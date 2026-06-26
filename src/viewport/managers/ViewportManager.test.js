@@ -20,6 +20,17 @@ describe('ViewportManager', () => {
     expect(viewportMeta).toContain('viewport-fit=cover');
   });
 
+  it('disables native Android WebView zoom', () => {
+    const mainActivity = readFileSync(
+      `${cwd()}/android/app/src/main/java/com/idlewizard/game/MainActivity.java`,
+      'utf8',
+    );
+
+    expect(mainActivity).toContain('settings.setSupportZoom(false);');
+    expect(mainActivity).toContain('settings.setBuiltInZoomControls(false);');
+    expect(mainActivity).toContain('settings.setDisplayZoomControls(false);');
+  });
+
   it('stages the initial control reveal and clears it after startup', () => {
     vi.useFakeTimers();
 

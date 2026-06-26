@@ -11,3 +11,31 @@ export function preventNativeWorldGestureDefault(event) {
     event.preventDefault();
   }
 }
+
+const WORLD_GESTURE_DEFAULT_EVENTS = [
+  'touchstart',
+  'touchmove',
+  'gesturestart',
+  'gesturechange',
+];
+
+const WORLD_GESTURE_DEFAULT_OPTIONS = { capture: true, passive: false };
+
+export function addNativeWorldGestureDefaultGuards(
+  listener = preventNativeWorldGestureDefault,
+  target = globalThis.document,
+) {
+  if (!target?.addEventListener || !target?.removeEventListener) {
+    return () => {};
+  }
+
+  for (const eventName of WORLD_GESTURE_DEFAULT_EVENTS) {
+    target.addEventListener(eventName, listener, WORLD_GESTURE_DEFAULT_OPTIONS);
+  }
+
+  return () => {
+    for (const eventName of WORLD_GESTURE_DEFAULT_EVENTS) {
+      target.removeEventListener(eventName, listener, WORLD_GESTURE_DEFAULT_OPTIONS);
+    }
+  };
+}

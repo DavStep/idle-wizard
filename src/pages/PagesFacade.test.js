@@ -5972,6 +5972,10 @@ describe('PagesFacade', () => {
       lockedAvatarButton.querySelector('.room-top-panel__character-lock'),
     ).not.toBeNull();
     expect(
+      lockedAvatarButton.querySelector('.room-top-panel__character-lock svg')?.dataset
+        .assetAtlasFrame,
+    ).toBe('status:lockDefault');
+    expect(
       lockedAvatarButton.querySelector('.room-top-panel__character-option-silhouette'),
     ).not.toBeNull();
     expect(
@@ -5989,12 +5993,16 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     expect(settings.querySelector('.style-box__title')?.textContent).toBe('avatar');
     expect(settings.querySelector('.room-top-panel__settings-tabs')?.hidden).toBe(true);
-    settings
-      .querySelector(
-        '#room-top-panel-settings-avatar .room-top-panel__character-button[data-character="rowan"]',
-      )
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    const rowanButton = settings.querySelector(
+      '#room-top-panel-settings-avatar .room-top-panel__character-button[data-character="rowan"]',
+    );
+    rowanButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     expect(playerFacade.getSnapshot().character).toBe('rowan');
+    expect(rowanButton.getAttribute('aria-checked')).toBe('true');
+    expect(
+      rowanButton.querySelector('.room-top-panel__character-check svg')?.dataset
+        .assetAtlasFrame,
+    ).toBe('status:checkDefault');
     expect(
       stage
         .querySelector('.room-top-panel__avatar-button')
@@ -11191,9 +11199,9 @@ describe('PagesFacade', () => {
     );
     expect(stage.querySelector('.garden-page__plot .style-box__title')).toBeNull();
     expect(rows[0].querySelector('.garden-page__plot-box-number')?.textContent).toBe('1');
-    expect(rows[0].querySelector('.garden-page__plot-box-label')?.textContent).toBe('empty');
+    expect(rows[0].querySelector('.garden-page__plot-box-label')?.textContent).toBe('choose');
     expect(rows[0].querySelector('.garden-page__plot-box-level')?.textContent).toBe('☆☆☆');
-    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe('choose');
+    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe('empty');
     expect(rows[0].disabled).toBe(false);
     expect(rows[1].classList.contains('is-buy-slot')).toBe(true);
     expect(rows[1].querySelector('.garden-page__plot-box-number')?.textContent).toBe('');
@@ -11210,9 +11218,9 @@ describe('PagesFacade', () => {
     rows[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.garden-page__message')).toBeNull();
-    expect(rows[1].querySelector('.garden-page__plot-box-label')?.textContent).toBe('empty');
+    expect(rows[1].querySelector('.garden-page__plot-box-label')?.textContent).toBe('choose');
     expect(rows[1].querySelector('.garden-page__plot-box-level')?.textContent).toBe('☆☆☆');
-    expect(rows[1].querySelector('.garden-page__plot-box-action')?.textContent).toBe('choose');
+    expect(rows[1].querySelector('.garden-page__plot-box-action')?.textContent).toBe('empty');
     expect(rows[1].disabled).toBe(false);
     expect(rows.filter((row) => !row.hidden)).toHaveLength(3);
     expect(stage.querySelector('.garden-page__plot-summary')).toBeNull();
@@ -11226,11 +11234,12 @@ describe('PagesFacade', () => {
       quantity: 0,
     });
     gameplayFacade.setGardenSeedQuantity(1, 1);
-    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe('choose');
+    expect(rows[0].querySelector('.garden-page__plot-box-label')?.textContent).toBe('choose');
+    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe('empty');
     expect(rows[0].classList.contains('is-plantable')).toBe(false);
     expect(rows[0].disabled).toBe(false);
     rows[0]
-      .querySelector('.garden-page__plot-box-action')
+      .querySelector('.garden-page__plot-box-label')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const seedPopup = stage.querySelector('.garden-page__seed-popup');

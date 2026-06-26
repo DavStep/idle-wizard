@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.51
+
+- Fixed level-up and research completion notices so restored saves do not replay old announcements, and large level jumps keep their unlock lists readable.
+- Improved seed visuals across labels, rewards, research notices, and Brewing drag icons with clearer seed pack art.
+- Tightened mobile play by disabling native Android WebView zoom, blocking stray pinch gestures in Garden and Brewing, and polishing Garden plot labels/timers.
+- Updated recipe discoverer names to open player info, and cleaned up avatar, prestige, and room-tab status icons.
+
 ## 0.2.50
 
 - Added full-screen progress notices for level-ups and completed research so big milestones are harder to miss.

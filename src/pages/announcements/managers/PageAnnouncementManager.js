@@ -3,7 +3,7 @@ import {
   createAssetAtlasSprite,
 } from '../../../assets/atlas/atlasSprite.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
-import { getSeedIconFrameName } from '../../../assets/items/seeds/seedIcons.js';
+import { createSeedPackIcon, getSeedIconFrameName } from '../../../assets/items/seeds/seedIcons.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { getLevelPayoffRows } from '../../workshop/managers/levelPayoffSummary.js';
 
@@ -28,6 +28,7 @@ export class PageAnnouncementManager {
     this.previousFocus = null;
     this.previousLevel = null;
     this.previousCompletedResearchIds = null;
+    this.previousPersistenceLoadRevision = null;
     this.queue = [];
     this.current = null;
     this.hideTimeoutId = null;
@@ -64,6 +65,7 @@ export class PageAnnouncementManager {
     this.previousFocus = null;
     this.previousLevel = null;
     this.previousCompletedResearchIds = null;
+    this.previousPersistenceLoadRevision = null;
     this.queue = [];
     this.current = null;
   }
@@ -98,6 +100,11 @@ export class PageAnnouncementManager {
       return;
     }
 
+    if (this.hasPersistenceLoadRevisionChanged(snapshot)) {
+      this.resetAnnouncementsToBaseline(snapshot);
+      return;
+    }
+
     this.queueLevelAnnouncement(snapshot);
     this.queueResearchAnnouncements(snapshot);
     this.captureBaseline(snapshot);
@@ -107,6 +114,44 @@ export class PageAnnouncementManager {
   captureBaseline(snapshot = {}) {
     this.previousLevel = this.getPlayerLevel(snapshot);
     this.previousCompletedResearchIds = this.getCompletedResearchIds(snapshot);
+    this.previousPersistenceLoadRevision = this.getPersistenceLoadRevision(snapshot);
+  }
+
+  hasPersistenceLoadRevisionChanged(snapshot = {}) {
+    const nextRevision = this.getPersistenceLoadRevision(snapshot);
+
+    return (
+      this.previousPersistenceLoadRevision !== null &&
+      nextRevision !== null &&
+      nextRevision !== this.previousPersistenceLoadRevision
+    );
+  }
+
+  resetAnnouncementsToBaseline(snapshot = {}) {
+    const previousFocus = this.previousFocus;
+
+    this.clearHideTimeout();
+    this.queue = [];
+    this.current = null;
+    this.previousFocus = null;
+
+    if (this.layer) {
+      this.layer.hidden = true;
+      this.layer.setAttribute('aria-hidden', 'true');
+    }
+
+    this.body?.replaceChildren();
+    this.captureBaseline(snapshot);
+
+    if (previousFocus && document.contains(previousFocus)) {
+      this.focusWithoutScroll(previousFocus);
+    }
+  }
+
+  getPersistenceLoadRevision(snapshot = {}) {
+    const revision = Number(snapshot?.persistence?.loadRevision);
+
+    return Number.isInteger(revision) && revision >= 0 ? revision : null;
   }
 
   queueLevelAnnouncement(snapshot = {}) {
@@ -173,7 +218,9 @@ export class PageAnnouncementManager {
 
   getResearchSnapshot(snapshot, researchId) {
     const research =
-      this.getResearches(snapshot).find((candidate) => candidate?.id === researchId) ?? {};
+      this.getResearches(snapshot).find((candidate) => candidate?.id === researchId) ??
+      this.gameplayFacade?.researchFacade?.getResearchAnnouncementSnapshot?.(researchId) ??
+      {};
 
     return {
       id: researchId,
@@ -348,7 +395,9 @@ export class PageAnnouncementManager {
 
   createRow(row, index = 0) {
     const root = document.createElement('div');
+    const valueLines = Array.isArray(row.valueLines) ? row.valueLines : [];
     root.className = 'room-announcement__row';
+    root.classList.toggle('room-announcement__row--list', valueLines.length > 1);
     root.style.setProperty('--room-announcement-row-index', index);
 
     const label = document.createElement('span');
@@ -357,7 +406,7 @@ export class PageAnnouncementManager {
 
     const value = document.createElement('span');
     value.className = 'room-announcement__row-value';
-    const valueText = Array.isArray(row.valueLines) ? row.valueLines.join(' / ') : row.value;
+    const valueText = valueLines.length > 0 ? valueLines.join(' / ') : row.value;
     setResourceIconText(value, valueText);
 
     root.append(label, value);
@@ -373,9 +422,7 @@ export class PageAnnouncementManager {
     const silhouette = frameName
       ? createAssetAtlasMaskedSprite('room-announcement__research-silhouette', frameName)
       : null;
-    const icon = frameName
-      ? createAssetAtlasSprite('room-announcement__research-icon', frameName)
-      : null;
+    const icon = this.createResearchIcon(research, frameName);
 
     if (silhouette && icon) {
       stage.append(silhouette, icon);
@@ -389,9 +436,20 @@ export class PageAnnouncementManager {
     return stage;
   }
 
+  createResearchIcon(research = {}, frameName = null) {
+    if (research.id?.startsWith('unlockSeed:')) {
+      return createSeedPackIcon('room-announcement__research-icon', {
+        key: research.id.slice('unlockSeed:'.length),
+        label: research.label ?? '',
+      });
+    }
+
+    return frameName ? createAssetAtlasSprite('room-announcement__research-icon', frameName) : null;
+  }
+
   getResearchIconFrameName(research = {}) {
     if (research.id?.startsWith('unlockSeed:')) {
-      return getSeedIconFrameName();
+      return getSeedIconFrameName(research.id.slice('unlockSeed:'.length));
     }
 
     if (research.id?.startsWith('unlockRecipe:')) {

@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
+
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { PageAnnouncementManager } from './PageAnnouncementManager.js';
@@ -36,6 +39,9 @@ function createGameplayFacadeFake(snapshot, { emitInitial = true } = {}) {
 
 function createSnapshot() {
   return {
+    persistence: {
+      loadRevision: 0,
+    },
     tasks: {
       currentLevel: 1,
     },
@@ -145,6 +151,38 @@ describe('PageAnnouncementManager', () => {
     ]);
   });
 
+  it('keeps multi-level unlock announcements in a stable row layout', () => {
+    const snapshot = createSnapshot();
+    const { gameplayFacade, stage } = mountManager(snapshot);
+
+    snapshot.tasks.currentLevel = 10;
+    snapshot.playerLevel.currentLevel = 10;
+    gameplayFacade.publishSnapshot();
+
+    const unlockRow = stage.querySelector('.room-announcement__row');
+    expect(unlockRow?.classList.contains('room-announcement__row--list')).toBe(true);
+    expect(unlockRow?.querySelector('.room-announcement__row-label')?.textContent).toBe(
+      'unlocks',
+    );
+    expect(unlockRow?.querySelector('.room-announcement__row-value')?.textContent).toBe(
+      'garden / research / brewing / prestige / leaderboard / discoveries / alliance',
+    );
+  });
+
+  it('allows long announcement values to wrap without collapsing labels', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rowRule = baseCss.match(/\.room-announcement__row\s*\{(?<body>[^}]*)\}/)?.groups
+      ?.body;
+    const valueRule = baseCss.match(
+      /\.room-announcement__row-value\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(rowRule).toContain('grid-template-columns: minmax(72px, 0.8fr) minmax(0, 1.2fr);');
+    expect(valueRule).toContain('min-width: 0;');
+    expect(valueRule).toContain('overflow-wrap: break-word;');
+    expect(valueRule).toContain('white-space: normal;');
+  });
+
   it('captures the saved level baseline when subscriptions do not emit immediately', () => {
     const snapshot = createSnapshot();
     const gameplayFacade = createGameplayFacadeFake(snapshot, { emitInitial: false });
@@ -158,6 +196,30 @@ describe('PageAnnouncementManager', () => {
 
     expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
     expect(stage.querySelector('.room-announcement__level-flow')?.textContent).toBe('level 1> 2');
+  });
+
+  it('does not replay saved level and research announcements after persistence hydration', () => {
+    const snapshot = createSnapshot();
+    const { gameplayFacade, stage } = mountManager(snapshot);
+    const research = snapshot.research.tabs[0].boxes[0].researches[0];
+
+    snapshot.persistence.loadRevision = 1;
+    snapshot.tasks.currentLevel = 2;
+    snapshot.playerLevel.currentLevel = 2;
+    research.completed = true;
+    research.value = 'researched';
+    snapshot.research.completedResearchIds = [research.id];
+    gameplayFacade.publishSnapshot();
+
+    expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(true);
+
+    snapshot.tasks.currentLevel = 3;
+    snapshot.playerLevel.currentLevel = 3;
+    gameplayFacade.publishSnapshot();
+
+    expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('level up!');
+    expect(stage.querySelector('.room-announcement__level-flow')?.textContent).toBe('level 2> 3');
   });
 
   it('keeps announcements open until the timed flow completes', () => {
@@ -203,5 +265,73 @@ describe('PageAnnouncementManager', () => {
         .querySelector('.room-announcement__research-icon')
         ?.getAttribute('data-asset-atlas-frame'),
     ).toBe('potion:manaTonic');
+  });
+
+  it('shows the seed icon on completed seed research packs', () => {
+    const snapshot = createSnapshot();
+    snapshot.research.tabs[0].boxes[0].researches[0] = {
+      id: 'unlockSeed:mintSeed',
+      label: 'mint seed',
+      value: 'grow mint',
+      effect: 'grow mint',
+      completed: false,
+    };
+    const { gameplayFacade, stage } = mountManager(snapshot);
+    const research = snapshot.research.tabs[0].boxes[0].researches[0];
+
+    research.completed = true;
+    research.value = 'researched';
+    snapshot.research.completedResearchIds = [research.id];
+    gameplayFacade.publishSnapshot();
+
+    const icon = stage.querySelector('.room-announcement__research-icon');
+    expect(
+      stage
+        .querySelector('.room-announcement__research-silhouette')
+        ?.getAttribute('data-asset-atlas-frame'),
+    ).toBe('seed:regular');
+    expect(icon?.classList.contains('style-seed-pack-composite')).toBe(true);
+    expect(icon?.getAttribute('data-asset-atlas-frame')).toBe('seed:regular');
+    expect(icon?.getAttribute('data-seed-pack-item-frame')).toBe('herb:mintHerb');
+    expect(
+      icon?.querySelector('.style-seed-pack-composite__item')?.getAttribute(
+        'data-asset-atlas-frame',
+      ),
+    ).toBe('herb:mintHerb');
+  });
+
+  it('uses facade metadata when completed series research is hidden from visible tabs', () => {
+    const snapshot = createSnapshot();
+    snapshot.research.tabs[0].boxes[0].researches = [];
+    const { gameplayFacade, stage } = mountManager(snapshot);
+
+    gameplayFacade.researchFacade = {
+      getResearchAnnouncementSnapshot: (researchId) => ({
+        id: researchId,
+        label: 'fast sell lvl 1',
+        effect: '85% payout',
+        value: 'researched',
+        costCurrency: 'ruby',
+      }),
+    };
+
+    snapshot.research.completedResearchIds = ['fastSellPayout:1'];
+    gameplayFacade.publishSnapshot();
+
+    expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe(
+      'research complete',
+    );
+    expect(stage.querySelector('.room-announcement__research-label')?.textContent).toBe(
+      'fast sell lvl 1',
+    );
+    expect(stage.querySelector('.room-announcement__research-detail')?.textContent).toBe(
+      '85% payout',
+    );
+    expect(
+      stage
+        .querySelector('.room-announcement__research-icon')
+        ?.getAttribute('data-asset-atlas-frame'),
+    ).toBe('resource:ruby');
   });
 });

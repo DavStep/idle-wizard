@@ -11,7 +11,7 @@ export class BrewingPageFacade {
   static explain =
     'Shows the brewing room page where herbs go into the cauldron and mana starts a brew.';
 
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, onOpenPlayerInfo } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.roomViewManager = new BrewingRoomViewManager();
     this.flyoutManager = new RewardFlyoutManager();
@@ -81,6 +81,7 @@ export class BrewingPageFacade {
           recipe?.key ?? null,
           this.recipeGuideManager.getCurrentCauldronIndex(),
         ),
+      onOpenPlayerInfo,
     });
   }
 

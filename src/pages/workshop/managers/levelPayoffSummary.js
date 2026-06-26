@@ -82,10 +82,10 @@ export function formatLevelUpNotice(level, rows = []) {
 }
 
 function getUnlockRows(levelBefore, levelAfter) {
-  const unlocks = [
+  const unlocks = dedupeUnlocksByValue([
     ...getPageUnlocks(levelBefore, levelAfter),
     ...getWorkshopUnlocks(levelBefore, levelAfter),
-  ];
+  ]);
 
   if (!unlocks.length) {
     return [];
@@ -101,6 +101,19 @@ function getUnlockRows(levelBefore, levelAfter) {
       notice: unlocks.map((unlock) => unlock.notice).join(', '),
     },
   ];
+}
+
+function dedupeUnlocksByValue(unlocks) {
+  const seenValues = new Set();
+
+  return unlocks.filter((unlock) => {
+    if (!unlock?.value || seenValues.has(unlock.value)) {
+      return false;
+    }
+
+    seenValues.add(unlock.value);
+    return true;
+  });
 }
 
 function getPageUnlocks(levelBefore, levelAfter) {

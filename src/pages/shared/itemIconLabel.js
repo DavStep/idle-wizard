@@ -1,5 +1,5 @@
 import { createAssetAtlasSprite } from '../../assets/atlas/atlasSprite.js';
-import { getSeedIconFrameName } from '../../assets/items/seeds/seedIcons.js';
+import { createSeedPackIcon, getSeedIconFrameName } from '../../assets/items/seeds/seedIcons.js';
 import {
   getHerbIconKeyByLabel,
   getHerbIconLabelEntries,
@@ -36,6 +36,8 @@ export function setItemIconLabel(element, kind, itemKey = null) {
       kind: 'seed',
       className: SEED_ICON_LABEL_CLASS,
       getIconFrameName: getSeedIconFrameName,
+      createIconSprite: ({ className, normalizedKey, value }) =>
+        createSeedPackIcon(`${className}__icon`, { key: normalizedKey, label: value }),
     });
     return;
   }
@@ -142,6 +144,8 @@ function setImageItemIconLabel({
   kind,
   className,
   getIconFrameName,
+  createIconSprite = ({ className, frameName }) =>
+    createImageItemIconSprite(className, frameName),
 }) {
   const value = String(text ?? '');
   const normalizedKey = String(itemKey ?? '').trim();
@@ -169,7 +173,7 @@ function setImageItemIconLabel({
   }
 
   element.replaceChildren(
-    createImageItemIconSprite(className, frameName),
+    createIconSprite({ className, frameName, normalizedKey, value }),
     createImageItemText(className, value),
   );
 }
@@ -310,7 +314,7 @@ function createSeedIconLabel(seedName) {
   label.className = SEED_ICON_LABEL_CLASS;
   label.dataset.itemIconKind = 'seed';
   label.append(
-    createImageItemIconSprite(SEED_ICON_LABEL_CLASS, getSeedIconFrameName()),
+    createSeedPackIcon(`${SEED_ICON_LABEL_CLASS}__icon`, { label: seedName }),
     createImageItemText(SEED_ICON_LABEL_CLASS, seedName),
   );
   return label;

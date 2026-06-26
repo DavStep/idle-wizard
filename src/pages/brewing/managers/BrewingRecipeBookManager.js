@@ -2,6 +2,7 @@ import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
+import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import {
   createAssetAtlasMaskedSprite,
   createAssetAtlasSprite,
@@ -61,11 +62,13 @@ export class BrewingRecipeBookManager {
     getSelectedRecipeKey,
     getCurrentCauldronIndex,
     onSelectRecipe,
+    onOpenPlayerInfo,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.getSelectedRecipeKey = getSelectedRecipeKey;
     this.getCurrentCauldronIndex = getCurrentCauldronIndex;
     this.onSelectRecipe = onSelectRecipe;
+    this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -316,6 +319,7 @@ export class BrewingRecipeBookManager {
           recipe.known === false ? 0 : 1,
           recipe.discoveryType ?? '',
           recipe.discoveredByUsername ?? '',
+          recipe.discoveredByIdentity ?? '',
           recipe.manaCost,
           recipe.brewDurationMs,
           ingredientsSignature,
@@ -424,6 +428,7 @@ export class BrewingRecipeBookManager {
     }
 
     const infoText = this.createRecipeInfoText(display);
+    const discoveryRow = this.createRecipeDiscoveryRow(display);
 
     const info = document.createElement('div');
     info.className = 'brewing-page__recipe-info';
@@ -469,6 +474,9 @@ export class BrewingRecipeBookManager {
     meta.append(cost, duration);
 
     main.append(top, infoText);
+    if (discoveryRow) {
+      main.append(discoveryRow);
+    }
     row.append(main, ingredients, meta, selectButton);
 
     return row;
@@ -489,6 +497,7 @@ export class BrewingRecipeBookManager {
         ? 'a recipe not yet named in the workshop book.'
         : this.getPotionInfo(recipe),
       discoveredByUsername: this.getRecipeDiscovererName(recipe),
+      discoveredByIdentity: this.getRecipeDiscovererIdentity(recipe),
     };
   }
 
@@ -530,14 +539,31 @@ export class BrewingRecipeBookManager {
     infoText.className = 'brewing-page__recipe-info-text';
     infoText.append(display.infoText);
 
-    if (display.discoveredByUsername) {
-      const discoverer = document.createElement('span');
-      discoverer.className = 'brewing-page__recipe-discovery-name';
-      discoverer.textContent = display.discoveredByUsername;
-      infoText.append(' discovered by ', discoverer);
+    return infoText;
+  }
+
+  createRecipeDiscoveryRow(display) {
+    if (!display.discoveredByUsername) {
+      return null;
     }
 
-    return infoText;
+    const row = document.createElement('div');
+    row.className = 'brewing-page__recipe-discovery-row';
+    row.append(
+      '- discovered by ',
+      createPlayerInfoLink(
+        {
+          identity: display.discoveredByIdentity,
+          username: display.discoveredByUsername,
+        },
+        {
+          onOpenPlayerInfo: this.onOpenPlayerInfo,
+          text: display.discoveredByUsername,
+          className: 'brewing-page__recipe-discovery-name',
+        },
+      ),
+    );
+    return row;
   }
 
   createPotionIcon(iconKey, { silhouette = false } = {}) {
@@ -561,6 +587,15 @@ export class BrewingRecipeBookManager {
 
     const username = String(recipe?.discoveredByUsername ?? '').trim();
     return username || 'wizard';
+  }
+
+  getRecipeDiscovererIdentity(recipe) {
+    if (recipe?.discovered !== true) {
+      return null;
+    }
+
+    const identity = String(recipe?.discoveredByIdentity ?? '').trim();
+    return identity || null;
   }
 
   getPotionInfo(recipe) {

@@ -68,6 +68,9 @@ describe('BrewingRecipeBookManager', () => {
     const infoTextRule = baseCss.match(
       /\.brewing-page__recipe-info-text\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const discoveryRowRule = baseCss.match(
+      /\.brewing-page__recipe-discovery-row\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const discoveryNameRule = baseCss.match(
       /\.brewing-page__recipe-discovery-name\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -110,7 +113,9 @@ describe('BrewingRecipeBookManager', () => {
     expect(infoTextRule).toContain(
       'min-height: calc(var(--style-box-border-label-line-height) * 4);',
     );
-    expect(discoveryNameRule).toContain('color: var(--style-star-purple);');
+    expect(discoveryRowRule).toBeDefined();
+    expect(discoveryRowRule).toContain('color: var(--style-muted);');
+    expect(discoveryNameRule).toContain('color: inherit;');
     expect(silhouetteRule).toContain('color: var(--style-disabled);');
     expect(ingredientsRule).toBeDefined();
     expect(ingredientsRule).toContain('margin-top: 6px;');
@@ -138,7 +143,7 @@ describe('BrewingRecipeBookManager', () => {
     parent.remove();
   });
 
-  it('shows discovered unknown recipe discoverer in purple description text', () => {
+  it('shows discovered unknown recipe discoverer in a separate player-info row', () => {
     const snapshot = {
       brewing: {
         herbs: [
@@ -157,6 +162,7 @@ describe('BrewingRecipeBookManager', () => {
             unlocked: true,
             discovered: true,
             discoveredByUsername: 'Ada',
+            discoveredByIdentity: 'identity-a',
             discoveryType: 'unknown',
             unknown: true,
             manaCost: 36,
@@ -174,23 +180,36 @@ describe('BrewingRecipeBookManager', () => {
       },
     };
     const parent = document.createElement('div');
+    const onOpenPlayerInfo = vi.fn();
     document.body.append(parent);
     const manager = new BrewingRecipeBookManager({
       gameplayFacade: createGameplayFacadeFake(snapshot),
       getSelectedRecipeKey: () => null,
       onSelectRecipe: () => {},
+      onOpenPlayerInfo,
     });
 
     manager.mount(parent);
 
     const description = parent.querySelector('.brewing-page__recipe-info-text');
-    const discoverer = description?.querySelector('.brewing-page__recipe-discovery-name');
+    const discoveryRow = parent.querySelector('.brewing-page__recipe-discovery-row');
+    const discoverer = discoveryRow?.querySelector('.brewing-page__recipe-discovery-name');
     const row = parent.querySelector('.brewing-page__recipe-row');
 
     expect(row?.classList.contains('is-unknown')).toBe(false);
-    expect(description?.textContent).toContain('discovered by Ada');
+    expect(description?.textContent).not.toContain('discovered by Ada');
+    expect(discoveryRow?.textContent).toBe('- discovered by Ada');
     expect(discoverer?.textContent).toBe('Ada');
-    expect(discoverer?.className).toBe('brewing-page__recipe-discovery-name');
+    expect(discoverer?.className).toBe(
+      'room-player-info-link brewing-page__recipe-discovery-name',
+    );
+
+    discoverer?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onOpenPlayerInfo).toHaveBeenCalledWith({
+      identity: 'identity-a',
+      username: 'Ada',
+    });
 
     manager.unmount();
     parent.remove();
@@ -459,11 +478,15 @@ describe('BrewingRecipeBookManager', () => {
     const pageRowRule = baseCss.match(
       /\.brewing-page__recipe-page\s*>\s*\.brewing-page__recipe-row\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const ghostRowRule = baseCss.match(
+      /\.brewing-page__recipe-turn-ghost\s*>\s*\.brewing-page__recipe-row\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const selectRule = baseCss.match(
       /\.brewing-page__recipe-select-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(pageRowRule).toContain('flex: 1 1 auto;');
+    expect(ghostRowRule).toContain('flex: 1 1 auto;');
     expect(selectRule).toContain('align-self: center;');
     expect(selectRule).toContain('box-sizing: border-box;');
     expect(selectRule).toContain('width: 112px;');

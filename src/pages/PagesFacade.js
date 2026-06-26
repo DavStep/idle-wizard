@@ -146,6 +146,7 @@ export class PagesFacade {
       'brewing',
       new BrewingPageFacade({
         gameplayFacade,
+        onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
       }),
     );
     this.registryManager.register(

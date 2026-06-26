@@ -536,6 +536,7 @@ describe('GardenPlotManager', () => {
     const multiTouchStart = createTouchEvent('touchstart', 2);
     const singleTouchStart = createTouchEvent('touchstart', 1);
     const multiTouchMove = createTouchEvent('touchmove', 2);
+    const documentMultiTouchMove = createTouchEvent('touchmove', 2);
     const gestureStart = new window.Event('gesturestart', {
       bubbles: true,
       cancelable: true,
@@ -545,6 +546,7 @@ describe('GardenPlotManager', () => {
     shell.dispatchEvent(multiTouchStart);
     shell.dispatchEvent(multiTouchMove);
     shell.dispatchEvent(gestureStart);
+    document.dispatchEvent(documentMultiTouchMove);
 
     expect(firstPointerDown.defaultPrevented).toBe(false);
     expect(secondPointerDown.defaultPrevented).toBe(true);
@@ -552,6 +554,7 @@ describe('GardenPlotManager', () => {
     expect(multiTouchStart.defaultPrevented).toBe(true);
     expect(multiTouchMove.defaultPrevented).toBe(true);
     expect(gestureStart.defaultPrevented).toBe(true);
+    expect(documentMultiTouchMove.defaultPrevented).toBe(true);
 
     manager.unmount();
     parent.remove();
@@ -595,6 +598,27 @@ describe('GardenPlotManager', () => {
     expect(
       star?.querySelectorAll('.style-star-level__slot[data-star-filled="true"]'),
     ).toHaveLength(0);
+  });
+
+  it('shows choose above empty plot boxes and empty in the plot center', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+
+    expect(plotRow?.classList.contains('is-empty')).toBe(true);
+    expect(plotRow?.classList.contains('has-herb-label')).toBe(true);
+    expect(plotRow?.querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
+    expect(plotRow?.querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
+    expect(plotRow?.querySelector('.garden-page__plot-box-label')?.textContent).toBe(
+      'choose',
+    );
+    expect(plotRow?.querySelector('.garden-page__plot-box-action')?.textContent).toBe(
+      'empty',
+    );
   });
 
   it('caps plot soil tint at the richest supported level', () => {
@@ -750,20 +774,20 @@ describe('GardenPlotManager', () => {
       'font-size: var(--garden-page-plot-box-detail-font-size);',
     );
     expect(boxTimerRule).toContain('padding: 0 2px;');
-    expect(boxTimerRule).toContain('color: var(--garden-page-plot-number-color);');
+    expect(boxTimerRule).toContain('color: #fff;');
     expect(boxTimerRule).toContain('font-weight: 700;');
     expect(boxTimerRule).toContain(
       'line-height: var(--garden-page-plot-box-detail-line-height);',
     );
-    expect(processingActionRule).toContain('right: auto;');
-    expect(processingActionRule).toContain('bottom: 7px;');
-    expect(processingActionRule).toContain('left: 50%;');
+    expect(processingActionRule).toContain('right: 6px;');
+    expect(processingActionRule).toContain('bottom: 6px;');
+    expect(processingActionRule).toContain('left: auto;');
     expect(processingActionRule).toContain('z-index: 3;');
     expect(processingActionRule).toContain('padding: 0;');
-    expect(processingActionRule).toContain('color: var(--garden-page-plot-number-color);');
+    expect(processingActionRule).toContain('color: #fff;');
     expect(processingActionRule).toContain('font-weight: 700;');
-    expect(processingActionRule).toContain('text-align: center;');
-    expect(processingActionRule).toContain('transform: translateX(-50%);');
+    expect(processingActionRule).toContain('text-align: right;');
+    expect(processingActionRule).toContain('transform: none;');
   });
 
   it('keeps the Garden world edge-to-edge while catalog boxes stay chrome-aligned', () => {
@@ -1093,7 +1117,7 @@ describe('GardenPlotManager', () => {
     expect(parent.querySelector('.garden-page__plot-box-timer')?.hidden).toBe(true);
   });
 
-  it('shows harvesting scissors and only the timer in boxes mode', () => {
+  it('keeps ready lift while showing harvesting scissors in boxes mode', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
@@ -1129,6 +1153,7 @@ describe('GardenPlotManager', () => {
     const boxTimer = parent.querySelector('.garden-page__plot-box-timer');
 
     expect(boxFrame?.classList.contains('is-harvesting')).toBe(true);
+    expect(boxFrame?.classList.contains('is-ready')).toBe(true);
     expect(scissors?.hasAttribute('hidden')).toBe(false);
     expect(
       scissors?.querySelector('.garden-page__plot-scissors-frame--closed')?.dataset

@@ -41,6 +41,10 @@ describe('resource icon labels', () => {
     );
     expect(element.querySelector('.style-resource-label--ruby')?.textContent).toBe('3 rubies');
     expect(element.querySelector('.style-resource-label--seed')?.textContent).toBe('4 seeds');
+    expect(
+      element.querySelector('.style-resource-label--seed .style-resource-label__icon')?.dataset
+        .seedPackItemFrame,
+    ).toBe('herb:sageHerb');
     expect(element.querySelector('.style-resource-label--herb')?.textContent).toBe('6 herbs');
     expect(element.querySelector('.style-resource-label--emerald')?.dataset.resourceColor).toBe(
       'emerald',

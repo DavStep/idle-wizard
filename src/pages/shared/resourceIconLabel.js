@@ -1,6 +1,6 @@
 import { createAssetAtlasSprite } from '../../assets/atlas/atlasSprite.js';
 import { getHerbIconFrameName } from '../../assets/items/herbs/herbIcons.js';
-import { getSeedIconFrameName } from '../../assets/items/seeds/seedIcons.js';
+import { createSeedPackIcon, getSeedIconFrameName } from '../../assets/items/seeds/seedIcons.js';
 import { setResourceColor } from './resourceColor.js';
 
 export const RESOURCE_ICON_LABEL_CLASS = 'style-resource-label';
@@ -14,6 +14,7 @@ const RESOURCE_ICON_FRAME_NAMES = Object.freeze({
   ruby: 'resource:ruby',
   seed: getSeedIconFrameName(),
 });
+const GENERIC_SEED_ICON = Object.freeze({ key: 'sageSeed', label: 'sage seed' });
 
 const RESOURCE_WORD_PATTERN = /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/;
 const RESOURCE_WORD_MATCH_PATTERN =
@@ -57,7 +58,10 @@ export function createResourceIconLabel(resource, label = resource, { amountPref
 
   appendAmountPrefix(root, amountPrefix);
 
-  const icon = createAssetAtlasSprite(`${RESOURCE_ICON_LABEL_CLASS}__icon`, frameName);
+  const icon =
+    normalizedResource === 'seed'
+      ? createSeedPackIcon(`${RESOURCE_ICON_LABEL_CLASS}__icon`, GENERIC_SEED_ICON)
+      : createAssetAtlasSprite(`${RESOURCE_ICON_LABEL_CLASS}__icon`, frameName);
 
   const text = document.createElement('span');
   text.className = `${RESOURCE_ICON_LABEL_CLASS}__text`;

@@ -10,9 +10,12 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { createStarLevelLabel, formatStarLevel } from '../../shared/starLevelLabel.js';
 import { setTimerProgressFill, stopTimerProgressFill } from '../../shared/timerProgress.js';
 import { formatRemainingTime } from '../../shared/timerDisplay.js';
-import { preventNativeWorldGestureDefault } from '../../shared/worldGestureDefaultGuard.js';
+import {
+  addNativeWorldGestureDefaultGuards,
+  preventNativeWorldGestureDefault,
+} from '../../shared/worldGestureDefaultGuard.js';
 import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
-import { getSeedIconFrameName } from '../../../assets/items/seeds/seedIcons.js';
+import { createSeedPackIcon, getSeedIconFrameName } from '../../../assets/items/seeds/seedIcons.js';
 import { getHerbIconFrameName } from '../../../assets/items/herbs/herbIcons.js';
 import {
   getPotionIconFrameName,
@@ -114,6 +117,7 @@ export class BrewingCauldronManager {
     this.worldGesture = null;
     this.worldDrag = null;
     this.worldSettleClassTimeout = null;
+    this.removeWorldGestureDefaultGuards = null;
     this.herbDrag = null;
     this.transientAnimationTimeouts = new Set();
     this.transientAnimationTimeoutsByElement = new WeakMap();
@@ -169,6 +173,8 @@ export class BrewingCauldronManager {
     this.worldPointers.clear();
     this.worldGesture = null;
     this.worldDrag = null;
+    this.removeWorldGestureDefaultGuards?.();
+    this.removeWorldGestureDefaultGuards = null;
     this.clearWorldSettleTimers();
     this.clearHerbDrag();
     this.clearTransientAnimationTimeouts();
@@ -188,6 +194,10 @@ export class BrewingCauldronManager {
     shell.addEventListener('touchmove', this.handleWorldGestureDefault, { passive: false });
     shell.addEventListener('gesturestart', this.handleWorldGestureDefault, { passive: false });
     shell.addEventListener('gesturechange', this.handleWorldGestureDefault, { passive: false });
+    this.removeWorldGestureDefaultGuards = addNativeWorldGestureDefaultGuards(
+      this.handleWorldGestureDefault,
+      shell.ownerDocument,
+    );
 
     const world = document.createElement('div');
     world.className = 'brewing-page__world';
@@ -1522,6 +1532,15 @@ export class BrewingCauldronManager {
   }
 
   createItemDragIcon(item = {}) {
+    const kind = String(item.itemKind ?? item.kind ?? '').trim();
+
+    if (kind === 'seed') {
+      return createSeedPackIcon('brewing-page__item-drag-ghost-icon', {
+        key: item.itemKey ?? item.key ?? '',
+        label: item.itemLabel ?? item.label ?? '',
+      });
+    }
+
     const frameName = this.getItemDragFrameName(item);
 
     if (!frameName) {

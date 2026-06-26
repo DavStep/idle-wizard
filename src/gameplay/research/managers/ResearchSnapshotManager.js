@@ -38,6 +38,16 @@ export class ResearchSnapshotManager {
     };
   }
 
+  getResearchSnapshotById(researchId) {
+    const research = this.researchDefinitionManager.getConfiguredResearch(researchId);
+
+    if (!research) {
+      return null;
+    }
+
+    return this.getResearchSnapshot(research);
+  }
+
   getBoxSnapshot(box) {
     return {
       ...box,

@@ -77,6 +77,13 @@ describe('RewardFlyoutManager', () => {
 
     expect(document.querySelectorAll('.room-item-drop.is-seed-burst')).toHaveLength(3);
     expect(document.querySelectorAll('.room-seed-pack-composite')).toHaveLength(3);
+    expect(
+      document.querySelector('.room-seed-pack-composite')?.dataset.seedPackItemFrame,
+    ).toBe('herb:sageHerb');
+    expect(
+      document.querySelector('.room-seed-pack-composite .room-seed-pack-item')?.dataset
+        .assetAtlasFrame,
+    ).toBe('herb:sageHerb');
     expect(document.querySelector('.room-reward-flyout')?.classList).toContain(
       'is-visual-only',
     );

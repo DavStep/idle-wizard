@@ -1,7 +1,11 @@
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import {
+  createStatusIcon,
+  STATUS_ICON_CHECK,
+  STATUS_ICON_LOCK,
+} from '../../shared/statusIcon.js';
 import { createStarLevelLabel } from '../../shared/starLevelLabel.js';
-import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import {
   cauldronCapacityEndCauldronNumber,
   cauldronCapacityStartCauldronNumber,
@@ -17,8 +21,6 @@ const PRESTIGE_TABS = [
 ];
 
 const PRESTIGE_POINT_REWARDS = createPrestigePointRewards();
-const PRESTIGE_COMPLETE_ICON_FRAME = 'status:checkDefault';
-const PRESTIGE_LOCKED_ICON_FRAME = 'status:lockDefault';
 
 function createPrestigePointRewards() {
   const rewardsByCount = new Map();
@@ -435,15 +437,13 @@ export class PrestigePanelManager {
       return stateLabel;
     }
 
-    const frameName =
-      state === 'completed' ? PRESTIGE_COMPLETE_ICON_FRAME : PRESTIGE_LOCKED_ICON_FRAME;
     stateLabel.classList.add(`workshop-page__prestige-state-label--${state}`);
     stateLabel.setAttribute('role', 'img');
     stateLabel.setAttribute('aria-label', this.getMilestoneStateLabel(state));
 
-    const icon = createAssetAtlasSprite(
+    const icon = createStatusIcon(
       'workshop-page__prestige-state-icon',
-      frameName,
+      state === 'completed' ? STATUS_ICON_CHECK : STATUS_ICON_LOCK,
     );
 
     if (icon) {

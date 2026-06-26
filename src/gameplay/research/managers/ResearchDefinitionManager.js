@@ -708,6 +708,19 @@ export class ResearchDefinitionManager {
     return this.getResearchLookup().get(normalizedResearchId) ?? null;
   }
 
+  getConfiguredResearch(researchId) {
+    const normalizedResearchId = this.normalizeResearchId(researchId);
+
+    if (!this.researchBalanceManager.isResearchEnabled(normalizedResearchId)) {
+      return null;
+    }
+
+    return (
+      this.getResearchLookup({ includeLevelLockedAutomation: true }).get(normalizedResearchId) ??
+      null
+    );
+  }
+
   getRequiredResearchIds(researchId) {
     return this.getResearch(researchId)?.requiredResearchIds ?? [];
   }

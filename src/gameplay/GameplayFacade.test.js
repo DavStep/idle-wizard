@@ -208,6 +208,7 @@ describe('GameplayFacade', () => {
     const second = createGameplay({ persistenceStorage });
     const snapshot = second.gameplayFacade.getSnapshot();
 
+    expect(snapshot.persistence.loadRevision).toBe(1);
     expect(snapshot.coin.current).toBe(12);
     expect(snapshot.coin.totalGenerated).toBe(12);
     expect(snapshot.crystal.current).toBe(2);
@@ -242,6 +243,29 @@ describe('GameplayFacade', () => {
     ]);
     expect(snapshot.shop.shelf.unlockedSlots).toBe(0);
     expect(snapshot.shop.playerRequests.unlockedSlots).toBe(0);
+  });
+
+  it('increments persistence load revision only when a save is restored', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    expect(gameplayFacade.getSnapshot().persistence.loadRevision).toBe(0);
+
+    expect(
+      gameplayFacade.loadPersistenceSave(
+        {
+          version: 7,
+          tasks: {
+            currentLevel: 2,
+            tasks: [],
+          },
+        },
+        ecsFacade,
+      ),
+    ).toBe(true);
+    expect(gameplayFacade.getSnapshot().persistence.loadRevision).toBe(1);
+
+    expect(gameplayFacade.loadPersistenceSave(null, ecsFacade)).toBe(false);
+    expect(gameplayFacade.getSnapshot().persistence.loadRevision).toBe(1);
   });
 
   it('persists only changed current-level task rows', () => {

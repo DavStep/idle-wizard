@@ -47,6 +47,8 @@
 - Timer progress bars should not depend on 250ms gameplay snapshots for visual smoothness; snapshots provide authoritative state, while UI derives in-between fill and label time.
 - When smooth timer bars are desired, derive fill, remaining label, and ARIA percent from one inferred end time; do not let snapshot `progress` disagree with `remainingMs`.
 - Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
+- Research completion announcements should resolve labels/details through `ResearchFacade`; visible research tabs can hide completed series entries before the popup renders.
+- Page announcement baselines must reset on gameplay persistence load; restored backend saves should not replay old level/research popups.
 - Cauldron brew/bottle success state belongs in the active brew text and progress rail; reserve cauldron messages for blocked/error feedback so stale success text does not fight the timer state.
 - Reward flyouts on Android WebView should avoid per-event dynamic `@keyframes`; use transform/opacity Web Animations API paths and cap active particles.
 - Potion collection reward drops should start from the visible cauldron liquid, not the potion preview/icon or whole cauldron box.
@@ -55,6 +57,7 @@
 - Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
 - Progress rails should use a real `.style-progress` border with the fill inside the content box; overlay pseudo-borders let scaled fills bleed across border pixels.
+- Level-up announcement rows can contain long multi-level unlock lists; keep a stable label column and let the value column wrap so labels do not collapse to one character per line.
 - Garden plot notification dots need row-specific vertical placement; the generic negative top offset can land the next row's dot on the previous row's progress rail.
 - Brewing herb notification dots must stay row-local; parent `:has([data-notification])` bleed padding makes the herbs box taller.
 - Brewing herb notification dots belong on the herb label, not the full row/button, or they cover right-aligned counts.
@@ -78,6 +81,7 @@
 - Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
 - Interactive room surfaces that own drag or pinch gestures should set `data-page-swipe-block="true"`; stage-level swipe capture otherwise steals their horizontal drags before the surface can own them.
 - Browser/WebView viewport zoom can steal Garden/Brewing world pinches; keep the app viewport scale locked and add non-passive multi-touch/gesture guards on world shells.
+- Android Capacitor WebView must set `WebSettings.setSupportZoom(false)` and disable built-in zoom controls; viewport meta and CSS alone may not stop full-page pinch zoom.
 - Brewing world pan/pinch must include cauldron boxes as gesture starts, then suppress the follow-up cauldron click after real movement.
 - The top status panel is shared room chrome; show gameplay coin there, not a separate coin currency.
 - Top-panel resource values should be written amount-first, like `560 coin`; icon mode hides the word and leaves `count icon`.
@@ -363,6 +367,7 @@
 - Top-panel selected character belongs in its own 58px avatar cell when icon mode is `icons`; keep the username opener text-only so FTUE username targeting stays tight.
 - Top-panel avatar and picker image rules must be more specific than `.style-player-character-icon`; otherwise the generic 18px inline icon rule shrinks them.
 - Current 87x108 avatar PNGs should keep visible art bottom near a 14px transparent bottom gap; larger gaps leave empty floor in the square picker/top-panel crop.
+- Avatar picker locked and selected states should use the shared status atlas icons (`status:lockDefault` and `status:checkDefault`), matching bottom tabs and prestige.
 - Settings character selector portraits should eager-load; lazy-loaded local PNGs can briefly render as blank boxes when the Account tab opens or during screenshot QA.
 - Tiny shared character icons should use small derived assets, not full 864x1080 portrait PNGs; full portraits can push Discord APK uploads over the size limit.
 - A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
@@ -590,6 +595,7 @@
 - Idle Wizard herb icon fixes should preserve the local 256x256 source silhouette/style; sibling Idle Witch Craft herb PNGs are old-size art and mismatch if copied directly.
 - Herb label atlas frames should trim transparent padding at build time so 256x256 source art fills text-size icon labels.
 - Idle Witch Craft seed pack icons live in sibling `../idle-whitch-craft/core/assets/misc/seedpacks`; `../idle-witch-craft 2/raws/misc/seedpacks` has matching raw copies.
+- Seed pack labels should render as one SVG atlas composite; nested absolutely positioned SVGs can show the herb mark without the pack in browser crops.
 - Idle Witch Craft item drop and coin flyout parity lives in `../idle-whitch-craft/core/MobilePreview.ts` plus `../idle-whitch-craft/core/mobile.css` keyframes around `mobile-workshop-item-drop`, `mobile-seed-burst`, and `mobile-coin-amt-pop`.
 - Idle Witch Craft launcher icon source lives at `../idle-whitch-craft/core/assets/ui/icons/game-icon.png`; generated Android launcher PNGs live under `../idle-whitch-craft/core/android/app/src/main/res/mipmap-*`.
 - Idle Witch Craft splash loading gradient progress bar CSS lives at `../idle-whitch-craft/core/splash.css`.
@@ -648,6 +654,7 @@
 - Brewing recipe popup ingredient rows show required amount on the left (`- 3 sage`) and owned count on the right (`owned 31`), not `(31/3) sage`.
 - Brewing recipe popup uses only the dialog title `recipes`; do not add a second inner `recipes` group title or extra list top padding.
 - Brewing recipe popup select rows need a fixed checkbox slot; `[ ]` to `[x]` and focus bold can otherwise reflow the row.
+- Brewing recipe page-turn ghosts must stretch recipe rows like live pages; otherwise bottom select buttons jump upward during the animation.
 - Brewing active brew timer text belongs next to the active brew label, not inside the progress rail.
 - Brewing completion flows brew timer -> manual start bottling action -> bottling timer -> collect-ready state; potion inventory is granted only by the collect action.
 - Reward flyouts that should show item icons need exact item labels/counts; generic text like `3 seeds found` cannot render item icons.

@@ -130,6 +130,17 @@ describe('TopPanelViewManager', () => {
         ),
       ].map((button) => button.dataset.character),
     ).toContain('mira');
+    const lockedAvatarButton = stage.querySelector(
+      '#room-top-panel-settings-avatar .room-top-panel__character-button[data-character="adventurer_cleric"]',
+    );
+    expect(
+      lockedAvatarButton?.querySelector('.room-top-panel__character-lock svg')?.dataset
+        .assetAtlasFrame,
+    ).toBe('status:lockDefault');
+    expect(
+      lockedAvatarButton?.querySelector('.room-top-panel__character-check svg')?.dataset
+        .assetAtlasFrame,
+    ).toBe('status:checkDefault');
     expect(
       stage.querySelectorAll(
         '#room-top-panel-settings-avatar .room-top-panel__character-section .room-top-panel__visual-option-price',
@@ -162,8 +173,14 @@ describe('TopPanelViewManager', () => {
     const pickerFrameRule = baseCss.match(
       /\.room-top-panel__character-option-frame\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const lockedPickerRule = baseCss.match(
-      /\.room-top-panel__character-button\.is-unresearched\s+\.room-top-panel__character-option-silhouette,\s*\.room-top-panel__character-button\.is-unresearched\s+\.room-top-panel__character-lock\s*\{(?<body>[^}]*)\}/,
+    const lockedSilhouetteRule = baseCss.match(
+      /\.room-top-panel__character-button\.is-unresearched\s+\.room-top-panel__character-option-silhouette\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const lockedIconRule = baseCss.match(
+      /\.room-top-panel__character-button\.is-unresearched:not\(\[aria-checked="true"\]\)\s+\.room-top-panel__character-lock\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const checkedIconRule = baseCss.match(
+      /\.room-top-panel__character-button\[aria-checked="true"\]\s+\.room-top-panel__character-check\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(topAvatarRule).toMatch(/\bwidth:\s*var\(--room-top-panel-avatar-size\);/);
@@ -173,7 +190,9 @@ describe('TopPanelViewManager', () => {
     expect(pickerFrameRule).toMatch(/\bheight:\s*72px;/);
     expect(pickerAvatarRule).toMatch(/\bwidth:\s*100%;/);
     expect(pickerAvatarRule).toMatch(/\bheight:\s*100%;/);
-    expect(lockedPickerRule).toMatch(/\bdisplay:\s*block;/);
+    expect(lockedSilhouetteRule).toMatch(/\bdisplay:\s*block;/);
+    expect(lockedIconRule).toMatch(/\bdisplay:\s*flex;/);
+    expect(checkedIconRule).toMatch(/\bdisplay:\s*flex;/);
   });
 
   it('keeps top-panel identity chrome tight to the left edge', () => {

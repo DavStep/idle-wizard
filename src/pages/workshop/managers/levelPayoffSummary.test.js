@@ -173,4 +173,19 @@ describe('levelPayoffSummary', () => {
       'level 4 reached: brewing unlocked, discoveries available, alliance available, +50 mana cap, +1/sec mana regen, +1 crystal',
     );
   });
+
+  it('dedupes unlock labels when a large level jump crosses shared unlock gates', () => {
+    const rows = getLevelPayoffRows(snapshot, { fromLevel: 1, toLevel: 10 });
+    const unlockRow = rows.find((row) => row.label === 'unlocks');
+
+    expect(unlockRow?.valueLines).toEqual([
+      'garden',
+      'research',
+      'brewing',
+      'prestige',
+      'leaderboard',
+      'discoveries',
+      'alliance',
+    ]);
+  });
 });

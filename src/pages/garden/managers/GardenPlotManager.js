@@ -24,7 +24,10 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setProgressFill } from '../../shared/progressFill.js';
 import { setTimerProgressFill, stopTimerProgressFill } from '../../shared/timerProgress.js';
 import { formatRemainingTime } from '../../shared/timerDisplay.js';
-import { preventNativeWorldGestureDefault } from '../../shared/worldGestureDefaultGuard.js';
+import {
+  addNativeWorldGestureDefaultGuards,
+  preventNativeWorldGestureDefault,
+} from '../../shared/worldGestureDefaultGuard.js';
 import { hasGardenTileNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
 import { GardenSeedSwapDialogManager } from './GardenSeedSwapDialogManager.js';
@@ -86,6 +89,7 @@ export class GardenPlotManager {
     this.worldPointers = new Map();
     this.worldGesture = null;
     this.worldSettleClassTimeout = null;
+    this.removeWorldGestureDefaultGuards = null;
     this.suppressWorldClickUntilMs = 0;
     this.boughtTileAnimationResets = new Map();
     this.handlePendingSeedPressMove = (event) => this.onPendingSeedPressMove(event);
@@ -200,6 +204,8 @@ export class GardenPlotManager {
     this.handledSeedPressStartReset = null;
     this.worldPointers.clear();
     this.worldGesture = null;
+    this.removeWorldGestureDefaultGuards?.();
+    this.removeWorldGestureDefaultGuards = null;
     this.clearWorldSettleTimers();
     this.suppressWorldClickUntilMs = 0;
     this.boughtTileAnimationResets.clear();
@@ -217,6 +223,10 @@ export class GardenPlotManager {
     shell.addEventListener('touchmove', this.handleWorldGestureDefault, { passive: false });
     shell.addEventListener('gesturestart', this.handleWorldGestureDefault, { passive: false });
     shell.addEventListener('gesturechange', this.handleWorldGestureDefault, { passive: false });
+    this.removeWorldGestureDefaultGuards = addNativeWorldGestureDefaultGuards(
+      this.handleWorldGestureDefault,
+      shell.ownerDocument,
+    );
 
     const world = document.createElement('div');
     world.className = 'garden-page__world';
@@ -524,7 +534,8 @@ export class GardenPlotManager {
     refs.button.classList.toggle(
       'has-herb-label',
       tile.unlocked &&
-        Boolean(tile.selectedSeedItemTypeId || tile.seedItemTypeId || tile.herbItemTypeId),
+        (tile.phase === 'empty' ||
+          Boolean(tile.selectedSeedItemTypeId || tile.seedItemTypeId || tile.herbItemTypeId)),
     );
     setNotificationBadge(
       refs.button,
@@ -593,9 +604,9 @@ export class GardenPlotManager {
         label: emptyTileAction,
       });
       this.setBoxTile(refs, tile, {
-        label: emptyTileDisplay.label,
+        label: hasSelectedSeed ? emptyTileDisplay.label : 'choose',
         labelResource: emptyTileDisplay.resource,
-        action: emptyTileAction,
+        action: hasSelectedSeed ? emptyTileAction : 'empty',
       });
       refs.button.setAttribute(
         'aria-label',
@@ -780,7 +791,10 @@ export class GardenPlotManager {
     refs.boxTimer.hidden = !timer;
     refs.boxFrame.classList.toggle('has-plant', Boolean(herbKey));
     refs.boxFrame.classList.toggle('is-harvesting', tile.phase === 'harvesting');
-    refs.boxFrame.classList.toggle('is-ready', tile.phase === 'ready');
+    refs.boxFrame.classList.toggle(
+      'is-ready',
+      tile.phase === 'ready' || tile.phase === 'harvesting',
+    );
     refs.boxFrame.dataset.plotSoilLevel = this.formatPlotSoilLevel(tile);
     refs.boxFrame.style.setProperty(
       '--garden-page-plot-growth-scale',

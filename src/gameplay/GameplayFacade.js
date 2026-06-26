@@ -188,6 +188,7 @@ export class GameplayFacade {
     this.lastFrameHadTimerWork = false;
     this.snapshotCacheDepth = 0;
     this.cachedSnapshot = null;
+    this.persistenceLoadRevision = 0;
   }
 
   setPersistenceStorage(storageManager) {
@@ -269,6 +270,9 @@ export class GameplayFacade {
     this.gardenFacade.initialize(ecsManagers);
     this.automationFacade.initialize(ecsManagers);
     const loaded = this.persistenceFacade.load();
+    if (loaded) {
+      this.persistenceLoadRevision += 1;
+    }
     this.syncRubyFromPrestige();
     const backfilledCrystal = loaded
       ? this.levelUpCrystalRewardManager.grantMissingForCurrentLevel()
@@ -1299,6 +1303,9 @@ export class GameplayFacade {
           this.potionDiscoveryFacade?.getDiscovery(potionKey) ?? null,
       }),
       logs: this.gameplayLogFacade.getSnapshot(),
+      persistence: {
+        loadRevision: this.persistenceLoadRevision,
+      },
       playerLevel: this.playerLevelFacade.getSnapshot(),
       tasks: this.tasksFacade.getSnapshot(),
       personalTasks: this.personalTasksFacade.getSnapshot(),
@@ -1524,6 +1531,9 @@ export class GameplayFacade {
 
   loadPersistenceSave(save, ecsFacade) {
     const loaded = this.persistenceFacade.loadSave(save);
+    if (loaded) {
+      this.persistenceLoadRevision += 1;
+    }
     this.syncRubyFromPrestige();
     const backfilledCrystal = loaded
       ? this.levelUpCrystalRewardManager.grantMissingForCurrentLevel()

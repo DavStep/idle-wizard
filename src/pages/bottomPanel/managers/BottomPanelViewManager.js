@@ -3,7 +3,7 @@ import {
   isNotificationActive,
   setNotificationBadge,
 } from '../../shared/notificationBadge.js';
-import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
+import { createStatusIcon, STATUS_ICON_LOCK } from '../../shared/statusIcon.js';
 
 export const BOTTOM_PANEL_TABS = [
   { id: 'brewing', label: 'brewing' },
@@ -25,7 +25,6 @@ const OPTIONAL_BOTTOM_PANEL_TAB_BY_ID = new Map(
   OPTIONAL_BOTTOM_PANEL_TABS.map((tab) => [tab.id, tab]),
 );
 
-const LOCK_ICON_FRAME = 'status:lockDefault';
 const LOCK_UNLOCK_ANIMATION_MS = 520;
 
 export class BottomPanelViewManager {
@@ -390,17 +389,17 @@ export class BottomPanelViewManager {
     lock.className = 'room-bottom-panel__tab-lock';
     lock.setAttribute('aria-hidden', 'true');
 
-    const whole = createAssetAtlasSprite(
+    const whole = createStatusIcon(
       'room-bottom-panel__tab-lock-icon room-bottom-panel__tab-lock-icon--whole',
-      LOCK_ICON_FRAME,
+      STATUS_ICON_LOCK,
     );
-    const left = createAssetAtlasSprite(
+    const left = createStatusIcon(
       'room-bottom-panel__tab-lock-icon room-bottom-panel__tab-lock-icon--left',
-      LOCK_ICON_FRAME,
+      STATUS_ICON_LOCK,
     );
-    const right = createAssetAtlasSprite(
+    const right = createStatusIcon(
       'room-bottom-panel__tab-lock-icon room-bottom-panel__tab-lock-icon--right',
-      LOCK_ICON_FRAME,
+      STATUS_ICON_LOCK,
     );
 
     if (!whole || !left || !right) {

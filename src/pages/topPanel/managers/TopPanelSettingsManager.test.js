@@ -163,6 +163,10 @@ describe('TopPanelSettingsManager', () => {
 
     expect(playerFacade.setCharacter).toHaveBeenCalledWith('rowan');
     expect(rowanButton.getAttribute('aria-checked')).toBe('true');
+    expect(
+      rowanButton.querySelector('.room-top-panel__character-check svg')?.dataset
+        .assetAtlasFrame,
+    ).toBe('status:checkDefault');
     expect(avatar?.getAttribute('src')).toContain('/assets/characters/rowan.png');
 
     playerFacade.setIconMode('none');

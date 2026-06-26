@@ -7,6 +7,11 @@ import {
 } from '../../shared/playerCharacterIcon.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
+import {
+  createStatusIcon,
+  STATUS_ICON_CHECK,
+  STATUS_ICON_LOCK,
+} from '../../shared/statusIcon.js';
 
 export class TopPanelViewManager {
   constructor() {
@@ -569,13 +574,35 @@ export class TopPanelViewManager {
         silhouette.setAttribute('aria-hidden', 'true');
 
         const lock = document.createElement('span');
-        lock.className = 'room-top-panel__character-lock';
+        lock.className =
+          'room-top-panel__character-status room-top-panel__character-lock';
         lock.setAttribute('aria-hidden', 'true');
+
+        const lockIcon = createStatusIcon(
+          'room-top-panel__character-status-icon',
+          STATUS_ICON_LOCK,
+        );
+        if (lockIcon) {
+          lock.append(lockIcon);
+        }
+
+        const check = document.createElement('span');
+        check.className =
+          'room-top-panel__character-status room-top-panel__character-check';
+        check.setAttribute('aria-hidden', 'true');
+
+        const checkIcon = createStatusIcon(
+          'room-top-panel__character-status-icon',
+          STATUS_ICON_CHECK,
+        );
+        if (checkIcon) {
+          check.append(checkIcon);
+        }
 
         const label = document.createElement('span');
         label.className = 'room-top-panel__character-option-label';
         label.textContent = option.label;
-        iconFrame.append(icon, silhouette, lock);
+        iconFrame.append(icon, silhouette, lock, check);
         name.replaceChildren(iconFrame, label);
         this.refs.characterButtons.push(name);
         buttons.append(name);

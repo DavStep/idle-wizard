@@ -122,6 +122,25 @@ describe('item icon labels', () => {
     expect(element.classList.contains('style-seed-label')).toBe(true);
     expect(icon).not.toBeNull();
     expect(icon?.dataset.assetAtlasFrame).toBe('seed:regular');
+    expect(icon?.dataset.seedPackItemFrame).toBe('herb:sageHerb');
+    expect(icon?.querySelector('.style-seed-pack-composite__base')?.dataset.assetAtlasFrame).toBe(
+      'seed:regular',
+    );
+    expect(icon?.querySelector('.style-seed-pack-composite__item')?.dataset.assetAtlasFrame).toBe(
+      'herb:sageHerb',
+    );
+  });
+
+  it('resolves seed pack item icons from seed labels when no key is provided', () => {
+    const element = document.createElement('span');
+    element.textContent = 'mint seed (3)';
+
+    setItemIconLabel(element, 'seed');
+
+    expect(element.textContent).toBe('mint seed (3)');
+    expect(element.querySelector('.style-seed-label__icon')?.dataset.seedPackItemFrame).toBe(
+      'herb:mintHerb',
+    );
   });
 
   it('adds potion, herb, seed, and resource icons inside mixed text', () => {
@@ -146,6 +165,9 @@ describe('item icon labels', () => {
     expect(element.querySelector('.style-resource-label--mana')).toBeNull();
     expect(element.querySelector('.style-resource-label--coin')?.textContent).toBe('2 coin');
     expect(element.querySelector('.style-seed-label__icon')).not.toBeNull();
+    expect(element.querySelector('.style-seed-label__icon')?.dataset.seedPackItemFrame).toBe(
+      'herb:starAniseHerb',
+    );
     expect(element.querySelector('.style-herb-label')?.textContent).toBe('sage');
     expect(element.querySelector('.style-seed-label')?.textContent).toBe('star anise seed');
   });

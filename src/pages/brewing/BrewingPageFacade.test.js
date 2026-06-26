@@ -121,6 +121,78 @@ describe('BrewingPageFacade', () => {
     stage.remove();
   });
 
+  it('opens player info from a recipe discoverer link', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [
+          {
+            key: 'ashenMemory',
+            label: 'ashen memory',
+            unlocked: true,
+            discovered: true,
+            discoveredByUsername: 'Ada',
+            discoveredByIdentity: 'identity-a',
+            discoveryType: 'unknown',
+            unknown: true,
+            manaCost: 36,
+            brewDurationMs: 80_000,
+            ingredients: [],
+          },
+        ],
+        maxIngredients: 5,
+        manaCost: 0,
+        activeBrew: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+        cauldrons: [
+          {
+            cauldronIndex: 0,
+            cauldronNumber: 1,
+            ingredients: [],
+            maxIngredients: 5,
+            manaCost: 0,
+            activeBrew: null,
+            match: null,
+            canAddIngredient: true,
+            canBrew: false,
+          },
+        ],
+      },
+    };
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      subscribe: (listener) => {
+        listener(snapshot);
+        return () => {};
+      },
+    };
+    const onOpenPlayerInfo = vi.fn();
+    const stage = document.createElement('div');
+    document.body.append(stage);
+    const facade = new BrewingPageFacade({ gameplayFacade, onOpenPlayerInfo });
+
+    facade.mount(stage);
+    facade.recipeBookManager.show();
+
+    const byline = stage.querySelector('.brewing-page__recipe-discovery-row');
+    expect(byline?.textContent).toBe('- discovered by Ada');
+
+    stage
+      .querySelector('.brewing-page__recipe-discovery-name')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onOpenPlayerInfo).toHaveBeenCalledWith({
+      identity: 'identity-a',
+      username: 'Ada',
+    });
+
+    facade.unmount();
+    stage.remove();
+  });
+
   it('uses the selected recipe before enabling auto brew', () => {
     const snapshot = {
       brewing: {

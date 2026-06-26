@@ -150,6 +150,10 @@ export class ResearchFacade {
     return this.researchDefinitionManager.getResearch(researchId)?.actionType ?? 'research';
   }
 
+  getResearchAnnouncementSnapshot(researchId) {
+    return this.researchSnapshotManager.getResearchSnapshotById(researchId);
+  }
+
   getCompletedCrystalCostTotal() {
     return this.researchStateEntityManager
       .getCompletedResearchIds()

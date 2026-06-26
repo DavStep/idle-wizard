@@ -372,6 +372,7 @@ describe('BrewingCauldronManager', () => {
     const multiTouchStart = createTouchEvent('touchstart', 2);
     const singleTouchStart = createTouchEvent('touchstart', 1);
     const multiTouchMove = createTouchEvent('touchmove', 2);
+    const documentMultiTouchMove = createTouchEvent('touchmove', 2);
     const gestureStart = new window.Event('gesturestart', {
       bubbles: true,
       cancelable: true,
@@ -381,6 +382,7 @@ describe('BrewingCauldronManager', () => {
     shell.dispatchEvent(multiTouchStart);
     shell.dispatchEvent(multiTouchMove);
     shell.dispatchEvent(gestureStart);
+    document.dispatchEvent(documentMultiTouchMove);
 
     expect(firstPointerDown.defaultPrevented).toBe(false);
     expect(secondPointerDown.defaultPrevented).toBe(true);
@@ -388,6 +390,7 @@ describe('BrewingCauldronManager', () => {
     expect(multiTouchStart.defaultPrevented).toBe(true);
     expect(multiTouchMove.defaultPrevented).toBe(true);
     expect(gestureStart.defaultPrevented).toBe(true);
+    expect(documentMultiTouchMove.defaultPrevented).toBe(true);
 
     manager.unmount();
     parent.remove();
@@ -1299,6 +1302,14 @@ describe('BrewingCauldronManager', () => {
     expect(manager.getItemDragFrameName({ itemKind: 'seed', itemKey: 'sageSeed' })).toBe(
       'seed:regular',
     );
+    const seedIcon = manager.createItemDragIcon({
+      itemKind: 'seed',
+      itemKey: 'sageSeed',
+      itemLabel: 'sage seed',
+    });
+    expect(seedIcon?.classList.contains('style-seed-pack-composite')).toBe(true);
+    expect(seedIcon?.dataset.assetAtlasFrame).toBe('seed:regular');
+    expect(seedIcon?.dataset.seedPackItemFrame).toBe('herb:sageHerb');
     expect(manager.getItemDragFrameName({ itemKind: 'herb', itemKey: 'sageHerb' })).toBe(
       'herb:sageHerb',
     );

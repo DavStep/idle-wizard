@@ -5,7 +5,12 @@ import {
   getPotionIconFrameName,
   getPotionIconKeyByLabel,
 } from '../../assets/items/potions/potionIcons.js';
-import { getSeedIconFrameName, seedIconVariantFrameNames } from '../../assets/items/seeds/seedIcons.js';
+import {
+  createSeedPackIcon,
+  getSeedIconFrameName,
+  getSeedPackBaseFrameName,
+  getSeedPackItemFrameName,
+} from '../../assets/items/seeds/seedIcons.js';
 import { normalizePlayerIconMode } from '../../player/playerIconModes.js';
 import { formatCoinPriceText } from '../../shared/coinPrice.js';
 
@@ -600,40 +605,17 @@ export class RewardFlyoutManager {
   }
 
   getSeedDropSource(seed) {
-    const herbKey = this.getHerbKeyForSeed(seed);
-    const itemFrameName = herbKey ? getHerbIconFrameName(herbKey) : null;
+    const itemFrameName = getSeedPackItemFrameName(seed);
 
     if (!itemFrameName) {
       return getSeedIconFrameName();
     }
 
     return {
-      packFrameName: this.getSeedPackBaseFrameName(seed),
+      packFrameName: getSeedPackBaseFrameName(seed),
       itemFrameName,
+      seed,
     };
-  }
-
-  getSeedPackBaseFrameName(seed) {
-    if (seed?.rarity === 'legendary') {
-      return seedIconVariantFrameNames.black;
-    }
-
-    if (seed?.rarity === 'rare') {
-      return seedIconVariantFrameNames.gray;
-    }
-
-    return seedIconVariantFrameNames.regular;
-  }
-
-  getHerbKeyForSeed(seed) {
-    const key = String(seed?.key ?? '');
-
-    if (key.endsWith('Seed')) {
-      return `${key.slice(0, -'Seed'.length)}Herb`;
-    }
-
-    const label = String(seed?.label ?? '').replace(/\s+seed$/i, '');
-    return getHerbIconKeyByLabel(label);
   }
 
   getItemDropSource(item, kind) {
@@ -799,14 +781,13 @@ export class RewardFlyoutManager {
       return createAssetAtlasSprite(dropClassName, source);
     }
 
-    const compositeDrop = document.createElement('span');
-    compositeDrop.className = `${dropClassName} room-seed-pack-composite`;
-
-    const pack = createAssetAtlasSprite('room-seed-pack-base', source.packFrameName);
-    const item = createAssetAtlasSprite('room-seed-pack-item', source.itemFrameName);
-
-    compositeDrop.append(pack, item);
-    return compositeDrop;
+    return createSeedPackIcon(dropClassName, source.seed, {
+      compositeClassName: 'room-seed-pack-composite',
+      baseClassName: 'room-seed-pack-base',
+      itemClassName: 'room-seed-pack-item',
+      packFrameName: source.packFrameName,
+      itemFrameName: source.itemFrameName,
+    });
   }
 
   setSeedBurstProperties(drop, count, t) {
