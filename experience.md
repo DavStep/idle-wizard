@@ -169,6 +169,7 @@
 - Tutorial flow logic should run through `TutorialLogicManager`; step definitions own reveal tokens/effects, reminder timing stays in `TutorialReminderManager`, and `TutorialFacade` only renders the returned view state.
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
 - Dev browser automation exposes `window.cheats` with `VITE_ENABLE_CHEATS=true`, but `window.tutorialCapture` needs its own `VITE_ENABLE_TUTORIAL_CAPTURE=true`; cheats alone do not mount the tutorial capture helper.
+- In-app Browser Playwright evaluate can miss main-world `window.cheats`, and `javascript:` bookmarklets are blocked; do not rely on that path for cheat-driven screenshot setup.
 - Brewing drag screenshot QA needs an unlocked level-4+ save or `VITE_ENABLE_CHEATS=true`; a level-2 local save cannot reach herb drag controls.
 - Tutorial motion/visual QA harnesses must set `--style-ui-scale` to `3 * viewportScale`; using only viewport scale makes Elara/source UI look tiny and gives misleading screenshots.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
@@ -259,6 +260,7 @@
 - Do not require a newly unlocked herb and newly unlocked recipe in the same task row; stagger the second new thing into a later row.
 - Research balance/default config is mirrored in `ResearchBalanceManager`, `src/gameplay/research/research-balance.json`, `scripts/balance-sim.js`, and `spacetimedb/src/index.ts`; update all together when changing research costs/currencies.
 - Cauldron star display starts at 0 stars; the first emerald cauldron level-up costs 1 emerald and displays 1 star while the internal brew multiplier becomes 2.
+- Plot and cauldron star UI should render `level - 1` upgrade stars; unupgraded multiplier level 1 is 0 filled stars with three empty slots.
 - SpacetimeDB task runtime config can still expose legacy `completionCostGold`; client task balance must treat it as `completionCostCoin` or level-up prices fall back to `level * 20`.
 - Player-level mana progression is mirrored in frontend defaults and SpacetimeDB default/validator/backfill; update all three when changing the regen curve.
 - Emerald plot/cauldron upgrades should read as `level up` / `lvl N` in player UI; keep internal research ids if needed, but do not present them as ordinary research.
@@ -473,6 +475,7 @@
 - Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
 - Brewing page unmounts should clear DOM/subscriptions only; selected recipe and current cauldron state must survive room swaps so `fill recipe` stays available after bottling.
 - Brewing recipe selection comes from the recipes popup; selected recipes render their requirements inside the cauldron as stable placed/required rows even when ingredients are missing.
+- Brewing recipes popup is recipe-only: show recipe info and selection controls there, while cauldron contents/actions stay on the cauldron surface.
 - Brewing `fill recipe` is only actionable before a brew starts; active brew phases must not show it or its notification dot because gameplay rejects recipe prep as `brew_in_progress`.
 - Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 sage`), not expanded numbered slots.
 - Brewing recipe guide height follows the selected recipe's grouped ingredient row count through the guide CSS variable.
@@ -558,6 +561,7 @@
 - Garden plot row height must include the progress rail slot even when no progress is shown; hide the rail but keep the space.
 - Garden plot row notification dots are row-local; do not add parent `:has([data-notification])` bleed margins to `.garden-page__plot-rows`, or plot boxes jump when readiness changes.
 - Garden herb harvest reward drops should originate from the plant inside the plot box; use the progress rail only as a row-mode fallback.
+- Garden plot soil art should read as soil at level 1; avoid parchment-white defaults, and deepen upgraded soil from a rich brown starting point.
 - Keep herbs below the plot with enough space for active progress rows; bounded plot scrolling is acceptable once many plots are unlocked.
 - Garden page overflow belongs to `.garden-page__ui-layer`; plot and herb boxes should grow to content instead of using fixed inner row heights.
 - Garden seed/herb inventory boxes open from bottom icon buttons, reset hidden on room swaps, and collapsed previews show three item rows.
@@ -639,8 +643,9 @@
 - Brewing action row should sit close under the cauldron; avoid a large vertical gap between cauldron and brew/bottle/collect controls.
 - Brewing cauldron staged ingredients display as adjacent quantity groups like `2 nettle`; do not show numbered slots or visible action words.
 - Brewing flow boxes can be broken by the late shared absolute-position style block; remove flow-managed Brewing boxes from that block when converting them to scroll layout.
-- Brewing workbench must reserve bottom clearance for fixed `select recipe`/`potions` buttons so scroll content cannot render underneath them.
+- Brewing workbench must reserve bottom clearance for fixed `recipes`/`potions` buttons so scroll content cannot render underneath them.
 - Seed summon feedback is a transient flyout, not a persistent row in the `seeds` block.
+- Web-wide reward/drop effect sizing should use fitted source UI width; `--app-stage-width` includes desktop gutters.
 - Seed summon logs list exact seed labels/counts, never a generic `summoned N seeds`.
 - Inventory info lists separate item type knowledge from unlock state: balance catalog item types are known by default; only explicitly unknown zero-count rows show fixed-length ASCII with `locked`; action pickers show only unlocked/researched or owned items.
 - Unknown item/potion masks use static six-character `??????` labels with `aria-label="unknown"`; do not use animated matrix/glitch text.

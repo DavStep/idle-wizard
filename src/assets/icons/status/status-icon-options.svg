@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="186" viewBox="0 0 390 186" role="img" aria-label="Idle Wizard status icon options">
+  <rect width="390" height="186" fill="#d6d6d6"/>
+  <g font-family="Lexend, ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#1a1a1a">
+    <text x="24" y="22">check</text>
+    <text x="24" y="78">red cross</text>
+    <text x="24" y="134">lock</text>
+  </g>
+  <g fill="none" stroke="#1a1a1a" stroke-width="1">
+    <path d="M92.5 8.5h72v42h-72z"/>
+    <path d="M172.5 8.5h72v42h-72z"/>
+    <path d="M252.5 8.5h72v42h-72z"/>
+    <path d="M92.5 64.5h72v42h-72z"/>
+    <path d="M172.5 64.5h72v42h-72z"/>
+    <path d="M252.5 64.5h72v42h-72z"/>
+    <path d="M92.5 120.5h72v42h-72z"/>
+    <path d="M172.5 120.5h72v42h-72z"/>
+    <path d="M252.5 120.5h72v42h-72z"/>
+  </g>
+  <g font-family="Lexend, ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#5e5e5e" text-anchor="middle">
+    <text x="128.5" y="47">01</text>
+    <text x="208.5" y="47">02</text>
+    <text x="288.5" y="47">03</text>
+    <text x="128.5" y="103">01</text>
+    <text x="208.5" y="103">02</text>
+    <text x="288.5" y="103">03</text>
+    <text x="128.5" y="159">01</text>
+    <text x="208.5" y="159">02</text>
+    <text x="288.5" y="159">03</text>
+  </g>
+  <g transform="translate(119.5 20.5)" color="#1a1a1a">
+    <path d="M4 9.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"/>
+  </g>
+  <g transform="translate(199.5 20.5)" color="#1a1a1a">
+    <path d="M3.5 9.5l3.25 3.25L14.5 5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path d="M2.5 2.5h13v13h-13z" fill="none" stroke="currentColor" stroke-width="1"/>
+  </g>
+  <g transform="translate(279.5 20.5)" color="#1a1a1a">
+    <path d="M3.5 10l2.75 2.75L14.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path d="M4 14.5h10" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="square"/>
+  </g>
+  <g transform="translate(119.5 76.5)">
+    <path d="M5 5l8 8M13 5l-8 8" fill="none" stroke="#c1121f" stroke-width="1.5" stroke-linecap="square"/>
+  </g>
+  <g transform="translate(199.5 76.5)">
+    <path d="M5 5l8 8M13 5l-8 8" fill="none" stroke="#c1121f" stroke-width="1.2" stroke-linecap="square"/>
+    <path d="M2.5 2.5h13v13h-13z" fill="none" stroke="#c1121f" stroke-width="1"/>
+  </g>
+  <g transform="translate(279.5 76.5)">
+    <path d="M4.5 4.5l9 9M13.5 4.5l-9 9" fill="none" stroke="#c1121f" stroke-width="2" stroke-linecap="square"/>
+    <path d="M4 14.5h10" fill="none" stroke="#c1121f" stroke-width="1" stroke-linecap="square"/>
+  </g>
+  <g transform="translate(119.5 132.5)" color="#1a1a1a">
+    <path d="M5 8.5h8v6H5z" fill="none" stroke="currentColor" stroke-width="1.2"/>
+    <path d="M6.5 8.5V6.25C6.5 4.45 7.55 3.5 9 3.5s2.5.95 2.5 2.75V8.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="square"/>
+    <path d="M9 10.5v2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="square"/>
+  </g>
+  <g transform="translate(199.5 132.5)" color="#1a1a1a">
+    <path d="M4.5 8h9v6.5h-9z" fill="none" stroke="currentColor" stroke-width="1"/>
+    <path d="M6.25 8V5.75C6.25 4.1 7.35 3 9 3s2.75 1.1 2.75 2.75V8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"/>
+    <path d="M8 11h2" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="square"/>
+  </g>
+  <g transform="translate(279.5 132.5)" color="#1a1a1a">
+    <path d="M5 8h8v6.5H5z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M7 8V5.8C7 4.4 7.8 3.5 9 3.5s2 .9 2 2.3V8" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="square"/>
+    <path d="M8.25 10.75h1.5v1.5h-1.5z" fill="currentColor"/>
+  </g>
+</svg>

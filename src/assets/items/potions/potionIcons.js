@@ -43,6 +43,52 @@ export const potionIconFrameNamesByKey = Object.freeze({
   unknownPotion: 'potion:unknownPotion',
 });
 
+const DEFAULT_POTION_LIQUID_COLOR = '#0a95f5';
+
+const potionLiquidColorsByKey = Object.freeze({
+  manaTonic: '#10a7ff',
+  minorHealingPotion: '#f03a2d',
+  nettleVigor: '#a9e84a',
+  calmingDraught: '#74c9f4',
+  simpleAntidote: '#78c82b',
+  venomDraught: '#4d3dd3',
+  briarWard: '#95ba3a',
+  lanternTonic: '#f8b72b',
+  healingPotion: '#f23636',
+  moonlitFocus: '#1977ff',
+  sunrootStamina: '#ff8617',
+  frostmossCleanse: '#23a8ff',
+  sleepDraught: '#6f52e8',
+  elixirOfLife: '#ffae16',
+  starLuckPhiltre: '#1597ff',
+  dragonCourage: '#76c916',
+  deepDreamVision: '#6d7ee8',
+  pactWard: '#f1c15a',
+  ashenMemory: '#59769c',
+  silverleafQuiet: '#68b6a1',
+  emberSight: '#f07413',
+  thornSleep: '#6f52e8',
+  glassMoonElixir: '#1694d4',
+  rootboundResolve: '#c98216',
+  nightOrchardTonic: '#4f2aca',
+  starlessCourage: '#e34810',
+  frostveinDraught: '#18a2d9',
+  bloodlightWard: '#e41419',
+  silverleafSalve: '#d8df58',
+  yarrowPoultice: '#f5b900',
+  hyssopClarity: '#75a8e8',
+  valerianRest: '#b4bac2',
+  comfreyBalm: '#74bd2e',
+  nightshadeVeil: '#7a55ca',
+  belladonnaSight: '#d9799c',
+  wormwoodPurge: '#97b915',
+  snowdropBreath: '#8fcdf0',
+  pearlrootDraught: '#f2c86c',
+  wastedPotion: '#7a6443',
+  unknownPotion: '#5d4aa2',
+  generic: DEFAULT_POTION_LIQUID_COLOR,
+});
+
 const potionIconKeysByLabel = Object.freeze({
   'mana tonic': 'manaTonic',
   'minor healing potion': 'minorHealingPotion',
@@ -94,6 +140,10 @@ const potionIconLabelEntries = Object.freeze(
 
 export function getPotionIconFrameName(itemKey) {
   return potionIconFrameNamesByKey[itemKey] ?? GENERIC_POTION_ICON_FRAME_NAME;
+}
+
+export function getPotionLiquidColor(itemKey) {
+  return potionLiquidColorsByKey[itemKey] ?? DEFAULT_POTION_LIQUID_COLOR;
 }
 
 export function getPotionIconKeyByLabel(label) {

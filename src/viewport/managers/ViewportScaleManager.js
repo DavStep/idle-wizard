@@ -74,6 +74,7 @@ export class ViewportScaleManager {
     document.documentElement.style.removeProperty('--app-viewport-height');
     document.documentElement.style.removeProperty('--app-stage-width');
     document.documentElement.style.removeProperty('--app-stage-height');
+    document.documentElement.style.removeProperty('--app-source-ui-screen-width');
     document.documentElement.style.removeProperty('--app-visible-stage-height');
     document.documentElement.style.removeProperty('--app-keyboard-inset');
     document.documentElement.style.removeProperty('--app-keyboard-dialog-shift');
@@ -115,6 +116,10 @@ export class ViewportScaleManager {
     document.documentElement.style.setProperty(
       '--app-stage-height',
       `${stageSize.height}px`,
+    );
+    document.documentElement.style.setProperty(
+      '--app-source-ui-screen-width',
+      `${this.viewport.width * scale}px`,
     );
     this.stage.style.setProperty('--viewport-scale', String(scale));
     this.stage.style.setProperty('--style-ui-scale', String(uiScale));

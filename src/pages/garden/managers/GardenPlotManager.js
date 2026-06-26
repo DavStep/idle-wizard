@@ -30,6 +30,7 @@ const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
 const TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX = 10;
 const BOX_PLOT_COLUMNS = 3;
+const MAX_PLOT_SOIL_LEVEL = 5;
 const WORLD_EDGE_EXTENSION = 16;
 const WORLD_WIDTH = 328 + WORLD_EDGE_EXTENSION * 2;
 const WORLD_MIN_HEIGHT = 560;
@@ -762,13 +763,14 @@ export class GardenPlotManager {
     refs.boxFrame.classList.toggle('has-plant', Boolean(herbKey));
     refs.boxFrame.classList.toggle('is-harvesting', tile.phase === 'harvesting');
     refs.boxFrame.classList.toggle('is-ready', tile.phase === 'ready');
+    refs.boxFrame.dataset.plotSoilLevel = this.formatPlotSoilLevel(tile);
     refs.boxFrame.style.setProperty(
       '--garden-page-plot-growth-scale',
       this.formatGrowthScale(tile),
     );
     refs.boxFrame.style.setProperty(
       '--garden-page-plot-ready-delay',
-      `${-((tile.tileNumber - 1) % BOX_PLOT_COLUMNS) * 140}ms`,
+      `${-(((tile.tileNumber - 1) * 317) % 1080)}ms`,
     );
     refs.boxScissors.toggleAttribute('hidden', tile.phase !== 'harvesting');
     this.renderPlantIcon(refs, herbKey);
@@ -824,8 +826,14 @@ export class GardenPlotManager {
     return level > 1 ? `plant x${level}` : 'plant';
   }
 
+  formatPlotSoilLevel(tile) {
+    const level = Math.max(1, Math.floor(Number(tile?.level) || 1));
+    return String(Math.min(level, MAX_PLOT_SOIL_LEVEL));
+  }
+
   setPlotLevel(element, tile) {
-    setStarLevelLabel(element, tile?.level);
+    const level = Math.max(1, Math.floor(Number(tile?.level) || 1));
+    setStarLevelLabel(element, level - 1);
   }
 
   clearPlotLevel(element) {

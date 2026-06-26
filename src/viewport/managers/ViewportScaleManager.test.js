@@ -53,6 +53,9 @@ describe('ViewportScaleManager', () => {
     expect(document.documentElement.style.getPropertyValue('--app-stage-height')).toBe(
       `${gameViewport.height * expectedViewportScale}px`,
     );
+    expect(
+      document.documentElement.style.getPropertyValue('--app-source-ui-screen-width'),
+    ).toBe(`${gameViewport.width * expectedViewportScale}px`);
     expect(stage.style.getPropertyValue('--source-ui-scale')).toBe('3');
     expect(stage.dataset.viewportMode).toBe('web-wide');
     expect(
@@ -100,6 +103,9 @@ describe('ViewportScaleManager', () => {
     expect(document.documentElement.style.getPropertyValue('--app-stage-height')).toBe(
       `${gameViewport.height * expectedViewportScale}px`,
     );
+    expect(
+      document.documentElement.style.getPropertyValue('--app-source-ui-screen-width'),
+    ).toBe(`${gameViewport.width * expectedViewportScale}px`);
     expect(stage.dataset.viewportMode).toBeUndefined();
   });
 
@@ -306,6 +312,9 @@ describe('ViewportScaleManager', () => {
     expect(document.documentElement.style.getPropertyValue('--app-stage-height')).toBe(
       '2170px',
     );
+    expect(
+      document.documentElement.style.getPropertyValue('--app-source-ui-screen-width'),
+    ).toBe('1080px');
     expect(stage.dataset.viewportMode).toBe('web-wide');
   });
 });

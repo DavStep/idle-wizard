@@ -2013,6 +2013,86 @@ describe('TutorialHintManager', () => {
     expect(controls.some((control) => overlaps(buttonRect, control))).toBe(false);
   });
 
+  it('protects Workshop summon controls from open lesson placement', () => {
+    const stage = document.createElement('section');
+    const summonButton = document.createElement('button');
+    const summonInfoButton = document.createElement('button');
+    const manager = new TutorialHintManager();
+    useFixedLessonSize(manager, { height: 97 });
+
+    summonButton.className = 'style-button workshop-page__summon-button';
+    summonInfoButton.className = 'workshop-page__summon-info-button';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      summonButton,
+      toClientRect({
+        left: 135,
+        top: 410,
+        width: 92,
+        height: 32,
+      }),
+    );
+    setClientRect(
+      summonInfoButton,
+      toClientRect({
+        left: 240,
+        top: 376,
+        width: 18,
+        height: 18,
+      }),
+    );
+    stage.append(summonButton, summonInfoButton);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.guideDragManager.setPlacement({ buttonLeft: 4, buttonTop: 352 }, { save: false });
+
+    const protectedRects = manager.getObjectiveProtectedRects(null);
+
+    expect(protectedRects).toContainEqual({
+      left: 135,
+      top: 410,
+      right: 227,
+      bottom: 442,
+    });
+    expect(protectedRects).toContainEqual({
+      left: 240,
+      top: 376,
+      right: 258,
+      bottom: 394,
+    });
+
+    manager.showLesson({
+      id: 'summon-protected',
+      title: 'lesson 3: gardening',
+      text: 'summon seed',
+      stepLabel: '18/31',
+      canShowTarget: true,
+    });
+
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
+    const lessonRect = getLessonRect(lesson);
+    const summonRect = {
+      left: 135,
+      top: 410,
+      right: 227,
+      bottom: 442,
+    };
+    const infoRect = {
+      left: 240,
+      top: 376,
+      right: 258,
+      bottom: 394,
+    };
+
+    expect(overlaps(lessonRect, summonRect)).toBe(false);
+    expect(overlaps(lessonRect, infoRect)).toBe(false);
+
+    manager.unmount();
+    stage.remove();
+  });
+
   it('moves the lesson away from research sub-tabs', () => {
     const stage = document.createElement('section');
     const tabs = [

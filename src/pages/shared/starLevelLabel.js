@@ -1,7 +1,9 @@
 export const STAR_LEVEL_LABEL_CLASS = 'style-star-level';
 
 const STAR_SYMBOL = '\u2605';
+const EMPTY_STAR_SYMBOL = '\u2606';
 const STAR_TONES = Object.freeze(['yellow', 'orange', 'red', 'purple']);
+const EMPTY_STAR_TONE = 'empty';
 const STARS_PER_TONE = 3;
 const MAX_STAR_LEVEL = STAR_TONES.length * STARS_PER_TONE;
 const STAR_IMAGE_URLS = Object.freeze({
@@ -13,8 +15,19 @@ const STAR_IMAGE_URLS = Object.freeze({
 });
 
 export function formatStarLevel(level) {
-  const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+  const safeLevel = Math.max(0, Math.floor(Number(level) || 0));
   const visualLevel = Math.min(safeLevel, MAX_STAR_LEVEL);
+  if (visualLevel === 0) {
+    return {
+      level: safeLevel,
+      tone: EMPTY_STAR_TONE,
+      starCount: 0,
+      slotCount: STARS_PER_TONE,
+      text: EMPTY_STAR_SYMBOL.repeat(STARS_PER_TONE),
+      ariaLabel: '0 stars',
+    };
+  }
+
   const zeroBasedLevel = visualLevel - 1;
   const toneIndex = Math.floor(zeroBasedLevel / STARS_PER_TONE);
   const starCount = (zeroBasedLevel % STARS_PER_TONE) + 1;

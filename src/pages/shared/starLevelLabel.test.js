@@ -6,6 +6,12 @@ import { formatStarLevel, setStarLevelLabel } from './starLevelLabel.js';
 
 describe('star level labels', () => {
   it('maps levels into yellow, orange, red, and purple star tiers', () => {
+    expect(formatStarLevel(0)).toMatchObject({
+      text: '☆☆☆',
+      tone: 'empty',
+      starCount: 0,
+      ariaLabel: '0 stars',
+    });
     expect(formatStarLevel(1)).toMatchObject({
       text: '★',
       tone: 'yellow',
@@ -48,6 +54,24 @@ describe('star level labels', () => {
       starCount: 3,
       ariaLabel: 'purple star 3',
     });
+  });
+
+  it('renders three empty slots for zero stars', () => {
+    const element = document.createElement('span');
+
+    setStarLevelLabel(element, 0);
+
+    expect(element.textContent).toBe('☆☆☆');
+    expect(element.dataset.starTone).toBe('empty');
+    expect(element.dataset.starCount).toBe('0');
+    expect(element.dataset.starSlots).toBe('3');
+    expect(element.getAttribute('aria-label')).toBe('0 stars');
+    expect(element.querySelectorAll('.style-star-level__slot')).toHaveLength(3);
+    expect(
+      element.querySelectorAll('.style-star-level__slot[data-star-filled="true"]'),
+    ).toHaveLength(0);
+    expect(element.querySelectorAll('.style-star-level__image--empty')).toHaveLength(3);
+    expect(element.querySelectorAll('.style-star-level__image--fill')).toHaveLength(0);
   });
 
   it('sets text, tier data, and accessible label on an element', () => {

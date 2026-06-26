@@ -71,6 +71,8 @@ const OBJECTIVE_PROTECTED_SELECTORS = [
   '.room-top-panel',
   '.room-bottom-panel',
   '.workshop-page__world-chat-box',
+  '.workshop-page__summon-button',
+  '.workshop-page__summon-info-button',
   '.workshop-page__bag-button',
   '.workshop-page__leaderboard-button',
   '.workshop-page__trade-alliance-button',
@@ -1611,10 +1613,11 @@ export class TutorialHintManager {
   }
 
   resolveGuideAutoMovePlacement({ basePlacement, bounds, protectedRects, targetRects }) {
-    const autoKey = this.getGuideAutoMoveKey(targetRects);
+    const avoidRects = [...targetRects, ...protectedRects];
+    const autoKey = this.getGuideAutoMoveKey(avoidRects);
     const wasAutoMoving = Boolean(this.guideAutoMove);
 
-    if (this.guideDrag || !autoKey || targetRects.length === 0) {
+    if (this.guideDrag || !autoKey || avoidRects.length === 0) {
       this.guideAutoMove = null;
       return { placement: basePlacement, animate: wasAutoMoving };
     }
@@ -1625,7 +1628,7 @@ export class TutorialHintManager {
 
     const outerSize = this.getObjectiveOuterSize();
     const includeObjective = this.isObjectivePanelOpen();
-    const baseOverlap = getObjectivePlacementOverlap(basePlacement, outerSize, targetRects, {
+    const baseOverlap = getObjectivePlacementOverlap(basePlacement, outerSize, avoidRects, {
       includeObjective,
     });
 
@@ -1637,12 +1640,12 @@ export class TutorialHintManager {
     const autoPlacement = this.resolveGuideAutoAvoidPlacement({
       basePlacement,
       bounds,
+      avoidRects,
       protectedRects,
-      targetRects,
       outerSize,
       includeObjective,
     });
-    const autoOverlap = getObjectivePlacementOverlap(autoPlacement, outerSize, targetRects, {
+    const autoOverlap = getObjectivePlacementOverlap(autoPlacement, outerSize, avoidRects, {
       includeObjective,
     });
 
@@ -1667,8 +1670,8 @@ export class TutorialHintManager {
   resolveGuideAutoAvoidPlacement({
     basePlacement,
     bounds,
+    avoidRects,
     protectedRects,
-    targetRects,
     outerSize,
     includeObjective,
   }) {
@@ -1679,7 +1682,7 @@ export class TutorialHintManager {
     const baseRects = getObjectivePlacementRects(basePlacement, outerSize);
     const candidates = placements.map((placement, index) => {
       const clamped = this.clampObjectivePlacement(placement, bounds, outerSize);
-      const targetOverlap = getObjectivePlacementOverlap(clamped, outerSize, targetRects, {
+      const avoidOverlap = getObjectivePlacementOverlap(clamped, outerSize, avoidRects, {
         includeObjective,
       });
       const protectedOverlap = getObjectivePlacementOverlap(clamped, outerSize, protectedRects, {
@@ -1695,24 +1698,24 @@ export class TutorialHintManager {
       return {
         ...clamped,
         index,
-        score: targetOverlap * 100000 + protectedOverlap * 1000 + travel,
+        score: avoidOverlap * 100000 + protectedOverlap * 1000 + travel,
       };
     });
 
     return candidates.sort((a, b) => a.score - b.score || a.index - b.index)[0] ?? basePlacement;
   }
 
-  getGuideAutoMoveKey(targetRects) {
-    if (!this.objectiveTarget || targetRects.length === 0) {
+  getGuideAutoMoveKey(avoidRects) {
+    if (avoidRects.length === 0) {
       return null;
     }
 
     const targetId =
-      this.objectiveTarget.dataset?.tutorialId ||
-      this.objectiveTarget.getAttribute?.('data-tutorial-id') ||
+      this.objectiveTarget?.dataset?.tutorialId ||
+      this.objectiveTarget?.getAttribute?.('data-tutorial-id') ||
       this.objectiveStepId ||
-      'target';
-    const targetRectKey = targetRects.map(formatAreaRectKey).join('|');
+      'protected';
+    const targetRectKey = avoidRects.map(formatAreaRectKey).join('|');
     const panelState = this.isObjectivePanelOpen() ? 'open' : 'closed';
 
     return `${targetId}:${panelState}:${this.objectiveWidth}x${this.objectiveHeight}:${targetRectKey}`;

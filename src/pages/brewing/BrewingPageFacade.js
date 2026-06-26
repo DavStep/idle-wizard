@@ -80,13 +80,6 @@ export class BrewingPageFacade {
           recipe?.key ?? null,
           this.recipeGuideManager.getCurrentCauldronIndex(),
         ),
-      onSelectBrewQuantity: (quantity, cauldronIndex) =>
-        this.setBrewQuantity(quantity, cauldronIndex),
-      onPrimaryAction: (cauldronIndex) =>
-        this.cauldronManager.onPrimaryAction(cauldronIndex),
-      onRemoveIngredient: (slotIndex, cauldronIndex) =>
-        this.cauldronManager.onRemoveIngredient(slotIndex, cauldronIndex),
-      getPrimaryAction: (brewing) => this.cauldronManager.getPrimaryAction(brewing),
     });
   }
 

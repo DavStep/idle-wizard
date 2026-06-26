@@ -1,12 +1,11 @@
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
-import { getCompletedResearchIds } from '../../shared/itemResearchStatus.js';
-import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
+import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
 import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 
-const RECIPES_PER_PAGE = 2;
+const RECIPES_PER_PAGE = 1;
 const PAGES_PER_SPREAD = 2;
 const RECIPES_PER_SPREAD = RECIPES_PER_PAGE * PAGES_PER_SPREAD;
 const BOOK_SWIPE_THRESHOLD = 30;
@@ -59,19 +58,11 @@ export class BrewingRecipeBookManager {
     getSelectedRecipeKey,
     getCurrentCauldronIndex,
     onSelectRecipe,
-    onSelectBrewQuantity,
-    onPrimaryAction,
-    onRemoveIngredient,
-    getPrimaryAction,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.getSelectedRecipeKey = getSelectedRecipeKey;
     this.getCurrentCauldronIndex = getCurrentCauldronIndex;
     this.onSelectRecipe = onSelectRecipe;
-    this.onSelectBrewQuantity = onSelectBrewQuantity;
-    this.onPrimaryAction = onPrimaryAction;
-    this.onRemoveIngredient = onRemoveIngredient;
-    this.getPrimaryAction = getPrimaryAction;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -81,6 +72,7 @@ export class BrewingRecipeBookManager {
     this.currentSpreadIndex = 0;
     this.bookPointer = null;
     this.bookTurnClassTimeout = null;
+    this.bookTurnGhosts = [];
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
@@ -134,6 +126,7 @@ export class BrewingRecipeBookManager {
     this.unsubscribe?.();
     this.unsubscribe = null;
     document.removeEventListener('keydown', this.handleKeydown);
+    this.clearBookTurnClass();
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
     this.refs.popup?.remove();
     this.root = null;
@@ -143,7 +136,6 @@ export class BrewingRecipeBookManager {
     this.renderedSignature = null;
     this.currentSpreadIndex = 0;
     this.bookPointer = null;
-    this.clearBookTurnClass();
   }
 
   createPopup() {
@@ -153,14 +145,14 @@ export class BrewingRecipeBookManager {
 
     const dialog = document.createElement('section');
     dialog.className = 'brewing-page__recipes-dialog style-dialog';
-    dialog.setAttribute('aria-label', 'Cauldron');
+    dialog.setAttribute('aria-label', 'recipes');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('role', 'dialog');
     dialog.tabIndex = -1;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'cauldron';
+    title.textContent = 'recipes';
 
     const closeButton = document.createElement('button');
     closeButton.className = 'style-button brewing-page__recipes-close';
@@ -172,35 +164,15 @@ export class BrewingRecipeBookManager {
     const book = this.createRecipeBook();
     const pagination = this.createRecipePagination();
 
-    const currentSummary = this.createCurrentSummary();
-    const actionSummary = this.createActionSummary();
-    const quantitySummary = this.createQuantitySummary();
-    const autoSummary = this.createAutoSummary();
-
     dialog.append(
       title,
       closeButton,
-      currentSummary.root,
-      actionSummary.root,
-      quantitySummary.root,
-      autoSummary.root,
       book.root,
       pagination.root,
     );
     popup.append(dialog);
     this.refs.dialog = dialog;
     this.refs.title = title;
-    this.refs.currentSummary = currentSummary.root;
-    this.refs.currentRows = currentSummary.rows;
-    this.refs.actionSummary = actionSummary.root;
-    this.refs.actionButton = actionSummary.button;
-    this.refs.actionButtonLabel = actionSummary.label;
-    this.refs.actionButtonCost = actionSummary.cost;
-    this.refs.quantitySummary = quantitySummary.root;
-    this.refs.quantityOptions = quantitySummary.options;
-    this.refs.autoSummary = autoSummary.root;
-    this.refs.autoStateButton = autoSummary.stateButton;
-    this.refs.autoRecipeValue = autoSummary.recipeValue;
     this.refs.book = book.root;
     this.refs.leftPage = book.leftPage;
     this.refs.rightPage = book.rightPage;
@@ -255,102 +227,6 @@ export class BrewingRecipeBookManager {
     return { root, previousButton, pageLabel, nextButton };
   }
 
-  createCurrentSummary() {
-    const root = document.createElement('div');
-    root.className = 'brewing-page__cauldron-dialog-current';
-
-    const title = document.createElement('div');
-    title.className = 'brewing-page__cauldron-dialog-section-title';
-    title.textContent = 'inside';
-
-    const rows = document.createElement('div');
-    rows.className = 'brewing-page__cauldron-dialog-current-rows';
-
-    root.append(title, rows);
-    return { root, rows };
-  }
-
-  createActionSummary() {
-    const root = document.createElement('div');
-    root.className = 'brewing-page__cauldron-dialog-action';
-
-    const button = document.createElement('button');
-    button.className = 'style-button brewing-page__dialog-action-button';
-    button.type = 'button';
-    button.addEventListener('click', () => {
-      this.onPrimaryAction?.(this.getSafeCurrentCauldronIndex());
-      this.render(this.gameplayFacade.getSnapshot());
-    });
-
-    const label = document.createElement('span');
-    label.className = 'brewing-page__dialog-action-label';
-
-    const cost = document.createElement('span');
-    cost.className = 'brewing-page__dialog-action-cost';
-
-    button.append(label, cost);
-    root.append(button);
-    return { root, button, label, cost };
-  }
-
-  createAutoSummary() {
-    const root = document.createElement('div');
-    root.className = 'brewing-page__auto-summary';
-    root.hidden = true;
-
-    const stateRow = this.createAutoRow('auto');
-    const recipeRow = this.createAutoRow('recipe');
-
-    const stateButton = document.createElement('button');
-    stateButton.className = 'row_val brewing-page__auto-state-button';
-    stateButton.type = 'button';
-    stateButton.addEventListener('click', () => this.toggleAutoBrew());
-    stateRow.value.replaceWith(stateButton);
-
-    root.append(stateRow.row, recipeRow.row);
-    return {
-      root,
-      stateButton,
-      recipeValue: recipeRow.value,
-    };
-  }
-
-  createQuantitySummary() {
-    const root = document.createElement('div');
-    root.className = 'brewing-page__quantity-summary';
-    root.hidden = true;
-
-    const row = document.createElement('div');
-    row.className = 'brewing-page__quantity-row';
-
-    const label = document.createElement('span');
-    label.className = 'row_key';
-    label.textContent = 'brew';
-
-    const options = document.createElement('span');
-    options.className = 'row_val brewing-page__quantity-options';
-
-    row.append(label, options);
-    root.append(row);
-
-    return { root, options };
-  }
-
-  createAutoRow(labelText) {
-    const row = document.createElement('div');
-    row.className = 'brewing-page__auto-row';
-
-    const label = document.createElement('span');
-    label.className = 'row_key';
-    label.textContent = labelText;
-
-    const value = document.createElement('span');
-    value.className = 'row_val';
-
-    row.append(label, value);
-    return { row, value };
-  }
-
   show() {
     this.previousFocus = document.activeElement;
     this.visible = true;
@@ -376,19 +252,14 @@ export class BrewingRecipeBookManager {
       return;
     }
 
-    const recipes = snapshot.brewing?.recipes ?? [];
-    const unlockedRecipes = recipes.filter((recipe) => recipe.unlocked);
-    this.clampCurrentSpreadIndex(unlockedRecipes.length);
+    const recipes = this.getVisibleRecipes(snapshot?.brewing?.recipes ?? []);
+    this.clampCurrentSpreadIndex(recipes.length);
     this.renderTitle();
-    this.renderCurrentSummary(snapshot);
-    this.renderActionSummary(snapshot);
-    this.renderQuantitySummary(snapshot);
-    this.renderAutoSummary(snapshot, unlockedRecipes);
-    this.renderPagination(unlockedRecipes.length);
+    this.renderPagination(recipes.length);
     const ownedIngredientQuantities = this.getOwnedIngredientQuantities(snapshot);
     const brewQuantity = this.getBrewQuantity(snapshot);
     const signature = this.createRenderSignature(
-      unlockedRecipes,
+      recipes,
       ownedIngredientQuantities,
       brewQuantity,
     );
@@ -400,7 +271,7 @@ export class BrewingRecipeBookManager {
     this.renderedSignature = signature;
 
     const pages = this.createRecipePages(
-      unlockedRecipes,
+      recipes,
       ownedIngredientQuantities,
       brewQuantity,
     );
@@ -408,288 +279,15 @@ export class BrewingRecipeBookManager {
     this.refs.rightPage.replaceChildren(...pages.right);
   }
 
+  getVisibleRecipes(recipes = []) {
+    return recipes.filter((recipe) => recipe && typeof recipe.key === 'string');
+  }
+
   renderTitle() {
-    const cauldronNumber = this.getSafeCurrentCauldronIndex() + 1;
-    const title = `recipes: cauldron ${cauldronNumber}`;
+    const title = 'recipes';
 
     this.setText(this.refs.title, title);
     this.setAttribute(this.refs.dialog, 'aria-label', title);
-  }
-
-  renderCurrentSummary(snapshot) {
-    if (!this.refs.currentRows) {
-      return;
-    }
-
-    const cauldron = this.getDialogCauldronSnapshot(snapshot);
-
-    if (!cauldron) {
-      this.refs.currentRows.replaceChildren(this.createReadonlyCurrentRow('inside', 'empty'));
-      return;
-    }
-
-    const rows = [];
-    const status = this.formatCauldronStatus(cauldron);
-
-    if (cauldron.activeBrew) {
-      rows.push(this.createReadonlyCurrentRow('inside', this.formatActiveBrew(cauldron.activeBrew)));
-    } else {
-      const groups = this.groupAdjacentIngredients(cauldron.ingredients ?? []);
-
-      if (groups.length === 0) {
-        rows.push(this.createReadonlyCurrentRow('inside', 'empty'));
-      } else {
-        rows.push(
-          ...groups.map((ingredient) =>
-            this.createRemovableIngredientRow(
-              ingredient,
-              this.getSafeCurrentCauldronIndex(),
-            ),
-          ),
-        );
-      }
-    }
-
-    if (status) {
-      rows.push(this.createReadonlyCurrentRow('status', status));
-    }
-
-    this.refs.currentRows.replaceChildren(...rows);
-  }
-
-  renderActionSummary(snapshot) {
-    if (!this.refs.actionButton) {
-      return;
-    }
-
-    const cauldron = this.getDialogCauldronSnapshot(snapshot);
-    const action = cauldron ? this.getPrimaryAction?.(cauldron) : null;
-    const hidden = !action;
-
-    this.setHidden(this.refs.actionSummary, hidden);
-
-    if (hidden) {
-      this.setText(this.refs.actionButtonLabel, '');
-      this.setText(this.refs.actionButtonCost, '');
-      this.setDisabled(this.refs.actionButton, true);
-      return;
-    }
-
-    this.setText(
-      this.refs.actionButtonLabel,
-      action.hasCost ? `${action.label} ` : action.label,
-    );
-    this.setHidden(this.refs.actionButtonCost, !action.hasCost);
-    setResourceColor(this.refs.actionButtonCost, action.costResource ?? 'mana');
-    this.setResourceText(
-      this.refs.actionButtonCost,
-      action.hasCost ? action.costText ?? '' : '',
-    );
-    this.setDisabled(this.refs.actionButton, action.disabled);
-    this.setAttribute(this.refs.actionButton, 'data-action', action.id);
-    this.setAttribute(this.refs.actionButton, 'aria-disabled', action.disabled ? 'true' : 'false');
-    this.setAttribute(this.refs.actionButton, 'aria-label', action.ariaLabel);
-  }
-
-  createReadonlyCurrentRow(labelText, valueText) {
-    const row = document.createElement('div');
-    row.className = 'brewing-page__cauldron-dialog-current-row';
-
-    const label = document.createElement('span');
-    label.className = 'row_key';
-    label.textContent = labelText;
-
-    const value = document.createElement('span');
-    value.className = 'row_val';
-    value.textContent = valueText;
-
-    row.append(label, value);
-    return row;
-  }
-
-  createRemovableIngredientRow(ingredient, cauldronIndex) {
-    const row = document.createElement('button');
-    row.className = 'brewing-page__cauldron-dialog-current-row is-removable';
-    row.type = 'button';
-    row.setAttribute('aria-label', `remove one ${ingredient.label} from cauldron`);
-    row.addEventListener('click', () => {
-      this.onRemoveIngredient?.(ingredient.slotIndex + ingredient.quantity - 1, cauldronIndex);
-      this.render(this.gameplayFacade.getSnapshot());
-    });
-
-    const label = document.createElement('span');
-    label.className = 'row_key';
-    label.append(`- ${ingredient.quantity} `, this.createIngredientIconLabel(ingredient));
-
-    const value = document.createElement('span');
-    value.className = 'row_val';
-    value.textContent = 'remove';
-
-    row.append(label, value);
-    return row;
-  }
-
-  getDialogCauldronSnapshot(snapshot) {
-    const cauldronIndex = this.getSafeCurrentCauldronIndex();
-    const cauldron = this.getCauldronSnapshot(snapshot, cauldronIndex);
-
-    if (!cauldron) {
-      return null;
-    }
-
-    const recipes = snapshot?.brewing?.recipes ?? [];
-    const selectedRecipeKey = this.getSelectedRecipeKey?.() ?? null;
-    const selectedRecipe =
-      recipes.find((recipe) => recipe.key === selectedRecipeKey && recipe.unlocked) ?? null;
-
-    return {
-      ...cauldron,
-      herbs: snapshot?.brewing?.herbs ?? [],
-      selectedRecipe,
-    };
-  }
-
-  groupAdjacentIngredients(ingredients = []) {
-    const groups = [];
-
-    for (const [index, ingredient] of ingredients.entries()) {
-      const group = groups.at(-1);
-
-      if (group?.itemTypeId === ingredient.itemTypeId) {
-        group.quantity += 1;
-        continue;
-      }
-
-      groups.push({
-        slotIndex: index,
-        itemTypeId: ingredient.itemTypeId,
-        key: ingredient.key,
-        label: ingredient.label,
-        kind: ingredient.kind,
-        quantity: 1,
-      });
-    }
-
-    return groups;
-  }
-
-  formatCauldronStatus(cauldron) {
-    if (!cauldron || cauldron.activeBrew || (cauldron.ingredients?.length ?? 0) === 0) {
-      return '';
-    }
-
-    if (cauldron.match) {
-      if (cauldron.match.unlocked) {
-        return `matches ${cauldron.match.label}`;
-      }
-
-      return cauldron.match.discoverable
-        ? 'unknown recipe'
-        : `${cauldron.match.label} locked`;
-    }
-
-    return '';
-  }
-
-  formatActiveBrew(activeBrew) {
-    if (activeBrew.canCollect) {
-      return `bottled ${activeBrew.label}`;
-    }
-
-    if (activeBrew.canStartBottling) {
-      return `brewed ${activeBrew.label}`;
-    }
-
-    return `${activeBrew.phase === 'bottling' ? 'bottling' : 'brewing'} ${activeBrew.label}`;
-  }
-
-  renderAutoSummary(snapshot, recipes) {
-    const visible = this.isAutoBrewAvailable(snapshot);
-    this.setHidden(this.refs.autoSummary, !visible);
-
-    if (!visible) {
-      this.setText(this.refs.autoStateButton, '');
-      this.setText(this.refs.autoRecipeValue, '');
-      this.setDisabled(this.refs.autoStateButton, true);
-      this.setAttribute(this.refs.autoStateButton, 'aria-hidden', 'true');
-      this.setAttribute(this.refs.autoStateButton, 'aria-disabled', 'true');
-      this.setAttribute(this.refs.autoStateButton, 'aria-pressed', 'false');
-      return;
-    }
-
-    const cauldronIndex = this.getSafeCurrentCauldronIndex();
-    const brewing = this.getCauldronSnapshot(snapshot, cauldronIndex) ?? snapshot.brewing ?? {};
-    const selectedRecipeKey = this.getSelectedRecipeKey?.() ?? null;
-    const selectedRecipe = recipes.find((recipe) => recipe.key === selectedRecipeKey);
-    const hasSelectedRecipe = Boolean(selectedRecipe);
-    const autoEnabled =
-      brewing.autoBrewEnabled === true && brewing.autoBrewRecipeKey === selectedRecipeKey;
-    const disabled = !autoEnabled && !hasSelectedRecipe;
-
-    this.setText(this.refs.autoStateButton, autoEnabled ? 'enabled' : 'disabled');
-    this.setText(this.refs.autoRecipeValue, selectedRecipe?.label ?? 'none');
-    this.setDisabled(this.refs.autoStateButton, disabled);
-    this.removeAttribute(this.refs.autoStateButton, 'aria-hidden');
-    this.setAttribute(this.refs.autoStateButton, 'aria-disabled', disabled ? 'true' : 'false');
-    this.setAttribute(this.refs.autoStateButton, 'aria-pressed', autoEnabled ? 'true' : 'false');
-    this.setAttribute(
-      this.refs.autoStateButton,
-      'aria-label',
-      this.formatAutoStateAriaLabel(autoEnabled, hasSelectedRecipe),
-    );
-  }
-
-  renderQuantitySummary(snapshot) {
-    if (!this.refs.quantitySummary || !this.refs.quantityOptions) {
-      return;
-    }
-
-    const maxBrewQuantity = this.getMaxBrewQuantity(snapshot);
-    const brewQuantity = this.getBrewQuantity(snapshot);
-    const visible = maxBrewQuantity > 1;
-
-    this.setHidden(this.refs.quantitySummary, !visible);
-
-    if (!visible) {
-      this.refs.quantityOptions.replaceChildren();
-      return;
-    }
-
-    const existingButtons = new Map(
-      [...this.refs.quantityOptions.querySelectorAll('.brewing-page__quantity-button')]
-        .map((button) => [Number(button.dataset.brewQuantity), button]),
-    );
-    const buttons = [];
-
-    for (let quantity = 1; quantity <= maxBrewQuantity; quantity += 1) {
-      const button = existingButtons.get(quantity) ?? this.createQuantityButton(quantity);
-      const selected = quantity === brewQuantity;
-      button.classList.toggle('is-selected', selected);
-      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
-      button.setAttribute(
-        'aria-label',
-        selected ? `brewing x${quantity}` : `set brewing x${quantity}`,
-      );
-      buttons.push(button);
-    }
-
-    this.refs.quantityOptions.replaceChildren(...buttons);
-  }
-
-  createQuantityButton(quantity) {
-    const button = document.createElement('button');
-    button.className = 'brewing-page__quantity-button';
-    button.type = 'button';
-    button.dataset.brewQuantity = String(quantity);
-    button.textContent = `x${quantity}`;
-    button.addEventListener('click', () => this.selectBrewQuantity(quantity));
-    return button;
-  }
-
-  selectBrewQuantity(quantity) {
-    const cauldronIndex = this.getSafeCurrentCauldronIndex();
-    this.onSelectBrewQuantity?.(quantity, cauldronIndex);
-    this.render(this.gameplayFacade.getSnapshot());
   }
 
   createRenderSignature(recipes, ownedIngredientQuantities = new Map(), brewQuantity = 1) {
@@ -706,7 +304,18 @@ export class BrewingRecipeBookManager {
             return `${ingredient.key}:${quantity}:${ownedQuantity}`;
           })
           .join(',');
-        return `${recipe.key}:${recipe.manaCost}:${recipe.brewDurationMs}:${ingredientsSignature}`;
+        return [
+          recipe.key,
+          recipe.label,
+          recipe.unlocked ? 1 : 0,
+          recipe.discovered ? 1 : 0,
+          recipe.unknown ? 1 : 0,
+          recipe.known === false ? 0 : 1,
+          recipe.discoveryType ?? '',
+          recipe.manaCost,
+          recipe.brewDurationMs,
+          ingredientsSignature,
+        ].join(':');
       })
       .join('|');
 
@@ -783,11 +392,15 @@ export class BrewingRecipeBookManager {
   }
 
   createRecipeRow(recipe, ownedIngredientQuantities = new Map(), brewQuantity = 1) {
+    const display = this.getRecipeDisplay(recipe);
     const row = document.createElement('div');
     row.className = 'brewing-page__recipe-row';
-    row.dataset.tutorialId = `brewing:recipe:${recipe.key}`;
-    const selected = recipe.key === this.getSelectedRecipeKey?.();
-    row.classList.toggle('is-locked', !recipe.unlocked);
+    if (!display.unknown) {
+      row.dataset.tutorialId = `brewing:recipe:${recipe.key}`;
+    }
+    const selected = !display.locked && recipe.key === this.getSelectedRecipeKey?.();
+    row.classList.toggle('is-locked', display.locked);
+    row.classList.toggle('is-unknown', display.unknown);
     row.classList.toggle('is-selected', selected);
     row.setAttribute('aria-pressed', selected ? 'true' : 'false');
 
@@ -795,35 +408,38 @@ export class BrewingRecipeBookManager {
     main.className = 'brewing-page__recipe-main';
 
     const selectButton = document.createElement('button');
-    selectButton.className = 'brewing-page__recipe-select-button';
+    selectButton.className = 'style-button brewing-page__recipe-select-button';
     selectButton.type = 'button';
-    selectButton.textContent = selected ? '[x]' : '[ ]';
+    selectButton.textContent = selected ? 'selected' : display.actionLabel;
+    selectButton.disabled = display.locked;
     selectButton.setAttribute('aria-pressed', selected ? 'true' : 'false');
     selectButton.setAttribute(
       'aria-label',
-      selected ? `unselect ${recipe.label} recipe` : `select ${recipe.label} recipe`,
+      this.getRecipeActionAriaLabel(recipe, display, selected),
     );
     selectButton.addEventListener('click', () => this.selectRecipe(recipe));
 
     const label = document.createElement('span');
     label.className = 'row_key brewing-page__recipe-name';
-    label.textContent = recipe.label;
-    setItemIconLabel(label, 'potion', recipe.key);
+    label.textContent = display.label;
+    if (display.unknown) {
+      label.setAttribute('aria-label', 'unknown');
+    }
 
     const infoText = document.createElement('p');
     infoText.className = 'brewing-page__recipe-info-text';
-    infoText.textContent = this.getPotionInfo(recipe);
+    infoText.textContent = display.infoText;
 
     const info = document.createElement('div');
     info.className = 'brewing-page__recipe-info';
 
     const header = document.createElement('div');
     header.className = 'brewing-page__recipe-header';
-    header.append(selectButton, label);
+    header.append(label);
 
-    info.append(header, infoText);
+    info.append(header);
 
-    const icon = this.createPotionIcon(recipe);
+    const icon = this.createPotionIcon(display.iconKey);
 
     const top = document.createElement('div');
     top.className = 'brewing-page__recipe-top';
@@ -833,6 +449,7 @@ export class BrewingRecipeBookManager {
       recipe.ingredients,
       ownedIngredientQuantities,
       brewQuantity,
+      { masked: display.unknown },
     );
 
     const meta = document.createElement('div');
@@ -841,32 +458,79 @@ export class BrewingRecipeBookManager {
     const cost = document.createElement('span');
     cost.className = 'brewing-page__recipe-cost';
     setResourceColor(cost, 'mana');
-    setResourceIconText(cost, `${recipe.manaCost * brewQuantity} mana required`);
+    setResourceIconText(
+      cost,
+      display.unknown ? '? mana required' : `${recipe.manaCost * brewQuantity} mana required`,
+    );
 
     const duration = document.createElement('span');
     duration.className = 'brewing-page__recipe-duration';
-    duration.textContent = `time: ${this.formatDuration(recipe.brewDurationMs)}`;
+    duration.textContent = `time: ${
+      display.unknown ? '?s' : this.formatDuration(recipe.brewDurationMs)
+    }`;
 
     meta.append(cost, duration);
 
-    main.append(top);
-    row.append(main, ingredients, meta);
+    main.append(top, infoText);
+    row.append(main, ingredients, meta, selectButton);
 
     return row;
   }
 
+  getRecipeDisplay(recipe) {
+    const unknown = this.isRecipeUnknown(recipe);
+    const locked = recipe?.unlocked !== true;
+
+    return {
+      unknown,
+      locked,
+      label: unknown ? 'unknown potion' : recipe.label,
+      iconKey: unknown ? 'unknownPotion' : recipe.key,
+      actionLabel: unknown ? 'unknown' : locked ? 'research' : 'select',
+      infoText: unknown
+        ? 'a recipe not yet named in the workshop book.'
+        : this.getPotionInfo(recipe),
+    };
+  }
+
+  isRecipeUnknown(recipe) {
+    return (
+      recipe?.discovered !== true &&
+      recipe?.unlocked !== true &&
+      (recipe?.unknown === true ||
+        recipe?.known === false ||
+        recipe?.discoveryType === 'unknown')
+    );
+  }
+
+  getRecipeActionAriaLabel(recipe, display, selected) {
+    if (display.unknown) {
+      return 'unknown recipe';
+    }
+
+    if (display.locked) {
+      return `${recipe.label} recipe needs research`;
+    }
+
+    return selected ? `unselect ${recipe.label} recipe` : `select ${recipe.label} recipe`;
+  }
+
   selectRecipe(recipe) {
+    if (recipe?.unlocked !== true) {
+      return;
+    }
+
     const selected = recipe?.key && recipe.key === this.getSelectedRecipeKey?.();
     this.onSelectRecipe?.(selected ? null : recipe);
     const snapshot = this.gameplayFacade.getSnapshot();
     this.render(snapshot);
   }
 
-  createPotionIcon(recipe) {
+  createPotionIcon(iconKey) {
     const icon =
       createAssetAtlasSprite(
         'brewing-page__recipe-potion-icon',
-        getPotionIconFrameName(recipe?.key),
+        getPotionIconFrameName(iconKey),
       ) ?? document.createElement('span');
 
     icon.classList.add('brewing-page__recipe-potion-icon');
@@ -919,19 +583,18 @@ export class BrewingRecipeBookManager {
 
   setCurrentSpreadIndex(spreadIndex, direction = 'forward') {
     const snapshot = this.gameplayFacade.getSnapshot();
-    const recipeCount = (snapshot?.brewing?.recipes ?? []).filter(
-      (recipe) => recipe.unlocked,
-    ).length;
+    const recipeCount = this.getVisibleRecipes(snapshot?.brewing?.recipes ?? []).length;
     const nextSpreadIndex = this.normalizeSpreadIndex(spreadIndex, recipeCount);
 
     if (nextSpreadIndex === this.currentSpreadIndex) {
       return;
     }
 
+    this.prepareBookTurn();
     this.currentSpreadIndex = nextSpreadIndex;
     this.renderedSignature = null;
-    this.playBookTurn(direction);
     this.render(snapshot);
+    this.playBookTurn(direction);
   }
 
   clampCurrentSpreadIndex(recipeCount) {
@@ -995,13 +658,58 @@ export class BrewingRecipeBookManager {
     this.showPreviousSpread();
   }
 
+  prepareBookTurn() {
+    this.clearBookTurnClass();
+
+    if (
+      !this.visible ||
+      this.prefersReducedMotion() ||
+      !this.refs.book ||
+      !this.refs.leftPage ||
+      !this.refs.rightPage
+    ) {
+      return;
+    }
+
+    this.bookTurnGhosts = [
+      this.createBookTurnGhost(this.refs.leftPage, 'left'),
+      this.createBookTurnGhost(this.refs.rightPage, 'right'),
+    ];
+    this.refs.book.append(...this.bookTurnGhosts);
+  }
+
+  createBookTurnGhost(page, side) {
+    const ghost = page.cloneNode(true);
+    ghost.className = `brewing-page__recipe-turn-ghost brewing-page__recipe-turn-ghost--${side}`;
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.inert = true;
+
+    for (const target of ghost.querySelectorAll('[data-tutorial-id]')) {
+      delete target.dataset.tutorialId;
+    }
+
+    for (const control of ghost.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]',
+    )) {
+      control.setAttribute('tabindex', '-1');
+    }
+
+    return ghost;
+  }
+
   playBookTurn(direction) {
     if (!this.refs.book) {
       return;
     }
 
-    this.clearBookTurnClass();
-    this.refs.book.dataset.turnDirection = direction;
+    if (this.prefersReducedMotion()) {
+      this.clearBookTurnClass();
+      return;
+    }
+
+    this.refs.book.dataset.turnDirection = direction === 'back' ? 'back' : 'forward';
+    // Flush after swapping page contents so the incoming and outgoing layers animate.
+    void this.refs.book.offsetWidth;
     this.refs.book.classList.add('is-turning');
     this.bookTurnClassTimeout = globalThis.setTimeout(() => {
       this.clearBookTurnClass();
@@ -1019,56 +727,16 @@ export class BrewingRecipeBookManager {
       this.refs.book.classList.remove('is-turning');
       delete this.refs.book.dataset.turnDirection;
     }
+
+    for (const ghost of this.bookTurnGhosts) {
+      ghost.remove();
+    }
+
+    this.bookTurnGhosts = [];
   }
 
-  toggleAutoBrew() {
-    const snapshot = this.gameplayFacade.getSnapshot();
-    const cauldronIndex = this.getSafeCurrentCauldronIndex();
-    const brewing = this.getCauldronSnapshot(snapshot, cauldronIndex) ?? snapshot.brewing ?? {};
-    const selectedRecipeKey = this.getSelectedRecipeKey?.() ?? null;
-    const enabled =
-      brewing.autoBrewEnabled === true && brewing.autoBrewRecipeKey === selectedRecipeKey;
-
-    if (enabled) {
-      this.gameplayFacade.setBrewingAutoBrewEnabled?.(false, cauldronIndex);
-      this.render(this.gameplayFacade.getSnapshot());
-      return;
-    }
-
-    if (!selectedRecipeKey) {
-      this.render(snapshot);
-      return;
-    }
-
-    const selectResult = this.gameplayFacade.setBrewingAutoBrewRecipe?.(
-      selectedRecipeKey,
-      cauldronIndex,
-    );
-
-    if (selectResult?.ok === false) {
-      this.render(this.gameplayFacade.getSnapshot());
-      return;
-    }
-
-    this.gameplayFacade.setBrewingAutoBrewEnabled?.(true, cauldronIndex);
-    this.render(this.gameplayFacade.getSnapshot());
-  }
-
-  isAutoBrewAvailable(snapshot) {
-    const cauldronIndex = this.getSafeCurrentCauldronIndex();
-    const cauldron = this.getCauldronSnapshot(snapshot, cauldronIndex);
-
-    if (cauldron?.autoBrewEnabled === true) {
-      return true;
-    }
-
-    const completedResearchIds = getCompletedResearchIds(snapshot);
-
-    if (completedResearchIds === null) {
-      return false;
-    }
-
-    return completedResearchIds.has(automationResearchIds.autoBrewCauldron(cauldronIndex + 1));
+  prefersReducedMotion() {
+    return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
   }
 
   getCauldronSnapshot(snapshot, cauldronIndex = 0) {
@@ -1091,18 +759,11 @@ export class BrewingRecipeBookManager {
       : 0;
   }
 
-  formatAutoStateAriaLabel(enabled, hasSelectedRecipe) {
-    if (enabled) {
-      return 'disable auto';
-    }
-
-    return hasSelectedRecipe ? 'enable auto' : 'select recipe before enabling auto';
-  }
-
   createIngredientsList(
     ingredients = [],
     ownedIngredientQuantities = new Map(),
     brewQuantity = 1,
+    { masked = false } = {},
   ) {
     const root = document.createElement('div');
     root.className = 'brewing-page__recipe-ingredients';
@@ -1119,6 +780,7 @@ export class BrewingRecipeBookManager {
       ...ingredients.map((ingredient) => {
         const row = document.createElement('div');
         row.className = 'brewing-page__recipe-ingredient-row';
+        row.classList.toggle('is-unknown', masked);
         const quantity = this.normalizeIngredientQuantity(ingredient);
         const totalQuantity = quantity * brewQuantity;
         const ownedQuantity = this.getOwnedIngredientQuantity(
@@ -1129,15 +791,22 @@ export class BrewingRecipeBookManager {
         const required = document.createElement('span');
         required.className = 'brewing-page__recipe-ingredient-required';
         required.classList.toggle('is-unavailable', ownedQuantity < totalQuantity);
-        setResourceColor(required, 'herb');
-        required.append(
-          this.formatIngredientPrefix(quantity, brewQuantity),
-          this.createIngredientIconLabel(ingredient),
-        );
+        if (masked) {
+          required.append(
+            this.formatIngredientPrefix(quantity, brewQuantity),
+            MYSTERY_TEXT_LABEL,
+          );
+        } else {
+          setResourceColor(required, 'herb');
+          required.append(
+            this.formatIngredientPrefix(quantity, brewQuantity),
+            this.createIngredientIconLabel(ingredient),
+          );
+        }
 
         const owned = document.createElement('span');
         owned.className = 'brewing-page__recipe-ingredient-owned';
-        owned.textContent = `owned ${ownedQuantity}`;
+        owned.textContent = masked ? 'owned ?' : `owned ${ownedQuantity}`;
 
         row.append(required, owned);
         return row;
@@ -1249,12 +918,6 @@ export class BrewingRecipeBookManager {
     }
   }
 
-  setResourceText(element, value) {
-    if (element.textContent !== value) {
-      setResourceIconText(element, value);
-    }
-  }
-
   setDisabled(element, disabled) {
     if (element.disabled !== disabled) {
       element.disabled = disabled;
@@ -1264,12 +927,6 @@ export class BrewingRecipeBookManager {
   setAttribute(element, name, value) {
     if (element.getAttribute(name) !== value) {
       element.setAttribute(name, value);
-    }
-  }
-
-  removeAttribute(element, name) {
-    if (element.hasAttribute(name)) {
-      element.removeAttribute(name);
     }
   }
 }

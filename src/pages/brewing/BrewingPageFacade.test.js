@@ -45,7 +45,7 @@ describe('BrewingPageFacade', () => {
     });
   });
 
-  it('opens the recipe book from a selected cauldron and clears the recipe there', () => {
+  it('opens the recipe dialog from the cauldron recipes button and clears there', () => {
     const snapshot = {
       brewing: {
         herbs: [],
@@ -101,9 +101,10 @@ describe('BrewingPageFacade', () => {
     facade.mount(stage);
     facade.recipeGuideManager.selectRecipe('manaTonic', 0);
 
-    stage
-      .querySelector('.brewing-page__cauldron')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    const recipesButton = stage.querySelector('.brewing-page__cauldron-select-recipe-text');
+    expect(recipesButton?.textContent).toBe('recipes');
+
+    recipesButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const recipePopup = stage.querySelector('.brewing-page__recipes-popup');
     expect(recipePopup?.hidden).toBe(false);

@@ -485,10 +485,46 @@ describe('GardenPlotManager', () => {
     manager.mount(parent);
 
     const star = parent.querySelector('.garden-page__plot-box-level');
+    const frame = parent.querySelector('.garden-page__plot-box-frame');
 
-    expect(star?.textContent).toBe('★★★');
+    expect(star?.textContent).toBe('★★');
     expect(star?.dataset.starTone).toBe('yellow');
-    expect(star?.getAttribute('aria-label')).toBe('yellow star 3');
+    expect(star?.getAttribute('aria-label')).toBe('yellow star 2');
+    expect(frame?.dataset.plotSoilLevel).toBe('3');
+  });
+
+  it('shows empty plot stars before emerald upgrades', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const star = parent.querySelector('.garden-page__plot-box-level');
+    const frame = parent.querySelector('.garden-page__plot-box-frame');
+
+    expect(star?.textContent).toBe('☆☆☆');
+    expect(star?.dataset.starTone).toBe('empty');
+    expect(star?.getAttribute('aria-label')).toBe('0 stars');
+    expect(frame?.dataset.plotSoilLevel).toBe('1');
+    expect(
+      star?.querySelectorAll('.style-star-level__slot[data-star-filled="true"]'),
+    ).toHaveLength(0);
+  });
+
+  it('caps plot soil tint at the richest supported level', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    tile.level = 12;
+
+    manager.mount(parent);
+
+    expect(parent.querySelector('.garden-page__plot-box-frame')?.dataset.plotSoilLevel).toBe(
+      '5',
+    );
   });
 
   it('shows plant xN on enhanced empty plots with selected seeds', () => {
@@ -604,6 +640,8 @@ describe('GardenPlotManager', () => {
     expect(boxActionRule).toContain(
       'font-size: var(--garden-page-plot-box-detail-font-size);',
     );
+    expect(boxActionRule).toContain('padding: 0 2px;');
+    expect(boxActionRule).toContain('background: transparent;');
     expect(boxActionRule).toContain(
       'line-height: var(--garden-page-plot-box-detail-line-height);',
     );
@@ -743,6 +781,12 @@ describe('GardenPlotManager', () => {
     const frameRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-box-frame\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const soilFillRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-box-frame::before\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const soilInkRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-box-frame::after\s*\{\s*(?<body>background-image:[^}]*)\}/,
+    )?.groups?.body;
     const plantRule = baseCss.match(
       /\.garden-page__plot-plant\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -754,18 +798,50 @@ describe('GardenPlotManager', () => {
     )?.groups?.body;
 
     expect(baseCss).toContain('--garden-page-plot-number-color: #3b2416;');
+    expect(baseCss).toContain('--garden-page-plot-soil-level-1: #784c31;');
+    expect(baseCss).toContain('--garden-page-plot-soil-level-5: #54321f;');
     expect(frameRule).toContain('width: var(--garden-page-plot-visual-width);');
+    expect(frameRule).toContain(
+      '--garden-page-plot-soil-fill: var(--garden-page-plot-soil-level-1);',
+    );
+    expect(frameRule).toContain('isolation: isolate;');
     expect(frameRule).toContain('border: 0;');
+    expect(frameRule).toContain('background-image: none;');
     expect(frameRule).toContain('background-position: center bottom;');
     expect(frameRule).toContain('background-size: 100% auto;');
+    expect(soilFillRule).toContain('background: var(--garden-page-plot-soil-fill);');
+    expect(soilFillRule).toContain(
+      'mask-image: url("../pages/garden/assets/plots/outpost-plot-ground.png");',
+    );
+    expect(soilFillRule).toContain(
+      '-webkit-mask-image: url("../pages/garden/assets/plots/outpost-plot-ground.png");',
+    );
+    expect(soilInkRule).toContain(
+      'background-image: url("../pages/garden/assets/plots/outpost-plot-ground.png");',
+    );
+    expect(soilInkRule).toContain('mix-blend-mode: multiply;');
     expect(numberRule).toContain('left: 10px;');
     expect(numberRule).toContain('color: var(--garden-page-plot-number-color);');
     expect(numberRule).toContain('font-size: var(--style-font-size);');
+    expect(baseCss).toMatch(
+      /\.garden-page__plot-box-number,[\s\S]*\.garden-page__plot-box-label\s*\{[\s\S]*padding:\s*0 2px;[\s\S]*background:\s*transparent;/,
+    );
+    expect(baseCss).toMatch(
+      /\.garden-page__plot-box-number,[\s\S]*\.garden-page__plot-box-label\s*\{[\s\S]*z-index:\s*2;/,
+    );
     expect(progressRule).toContain('justify-self: center;');
     expect(progressRule).toContain('width: var(--garden-page-plot-visual-width);');
-    expect(plantRule).toContain('bottom: 18px;');
-    expect(plantRule).toContain('width: 44px;');
-    expect(plantRule).toContain('height: 48px;');
+    expect(plantRule).toContain('bottom: 20px;');
+    expect(baseCss).toContain('animation: garden-page-plot-ready-lift 1080ms');
+    expect(baseCss).toContain('infinite;');
+    expect(baseCss).toContain('@keyframes garden-page-plot-ready-lift');
+    expect(baseCss).toContain('translate(-50%, -8px)');
+    expect(baseCss).toContain('scale(1.1, 0.88)');
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.garden-page__plot-box-frame\.is-ready \.garden-page__plot-plant\s*\{[\s\S]*animation: none;[\s\S]*transform: translateX\(-50%\) scale\(var\(--garden-page-plot-growth-scale, 1\)\);/,
+    );
+    expect(plantRule).toContain('width: 57.2px;');
+    expect(plantRule).toContain('height: 62.4px;');
   });
 
   it('softens active plot progress without continuously animating on mobile', () => {
@@ -1839,8 +1915,11 @@ describe('GardenPlotManager', () => {
     manager.mount(parent);
 
     const plotRow = parent.querySelector('.garden-page__plot-row');
+    const boxFrame = plotRow.querySelector('.garden-page__plot-box-frame');
 
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvest');
+    expect(boxFrame?.classList.contains('is-ready')).toBe(true);
+    expect(boxFrame?.style.getPropertyValue('--garden-page-plot-ready-delay')).toBe('0ms');
     expect(plotRow.querySelector('.garden-page__plot-progress')?.hidden).toBe(false);
     expect(plotRow.querySelector('.garden-page__plot-progress-fill')?.style.transform).toBe(
       'scaleX(1)',

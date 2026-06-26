@@ -9,6 +9,8 @@ import { TUTORIAL_HINT_REMINDER_MS } from './managers/TutorialReminderManager.js
 import { TUTORIAL_LESSON_THREE_STUCK_MS } from './managers/TutorialStepManager.js';
 
 const UI_SCALE = 3;
+const LESSON_HORIZONTAL_CHROME = 24;
+const LESSON_VERTICAL_CHROME = 21;
 
 function createMemoryStorage(initial = {}) {
   const entries = new Map(Object.entries(initial));
@@ -28,6 +30,44 @@ function setClientRect(element, rect) {
     bottom: rect.top + rect.height,
     ...rect,
   });
+}
+
+function toClientRect(rect) {
+  return {
+    left: rect.left * UI_SCALE,
+    top: rect.top * UI_SCALE,
+    width: rect.width * UI_SCALE,
+    height: rect.height * UI_SCALE,
+  };
+}
+
+function getSourceAreaRect(element) {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    left: rect.left / UI_SCALE,
+    top: rect.top / UI_SCALE,
+    right: rect.right / UI_SCALE,
+    bottom: rect.bottom / UI_SCALE,
+  };
+}
+
+function getLessonRect(lesson) {
+  const left = Number.parseFloat(lesson?.style.left ?? '');
+  const top = Number.parseFloat(lesson?.style.top ?? '');
+  const width = Number.parseFloat(lesson?.style.width ?? '') + LESSON_HORIZONTAL_CHROME;
+  const height = Number.parseFloat(lesson?.style.height ?? '') + LESSON_VERTICAL_CHROME;
+
+  return {
+    left,
+    top,
+    right: left + width,
+    bottom: top + height,
+  };
+}
+
+function overlaps(a, b) {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
 
 function createLevelThreeSnapshot() {
@@ -826,6 +866,81 @@ describe('TutorialFacade', () => {
 
     expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
+
+    facade.unmount();
+  });
+
+  it('places an open lesson away from its show-me target before the target cue is requested', () => {
+    const snapshot = createLevelTwoSageTaskSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 0 }],
+      seedSummoning: { canSummon: true },
+      garden: {
+        seeds: [{ key: 'sageSeed', quantity: 0 }],
+        herbs: [{ key: 'sageHerb', quantity: 0 }],
+        plot: { tiles: [] },
+      },
+      tasks: {
+        currentLevel: 2,
+        level: {
+          completion: { canComplete: false, costCoin: 40 },
+          tasks: [
+            {
+              taskId: 'level2-sage-herb',
+              itemKey: 'sageHerb',
+              requiredQuantity: 2,
+              progressQuantity: 1,
+              remainingQuantity: 1,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+    const stage = document.createElement('section');
+    const summonButton = document.createElement('button');
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['intro-garden'],
+        }),
+        'idle-wizard.tutorial.elaraPlacement.v1': JSON.stringify({
+          buttonLeft: 4,
+          buttonTop: 420,
+        }),
+      }),
+    });
+
+    summonButton.dataset.tutorialId = 'workshop:summonSeed';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      summonButton,
+      toClientRect({
+        left: 135,
+        top: 410,
+        width: 92,
+        height: 32,
+      }),
+    );
+    stage.append(summonButton);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
+
+    expect(facade.activeStep?.id).toBe('grow-sage');
+    expect(lesson?.hidden).toBe(false);
+    expect(overlaps(getLessonRect(lesson), getSourceAreaRect(summonButton))).toBe(false);
 
     facade.unmount();
   });

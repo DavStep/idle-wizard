@@ -316,8 +316,13 @@ export class TutorialFacade {
         return;
       }
 
+      const target = viewState.step?.targetId
+        ? this.targetManager.getTarget(viewState.step.targetId)
+        : null;
+
       this.hintManager.showLesson({
         ...viewState.lesson,
+        target,
         hideTargetCue: false,
       });
       this.saleManager.update({

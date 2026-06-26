@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.47
+
+- Updated the Brewing recipe book so not-yet-researched recipes stay visible, and unknown recipes appear as locked mystery entries until discovered.
+- Polished Brewing cauldrons with clearer recipe controls, batch quantity cycling, and colored liquid previews while a potion brews.
+- Refined Garden plot art, upgrade stars, tutorial placement, and wide desktop scaling for cleaner room layout.
+
 ## 0.2.46
 
 - Added bottom inventory buttons in Garden and Brewing so seeds, herbs, and potions can open as inline room boxes.
