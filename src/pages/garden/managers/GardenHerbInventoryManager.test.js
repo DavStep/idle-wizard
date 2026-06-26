@@ -33,7 +33,7 @@ function createGameplayFacadeFake(snapshot = null) {
   };
 }
 
-function createFourHerbSnapshot() {
+function createSevenHerbSnapshot() {
   return {
     garden: {
       herbs: [
@@ -69,6 +69,30 @@ function createFourHerbSnapshot() {
           quantity: 4,
           researched: true,
         },
+        {
+          itemTypeId: 5,
+          key: 'frostmossHerb',
+          label: 'frostmoss',
+          kind: 'herb',
+          quantity: 5,
+          researched: true,
+        },
+        {
+          itemTypeId: 6,
+          key: 'mandrakeHerb',
+          label: 'mandrake',
+          kind: 'herb',
+          quantity: 6,
+          researched: true,
+        },
+        {
+          itemTypeId: 7,
+          key: 'nightshadeHerb',
+          label: 'nightshade',
+          kind: 'herb',
+          quantity: 7,
+          researched: true,
+        },
       ],
     },
   };
@@ -95,7 +119,7 @@ describe('GardenHerbInventoryManager', () => {
   it('expands and collapses herb rows from the bottom border toggle', () => {
     const parent = document.createElement('section');
     const manager = new GardenHerbInventoryManager({
-      gameplayFacade: createGameplayFacadeFake(createFourHerbSnapshot()),
+      gameplayFacade: createGameplayFacadeFake(createSevenHerbSnapshot()),
     });
 
     manager.mount(parent);
@@ -106,29 +130,23 @@ describe('GardenHerbInventoryManager', () => {
       );
     const toggle = parent.querySelector('.garden-page__herbs-toggle');
 
-    expect(parent.querySelector('.garden-page__herbs-count')?.textContent).toBe(
-      '3/4',
-    );
+    expect(parent.querySelector('.garden-page__herbs-count')?.textContent).toBe('6/7');
     expect(toggle?.textContent).toBe('expand');
-    expect(visibleRows()).toHaveLength(3);
+    expect(visibleRows()).toHaveLength(6);
 
     toggle?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
 
-    expect(parent.querySelector('.garden-page__herbs-count')?.textContent).toBe(
-      '4/4',
-    );
+    expect(parent.querySelector('.garden-page__herbs-count')?.textContent).toBe('7/7');
     expect(toggle?.textContent).toBe('collapse');
     expect(toggle?.getAttribute('aria-expanded')).toBe('true');
-    expect(visibleRows()).toHaveLength(4);
+    expect(visibleRows()).toHaveLength(7);
 
     toggle?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
 
-    expect(parent.querySelector('.garden-page__herbs-count')?.textContent).toBe(
-      '3/4',
-    );
+    expect(parent.querySelector('.garden-page__herbs-count')?.textContent).toBe('6/7');
     expect(toggle?.textContent).toBe('expand');
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
-    expect(visibleRows()).toHaveLength(3);
+    expect(visibleRows()).toHaveLength(6);
   });
 
   it('keeps the expanded herb box inside the page scroll viewport', () => {
@@ -153,7 +171,7 @@ describe('GardenHerbInventoryManager', () => {
       toJSON: () => {},
     });
     const manager = new GardenHerbInventoryManager({
-      gameplayFacade: createGameplayFacadeFake(createFourHerbSnapshot()),
+      gameplayFacade: createGameplayFacadeFake(createSevenHerbSnapshot()),
     });
 
     manager.mount(parent);
@@ -181,6 +199,9 @@ describe('GardenHerbInventoryManager', () => {
 
   it('keeps inventory hidden rows authoritative after grid row styling', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rowsRule = baseCss.match(
+      /\.garden-page__inventory-rows,\n\.garden-page__herb-rows,\n\.garden-page__seed-inventory-rows\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const gridRuleIndex = baseCss.indexOf(
       '.garden-page__inventory-row,\n.garden-page__herb-row,\n.garden-page__seed-inventory-row',
     );
@@ -189,6 +210,11 @@ describe('GardenHerbInventoryManager', () => {
     );
     const hiddenRule = baseCss.slice(hiddenRuleIndex, baseCss.indexOf('}', hiddenRuleIndex));
 
+    expect(rowsRule).toContain('display: grid;');
+    expect(rowsRule).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
+    expect(rowsRule).toContain(
+      'min-height: calc(var(--style-row-min-height) * 3);',
+    );
     expect(gridRuleIndex).toBeGreaterThan(-1);
     expect(hiddenRuleIndex).toBeGreaterThan(gridRuleIndex);
     expect(hiddenRule).toContain('display: none;');

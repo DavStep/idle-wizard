@@ -52,12 +52,15 @@ function createSnapshot() {
 }
 
 describe('BrewingRecipeBookManager', () => {
-  it('keeps the cauldron dialog at a fixed height while recipe rows scroll', () => {
+  it('keeps the recipe book as a fixed two-page spread', () => {
     const dialogRule = baseCss.match(
       /\.style-dialog\.brewing-page__recipes-dialog\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const listRule = baseCss.match(
-      /\.brewing-page__recipe-list\s*\{(?<body>[^}]*)\}/,
+    const bookRule = baseCss.match(
+      /\.brewing-page__recipe-book\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const pageRule = baseCss.match(
+      /\n\.brewing-page__recipe-page\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(dialogRule).toBeDefined();
@@ -67,11 +70,14 @@ describe('BrewingRecipeBookManager', () => {
       /\bheight:\s*var\(--brewing-page-cauldron-dialog-content-height\);/,
     );
 
-    expect(listRule).toBeDefined();
-    expect(listRule).toMatch(/\bflex:\s*1 1 auto;/);
-    expect(listRule).toMatch(/\bmin-height:\s*0;/);
-    expect(listRule).toMatch(/\bmax-height:\s*none;/);
-    expect(listRule).toMatch(/\boverflow:\s*hidden auto;/);
+    expect(bookRule).toBeDefined();
+    expect(bookRule).toMatch(/\bdisplay:\s*grid;/);
+    expect(bookRule).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);');
+    expect(bookRule).toMatch(/\bflex:\s*1 1 auto;/);
+    expect(bookRule).toMatch(/\bmin-height:\s*0;/);
+
+    expect(pageRule).toBeDefined();
+    expect(pageRule).toMatch(/\boverflow:\s*hidden auto;/);
   });
 
   it('keeps the cauldron dialog brew action inside the popup panel', () => {
@@ -144,15 +150,19 @@ describe('BrewingRecipeBookManager', () => {
     manager.mount(parent);
     manager.show();
 
-    expect(parent.querySelector('.style-box__title')?.textContent).toBe('cauldron 2');
+    expect(parent.querySelector('.style-box__title')?.textContent).toBe(
+      'recipes: cauldron 2',
+    );
     expect(parent.querySelector('.brewing-page__recipes-dialog')?.getAttribute('aria-label')).toBe(
-      'cauldron 2',
+      'recipes: cauldron 2',
     );
 
     cauldronIndex = 2;
     manager.render(createSnapshot());
 
-    expect(parent.querySelector('.style-box__title')?.textContent).toBe('cauldron 3');
+    expect(parent.querySelector('.style-box__title')?.textContent).toBe(
+      'recipes: cauldron 3',
+    );
 
     manager.unmount();
     parent.remove();
@@ -188,15 +198,15 @@ describe('BrewingRecipeBookManager', () => {
     parent.remove();
   });
 
-  it('reserves recipe select space so checkbox text does not shift the row', () => {
-    const mainRule = baseCss.match(
-      /\.brewing-page__recipe-main\s*\{(?<body>[^}]*)\}/,
+  it('reserves recipe select space so checkbox text does not shift the entry', () => {
+    const headerRule = baseCss.match(
+      /\.brewing-page__recipe-header\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const selectRule = baseCss.match(
       /\.brewing-page__recipe-select-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(mainRule).toContain('grid-template-columns: 24px minmax(0, 1fr) 18px;');
+    expect(headerRule).toContain('grid-template-columns: 24px minmax(0, 1fr);');
     expect(selectRule).toContain('width: 24px;');
     expect(selectRule).toContain('min-width: 24px;');
     expect(selectRule).toContain('white-space: nowrap;');
@@ -350,10 +360,6 @@ describe('BrewingRecipeBookManager', () => {
 
     manager.mount(parent);
 
-    parent
-      .querySelector('.brewing-page__recipe-eye-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
     const ingredients = [...parent.querySelectorAll('.brewing-page__recipe-ingredient-row')].map(
       (row) => ({
         required: row.querySelector('.brewing-page__recipe-ingredient-required')?.textContent,
@@ -382,6 +388,145 @@ describe('BrewingRecipeBookManager', () => {
         .querySelector('.brewing-page__recipe-ingredient-row')
         ?.querySelector('.brewing-page__recipe-ingredient-owned')?.textContent,
     ).toBe('owned 8');
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('shows two recipes on each book page and turns to the next spread', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            kind: 'herb',
+            quantity: 4,
+          },
+          {
+            itemTypeId: 1002,
+            key: 'mintHerb',
+            label: 'mint',
+            kind: 'herb',
+            quantity: 3,
+          },
+        ],
+        recipes: [
+          {
+            key: 'manaTonic',
+            label: 'mana tonic',
+            unlocked: true,
+            manaCost: 12,
+            brewDurationMs: 10_000,
+            ingredients: [
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 3,
+              },
+            ],
+          },
+          {
+            key: 'minorHealingPotion',
+            label: 'minor healing potion',
+            unlocked: true,
+            manaCost: 15,
+            brewDurationMs: 20_000,
+            ingredients: [
+              {
+                itemTypeId: 1002,
+                key: 'mintHerb',
+                label: 'mint',
+                quantity: 2,
+              },
+            ],
+          },
+          {
+            key: 'nettleVigor',
+            label: 'nettle vigor',
+            unlocked: true,
+            manaCost: 16,
+            brewDurationMs: 25_000,
+            ingredients: [
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 1,
+              },
+            ],
+          },
+          {
+            key: 'calmingDraught',
+            label: 'calming draught',
+            unlocked: true,
+            manaCost: 18,
+            brewDurationMs: 30_000,
+            ingredients: [
+              {
+                itemTypeId: 1002,
+                key: 'mintHerb',
+                label: 'mint',
+                quantity: 1,
+              },
+            ],
+          },
+          {
+            key: 'briarWard',
+            label: 'briar ward',
+            unlocked: true,
+            manaCost: 24,
+            brewDurationMs: 60_000,
+            ingredients: [
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 1,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => null,
+      onSelectRecipe: () => {},
+    });
+
+    manager.mount(parent);
+
+    expect(
+      [...parent.querySelectorAll('.brewing-page__recipe-page')].map((page) =>
+        [...page.querySelectorAll('.brewing-page__recipe-row')].map((row) =>
+          row.querySelector('.brewing-page__recipe-name')?.textContent,
+        ),
+      ),
+    ).toEqual([
+      ['mana tonic', 'minor healing potion'],
+      ['nettle vigor', 'calming draught'],
+    ]);
+    expect(parent.querySelector('.brewing-page__recipe-page-label')?.textContent).toBe(
+      'pages 1-2/3',
+    );
+
+    parent
+      .querySelector('.brewing-page__recipe-page-button:last-child')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(
+      [...parent.querySelectorAll('.brewing-page__recipe-row')].map((row) =>
+        row.querySelector('.brewing-page__recipe-name')?.textContent,
+      ),
+    ).toEqual(['briar ward']);
+    expect(parent.querySelector('.brewing-page__recipe-page-label')?.textContent).toBe(
+      'page 3/3',
+    );
 
     manager.unmount();
     parent.remove();
@@ -467,12 +612,8 @@ describe('BrewingRecipeBookManager', () => {
       { text: 'x3', pressed: 'true' },
     ]);
 
-    parent
-      .querySelector('.brewing-page__recipe-eye-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
     expect(parent.querySelector('.brewing-page__recipe-cost')?.textContent).toBe(
-      'cost 36 mana',
+      '36 mana required',
     );
     expect(
       [...parent.querySelectorAll('.brewing-page__recipe-ingredient-row')].map((row) => ({
@@ -490,7 +631,7 @@ describe('BrewingRecipeBookManager', () => {
 
     expect(onSelectBrewQuantity).toHaveBeenCalledWith(1, 0);
     expect(parent.querySelector('.brewing-page__recipe-cost')?.textContent).toBe(
-      'cost 12 mana',
+      '12 mana required',
     );
 
     manager.unmount();

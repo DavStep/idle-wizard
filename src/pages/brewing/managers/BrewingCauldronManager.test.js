@@ -348,10 +348,10 @@ describe('BrewingCauldronManager', () => {
       world.style.getPropertyValue('--brewing-page-world-pan-y'),
     );
 
-    expect(rubberPanX).toBeLessThan(-392);
-    expect(rubberPanX).toBeGreaterThan(-446);
-    expect(rubberPanY).toBeLessThan(-552);
-    expect(rubberPanY).toBeGreaterThan(-606);
+    expect(rubberPanX).toBeLessThan(-562);
+    expect(rubberPanX).toBeGreaterThan(-616);
+    expect(rubberPanY).toBeLessThan(-612);
+    expect(rubberPanY).toBeGreaterThan(-666);
 
     shell.dispatchEvent(
       new window.MouseEvent('pointerup', {
@@ -361,8 +361,8 @@ describe('BrewingCauldronManager', () => {
       }),
     );
 
-    expect(world.style.getPropertyValue('--brewing-page-world-pan-x')).toBe('-392px');
-    expect(world.style.getPropertyValue('--brewing-page-world-pan-y')).toBe('-552px');
+    expect(world.style.getPropertyValue('--brewing-page-world-pan-x')).toBe('-562px');
+    expect(world.style.getPropertyValue('--brewing-page-world-pan-y')).toBe('-612px');
     expect(world.style.getPropertyValue('--brewing-page-world-zoom')).toBe('1');
     expect(world.classList.contains('is-settling')).toBe(true);
 
@@ -406,12 +406,12 @@ describe('BrewingCauldronManager', () => {
       world.style.getPropertyValue('--brewing-page-world-zoom'),
     );
 
-    expect(rubberZoom).toBeLessThan(0.68);
-    expect(rubberZoom).toBeGreaterThan(0.56);
+    expect(rubberZoom).toBeLessThan(0.56);
+    expect(rubberZoom).toBeGreaterThan(0.44);
 
     manager.settleWorldViewport();
 
-    expect(world.style.getPropertyValue('--brewing-page-world-zoom')).toBe('0.68');
+    expect(world.style.getPropertyValue('--brewing-page-world-zoom')).toBe('0.56');
     expect(world.classList.contains('is-settling')).toBe(true);
 
     manager.unmount();
@@ -460,7 +460,7 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
-  it('keeps the world shell edge-to-edge while the fixed herb box overlays the top world area', () => {
+  it('keeps the world shell edge-to-edge while the hidden herb box opens above bottom controls', () => {
     const worldViewRule = baseCss.match(
       /\.brewing-page__world-view\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -491,8 +491,11 @@ describe('BrewingCauldronManager', () => {
     expect(boundaryRule).toContain('display: none;');
     expect(boundaryRule).toContain('border: 0;');
     expect(herbsRule).toContain('position: absolute;');
-    expect(herbsRule).toContain('top: var(--style-room-content-edge);');
+    expect(herbsRule).toContain('top: auto;');
     expect(herbsRule).toContain('right: var(--style-room-chrome-edge);');
+    expect(herbsRule).toContain('bottom: calc(');
+    expect(herbsRule).toContain('80.25px + var(--brewing-page-guide-controls-gap)');
+    expect(herbsRule).toContain('var(--room-inventory-panel-y-offset)');
     expect(herbsRule).toContain('left: var(--style-room-chrome-edge);');
     expect(herbsRule).toContain('width: auto;');
     expect(herbsRule).toContain('max-width: none;');
@@ -525,14 +528,9 @@ describe('BrewingCauldronManager', () => {
     )?.groups?.body;
 
     expect(activeBubbleRule).toContain('display: none;');
-    expect(previewRule).toContain('position: absolute;');
-    expect(previewRule).toContain('width: 78px;');
-    expect(emptyItemsRule).toContain('display: flex;');
-    expect(emptyItemsRule).toContain('position: absolute;');
-    expect(emptyItemsRule).toContain('inset: 0;');
-    expect(emptyItemsRule).toContain('align-items: center;');
-    expect(emptyItemsRule).toContain('justify-content: center;');
-    expect(emptyItemsRule).toContain('width: auto;');
+    expect(previewRule).toContain('position: static;');
+    expect(previewRule).toContain('width: 100%;');
+    expect(emptyItemsRule).toContain('text-align: left;');
     expect(emptyItemsRule).toContain('pointer-events: none;');
     expect(previewLabelHiddenRule).toContain('display: none;');
     expect(activeTextRule).toContain('white-space: nowrap;');
@@ -568,16 +566,16 @@ describe('BrewingCauldronManager', () => {
 
     const cauldron = parent.querySelector('.brewing-page__cauldron');
 
-    expect(worldRule).toContain('width: 592px;');
-    expect(worldRule).toContain('height: 752px;');
+    expect(worldRule).toContain('width: 762px;');
+    expect(worldRule).toContain('height: 812px;');
     expect(cauldron?.style.left).toBe('122px');
-    expect(cauldron?.style.top).toBe('164px');
+    expect(cauldron?.style.top).toBe('112px');
 
     manager.unmount();
     parent.remove();
   });
 
-  it('places cauldrons in a compact two-column stack', () => {
+  it('places cauldrons in a spaced two-column stack', () => {
     const manager = new BrewingCauldronManager();
 
     expect(
@@ -585,12 +583,12 @@ describe('BrewingCauldronManager', () => {
         manager.getCauldronWorldPosition(cauldronIndex),
       ),
     ).toEqual([
-      { x: 122, y: 164 },
-      { x: 342, y: 164 },
-      { x: 122, y: 306 },
-      { x: 342, y: 306 },
+      { x: 122, y: 112 },
+      { x: 432, y: 112 },
+      { x: 122, y: 280 },
+      { x: 432, y: 280 },
       { x: 122, y: 448 },
-      { x: 342, y: 448 },
+      { x: 432, y: 448 },
     ]);
   });
 
@@ -644,7 +642,7 @@ describe('BrewingCauldronManager', () => {
     const first = manager.getCauldronWorldPosition(0);
     const second = manager.getCauldronWorldPosition(1);
     const firstLeft = manager.worldPan.x + first.x * manager.worldZoom;
-    const secondRight = manager.worldPan.x + (second.x + 154) * manager.worldZoom;
+    const secondRight = manager.worldPan.x + (second.x + 266) * manager.worldZoom;
 
     expect(firstLeft).toBeGreaterThanOrEqual(15.9);
     expect(secondRight).toBeLessThanOrEqual(344.1);
@@ -699,11 +697,18 @@ describe('BrewingCauldronManager', () => {
     const locked = parent.querySelectorAll('.brewing-page__cauldron')[1];
     const action = locked.querySelector('.brewing-page__action-button');
     const count = locked.querySelector('.brewing-page__cauldron-count');
+    const lockedBox = locked.querySelector('.brewing-page__cauldron-locked-box');
     const lockedRule = baseCss.match(
-      /\.brewing-page__cauldron\.is-locked\s*\{(?<body>[^}]*)\}/,
+      /\.brewing-page__cauldron\.is-locked\s+\.brewing-page__cauldron-locked-box\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const lockedPreviewRule = baseCss.match(
-      /\.brewing-page__cauldron\.is-locked\s+\.brewing-page__cauldron-preview\s*\{(?<body>[^}]*)\}/,
+    const hiddenSubBoxRule = baseCss.match(
+      /\.brewing-page__cauldron-recipe-box\[hidden\],\s*\.brewing-page__cauldron-potion-box\[hidden\]\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const lockedActionsRule = baseCss.match(
+      /\.brewing-page__cauldron\.is-locked\s+\.brewing-page__actions\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const lockedActionButtonRule = baseCss.match(
+      /\.brewing-page__cauldron\.is-locked\s+\.brewing-page__action-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const hiddenCountRule = baseCss.match(
       /\.brewing-page__cauldron-count\[hidden\]\s*\{(?<body>[^}]*)\}/,
@@ -714,9 +719,16 @@ describe('BrewingCauldronManager', () => {
     expect(locked.getAttribute('aria-disabled')).toBe('true');
     expect(lockedRule).toContain('border-style: dashed;');
     expect(lockedRule).toContain('color-mix(in srgb, var(--style-stroke) 45%, transparent)');
-    expect(lockedPreviewRule).toContain('inset: 0;');
-    expect(lockedPreviewRule).toContain('justify-content: center;');
+    expect(lockedRule).toContain('background: transparent;');
+    expect(hiddenSubBoxRule).toContain('display: none;');
+    expect(lockedActionsRule).toContain('height: var(--brewing-page-cauldron-height);');
+    expect(lockedActionsRule).toContain('pointer-events: none;');
+    expect(lockedActionButtonRule).toContain('background: transparent;');
+    expect(lockedActionButtonRule).toContain('border: 0;');
     expect(hiddenCountRule).toContain('display: none;');
+    expect(lockedBox?.hidden).toBe(false);
+    expect(locked.querySelector('.brewing-page__cauldron-recipe-box')?.hidden).toBe(true);
+    expect(locked.querySelector('.brewing-page__cauldron-potion-box')?.hidden).toBe(true);
     expect(count?.hidden).toBe(true);
     expect(locked.querySelector('.brewing-page__cauldron-bubble')?.hidden).toBe(true);
     expect(locked.querySelector('.brewing-page__cauldron-items')?.hidden).toBe(true);
@@ -804,10 +816,46 @@ describe('BrewingCauldronManager', () => {
         clientY: 40,
       }),
     );
+
+    const ghost = document.querySelector('.brewing-page__item-drag-ghost');
+    const ghostIcon = ghost?.querySelector('.brewing-page__item-drag-ghost-icon');
+
+    expect(ghost?.classList.contains('brewing-page__herb-drag-ghost')).toBe(true);
+    expect(ghost?.dataset.itemKind).toBe('herb');
+    expect(ghost?.dataset.itemKey).toBe('sageHerb');
+    expect(ghost?.style.left).toBe('40px');
+    expect(ghost?.style.top).toBe('40px');
+    expect(ghost?.style.getPropertyValue('--brewing-page-item-drag-sway-x')).toBe(
+      '-12px',
+    );
+    expect(ghost?.style.getPropertyValue('--brewing-page-item-drag-sway-y')).toBe(
+      '-6px',
+    );
+    expect(
+      ghost?.style.getPropertyValue('--brewing-page-item-drag-sway-rotation'),
+    ).toBe('-7.2deg');
+    expect(ghostIcon?.dataset.assetAtlasFrame).toBe('herb:sageHerb');
+
+    herbButton.dispatchEvent(
+      new window.MouseEvent('pointermove', {
+        bubbles: true,
+        clientX: 20,
+        clientY: 40,
+      }),
+    );
+
+    expect(ghost?.style.left).toBe('20px');
+    expect(ghost?.style.getPropertyValue('--brewing-page-item-drag-sway-x')).toBe(
+      '9px',
+    );
+    expect(
+      ghost?.style.getPropertyValue('--brewing-page-item-drag-sway-rotation'),
+    ).toBe('4.8deg');
+
     herbButton.dispatchEvent(
       new window.MouseEvent('pointerup', {
         bubbles: true,
-        clientX: 40,
+        clientX: 20,
         clientY: 40,
       }),
     );
@@ -818,6 +866,36 @@ describe('BrewingCauldronManager', () => {
     document.elementFromPoint = originalElementFromPoint;
     manager.unmount();
     parent.remove();
+  });
+
+  it('uses lifted item icons for seed, herb, and potion drag ghosts', () => {
+    const dragRule = baseCss.match(
+      /\.brewing-page__item-drag-ghost,\s*\.brewing-page__herb-drag-ghost\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const iconRule = baseCss.match(
+      /\.brewing-page__item-drag-ghost-icon\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const manager = new BrewingCauldronManager();
+
+    expect(dragRule).toContain('width: 72px;');
+    expect(dragRule).toContain('height: 72px;');
+    expect(dragRule).toContain('padding: 0;');
+    expect(dragRule).not.toContain('background:');
+    expect(dragRule).not.toContain('border:');
+    expect(dragRule).toContain('transform: translate(-50%, calc(-100% - 24px));');
+    expect(iconRule).toContain('width: 72px;');
+    expect(iconRule).toContain('height: 72px;');
+    expect(iconRule).toContain('var(--brewing-page-item-drag-sway-x, 0px)');
+    expect(iconRule).toContain('transition: transform 80ms var(--style-motion-ease-soft);');
+    expect(manager.getItemDragFrameName({ itemKind: 'seed', itemKey: 'sageSeed' })).toBe(
+      'seed:regular',
+    );
+    expect(manager.getItemDragFrameName({ itemKind: 'herb', itemKey: 'sageHerb' })).toBe(
+      'herb:sageHerb',
+    );
+    expect(manager.getItemDragFrameName({ itemKind: 'potion', itemKey: 'manaTonic' })).toBe(
+      'potion:manaTonic',
+    );
   });
 
   it('keeps herb click add as a fallback when not dragging', () => {
@@ -871,6 +949,152 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
+  it('clears the selected recipe before manually adding an outside herb', () => {
+    const addBrewingIngredient = vi.fn(() => ({ ok: true }));
+    const onClearSelectedRecipe = vi.fn();
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            kind: 'herb',
+            quantity: 3,
+            availableQuantity: 3,
+          },
+          {
+            itemTypeId: 1003,
+            key: 'nettleHerb',
+            label: 'nettle',
+            kind: 'herb',
+            quantity: 2,
+            availableQuantity: 2,
+          },
+        ],
+        ingredients: [],
+        recipes: [
+          {
+            key: 'manaTonic',
+            label: 'mana tonic',
+            unlocked: true,
+            ingredients: [
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 3,
+              },
+            ],
+          },
+        ],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: {
+        ...createGameplayFacadeFake(snapshot),
+        addBrewingIngredient,
+      },
+      getSelectedRecipeKey: () => 'manaTonic',
+      onClearSelectedRecipe,
+    });
+
+    manager.mount(parent);
+
+    const nettleButton = [...parent.querySelectorAll('.brewing-page__herb-button')].find(
+      (button) => button.textContent.includes('nettle'),
+    );
+
+    expect(nettleButton?.disabled).toBe(false);
+
+    nettleButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onClearSelectedRecipe).toHaveBeenCalledWith(0);
+    expect(addBrewingIngredient).toHaveBeenCalledWith(1003, 0);
+    expect(parent.querySelector('.brewing-page__message')?.textContent).toBe('');
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('clears the selected recipe before manually adding an extra fulfilled herb', () => {
+    const addBrewingIngredient = vi.fn(() => ({ ok: true }));
+    const onClearSelectedRecipe = vi.fn();
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            kind: 'herb',
+            quantity: 4,
+            availableQuantity: 1,
+          },
+        ],
+        ingredients: [
+          { slotIndex: 0, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+          { slotIndex: 1, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+          { slotIndex: 2, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+        ],
+        recipes: [
+          {
+            key: 'manaTonic',
+            label: 'mana tonic',
+            unlocked: true,
+            ingredients: [
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 3,
+              },
+            ],
+          },
+        ],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: {
+        ...createGameplayFacadeFake(snapshot),
+        addBrewingIngredient,
+      },
+      getSelectedRecipeKey: () => 'manaTonic',
+      onClearSelectedRecipe,
+    });
+
+    manager.mount(parent);
+
+    const sageButton = parent.querySelector('.brewing-page__herb-button');
+
+    expect(sageButton?.disabled).toBe(false);
+
+    sageButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onClearSelectedRecipe).toHaveBeenCalledWith(0);
+    expect(addBrewingIngredient).toHaveBeenCalledWith(1001, 0);
+    expect(parent.querySelector('.brewing-page__message')?.textContent).toBe('');
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('shows three two-herb rows while collapsed and expands all herbs over the world', () => {
     const snapshot = {
       brewing: {
@@ -902,6 +1126,10 @@ describe('BrewingCauldronManager', () => {
     const herbs = parent.querySelector('.brewing-page__herbs');
 
     expect(parent.querySelector('.brewing-page__herbs-count')).toBeNull();
+    expect(herbs?.hidden).toBe(true);
+    manager.setHerbsVisible(true);
+
+    expect(herbs?.hidden).toBe(false);
     expect(visibleRows()).toHaveLength(6);
     expect(toggle?.textContent).toBe('expand');
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
@@ -1018,7 +1246,7 @@ describe('BrewingCauldronManager', () => {
     const label = row?.querySelector('.brewing-page__ingredient-label');
     const icon = label?.childNodes[0];
 
-    expect(row?.textContent).toBe('3 sageremove');
+    expect(row?.textContent).toBe('3 sage');
     expect(count?.textContent).toBe('3 ');
     expect(count?.dataset.resourceColor).toBe('herb');
     expect(label?.textContent).toBe('sage');
@@ -1176,13 +1404,13 @@ describe('BrewingCauldronManager', () => {
     const removeTarget = parent.querySelector('[data-tutorial-id="brewing:remove:sageHerb"]');
 
     expect(removeTarget?.classList.contains('brewing-page__ingredient-row')).toBe(true);
-    expect(removeTarget?.textContent).toBe('4 sageremove');
+    expect(removeTarget?.textContent).toBe('4 sage');
 
     manager.unmount();
     parent.remove();
   });
 
-  it('marks selected-recipe extra sage guide rows as tutorial targets', () => {
+  it('marks overfilled selected-recipe sage rows as tutorial targets', () => {
     const snapshot = {
       brewing: {
         herbs: [
@@ -1241,7 +1469,8 @@ describe('BrewingCauldronManager', () => {
     expect(removeTargets[0].classList.contains('brewing-page__cauldron-guide-step')).toBe(
       true,
     );
-    expect(removeTargets[0].textContent).toBe('- 1 sageremove');
+    expect(removeTargets[0].textContent).toBe('sage4/3');
+    expect(removeTargets[0].classList.contains('is-fulfilled')).toBe(true);
 
     manager.unmount();
     parent.remove();
@@ -1348,7 +1577,7 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
-  it('renders the selected recipe potion icon inside the cauldron', () => {
+  it('shows the selected recipe potion preview in an empty cauldron', () => {
     const snapshot = {
       brewing: {
         herbs: [],
@@ -1388,11 +1617,16 @@ describe('BrewingCauldronManager', () => {
     const cauldron = parent.querySelector('.brewing-page__cauldron');
     const icon = parent.querySelector('.brewing-page__cauldron-potion-icon');
     const image = parent.querySelector('.brewing-page__cauldron-potion-icon-image');
+    const label = parent.querySelector('.brewing-page__cauldron-preview-label');
+    const status = parent.querySelector('.brewing-page__cauldron-status');
 
     expect(cauldron?.classList.contains('has-potion-icon')).toBe(true);
     expect(icon?.hidden).toBe(false);
     expect(icon?.dataset.potionIconKey).toBe('manaTonic');
     expect(image?.dataset.assetAtlasFrame).toBe('potion:manaTonic');
+    expect(label?.hidden).toBe(false);
+    expect(label?.textContent).toBe('mana tonic');
+    expect(status?.textContent).toBe('will brew mana tonic');
 
     manager.unmount();
     parent.remove();
@@ -1485,21 +1719,24 @@ describe('BrewingCauldronManager', () => {
 
     const guide = parent.querySelector('.brewing-page__cauldron-guide');
     const items = parent.querySelector('.brewing-page__cauldron-items');
+    const status = parent.querySelector('.brewing-page__cauldron-status');
 
     expect(parent.querySelector('.brewing-page__cauldron-recipe-title')).toBeNull();
     expect(
       parent.querySelector('.brewing-page__cauldron .style-box__title')?.textContent,
     ).toBe('cauldron 1');
     expect(guide?.querySelector('.brewing-page__cauldron-recipe-row')).toBeNull();
+    expect(guide?.hidden).toBe(false);
     expect(guide?.textContent).not.toContain('recipe');
-    expect(guide?.textContent).toContain('- 3 sage');
+    expect(guide?.textContent).toBe('sage0/3');
+    expect(status?.textContent).toBe('will brew mana tonic');
     expect(items?.hidden).toBe(true);
 
     manager.unmount();
     parent.remove();
   });
 
-  it('shows exact xN recipe requirements in the cauldron guide', () => {
+  it('shows selected recipe requirements as stable stash and required rows in the cauldron guide', () => {
     const snapshot = {
       brewing: {
         herbs: [
@@ -1561,11 +1798,116 @@ describe('BrewingCauldronManager', () => {
 
     manager.mount(parent);
 
-    const labels = [...parent.querySelectorAll('.brewing-page__cauldron-guide-step .row_key')].map(
-      (row) => row.textContent,
-    );
+    const guide = parent.querySelector('.brewing-page__cauldron-guide');
+    const items = parent.querySelector('.brewing-page__cauldron-items');
+    const rows = [...parent.querySelectorAll('.brewing-page__cauldron-guide-step')];
 
-    expect(labels).toEqual(['- 3 x 3 sage', '- 3 x 1 nettle']);
+    expect(guide?.hidden).toBe(false);
+    expect(items?.hidden).toBe(true);
+    expect(rows.map((row) => row.textContent)).toEqual([
+      'sage9/9',
+      'nettle3/3',
+    ]);
+    expect(rows.map((row) => row.classList.contains('is-fulfilled'))).toEqual([
+      true,
+      true,
+    ]);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('shows selected recipe requirements as stash and required amounts', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            kind: 'herb',
+            quantity: 4,
+            availableQuantity: 1,
+          },
+          {
+            itemTypeId: 1003,
+            key: 'nettleHerb',
+            label: 'nettle',
+            kind: 'herb',
+            quantity: 2,
+            availableQuantity: 1,
+          },
+        ],
+        ingredients: [
+          { slotIndex: 0, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+          { slotIndex: 1, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+          { slotIndex: 2, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+          { slotIndex: 3, itemTypeId: 1003, key: 'nettleHerb', label: 'nettle', kind: 'herb' },
+        ],
+        recipes: [
+          {
+            key: 'sageNettle',
+            label: 'sage nettle',
+            unlocked: true,
+            ingredients: [
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                quantity: 3,
+              },
+              {
+                itemTypeId: 1003,
+                key: 'nettleHerb',
+                label: 'nettle',
+                quantity: 2,
+              },
+            ],
+          },
+        ],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => 'sageNettle',
+    });
+
+    manager.mount(parent);
+
+    const rows = [...parent.querySelectorAll('.brewing-page__cauldron-guide-step')];
+
+    expect(
+      rows.map((row) => ({
+        count: row.querySelector('.brewing-page__ingredient-count')?.textContent,
+        label: row.querySelector('.brewing-page__ingredient-label')?.textContent,
+        value: row.querySelector('.row_val')?.textContent,
+        fulfilled: row.classList.contains('is-fulfilled'),
+        removeTarget: row.dataset.tutorialId,
+      })),
+    ).toEqual([
+      {
+        count: '',
+        label: 'sage',
+        value: '4/3',
+        fulfilled: true,
+        removeTarget: 'brewing:remove:sageHerb',
+      },
+      {
+        count: '',
+        label: 'nettle',
+        value: '2/2',
+        fulfilled: true,
+        removeTarget: 'brewing:remove:nettleHerb',
+      },
+    ]);
 
     manager.unmount();
     parent.remove();
@@ -1604,11 +1946,21 @@ describe('BrewingCauldronManager', () => {
     manager.mount(parent);
 
     expect(parent.querySelector('.brewing-page__action-button-label')?.textContent.trim()).toBe(
-      'brew x3',
+      'brew',
     );
     expect(parent.querySelector('.brewing-page__action-button-cost')?.textContent).toBe(
-      '(36 mana)',
+      '36 mana',
     );
+    expect(
+      [...parent.querySelectorAll('.brewing-page__quantity-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['x1', 'x2', 'x3']);
+    expect(
+      parent
+        .querySelector('.brewing-page__quantity-button[data-brew-quantity="3"]')
+        ?.classList.contains('is-selected'),
+    ).toBe(true);
     expect(parent.querySelector('.brewing-page__action-button')?.getAttribute('aria-label')).toBe(
       'brew 3 mana tonic, costs 36 mana',
     );
@@ -1675,7 +2027,7 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
-  it('shows only the potion icon on the right with the brew action beneath it', () => {
+  it('shows the potion result label and icon with the brew action beneath it', () => {
     const snapshot = {
       brewing: {
         herbs: [],
@@ -1705,13 +2057,14 @@ describe('BrewingCauldronManager', () => {
     const icon = parent.querySelector('.brewing-page__cauldron-potion-icon');
     const action = parent.querySelector('.brewing-page__action-button');
 
-    expect(label?.hidden).toBe(true);
-    expect(label?.textContent).toBe('');
-    expect(label?.dataset.resourceColor).toBeUndefined();
+    expect(label?.hidden).toBe(false);
+    expect(label?.textContent).toBe('wasted potion');
+    expect(label?.dataset.resourceColor).toBe('potion');
     expect(icon?.hidden).toBe(false);
     expect(icon?.dataset.potionIconKey).toBe('wastedPotion');
-    expect(action?.closest('.brewing-page__cauldron-preview')).toBe(preview);
-    expect(action?.textContent).toBe('brew (5 mana)');
+    expect(action?.closest('.brewing-page__cauldron-preview')).toBeNull();
+    expect(action?.closest('.brewing-page__cauldron')).toBe(preview?.closest('.brewing-page__cauldron'));
+    expect(action?.textContent).toBe('brew 5 mana');
 
     snapshot.brewing.match = {
       label: 'unknown potion',
@@ -1721,9 +2074,9 @@ describe('BrewingCauldronManager', () => {
     snapshot.brewing.manaCost = 5;
     manager.render(snapshot);
 
-    expect(label?.hidden).toBe(true);
-    expect(label?.textContent).toBe('');
-    expect(label?.classList.contains('is-unknown')).toBe(false);
+    expect(label?.hidden).toBe(false);
+    expect(label?.textContent).toBe('unknown potion');
+    expect(label?.classList.contains('is-unknown')).toBe(true);
     expect(icon?.dataset.potionIconKey).toBe('unknownPotion');
     expect(action?.getAttribute('aria-label')).toBe('brew unknown potion, costs 5 mana');
 
@@ -1736,11 +2089,11 @@ describe('BrewingCauldronManager', () => {
     snapshot.brewing.manaCost = 12;
     manager.render(snapshot);
 
-    expect(label?.hidden).toBe(true);
-    expect(label?.textContent).toBe('');
+    expect(label?.hidden).toBe(false);
+    expect(label?.textContent).toBe('mana tonic');
     expect(label?.dataset.itemIconKey).toBeUndefined();
     expect(icon?.dataset.potionIconKey).toBe('manaTonic');
-    expect(action?.textContent).toBe('brew (12 mana)');
+    expect(action?.textContent).toBe('brew 12 mana');
 
     manager.unmount();
     parent.remove();
@@ -1834,7 +2187,7 @@ describe('BrewingCauldronManager', () => {
       recipeParent
         .querySelector('.brewing-page__cauldron')
         ?.style.getPropertyValue('--brewing-page-cauldron-row-count'),
-    ).toBe('4');
+    ).toBe('5');
     expect(
       recipeParent
         .querySelector('.brewing-page__cauldron')
@@ -1882,7 +2235,7 @@ describe('BrewingCauldronManager', () => {
 
     const statusCauldron = statusParent.querySelector('.brewing-page__cauldron');
     expect(statusCauldron?.style.getPropertyValue('--brewing-page-cauldron-row-count')).toBe(
-      '3',
+      '4',
     );
     expect(
       statusCauldron?.style.getPropertyValue('--brewing-page-cauldron-list-row-count'),

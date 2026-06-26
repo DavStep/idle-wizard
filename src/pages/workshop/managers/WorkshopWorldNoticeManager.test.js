@@ -329,6 +329,8 @@ describe('WorkshopWorldNoticeManager', () => {
     );
     expect(leaderboardRowsRule).toMatch(/\bjustify-self:\s*center;/);
     expect(leaderboardRowsRule).toMatch(/\bwidth:\s*260px;/);
+    expect(leaderboardRowsRule).toMatch(/\bmax-height:\s*none;/);
+    expect(leaderboardRowsRule).toMatch(/\boverflow:\s*visible;/);
     expect(rewardsRules.some((rule) => /\bborder-top:\s*0;/.test(rule))).toBe(true);
     expect(
       requestsRules.some((rule) =>
@@ -601,6 +603,52 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(
       popupParent.querySelector('.workshop-page__world-notice-frame')?.scrollTop,
     ).toBe(0);
+  });
+
+  it('keeps the leaderboard tab in the outer event scroll frame', () => {
+    const snapshot = createWorldNoticeSnapshot();
+    const gameplayFacade = createGameplayFacadeFake(snapshot);
+    const manager = new WorkshopWorldNoticeManager({ gameplayFacade });
+    const parent = document.createElement('div');
+    const popupParent = document.createElement('div');
+
+    manager.mount(parent, popupParent);
+    parent.querySelector('.workshop-page__world-notice-open').click();
+    popupParent
+      .querySelector('.workshop-page__world-notice-tab-button:nth-child(2)')
+      .click();
+
+    const frame = popupParent.querySelector('.workshop-page__world-notice-frame');
+    const rows = popupParent.querySelector(
+      '.workshop-page__world-notice-leaderboard-rows',
+    );
+
+    expect(frame.classList.contains('style-dialog-scroll')).toBe(true);
+    expect(rows.classList.contains('workshop-page__leaderboard-rows')).toBe(false);
+
+    frame.scrollTop = 118;
+
+    const nextSnapshot = JSON.parse(JSON.stringify(snapshot));
+    nextSnapshot.worldNotice.current.leaderboard.rows.push({
+      rank: 3,
+      name: 'Sable',
+      playerLevel: 4,
+      points: 95,
+    });
+    gameplayFacade.emit(nextSnapshot);
+
+    const refreshedFrame = popupParent.querySelector(
+      '.workshop-page__world-notice-frame',
+    );
+    const refreshedRows = popupParent.querySelector(
+      '.workshop-page__world-notice-leaderboard-rows',
+    );
+
+    expect(refreshedFrame).toBe(frame);
+    expect(refreshedFrame.scrollTop).toBe(118);
+    expect(refreshedRows.classList.contains('workshop-page__leaderboard-rows')).toBe(
+      false,
+    );
   });
 
   it('renders event task rows with title, instruction, point columns, and separators', () => {

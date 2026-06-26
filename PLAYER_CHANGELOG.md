@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.46
+
+- Added bottom inventory buttons in Garden and Brewing so seeds, herbs, and potions can open as inline room boxes.
+- Reworked Brewing cauldrons with clearer recipe, ingredient, potion preview, quantity, and selected-recipe controls.
+- Polished Garden plots, star labels, and wide desktop scaling so room UI, tutorial pointers, and world event scrolling stay aligned.
+
 ## 0.2.45
 
 - Fixed empty Brewing cauldrons so tapping the cauldron opens its dialog reliably on mobile.

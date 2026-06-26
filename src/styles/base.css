@@ -24,6 +24,8 @@
   --style-star-orange: oklch(43% 0.15 55);
   --style-star-red: oklch(42% 0.16 25);
   --style-star-purple: oklch(42% 0.14 305);
+  --style-star-slot-size: 12px;
+  --style-star-slot-gap: 1px;
   --style-coin-particle-size: clamp(19.2px, 5.28vw, 28.8px);
   --style-resource-seed: var(--style-text);
   --style-resource-herb: var(--style-text);
@@ -201,8 +203,11 @@
   );
   --brewing-page-box-gap: 8px;
   --garden-page-box-gap: 24px;
+  --room-inventory-panel-y-offset: 5px;
   --garden-page-plot-progress-slot-height: var(--style-scroll-progress-height);
-  --garden-page-plot-box-frame-height: 70px;
+  --garden-page-plot-visual-width: 88px;
+  --garden-page-plot-box-frame-height: 84px;
+  --garden-page-plot-number-color: #3b2416;
   --garden-page-plot-box-detail-font-size: 9px;
   --garden-page-plot-box-detail-line-height: 11px;
   --garden-page-plot-box-row-min-height: calc(
@@ -432,26 +437,50 @@
 }
 
 .style-star-level {
-  color: var(--style-text);
+  position: relative;
+  display: inline-flex;
+  gap: var(--style-star-slot-gap);
+  align-items: center;
   font-variant-numeric: tabular-nums lining-nums;
   letter-spacing: 0;
+  line-height: 1;
+  vertical-align: -1px;
   white-space: nowrap;
 }
 
-.style-star-level[data-star-tone="yellow"] {
-  color: var(--style-star-yellow);
+.style-star-level__text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
-.style-star-level[data-star-tone="orange"] {
-  color: var(--style-star-orange);
+.style-star-level__slot {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 var(--style-star-slot-size);
+  width: var(--style-star-slot-size);
+  height: var(--style-star-slot-size);
 }
 
-.style-star-level[data-star-tone="red"] {
-  color: var(--style-star-red);
+.style-star-level__image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: auto;
+  pointer-events: none;
 }
 
-.style-star-level[data-star-tone="purple"] {
-  color: var(--style-star-purple);
+.style-star-level__image--fill {
+  z-index: 1;
 }
 
 :root
@@ -465,7 +494,7 @@
     .is-unknown
   )
   .style-star-level {
-  color: inherit;
+  opacity: 0.58;
 }
 
 :root
@@ -621,19 +650,37 @@ body {
 }
 
 .game-stage {
+  --style-source-ui-width: calc(
+    (var(--design-width) * 1px) / var(--source-ui-scale)
+  );
+  --style-source-ui-screen-width: calc(
+    var(--style-source-ui-width) * var(--style-ui-scale)
+  );
+  --style-source-ui-offset-x: max(
+    0px,
+    calc((100% - var(--style-source-ui-screen-width)) / 2)
+  );
   position: relative;
-  width: min(
-    var(--app-viewport-width),
-    calc(
-      var(--app-viewport-height) * var(--design-width) / var(--design-height)
+  width: var(
+    --app-stage-width,
+    min(
+      var(--app-viewport-width),
+      calc(
+        var(--app-viewport-height) * var(--design-width) / var(--design-height)
+      )
     )
   );
-  height: min(
-    var(--app-viewport-height),
-    calc(var(--app-viewport-width) * var(--design-height) / var(--design-width))
+  height: var(
+    --app-stage-height,
+    min(
+      var(--app-viewport-height),
+      calc(
+        var(--app-viewport-width) * var(--design-height) / var(--design-width)
+      )
+    )
   );
-  max-width: calc(var(--design-width) * 1px);
-  max-height: calc(var(--design-height) * 1px);
+  max-width: var(--app-viewport-width);
+  max-height: var(--app-viewport-height);
   overflow: hidden;
   border: var(--style-border);
   background: var(--style-surface);
@@ -642,6 +689,28 @@ body {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+.game-stage[data-viewport-mode="web-wide"]
+  :where(
+    .workshop-page__ui-layer,
+    .brewing-page__ui-layer,
+    .garden-page__ui-layer,
+    .shop-page__ui-layer,
+    .research-page__ui-layer,
+    .guild-page__ui-layer,
+    .prestige-page__ui-layer,
+    .room-page__popup-layer,
+    .room-top-panel-layer,
+    .room-bottom-panel-layer,
+    .room-world-chat-layer,
+    .tutorial-layer,
+    .room-player-info-popup,
+    .room-alliance-info-popup
+  ) {
+  right: auto;
+  left: var(--style-source-ui-offset-x);
+  width: var(--style-source-ui-width);
 }
 
 .game-stage.is-control-revealing :where(button, [role="button"]) {
@@ -1467,7 +1536,9 @@ body {
     .brewing-page__workbench > .style-box,
     .brewing-page__cauldrons > .style-box,
     .brewing-page__guide,
+    .brewing-page__inventory-buttons,
     .brewing-page__potions-button,
+    .garden-page__inventory-buttons,
     .garden-page__content > .garden-page__plot-world,
     .garden-page__content > .style-box,
     .research-page__tabs,
@@ -1536,6 +1607,286 @@ body {
 .brewing-page__guide,
 .brewing-page__potions-button {
   --room-section-index: 6;
+}
+
+.room-inventory-buttons {
+  pointer-events: none;
+}
+
+.room-inventory-panel-button {
+  position: relative;
+  box-sizing: border-box;
+  width: 45.5px;
+  height: 80.25px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.room-inventory-panel-button__open {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 45.5px;
+  height: 68.25px;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.room-inventory-panel-button[data-panel-side="right"]
+  .room-inventory-panel-button__open {
+  right: 0;
+  left: auto;
+}
+
+.room-inventory-panel-button__portrait {
+  display: grid;
+  width: 45.5px;
+  height: 59.15px;
+  place-items: end center;
+  filter: drop-shadow(0 1px 0 var(--style-surface));
+  pointer-events: none;
+}
+
+.room-inventory-panel-button__icon {
+  display: block;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  object-position: center bottom;
+  image-rendering: auto;
+  pointer-events: none;
+  transform-origin: 50% 78%;
+  transition:
+    scale var(--style-motion-fast) var(--style-motion-ease-rubber),
+    translate var(--style-motion-fast) var(--style-motion-ease-rubber);
+}
+
+.room-inventory-panel-button__label {
+  position: absolute;
+  bottom: 3.9px;
+  left: 14px;
+  z-index: 2;
+  display: inline-block;
+  min-height: calc(var(--style-box-border-label-line-height) * 0.65);
+  padding: 0 calc(var(--style-box-border-label-padding-x) * 0.65);
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: calc(var(--style-box-border-label-font-size) * 0.65);
+  font-weight: normal;
+  line-height: calc(var(--style-box-border-label-line-height) * 0.65);
+  white-space: nowrap;
+  background: var(--style-surface);
+  border: var(--style-border);
+  pointer-events: none;
+  transition: translate var(--style-motion-press) var(--style-motion-ease-rubber);
+}
+
+.room-inventory-panel-button[data-panel-side="right"]
+  .room-inventory-panel-button__label {
+  right: 14px;
+  left: auto;
+}
+
+.room-inventory-panel-button__open:focus {
+  outline: none;
+}
+
+.room-inventory-panel-button__open:focus-visible {
+  outline: var(--style-border);
+  outline-offset: 1px;
+}
+
+.room-inventory-panel-button__open:focus-visible
+  .room-inventory-panel-button__label {
+  font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .room-inventory-panel-button__open:hover .room-inventory-panel-button__label {
+    font-weight: 700;
+  }
+}
+
+.room-inventory-panel-button__open:active .room-inventory-panel-button__icon {
+  scale: 0.965;
+  translate: 0 1px;
+}
+
+.room-inventory-panel-button__open:active .room-inventory-panel-button__label {
+  translate: 0 1px;
+}
+
+.room-inventory-panel-button.is-active .room-inventory-panel-button__label {
+  font-weight: 700;
+}
+
+.room-inventory-box {
+  box-sizing: border-box;
+  width: auto;
+  max-width: none;
+  padding-bottom: calc(5px + var(--style-box-border-label-line-height));
+}
+
+.room-inventory-box:not([hidden]),
+.style-box.brewing-page__herbs:not([hidden]) {
+  animation: room-inventory-box-enter var(--style-motion-expand)
+    var(--style-motion-ease-expand-rubber) both;
+  transform-origin: center bottom;
+}
+
+.game-stage[data-tutorial-reveal] .room-inventory-box:not([hidden]),
+.game-stage[data-tutorial-reveal] .style-box.brewing-page__herbs:not([hidden]) {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+.room-inventory-box__count {
+  position: absolute;
+  top: var(--style-box-border-label-offset);
+  right: var(--style-box-title-left);
+  display: inline-block;
+  padding: 0 var(--style-box-border-label-padding-x);
+  color: var(--style-text);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
+}
+
+.room-inventory-box__toggle {
+  position: absolute;
+  bottom: var(--style-box-border-label-offset);
+  left: 50%;
+  width: auto;
+  min-width: 0;
+  min-height: var(--style-box-border-label-line-height);
+  padding: 0 var(--style-box-border-label-padding-x);
+  margin: 0;
+  appearance: none;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  cursor: pointer;
+  background: var(--style-surface);
+  border: 0;
+  border-radius: 0;
+  transform: translateX(-50%);
+}
+
+.room-inventory-box__toggle[hidden],
+.room-inventory-box__row[hidden],
+.room-inventory-box__divider[hidden] {
+  display: none;
+}
+
+.room-inventory-box__toggle:focus-visible {
+  font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .room-inventory-box__toggle:hover {
+    font-weight: 700;
+  }
+}
+
+.room-inventory-box__toggle:focus {
+  outline: none;
+}
+
+.room-inventory-box__rows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+  min-height: calc(var(--style-row-min-height) * 3);
+  max-height: none;
+  overflow: visible;
+  touch-action: none;
+}
+
+.room-inventory-box__rows::-webkit-scrollbar {
+  display: none;
+}
+
+.room-inventory-box__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: baseline;
+  column-gap: var(--style-row-column-gap);
+  min-height: var(--style-row-min-height);
+  clear: both;
+}
+
+.room-inventory-box__row > .row_key,
+.room-inventory-box__row > .row_val {
+  clear: none;
+  float: none;
+}
+
+.room-inventory-box__row > .row_key {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-inventory-box__row > .row_val {
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.room-inventory-box__row.is-empty,
+.room-inventory-box__row.is-locked,
+.room-inventory-box__row.is-unknown {
+  color: var(--style-disabled);
+}
+
+.room-inventory-box__divider {
+  grid-column: 1 / -1;
+  height: 1px;
+  margin: 5px 0;
+  clear: both;
+  border-top: var(--style-separator-border);
+}
+
+.room-inventory-box__row::after {
+  display: block;
+  clear: both;
+  content: "";
+}
+
+@keyframes room-inventory-box-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(7px) scale(0.985, 0.965);
+  }
+
+  62% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.01, 1.015);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .tutorial-layer {
@@ -2975,7 +3326,7 @@ body {
 .garden-page__plot
   .garden-page__plot-row[data-notification="true"]::before {
   top: 2px;
-  right: 2px;
+  right: calc(((100% - var(--garden-page-plot-visual-width)) / 2) + 2px);
 }
 
 .brewing-page__herb-label[data-notification="true"] {
@@ -3355,24 +3706,8 @@ body {
   vertical-align: baseline;
 }
 
-.workshop-page__prestige-point-row.is-locked
-  .style-star-level[data-star-tone="yellow"] {
-  color: var(--style-star-yellow);
-}
-
-.workshop-page__prestige-point-row.is-locked
-  .style-star-level[data-star-tone="orange"] {
-  color: var(--style-star-orange);
-}
-
-.workshop-page__prestige-point-row.is-locked
-  .style-star-level[data-star-tone="red"] {
-  color: var(--style-star-red);
-}
-
-.workshop-page__prestige-point-row.is-locked
-  .style-star-level[data-star-tone="purple"] {
-  color: var(--style-star-purple);
+.workshop-page__prestige-point-row.is-locked .style-star-level {
+  opacity: 1;
 }
 
 .workshop-page__prestige-point-number {
@@ -4187,8 +4522,8 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  width: 592px;
-  height: 752px;
+  width: 762px;
+  height: 812px;
   transform-origin: 0 0;
   transform: translate3d(
     var(--brewing-page-world-pan-x, 0px),
@@ -4212,8 +4547,12 @@ body {
 
 .style-box.brewing-page__herbs {
   position: absolute;
-  top: var(--style-room-content-edge);
+  top: auto;
   right: var(--style-room-chrome-edge);
+  bottom: calc(
+    80.25px + var(--brewing-page-guide-controls-gap) +
+      var(--brewing-page-box-gap) - var(--room-inventory-panel-y-offset)
+  );
   left: var(--style-room-chrome-edge);
   z-index: 2;
   box-sizing: border-box;
@@ -4293,7 +4632,8 @@ body {
   border-radius: 0;
 }
 
-.brewing-page__ingredient-row {
+.brewing-page__ingredient-row,
+.brewing-page__cauldron-guide-step {
   display: grid;
   grid-template-columns: 2ch minmax(0, 1fr) auto;
   align-items: baseline;
@@ -4302,7 +4642,8 @@ body {
 
 .brewing-page__ingredient-count,
 .brewing-page__ingredient-label,
-.brewing-page__ingredient-row .row_val {
+.brewing-page__ingredient-row .row_val,
+.brewing-page__cauldron-guide-step .row_val {
   float: none;
   clear: none;
 }
@@ -4387,20 +4728,64 @@ body {
   font-weight: normal;
 }
 
-.style-box.brewing-page__cauldron {
-  --brewing-page-cauldron-preview-space: 92px;
+.brewing-page__cauldron {
   position: absolute;
   box-sizing: border-box;
-  width: 196px;
-  height: var(--brewing-page-cauldron-height);
-  min-height: var(--brewing-page-cauldron-height);
-  max-height: none;
-  padding-right: var(--brewing-page-cauldron-preview-space);
-  padding-bottom: 5px;
+  width: 266px;
+  min-height: calc(
+    var(--brewing-page-cauldron-height) + var(--style-row-min-height) + 8px
+  );
   cursor: pointer;
 }
 
-.brewing-page__cauldron.is-current > .style-box__title {
+.brewing-page__cauldron-boxes {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.brewing-page__cauldron-recipe-box {
+  position: relative;
+  box-sizing: border-box;
+  width: 170px;
+  height: var(--brewing-page-cauldron-height);
+  min-height: var(--brewing-page-cauldron-height);
+  max-height: none;
+  padding-bottom: 5px;
+}
+
+.brewing-page__cauldron-potion-box {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 86px;
+  height: var(--brewing-page-cauldron-height);
+  min-height: var(--brewing-page-cauldron-height);
+  margin-top: 0;
+}
+
+.brewing-page__cauldron-recipe-box[hidden],
+.brewing-page__cauldron-potion-box[hidden] {
+  display: none;
+}
+
+.brewing-page__cauldron-locked-box {
+  position: relative;
+  box-sizing: border-box;
+  width: 266px;
+  height: var(--brewing-page-cauldron-height);
+  min-height: var(--brewing-page-cauldron-height);
+}
+
+.brewing-page__cauldron-locked-box[hidden] {
+  display: none;
+}
+
+.brewing-page__cauldron.is-current
+  .brewing-page__cauldron-recipe-box
+  > .style-box__title {
   font-weight: 700;
 }
 
@@ -4428,19 +4813,23 @@ body {
   display: none;
 }
 
-.brewing-page__cauldron.is-locked {
+.brewing-page__cauldron.is-locked .brewing-page__cauldron-locked-box {
   color: var(--style-disabled);
   border-style: dashed;
   border-color: color-mix(in srgb, var(--style-stroke) 45%, transparent);
-  background: color-mix(in srgb, var(--style-surface) 55%, transparent);
+  background: transparent;
+}
+
+.brewing-page__cauldron.is-locked {
+  min-height: var(--brewing-page-cauldron-height);
 }
 
 .brewing-page__cauldron.is-buyable {
   cursor: pointer;
 }
 
-.brewing-page__cauldron.is-buyable:active {
-  background: color-mix(in srgb, var(--style-active-surface) 68%, transparent);
+.brewing-page__cauldron.is-buyable:active .brewing-page__cauldron-locked-box {
+  background: transparent;
 }
 
 .brewing-page__cauldron.is-newly-bought {
@@ -4523,49 +4912,29 @@ body {
   color: var(--style-muted);
 }
 
-.brewing-page__cauldron-guide-step.is-placed,
-.brewing-page__cauldron-guide-step.is-next,
-.brewing-page__cauldron-guide-step.is-mismatch {
+.brewing-page__cauldron-guide-step.is-fulfilled .row_val {
   color: var(--style-text);
-}
-
-.brewing-page__cauldron-guide-step:disabled.is-next,
-.brewing-page__cauldron-guide-step:disabled.is-mismatch {
-  color: var(--style-text);
+  font-weight: 700;
 }
 
 .brewing-page__cauldron-items.is-empty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: auto;
-  height: auto;
-  min-height: 0;
   overflow: hidden;
-  text-align: center;
+  text-align: left;
   pointer-events: none;
 }
 
 .brewing-page__cauldron-preview {
-  position: absolute;
-  top: 16px;
-  right: 8px;
-  bottom: 5px;
+  position: static;
   z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 78px;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  min-height: calc(var(--brewing-page-cauldron-height) - 12px);
   text-align: center;
   pointer-events: none;
-}
-
-.brewing-page__cauldron.is-locked .brewing-page__cauldron-preview {
-  inset: 0;
-  justify-content: center;
-  width: auto;
 }
 
 .brewing-page__cauldron-potion-icon {
@@ -4577,8 +4946,8 @@ body {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
+  width: 52px;
+  height: 52px;
   pointer-events: none;
   opacity: 0.86;
   transform: none;
@@ -4621,10 +4990,11 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   height: var(--brewing-page-cauldron-scroll-height);
   min-height: var(--brewing-page-cauldron-scroll-height);
   margin-top: 0;
+  padding-top: 2px;
   color: var(--style-muted);
   overflow: hidden;
 }
@@ -4654,12 +5024,12 @@ body {
   bottom: auto;
   left: auto;
   z-index: auto;
-  width: 100%;
-  margin-top: auto;
+  width: 170px;
+  margin-top: 4px;
   background: transparent;
   font-size: var(--style-box-border-label-font-size);
   line-height: var(--style-box-border-label-line-height);
-  text-align: center;
+  text-align: left;
   pointer-events: auto;
 }
 
@@ -4670,13 +5040,23 @@ body {
 }
 
 .brewing-page__cauldron.is-locked .brewing-page__actions {
-  width: auto;
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 266px;
+  height: var(--brewing-page-cauldron-height);
   margin-top: 0;
-  pointer-events: auto;
+  text-align: center;
+  pointer-events: none;
 }
 
 .brewing-page__action-row {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: auto;
 }
 
@@ -4693,18 +5073,22 @@ body {
   width: auto;
   max-width: 100%;
   min-width: 0;
-  padding: 0 var(--style-box-border-label-padding-x);
+  padding: 5px 10px;
   margin: 0;
-  font-size: var(--style-box-border-label-font-size);
-  line-height: var(--style-box-border-label-line-height);
+  font-size: var(--style-font-size);
+  line-height: normal;
   background: var(--style-surface);
-  border: 0;
+  border: var(--style-border);
   vertical-align: middle;
   white-space: normal;
 }
 
 .brewing-page__cauldron.is-locked .brewing-page__action-button {
+  padding: 0;
   font-weight: 700;
+  background: transparent;
+  border: 0;
+  pointer-events: none;
 }
 
 .brewing-page__action-button-label {
@@ -4728,7 +5112,7 @@ body {
 
 .style-button.brewing-page__action-button[aria-disabled="true"],
 .style-button.brewing-page__action-button:disabled {
-  border-color: transparent;
+  border-color: var(--style-disabled);
 }
 
 .style-button.brewing-page__action-button[aria-disabled="true"]
@@ -4761,18 +5145,54 @@ body {
   display: none;
 }
 
+.brewing-page__item-drag-ghost,
 .brewing-page__herb-drag-ghost {
   position: fixed;
   z-index: 1000;
-  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  padding: 0;
   color: var(--style-text);
   font-family: var(--style-font);
   font-size: var(--style-font-size);
   line-height: normal;
-  background: var(--style-surface);
-  border: var(--style-border);
   pointer-events: none;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, calc(-100% - 24px));
+}
+
+.brewing-page__item-drag-ghost-icon {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  object-position: center;
+  transform: translate3d(
+      var(--brewing-page-item-drag-sway-x, 0px),
+      var(--brewing-page-item-drag-sway-y, 0px),
+      0
+    )
+    rotate(var(--brewing-page-item-drag-sway-rotation, 0deg));
+  transition: transform 80ms var(--style-motion-ease-soft);
+  will-change: transform;
+}
+
+.brewing-page__item-drag-ghost-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brewing-page__item-drag-ghost-icon {
+    transform: none;
+    transition: none;
+  }
 }
 
 .style-box .brewing-page__cauldron-select-recipe-text[hidden] {
@@ -4876,6 +5296,37 @@ body {
   margin-bottom: 0;
   left: 50%;
   transform: translateX(-50%);
+}
+
+.brewing-page__inventory-buttons {
+  position: absolute;
+  right: calc(var(--style-room-content-edge) - 14px);
+  bottom: calc(
+    var(--style-room-chat-clearance) + var(--brewing-page-guide-controls-gap)
+  );
+  left: calc(var(--style-room-content-edge) - 14px);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 80.25px;
+}
+
+.brewing-page__inventory-panel-layer {
+  position: absolute;
+  right: var(--style-room-chrome-edge);
+  bottom: calc(
+    var(--style-room-chat-clearance) + var(--brewing-page-guide-controls-gap) +
+      80.25px + var(--brewing-page-box-gap) -
+      var(--room-inventory-panel-y-offset)
+  );
+  left: var(--style-room-chrome-edge);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.brewing-page__inventory-panel-layer > .style-box {
+  pointer-events: auto;
 }
 
 .style-button.workshop-page__leaderboard-button {
@@ -5605,7 +6056,8 @@ body {
   justify-self: center;
   width: 260px;
   height: auto;
-  max-height: calc(240px - var(--style-scroll-progress-block-size));
+  max-height: none;
+  overflow: visible;
 }
 
 .workshop-page__world-notice-archive {
@@ -6852,6 +7304,77 @@ div.workshop-page__discovery-row {
   flex: 0 0 auto;
 }
 
+.garden-page__plot-world {
+  position: absolute;
+  top: calc(var(--style-room-content-top) - var(--style-room-content-edge));
+  right: 0;
+  bottom: var(--style-room-chat-clearance);
+  left: 0;
+  z-index: 0;
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
+}
+
+.garden-page__world-shell {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.garden-page__world-shell.is-dragging {
+  cursor: grabbing;
+}
+
+.garden-page__world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--garden-page-world-width, 360px);
+  height: var(--garden-page-world-height, 560px);
+  transform-origin: 0 0;
+  transform: translate3d(
+    var(--garden-page-world-pan-x, 0px),
+    var(--garden-page-world-pan-y, 0px),
+    0
+  ) scale(var(--garden-page-world-zoom, 1));
+  will-change: transform;
+}
+
+.garden-page__world.is-settling {
+  transition: transform var(--style-motion-normal) var(--style-motion-ease-rubber);
+}
+
+.garden-page__inventory-buttons {
+  position: absolute;
+  right: calc(var(--style-room-content-edge) - 14px);
+  bottom: var(--style-room-chat-clearance);
+  left: calc(var(--style-room-content-edge) - 14px);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 80.25px;
+}
+
+.garden-page__inventory-panel-layer {
+  position: absolute;
+  right: var(--style-room-chrome-edge);
+  bottom: calc(
+    var(--style-room-chat-clearance) + 80.25px + var(--garden-page-box-gap) -
+      var(--room-inventory-panel-y-offset)
+  );
+  left: var(--style-room-chrome-edge);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.garden-page__inventory-panel-layer > .style-box {
+  pointer-events: auto;
+}
+
 .style-box.garden-page__inventory {
   padding-bottom: calc(5px + var(--style-box-border-label-line-height));
 }
@@ -6917,9 +7440,13 @@ div.workshop-page__discovery-row {
 .garden-page__inventory-rows,
 .garden-page__herb-rows,
 .garden-page__seed-inventory-rows {
-  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+  min-height: calc(var(--style-row-min-height) * 3);
   max-height: none;
   overflow: visible;
+  touch-action: none;
 }
 
 .garden-page__herb-rows::-webkit-scrollbar,
@@ -6985,6 +7512,7 @@ div.workshop-page__discovery-row {
 .garden-page__inventory-divider,
 .garden-page__herb-divider,
 .garden-page__seed-inventory-divider {
+  grid-column: 1 / -1;
   height: 1px;
   margin: 5px 0;
   clear: both;
@@ -7256,6 +7784,7 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot .garden-page__plot-rows {
   --style-scroll-padding-top: 8px;
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: repeat(
     var(--garden-page-plot-columns, 3),
@@ -7263,7 +7792,7 @@ div.workshop-page__discovery-row {
   );
   gap: 8px 6px;
   align-content: start;
-  padding-top: 8px;
+  padding: 8px var(--style-room-content-edge) 0;
 }
 
 .garden-page__plot .garden-page__plot-row {
@@ -7298,20 +7827,27 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot .garden-page__plot-box-frame {
   position: relative;
+  box-sizing: border-box;
   display: block;
   grid-column: 1;
   grid-row: 1;
+  justify-self: center;
+  width: var(--garden-page-plot-visual-width);
   min-width: 0;
   min-height: var(--garden-page-plot-box-frame-height);
   overflow: visible;
-  border: var(--style-border);
-  background: var(--style-surface);
+  border: 0;
+  background-color: transparent;
+  background-image: url("../pages/garden/assets/plots/outpost-plot-ground.png");
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  background-size: 100% auto;
 }
 
 .garden-page__plot
   .garden-page__plot-row:active:not(:disabled)
   .garden-page__plot-box-frame {
-  background: var(--style-active-surface);
+  background-color: transparent;
 }
 
 .garden-page__plot
@@ -7322,15 +7858,17 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot .garden-page__plot-row.is-buy-slot .garden-page__plot-box-frame {
+  border: var(--style-border);
   border-style: dashed;
   border-color: color-mix(in srgb, var(--style-stroke) 45%, transparent);
-  background: color-mix(in srgb, var(--style-surface) 55%, transparent);
+  background-color: transparent;
+  background-image: none;
 }
 
 .garden-page__plot
   .garden-page__plot-row.is-buy-slot:active:not(:disabled)
   .garden-page__plot-box-frame {
-  background: color-mix(in srgb, var(--style-active-surface) 68%, transparent);
+  background-color: transparent;
 }
 
 .garden-page__plot
@@ -7355,28 +7893,32 @@ div.workshop-page__discovery-row {
 .garden-page__plot-box-level,
 .garden-page__plot-box-label {
   position: absolute;
-  top: calc(var(--style-box-border-label-offset) - 1px);
+  top: 6px;
   z-index: 1;
   display: block;
   max-width: calc(100% - 12px);
-  padding: 0 var(--style-box-border-label-padding-x);
+  padding: 0;
   overflow: hidden;
   color: var(--style-text);
   font-size: var(--style-box-border-label-font-size);
   line-height: var(--style-box-border-label-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
-  background: var(--style-surface);
+  background: transparent;
 }
 
 .garden-page__plot-box-number {
-  left: 5px;
+  left: 10px;
+  color: var(--garden-page-plot-number-color);
+  font-size: var(--style-font-size);
+  font-weight: 700;
+  line-height: var(--style-box-border-label-line-height);
   font-variant-numeric: tabular-nums lining-nums;
 }
 
 .garden-page__plot-box-level {
-  bottom: 3px;
-  left: 5px;
+  bottom: 5px;
+  left: 9px;
   top: auto;
   color: var(--style-muted);
   font-size: var(--garden-page-plot-box-detail-font-size);
@@ -7385,7 +7927,8 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot-box-label {
-  right: 5px;
+  right: 9px;
+  max-width: calc(100% - 34px);
   text-align: right;
 }
 
@@ -7396,12 +7939,13 @@ div.workshop-page__discovery-row {
 .garden-page__plot-plant {
   position: absolute;
   left: 50%;
-  bottom: 16px;
+  bottom: 18px;
+  z-index: 1;
   display: inline-flex;
   align-items: end;
   justify-content: center;
-  width: 36px;
-  height: 42px;
+  width: 44px;
+  height: 48px;
   transform: translateX(-50%) scale(var(--garden-page-plot-growth-scale, 1));
   transform-origin: 50% 100%;
   transition: transform var(--style-motion-normal) var(--style-motion-ease);
@@ -7428,6 +7972,7 @@ div.workshop-page__discovery-row {
   position: absolute;
   right: 2px;
   bottom: 31px;
+  z-index: 2;
   display: block;
   width: 15px;
   height: 15px;
@@ -7451,6 +7996,7 @@ div.workshop-page__discovery-row {
   position: absolute;
   right: 5px;
   bottom: 3px;
+  z-index: 2;
   display: block;
   min-width: 0;
   min-height: 0;
@@ -7506,6 +8052,8 @@ div.workshop-page__discovery-row {
 .garden-page__plot .garden-page__plot-progress {
   grid-column: 1;
   grid-row: 2;
+  justify-self: center;
+  width: var(--garden-page-plot-visual-width);
 }
 
 .garden-page__plot .garden-page__plot-box-timer {
@@ -7964,6 +8512,7 @@ div.workshop-page__discovery-row {
 }
 
 .brewing-page__recipes-popup,
+.brewing-page__recipe-choice-popup,
 .brewing-page__potions-popup {
   position: absolute;
   inset: 0;
@@ -7971,6 +8520,7 @@ div.workshop-page__discovery-row {
 }
 
 .brewing-page__recipes-popup[hidden],
+.brewing-page__recipe-choice-popup[hidden],
 .brewing-page__potions-popup[hidden] {
   display: none;
 }
@@ -7988,7 +8538,25 @@ div.workshop-page__discovery-row {
   --brewing-page-cauldron-dialog-content-height: 430px;
   display: flex;
   flex-direction: column;
+  width: 306px;
   height: var(--brewing-page-cauldron-dialog-content-height);
+}
+
+.style-dialog.brewing-page__recipe-choice-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 210px;
+  transform: translate(-50%, calc(-50% + var(--app-dialog-y-shift, 0px)));
+}
+
+.style-button.brewing-page__recipe-choice-button {
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .style-button.brewing-page__recipes-close,
@@ -8072,6 +8640,124 @@ div.workshop-page__discovery-row {
   scrollbar-width: none;
 }
 
+.brewing-page__recipe-book {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  flex: 1 1 auto;
+  gap: 0;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.brewing-page__recipe-book::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 1;
+  border-left: var(--style-separator-border);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.brewing-page__recipe-book.is-turning .brewing-page__recipe-page {
+  animation: brewing-recipe-page-turn var(--style-motion-normal)
+    var(--style-motion-ease) both;
+}
+
+.brewing-page__recipe-book[data-turn-direction="back"].is-turning
+  .brewing-page__recipe-page {
+  animation-name: brewing-recipe-page-turn-back;
+}
+
+.brewing-page__recipe-page {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 8px 0 0;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+
+.brewing-page__recipe-page--right {
+  padding: 0 0 0 8px;
+}
+
+.brewing-page__recipe-page::-webkit-scrollbar {
+  display: none;
+}
+
+.brewing-page__recipe-page-number {
+  flex: 0 0 auto;
+  min-height: var(--style-row-min-height);
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  text-align: center;
+}
+
+.brewing-page__recipe-book-controls {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: var(--style-row-min-height);
+  padding-top: 5px;
+  column-gap: 8px;
+}
+
+.brewing-page__recipe-page-button {
+  min-width: 0;
+  padding: 0;
+  appearance: none;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.brewing-page__recipe-page-button:disabled {
+  color: var(--style-disabled);
+  cursor: default;
+}
+
+.brewing-page__recipe-page-label {
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  text-align: center;
+}
+
+@keyframes brewing-recipe-page-turn {
+  0% {
+    opacity: 0.72;
+    transform: translateX(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes brewing-recipe-page-turn-back {
+  0% {
+    opacity: 0.72;
+    transform: translateX(-8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .brewing-page__potion-list {
   padding-top: 19px;
   max-height: 430px;
@@ -8084,7 +8770,6 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-.brewing-page__cauldron-dialog-current,
 .brewing-page__cauldron-dialog-action,
 .brewing-page__quantity-summary,
 .brewing-page__auto-summary {
@@ -8092,6 +8777,11 @@ div.workshop-page__discovery-row {
   padding-bottom: 7px;
   margin-bottom: 6px;
   border-bottom: var(--style-separator-border);
+}
+
+.brewing-page__cauldron-dialog-current {
+  flex: 0 0 auto;
+  margin-bottom: 7px;
 }
 
 .brewing-page__cauldron-dialog-action[hidden],
@@ -8236,12 +8926,18 @@ button.brewing-page__cauldron-dialog-current-row {
   min-height: var(--style-row-min-height);
 }
 
+.brewing-page__recipe-empty {
+  color: var(--style-muted);
+  text-align: center;
+}
+
 .brewing-page__recipe-row {
-  clear: both;
-  display: block;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
   width: 100%;
-  padding: 0 0 7px;
-  margin-top: 6px;
+  padding: 0 0 6px;
+  margin-top: 5px;
   color: inherit;
   font: inherit;
   text-align: left;
@@ -8257,11 +8953,9 @@ button.brewing-page__cauldron-dialog-current-row {
 }
 
 .brewing-page__recipe-main {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 18px;
+  display: block;
+  min-width: 0;
   min-height: var(--style-row-min-height);
-  column-gap: 8px;
-  align-items: baseline;
 }
 
 .brewing-page__recipe-main .row_key,
@@ -8271,6 +8965,41 @@ button.brewing-page__cauldron-dialog-current-row {
 }
 
 .brewing-page__recipe-main .row_key {
+  overflow-wrap: anywhere;
+}
+
+.brewing-page__recipe-top {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 6px;
+}
+
+.brewing-page__recipe-potion-icon {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.brewing-page__recipe-info {
+  min-width: 0;
+}
+
+.brewing-page__recipe-header {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 4px;
+  min-height: var(--style-row-min-height);
+}
+
+.brewing-page__recipe-info-text {
+  margin: 0;
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
   overflow-wrap: anywhere;
 }
 
@@ -8296,8 +9025,7 @@ button.brewing-page__cauldron-dialog-current-row {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .brewing-page__recipe-select-button:hover,
-  .brewing-page__recipe-eye-button:hover {
+  .brewing-page__recipe-select-button:hover {
     font-weight: 700;
   }
 }
@@ -8308,62 +9036,25 @@ button.brewing-page__cauldron-dialog-current-row {
 
 .brewing-page__recipe-ingredients {
   clear: both;
+  margin-top: 3px;
   color: var(--style-muted);
-}
-
-.brewing-page__recipe-eye-button {
-  position: relative;
-  justify-self: end;
-  width: 18px;
-  min-width: 0;
-  height: var(--style-row-min-height);
-  padding: 0;
-  appearance: none;
-  color: inherit;
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-}
-
-.brewing-page__recipe-eye-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 11px;
-  height: 7px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.brewing-page__recipe-eye-icon::after {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 3px;
-  height: 3px;
-  background: currentColor;
-  border-radius: 50%;
-  content: "";
-  transform: translate(-50%, -50%);
 }
 
 .brewing-page__recipe-meta {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 8px;
-  padding-left: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0;
+  margin-top: 2px;
   color: var(--style-muted);
 }
 
 .brewing-page__recipe-cost,
 .brewing-page__recipe-duration {
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .brewing-page__recipe-duration {
-  text-align: right;
+  text-align: left;
 }
 
 .brewing-page__recipe-ingredients-title {
@@ -8377,8 +9068,8 @@ button.brewing-page__cauldron-dialog-current-row {
 
 .brewing-page__recipe-ingredient-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 0;
   align-items: baseline;
   min-height: var(--style-row-min-height);
   padding-left: 0;
@@ -8390,10 +9081,10 @@ button.brewing-page__cauldron-dialog-current-row {
 }
 
 .brewing-page__recipe-ingredient-owned {
-  justify-self: end;
+  justify-self: start;
   color: var(--style-muted);
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  text-align: left;
   white-space: nowrap;
 }
 
@@ -12680,6 +13371,7 @@ button.brewing-page__cauldron-dialog-current-row {
 .workshop-page__world-notice-popup:not([hidden]),
 .workshop-page__summon-info-popup:not([hidden]),
 .brewing-page__recipes-popup:not([hidden]),
+.brewing-page__recipe-choice-popup:not([hidden]),
 .brewing-page__potions-popup:not([hidden]),
 .garden-page__seed-popup:not([hidden]),
 .garden-page__cancel-popup:not([hidden]),
@@ -12714,6 +13406,8 @@ button.brewing-page__cauldron-dialog-current-row {
 .game-stage:has(.workshop-page__world-notice-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__summon-info-popup:not([hidden])) .workshop-page,
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
+.game-stage:has(.brewing-page__recipe-choice-popup:not([hidden]))
+  .brewing-page,
 .game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,
 .game-stage:has(.garden-page__seed-popup:not([hidden])) .garden-page,
 .game-stage:has(.garden-page__cancel-popup:not([hidden])) .garden-page,
@@ -12747,6 +13441,7 @@ button.brewing-page__cauldron-dialog-current-row {
 .workshop-page__world-notice-popup:not([hidden]) .style-dialog,
 .workshop-page__summon-info-popup:not([hidden]) .style-dialog,
 .brewing-page__recipes-popup:not([hidden]) .style-dialog,
+.brewing-page__recipe-choice-popup:not([hidden]) .style-dialog,
 .brewing-page__potions-popup:not([hidden]) .style-dialog,
 .garden-page__seed-popup:not([hidden]) .style-dialog,
 .garden-page__cancel-popup:not([hidden]) .style-dialog,
@@ -13581,7 +14276,9 @@ button.brewing-page__cauldron-dialog-current-row {
       .brewing-page__workbench > .style-box,
       .brewing-page__cauldrons > .style-box,
       .brewing-page__guide,
+      .brewing-page__inventory-buttons,
       .brewing-page__potions-button,
+      .garden-page__inventory-buttons,
       .garden-page__content > .style-box,
       .research-page__tabs,
       .research-page__box-list > .style-box,
@@ -13592,6 +14289,19 @@ button.brewing-page__cauldron-dialog-current-row {
       .shop-page__market-panel > .style-panel
     ) {
     animation: none;
+  }
+
+  .room-inventory-box:not([hidden]),
+  .style-box.brewing-page__herbs:not([hidden]) {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .brewing-page__recipe-book.is-turning .brewing-page__recipe-page {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 
   .app-online-gate__progress.is-indeterminate .app-online-gate__progress-fill {

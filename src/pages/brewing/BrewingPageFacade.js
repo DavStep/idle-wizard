@@ -1,8 +1,11 @@
 import { BrewingCauldronManager } from './managers/BrewingCauldronManager.js';
+import { BrewingPotionInventoryBoxManager } from './managers/BrewingPotionInventoryManager.js';
 import { BrewingRecipeBookManager } from './managers/BrewingRecipeBookManager.js';
+import { BrewingRecipeChoiceDialogManager } from './managers/BrewingRecipeChoiceDialogManager.js';
 import { BrewingRecipeGuideManager } from './managers/BrewingRecipeGuideManager.js';
 import { BrewingRoomViewManager } from './managers/BrewingRoomViewManager.js';
 import { RewardFlyoutManager } from '../shared/RewardFlyoutManager.js';
+import { RoomInventoryButtonManager } from '../shared/RoomInventoryButtonManager.js';
 
 export class BrewingPageFacade {
   static explain =
@@ -13,7 +16,37 @@ export class BrewingPageFacade {
     this.roomViewManager = new BrewingRoomViewManager();
     this.flyoutManager = new RewardFlyoutManager();
     this.rewardEventsUnsubscribe = null;
+    this.inventoryPanelLayer = null;
+    this.activeInventoryTab = null;
     this.recipeGuideManager = new BrewingRecipeGuideManager({ gameplayFacade });
+    this.recipeChoiceDialogManager = new BrewingRecipeChoiceDialogManager({
+      onClearRecipe: (cauldronIndex) => this.selectRecipe(null, cauldronIndex),
+      onChooseAnother: (cauldronIndex) => {
+        this.recipeGuideManager.setCurrentCauldronIndex(cauldronIndex);
+        this.recipeBookManager.show();
+      },
+    });
+    this.potionInventoryManager = new BrewingPotionInventoryBoxManager({ gameplayFacade });
+    this.inventoryButtonManager = new RoomInventoryButtonManager({
+      className: 'brewing-page__inventory-buttons',
+      onOpenInventory: (tabId) => this.toggleInventoryBox(tabId),
+      buttons: [
+        {
+          tabId: 'herbs',
+          label: 'herbs',
+          icon: 'herbs',
+          side: 'left',
+          className: 'brewing-page__inventory-button brewing-page__inventory-button--herbs',
+        },
+        {
+          tabId: 'potions',
+          label: 'potions',
+          icon: 'potions',
+          side: 'right',
+          className: 'brewing-page__inventory-button brewing-page__inventory-button--potions',
+        },
+      ],
+    });
     this.cauldronManager = new BrewingCauldronManager({
       gameplayFacade,
       getSelectedRecipeKey: (cauldronIndex) =>
@@ -24,6 +57,14 @@ export class BrewingPageFacade {
         this.recipeGuideManager.setCurrentCauldronIndex(cauldronIndex);
         this.recipeBookManager.show();
       },
+      onOpenRecipeChoice: (cauldronIndex) => {
+        this.recipeGuideManager.setCurrentCauldronIndex(cauldronIndex);
+        this.recipeChoiceDialogManager.show(cauldronIndex);
+      },
+      onClearSelectedRecipe: (cauldronIndex) =>
+        this.selectRecipe(null, cauldronIndex),
+      onSelectBrewQuantity: (quantity, cauldronIndex) =>
+        this.setBrewQuantity(quantity, cauldronIndex),
       onRewardNotice: (event) => this.flyoutManager.showReward(event),
       rewardEventsAvailable: Boolean(gameplayFacade?.subscribeRewardEvents),
     });
@@ -54,22 +95,50 @@ export class BrewingPageFacade {
     const uiLayer = this.roomViewManager.getUiLayer();
     const popupLayer = this.roomViewManager.getPopupLayer();
     this.cauldronManager.mount(uiLayer);
+    this.mountInventoryPanelLayer(uiLayer);
+    this.inventoryButtonManager.mount(uiLayer);
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
       this.gameplayFacade?.subscribeRewardEvents?.((event) =>
         this.flyoutManager.showReward(event),
       ) ?? null;
     this.recipeBookManager.mount(uiLayer, popupLayer);
+    this.recipeChoiceDialogManager.mount(popupLayer);
   }
 
   unmount() {
     this.rewardEventsUnsubscribe?.();
     this.rewardEventsUnsubscribe = null;
+    this.recipeChoiceDialogManager.unmount();
     this.recipeGuideManager.unmount();
     this.recipeBookManager.unmount();
     this.flyoutManager.unmount();
+    this.inventoryButtonManager.unmount();
+    this.potionInventoryManager.unmount();
+    this.inventoryPanelLayer?.remove();
+    this.inventoryPanelLayer = null;
+    this.activeInventoryTab = null;
     this.cauldronManager.unmount();
     this.roomViewManager.unmount();
+  }
+
+  mountInventoryPanelLayer(uiLayer) {
+    if (this.inventoryPanelLayer || !uiLayer) {
+      return;
+    }
+
+    this.inventoryPanelLayer = document.createElement('section');
+    this.inventoryPanelLayer.className = 'brewing-page__inventory-panel-layer';
+    this.inventoryPanelLayer.setAttribute('aria-label', 'brewing inventory');
+    uiLayer.append(this.inventoryPanelLayer);
+    this.potionInventoryManager.mount(this.inventoryPanelLayer);
+  }
+
+  toggleInventoryBox(tabId) {
+    this.activeInventoryTab = this.activeInventoryTab === tabId ? null : tabId;
+    this.cauldronManager.setHerbsVisible(this.activeInventoryTab === 'herbs');
+    this.potionInventoryManager.setVisible(this.activeInventoryTab === 'potions');
+    this.inventoryButtonManager.setActiveTab(this.activeInventoryTab);
   }
 
   selectRecipe(recipeKey, cauldronIndex = 0) {

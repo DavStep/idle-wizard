@@ -11,6 +11,7 @@ import { PlayerInfoDialogFacade } from './playerInfo/PlayerInfoDialogFacade.js';
 import { TopPanelFacade } from './topPanel/TopPanelFacade.js';
 import { TutorialFacade } from './tutorial/TutorialFacade.js';
 import { WorkshopPageFacade } from './workshop/WorkshopPageFacade.js';
+import { WorkshopBagManager } from './workshop/managers/WorkshopBagManager.js';
 import { WorkshopWorldChatManager } from './workshop/managers/WorkshopWorldChatManager.js';
 import { CurrentPageManager } from './managers/CurrentPageManager.js';
 import { PageUnlockManager } from './managers/PageUnlockManager.js';
@@ -79,6 +80,8 @@ export class PagesFacade {
       uiClickSoundFacade,
     });
     this.scrollCueManager = new ScrollCueManager();
+    this.inventoryPopupLayer = null;
+    this.inventoryDialogManager = new WorkshopBagManager({ gameplayFacade });
     this.bottomPanelFacade = new BottomPanelFacade({
       getCurrentPageId: () => this.getCurrentPageId(),
       onShowPage: (pageId) => this.show(pageId),
@@ -134,6 +137,7 @@ export class PagesFacade {
         tradeAllianceFacade,
         onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
         onOpenAllianceInfo: (alliance) => this.allianceInfoDialogFacade.show(alliance),
+        onOpenBag: () => this.toggleInventoryDialog(),
       }),
     );
     this.registryManager.register(
@@ -195,6 +199,7 @@ export class PagesFacade {
       this.bottomPanelFacade.mount(stage);
       this.notificationFacade.mount();
       this.worldChatManager.mount(stage);
+      this.mountInventoryDialog(stage);
       this.topPanelFacade.mount(stage);
       this.playerInfoDialogFacade.mount(stage);
       this.allianceInfoDialogFacade.mount(stage);
@@ -217,6 +222,7 @@ export class PagesFacade {
     this.releaseNpcMarketPrices = null;
     this.npcMarketPricesRetained = false;
     this.topPanelFacade.unmount();
+    this.unmountInventoryDialog();
     this.allianceInfoDialogFacade.unmount();
     this.playerInfoDialogFacade.unmount();
     this.worldChatManager.unmount();
@@ -309,8 +315,13 @@ export class PagesFacade {
     switch (normalizedDialogId) {
       case 'bag':
       case 'inventory':
+        return this.openInventoryDialog(options);
       case 'seeds':
-        return this.openWorkshopDialog('bag', options);
+        return this.openInventoryDialog({ ...options, tab: options.tab ?? 'seeds' });
+      case 'herbs':
+        return this.openInventoryDialog({ ...options, tab: options.tab ?? 'herbs' });
+      case 'potions':
+        return this.openInventoryDialog({ ...options, tab: options.tab ?? 'potions' });
       case 'summoninfo':
       case 'summon':
         return this.openWorkshopDialog('summonInfo', options);
@@ -453,18 +464,53 @@ export class PagesFacade {
     this.notificationFacade.publish();
   }
 
+  mountInventoryDialog(stage) {
+    if (this.inventoryPopupLayer || !stage) {
+      return;
+    }
+
+    this.inventoryPopupLayer = document.createElement('div');
+    this.inventoryPopupLayer.className =
+      'room-page__popup-layer room-inventory-popup-layer';
+    stage.append(this.inventoryPopupLayer);
+    this.inventoryDialogManager.mount(this.inventoryPopupLayer);
+  }
+
+  unmountInventoryDialog() {
+    this.inventoryDialogManager.unmount();
+    this.inventoryPopupLayer?.remove();
+    this.inventoryPopupLayer = null;
+  }
+
+  openInventoryDialog(options = {}) {
+    const tabId = this.normalizeDevDialogTab(options.tab ?? options.type);
+
+    if (tabId) {
+      this.inventoryDialogManager.selectedTabId = tabId;
+      this.inventoryDialogManager.renderedSignature = '';
+    }
+
+    this.inventoryDialogManager.render(this.getGameplaySnapshot());
+    this.inventoryDialogManager.show();
+    return {
+      ok: true,
+      dialogId: 'bag',
+      tabId: tabId ?? this.inventoryDialogManager.selectedTabId,
+    };
+  }
+
+  toggleInventoryDialog() {
+    this.inventoryDialogManager.toggle();
+    return { ok: true, dialogId: 'bag' };
+  }
+
   openWorkshopDialog(managerId, options = {}) {
+    if (managerId === 'bag') {
+      return this.openInventoryDialog(options);
+    }
+
     this.show('workshop');
     const page = this.registryManager.get('workshop');
-
-    if (managerId === 'bag') {
-      const tabId = this.normalizeDevDialogTab(options.tab ?? options.type);
-      if (tabId && page.bagManager) {
-        page.bagManager.selectedTabId = tabId;
-      }
-      page.bagManager?.show?.();
-      return { ok: true, dialogId: managerId, pageId: 'workshop' };
-    }
 
     if (managerId === 'summonInfo') {
       page.summonInfoManager?.show?.();

@@ -1,5 +1,4 @@
 import { WorkshopRoomViewManager } from './managers/WorkshopRoomViewManager.js';
-import { WorkshopBagManager } from './managers/WorkshopBagManager.js';
 import { WorkshopActionBarManager } from './managers/WorkshopActionBarManager.js';
 import { WorkshopSummonInfoManager } from './managers/WorkshopSummonInfoManager.js';
 import { WorkshopLeaderboardManager } from './managers/WorkshopLeaderboardManager.js';
@@ -28,8 +27,10 @@ export class WorkshopPageFacade {
     tradeAllianceFacade,
     onOpenPlayerInfo,
     onOpenAllianceInfo,
+    onOpenBag,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.onOpenBag = onOpenBag;
     this.roomViewManager = new WorkshopRoomViewManager();
     this.flyoutManager = new WorkshopFlyoutManager();
     this.requirementConnectionManager = new WorkshopRequirementConnectionManager();
@@ -39,12 +40,11 @@ export class WorkshopPageFacade {
     this.discoveryAllianceActionGateManager = new WorkshopSecondaryActionGateManager({
       unlockLevel: WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
     });
-    this.bagManager = new WorkshopBagManager({ gameplayFacade });
     this.summonInfoManager = new WorkshopSummonInfoManager({ gameplayFacade });
     this.actionBarManager = new WorkshopActionBarManager({
       gameplayFacade,
       hapticsFacade,
-      onBagClick: () => this.bagManager.toggle(),
+      onBagClick: () => this.onOpenBag?.(),
       onSummonInfoClick: () => this.summonInfoManager.show(),
       onSummonNotice: (message, options) => this.flyoutManager.show(message, options),
       onSummonNoticeList: (notices) => this.flyoutManager.showList(notices),
@@ -98,7 +98,6 @@ export class WorkshopPageFacade {
     this.leaderboardManager.mount(uiLayer, popupLayer);
     this.tradeAllianceManager.mount(uiLayer, popupLayer);
     this.discoveriesManager.mount(uiLayer, popupLayer);
-    this.bagManager.mount(popupLayer);
     this.summonInfoManager.mount(popupLayer);
     this.secondaryActionGateUnsubscribe =
       this.gameplayFacade?.subscribe((snapshot) => this.applySecondaryActionGate(snapshot)) ??
@@ -113,7 +112,6 @@ export class WorkshopPageFacade {
     this.rewardEventsUnsubscribe = null;
     this.requirementConnectionManager.unmount();
     this.summonInfoManager.unmount();
-    this.bagManager.unmount();
     this.discoveriesManager.unmount();
     this.tradeAllianceManager.unmount();
     this.leaderboardManager.unmount();

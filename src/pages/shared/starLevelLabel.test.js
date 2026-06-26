@@ -58,6 +58,19 @@ describe('star level labels', () => {
     expect(element.textContent).toBe('★★');
     expect(element.dataset.starTone).toBe('orange');
     expect(element.dataset.starCount).toBe('2');
+    expect(element.dataset.starSlots).toBe('3');
     expect(element.getAttribute('aria-label')).toBe('orange star 2');
+    expect(element.querySelectorAll('.style-star-level__slot')).toHaveLength(3);
+    expect(
+      element.querySelectorAll('.style-star-level__slot[data-star-filled="true"]'),
+    ).toHaveLength(2);
+    expect(element.querySelectorAll('.style-star-level__image--empty')).toHaveLength(3);
+    expect(element.querySelectorAll('.style-star-level__image--fill')).toHaveLength(2);
+    expect(
+      element
+        .querySelector('.style-star-level__slot[data-star-filled="true"]')
+        ?.querySelector('.style-star-level__image--fill')
+        ?.getAttribute('src'),
+    ).toContain('star-orange.png');
   });
 });

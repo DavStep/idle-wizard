@@ -201,6 +201,37 @@ describe('TutorialHintManager', () => {
     expect(pointer?.style.top).toBe('35px');
   });
 
+  it('measures target cues from the centered tutorial layer on web-wide stages', () => {
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const manager = new TutorialHintManager();
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1920, height: 2160 });
+    stage.append(target);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    setClientRect(manager.root, { left: 420, top: 0, width: 1080, height: 2160 });
+    setClientRect(target, {
+      left: 420 + 16 * UI_SCALE,
+      top: 100 * UI_SCALE,
+      width: 120 * UI_SCALE,
+      height: 30 * UI_SCALE,
+    });
+
+    expect(manager.getSourceBounds()).toEqual({
+      width: 360,
+      height: 720,
+    });
+    expect(manager.getSourceRect(target)).toEqual({
+      left: 16,
+      top: 100,
+      width: 120,
+      height: 30,
+    });
+  });
+
   it('anchors the username cue to the visible name instead of the wide button', () => {
     const stage = document.createElement('section');
     const target = document.createElement('button');

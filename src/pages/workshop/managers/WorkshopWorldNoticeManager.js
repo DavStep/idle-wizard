@@ -924,8 +924,7 @@ export class WorkshopWorldNoticeManager {
     section.className = 'workshop-page__world-notice-leaderboard';
 
     const rows = document.createElement('div');
-    rows.className =
-      'workshop-page__leaderboard-rows workshop-page__world-notice-leaderboard-rows';
+    rows.className = 'workshop-page__world-notice-leaderboard-rows';
 
     rows.append(this.createLeaderboardRow({ name: 'user', pointsLabel: 'points' }, 0, {
       header: true,

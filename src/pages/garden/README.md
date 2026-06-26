@@ -2,4 +2,4 @@
 
 The Garden is the room page between Brewing and Workshop.
 
-It renders a compact garden world of plot boxes for open plots plus the next buy slot, and the seed picker popup. Seed and herb catalog inventories live outside this page for now. Gameplay rules stay in `src/gameplay/garden`: the page only calls buy, plant, replace, and harvest actions and displays their snapshots.
+It renders a compact pannable garden world of plots for open plots plus the next buy slot, the seed picker popup, and small bottom icon buttons that expand inline seed and herb inventory boxes. Gameplay rules stay in `src/gameplay/garden`: the page only calls buy, plant, replace, and harvest actions and displays their snapshots.

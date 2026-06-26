@@ -78,6 +78,8 @@ export class ViewportScaleManager {
     document.documentElement.style.removeProperty('--app-keyboard-inset');
     document.documentElement.style.removeProperty('--app-keyboard-dialog-shift');
     document.documentElement.style.removeProperty('--app-keyboard-top-dialog-shift');
+    this.stage?.style.removeProperty('--source-ui-scale');
+    delete this.stage?.dataset.viewportMode;
     this.layoutViewport = null;
     this.textEntryViewportLocked = false;
     this.focusedTextEntryElement = null;
@@ -96,6 +98,7 @@ export class ViewportScaleManager {
       viewportSize.height / this.viewport.height,
     );
     const uiScale = scale * this.sourceUiScale;
+    const stageSize = this.getStageSize({ viewportSize, scale });
 
     document.documentElement.style.setProperty(
       '--app-viewport-width',
@@ -107,19 +110,39 @@ export class ViewportScaleManager {
     );
     document.documentElement.style.setProperty(
       '--app-stage-width',
-      `${this.viewport.width * scale}px`,
+      `${stageSize.width}px`,
     );
     document.documentElement.style.setProperty(
       '--app-stage-height',
-      `${this.viewport.height * scale}px`,
+      `${stageSize.height}px`,
     );
     this.stage.style.setProperty('--viewport-scale', String(scale));
     this.stage.style.setProperty('--style-ui-scale', String(uiScale));
-    this.updateVisibleStageMetrics({ viewportSize, scale, uiScale });
+    this.stage.style.setProperty('--source-ui-scale', String(this.sourceUiScale));
+
+    if (stageSize.isWide) {
+      this.stage.dataset.viewportMode = 'web-wide';
+    } else {
+      delete this.stage.dataset.viewportMode;
+    }
+
+    this.updateVisibleStageMetrics({ viewportSize, stageSize, uiScale });
   }
 
-  updateVisibleStageMetrics({ viewportSize, scale, uiScale }) {
-    const stageHeight = this.viewport.height * scale;
+  getStageSize({ viewportSize, scale }) {
+    const baseWidth = this.viewport.width * scale;
+    const height = this.viewport.height * scale;
+    const isWide = viewportSize.width > baseWidth + 1;
+
+    return {
+      width: isWide ? viewportSize.width : baseWidth,
+      height,
+      isWide,
+    };
+  }
+
+  updateVisibleStageMetrics({ viewportSize, stageSize, uiScale }) {
+    const stageHeight = stageSize.height;
     const stageRect = this.stage.getBoundingClientRect();
     const fallbackStageTop = Math.max(0, (viewportSize.height - stageHeight) / 2);
     const stageTop =

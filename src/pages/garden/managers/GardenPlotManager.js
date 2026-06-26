@@ -30,6 +30,18 @@ const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
 const TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX = 10;
 const BOX_PLOT_COLUMNS = 3;
+const WORLD_EDGE_EXTENSION = 16;
+const WORLD_WIDTH = 328 + WORLD_EDGE_EXTENSION * 2;
+const WORLD_MIN_HEIGHT = 560;
+const WORLD_ROW_HEIGHT = 92;
+const WORLD_ROW_GAP = 8;
+const WORLD_ROWS_PADDING_TOP = 8;
+const WORLD_DRAG_THRESHOLD = 4;
+const WORLD_MIN_ZOOM = 0.62;
+const WORLD_MAX_ZOOM = 1.16;
+const WORLD_ZOOM_RUBBER_LIMIT = 0.12;
+const WORLD_PAN_RUBBER_LIMIT = 54;
+const WORLD_SETTLE_CLASS_MS = 240;
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 export class GardenPlotManager {
@@ -59,6 +71,16 @@ export class GardenPlotManager {
     this.handledSeedPressStartKey = null;
     this.handledSeedPressStartReset = null;
     this.pendingSeedPress = null;
+    this.worldPan = { x: 0, y: 0 };
+    this.worldZoom = 1;
+    this.worldSize = {
+      width: WORLD_WIDTH,
+      height: WORLD_MIN_HEIGHT,
+    };
+    this.worldPointers = new Map();
+    this.worldGesture = null;
+    this.worldSettleClassTimeout = null;
+    this.suppressWorldClickUntilMs = 0;
     this.boughtTileAnimationResets = new Map();
     this.handlePendingSeedPressMove = (event) => this.onPendingSeedPressMove(event);
     this.handlePendingSeedPressEnd = (event) => this.onPendingSeedPressEnd(event);
@@ -109,8 +131,10 @@ export class GardenPlotManager {
 
     this.root = document.createElement('section');
     this.root.className = 'garden-page__plot garden-page__plot-world';
+    this.root.dataset.pageSwipeBlock = 'true';
     this.root.setAttribute('aria-label', 'Garden world');
 
+    this.refs.world = this.createWorld();
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'garden-page__plot-rows';
     this.refs.rows.style.setProperty('--garden-page-plot-columns', String(BOX_PLOT_COLUMNS));
@@ -118,7 +142,8 @@ export class GardenPlotManager {
     this.refs.rows.addEventListener('scroll', this.handlePlotRowsScroll);
     this.refs.seedRows.addEventListener('scroll', this.handleSeedRowsScroll);
 
-    this.root.append(this.refs.rows);
+    this.refs.world.world.append(this.refs.rows);
+    this.root.append(this.refs.world.shell);
     parent.append(this.root);
     popupParent.append(this.refs.popup);
     this.cancelDialogManager.mount(popupParent);
@@ -166,7 +191,32 @@ export class GardenPlotManager {
     this.handledTileLabelPressStartReset = null;
     this.handledSeedPressStartKey = null;
     this.handledSeedPressStartReset = null;
+    this.worldPointers.clear();
+    this.worldGesture = null;
+    this.clearWorldSettleTimers();
+    this.suppressWorldClickUntilMs = 0;
     this.boughtTileAnimationResets.clear();
+  }
+
+  createWorld() {
+    const shell = document.createElement('section');
+    shell.className = 'garden-page__world-shell';
+    shell.setAttribute('aria-label', 'Garden map');
+    shell.addEventListener('pointerdown', (event) => this.onWorldPointerDown(event));
+    shell.addEventListener('pointermove', (event) => this.onWorldPointerMove(event));
+    shell.addEventListener('pointerup', (event) => this.onWorldPointerUp(event));
+    shell.addEventListener('pointercancel', (event) => this.onWorldPointerUp(event));
+
+    const world = document.createElement('div');
+    world.className = 'garden-page__world';
+    world.style.setProperty('--garden-page-world-width', `${this.worldSize.width}px`);
+    world.style.setProperty('--garden-page-world-height', `${this.worldSize.height}px`);
+    world.style.setProperty('--garden-page-world-pan-x', `${this.worldPan.x}px`);
+    world.style.setProperty('--garden-page-world-pan-y', `${this.worldPan.y}px`);
+    world.style.setProperty('--garden-page-world-zoom', String(this.worldZoom));
+
+    shell.append(world);
+    return { shell, world };
   }
 
   createSeedPopup() {
@@ -409,6 +459,7 @@ export class GardenPlotManager {
     );
     const hasPlantableSeed = seeds.some((seed) => seed.quantity > 0);
     this.ensureTiles(garden.plot.maxTiles);
+    this.syncWorldSize(garden.plot.maxTiles);
     this.ensureEmptySeedRow();
     this.ensureSeedRows(seeds);
 
@@ -785,6 +836,7 @@ export class GardenPlotManager {
     element.classList.remove(STAR_LEVEL_LABEL_CLASS);
     delete element.dataset.starTone;
     delete element.dataset.starCount;
+    delete element.dataset.starSlots;
     this.setText(element, '');
     element.removeAttribute('aria-label');
   }
@@ -873,6 +925,29 @@ export class GardenPlotManager {
     }
   }
 
+  syncWorldSize(maxTiles = 0) {
+    const rowCount = Math.max(1, Math.ceil(Number(maxTiles || 0) / BOX_PLOT_COLUMNS));
+    const contentHeight =
+      WORLD_ROWS_PADDING_TOP +
+      rowCount * WORLD_ROW_HEIGHT +
+      Math.max(0, rowCount - 1) * WORLD_ROW_GAP +
+      WORLD_EDGE_EXTENSION * 2;
+    const nextSize = {
+      width: WORLD_WIDTH,
+      height: Math.max(WORLD_MIN_HEIGHT, contentHeight),
+    };
+
+    if (
+      nextSize.width === this.worldSize.width &&
+      nextSize.height === this.worldSize.height
+    ) {
+      return;
+    }
+
+    this.worldSize = nextSize;
+    this.setWorldViewport(this.worldPan.x, this.worldPan.y, this.worldZoom);
+  }
+
   ensureEmptySeedRow() {
     if (!this.emptySeedRef) {
       this.createEmptySeedRow();
@@ -895,6 +970,12 @@ export class GardenPlotManager {
   }
 
   onTileClick(tileNumber, event) {
+    if (event?.type === 'click' && this.isWorldClickSuppressed()) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     const snapshot = this.gameplayFacade.getSnapshot();
     const garden = snapshot.garden;
     const tile = garden.plot.tiles.find((candidate) => candidate.tileNumber === tileNumber);
@@ -902,6 +983,7 @@ export class GardenPlotManager {
     const clickedLabel = this.isTileLabelClick(event);
     const clickedPlant = this.isTilePlantClick(event);
     const clickedAction = this.isTileActionClick(event, refs);
+    const clickedHarvestArea = this.isTileHarvestAreaClick(event, refs);
     const canPlantSelectedSeed = this.canPlantSelectedSeed(tile, snapshot);
     const keyboardRowAction =
       event?.target === event?.currentTarget && event?.detail === 0;
@@ -970,7 +1052,7 @@ export class GardenPlotManager {
     }
 
     if (tile.phase === 'ready') {
-      if (clickedAction || clickedPlant || keyboardRowAction) {
+      if (clickedAction || clickedPlant || clickedHarvestArea || keyboardRowAction) {
         this.gameplayFacade.startGardenHarvest(tileNumber);
         this.render(this.gameplayFacade.getSnapshot());
       }
@@ -1023,6 +1105,10 @@ export class GardenPlotManager {
 
   isTilePlantClick(event) {
     return Boolean(event?.target?.closest?.('.garden-page__plot-plant'));
+  }
+
+  isTileHarvestAreaClick(event, refs) {
+    return Boolean(refs?.boxFrame && event?.target && refs.boxFrame.contains(event.target));
   }
 
   onTileLabelClick(tileNumber, event) {
@@ -1497,6 +1583,346 @@ export class GardenPlotManager {
     }
 
     this.boughtTileAnimationResets.clear();
+  }
+
+  onWorldPointerDown(event) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const pointerId = this.getPointerId(event);
+    this.clearWorldSettleTimers();
+    this.refs.world?.world?.classList.remove('is-settling');
+    this.refs.world?.shell?.classList.add('is-dragging');
+    this.worldPointers.set(pointerId, {
+      pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
+
+    if (this.worldPointers.size >= 2) {
+      this.startWorldPinchGesture();
+    } else {
+      this.worldGesture = {
+        type: 'pan',
+        pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        panX: this.worldPan.x,
+        panY: this.worldPan.y,
+        didDrag: false,
+      };
+    }
+
+    if (event.pointerId !== undefined) {
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    }
+  }
+
+  onWorldPointerMove(event) {
+    const pointerId = this.getPointerId(event);
+
+    if (!this.worldPointers.has(pointerId)) {
+      return;
+    }
+
+    this.worldPointers.set(pointerId, {
+      pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
+
+    if (this.worldGesture?.type === 'pinch') {
+      this.updateWorldPinchGesture(event);
+      return;
+    }
+
+    if (!this.worldGesture || this.worldGesture.pointerId !== pointerId) {
+      return;
+    }
+
+    const scale = this.getUiScale();
+    const deltaX = (event.clientX - this.worldGesture.startX) / scale;
+    const deltaY = (event.clientY - this.worldGesture.startY) / scale;
+
+    if (
+      !this.worldGesture.didDrag &&
+      Math.hypot(deltaX, deltaY) < WORLD_DRAG_THRESHOLD
+    ) {
+      return;
+    }
+
+    this.worldGesture.didDrag = true;
+    this.suppressWorldClick();
+    this.setWorldPan(this.worldGesture.panX + deltaX, this.worldGesture.panY + deltaY, {
+      rubber: true,
+    });
+    event.preventDefault();
+  }
+
+  onWorldPointerUp(event) {
+    const pointerId = this.getPointerId(event);
+
+    if (!this.worldPointers.has(pointerId)) {
+      return;
+    }
+
+    if (event.pointerId !== undefined) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    }
+
+    this.worldPointers.delete(pointerId);
+
+    if (this.worldPointers.size >= 2) {
+      this.startWorldPinchGesture();
+      return;
+    }
+
+    if (this.worldPointers.size === 1) {
+      const remainingPointer = [...this.worldPointers.values()][0];
+      this.worldGesture = {
+        type: 'pan',
+        pointerId: remainingPointer.pointerId,
+        startX: remainingPointer.clientX,
+        startY: remainingPointer.clientY,
+        panX: this.worldPan.x,
+        panY: this.worldPan.y,
+        didDrag: true,
+      };
+      return;
+    }
+
+    this.refs.world?.shell?.classList.remove('is-dragging');
+    this.worldGesture = null;
+    this.settleWorldViewport();
+  }
+
+  startWorldPinchGesture() {
+    const points = [...this.worldPointers.values()].slice(-2);
+
+    if (points.length < 2) {
+      return;
+    }
+
+    const midpoint = this.getPointerMidpoint(points[0], points[1]);
+    const sourceMidpoint = this.getShellSourcePoint(midpoint.clientX, midpoint.clientY);
+    const startZoom = this.worldZoom;
+
+    this.worldGesture = {
+      type: 'pinch',
+      pointerIds: [points[0].pointerId, points[1].pointerId],
+      startDistance: Math.max(1, this.getPointerDistance(points[0], points[1])),
+      startWorldX: (sourceMidpoint.x - this.worldPan.x) / startZoom,
+      startWorldY: (sourceMidpoint.y - this.worldPan.y) / startZoom,
+      startZoom,
+      didDrag: true,
+    };
+    this.suppressWorldClick();
+  }
+
+  updateWorldPinchGesture(event) {
+    const [firstId, secondId] = this.worldGesture.pointerIds;
+    const firstPointer = this.worldPointers.get(firstId);
+    const secondPointer = this.worldPointers.get(secondId);
+
+    if (!firstPointer || !secondPointer) {
+      return;
+    }
+
+    const distance = Math.max(1, this.getPointerDistance(firstPointer, secondPointer));
+    const rawZoom =
+      this.worldGesture.startZoom * (distance / this.worldGesture.startDistance);
+    const zoom = this.getRubberZoom(rawZoom);
+    const midpoint = this.getPointerMidpoint(firstPointer, secondPointer);
+    const sourceMidpoint = this.getShellSourcePoint(midpoint.clientX, midpoint.clientY);
+
+    this.setWorldViewport(
+      sourceMidpoint.x - this.worldGesture.startWorldX * zoom,
+      sourceMidpoint.y - this.worldGesture.startWorldY * zoom,
+      zoom,
+      { rubber: true },
+    );
+    event.preventDefault();
+  }
+
+  getPointerId(event) {
+    return event.pointerId ?? 'mouse';
+  }
+
+  getPointerDistance(firstPointer, secondPointer) {
+    return Math.hypot(
+      secondPointer.clientX - firstPointer.clientX,
+      secondPointer.clientY - firstPointer.clientY,
+    );
+  }
+
+  getPointerMidpoint(firstPointer, secondPointer) {
+    return {
+      clientX: (firstPointer.clientX + secondPointer.clientX) / 2,
+      clientY: (firstPointer.clientY + secondPointer.clientY) / 2,
+    };
+  }
+
+  getShellSourcePoint(clientX, clientY) {
+    const shellRect = this.refs.world?.shell?.getBoundingClientRect?.();
+    const scale = this.getUiScale();
+
+    return {
+      x: ((clientX ?? 0) - (shellRect?.left ?? 0)) / scale,
+      y: ((clientY ?? 0) - (shellRect?.top ?? 0)) / scale,
+    };
+  }
+
+  setWorldPan(x, y, { rubber = false } = {}) {
+    this.setWorldViewport(x, y, this.worldZoom, { rubber });
+  }
+
+  setWorldViewport(x, y, zoom = this.worldZoom, { rubber = false, animate = false } = {}) {
+    const nextZoom = rubber ? this.getRubberZoom(zoom) : this.clampWorldZoom(zoom);
+    const nextPan = rubber
+      ? this.getRubberPan(x, y, nextZoom)
+      : this.clampWorldPan(x, y, nextZoom);
+
+    this.worldPan = nextPan;
+    this.worldZoom = nextZoom;
+    this.applyWorldViewport({ animate });
+  }
+
+  applyWorldViewport({ animate = false } = {}) {
+    const world = this.refs.world?.world;
+
+    if (!world) {
+      return;
+    }
+
+    world.style.setProperty('--garden-page-world-width', `${this.worldSize.width}px`);
+    world.style.setProperty('--garden-page-world-height', `${this.worldSize.height}px`);
+    world.style.setProperty('--garden-page-world-pan-x', `${this.worldPan.x}px`);
+    world.style.setProperty('--garden-page-world-pan-y', `${this.worldPan.y}px`);
+    world.style.setProperty('--garden-page-world-zoom', String(this.worldZoom));
+
+    if (!animate) {
+      return;
+    }
+
+    world.classList.add('is-settling');
+    window.clearTimeout(this.worldSettleClassTimeout);
+    this.worldSettleClassTimeout = window.setTimeout(() => {
+      world.classList.remove('is-settling');
+      this.worldSettleClassTimeout = null;
+    }, WORLD_SETTLE_CLASS_MS);
+  }
+
+  settleWorldViewport() {
+    this.setWorldViewport(this.worldPan.x, this.worldPan.y, this.worldZoom, {
+      rubber: false,
+      animate: true,
+    });
+  }
+
+  suppressWorldClick() {
+    this.suppressWorldClickUntilMs = Date.now() + 450;
+  }
+
+  isWorldClickSuppressed() {
+    if (Date.now() > this.suppressWorldClickUntilMs) {
+      this.suppressWorldClickUntilMs = 0;
+      return false;
+    }
+
+    return true;
+  }
+
+  clearWorldSettleTimers() {
+    window.clearTimeout(this.worldSettleClassTimeout);
+    this.worldSettleClassTimeout = null;
+  }
+
+  getWorldPanBounds(zoom = this.worldZoom) {
+    const shellRect = this.refs.world?.shell?.getBoundingClientRect?.();
+    const scale = this.getUiScale();
+    const shellWidth = Math.max(0, (shellRect?.width ?? 0) / scale);
+    const shellHeight = Math.max(0, (shellRect?.height ?? 0) / scale);
+    const minX = Math.min(0, shellWidth - this.worldSize.width * zoom);
+    const minY = Math.min(0, shellHeight - this.worldSize.height * zoom);
+
+    return {
+      minX,
+      maxX: 0,
+      minY,
+      maxY: 0,
+    };
+  }
+
+  clampWorldPan(x, y, zoom = this.worldZoom) {
+    const bounds = this.getWorldPanBounds(zoom);
+
+    return {
+      x: Math.min(bounds.maxX, Math.max(bounds.minX, x)),
+      y: Math.min(bounds.maxY, Math.max(bounds.minY, y)),
+    };
+  }
+
+  getRubberPan(x, y, zoom = this.worldZoom) {
+    const bounds = this.getWorldPanBounds(zoom);
+
+    return {
+      x: this.rubberClampValue(
+        x,
+        bounds.minX,
+        bounds.maxX,
+        WORLD_PAN_RUBBER_LIMIT,
+      ),
+      y: this.rubberClampValue(
+        y,
+        bounds.minY,
+        bounds.maxY,
+        WORLD_PAN_RUBBER_LIMIT,
+      ),
+    };
+  }
+
+  clampWorldZoom(zoom) {
+    return Math.min(WORLD_MAX_ZOOM, Math.max(WORLD_MIN_ZOOM, zoom));
+  }
+
+  getRubberZoom(zoom) {
+    return this.rubberClampValue(
+      zoom,
+      WORLD_MIN_ZOOM,
+      WORLD_MAX_ZOOM,
+      WORLD_ZOOM_RUBBER_LIMIT,
+    );
+  }
+
+  rubberClampValue(value, min, max, limit) {
+    if (value < min) {
+      return Math.max(min - limit, min - this.getRubberDistance(min - value, limit));
+    }
+
+    if (value > max) {
+      return Math.min(max + limit, max + this.getRubberDistance(value - max, limit));
+    }
+
+    return value;
+  }
+
+  getRubberDistance(distance, limit) {
+    if (limit <= 0) {
+      return 0;
+    }
+
+    return limit * (1 - 1 / (distance / limit + 1));
+  }
+
+  getUiScale() {
+    const rawScale =
+      this.root?.computedStyleMap?.()?.get?.('--style-ui-scale')?.value ??
+      window.getComputedStyle(this.root ?? document.documentElement)
+        .getPropertyValue('--style-ui-scale')
+        .trim();
+    const scale = Number.parseFloat(rawScale);
+    return Number.isFinite(scale) && scale > 0 ? scale : 1;
   }
 
   formatCoin(value) {

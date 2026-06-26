@@ -35,6 +35,7 @@
 - Game-stage text copy/paste suppression needs both CSS `user-select`/touch-callout rules and an app-level guard for clipboard, context menu, selectstart, and paste `beforeinput` events.
 - Interactive hover/press states should not tint backgrounds; keep `--style-active-surface` equal to the current surface and rely on weight/border cues, never below-text line decoration.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
+- Web-wide source-scaled overlays must subtract the centered source-layer rect, not the widened stage rect, when converting target screen coords to source coords.
 - Popup-layer descendants use `box-sizing: content-box`; full-width dialog buttons need explicit `box-sizing: border-box` or padding/borders spill past the panel.
 - Centered content inside source-scaled room layers must account for ui-layer padding/content-box sizing; plain auto margins center in the padded layer, not the visual stage.
 - Stage-mounted global dialogs such as player/alliance info need their own `--style-ui-scale` source layer and content-box descendants; otherwise they render tiny compared with page popup-layer dialogs.
@@ -45,6 +46,7 @@
 - Timer progress bars should not depend on 250ms gameplay snapshots for visual smoothness; snapshots provide authoritative state, while UI derives in-between fill and label time.
 - When smooth timer bars are desired, derive fill, remaining label, and ARIA percent from one inferred end time; do not let snapshot `progress` disagree with `remainingMs`.
 - Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
+- Cauldron brew/bottle success state belongs in the active brew text and progress rail; reserve cauldron messages for blocked/error feedback so stale success text does not fight the timer state.
 - Reward flyouts on Android WebView should avoid per-event dynamic `@keyframes`; use transform/opacity Web Animations API paths and cap active particles.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
 - Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
@@ -98,6 +100,7 @@
 - Keep event qualification copy in tasks/rewards, not under the leaderboard rows; the leaderboard tab should stay table-only.
 - World event dialog top header should stay fixed with a separator; split points and resolve time into separate rows, and keep task text wrapping in a list.
 - World event dialog overflow belongs on `.workshop-page__world-notice-frame`; register that frame with `ScrollCueManager` so the shared progress rail appears only when needed.
+- World event leaderboard rows must not carry `.workshop-page__leaderboard-rows`; that creates a nested scroll cue and snaps mobile scroll on refresh.
 - World event same-tab refreshes must restore `.workshop-page__world-notice-frame.scrollTop`; live snapshot/leaderboard updates otherwise bounce mobile scrolling back to the top.
 - World event same-tab refreshes should reuse the existing `.workshop-page__world-notice-frame`; replacing the scroll element can still break mobile momentum even when `scrollTop` is restored.
 - World event character entry belongs on Workshop only; Garden should not mount or place `WorkshopWorldNoticeManager`.
@@ -113,6 +116,7 @@
 - Page swipe direction lock should wait for a clear axis ratio, and `style-page-scroll` roots need `touch-action: pan-y`; otherwise tiny early vertical drift inside scroll pages can steal horizontal swipes.
 - Scaled full-page UI layers should stay unscrolled; put an inner source-positioned scroll root inside them, or content can visibly pass under top/bottom chrome before clipping.
 - Garden's inner scroll root should stop at `--style-room-chat-clearance` only; adding bottom tab clearance double-counts the shared world-chat gap.
+- Garden's pannable plot world should mount directly under the room UI layer with an edge-to-edge shell and 16px internal row padding; mounting it inside `.garden-page__content` clips side movement.
 - Alliance quest notifications need quest/progress/contribution rows retained outside the popup; the full public alliance list can stay popup-retained.
 - Alliance income deltas currently skip if the player has same-week quest contribution or reward rows in another alliance; new alliances can show 0 until weekly reset.
 - Guild adventurer row notification dots need row-local placement; the generic button badge lands between the name and status columns.
@@ -141,6 +145,7 @@
 - Garden seeds and Brewing herbs are tap-first item controls only; do not reintroduce drag/drop for these rows.
 - Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
 - Garden plantable empty plots should plant from the whole slot/row; seed-name labels still open seed choices and no-seed slots stay inert.
+- Ready Garden plot boxes should harvest from the visible plot frame, not only the plant/action label; the plant icon is too small as the sole tap target.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
@@ -148,6 +153,7 @@
 - FTUE blocking dialogs should preserve the current reveal gate; clearing `data-tutorial-reveal` makes unrevealed room chrome appear behind the dialog.
 - FTUE guide should also hide behind app-level account gates such as fresh-start/account-link choice dialogs, not only page popups.
 - Screenshot QA must dismiss app-level account/server gates before trusting target-dialog DOM checks; the target can exist behind a blocking gate.
+- After screenshot QA viewport changes, wait for `.app-online-gate[hidden]`; the server gate can flash during reconnect and stale screenshots can be blank even if later DOM metrics pass.
 - Top-panel screenshot QA on a fresh FTUE save must reveal `top mana` or complete FTUE first; empty `data-tutorial-reveal` hides the chrome.
 - FTUE should also hide behind ordinary room popups unless the active step targets that popup or explicitly uses popup-only copy guidance.
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
@@ -163,6 +169,7 @@
 - Tutorial flow logic should run through `TutorialLogicManager`; step definitions own reveal tokens/effects, reminder timing stays in `TutorialReminderManager`, and `TutorialFacade` only renders the returned view state.
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
 - Dev browser automation exposes `window.cheats` with `VITE_ENABLE_CHEATS=true`, but `window.tutorialCapture` needs its own `VITE_ENABLE_TUTORIAL_CAPTURE=true`; cheats alone do not mount the tutorial capture helper.
+- Brewing drag screenshot QA needs an unlocked level-4+ save or `VITE_ENABLE_CHEATS=true`; a level-2 local save cannot reach herb drag controls.
 - Tutorial motion/visual QA harnesses must set `--style-ui-scale` to `3 * viewportScale`; using only viewport scale makes Elara/source UI look tiny and gives misleading screenshots.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
 - FTUE lesson panels have no visible `close` border label; players collapse them with the Elara portrait button.
@@ -222,7 +229,7 @@
 - Elara's visible image size should stay stable as the lesson button; enlarge hit area separately if needed.
 - FTUE lesson panel should keep the left-paired Elara/box geometry and avoid protected controls.
 - Brewing FTUE lesson placement must protect the herbs box, cauldron, and bottom brewing controls so Elara never hides brew status/progress.
-- Brewing cauldron boxes default to three content rows, then grow from row count when selected recipe or staged ingredient groups exceed three.
+- Brewing cauldron boxes default to three content rows, then grow for selected recipe requirements or staged ingredient/status rows so text never jumps after the first drop.
 - Active brew status/progress should replace the cauldron ingredient slot; leaving the normal slot visible makes the box read taller.
 - Brewing world pan bounds should stop above the herbs box including border-title overhang; do not draw a world boundary stroke behind the herb tray.
 - Brewing first-load world fit must measure the bordered cauldron box, not just its content width, or cauldrons still clip at the side edge.
@@ -244,6 +251,7 @@
 - Guild adventurers should use a fitting non-Elara `iconKey` from `src/assets/characters/character-descriptions.txt`.
 - Chibi character image prompts must lock exact eye construction: half-lidded sleepy eyes, small flat oval pupils, same pupil size/position, and no round anime/shiny dot pupils.
 - Generated character sheet cuts need dark/magenta background QA against `mira.png`; use premultiplied-alpha resizing, de-matte pale edges, and remove opaque neutral-white holes near hair/props or sheet artifacts remain.
+- The Workshop bag popup is PagesFacade-owned global catalog UI; Garden/Brewing icon buttons expand inline room inventory boxes instead of opening the global bag.
 - Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
 - Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from target level 6 onward, adjacent rows should not reuse exact requirement item keys.
@@ -294,6 +302,7 @@
 - Pixi `autoDensity` can write inline canvas pixel sizes; reassert `width/height: 100%` after init so the authored 1080x2170 canvas fits the scaled stage.
 - Pixi text rasterizes before parent scale; wait for web fonts and render text textures at source-scale resolution or the UI looks like wrong/blurry fonts.
 - Spine Pixi runtime major/minor must match the Spine Editor major/minor used to export skeletons; current `@esotericsoftware/spine-pixi-v8` needs Pixi `>=8.16`.
+- Idle Outpost `farming-tile.skel` is Spine `4.0.64`; in Idle Wizard prefer cropped atlas PNGs or a re-export before loading it through the Spine 4.3 runtime.
 - Pixi DOM mirror must schedule renders on pointerdown/up/cancel; interval-only rendering can miss short `:active` button press states.
 - Atlas sprites in DOM should use inline SVG `viewBox` crops instead of CSS background positioning; they scale like images and keep Pixi mirror frame lookup simple.
 - Generated atlases need transparent-pixel alpha bleed and edge extrusion; raw RGB garbage or blank padding can show as seams when Pixi/SVG scales sprites.
@@ -463,12 +472,12 @@
 - Brewing keeps the action button generic (`brew (N mana)`) as a one-line bottom-left cauldron border label; cauldron status carries matched potion, locked recipe, and wasted mix state.
 - Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
 - Brewing page unmounts should clear DOM/subscriptions only; selected recipe and current cauldron state must survive room swaps so `fill recipe` stays available after bottling.
-- Brewing recipe selection comes from the recipes popup; selecting stages full ingredients when owned, otherwise the cauldron guide shows missing counts.
+- Brewing recipe selection comes from the recipes popup; selected recipes render their requirements inside the cauldron as stable placed/required rows even when ingredients are missing.
 - Brewing `fill recipe` is only actionable before a brew starts; active brew phases must not show it or its notification dot because gameplay rejects recipe prep as `brew_in_progress`.
 - Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 sage`), not expanded numbered slots.
 - Brewing recipe guide height follows the selected recipe's grouped ingredient row count through the guide CSS variable.
 - Brewing recipe popup rows use an explicit `select` action; do not hide recipe selection behind the recipe name.
-- Brewing shows `recipes` and `potions` as sibling buttons, not a bordered recipes block; potions popup reads owned potion stacks from `snapshot.inventory`.
+- Brewing shows bottom `herbs` and `potions` icon buttons; herbs expands the add-to-cauldron box, and potions expands an inline owned-potion box from `snapshot.inventory`.
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
 - wasted potion is not researchable and sells for 1 coin by item-level sell price override.
 - Research prices come from SpacetimeDB `research_config`/`game_config.research`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
@@ -551,7 +560,7 @@
 - Garden herb harvest reward drops should originate from the plant inside the plot box; use the progress rail only as a row-mode fallback.
 - Keep herbs below the plot with enough space for active progress rows; bounded plot scrolling is acceptable once many plots are unlocked.
 - Garden page overflow belongs to `.garden-page__ui-layer`; plot and herb boxes should grow to content instead of using fixed inner row heights.
-- Garden seed/herb inventory expand state is page-manager-owned and survives room tab swaps; collapsed previews show three item rows.
+- Garden seed/herb inventory boxes open from bottom icon buttons, reset hidden on room swaps, and collapsed previews show three item rows.
 - Garden seed/herb inventory expansion should keep the expanded box inside the page scroll viewport, converting scaled DOM rect deltas back to source scroll pixels.
 
 ## Style
@@ -571,6 +580,7 @@
 - Resource color and icon modes are fixed on; normalize stale `monochrome`/`none` visual values to `resources`/`icons` and do not show those choices in settings.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
+- Room inventory entrypoints should follow Workshop `tasks`/`event`: icon/portrait over a small bordered lowercase label box, not icon-only buttons.
 - Workshop task row reordering should use CSS-transition FLIP, not `Element.animate`; the in-app browser target can lack WAAPI.
 - Room UI animation should use sine-ish interpolation; keep rubber from tiny keyframe overshoot, not y>1 easing curves.
 - Shared press/release motion should use individual `scale`/`translate`, not `transform`, so centered or positioned controls keep their existing transforms.
@@ -623,11 +633,11 @@
 - Brewing cauldron should not show a standalone `unknown mix` status row; no-match staged herbs already read through the wasted potion preview/action.
 - Brewing cauldron box should stay compact at partial fill, but leave action-row clearance for status plus five distinct ingredient rows.
 - Brewing cauldron top spacing must reserve the herb-list scroll progress rail so overflow herb rows do not touch the cauldron border.
-- Brewing cauldron should not show a separate `empty` clear button; ingredient rows own correction through their remove action.
-- Brewing action message should stay hidden; do not render helper/warning/result text under the brew button.
+- Brewing cauldron should not show separate `empty` or visible `remove` controls; ingredient rows stay tappable/ARIA-labeled for correction while visible copy stays contents-only.
+- Brewing action messages render only blocked/error feedback under the action; do not render successful brew/bottle helper text there.
 - Brewing active brew state belongs only in the active brew/progress row; keep cauldron status blank while brewing, brewed, bottling, or bottled.
 - Brewing action row should sit close under the cauldron; avoid a large vertical gap between cauldron and brew/bottle/collect controls.
-- Brewing cauldron staged ingredients display as adjacent quantity groups like `- 2 nettle`; do not show numbered slots.
+- Brewing cauldron staged ingredients display as adjacent quantity groups like `2 nettle`; do not show numbered slots or visible action words.
 - Brewing flow boxes can be broken by the late shared absolute-position style block; remove flow-managed Brewing boxes from that block when converting them to scroll layout.
 - Brewing workbench must reserve bottom clearance for fixed `select recipe`/`potions` buttons so scroll content cannot render underneath them.
 - Seed summon feedback is a transient flyout, not a persistent row in the `seeds` block.
@@ -743,8 +753,8 @@
 - Logs popup should auto-pin new entries only while the player is at top; preserve manual scroll position otherwise.
 - Timed progress bars should visually match the logs dialog rail: 3px high, compact black border, black fill, no visible timer label inside the rail.
 - Smooth timed progress bars with compositor `transform` transitions from the latest snapshot to completion; do not raise gameplay snapshot cadence just to reduce visible stepping.
-- Brewing selected recipe guide renders inside the cauldron; do not add a separate guide box back to the bottom of the room.
-- Brewing selected recipe guide sits above normal cauldron content; border actions like `change recipe` need a higher z-index or they can look visible but stop receiving taps.
+- Brewing selected recipe requirements render inside the cauldron as `placed/required` plus `need N`/`ready`; keep them stable before and after drops.
+- Brewing selected recipe rows are correction targets through tap/ARIA only; do not reintroduce visible `next` or `remove` text into the cauldron body.
 - Garden plot `.is-empty` means the plot has no active plant, not that its selected seed label is unavailable; keep resource-color overrides scoped so zero-count selected seeds can still show seed color.
 - Research item-name spans need their own `data-resource-color`; item icons alone do not color the text, and locked rows rely on the unavailable ancestor to suppress that color.
 

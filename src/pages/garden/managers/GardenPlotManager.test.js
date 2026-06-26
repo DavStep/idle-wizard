@@ -327,6 +327,12 @@ function createPointerEvent(
   return event;
 }
 
+function dispatchPointer(element, type, options) {
+  const event = createPointerEvent(type, options);
+  element.dispatchEvent(event);
+  return event;
+}
+
 function dispatchTouchLikePressStart(element, options) {
   element.dispatchEvent(createPointerEvent('pointerdown', options));
 }
@@ -357,9 +363,115 @@ describe('GardenPlotManager', () => {
     const rows = parent.querySelector('.garden-page__plot-rows');
 
     expect(plotRoot?.classList.contains('garden-page__plot-world')).toBe(true);
+    expect(plotRoot?.dataset.pageSwipeBlock).toBe('true');
     expect(plotRoot?.classList.contains('style-box')).toBe(false);
     expect(plotRoot?.querySelector('.style-box__title')).toBeNull();
+    expect(plotRoot?.querySelector('.garden-page__world-shell')).toBeTruthy();
+    expect(plotRoot?.querySelector('.garden-page__world')).toBeTruthy();
     expect(rows?.style.getPropertyValue('--garden-page-plot-columns')).toBe('3');
+  });
+
+  it('pans the garden world from a plot and suppresses the follow-up click', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 3,
+      selectedSeedKey: 'nettleSeed',
+      selectedSeedLabel: 'nettle seed',
+      selectedHerbKey: 'nettleHerb',
+      selectedHerbLabel: 'nettle',
+    });
+    const plantSelectedGardenSeed = vi.spyOn(gameplayFacade, 'plantSelectedGardenSeed');
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.garden-page__world-shell');
+    const row = parent.querySelector('.garden-page__plot-row');
+    Object.defineProperty(shell, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 200, height: 200 }),
+    });
+
+    dispatchPointer(row, 'pointerdown', {
+      pointerId: 1,
+      clientX: 100,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointermove', {
+      pointerId: 1,
+      clientX: 50,
+      clientY: 40,
+    });
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 1,
+      clientX: 50,
+      clientY: 40,
+    });
+    row.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    const world = parent.querySelector('.garden-page__world');
+    expect(world.style.getPropertyValue('--garden-page-world-pan-x')).toBe('-50px');
+    expect(world.style.getPropertyValue('--garden-page-world-pan-y')).toBe('-60px');
+    expect(plantSelectedGardenSeed).not.toHaveBeenCalled();
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('pinch-zooms the garden world', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.garden-page__world-shell');
+    const row = parent.querySelector('.garden-page__plot-row');
+    Object.defineProperty(shell, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 200, height: 200 }),
+    });
+
+    dispatchPointer(row, 'pointerdown', {
+      pointerId: 1,
+      clientX: 80,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointerdown', {
+      pointerId: 2,
+      clientX: 140,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointermove', {
+      pointerId: 2,
+      clientX: 176,
+      clientY: 100,
+    });
+
+    const world = parent.querySelector('.garden-page__world');
+    const zoom = Number.parseFloat(world.style.getPropertyValue('--garden-page-world-zoom'));
+    expect(zoom).toBeGreaterThan(1);
+
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 2,
+      clientX: 176,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 1,
+      clientX: 80,
+      clientY: 100,
+    });
+
+    expect(world.style.getPropertyValue('--garden-page-world-zoom')).toBe('1.16');
+
+    manager.unmount();
+    parent.remove();
   });
 
   it('shows plot stars inside each plot box', () => {
@@ -423,7 +535,7 @@ describe('GardenPlotManager', () => {
     expect(centeredRule).toContain('transform: translate(-50%, -50%);');
   });
 
-  it('styles buyable plot boxes as dashed buy slots', () => {
+  it('styles buyable plot slots as dashed transparent boxes', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const frameRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-row\.is-buy-slot\s+\.garden-page__plot-box-frame\s*\{(?<body>[^}]*)\}/,
@@ -441,13 +553,13 @@ describe('GardenPlotManager', () => {
       /\.garden-page__plot\s+\.garden-page__plot-row\.is-newly-bought\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
+    expect(frameRule).toContain('border: var(--style-border);');
     expect(frameRule).toContain('border-style: dashed;');
     expect(frameRule).toContain(
       'border-color: color-mix(in srgb, var(--style-stroke) 45%, transparent);',
     );
-    expect(frameRule).toContain(
-      'background: color-mix(in srgb, var(--style-surface) 55%, transparent);',
-    );
+    expect(frameRule).toContain('background-color: transparent;');
+    expect(frameRule).toContain('background-image: none;');
     expect(hiddenChromeRule).toContain('display: none;');
     expect(centeredActionRule).toContain('top: 50%;');
     expect(centeredActionRule).toContain('left: 50%;');
@@ -503,7 +615,7 @@ describe('GardenPlotManager', () => {
     );
   });
 
-  it('lets the Garden page scroll instead of fixing plot and catalog box heights', () => {
+  it('keeps the Garden world edge-to-edge while catalog boxes stay chrome-aligned', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const uiLayerRule = baseCss.match(
       /\.garden-page__ui-layer\s*\{(?<body>[^}]*)\}/,
@@ -513,6 +625,15 @@ describe('GardenPlotManager', () => {
     )?.groups?.body;
     const gardenBoxesRule = baseCss.match(
       /\.garden-page__plot,\s*\.garden-page__seeds,\s*\.garden-page__herbs\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const plotWorldRule = baseCss.match(
+      /\.garden-page__plot-world\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const worldShellRule = baseCss.match(
+      /\.garden-page__world-shell\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const worldRule = baseCss.match(
+      /\.garden-page__world\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const plotRowsRule = baseCss.match(
       /\.garden-page__plot-rows\s*\{(?<body>[^}]*)\}/,
@@ -536,8 +657,30 @@ describe('GardenPlotManager', () => {
     expect(contentRule).toContain('overflow: hidden auto;');
     expect(contentRule).toContain('touch-action: pan-y;');
     expect(gardenBoxesRule).toContain('position: relative;');
+    expect(plotWorldRule).toContain('position: absolute;');
+    expect(plotWorldRule).toContain(
+      'top: calc(var(--style-room-content-top) - var(--style-room-content-edge));',
+    );
+    expect(plotWorldRule).toContain('right: 0;');
+    expect(plotWorldRule).toContain('bottom: var(--style-room-chat-clearance);');
+    expect(plotWorldRule).toContain('left: 0;');
+    expect(plotWorldRule).toContain('overflow: hidden;');
+    expect(worldShellRule).toContain('touch-action: none;');
+    expect(worldRule).toContain('var(--garden-page-world-pan-x, 0px)');
+    expect(worldRule).toContain('var(--garden-page-world-pan-y, 0px)');
+    expect(worldRule).toContain('scale(var(--garden-page-world-zoom, 1))');
     expect(plotRowsRule).toContain('max-height: none;');
     expect(plotRowsRule).toContain('overflow: visible;');
+    expect(baseCss).toContain(
+      'padding: 8px var(--style-room-content-edge) 0;',
+    );
+    expect(inventoryRowsRule).toContain('display: grid;');
+    expect(inventoryRowsRule).toContain(
+      'grid-template-columns: repeat(2, minmax(0, 1fr));',
+    );
+    expect(inventoryRowsRule).toContain(
+      'min-height: calc(var(--style-row-min-height) * 3);',
+    );
     expect(inventoryRowsRule).toContain('max-height: none;');
     expect(inventoryRowsRule).toContain('overflow: visible;');
     expect(baseCss).not.toContain('--garden-page-plot-rows-height');
@@ -593,6 +736,36 @@ describe('GardenPlotManager', () => {
     expect(boxAction?.textContent).toBe('growing 6s');
     expect(boxTimer?.parentElement).toBe(boxAction);
     expect(boxTimer?.textContent).toBe('6s');
+  });
+
+  it('sizes plot soil and progress rails from the same visual width', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const frameRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-box-frame\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const plantRule = baseCss.match(
+      /\.garden-page__plot-plant\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const numberRule = baseCss.match(
+      /\.garden-page__plot-box-number\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const progressRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-progress\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(baseCss).toContain('--garden-page-plot-number-color: #3b2416;');
+    expect(frameRule).toContain('width: var(--garden-page-plot-visual-width);');
+    expect(frameRule).toContain('border: 0;');
+    expect(frameRule).toContain('background-position: center bottom;');
+    expect(frameRule).toContain('background-size: 100% auto;');
+    expect(numberRule).toContain('left: 10px;');
+    expect(numberRule).toContain('color: var(--garden-page-plot-number-color);');
+    expect(numberRule).toContain('font-size: var(--style-font-size);');
+    expect(progressRule).toContain('justify-self: center;');
+    expect(progressRule).toContain('width: var(--garden-page-plot-visual-width);');
+    expect(plantRule).toContain('bottom: 18px;');
+    expect(plantRule).toContain('width: 44px;');
+    expect(plantRule).toContain('height: 48px;');
   });
 
   it('softens active plot progress without continuously animating on mobile', () => {
@@ -1600,6 +1773,40 @@ describe('GardenPlotManager', () => {
     const plotRow = parent.querySelector('.garden-page__plot-row');
     plotRow
       .querySelector('.garden-page__plot-plant')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(tile.phase).toBe('harvesting');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvesting 3s');
+  });
+
+  it('starts harvest when a ready plot box frame is clicked beside the plant', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 1,
+      selectedSeedKey: 'sageSeed',
+      selectedSeedLabel: 'sage seed',
+      seedItemTypeId: 1,
+      seedKey: 'sageSeed',
+      seedLabel: 'sage seed',
+      herbItemTypeId: 1001,
+      herbKey: 'sageHerb',
+      herbLabel: 'sage',
+      phase: 'ready',
+      totalMs: 0,
+      remainingMs: 0,
+      progress: 1,
+      process: null,
+    });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow
+      .querySelector('.garden-page__plot-box-frame')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(tile.phase).toBe('harvesting');

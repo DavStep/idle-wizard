@@ -471,6 +471,7 @@ export class TutorialHintManager {
       return;
     }
 
+    this.root.hidden = false;
     const rect = this.getTargetCueSourceRect(target);
 
     if (!rect) {
@@ -484,7 +485,6 @@ export class TutorialHintManager {
 
     this.clearTargetCueFrame();
     this.blockingDialogSuspended = false;
-    this.root.hidden = false;
     this.hidePromptBox();
     this.positionPointer(rect, showPointer, null);
     this.syncRootVisibility();
@@ -990,17 +990,17 @@ export class TutorialHintManager {
   }
 
   getSourceRect(target) {
-    const stageRect = this.stage.getBoundingClientRect();
+    const layerRect = this.getSourceLayerRect();
     const targetRect = target.getBoundingClientRect();
     const scale = this.getUiScale();
 
-    if (targetRect.width <= 0 && targetRect.height <= 0) {
+    if (!layerRect || (targetRect.width <= 0 && targetRect.height <= 0)) {
       return null;
     }
 
     return {
-      left: (targetRect.left - stageRect.left) / scale,
-      top: (targetRect.top - stageRect.top) / scale,
+      left: (targetRect.left - layerRect.left) / scale,
+      top: (targetRect.top - layerRect.top) / scale,
       width: targetRect.width / scale,
       height: targetRect.height / scale,
     };
@@ -1821,29 +1821,41 @@ export class TutorialHintManager {
       return null;
     }
 
-    const stageRect = this.stage.getBoundingClientRect();
+    const layerRect = this.getSourceLayerRect();
     const rect = element.getBoundingClientRect();
     const scale = this.getUiScale();
 
-    if (rect.width <= 0 || rect.height <= 0) {
+    if (!layerRect || rect.width <= 0 || rect.height <= 0) {
       return null;
     }
 
     return {
-      left: (rect.left - stageRect.left) / scale,
-      top: (rect.top - stageRect.top) / scale,
-      right: (rect.right - stageRect.left) / scale,
-      bottom: (rect.bottom - stageRect.top) / scale,
+      left: (rect.left - layerRect.left) / scale,
+      top: (rect.top - layerRect.top) / scale,
+      right: (rect.right - layerRect.left) / scale,
+      bottom: (rect.bottom - layerRect.top) / scale,
     };
   }
 
+  getSourceLayerRect() {
+    const layerRect = this.root?.getBoundingClientRect?.();
+
+    if (layerRect?.width > 0 && layerRect?.height > 0) {
+      return layerRect;
+    }
+
+    const stageRect = this.stage?.getBoundingClientRect?.();
+
+    return stageRect?.width > 0 && stageRect?.height > 0 ? stageRect : null;
+  }
+
   getSourceBounds() {
-    const rect = this.stage.getBoundingClientRect();
+    const rect = this.getSourceLayerRect();
     const scale = this.getUiScale();
 
     return {
-      width: rect.width > 0 ? rect.width / scale : 360,
-      height: rect.height > 0 ? rect.height / scale : 720,
+      width: rect?.width > 0 ? rect.width / scale : 360,
+      height: rect?.height > 0 ? rect.height / scale : 720,
     };
   }
 

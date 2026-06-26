@@ -3,6 +3,55 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { getCompletedResearchIds } from '../../shared/itemResearchStatus.js';
 import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
+import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
+import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
+
+const RECIPES_PER_PAGE = 2;
+const PAGES_PER_SPREAD = 2;
+const RECIPES_PER_SPREAD = RECIPES_PER_PAGE * PAGES_PER_SPREAD;
+const BOOK_SWIPE_THRESHOLD = 30;
+const BOOK_TURN_CLASS_MS = 220;
+
+const POTION_INFO_BY_KEY = Object.freeze({
+  manaTonic: 'a plain workshop tonic for waking tired tools and tired hands.',
+  minorHealingPotion: 'a small healer bottle for cuts, fever, and road work.',
+  nettleVigor: 'a sharp green brew that keeps a worker upright through long chores.',
+  calmingDraught: 'a quiet draught for steady nerves and easier sleep.',
+  simpleAntidote: 'a bitter bottle kept near stings, rot, and bad water.',
+  venomDraught: 'a dangerous mixture studied in small, careful doses.',
+  briarWard: 'a thorn-scented ward for travelers crossing rough hedges.',
+  lanternTonic: 'a bright tonic used when paths or cellars refuse to stay visible.',
+  healingPotion: 'a stronger healer brew for wounds that minor bottles cannot cover.',
+  moonlitFocus: 'a pale focus brew for careful copying, sorting, and night reading.',
+  sunrootStamina: 'a warm field brew for hauling, digging, and stubborn work.',
+  frostmossCleanse: 'a cold cleansing draught for smoke, grime, and sour wells.',
+  sleepDraught: 'a heavy bottle for forced rest when worry will not leave.',
+  elixirOfLife: 'a rare restorative kept for moments too serious for ordinary care.',
+  starLuckPhiltre: 'a strange philtre poured when chance needs a small nudge.',
+  dragonCourage: 'a hot courage brew for shaking knees and hard doors.',
+  deepDreamVision: 'a dark seeing draught for dreams that remember useful things.',
+  pactWard: 'a formal ward for seals, bargains, and unsafe promises.',
+  silverleafSalve: 'a soft salve for clean bandages and slow-healing skin.',
+  yarrowPoultice: 'a poultice brewed thick for bruises, sprains, and travel sores.',
+  hyssopClarity: 'a clear draught for careful notes and unclouded thought.',
+  valerianRest: 'a rest brew for sore bodies after work runs too long.',
+  comfreyBalm: 'a heavy balm for bones, joints, and patient recovery.',
+  nightshadeVeil: 'a shadowed veil carried only by careful hands.',
+  belladonnaSight: 'a risky sight brew for glimpses best taken briefly.',
+  wormwoodPurge: 'a harsh purge for sickness that will not leave politely.',
+  snowdropBreath: 'a cold breath draught for smoke, panic, and winter air.',
+  pearlrootDraught: 'a pale draught saved for rare cases and exact work.',
+  ashenMemory: 'a gray memory brew for old rooms and older mistakes.',
+  silverleafQuiet: 'a quieting brew for noise, fear, and crowded halls.',
+  emberSight: 'a hot sight brew for finding the last spark in dark places.',
+  thornSleep: 'a thorned sleep brew, useful only when handled with care.',
+  glassMoonElixir: 'a clear moon elixir for nights when ordinary sense feels thin.',
+  rootboundResolve: 'a stubborn root brew for standing ground under pressure.',
+  nightOrchardTonic: 'a dark orchard tonic, sweet first and heavy after.',
+  starlessCourage: 'a courage brew made for work done without witnesses.',
+  frostveinDraught: 'a cold vein draught for heat, swelling, and fevered hands.',
+  bloodlightWard: 'a red ward mixed for dangerous paths and bad omens.',
+});
 
 export class BrewingRecipeBookManager {
   constructor({
@@ -29,19 +78,35 @@ export class BrewingRecipeBookManager {
     this.visible = false;
     this.previousFocus = null;
     this.renderedSignature = null;
-    this.expandedRecipeKey = null;
+    this.currentSpreadIndex = 0;
+    this.bookPointer = null;
+    this.bookTurnClassTimeout = null;
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
       }
     };
     this.handleKeydown = (event) => {
-      if (!this.visible || event.key !== 'Escape') {
+      if (!this.visible) {
         return;
       }
 
-      event.preventDefault();
-      this.hide();
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        this.hide();
+        return;
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        this.showPreviousSpread();
+        return;
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        this.showNextSpread();
+      }
     };
   }
 
@@ -76,7 +141,9 @@ export class BrewingRecipeBookManager {
     this.visible = false;
     this.previousFocus = null;
     this.renderedSignature = null;
-    this.expandedRecipeKey = null;
+    this.currentSpreadIndex = 0;
+    this.bookPointer = null;
+    this.clearBookTurnClass();
   }
 
   createPopup() {
@@ -102,8 +169,8 @@ export class BrewingRecipeBookManager {
     closeButton.textContent = 'close';
     closeButton.addEventListener('click', () => this.hide());
 
-    const rows = document.createElement('div');
-    rows.className = 'brewing-page__recipe-list';
+    const book = this.createRecipeBook();
+    const pagination = this.createRecipePagination();
 
     const currentSummary = this.createCurrentSummary();
     const actionSummary = this.createActionSummary();
@@ -117,7 +184,8 @@ export class BrewingRecipeBookManager {
       actionSummary.root,
       quantitySummary.root,
       autoSummary.root,
-      rows,
+      book.root,
+      pagination.root,
     );
     popup.append(dialog);
     this.refs.dialog = dialog;
@@ -133,8 +201,58 @@ export class BrewingRecipeBookManager {
     this.refs.autoSummary = autoSummary.root;
     this.refs.autoStateButton = autoSummary.stateButton;
     this.refs.autoRecipeValue = autoSummary.recipeValue;
-    this.refs.rows = rows;
+    this.refs.book = book.root;
+    this.refs.leftPage = book.leftPage;
+    this.refs.rightPage = book.rightPage;
+    this.refs.previousSpreadButton = pagination.previousButton;
+    this.refs.nextSpreadButton = pagination.nextButton;
+    this.refs.pageLabel = pagination.pageLabel;
     return popup;
+  }
+
+  createRecipeBook() {
+    const root = document.createElement('div');
+    root.className = 'brewing-page__recipe-book';
+    root.dataset.pageSwipeBlock = 'true';
+    root.addEventListener('pointerdown', (event) => this.onBookPointerDown(event));
+    root.addEventListener('pointerup', (event) => this.onBookPointerUp(event));
+    root.addEventListener('pointercancel', () => {
+      this.bookPointer = null;
+    });
+
+    const leftPage = document.createElement('section');
+    leftPage.className = 'brewing-page__recipe-page brewing-page__recipe-page--left';
+    leftPage.setAttribute('aria-label', 'left recipe page');
+
+    const rightPage = document.createElement('section');
+    rightPage.className = 'brewing-page__recipe-page brewing-page__recipe-page--right';
+    rightPage.setAttribute('aria-label', 'right recipe page');
+
+    root.append(leftPage, rightPage);
+    return { root, leftPage, rightPage };
+  }
+
+  createRecipePagination() {
+    const root = document.createElement('div');
+    root.className = 'brewing-page__recipe-book-controls';
+
+    const previousButton = document.createElement('button');
+    previousButton.className = 'brewing-page__recipe-page-button';
+    previousButton.type = 'button';
+    previousButton.textContent = 'prev';
+    previousButton.addEventListener('click', () => this.showPreviousSpread());
+
+    const pageLabel = document.createElement('span');
+    pageLabel.className = 'brewing-page__recipe-page-label';
+
+    const nextButton = document.createElement('button');
+    nextButton.className = 'brewing-page__recipe-page-button';
+    nextButton.type = 'button';
+    nextButton.textContent = 'next';
+    nextButton.addEventListener('click', () => this.showNextSpread());
+
+    root.append(previousButton, pageLabel, nextButton);
+    return { root, previousButton, pageLabel, nextButton };
   }
 
   createCurrentSummary() {
@@ -254,17 +372,19 @@ export class BrewingRecipeBookManager {
   }
 
   render(snapshot) {
-    if (!this.refs.rows) {
+    if (!this.refs.book) {
       return;
     }
 
     const recipes = snapshot.brewing?.recipes ?? [];
     const unlockedRecipes = recipes.filter((recipe) => recipe.unlocked);
+    this.clampCurrentSpreadIndex(unlockedRecipes.length);
     this.renderTitle();
     this.renderCurrentSummary(snapshot);
     this.renderActionSummary(snapshot);
     this.renderQuantitySummary(snapshot);
     this.renderAutoSummary(snapshot, unlockedRecipes);
+    this.renderPagination(unlockedRecipes.length);
     const ownedIngredientQuantities = this.getOwnedIngredientQuantities(snapshot);
     const brewQuantity = this.getBrewQuantity(snapshot);
     const signature = this.createRenderSignature(
@@ -279,18 +399,18 @@ export class BrewingRecipeBookManager {
 
     this.renderedSignature = signature;
 
-    this.refs.rows.replaceChildren(
-      ...this.createRecipeListRows(
-        unlockedRecipes,
-        ownedIngredientQuantities,
-        brewQuantity,
-      ),
+    const pages = this.createRecipePages(
+      unlockedRecipes,
+      ownedIngredientQuantities,
+      brewQuantity,
     );
+    this.refs.leftPage.replaceChildren(...pages.left);
+    this.refs.rightPage.replaceChildren(...pages.right);
   }
 
   renderTitle() {
     const cauldronNumber = this.getSafeCurrentCauldronIndex() + 1;
-    const title = `cauldron ${cauldronNumber}`;
+    const title = `recipes: cauldron ${cauldronNumber}`;
 
     this.setText(this.refs.title, title);
     this.setAttribute(this.refs.dialog, 'aria-label', title);
@@ -590,24 +710,76 @@ export class BrewingRecipeBookManager {
       })
       .join('|');
 
-    return `${selectedRecipeKey}:x${brewQuantity}:open=${this.expandedRecipeKey ?? ''}::${recipeSignature}`;
+    return `${selectedRecipeKey}:x${brewQuantity}:spread=${this.currentSpreadIndex}::${recipeSignature}`;
   }
 
-  createRecipeListRows(
+  createRecipePages(
     recipes,
     ownedIngredientQuantities = new Map(),
     brewQuantity = 1,
   ) {
     if (recipes.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'brewing-page__recipe-empty';
-      empty.textContent = 'no recipes';
-      return [empty];
+      return {
+        left: [this.createRecipePageEmpty('no recipes')],
+        right: [this.createRecipePageEmpty('')],
+      };
     }
 
-    return recipes.map((recipe) =>
-      this.createRecipeRow(recipe, ownedIngredientQuantities, brewQuantity),
+    const leftPageIndex = this.currentSpreadIndex * PAGES_PER_SPREAD;
+    const rightPageIndex = leftPageIndex + 1;
+
+    return {
+      left: this.createRecipePageRows(
+        recipes,
+        leftPageIndex,
+        ownedIngredientQuantities,
+        brewQuantity,
+      ),
+      right: this.createRecipePageRows(
+        recipes,
+        rightPageIndex,
+        ownedIngredientQuantities,
+        brewQuantity,
+      ),
+    };
+  }
+
+  createRecipePageRows(
+    recipes,
+    pageIndex,
+    ownedIngredientQuantities = new Map(),
+    brewQuantity = 1,
+  ) {
+    const startIndex = pageIndex * RECIPES_PER_PAGE;
+    const pageRecipes = recipes.slice(startIndex, startIndex + RECIPES_PER_PAGE);
+    const rows = [this.createRecipePageNumber(pageIndex, recipes.length)];
+
+    if (pageRecipes.length === 0) {
+      rows.push(this.createRecipePageEmpty('no more recipes'));
+      return rows;
+    }
+
+    rows.push(
+      ...pageRecipes.map((recipe) =>
+        this.createRecipeRow(recipe, ownedIngredientQuantities, brewQuantity),
+      ),
     );
+
+    return rows;
+  }
+
+  createRecipePageNumber(pageIndex, recipeCount) {
+    const page = document.createElement('div');
+    page.className = 'brewing-page__recipe-page-number';
+    page.textContent = `page ${pageIndex + 1}/${this.getPageCount(recipeCount)}`;
+    return page;
+  }
+
+  createRecipePageEmpty(text) {
+    const empty = document.createElement('div');
+    empty.className = 'brewing-page__recipe-empty';
+    empty.textContent = text;
+    return empty;
   }
 
   createRecipeRow(recipe, ownedIngredientQuantities = new Map(), brewQuantity = 1) {
@@ -615,10 +787,8 @@ export class BrewingRecipeBookManager {
     row.className = 'brewing-page__recipe-row';
     row.dataset.tutorialId = `brewing:recipe:${recipe.key}`;
     const selected = recipe.key === this.getSelectedRecipeKey?.();
-    const expanded = recipe.key === this.expandedRecipeKey;
     row.classList.toggle('is-locked', !recipe.unlocked);
     row.classList.toggle('is-selected', selected);
-    row.classList.toggle('is-expanded', expanded);
     row.setAttribute('aria-pressed', selected ? 'true' : 'false');
 
     const main = document.createElement('div');
@@ -640,16 +810,24 @@ export class BrewingRecipeBookManager {
     label.textContent = recipe.label;
     setItemIconLabel(label, 'potion', recipe.key);
 
-    const eyeButton = document.createElement('button');
-    eyeButton.className = 'brewing-page__recipe-eye-button';
-    eyeButton.type = 'button';
-    eyeButton.setAttribute(
-      'aria-label',
-      expanded ? `hide ${recipe.label} recipe` : `show ${recipe.label} recipe`,
-    );
-    eyeButton.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    eyeButton.append(this.createEyeIcon());
-    eyeButton.addEventListener('click', () => this.toggleRecipeExpanded(recipe.key));
+    const infoText = document.createElement('p');
+    infoText.className = 'brewing-page__recipe-info-text';
+    infoText.textContent = this.getPotionInfo(recipe);
+
+    const info = document.createElement('div');
+    info.className = 'brewing-page__recipe-info';
+
+    const header = document.createElement('div');
+    header.className = 'brewing-page__recipe-header';
+    header.append(selectButton, label);
+
+    info.append(header, infoText);
+
+    const icon = this.createPotionIcon(recipe);
+
+    const top = document.createElement('div');
+    top.className = 'brewing-page__recipe-top';
+    top.append(icon, info);
 
     const ingredients = this.createIngredientsList(
       recipe.ingredients,
@@ -663,7 +841,7 @@ export class BrewingRecipeBookManager {
     const cost = document.createElement('span');
     cost.className = 'brewing-page__recipe-cost';
     setResourceColor(cost, 'mana');
-    setResourceIconText(cost, `cost ${recipe.manaCost * brewQuantity} mana`);
+    setResourceIconText(cost, `${recipe.manaCost * brewQuantity} mana required`);
 
     const duration = document.createElement('span');
     duration.className = 'brewing-page__recipe-duration';
@@ -671,12 +849,8 @@ export class BrewingRecipeBookManager {
 
     meta.append(cost, duration);
 
-    main.append(selectButton, label, eyeButton);
-    row.append(main);
-
-    if (expanded) {
-      row.append(ingredients, meta);
-    }
+    main.append(top);
+    row.append(main, ingredients, meta);
 
     return row;
   }
@@ -688,17 +862,163 @@ export class BrewingRecipeBookManager {
     this.render(snapshot);
   }
 
-  createEyeIcon() {
-    const icon = document.createElement('span');
-    icon.className = 'brewing-page__recipe-eye-icon';
+  createPotionIcon(recipe) {
+    const icon =
+      createAssetAtlasSprite(
+        'brewing-page__recipe-potion-icon',
+        getPotionIconFrameName(recipe?.key),
+      ) ?? document.createElement('span');
+
+    icon.classList.add('brewing-page__recipe-potion-icon');
     icon.setAttribute('aria-hidden', 'true');
     return icon;
   }
 
-  toggleRecipeExpanded(recipeKey) {
-    this.expandedRecipeKey = this.expandedRecipeKey === recipeKey ? null : recipeKey;
+  getPotionInfo(recipe) {
+    const copy = POTION_INFO_BY_KEY[recipe?.key];
+
+    if (copy) {
+      return copy;
+    }
+
+    const label = String(recipe?.label ?? 'potion').trim() || 'potion';
+    return `a recorded ${label} recipe from the workshop shelves.`;
+  }
+
+  renderPagination(recipeCount) {
+    const spreadCount = this.getSpreadCount(recipeCount);
+    const pageCount = this.getPageCount(recipeCount);
+    const leftPageNumber = this.currentSpreadIndex * PAGES_PER_SPREAD + 1;
+    const rightPageNumber = Math.min(leftPageNumber + 1, pageCount);
+    const label =
+      leftPageNumber === rightPageNumber
+        ? `page ${leftPageNumber}/${pageCount}`
+        : `pages ${leftPageNumber}-${rightPageNumber}/${pageCount}`;
+
+    this.setText(this.refs.pageLabel, label);
+    this.setDisabled(this.refs.previousSpreadButton, this.currentSpreadIndex <= 0);
+    this.setDisabled(
+      this.refs.nextSpreadButton,
+      this.currentSpreadIndex >= spreadCount - 1,
+    );
+    this.setAttribute(
+      this.refs.previousSpreadButton,
+      'aria-label',
+      'previous recipe pages',
+    );
+    this.setAttribute(this.refs.nextSpreadButton, 'aria-label', 'next recipe pages');
+  }
+
+  showPreviousSpread() {
+    this.setCurrentSpreadIndex(this.currentSpreadIndex - 1, 'back');
+  }
+
+  showNextSpread() {
+    this.setCurrentSpreadIndex(this.currentSpreadIndex + 1, 'forward');
+  }
+
+  setCurrentSpreadIndex(spreadIndex, direction = 'forward') {
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const recipeCount = (snapshot?.brewing?.recipes ?? []).filter(
+      (recipe) => recipe.unlocked,
+    ).length;
+    const nextSpreadIndex = this.normalizeSpreadIndex(spreadIndex, recipeCount);
+
+    if (nextSpreadIndex === this.currentSpreadIndex) {
+      return;
+    }
+
+    this.currentSpreadIndex = nextSpreadIndex;
     this.renderedSignature = null;
-    this.render(this.gameplayFacade.getSnapshot());
+    this.playBookTurn(direction);
+    this.render(snapshot);
+  }
+
+  clampCurrentSpreadIndex(recipeCount) {
+    this.currentSpreadIndex = this.normalizeSpreadIndex(
+      this.currentSpreadIndex,
+      recipeCount,
+    );
+  }
+
+  normalizeSpreadIndex(spreadIndex, recipeCount) {
+    const spreadCount = this.getSpreadCount(recipeCount);
+    const safeSpreadIndex = Math.floor(Number(spreadIndex));
+    const index = Number.isInteger(safeSpreadIndex) ? safeSpreadIndex : 0;
+    return Math.min(Math.max(0, index), spreadCount - 1);
+  }
+
+  getSpreadCount(recipeCount) {
+    return Math.max(1, Math.ceil(Math.max(0, recipeCount) / RECIPES_PER_SPREAD));
+  }
+
+  getPageCount(recipeCount) {
+    return Math.max(1, Math.ceil(Math.max(0, recipeCount) / RECIPES_PER_PAGE));
+  }
+
+  onBookPointerDown(event) {
+    if (event.button !== 0 || event.target?.closest?.('button')) {
+      return;
+    }
+
+    this.bookPointer = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+    };
+  }
+
+  onBookPointerUp(event) {
+    if (!this.bookPointer || this.bookPointer.pointerId !== event.pointerId) {
+      this.bookPointer = null;
+      return;
+    }
+
+    const deltaX = event.clientX - this.bookPointer.startX;
+    const deltaY = event.clientY - this.bookPointer.startY;
+    this.bookPointer = null;
+
+    if (
+      Math.abs(deltaX) < BOOK_SWIPE_THRESHOLD ||
+      Math.abs(deltaX) < Math.abs(deltaY) * 1.2
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (deltaX < 0) {
+      this.showNextSpread();
+      return;
+    }
+
+    this.showPreviousSpread();
+  }
+
+  playBookTurn(direction) {
+    if (!this.refs.book) {
+      return;
+    }
+
+    this.clearBookTurnClass();
+    this.refs.book.dataset.turnDirection = direction;
+    this.refs.book.classList.add('is-turning');
+    this.bookTurnClassTimeout = globalThis.setTimeout(() => {
+      this.clearBookTurnClass();
+    }, BOOK_TURN_CLASS_MS);
+    this.bookTurnClassTimeout?.unref?.();
+  }
+
+  clearBookTurnClass() {
+    if (this.bookTurnClassTimeout) {
+      globalThis.clearTimeout(this.bookTurnClassTimeout);
+      this.bookTurnClassTimeout = null;
+    }
+
+    if (this.refs.book) {
+      this.refs.book.classList.remove('is-turning');
+      delete this.refs.book.dataset.turnDirection;
+    }
   }
 
   toggleAutoBrew() {
