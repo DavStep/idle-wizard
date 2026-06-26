@@ -12,6 +12,7 @@
 - Before resetting SpacetimeDB player data, close or navigate away all active game clients; open clients can reconnect and republish old in-memory saves into the emptied database.
 - When loading a prod save into local SpacetimeDB for desktop QA, direct-SQL the `player_gameplay_save` row and clear that identity's `player_session`; reducer import while the client is open can be overwritten by stale in-memory saves.
 - To clone test progression between live accounts while keeping the target profile, use `admin_copy_player_progression`; `admin_merge_player_accounts` moves/deletes the source and copies source profile settings.
+- Production player level fixes must update gameplay save `tasks.currentLevel` as well as `player.player_level`; profile-only level edits revert visually after save reload.
 - For player-save maintenance, use `drain` first so updated clients stop and flush, then `locked` before backup/migration so old clients cannot overwrite migrated rows.
 - Single-account support currency grants need a server pending-grant guard through the next client save; active clients can reconnect and autosave stale in-memory currency over a one-shot admin save edit.
 - When correcting live currency after a bad admin grant, clear the stale `player-currency-grant-pending:*` row or it can preserve/refill the old amount on future saves.
@@ -65,6 +66,7 @@
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
 - Cauldron tap opens should fire from no-drag world pointerup when the press started on a cauldron; Android/WebView can retarget the native click to the world shell, especially from empty overlays.
 - Cauldron tap drift should use the tap-action tolerance, not the normal world-pan threshold; 4 source pixels can classify WebView finger jitter as a drag.
+- Cauldron action buttons sit inside the cauldron tap opener; stop/suppress action clicks so selected-recipe brews do not reopen the recipes dialog.
 - Popup forms in snapshot-rendered managers need local drafts captured before replacing content; otherwise timer/mana refreshes clear focused fields.
 - Snapshot-rendered popup forms with active text inputs should keep the same input DOM node mounted during refresh; replacing then refocusing can still close mobile keyboards.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
@@ -81,10 +83,12 @@
 - Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
 - Interactive room surfaces that own drag or pinch gestures should set `data-page-swipe-block="true"`; stage-level swipe capture otherwise steals their horizontal drags before the surface can own them.
 - Browser/WebView viewport zoom can steal Garden/Brewing world pinches; keep the app viewport scale locked and add non-passive multi-touch/gesture guards on world shells.
+- App-wide viewport zoom guards should mount with `ViewportManager`; world page guards alone leave non-world pages able to pinch/ctrl-wheel zoom.
 - Android Capacitor WebView must set `WebSettings.setSupportZoom(false)` and disable built-in zoom controls; viewport meta and CSS alone may not stop full-page pinch zoom.
 - Brewing world pan/pinch must include cauldron boxes as gesture starts, then suppress the follow-up cauldron click after real movement.
 - The top status panel is shared room chrome; show gameplay coin there, not a separate coin currency.
 - Top-panel resource values should be written amount-first, like `560 coin`; icon mode hides the word and leaves `count icon`.
+- Icon-mode amount/resource labels should hide `.style-resource-label__spacer` and use `--style-icon-label-gap`; preserving the word-space makes count/icon pairs look too far apart.
 - Weekly events should be framed as `weekly world event` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
 - Personal daily/weekly tasks are separate from weekly world events and alliance weekly quests; keep them as player-save counters unless server ownership is requested.
 - Tabbed dialog close labels belong on the top-right border; reserve the bottom edge for the tab strip.
@@ -158,8 +162,10 @@
 - Garden seeds and Brewing herbs are tap-first item controls only; do not reintroduce drag/drop for these rows.
 - Brewing herb drag thresholds must not be lower than validated tap slop; otherwise small WebView drift suppresses the synthetic click and adds no herb.
 - Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
+- Garden plant availability and copy must compare selected seed count to the plot level/multiplier; `>0` is wrong for x2+ plots.
 - Garden plantable empty plots should plant from the whole slot/row; seed-name labels still open seed choices and no-seed slots stay inert.
 - Plantable Garden plot taps need a no-drag world pointerup path with click dedupe, same as ready harvest; WebView can drop the native row click after small drift.
+- Garden no-drag plot actions must suppress retargeted herb/seed label clicks too; after planting, the new herb label can appear under the release point and reopen choices.
 - Ready Garden plot boxes should harvest from the visible plot frame, not only the plant/action label; the plant icon is too small as the sole tap target.
 - Ready Garden plot boxes should not show a visible `harvest` label; the ready animation and plot tap affordance are enough.
 - Ready Garden plot taps need a no-drag world pointerup path with click dedupe; WebView can turn small finger drift into pan and drop the native click.
@@ -188,6 +194,7 @@
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
 - Dev browser automation exposes `window.cheats` with `VITE_ENABLE_CHEATS=true`, but `window.tutorialCapture` needs its own `VITE_ENABLE_TUTORIAL_CAPTURE=true`; cheats alone do not mount the tutorial capture helper.
 - In-app Browser Playwright evaluate can miss main-world `window.cheats`, and `javascript:` bookmarklets are blocked; do not rely on that path for cheat-driven screenshot setup.
+- In-app Browser Playwright evaluate is read-only for DOM/module work; it cannot import page modules or reveal hidden DOM, so use visible UI actions or an HTTP-served local harness for visual QA.
 - In-app Browser blocks `data:` and `file:` fixture pages; use the real app state or an HTTP-served local harness for browser UI QA.
 - Brewing drag screenshot QA needs an unlocked level-4+ save or `VITE_ENABLE_CHEATS=true`; a level-2 local save cannot reach herb drag controls.
 - Cauldron staged-recipe QA should use minimal unlocks and explicit ingredients; `unlockAllResearch` can raise cauldron batch level and make base recipe staging fail.
@@ -586,6 +593,7 @@
 - Garden plot row notification dots are row-local; do not add parent `:has([data-notification])` bleed margins to `.garden-page__plot-rows`, or plot boxes jump when readiness changes.
 - Garden herb harvest reward drops should originate from the plant inside the plot box; use the progress rail only as a row-mode fallback.
 - Garden plot soil art should read as soil at level 1; avoid parchment-white defaults, and deepen upgraded soil from a rich brown starting point.
+- Garden plot upgrade art should use per-level soil sprites: higher levels get darker and cleaner with fewer rocks/weeds; tinting one base sprite is too subtle.
 - Keep herbs below the plot with enough space for active progress rows; bounded plot scrolling is acceptable once many plots are unlocked.
 - Garden page overflow belongs to `.garden-page__ui-layer`; plot and herb boxes should grow to content instead of using fixed inner row heights.
 - Garden seed/herb inventory boxes open from bottom icon buttons, reset hidden on room swaps, and collapsed previews show three item rows.
@@ -665,6 +673,7 @@
 - Empty cauldron item containers are absolute only in the empty state; override their normal fixed scroll height or `empty` centers in the top strip instead of the full cauldron.
 - Brewing cauldron should not show a standalone `unknown mix` status row; no-match staged herbs already read through the wasted potion preview/action.
 - Brewing cauldron box should stay compact at partial fill, but leave action-row clearance for status plus five distinct ingredient rows.
+- Brewing cauldron derived height vars must be scoped on `.brewing-page__cauldron`; `:root` custom props resolve before per-cauldron row-count overrides and can leave the list stuck at three rows.
 - Brewing cauldron top spacing must reserve the herb-list scroll progress rail so overflow herb rows do not touch the cauldron border.
 - Brewing cauldron should not show separate `empty` or visible `remove` controls; ingredient rows stay tappable/ARIA-labeled for correction while visible copy stays contents-only.
 - Brewing action messages render only blocked/error feedback under the action; do not render successful brew/bottle helper text there.
@@ -800,6 +809,7 @@
 - Shared live local QA belongs to one primary branch/worktree; helper branches/worktrees can prep code or run static checks, but runtime verification is invalid unless that checkout owns the running Vite and SpacetimeDB processes.
 - Before claiming local runtime verification, confirm both Vite `55173` and SpacetimeDB `3000`; frontend-only status is not enough.
 - Visual QA for deep page states needs deterministic real-game state recipes; ad hoc clicks/cheats make agents miss screenshots or verify the wrong state.
+- In-app Browser blocks `data:` QA harness URLs; use the real local app or a checked-in/local route instead of ad hoc data-url visual harnesses.
 - Fresh-start browser QA resets FTUE progress; after choosing `start fresh`, write completed `idle-wizard.tutorial.v4` storage and reload before normal room-click automation.
 - Keep top-level docs current with implemented systems; agents trust README/architecture docs early, so stale future-scope text causes wrong plans.
 - When a feature needs faster or safer repeat work, add the smallest reusable dev tool and document its command/env in `docs/ai-workflow.md` or the feature README.

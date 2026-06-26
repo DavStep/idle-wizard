@@ -198,8 +198,11 @@ export class TopPanelLevelManager {
     const addedRows = this.formatAddedRows(levelSnapshot.effects ?? [], previousTotals);
     const totalRows = this.formatTotalRows(this.getTotals(levelSnapshot));
 
+    this.setHidden(this.refs.levelAddedLabel, addedRows.length <= 0);
     this.setHidden(this.refs.levelAddedRows, addedRows.length <= 0);
     this.setHidden(this.refs.levelDivider, addedRows.length <= 0);
+    this.setHidden(this.refs.levelTotalLabel, totalRows.length <= 0);
+    this.setHidden(this.refs.levelTotalRows, totalRows.length <= 0);
     this.renderRows(this.refs.levelAddedRows, addedRows);
     this.renderRows(this.refs.levelTotalRows, totalRows);
   }

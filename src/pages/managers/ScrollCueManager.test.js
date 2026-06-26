@@ -119,6 +119,28 @@ describe('ScrollCueManager', () => {
     expect(panel.style.getPropertyValue('--style-scroll-progress')).toBe('');
   });
 
+  it('does not treat level reward content as a scroll cue', async () => {
+    const root = document.createElement('div');
+    const content = document.createElement('div');
+    content.className = 'room-top-panel__level-content';
+    root.append(content);
+    document.body.append(root);
+
+    Object.defineProperty(content, 'clientHeight', { value: 100, configurable: true });
+    Object.defineProperty(content, 'scrollHeight', { value: 300, configurable: true });
+
+    const manager = new ScrollCueManager();
+    manager.mount(root);
+    await flushAnimationFrame();
+
+    expect(content.classList.contains('style-scroll-cue')).toBe(false);
+    expect(
+      Boolean(content.nextElementSibling?.classList.contains('style-scroll-cue-progress')),
+    ).toBe(false);
+
+    manager.unmount();
+  });
+
   it('standardizes page scroll cuts in CSS', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;

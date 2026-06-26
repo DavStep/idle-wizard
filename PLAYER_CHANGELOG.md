@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.53
+
+- Fixed higher-level Garden plots so x2+ plantings require and show the correct seed count.
+- Tightened Garden and Brewing taps so plot seed labels and cauldron action buttons no longer reopen the wrong popup after the same tap.
+- Polished Brewing cauldron layout, recipe discovery text, level/prestige panels, player info loading, icon spacing, and native zoom blocking.
+
 ## 0.2.52
 
 - Fixed Garden seed switching on WebView so the swap or empty-confirm popup no longer closes from the same tap that picked a seed.

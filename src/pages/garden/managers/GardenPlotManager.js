@@ -41,7 +41,7 @@ const WORLD_EDGE_EXTENSION = 16;
 const WORLD_WIDTH = 328 + WORLD_EDGE_EXTENSION * 2;
 const WORLD_MIN_HEIGHT = 560;
 const WORLD_ROW_HEIGHT = 92;
-const WORLD_ROW_GAP = 12;
+const WORLD_ROW_GAP = 20;
 const WORLD_ROWS_PADDING_TOP = 18;
 const WORLD_DRAG_THRESHOLD = 4;
 const WORLD_TAP_ACTION_DRAG_THRESHOLD = 12;
@@ -513,6 +513,9 @@ export class GardenPlotManager {
     const selectedSeedQuantity = tile.selectedSeedItemTypeId
       ? (seedQuantityById.get(tile.selectedSeedItemTypeId) ?? 0)
       : 0;
+    const selectedSeedRequirement = this.getPlantSeedRequirement(tile);
+    const canPlantSelectedSeed =
+      Boolean(tile.selectedSeedItemTypeId) && selectedSeedQuantity >= selectedSeedRequirement;
     const hasSelectedSeed = Boolean(tile.selectedSeedItemTypeId);
     const selected = this.visible && this.selectedTileNumber === tile.tileNumber;
 
@@ -523,11 +526,11 @@ export class GardenPlotManager {
     refs.button.classList.toggle('is-empty', tile.unlocked && tile.phase === 'empty');
     refs.button.classList.toggle(
       'is-plantable',
-      tile.unlocked && tile.phase === 'empty' && hasSelectedSeed && selectedSeedQuantity > 0,
+      tile.unlocked && tile.phase === 'empty' && canPlantSelectedSeed,
     );
     refs.button.classList.toggle(
       'is-selected-without-seeds',
-      tile.unlocked && tile.phase === 'empty' && hasSelectedSeed && selectedSeedQuantity <= 0,
+      tile.unlocked && tile.phase === 'empty' && hasSelectedSeed && !canPlantSelectedSeed,
     );
     refs.button.classList.toggle('is-ready', tile.phase === 'ready');
     refs.button.classList.toggle('is-processing', Boolean(tile.process));
@@ -588,9 +591,9 @@ export class GardenPlotManager {
     if (tile.phase === 'empty') {
       const emptyTileDisplay = this.getPlotLabelDisplay(tile);
       const emptyTileAction = hasSelectedSeed
-        ? selectedSeedQuantity > 0
+        ? canPlantSelectedSeed
           ? this.formatPlantAction(tile)
-          : 'no seeds'
+          : this.formatMissingPlantSeedAction(tile)
         : 'choose';
       this.setText(refs.label, emptyTileDisplay.label);
       setItemIconLabel(
@@ -790,6 +793,7 @@ export class GardenPlotManager {
     this.setText(refs.boxActionGap, action && timer ? ' ' : '');
     refs.boxTimer.hidden = !timer;
     refs.boxFrame.classList.toggle('has-plant', Boolean(herbKey));
+    refs.boxFrame.classList.toggle('is-growing', tile.phase === 'growing');
     refs.boxFrame.classList.toggle('is-harvesting', tile.phase === 'harvesting');
     refs.boxFrame.classList.toggle(
       'is-ready',
@@ -803,6 +807,10 @@ export class GardenPlotManager {
     refs.boxFrame.style.setProperty(
       '--garden-page-plot-ready-delay',
       `${-(((tile.tileNumber - 1) * 317) % 1080)}ms`,
+    );
+    refs.boxFrame.style.setProperty(
+      '--garden-page-plot-wind-delay',
+      `${-(((tile.tileNumber - 1) * 421) % 2400)}ms`,
     );
     refs.boxScissors.toggleAttribute('hidden', tile.phase !== 'harvesting');
     this.renderPlantIcon(refs, herbKey);
@@ -854,8 +862,18 @@ export class GardenPlotManager {
   }
 
   formatPlantAction(tile) {
+    const requiredQuantity = this.getPlantSeedRequirement(tile);
+    return requiredQuantity > 1 ? `plant x${requiredQuantity}` : 'plant';
+  }
+
+  formatMissingPlantSeedAction(tile) {
+    const requiredQuantity = this.getPlantSeedRequirement(tile);
+    return requiredQuantity > 1 ? `no x${requiredQuantity} seed` : 'no seeds';
+  }
+
+  getPlantSeedRequirement(tile) {
     const level = Math.max(1, Math.floor(Number(tile?.level) || 1));
-    return level > 1 ? `plant x${level}` : 'plant';
+    return level;
   }
 
   formatPlotSoilLevel(tile) {
@@ -1155,7 +1173,7 @@ export class GardenPlotManager {
       (seed) => seed.itemTypeId === tile.selectedSeedItemTypeId,
     );
 
-    return (selectedSeed?.quantity ?? 0) > 0;
+    return (selectedSeed?.quantity ?? 0) >= this.getPlantSeedRequirement(tile);
   }
 
   isTileLabelClick(event) {
@@ -1273,7 +1291,64 @@ export class GardenPlotManager {
     return (snapshot.coin?.current ?? 0) >= cost ? tileNumber : null;
   }
 
+  getLabelTileNumberFromEvent(event) {
+    const row = event?.target?.closest?.('.garden-page__plot-row');
+    const tileNumber = Number.parseInt(row?.dataset?.gardenTileNumber ?? '', 10);
+
+    if (!Number.isInteger(tileNumber)) {
+      return null;
+    }
+
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const tile = snapshot.garden?.plot?.tiles.find(
+      (candidate) => candidate.tileNumber === tileNumber,
+    );
+    const refs = this.tileRefs.get(tileNumber);
+
+    if (!tile?.unlocked || !refs?.button || refs.button.disabled) {
+      return null;
+    }
+
+    return this.isTileLabelPress(event, refs) ? tileNumber : null;
+  }
+
+  isTileLabelPress(event, refs) {
+    return (
+      this.isTileLabelClick(event) ||
+      this.isEventInsideElementRect(event, refs?.label) ||
+      this.isEventInsideElementRect(event, refs?.boxLabel)
+    );
+  }
+
+  isEventInsideElementRect(event, element) {
+    const clientX = event?.clientX;
+    const clientY = event?.clientY;
+
+    if (!element || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+      return false;
+    }
+
+    const rect = element.getBoundingClientRect?.();
+
+    if (!rect || rect.width <= 0 || rect.height <= 0) {
+      return false;
+    }
+
+    return (
+      clientX >= rect.left &&
+      clientX <= rect.right &&
+      clientY >= rect.top &&
+      clientY <= rect.bottom
+    );
+  }
+
   onTileLabelClick(tileNumber, event) {
+    if (event?.type === 'click' && this.isWorldClickSuppressed()) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (event?.type === 'click' && this.handledTileLabelPressStartTileNumber === tileNumber) {
       event.preventDefault();
       event.stopPropagation();
@@ -1827,6 +1902,7 @@ export class GardenPlotManager {
     const readyHarvestTileNumber = this.getReadyHarvestTileNumberFromEvent(event);
     const plantableTileNumber = this.getPlantableTileNumberFromEvent(event);
     const buyableTileNumber = this.getBuyableTileNumberFromEvent(event);
+    const labelTileNumber = this.getLabelTileNumberFromEvent(event);
 
     if (this.worldPointers.size >= 2) {
       this.startWorldPinchGesture();
@@ -1843,12 +1919,14 @@ export class GardenPlotManager {
         dragThreshold:
           readyHarvestTileNumber !== null ||
           plantableTileNumber !== null ||
-          buyableTileNumber !== null
+          buyableTileNumber !== null ||
+          labelTileNumber !== null
             ? WORLD_TAP_ACTION_DRAG_THRESHOLD
             : WORLD_DRAG_THRESHOLD,
         readyHarvestTileNumber,
         plantableTileNumber,
         buyableTileNumber,
+        labelTileNumber,
       };
     }
 
@@ -1931,6 +2009,15 @@ export class GardenPlotManager {
       Number.isInteger(this.worldGesture.buyableTileNumber)
         ? this.worldGesture.buyableTileNumber
         : null;
+    const tapLabelTileNumber =
+      event.type !== 'pointercancel' &&
+      this.worldPointers.size === 1 &&
+      this.worldGesture?.type === 'pan' &&
+      this.worldGesture.pointerId === pointerId &&
+      this.worldGesture.didDrag !== true &&
+      Number.isInteger(this.worldGesture.labelTileNumber)
+        ? this.worldGesture.labelTileNumber
+        : null;
 
     if (event.pointerId !== undefined) {
       event.currentTarget.releasePointerCapture?.(event.pointerId);
@@ -1960,6 +2047,14 @@ export class GardenPlotManager {
     this.refs.world?.shell?.classList.remove('is-dragging');
     this.worldGesture = null;
     this.settleWorldViewport();
+
+    if (tapLabelTileNumber !== null && this.handleTileLabelIntent(tapLabelTileNumber)) {
+      this.suppressWorldClick();
+      event.preventDefault();
+      event.stopPropagation();
+      this.setHandledTileLabelPressStartTileNumber(tapLabelTileNumber);
+      return;
+    }
 
     if (tapBuyTileNumber !== null) {
       this.suppressWorldClick();

@@ -7,7 +7,7 @@ export const gameAssetAtlasSize = Object.freeze({
 });
 export const gameAssetAtlasFrames = Object.freeze({
   "herb:belladonnaHerb": {
-    "x": 1277,
+    "x": 1147,
     "y": 875,
     "width": 97,
     "height": 128,
@@ -124,7 +124,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-moonflower.png"
   },
   "herb:nettleHerb": {
-    "x": 1535,
+    "x": 1534,
     "y": 875,
     "width": 94,
     "height": 128,
@@ -142,7 +142,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-nightshade.png"
   },
   "herb:pearlrootHerb": {
-    "x": 1661,
+    "x": 1660,
     "y": 875,
     "width": 94,
     "height": 128,
@@ -151,7 +151,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-pearlroot.png"
   },
   "herb:sageHerb": {
-    "x": 1787,
+    "x": 1786,
     "y": 875,
     "width": 93,
     "height": 128,
@@ -169,7 +169,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-silverleaf.png"
   },
   "herb:snowdropHerb": {
-    "x": 1912,
+    "x": 1911,
     "y": 875,
     "width": 92,
     "height": 128,
@@ -205,7 +205,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-valerian.png"
   },
   "herb:wormwoodHerb": {
-    "x": 1406,
+    "x": 1276,
     "y": 875,
     "width": 97,
     "height": 128,
@@ -592,7 +592,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-yarrow-poultice.png"
   },
   "resource:coin": {
-    "x": 1733,
+    "x": 1861,
     "y": 1035,
     "width": 92,
     "height": 92,
@@ -601,8 +601,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-coin.png"
   },
   "resource:crystal": {
-    "x": 1857,
-    "y": 1035,
+    "x": 32,
+    "y": 1195,
     "width": 68,
     "height": 88,
     "originalWidth": 68,
@@ -610,7 +610,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-crystal.png"
   },
   "resource:emerald": {
-    "x": 32,
+    "x": 132,
     "y": 1195,
     "width": 65,
     "height": 88,
@@ -619,7 +619,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-emerald.png"
   },
   "resource:mana": {
-    "x": 129,
+    "x": 229,
     "y": 1195,
     "width": 60,
     "height": 88,
@@ -627,8 +627,17 @@ export const gameAssetAtlasFrames = Object.freeze({
     "originalHeight": 88,
     "source": "src/assets/icons/icon-mana-drop.png"
   },
+  "resource:research": {
+    "x": 1733,
+    "y": 1035,
+    "width": 96,
+    "height": 96,
+    "originalWidth": 512,
+    "originalHeight": 512,
+    "source": "src/assets/icons/icon-research.png"
+  },
   "resource:ruby": {
-    "x": 221,
+    "x": 321,
     "y": 1195,
     "width": 88,
     "height": 85,
@@ -673,9 +682,9 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/status/check-01.png"
   },
   "status:lockDefault": {
-    "x": 1147,
+    "x": 1405,
     "y": 875,
-    "width": 98,
+    "width": 97,
     "height": 128,
     "originalWidth": 256,
     "originalHeight": 256,

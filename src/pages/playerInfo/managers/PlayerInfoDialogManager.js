@@ -175,9 +175,17 @@ export class PlayerInfoDialogManager {
       return;
     }
 
-    const player = this.mergePlayer(this.activePlayer);
+    const livePlayer = this.findPlayer(this.activePlayer);
+
+    if (!livePlayer && this.playerInfoFacade) {
+      this.renderLoading(this.activePlayer);
+      return;
+    }
+
+    const player = this.mergePlayer(this.activePlayer, livePlayer);
     this.activePlayer = player;
     this.refs.dialog.setAttribute('aria-label', `${player.username} player information`);
+    this.refs.dialog.setAttribute('aria-busy', 'false');
     this.refs.character.src = getPlayerCharacterImageUrl(player.character);
     this.refs.nameLine.replaceChildren(...this.createNameLineContent(player));
     this.refs.mainRows.replaceChildren(
@@ -188,6 +196,19 @@ export class PlayerInfoDialogManager {
     this.refs.rows.replaceChildren(
       this.createTextRow('total produced coin', this.formatNumber(player.totalProducedCoin)),
     );
+    this.refs.summary.replaceChildren(this.refs.character, this.refs.mainRows);
+    this.refs.details.replaceChildren(this.refs.rows);
+    this.refs.content.replaceChildren(this.refs.summary, this.refs.details);
+  }
+
+  renderLoading(player) {
+    const username = this.normalizePlayer(player).username;
+    const label = username
+      ? `${username} player information loading`
+      : 'Player information loading';
+    this.refs.dialog.setAttribute('aria-label', label);
+    this.refs.dialog.setAttribute('aria-busy', 'true');
+    this.refs.content.replaceChildren(this.createEmptyRow('loading player info'));
   }
 
   createNameLineContent(player) {
@@ -236,8 +257,15 @@ export class PlayerInfoDialogManager {
     return row;
   }
 
-  mergePlayer(fallback) {
-    const player = this.findPlayer(fallback);
+  createEmptyRow(text) {
+    const row = document.createElement('div');
+    row.className = 'room-player-info-empty';
+    row.setAttribute('role', 'status');
+    row.textContent = text;
+    return row;
+  }
+
+  mergePlayer(fallback, player = this.findPlayer(fallback)) {
     return this.normalizePlayer({
       ...fallback,
       ...player,

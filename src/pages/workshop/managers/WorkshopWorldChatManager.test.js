@@ -70,4 +70,13 @@ describe('WorkshopWorldChatManager styles', () => {
     expect(stageBackdropRule).toContain('left: 0;');
     expect(stageBackdropRule).toContain('width: calc(100% / var(--style-ui-scale));');
   });
+
+  it('keeps chat time labels smaller than message text', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const ageRule = baseCss.match(
+      /\.workshop-page__world-chat-age\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(ageRule).toContain('font-size: var(--style-tiny-font-size);');
+  });
 });

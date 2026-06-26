@@ -25,7 +25,6 @@ const SCROLL_CUE_SELECTOR = [
   '.guild-page__card-details',
   '.room-alliance-info-content',
   '.room-top-panel__settings-pane',
-  '.room-top-panel__level-content',
 ].join(',');
 
 const SCROLL_PROGRESS_PROPERTY = '--style-scroll-progress';

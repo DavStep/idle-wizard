@@ -111,6 +111,7 @@ const ASSETS = [
   ['resource:crystal', 'src/assets/icons/icon-crystal.png', 96],
   ['resource:emerald', 'src/assets/icons/icon-emerald.png', 96],
   ['resource:mana', 'src/assets/icons/icon-mana-drop.png', 96],
+  ['resource:research', 'src/assets/icons/icon-research.png', 96],
   ['resource:ruby', 'src/assets/icons/icon-ruby.png', 96],
   ['seed:black', 'src/assets/items/seeds/seed-pack-black.png', 128],
   ['seed:gray', 'src/assets/items/seeds/seed-pack-gray.png', 128],

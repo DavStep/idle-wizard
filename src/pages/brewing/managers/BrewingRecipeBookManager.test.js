@@ -114,7 +114,7 @@ describe('BrewingRecipeBookManager', () => {
       'min-height: calc(var(--style-box-border-label-line-height) * 4);',
     );
     expect(discoveryRowRule).toBeDefined();
-    expect(discoveryRowRule).toContain('color: var(--style-muted);');
+    expect(discoveryRowRule).toMatch(/\bdisplay:\s*block;/);
     expect(discoveryNameRule).toContain('color: inherit;');
     expect(silhouetteRule).toContain('color: var(--style-disabled);');
     expect(ingredientsRule).toBeDefined();
@@ -197,8 +197,10 @@ describe('BrewingRecipeBookManager', () => {
     const row = parent.querySelector('.brewing-page__recipe-row');
 
     expect(row?.classList.contains('is-unknown')).toBe(false);
-    expect(description?.textContent).not.toContain('discovered by Ada');
+    expect(description?.textContent).toContain('discovered by Ada');
+    expect(description?.contains(discoveryRow)).toBe(true);
     expect(discoveryRow?.textContent).toBe('- discovered by Ada');
+    expect(discoveryRow?.dataset.resourceColor).toBe('crystal');
     expect(discoverer?.textContent).toBe('Ada');
     expect(discoverer?.className).toBe(
       'room-player-info-link brewing-page__recipe-discovery-name',
@@ -293,12 +295,28 @@ describe('BrewingRecipeBookManager', () => {
     parent.remove();
   });
 
-  it('shows a recipe-only popup title while selection stays externally scoped', () => {
+  it('shows recipe learning progress in the popup title while selection stays externally scoped', () => {
+    const snapshot = createSnapshot();
+    snapshot.brewing.recipes.push({
+      key: 'calmingDraught',
+      label: 'calming draught',
+      unlocked: false,
+      manaCost: 18,
+      brewDurationMs: 30_000,
+      ingredients: [
+        {
+          itemTypeId: 1001,
+          key: 'sageHerb',
+          label: 'sage',
+          quantity: 1,
+        },
+      ],
+    });
     const parent = document.createElement('div');
     document.body.append(parent);
     let cauldronIndex = 1;
     const manager = new BrewingRecipeBookManager({
-      gameplayFacade: createGameplayFacadeFake(createSnapshot()),
+      gameplayFacade: createGameplayFacadeFake(snapshot),
       getSelectedRecipeKey: () => null,
       getCurrentCauldronIndex: () => cauldronIndex,
       onSelectRecipe: () => {},
@@ -307,15 +325,19 @@ describe('BrewingRecipeBookManager', () => {
     manager.mount(parent);
     manager.show();
 
-    expect(parent.querySelector('.style-box__title')?.textContent).toBe('recipes');
+    expect(parent.querySelector('.style-box__title')?.textContent).toBe(
+      'recipes: learned 1/2',
+    );
     expect(parent.querySelector('.brewing-page__recipes-dialog')?.getAttribute('aria-label')).toBe(
-      'recipes',
+      'recipes: learned 1/2',
     );
 
     cauldronIndex = 2;
-    manager.render(createSnapshot());
+    manager.render(snapshot);
 
-    expect(parent.querySelector('.style-box__title')?.textContent).toBe('recipes');
+    expect(parent.querySelector('.style-box__title')?.textContent).toBe(
+      'recipes: learned 1/2',
+    );
 
     manager.unmount();
     parent.remove();

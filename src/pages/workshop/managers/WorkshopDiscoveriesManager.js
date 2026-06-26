@@ -1,7 +1,5 @@
-import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
-import { setResourceColor } from '../../shared/resourceColor.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
@@ -196,7 +194,7 @@ export class WorkshopDiscoveriesManager {
 
     this.lastSnapshot = snapshot ?? {};
     this.updateTabs();
-    this.refs.rows.classList.toggle('is-recipe-list', this.selectedTabId === 'potions');
+    this.refs.rows.classList.toggle('is-potion-list', this.selectedTabId === 'potions');
 
     const signature = this.createRenderSignature(this.lastSnapshot);
     if (signature === this.renderedSignature) {
@@ -232,37 +230,46 @@ export class WorkshopDiscoveriesManager {
       return;
     }
 
-    this.refs.rows.replaceChildren(
-      ...potions.map((potion) => this.createPotionRecipeRow(potion)),
-    );
+    this.refs.rows.replaceChildren(this.createPotionDiscoveryBox(potions));
     this.refs.detail.replaceChildren();
   }
 
-  createPotionRecipeRow(potion) {
-    const row = document.createElement('div');
-    row.className = 'workshop-page__discovery-recipe-row brewing-page__recipe-row';
-    row.classList.toggle('is-unknown', !potion.discovered);
+  createPotionDiscoveryBox(potions = []) {
+    const box = document.createElement('section');
+    box.className = 'workshop-page__discovery-potion-box style-box';
+    box.setAttribute('aria-label', 'potion discoveries');
 
-    const main = document.createElement('div');
-    main.className = 'brewing-page__recipe-main';
+    const title = document.createElement('div');
+    title.className = 'style-box__title';
+    title.textContent = 'potion discoveries';
+
+    box.append(
+      title,
+      ...potions.map((potion) => this.createPotionDiscoveryRow(potion)),
+    );
+    return box;
+  }
+
+  createPotionDiscoveryRow(potion) {
+    const row = document.createElement('div');
+    row.className = 'workshop-page__discovery-potion-row research-page__row';
+    row.classList.toggle('is-unavailable', !potion.discovered);
 
     const key = document.createElement('span');
-    key.className = 'row_key brewing-page__recipe-name';
-    this.setPotionRecipeName(key, potion);
+    key.className =
+      'row_key workshop-page__discovery-potion-label research-page__research-label';
 
-    if (potion.discovered) {
-      main.append(key, this.createRoyaltyValue(potion));
-    } else {
-      const val = document.createElement('span');
-      val.className = 'row_val workshop-page__discovery-byline';
-      val.textContent = 'unowned';
-      main.append(key, val);
-    }
-    row.append(
-      main,
-      this.createIngredientsList(potion.ingredients, { masked: !potion.discovered }),
-      this.createRecipeMeta(potion),
-    );
+    const name = document.createElement('span');
+    name.className =
+      'workshop-page__discovery-potion-name research-page__research-name';
+    this.setPotionRecipeName(name, potion);
+    key.append(name);
+
+    const val = potion.discovered
+      ? this.createRoyaltyValue(potion)
+      : this.createUndiscoveredValue();
+
+    row.append(key, val);
     return row;
   }
 
@@ -293,7 +300,8 @@ export class WorkshopDiscoveriesManager {
 
   createRoyaltyValue(potion) {
     const value = document.createElement('span');
-    value.className = 'row_val workshop-page__discovery-royalties';
+    value.className =
+      'row_val workshop-page__discovery-royalties research-page__research-value';
     const royaltyCoin = Number(potion.royaltyCoin);
     setResourceIconText(
       value,
@@ -302,64 +310,12 @@ export class WorkshopDiscoveriesManager {
     return value;
   }
 
-  createIngredientsList(ingredients = [], { masked = false } = {}) {
-    const root = document.createElement('div');
-    root.className = 'brewing-page__recipe-ingredients';
-
-    if (!ingredients.length) {
-      const empty = document.createElement('div');
-      empty.className = 'brewing-page__recipe-ingredient-row';
-      empty.textContent = masked ? `- 0 ${MYSTERY_TEXT_LABEL}` : 'none';
-      root.append(empty);
-      return root;
-    }
-
-    root.append(
-      ...ingredients.map((ingredient) => this.createIngredientRow(ingredient, { masked })),
-    );
-
-    return root;
-  }
-
-  createIngredientRow(ingredient, { masked = false } = {}) {
-    const row = document.createElement('div');
-    row.className = 'brewing-page__recipe-ingredient-row';
-
-    if (masked) {
-      row.classList.add('is-unknown');
-    } else {
-      setResourceColor(row, 'herb');
-    }
-
-    const quantity = Number.isFinite(ingredient.quantity) ? ingredient.quantity : 1;
-    row.textContent = `- ${Math.max(1, quantity)} ${
-      masked ? MYSTERY_TEXT_LABEL : ingredient.label
-    }`;
-    return row;
-  }
-
-  createRecipeMeta(potion) {
-    const meta = document.createElement('div');
-    meta.className = 'brewing-page__recipe-meta';
-
-    const cost = document.createElement('span');
-    cost.className = 'brewing-page__recipe-cost';
-    setResourceColor(cost, 'mana');
-    setResourceIconText(
-      cost,
-      potion.discovered && Number.isFinite(potion.manaCost)
-        ? `cost ${potion.manaCost} mana`
-        : 'cost ? mana',
-    );
-
-    const duration = document.createElement('span');
-    duration.className = 'brewing-page__recipe-duration';
-    duration.textContent = `time: ${
-      potion.discovered ? this.formatDuration(potion.brewDurationMs) : '?s'
-    }`;
-
-    meta.append(cost, duration);
-    return meta;
+  createUndiscoveredValue() {
+    const value = document.createElement('span');
+    value.className =
+      'row_val workshop-page__discovery-royalties research-page__research-value';
+    value.textContent = 'unowned';
+    return value;
   }
 
   createEmptyRow() {
@@ -384,9 +340,8 @@ export class WorkshopDiscoveriesManager {
             potion.key,
             potion.discovered,
             potion.discoveredByUsername,
+            potion.discoveredByIdentity,
             potion.royaltyCoin,
-            potion.manaCost,
-            potion.brewDurationMs,
             ingredientsSignature,
           ].join(':');
         },
@@ -394,14 +349,6 @@ export class WorkshopDiscoveriesManager {
       .join('|');
 
     return `${this.selectedTabId}:${potionSignature}`;
-  }
-
-  formatDuration(durationMs) {
-    if (!Number.isFinite(durationMs)) {
-      return '?s';
-    }
-
-    return `${Math.ceil(durationMs / 1_000)}s`;
   }
 
   applyVisibility() {

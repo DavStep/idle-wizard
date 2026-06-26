@@ -277,9 +277,27 @@ export class PrestigePanelManager {
   createDescription() {
     const description = document.createElement('div');
     description.className = 'prestige-page__description-copy';
-    description.textContent =
-      'prestige resets the current run after milestone levels. completed milestones keep ruby and point rewards for future runs.';
+    description.replaceChildren(
+      this.createDescriptionLine(
+        'prestige resets the current run into a new run from the shown start level.',
+      ),
+      this.createDescriptionLine(
+        'mana, coin, crystal, items, ordinary research, garden, brewing, and tasks reset.',
+      ),
+      this.createDescriptionLine(
+        'the shown ruby and emerald totals carry into the next run.',
+      ),
+      this.createDescriptionLine(
+        'each completed milestone adds 1 prestige point for capacity rewards.',
+      ),
+    );
     return description;
+  }
+
+  createDescriptionLine(text) {
+    const line = document.createElement('div');
+    line.textContent = text;
+    return line;
   }
 
   createMilestoneRow(milestone, upcoming = false) {
@@ -309,15 +327,20 @@ export class PrestigePanelManager {
 
     const action = this.createMilestoneAction(milestone);
 
+    const header = document.createElement('div');
+    header.className = 'workshop-page__prestige-milestone-header';
+    header.append(level);
+
     body.append(reward);
     if (action) {
       body.append(action);
     }
-    const header = document.createElement('div');
-    header.className = 'workshop-page__prestige-milestone-header';
-    header.append(level, stateLabel);
 
-    row.append(header, body);
+    const content = document.createElement('div');
+    content.className = 'workshop-page__prestige-milestone-content';
+    content.append(header, body);
+
+    row.append(stateLabel, content);
     return row;
   }
 

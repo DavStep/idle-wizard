@@ -6836,6 +6836,12 @@ describe('PagesFacade', () => {
     expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
       'prestige resets the current run',
     );
+    expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
+      'mana, coin, crystal, items, ordinary research, garden, brewing, and tasks reset.',
+    );
+    expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
+      'each completed milestone adds 1 prestige point for capacity rewards.',
+    );
     const summary = page.querySelector('.workshop-page__prestige-summary');
     expect(
       summary?.querySelector('.workshop-page__prestige-level-flow')?.textContent,
@@ -6959,6 +6965,28 @@ describe('PagesFacade', () => {
     const stateLabels = milestoneRows.map((row) =>
       row.querySelector('.workshop-page__prestige-state-label'),
     );
+    const contentBlocks = milestoneRows.map((row) =>
+      row.querySelector('.workshop-page__prestige-milestone-content'),
+    );
+    const headerStateLabels = milestoneRows.map((row) =>
+      row.querySelector(
+        '.workshop-page__prestige-milestone-header .workshop-page__prestige-state-label',
+      ),
+    );
+    expect(stateLabels.map((label) => label?.parentElement)).toEqual(milestoneRows);
+    expect(
+      stateLabels.map((label) =>
+        label?.nextElementSibling?.classList.contains(
+          'workshop-page__prestige-milestone-content',
+        ),
+      ),
+    ).toEqual([true, true, true, true]);
+    expect(headerStateLabels).toEqual([null, null, null, null]);
+    expect(
+      contentBlocks.map((content) =>
+        content?.querySelector('.workshop-page__prestige-level')?.textContent,
+      ),
+    ).toEqual(['level 10', 'level 20', 'level 30', 'level 40']);
     expect(stateLabels.map((label) => label?.textContent)).toEqual([
       '',
       'ready',
@@ -9004,29 +9032,25 @@ describe('PagesFacade', () => {
     expect(popup.textContent).toContain('unknown potion');
     expect(popup.textContent).not.toContain('ashen memory');
     expect(popup.textContent).not.toContain('ingredients:');
-    expect(popup.textContent).toContain('- 5 ??????');
-    expect(popup.textContent).toContain('- 3 ??????');
-    expect(popup.textContent).toContain('- 10 ??????');
-    expect(popup.textContent).toContain('cost ? mana');
-    expect(popup.textContent).toContain('time: ?s');
     expect(popup.textContent).toContain('silverleaf quiet');
     expect(popup.textContent).toContain('silverleaf quiet: discovered by Ada');
+    expect(
+      popup.querySelector('.workshop-page__discovery-potion-box .style-box__title')
+        ?.textContent,
+    ).toBe('potion discoveries');
+    expect(popup.querySelector('.brewing-page__recipe-select-button')).toBeNull();
 
-    const discoveredRow = [...popup.querySelectorAll('.workshop-page__discovery-recipe-row')].find(
+    const discoveredRow = [...popup.querySelectorAll('.workshop-page__discovery-potion-row')].find(
       (row) => row.textContent.includes('silverleaf quiet'),
     );
 
-    expect(discoveredRow?.querySelector('.brewing-page__recipe-name')?.textContent).toBe(
-      'silverleaf quiet: discovered by Ada',
-    );
+    expect(discoveredRow?.classList.contains('research-page__row')).toBe(true);
+    expect(
+      discoveredRow?.querySelector('.workshop-page__discovery-potion-name')?.textContent,
+    ).toBe('silverleaf quiet: discovered by Ada');
     expect(discoveredRow?.querySelector('.workshop-page__discovery-royalties')?.textContent).toBe(
       'royalties 12.5 coin',
     );
-    expect(popup.textContent).toContain('- 1 mint');
-    expect(popup.textContent).toContain('- 1 glowcap');
-    expect(popup.textContent).toContain('- 1 moonflower');
-    expect(popup.textContent).toContain('cost 34 mana');
-    expect(popup.textContent).toContain('time: 75s');
 
     const herbsTab = [...popup.querySelectorAll('.workshop-page__discoveries-tab-button')].find(
       (tab) => tab.textContent === 'herbs',
@@ -10357,7 +10381,7 @@ describe('PagesFacade', () => {
 
     const popup = stage.querySelector('.brewing-page__recipes-popup');
     expect(popup.hidden).toBe(false);
-    expect(popup.querySelector('.style-box__title')?.textContent).toBe('recipes');
+    expect(popup.querySelector('.style-box__title')?.textContent).toBe('recipes: learned 1/2');
     expect(stage.querySelector('.brewing-page__cauldron.is-current')?.dataset.cauldronIndex).toBe(
       '1',
     );
@@ -10396,7 +10420,7 @@ describe('PagesFacade', () => {
 
     const popup = stage.querySelector('.brewing-page__recipes-popup');
     expect(popup.hidden).toBe(false);
-    expect(popup.querySelector('.style-box__title')?.textContent).toBe('recipes');
+    expect(popup.querySelector('.style-box__title')?.textContent).toBe('recipes: learned 1/2');
     expect(popup.textContent).not.toContain('auto brewing');
     expect(popup.querySelector('.brewing-page__auto-summary')).toBeNull();
 
@@ -10531,7 +10555,7 @@ describe('PagesFacade', () => {
 
     expect(popup.hidden).toBe(false);
     expect(popup.querySelector('[role="dialog"]')).not.toBeNull();
-    expect(popup.querySelector('.style-box__title')?.textContent).toBe('recipes');
+    expect(popup.querySelector('.style-box__title')?.textContent).toBe('recipes: learned 1/2');
     expect(popup.querySelector('.brewing-page__recipes-close')?.textContent).toBe('close');
     expect(popup.querySelector('.brewing-page__recipe-group-title')).toBeNull();
     expect(popup.textContent).not.toContain('unlocked recipes');

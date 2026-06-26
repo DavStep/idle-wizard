@@ -8130,6 +8130,69 @@ function createAdminPlayerGameplaySaveJson(
   );
 }
 
+function createAdminPlayerLevelTasks(
+  taskCatalog: ReturnType<typeof getSaveTaskCatalog>,
+  playerLevel: number,
+) {
+  if (playerLevel < taskCatalog.initialLevel || playerLevel > taskCatalog.maxLevel) {
+    throw new Error('Invalid player level.');
+  }
+
+  return {
+    currentLevel: playerLevel,
+    tasks: [],
+  };
+}
+
+function createAdminPlayerLevelSaveJson(
+  ctx: IdleWizardReducerCtx,
+  existingSave: PlayerGameplaySaveRowValue | undefined,
+  identity: Identity,
+  playerLevel: number,
+): string {
+  if (!existingSave) {
+    throw new Error('Cannot set level for missing player save.');
+  }
+
+  const previousSave = parsePlayerGameplaySaveJson(existingSave.saveJson);
+  if (!previousSave) {
+    throw new Error('Cannot set level for invalid player save.');
+  }
+
+  const normalizedSave = normalizePlayerGameplaySave(
+    ctx,
+    previousSave,
+    existingSave.saveJson,
+    identity,
+  );
+  const taskCatalog = getSaveTaskCatalog(ctx);
+  const research: Record<string, unknown> = isRecord(normalizedSave.research)
+    ? normalizedSave.research
+    : {};
+  const minimumCurrentCrystal = getMinimumCurrentCrystalForSave(ctx, playerLevel, {
+    completedIds: Array.isArray(research.completedIds)
+      ? research.completedIds.map((researchId: unknown) => String(researchId))
+      : [],
+    inProgress: Array.isArray(research.inProgress)
+      ? research.inProgress.filter((progress: unknown): progress is Record<string, unknown> =>
+          isRecord(progress),
+        )
+      : [],
+  });
+  const nextSaveJson = JSON.stringify({
+    ...normalizedSave,
+    savedAt: normalizeSaveTimestamp(ctx),
+    crystal: normalizeSaveCrystal(normalizedSave.crystal, minimumCurrentCrystal),
+    tasks: createAdminPlayerLevelTasks(taskCatalog, playerLevel),
+  });
+
+  if (nextSaveJson.length > MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH) {
+    throw new Error('Invalid player save JSON length.');
+  }
+
+  return nextSaveJson;
+}
+
 function createAdminPlayerCurrencyBonusSaveJson(
   ctx: IdleWizardReducerCtx,
   existingSave: PlayerGameplaySaveRowValue | undefined,
@@ -8370,6 +8433,64 @@ function copyAdminWorldEventLeaderboardEntries(
       username: targetUsername,
       points: clampWorldEventLeaderboardPoints(entry.points, targetPlayerLevel),
       playerLevel: targetPlayerLevel,
+      updatedAt: ctx.timestamp,
+    });
+  }
+}
+
+function upsertAdminLeaderboardEntry(
+  ctx: IdleWizardReducerCtx,
+  player: { identity: Identity; username: string; playerLevel: number },
+) {
+  const username = normalizeUsername(player.username);
+  const playerLevel = normalizePlayerLevel(player.playerLevel);
+  const capPlayerLevel = getLeaderboardCapPlayerLevel(ctx, player.identity, playerLevel);
+  const rawExistingEntry = ctx.db.leaderboard.identity.find(player.identity);
+  const totalIncome = clampLeaderboardTotalIncome(
+    rawExistingEntry?.totalIncome ?? 0n,
+    capPlayerLevel,
+  );
+  const periods = rawExistingEntry
+    ? getLeaderboardPeriodValues(ctx, rawExistingEntry, totalIncome)
+    : getLeaderboardPeriodDefaults(ctx, totalIncome);
+
+  if (rawExistingEntry) {
+    ctx.db.leaderboard.identity.update({
+      ...rawExistingEntry,
+      username,
+      playerLevel,
+      totalIncome,
+      ...periods,
+      updatedAt: ctx.timestamp,
+    });
+    return;
+  }
+
+  ctx.db.leaderboard.insert({
+    identity: player.identity,
+    username,
+    playerLevel,
+    totalIncome,
+    ...periods,
+    updatedAt: ctx.timestamp,
+  });
+}
+
+function updateAdminWorldEventLeaderboardProfile(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+  username: string,
+  playerLevel: number,
+) {
+  const safeUsername = normalizeUsername(username);
+  const safePlayerLevel = normalizePlayerLevel(playerLevel);
+
+  for (const entry of Array.from(ctx.db.worldEventLeaderboard.byIdentity.filter(identity))) {
+    ctx.db.worldEventLeaderboard.contributionKey.update({
+      ...entry,
+      username: safeUsername,
+      playerLevel: safePlayerLevel,
+      points: clampWorldEventLeaderboardPoints(entry.points, safePlayerLevel),
       updatedAt: ctx.timestamp,
     });
   }
@@ -15226,6 +15347,56 @@ export const set_admin_player_data = spacetimedb.reducer(
       ...getLeaderboardPeriodDefaults(ctx, safeTotalIncome),
       updatedAt: ctx.timestamp,
     });
+  },
+);
+
+export const admin_set_player_level_by_identity = spacetimedb.reducer(
+  {
+    identityHex: t.string(),
+    playerLevel: t.u32(),
+  },
+  (ctx, { identityHex, playerLevel }) => {
+    assertGameConfigAdmin(ctx);
+
+    const player = findPlayerByIdentityHex(ctx, identityHex);
+    const safePlayerLevel = validateAdminPlayerLevel(playerLevel);
+    const existingSave = ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
+    const safeSaveJson = createAdminPlayerLevelSaveJson(
+      ctx,
+      existingSave,
+      player.identity,
+      safePlayerLevel,
+    );
+    const nextPlayer = ctx.db.player.identity.update({
+      ...player,
+      username: normalizeUsername(player.username),
+      playerLevel: safePlayerLevel,
+      theme: normalizePlayerTheme(player.theme),
+      font: normalizePlayerFont(player.font),
+      colorMode: normalizePlayerColorMode(player.colorMode),
+      character: normalizePlayerCharacter(player.character),
+      usernamePromptSeen:
+        Boolean(player.usernamePromptSeen) ||
+        normalizeUsername(player.username) !== DEFAULT_USERNAME,
+      connected: false,
+      lastSeenAt: ctx.timestamp,
+    });
+
+    upsertAdminPlayerGameplaySave(ctx, nextPlayer.identity, safeSaveJson, existingSave);
+    upsertAdminLeaderboardEntry(ctx, nextPlayer);
+    updateAdminWorldEventLeaderboardProfile(
+      ctx,
+      nextPlayer.identity,
+      nextPlayer.username,
+      nextPlayer.playerLevel,
+    );
+    updateTradeAllianceMemberProfile(
+      ctx,
+      nextPlayer.identity,
+      nextPlayer.username,
+      nextPlayer.playerLevel,
+    );
+    kickAdminPlayerSession(ctx, nextPlayer.identity);
   },
 );
 

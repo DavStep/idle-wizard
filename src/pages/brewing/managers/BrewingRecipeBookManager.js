@@ -260,7 +260,7 @@ export class BrewingRecipeBookManager {
 
     const recipes = this.getVisibleRecipes(snapshot?.brewing?.recipes ?? []);
     this.clampCurrentSpreadIndex(recipes.length);
-    this.renderTitle();
+    this.renderTitle(recipes);
     this.renderPagination(recipes.length);
     const ownedIngredientQuantities = this.getOwnedIngredientQuantities(snapshot);
     const brewQuantity = this.getBrewQuantity(snapshot);
@@ -289,8 +289,9 @@ export class BrewingRecipeBookManager {
     return recipes.filter((recipe) => recipe && typeof recipe.key === 'string');
   }
 
-  renderTitle() {
-    const title = 'recipes';
+  renderTitle(recipes = []) {
+    const learnedCount = recipes.filter((recipe) => recipe?.unlocked === true).length;
+    const title = `recipes: learned ${learnedCount}/${recipes.length}`;
 
     this.setText(this.refs.title, title);
     this.setAttribute(this.refs.dialog, 'aria-label', title);
@@ -427,8 +428,8 @@ export class BrewingRecipeBookManager {
       label.setAttribute('aria-label', 'unknown');
     }
 
-    const infoText = this.createRecipeInfoText(display);
     const discoveryRow = this.createRecipeDiscoveryRow(display);
+    const infoText = this.createRecipeInfoText(display, discoveryRow);
 
     const info = document.createElement('div');
     info.className = 'brewing-page__recipe-info';
@@ -474,9 +475,6 @@ export class BrewingRecipeBookManager {
     meta.append(cost, duration);
 
     main.append(top, infoText);
-    if (discoveryRow) {
-      main.append(discoveryRow);
-    }
     row.append(main, ingredients, meta, selectButton);
 
     return row;
@@ -534,10 +532,13 @@ export class BrewingRecipeBookManager {
     this.render(snapshot);
   }
 
-  createRecipeInfoText(display) {
+  createRecipeInfoText(display, discoveryRow = null) {
     const infoText = document.createElement('p');
     infoText.className = 'brewing-page__recipe-info-text';
     infoText.append(display.infoText);
+    if (discoveryRow) {
+      infoText.append(discoveryRow);
+    }
 
     return infoText;
   }
@@ -547,8 +548,9 @@ export class BrewingRecipeBookManager {
       return null;
     }
 
-    const row = document.createElement('div');
+    const row = document.createElement('span');
     row.className = 'brewing-page__recipe-discovery-row';
+    setResourceColor(row, 'crystal');
     row.append(
       '- discovered by ',
       createPlayerInfoLink(

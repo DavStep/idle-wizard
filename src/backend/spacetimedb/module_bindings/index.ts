@@ -44,6 +44,7 @@ import AdminMergePlayerAccountsReducer from "./admin_merge_player_accounts_reduc
 import AdminMoveTradeAllianceMemberReducer from "./admin_move_trade_alliance_member_reducer";
 import AdminResetPlayerProgressionByIdentityReducer from "./admin_reset_player_progression_by_identity_reducer";
 import AdminResetPlayerProgressionDataReducer from "./admin_reset_player_progression_data_reducer";
+import AdminSetPlayerLevelByIdentityReducer from "./admin_set_player_level_by_identity_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "./admin_set_trade_alliance_member_role_reducer";
 import AdminWipeAllPlayerDataReducer from "./admin_wipe_all_player_data_reducer";
 import AdminWipeZeroIncomePlayerDataReducer from "./admin_wipe_zero_income_player_data_reducer";
@@ -704,6 +705,7 @@ const reducersSchema = __reducers(
   __reducerSchema("admin_move_trade_alliance_member", AdminMoveTradeAllianceMemberReducer),
   __reducerSchema("admin_reset_player_progression_by_identity", AdminResetPlayerProgressionByIdentityReducer),
   __reducerSchema("admin_reset_player_progression_data", AdminResetPlayerProgressionDataReducer),
+  __reducerSchema("admin_set_player_level_by_identity", AdminSetPlayerLevelByIdentityReducer),
   __reducerSchema("admin_set_trade_alliance_member_role", AdminSetTradeAllianceMemberRoleReducer),
   __reducerSchema("admin_wipe_all_player_data", AdminWipeAllPlayerDataReducer),
   __reducerSchema("admin_wipe_zero_income_player_data", AdminWipeZeroIncomePlayerDataReducer),

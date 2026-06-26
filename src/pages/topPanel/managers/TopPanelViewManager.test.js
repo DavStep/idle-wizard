@@ -173,6 +173,15 @@ describe('TopPanelViewManager', () => {
     const pickerFrameRule = baseCss.match(
       /\.room-top-panel__character-option-frame\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const lockedFrameRule = baseCss.match(
+      /\.room-top-panel__character-button\.is-unresearched\s+\.room-top-panel__character-option-frame\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const silhouetteBaseRule = baseCss.match(
+      /\.room-top-panel__character-option-silhouette\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const statusBaseRule = baseCss.match(
+      /\.room-top-panel__character-status\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const lockedSilhouetteRule = baseCss.match(
       /\.room-top-panel__character-button\.is-unresearched\s+\.room-top-panel__character-option-silhouette\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -190,6 +199,9 @@ describe('TopPanelViewManager', () => {
     expect(pickerFrameRule).toMatch(/\bheight:\s*72px;/);
     expect(pickerAvatarRule).toMatch(/\bwidth:\s*100%;/);
     expect(pickerAvatarRule).toMatch(/\bheight:\s*100%;/);
+    expect(lockedFrameRule).toMatch(/\bborder-color:\s*var\(--style-stroke\);/);
+    expect(silhouetteBaseRule).toMatch(/\bbackground:\s*var\(--style-stroke\);/);
+    expect(statusBaseRule).toMatch(/\bbackground:\s*transparent;/);
     expect(lockedSilhouetteRule).toMatch(/\bdisplay:\s*block;/);
     expect(lockedIconRule).toMatch(/\bdisplay:\s*flex;/);
     expect(checkedIconRule).toMatch(/\bdisplay:\s*flex;/);
@@ -203,5 +215,65 @@ describe('TopPanelViewManager', () => {
 
     expect(topPanelRule).toMatch(/\bgap:\s*2px 6px;/);
     expect(topPanelRule).toMatch(/\bpadding-left:\s*2px;/);
+  });
+
+  it('keeps amount-icon labels tight when resource words are hidden', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
+    const itemIconRule = baseCss.match(
+      /\.style-seed-label__icon,\s*\.style-herb-label__icon,\s*\.style-potion-label__icon\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const globalSpacerRule = baseCss.match(
+      /:root\[data-style-icons="icons"\]\s+\.style-resource-label__spacer\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const globalAmountIconRule = baseCss.match(
+      /:root\[data-style-icons="icons"\]\s+\.style-resource-label__amount\s*\+\s*\.style-resource-label__spacer\s*\+\s*\.style-resource-label__icon\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const previewSpacerRule = baseCss.match(
+      /:root\s+\.room-top-panel__icon-preview\[data-preview-icons="icons"\]\s+\.style-resource-label__spacer\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const previewAmountIconRule = baseCss.match(
+      /:root\s+\.room-top-panel__icon-preview\[data-preview-icons="icons"\]\s+\.style-resource-label__amount\s*\+\s*\.style-resource-label__spacer\s*\+\s*\.style-resource-label__icon\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(rootRule).toMatch(/--style-icon-label-gap:\s*0\.14em;/);
+    expect(itemIconRule).toMatch(/\bmargin-right:\s*var\(--style-icon-label-gap\);/);
+    expect(globalSpacerRule).toMatch(/\bdisplay:\s*none;/);
+    expect(globalAmountIconRule).toMatch(
+      /\bmargin-left:\s*var\(--style-icon-label-gap\);/,
+    );
+    expect(previewSpacerRule).toMatch(/\bdisplay:\s*none;/);
+    expect(previewAmountIconRule).toMatch(
+      /\bmargin-left:\s*var\(--style-icon-label-gap\);/,
+    );
+  });
+
+  it('labels level reward sections and keeps the level dialog non-scrollable', () => {
+    const stage = document.createElement('section');
+    const manager = new TopPanelViewManager();
+
+    manager.mount(stage);
+
+    expect(
+      [...stage.querySelectorAll('.room-top-panel__level-section-label')].map(
+        (label) => label.textContent,
+      ),
+    ).toEqual(['bonuses gained at this level', 'total bonuses at this level']);
+
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
+    const dialogRule = baseCss.match(
+      /\.style-dialog\.room-top-panel__level-dialog\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const contentRule = baseCss.match(
+      /\.room-top-panel__level-content\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(rootRule).toMatch(/--room-top-panel-level-dialog-height:\s*360px;/);
+    expect(dialogRule).toMatch(
+      /\bheight:\s*var\(--room-top-panel-level-dialog-height\);/,
+    );
+    expect(contentRule).toMatch(/\boverflow:\s*visible;/);
+    expect(contentRule).not.toMatch(/\boverflow:\s*hidden auto;/);
   });
 });

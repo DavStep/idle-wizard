@@ -146,6 +146,63 @@ describe('PlayerInfoDialogManager', () => {
     );
   });
 
+  it('shows loading until requested player info data arrives', () => {
+    let snapshot = { connected: true, players: [] };
+    let publishSnapshot = () => {};
+    const playerInfoFacade = {
+      getSnapshot: () => snapshot,
+      retainPublicData: vi.fn(() => vi.fn()),
+      subscribe: vi.fn((listener) => {
+        publishSnapshot = (nextSnapshot) => {
+          snapshot = nextSnapshot;
+          listener(nextSnapshot);
+        };
+        listener(snapshot);
+        return vi.fn();
+      }),
+    };
+    const stage = document.createElement('section');
+    const manager = new PlayerInfoDialogManager({ playerInfoFacade });
+
+    document.body.append(stage);
+    manager.mount(stage);
+    manager.show({ identity: 'identity-ada', username: 'Ada' });
+
+    const popup = stage.querySelector('.room-player-info-popup');
+    expect(popup.querySelector('.room-player-info-empty')?.textContent).toBe(
+      'loading player info',
+    );
+    expect(popup.querySelector('.room-player-info-dialog')?.getAttribute('aria-busy')).toBe(
+      'true',
+    );
+    expect(popup.querySelector('.room-player-info-rows')).toBeNull();
+
+    publishSnapshot({
+      connected: true,
+      players: [
+        {
+          identity: 'identity-ada',
+          username: 'Ada',
+          character: 'mira',
+          totalProducedCoin: 987,
+          playerLevel: 8,
+          prestigeCount: 1,
+        },
+      ],
+    });
+
+    expect(popup.querySelector('.room-player-info-empty')).toBeNull();
+    expect(popup.querySelector('.room-player-info-dialog')?.getAttribute('aria-busy')).toBe(
+      'false',
+    );
+    expect(popup.querySelector('.room-player-info-main-rows')?.textContent).toContain(
+      'level8',
+    );
+    expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
+      'total produced coin987',
+    );
+  });
+
   it('retains public player info only while the dialog is open', () => {
     const stage = document.createElement('section');
     const releasePublicData = vi.fn();

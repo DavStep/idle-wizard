@@ -20,6 +20,7 @@
   --style-resource-emerald: var(--style-text);
   --style-resource-ruby: var(--style-text);
   --style-resource-icon-size: 1.032em;
+  --style-icon-label-gap: 0.14em;
   --style-star-yellow: oklch(45% 0.13 96);
   --style-star-orange: oklch(43% 0.15 55);
   --style-star-red: oklch(42% 0.16 25);
@@ -73,6 +74,7 @@
   );
   --style-tabbed-dialog-content-height: 320px;
   --room-top-panel-settings-content-height: 410px;
+  --room-top-panel-level-dialog-height: 360px;
   --style-discoveries-dialog-width: calc(
     286px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
   );
@@ -194,8 +196,21 @@
     (var(--style-row-min-height) * var(--brewing-page-cauldron-row-count)) +
       var(--brewing-page-cauldron-frame-height)
   );
-  --brewing-page-cauldron-box-width: 272px;
-  --brewing-page-cauldron-box-gap: 16px;
+  --brewing-page-cauldron-action-height: 28px;
+  --brewing-page-cauldron-actions-gap: 4px;
+  --brewing-page-cauldron-recipe-box-width: 216px;
+  --brewing-page-cauldron-art-width: 178px;
+  --brewing-page-cauldron-art-height: calc(
+    var(--brewing-page-cauldron-height) +
+      var(--brewing-page-cauldron-action-height) +
+      var(--brewing-page-cauldron-actions-gap) + 6px
+  );
+  --brewing-page-cauldron-box-gap: 14px;
+  --brewing-page-cauldron-box-width: calc(
+    var(--brewing-page-cauldron-art-width) +
+      var(--brewing-page-cauldron-box-gap) +
+      var(--brewing-page-cauldron-recipe-box-width)
+  );
   --brewing-page-herbs-box-clearance: 0px;
   --brewing-page-herb-rows-height: 132px;
   --brewing-page-herbs-box-reserved-height: calc(
@@ -204,17 +219,14 @@
   );
   --brewing-page-box-gap: 8px;
   --garden-page-box-gap: 24px;
+  --garden-page-world-top-extension: calc(var(--style-room-content-edge) * 2);
   --room-inventory-panel-y-offset: 5px;
   --garden-page-plot-progress-slot-height: var(--style-scroll-progress-height);
   --garden-page-plot-visual-width: 88px;
   --garden-page-plot-progress-width: 80px;
   --garden-page-plot-box-frame-height: 84px;
+  --garden-page-plot-row-gap: 20px;
   --garden-page-plot-number-color: #3b2416;
-  --garden-page-plot-soil-level-1: #784c31;
-  --garden-page-plot-soil-level-2: #70462d;
-  --garden-page-plot-soil-level-3: #673f29;
-  --garden-page-plot-soil-level-4: #5e3925;
-  --garden-page-plot-soil-level-5: #54321f;
   --garden-page-plot-box-detail-font-size: 9px;
   --garden-page-plot-box-detail-line-height: 11px;
   --garden-page-plot-text-stroke-width: 1px;
@@ -546,7 +558,7 @@
   height: var(--style-resource-icon-size);
   object-fit: contain;
   object-position: center;
-  vertical-align: -0.22em;
+  vertical-align: -0.24em;
 }
 
 .style-seed-label__icon,
@@ -555,16 +567,16 @@
   display: none;
   width: 1.287em;
   height: 1.287em;
-  margin-right: 0.28em;
+  margin-right: var(--style-icon-label-gap);
   object-fit: contain;
   object-position: center;
-  vertical-align: -0.14em;
+  vertical-align: -0.24em;
 }
 
 .style-seed-label__icon {
   width: 1.115em;
   height: 1.502em;
-  vertical-align: -0.24em;
+  vertical-align: -0.34em;
 }
 
 .style-seed-pack-composite {
@@ -607,6 +619,17 @@ span.style-seed-pack-composite > .style-seed-pack-composite__item {
   display: none;
 }
 
+:root[data-style-icons="icons"] .style-resource-label__spacer {
+  display: none;
+}
+
+:root[data-style-icons="icons"]
+  .style-resource-label__amount
+  + .style-resource-label__spacer
+  + .style-resource-label__icon {
+  margin-left: var(--style-icon-label-gap);
+}
+
 :root[data-style-icons="icons"] .style-seed-label__icon,
 :root[data-style-icons="icons"] .style-herb-label__icon,
 :root[data-style-icons="icons"] .style-potion-label__icon {
@@ -644,6 +667,7 @@ body,
   height: var(--app-viewport-height);
   margin: 0;
   overflow: hidden;
+  touch-action: pan-y;
 }
 
 body {
@@ -660,6 +684,7 @@ body {
   place-items: center;
   overflow: hidden;
   background: var(--style-bg);
+  touch-action: pan-y;
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
@@ -3852,10 +3877,14 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .style-box.workshop-page__prestige-row {
   --workshop-page-prestige-state-icon-size: 26px;
+  --workshop-page-prestige-state-column-width: 64px;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-template-columns:
+    var(--workshop-page-prestige-state-column-width)
+    minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--style-row-column-gap);
   flex: 0 0 auto;
   width: 100%;
   max-width: 100%;
@@ -3877,18 +3906,27 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__prestige-milestone-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
+  display: block;
   align-items: center;
-  min-height: var(--workshop-page-prestige-state-icon-size);
-  column-gap: var(--style-row-column-gap);
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__prestige-milestone-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .workshop-page__prestige-state-label {
   display: block;
+  align-self: center;
+  justify-self: center;
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   font-variant-numeric: tabular-nums lining-nums;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3897,7 +3935,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__prestige-state-label--locked {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   width: calc(var(--workshop-page-prestige-state-icon-size) + 2px);
   height: var(--workshop-page-prestige-state-icon-size);
   line-height: 0;
@@ -4805,8 +4843,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
   position: absolute;
   top: 0;
   left: 0;
-  width: 762px;
-  height: 812px;
+  width: 560px;
+  height: 1960px;
   transform-origin: 0 0;
   transform: translate3d(
     var(--brewing-page-world-pan-x, 0px),
@@ -5033,12 +5071,22 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .brewing-page__cauldron {
+  --brewing-page-cauldron-scroll-height: calc(
+    var(--style-row-min-height) * var(--brewing-page-cauldron-list-row-count)
+  );
+  --brewing-page-cauldron-height: calc(
+    (var(--style-row-min-height) * var(--brewing-page-cauldron-row-count)) +
+      var(--brewing-page-cauldron-frame-height)
+  );
+  --brewing-page-cauldron-art-height: calc(
+    var(--brewing-page-cauldron-height) +
+      var(--brewing-page-cauldron-action-height) +
+      var(--brewing-page-cauldron-actions-gap) + 6px
+  );
   position: absolute;
   box-sizing: border-box;
   width: var(--brewing-page-cauldron-box-width);
-  min-height: calc(
-    var(--brewing-page-cauldron-height) + var(--style-row-min-height) + 8px
-  );
+  min-height: calc(var(--brewing-page-cauldron-art-height) + 28px);
   cursor: pointer;
 }
 
@@ -5051,7 +5099,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .brewing-page__cauldron-recipe-box {
   position: relative;
   box-sizing: border-box;
-  width: 170px;
+  width: var(--brewing-page-cauldron-recipe-box-width);
   height: var(--brewing-page-cauldron-height);
   min-height: var(--brewing-page-cauldron-height);
   max-height: none;
@@ -5062,11 +5110,11 @@ span.room-seed-pack-composite .room-seed-pack-item {
   position: relative;
   box-sizing: border-box;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  width: 86px;
-  height: var(--brewing-page-cauldron-height);
-  min-height: var(--brewing-page-cauldron-height);
+  width: var(--brewing-page-cauldron-art-width);
+  height: var(--brewing-page-cauldron-art-height);
+  min-height: var(--brewing-page-cauldron-art-height);
   margin-top: 0;
   padding: 0;
   background: transparent;
@@ -5081,13 +5129,22 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .brewing-page__cauldron-locked-box {
   position: relative;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: var(--brewing-page-cauldron-box-width);
   height: var(--brewing-page-cauldron-height);
   min-height: var(--brewing-page-cauldron-height);
+  text-align: center;
 }
 
 .brewing-page__cauldron-locked-box[hidden] {
   display: none;
+}
+
+.brewing-page__cauldron-locked-label {
+  width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .brewing-page__cauldron.is-current
@@ -5239,8 +5296,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
   justify-content: flex-start;
   gap: 2px;
   width: 100%;
-  min-height: calc(var(--brewing-page-cauldron-height) - 12px);
-  padding-top: 3px;
+  min-height: var(--brewing-page-cauldron-art-height);
+  padding-top: 0;
   text-align: center;
   pointer-events: none;
 }
@@ -5248,8 +5305,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .brewing-page__cauldron-art {
   position: relative;
   flex: 0 0 auto;
-  width: 96px;
-  height: 78px;
+  width: var(--brewing-page-cauldron-art-width);
+  height: var(--brewing-page-cauldron-art-height);
   overflow: visible;
   pointer-events: none;
 }
@@ -5320,8 +5377,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  width: 132px;
-  max-width: 132px;
+  width: 150px;
+  max-width: 150px;
   min-height: 24px;
   pointer-events: none;
 }
@@ -5405,12 +5462,19 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .brewing-page__actions {
-  position: relative;
+  position: absolute;
+  top: calc(
+    var(--brewing-page-cauldron-height) +
+      var(--brewing-page-cauldron-actions-gap)
+  );
   bottom: auto;
-  left: auto;
+  left: calc(
+    var(--brewing-page-cauldron-art-width) +
+      var(--brewing-page-cauldron-box-gap)
+  );
   z-index: auto;
-  width: var(--brewing-page-cauldron-box-width);
-  margin-top: 4px;
+  width: var(--brewing-page-cauldron-recipe-box-width);
+  margin-top: 0;
   background: transparent;
   font-size: var(--style-box-border-label-font-size);
   line-height: var(--style-box-border-label-line-height);
@@ -5419,7 +5483,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .brewing-page__actions.is-centered {
-  left: auto;
   transform: none;
   text-align: center;
 }
@@ -5429,17 +5492,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .brewing-page__cauldron.is-locked .brewing-page__actions {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--brewing-page-cauldron-box-width);
-  height: var(--brewing-page-cauldron-height);
-  margin-top: 0;
-  text-align: center;
-  pointer-events: none;
+  display: none;
 }
 
 .brewing-page__action-row {
@@ -5447,13 +5500,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
   align-items: stretch;
   gap: 6px;
   width: 100%;
-  height: 28px;
-  min-height: 28px;
-}
-
-.brewing-page__cauldron.is-locked .brewing-page__action-row {
-  display: flex;
-  justify-content: center;
+  height: var(--brewing-page-cauldron-action-height);
+  min-height: var(--brewing-page-cauldron-action-height);
 }
 
 .style-button.brewing-page__action-button {
@@ -5476,14 +5524,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
   white-space: nowrap;
 }
 
-.brewing-page__cauldron.is-locked .brewing-page__action-button {
-  padding: 0;
-  font-weight: 700;
-  background: transparent;
-  border: 0;
-  pointer-events: none;
-}
-
 .brewing-page__action-button-label {
   line-height: inherit;
 }
@@ -5501,13 +5541,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
     [aria-disabled="true"]
   ) {
   background: var(--style-active-surface);
-}
-
-.brewing-page__cauldron.is-locked
-  .style-button.brewing-page__action-button:active:not(:disabled):not(
-    [aria-disabled="true"]
-  ) {
-  background: transparent;
 }
 
 .style-button.brewing-page__action-button[aria-disabled="true"],
@@ -6113,7 +6146,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 :root[data-style-icons="icons"]
   .workshop-page__personal-task-label
   > .style-resource-label {
-  margin-right: 0.28em;
+  margin-right: var(--style-icon-label-gap);
 }
 
 .workshop-page__personal-task-progress,
@@ -6369,7 +6402,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__world-notice-donation-label .style-resource-label__icon {
-  margin-right: 0.28em;
+  margin-right: var(--style-icon-label-gap);
 }
 
 :root[data-style-icons="icons"]
@@ -7026,8 +7059,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
   scrollbar-width: none;
 }
 
-.workshop-page__discoveries-rows.is-recipe-list {
-  padding-top: 0;
+.workshop-page__discoveries-rows.is-potion-list {
+  padding-top: 14px;
 }
 
 .workshop-page__bag-rows {
@@ -7047,17 +7080,30 @@ span.room-seed-pack-composite .room-seed-pack-item {
   display: none;
 }
 
-.workshop-page__discovery-recipe-row.is-unknown,
-.workshop-page__discovery-recipe-row.is-unknown
-  .brewing-page__recipe-ingredients-title,
-.workshop-page__discovery-recipe-row.is-unknown .brewing-page__recipe-meta,
-.workshop-page__discovery-recipe-row
-  .brewing-page__recipe-ingredient-row.is-unknown {
-  color: var(--style-disabled);
-}
-
 .workshop-page__discovery-byline {
   white-space: nowrap;
+}
+
+.workshop-page__discovery-potion-box {
+  box-sizing: border-box;
+  width: 100%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.workshop-page__discovery-potion-row .row_key,
+.workshop-page__discovery-potion-row .row_val {
+  float: none;
+  clear: none;
+}
+
+.workshop-page__discovery-potion-label {
+  cursor: default;
+}
+
+.workshop-page__discovery-potion-label,
+.workshop-page__discovery-potion-name {
+  min-width: 0;
 }
 
 .workshop-page__discovery-royalties {
@@ -7242,6 +7288,7 @@ div.workshop-page__discovery-row {
 
 .workshop-page__world-chat-age {
   color: var(--style-muted);
+  font-size: var(--style-tiny-font-size);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -7783,7 +7830,7 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot-world {
   position: absolute;
-  top: calc(var(--style-room-content-top) - var(--style-room-content-edge));
+  top: calc(var(--style-room-content-top) - var(--garden-page-world-top-extension));
   right: 0;
   bottom: var(--style-room-chat-clearance);
   left: 0;
@@ -8267,7 +8314,8 @@ div.workshop-page__discovery-row {
     var(--garden-page-plot-columns, 3),
     minmax(0, 1fr)
   );
-  gap: 12px;
+  column-gap: 12px;
+  row-gap: var(--garden-page-plot-row-gap);
   align-content: start;
   padding: 24px var(--style-room-content-edge) 0;
 }
@@ -8303,7 +8351,7 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot .garden-page__plot-box-frame {
-  --garden-page-plot-soil-fill: var(--garden-page-plot-soil-level-1);
+  --garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground.png");
   --garden-page-plot-level-color: var(--style-muted);
   position: relative;
   box-sizing: border-box;
@@ -8345,49 +8393,32 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="2"] {
-  --garden-page-plot-soil-fill: var(--garden-page-plot-soil-level-2);
+  --garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground-level-2.png");
 }
 
 .garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="3"] {
-  --garden-page-plot-soil-fill: var(--garden-page-plot-soil-level-3);
+  --garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground-level-3.png");
 }
 
 .garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="4"] {
-  --garden-page-plot-soil-fill: var(--garden-page-plot-soil-level-4);
+  --garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground-level-4.png");
 }
 
 .garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="5"] {
-  --garden-page-plot-soil-fill: var(--garden-page-plot-soil-level-5);
+  --garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground-level-5.png");
 }
 
-.garden-page__plot .garden-page__plot-box-frame::before,
-.garden-page__plot .garden-page__plot-box-frame::after {
+.garden-page__plot .garden-page__plot-box-frame::before {
   position: absolute;
   inset: 0;
   z-index: 0;
   display: block;
   pointer-events: none;
   content: "";
+  background-image: var(--garden-page-plot-soil-image);
   background-position: center bottom;
   background-repeat: no-repeat;
   background-size: 100% auto;
-}
-
-.garden-page__plot .garden-page__plot-box-frame::before {
-  background: var(--garden-page-plot-soil-fill);
-  mask-image: url("../pages/garden/assets/plots/outpost-plot-ground.png");
-  mask-position: center bottom;
-  mask-repeat: no-repeat;
-  mask-size: 100% auto;
-  -webkit-mask-image: url("../pages/garden/assets/plots/outpost-plot-ground.png");
-  -webkit-mask-position: center bottom;
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 100% auto;
-}
-
-.garden-page__plot .garden-page__plot-box-frame::after {
-  background-image: url("../pages/garden/assets/plots/outpost-plot-ground.png");
-  mix-blend-mode: multiply;
 }
 
 .garden-page__plot
@@ -8543,6 +8574,15 @@ div.workshop-page__discovery-row {
   height: 100%;
   color: var(--garden-page-plot-number-color);
   object-fit: contain;
+  transform-box: fill-box;
+  transform-origin: 50% 92%;
+}
+
+.garden-page__plot-box-frame.is-growing .garden-page__plot-plant-icon {
+  animation: garden-page-plot-growing-wind 2400ms var(--style-motion-ease-soft)
+    infinite;
+  animation-delay: var(--garden-page-plot-wind-delay, 0ms);
+  will-change: transform;
 }
 
 .garden-page__plot-box-frame.is-ready .garden-page__plot-plant {
@@ -8651,7 +8691,7 @@ div.workshop-page__discovery-row {
   .garden-page__plot-row.is-processing
   .garden-page__plot-box-action {
   right: 6px;
-  bottom: 6px;
+  bottom: 7px;
   left: auto;
   z-index: 3;
   padding: 0;
@@ -8670,7 +8710,7 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot .garden-page__plot-box-timer {
   display: inline;
-  padding: 0 2px;
+  padding: 0 2px 1px 4px;
   color: #fff;
   font-size: var(--garden-page-plot-box-detail-font-size);
   font-weight: 700;
@@ -8680,6 +8720,17 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot .garden-page__plot-box-timer[hidden] {
   display: none;
+}
+
+@keyframes garden-page-plot-growing-wind {
+  0%,
+  100% {
+    transform: rotate(-1.8deg);
+  }
+
+  50% {
+    transform: rotate(2.1deg);
+  }
 }
 
 @keyframes garden-page-plot-ready-lift {
@@ -9687,8 +9738,8 @@ div.workshop-page__discovery-row {
 }
 
 .brewing-page__recipe-discovery-row {
+  display: block;
   margin-top: 2px;
-  color: var(--style-muted);
   font-size: var(--style-box-border-label-font-size);
   line-height: var(--style-box-border-label-line-height);
   overflow-wrap: anywhere;
@@ -12026,7 +12077,7 @@ div.workshop-page__discovery-row {
 .style-dialog.room-top-panel__level-dialog {
   position: relative;
   width: 286px;
-  height: 252px;
+  height: var(--room-top-panel-level-dialog-height);
 }
 
 .room-top-panel__settings-close,
@@ -12078,18 +12129,27 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__level-content {
-  height: calc(252px - var(--style-scroll-progress-block-size));
-  overflow: hidden auto;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
-}
-
-.room-top-panel__level-content::-webkit-scrollbar {
-  display: none;
+  height: 100%;
+  overflow: visible;
 }
 
 .room-top-panel__level-content.is-locked {
   color: var(--style-disabled);
+}
+
+.room-top-panel__level-section-label {
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: 700;
+  line-height: var(--style-box-border-label-line-height);
+}
+
+.room-top-panel__level-section-label[hidden] {
+  display: none;
+}
+
+.room-top-panel__level-section-label + .room-top-panel__level-rows {
+  margin-top: 2px;
 }
 
 .room-top-panel__level-rows {
@@ -12479,7 +12539,7 @@ div.workshop-page__discovery-row {
   position: absolute;
   inset: 0;
   display: none;
-  background: var(--style-disabled);
+  background: var(--style-stroke);
   -webkit-mask: var(--room-top-panel-character-mask) 50% 13% / cover no-repeat;
   mask: var(--room-top-panel-character-mask) 50% 13% / cover no-repeat;
 }
@@ -12491,16 +12551,16 @@ div.workshop-page__discovery-row {
   display: none;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  background: var(--style-surface);
+  width: 20.8px;
+  height: 20.8px;
+  background: transparent;
   pointer-events: none;
 }
 
 .room-top-panel__character-status-icon {
   display: block;
-  width: 14px;
-  height: 14px;
+  width: 18.2px;
+  height: 18.2px;
 }
 
 .room-top-panel__character-button.is-unresearched {
@@ -12509,7 +12569,7 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__character-button.is-unresearched
   .room-top-panel__character-option-frame {
-  border-color: var(--style-disabled);
+  border-color: var(--style-stroke);
 }
 
 .room-top-panel__character-button.is-unresearched
@@ -12535,12 +12595,6 @@ div.workshop-page__discovery-row {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.room-top-panel__character-button[aria-checked="true"]
-  .room-top-panel__character-option-frame {
-  outline: 2px solid var(--style-stroke);
-  outline-offset: 2px;
 }
 
 .room-top-panel__character-button[aria-checked="true"]
@@ -12795,6 +12849,20 @@ div.workshop-page__discovery-row {
   .room-top-panel__icon-preview[data-preview-icons="icons"]
   .style-resource-label__text {
   display: none;
+}
+
+:root
+  .room-top-panel__icon-preview[data-preview-icons="icons"]
+  .style-resource-label__spacer {
+  display: none;
+}
+
+:root
+  .room-top-panel__icon-preview[data-preview-icons="icons"]
+  .style-resource-label__amount
+  + .style-resource-label__spacer
+  + .style-resource-label__icon {
+  margin-left: var(--style-icon-label-gap);
 }
 
 :root
@@ -13113,6 +13181,11 @@ div.workshop-page__discovery-row {
   position: relative;
   padding-top: 6px;
   border-top: var(--style-border);
+}
+
+.room-player-info-empty {
+  min-height: var(--style-row-min-height);
+  color: var(--style-muted);
 }
 
 .room-player-info-row {
@@ -15534,6 +15607,12 @@ div.workshop-page__discovery-row {
     transform: translateX(-50%) scale(var(--garden-page-plot-growth-scale, 1));
   }
 
+  .garden-page__plot-box-frame.is-growing .garden-page__plot-plant-icon {
+    animation: none;
+    transform: rotate(0deg);
+    will-change: auto;
+  }
+
   .brewing-page__recipe-book.is-turning .brewing-page__recipe-page {
     animation: none;
     opacity: 1;
@@ -15593,6 +15672,7 @@ div.workshop-page__discovery-row {
     :where(.garden-page__plot-box-frame, .garden-page__plot-box-action),
   .brewing-page__cauldron.is-newly-bought,
   .garden-page__plot-box-frame.is-ready .garden-page__plot-plant,
+  .garden-page__plot-box-frame.is-growing .garden-page__plot-plant-icon,
   .garden-page__plot-scissors,
   .garden-page__plot-scissors-frame {
     animation: none;

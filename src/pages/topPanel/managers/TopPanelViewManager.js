@@ -789,6 +789,10 @@ export class TopPanelViewManager {
     this.refs.levelContent = document.createElement('div');
     this.refs.levelContent.className = 'room-top-panel__level-content';
 
+    this.refs.levelAddedLabel = document.createElement('div');
+    this.refs.levelAddedLabel.className = 'room-top-panel__level-section-label';
+    this.refs.levelAddedLabel.textContent = 'bonuses gained at this level';
+
     this.refs.levelAddedRows = document.createElement('div');
     this.refs.levelAddedRows.className =
       'room-top-panel__level-rows room-top-panel__level-added-rows';
@@ -797,13 +801,19 @@ export class TopPanelViewManager {
     this.refs.levelDivider.className = 'room-top-panel__level-divider';
     this.refs.levelDivider.hidden = true;
 
+    this.refs.levelTotalLabel = document.createElement('div');
+    this.refs.levelTotalLabel.className = 'room-top-panel__level-section-label';
+    this.refs.levelTotalLabel.textContent = 'total bonuses at this level';
+
     this.refs.levelTotalRows = document.createElement('div');
     this.refs.levelTotalRows.className =
       'room-top-panel__level-rows room-top-panel__level-total-rows';
 
     this.refs.levelContent.append(
+      this.refs.levelAddedLabel,
       this.refs.levelAddedRows,
       this.refs.levelDivider,
+      this.refs.levelTotalLabel,
       this.refs.levelTotalRows,
     );
 

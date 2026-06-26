@@ -16,6 +16,7 @@ import AdminMergePlayerAccountsReducer from "../admin_merge_player_accounts_redu
 import AdminMoveTradeAllianceMemberReducer from "../admin_move_trade_alliance_member_reducer";
 import AdminResetPlayerProgressionByIdentityReducer from "../admin_reset_player_progression_by_identity_reducer";
 import AdminResetPlayerProgressionDataReducer from "../admin_reset_player_progression_data_reducer";
+import AdminSetPlayerLevelByIdentityReducer from "../admin_set_player_level_by_identity_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "../admin_set_trade_alliance_member_role_reducer";
 import AdminWipeAllPlayerDataReducer from "../admin_wipe_all_player_data_reducer";
 import AdminWipeZeroIncomePlayerDataReducer from "../admin_wipe_zero_income_player_data_reducer";
@@ -75,6 +76,7 @@ export type AdminMergePlayerAccountsParams = __Infer<typeof AdminMergePlayerAcco
 export type AdminMoveTradeAllianceMemberParams = __Infer<typeof AdminMoveTradeAllianceMemberReducer>;
 export type AdminResetPlayerProgressionByIdentityParams = __Infer<typeof AdminResetPlayerProgressionByIdentityReducer>;
 export type AdminResetPlayerProgressionDataParams = __Infer<typeof AdminResetPlayerProgressionDataReducer>;
+export type AdminSetPlayerLevelByIdentityParams = __Infer<typeof AdminSetPlayerLevelByIdentityReducer>;
 export type AdminSetTradeAllianceMemberRoleParams = __Infer<typeof AdminSetTradeAllianceMemberRoleReducer>;
 export type AdminWipeAllPlayerDataParams = __Infer<typeof AdminWipeAllPlayerDataReducer>;
 export type AdminWipeZeroIncomePlayerDataParams = __Infer<typeof AdminWipeZeroIncomePlayerDataReducer>;

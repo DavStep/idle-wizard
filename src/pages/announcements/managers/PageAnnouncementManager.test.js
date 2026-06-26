@@ -332,6 +332,6 @@ describe('PageAnnouncementManager', () => {
       stage
         .querySelector('.room-announcement__research-icon')
         ?.getAttribute('data-asset-atlas-frame'),
-    ).toBe('resource:ruby');
+    ).toBe('resource:research');
   });
 });

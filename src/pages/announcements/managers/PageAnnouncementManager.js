@@ -13,6 +13,7 @@ const RESOURCE_ICON_FRAMES = Object.freeze({
   crystal: 'resource:crystal',
   emerald: 'resource:emerald',
   mana: 'resource:mana',
+  research: 'resource:research',
   ruby: 'resource:ruby',
 });
 
@@ -456,7 +457,11 @@ export class PageAnnouncementManager {
       return getPotionIconFrameName(research.id.slice('unlockRecipe:'.length));
     }
 
-    return RESOURCE_ICON_FRAMES[research.costCurrency] ?? RESOURCE_ICON_FRAMES.coin;
+    if (research.actionType === 'levelUp') {
+      return RESOURCE_ICON_FRAMES[research.costCurrency] ?? RESOURCE_ICON_FRAMES.coin;
+    }
+
+    return RESOURCE_ICON_FRAMES.research;
   }
 
   getResearchDetailText(research = {}) {
