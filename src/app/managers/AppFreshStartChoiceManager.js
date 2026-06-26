@@ -148,6 +148,7 @@ export class AppFreshStartChoiceManager {
     const oidc = authSnapshot?.oidc ?? {};
     const enabled = Boolean(oidc.enabled);
     const isBusy = Boolean(busy);
+    const defaultStatusText = this.getStatusText({ authSnapshot, busy: isBusy });
 
     if (isBusy) {
       this.root?.setAttribute('aria-busy', 'true');
@@ -166,9 +167,59 @@ export class AppFreshStartChoiceManager {
     );
     this.setText(
       this.refs.status,
-      statusText ??
-        (isBusy ? 'connecting...' : enabled ? 'not connected' : 'login unavailable'),
+      statusText ?? defaultStatusText,
     );
+  }
+
+  getStatusText({ authSnapshot, busy = false } = {}) {
+    const oidc = authSnapshot?.oidc ?? {};
+    if (busy) {
+      return 'connecting...';
+    }
+
+    if (oidc.cancelled) {
+      return 'login cancelled';
+    }
+
+    if (oidc.error) {
+      return this.getLoginErrorStatusText(oidc.error);
+    }
+
+    if (oidc.authenticated || (authSnapshot?.hasToken && oidc.remembered)) {
+      return oidc.displayName || oidc.email || 'connected';
+    }
+
+    if (!oidc.enabled) {
+      return 'login unavailable';
+    }
+
+    return 'not connected';
+  }
+
+  getLoginErrorStatusText(error) {
+    if (this.isLoginUnavailableReason(error)) {
+      return 'login unavailable';
+    }
+
+    return `login error: ${this.getErrorText(error)}`;
+  }
+
+  getErrorText(error) {
+    return String(error ?? '').replace(/\s+/g, ' ').trim();
+  }
+
+  isLoginUnavailableReason(reason) {
+    return [
+      'browser_not_supported',
+      'invalid_client',
+      'missing_client_id',
+      'opt_out_or_no_session',
+      'secure_http_required',
+      'suppressed_by_user',
+      'unregistered_origin',
+      'unknown_reason',
+      'web_unavailable',
+    ].includes(String(reason ?? '').trim());
   }
 
   setText(element, text) {

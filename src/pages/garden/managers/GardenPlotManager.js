@@ -1046,18 +1046,7 @@ export class GardenPlotManager {
     }
 
     if (!tile.unlocked) {
-      let buyResult = null;
-
-      if (tileNumber === garden.plot.nextTileNumber) {
-        buyResult = this.gameplayFacade.buyGardenTile();
-      }
-
-      this.render(this.gameplayFacade.getSnapshot());
-
-      if (buyResult?.ok) {
-        this.playBoughtTileAnimation(buyResult.tileNumber ?? tileNumber);
-      }
-
+      this.buyGardenTile(tileNumber);
       return;
     }
 
@@ -1096,6 +1085,27 @@ export class GardenPlotManager {
         this.startGardenHarvest(tileNumber);
       }
     }
+  }
+
+  buyGardenTile(tileNumber) {
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const plot = snapshot.garden?.plot;
+    const tile = plot?.tiles.find((candidate) => candidate.tileNumber === tileNumber);
+    const refs = this.tileRefs.get(tileNumber);
+
+    if (!tile || tile.unlocked || tileNumber !== plot?.nextTileNumber || refs?.button?.disabled) {
+      return { ok: false };
+    }
+
+    const result = this.gameplayFacade.buyGardenTile();
+
+    this.render(this.gameplayFacade.getSnapshot());
+
+    if (result?.ok) {
+      this.playBoughtTileAnimation(result.tileNumber ?? tileNumber);
+    }
+
+    return result;
   }
 
   startGardenHarvest(tileNumber) {
@@ -1234,6 +1244,35 @@ export class GardenPlotManager {
     return this.canPlantSelectedSeed(tile, snapshot) ? tileNumber : null;
   }
 
+  getBuyableTileNumberFromEvent(event) {
+    const row = event?.target?.closest?.('.garden-page__plot-row');
+    const tileNumber = Number.parseInt(row?.dataset?.gardenTileNumber ?? '', 10);
+
+    if (!Number.isInteger(tileNumber)) {
+      return null;
+    }
+
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const plot = snapshot.garden?.plot;
+    const tile = plot?.tiles.find((candidate) => candidate.tileNumber === tileNumber);
+    const refs = this.tileRefs.get(tileNumber);
+    const cost = plot?.nextTileCost;
+
+    if (
+      tile?.unlocked ||
+      tileNumber !== plot?.nextTileNumber ||
+      !refs?.button ||
+      refs.button.disabled ||
+      plot.nextTileLockedByLevel ||
+      plot.nextTileLockedByResearch ||
+      !Number.isFinite(cost)
+    ) {
+      return null;
+    }
+
+    return (snapshot.coin?.current ?? 0) >= cost ? tileNumber : null;
+  }
+
   onTileLabelClick(tileNumber, event) {
     if (event?.type === 'click' && this.handledTileLabelPressStartTileNumber === tileNumber) {
       event.preventDefault();
@@ -1333,10 +1372,10 @@ export class GardenPlotManager {
 
     event.preventDefault();
     this.setHandledSeedPressStartKey(this.getSeedPressStartKey(seedTypeId));
-    this.onSelectSeed(seedTypeId);
+    this.onSelectSeed(seedTypeId, { suppressNextDialogBackdropClick: true });
   }
 
-  onSelectSeed(seedTypeId) {
+  onSelectSeed(seedTypeId, { suppressNextDialogBackdropClick = false } = {}) {
     if (!this.selectedTileNumber) {
       return;
     }
@@ -1345,7 +1384,9 @@ export class GardenPlotManager {
     const selectedTile = this.getSelectedTile(snapshot);
 
     if (selectedTile && !this.isTileEmpty(selectedTile)) {
-      this.onSelectSeedForActiveTile(selectedTile, seedTypeId, snapshot);
+      this.onSelectSeedForActiveTile(selectedTile, seedTypeId, snapshot, {
+        suppressNextDialogBackdropClick,
+      });
       return;
     }
 
@@ -1358,11 +1399,18 @@ export class GardenPlotManager {
     this.render(this.gameplayFacade.getSnapshot());
   }
 
-  onSelectSeedForActiveTile(tile, seedTypeId, snapshot) {
+  onSelectSeedForActiveTile(
+    tile,
+    seedTypeId,
+    snapshot,
+    { suppressNextDialogBackdropClick = false } = {},
+  ) {
     if (seedTypeId === null) {
       this.hideSeedPopup();
       this.openSeedPopupAfterCancelTileNumber = null;
-      this.cancelDialogManager.show(tile);
+      this.cancelDialogManager.show(tile, {
+        suppressNextBackdropClick: suppressNextDialogBackdropClick,
+      });
       return;
     }
 
@@ -1384,7 +1432,11 @@ export class GardenPlotManager {
     }
 
     this.hideSeedPopup();
-    this.swapDialogManager.show({ tile, seed });
+    this.swapDialogManager.show({
+      tile,
+      seed,
+      suppressNextBackdropClick: suppressNextDialogBackdropClick,
+    });
   }
 
   isTileEmpty(tile) {
@@ -1774,6 +1826,7 @@ export class GardenPlotManager {
     });
     const readyHarvestTileNumber = this.getReadyHarvestTileNumberFromEvent(event);
     const plantableTileNumber = this.getPlantableTileNumberFromEvent(event);
+    const buyableTileNumber = this.getBuyableTileNumberFromEvent(event);
 
     if (this.worldPointers.size >= 2) {
       this.startWorldPinchGesture();
@@ -1788,11 +1841,14 @@ export class GardenPlotManager {
         panY: this.worldPan.y,
         didDrag: false,
         dragThreshold:
-          readyHarvestTileNumber !== null || plantableTileNumber !== null
+          readyHarvestTileNumber !== null ||
+          plantableTileNumber !== null ||
+          buyableTileNumber !== null
             ? WORLD_TAP_ACTION_DRAG_THRESHOLD
             : WORLD_DRAG_THRESHOLD,
         readyHarvestTileNumber,
         plantableTileNumber,
+        buyableTileNumber,
       };
     }
 
@@ -1866,6 +1922,15 @@ export class GardenPlotManager {
       Number.isInteger(this.worldGesture.plantableTileNumber)
         ? this.worldGesture.plantableTileNumber
         : null;
+    const tapBuyTileNumber =
+      event.type !== 'pointercancel' &&
+      this.worldPointers.size === 1 &&
+      this.worldGesture?.type === 'pan' &&
+      this.worldGesture.pointerId === pointerId &&
+      this.worldGesture.didDrag !== true &&
+      Number.isInteger(this.worldGesture.buyableTileNumber)
+        ? this.worldGesture.buyableTileNumber
+        : null;
 
     if (event.pointerId !== undefined) {
       event.currentTarget.releasePointerCapture?.(event.pointerId);
@@ -1895,6 +1960,14 @@ export class GardenPlotManager {
     this.refs.world?.shell?.classList.remove('is-dragging');
     this.worldGesture = null;
     this.settleWorldViewport();
+
+    if (tapBuyTileNumber !== null) {
+      this.suppressWorldClick();
+      event.preventDefault();
+      event.stopPropagation();
+      this.buyGardenTile(tapBuyTileNumber);
+      return;
+    }
 
     if (tapHarvestTileNumber !== null) {
       this.suppressWorldClick();

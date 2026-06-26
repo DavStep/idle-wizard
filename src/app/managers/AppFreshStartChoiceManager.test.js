@@ -103,6 +103,53 @@ describe('AppFreshStartChoiceManager', () => {
     manager.unmount();
   });
 
+  it('shows stored google login errors instead of a plain disconnected state', () => {
+    const stage = document.createElement('section');
+    const manager = new AppFreshStartChoiceManager();
+    manager.mount(stage);
+
+    void manager.choose({
+      authSnapshot: {
+        oidc: {
+          enabled: true,
+          authenticated: false,
+          error: 'missing state',
+        },
+      },
+    });
+
+    expect(stage.querySelector('.app-fresh-start-choice__status').textContent).toBe(
+      'login error: missing state',
+    );
+
+    manager.unmount();
+  });
+
+  it('shows remembered connected account details on the first-run gate', () => {
+    const stage = document.createElement('section');
+    const manager = new AppFreshStartChoiceManager();
+    manager.mount(stage);
+
+    void manager.choose({
+      authSnapshot: {
+        hasToken: true,
+        oidc: {
+          enabled: true,
+          authenticated: false,
+          remembered: true,
+          displayName: 'Dav',
+          email: 'dav@example.com',
+        },
+      },
+    });
+
+    expect(stage.querySelector('.app-fresh-start-choice__status').textContent).toBe(
+      'Dav',
+    );
+
+    manager.unmount();
+  });
+
   it('defaults to start fresh when not mounted', async () => {
     const manager = new AppFreshStartChoiceManager();
 

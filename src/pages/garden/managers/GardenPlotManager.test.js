@@ -1297,6 +1297,61 @@ describe('GardenPlotManager', () => {
     expect(plotRows[1].classList.contains('is-newly-bought')).toBe(false);
   });
 
+  it('buys a plot from a touch-like world tap with small WebView drift', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    snapshot.coin.current = 1;
+    snapshot.garden.plot.maxTiles = 2;
+    snapshot.garden.plot.tileCosts = [0, 1];
+    snapshot.garden.plot.nextTileNumber = 2;
+    snapshot.garden.plot.nextTileCost = 1;
+    snapshot.garden.plot.tiles.push({
+      ...snapshot.garden.plot.tiles[0],
+      tileNumber: 2,
+      unlocked: false,
+    });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.garden-page__world-shell');
+    const plotRows = [...parent.querySelectorAll('.garden-page__plot-row')];
+    const buyRow = plotRows[1];
+
+    Object.defineProperty(shell, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 240, height: 240 }),
+    });
+
+    dispatchPointer(buyRow, 'pointerdown', {
+      pointerId: 1,
+      clientX: 100,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointermove', {
+      pointerId: 1,
+      clientX: 106,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 1,
+      clientX: 106,
+      clientY: 100,
+    });
+    buyRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    expect(gameplayFacade.buyGardenTile).toHaveBeenCalledTimes(1);
+    expect(buyRow.classList.contains('is-buy-slot')).toBe(false);
+    expect(snapshot.garden.plot.unlockedTiles).toBe(2);
+    expect(snapshot.coin.current).toBe(0);
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('keeps plant seed buttons stable between renders and plants mint seed', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -1918,6 +1973,100 @@ describe('GardenPlotManager', () => {
       label: 'nettle seed',
       quantity: 5,
     });
+  });
+
+  it('keeps swap confirmation open when a touch-selected seed click retargets to the backdrop', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    parent
+      .querySelector('[aria-label="select mint seed, owned 1"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    plotRow
+      .querySelector('.garden-page__plot-box-label')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
+
+    const nettleButton = parent.querySelector('[aria-label="select nettle seed, owned 6"]');
+
+    dispatchTouchLikePressStart(nettleButton);
+    dispatchTouchLikePressEnd(nettleButton);
+
+    const seedPopup = parent.querySelector('.garden-page__seed-popup');
+    const swapPopup = parent.querySelector('.garden-page__swap-popup');
+    const retargetedClick = new window.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    expect(seedPopup.hidden).toBe(true);
+    expect(swapPopup.hidden).toBe(false);
+
+    swapPopup.dispatchEvent(retargetedClick);
+
+    expect(retargetedClick.defaultPrevented).toBe(true);
+    expect(swapPopup.hidden).toBe(false);
+
+    swapPopup.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(swapPopup.hidden).toBe(true);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('keeps cancel confirmation open when a touch-selected empty choice retargets to the backdrop', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow
+      .querySelector('.garden-page__plot-action')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    parent
+      .querySelector('[aria-label="select mint seed, owned 1"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    plotRow
+      .querySelector('.garden-page__plot-box-label')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
+
+    const emptyButton = parent.querySelector('[aria-label="set plot seed to empty"]');
+
+    dispatchTouchLikePressStart(emptyButton);
+    dispatchTouchLikePressEnd(emptyButton);
+
+    const seedPopup = parent.querySelector('.garden-page__seed-popup');
+    const cancelPopup = parent.querySelector('.garden-page__cancel-popup');
+    const retargetedClick = new window.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    expect(seedPopup.hidden).toBe(true);
+    expect(cancelPopup.hidden).toBe(false);
+
+    cancelPopup.dispatchEvent(retargetedClick);
+
+    expect(retargetedClick.defaultPrevented).toBe(true);
+    expect(cancelPopup.hidden).toBe(false);
+
+    cancelPopup.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(cancelPopup.hidden).toBe(true);
+
+    manager.unmount();
+    parent.remove();
   });
 
   it('does not reopen seed choices after canceling from the action', () => {

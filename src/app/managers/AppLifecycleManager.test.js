@@ -912,6 +912,48 @@ describe('AppLifecycleManager', () => {
     });
   });
 
+  it('shows the auth manager error after a failed fresh-start login return', async () => {
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi
+        .fn()
+        .mockResolvedValueOnce(FRESH_START_CHOICE_CONNECT_ACCOUNT)
+        .mockResolvedValueOnce(FRESH_START_CHOICE_START_FRESH),
+      render: vi.fn(),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({
+        oidc: {
+          authenticated: false,
+          enabled: true,
+          error: 'Google login returned a token for another client.',
+        },
+      })),
+      signInWithGoogle: vi.fn(() =>
+        Promise.resolve({ ok: false, reason: 'web_failed' }),
+      ),
+    };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
+
+    await lifecycle.handleGameplaySaveReady({ save: null });
+
+    expect(freshStartChoiceManager.choose).toHaveBeenNthCalledWith(2, {
+      authSnapshot: {
+        oidc: {
+          authenticated: false,
+          enabled: true,
+          error: 'Google login returned a token for another client.',
+        },
+      },
+      statusText:
+        'login error: Google login returned a token for another client.',
+      keepOpenOnConnect: true,
+    });
+  });
+
   it('does not ask fresh start questions when the account has a save', async () => {
     const freshStartChoiceManager = {
       mount: vi.fn(),

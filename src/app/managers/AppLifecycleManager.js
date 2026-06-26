@@ -356,7 +356,7 @@ export class AppLifecycleManager {
         await new Promise(() => {});
       }
 
-      statusText = this.getFreshStartLoginStatusText(result);
+      statusText = this.getFreshStartLoginStatusText(result, this.getAuthSnapshot());
       authSnapshot = this.getAuthSnapshot();
     }
   }
@@ -389,13 +389,18 @@ export class AppLifecycleManager {
     }));
   }
 
-  getFreshStartLoginStatusText(result = {}) {
+  getFreshStartLoginStatusText(result = {}, authSnapshot = this.getAuthSnapshot()) {
     if (result.reason === 'disabled') {
       return 'login unavailable';
     }
 
     if (String(result.reason ?? '').includes('cancelled')) {
       return 'login cancelled';
+    }
+
+    const oidcError = authSnapshot?.oidc?.error;
+    if (!result.message && oidcError) {
+      return this.getLoginErrorStatusText(oidcError);
     }
 
     if (!result.message && this.isLoginUnavailableReason(result.reason)) {

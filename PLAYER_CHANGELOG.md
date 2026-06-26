@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.52
+
+- Fixed Garden seed switching on WebView so the swap or empty-confirm popup no longer closes from the same tap that picked a seed.
+- Tightened Garden plot taps so buy slots survive small WebView finger drift like planting and harvesting already do.
+- Improved first-run account status text so failed or cancelled Google login returns explain what happened instead of looking stuck.
+
 ## 0.2.51
 
 - Fixed level-up and research completion notices so restored saves do not replay old announcements, and large level jumps keep their unlock lists readable.

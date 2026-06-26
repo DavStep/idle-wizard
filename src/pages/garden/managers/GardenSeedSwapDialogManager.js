@@ -1,3 +1,5 @@
+const BACKDROP_CLICK_DEDUPE_RESET_MS = 500;
+
 export class GardenSeedSwapDialogManager {
   constructor({ onConfirm } = {}) {
     this.onConfirm = onConfirm;
@@ -6,8 +8,17 @@ export class GardenSeedSwapDialogManager {
     this.visible = false;
     this.swap = null;
     this.previousFocus = null;
+    this.suppressedBackdropClick = false;
+    this.suppressedBackdropClickReset = null;
     this.handlePopupClick = (event) => {
       if (event.target === this.root) {
+        if (this.suppressedBackdropClick) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.clearSuppressedBackdropClick();
+          return;
+        }
+
         this.hide();
       }
     };
@@ -79,9 +90,10 @@ export class GardenSeedSwapDialogManager {
     this.visible = false;
     this.swap = null;
     this.previousFocus = null;
+    this.clearSuppressedBackdropClick();
   }
 
-  show({ tile, seed } = {}) {
+  show({ tile, seed, suppressNextBackdropClick = false } = {}) {
     if (!tile || !seed) {
       return;
     }
@@ -96,6 +108,9 @@ export class GardenSeedSwapDialogManager {
     this.visible = true;
     this.updateContent();
     this.applyVisibility();
+    if (suppressNextBackdropClick) {
+      this.suppressNextBackdropClick();
+    }
     this.refs.keepButton?.focus();
   }
 
@@ -124,6 +139,7 @@ export class GardenSeedSwapDialogManager {
 
     this.swap = null;
     this.previousFocus = null;
+    this.clearSuppressedBackdropClick();
   }
 
   confirm() {
@@ -207,5 +223,24 @@ export class GardenSeedSwapDialogManager {
       event.preventDefault();
       first.focus();
     }
+  }
+
+  suppressNextBackdropClick() {
+    this.clearSuppressedBackdropClick();
+    this.suppressedBackdropClick = true;
+    this.suppressedBackdropClickReset = globalThis.setTimeout(() => {
+      this.suppressedBackdropClick = false;
+      this.suppressedBackdropClickReset = null;
+    }, BACKDROP_CLICK_DEDUPE_RESET_MS);
+    this.suppressedBackdropClickReset?.unref?.();
+  }
+
+  clearSuppressedBackdropClick() {
+    if (this.suppressedBackdropClickReset !== null) {
+      globalThis.clearTimeout(this.suppressedBackdropClickReset);
+      this.suppressedBackdropClickReset = null;
+    }
+
+    this.suppressedBackdropClick = false;
   }
 }
