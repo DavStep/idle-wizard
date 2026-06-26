@@ -1278,14 +1278,23 @@ export class BrewingCauldronManager {
     const scale = this.getUiScale();
     const shellWidth = Math.max(0, (shellRect?.width ?? 0) / scale);
     const shellHeight = Math.max(0, (shellRect?.height ?? 0) / scale);
-    const minX = Math.min(0, shellWidth - WORLD_WIDTH * zoom);
-    const minY = Math.min(0, shellHeight - WORLD_HEIGHT * zoom);
+    const xBounds = this.getWorldAxisPanBounds(shellWidth, WORLD_WIDTH, zoom);
+    const yBounds = this.getWorldAxisPanBounds(shellHeight, WORLD_HEIGHT, zoom);
 
     return {
-      minX,
-      maxX: 0,
-      minY,
-      maxY: 0,
+      minX: xBounds.min,
+      maxX: xBounds.max,
+      minY: yBounds.min,
+      maxY: yBounds.max,
+    };
+  }
+
+  getWorldAxisPanBounds(shellSize, worldSize, zoom = this.worldZoom) {
+    const freeSpace = Math.max(0, shellSize) - worldSize * zoom;
+
+    return {
+      min: Math.min(0, freeSpace),
+      max: Math.max(0, freeSpace),
     };
   }
 

@@ -8250,22 +8250,41 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot-scissors {
   position: absolute;
-  right: 2px;
-  bottom: 31px;
+  right: -3px;
+  bottom: 25px;
   z-index: 2;
   display: block;
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: var(--style-text);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.15px;
-  transform: translate(-20px, 0) rotate(-90deg);
+  width: 30px;
+  height: 30px;
+  pointer-events: none;
+  transform: translate(-15px, 0) rotate(-16deg);
+  transform-origin: 48% 58%;
+}
+
+.garden-page__plot-scissors-frame {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.garden-page__plot-scissors-frame--open {
+  opacity: 0;
 }
 
 .garden-page__plot-box-frame.is-harvesting .garden-page__plot-scissors {
   animation: garden-page-plot-scissors-snip 0.42s steps(2, end) infinite;
+}
+
+.garden-page__plot-box-frame.is-harvesting
+  .garden-page__plot-scissors-frame--closed {
+  animation: garden-page-plot-scissors-closed-frame 0.42s steps(2, end) infinite;
+}
+
+.garden-page__plot-box-frame.is-harvesting
+  .garden-page__plot-scissors-frame--open {
+  animation: garden-page-plot-scissors-open-frame 0.42s steps(2, end) infinite;
 }
 
 .garden-page__plot-scissors[hidden] {
@@ -8422,11 +8441,35 @@ div.workshop-page__discovery-row {
 @keyframes garden-page-plot-scissors-snip {
   0%,
   100% {
-    transform: translate(-20px, 0) rotate(-108deg);
+    transform: translate(-15px, 0) rotate(-20deg);
   }
 
   50% {
-    transform: translate(-18px, -2px) rotate(-74deg);
+    transform: translate(-13px, -2px) rotate(-7deg);
+  }
+}
+
+@keyframes garden-page-plot-scissors-closed-frame {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes garden-page-plot-scissors-open-frame {
+  0%,
+  49% {
+    opacity: 0;
+  }
+
+  50%,
+  100% {
+    opacity: 1;
   }
 }
 
@@ -14663,7 +14706,8 @@ div.workshop-page__discovery-row {
     :where(.garden-page__plot-box-frame, .garden-page__plot-box-action),
   .brewing-page__cauldron.is-newly-bought,
   .garden-page__plot-box-frame.is-ready .garden-page__plot-plant,
-  .garden-page__plot-scissors {
+  .garden-page__plot-scissors,
+  .garden-page__plot-scissors-frame {
     animation: none;
   }
 
@@ -14680,6 +14724,14 @@ div.workshop-page__discovery-row {
   }
 
   .garden-page__plot-scissors {
-    transform: translate(-20px, 0) rotate(-90deg);
+    transform: translate(-15px, 0) rotate(-16deg);
+  }
+
+  .garden-page__plot-scissors-frame--closed {
+    opacity: 1;
+  }
+
+  .garden-page__plot-scissors-frame--open {
+    opacity: 0;
   }
 }

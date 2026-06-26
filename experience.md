@@ -520,6 +520,7 @@
 - Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
 - Auto brew recipe/enabled state is per cauldron; selecting a recipe in cauldron 2+ must not rewrite cauldron 1 automation.
+- Auto brew enable UI must set `autoBrewRecipeKey` from the selected recipe before enabling; `BrewingFacade` rejects enabled auto-brew without a recipe key.
 - Fast sell starts at level 1 and pays 80% of the NPC bulk sell quote; ruby research raises it to 85/90/95%, while shelf auto-sell keeps the full marginal NPC quote.
 - With Research moved to level 3, level-one FTUE should bank only the 10 coin needed for level 2; do not hold players for mint research before Garden.
 - Nettle seed research stays locked until level 4 so level-3 players keep the 60 coin needed to complete the level-3 task step.

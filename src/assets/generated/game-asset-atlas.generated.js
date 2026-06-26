@@ -7,7 +7,7 @@ export const gameAssetAtlasSize = Object.freeze({
 });
 export const gameAssetAtlasFrames = Object.freeze({
   "herb:belladonnaHerb": {
-    "x": 1003,
+    "x": 1147,
     "y": 875,
     "width": 97,
     "height": 128,
@@ -16,7 +16,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-belladonna.png"
   },
   "herb:bloodroseHerb": {
-    "x": 174,
+    "x": 318,
     "y": 875,
     "width": 107,
     "height": 128,
@@ -25,7 +25,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-bloodrose.png"
   },
   "herb:briarHerb": {
-    "x": 518,
+    "x": 760,
     "y": 1035,
     "width": 86,
     "height": 128,
@@ -34,7 +34,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-briar.png"
   },
   "herb:comfreyHerb": {
-    "x": 1048,
+    "x": 1290,
     "y": 1035,
     "width": 128,
     "height": 125,
@@ -43,7 +43,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-comfrey.png"
   },
   "herb:dragonpepperHerb": {
-    "x": 951,
+    "x": 1193,
     "y": 1035,
     "width": 65,
     "height": 128,
@@ -52,7 +52,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-dragonpepper.png"
   },
   "herb:dreambellHerb": {
-    "x": 32,
+    "x": 155,
     "y": 1035,
     "width": 90,
     "height": 128,
@@ -61,7 +61,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-dreambell.png"
   },
   "herb:frostmossHerb": {
-    "x": 867,
+    "x": 1011,
     "y": 875,
     "width": 104,
     "height": 128,
@@ -70,7 +70,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-frostmoss.png"
   },
   "herb:glowcapHerb": {
-    "x": 32,
+    "x": 176,
     "y": 875,
     "width": 110,
     "height": 128,
@@ -79,7 +79,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-glowcap.png"
   },
   "herb:hyssopHerb": {
-    "x": 853,
+    "x": 1095,
     "y": 1035,
     "width": 66,
     "height": 128,
@@ -88,7 +88,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-hyssop.png"
   },
   "herb:lavenderHerb": {
-    "x": 398,
+    "x": 521,
     "y": 1035,
     "width": 88,
     "height": 128,
@@ -97,7 +97,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-lavender.png"
   },
   "herb:mandrakeHerb": {
-    "x": 754,
+    "x": 996,
     "y": 1035,
     "width": 67,
     "height": 128,
@@ -106,7 +106,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-mandrake.png"
   },
   "herb:mintHerb": {
-    "x": 591,
+    "x": 735,
     "y": 875,
     "width": 106,
     "height": 128,
@@ -115,7 +115,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-mint.png"
   },
   "herb:moonflowerHerb": {
-    "x": 313,
+    "x": 457,
     "y": 875,
     "width": 107,
     "height": 128,
@@ -124,7 +124,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-moonflower.png"
   },
   "herb:nettleHerb": {
-    "x": 1261,
+    "x": 1405,
     "y": 875,
     "width": 94,
     "height": 128,
@@ -133,7 +133,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-nettle.png"
   },
   "herb:nightshadeHerb": {
-    "x": 452,
+    "x": 596,
     "y": 875,
     "width": 107,
     "height": 128,
@@ -142,7 +142,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-nightshade.png"
   },
   "herb:pearlrootHerb": {
-    "x": 1387,
+    "x": 1531,
     "y": 875,
     "width": 94,
     "height": 128,
@@ -151,7 +151,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-pearlroot.png"
   },
   "herb:sageHerb": {
-    "x": 1513,
+    "x": 1657,
     "y": 875,
     "width": 93,
     "height": 128,
@@ -160,7 +160,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-sage.png"
   },
   "herb:silverleafHerb": {
-    "x": 1762,
+    "x": 1906,
     "y": 875,
     "width": 91,
     "height": 128,
@@ -169,7 +169,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-silverleaf.png"
   },
   "herb:snowdropHerb": {
-    "x": 1638,
+    "x": 1782,
     "y": 875,
     "width": 92,
     "height": 128,
@@ -187,7 +187,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-star-anise.png"
   },
   "herb:sunrootHerb": {
-    "x": 636,
+    "x": 878,
     "y": 1035,
     "width": 86,
     "height": 128,
@@ -196,7 +196,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-sunroot.png"
   },
   "herb:valerianHerb": {
-    "x": 729,
+    "x": 873,
     "y": 875,
     "width": 106,
     "height": 128,
@@ -205,7 +205,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-valerian.png"
   },
   "herb:wormwoodHerb": {
-    "x": 1132,
+    "x": 1276,
     "y": 875,
     "width": 97,
     "height": 128,
@@ -214,8 +214,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-wormwood.png"
   },
   "herb:yarrowHerb": {
-    "x": 1792,
-    "y": 715,
+    "x": 32,
+    "y": 875,
     "width": 112,
     "height": 128,
     "originalWidth": 256,
@@ -592,7 +592,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-yarrow-poultice.png"
   },
   "resource:coin": {
-    "x": 1208,
+    "x": 1450,
     "y": 1035,
     "width": 92,
     "height": 92,
@@ -601,7 +601,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-coin.png"
   },
   "resource:crystal": {
-    "x": 1332,
+    "x": 1574,
     "y": 1035,
     "width": 68,
     "height": 88,
@@ -610,7 +610,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-crystal.png"
   },
   "resource:emerald": {
-    "x": 1432,
+    "x": 1674,
     "y": 1035,
     "width": 65,
     "height": 88,
@@ -619,7 +619,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-emerald.png"
   },
   "resource:mana": {
-    "x": 1529,
+    "x": 1771,
     "y": 1035,
     "width": 60,
     "height": 88,
@@ -628,7 +628,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-mana-drop.png"
   },
   "resource:ruby": {
-    "x": 1621,
+    "x": 1863,
     "y": 1035,
     "width": 88,
     "height": 85,
@@ -637,7 +637,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-ruby.png"
   },
   "seed:black": {
-    "x": 154,
+    "x": 277,
     "y": 1035,
     "width": 90,
     "height": 128,
@@ -646,7 +646,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/seeds/seed-pack-black.png"
   },
   "seed:gray": {
-    "x": 276,
+    "x": 399,
     "y": 1035,
     "width": 90,
     "height": 128,
@@ -655,13 +655,31 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/seeds/seed-pack-gray.png"
   },
   "seed:regular": {
-    "x": 1885,
-    "y": 875,
+    "x": 32,
+    "y": 1035,
     "width": 91,
     "height": 128,
     "originalWidth": 119,
     "originalHeight": 167,
     "source": "src/assets/items/seeds/seed-pack-regular.png"
+  },
+  "tool:herbCuttingScissorsClosed": {
+    "x": 641,
+    "y": 1035,
+    "width": 87,
+    "height": 128,
+    "originalWidth": 256,
+    "originalHeight": 256,
+    "source": "src/assets/icons/tools/herb-cutting-scissors-closed.png"
+  },
+  "tool:herbCuttingScissorsOpen": {
+    "x": 1792,
+    "y": 715,
+    "width": 118,
+    "height": 128,
+    "originalWidth": 256,
+    "originalHeight": 256,
+    "source": "src/assets/icons/tools/herb-cutting-scissors-open.png"
   },
   "ui:summonCircle": {
     "x": 32,

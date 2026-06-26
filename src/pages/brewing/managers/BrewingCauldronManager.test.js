@@ -543,6 +543,12 @@ describe('BrewingCauldronManager', () => {
     const herbRowsRule = baseCss.match(
       /\.brewing-page__herb-rows\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const webWideWorldRule = baseCss.match(
+      /\.game-stage\[data-viewport-mode="web-wide"\]\s*:where\(\.brewing-page__world-view,\s*\.garden-page__plot-world\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const webWideShellRule = baseCss.match(
+      /\.game-stage\[data-viewport-mode="web-wide"\]\s*:where\(\.brewing-page__world-shell,\s*\.garden-page__world-shell\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(baseCss).toContain('--brewing-page-herbs-box-clearance: 0px;');
     expect(worldViewRule).toContain('--brewing-page-world-bottom-offset: 0px;');
@@ -571,6 +577,13 @@ describe('BrewingCauldronManager', () => {
     expect(herbRowsRule).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
     expect(herbRowsRule).toContain(
       'min-height: calc(var(--style-row-min-height) * 3);',
+    );
+    expect(webWideWorldRule).toContain('overflow: visible;');
+    expect(webWideShellRule).toContain(
+      'right: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);',
+    );
+    expect(webWideShellRule).toContain(
+      'left: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);',
     );
   });
 
@@ -740,6 +753,71 @@ describe('BrewingCauldronManager', () => {
     expect(firstLeft).toBeGreaterThanOrEqual(15.9);
     expect(secondRight).toBeLessThanOrEqual(344.1);
     expect(manager.worldZoom).toBeLessThan(1);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('centers cauldrons inside a web-wide shell without cropping the world', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        cauldrons: [
+          {
+            cauldronIndex: 0,
+            cauldronNumber: 1,
+            ingredients: [],
+            maxIngredients: 5,
+            manaCost: 12,
+            activeBrew: null,
+            selectedRecipe: null,
+            match: null,
+            canAddIngredient: true,
+            canBrew: false,
+          },
+          {
+            cauldronIndex: 1,
+            cauldronNumber: 2,
+            unlocked: false,
+            ingredients: [],
+            maxIngredients: 5,
+            manaCost: 12,
+          },
+        ],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+    });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.brewing-page__world-shell');
+    Object.defineProperty(shell, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ width: 1200, height: 390 }),
+    });
+
+    manager.fitWorldViewportToCauldrons(snapshot.brewing.cauldrons);
+
+    const bounds = manager.getWorldPanBounds(1);
+    const first = manager.getCauldronWorldPosition(0);
+    const second = manager.getCauldronWorldPosition(1);
+    const firstLeft = manager.worldPan.x + first.x * manager.worldZoom;
+    const secondRight = manager.worldPan.x + (second.x + 266) * manager.worldZoom;
+
+    expect(bounds.minX).toBe(0);
+    expect(bounds.maxX).toBe(438);
+    expect(manager.worldZoom).toBe(1);
+    expect(firstLeft).toBeGreaterThan(300);
+    expect(secondRight).toBeLessThan(900);
+    expect(manager.worldPan.x).toBeGreaterThanOrEqual(bounds.minX);
+    expect(manager.worldPan.x + 762).toBeLessThanOrEqual(1200);
 
     manager.unmount();
     parent.remove();

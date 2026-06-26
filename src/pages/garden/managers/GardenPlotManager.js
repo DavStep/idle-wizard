@@ -2,7 +2,10 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
-import { createAssetAtlasMaskedSprite } from '../../../assets/atlas/atlasSprite.js';
+import {
+  createAssetAtlasMaskedSprite,
+  createAssetAtlasSprite,
+} from '../../../assets/atlas/atlasSprite.js';
 import {
   getHerbIconFrameName,
   getHerbIconKeyByLabel,
@@ -44,7 +47,8 @@ const WORLD_MAX_ZOOM = 1.16;
 const WORLD_ZOOM_RUBBER_LIMIT = 0.12;
 const WORLD_PAN_RUBBER_LIMIT = 54;
 const WORLD_SETTLE_CLASS_MS = 240;
-const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+const SCISSORS_CLOSED_FRAME = 'tool:herbCuttingScissorsClosed';
+const SCISSORS_OPEN_FRAME = 'tool:herbCuttingScissorsOpen';
 
 export class GardenPlotManager {
   constructor({ gameplayFacade, pixiProgressOverlayManager = null } = {}) {
@@ -374,29 +378,27 @@ export class GardenPlotManager {
   }
 
   createScissorsIcon() {
-    const scissors = document.createElementNS(SVG_NAMESPACE, 'svg');
-    scissors.setAttribute('class', 'garden-page__plot-scissors');
-    scissors.setAttribute('viewBox', '0 0 14 14');
+    const scissors = document.createElement('span');
+    scissors.className = 'garden-page__plot-scissors';
     scissors.setAttribute('aria-hidden', 'true');
-    scissors.setAttribute('focusable', 'false');
 
-    const firstCircle = document.createElementNS(SVG_NAMESPACE, 'circle');
-    firstCircle.setAttribute('cx', '3.5');
-    firstCircle.setAttribute('cy', '10.5');
-    firstCircle.setAttribute('r', '2');
+    const closedFrame = createAssetAtlasSprite(
+      'garden-page__plot-scissors-frame garden-page__plot-scissors-frame--closed',
+      SCISSORS_CLOSED_FRAME,
+    );
+    const openFrame = createAssetAtlasSprite(
+      'garden-page__plot-scissors-frame garden-page__plot-scissors-frame--open',
+      SCISSORS_OPEN_FRAME,
+    );
 
-    const secondCircle = document.createElementNS(SVG_NAMESPACE, 'circle');
-    secondCircle.setAttribute('cx', '10.5');
-    secondCircle.setAttribute('cy', '10.5');
-    secondCircle.setAttribute('r', '2');
+    if (closedFrame) {
+      scissors.append(closedFrame);
+    }
 
-    const firstBlade = document.createElementNS(SVG_NAMESPACE, 'path');
-    firstBlade.setAttribute('d', 'M5 9 12 2');
+    if (openFrame) {
+      scissors.append(openFrame);
+    }
 
-    const secondBlade = document.createElementNS(SVG_NAMESPACE, 'path');
-    secondBlade.setAttribute('d', 'M9 9 2 2');
-
-    scissors.append(firstCircle, secondCircle, firstBlade, secondBlade);
     return scissors;
   }
 
@@ -1981,14 +1983,23 @@ export class GardenPlotManager {
     const scale = this.getUiScale();
     const shellWidth = Math.max(0, (shellRect?.width ?? 0) / scale);
     const shellHeight = Math.max(0, (shellRect?.height ?? 0) / scale);
-    const minX = Math.min(0, shellWidth - this.worldSize.width * zoom);
-    const minY = Math.min(0, shellHeight - this.worldSize.height * zoom);
+    const xBounds = this.getWorldAxisPanBounds(shellWidth, this.worldSize.width, zoom);
+    const yBounds = this.getWorldAxisPanBounds(shellHeight, this.worldSize.height, zoom);
 
     return {
-      minX,
-      maxX: 0,
-      minY,
-      maxY: 0,
+      minX: xBounds.min,
+      maxX: xBounds.max,
+      minY: yBounds.min,
+      maxY: yBounds.max,
+    };
+  }
+
+  getWorldAxisPanBounds(shellSize, worldSize, zoom = this.worldZoom) {
+    const freeSpace = Math.max(0, shellSize) - worldSize * zoom;
+
+    return {
+      min: Math.min(0, freeSpace),
+      max: Math.max(0, freeSpace),
     };
   }
 

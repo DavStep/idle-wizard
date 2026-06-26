@@ -90,6 +90,11 @@ const POTION_ASSETS = [
   ['potion:generic', 'src/assets/items/potions/potion-generic.png'],
 ];
 
+const TOOL_ASSETS = [
+  ['tool:herbCuttingScissorsClosed', 'src/assets/icons/tools/herb-cutting-scissors-closed.png'],
+  ['tool:herbCuttingScissorsOpen', 'src/assets/icons/tools/herb-cutting-scissors-open.png'],
+];
+
 const ASSETS = [
   ['resource:coin', 'src/assets/icons/icon-coin.png', 96],
   ['resource:crystal', 'src/assets/icons/icon-crystal.png', 96],
@@ -106,6 +111,7 @@ const ASSETS = [
     { trimTransparent: true },
   ]),
   ...POTION_ASSETS.map(([frameName, filePath]) => [frameName, filePath, 128]),
+  ...TOOL_ASSETS.map(([frameName, filePath]) => [frameName, filePath, 128, { trimTransparent: true }]),
   ['ui:summonCircle', 'src/assets/ui/summon-circle.png', 768],
 ];
 

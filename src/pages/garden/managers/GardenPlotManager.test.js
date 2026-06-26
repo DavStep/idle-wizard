@@ -422,6 +422,35 @@ describe('GardenPlotManager', () => {
     parent.remove();
   });
 
+  it('keeps the full garden world visible inside a web-wide shell', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.garden-page__world-shell');
+    Object.defineProperty(shell, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 1200, height: 500 }),
+    });
+
+    manager.setWorldViewport(420, 0, 1);
+
+    const bounds = manager.getWorldPanBounds(1);
+    const world = parent.querySelector('.garden-page__world');
+
+    expect(bounds.minX).toBe(0);
+    expect(bounds.maxX).toBe(840);
+    expect(manager.worldPan.x).toBe(420);
+    expect(world.style.getPropertyValue('--garden-page-world-pan-x')).toBe('420px');
+    expect(manager.worldPan.x + manager.worldSize.width).toBeLessThanOrEqual(1200);
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('pinch-zooms the garden world', () => {
     const parent = document.createElement('section');
     document.body.append(parent);
@@ -684,6 +713,12 @@ describe('GardenPlotManager', () => {
     const worldRule = baseCss.match(
       /\.garden-page__world\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const webWideWorldRule = baseCss.match(
+      /\.game-stage\[data-viewport-mode="web-wide"\]\s*:where\(\.brewing-page__world-view,\s*\.garden-page__plot-world\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const webWideShellRule = baseCss.match(
+      /\.game-stage\[data-viewport-mode="web-wide"\]\s*:where\(\.brewing-page__world-shell,\s*\.garden-page__world-shell\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const plotRowsRule = baseCss.match(
       /\.garden-page__plot-rows\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -718,6 +753,13 @@ describe('GardenPlotManager', () => {
     expect(worldRule).toContain('var(--garden-page-world-pan-x, 0px)');
     expect(worldRule).toContain('var(--garden-page-world-pan-y, 0px)');
     expect(worldRule).toContain('scale(var(--garden-page-world-zoom, 1))');
+    expect(webWideWorldRule).toContain('overflow: visible;');
+    expect(webWideShellRule).toContain(
+      'right: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);',
+    );
+    expect(webWideShellRule).toContain(
+      'left: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);',
+    );
     expect(plotRowsRule).toContain('max-height: none;');
     expect(plotRowsRule).toContain('overflow: visible;');
     expect(baseCss).toContain('gap: 12px;\n  align-content: start;');
@@ -1014,6 +1056,14 @@ describe('GardenPlotManager', () => {
 
     expect(boxFrame?.classList.contains('is-harvesting')).toBe(true);
     expect(scissors?.hasAttribute('hidden')).toBe(false);
+    expect(
+      scissors?.querySelector('.garden-page__plot-scissors-frame--closed')?.dataset
+        .assetAtlasFrame,
+    ).toBe('tool:herbCuttingScissorsClosed');
+    expect(
+      scissors?.querySelector('.garden-page__plot-scissors-frame--open')?.dataset
+        .assetAtlasFrame,
+    ).toBe('tool:herbCuttingScissorsOpen');
     expect(boxAction?.textContent).toBe('3s');
     expect(boxTimer?.textContent).toBe('3s');
     expect(boxTimer?.parentElement).toBe(boxAction);
@@ -1024,13 +1074,33 @@ describe('GardenPlotManager', () => {
     const scissorsRule = baseCss.match(
       /\.garden-page__plot-box-frame\.is-harvesting\s+\.garden-page__plot-scissors\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const closedFrameRule = baseCss.match(
+      /\.garden-page__plot-box-frame\.is-harvesting\s+\.garden-page__plot-scissors-frame--closed\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const openFrameRule = baseCss.match(
+      /\.garden-page__plot-box-frame\.is-harvesting\s+\.garden-page__plot-scissors-frame--open\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(scissorsRule).toBeDefined();
     expect(scissorsRule).toContain(
       'animation: garden-page-plot-scissors-snip 0.42s steps(2, end) infinite;',
     );
+    expect(closedFrameRule).toContain(
+      'animation: garden-page-plot-scissors-closed-frame 0.42s steps(2, end) infinite;',
+    );
+    expect(openFrameRule).toContain(
+      'animation: garden-page-plot-scissors-open-frame 0.42s steps(2, end) infinite;',
+    );
+    expect(baseCss).toContain('@keyframes garden-page-plot-scissors-closed-frame');
+    expect(baseCss).toContain('@keyframes garden-page-plot-scissors-open-frame');
     expect(baseCss).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.garden-page__plot-scissors[\s\S]*animation:\s*none;/,
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.garden-page__plot-scissors-frame[\s\S]*animation:\s*none;/,
+    );
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.garden-page__plot-scissors-frame--closed\s*\{[\s\S]*opacity:\s*1;/,
+    );
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.garden-page__plot-scissors-frame--open\s*\{[\s\S]*opacity:\s*0;/,
     );
   });
 
