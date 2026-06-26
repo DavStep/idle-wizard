@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.49
+
+- Fixed Garden planting on Android/WebView so empty plots with a selected seed still plant after small finger drift.
+- Tightened Brewing touch controls so cauldron taps and herb taps are less likely to be lost on mobile.
+- Polished Garden harvest visuals with clearer scissors animation and cleaner plot art.
+
 ## 0.2.48
 
 - Improved Brewing herb drag feedback with smoother item motion, clearer count previews, and cauldron receive animation.
