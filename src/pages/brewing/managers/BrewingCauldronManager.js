@@ -39,7 +39,7 @@ const WORLD_HEIGHT = 780 + WORLD_EDGE_EXTENSION * 2;
 const WORLD_FIT_PADDING = 16;
 const CAULDRON_BOX_WIDTH = 266;
 const CAULDRON_BOX_HEIGHT = 150;
-const HERB_DRAG_THRESHOLD = 5;
+const HERB_DRAG_THRESHOLD = 22;
 const ITEM_DRAG_SWAY_X_FACTOR = 0.45;
 const ITEM_DRAG_SWAY_Y_FACTOR = 0.2;
 const ITEM_DRAG_SWAY_ROTATION_FACTOR = 0.36;
@@ -59,6 +59,7 @@ const ITEM_BREW_DROP_STAGGER_MS = 45;
 const ITEM_DROP_RECEIVE_MS = 240;
 const ITEM_DROP_FADE_MS = 80;
 const WORLD_DRAG_THRESHOLD = 4;
+const WORLD_CAULDRON_TAP_DRAG_THRESHOLD = 12;
 const WORLD_MIN_ZOOM = 0.56;
 const WORLD_MAX_ZOOM = 1.16;
 const WORLD_ZOOM_RUBBER_LIMIT = 0.12;
@@ -77,6 +78,7 @@ export class BrewingCauldronManager {
     onOpenRecipeChoice,
     onClearSelectedRecipe,
     onSelectBrewQuantity,
+    onToggleAutoBrew,
     onCurrentCauldronChange,
     onRewardNotice,
     rewardEventsAvailable = false,
@@ -87,6 +89,7 @@ export class BrewingCauldronManager {
     this.onOpenRecipeChoice = onOpenRecipeChoice;
     this.onClearSelectedRecipe = onClearSelectedRecipe;
     this.onSelectBrewQuantity = onSelectBrewQuantity;
+    this.onToggleAutoBrew = onToggleAutoBrew;
     this.onCurrentCauldronChange = onCurrentCauldronChange;
     this.onRewardNotice = onRewardNotice;
     this.rewardEventsAvailable = rewardEventsAvailable;
@@ -433,8 +436,17 @@ export class BrewingCauldronManager {
     quantityOptions.className = 'brewing-page__quantity-options';
     quantityOptions.hidden = true;
 
+    const autoButton = document.createElement('button');
+    autoButton.className = 'style-button brewing-page__auto-button';
+    autoButton.type = 'button';
+    autoButton.hidden = true;
+    autoButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.onAutoBrewModeButtonClick(cauldronIndex);
+    });
+
     actionButton.append(actionButtonLabel, actionButtonCost);
-    actionRow.append(actionButton, quantityOptions);
+    actionRow.append(actionButton, quantityOptions, autoButton);
 
     const message = document.createElement('div');
     message.className = 'brewing-page__message';
@@ -447,6 +459,7 @@ export class BrewingCauldronManager {
       actionButtonLabel,
       actionButtonCost,
       quantityOptions,
+      autoButton,
       message,
     };
   }
@@ -984,6 +997,8 @@ export class BrewingCauldronManager {
         panX: this.worldPan.x,
         panY: this.worldPan.y,
         didDrag: false,
+        dragThreshold:
+          cauldronIndex !== null ? WORLD_CAULDRON_TAP_DRAG_THRESHOLD : WORLD_DRAG_THRESHOLD,
         cauldronIndex,
       };
       this.worldDrag = this.worldGesture;
@@ -1020,10 +1035,9 @@ export class BrewingCauldronManager {
     const deltaX = (event.clientX - this.worldGesture.startX) / scale;
     const deltaY = (event.clientY - this.worldGesture.startY) / scale;
 
-    if (
-      !this.worldGesture.didDrag &&
-      Math.hypot(deltaX, deltaY) < WORLD_DRAG_THRESHOLD
-    ) {
+    const dragThreshold = this.worldGesture.dragThreshold ?? WORLD_DRAG_THRESHOLD;
+
+    if (!this.worldGesture.didDrag && Math.hypot(deltaX, deltaY) < dragThreshold) {
       return;
     }
 
@@ -2693,6 +2707,7 @@ export class BrewingCauldronManager {
       this.removeAttribute(refs.actions.actionButton, 'aria-label');
       setNotificationBadge(refs.actions.actionButton, false);
       this.renderBrewQuantityOptions(refs, brewing, null);
+      this.renderAutoBrewButton(refs, brewing, null);
       this.renderActionMessage(refs);
       this.renderSelectRecipeButton(refs, brewing);
       return;
@@ -2724,6 +2739,7 @@ export class BrewingCauldronManager {
     );
     setNotificationBadge(refs.actions.actionButton, !action.disabled);
     this.renderBrewQuantityOptions(refs, brewing, action);
+    this.renderAutoBrewButton(refs, brewing, action);
     this.renderActionMessage(refs);
     this.renderSelectRecipeButton(refs, brewing);
   }
@@ -2783,6 +2799,59 @@ export class BrewingCauldronManager {
     return button;
   }
 
+  renderAutoBrewButton(refs, brewing, action) {
+    const button = refs?.actions?.autoButton;
+
+    if (!button) {
+      return;
+    }
+
+    const visible = action?.id === 'brew' && brewing.autoBrewAvailable === true;
+    this.setHidden(button, !visible);
+
+    if (!visible) {
+      this.setDisabled(button, true);
+      this.removeAttribute(button, 'aria-pressed');
+      this.removeAttribute(button, 'aria-label');
+      this.removeAttribute(button, 'data-auto-brew-enabled');
+      return;
+    }
+
+    const enabled = brewing.autoBrewEnabled === true;
+    const label = enabled ? 'auto' : 'manual';
+    const nextLabel = enabled ? 'manual' : 'auto';
+
+    button.dataset.cauldronIndex = String(this.normalizeCauldronIndex(refs.cauldronIndex));
+    button.dataset.autoBrewEnabled = enabled ? 'true' : 'false';
+    this.setText(button, label);
+    this.setDisabled(button, false);
+    this.setAttribute(button, 'aria-pressed', enabled ? 'true' : 'false');
+    this.setAttribute(button, 'aria-label', `${label} brewing; press for ${nextLabel}`);
+  }
+
+  onAutoBrewModeButtonClick(cauldronIndex = this.selectedCauldronIndex) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+
+    this.selectCauldron(safeCauldronIndex);
+
+    const result = this.onToggleAutoBrew?.(safeCauldronIndex) ?? {
+      ok: false,
+      reason: 'auto_brew_recipe_required',
+    };
+
+    if (result.ok) {
+      this.message = null;
+    } else {
+      this.message = {
+        cauldronIndex: safeCauldronIndex,
+        text: this.formatResultMessage(result),
+      };
+    }
+
+    this.render(this.gameplayFacade?.getSnapshot?.());
+    this.flashMessage(safeCauldronIndex);
+  }
+
   renderActionMessage(refs) {
     const messageText = this.getActionMessageText(refs);
 
@@ -2827,17 +2896,6 @@ export class BrewingCauldronManager {
       'aria-label',
       `open recipes for cauldron ${brewing.cauldronNumber ?? brewing.cauldronIndex + 1}`,
     );
-
-    if (brewing.autoBrewAvailable === true) {
-      this.setAttribute(selectRecipeButton, 'data-state', brewing.autoBrewEnabled ? 'on' : 'off');
-      this.setAttribute(
-        selectRecipeButton,
-        'aria-pressed',
-        brewing.autoBrewEnabled ? 'true' : 'false',
-      );
-      return;
-    }
-
     this.removeAttribute(selectRecipeButton, 'data-state');
     this.removeAttribute(selectRecipeButton, 'aria-pressed');
   }
@@ -3585,25 +3643,12 @@ export class BrewingCauldronManager {
     }
 
     if (brewing.match) {
-      if (brewing.match.unlocked) {
-        return `will brew ${this.formatPotionQuantity(
-          brewing.match.label,
-          this.getBrewQuantity(brewing),
-        )}`;
-      }
-
-      return brewing.match.discoverable
-        ? `will brew ${this.formatPotionQuantity(
-            'unknown potion',
-            this.getBrewQuantity(brewing),
-          )}`
+      return brewing.match.unlocked || brewing.match.discoverable
+        ? ''
         : `${brewing.match.label} locked`;
     }
 
-    return `will brew ${this.formatPotionQuantity(
-      'wasted potion',
-      this.getBrewQuantity(brewing),
-    )}`;
+    return '';
   }
 
   formatActionHint(brewing) {
@@ -3721,13 +3766,6 @@ export class BrewingCauldronManager {
 
     const currentQuantity = Math.floor(Number(brewing?.brewQuantity ?? brewing?.yieldMultiplier));
     return Number.isInteger(currentQuantity) && currentQuantity > 0 ? currentQuantity : 1;
-  }
-
-  formatPotionQuantity(label, quantity) {
-    const safeQuantity = Math.floor(Number(quantity));
-    return Number.isInteger(safeQuantity) && safeQuantity > 1
-      ? `x${safeQuantity} ${label}`
-      : label;
   }
 
   formatFillRecipeAriaLabel(brewing, canFillRecipe = this.canFillSelectedRecipe(brewing)) {

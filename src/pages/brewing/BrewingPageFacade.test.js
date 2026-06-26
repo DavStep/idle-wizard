@@ -120,4 +120,53 @@ describe('BrewingPageFacade', () => {
     facade.unmount();
     stage.remove();
   });
+
+  it('uses the selected recipe before enabling auto brew', () => {
+    const snapshot = {
+      brewing: {
+        cauldrons: [
+          {
+            cauldronIndex: 0,
+            cauldronNumber: 1,
+            autoBrewEnabled: false,
+            autoBrewRecipeKey: null,
+          },
+        ],
+      },
+    };
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      setBrewingAutoBrewRecipe: vi.fn((recipeKey, cauldronIndex) => {
+        snapshot.brewing.cauldrons[cauldronIndex].autoBrewRecipeKey = recipeKey;
+        return { ok: true, autoBrewRecipeKey: recipeKey, cauldronIndex };
+      }),
+      setBrewingAutoBrewEnabled: vi.fn((enabled, cauldronIndex) => {
+        snapshot.brewing.cauldrons[cauldronIndex].autoBrewEnabled = enabled === true;
+        return {
+          ok: true,
+          autoBrewEnabled: enabled === true,
+          cauldronIndex,
+        };
+      }),
+    };
+    const facade = new BrewingPageFacade({ gameplayFacade });
+    facade.cauldronManager.render = vi.fn();
+
+    facade.recipeGuideManager.selectRecipe('manaTonic', 0);
+
+    expect(facade.toggleAutoBrew(0)).toMatchObject({
+      ok: true,
+      autoBrewEnabled: true,
+      cauldronIndex: 0,
+    });
+    expect(gameplayFacade.setBrewingAutoBrewRecipe).toHaveBeenCalledWith(
+      'manaTonic',
+      0,
+    );
+    expect(gameplayFacade.setBrewingAutoBrewEnabled).toHaveBeenCalledWith(true, 0);
+    expect(snapshot.brewing.cauldrons[0]).toMatchObject({
+      autoBrewEnabled: true,
+      autoBrewRecipeKey: 'manaTonic',
+    });
+  });
 });

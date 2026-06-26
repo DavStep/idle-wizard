@@ -2,7 +2,7 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
-import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
+import { createAssetAtlasMaskedSprite } from '../../../assets/atlas/atlasSprite.js';
 import {
   getHerbIconFrameName,
   getHerbIconKeyByLabel,
@@ -36,9 +36,9 @@ const WORLD_WIDTH = 328 + WORLD_EDGE_EXTENSION * 2;
 const WORLD_MIN_HEIGHT = 560;
 const WORLD_ROW_HEIGHT = 92;
 const WORLD_ROW_GAP = 12;
-const WORLD_ROWS_PADDING_TOP = 8;
+const WORLD_ROWS_PADDING_TOP = 18;
 const WORLD_DRAG_THRESHOLD = 4;
-const WORLD_HARVEST_DRAG_THRESHOLD = 12;
+const WORLD_TAP_ACTION_DRAG_THRESHOLD = 12;
 const WORLD_MIN_ZOOM = 0.62;
 const WORLD_MAX_ZOOM = 1.16;
 const WORLD_ZOOM_RUBBER_LIMIT = 0.12;
@@ -514,6 +514,11 @@ export class GardenPlotManager {
     );
     refs.button.classList.toggle('is-ready', tile.phase === 'ready');
     refs.button.classList.toggle('is-processing', Boolean(tile.process));
+    refs.button.classList.toggle(
+      'has-herb-label',
+      tile.unlocked &&
+        Boolean(tile.selectedSeedItemTypeId || tile.seedItemTypeId || tile.herbItemTypeId),
+    );
     setNotificationBadge(
       refs.button,
       hasGardenTileNotification({
@@ -704,9 +709,12 @@ export class GardenPlotManager {
       setTimerProgressFill(refs.fill, progress, {
         onUpdate: ({ remainingMs: currentRemainingMs }) => {
           const timer = formatRemainingTime(currentRemainingMs);
-          this.setText(refs.actionGap, timer ? ' ' : '');
+          this.setText(refs.actionGap, refs.actionLabel.textContent && timer ? ' ' : '');
           this.setText(refs.actionTimer, timer);
-          this.setText(refs.boxActionGap, timer ? ' ' : '');
+          this.setText(
+            refs.boxActionGap,
+            refs.boxActionLabel.textContent && timer ? ' ' : '',
+          );
           this.setText(refs.boxTimer, timer);
         },
       });
@@ -745,8 +753,10 @@ export class GardenPlotManager {
     this.setText(refs.boxNumber, showNumber ? String(tile.tileNumber) : '');
     if (showLevel) {
       this.setPlotLevel(refs.boxLevel, tile);
+      refs.boxFrame.dataset.plotStarTone = refs.boxLevel.dataset.starTone ?? 'empty';
     } else {
       this.clearPlotLevel(refs.boxLevel);
+      delete refs.boxFrame.dataset.plotStarTone;
     }
     this.setText(refs.boxLabel, label);
     setResourceColor(refs.boxLabel, labelResource === 'seed' ? labelResource : null);
@@ -759,7 +769,7 @@ export class GardenPlotManager {
     }
 
     this.setText(refs.boxTimer, timer);
-    this.setText(refs.boxActionGap, timer ? ' ' : '');
+    this.setText(refs.boxActionGap, action && timer ? ' ' : '');
     refs.boxTimer.hidden = !timer;
     refs.boxFrame.classList.toggle('has-plant', Boolean(herbKey));
     refs.boxFrame.classList.toggle('is-harvesting', tile.phase === 'harvesting');
@@ -790,7 +800,7 @@ export class GardenPlotManager {
 
     const frameName = getHerbIconFrameName(normalizedHerbKey);
     const icon = frameName
-      ? createAssetAtlasSprite('garden-page__plot-plant-icon', frameName)
+      ? createAssetAtlasMaskedSprite('garden-page__plot-plant-icon', frameName)
       : null;
 
     if (icon) {
@@ -1041,12 +1051,7 @@ export class GardenPlotManager {
       }
 
       if (tile.selectedSeedItemTypeId) {
-        const result = this.gameplayFacade.plantSelectedGardenSeed(tileNumber);
-
-        if (result.ok) {
-          this.render(this.gameplayFacade.getSnapshot());
-        }
-
+        this.startPlantSelectedGardenSeed(tileNumber);
         return;
       }
 
@@ -1068,9 +1073,37 @@ export class GardenPlotManager {
   }
 
   startGardenHarvest(tileNumber) {
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const tile = snapshot.garden?.plot?.tiles.find(
+      (candidate) => candidate.tileNumber === tileNumber,
+    );
+
+    if (!tile?.unlocked || tile.phase !== 'ready') {
+      return { ok: false };
+    }
+
     const result = this.gameplayFacade.startGardenHarvest(tileNumber);
 
     if (result?.ok !== false) {
+      this.render(this.gameplayFacade.getSnapshot());
+    }
+
+    return result;
+  }
+
+  startPlantSelectedGardenSeed(tileNumber) {
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const tile = snapshot.garden?.plot?.tiles.find(
+      (candidate) => candidate.tileNumber === tileNumber,
+    );
+
+    if (!this.canPlantSelectedSeed(tile, snapshot)) {
+      return { ok: false };
+    }
+
+    const result = this.gameplayFacade.plantSelectedGardenSeed(tileNumber);
+
+    if (result.ok) {
       this.render(this.gameplayFacade.getSnapshot());
     }
 
@@ -1152,6 +1185,27 @@ export class GardenPlotManager {
       this.isTileHarvestAreaClick(event, refs)
       ? tileNumber
       : null;
+  }
+
+  getPlantableTileNumberFromEvent(event) {
+    const row = event?.target?.closest?.('.garden-page__plot-row');
+    const tileNumber = Number.parseInt(row?.dataset?.gardenTileNumber ?? '', 10);
+
+    if (!Number.isInteger(tileNumber) || this.isTileLabelClick(event)) {
+      return null;
+    }
+
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const tile = snapshot.garden?.plot?.tiles.find(
+      (candidate) => candidate.tileNumber === tileNumber,
+    );
+    const refs = this.tileRefs.get(tileNumber);
+
+    if (!tile?.unlocked || tile.phase !== 'empty' || !refs?.button || refs.button.disabled) {
+      return null;
+    }
+
+    return this.canPlantSelectedSeed(tile, snapshot) ? tileNumber : null;
   }
 
   onTileLabelClick(tileNumber, event) {
@@ -1643,6 +1697,7 @@ export class GardenPlotManager {
       clientY: event.clientY,
     });
     const readyHarvestTileNumber = this.getReadyHarvestTileNumberFromEvent(event);
+    const plantableTileNumber = this.getPlantableTileNumberFromEvent(event);
 
     if (this.worldPointers.size >= 2) {
       this.startWorldPinchGesture();
@@ -1656,10 +1711,11 @@ export class GardenPlotManager {
         panY: this.worldPan.y,
         didDrag: false,
         dragThreshold:
-          readyHarvestTileNumber !== null
-            ? WORLD_HARVEST_DRAG_THRESHOLD
+          readyHarvestTileNumber !== null || plantableTileNumber !== null
+            ? WORLD_TAP_ACTION_DRAG_THRESHOLD
             : WORLD_DRAG_THRESHOLD,
         readyHarvestTileNumber,
+        plantableTileNumber,
       };
     }
 
@@ -1724,6 +1780,15 @@ export class GardenPlotManager {
       Number.isInteger(this.worldGesture.readyHarvestTileNumber)
         ? this.worldGesture.readyHarvestTileNumber
         : null;
+    const tapPlantTileNumber =
+      event.type !== 'pointercancel' &&
+      this.worldPointers.size === 1 &&
+      this.worldGesture?.type === 'pan' &&
+      this.worldGesture.pointerId === pointerId &&
+      this.worldGesture.didDrag !== true &&
+      Number.isInteger(this.worldGesture.plantableTileNumber)
+        ? this.worldGesture.plantableTileNumber
+        : null;
 
     if (event.pointerId !== undefined) {
       event.currentTarget.releasePointerCapture?.(event.pointerId);
@@ -1759,6 +1824,14 @@ export class GardenPlotManager {
       event.preventDefault();
       event.stopPropagation();
       this.startGardenHarvest(tapHarvestTileNumber);
+      return;
+    }
+
+    if (tapPlantTileNumber !== null) {
+      this.suppressWorldClick();
+      event.preventDefault();
+      event.stopPropagation();
+      this.startPlantSelectedGardenSeed(tapPlantTileNumber);
     }
   }
 
@@ -2012,7 +2085,7 @@ export class GardenPlotManager {
 
   setTileAction(refs, { label, timer = '', colorResource = true }) {
     this.setResourceText(refs.actionLabel, label);
-    this.setText(refs.actionGap, timer ? ' ' : '');
+    this.setText(refs.actionGap, label && timer ? ' ' : '');
     this.setText(refs.actionTimer, timer);
     if (colorResource) {
       setResourceColorFromText(refs.actionLabel, label);
@@ -2029,11 +2102,13 @@ export class GardenPlotManager {
 
     const status = this.formatTileStatus(tile.phase);
     if (!tile.process) {
-      return { label: status };
+      return {
+        label: tile.phase === 'growing' || tile.phase === 'harvesting' ? '' : status,
+      };
     }
 
     return {
-      label: status,
+      label: '',
       timer: this.formatProcessTimer(tile.process),
     };
   }

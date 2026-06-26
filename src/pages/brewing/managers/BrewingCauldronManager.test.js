@@ -145,6 +145,59 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
+  it('opens an empty cauldron from a captured world tap with small drift', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [],
+        ingredients: [],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 12,
+        activeBrew: null,
+        selectedRecipe: null,
+        match: null,
+        canAddIngredient: true,
+        canBrew: false,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const onOpenSelectRecipe = vi.fn();
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      onOpenSelectRecipe,
+    });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.brewing-page__world-shell');
+    const cauldron = parent.querySelector('.brewing-page__cauldron');
+    const empty = cauldron.querySelector('.brewing-page__cauldron-empty');
+
+    dispatchPointer(empty, 'pointerdown', {
+      pointerId: 1,
+      clientX: 80,
+      clientY: 90,
+    });
+    dispatchPointer(shell, 'pointermove', {
+      pointerId: 1,
+      clientX: 86,
+      clientY: 90,
+    });
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 1,
+      clientX: 86,
+      clientY: 90,
+    });
+    cauldron.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    expect(onOpenSelectRecipe).toHaveBeenCalledTimes(1);
+    expect(onOpenSelectRecipe).toHaveBeenCalledWith(0);
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('pans the world when dragging from a cauldron and suppresses the follow-up click', () => {
     const snapshot = {
       brewing: {
@@ -2311,13 +2364,29 @@ describe('BrewingCauldronManager', () => {
       '36 mana',
     );
     const quantityButton = parent.querySelector('.brewing-page__quantity-button');
+    const actionRow = parent.querySelector('.brewing-page__action-row');
+    const actionButton = parent.querySelector('.brewing-page__action-button');
+    const quantityOptions = parent.querySelector('.brewing-page__quantity-options');
+    const actionButtonRule = baseCss.match(
+      /\.style-button\.brewing-page__action-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const quantityButtonRule = baseCss.match(
+      /\.style-button\.brewing-page__quantity-button,\s*\.style-button\.brewing-page__auto-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
     expect([...parent.querySelectorAll('.brewing-page__quantity-button')]).toHaveLength(1);
     expect(quantityButton?.classList.contains('style-button')).toBe(true);
     expect(quantityButton?.textContent).toBe('x3');
     expect(quantityButton?.dataset.brewQuantity).toBe('3');
     expect(quantityButton?.dataset.nextBrewQuantity).toBe('1');
     expect(quantityButton?.getAttribute('aria-label')).toBe('brewing x3; press for x1');
-    expect(parent.querySelector('.brewing-page__action-button')?.getAttribute('aria-label')).toBe(
+    expect(quantityOptions?.previousElementSibling).toBe(actionButton);
+    expect(quantityOptions?.parentElement).toBe(actionRow);
+    expect(actionButtonRule).toContain('width: var(--style-button-width);');
+    expect(actionButtonRule).toContain('height: 28px;');
+    expect(actionButtonRule).toContain('white-space: nowrap;');
+    expect(quantityButtonRule).toContain('height: 28px;');
+    expect(actionButton?.getAttribute('aria-label')).toBe(
       'brew 3 mana tonic, costs 36 mana',
     );
 
@@ -2377,6 +2446,78 @@ describe('BrewingCauldronManager', () => {
       { quantity: 3, cauldronIndex: 0 },
       { quantity: 1, cauldronIndex: 0 },
     ]);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('shows auto/manual mode button next to brew quantity when auto brew is available', () => {
+    const snapshot = {
+      research: {
+        completedResearchIds: ['automation:autoBrewCauldron:1'],
+      },
+      brewing: {
+        herbs: [],
+        ingredients: [
+          { slotIndex: 0, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+          { slotIndex: 1, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+          { slotIndex: 2, itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb' },
+        ],
+        recipes: [],
+        maxIngredients: 5,
+        manaCost: 36,
+        brewQuantity: 3,
+        maxBrewQuantity: 3,
+        autoBrewEnabled: false,
+        autoBrewRecipeKey: 'manaTonic',
+        activeBrew: null,
+        match: {
+          key: 'manaTonic',
+          label: 'mana tonic',
+          unlocked: true,
+        },
+        canAddIngredient: true,
+        canBrew: true,
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const toggles = [];
+    const manager = new BrewingCauldronManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      onToggleAutoBrew: (cauldronIndex) => {
+        toggles.push(cauldronIndex);
+        snapshot.brewing.autoBrewEnabled = !snapshot.brewing.autoBrewEnabled;
+        return {
+          ok: true,
+          autoBrewEnabled: snapshot.brewing.autoBrewEnabled,
+          cauldronIndex,
+        };
+      },
+    });
+
+    manager.mount(parent);
+
+    const actionRow = parent.querySelector('.brewing-page__action-row');
+    const autoButton = parent.querySelector('.brewing-page__auto-button');
+
+    expect(autoButton?.hidden).toBe(false);
+    expect(autoButton?.previousElementSibling).toBe(
+      parent.querySelector('.brewing-page__quantity-options'),
+    );
+    expect(autoButton?.parentElement).toBe(actionRow);
+    expect(autoButton?.textContent).toBe('manual');
+    expect(autoButton?.dataset.autoBrewEnabled).toBe('false');
+    expect(autoButton?.getAttribute('aria-pressed')).toBe('false');
+    expect(autoButton?.getAttribute('aria-label')).toBe('manual brewing; press for auto');
+
+    autoButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(toggles).toEqual([0]);
+    expect(autoButton?.textContent).toBe('auto');
+    expect(autoButton?.dataset.autoBrewEnabled).toBe('true');
+    expect(autoButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(autoButton?.getAttribute('aria-label')).toBe('auto brewing; press for manual');
 
     manager.unmount();
     parent.remove();

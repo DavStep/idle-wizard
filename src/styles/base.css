@@ -719,6 +719,17 @@ body {
   width: var(--style-source-ui-width);
 }
 
+.game-stage[data-viewport-mode="web-wide"]
+  :where(.brewing-page__world-view, .garden-page__plot-world) {
+  overflow: visible;
+}
+
+.game-stage[data-viewport-mode="web-wide"]
+  :where(.brewing-page__world-shell, .garden-page__world-shell) {
+  right: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);
+  left: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);
+}
+
 .game-stage.is-control-revealing :where(button, [role="button"]) {
   pointer-events: none;
   animation: stage-control-reveal var(--style-motion-expand)
@@ -5110,7 +5121,7 @@ body {
   bottom: auto;
   left: auto;
   z-index: auto;
-  width: 170px;
+  width: 266px;
   margin-top: 4px;
   background: transparent;
   font-size: var(--style-box-border-label-font-size);
@@ -5123,6 +5134,10 @@ body {
   left: auto;
   transform: none;
   text-align: center;
+}
+
+.brewing-page__actions.is-centered .brewing-page__action-row {
+  justify-content: center;
 }
 
 .brewing-page__cauldron.is-locked .brewing-page__actions {
@@ -5143,7 +5158,7 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: auto;
+  width: 100%;
 }
 
 .brewing-page__cauldron.is-locked .brewing-page__action-row {
@@ -5156,17 +5171,19 @@ body {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  width: auto;
-  max-width: 100%;
-  min-width: 0;
-  padding: 5px 10px;
+  box-sizing: border-box;
+  width: var(--style-button-width);
+  max-width: var(--style-button-width);
+  min-width: var(--style-button-width);
+  height: 28px;
+  padding: 5px 8px;
   margin: 0;
   font-size: var(--style-font-size);
   line-height: normal;
   background: var(--style-surface);
   border: var(--style-border);
   vertical-align: middle;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .brewing-page__cauldron.is-locked .brewing-page__action-button {
@@ -7953,7 +7970,7 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot .garden-page__plot-rows {
-  --style-scroll-padding-top: 8px;
+  --style-scroll-padding-top: 18px;
   box-sizing: border-box;
   display: grid;
   grid-template-columns: repeat(
@@ -7962,7 +7979,7 @@ div.workshop-page__discovery-row {
   );
   gap: 12px;
   align-content: start;
-  padding: 8px var(--style-room-content-edge) 0;
+  padding: 18px var(--style-room-content-edge) 0;
 }
 
 .garden-page__plot .garden-page__plot-row {
@@ -7997,6 +8014,7 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot .garden-page__plot-box-frame {
   --garden-page-plot-soil-fill: var(--garden-page-plot-soil-level-1);
+  --garden-page-plot-level-color: var(--style-muted);
   position: relative;
   box-sizing: border-box;
   isolation: isolate;
@@ -8014,6 +8032,26 @@ div.workshop-page__discovery-row {
   background-position: center bottom;
   background-repeat: no-repeat;
   background-size: 100% auto;
+}
+
+.garden-page__plot
+  .garden-page__plot-box-frame[data-plot-star-tone="yellow"] {
+  --garden-page-plot-level-color: var(--style-star-yellow);
+}
+
+.garden-page__plot
+  .garden-page__plot-box-frame[data-plot-star-tone="orange"] {
+  --garden-page-plot-level-color: var(--style-star-orange);
+}
+
+.garden-page__plot
+  .garden-page__plot-box-frame[data-plot-star-tone="red"] {
+  --garden-page-plot-level-color: var(--style-star-red);
+}
+
+.garden-page__plot
+  .garden-page__plot-box-frame[data-plot-star-tone="purple"] {
+  --garden-page-plot-level-color: var(--style-star-purple);
 }
 
 .garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="2"] {
@@ -8148,7 +8186,7 @@ div.workshop-page__discovery-row {
   bottom: 5px;
   left: 9px;
   top: auto;
-  color: var(--style-muted);
+  color: var(--garden-page-plot-level-color);
   font-size: var(--garden-page-plot-box-detail-font-size);
   line-height: var(--garden-page-plot-box-detail-line-height);
   font-variant-numeric: tabular-nums lining-nums;
@@ -8160,6 +8198,17 @@ div.workshop-page__discovery-row {
   max-width: calc(100% - 34px);
   color: var(--style-text);
   text-align: right;
+}
+
+.garden-page__plot
+  .garden-page__plot-row.has-herb-label
+  .garden-page__plot-box-label {
+  top: -13px;
+  right: auto;
+  left: 50%;
+  max-width: calc(100% + 10px);
+  text-align: center;
+  transform: translateX(-50%);
 }
 
 .garden-page__plot-box-label[data-resource-color="seed"] {
@@ -8189,6 +8238,7 @@ div.workshop-page__discovery-row {
   display: block;
   width: 100%;
   height: 100%;
+  color: var(--garden-page-plot-number-color);
   object-fit: contain;
 }
 
@@ -8278,8 +8328,9 @@ div.workshop-page__discovery-row {
 .garden-page__plot
   .garden-page__plot-row.is-processing
   .garden-page__plot-box-action {
-  color: var(--style-muted);
-  font-weight: normal;
+  padding: 0;
+  color: var(--garden-page-plot-number-color);
+  font-weight: 700;
 }
 
 .garden-page__plot .garden-page__plot-progress {
@@ -8291,8 +8342,10 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot .garden-page__plot-box-timer {
   display: inline;
-  color: var(--style-muted);
+  padding: 0 2px;
+  color: var(--garden-page-plot-number-color);
   font-size: var(--garden-page-plot-box-detail-font-size);
+  font-weight: 700;
   line-height: var(--garden-page-plot-box-detail-line-height);
   font-variant-numeric: tabular-nums lining-nums;
 }
@@ -9107,33 +9160,50 @@ div.workshop-page__discovery-row {
 
 .brewing-page__quantity-options {
   display: inline-flex;
+  align-items: stretch;
   justify-content: flex-end;
 }
 
-.style-button.brewing-page__quantity-button {
+.style-button.brewing-page__quantity-button,
+.style-button.brewing-page__auto-button {
+  box-sizing: border-box;
+  height: 28px;
   justify-self: end;
-  width: 34px;
-  min-width: 34px;
   padding: 5px 0;
   font-size: var(--style-font-size);
   line-height: normal;
   text-align: center;
+}
+
+.style-button.brewing-page__quantity-button {
+  width: 34px;
+  min-width: 34px;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+.style-button.brewing-page__auto-button {
+  width: 58px;
+  min-width: 58px;
+}
+
 .style-button.brewing-page__quantity-button:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ),
+.style-button.brewing-page__auto-button:active:not(:disabled):not(
     [aria-disabled="true"]
   ) {
   background: var(--style-active-surface);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .style-button.brewing-page__quantity-button:hover {
+  .style-button.brewing-page__quantity-button:hover,
+  .style-button.brewing-page__auto-button:hover {
     font-weight: 700;
   }
 }
 
-.style-button.brewing-page__quantity-button:focus {
+.style-button.brewing-page__quantity-button:focus,
+.style-button.brewing-page__auto-button:focus {
   outline: none;
 }
 

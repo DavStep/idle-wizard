@@ -11183,11 +11183,9 @@ describe('PagesFacade', () => {
       undefined,
     );
     expect(rows[0].querySelector('.garden-page__plot-box-level')?.textContent).toBe('☆☆☆');
-    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe(
-      'growing 12s',
-    );
+    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe('12s');
     expect(rows[0].querySelector('.garden-page__plot-box-action-label')?.textContent).toBe(
-      'growing',
+      '',
     );
     expect(rows[0].querySelector('.garden-page__plot-box-timer')?.textContent).toBe('12s');
     expect(rows[0].classList.contains('is-ready')).toBe(false);
@@ -11561,9 +11559,7 @@ describe('PagesFacade', () => {
 
     expect(seedPopup.hidden).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-box-label')?.textContent).toBe('sage');
-    expect(plotRow.querySelector('.garden-page__plot-box-action')?.textContent).toBe(
-      'growing 12s',
-    );
+    expect(plotRow.querySelector('.garden-page__plot-box-action')?.textContent).toBe('12s');
   });
 
   it('changes room pages from Research controls with horizontal touch swipes', () => {
@@ -11663,9 +11659,8 @@ describe('PagesFacade', () => {
       stage.querySelector('.brewing-page__cauldron-art-liquid')?.hidden,
     ).toBe(true);
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage2');
-    expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
-      'will brew wasted potion',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe('');
     expect(stage.querySelector('.brewing-page__message')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__message')?.textContent).toBe('');
 
@@ -11705,9 +11700,8 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
       'brew 12 mana',
     );
-    expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
-      'will brew mana tonic',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe('');
     expect(stage.querySelector('.brewing-page__cauldron-preview-label')?.hidden).toBe(false);
     expect(stage.querySelector('.brewing-page__cauldron-preview-label')?.textContent).toBe(
       'mana tonic',
@@ -11841,7 +11835,8 @@ describe('PagesFacade', () => {
       sageButton.dispatchEvent(
         createPointerEvent('pointerdown', { clientX: 320, clientY: 360 }),
       );
-      document.dispatchEvent(createPointerEvent('pointerup', { clientX: 320, clientY: 360 }));
+      document.dispatchEvent(createPointerEvent('pointermove', { clientX: 330, clientY: 366 }));
+      document.dispatchEvent(createPointerEvent('pointerup', { clientX: 330, clientY: 366 }));
       sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     } finally {
       document.elementFromPoint = originalElementFromPoint;

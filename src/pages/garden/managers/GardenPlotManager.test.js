@@ -491,6 +491,7 @@ describe('GardenPlotManager', () => {
     expect(star?.dataset.starTone).toBe('yellow');
     expect(star?.getAttribute('aria-label')).toBe('yellow star 2');
     expect(frame?.dataset.plotSoilLevel).toBe('3');
+    expect(frame?.dataset.plotStarTone).toBe('yellow');
   });
 
   it('shows empty plot stars before emerald upgrades', () => {
@@ -507,6 +508,7 @@ describe('GardenPlotManager', () => {
     expect(star?.dataset.starTone).toBe('empty');
     expect(star?.getAttribute('aria-label')).toBe('0 stars');
     expect(frame?.dataset.plotSoilLevel).toBe('1');
+    expect(frame?.dataset.plotStarTone).toBe('empty');
     expect(
       star?.querySelectorAll('.style-star-level__slot[data-star-filled="true"]'),
     ).toHaveLength(0);
@@ -628,6 +630,9 @@ describe('GardenPlotManager', () => {
     const boxTimerRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-box-timer\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const processingActionRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-row\.is-processing\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(rootRule).toContain('--garden-page-plot-box-detail-font-size: 9px;');
     expect(rootRule).toContain('--garden-page-plot-box-detail-line-height: 11px;');
@@ -648,9 +653,15 @@ describe('GardenPlotManager', () => {
     expect(boxTimerRule).toContain(
       'font-size: var(--garden-page-plot-box-detail-font-size);',
     );
+    expect(boxTimerRule).toContain('padding: 0 2px;');
+    expect(boxTimerRule).toContain('color: var(--garden-page-plot-number-color);');
+    expect(boxTimerRule).toContain('font-weight: 700;');
     expect(boxTimerRule).toContain(
       'line-height: var(--garden-page-plot-box-detail-line-height);',
     );
+    expect(processingActionRule).toContain('padding: 0;');
+    expect(processingActionRule).toContain('color: var(--garden-page-plot-number-color);');
+    expect(processingActionRule).toContain('font-weight: 700;');
   });
 
   it('keeps the Garden world edge-to-edge while catalog boxes stay chrome-aligned', () => {
@@ -711,7 +722,7 @@ describe('GardenPlotManager', () => {
     expect(plotRowsRule).toContain('overflow: visible;');
     expect(baseCss).toContain('gap: 12px;\n  align-content: start;');
     expect(baseCss).toContain(
-      'padding: 8px var(--style-room-content-edge) 0;',
+      'padding: 18px var(--style-room-content-edge) 0;',
     );
     expect(inventoryRowsRule).toContain('display: grid;');
     expect(inventoryRowsRule).toContain(
@@ -764,20 +775,23 @@ describe('GardenPlotManager', () => {
     const boxFrame = parent.querySelector('.garden-page__plot-box-frame');
     const plantIcon = parent.querySelector('.garden-page__plot-plant-icon');
     const boxAction = parent.querySelector('.garden-page__plot-box-action');
+    const boxActionLabel = parent.querySelector('.garden-page__plot-box-action-label');
     const boxTimer = parent.querySelector('.garden-page__plot-box-timer');
 
     expect(boxFrame?.classList.contains('has-plant')).toBe(true);
     expect(boxFrame?.style.getPropertyValue('--garden-page-plot-growth-scale')).toBe('0.71');
     expect(plantIcon?.dataset.assetAtlasFrame).toBe('herb:sageHerb');
+    expect(plantIcon?.querySelector('rect')?.getAttribute('fill')).toBe('currentColor');
     expect(parent.querySelector('.garden-page__plot-scissors')?.hasAttribute('hidden')).toBe(
       true,
     );
-    expect(boxAction?.textContent).toBe('growing 6s');
+    expect(boxAction?.textContent).toBe('6s');
+    expect(boxActionLabel?.textContent).toBe('');
     expect(boxTimer?.parentElement).toBe(boxAction);
     expect(boxTimer?.textContent).toBe('6s');
   });
 
-  it('keeps plot labels on the soil and progress rails slightly narrower', () => {
+  it('keeps active plot labels above soil and progress rails slightly narrower', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const frameRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-box-frame\s*\{(?<body>[^}]*)\}/,
@@ -797,8 +811,14 @@ describe('GardenPlotManager', () => {
     const labelRule = baseCss.match(
       /\.garden-page__plot-box-level\s*\{[^}]*\}\s*\.garden-page__plot-box-label\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const activeLabelRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-row\.has-herb-label\s+\.garden-page__plot-box-label\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const progressRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-progress\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const plantIconRule = baseCss.match(
+      /\.garden-page__plot-plant-icon\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const activePlotRowRule = baseCss.match(
       /\.garden-page__plot-row:is\(:active, \.is-pressing\):not\(:disabled\)\s*\{(?<body>[^}]*)\}/,
@@ -811,6 +831,9 @@ describe('GardenPlotManager', () => {
     expect(frameRule).toContain('width: var(--garden-page-plot-visual-width);');
     expect(frameRule).toContain(
       '--garden-page-plot-soil-fill: var(--garden-page-plot-soil-level-1);',
+    );
+    expect(frameRule).toContain(
+      '--garden-page-plot-level-color: var(--style-muted);',
     );
     expect(frameRule).toContain('isolation: isolate;');
     expect(frameRule).toContain('border: 0;');
@@ -836,6 +859,18 @@ describe('GardenPlotManager', () => {
     expect(labelRule).toContain('max-width: calc(100% - 34px);');
     expect(labelRule).toContain('color: var(--style-text);');
     expect(labelRule).toContain('text-align: right;');
+    expect(activeLabelRule).toContain('top: -13px;');
+    expect(activeLabelRule).toContain('right: auto;');
+    expect(activeLabelRule).toContain('left: 50%;');
+    expect(activeLabelRule).toContain('max-width: calc(100% + 10px);');
+    expect(activeLabelRule).toContain('text-align: center;');
+    expect(activeLabelRule).toContain('transform: translateX(-50%);');
+    expect(baseCss).toContain(
+      '.garden-page__plot-box-frame[data-plot-star-tone="yellow"]',
+    );
+    expect(baseCss).toContain(
+      '--garden-page-plot-level-color: var(--style-star-yellow);',
+    );
     expect(baseCss).toMatch(
       /\.garden-page__plot-box-number,[\s\S]*\.garden-page__plot-box-label\s*\{[\s\S]*padding:\s*0 2px;[\s\S]*background:\s*transparent;/,
     );
@@ -846,6 +881,7 @@ describe('GardenPlotManager', () => {
     expect(progressRule).toContain('width: var(--garden-page-plot-progress-width);');
     expect(activePlotRowRule).toContain('background: transparent;');
     expect(plantRule).toContain('bottom: 20px;');
+    expect(plantIconRule).toContain('color: var(--garden-page-plot-number-color);');
     expect(baseCss).toContain('animation: garden-page-plot-ready-lift 1080ms');
     expect(baseCss).toContain('infinite;');
     expect(baseCss).toContain('@keyframes garden-page-plot-ready-lift');
@@ -941,7 +977,7 @@ describe('GardenPlotManager', () => {
     expect(parent.querySelector('.garden-page__plot-box-timer')?.hidden).toBe(true);
   });
 
-  it('shows harvesting scissors and timer next to status in boxes mode', () => {
+  it('shows harvesting scissors and only the timer in boxes mode', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
@@ -978,7 +1014,7 @@ describe('GardenPlotManager', () => {
 
     expect(boxFrame?.classList.contains('is-harvesting')).toBe(true);
     expect(scissors?.hasAttribute('hidden')).toBe(false);
-    expect(boxAction?.textContent).toBe('harvesting 3s');
+    expect(boxAction?.textContent).toBe('3s');
     expect(boxTimer?.textContent).toBe('3s');
     expect(boxTimer?.parentElement).toBe(boxAction);
   });
@@ -1126,7 +1162,7 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
       'herb',
     );
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('12s');
     expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('12s');
   });
 
@@ -1185,7 +1221,7 @@ describe('GardenPlotManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(tile.phase).toBe('growing');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('12s');
   });
 
   it('plants from the full empty plot slot when a selected seed is plantable', () => {
@@ -1211,7 +1247,54 @@ describe('GardenPlotManager', () => {
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(tile.phase).toBe('growing');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('12s');
+  });
+
+  it('plants from a no-drag empty plot pointer release and suppresses the follow-up click', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const plantSelectedGardenSeed = vi.spyOn(gameplayFacade, 'plantSelectedGardenSeed');
+    const snapshot = gameplayFacade.getSnapshot();
+    const tile = snapshot.garden.plot.tiles[0];
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 2,
+      selectedSeedKey: 'mintSeed',
+      selectedSeedLabel: 'mint seed',
+      phase: 'empty',
+    });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.garden-page__world-shell');
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    const boxFrame = plotRow.querySelector('.garden-page__plot-box-frame');
+
+    dispatchPointer(boxFrame, 'pointerdown', {
+      pointerId: 1,
+      clientX: 100,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointermove', {
+      pointerId: 1,
+      clientX: 106,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 1,
+      clientX: 106,
+      clientY: 100,
+    });
+    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    expect(plantSelectedGardenSeed).toHaveBeenCalledTimes(1);
+    expect(tile.phase).toBe('growing');
+    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
+
+    manager.unmount();
+    parent.remove();
   });
 
   it('opens seed choices from selected seed text on touch press start', () => {
@@ -1330,7 +1413,7 @@ describe('GardenPlotManager', () => {
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('mint');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('12s');
 
     manager.unmount();
     parent.remove();
@@ -1386,7 +1469,7 @@ describe('GardenPlotManager', () => {
 
     expect(parent.querySelector('.garden-page__cancel-popup').hidden).toBe(true);
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('12s');
 
     manager.unmount();
     parent.remove();
@@ -1459,7 +1542,7 @@ describe('GardenPlotManager', () => {
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(tile.phase).toBe('growing');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('growing 12s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('12s');
   });
 
   it('keeps blank row space inert when the selected seed count is empty', () => {
@@ -1483,6 +1566,7 @@ describe('GardenPlotManager', () => {
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(plotRow.classList.contains('is-empty')).toBe(true);
+    expect(plotRow.classList.contains('has-herb-label')).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
       'herb',
     );
@@ -1801,7 +1885,7 @@ describe('GardenPlotManager', () => {
     expect(findRow('sage seed')?.querySelector('.garden-page__seed-button')?.disabled).toBe(false);
   });
 
-  it('shows the harvest timer next to the harvesting label', () => {
+  it('shows only the harvest timer while harvesting', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
@@ -1831,9 +1915,9 @@ describe('GardenPlotManager', () => {
       .querySelector('.garden-page__plot-action')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvesting 3s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('3s');
     expect(plotRow.querySelector('.garden-page__plot-action-label')?.textContent).toBe(
-      'harvesting',
+      '',
     );
     expect(plotRow.querySelector('.garden-page__plot-action-timer')?.textContent).toBe('3s');
   });
@@ -1869,7 +1953,7 @@ describe('GardenPlotManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(tile.phase).toBe('harvesting');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvesting 3s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('3s');
   });
 
   it('starts harvest when a ready plot box frame is clicked beside the plant', () => {
@@ -1903,7 +1987,7 @@ describe('GardenPlotManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(tile.phase).toBe('harvesting');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvesting 3s');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('3s');
   });
 
   it('starts harvest from a no-drag ready plot pointer release and suppresses the follow-up click', () => {

@@ -16,6 +16,8 @@ const MAX_ATLAS_WIDTH = 2048;
 // Inline SVG crops minify 128px frames down to text size; keep enough gutter for filtering.
 const PADDING = 32;
 const EDGE_EXTRUDE = Math.max(1, Math.floor(PADDING / 2));
+const TRIM_ALPHA_THRESHOLD = 0;
+const TRIM_SOURCE_PADDING = 4;
 
 const HERB_ASSETS = [
   ['herb:belladonnaHerb', 'src/assets/items/herbs/herb-belladonna.png'],
@@ -97,15 +99,21 @@ const ASSETS = [
   ['seed:black', 'src/assets/items/seeds/seed-pack-black.png', 128],
   ['seed:gray', 'src/assets/items/seeds/seed-pack-gray.png', 128],
   ['seed:regular', 'src/assets/items/seeds/seed-pack-regular.png', 128],
-  ...HERB_ASSETS.map(([frameName, filePath]) => [frameName, filePath, 128]),
+  ...HERB_ASSETS.map(([frameName, filePath]) => [
+    frameName,
+    filePath,
+    128,
+    { trimTransparent: true },
+  ]),
   ...POTION_ASSETS.map(([frameName, filePath]) => [frameName, filePath, 128]),
   ['ui:summonCircle', 'src/assets/ui/summon-circle.png', 768],
 ];
 
-function readAsset([frameName, relativePath, maxDimension]) {
+function readAsset([frameName, relativePath, maxDimension, options = {}]) {
   const filePath = path.join(ROOT, relativePath);
   const source = PNG.sync.read(fs.readFileSync(filePath));
-  const image = prepareImageForAtlas(resizeToMaxDimension(source, maxDimension));
+  const imageSource = options.trimTransparent ? trimTransparentBounds(source) : source;
+  const image = prepareImageForAtlas(resizeToMaxDimension(imageSource, maxDimension));
 
   return {
     frameName,
@@ -116,6 +124,49 @@ function readAsset([frameName, relativePath, maxDimension]) {
     width: image.width,
     height: image.height,
   };
+}
+
+function trimTransparentBounds(source) {
+  let minX = source.width;
+  let minY = source.height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < source.height; y += 1) {
+    for (let x = 0; x < source.width; x += 1) {
+      const offset = (y * source.width + x) * 4;
+
+      if (source.data[offset + 3] <= TRIM_ALPHA_THRESHOLD) {
+        continue;
+      }
+
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    return source;
+  }
+
+  const cropX = Math.max(0, minX - TRIM_SOURCE_PADDING);
+  const cropY = Math.max(0, minY - TRIM_SOURCE_PADDING);
+  const cropRight = Math.min(source.width - 1, maxX + TRIM_SOURCE_PADDING);
+  const cropBottom = Math.min(source.height - 1, maxY + TRIM_SOURCE_PADDING);
+  const width = cropRight - cropX + 1;
+  const height = cropBottom - cropY + 1;
+  const target = new PNG({ width, height });
+
+  for (let y = 0; y < height; y += 1) {
+    const sourceStart = ((cropY + y) * source.width + cropX) * 4;
+    const sourceEnd = sourceStart + width * 4;
+    const targetStart = y * width * 4;
+    target.data.set(source.data.subarray(sourceStart, sourceEnd), targetStart);
+  }
+
+  return target;
 }
 
 function prepareImageForAtlas(image) {

@@ -59,6 +59,7 @@
 - Brewing herbs box uses the shared room chrome inset like the top panel and world chat; do not size it with `--style-main-box-width`.
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
 - Cauldron tap opens should fire from no-drag world pointerup when the press started on a cauldron; Android/WebView can retarget the native click to the world shell, especially from empty overlays.
+- Cauldron tap drift should use the tap-action tolerance, not the normal world-pan threshold; 4 source pixels can classify WebView finger jitter as a drag.
 - Popup forms in snapshot-rendered managers need local drafts captured before replacing content; otherwise timer/mana refreshes clear focused fields.
 - Snapshot-rendered popup forms with active text inputs should keep the same input DOM node mounted during refresh; replacing then refocusing can still close mobile keyboards.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
@@ -144,8 +145,10 @@
 - Scrollable choice/item rows should activate on validated touch release with a small movement tolerance; keep press-start only for non-scroll openers where mobile click retargets.
 - Garden selected seed labels need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening seed choices.
 - Garden seeds and Brewing herbs are tap-first item controls only; do not reintroduce drag/drop for these rows.
+- Brewing herb drag thresholds must not be lower than validated tap slop; otherwise small WebView drift suppresses the synthetic click and adds no herb.
 - Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
 - Garden plantable empty plots should plant from the whole slot/row; seed-name labels still open seed choices and no-seed slots stay inert.
+- Plantable Garden plot taps need a no-drag world pointerup path with click dedupe, same as ready harvest; WebView can drop the native row click after small drift.
 - Ready Garden plot boxes should harvest from the visible plot frame, not only the plant/action label; the plant icon is too small as the sole tap target.
 - Ready Garden plot boxes should not show a visible `harvest` label; the ready animation and plot tap affordance are enough.
 - Ready Garden plot taps need a no-drag world pointerup path with click dedupe; WebView can turn small finger drift into pan and drop the native click.
@@ -175,6 +178,7 @@
 - In-app Browser Playwright evaluate can miss main-world `window.cheats`, and `javascript:` bookmarklets are blocked; do not rely on that path for cheat-driven screenshot setup.
 - In-app Browser blocks `data:` fixture pages; use the real app state or an HTTP-served local harness for browser UI QA.
 - Brewing drag screenshot QA needs an unlocked level-4+ save or `VITE_ENABLE_CHEATS=true`; a level-2 local save cannot reach herb drag controls.
+- Cauldron staged-recipe QA should use minimal unlocks and explicit ingredients; `unlockAllResearch` can raise cauldron batch level and make base recipe staging fail.
 - Tutorial motion/visual QA harnesses must set `--style-ui-scale` to `3 * viewportScale`; using only viewport scale makes Elara/source UI look tiny and gives misleading screenshots.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.
 - FTUE lesson panels have no visible `close` border label; players collapse them with the Elara portrait button.
@@ -575,6 +579,8 @@
 
 - The project style is based on `https://adarkroom.doublespeakgames.com/`.
 - Idle Witch Craft source herb icons live in sibling `../idle-whitch-craft/core/assets/items/herbs`; `../idle-witch-craft 2/raws/items/herbs` has matching raw copies.
+- Idle Wizard herb icon fixes should preserve the local 256x256 source silhouette/style; sibling Idle Witch Craft herb PNGs are old-size art and mismatch if copied directly.
+- Herb label atlas frames should trim transparent padding at build time so 256x256 source art fills text-size icon labels.
 - Idle Witch Craft seed pack icons live in sibling `../idle-whitch-craft/core/assets/misc/seedpacks`; `../idle-witch-craft 2/raws/misc/seedpacks` has matching raw copies.
 - Idle Witch Craft item drop and coin flyout parity lives in `../idle-whitch-craft/core/MobilePreview.ts` plus `../idle-whitch-craft/core/mobile.css` keyframes around `mobile-workshop-item-drop`, `mobile-seed-burst`, and `mobile-coin-amt-pop`.
 - Idle Witch Craft launcher icon source lives at `../idle-whitch-craft/core/assets/ui/icons/game-icon.png`; generated Android launcher PNGs live under `../idle-whitch-craft/core/android/app/src/main/res/mipmap-*`.

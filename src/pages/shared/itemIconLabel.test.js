@@ -2,6 +2,8 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { gameAssetAtlasFrames } from '../../assets/generated/game-asset-atlas.generated.js';
+import { herbIconFrameNamesByKey } from '../../assets/items/herbs/herbIcons.js';
 import {
   appendTextWithItemIcons,
   setItemIconLabel,
@@ -77,6 +79,19 @@ describe('item icon labels', () => {
     expect(potion.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame).toBe(
       'potion:pearlrootDraught',
     );
+  });
+
+  it('uses trimmed atlas frames for herb icons', () => {
+    const herbFrames = Object.values(herbIconFrameNamesByKey).map(
+      (frameName) => gameAssetAtlasFrames[frameName],
+    );
+    const trimmedFrameCount = herbFrames.filter(
+      (frame) => frame && (frame.width < 128 || frame.height < 128),
+    ).length;
+
+    expect(herbFrames).toHaveLength(24);
+    expect(herbFrames.every((frame) => frame?.width <= 128 && frame?.height <= 128)).toBe(true);
+    expect(trimmedFrameCount).toBeGreaterThan(20);
   });
 
   it('marks wasted and unknown potion labels with distinct potion icons', () => {
