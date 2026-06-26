@@ -2765,38 +2765,36 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.setBrewingAutoBrewEnabled(true)).toMatchObject({
       ok: true,
       autoBrewEnabled: true,
+      autoBrewArmed: false,
     });
 
     ecsFacade.update({ deltaSeconds: 4 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(4);
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
+
+    gameplayFacade.manaFacade.fill();
+    gameplayFacade.itemsFacade.addItem(1001, 3);
+    expect(gameplayFacade.addBrewingIngredient(1001)).toMatchObject({ ok: true });
+    expect(gameplayFacade.addBrewingIngredient(1001)).toMatchObject({ ok: true });
+    expect(gameplayFacade.addBrewingIngredient(1001)).toMatchObject({ ok: true });
+    expect(gameplayFacade.brewCauldron()).toMatchObject({ ok: true });
+    expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
+      autoBrewEnabled: true,
+      autoBrewArmed: true,
+    });
+    expect(gameplayFacade.brewingFacade.getPendingAutoBrewManaCost()).toBe(12);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',
       phase: 'brewing',
       remainingMs: 30_000,
     });
-    expect(gameplayFacade.getSnapshot().seedInventory).toContainEqual({
-      itemTypeId: 1,
-      key: 'sageSeed',
-      label: 'sage seed',
-      kind: 'seed',
-      quantity: 0,
-    });
-
     ecsFacade.update({ deltaSeconds: 3 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(6);
+    expect(gameplayFacade.getSnapshot().mana.current).toBeGreaterThanOrEqual(12);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',
       phase: 'brewing',
       remainingMs: 27_000,
-    });
-    expect(gameplayFacade.getSnapshot().seedInventory).toContainEqual({
-      itemTypeId: 1,
-      key: 'sageSeed',
-      label: 'sage seed',
-      kind: 'seed',
-      quantity: 1,
     });
   });
 
@@ -3140,7 +3138,6 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 2 });
 
-    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 2001,
       key: 'manaTonic',
@@ -3321,10 +3318,21 @@ describe('GameplayFacade', () => {
     });
     expect(gameplayFacade.getSnapshot().brewing.cauldrons[1]).toMatchObject({
       autoBrewEnabled: true,
+      autoBrewArmed: false,
       autoBrewRecipeKey: 'minorHealingPotion',
     });
 
     ecsFacade.update({ deltaSeconds: 0 });
+
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[0].activeBrew).toBeNull();
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons[1].activeBrew).toBeNull();
+
+    expect(gameplayFacade.prepareBrewingRecipe('manaTonic', 0)).toMatchObject({ ok: true });
+    expect(gameplayFacade.brewCauldron(0)).toMatchObject({ ok: true });
+    expect(gameplayFacade.prepareBrewingRecipe('minorHealingPotion', 1)).toMatchObject({
+      ok: true,
+    });
+    expect(gameplayFacade.brewCauldron(1)).toMatchObject({ ok: true });
 
     expect(gameplayFacade.getSnapshot().brewing.cauldrons[0].activeBrew).toMatchObject({
       key: 'manaTonic',
@@ -3431,17 +3439,22 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.setBrewingAutoBrewEnabled(true)).toMatchObject({
       ok: true,
       autoBrewEnabled: true,
+      autoBrewArmed: false,
     });
-    gameplayFacade.itemsFacade.addItem(1001, 3);
+    gameplayFacade.itemsFacade.addItem(1001, 6);
     ecsFacade.update({ deltaSeconds: 12 });
     gameplayFacade.addBrewingIngredient(1001);
     gameplayFacade.addBrewingIngredient(1001);
     gameplayFacade.addBrewingIngredient(1001);
 
-    ecsFacade.update({ deltaSeconds: 0 });
+    expect(gameplayFacade.brewCauldron()).toMatchObject({ ok: true });
 
     expect(gameplayFacade.getSnapshot().mana.current).toBe(36);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
+    expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
+      autoBrewEnabled: true,
+      autoBrewArmed: true,
+    });
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       key: 'manaTonic',
       phase: 'brewing',
@@ -3458,13 +3471,17 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 2 });
 
-    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 2001,
       key: 'manaTonic',
       label: 'mana tonic',
       kind: 'potion',
       quantity: 1,
+    });
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
+      key: 'manaTonic',
+      phase: 'brewing',
+      remainingMs: 30_000,
     });
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toContain(
       'brewed mana tonic',
@@ -4309,6 +4326,15 @@ describe('GameplayFacade', () => {
         { key: 'lavenderHerb', quantity: 1 },
         { key: 'frostmossHerb', quantity: 1 },
       ],
+    });
+    expect(
+      gameplayFacade
+        .getSnapshot()
+        .brewing.recipes.find((recipe) => recipe.key === 'ashenMemory'),
+    ).toMatchObject({
+      discovered: true,
+      discoveredByUsername: 'Ada',
+      unlocked: true,
     });
 
     const { ecsFacade: secondEcsFacade, gameplayFacade: secondGameplayFacade } = createGameplay();

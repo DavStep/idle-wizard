@@ -32,6 +32,15 @@ export const PLAYER_CHARACTER_OPTIONS = Object.freeze([
   Object.freeze({ key: 'adventurer_purpleaxe', label: 'purple axe' }),
 ]);
 
+export const DEFAULT_UNLOCKED_PLAYER_CHARACTER_KEYS = Object.freeze([
+  'elara',
+  'mira',
+  'bramble',
+  'corvin',
+  'juniper',
+  'rowan',
+]);
+
 const PLAYER_CHARACTER_KEYS = new Set(
   PLAYER_CHARACTER_OPTIONS.map((character) => character.key),
 );

@@ -3,7 +3,6 @@ import {
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
 import {
-  createAssetAtlasMaskedSprite,
   createAssetAtlasSprite,
 } from '../../../assets/atlas/atlasSprite.js';
 import {
@@ -25,6 +24,7 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setProgressFill } from '../../shared/progressFill.js';
 import { setTimerProgressFill, stopTimerProgressFill } from '../../shared/timerProgress.js';
 import { formatRemainingTime } from '../../shared/timerDisplay.js';
+import { preventNativeWorldGestureDefault } from '../../shared/worldGestureDefaultGuard.js';
 import { hasGardenTileNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 import { GardenCancelDialogManager } from './GardenCancelDialogManager.js';
 import { GardenSeedSwapDialogManager } from './GardenSeedSwapDialogManager.js';
@@ -91,6 +91,7 @@ export class GardenPlotManager {
     this.handlePendingSeedPressMove = (event) => this.onPendingSeedPressMove(event);
     this.handlePendingSeedPressEnd = (event) => this.onPendingSeedPressEnd(event);
     this.handlePendingSeedPressCancel = () => this.clearPendingSeedPress();
+    this.handleWorldGestureDefault = (event) => preventNativeWorldGestureDefault(event);
     this.lastTouchLikePressStart = {
       key: null,
       timeStamp: Number.NEGATIVE_INFINITY,
@@ -212,6 +213,10 @@ export class GardenPlotManager {
     shell.addEventListener('pointermove', (event) => this.onWorldPointerMove(event));
     shell.addEventListener('pointerup', (event) => this.onWorldPointerUp(event));
     shell.addEventListener('pointercancel', (event) => this.onWorldPointerUp(event));
+    shell.addEventListener('touchstart', this.handleWorldGestureDefault, { passive: false });
+    shell.addEventListener('touchmove', this.handleWorldGestureDefault, { passive: false });
+    shell.addEventListener('gesturestart', this.handleWorldGestureDefault, { passive: false });
+    shell.addEventListener('gesturechange', this.handleWorldGestureDefault, { passive: false });
 
     const world = document.createElement('div');
     world.className = 'garden-page__world';
@@ -802,7 +807,7 @@ export class GardenPlotManager {
 
     const frameName = getHerbIconFrameName(normalizedHerbKey);
     const icon = frameName
-      ? createAssetAtlasMaskedSprite('garden-page__plot-plant-icon', frameName)
+      ? createAssetAtlasSprite('garden-page__plot-plant-icon', frameName)
       : null;
 
     if (icon) {
@@ -1062,7 +1067,12 @@ export class GardenPlotManager {
     }
 
     if (tile.process) {
-      this.openSeedPopupAfterCancelTileNumber = clickedLabel ? tileNumber : null;
+      if (clickedLabel && this.canReplaceActiveSeed(tile)) {
+        this.showSeedPopup(tileNumber);
+        return;
+      }
+
+      this.openSeedPopupAfterCancelTileNumber = null;
       this.cancelDialogManager.show(tile);
       return;
     }
@@ -1257,6 +1267,11 @@ export class GardenPlotManager {
     }
 
     if (tile.process) {
+      if (this.canReplaceActiveSeed(tile)) {
+        this.showSeedPopup(tileNumber);
+        return true;
+      }
+
       this.openSeedPopupAfterCancelTileNumber = tileNumber;
       this.cancelDialogManager.show(tile);
       return true;
@@ -1312,6 +1327,14 @@ export class GardenPlotManager {
       return;
     }
 
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const selectedTile = this.getSelectedTile(snapshot);
+
+    if (selectedTile && !this.isTileEmpty(selectedTile)) {
+      this.onSelectSeedForActiveTile(selectedTile, seedTypeId, snapshot);
+      return;
+    }
+
     const result = this.gameplayFacade.selectGardenSeed(this.selectedTileNumber, seedTypeId);
 
     if (result.ok) {
@@ -1319,6 +1342,43 @@ export class GardenPlotManager {
     }
 
     this.render(this.gameplayFacade.getSnapshot());
+  }
+
+  onSelectSeedForActiveTile(tile, seedTypeId, snapshot) {
+    if (seedTypeId === null) {
+      this.hideSeedPopup();
+      this.openSeedPopupAfterCancelTileNumber = null;
+      this.cancelDialogManager.show(tile);
+      return;
+    }
+
+    if (!this.canReplaceActiveSeed(tile)) {
+      return;
+    }
+
+    if (seedTypeId === tile.seedItemTypeId) {
+      this.hideSeedPopup();
+      return;
+    }
+
+    const seed = (snapshot.garden?.seeds ?? []).find(
+      (candidate) => candidate.itemTypeId === seedTypeId,
+    );
+
+    if (!seed || (seed.quantity ?? 0) <= 0) {
+      return;
+    }
+
+    this.hideSeedPopup();
+    this.swapDialogManager.show({ tile, seed });
+  }
+
+  isTileEmpty(tile) {
+    return tile?.phase === 'empty';
+  }
+
+  canReplaceActiveSeed(tile) {
+    return tile?.phase === 'growing';
   }
 
   showSeedPopup(tileNumber) {
@@ -1703,6 +1763,7 @@ export class GardenPlotManager {
 
     if (this.worldPointers.size >= 2) {
       this.startWorldPinchGesture();
+      event.preventDefault();
     } else {
       this.worldGesture = {
         type: 'pan',

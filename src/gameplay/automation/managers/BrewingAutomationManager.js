@@ -43,7 +43,7 @@ export class BrewingAutomationManager {
 
     const cauldron = this.getCauldronSnapshot(cauldronNumber);
 
-    if (!cauldron?.autoBrewEnabled || !cauldron.autoBrewRecipeKey) {
+    if (!cauldron?.autoBrewEnabled || !cauldron.autoBrewArmed || !cauldron.autoBrewRecipeKey) {
       return;
     }
 

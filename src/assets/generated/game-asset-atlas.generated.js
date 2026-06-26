@@ -7,7 +7,7 @@ export const gameAssetAtlasSize = Object.freeze({
 });
 export const gameAssetAtlasFrames = Object.freeze({
   "herb:belladonnaHerb": {
-    "x": 1147,
+    "x": 1277,
     "y": 875,
     "width": 97,
     "height": 128,
@@ -25,7 +25,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-bloodrose.png"
   },
   "herb:briarHerb": {
-    "x": 760,
+    "x": 883,
     "y": 1035,
     "width": 86,
     "height": 128,
@@ -34,7 +34,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-briar.png"
   },
   "herb:comfreyHerb": {
-    "x": 1290,
+    "x": 1413,
     "y": 1035,
     "width": 128,
     "height": 125,
@@ -43,7 +43,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-comfrey.png"
   },
   "herb:dragonpepperHerb": {
-    "x": 1193,
+    "x": 1316,
     "y": 1035,
     "width": 65,
     "height": 128,
@@ -52,7 +52,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-dragonpepper.png"
   },
   "herb:dreambellHerb": {
-    "x": 155,
+    "x": 278,
     "y": 1035,
     "width": 90,
     "height": 128,
@@ -79,7 +79,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-glowcap.png"
   },
   "herb:hyssopHerb": {
-    "x": 1095,
+    "x": 1218,
     "y": 1035,
     "width": 66,
     "height": 128,
@@ -88,7 +88,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-hyssop.png"
   },
   "herb:lavenderHerb": {
-    "x": 521,
+    "x": 644,
     "y": 1035,
     "width": 88,
     "height": 128,
@@ -97,7 +97,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-lavender.png"
   },
   "herb:mandrakeHerb": {
-    "x": 996,
+    "x": 1119,
     "y": 1035,
     "width": 67,
     "height": 128,
@@ -124,7 +124,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-moonflower.png"
   },
   "herb:nettleHerb": {
-    "x": 1405,
+    "x": 1535,
     "y": 875,
     "width": 94,
     "height": 128,
@@ -142,7 +142,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-nightshade.png"
   },
   "herb:pearlrootHerb": {
-    "x": 1531,
+    "x": 1661,
     "y": 875,
     "width": 94,
     "height": 128,
@@ -151,7 +151,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-pearlroot.png"
   },
   "herb:sageHerb": {
-    "x": 1657,
+    "x": 1787,
     "y": 875,
     "width": 93,
     "height": 128,
@@ -160,8 +160,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-sage.png"
   },
   "herb:silverleafHerb": {
-    "x": 1906,
-    "y": 875,
+    "x": 32,
+    "y": 1035,
     "width": 91,
     "height": 128,
     "originalWidth": 256,
@@ -169,7 +169,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-silverleaf.png"
   },
   "herb:snowdropHerb": {
-    "x": 1782,
+    "x": 1912,
     "y": 875,
     "width": 92,
     "height": 128,
@@ -187,7 +187,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-star-anise.png"
   },
   "herb:sunrootHerb": {
-    "x": 878,
+    "x": 1001,
     "y": 1035,
     "width": 86,
     "height": 128,
@@ -205,7 +205,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-valerian.png"
   },
   "herb:wormwoodHerb": {
-    "x": 1276,
+    "x": 1406,
     "y": 875,
     "width": 97,
     "height": 128,
@@ -592,7 +592,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/potions/potion-yarrow-poultice.png"
   },
   "resource:coin": {
-    "x": 1450,
+    "x": 1733,
     "y": 1035,
     "width": 92,
     "height": 92,
@@ -601,7 +601,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-coin.png"
   },
   "resource:crystal": {
-    "x": 1574,
+    "x": 1857,
     "y": 1035,
     "width": 68,
     "height": 88,
@@ -610,8 +610,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-crystal.png"
   },
   "resource:emerald": {
-    "x": 1674,
-    "y": 1035,
+    "x": 32,
+    "y": 1195,
     "width": 65,
     "height": 88,
     "originalWidth": 65,
@@ -619,8 +619,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-emerald.png"
   },
   "resource:mana": {
-    "x": 1771,
-    "y": 1035,
+    "x": 129,
+    "y": 1195,
     "width": 60,
     "height": 88,
     "originalWidth": 60,
@@ -628,8 +628,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-mana-drop.png"
   },
   "resource:ruby": {
-    "x": 1863,
-    "y": 1035,
+    "x": 221,
+    "y": 1195,
     "width": 88,
     "height": 85,
     "originalWidth": 88,
@@ -637,7 +637,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-ruby.png"
   },
   "seed:black": {
-    "x": 277,
+    "x": 400,
     "y": 1035,
     "width": 90,
     "height": 128,
@@ -646,7 +646,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/seeds/seed-pack-black.png"
   },
   "seed:gray": {
-    "x": 399,
+    "x": 522,
     "y": 1035,
     "width": 90,
     "height": 128,
@@ -655,7 +655,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/seeds/seed-pack-gray.png"
   },
   "seed:regular": {
-    "x": 32,
+    "x": 155,
     "y": 1035,
     "width": 91,
     "height": 128,
@@ -663,8 +663,26 @@ export const gameAssetAtlasFrames = Object.freeze({
     "originalHeight": 167,
     "source": "src/assets/items/seeds/seed-pack-regular.png"
   },
+  "status:checkDefault": {
+    "x": 1573,
+    "y": 1035,
+    "width": 128,
+    "height": 122,
+    "originalWidth": 256,
+    "originalHeight": 256,
+    "source": "src/assets/icons/status/check-01.png"
+  },
+  "status:lockDefault": {
+    "x": 1147,
+    "y": 875,
+    "width": 98,
+    "height": 128,
+    "originalWidth": 256,
+    "originalHeight": 256,
+    "source": "src/assets/icons/status/lock-01.png"
+  },
   "tool:herbCuttingScissorsClosed": {
-    "x": 641,
+    "x": 764,
     "y": 1035,
     "width": 87,
     "height": 128,

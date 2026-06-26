@@ -5955,6 +5955,27 @@ describe('PagesFacade', () => {
     ).toContain('mira');
     expect(
       settings.querySelector(
+        '#room-top-panel-settings-avatar .room-top-panel__character-section.style-box',
+      ),
+    ).toBeNull();
+    expect(
+      settings.querySelector(
+        '#room-top-panel-settings-avatar .room-top-panel__character-button[data-character="mira"]',
+      ).disabled,
+    ).toBe(false);
+    const lockedAvatarButton = settings.querySelector(
+      '#room-top-panel-settings-avatar .room-top-panel__character-button[data-character="adventurer_cleric"]',
+    );
+    expect(lockedAvatarButton.disabled).toBe(true);
+    expect(lockedAvatarButton.classList.contains('is-unresearched')).toBe(true);
+    expect(
+      lockedAvatarButton.querySelector('.room-top-panel__character-lock'),
+    ).not.toBeNull();
+    expect(
+      lockedAvatarButton.querySelector('.room-top-panel__character-option-silhouette'),
+    ).not.toBeNull();
+    expect(
+      settings.querySelector(
         '#room-top-panel-settings-theme .room-top-panel__character-section',
       ),
     ).toBeNull();
@@ -6808,11 +6829,17 @@ describe('PagesFacade', () => {
       'prestige resets the current run',
     );
     const summary = page.querySelector('.workshop-page__prestige-summary');
-    expect(summary?.textContent).toBe(
-      'level 40, 0 ruby available. press prestige to review next run.',
-    );
+    expect(
+      summary?.querySelector('.workshop-page__prestige-level-flow')?.textContent,
+    ).toBe('level 40 > level 20');
+    expect(
+      summary?.querySelector('.workshop-page__prestige-receive')?.textContent,
+    ).toBe('on prestige: 1 ruby, 0 emerald total');
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
-    expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('0 ruby');
+    expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('1 ruby');
+    expect(summary?.querySelector('[data-resource-color="emerald"]')?.textContent).toBe(
+      '0 emerald',
+    );
     expect(
       summary?.querySelector('.style-resource-label--ruby .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
@@ -6833,9 +6860,12 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(page.querySelector('.workshop-page__prestige-confirm').hidden).toBe(false);
-    expect(page.textContent).toContain('higher level prestige available level 40');
+    expect(page.textContent).toContain('higher prestige available: level 40');
+    expect(page.textContent).toContain('level 40 > level 5');
+    expect(page.textContent).toContain('on prestige: 1 ruby, 0 emerald total');
     expect(page.textContent).toContain('start level5');
-    expect(page.textContent).toContain('ruby1 ruby');
+    expect(page.textContent).toContain('emerald total0 emerald');
+    expect(page.textContent).toContain('ruby total1 ruby');
 
     page
       .querySelector('.workshop-page__prestige-confirm-proceed')
@@ -6918,11 +6948,27 @@ describe('PagesFacade', () => {
       'upcoming',
       'locked',
     ]);
+    const stateLabels = milestoneRows.map((row) =>
+      row.querySelector('.workshop-page__prestige-state-label'),
+    );
+    expect(stateLabels.map((label) => label?.textContent)).toEqual([
+      '',
+      'ready',
+      'upcoming',
+      '',
+    ]);
+    expect(stateLabels[0]?.getAttribute('aria-label')).toBe('complete');
+    expect(stateLabels[0]?.getAttribute('role')).toBe('img');
     expect(
-      milestoneRows.map(
-        (row) => row.querySelector('.workshop-page__prestige-state-label')?.textContent,
-      ),
-    ).toEqual(['complete', 'ready', 'upcoming', 'locked']);
+      stateLabels[0]?.querySelector('.workshop-page__prestige-state-icon')?.dataset
+        .assetAtlasFrame,
+    ).toBe('status:checkDefault');
+    expect(stateLabels[3]?.getAttribute('aria-label')).toBe('locked');
+    expect(stateLabels[3]?.getAttribute('role')).toBe('img');
+    expect(
+      stateLabels[3]?.querySelector('.workshop-page__prestige-state-icon')?.dataset
+        .assetAtlasFrame,
+    ).toBe('status:lockDefault');
     expect(milestoneRows[1]?.querySelector('.workshop-page__prestige-action')).not.toBeNull();
     expect(
       milestoneRows[2]?.querySelector('.workshop-page__prestige-status'),
@@ -6934,7 +6980,7 @@ describe('PagesFacade', () => {
     ).toEqual(['', '', '', '']);
   });
 
-  it('explains prestige ruby as available before next-run review', () => {
+  it('shows prestige total rewards before confirm', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -6942,7 +6988,28 @@ describe('PagesFacade', () => {
     snapshot.playerLevel.currentLevel = 20;
     snapshot.prestige.currentLevel = 20;
     snapshot.prestige.earnedRuby = 2;
+    snapshot.prestige.highestAvailableLevel = 20;
+    snapshot.emerald.current = 3;
     snapshot.ruby.current = 1;
+    snapshot.prestige.milestones = [
+      {
+        level: 20,
+        rewardRuby: 1,
+        completed: false,
+        unlocked: true,
+        canComplete: true,
+        currentLevel: 20,
+        lowerThanHighestAvailable: false,
+        nextRun: {
+          level: 10,
+          mana: 0,
+          coin: 0,
+          crystal: 0,
+          emerald: 3,
+          ruby: 3,
+        },
+      },
+    ];
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -6955,15 +7022,25 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const summary = stage.querySelector('.workshop-page__prestige-summary');
-    expect(summary?.textContent).toBe(
-      'level 20, 1 ruby available. press prestige to review next run.',
-    );
+    expect(
+      summary?.querySelector('.workshop-page__prestige-level-flow')?.textContent,
+    ).toBe('level 20 > level 10');
+    expect(
+      summary?.querySelector('.workshop-page__prestige-receive')?.textContent,
+    ).toBe('on prestige: 3 ruby, 3 emerald total');
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
-    expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('1 ruby');
+    expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('3 ruby');
+    expect(summary?.querySelector('[data-resource-color="emerald"]')?.textContent).toBe(
+      '3 emerald',
+    );
     expect(
       summary?.querySelector('.style-resource-label--ruby .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
     ).toBe('resource:ruby');
+    expect(
+      summary?.querySelector('.style-resource-label--emerald .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:emerald');
   });
 
   it('shows prestige point rewards on the second prestige tab', () => {
@@ -11205,15 +11282,10 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const cancelPopup = stage.querySelector('.garden-page__cancel-popup');
-    expect(seedPopup.hidden).toBe(true);
-    expect(cancelPopup?.hidden).toBe(false);
-    expect(stage.querySelector('#garden-cancel-dialog-title')?.textContent).toBe(
-      'cancel progress?',
-    );
+    expect(seedPopup.hidden).toBe(false);
+    expect(cancelPopup?.hidden).toBe(true);
 
-    cancelPopup
-      ?.querySelector('.garden-page__cancel-keep')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    seedPopup.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     rows[0]
       .querySelector('.garden-page__plot-box-action')

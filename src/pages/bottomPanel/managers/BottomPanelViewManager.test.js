@@ -1,5 +1,7 @@
 /* @vitest-environment jsdom */
 
+import fs from 'node:fs';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import { BottomPanelViewManager } from './BottomPanelViewManager.js';
@@ -59,6 +61,10 @@ describe('BottomPanelViewManager', () => {
     expect(brewingTab?.classList.contains('is-locked')).toBe(true);
     expect(brewingTab?.getAttribute('aria-disabled')).toBeNull();
     expect(brewingTab?.dataset.notification).toBeUndefined();
+    expect(
+      brewingTab?.querySelector('.room-bottom-panel__tab-lock-icon--whole')?.dataset
+        .assetAtlasFrame,
+    ).toBe('status:lockDefault');
 
     brewingTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -79,6 +85,64 @@ describe('BottomPanelViewManager', () => {
     expect(popup?.hidden).toBe(true);
     expect(popup?.classList.contains('is-entering')).toBe(false);
     expect(popup?.dataset.pageId).toBeUndefined();
+  });
+
+  it('breaks the lock icon when a locked tab unlocks', () => {
+    vi.useFakeTimers();
+
+    try {
+      const stage = document.createElement('section');
+      const manager = new BottomPanelViewManager({
+        getCurrentPageId: () => 'workshop',
+      });
+
+      manager.mount(stage);
+      manager.setPageStates([
+        {
+          id: 'garden',
+          unlocked: false,
+          requiredLevel: 2,
+        },
+      ]);
+
+      const gardenTab = stage.querySelector(
+        '.room-bottom-panel__tab[data-page-id="garden"]',
+      );
+
+      expect(gardenTab?.classList.contains('is-locked')).toBe(true);
+
+      manager.setPageStates([{ id: 'garden', unlocked: true, visible: true }]);
+
+      expect(gardenTab?.classList.contains('is-locked')).toBe(false);
+      expect(gardenTab?.classList.contains('is-unlocking')).toBe(true);
+
+      const event = new window.Event('animationend', { bubbles: true });
+      Object.defineProperty(event, 'animationName', {
+        value: 'room-bottom-tab-lock-break',
+      });
+      gardenTab?.dispatchEvent(event);
+
+      expect(gardenTab?.classList.contains('is-unlocking')).toBe(false);
+      expect(gardenTab?.dataset.unlockAnimationToken).toBeUndefined();
+
+      vi.runOnlyPendingTimers();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('defines bottom-tab lock break motion with reduced-motion fallback', () => {
+    const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
+
+    expect(baseCss).toContain('@keyframes room-bottom-tab-lock-break');
+    expect(baseCss).toContain('@keyframes room-bottom-tab-lock-left-break');
+    expect(baseCss).toContain('@keyframes room-bottom-tab-lock-right-break');
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.room-bottom-panel__tab\.is-unlocking \.room-bottom-panel__tab-lock[\s\S]*animation:\s*none;/,
+    );
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.room-bottom-panel__tab\.is-unlocking \.room-bottom-panel__tab-lock\s*\{[\s\S]*opacity:\s*0;/,
+    );
   });
 
   it('appends the gated prestige page only when visible', () => {

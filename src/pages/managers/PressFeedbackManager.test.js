@@ -264,6 +264,30 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
+  it('activates locked-looking controls when they are not disabled', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    let clicks = 0;
+    button.className = 'style-button is-locked';
+    button.setAttribute('aria-disabled', 'false');
+    button.addEventListener('click', () => {
+      clicks += 1;
+    });
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown');
+    dispatchPointer(document, 'pointerup');
+
+    expect(clicks).toBe(1);
+
+    manager.unmount();
+  });
+
   it('plays click sound once for touch activation with a duplicate native click', () => {
     const root = document.createElement('div');
     const button = document.createElement('button');

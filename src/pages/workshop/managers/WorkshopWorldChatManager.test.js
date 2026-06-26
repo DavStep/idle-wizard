@@ -45,4 +45,29 @@ describe('WorkshopWorldChatManager styles', () => {
       '.workshop-page__world-chat-popup:focus-within .workshop-page__world-chat-panel',
     );
   });
+
+  it('dims the full web-wide stage behind room dialogs', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const gutterRule = baseCss.match(
+      /\.game-stage\[data-viewport-mode="web-wide"\]\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const nestedBackdropRule = baseCss.match(
+      /\.game-stage\[data-viewport-mode="web-wide"\]\s*:where\(\s*\.workshop-page__bag-popup,[\s\S]*?\.room-top-panel__level-popup\s*\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stageBackdropRule = baseCss.match(
+      /\.game-stage\[data-viewport-mode="web-wide"\]\s*:where\(\s*\.room-announcement-layer,[\s\S]*?\.room-alliance-info-popup\s*\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(gutterRule).toContain(
+      '--style-web-wide-source-gutter: max(\n    0px,\n    calc(\n      (var(--app-stage-width) - var(--app-source-ui-screen-width)) /\n        var(--style-ui-scale) / 2\n    )\n  );',
+    );
+    expect(nestedBackdropRule).toContain(
+      'right: calc(var(--style-web-wide-source-gutter) * -1);',
+    );
+    expect(nestedBackdropRule).toContain(
+      'left: calc(var(--style-web-wide-source-gutter) * -1);',
+    );
+    expect(stageBackdropRule).toContain('left: 0;');
+    expect(stageBackdropRule).toContain('width: calc(100% / var(--style-ui-scale));');
+  });
 });

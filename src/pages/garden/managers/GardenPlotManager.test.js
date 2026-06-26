@@ -333,6 +333,17 @@ function dispatchPointer(element, type, options) {
   return event;
 }
 
+function createTouchEvent(type, touchCount) {
+  const event = new window.Event(type, {
+    bubbles: true,
+    cancelable: true,
+  });
+  Object.defineProperty(event, 'touches', {
+    value: Array.from({ length: touchCount }, (_, index) => ({ identifier: index })),
+  });
+  return event;
+}
+
 function dispatchTouchLikePressStart(element, options) {
   element.dispatchEvent(createPointerEvent('pointerdown', options));
 }
@@ -503,6 +514,49 @@ describe('GardenPlotManager', () => {
     parent.remove();
   });
 
+  it('blocks native page zoom while the garden world owns a pinch', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.garden-page__world-shell');
+    const firstPointerDown = dispatchPointer(shell, 'pointerdown', {
+      pointerId: 1,
+      clientX: 80,
+      clientY: 100,
+    });
+    const secondPointerDown = dispatchPointer(shell, 'pointerdown', {
+      pointerId: 2,
+      clientX: 140,
+      clientY: 100,
+    });
+    const multiTouchStart = createTouchEvent('touchstart', 2);
+    const singleTouchStart = createTouchEvent('touchstart', 1);
+    const multiTouchMove = createTouchEvent('touchmove', 2);
+    const gestureStart = new window.Event('gesturestart', {
+      bubbles: true,
+      cancelable: true,
+    });
+
+    shell.dispatchEvent(singleTouchStart);
+    shell.dispatchEvent(multiTouchStart);
+    shell.dispatchEvent(multiTouchMove);
+    shell.dispatchEvent(gestureStart);
+
+    expect(firstPointerDown.defaultPrevented).toBe(false);
+    expect(secondPointerDown.defaultPrevented).toBe(true);
+    expect(singleTouchStart.defaultPrevented).toBe(false);
+    expect(multiTouchStart.defaultPrevented).toBe(true);
+    expect(multiTouchMove.defaultPrevented).toBe(true);
+    expect(gestureStart.defaultPrevented).toBe(true);
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('shows plot stars inside each plot box', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -656,15 +710,21 @@ describe('GardenPlotManager', () => {
     const boxActionRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const boxTimerRule = baseCss.match(
-      /\.garden-page__plot\s+\.garden-page__plot-box-timer\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
+    const boxTimerRule = [...baseCss.matchAll(
+      /\.garden-page__plot\s+\.garden-page__plot-box-timer\s*\{(?<body>[^}]*)\}/g,
+    )]
+      .map((match) => match.groups?.body)
+      .find((body) => body?.includes('display: inline;'));
     const processingActionRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-row\.is-processing\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(rootRule).toContain('--garden-page-plot-box-detail-font-size: 9px;');
     expect(rootRule).toContain('--garden-page-plot-box-detail-line-height: 11px;');
+    expect(rootRule).toContain('--garden-page-plot-text-stroke-width: 1px;');
+    expect(rootRule).toContain(
+      '--garden-page-plot-text-stroke-color: var(--style-surface);',
+    );
     expect(boxLevelRule).toContain(
       'font-size: var(--garden-page-plot-box-detail-font-size);',
     );
@@ -679,6 +739,13 @@ describe('GardenPlotManager', () => {
     expect(boxActionRule).toContain(
       'line-height: var(--garden-page-plot-box-detail-line-height);',
     );
+    expect(baseCss).toContain(
+      '-webkit-text-stroke: var(--garden-page-plot-text-stroke-width)',
+    );
+    expect(baseCss).toContain('paint-order: stroke fill;');
+    expect(baseCss).toContain(
+      '0 1px 0 var(--garden-page-plot-text-stroke-color),',
+    );
     expect(boxTimerRule).toContain(
       'font-size: var(--garden-page-plot-box-detail-font-size);',
     );
@@ -688,9 +755,15 @@ describe('GardenPlotManager', () => {
     expect(boxTimerRule).toContain(
       'line-height: var(--garden-page-plot-box-detail-line-height);',
     );
+    expect(processingActionRule).toContain('right: auto;');
+    expect(processingActionRule).toContain('bottom: 7px;');
+    expect(processingActionRule).toContain('left: 50%;');
+    expect(processingActionRule).toContain('z-index: 3;');
     expect(processingActionRule).toContain('padding: 0;');
     expect(processingActionRule).toContain('color: var(--garden-page-plot-number-color);');
     expect(processingActionRule).toContain('font-weight: 700;');
+    expect(processingActionRule).toContain('text-align: center;');
+    expect(processingActionRule).toContain('transform: translateX(-50%);');
   });
 
   it('keeps the Garden world edge-to-edge while catalog boxes stay chrome-aligned', () => {
@@ -764,7 +837,7 @@ describe('GardenPlotManager', () => {
     expect(plotRowsRule).toContain('overflow: visible;');
     expect(baseCss).toContain('gap: 12px;\n  align-content: start;');
     expect(baseCss).toContain(
-      'padding: 18px var(--style-room-content-edge) 0;',
+      'padding: 24px var(--style-room-content-edge) 0;',
     );
     expect(inventoryRowsRule).toContain('display: grid;');
     expect(inventoryRowsRule).toContain(
@@ -823,7 +896,8 @@ describe('GardenPlotManager', () => {
     expect(boxFrame?.classList.contains('has-plant')).toBe(true);
     expect(boxFrame?.style.getPropertyValue('--garden-page-plot-growth-scale')).toBe('0.71');
     expect(plantIcon?.dataset.assetAtlasFrame).toBe('herb:sageHerb');
-    expect(plantIcon?.querySelector('rect')?.getAttribute('fill')).toBe('currentColor');
+    expect(plantIcon?.querySelector('image')).not.toBeNull();
+    expect(plantIcon?.querySelector('rect')).toBeNull();
     expect(parent.querySelector('.garden-page__plot-scissors')?.hasAttribute('hidden')).toBe(
       true,
     );
@@ -1767,7 +1841,7 @@ describe('GardenPlotManager', () => {
     });
   });
 
-  it('opens cancel from the visible plot name and returns to seed choices after confirming', () => {
+  it('opens seed choices from the active plot name and swaps after confirming', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
@@ -1784,33 +1858,44 @@ describe('GardenPlotManager', () => {
 
     const cancelPopup = parent.querySelector('.garden-page__cancel-popup');
     const seedPopup = parent.querySelector('.garden-page__seed-popup');
+    const swapPopup = parent.querySelector('.garden-page__swap-popup');
 
     plotRow
       .querySelector('.garden-page__plot-box-label')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
-
-    expect(cancelPopup.hidden).toBe(false);
-    expect(seedPopup.hidden).toBe(true);
-    expect(cancelPopup.querySelector('.garden-page__cancel-message')?.textContent).toBe(
-      'are you sure you want to empty plot 1? mint seed will be returned.',
-    );
-
-    cancelPopup
-      .querySelector('.garden-page__cancel-confirm')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(cancelPopup.hidden).toBe(true);
     expect(seedPopup.hidden).toBe(false);
     expect(plotRow.classList.contains('is-selected')).toBe(true);
-    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
+
+    parent
+      .querySelector('[aria-label="select nettle seed, owned 6"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(seedPopup.hidden).toBe(true);
+    expect(swapPopup.hidden).toBe(false);
+    expect(swapPopup.querySelector('.garden-page__swap-message')?.textContent).toBe(
+      'replace mint seed with nettle seed and restart plot 1.',
+    );
+
+    swapPopup
+      .querySelector('.garden-page__swap-confirm')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(swapPopup.hidden).toBe(true);
+    expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('nettle');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('12s');
     expect(gameplayFacade.getSnapshot().garden.seeds[0]).toMatchObject({
       label: 'mint seed',
       quantity: 1,
     });
+    expect(gameplayFacade.getSnapshot().garden.seeds[1]).toMatchObject({
+      label: 'nettle seed',
+      quantity: 5,
+    });
   });
 
-  it('does not reopen seed choices after keeping a name cancel and canceling from the action', () => {
+  it('does not reopen seed choices after canceling from the action', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
@@ -1828,12 +1913,6 @@ describe('GardenPlotManager', () => {
     const cancelPopup = parent.querySelector('.garden-page__cancel-popup');
     const seedPopup = parent.querySelector('.garden-page__seed-popup');
 
-    plotRow
-      .querySelector('.garden-page__plot-box-label')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
-    cancelPopup
-      .querySelector('.garden-page__cancel-keep')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     plotRow
       .querySelector('.garden-page__plot-action')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));

@@ -101,6 +101,11 @@ const TOOL_ASSETS = [
   ],
 ];
 
+const STATUS_ASSETS = [
+  ['status:checkDefault', 'src/assets/icons/status/check-01.png'],
+  ['status:lockDefault', 'src/assets/icons/status/lock-01.png'],
+];
+
 const ASSETS = [
   ['resource:coin', 'src/assets/icons/icon-coin.png', 96],
   ['resource:crystal', 'src/assets/icons/icon-crystal.png', 96],
@@ -118,6 +123,12 @@ const ASSETS = [
   ]),
   ...POTION_ASSETS.map(([frameName, filePath]) => [frameName, filePath, 128]),
   ...TOOL_ASSETS.map(([frameName, filePath]) => [
+    frameName,
+    filePath,
+    128,
+    { trimTransparent: true },
+  ]),
+  ...STATUS_ASSETS.map(([frameName, filePath]) => [
     frameName,
     filePath,
     128,

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { setResourceColor, setResourceColorFromText } from './resourceColor.js';
 
 describe('resource colors', () => {
-  it('marks potion item labels as potion-colored resources', () => {
+  it('keeps potion item labels marked with potion metadata', () => {
     const element = document.createElement('span');
 
     setResourceColor(element, 'potion');

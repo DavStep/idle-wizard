@@ -3,6 +3,7 @@ import {
   isNotificationActive,
   setNotificationBadge,
 } from '../../shared/notificationBadge.js';
+import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 
 export const BOTTOM_PANEL_TABS = [
   { id: 'brewing', label: 'brewing' },
@@ -23,6 +24,9 @@ export const OPTIONAL_BOTTOM_PANEL_TABS = [
 const OPTIONAL_BOTTOM_PANEL_TAB_BY_ID = new Map(
   OPTIONAL_BOTTOM_PANEL_TABS.map((tab) => [tab.id, tab]),
 );
+
+const LOCK_ICON_FRAME = 'status:lockDefault';
+const LOCK_UNLOCK_ANIMATION_MS = 520;
 
 export class BottomPanelViewManager {
   constructor({ getCurrentPageId, onShowPage, onAction, tabs = BOTTOM_PANEL_TABS } = {}) {
@@ -199,6 +203,7 @@ export class BottomPanelViewManager {
         continue;
       }
 
+      const wasLocked = button.classList.contains('is-locked');
       const locked = !state.unlocked;
       const visible = state.visible !== false;
       const optionalHidden = !visible && !this.defaultTabIds.has(tab.id);
@@ -212,6 +217,10 @@ export class BottomPanelViewManager {
         locked && this.swipeTargetPageId === tab.id,
       );
       button.removeAttribute('aria-disabled');
+
+      if (wasLocked && !locked && visible && !button.hidden) {
+        this.restartUnlockAnimation(button);
+      }
 
       if (!visible) {
         setNotificationBadge(button, false);
@@ -346,7 +355,17 @@ export class BottomPanelViewManager {
       ? `room-bottom-panel__tab room-bottom-panel__action room-bottom-panel__${tab.actionId}-button`
       : `room-bottom-panel__tab room-bottom-panel__${tab.id}-button`;
     button.type = 'button';
-    button.textContent = tab.label;
+
+    const label = document.createElement('span');
+    label.className = 'room-bottom-panel__tab-label';
+    label.textContent = tab.label;
+    button.append(label);
+
+    const lockIcon = this.createLockIcon();
+    if (lockIcon) {
+      button.append(lockIcon);
+    }
+
     if (this.isActionTab(tab)) {
       button.dataset.actionId = tab.actionId;
       button.setAttribute('aria-label', `open ${tab.label}`);
@@ -364,6 +383,32 @@ export class BottomPanelViewManager {
       this.syncTabNotification(tab);
     }
     return button;
+  }
+
+  createLockIcon() {
+    const lock = document.createElement('span');
+    lock.className = 'room-bottom-panel__tab-lock';
+    lock.setAttribute('aria-hidden', 'true');
+
+    const whole = createAssetAtlasSprite(
+      'room-bottom-panel__tab-lock-icon room-bottom-panel__tab-lock-icon--whole',
+      LOCK_ICON_FRAME,
+    );
+    const left = createAssetAtlasSprite(
+      'room-bottom-panel__tab-lock-icon room-bottom-panel__tab-lock-icon--left',
+      LOCK_ICON_FRAME,
+    );
+    const right = createAssetAtlasSprite(
+      'room-bottom-panel__tab-lock-icon room-bottom-panel__tab-lock-icon--right',
+      LOCK_ICON_FRAME,
+    );
+
+    if (!whole || !left || !right) {
+      return null;
+    }
+
+    lock.append(whole, left, right);
+    return lock;
   }
 
   handleTabClick(tab) {
@@ -491,6 +536,42 @@ export class BottomPanelViewManager {
     button.classList.add('is-swipe-bumped');
   }
 
+  restartUnlockAnimation(button) {
+    if (!button) {
+      return;
+    }
+
+    const token = String((Number(button.dataset.unlockAnimationToken) || 0) + 1);
+    button.dataset.unlockAnimationToken = token;
+    button.classList.remove('is-unlocking');
+    void button.offsetWidth;
+    button.classList.add('is-unlocking');
+
+    const clearAnimation = () => {
+      if (button.dataset.unlockAnimationToken !== token) {
+        return;
+      }
+
+      button.classList.remove('is-unlocking');
+      delete button.dataset.unlockAnimationToken;
+    };
+
+    const handleAnimationEnd = (event) => {
+      if (event.animationName !== 'room-bottom-tab-lock-break') {
+        return;
+      }
+
+      button.removeEventListener('animationend', handleAnimationEnd);
+      clearAnimation();
+    };
+
+    button.addEventListener('animationend', handleAnimationEnd);
+    globalThis.setTimeout?.(() => {
+      button.removeEventListener('animationend', handleAnimationEnd);
+      clearAnimation();
+    }, LOCK_UNLOCK_ANIMATION_MS);
+  }
+
   getLockedMessage(tab, state) {
     if (state?.lockedMessage) {
       return state.lockedMessage;
@@ -551,6 +632,7 @@ export class BottomPanelViewManager {
     };
     const visible = state.visible === true;
     const enabled = visible && state.enabled === true;
+    const wasLocked = button.classList.contains('is-locked');
 
     button.disabled = !enabled;
     button.style.visibility = visible ? '' : 'hidden';
@@ -562,6 +644,10 @@ export class BottomPanelViewManager {
       'aria-label',
       enabled ? `open ${tab.label}` : `${tab.label} unavailable`,
     );
+
+    if (wasLocked && enabled) {
+      this.restartUnlockAnimation(button);
+    }
   }
 
   isActionTab(tab) {

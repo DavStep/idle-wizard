@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.50
+
+- Added full-screen progress notices for level-ups and completed research so big milestones are harder to miss.
+- Polished room unlocks, avatar choices, and prestige summaries with clearer lock states and reward previews.
+- Improved Brewing and Garden controls with safer pinch handling, clearer recipe discoveries, and auto-brew that waits for a successful manual brew before repeating.
+
 ## 0.2.49
 
 - Fixed Garden planting on Android/WebView so empty plots with a selected seed still plant after small finger drift.

@@ -14,11 +14,19 @@ export class BrewingRecipeMatchManager {
   }
 
   getRecipes() {
-    return this.itemsFacade.getPotionRecipes().map((recipe) => ({
-      ...recipe,
-      unlocked: this.isRecipeUnlocked(recipe),
-      discovered: this.isRecipeDiscovered(recipe),
-    }));
+    return this.itemsFacade.getPotionRecipes().map((recipe) => {
+      const discovery = this.getRecipeDiscovery(recipe);
+      const discovered = Boolean(discovery) || this.isRecipeDiscovered(recipe);
+
+      return {
+        ...recipe,
+        unlocked: this.isRecipeUnlocked(recipe),
+        discovered,
+        discoveredByUsername: discovery?.username ?? null,
+        discoveredByIdentity: discovery?.discoveredByIdentity ?? null,
+        discoveredAtMs: discovery?.discoveredAtMs ?? null,
+      };
+    });
   }
 
   getRecipeByKey(recipeKey) {

@@ -25,6 +25,15 @@ Use the smallest check that proves the change, then broaden when touching shared
 
 `npm run check` is the default green gate: lint, tests, production web build.
 
+## Reusable Dev Tools
+
+When a feature change would be meaningfully faster or safer with a repo-local helper, add the smallest reusable dev tool instead of relying on a hidden one-off command.
+
+- Prefer an `npm` script, checked-in harness, fixture generator, capture script, or focused validator that future agents can run directly.
+- Document the command, required env flags, and intended use in this file when it is broad, or in the feature-local `README.md` when it is feature-specific.
+- Keep tools deterministic and scoped to the current repo; do not make them start duplicate Vite or SpacetimeDB processes.
+- Reuse documented tools before creating a near-duplicate helper.
+
 ## Shared Local Runtime
 
 Live browser/Android/manual QA must happen from the primary branch/worktree that owns the shared local services. Alternate branches/worktrees can help with code edits and static checks, but they must not claim runtime verification unless they also own the running services.

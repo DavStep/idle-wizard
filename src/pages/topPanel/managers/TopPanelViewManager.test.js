@@ -48,6 +48,11 @@ describe('TopPanelViewManager', () => {
     ).not.toBeNull();
     expect(
       stage.querySelector(
+        '#room-top-panel-settings-avatar .room-top-panel__character-section.style-box',
+      ),
+    ).toBeNull();
+    expect(
+      stage.querySelector(
         '#room-top-panel-settings-theme .room-top-panel__character-section',
       ),
     ).toBeNull();
@@ -154,12 +159,21 @@ describe('TopPanelViewManager', () => {
     const pickerAvatarRule = baseCss.match(
       /\.room-top-panel__character-button \.room-top-panel__character-option-icon\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const pickerFrameRule = baseCss.match(
+      /\.room-top-panel__character-option-frame\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const lockedPickerRule = baseCss.match(
+      /\.room-top-panel__character-button\.is-unresearched\s+\.room-top-panel__character-option-silhouette,\s*\.room-top-panel__character-button\.is-unresearched\s+\.room-top-panel__character-lock\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(topAvatarRule).toMatch(/\bwidth:\s*var\(--room-top-panel-avatar-size\);/);
     expect(topAvatarRule).toMatch(/\bheight:\s*var\(--room-top-panel-avatar-size\);/);
     expect(topAvatarRule).toMatch(/\bborder:\s*0;/);
-    expect(pickerAvatarRule).toMatch(/\bwidth:\s*72px;/);
-    expect(pickerAvatarRule).toMatch(/\bheight:\s*72px;/);
+    expect(pickerFrameRule).toMatch(/\bwidth:\s*72px;/);
+    expect(pickerFrameRule).toMatch(/\bheight:\s*72px;/);
+    expect(pickerAvatarRule).toMatch(/\bwidth:\s*100%;/);
+    expect(pickerAvatarRule).toMatch(/\bheight:\s*100%;/);
+    expect(lockedPickerRule).toMatch(/\bdisplay:\s*block;/);
   });
 
   it('keeps top-panel identity chrome tight to the left edge', () => {

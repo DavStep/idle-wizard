@@ -68,6 +68,12 @@ describe('BrewingRecipeBookManager', () => {
     const infoTextRule = baseCss.match(
       /\.brewing-page__recipe-info-text\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const discoveryNameRule = baseCss.match(
+      /\.brewing-page__recipe-discovery-name\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const silhouetteRule = baseCss.match(
+      /\.brewing-page__recipe-potion-icon\.is-silhouette\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const ingredientsRule = baseCss.match(
       /\.brewing-page__recipe-ingredients\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -104,6 +110,8 @@ describe('BrewingRecipeBookManager', () => {
     expect(infoTextRule).toContain(
       'min-height: calc(var(--style-box-border-label-line-height) * 4);',
     );
+    expect(discoveryNameRule).toContain('color: var(--style-star-purple);');
+    expect(silhouetteRule).toContain('color: var(--style-disabled);');
     expect(ingredientsRule).toBeDefined();
     expect(ingredientsRule).toContain('margin-top: 6px;');
     expect(metaRule).toBeDefined();
@@ -125,6 +133,64 @@ describe('BrewingRecipeBookManager', () => {
     expect(parent.querySelector('.brewing-page__cauldron-dialog-action')).toBeNull();
     expect(parent.querySelector('.brewing-page__quantity-summary')).toBeNull();
     expect(parent.querySelector('.brewing-page__auto-summary')).toBeNull();
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('shows discovered unknown recipe discoverer in purple description text', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1004,
+            key: 'lavenderHerb',
+            label: 'lavender',
+            kind: 'herb',
+            quantity: 2,
+          },
+        ],
+        recipes: [
+          {
+            key: 'ashenMemory',
+            label: 'ashen memory',
+            unlocked: true,
+            discovered: true,
+            discoveredByUsername: 'Ada',
+            discoveryType: 'unknown',
+            unknown: true,
+            manaCost: 36,
+            brewDurationMs: 80_000,
+            ingredients: [
+              {
+                itemTypeId: 1004,
+                key: 'lavenderHerb',
+                label: 'lavender',
+                quantity: 1,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => null,
+      onSelectRecipe: () => {},
+    });
+
+    manager.mount(parent);
+
+    const description = parent.querySelector('.brewing-page__recipe-info-text');
+    const discoverer = description?.querySelector('.brewing-page__recipe-discovery-name');
+    const row = parent.querySelector('.brewing-page__recipe-row');
+
+    expect(row?.classList.contains('is-unknown')).toBe(false);
+    expect(description?.textContent).toContain('discovered by Ada');
+    expect(discoverer?.textContent).toBe('Ada');
+    expect(discoverer?.className).toBe('brewing-page__recipe-discovery-name');
 
     manager.unmount();
     parent.remove();
@@ -361,6 +427,14 @@ describe('BrewingRecipeBookManager', () => {
       'unknown',
     );
     expect(unknownRow.querySelector('.brewing-page__recipe-select-button')?.disabled).toBe(true);
+    expect(
+      unknownRow.querySelector('.brewing-page__recipe-potion-icon')?.dataset.assetAtlasFrame,
+    ).toBe('potion:ashenMemory');
+    expect(
+      unknownRow
+        .querySelector('.brewing-page__recipe-potion-icon')
+        ?.classList.contains('is-silhouette'),
+    ).toBe(true);
     expect(unknownRow.textContent).toContain('- 1 ??????');
     expect(unknownRow.textContent).toContain('owned ?');
     expect(unknownRow.textContent).toContain('? mana required');

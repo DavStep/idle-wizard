@@ -1,6 +1,7 @@
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { createStarLevelLabel } from '../../shared/starLevelLabel.js';
+import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import {
   cauldronCapacityEndCauldronNumber,
   cauldronCapacityStartCauldronNumber,
@@ -16,6 +17,8 @@ const PRESTIGE_TABS = [
 ];
 
 const PRESTIGE_POINT_REWARDS = createPrestigePointRewards();
+const PRESTIGE_COMPLETE_ICON_FRAME = 'status:checkDefault';
+const PRESTIGE_LOCKED_ICON_FRAME = 'status:lockDefault';
 
 function createPrestigePointRewards() {
   const rewardsByCount = new Map();
@@ -131,7 +134,7 @@ export class PrestigePanelManager {
 
     const title = document.createElement('div');
     title.className = 'workshop-page__prestige-confirm-title';
-    title.textContent = 'next run';
+    title.textContent = 'on prestige';
 
     this.refs.confirmMessage = document.createElement('div');
     this.refs.confirmMessage.className = 'workshop-page__prestige-confirm-message';
@@ -223,11 +226,6 @@ export class PrestigePanelManager {
 
   updateSummary(snapshot = {}) {
     const prestige = snapshot?.prestige ?? {};
-    const earnedRuby = Math.max(0, Math.floor(Number(prestige.earnedRuby) || 0));
-    const currentRuby = Math.max(
-      0,
-      Math.floor(Number(snapshot?.ruby?.current ?? earnedRuby) || 0),
-    );
     const currentLevel = Math.max(1, Math.floor(Number(prestige.currentLevel) || 1));
 
     if (this.selectedTabId === 'points') {
@@ -240,16 +238,22 @@ export class PrestigePanelManager {
       return;
     }
 
-    const ruby = document.createElement('span');
-    ruby.className = 'workshop-page__prestige-summary-ruby';
-    setResourceIconText(ruby, `${currentRuby} ruby`);
-    setResourceColor(ruby, 'ruby');
-
-    this.refs.summary.replaceChildren(
-      document.createTextNode(`level ${currentLevel}, `),
-      ruby,
-      document.createTextNode(' available. press prestige to review next run.'),
+    const milestone = this.getSummaryMilestone(prestige);
+    const flow = document.createElement('div');
+    flow.className = 'workshop-page__prestige-level-flow';
+    flow.textContent = this.formatLevelFlow(
+      currentLevel,
+      this.getSummaryTargetLevel(milestone, currentLevel),
     );
+
+    const receive = document.createElement('div');
+    receive.className = 'workshop-page__prestige-receive';
+    receive.append(
+      document.createTextNode(milestone?.canComplete ? 'on prestige: ' : 'next prestige: '),
+      ...this.createPrestigeTotalNodes(milestone?.nextRun),
+    );
+
+    this.refs.summary.replaceChildren(flow, receive);
     setResourceColor(this.refs.summary, null);
   }
 
@@ -291,9 +295,7 @@ export class PrestigePanelManager {
     level.className = 'workshop-page__prestige-level';
     level.textContent = `level ${milestone.level}`;
 
-    const stateLabel = document.createElement('span');
-    stateLabel.className = 'workshop-page__prestige-state-label';
-    stateLabel.textContent = this.getMilestoneStateLabel(state);
+    const stateLabel = this.createMilestoneStateLabel(state);
 
     const body = document.createElement('div');
     body.className = 'workshop-page__prestige-milestone-body';
@@ -424,6 +426,35 @@ export class PrestigePanelManager {
     return state;
   }
 
+  createMilestoneStateLabel(state) {
+    const stateLabel = document.createElement('span');
+    stateLabel.className = 'workshop-page__prestige-state-label';
+
+    if (state !== 'completed' && state !== 'locked') {
+      stateLabel.textContent = this.getMilestoneStateLabel(state);
+      return stateLabel;
+    }
+
+    const frameName =
+      state === 'completed' ? PRESTIGE_COMPLETE_ICON_FRAME : PRESTIGE_LOCKED_ICON_FRAME;
+    stateLabel.classList.add(`workshop-page__prestige-state-label--${state}`);
+    stateLabel.setAttribute('role', 'img');
+    stateLabel.setAttribute('aria-label', this.getMilestoneStateLabel(state));
+
+    const icon = createAssetAtlasSprite(
+      'workshop-page__prestige-state-icon',
+      frameName,
+    );
+
+    if (icon) {
+      stateLabel.append(icon);
+    } else {
+      stateLabel.textContent = this.getMilestoneStateLabel(state);
+    }
+
+    return stateLabel;
+  }
+
   onPrestigeClick(milestone) {
     this.confirmingMilestone = milestone;
     this.applyConfirm();
@@ -493,15 +524,25 @@ export class PrestigePanelManager {
     if (milestone.lowerThanHighestAvailable && highest) {
       const warning = document.createElement('div');
       warning.className = 'workshop-page__prestige-confirm-warning';
-      warning.textContent =
-        `higher level prestige available level ${highest}; prestige level ${milestone.level}?`;
+      warning.textContent = `higher prestige available: level ${highest}`;
       nodes.push(warning);
-    } else {
-      const question = document.createElement('div');
-      question.className = 'workshop-page__prestige-confirm-warning';
-      question.textContent = `prestige level ${milestone.level}?`;
-      nodes.push(question);
     }
+
+    const flow = document.createElement('div');
+    flow.className = 'workshop-page__prestige-confirm-flow';
+    flow.textContent = this.formatLevelFlow(
+      milestone.currentLevel,
+      milestone.nextRun?.level,
+    );
+    nodes.push(flow);
+
+    const receive = document.createElement('div');
+    receive.className = 'workshop-page__prestige-confirm-receive';
+    receive.append(
+      document.createTextNode('on prestige: '),
+      ...this.createPrestigeTotalNodes(milestone.nextRun),
+    );
+    nodes.push(receive);
 
     nodes.push(this.createNextRunSummary(milestone.nextRun));
     return nodes;
@@ -527,11 +568,11 @@ export class PrestigePanelManager {
     };
 
     addLine('start level', document.createTextNode(String(nextRun.level ?? 1)));
-    addLine('mana', this.createResourceValue('mana', nextRun.mana));
-    addLine('coin', this.createResourceValue('coin', nextRun.coin));
-    addLine('crystal', this.createResourceValue('crystal', nextRun.crystal));
-    addLine('emerald', this.createResourceValue('emerald', nextRun.emerald));
-    addLine('ruby', this.createResourceValue('ruby', nextRun.ruby));
+    addLine('mana total', this.createResourceValue('mana', nextRun.mana));
+    addLine('coin total', this.createResourceValue('coin', nextRun.coin));
+    addLine('crystal total', this.createResourceValue('crystal', nextRun.crystal));
+    addLine('emerald total', this.createResourceValue('emerald', nextRun.emerald));
+    addLine('ruby total', this.createResourceValue('ruby', nextRun.ruby));
 
     return summary;
   }
@@ -542,6 +583,62 @@ export class PrestigePanelManager {
     setResourceIconText(node, `${value} ${resourceKey}`);
     setResourceColor(node, resourceKey);
     return node;
+  }
+
+  createPrestigeTotalNodes(nextRun = {}) {
+    const nodes = [];
+
+    for (const resourceKey of ['ruby', 'emerald']) {
+      if (nodes.length > 0) {
+        nodes.push(document.createTextNode(', '));
+      }
+
+      nodes.push(this.createResourceValue(resourceKey, nextRun?.[resourceKey]));
+    }
+
+    nodes.push(document.createTextNode(' total'));
+    return nodes;
+  }
+
+  getSummaryMilestone(prestige = {}) {
+    const milestones = Array.isArray(prestige.milestones) ? prestige.milestones : [];
+    const highestAvailableLevel = Number(prestige.highestAvailableLevel);
+
+    if (Number.isInteger(highestAvailableLevel)) {
+      const highestAvailable = milestones.find(
+        (milestone) => milestone.level === highestAvailableLevel,
+      );
+
+      if (highestAvailable) {
+        return highestAvailable;
+      }
+    }
+
+    return (
+      milestones.find((milestone) => milestone.canComplete) ??
+      milestones.find((milestone) => !milestone.completed) ??
+      milestones.at(-1) ??
+      null
+    );
+  }
+
+  getSummaryTargetLevel(milestone, currentLevel) {
+    const nextRunLevel = Math.floor(Number(milestone?.nextRun?.level));
+
+    if (milestone?.canComplete && Number.isFinite(nextRunLevel) && nextRunLevel >= 1) {
+      return nextRunLevel;
+    }
+
+    const milestoneLevel = Math.floor(Number(milestone?.level));
+    return Number.isFinite(milestoneLevel) && milestoneLevel >= 1
+      ? milestoneLevel
+      : currentLevel;
+  }
+
+  formatLevelFlow(currentLevel, targetLevel) {
+    const safeCurrent = Math.max(1, Math.floor(Number(currentLevel) || 1));
+    const safeTarget = Math.max(1, Math.floor(Number(targetLevel) || safeCurrent));
+    return `level ${safeCurrent} > level ${safeTarget}`;
   }
 
   syncTabs() {

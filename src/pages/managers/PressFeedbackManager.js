@@ -41,8 +41,7 @@ function isPressFeedbackTargetDisabled(element) {
     element.matches(':disabled') ||
     element.getAttribute('aria-disabled') === 'true' ||
     element.classList.contains('is-disabled') ||
-    element.classList.contains('is-selected') ||
-    element.classList.contains('is-locked')
+    element.classList.contains('is-selected')
   );
 }
 

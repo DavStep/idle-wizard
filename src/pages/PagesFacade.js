@@ -1,5 +1,6 @@
 import { BrewingPageFacade } from './brewing/BrewingPageFacade.js';
 import { AllianceInfoDialogFacade } from './allianceInfo/AllianceInfoDialogFacade.js';
+import { PageAnnouncementFacade } from './announcements/PageAnnouncementFacade.js';
 import { GardenPageFacade } from './garden/GardenPageFacade.js';
 import { GuildPageFacade } from './guild/GuildPageFacade.js';
 import { ShopPageFacade } from './shop/ShopPageFacade.js';
@@ -92,6 +93,7 @@ export class PagesFacade {
       tradeAllianceFacade,
       onChange: (snapshot) => this.bottomPanelFacade.setNotifications(snapshot.pages),
     });
+    this.announcementFacade = new PageAnnouncementFacade({ gameplayFacade });
     this.topPanelFacade = new TopPanelFacade({
       gameplayFacade,
       playerFacade,
@@ -198,6 +200,7 @@ export class PagesFacade {
       this.swipeNavigationManager.mount(stage);
       this.bottomPanelFacade.mount(stage);
       this.notificationFacade.mount();
+      this.announcementFacade.mount(stage);
       this.worldChatManager.mount(stage);
       this.mountInventoryDialog(stage);
       this.topPanelFacade.mount(stage);
@@ -226,6 +229,7 @@ export class PagesFacade {
     this.allianceInfoDialogFacade.unmount();
     this.playerInfoDialogFacade.unmount();
     this.worldChatManager.unmount();
+    this.announcementFacade.unmount();
     this.notificationFacade.unmount();
     this.bottomPanelFacade.unmount();
     this.swipeNavigationManager.unmount();

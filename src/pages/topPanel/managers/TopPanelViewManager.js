@@ -1,7 +1,10 @@
 import { getPlayerVisualSettingCategories } from '../../../player/playerVisualSettings.js';
 import { getClientReleaseVersion } from '../../../shared/clientReleaseVersion.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
-import { createPlayerCharacterIcon } from '../../shared/playerCharacterIcon.js';
+import {
+  createPlayerCharacterIcon,
+  getPlayerCharacterImageUrl,
+} from '../../shared/playerCharacterIcon.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 
@@ -219,7 +222,10 @@ export class TopPanelViewManager {
       'room-top-panel__settings-pane room-top-panel__avatar-pane';
     this.refs.avatarPane.setAttribute('role', 'tabpanel');
     this.refs.avatarPane.setAttribute('aria-label', 'avatar');
-    const characterSection = this.createVisualSettingSection('character');
+    const characterSection = this.createVisualSettingSection('character', {
+      boxed: false,
+      title: false,
+    });
     this.refs.avatarPane.append(characterSection);
 
     this.refs.themePane = document.createElement('div');
@@ -459,7 +465,7 @@ export class TopPanelViewManager {
     return row;
   }
 
-  createVisualSettingSection(categoryKey) {
+  createVisualSettingSection(categoryKey, { boxed = true, title: showTitle = true } = {}) {
     const category = getPlayerVisualSettingCategories().find(
       (candidate) => candidate.key === categoryKey,
     );
@@ -468,11 +474,20 @@ export class TopPanelViewManager {
     }
 
     const section = document.createElement('section');
-    section.className = `room-top-panel__settings-section room-top-panel__visual-section room-top-panel__${categoryKey}-section style-box`;
+    section.className = [
+      'room-top-panel__settings-section',
+      'room-top-panel__visual-section',
+      `room-top-panel__${categoryKey}-section`,
+      boxed ? 'style-box' : 'room-top-panel__visual-section--plain',
+    ]
+      .filter(Boolean)
+      .join(' ');
 
-    const title = document.createElement('div');
-    title.className = 'style-box__title';
-    title.textContent = category.label;
+    const title = showTitle ? document.createElement('div') : null;
+    if (title) {
+      title.className = 'style-box__title';
+      title.textContent = category.label;
+    }
 
     const buttons = document.createElement('div');
     buttons.className = `room-top-panel__visual-options room-top-panel__${categoryKey}-buttons`;
@@ -535,15 +550,33 @@ export class TopPanelViewManager {
       } else if (categoryKey === 'character') {
         name.classList.add('room-top-panel__character-button');
         name.dataset.character = option.key;
+
+        const iconFrame = document.createElement('span');
+        iconFrame.className = 'room-top-panel__character-option-frame';
+
         const icon = createPlayerCharacterIcon(
           option.key,
           'room-top-panel__character-option-icon',
         );
         icon.loading = 'eager';
+
+        const silhouette = document.createElement('span');
+        silhouette.className = 'room-top-panel__character-option-silhouette';
+        silhouette.style.setProperty(
+          '--room-top-panel-character-mask',
+          `url("${getPlayerCharacterImageUrl(option.key)}")`,
+        );
+        silhouette.setAttribute('aria-hidden', 'true');
+
+        const lock = document.createElement('span');
+        lock.className = 'room-top-panel__character-lock';
+        lock.setAttribute('aria-hidden', 'true');
+
         const label = document.createElement('span');
         label.className = 'room-top-panel__character-option-label';
         label.textContent = option.label;
-        name.replaceChildren(icon, label);
+        iconFrame.append(icon, silhouette, lock);
+        name.replaceChildren(iconFrame, label);
         this.refs.characterButtons.push(name);
         buttons.append(name);
         this.refs.visualSettingButtons.push(name);
@@ -577,7 +610,7 @@ export class TopPanelViewManager {
       this.refs.visualSettingPriceLabels.push(price);
     }
 
-    section.append(title, buttons);
+    section.append(...[title, buttons].filter(Boolean));
     return section;
   }
 

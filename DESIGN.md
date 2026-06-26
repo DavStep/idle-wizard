@@ -116,9 +116,9 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 
 ### Named Rules
 
-**The Quiet Surface Rule.** Use black text, gray state colors, and white or gray surfaces for chrome and layout surfaces. Resource words and amounts use resource colors by default.
+**The Quiet Surface Rule.** Use black text, gray state colors, and white or gray surfaces for chrome and layout surfaces. Resource words and amounts can use resource colors, but potion item names inherit normal text color.
 
-**The Color Has a Job Rule.** Red and orange mean notification priority. Resource colors identify resource words and amounts; they must disappear into disabled state when a row is locked or unavailable.
+**The Color Has a Job Rule.** Red and orange mean notification priority. Resource colors identify non-potion resource words and amounts; they must disappear into disabled state when a row is locked or unavailable.
 
 ## 3. Typography
 

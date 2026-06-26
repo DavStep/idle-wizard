@@ -2,7 +2,10 @@ import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
-import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
+import {
+  createAssetAtlasMaskedSprite,
+  createAssetAtlasSprite,
+} from '../../../assets/atlas/atlasSprite.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 
 const RECIPES_PER_PAGE = 1;
@@ -312,6 +315,7 @@ export class BrewingRecipeBookManager {
           recipe.unknown ? 1 : 0,
           recipe.known === false ? 0 : 1,
           recipe.discoveryType ?? '',
+          recipe.discoveredByUsername ?? '',
           recipe.manaCost,
           recipe.brewDurationMs,
           ingredientsSignature,
@@ -419,9 +423,7 @@ export class BrewingRecipeBookManager {
       label.setAttribute('aria-label', 'unknown');
     }
 
-    const infoText = document.createElement('p');
-    infoText.className = 'brewing-page__recipe-info-text';
-    infoText.textContent = display.infoText;
+    const infoText = this.createRecipeInfoText(display);
 
     const info = document.createElement('div');
     info.className = 'brewing-page__recipe-info';
@@ -432,7 +434,9 @@ export class BrewingRecipeBookManager {
 
     info.append(header);
 
-    const icon = this.createPotionIcon(display.iconKey);
+    const icon = this.createPotionIcon(display.iconKey, {
+      silhouette: display.iconSilhouette,
+    });
 
     const top = document.createElement('div');
     top.className = 'brewing-page__recipe-top';
@@ -478,11 +482,13 @@ export class BrewingRecipeBookManager {
       unknown,
       locked,
       label: unknown ? 'unknown potion' : recipe.label,
-      iconKey: unknown ? 'unknownPotion' : recipe.key,
+      iconKey: recipe?.key,
+      iconSilhouette: unknown,
       actionLabel: unknown ? 'unknown' : locked ? 'research' : 'select',
       infoText: unknown
         ? 'a recipe not yet named in the workshop book.'
         : this.getPotionInfo(recipe),
+      discoveredByUsername: this.getRecipeDiscovererName(recipe),
     };
   }
 
@@ -519,16 +525,42 @@ export class BrewingRecipeBookManager {
     this.render(snapshot);
   }
 
-  createPotionIcon(iconKey) {
+  createRecipeInfoText(display) {
+    const infoText = document.createElement('p');
+    infoText.className = 'brewing-page__recipe-info-text';
+    infoText.append(display.infoText);
+
+    if (display.discoveredByUsername) {
+      const discoverer = document.createElement('span');
+      discoverer.className = 'brewing-page__recipe-discovery-name';
+      discoverer.textContent = display.discoveredByUsername;
+      infoText.append(' discovered by ', discoverer);
+    }
+
+    return infoText;
+  }
+
+  createPotionIcon(iconKey, { silhouette = false } = {}) {
+    const frameName = getPotionIconFrameName(iconKey);
     const icon =
-      createAssetAtlasSprite(
-        'brewing-page__recipe-potion-icon',
-        getPotionIconFrameName(iconKey),
-      ) ?? document.createElement('span');
+      (silhouette
+        ? createAssetAtlasMaskedSprite('brewing-page__recipe-potion-icon', frameName)
+        : createAssetAtlasSprite('brewing-page__recipe-potion-icon', frameName)) ??
+      document.createElement('span');
 
     icon.classList.add('brewing-page__recipe-potion-icon');
+    icon.classList.toggle('is-silhouette', silhouette);
     icon.setAttribute('aria-hidden', 'true');
     return icon;
+  }
+
+  getRecipeDiscovererName(recipe) {
+    if (recipe?.discovered !== true) {
+      return null;
+    }
+
+    const username = String(recipe?.discoveredByUsername ?? '').trim();
+    return username || 'wizard';
   }
 
   getPotionInfo(recipe) {

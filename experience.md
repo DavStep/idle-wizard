@@ -36,6 +36,7 @@
 - Interactive hover/press states should not tint backgrounds; keep `--style-active-surface` equal to the current surface and rely on weight/border cues, never below-text line decoration.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
 - Web-wide source-scaled overlays must subtract the centered source-layer rect, not the widened stage rect, when converting target screen coords to source coords.
+- Web-wide room dialog backdrops must expand from the centered source layer using root pixel vars like `--app-stage-width` and `--app-source-ui-screen-width`; `%`-based `--style-source-ui-offset-x` resolves against nested popup width and collapses the gutter.
 - Popup-layer descendants use `box-sizing: content-box`; full-width dialog buttons need explicit `box-sizing: border-box` or padding/borders spill past the panel.
 - Centered content inside source-scaled room layers must account for ui-layer padding/content-box sizing; plain auto margins center in the padded layer, not the visual stage.
 - Stage-mounted global dialogs such as player/alliance info need their own `--style-ui-scale` source layer and content-box descendants; otherwise they render tiny compared with page popup-layer dialogs.
@@ -49,6 +50,7 @@
 - Cauldron brew/bottle success state belongs in the active brew text and progress rail; reserve cauldron messages for blocked/error feedback so stale success text does not fight the timer state.
 - Reward flyouts on Android WebView should avoid per-event dynamic `@keyframes`; use transform/opacity Web Animations API paths and cap active particles.
 - Potion collection reward drops should start from the visible cauldron liquid, not the potion preview/icon or whole cauldron box.
+- Cauldron potion preview labels need a fixed-width summary that can overflow the 86px potion box; `max-width: 100%` clamps labels and truncates names under world zoom.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
 - Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
@@ -75,6 +77,7 @@
 - Show all five room pages in a shared bottom tab panel; bold the current page tab.
 - Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
 - Interactive room surfaces that own drag or pinch gestures should set `data-page-swipe-block="true"`; stage-level swipe capture otherwise steals their horizontal drags before the surface can own them.
+- Browser/WebView viewport zoom can steal Garden/Brewing world pinches; keep the app viewport scale locked and add non-passive multi-touch/gesture guards on world shells.
 - Brewing world pan/pinch must include cauldron boxes as gesture starts, then suppress the follow-up cauldron click after real movement.
 - The top status panel is shared room chrome; show gameplay coin there, not a separate coin currency.
 - Top-panel resource values should be written amount-first, like `560 coin`; icon mode hides the word and leaves `count icon`.
@@ -119,6 +122,8 @@
 - Scaled full-page UI layers should stay unscrolled; put an inner source-positioned scroll root inside them, or content can visibly pass under top/bottom chrome before clipping.
 - Garden's inner scroll root should stop at `--style-room-chat-clearance` only; adding bottom tab clearance double-counts the shared world-chat gap.
 - Garden's pannable plot world should mount directly under the room UI layer with an edge-to-edge shell and 16px internal row padding; mounting it inside `.garden-page__content` clips side movement.
+- Web-wide Garden/Brewing worlds need shells expanded past the centered source UI layer plus positive free-space pan bounds; otherwise desktop crops or left-pins the world.
+- Garden plot plant icons must use full atlas sprites; masked atlas sprites flatten herbs into one solid color.
 - Alliance quest notifications need quest/progress/contribution rows retained outside the popup; the full public alliance list can stay popup-retained.
 - Alliance income deltas currently skip if the player has same-week quest contribution or reward rows in another alliance; new alliances can show 0 until weekly reset.
 - Guild adventurer row notification dots need row-local placement; the generic button badge lands between the name and status columns.
@@ -131,6 +136,7 @@
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
 - Non-button text/row press targets should fire synthetic click on touch/pointer press-start with click dedupe; native buttons should activate on release/click. Use `data-press-start-click="false"` only when a non-button target needs validated release.
+- `.is-locked` is not a disabled signal for shared press handling; use native `disabled`, `aria-disabled="true"`, or `.is-disabled` so buyable locked rows and locked room tabs still synth-click on web.
 - Native dialog/open/submit buttons should activate on validated pointerup/click; do not add touchstart/pointerdown action handlers to buttons unless the interaction is a true hold/drag setup.
 - NPC market stand press-start opens must ignore the immediate retargeted backdrop click; otherwise the `sell` picker flashes open and closes on mobile/WebView.
 - NPC market demand recovery uses lazy capped UTC buyer waves, not a smooth 5-minute/half-life regen or hard daily reset; backend and `npcMarketPricing.js` must stay mirrored.
@@ -176,7 +182,7 @@
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
 - Dev browser automation exposes `window.cheats` with `VITE_ENABLE_CHEATS=true`, but `window.tutorialCapture` needs its own `VITE_ENABLE_TUTORIAL_CAPTURE=true`; cheats alone do not mount the tutorial capture helper.
 - In-app Browser Playwright evaluate can miss main-world `window.cheats`, and `javascript:` bookmarklets are blocked; do not rely on that path for cheat-driven screenshot setup.
-- In-app Browser blocks `data:` fixture pages; use the real app state or an HTTP-served local harness for browser UI QA.
+- In-app Browser blocks `data:` and `file:` fixture pages; use the real app state or an HTTP-served local harness for browser UI QA.
 - Brewing drag screenshot QA needs an unlocked level-4+ save or `VITE_ENABLE_CHEATS=true`; a level-2 local save cannot reach herb drag controls.
 - Cauldron staged-recipe QA should use minimal unlocks and explicit ingredients; `unlockAllResearch` can raise cauldron batch level and make base recipe staging fail.
 - Tutorial motion/visual QA harnesses must set `--style-ui-scale` to `3 * viewportScale`; using only viewport scale makes Elara/source UI look tiny and gives misleading screenshots.
@@ -521,6 +527,7 @@
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
 - Auto brew recipe/enabled state is per cauldron; selecting a recipe in cauldron 2+ must not rewrite cauldron 1 automation.
 - Auto brew enable UI must set `autoBrewRecipeKey` from the selected recipe before enabling; `BrewingFacade` rejects enabled auto-brew without a recipe key.
+- Auto/manual cauldron UI only enables or disables future automation; auto brew stays unarmed until a successful manual brew, then repeats future cycles.
 - Fast sell starts at level 1 and pays 80% of the NPC bulk sell quote; ruby research raises it to 85/90/95%, while shelf auto-sell keeps the full marginal NPC quote.
 - With Research moved to level 3, level-one FTUE should bank only the 10 coin needed for level 2; do not hold players for mint research before Garden.
 - Nettle seed research stays locked until level 4 so level-3 players keep the 60 coin needed to complete the level-3 task step.
@@ -593,6 +600,7 @@
 - Reward particles anchored to room controls must measure and animate in `.game-stage` coordinates, not raw `document.body` viewport coords; the fitted stage can drift or double body-fixed positions on web/mobile.
 - Icon-mode reward text should hide only after visual nodes actually spawn; reduced-motion/mobile fallbacks need visible text.
 - Resource color and icon modes are fixed on; normalize stale `monochrome`/`none` visual values to `resources`/`icons` and do not show those choices in settings.
+- Potion item names intentionally stay uncolored; do not assign pink or another category resource color to potions.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Room inventory entrypoints should follow Workshop `tasks`/`event`: icon/portrait over a small bordered lowercase label box, not icon-only buttons.
@@ -734,6 +742,7 @@
 - Expand/collapse toggles may show a notification only in the collapsed `expand` state; the `collapse` state should never have a notification dot.
 - If notification dots grow beyond page-level flags, move to a provider tree with centralized child aggregation and graph validation instead of ad hoc booleans.
 - Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
+- Gameplay state `subscribe` is passive; managers that diff state must seed their baseline from `gameplayFacade.getSnapshot()` on mount.
 - World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
 - World chat system sender labels use the resource-color system accent; avoid adding a separate chat-only color mode.
 - Successful world/alliance chat sends should render a local sent row until the matching subscription row arrives; reducer success can precede the table/view echo.
@@ -783,6 +792,7 @@
 - Visual QA for deep page states needs deterministic real-game state recipes; ad hoc clicks/cheats make agents miss screenshots or verify the wrong state.
 - Fresh-start browser QA resets FTUE progress; after choosing `start fresh`, write completed `idle-wizard.tutorial.v4` storage and reload before normal room-click automation.
 - Keep top-level docs current with implemented systems; agents trust README/architecture docs early, so stale future-scope text causes wrong plans.
+- When a feature needs faster or safer repeat work, add the smallest reusable dev tool and document its command/env in `docs/ai-workflow.md` or the feature README.
 - Full player-save backup must use SpacetimeDB SQL/export or a dedicated admin reducer; `admin_player_gameplay_save` currently exposes only summary fields, not raw `saveJson`.
 - SpacetimeDB CLI `sql` calls trigger `on_connect`; after reset verification, run final deletes for `player`/`leaderboard` and stop querying.
 - Match verification to risk: tiny deterministic edits can use inspection or a focused check, while shared runtime/UI changes justify lint, tests, build, and browser/device checks.

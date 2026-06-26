@@ -10,6 +10,7 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { createStarLevelLabel, formatStarLevel } from '../../shared/starLevelLabel.js';
 import { setTimerProgressFill, stopTimerProgressFill } from '../../shared/timerProgress.js';
 import { formatRemainingTime } from '../../shared/timerDisplay.js';
+import { preventNativeWorldGestureDefault } from '../../shared/worldGestureDefaultGuard.js';
 import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { getSeedIconFrameName } from '../../../assets/items/seeds/seedIcons.js';
 import { getHerbIconFrameName } from '../../../assets/items/herbs/herbIcons.js';
@@ -37,7 +38,7 @@ const WORLD_EDGE_EXTENSION = 16;
 const WORLD_WIDTH = 730 + WORLD_EDGE_EXTENSION * 2;
 const WORLD_HEIGHT = 780 + WORLD_EDGE_EXTENSION * 2;
 const WORLD_FIT_PADDING = 16;
-const CAULDRON_BOX_WIDTH = 266;
+const CAULDRON_BOX_WIDTH = 272;
 const CAULDRON_BOX_HEIGHT = 150;
 const HERB_DRAG_THRESHOLD = 22;
 const ITEM_DRAG_SWAY_X_FACTOR = 0.45;
@@ -119,6 +120,7 @@ export class BrewingCauldronManager {
     this.boughtCauldronAnimationResets = new Map();
     this.handleDocumentHerbPointerMove = (event) => this.onHerbPointerMove(event);
     this.handleDocumentHerbPointerUp = (event) => this.onHerbPointerUp(event);
+    this.handleWorldGestureDefault = (event) => preventNativeWorldGestureDefault(event);
   }
 
   mount(parent) {
@@ -182,6 +184,10 @@ export class BrewingCauldronManager {
     shell.addEventListener('pointermove', (event) => this.onWorldPointerMove(event));
     shell.addEventListener('pointerup', (event) => this.onWorldPointerUp(event));
     shell.addEventListener('pointercancel', (event) => this.onWorldPointerUp(event));
+    shell.addEventListener('touchstart', this.handleWorldGestureDefault, { passive: false });
+    shell.addEventListener('touchmove', this.handleWorldGestureDefault, { passive: false });
+    shell.addEventListener('gesturestart', this.handleWorldGestureDefault, { passive: false });
+    shell.addEventListener('gesturechange', this.handleWorldGestureDefault, { passive: false });
 
     const world = document.createElement('div');
     world.className = 'brewing-page__world';
@@ -988,6 +994,7 @@ export class BrewingCauldronManager {
 
     if (this.worldPointers.size >= 2) {
       this.startWorldPinchGesture();
+      event.preventDefault();
     } else {
       this.worldGesture = {
         type: 'pan',

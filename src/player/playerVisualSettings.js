@@ -1,4 +1,7 @@
-import { PLAYER_CHARACTER_OPTIONS } from './playerCharacters.js';
+import {
+  DEFAULT_UNLOCKED_PLAYER_CHARACTER_KEYS,
+  PLAYER_CHARACTER_OPTIONS,
+} from './playerCharacters.js';
 import { DEFAULT_PLAYER_FONT, PLAYER_FONT_OPTIONS } from './playerFonts.js';
 import {
   DEFAULT_PLAYER_PROGRESS_BAR,
@@ -42,7 +45,12 @@ export const DEFAULT_PLAYER_VISUAL_SETTINGS_RESEARCHED = Object.freeze({
   theme: Object.freeze({ [DEFAULT_PLAYER_THEME]: true }),
   font: Object.freeze({ [DEFAULT_PLAYER_FONT]: true }),
   character: Object.freeze(
-    Object.fromEntries(PLAYER_CHARACTER_OPTIONS.map((option) => [option.key, true])),
+    Object.fromEntries(
+      PLAYER_CHARACTER_OPTIONS.map((option) => [
+        option.key,
+        DEFAULT_UNLOCKED_PLAYER_CHARACTER_KEYS.includes(option.key),
+      ]),
+    ),
   ),
   progressBar: Object.freeze({ [DEFAULT_PLAYER_PROGRESS_BAR]: true }),
 });

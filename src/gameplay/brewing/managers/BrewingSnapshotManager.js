@@ -9,6 +9,7 @@ export class BrewingSnapshotManager {
     playerLevelFacade,
     researchFacade,
     getAutoBrewEnabled,
+    getAutoBrewArmed,
     getAutoBrewRecipeKey,
     getBrewQuantity,
   }) {
@@ -21,6 +22,7 @@ export class BrewingSnapshotManager {
     this.playerLevelFacade = playerLevelFacade;
     this.researchFacade = researchFacade;
     this.getAutoBrewEnabled = getAutoBrewEnabled;
+    this.getAutoBrewArmed = getAutoBrewArmed;
     this.getAutoBrewRecipeKey = getAutoBrewRecipeKey;
     this.getBrewQuantityCallback = getBrewQuantity;
   }
@@ -79,6 +81,7 @@ export class BrewingSnapshotManager {
         ? nextCauldronRequiresResearchId
         : null,
       autoBrewEnabled: this.getAutoBrewEnabled?.(0) === true,
+      autoBrewArmed: this.getAutoBrewArmed?.(0) === true,
       autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(0) ?? null,
     };
   }
@@ -111,6 +114,7 @@ export class BrewingSnapshotManager {
         canCollectPotion: Boolean(activeBrew.canCollect),
         maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
         autoBrewEnabled: this.getAutoBrewEnabled?.(safeCauldronIndex) === true,
+        autoBrewArmed: this.getAutoBrewArmed?.(safeCauldronIndex) === true,
         autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(safeCauldronIndex) ?? null,
         herbs,
       };
@@ -143,6 +147,7 @@ export class BrewingSnapshotManager {
         canCollectPotion: false,
         maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
         autoBrewEnabled: this.getAutoBrewEnabled?.(safeCauldronIndex) === true,
+        autoBrewArmed: this.getAutoBrewArmed?.(safeCauldronIndex) === true,
         autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(safeCauldronIndex) ?? null,
         herbs,
       };
@@ -207,6 +212,7 @@ export class BrewingSnapshotManager {
       canCollectPotion: Boolean(activeBrew?.canCollect),
       maxIngredients: this.brewingBalanceManager.getMaxCauldronIngredients(),
       autoBrewEnabled: this.getAutoBrewEnabled?.(safeCauldronIndex) === true,
+      autoBrewArmed: this.getAutoBrewArmed?.(safeCauldronIndex) === true,
       autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(safeCauldronIndex) ?? null,
       herbs,
     };

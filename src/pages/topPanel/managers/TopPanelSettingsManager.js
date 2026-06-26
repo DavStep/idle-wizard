@@ -774,6 +774,7 @@ export class TopPanelSettingsManager {
       const costCrystal = this.getVisualSettingCostCrystal(categoryKey, optionKey);
       const selected = this.isCurrentVisualSetting(categoryKey, optionKey);
       const researched = this.isVisualSettingResearched(categoryKey, optionKey);
+      const lockedCharacter = categoryKey === 'character' && !researched;
       const canResearch = !researched && (costCrystal <= currentCrystal || !this.gameplayFacade);
       const price = this.refs.visualSettingResearchButtons?.find(
         (candidate) =>
@@ -788,11 +789,11 @@ export class TopPanelSettingsManager {
         price.textContent = statusLabel;
       }
 
-      button.disabled = !researched && costCrystal > 0;
+      button.disabled = lockedCharacter || (!researched && costCrystal > 0);
       button.classList.toggle('is-unresearched', !researched);
       button.setAttribute(
         'aria-label',
-        `${label}, ${researched ? 'researched' : 'not researched'}${
+        `${label}, ${lockedCharacter ? 'locked' : researched ? 'researched' : 'not researched'}${
           selected ? ', selected' : ''
         }`,
       );

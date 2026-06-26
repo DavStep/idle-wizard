@@ -29,7 +29,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Primary text: black.
 - Page and surface: light gray, currently `#d6d6d6` in the white theme.
 - Disabled/secondary text and borders: medium gray.
-- Resource words and amounts use resource colors by default; other UI stays uncolored unless the user explicitly asks for it.
+- Resource words and amounts can use resource colors; potion item names stay normal text, not a pink/category color.
 - The page background may use the explicit mild bottom-to-top room identity gradient; boxes, buttons, dialogs, and labels stay on the normal surface.
 
 ## Boxes
