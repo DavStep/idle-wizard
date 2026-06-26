@@ -91,8 +91,14 @@ const POTION_ASSETS = [
 ];
 
 const TOOL_ASSETS = [
-  ['tool:herbCuttingScissorsClosed', 'src/assets/icons/tools/herb-cutting-scissors-closed.png'],
-  ['tool:herbCuttingScissorsOpen', 'src/assets/icons/tools/herb-cutting-scissors-open.png'],
+  [
+    'tool:herbCuttingScissorsClosed',
+    'src/assets/icons/tools/herb-cutting-scissors-closed.png',
+  ],
+  [
+    'tool:herbCuttingScissorsOpen',
+    'src/assets/icons/tools/herb-cutting-scissors-open.png',
+  ],
 ];
 
 const ASSETS = [
@@ -111,7 +117,12 @@ const ASSETS = [
     { trimTransparent: true },
   ]),
   ...POTION_ASSETS.map(([frameName, filePath]) => [frameName, filePath, 128]),
-  ...TOOL_ASSETS.map(([frameName, filePath]) => [frameName, filePath, 128, { trimTransparent: true }]),
+  ...TOOL_ASSETS.map(([frameName, filePath]) => [
+    frameName,
+    filePath,
+    128,
+    { trimTransparent: true },
+  ]),
   ['ui:summonCircle', 'src/assets/ui/summon-circle.png', 768],
 ];
 
