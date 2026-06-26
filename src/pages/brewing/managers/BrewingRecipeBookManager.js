@@ -361,7 +361,7 @@ export class BrewingRecipeBookManager {
   ) {
     const startIndex = pageIndex * RECIPES_PER_PAGE;
     const pageRecipes = recipes.slice(startIndex, startIndex + RECIPES_PER_PAGE);
-    const rows = [this.createRecipePageNumber(pageIndex, recipes.length)];
+    const rows = [];
 
     if (pageRecipes.length === 0) {
       rows.push(this.createRecipePageEmpty('no more recipes'));
@@ -375,13 +375,6 @@ export class BrewingRecipeBookManager {
     );
 
     return rows;
-  }
-
-  createRecipePageNumber(pageIndex, recipeCount) {
-    const page = document.createElement('div');
-    page.className = 'brewing-page__recipe-page-number';
-    page.textContent = `page ${pageIndex + 1}/${this.getPageCount(recipeCount)}`;
-    return page;
   }
 
   createRecipePageEmpty(text) {

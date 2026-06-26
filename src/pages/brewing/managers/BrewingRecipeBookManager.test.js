@@ -65,6 +65,15 @@ describe('BrewingRecipeBookManager', () => {
     const ghostRule = baseCss.match(
       /\.brewing-page__recipe-turn-ghost\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const infoTextRule = baseCss.match(
+      /\.brewing-page__recipe-info-text\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const ingredientsRule = baseCss.match(
+      /\.brewing-page__recipe-ingredients\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const metaRule = baseCss.match(
+      /\.brewing-page__recipe-meta\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(dialogRule).toBeDefined();
     expect(dialogRule).toContain('--brewing-page-recipes-dialog-content-height: 360px;');
@@ -89,6 +98,16 @@ describe('BrewingRecipeBookManager', () => {
     expect(ghostRule).toMatch(/\bbackground:\s*var\(--style-surface\);/);
     expect(baseCss).toContain('@keyframes brewing-recipe-page-enter-forward');
     expect(baseCss).toContain('@keyframes brewing-recipe-page-exit-forward');
+    expect(baseCss).not.toContain('.brewing-page__recipe-page-number');
+
+    expect(infoTextRule).toBeDefined();
+    expect(infoTextRule).toContain(
+      'min-height: calc(var(--style-box-border-label-line-height) * 4);',
+    );
+    expect(ingredientsRule).toBeDefined();
+    expect(ingredientsRule).toContain('margin-top: 6px;');
+    expect(metaRule).toBeDefined();
+    expect(metaRule).toContain('margin-top: 6px;');
   });
 
   it('keeps cauldron controls out of the recipe popup', () => {
@@ -362,7 +381,7 @@ describe('BrewingRecipeBookManager', () => {
     parent.remove();
   });
 
-  it('places the recipe action at the bottom of each recipe page', () => {
+  it('keeps the recipe action wide and lifted from the page bottom', () => {
     const pageRowRule = baseCss.match(
       /\.brewing-page__recipe-page\s*>\s*\.brewing-page__recipe-row\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -372,8 +391,10 @@ describe('BrewingRecipeBookManager', () => {
 
     expect(pageRowRule).toContain('flex: 1 1 auto;');
     expect(selectRule).toContain('align-self: center;');
-    expect(selectRule).toContain('width: auto;');
+    expect(selectRule).toContain('box-sizing: border-box;');
+    expect(selectRule).toContain('width: 112px;');
     expect(selectRule).toContain('margin-top: auto;');
+    expect(selectRule).toContain('margin-bottom: 8px;');
     expect(selectRule).toContain('text-align: center;');
     expect(selectRule).toContain('border: var(--style-border);');
     expect(selectRule).not.toContain('border-top:');
@@ -650,6 +671,7 @@ describe('BrewingRecipeBookManager', () => {
 
     manager.mount(parent);
 
+    expect(parent.querySelector('.brewing-page__recipe-page-number')).toBeNull();
     expect(
       [...parent.querySelectorAll('.brewing-page__recipe-page')].map((page) =>
         [...page.querySelectorAll('.brewing-page__recipe-row')].map((row) =>

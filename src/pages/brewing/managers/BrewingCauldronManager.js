@@ -42,11 +42,22 @@ const CAULDRON_BOX_HEIGHT = 150;
 const HERB_DRAG_THRESHOLD = 5;
 const ITEM_DRAG_SWAY_X_FACTOR = 0.45;
 const ITEM_DRAG_SWAY_Y_FACTOR = 0.2;
-const ITEM_DRAG_SWAY_ROTATION_FACTOR = 0.24;
+const ITEM_DRAG_SWAY_ROTATION_FACTOR = 0.36;
+const ITEM_DRAG_SWAY_ROTATION_ACCELERATION_FACTOR = 0.18;
+const ITEM_DRAG_SWAY_SMOOTHING = 0.38;
+const ITEM_DRAG_SWAY_SETTLE_ROTATION_FACTOR = 0.28;
 const ITEM_DRAG_SWAY_X_MAX = 12;
 const ITEM_DRAG_SWAY_Y_MAX = 6;
-const ITEM_DRAG_SWAY_ROTATION_MAX = 8;
-const ITEM_DRAG_SWAY_SETTLE_MS = 90;
+const ITEM_DRAG_SWAY_ROTATION_MAX = 14;
+const ITEM_DRAG_SWAY_SETTLE_ROTATION_MAX = 3;
+const ITEM_DRAG_SWAY_SETTLE_MS = 110;
+const ITEM_DRAG_SWAY_REST_MS = 90;
+const ITEM_DROP_CAULDRON_MS = 220;
+const ITEM_DROP_RETURN_MS = 190;
+const ITEM_BREW_DROP_MS = 240;
+const ITEM_BREW_DROP_STAGGER_MS = 45;
+const ITEM_DROP_RECEIVE_MS = 240;
+const ITEM_DROP_FADE_MS = 80;
 const WORLD_DRAG_THRESHOLD = 4;
 const WORLD_MIN_ZOOM = 0.56;
 const WORLD_MAX_ZOOM = 1.16;
@@ -100,6 +111,8 @@ export class BrewingCauldronManager {
     this.worldDrag = null;
     this.worldSettleClassTimeout = null;
     this.herbDrag = null;
+    this.transientAnimationTimeouts = new Set();
+    this.transientAnimationTimeoutsByElement = new WeakMap();
     this.boughtCauldronAnimationResets = new Map();
     this.handleDocumentHerbPointerMove = (event) => this.onHerbPointerMove(event);
     this.handleDocumentHerbPointerUp = (event) => this.onHerbPointerUp(event);
@@ -153,6 +166,7 @@ export class BrewingCauldronManager {
     this.worldDrag = null;
     this.clearWorldSettleTimers();
     this.clearHerbDrag();
+    this.clearTransientAnimationTimeouts();
     this.boughtCauldronAnimationResets.clear();
   }
 
@@ -337,12 +351,22 @@ export class BrewingCauldronManager {
     const previewLabel = document.createElement('div');
     previewLabel.className = 'brewing-page__cauldron-preview-label';
 
+    const previewSummary = document.createElement('div');
+    previewSummary.className = 'brewing-page__cauldron-preview-summary';
+    previewSummary.hidden = true;
+
+    const previewIcon = document.createElement('span');
+    previewIcon.className = 'brewing-page__cauldron-preview-icon';
+    previewIcon.setAttribute('aria-hidden', 'true');
+    previewIcon.hidden = true;
+
     const actions = this.createActions(safeCauldronIndex);
 
     activeProgress.append(activeProgressFill, activeProgressText);
     active.append(activeText, activeProgress);
     cauldronArt.append(cauldronImage, cauldronLiquid);
-    preview.append(cauldronArt, previewLabel);
+    previewSummary.append(previewLabel, previewIcon);
+    preview.append(cauldronArt, previewSummary);
     recipeBox.append(title, count, bubble, guide, status, items, active, selectRecipeButton);
     potionBox.append(preview);
     lockedBox.append(lockedTitle);
@@ -369,6 +393,8 @@ export class BrewingCauldronManager {
       cauldronImage,
       cauldronLiquid,
       previewLabel,
+      previewSummary,
+      previewIcon,
       status,
       selectRecipeButton,
       items,
@@ -738,7 +764,7 @@ export class BrewingCauldronManager {
       label.className = 'brewing-page__herb-label row_key';
 
       const quantity = document.createElement('span');
-      quantity.className = 'row_val';
+      quantity.className = 'brewing-page__herb-quantity row_val';
 
       button.append(label, quantity);
       row.append(button);
@@ -767,7 +793,16 @@ export class BrewingCauldronManager {
       this.setHidden(refs.row, rowIndex >= hiddenStartIndex);
       this.setText(refs.label, herb.label);
       setItemIconLabel(refs.label, 'herb', herb.key);
-      this.setText(refs.quantity, String(herb.availableQuantity));
+      const displayQuantity = this.getDisplayHerbQuantity(herb);
+      refs.row.classList.toggle(
+        'is-picked',
+        this.herbDrag?.itemTypeId === herb.itemTypeId,
+      );
+      refs.quantity.classList.toggle(
+        'is-previewing-pick',
+        this.herbDrag?.itemTypeId === herb.itemTypeId,
+      );
+      this.setText(refs.quantity, String(displayQuantity));
       this.setDisabled(refs.button, disabled);
       this.setAttribute(refs.button, 'aria-disabled', disabled ? 'true' : 'false');
       this.setAttribute(refs.button, 'aria-label', `add ${herb.label} to cauldron`);
@@ -776,6 +811,49 @@ export class BrewingCauldronManager {
     }
 
     this.renderHerbsToggle(brewing.herbs.length);
+  }
+
+  getDisplayHerbQuantity(herb) {
+    const availableQuantity = Math.max(
+      0,
+      Math.floor(Number(herb?.availableQuantity) || 0),
+    );
+
+    if (this.herbDrag?.itemTypeId !== herb?.itemTypeId) {
+      return availableQuantity;
+    }
+
+    return Math.max(0, availableQuantity - 1);
+  }
+
+  getCurrentHerbAvailableQuantity(itemTypeId) {
+    const snapshot = this.gameplayFacade?.getSnapshot?.();
+    const herb = (snapshot?.brewing?.herbs ?? []).find(
+      (candidate) => candidate.itemTypeId === itemTypeId,
+    );
+    const availableQuantity = Math.max(
+      0,
+      Math.floor(Number(herb?.availableQuantity) || 0),
+    );
+
+    return availableQuantity;
+  }
+
+  setHerbDragSourceState(drag, picked) {
+    if (!drag?.source) {
+      return;
+    }
+
+    const row = drag.source.closest?.('.brewing-page__herb-row');
+    const quantity = drag.source.querySelector?.('.brewing-page__herb-quantity');
+    const availableQuantity = this.getCurrentHerbAvailableQuantity(drag.itemTypeId);
+
+    row?.classList.toggle('is-picked', picked);
+    quantity?.classList.toggle('is-previewing-pick', picked);
+    this.setText(
+      quantity,
+      String(picked ? Math.max(0, availableQuantity - 1) : availableQuantity),
+    );
   }
 
   getAddTargetCauldron(cauldrons = [], itemTypeId = null) {
@@ -1285,10 +1363,14 @@ export class BrewingCauldronManager {
       startY: event.clientY,
       lastClientX: event.clientX,
       lastClientY: event.clientY,
+      lastDeltaX: 0,
+      swingX: 0,
       swayResetTimeout: null,
+      swayRestTimeout: null,
       ghost: null,
       didDrag: false,
     };
+    this.setHerbDragSourceState(this.herbDrag, true);
     event.currentTarget.setPointerCapture?.(event.pointerId);
     document.addEventListener('pointermove', this.handleDocumentHerbPointerMove);
     document.addEventListener('pointerup', this.handleDocumentHerbPointerUp);
@@ -1324,6 +1406,8 @@ export class BrewingCauldronManager {
 
     const drag = this.herbDrag;
     drag.source.releasePointerCapture?.(event.pointerId);
+    let finishTarget = null;
+    let finishType = 'return';
 
     if (drag.didDrag) {
       const targetCauldron = document
@@ -1332,13 +1416,40 @@ export class BrewingCauldronManager {
       const cauldronIndex = Number(targetCauldron?.dataset?.cauldronIndex);
 
       if (Number.isInteger(cauldronIndex) && !this.isCauldronLocked(cauldronIndex)) {
-        this.onAddIngredient(drag.itemTypeId, cauldronIndex);
+        const result = this.onAddIngredient(drag.itemTypeId, cauldronIndex);
+
+        if (result?.ok) {
+          finishTarget = this.getCauldronDropTarget(result.cauldronIndex);
+          finishType = 'cauldron';
+          this.animateCauldronIngredientReceive(result.cauldronIndex);
+        }
       }
 
       event.preventDefault();
+    } else {
+      finishType = 'none';
     }
 
-    this.clearHerbDrag();
+    if (finishType === 'return') {
+      finishTarget = this.getHerbReturnTarget(drag.itemTypeId) ?? drag.source;
+      this.animateHerbSourceReturn(drag);
+    }
+
+    this.clearHerbDrag({
+      keepGhost: Boolean(drag.ghost && finishTarget && finishType !== 'none'),
+    });
+
+    if (finishType === 'cauldron') {
+      this.animateItemDragGhostToElement(drag.ghost, finishTarget, {
+        type: 'cauldron',
+        duration: ITEM_DROP_CAULDRON_MS,
+      });
+    } else if (finishType === 'return') {
+      this.animateItemDragGhostToElement(drag.ghost, finishTarget, {
+        type: 'return',
+        duration: ITEM_DROP_RETURN_MS,
+      });
+    }
   }
 
   ensureHerbDragGhost() {
@@ -1346,29 +1457,38 @@ export class BrewingCauldronManager {
       return;
     }
 
+    const ghost = this.createFloatingItemGhost(this.herbDrag, {
+      className: 'brewing-page__herb-drag-ghost',
+      fallbackLabel:
+        this.herbDrag.source.querySelector('.brewing-page__herb-label')?.textContent ??
+        this.herbDrag.itemLabel ??
+        'herb',
+    });
+    document.body.append(ghost);
+    this.herbDrag.ghost = ghost;
+  }
+
+  createFloatingItemGhost(item = {}, { className = '', fallbackLabel = 'item' } = {}) {
     const ghost = document.createElement('div');
-    ghost.className = 'brewing-page__item-drag-ghost brewing-page__herb-drag-ghost';
-    ghost.dataset.itemKind = this.herbDrag.itemKind;
-    ghost.dataset.itemKey = this.herbDrag.itemKey;
+    ghost.className = ['brewing-page__item-drag-ghost', className]
+      .filter(Boolean)
+      .join(' ');
+    ghost.dataset.itemKind = item.itemKind ?? item.kind ?? '';
+    ghost.dataset.itemKey = item.itemKey ?? item.key ?? '';
     ghost.setAttribute('aria-hidden', 'true');
 
-    const icon = this.createItemDragIcon(this.herbDrag);
-    const label =
-      this.herbDrag.source.querySelector('.brewing-page__herb-label')?.textContent ??
-      this.herbDrag.itemLabel ??
-      'herb';
+    const icon = this.createItemDragIcon(item);
 
     if (icon) {
       ghost.append(icon);
-    } else {
-      const fallback = document.createElement('span');
-      fallback.className = 'brewing-page__item-drag-ghost-label';
-      fallback.textContent = label;
-      ghost.append(fallback);
+      return ghost;
     }
 
-    document.body.append(ghost);
-    this.herbDrag.ghost = ghost;
+    const fallback = document.createElement('span');
+    fallback.className = 'brewing-page__item-drag-ghost-label';
+    fallback.textContent = fallbackLabel;
+    ghost.append(fallback);
+    return ghost;
   }
 
   createItemDragIcon(item = {}) {
@@ -1430,10 +1550,16 @@ export class BrewingCauldronManager {
     drag.lastClientY = clientY;
 
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true) {
+      this.clearItemDragSwayTimers(drag);
       this.setItemDragGhostMotion(drag.ghost, 0, 0, 0);
       return;
     }
 
+    const lastDeltaX = Number.isFinite(drag.lastDeltaX) ? drag.lastDeltaX : 0;
+    const swingX =
+      (Number.isFinite(drag.swingX) ? drag.swingX : 0) * ITEM_DRAG_SWAY_SMOOTHING +
+      deltaX * (1 - ITEM_DRAG_SWAY_SMOOTHING);
+    const accelerationX = deltaX - lastDeltaX;
     const swayX = this.clampItemDragMotion(
       -deltaX * ITEM_DRAG_SWAY_X_FACTOR,
       ITEM_DRAG_SWAY_X_MAX,
@@ -1443,25 +1569,53 @@ export class BrewingCauldronManager {
       ITEM_DRAG_SWAY_Y_MAX,
     );
     const rotation = this.clampItemDragMotion(
-      -deltaX * ITEM_DRAG_SWAY_ROTATION_FACTOR,
+      -(swingX * ITEM_DRAG_SWAY_ROTATION_FACTOR +
+        accelerationX * ITEM_DRAG_SWAY_ROTATION_ACCELERATION_FACTOR),
       ITEM_DRAG_SWAY_ROTATION_MAX,
     );
 
+    drag.lastDeltaX = deltaX;
+    drag.swingX = swingX;
+
     this.setItemDragGhostMotion(drag.ghost, swayX, swayY, rotation);
-    window.clearTimeout(drag.swayResetTimeout);
+    this.scheduleItemDragSwaySettle(drag, rotation);
+  }
+
+  scheduleItemDragSwaySettle(drag, rotation) {
+    this.clearItemDragSwayTimers(drag);
     drag.swayResetTimeout = window.setTimeout(() => {
       if (this.herbDrag?.ghost !== drag.ghost) {
         return;
       }
 
-      this.setItemDragGhostMotion(drag.ghost, 0, 0, 0);
-      this.herbDrag.swayResetTimeout = null;
+      const settleRotation = this.clampItemDragMotion(
+        -rotation * ITEM_DRAG_SWAY_SETTLE_ROTATION_FACTOR,
+        ITEM_DRAG_SWAY_SETTLE_ROTATION_MAX,
+      );
+      drag.lastDeltaX = 0;
+      drag.swingX = 0;
+      this.setItemDragGhostMotion(drag.ghost, 0, 0, settleRotation);
+      drag.swayResetTimeout = null;
+      drag.swayRestTimeout = window.setTimeout(() => {
+        if (this.herbDrag?.ghost !== drag.ghost) {
+          return;
+        }
+
+        this.setItemDragGhostMotion(drag.ghost, 0, 0, 0);
+        drag.swayRestTimeout = null;
+      }, ITEM_DRAG_SWAY_REST_MS);
     }, ITEM_DRAG_SWAY_SETTLE_MS);
   }
 
   setItemDragGhostMotion(ghost, x, y, rotation) {
-    ghost.style.setProperty('--brewing-page-item-drag-sway-x', `${this.formatCssNumber(x)}px`);
-    ghost.style.setProperty('--brewing-page-item-drag-sway-y', `${this.formatCssNumber(y)}px`);
+    ghost.style.setProperty(
+      '--brewing-page-item-drag-sway-x',
+      `${this.formatCssNumber(x)}px`,
+    );
+    ghost.style.setProperty(
+      '--brewing-page-item-drag-sway-y',
+      `${this.formatCssNumber(y)}px`,
+    );
     ghost.style.setProperty(
       '--brewing-page-item-drag-sway-rotation',
       `${this.formatCssNumber(rotation)}deg`,
@@ -1483,13 +1637,252 @@ export class BrewingCauldronManager {
     return String(Number((Number(value) || 0).toFixed(2)));
   }
 
-  clearHerbDrag() {
+  clearItemDragSwayTimers(drag = this.herbDrag) {
+    window.clearTimeout(drag?.swayResetTimeout);
+    window.clearTimeout(drag?.swayRestTimeout);
+    if (drag) {
+      drag.swayResetTimeout = null;
+      drag.swayRestTimeout = null;
+    }
+  }
+
+  clearHerbDrag({ keepGhost = false } = {}) {
     document.removeEventListener('pointermove', this.handleDocumentHerbPointerMove);
     document.removeEventListener('pointerup', this.handleDocumentHerbPointerUp);
     document.removeEventListener('pointercancel', this.handleDocumentHerbPointerUp);
-    window.clearTimeout(this.herbDrag?.swayResetTimeout);
-    this.herbDrag?.ghost?.remove();
+    this.clearItemDragSwayTimers(this.herbDrag);
+    this.setHerbDragSourceState(this.herbDrag, false);
+    if (!keepGhost) {
+      this.herbDrag?.ghost?.remove();
+    }
     this.herbDrag = null;
+  }
+
+  getCauldronDropTarget(cauldronIndex = this.selectedCauldronIndex) {
+    const refs = this.cauldronRefs.get(this.normalizeCauldronIndex(cauldronIndex));
+
+    return refs?.cauldronArt ?? refs?.recipeBox ?? refs?.root ?? null;
+  }
+
+  getHerbReturnTarget(itemTypeId) {
+    const refs = this.herbRows.get(itemTypeId);
+
+    if (!this.refs.herbs?.root?.hidden && refs?.row && !refs.row.hidden) {
+      return refs.button ?? refs.row;
+    }
+
+    if (!this.refs.herbs?.root?.hidden) {
+      return this.refs.herbs.root;
+    }
+
+    return null;
+  }
+
+  animateHerbSourceReturn(drag) {
+    const row = drag?.source?.closest?.('.brewing-page__herb-row');
+
+    if (!row || this.prefersReducedMotion()) {
+      return;
+    }
+
+    row.classList.add('is-returning');
+    this.setTransientClassTimeout(row, 'is-returning', ITEM_DROP_RETURN_MS);
+  }
+
+  animateCauldronIngredientReceive(cauldronIndex) {
+    const refs = this.cauldronRefs.get(this.normalizeCauldronIndex(cauldronIndex));
+
+    if (!refs?.root || this.prefersReducedMotion()) {
+      return;
+    }
+
+    refs.root.classList.remove('is-receiving-ingredient');
+    void refs.root.offsetWidth;
+    refs.root.classList.add('is-receiving-ingredient');
+    this.setTransientClassTimeout(
+      refs.root,
+      'is-receiving-ingredient',
+      ITEM_DROP_RECEIVE_MS,
+    );
+  }
+
+  animateItemDragGhostToElement(
+    ghost,
+    target,
+    {
+      type = 'return',
+      duration = ITEM_DROP_RETURN_MS,
+      startRect = null,
+      onFinish = null,
+    } = {},
+  ) {
+    if (!ghost || !target) {
+      ghost?.remove();
+      return;
+    }
+
+    const resolvedStartRect = startRect ?? this.getElementRect(ghost);
+    const targetRect = this.getElementRect(target);
+
+    if (!resolvedStartRect || !targetRect) {
+      ghost.remove();
+      return;
+    }
+
+    this.prepareFloatingGhostForAnimation(ghost, resolvedStartRect);
+
+    const isCauldronDrop = type === 'cauldron' || type === 'brew';
+    const targetCenterX = targetRect.left + targetRect.width / 2;
+    const targetCenterY =
+      isCauldronDrop
+        ? targetRect.top + targetRect.height * 0.62
+        : targetRect.top + targetRect.height / 2;
+    const endLeft = targetCenterX - resolvedStartRect.width / 2;
+    const endTop = targetCenterY - resolvedStartRect.height / 2;
+    const deltaX = endLeft - resolvedStartRect.left;
+    const deltaY = endTop - resolvedStartRect.top;
+
+    if (this.prefersReducedMotion() || typeof ghost.animate !== 'function') {
+      if (isCauldronDrop && typeof ghost.animate === 'function') {
+        const fade = ghost.animate(
+          [{ opacity: 1 }, { opacity: 0 }],
+          {
+            duration: ITEM_DROP_FADE_MS,
+            easing: 'linear',
+            fill: 'forwards',
+          },
+        );
+        fade.finished.then(
+          () => this.finishFloatingGhostAnimation(ghost, onFinish),
+          () => ghost.remove(),
+        );
+        return;
+      }
+
+      onFinish?.();
+      ghost.remove();
+      return;
+    }
+
+    const midLift = isCauldronDrop ? (type === 'brew' ? -22 : -18) : -8;
+    const midScale = isCauldronDrop ? 0.92 : 0.96;
+    const endScale = isCauldronDrop ? 0.58 : 0.72;
+    const endOpacity = isCauldronDrop ? 0 : 0.35;
+    const animation = ghost.animate(
+      [
+        {
+          offset: 0,
+          opacity: 1,
+          transform: 'translate3d(0, 0, 0) scale(1) rotate(0deg)',
+        },
+        {
+          offset: 0.58,
+          opacity: 1,
+          transform: this.formatItemDropTransform({
+            x: deltaX * 0.58,
+            y: deltaY * 0.58 + midLift,
+            scale: midScale,
+            rotation: isCauldronDrop ? '4deg' : '-3deg',
+          }),
+        },
+        {
+          offset: 1,
+          opacity: endOpacity,
+          transform: this.formatItemDropTransform({
+            x: deltaX,
+            y: deltaY,
+            scale: endScale,
+            rotation: '0deg',
+          }),
+        },
+      ],
+      {
+        duration,
+        easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+        fill: 'forwards',
+      },
+    );
+
+    animation.finished.then(
+      () => this.finishFloatingGhostAnimation(ghost, onFinish),
+      () => ghost.remove(),
+    );
+  }
+
+  finishFloatingGhostAnimation(ghost, onFinish = null) {
+    onFinish?.();
+    ghost.remove();
+  }
+
+  formatItemDropTransform({ x, y, scale, rotation }) {
+    return `translate3d(${this.formatCssNumber(x)}px, ${this.formatCssNumber(
+      y,
+    )}px, 0) scale(${scale}) rotate(${rotation})`;
+  }
+
+  prepareFloatingGhostForAnimation(ghost, rect) {
+    this.setItemDragGhostMotion(ghost, 0, 0, 0);
+    ghost.classList.add('is-settling');
+    ghost.style.left = `${rect.left}px`;
+    ghost.style.top = `${rect.top}px`;
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.height = `${rect.height}px`;
+    ghost.style.transform = 'none';
+  }
+
+  getElementRect(element) {
+    const rect = element?.getBoundingClientRect?.();
+
+    if (!rect || rect.width <= 0 || rect.height <= 0) {
+      return null;
+    }
+
+    return {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+  }
+
+  setTransientClassTimeout(element, className, duration) {
+    if (!element || !className) {
+      return;
+    }
+
+    let elementTimeouts = this.transientAnimationTimeoutsByElement.get(element);
+    if (!elementTimeouts) {
+      elementTimeouts = new Map();
+      this.transientAnimationTimeoutsByElement.set(element, elementTimeouts);
+    }
+
+    const existingTimeout = elementTimeouts.get(className);
+    if (existingTimeout !== undefined) {
+      window.clearTimeout(existingTimeout);
+      this.transientAnimationTimeouts.delete(existingTimeout);
+    }
+
+    const timeout = window.setTimeout(() => {
+      element?.classList?.remove(className);
+      this.transientAnimationTimeouts.delete(timeout);
+      elementTimeouts.delete(className);
+    }, duration);
+
+    elementTimeouts.set(className, timeout);
+    this.transientAnimationTimeouts.add(timeout);
+  }
+
+  clearTransientAnimationTimeouts() {
+    for (const timeout of this.transientAnimationTimeouts) {
+      window.clearTimeout(timeout);
+    }
+
+    this.transientAnimationTimeouts.clear();
+    this.transientAnimationTimeoutsByElement = new WeakMap();
+  }
+
+  prefersReducedMotion() {
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
   }
 
   renderCauldron(refs, brewing) {
@@ -1565,6 +1958,8 @@ export class BrewingCauldronManager {
     this.renderPlainCauldronTitle(refs.lockedTitle, brewing);
     this.setHidden(refs.preview, false);
     this.setHidden(refs.previewLabel, true);
+    this.setHidden(refs.previewSummary, true);
+    this.renderCauldronPreviewIcon(refs, null);
     this.setText(refs.previewLabel, '');
     setResourceColor(refs.previewLabel, null);
     setItemIconLabel(refs.previewLabel, null);
@@ -1694,13 +2089,54 @@ export class BrewingCauldronManager {
 
     this.setHidden(refs.preview, false);
     this.renderCauldronLiquid(refs, brewing, preview);
+    this.setHidden(refs.previewSummary, !showLabel);
     this.setHidden(refs.previewLabel, !showLabel);
     this.setText(refs.previewLabel, showLabel ? preview.label : '');
-    setResourceColor(refs.previewLabel, showLabel ? preview.resource : null);
+    setResourceColor(refs.previewLabel, null);
     setItemIconLabel(refs.previewLabel, null);
     refs.previewLabel.classList.toggle('is-empty', showLabel && preview.empty);
     refs.previewLabel.classList.toggle('is-locked', showLabel && preview.locked);
     refs.previewLabel.classList.toggle('is-unknown', showLabel && preview.unknown);
+    this.renderCauldronPreviewIcon(
+      refs,
+      showLabel && preview.resource === 'potion'
+        ? getPotionIconFrameName(preview.iconKey)
+        : null,
+    );
+  }
+
+  renderCauldronPreviewIcon(refs, frameName) {
+    const icon = refs?.previewIcon;
+    const showIcon = Boolean(frameName);
+
+    this.setPreviewIconHidden(icon, !showIcon);
+
+    if (!showIcon) {
+      icon?.removeAttribute?.('data-asset-atlas-frame');
+      return;
+    }
+
+    if (icon?.dataset?.assetAtlasFrame === frameName) {
+      return;
+    }
+
+    const nextIcon =
+      createAssetAtlasSprite('brewing-page__cauldron-preview-icon', frameName) ??
+      document.createElement('span');
+    nextIcon.classList.add('brewing-page__cauldron-preview-icon');
+    nextIcon.setAttribute('aria-hidden', 'true');
+    this.setPreviewIconHidden(nextIcon, false);
+    icon?.replaceWith(nextIcon);
+    refs.previewIcon = nextIcon;
+  }
+
+  setPreviewIconHidden(element, hidden) {
+    if (!element) {
+      return;
+    }
+
+    element.hidden = hidden;
+    element.toggleAttribute('hidden', hidden);
   }
 
   renderCauldronLiquid(refs, brewing, preview) {
@@ -1959,7 +2395,7 @@ export class BrewingCauldronManager {
       const cauldronIndex = Number(event.currentTarget.dataset.cauldronIndex);
 
       if (Number.isInteger(slotIndex)) {
-        this.onRemoveIngredient(slotIndex, cauldronIndex);
+        this.onRemoveIngredient(slotIndex, cauldronIndex, event.currentTarget);
       }
     });
 
@@ -2219,7 +2655,7 @@ export class BrewingCauldronManager {
       const cauldronIndex = Number(event.currentTarget.dataset.cauldronIndex);
 
       if (Number.isInteger(slotIndex)) {
-        this.onRemoveIngredient(slotIndex, cauldronIndex);
+        this.onRemoveIngredient(slotIndex, cauldronIndex, event.currentTarget);
       }
     });
 
@@ -2563,7 +2999,7 @@ export class BrewingCauldronManager {
       };
       this.render(this.gameplayFacade.getSnapshot());
       this.flashMessage(messageCauldronIndex);
-      return;
+      return { ok: false, cauldronIndex: messageCauldronIndex };
     }
 
     if (targetCauldron.selectedRecipe) {
@@ -2582,16 +3018,23 @@ export class BrewingCauldronManager {
       };
       this.render(this.gameplayFacade.getSnapshot());
       this.flashMessage(targetCauldronIndex);
-      return;
+      return { ok: false, cauldronIndex: targetCauldronIndex };
     }
 
     this.selectCauldron(targetCauldronIndex);
     this.message = null;
     this.render(this.gameplayFacade.getSnapshot());
+    return { ok: true, cauldronIndex: targetCauldronIndex, itemTypeId };
   }
 
-  onRemoveIngredient(slotIndex, cauldronIndex = this.selectedCauldronIndex) {
+  onRemoveIngredient(
+    slotIndex,
+    cauldronIndex = this.selectedCauldronIndex,
+    sourceElement = null,
+  ) {
     const targetCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const ingredient = this.getIngredientAtSlot(slotIndex, targetCauldronIndex);
+    const sourceRect = this.getElementRect(sourceElement);
     const result = this.gameplayFacade.removeBrewingIngredientAt(
       slotIndex,
       targetCauldronIndex,
@@ -2607,7 +3050,153 @@ export class BrewingCauldronManager {
     } else {
       this.message = null;
       this.render(this.gameplayFacade.getSnapshot());
+      this.animateIngredientReturnToHerbs(ingredient, sourceRect);
     }
+  }
+
+  getIngredientAtSlot(slotIndex, cauldronIndex = this.selectedCauldronIndex) {
+    const safeSlotIndex = Math.floor(Number(slotIndex));
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const snapshot = this.gameplayFacade?.getSnapshot?.();
+    const cauldron =
+      (snapshot?.brewing?.cauldrons ?? []).find(
+        (candidate) => candidate.cauldronIndex === safeCauldronIndex,
+      ) ?? (safeCauldronIndex === 0 ? snapshot?.brewing : null);
+
+    if (!Number.isInteger(safeSlotIndex)) {
+      return null;
+    }
+
+    return (
+      (cauldron?.ingredients ?? []).find(
+        (ingredient, index) => (ingredient.slotIndex ?? index) === safeSlotIndex,
+      ) ?? null
+    );
+  }
+
+  animateIngredientReturnToHerbs(ingredient, sourceRect) {
+    if (!ingredient || !sourceRect || this.prefersReducedMotion()) {
+      return;
+    }
+
+    const target = this.getHerbReturnTarget(ingredient.itemTypeId);
+
+    if (!target) {
+      return;
+    }
+
+    const ghost = this.createFloatingItemGhost(ingredient, {
+      className: 'brewing-page__herb-return-ghost',
+      fallbackLabel: ingredient.label ?? 'herb',
+    });
+
+    document.body.append(ghost);
+    this.prepareFloatingGhostForAnimation(ghost, sourceRect);
+    this.animateItemDragGhostToElement(ghost, target, {
+      type: 'return',
+      duration: ITEM_DROP_RETURN_MS,
+    });
+    target
+      .closest?.('.brewing-page__herb-row')
+      ?.classList.add('is-returning');
+    this.setTransientClassTimeout(
+      target.closest?.('.brewing-page__herb-row') ?? target,
+      'is-returning',
+      ITEM_DROP_RETURN_MS,
+    );
+  }
+
+  getBrewIngredientFlyoutSources(cauldronIndex = this.selectedCauldronIndex) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const refs = this.cauldronRefs.get(safeCauldronIndex);
+    const brewing = this.getRenderedCauldronSnapshot(safeCauldronIndex);
+
+    if (!refs || !brewing || brewing.activeBrew) {
+      return [];
+    }
+
+    if (brewing.selectedRecipe) {
+      return this.getBrewFlyoutSourcesFromRows(
+        refs.cauldronGuideRows,
+        this.createIngredientGroups(brewing.selectedRecipe.ingredients),
+      );
+    }
+
+    return this.getBrewFlyoutSourcesFromRows(
+      refs.ingredientRows,
+      this.groupAdjacentIngredients(brewing.ingredients ?? []),
+    );
+  }
+
+  getBrewFlyoutSourcesFromRows(rowRefs = [], ingredients = []) {
+    const sources = [];
+
+    for (const [index, refs] of rowRefs.entries()) {
+      const row = refs?.row;
+      const ingredient = ingredients[index];
+
+      if (!row || row.hidden || !ingredient) {
+        continue;
+      }
+
+      const rect = this.getElementRect(row);
+
+      if (!rect) {
+        continue;
+      }
+
+      sources.push({
+        rect,
+        itemKind: ingredient.kind ?? 'herb',
+        itemKey: ingredient.key ?? '',
+        itemLabel: ingredient.label ?? 'herb',
+      });
+    }
+
+    return sources;
+  }
+
+  animateBrewIngredientsIntoCauldron(
+    cauldronIndex = this.selectedCauldronIndex,
+    sources = [],
+  ) {
+    if (sources.length <= 0 || this.prefersReducedMotion()) {
+      return;
+    }
+
+    const target = this.getCauldronDropTarget(cauldronIndex);
+
+    if (!target) {
+      return;
+    }
+
+    sources.forEach((source, index) => {
+      const animateSource = () => {
+        const ghost = this.createFloatingItemGhost(source, {
+          className: 'brewing-page__brew-ingredient-ghost',
+          fallbackLabel: source.itemLabel ?? 'herb',
+        });
+
+        document.body.append(ghost);
+        this.animateItemDragGhostToElement(ghost, target, {
+          type: 'brew',
+          duration: ITEM_BREW_DROP_MS,
+          startRect: source.rect,
+          onFinish: () => this.animateCauldronIngredientReceive(cauldronIndex),
+        });
+      };
+
+      if (index === 0) {
+        animateSource();
+        return;
+      }
+
+      const timeout = window.setTimeout(() => {
+        this.transientAnimationTimeouts.delete(timeout);
+        animateSource();
+      }, index * ITEM_BREW_DROP_STAGGER_MS);
+      this.transientAnimationTimeouts.add(timeout);
+    });
   }
 
   onPrimaryAction(cauldronIndex = this.selectedCauldronIndex) {
@@ -2667,6 +3256,7 @@ export class BrewingCauldronManager {
 
   onBrew(cauldronIndex = this.selectedCauldronIndex) {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const flyoutSources = this.getBrewIngredientFlyoutSources(safeCauldronIndex);
     const result = this.gameplayFacade.brewCauldron(safeCauldronIndex);
 
     if (result.ok) {
@@ -2679,6 +3269,9 @@ export class BrewingCauldronManager {
     }
 
     this.render(this.gameplayFacade.getSnapshot());
+    if (result.ok) {
+      this.animateBrewIngredientsIntoCauldron(safeCauldronIndex, flyoutSources);
+    }
     this.flashMessage(safeCauldronIndex);
   }
 
@@ -2984,10 +3577,7 @@ export class BrewingCauldronManager {
     }
 
     if (brewing.selectedRecipe) {
-      return `will brew ${this.formatPotionQuantity(
-        brewing.selectedRecipe.label,
-        this.getBrewQuantity(brewing),
-      )}`;
+      return '';
     }
 
     if (count === 0) {

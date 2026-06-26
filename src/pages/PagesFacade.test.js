@@ -10652,9 +10652,8 @@ describe('PagesFacade', () => {
 
     expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('3 sage');
     expect(stage.querySelector('.brewing-page__cauldron-count')?.textContent).toBe('3/5');
-    expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
-      'will brew mana tonic',
-    );
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe('');
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
       'brew 12 mana',
     );
@@ -11181,7 +11180,7 @@ describe('PagesFacade', () => {
     expect(seedPopup.hidden).toBe(true);
     expect(rows[0].querySelector('.garden-page__plot-box-label')?.textContent).toBe('sage');
     expect(rows[0].querySelector('.garden-page__plot-box-label')?.dataset.resourceColor).toBe(
-      'herb',
+      undefined,
     );
     expect(rows[0].querySelector('.garden-page__plot-box-level')?.textContent).toBe('☆☆☆');
     expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe(

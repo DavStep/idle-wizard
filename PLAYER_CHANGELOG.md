@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.48
+
+- Improved Brewing herb drag feedback with smoother item motion, clearer count previews, and cauldron receive animation.
+- Made brewed potion rewards fly out from the cauldron liquid and tightened potion preview labels/icons.
+- Polished ready Garden plots so tapping the plot frame harvests more reliably on mobile without extra label clutter.
+
 ## 0.2.47
 
 - Updated the Brewing recipe book so not-yet-researched recipes stay visible, and unknown recipes appear as locked mystery entries until discovered.

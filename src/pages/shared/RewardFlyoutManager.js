@@ -544,14 +544,31 @@ export class RewardFlyoutManager {
       ? `.brewing-page__cauldron[data-cauldron-index="${cauldronIndex}"]`
       : '.brewing-page__cauldron';
     const cauldron = root?.querySelector(cauldronSelector);
+    const cauldronLiquid =
+      cauldron?.querySelector('.brewing-page__cauldron-art-liquid:not([hidden])') ??
+      root?.querySelector('.brewing-page__cauldron-art-liquid:not([hidden])');
+    const liquidAnchor = this.getBrewingCauldronLiquidAnchor(cauldronLiquid);
 
     return (
-      cauldron?.querySelector('.brewing-page__cauldron-potion-icon:not([hidden])') ??
+      liquidAnchor ??
+      cauldron?.querySelector('.brewing-page__cauldron-art:not([hidden])') ??
       cauldron ??
-      root?.querySelector('.brewing-page__cauldron-potion-icon:not([hidden])') ??
       root?.querySelector('.brewing-page__cauldron') ??
       root
     );
+  }
+
+  getBrewingCauldronLiquidAnchor(cauldronLiquid) {
+    const liquidRect = this.getElementRect(cauldronLiquid);
+
+    if (!liquidRect) {
+      return null;
+    }
+
+    return {
+      x: liquidRect.left + liquidRect.width / 2,
+      y: liquidRect.top + liquidRect.height * 0.62,
+    };
   }
 
   getSeedDropSources(event) {

@@ -709,6 +709,7 @@ describe('GardenPlotManager', () => {
     expect(worldRule).toContain('scale(var(--garden-page-world-zoom, 1))');
     expect(plotRowsRule).toContain('max-height: none;');
     expect(plotRowsRule).toContain('overflow: visible;');
+    expect(baseCss).toContain('gap: 12px;\n  align-content: start;');
     expect(baseCss).toContain(
       'padding: 8px var(--style-room-content-edge) 0;',
     );
@@ -776,7 +777,7 @@ describe('GardenPlotManager', () => {
     expect(boxTimer?.textContent).toBe('6s');
   });
 
-  it('sizes plot soil and progress rails from the same visual width', () => {
+  it('keeps plot labels on the soil and progress rails slightly narrower', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const frameRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-box-frame\s*\{(?<body>[^}]*)\}/,
@@ -793,13 +794,20 @@ describe('GardenPlotManager', () => {
     const numberRule = baseCss.match(
       /\.garden-page__plot-box-number\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const labelRule = baseCss.match(
+      /\.garden-page__plot-box-level\s*\{[^}]*\}\s*\.garden-page__plot-box-label\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const progressRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-progress\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const activePlotRowRule = baseCss.match(
+      /\.garden-page__plot-row:is\(:active, \.is-pressing\):not\(:disabled\)\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(baseCss).toContain('--garden-page-plot-number-color: #3b2416;');
     expect(baseCss).toContain('--garden-page-plot-soil-level-1: #784c31;');
     expect(baseCss).toContain('--garden-page-plot-soil-level-5: #54321f;');
+    expect(baseCss).toContain('--garden-page-plot-progress-width: 80px;');
     expect(frameRule).toContain('width: var(--garden-page-plot-visual-width);');
     expect(frameRule).toContain(
       '--garden-page-plot-soil-fill: var(--garden-page-plot-soil-level-1);',
@@ -823,6 +831,11 @@ describe('GardenPlotManager', () => {
     expect(numberRule).toContain('left: 10px;');
     expect(numberRule).toContain('color: var(--garden-page-plot-number-color);');
     expect(numberRule).toContain('font-size: var(--style-font-size);');
+    expect(labelRule).toContain('top: 18px;');
+    expect(labelRule).toContain('right: 9px;');
+    expect(labelRule).toContain('max-width: calc(100% - 34px);');
+    expect(labelRule).toContain('color: var(--style-text);');
+    expect(labelRule).toContain('text-align: right;');
     expect(baseCss).toMatch(
       /\.garden-page__plot-box-number,[\s\S]*\.garden-page__plot-box-label\s*\{[\s\S]*padding:\s*0 2px;[\s\S]*background:\s*transparent;/,
     );
@@ -830,7 +843,8 @@ describe('GardenPlotManager', () => {
       /\.garden-page__plot-box-number,[\s\S]*\.garden-page__plot-box-label\s*\{[\s\S]*z-index:\s*2;/,
     );
     expect(progressRule).toContain('justify-self: center;');
-    expect(progressRule).toContain('width: var(--garden-page-plot-visual-width);');
+    expect(progressRule).toContain('width: var(--garden-page-plot-progress-width);');
+    expect(activePlotRowRule).toContain('background: transparent;');
     expect(plantRule).toContain('bottom: 20px;');
     expect(baseCss).toContain('animation: garden-page-plot-ready-lift 1080ms');
     expect(baseCss).toContain('infinite;');
@@ -919,7 +933,7 @@ describe('GardenPlotManager', () => {
     const boxFrame = parent.querySelector('.garden-page__plot-box-frame');
 
     expect(boxFrame?.classList.contains('is-ready')).toBe(true);
-    expect(parent.querySelector('.garden-page__plot-box-action')?.textContent).toBe('harvest');
+    expect(parent.querySelector('.garden-page__plot-box-action')?.textContent).toBe('');
     expect(parent.querySelector('.garden-page__plot-scissors')?.hasAttribute('hidden')).toBe(
       true,
     );
@@ -1472,6 +1486,9 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
       'herb',
     );
+    expect(plotRow.querySelector('.garden-page__plot-box-label')?.dataset.resourceColor).toBe(
+      undefined,
+    );
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('no seeds');
 
     plotRow
@@ -1889,6 +1906,123 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvesting 3s');
   });
 
+  it('starts harvest from a no-drag ready plot pointer release and suppresses the follow-up click', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const startGardenHarvest = vi.spyOn(gameplayFacade, 'startGardenHarvest');
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 1,
+      selectedSeedKey: 'sageSeed',
+      selectedSeedLabel: 'sage seed',
+      seedItemTypeId: 1,
+      seedKey: 'sageSeed',
+      seedLabel: 'sage seed',
+      herbItemTypeId: 1001,
+      herbKey: 'sageHerb',
+      herbLabel: 'sage',
+      phase: 'ready',
+      totalMs: 0,
+      remainingMs: 0,
+      progress: 1,
+      process: null,
+    });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.garden-page__world-shell');
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    const boxFrame = plotRow.querySelector('.garden-page__plot-box-frame');
+
+    dispatchPointer(boxFrame, 'pointerdown', {
+      pointerId: 1,
+      clientX: 100,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointermove', {
+      pointerId: 1,
+      clientX: 106,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 1,
+      clientX: 106,
+      clientY: 100,
+    });
+    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    expect(startGardenHarvest).toHaveBeenCalledTimes(1);
+    expect(tile.phase).toBe('harvesting');
+    expect(parent.querySelector('.garden-page__cancel-popup')?.hidden).toBe(true);
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('keeps ready plot world drag when movement is deliberate', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const startGardenHarvest = vi.spyOn(gameplayFacade, 'startGardenHarvest');
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    Object.assign(tile, {
+      selectedSeedItemTypeId: 1,
+      selectedSeedKey: 'sageSeed',
+      selectedSeedLabel: 'sage seed',
+      seedItemTypeId: 1,
+      seedKey: 'sageSeed',
+      seedLabel: 'sage seed',
+      herbItemTypeId: 1001,
+      herbKey: 'sageHerb',
+      herbLabel: 'sage',
+      phase: 'ready',
+      totalMs: 0,
+      remainingMs: 0,
+      progress: 1,
+      process: null,
+    });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.garden-page__world-shell');
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    const boxFrame = plotRow.querySelector('.garden-page__plot-box-frame');
+    Object.defineProperty(shell, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 200, height: 200 }),
+    });
+
+    dispatchPointer(boxFrame, 'pointerdown', {
+      pointerId: 1,
+      clientX: 100,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointermove', {
+      pointerId: 1,
+      clientX: 80,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 1,
+      clientX: 80,
+      clientY: 100,
+    });
+    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    const world = parent.querySelector('.garden-page__world');
+    expect(world.style.getPropertyValue('--garden-page-world-pan-x')).toBe('-20px');
+    expect(startGardenHarvest).not.toHaveBeenCalled();
+    expect(tile.phase).toBe('ready');
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('shows full progress when a plot can be harvested', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -1917,7 +2051,7 @@ describe('GardenPlotManager', () => {
     const plotRow = parent.querySelector('.garden-page__plot-row');
     const boxFrame = plotRow.querySelector('.garden-page__plot-box-frame');
 
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('harvest');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('');
     expect(boxFrame?.classList.contains('is-ready')).toBe(true);
     expect(boxFrame?.style.getPropertyValue('--garden-page-plot-ready-delay')).toBe('0ms');
     expect(plotRow.querySelector('.garden-page__plot-progress')?.hidden).toBe(false);

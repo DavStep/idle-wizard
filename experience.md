@@ -48,6 +48,7 @@
 - Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
 - Cauldron brew/bottle success state belongs in the active brew text and progress rail; reserve cauldron messages for blocked/error feedback so stale success text does not fight the timer state.
 - Reward flyouts on Android WebView should avoid per-event dynamic `@keyframes`; use transform/opacity Web Animations API paths and cap active particles.
+- Potion collection reward drops should start from the visible cauldron liquid, not the potion preview/icon or whole cauldron box.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
 - Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
@@ -146,6 +147,8 @@
 - Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
 - Garden plantable empty plots should plant from the whole slot/row; seed-name labels still open seed choices and no-seed slots stay inert.
 - Ready Garden plot boxes should harvest from the visible plot frame, not only the plant/action label; the plant icon is too small as the sole tap target.
+- Ready Garden plot boxes should not show a visible `harvest` label; the ready animation and plot tap affordance are enough.
+- Ready Garden plot taps need a no-drag world pointerup path with click dedupe; WebView can turn small finger drift into pan and drop the native click.
 - First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
 - FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
@@ -170,6 +173,7 @@
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
 - Dev browser automation exposes `window.cheats` with `VITE_ENABLE_CHEATS=true`, but `window.tutorialCapture` needs its own `VITE_ENABLE_TUTORIAL_CAPTURE=true`; cheats alone do not mount the tutorial capture helper.
 - In-app Browser Playwright evaluate can miss main-world `window.cheats`, and `javascript:` bookmarklets are blocked; do not rely on that path for cheat-driven screenshot setup.
+- In-app Browser blocks `data:` fixture pages; use the real app state or an HTTP-served local harness for browser UI QA.
 - Brewing drag screenshot QA needs an unlocked level-4+ save or `VITE_ENABLE_CHEATS=true`; a level-2 local save cannot reach herb drag controls.
 - Tutorial motion/visual QA harnesses must set `--style-ui-scale` to `3 * viewportScale`; using only viewport scale makes Elara/source UI look tiny and gives misleading screenshots.
 - FTUE guide has no skip control; players should finish or auto-complete it through progress.

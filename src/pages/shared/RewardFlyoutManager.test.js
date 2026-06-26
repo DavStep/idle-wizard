@@ -455,7 +455,7 @@ describe('RewardFlyoutManager', () => {
     expect(anchor?.style.top).toBe('313px');
   });
 
-  it('starts potion drops from the cauldron potion icon', () => {
+  it('starts potion drops from the cauldron liquid', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const host = document.createElement('section');
     const cauldron = document.createElement('section');
@@ -463,10 +463,19 @@ describe('RewardFlyoutManager', () => {
     cauldron.dataset.cauldronIndex = '1';
     setRect(cauldron, { left: 120, top: 300, width: 280, height: 96 });
 
+    const cauldronArt = document.createElement('span');
+    cauldronArt.className = 'brewing-page__cauldron-art';
+    setRect(cauldronArt, { left: 148, top: 318, width: 96, height: 78 });
+
+    const cauldronLiquid = document.createElement('span');
+    cauldronLiquid.className = 'brewing-page__cauldron-art-liquid';
+    setRect(cauldronLiquid, { left: 148, top: 318, width: 96, height: 78 });
+
     const potionIcon = document.createElement('span');
     potionIcon.className = 'brewing-page__cauldron-potion-icon';
     setRect(potionIcon, { left: 330, top: 324, width: 48, height: 48 });
-    cauldron.append(potionIcon);
+    cauldronArt.append(cauldronLiquid);
+    cauldron.append(cauldronArt, potionIcon);
     host.append(cauldron);
     document.body.append(host);
 
@@ -480,8 +489,8 @@ describe('RewardFlyoutManager', () => {
     });
 
     const anchor = document.querySelector('.room-item-drop-anchor.is-potion');
-    expect(anchor?.style.left).toBe('354px');
-    expect(anchor?.style.top).toBe('348px');
+    expect(anchor?.style.left).toBe('196px');
+    expect(anchor?.style.top).toBe('366.36px');
 
     manager.unmount();
   });

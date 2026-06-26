@@ -35,9 +35,10 @@ const WORLD_EDGE_EXTENSION = 16;
 const WORLD_WIDTH = 328 + WORLD_EDGE_EXTENSION * 2;
 const WORLD_MIN_HEIGHT = 560;
 const WORLD_ROW_HEIGHT = 92;
-const WORLD_ROW_GAP = 8;
+const WORLD_ROW_GAP = 12;
 const WORLD_ROWS_PADDING_TOP = 8;
 const WORLD_DRAG_THRESHOLD = 4;
+const WORLD_HARVEST_DRAG_THRESHOLD = 12;
 const WORLD_MIN_ZOOM = 0.62;
 const WORLD_MAX_ZOOM = 1.16;
 const WORLD_ZOOM_RUBBER_LIMIT = 0.12;
@@ -748,7 +749,7 @@ export class GardenPlotManager {
       this.clearPlotLevel(refs.boxLevel);
     }
     this.setText(refs.boxLabel, label);
-    setResourceColor(refs.boxLabel, labelResource);
+    setResourceColor(refs.boxLabel, labelResource === 'seed' ? labelResource : null);
     this.setResourceText(refs.boxActionLabel, action);
 
     if (actionColorResource) {
@@ -1061,10 +1062,19 @@ export class GardenPlotManager {
 
     if (tile.phase === 'ready') {
       if (clickedAction || clickedPlant || clickedHarvestArea || keyboardRowAction) {
-        this.gameplayFacade.startGardenHarvest(tileNumber);
-        this.render(this.gameplayFacade.getSnapshot());
+        this.startGardenHarvest(tileNumber);
       }
     }
+  }
+
+  startGardenHarvest(tileNumber) {
+    const result = this.gameplayFacade.startGardenHarvest(tileNumber);
+
+    if (result?.ok !== false) {
+      this.render(this.gameplayFacade.getSnapshot());
+    }
+
+    return result;
   }
 
   canPlantSelectedSeed(tile, snapshot) {
@@ -1117,6 +1127,31 @@ export class GardenPlotManager {
 
   isTileHarvestAreaClick(event, refs) {
     return Boolean(refs?.boxFrame && event?.target && refs.boxFrame.contains(event.target));
+  }
+
+  getReadyHarvestTileNumberFromEvent(event) {
+    const row = event?.target?.closest?.('.garden-page__plot-row');
+    const tileNumber = Number.parseInt(row?.dataset?.gardenTileNumber ?? '', 10);
+
+    if (!Number.isInteger(tileNumber)) {
+      return null;
+    }
+
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const tile = snapshot.garden?.plot?.tiles.find(
+      (candidate) => candidate.tileNumber === tileNumber,
+    );
+    const refs = this.tileRefs.get(tileNumber);
+
+    if (!tile?.unlocked || tile.phase !== 'ready' || !refs?.button || refs.button.disabled) {
+      return null;
+    }
+
+    return this.isTileActionClick(event, refs) ||
+      this.isTilePlantClick(event) ||
+      this.isTileHarvestAreaClick(event, refs)
+      ? tileNumber
+      : null;
   }
 
   onTileLabelClick(tileNumber, event) {
@@ -1607,6 +1642,7 @@ export class GardenPlotManager {
       clientX: event.clientX,
       clientY: event.clientY,
     });
+    const readyHarvestTileNumber = this.getReadyHarvestTileNumberFromEvent(event);
 
     if (this.worldPointers.size >= 2) {
       this.startWorldPinchGesture();
@@ -1619,6 +1655,11 @@ export class GardenPlotManager {
         panX: this.worldPan.x,
         panY: this.worldPan.y,
         didDrag: false,
+        dragThreshold:
+          readyHarvestTileNumber !== null
+            ? WORLD_HARVEST_DRAG_THRESHOLD
+            : WORLD_DRAG_THRESHOLD,
+        readyHarvestTileNumber,
       };
     }
 
@@ -1653,10 +1694,9 @@ export class GardenPlotManager {
     const deltaX = (event.clientX - this.worldGesture.startX) / scale;
     const deltaY = (event.clientY - this.worldGesture.startY) / scale;
 
-    if (
-      !this.worldGesture.didDrag &&
-      Math.hypot(deltaX, deltaY) < WORLD_DRAG_THRESHOLD
-    ) {
+    const dragThreshold = this.worldGesture.dragThreshold ?? WORLD_DRAG_THRESHOLD;
+
+    if (!this.worldGesture.didDrag && Math.hypot(deltaX, deltaY) < dragThreshold) {
       return;
     }
 
@@ -1674,6 +1714,16 @@ export class GardenPlotManager {
     if (!this.worldPointers.has(pointerId)) {
       return;
     }
+
+    const tapHarvestTileNumber =
+      event.type !== 'pointercancel' &&
+      this.worldPointers.size === 1 &&
+      this.worldGesture?.type === 'pan' &&
+      this.worldGesture.pointerId === pointerId &&
+      this.worldGesture.didDrag !== true &&
+      Number.isInteger(this.worldGesture.readyHarvestTileNumber)
+        ? this.worldGesture.readyHarvestTileNumber
+        : null;
 
     if (event.pointerId !== undefined) {
       event.currentTarget.releasePointerCapture?.(event.pointerId);
@@ -1703,6 +1753,13 @@ export class GardenPlotManager {
     this.refs.world?.shell?.classList.remove('is-dragging');
     this.worldGesture = null;
     this.settleWorldViewport();
+
+    if (tapHarvestTileNumber !== null) {
+      this.suppressWorldClick();
+      event.preventDefault();
+      event.stopPropagation();
+      this.startGardenHarvest(tapHarvestTileNumber);
+    }
   }
 
   startWorldPinchGesture() {
@@ -1967,7 +2024,7 @@ export class GardenPlotManager {
 
   formatTileAction(tile) {
     if (tile.phase === 'ready') {
-      return { label: 'harvest' };
+      return { label: '' };
     }
 
     const status = this.formatTileStatus(tile.phase);
