@@ -1,6 +1,8 @@
 import {
   PERSONAL_TASK_ACTIONS,
+  PERSONAL_TASK_DAILY_MAX_POINTS,
   PERSONAL_TASK_UNLOCK_LEVEL,
+  PERSONAL_TASK_WEEKLY_MAX_POINTS,
   PersonalTaskGenerationManager,
 } from './managers/PersonalTaskGenerationManager.js';
 import { PersonalTaskPeriodManager } from './managers/PersonalTaskPeriodManager.js';
@@ -8,15 +10,17 @@ import { PersonalTaskRewardManager } from './managers/PersonalTaskRewardManager.
 
 export { PERSONAL_TASK_ACTIONS, PERSONAL_TASK_UNLOCK_LEVEL };
 
+const PERSONAL_TASK_STATE_VERSION = 2;
+const PERSONAL_TASK_PERIOD_TYPES = ['daily', 'weekly'];
+
 export class PersonalTasksFacade {
   static explain =
-    'Personal tasks give the wizard small daily and weekly goals, then hold rewards until the player claims them.';
+    'Personal tasks give the wizard daily quests that feed daily and weekly point tracks, then hold milestone rewards until the player claims them.';
 
   constructor({
     crystalFacade,
     coinFacade,
     playerLevelFacade,
-    researchFacade,
     tasksFacade,
     now = () => Date.now(),
   } = {}) {
@@ -24,7 +28,6 @@ export class PersonalTasksFacade {
     this.tasksFacade = tasksFacade;
     this.periodManager = new PersonalTaskPeriodManager({ now });
     this.generationManager = new PersonalTaskGenerationManager({
-      researchFacade,
       tasksFacade,
     });
     this.rewardManager = new PersonalTaskRewardManager({
@@ -45,47 +48,48 @@ export class PersonalTasksFacade {
       };
     }
 
-    this.ensureCurrentPeriods();
-
+    const periods = this.ensureCurrentPeriods();
+    const daily = periods.daily;
+    const weekly = periods.weekly;
     let changed = false;
+    let dailyPointsAdded = 0;
+    let weeklyPointsAdded = 0;
 
-    for (const periodType of ['daily', 'weekly']) {
-      const period = this.state.periods[periodType];
-
-      if (!period) {
+    for (const task of daily?.tasks ?? []) {
+      if (task.actionType !== normalizedActionType || task.completed) {
         continue;
       }
 
-      for (const task of period.tasks ?? []) {
-        if (task.actionType !== normalizedActionType || task.completed) {
-          continue;
-        }
+      const previousProgress = Math.max(0, Math.floor(Number(task.progressQuantity) || 0));
+      const requiredQuantity = Math.max(1, Math.floor(Number(task.requiredQuantity) || 1));
+      const nextProgress = Math.min(requiredQuantity, previousProgress + amount);
 
-        const previousProgress = Math.max(0, Math.floor(Number(task.progressQuantity) || 0));
-        const requiredQuantity = Math.max(1, Math.floor(Number(task.requiredQuantity) || 1));
-        const nextProgress = Math.min(requiredQuantity, previousProgress + amount);
+      if (nextProgress === previousProgress) {
+        continue;
+      }
 
-        if (nextProgress === previousProgress) {
-          continue;
-        }
+      task.progressQuantity = nextProgress;
+      changed = true;
 
-        task.progressQuantity = nextProgress;
-        changed = true;
-
-        if (nextProgress >= requiredQuantity) {
-          task.completed = true;
-        }
+      if (nextProgress >= requiredQuantity) {
+        task.completed = true;
+        const pointValue = Math.max(1, Math.floor(Number(task.pointValue) || 1));
+        dailyPointsAdded += this.addPeriodPoints(daily, pointValue);
+        weeklyPointsAdded += this.addPeriodPoints(weekly, pointValue);
       }
     }
 
     return {
       ok: changed,
       changed,
+      dailyPointsAdded,
+      weeklyPointsAdded,
+      pointsAdded: dailyPointsAdded,
       rewards: [],
     };
   }
 
-  claimTaskReward(periodType, taskId) {
+  claimMilestoneReward(periodType, threshold) {
     if (!this.isUnlocked()) {
       return {
         ok: false,
@@ -104,19 +108,66 @@ export class PersonalTasksFacade {
       };
     }
 
-    const task = (period.tasks ?? []).find(
-      (candidate) => candidate.taskId === String(taskId ?? ''),
+    const normalizedThreshold = Math.max(0, Math.floor(Number(threshold) || 0));
+    const milestone = (period.rewards ?? []).find(
+      (candidate) => candidate.threshold === normalizedThreshold,
     );
 
-    if (!task) {
+    if (!milestone) {
       return {
         ok: false,
         changed: false,
-        reason: 'unknown_task',
+        reason: 'unknown_reward',
       };
     }
 
-    return this.grantTaskReward(task, period);
+    if (milestone.claimed) {
+      return {
+        ok: false,
+        changed: false,
+        reason: 'claimed',
+      };
+    }
+
+    if (Math.max(0, Math.floor(Number(period.currentPoints) || 0)) < milestone.threshold) {
+      return {
+        ok: false,
+        changed: false,
+        reason: 'incomplete',
+      };
+    }
+
+    milestone.claimed = true;
+    const granted = this.rewardManager.grantReward(milestone.reward);
+    const taskId = `${period.periodKey}:milestone:${milestone.threshold}`;
+    const label = `${period.periodType} ${milestone.threshold} points`;
+
+    return {
+      ok: true,
+      changed: true,
+      periodType: period.periodType,
+      taskId,
+      label,
+      milestoneThreshold: milestone.threshold,
+      rewards: [
+        {
+          periodType: period.periodType,
+          taskId,
+          label,
+          milestoneThreshold: milestone.threshold,
+          ...granted,
+        },
+      ],
+      ...granted,
+    };
+  }
+
+  claimTaskReward() {
+    return {
+      ok: false,
+      changed: false,
+      reason: 'milestone_rewards_only',
+    };
   }
 
   claimFullClearReward(periodType) {
@@ -129,16 +180,7 @@ export class PersonalTasksFacade {
     }
 
     const period = this.getCurrentPeriod(periodType);
-
-    if (!period) {
-      return {
-        ok: false,
-        changed: false,
-        reason: 'unknown_period',
-      };
-    }
-
-    return this.grantFullClearReward(period);
+    return this.claimMilestoneReward(periodType, period?.maxPoints);
   }
 
   getSnapshot() {
@@ -174,14 +216,14 @@ export class PersonalTasksFacade {
   }
 
   applyPersistenceSnapshot(snapshot = {}) {
-    if (!snapshot || typeof snapshot !== 'object') {
+    if (!snapshot || typeof snapshot !== 'object' || snapshot.version !== PERSONAL_TASK_STATE_VERSION) {
       this.state = this.createEmptyState();
       return;
     }
 
     const periods = {};
 
-    for (const periodType of ['daily', 'weekly']) {
+    for (const periodType of PERSONAL_TASK_PERIOD_TYPES) {
       const period = snapshot.periods?.[periodType];
 
       if (!period || typeof period !== 'object') {
@@ -192,7 +234,7 @@ export class PersonalTasksFacade {
     }
 
     this.state = {
-      version: 1,
+      version: PERSONAL_TASK_STATE_VERSION,
       periods,
     };
   }
@@ -201,11 +243,14 @@ export class PersonalTasksFacade {
     const currentPeriods = this.periodManager.getCurrentPeriods();
     const anchorLevel = this.getCurrentLevel();
 
-    for (const periodType of ['daily', 'weekly']) {
+    for (const periodType of PERSONAL_TASK_PERIOD_TYPES) {
       const currentPeriod = currentPeriods[periodType];
       const storedPeriod = this.state.periods[periodType];
 
-      if (storedPeriod?.periodKey === currentPeriod.periodKey) {
+      if (
+        storedPeriod?.version === PERSONAL_TASK_STATE_VERSION &&
+        storedPeriod.periodKey === currentPeriod.periodKey
+      ) {
         storedPeriod.resetAtMs = currentPeriod.resetAtMs;
         continue;
       }
@@ -223,11 +268,20 @@ export class PersonalTasksFacade {
     const tasks = Array.isArray(period?.tasks) ? period.tasks : [];
     const completedTasks = tasks.filter((task) => this.isTaskCompleted(task)).length;
     const taskSnapshots = tasks.map((task) => this.createTaskSnapshot(task));
-    const fullClearRewardText = this.rewardManager.formatRewardText(period?.fullClearReward);
-    const fullClearRewardClaimable = this.isFullClearRewardClaimable(period);
-    const claimableRewards =
-      taskSnapshots.filter((task) => task.rewardClaimable).length +
-      Number(fullClearRewardClaimable);
+    const rewardSnapshots = (period?.rewards ?? []).map((reward) =>
+      this.createMilestoneSnapshot(period, reward),
+    );
+    const claimableRewards = rewardSnapshots.filter((reward) => reward.claimable).length;
+    const currentPoints = Math.max(0, Math.floor(Number(period?.currentPoints) || 0));
+    const maxPoints = Math.max(
+      1,
+      Math.floor(
+        Number(period?.maxPoints) ||
+          (period?.periodType === 'weekly'
+            ? PERSONAL_TASK_WEEKLY_MAX_POINTS
+            : PERSONAL_TASK_DAILY_MAX_POINTS),
+      ),
+    );
 
     return {
       periodType: period.periodType,
@@ -235,14 +289,13 @@ export class PersonalTasksFacade {
       anchorLevel: period.anchorLevel,
       resetAtMs: period.resetAtMs,
       resetLabel: this.periodManager.formatResetLabel(period.resetAtMs),
+      currentPoints,
+      maxPoints,
+      progress: Math.min(1, currentPoints / maxPoints),
       completedTasks,
       totalTasks: tasks.length,
-      fullClearReward: {
-        ...(period.fullClearReward ?? {}),
-        text: fullClearRewardText,
-      },
-      fullClearRewardClaimed: Boolean(period.fullClearRewardClaimed),
-      fullClearRewardClaimable,
+      rewards: rewardSnapshots,
+      milestones: rewardSnapshots,
       claimableRewards,
       hasClaimableRewards: claimableRewards > 0,
       tasks: taskSnapshots,
@@ -255,9 +308,7 @@ export class PersonalTasksFacade {
       0,
       Math.min(requiredQuantity, Math.floor(Number(task.progressQuantity) || 0)),
     );
-
     const completed = this.isTaskCompleted(task);
-    const rewardClaimed = Boolean(task.rewardClaimed);
 
     return {
       taskId: task.taskId,
@@ -268,106 +319,44 @@ export class PersonalTasksFacade {
       progressQuantity,
       remainingQuantity: Math.max(0, requiredQuantity - progressQuantity),
       progress: progressQuantity / requiredQuantity,
+      pointValue: Math.max(1, Math.floor(Number(task.pointValue) || 1)),
       completed,
+    };
+  }
+
+  createMilestoneSnapshot(period, milestone) {
+    const threshold = Math.max(1, Math.floor(Number(milestone?.threshold) || 1));
+    const currentPoints = Math.max(0, Math.floor(Number(period?.currentPoints) || 0));
+    const claimed = Boolean(milestone?.claimed);
+    const unlocked = currentPoints >= threshold;
+
+    return {
+      milestoneId: `${period.periodKey}:milestone:${threshold}`,
+      threshold,
       reward: {
-        ...(task.reward ?? {}),
-        text: this.rewardManager.formatRewardText(task.reward),
+        ...(milestone.reward ?? {}),
+        text: this.rewardManager.formatRewardText(milestone.reward),
       },
-      rewardClaimed,
-      rewardClaimable: completed && !rewardClaimed,
+      claimed,
+      claimable: unlocked && !claimed,
+      unlocked,
     };
   }
 
-  grantTaskReward(task, period) {
-    if (!this.isTaskCompleted(task)) {
-      return {
-        ok: false,
-        changed: false,
-        reason: 'incomplete',
-      };
+  addPeriodPoints(period, amount) {
+    if (!period) {
+      return 0;
     }
 
-    if (task.rewardClaimed) {
-      return {
-        ok: false,
-        changed: false,
-        reason: 'claimed',
-      };
-    }
-
-    task.completed = true;
-    task.rewardClaimed = true;
-    const granted = this.rewardManager.grantReward(task.reward);
-
-    return {
-      ok: true,
-      changed: true,
-      periodType: period.periodType,
-      taskId: task.taskId,
-      label: task.label,
-      rewards: [
-        {
-          periodType: period.periodType,
-          taskId: task.taskId,
-          label: task.label,
-          ...granted,
-        },
-      ],
-      ...granted,
-    };
-  }
-
-  grantFullClearReward(period) {
-    const tasks = Array.isArray(period.tasks) ? period.tasks : [];
-
-    if (period.fullClearRewardClaimed || tasks.length <= 0) {
-      return {
-        ok: false,
-        changed: false,
-        reason: period.fullClearRewardClaimed ? 'claimed' : 'empty',
-      };
-    }
-
-    if (!tasks.every((task) => this.isTaskCompleted(task))) {
-      return {
-        ok: false,
-        changed: false,
-        reason: 'incomplete',
-      };
-    }
-
-    period.fullClearRewardClaimed = true;
-    const granted = this.rewardManager.grantReward(period.fullClearReward);
-    const taskId = `${period.periodKey}:full-clear`;
-
-    return {
-      ok: true,
-      changed: true,
-      periodType: period.periodType,
-      taskId,
-      label: `${period.periodType} complete`,
-      fullClear: true,
-      rewards: [
-        {
-          periodType: period.periodType,
-          taskId,
-          label: `${period.periodType} complete`,
-          fullClear: true,
-          ...granted,
-        },
-      ],
-      ...granted,
-    };
-  }
-
-  isFullClearRewardClaimable(period) {
-    const tasks = Array.isArray(period?.tasks) ? period.tasks : [];
-
-    return (
-      !period?.fullClearRewardClaimed &&
-      tasks.length > 0 &&
-      tasks.every((task) => this.isTaskCompleted(task))
+    const previousPoints = Math.max(0, Math.floor(Number(period.currentPoints) || 0));
+    const maxPoints = Math.max(1, Math.floor(Number(period.maxPoints) || 1));
+    const nextPoints = Math.min(
+      maxPoints,
+      previousPoints + Math.max(0, Math.floor(Number(amount) || 0)),
     );
+
+    period.currentPoints = nextPoints;
+    return nextPoints - previousPoints;
   }
 
   isTaskCompleted(task) {
@@ -383,7 +372,7 @@ export class PersonalTasksFacade {
   getCurrentPeriod(periodType) {
     const normalizedPeriodType = String(periodType ?? '');
 
-    if (!['daily', 'weekly'].includes(normalizedPeriodType)) {
+    if (!PERSONAL_TASK_PERIOD_TYPES.includes(normalizedPeriodType)) {
       return null;
     }
 
@@ -392,60 +381,76 @@ export class PersonalTasksFacade {
   }
 
   sanitizePeriod(period, periodType) {
-    return {
-      version: 1,
+    const anchorLevel = Math.max(
+      PERSONAL_TASK_UNLOCK_LEVEL,
+      Math.floor(Number(period.anchorLevel) || PERSONAL_TASK_UNLOCK_LEVEL),
+    );
+    const generatedPeriod = this.generationManager.createPeriodState({
       periodType,
       periodKey: typeof period.periodKey === 'string' ? period.periodKey : '',
       resetAtMs: Number.isFinite(period.resetAtMs) ? period.resetAtMs : 0,
-      anchorLevel: Math.max(
-        PERSONAL_TASK_UNLOCK_LEVEL,
-        Math.floor(Number(period.anchorLevel) || PERSONAL_TASK_UNLOCK_LEVEL),
-      ),
-      fullClearReward: this.sanitizeReward(period.fullClearReward),
-      fullClearRewardClaimed: Boolean(period.fullClearRewardClaimed),
-      tasks: Array.isArray(period.tasks)
-        ? period.tasks.map((task) => this.sanitizeTask(task)).filter(Boolean)
-        : [],
-    };
-  }
-
-  sanitizeTask(task) {
-    if (!task || typeof task !== 'object') {
-      return null;
-    }
-
-    const taskId = typeof task.taskId === 'string' ? task.taskId : '';
-    const actionType = typeof task.actionType === 'string' ? task.actionType : '';
-    const label = typeof task.label === 'string' ? task.label : '';
-
-    if (!taskId || !actionType || !label) {
-      return null;
-    }
-
-    const requiredQuantity = Math.max(1, Math.floor(Number(task.requiredQuantity) || 1));
-    const progressQuantity = Math.max(
+      anchorLevel,
+    });
+    const maxPoints = Math.max(1, Math.floor(Number(generatedPeriod.maxPoints) || 1));
+    const currentPoints = Math.max(
       0,
-      Math.min(requiredQuantity, Math.floor(Number(task.progressQuantity) || 0)),
+      Math.min(maxPoints, Math.floor(Number(period.currentPoints) || 0)),
     );
 
     return {
-      taskId,
-      taskKey: typeof task.taskKey === 'string' ? task.taskKey : taskId,
-      actionType,
-      label,
-      requiredQuantity,
-      progressQuantity,
-      completed: Boolean(task.completed) || progressQuantity >= requiredQuantity,
-      reward: this.sanitizeReward(task.reward),
-      rewardClaimed: Boolean(task.rewardClaimed),
+      ...generatedPeriod,
+      currentPoints,
+      rewards: this.sanitizeRewards(period.rewards, generatedPeriod.rewards),
+      tasks:
+        periodType === 'daily'
+          ? this.sanitizeTasks(period.tasks, generatedPeriod.tasks)
+          : [],
     };
   }
 
-  sanitizeReward(reward = {}) {
-    return {
-      coin: Math.max(0, Math.floor(Number(reward.coin) || 0)),
-      crystal: Math.max(0, Math.floor(Number(reward.crystal) || 0)),
-    };
+  sanitizeRewards(rewards, generatedRewards) {
+    const rewardByThreshold = new Map(
+      (Array.isArray(rewards) ? rewards : []).map((reward) => [
+        Math.max(1, Math.floor(Number(reward?.threshold) || 1)),
+        reward,
+      ]),
+    );
+
+    return generatedRewards.map((generatedReward) => {
+      const storedReward = rewardByThreshold.get(generatedReward.threshold);
+
+      return {
+        ...generatedReward,
+        claimed: Boolean(storedReward?.claimed),
+      };
+    });
+  }
+
+  sanitizeTasks(tasks, generatedTasks = []) {
+    const taskByKey = new Map(
+      (Array.isArray(tasks) ? tasks : []).map((task) => [
+        String(task?.taskKey ?? ''),
+        task,
+      ]),
+    );
+
+    return generatedTasks.map((generatedTask) => {
+      const storedTask = taskByKey.get(generatedTask.taskKey);
+      const requiredQuantity = Math.max(
+        1,
+        Math.floor(Number(generatedTask.requiredQuantity) || 1),
+      );
+      const progressQuantity = Math.max(
+        0,
+        Math.min(requiredQuantity, Math.floor(Number(storedTask?.progressQuantity) || 0)),
+      );
+
+      return {
+        ...generatedTask,
+        progressQuantity,
+        completed: Boolean(storedTask?.completed) || progressQuantity >= requiredQuantity,
+      };
+    });
   }
 
   getCurrentLevel() {
@@ -470,7 +475,7 @@ export class PersonalTasksFacade {
 
   createEmptyState() {
     return {
-      version: 1,
+      version: PERSONAL_TASK_STATE_VERSION,
       periods: {},
     };
   }

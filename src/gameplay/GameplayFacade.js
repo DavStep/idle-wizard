@@ -694,6 +694,13 @@ export class GameplayFacade {
     return result;
   }
 
+  claimPersonalTaskMilestoneReward(periodType, threshold) {
+    const result = this.personalTasksFacade.claimMilestoneReward(periodType, threshold);
+    this.publishPersonalTaskRewardEvent(result);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   claimPersonalTaskFullClearReward(periodType) {
     const result = this.personalTasksFacade.claimFullClearReward(periodType);
     this.publishPersonalTaskRewardEvent(result);
@@ -719,6 +726,7 @@ export class GameplayFacade {
       taskId: result.taskId,
       label: result.label,
       fullClear: result.fullClear === true,
+      milestoneThreshold: result.milestoneThreshold,
       coin,
       crystal,
     });

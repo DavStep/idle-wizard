@@ -91,11 +91,11 @@
 - Top-panel resource values should be written amount-first, like `560 coin`; icon mode hides the word and leaves `count icon`.
 - Icon-mode amount/resource labels should hide `.style-resource-label__spacer` and use `--style-icon-label-gap`; preserving the word-space makes count/icon pairs look too far apart.
 - Weekly events should be framed as `weekly world event` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
-- Personal daily/weekly tasks are separate from weekly world events and alliance weekly quests; keep them as player-save counters unless server ownership is requested.
+- Personal tasks have only daily quest rows; completed daily quests add points to both daily and weekly reward tracks, separate from weekly world events and alliance quests.
 - Tabbed dialog close labels belong on the top-right border; reserve the bottom edge for the tab strip.
 - Nested dialogs inside an existing popup need their own full-layer backdrop; otherwise the parent popup text bleeds through during dialog enter/fade.
 - Personal tasks is a standard tabbed popup: `--style-tabbed-dialog-width` panel with `260px` dialog content. Do not pair that panel with a `286px` dialog or the border becomes wider than the tabs.
-- Personal task badges should count only visible per-task claim rewards; hidden full-clear rewards should not leave an orphan notification.
+- Personal task badges should count only visible milestone rewards; task rows give points and should not carry reward claim buttons.
 - Workshop personal tasks and world event character-button notification dots belong on the small `tasks`/`event` label box, not the portrait/full hit area.
 - Weekly event families should cover village crises, political changes, military danger, exploration discoveries, and trade/civil disruption.
 - Weekly event requests must match the event through theme/tags; use normal loops like summon, harvest, brew, research, sell, and earn, not random chores pasted under a headline.
@@ -599,6 +599,7 @@
 - Garden herb harvest reward drops should originate from the plant inside the plot box; use the progress rail only as a row-mode fallback.
 - Garden plot soil art should read as soil at level 1; avoid parchment-white defaults, and deepen upgraded soil from a rich brown starting point.
 - Garden plot upgrade art should use per-level soil sprites: higher levels get darker and cleaner with fewer rocks/weeds; tinting one base sprite is too subtle.
+- Garden plot bottom-left star labels can look like dark rocks in screenshots; inspect DOM/assets before redrawing soil decoration.
 - Keep herbs below the plot with enough space for active progress rows; bounded plot scrolling is acceptable once many plots are unlocked.
 - Garden page overflow belongs to `.garden-page__ui-layer`; plot and herb boxes should grow to content instead of using fixed inner row heights.
 - Garden seed/herb inventory boxes open from bottom icon buttons, reset hidden on room swaps, and collapsed previews show three item rows.

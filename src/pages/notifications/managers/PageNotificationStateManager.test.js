@@ -269,17 +269,15 @@ describe('PageNotificationStateManager', () => {
       claimableRewards: 1,
       daily: {
         claimableRewards: 1,
-        tasks: [
+        rewards: [
           {
-            completed: true,
-            rewardClaimed: false,
-            rewardClaimable: true,
+            claimable: true,
           },
         ],
       },
       weekly: {
         claimableRewards: 0,
-        tasks: [],
+        rewards: [],
       },
     };
 
@@ -292,7 +290,7 @@ describe('PageNotificationStateManager', () => {
     });
   });
 
-  it('does not roll hidden personal task full-clear rewards up to the workshop page', () => {
+  it('does not roll non-claimable personal task milestones up to the workshop page', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();
 
@@ -301,18 +299,15 @@ describe('PageNotificationStateManager', () => {
       claimableRewards: 1,
       daily: {
         claimableRewards: 1,
-        fullClearRewardClaimable: true,
-        tasks: [
+        rewards: [
           {
-            completed: true,
-            rewardClaimed: true,
-            rewardClaimable: false,
+            claimable: false,
           },
         ],
       },
       weekly: {
         claimableRewards: 0,
-        tasks: [],
+        rewards: [],
       },
     };
 

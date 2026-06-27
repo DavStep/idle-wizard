@@ -358,12 +358,21 @@ export class RewardFlyoutManager {
     const root = this.root?.closest('.game-stage') ?? document;
     const periodType = String(event?.periodType ?? '');
     const taskId = String(event?.taskId ?? '');
-    const claimButtons = [...root.querySelectorAll('.workshop-page__personal-task-claim')];
+    const milestoneThreshold = String(event?.milestoneThreshold ?? '');
+    const claimButtons = [
+      ...root.querySelectorAll(
+        '.workshop-page__personal-task-milestone-claim, .workshop-page__personal-task-claim',
+      ),
+    ];
 
     return (
       claimButtons.find((button) => {
         if (button.dataset.personalTaskPeriodType !== periodType) {
           return false;
+        }
+
+        if (milestoneThreshold) {
+          return button.dataset.personalTaskThreshold === milestoneThreshold;
         }
 
         if (event?.fullClear === true) {

@@ -21,7 +21,7 @@ function createCounterFacade() {
   };
 }
 
-function createFacade({ level = 4, now = () => START_MS, researchTabs = [] } = {}) {
+function createFacade({ level = 4, now = () => START_MS } = {}) {
   const coinFacade = createCounterFacade();
   const crystalFacade = createCounterFacade();
   const playerLevelFacade = {
@@ -35,16 +35,10 @@ function createFacade({ level = 4, now = () => START_MS, researchTabs = [] } = {
       currentLevel: level,
     }),
   };
-  const researchFacade = {
-    getSnapshot: () => ({
-      tabs: researchTabs,
-    }),
-  };
   const facade = new PersonalTasksFacade({
     crystalFacade,
     coinFacade,
     playerLevelFacade,
-    researchFacade,
     tasksFacade,
     now,
   });
@@ -73,7 +67,7 @@ describe('PersonalTasksFacade', () => {
     });
   });
 
-  it('generates level-anchored daily and weekly task sets', () => {
+  it('generates daily quests plus daily and weekly reward tracks', () => {
     const { facade } = createFacade({ level: 4 });
     const snapshot = facade.getSnapshot();
 
@@ -82,89 +76,67 @@ describe('PersonalTasksFacade', () => {
       anchorLevel: 4,
       completedTasks: 0,
       totalTasks: 7,
+      currentPoints: 0,
+      maxPoints: 100,
     });
     expect(snapshot.weekly).toMatchObject({
       anchorLevel: 4,
       completedTasks: 0,
-      totalTasks: 7,
+      totalTasks: 0,
+      currentPoints: 0,
+      maxPoints: 700,
+      tasks: [],
     });
-    expect(snapshot.daily.tasks.map((task) => task.actionType)).toContain(
-      PERSONAL_TASK_ACTIONS.EARN_COIN,
-    );
-    expect(snapshot.weekly.tasks.map((task) => task.actionType)).toContain(
-      PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS,
-    );
-    expect(snapshot.weekly.tasks.map((task) => ({
+    expect(snapshot.daily.tasks.map((task) => ({
       actionType: task.actionType,
       label: task.label,
-      requiredQuantity: task.requiredQuantity,
+      pointValue: task.pointValue,
     }))).toEqual([
       {
         actionType: PERSONAL_TASK_ACTIONS.SUMMON_SEEDS,
-        label: 'summon 2500 seeds',
-        requiredQuantity: 2500,
+        label: 'summon seeds',
+        pointValue: 10,
       },
       {
         actionType: PERSONAL_TASK_ACTIONS.SPEND_MANA,
-        label: 'spend 25000 mana',
-        requiredQuantity: 25000,
+        label: 'spend mana',
+        pointValue: 15,
       },
       {
         actionType: PERSONAL_TASK_ACTIONS.PLANT_SEEDS,
-        label: 'plant 400 seeds',
-        requiredQuantity: 400,
+        label: 'plant seeds',
+        pointValue: 10,
       },
       {
         actionType: PERSONAL_TASK_ACTIONS.HARVEST_HERBS,
-        label: 'harvest 600 herbs',
-        requiredQuantity: 600,
+        label: 'harvest herbs',
+        pointValue: 15,
       },
       {
         actionType: PERSONAL_TASK_ACTIONS.BREW_POTIONS,
-        label: 'brew 150 potions',
-        requiredQuantity: 150,
+        label: 'brew potions',
+        pointValue: 15,
       },
       {
         actionType: PERSONAL_TASK_ACTIONS.SELL_ITEMS,
-        label: 'sell 1500 items',
-        requiredQuantity: 1500,
+        label: 'sell items',
+        pointValue: 15,
       },
       {
-        actionType: PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS,
-        label: 'complete 3 requirements',
-        requiredQuantity: 3,
+        actionType: PERSONAL_TASK_ACTIONS.EARN_COIN,
+        label: 'earn coin',
+        pointValue: 20,
       },
+    ]);
+    expect(snapshot.daily.rewards.map((reward) => reward.threshold)).toEqual([
+      30, 50, 70, 100,
+    ]);
+    expect(snapshot.weekly.rewards.map((reward) => reward.threshold)).toEqual([
+      100, 250, 500, 700,
     ]);
   });
 
-  it('uses two researches for the weekly research task when research is visible', () => {
-    const { facade } = createFacade({
-      level: 4,
-      researchTabs: [
-        {
-          boxes: [
-            {
-              researches: [
-                {
-                  completed: false,
-                  locked: false,
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
-    const researchTask = facade.getSnapshot().weekly.tasks.at(-1);
-
-    expect(researchTask).toMatchObject({
-      actionType: PERSONAL_TASK_ACTIONS.COMPLETE_RESEARCH,
-      label: 'finish 2 researches',
-      requiredQuantity: 2,
-    });
-  });
-
-  it('records progress and leaves completed task rewards claimable', () => {
+  it('completes daily quests into daily and weekly points', () => {
     const { facade, coinFacade } = createFacade({ level: 4 });
     const summonTask = facade
       .getSnapshot()
@@ -179,73 +151,86 @@ describe('PersonalTasksFacade', () => {
       (task) => task.actionType === PERSONAL_TASK_ACTIONS.SUMMON_SEEDS,
     );
 
-    expect(result.changed).toBe(true);
+    expect(result).toMatchObject({
+      changed: true,
+      dailyPointsAdded: 10,
+      weeklyPointsAdded: 10,
+      rewards: [],
+    });
     expect(updatedTask).toMatchObject({
       completed: true,
       progressQuantity: summonTask.requiredQuantity,
-      rewardClaimed: false,
-      rewardClaimable: true,
     });
-    expect(snapshot.daily.claimableRewards).toBe(1);
-    expect(result.rewards).toEqual([]);
+    expect(snapshot.daily.currentPoints).toBe(10);
+    expect(snapshot.weekly.currentPoints).toBe(10);
+    expect(snapshot.daily.claimableRewards).toBe(0);
     expect(coinFacade.current).toBe(0);
   });
 
-  it('claims completed task rewards on request', () => {
+  it('claims milestone rewards on request', () => {
     const { facade, coinFacade } = createFacade({ level: 4 });
-    const summonTask = facade
-      .getSnapshot()
-      .daily.tasks.find((task) => task.actionType === PERSONAL_TASK_ACTIONS.SUMMON_SEEDS);
+    const dailyTasks = facade.getSnapshot().daily.tasks;
 
-    facade.recordAction(PERSONAL_TASK_ACTIONS.SUMMON_SEEDS, summonTask.requiredQuantity);
+    for (const task of dailyTasks.slice(0, 3)) {
+      facade.recordAction(task.actionType, task.requiredQuantity);
+    }
 
-    const claim = facade.claimTaskReward('daily', summonTask.taskId);
-    const updatedTask = facade
-      .getSnapshot()
-      .daily.tasks.find((task) => task.actionType === PERSONAL_TASK_ACTIONS.SUMMON_SEEDS);
+    const claimableDaily = facade.getSnapshot().daily;
+
+    expect(claimableDaily.currentPoints).toBe(35);
+    expect(claimableDaily.rewards[0]).toMatchObject({
+      threshold: 30,
+      claimable: true,
+      claimed: false,
+    });
+
+    const claim = facade.claimMilestoneReward('daily', 30);
+    const updatedReward = facade.getSnapshot().daily.rewards[0];
 
     expect(claim).toMatchObject({
       ok: true,
       changed: true,
       periodType: 'daily',
-      taskId: summonTask.taskId,
+      milestoneThreshold: 30,
     });
     expect(claim.rewards).toHaveLength(1);
-    expect(updatedTask).toMatchObject({
-      rewardClaimed: true,
-      rewardClaimable: false,
+    expect(updatedReward).toMatchObject({
+      claimed: true,
+      claimable: false,
     });
     expect(coinFacade.current).toBeGreaterThan(0);
   });
 
-  it('claims weekly full clear crystal after all weekly tasks complete', () => {
+  it('claims weekly milestone crystal after enough daily quest points', () => {
     const { crystalFacade, facade } = createFacade({ level: 10 });
-    const weekly = facade.getSnapshot().weekly;
+    const dailyTasks = facade.getSnapshot().daily.tasks;
 
-    for (const task of weekly.tasks) {
+    for (const task of dailyTasks) {
       facade.recordAction(task.actionType, task.requiredQuantity);
     }
 
-    const updatedWeekly = facade.getSnapshot().weekly;
+    const weekly = facade.getSnapshot().weekly;
 
-    expect(updatedWeekly.completedTasks).toBe(7);
-    expect(updatedWeekly.fullClearRewardClaimed).toBe(false);
-    expect(updatedWeekly.fullClearRewardClaimable).toBe(true);
+    expect(weekly.currentPoints).toBe(100);
+    expect(weekly.rewards[0]).toMatchObject({
+      threshold: 100,
+      claimable: true,
+    });
     expect(crystalFacade.current).toBe(0);
 
-    const claim = facade.claimFullClearReward('weekly');
+    const claim = facade.claimMilestoneReward('weekly', 100);
 
     expect(claim).toMatchObject({
       ok: true,
       changed: true,
       periodType: 'weekly',
-      fullClear: true,
+      milestoneThreshold: 100,
     });
-    expect(facade.getSnapshot().weekly.fullClearRewardClaimed).toBe(true);
-    expect(crystalFacade.current).toBe(2);
+    expect(facade.getSnapshot().weekly.rewards[0].claimed).toBe(true);
+    expect(crystalFacade.current).toBe(0);
   });
 
-  it('rolls daily tasks on the UTC day key', () => {
+  it('rolls daily quests on the UTC day key while keeping weekly points', () => {
     let nowMs = Date.UTC(2026, 5, 20, 23, 59, 0, 0);
     const { facade } = createFacade({
       level: 4,
@@ -258,11 +243,40 @@ describe('PersonalTasksFacade', () => {
 
     facade.recordAction(PERSONAL_TASK_ACTIONS.SUMMON_SEEDS, summonTask.requiredQuantity);
     expect(facade.getSnapshot().daily.completedTasks).toBe(1);
+    expect(facade.getSnapshot().weekly.currentPoints).toBe(10);
 
     nowMs = Date.UTC(2026, 5, 21, 0, 1, 0, 0);
-    const nextDaily = facade.getSnapshot().daily;
+    const nextSnapshot = facade.getSnapshot();
 
-    expect(nextDaily.periodKey).not.toBe(firstDaily.periodKey);
-    expect(nextDaily.completedTasks).toBe(0);
+    expect(nextSnapshot.daily.periodKey).not.toBe(firstDaily.periodKey);
+    expect(nextSnapshot.daily.completedTasks).toBe(0);
+    expect(nextSnapshot.daily.currentPoints).toBe(0);
+    expect(nextSnapshot.weekly.currentPoints).toBe(10);
+  });
+
+  it('resets old v1 personal task saves instead of migrating points', () => {
+    const { facade } = createFacade({ level: 4 });
+
+    facade.applyPersistenceSnapshot({
+      version: 1,
+      periods: {
+        daily: {
+          periodKey: '2026-06-20',
+          tasks: [
+            {
+              taskKey: 'summon',
+              progressQuantity: 999,
+              completed: true,
+            },
+          ],
+        },
+      },
+    });
+
+    const snapshot = facade.getSnapshot();
+
+    expect(snapshot.daily.currentPoints).toBe(0);
+    expect(snapshot.weekly.currentPoints).toBe(0);
+    expect(snapshot.daily.completedTasks).toBe(0);
   });
 });

@@ -1359,32 +1359,33 @@ describe('GameplayFacade', () => {
 
     advanceToLevel(gameplayFacade, 4);
 
-    const dailyTask = gameplayFacade.getSnapshot().personalTasks.daily.tasks[0];
-    gameplayFacade.recordPersonalTaskAction(dailyTask.actionType, dailyTask.requiredQuantity);
-    const dailyClaim = gameplayFacade.claimPersonalTaskReward('daily', dailyTask.taskId);
-
-    const weekly = gameplayFacade.getSnapshot().personalTasks.weekly;
-    for (const task of weekly.tasks) {
+    const dailyTasks = gameplayFacade.getSnapshot().personalTasks.daily.tasks;
+    for (const task of dailyTasks.slice(0, 3)) {
       gameplayFacade.recordPersonalTaskAction(task.actionType, task.requiredQuantity);
     }
-    const weeklyClaim = gameplayFacade.claimPersonalTaskFullClearReward('weekly');
+    const dailyClaim = gameplayFacade.claimPersonalTaskMilestoneReward('daily', 30);
+
+    for (const task of gameplayFacade.getSnapshot().personalTasks.daily.tasks.slice(3)) {
+      gameplayFacade.recordPersonalTaskAction(task.actionType, task.requiredQuantity);
+    }
+    const weeklyClaim = gameplayFacade.claimPersonalTaskMilestoneReward('weekly', 100);
 
     expect(dailyClaim).toMatchObject({
       ok: true,
       periodType: 'daily',
-      taskId: dailyTask.taskId,
+      milestoneThreshold: 30,
     });
     expect(weeklyClaim).toMatchObject({
       ok: true,
       periodType: 'weekly',
-      fullClear: true,
+      milestoneThreshold: 100,
     });
     expect(rewardEvents).toEqual([
       expect.objectContaining({
         type: 'personal_task_reward_claimed',
         periodType: 'daily',
-        taskId: dailyTask.taskId,
-        fullClear: false,
+        taskId: dailyClaim.taskId,
+        milestoneThreshold: 30,
         coin: dailyClaim.coin,
         crystal: dailyClaim.crystal,
       }),
@@ -1392,7 +1393,7 @@ describe('GameplayFacade', () => {
         type: 'personal_task_reward_claimed',
         periodType: 'weekly',
         taskId: weeklyClaim.taskId,
-        fullClear: true,
+        milestoneThreshold: 100,
         coin: weeklyClaim.coin,
         crystal: weeklyClaim.crystal,
       }),

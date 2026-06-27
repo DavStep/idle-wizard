@@ -197,7 +197,9 @@ export function hasClaimablePersonalTaskReward(snapshot = {}) {
   return ['daily', 'weekly'].some((periodType) => {
     const period = personalTasks[periodType];
 
-    return (period?.tasks ?? []).some((task) => task.rewardClaimable === true);
+    return (period?.rewards ?? period?.milestones ?? []).some(
+      (reward) => reward.claimable === true,
+    );
   });
 }
 

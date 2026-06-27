@@ -32,7 +32,7 @@ export class WorkshopPersonalTasksManager {
     this.unsubscribe = null;
     this.refs = {};
     this.visible = false;
-    this.selectedPeriodType = 'daily';
+    this.selectedTab = 'tasks';
     this.previousFocus = null;
     this.currentSnapshot = null;
     this.handlePopupClick = (event) => {
@@ -108,27 +108,14 @@ export class WorkshopPersonalTasksManager {
 
     this.refs.dialog = document.createElement('section');
     this.refs.dialog.className = 'workshop-page__personal-tasks-dialog style-dialog';
-    this.refs.dialog.setAttribute('aria-label', 'personal tasks');
+    this.refs.dialog.setAttribute('aria-label', 'quests');
     this.refs.dialog.setAttribute('aria-modal', 'true');
     this.refs.dialog.setAttribute('role', 'dialog');
     this.refs.dialog.tabIndex = -1;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'personal tasks';
-
-    this.refs.periodLabel = document.createElement('div');
-    this.refs.periodLabel.className = 'workshop-page__personal-tasks-period';
-
-    this.refs.header = document.createElement('div');
-    this.refs.header.className = 'workshop-page__personal-tasks-header';
-    this.refs.header.append(
-      createWorkshopCharacterPortrait(
-        'personalTasks',
-        'workshop-page__personal-tasks-dialog-character',
-      ),
-      this.refs.periodLabel,
-    );
+    title.textContent = 'quests';
 
     this.refs.frame = document.createElement('div');
     this.refs.frame.className = 'workshop-page__personal-tasks-frame';
@@ -147,26 +134,21 @@ export class WorkshopPersonalTasksManager {
     this.refs.tabs = document.createElement('div');
     this.refs.tabs.className = 'workshop-page__personal-tasks-tabs';
     this.refs.tabs.setAttribute('role', 'tablist');
-    this.refs.tabs.setAttribute('aria-label', 'task period');
+    this.refs.tabs.setAttribute('aria-label', 'quest view');
     this.refs.tabButtons = new Map(
-      ['daily', 'weekly'].map((periodType) => {
+      ['tasks', 'rewards'].map((tabId) => {
         const button = document.createElement('button');
         button.className = 'style-button workshop-page__personal-tasks-tab-button';
         button.type = 'button';
-        button.textContent = periodType;
+        button.textContent = tabId;
         button.setAttribute('role', 'tab');
-        button.addEventListener('click', () => this.selectPeriod(periodType));
-        return [periodType, button];
+        button.addEventListener('click', () => this.selectTab(tabId));
+        return [tabId, button];
       }),
     );
     this.refs.tabs.replaceChildren(...this.refs.tabButtons.values());
 
-    this.refs.dialog.append(
-      title,
-      this.refs.header,
-      this.refs.frame,
-      this.refs.closeButton,
-    );
+    this.refs.dialog.append(title, this.refs.frame, this.refs.closeButton);
     this.refs.panel.append(this.refs.dialog, this.refs.tabs);
     popup.append(this.refs.panel);
 
@@ -197,12 +179,12 @@ export class WorkshopPersonalTasksManager {
     this.previousFocus = null;
   }
 
-  selectPeriod(periodType) {
-    if (this.selectedPeriodType === periodType) {
+  selectTab(tabId) {
+    if (this.selectedTab === tabId) {
       return;
     }
 
-    this.selectedPeriodType = periodType;
+    this.selectedTab = tabId;
     this.renderPopup(this.currentSnapshot?.personalTasks);
   }
 
@@ -247,7 +229,7 @@ export class WorkshopPersonalTasksManager {
     const claimableRewards = this.getVisibleClaimableRewards(personalTasks);
     this.refs.openButton?.setAttribute(
       'aria-label',
-      `open personal tasks, daily ${daily?.completedTasks ?? 0}/${daily?.totalTasks ?? 0}, weekly ${weekly?.completedTasks ?? 0}/${weekly?.totalTasks ?? 0}, ${claimableRewards} rewards to claim`,
+      `open quests, daily ${daily?.completedTasks ?? 0}/${daily?.totalTasks ?? 0}, today ${daily?.currentPoints ?? 0}/${daily?.maxPoints ?? 0} points, week ${weekly?.currentPoints ?? 0}/${weekly?.maxPoints ?? 0} points`,
     );
     setNotificationBadge(this.refs.openButton, claimableRewards > 0);
   }
@@ -257,112 +239,227 @@ export class WorkshopPersonalTasksManager {
       return;
     }
 
-    const period = personalTasks?.[this.selectedPeriodType];
-
-    for (const [periodType, button] of this.refs.tabButtons.entries()) {
-      const selected = periodType === this.selectedPeriodType;
-      const tabPeriod = personalTasks?.[periodType];
+    for (const [tabId, button] of this.refs.tabButtons.entries()) {
+      const selected = tabId === this.selectedTab;
       button.setAttribute('aria-selected', selected ? 'true' : 'false');
       button.tabIndex = selected ? 0 : -1;
-      setNotificationBadge(button, this.getPeriodVisibleClaimableRewards(tabPeriod) > 0);
+      setNotificationBadge(
+        button,
+        tabId === 'rewards' && this.getVisibleClaimableRewards(personalTasks) > 0,
+      );
     }
 
-    this.refs.periodLabel.textContent = period
-      ? `${period.completedTasks}/${period.totalTasks} done, ${period.resetLabel}`
-      : '';
-
-    if (!period) {
-      const empty = document.createElement('div');
-      empty.className = 'workshop-page__personal-tasks-empty';
-      empty.textContent = 'no tasks';
-      this.refs.rows.replaceChildren(empty);
+    if (this.selectedTab === 'rewards') {
+      this.renderRewardsTab(personalTasks);
       return;
     }
 
-    const rows = period.tasks.map((task) => this.createTaskRow(task));
-    this.refs.rows.replaceChildren(...rows);
+    this.renderTasksTab(personalTasks);
   }
 
-  createTaskRow(task) {
+  renderTasksTab(personalTasks) {
+    const daily = personalTasks?.daily;
+
+    if (!daily) {
+      this.refs.rows.replaceChildren(this.createEmptyRow('no tasks'));
+      return;
+    }
+
+    const title = document.createElement('div');
+    title.className = 'workshop-page__personal-tasks-section-title';
+    title.textContent = 'daily quests';
+
+    this.refs.rows.replaceChildren(
+      this.createTaskProgressSummary(personalTasks),
+      title,
+      ...daily.tasks.map((task, index) => this.createTaskRow(task, index + 1)),
+    );
+  }
+
+  renderRewardsTab(personalTasks) {
+    const daily = personalTasks?.daily;
+    const weekly = personalTasks?.weekly;
+
+    if (!daily && !weekly) {
+      this.refs.rows.replaceChildren(this.createEmptyRow('no rewards'));
+      return;
+    }
+
+    const sections = [];
+    if (daily) {
+      sections.push(this.createRewardSection('today', daily));
+    }
+    if (weekly) {
+      sections.push(this.createRewardSection('week', weekly));
+    }
+
+    this.refs.rows.replaceChildren(...sections);
+  }
+
+  createTaskProgressSummary(personalTasks) {
+    const summary = document.createElement('div');
+    summary.className = 'workshop-page__personal-tasks-summary';
+    summary.append(
+      this.createSummaryRow('today', this.formatPointSummary(personalTasks?.daily, 'pts')),
+      this.createSummaryRow('week', this.formatPointSummary(personalTasks?.weekly, 'pts')),
+    );
+    return summary;
+  }
+
+  createSummaryRow(labelText, valueText) {
+    const row = document.createElement('div');
+    row.className = 'workshop-page__personal-tasks-summary-row';
+
+    const label = document.createElement('span');
+    label.textContent = labelText;
+
+    const value = document.createElement('span');
+    value.textContent = valueText;
+
+    row.append(label, value);
+    return row;
+  }
+
+  createTaskRow(task, index) {
     const root = document.createElement('div');
     root.className = 'workshop-page__personal-task';
+
+    if (task.completed) {
+      root.classList.add('is-completed');
+    }
 
     const row = document.createElement('div');
     row.className = 'workshop-page__personal-task-row';
 
-    const rewardClaimable = task.rewardClaimable === true;
-    const rewardClaimed = task.rewardClaimed === true;
-
-    if (rewardClaimed) {
-      root.classList.add('is-completed');
-      row.classList.add('is-completed');
-    } else if (rewardClaimable) {
-      root.classList.add('is-claimable');
-      row.classList.add('is-claimable');
-    }
+    const number = document.createElement('span');
+    number.className = 'workshop-page__personal-task-number';
+    number.textContent = `${index}.`;
 
     const label = document.createElement('span');
     label.className = 'workshop-page__personal-task-label';
 
-    const progress = document.createElement('span');
-    progress.className = 'workshop-page__personal-task-progress';
-    progress.textContent = `${task.progressQuantity}/${task.requiredQuantity}`;
-
-    const reward = rewardClaimable
-      ? this.createTaskClaimButton(task)
-      : document.createElement('span');
-    reward.classList.add('workshop-page__personal-task-reward');
+    const points = document.createElement('span');
+    points.className = 'workshop-page__personal-task-points';
+    points.textContent = `+${task.pointValue ?? 0} pts`;
 
     const taskResource = this.getTaskResource(task);
     const activeTaskResource = task.completed ? null : taskResource;
     this.setTaskIconText(label, task.label, taskResource);
-    if (!rewardClaimable) {
-      setResourceIconText(reward, rewardClaimed ? 'done' : task.reward?.text ?? '');
-    }
     setResourceColor(label, activeTaskResource);
+
+    row.append(number, label, points);
+
+    const detail = document.createElement('div');
+    detail.className = 'workshop-page__personal-task-detail';
+
+    const progress = document.createElement('span');
+    progress.className = 'workshop-page__personal-task-progress';
+    progress.textContent = task.completed
+      ? 'done'
+      : `${task.progressQuantity}/${task.requiredQuantity}`;
     setResourceColor(progress, activeTaskResource);
-    setResourceColor(
-      reward,
-      rewardClaimed ? null : this.getRewardResource(task.reward),
+
+    detail.append(
+      progress,
+      this.createProgressBar(
+        this.getProgressWidth(task.progressQuantity, task.requiredQuantity, task.completed),
+        'workshop-page__personal-task-bar',
+      ),
     );
-    setNotificationBadge(reward, rewardClaimable);
 
-    const progressBar = this.createProgressBar(
-      this.getProgressWidth(task.progressQuantity, task.requiredQuantity, task.completed),
-    );
-
-    const status = document.createElement('span');
-    status.className = 'workshop-page__personal-task-status';
-    status.append(progress, reward);
-
-    row.append(label, status);
-    root.append(row, progressBar);
+    root.append(row, detail);
     return root;
   }
 
-  createTaskClaimButton(task) {
+  createRewardSection(titleText, period) {
+    const section = document.createElement('section');
+    section.className = 'workshop-page__personal-task-reward-section';
+
+    const title = document.createElement('div');
+    title.className = 'workshop-page__personal-task-reward-title';
+    title.textContent = titleText;
+
+    const status = document.createElement('div');
+    status.className = 'workshop-page__personal-task-reward-status';
+    status.textContent = `${this.formatPointSummary(period, 'points')}, ${period.resetLabel}`;
+
+    const rewards = document.createElement('div');
+    rewards.className = 'workshop-page__personal-task-milestones';
+    rewards.replaceChildren(
+      ...(period.rewards ?? []).map((reward) =>
+        this.createMilestoneRow(period.periodType, reward),
+      ),
+    );
+
+    section.append(
+      title,
+      status,
+      this.createProgressBar(
+        this.getProgressWidth(period.currentPoints, period.maxPoints),
+        'workshop-page__personal-task-period-bar',
+      ),
+      rewards,
+    );
+    return section;
+  }
+
+  createMilestoneRow(periodType, milestone) {
+    const row = document.createElement('div');
+    row.className = 'workshop-page__personal-task-milestone';
+
+    if (milestone.claimed) {
+      row.classList.add('is-claimed');
+    } else if (milestone.claimable) {
+      row.classList.add('is-claimable');
+    }
+
+    const threshold = document.createElement('span');
+    threshold.className = 'workshop-page__personal-task-milestone-threshold';
+    threshold.textContent = String(milestone.threshold);
+
+    const reward = document.createElement('span');
+    reward.className = 'workshop-page__personal-task-milestone-reward';
+    setResourceIconText(reward, milestone.reward?.text || 'reward');
+    setResourceColor(reward, milestone.claimed ? null : this.getRewardResource(milestone.reward));
+
+    const status = milestone.claimable
+      ? this.createMilestoneClaimButton(periodType, milestone)
+      : document.createElement('span');
+    status.classList.add('workshop-page__personal-task-milestone-status');
+
+    if (!milestone.claimable) {
+      status.textContent = milestone.claimed ? 'claimed' : 'locked';
+    }
+
+    row.append(threshold, reward, status);
+    return row;
+  }
+
+  createMilestoneClaimButton(periodType, milestone) {
     const button = document.createElement('button');
-    button.className = 'style-button workshop-page__personal-task-claim';
+    button.className =
+      'style-button workshop-page__personal-task-milestone-claim';
     button.type = 'button';
     button.textContent = 'claim';
-    button.dataset.personalTaskPeriodType = this.selectedPeriodType;
-    button.dataset.personalTaskId = task.taskId;
+    button.dataset.personalTaskPeriodType = periodType;
+    button.dataset.personalTaskThreshold = String(milestone.threshold);
     button.setAttribute(
       'aria-label',
-      `claim ${task.reward?.text ?? 'reward'} for ${task.label}`,
+      `claim ${milestone.reward?.text ?? 'reward'} from ${periodType} ${milestone.threshold} point reward`,
     );
     button.addEventListener('click', () => {
-      this.gameplayFacade?.claimPersonalTaskReward?.(
-        this.selectedPeriodType,
-        task.taskId,
+      this.gameplayFacade?.claimPersonalTaskMilestoneReward?.(
+        periodType,
+        milestone.threshold,
       );
     });
+    setNotificationBadge(button, true);
     return button;
   }
 
-  createProgressBar(width) {
+  createProgressBar(width, className) {
     const progress = document.createElement('div');
-    progress.className = 'style-progress workshop-page__personal-task-bar';
+    progress.className = `style-progress ${className}`;
     progress.setAttribute('aria-hidden', 'true');
 
     const fill = document.createElement('span');
@@ -371,6 +468,13 @@ export class WorkshopPersonalTasksManager {
 
     progress.append(fill);
     return progress;
+  }
+
+  createEmptyRow(text) {
+    const empty = document.createElement('div');
+    empty.className = 'workshop-page__personal-tasks-empty';
+    empty.textContent = text;
+    return empty;
   }
 
   getProgressWidth(progressQuantity, requiredQuantity, completed = false) {
@@ -386,6 +490,10 @@ export class WorkshopPersonalTasksManager {
     }
 
     return `${Math.max(0, Math.min(1, progress / required)) * 100}%`;
+  }
+
+  formatPointSummary(period, unit = 'points') {
+    return `${period?.currentPoints ?? 0}/${period?.maxPoints ?? 0} ${unit}`;
   }
 
   getTaskResource(task) {
@@ -427,6 +535,10 @@ export class WorkshopPersonalTasksManager {
   }
 
   getVisibleClaimableRewards(personalTasks) {
+    if (Number.isFinite(personalTasks?.claimableRewards)) {
+      return Math.max(0, Math.floor(personalTasks.claimableRewards));
+    }
+
     return ['daily', 'weekly'].reduce(
       (total, periodType) =>
         total + this.getPeriodVisibleClaimableRewards(personalTasks?.[periodType]),
@@ -435,7 +547,9 @@ export class WorkshopPersonalTasksManager {
   }
 
   getPeriodVisibleClaimableRewards(period) {
-    return (period?.tasks ?? []).filter((task) => task.rewardClaimable === true).length;
+    return (period?.rewards ?? period?.milestones ?? []).filter(
+      (reward) => reward.claimable === true,
+    ).length;
   }
 
   applyVisibility() {

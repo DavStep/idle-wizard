@@ -169,7 +169,7 @@ export class GameplayMigrationManager {
 
     if (!migratedSave.personalTasks) {
       migratedSave.personalTasks = {
-        version: 1,
+        version: 2,
         periods: {},
       };
     }
@@ -226,7 +226,7 @@ export class GameplayMigrationManager {
 
     if (!migratedSave.personalTasks) {
       migratedSave.personalTasks = {
-        version: 1,
+        version: 2,
         periods: {},
       };
     }

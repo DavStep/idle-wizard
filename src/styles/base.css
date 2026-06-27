@@ -6079,37 +6079,10 @@ span.room-seed-pack-composite .room-seed-pack-item {
   height: var(--style-tabbed-dialog-content-height);
 }
 
-.workshop-page__personal-tasks-period {
-  min-height: var(--style-row-min-height);
-  color: var(--style-muted);
-  font-size: var(--style-tiny-font-size);
-  font-variant-numeric: tabular-nums lining-nums;
-}
-
-.workshop-page__personal-tasks-header {
-  box-sizing: border-box;
-  display: grid;
-  grid-template-columns: 68px minmax(0, 1fr);
-  column-gap: 8px;
-  align-items: center;
-  height: 90px;
-  min-height: 90px;
-  padding-bottom: 6px;
-  margin-bottom: 6px;
-  background: var(--style-surface);
-  border-bottom: var(--style-separator-border);
-}
-
-.workshop-page__personal-tasks-dialog-character {
-  width: 64px;
-  height: 80px;
-  object-position: center bottom;
-}
-
 .workshop-page__personal-tasks-frame {
   height: calc(
     var(--style-tabbed-dialog-content-height) -
-      var(--style-box-border-label-line-height) - 90px - 6px -
+      var(--style-box-border-label-line-height) -
       var(--style-scroll-progress-block-size)
   );
   overflow: hidden auto;
@@ -6122,7 +6095,47 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__personal-tasks-rows {
   display: grid;
-  gap: 5px;
+  gap: 7px;
+}
+
+.workshop-page__personal-tasks-summary,
+.workshop-page__personal-task-reward-section {
+  display: grid;
+  gap: 3px;
+  padding-bottom: 6px;
+  border-bottom: var(--style-separator-border);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__personal-task-reward-section:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.workshop-page__personal-tasks-summary-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--style-row-column-gap);
+  align-items: center;
+  min-height: var(--style-row-min-height);
+}
+
+.workshop-page__personal-tasks-summary-row > :last-child {
+  justify-self: end;
+  text-align: right;
+}
+
+.workshop-page__personal-tasks-section-title,
+.workshop-page__personal-task-reward-title {
+  min-height: var(--style-row-min-height);
+  font-weight: 700;
+}
+
+.workshop-page__personal-task-reward-status {
+  min-height: var(--style-row-min-height);
+  color: var(--style-muted);
+  font-size: var(--style-tiny-font-size);
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .workshop-page__personal-task {
@@ -6133,19 +6146,23 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__personal-task-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-columns: 18px minmax(0, 1fr) max-content;
   column-gap: var(--style-row-column-gap);
   align-items: center;
   min-height: var(--style-row-min-height);
 }
 
-.workshop-page__personal-task-status {
+.workshop-page__personal-task-number {
+  color: var(--style-muted);
+  text-align: right;
+}
+
+.workshop-page__personal-task-detail {
   display: grid;
-  grid-template-columns: max-content max-content;
-  column-gap: var(--style-row-column-gap);
+  grid-template-columns: 38px minmax(0, 1fr);
+  column-gap: 5px;
   align-items: center;
-  justify-content: end;
-  min-width: 0;
+  padding-left: calc(18px + var(--style-row-column-gap));
 }
 
 .workshop-page__personal-task.is-completed {
@@ -6153,7 +6170,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__personal-task-label,
-.workshop-page__personal-task-reward {
+.workshop-page__personal-task-points,
+.workshop-page__personal-task-milestone-reward {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6167,24 +6185,51 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__personal-task-progress,
-.workshop-page__personal-task-reward {
+.workshop-page__personal-task-points,
+.workshop-page__personal-task-milestone-status {
   text-align: right;
 }
 
-.workshop-page__personal-task-reward {
+.workshop-page__personal-task-progress,
+.workshop-page__personal-task-points,
+.workshop-page__personal-task-milestone-status {
   font-size: var(--style-tiny-font-size);
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
-.style-button.workshop-page__personal-task-claim {
+.workshop-page__personal-task-bar,
+.workshop-page__personal-task-period-bar {
+  width: 100%;
+}
+
+.workshop-page__personal-task-milestones {
+  display: grid;
+  gap: 2px;
+}
+
+.workshop-page__personal-task-milestone {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) max-content;
+  column-gap: var(--style-row-column-gap);
+  align-items: center;
+  min-height: var(--style-row-min-height);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.workshop-page__personal-task-milestone.is-claimed {
+  color: var(--style-muted);
+}
+
+.workshop-page__personal-task-milestone-threshold {
+  text-align: right;
+}
+
+.style-button.workshop-page__personal-task-milestone-claim {
   width: auto;
   min-width: 52px;
   padding: 1px 4px;
   margin: 0;
   font-size: var(--style-tiny-font-size);
-}
-
-.workshop-page__personal-task-bar {
-  width: 100%;
 }
 
 .workshop-page__personal-tasks-tabs {

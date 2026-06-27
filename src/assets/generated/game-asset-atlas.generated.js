@@ -7,7 +7,7 @@ export const gameAssetAtlasSize = Object.freeze({
 });
 export const gameAssetAtlasFrames = Object.freeze({
   "herb:belladonnaHerb": {
-    "x": 1147,
+    "x": 1278,
     "y": 875,
     "width": 97,
     "height": 128,
@@ -124,7 +124,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-moonflower.png"
   },
   "herb:nettleHerb": {
-    "x": 1534,
+    "x": 1536,
     "y": 875,
     "width": 94,
     "height": 128,
@@ -142,7 +142,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-nightshade.png"
   },
   "herb:pearlrootHerb": {
-    "x": 1660,
+    "x": 1662,
     "y": 875,
     "width": 94,
     "height": 128,
@@ -151,7 +151,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-pearlroot.png"
   },
   "herb:sageHerb": {
-    "x": 1786,
+    "x": 1788,
     "y": 875,
     "width": 93,
     "height": 128,
@@ -169,7 +169,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-silverleaf.png"
   },
   "herb:snowdropHerb": {
-    "x": 1911,
+    "x": 1913,
     "y": 875,
     "width": 92,
     "height": 128,
@@ -205,7 +205,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-valerian.png"
   },
   "herb:wormwoodHerb": {
-    "x": 1276,
+    "x": 1407,
     "y": 875,
     "width": 97,
     "height": 128,
@@ -682,9 +682,9 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/status/check-01.png"
   },
   "status:lockDefault": {
-    "x": 1405,
+    "x": 1147,
     "y": 875,
-    "width": 97,
+    "width": 99,
     "height": 128,
     "originalWidth": 256,
     "originalHeight": 256,

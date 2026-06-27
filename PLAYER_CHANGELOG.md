@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.57
+
+- Reworked quests so daily quest completions add points to both daily and weekly reward tracks.
+- Added clearer quest and reward tabs with milestone claim buttons and progress bars.
+- Improved quest reward notifications and reward flyouts so claimable milestones point to the right reward.
+- Polished Garden plot ground art and removed unused image assets from the client build.
+
 ## 0.2.56
 
 - Polished Garden plot ground art for base and upgraded plots so the room view reads cleaner.
