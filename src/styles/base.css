@@ -219,7 +219,7 @@
   );
   --brewing-page-box-gap: 8px;
   --garden-page-box-gap: 24px;
-  --garden-page-world-top-extension: calc(var(--style-room-content-edge) * 2);
+  --garden-page-world-top-extension: calc(var(--style-room-content-edge) * 3);
   --room-inventory-panel-y-offset: 5px;
   --garden-page-plot-progress-slot-height: var(--style-scroll-progress-height);
   --garden-page-plot-visual-width: 88px;
@@ -714,6 +714,20 @@ body {
     0px,
     calc((100% - var(--style-source-ui-screen-width)) / 2)
   );
+  --style-source-ui-gutter-x: calc(
+    max(
+        0px,
+        calc(
+          (
+              var(--app-stage-width, var(--style-source-ui-screen-width)) -
+                var(
+                  --app-source-ui-screen-width,
+                  var(--style-source-ui-screen-width)
+                )
+            ) / 2
+        )
+      ) / var(--style-ui-scale)
+  );
   position: relative;
   width: var(
     --app-stage-width,
@@ -775,8 +789,8 @@ body {
 
 .game-stage[data-viewport-mode="web-wide"]
   :where(.brewing-page__world-shell, .garden-page__world-shell) {
-  right: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);
-  left: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);
+  right: calc(var(--style-source-ui-gutter-x) * -1);
+  left: calc(var(--style-source-ui-gutter-x) * -1);
 }
 
 .game-stage.is-control-revealing :where(button, [role="button"]) {

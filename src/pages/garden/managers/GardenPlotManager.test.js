@@ -881,7 +881,7 @@ describe('GardenPlotManager', () => {
     expect(contentRule).toContain('touch-action: pan-y;');
     expect(gardenBoxesRule).toContain('position: relative;');
     expect(baseCss).toContain(
-      '--garden-page-world-top-extension: calc(var(--style-room-content-edge) * 2);',
+      '--garden-page-world-top-extension: calc(var(--style-room-content-edge) * 3);',
     );
     expect(plotWorldRule).toContain('position: absolute;');
     expect(plotWorldRule).toContain(
@@ -897,10 +897,10 @@ describe('GardenPlotManager', () => {
     expect(worldRule).toContain('scale(var(--garden-page-world-zoom, 1))');
     expect(webWideWorldRule).toContain('overflow: visible;');
     expect(webWideShellRule).toContain(
-      'right: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);',
+      'right: calc(var(--style-source-ui-gutter-x) * -1);',
     );
     expect(webWideShellRule).toContain(
-      'left: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);',
+      'left: calc(var(--style-source-ui-gutter-x) * -1);',
     );
     expect(plotRowsRule).toContain('max-height: none;');
     expect(plotRowsRule).toContain('overflow: visible;');

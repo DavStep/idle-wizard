@@ -706,6 +706,11 @@ describe('BrewingCauldronManager', () => {
     );
     expect(worldViewRule).toContain('right: 0;');
     expect(worldViewRule).toContain('left: 0;');
+    expect(baseCss).toContain('--style-source-ui-gutter-x: calc(');
+    expect(baseCss).toContain('var(--app-stage-width, var(--style-source-ui-screen-width))');
+    expect(baseCss).toContain(
+      '--app-source-ui-screen-width,\n                  var(--style-source-ui-screen-width)',
+    );
     expect(shellRule).toContain('bottom: calc(');
     expect(shellRule).toContain('var(--brewing-page-world-bottom-offset)');
     expect(shellRule).toContain('var(--brewing-page-herbs-box-clearance)');
@@ -728,12 +733,8 @@ describe('BrewingCauldronManager', () => {
       'min-height: calc(var(--style-row-min-height) * 3);',
     );
     expect(webWideWorldRule).toContain('overflow: visible;');
-    expect(webWideShellRule).toContain(
-      'right: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);',
-    );
-    expect(webWideShellRule).toContain(
-      'left: calc((var(--style-source-ui-offset-x) / var(--style-ui-scale)) * -1);',
-    );
+    expect(webWideShellRule).toContain('right: calc(var(--style-source-ui-gutter-x) * -1);');
+    expect(webWideShellRule).toContain('left: calc(var(--style-source-ui-gutter-x) * -1);');
   });
 
   it('keeps active brew text singular and the timer rail full width', () => {

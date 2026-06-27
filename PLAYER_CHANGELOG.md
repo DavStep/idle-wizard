@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.54
+
+- Fixed wide desktop Garden and Brewing views so panning space stays aligned with the authored room instead of collapsing at the sides.
+- Refined Garden plot ground art and spacing so upgraded plots read cleaner in the room view.
+
 ## 0.2.53
 
 - Fixed higher-level Garden plots so x2+ plantings require and show the correct seed count.

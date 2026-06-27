@@ -38,6 +38,7 @@
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
 - Web-wide source-scaled overlays must subtract the centered source-layer rect, not the widened stage rect, when converting target screen coords to source coords.
 - Web-wide room dialog backdrops must expand from the centered source layer using root pixel vars like `--app-stage-width` and `--app-source-ui-screen-width`; `%`-based `--style-source-ui-offset-x` resolves against nested popup width and collapses the gutter.
+- Web-wide Garden/Brewing world shells also need root pixel vars for side gutters; reusing `%`-based `--style-source-ui-offset-x` inside nested shell `left/right` collapses the expanded pan area.
 - Popup-layer descendants use `box-sizing: content-box`; full-width dialog buttons need explicit `box-sizing: border-box` or padding/borders spill past the panel.
 - Centered content inside source-scaled room layers must account for ui-layer padding/content-box sizing; plain auto margins center in the padded layer, not the visual stage.
 - Stage-mounted global dialogs such as player/alliance info need their own `--style-ui-scale` source layer and content-box descendants; otherwise they render tiny compared with page popup-layer dialogs.
@@ -195,6 +196,7 @@
 - Dev browser automation exposes `window.cheats` with `VITE_ENABLE_CHEATS=true`, but `window.tutorialCapture` needs its own `VITE_ENABLE_TUTORIAL_CAPTURE=true`; cheats alone do not mount the tutorial capture helper.
 - In-app Browser Playwright evaluate can miss main-world `window.cheats`, and `javascript:` bookmarklets are blocked; do not rely on that path for cheat-driven screenshot setup.
 - In-app Browser Playwright evaluate is read-only for DOM/module work; it cannot import page modules or reveal hidden DOM, so use visible UI actions or an HTTP-served local harness for visual QA.
+- `cheats.showPage(page)` unlocks and saves by default; use `{ unlock: false }` only when fallback behavior is acceptable, or avoid it for no-mutation QA on real local saves.
 - In-app Browser blocks `data:` and `file:` fixture pages; use the real app state or an HTTP-served local harness for browser UI QA.
 - Brewing drag screenshot QA needs an unlocked level-4+ save or `VITE_ENABLE_CHEATS=true`; a level-2 local save cannot reach herb drag controls.
 - Cauldron staged-recipe QA should use minimal unlocks and explicit ingredients; `unlockAllResearch` can raise cauldron batch level and make base recipe staging fail.
