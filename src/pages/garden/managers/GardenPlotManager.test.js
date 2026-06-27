@@ -434,11 +434,39 @@ describe('GardenPlotManager', () => {
       clientY: 40,
     });
     row.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+    gameplayFacade.publish();
 
     const world = parent.querySelector('.garden-page__world');
     expect(world.style.getPropertyValue('--garden-page-world-pan-x')).toBe('-50px');
     expect(world.style.getPropertyValue('--garden-page-world-pan-y')).toBe('-60px');
     expect(plantSelectedGardenSeed).not.toHaveBeenCalled();
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('centers the initial garden world inside a web-wide shell', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.garden-page__world-shell');
+    Object.defineProperty(shell, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 1200, height: 500 }),
+    });
+
+    gameplayFacade.publish();
+
+    const world = parent.querySelector('.garden-page__world');
+
+    expect(manager.worldPan.x).toBe(420);
+    expect(manager.worldPan.y).toBe(0);
+    expect(world.style.getPropertyValue('--garden-page-world-pan-x')).toBe('420px');
+    expect(world.style.getPropertyValue('--garden-page-world-pan-y')).toBe('0px');
 
     manager.unmount();
     parent.remove();
@@ -797,6 +825,7 @@ describe('GardenPlotManager', () => {
     expect(boxLevelRule).toContain(
       'line-height: var(--garden-page-plot-box-detail-line-height);',
     );
+    expect(boxLevelRule).toContain('left: 5px;');
     expect(boxActionRule).toContain(
       'font-size: var(--garden-page-plot-box-detail-font-size);',
     );
@@ -881,11 +910,11 @@ describe('GardenPlotManager', () => {
     expect(contentRule).toContain('touch-action: pan-y;');
     expect(gardenBoxesRule).toContain('position: relative;');
     expect(baseCss).toContain(
-      '--garden-page-world-top-extension: calc(var(--style-room-content-edge) * 3);',
+      '--garden-page-world-top-safe-space: var(--style-room-content-edge);',
     );
     expect(plotWorldRule).toContain('position: absolute;');
     expect(plotWorldRule).toContain(
-      'top: calc(var(--style-room-content-top) - var(--garden-page-world-top-extension));',
+      'top: calc(var(--style-room-content-top) + var(--garden-page-world-top-safe-space));',
     );
     expect(plotWorldRule).toContain('right: 0;');
     expect(plotWorldRule).toContain('bottom: var(--style-room-chat-clearance);');
@@ -1509,6 +1538,70 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('12s');
   });
 
+  it('opens seed choices from the full empty plot slot', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    plotRow
+      .querySelector('.garden-page__plot-box-frame')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
+
+    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(false);
+    expect(tile.phase).toBe('empty');
+    expect(plotRow.classList.contains('is-selected')).toBe(true);
+  });
+
+  it('opens seed choices from a no-drag empty plot pointer release', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.garden-page__world-shell');
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    const boxFrame = plotRow.querySelector('.garden-page__plot-box-frame');
+
+    dispatchPointer(boxFrame, 'pointerdown', {
+      pointerId: 1,
+      clientX: 100,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointermove', {
+      pointerId: 1,
+      clientX: 106,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 1,
+      clientX: 106,
+      clientY: 100,
+    });
+
+    const popup = parent.querySelector('.garden-page__seed-popup');
+    const retargetedBackdropClick = new window.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      detail: 1,
+    });
+    popup.dispatchEvent(retargetedBackdropClick);
+
+    expect(popup.hidden).toBe(false);
+    expect(retargetedBackdropClick.defaultPrevented).toBe(true);
+    expect(tile.phase).toBe('empty');
+    expect(plotRow.classList.contains('is-selected')).toBe(true);
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('plants from the full empty plot slot when a selected seed is plantable', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -1932,7 +2025,7 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('12s');
   });
 
-  it('keeps blank row space inert when the selected seed count is empty', () => {
+  it('opens seed choices from blank row space when the selected seed count is empty', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -1951,7 +2044,7 @@ describe('GardenPlotManager', () => {
     const plotRow = parent.querySelector('.garden-page__plot-row');
     plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
 
-    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
+    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(false);
     expect(plotRow.classList.contains('is-empty')).toBe(true);
     expect(plotRow.classList.contains('has-herb-label')).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
@@ -1961,12 +2054,6 @@ describe('GardenPlotManager', () => {
       undefined,
     );
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('no seeds');
-
-    plotRow
-      .querySelector('.garden-page__plot-label')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(false);
   });
 
   it('keeps selected empty plot herb labels in resource color', () => {

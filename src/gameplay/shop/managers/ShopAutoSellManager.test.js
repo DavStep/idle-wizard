@@ -205,6 +205,69 @@ describe('ShopAutoSellManager', () => {
     expect(removeItem).toHaveBeenCalledTimes(1);
   });
 
+  it('does not repeat a completed fixed NPC stand amount across pending cycles', () => {
+    const nowMs = 15_000;
+    let quantity = 10;
+    const addCoin = vi.fn();
+    const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
+      quantity -= removeQuantity;
+      return {
+        itemTypeId: 1,
+        key: 'sageSeed',
+        label: 'sage seed',
+        kind: 'seed',
+        quantity: removeQuantity,
+      };
+    });
+    const slotManager = createSlotManager({
+      slots: [
+        {
+          slotNumber: 1,
+          unlocked: true,
+          sellItemTypeId: 1,
+          sellLimitMode: 'amount',
+          sellQuantityLimit: 2,
+        },
+      ],
+    });
+    const manager = new ShopAutoSellManager({
+      coinFacade: {
+        add: addCoin,
+      },
+      itemsFacade: {
+        getItemDefinition: () => ({
+          id: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          kind: 'seed',
+        }),
+        getItemQuantity: () => quantity,
+        removeItem,
+      },
+      shopBalanceManager: {
+        getAutoSellSeconds: () => 5,
+      },
+      shopNpcPriceManager: {
+        getNpcBuyPriceCoin: () => 4,
+        getNpcNeed: () => 10,
+        recordSellToNpc: vi.fn(),
+      },
+      shopShelfEntityManager: slotManager,
+      now: () => nowMs,
+    });
+
+    manager.update(15);
+
+    expect(removeItem).toHaveBeenCalledTimes(1);
+    expect(removeItem).toHaveBeenCalledWith(1, 2);
+    expect(addCoin).toHaveBeenCalledTimes(1);
+    expect(quantity).toBe(8);
+    expect(slotManager.getSlotSnapshots()[0]).toMatchObject({
+      sellLimitMode: 'amount',
+      sellQuantityLimit: 0,
+    });
+  });
+
   it('sells all eligible NPC stands on one shared shop timer', () => {
     let nowMs = 4_000;
     const addCoin = vi.fn();

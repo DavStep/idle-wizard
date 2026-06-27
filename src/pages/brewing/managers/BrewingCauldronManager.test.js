@@ -771,6 +771,9 @@ describe('BrewingCauldronManager', () => {
     const cauldronArtRule = baseCss.match(
       /\.brewing-page__cauldron-art\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const cauldronArtAssetRule = baseCss.match(
+      /\.brewing-page__cauldron-art-image,\s*\.brewing-page__cauldron-art-liquid\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const cauldronLiquidHiddenRule = baseCss.match(
       /\.brewing-page__cauldron-art-liquid\[hidden\]\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -783,6 +786,11 @@ describe('BrewingCauldronManager', () => {
     expect(cauldronArtRule).toContain('width: var(--brewing-page-cauldron-art-width);');
     expect(cauldronArtRule).toContain('height: var(--brewing-page-cauldron-art-height);');
     expect(cauldronArtRule).toContain('pointer-events: none;');
+    expect(baseCss).toContain('--brewing-page-cauldron-art-scale: 0.9;');
+    expect(cauldronArtAssetRule).toContain(
+      'transform: scale(var(--brewing-page-cauldron-art-scale));',
+    );
+    expect(cauldronArtAssetRule).toContain('transform-origin: center;');
     expect(baseCss).toContain(
       'background: var(--brewing-page-cauldron-liquid-color, #0a95f5);',
     );

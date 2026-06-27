@@ -82,6 +82,7 @@ export class GardenPlotManager {
     this.pendingSeedPress = null;
     this.worldPan = { x: 0, y: 0 };
     this.worldZoom = 1;
+    this.worldViewportTouched = false;
     this.worldSize = {
       width: WORLD_WIDTH,
       height: WORLD_MIN_HEIGHT,
@@ -204,6 +205,7 @@ export class GardenPlotManager {
     this.handledSeedPressStartReset = null;
     this.worldPointers.clear();
     this.worldGesture = null;
+    this.worldViewportTouched = false;
     this.removeWorldGestureDefaultGuards?.();
     this.removeWorldGestureDefaultGuards = null;
     this.clearWorldSettleTimers();
@@ -479,6 +481,7 @@ export class GardenPlotManager {
     const hasPlantableSeed = seeds.some((seed) => seed.quantity > 0);
     this.ensureTiles(garden.plot.maxTiles);
     this.syncWorldSize(garden.plot.maxTiles);
+    this.fitWorldViewportToPlots();
     this.ensureEmptySeedRow();
     this.ensureSeedRows(seeds);
 
@@ -1074,11 +1077,7 @@ export class GardenPlotManager {
         return;
       }
 
-      if (!clickedAction && !keyboardRowAction && !canPlantSelectedSeed) {
-        return;
-      }
-
-      if (tile.selectedSeedItemTypeId) {
+      if (tile.selectedSeedItemTypeId && canPlantSelectedSeed) {
         this.startPlantSelectedGardenSeed(tileNumber);
         return;
       }
@@ -1260,6 +1259,27 @@ export class GardenPlotManager {
     }
 
     return this.canPlantSelectedSeed(tile, snapshot) ? tileNumber : null;
+  }
+
+  getSeedChoiceTileNumberFromEvent(event) {
+    const row = event?.target?.closest?.('.garden-page__plot-row');
+    const tileNumber = Number.parseInt(row?.dataset?.gardenTileNumber ?? '', 10);
+
+    if (!Number.isInteger(tileNumber) || this.isTileLabelClick(event)) {
+      return null;
+    }
+
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const tile = snapshot.garden?.plot?.tiles.find(
+      (candidate) => candidate.tileNumber === tileNumber,
+    );
+    const refs = this.tileRefs.get(tileNumber);
+
+    if (!tile?.unlocked || tile.phase !== 'empty' || !refs?.button || refs.button.disabled) {
+      return null;
+    }
+
+    return this.canPlantSelectedSeed(tile, snapshot) ? null : tileNumber;
   }
 
   getBuyableTileNumberFromEvent(event) {
@@ -1901,6 +1921,7 @@ export class GardenPlotManager {
     });
     const readyHarvestTileNumber = this.getReadyHarvestTileNumberFromEvent(event);
     const plantableTileNumber = this.getPlantableTileNumberFromEvent(event);
+    const seedChoiceTileNumber = this.getSeedChoiceTileNumberFromEvent(event);
     const buyableTileNumber = this.getBuyableTileNumberFromEvent(event);
     const labelTileNumber = this.getLabelTileNumberFromEvent(event);
 
@@ -1919,12 +1940,14 @@ export class GardenPlotManager {
         dragThreshold:
           readyHarvestTileNumber !== null ||
           plantableTileNumber !== null ||
+          seedChoiceTileNumber !== null ||
           buyableTileNumber !== null ||
           labelTileNumber !== null
             ? WORLD_TAP_ACTION_DRAG_THRESHOLD
             : WORLD_DRAG_THRESHOLD,
         readyHarvestTileNumber,
         plantableTileNumber,
+        seedChoiceTileNumber,
         buyableTileNumber,
         labelTileNumber,
       };
@@ -1968,6 +1991,7 @@ export class GardenPlotManager {
     }
 
     this.worldGesture.didDrag = true;
+    this.worldViewportTouched = true;
     this.suppressWorldClick();
     this.setWorldPan(this.worldGesture.panX + deltaX, this.worldGesture.panY + deltaY, {
       rubber: true,
@@ -2008,6 +2032,15 @@ export class GardenPlotManager {
       this.worldGesture.didDrag !== true &&
       Number.isInteger(this.worldGesture.buyableTileNumber)
         ? this.worldGesture.buyableTileNumber
+        : null;
+    const tapSeedChoiceTileNumber =
+      event.type !== 'pointercancel' &&
+      this.worldPointers.size === 1 &&
+      this.worldGesture?.type === 'pan' &&
+      this.worldGesture.pointerId === pointerId &&
+      this.worldGesture.didDrag !== true &&
+      Number.isInteger(this.worldGesture.seedChoiceTileNumber)
+        ? this.worldGesture.seedChoiceTileNumber
         : null;
     const tapLabelTileNumber =
       event.type !== 'pointercancel' &&
@@ -2077,6 +2110,15 @@ export class GardenPlotManager {
       event.preventDefault();
       event.stopPropagation();
       this.startPlantSelectedGardenSeed(tapPlantTileNumber);
+      return;
+    }
+
+    if (tapSeedChoiceTileNumber !== null) {
+      this.suppressWorldClick();
+      event.preventDefault();
+      event.stopPropagation();
+      this.showSeedPopup(tapSeedChoiceTileNumber);
+      this.setHandledTileLabelPressStartTileNumber(tapSeedChoiceTileNumber);
     }
   }
 
@@ -2100,6 +2142,7 @@ export class GardenPlotManager {
       startZoom,
       didDrag: true,
     };
+    this.worldViewportTouched = true;
     this.suppressWorldClick();
   }
 
@@ -2158,6 +2201,30 @@ export class GardenPlotManager {
 
   setWorldPan(x, y, { rubber = false } = {}) {
     this.setWorldViewport(x, y, this.worldZoom, { rubber });
+  }
+
+  fitWorldViewportToPlots() {
+    if (this.worldViewportTouched) {
+      return;
+    }
+
+    const shellRect = this.refs.world?.shell?.getBoundingClientRect?.();
+    const scale = this.getUiScale();
+    const shellWidth = Math.max(0, (shellRect?.width ?? 0) / scale);
+
+    if (shellWidth <= 0) {
+      return;
+    }
+
+    const centeredPanX = (shellWidth - this.worldSize.width * this.worldZoom) / 2;
+    const nextPan = this.clampWorldPan(centeredPanX, this.worldPan.y, this.worldZoom);
+
+    if (nextPan.x === this.worldPan.x && nextPan.y === this.worldPan.y) {
+      return;
+    }
+
+    this.worldPan = nextPan;
+    this.applyWorldViewport();
   }
 
   setWorldViewport(x, y, zoom = this.worldZoom, { rubber = false, animate = false } = {}) {

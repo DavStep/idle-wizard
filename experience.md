@@ -131,7 +131,9 @@
 - Scaled full-page UI layers should stay unscrolled; put an inner source-positioned scroll root inside them, or content can visibly pass under top/bottom chrome before clipping.
 - Garden's inner scroll root should stop at `--style-room-chat-clearance` only; adding bottom tab clearance double-counts the shared world-chat gap.
 - Garden's pannable plot world should mount directly under the room UI layer with an edge-to-edge shell and 16px internal row padding; mounting it inside `.garden-page__content` clips side movement.
+- Garden's plot world can stay edge-to-edge horizontally, but its top clip must start below top chrome; extending it upward lets plots render under the top panel.
 - Web-wide Garden/Brewing worlds need shells expanded past the centered source UI layer plus positive free-space pan bounds; otherwise desktop crops or left-pins the world.
+- Web-wide Garden initial pan must center the source-width plot world inside the expanded shell; otherwise the top three plots open offset from the top chrome.
 - Garden plot plant icons must use full atlas sprites; masked atlas sprites flatten herbs into one solid color.
 - Alliance quest notifications need quest/progress/contribution rows retained outside the popup; the full public alliance list can stay popup-retained.
 - Alliance income deltas currently skip if the player has same-week quest contribution or reward rows in another alliance; new alliances can show 0 until weekly reset.
@@ -152,6 +154,7 @@
 - NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or fast-sell/stock totals drift.
 - NPC market demand/prices are fake local gameplay values until player level 4; do not debug level 1-3 fast-sell against backend NPC rows.
 - NPC demand market auto-sell uses one shared wall-clock timer aligned to `:00` and `:30`; render it as a box-level bottom border label, not inside each stand row.
+- NPC demand market catch-up cycles must refresh active stand snapshots after each sale; fixed `amount` marks can hit zero mid-update and must not keep selling from a stale slot snapshot.
 - Level 4+ NPC auto-sell needs retained backend price rows while any stand has an item; if prices are missing at a timer boundary, keep that cycle pending instead of resetting it away.
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or bold text there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
@@ -164,7 +167,7 @@
 - Brewing herb drag thresholds must not be lower than validated tap slop; otherwise small WebView drift suppresses the synthetic click and adds no herb.
 - Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
 - Garden plant availability and copy must compare selected seed count to the plot level/multiplier; `>0` is wrong for x2+ plots.
-- Garden plantable empty plots should plant from the whole slot/row; seed-name labels still open seed choices and no-seed slots stay inert.
+- Garden empty plot taps without a plantable selected seed should open seed choices; plantable empty plots still plant from the whole slot/row, and seed-name labels open seed choices.
 - Plantable Garden plot taps need a no-drag world pointerup path with click dedupe, same as ready harvest; WebView can drop the native row click after small drift.
 - Garden no-drag plot actions must suppress retargeted herb/seed label clicks too; after planting, the new herb label can appear under the release point and reopen choices.
 - Ready Garden plot boxes should harvest from the visible plot frame, not only the plant/action label; the plant icon is too small as the sole tap target.

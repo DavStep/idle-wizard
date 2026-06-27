@@ -966,15 +966,18 @@ export class ShopShelfManager {
       return;
     }
 
-    const maxQuantity = this.getMaxMarkQuantity(item);
-    const quantity = maxQuantity > 0
-      ? this.clampMarkQuantity(this.draftSellQuantity, item) ?? maxQuantity
-      : 0;
-    const display = getItemDisplay(this.gameplayFacade.getSnapshot(), item, item.quantity);
     const selectedSameItem = selectedSlot?.sellItemTypeId === item.itemTypeId;
     const selectedAll = selectedSameItem && selectedSlot.sellLimitMode !== 'amount';
     const selectedAmount = selectedSameItem && selectedSlot.sellLimitMode === 'amount';
     const selectedLimit = Math.max(0, Math.floor(Number(selectedSlot?.sellQuantityLimit) || 0));
+    const maxQuantity = this.getMaxMarkQuantity(item);
+    const quantity =
+      selectedAmount && selectedLimit <= 0 && this.draftSellQuantity <= 0
+        ? 0
+        : maxQuantity > 0
+          ? this.clampMarkQuantity(this.draftSellQuantity, item) ?? maxQuantity
+          : 0;
+    const display = getItemDisplay(this.gameplayFacade.getSnapshot(), item, item.quantity);
 
     this.draftSellQuantity = quantity;
     controls.selectedItem.label.disabled = false;

@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.55
+
+- Fixed Garden plot views so the world opens centered, stays below the top panel, and keeps upgraded plot art cleaner.
+- Improved Garden empty plot taps so plots without a plantable selected seed open seed choices instead of doing nothing.
+- Fixed NPC demand auto-sell catch-up so sold-out marked items stop cleanly during timer cycles.
+- Shortened level-up and research announcement animations so milestone popups get back to play faster.
+
 ## 0.2.54
 
 - Fixed wide desktop Garden and Brewing views so panning space stays aligned with the authored room instead of collapsing at the sides.

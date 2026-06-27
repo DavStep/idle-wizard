@@ -38,9 +38,7 @@ export class ShopAutoSellManager {
     const autoSellSeconds = this.shopBalanceManager.getAutoSellSeconds();
     const nowSeconds = this.getNowSeconds();
     const progressSeconds = this.getGlobalProgressSeconds(autoSellSeconds, nowSeconds);
-    const activeSlots = this.shopShelfEntityManager
-      .getSlotSnapshots()
-      .filter((slot) => this.isActiveSellSlot(slot));
+    const activeSlots = this.getActiveSellSlots();
     this.syncPriceRetention(activeSlots);
 
     if (activeSlots.length <= 0) {
@@ -61,9 +59,7 @@ export class ShopAutoSellManager {
   }
 
   hasFrameTimerWork() {
-    return this.shopShelfEntityManager
-      .getSlotSnapshots()
-      .some((slot) => this.isActiveSellSlot(slot));
+    return this.getActiveSellSlots().length > 0;
   }
 
   syncPriceRetention(activeSlots) {
@@ -127,12 +123,23 @@ export class ShopAutoSellManager {
 
   processPendingCycles(activeSlots) {
     const npcNeedByItemKey = new Map();
+    let currentActiveSlots = activeSlots;
 
     while (this.pendingCycleCount > 0) {
-      const result = this.sellShopCycleWithDemandState(activeSlots, npcNeedByItemKey);
+      const result = this.sellShopCycleWithDemandState(
+        currentActiveSlots,
+        npcNeedByItemKey,
+      );
 
       if (result.soldAny) {
         this.pendingCycleCount -= 1;
+        currentActiveSlots = this.getActiveSellSlots();
+
+        if (currentActiveSlots.length <= 0) {
+          this.pendingCycleCount = 0;
+          return;
+        }
+
         continue;
       }
 
@@ -143,6 +150,12 @@ export class ShopAutoSellManager {
       this.pendingCycleCount = 0;
       return;
     }
+  }
+
+  getActiveSellSlots() {
+    return this.shopShelfEntityManager
+      .getSlotSnapshots()
+      .filter((slot) => this.isActiveSellSlot(slot));
   }
 
   sellSlot(slot, { npcNeedByItemKey = null } = {}) {

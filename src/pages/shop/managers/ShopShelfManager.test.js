@@ -1666,6 +1666,82 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('keeps a completed fixed NPC market amount from reopening as all', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      coin: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              quantity: 5,
+              sellCoin: 8,
+              sellNeed: 120,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 1,
+              sellKind: 'seed',
+              sellKey: 'sageSeed',
+              sellLabel: 'sage seed',
+              sellQuantity: 5,
+              sellLimitMode: 'amount',
+              sellQuantityLimit: 0,
+              sellCoin: 8,
+              sellNeed: 120,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+      setSelectedShopShelfSlotSellItem: vi.fn(() => ({ ok: true })),
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    expect(stage.querySelector('.shop-page__slot-row .row_val')?.textContent).toBe(
+      'sage seed (0) done',
+    );
+
+    manager.showSellPopup();
+
+    const selectedValue = popupLayer.querySelector(
+      '.shop-page__sell-selected-row .row_val',
+    );
+    const markButton = popupLayer.querySelector('.shop-page__sell-mark-button');
+    const markAllButton = popupLayer.querySelector('.shop-page__sell-mark-all-button');
+
+    expect(selectedValue?.textContent).toBe('marked 0');
+    expect(markButton?.textContent).toBe('mark x0');
+    expect(markButton?.disabled).toBe(true);
+    expect(markAllButton?.getAttribute('aria-pressed')).toBe('false');
+    expect(gameplayFacade.setSelectedShopShelfSlotSellItem).not.toHaveBeenCalled();
+
+    manager.unmount();
+  });
+
   it('keeps NPC market stand item text stable across renders so taps can open picker', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');

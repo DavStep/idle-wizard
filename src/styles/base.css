@@ -200,6 +200,7 @@
   --brewing-page-cauldron-actions-gap: 4px;
   --brewing-page-cauldron-recipe-box-width: 216px;
   --brewing-page-cauldron-art-width: 178px;
+  --brewing-page-cauldron-art-scale: 0.9;
   --brewing-page-cauldron-art-height: calc(
     var(--brewing-page-cauldron-height) +
       var(--brewing-page-cauldron-action-height) +
@@ -219,7 +220,7 @@
   );
   --brewing-page-box-gap: 8px;
   --garden-page-box-gap: 24px;
-  --garden-page-world-top-extension: calc(var(--style-room-content-edge) * 3);
+  --garden-page-world-top-safe-space: var(--style-room-content-edge);
   --room-inventory-panel-y-offset: 5px;
   --garden-page-plot-progress-slot-height: var(--style-scroll-progress-height);
   --garden-page-plot-visual-width: 88px;
@@ -5342,6 +5343,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
   display: block;
   width: 100%;
   height: 100%;
+  transform: scale(var(--brewing-page-cauldron-art-scale));
+  transform-origin: center;
 }
 
 .brewing-page__cauldron-art-image {
@@ -7844,7 +7847,7 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot-world {
   position: absolute;
-  top: calc(var(--style-room-content-top) - var(--garden-page-world-top-extension));
+  top: calc(var(--style-room-content-top) + var(--garden-page-world-top-safe-space));
   right: 0;
   bottom: var(--style-room-chat-clearance);
   left: 0;
@@ -8532,7 +8535,7 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot-box-level {
   bottom: 5px;
-  left: 9px;
+  left: 5px;
   top: auto;
   color: var(--garden-page-plot-level-color);
   font-size: var(--garden-page-plot-box-detail-font-size);
@@ -14410,7 +14413,7 @@ div.workshop-page__discovery-row {
 }
 
 .room-announcement-layer:not([hidden]) .room-announcement {
-  animation: room-announcement-panel-enter 260ms
+  animation: room-announcement-panel-enter 130ms
     var(--style-motion-ease-rubber) both;
   transform-origin: center;
 }
@@ -14418,58 +14421,58 @@ div.workshop-page__discovery-row {
 .room-announcement-layer:not([hidden])
   .room-announcement[data-announcement-kind="level"]
   .room-announcement__title {
-  animation: room-announcement-title-flyout 900ms
+  animation: room-announcement-title-flyout 450ms
     var(--style-motion-ease-rubber) both;
 }
 
 .room-announcement-layer:not([hidden])
   .room-announcement[data-announcement-kind="research"]
   .room-announcement__title {
-  animation: room-announcement-research-title-enter 520ms
+  animation: room-announcement-research-title-enter 260ms
     var(--style-motion-ease-rubber) both;
 }
 
 .room-announcement-layer:not([hidden])
   .room-announcement__level-from {
-  animation: room-announcement-level-from-sequence 1160ms
-    var(--style-motion-ease-rubber) 640ms both;
+  animation: room-announcement-level-from-sequence 580ms
+    var(--style-motion-ease-rubber) 320ms both;
 }
 
 .room-announcement-layer:not([hidden])
   .room-announcement__level-to {
-  animation: room-announcement-level-to-enter 540ms
-    var(--style-motion-ease-rubber) 1440ms both;
+  animation: room-announcement-level-to-enter 270ms
+    var(--style-motion-ease-rubber) 720ms both;
 }
 
 .room-announcement-layer:not([hidden]) .room-announcement__row {
-  animation: room-announcement-row-enter 430ms var(--style-motion-ease-rubber)
-    calc(1940ms + (var(--room-announcement-row-index, 0) * 110ms)) both;
+  animation: room-announcement-row-enter 215ms var(--style-motion-ease-rubber)
+    calc(970ms + (var(--room-announcement-row-index, 0) * 55ms)) both;
 }
 
 .room-announcement-layer:not([hidden])
   .room-announcement__research-silhouette {
-  animation: room-announcement-research-silhouette 760ms
+  animation: room-announcement-research-silhouette 380ms
     var(--style-motion-ease-rubber) both;
 }
 
 .room-announcement-layer:not([hidden]) .room-announcement__research-icon {
-  animation: room-announcement-research-icon 780ms
-    var(--style-motion-ease-rubber) 360ms both;
+  animation: room-announcement-research-icon 390ms
+    var(--style-motion-ease-rubber) 180ms both;
 }
 
 .room-announcement-layer:not([hidden]) .room-announcement__research-label {
-  animation: room-announcement-row-enter 430ms var(--style-motion-ease-rubber)
-    1080ms both;
+  animation: room-announcement-row-enter 215ms var(--style-motion-ease-rubber)
+    540ms both;
 }
 
 .room-announcement-layer:not([hidden]) .room-announcement__research-detail {
-  animation: room-announcement-row-enter 430ms var(--style-motion-ease-rubber)
-    1220ms both;
+  animation: room-announcement-row-enter 215ms var(--style-motion-ease-rubber)
+    610ms both;
 }
 
 .room-announcement-layer:not([hidden])
   .room-announcement__research-fallback-icon {
-  animation: room-announcement-level-to-enter 620ms
+  animation: room-announcement-level-to-enter 310ms
     var(--style-motion-ease-rubber) both;
 }
 

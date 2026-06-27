@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { cwd } from 'node:process';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PageAnnouncementManager } from './PageAnnouncementManager.js';
 
@@ -15,6 +15,7 @@ afterEach(() => {
   }
 
   managers.clear();
+  vi.useRealTimers();
 });
 
 function createGameplayFacadeFake(snapshot, { emitInitial = true } = {}) {
@@ -235,6 +236,46 @@ describe('PageAnnouncementManager', () => {
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
 
     expect(layer.hidden).toBe(false);
+  });
+
+  it('auto-advances announcements after the faster default display window', () => {
+    vi.useFakeTimers();
+
+    const snapshot = createSnapshot();
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake(snapshot);
+    const manager = new PageAnnouncementManager({ gameplayFacade });
+    managers.add(manager);
+    manager.mount(stage);
+
+    snapshot.tasks.currentLevel = 2;
+    snapshot.playerLevel.currentLevel = 2;
+    gameplayFacade.publishSnapshot();
+
+    const layer = stage.querySelector('.room-announcement-layer');
+    expect(layer?.hidden).toBe(false);
+
+    vi.advanceTimersByTime(2099);
+    expect(layer?.hidden).toBe(false);
+
+    vi.advanceTimersByTime(1);
+    expect(layer?.hidden).toBe(true);
+  });
+
+  it('uses x2 faster announcement animation timings', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+
+    expect(baseCss).toContain('animation: room-announcement-panel-enter 130ms');
+    expect(baseCss).toContain('animation: room-announcement-title-flyout 450ms');
+    expect(baseCss).toContain('animation: room-announcement-level-from-sequence 580ms');
+    expect(baseCss).toContain('var(--style-motion-ease-rubber) 320ms both;');
+    expect(baseCss).toContain('animation: room-announcement-level-to-enter 270ms');
+    expect(baseCss).toContain('var(--style-motion-ease-rubber) 720ms both;');
+    expect(baseCss).toContain(
+      'calc(970ms + (var(--room-announcement-row-index, 0) * 55ms)) both;',
+    );
+    expect(baseCss).toContain('animation: room-announcement-research-icon 390ms');
+    expect(baseCss).toContain('var(--style-motion-ease-rubber) 180ms both;');
   });
 
   it('shows completed research with a silhouette and actual icon', () => {

@@ -7,7 +7,7 @@ import { createSeedPackIcon, getSeedIconFrameName } from '../../../assets/items/
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { getLevelPayoffRows } from '../../workshop/managers/levelPayoffSummary.js';
 
-const DISPLAY_MS = 4200;
+const DISPLAY_MS = 2100;
 const RESOURCE_ICON_FRAMES = Object.freeze({
   coin: 'resource:coin',
   crystal: 'resource:crystal',
