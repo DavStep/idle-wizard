@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.56
+
+- Polished Garden plot ground art for base and upgraded plots so the room view reads cleaner.
+- Removed an unused chest image from the client build.
+
 ## 0.2.55
 
 - Fixed Garden plot views so the world opens centered, stays below the top panel, and keeps upgraded plot art cleaner.
