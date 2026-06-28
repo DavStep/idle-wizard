@@ -231,8 +231,15 @@ export class AppLifecycleManager {
   }
 
   async handleGameplaySaveReady({ save } = {}) {
-    this.freshStartChoiceManager.hide?.();
     const accountLinkSave = this.getPendingAccountLinkSave();
+    const shouldPromptForFreshStart = this.shouldPromptForFreshStart({
+      save,
+      accountLinkSave,
+    });
+
+    if (!shouldPromptForFreshStart) {
+      this.freshStartChoiceManager.hide?.();
+    }
 
     if (accountLinkSave && this.isAuthenticatedAccount()) {
       this.onlineGateManager.hide();
@@ -275,7 +282,7 @@ export class AppLifecycleManager {
       return;
     }
 
-    if (this.shouldPromptForFreshStart({ save, accountLinkSave })) {
+    if (shouldPromptForFreshStart) {
       this.onlineGateManager.hide();
       await this.chooseFreshStart({ keepOpenOnConnect: true });
       if (this.stopping) {
@@ -294,8 +301,7 @@ export class AppLifecycleManager {
     return (
       !this.freshStartConfirmed &&
       !save &&
-      !accountLinkSave &&
-      !this.isAuthenticatedAccount()
+      !accountLinkSave
     );
   }
 
@@ -306,7 +312,11 @@ export class AppLifecycleManager {
   shouldRestoreConnectedAccountBeforeInitialConnect(
     authSnapshot = this.getAuthSnapshot(),
   ) {
-    return !authSnapshot?.oidc?.authenticated && authSnapshot?.oidc?.remembered;
+    return (
+      authSnapshot?.hasToken &&
+      !authSnapshot?.oidc?.authenticated &&
+      authSnapshot?.oidc?.remembered
+    );
   }
 
   hasConnectableAccount(authSnapshot = this.getAuthSnapshot()) {

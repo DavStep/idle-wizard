@@ -4,7 +4,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 
 ## Box Construction
 
-- Ordinary room boxes use compact padding and no shadow; the white theme uses `1px` borders, while non-white themes use `2px` ordinary borders.
+- Ordinary room boxes use compact padding and no shadow; the white theme uses `1px` game-gray borders, while non-white themes use `2px` ordinary borders.
 - Box titles sit embedded over the top border on the same room surface.
 - Secondary border labels, such as counts, close/current controls, actions, and tabs, use smaller normal-weight text centered on the border line.
 - Popup/dialog boxes use the thicker dialog treatment: `2px` border, `20px` padding, and bottom-right shadow.

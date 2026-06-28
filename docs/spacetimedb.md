@@ -66,8 +66,9 @@ http://localhost
 
 The current Android app uses Google Credential Manager through the native
 `NativeGoogleAuth` Capacitor plugin. Keep the Android OAuth client package name
-and SHA-1 configured in Google Cloud. The hosted redirect remains as a fallback
-for the older native OIDC handoff flow.
+and SHA-1 configured in Google Cloud. The older native OIDC handoff flow is
+disabled in production because browser-side code exchange against the web OAuth
+client can fail with `client_secret is missing`.
 
 Configure Google OAuth with these authorized redirect URIs only if the fallback
 native/mobile handoff flow is enabled:
@@ -88,6 +89,7 @@ production builds read:
 VITE_GOOGLE_AUTH_CLIENT_ID=<google-client-id>
 VITE_GOOGLE_AUTH_MOBILE_REDIRECT_URI=https://davstep.github.io/idle-wizard/?native_auth=1
 VITE_GOOGLE_AUTH_MOBILE_CALLBACK_URI=com.idlewizard.game://auth/callback
+VITE_ENABLE_NATIVE_OIDC=false
 VITE_ANDROID_APP_ID=com.idlewizard.game
 ```
 

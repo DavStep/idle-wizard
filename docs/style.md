@@ -27,6 +27,7 @@ This project should use the same kind of minimal text-game language, without cop
 ## Color
 
 - Primary text: black.
+- White-theme strokes: game gray, currently `#5e5e5e`.
 - Page and surface: light gray, currently `#d6d6d6` in the white theme.
 - Disabled/secondary text and borders: medium gray.
 - Resource words and amounts can use resource colors; potion item names stay normal text, not a pink/category color.
@@ -34,13 +35,13 @@ This project should use the same kind of minimal text-game language, without cop
 
 ## Boxes
 
-- White-theme ordinary non-dialog boxes use `1px solid black`; non-white themes use `2px` ordinary borders.
+- White-theme ordinary non-dialog boxes use `1px` game-gray borders; non-white themes use `2px` ordinary borders.
 - No border radius.
 - Ordinary box padding follows A Dark Room's stores spacing: `5px 10px` in source UI units.
 - Box titles sit over the top border on the same surface background, like A Dark Room's simple store boxes.
 - Do not put a separate heading inside a box when the label belongs in the border.
 - Non-title labels that sit on a box border, such as counts, close/current controls, bottom-edge actions, and tabs, should use smaller text with the line box centered on the border line.
-- Popup/dialog panels may use `2px solid black`, `20px` padding, and a bottom-right gray shadow: `5px 5px 5px #666` in source UI units.
+- Popup/dialog panels may use `2px` game-gray borders in the white theme, `20px` padding, and a bottom-right gray shadow: `5px 5px 5px #666` in source UI units.
 - Theme popup/dialog shadows should stay visible by contrasting with the active surface: dark on white, light on black.
 - Tabbed dialogs use a fixed panel height. If tab content is taller than that height, keep the bottom tabs fixed and scroll the content with the shared scroll cue.
 - Shared scroll progress rails use the logs dialog pattern: a separate `style-progress` rail below the scroll frame, never over the last row.

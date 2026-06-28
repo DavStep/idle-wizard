@@ -67,7 +67,7 @@ describe('AuthOidcManager', () => {
     });
   });
 
-  it('processes a redirect callback and exposes the OIDC token', async () => {
+  it('processes a native fallback redirect callback and exposes the OIDC token', async () => {
     let capturedSettings = null;
     const user = {
       id_token: 'id-token',
@@ -86,7 +86,14 @@ describe('AuthOidcManager', () => {
     const manager = new AuthOidcManager({
       clientId: 'client-1',
       basePath: '/idle-wizard/',
+      mobileRedirectUri: 'https://davstep.github.io/idle-wizard/?native_auth=1',
       storage,
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      appPlugin: null,
+      nativeOidcEnabled: true,
+      nativeGoogleAuthPlugin: null,
       windowRef: {
         document: { title: 'Idle Wizard' },
         history: { replaceState },
@@ -106,7 +113,9 @@ describe('AuthOidcManager', () => {
 
     await manager.prepare();
 
-    expect(capturedSettings.redirect_uri).toBe('https://davstep.github.io/idle-wizard/');
+    expect(capturedSettings.redirect_uri).toBe(
+      'https://davstep.github.io/idle-wizard/?native_auth=1',
+    );
     expect(capturedSettings.authority).toBe('https://accounts.google.com');
     expect(capturedSettings.response_type).toBe('code');
     expect(capturedSettings.prompt).toBe('select_account');
@@ -136,6 +145,12 @@ describe('AuthOidcManager', () => {
       clientId: 'client-1',
       responseType: 'code',
       storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      appPlugin: null,
+      nativeOidcEnabled: true,
+      nativeGoogleAuthPlugin: null,
       windowRef: {
         location: {
           origin: 'https://davstep.github.io',
@@ -165,6 +180,12 @@ describe('AuthOidcManager', () => {
       clientId: 'client-1',
       responseType: 'id_token',
       storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      appPlugin: null,
+      nativeOidcEnabled: true,
+      nativeGoogleAuthPlugin: null,
       windowRef: {
         location: {
           origin: 'https://davstep.github.io',
@@ -309,7 +330,7 @@ describe('AuthOidcManager', () => {
     });
   });
 
-  it('falls back to redirect when web Google Identity prompt cannot display', async () => {
+  it('does not fall back to redirect when web Google Identity prompt cannot display', async () => {
     const google = {
       accounts: {
         id: {
@@ -325,9 +346,6 @@ describe('AuthOidcManager', () => {
       },
     };
     const storage = createMemoryStorage();
-    const oidcClient = {
-      signinRedirect: vi.fn(() => Promise.resolve()),
-    };
     const manager = new AuthOidcManager({
       clientId: 'client-1',
       storage,
@@ -340,28 +358,24 @@ describe('AuthOidcManager', () => {
         setTimeout: vi.fn(() => 1),
         clearTimeout: vi.fn(),
       },
-      createUserManager: () => oidcClient,
+      createUserManager: () => {
+        throw new Error('web Google Identity failure should not create OIDC manager');
+      },
     });
 
     await expect(
       manager.signIn({ pendingAccountLinkAttemptId: 'attempt-1' }),
-    ).resolves.toEqual({ ok: true });
-    expect(oidcClient.signinRedirect).toHaveBeenCalledTimes(1);
-    expect(storage.getItem('idle-wizard.account-link.active-attempt')).toBe(
-      'attempt-1',
-    );
+    ).resolves.toEqual({ ok: false, reason: 'web_unavailable' });
+    expect(storage.getItem('idle-wizard.account-link.active-attempt')).toBeNull();
     expect(manager.getSnapshot()).toMatchObject({
       authenticated: false,
-      error: null,
+      error: 'unregistered_origin',
       cancelled: false,
     });
   });
 
-  it('falls back to redirect when the web Google Identity script cannot load', async () => {
+  it('does not fall back to redirect when the web Google Identity script cannot load', async () => {
     const storage = createMemoryStorage();
-    const oidcClient = {
-      signinRedirect: vi.fn(() => Promise.resolve()),
-    };
     const scriptListeners = new Map();
     const script = {
       parentNode: null,
@@ -387,42 +401,26 @@ describe('AuthOidcManager', () => {
         setTimeout: vi.fn(() => 1),
         clearTimeout: vi.fn(),
       },
-      createUserManager: () => oidcClient,
+      createUserManager: () => {
+        throw new Error('web Google Identity failure should not create OIDC manager');
+      },
     });
 
     await expect(
       manager.signIn({ pendingAccountLinkAttemptId: 'attempt-1' }),
-    ).resolves.toEqual({ ok: true });
+    ).resolves.toEqual({ ok: false, reason: 'web_unavailable' });
 
-    expect(oidcClient.signinRedirect).toHaveBeenCalledTimes(1);
-    expect(storage.getItem('idle-wizard.account-link.active-attempt')).toBe(
-      'attempt-1',
-    );
+    expect(storage.getItem('idle-wizard.account-link.active-attempt')).toBeNull();
     expect(manager.getSnapshot()).toMatchObject({
       authenticated: false,
-      error: null,
+      error: 'Google login script failed to load.',
       cancelled: false,
     });
   });
 
-  it('handles redirect callback before web Google Identity mode after fallback', async () => {
+  it('cleans stale web OIDC callbacks without exchanging a code', async () => {
     const storage = createMemoryStorage();
-    const idToken = createFakeJwt({
-      expiresAtSeconds: Math.floor(Date.now() / 1000) + 3600,
-    });
-    const user = {
-      id_token: idToken,
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-      profile: {
-        email: 'dav@example.com',
-        name: 'Dav',
-      },
-    };
     const replaceState = vi.fn();
-    const oidcClient = {
-      signinCallback: vi.fn(() => Promise.resolve(user)),
-      getUser: vi.fn(() => Promise.resolve(null)),
-    };
     storage.setItem('idle-wizard.account-link.active-attempt', 'attempt-1');
     const manager = new AuthOidcManager({
       clientId: 'client-1',
@@ -443,60 +441,22 @@ describe('AuthOidcManager', () => {
           href: 'https://davstep.github.io/idle-wizard/?code=abc&state=def',
         },
       },
-      createUserManager: () => oidcClient,
+      createUserManager: () => {
+        throw new Error('stale web OIDC callback should not create OIDC manager');
+      },
     });
 
     await expect(manager.prepare()).resolves.toMatchObject({
       enabled: true,
-      authenticated: true,
-      displayName: 'Dav',
-      email: 'dav@example.com',
+      authenticated: false,
+      error: 'web_unavailable',
+      cancelled: false,
     });
 
-    expect(oidcClient.signinCallback).toHaveBeenCalledWith(
-      'https://davstep.github.io/idle-wizard/?code=abc&state=def',
-    );
-    expect(storage.getItem('idle-wizard.web-google.user')).toContain(idToken);
-    expect(storage.getItem('idle-wizard.web-google.user')).toContain('attempt-1');
+    expect(storage.getItem('idle-wizard.web-google.user')).toBeNull();
     expect(storage.getItem('idle-wizard.account-link.active-attempt')).toBeNull();
     expect(replaceState).toHaveBeenCalledWith({}, 'Idle Wizard', '/idle-wizard/');
-    await expect(manager.getConnectionToken()).resolves.toBe(idToken);
-
-    const removeUser = vi.fn(() => Promise.resolve());
-    const reloadedManager = new AuthOidcManager({
-      clientId: 'client-1',
-      storage,
-      windowRef: {
-        atob: globalThis.atob,
-        document: {
-          createElement: vi.fn(),
-        },
-        location: {
-          origin: 'https://davstep.github.io',
-          pathname: '/idle-wizard/',
-          search: '',
-          hash: '',
-          href: 'https://davstep.github.io/idle-wizard/',
-        },
-      },
-      createUserManager: () => ({
-        getUser: vi.fn(() => Promise.resolve(null)),
-        removeUser,
-      }),
-    });
-
-    await expect(reloadedManager.prepare()).resolves.toMatchObject({
-      enabled: true,
-      authenticated: true,
-      displayName: 'Dav',
-      email: 'dav@example.com',
-    });
-    await expect(reloadedManager.getConnectionToken()).resolves.toBe(idToken);
-
-    await expect(reloadedManager.signOut()).resolves.toEqual({ ok: true });
-    expect(removeUser).toHaveBeenCalledTimes(1);
-    expect(storage.getItem('idle-wizard.web-google.user')).toBeNull();
-    await expect(reloadedManager.getConnectionToken()).resolves.toBeUndefined();
+    await expect(manager.getConnectionToken()).resolves.toBeUndefined();
   });
 
   it('cleans the redirect URL when callback handling fails', async () => {
@@ -509,6 +469,12 @@ describe('AuthOidcManager', () => {
       clientId: 'client-1',
       basePath: '/idle-wizard/',
       storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      appPlugin: null,
+      nativeOidcEnabled: true,
+      nativeGoogleAuthPlugin: null,
       windowRef: {
         document: { title: 'Idle Wizard' },
         history: { replaceState },
@@ -573,6 +539,37 @@ describe('AuthOidcManager', () => {
     expect(getLaunchUrl).not.toHaveBeenCalled();
   });
 
+  it('does not use native OIDC fallback by default when native Google auth is unavailable', async () => {
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      nativeGoogleAuthPlugin: null,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+      },
+      createUserManager: () => {
+        throw new Error('native OIDC fallback should not create OIDC manager');
+      },
+    });
+
+    await expect(manager.prepare()).resolves.toMatchObject({
+      enabled: false,
+      authenticated: false,
+      disabledReason: 'native',
+    });
+    await expect(manager.signIn()).resolves.toEqual({
+      ok: false,
+      reason: 'disabled',
+    });
+  });
+
   it('uses the hosted redirect and handles the Android app callback on native builds', async () => {
     let capturedSettings = null;
     let capturedRedirectNavigator = null;
@@ -606,6 +603,7 @@ describe('AuthOidcManager', () => {
         ),
       },
       browserPlugin,
+      nativeOidcEnabled: true,
       nativeGoogleAuthPlugin: null,
       windowRef: {
         location: {
@@ -1213,6 +1211,12 @@ describe('AuthOidcManager', () => {
     const manager = new AuthOidcManager({
       clientId: 'client-1',
       storage: createMemoryStorage(),
+      capacitor: {
+        getPlatform: () => 'android',
+      },
+      appPlugin: null,
+      nativeOidcEnabled: true,
+      nativeGoogleAuthPlugin: null,
       windowRef: {
         location: {
           origin: 'http://127.0.0.1:55173',

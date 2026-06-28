@@ -913,13 +913,18 @@ describe('GardenPlotManager', () => {
       '--garden-page-world-top-safe-space: var(--style-room-content-edge);',
     );
     expect(plotWorldRule).toContain('position: absolute;');
-    expect(plotWorldRule).toContain(
-      'top: calc(var(--style-room-content-top) + var(--garden-page-world-top-safe-space));',
-    );
+    expect(plotWorldRule).toContain('top: 0;');
     expect(plotWorldRule).toContain('right: 0;');
     expect(plotWorldRule).toContain('bottom: var(--style-room-chat-clearance);');
     expect(plotWorldRule).toContain('left: 0;');
     expect(plotWorldRule).toContain('overflow: hidden;');
+    expect(worldShellRule).toContain(
+      'top: calc(var(--style-room-content-top) + var(--garden-page-world-top-safe-space));',
+    );
+    expect(worldShellRule).toContain('right: 0;');
+    expect(worldShellRule).toContain('bottom: 0;');
+    expect(worldShellRule).toContain('left: 0;');
+    expect(worldShellRule).toContain('overflow: visible;');
     expect(worldShellRule).toContain('touch-action: none;');
     expect(worldRule).toContain('var(--garden-page-world-pan-x, 0px)');
     expect(worldRule).toContain('var(--garden-page-world-pan-y, 0px)');

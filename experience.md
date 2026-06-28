@@ -26,6 +26,7 @@
 - Removed FTUE skip states must be ignored, not migrated; stale Android WebView `skipped` flags can hide the guide for reset level-1 players.
 - Post-reset replay guards must allow the client baseline save, including default free research like `unlockSeed:sageSeed`; otherwise new post-reset saves can never create a server row.
 - Fresh Android installs must show the account/start-fresh choice before any Credential Manager restore; native Google can silently restore a previously authorized account even when app-local data was cleared.
+- Web/mobile Google login must fail closed when ID-token auth is unavailable; browser OIDC code redirects with a web OAuth client surface `client_secret is missing` unless a backend token-exchange endpoint exists.
 
 ## Product Shape
 
@@ -131,7 +132,7 @@
 - Scaled full-page UI layers should stay unscrolled; put an inner source-positioned scroll root inside them, or content can visibly pass under top/bottom chrome before clipping.
 - Garden's inner scroll root should stop at `--style-room-chat-clearance` only; adding bottom tab clearance double-counts the shared world-chat gap.
 - Garden's pannable plot world should mount directly under the room UI layer with an edge-to-edge shell and 16px internal row padding; mounting it inside `.garden-page__content` clips side movement.
-- Garden's plot world can stay edge-to-edge horizontally, but its top clip must start below top chrome; extending it upward lets plots render under the top panel.
+- Garden's plot world keeps its top chrome spacing on the inner shell, but the visual crop starts at the screen top so upward pan/overflow cuts against the stage edge.
 - Web-wide Garden/Brewing worlds need shells expanded past the centered source UI layer plus positive free-space pan bounds; otherwise desktop crops or left-pins the world.
 - Web-wide Garden initial pan must center the source-width plot world inside the expanded shell; otherwise the top three plots open offset from the top chrome.
 - Garden plot plant icons must use full atlas sprites; masked atlas sprites flatten herbs into one solid color.
@@ -408,19 +409,15 @@
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
 - Gameplay save coalescing must stay short and flush on hide/reload; long pending windows can make recent quest/coin progress look reset after refresh.
 - Android app-background disconnects should defer reconnect UI/retry until foreground; otherwise app switching can race SpacetimeDB session ownership and look like an account reconnect.
-- Google account linking must stash the current in-memory gameplay save before OIDC redirect, then ask whether to forget device data or overwrite the connected account before server saves resume.
-- Web Google account linking should fall back to OIDC redirect when Google Identity prompt cannot display; `web_unavailable` should not leave players stuck.
-- Web Google Identity script load/init failures should also be treated as `web_unavailable`, so blocked GIS can fall back to top-level OIDC redirect.
-- Web Google Identity fallback must handle OIDC redirect callbacks before the GIS shortcut, then persist the redirect user for the next reload.
+- Google account linking must stash the current in-memory gameplay save before auth handoff, then ask whether to forget device data or overwrite the connected account before server saves resume.
+- Web Google account linking must use Google Identity Services ID-token callback only; if GIS cannot display/load, return `web_unavailable` instead of falling back to OIDC code redirect.
+- Stale web OIDC callback URLs should be cleaned without code exchange; a backend token-exchange endpoint is required before restoring browser OIDC code flow.
 - Fresh-start account gates must render `oidc.error`/`cancelled`; otherwise failed Google returns look like a dead `not connected` retry loop.
 - If a level 1 device save links into a Google account with a save above level 1, keep the Google account automatically and skip the choice prompt.
 - Account-link pending saves need attempt scoping and visible failure handling; silent `localStorage` failure can drop device progress when linking into an existing account.
 - Account linking should use Google OIDC directly, not SpacetimeAuth, so the player sees only the Google account picker/consent before returning to the game.
-- Android account linking should use the hosted `https://davstep.github.io/idle-wizard/` Google redirect, then forward mobile browser callbacks to `com.idlewizard.game://auth/callback`; custom schemes can fail provider validation.
-- Android Google account linking should open through Capacitor Browser/Chrome Custom Tab, not the game WebView, so Google shows the normal account picker.
-- `oidc-client-ts` supports Authorization Code with PKCE for redirect sign-in; implicit `id_token token` fails before Capacitor Browser opens.
-- Mobile auth redirects need an explicit native marker and Android `intent://` handoff; some custom-tab browsers can ignore bare custom-scheme redirects from a loaded page.
-- For mobile account linking, prefer native Google Credential Manager over browser OIDC; browser callbacks can reopen the app without restoring OIDC state/token into the game.
+- Android account linking should use native Google Credential Manager, not hosted browser OIDC fallback; browser code callbacks can reopen the app and then fail token exchange with `client_secret is missing`.
+- Legacy mobile auth redirects need an explicit native marker and Android `intent://` handoff if re-enabled for experiments; do not use them for production login without backend exchange.
 - Android Credential Manager `GetCredentialCancellationException` is a neutral cancel for UI; if it happens after account selection, verify the Android OAuth client package and SHA-1.
 - Player-distributed Android prod APKs must be signed with a Google OAuth-registered cert; debug-signed prod builds can connect only if that debug SHA-1 is registered for `com.idlewizard.game`.
 - Native Google sign-in returns inside the same WebView, so persist the native user and reload/reconnect after success; web OIDC redirect handled that implicitly.
@@ -433,6 +430,7 @@
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Username prompt seen is monotonic; stale client/server profile echoes must not turn it false or the first-run name dialog can reopen after dismissal.
 - First-run account choice happens before `onOnline`; hide the server gate before awaiting that dialog or new players can look stuck at `connecting to server...`.
+- Empty connected accounts must keep the account/start gate open until `start new`; loading a null gameplay save immediately creates baseline server data.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
 - Gameplay save migrations must carry `visualSettings`; dropping it makes free theme/font/color unlocks vanish after refresh.
 - SpacetimeDB gameplay-save sanitizer must explicitly keep every client save branch, including visualSettings, or reducer writes will silently drop it before reload.

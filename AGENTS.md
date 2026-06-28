@@ -10,7 +10,7 @@ The target design viewport is `1080x2170`. Treat that as the authored game surfa
 
 Do not add seed, herb, potion, selling, economy, inventory, progression, or other gameplay code until the user explicitly requests that feature.
 
-The project `STYLE` is defined in `docs/style.md`. It is inspired by A Dark Room: black text, white surfaces, readable serif text with some character, thin black borders, compact text panels, and almost no decoration.
+The project `STYLE` is defined in `docs/style.md`. It is inspired by A Dark Room: black text, white surfaces, readable serif text with some character, thin game-gray borders, compact text panels, and almost no decoration.
 
 Before making new UI, check `docs/style.md` and `docs/ui-patterns.md` for an existing similar concept, then reuse that row, box, popup, tab, and border-label pattern instead of inventing a near-duplicate.
 

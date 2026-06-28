@@ -6,6 +6,7 @@ colors:
   room-surface: "#d6d6d6"
   ink: "#1a1a1a"
   muted: "#5e5e5e"
+  stroke: "#5e5e5e"
   disabled: "#969696"
   active-surface: "{colors.room-surface}"
   notification-red: "#c1121f"
@@ -101,7 +102,9 @@ The system rejects decorated fantasy RPG UI, colorful idle dashboards, modern ro
 Palette is functional, mostly monochrome, and intentionally low-ornament.
 
 ### Primary
-- **Ledger Ink:** Primary text and strokes. It is the main interactive color and carries buttons, rows, progress fills, and borders.
+- **Ledger Ink:** Primary text and progress fills. It carries labels, rows, buttons, and strong values.
+
+- **Ledger Stroke:** Primary white-theme strokes. It uses the game gray so borders frame the ledger without competing with black text.
 
 ### Secondary
 - **Notification Red:** Normal-priority notification dots only.
@@ -142,7 +145,7 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 
 ## 4. Elevation
 
-Ordinary room UI is flat. In the white theme, depth is communicated by 1px borders, title placement, and popup layering; non-white themes use 2px ordinary borders for stronger themed strokes. Only dialogs, overlays, and tooltips use shadow, and those shadows are structural.
+Ordinary room UI is flat. In the white theme, depth is communicated by 1px game-gray borders, title placement, and popup layering; non-white themes use 2px ordinary borders for stronger themed strokes. Only dialogs, overlays, and tooltips use shadow, and those shadows are structural.
 
 ### Shadow Vocabulary
 - **Dialog Shadow** (`5px 5px 5px var(--style-muted)`): Popup/dialog panels only.
@@ -168,7 +171,7 @@ Ordinary room UI is flat. In the white theme, depth is communicated by 1px borde
 - **Corner Style:** Square corners (0).
 - **Background:** Room surface.
 - **Shadow Strategy:** No shadow for ordinary panels.
-- **Border:** 1px ink border in the white theme; 2px ordinary border in non-white themes.
+- **Border:** 1px game-gray border in the white theme; 2px ordinary border in non-white themes.
 - **Internal Padding:** Compact source padding (5px 10px).
 - **Title:** Embedded on the top border over the same surface, bold 13px.
 
@@ -195,7 +198,7 @@ Ordinary room UI is flat. In the white theme, depth is communicated by 1px borde
 ### Do:
 - **Do** reuse `docs/ui-patterns.md` before creating any new row, box, popup, tab, or border-label treatment.
 - **Do** keep source typography at 13px body, 14px dialog title, and 11px border label.
-- **Do** use 1px ordinary borders in the white theme, 2px ordinary borders in non-white themes, and 2px borders for dialogs and popup tabs.
+- **Do** use 1px game-gray ordinary borders in the white theme, 2px ordinary borders in non-white themes, and 2px borders for dialogs and popup tabs.
 - **Do** keep row actions inline and right-aligned with tabular numerals.
 - **Do** support reduced motion by removing nonessential transitions and animations.
 

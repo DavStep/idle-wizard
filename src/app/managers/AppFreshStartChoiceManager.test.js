@@ -20,11 +20,14 @@ describe('AppFreshStartChoiceManager', () => {
 
     const dialog = stage.querySelector('.app-fresh-start-choice');
     expect(dialog.hidden).toBe(false);
-    expect(dialog.textContent).toContain('account');
+    expect(dialog.textContent).toContain('Elara Starbrew');
     expect(dialog.textContent).toContain('do you already have an account?');
     expect(dialog.textContent).toContain('connect account');
-    expect(dialog.textContent).toContain('start fresh');
+    expect(dialog.textContent).toContain('start new');
     expect(dialog.textContent).toContain('not connected');
+    expect(
+      stage.querySelector('.app-fresh-start-choice__portrait')?.src,
+    ).toContain('elara.png');
 
     stage
       .querySelector('.app-fresh-start-choice__button--connect')
@@ -34,7 +37,7 @@ describe('AppFreshStartChoiceManager', () => {
     expect(dialog.hidden).toBe(true);
   });
 
-  it('resolves start fresh when selected', async () => {
+  it('resolves start new when selected', async () => {
     const stage = document.createElement('section');
     const manager = new AppFreshStartChoiceManager();
     manager.mount(stage);

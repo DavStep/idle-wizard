@@ -1,6 +1,8 @@
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
+import { createStatusIcon, STATUS_ICON_CHECK } from '../../shared/statusIcon.js';
+import { updateScrollCueState } from '../../managers/ScrollCueManager.js';
 
 const DEFAULT_MAX_MANA_RESERVE = 5_000;
 const seedDropPreferenceOptions = ['none', 'low', 'medium', 'high'];
@@ -15,17 +17,14 @@ export class WorkshopSummonInfoManager {
     this.lastSnapshot = {};
     this.renderedSignature = null;
     this.renderedAutoSignature = null;
-    this.openWeightDropdownSeedKey = null;
+    this.selectedSeedKey = null;
     this.selectionAnimationSeedKey = null;
+    this.preferenceStatus = '';
     this.previousFocus = null;
+    this.handleRowsScroll = () => this.updateScrollProgress();
     this.handleRootClick = (event) => {
       if (event.target === this.root) {
         this.hide();
-      }
-    };
-    this.handleDialogClick = (event) => {
-      if (!event.target?.closest?.('.workshop-page__summon-info-weight-dropdown')) {
-        this.closeWeightDropdown();
       }
     };
     this.handleKeydown = (event) => {
@@ -34,11 +33,6 @@ export class WorkshopSummonInfoManager {
       }
 
       event.preventDefault();
-      if (this.openWeightDropdownSeedKey) {
-        this.closeWeightDropdown({ restoreFocus: true });
-        return;
-      }
-
       this.hide();
     };
   }
@@ -62,21 +56,25 @@ export class WorkshopSummonInfoManager {
     this.refs.dialog.setAttribute('aria-modal', 'true');
     this.refs.dialog.setAttribute('role', 'dialog');
     this.refs.dialog.tabIndex = -1;
-    this.refs.dialog.addEventListener('click', this.handleDialogClick);
 
     this.refs.title = this.createTitle();
     this.refs.closeButton = this.createCloseButton();
     this.refs.autoRows = this.createAutoRows();
+    this.refs.selectedEditor = this.createSelectedEditor();
     this.refs.rowsHeader = this.createRowsHeader();
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'workshop-page__summon-info-rows';
+    this.refs.rows.addEventListener('scroll', this.handleRowsScroll, { passive: true });
+    this.refs.progress = this.createScrollProgress();
 
     this.refs.dialog.append(
       this.refs.title,
       this.refs.closeButton,
       this.refs.autoRows,
+      this.refs.selectedEditor,
       this.refs.rowsHeader,
       this.refs.rows,
+      this.refs.progress,
     );
     this.root.append(this.refs.dialog);
     parent.append(this.root);
@@ -226,7 +224,7 @@ export class WorkshopSummonInfoManager {
     this.unsubscribe = null;
     document.removeEventListener('keydown', this.handleKeydown);
     this.root?.removeEventListener('click', this.handleRootClick);
-    this.refs.dialog?.removeEventListener('click', this.handleDialogClick);
+    this.refs.rows?.removeEventListener('scroll', this.handleRowsScroll);
     this.root?.remove();
     this.root = null;
     this.refs = {};
@@ -234,8 +232,9 @@ export class WorkshopSummonInfoManager {
     this.lastSnapshot = {};
     this.renderedSignature = null;
     this.renderedAutoSignature = null;
-    this.openWeightDropdownSeedKey = null;
+    this.selectedSeedKey = null;
     this.selectionAnimationSeedKey = null;
+    this.preferenceStatus = '';
     this.previousFocus = null;
   }
 
@@ -247,6 +246,8 @@ export class WorkshopSummonInfoManager {
     this.lastSnapshot = snapshot ?? {};
     this.renderAutoSummoning(this.getAutoSummoning(this.lastSnapshot));
     const rows = this.getRows(this.lastSnapshot);
+    this.ensureSelectedSeed(rows);
+    this.renderSelectedEditor(rows);
     this.refs.rowsHeader.hidden = rows.length === 0;
     const signature = rows
       .map(
@@ -254,14 +255,15 @@ export class WorkshopSummonInfoManager {
           `${row.itemTypeId}:${row.key}:${row.label}:${row.dropPreference}:${row.dropChance}`,
       )
       .join('|');
+    const renderSignature = `${this.selectedSeedKey}:${this.preferenceStatus}:${signature}`;
 
-    if (signature === this.renderedSignature) {
+    if (renderSignature === this.renderedSignature) {
       this.selectionAnimationSeedKey = null;
-      this.syncWeightDropdownState();
+      this.updateScrollProgress();
       return;
     }
 
-    this.renderedSignature = signature;
+    this.renderedSignature = renderSignature;
     const selectionAnimationSeedKey = this.selectionAnimationSeedKey;
     this.refs.rows.replaceChildren(
       ...(rows.length
@@ -269,7 +271,7 @@ export class WorkshopSummonInfoManager {
         : [this.createEmptyRow()]),
     );
     this.selectionAnimationSeedKey = null;
-    this.syncWeightDropdownState();
+    this.updateScrollProgress();
   }
 
   getRows(snapshot) {
@@ -311,10 +313,107 @@ export class WorkshopSummonInfoManager {
     }
   }
 
-  createRow(seed, animateSelection = false) {
+  createSelectedEditor() {
+    const editor = document.createElement('div');
+    editor.className = 'workshop-page__summon-info-editor';
+
+    const seedRow = this.createEditorRow('seed');
+    this.refs.selectedSeedName = document.createElement('span');
+    this.refs.selectedSeedName.className = 'workshop-page__summon-info-selected-name';
+    seedRow.value.append(this.refs.selectedSeedName);
+
+    const chanceRow = this.createEditorRow('chance');
+    this.refs.selectedChance = document.createElement('span');
+    this.refs.selectedChance.className = 'workshop-page__summon-info-chance';
+    chanceRow.value.append(this.refs.selectedChance);
+
+    this.refs.weightLabel = document.createElement('div');
+    this.refs.weightLabel.className = 'workshop-page__summon-info-weight-label';
+    this.refs.weightLabel.textContent = 'weight';
+
+    this.refs.weightChoiceGroup = document.createElement('span');
+    this.refs.weightChoiceGroup.className = 'workshop-page__summon-info-weight-choices';
+    this.refs.weightChoiceGroup.setAttribute('aria-label', 'selected seed drop weight');
+    this.refs.weightChoiceButtons = new Map();
+
+    for (const optionValue of seedDropPreferenceOptions) {
+      const option = document.createElement('button');
+      option.className = 'workshop-page__summon-info-weight-choice';
+      option.type = 'button';
+      option.dataset.preference = optionValue;
+      const check = document.createElement('span');
+      check.className = 'workshop-page__summon-info-weight-check';
+      check.setAttribute('aria-hidden', 'true');
+      const checkIcon = createStatusIcon(
+        'workshop-page__summon-info-weight-check-icon',
+        STATUS_ICON_CHECK,
+      );
+      if (checkIcon) {
+        check.append(checkIcon);
+      }
+
+      const label = document.createElement('span');
+      label.className = 'workshop-page__summon-info-weight-choice-label';
+      label.textContent = optionValue;
+
+      option.append(check, label);
+      option.addEventListener('click', () => this.commitSelectedDropPreference(optionValue));
+      this.refs.weightChoiceButtons.set(optionValue, option);
+      this.refs.weightChoiceGroup.append(option);
+    }
+
+    this.refs.preferenceStatus = document.createElement('div');
+    this.refs.preferenceStatus.className = 'workshop-page__summon-info-status';
+    this.refs.preferenceStatus.hidden = true;
+
+    editor.append(
+      seedRow.row,
+      chanceRow.row,
+      this.refs.weightLabel,
+      this.refs.weightChoiceGroup,
+      this.refs.preferenceStatus,
+    );
+    return editor;
+  }
+
+  createEditorRow(label) {
     const row = document.createElement('div');
     row.className = 'workshop-page__row workshop-page__summon-info-row';
+
+    const key = document.createElement('span');
+    key.className = 'row_key';
+    key.textContent = label;
+
+    const value = document.createElement('span');
+    value.className = 'row_val workshop-page__summon-info-value';
+
+    row.append(key, value);
+    return { row, value };
+  }
+
+  createScrollProgress() {
+    const progress = document.createElement('div');
+    progress.className =
+      'style-progress style-scroll-cue-progress workshop-page__summon-info-progress';
+    progress.setAttribute('aria-hidden', 'true');
+    progress.hidden = true;
+
+    this.refs.progressFill = document.createElement('div');
+    this.refs.progressFill.className =
+      'style-progress__fill style-scroll-cue-progress-fill workshop-page__summon-info-progress-fill';
+    progress.append(this.refs.progressFill);
+    return progress;
+  }
+
+  createRow(seed, animateSelection = false) {
+    const row = document.createElement('button');
+    row.className =
+      'workshop-page__row workshop-page__summon-info-row workshop-page__summon-info-seed-row';
+    row.type = 'button';
     row.dataset.seedKey = seed.key;
+    row.setAttribute('aria-pressed', seed.key === this.selectedSeedKey ? 'true' : 'false');
+    row.addEventListener('click', () => this.selectSeed(seed.key));
+    row.classList.toggle('is-selected', seed.key === this.selectedSeedKey);
     row.classList.toggle('is-selection-updated', animateSelection);
     setResourceColor(row, 'seed');
 
@@ -326,129 +425,17 @@ export class WorkshopSummonInfoManager {
     const value = document.createElement('span');
     value.className = 'row_val workshop-page__summon-info-value';
 
-    const dropdown = this.createWeightDropdown(seed);
+    const weight = document.createElement('span');
+    weight.className = 'workshop-page__summon-info-weight-value';
+    weight.textContent = this.normalizeDropPreference(seed.dropPreference);
     const chance = document.createElement('span');
     chance.className = 'workshop-page__summon-info-chance';
-    chance.dataset.dropRateColor = this.getDropRateColor(seed.dropChance);
     setResourceIconText(chance, this.formatDropChance(seed.dropChance));
 
-    value.append(dropdown, chance);
+    value.append(weight, chance);
 
     row.append(key, value);
     return row;
-  }
-
-  createWeightDropdown(seed) {
-    const preference = this.normalizeDropPreference(seed.dropPreference);
-    const dropdown = document.createElement('span');
-    dropdown.className = 'workshop-page__summon-info-weight-dropdown';
-    dropdown.dataset.seedKey = seed.key;
-
-    const button = document.createElement('button');
-    button.className = 'workshop-page__summon-info-weight-button';
-    button.type = 'button';
-    button.setAttribute('aria-label', `${seed.label} drop weight: ${preference}`);
-    button.setAttribute('aria-haspopup', 'listbox');
-    button.setAttribute('aria-expanded', 'false');
-    button.setAttribute('aria-controls', this.getWeightDropdownMenuId(seed.key));
-    button.dataset.dropWeightColor = preference;
-    button.addEventListener('click', () => this.toggleWeightDropdown(seed.key));
-    button.addEventListener('keydown', (event) =>
-      this.handleWeightButtonKeydown(event, seed.key),
-    );
-    button.append(this.createWeightDropdownText(preference));
-
-    const menu = document.createElement('span');
-    menu.id = this.getWeightDropdownMenuId(seed.key);
-    menu.className = 'workshop-page__summon-info-weight-menu';
-    menu.setAttribute('role', 'listbox');
-    menu.setAttribute('aria-label', `${seed.label} drop weight options`);
-    menu.hidden = true;
-
-    for (const optionValue of seedDropPreferenceOptions) {
-      if (optionValue === preference) {
-        continue;
-      }
-
-      const option = document.createElement('button');
-      option.className = 'workshop-page__summon-info-weight-option';
-      option.type = 'button';
-      option.dataset.preference = optionValue;
-      option.dataset.dropWeightColor = optionValue;
-      option.setAttribute('role', 'option');
-      option.setAttribute('aria-selected', 'false');
-      option.append(this.createWeightDropdownText(optionValue));
-      option.addEventListener('click', () => this.commitDropPreference(seed, optionValue));
-      option.addEventListener('keydown', (event) =>
-        this.handleWeightOptionKeydown(event, seed),
-      );
-      menu.append(option);
-    }
-
-    dropdown.append(button, menu);
-    return dropdown;
-  }
-
-  createWeightDropdownText(text) {
-    const label = document.createElement('span');
-    label.className = 'workshop-page__summon-info-weight-text';
-    label.textContent = text;
-    return label;
-  }
-
-  getWeightDropdownMenuId(seedKey) {
-    return `workshop-summon-info-weight-${seedKey}`;
-  }
-
-  handleWeightButtonKeydown(event, seedKey) {
-    if (!['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) {
-      return;
-    }
-
-    event.preventDefault();
-    this.openWeightDropdown(seedKey, { focusSelected: true });
-  }
-
-  handleWeightOptionKeydown(event, seed) {
-    const options = [
-      ...(event.currentTarget.parentElement?.querySelectorAll(
-        '.workshop-page__summon-info-weight-option',
-      ) ?? []),
-    ];
-    const currentIndex = options.indexOf(event.currentTarget);
-
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.closeWeightDropdown({ restoreFocus: true });
-      return;
-    }
-
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      this.commitDropPreference(seed, event.currentTarget.dataset.preference);
-      return;
-    }
-
-    if (event.key === 'Home') {
-      event.preventDefault();
-      options[0]?.focus();
-      return;
-    }
-
-    if (event.key === 'End') {
-      event.preventDefault();
-      options.at(-1)?.focus();
-      return;
-    }
-
-    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
-      return;
-    }
-
-    event.preventDefault();
-    const step = event.key === 'ArrowDown' ? 1 : -1;
-    const nextIndex = (currentIndex + step + options.length) % options.length;
-    options[nextIndex]?.focus();
   }
 
   createEmptyRow() {
@@ -469,24 +456,6 @@ export class WorkshopSummonInfoManager {
     return `${Number(percent.toFixed(precision))}%`;
   }
 
-  getDropRateColor(dropChance) {
-    const rate = Number(dropChance);
-
-    if (!Number.isFinite(rate) || rate <= 0) {
-      return 'none';
-    }
-
-    if (rate < 1 / 3) {
-      return 'low';
-    }
-
-    if (rate < 2 / 3) {
-      return 'medium';
-    }
-
-    return 'high';
-  }
-
   toggleAutoSummon() {
     this.gameplayFacade?.toggleSeedSummoningAutoEnabled?.();
     this.render(this.gameplayFacade?.getSnapshot?.());
@@ -504,8 +473,22 @@ export class WorkshopSummonInfoManager {
     this.render(this.gameplayFacade?.getSnapshot?.());
   }
 
-  commitDropPreference(seed, preference) {
+  commitSelectedDropPreference(preference) {
+    const rows = this.getRows(this.lastSnapshot);
+    const seed = this.getSelectedSeed(rows);
+
+    if (!seed) {
+      return;
+    }
+
     const normalizedPreference = this.normalizeDropPreference(preference);
+
+    if (!this.isDropPreferenceAvailable(seed, normalizedPreference, rows)) {
+      this.preferenceStatus = 'one seed must stay active';
+      this.render(this.lastSnapshot);
+      return;
+    }
+
     this.selectionAnimationSeedKey = seed.key;
     const result = this.gameplayFacade?.setSeedDropPreference?.(
       seed.key,
@@ -514,91 +497,114 @@ export class WorkshopSummonInfoManager {
 
     if (result?.ok === false) {
       this.selectionAnimationSeedKey = null;
+      this.preferenceStatus = this.getDropPreferenceErrorText(result.reason);
+    } else {
+      this.preferenceStatus = '';
     }
 
-    this.closeWeightDropdown({ restoreFocus: true });
     this.render(this.gameplayFacade?.getSnapshot?.());
   }
 
-  toggleWeightDropdown(seedKey) {
-    if (this.openWeightDropdownSeedKey === seedKey) {
-      this.closeWeightDropdown({ restoreFocus: true });
+  selectSeed(seedKey) {
+    if (this.selectedSeedKey === seedKey) {
       return;
     }
 
-    this.openWeightDropdown(seedKey);
+    this.selectedSeedKey = seedKey;
+    this.preferenceStatus = '';
+    this.render(this.lastSnapshot);
   }
 
-  openWeightDropdown(seedKey, { focusSelected = false } = {}) {
-    this.openWeightDropdownSeedKey = seedKey;
-    this.syncWeightDropdownState();
-
-    if (focusSelected) {
-      this.focusSelectedWeightOption(seedKey);
-    }
-  }
-
-  closeWeightDropdown({ restoreFocus = false } = {}) {
-    const seedKey = this.openWeightDropdownSeedKey;
-
-    if (!seedKey) {
-      return;
+  ensureSelectedSeed(rows) {
+    if (!rows.length) {
+      this.selectedSeedKey = null;
+      return null;
     }
 
-    this.openWeightDropdownSeedKey = null;
-    this.syncWeightDropdownState();
-
-    if (restoreFocus) {
-      this.findWeightDropdown(seedKey)
-        ?.querySelector('.workshop-page__summon-info-weight-button')
-        ?.focus();
+    const selectedSeed = this.getSelectedSeed(rows);
+    if (selectedSeed) {
+      return selectedSeed;
     }
+
+    this.selectedSeedKey = rows[0].key;
+    return rows[0];
   }
 
-  syncWeightDropdownState() {
-    const dropdowns = [
-      ...(this.root?.querySelectorAll('.workshop-page__summon-info-weight-dropdown') ?? []),
-    ];
-    const hasOpenDropdown = Boolean(this.openWeightDropdownSeedKey);
-
-    this.root?.classList.toggle('is-weight-dropdown-open', hasOpenDropdown);
-    this.refs.dialog?.classList.toggle('is-weight-dropdown-open', hasOpenDropdown);
-
-    for (const dropdown of dropdowns) {
-      const isOpen = dropdown.dataset.seedKey === this.openWeightDropdownSeedKey;
-      const row = dropdown.closest('.workshop-page__summon-info-row');
-
-      row?.classList.toggle('is-weight-dropdown-row', isOpen);
-      dropdown.classList.toggle('is-open', isOpen);
-      dropdown
-        .querySelector('.workshop-page__summon-info-weight-button')
-        ?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      const menu = dropdown.querySelector('.workshop-page__summon-info-weight-menu');
-
-      if (menu) {
-        menu.hidden = !isOpen;
-      }
-    }
-  }
-
-  focusSelectedWeightOption(seedKey) {
-    const dropdown = this.findWeightDropdown(seedKey);
-    const selectedOption =
-      dropdown?.querySelector(
-        '.workshop-page__summon-info-weight-option[aria-selected="true"]',
-      ) ?? dropdown?.querySelector('.workshop-page__summon-info-weight-option');
-
-    selectedOption?.focus();
-  }
-
-  findWeightDropdown(seedKey) {
+  getSelectedSeed(rows) {
     return (
-      [
-        ...(this.root?.querySelectorAll(
-          '.workshop-page__summon-info-weight-dropdown',
-        ) ?? []),
-      ].find((dropdown) => dropdown.dataset.seedKey === seedKey) ?? null
+      rows.find((seed) => String(seed?.key ?? '') === String(this.selectedSeedKey ?? '')) ??
+      null
     );
+  }
+
+  renderSelectedEditor(rows) {
+    const selectedSeed = this.getSelectedSeed(rows);
+
+    this.refs.selectedEditor.hidden = !selectedSeed;
+
+    if (!selectedSeed) {
+      return;
+    }
+
+    this.refs.selectedSeedName.textContent = selectedSeed.label;
+    setItemIconLabel(this.refs.selectedSeedName, 'seed', selectedSeed.key);
+    setResourceColor(this.refs.selectedSeedName, 'seed');
+    setResourceIconText(this.refs.selectedChance, this.formatDropChance(selectedSeed.dropChance));
+    const selectedPreference = this.normalizeDropPreference(selectedSeed.dropPreference);
+
+    for (const optionValue of seedDropPreferenceOptions) {
+      const button = this.refs.weightChoiceButtons.get(optionValue);
+      const selected = optionValue === selectedPreference;
+      const disabled = !this.isDropPreferenceAvailable(selectedSeed, optionValue, rows);
+
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      button.disabled = disabled;
+      button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    }
+
+    this.refs.preferenceStatus.hidden = !this.preferenceStatus;
+    this.refs.preferenceStatus.textContent = this.preferenceStatus;
+  }
+
+  isDropPreferenceAvailable(seed, preference, rows) {
+    const normalizedPreference = this.normalizeDropPreference(preference);
+
+    if (normalizedPreference !== 'none') {
+      return true;
+    }
+
+    if (this.normalizeDropPreference(seed?.dropPreference) === 'none') {
+      return true;
+    }
+
+    return rows.some(
+      (row) =>
+        row.key !== seed.key &&
+        this.getDropPreferenceWeight(this.normalizeDropPreference(row.dropPreference)) > 0,
+    );
+  }
+
+  getDropPreferenceWeight(preference) {
+    return seedDropPreferenceOptions.indexOf(this.normalizeDropPreference(preference));
+  }
+
+  getDropPreferenceErrorText(reason) {
+    if (reason === 'last_active_seed') {
+      return 'one seed must stay active';
+    }
+
+    return '';
+  }
+
+  updateScrollProgress() {
+    updateScrollCueState({
+      scrollElement: this.refs.rows,
+      cueElement: this.refs.rows,
+      progressFill: this.refs.progressFill,
+      progressElement: this.refs.progress,
+      inlineCue: false,
+    });
   }
 
   normalizeDropPreference(preference) {
@@ -634,11 +640,8 @@ export class WorkshopSummonInfoManager {
       return;
     }
 
-    if (!this.visible) {
-      this.closeWeightDropdown();
-    }
-
     this.root.hidden = !this.visible;
     this.root.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+    this.updateScrollProgress();
   }
 }

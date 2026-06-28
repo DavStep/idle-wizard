@@ -1,6 +1,12 @@
 export const FRESH_START_CHOICE_CONNECT_ACCOUNT = 'connect_account';
 export const FRESH_START_CHOICE_START_FRESH = 'start_fresh';
 
+const ELARA_IMAGE_URL = new URL(
+  '../../assets/characters/elara.png',
+  import.meta.url,
+).href;
+const GUIDE_NAME = 'Elara Starbrew';
+
 export class AppFreshStartChoiceManager {
   constructor() {
     this.root = null;
@@ -37,7 +43,20 @@ export class AppFreshStartChoiceManager {
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'account';
+    title.textContent = GUIDE_NAME;
+
+    const guide = document.createElement('div');
+    guide.className = 'app-fresh-start-choice__guide';
+
+    const portrait = document.createElement('img');
+    portrait.className = 'app-fresh-start-choice__portrait';
+    portrait.src = ELARA_IMAGE_URL;
+    portrait.alt = '';
+    portrait.draggable = false;
+    portrait.setAttribute('aria-hidden', 'true');
+
+    const copy = document.createElement('div');
+    copy.className = 'app-fresh-start-choice__copy';
 
     const message = document.createElement('p');
     message.className = 'app-fresh-start-choice__message';
@@ -61,11 +80,13 @@ export class AppFreshStartChoiceManager {
     freshButton.className =
       'style-button app-fresh-start-choice__button app-fresh-start-choice__button--fresh';
     freshButton.type = 'button';
-    freshButton.textContent = 'start fresh';
-    freshButton.setAttribute('aria-label', 'start fresh');
+    freshButton.textContent = 'start new';
+    freshButton.setAttribute('aria-label', 'start new');
 
+    copy.append(message, status);
+    guide.append(portrait, copy);
     actions.append(connectButton, freshButton);
-    dialog.append(title, message, status, actions);
+    dialog.append(title, guide, actions);
     panel.append(dialog);
     root.append(panel);
     stage.append(root);

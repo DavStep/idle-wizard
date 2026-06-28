@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.58
+
+- Fixed Google account connection on web/mobile so unavailable browser login fails cleanly instead of sending players through a broken redirect.
+- Improved fresh installs and empty connected accounts so the start-new/account choice stays visible until the player chooses.
+- Polished the Workshop summon seed settings with a clearer selected-seed editor, scroll cue, and safer drop-weight choices.
+
 ## 0.2.57
 
 - Reworked quests so daily quest completions add points to both daily and weekly reward tracks.

@@ -91,8 +91,11 @@ describe('WorkshopSummonInfoManager', () => {
     const popup = parent.querySelector('.workshop-page__summon-info-popup');
     const rows = [
       ...parent.querySelectorAll(
-        '.workshop-page__summon-info-rows .workshop-page__summon-info-row',
+        '.workshop-page__summon-info-rows .workshop-page__summon-info-seed-row',
       ),
+    ];
+    const weightChoices = [
+      ...parent.querySelectorAll('.workshop-page__summon-info-weight-choice'),
     ];
 
     expect(popup?.hidden).toBe(false);
@@ -117,11 +120,50 @@ describe('WorkshopSummonInfoManager', () => {
         ),
       ].map((column) => column.textContent),
     ).toEqual(['name', 'weight', 'chance']);
+    expect(parent.querySelector('.workshop-page__summon-info-selected-name')?.textContent).toBe(
+      'sage seed',
+    );
+    expect(
+      parent
+        .querySelector('.workshop-page__summon-info-selected-name')
+        ?.getAttribute('data-resource-color'),
+    ).toBe('seed');
+    expect(
+      parent
+        .querySelector('.workshop-page__summon-info-selected-name .style-seed-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('seed:regular');
+    expect(parent.querySelector('.workshop-page__summon-info-editor')?.textContent).toContain(
+      'chance25%',
+    );
+    expect(weightChoices.map((choice) => choice.textContent)).toEqual([
+      'none',
+      'low',
+      'medium',
+      'high',
+    ]);
+    expect(weightChoices.map((choice) => choice.getAttribute('aria-pressed'))).toEqual([
+      'false',
+      'false',
+      'true',
+      'false',
+    ]);
+    expect(
+      parent
+        .querySelector(
+          '.workshop-page__summon-info-weight-choice[data-preference="medium"] .workshop-page__summon-info-weight-check-icon',
+        )
+        ?.dataset.assetAtlasFrame,
+    ).toBe('status:checkDefault');
+    expect(rows.map((row) => row.getAttribute('aria-pressed'))).toEqual([
+      'true',
+      'false',
+    ]);
     expect(
       rows.map(
         (row) =>
           `${row.querySelector('.row_key')?.textContent}:${
-            row.querySelector('.workshop-page__summon-info-weight-button')?.textContent
+            row.querySelector('.workshop-page__summon-info-weight-value')?.textContent
           }:${row.querySelector('.workshop-page__summon-info-chance')?.textContent}`,
       ),
     ).toEqual(['sage seed:medium:25%', 'mint seed:medium:75%']);
@@ -135,7 +177,7 @@ describe('WorkshopSummonInfoManager', () => {
     manager.unmount();
   });
 
-  it('marks drop chance percentages with rate color buckets', () => {
+  it('formats drop chance percentages in the scroll list', () => {
     const gameplayFacade = createGameplayFacadeFake({
       seedSummoning: {
         dropChances: [
@@ -192,17 +234,11 @@ describe('WorkshopSummonInfoManager', () => {
       '50%',
       '75%',
     ]);
-    expect(chances.map((chance) => chance.dataset.dropRateColor)).toEqual([
-      'none',
-      'low',
-      'medium',
-      'high',
-    ]);
 
     manager.unmount();
   });
 
-  it('marks drop weight preferences with color buckets', () => {
+  it('shows the fixed weight choices for the selected seed', () => {
     const gameplayFacade = createGameplayFacadeFake({
       seedSummoning: {
         dropChances: [
@@ -248,7 +284,7 @@ describe('WorkshopSummonInfoManager', () => {
     manager.show();
 
     const weights = [
-      ...parent.querySelectorAll('.workshop-page__summon-info-weight-button'),
+      ...parent.querySelectorAll('.workshop-page__summon-info-weight-choice'),
     ];
 
     expect(weights.map((weight) => weight.textContent)).toEqual([
@@ -257,44 +293,17 @@ describe('WorkshopSummonInfoManager', () => {
       'medium',
       'high',
     ]);
-    expect(weights.map((weight) => weight.dataset.dropWeightColor)).toEqual([
-      'none',
-      'low',
-      'medium',
-      'high',
+    expect(weights.map((weight) => weight.getAttribute('aria-pressed'))).toEqual([
+      'true',
+      'false',
+      'false',
+      'false',
     ]);
 
     manager.unmount();
   });
 
-  it('routes drop chance color buckets through color-mode resource variables', async () => {
-    const css = await readFile(path.join(cwd(), 'src/styles/base.css'), 'utf8');
-
-    expect(css).toContain(
-      '.workshop-page__summon-info-chance[data-drop-rate-color="none"]',
-    );
-    expect(css).toContain('color: var(--style-resource-ruby);');
-    expect(css).toContain('color: var(--style-resource-seed);');
-    expect(css).toContain('color: var(--style-resource-coin);');
-    expect(css).toContain('color: var(--style-resource-herb);');
-  });
-
-  it('routes drop weight color buckets through color-mode resource variables', async () => {
-    const css = await readFile(path.join(cwd(), 'src/styles/base.css'), 'utf8');
-
-    expect(css).toContain(
-      '.workshop-page__summon-info-weight-button[data-drop-weight-color="none"]',
-    );
-    expect(css).toContain(
-      '.workshop-page__summon-info-weight-option[data-drop-weight-color="high"]',
-    );
-    expect(css).toContain('color: var(--style-resource-ruby);');
-    expect(css).toContain('color: var(--style-resource-seed);');
-    expect(css).toContain('color: var(--style-resource-coin);');
-    expect(css).toContain('color: var(--style-resource-herb);');
-  });
-
-  it('keeps the active weight row above the dropdown dim state', () => {
+  it('selects a seed row and updates the fixed editor', () => {
     const gameplayFacade = createGameplayFacadeFake({
       seedSummoning: {
         dropChances: [
@@ -323,40 +332,49 @@ describe('WorkshopSummonInfoManager', () => {
     manager.mount(parent);
     manager.show();
 
-    const popup = parent.querySelector('.workshop-page__summon-info-popup');
-    const dialog = parent.querySelector('.workshop-page__summon-info-dialog');
     const rows = [
       ...parent.querySelectorAll(
-        '.workshop-page__summon-info-rows .workshop-page__summon-info-row',
+        '.workshop-page__summon-info-rows .workshop-page__summon-info-seed-row',
       ),
     ];
-    const sageButton = rows[0]?.querySelector(
-      '.workshop-page__summon-info-weight-button',
+    rows[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(parent.querySelector('.workshop-page__summon-info-selected-name')?.textContent).toBe(
+      'mint seed',
     );
-
-    sageButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(popup?.classList.contains('is-weight-dropdown-open')).toBe(true);
-    expect(dialog?.classList.contains('is-weight-dropdown-open')).toBe(true);
-    expect(rows[0]?.classList.contains('is-weight-dropdown-row')).toBe(true);
-    expect(rows[1]?.classList.contains('is-weight-dropdown-row')).toBe(false);
-
-    dialog.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(popup?.classList.contains('is-weight-dropdown-open')).toBe(false);
-    expect(rows[0]?.classList.contains('is-weight-dropdown-row')).toBe(false);
+    expect(parent.querySelector('.workshop-page__summon-info-editor')?.textContent).toContain(
+      'chance75%',
+    );
+    expect(
+      [...parent.querySelectorAll('.workshop-page__summon-info-weight-choice')].map(
+        (choice) => choice.getAttribute('aria-pressed'),
+      ),
+    ).toEqual(['false', 'true', 'false', 'false']);
+    expect(
+      [
+        ...parent.querySelectorAll(
+          '.workshop-page__summon-info-rows .workshop-page__summon-info-seed-row',
+        ),
+      ].map((row) => row.getAttribute('aria-pressed')),
+    ).toEqual(['false', 'true']);
 
     manager.unmount();
   });
 
-  it('defines taller summon info rows and dropdown dim styles', async () => {
+  it('defines fixed editor and scroll rail styles', async () => {
     const css = await readFile(path.join(cwd(), 'src/styles/base.css'), 'utf8');
 
     expect(css).toContain('--workshop-summon-info-row-height');
-    expect(css).toContain(
-      '.workshop-page__summon-info-popup.is-weight-dropdown-open:not([hidden])',
-    );
-    expect(css).toContain('.workshop-page__summon-info-row.is-weight-dropdown-row');
+    expect(css).toContain('.workshop-page__summon-info-editor');
+    expect(css).toContain('.workshop-page__summon-info-weight-label');
+    expect(css).toContain('.workshop-page__summon-info-weight-choices');
+    expect(css).toContain('display: flex;');
+    expect(css).toContain('border: 0;');
+    expect(css).toContain('.workshop-page__summon-info-weight-check-icon');
+    expect(css).toContain('.workshop-page__summon-info-progress');
+    expect(css).toContain('height: 400px;');
+    expect(css).toContain('overflow: hidden auto;');
+    expect(css).not.toContain('workshop-page__summon-info-weight-dropdown');
   });
 
   it('updates auto summon controls', () => {
@@ -393,7 +411,7 @@ describe('WorkshopSummonInfoManager', () => {
     manager.unmount();
   });
 
-  it('updates seed drop preferences from dropdowns', () => {
+  it('updates seed drop preferences from fixed choices', () => {
     const gameplayFacade = createGameplayFacadeFake({
       seedSummoning: {
         dropChances: [
@@ -414,40 +432,180 @@ describe('WorkshopSummonInfoManager', () => {
     manager.mount(parent);
     manager.show();
 
-    const button = parent.querySelector('.workshop-page__summon-info-weight-button');
-
-    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(button.getAttribute('aria-expanded')).toBe('true');
-    expect(
-      [
-        ...parent.querySelectorAll('.workshop-page__summon-info-weight-option'),
-      ].map((option) => [
-        option.textContent,
-        option.getAttribute('aria-selected'),
-      ]),
-    ).toEqual([
-      ['none', 'false'],
-      ['low', 'false'],
-      ['high', 'false'],
-    ]);
-
     parent
-      .querySelector('.workshop-page__summon-info-weight-option[data-preference="high"]')
+      .querySelector('.workshop-page__summon-info-weight-choice[data-preference="high"]')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(gameplayFacade.getSnapshot().seedSummoning.dropChances[0]).toMatchObject({
       key: 'sageSeed',
       dropPreference: 'high',
     });
-    expect(parent.querySelector('.workshop-page__summon-info-weight-button')?.textContent).toBe(
-      'high',
-    );
+    expect(
+      parent
+        .querySelector('.workshop-page__summon-info-weight-choice[data-preference="high"]')
+        ?.getAttribute('aria-pressed'),
+    ).toBe('true');
+    expect(
+      parent
+        .querySelector('.workshop-page__summon-info-rows .workshop-page__summon-info-weight-value')
+        ?.textContent,
+    ).toBe('high');
     expect(
       parent
         .querySelector('.workshop-page__summon-info-rows .workshop-page__summon-info-row')
         ?.classList.contains('is-selection-updated'),
     ).toBe(true);
+
+    manager.unmount();
+  });
+
+  it('keeps the last active seed from being disabled', () => {
+    const gameplayFacade = createGameplayFacadeFake({
+      seedSummoning: {
+        dropChances: [
+          {
+            itemTypeId: 1,
+            key: 'sageSeed',
+            label: 'sage seed',
+            kind: 'seed',
+            dropPreference: 'medium',
+            dropChance: 1,
+          },
+          {
+            itemTypeId: 2,
+            key: 'mintSeed',
+            label: 'mint seed',
+            kind: 'seed',
+            dropPreference: 'none',
+            dropChance: 0,
+          },
+        ],
+      },
+    });
+    const manager = new WorkshopSummonInfoManager({ gameplayFacade });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+    manager.show();
+
+    expect(
+      parent.querySelector('.workshop-page__summon-info-weight-choice[data-preference="none"]')
+        ?.disabled,
+    ).toBe(true);
+    expect(
+      parent
+        .querySelector('.workshop-page__summon-info-weight-choice[data-preference="none"]')
+        ?.getAttribute('aria-disabled'),
+    ).toBe('true');
+
+    parent
+      .querySelector('.workshop-page__summon-info-weight-choice[data-preference="low"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(
+      parent.querySelector('.workshop-page__summon-info-weight-choice[data-preference="none"]')
+        ?.disabled,
+    ).toBe(true);
+    expect(gameplayFacade.getSnapshot().seedSummoning.dropChances[0]).toMatchObject({
+      key: 'sageSeed',
+      dropPreference: 'low',
+    });
+
+    manager.unmount();
+  });
+
+  it('allows none when another seed stays active', () => {
+    const gameplayFacade = createGameplayFacadeFake({
+      seedSummoning: {
+        dropChances: [
+          {
+            itemTypeId: 1,
+            key: 'sageSeed',
+            label: 'sage seed',
+            kind: 'seed',
+            dropPreference: 'medium',
+            dropChance: 0.5,
+          },
+          {
+            itemTypeId: 2,
+            key: 'mintSeed',
+            label: 'mint seed',
+            kind: 'seed',
+            dropPreference: 'low',
+            dropChance: 0.5,
+          },
+        ],
+      },
+    });
+    const manager = new WorkshopSummonInfoManager({ gameplayFacade });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+    manager.show();
+
+    parent
+      .querySelector('.workshop-page__summon-info-weight-choice[data-preference="none"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(gameplayFacade.getSnapshot().seedSummoning.dropChances[0]).toMatchObject({
+      key: 'sageSeed',
+      dropPreference: 'none',
+    });
+    expect(
+      parent
+        .querySelector('.workshop-page__summon-info-weight-choice[data-preference="none"]')
+        ?.getAttribute('aria-pressed'),
+    ).toBe('true');
+    expect(
+      parent
+        .querySelector('.workshop-page__summon-info-rows .workshop-page__summon-info-row')
+        ?.classList.contains('is-selection-updated'),
+    ).toBe(true);
+
+    manager.unmount();
+  });
+
+  it('shows a compact status if gameplay rejects the preference', () => {
+    const gameplayFacade = createGameplayFacadeFake({
+      seedSummoning: {
+        dropChances: [
+          {
+            itemTypeId: 1,
+            key: 'sageSeed',
+            label: 'sage seed',
+            kind: 'seed',
+            dropPreference: 'medium',
+            dropChance: 1,
+          },
+          {
+            itemTypeId: 2,
+            key: 'mintSeed',
+            label: 'mint seed',
+            kind: 'seed',
+            dropPreference: 'low',
+            dropChance: 0,
+          },
+        ],
+      },
+    });
+    gameplayFacade.setSeedDropPreference = () => ({
+      ok: false,
+      reason: 'last_active_seed',
+    });
+    const manager = new WorkshopSummonInfoManager({ gameplayFacade });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+    manager.show();
+
+    parent
+      .querySelector('.workshop-page__summon-info-weight-choice[data-preference="none"]')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(parent.querySelector('.workshop-page__summon-info-status')?.hidden).toBe(false);
+    expect(parent.querySelector('.workshop-page__summon-info-status')?.textContent).toBe(
+      'one seed must stay active',
+    );
 
     manager.unmount();
   });
@@ -469,6 +627,7 @@ describe('WorkshopSummonInfoManager', () => {
     );
     expect(parent.querySelector('.workshop-page__summon-info-header')?.hidden).toBe(true);
     expect(parent.querySelector('.workshop-page__summon-info-auto')?.hidden).toBe(true);
+    expect(parent.querySelector('.workshop-page__summon-info-editor')?.hidden).toBe(true);
 
     manager.unmount();
   });

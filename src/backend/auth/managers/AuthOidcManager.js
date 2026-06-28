@@ -26,7 +26,7 @@ export class AuthOidcManager {
       DEFAULT_MOBILE_REDIRECT_URI,
     responseType = import.meta.env.VITE_GOOGLE_AUTH_RESPONSE_TYPE,
     webGoogleIdentityEnabled = import.meta.env.VITE_ENABLE_WEB_GOOGLE_IDENTITY !== 'false',
-    nativeOidcEnabled = import.meta.env.VITE_ENABLE_NATIVE_OIDC !== 'false',
+    nativeOidcEnabled = import.meta.env.VITE_ENABLE_NATIVE_OIDC === 'true',
     nativeGoogleAuthEnabled = import.meta.env.VITE_ENABLE_NATIVE_GOOGLE_AUTH !== 'false',
     googleIdentityScriptSrc = GOOGLE_IDENTITY_SCRIPT_SRC,
     scriptLoadTimeoutMs = DEFAULT_SCRIPT_LOAD_TIMEOUT_MS,
@@ -82,7 +82,7 @@ export class AuthOidcManager {
     }
 
     if (!this.isNativePlatform()) {
-      return true;
+      return this.webGoogleIdentityEnabled;
     }
 
     return this.shouldUseNativeGoogleAuth() || this.nativeOidcEnabled;
@@ -103,7 +103,7 @@ export class AuthOidcManager {
       return this.getSnapshot();
     }
 
-    if (this.shouldUseWebGoogleIdentity()) {
+    if (this.shouldUseWebGoogleIdentityMode()) {
       const handledRedirectCallback = await this.handleWebRedirectCallback();
       if (!handledRedirectCallback) {
         this.user = this.loadWebGoogleUser() ?? (await this.loadOidcUser());
@@ -145,7 +145,7 @@ export class AuthOidcManager {
       return this.getNativeConnectionToken();
     }
 
-    if (this.shouldUseWebGoogleIdentity()) {
+    if (this.shouldUseWebGoogleIdentityMode()) {
       return this.getWebConnectionToken();
     }
 
@@ -158,14 +158,11 @@ export class AuthOidcManager {
       return false;
     }
 
-    const manager = this.getUserManager();
-    const handled = await this.handleCallbackUrl(manager);
-    if (handled && !this.error) {
-      this.user = this.user ?? (await this.loadOidcUser());
-      this.saveWebGoogleUser(this.user);
-    }
-
-    return handled;
+    this.clearActiveAccountLinkAttemptId();
+    this.error = 'web_unavailable';
+    this.cancelled = false;
+    this.cleanCallbackUrl();
+    return true;
   }
 
   async loadOidcUser() {
@@ -229,17 +226,8 @@ export class AuthOidcManager {
       return this.signInNative({ pendingAccountLinkAttemptId });
     }
 
-    if (this.shouldUseWebGoogleIdentity()) {
-      const result = await this.signInWebGoogleIdentity({ pendingAccountLinkAttemptId });
-      if (this.shouldFallbackToRedirectSignIn(result)) {
-        this.saveActiveAccountLinkAttemptId(pendingAccountLinkAttemptId);
-        this.error = null;
-        this.cancelled = false;
-        this.publish();
-        return this.signInWithRedirect();
-      }
-
-      return result;
+    if (this.shouldUseWebGoogleIdentityMode()) {
+      return this.signInWebGoogleIdentity({ pendingAccountLinkAttemptId });
     }
 
     return this.signInWithRedirect();
@@ -255,10 +243,6 @@ export class AuthOidcManager {
       this.publish();
       return { ok: false, reason: 'redirect_failed' };
     }
-  }
-
-  shouldFallbackToRedirectSignIn(result = {}) {
-    return result?.ok === false && result.reason === 'web_unavailable';
   }
 
   async signOut() {
@@ -277,7 +261,7 @@ export class AuthOidcManager {
       return { ok: true };
     }
 
-    if (this.shouldUseWebGoogleIdentity()) {
+    if (this.shouldUseWebGoogleIdentityMode()) {
       this.getGoogleIdentityClient()?.accounts?.id?.disableAutoSelect?.();
       await this.clearOidcUser();
       this.user = null;
@@ -1063,6 +1047,10 @@ export class AuthOidcManager {
         (this.getGoogleIdentityClient()?.accounts?.id ||
           this.windowRef?.document?.createElement),
     );
+  }
+
+  shouldUseWebGoogleIdentityMode() {
+    return Boolean(this.webGoogleIdentityEnabled && !this.isNativePlatform());
   }
 
   isNativeGoogleAuthCancellation(error) {
