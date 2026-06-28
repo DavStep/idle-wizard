@@ -5,6 +5,7 @@ export class GameplayLoadManager {
     crystalFacade,
     emeraldFacade,
     rubyFacade,
+    inboxRewardsFacade,
     gameplayLogFacade,
     itemsFacade,
     researchFacade,
@@ -25,6 +26,9 @@ export class GameplayLoadManager {
     this.crystalFacade = crystalFacade;
     this.emeraldFacade = emeraldFacade;
     this.rubyFacade = rubyFacade;
+    this.inboxRewardsFacade = inboxRewardsFacade ?? {
+      applyPersistenceSnapshot: () => {},
+    };
     this.gameplayLogFacade = gameplayLogFacade;
     this.itemsFacade = itemsFacade;
     this.researchFacade = researchFacade;
@@ -51,6 +55,7 @@ export class GameplayLoadManager {
     this.crystalFacade.applyPersistenceSnapshot(save.crystal);
     this.emeraldFacade.applyPersistenceSnapshot(save.emerald);
     this.rubyFacade.applyPersistenceSnapshot(save.ruby);
+    this.inboxRewardsFacade.applyPersistenceSnapshot(save.inboxRewards);
     this.gameplayLogFacade.applyPersistenceSnapshot(save.logs);
     this.itemsFacade.applyPersistenceSnapshot(save.inventory);
     this.researchFacade.applyPersistenceSnapshot(save.research);

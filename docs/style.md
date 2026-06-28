@@ -39,6 +39,7 @@ This project should use the same kind of minimal text-game language, without cop
 - No border radius.
 - Ordinary box padding follows A Dark Room's stores spacing: `5px 10px` in source UI units.
 - Box titles sit over the top border on the same surface background, like A Dark Room's simple store boxes.
+- In the white theme, box and dialog titles use a surface-colored text stroke so the border line does not cut through the letters.
 - Do not put a separate heading inside a box when the label belongs in the border.
 - Non-title labels that sit on a box border, such as counts, close/current controls, bottom-edge actions, and tabs, should use smaller text with the line box centered on the border line.
 - Popup/dialog panels may use `2px` game-gray borders in the white theme, `20px` padding, and a bottom-right gray shadow: `5px 5px 5px #666` in source UI units.

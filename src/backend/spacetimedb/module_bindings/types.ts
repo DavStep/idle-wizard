@@ -205,6 +205,29 @@ export type NpcMarketPriceSnapshotResult = __Infer<typeof NpcMarketPriceSnapshot
 export const OwnPlayerGameplaySave = __t.object("OwnPlayerGameplaySave", {});
 export type OwnPlayerGameplaySave = __Infer<typeof OwnPlayerGameplaySave>;
 
+export const OwnPlayerInboxMail = __t.object("OwnPlayerInboxMail", {});
+export type OwnPlayerInboxMail = __Infer<typeof OwnPlayerInboxMail>;
+
+export const OwnPlayerInboxMailResult = __t.object("OwnPlayerInboxMailResult", {
+  mailKey: __t.string(),
+  recipientIdentity: __t.identity(),
+  sourceType: __t.string(),
+  sourceKey: __t.string(),
+  senderLabel: __t.string(),
+  title: __t.string(),
+  body: __t.string(),
+  rewardText: __t.string(),
+  coinReward: __t.u64(),
+  crystalReward: __t.u32(),
+  rubyReward: __t.u32(),
+  emeraldReward: __t.u32(),
+  itemRewardsJson: __t.string(),
+  createdAt: __t.timestamp(),
+  read: __t.bool(),
+  rewardCollected: __t.bool(),
+});
+export type OwnPlayerInboxMailResult = __Infer<typeof OwnPlayerInboxMailResult>;
+
 export const OwnPlayerProfile = __t.object("OwnPlayerProfile", {});
 export type OwnPlayerProfile = __Infer<typeof OwnPlayerProfile>;
 
@@ -338,6 +361,26 @@ export const PlayerGameplaySaveResult = __t.object("PlayerGameplaySaveResult", {
   updatedAt: __t.timestamp(),
 });
 export type PlayerGameplaySaveResult = __Infer<typeof PlayerGameplaySaveResult>;
+
+export const PlayerInboxMail = __t.object("PlayerInboxMail", {
+  mailKey: __t.string(),
+  recipientIdentity: __t.identity(),
+  sourceType: __t.string(),
+  sourceKey: __t.string(),
+  senderLabel: __t.string(),
+  title: __t.string(),
+  body: __t.string(),
+  rewardText: __t.string(),
+  coinReward: __t.u64(),
+  crystalReward: __t.u32(),
+  rubyReward: __t.u32(),
+  emeraldReward: __t.u32(),
+  itemRewardsJson: __t.string(),
+  createdAt: __t.timestamp(),
+  read: __t.bool(),
+  rewardCollected: __t.bool(),
+});
+export type PlayerInboxMail = __Infer<typeof PlayerInboxMail>;
 
 export const PlayerInfoSummary = __t.object("PlayerInfoSummary", {});
 export type PlayerInfoSummary = __Infer<typeof PlayerInfoSummary>;

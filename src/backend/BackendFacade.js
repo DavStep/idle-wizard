@@ -6,6 +6,7 @@ import { GameplaySaveBackendFacade } from './gameplaySave/GameplaySaveBackendFac
 import { LeaderboardBackendFacade } from './leaderboard/LeaderboardBackendFacade.js';
 import { MaintenanceBackendFacade } from './maintenance/MaintenanceBackendFacade.js';
 import { NpcMarketBackendFacade } from './npcMarket/NpcMarketBackendFacade.js';
+import { PlayerInboxBackendFacade } from './playerInbox/PlayerInboxBackendFacade.js';
 import { PlayerInfoBackendFacade } from './playerInfo/PlayerInfoBackendFacade.js';
 import { PlayerBackendSyncFacade } from './playerSync/PlayerBackendSyncFacade.js';
 import { PlayerShopBackendFacade } from './playerShop/PlayerShopBackendFacade.js';
@@ -35,6 +36,7 @@ export class BackendFacade {
     this.worldChatFacade = new WorldChatBackendFacade();
     this.feedbackFacade = new FeedbackBackendFacade();
     this.npcMarketFacade = new NpcMarketBackendFacade();
+    this.playerInboxFacade = new PlayerInboxBackendFacade();
     this.playerInfoFacade = new PlayerInfoBackendFacade();
     this.playerSyncFacade = new PlayerBackendSyncFacade();
     this.playerShopFacade = new PlayerShopBackendFacade();
@@ -64,6 +66,7 @@ export class BackendFacade {
   } = {}) {
     this.leaderboardFacade.setGameplayFacade(gameplayFacade);
     this.worldEventLeaderboardFacade.setGameplayFacade(gameplayFacade);
+    this.playerInboxFacade.setGameplayFacade(gameplayFacade);
     this.tradeAllianceFacade.setGameplayFacade(gameplayFacade);
     this.tradeAllianceFacade.setRewardProcessingReady(false);
     this.accountSessionInactive = false;
@@ -156,6 +159,7 @@ export class BackendFacade {
         this.feedbackFacade.connect(connection);
         this.npcMarketFacade.connect(connection);
         this.playerInfoFacade.connect(connection);
+        this.playerInboxFacade.connect(connection, identity);
         this.playerSyncFacade.connect(connection, identity);
         this.playerShopFacade.connect(connection, identity);
         this.potionDiscoveryFacade.connect(connection);
@@ -185,6 +189,7 @@ export class BackendFacade {
     this.gameplaySaveFacade.setSyncUnhealthyHandler(null);
     this.leaderboardFacade.setGameplayFacade(null);
     this.worldEventLeaderboardFacade.setGameplayFacade(null);
+    this.playerInboxFacade.setGameplayFacade(null);
     this.tradeAllianceFacade.setGameplayFacade(null);
     this.playerSyncFacade.setGameplayFacade(null);
     this.worldChatFacade.setBeforeSendMessage?.(null);
@@ -229,6 +234,7 @@ export class BackendFacade {
     this.worldChatFacade.disconnect();
     this.feedbackFacade.disconnect();
     this.npcMarketFacade.disconnect();
+    this.playerInboxFacade.disconnect();
     this.playerInfoFacade.disconnect();
     this.playerSyncFacade.disconnect();
     this.playerShopFacade.disconnect();
@@ -278,6 +284,10 @@ export class BackendFacade {
 
   getPlayerInfoFacade() {
     return this.playerInfoFacade;
+  }
+
+  getPlayerInboxFacade() {
+    return this.playerInboxFacade;
   }
 
   getPlayerShopFacade() {

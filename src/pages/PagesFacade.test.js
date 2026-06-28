@@ -9033,24 +9033,28 @@ describe('PagesFacade', () => {
     expect(popup.textContent).not.toContain('ashen memory');
     expect(popup.textContent).not.toContain('ingredients:');
     expect(popup.textContent).toContain('silverleaf quiet');
-    expect(popup.textContent).toContain('silverleaf quiet: discovered by Ada');
-    expect(
-      popup.querySelector('.workshop-page__discovery-potion-box .style-box__title')
-        ?.textContent,
-    ).toBe('potion discoveries');
+    expect(popup.textContent).toContain('discovered by Ada');
+    expect(popup.querySelector('.workshop-page__discovery-recipe-book')).not.toBeNull();
+    expect(popup.querySelector('.workshop-page__discovery-potion-box')).toBeNull();
+    expect(popup.querySelector('.workshop-page__discovery-recipe-page-label')?.textContent).toBe(
+      'pages 1-2/2',
+    );
     expect(popup.querySelector('.brewing-page__recipe-select-button')).toBeNull();
 
     const discoveredRow = [...popup.querySelectorAll('.workshop-page__discovery-potion-row')].find(
       (row) => row.textContent.includes('silverleaf quiet'),
     );
 
-    expect(discoveredRow?.classList.contains('research-page__row')).toBe(true);
+    expect(discoveredRow?.classList.contains('brewing-page__recipe-row')).toBe(true);
     expect(
       discoveredRow?.querySelector('.workshop-page__discovery-potion-name')?.textContent,
-    ).toBe('silverleaf quiet: discovered by Ada');
+    ).toBe('silverleaf quiet');
     expect(discoveredRow?.querySelector('.workshop-page__discovery-royalties')?.textContent).toBe(
       'royalties 12.5 coin',
     );
+    expect(discoveredRow?.textContent).toContain('- 1 mint');
+    expect(discoveredRow?.textContent).toContain('34 mana required');
+    expect(discoveredRow?.textContent).toContain('time: 75s');
 
     const herbsTab = [...popup.querySelectorAll('.workshop-page__discoveries-tab-button')].find(
       (tab) => tab.textContent === 'herbs',
@@ -9059,6 +9063,7 @@ describe('PagesFacade', () => {
     herbsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(herbsTab.getAttribute('aria-selected')).toBe('true');
+    expect(popup.querySelector('.workshop-page__discovery-recipe-book')?.hidden).toBe(true);
     expect(popup.querySelector('.workshop-page__discoveries-empty')?.textContent).toBe('empty');
   });
 

@@ -120,7 +120,7 @@ describe('GameplayPersistenceFacade', () => {
 
     expect(storageManager.saveAndFlush).toHaveBeenCalledTimes(2);
     expect(storageManager.saveAndFlush.mock.calls[0][0]).toMatchObject({
-      version: 7,
+      version: 8,
       savedAt: 123,
     });
 

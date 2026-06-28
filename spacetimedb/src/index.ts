@@ -43,6 +43,17 @@ const MAX_TRADE_ALLIANCE_QUEST_TARGET = 1_000_000_000n;
 const MAX_TRADE_ALLIANCE_QUEST_CRYSTAL_REWARD = 100;
 const TRADE_ALLIANCE_CHAT_HISTORY_LIMIT = 200;
 const TRADE_ALLIANCE_REWARD_HISTORY_LIMIT = 80;
+const PLAYER_INBOX_HISTORY_LIMIT = 100;
+const MAX_PLAYER_INBOX_MAIL_KEY_LENGTH = 240;
+const MAX_PLAYER_INBOX_TITLE_LENGTH = 80;
+const MAX_PLAYER_INBOX_BODY_LENGTH = 1_200;
+const MAX_PLAYER_INBOX_SOURCE_TYPE_LENGTH = 32;
+const MAX_PLAYER_INBOX_SOURCE_KEY_LENGTH = 96;
+const MAX_PLAYER_INBOX_SENDER_LABEL_LENGTH = 40;
+const MAX_PLAYER_INBOX_REWARD_TEXT_LENGTH = 160;
+const MAX_PLAYER_INBOX_ITEM_REWARDS_JSON_LENGTH = 4_000;
+const MAX_PLAYER_INBOX_ITEM_REWARDS = 16;
+const MAX_PLAYER_INBOX_ITEM_REWARD_QUANTITY = 100_000;
 const DEFAULT_TRADE_ALLIANCE_TAG_COLOR = 'ink';
 const WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS = 15n * 1_000_000n;
 const WORLD_CHAT_RATE_LIMIT_MAX_MESSAGES = 3;
@@ -122,10 +133,20 @@ const MAX_PLAYER_SAVE_AUTO_SEED_MANA_RESERVE = MAX_PLAYER_SAVE_MANA_CURRENT;
 const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
 const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
 const MAX_PLAYER_SAVE_SHOP_COIN_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
+const MAX_PLAYER_SAVE_INBOX_CLAIMED_MAIL_KEYS = 500;
 const LEADERBOARD_SUMMARY_LIMIT = 100;
 const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
 const WORLD_EVENT_LEADERBOARD_SUMMARY_LIMIT = 100;
 const WORLD_EVENT_LEADERBOARD_POINTS_CAP_PER_LEVEL = 1_000_000n;
+const WORLD_EVENT_REWARD_QUALIFICATION_POINTS = 2_000n;
+const WORLD_EVENT_REWARD_TIERS = [
+  { minRank: 1, maxRank: 1, emeraldReward: 5, crystalReward: 10 },
+  { minRank: 2, maxRank: 2, emeraldReward: 3, crystalReward: 7 },
+  { minRank: 3, maxRank: 3, emeraldReward: 2, crystalReward: 5 },
+  { minRank: 4, maxRank: 10, emeraldReward: 1, crystalReward: 3 },
+  { minRank: 11, maxRank: 25, emeraldReward: 0, crystalReward: 2 },
+  { minRank: 26, maxRank: Number.MAX_SAFE_INTEGER, emeraldReward: 0, crystalReward: 1 },
+];
 const PERIOD_DAY_MICROS = 86_400_000_000n;
 const PERIOD_WEEK_DAYS = 7n;
 const PERIOD_MONTH_DAYS = 30n;
@@ -4806,6 +4827,35 @@ const spacetimedb = schema({
       updatedAt: t.timestamp(),
     },
   ),
+  playerInboxMail: table(
+    {
+      name: 'player_inbox_mail',
+      public: false,
+      indexes: [
+        { accessor: 'byRecipientIdentity', algorithm: 'btree', columns: ['recipientIdentity'] },
+        { accessor: 'byCreatedAt', algorithm: 'btree', columns: ['createdAt'] },
+        { accessor: 'bySourceKey', algorithm: 'btree', columns: ['sourceKey'] },
+      ],
+    },
+    {
+      mailKey: t.string().primaryKey(),
+      recipientIdentity: t.identity(),
+      sourceType: t.string(),
+      sourceKey: t.string(),
+      senderLabel: t.string(),
+      title: t.string(),
+      body: t.string(),
+      rewardText: t.string().default(''),
+      coinReward: t.u64().default(0n),
+      crystalReward: t.u32().default(0),
+      rubyReward: t.u32().default(0),
+      emeraldReward: t.u32().default(0),
+      itemRewardsJson: t.string().default('[]'),
+      createdAt: t.timestamp(),
+      read: t.bool().default(false),
+      rewardCollected: t.bool().default(true),
+    },
+  ),
   leaderboard: table(
     {
       public: true,
@@ -5286,6 +5336,26 @@ const playerSessionResult = t.option(
     identity: t.identity().primaryKey(),
     activeConnectionId: t.connectionId(),
     updatedAt: t.timestamp(),
+  }),
+);
+const ownPlayerInboxMailResult = t.array(
+  t.row('OwnPlayerInboxMailResult', {
+    mailKey: t.string().primaryKey(),
+    recipientIdentity: t.identity(),
+    sourceType: t.string(),
+    sourceKey: t.string(),
+    senderLabel: t.string(),
+    title: t.string(),
+    body: t.string(),
+    rewardText: t.string(),
+    coinReward: t.u64(),
+    crystalReward: t.u32(),
+    rubyReward: t.u32(),
+    emeraldReward: t.u32(),
+    itemRewardsJson: t.string(),
+    createdAt: t.timestamp(),
+    read: t.bool(),
+    rewardCollected: t.bool(),
   }),
 );
 const playerProfileResult = t.option(
@@ -5960,6 +6030,12 @@ export const potion_recipe_discovery_snapshot = spacetimedb.view(
   (ctx) => Array.from(ctx.db.potionRecipeDiscovery.byDiscoveredAt.filter(new Range())),
 );
 
+export const own_player_inbox_mail = spacetimedb.view(
+  { name: 'own_player_inbox_mail', public: true },
+  ownPlayerInboxMailResult,
+  (ctx) => getOwnPlayerInboxMailRows(ctx),
+);
+
 export const own_trade_alliance_reward_inbox = spacetimedb.view(
   { name: 'own_trade_alliance_reward_inbox', public: true },
   ownTradeAllianceRewardInboxResult,
@@ -6322,12 +6398,25 @@ function getAnchoredPeriodKey(ctx: IdleWizardReducerCtx, daySpan: bigint): strin
   );
 }
 
+function getAnchoredPeriodStartMicros(timestampMicros: bigint, daySpan: bigint): bigint {
+  const periodMicros = daySpan * PERIOD_DAY_MICROS;
+  return (
+    PERIOD_LOOP_ANCHOR_MICROS +
+    floorDivBigInt(timestampMicros - PERIOD_LOOP_ANCHOR_MICROS, periodMicros) *
+      periodMicros
+  );
+}
+
 function getDailyPeriodKey(ctx: IdleWizardReducerCtx): string {
   return String(getContextTimestampMicros(ctx) / PERIOD_DAY_MICROS);
 }
 
 function getWeeklyPeriodKey(ctx: IdleWizardReducerCtx): string {
   return getAnchoredPeriodKey(ctx, PERIOD_WEEK_DAYS);
+}
+
+function getWeeklyPeriodStartMicros(timestampMicros: bigint): bigint {
+  return getAnchoredPeriodStartMicros(timestampMicros, PERIOD_WEEK_DAYS);
 }
 
 function getMonthlyPeriodKey(ctx: IdleWizardReducerCtx): string {
@@ -7974,11 +8063,34 @@ function normalizePlayerGameplaySave(
       Object.hasOwn(save, 'guild') ? save.guild : previousSave.guild,
       { version: 1, profile: null },
     ),
+    inboxRewards: normalizeSaveInboxRewards(
+      Object.hasOwn(save, 'inboxRewards') ? save.inboxRewards : previousSave.inboxRewards,
+    ),
   };
 }
 
 function normalizeSaveClientStateBranch(value: unknown, fallback: Record<string, unknown>) {
   return isRecord(value) ? value : fallback;
+}
+
+function normalizeSaveInboxRewards(value: unknown) {
+  const branch = isRecord(value) ? value : {};
+  const claimedMailKeys = Array.isArray(branch.claimedMailKeys)
+    ? branch.claimedMailKeys
+        .map((mailKey) =>
+          stripUnsafeTextControls(String(mailKey ?? ''))
+            .trim()
+            .slice(0, MAX_PLAYER_INBOX_MAIL_KEY_LENGTH),
+        )
+        .filter((mailKey) => Boolean(mailKey))
+    : [];
+
+  return {
+    version: 1,
+    claimedMailKeys: [...new Set(claimedMailKeys)].slice(
+      -MAX_PLAYER_SAVE_INBOX_CLAIMED_MAIL_KEYS,
+    ),
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -11934,6 +12046,387 @@ function getWorldEventLeaderboardKey(
   return `${periodKey}:${eventId}:${getIdentityHex(identity)}`;
 }
 
+type PlayerInboxItemReward = {
+  itemKey: string;
+  quantity: number;
+};
+
+type PlayerInboxRewardPayload = {
+  coinReward: bigint;
+  crystalReward: number;
+  rubyReward: number;
+  emeraldReward: number;
+  itemRewards: PlayerInboxItemReward[];
+  itemRewardsJson: string;
+  rewardText: string;
+  hasReward: boolean;
+};
+
+function normalizePlayerInboxText(
+  value: unknown,
+  maxLength: number,
+  fallback = '',
+): string {
+  const text = stripUnsafeTextControls(String(value ?? ''))
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, maxLength);
+
+  return text || fallback;
+}
+
+function normalizePlayerInboxSourceType(value: unknown): string {
+  const sourceType = normalizePlayerInboxText(
+    value,
+    MAX_PLAYER_INBOX_SOURCE_TYPE_LENGTH,
+    'system',
+  )
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .slice(0, MAX_PLAYER_INBOX_SOURCE_TYPE_LENGTH);
+
+  return sourceType || 'system';
+}
+
+function normalizePlayerInboxSourceKey(value: unknown): string {
+  const sourceKey = stripUnsafeTextControls(String(value ?? ''))
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, MAX_PLAYER_INBOX_SOURCE_KEY_LENGTH);
+
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9:_-]*$/.test(sourceKey)) {
+    throw new Error('Inbox mail source key is required.');
+  }
+
+  return sourceKey;
+}
+
+function normalizePlayerInboxMailKeyPart(value: unknown, maxLength: number): string {
+  const part = stripUnsafeTextControls(String(value ?? ''))
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9:_-]/g, '')
+    .slice(0, maxLength);
+
+  if (!part) {
+    throw new Error('Inbox mail key part is required.');
+  }
+
+  return part;
+}
+
+function getPlayerInboxMailKey(
+  sourceType: string,
+  sourceKey: string,
+  recipientIdentity: Identity,
+): string {
+  return [
+    normalizePlayerInboxMailKeyPart(sourceType, MAX_PLAYER_INBOX_SOURCE_TYPE_LENGTH),
+    normalizePlayerInboxMailKeyPart(sourceKey, MAX_PLAYER_INBOX_SOURCE_KEY_LENGTH),
+    getIdentityHex(recipientIdentity),
+  ]
+    .join(':')
+    .slice(0, MAX_PLAYER_INBOX_MAIL_KEY_LENGTH);
+}
+
+function normalizePlayerInboxCoinReward(value: unknown): bigint {
+  const reward = typeof value === 'bigint' ? value : toBigInt(Number(value));
+
+  if (reward < 0n || reward > BigInt(MAX_PLAYER_SAVE_CURRENT_GOLD)) {
+    throw new Error('Invalid inbox coin reward.');
+  }
+
+  return reward;
+}
+
+function normalizePlayerInboxCurrencyReward(
+  value: unknown,
+  maxAmount: number,
+  label: string,
+): number {
+  const reward = Math.floor(Number(value));
+
+  if (!Number.isFinite(reward) || reward < 0 || reward > maxAmount) {
+    throw new Error(`Invalid inbox ${label} reward.`);
+  }
+
+  return reward;
+}
+
+function normalizePlayerInboxItemRewards(
+  ctx: IdleWizardReducerCtx,
+  itemRewardsJson: unknown,
+): PlayerInboxItemReward[] {
+  const rawJson = String(itemRewardsJson ?? '[]').trim() || '[]';
+
+  if (rawJson.length > MAX_PLAYER_INBOX_ITEM_REWARDS_JSON_LENGTH) {
+    throw new Error('Invalid inbox item rewards length.');
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawJson);
+  } catch {
+    throw new Error('Invalid inbox item rewards JSON.');
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error('Invalid inbox item rewards.');
+  }
+
+  if (parsed.length > MAX_PLAYER_INBOX_ITEM_REWARDS) {
+    throw new Error('Too many inbox item rewards.');
+  }
+
+  const itemCatalog = getSaveItemCatalog(ctx);
+  const quantityByItemKey = new Map<string, number>();
+
+  for (const item of parsed) {
+    if (!isRecord(item)) {
+      continue;
+    }
+
+    const itemKey = normalizeSaveItemKey(item.itemKey);
+    if (!itemCatalog.has(itemKey)) {
+      throw new Error('Invalid inbox item reward key.');
+    }
+
+    const quantity = Math.floor(Number(item.quantity));
+    if (
+      !Number.isFinite(quantity) ||
+      quantity <= 0 ||
+      quantity > MAX_PLAYER_INBOX_ITEM_REWARD_QUANTITY
+    ) {
+      throw new Error('Invalid inbox item reward quantity.');
+    }
+
+    quantityByItemKey.set(
+      itemKey,
+      clampNumber(
+        (quantityByItemKey.get(itemKey) ?? 0) + quantity,
+        1,
+        MAX_PLAYER_INBOX_ITEM_REWARD_QUANTITY,
+      ),
+    );
+  }
+
+  return [...quantityByItemKey.entries()].map(([itemKey, quantity]) => ({
+    itemKey,
+    quantity: Math.floor(quantity),
+  }));
+}
+
+function createPlayerInboxRewardText({
+  coinReward,
+  crystalReward,
+  rubyReward,
+  emeraldReward,
+  itemRewards,
+}: Omit<PlayerInboxRewardPayload, 'itemRewardsJson' | 'rewardText' | 'hasReward'>): string {
+  const parts: string[] = [];
+
+  if (coinReward > 0n) {
+    parts.push(`${coinReward.toString()} coin`);
+  }
+
+  if (crystalReward > 0) {
+    parts.push(`${crystalReward} crystal`);
+  }
+
+  if (rubyReward > 0) {
+    parts.push(`${rubyReward} ruby`);
+  }
+
+  if (emeraldReward > 0) {
+    parts.push(`${emeraldReward} emerald`);
+  }
+
+  for (const itemReward of itemRewards) {
+    parts.push(`${itemReward.quantity} ${itemReward.itemKey}`);
+  }
+
+  return parts.join(', ').slice(0, MAX_PLAYER_INBOX_REWARD_TEXT_LENGTH);
+}
+
+function normalizePlayerInboxRewards(
+  ctx: IdleWizardReducerCtx,
+  {
+    coinReward,
+    crystalReward,
+    rubyReward,
+    emeraldReward,
+    itemRewardsJson,
+  }: {
+    coinReward: unknown;
+    crystalReward: unknown;
+    rubyReward: unknown;
+    emeraldReward: unknown;
+    itemRewardsJson: unknown;
+  },
+): PlayerInboxRewardPayload {
+  const normalized = {
+    coinReward: normalizePlayerInboxCoinReward(coinReward),
+    crystalReward: normalizePlayerInboxCurrencyReward(
+      crystalReward,
+      MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+      'crystal',
+    ),
+    rubyReward: normalizePlayerInboxCurrencyReward(
+      rubyReward,
+      MAX_PLAYER_SAVE_CURRENT_RUBY,
+      'ruby',
+    ),
+    emeraldReward: normalizePlayerInboxCurrencyReward(
+      emeraldReward,
+      MAX_PLAYER_SAVE_CURRENT_EMERALD,
+      'emerald',
+    ),
+    itemRewards: normalizePlayerInboxItemRewards(ctx, itemRewardsJson),
+  };
+  const rewardText = createPlayerInboxRewardText(normalized);
+  const hasReward =
+    normalized.coinReward > 0n ||
+    normalized.crystalReward > 0 ||
+    normalized.rubyReward > 0 ||
+    normalized.emeraldReward > 0 ||
+    normalized.itemRewards.length > 0;
+
+  return {
+    ...normalized,
+    itemRewardsJson: JSON.stringify(normalized.itemRewards),
+    rewardText,
+    hasReward,
+  };
+}
+
+function insertPlayerInboxMail(
+  ctx: IdleWizardReducerCtx,
+  {
+    recipientIdentity,
+    sourceType,
+    sourceKey,
+    senderLabel,
+    title,
+    body,
+    rewards,
+  }: {
+    recipientIdentity: Identity;
+    sourceType: string;
+    sourceKey: string;
+    senderLabel: string;
+    title: string;
+    body: string;
+    rewards: PlayerInboxRewardPayload;
+  },
+): boolean {
+  const safeSourceType = normalizePlayerInboxSourceType(sourceType);
+  const safeSourceKey = normalizePlayerInboxSourceKey(sourceKey);
+  const mailKey = getPlayerInboxMailKey(safeSourceType, safeSourceKey, recipientIdentity);
+
+  if (ctx.db.playerInboxMail.mailKey.find(mailKey)) {
+    return false;
+  }
+
+  ctx.db.playerInboxMail.insert({
+    mailKey,
+    recipientIdentity,
+    sourceType: safeSourceType,
+    sourceKey: safeSourceKey,
+    senderLabel: normalizePlayerInboxText(
+      senderLabel,
+      MAX_PLAYER_INBOX_SENDER_LABEL_LENGTH,
+      'system',
+    ),
+    title: normalizePlayerInboxText(title, MAX_PLAYER_INBOX_TITLE_LENGTH, 'message'),
+    body: normalizePlayerInboxText(body, MAX_PLAYER_INBOX_BODY_LENGTH),
+    rewardText: rewards.rewardText,
+    coinReward: rewards.coinReward,
+    crystalReward: rewards.crystalReward,
+    rubyReward: rewards.rubyReward,
+    emeraldReward: rewards.emeraldReward,
+    itemRewardsJson: rewards.itemRewardsJson,
+    createdAt: ctx.timestamp,
+    read: false,
+    rewardCollected: !rewards.hasReward,
+  });
+  prunePlayerInboxMail(ctx, recipientIdentity);
+  return true;
+}
+
+function prunePlayerInboxMail(ctx: IdleWizardReducerCtx, identity: Identity) {
+  const rows = Array.from(ctx.db.playerInboxMail.byRecipientIdentity.filter(identity)).sort(
+    (left, right) => {
+      const leftCreatedAt = left.createdAt.microsSinceUnixEpoch;
+      const rightCreatedAt = right.createdAt.microsSinceUnixEpoch;
+
+      if (leftCreatedAt < rightCreatedAt) {
+        return -1;
+      }
+
+      if (leftCreatedAt > rightCreatedAt) {
+        return 1;
+      }
+
+      return left.mailKey.localeCompare(right.mailKey);
+    },
+  );
+  let excess = rows.length - PLAYER_INBOX_HISTORY_LIMIT;
+
+  if (excess <= 0) {
+    return;
+  }
+
+  for (const row of rows) {
+    if (excess <= 0) {
+      return;
+    }
+
+    if (!row.read || !row.rewardCollected) {
+      continue;
+    }
+
+    ctx.db.playerInboxMail.delete(row);
+    excess -= 1;
+  }
+}
+
+function getOwnPlayerInboxMailRows(ctx: { sender: Identity; db: any }): any[] {
+  return Array.from<any>(ctx.db.playerInboxMail.byRecipientIdentity.filter(ctx.sender))
+    .sort((left, right) => {
+      const leftCreatedAt = left.createdAt.microsSinceUnixEpoch;
+      const rightCreatedAt = right.createdAt.microsSinceUnixEpoch;
+
+      if (leftCreatedAt < rightCreatedAt) {
+        return 1;
+      }
+
+      if (leftCreatedAt > rightCreatedAt) {
+        return -1;
+      }
+
+      return left.mailKey.localeCompare(right.mailKey);
+    })
+    .slice(0, PLAYER_INBOX_HISTORY_LIMIT);
+}
+
+function findOwnPlayerInboxMail(ctx: IdleWizardReducerCtx, mailKey: unknown) {
+  const safeMailKey = String(mailKey ?? '').trim().slice(0, MAX_PLAYER_INBOX_MAIL_KEY_LENGTH);
+  const mail = ctx.db.playerInboxMail.mailKey.find(safeMailKey);
+
+  if (!mail || !mail.recipientIdentity.isEqual(ctx.sender)) {
+    return null;
+  }
+
+  return mail;
+}
+
+function getWorldEventRewardTier(rank: number) {
+  return (
+    WORLD_EVENT_REWARD_TIERS.find(
+      (tier) => rank >= tier.minRank && rank <= tier.maxRank,
+    ) ?? null
+  );
+}
+
 function getLeaderboardPeriodDefaults(ctx: IdleWizardReducerCtx, income = 0n) {
   const safeIncome = toBigInt(income);
 
@@ -12416,11 +12909,12 @@ function getNpcMarketRecoveredNeedState(
   targetNeed: bigint,
 ) {
   const needState = getNpcMarketNeedState(row, targetNeed);
+  const nowMicros = getContextTimestampMicros(ctx);
   const lastTickMicros =
     row.lastTickAt?.microsSinceUnixEpoch ??
     row.updatedAt?.microsSinceUnixEpoch ??
-    getContextTimestampMicros(ctx);
-  const elapsedMicros = getContextTimestampMicros(ctx) - lastTickMicros;
+    nowMicros;
+  const elapsedMicros = nowMicros - lastTickMicros;
 
   if (elapsedMicros <= 0n) {
     return {
@@ -12430,26 +12924,53 @@ function getNpcMarketRecoveredNeedState(
     };
   }
 
+  const recoveryWindow = getNpcMarketDemandRecoveryWindow(
+    needState.npcNeed,
+    lastTickMicros,
+    nowMicros,
+  );
   const waveRecovery = getNpcMarketDemandWaveRecovery(
     needState.targetNeed,
-    lastTickMicros,
-    getContextTimestampMicros(ctx),
+    recoveryWindow.fromMicros,
+    nowMicros,
   );
   const nextNpcNeed = clampBigInt(
-    needState.npcNeed + waveRecovery,
+    recoveryWindow.npcNeed + waveRecovery,
     0n,
     needState.maxNeed,
   );
-  const processedWave = waveRecovery > 0n;
+  const processedChange = recoveryWindow.didReset || waveRecovery > 0n;
 
   return {
     ...needState,
     npcNeed: nextNpcNeed,
     lastTickAt:
-      processedWave || nextNpcNeed !== needState.npcNeed
+      processedChange || nextNpcNeed !== needState.npcNeed
         ? ctx.timestamp
         : row.lastTickAt ?? ctx.timestamp,
-    recovered: processedWave || nextNpcNeed !== needState.npcNeed,
+    recovered: processedChange || nextNpcNeed !== needState.npcNeed,
+  };
+}
+
+function getNpcMarketDemandRecoveryWindow(
+  npcNeed: bigint,
+  fromMicros: bigint,
+  toMicros: bigint,
+) {
+  const weekStartMicros = getWeeklyPeriodStartMicros(toMicros);
+
+  if (fromMicros >= weekStartMicros) {
+    return {
+      npcNeed,
+      fromMicros,
+      didReset: false,
+    };
+  }
+
+  return {
+    npcNeed: 0n,
+    fromMicros: weekStartMicros - 1n,
+    didReset: true,
   };
 }
 
@@ -13753,6 +14274,12 @@ function deleteAllPlayerGameplaySaves(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function deleteAllPlayerInboxMail(ctx: IdleWizardReducerCtx) {
+  for (const mail of Array.from(ctx.db.playerInboxMail.iter())) {
+    ctx.db.playerInboxMail.delete(mail);
+  }
+}
+
 function deleteAllPlayerSessions(ctx: IdleWizardReducerCtx) {
   for (const session of Array.from(ctx.db.playerSession.iter())) {
     ctx.db.playerSession.delete(session);
@@ -13778,6 +14305,12 @@ function deletePlayerGameplaySaveForIdentity(
   const save = ctx.db.playerGameplaySave.identity.find(identity);
   if (save) {
     ctx.db.playerGameplaySave.delete(save);
+  }
+}
+
+function deletePlayerInboxForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+  for (const mail of Array.from(ctx.db.playerInboxMail.byRecipientIdentity.filter(identity))) {
+    ctx.db.playerInboxMail.delete(mail);
   }
 }
 
@@ -13879,6 +14412,7 @@ function deleteTradeAllianceDataForIdentity(ctx: IdleWizardReducerCtx, identity:
 
 function deletePlayerDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
   deletePlayerGameplaySaveForIdentity(ctx, identity);
+  deletePlayerInboxForIdentity(ctx, identity);
   deleteLeaderboardForIdentity(ctx, identity);
   deleteWorldEventLeaderboardForIdentity(ctx, identity);
   deleteMessageRowsForIdentity(ctx, identity);
@@ -13909,6 +14443,7 @@ function deletePlayerDataForIdentities(ctx: IdleWizardReducerCtx, identities: Id
 
   for (const identity of identityByHex.values()) {
     deletePlayerGameplaySaveForIdentity(ctx, identity);
+    deletePlayerInboxForIdentity(ctx, identity);
     deleteLeaderboardForIdentity(ctx, identity);
     deleteWorldEventLeaderboardForIdentity(ctx, identity);
     deleteAdminPlayerSession(ctx, identity);
@@ -14346,6 +14881,39 @@ function moveAdminTradeAllianceRewards(
       collected,
     });
   }
+}
+
+function moveAdminPlayerInboxMail(
+  ctx: IdleWizardReducerCtx,
+  sourceIdentity: Identity,
+  targetIdentity: Identity,
+) {
+  for (const mail of Array.from(ctx.db.playerInboxMail.byRecipientIdentity.filter(sourceIdentity))) {
+    const targetKey = getPlayerInboxMailKey(
+      mail.sourceType,
+      mail.sourceKey,
+      targetIdentity,
+    );
+    const existingTarget = ctx.db.playerInboxMail.mailKey.find(targetKey);
+    const read = Boolean(mail.read) || Boolean(existingTarget?.read);
+    const rewardCollected =
+      Boolean(mail.rewardCollected) || Boolean(existingTarget?.rewardCollected);
+
+    if (existingTarget) {
+      ctx.db.playerInboxMail.delete(existingTarget);
+    }
+
+    ctx.db.playerInboxMail.delete(mail);
+    ctx.db.playerInboxMail.insert({
+      ...mail,
+      mailKey: targetKey,
+      recipientIdentity: targetIdentity,
+      read,
+      rewardCollected,
+    });
+  }
+
+  prunePlayerInboxMail(ctx, targetIdentity);
 }
 
 function refreshAdminMergedAlliance(ctx: IdleWizardReducerCtx, allianceId: any) {
@@ -15487,6 +16055,7 @@ export const admin_merge_player_accounts = spacetimedb.reducer(
       nextTargetPlayer.identity,
       targetUsername,
     );
+    moveAdminPlayerInboxMail(ctx, sourcePlayer.identity, nextTargetPlayer.identity);
     moveAdminMessageRows(
       ctx,
       sourcePlayer.identity,
@@ -15933,6 +16502,198 @@ export const set_world_event_contribution_points = spacetimedb.reducer(
       playerLevel: safePlayerLevel,
       points: nextPoints,
       updatedAt: ctx.timestamp,
+    });
+  },
+);
+
+export const admin_send_player_inbox_mail = spacetimedb.reducer(
+  {
+    identityHex: t.string(),
+    sourceKey: t.string(),
+    title: t.string(),
+    body: t.string(),
+    coinReward: t.u64(),
+    crystalReward: t.u32(),
+    rubyReward: t.u32(),
+    emeraldReward: t.u32(),
+    itemRewardsJson: t.string(),
+  },
+  (
+    ctx,
+    {
+      identityHex,
+      sourceKey,
+      title,
+      body,
+      coinReward,
+      crystalReward,
+      rubyReward,
+      emeraldReward,
+      itemRewardsJson,
+    },
+  ) => {
+    assertGameConfigAdmin(ctx);
+
+    const player = findPlayerByIdentityHex(ctx, identityHex);
+    const rewards = normalizePlayerInboxRewards(ctx, {
+      coinReward,
+      crystalReward,
+      rubyReward,
+      emeraldReward,
+      itemRewardsJson,
+    });
+
+    insertPlayerInboxMail(ctx, {
+      recipientIdentity: player.identity,
+      sourceType: 'admin',
+      sourceKey,
+      senderLabel: 'admin',
+      title,
+      body,
+      rewards,
+    });
+  },
+);
+
+export const admin_send_player_inbox_broadcast = spacetimedb.reducer(
+  {
+    sourceKey: t.string(),
+    title: t.string(),
+    body: t.string(),
+    coinReward: t.u64(),
+    crystalReward: t.u32(),
+    rubyReward: t.u32(),
+    emeraldReward: t.u32(),
+    itemRewardsJson: t.string(),
+  },
+  (
+    ctx,
+    {
+      sourceKey,
+      title,
+      body,
+      coinReward,
+      crystalReward,
+      rubyReward,
+      emeraldReward,
+      itemRewardsJson,
+    },
+  ) => {
+    assertGameConfigAdmin(ctx);
+
+    const rewards = normalizePlayerInboxRewards(ctx, {
+      coinReward,
+      crystalReward,
+      rubyReward,
+      emeraldReward,
+      itemRewardsJson,
+    });
+
+    for (const player of Array.from(ctx.db.player.iter())) {
+      insertPlayerInboxMail(ctx, {
+        recipientIdentity: player.identity,
+        sourceType: 'news',
+        sourceKey,
+        senderLabel: 'news',
+        title,
+        body,
+        rewards,
+      });
+    }
+  },
+);
+
+export const admin_settle_world_event_inbox_rewards = spacetimedb.reducer(
+  {
+    periodKey: t.string(),
+    eventId: t.string(),
+    headline: t.string(),
+  },
+  (ctx, { periodKey, eventId, headline }) => {
+    assertGameConfigAdmin(ctx);
+
+    const safePeriodKey = normalizeWorldEventPeriodKey(periodKey);
+    const safeEventId = normalizeWorldEventId(eventId);
+    if (!safePeriodKey || !safeEventId) {
+      throw new Error('Invalid world event reward settlement key.');
+    }
+
+    const eventEntries = Array.from(ctx.db.worldEventLeaderboard.byPeriodKey.filter(safePeriodKey))
+      .filter((entry) => normalizeWorldEventId(entry.eventId) === safeEventId);
+    const rankedEntries = getRankedWorldEventLeaderboardEntries(eventEntries);
+    const eventHeadline =
+      normalizePlayerInboxText(headline, MAX_PLAYER_INBOX_TITLE_LENGTH) || safeEventId;
+    const sourceKey = `${safePeriodKey}:${safeEventId}`;
+
+    rankedEntries.forEach((entry, index) => {
+      const points = toBigInt(entry.points);
+      if (points < WORLD_EVENT_REWARD_QUALIFICATION_POINTS) {
+        return;
+      }
+
+      const player = ctx.db.player.identity.find(entry.identity);
+      if (!player) {
+        return;
+      }
+
+      const rank = index + 1;
+      const tier = getWorldEventRewardTier(rank);
+      if (!tier) {
+        return;
+      }
+
+      const rewards = normalizePlayerInboxRewards(ctx, {
+        coinReward: 0n,
+        crystalReward: tier.crystalReward,
+        rubyReward: 0,
+        emeraldReward: tier.emeraldReward,
+        itemRewardsJson: '[]',
+      });
+
+      insertPlayerInboxMail(ctx, {
+        recipientIdentity: player.identity,
+        sourceType: 'worldEvent',
+        sourceKey,
+        senderLabel: 'world event',
+        title: 'event finished',
+        body: `you placed #${rank} in ${eventHeadline} with ${points.toString()} points. here are your rewards.`,
+        rewards,
+      });
+    });
+  },
+);
+
+export const mark_player_inbox_mail_read = spacetimedb.reducer(
+  { mailKey: t.string() },
+  (ctx, { mailKey }) => {
+    assertActivePlayerSession(ctx);
+
+    const mail = findOwnPlayerInboxMail(ctx, mailKey);
+    if (!mail || mail.read) {
+      return;
+    }
+
+    ctx.db.playerInboxMail.mailKey.update({
+      ...mail,
+      read: true,
+    });
+  },
+);
+
+export const collect_player_inbox_mail_reward = spacetimedb.reducer(
+  { mailKey: t.string() },
+  (ctx, { mailKey }) => {
+    assertActivePlayerSession(ctx);
+
+    const mail = findOwnPlayerInboxMail(ctx, mailKey);
+    if (!mail || mail.rewardCollected) {
+      return;
+    }
+
+    ctx.db.playerInboxMail.mailKey.update({
+      ...mail,
+      read: true,
+      rewardCollected: true,
     });
   },
 );
@@ -17583,6 +18344,7 @@ export const admin_reset_player_progression_data = spacetimedb.reducer(
     }
 
     deleteAllPlayerGameplaySaves(ctx);
+    deleteAllPlayerInboxMail(ctx);
     deleteAllLeaderboardState(ctx);
     deleteAllWorldChatMessages(ctx);
     deleteAllTradeAllianceState(ctx);
@@ -17610,6 +18372,7 @@ export const admin_wipe_all_player_data = spacetimedb.reducer(
     }
 
     deleteAllPlayerGameplaySaves(ctx);
+    deleteAllPlayerInboxMail(ctx);
     deleteAllLeaderboardState(ctx);
     deleteAllWorldChatMessages(ctx);
     deleteAllTradeAllianceState(ctx);
@@ -17766,6 +18529,7 @@ export const admin_reset_player_progression_by_identity = spacetimedb.reducer(
 
     const nextPlayer = resetPlayerSharedProgress(ctx, player);
     deletePlayerGameplaySaveForIdentity(ctx, nextPlayer.identity);
+    deletePlayerInboxForIdentity(ctx, nextPlayer.identity);
     resetLeaderboardProgressForIdentity(ctx, nextPlayer.identity, nextPlayer.username);
     deleteTradeAllianceProgressionForIdentity(ctx, nextPlayer.identity);
     deletePlayerShopProgressionForIdentity(ctx, nextPlayer.identity);

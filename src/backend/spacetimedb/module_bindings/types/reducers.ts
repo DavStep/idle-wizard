@@ -16,8 +16,11 @@ import AdminMergePlayerAccountsReducer from "../admin_merge_player_accounts_redu
 import AdminMoveTradeAllianceMemberReducer from "../admin_move_trade_alliance_member_reducer";
 import AdminResetPlayerProgressionByIdentityReducer from "../admin_reset_player_progression_by_identity_reducer";
 import AdminResetPlayerProgressionDataReducer from "../admin_reset_player_progression_data_reducer";
+import AdminSendPlayerInboxBroadcastReducer from "../admin_send_player_inbox_broadcast_reducer";
+import AdminSendPlayerInboxMailReducer from "../admin_send_player_inbox_mail_reducer";
 import AdminSetPlayerLevelByIdentityReducer from "../admin_set_player_level_by_identity_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "../admin_set_trade_alliance_member_role_reducer";
+import AdminSettleWorldEventInboxRewardsReducer from "../admin_settle_world_event_inbox_rewards_reducer";
 import AdminWipeAllPlayerDataReducer from "../admin_wipe_all_player_data_reducer";
 import AdminWipeZeroIncomePlayerDataReducer from "../admin_wipe_zero_income_player_data_reducer";
 import AnnounceLevelUpReducer from "../announce_level_up_reducer";
@@ -32,6 +35,7 @@ import ClaimPlayerShopProceedsReducer from "../claim_player_shop_proceeds_reduce
 import ClaimTradeAllianceQuestRewardReducer from "../claim_trade_alliance_quest_reward_reducer";
 import ClearPlayerShopRequestReducer from "../clear_player_shop_request_reducer";
 import ClearPlayerShopSlotReducer from "../clear_player_shop_slot_reducer";
+import CollectPlayerInboxMailRewardReducer from "../collect_player_inbox_mail_reward_reducer";
 import CollectTradeAllianceRewardReducer from "../collect_trade_alliance_reward_reducer";
 import CreateTradeAllianceReducer from "../create_trade_alliance_reducer";
 import DiscoverPotionRecipeReducer from "../discover_potion_recipe_reducer";
@@ -39,6 +43,7 @@ import FillTradeAllianceItemQuestReducer from "../fill_trade_alliance_item_quest
 import JoinTradeAllianceReducer from "../join_trade_alliance_reducer";
 import KickTradeAllianceMemberReducer from "../kick_trade_alliance_member_reducer";
 import LeaveTradeAllianceReducer from "../leave_trade_alliance_reducer";
+import MarkPlayerInboxMailReadReducer from "../mark_player_inbox_mail_read_reducer";
 import MigratePlayerGameplaySavesReducer from "../migrate_player_gameplay_saves_reducer";
 import RejectTradeAllianceApplicationReducer from "../reject_trade_alliance_application_reducer";
 import RemoveNpcMarketItemConfigReducer from "../remove_npc_market_item_config_reducer";
@@ -76,8 +81,11 @@ export type AdminMergePlayerAccountsParams = __Infer<typeof AdminMergePlayerAcco
 export type AdminMoveTradeAllianceMemberParams = __Infer<typeof AdminMoveTradeAllianceMemberReducer>;
 export type AdminResetPlayerProgressionByIdentityParams = __Infer<typeof AdminResetPlayerProgressionByIdentityReducer>;
 export type AdminResetPlayerProgressionDataParams = __Infer<typeof AdminResetPlayerProgressionDataReducer>;
+export type AdminSendPlayerInboxBroadcastParams = __Infer<typeof AdminSendPlayerInboxBroadcastReducer>;
+export type AdminSendPlayerInboxMailParams = __Infer<typeof AdminSendPlayerInboxMailReducer>;
 export type AdminSetPlayerLevelByIdentityParams = __Infer<typeof AdminSetPlayerLevelByIdentityReducer>;
 export type AdminSetTradeAllianceMemberRoleParams = __Infer<typeof AdminSetTradeAllianceMemberRoleReducer>;
+export type AdminSettleWorldEventInboxRewardsParams = __Infer<typeof AdminSettleWorldEventInboxRewardsReducer>;
 export type AdminWipeAllPlayerDataParams = __Infer<typeof AdminWipeAllPlayerDataReducer>;
 export type AdminWipeZeroIncomePlayerDataParams = __Infer<typeof AdminWipeZeroIncomePlayerDataReducer>;
 export type AnnounceLevelUpParams = __Infer<typeof AnnounceLevelUpReducer>;
@@ -92,6 +100,7 @@ export type ClaimPlayerShopProceedsParams = __Infer<typeof ClaimPlayerShopProcee
 export type ClaimTradeAllianceQuestRewardParams = __Infer<typeof ClaimTradeAllianceQuestRewardReducer>;
 export type ClearPlayerShopRequestParams = __Infer<typeof ClearPlayerShopRequestReducer>;
 export type ClearPlayerShopSlotParams = __Infer<typeof ClearPlayerShopSlotReducer>;
+export type CollectPlayerInboxMailRewardParams = __Infer<typeof CollectPlayerInboxMailRewardReducer>;
 export type CollectTradeAllianceRewardParams = __Infer<typeof CollectTradeAllianceRewardReducer>;
 export type CreateTradeAllianceParams = __Infer<typeof CreateTradeAllianceReducer>;
 export type DiscoverPotionRecipeParams = __Infer<typeof DiscoverPotionRecipeReducer>;
@@ -99,6 +108,7 @@ export type FillTradeAllianceItemQuestParams = __Infer<typeof FillTradeAllianceI
 export type JoinTradeAllianceParams = __Infer<typeof JoinTradeAllianceReducer>;
 export type KickTradeAllianceMemberParams = __Infer<typeof KickTradeAllianceMemberReducer>;
 export type LeaveTradeAllianceParams = __Infer<typeof LeaveTradeAllianceReducer>;
+export type MarkPlayerInboxMailReadParams = __Infer<typeof MarkPlayerInboxMailReadReducer>;
 export type MigratePlayerGameplaySavesParams = __Infer<typeof MigratePlayerGameplaySavesReducer>;
 export type RejectTradeAllianceApplicationParams = __Infer<typeof RejectTradeAllianceApplicationReducer>;
 export type RemoveNpcMarketItemConfigParams = __Infer<typeof RemoveNpcMarketItemConfigReducer>;

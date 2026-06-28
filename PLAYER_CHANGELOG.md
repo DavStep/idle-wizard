@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.59
+
+- Added a top-panel inbox for system mail, admin gifts, broadcast news, and reward messages with a clear claim button and notification dot.
+- Added weekly world event reward mail so qualified event contributors can receive crystal and emerald rewards through the inbox after settlement.
+- Reworked Workshop potion discoveries into book-style recipe pages with ingredients, owned counts, discoverer links, royalties, mana cost, brew time, and page controls.
+- Improved Garden seed handling so seeds can be dragged from the seed inventory onto plots to plant or swap, with tap controls still intact.
+- Fixed NPC demand market recovery so weekly demand resets cleanly at the shared Monday UTC boundary and frontend/backend prices stay aligned.
+
 ## 0.2.58
 
 - Fixed Google account connection on web/mobile so unavailable browser login fails cleanly instead of sending players through a broken redirect.

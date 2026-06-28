@@ -30,6 +30,8 @@ export class RoomInventoryBoxManager {
       shouldShowItemInActionList(snapshot, item, item.quantity),
     setRowIcon = (label, item) =>
       setItemIconLabel(label, item.display.unknown ? null : item.kind, item.key),
+    configureRow = null,
+    syncRow = null,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.kind = kind;
@@ -47,6 +49,8 @@ export class RoomInventoryBoxManager {
     this.getItems = getItems;
     this.filterItems = filterItems;
     this.setRowIcon = setRowIcon;
+    this.configureRow = configureRow;
+    this.syncRow = syncRow;
     this.root = null;
     this.rows = null;
     this.count = null;
@@ -169,6 +173,7 @@ export class RoomInventoryBoxManager {
         'aria-label',
         `${item.display.label}, owned ${item.quantity}`,
       );
+      this.syncRow?.(refs, item);
     }
 
     this.applyRowOrder(items);
@@ -201,7 +206,9 @@ export class RoomInventoryBoxManager {
       quantity.className = 'row_val';
 
       row.append(label, quantity);
-      this.itemRefs.set(item.itemTypeId, { row, label, quantity });
+      const refs = { row, label, quantity };
+      this.itemRefs.set(item.itemTypeId, refs);
+      this.configureRow?.(refs, item);
       this.rows.append(row);
     }
   }

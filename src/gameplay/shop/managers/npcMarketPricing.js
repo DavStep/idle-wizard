@@ -9,6 +9,10 @@ export const NPC_MARKET_DEMAND_DAILY_BUDGET_BPS = 40_000;
 export const NPC_MARKET_DEMAND_CAP_BPS = 15_000;
 export const NPC_MARKET_DEMAND_BIG_WAVE_BPS = 4_000;
 export const NPC_MARKET_DEMAND_SMALL_WAVE_BPS = 2_000;
+export const NPC_MARKET_WEEKLY_RESET_ANCHOR_MS = 1_780_876_800_000; // 2026-06-08 00:00 UTC.
+
+const PERIOD_DAY_MS = 24 * 60 * 60 * 1000;
+const PERIOD_WEEK_DAYS = 7;
 
 const DEFAULT_VOLATILITY_BPS_BY_KIND = new Map([
   ['seed', 1_200],
@@ -104,13 +108,18 @@ export function getRecoveredNpcNeed({
     return cappedNeed;
   }
 
-  const waveRecovery = getNpcMarketDemandWaveRecovery({
-    targetNeed: safeTargetNeed,
+  const recoveryWindow = getNpcMarketDemandRecoveryWindow({
+    npcNeed: cappedNeed,
     fromMs: tickMs,
     toMs: nowMs,
   });
+  const waveRecovery = getNpcMarketDemandWaveRecovery({
+    targetNeed: safeTargetNeed,
+    fromMs: recoveryWindow.fromMs,
+    toMs: nowMs,
+  });
 
-  return Math.min(demandCap, cappedNeed + waveRecovery);
+  return Math.min(demandCap, recoveryWindow.npcNeed + waveRecovery);
 }
 
 export function getNpcMarketPriceState(priceState, nowMs = Date.now()) {
@@ -243,6 +252,40 @@ export function getNpcMarketDemandWaveRecovery({ targetNeed, fromMs, toMs } = {}
   }
 
   return recovery;
+}
+
+export function getNpcMarketDemandRecoveryWindow({ npcNeed, fromMs, toMs } = {}) {
+  const safeFromMs = Math.floor(Number(fromMs));
+  const safeToMs = Math.floor(Number(toMs));
+
+  if (!Number.isFinite(safeFromMs) || !Number.isFinite(safeToMs)) {
+    return {
+      npcNeed,
+      fromMs,
+    };
+  }
+
+  const weekStartMs = getNpcMarketWeekStartMs(safeToMs);
+
+  if (safeFromMs >= weekStartMs) {
+    return {
+      npcNeed,
+      fromMs: safeFromMs,
+    };
+  }
+
+  return {
+    npcNeed: 0,
+    fromMs: weekStartMs - 1,
+  };
+}
+
+function getNpcMarketWeekStartMs(timeMs) {
+  const weekMs = PERIOD_WEEK_DAYS * PERIOD_DAY_MS;
+  return (
+    NPC_MARKET_WEEKLY_RESET_ANCHOR_MS +
+    Math.floor((timeMs - NPC_MARKET_WEEKLY_RESET_ANCHOR_MS) / weekMs) * weekMs
+  );
 }
 
 function getNpcMarketDemandWaveAmount(targetNeed, waveSlot) {

@@ -6,6 +6,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 
 - Ordinary room boxes use compact padding and no shadow; the white theme uses `1px` game-gray borders, while non-white themes use `2px` ordinary borders.
 - Box titles sit embedded over the top border on the same room surface.
+- White-theme box and dialog titles use a surface-colored text stroke; non-white themes keep plain title text.
 - Secondary border labels, such as counts, close/current controls, actions, and tabs, use smaller normal-weight text centered on the border line.
 - Popup/dialog boxes use the thicker dialog treatment: `2px` border, `20px` padding, and bottom-right shadow.
 - Full-page room scroll areas use `style-page-scroll` on the actual scrolling element, with inline scroll cues and the shared `--style-page-scroll-padding-top` / `--style-page-scroll-padding-bottom` cuts so content tucks under chrome consistently.

@@ -54,6 +54,7 @@ export class AppFacade {
       worldChatFacade: this.backendFacade.getWorldChatFacade(),
       tradeAllianceFacade: this.backendFacade.getTradeAllianceFacade(),
       feedbackFacade: this.backendFacade.getFeedbackFacade(),
+      playerInboxFacade: this.backendFacade.getPlayerInboxFacade(),
       playerInfoFacade: this.backendFacade.getPlayerInfoFacade(),
       playerShopFacade: this.backendFacade.getPlayerShopFacade(),
       npcMarketFacade: this.backendFacade.getNpcMarketFacade(),

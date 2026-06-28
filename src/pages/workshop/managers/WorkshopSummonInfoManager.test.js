@@ -148,6 +148,12 @@ describe('WorkshopSummonInfoManager', () => {
       'true',
       'false',
     ]);
+    expect(weightChoices.map((choice) => choice.getAttribute('data-drop-weight-color'))).toEqual([
+      'none',
+      'low',
+      'medium',
+      'high',
+    ]);
     expect(
       parent
         .querySelector(
@@ -159,6 +165,10 @@ describe('WorkshopSummonInfoManager', () => {
       'true',
       'false',
     ]);
+    expect(rows.map((row) => row.classList.contains('is-selected'))).toEqual([
+      true,
+      false,
+    ]);
     expect(
       rows.map(
         (row) =>
@@ -167,6 +177,20 @@ describe('WorkshopSummonInfoManager', () => {
           }:${row.querySelector('.workshop-page__summon-info-chance')?.textContent}`,
       ),
     ).toEqual(['sage seed:medium:25%', 'mint seed:medium:75%']);
+    expect(
+      rows.map((row) =>
+        row
+          .querySelector('.workshop-page__summon-info-weight-value')
+          ?.getAttribute('data-drop-weight-color'),
+      ),
+    ).toEqual(['medium', 'medium']);
+    expect(
+      rows.map((row) =>
+        row
+          .querySelector('.workshop-page__summon-info-chance')
+          ?.getAttribute('data-drop-rate-color'),
+      ),
+    ).toEqual(['low', 'high']);
 
     parent
       .querySelector('.workshop-page__summon-info-close')
@@ -233,6 +257,12 @@ describe('WorkshopSummonInfoManager', () => {
       '25%',
       '50%',
       '75%',
+    ]);
+    expect(chances.map((chance) => chance.getAttribute('data-drop-rate-color'))).toEqual([
+      'none',
+      'low',
+      'medium',
+      'high',
     ]);
 
     manager.unmount();
@@ -369,9 +399,14 @@ describe('WorkshopSummonInfoManager', () => {
     expect(css).toContain('.workshop-page__summon-info-weight-label');
     expect(css).toContain('.workshop-page__summon-info-weight-choices');
     expect(css).toContain('display: flex;');
+    expect(css).toContain('gap: 12px;');
+    expect(css).toContain('min-height: 18px;');
     expect(css).toContain('border: 0;');
     expect(css).toContain('.workshop-page__summon-info-weight-check-icon');
     expect(css).toContain('.workshop-page__summon-info-progress');
+    expect(css).toContain('workshop-summon-info-selected-surface');
+    expect(css).toContain('[data-drop-weight-color="none"]');
+    expect(css).toContain('[data-drop-rate-color="high"]');
     expect(css).toContain('height: 400px;');
     expect(css).toContain('overflow: hidden auto;');
     expect(css).not.toContain('workshop-page__summon-info-weight-dropdown');

@@ -1,4 +1,4 @@
-export const GAMEPLAY_SAVE_VERSION = 7;
+export const GAMEPLAY_SAVE_VERSION = 8;
 
 export class GameplayMigrationManager {
   constructor() {
@@ -16,37 +16,49 @@ export class GameplayMigrationManager {
       return save;
     }
 
+    if (save.version === 7) {
+      return this.createVersion8Save(save);
+    }
+
     if (save.version === 6) {
-      return this.createVersion7Save(save);
+      return this.createVersion8Save(this.createVersion7Save(save));
     }
 
     if (save.version === 5) {
-      return this.createVersion7Save(this.createVersion6Save(save));
+      return this.createVersion8Save(this.createVersion7Save(this.createVersion6Save(save)));
     }
 
     if (save.version === 4) {
-      return this.createVersion7Save(this.createVersion6Save(this.createVersion5Save(save)));
+      return this.createVersion8Save(
+        this.createVersion7Save(this.createVersion6Save(this.createVersion5Save(save))),
+      );
     }
 
     if (save.version === 3) {
-      return this.createVersion7Save(
-        this.createVersion6Save(this.createVersion5Save(this.createVersion4Save(save))),
+      return this.createVersion8Save(
+        this.createVersion7Save(
+          this.createVersion6Save(this.createVersion5Save(this.createVersion4Save(save))),
+        ),
       );
     }
 
     if (save.version === 2) {
-      return this.createVersion7Save(
-        this.createVersion6Save(
-          this.createVersion5Save(this.createVersion4Save(this.createVersion3Save(save))),
+      return this.createVersion8Save(
+        this.createVersion7Save(
+          this.createVersion6Save(
+            this.createVersion5Save(this.createVersion4Save(this.createVersion3Save(save))),
+          ),
         ),
       );
     }
 
     if (save.version === 1) {
-      return this.createVersion7Save(
-        this.createVersion6Save(
-          this.createVersion5Save(
-            this.createVersion4Save(this.createVersion3Save(this.createVersion2Save(save))),
+      return this.createVersion8Save(
+        this.createVersion7Save(
+          this.createVersion6Save(
+            this.createVersion5Save(
+              this.createVersion4Save(this.createVersion3Save(this.createVersion2Save(save))),
+            ),
           ),
         ),
       );
@@ -79,6 +91,7 @@ export class GameplayMigrationManager {
       'garden',
       'tasks',
       'guild',
+      'inboxRewards',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -113,6 +126,7 @@ export class GameplayMigrationManager {
       'garden',
       'tasks',
       'guild',
+      'inboxRewards',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -155,6 +169,7 @@ export class GameplayMigrationManager {
       'personalTasks',
       'worldNotice',
       'guild',
+      'inboxRewards',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -212,6 +227,7 @@ export class GameplayMigrationManager {
       'personalTasks',
       'worldNotice',
       'guild',
+      'inboxRewards',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -276,6 +292,7 @@ export class GameplayMigrationManager {
       'personalTasks',
       'worldNotice',
       'guild',
+      'inboxRewards',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -293,7 +310,7 @@ export class GameplayMigrationManager {
 
   createVersion7Save(save) {
     const migratedSave = {
-      version: GAMEPLAY_SAVE_VERSION,
+      version: 7,
     };
 
     for (const key of [
@@ -316,6 +333,7 @@ export class GameplayMigrationManager {
       'personalTasks',
       'worldNotice',
       'guild',
+      'inboxRewards',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -332,6 +350,50 @@ export class GameplayMigrationManager {
     if (!migratedSave.emerald) {
       migratedSave.emerald = {
         current: 0,
+      };
+    }
+
+    return migratedSave;
+  }
+
+  createVersion8Save(save) {
+    const migratedSave = {
+      version: GAMEPLAY_SAVE_VERSION,
+    };
+
+    for (const key of [
+      'savedAt',
+      'mana',
+      'coin',
+      'gold',
+      'crystal',
+      'emerald',
+      'ruby',
+      'logs',
+      'inventory',
+      'research',
+      'automation',
+      'seedSummoning',
+      'prestige',
+      'visualSettings',
+      'shop',
+      'brewing',
+      'garden',
+      'tasks',
+      'personalTasks',
+      'worldNotice',
+      'guild',
+      'inboxRewards',
+    ]) {
+      if (save[key] !== undefined) {
+        migratedSave[key] = save[key];
+      }
+    }
+
+    if (!migratedSave.inboxRewards) {
+      migratedSave.inboxRewards = {
+        version: 1,
+        claimedMailKeys: [],
       };
     }
 

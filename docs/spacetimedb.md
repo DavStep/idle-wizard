@@ -111,6 +111,7 @@ The server module defines:
 
 - `player`: one row per SpacetimeDB identity, with `username`, visual preferences, player level, connection state, and timestamps.
 - `player_gameplay_save`: one row per identity, with the full gameplay save JSON and update time.
+- `player_inbox_mail`: private system mail rows for admin rewards, broadcast news, and world-event rewards. Clients read only their own rows through `own_player_inbox_mail`.
 - `leaderboard`: one row per identity, with `username`, player level, all-time `totalIncome`, current daily/weekly/monthly income counters, and period keys.
 - `leaderboard_summary`: public indexed view returning each period top 100 plus the subscribing player's own row, alliance tag, and rank fields.
 - `world_event_leaderboard`: one row per identity/event period, with `username`, player level, event id, period key, and current event points.
@@ -137,6 +138,14 @@ The server module defines:
 
 `admin_set_player_level_by_identity` sets one player's real gameplay level by identity. It updates `player.player_level`, `leaderboard.player_level`, world-event/alliance level snapshots, and gameplay save `tasks.currentLevel`, then kicks the target session so the next load hydrates the edited save.
 
+Player inbox mail uses deterministic keys in the form `sourceType:sourceKey:recipientIdentity`, so retrying the same admin send, broadcast, or event settlement is idempotent. Admin reducers are:
+
+- `admin_send_player_inbox_mail(identityHex, sourceKey, title, body, coinReward, crystalReward, rubyReward, emeraldReward, itemRewardsJson)`
+- `admin_send_player_inbox_broadcast(sourceKey, title, body, coinReward, crystalReward, rubyReward, emeraldReward, itemRewardsJson)`
+- `admin_settle_world_event_inbox_rewards(periodKey, eventId, headline)`
+
+`itemRewardsJson` is an array like `[{"itemKey":"sageSeed","quantity":5}]`. Broadcasts create rows only for current `player` rows. Event settlement ranks `world_event_leaderboard` rows by points descending then identity, requires at least `2000` points, and sends the current event-tier crystal/emerald rewards to qualified players.
+
 `set_player_gameplay_save` validates bounded JSON and stores the sender's gameplay save in `player_gameplay_save`. On startup, the web client waits for the own-save subscription before opening the room gate, applies the saved gameplay snapshot, unsubscribes from the own-save stream, and then autosaves back through the reducer. Gameplay save data no longer uses browser local storage in normal app wiring.
 
 Maintenance mode lives in `game_config` under the `maintenance` key. `off` allows normal play. `drain` makes updated clients stop gameplay and flush one final `set_player_gameplay_save` while other player writes are rejected. `locked` rejects all player writes, including gameplay saves, so old clients cannot overwrite rows during a player-save migration. Use `set_maintenance_mode` for ops and follow `docs/maintenance.md` before live data work. `migrate_player_gameplay_saves` requires `locked`, preserves `savedAt`, never deletes rows, and records a one-time migration key in `maintenance_state`.
@@ -155,7 +164,7 @@ Period loops use server UTC time. Daily periods reset at UTC 00:00, which is 04:
 
 Player market exchange reducers are enabled for public listings, public requests, purchases, proceeds, and trade history. The backend caps listing/request quantity at `1000` units, unit price at `1000000` coin, and one trade total at `10000000` coin.
 
-`sell_to_npc` records an NPC buyer sale. It reduces `npc_need`, raises the fulfilled/supply score, increases shared `npc_stock`, and recomputes the backend quote. `scheduled_tick_npc_market` runs from the `npc_market_tick_schedule` SpacetimeDB schedule table every 5 minutes to replenish `npc_need` and recompute prices; trades also apply any due tick inline before changing market rows. During a server data reset, the module clears NPC market demand and stock once using a `maintenance_state` key tied to `PLAYER_DATA_RESET_GUARD_MICROS`.
+`sell_to_npc` records an NPC buyer sale. It reduces `npc_need`, raises the fulfilled/supply score, increases shared `npc_stock`, and recomputes the backend quote. NPC demand recovers lazily when market rows are touched: the current weekly boundary clears carried demand, then UTC buyer waves add demand, with a large wave at day start and smaller waves every six hours. During a server data reset, the module clears NPC market demand and stock once using a `maintenance_state` key tied to `PLAYER_DATA_RESET_GUARD_MICROS`.
 
 NPC market item labels and kinds still come from the backend catalog, but base market prices come from `npc_market_item_config`. `claim_npc_market_admin` and all admin config writes are locked to `NPC_MARKET_ADMIN_IDENTITY_HEX_ALLOWLIST` in `spacetimedb/src/index.ts`; legacy `npc_market_admin` rows are not authorization. `set_npc_market_item_base_price` changes a DB-owned base price after that. `reset_npc_market` restores neutral demand, clears rolling scores, resets prices to base, and clears NPC stock. The derived `npc_market_price` row is updated immediately, so connected clients see the new quote through their existing price subscription. Quotes are computed from uncapped `npc_need / target_need` pressure; currently `npcBuyPriceCoin` is 80% of `marketPriceCoin` and `npcSellPriceCoin` is 120%.
 
@@ -181,6 +190,7 @@ The web client starts safely even before generated bindings exist. After `npm ru
 SELECT * FROM own_player_profile
 SELECT * FROM own_player_session
 SELECT * FROM own_player_gameplay_save
+SELECT * FROM own_player_inbox_mail
 SELECT * FROM leaderboard_summary
 SELECT * FROM world_chat_recent
 SELECT * FROM public_player_shop_listing
@@ -206,3 +216,5 @@ The own `player` profile view is treated as the source of truth on reconnect, th
 The client does not need to subscribe to `npc_market_item_config` for normal play. Shop UI reads `npc_market_price`, which is the derived live quote table.
 
 Trade alliance client code subscribes to public alliance/member/application/progress rows plus sender-scoped private views for alliance chat and reward inbox. Claiming a quest creates a reward inbox row on the server; the client grants the local crystal reward, then calls `collect_trade_alliance_reward` to mark it collected.
+
+Player inbox client code subscribes to `own_player_inbox_mail`. Opening the top-panel `mail` dialog marks visible mail read. Claiming a reward grants currencies/items locally once, persists claimed mail keys inside gameplay save `inboxRewards`, then calls `collect_player_inbox_mail_reward` so server retry confirmations cannot duplicate local rewards.

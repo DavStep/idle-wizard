@@ -20,7 +20,7 @@ export class GardenHerbInventoryManager extends RoomInventoryBoxManager {
 }
 
 export class GardenSeedInventoryManager extends RoomInventoryBoxManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, onSeedDragStart = null } = {}) {
     super({
       gameplayFacade,
       kind: 'seed',
@@ -35,5 +35,47 @@ export class GardenSeedInventoryManager extends RoomInventoryBoxManager {
       toggleClassName: 'room-inventory-box__toggle garden-page__inventory-toggle',
       getItems: (snapshot) => snapshot.garden?.seeds ?? [],
     });
+    this.onSeedDragStart = onSeedDragStart;
+    this.configureRow = (refs, item) => this.configureSeedRow(refs, item);
+    this.syncRow = (refs, item) => this.syncSeedRow(refs, item);
+  }
+
+  configureSeedRow(refs, item) {
+    refs.row.dataset.gardenSeedItemTypeId = String(item.itemTypeId);
+    refs.row.addEventListener('pointerdown', (event) =>
+      this.onSeedPointerDown(event, item.itemTypeId),
+    );
+    refs.row.addEventListener('dragstart', (event) => event.preventDefault());
+  }
+
+  syncSeedRow(refs, item) {
+    const draggable =
+      typeof this.onSeedDragStart === 'function' &&
+      item.quantity > 0 &&
+      item.display?.locked !== true &&
+      item.display?.unknown !== true;
+
+    refs.row.classList.toggle('is-draggable', draggable);
+    if (draggable) {
+      refs.row.dataset.pageSwipeBlock = 'true';
+    } else {
+      delete refs.row.dataset.pageSwipeBlock;
+    }
+  }
+
+  onSeedPointerDown(event, itemTypeId) {
+    if (event.button !== 0 || typeof this.onSeedDragStart !== 'function') {
+      return;
+    }
+
+    const seed = (this.gameplayFacade?.getSnapshot?.()?.garden?.seeds ?? []).find(
+      (candidate) => candidate.itemTypeId === itemTypeId,
+    );
+
+    if (!seed || seed.quantity <= 0) {
+      return;
+    }
+
+    this.onSeedDragStart(event, seed);
   }
 }

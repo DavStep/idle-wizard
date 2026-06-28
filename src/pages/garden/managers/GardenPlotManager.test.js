@@ -1680,6 +1680,130 @@ describe('GardenPlotManager', () => {
     parent.remove();
   });
 
+  it('plants a seed dragged from inventory onto an empty plot', () => {
+    const parent = document.createElement('section');
+    const source = document.createElement('div');
+    source.className = 'garden-page__seed-inventory-row';
+    document.body.append(parent, source);
+    const gameplayFacade = createGameplayFacadeFake();
+    const plantGardenSeed = vi.spyOn(gameplayFacade, 'plantGardenSeed');
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const originalElementFromPoint = document.elementFromPoint;
+
+    manager.mount(parent);
+    const seed = gameplayFacade.getSnapshot().garden.seeds.find(
+      (candidate) => candidate.itemTypeId === 2,
+    );
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+
+    document.elementFromPoint = vi.fn(() => plotRow);
+    source.addEventListener('pointerdown', (event) =>
+      manager.onInventorySeedPointerDown(event, seed),
+    );
+
+    dispatchPointer(source, 'pointerdown', {
+      pointerId: 1,
+      clientX: 10,
+      clientY: 10,
+    });
+    dispatchPointer(document, 'pointermove', {
+      pointerId: 1,
+      clientX: 44,
+      clientY: 46,
+    });
+
+    const ghost = document.querySelector('.garden-page__item-drag-ghost');
+
+    expect(source.classList.contains('is-picked')).toBe(true);
+    expect(ghost?.classList.contains('garden-page__seed-drag-ghost')).toBe(true);
+    expect(ghost?.dataset.itemKind).toBe('seed');
+    expect(ghost?.dataset.itemKey).toBe('mintSeed');
+    expect(ghost?.style.left).toBe('44px');
+    expect(ghost?.style.top).toBe('46px');
+    expect(
+      ghost?.querySelector('.garden-page__item-drag-ghost-icon')?.dataset.assetAtlasFrame,
+    ).toBe('seed:regular');
+
+    dispatchPointer(document, 'pointerup', {
+      pointerId: 1,
+      clientX: 44,
+      clientY: 46,
+    });
+
+    const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
+
+    expect(plantGardenSeed).toHaveBeenCalledWith(1, 2);
+    expect(tile.phase).toBe('growing');
+    expect(plotRow.classList.contains('is-receiving-seed')).toBe(true);
+    expect(source.classList.contains('is-picked')).toBe(false);
+    expect(document.querySelector('.garden-page__seed-drag-ghost')).toBeNull();
+
+    if (originalElementFromPoint) {
+      document.elementFromPoint = originalElementFromPoint;
+    } else {
+      delete document.elementFromPoint;
+    }
+    manager.unmount();
+    parent.remove();
+    source.remove();
+  });
+
+  it('opens the existing swap confirm when a seed is dropped on a growing plot', () => {
+    const parent = document.createElement('section');
+    const source = document.createElement('div');
+    source.className = 'garden-page__seed-inventory-row';
+    document.body.append(parent, source);
+    const gameplayFacade = createGameplayFacadeFake();
+    gameplayFacade.plantGardenSeed(1, 2);
+    const replaceGardenSeed = vi.spyOn(gameplayFacade, 'replaceGardenSeed');
+    const manager = new GardenPlotManager({ gameplayFacade });
+    const originalElementFromPoint = document.elementFromPoint;
+
+    manager.mount(parent);
+    const seed = gameplayFacade.getSnapshot().garden.seeds.find(
+      (candidate) => candidate.itemTypeId === 3,
+    );
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+
+    document.elementFromPoint = vi.fn(() => plotRow);
+    source.addEventListener('pointerdown', (event) =>
+      manager.onInventorySeedPointerDown(event, seed),
+    );
+
+    dispatchPointer(source, 'pointerdown', {
+      pointerId: 1,
+      clientX: 10,
+      clientY: 10,
+    });
+    dispatchPointer(document, 'pointermove', {
+      pointerId: 1,
+      clientX: 44,
+      clientY: 46,
+    });
+    dispatchPointer(document, 'pointerup', {
+      pointerId: 1,
+      clientX: 44,
+      clientY: 46,
+    });
+
+    const swapPopup = parent.querySelector('.garden-page__swap-popup');
+
+    expect(swapPopup.hidden).toBe(false);
+    expect(parent.querySelector('.garden-page__swap-message')?.textContent).toBe(
+      'replace mint seed with nettle seed and restart plot 1.',
+    );
+    expect(replaceGardenSeed).not.toHaveBeenCalled();
+
+    if (originalElementFromPoint) {
+      document.elementFromPoint = originalElementFromPoint;
+    } else {
+      delete document.elementFromPoint;
+    }
+    manager.unmount();
+    parent.remove();
+    source.remove();
+  });
+
   it('ignores a retargeted herb-name click after a no-drag plant release', () => {
     const parent = document.createElement('section');
     document.body.append(parent);

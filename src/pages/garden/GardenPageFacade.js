@@ -22,10 +22,14 @@ export class GardenPageFacade {
     this.inventoryPanelLayer = null;
     this.activeInventoryTab = null;
     this.herbInventoryManager = new GardenHerbInventoryManager({ gameplayFacade });
-    this.seedInventoryManager = new GardenSeedInventoryManager({ gameplayFacade });
     this.plotManager = new GardenPlotManager({
       gameplayFacade,
       pixiProgressOverlayManager,
+    });
+    this.seedInventoryManager = new GardenSeedInventoryManager({
+      gameplayFacade,
+      onSeedDragStart: (event, seed) =>
+        this.plotManager.onInventorySeedPointerDown(event, seed),
     });
     this.inventoryButtonManager = new RoomInventoryButtonManager({
       className: 'garden-page__inventory-buttons',

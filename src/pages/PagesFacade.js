@@ -40,6 +40,7 @@ export class PagesFacade {
     worldChatFacade,
     tradeAllianceFacade,
     feedbackFacade,
+    playerInboxFacade,
     playerInfoFacade,
     playerShopFacade,
     npcMarketFacade,
@@ -99,6 +100,7 @@ export class PagesFacade {
       playerFacade,
       authFacade,
       feedbackFacade,
+      playerInboxFacade,
       hapticsFacade,
       soundSettingsFacade,
     });
@@ -368,6 +370,9 @@ export class PagesFacade {
       case 'level':
       case 'levels':
         return this.openTopPanelDialog('level', options);
+      case 'mail':
+      case 'inbox':
+        return this.openTopPanelDialog('inbox', options);
       default:
         return { ok: false, reason: 'unknown_dialog', dialogId };
     }
@@ -630,6 +635,11 @@ export class PagesFacade {
     if (dialogId === 'level') {
       this.topPanelFacade.levelManager?.show?.();
       return { ok: true, dialogId: 'level' };
+    }
+
+    if (dialogId === 'inbox') {
+      this.topPanelFacade.inboxManager?.show?.();
+      return { ok: true, dialogId: 'inbox' };
     }
 
     if (dialogId === 'feedback' || dialogId === 'bug' || dialogId === 'feature') {

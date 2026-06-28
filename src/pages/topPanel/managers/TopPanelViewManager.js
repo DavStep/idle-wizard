@@ -30,7 +30,12 @@ export class TopPanelViewManager {
 
     this.root = document.createElement('section');
     this.root.className = 'room-top-panel-layer';
-    this.root.append(this.createPanel(), this.createSettings(), this.createLevelPopup());
+    this.root.append(
+      this.createPanel(),
+      this.createSettings(),
+      this.createLevelPopup(),
+      this.createInboxPopup(),
+    );
     stage.append(this.root);
 
     return this.root;
@@ -89,10 +94,18 @@ export class TopPanelViewManager {
     this.refs.levelButton.setAttribute('aria-label', 'open level rewards');
     this.refs.levelValue = this.refs.levelButton;
 
+    this.refs.mailButton = document.createElement('button');
+    this.refs.mailButton.className = 'room-top-panel__mail';
+    this.refs.mailButton.type = 'button';
+    this.refs.mailButton.textContent = 'mail';
+    this.refs.mailButton.setAttribute('aria-label', 'open inbox');
+    this.refs.mailButton.setAttribute('aria-pressed', 'false');
+    this.refs.mailButton.dataset.notification = 'false';
+
     const identityRow = document.createElement('div');
     identityRow.className = 'room-top-panel__identity-row';
     const contextCurrency = this.createResource('crystal', '0 crystal');
-    identityRow.append(this.refs.usernameButton, this.refs.levelButton);
+    identityRow.append(this.refs.usernameButton, this.refs.levelButton, this.refs.mailButton);
 
     this.refs.resources = document.createElement('div');
     this.refs.resources.className = 'room-top-panel__resources';
@@ -850,5 +863,47 @@ export class TopPanelViewManager {
     this.refs.levelPopup.append(this.refs.levelPanel);
 
     return this.refs.levelPopup;
+  }
+
+  createInboxPopup() {
+    this.refs.inboxPopup = document.createElement('section');
+    this.refs.inboxPopup.className = 'room-top-panel__inbox-popup';
+    this.refs.inboxPopup.hidden = true;
+
+    this.refs.inboxPanel = document.createElement('section');
+    this.refs.inboxPanel.className = 'room-top-panel__inbox-panel';
+    this.refs.inboxPanel.setAttribute('aria-label', 'Inbox');
+    this.refs.inboxPanel.setAttribute('aria-modal', 'true');
+    this.refs.inboxPanel.setAttribute('role', 'dialog');
+    this.refs.inboxPanel.tabIndex = -1;
+
+    this.refs.inboxDialog = document.createElement('section');
+    this.refs.inboxDialog.className = 'room-top-panel__inbox-dialog style-dialog';
+
+    this.refs.inboxTitle = document.createElement('div');
+    this.refs.inboxTitle.className = 'style-box__title room-top-panel__inbox-title';
+    this.refs.inboxTitle.textContent = 'inbox';
+
+    this.refs.inboxCloseButton = document.createElement('button');
+    this.refs.inboxCloseButton.className = 'room-top-panel__inbox-close';
+    this.refs.inboxCloseButton.type = 'button';
+    this.refs.inboxCloseButton.textContent = 'close';
+
+    this.refs.inboxFrame = document.createElement('div');
+    this.refs.inboxFrame.className = 'style-dialog-scroll room-top-panel__inbox-frame';
+
+    this.refs.inboxRows = document.createElement('div');
+    this.refs.inboxRows.className = 'room-top-panel__inbox-rows';
+    this.refs.inboxFrame.append(this.refs.inboxRows);
+
+    this.refs.inboxDialog.append(
+      this.refs.inboxTitle,
+      this.refs.inboxCloseButton,
+      this.refs.inboxFrame,
+    );
+    this.refs.inboxPanel.append(this.refs.inboxDialog);
+    this.refs.inboxPopup.append(this.refs.inboxPanel);
+
+    return this.refs.inboxPopup;
   }
 }

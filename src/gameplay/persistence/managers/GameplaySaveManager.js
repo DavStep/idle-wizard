@@ -7,6 +7,7 @@ export class GameplaySaveManager {
     crystalFacade,
     emeraldFacade,
     rubyFacade,
+    inboxRewardsFacade,
     gameplayLogFacade,
     itemsFacade,
     researchFacade,
@@ -28,6 +29,9 @@ export class GameplaySaveManager {
     this.crystalFacade = crystalFacade;
     this.emeraldFacade = emeraldFacade;
     this.rubyFacade = rubyFacade;
+    this.inboxRewardsFacade = inboxRewardsFacade ?? {
+      getPersistenceSnapshot: () => ({ version: 1, claimedMailKeys: [] }),
+    };
     this.gameplayLogFacade = gameplayLogFacade;
     this.itemsFacade = itemsFacade;
     this.researchFacade = researchFacade;
@@ -57,6 +61,7 @@ export class GameplaySaveManager {
       crystal: this.crystalFacade.getSnapshot(),
       emerald: this.emeraldFacade.getSnapshot(),
       ruby: this.rubyFacade.getSnapshot(),
+      inboxRewards: this.inboxRewardsFacade.getPersistenceSnapshot(),
       logs: this.gameplayLogFacade.getPersistenceSnapshot(),
       inventory: this.itemsFacade.getPersistenceSnapshot(),
       research: this.researchFacade.getPersistenceSnapshot(),

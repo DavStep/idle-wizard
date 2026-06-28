@@ -44,8 +44,11 @@ import AdminMergePlayerAccountsReducer from "./admin_merge_player_accounts_reduc
 import AdminMoveTradeAllianceMemberReducer from "./admin_move_trade_alliance_member_reducer";
 import AdminResetPlayerProgressionByIdentityReducer from "./admin_reset_player_progression_by_identity_reducer";
 import AdminResetPlayerProgressionDataReducer from "./admin_reset_player_progression_data_reducer";
+import AdminSendPlayerInboxBroadcastReducer from "./admin_send_player_inbox_broadcast_reducer";
+import AdminSendPlayerInboxMailReducer from "./admin_send_player_inbox_mail_reducer";
 import AdminSetPlayerLevelByIdentityReducer from "./admin_set_player_level_by_identity_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "./admin_set_trade_alliance_member_role_reducer";
+import AdminSettleWorldEventInboxRewardsReducer from "./admin_settle_world_event_inbox_rewards_reducer";
 import AdminWipeAllPlayerDataReducer from "./admin_wipe_all_player_data_reducer";
 import AdminWipeZeroIncomePlayerDataReducer from "./admin_wipe_zero_income_player_data_reducer";
 import AnnounceLevelUpReducer from "./announce_level_up_reducer";
@@ -60,6 +63,7 @@ import ClaimPlayerShopProceedsReducer from "./claim_player_shop_proceeds_reducer
 import ClaimTradeAllianceQuestRewardReducer from "./claim_trade_alliance_quest_reward_reducer";
 import ClearPlayerShopRequestReducer from "./clear_player_shop_request_reducer";
 import ClearPlayerShopSlotReducer from "./clear_player_shop_slot_reducer";
+import CollectPlayerInboxMailRewardReducer from "./collect_player_inbox_mail_reward_reducer";
 import CollectTradeAllianceRewardReducer from "./collect_trade_alliance_reward_reducer";
 import CreateTradeAllianceReducer from "./create_trade_alliance_reducer";
 import DiscoverPotionRecipeReducer from "./discover_potion_recipe_reducer";
@@ -67,6 +71,7 @@ import FillTradeAllianceItemQuestReducer from "./fill_trade_alliance_item_quest_
 import JoinTradeAllianceReducer from "./join_trade_alliance_reducer";
 import KickTradeAllianceMemberReducer from "./kick_trade_alliance_member_reducer";
 import LeaveTradeAllianceReducer from "./leave_trade_alliance_reducer";
+import MarkPlayerInboxMailReadReducer from "./mark_player_inbox_mail_read_reducer";
 import MigratePlayerGameplaySavesReducer from "./migrate_player_gameplay_saves_reducer";
 import RejectTradeAllianceApplicationReducer from "./reject_trade_alliance_application_reducer";
 import RemoveNpcMarketItemConfigReducer from "./remove_npc_market_item_config_reducer";
@@ -110,6 +115,7 @@ import NpcMarketItemConfigRow from "./npc_market_item_config_table";
 import NpcMarketPriceRow from "./npc_market_price_table";
 import NpcMarketPriceSnapshotRow from "./npc_market_price_snapshot_table";
 import OwnPlayerGameplaySaveRow from "./own_player_gameplay_save_table";
+import OwnPlayerInboxMailRow from "./own_player_inbox_mail_table";
 import OwnPlayerProfileRow from "./own_player_profile_table";
 import OwnPlayerSessionRow from "./own_player_session_table";
 import OwnPlayerShopListingRow from "./own_player_shop_listing_table";
@@ -537,6 +543,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, OwnPlayerGameplaySaveRow),
+  own_player_inbox_mail: __table({
+    name: 'own_player_inbox_mail',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnPlayerInboxMailRow),
   own_player_profile: __table({
     name: 'own_player_profile',
     indexes: [
@@ -705,8 +718,11 @@ const reducersSchema = __reducers(
   __reducerSchema("admin_move_trade_alliance_member", AdminMoveTradeAllianceMemberReducer),
   __reducerSchema("admin_reset_player_progression_by_identity", AdminResetPlayerProgressionByIdentityReducer),
   __reducerSchema("admin_reset_player_progression_data", AdminResetPlayerProgressionDataReducer),
+  __reducerSchema("admin_send_player_inbox_broadcast", AdminSendPlayerInboxBroadcastReducer),
+  __reducerSchema("admin_send_player_inbox_mail", AdminSendPlayerInboxMailReducer),
   __reducerSchema("admin_set_player_level_by_identity", AdminSetPlayerLevelByIdentityReducer),
   __reducerSchema("admin_set_trade_alliance_member_role", AdminSetTradeAllianceMemberRoleReducer),
+  __reducerSchema("admin_settle_world_event_inbox_rewards", AdminSettleWorldEventInboxRewardsReducer),
   __reducerSchema("admin_wipe_all_player_data", AdminWipeAllPlayerDataReducer),
   __reducerSchema("admin_wipe_zero_income_player_data", AdminWipeZeroIncomePlayerDataReducer),
   __reducerSchema("announce_level_up", AnnounceLevelUpReducer),
@@ -721,6 +737,7 @@ const reducersSchema = __reducers(
   __reducerSchema("claim_trade_alliance_quest_reward", ClaimTradeAllianceQuestRewardReducer),
   __reducerSchema("clear_player_shop_request", ClearPlayerShopRequestReducer),
   __reducerSchema("clear_player_shop_slot", ClearPlayerShopSlotReducer),
+  __reducerSchema("collect_player_inbox_mail_reward", CollectPlayerInboxMailRewardReducer),
   __reducerSchema("collect_trade_alliance_reward", CollectTradeAllianceRewardReducer),
   __reducerSchema("create_trade_alliance", CreateTradeAllianceReducer),
   __reducerSchema("discover_potion_recipe", DiscoverPotionRecipeReducer),
@@ -728,6 +745,7 @@ const reducersSchema = __reducers(
   __reducerSchema("join_trade_alliance", JoinTradeAllianceReducer),
   __reducerSchema("kick_trade_alliance_member", KickTradeAllianceMemberReducer),
   __reducerSchema("leave_trade_alliance", LeaveTradeAllianceReducer),
+  __reducerSchema("mark_player_inbox_mail_read", MarkPlayerInboxMailReadReducer),
   __reducerSchema("migrate_player_gameplay_saves", MigratePlayerGameplaySavesReducer),
   __reducerSchema("reject_trade_alliance_application", RejectTradeAllianceApplicationReducer),
   __reducerSchema("remove_npc_market_item_config", RemoveNpcMarketItemConfigReducer),

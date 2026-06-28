@@ -8,6 +8,7 @@
 - The user wants only what was asked for; avoid adding gameplay, visuals, or extra systems early.
 - Before any change that can cause player data loss or needs migration, warn the user first; even after approval, ask one more explicit confirmation before making the change.
 - Persistent save/schema/config shape changes need explicit migration code or scripts before deploy; never rely on wiping rows, startup defaults, or page reloads to move users forward.
+- SpacetimeDB `normalizePlayerGameplaySave` drops unlisted save branches; add any new persisted client branch there as well as client migration/load/save code.
 - Inventory quantities can be capped by SpacetimeDB save normalization even when local `ItemsFacade` has no cap; check `normalizeSaveInventory` for reload-only item reductions.
 - Before resetting SpacetimeDB player data, close or navigate away all active game clients; open clients can reconnect and republish old in-memory saves into the emptied database.
 - When loading a prod save into local SpacetimeDB for desktop QA, direct-SQL the `player_gameplay_save` row and clear that identity's `player_session`; reducer import while the client is open can be overwritten by stale in-memory saves.
@@ -133,6 +134,7 @@
 - Garden's inner scroll root should stop at `--style-room-chat-clearance` only; adding bottom tab clearance double-counts the shared world-chat gap.
 - Garden's pannable plot world should mount directly under the room UI layer with an edge-to-edge shell and 16px internal row padding; mounting it inside `.garden-page__content` clips side movement.
 - Garden's plot world keeps its top chrome spacing on the inner shell, but the visual crop starts at the screen top so upward pan/overflow cuts against the stage edge.
+- Brewing's pannable world should mirror Garden's crop pattern: outer world view starts at the screen top, while the inner shell keeps the old top offset and uses visible overflow.
 - Web-wide Garden/Brewing worlds need shells expanded past the centered source UI layer plus positive free-space pan bounds; otherwise desktop crops or left-pins the world.
 - Web-wide Garden initial pan must center the source-width plot world inside the expanded shell; otherwise the top three plots open offset from the top chrome.
 - Garden plot plant icons must use full atlas sprites; masked atlas sprites flatten herbs into one solid color.
@@ -152,6 +154,7 @@
 - Native dialog/open/submit buttons should activate on validated pointerup/click; do not add touchstart/pointerdown action handlers to buttons unless the interaction is a true hold/drag setup.
 - NPC market stand press-start opens must ignore the immediate retargeted backdrop click; otherwise the `sell` picker flashes open and closes on mobile/WebView.
 - NPC market demand recovery uses lazy capped UTC buyer waves, not a smooth 5-minute/half-life regen or hard daily reset; backend and `npcMarketPricing.js` must stay mirrored.
+- NPC market weekly reset must use the same anchored Monday UTC period as leaderboards/events; start recovery at `weekStart - 1` so the day-start buyer wave is added after the reset.
 - NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or fast-sell/stock totals drift.
 - NPC market demand/prices are fake local gameplay values until player level 4; do not debug level 1-3 fast-sell against backend NPC rows.
 - NPC demand market auto-sell uses one shared wall-clock timer aligned to `:00` and `:30`; render it as a box-level bottom border label, not inside each stand row.
@@ -621,6 +624,7 @@
 - Reward particles anchored to room controls must measure and animate in `.game-stage` coordinates, not raw `document.body` viewport coords; the fitted stage can drift or double body-fixed positions on web/mobile.
 - Icon-mode reward text should hide only after visual nodes actually spawn; reduced-motion/mobile fallbacks need visible text.
 - Resource color and icon modes are fixed on; normalize stale `monochrome`/`none` visual values to `resources`/`icons` and do not show those choices in settings.
+- Workshop summon weight colors are semantic: `none` uses ruby, `low` seed, `medium` coin, and `high` herb.
 - Potion item names intentionally stay uncolored; do not assign pink or another category resource color to potions.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.

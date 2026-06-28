@@ -1,5 +1,15 @@
 # Feature Announcements
 
+## 0.2.59
+
+Mail now lives in the top panel.
+
+The new inbox gives the game a safer place to send system messages, admin gifts, broadcast news, and reward messages. New or claimable mail marks the `mail` button, and reward mail can be claimed from the inbox without leaving the room.
+
+Weekly world event rewards can now be delivered as mail after an event is settled. Qualified contributors keep a readable message in their inbox and claim the crystal or emerald reward there, so event prizes no longer need to be hidden behind one-off support steps.
+
+The same update also turns Workshop potion discoveries into a small recipe book with page controls, discoverer links, ingredients, owned counts, royalties, mana cost, and brew time.
+
 ## 0.2.34
 
 Weekly world events now use donation quests.

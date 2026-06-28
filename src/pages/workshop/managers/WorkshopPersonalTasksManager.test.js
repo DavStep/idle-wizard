@@ -130,6 +130,8 @@ describe('WorkshopPersonalTasksManager', () => {
 
     expect(frameRule).not.toMatch(/\b90px\b/);
     expect(frameRule).toMatch(/var\(--style-tabbed-dialog-content-height\)/);
+    expect(frameRule).toMatch(/var\(--style-scroll-progress-block-size\)/);
+    expect(frameRule).not.toMatch(/var\(--style-box-border-label-line-height\)/);
   });
 
   it('renders daily quest rows in the tasks tab', () => {

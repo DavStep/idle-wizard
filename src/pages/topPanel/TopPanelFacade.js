@@ -1,5 +1,6 @@
 import { TopPanelAuthManager } from './managers/TopPanelAuthManager.js';
 import { TopPanelFitManager } from './managers/TopPanelFitManager.js';
+import { TopPanelInboxManager } from './managers/TopPanelInboxManager.js';
 import { TopPanelLevelManager } from './managers/TopPanelLevelManager.js';
 import { TopPanelResourceDisplayManager } from './managers/TopPanelResourceDisplayManager.js';
 import { TopPanelSettingsManager } from './managers/TopPanelSettingsManager.js';
@@ -15,6 +16,7 @@ export class TopPanelFacade {
     playerFacade,
     authFacade,
     feedbackFacade,
+    playerInboxFacade,
     hapticsFacade,
     soundSettingsFacade,
   } = {}) {
@@ -22,6 +24,7 @@ export class TopPanelFacade {
     this.authManager = new TopPanelAuthManager({ authFacade, gameplayFacade });
     this.fitManager = new TopPanelFitManager();
     this.levelManager = new TopPanelLevelManager({ gameplayFacade });
+    this.inboxManager = new TopPanelInboxManager({ playerInboxFacade });
     this.resourceDisplayManager = new TopPanelResourceDisplayManager({ gameplayFacade });
     this.settingsManager = new TopPanelSettingsManager({
       gameplayFacade,
@@ -40,6 +43,7 @@ export class TopPanelFacade {
     const refs = this.viewManager.getRefs();
     this.authManager.mount(refs);
     this.levelManager.mount(refs);
+    this.inboxManager.mount(refs);
     this.resourceDisplayManager.mount(refs);
     this.fitManager.mount(refs);
     this.settingsManager.mount(refs);
@@ -51,6 +55,7 @@ export class TopPanelFacade {
     this.settingsManager.unmount();
     this.fitManager.unmount();
     this.resourceDisplayManager.unmount();
+    this.inboxManager.unmount();
     this.levelManager.unmount();
     this.authManager.unmount();
     this.viewManager.unmount();

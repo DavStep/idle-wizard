@@ -5,6 +5,7 @@ import {
 import {
   createAssetAtlasSprite,
 } from '../../../assets/atlas/atlasSprite.js';
+import { createSeedPackIcon } from '../../../assets/items/seeds/seedIcons.js';
 import {
   getHerbIconFrameName,
   getHerbIconKeyByLabel,
@@ -50,6 +51,10 @@ const WORLD_MAX_ZOOM = 1.16;
 const WORLD_ZOOM_RUBBER_LIMIT = 0.12;
 const WORLD_PAN_RUBBER_LIMIT = 54;
 const WORLD_SETTLE_CLASS_MS = 240;
+const SEED_DRAG_THRESHOLD = 22;
+const SEED_DROP_PLOT_MS = 220;
+const SEED_DROP_RETURN_MS = 190;
+const SEED_DROP_RECEIVE_MS = 240;
 const SCISSORS_CLOSED_FRAME = 'tool:herbCuttingScissorsClosed';
 const SCISSORS_OPEN_FRAME = 'tool:herbCuttingScissorsOpen';
 
@@ -92,10 +97,15 @@ export class GardenPlotManager {
     this.worldSettleClassTimeout = null;
     this.removeWorldGestureDefaultGuards = null;
     this.suppressWorldClickUntilMs = 0;
+    this.seedDrag = null;
     this.boughtTileAnimationResets = new Map();
+    this.transientAnimationTimeouts = new Set();
+    this.transientAnimationTimeoutsByElement = new WeakMap();
     this.handlePendingSeedPressMove = (event) => this.onPendingSeedPressMove(event);
     this.handlePendingSeedPressEnd = (event) => this.onPendingSeedPressEnd(event);
     this.handlePendingSeedPressCancel = () => this.clearPendingSeedPress();
+    this.handleDocumentSeedPointerMove = (event) => this.onSeedPointerMove(event);
+    this.handleDocumentSeedPointerUp = (event) => this.onSeedPointerUp(event);
     this.handleWorldGestureDefault = (event) => preventNativeWorldGestureDefault(event);
     this.lastTouchLikePressStart = {
       key: null,
@@ -179,6 +189,7 @@ export class GardenPlotManager {
     this.clearHandledTileLabelPressStartTileNumber();
     this.clearHandledSeedPressStartKey();
     this.clearPendingSeedPress();
+    this.clearSeedDrag();
     this.cancelDialogManager.unmount();
     this.swapDialogManager.unmount();
     for (const refs of this.tileRefs.values()) {
@@ -210,7 +221,9 @@ export class GardenPlotManager {
     this.removeWorldGestureDefaultGuards = null;
     this.clearWorldSettleTimers();
     this.suppressWorldClickUntilMs = 0;
+    this.seedDrag = null;
     this.boughtTileAnimationResets.clear();
+    this.clearTransientAnimationTimeouts();
   }
 
   createWorld() {
@@ -1173,6 +1186,454 @@ export class GardenPlotManager {
     );
 
     return (selectedSeed?.quantity ?? 0) >= this.getPlantSeedRequirement(tile);
+  }
+
+  onInventorySeedPointerDown(event, seed = {}) {
+    if (event.button !== 0 || !seed?.itemTypeId || (seed.quantity ?? 0) <= 0) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.clearPendingSeedPress();
+    this.clearSeedDrag();
+
+    this.seedDrag = {
+      pointerId: event.pointerId,
+      itemTypeId: seed.itemTypeId,
+      itemKind: seed.kind ?? 'seed',
+      itemKey: seed.key ?? '',
+      itemLabel: seed.label ?? '',
+      source: event.currentTarget,
+      startX: event.clientX,
+      startY: event.clientY,
+      lastClientX: event.clientX,
+      lastClientY: event.clientY,
+      ghost: null,
+      didDrag: false,
+    };
+    this.setSeedDragSourceState(this.seedDrag, true);
+    event.currentTarget?.setPointerCapture?.(event.pointerId);
+
+    const document = this.root?.ownerDocument ?? globalThis.document;
+    document?.addEventListener('pointermove', this.handleDocumentSeedPointerMove);
+    document?.addEventListener('pointerup', this.handleDocumentSeedPointerUp);
+    document?.addEventListener('pointercancel', this.handleDocumentSeedPointerUp);
+  }
+
+  onSeedPointerMove(event) {
+    if (!this.seedDrag || this.seedDrag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - this.seedDrag.startX;
+    const deltaY = event.clientY - this.seedDrag.startY;
+
+    if (!this.seedDrag.didDrag && Math.hypot(deltaX, deltaY) < SEED_DRAG_THRESHOLD) {
+      return;
+    }
+
+    this.seedDrag.didDrag = true;
+    this.suppressWorldClick();
+    this.ensureSeedDragGhost();
+    this.moveSeedDragGhost(event.clientX, event.clientY);
+    event.preventDefault();
+  }
+
+  onSeedPointerUp(event) {
+    if (!this.seedDrag || this.seedDrag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const drag = this.seedDrag;
+    drag.source?.releasePointerCapture?.(event.pointerId);
+    let finishTarget = null;
+    let finishType = 'return';
+
+    if (drag.didDrag) {
+      const document = this.getDocument();
+      const tileNumber = this.getTileNumberFromElement(
+        document?.elementFromPoint?.(event.clientX, event.clientY),
+      );
+
+      if (tileNumber !== null) {
+        const result = this.onDropSeedOnTile(drag.itemTypeId, tileNumber);
+
+        if (result?.ok) {
+          finishTarget = this.getPlotDropTarget(tileNumber);
+          finishType = 'plot';
+          this.animatePlotSeedReceive(tileNumber);
+        }
+      }
+
+      event.preventDefault();
+    } else {
+      finishType = 'none';
+    }
+
+    if (finishType === 'return') {
+      finishTarget = this.getSeedReturnTarget(drag) ?? drag.source;
+      this.animateSeedSourceReturn(drag);
+    }
+
+    this.clearSeedDrag({
+      keepGhost: Boolean(drag.ghost && finishTarget && finishType !== 'none'),
+    });
+
+    if (finishType === 'plot') {
+      this.animateSeedDragGhostToElement(drag.ghost, finishTarget, {
+        type: 'plot',
+        duration: SEED_DROP_PLOT_MS,
+      });
+    } else if (finishType === 'return') {
+      this.animateSeedDragGhostToElement(drag.ghost, finishTarget, {
+        type: 'return',
+        duration: SEED_DROP_RETURN_MS,
+      });
+    }
+  }
+
+  onDropSeedOnTile(seedTypeId, tileNumber) {
+    const snapshot = this.gameplayFacade.getSnapshot();
+    const tile = this.getTileByNumber(snapshot, tileNumber);
+    const seed = this.getSeedByTypeId(snapshot, seedTypeId);
+
+    if (!this.canDropSeedOnTile(tile, seed)) {
+      return { ok: false };
+    }
+
+    if (tile.phase === 'empty') {
+      const result = this.gameplayFacade.plantGardenSeed(tileNumber, seedTypeId);
+
+      if (result?.ok) {
+        this.render(this.gameplayFacade.getSnapshot());
+      }
+
+      return result;
+    }
+
+    if (this.canReplaceActiveSeed(tile)) {
+      this.swapDialogManager.show({
+        tile,
+        seed,
+        suppressNextBackdropClick: true,
+      });
+      return { ok: true, tileNumber, seed, swapPending: true };
+    }
+
+    return { ok: false };
+  }
+
+  canDropSeedOnTile(tile, seed) {
+    if (!tile?.unlocked || !seed || (seed.quantity ?? 0) <= 0) {
+      return false;
+    }
+
+    const requiredQuantity = this.getPlantSeedRequirement(tile);
+
+    if (tile.phase === 'empty') {
+      return seed.quantity >= requiredQuantity;
+    }
+
+    if (!this.canReplaceActiveSeed(tile) || seed.itemTypeId === tile.seedItemTypeId) {
+      return false;
+    }
+
+    return seed.quantity >= requiredQuantity;
+  }
+
+  getTileByNumber(snapshot, tileNumber) {
+    return (
+      snapshot?.garden?.plot?.tiles?.find(
+        (candidate) => candidate.tileNumber === tileNumber,
+      ) ?? null
+    );
+  }
+
+  getSeedByTypeId(snapshot, itemTypeId) {
+    return (
+      snapshot?.garden?.seeds?.find((candidate) => candidate.itemTypeId === itemTypeId) ??
+      null
+    );
+  }
+
+  getTileNumberFromElement(element) {
+    const row = element?.closest?.('.garden-page__plot-row');
+    const tileNumber = Number.parseInt(row?.dataset?.gardenTileNumber ?? '', 10);
+
+    return Number.isInteger(tileNumber) ? tileNumber : null;
+  }
+
+  setSeedDragSourceState(drag, picked) {
+    const row = drag?.source?.closest?.('.garden-page__seed-inventory-row');
+
+    row?.classList.toggle('is-picked', picked);
+  }
+
+  ensureSeedDragGhost() {
+    if (!this.seedDrag || this.seedDrag.ghost) {
+      return;
+    }
+
+    const ghost = this.createSeedDragGhost(this.seedDrag);
+    const document = this.getDocument();
+    if (!document?.body) {
+      return;
+    }
+
+    document.body.append(ghost);
+    this.seedDrag.ghost = ghost;
+  }
+
+  createSeedDragGhost(seed = {}) {
+    const document = this.getDocument();
+    const ghost = document.createElement('div');
+    ghost.className = 'garden-page__item-drag-ghost garden-page__seed-drag-ghost';
+    ghost.dataset.itemKind = seed.itemKind ?? seed.kind ?? 'seed';
+    ghost.dataset.itemKey = seed.itemKey ?? seed.key ?? '';
+    ghost.setAttribute('aria-hidden', 'true');
+
+    const icon = createSeedPackIcon('garden-page__item-drag-ghost-icon', {
+      key: seed.itemKey ?? seed.key ?? '',
+      label: seed.itemLabel ?? seed.label ?? '',
+    });
+
+    if (icon) {
+      ghost.append(icon);
+      return ghost;
+    }
+
+    const label = document.createElement('span');
+    label.className = 'garden-page__item-drag-ghost-label';
+    label.textContent = seed.itemLabel ?? seed.label ?? 'seed';
+    ghost.append(label);
+    return ghost;
+  }
+
+  moveSeedDragGhost(clientX, clientY) {
+    if (!this.seedDrag?.ghost) {
+      return;
+    }
+
+    this.seedDrag.ghost.style.left = `${clientX}px`;
+    this.seedDrag.ghost.style.top = `${clientY}px`;
+  }
+
+  clearSeedDrag({ keepGhost = false } = {}) {
+    const document = this.root?.ownerDocument ?? globalThis.document;
+    document?.removeEventListener('pointermove', this.handleDocumentSeedPointerMove);
+    document?.removeEventListener('pointerup', this.handleDocumentSeedPointerUp);
+    document?.removeEventListener('pointercancel', this.handleDocumentSeedPointerUp);
+    this.setSeedDragSourceState(this.seedDrag, false);
+    if (!keepGhost) {
+      this.seedDrag?.ghost?.remove();
+    }
+    this.seedDrag = null;
+  }
+
+  getSeedReturnTarget(drag) {
+    const document = this.getDocument();
+    if (drag?.source && document?.contains?.(drag.source) && !drag.source.hidden) {
+      return drag.source;
+    }
+
+    return drag?.source?.closest?.('.garden-page__seeds') ?? null;
+  }
+
+  getPlotDropTarget(tileNumber) {
+    const refs = this.tileRefs.get(tileNumber);
+
+    if (!refs) {
+      return null;
+    }
+
+    return refs.boxPlant?.hidden === false ? refs.boxPlant : refs.boxFrame ?? refs.button;
+  }
+
+  animateSeedSourceReturn(drag) {
+    const row = drag?.source?.closest?.('.garden-page__seed-inventory-row');
+
+    if (!row || this.prefersReducedMotion()) {
+      return;
+    }
+
+    row.classList.add('is-returning');
+    this.setTransientClassTimeout(row, 'is-returning', SEED_DROP_RETURN_MS);
+  }
+
+  animatePlotSeedReceive(tileNumber) {
+    const refs = this.tileRefs.get(tileNumber);
+
+    if (!refs?.button || this.prefersReducedMotion()) {
+      return;
+    }
+
+    refs.button.classList.remove('is-receiving-seed');
+    void refs.button.offsetWidth;
+    refs.button.classList.add('is-receiving-seed');
+    this.setTransientClassTimeout(
+      refs.button,
+      'is-receiving-seed',
+      SEED_DROP_RECEIVE_MS,
+    );
+  }
+
+  animateSeedDragGhostToElement(
+    ghost,
+    target,
+    { type = 'return', duration = SEED_DROP_RETURN_MS } = {},
+  ) {
+    if (!ghost || !target) {
+      ghost?.remove();
+      return;
+    }
+
+    const startRect = this.getElementRect(ghost);
+    const targetRect = this.getElementRect(target);
+
+    if (!startRect || !targetRect) {
+      ghost.remove();
+      return;
+    }
+
+    this.prepareFloatingSeedGhostForAnimation(ghost, startRect);
+
+    const isPlotDrop = type === 'plot';
+    const targetCenterX = targetRect.left + targetRect.width / 2;
+    const targetCenterY =
+      isPlotDrop
+        ? targetRect.top + targetRect.height * 0.58
+        : targetRect.top + targetRect.height / 2;
+    const endLeft = targetCenterX - startRect.width / 2;
+    const endTop = targetCenterY - startRect.height / 2;
+    const deltaX = endLeft - startRect.left;
+    const deltaY = endTop - startRect.top;
+
+    if (this.prefersReducedMotion() || typeof ghost.animate !== 'function') {
+      ghost.remove();
+      return;
+    }
+
+    const animation = ghost.animate(
+      [
+        {
+          offset: 0,
+          opacity: 1,
+          transform: 'translate3d(0, 0, 0) scale(1) rotate(0deg)',
+        },
+        {
+          offset: 0.58,
+          opacity: 1,
+          transform: this.formatSeedDropTransform({
+            x: deltaX * 0.58,
+            y: deltaY * 0.58 + (isPlotDrop ? -14 : -8),
+            scale: isPlotDrop ? 0.92 : 0.96,
+            rotation: isPlotDrop ? '4deg' : '-3deg',
+          }),
+        },
+        {
+          offset: 1,
+          opacity: isPlotDrop ? 0 : 0.35,
+          transform: this.formatSeedDropTransform({
+            x: deltaX,
+            y: deltaY,
+            scale: isPlotDrop ? 0.58 : 0.72,
+            rotation: '0deg',
+          }),
+        },
+      ],
+      {
+        duration,
+        easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+        fill: 'forwards',
+      },
+    );
+
+    animation.finished.then(
+      () => ghost.remove(),
+      () => ghost.remove(),
+    );
+  }
+
+  prepareFloatingSeedGhostForAnimation(ghost, rect) {
+    ghost.classList.add('is-settling');
+    ghost.style.left = `${rect.left}px`;
+    ghost.style.top = `${rect.top}px`;
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.height = `${rect.height}px`;
+    ghost.style.transform = 'none';
+  }
+
+  getElementRect(element) {
+    const rect = element?.getBoundingClientRect?.();
+
+    if (!rect || rect.width <= 0 || rect.height <= 0) {
+      return null;
+    }
+
+    return {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+  }
+
+  formatSeedDropTransform({ x, y, scale, rotation }) {
+    return `translate3d(${this.formatCssNumber(x)}px, ${this.formatCssNumber(
+      y,
+    )}px, 0) scale(${scale}) rotate(${rotation})`;
+  }
+
+  formatCssNumber(value) {
+    return String(Number((Number(value) || 0).toFixed(2)));
+  }
+
+  setTransientClassTimeout(element, className, duration) {
+    if (!element || !className) {
+      return;
+    }
+
+    let elementTimeouts = this.transientAnimationTimeoutsByElement.get(element);
+    if (!elementTimeouts) {
+      elementTimeouts = new Map();
+      this.transientAnimationTimeoutsByElement.set(element, elementTimeouts);
+    }
+
+    const existingTimeout = elementTimeouts.get(className);
+    if (existingTimeout !== undefined) {
+      globalThis.clearTimeout(existingTimeout);
+      this.transientAnimationTimeouts.delete(existingTimeout);
+    }
+
+    const timeout = globalThis.setTimeout(() => {
+      element?.classList?.remove(className);
+      this.transientAnimationTimeouts.delete(timeout);
+      elementTimeouts.delete(className);
+    }, duration);
+    timeout?.unref?.();
+
+    elementTimeouts.set(className, timeout);
+    this.transientAnimationTimeouts.add(timeout);
+  }
+
+  clearTransientAnimationTimeouts() {
+    for (const timeout of this.transientAnimationTimeouts) {
+      globalThis.clearTimeout(timeout);
+    }
+
+    this.transientAnimationTimeouts.clear();
+    this.transientAnimationTimeoutsByElement = new WeakMap();
+  }
+
+  prefersReducedMotion() {
+    const view = this.getDocument()?.defaultView ?? globalThis.window;
+
+    return view?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
+  }
+
+  getDocument() {
+    return this.root?.ownerDocument ?? globalThis.document;
   }
 
   isTileLabelClick(event) {

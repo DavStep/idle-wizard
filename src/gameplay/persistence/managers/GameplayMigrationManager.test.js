@@ -60,4 +60,23 @@ describe('GameplayMigrationManager', () => {
       guild,
     });
   });
+
+  it('preserves inbox reward claim keys from server-normalized saves', () => {
+    const manager = new GameplayMigrationManager();
+    const inboxRewards = {
+      version: 1,
+      claimedMailKeys: ['admin:gift:identity'],
+    };
+
+    expect(
+      manager.migrate({
+        version: 3,
+        savedAt: 123,
+        inboxRewards,
+      }),
+    ).toMatchObject({
+      version: GAMEPLAY_SAVE_VERSION,
+      inboxRewards,
+    });
+  });
 });

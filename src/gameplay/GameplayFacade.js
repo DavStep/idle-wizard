@@ -5,6 +5,7 @@ import { EmeraldFacade } from './emerald/EmeraldFacade.js';
 import { CoinFacade } from './coin/CoinFacade.js';
 import { GardenFacade } from './garden/GardenFacade.js';
 import { GuildFacade } from './guild/GuildFacade.js';
+import { InboxRewardsFacade } from './inboxRewards/InboxRewardsFacade.js';
 import { ItemsFacade } from './items/ItemsFacade.js';
 import { ManaFacade } from './mana/ManaFacade.js';
 import { GameplayRewardEventManager } from './managers/GameplayRewardEventManager.js';
@@ -60,6 +61,13 @@ export class GameplayFacade {
     this.crystalFacade = new CrystalFacade();
     this.emeraldFacade = new EmeraldFacade();
     this.rubyFacade = new RubyFacade();
+    this.inboxRewardsFacade = new InboxRewardsFacade({
+      coinFacade: this.coinFacade,
+      crystalFacade: this.crystalFacade,
+      emeraldFacade: this.emeraldFacade,
+      rubyFacade: this.rubyFacade,
+      itemsFacade: this.itemsFacade,
+    });
     this.visualSettingsFacade = new VisualSettingsFacade({
       crystalFacade: this.crystalFacade,
     });
@@ -160,6 +168,7 @@ export class GameplayFacade {
       crystalFacade: this.crystalFacade,
       emeraldFacade: this.emeraldFacade,
       rubyFacade: this.rubyFacade,
+      inboxRewardsFacade: this.inboxRewardsFacade,
       gameplayLogFacade: this.gameplayLogFacade,
       itemsFacade: this.itemsFacade,
       researchFacade: this.researchFacade,
@@ -528,6 +537,7 @@ export class GameplayFacade {
       },
       worldNotice: this.worldNoticeFacade.getPersistenceSnapshot(),
       guild: this.guildFacade.getPersistenceSnapshot(),
+      inboxRewards: this.inboxRewardsFacade.getPersistenceSnapshot(),
     });
     this.syncPlayerLevelManaEffects();
     this.syncRubyFromPrestige({ resetRun: true });
@@ -1113,6 +1123,16 @@ export class GameplayFacade {
       ok: true,
       crystalReward,
     };
+  }
+
+  claimInboxReward(mail) {
+    const result = this.inboxRewardsFacade.claim(mail);
+
+    if (result?.ok && !result.alreadyClaimed) {
+      this.publishAndSaveSnapshot();
+    }
+
+    return result;
   }
 
   fillTradeAllianceItemQuest(quest) {

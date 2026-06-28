@@ -9,6 +9,8 @@ import {
   GardenSeedInventoryManager,
 } from './GardenHerbInventoryManager.js';
 
+const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+
 function createGameplayFacadeFake(snapshot = null) {
   const currentSnapshot = snapshot ?? {
     garden: {
@@ -99,19 +101,59 @@ function createSevenHerbSnapshot() {
 }
 
 describe('GardenSeedInventoryManager', () => {
-  it('renders owned seed rows without drag/drop affordances', () => {
+  it('renders owned seed rows as pointer drag sources without native drag', () => {
     const parent = document.createElement('section');
+    const onSeedDragStart = vi.fn();
     const manager = new GardenSeedInventoryManager({
       gameplayFacade: createGameplayFacadeFake(),
+      onSeedDragStart,
     });
 
     manager.mount(parent);
 
     const row = parent.querySelector('.garden-page__seed-inventory-row');
+    const pointerDown = new window.MouseEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      clientX: 10,
+      clientY: 20,
+    });
+    Object.defineProperty(pointerDown, 'pointerId', { value: 1 });
 
     expect(row?.draggable).toBe(false);
-    expect(row?.classList.contains('is-draggable')).toBe(false);
+    expect(row?.classList.contains('is-draggable')).toBe(true);
+    expect(row?.dataset.pageSwipeBlock).toBe('true');
     expect(row?.getAttribute('aria-label')).toBe('mint seed, owned 2');
+
+    row.dispatchEvent(pointerDown);
+
+    expect(onSeedDragStart).toHaveBeenCalledTimes(1);
+    expect(onSeedDragStart.mock.calls[0][1]).toMatchObject({
+      itemTypeId: 2,
+      key: 'mintSeed',
+      label: 'mint seed',
+    });
+  });
+
+  it('keeps seed drag visuals lifted and reduced-motion safe', () => {
+    const dragRule = baseCss.match(
+      /\.garden-page__item-drag-ghost,\n\.garden-page__seed-drag-ghost\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const iconRule = baseCss.match(
+      /\.garden-page__item-drag-ghost-icon\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(dragRule).toContain('width: 72px;');
+    expect(dragRule).toContain('height: 72px;');
+    expect(dragRule).not.toContain('background:');
+    expect(dragRule).not.toContain('border:');
+    expect(iconRule).toContain('width: 72px;');
+    expect(iconRule).toContain('height: 72px;');
+    expect(baseCss).toContain('@keyframes garden-page-plot-receive-seed');
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.garden-page__plot-row\.is-receiving-seed \.garden-page__plot-box-frame[\s\S]*animation:\s*none;/,
+    );
   });
 });
 

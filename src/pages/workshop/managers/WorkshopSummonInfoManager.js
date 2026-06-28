@@ -341,6 +341,7 @@ export class WorkshopSummonInfoManager {
       option.className = 'workshop-page__summon-info-weight-choice';
       option.type = 'button';
       option.dataset.preference = optionValue;
+      option.dataset.dropWeightColor = optionValue;
       const check = document.createElement('span');
       check.className = 'workshop-page__summon-info-weight-check';
       check.setAttribute('aria-hidden', 'true');
@@ -428,8 +429,10 @@ export class WorkshopSummonInfoManager {
     const weight = document.createElement('span');
     weight.className = 'workshop-page__summon-info-weight-value';
     weight.textContent = this.normalizeDropPreference(seed.dropPreference);
+    weight.dataset.dropWeightColor = this.normalizeDropPreference(seed.dropPreference);
     const chance = document.createElement('span');
     chance.className = 'workshop-page__summon-info-chance';
+    chance.dataset.dropRateColor = this.getDropRateColor(seed.dropChance);
     setResourceIconText(chance, this.formatDropChance(seed.dropChance));
 
     value.append(weight, chance);
@@ -549,6 +552,9 @@ export class WorkshopSummonInfoManager {
     this.refs.selectedSeedName.textContent = selectedSeed.label;
     setItemIconLabel(this.refs.selectedSeedName, 'seed', selectedSeed.key);
     setResourceColor(this.refs.selectedSeedName, 'seed');
+    this.refs.selectedChance.dataset.dropRateColor = this.getDropRateColor(
+      selectedSeed.dropChance,
+    );
     setResourceIconText(this.refs.selectedChance, this.formatDropChance(selectedSeed.dropChance));
     const selectedPreference = this.normalizeDropPreference(selectedSeed.dropPreference);
 
@@ -587,6 +593,24 @@ export class WorkshopSummonInfoManager {
 
   getDropPreferenceWeight(preference) {
     return seedDropPreferenceOptions.indexOf(this.normalizeDropPreference(preference));
+  }
+
+  getDropRateColor(dropChance) {
+    const rate = Number(dropChance);
+
+    if (!Number.isFinite(rate) || rate <= 0) {
+      return 'none';
+    }
+
+    if (rate < 1 / 3) {
+      return 'low';
+    }
+
+    if (rate < 2 / 3) {
+      return 'medium';
+    }
+
+    return 'high';
   }
 
   getDropPreferenceErrorText(reason) {

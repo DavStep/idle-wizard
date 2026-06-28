@@ -701,9 +701,7 @@ describe('BrewingCauldronManager', () => {
 
     expect(baseCss).toContain('--brewing-page-herbs-box-clearance: 0px;');
     expect(worldViewRule).toContain('--brewing-page-world-bottom-offset: 0px;');
-    expect(worldViewRule).toContain(
-      'top: calc(var(--style-room-content-top) - var(--style-room-content-edge));',
-    );
+    expect(worldViewRule).toContain('top: 0;');
     expect(worldViewRule).toContain('right: 0;');
     expect(worldViewRule).toContain('left: 0;');
     expect(baseCss).toContain('--style-source-ui-gutter-x: calc(');
@@ -711,10 +709,14 @@ describe('BrewingCauldronManager', () => {
     expect(baseCss).toContain(
       '--app-source-ui-screen-width,\n                  var(--style-source-ui-screen-width)',
     );
+    expect(shellRule).toContain(
+      'top: calc(var(--style-room-content-top) - var(--style-room-content-edge));',
+    );
     expect(shellRule).toContain('bottom: calc(');
     expect(shellRule).toContain('var(--brewing-page-world-bottom-offset)');
     expect(shellRule).toContain('var(--brewing-page-herbs-box-clearance)');
     expect(shellRule).toContain('z-index: 0;');
+    expect(shellRule).toContain('overflow: visible;');
     expect(boundaryRule).toContain('display: none;');
     expect(boundaryRule).toContain('border: 0;');
     expect(herbsRule).toContain('position: absolute;');

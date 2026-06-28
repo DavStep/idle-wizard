@@ -39,6 +39,7 @@ const OPEN_POPUP_SELECTOR = [
   '.guild-page__popup:not([hidden])',
   '.room-bottom-panel__lock-popup:not([hidden])',
   '.room-top-panel__settings:not([hidden])',
+  '.room-top-panel__inbox-popup:not([hidden])',
 ].join(',');
 
 const SWIPE_COMMIT_AXIS_RATIO = 1.15;
