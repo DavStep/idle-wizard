@@ -38,6 +38,8 @@ export class GuildPanelManager {
     this.selectedCardTab = 'stats';
     this.selectedCardId = null;
     this.selectedCardKind = null;
+    this.requestStackIndex = 0;
+    this.requestStackTimer = null;
     this.renderedCardScrollKey = '';
     this.contentTabScrollTops = new Map();
     this.lastRenderedSecretaryLevel = null;
@@ -83,12 +85,14 @@ export class GuildPanelManager {
     this.unsubscribe?.();
     this.unsubscribe = null;
     document.removeEventListener('keydown', this.handleKeydown);
+    this.clearRequestStackTimer();
     this.refs.popup?.remove();
     this.root?.remove();
     this.root = null;
     this.popupLayer = null;
     this.refs = {};
     this.selectedContentTab = 'hall';
+    this.requestStackIndex = 0;
     this.renderedCardScrollKey = '';
     this.contentTabScrollTops.clear();
     this.formDrafts = {
@@ -445,28 +449,35 @@ export class GuildPanelManager {
   }
 
   createBoardBox(guild) {
-    const rows = this.createRequestRows({
-      normalRequests: guild.normalBoard ?? [],
-      eventRequests: guild.eventBoard ?? [],
-      emptyText: 'no requests',
-      actionKind: 'remove',
-      separateRequests: true,
-    });
+    const requests = [
+      ...(guild.normalBoard ?? []),
+      ...(guild.eventBoard ?? []),
+    ];
+    const rows = requests.length
+      ? [this.createQuestBoard(requests)]
+      : [this.createEmptyRow('no requests')];
 
     return this.createBox('request board', rows, {
       countLabel: `${guild.board?.length ?? 0}/${guild.secretary?.boardSlots ?? 3}`,
+      className: 'guild-page__box--request-board',
     });
   }
 
   createAvailableRequestsBox(guild) {
     const availableRequests = guild.availableRequests ?? [];
-    const rows = this.createRequestRows({
-      normalRequests: guild.availableNormalRequests ?? [],
-      eventRequests: guild.availableEventRequests ?? [],
-      emptyText: 'no available quests',
-      actionKind: 'post',
-      separateRequests: true,
-    });
+    const rows = [];
+
+    if (availableRequests.length > 0) {
+      rows.push(
+        this.createTextRow(
+          'incoming',
+          `${availableRequests.length} quest${availableRequests.length === 1 ? '' : 's'}`,
+        ),
+        this.createButtonRow('review quests', () => this.showAvailableRequestsDialog()),
+      );
+    } else {
+      rows.push(this.createEmptyRow('no available quests'));
+    }
 
     if (guild.boardWaveLabel) {
       rows.push(this.createTextRow('upcoming quest', guild.boardWaveLabel));
@@ -477,40 +488,15 @@ export class GuildPanelManager {
     });
   }
 
-  createRequestRows({
-    normalRequests,
-    eventRequests,
-    emptyText,
-    actionKind,
-    separateRequests = false,
-  }) {
-    const rows = [];
+  createQuestBoard(requests) {
+    const board = document.createElement('div');
+    board.className = 'guild-page__quest-board';
 
-    if (normalRequests.length <= 0 && eventRequests.length <= 0) {
-      rows.push(this.createEmptyRow(emptyText));
-      return rows;
-    }
+    requests.forEach((request, index) => {
+      board.append(this.createQuestPaper(request, index));
+    });
 
-    const pushRequest = (request, index) => {
-      if (separateRequests && index > 0) {
-        rows.push(this.createQuestSeparator());
-      }
-
-      rows.push(this.createRequestRow(request, actionKind));
-    };
-
-    normalRequests.forEach(pushRequest);
-
-    if (eventRequests.length > 0) {
-      if (separateRequests && normalRequests.length > 0) {
-        rows.push(this.createQuestSeparator());
-      }
-
-      rows.push(this.createSectionLabel('event requests'));
-      eventRequests.forEach(pushRequest);
-    }
-
-    return rows;
+    return board;
   }
 
   createAdventurersBox(guild) {
@@ -555,13 +541,15 @@ export class GuildPanelManager {
     return row;
   }
 
-  createRequestRow(request, actionKind = 'remove') {
-    const row = document.createElement('div');
-    row.className = 'guild-page__row guild-page__request-row';
+  createQuestPaper(request, index = 0) {
+    const paper = document.createElement('article');
+    paper.className = 'guild-page__quest-paper';
+    paper.dataset.questSlot = String((index % 6) + 1);
 
     const main = document.createElement('button');
-    main.className = 'guild-page__row-main guild-page__request-main';
+    main.className = 'guild-page__quest-paper-main';
     main.type = 'button';
+    main.setAttribute('aria-label', `open ${request.title} quest`);
     main.append(
       this.createRequestLine('guild-page__request-title', request.title),
       this.createRequestLine('guild-page__request-description', request.lore),
@@ -576,31 +564,15 @@ export class GuildPanelManager {
     main.addEventListener('click', () => this.showRequestDialog(request.id));
 
     const action = document.createElement('button');
-    action.className = 'guild-page__row-action';
+    action.className = 'guild-page__quest-paper-action';
     action.type = 'button';
-    const boardFull =
-      actionKind === 'post' &&
-      (this.snapshot.board?.length ?? 0) >= (this.snapshot.secretary?.boardSlots ?? 0);
-    action.textContent = actionKind === 'post' ? (boardFull ? 'full' : 'post') : 'remove';
-    action.disabled = boardFull;
+    action.textContent = 'remove';
     action.addEventListener('click', () => {
-      if (actionKind === 'post') {
-        this.gameplayFacade?.postGuildRequest?.(request.id);
-        return;
-      }
-
       this.gameplayFacade?.removeGuildRequest?.(request.id);
     });
 
-    row.append(main, action);
-    return row;
-  }
-
-  createQuestSeparator() {
-    const separator = document.createElement('div');
-    separator.className = 'guild-page__quest-separator';
-    separator.setAttribute('aria-hidden', 'true');
-    return separator;
+    paper.append(main, action);
+    return paper;
   }
 
   createRequestLine(className, text, { resourceIcons = false } = {}) {
@@ -910,6 +882,7 @@ export class GuildPanelManager {
     popup.append(panel);
     this.refs.popup = popup;
     this.refs.popupPanel = panel;
+    this.refs.dialog = dialog;
     return popup;
   }
 
@@ -933,6 +906,17 @@ export class GuildPanelManager {
     this.showPopup();
   }
 
+  showAvailableRequestsDialog() {
+    if ((this.snapshot.availableRequests ?? []).length <= 0) {
+      return;
+    }
+
+    this.selectedCardKind = 'requestStack';
+    this.selectedCardId = null;
+    this.requestStackIndex = 0;
+    this.showPopup();
+  }
+
   showAdventurerDialog(adventurerId, kind) {
     this.selectedCardKind = kind;
     this.selectedCardId = adventurerId;
@@ -952,11 +936,13 @@ export class GuildPanelManager {
       return;
     }
 
+    this.clearRequestStackTimer();
     this.refs.popup.hidden = true;
     this.refs.popup.setAttribute('aria-hidden', 'true');
     this.selectedCardId = null;
     this.selectedCardKind = null;
     this.selectedCardTab = 'stats';
+    this.requestStackIndex = 0;
     this.clearCardDetailsReuse();
   }
 
@@ -979,6 +965,11 @@ export class GuildPanelManager {
 
     if (this.selectedCardKind === 'request') {
       this.renderRequestDialog();
+      return;
+    }
+
+    if (this.selectedCardKind === 'requestStack') {
+      this.renderRequestStackDialog();
       return;
     }
 
@@ -1084,8 +1075,113 @@ export class GuildPanelManager {
 
     this.refs.popupTitle.textContent = request.title;
     this.refs.popupTabs.replaceChildren();
+
+    const boardFull =
+      !boardRequest &&
+      (this.snapshot.board?.length ?? 0) >= (this.snapshot.secretary?.boardSlots ?? 0);
+    this.refs.popupContent.replaceChildren(
+      this.createRequestPaperContent(request, {
+        actionLabel: boardRequest ? 'remove' : boardFull ? 'board full' : 'post',
+        actionDisabled: boardFull,
+        onAction: () => {
+          if (boardRequest) {
+            this.gameplayFacade?.removeGuildRequest?.(request.id);
+          } else {
+            this.gameplayFacade?.postGuildRequest?.(request.id);
+          }
+
+          this.hidePopup();
+        },
+      }),
+    );
+  }
+
+  renderRequestStackDialog() {
+    this.clearCardDetailsReuse();
+    const requests = this.getAvailableRequestStack();
+
+    if (requests.length <= 0) {
+      this.hidePopup();
+      return;
+    }
+
+    this.requestStackIndex = Math.min(
+      Math.max(0, this.requestStackIndex),
+      requests.length - 1,
+    );
+    const request = requests[this.requestStackIndex];
+    const boardFull =
+      (this.snapshot.board?.length ?? 0) >= (this.snapshot.secretary?.boardSlots ?? 0);
+
+    this.refs.popupTitle.textContent = 'incoming quests';
+    this.refs.popupTabs.replaceChildren();
+    const stack = document.createElement('div');
+    stack.className = 'guild-page__request-stack';
+    stack.append(
+      this.createRequestPaperContent(request, {
+        showTitle: true,
+        pageLabel: `${this.requestStackIndex + 1}/${requests.length}`,
+        actionLabel: boardFull ? 'board full' : 'post',
+        actionDisabled: boardFull,
+        onAction: () => {
+          this.gameplayFacade?.postGuildRequest?.(request.id);
+          this.hidePopup();
+        },
+      }),
+    );
+
+    const controls = document.createElement('div');
+    controls.className = 'guild-page__request-stack-controls';
+    const nextButton = document.createElement('button');
+    nextButton.className = 'style-button guild-page__request-stack-next';
+    nextButton.type = 'button';
+    nextButton.textContent = requests.length > 1 ? 'next page' : 'only page';
+    nextButton.disabled = requests.length <= 1;
+    nextButton.addEventListener('click', () => this.turnAvailableRequestPage());
+    controls.append(nextButton);
+
+    const content = document.createElement('div');
+    content.className = 'guild-page__request-stack-wrap';
+    content.append(stack, controls);
+    this.refs.popupContent.replaceChildren(content);
+  }
+
+  createRequestPaperContent(
+    request,
+    {
+      showTitle = false,
+      pageLabel = '',
+      actionLabel = '',
+      actionDisabled = false,
+      onAction = null,
+    } = {},
+  ) {
+    const content = document.createElement('section');
+    content.className = 'guild-page__request-paper-content';
+
+    if (showTitle || pageLabel) {
+      const header = document.createElement('div');
+      header.className = 'guild-page__request-paper-header';
+
+      if (showTitle) {
+        const title = document.createElement('div');
+        title.className = 'guild-page__request-paper-title';
+        title.textContent = request.title;
+        header.append(title);
+      }
+
+      if (pageLabel) {
+        const page = document.createElement('div');
+        page.className = 'guild-page__request-paper-page';
+        page.textContent = pageLabel;
+        header.append(page);
+      }
+
+      content.append(header);
+    }
+
     const rows = document.createElement('div');
-    rows.className = 'guild-page__rows';
+    rows.className = 'guild-page__request-paper-rows guild-page__rows';
     rows.append(
       this.createTextRow('difficulty', request.difficulty),
       this.createTextRow('stats', request.statLabel),
@@ -1098,25 +1194,58 @@ export class GuildPanelManager {
       rows.append(this.createTextRow('event', request.eventLabel));
     }
 
-    const boardFull =
-      !boardRequest &&
-      (this.snapshot.board?.length ?? 0) >= (this.snapshot.secretary?.boardSlots ?? 0);
-    rows.append(
-      this.createButtonRow(
-        boardRequest ? 'remove' : boardFull ? 'board full' : 'post',
-        () => {
-          if (boardRequest) {
-            this.gameplayFacade?.removeGuildRequest?.(request.id);
-          } else {
-            this.gameplayFacade?.postGuildRequest?.(request.id);
-          }
+    content.append(rows);
 
-          this.hidePopup();
-        },
-        { disabled: boardFull },
-      ),
-    );
-    this.refs.popupContent.replaceChildren(rows);
+    if (actionLabel && onAction) {
+      content.append(
+        this.createButtonRow(actionLabel, onAction, { disabled: actionDisabled }),
+      );
+    }
+
+    return content;
+  }
+
+  getAvailableRequestStack() {
+    return (this.snapshot.availableRequests ?? []).filter(Boolean);
+  }
+
+  turnAvailableRequestPage() {
+    const requests = this.getAvailableRequestStack();
+
+    if (requests.length <= 1 || this.requestStackTimer) {
+      return;
+    }
+
+    const finishTurn = () => {
+      const latestRequests = this.getAvailableRequestStack();
+      this.requestStackIndex =
+        latestRequests.length > 0
+          ? (this.requestStackIndex + 1) % latestRequests.length
+          : 0;
+      this.requestStackTimer = null;
+      this.refs.popupPanel?.classList.remove('is-turning-page');
+      this.renderPopup();
+    };
+
+    const prefersReducedMotion =
+      globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
+
+    if (prefersReducedMotion) {
+      finishTurn();
+      return;
+    }
+
+    this.refs.popupPanel?.classList.add('is-turning-page');
+    this.requestStackTimer = globalThis.setTimeout(finishTurn, 225);
+  }
+
+  clearRequestStackTimer() {
+    if (this.requestStackTimer) {
+      globalThis.clearTimeout(this.requestStackTimer);
+      this.requestStackTimer = null;
+    }
+
+    this.refs.popupPanel?.classList.remove('is-turning-page');
   }
 
   renderAdventurerDialog() {

@@ -816,6 +816,7 @@
 - Before claiming local runtime verification, confirm both Vite `55173` and SpacetimeDB `3000`; frontend-only status is not enough.
 - Visual QA for deep page states needs deterministic real-game state recipes; ad hoc clicks/cheats make agents miss screenshots or verify the wrong state.
 - In-app Browser blocks `data:` QA harness URLs; use the real local app or a checked-in/local route instead of ad hoc data-url visual harnesses.
+- Source-scaled room UI clicks in in-app Browser QA should use DOM rect screen coordinates with `tab.cua.click`; Playwright locator clicks can miss scaled controls.
 - Fresh-start browser QA resets FTUE progress; after choosing `start fresh`, write completed `idle-wizard.tutorial.v4` storage and reload before normal room-click automation.
 - Keep top-level docs current with implemented systems; agents trust README/architecture docs early, so stale future-scope text causes wrong plans.
 - When a feature needs faster or safer repeat work, add the smallest reusable dev tool and document its command/env in `docs/ai-workflow.md` or the feature README.

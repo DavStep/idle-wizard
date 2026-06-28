@@ -122,6 +122,7 @@ function mountManager(gameplayFacade) {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   document.body.replaceChildren();
 });
 
@@ -278,7 +279,7 @@ describe('GuildPanelManager', () => {
     expect(parent.querySelector('.guild-page__tabpanel')?.scrollTop).toBe(32);
   });
 
-  it('shows board requests above available quests with details, rewards, and actions', () => {
+  it('shows board requests as papers and reviews incoming quests in a stack dialog', () => {
     const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
     const { parent, popupLayer } = mountManager(gameplayFacade);
 
@@ -293,19 +294,20 @@ describe('GuildPanelManager', () => {
     const availableBox = boxes.find(
       (box) => box.querySelector('.style-box__title')?.textContent === 'available quests',
     );
-    const boardRow = boardBox?.querySelector('.guild-page__request-row');
-    const availableRow = availableBox?.querySelector('.guild-page__request-row');
-    const boardReward = boardRow?.querySelector('.guild-page__request-reward');
-    const availableReward = availableRow?.querySelector('.guild-page__request-reward');
+    const boardPaper = boardBox?.querySelector('.guild-page__quest-paper');
+    const boardReward = boardPaper?.querySelector('.guild-page__request-reward');
+    const reviewButton = availableBox?.querySelector('.guild-page__wide-button');
 
     expect(parent.querySelector('.guild-page__board-separator')).toBeNull();
-    expect(boardRow?.querySelector('.guild-page__request-title')?.textContent).toBe(
+    expect(boardBox?.classList.contains('guild-page__box--request-board')).toBe(true);
+    expect(boardBox?.querySelector('.guild-page__quest-board')).not.toBeNull();
+    expect(boardPaper?.querySelector('.guild-page__request-title')?.textContent).toBe(
       'lost lantern',
     );
-    expect(boardRow?.querySelector('.guild-page__request-description')?.textContent).toBe(
+    expect(boardPaper?.querySelector('.guild-page__request-description')?.textContent).toBe(
       'a village needs light.',
     );
-    expect(boardRow?.querySelector('.guild-page__request-meta')?.textContent).toBe(
+    expect(boardPaper?.querySelector('.guild-page__request-meta')?.textContent).toBe(
       'easy, expires 12m',
     );
     expect(boardReward?.textContent).toBe(
@@ -321,33 +323,29 @@ describe('GuildPanelManager', () => {
         ?.dataset.assetAtlasFrame,
     ).toBe('herb:sageHerb');
     expect(boardBox?.querySelector('.guild-page__box-bottom')).toBeNull();
-    expect(boardRow?.querySelector('.guild-page__row-action')?.textContent).toBe('remove');
-    expect(availableRow?.querySelector('.guild-page__request-title')?.textContent).toBe(
-      'old road escort',
+    expect(boardPaper?.querySelector('.guild-page__quest-paper-action')?.textContent).toBe(
+      'remove',
     );
-    expect(availableRow?.querySelector('.guild-page__request-description')?.textContent).toBe(
-      'a trader wants one honest shadow.',
-    );
-    expect(availableRow?.querySelector('.guild-page__request-meta')?.textContent).toBe(
-      'medium, expires 12m',
-    );
-    expect(availableReward?.textContent).toBe(
-      'reward: 20 coin, 5 seeds, or 6 herbs',
-    );
-    expect(availableReward?.querySelector('.style-resource-label--coin')).not.toBeNull();
-    expect(availableReward?.querySelector('.style-resource-label--seed')).not.toBeNull();
-    expect(availableReward?.querySelector('.style-resource-label--herb')).not.toBeNull();
+    expect(
+      [...(availableBox?.querySelectorAll('.guild-page__row') ?? [])].find(
+        (row) => row.querySelector('.guild-page__row-key')?.textContent === 'incoming',
+      )?.textContent,
+    ).toBe('incoming1 quest');
+    expect(availableBox?.querySelector('.guild-page__request-row')).toBeNull();
+    expect(reviewButton?.textContent).toBe('review quests');
     const availableTimerRow = [...(availableBox?.querySelectorAll('.guild-page__row') ?? [])].find(
       (row) => row.querySelector('.guild-page__row-key')?.textContent === 'upcoming quest',
     );
     expect(availableTimerRow?.querySelector('.guild-page__row-value')?.textContent).toBe('12m');
     expect(availableBox?.querySelector('.guild-page__box-bottom')).toBeNull();
-    expect(availableRow?.querySelector('.guild-page__row-action')?.textContent).toBe('post');
 
-    boardRow
-      ?.querySelector('.guild-page__request-main')
+    boardPaper
+      ?.querySelector('.guild-page__quest-paper-main')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
+    expect(
+      popupLayer.querySelector('.guild-page__popup-panel')?.dataset.popupKind,
+    ).toBe('request');
     const rewardDialogRow = [...popupLayer.querySelectorAll('.guild-page__row')].find(
       (row) => row.querySelector('.guild-page__row-key')?.textContent === 'reward',
     );
@@ -356,18 +354,45 @@ describe('GuildPanelManager', () => {
     expect(rewardDialogRow?.querySelector('.style-resource-label--seed')).not.toBeNull();
     expect(rewardDialogRow?.querySelector('.style-resource-label--herb')).not.toBeNull();
 
-    boardRow
-      ?.querySelector('.guild-page__row-action')
+    popupLayer
+      .querySelector('.guild-page__close')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    availableRow
-      ?.querySelector('.guild-page__row-action')
+    boardPaper
+      ?.querySelector('.guild-page__quest-paper-action')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    reviewButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(
+      popupLayer.querySelector('.guild-page__popup-panel')?.dataset.popupKind,
+    ).toBe('requestStack');
+    expect(popupLayer.querySelector('.style-box__title')?.textContent).toBe('incoming quests');
+    expect(popupLayer.querySelector('.guild-page__request-paper-title')?.textContent).toBe(
+      'old road escort',
+    );
+    expect(popupLayer.querySelector('.guild-page__request-paper-page')?.textContent).toBe(
+      '1/1',
+    );
+    expect(popupLayer.querySelector('.guild-page__request-stack-next')?.textContent).toBe(
+      'only page',
+    );
+    expect(popupLayer.querySelector('.guild-page__request-stack-next')?.disabled).toBe(true);
+    const stackRewardRow = [...popupLayer.querySelectorAll('.guild-page__row')].find(
+      (row) => row.querySelector('.guild-page__row-key')?.textContent === 'reward',
+    );
+    expect(stackRewardRow?.textContent).toBe('reward20 coin, 5 seeds, or 6 herbs');
+    expect(stackRewardRow?.querySelector('.style-resource-label--coin')).not.toBeNull();
+    expect(stackRewardRow?.querySelector('.style-resource-label--seed')).not.toBeNull();
+    expect(stackRewardRow?.querySelector('.style-resource-label--herb')).not.toBeNull();
+
+    popupLayer
+      .querySelector('.guild-page__request-paper-content .guild-page__wide-button')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(gameplayFacade.removeGuildRequest).toHaveBeenCalledWith('request-1');
     expect(gameplayFacade.postGuildRequest).toHaveBeenCalledWith('request-2');
   });
 
-  it('separates multiple board and available quests with thin dividers', () => {
+  it('lays out multiple board papers and keeps available quests behind review', () => {
     const firstRequest = {
       id: 'request-2',
       title: 'old road escort',
@@ -406,7 +431,8 @@ describe('GuildPanelManager', () => {
         boardWaveLabel: '',
       }),
     );
-    const { parent } = mountManager(gameplayFacade);
+    vi.useFakeTimers();
+    const { parent, popupLayer } = mountManager(gameplayFacade);
 
     parent
       .querySelector('.guild-page__content-tab-button[data-guild-tab="board"]')
@@ -419,8 +445,8 @@ describe('GuildPanelManager', () => {
     const availableBox = boxes.find(
       (box) => box.querySelector('.style-box__title')?.textContent === 'available quests',
     );
-    const boardRequestRows = [
-      ...(boardBox?.querySelectorAll('.guild-page__request-row') ?? []),
+    const boardPapers = [
+      ...(boardBox?.querySelectorAll('.guild-page__quest-paper') ?? []),
     ];
     const boardSeparators = [
       ...(boardBox?.querySelectorAll('.guild-page__quest-separator') ?? []),
@@ -435,15 +461,61 @@ describe('GuildPanelManager', () => {
     const children = [...(availableBox?.querySelector('.guild-page__rows')?.children ?? [])];
     const eventLabel = availableBox?.querySelector('.guild-page__section-label');
 
-    expect(boardRequestRows).toHaveLength(2);
-    expect(boardSeparators).toHaveLength(1);
-    expect(boardChildren.indexOf(boardSeparators[0])).toBe(
-      boardChildren.indexOf(boardRequestRows[1]) - 1,
+    expect(boardPapers).toHaveLength(2);
+    expect(boardSeparators).toHaveLength(0);
+    expect(boardChildren).toHaveLength(1);
+    expect(boardChildren[0]?.classList.contains('guild-page__quest-board')).toBe(true);
+    expect(boardPapers.map((paper) => paper.querySelector('.guild-page__request-title')?.textContent))
+      .toEqual(['old road escort', 'sealed cellar']);
+    expect(requestRows).toHaveLength(0);
+    expect(separators).toHaveLength(0);
+    expect(eventLabel).toBeNull();
+    expect(
+      [...(availableBox?.querySelectorAll('.guild-page__row') ?? [])].find(
+        (row) => row.querySelector('.guild-page__row-key')?.textContent === 'incoming',
+      )?.textContent,
+    ).toBe('incoming3 quests');
+    expect(children.some((child) => child.classList.contains('guild-page__wide-button'))).toBe(
+      true,
     );
-    expect(requestRows).toHaveLength(3);
-    expect(separators).toHaveLength(2);
-    expect(children.indexOf(separators[0])).toBe(children.indexOf(requestRows[1]) - 1);
-    expect(children.indexOf(separators[1])).toBe(children.indexOf(eventLabel) - 1);
+
+    availableBox
+      ?.querySelector('.guild-page__wide-button')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(popupLayer.querySelector('.guild-page__request-paper-title')?.textContent).toBe(
+      'old road escort',
+    );
+    expect(popupLayer.querySelector('.guild-page__request-paper-page')?.textContent).toBe(
+      '1/3',
+    );
+
+    popupLayer
+      .querySelector('.guild-page__request-stack-next')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(
+      popupLayer
+        .querySelector('.guild-page__popup-panel')
+        ?.classList.contains('is-turning-page'),
+    ).toBe(true);
+    expect(popupLayer.querySelector('.guild-page__request-paper-title')?.textContent).toBe(
+      'old road escort',
+    );
+
+    vi.advanceTimersByTime(225);
+
+    expect(
+      popupLayer
+        .querySelector('.guild-page__popup-panel')
+        ?.classList.contains('is-turning-page'),
+    ).toBe(false);
+    expect(popupLayer.querySelector('.guild-page__request-paper-title')?.textContent).toBe(
+      'sealed cellar',
+    );
+    expect(popupLayer.querySelector('.guild-page__request-paper-page')?.textContent).toBe(
+      '2/3',
+    );
   });
 
   it('shows the guild tag and name as one left-aligned hall row', () => {
@@ -1134,24 +1206,37 @@ describe('GuildPanelManager', () => {
     expect(charterButtonRule).toMatch(/\bmargin-top:\s*10px;/);
   });
 
-  it('lets guild request details wrap instead of ellipsizing', () => {
+  it('styles guild request papers as compact board notes', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const requestMainRule = baseCss.match(
-      /\.guild-page__request-main\s*\{(?<body>[^}]*)\}/,
+    const boardRule = baseCss.match(
+      /\.guild-page__quest-board\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const paperRule = baseCss.match(
+      /\.guild-page__quest-paper\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const paperMainRule = baseCss.match(
+      /\.guild-page__quest-paper-main\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const requestLineRule = baseCss.match(
       /\.guild-page__request-title,\s*\.guild-page__request-description,\s*\.guild-page__request-meta,\s*\.guild-page__request-reward\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const questSeparatorRule = baseCss.match(
-      /\.guild-page__quest-separator\s*\{(?<body>[^}]*)\}/,
+    const requestPaperTitleRule = baseCss.match(
+      /\.guild-page__request-paper-title\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const requestPaperValueRule = baseCss.match(
+      /\.guild-page__request-paper-rows\s+\.guild-page__row-value,\s*\.guild-page__request-paper-rows\s+\.guild-page__paragraph\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(requestMainRule).toMatch(/\bwhite-space:\s*normal;/);
-    expect(requestMainRule).toMatch(/\btext-overflow:\s*clip;/);
+    expect(boardRule).toMatch(/\bgrid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/);
+    expect(paperRule).toMatch(/\bborder:\s*var\(--style-border\);/);
+    expect(paperRule).toMatch(/\bmin-height:\s*106px;/);
+    expect(paperMainRule).toMatch(/\bflex-direction:\s*column;/);
     expect(requestLineRule).toMatch(/\bwhite-space:\s*normal;/);
     expect(requestLineRule).toMatch(/\boverflow-wrap:\s*anywhere;/);
+    expect(requestPaperTitleRule).toMatch(/\boverflow-wrap:\s*anywhere;/);
+    expect(requestPaperValueRule).toMatch(/\bwhite-space:\s*normal;/);
+    expect(requestPaperValueRule).toMatch(/\btext-overflow:\s*clip;/);
     expect(baseCss).not.toMatch(/\.guild-page__board-separator\b/);
-    expect(questSeparatorRule).toMatch(/\bborder-top:\s*var\(--style-border\);/);
   });
 
   it('keeps guild request reward resources on resource colors', () => {
@@ -1347,6 +1432,33 @@ describe('GuildPanelManager', () => {
     expect(dialogRule).not.toMatch(/\boverflow:\s*hidden;/);
     expect(contentRule).toMatch(/\bmin-height:\s*0;/);
     expect(contentRule).toMatch(/\boverflow:\s*hidden auto;/);
+  });
+
+  it('styles guild request dialogs with zoom and stack page motion', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const requestDialogRule = baseCss.match(
+      /\.guild-page__popup-panel\[data-popup-kind="request"\]\s+\.style-dialog\.guild-page__dialog\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackUnderlayRule = baseCss.match(
+      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]::before,\s*\.guild-page__popup-panel\[data-popup-kind="requestStack"\]::after\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackTurnRule = baseCss.match(
+      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]\.is-turning-page\s+\.style-dialog\.guild-page__dialog\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackNextRule = baseCss.match(
+      /\.style-button\.guild-page__request-stack-next\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(requestDialogRule).toContain('guild-request-paper-zoom');
+    expect(stackUnderlayRule).toMatch(/\bborder:\s*var\(--style-border-strong\);/);
+    expect(stackUnderlayRule).toMatch(/\bz-index:\s*0;/);
+    expect(stackTurnRule).toContain('guild-request-page-under');
+    expect(stackNextRule).toMatch(/\bfont-size:\s*var\(--style-box-border-label-font-size\);/);
+    expect(baseCss).toMatch(/@keyframes guild-request-paper-zoom/);
+    expect(baseCss).toMatch(/@keyframes guild-request-page-under/);
+    expect(baseCss).toMatch(
+      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]\.is-turning-page[\s\S]*animation:\s*none;/,
+    );
   });
 
   it('aligns guild card dialog tabs with the shared tabbed popup pattern', () => {

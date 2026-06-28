@@ -11176,7 +11176,6 @@ div.workshop-page__discovery-row {
 
 .guild-page__row,
 .guild-page__empty-row,
-.guild-page__request-row,
 .guild-page__adventurer-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--style-row-right-slot-width);
@@ -11284,25 +11283,80 @@ div.workshop-page__discovery-row {
   }
 }
 
-.guild-page__request-row {
-  align-items: start;
-  min-height: calc(var(--style-row-min-height) * 3);
-  padding: 3px 0;
+.guild-page__box--request-board .guild-page__rows {
+  gap: 8px;
 }
 
-.guild-page__request-main {
+.guild-page__quest-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.guild-page__quest-paper {
+  position: relative;
   display: flex;
+  min-width: 0;
+  min-height: 106px;
+  padding: 6px 7px calc(var(--style-box-border-label-line-height) + 5px);
+  background: var(--style-surface);
+  border: var(--style-border);
+  transform-origin: center;
+}
+
+.guild-page__quest-paper-main,
+.guild-page__quest-paper-action {
+  min-width: 0;
+  padding: 0;
+  color: var(--style-text);
+  font: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.guild-page__quest-paper-main {
+  display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 2px;
-  overflow: visible;
   text-align: left;
-  text-overflow: clip;
-  white-space: normal;
 }
 
-.guild-page__request-main:hover,
-.guild-page__request-main:focus-visible {
-  font-weight: inherit;
+.guild-page__quest-paper-action {
+  position: absolute;
+  right: 7px;
+  bottom: 2px;
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  text-align: right;
+}
+
+.guild-page__quest-paper:focus-within {
+  border: var(--style-border-strong);
+}
+
+.guild-page__quest-paper-main:focus-visible,
+.guild-page__quest-paper-action:focus-visible {
+  font-weight: 700;
+  outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .guild-page__quest-paper:hover {
+    border: var(--style-border-strong);
+  }
+
+  .guild-page__quest-paper-main:hover,
+  .guild-page__quest-paper-action:hover {
+    font-weight: inherit;
+  }
+
+  .guild-page__quest-paper-action:hover {
+    font-weight: 700;
+  }
 }
 
 .guild-page__request-title,
@@ -11337,15 +11391,50 @@ div.workshop-page__discovery-row {
   color: var(--style-resource-herb);
 }
 
-.guild-page__request-row .guild-page__row-action {
-  align-self: start;
-  padding-top: 1px;
+.guild-page__request-paper-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
 }
 
-.guild-page__quest-separator {
-  height: 0;
-  margin: 3px 0;
-  border-top: var(--style-border);
+.guild-page__request-paper-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  column-gap: var(--style-row-column-gap);
+  align-items: baseline;
+}
+
+.guild-page__request-paper-title {
+  min-width: 0;
+  overflow: visible;
+  font-weight: 700;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.guild-page__request-paper-page {
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: var(--style-box-border-label-line-height);
+}
+
+.guild-page__request-paper-rows {
+  gap: 2px;
+}
+
+.guild-page__request-paper-rows .guild-page__row {
+  align-items: start;
+}
+
+.guild-page__request-paper-rows .guild-page__row-value,
+.guild-page__request-paper-rows .guild-page__paragraph {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .guild-page__adventurer-row {
@@ -11565,6 +11654,32 @@ div.workshop-page__discovery-row {
   transform: translate(-50%, calc(-50% + var(--app-dialog-y-shift, 0px)));
 }
 
+.guild-page__popup-panel[data-popup-kind="requestStack"]::before,
+.guild-page__popup-panel[data-popup-kind="requestStack"]::after {
+  position: absolute;
+  right: -4px;
+  left: 4px;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+  background: var(--style-surface);
+  border: var(--style-border-strong);
+}
+
+.guild-page__popup-panel[data-popup-kind="requestStack"]::before {
+  top: 7px;
+  bottom: -7px;
+  opacity: 0.56;
+  transform: translate(4px, 5px);
+}
+
+.guild-page__popup-panel[data-popup-kind="requestStack"]::after {
+  top: 13px;
+  bottom: -13px;
+  opacity: 0.34;
+  transform: translate(8px, 10px);
+}
+
 .guild-page__popup-panel[data-popup-kind="charter"] {
   width: calc(
     300px + var(--style-trade-alliance-dialog-padding) +
@@ -11594,6 +11709,23 @@ div.workshop-page__discovery-row {
   padding: var(--style-trade-alliance-dialog-padding);
 }
 
+.guild-page__popup-panel[data-popup-kind="request"] .style-dialog.guild-page__dialog {
+  animation: guild-request-paper-zoom var(--style-motion-dialog)
+    var(--style-motion-ease-rubber) both;
+  transform-origin: center;
+}
+
+.guild-page__popup-panel[data-popup-kind="requestStack"] .style-dialog.guild-page__dialog {
+  z-index: 2;
+}
+
+.guild-page__popup-panel[data-popup-kind="requestStack"].is-turning-page
+  .style-dialog.guild-page__dialog {
+  animation: guild-request-page-under var(--style-motion-expand)
+    var(--style-motion-ease-rubber) both;
+  transform-origin: 80% 78%;
+}
+
 .guild-page__popup-content {
   flex: 1 1 auto;
   min-height: 0;
@@ -11603,6 +11735,33 @@ div.workshop-page__discovery-row {
 
 .guild-page__popup-content::-webkit-scrollbar {
   display: none;
+}
+
+.guild-page__request-stack-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.guild-page__request-stack {
+  position: relative;
+  min-height: 0;
+}
+
+.guild-page__request-stack-controls {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.style-button.guild-page__request-stack-next {
+  width: auto;
+  min-width: 86px;
+  min-height: var(--style-row-min-height);
+  padding: 1px 6px;
+  margin: 0;
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
 }
 
 .guild-page__card-info {
@@ -15197,6 +15356,43 @@ div.workshop-page__discovery-row {
   }
 }
 
+@keyframes guild-request-paper-zoom {
+  0% {
+    opacity: 0.72;
+    scale: 0.94;
+    translate: 0 4px;
+  }
+
+  68% {
+    opacity: 1;
+    scale: 1.012;
+    translate: 0 -1px;
+  }
+
+  100% {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes guild-request-page-under {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+
+  56% {
+    opacity: 0.92;
+    transform: translate(12px, -2px) scale(0.99);
+  }
+
+  100% {
+    opacity: 0.55;
+    transform: translate(8px, 17px) scale(0.965);
+  }
+}
+
 @keyframes room-workshop-item-drop {
   0% {
     opacity: 0;
@@ -15699,11 +15895,15 @@ div.workshop-page__discovery-row {
 
   .guild-page__box--secretary-upgraded,
   .guild-page__box--secretary-upgraded
-    :where(.guild-page__row-value, .guild-page__wide-button) {
+    :where(.guild-page__row-value, .guild-page__wide-button),
+  .guild-page__popup-panel[data-popup-kind="request"] .style-dialog.guild-page__dialog,
+  .guild-page__popup-panel[data-popup-kind="requestStack"].is-turning-page
+    .style-dialog.guild-page__dialog {
     animation: none;
     opacity: 1;
     scale: 1;
     translate: 0 0;
+    transform: none;
   }
 
   .style-button.workshop-page__summon-button.is-summoning
