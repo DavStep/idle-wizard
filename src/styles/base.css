@@ -333,6 +333,8 @@
   --style-muted: #a6a6a6;
   --style-disabled: #6a6a6a;
   --style-active-surface: var(--style-surface);
+  --style-midnight-button-frame: url("/ui/player-card-button-brown-fill-9slice.png");
+  --style-midnight-button-disabled-frame: url("/ui/player-card-button-brown-dark-fill-9slice.png");
   --style-midnight-frame-slice: 31 29 31 29 fill;
   --style-midnight-frame-outline-slice: 31 29 31 29;
   --style-midnight-frame-width: 8px 10px;
@@ -14966,6 +14968,41 @@ div.workshop-page__discovery-row {
 }
 
 :root[data-style-theme="midnight"]
+  :where(
+    .style-button:not(.workshop-page__summon-button),
+    .workshop-page__summon-button-text,
+    .tutorial-layer__objective-button-label,
+    .tutorial-layer__lesson-show,
+    .tutorial-layer__lesson-advance,
+    .tutorial-layer__advance
+  ) {
+  border-image-source: var(--style-midnight-button-frame);
+}
+
+:root[data-style-theme="midnight"]
+  :where(
+    .style-button:not(.workshop-page__summon-button):is(
+        :disabled,
+        [aria-disabled="true"],
+        .is-disabled
+      ),
+    .style-button.workshop-page__summon-button:is(
+        :disabled,
+        [aria-disabled="true"],
+        .is-disabled
+      )
+      .workshop-page__summon-button-text,
+    .tutorial-layer__objective-button:is(
+        :disabled,
+        [aria-disabled="true"],
+        .is-disabled
+      )
+      .tutorial-layer__objective-button-label
+  ) {
+  border-image-source: var(--style-midnight-button-disabled-frame);
+}
+
+:root[data-style-theme="midnight"]
   .room-top-panel__theme-preview[data-preview-theme="midnight"]
   .room-top-panel__theme-preview-box {
   border-image-width: var(--style-midnight-frame-compact-width);
@@ -14981,7 +15018,14 @@ div.workshop-page__discovery-row {
     .is-swipe-target-locked
   ) {
   background: transparent;
-  border-image-slice: var(--style-midnight-frame-outline-slice);
+  border-image-source: var(--style-midnight-button-frame);
+  border-image-slice: var(--style-midnight-frame-slice);
+}
+
+:root[data-style-theme="midnight"] .room-bottom-panel__tab.is-locked,
+:root[data-style-theme="midnight"]
+  .room-bottom-panel__tab.is-swipe-target-locked:not(.is-selected) {
+  border-image-source: var(--style-midnight-button-disabled-frame);
 }
 
 .style-panel.room-bottom-panel {

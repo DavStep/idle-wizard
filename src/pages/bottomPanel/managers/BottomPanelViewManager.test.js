@@ -164,6 +164,35 @@ describe('BottomPanelViewManager', () => {
     expect(tabBlock).toContain('background: var(--style-surface);');
   });
 
+  it('lets midnight bottom tabs use only their 9-slice fill background', () => {
+    const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
+    const tabFrameIndex = baseCss.indexOf(
+      ':root[data-style-theme="midnight"] .room-bottom-panel__tab,',
+    );
+    const tabFrameBlock = baseCss.slice(
+      tabFrameIndex,
+      baseCss.indexOf('}', tabFrameIndex) + 1,
+    );
+    const lockedFrameIndex = baseCss.indexOf(
+      ':root[data-style-theme="midnight"] .room-bottom-panel__tab.is-locked,',
+    );
+    const lockedFrameBlock = baseCss.slice(
+      lockedFrameIndex,
+      baseCss.indexOf('}', lockedFrameIndex) + 1,
+    );
+
+    expect(tabFrameBlock).toContain('background: transparent;');
+    expect(tabFrameBlock).toContain(
+      'border-image-source: var(--style-midnight-button-frame);',
+    );
+    expect(tabFrameBlock).toContain(
+      'border-image-slice: var(--style-midnight-frame-slice);',
+    );
+    expect(lockedFrameBlock).toContain(
+      'border-image-source: var(--style-midnight-button-disabled-frame);',
+    );
+  });
+
   it('appends the gated prestige page only when visible', () => {
     const stage = document.createElement('section');
     const onShowPage = vi.fn();

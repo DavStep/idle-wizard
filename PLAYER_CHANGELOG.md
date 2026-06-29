@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.66
+
+- Polished Midnight theme buttons and bottom tabs so normal, selected, and locked states use the cleaner framed surfaces.
+
 ## 0.2.65
 
 - Improved Elara's level 2 guidance so she asks players to pin the level requirements before moving on to Garden or more seed summoning.
