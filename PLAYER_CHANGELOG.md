@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.64
+
+- Improved Elara's early guide placement so lesson panels avoid covering the summon target and nearby tutorial controls.
+- Polished Midnight theme panel borders so framed player panels render cleaner.
+
 ## 0.2.63
 
 - Fixed connecting a new account with no previous save so it starts a fresh game immediately after login instead of asking to start new again.

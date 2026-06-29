@@ -333,8 +333,8 @@
   --style-muted: #a6a6a6;
   --style-disabled: #6a6a6a;
   --style-active-surface: var(--style-surface);
-  --style-midnight-frame-slice: 32 fill;
-  --style-midnight-frame-outline-slice: 32;
+  --style-midnight-frame-slice: 31 29 31 29 fill;
+  --style-midnight-frame-outline-slice: 31 29 31 29;
   --style-midnight-frame-width: 8px 10px;
   --style-midnight-frame-control-width: 5px 6px;
   --style-midnight-frame-compact-width: 4px 5px;

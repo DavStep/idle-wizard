@@ -1506,6 +1506,97 @@ describe('TutorialHintManager', () => {
     }
   });
 
+  it('moves the open lesson below summon when the next visible target is above', () => {
+    const stage = document.createElement('section');
+    const requirement = document.createElement('button');
+    const summonButton = document.createElement('button');
+    const summonCircle = document.createElement('span');
+    const summonText = document.createElement('span');
+    const manager = new TutorialHintManager({ storage: createMemoryStorage() });
+    const summonTargetRect = {
+      left: 136,
+      top: 495,
+      right: 224,
+      bottom: 534,
+    };
+    const summonCircleRect = {
+      left: 82,
+      top: 400,
+      right: 278,
+      bottom: 490,
+    };
+
+    requirement.dataset.tutorialId = 'task:level1-sage-seeds';
+    summonButton.className = 'style-button workshop-page__summon-button';
+    summonButton.dataset.tutorialId = 'workshop:summonSeed';
+    summonCircle.className = 'workshop-page__summon-circle';
+    summonText.className = 'workshop-page__summon-button-text';
+    summonButton.append(summonCircle, summonText);
+    stage.append(requirement, summonButton);
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      requirement,
+      toClientRect({
+        left: 24,
+        top: 84,
+        width: 312,
+        height: 58,
+      }),
+    );
+    setClientRect(
+      summonButton,
+      toClientRect({
+        left: summonTargetRect.left,
+        top: summonTargetRect.top,
+        width: summonTargetRect.right - summonTargetRect.left,
+        height: summonTargetRect.bottom - summonTargetRect.top,
+      }),
+    );
+    setClientRect(
+      summonCircle,
+      toClientRect({
+        left: summonCircleRect.left,
+        top: summonCircleRect.top,
+        width: summonCircleRect.right - summonCircleRect.left,
+        height: summonCircleRect.bottom - summonCircleRect.top,
+      }),
+    );
+    setClientRect(
+      summonText,
+      toClientRect({
+        left: summonTargetRect.left,
+        top: summonTargetRect.top,
+        width: summonTargetRect.right - summonTargetRect.left,
+        height: summonTargetRect.bottom - summonTargetRect.top,
+      }),
+    );
+    document.body.append(stage);
+
+    useFixedLessonSize(manager);
+    manager.mount(stage);
+    manager.showLesson({
+      id: 'summon-flow-above',
+      title: 'lesson 1: introduction',
+      text: 'summon and turn in sage seeds for the next level',
+      stepLabel: '8/32',
+      canShowTarget: true,
+      target: summonButton,
+    });
+
+    const elaraButton = stage.querySelector('.tutorial-layer__lesson-button');
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
+    const lessonRect = getLessonRect(lesson);
+
+    expect(lessonRect.top).toBeGreaterThanOrEqual(summonTargetRect.bottom);
+    expect(overlaps(lessonRect, summonTargetRect)).toBe(false);
+    expect(overlaps(lessonRect, summonCircleRect)).toBe(false);
+    expect(overlaps(getLessonButtonRect(elaraButton), summonTargetRect)).toBe(false);
+
+    manager.unmount();
+    stage.remove();
+  });
+
   it('keeps the player dragged position after an automatic target dodge', () => {
     const storage = createMemoryStorage();
     const stage = document.createElement('section');

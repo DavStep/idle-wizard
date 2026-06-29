@@ -383,6 +383,7 @@
 - Temporary Vite UI harnesses must set `--style-ui-scale` to `3 * min(width/1080, height/2170, 1)`; leaving the default `3` compresses source UI in desktop screenshots.
 - Put temporary Vite UI harness HTML at the repo root when it imports source modules or bare deps; `public/` serves raw HTML and bare imports fail.
 - Transient Playwright `page.setContent` UI harnesses must first `goto` the Vite origin before importing `/src/...`; `about:blank` gets blocked by CORS.
+- FTUE placement harnesses should use memory-backed Elara storage and matching `data-tutorial-reveal` tokens; persisted drag placement or entry animations can mask auto-placement logic.
 - If the in-app browser cannot reach `127.0.0.1:55173` or `localhost:55173`, use the Vite network URL printed by `npm run dev`; shell checks can still use localhost.
 - UI storage helpers should prefer `window.localStorage` and validate `getItem`/`setItem`; Vitest can expose a bad global `localStorage` that reads stale tutorial progress.
 - Release automation bumps `package.json`/`package-lock.json` by patch by default; use `--no-version-bump` only when explicitly asked not to version up.

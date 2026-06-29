@@ -36,6 +36,7 @@ const GUIDE_DRAG_MAX_LAG = 18;
 const GUIDE_DRAG_SETTLE_DISTANCE = 0.2;
 const GUIDE_AUTO_MOVE_MS = 225;
 const GUIDE_AUTO_MOVE_TARGET_GAP = HINT_GAP;
+const GUIDE_FLOW_DIRECTION_PENALTY = 220;
 const LESSON_HIDE_MS = 260;
 const POINTER_HIDE_MS = 180;
 const TARGET_EMPHASIS_MS = 560;
@@ -67,11 +68,14 @@ const OBJECTIVE_BUTTON_LEGACY_LEFT_MIN = -HINT_GAP;
 const OBJECTIVE_BUTTON_TOP = OBJECTIVE_TOP + OBJECTIVE_HEIGHT - PORTRAIT_HEIGHT + 9;
 const OBJECTIVE_BUTTON_WIDTH = PORTRAIT_WIDTH;
 const OBJECTIVE_BUTTON_HEIGHT = PORTRAIT_HEIGHT;
+const OBJECTIVE_COLLISION_OVERHANG = 8;
 const OBJECTIVE_PROTECTED_SELECTORS = [
   '.room-top-panel',
   '.room-bottom-panel',
   '.workshop-page__world-chat-box',
   '.workshop-page__summon-button',
+  '.workshop-page__summon-button-text',
+  '.workshop-page__summon-circle',
   '.workshop-page__summon-info-button',
   '.workshop-page__bag-button',
   '.workshop-page__leaderboard-button',
@@ -1407,14 +1411,16 @@ export class TutorialHintManager {
     const targetRects = this.getObjectiveTargetProtectedRects(this.objectiveTarget).map((rect) =>
       padAreaRect(rect, GUIDE_AUTO_MOVE_TARGET_GAP),
     );
+    const targetFlow = this.getObjectiveTargetFlow(this.objectiveTarget);
     const basePlacement =
       this.resolveManualObjectivePlacement({ bounds }) ??
-      this.resolveObjectivePlacement({ bounds, protectedRects });
+      this.resolveObjectivePlacement({ bounds, protectedRects, targetFlow });
     const { placement, animate } = this.resolveGuideAutoMovePlacement({
       basePlacement,
       bounds,
       protectedRects,
       targetRects,
+      targetFlow,
     });
     this.applyObjectivePlacement(placement, { animate });
     this.updateObjectiveAnimationOrigin(placement);
@@ -1585,7 +1591,7 @@ export class TutorialHintManager {
     this.objective.style.setProperty('--tutorial-lesson-enter-y', `${enterY}px`);
   }
 
-  resolveObjectivePlacement({ bounds, protectedRects }) {
+  resolveObjectivePlacement({ bounds, protectedRects, targetFlow }) {
     const outerSize = this.getObjectiveOuterSize();
     const placements = this.getObjectivePlacementCandidates({
       protectedRects,
@@ -1601,18 +1607,25 @@ export class TutorialHintManager {
           getOverlapArea(rects.button, protectedRect),
         0,
       );
+      const flowPenalty = getObjectiveFlowPenalty(rects, targetFlow);
 
       return {
         ...clamped,
         index,
-        score: protectedOverlap,
+        score: protectedOverlap * 10000 + flowPenalty,
       };
     });
 
     return candidates.sort((a, b) => a.score - b.score || a.index - b.index)[0];
   }
 
-  resolveGuideAutoMovePlacement({ basePlacement, bounds, protectedRects, targetRects }) {
+  resolveGuideAutoMovePlacement({
+    basePlacement,
+    bounds,
+    protectedRects,
+    targetRects,
+    targetFlow,
+  }) {
     const avoidRects = [...targetRects, ...protectedRects];
     const autoKey = this.getGuideAutoMoveKey(avoidRects);
     const wasAutoMoving = Boolean(this.guideAutoMove);
@@ -1644,6 +1657,7 @@ export class TutorialHintManager {
       protectedRects,
       outerSize,
       includeObjective,
+      targetFlow,
     });
     const autoOverlap = getObjectivePlacementOverlap(autoPlacement, outerSize, avoidRects, {
       includeObjective,
@@ -1674,6 +1688,7 @@ export class TutorialHintManager {
     protectedRects,
     outerSize,
     includeObjective,
+    targetFlow,
   }) {
     const placements = this.getObjectivePlacementCandidates({
       protectedRects,
@@ -1694,11 +1709,12 @@ export class TutorialHintManager {
         Math.abs(rects.button.top - baseRects.button.top) +
         Math.abs(rects.objective.left - baseRects.objective.left) * 0.35 +
         Math.abs(rects.objective.top - baseRects.objective.top) * 0.35;
+      const flowPenalty = getObjectiveFlowPenalty(rects, targetFlow);
 
       return {
         ...clamped,
         index,
-        score: avoidOverlap * 100000 + protectedOverlap * 1000 + travel,
+        score: avoidOverlap * 100000 + protectedOverlap * 1000 + flowPenalty + travel,
       };
     });
 
@@ -1726,8 +1742,10 @@ export class TutorialHintManager {
 
     for (const rect of protectedRects) {
       placements.push(
-        createObjectivePlacement(rect.top - outerSize.height - HINT_GAP),
-        createObjectivePlacement(rect.bottom + HINT_GAP),
+        createObjectivePlacement(
+          rect.top - outerSize.height - HINT_GAP - OBJECTIVE_COLLISION_OVERHANG,
+        ),
+        createObjectivePlacement(rect.bottom + HINT_GAP + OBJECTIVE_COLLISION_OVERHANG),
       );
     }
 
@@ -1817,6 +1835,41 @@ export class TutorialHintManager {
     return OBJECTIVE_TARGET_CONTAINER_SELECTORS.map((selector) =>
       target?.closest?.(selector),
     ).find(Boolean);
+  }
+
+  getObjectiveTargetFlow(target) {
+    if (!this.stage || !target || !isVisibleElement(target, this.stage)) {
+      return null;
+    }
+
+    const targetRect = unionAreaRects(this.getObjectiveTargetProtectedRects(target));
+
+    if (!targetRect) {
+      return null;
+    }
+
+    const visibleTargetRects = [...this.stage.querySelectorAll('[data-tutorial-id]')]
+      .filter(
+        (element) =>
+          element !== target &&
+          !target.contains?.(element) &&
+          !element.contains?.(target) &&
+          !element.closest?.('.tutorial-layer') &&
+          isVisibleElement(element, this.stage),
+      )
+      .map((element) => this.getSourceAreaRect(element))
+      .filter(Boolean)
+      .filter((rect) => !areaRectsMostlyOverlap(rect, targetRect));
+    const upScore = getFlowDirectionScore(visibleTargetRects, targetRect, 'up');
+    const downScore = getFlowDirectionScore(visibleTargetRects, targetRect, 'down');
+    const direction = getDominantFlowDirection(upScore, downScore);
+
+    return direction
+      ? {
+          direction,
+          targetRect,
+        }
+      : null;
   }
 
   getSourceAreaRect(element) {
@@ -2696,9 +2749,9 @@ function getObjectivePlacementRects(
   return {
     objective: {
       left: objectiveLeft,
-      top: objectiveTop,
+      top: objectiveTop - OBJECTIVE_COLLISION_OVERHANG,
       right: objectiveLeft + outerSize.width,
-      bottom: objectiveTop + outerSize.height,
+      bottom: objectiveTop + outerSize.height + OBJECTIVE_COLLISION_OVERHANG,
     },
     button: {
       left: buttonLeft,
@@ -2707,6 +2760,109 @@ function getObjectivePlacementRects(
       bottom: buttonTop + OBJECTIVE_BUTTON_HEIGHT,
     },
   };
+}
+
+function getObjectiveFlowPenalty(rects, targetFlow) {
+  if (!targetFlow?.direction || !targetFlow.targetRect) {
+    return 0;
+  }
+
+  const guideRect = unionAreaRects([rects.objective, rects.button]);
+
+  if (!guideRect) {
+    return 0;
+  }
+
+  const guideCenterY = getAreaRectCenterY(guideRect);
+  const targetCenterY = getAreaRectCenterY(targetFlow.targetRect);
+  const blocksFlow =
+    targetFlow.direction === 'up'
+      ? guideCenterY < targetCenterY
+      : guideCenterY > targetCenterY;
+
+  return blocksFlow ? GUIDE_FLOW_DIRECTION_PENALTY : 0;
+}
+
+function unionAreaRects(rects) {
+  const validRects = rects.filter(Boolean);
+
+  if (validRects.length === 0) {
+    return null;
+  }
+
+  return validRects.reduce(
+    (union, rect) => ({
+      left: Math.min(union.left, rect.left),
+      top: Math.min(union.top, rect.top),
+      right: Math.max(union.right, rect.right),
+      bottom: Math.max(union.bottom, rect.bottom),
+    }),
+    { ...validRects[0] },
+  );
+}
+
+function getFlowDirectionScore(rects, targetRect, direction) {
+  const targetCenterX = getAreaRectCenterX(targetRect);
+  const targetWidth = Math.max(1, targetRect.right - targetRect.left);
+
+  return rects.reduce((total, rect) => {
+    const gap = direction === 'up' ? targetRect.top - rect.bottom : rect.top - targetRect.bottom;
+
+    if (gap < 0) {
+      return total;
+    }
+
+    const horizontalOverlap = Math.max(
+      0,
+      Math.min(rect.right, targetRect.right) - Math.max(rect.left, targetRect.left),
+    );
+    const rectWidth = Math.max(1, rect.right - rect.left);
+    const overlapScore = horizontalOverlap / Math.min(targetWidth, rectWidth);
+    const centerDistance = Math.abs(getAreaRectCenterX(rect) - targetCenterX);
+    const centerScore = Math.max(0, 1 - centerDistance / Math.max(96, targetWidth));
+    const alignment = Math.max(overlapScore, centerScore);
+
+    if (alignment <= 0) {
+      return total;
+    }
+
+    return total + alignment / Math.max(24, gap + 24);
+  }, 0);
+}
+
+function getDominantFlowDirection(upScore, downScore) {
+  if (upScore <= 0 && downScore <= 0) {
+    return null;
+  }
+
+  if (upScore > downScore * 1.2) {
+    return 'up';
+  }
+
+  if (downScore > upScore * 1.2) {
+    return 'down';
+  }
+
+  return null;
+}
+
+function areaRectsMostlyOverlap(a, b) {
+  const overlapArea = getOverlapArea(a, b);
+  const smallerArea = Math.min(getAreaRectArea(a), getAreaRectArea(b));
+
+  return smallerArea > 0 && overlapArea / smallerArea >= 0.75;
+}
+
+function getAreaRectArea(rect) {
+  return Math.max(0, rect.right - rect.left) * Math.max(0, rect.bottom - rect.top);
+}
+
+function getAreaRectCenterX(rect) {
+  return rect.left + (rect.right - rect.left) / 2;
+}
+
+function getAreaRectCenterY(rect) {
+  return rect.top + (rect.bottom - rect.top) / 2;
 }
 
 function getObjectivePlacementOverlap(placement, outerSize, rects, { includeObjective = true } = {}) {
