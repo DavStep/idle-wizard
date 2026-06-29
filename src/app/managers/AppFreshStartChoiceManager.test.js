@@ -20,7 +20,7 @@ describe('AppFreshStartChoiceManager', () => {
 
     const dialog = stage.querySelector('.app-fresh-start-choice');
     expect(dialog.hidden).toBe(false);
-    expect(dialog.textContent).toContain('Elara Starbrew');
+    expect(dialog.textContent).toContain('Welcome to Idle Wizard');
     expect(dialog.textContent).toContain('do you already have an account?');
     expect(dialog.textContent).toContain('connect account');
     expect(dialog.textContent).toContain('start new');

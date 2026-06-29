@@ -728,6 +728,48 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
   });
 
+  it('starts new after connecting an empty account from the fresh-start dialog', async () => {
+    let authenticated = false;
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_CONNECT_ACCOUNT)),
+      render: vi.fn(),
+      hide: vi.fn(),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({
+        hasToken: authenticated,
+        oidc: { authenticated, enabled: true },
+      })),
+      signInWithGoogle: vi.fn(() => {
+        authenticated = true;
+        return Promise.resolve({ ok: true });
+      }),
+    };
+    const { lifecycle, getBackendCallbacks } = createLifecycle({
+      freshStartChoiceManager,
+      authFacade,
+    });
+    lifecycle.gameplayFacade.loadPersistenceSave.mockReturnValueOnce(false);
+
+    lifecycle.start();
+    await flushPromises();
+    await flushPromises();
+    await getBackendCallbacks().onGameplaySaveReady({ save: null });
+
+    expect(authFacade.signInWithGoogle).toHaveBeenCalledTimes(1);
+    expect(freshStartChoiceManager.choose).toHaveBeenCalledTimes(1);
+    expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
+      null,
+      lifecycle.ecsFacade,
+    );
+    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+  });
+
   it('pauses gameplay and flushes the last save when maintenance drains', async () => {
     const { lifecycle, getBackendCallbacks, setMaintenance } = createLifecycle();
 

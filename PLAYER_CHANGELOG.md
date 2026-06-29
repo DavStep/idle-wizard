@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.63
+
+- Fixed connecting a new account with no previous save so it starts a fresh game immediately after login instead of asking to start new again.
+- Updated the first-run account choice title to show the game name more clearly.
+
 ## 0.2.62
 
 - Fixed first-run start/account choice screens so the room UI no longer appears behind them before the game is ready.

@@ -358,6 +358,7 @@ export class AppLifecycleManager {
         });
 
         if (returnOnConnectedAccount && this.hasConnectableAccount()) {
+          this.freshStartConfirmed = true;
           return;
         }
 

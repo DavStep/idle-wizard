@@ -5,7 +5,7 @@ const ELARA_IMAGE_URL = new URL(
   '../../assets/characters/elara.png',
   import.meta.url,
 ).href;
-const GUIDE_NAME = 'Elara Starbrew';
+const WELCOME_TITLE = 'Welcome to Idle Wizard';
 
 export class AppFreshStartChoiceManager {
   constructor() {
@@ -43,7 +43,7 @@ export class AppFreshStartChoiceManager {
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = GUIDE_NAME;
+    title.textContent = WELCOME_TITLE;
 
     const guide = document.createElement('div');
     guide.className = 'app-fresh-start-choice__guide';
