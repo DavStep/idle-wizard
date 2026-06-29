@@ -215,6 +215,7 @@ const LEVEL_ONE_COMPLETED_STEP_IDS = [
   'first-summon-seed',
   'first-fill-seed-task',
   'finish-seed-task',
+  'first-task-complete',
   'intro-market',
   'prepare-seed-sale',
   'open-market',
@@ -222,6 +223,7 @@ const LEVEL_ONE_COMPLETED_STEP_IDS = [
   'select-sage-seed-sale',
   'show-selected-sale-amount',
   'earn-tutorial-coin',
+  'first-sale-complete',
   'unselect-sage-seed-sale',
   'level-up-one',
 ];

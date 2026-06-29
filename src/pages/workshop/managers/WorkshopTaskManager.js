@@ -18,6 +18,11 @@ const TASK_REORDER_EARLY_THRESHOLD_RATIO = 0.2;
 const DUPLICATE_TOUCH_CLICK_SUPPRESSION_MS = 450;
 const TASK_REORDER_TRANSITION =
   'transform 225ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms linear';
+const LEVEL_PAYOFF_RESOURCE_BY_LABEL = Object.freeze({
+  'mana cap': 'mana',
+  'mana regen': 'mana',
+  crystal: 'crystal',
+});
 
 export class WorkshopTaskManager {
   constructor({ gameplayFacade, onLevelUpNotice } = {}) {
@@ -956,7 +961,7 @@ export class WorkshopTaskManager {
     const payoffRows = this.getLevelPayoffRows(currentLevel, nextLevel);
     const payoffPreview = this.getLevelPayoffPreview(nextLevel, payoffRows);
 
-    this.setText(row.title, `level ${nextLevel} rewards`);
+    this.setText(row.title, 'rewards');
     this.renderLevelPayoffRows(payoffRows, row.rows);
     this.setAttribute(row.root, 'aria-label', payoffPreview);
   }
@@ -1098,6 +1103,7 @@ export class WorkshopTaskManager {
     container.replaceChildren(
       ...displayRows.map((row) => {
         const valueLines = Array.isArray(row.valueLines) ? row.valueLines : [];
+        const resourceKey = this.getLevelPayoffResourceKey(row);
         const root = document.createElement('div');
         root.className = 'workshop-page__level-payoff-row';
         root.classList.toggle('workshop-page__level-payoff-row--list', valueLines.length > 0);
@@ -1108,10 +1114,11 @@ export class WorkshopTaskManager {
 
         const label = document.createElement('span');
         label.className = 'workshop-page__level-payoff-label';
-        label.textContent = row.label;
+        setResourceIconText(label, row.label);
 
         const value = document.createElement('span');
         value.className = 'workshop-page__level-payoff-value';
+        setResourceColor(value, resourceKey);
 
         if (valueLines.length > 0) {
           value.classList.add('workshop-page__level-payoff-value--list');
@@ -1131,6 +1138,11 @@ export class WorkshopTaskManager {
         return root;
       }),
     );
+  }
+
+  getLevelPayoffResourceKey(row) {
+    const label = String(row?.label ?? '').toLowerCase();
+    return LEVEL_PAYOFF_RESOURCE_BY_LABEL[label] ?? null;
   }
 
   getButtonText(task) {

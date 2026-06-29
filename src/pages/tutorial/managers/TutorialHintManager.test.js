@@ -2228,6 +2228,97 @@ describe('TutorialHintManager', () => {
     expect(controls.some((control) => overlaps(buttonRect, control))).toBe(false);
   });
 
+  it('keeps the expanded Workshop pin lesson on the lower side when that slot is clear', () => {
+    const stage = document.createElement('section');
+    const requirements = document.createElement('section');
+    const pinButton = document.createElement('button');
+    const summonButton = document.createElement('button');
+    const summonCircle = document.createElement('span');
+    const summonText = document.createElement('span');
+    const summonInfoButton = document.createElement('button');
+    const mailButton = document.createElement('button');
+    const bagButton = document.createElement('button');
+    const manager = new TutorialHintManager();
+    const protectedAreas = [
+      { left: 16, top: 82, right: 344, bottom: 248 },
+      { left: 82, top: 398, right: 278, bottom: 488 },
+      { left: 135, top: 424, right: 227, bottom: 456 },
+      { left: 240, top: 388, right: 258, bottom: 406 },
+      { left: 130, top: 500, right: 230, bottom: 528 },
+      { left: 16, top: 540, right: 116, bottom: 568 },
+    ];
+
+    useFixedLessonSize(manager);
+    requirements.className = 'workshop-page__tasks style-box is-expanded is-pinned';
+    pinButton.className = 'workshop-page__tasks-pin';
+    pinButton.dataset.tutorialId = 'workshop:tasksPin';
+    summonButton.className = 'style-button workshop-page__summon-button';
+    summonCircle.className = 'workshop-page__summon-circle';
+    summonText.className = 'workshop-page__summon-button-text';
+    summonInfoButton.className = 'workshop-page__summon-info-button';
+    mailButton.className = 'style-button workshop-page__mail-button';
+    bagButton.className = 'style-button workshop-page__bag-button';
+    summonButton.append(summonCircle, summonText);
+    requirements.append(pinButton);
+
+    [
+      requirements,
+      summonCircle,
+      summonButton,
+      summonInfoButton,
+      mailButton,
+      bagButton,
+    ].forEach((element, index) => {
+      const rect = protectedAreas[index];
+      setClientRect(
+        element,
+        toClientRect({
+          left: rect.left,
+          top: rect.top,
+          width: rect.right - rect.left,
+          height: rect.bottom - rect.top,
+        }),
+      );
+    });
+    setClientRect(
+      pinButton,
+      toClientRect({
+        left: 20,
+        top: 232,
+        width: 34,
+        height: 18,
+      }),
+    );
+    stage.append(requirements, summonButton, summonInfoButton, mailButton, bagButton);
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showLesson({
+      id: 'grow-sage-pin',
+      title: 'lesson 3: gardening',
+      text: 'pin level 3 requirements so they stay open.',
+      stepLabel: '19/32',
+      progress: { value: 0, max: 2 },
+      progressLabel: '0/2 sage',
+      canShowTarget: true,
+      target: pinButton,
+    });
+
+    const button = stage.querySelector('.tutorial-layer__lesson-button');
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
+    const lessonRect = getLessonRect(lesson);
+    const buttonRect = getLessonButtonRect(button);
+
+    expect(lessonRect.top).toBeGreaterThan(protectedAreas.at(-1).bottom);
+    expect(protectedAreas.some((area) => overlaps(lessonRect, area))).toBe(false);
+    expect(protectedAreas.some((area) => overlaps(buttonRect, area))).toBe(false);
+
+    manager.unmount();
+    stage.remove();
+  });
+
   it('protects Workshop summon controls from open lesson placement', () => {
     const stage = document.createElement('section');
     const requirements = document.createElement('section');

@@ -5,7 +5,8 @@ const ELARA_IMAGE_URL = new URL(
   '../../assets/characters/elara.png',
   import.meta.url,
 ).href;
-const WELCOME_TITLE = 'Welcome to Idle Wizard';
+const GUIDE_NAME = 'Elara Starbrew';
+const WELCOME_HEADING = 'Welcome to Idle Wizard';
 
 export class AppFreshStartChoiceManager {
   constructor() {
@@ -43,7 +44,7 @@ export class AppFreshStartChoiceManager {
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = WELCOME_TITLE;
+    title.textContent = GUIDE_NAME;
 
     const guide = document.createElement('div');
     guide.className = 'app-fresh-start-choice__guide';
@@ -57,6 +58,10 @@ export class AppFreshStartChoiceManager {
 
     const copy = document.createElement('div');
     copy.className = 'app-fresh-start-choice__copy';
+
+    const heading = document.createElement('p');
+    heading.className = 'app-fresh-start-choice__heading';
+    heading.textContent = WELCOME_HEADING;
 
     const message = document.createElement('p');
     message.className = 'app-fresh-start-choice__message';
@@ -83,7 +88,7 @@ export class AppFreshStartChoiceManager {
     freshButton.textContent = 'start new';
     freshButton.setAttribute('aria-label', 'start new');
 
-    copy.append(message, status);
+    copy.append(heading, message, status);
     guide.append(portrait, copy);
     actions.append(connectButton, freshButton);
     dialog.append(title, guide, actions);

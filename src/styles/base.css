@@ -1093,9 +1093,15 @@ body {
   min-height: 125px;
 }
 
+.app-fresh-start-choice__heading,
 .app-fresh-start-choice__message,
 .app-fresh-start-choice__status {
   margin: 0;
+}
+
+.app-fresh-start-choice__heading {
+  margin-bottom: 6px;
+  font-weight: bold;
 }
 
 .app-fresh-start-choice__status {
@@ -4753,20 +4759,22 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__level-payoff-title {
-  position: absolute;
-  top: var(--style-box-border-label-offset);
-  left: 0;
-  padding-right: 3px;
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 2px;
   color: var(--style-text);
   font-size: var(--style-box-border-label-font-size);
   font-weight: normal;
   line-height: var(--style-box-border-label-line-height);
+  text-align: center;
   background: transparent;
 }
 
 .workshop-page__level-payoff-rows {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0;
   font-size: var(--style-tiny-font-size);
   line-height: var(--style-tiny-line-height);
@@ -4775,6 +4783,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__level-payoff-row {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
+  justify-content: center;
   gap: var(--style-row-column-gap);
   align-items: baseline;
   min-height: var(--style-tiny-line-height);
@@ -4794,8 +4803,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__level-payoff-value {
   min-width: 0;
   font-variant-numeric: tabular-nums lining-nums;
-  justify-self: end;
-  text-align: right;
+  justify-self: start;
+  text-align: left;
   white-space: nowrap;
 }
 

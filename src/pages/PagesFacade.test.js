@@ -4688,7 +4688,8 @@ describe('PagesFacade', () => {
     expect(list.querySelector('.workshop-page__task-label')?.textContent).toBe('mint seed');
     expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
     expect(rewards?.hidden).toBe(false);
-    expect(rewards?.textContent).toContain('level 2 rewards');
+    expect(rewards?.textContent).toContain('rewards');
+    expect(rewards?.textContent).not.toContain('level 2 rewards');
     expect(rewardsToggle?.hidden).toBe(true);
     expect(rewardsToggle?.disabled).toBe(true);
     expect(pinButton?.textContent).toBe('pin');
@@ -5753,7 +5754,7 @@ describe('PagesFacade', () => {
 
     expect(completion?.hidden).toBe(false);
     expect(rewards?.hidden).toBe(false);
-    expect(payoffTitle?.textContent).toBe('level 2 rewards');
+    expect(payoffTitle?.textContent).toBe('rewards');
     expect(payoffRows).toEqual([
       ['unlocks', 'garden'],
       ['garden plots', '+1'],
@@ -5761,6 +5762,25 @@ describe('PagesFacade', () => {
       ['mana regen', '+1/sec'],
       ['crystal', '+1'],
     ]);
+    expect(
+      rewards?.querySelector(
+        '.workshop-page__level-payoff-label .style-resource-label--mana .style-resource-label__icon',
+      )?.dataset.assetAtlasFrame,
+    ).toBe('resource:mana');
+    expect(
+      rewards?.querySelector(
+        '.workshop-page__level-payoff-label .style-resource-label--crystal .style-resource-label__icon',
+      )?.dataset.assetAtlasFrame,
+    ).toBe('resource:crystal');
+    expect(
+      rewards
+        ?.querySelectorAll('.workshop-page__level-payoff-value[data-resource-color="mana"]')
+        .length,
+    ).toBe(2);
+    expect(
+      rewards?.querySelector('.workshop-page__level-payoff-value[data-resource-color="crystal"]')
+        ?.textContent,
+    ).toBe('+1');
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
     expect(button?.textContent).toBe('level up10 coin');
     expect(button?.disabled).toBe(false);

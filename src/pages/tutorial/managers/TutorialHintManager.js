@@ -78,6 +78,7 @@ const OBJECTIVE_PROTECTED_SELECTORS = [
   '.workshop-page__summon-button-text',
   '.workshop-page__summon-circle',
   '.workshop-page__summon-info-button',
+  '.workshop-page__mail-button',
   '.workshop-page__bag-button',
   '.workshop-page__leaderboard-button',
   '.workshop-page__trade-alliance-button',
@@ -1603,6 +1604,12 @@ export class TutorialHintManager {
 
   resolveObjectivePlacement({ bounds, protectedRects, targetFlow }) {
     const outerSize = this.getObjectiveOuterSize();
+    const preferredPlacement = this.clampObjectivePlacement(
+      OBJECTIVE_PLACEMENTS[0],
+      bounds,
+      outerSize,
+    );
+    const preferredRects = getObjectivePlacementRects(preferredPlacement, outerSize);
     const placements = this.getObjectivePlacementCandidates({
       protectedRects,
       outerSize,
@@ -1621,7 +1628,10 @@ export class TutorialHintManager {
         ...clamped,
         index,
         protectedOverlap,
-        score: protectedOverlap * 10000 + getObjectiveFlowPenalty(rects, targetFlow),
+        score:
+          protectedOverlap * 10000 +
+          getObjectiveFlowPenalty(rects, targetFlow) +
+          getObjectivePlacementDistance(rects, preferredRects),
       };
     });
 
@@ -2794,6 +2804,15 @@ function getObjectiveFlowPenalty(rects, targetFlow) {
       : guideCenterY > targetCenterY;
 
   return blocksFlow ? GUIDE_FLOW_DIRECTION_PENALTY : 0;
+}
+
+function getObjectivePlacementDistance(rects, preferredRects) {
+  return (
+    Math.abs(rects.objective.top - preferredRects.objective.top) +
+    Math.abs(rects.button.top - preferredRects.button.top) +
+    Math.abs(rects.objective.left - preferredRects.objective.left) * 0.35 +
+    Math.abs(rects.button.left - preferredRects.button.left) * 0.35
+  );
 }
 
 function unionAreaRects(rects) {

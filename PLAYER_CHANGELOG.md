@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.67
+
+- Improved Elara's early lessons with short checkpoint prompts after the first task, sale, harvest, research, and brew.
+- Polished first-run onboarding copy so Elara introduces the account choice more clearly.
+- Cleaned up Workshop reward labels, tutorial placement, and framed button art for a sharper mobile view.
+
 ## 0.2.66
 
 - Polished Midnight theme buttons and bottom tabs so normal, selected, and locked states use the cleaner framed surfaces.

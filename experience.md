@@ -216,6 +216,7 @@
 - In-app Browser blocks `data:` and `file:` fixture pages; use the real app state or an HTTP-served local harness for browser UI QA.
 - Local preview harnesses that must survive after a Codex command exits need a real daemon/session detach; plain `nohup ... &` can be cleaned up by the command harness.
 - For raster 9-slice extraction, preserve source pixels with clean samples, color-keying, and gutter trims; geometric chamfers or redrawn mirrored lines can make the asset look vectorized.
+- For creating, editing, extracting, validating, or debugging 9-slice assets, use the `nine-slice-generator` skill before hand-editing assets.
 - Brewing drag screenshot QA needs an unlocked level-4+ save or `VITE_ENABLE_CHEATS=true`; a level-2 local save cannot reach herb drag controls.
 - Cauldron staged-recipe QA should use minimal unlocks and explicit ingredients; `unlockAllResearch` can raise cauldron batch level and make base recipe staging fail.
 - Tutorial motion/visual QA harnesses must set `--style-ui-scale` to `3 * viewportScale`; using only viewport scale makes Elara/source UI look tiny and gives misleading screenshots.
@@ -254,6 +255,7 @@
 - FTUE grow-sage should treat planted active sage as a current source; seed inventory dropping to zero during growth must not route guidance back to Workshop.
 - FTUE grow-sage should stay visible during planted sage wait states; hide pointer/show-me guidance there, but do not pause Elara entirely.
 - Elara objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
+- Elara collision fallback should prefer the lower default slot when multiple placements clear protected controls; first-safe ordering can put her in the upper lane.
 - Elara objective placement must also avoid visible research sub-tabs; otherwise the tab corner peeks under the lesson border-label area.
 - Elara objective placement must protect the whole fast-sell tab strip when targeting one tab; a single tab rect can leave the guide covering adjacent tab controls.
 - Draggable Elara placement must test portrait/button overlap with the lesson panel; side-only clamping can shove the panel under Elara near the right edge.

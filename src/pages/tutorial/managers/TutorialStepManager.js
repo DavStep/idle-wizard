@@ -44,6 +44,7 @@ const LEVEL_ONE_STEP_IDS = [
   'first-summon-seed',
   'first-fill-seed-task',
   'finish-seed-task',
+  'first-task-complete',
   'intro-market',
   'prepare-seed-sale',
   'open-market',
@@ -51,6 +52,7 @@ const LEVEL_ONE_STEP_IDS = [
   'select-sage-seed-sale',
   'show-selected-sale-amount',
   'earn-tutorial-coin',
+  'first-sale-complete',
   'unselect-sage-seed-sale',
   'level-up-one',
 ];
@@ -58,6 +60,7 @@ const LEVEL_ONE_STEP_IDS = [
 const LEVEL_TWO_STEP_IDS = [
   'intro-garden',
   'grow-sage',
+  'first-harvest-complete',
   'fill-sage-herb-task',
   'fill-sage-seed-task',
   'level-up-two',
@@ -66,6 +69,7 @@ const LEVEL_TWO_STEP_IDS = [
 const LEVEL_THREE_STEP_IDS = [
   'intro-research',
   'research-mint-seed',
+  'first-research-complete',
   'fill-mint-seed-task',
   'fill-mint-herb-task',
   'level-up-three',
@@ -75,6 +79,7 @@ const LEVEL_FOUR_STEP_IDS = [
   'research-mana-tonic',
   'intro-brewing',
   'brew-mana-tonic',
+  'first-brew-complete',
   'refill-mana-tonic-cauldron',
 ];
 
@@ -104,6 +109,7 @@ const LESSON_TITLE_BY_STEP_ID = new Map([
   ...GARDENING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 3: gardening']),
   ...BREWING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 4: brewing']),
   ...SETTINGS_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 5: settings']),
+  ['first-task-complete', 'lesson 1: introduction'],
   ['purchase-house', 'the story begins'],
   ['intro-market', 'market opened'],
   ['intro-garden', 'garden opened'],
@@ -294,6 +300,21 @@ export const TUTORIAL_STEPS = [
       getCurrentLevel(snapshot) === 1 && !isLevelOneSeedTaskComplete(snapshot),
     isComplete: ({ snapshot }) =>
       getCurrentLevel(snapshot) >= 2 || isLevelOneSeedTaskComplete(snapshot),
+  },
+  {
+    id: 'first-task-complete',
+    kind: 'prompt',
+    revealTokens: REVEAL_MANA_SUMMON_TASKS,
+    text:
+      'good. tasks are how the workshop asks for supplies. finish them to restore more of the house.',
+    advanceOnClick: true,
+    showPointer: false,
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 1 &&
+      isLevelOneSeedTaskComplete(snapshot) &&
+      getCoin(snapshot) < LEVEL_ONE_COIN_TARGET,
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 2 || getCoin(snapshot) >= LEVEL_ONE_COIN_TARGET,
   },
   {
     id: 'intro-market',
@@ -513,6 +534,21 @@ export const TUTORIAL_STEPS = [
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2 || getCoin(snapshot) >= LEVEL_ONE_COIN_TARGET,
   },
   {
+    id: 'first-sale-complete',
+    kind: 'prompt',
+    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
+    text: 'that was coin. coin pays for level-ups and opens new rooms.',
+    advanceLabel: 'open workshop',
+    advancePageId: 'workshop',
+    advanceOnClick: true,
+    showPointer: false,
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 1 &&
+      isLevelOneSeedTaskComplete(snapshot) &&
+      getCoin(snapshot) >= LEVEL_ONE_COIN_TARGET,
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
+  },
+  {
     id: 'unselect-sage-seed-sale',
     kind: 'objective',
     pageId: 'shop',
@@ -557,8 +593,7 @@ export const TUTORIAL_STEPS = [
     kind: 'dialog',
     targetId: 'page:garden',
     revealTokens: null,
-    text:
-      'there is a small growing plot behind the house.\n\nyou can plant seeds there.',
+    text: 'level 2. the garden is open now.\n\nseeds can become herbs there.',
     advanceLabel: 'open garden',
     advancePageId: 'garden',
     advanceOnClick: true,
@@ -707,6 +742,21 @@ export const TUTORIAL_STEPS = [
       getCurrentLevel(snapshot) >= 3 ||
       hasGrownEnoughSageForLesson(snapshot) ||
       hasTaskActionForItem(snapshot, SAGE_HERB_KEY),
+  },
+  {
+    id: 'first-harvest-complete',
+    kind: 'prompt',
+    text: 'seed became sage. when tasks ask for herbs, grow them here first.',
+    advanceOnClick: true,
+    showPointer: false,
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 2 &&
+      !hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY) &&
+      (hasTaskActionForItem(snapshot, SAGE_HERB_KEY) ||
+        getItemQuantity(snapshot, SAGE_HERB_KEY) > 0 ||
+        hasTaskProgressForItem(snapshot, SAGE_HERB_KEY)),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 3 || hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY),
   },
   {
     id: 'fill-sage-herb-task',
@@ -900,6 +950,19 @@ export const TUTORIAL_STEPS = [
       getCurrentLevel(snapshot) >= 4 ||
       hasCompletedResearch(snapshot, MINT_SEED_RESEARCH_ID) ||
       hasTaskActionForItem(snapshot, MINT_SEED_KEY),
+  },
+  {
+    id: 'first-research-complete',
+    kind: 'prompt',
+    text: 'research unlocks new things the workshop can make. mint seed is available now.',
+    advanceOnClick: true,
+    showPointer: false,
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 3 &&
+      hasCompletedResearch(snapshot, MINT_SEED_RESEARCH_ID) &&
+      !hasCompletedTaskForItem(snapshot, MINT_SEED_KEY),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, MINT_SEED_KEY),
   },
   {
     id: 'fill-mint-seed-task',
@@ -1208,6 +1271,23 @@ export const TUTORIAL_STEPS = [
       getCurrentLevel(snapshot) >= 4 && hasCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID),
     isComplete: ({ snapshot }) =>
       getCurrentLevel(snapshot) >= 5 || hasBrewedManaTonic(snapshot),
+  },
+  {
+    id: 'first-brew-complete',
+    kind: 'prompt',
+    text:
+      'first potion brewed. brewing uses herbs in order, so the cauldron setup matters.',
+    advanceOnClick: true,
+    showPointer: false,
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 4 &&
+      hasBrewedManaTonic(snapshot) &&
+      !hasCompletedTaskForItem(snapshot, MANA_TONIC_KEY) &&
+      !isActiveManaTonicBrew(snapshot),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 5 ||
+      hasCompletedTaskForItem(snapshot, MANA_TONIC_KEY) ||
+      isActiveManaTonicBrew(snapshot),
   },
   {
     id: 'refill-mana-tonic-cauldron',
