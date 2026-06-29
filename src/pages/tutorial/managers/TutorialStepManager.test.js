@@ -828,7 +828,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('continues the same objective style for garden', () => {
+  it('uses direct garden action text while growing sage', () => {
     const snapshot = createSnapshot({
       tasks: { currentLevel: 2, level: { tasks: [] } },
       seedInventory: [{ key: 'sageSeed', quantity: 1 }],
@@ -852,7 +852,7 @@ describe('TutorialStepManager', () => {
       id: 'grow-sage',
       kind: 'objective',
       targetId: 'garden:plot:1:label',
-      objectiveText: 'sage seed grows into sage. plant one, then harvest it.',
+      objectiveText: 'tap the empty plot, then choose sage seed.',
       progressLabel: '0/3 sage',
       cueMode: 'active',
       stepLabel: '21/37',
@@ -915,7 +915,7 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:tasks',
       hintText: 'open level 3 requirements',
       objectiveText:
-        "now level 3 requires 2 sages and 7 sage seeds to level up. fussy little list. let's start growing sage.",
+        'to reach level 3, turn in 2 sages and 7 sage seeds. grow sage first.',
       autoPageId: null,
       progressLabel: '0/2 sage',
     });
@@ -995,7 +995,7 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:tasks',
       hintText: 'open level 3 requirements',
       objectiveText:
-        "now level 3 requires 2 sages and 7 sage seeds to level up. fussy little list. let's start growing sage.",
+        'to reach level 3, turn in 2 sages and 7 sage seeds. grow sage first.',
       autoPageId: null,
       progressLabel: '0/2 sage',
     });
@@ -1026,15 +1026,52 @@ describe('TutorialStepManager', () => {
       hintText: 'open garden',
       autoPageId: 'garden',
       objectiveText:
-        "now level 3 requires 2 sages and 7 sage seeds to level up. fussy little list. let's start growing sage.",
+        'to reach level 3, turn in 2 sages and 7 sage seeds. grow sage first.',
     });
 
     expect(getStep({ pageId: 'garden', snapshot })).toMatchObject({
       id: 'grow-sage',
       targetId: 'garden:plot:1:label',
+      hintText: 'tap empty plot',
+      objectiveText: 'tap the empty plot, then choose sage seed.',
+    });
+
+    expect(
+      getStep({
+        pageId: 'garden',
+        snapshot,
+        dom: createDomFake({ seedPopupOpen: true }),
+      }),
+    ).toMatchObject({
+      id: 'grow-sage',
+      targetId: 'garden:seed:sageSeed',
       hintText: 'choose sage seed',
-      objectiveText:
-        "now level 3 requires 2 sages and 7 sage seeds to level up. fussy little list. let's start growing sage.",
+      objectiveText: 'choose sage seed for this plot.',
+    });
+
+    const selectedSnapshot = {
+      ...snapshot,
+      garden: {
+        ...snapshot.garden,
+        plot: {
+          ...snapshot.garden.plot,
+          tiles: [
+            {
+              ...snapshot.garden.plot.tiles[0],
+              selectedSeedItemTypeId: 1,
+              selectedSeedKey: 'sageSeed',
+              selectedSeedLabel: 'sage seed',
+            },
+          ],
+        },
+      },
+    };
+
+    expect(getStep({ pageId: 'garden', snapshot: selectedSnapshot })).toMatchObject({
+      id: 'grow-sage',
+      targetId: 'garden:plot:1',
+      hintText: 'plant sage seed',
+      objectiveText: 'tap the plot to plant sage seed.',
     });
   });
 
@@ -1063,7 +1100,9 @@ describe('TutorialStepManager', () => {
     expect(getStep({ pageId: 'garden', snapshot })).toMatchObject({
       id: 'grow-sage',
       progress: { value: 1, max: 2 },
-      objectiveText: 'keep going. grow sage 2 times.',
+      targetId: 'page:workshop',
+      hintText: 'open workshop',
+      objectiveText: 'open workshop and summon a sage seed.',
       progressLabel: '1/2 sage',
       cueMode: 'delayed-target',
     });

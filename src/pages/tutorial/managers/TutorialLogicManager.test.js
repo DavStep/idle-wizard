@@ -75,6 +75,7 @@ describe('TutorialLogicManager', () => {
         id: 'finish-seed-task',
         title: undefined,
         autoOpen: true,
+        canShowTarget: false,
       },
       cue: {
         kind: 'target-cue',
@@ -202,14 +203,15 @@ describe('TutorialLogicManager', () => {
       lessonPanelOpen: false,
     });
 
-    expect(
-      manager.getViewState({
-        snapshot: {},
-        dom: {},
-        targetResolver: () => target,
-        lessonPanelOpen: true,
-      }).cue,
-    ).toEqual({
+    const openState = manager.getViewState({
+      snapshot: {},
+      dom: {},
+      targetResolver: () => target,
+      lessonPanelOpen: true,
+    });
+
+    expect(openState.lesson.canShowTarget).toBe(true);
+    expect(openState.cue).toEqual({
       kind: 'none',
       lessonAttention: false,
       nextRefreshAt: null,

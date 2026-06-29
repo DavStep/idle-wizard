@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.69
+
+- Improved Elara's early Garden guidance so she gives clearer next steps for summoning, planting, waiting, and harvesting sage.
+- Kept tutorial target pointers aligned while nearby panels expand or collapse.
+- Polished Midnight theme frames and Workshop level reward labels for cleaner mobile readability.
+
 ## 0.2.68
 
 - Rebalanced Garden and Brewing capacity so the first prestige rewards unlock extra plots and cauldrons sooner through capacity research.

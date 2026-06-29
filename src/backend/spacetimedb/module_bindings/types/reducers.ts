@@ -19,6 +19,7 @@ import AdminResetPlayerProgressionDataReducer from "../admin_reset_player_progre
 import AdminSendPlayerInboxBroadcastReducer from "../admin_send_player_inbox_broadcast_reducer";
 import AdminSendPlayerInboxMailReducer from "../admin_send_player_inbox_mail_reducer";
 import AdminSetPlayerLevelByIdentityReducer from "../admin_set_player_level_by_identity_reducer";
+import AdminSetPlayerPlotCapacityResearchByIdentityReducer from "../admin_set_player_plot_capacity_research_by_identity_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "../admin_set_trade_alliance_member_role_reducer";
 import AdminSettleWorldEventInboxRewardsReducer from "../admin_settle_world_event_inbox_rewards_reducer";
 import AdminWipeAllPlayerDataReducer from "../admin_wipe_all_player_data_reducer";
@@ -84,6 +85,7 @@ export type AdminResetPlayerProgressionDataParams = __Infer<typeof AdminResetPla
 export type AdminSendPlayerInboxBroadcastParams = __Infer<typeof AdminSendPlayerInboxBroadcastReducer>;
 export type AdminSendPlayerInboxMailParams = __Infer<typeof AdminSendPlayerInboxMailReducer>;
 export type AdminSetPlayerLevelByIdentityParams = __Infer<typeof AdminSetPlayerLevelByIdentityReducer>;
+export type AdminSetPlayerPlotCapacityResearchByIdentityParams = __Infer<typeof AdminSetPlayerPlotCapacityResearchByIdentityReducer>;
 export type AdminSetTradeAllianceMemberRoleParams = __Infer<typeof AdminSetTradeAllianceMemberRoleReducer>;
 export type AdminSettleWorldEventInboxRewardsParams = __Infer<typeof AdminSettleWorldEventInboxRewardsReducer>;
 export type AdminWipeAllPlayerDataParams = __Infer<typeof AdminWipeAllPlayerDataReducer>;

@@ -859,11 +859,13 @@ describe('TutorialFacade', () => {
 
     const lesson = stage.querySelector('.tutorial-layer__lesson');
     const hint = stage.querySelector('.tutorial-layer__hint');
+    const showButton = stage.querySelector('.tutorial-layer__lesson-show');
 
     expect(facade.activeStep?.id).toBe('finish-seed-task');
     expect(lesson?.hidden).toBe(false);
     expect(hint?.hidden).toBe(true);
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
+    expect(showButton?.hidden).toBe(true);
     expect([lesson, hint].filter((element) => element && !element.hidden)).toHaveLength(1);
 
     facade.unmount();
@@ -1217,10 +1219,12 @@ describe('TutorialFacade', () => {
 
     expect(facade.activeStep?.id).toBe('grow-sage');
     expect(pointer?.hidden).toBe(true);
+    expect(showButton?.hidden).toBe(false);
 
     showButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(pointer?.hidden).toBe(false);
+    expect(showButton?.hidden).toBe(true);
     expect(summonButton.classList.contains('is-tutorial-target-emphasized')).toBe(true);
     expect(summonButton.getAttribute('data-tutorial-target-emphasis')).toBe('true');
 

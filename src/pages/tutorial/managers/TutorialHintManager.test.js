@@ -392,6 +392,200 @@ describe('TutorialHintManager', () => {
     }
   });
 
+  it('hides the stale pointer while the next target layout is not ready', () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const originalCancelAnimationFrame = window.cancelAnimationFrame;
+    const hadRequestAnimationFrame = 'requestAnimationFrame' in window;
+    const hadCancelAnimationFrame = 'cancelAnimationFrame' in window;
+    const frames = [];
+    const requestAnimationFrame = vi.fn((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const cancelAnimationFrame = vi.fn();
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: requestAnimationFrame,
+      writable: true,
+    });
+    Object.defineProperty(window, 'cancelAnimationFrame', {
+      configurable: true,
+      value: cancelAnimationFrame,
+      writable: true,
+    });
+
+    try {
+      const stage = document.createElement('section');
+      const firstTarget = document.createElement('button');
+      const nextTarget = document.createElement('button');
+      const manager = new TutorialHintManager();
+      let nextRect = { left: 0, top: 0, width: 0, height: 0 };
+
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      setClientRect(
+        firstTarget,
+        toClientRect({
+          left: 90,
+          top: 120,
+          width: 64,
+          height: 24,
+        }),
+      );
+      nextTarget.getBoundingClientRect = () => ({
+        x: nextRect.left,
+        y: nextRect.top,
+        right: nextRect.left + nextRect.width,
+        bottom: nextRect.top + nextRect.height,
+        ...nextRect,
+      });
+      stage.append(firstTarget, nextTarget);
+      document.body.append(stage);
+
+      manager.mount(stage);
+      manager.showTargetCue({ target: firstTarget });
+      frames.shift()?.(0);
+
+      const pointer = stage.querySelector('.tutorial-layer__pointer');
+
+      expect(pointer?.hidden).toBe(false);
+      expect(pointer?.style.left).toBe('138px');
+      expect(pointer?.style.top).toBe('148px');
+
+      manager.showTargetCue({ target: nextTarget });
+
+      expect(pointer?.hidden).toBe(true);
+
+      nextRect = toClientRect({
+        left: 4,
+        top: 4,
+        width: 60,
+        height: 30,
+      });
+      frames.shift()?.(16);
+
+      expect(pointer?.hidden).toBe(false);
+      expect(pointer?.style.left).toBe('50px');
+      expect(pointer?.style.top).toBe('35px');
+
+      manager.unmount();
+      stage.remove();
+    } finally {
+      if (hadRequestAnimationFrame) {
+        Object.defineProperty(window, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'requestAnimationFrame');
+      }
+
+      if (hadCancelAnimationFrame) {
+        Object.defineProperty(window, 'cancelAnimationFrame', {
+          configurable: true,
+          value: originalCancelAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'cancelAnimationFrame');
+      }
+    }
+  });
+
+  it('follows the Workshop pin cue while expanded requirements settle', () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const originalCancelAnimationFrame = window.cancelAnimationFrame;
+    const hadRequestAnimationFrame = 'requestAnimationFrame' in window;
+    const hadCancelAnimationFrame = 'cancelAnimationFrame' in window;
+    const frames = [];
+    const requestAnimationFrame = vi.fn((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const cancelAnimationFrame = vi.fn();
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: requestAnimationFrame,
+      writable: true,
+    });
+    Object.defineProperty(window, 'cancelAnimationFrame', {
+      configurable: true,
+      value: cancelAnimationFrame,
+      writable: true,
+    });
+
+    try {
+      const stage = document.createElement('section');
+      const requirements = document.createElement('section');
+      const pinButton = document.createElement('button');
+      const manager = new TutorialHintManager();
+      let pinTop = 96;
+
+      requirements.className = 'workshop-page__tasks style-box is-expanded is-expanding';
+      pinButton.className = 'workshop-page__tasks-pin';
+      pinButton.dataset.tutorialId = 'workshop:tasksPin';
+      pinButton.getBoundingClientRect = () =>
+        toClientRect({
+          left: 20,
+          top: pinTop,
+          width: 34,
+          height: 18,
+        });
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      requirements.append(pinButton);
+      stage.append(requirements);
+      document.body.append(stage);
+
+      manager.mount(stage);
+      manager.showTargetCue({ target: pinButton });
+
+      const pointer = stage.querySelector('.tutorial-layer__pointer');
+
+      expect(pointer?.hidden).toBe(false);
+      expect(pointer?.dataset.placement).toBe('bottom-right');
+      expect(pointer?.style.top).toBe('121px');
+      expect(requestAnimationFrame).toHaveBeenCalledTimes(2);
+
+      pinTop = 232;
+      frames.shift()?.(0);
+      frames.shift()?.(16);
+
+      expect(pointer?.style.top).toBe('257px');
+
+      requirements.classList.remove('is-expanding');
+      frames.shift()?.(32);
+      frames.shift()?.(48);
+
+      expect(pointer?.style.top).toBe('257px');
+      expect(requestAnimationFrame).toHaveBeenCalledTimes(4);
+
+      manager.unmount();
+      stage.remove();
+    } finally {
+      if (hadRequestAnimationFrame) {
+        Object.defineProperty(window, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'requestAnimationFrame');
+      }
+
+      if (hadCancelAnimationFrame) {
+        Object.defineProperty(window, 'cancelAnimationFrame', {
+          configurable: true,
+          value: originalCancelAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'cancelAnimationFrame');
+      }
+    }
+  });
+
   it('does not restart the pointer animation when the same cue repeats', () => {
     const originalRequestAnimationFrame = window.requestAnimationFrame;
     const hadRequestAnimationFrame = 'requestAnimationFrame' in window;

@@ -47,6 +47,7 @@ import AdminResetPlayerProgressionDataReducer from "./admin_reset_player_progres
 import AdminSendPlayerInboxBroadcastReducer from "./admin_send_player_inbox_broadcast_reducer";
 import AdminSendPlayerInboxMailReducer from "./admin_send_player_inbox_mail_reducer";
 import AdminSetPlayerLevelByIdentityReducer from "./admin_set_player_level_by_identity_reducer";
+import AdminSetPlayerPlotCapacityResearchByIdentityReducer from "./admin_set_player_plot_capacity_research_by_identity_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "./admin_set_trade_alliance_member_role_reducer";
 import AdminSettleWorldEventInboxRewardsReducer from "./admin_settle_world_event_inbox_rewards_reducer";
 import AdminWipeAllPlayerDataReducer from "./admin_wipe_all_player_data_reducer";
@@ -721,6 +722,7 @@ const reducersSchema = __reducers(
   __reducerSchema("admin_send_player_inbox_broadcast", AdminSendPlayerInboxBroadcastReducer),
   __reducerSchema("admin_send_player_inbox_mail", AdminSendPlayerInboxMailReducer),
   __reducerSchema("admin_set_player_level_by_identity", AdminSetPlayerLevelByIdentityReducer),
+  __reducerSchema("admin_set_player_plot_capacity_research_by_identity", AdminSetPlayerPlotCapacityResearchByIdentityReducer),
   __reducerSchema("admin_set_trade_alliance_member_role", AdminSetTradeAllianceMemberRoleReducer),
   __reducerSchema("admin_settle_world_event_inbox_rewards", AdminSettleWorldEventInboxRewardsReducer),
   __reducerSchema("admin_wipe_all_player_data", AdminWipeAllPlayerDataReducer),

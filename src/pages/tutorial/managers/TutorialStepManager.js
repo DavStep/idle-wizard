@@ -611,6 +611,10 @@ export const TUTORIAL_STEPS = [
     id: 'grow-sage',
     kind: 'objective',
     getObjectiveText: ({ currentPageId, dom, snapshot }) => {
+      if (shouldIntroduceLevelTwoRequirements({ currentPageId, dom, snapshot })) {
+        return getLevelTwoRequirementIntroText(snapshot);
+      }
+
       if (shouldPinLevelTwoRequirements({ currentPageId, dom, snapshot })) {
         return getLevelTwoRequirementPinText(snapshot);
       }
@@ -619,8 +623,20 @@ export const TUTORIAL_STEPS = [
         return 'summon seed';
       }
 
+      const seedSourceText = getGrowSageSeedSourceText({ currentPageId, snapshot });
+
+      if (seedSourceText) {
+        return seedSourceText;
+      }
+
       if (isGrowSageWaitState(snapshot)) {
         return 'wait for sage to grow';
+      }
+
+      const gardenActionText = getGrowSageGardenActionText({ currentPageId, dom, snapshot });
+
+      if (gardenActionText) {
+        return gardenActionText;
       }
 
       const growTarget = getLessonSageGrowTarget(snapshot);
@@ -723,7 +739,7 @@ export const TUTORIAL_STEPS = [
 
       return tile?.phase === 'growing' || tile?.phase === 'harvesting'
         ? `wait for ${getTileHerbHintName(tile, 'sage')} to grow`
-        : 'choose sage seed';
+        : 'tap empty plot';
     },
     getAutoPageId: ({ currentPageId, dom, snapshot }) =>
       shouldMoveToGardenAfterLevelTwoRequirements({ currentPageId, dom, snapshot })
@@ -2480,6 +2496,58 @@ function hasLevelTwoSageRequirements(snapshot) {
   );
 }
 
+function getGrowSageSeedSourceText({ currentPageId, snapshot }) {
+  if (
+    getItemQuantity(snapshot, SAGE_SEED_KEY) > 0 ||
+    hasGrownEnoughSageForLesson(snapshot) ||
+    hasActiveCrop(snapshot, SAGE_SEED_KEY)
+  ) {
+    return null;
+  }
+
+  if (currentPageId !== 'workshop') {
+    return 'open workshop and summon a sage seed.';
+  }
+
+  return snapshot?.seedSummoning?.canSummon
+    ? 'summon a sage seed.'
+    : 'wait for mana, then summon a sage seed.';
+}
+
+function getGrowSageGardenActionText({ currentPageId, dom, snapshot }) {
+  if (currentPageId !== 'garden') {
+    return null;
+  }
+
+  if (dom.isGardenSeedPopupOpen()) {
+    return 'choose sage seed for this plot.';
+  }
+
+  const tile = getGrowTile(snapshot, SAGE_SEED_KEY);
+
+  if (!tile) {
+    return null;
+  }
+
+  if (tile.phase === 'ready') {
+    return `tap the ready plot to harvest ${getTileHerbHintName(tile, 'sage')}.`;
+  }
+
+  if (tile.phase === 'empty' && isTileSelectedSeed(tile, SAGE_SEED_KEY)) {
+    return 'tap the plot to plant sage seed.';
+  }
+
+  if (tile.phase === 'growing' || tile.phase === 'harvesting') {
+    return `wait for ${getTileHerbHintName(tile, 'sage')} to grow.`;
+  }
+
+  if (tile.phase === 'empty') {
+    return 'tap the empty plot, then choose sage seed.';
+  }
+
+  return null;
+}
+
 function getLevelTwoRequirementIntroText(snapshot) {
   const requirementText = formatLevelTwoSageRequirementList(snapshot);
 
@@ -2490,7 +2558,7 @@ function getLevelTwoRequirementIntroText(snapshot) {
   const targetLevel = getLevelRequirementTargetLevel(snapshot?.tasks);
   const levelText = targetLevel ? `level ${targetLevel}` : 'the next level';
 
-  return `now ${levelText} requires ${requirementText} to level up. fussy little list. let's start growing sage.`;
+  return `to reach ${levelText}, turn in ${requirementText}. grow sage first.`;
 }
 
 function getLevelTwoRequirementPinText(snapshot) {

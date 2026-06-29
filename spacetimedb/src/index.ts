@@ -8509,6 +8509,100 @@ function createAdminPlayerCurrencyBonusSaveJson(
   );
 }
 
+function validateAdminPlotCapacityTarget(plotNumber: unknown): number {
+  const value = Math.floor(Number(plotNumber));
+
+  if (!Number.isInteger(value) || !plotCapacityResearchNumbers.includes(value)) {
+    throw new Error('Invalid plot capacity target.');
+  }
+
+  return value;
+}
+
+function isPlotCapacityResearchId(researchId: unknown): boolean {
+  return /^advanced:plotCapacity:\d+$/.test(String(researchId ?? ''));
+}
+
+function getSequentialPlotCapacityResearchIds(plotNumber: number): string[] {
+  return plotCapacityResearchNumbers
+    .filter((candidate) => candidate <= plotNumber)
+    .map((candidate) => `advanced:plotCapacity:${candidate}`);
+}
+
+function createAdminPlotCapacityCorrectionSaveJson(
+  ctx: IdleWizardReducerCtx,
+  existingSave: PlayerGameplaySaveRowValue | undefined,
+  identity: Identity,
+  plotNumber: number,
+): string {
+  if (!existingSave) {
+    throw new Error('Cannot correct missing player save.');
+  }
+
+  const previousSave = parsePlayerGameplaySaveJson(existingSave.saveJson);
+  if (!previousSave) {
+    throw new Error('Cannot correct invalid player save JSON.');
+  }
+
+  const safePlotNumber = validateAdminPlotCapacityTarget(plotNumber);
+  const normalizedSave = normalizePlayerGameplaySave(
+    ctx,
+    previousSave,
+    existingSave.saveJson,
+    identity,
+    { preserveSavedAt: true },
+  );
+  const prestigeCount = normalizedSave.prestige.completedLevels.length;
+  const requiredPrestigeCount = getSaveRequiredPrestigeCount(
+    `advanced:plotCapacity:${safePlotNumber}`,
+  );
+
+  if (prestigeCount < requiredPrestigeCount) {
+    throw new Error('Player has not completed enough prestige levels.');
+  }
+
+  const research = normalizedSave.research;
+  const completedIds = normalizeSaveCompletedResearchIds(research.completedIds) ?? [];
+  const nextCompletedIdSet = new Set([
+    ...completedIds.filter((researchId) => !isPlotCapacityResearchId(researchId)),
+    ...getSequentialPlotCapacityResearchIds(safePlotNumber),
+  ]);
+  const nextCompletedIds = researchCatalog
+    .map((catalogResearch) => catalogResearch.researchId)
+    .filter((researchId) => nextCompletedIdSet.has(researchId));
+  const nextCompletedSet = new Set(nextCompletedIds);
+  const nextInProgress = normalizeSaveInProgressResearches(
+    {
+      inProgress: research.inProgress.filter(
+        (progress) => !isPlotCapacityResearchId(progress.researchId),
+      ),
+    },
+    nextCompletedSet,
+    prestigeCount,
+  );
+  const nextSaveJson = JSON.stringify(
+    normalizePlayerGameplaySave(
+      ctx,
+      {
+        ...normalizedSave,
+        research: {
+          completedIds: nextCompletedIds,
+          inProgress: nextInProgress,
+        },
+      },
+      existingSave.saveJson,
+      identity,
+      { preserveSavedAt: true },
+    ),
+  );
+
+  if (nextSaveJson.length > MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH) {
+    throw new Error('Invalid player save JSON length.');
+  }
+
+  return nextSaveJson;
+}
+
 function upsertAdminPlayerGameplaySave(
   ctx: IdleWizardReducerCtx,
   identity: Identity,
@@ -16397,6 +16491,46 @@ export const admin_copy_player_progression = spacetimedb.reducer(
       nextTargetPlayer.playerLevel,
     );
     kickAdminPlayerSession(ctx, nextTargetPlayer.identity);
+  },
+);
+
+export const admin_set_player_plot_capacity_research_by_identity = spacetimedb.reducer(
+  {
+    identityHex: t.string(),
+    plotNumber: t.u32(),
+    correctionKey: t.string(),
+  },
+  (ctx, { identityHex, plotNumber, correctionKey }) => {
+    assertGameConfigAdmin(ctx);
+
+    const player = findPlayerByIdentityHex(ctx, identityHex);
+    const identityKey = getIdentityHex(player.identity);
+    const stateKey =
+      `player-plot-capacity-correction:${identityKey}:` +
+      normalizeMaintenanceKey(correctionKey);
+    if (ctx.db.maintenanceState.stateKey.find(stateKey)) {
+      return;
+    }
+
+    const existingSave = ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
+    const safeSaveJson = createAdminPlotCapacityCorrectionSaveJson(
+      ctx,
+      existingSave,
+      player.identity,
+      plotNumber,
+    );
+
+    upsertAdminPlayerGameplaySave(ctx, player.identity, safeSaveJson, existingSave);
+    kickAdminPlayerSession(ctx, player.identity);
+    ctx.db.player.identity.update({
+      ...player,
+      connected: false,
+      lastSeenAt: ctx.timestamp,
+    });
+    ctx.db.maintenanceState.insert({
+      stateKey,
+      appliedAt: ctx.timestamp,
+    });
   },
 );
 

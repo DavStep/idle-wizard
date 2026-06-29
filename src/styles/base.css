@@ -333,6 +333,7 @@
   --style-muted: #a6a6a6;
   --style-disabled: #6a6a6a;
   --style-active-surface: var(--style-surface);
+  --style-midnight-panel-frame: url("/ui/player-card-panel-9slice.png");
   --style-midnight-button-frame: url("/ui/player-card-button-brown-fill-9slice.png");
   --style-midnight-button-disabled-frame: url("/ui/player-card-button-brown-dark-fill-9slice.png");
   --style-midnight-frame-slice: 31 29 31 29 fill;
@@ -2347,7 +2348,10 @@ body {
   opacity: 1;
   pointer-events: none;
   translate: -50% -50%;
-  transition: opacity var(--style-motion-fast) var(--style-motion-ease);
+  transition:
+    opacity var(--style-motion-fast) var(--style-motion-ease),
+    left var(--style-motion-normal) var(--style-motion-ease),
+    top var(--style-motion-normal) var(--style-motion-ease);
 }
 
 .tutorial-layer__pointer-spine-shell {
@@ -2889,8 +2893,13 @@ body {
 
 .tutorial-layer__objective-text,
 .tutorial-layer__lesson-text {
+  font-size: 12px;
   min-height: var(--style-row-min-height);
   margin: 0;
+}
+
+.tutorial-layer__lesson.is-intro-dialog .tutorial-layer__lesson-text {
+  font-size: var(--style-font-size);
 }
 
 .tutorial-layer__objective-progress,
@@ -4772,24 +4781,25 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__level-payoff-rows {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
+  display: grid;
+  align-items: stretch;
+  width: 100%;
+  row-gap: 0;
   font-size: var(--style-tiny-font-size);
   line-height: var(--style-tiny-line-height);
 }
 
 .workshop-page__level-payoff-row {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  justify-content: center;
-  gap: var(--style-row-column-gap);
+  grid-template-columns: minmax(0, 1fr) max-content;
+  width: 100%;
+  column-gap: var(--style-row-column-gap);
   align-items: baseline;
   min-height: var(--style-tiny-line-height);
 }
 
 .workshop-page__level-payoff-row--list {
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: start;
 }
 
@@ -4803,8 +4813,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__level-payoff-value {
   min-width: 0;
   font-variant-numeric: tabular-nums lining-nums;
-  justify-self: start;
-  text-align: left;
+  justify-self: end;
+  text-align: right;
   white-space: nowrap;
 }
 
@@ -11009,7 +11019,7 @@ div.workshop-page__discovery-row {
   :where(.style-panel, .style-box, .style-dialog, .style-overlay, .style-tooltip) {
   background: var(--style-surface);
   border-color: transparent;
-  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-source: var(--style-midnight-panel-frame);
   border-image-slice: var(--style-midnight-frame-slice);
   border-image-width: var(--style-midnight-frame-width);
   border-image-repeat: stretch;
@@ -11024,7 +11034,7 @@ div.workshop-page__discovery-row {
   ) {
   background: var(--style-surface);
   border-color: transparent;
-  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-source: var(--style-midnight-panel-frame);
   border-image-slice: var(--style-midnight-frame-slice);
   border-image-width: var(--style-midnight-frame-control-width);
   border-image-repeat: stretch;
@@ -11033,7 +11043,7 @@ div.workshop-page__discovery-row {
 :root[data-style-theme="midnight"] :is(.style-progress) {
   background: var(--style-surface);
   border-color: transparent;
-  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-source: var(--style-midnight-panel-frame);
   border-image-slice: var(--style-midnight-frame-slice);
   border-image-width: var(--style-midnight-frame-compact-width);
   border-image-repeat: stretch;
@@ -13310,7 +13320,7 @@ div.workshop-page__discovery-row {
 .room-top-panel__theme-preview[data-preview-theme="midnight"]
   .room-top-panel__theme-preview-box {
   border-color: transparent;
-  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-source: var(--style-midnight-panel-frame);
   border-image-slice: var(--style-midnight-frame-slice);
   border-image-width: var(--style-midnight-frame-compact-width);
   border-image-repeat: stretch;
@@ -13630,7 +13640,7 @@ div.workshop-page__discovery-row {
 
 :root[data-style-theme="midnight"] .style-dialog::after {
   border-color: transparent;
-  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-source: var(--style-midnight-panel-frame);
   border-image-slice: var(--style-midnight-frame-slice);
   border-image-width: var(--style-midnight-frame-width);
   border-image-repeat: stretch;
@@ -14944,7 +14954,7 @@ div.workshop-page__discovery-row {
       .room-top-panel__theme-preview-box
   ) {
   border-color: transparent;
-  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-source: var(--style-midnight-panel-frame);
   border-image-slice: var(--style-midnight-frame-slice);
   border-image-repeat: stretch;
 }
@@ -14956,7 +14966,14 @@ div.workshop-page__discovery-row {
     .style-dialog,
     .style-dialog::after,
     .style-overlay,
-    .style-tooltip
+    .style-tooltip,
+    .style-button:not(.workshop-page__summon-button),
+    .room-bottom-panel__tab,
+    .workshop-page__summon-button-text,
+    .tutorial-layer__objective-button-label,
+    .tutorial-layer__lesson-show,
+    .tutorial-layer__lesson-advance,
+    .tutorial-layer__advance
   ) {
   border-image-width: var(--style-midnight-frame-width);
 }
@@ -14973,35 +14990,76 @@ div.workshop-page__discovery-row {
     .tutorial-layer__advance
   ) {
   background: var(--style-surface);
+}
+
+:root[data-style-theme="midnight"]
+  :where(
+    .style-box .style-button:not(.workshop-page__summon-button),
+    .style-dialog .style-button:not(.workshop-page__summon-button),
+    .style-input,
+    .style-box .workshop-page__summon-button-text,
+    .style-dialog .workshop-page__summon-button-text,
+    .style-box .tutorial-layer__objective-button-label,
+    .style-dialog .tutorial-layer__objective-button-label,
+    .style-box .tutorial-layer__lesson-show,
+    .style-dialog .tutorial-layer__lesson-show,
+    .style-box .tutorial-layer__lesson-advance,
+    .style-dialog .tutorial-layer__lesson-advance,
+    .style-box .tutorial-layer__advance,
+    .style-dialog .tutorial-layer__advance
+  ) {
   border-image-width: var(--style-midnight-frame-control-width);
 }
 
 :root[data-style-theme="midnight"]
   :where(
-    .style-button:not(.workshop-page__summon-button),
-    .workshop-page__summon-button-text,
-    .tutorial-layer__objective-button-label,
-    .tutorial-layer__lesson-show,
-    .tutorial-layer__lesson-advance,
-    .tutorial-layer__advance
+    .style-box .style-button:not(.workshop-page__summon-button),
+    .style-dialog .style-button:not(.workshop-page__summon-button),
+    .style-box .workshop-page__summon-button-text,
+    .style-dialog .workshop-page__summon-button-text,
+    .style-box .tutorial-layer__objective-button-label,
+    .style-dialog .tutorial-layer__objective-button-label,
+    .style-box .tutorial-layer__lesson-show,
+    .style-dialog .tutorial-layer__lesson-show,
+    .style-box .tutorial-layer__lesson-advance,
+    .style-dialog .tutorial-layer__lesson-advance,
+    .style-box .tutorial-layer__advance,
+    .style-dialog .tutorial-layer__advance
   ) {
   border-image-source: var(--style-midnight-button-frame);
 }
 
 :root[data-style-theme="midnight"]
   :where(
-    .style-button:not(.workshop-page__summon-button):is(
+    .style-box .style-button:not(.workshop-page__summon-button):is(
         :disabled,
         [aria-disabled="true"],
         .is-disabled
       ),
-    .style-button.workshop-page__summon-button:is(
+    .style-dialog .style-button:not(.workshop-page__summon-button):is(
+        :disabled,
+        [aria-disabled="true"],
+        .is-disabled
+      ),
+    .style-box .style-button.workshop-page__summon-button:is(
         :disabled,
         [aria-disabled="true"],
         .is-disabled
       )
       .workshop-page__summon-button-text,
-    .tutorial-layer__objective-button:is(
+    .style-dialog .style-button.workshop-page__summon-button:is(
+        :disabled,
+        [aria-disabled="true"],
+        .is-disabled
+      )
+      .workshop-page__summon-button-text,
+    .style-box .tutorial-layer__objective-button:is(
+        :disabled,
+        [aria-disabled="true"],
+        .is-disabled
+      )
+      .tutorial-layer__objective-button-label,
+    .style-dialog .tutorial-layer__objective-button:is(
         :disabled,
         [aria-disabled="true"],
         .is-disabled
@@ -15027,14 +15085,14 @@ div.workshop-page__discovery-row {
     .is-swipe-target-locked
   ) {
   background: transparent;
-  border-image-source: var(--style-midnight-button-frame);
+  border-image-source: var(--style-midnight-panel-frame);
   border-image-slice: var(--style-midnight-frame-slice);
 }
 
 :root[data-style-theme="midnight"] .room-bottom-panel__tab.is-locked,
 :root[data-style-theme="midnight"]
   .room-bottom-panel__tab.is-swipe-target-locked:not(.is-selected) {
-  border-image-source: var(--style-midnight-button-disabled-frame);
+  border-image-source: var(--style-midnight-panel-frame);
 }
 
 .style-panel.room-bottom-panel {

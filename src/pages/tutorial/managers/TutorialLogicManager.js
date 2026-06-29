@@ -85,6 +85,7 @@ export class TutorialLogicManager {
       targetGuidanceRequested: requestedTargetGuidanceStepId === step?.id,
       now,
     });
+    const canShowTarget = Boolean(target) && cue.kind !== 'target-cue';
 
     return {
       kind: 'lesson',
@@ -102,7 +103,7 @@ export class TutorialLogicManager {
         forceOpen,
         advanceOnClick: step.advanceOnClick,
         advanceLabel: step.advanceLabel,
-        canShowTarget: Boolean(target),
+        canShowTarget,
         target,
         variant: step.variant,
       },

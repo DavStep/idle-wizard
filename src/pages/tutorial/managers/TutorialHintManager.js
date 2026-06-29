@@ -43,6 +43,8 @@ const TARGET_EMPHASIS_MS = 560;
 const TARGET_EMPHASIS_REDUCED_MS = 420;
 const TARGET_EMPHASIS_CLASS = 'is-tutorial-target-emphasized';
 const TARGET_EMPHASIS_ATTR = 'data-tutorial-target-emphasis';
+const MOVING_TARGET_CUE_MAX_FRAMES = 24;
+const MOVING_TARGET_CUE_SETTLED_FRAMES = 2;
 const OBJECTIVE_BUTTON_COLLAPSED_LABEL = 'help';
 const OBJECTIVE_BUTTON_EXPANDED_LABEL = 'hide';
 const OBJECTIVE_BUTTON_DRAG_YELLS = ['AAAAAA!!!', 'Put me down!', 'Let me go!', 'Hey, careful!'];
@@ -165,6 +167,8 @@ export class TutorialHintManager {
     this.pointerHideTimeout = null;
     this.targetCueFrame = null;
     this.pendingTargetCue = null;
+    this.movingTargetCueFrame = null;
+    this.movingTargetCue = null;
     this.objectiveHideTimeout = null;
     this.targetEmphasisStates = new Map();
     this.typewriterTimers = new Map();
@@ -427,6 +431,7 @@ export class TutorialHintManager {
     this.objectiveTarget = null;
     this.blockingDialogSuspended = false;
     this.clearTargetCueFrame();
+    this.clearMovingTargetCueFrame();
     this.clearPointerHideTimeout();
     this.clearObjectiveHideTimeout();
     this.cancelGuideDrag();
@@ -489,6 +494,10 @@ export class TutorialHintManager {
     const rect = this.getTargetCueSourceRect(target);
 
     if (!rect) {
+      this.clearMovingTargetCueFrame();
+      this.hidePointer({ immediate: true });
+      this.clearAllTargetEmphasis();
+      this.syncRootVisibility();
       if (allowDefer) {
         this.deferTargetCue({ target, showPointer, emphasizeTarget });
       } else {
@@ -500,7 +509,9 @@ export class TutorialHintManager {
     this.clearTargetCueFrame();
     this.blockingDialogSuspended = false;
     this.hidePromptBox();
+    this.hideLessonShowButton();
     this.positionPointer(rect, showPointer, null);
+    this.startMovingTargetCueFollow({ target, showPointer });
     if (emphasizeTarget) {
       this.emphasizeTarget(target);
     }
@@ -608,6 +619,12 @@ export class TutorialHintManager {
       title: 'lesson',
       ...objective,
     });
+  }
+
+  hideLessonShowButton() {
+    if (this.lessonShowButton) {
+      this.lessonShowButton.hidden = true;
+    }
   }
 
   measureLessonSize({
@@ -997,6 +1014,7 @@ export class TutorialHintManager {
 
   hideTargetCue({ immediate = false } = {}) {
     this.clearTargetCueFrame();
+    this.clearMovingTargetCueFrame();
     this.hidePointer({ immediate });
     this.clearAllTargetEmphasis();
 
@@ -1065,6 +1083,94 @@ export class TutorialHintManager {
     view?.cancelAnimationFrame?.(this.targetCueFrame);
     this.targetCueFrame = null;
     this.pendingTargetCue = null;
+  }
+
+  startMovingTargetCueFollow({ target, showPointer }) {
+    if (!this.shouldFollowMovingTargetCue(target)) {
+      this.clearMovingTargetCueFrame();
+      return;
+    }
+
+    const current = this.movingTargetCue;
+    this.movingTargetCue =
+      current?.target === target && current.showPointer === showPointer
+        ? current
+        : {
+            target,
+            showPointer,
+            frameCount: 0,
+            lastRectKey: '',
+            settledFrames: 0,
+          };
+    this.scheduleMovingTargetCueFrame();
+  }
+
+  shouldFollowMovingTargetCue(target) {
+    return Boolean(
+      target?.closest?.('.workshop-page__tasks.is-expanding, .workshop-page__tasks.is-collapsing'),
+    );
+  }
+
+  scheduleMovingTargetCueFrame() {
+    if (this.movingTargetCueFrame !== null) {
+      return;
+    }
+
+    const view = this.getWindow();
+
+    if (typeof view?.requestAnimationFrame !== 'function') {
+      return;
+    }
+
+    this.movingTargetCueFrame = view.requestAnimationFrame(() => {
+      this.movingTargetCueFrame = null;
+      this.followMovingTargetCue();
+    });
+  }
+
+  followMovingTargetCue() {
+    const state = this.movingTargetCue;
+
+    if (!state || !this.root || !this.stage || !state.target?.isConnected) {
+      this.clearMovingTargetCueFrame();
+      return;
+    }
+
+    const rect = this.getTargetCueSourceRect(state.target);
+
+    if (!rect) {
+      this.clearMovingTargetCueFrame();
+      return;
+    }
+
+    this.positionPointer(rect, state.showPointer, null);
+
+    const rectKey = formatSourceRectKey(rect);
+    state.settledFrames = rectKey === state.lastRectKey ? state.settledFrames + 1 : 0;
+    state.lastRectKey = rectKey;
+    state.frameCount += 1;
+
+    if (
+      state.frameCount < MOVING_TARGET_CUE_MAX_FRAMES &&
+      (this.shouldFollowMovingTargetCue(state.target) ||
+        state.settledFrames < MOVING_TARGET_CUE_SETTLED_FRAMES)
+    ) {
+      this.scheduleMovingTargetCueFrame();
+      return;
+    }
+
+    this.clearMovingTargetCueFrame();
+  }
+
+  clearMovingTargetCueFrame() {
+    const view = this.getWindow();
+
+    if (this.movingTargetCueFrame !== null) {
+      view?.cancelAnimationFrame?.(this.movingTargetCueFrame);
+      this.movingTargetCueFrame = null;
+    }
+
+    this.movingTargetCue = null;
   }
 
   getUiScale() {
@@ -2920,6 +3026,12 @@ function padAreaRect(rect, padding) {
 
 function formatAreaRectKey(rect) {
   return [rect.left, rect.top, rect.right, rect.bottom]
+    .map((value) => Math.round(value))
+    .join(',');
+}
+
+function formatSourceRectKey(rect) {
+  return [rect.left, rect.top, rect.width, rect.height]
     .map((value) => Math.round(value))
     .join(',');
 }

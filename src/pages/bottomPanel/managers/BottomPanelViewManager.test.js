@@ -164,7 +164,7 @@ describe('BottomPanelViewManager', () => {
     expect(tabBlock).toContain('background: var(--style-surface);');
   });
 
-  it('lets midnight bottom tabs use only their 9-slice fill background', () => {
+  it('lets midnight bottom tabs use the box 9-slice without an extra panel fill', () => {
     const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
     const tabFrameIndex = baseCss.indexOf(
       ':root[data-style-theme="midnight"] .room-bottom-panel__tab,',
@@ -183,13 +183,13 @@ describe('BottomPanelViewManager', () => {
 
     expect(tabFrameBlock).toContain('background: transparent;');
     expect(tabFrameBlock).toContain(
-      'border-image-source: var(--style-midnight-button-frame);',
+      'border-image-source: var(--style-midnight-panel-frame);',
     );
     expect(tabFrameBlock).toContain(
       'border-image-slice: var(--style-midnight-frame-slice);',
     );
     expect(lockedFrameBlock).toContain(
-      'border-image-source: var(--style-midnight-button-disabled-frame);',
+      'border-image-source: var(--style-midnight-panel-frame);',
     );
   });
 
