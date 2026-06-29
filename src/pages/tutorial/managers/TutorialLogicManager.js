@@ -139,6 +139,7 @@ export class TutorialLogicManager {
           kind: 'target-cue',
           target,
           showPointer: this.shouldShowPointer(step),
+          emphasizeTarget: this.shouldEmphasizeTarget(step),
           nextRefreshAt: null,
         };
       }
@@ -148,6 +149,7 @@ export class TutorialLogicManager {
           kind: 'target-cue',
           target,
           showPointer: this.shouldShowPointer(step),
+          emphasizeTarget: this.shouldEmphasizeTarget(step),
           nextRefreshAt: null,
         };
       }
@@ -166,6 +168,7 @@ export class TutorialLogicManager {
           kind: 'target-cue',
           target,
           showPointer: this.shouldShowPointer(step),
+          emphasizeTarget: this.shouldEmphasizeTarget(step),
           nextRefreshAt: null,
         };
       }
@@ -177,6 +180,7 @@ export class TutorialLogicManager {
           kind: 'target-cue',
           target,
           showPointer: this.shouldShowPointer(step),
+          emphasizeTarget: this.shouldEmphasizeTarget(step),
           nextRefreshAt: null,
         };
       }
@@ -195,6 +199,7 @@ export class TutorialLogicManager {
         kind: 'target-cue',
         target,
         showPointer: this.shouldShowPointer(step),
+        emphasizeTarget: this.shouldEmphasizeTarget(step),
         nextRefreshAt: null,
       };
     }
@@ -231,6 +236,7 @@ export class TutorialLogicManager {
       kind: 'target-cue',
       target,
       showPointer: this.shouldShowPointer(step),
+      emphasizeTarget: this.shouldEmphasizeTarget(step),
       nextRefreshAt: null,
     };
   }
@@ -245,6 +251,10 @@ export class TutorialLogicManager {
 
   shouldShowPointer(step) {
     return step?.showPointer !== false && step?.targetId !== MANA_READOUT_TARGET_ID;
+  }
+
+  shouldEmphasizeTarget(step) {
+    return step?.emphasizeTarget === true;
   }
 
   shouldAutoOpen(step) {

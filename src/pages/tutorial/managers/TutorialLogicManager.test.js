@@ -399,6 +399,8 @@ describe('TutorialLogicManager', () => {
       id: 'show-selected-sale-amount',
       targetId: 'shop:directSell:amount',
       objectiveText: 'this number is the amount selected to sell.',
+      showPointer: false,
+      emphasizeTarget: true,
       autoAdvanceMs: 2000,
     });
     const sellStep = createStep({
@@ -432,6 +434,8 @@ describe('TutorialLogicManager', () => {
       },
       cue: {
         target: amountTarget,
+        showPointer: false,
+        emphasizeTarget: true,
       },
       nextRefreshAt: 3000,
     });

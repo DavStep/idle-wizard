@@ -42,6 +42,30 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().isTasksExpanded()).toBe(true);
   });
 
+  it('reads the Workshop requirements pin state', () => {
+    const stage = document.createElement('section');
+    const tasks = document.createElement('section');
+    const pin = document.createElement('button');
+    const manager = new TutorialTargetManager({ stage });
+
+    tasks.className = 'workshop-page__tasks';
+    pin.className = 'workshop-page__tasks-pin';
+    pin.setAttribute('aria-pressed', 'false');
+    tasks.append(pin);
+    stage.append(tasks);
+
+    expect(manager.getDomState().isTasksPinned()).toBe(false);
+
+    pin.setAttribute('aria-pressed', 'true');
+
+    expect(manager.getDomState().isTasksPinned()).toBe(true);
+
+    pin.setAttribute('aria-pressed', 'false');
+    tasks.classList.add('is-pinned');
+
+    expect(manager.getDomState().isTasksPinned()).toBe(true);
+  });
+
   it('treats app, announcement, and top-panel dialogs as tutorial blockers', () => {
     const stage = document.createElement('section');
     const accountChoice = document.createElement('section');

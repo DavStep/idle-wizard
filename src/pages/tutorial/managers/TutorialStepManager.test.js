@@ -78,6 +78,7 @@ function createSnapshot(overrides = {}) {
 
 function createDomFake({
   tasksExpanded = false,
+  tasksPinned = false,
   seedPopupOpen = false,
   recipePopupOpen = false,
   selectedBrewingRecipeKey = null,
@@ -102,6 +103,7 @@ function createDomFake({
     getShopDirectSellQuantity: () => directSellQuantity,
     isShopSellPopupOpen: () => shopSellPopupOpen,
     isTasksExpanded: () => tasksExpanded,
+    isTasksPinned: () => tasksPinned,
     isUsernameSettingsOpen: () => usernameSettingsOpen,
     isSettingsThemeTabVisible: () => settingsThemeTabVisible,
     isThemeSettingsTabOpen: () => themeSettingsTabOpen,
@@ -705,6 +707,8 @@ describe('TutorialStepManager', () => {
       targetId: 'shop:directSell:amount',
       objectiveText: 'this number is the amount selected to sell.',
       allowedPopupClasses: ['shop-page__direct-sell-popup'],
+      showPointer: false,
+      emphasizeTarget: true,
       autoAdvanceMs: 2000,
       stepLabel: '14/32',
     });
@@ -904,8 +908,22 @@ describe('TutorialStepManager', () => {
       }),
     ).toMatchObject({
       id: 'grow-sage',
+      targetId: 'workshop:tasksPin',
+      hintText: 'pin',
+      objectiveText: 'pin level 3 requirements so they stay open.',
+      autoPageId: null,
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true, tasksPinned: true }),
+      }),
+    ).toMatchObject({
+      id: 'grow-sage',
       targetId: 'workshop:summonSeed',
       hintText: 'summon seed',
+      objectiveText: 'summon seed',
       autoPageId: null,
     });
   });
@@ -968,6 +986,20 @@ describe('TutorialStepManager', () => {
       getStep({
         snapshot,
         dom: createDomFake({ tasksExpanded: true }),
+        completed: completedThrough('intro-garden'),
+      }),
+    ).toMatchObject({
+      id: 'grow-sage',
+      targetId: 'workshop:tasksPin',
+      hintText: 'pin',
+      autoPageId: null,
+      objectiveText: 'pin level 3 requirements so they stay open.',
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true, tasksPinned: true }),
         completed: completedThrough('intro-garden'),
       }),
     ).toMatchObject({

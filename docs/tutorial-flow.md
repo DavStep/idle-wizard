@@ -6,7 +6,7 @@ Screenshots are captured from the real Vite game surface at the authored `1080x2
 
 The automation uses the real `TutorialFacade`, CSS, Elara assets, and `data-tutorial-id` targets. Dev capture hooks only skip waits/background resource tasks and hide the local offline gate so the screenshots show the actual game UI, not a harness.
 
-Current source starts with a purchase dialog and routes room openings through short `market opened`, `garden opened`, `research opened`, and `brewing opened` beats. The Garden opening beat waits until the player has a sage seed or active sage crop; otherwise lesson 3 starts from Workshop requirements and summon guidance so the player is not sent to an empty Garden and back. The first fast-sell lesson selects the item, shows the selected amount for two seconds, then advances to the `sell` button without player input. Coin-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates those routing and room-open changes and should be refreshed the next time tutorial captures are regenerated.
+Current source starts with a purchase dialog and routes room openings through short `market opened`, `garden opened`, `research opened`, and `brewing opened` beats. The Garden opening beat waits until the player has a sage seed or active sage crop; otherwise lesson 3 starts from Workshop requirements and summon guidance so the player is not sent to an empty Garden and back. The first fast-sell lesson selects the item, highlights the selected amount for two seconds without a pointer, then advances to the `sell` button without player input. Coin-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates those routing and room-open changes and should be refreshed the next time tutorial captures are regenerated.
 
 ![tutorial flow contact sheet](tutorial-flow/contact-sheet.png)
 
@@ -26,7 +26,7 @@ flowchart TD
   S10["10. open-market<br/>target: market tab"]
   S11["11. select-market-stand<br/>target: fast sell button"]
   S12["12. select-sage-seed-sale<br/>target: fast sell sage seed row"]
-  S13["13. show-selected-sale-amount<br/>target: selected amount"]
+  S13["13. show-selected-sale-amount<br/>highlight: selected amount"]
   S14["14. earn-tutorial-coin<br/>effect: tutorial fast sell"]
   S15["15. unselect-sage-seed-sale<br/>target: empty picker row"]
   S16["16. level-up-one<br/>target: level up"]

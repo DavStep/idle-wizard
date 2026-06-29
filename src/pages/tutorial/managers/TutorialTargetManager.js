@@ -99,6 +99,14 @@ export class TutorialTargetManager {
         const tasks = this.stage?.querySelector('[data-tutorial-id="workshop:tasks"]');
         return tasks?.getAttribute('aria-expanded') === 'true';
       },
+      isTasksPinned: () => {
+        const pin = this.stage?.querySelector('.workshop-page__tasks-pin');
+
+        return (
+          pin?.getAttribute('aria-pressed') === 'true' ||
+          Boolean(this.stage?.querySelector('.workshop-page__tasks.is-pinned'))
+        );
+      },
     };
   }
 

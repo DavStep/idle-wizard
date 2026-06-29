@@ -4557,6 +4557,7 @@ describe('PagesFacade', () => {
     expect(count?.textContent).toBe('0/1');
     expect(pinButton?.hidden).toBe(true);
     expect(pinButton?.disabled).toBe(true);
+    expect(pinButton?.dataset.tutorialId).toBeUndefined();
     expect(toggle?.hidden).toBe(true);
     expect(toggle?.disabled).toBe(true);
     expect(toggle?.dataset.tutorialId).toBeUndefined();
@@ -4632,6 +4633,7 @@ describe('PagesFacade', () => {
     expect(pinButton?.hidden).toBe(false);
     expect(pinButton?.textContent).toBe('pin');
     expect(pinButton?.getAttribute('aria-pressed')).toBe('false');
+    expect(pinButton?.dataset.tutorialId).toBe('workshop:tasksPin');
     expect(toggle?.hidden).toBe(false);
     expect(toggle?.textContent).toBe('expand');
     expect(toggle?.dataset.tutorialId).toBe('workshop:tasks');

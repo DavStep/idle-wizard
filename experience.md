@@ -88,6 +88,7 @@
 - Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`; Workshop stays the default page. The internal page id is `shop`.
 - Market has no `PageUnlockManager` requirement; gate market-only subscriptions on current page visibility, not unlock state.
 - Show all five room pages in a shared bottom tab panel; bold the current page tab.
+- Bottom panel wrapper transparency needs a late `.style-panel.room-bottom-panel` reset after themed frame rules; leave the tab buttons to own their surfaces.
 - Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
 - Interactive room surfaces that own drag or pinch gestures should set `data-page-swipe-block="true"`; stage-level swipe capture otherwise steals their horizontal drags before the surface can own them.
 - Browser/WebView viewport zoom can steal Garden/Brewing world pinches; keep the app viewport scale locked and add non-passive multi-touch/gesture guards on world shells.
@@ -200,6 +201,7 @@
 - Fast-sell picker rows are one action; make the whole visual row the button, but put the FTUE target id on the item-name span.
 - Fast-sell picker item names should bold only when their row is selected; mobile no-hover affordance must not bold every seed/herb/potion row.
 - Fast-sell FTUE should point at the item name, not the row value side, so `sage seed` reads as the target.
+- The first FTUE fast-sell amount beat should highlight the selected `[1]` amount without a pointer; the next sale step points at `sell`.
 - FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.
 - When fast sell is already open with an item selected, FTUE should target the current amount action (`sell` once current quantity covers missing coin, `+1` while more quantity is still useful) and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.

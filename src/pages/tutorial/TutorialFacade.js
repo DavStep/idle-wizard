@@ -364,6 +364,7 @@ export class TutorialFacade {
       this.hintManager.showTargetCue({
         target: cue.target,
         showPointer: cue.showPointer,
+        emphasizeTarget: cue.emphasizeTarget === true,
       });
       return;
     }

@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.65
+
+- Improved Elara's level 2 guidance so she asks players to pin the level requirements before moving on to Garden or more seed summoning.
+- Polished the first fast-sell lesson so the selected amount is highlighted clearly without an unnecessary pointer.
+- Fixed Midnight bottom navigation chrome so the tab bar wrapper stays transparent while the room tabs keep their framed button surfaces.
+
 ## 0.2.64
 
 - Improved Elara's early guide placement so lesson panels avoid covering the summon target and nearby tutorial controls.

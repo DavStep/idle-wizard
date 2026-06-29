@@ -11148,6 +11148,8 @@ div.workshop-page__discovery-row {
   padding: 0;
   background: transparent;
   border: 0;
+  border-image: none;
+  box-shadow: none;
   pointer-events: auto;
 }
 
@@ -14980,6 +14982,13 @@ div.workshop-page__discovery-row {
   ) {
   background: transparent;
   border-image-slice: var(--style-midnight-frame-outline-slice);
+}
+
+.style-panel.room-bottom-panel {
+  background: transparent;
+  border: 0;
+  border-image: none;
+  box-shadow: none;
 }
 
 ::selection {

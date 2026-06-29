@@ -73,6 +73,7 @@ const OBJECTIVE_PROTECTED_SELECTORS = [
   '.room-top-panel',
   '.room-bottom-panel',
   '.workshop-page__world-chat-box',
+  '.workshop-page__tasks.is-expanded',
   '.workshop-page__summon-button',
   '.workshop-page__summon-button-text',
   '.workshop-page__summon-circle',
@@ -89,6 +90,7 @@ const OBJECTIVE_PROTECTED_SELECTORS = [
 ];
 const OBJECTIVE_TARGET_CONTAINER_SELECTORS = [
   '.research-page__row',
+  '.workshop-page__tasks',
   '.workshop-page__row',
   '.garden-page__plot-row',
   '.garden-page__seed-row',
@@ -470,7 +472,12 @@ export class TutorialHintManager {
     }
   }
 
-  showTargetCue({ target, showPointer = true, allowDefer = true } = {}) {
+  showTargetCue({
+    target,
+    showPointer = true,
+    emphasizeTarget = false,
+    allowDefer = true,
+  } = {}) {
     if (!this.root || !this.stage || !target) {
       this.clearTargetCueFrame();
       this.hideTargetCue();
@@ -482,7 +489,7 @@ export class TutorialHintManager {
 
     if (!rect) {
       if (allowDefer) {
-        this.deferTargetCue({ target, showPointer });
+        this.deferTargetCue({ target, showPointer, emphasizeTarget });
       } else {
         this.hideTargetCue();
       }
@@ -493,6 +500,9 @@ export class TutorialHintManager {
     this.blockingDialogSuspended = false;
     this.hidePromptBox();
     this.positionPointer(rect, showPointer, null);
+    if (emphasizeTarget) {
+      this.emphasizeTarget(target);
+    }
     this.syncRootVisibility();
   }
 
@@ -1017,8 +1027,8 @@ export class TutorialHintManager {
     return this.getSourceRect(cueAnchor ?? target);
   }
 
-  deferTargetCue({ target, showPointer }) {
-    this.pendingTargetCue = { target, showPointer };
+  deferTargetCue({ target, showPointer, emphasizeTarget }) {
+    this.pendingTargetCue = { target, showPointer, emphasizeTarget };
 
     if (this.targetCueFrame !== null) {
       return;
@@ -1121,7 +1131,7 @@ export class TutorialHintManager {
 
   positionPointer(rect, showPointer, guidePlacement, extraProtectedRects = []) {
     if (!this.pointer || !showPointer) {
-      this.hidePointer();
+      this.hidePointer({ immediate: true });
       return;
     }
 
@@ -1607,14 +1617,17 @@ export class TutorialHintManager {
           getOverlapArea(rects.button, protectedRect),
         0,
       );
-      const flowPenalty = getObjectiveFlowPenalty(rects, targetFlow);
-
       return {
         ...clamped,
         index,
-        score: protectedOverlap * 10000 + flowPenalty,
+        protectedOverlap,
+        score: protectedOverlap * 10000 + getObjectiveFlowPenalty(rects, targetFlow),
       };
     });
+
+    if (candidates[0]?.protectedOverlap <= 0) {
+      return candidates[0];
+    }
 
     return candidates.sort((a, b) => a.score - b.score || a.index - b.index)[0];
   }

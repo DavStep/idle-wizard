@@ -130,6 +130,39 @@ describe('TutorialHintManager', () => {
     expect(pointer?.querySelector('img')).toBeNull();
   });
 
+  it('hides the pointer immediately for pointerless highlighted target cues', () => {
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const manager = new TutorialHintManager();
+
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      target,
+      toClientRect({
+        left: 96,
+        top: 140,
+        width: 80,
+        height: 24,
+      }),
+    );
+    stage.append(target);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showTargetCue({ target });
+
+    const pointer = stage.querySelector('.tutorial-layer__pointer');
+
+    expect(pointer?.hidden).toBe(false);
+
+    manager.showTargetCue({ target, showPointer: false, emphasizeTarget: true });
+
+    expect(pointer?.hidden).toBe(true);
+    expect(target.classList.contains('is-tutorial-target-emphasized')).toBe(true);
+    expect(target.getAttribute('data-tutorial-target-emphasis')).toBe('true');
+  });
+
   it('mounts and pauses the Spine pointer with target cue visibility', () => {
     const stage = document.createElement('section');
     const target = document.createElement('button');
@@ -1597,6 +1630,97 @@ describe('TutorialHintManager', () => {
     stage.remove();
   });
 
+  it('keeps the default lesson placement when it already clears the summon target', () => {
+    const stage = document.createElement('section');
+    const requirement = document.createElement('button');
+    const summonButton = document.createElement('button');
+    const summonCircle = document.createElement('span');
+    const summonText = document.createElement('span');
+    const manager = new TutorialHintManager({ storage: createMemoryStorage() });
+    const summonTargetRect = {
+      left: 136,
+      top: 400,
+      right: 224,
+      bottom: 439,
+    };
+    const summonCircleRect = {
+      left: 82,
+      top: 305,
+      right: 278,
+      bottom: 395,
+    };
+
+    requirement.dataset.tutorialId = 'task:level1-sage-seeds';
+    summonButton.className = 'style-button workshop-page__summon-button';
+    summonButton.dataset.tutorialId = 'workshop:summonSeed';
+    summonCircle.className = 'workshop-page__summon-circle';
+    summonText.className = 'workshop-page__summon-button-text';
+    summonButton.append(summonCircle, summonText);
+    stage.append(requirement, summonButton);
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      requirement,
+      toClientRect({
+        left: 24,
+        top: 84,
+        width: 312,
+        height: 58,
+      }),
+    );
+    setClientRect(
+      summonButton,
+      toClientRect({
+        left: summonTargetRect.left,
+        top: summonTargetRect.top,
+        width: summonTargetRect.right - summonTargetRect.left,
+        height: summonTargetRect.bottom - summonTargetRect.top,
+      }),
+    );
+    setClientRect(
+      summonCircle,
+      toClientRect({
+        left: summonCircleRect.left,
+        top: summonCircleRect.top,
+        width: summonCircleRect.right - summonCircleRect.left,
+        height: summonCircleRect.bottom - summonCircleRect.top,
+      }),
+    );
+    setClientRect(
+      summonText,
+      toClientRect({
+        left: summonTargetRect.left,
+        top: summonTargetRect.top,
+        width: summonTargetRect.right - summonTargetRect.left,
+        height: summonTargetRect.bottom - summonTargetRect.top,
+      }),
+    );
+    document.body.append(stage);
+
+    useFixedLessonSize(manager);
+    manager.mount(stage);
+    manager.showLesson({
+      id: 'summon-flow-clear',
+      title: 'lesson 1: introduction',
+      text: 'summon and turn in sage seeds for the next level',
+      stepLabel: '8/32',
+      canShowTarget: true,
+      target: summonButton,
+    });
+
+    const elaraButton = stage.querySelector('.tutorial-layer__lesson-button');
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
+    const lessonRect = getLessonRect(lesson);
+
+    expect(Number.parseFloat(lesson?.style.top ?? 'NaN')).toBe(520);
+    expect(overlaps(lessonRect, summonTargetRect)).toBe(false);
+    expect(overlaps(lessonRect, summonCircleRect)).toBe(false);
+    expect(overlaps(getLessonButtonRect(elaraButton), summonTargetRect)).toBe(false);
+
+    manager.unmount();
+    stage.remove();
+  });
+
   it('keeps the player dragged position after an automatic target dodge', () => {
     const storage = createMemoryStorage();
     const stage = document.createElement('section');
@@ -2106,15 +2230,26 @@ describe('TutorialHintManager', () => {
 
   it('protects Workshop summon controls from open lesson placement', () => {
     const stage = document.createElement('section');
+    const requirements = document.createElement('section');
     const summonButton = document.createElement('button');
     const summonInfoButton = document.createElement('button');
     const manager = new TutorialHintManager();
     useFixedLessonSize(manager, { height: 97 });
 
+    requirements.className = 'workshop-page__tasks style-box is-expanded is-pinned';
     summonButton.className = 'style-button workshop-page__summon-button';
     summonInfoButton.className = 'workshop-page__summon-info-button';
     stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
     setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      requirements,
+      toClientRect({
+        left: 16,
+        top: 82,
+        width: 328,
+        height: 252,
+      }),
+    );
     setClientRect(
       summonButton,
       toClientRect({
@@ -2133,7 +2268,7 @@ describe('TutorialHintManager', () => {
         height: 18,
       }),
     );
-    stage.append(summonButton, summonInfoButton);
+    stage.append(requirements, summonButton, summonInfoButton);
     document.body.append(stage);
 
     manager.mount(stage);
@@ -2141,6 +2276,12 @@ describe('TutorialHintManager', () => {
 
     const protectedRects = manager.getObjectiveProtectedRects(null);
 
+    expect(protectedRects).toContainEqual({
+      left: 16,
+      top: 82,
+      right: 344,
+      bottom: 334,
+    });
     expect(protectedRects).toContainEqual({
       left: 135,
       top: 410,
@@ -2164,6 +2305,12 @@ describe('TutorialHintManager', () => {
 
     const lesson = stage.querySelector('.tutorial-layer__lesson');
     const lessonRect = getLessonRect(lesson);
+    const requirementsRect = {
+      left: 16,
+      top: 82,
+      right: 344,
+      bottom: 334,
+    };
     const summonRect = {
       left: 135,
       top: 410,
@@ -2177,6 +2324,7 @@ describe('TutorialHintManager', () => {
       bottom: 394,
     };
 
+    expect(overlaps(lessonRect, requirementsRect)).toBe(false);
     expect(overlaps(lessonRect, summonRect)).toBe(false);
     expect(overlaps(lessonRect, infoRect)).toBe(false);
 

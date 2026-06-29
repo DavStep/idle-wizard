@@ -588,6 +588,9 @@ describe('TutorialFacade', () => {
 
     expect(facade.activeStep?.id).toBe('show-selected-sale-amount');
     expect(facade.progressManager.hasCompleted('show-selected-sale-amount')).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(true);
+    expect(amount.classList.contains('is-tutorial-target-emphasized')).toBe(true);
+    expect(amount.getAttribute('data-tutorial-target-emphasis')).toBe('true');
 
     vi.advanceTimersByTime(1999);
 
@@ -961,6 +964,7 @@ describe('TutorialFacade', () => {
     });
     const stage = document.createElement('section');
     const tasksToggle = document.createElement('button');
+    const tasksPin = document.createElement('button');
     const gameplayFacade = {
       getSnapshot: () => snapshot,
       subscribe: () => () => {},
@@ -982,12 +986,22 @@ describe('TutorialFacade', () => {
     tasksToggle.className = 'workshop-page__tasks-toggle';
     tasksToggle.dataset.tutorialId = 'workshop:tasks';
     tasksToggle.setAttribute('aria-expanded', 'true');
+    tasksPin.className = 'workshop-page__tasks-pin';
+    tasksPin.dataset.tutorialId = 'workshop:tasksPin';
+    tasksPin.setAttribute('aria-pressed', 'false');
     stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
     setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
-    stage.append(tasksToggle);
+    stage.append(tasksToggle, tasksPin);
     document.body.append(stage);
 
     facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('grow-sage');
+    expect(facade.activeStep?.targetId).toBe('workshop:tasksPin');
+    expect(shownPages).toEqual([]);
+
+    tasksPin.setAttribute('aria-pressed', 'true');
     facade.refresh();
 
     expect(facade.activeStep?.id).toBe('grow-sage');

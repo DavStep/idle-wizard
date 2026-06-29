@@ -1926,9 +1926,11 @@ export class WorkshopTaskManager {
 
     if (this.canToggleTasks) {
       this.setDataset(this.refs.toggleButton, 'tutorialId', 'workshop:tasks');
+      this.setDataset(this.refs.pinButton, 'tutorialId', 'workshop:tasksPin');
       this.setAttribute(this.refs.toggleButton, 'aria-controls', 'workshop-task-list');
     } else {
       delete this.refs.toggleButton.dataset.tutorialId;
+      delete this.refs.pinButton.dataset.tutorialId;
       this.removeAttribute(this.refs.toggleButton, 'aria-controls');
     }
   }

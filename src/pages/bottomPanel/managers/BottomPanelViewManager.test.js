@@ -145,6 +145,25 @@ describe('BottomPanelViewManager', () => {
     );
   });
 
+  it('keeps bottom chrome transparent while tabs keep button surfaces', () => {
+    const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
+    const panelResetIndex = baseCss.lastIndexOf('.style-panel.room-bottom-panel');
+    const themedPanelFrameIndex = baseCss.lastIndexOf(
+      ':root[data-style-theme="midnight"]\n  :where(\n    .style-panel,',
+    );
+    const panelResetBlock = baseCss.slice(
+      panelResetIndex,
+      baseCss.indexOf('}', panelResetIndex) + 1,
+    );
+    const tabBlockIndex = baseCss.indexOf('.room-bottom-panel__tab {');
+    const tabBlock = baseCss.slice(tabBlockIndex, baseCss.indexOf('}', tabBlockIndex) + 1);
+
+    expect(panelResetIndex).toBeGreaterThan(themedPanelFrameIndex);
+    expect(panelResetBlock).toContain('background: transparent;');
+    expect(panelResetBlock).toContain('border-image: none;');
+    expect(tabBlock).toContain('background: var(--style-surface);');
+  });
+
   it('appends the gated prestige page only when visible', () => {
     const stage = document.createElement('section');
     const onShowPage = vi.fn();
