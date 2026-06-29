@@ -63,6 +63,8 @@ export class AppLifecycleManager {
     this.backendConnectAttempt = 0;
     this.backendOnline = false;
     this.appVisible = true;
+    this.stage = null;
+    this.gameSurfacesMounted = false;
     this.hiddenOfflineReason = null;
     this.freshStartConfirmed = false;
     this.maintenanceUnsubscribe = null;
@@ -82,6 +84,7 @@ export class AppLifecycleManager {
     const shell = this.shellManager.mount();
     this.appThemeManager?.mount(this.playerFacade);
     const stage = this.viewportFacade.mount(shell);
+    this.stage = stage;
     this.textClipboardGuardManager.mount(stage);
     this.interactionLockManager.mount(stage);
     this.interactionLockManager.lock('connecting');
@@ -104,8 +107,6 @@ export class AppLifecycleManager {
 
     this.ecsFacade.createWorld();
     this.gameplayFacade.initialize(this.ecsFacade);
-    this.pagesFacade.mount(stage);
-    this.renderFacade.mount(stage);
     this.started = true;
     this.stopping = false;
     this.freshStartConfirmed = false;
@@ -479,6 +480,28 @@ export class AppLifecycleManager {
     if (!loaded || persistLoaded) {
       this.gameplayFacade.savePersistenceSnapshot();
     }
+
+    this.mountGameSurfaces();
+  }
+
+  mountGameSurfaces() {
+    if (this.gameSurfacesMounted || !this.stage) {
+      return;
+    }
+
+    this.pagesFacade.mount(this.stage);
+    this.renderFacade.mount(this.stage);
+    this.gameSurfacesMounted = true;
+  }
+
+  unmountGameSurfaces() {
+    if (!this.gameSurfacesMounted) {
+      return;
+    }
+
+    this.renderFacade.unmount();
+    this.pagesFacade.unmount();
+    this.gameSurfacesMounted = false;
   }
 
   getPendingAccountLinkSave() {
@@ -759,6 +782,7 @@ export class AppLifecycleManager {
       return;
     }
 
+    this.mountGameSurfaces();
     this.frameLoopStarted = true;
     this.gameplayTickUnsubscribe =
       this.gameplayFacade.subscribe?.(() => {
@@ -821,11 +845,11 @@ export class AppLifecycleManager {
     this.interactionLockManager.unmount();
     this.textClipboardGuardManager.unmount();
     this.appThemeManager?.unmount();
-    this.renderFacade.unmount();
-    this.pagesFacade.unmount();
+    this.unmountGameSurfaces();
     this.viewportFacade.unmount();
     this.ecsFacade.destroyWorld();
     this.shellManager.unmount();
+    this.stage = null;
     this.started = false;
     this.stopping = false;
   }

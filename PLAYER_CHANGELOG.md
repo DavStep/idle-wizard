@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.62
+
+- Fixed first-run start/account choice screens so the room UI no longer appears behind them before the game is ready.
+- Improved the fresh-start gate backdrop and Elara portrait sizing so the pre-game choice reads cleanly on mobile.
+
 ## 0.2.61
 
 - Moved mail into the Workshop action buttons so inbox access and notifications stay near the main room actions.

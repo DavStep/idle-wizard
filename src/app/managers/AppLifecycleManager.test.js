@@ -500,6 +500,54 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
   });
 
+  it('does not mount game surfaces behind the fresh-start gate', async () => {
+    let resolveChoice;
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveChoice = resolve;
+          }),
+      ),
+      render: vi.fn(),
+      hide: vi.fn(),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({
+        hasToken: false,
+        oidc: { authenticated: false, enabled: true },
+      })),
+      signInWithGoogle: vi.fn(),
+    };
+    const { lifecycle, stage, getBackendCallbacks } = createLifecycle({
+      freshStartChoiceManager,
+      authFacade,
+    });
+
+    lifecycle.start();
+    await flushPromises();
+
+    expect(freshStartChoiceManager.choose).toHaveBeenCalledTimes(1);
+    expect(lifecycle.pagesFacade.mount).not.toHaveBeenCalled();
+    expect(lifecycle.renderFacade.mount).not.toHaveBeenCalled();
+
+    resolveChoice(FRESH_START_CHOICE_START_FRESH);
+    await flushPromises();
+
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+    expect(lifecycle.pagesFacade.mount).not.toHaveBeenCalled();
+    expect(lifecycle.renderFacade.mount).not.toHaveBeenCalled();
+
+    await getBackendCallbacks().onGameplaySaveReady({ save: null });
+
+    expect(lifecycle.pagesFacade.mount).toHaveBeenCalledWith(stage);
+    expect(lifecycle.renderFacade.mount).toHaveBeenCalledWith(stage);
+  });
+
   it('connects without the fresh-start gate when an account token exists', async () => {
     const freshStartChoiceManager = {
       mount: vi.fn(),

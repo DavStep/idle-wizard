@@ -1024,7 +1024,7 @@ body {
 }
 
 .app-fresh-start-choice {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 120;
   display: grid;
@@ -1041,8 +1041,7 @@ body {
 }
 
 .app-fresh-start-choice:not([hidden]) {
-  animation: style-overlay-enter var(--style-motion-dialog)
-    var(--style-motion-ease) both;
+  background: var(--style-surface);
 }
 
 .app-fresh-start-choice__panel {
@@ -1069,15 +1068,15 @@ body {
 
 .app-fresh-start-choice__guide {
   display: grid;
-  grid-template-columns: 70px minmax(0, 1fr);
-  column-gap: 8px;
+  grid-template-columns: 96px minmax(0, 1fr);
+  column-gap: 10px;
   align-items: end;
   min-width: 0;
 }
 
 .app-fresh-start-choice__portrait {
-  width: 70px;
-  height: 91px;
+  width: 96px;
+  height: 125px;
   object-fit: contain;
   object-position: center bottom;
   pointer-events: none;
@@ -1089,7 +1088,7 @@ body {
   flex-direction: column;
   justify-content: end;
   min-width: 0;
-  min-height: 91px;
+  min-height: 125px;
 }
 
 .app-fresh-start-choice__message,
