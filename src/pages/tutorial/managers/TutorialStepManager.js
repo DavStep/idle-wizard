@@ -561,7 +561,8 @@ export const TUTORIAL_STEPS = [
     advanceOnClick: true,
     allowTargetClick: true,
     showPointer: false,
-    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 2,
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 2 && hasSageSeedSource(snapshot),
     isComplete: ({ currentPageId, snapshot }) =>
       getCurrentLevel(snapshot) >= 3 ||
       currentPageId === 'garden' ||
@@ -2437,6 +2438,10 @@ function hasActiveCrop(snapshot, seedKey) {
       tile.seedKey === seedKey &&
       (tile.phase === 'ready' || tile.phase === 'growing' || tile.phase === 'harvesting'),
   );
+}
+
+function hasSageSeedSource(snapshot) {
+  return getItemQuantity(snapshot, SAGE_SEED_KEY) > 0 || hasActiveCrop(snapshot, SAGE_SEED_KEY);
 }
 
 function isWaitingForCrop(snapshot, seedKey) {

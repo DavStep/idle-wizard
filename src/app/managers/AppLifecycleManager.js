@@ -246,7 +246,8 @@ export class AppLifecycleManager {
 
       if (!save) {
         this.clearPendingAccountLinkSave();
-        this.loadGameplaySave(accountLinkSave, { persistLoaded: true });
+        this.pagesFacade.resetTutorialProgress?.();
+        this.loadGameplaySave(null, { persistLoaded: true });
         return;
       }
 

@@ -53,13 +53,12 @@ describe('TopPanelInboxManager', () => {
     const manager = new TopPanelInboxManager({ playerInboxFacade: inboxFacade });
 
     manager.mount(viewManager.getRefs());
-    const mailButton = stage.querySelector('.room-top-panel__mail');
     const popup = stage.querySelector('.room-top-panel__inbox-popup');
 
-    expect(mailButton?.dataset.notification).toBe('true');
+    expect(stage.querySelector('.room-top-panel__mail')).toBeNull();
     expect(popup?.hidden).toBe(true);
 
-    mailButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    manager.show();
 
     expect(popup.hidden).toBe(false);
     expect(inboxFacade.markVisibleRead).toHaveBeenCalledTimes(1);

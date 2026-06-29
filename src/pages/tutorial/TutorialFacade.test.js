@@ -357,6 +357,69 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
+  it('refreshes first summon guidance when frame mana reaches the cost', () => {
+    const stage = document.createElement('section');
+    const summonButton = document.createElement('button');
+    let frameResourceListener = null;
+    let snapshot = createLevelOneSnapshot();
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      subscribe: () => () => {},
+      subscribeFrameResources: vi.fn((listener) => {
+        frameResourceListener = listener;
+        return () => {
+          frameResourceListener = null;
+        };
+      }),
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: [
+            'purchase-house',
+            'intro-welcome',
+            'intro-username',
+            'intro-username-return',
+            'intro-mana-sphere',
+          ],
+        }),
+      }),
+    });
+    const scheduleRefresh = vi.spyOn(facade, 'scheduleRefresh').mockImplementation(() => {
+      facade.refresh();
+    });
+
+    summonButton.dataset.tutorialId = 'workshop:summonSeed';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(summonButton, { left: 420, top: 1080, width: 240, height: 90 });
+    stage.append(summonButton);
+    document.body.append(stage);
+
+    try {
+      facade.mount(stage);
+
+      expect(gameplayFacade.subscribeFrameResources).toHaveBeenCalled();
+      expect(facade.activeStep?.id).toBe('first-summon-seed');
+      expect(facade.activeStep?.targetId).toBeNull();
+
+      snapshot = {
+        ...createLevelOneSnapshot(),
+        seedSummoning: { canSummon: true, cost: 10 },
+      };
+      frameResourceListener?.({ mana: { current: 10, cap: 50, perSecond: 1 } });
+
+      expect(scheduleRefresh).toHaveBeenCalledTimes(2);
+      expect(facade.activeStep?.id).toBe('first-summon-seed');
+      expect(facade.activeStep?.targetId).toBe('workshop:summonSeed');
+    } finally {
+      facade.unmount();
+      scheduleRefresh.mockRestore();
+    }
+  });
+
   it('publishes notification suppression only while the active step is blocking', () => {
     let snapshot = createLevelOneSnapshot();
     const policies = [];

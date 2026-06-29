@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.61
+
+- Moved mail into the Workshop action buttons so inbox access and notifications stay near the main room actions.
+- Improved Elara's Garden guidance so players stay in Workshop until they have a usable sage source, then move to Garden at the right moment.
+- Fixed first summon guidance so it updates as soon as mana reaches the summon cost, even between full gameplay refreshes.
+- Fixed new Google account links with no server save so they start fresh and reset the tutorial instead of carrying over the previous device progress.
+
 ## 0.2.60
 
 - Added matching automation, speed, and emerald upgrade research rows for capacity-unlocked plots and cauldrons after prestige.

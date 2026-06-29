@@ -7,7 +7,6 @@ export class TopPanelInboxManager {
     this.previousFocus = null;
     this.lastSnapshot = null;
     this.pendingMailKeys = new Set();
-    this.handleMailClick = () => this.show();
     this.handleCloseClick = () => this.hide();
     this.handleOverlayClick = (event) => {
       if (event.target === this.refs?.inboxPopup) {
@@ -27,7 +26,6 @@ export class TopPanelInboxManager {
 
   mount(refs) {
     this.refs = refs;
-    this.refs.mailButton.addEventListener('click', this.handleMailClick);
     this.refs.inboxCloseButton.addEventListener('click', this.handleCloseClick);
     this.refs.inboxPopup.addEventListener('click', this.handleOverlayClick);
     this.refs.inboxRows.addEventListener('click', this.handleRowsClick);
@@ -48,7 +46,6 @@ export class TopPanelInboxManager {
     this.unsubscribe = null;
 
     if (this.refs) {
-      this.refs.mailButton.removeEventListener('click', this.handleMailClick);
       this.refs.inboxCloseButton.removeEventListener('click', this.handleCloseClick);
       this.refs.inboxPopup.removeEventListener('click', this.handleOverlayClick);
       this.refs.inboxRows.removeEventListener('click', this.handleRowsClick);
@@ -120,17 +117,6 @@ export class TopPanelInboxManager {
       unreadCount: 0,
       claimableCount: 0,
     };
-    const unreadCount = Math.max(0, Math.floor(Number(this.lastSnapshot.unreadCount) || 0));
-    const claimableCount = Math.max(0, Math.floor(Number(this.lastSnapshot.claimableCount) || 0));
-    const hasNotification = unreadCount > 0 || claimableCount > 0;
-
-    this.refs.mailButton.dataset.notification = hasNotification ? 'true' : 'false';
-    this.refs.mailButton.setAttribute('aria-pressed', this.visible ? 'true' : 'false');
-    this.refs.mailButton.setAttribute(
-      'aria-label',
-      hasNotification ? 'open inbox, new mail' : 'open inbox',
-    );
-
     if (!this.visible) {
       return;
     }

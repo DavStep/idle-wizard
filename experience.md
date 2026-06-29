@@ -26,6 +26,7 @@
 - Player profile sync must wait on `own_player_profile` as well as `player`; otherwise reconnect can push default username/theme/avatar before hydration and overwrite saved profile data.
 - A temporarily empty own-profile subscription must not sync local defaults; suppress profile publishes while marking the prompt loaded, then wait for the row or a real user edit.
 - Fresh empty gameplay saves must reset browser FTUE progress before loading the null save; otherwise stale completed tutorial storage hides Elara on new data.
+- Google account linking to an identity with no server save should start a fresh save and reset FTUE progress; do not import the stashed device save into that new account.
 - Removed FTUE skip states must be ignored, not migrated; stale Android WebView `skipped` flags can hide the guide for reset level-1 players.
 - Post-reset replay guards must allow the client baseline save, including default free research like `unlockSeed:sageSeed`; otherwise new post-reset saves can never create a server row.
 - Fresh Android installs must show the account/start-fresh choice before any Credential Manager restore; native Google can silently restore a previously authorized account even when app-local data was cleared.
@@ -79,6 +80,7 @@
 - World chat dialog should use a fixed upper source-coordinate anchor; focus-within keyboard recentering makes it jump down when the keyboard closes.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
+- Resource-gated FTUE steps must refresh from `subscribeFrameResources`; top-panel mana can change without a full gameplay snapshot.
 - FTUE repeated action prompts should show once as brief non-dimming hints, then reappear only after idle time; do not keep alternating guidance through active loops.
 - A page means a room view, not a web route.
 - The first page is `Workshop`.
@@ -242,6 +244,7 @@
 - FTUE mana tonic recipe guidance should point to the recipe popup `close` label after the recipe is selected; do not keep cueing the selected row.
 - FTUE mana tonic brew guidance must require an unlocked `manaTonic` cauldron match, not just `canBrew`; `canBrew` is also true for wasted mixes. Overfilled sage should target the remove row before brew.
 - FTUE should actively show the first `grow sage` loop using the live sage-herb requirement target; after that first grow, later lesson-3 sage guidance can wait for idle and stay on-demand.
+- FTUE Garden opening should wait for a usable sage source; otherwise lesson 3 should open requirements and summon first instead of sending players to empty Garden and back.
 - FTUE level-2 task order should match the visible level-2 task row order; showing `sage` before `sage seed` keeps the gardening lesson coherent.
 - FTUE garden herb guidance must compare the requested `seedKey` with tile `selectedSeedKey`/`seedKey`; otherwise mint tasks can point at sage-selected plots with mint copy.
 - FTUE grow-sage should treat planted active sage as a current source; seed inventory dropping to zero during growth must not route guidance back to Workshop.

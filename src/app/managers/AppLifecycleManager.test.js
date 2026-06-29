@@ -1053,7 +1053,7 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the device save without prompting when a new Google account has no save', async () => {
+  it('starts new without prompting when a new Google account has no save', async () => {
     const deviceSave = { tasks: { currentLevel: 4 } };
     const accountLinkChoiceManager = {
       mount: vi.fn(),
@@ -1072,8 +1072,9 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
     expect(accountLinkChoiceManager.choose).not.toHaveBeenCalled();
     expect(authFacade.clearPendingAccountLinkSave).toHaveBeenCalledTimes(1);
+    expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
-      deviceSave,
+      null,
       lifecycle.ecsFacade,
     );
     expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);

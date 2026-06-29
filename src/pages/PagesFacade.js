@@ -139,9 +139,11 @@ export class PagesFacade {
         leaderboardFacade,
         worldEventLeaderboardFacade,
         tradeAllianceFacade,
+        playerInboxFacade,
         onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
         onOpenAllianceInfo: (alliance) => this.allianceInfoDialogFacade.show(alliance),
         onOpenBag: () => this.toggleInventoryDialog(),
+        onOpenInbox: () => this.topPanelFacade.showInbox(),
       }),
     );
     this.registryManager.register(

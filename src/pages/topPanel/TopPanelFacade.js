@@ -61,6 +61,10 @@ export class TopPanelFacade {
     this.viewManager.unmount();
   }
 
+  showInbox() {
+    this.inboxManager.show();
+  }
+
   setResourceContext(context = {}) {
     this.resourceDisplayManager.setContextCurrency(context.currency);
   }

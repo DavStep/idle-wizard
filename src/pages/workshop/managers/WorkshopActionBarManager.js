@@ -12,7 +12,9 @@ export class WorkshopActionBarManager {
   constructor({
     gameplayFacade,
     hapticsFacade,
+    playerInboxFacade,
     onBagClick,
+    onMailClick,
     onSummonInfoClick,
     onSummonNotice,
     onSummonNoticeList,
@@ -20,13 +22,16 @@ export class WorkshopActionBarManager {
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.hapticsFacade = hapticsFacade;
+    this.playerInboxFacade = playerInboxFacade;
     this.onBagClick = onBagClick;
+    this.onMailClick = onMailClick;
     this.onSummonInfoClick = onSummonInfoClick;
     this.onSummonNotice = onSummonNotice;
     this.onSummonNoticeList = onSummonNoticeList;
     this.rewardEventsAvailable = rewardEventsAvailable;
     this.root = null;
     this.unsubscribe = null;
+    this.inboxUnsubscribe = null;
     this.refs = {};
     this.summonHoldTimer = null;
     this.summonEffectTimer = null;
@@ -57,17 +62,27 @@ export class WorkshopActionBarManager {
 
     this.refs.summonButton = this.createSummonButton();
     this.refs.summonInfoButton = this.createSummonInfoButton();
+    this.refs.mailButton = this.createMailButton();
     this.refs.bagButton = this.createBagButton();
 
     this.root.append(
       this.refs.summonButton,
       this.refs.summonInfoButton,
+      this.refs.mailButton,
       this.refs.bagButton,
     );
     parent.append(this.root);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
     this.render(this.gameplayFacade.getSnapshot());
+    if (this.playerInboxFacade) {
+      this.inboxUnsubscribe = this.playerInboxFacade.subscribe((snapshot) =>
+        this.renderInbox(snapshot),
+      );
+      this.renderInbox(this.playerInboxFacade.getSnapshot?.());
+    } else {
+      this.renderInbox(null);
+    }
 
     return this.root;
   }
@@ -77,6 +92,8 @@ export class WorkshopActionBarManager {
     this.clearSummonEffect();
     this.unsubscribe?.();
     this.unsubscribe = null;
+    this.inboxUnsubscribe?.();
+    this.inboxUnsubscribe = null;
     this.root?.remove();
     this.root = null;
     this.refs = {};
@@ -128,6 +145,16 @@ export class WorkshopActionBarManager {
     button.textContent = 'bag';
     button.setAttribute('aria-label', 'open bag');
     button.addEventListener('click', () => this.onBagClick?.());
+    return button;
+  }
+
+  createMailButton() {
+    const button = document.createElement('button');
+    button.className = 'style-button workshop-page__mail-button';
+    button.type = 'button';
+    button.textContent = 'mail';
+    button.setAttribute('aria-label', 'open inbox');
+    button.addEventListener('click', () => this.onMailClick?.());
     return button;
   }
 
@@ -388,6 +415,23 @@ export class WorkshopActionBarManager {
     this.setAttribute(this.refs.summonButton, 'aria-disabled', ariaDisabled);
     this.refs.summonButton.disabled = false;
     setNotificationBadge(this.refs.summonButton, getSeedSummonNotification(snapshot));
+  }
+
+  renderInbox(snapshot) {
+    if (!this.refs.mailButton) {
+      return;
+    }
+
+    const unreadCount = Math.max(0, Math.floor(Number(snapshot?.unreadCount) || 0));
+    const claimableCount = Math.max(0, Math.floor(Number(snapshot?.claimableCount) || 0));
+    const hasNotification = unreadCount > 0 || claimableCount > 0;
+
+    this.setAttribute(
+      this.refs.mailButton,
+      'aria-label',
+      hasNotification ? 'open inbox, new mail' : 'open inbox',
+    );
+    setNotificationBadge(this.refs.mailButton, hasNotification);
   }
 
   setText(element, text) {

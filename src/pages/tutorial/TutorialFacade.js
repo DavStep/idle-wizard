@@ -26,6 +26,7 @@ export class TutorialFacade {
     this.onShowPage = typeof onShowPage === 'function' ? onShowPage : null;
     this.stage = null;
     this.unsubscribe = null;
+    this.frameResourceUnsubscribe = null;
     this.getNow = typeof now === 'function' ? now : () => Date.now();
     this.onNotificationVisibilityPolicyChange = onNotificationVisibilityPolicyChange;
     this.progressManager = new TutorialProgressManager({ storage });
@@ -79,6 +80,13 @@ export class TutorialFacade {
       this.refresh();
     };
     this.handleResize = () => this.scheduleRefresh();
+    this.handleFrameResources = () => {
+      if (this.stepManager.hasCompletedAllSteps()) {
+        return;
+      }
+
+      this.scheduleRefresh();
+    };
     this.handleUsernameSaved = () => {
       if (this.progressManager.hasCompleted('intro-username')) {
         return;
@@ -102,6 +110,8 @@ export class TutorialFacade {
     this.hintManager.setObjectivePressHandler(this.handleObjectivePress);
     this.hintManager.setLessonPanelCloseHandler(this.handleLessonPanelClose);
     this.unsubscribe = this.gameplayFacade.subscribe(() => this.scheduleRefresh());
+    this.frameResourceUnsubscribe =
+      this.gameplayFacade.subscribeFrameResources?.(this.handleFrameResources) ?? null;
     stage.addEventListener('click', this.handleClick, true);
     stage.addEventListener(TOP_PANEL_USERNAME_SAVED_EVENT, this.handleUsernameSaved);
     window.addEventListener('resize', this.handleResize);
@@ -111,7 +121,9 @@ export class TutorialFacade {
 
   unmount() {
     this.unsubscribe?.();
+    this.frameResourceUnsubscribe?.();
     this.unsubscribe = null;
+    this.frameResourceUnsubscribe = null;
     this.cancelRefresh();
     this.cancelReminderRefresh();
     this.cancelAutoAdvance();

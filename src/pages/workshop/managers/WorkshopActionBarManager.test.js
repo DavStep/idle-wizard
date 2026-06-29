@@ -41,6 +41,29 @@ function createGameplayFacadeFake(overrides = {}) {
   };
 }
 
+function createPlayerInboxFacadeFake(overrides = {}) {
+  const listeners = new Set();
+  const snapshot = {
+    unreadCount: 0,
+    claimableCount: 0,
+    ...overrides,
+  };
+
+  return {
+    getSnapshot: () => snapshot,
+    publish: () => {
+      for (const listener of listeners) {
+        listener(snapshot);
+      }
+    },
+    subscribe: (listener) => {
+      listeners.add(listener);
+      listener(snapshot);
+      return () => listeners.delete(listener);
+    },
+  };
+}
+
 function dispatchPointer(target, type, { pointerId = 1, pointerType = 'touch' } = {}) {
   const event = new window.MouseEvent(type, {
     bubbles: true,
@@ -345,8 +368,12 @@ describe('WorkshopActionBarManager', () => {
 
   it('places the secondary action buttons near chat with matching widths', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
     const bagRule = baseCss.match(
       /\.workshop-page__action-bar > \.style-button\.workshop-page__bag-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const mailRule = baseCss.match(
+      /\.workshop-page__action-bar > \.style-button\.workshop-page__mail-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const leaderboardRule = baseCss.match(
       /\.style-button\.workshop-page__leaderboard-button\s*\{(?<body>[^}]*)\}/,
@@ -358,14 +385,28 @@ describe('WorkshopActionBarManager', () => {
       /\.style-button\.workshop-page__discoveries-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
+    expect(rootRule).toMatch(/--workshop-secondary-button-width:\s*100px;/);
+    expect(rootRule).toMatch(/--workshop-secondary-button-half-width:\s*50px;/);
+
     expect(bagRule).toBeDefined();
     expect(bagRule).toMatch(
       /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\) \+\s*var\(--workshop-secondary-button-row-gap\)\s*\);/,
     );
     expect(bagRule).toMatch(/\bleft:\s*0;/);
     expect(bagRule).toMatch(/\bbox-sizing:\s*content-box;/);
-    expect(bagRule).toMatch(/\bwidth:\s*132px;/);
+    expect(bagRule).toMatch(
+      /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
+    );
     expect(bagRule).not.toMatch(/\bbottom:/);
+
+    expect(mailRule).toBeDefined();
+    expect(mailRule).toMatch(
+      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\)\s*\);/,
+    );
+    expect(mailRule).toMatch(
+      /\bleft:\s*calc\(50% - var\(--workshop-secondary-button-half-width\)\);/,
+    );
+    expect(mailRule).toMatch(/\bwidth:\s*var\(--workshop-secondary-button-width\);/);
 
     expect(leaderboardRule).toMatch(
       /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\)\s*\);/,
@@ -376,9 +417,50 @@ describe('WorkshopActionBarManager', () => {
     expect(discoveriesRule).toMatch(
       /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\) \+\s*var\(--workshop-secondary-button-row-gap\)\s*\);/,
     );
-    expect(leaderboardRule).toMatch(/\bwidth:\s*132px;/);
-    expect(allianceRule).toMatch(/\bwidth:\s*132px;/);
-    expect(discoveriesRule).toMatch(/\bwidth:\s*132px;/);
+    expect(leaderboardRule).toMatch(
+      /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
+    );
+    expect(allianceRule).toMatch(
+      /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
+    );
+    expect(discoveriesRule).toMatch(
+      /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
+    );
+  });
+
+  it('opens the moved mail button from the Workshop action cluster', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const playerInboxFacade = createPlayerInboxFacadeFake({
+      unreadCount: 1,
+      claimableCount: 0,
+    });
+    const onMailClick = vi.fn();
+    const manager = new WorkshopActionBarManager({
+      gameplayFacade,
+      playerInboxFacade,
+      onMailClick,
+    });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+
+    const mailButton = parent.querySelector('.workshop-page__mail-button');
+
+    expect(mailButton?.textContent).toBe('mail');
+    expect(mailButton?.dataset.notification).toBe('true');
+    expect(mailButton?.getAttribute('aria-label')).toBe('open inbox, new mail');
+
+    mailButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onMailClick).toHaveBeenCalledTimes(1);
+
+    playerInboxFacade.getSnapshot().unreadCount = 0;
+    playerInboxFacade.publish();
+
+    expect(mailButton?.dataset.notification).toBeUndefined();
+    expect(mailButton?.getAttribute('aria-label')).toBe('open inbox');
+
+    manager.unmount();
   });
 
   it('keeps normal click summon activation when no hold started', () => {

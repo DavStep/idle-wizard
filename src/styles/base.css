@@ -172,6 +172,8 @@
   );
   --workshop-secondary-button-top-offset: 388px;
   --workshop-secondary-button-row-gap: 40px;
+  --workshop-secondary-button-width: 100px;
+  --workshop-secondary-button-half-width: 50px;
   --style-main-box-width: 280px;
   --style-room-nav-button-width: 100px;
   --brewing-page-guide-sequence-height: var(--style-row-min-height);
@@ -1874,6 +1876,7 @@ body {
     .workshop-page__world-notice,
     .workshop-page__summon-button,
     .workshop-page__bag-button,
+    .workshop-page__mail-button,
     .workshop-page__leaderboard-button,
     .workshop-page__trade-alliance-button,
     .workshop-page__discoveries-button,
@@ -1928,6 +1931,7 @@ body {
 }
 
 .workshop-page__leaderboard-button,
+.workshop-page__mail-button,
 .workshop-page__trade-alliance-button,
 .brewing-page__cauldrons > .style-box:nth-child(3),
 .research-page__box-list > .style-box:nth-child(3),
@@ -3169,7 +3173,17 @@ body {
   );
   left: 0;
   box-sizing: content-box;
-  width: 132px;
+  width: var(--workshop-secondary-button-width);
+}
+
+.workshop-page__action-bar > .style-button.workshop-page__mail-button {
+  position: absolute;
+  top: calc(
+    var(--style-room-content-top) +
+      var(--workshop-secondary-button-top-offset)
+  );
+  left: calc(50% - var(--workshop-secondary-button-half-width));
+  width: var(--workshop-secondary-button-width);
 }
 
 .room-reward-flyouts,
@@ -5907,7 +5921,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
       var(--workshop-secondary-button-top-offset)
   );
   left: var(--style-room-content-edge);
-  width: 132px;
+  width: var(--workshop-secondary-button-width);
 }
 
 .style-button.workshop-page__trade-alliance-button {
@@ -5917,7 +5931,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
       var(--workshop-secondary-button-top-offset)
   );
   right: var(--style-room-content-edge);
-  width: 132px;
+  width: var(--workshop-secondary-button-width);
 }
 
 .workshop-page__world-chat-box {
@@ -5965,7 +5979,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
       var(--workshop-secondary-button-row-gap)
   );
   right: var(--style-room-content-edge);
-  width: 132px;
+  width: var(--workshop-secondary-button-width);
 }
 
 .style-button[class*="workshop-page__"]:not(
@@ -12273,7 +12287,7 @@ div.workshop-page__discovery-row {
   display: grid;
   grid-column: 2 / 4;
   grid-row: 1;
-  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
   column-gap: 8px;
   min-height: var(--style-row-min-height);
@@ -12375,8 +12389,7 @@ div.workshop-page__discovery-row {
   outline: none;
 }
 
-.room-top-panel__level,
-.room-top-panel__mail {
+.room-top-panel__level {
   position: relative;
   flex: 0 0 auto;
   justify-self: end;
@@ -12394,43 +12407,22 @@ div.workshop-page__discovery-row {
   border-radius: 0;
 }
 
-.room-top-panel__mail {
-  font-weight: normal;
-}
-
-.room-top-panel__level:focus,
-.room-top-panel__mail:focus {
+.room-top-panel__level:focus {
   font-weight: 700;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .room-top-panel__level:hover,
-  .room-top-panel__mail:hover {
+  .room-top-panel__level:hover {
     font-weight: 700;
   }
 }
 
-.room-top-panel__level:active,
-.room-top-panel__mail:active {
+.room-top-panel__level:active {
   background: var(--style-active-surface);
 }
 
-.room-top-panel__level:focus,
-.room-top-panel__mail:focus {
+.room-top-panel__level:focus {
   outline: none;
-}
-
-.room-top-panel__mail[data-notification="true"]::after {
-  position: absolute;
-  top: -3px;
-  right: -6px;
-  width: var(--style-notification-size);
-  height: var(--style-notification-size);
-  pointer-events: none;
-  content: "";
-  background: var(--style-notification);
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px var(--style-surface);
 }
 
 .room-top-panel__resources {
@@ -14569,7 +14561,6 @@ div.workshop-page__discovery-row {
 @media (hover: none) {
   .room-top-panel__username,
   .room-top-panel__level,
-  .room-top-panel__mail,
   .workshop-page__tasks-title,
   .workshop-page__tasks-pin,
   .workshop-page__tasks-toggle,
@@ -14628,7 +14619,6 @@ div.workshop-page__discovery-row {
   .room-bottom-panel__tab,
   .room-top-panel__username,
   .room-top-panel__level,
-  .room-top-panel__mail,
   .workshop-page__row--interactive,
   .workshop-page__tasks-title,
   .workshop-page__tasks-pin,
@@ -14656,7 +14646,6 @@ div.workshop-page__discovery-row {
     .room-bottom-panel__tab,
     .room-top-panel__username,
     .room-top-panel__level,
-    .room-top-panel__mail,
     .workshop-page__row--interactive,
     .workshop-page__tasks-title,
     .workshop-page__tasks-pin,

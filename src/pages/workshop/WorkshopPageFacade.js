@@ -25,9 +25,11 @@ export class WorkshopPageFacade {
     leaderboardFacade,
     worldEventLeaderboardFacade,
     tradeAllianceFacade,
+    playerInboxFacade,
     onOpenPlayerInfo,
     onOpenAllianceInfo,
     onOpenBag,
+    onOpenInbox,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.onOpenBag = onOpenBag;
@@ -44,7 +46,9 @@ export class WorkshopPageFacade {
     this.actionBarManager = new WorkshopActionBarManager({
       gameplayFacade,
       hapticsFacade,
+      playerInboxFacade,
       onBagClick: () => this.onOpenBag?.(),
+      onMailClick: () => onOpenInbox?.(),
       onSummonInfoClick: () => this.summonInfoManager.show(),
       onSummonNotice: (message, options) => this.flyoutManager.show(message, options),
       onSummonNoticeList: (notices) => this.flyoutManager.showList(notices),

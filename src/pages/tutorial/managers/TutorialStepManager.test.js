@@ -836,6 +836,80 @@ describe('TutorialStepManager', () => {
     });
   });
 
+  it('keeps level two in workshop until there is a sage source for garden', () => {
+    const snapshot = createSnapshot({
+      seedSummoning: {
+        canSummon: true,
+        cost: 10,
+      },
+      seedInventory: [{ key: 'sageSeed', quantity: 0 }],
+      garden: {
+        seeds: [{ key: 'sageSeed', quantity: 0 }],
+        herbs: [{ key: 'sageHerb', quantity: 0 }],
+        plot: {
+          tiles: [
+            {
+              tileNumber: 1,
+              unlocked: true,
+              phase: 'empty',
+              selectedSeedItemTypeId: null,
+            },
+          ],
+        },
+      },
+      tasks: {
+        currentLevel: 2,
+        level: {
+          completion: { canComplete: false, costCoin: 40 },
+          tasks: [
+            {
+              taskId: 'level2-sage-herb',
+              itemKey: 'sageHerb',
+              requiredQuantity: 2,
+              progressQuantity: 0,
+              remainingQuantity: 2,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+            {
+              taskId: 'level2-sage-seeds',
+              itemKey: 'sageSeed',
+              requiredQuantity: 7,
+              progressQuantity: 0,
+              remainingQuantity: 7,
+              canFill: false,
+              canComplete: false,
+              completed: false,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(getStep({ snapshot })).toMatchObject({
+      id: 'grow-sage',
+      targetId: 'workshop:tasks',
+      hintText: 'open level 3 requirements',
+      objectiveText:
+        "now level 3 requires 2 sages and 7 sage seeds to level up. fussy little list. let's start growing sage.",
+      autoPageId: null,
+      progressLabel: '0/2 sage',
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        dom: createDomFake({ tasksExpanded: true }),
+      }),
+    ).toMatchObject({
+      id: 'grow-sage',
+      targetId: 'workshop:summonSeed',
+      hintText: 'summon seed',
+      autoPageId: null,
+    });
+  });
+
   it('opens level two requirements before sending the player to garden', () => {
     const snapshot = createSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 1 }],

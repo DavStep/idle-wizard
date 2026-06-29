@@ -94,18 +94,10 @@ export class TopPanelViewManager {
     this.refs.levelButton.setAttribute('aria-label', 'open level rewards');
     this.refs.levelValue = this.refs.levelButton;
 
-    this.refs.mailButton = document.createElement('button');
-    this.refs.mailButton.className = 'room-top-panel__mail';
-    this.refs.mailButton.type = 'button';
-    this.refs.mailButton.textContent = 'mail';
-    this.refs.mailButton.setAttribute('aria-label', 'open inbox');
-    this.refs.mailButton.setAttribute('aria-pressed', 'false');
-    this.refs.mailButton.dataset.notification = 'false';
-
     const identityRow = document.createElement('div');
     identityRow.className = 'room-top-panel__identity-row';
     const contextCurrency = this.createResource('crystal', '0 crystal');
-    identityRow.append(this.refs.usernameButton, this.refs.levelButton, this.refs.mailButton);
+    identityRow.append(this.refs.usernameButton, this.refs.levelButton);
 
     this.refs.resources = document.createElement('div');
     this.refs.resources.className = 'room-top-panel__resources';
