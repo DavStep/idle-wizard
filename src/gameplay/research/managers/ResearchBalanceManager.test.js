@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { automationResearchIds } from '../../automation/automationResearchIds.js';
+import { advancedResearchIds } from '../advancedResearchIds.js';
+import { emeraldResearchIds } from '../emeraldResearchIds.js';
 import { ResearchBalanceManager } from './ResearchBalanceManager.js';
 import { researchCostResearchIds } from '../researchCostResearch.js';
 import { researchTimeResearchIds } from '../researchTimeResearch.js';
@@ -66,6 +69,30 @@ describe('ResearchBalanceManager', () => {
       amount: 8,
       currency: 'ruby',
     });
+    expect(manager.getCost(automationResearchIds.autoPlantTile(11))).toEqual({
+      amount: 11,
+      currency: 'crystal',
+    });
+    expect(manager.getCost(automationResearchIds.autoHarvestPlant(20))).toEqual({
+      amount: 20,
+      currency: 'crystal',
+    });
+    expect(manager.getCost(automationResearchIds.autoBrewCauldron(6))).toEqual({
+      amount: 6,
+      currency: 'crystal',
+    });
+    expect(manager.getCost(automationResearchIds.autoBottleCauldron(10))).toEqual({
+      amount: 10,
+      currency: 'crystal',
+    });
+    expect(manager.getCost(advancedResearchIds.plotGrowth(20, 1))).toEqual({
+      amount: 1,
+      currency: 'ruby',
+    });
+    expect(manager.getCost(advancedResearchIds.cauldronBrewing(10, 1))).toEqual({
+      amount: 1,
+      currency: 'ruby',
+    });
   });
 
   it('applies research cost reduction to coin research costs', () => {
@@ -115,9 +142,27 @@ describe('ResearchBalanceManager', () => {
 
     expect(manager.getCostEmerald('emerald:plotPlanting:1:2')).toBe(1);
     expect(manager.getCostEmerald('emerald:plotPlanting:10:2')).toBe(1);
+    expect(manager.getCostEmerald(emeraldResearchIds.plotPlanting(20, 2))).toBe(1);
     expect(manager.getCostEmerald('emerald:plotPlanting:10:3')).toBe(2);
     expect(manager.getCostEmerald('emerald:cauldronBrewing:5:2')).toBe(1);
+    expect(manager.getCostEmerald(emeraldResearchIds.cauldronBrewing(10, 2))).toBe(1);
     expect(manager.getCostEmerald('emerald:cauldronBrewing:5:3')).toBe(2);
+  });
+
+  it('fills missing crystal costs from defaults for old runtime configs', () => {
+    const manager = new ResearchBalanceManager({
+      balance: {
+        researchCostsCoin: {
+          [automationResearchIds.autoPlantTile(11)]: 99,
+        },
+        researchCostsCrystal: {},
+      },
+    });
+
+    expect(manager.getCost(automationResearchIds.autoPlantTile(11))).toEqual({
+      amount: 11,
+      currency: 'crystal',
+    });
   });
 
   it('reads ruby research costs for research time reduction', () => {

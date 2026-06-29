@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { ItemsFacade } from '../../items/ItemsFacade.js';
+import { automationResearchIds } from '../../automation/automationResearchIds.js';
+import { advancedResearchIds } from '../advancedResearchIds.js';
+import { capacityResearchIds } from '../capacityResearchIds.js';
+import { emeraldResearchIds } from '../emeraldResearchIds.js';
 import { ResearchBalanceManager } from './ResearchBalanceManager.js';
 import { ResearchDefinitionManager } from './ResearchDefinitionManager.js';
 import { researchCostResearchIds } from '../researchCostResearch.js';
@@ -73,6 +77,47 @@ describe('ResearchDefinitionManager', () => {
 
     expect(manager.hasResearch('unlockRecipe:manaTonic')).toBe(false);
     expect(manager.hasConfiguredResearch('unlockRecipe:manaTonic')).toBe(true);
+  });
+
+  it('shows slot researches unlocked by completed capacity research', () => {
+    const { manager, setMaxGardenTiles, setMaxCauldrons } = createManager();
+    setMaxGardenTiles(3);
+    setMaxCauldrons(2);
+    const completedResearchIds = [
+      capacityResearchIds.plot(11),
+      capacityResearchIds.cauldron(6),
+    ];
+    const tabs = manager.getVisibleResearchTabs(completedResearchIds);
+    const getResearchIds = (tabId, boxId) =>
+      tabs
+        .find((tab) => tab.id === tabId)
+        ?.boxes.find((box) => box.id === boxId)
+        ?.researches.map((research) => research.id) ?? [];
+
+    expect(manager.hasResearch(automationResearchIds.autoPlantTile(11))).toBe(false);
+    expect(
+      manager.hasResearch(automationResearchIds.autoPlantTile(11), {
+        completedResearchIds,
+      }),
+    ).toBe(true);
+    expect(getResearchIds('automation', 'autoPlantTiles')).toContain(
+      automationResearchIds.autoPlantTile(11),
+    );
+    expect(getResearchIds('automation', 'autoPlantTiles')).not.toContain(
+      automationResearchIds.autoPlantTile(12),
+    );
+    expect(getResearchIds('automation', 'autoBrewCauldrons')).toContain(
+      automationResearchIds.autoBrewCauldron(6),
+    );
+    expect(getResearchIds('automation', 'autoBrewCauldrons')).not.toContain(
+      automationResearchIds.autoBrewCauldron(7),
+    );
+    expect(getResearchIds('advanced', 'plotGrowth')).toContain(
+      advancedResearchIds.plotGrowth(11, 1),
+    );
+    expect(getResearchIds('emerald', 'cauldronBrewing')).toContain(
+      emeraldResearchIds.cauldronBrewing(6, 2),
+    );
   });
 
   it('adds staged research time reduction rows to advanced research', () => {

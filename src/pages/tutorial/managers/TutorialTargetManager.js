@@ -2,6 +2,7 @@ export const GLOBAL_BLOCKING_DIALOG_SELECTORS = [
   '.app-account-link-choice:not([hidden])',
   '.app-fresh-start-choice:not([hidden])',
   '.mobile-auth-bridge:not([hidden])',
+  '.room-announcement-layer:not([hidden])',
   '.room-top-panel__level-popup:not([hidden])',
 ];
 const POPUP_ROOT_BASE_SELECTORS = [

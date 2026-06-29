@@ -6,6 +6,8 @@ Tutorial logic is unified through `TutorialLogicManager`. `TutorialStepManager` 
 
 The guide covers level 1 seed task, tutorial market sale, level 1 level-up, level 2 Garden sage herb and sage seed tasks, level 3 seed research, level 4 Brewing recipe research, and a passive level 5 settings/theme reminder. It has no skip state.
 
+The first tutorial fast-sell sequence selects the item, points at the amount value for two seconds, then automatically advances to the `sell` button. Do not add a manual skip or a second hint box for that amount beat.
+
 When later level-up coin goals already have the fast-sell popup open and an item selected, Elara points at `sell` if the current amount covers the missing coin, or at `+1` if the amount can still usefully increase. The popup amount resets to `1` on open so the first sell read stays clear.
 
 Level-up coin guidance must read Market `shop.shelf.sellItems` quantities before pointing at fast sell. Raw inventory can include items reserved by Garden, Brewing, or listings; if the matching fast-sell row would show `x0`, guide back to the next source instead of the disabled row. If a sellable item exists on another fast-sell type tab, point to that tab before pointing to the item row.

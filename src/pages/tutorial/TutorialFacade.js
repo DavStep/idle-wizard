@@ -42,6 +42,8 @@ export class TutorialFacade {
     this.saleManager = new TutorialSaleManager();
     this.animationFrame = null;
     this.reminderTimeout = null;
+    this.autoAdvanceTimeout = null;
+    this.autoAdvanceStepId = null;
     this.blockingDialogObserver = null;
     this.activeStep = null;
     this.requestedTargetGuidanceStepId = null;
@@ -112,6 +114,7 @@ export class TutorialFacade {
     this.unsubscribe = null;
     this.cancelRefresh();
     this.cancelReminderRefresh();
+    this.cancelAutoAdvance();
     this.disconnectBlockingDialogObserver();
     this.saleManager.cancel();
     this.stage?.removeEventListener('click', this.handleClick, true);
@@ -131,6 +134,7 @@ export class TutorialFacade {
     this.logicManager.resetProgress();
     this.activeStep = null;
     this.clearRequestedTargetGuidance();
+    this.cancelAutoAdvance();
     this.scheduleRefresh();
   }
 
@@ -184,6 +188,7 @@ export class TutorialFacade {
     this.activeStep = null;
     this.reminderManager.discardActivePrompt();
     this.clearRequestedTargetGuidance();
+    this.cancelAutoAdvance();
     this.hintManager.hideTargetCue?.({ immediate: true });
     this.scheduleRefresh();
 
@@ -296,6 +301,7 @@ export class TutorialFacade {
 
     if (viewState.kind === 'blocked') {
       this.clearRequestedTargetGuidance();
+      this.cancelAutoAdvance();
       this.saleManager.cancel();
       this.hintManager.suspendForBlockingDialog();
       return;
@@ -303,6 +309,7 @@ export class TutorialFacade {
 
     if (viewState.kind === 'hidden') {
       this.clearRequestedTargetGuidance();
+      this.cancelAutoAdvance();
       this.saleManager.cancel();
       this.revealManager.clear();
       this.hintManager.hide();
@@ -330,9 +337,11 @@ export class TutorialFacade {
       });
       this.applyCue(viewState.cue);
       this.scheduleReminderRefresh(viewState.nextRefreshAt);
+      this.scheduleAutoAdvance(viewState.step);
       return;
     }
 
+    this.cancelAutoAdvance();
     this.saleManager.cancel();
     this.applyCue(viewState.cue);
     this.scheduleReminderRefresh(viewState.nextRefreshAt);
@@ -363,6 +372,7 @@ export class TutorialFacade {
 
     this.activeStep = null;
     this.clearRequestedTargetGuidance();
+    this.cancelAutoAdvance();
     this.hintManager.hideTargetCue({ immediate: Boolean(advancePageId) });
 
     if (advancePageId && this.onShowPage) {
@@ -380,6 +390,7 @@ export class TutorialFacade {
     }
 
     this.clearRequestedTargetGuidance();
+    this.cancelAutoAdvance();
     this.hintManager.hideTargetCue({ immediate: true });
     this.onShowPage(pageId);
     this.scheduleRefresh();
@@ -526,6 +537,49 @@ export class TutorialFacade {
 
     globalThis.clearTimeout(this.reminderTimeout);
     this.reminderTimeout = null;
+  }
+
+  scheduleAutoAdvance(step) {
+    const stepId = step?.id;
+    const autoAdvanceMs = step?.autoAdvanceMs;
+
+    if (!stepId || !Number.isFinite(autoAdvanceMs) || autoAdvanceMs < 0) {
+      this.cancelAutoAdvance();
+      return;
+    }
+
+    if (this.autoAdvanceTimeout !== null && this.autoAdvanceStepId === stepId) {
+      return;
+    }
+
+    this.cancelAutoAdvance();
+    this.autoAdvanceStepId = stepId;
+    this.autoAdvanceTimeout = globalThis.setTimeout(() => {
+      this.autoAdvanceTimeout = null;
+      this.autoAdvanceStepId = null;
+
+      if (this.activeStep?.id !== stepId) {
+        return;
+      }
+
+      this.stepManager.advanceStep(stepId);
+      this.logicManager.activeStep = null;
+      this.activeStep = null;
+      this.reminderManager.discardActivePrompt();
+      this.clearRequestedTargetGuidance();
+      this.hintManager.hideTargetCue({ immediate: true });
+      this.refresh();
+    }, autoAdvanceMs);
+    this.autoAdvanceTimeout?.unref?.();
+  }
+
+  cancelAutoAdvance() {
+    if (this.autoAdvanceTimeout !== null) {
+      globalThis.clearTimeout(this.autoAdvanceTimeout);
+    }
+
+    this.autoAdvanceTimeout = null;
+    this.autoAdvanceStepId = null;
   }
 
   watchBlockingDialogs() {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setNotificationVisibilityPolicy } from '../shared/notificationBadge.js';
 import { TutorialFacade } from './TutorialFacade.js';
@@ -136,6 +136,31 @@ function createLevelOneObjectiveSnapshot() {
   };
 }
 
+function createLevelOneSaleSnapshot() {
+  return {
+    ...createLevelOneSnapshot(),
+    seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+    tasks: {
+      currentLevel: 1,
+      level: {
+        completion: { canComplete: false, costCoin: 10 },
+        tasks: [
+          {
+            taskId: 'level1-sage-seeds',
+            itemKey: 'sageSeed',
+            requiredQuantity: 4,
+            progressQuantity: 4,
+            remainingQuantity: 0,
+            canFill: false,
+            canComplete: false,
+            completed: true,
+          },
+        ],
+      },
+    },
+  };
+}
+
 function createLevelTwoSageTaskSnapshot(overrides = {}) {
   return {
     ...createLevelThreeSnapshot(),
@@ -195,13 +220,19 @@ const LEVEL_ONE_COMPLETED_STEP_IDS = [
   'open-market',
   'select-market-stand',
   'select-sage-seed-sale',
+  'show-selected-sale-amount',
   'earn-tutorial-coin',
   'unselect-sage-seed-sale',
   'level-up-one',
 ];
+const LEVEL_ONE_SELECTED_SALE_STEP_IDS = LEVEL_ONE_COMPLETED_STEP_IDS.slice(
+  0,
+  LEVEL_ONE_COMPLETED_STEP_IDS.indexOf('show-selected-sale-amount'),
+);
 
 describe('TutorialFacade', () => {
   afterEach(() => {
+    vi.useRealTimers();
     setNotificationVisibilityPolicy(null);
     document.body.textContent = '';
   });
@@ -408,6 +439,106 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
+  it('pauses the lesson while a room announcement is active', async () => {
+    const stage = document.createElement('section');
+    const announcement = document.createElement('section');
+    const gameplayFacade = {
+      getSnapshot: () => createLevelOneSnapshot(),
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['purchase-house'],
+        }),
+      }),
+    });
+
+    announcement.className = 'room-announcement-layer';
+    announcement.hidden = true;
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    stage.append(announcement);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('intro-welcome');
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+
+    announcement.hidden = false;
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+
+    announcement.hidden = true;
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+
+    expect(facade.activeStep?.id).toBe('intro-welcome');
+    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+
+    facade.unmount();
+  });
+
+  it('auto-advances the selected fast-sell amount explanation', () => {
+    vi.useFakeTimers();
+    const stage = document.createElement('section');
+    const popup = document.createElement('section');
+    const amount = document.createElement('button');
+    const item = document.createElement('button');
+    const sell = document.createElement('button');
+    const gameplayFacade = {
+      getSnapshot: () => createLevelOneSaleSnapshot(),
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'shop',
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: LEVEL_ONE_SELECTED_SALE_STEP_IDS,
+        }),
+      }),
+    });
+
+    popup.className = 'shop-page__direct-sell-popup';
+    amount.dataset.tutorialId = 'shop:directSell:amount';
+    amount.textContent = '1';
+    item.className = 'shop-page__direct-sell-item-button';
+    item.dataset.directSellItemKey = 'sageSeed';
+    item.dataset.tutorialId = 'shop:directSell:sageSeed';
+    item.setAttribute('aria-pressed', 'true');
+    sell.dataset.tutorialId = 'shop:directSell:sell';
+    popup.append(amount, item, sell);
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(amount, { left: 420, top: 560, width: 120, height: 54 });
+    setClientRect(sell, { left: 680, top: 560, width: 140, height: 54 });
+    stage.append(popup);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('show-selected-sale-amount');
+    expect(facade.progressManager.hasCompleted('show-selected-sale-amount')).toBe(false);
+
+    vi.advanceTimersByTime(1999);
+
+    expect(facade.activeStep?.id).toBe('show-selected-sale-amount');
+
+    vi.advanceTimersByTime(1);
+
+    expect(facade.progressManager.hasCompleted('show-selected-sale-amount')).toBe(true);
+    expect(facade.activeStep?.id).toBe('earn-tutorial-coin');
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
+
+    facade.unmount();
+  });
+
   it('keeps the rename lesson collapsed while pointing at username and settings input', async () => {
     const stage = document.createElement('section');
     const usernameButton = document.createElement('button');
@@ -450,7 +581,7 @@ describe('TutorialFacade', () => {
 
     settings.hidden = false;
     await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
-
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
     expect(facade.activeStep?.targetId).toBe('top:username-input');
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
     expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
@@ -458,6 +589,7 @@ describe('TutorialFacade', () => {
     expect(stage.dataset.tutorialReveal).toBe('top');
 
     settings.hidden = true;
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
     await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
 
     expect(facade.activeStep?.targetId).toBe('top:username');

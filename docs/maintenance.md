@@ -119,8 +119,9 @@ PATH="$HOME/.local/bin:$PATH" spacetime sql \
 
 Use this only when intentionally wiping player progression while keeping account
 identity/profile rows. This preserves `player` rows (`identity`, username, theme,
-font, color mode, username prompt state, Google-derived identity), but resets
-shared player level to 1 and deletes gameplay/progression state.
+font, color mode, selected character icon, username prompt state,
+Google-derived identity), but resets shared player level to 1 and deletes
+gameplay/progression state.
 
 The reset requires `locked` maintenance mode and a one-time reset key. Before
 running it, drain active clients, lock writes, and take a progression backup:
@@ -135,7 +136,10 @@ This backs up:
 ```txt
 player
 player_gameplay_save
+player_inbox_mail
+player_feedback
 leaderboard
+world_event_leaderboard
 world_chat
 trade_alliance*
 player_shop*
@@ -183,8 +187,9 @@ Expected post-reset counts:
 
 - `player_count` remains nonzero if accounts exist.
 - `above_level_1` is `0`.
-- gameplay saves, leaderboard, world chat, alliance rows, player shop rows, and
-  potion discovery rows are `0`.
+- gameplay saves, inbox mail, player feedback, leaderboard, world event
+  leaderboard, world chat, alliance rows, player shop rows, and potion discovery
+  rows are `0`.
 - NPC market rows remain, but `npc_need`, `npc_stock`, `demand_score`, and
   `supply_score` should be neutral/reset values.
 
@@ -211,14 +216,16 @@ This backs up:
 ```txt
 player
 player_gameplay_save
+player_inbox_mail
+player_feedback
 leaderboard
+world_event_leaderboard
 world_chat
 trade_alliance*
 player_shop*
 potion_recipe_discovery
 npc_market_price
 player_session
-player_feedback
 ```
 
 Run the wipe while still locked:
@@ -238,8 +245,9 @@ node scripts/maintenance.js verify-player-data-wipe \
 
 Expected post-wipe counts:
 
-- player, player session, player feedback, gameplay saves, leaderboard, world
-  chat, alliance rows, player shop rows, and potion discovery rows are `0`.
+- player, player session, player feedback, gameplay saves, inbox mail,
+  leaderboard, world event leaderboard, world chat, alliance rows, player shop
+  rows, and potion discovery rows are `0`.
 - NPC market rows remain, but `npc_need`, `npc_stock`, `demand_score`, and
   `supply_score` should be neutral/reset values.
 

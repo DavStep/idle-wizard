@@ -1,3 +1,4 @@
+import { automationResearchIds } from '../../automation/automationResearchIds.js';
 import { advancedResearchIds, advancedResearchMaxLevel } from '../advancedResearchIds.js';
 import {
   capacityResearchIds,
@@ -146,69 +147,11 @@ const DEFAULT_RESEARCH_BALANCE = {
     'unlockRecipe:wormwoodPurge': 1000000,
     'unlockRecipe:snowdropBreath': 1300000,
     'unlockRecipe:pearlrootDraught': 1700000,
-    'automation:autoPlantTile:1': 1,
-    'automation:autoPlantTile:2': 2,
-    'automation:autoPlantTile:3': 3,
-    'automation:autoPlantTile:4': 4,
-    'automation:autoPlantTile:5': 5,
-    'automation:autoPlantTile:6': 6,
-    'automation:autoPlantTile:7': 7,
-    'automation:autoPlantTile:8': 8,
-    'automation:autoPlantTile:9': 9,
-    'automation:autoPlantTile:10': 10,
-    'automation:autoHarvestPlant:1': 1,
-    'automation:autoHarvestPlant:2': 2,
-    'automation:autoHarvestPlant:3': 3,
-    'automation:autoHarvestPlant:4': 4,
-    'automation:autoHarvestPlant:5': 5,
-    'automation:autoHarvestPlant:6': 6,
-    'automation:autoHarvestPlant:7': 7,
-    'automation:autoHarvestPlant:8': 8,
-    'automation:autoHarvestPlant:9': 9,
-    'automation:autoHarvestPlant:10': 10,
-    'automation:autoBrewCauldron:1': 1,
-    'automation:autoBrewCauldron:2': 2,
-    'automation:autoBrewCauldron:3': 3,
-    'automation:autoBrewCauldron:4': 4,
-    'automation:autoBrewCauldron:5': 5,
-    'automation:autoBottleCauldron:1': 1,
-    'automation:autoBottleCauldron:2': 2,
-    'automation:autoBottleCauldron:3': 3,
-    'automation:autoBottleCauldron:4': 4,
-    'automation:autoBottleCauldron:5': 5,
+    ...createDefaultAutomationCosts(),
   },
   researchCostsCrystal: {
     'automation:autoSeedSpawn': 10,
-    'automation:autoPlantTile:1': 1,
-    'automation:autoPlantTile:2': 2,
-    'automation:autoPlantTile:3': 3,
-    'automation:autoPlantTile:4': 4,
-    'automation:autoPlantTile:5': 5,
-    'automation:autoPlantTile:6': 6,
-    'automation:autoPlantTile:7': 7,
-    'automation:autoPlantTile:8': 8,
-    'automation:autoPlantTile:9': 9,
-    'automation:autoPlantTile:10': 10,
-    'automation:autoHarvestPlant:1': 1,
-    'automation:autoHarvestPlant:2': 2,
-    'automation:autoHarvestPlant:3': 3,
-    'automation:autoHarvestPlant:4': 4,
-    'automation:autoHarvestPlant:5': 5,
-    'automation:autoHarvestPlant:6': 6,
-    'automation:autoHarvestPlant:7': 7,
-    'automation:autoHarvestPlant:8': 8,
-    'automation:autoHarvestPlant:9': 9,
-    'automation:autoHarvestPlant:10': 10,
-    'automation:autoBrewCauldron:1': 1,
-    'automation:autoBrewCauldron:2': 2,
-    'automation:autoBrewCauldron:3': 3,
-    'automation:autoBrewCauldron:4': 4,
-    'automation:autoBrewCauldron:5': 5,
-    'automation:autoBottleCauldron:1': 1,
-    'automation:autoBottleCauldron:2': 2,
-    'automation:autoBottleCauldron:3': 3,
-    'automation:autoBottleCauldron:4': 4,
-    'automation:autoBottleCauldron:5': 5,
+    ...createDefaultAutomationCosts(),
   },
   researchCostsRuby: createDefaultAdvancedRubyCosts(),
   researchCostsEmerald: createDefaultEmeraldCosts(),
@@ -220,6 +163,26 @@ DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds = createDefaultResearchDuratio
   DEFAULT_RESEARCH_BALANCE.researchCostsRuby,
   DEFAULT_RESEARCH_BALANCE.researchCostsEmerald,
 );
+
+function createDefaultAutomationCosts() {
+  const costs = {};
+
+  for (let plotNumber = 1; plotNumber <= plotCapacityEndPlotNumber; plotNumber += 1) {
+    costs[automationResearchIds.autoPlantTile(plotNumber)] = plotNumber;
+    costs[automationResearchIds.autoHarvestPlant(plotNumber)] = plotNumber;
+  }
+
+  for (
+    let cauldronNumber = 1;
+    cauldronNumber <= cauldronCapacityEndCauldronNumber;
+    cauldronNumber += 1
+  ) {
+    costs[automationResearchIds.autoBrewCauldron(cauldronNumber)] = cauldronNumber;
+    costs[automationResearchIds.autoBottleCauldron(cauldronNumber)] = cauldronNumber;
+  }
+
+  return costs;
+}
 
 function createDefaultAdvancedRubyCosts() {
   const costs = {};
@@ -236,13 +199,17 @@ function createDefaultAdvancedRubyCosts() {
     costs[researchCostResearchIds.reduction(level)] = level;
   }
 
-  for (let cauldronNumber = 1; cauldronNumber <= 5; cauldronNumber += 1) {
+  for (
+    let cauldronNumber = 1;
+    cauldronNumber <= cauldronCapacityEndCauldronNumber;
+    cauldronNumber += 1
+  ) {
     for (let level = 1; level <= advancedResearchMaxLevel; level += 1) {
       costs[advancedResearchIds.cauldronBrewing(cauldronNumber, level)] = level;
     }
   }
 
-  for (let plotNumber = 1; plotNumber <= 10; plotNumber += 1) {
+  for (let plotNumber = 1; plotNumber <= plotCapacityEndPlotNumber; plotNumber += 1) {
     for (let level = 1; level <= advancedResearchMaxLevel; level += 1) {
       costs[advancedResearchIds.plotGrowth(plotNumber, level)] = level;
     }
@@ -270,7 +237,7 @@ function createDefaultAdvancedRubyCosts() {
 function createDefaultEmeraldCosts() {
   const costs = {};
 
-  for (let plotNumber = 1; plotNumber <= 10; plotNumber += 1) {
+  for (let plotNumber = 1; plotNumber <= plotCapacityEndPlotNumber; plotNumber += 1) {
     for (
       let multiplier = emeraldResearchMinMultiplier;
       multiplier <= emeraldResearchMaxMultiplier;
@@ -281,7 +248,11 @@ function createDefaultEmeraldCosts() {
     }
   }
 
-  for (let cauldronNumber = 1; cauldronNumber <= 5; cauldronNumber += 1) {
+  for (
+    let cauldronNumber = 1;
+    cauldronNumber <= cauldronCapacityEndCauldronNumber;
+    cauldronNumber += 1
+  ) {
     for (
       let multiplier = emeraldResearchMinMultiplier;
       multiplier <= emeraldResearchMaxMultiplier;
@@ -534,7 +505,7 @@ export class ResearchBalanceManager {
     const costs = this.balance?.researchCostsCrystal;
 
     if (costs === undefined) {
-      return {};
+      return { ...DEFAULT_RESEARCH_BALANCE.researchCostsCrystal };
     }
 
     if (!costs || typeof costs !== 'object' || Array.isArray(costs)) {
@@ -547,7 +518,10 @@ export class ResearchBalanceManager {
       }
     }
 
-    return { ...costs };
+    return {
+      ...DEFAULT_RESEARCH_BALANCE.researchCostsCrystal,
+      ...costs,
+    };
   }
 
   readCostRubyByResearchId() {

@@ -27,7 +27,7 @@ export class ResearchSnapshotManager {
       .getVisibleResearchTabs(completedResearchIds)
       .map((tab) => ({
         ...tab,
-        boxes: tab.boxes.map((box) => this.getBoxSnapshot(box)),
+        boxes: tab.boxes.map((box) => this.getBoxSnapshot(box, completedResearchIds)),
       }));
 
     return {
@@ -48,28 +48,37 @@ export class ResearchSnapshotManager {
     return this.getResearchSnapshot(research);
   }
 
-  getBoxSnapshot(box) {
+  getBoxSnapshot(box, completedResearchIds = []) {
     return {
       ...box,
-      researches: box.researches.map((research) => this.getResearchSnapshot(research)),
+      researches: box.researches.map((research) =>
+        this.getResearchSnapshot(research, completedResearchIds),
+      ),
     };
   }
 
-  getResearchSnapshot(research) {
+  getResearchSnapshot(research, completedResearchIds = []) {
+    const researchOptions = { completedResearchIds };
     const cost = this.getResearchCost(research.id);
     const completed = this.researchStateEntityManager.isCompleted(research.id);
     const progress = this.researchStateEntityManager.getProgressSnapshot(research.id);
     const requiredResearchIds =
       research.requiredResearchIds ??
-      this.researchDefinitionManager.getRequiredResearchIds(research.id);
+      this.researchDefinitionManager.getRequiredResearchIds(research.id, researchOptions);
     const hasRequiredResearch = requiredResearchIds.every((requiredResearchId) =>
       this.researchStateEntityManager.isCompleted(requiredResearchId),
     );
     const missingRequiredPlayerLevel =
-      this.researchDefinitionManager.getMissingRequiredPlayerLevel(research.id);
+      this.researchDefinitionManager.getMissingRequiredPlayerLevel(
+        research.id,
+        researchOptions,
+      );
     const hasRequiredPlayerLevel = !missingRequiredPlayerLevel;
     const missingRequiredPrestigeCount =
-      this.researchDefinitionManager.getMissingRequiredPrestigeCount(research.id);
+      this.researchDefinitionManager.getMissingRequiredPrestigeCount(
+        research.id,
+        researchOptions,
+      );
     const hasRequiredPrestigeCount = !missingRequiredPrestigeCount;
     const locked =
       !completed &&

@@ -4,7 +4,7 @@
 
 This repo is a JavaScript mobile game project for `Idle Wizard`.
 
-Use caveman communication by default: terse, technical, no filler. Stop only when the user asks for normal mode.
+Use Ponytail-style engineering by default: read the touched flow first, then choose the smallest correct change. Prefer deleting, reusing existing project code, standard library/native platform features, and already-installed dependencies before adding new code or abstractions. Keep communication concise, technical, and no-filler. Stop only when the user asks for normal mode.
 
 The target design viewport is `1080x2170`. Treat that as the authored game surface size, then scale it to the user's device without changing the logical layout.
 

@@ -16,6 +16,7 @@ const DIRECT_SELL_TABS = [
   { kind: 'herb', label: 'herbs' },
   { kind: 'potion', label: 'potions' },
 ];
+const DIRECT_SELL_AMOUNT_TARGET_ID = 'shop:directSell:amount';
 const DIRECT_SELL_HELP_TOOLTIP_ID = 'shop-page__direct-sell-help-tooltip';
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_CLICK_DEDUPE_RESET_MS = 500;
@@ -238,6 +239,7 @@ export class ShopDirectSellManager {
       onInput: () => this.onQuantityInput(),
       onStep: (delta) => this.onQuantityStep(delta),
     });
+    this.refs.quantityField.valueButton.dataset.tutorialId = DIRECT_SELL_AMOUNT_TARGET_ID;
     this.refs.quantityField.stepButtons.get(1).dataset.tutorialId =
       'shop:directSell:amount:+1';
 

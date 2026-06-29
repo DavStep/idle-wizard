@@ -2,7 +2,7 @@
 
 ## Communication
 
-- Use caveman communication by default: terse, technical, no filler.
+- Use Ponytail-style engineering by default: read first, then make the smallest correct change; keep communication concise, technical, and no-filler.
 - If a requested feature is ambiguous, ask first instead of guessing.
 - For new game design requests, ask about open questions or suggest better options before starting when useful.
 - The user wants only what was asked for; avoid adding gameplay, visuals, or extra systems early.
@@ -18,6 +18,8 @@
 - Single-account support currency grants need a server pending-grant guard through the next client save; active clients can reconnect and autosave stale in-memory currency over a one-shot admin save edit.
 - When correcting live currency after a bad admin grant, clear the stale `player-currency-grant-pending:*` row or it can preserve/refill the old amount on future saves.
 - Full player progression wipes should use `admin_reset_player_progression_data` while maintenance is `locked`, after `backup-reset`; do not do ad hoc table deletes.
+- Full reset backup/verify tooling must include every reducer-deleted player table, including inbox mail, feedback, world-event leaderboard rows, and player shop requests.
+- Maintenance helper `--dry-run` paths must return before any reducer call; the confirmation guard alone does not make an action non-mutating.
 - Full progression resets should post a human Discord notice before the reducer runs, using the reset/maintenance webhook rather than the APK upload webhook.
 - Zero-total-coin player cleanup must consider players with no leaderboard/save rows; `leaderboard.total_income = 0` alone misses accounts that connected but never progressed.
 - Server progression resets do not clear browser tutorial `localStorage`; bump the FTUE storage key when old clients must see the guide again after reset.
@@ -188,6 +190,7 @@
 - After screenshot QA viewport changes, wait for `.app-online-gate[hidden]`; the server gate can flash during reconnect and stale screenshots can be blank even if later DOM metrics pass.
 - Top-panel screenshot QA on a fresh FTUE save must reveal `top mana` or complete FTUE first; empty `data-tutorial-reveal` hides the chrome.
 - FTUE should also hide behind ordinary room popups unless the active step targets that popup or explicitly uses popup-only copy guidance.
+- Room announcement overlays are FTUE blockers; add them through `TutorialTargetManager` blocking selectors so hidden toggles pause/resume Elara.
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - Fast-sell picker rows are one action; make the whole visual row the button, but put the FTUE target id on the item-name span.
@@ -205,6 +208,8 @@
 - In-app Browser Playwright evaluate is read-only for DOM/module work; it cannot import page modules or reveal hidden DOM, so use visible UI actions or an HTTP-served local harness for visual QA.
 - `cheats.showPage(page)` unlocks and saves by default; use `{ unlock: false }` only when fallback behavior is acceptable, or avoid it for no-mutation QA on real local saves.
 - In-app Browser blocks `data:` and `file:` fixture pages; use the real app state or an HTTP-served local harness for browser UI QA.
+- Local preview harnesses that must survive after a Codex command exits need a real daemon/session detach; plain `nohup ... &` can be cleaned up by the command harness.
+- For raster 9-slice extraction, preserve source pixels with clean samples, color-keying, and gutter trims; geometric chamfers or redrawn mirrored lines can make the asset look vectorized.
 - Brewing drag screenshot QA needs an unlocked level-4+ save or `VITE_ENABLE_CHEATS=true`; a level-2 local save cannot reach herb drag controls.
 - Cauldron staged-recipe QA should use minimal unlocks and explicit ingredients; `unlockAllResearch` can raise cauldron batch level and make base recipe staging fail.
 - Tutorial motion/visual QA harnesses must set `--style-ui-scale` to `3 * viewportScale`; using only viewport scale makes Elara/source UI look tiny and gives misleading screenshots.
@@ -354,6 +359,7 @@
 - When running the game locally, verify the local SpacetimeDB backend is running on `http://127.0.0.1:3000` before debugging client offline/auth behavior.
 - New client-owned gameplay save branches must be added to `normalizePlayerGameplaySave`; otherwise SpacetimeDB rewrites the save without that branch on server round-trip.
 - SpacetimeDB save normalization must mirror client permanent capacity math: capacity research raises to `base capacity + bonus` even after prestige reset level, or server keeps spent coin but drops bought plots/cauldrons.
+- Slot-specific research visibility must use completed permanent capacity research as well as player-level caps; otherwise prestige plots/cauldrons hide their automation/speed/emerald rows.
 - For stuck live account sessions, invalidate the `player_session` row by replacing its connection id rather than only deleting it; an empty row can let the stale open client pass the active-session gate again.
 - Local app DB name can come from `.env.local`, while SpacetimeDB CLI defaults to `spacetime.json`; use `--no-config` or the env database name when querying/publishing Codex local DBs.
 - SpacetimeDB SQL does not support `IN (SELECT ...)` subqueries; filtered maintenance deletes need reducer-side identity collection.
@@ -728,6 +734,7 @@
 - Player visual themes also need matching allowlist or alias entries in SpacetimeDB; otherwise profile sync normalizes them back to `white`.
 - Theme borders use `--style-stroke` through `--style-border`; keep text contrast independent when a theme wants dim strokes.
 - Midnight popups should use dark shadow tokens; light shadows read as a harsh glow on the dark room surface.
+- Midnight 9-slice PNGs must put border art across the full `32px` slice; early center fill makes CSS `border-image` render as a hairline.
 - Player font options live in `src/player/playerFonts.js`, apply through `html[data-style-font]`, and need matching SpacetimeDB `PLAYER_FONTS` entries to survive profile sync.
 - Bundled player fonts need an `@fontsource/<font>` dependency plus `src/main.js` CSS imports; CSS fallback alone is not enough for Android/offline builds.
 - Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.

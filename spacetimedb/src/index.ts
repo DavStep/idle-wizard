@@ -3580,6 +3580,54 @@ const potionMarketBasePriceGoldByKey: Record<string, number> = {
   pearlrootDraught: 925,
 };
 
+const MAX_AUTOMATION_GARDEN_TILES = 20;
+const MAX_AUTOMATION_CAULDRONS = 10;
+
+function getAutomationDefaultCostGoldById(): Record<string, bigint> {
+  const costs: Record<string, bigint> = {};
+
+  for (let tileNumber = 1; tileNumber <= MAX_AUTOMATION_GARDEN_TILES; tileNumber += 1) {
+    costs[`automation:autoPlantTile:${tileNumber}`] = BigInt(tileNumber);
+    costs[`automation:autoHarvestPlant:${tileNumber}`] = BigInt(tileNumber);
+  }
+
+  for (
+    let cauldronNumber = 1;
+    cauldronNumber <= MAX_AUTOMATION_CAULDRONS;
+    cauldronNumber += 1
+  ) {
+    const cost = BigInt(cauldronNumber);
+    costs[`automation:autoBrewCauldron:${cauldronNumber}`] = cost;
+    costs[`automation:autoBottleCauldron:${cauldronNumber}`] = cost;
+    costs[`automation:autoCollectCauldron:${cauldronNumber}`] = cost;
+  }
+
+  return costs;
+}
+
+function getAutomationDefaultCostCrystalById(): Record<string, number> {
+  const costs: Record<string, number> = {
+    'automation:autoSeedSpawn': 10,
+  };
+
+  for (let tileNumber = 1; tileNumber <= MAX_AUTOMATION_GARDEN_TILES; tileNumber += 1) {
+    costs[`automation:autoPlantTile:${tileNumber}`] = tileNumber;
+    costs[`automation:autoHarvestPlant:${tileNumber}`] = tileNumber;
+  }
+
+  for (
+    let cauldronNumber = 1;
+    cauldronNumber <= MAX_AUTOMATION_CAULDRONS;
+    cauldronNumber += 1
+  ) {
+    costs[`automation:autoBrewCauldron:${cauldronNumber}`] = cauldronNumber;
+    costs[`automation:autoBottleCauldron:${cauldronNumber}`] = cauldronNumber;
+    costs[`automation:autoCollectCauldron:${cauldronNumber}`] = cauldronNumber;
+  }
+
+  return costs;
+}
+
 const researchDefaultCostGoldById: Record<string, bigint> = {
   'unlockSeed:sageSeed': 0n,
   'unlockSeed:mintSeed': 25n,
@@ -3637,89 +3685,25 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   'unlockRecipe:wormwoodPurge': 1_000_000n,
   'unlockRecipe:snowdropBreath': 1_300_000n,
   'unlockRecipe:pearlrootDraught': 1_700_000n,
-  'automation:autoPlantTile:1': 1n,
-  'automation:autoPlantTile:2': 2n,
-  'automation:autoPlantTile:3': 3n,
-  'automation:autoPlantTile:4': 4n,
-  'automation:autoPlantTile:5': 5n,
-  'automation:autoPlantTile:6': 6n,
-  'automation:autoPlantTile:7': 7n,
-  'automation:autoPlantTile:8': 8n,
-  'automation:autoPlantTile:9': 9n,
-  'automation:autoPlantTile:10': 10n,
-  'automation:autoHarvestPlant:1': 1n,
-  'automation:autoHarvestPlant:2': 2n,
-  'automation:autoHarvestPlant:3': 3n,
-  'automation:autoHarvestPlant:4': 4n,
-  'automation:autoHarvestPlant:5': 5n,
-  'automation:autoHarvestPlant:6': 6n,
-  'automation:autoHarvestPlant:7': 7n,
-  'automation:autoHarvestPlant:8': 8n,
-  'automation:autoHarvestPlant:9': 9n,
-  'automation:autoHarvestPlant:10': 10n,
-  'automation:autoBrewCauldron:1': 1n,
-  'automation:autoBrewCauldron:2': 2n,
-  'automation:autoBrewCauldron:3': 3n,
-  'automation:autoBrewCauldron:4': 4n,
-  'automation:autoBrewCauldron:5': 5n,
-  'automation:autoBottleCauldron:1': 1n,
-  'automation:autoBottleCauldron:2': 2n,
-  'automation:autoBottleCauldron:3': 3n,
-  'automation:autoBottleCauldron:4': 4n,
-  'automation:autoBottleCauldron:5': 5n,
-  'automation:autoCollectCauldron:1': 1n,
-  'automation:autoCollectCauldron:2': 2n,
-  'automation:autoCollectCauldron:3': 3n,
-  'automation:autoCollectCauldron:4': 4n,
-  'automation:autoCollectCauldron:5': 5n,
+  ...getAutomationDefaultCostGoldById(),
 };
 
-const researchDefaultCostCrystalById: Record<string, number> = {
-  'automation:autoSeedSpawn': 10,
-  'automation:autoPlantTile:1': 1,
-  'automation:autoPlantTile:2': 2,
-  'automation:autoPlantTile:3': 3,
-  'automation:autoPlantTile:4': 4,
-  'automation:autoPlantTile:5': 5,
-  'automation:autoPlantTile:6': 6,
-  'automation:autoPlantTile:7': 7,
-  'automation:autoPlantTile:8': 8,
-  'automation:autoPlantTile:9': 9,
-  'automation:autoPlantTile:10': 10,
-  'automation:autoHarvestPlant:1': 1,
-  'automation:autoHarvestPlant:2': 2,
-  'automation:autoHarvestPlant:3': 3,
-  'automation:autoHarvestPlant:4': 4,
-  'automation:autoHarvestPlant:5': 5,
-  'automation:autoHarvestPlant:6': 6,
-  'automation:autoHarvestPlant:7': 7,
-  'automation:autoHarvestPlant:8': 8,
-  'automation:autoHarvestPlant:9': 9,
-  'automation:autoHarvestPlant:10': 10,
-  'automation:autoBrewCauldron:1': 1,
-  'automation:autoBrewCauldron:2': 2,
-  'automation:autoBrewCauldron:3': 3,
-  'automation:autoBrewCauldron:4': 4,
-  'automation:autoBrewCauldron:5': 5,
-  'automation:autoBottleCauldron:1': 1,
-  'automation:autoBottleCauldron:2': 2,
-  'automation:autoBottleCauldron:3': 3,
-  'automation:autoBottleCauldron:4': 4,
-  'automation:autoBottleCauldron:5': 5,
-  'automation:autoCollectCauldron:1': 1,
-  'automation:autoCollectCauldron:2': 2,
-  'automation:autoCollectCauldron:3': 3,
-  'automation:autoCollectCauldron:4': 4,
-  'automation:autoCollectCauldron:5': 5,
-};
+const researchDefaultCostCrystalById: Record<string, number> =
+  getAutomationDefaultCostCrystalById();
 
 const ADVANCED_RESEARCH_MAX_LEVEL = 10;
 const FAST_SELL_RESEARCH_MAX_LEVEL = 3;
 const RESEARCH_TIME_REDUCTION_MAX_LEVEL = 8;
 const RESEARCH_COST_REDUCTION_MAX_LEVEL = 8;
 const fastSellResearchCostsRuby = [2, 5, 10];
-const advancedResearchCauldronNumbers = [1, 2, 3, 4, 5];
-const advancedResearchPlotNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const advancedResearchCauldronNumbers = Array.from(
+  { length: MAX_AUTOMATION_CAULDRONS },
+  (_value, index) => index + 1,
+);
+const advancedResearchPlotNumbers = Array.from(
+  { length: MAX_AUTOMATION_GARDEN_TILES },
+  (_value, index) => index + 1,
+);
 const plotCapacityResearchNumbers = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 const cauldronCapacityResearchNumbers = [6, 7, 8, 9, 10];
 const emeraldResearchMultipliers = [2, 3, 4, 5];
@@ -4400,8 +4384,14 @@ const summonSeedResearchCatalog = [
   { id: 'summonSeedsX5', label: 'x5 summon' },
 ];
 
-const automationGardenTileNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-const automationCauldronNumbers = [1, 2, 3, 4, 5];
+const automationGardenTileNumbers = Array.from(
+  { length: MAX_AUTOMATION_GARDEN_TILES },
+  (_value, index) => index + 1,
+);
+const automationCauldronNumbers = Array.from(
+  { length: MAX_AUTOMATION_CAULDRONS },
+  (_value, index) => index + 1,
+);
 const automationResearchCatalog = [
   {
     id: 'automation:autoSeedSpawn',
@@ -7298,6 +7288,24 @@ function normalizeGameConfigJson(
       }
     } else {
       normalizedResearchConfig.researchCostsGold = defaultResearchCostsGold;
+      changed = true;
+    }
+
+    if (isRecord(parsedConfig.researchCostsCrystal)) {
+      const existingCostsCrystal = parsedConfig.researchCostsCrystal;
+      const missingCrystalCost = Object.keys(researchDefaultCostCrystalById).some(
+        (researchId) => existingCostsCrystal[researchId] === undefined,
+      );
+
+      if (missingCrystalCost) {
+        normalizedResearchConfig.researchCostsCrystal = {
+          ...researchDefaultCostCrystalById,
+          ...existingCostsCrystal,
+        };
+        changed = true;
+      }
+    } else {
+      normalizedResearchConfig.researchCostsCrystal = researchDefaultCostCrystalById;
       changed = true;
     }
 
@@ -18350,6 +18358,7 @@ export const admin_reset_player_progression_data = spacetimedb.reducer(
     deleteAllTradeAllianceState(ctx);
     deleteAllPlayerShopState(ctx);
     deleteAllPotionDiscoveries(ctx);
+    deleteAllPlayerFeedback(ctx);
     resetNpcMarketRows(ctx, { resetStock: true });
     resetAllPlayerSharedProgress(ctx);
 
@@ -18533,6 +18542,7 @@ export const admin_reset_player_progression_by_identity = spacetimedb.reducer(
     resetLeaderboardProgressForIdentity(ctx, nextPlayer.identity, nextPlayer.username);
     deleteTradeAllianceProgressionForIdentity(ctx, nextPlayer.identity);
     deletePlayerShopProgressionForIdentity(ctx, nextPlayer.identity);
+    deletePlayerFeedbackForIdentity(ctx, nextPlayer.identity);
     deleteAdminPlayerSession(ctx, nextPlayer.identity);
 
     ctx.db.maintenanceState.insert({

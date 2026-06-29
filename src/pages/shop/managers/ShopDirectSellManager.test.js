@@ -223,6 +223,9 @@ describe('ShopDirectSellManager', () => {
     expect(popup?.textContent).toContain('select item');
     expect(popup.querySelector('.shop-page__direct-sell-field')?.hidden).toBe(false);
     expect(popup.querySelector('.amount-selection-row__value')?.textContent).toBe('1');
+    expect(popup.querySelector('.amount-selection-row__value')?.dataset.tutorialId).toBe(
+      'shop:directSell:amount',
+    );
     expect(popup.querySelector('.amount-selection-row__value')?.hasAttribute('disabled')).toBe(
       true,
     );

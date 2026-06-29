@@ -35,7 +35,10 @@ const DEFAULT_MESSAGE = 'maintenance in progress';
 const PLAYER_PROGRESSION_RESET_TABLES = [
   'player',
   'player_gameplay_save',
+  'player_inbox_mail',
+  'player_feedback',
   'leaderboard',
+  'world_event_leaderboard',
   'world_chat',
   'trade_alliance',
   'trade_alliance_member',
@@ -45,6 +48,7 @@ const PLAYER_PROGRESSION_RESET_TABLES = [
   'trade_alliance_quest_contribution',
   'trade_alliance_reward_inbox',
   'player_shop_listing',
+  'player_shop_request',
   'player_shop_proceeds',
   'player_shop_trade',
   'potion_recipe_discovery',
@@ -53,7 +57,6 @@ const PLAYER_PROGRESSION_RESET_TABLES = [
 const ALL_PLAYER_DATA_WIPE_TABLES = [
   ...PLAYER_PROGRESSION_RESET_TABLES,
   'player_session',
-  'player_feedback',
 ];
 
 const args = process.argv.slice(2);
@@ -354,6 +357,18 @@ function backupSinglePlayerProgressionResetData() {
       `SELECT identity, updated_at, save_json FROM player_gameplay_save WHERE identity = ${identitySql}`,
     ],
     ['leaderboard', `SELECT * FROM leaderboard WHERE identity = ${identitySql}`],
+    [
+      'world_event_leaderboard',
+      `SELECT * FROM world_event_leaderboard WHERE identity = ${identitySql}`,
+    ],
+    [
+      'player_inbox_mail',
+      `SELECT * FROM player_inbox_mail WHERE recipient_identity = ${identitySql}`,
+    ],
+    [
+      'player_feedback',
+      `SELECT * FROM player_feedback WHERE sender_identity = ${identitySql}`,
+    ],
     ['player_session', `SELECT * FROM player_session WHERE identity = ${identitySql}`],
     [
       'trade_alliance_member',
@@ -374,6 +389,10 @@ function backupSinglePlayerProgressionResetData() {
     [
       'player_shop_listing',
       `SELECT * FROM player_shop_listing WHERE seller_identity = ${identitySql}`,
+    ],
+    [
+      'player_shop_request',
+      `SELECT * FROM player_shop_request WHERE requester_identity = ${identitySql}`,
     ],
     [
       'player_shop_proceeds',
@@ -400,7 +419,10 @@ function verifyPlayerProgressionReset() {
   runSql('SELECT COUNT(*) AS player_count FROM player');
   runSql('SELECT COUNT(*) AS above_level_1 FROM player WHERE player_level > 1');
   runSql('SELECT COUNT(*) AS save_count FROM player_gameplay_save');
+  runSql('SELECT COUNT(*) AS inbox_mail_count FROM player_inbox_mail');
+  runSql('SELECT COUNT(*) AS player_feedback_count FROM player_feedback');
   runSql('SELECT COUNT(*) AS leaderboard_count FROM leaderboard');
+  runSql('SELECT COUNT(*) AS world_event_leaderboard_count FROM world_event_leaderboard');
   runSql('SELECT COUNT(*) AS world_chat_count FROM world_chat');
   runSql('SELECT COUNT(*) AS alliance_count FROM trade_alliance');
   runSql('SELECT COUNT(*) AS alliance_member_count FROM trade_alliance_member');
@@ -410,6 +432,7 @@ function verifyPlayerProgressionReset() {
   runSql('SELECT COUNT(*) AS alliance_contribution_count FROM trade_alliance_quest_contribution');
   runSql('SELECT COUNT(*) AS alliance_reward_count FROM trade_alliance_reward_inbox');
   runSql('SELECT COUNT(*) AS player_shop_listing_count FROM player_shop_listing');
+  runSql('SELECT COUNT(*) AS player_shop_request_count FROM player_shop_request');
   runSql('SELECT COUNT(*) AS player_shop_proceeds_count FROM player_shop_proceeds');
   runSql('SELECT COUNT(*) AS player_shop_trade_count FROM player_shop_trade');
   runSql('SELECT COUNT(*) AS potion_discovery_count FROM potion_recipe_discovery');
@@ -423,7 +446,9 @@ function verifyAllPlayerDataWipe() {
   runSql('SELECT COUNT(*) AS player_session_count FROM player_session');
   runSql('SELECT COUNT(*) AS player_feedback_count FROM player_feedback');
   runSql('SELECT COUNT(*) AS save_count FROM player_gameplay_save');
+  runSql('SELECT COUNT(*) AS inbox_mail_count FROM player_inbox_mail');
   runSql('SELECT COUNT(*) AS leaderboard_count FROM leaderboard');
+  runSql('SELECT COUNT(*) AS world_event_leaderboard_count FROM world_event_leaderboard');
   runSql('SELECT COUNT(*) AS world_chat_count FROM world_chat');
   runSql('SELECT COUNT(*) AS alliance_count FROM trade_alliance');
   runSql('SELECT COUNT(*) AS alliance_member_count FROM trade_alliance_member');
@@ -433,6 +458,7 @@ function verifyAllPlayerDataWipe() {
   runSql('SELECT COUNT(*) AS alliance_contribution_count FROM trade_alliance_quest_contribution');
   runSql('SELECT COUNT(*) AS alliance_reward_count FROM trade_alliance_reward_inbox');
   runSql('SELECT COUNT(*) AS player_shop_listing_count FROM player_shop_listing');
+  runSql('SELECT COUNT(*) AS player_shop_request_count FROM player_shop_request');
   runSql('SELECT COUNT(*) AS player_shop_proceeds_count FROM player_shop_proceeds');
   runSql('SELECT COUNT(*) AS player_shop_trade_count FROM player_shop_trade');
   runSql('SELECT COUNT(*) AS potion_discovery_count FROM potion_recipe_discovery');
@@ -469,6 +495,15 @@ function verifySinglePlayerProgressionReset() {
   runSql(
     `SELECT identity, username, player_level, total_income, daily_income, weekly_income, monthly_income FROM leaderboard WHERE identity = ${identitySql}`,
   );
+  runSql(
+    `SELECT COUNT(*) AS world_event_leaderboard_count FROM world_event_leaderboard WHERE identity = ${identitySql}`,
+  );
+  runSql(
+    `SELECT COUNT(*) AS inbox_mail_count FROM player_inbox_mail WHERE recipient_identity = ${identitySql}`,
+  );
+  runSql(
+    `SELECT COUNT(*) AS player_feedback_count FROM player_feedback WHERE sender_identity = ${identitySql}`,
+  );
   runSql(`SELECT COUNT(*) AS session_count FROM player_session WHERE identity = ${identitySql}`);
   runSql(
     `SELECT COUNT(*) AS alliance_member_count FROM trade_alliance_member WHERE member_identity = ${identitySql}`,
@@ -484,6 +519,9 @@ function verifySinglePlayerProgressionReset() {
   );
   runSql(
     `SELECT COUNT(*) AS player_shop_listing_count FROM player_shop_listing WHERE seller_identity = ${identitySql}`,
+  );
+  runSql(
+    `SELECT COUNT(*) AS player_shop_request_count FROM player_shop_request WHERE requester_identity = ${identitySql}`,
   );
   runSql(
     `SELECT COUNT(*) AS player_shop_proceeds_count FROM player_shop_proceeds WHERE seller_identity = ${identitySql}`,
@@ -506,6 +544,11 @@ async function resetPlayerProgressionData() {
 
   if (options['post-discord']) {
     await postResetDiscordNotice(resetKey);
+  }
+
+  if (options['dry-run']) {
+    console.log(`Dry run: would call admin_reset_player_progression_data ${shellQuote(resetKey)}`);
+    return;
   }
 
   callReducer('admin_reset_player_progression_data', [resetKey]);
@@ -676,7 +719,7 @@ function buildDefaultResetDiscordMessage(resetKey, { fullPlayerDataWipe = false 
       '',
       'Hey everyone. We are doing a full account and progression reset for Idle Wizard.',
       '',
-      'This clears account/profile rows and gameplay progress: saved names, theme/font/color settings, saves, leaderboards, world chat history, feedback, alliances, player market listings, potion discoveries, and shared market pressure. Everyone starts as a brand-new player after maintenance ends.',
+      'This clears account/profile rows and gameplay progress: saved names, theme/font/color settings, saves, inbox mail, leaderboards, event points, world chat history, feedback, alliances, player market listings/requests, potion discoveries, and shared market pressure. Everyone starts as a brand-new player after maintenance ends.',
       '',
       'Why this is happening: the game is still in early testing, and the economy/server systems have changed enough that old account data can leave players in unfair or broken states. A clean reset gives the next build a fair baseline and helps us tune the game properly.',
       '',
@@ -691,7 +734,7 @@ function buildDefaultResetDiscordMessage(resetKey, { fullPlayerDataWipe = false 
     '',
     'Hey everyone. We are doing a full progression reset for Idle Wizard.',
     '',
-    'This keeps your account, name, and profile settings, but clears gameplay progress: saves, leaderboards, world chat history, alliances, player market listings, potion discoveries, and shared market pressure. Everyone starts fresh at level 1 after maintenance ends.',
+    'This keeps your account, name, and profile settings, but clears gameplay progress: saves, inbox mail, leaderboards, event points, world chat history, feedback, alliances, player market listings/requests, potion discoveries, and shared market pressure. Everyone starts fresh at level 1 after maintenance ends.',
     '',
     'Why this is happening: the game is still in early testing, and the economy/server systems have changed enough that old progress can leave players in unfair or broken states. A clean reset gives the next build a fair baseline and helps us tune the game properly.',
     '',

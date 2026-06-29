@@ -325,15 +325,20 @@
 
 :root[data-style-theme="midnight"] {
   --style-bg: #1c1e26;
-  --style-surface: #1c1e26;
+  --style-surface: #17191f;
   --style-text: #d4d4d4;
-  --style-stroke: #3a3d4d;
+  --style-stroke: #3f465c;
   --style-muted: #a6a6a6;
   --style-disabled: #6a6a6a;
   --style-active-surface: var(--style-surface);
+  --style-midnight-frame-slice: 32 fill;
+  --style-midnight-frame-outline-slice: 32;
+  --style-midnight-frame-width: 8px 10px;
+  --style-midnight-frame-control-width: 5px 6px;
+  --style-midnight-frame-compact-width: 4px 5px;
   --style-announcement-coin: oklch(82% 0.14 88);
   --style-backdrop-rgb: 28 30 38;
-  --style-log-fade-rgb: 28 30 38;
+  --style-log-fade-rgb: 23 25 31;
   --style-block-shadow: 5px 5px 5px #0f1118;
   --style-dialog-shadow: var(--style-block-shadow);
   --style-overlay-shadow: 5px 5px 5px #0f1118;
@@ -10976,6 +10981,40 @@ div.workshop-page__discovery-row {
   border: var(--style-border);
 }
 
+:root[data-style-theme="midnight"]
+  :where(.style-panel, .style-box, .style-dialog, .style-overlay, .style-tooltip) {
+  background: var(--style-surface);
+  border-color: transparent;
+  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-slice: var(--style-midnight-frame-slice);
+  border-image-width: var(--style-midnight-frame-width);
+  border-image-repeat: stretch;
+}
+
+:root[data-style-theme="midnight"]
+  :where(
+    .style-button,
+    .style-input,
+    .room-bottom-panel__tab,
+    .workshop-page__summon-button-text
+  ) {
+  background: var(--style-surface);
+  border-color: transparent;
+  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-slice: var(--style-midnight-frame-slice);
+  border-image-width: var(--style-midnight-frame-control-width);
+  border-image-repeat: stretch;
+}
+
+:root[data-style-theme="midnight"] :is(.style-progress) {
+  background: var(--style-surface);
+  border-color: transparent;
+  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-slice: var(--style-midnight-frame-slice);
+  border-image-width: var(--style-midnight-frame-compact-width);
+  border-image-repeat: stretch;
+}
+
 .style-box.shop-page__stock {
   padding-bottom: calc(5px + var(--style-box-border-label-line-height));
 }
@@ -11145,11 +11184,11 @@ div.workshop-page__discovery-row {
   left: 50%;
   z-index: 2;
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 22px;
+  height: 22px;
   opacity: 0;
   pointer-events: none;
-  scale: 1.08;
+  scale: 1;
   translate: -50% -54%;
 }
 
@@ -13239,9 +13278,9 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__theme-preview[data-preview-theme="midnight"] {
   --theme-preview-bg: #1c1e26;
-  --theme-preview-surface: #1c1e26;
+  --theme-preview-surface: #17191f;
   --theme-preview-text: #d4d4d4;
-  --theme-preview-stroke: #3a3d4d;
+  --theme-preview-stroke: #3f465c;
   --theme-preview-muted: #a6a6a6;
 }
 
@@ -13262,6 +13301,15 @@ div.workshop-page__discovery-row {
   color: var(--theme-preview-text);
   background: var(--theme-preview-surface);
   border: var(--theme-preview-border-width) solid var(--theme-preview-stroke);
+}
+
+.room-top-panel__theme-preview[data-preview-theme="midnight"]
+  .room-top-panel__theme-preview-box {
+  border-color: transparent;
+  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-slice: var(--style-midnight-frame-slice);
+  border-image-width: var(--style-midnight-frame-compact-width);
+  border-image-repeat: stretch;
 }
 
 .room-top-panel__theme-preview-title {
@@ -13574,6 +13622,14 @@ div.workshop-page__discovery-row {
   border: var(--style-border-strong);
   box-shadow: var(--style-block-shadow);
   content: " ";
+}
+
+:root[data-style-theme="midnight"] .style-dialog::after {
+  border-color: transparent;
+  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-slice: var(--style-midnight-frame-slice);
+  border-image-width: var(--style-midnight-frame-width);
+  border-image-repeat: stretch;
 }
 
 .style-dialog:focus {
@@ -14867,6 +14923,77 @@ div.workshop-page__discovery-row {
   box-shadow: var(--style-overlay-shadow);
 }
 
+:root[data-style-theme="midnight"]
+  :where(
+    .style-panel,
+    .style-box,
+    .style-dialog,
+    .style-dialog::after,
+    .style-overlay,
+    .style-tooltip,
+    .style-button:not(.workshop-page__summon-button),
+    .style-input,
+    .room-bottom-panel__tab,
+    .workshop-page__summon-button-text,
+    .tutorial-layer__objective-button-label,
+    .tutorial-layer__lesson-show,
+    .tutorial-layer__lesson-advance,
+    .tutorial-layer__advance,
+    .room-top-panel__theme-preview[data-preview-theme="midnight"]
+      .room-top-panel__theme-preview-box
+  ) {
+  border-color: transparent;
+  border-image-source: url("/ui/player-card-panel-9slice.png");
+  border-image-slice: var(--style-midnight-frame-slice);
+  border-image-repeat: stretch;
+}
+
+:root[data-style-theme="midnight"]
+  :where(
+    .style-panel,
+    .style-box,
+    .style-dialog,
+    .style-dialog::after,
+    .style-overlay,
+    .style-tooltip
+  ) {
+  border-image-width: var(--style-midnight-frame-width);
+}
+
+:root[data-style-theme="midnight"]
+  :where(
+    .style-button:not(.workshop-page__summon-button),
+    .style-input,
+    .room-bottom-panel__tab,
+    .workshop-page__summon-button-text,
+    .tutorial-layer__objective-button-label,
+    .tutorial-layer__lesson-show,
+    .tutorial-layer__lesson-advance,
+    .tutorial-layer__advance
+  ) {
+  background: var(--style-surface);
+  border-image-width: var(--style-midnight-frame-control-width);
+}
+
+:root[data-style-theme="midnight"]
+  .room-top-panel__theme-preview[data-preview-theme="midnight"]
+  .room-top-panel__theme-preview-box {
+  border-image-width: var(--style-midnight-frame-compact-width);
+}
+
+:root[data-style-theme="midnight"] .room-bottom-panel__tab,
+:root[data-style-theme="midnight"]
+  .room-bottom-panel__tab:is(
+    :active,
+    .is-pressing,
+    .is-selected,
+    .is-swipe-target,
+    .is-swipe-target-locked
+  ) {
+  background: transparent;
+  border-image-slice: var(--style-midnight-frame-outline-slice);
+}
+
 ::selection {
   background-color: transparent;
 }
@@ -15188,31 +15315,31 @@ div.workshop-page__discovery-row {
   30%,
   44% {
     opacity: 1;
-    scale: 1.08;
+    scale: 1;
   }
 
   8%,
   38% {
     opacity: 1;
-    scale: 1.1;
+    scale: 1.02;
     translate: calc(-50% - 1px) -54%;
   }
 
   23% {
     opacity: 1;
-    scale: 1.1;
+    scale: 1.02;
     translate: calc(-50% + 1px) -55%;
   }
 
   58% {
     opacity: 1;
-    scale: 1.14;
+    scale: 1.06;
     translate: -50% -56%;
   }
 
   100% {
     opacity: 0;
-    scale: 1.2;
+    scale: 1.12;
     translate: -50% -60%;
   }
 }

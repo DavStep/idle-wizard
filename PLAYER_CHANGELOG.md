@@ -3,6 +3,14 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.60
+
+- Added matching automation, speed, and emerald upgrade research rows for capacity-unlocked plots and cauldrons after prestige.
+- Fixed research balance defaults so older server configs can fill in missing crystal costs for newly available automation rows.
+- Improved Elara's early Market fast-sell guidance so the selected amount is shown briefly before the guide moves to the sell button.
+- Polished Midnight theme panels and buttons with a sharper framed border treatment.
+- Hardened server maintenance reset tooling so inbox mail, feedback, event points, and player market requests are backed up, verified, and cleared correctly.
+
 ## 0.2.59
 
 - Added a top-panel inbox for system mail, admin gifts, broadcast news, and reward messages with a clear claim button and notification dot.

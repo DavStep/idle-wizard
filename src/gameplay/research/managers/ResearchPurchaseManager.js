@@ -27,8 +27,10 @@ export class ResearchPurchaseManager {
 
   buyResearch(researchId) {
     const normalizedResearchId = this.researchDefinitionManager.normalizeResearchId(researchId);
+    const completedResearchIds = this.researchStateEntityManager.getCompletedResearchIds();
+    const researchOptions = { completedResearchIds };
 
-    if (!this.researchDefinitionManager.hasResearch(normalizedResearchId)) {
+    if (!this.researchDefinitionManager.hasResearch(normalizedResearchId, researchOptions)) {
       return {
         ok: false,
         reason: 'unknown_research',
@@ -57,7 +59,7 @@ export class ResearchPurchaseManager {
     }
 
     const missingRequiredResearchId = this.researchDefinitionManager
-      .getRequiredResearchIds(normalizedResearchId)
+      .getRequiredResearchIds(normalizedResearchId, researchOptions)
       .find((requiredResearchId) => !this.researchStateEntityManager.isCompleted(requiredResearchId));
 
     if (missingRequiredResearchId) {
@@ -71,7 +73,10 @@ export class ResearchPurchaseManager {
     }
 
     const missingRequiredPlayerLevel =
-      this.researchDefinitionManager.getMissingRequiredPlayerLevel(normalizedResearchId);
+      this.researchDefinitionManager.getMissingRequiredPlayerLevel(
+        normalizedResearchId,
+        researchOptions,
+      );
 
     if (missingRequiredPlayerLevel) {
       return {
@@ -84,7 +89,10 @@ export class ResearchPurchaseManager {
     }
 
     const missingRequiredPrestigeCount =
-      this.researchDefinitionManager.getMissingRequiredPrestigeCount(normalizedResearchId);
+      this.researchDefinitionManager.getMissingRequiredPrestigeCount(
+        normalizedResearchId,
+        researchOptions,
+      );
 
     if (missingRequiredPrestigeCount) {
       return {

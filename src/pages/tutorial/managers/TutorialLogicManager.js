@@ -22,6 +22,8 @@ export class TutorialLogicManager {
         getCurrentPageId,
       });
     this.activeStep = null;
+    this.autoAdvanceStepId = null;
+    this.autoAdvanceStartedAt = null;
   }
 
   getViewState({
@@ -35,18 +37,30 @@ export class TutorialLogicManager {
   } = {}) {
     if ((dom?.isNonSettingsBlockingDialogOpen ?? dom?.isBlockingDialogOpen)?.()) {
       this.activeStep = null;
+      this.clearAutoAdvanceTimer();
       this.reminderManager.discardActivePrompt();
       return this.createEmptyState('blocked');
     }
 
     const previousStepId = this.activeStep?.id ?? null;
     const previousTargetId = this.activeStep?.targetId ?? null;
-    const step = this.stepManager.getActiveStep({ snapshot, dom });
+    let step = this.stepManager.getActiveStep({ snapshot, dom });
+    let autoAdvanceAt = this.getAutoAdvanceAt(step, now);
+
+    if (Number.isFinite(autoAdvanceAt) && now >= autoAdvanceAt) {
+      this.stepManager.advanceStep(step.id);
+      this.reminderManager.discardActivePrompt();
+      this.activeStep = null;
+      this.clearAutoAdvanceTimer();
+      step = this.stepManager.getActiveStep({ snapshot, dom });
+      autoAdvanceAt = this.getAutoAdvanceAt(step, now);
+    }
 
     const target = step ? targetResolver(step.targetId) : null;
 
     if (dom?.isBlockingDialogOpenForStep?.(step, target)) {
       this.activeStep = null;
+      this.clearAutoAdvanceTimer();
       this.reminderManager.discardActivePrompt();
       return this.createEmptyState('blocked');
     }
@@ -93,7 +107,7 @@ export class TutorialLogicManager {
         variant: step.variant,
       },
       cue,
-      nextRefreshAt: cue.nextRefreshAt,
+      nextRefreshAt: getEarliestRefreshAt(cue.nextRefreshAt, autoAdvanceAt),
     };
   }
 
@@ -244,6 +258,7 @@ export class TutorialLogicManager {
   resetProgress() {
     this.progressManager?.reset?.();
     this.activeStep = null;
+    this.clearAutoAdvanceTimer();
     this.reminderManager.discardActivePrompt();
   }
 
@@ -254,7 +269,34 @@ export class TutorialLogicManager {
 
     this.stepManager.advanceStep(this.activeStep.id);
     this.activeStep = null;
+    this.clearAutoAdvanceTimer();
     this.reminderManager.discardActivePrompt();
     return true;
   }
+
+  getAutoAdvanceAt(step, now = this.getNow()) {
+    const durationMs = step?.autoAdvanceMs;
+
+    if (!Number.isFinite(durationMs) || durationMs < 0) {
+      this.clearAutoAdvanceTimer();
+      return null;
+    }
+
+    if (this.autoAdvanceStepId !== step.id) {
+      this.autoAdvanceStepId = step.id;
+      this.autoAdvanceStartedAt = now;
+    }
+
+    return this.autoAdvanceStartedAt + durationMs;
+  }
+
+  clearAutoAdvanceTimer() {
+    this.autoAdvanceStepId = null;
+    this.autoAdvanceStartedAt = null;
+  }
+}
+
+function getEarliestRefreshAt(...refreshTimes) {
+  const finiteTimes = refreshTimes.filter((refreshAt) => Number.isFinite(refreshAt));
+  return finiteTimes.length > 0 ? Math.min(...finiteTimes) : null;
 }

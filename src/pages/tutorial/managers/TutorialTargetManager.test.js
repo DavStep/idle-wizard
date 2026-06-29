@@ -42,10 +42,11 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().isTasksExpanded()).toBe(true);
   });
 
-  it('treats app and top-panel dialogs as tutorial blockers', () => {
+  it('treats app, announcement, and top-panel dialogs as tutorial blockers', () => {
     const stage = document.createElement('section');
     const accountChoice = document.createElement('section');
     const freshStartChoice = document.createElement('section');
+    const announcement = document.createElement('section');
     const levelPopup = document.createElement('section');
     const manager = new TutorialTargetManager({ stage });
 
@@ -61,6 +62,12 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().isBlockingDialogOpen()).toBe(true);
 
     freshStartChoice.hidden = true;
+    announcement.className = 'room-announcement-layer';
+    stage.append(announcement);
+
+    expect(manager.getDomState().isBlockingDialogOpen()).toBe(true);
+
+    announcement.hidden = true;
     levelPopup.className = 'room-top-panel__level-popup';
     stage.append(levelPopup);
 

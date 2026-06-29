@@ -11,8 +11,10 @@ const MINT_SEED_RESEARCH_ID = 'unlockSeed:mintSeed';
 const MANA_TONIC_KEY = 'manaTonic';
 const MANA_TONIC_RESEARCH_ID = 'unlockRecipe:manaTonic';
 const DIRECT_SELL_POPUP_CLASS = 'shop-page__direct-sell-popup';
+const DIRECT_SELL_AMOUNT_TARGET_ID = 'shop:directSell:amount';
 const DIRECT_SELL_PLUS_ONE_TARGET_ID = 'shop:directSell:amount:+1';
 const DIRECT_SELL_CONFIRM_TARGET_ID = 'shop:directSell:sell';
+const SELECTED_SELL_AMOUNT_AUTO_ADVANCE_MS = 2000;
 const MANA_TONIC_SAGE_COUNT = 3;
 const MANA_TONIC_EXTRA_SAGE_TARGET_ID = `brewing:remove:${SAGE_HERB_KEY}`;
 const MANA_READOUT_TARGET_ID = 'top:mana';
@@ -46,6 +48,7 @@ const LEVEL_ONE_STEP_IDS = [
   'open-market',
   'select-market-stand',
   'select-sage-seed-sale',
+  'show-selected-sale-amount',
   'earn-tutorial-coin',
   'unselect-sage-seed-sale',
   'level-up-one',
@@ -417,6 +420,25 @@ export const TUTORIAL_STEPS = [
       getCurrentLevel(snapshot) >= 2 ||
       isDirectSellSelected(dom, SAGE_SEED_KEY) ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
+  },
+  {
+    id: 'show-selected-sale-amount',
+    kind: 'objective',
+    pageId: 'shop',
+    targetId: DIRECT_SELL_AMOUNT_TARGET_ID,
+    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
+    objectiveText: 'this number is the amount selected to sell.',
+    allowedPopupClasses: [DIRECT_SELL_POPUP_CLASS],
+    autoAdvanceMs: SELECTED_SELL_AMOUNT_AUTO_ADVANCE_MS,
+    isAvailable: ({ dom, snapshot }) =>
+      getCurrentLevel(snapshot) === 1 &&
+      isLevelOneSeedTaskComplete(snapshot) &&
+      getCoin(snapshot) < LEVEL_ONE_COIN_TARGET &&
+      getItemQuantity(snapshot, SAGE_SEED_KEY) > 0 &&
+      dom.isShopDirectSellPopupOpen?.() &&
+      isDirectSellSelected(dom, SAGE_SEED_KEY),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 2 || getCoin(snapshot) >= LEVEL_ONE_COIN_TARGET,
   },
   {
     id: 'earn-tutorial-coin',
@@ -1491,6 +1513,7 @@ export class TutorialStepManager {
         autoPageId: getAutoPageId(step, context),
         advanceLabel: getAdvanceLabel(step, context),
         advancePageId: getAdvancePageId(step, context),
+        autoAdvanceMs: getAutoAdvanceMs(step, context),
         variant: getVariant(step, context),
         effect: step.effect,
         sale: step.sale,
@@ -1523,6 +1546,7 @@ export class TutorialStepManager {
       autoPageId: getAutoPageId(step, { ...context, targetId, text, hintText }),
       advanceLabel: getAdvanceLabel(step, { ...context, targetId, text, hintText }),
       advancePageId: getAdvancePageId(step, { ...context, targetId, text, hintText }),
+      autoAdvanceMs: getAutoAdvanceMs(step, { ...context, targetId, text, hintText }),
       variant: getVariant(step, { ...context, targetId, text, hintText }),
       effect: step.effect,
       sale: step.sale,
@@ -1620,6 +1644,11 @@ function getAdvanceLabel(step, context) {
 function getAdvancePageId(step, context) {
   const pageId = step?.getAdvancePageId?.(context) ?? step?.advancePageId ?? null;
   return typeof pageId === 'string' && pageId.length > 0 ? pageId : null;
+}
+
+function getAutoAdvanceMs(step, context) {
+  const durationMs = step?.getAutoAdvanceMs?.(context) ?? step?.autoAdvanceMs ?? null;
+  return Number.isFinite(durationMs) && durationMs >= 0 ? durationMs : null;
 }
 
 function getVariant(step, context) {

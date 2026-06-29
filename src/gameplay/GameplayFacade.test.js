@@ -756,6 +756,17 @@ describe('GameplayFacade', () => {
       nextTileLockedByResearch: true,
       nextTileRequiresResearchId: capacityResearchIds.plot(12),
     });
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoPlantTile(11))).toMatchObject({
+      id: automationResearchIds.autoPlantTile(11),
+      costCrystal: 11,
+      costCurrency: 'crystal',
+    });
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoHarvestPlant(11))).toMatchObject({
+      id: automationResearchIds.autoHarvestPlant(11),
+      costCrystal: 11,
+      costCurrency: 'crystal',
+    });
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoPlantTile(12))).toBeUndefined();
 
     advanceToLevel(gameplayFacade, 20);
     gameplayFacade.completePrestigeMilestone(20);
@@ -777,6 +788,17 @@ describe('GameplayFacade', () => {
       nextCauldronLockedByResearch: true,
       nextCauldronRequiresResearchId: capacityResearchIds.cauldron(7),
     });
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoBrewCauldron(6))).toMatchObject({
+      id: automationResearchIds.autoBrewCauldron(6),
+      costCrystal: 6,
+      costCurrency: 'crystal',
+    });
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoBottleCauldron(6))).toMatchObject({
+      id: automationResearchIds.autoBottleCauldron(6),
+      costCrystal: 6,
+      costCurrency: 'crystal',
+    });
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoBrewCauldron(7))).toBeUndefined();
   }, 30_000);
 
   it('announces prestige completions to world chat', () => {

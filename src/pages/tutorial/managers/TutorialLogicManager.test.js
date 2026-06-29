@@ -391,6 +391,73 @@ describe('TutorialLogicManager', () => {
     });
   });
 
+  it('auto-advances timed steps after their delay', () => {
+    const amountTarget = {};
+    const sellTarget = {};
+    const completed = [];
+    const timedStep = createStep({
+      id: 'show-selected-sale-amount',
+      targetId: 'shop:directSell:amount',
+      objectiveText: 'this number is the amount selected to sell.',
+      autoAdvanceMs: 2000,
+    });
+    const sellStep = createStep({
+      id: 'earn-tutorial-coin',
+      targetId: 'shop:directSell:sell',
+      objectiveText: 'press sell',
+    });
+    const reminderManager = createReminderFake();
+    const manager = new TutorialLogicManager({
+      progressManager: { reset: () => {} },
+      reminderManager,
+      stepManager: {
+        advanceStep: (stepId) => completed.push(stepId),
+        getActiveStep: () => (completed.includes(timedStep.id) ? sellStep : timedStep),
+      },
+    });
+    const targetResolver = (targetId) =>
+      targetId === 'shop:directSell:amount' ? amountTarget : sellTarget;
+
+    const waitingState = manager.getViewState({
+      snapshot: {},
+      dom: {},
+      targetResolver,
+      now: 1000,
+    });
+
+    expect(waitingState).toMatchObject({
+      kind: 'lesson',
+      step: {
+        id: 'show-selected-sale-amount',
+      },
+      cue: {
+        target: amountTarget,
+      },
+      nextRefreshAt: 3000,
+    });
+    expect(completed).toEqual([]);
+
+    const advancedState = manager.getViewState({
+      snapshot: {},
+      dom: {},
+      targetResolver,
+      lessonPanelOpen: true,
+      now: 3000,
+    });
+
+    expect(completed).toEqual(['show-selected-sale-amount']);
+    expect(reminderManager.discardCount).toBe(1);
+    expect(advancedState).toMatchObject({
+      kind: 'lesson',
+      step: {
+        id: 'earn-tutorial-coin',
+      },
+      cue: {
+        target: sellTarget,
+      },
+    });
+  });
+
   it('passes the resolved target into popup blocker checks', () => {
     const target = {};
     const step = createStep({
