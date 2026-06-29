@@ -66,6 +66,7 @@
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
 - Progress rails should use a real `.style-progress` border with the fill inside the content box; overlay pseudo-borders let scaled fills bleed across border pixels.
 - Level-up announcement rows can contain long multi-level unlock lists; keep a stable label column and let the value column wrap so labels do not collapse to one character per line.
+- Prestige reset crystal should use the cumulative player-level reward through the reset level; level 1 grants crystal too, so a reset to level 10 starts with 10 crystals under the default curve.
 - Garden plot notification dots need row-specific vertical placement; the generic negative top offset can land the next row's dot on the previous row's progress rail.
 - Brewing herb notification dots must stay row-local; parent `:has([data-notification])` bleed padding makes the herbs box taller.
 - Brewing herb notification dots belong on the herb label, not the full row/button, or they cover right-aligned counts.
@@ -100,6 +101,7 @@
 - Icon-mode amount/resource labels should hide `.style-resource-label__spacer` and use `--style-icon-label-gap`; preserving the word-space makes count/icon pairs look too far apart.
 - Weekly events should be framed as `weekly world event` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
 - Personal tasks have only daily quest rows; completed daily quests add points to both daily and weekly reward tracks, separate from weekly world events and alliance quests.
+- Prestige resets the run but preserves personal task daily/weekly progress until the normal period rollover.
 - Tabbed dialog close labels belong on the top-right border; reserve the bottom edge for the tab strip.
 - Nested dialogs inside an existing popup need their own full-layer backdrop; otherwise the parent popup text bleeds through during dialog enter/fade.
 - Personal tasks is a standard tabbed popup: `--style-tabbed-dialog-width` panel with `260px` dialog content. Do not pair that panel with a `286px` dialog or the border becomes wider than the tabs.
@@ -546,7 +548,7 @@
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `12s` to `210s` by herb tier.
-- Crystal is the hard currency; it starts at `0`, appears in the top panel only where usable, level-ups grant `playerLevel.crystal.perLevel`, and automation research spends it.
+- Crystal is the hard currency; it appears in the top panel only where usable, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and automation research spends it.
 - Ruby starts at `0`, has no source yet, appears in the top panel only where usable, and advanced research spends it on per-slot speed upgrades.
 - Prestige ruby is derived from completed prestige milestones minus committed ruby research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.
 - Prestige resets run data but preserves current emerald currency; emerald research remains run-scoped unless explicitly made permanent.
@@ -906,8 +908,9 @@
 - Cauldron unlocks must be bought one at a time; level milestones only raise the max purchasable cauldron cap, never bulk-unlock cauldrons.
 - Server `DEFAULT_PLAYER_LEVEL_CONFIG_JSON` must mirror the client bootstrap default; hosted `game_config.playerLevel` can override milestones.
 - Player-level balance changes that should affect hosted rows need a keyed backend backfill; changing only defaults leaves existing `game_config.playerLevel` rows untouched.
+- Garden/brewing max-slot balance changes also need hosted `game_config` normalization for old default cost arrays, or existing rows keep exposing the old slot counts.
 - Player level sets mana cap and mana regen from `game_config.playerLevel`; there are no separate mana research bonuses.
-- Player level-up crystal rewards also come from `game_config.playerLevel`; level 1 start does not grant the reward.
+- Player-level crystal rewards come from `game_config.playerLevel`; level 1 now grants the reward too, while level-up deltas should only pay newly reached levels.
 - Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
 - Garden tile and market stand purchases should fail with `level_locked` before checking coin when the next buy exceeds the current level milestone cap.
 - Leaderboard total generated coin should stay admin/server-owned until coin generation is server-authoritative; local lifetime totals are useful for player saves, not trusted shared ranking.

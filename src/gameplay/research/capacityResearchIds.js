@@ -1,7 +1,7 @@
-export const plotCapacityStartPlotNumber = 11;
-export const plotCapacityEndPlotNumber = 20;
-export const cauldronCapacityStartCauldronNumber = 6;
-export const cauldronCapacityEndCauldronNumber = 10;
+export const plotCapacityStartPlotNumber = 6;
+export const plotCapacityEndPlotNumber = 12;
+export const cauldronCapacityStartCauldronNumber = 3;
+export const cauldronCapacityEndCauldronNumber = 5;
 
 export const capacityResearchIds = Object.freeze({
   plot: (plotNumber) => `advanced:plotCapacity:${plotNumber}`,
@@ -9,11 +9,11 @@ export const capacityResearchIds = Object.freeze({
 });
 
 export function getPlotCapacityPrestigeRequirement(plotNumber) {
-  return plotNumber - 10;
+  return plotNumber - 5;
 }
 
 export function getCauldronCapacityPrestigeRequirement(cauldronNumber) {
-  return (cauldronNumber - 5) * 2;
+  return cauldronNumber - 2;
 }
 
 export function isCapacityResearchId(researchId) {

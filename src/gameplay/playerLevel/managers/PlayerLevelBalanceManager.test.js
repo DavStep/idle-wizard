@@ -3,12 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { PlayerLevelBalanceManager } from './PlayerLevelBalanceManager.js';
 
 describe('PlayerLevelBalanceManager', () => {
-  it('keeps the default cauldron cap at three through level twenty', () => {
+  it('keeps default plot and cauldron caps below prestige capacity', () => {
     const manager = new PlayerLevelBalanceManager();
 
-    expect(manager.getEffects(20).maxCauldrons).toBe(3);
-    expect(manager.getRequiredLevelForCauldron(4)).toBe(21);
-    expect(manager.getRequiredLevelForCauldron(5)).toBe(25);
+    expect(manager.getEffects(20).maxGardenTiles).toBe(5);
+    expect(manager.getEffects(20).maxCauldrons).toBe(2);
+    expect(manager.getRequiredLevelForGardenTile(6)).toBeNull();
+    expect(manager.getRequiredLevelForCauldron(2)).toBe(5);
+    expect(manager.getRequiredLevelForCauldron(3)).toBeNull();
   });
 
   it('uses faster default mana regen gains early and smaller gains later', () => {
@@ -65,6 +67,7 @@ describe('PlayerLevelBalanceManager', () => {
       'allows researching "Mana Cap"',
       'max mana cap 50',
       'mana regen 1/sec',
+      'crystal reward 2',
     ]);
     expect(manager.getLevelSummaries(1)[2].effects).toEqual([
       'max garden tiles 2',
@@ -91,8 +94,9 @@ describe('PlayerLevelBalanceManager', () => {
       maxManaCap: 70,
       manaPerSecond: 1.2,
     });
-    expect(manager.getCrystalRewardForLevel(1)).toBe(0);
+    expect(manager.getCrystalRewardForLevel(1)).toBe(2);
     expect(manager.getCrystalRewardForLevel(3)).toBe(2);
+    expect(manager.getCrystalRewardThroughLevel(3)).toBe(6);
     expect(manager.getCrystalRewardForLevelRange(1, 3)).toBe(4);
     expect(manager.getEffects(3)).toEqual({
       maxGardenTiles: 2,

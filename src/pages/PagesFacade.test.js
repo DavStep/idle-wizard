@@ -20,6 +20,10 @@ afterEach(() => {
   }
 });
 
+function getFakePrestigeResetCrystal(level) {
+  return getPrestigeResetLevel(level);
+}
+
 function createGameplayFacadeFake() {
   const snapshot = {
     mana: {
@@ -59,7 +63,7 @@ function createGameplayFacadeFake() {
             level: getPrestigeResetLevel(10),
             mana: 0,
             coin: 0,
-            crystal: 0,
+            crystal: getFakePrestigeResetCrystal(10),
             emerald: 0,
             ruby: 1,
           },
@@ -76,7 +80,7 @@ function createGameplayFacadeFake() {
             level: getPrestigeResetLevel(20),
             mana: 0,
             coin: 0,
-            crystal: 0,
+            crystal: getFakePrestigeResetCrystal(20),
             emerald: 0,
             ruby: 1,
           },
@@ -93,7 +97,7 @@ function createGameplayFacadeFake() {
             level: getPrestigeResetLevel(30),
             mana: 0,
             coin: 0,
-            crystal: 0,
+            crystal: getFakePrestigeResetCrystal(30),
             emerald: 0,
             ruby: 1,
           },
@@ -1628,6 +1632,7 @@ function createGameplayFacadeFake() {
       snapshot.tasks.currentLevel = resetLevel;
       snapshot.playerLevel.currentLevel = resetLevel;
       snapshot.prestige.currentLevel = resetLevel;
+      snapshot.crystal.current = getFakePrestigeResetCrystal(level);
       publish();
 
       return {
@@ -6830,7 +6835,7 @@ describe('PagesFacade', () => {
         level: getPrestigeResetLevel(level),
         mana: 0,
         coin: 0,
-        crystal: 0,
+        crystal: getFakePrestigeResetCrystal(level),
         emerald: snapshot.emerald.current,
         ruby: snapshot.prestige.earnedRuby + 1,
       },
@@ -6859,7 +6864,10 @@ describe('PagesFacade', () => {
       'prestige resets the current run',
     );
     expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
-      'mana, coin, crystal, items, ordinary research, garden, brewing, and tasks reset.',
+      'mana, coin, crystal, items, ordinary research, garden, brewing, and level tasks reset.',
+    );
+    expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
+      'daily and weekly task progress keeps its normal reset timer.',
     );
     expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
       'each completed milestone adds 1 prestige point for capacity rewards.',
@@ -6870,8 +6878,11 @@ describe('PagesFacade', () => {
     ).toBe('level 40 > level 20');
     expect(
       summary?.querySelector('.workshop-page__prestige-receive')?.textContent,
-    ).toBe('on prestige: 1 ruby, 0 emerald total');
+    ).toBe('on prestige: 20 crystal, 1 ruby, 0 emerald total');
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
+    expect(summary?.querySelector('[data-resource-color="crystal"]')?.textContent).toBe(
+      '20 crystal',
+    );
     expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('1 ruby');
     expect(summary?.querySelector('[data-resource-color="emerald"]')?.textContent).toBe(
       '0 emerald',
@@ -6885,6 +6896,14 @@ describe('PagesFacade', () => {
     const milestoneRows = [...page.querySelectorAll('.workshop-page__prestige-row')];
     expect(milestoneRows[0]?.classList.contains('style-box')).toBe(true);
     expect(milestoneRows[0]?.dataset.prestigeState).toBe('ready');
+    expect(milestoneRows[0]?.querySelector('.workshop-page__prestige-reward')?.textContent).toBe(
+      'reward: 5 crystal, 1 ruby',
+    );
+    expect(
+      page.querySelector(
+        '.workshop-page__prestige-reward .style-resource-label--crystal .style-resource-label__icon',
+      )?.dataset.assetAtlasFrame,
+    ).toBe('resource:crystal');
     expect(
       page.querySelector(
         '.workshop-page__prestige-reward .style-resource-label--ruby .style-resource-label__icon',
@@ -6898,10 +6917,11 @@ describe('PagesFacade', () => {
     expect(page.querySelector('.workshop-page__prestige-confirm').hidden).toBe(false);
     expect(page.textContent).toContain('higher prestige available: level 40');
     expect(page.textContent).toContain('level 40 > level 5');
-    expect(page.textContent).toContain('on prestige: 1 ruby, 0 emerald total');
+    expect(page.textContent).toContain('on prestige: 5 crystal, 1 ruby, 0 emerald total');
     expect(page.textContent).toContain('start level5');
-    expect(page.textContent).toContain('emerald total0 emerald');
-    expect(page.textContent).toContain('ruby total1 ruby');
+    expect(page.textContent).toContain('crystal5 crystal');
+    expect(page.textContent).toContain('emerald0 emerald');
+    expect(page.textContent).toContain('ruby1 ruby');
 
     page
       .querySelector('.workshop-page__prestige-confirm-proceed')
@@ -6931,7 +6951,7 @@ describe('PagesFacade', () => {
         canComplete: false,
         currentLevel: 20,
         lowerThanHighestAvailable: false,
-        nextRun: { level: 5, ruby: 1 },
+        nextRun: { level: 5, crystal: 5, ruby: 1 },
       },
       {
         level: 20,
@@ -6941,7 +6961,7 @@ describe('PagesFacade', () => {
         canComplete: true,
         currentLevel: 20,
         lowerThanHighestAvailable: false,
-        nextRun: { level: 10, ruby: 2 },
+        nextRun: { level: 10, crystal: 10, ruby: 2 },
       },
       {
         level: 30,
@@ -6951,7 +6971,7 @@ describe('PagesFacade', () => {
         canComplete: false,
         currentLevel: 20,
         lowerThanHighestAvailable: false,
-        nextRun: { level: 15, ruby: 3 },
+        nextRun: { level: 15, crystal: 15, ruby: 3 },
       },
       {
         level: 40,
@@ -6961,7 +6981,7 @@ describe('PagesFacade', () => {
         canComplete: false,
         currentLevel: 20,
         lowerThanHighestAvailable: false,
-        nextRun: { level: 20, ruby: 4 },
+        nextRun: { level: 20, crystal: 20, ruby: 4 },
       },
     ];
     const pagesFacade = new PagesFacade({
@@ -7062,7 +7082,7 @@ describe('PagesFacade', () => {
           level: 10,
           mana: 0,
           coin: 0,
-          crystal: 0,
+          crystal: 10,
           emerald: 3,
           ruby: 3,
         },
@@ -7085,12 +7105,19 @@ describe('PagesFacade', () => {
     ).toBe('level 20 > level 10');
     expect(
       summary?.querySelector('.workshop-page__prestige-receive')?.textContent,
-    ).toBe('on prestige: 3 ruby, 3 emerald total');
+    ).toBe('on prestige: 10 crystal, 3 ruby, 3 emerald total');
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
+    expect(summary?.querySelector('[data-resource-color="crystal"]')?.textContent).toBe(
+      '10 crystal',
+    );
     expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('3 ruby');
     expect(summary?.querySelector('[data-resource-color="emerald"]')?.textContent).toBe(
       '3 emerald',
     );
+    expect(
+      summary?.querySelector('.style-resource-label--crystal .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:crystal');
     expect(
       summary?.querySelector('.style-resource-label--ruby .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
@@ -7137,7 +7164,7 @@ describe('PagesFacade', () => {
       'true',
     ]);
     expect(page.textContent).toContain('1 point earned');
-    expect(page.textContent).toContain('plot 11 capacity');
+    expect(page.textContent).toContain('plot 6 capacity');
     expect(page.querySelector('.workshop-page__prestige-point-box')).toBeNull();
     expect(page.querySelector('.workshop-page__prestige-point-title')?.textContent).toBe(
       'point rewards',
@@ -7161,7 +7188,7 @@ describe('PagesFacade', () => {
       [...pointRows[1].querySelectorAll('.workshop-page__prestige-point-reward-row')].map(
         (row) => row.textContent,
       ),
-    ).toEqual(['- plot 12 capacity', '- cauldron 6 capacity']);
+    ).toEqual(['- plot 7 capacity', '- cauldron 4 capacity']);
     expect(pointRows[1]?.textContent).not.toContain(',');
     expect(
       pointRows[1]?.textContent,

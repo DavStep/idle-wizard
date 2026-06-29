@@ -1,4 +1,11 @@
 import { GAMEPLAY_SAVE_VERSION } from '../../../gameplay/persistence/managers/GameplayMigrationManager.js';
+import {
+  capacityResearchIds,
+  cauldronCapacityEndCauldronNumber,
+  cauldronCapacityStartCauldronNumber,
+  plotCapacityEndPlotNumber,
+  plotCapacityStartPlotNumber,
+} from '../../../gameplay/research/capacityResearchIds.js';
 import { PAGE_UNLOCK_REQUIREMENTS } from '../../../pages/managers/PageUnlockManager.js';
 import { TUTORIAL_STEP_IDS } from '../../../pages/tutorial/managers/TutorialStepManager.js';
 
@@ -645,6 +652,53 @@ export class DevCheatCommandManager {
     };
   }
 
+  completeGardenCapacityResearchThrough(tileCount) {
+    const maxTileNumber = Math.min(plotCapacityEndPlotNumber, Math.floor(Number(tileCount) || 0));
+    const researchIds = [];
+
+    for (
+      let tileNumber = plotCapacityStartPlotNumber;
+      tileNumber <= maxTileNumber;
+      tileNumber += 1
+    ) {
+      researchIds.push(capacityResearchIds.plot(tileNumber));
+    }
+
+    this.completeCapacityResearchIds(researchIds);
+  }
+
+  completeCauldronCapacityResearchThrough(cauldronCount) {
+    const maxCauldronNumber = Math.min(
+      cauldronCapacityEndCauldronNumber,
+      Math.floor(Number(cauldronCount) || 0),
+    );
+    const researchIds = [];
+
+    for (
+      let cauldronNumber = cauldronCapacityStartCauldronNumber;
+      cauldronNumber <= maxCauldronNumber;
+      cauldronNumber += 1
+    ) {
+      researchIds.push(capacityResearchIds.cauldron(cauldronNumber));
+    }
+
+    this.completeCapacityResearchIds(researchIds);
+  }
+
+  completeCapacityResearchIds(researchIds = []) {
+    if (researchIds.length <= 0) {
+      return;
+    }
+
+    const snapshot = this.gameplayFacade.researchFacade.getPersistenceSnapshot();
+    const completedIds = [...new Set([...snapshot.completedIds, ...researchIds])];
+
+    this.gameplayFacade.researchFacade.applyPersistenceSnapshot({
+      ...snapshot,
+      completedIds,
+    });
+  }
+
   unlockAllResearch({ save = true } = {}) {
     const researchIds = this.getAllConfiguredResearchIds();
     const existingIds = this.gameplayFacade.researchFacade.getPersistenceSnapshot().completedIds;
@@ -680,7 +734,8 @@ export class DevCheatCommandManager {
 
     const maxTiles = this.getGardenMaxTiles();
     const unlockedTiles = Math.min(safeCount.value, maxTiles);
-    this.ensureLevelForGardenTile(unlockedTiles);
+    this.ensureLevelForGardenTile(Math.min(unlockedTiles, plotCapacityStartPlotNumber - 1));
+    this.completeGardenCapacityResearchThrough(unlockedTiles);
     const snapshot = this.gameplayFacade.gardenFacade.getPersistenceSnapshot();
 
     this.gameplayFacade.gardenFacade.applyPersistenceSnapshot({
@@ -720,7 +775,10 @@ export class DevCheatCommandManager {
       };
     }
 
-    this.ensureLevelForGardenTile(safePlotNumber.value);
+    this.ensureLevelForGardenTile(
+      Math.min(safePlotNumber.value, plotCapacityStartPlotNumber - 1),
+    );
+    this.completeGardenCapacityResearchThrough(safePlotNumber.value);
     const snapshot = this.gameplayFacade.gardenFacade.getPersistenceSnapshot();
     const unlockedTiles = Math.max(snapshot.unlockedTiles, safePlotNumber.value);
     const existingTile = snapshot.tiles.find(
@@ -799,7 +857,10 @@ export class DevCheatCommandManager {
 
     const maxCauldrons = this.getBrewingMaxCauldrons();
     const unlockedCauldrons = Math.min(safeCount.value, maxCauldrons);
-    this.ensureLevelForCauldron(unlockedCauldrons);
+    this.ensureLevelForCauldron(
+      Math.min(unlockedCauldrons, cauldronCapacityStartCauldronNumber - 1),
+    );
+    this.completeCauldronCapacityResearchThrough(unlockedCauldrons);
     const snapshot = this.gameplayFacade.brewingFacade.getPersistenceSnapshot();
 
     this.gameplayFacade.brewingFacade.applyPersistenceSnapshot(

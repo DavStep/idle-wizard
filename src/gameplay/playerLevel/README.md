@@ -6,7 +6,7 @@ The current scope gates how many garden tiles, cauldrons, trader market stands, 
 
 Player level also sets mana cap and mana regen through the `mana` progression in `game_config.playerLevel`. Each level gives +50 cap. Mana regen starts at 1/sec on level 1, then level-ups to 2-5 add +1/sec each, 6-10 add +0.5/sec each, and 11+ add +0.25/sec each.
 
-Player level-ups also grant crystal through `crystal.perLevel` in `game_config.playerLevel`. Level 1 is the starting level and does not grant this reward.
+Player levels also grant crystal through `crystal.perLevel` in `game_config.playerLevel`. Level 1 grants this reward too, so the natural crystal total through a level equals that level times the configured per-level reward.
 
 The current playable cap is level 44. SpacetimeDB caps reported player levels and accepted player-level config at the same value, so raising this curve requires updating the backend constants before publishing.
 

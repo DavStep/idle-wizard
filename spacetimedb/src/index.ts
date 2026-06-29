@@ -3347,54 +3347,70 @@ const DEFAULT_PLAYER_LEVEL_CONFIG_JSON = JSON.stringify({
     {
       "level": 5,
       "maxGardenTiles": 5,
-      "maxCauldrons": 3,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 2,
       "maxPlayerMarketStands": 2
     },
     {
       "level": 8,
-      "maxGardenTiles": 7,
-      "maxCauldrons": 3,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 2,
       "maxPlayerMarketStands": 2
     },
     {
       "level": 10,
-      "maxGardenTiles": 8,
-      "maxCauldrons": 3,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 3,
       "maxPlayerMarketStands": 3
     },
     {
       "level": 13,
-      "maxGardenTiles": 9,
-      "maxCauldrons": 3,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 4,
       "maxPlayerMarketStands": 4
     },
     {
       "level": 17,
-      "maxGardenTiles": 10,
-      "maxCauldrons": 3,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 5,
       "maxPlayerMarketStands": 5
     },
     {
       "level": 21,
-      "maxGardenTiles": 10,
-      "maxCauldrons": 4,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 5,
       "maxPlayerMarketStands": 5
     },
     {
       "level": 25,
-      "maxGardenTiles": 10,
-      "maxCauldrons": 5,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 5,
       "maxPlayerMarketStands": 5
     }
   ]
 });
+const LEGACY_PLAYER_LEVEL_CAPS_BY_LEVEL = new Map<number, {
+  maxGardenTiles: number;
+  maxCauldrons: number;
+}>([
+  [1, { maxGardenTiles: 2, maxCauldrons: 1 }],
+  [2, { maxGardenTiles: 3, maxCauldrons: 1 }],
+  [3, { maxGardenTiles: 3, maxCauldrons: 1 }],
+  [4, { maxGardenTiles: 3, maxCauldrons: 1 }],
+  [5, { maxGardenTiles: 5, maxCauldrons: 3 }],
+  [8, { maxGardenTiles: 7, maxCauldrons: 3 }],
+  [10, { maxGardenTiles: 8, maxCauldrons: 3 }],
+  [13, { maxGardenTiles: 9, maxCauldrons: 3 }],
+  [17, { maxGardenTiles: 10, maxCauldrons: 3 }],
+  [21, { maxGardenTiles: 10, maxCauldrons: 4 }],
+  [25, { maxGardenTiles: 10, maxCauldrons: 5 }],
+]);
 
 const herbCatalog = [
   { key: 'sage', label: 'sage', growthDurationMs: 12_000 },
@@ -3580,8 +3596,8 @@ const potionMarketBasePriceGoldByKey: Record<string, number> = {
   pearlrootDraught: 925,
 };
 
-const MAX_AUTOMATION_GARDEN_TILES = 20;
-const MAX_AUTOMATION_CAULDRONS = 10;
+const MAX_AUTOMATION_GARDEN_TILES = 12;
+const MAX_AUTOMATION_CAULDRONS = 5;
 
 function getAutomationDefaultCostGoldById(): Record<string, bigint> {
   const costs: Record<string, bigint> = {};
@@ -3704,8 +3720,8 @@ const advancedResearchPlotNumbers = Array.from(
   { length: MAX_AUTOMATION_GARDEN_TILES },
   (_value, index) => index + 1,
 );
-const plotCapacityResearchNumbers = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-const cauldronCapacityResearchNumbers = [6, 7, 8, 9, 10];
+const plotCapacityResearchNumbers = [6, 7, 8, 9, 10, 11, 12];
+const cauldronCapacityResearchNumbers = [3, 4, 5];
 const emeraldResearchMultipliers = [2, 3, 4, 5];
 
 function getAdvancedResearchCostRubyById(): Record<string, number> {
@@ -4606,13 +4622,16 @@ const DEFAULT_GARDEN_CONFIG_JSON = toGameConfigJson({
   garden: {
     initialUnlockedTiles: 1,
     tileCostsGold: [
-      0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800, 7000, 10000, 14000,
-      19000, 25000, 32000, 40000, 50000, 62000, 76000,
+      0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800, 7000, 10000,
     ],
     tilesPerRow: 4,
     harvestSeconds: 3,
   },
 });
+const LEGACY_GARDEN_TILE_COSTS_GOLD_20 = [
+  0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800, 7000, 10000, 14000, 19000,
+  25000, 32000, 40000, 50000, 62000, 76000,
+];
 const DEFAULT_SHOP_CONFIG_JSON = toGameConfigJson({
   shopShelf: {
     initialUnlockedSlots: 0,
@@ -4633,9 +4652,12 @@ const DEFAULT_BREWING_CONFIG_JSON = toGameConfigJson({
   bottlingDurationMs: 2_000,
   maxCauldronIngredients: 5,
   initialUnlockedCauldrons: 1,
-  cauldronCostsGold: [0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800],
+  cauldronCostsGold: [0, 25, 75, 175, 400],
   wastedPotionKey: 'wastedPotion',
 });
+const LEGACY_BREWING_CAULDRON_COSTS_GOLD_10 = [
+  0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800,
+];
 const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
   weeklyQuests: [
     {
@@ -7462,23 +7484,110 @@ function normalizeGameConfigJson(
     return normalizeBrewingGameConfigJson(parsedConfig, originalJson);
   }
 
+  if (configKey === 'playerLevel' && isRecord(parsedConfig)) {
+    return normalizePlayerLevelGameConfigJson(parsedConfig, originalJson);
+  }
+
   if (configKey !== 'playerLevel' || !isRecord(parsedConfig)) {
     return originalJson;
   }
 
+  return originalJson;
+}
+
+function normalizePlayerLevelGameConfigJson(
+  parsedConfig: Record<string, unknown>,
+  originalJson: string,
+): string {
+  let changed = false;
+  let normalizedConfig = parsedConfig;
+
   if (readPlayerLevelCrystalPerLevel(parsedConfig) !== undefined) {
-    return originalJson;
+    normalizedConfig = parsedConfig;
+  } else {
+    const crystal = isRecord(parsedConfig.crystal) ? parsedConfig.crystal : {};
+
+    normalizedConfig = {
+      ...parsedConfig,
+      crystal: {
+        ...crystal,
+        perLevel: DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL,
+      },
+    };
+    changed = true;
   }
 
-  const crystal = isRecord(parsedConfig.crystal) ? parsedConfig.crystal : {};
+  const defaultConfig = JSON.parse(DEFAULT_PLAYER_LEVEL_CONFIG_JSON) as {
+    milestones?: unknown;
+  };
+  const defaultMilestones = Array.isArray(defaultConfig.milestones)
+    ? defaultConfig.milestones
+    : [];
+  const milestoneKey = Array.isArray(normalizedConfig.milestones)
+    ? 'milestones'
+    : Array.isArray(normalizedConfig.levels)
+      ? 'levels'
+      : null;
 
-  return JSON.stringify({
-    ...parsedConfig,
-    crystal: {
-      ...crystal,
-      perLevel: DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL,
-    },
+  if (milestoneKey) {
+    const normalizedMilestones = normalizeLegacyPlayerLevelMilestones(
+      normalizedConfig[milestoneKey],
+      defaultMilestones,
+    );
+
+    if (normalizedMilestones !== normalizedConfig[milestoneKey]) {
+      normalizedConfig = {
+        ...normalizedConfig,
+        [milestoneKey]: normalizedMilestones,
+      };
+      changed = true;
+    }
+  }
+
+  return changed ? JSON.stringify(normalizedConfig) : originalJson;
+}
+
+function normalizeLegacyPlayerLevelMilestones(
+  milestones: unknown,
+  defaultMilestones: unknown[],
+) {
+  if (!Array.isArray(milestones)) {
+    return milestones;
+  }
+
+  const defaultByLevel = new Map(
+    defaultMilestones
+      .filter((milestone): milestone is Record<string, unknown> => isRecord(milestone))
+      .map((milestone) => [Number(milestone.level), milestone]),
+  );
+  let changed = false;
+  const normalizedMilestones = milestones.map((milestone) => {
+    if (!isRecord(milestone)) {
+      return milestone;
+    }
+
+    const level = Number(milestone.level);
+    const legacyCaps = LEGACY_PLAYER_LEVEL_CAPS_BY_LEVEL.get(level);
+    const defaultMilestone = defaultByLevel.get(level);
+
+    if (
+      !legacyCaps ||
+      !defaultMilestone ||
+      Number(milestone.maxGardenTiles) !== legacyCaps.maxGardenTiles ||
+      Number(milestone.maxCauldrons) !== legacyCaps.maxCauldrons
+    ) {
+      return milestone;
+    }
+
+    changed = true;
+    return {
+      ...milestone,
+      maxGardenTiles: defaultMilestone.maxGardenTiles,
+      maxCauldrons: defaultMilestone.maxCauldrons,
+    };
   });
+
+  return changed ? normalizedMilestones : milestones;
 }
 
 function normalizeGardenGameConfigJson(
@@ -7495,7 +7604,8 @@ function normalizeGardenGameConfigJson(
     !garden ||
     !Array.isArray(garden.tileCostsGold) ||
     !Array.isArray(defaultTileCosts) ||
-    !shouldExtendDefaultNumberList(garden.tileCostsGold, defaultTileCosts)
+    (!matchesNumberList(garden.tileCostsGold, LEGACY_GARDEN_TILE_COSTS_GOLD_20) &&
+      !shouldExtendDefaultNumberList(garden.tileCostsGold, defaultTileCosts))
   ) {
     return originalJson;
   }
@@ -7521,7 +7631,11 @@ function normalizeBrewingGameConfigJson(
   if (
     !Array.isArray(parsedConfig.cauldronCostsGold) ||
     !Array.isArray(defaultCauldronCosts) ||
-    !shouldExtendDefaultNumberList(parsedConfig.cauldronCostsGold, defaultCauldronCosts)
+    (!matchesNumberList(
+      parsedConfig.cauldronCostsGold,
+      LEGACY_BREWING_CAULDRON_COSTS_GOLD_10,
+    ) &&
+      !shouldExtendDefaultNumberList(parsedConfig.cauldronCostsGold, defaultCauldronCosts))
   ) {
     return originalJson;
   }
@@ -7537,6 +7651,13 @@ function shouldExtendDefaultNumberList(existing: unknown[], defaults: number[]):
     existing.length > 0 &&
     existing.length < defaults.length &&
     existing.every((value, index) => Number(value) === defaults[index])
+  );
+}
+
+function matchesNumberList(existing: unknown[], expected: number[]): boolean {
+  return (
+    existing.length === expected.length &&
+    existing.every((value, index) => Number(value) === expected[index])
   );
 }
 
@@ -8018,7 +8139,12 @@ function normalizePlayerGameplaySave(
   const previousSave = parsePlayerGameplaySaveJson(previousSaveJson) ?? {};
   const tasks = normalizeSaveTasks(save.tasks, taskCatalog, previousLevel);
   const prestige = normalizeSavePrestige(save.prestige);
-  const research = normalizeSaveResearch(save.research, prestige.completedLevels.length);
+  const inferredCapacityResearchIds = getSaveInferredCapacityResearchIds(save);
+  const research = normalizeSaveResearch(
+    save.research,
+    prestige.completedLevels.length,
+    inferredCapacityResearchIds,
+  );
   const normalizedCoin = normalizeSaveGold(readSaveCoinBranch(save));
   const levelLimits = applySaveCapacityResearchLimits(
     getSaveLevelLimits(ctx, tasks.currentLevel),
@@ -9088,13 +9214,143 @@ function normalizeSaveInventory(value: unknown, itemCatalog: Map<string, string>
   }));
 }
 
-function normalizeSaveResearch(value: unknown, prestigeCount = 0) {
+function getSaveInferredCapacityResearchIds(save: Record<string, unknown>) {
+  return [
+    ...getSaveInferredPlotCapacityResearchIds(save),
+    ...getSaveInferredCauldronCapacityResearchIds(save),
+  ];
+}
+
+function getSaveInferredPlotCapacityResearchIds(save: Record<string, unknown>) {
+  const legacyCaps = getLegacySaveLevelLimits(save);
+  const unlockedTiles = Math.min(
+    getSaveInferredUnlockedTileCount(save.garden),
+    legacyCaps.maxGardenTiles,
+  );
+  const maxPlotNumber = Math.min(
+    plotCapacityResearchNumbers.at(-1) ?? 0,
+    unlockedTiles,
+  );
+  const researchIds: string[] = [];
+
+  for (const plotNumber of plotCapacityResearchNumbers) {
+    if (plotNumber > maxPlotNumber) {
+      break;
+    }
+
+    researchIds.push(`advanced:plotCapacity:${plotNumber}`);
+  }
+
+  return researchIds;
+}
+
+function getSaveInferredCauldronCapacityResearchIds(save: Record<string, unknown>) {
+  const legacyCaps = getLegacySaveLevelLimits(save);
+  const unlockedCauldrons = Math.min(
+    getSaveInferredUnlockedCauldronCount(save.brewing),
+    legacyCaps.maxCauldrons,
+  );
+  const maxCauldronNumber = Math.min(
+    cauldronCapacityResearchNumbers.at(-1) ?? 0,
+    unlockedCauldrons,
+  );
+  const researchIds: string[] = [];
+
+  for (const cauldronNumber of cauldronCapacityResearchNumbers) {
+    if (cauldronNumber > maxCauldronNumber) {
+      break;
+    }
+
+    researchIds.push(`advanced:cauldronCapacity:${cauldronNumber}`);
+  }
+
+  return researchIds;
+}
+
+function getLegacySaveLevelLimits(save: Record<string, unknown>) {
+  const tasks = isRecord(save.tasks) ? save.tasks : {};
+  const currentLevel = Math.max(1, Math.floor(Number(tasks.currentLevel) || 1));
+  const limits = {
+    maxGardenTiles: 2,
+    maxCauldrons: 1,
+  };
+
+  for (const [level, caps] of LEGACY_PLAYER_LEVEL_CAPS_BY_LEVEL.entries()) {
+    if (level > currentLevel) {
+      break;
+    }
+
+    limits.maxGardenTiles = caps.maxGardenTiles;
+    limits.maxCauldrons = caps.maxCauldrons;
+  }
+
+  return limits;
+}
+
+function getSaveInferredUnlockedTileCount(value: unknown) {
+  const garden = isRecord(value) ? value : {};
+  const directCount = Math.floor(Number(garden.unlockedTiles));
+  const tileCount = Array.isArray(garden.tiles)
+    ? Math.max(
+        0,
+        ...garden.tiles
+          .filter((tile): tile is Record<string, unknown> => isRecord(tile))
+          .map((tile) => Math.floor(Number(tile.tileNumber)))
+          .filter((tileNumber) => Number.isInteger(tileNumber) && tileNumber > 0),
+      )
+    : 0;
+
+  return Math.max(Number.isInteger(directCount) ? directCount : 0, tileCount);
+}
+
+function getSaveInferredUnlockedCauldronCount(value: unknown) {
+  const brewing = isRecord(value) ? value : {};
+  const directCount = Math.floor(Number(brewing.unlockedCauldrons));
+
+  if (Number.isInteger(directCount) && directCount > 0) {
+    return directCount;
+  }
+
+  if (!Array.isArray(brewing.cauldrons)) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    ...brewing.cauldrons
+      .filter((cauldron): cauldron is Record<string, unknown> =>
+        isRecord(cauldron) && hasSavePersistedCauldronWork(cauldron),
+      )
+      .map((cauldron) => Math.floor(Number(cauldron.cauldronNumber)))
+      .filter((cauldronNumber) => Number.isInteger(cauldronNumber) && cauldronNumber > 0),
+  );
+}
+
+function hasSavePersistedCauldronWork(cauldron: Record<string, unknown>) {
+  return (
+    (Array.isArray(cauldron.cauldronItemKeys) && cauldron.cauldronItemKeys.length > 0) ||
+    isRecord(cauldron.activeBrew) ||
+    cauldron.autoBrewEnabled === true ||
+    typeof cauldron.autoBrewRecipeKey === 'string'
+  );
+}
+
+function normalizeSaveResearch(
+  value: unknown,
+  prestigeCount = 0,
+  inferredCompletedIds: string[] = [],
+) {
   const completedIds = isRecord(value) && Array.isArray(value.completedIds)
     ? value.completedIds
         .map((researchId) => normalizeResearchId(String(researchId ?? '')))
         .filter((researchId) => researchCatalogById.has(researchId))
     : [];
-  const requested = new Set(completedIds);
+  const inferredIds = new Set(
+    inferredCompletedIds
+      .map((researchId) => normalizeResearchId(String(researchId ?? '')))
+      .filter((researchId) => researchCatalogById.has(researchId)),
+  );
+  const requested = new Set([...completedIds, ...inferredIds]);
   const accepted = new Set<string>();
 
   for (const research of researchCatalog) {
@@ -9102,7 +9358,10 @@ function normalizeSaveResearch(value: unknown, prestigeCount = 0) {
       continue;
     }
 
-    if (getSaveRequiredPrestigeCount(research.researchId) > prestigeCount) {
+    if (
+      !inferredIds.has(research.researchId) &&
+      getSaveRequiredPrestigeCount(research.researchId) > prestigeCount
+    ) {
       continue;
     }
 
@@ -9264,14 +9523,14 @@ function getSaveRequiredPrestigeCount(researchId: string): number {
   const plotCapacityMatch = /^advanced:plotCapacity:(\d+)$/.exec(researchId);
   if (plotCapacityMatch) {
     const plotNumber = Number(plotCapacityMatch[1]);
-    return plotCapacityResearchNumbers.includes(plotNumber) ? plotNumber - 10 : 0;
+    return plotCapacityResearchNumbers.includes(plotNumber) ? plotNumber - 5 : 0;
   }
 
   const cauldronCapacityMatch = /^advanced:cauldronCapacity:(\d+)$/.exec(researchId);
   if (cauldronCapacityMatch) {
     const cauldronNumber = Number(cauldronCapacityMatch[1]);
     return cauldronCapacityResearchNumbers.includes(cauldronNumber)
-      ? (cauldronNumber - 5) * 2
+      ? cauldronNumber - 2
       : 0;
   }
 
@@ -13915,7 +14174,7 @@ function applyDefaultCauldronCaps(milestones: any[]) {
 }
 
 function insertCauldronCapMilestones(milestones: any[]) {
-  return [21, 25].reduce(
+  return [5].reduce(
     (nextMilestones, level) => insertPlayerLevelMilestone(nextMilestones, level),
     milestones,
   );
@@ -13950,15 +14209,7 @@ function getDefaultCauldronsForLevel(level: number) {
     return 1;
   }
 
-  if (level < 21) {
-    return 3;
-  }
-
-  if (level < 25) {
-    return 4;
-  }
-
-  return 5;
+  return 2;
 }
 
 function insertPlayerLevelMilestone(milestones: any[], targetLevel: number) {

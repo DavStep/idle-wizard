@@ -462,7 +462,7 @@ describe('ResearchBoxListManager', () => {
         currentLevel: 17,
       },
       prestige: {
-        completedLevels: [10],
+        completedLevels: [],
       },
       research: {
         boxes: [
@@ -471,17 +471,17 @@ describe('ResearchBoxListManager', () => {
             label: 'cauldron capacity research',
             researches: [
               {
-                id: 'advanced:cauldronCapacity:6',
-                label: 'cauldron 6 capacity',
+                id: 'advanced:cauldronCapacity:3',
+                label: 'cauldron 3 capacity',
                 value: 'locked',
                 effect: '+1 cauldron',
-                description: 'raises cauldron capacity to 6.',
+                description: 'raises cauldron capacity to 3.',
                 costRuby: 1,
                 costCurrency: 'ruby',
                 completed: false,
                 locked: true,
                 canResearch: false,
-                requiredPrestigeCount: 2,
+                requiredPrestigeCount: 1,
                 requiredResearchIds: [],
               },
             ],
@@ -505,8 +505,8 @@ describe('ResearchBoxListManager', () => {
 
     expect(onShowResearchInfo).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: 'advanced:cauldronCapacity:6',
-        lockReason: 'requires 2 prestiges.',
+        id: 'advanced:cauldronCapacity:3',
+        lockReason: 'requires 1 prestige.',
       }),
     );
 

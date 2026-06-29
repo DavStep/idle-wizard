@@ -229,6 +229,10 @@ export class GameplayFacade {
 
     if (this.initialized) {
       this.syncPlayerLevelManaEffects();
+      const backfilledCrystal = this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
+      if (backfilledCrystal > 0) {
+        this.persistenceFacade.save();
+      }
     }
   }
 
@@ -283,9 +287,7 @@ export class GameplayFacade {
       this.persistenceLoadRevision += 1;
     }
     this.syncRubyFromPrestige();
-    const backfilledCrystal = loaded
-      ? this.levelUpCrystalRewardManager.grantMissingForCurrentLevel()
-      : 0;
+    const backfilledCrystal = this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
     this.syncPlayerLevelManaEffects();
     if (loaded) {
       this.applyOfflineTimerCatchup(ecsFacade);
@@ -490,9 +492,13 @@ export class GameplayFacade {
     const emerald = {
       current: this.getPrestigeResetEmeraldCurrent(),
     };
+    const crystal = {
+      current: this.getPrestigeResetCrystalCurrent(prestigeResetLevel),
+    };
     const visualSettings = this.visualSettingsFacade.getPersistenceSnapshot();
     const automation = this.automationFacade.getPersistenceSnapshot();
     const seedSummoning = this.seedSummoningFacade.getPersistenceSnapshot();
+    const personalTasks = this.personalTasksFacade.getPersistenceSnapshot();
 
     this.persistenceFacade.applyRuntimeSave({
       mana: {
@@ -504,9 +510,7 @@ export class GameplayFacade {
         current: 0,
         totalGenerated: 0,
       },
-      crystal: {
-        current: 0,
-      },
+      crystal,
       emerald,
       ruby: {
         current: 0,
@@ -531,10 +535,7 @@ export class GameplayFacade {
         currentLevel: prestigeResetLevel,
         tasks: [],
       },
-      personalTasks: {
-        version: 1,
-        periods: {},
-      },
+      personalTasks,
       worldNotice: this.worldNoticeFacade.getPersistenceSnapshot(),
       guild: this.guildFacade.getPersistenceSnapshot(),
       inboxRewards: this.inboxRewardsFacade.getPersistenceSnapshot(),
@@ -565,6 +566,11 @@ export class GameplayFacade {
     return currentEmerald + spentEmerald;
   }
 
+  getPrestigeResetCrystalCurrent(level) {
+    const resetLevel = Math.max(1, Math.floor(Number(level) || 1));
+    return this.playerLevelFacade.getCrystalRewardThroughLevel(resetLevel);
+  }
+
   getPrestigeNextRunPreview(level) {
     const prestige = this.prestigeFacade.getSnapshot();
     const milestoneLevel = Math.floor(Number(level));
@@ -577,11 +583,13 @@ export class GameplayFacade {
       completedLevels.add(milestone.level);
     }
 
+    const resetLevel = getPrestigeResetLevel(milestoneLevel);
+
     return {
-      level: getPrestigeResetLevel(milestoneLevel),
+      level: resetLevel,
       mana: 0,
       coin: 0,
-      crystal: 0,
+      crystal: this.getPrestigeResetCrystalCurrent(resetLevel),
       emerald: this.getPrestigeResetEmeraldCurrent(),
       ruby: this.prestigeFacade.getRubyForCompletedLevels([...completedLevels]),
     };

@@ -47,49 +47,49 @@ export const DEFAULT_PLAYER_LEVEL_BALANCE = {
     {
       "level": 5,
       "maxGardenTiles": 5,
-      "maxCauldrons": 3,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 2,
       "maxPlayerMarketStands": 2
     },
     {
       "level": 8,
-      "maxGardenTiles": 7,
-      "maxCauldrons": 3,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 2,
       "maxPlayerMarketStands": 2
     },
     {
       "level": 10,
-      "maxGardenTiles": 8,
-      "maxCauldrons": 3,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 3,
       "maxPlayerMarketStands": 3
     },
     {
       "level": 13,
-      "maxGardenTiles": 9,
-      "maxCauldrons": 3,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 4,
       "maxPlayerMarketStands": 4
     },
     {
       "level": 17,
-      "maxGardenTiles": 10,
-      "maxCauldrons": 3,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 5,
       "maxPlayerMarketStands": 5
     },
     {
       "level": 21,
-      "maxGardenTiles": 10,
-      "maxCauldrons": 4,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 5,
       "maxPlayerMarketStands": 5
     },
     {
       "level": 25,
-      "maxGardenTiles": 10,
-      "maxCauldrons": 5,
+      "maxGardenTiles": 5,
+      "maxCauldrons": 2,
       "maxNpcMarketStands": 5,
       "maxPlayerMarketStands": 5
     }
@@ -218,14 +218,13 @@ export class PlayerLevelBalanceManager {
     }, 0);
   }
 
-  getCrystalRewardForLevel(levelNumber) {
-    const safeLevel = this.clampLevelNumber(levelNumber);
-
-    if (safeLevel <= 1) {
-      return 0;
-    }
-
+  getCrystalRewardForLevel() {
     return this.crystalRewards.perLevel;
+  }
+
+  getCrystalRewardThroughLevel(levelNumber) {
+    const safeLevel = this.clampLevelNumber(levelNumber);
+    return this.roundStat(safeLevel * this.crystalRewards.perLevel);
   }
 
   getCrystalRewardForLevelRange(levelBefore, levelAfter) {
@@ -236,7 +235,7 @@ export class PlayerLevelBalanceManager {
       return 0;
     }
 
-    const firstRewardLevel = Math.max(2, safeLevelBefore + 1);
+    const firstRewardLevel = safeLevelBefore + 1;
 
     if (safeLevelAfter < firstRewardLevel) {
       return 0;

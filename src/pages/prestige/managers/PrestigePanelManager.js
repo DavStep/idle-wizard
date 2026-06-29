@@ -282,10 +282,13 @@ export class PrestigePanelManager {
         'prestige resets the current run into a new run from the shown start level.',
       ),
       this.createDescriptionLine(
-        'mana, coin, crystal, items, ordinary research, garden, brewing, and tasks reset.',
+        'mana, coin, crystal, items, ordinary research, garden, brewing, and level tasks reset.',
       ),
       this.createDescriptionLine(
-        'the shown ruby and emerald totals carry into the next run.',
+        'daily and weekly task progress keeps its normal reset timer.',
+      ),
+      this.createDescriptionLine(
+        'the shown crystal, ruby, and emerald totals start the next run.',
       ),
       this.createDescriptionLine(
         'each completed milestone adds 1 prestige point for capacity rewards.',
@@ -322,8 +325,8 @@ export class PrestigePanelManager {
 
     const reward = document.createElement('span');
     reward.className = 'workshop-page__prestige-reward';
-    setResourceIconText(reward, `reward: ${milestone.rewardRuby} ruby`);
-    setResourceColor(reward, 'ruby');
+    setResourceIconText(reward, this.createMilestoneRewardText(milestone));
+    setResourceColor(reward, null);
 
     const action = this.createMilestoneAction(milestone);
 
@@ -591,27 +594,39 @@ export class PrestigePanelManager {
     };
 
     addLine('start level', document.createTextNode(String(nextRun.level ?? 1)));
-    addLine('mana total', this.createResourceValue('mana', nextRun.mana));
-    addLine('coin total', this.createResourceValue('coin', nextRun.coin));
-    addLine('crystal total', this.createResourceValue('crystal', nextRun.crystal));
-    addLine('emerald total', this.createResourceValue('emerald', nextRun.emerald));
-    addLine('ruby total', this.createResourceValue('ruby', nextRun.ruby));
+    addLine('mana', this.createResourceValue('mana', nextRun.mana));
+    addLine('coin', this.createResourceValue('coin', nextRun.coin));
+    addLine('crystal', this.createResourceValue('crystal', nextRun.crystal));
+    addLine('emerald', this.createResourceValue('emerald', nextRun.emerald));
+    addLine('ruby', this.createResourceValue('ruby', nextRun.ruby));
 
     return summary;
   }
 
   createResourceValue(resourceKey, amount) {
-    const value = Math.max(0, Math.floor(Number(amount) || 0));
+    const value = this.normalizeResourceAmount(amount);
     const node = document.createElement('span');
     setResourceIconText(node, `${value} ${resourceKey}`);
     setResourceColor(node, resourceKey);
     return node;
   }
 
+  createMilestoneRewardText(milestone = {}) {
+    const parts = [];
+    const nextRun = milestone?.nextRun ?? {};
+
+    if (Object.prototype.hasOwnProperty.call(nextRun, 'crystal')) {
+      parts.push(`${this.normalizeResourceAmount(nextRun.crystal)} crystal`);
+    }
+
+    parts.push(`${this.normalizeResourceAmount(milestone.rewardRuby)} ruby`);
+    return `reward: ${parts.join(', ')}`;
+  }
+
   createPrestigeTotalNodes(nextRun = {}) {
     const nodes = [];
 
-    for (const resourceKey of ['ruby', 'emerald']) {
+    for (const resourceKey of ['crystal', 'ruby', 'emerald']) {
       if (nodes.length > 0) {
         nodes.push(document.createTextNode(', '));
       }
@@ -621,6 +636,10 @@ export class PrestigePanelManager {
 
     nodes.push(document.createTextNode(' total'));
     return nodes;
+  }
+
+  normalizeResourceAmount(amount) {
+    return Math.max(0, Math.floor(Number(amount) || 0));
   }
 
   getSummaryMilestone(prestige = {}) {

@@ -77,7 +77,7 @@ describe('DevCheatsFacade', () => {
     });
     expect(target.cheats.addCrystal(7)).toMatchObject({
       ok: true,
-      crystal: { current: 7 },
+      crystal: { current: 8 },
     });
     expect(target.cheats.addEmerald(2)).toMatchObject({
       ok: true,
@@ -119,7 +119,7 @@ describe('DevCheatsFacade', () => {
     expect(target.cheats.unlockPlots(8)).toMatchObject({
       ok: true,
       unlockedTiles: 8,
-      currentLevel: 10,
+      currentLevel: 5,
     });
     expect(target.cheats.setPlot(1, { seed: 'sage', phase: 'growing', progress: 0.5 }))
       .toMatchObject({
@@ -143,8 +143,9 @@ describe('DevCheatsFacade', () => {
     });
 
     const snapshot = target.cheats.snapshot().snapshot;
-    expect(snapshot.playerLevel.currentLevel).toBe(10);
+    expect(snapshot.playerLevel.currentLevel).toBe(5);
     expect(snapshot.garden.plot.unlockedTiles).toBe(8);
+    expect(snapshot.research.completedResearchIds).toContain('advanced:plotCapacity:8');
   });
 
   it('unlocks all feature gates and direct-state surfaces', () => {
@@ -158,10 +159,10 @@ describe('DevCheatsFacade', () => {
       ok: true,
       level: 100,
       garden: {
-        unlockedTiles: 20,
+        unlockedTiles: 12,
       },
       cauldrons: {
-        unlockedCauldrons: 10,
+        unlockedCauldrons: 5,
       },
       market: {
         trader: { unlockedSlots: 5 },
@@ -575,7 +576,7 @@ describe('DevCheatsFacade', () => {
       snapshot: {
         mana: { current: 0, cap: 50, perSecond: 1 },
         coin: { current: 0, totalGenerated: 0 },
-        crystal: { current: 0 },
+        crystal: { current: 1 },
         emerald: { current: 0 },
         inventory: [],
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
@@ -587,7 +588,7 @@ describe('DevCheatsFacade', () => {
     expect(saved).toMatchObject({
       version: 8,
       coin: { current: 0, totalGenerated: 0 },
-      crystal: { current: 0 },
+      crystal: { current: 1 },
       emerald: { current: 0 },
       ruby: { current: 0 },
       inventory: [],

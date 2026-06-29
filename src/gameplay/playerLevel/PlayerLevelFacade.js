@@ -69,6 +69,10 @@ export class PlayerLevelFacade {
     return this.playerLevelBalanceManager.getCrystalRewardForLevel(levelNumber);
   }
 
+  getCrystalRewardThroughLevel(levelNumber) {
+    return this.playerLevelBalanceManager.getCrystalRewardThroughLevel(levelNumber);
+  }
+
   getCrystalRewardForLevelRange(levelBefore, levelAfter) {
     return this.playerLevelBalanceManager.getCrystalRewardForLevelRange(
       levelBefore,

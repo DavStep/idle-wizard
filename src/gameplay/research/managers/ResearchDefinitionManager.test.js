@@ -84,8 +84,8 @@ describe('ResearchDefinitionManager', () => {
     setMaxGardenTiles(3);
     setMaxCauldrons(2);
     const completedResearchIds = [
-      capacityResearchIds.plot(11),
-      capacityResearchIds.cauldron(6),
+      capacityResearchIds.plot(6),
+      capacityResearchIds.cauldron(3),
     ];
     const tabs = manager.getVisibleResearchTabs(completedResearchIds);
     const getResearchIds = (tabId, boxId) =>
@@ -94,29 +94,29 @@ describe('ResearchDefinitionManager', () => {
         ?.boxes.find((box) => box.id === boxId)
         ?.researches.map((research) => research.id) ?? [];
 
-    expect(manager.hasResearch(automationResearchIds.autoPlantTile(11))).toBe(false);
+    expect(manager.hasResearch(automationResearchIds.autoPlantTile(6))).toBe(false);
     expect(
-      manager.hasResearch(automationResearchIds.autoPlantTile(11), {
+      manager.hasResearch(automationResearchIds.autoPlantTile(6), {
         completedResearchIds,
       }),
     ).toBe(true);
     expect(getResearchIds('automation', 'autoPlantTiles')).toContain(
-      automationResearchIds.autoPlantTile(11),
+      automationResearchIds.autoPlantTile(6),
     );
     expect(getResearchIds('automation', 'autoPlantTiles')).not.toContain(
-      automationResearchIds.autoPlantTile(12),
+      automationResearchIds.autoPlantTile(7),
     );
     expect(getResearchIds('automation', 'autoBrewCauldrons')).toContain(
-      automationResearchIds.autoBrewCauldron(6),
+      automationResearchIds.autoBrewCauldron(3),
     );
     expect(getResearchIds('automation', 'autoBrewCauldrons')).not.toContain(
-      automationResearchIds.autoBrewCauldron(7),
+      automationResearchIds.autoBrewCauldron(4),
     );
     expect(getResearchIds('advanced', 'plotGrowth')).toContain(
-      advancedResearchIds.plotGrowth(11, 1),
+      advancedResearchIds.plotGrowth(6, 1),
     );
     expect(getResearchIds('emerald', 'cauldronBrewing')).toContain(
-      emeraldResearchIds.cauldronBrewing(6, 2),
+      emeraldResearchIds.cauldronBrewing(3, 2),
     );
   });
 

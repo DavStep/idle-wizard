@@ -24,7 +24,7 @@ export class LevelUpCrystalRewardManager {
 
   grantMissingForCurrentLevel() {
     const currentLevel = this.playerLevelFacade.getSnapshot().currentLevel ?? 1;
-    const earnedCrystal = this.playerLevelFacade.getCrystalRewardForLevelRange(1, currentLevel);
+    const earnedCrystal = this.playerLevelFacade.getCrystalRewardThroughLevel(currentLevel);
     const spentCrystal = Math.max(
       0,
       Math.floor(Number(this.getCommittedCrystalResearchCostTotal()) || 0),

@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.68
+
+- Rebalanced Garden and Brewing capacity so the first prestige rewards unlock extra plots and cauldrons sooner through capacity research.
+- Preserved older saves with extra plots or cauldrons by converting those slots into the matching completed capacity research.
+- Improved prestige resets so the next run starts with the earned crystal for its reset level while daily and weekly task progress keeps its normal timer.
+
 ## 0.2.67
 
 - Improved Elara's early lessons with short checkpoint prompts after the first task, sale, harvest, research, and brew.

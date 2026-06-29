@@ -211,7 +211,7 @@ describe('GameplayFacade', () => {
     expect(snapshot.persistence.loadRevision).toBe(1);
     expect(snapshot.coin.current).toBe(12);
     expect(snapshot.coin.totalGenerated).toBe(12);
-    expect(snapshot.crystal.current).toBe(2);
+    expect(snapshot.crystal.current).toBe(3);
     expect(snapshot.emerald.current).toBe(1);
     expect(snapshot.logs.entries).toEqual([]);
     expect(snapshot.inventory).toContainEqual({
@@ -335,6 +335,53 @@ describe('GameplayFacade', () => {
     expect(snapshot.shop.playerShelf.unlockedSlots).toBe(0);
   });
 
+  it('grandfathers old level-cap plots and cauldrons into capacity research', () => {
+    const persistenceStorage = createMemoryStorage();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 3,
+        mana: {},
+        coin: {},
+        crystal: {},
+        logs: {},
+        inventory: [],
+        research: {
+          completedIds: [],
+        },
+        brewing: {
+          unlockedCauldrons: 3,
+          cauldrons: [
+            { cauldronNumber: 1, cauldronItemKeys: [], activeBrew: null },
+            { cauldronNumber: 2, cauldronItemKeys: [], activeBrew: null },
+            { cauldronNumber: 3, cauldronItemKeys: [], activeBrew: null },
+          ],
+        },
+        garden: {
+          unlockedTiles: 10,
+          tiles: [],
+        },
+        tasks: {
+          currentLevel: 17,
+          tasks: [],
+        },
+      }),
+    );
+
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+    const snapshot = gameplayFacade.getSnapshot();
+
+    expect(snapshot.garden.plot.unlockedTiles).toBe(10);
+    expect(snapshot.brewing.unlockedCauldrons).toBe(3);
+    expect(snapshot.research.completedResearchIds).toEqual(
+      expect.arrayContaining([
+        capacityResearchIds.plot(6),
+        capacityResearchIds.plot(10),
+        capacityResearchIds.cauldron(3),
+      ]),
+    );
+  });
+
   it('locks empty legacy Brewing cauldrons that used to appear from player level', () => {
     const persistenceStorage = createMemoryStorage();
     persistenceStorage.setItem(
@@ -366,7 +413,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
     const brewing = gameplayFacade.getSnapshot().brewing;
 
-    expect(brewing.maxCauldrons).toBe(3);
+    expect(brewing.maxCauldrons).toBe(2);
     expect(brewing.unlockedCauldrons).toBe(1);
     expect(brewing.cauldrons).toHaveLength(1);
     expect(brewing.nextCauldronNumber).toBe(2);
@@ -584,17 +631,17 @@ describe('GameplayFacade', () => {
   it('grants configured crystal when player level advances', () => {
     const { gameplayFacade } = createGameplay();
 
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(0);
-
-    finishCurrentTaskLevel(gameplayFacade);
-
-    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
 
     finishCurrentTaskLevel(gameplayFacade);
 
-    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
+
+    finishCurrentTaskLevel(gameplayFacade);
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(3);
   });
 
   it('shows prestige milestones through level 100 with special ruby rewards', () => {
@@ -618,7 +665,7 @@ describe('GameplayFacade', () => {
   it('completes prestige, resets run data, and keeps emeralds plus prestige rubies', () => {
     const { gameplayFacade } = createGameplay();
 
-    gameplayFacade.crystalFacade.add(4);
+    gameplayFacade.crystalFacade.add(8);
     gameplayFacade.emeraldFacade.add(7);
     gameplayFacade.coinFacade.add(99);
     gameplayFacade.itemsFacade.addItem(1, 5);
@@ -649,7 +696,7 @@ describe('GameplayFacade', () => {
     expect(snapshot.prestige.earnedRuby).toBe(1);
     expect(snapshot.ruby.current).toBe(1);
     expect(snapshot.coin).toMatchObject({ current: 0, totalGenerated: 0 });
-    expect(snapshot.crystal.current).toBe(0);
+    expect(snapshot.crystal.current).toBe(5);
     expect(snapshot.emerald.current).toBe(7);
     expect(snapshot.inventory).toEqual([]);
     expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
@@ -662,6 +709,55 @@ describe('GameplayFacade', () => {
       cap: 250,
       perSecond: 5,
     });
+  }, 30_000);
+
+  it('keeps personal daily and weekly task progress after prestige', () => {
+    const { gameplayFacade } = createGameplay();
+
+    advanceToLevel(gameplayFacade, 10);
+
+    const personalTasks = gameplayFacade.getSnapshot().personalTasks;
+    const dailyPeriodKey = personalTasks.daily.periodKey;
+    const weeklyPeriodKey = personalTasks.weekly.periodKey;
+
+    for (const task of personalTasks.daily.tasks) {
+      gameplayFacade.recordPersonalTaskAction(task.actionType, task.requiredQuantity);
+    }
+
+    expect(gameplayFacade.claimPersonalTaskMilestoneReward('daily', 30)).toMatchObject({
+      ok: true,
+      periodType: 'daily',
+      milestoneThreshold: 30,
+    });
+    expect(gameplayFacade.claimPersonalTaskMilestoneReward('weekly', 100)).toMatchObject({
+      ok: true,
+      periodType: 'weekly',
+      milestoneThreshold: 100,
+    });
+
+    const beforePrestige = gameplayFacade.getSnapshot().personalTasks;
+    expect(beforePrestige.daily.currentPoints).toBe(100);
+    expect(beforePrestige.weekly.currentPoints).toBe(100);
+    expect(beforePrestige.daily.completedTasks).toBe(7);
+
+    expect(gameplayFacade.completePrestigeMilestone(10)).toMatchObject({ ok: true });
+
+    const afterPrestige = gameplayFacade.getSnapshot().personalTasks;
+    expect(afterPrestige.daily).toMatchObject({
+      periodKey: dailyPeriodKey,
+      currentPoints: 100,
+      completedTasks: 7,
+    });
+    expect(afterPrestige.weekly).toMatchObject({
+      periodKey: weeklyPeriodKey,
+      currentPoints: 100,
+    });
+    expect(
+      afterPrestige.daily.rewards.find((reward) => reward.threshold === 30),
+    ).toMatchObject({ claimed: true, claimable: false });
+    expect(
+      afterPrestige.weekly.rewards.find((reward) => reward.threshold === 100),
+    ).toMatchObject({ claimed: true, claimable: false });
   }, 30_000);
 
   it('restores sage seed medium priority after prestige when other seed preferences reset away', () => {
@@ -712,28 +808,36 @@ describe('GameplayFacade', () => {
     });
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(20);
     expect(gameplayFacade.getSnapshot().playerLevel.currentLevel).toBe(20);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(20);
   }, 30_000);
 
   it('uses prestige-gated permanent research for extra plots and cauldrons', () => {
     const { gameplayFacade } = createGameplay();
 
     advanceToLevel(gameplayFacade, 25);
-    buyGardenTilesThrough(gameplayFacade, 10);
-    buyCauldronsThrough(gameplayFacade, 5);
+    buyGardenTilesThrough(gameplayFacade, 5);
+    buyCauldronsThrough(gameplayFacade, 2);
 
     expect(gameplayFacade.getSnapshot().garden.plot).toMatchObject({
-      unlockedTiles: 10,
-      nextTileNumber: 11,
+      unlockedTiles: 5,
+      nextTileNumber: 6,
       nextTileLockedByResearch: true,
-      nextTileRequiresResearchId: capacityResearchIds.plot(11),
+      nextTileRequiresResearchId: capacityResearchIds.plot(6),
     });
     expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
-      unlockedCauldrons: 5,
-      nextCauldronNumber: 6,
+      unlockedCauldrons: 2,
+      nextCauldronNumber: 3,
       nextCauldronLockedByResearch: true,
-      nextCauldronRequiresResearchId: capacityResearchIds.cauldron(6),
+      nextCauldronRequiresResearchId: capacityResearchIds.cauldron(3),
     });
-    expect(gameplayFacade.buyResearch(capacityResearchIds.plot(11))).toMatchObject({
+    expect(gameplayFacade.buyResearch(capacityResearchIds.plot(6))).toMatchObject({
+      ok: false,
+      reason: 'missing_required_prestige',
+      requiredPrestigeCount: 1,
+      cost: 1,
+      costCurrency: 'ruby',
+    });
+    expect(gameplayFacade.buyResearch(capacityResearchIds.cauldron(3))).toMatchObject({
       ok: false,
       reason: 'missing_required_prestige',
       requiredPrestigeCount: 1,
@@ -743,62 +847,62 @@ describe('GameplayFacade', () => {
 
     gameplayFacade.completePrestigeMilestone(10, { confirmedLower: true });
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(getPrestigeResetLevel(10));
-    expect(gameplayFacade.buyResearch(capacityResearchIds.plot(11))).toMatchObject({
+    expect(gameplayFacade.buyResearch(capacityResearchIds.plot(6))).toMatchObject({
       ok: true,
       cost: 1,
       costCurrency: 'ruby',
     });
     expect(gameplayFacade.getSnapshot().ruby.current).toBe(0);
-    buyGardenTilesThrough(gameplayFacade, 11);
+    buyGardenTilesThrough(gameplayFacade, 6);
     expect(gameplayFacade.getSnapshot().garden.plot).toMatchObject({
-      unlockedTiles: 11,
-      nextTileNumber: 12,
+      unlockedTiles: 6,
+      nextTileNumber: 7,
       nextTileLockedByResearch: true,
-      nextTileRequiresResearchId: capacityResearchIds.plot(12),
+      nextTileRequiresResearchId: capacityResearchIds.plot(7),
     });
-    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoPlantTile(11))).toMatchObject({
-      id: automationResearchIds.autoPlantTile(11),
-      costCrystal: 11,
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoPlantTile(6))).toMatchObject({
+      id: automationResearchIds.autoPlantTile(6),
+      costCrystal: 6,
       costCurrency: 'crystal',
     });
-    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoHarvestPlant(11))).toMatchObject({
-      id: automationResearchIds.autoHarvestPlant(11),
-      costCrystal: 11,
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoHarvestPlant(6))).toMatchObject({
+      id: automationResearchIds.autoHarvestPlant(6),
+      costCrystal: 6,
       costCurrency: 'crystal',
     });
-    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoPlantTile(12))).toBeUndefined();
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoPlantTile(7))).toBeUndefined();
 
     advanceToLevel(gameplayFacade, 20);
     gameplayFacade.completePrestigeMilestone(20);
     expect(gameplayFacade.getSnapshot().research.completedResearchIds).toContain(
-      capacityResearchIds.plot(11),
+      capacityResearchIds.plot(6),
     );
     expect(gameplayFacade.getSnapshot().ruby.current).toBe(2);
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(getPrestigeResetLevel(20));
 
-    expect(gameplayFacade.buyResearch(capacityResearchIds.cauldron(6))).toMatchObject({
+    expect(gameplayFacade.buyResearch(capacityResearchIds.cauldron(3))).toMatchObject({
       ok: true,
       cost: 1,
       costCurrency: 'ruby',
     });
-    buyCauldronsThrough(gameplayFacade, 6);
+    buyCauldronsThrough(gameplayFacade, 3);
     expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
-      unlockedCauldrons: 6,
-      nextCauldronNumber: 7,
+      unlockedCauldrons: 3,
+      nextCauldronNumber: 4,
       nextCauldronLockedByResearch: true,
-      nextCauldronRequiresResearchId: capacityResearchIds.cauldron(7),
+      nextCauldronRequiresResearchId: capacityResearchIds.cauldron(4),
     });
-    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoBrewCauldron(6))).toMatchObject({
-      id: automationResearchIds.autoBrewCauldron(6),
-      costCrystal: 6,
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoBrewCauldron(3))).toMatchObject({
+      id: automationResearchIds.autoBrewCauldron(3),
+      costCrystal: 3,
       costCurrency: 'crystal',
     });
-    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoBottleCauldron(6))).toMatchObject({
-      id: automationResearchIds.autoBottleCauldron(6),
-      costCrystal: 6,
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoBottleCauldron(3))).toMatchObject({
+      id: automationResearchIds.autoBottleCauldron(3),
+      costCrystal: 3,
       costCurrency: 'crystal',
     });
-    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoBrewCauldron(7))).toBeUndefined();
+    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoBrewCauldron(4))).toBeUndefined();
   }, 30_000);
 
   it('announces prestige completions to world chat', () => {
@@ -828,7 +932,7 @@ describe('GameplayFacade', () => {
     const persistenceStorage = createMemoryStorage();
     const { gameplayFacade } = createGameplay({ persistenceStorage });
 
-    gameplayFacade.crystalFacade.add(4);
+    gameplayFacade.crystalFacade.add(8);
     gameplayFacade.emeraldFacade.add(7);
     gameplayFacade.coinFacade.add(99);
     gameplayFacade.buyVisualSettingOption('theme', 'black');
@@ -840,7 +944,7 @@ describe('GameplayFacade', () => {
     const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
     expect(saved).toMatchObject({
       coin: { current: 0, totalGenerated: 0 },
-      crystal: { current: 0 },
+      crystal: { current: 5 },
       emerald: { current: 7 },
       ruby: { current: 1 },
       inventory: [],
@@ -882,6 +986,7 @@ describe('GameplayFacade', () => {
     expect(saved).toMatchObject({
       coin: { current: 0, totalGenerated: 0 },
       gold: { current: 0, totalGenerated: 0 },
+      crystal: { current: 10 },
       ruby: { current: 2 },
       inventory: [],
       research: { completedIds: ['unlockSeed:sageSeed'] },
@@ -902,7 +1007,13 @@ describe('GameplayFacade', () => {
     expect(snapshot.ruby.current).toBe(2);
     expect(snapshot.coin).toMatchObject({ current: 0, totalGenerated: 0 });
     expect(snapshot.inventory).toEqual([]);
-    expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
+    expect(snapshot.research.completedResearchIds).toEqual(
+      expect.arrayContaining([
+        'unlockSeed:sageSeed',
+        capacityResearchIds.plot(6),
+        capacityResearchIds.plot(8),
+      ]),
+    );
 
     second.gameplayFacade.shutdown();
     second.ecsFacade.destroyWorld();
@@ -1033,7 +1144,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(3);
   });
 
   it('does not duplicate existing level crystals when loading saves', () => {
@@ -1044,7 +1155,7 @@ describe('GameplayFacade', () => {
         version: 2,
         mana: {},
         coin: {},
-        crystal: { current: 2 },
+        crystal: { current: 3 },
         inventory: [],
         research: { completedIds: [] },
         tasks: {
@@ -1057,7 +1168,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(3);
   });
 
   it('counts spent crystal research when backfilling old saves', () => {
@@ -1083,7 +1194,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
   });
 
   it('counts in-progress crystal research when backfilling old saves', () => {
@@ -1116,7 +1227,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
     expect(gameplayFacade.getSnapshot().research.inProgressResearches).toEqual([
       expect.objectContaining({
         researchId: automationResearchIds.autoPlantTile(1),
@@ -1141,10 +1252,12 @@ describe('GameplayFacade', () => {
       ],
     });
 
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(3);
+
     finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(3);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(6);
   });
 
   it('keeps crystal level-up rewards when legacy runtime config omits crystal', () => {
@@ -1165,7 +1278,7 @@ describe('GameplayFacade', () => {
     finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
   });
 
   it('uses legacy SpacetimeDB task completion costs without falling back', () => {
@@ -1431,7 +1544,7 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot()).toMatchObject({
       coin: { current: 0 },
-      crystal: { current: 0 },
+      crystal: { current: 1 },
       inventory: [],
       research: { completedResearchIds: ['unlockSeed:sageSeed'] },
     });
@@ -1650,15 +1763,15 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay();
 
     expect(gameplayFacade.getSnapshot().crystal).toEqual({
-      current: 0,
+      current: 1,
     });
 
     gameplayFacade.crystalFacade.add(5);
 
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(5);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(6);
     expect(gameplayFacade.crystalFacade.spend(2)).toBe(true);
-    expect(gameplayFacade.crystalFacade.spend(4)).toBe(false);
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(3);
+    expect(gameplayFacade.crystalFacade.spend(5)).toBe(false);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(4);
   });
 
   it('researches visual settings from runtime config and spends crystal', () => {
@@ -1706,7 +1819,7 @@ describe('GameplayFacade', () => {
       costCrystal: 2,
       costCurrency: 'crystal',
     });
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
     expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.black).toBe(true);
     expect(gameplayFacade.buyVisualSettingOption('theme', 'black')).toEqual({
       ok: false,
@@ -1911,7 +2024,7 @@ describe('GameplayFacade', () => {
       costCrystal: 1,
       costCurrency: 'crystal',
       completed: false,
-      canResearch: false,
+      canResearch: true,
     });
     expect(research.tabs[1].boxes[1].researches[1]).toMatchObject({
       id: automationResearchIds.autoPlantTile(2),
@@ -1997,11 +2110,11 @@ describe('GameplayFacade', () => {
       costCurrency: 'ruby',
     });
     expect(research.tabs[2].boxes[3].researches.map((research) => research.id)).toEqual([
-      capacityResearchIds.plot(11),
+      capacityResearchIds.plot(6),
     ]);
     expect(research.tabs[2].boxes[3].researches[0]).toMatchObject({
-      id: capacityResearchIds.plot(11),
-      label: 'plot 11 capacity',
+      id: capacityResearchIds.plot(6),
+      label: 'plot 6 capacity',
       value: 'locked',
       effect: '+1 plot',
       showEffect: true,
@@ -2013,15 +2126,15 @@ describe('GameplayFacade', () => {
       costCurrency: 'ruby',
     });
     expect(research.tabs[2].boxes[4].researches.map((research) => research.id)).toEqual([
-      capacityResearchIds.cauldron(6),
+      capacityResearchIds.cauldron(3),
     ]);
     expect(research.tabs[2].boxes[4].researches[0]).toMatchObject({
-      id: capacityResearchIds.cauldron(6),
-      label: 'cauldron 6 capacity',
+      id: capacityResearchIds.cauldron(3),
+      label: 'cauldron 3 capacity',
       value: 'locked',
       effect: '+1 cauldron',
       showEffect: true,
-      requiredPrestigeCount: 2,
+      requiredPrestigeCount: 1,
       requiredResearchIds: [],
       locked: true,
       costCoin: 0,
@@ -2216,12 +2329,10 @@ describe('GameplayFacade', () => {
     expect(getAutomationBoxResearchIds('autoBrewCauldrons')).toEqual([
       automationResearchIds.autoBrewCauldron(1),
       automationResearchIds.autoBrewCauldron(2),
-      automationResearchIds.autoBrewCauldron(3),
     ]);
     expect(getAutomationBoxResearchIds('autoBottleCauldrons')).toEqual([
       automationResearchIds.autoBottleCauldron(1),
       automationResearchIds.autoBottleCauldron(2),
-      automationResearchIds.autoBottleCauldron(3),
     ]);
   });
 
@@ -2338,7 +2449,7 @@ describe('GameplayFacade', () => {
       cost: 10,
       costCurrency: 'crystal',
     });
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
     expect(gameplayFacade.getSnapshot().coin.current).toBe(100);
 
     ecsFacade.update({ deltaSeconds: 10 });
@@ -3234,7 +3345,7 @@ describe('GameplayFacade', () => {
     unlockRecipeResearch(gameplayFacade);
     gameplayFacade.coinFacade.add(100);
 
-    expect(gameplayFacade.getSnapshot().brewing.maxCauldrons).toBe(3);
+    expect(gameplayFacade.getSnapshot().brewing.maxCauldrons).toBe(2);
     expect(gameplayFacade.getSnapshot().brewing.cauldrons).toHaveLength(1);
     expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
       unlockedCauldrons: 1,
@@ -3252,18 +3363,13 @@ describe('GameplayFacade', () => {
       cost: 25,
       cauldronNumber: 2,
     });
-    expect(gameplayFacade.buyBrewingCauldron()).toMatchObject({
-      ok: true,
-      cost: 75,
-      cauldronNumber: 3,
-    });
     expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
-      unlockedCauldrons: 3,
-      nextCauldronNumber: 4,
-      nextCauldronLockedByLevel: true,
-      nextCauldronRequiresLevel: 21,
+      unlockedCauldrons: 2,
+      nextCauldronNumber: 3,
+      nextCauldronLockedByResearch: true,
+      nextCauldronRequiresResearchId: capacityResearchIds.cauldron(3),
     });
-    expect(gameplayFacade.getSnapshot().brewing.cauldrons).toHaveLength(3);
+    expect(gameplayFacade.getSnapshot().brewing.cauldrons).toHaveLength(2);
 
     expect(gameplayFacade.prepareBrewingRecipe('manaTonic', 1)).toMatchObject({
       ok: true,
@@ -3397,7 +3503,7 @@ describe('GameplayFacade', () => {
 
     advanceToLevel(first.gameplayFacade, 5);
     first.gameplayFacade.syncPlayerLevelManaEffects();
-    first.gameplayFacade.itemsFacade.addItem(1001, 9);
+    first.gameplayFacade.itemsFacade.addItem(1001, 6);
     first.gameplayFacade.itemsFacade.addItem(2001, 2);
     first.gameplayFacade.coinFacade.add(180);
     unlockRecipeResearch(first.gameplayFacade);
@@ -3406,18 +3512,10 @@ describe('GameplayFacade', () => {
       ok: true,
       cauldronNumber: 2,
     });
-    expect(first.gameplayFacade.buyBrewingCauldron()).toMatchObject({
-      ok: true,
-      cauldronNumber: 3,
-    });
 
     expect(first.gameplayFacade.prepareBrewingRecipe('manaTonic', 1)).toMatchObject({
       ok: true,
       cauldronNumber: 2,
-    });
-    expect(first.gameplayFacade.prepareBrewingRecipe('manaTonic', 2)).toMatchObject({
-      ok: true,
-      cauldronNumber: 3,
     });
     first.gameplayFacade.savePersistenceSnapshot();
     first.ecsFacade.destroyWorld();
@@ -3425,10 +3523,9 @@ describe('GameplayFacade', () => {
     const second = createGameplay({ persistenceStorage });
     const snapshot = second.gameplayFacade.getSnapshot();
 
-    expect(snapshot.brewing.unlockedCauldrons).toBe(3);
-    expect(snapshot.brewing.cauldrons).toHaveLength(3);
+    expect(snapshot.brewing.unlockedCauldrons).toBe(2);
+    expect(snapshot.brewing.cauldrons).toHaveLength(2);
     expect(snapshot.brewing.cauldrons[1].ingredients).toHaveLength(3);
-    expect(snapshot.brewing.cauldrons[2].ingredients).toHaveLength(3);
     expect(snapshot.inventory).toContainEqual({
       itemTypeId: 2001,
       key: 'manaTonic',
@@ -3727,13 +3824,12 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().garden.plot).toMatchObject({
       unlockedTiles: 1,
-      maxTiles: 20,
+      maxTiles: 12,
       maxUnlockedTilesByLevel: 2,
       maxUnlockedTilesByProgression: 2,
       tilesPerRow: 4,
       tileCosts: [
-        0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800, 7000, 10000, 14000,
-        19000, 25000, 32000, 40000, 50000, 62000, 76000,
+        0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800, 7000, 10000,
       ],
       nextTileNumber: 2,
       nextTileCost: 25,

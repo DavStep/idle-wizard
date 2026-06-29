@@ -2,8 +2,7 @@ const DEFAULT_GARDEN_BALANCE = {
   garden: {
     initialUnlockedTiles: 1,
     tileCostsCoin: [
-      0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800, 7000, 10000, 14000,
-      19000, 25000, 32000, 40000, 50000, 62000, 76000,
+      0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800, 7000, 10000,
     ],
     tilesPerRow: 4,
     harvestSeconds: 3,

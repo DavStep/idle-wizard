@@ -73,23 +73,23 @@ describe('ResearchBalanceManager', () => {
       amount: 11,
       currency: 'crystal',
     });
-    expect(manager.getCost(automationResearchIds.autoHarvestPlant(20))).toEqual({
-      amount: 20,
+    expect(manager.getCost(automationResearchIds.autoHarvestPlant(12))).toEqual({
+      amount: 12,
       currency: 'crystal',
     });
-    expect(manager.getCost(automationResearchIds.autoBrewCauldron(6))).toEqual({
-      amount: 6,
+    expect(manager.getCost(automationResearchIds.autoBrewCauldron(5))).toEqual({
+      amount: 5,
       currency: 'crystal',
     });
-    expect(manager.getCost(automationResearchIds.autoBottleCauldron(10))).toEqual({
-      amount: 10,
+    expect(manager.getCost(automationResearchIds.autoBottleCauldron(5))).toEqual({
+      amount: 5,
       currency: 'crystal',
     });
-    expect(manager.getCost(advancedResearchIds.plotGrowth(20, 1))).toEqual({
+    expect(manager.getCost(advancedResearchIds.plotGrowth(12, 1))).toEqual({
       amount: 1,
       currency: 'ruby',
     });
-    expect(manager.getCost(advancedResearchIds.cauldronBrewing(10, 1))).toEqual({
+    expect(manager.getCost(advancedResearchIds.cauldronBrewing(5, 1))).toEqual({
       amount: 1,
       currency: 'ruby',
     });
@@ -142,10 +142,10 @@ describe('ResearchBalanceManager', () => {
 
     expect(manager.getCostEmerald('emerald:plotPlanting:1:2')).toBe(1);
     expect(manager.getCostEmerald('emerald:plotPlanting:10:2')).toBe(1);
-    expect(manager.getCostEmerald(emeraldResearchIds.plotPlanting(20, 2))).toBe(1);
+    expect(manager.getCostEmerald(emeraldResearchIds.plotPlanting(12, 2))).toBe(1);
     expect(manager.getCostEmerald('emerald:plotPlanting:10:3')).toBe(2);
     expect(manager.getCostEmerald('emerald:cauldronBrewing:5:2')).toBe(1);
-    expect(manager.getCostEmerald(emeraldResearchIds.cauldronBrewing(10, 2))).toBe(1);
+    expect(manager.getCostEmerald(emeraldResearchIds.cauldronBrewing(5, 2))).toBe(1);
     expect(manager.getCostEmerald('emerald:cauldronBrewing:5:3')).toBe(2);
   });
 
