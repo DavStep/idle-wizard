@@ -5,6 +5,11 @@ import {
 } from '../../shared/notificationBadge.js';
 import { createStatusIcon, STATUS_ICON_LOCK } from '../../shared/statusIcon.js';
 
+const RESEARCH_TAB_ICON_URL = new URL(
+  '../../../assets/icons/icon-research-telescope-tab.png',
+  import.meta.url,
+).href;
+
 export const BOTTOM_PANEL_TABS = [
   { id: 'brewing', label: 'brewing' },
   { id: 'garden', label: 'garden' },
@@ -355,6 +360,11 @@ export class BottomPanelViewManager {
       : `room-bottom-panel__tab room-bottom-panel__${tab.id}-button`;
     button.type = 'button';
 
+    const icon = this.createTabIcon(tab);
+    if (icon) {
+      button.append(icon);
+    }
+
     const label = document.createElement('span');
     label.className = 'room-bottom-panel__tab-label';
     label.textContent = tab.label;
@@ -382,6 +392,27 @@ export class BottomPanelViewManager {
       this.syncTabNotification(tab);
     }
     return button;
+  }
+
+  createTabIcon(tab) {
+    if (tab.id !== 'research' || this.isActionTab(tab)) {
+      return null;
+    }
+
+    const frame = document.createElement('span');
+    frame.className = 'room-bottom-panel__tab-icon-frame';
+    frame.setAttribute('aria-hidden', 'true');
+
+    const image = document.createElement('img');
+    image.className = 'room-bottom-panel__tab-icon';
+    image.src = RESEARCH_TAB_ICON_URL;
+    image.alt = '';
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    image.setAttribute('aria-hidden', 'true');
+
+    frame.append(image);
+    return frame;
   }
 
   createLockIcon() {

@@ -213,6 +213,8 @@
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
 - Dev browser automation exposes `window.cheats` with `VITE_ENABLE_CHEATS=true`, but `window.tutorialCapture` needs its own `VITE_ENABLE_TUTORIAL_CAPTURE=true`; cheats alone do not mount the tutorial capture helper.
 - `npm run tutorial:capture` reuses an already reachable Vite server and deletes old tutorial PNGs before checking capture hooks; confirm `window.tutorialCapture` is mounted before running it against a shared server.
+- In-app Browser screenshots of the full `1080x2170` authored viewport can truncate normal viewport captures; use full-page capture and crop locally when checking bottom chrome.
+- In-app Browser screenshots can omit the transformed bottom-panel overlay even when hit tests and DOM rects see it; verify bottom chrome geometry with live DOM metrics if the capture looks blank.
 - In-app Browser Playwright evaluate can miss main-world `window.cheats`, and `javascript:` bookmarklets are blocked; do not rely on that path for cheat-driven screenshot setup.
 - In-app Browser Playwright evaluate is read-only for DOM/module work; it cannot import page modules or reveal hidden DOM, so use visible UI actions or an HTTP-served local harness for visual QA.
 - `cheats.showPage(page)` unlocks and saves by default; use `{ unlock: false }` only when fallback behavior is acceptable, or avoid it for no-mutation QA on real local saves.

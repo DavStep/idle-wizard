@@ -7,6 +7,59 @@ import { describe, expect, it, vi } from 'vitest';
 import { BottomPanelViewManager } from './BottomPanelViewManager.js';
 
 describe('BottomPanelViewManager', () => {
+  it('renders the research tab telescope icon as decorative button art', () => {
+    const stage = document.createElement('section');
+    const manager = new BottomPanelViewManager({
+      getCurrentPageId: () => 'workshop',
+    });
+
+    manager.mount(stage);
+
+    const researchTab = stage.querySelector(
+      '.room-bottom-panel__tab[data-page-id="research"]',
+    );
+    const marketTab = stage.querySelector(
+      '.room-bottom-panel__tab[data-page-id="shop"]',
+    );
+    const iconFrame = researchTab?.querySelector(
+      '.room-bottom-panel__tab-icon-frame',
+    );
+    const icon = researchTab?.querySelector('.room-bottom-panel__tab-icon');
+
+    expect(iconFrame?.getAttribute('aria-hidden')).toBe('true');
+    expect(icon?.tagName).toBe('IMG');
+    expect(icon?.getAttribute('aria-hidden')).toBe('true');
+    expect(icon?.getAttribute('alt')).toBe('');
+    expect(icon?.getAttribute('src')).toContain('icon-research-telescope-tab.png');
+    expect(researchTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
+      'research',
+    );
+    expect(marketTab?.querySelector('.room-bottom-panel__tab-icon')).toBeNull();
+  });
+
+  it('keeps the research tab icon from changing bottom-tab height', () => {
+    const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
+    const tabRuleIndex = baseCss.indexOf('.room-bottom-panel__tab {');
+    const tabRule = baseCss.slice(tabRuleIndex, baseCss.indexOf('}', tabRuleIndex) + 1);
+    const iconFrameRuleIndex = baseCss.indexOf('.room-bottom-panel__tab-icon-frame {');
+    const iconFrameRule = baseCss.slice(
+      iconFrameRuleIndex,
+      baseCss.indexOf('}', iconFrameRuleIndex) + 1,
+    );
+    const tabScrollClearance = baseCss.match(
+      /--style-page-tab-scroll-clearance:\s*calc\(([\s\S]*?)\);/,
+    )?.[1];
+
+    expect(baseCss).not.toContain('.room-bottom-panel__research-button {');
+    expect(tabRule).toContain('min-height: var(--style-page-tab-button-height);');
+    expect(tabRule).toContain('padding: 1px 2px;');
+    expect(tabScrollClearance).not.toContain('style-page-tab-icon');
+    expect(iconFrameRule).toContain(
+      'bottom: calc(50% - var(--style-page-tab-icon-center-offset));',
+    );
+    expect(iconFrameRule).not.toContain('top:');
+  });
+
   it('applies notification tones to room tabs', () => {
     const stage = document.createElement('section');
     const manager = new BottomPanelViewManager({

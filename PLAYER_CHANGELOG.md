@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.70
+
+- Added telescope art to the Research tab while keeping the bottom navigation height stable.
+
 ## 0.2.69
 
 - Improved Elara's early Garden guidance so she gives clearer next steps for summoning, planting, waiting, and harvesting sage.
