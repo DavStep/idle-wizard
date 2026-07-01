@@ -49,26 +49,28 @@ describe('BottomPanelViewManager', () => {
     expect(workshopIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(workshopIcon?.getAttribute('alt')).toBe('');
     expect(workshopIcon?.getAttribute('src')).toContain(
-      'icon-workshop-house-tab.png',
+      'icon-workshop-house-tab.webp',
     );
     expect(gardenIconFrame?.getAttribute('aria-hidden')).toBe('true');
     expect(gardenIcon?.tagName).toBe('IMG');
     expect(gardenIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(gardenIcon?.getAttribute('alt')).toBe('');
-    expect(gardenIcon?.getAttribute('src')).toContain('icon-garden-plot-tab.png');
+    expect(gardenIcon?.getAttribute('src')).toContain(
+      'icon-garden-plot-tab.webp',
+    );
     expect(researchIconFrame?.getAttribute('aria-hidden')).toBe('true');
     expect(researchIcon?.tagName).toBe('IMG');
     expect(researchIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(researchIcon?.getAttribute('alt')).toBe('');
     expect(researchIcon?.getAttribute('src')).toContain(
-      'icon-research-telescope-tab.png',
+      'icon-research-telescope-tab.webp',
     );
     expect(marketIconFrame?.getAttribute('aria-hidden')).toBe('true');
     expect(marketIcon?.tagName).toBe('IMG');
     expect(marketIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(marketIcon?.getAttribute('alt')).toBe('');
     expect(marketIcon?.getAttribute('src')).toContain(
-      'icon-shop-market-stall-tab.png',
+      'icon-shop-market-stall-tab.webp',
     );
     expect(workshopTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
       'workshop',

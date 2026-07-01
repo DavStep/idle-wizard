@@ -6,19 +6,19 @@ import {
 import { createStatusIcon, STATUS_ICON_LOCK } from '../../shared/statusIcon.js';
 
 const RESEARCH_TAB_ICON_URL = new URL(
-  '../../../assets/icons/icon-research-telescope-tab.png',
+  '../../../assets/icons/icon-research-telescope-tab.webp',
   import.meta.url,
 ).href;
 const GARDEN_TAB_ICON_URL = new URL(
-  '../../../assets/icons/icon-garden-plot-tab.png',
+  '../../../assets/icons/icon-garden-plot-tab.webp',
   import.meta.url,
 ).href;
 const SHOP_TAB_ICON_URL = new URL(
-  '../../../assets/icons/icon-shop-market-stall-tab.png',
+  '../../../assets/icons/icon-shop-market-stall-tab.webp',
   import.meta.url,
 ).href;
 const WORKSHOP_TAB_ICON_URL = new URL(
-  '../../../assets/icons/icon-workshop-house-tab.png',
+  '../../../assets/icons/icon-workshop-house-tab.webp',
   import.meta.url,
 ).href;
 

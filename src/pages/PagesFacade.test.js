@@ -4274,6 +4274,14 @@ describe('PagesFacade', () => {
     expect(setCharacter).not.toHaveBeenCalled();
     expect(playerFacade.getSnapshot().character).toBe('rowan');
     expect(intro?.dataset.scene).toBe('workshop');
+    const saleBoard = stage.querySelector('.first-run-intro__workshop-sale');
+    expect(saleBoard?.textContent).toContain('on sale');
+    expect(saleBoard?.textContent).toContain('x10');
+    expect(
+      saleBoard
+        ?.querySelector('.first-run-intro__workshop-sale-icon')
+        ?.getAttribute('data-asset-atlas-frame'),
+    ).toBe('resource:coin');
 
     await advance();
     expect(stage.querySelector('.first-run-intro__text')?.textContent).toContain(

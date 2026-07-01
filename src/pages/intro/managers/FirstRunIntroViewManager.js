@@ -1,10 +1,10 @@
 import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 
-const CASTLE_RUINS_URL = new URL('../assets/castle-ruins.png', import.meta.url).href;
-const DEMON_DEFEATED_URL = new URL('../assets/demon-defeated.png', import.meta.url).href;
-const MAGE_SILHOUETTES_URL = new URL('../assets/mage-silhouettes.png', import.meta.url).href;
-const REWARD_POUCH_URL = new URL('../assets/reward-pouch.png', import.meta.url).href;
-const WORKSHOP_FOR_SALE_URL = new URL('../assets/workshop-for-sale.png', import.meta.url).href;
+const CASTLE_RUINS_URL = new URL('../assets/castle-ruins.webp', import.meta.url).href;
+const DEMON_DEFEATED_URL = new URL('../assets/demon-defeated.webp', import.meta.url).href;
+const MAGE_SILHOUETTES_URL = new URL('../assets/mage-silhouettes.webp', import.meta.url).href;
+const REWARD_POUCH_URL = new URL('../assets/reward-pouch.webp', import.meta.url).href;
+const WORKSHOP_FOR_SALE_URL = new URL('../assets/workshop-for-sale.webp', import.meta.url).href;
 
 const INTRO_STEP_EXIT_MS = 150;
 

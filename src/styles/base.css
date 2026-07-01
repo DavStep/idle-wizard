@@ -3444,6 +3444,8 @@ body {
   .first-run-intro--step-enter .style-button.first-run-intro__advance,
   .first-run-intro--step-enter .first-run-intro__coin-pile,
   .first-run-intro--step-exit .first-run-intro__coin-pile,
+  .first-run-intro--step-enter .first-run-intro__workshop-sale,
+  .first-run-intro--step-exit .first-run-intro__workshop-sale,
   .first-run-intro[data-scene="defeated"] .first-run-intro__demon--defeated,
   .first-run-intro[data-scene="mages"] .first-run-intro__demon--defeated,
   .first-run-intro[data-scene="mages"] .first-run-intro__mages,
