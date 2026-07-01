@@ -104,6 +104,7 @@ const OBJECTIVE_TARGET_CONTAINER_SELECTORS = [
   '.brewing-page__herb-row',
   '.brewing-page__action-row',
 ];
+const OBJECTIVE_TARGET_SURFACE_SELECTORS = ['.style-dialog'];
 const TARGET_CUE_ANCHOR_SELECTORS = new Map([
   ['top:username', '.room-top-panel__username-label'],
   ['workshop:levelUp', '.workshop-page__level-complete-button'],
@@ -1937,12 +1938,11 @@ export class TutorialHintManager {
       return [];
     }
 
-    const elements = [target];
-    const container = this.getObjectiveTargetContainer(target);
-
-    if (container && container !== target) {
-      elements.push(container);
-    }
+    const elements = [
+      target,
+      this.getObjectiveTargetContainer(target),
+      this.getObjectiveTargetSurface(target),
+    ].filter((element, index, list) => element && list.indexOf(element) === index);
 
     return elements
       .map((element) => this.getSourceAreaRect(element))
@@ -1964,6 +1964,12 @@ export class TutorialHintManager {
     return OBJECTIVE_TARGET_CONTAINER_SELECTORS.map((selector) =>
       target?.closest?.(selector),
     ).find(Boolean);
+  }
+
+  getObjectiveTargetSurface(target) {
+    return OBJECTIVE_TARGET_SURFACE_SELECTORS.map((selector) =>
+      target?.closest?.(selector),
+    ).find((element) => element && isVisibleElement(element));
   }
 
   getObjectiveTargetFlow(target) {

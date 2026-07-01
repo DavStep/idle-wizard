@@ -871,7 +871,8 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
-  it('shows first grow sage guidance immediately', () => {
+  it('shows first grow sage pointer after a short idle delay', () => {
+    let now = 1_000;
     const snapshot = createLevelTwoSageTaskSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 0 }],
       seedSummoning: { canSummon: true },
@@ -913,6 +914,7 @@ describe('TutorialFacade', () => {
           completedStepIds: ['intro-garden'],
         }),
       }),
+      now: () => now,
     });
 
     summonButton.dataset.tutorialId = 'workshop:summonSeed';
@@ -927,6 +929,11 @@ describe('TutorialFacade', () => {
 
     expect(facade.activeStep?.id).toBe('grow-sage');
     expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(true);
+
+    now += TUTORIAL_LESSON_THREE_STUCK_MS;
+    facade.refresh();
+
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
 
     facade.unmount();
@@ -1154,6 +1161,59 @@ describe('TutorialFacade', () => {
     expect(facade.activeStep?.id).toBe('grow-sage');
     expect(lesson?.hidden).toBe(false);
     expect(overlaps(getLessonRect(lesson), getSourceAreaRect(summonButton))).toBe(false);
+
+    facade.unmount();
+  });
+
+  it('places the grow sage lesson away from the open seed picker target', () => {
+    const snapshot = createLevelTwoSageTaskSnapshot();
+    const stage = document.createElement('section');
+    const bottomPanel = document.createElement('section');
+    const popup = document.createElement('section');
+    const dialog = document.createElement('section');
+    const seedRow = document.createElement('div');
+    const seedLabel = document.createElement('span');
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'garden',
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['intro-garden'],
+        }),
+      }),
+    });
+
+    bottomPanel.className = 'room-bottom-panel';
+    popup.className = 'garden-page__seed-popup';
+    dialog.className = 'garden-page__seed-dialog style-dialog';
+    seedRow.className = 'garden-page__seed-row';
+    seedLabel.dataset.tutorialId = 'garden:seed:sageSeed';
+    seedRow.append(seedLabel);
+    dialog.append(seedRow);
+    popup.append(dialog);
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(bottomPanel, toClientRect({ left: 0, top: 575, width: 360, height: 145 }));
+    setClientRect(dialog, toClientRect({ left: 60, top: 315, width: 240, height: 105 }));
+    setClientRect(seedRow, toClientRect({ left: 76, top: 363, width: 208, height: 24 }));
+    setClientRect(seedLabel, toClientRect({ left: 90, top: 364, width: 94, height: 20 }));
+    stage.append(bottomPanel, popup);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
+
+    expect(facade.activeStep?.id).toBe('grow-sage');
+    expect(facade.activeStep?.targetId).toBe('garden:seed:sageSeed');
+    expect(lesson?.hidden).toBe(false);
+    expect(overlaps(getLessonRect(lesson), getSourceAreaRect(dialog))).toBe(false);
+    expect(overlaps(getLessonRect(lesson), getSourceAreaRect(seedRow))).toBe(false);
 
     facade.unmount();
   });

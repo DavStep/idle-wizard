@@ -101,7 +101,7 @@ describe('TopPanelSettingsManager', () => {
     const viewManager = new TopPanelViewManager();
     let playerSnapshot = {
       username: 'Merlin',
-      theme: 'white',
+      theme: 'midnight',
       font: 'lexend',
       colorMode: 'resources',
       character: 'mira',
@@ -185,7 +185,7 @@ describe('TopPanelSettingsManager', () => {
     const viewManager = new TopPanelViewManager();
     const playerSnapshot = {
       username: 'wizard',
-      theme: 'white',
+      theme: 'midnight',
       font: 'lexend',
       colorMode: 'resources',
       character: 'elara',

@@ -1,3 +1,8 @@
+import {
+  DEFAULT_PLAYER_THEME,
+  normalizePlayerTheme,
+} from '../../../player/playerThemes.js';
+
 const PLAYER_PROFILE_QUERY = 'SELECT * FROM own_player_profile';
 const LEGACY_PLAYER_QUERY = 'SELECT * FROM player WHERE identity =';
 
@@ -92,7 +97,7 @@ export class PlayerProfileSubscriptionManager {
   mapProfile(row) {
     return {
       username: row.username,
-      theme: row.theme ?? 'white',
+      theme: normalizePlayerTheme(row.theme ?? DEFAULT_PLAYER_THEME),
       font: row.font ?? 'lexend',
       colorMode: row.colorMode ?? row.color_mode ?? 'resources',
       character: row.character ?? 'elara',

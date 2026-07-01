@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { AppThemeManager } from './AppThemeManager.js';
 
 function createPlayerFacade(
-  initialTheme = 'white',
+  initialTheme = 'midnight',
   initialColorMode = 'resources',
   initialFont = 'lexend',
   initialIconMode = 'icons',
@@ -119,10 +119,10 @@ describe('AppThemeManager', () => {
 
     playerFacade.setTheme('mild-white');
 
-    expect(document.documentElement.dataset.styleTheme).toBe('white');
+    expect(document.documentElement.dataset.styleTheme).toBe('midnight');
 
     manager.unmount();
-    expect(document.documentElement.dataset.styleTheme).toBe('white');
+    expect(document.documentElement.dataset.styleTheme).toBe('midnight');
     expect(document.documentElement.dataset.styleFont).toBe('lexend');
     expect(document.documentElement.dataset.styleColor).toBe('resources');
     expect(document.documentElement.dataset.styleIcons).toBe('icons');

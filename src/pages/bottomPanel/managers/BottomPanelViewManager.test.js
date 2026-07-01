@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { BottomPanelViewManager } from './BottomPanelViewManager.js';
 
 describe('BottomPanelViewManager', () => {
-  it('renders the research tab telescope icon as decorative button art', () => {
+  it('renders bottom tab icons as decorative button art', () => {
     const stage = document.createElement('section');
     const manager = new BottomPanelViewManager({
       getCurrentPageId: () => 'workshop',
@@ -15,26 +15,73 @@ describe('BottomPanelViewManager', () => {
 
     manager.mount(stage);
 
+    const workshopTab = stage.querySelector(
+      '.room-bottom-panel__tab[data-page-id="workshop"]',
+    );
+    const gardenTab = stage.querySelector(
+      '.room-bottom-panel__tab[data-page-id="garden"]',
+    );
     const researchTab = stage.querySelector(
       '.room-bottom-panel__tab[data-page-id="research"]',
     );
     const marketTab = stage.querySelector(
       '.room-bottom-panel__tab[data-page-id="shop"]',
     );
-    const iconFrame = researchTab?.querySelector(
+    const workshopIconFrame = workshopTab?.querySelector(
       '.room-bottom-panel__tab-icon-frame',
     );
-    const icon = researchTab?.querySelector('.room-bottom-panel__tab-icon');
+    const workshopIcon = workshopTab?.querySelector('.room-bottom-panel__tab-icon');
+    const gardenIconFrame = gardenTab?.querySelector(
+      '.room-bottom-panel__tab-icon-frame',
+    );
+    const gardenIcon = gardenTab?.querySelector('.room-bottom-panel__tab-icon');
+    const researchIconFrame = researchTab?.querySelector(
+      '.room-bottom-panel__tab-icon-frame',
+    );
+    const researchIcon = researchTab?.querySelector('.room-bottom-panel__tab-icon');
+    const marketIconFrame = marketTab?.querySelector(
+      '.room-bottom-panel__tab-icon-frame',
+    );
+    const marketIcon = marketTab?.querySelector('.room-bottom-panel__tab-icon');
 
-    expect(iconFrame?.getAttribute('aria-hidden')).toBe('true');
-    expect(icon?.tagName).toBe('IMG');
-    expect(icon?.getAttribute('aria-hidden')).toBe('true');
-    expect(icon?.getAttribute('alt')).toBe('');
-    expect(icon?.getAttribute('src')).toContain('icon-research-telescope-tab.png');
+    expect(workshopIconFrame?.getAttribute('aria-hidden')).toBe('true');
+    expect(workshopIcon?.tagName).toBe('IMG');
+    expect(workshopIcon?.getAttribute('aria-hidden')).toBe('true');
+    expect(workshopIcon?.getAttribute('alt')).toBe('');
+    expect(workshopIcon?.getAttribute('src')).toContain(
+      'icon-workshop-house-tab.png',
+    );
+    expect(gardenIconFrame?.getAttribute('aria-hidden')).toBe('true');
+    expect(gardenIcon?.tagName).toBe('IMG');
+    expect(gardenIcon?.getAttribute('aria-hidden')).toBe('true');
+    expect(gardenIcon?.getAttribute('alt')).toBe('');
+    expect(gardenIcon?.getAttribute('src')).toContain('icon-garden-plot-tab.png');
+    expect(researchIconFrame?.getAttribute('aria-hidden')).toBe('true');
+    expect(researchIcon?.tagName).toBe('IMG');
+    expect(researchIcon?.getAttribute('aria-hidden')).toBe('true');
+    expect(researchIcon?.getAttribute('alt')).toBe('');
+    expect(researchIcon?.getAttribute('src')).toContain(
+      'icon-research-telescope-tab.png',
+    );
+    expect(marketIconFrame?.getAttribute('aria-hidden')).toBe('true');
+    expect(marketIcon?.tagName).toBe('IMG');
+    expect(marketIcon?.getAttribute('aria-hidden')).toBe('true');
+    expect(marketIcon?.getAttribute('alt')).toBe('');
+    expect(marketIcon?.getAttribute('src')).toContain(
+      'icon-shop-market-stall-tab.png',
+    );
+    expect(workshopTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
+      'workshop',
+    );
+    expect(gardenTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
+      'garden',
+    );
     expect(researchTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
       'research',
     );
-    expect(marketTab?.querySelector('.room-bottom-panel__tab-icon')).toBeNull();
+    expect(marketTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
+      'market',
+    );
   });
 
   it('keeps the research tab icon from changing bottom-tab height', () => {
@@ -53,10 +100,12 @@ describe('BottomPanelViewManager', () => {
     expect(baseCss).not.toContain('.room-bottom-panel__research-button {');
     expect(tabRule).toContain('min-height: var(--style-page-tab-button-height);');
     expect(tabRule).toContain('padding: 1px 2px;');
+    expect(baseCss).toContain('--style-page-tab-icon-size: calc(38px * 1.3);');
     expect(tabScrollClearance).not.toContain('style-page-tab-icon');
     expect(iconFrameRule).toContain(
       'bottom: calc(50% - var(--style-page-tab-icon-center-offset));',
     );
+    expect(iconFrameRule).toContain('translate: -50% 10%;');
     expect(iconFrameRule).not.toContain('top:');
   });
 

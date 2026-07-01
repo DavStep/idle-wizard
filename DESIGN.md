@@ -2,12 +2,12 @@
 name: Idle Wizard
 description: Minimal text-first mobile idle game with sparse bordered room panels.
 colors:
-  room-bg: "#d6d6d6"
-  room-surface: "#d6d6d6"
-  ink: "#1a1a1a"
-  muted: "#5e5e5e"
-  stroke: "#5e5e5e"
-  disabled: "#969696"
+  room-bg: "#1c1e26"
+  room-surface: "#17191f"
+  ink: "#d4d4d4"
+  muted: "#a6a6a6"
+  stroke: "#3f465c"
+  disabled: "#6a6a6a"
   active-surface: "{colors.room-surface}"
   notification-red: "#c1121f"
   notification-orange: "#d66a00"
@@ -92,7 +92,7 @@ The system rejects decorated fantasy RPG UI, colorful idle dashboards, modern ro
 
 **Key Characteristics:**
 - Fixed authored portrait room surface with scaled source UI.
-- Black or near-black text on plain light surfaces by default.
+- Light text on plain midnight surfaces by default.
 - Compact bordered boxes, embedded border titles, and tab labels on borders.
 - Lowercase player-facing labels.
 - Motion only for room entry, popup entry, overlay fade, and compact state feedback.
@@ -104,7 +104,7 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 ### Primary
 - **Ledger Ink:** Primary text and progress fills. It carries labels, rows, buttons, and strong values.
 
-- **Ledger Stroke:** Primary white-theme strokes. It uses the game gray so borders frame the ledger without competing with black text.
+- **Ledger Stroke:** Primary theme strokes. It frames the ledger without competing with text.
 
 ### Secondary
 - **Notification Red:** Normal-priority notification dots only.
@@ -119,7 +119,7 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 
 ### Named Rules
 
-**The Quiet Surface Rule.** Use black text, gray state colors, and white or gray surfaces for chrome and layout surfaces. Resource words and amounts can use resource colors, but potion item names inherit normal text color.
+**The Quiet Surface Rule.** Use high-contrast text, gray state colors, and quiet midnight surfaces for chrome and layout surfaces. Resource words and amounts can use resource colors, but potion item names inherit normal text color.
 
 **The Color Has a Job Rule.** Red and orange mean notification priority. Resource colors identify non-potion resource words and amounts; they must disappear into disabled state when a row is locked or unavailable.
 
@@ -145,7 +145,7 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 
 ## 4. Elevation
 
-Ordinary room UI is flat. In the white theme, depth is communicated by 1px game-gray borders, title placement, and popup layering; non-white themes use 2px ordinary borders for stronger themed strokes. Only dialogs, overlays, and tooltips use shadow, and those shadows are structural.
+Ordinary room UI is flat. Available themes use 2px ordinary borders for clear themed strokes. Depth is communicated by borders, title placement, and popup layering. Only dialogs, overlays, and tooltips use shadow, and those shadows are structural.
 
 ### Shadow Vocabulary
 - **Dialog Shadow** (`5px 5px 5px var(--style-muted)`): Popup/dialog panels only.
@@ -171,7 +171,7 @@ Ordinary room UI is flat. In the white theme, depth is communicated by 1px game-
 - **Corner Style:** Square corners (0).
 - **Background:** Room surface.
 - **Shadow Strategy:** No shadow for ordinary panels.
-- **Border:** 1px game-gray border in the white theme; 2px ordinary border in non-white themes.
+- **Border:** 2px ordinary border in selectable themes.
 - **Internal Padding:** Compact source padding (5px 10px).
 - **Title:** Embedded on the top border over the same surface, bold 13px.
 
@@ -198,7 +198,7 @@ Ordinary room UI is flat. In the white theme, depth is communicated by 1px game-
 ### Do:
 - **Do** reuse `docs/ui-patterns.md` before creating any new row, box, popup, tab, or border-label treatment.
 - **Do** keep source typography at 13px body, 14px dialog title, and 11px border label.
-- **Do** use 1px game-gray ordinary borders in the white theme, 2px ordinary borders in non-white themes, and 2px borders for dialogs and popup tabs.
+- **Do** use 2px ordinary borders in selectable themes and 2px borders for dialogs and popup tabs.
 - **Do** keep row actions inline and right-aligned with tabular numerals.
 - **Do** support reduced motion by removing nonessential transitions and animations.
 

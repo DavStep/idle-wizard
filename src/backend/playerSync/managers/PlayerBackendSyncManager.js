@@ -1,3 +1,8 @@
+import {
+  DEFAULT_PLAYER_THEME,
+  normalizePlayerTheme,
+} from '../../../player/playerThemes.js';
+
 export class PlayerBackendSyncManager {
   constructor() {
     this.connection = null;
@@ -166,7 +171,7 @@ export class PlayerBackendSyncManager {
   readClientProfile(snapshot = {}) {
     return {
       username: snapshot?.username,
-      theme: snapshot?.theme ?? 'white',
+      theme: normalizePlayerTheme(snapshot?.theme ?? DEFAULT_PLAYER_THEME),
       font: snapshot?.font ?? 'lexend',
       colorMode: snapshot?.colorMode ?? 'resources',
       character: snapshot?.character ?? 'elara',
@@ -177,7 +182,7 @@ export class PlayerBackendSyncManager {
   readServerProfile(profile = {}) {
     return {
       username: profile?.username,
-      theme: profile?.theme ?? 'white',
+      theme: normalizePlayerTheme(profile?.theme ?? DEFAULT_PLAYER_THEME),
       font: profile?.font ?? 'lexend',
       colorMode: profile?.colorMode ?? 'resources',
       character: profile?.character ?? 'elara',

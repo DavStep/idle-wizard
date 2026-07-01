@@ -9,6 +9,25 @@ const RESEARCH_TAB_ICON_URL = new URL(
   '../../../assets/icons/icon-research-telescope-tab.png',
   import.meta.url,
 ).href;
+const GARDEN_TAB_ICON_URL = new URL(
+  '../../../assets/icons/icon-garden-plot-tab.png',
+  import.meta.url,
+).href;
+const SHOP_TAB_ICON_URL = new URL(
+  '../../../assets/icons/icon-shop-market-stall-tab.png',
+  import.meta.url,
+).href;
+const WORKSHOP_TAB_ICON_URL = new URL(
+  '../../../assets/icons/icon-workshop-house-tab.png',
+  import.meta.url,
+).href;
+
+const TAB_ICON_URL_BY_ID = new Map([
+  ['garden', GARDEN_TAB_ICON_URL],
+  ['research', RESEARCH_TAB_ICON_URL],
+  ['shop', SHOP_TAB_ICON_URL],
+  ['workshop', WORKSHOP_TAB_ICON_URL],
+]);
 
 export const BOTTOM_PANEL_TABS = [
   { id: 'brewing', label: 'brewing' },
@@ -395,7 +414,9 @@ export class BottomPanelViewManager {
   }
 
   createTabIcon(tab) {
-    if (tab.id !== 'research' || this.isActionTab(tab)) {
+    const iconUrl = TAB_ICON_URL_BY_ID.get(tab.id);
+
+    if (!iconUrl || this.isActionTab(tab)) {
       return null;
     }
 
@@ -405,7 +426,7 @@ export class BottomPanelViewManager {
 
     const image = document.createElement('img');
     image.className = 'room-bottom-panel__tab-icon';
-    image.src = RESEARCH_TAB_ICON_URL;
+    image.src = iconUrl;
     image.alt = '';
     image.loading = 'lazy';
     image.decoding = 'async';

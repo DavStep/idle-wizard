@@ -6,15 +6,18 @@ import { getPrestigeResetLevel } from '../gameplay/GameplayFacade.js';
 import packageJson from '../../package.json';
 import { PlayerFacade } from '../player/PlayerFacade.js';
 import { PagesFacade } from './PagesFacade.js';
+import { FIRST_RUN_INTRO_STORAGE_KEY } from './intro/managers/FirstRunIntroProgressManager.js';
 import { setNotificationVisibilityPolicy } from './shared/notificationBadge.js';
 import { TUTORIAL_STORAGE_KEY } from './tutorial/managers/TutorialProgressManager.js';
 import { TUTORIAL_STEP_IDS } from './tutorial/managers/TutorialStepManager.js';
 import { WORKSHOP_CHAT_PENDING_STORAGE_KEY } from './workshop/managers/WorkshopChatPendingMessageManager.js';
 
 afterEach(() => {
+  vi.useRealTimers();
   setNotificationVisibilityPolicy(null);
   try {
     window.localStorage?.removeItem?.(WORKSHOP_CHAT_PENDING_STORAGE_KEY);
+    window.localStorage?.removeItem?.(FIRST_RUN_INTRO_STORAGE_KEY);
   } catch {
     // Ignore unavailable storage in jsdom edge cases.
   }
@@ -106,12 +109,12 @@ function createGameplayFacadeFake() {
     },
     visualSettings: {
       costsCrystal: {
-        theme: { white: 0, black: 0, midnight: 0, witchcraft: 0 },
+        theme: { black: 0, midnight: 0, witchcraft: 0 },
         font: { lexend: 0, 'comic-sans-mono': 0 },
         progressBar: { regular: 0, gradient: 0 },
       },
       researched: {
-        theme: { white: true, black: false, midnight: false, witchcraft: false },
+        theme: { black: false, midnight: true, witchcraft: false },
         font: {
           lexend: true,
           'comic-sans-mono': false,
@@ -2832,7 +2835,7 @@ function clickNpcMarketStandLabel(stage, index = 0) {
 
 function createPlayerFacadeFake(
   initialUsername = 'wizard',
-  initialTheme = 'white',
+  initialTheme = 'midnight',
   {
     shouldPromptForUsername = false,
     initialColorMode = 'resources',
@@ -2898,14 +2901,15 @@ function createPlayerFacadeFake(
           'idle witch craft',
         ].includes(theme)
           ? theme
-              .replace('mild-white', 'white')
+              .replace('mild-white', 'midnight')
+              .replace('white', 'midnight')
               .replace('mild-black', 'black')
               .replace('dark-gray', 'black')
               .replace('night-black', 'black')
               .replace('vs-code-midnight', 'midnight')
               .replace('vscode-midnight', 'midnight')
               .replace('idle witch craft', 'witchcraft')
-          : 'white',
+          : 'midnight',
       };
 
       publish();
@@ -4188,6 +4192,132 @@ describe('PagesFacade', () => {
     expect(layer?.querySelector('.tutorial-layer__step-label')).not.toBeNull();
     expect(layer?.querySelector('.tutorial-layer__lesson')).not.toBeNull();
     expect(layer?.querySelector('.tutorial-layer__skip')).toBeNull();
+  });
+
+  it('plays first-run intro before Elara and resumes FTUE after the workshop beat', async () => {
+    vi.useFakeTimers();
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const playerFacade = createPlayerFacadeFake('wizard', 'white', {
+      initialCharacter: 'rowan',
+    });
+    const setCharacter = vi.spyOn(playerFacade, 'setCharacter');
+    const firstRunIntroStorage = createMemoryStorage({
+      [FIRST_RUN_INTRO_STORAGE_KEY]: JSON.stringify({ state: 'pending' }),
+    });
+    const tutorialStorage = createMemoryStorage();
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade,
+      tutorialStorage,
+      firstRunIntroStorage,
+    });
+
+    pagesFacade.mount(stage);
+
+    const intro = stage.querySelector('.first-run-intro');
+    const advance = async ({ completes = false } = {}) => {
+      const advanceButton = stage.querySelector('.first-run-intro__advance');
+      const previousMotionStep = Number(intro?.dataset.motionStep ?? 0);
+      stage
+        .querySelector('.first-run-intro__advance')
+        ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      expect(advanceButton?.disabled).toBe(true);
+      expect(intro?.classList.contains('first-run-intro--step-exit')).toBe(true);
+      await vi.advanceTimersByTimeAsync(170);
+      if (completes) {
+        expect(intro?.hidden).toBe(true);
+        return;
+      }
+      expect(Number(intro?.dataset.motionStep ?? 0)).toBeGreaterThan(
+        previousMotionStep,
+      );
+      expect(intro?.classList.contains('first-run-intro--step-enter')).toBe(true);
+    };
+
+    expect(intro).not.toBeNull();
+    expect(intro?.hidden).toBe(false);
+    expect(intro?.dataset.scene).toBe('castle');
+    expect(intro?.dataset.motionStep).toBe('1');
+    expect(stage.querySelector('.tutorial-layer')).toBeNull();
+
+    await advance();
+    expect(intro?.dataset.scene).toBe('defeated');
+
+    await advance();
+    expect(intro?.dataset.scene).toBe('mages');
+
+    await advance();
+    expect(intro?.dataset.scene).toBe('reward');
+    expect(stage.querySelector('.first-run-intro__coin-badge')).toBeNull();
+    const rewardCoins = Array.from(
+      stage.querySelectorAll('.first-run-intro__coin-pile-icon'),
+    );
+    expect(rewardCoins).toHaveLength(10);
+    expect(
+      rewardCoins.map((coin) => coin.getAttribute('data-asset-atlas-frame')),
+    ).toEqual(Array(10).fill('resource:coin'));
+
+    await advance();
+    expect(stage.querySelector('.first-run-intro__text')?.textContent).toContain(
+      'better use',
+    );
+
+    await advance();
+    const nameInput = stage.querySelector('.first-run-intro__name-input');
+    expect(nameInput).not.toBeNull();
+    nameInput.value = 'Mira';
+    await advance();
+    expect(playerFacade.getSnapshot().username).toBe('Mira');
+    expect(stage.querySelector('.first-run-intro__avatar')).toBeNull();
+    expect(stage.querySelector('.first-run-intro [role="radiogroup"]')).toBeNull();
+    expect(setCharacter).not.toHaveBeenCalled();
+    expect(playerFacade.getSnapshot().character).toBe('rowan');
+    expect(intro?.dataset.scene).toBe('workshop');
+
+    await advance();
+    expect(stage.querySelector('.first-run-intro__text')?.textContent).toContain(
+      '10 coin',
+    );
+
+    await advance();
+    expect(stage.querySelector('.first-run-intro__text')?.textContent).toContain(
+      'door opens',
+    );
+
+    await advance({ completes: true });
+
+    expect(intro?.hidden).toBe(true);
+    expect(JSON.parse(firstRunIntroStorage.getItem(FIRST_RUN_INTRO_STORAGE_KEY))).toEqual({
+      state: 'complete',
+    });
+    expect(stage.querySelector('.tutorial-layer')).not.toBeNull();
+    pagesFacade.tutorialFacade.refresh();
+    expect(setCharacter).not.toHaveBeenCalled();
+    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-welcome');
+  });
+
+  it('completes stale pending first-run intro state without showing it on advanced saves', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    gameplayFacade.getSnapshot().tasks.currentLevel = 2;
+    const firstRunIntroStorage = createMemoryStorage({
+      [FIRST_RUN_INTRO_STORAGE_KEY]: JSON.stringify({ state: 'pending' }),
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createMemoryStorage(),
+      firstRunIntroStorage,
+    });
+
+    pagesFacade.mount(stage);
+
+    expect(stage.querySelector('.first-run-intro')?.hidden).toBe(true);
+    expect(JSON.parse(firstRunIntroStorage.getItem(FIRST_RUN_INTRO_STORAGE_KEY))).toEqual({
+      state: 'complete',
+    });
+    expect(stage.querySelector('.tutorial-layer')).not.toBeNull();
   });
 
   it('can reset stale FTUE progress for a fresh gameplay save', () => {
@@ -5962,7 +6092,7 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__theme-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['white', 'black', 'midnight', 'witchcraft']);
+    ).toEqual(['black', 'midnight', 'witchcraft']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__font-button')].map(
         (button) => button.textContent,
@@ -6055,9 +6185,8 @@ describe('PagesFacade', () => {
         (price) => price.textContent,
       ),
     ).toEqual([
+      'free',
       'researched',
-      'free',
-      'free',
       'free',
       'researched',
       'free',
@@ -6316,7 +6445,7 @@ describe('PagesFacade', () => {
       ?.closest('.room-top-panel__visual-option')
       ?.querySelector('.room-top-panel__visual-option-price');
 
-    expect(whiteButton.getAttribute('aria-checked')).toBe('true');
+    expect(whiteButton).toBeNull();
     expect(mildWhiteButton).toBeNull();
     expect(mildBlackButton).toBeNull();
     expect(darkGrayButton).toBeNull();
@@ -6324,12 +6453,13 @@ describe('PagesFacade', () => {
     expect(midnightButton.disabled).toBe(false);
     expect(witchcraftButton.disabled).toBe(false);
     expect(blackResearchButton?.textContent).toBe('free');
-    expect(midnightResearchButton?.textContent).toBe('free');
+    expect(midnightResearchButton?.textContent).toBe('researched');
     expect(witchcraftResearchButton?.textContent).toBe('free');
+    expect(midnightButton.getAttribute('aria-checked')).toBe('true');
 
     blackButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(playerFacade.getSnapshot().theme).toBe('white');
+    expect(playerFacade.getSnapshot().theme).toBe('midnight');
     expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.black).toBe(false);
     expect(stage.querySelector('.room-top-panel__visual-status')?.textContent).toBe(
       'research first',
@@ -6337,7 +6467,7 @@ describe('PagesFacade', () => {
 
     blackResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(playerFacade.getSnapshot().theme).toBe('white');
+    expect(playerFacade.getSnapshot().theme).toBe('midnight');
     expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.black).toBe(true);
     expect(blackResearchButton?.textContent).toBe('researched');
     expect(blackButton.getAttribute('aria-checked')).toBe('false');
@@ -6346,7 +6476,7 @@ describe('PagesFacade', () => {
 
     expect(playerFacade.getSnapshot().theme).toBe('black');
     expect(blackButton.getAttribute('aria-checked')).toBe('true');
-    expect(whiteButton.getAttribute('aria-checked')).toBe('false');
+    expect(midnightButton.getAttribute('aria-checked')).toBe('false');
 
     const midnightPointerDown = new window.Event('pointerdown', {
       bubbles: true,
@@ -6356,15 +6486,9 @@ describe('PagesFacade', () => {
     midnightButton.dispatchEvent(midnightPointerDown);
 
     expect(playerFacade.getSnapshot().theme).toBe('black');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.midnight).toBe(false);
+    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.midnight).toBe(true);
     expect(midnightPointerDown.defaultPrevented).toBe(false);
     expect(midnightButton.getAttribute('aria-checked')).toBe('false');
-
-    midnightResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().theme).toBe('black');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.midnight).toBe(true);
-    expect(midnightResearchButton?.textContent).toBe('researched');
 
     const midnightSelectPointerDown = new window.Event('pointerdown', {
       bubbles: true,

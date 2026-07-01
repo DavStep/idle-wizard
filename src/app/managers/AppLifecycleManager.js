@@ -247,6 +247,7 @@ export class AppLifecycleManager {
 
       if (!save) {
         this.clearPendingAccountLinkSave();
+        this.pagesFacade.resetFirstRunIntroProgress?.();
         this.pagesFacade.resetTutorialProgress?.();
         this.loadGameplaySave(null, { persistLoaded: true });
         return;
@@ -293,6 +294,7 @@ export class AppLifecycleManager {
     }
 
     if (!save && !accountLinkSave) {
+      this.pagesFacade.resetFirstRunIntroProgress?.();
       this.pagesFacade.resetTutorialProgress?.();
     }
 

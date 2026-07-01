@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.71
+
+- Added a first-run story intro before Elara's lessons so new wizards get the workshop setup before play begins.
+- Made Midnight the default visual theme and removed the old white theme from the settings choices.
+- Added more bottom navigation art for Workshop, Garden, Research, and Market while keeping the room tabs readable.
+- Fixed fresh-start and account-link flows so the intro and tutorial reset together for new empty saves.
+
 ## 0.2.70
 
 - Added telescope art to the Research tab while keeping the bottom navigation height stable.

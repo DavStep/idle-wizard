@@ -1783,7 +1783,7 @@ describe('GameplayFacade', () => {
           configKey: 'visualSettings',
           configJson: JSON.stringify({
             costsCrystal: {
-              theme: { white: 0, black: 2, midnight: 0, witchcraft: 0 },
+              theme: { black: 2, midnight: 0, witchcraft: 0 },
               font: { lexend: 0, 'comic-sans-mono': 0 },
               progressBar: { regular: 0, gradient: 0 },
             },
@@ -1794,7 +1794,7 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().visualSettings.costsCrystal.theme.black).toBe(2);
     expect(gameplayFacade.getSnapshot().visualSettings.researched).toMatchObject({
-      theme: { white: true, black: false, midnight: false, witchcraft: false },
+      theme: { black: false, midnight: true, witchcraft: false },
       font: {
         lexend: true,
         'comic-sans-mono': false,

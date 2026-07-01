@@ -11,7 +11,7 @@ import {
 const DEFAULT_USERNAME = 'wizard';
 const DEFAULT_PLAYER_LEVEL = 1;
 const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
-const DEFAULT_PLAYER_THEME = 'white';
+const DEFAULT_PLAYER_THEME = 'midnight';
 const DEFAULT_PLAYER_FONT = 'lexend';
 const DEFAULT_PLAYER_COLOR_MODE = 'resources';
 const DEFAULT_PLAYER_CHARACTER = 'elara';
@@ -169,7 +169,7 @@ const MAINTENANCE_MODES = new Set([
   MAINTENANCE_MODE_DRAIN,
   MAINTENANCE_MODE_LOCKED,
 ]);
-const PLAYER_THEMES = new Set(['white', 'black', 'midnight', 'witchcraft']);
+const PLAYER_THEMES = new Set(['black', 'midnight', 'witchcraft']);
 const TRADE_ALLIANCE_TAG_COLORS = new Set([
   'ink',
   'red',
@@ -183,7 +183,7 @@ const TRADE_ALLIANCE_TAG_COLORS = new Set([
   'slate',
 ]);
 const PLAYER_THEME_ALIASES = new Map([
-  ['mild-white', 'white'],
+  ['mild-white', 'midnight'],
   ['mild-black', 'black'],
   ['dark-gray', 'black'],
   ['night-black', 'black'],
@@ -4734,7 +4734,6 @@ const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
 const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
   costsCrystal: {
     theme: {
-      white: 0,
       black: 0,
       midnight: 0,
       witchcraft: 0,

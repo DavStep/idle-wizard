@@ -78,13 +78,13 @@ describe('TopPanelViewManager', () => {
       [...stage.querySelectorAll('.room-top-panel__theme-preview')].map(
         (preview) => preview.dataset.previewTheme,
       ),
-    ).toEqual(['white', 'black', 'midnight', 'witchcraft']);
+    ).toEqual(['black', 'midnight', 'witchcraft']);
 
     expect(
       [...stage.querySelectorAll('.room-top-panel__theme-preview-box')].map(
         (box) => box.querySelector('.room-top-panel__theme-preview-title')?.textContent,
       ),
-    ).toEqual(['sample', 'sample', 'sample', 'sample']);
+    ).toEqual(['sample', 'sample', 'sample']);
 
     expect(
       [...stage.querySelectorAll('.room-top-panel__progress-preview')].map(

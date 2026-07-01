@@ -18,7 +18,7 @@ function findRuleBody(pattern, predicate) {
 }
 
 describe('base styles', () => {
-  it('uses stroked box and dialog titles only in the white theme', () => {
+  it('uses stroked box and dialog titles only in the root fallback', () => {
     const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
     const nonWhiteThemeRule = getRuleBody(
       /:root\[data-style-theme="black"\],\s*:root\[data-style-theme="midnight"\],\s*:root\[data-style-theme="witchcraft"\]\s*\{(?<body>[^}]*)\}/,
@@ -43,11 +43,15 @@ describe('base styles', () => {
     expect(titleRule).toContain(
       '-webkit-text-stroke: var(--style-title-text-stroke-width)',
     );
+    expect(titleRule).toContain(
+      'padding: 0 var(--style-box-border-label-padding-x);',
+    );
     expect(titleRule).toContain('var(--style-title-text-stroke-color);');
     expect(titleRule).toContain('paint-order: stroke fill;');
     expect(titleRule).toContain(
       'text-shadow: var(--style-title-text-stroke-shadow);',
     );
+    expect(titleRule).toContain('background: var(--style-surface);');
     expect(dialogTitleRule).toContain(
       'font-size: var(--style-dialog-title-font-size);',
     );
@@ -87,6 +91,18 @@ describe('base styles', () => {
     );
     expect(nestedButtonFrameRule).toBeDefined();
     expect(globalButtonFrameRule).toBeUndefined();
+  });
+
+  it('keeps midnight 9-slice transparent corners clear of rectangular backing fills', () => {
+    const sharedFrameRule = getRuleBody(
+      /:root\[data-style-theme="midnight"\]\s*:where\(\s*\.style-panel,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
+    );
+    const dialogBackingRule = getRuleBody(
+      /:root\[data-style-theme="midnight"\]\s*\.style-dialog::before\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(sharedFrameRule).toContain('background-clip: padding-box;');
+    expect(dialogBackingRule).toContain('background: transparent;');
   });
 
   it('keeps Workshop level reward text left and point values right under a centered title', () => {

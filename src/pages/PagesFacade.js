@@ -3,6 +3,7 @@ import { AllianceInfoDialogFacade } from './allianceInfo/AllianceInfoDialogFacad
 import { PageAnnouncementFacade } from './announcements/PageAnnouncementFacade.js';
 import { GardenPageFacade } from './garden/GardenPageFacade.js';
 import { GuildPageFacade } from './guild/GuildPageFacade.js';
+import { FirstRunIntroFacade } from './intro/FirstRunIntroFacade.js';
 import { ShopPageFacade } from './shop/ShopPageFacade.js';
 import { ResearchPageFacade } from './research/ResearchPageFacade.js';
 import { PrestigePageFacade } from './prestige/PrestigePageFacade.js';
@@ -50,6 +51,7 @@ export class PagesFacade {
     uiClickSoundFacade,
     pixiProgressOverlayManager = null,
     tutorialStorage,
+    firstRunIntroStorage,
     defaultPageId = 'workshop',
   } = {}) {
     this.stage = null;
@@ -119,6 +121,11 @@ export class PagesFacade {
       tradeAllianceFacade,
       onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
     });
+    this.firstRunIntroFacade = new FirstRunIntroFacade({
+      playerFacade,
+      storage: firstRunIntroStorage,
+    });
+    this.tutorialMounted = false;
     this.tutorialFacade = FTUE_ENABLED
       ? new TutorialFacade({
           gameplayFacade,
@@ -215,7 +222,7 @@ export class PagesFacade {
       this.syncPageUnlocks(this.getGameplaySnapshot());
       this.pageUnlockUnsubscribe =
         this.gameplayFacade?.subscribe?.((snapshot) => this.syncPageUnlocks(snapshot)) ?? null;
-      this.tutorialFacade?.mount(stage);
+      this.mountFirstRunIntro(stage);
       this.scrollCueManager.mount(stage);
     });
   }
@@ -224,6 +231,8 @@ export class PagesFacade {
     this.applyTutorialNotificationVisibilityPolicy(null);
     this.scrollCueManager.unmount();
     this.tutorialFacade?.unmount();
+    this.tutorialMounted = false;
+    this.firstRunIntroFacade.unmount();
     this.pageUnlockUnsubscribe?.();
     this.pageUnlockUnsubscribe = null;
     this.releaseNpcMarketPrices?.();
@@ -250,7 +259,7 @@ export class PagesFacade {
       this.syncTopPanelResourceContext();
       this.syncNpcMarketPriceSubscription();
     });
-    this.tutorialFacade?.scheduleRefresh();
+    this.scheduleTutorialRefresh();
   }
 
   showFromSwipe(pageId) {
@@ -264,6 +273,10 @@ export class PagesFacade {
 
   resetTutorialProgress() {
     this.tutorialFacade?.resetProgress();
+  }
+
+  resetFirstRunIntroProgress() {
+    this.firstRunIntroFacade?.resetProgress();
   }
 
   listTutorialStages() {
@@ -384,6 +397,36 @@ export class PagesFacade {
     return this.currentPageManager.getCurrentPageId();
   }
 
+  mountFirstRunIntro(stage) {
+    this.firstRunIntroFacade.mount(stage);
+    const snapshot = this.getGameplaySnapshot();
+    const shown = this.firstRunIntroFacade.show({
+      snapshot,
+      onComplete: ({ shown: introWasShown } = {}) => {
+        this.mountTutorial({
+          skipPurchaseHouse: introWasShown,
+        });
+      },
+    });
+
+    if (!shown) {
+      this.mountTutorial();
+    }
+  }
+
+  mountTutorial({ skipPurchaseHouse = false } = {}) {
+    if (this.tutorialMounted || !this.tutorialFacade || !this.stage) {
+      return;
+    }
+
+    this.tutorialFacade.mount(this.stage);
+    this.tutorialMounted = true;
+
+    if (skipPurchaseHouse) {
+      this.tutorialFacade.setStage?.('intro-welcome');
+    }
+  }
+
   setResearchTabId(tabId) {
     this.researchTabId = typeof tabId === 'string' ? tabId : 'regular';
     this.syncTopPanelResourceContext();
@@ -414,6 +457,14 @@ export class PagesFacade {
       this.syncTopPanelResourceContext();
     });
     this.syncNpcMarketPriceSubscription();
+    this.scheduleTutorialRefresh();
+  }
+
+  scheduleTutorialRefresh() {
+    if (!this.tutorialMounted) {
+      return;
+    }
+
     this.tutorialFacade?.scheduleRefresh();
   }
 

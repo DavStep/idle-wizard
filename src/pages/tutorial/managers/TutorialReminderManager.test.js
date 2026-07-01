@@ -158,18 +158,18 @@ describe('TutorialReminderManager', () => {
       id: 'grow-sage',
       targetId: 'workshop:summonSeed',
       text: 'summon seed',
-      reminderMs: 3500,
+      reminderMs: 2000,
     };
 
     expect(manager.getAttentionState({ step: prompt })).toEqual({
       shouldNotify: false,
-      nextRefreshAt: 3500,
+      nextRefreshAt: 2000,
     });
 
-    clock.tick(3499);
+    clock.tick(1999);
     expect(manager.getAttentionState({ step: prompt })).toEqual({
       shouldNotify: false,
-      nextRefreshAt: 3500,
+      nextRefreshAt: 2000,
     });
 
     clock.tick(1);

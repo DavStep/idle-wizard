@@ -7,7 +7,7 @@ function createPlayerFacade(username) {
   let snapshot = {
     username,
     usernamePromptSeen: username !== 'wizard',
-    theme: 'white',
+    theme: 'midnight',
     font: 'lexend',
     colorMode: 'resources',
     character: 'elara',
@@ -78,7 +78,7 @@ describe('PlayerBackendSyncManager', () => {
 
     expect(setPlayerProfile).toHaveBeenCalledWith({
       username: 'Merlin',
-      theme: 'white',
+      theme: 'midnight',
       font: 'lexend',
       colorMode: 'resources',
       character: 'elara',
@@ -290,12 +290,12 @@ describe('PlayerBackendSyncManager', () => {
     });
     setPlayerProfile.mockClear();
 
-    playerFacade.setTheme('midnight');
+    playerFacade.setTheme('black');
 
     expect(setPlayerProfile).toHaveBeenCalledTimes(1);
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'wizard',
-      theme: 'midnight',
+      theme: 'black',
       font: 'lexend',
       colorMode: 'resources',
       character: 'mira',
@@ -312,7 +312,7 @@ describe('PlayerBackendSyncManager', () => {
     });
 
     expect(playerFacade.getSnapshot()).toMatchObject({
-      theme: 'midnight',
+      theme: 'black',
       font: 'lexend',
       character: 'mira',
     });

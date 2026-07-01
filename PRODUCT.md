@@ -14,7 +14,7 @@ Idle Wizard is a minimal text-first mobile idle game. It gives the player a set 
 
 ## Brand Personality
 
-Sparse, quiet, readable. The game should feel like a restrained text adventure: direct labels, small panels, black text, white surfaces, and almost no decoration.
+Sparse, quiet, readable. The game should feel like a restrained text adventure: direct labels, small panels, high-contrast text, midnight surfaces by default, and almost no decoration.
 
 ## Anti-references
 
@@ -30,4 +30,4 @@ Do not make it look like a decorated fantasy RPG, card battler, casino idle game
 
 ## Accessibility & Inclusion
 
-Prefer high-contrast black text on white surfaces. Support reduced motion by disabling nonessential transitions. Keep hit targets comfortable after viewport scaling without changing the source 16px text system.
+Prefer high-contrast text on the active surface, with midnight as the default theme. Support reduced motion by disabling nonessential transitions. Keep hit targets comfortable after viewport scaling without changing the source 16px text system.

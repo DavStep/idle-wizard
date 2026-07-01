@@ -12,7 +12,7 @@ describe('PlayerFacade', () => {
       username: 'Arch Mage',
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
-      theme: 'white',
+      theme: 'midnight',
       font: 'lexend',
       colorMode: 'resources',
       character: 'elara',
@@ -31,7 +31,7 @@ describe('PlayerFacade', () => {
       username: 'wizard',
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
-      theme: 'white',
+      theme: 'midnight',
       font: 'lexend',
       colorMode: 'resources',
       character: 'elara',
@@ -111,7 +111,7 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().theme).toBe('witchcraft');
 
     playerFacade.setTheme('unknown');
-    expect(playerFacade.getSnapshot().theme).toBe('white');
+    expect(playerFacade.getSnapshot().theme).toBe('midnight');
   });
 
   it('normalizes color mode', () => {
@@ -220,7 +220,7 @@ describe('PlayerFacade', () => {
     const playerFacade = new PlayerFacade();
 
     playerFacade.setTheme('mild-white');
-    expect(playerFacade.getSnapshot().theme).toBe('white');
+    expect(playerFacade.getSnapshot().theme).toBe('midnight');
 
     playerFacade.setTheme('mild-black');
     expect(playerFacade.getSnapshot().theme).toBe('black');

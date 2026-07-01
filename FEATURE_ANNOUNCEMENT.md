@@ -1,5 +1,13 @@
 # Feature Announcements
 
+## 0.2.71
+
+Idle Wizard now opens with a short story intro.
+
+New wizards will see the end of the old war, the small reward that starts the next chapter, and the old workshop that becomes home base. The intro also asks for a wizard name before handing the player to Elara's normal lessons, so the first few moments have more context without changing the early gameplay rules.
+
+This update also makes Midnight the default theme and adds more room art to the bottom navigation for Workshop, Garden, Research, and Market.
+
 ## 0.2.59
 
 Mail now lives in the top panel.

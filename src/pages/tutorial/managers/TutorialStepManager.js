@@ -25,7 +25,7 @@ const DEFAULT_LEVEL_TWO_SAGE_GROW_TARGET = 3;
 const TURN_IN_TEXT = 'turn in';
 const COMPLETE_TEXT = 'complete';
 const WORKSHOP_TASKS_PIN_TARGET_ID = 'workshop:tasksPin';
-export const TUTORIAL_LESSON_THREE_STUCK_MS = 3500;
+export const TUTORIAL_LESSON_THREE_STUCK_MS = 2000;
 export const LEVEL_ONE_TUTORIAL_SALE = Object.freeze({
   itemKey: SAGE_SEED_KEY,
   quantity: 1,
@@ -645,8 +645,7 @@ export const TUTORIAL_STEPS = [
         ? getLevelTwoRequirementIntroText(snapshot)
         : `keep going. grow sage ${growTarget} ${growTarget === 1 ? 'time' : 'times'}.`;
     },
-    getCueMode: ({ snapshot }) =>
-      getLessonSageGrowCount(snapshot) <= 0 ? 'active' : 'delayed-target',
+    cueMode: 'delayed-target',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       if (shouldIntroduceLevelTwoRequirements({ currentPageId, dom, snapshot })) {
         return 'workshop:tasks';

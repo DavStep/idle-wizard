@@ -38,6 +38,7 @@
 - This is an Android-first mobile JavaScript game.
 - macOS `sips` can read project WebP portraits but cannot write them; use `cwebp` for WebP resize/encode.
 - Android dev builds that point at local SpacetimeDB need `adb reverse tcp:3000 tcp:3000`; without it, Pixel WebView loops on `connecting to server`.
+- Before wiping local SpacetimeDB progress, check `.env.local` for the active `VITE_SPACETIME_DATABASE`; the shared Vite app may use `idle-wizard-codex-run` while `npm run stdb:publish` still targets `idle-wizard`.
 - The authored game viewport is `1080x2170`.
 - Game-stage text copy/paste suppression needs both CSS `user-select`/touch-callout rules and an app-level guard for clipboard, context menu, selectstart, and paste `beforeinput` events.
 - Interactive hover/press states should not tint backgrounds; keep `--style-active-surface` equal to the current surface and rely on weight/border cues, never below-text line decoration.
@@ -53,6 +54,7 @@
 - Smooth timer progress transitions are acceptable when they start from one inferred end time and the visible text uses the same clock; watch Android WebView paint cost during QA.
 - Garden, Brewing, and Research timer bars should use the shared timer-progress end-time binding instead of per-surface stepped fill logic.
 - Timer progress bars should not depend on 250ms gameplay snapshots for visual smoothness; snapshots provide authoritative state, while UI derives in-between fill and label time.
+- First-run cutscene animations need a per-step replay trigger; scene/data-state selectors alone do not replay when advancing through steps that reuse the same scene.
 - When smooth timer bars are desired, derive fill, remaining label, and ARIA percent from one inferred end time; do not let snapshot `progress` disagree with `remainingMs`.
 - Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
 - Research completion announcements should resolve labels/details through `ResearchFacade`; visible research tabs can hide completed series entries before the popup renders.
@@ -222,6 +224,7 @@
 - Local preview harnesses that must survive after a Codex command exits need a real daemon/session detach; plain `nohup ... &` can be cleaned up by the command harness.
 - For raster 9-slice extraction, preserve source pixels with clean samples, color-keying, and gutter trims; geometric chamfers or redrawn mirrored lines can make the asset look vectorized.
 - For creating, editing, extracting, validating, or debugging 9-slice assets, use the `nine-slice-generator` skill before hand-editing assets.
+- Midnight 9-slice transparent corners need CSS backing layers clipped or transparent; a solid element background or dialog `::before` can make a correct PNG look square.
 - Brewing drag screenshot QA needs an unlocked level-4+ save or `VITE_ENABLE_CHEATS=true`; a level-2 local save cannot reach herb drag controls.
 - Cauldron staged-recipe QA should use minimal unlocks and explicit ingredients; `unlockAllResearch` can raise cauldron batch level and make base recipe staging fail.
 - Tutorial motion/visual QA harnesses must set `--style-ui-scale` to `3 * viewportScale`; using only viewport scale makes Elara/source UI look tiny and gives misleading screenshots.
@@ -230,6 +233,7 @@
 - FTUE paused/wait states should collapse to a stable Elara help anchor instead of hiding entirely; show explicit `help` on the collapsed Elara toggle and `hide` on the open Elara toggle, with the label chip kept left of the lesson box so it does not overlap the panel edge.
 - Iconless collapsed Elara still drags a 70px invisible button; left clamp must account for the visible `help` label's right-anchored offset so the chip can align with the 16px room inset.
 - FTUE target cues should be pointer-only; do not draw rectangular frames, cloned target DOM, or under-row marks.
+- FTUE open lesson placement must protect the visible dialog surface around popup targets, not only the row/span, so Elara does not cover seed/recipe/item pickers.
 - FTUE target cues are Spine-only; preserve diagonal placement math and rotate the Spine shell by placement so the authored upward tap points at the target anchor.
 - FTUE Spine target cues should use the pointer Spine, not the removed old hand sprite.
 - Pointer-local Pixi canvases inside the scaled tutorial layer must use `devicePixelRatio * --style-ui-scale` resolution; DPR-only backing stores look pixelated after the room UI scale transform.
@@ -253,7 +257,7 @@
 - FTUE acquisition, research, and brewing lessons must first check live task `ownedQuantity`/remaining requirements; if the task can consume an already-owned item, point to the task before asking for another source.
 - FTUE mana tonic recipe guidance should point to the recipe popup `close` label after the recipe is selected; do not keep cueing the selected row.
 - FTUE mana tonic brew guidance must require an unlocked `manaTonic` cauldron match, not just `canBrew`; `canBrew` is also true for wasted mixes. Overfilled sage should target the remove row before brew.
-- FTUE should actively show the first `grow sage` loop using the live sage-herb requirement target; after that first grow, later lesson-3 sage guidance can wait for idle and stay on-demand.
+- FTUE `grow sage` should open the lesson immediately, then show the target pointer only after about 2s of no player activity or an explicit `show me`; keep later lesson-3 sage guidance on the same delayed pointer path.
 - FTUE Garden opening should wait for a usable sage source; otherwise lesson 3 should open requirements and summon first instead of sending players to empty Garden and back.
 - FTUE level-2 task order should match the visible level-2 task row order; showing `sage` before `sage seed` keeps the gardening lesson coherent.
 - FTUE garden herb guidance must compare the requested `seedKey` with tile `selectedSeedKey`/`seedKey`; otherwise mint tasks can point at sage-selected plots with mint copy.
@@ -656,7 +660,7 @@
 - Workshop task row reordering should use CSS-transition FLIP, not `Element.animate`; the in-app browser target can lack WAAPI.
 - Room UI animation should use sine-ish interpolation; keep rubber from tiny keyframe overshoot, not y>1 easing curves.
 - Shared press/release motion should use individual `scale`/`translate`, not `transform`, so centered or positioned controls keep their existing transforms.
-- Use black text, white surfaces, readable text, thin black borders, compact panels, and minimal decoration.
+- Use high-contrast text, quiet midnight-default surfaces, readable text, compact panels, and minimal decoration.
 - Player-facing UI labels should stay lowercase, including seed, herb, potion, research, event, and task labels; preserve user-entered names as typed.
 - Project typography uses `Lexend` at `13px` source size with tabular lining numerals for values.
 - Keep popup/dialog titles at `14px`; ordinary block titles and body text share the source size.
@@ -674,11 +678,13 @@
 - Non-dialog boxes stay simple: `1px` border, compact padding, no shadow.
 - Popup/dialog panels can use the thicker event-panel treatment: `2px` border and `5px 5px 5px #666` shadow in source UI units.
 - Shared chrome overlays with the same z-index paint by DOM order; visible bottom-panel lock notices must raise the bottom panel layer above the passive chat preview.
-- Popup/dialog shadow tokens must contrast with the active theme: dark shadow on white surfaces, light shadow on black surfaces.
+- Popup/dialog shadow tokens must contrast with the active theme surface.
 - Mana amount and regen live in the top panel; Workshop no longer has a separate mana resource box.
 - Workshop no longer has a separate `seeds` block; `summon` and `bag` sit above world chat.
 - Workshop `bag` opens a tabbed popup for currencies, seeds, herbs, and potions.
 - Do not add decorative visuals unless the user explicitly asks.
+- Cutscene overlays should settle visible while their text step is active; do not fade story-critical art to `opacity: 0` before the player advances.
+- Cutscene sprite overlays should align by visible alpha bounds, not the full PNG box; transparent padding can make grounded characters appear to float.
 - Managers subscribed to gameplay snapshots can render every frame; keep buttons stable and update text/state instead of replacing interactive DOM nodes.
 - In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
 - Hidden tab panels should skip list and popup rendering on gameplay snapshots; refresh the active tab on tab switch and visible popups when opened.
@@ -749,7 +755,7 @@
 - Level milestone dialogs show a centered top-border `current` label only when the selected level is the player current level.
 - Player visual theme is stored on `PlayerFacade` snapshot and applied globally by `AppThemeManager` through `html[data-style-theme]`.
 - Player visual theme options live in `src/player/playerThemes.js`; settings render from that list, and theme colors are CSS vars in `src/styles/base.css`.
-- Player visual themes also need matching allowlist or alias entries in SpacetimeDB; otherwise profile sync normalizes them back to `white`.
+- Player visual themes also need matching allowlist or alias entries in SpacetimeDB; otherwise profile sync normalizes them back to the default theme.
 - Theme borders use `--style-stroke` through `--style-border`; keep text contrast independent when a theme wants dim strokes.
 - Midnight popups should use dark shadow tokens; light shadows read as a harsh glow on the dark room surface.
 - Midnight 9-slice PNGs must put border art across the full `32px` slice; early center fill makes CSS `border-image` render as a hairline.
@@ -757,7 +763,7 @@
 - Bundled player fonts need an `@fontsource/<font>` dependency plus `src/main.js` CSS imports; CSS fallback alone is not enough for Android/offline builds.
 - Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
 - Profile sync can echo stale server visual values after a local choice; keep in-flight client choices optimistic until a matching server echo arrives.
-- Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; white, Lexend, and regular progress bars start researched, while other selectable visual options show their price/free research action until researched.
+- Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; midnight, Lexend, and regular progress bars start researched, while other selectable visual options show their price/free research action until researched.
 - Zero-cost visual setting names should not unlock or select directly; tap `free` to research first, then tap the option name to select.
 - Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `coin`.
 - Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.

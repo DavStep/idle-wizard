@@ -854,7 +854,7 @@ describe('TutorialStepManager', () => {
       targetId: 'garden:plot:1:label',
       objectiveText: 'tap the empty plot, then choose sage seed.',
       progressLabel: '0/3 sage',
-      cueMode: 'active',
+      cueMode: 'delayed-target',
       stepLabel: '21/37',
     });
   });
