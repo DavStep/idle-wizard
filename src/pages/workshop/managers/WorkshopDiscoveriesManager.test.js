@@ -130,6 +130,31 @@ function getPagePotionNames(parent) {
 }
 
 describe('WorkshopDiscoveriesManager', () => {
+  it('uses the compact side-panel journal opener', () => {
+    const parent = document.createElement('div');
+    const manager = new WorkshopDiscoveriesManager({
+      gameplayFacade: createGameplayFacadeFake(createSnapshot()),
+    });
+
+    manager.mount(parent);
+
+    const root = parent.querySelector('.workshop-page__discoveries');
+    const button = parent.querySelector('.workshop-page__discoveries-button');
+    const icon = parent.querySelector('.workshop-page__discoveries-button-icon');
+    const label = parent.querySelector('.workshop-page__discoveries-button-label');
+
+    expect(root?.classList.contains('workshop-page__panel-button')).toBe(true);
+    expect(root?.dataset.panelSide).toBe('right');
+    expect(button?.classList.contains('workshop-page__panel-button-open')).toBe(true);
+    expect(button?.getAttribute('aria-label')).toBe('open discoveries');
+    expect(button?.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(icon?.getAttribute('src')).toContain('icon-discoveries-journal.webp');
+    expect(icon?.getAttribute('alt')).toBe('');
+    expect(label?.textContent).toBe('discoveries');
+
+    manager.unmount();
+  });
+
   it('keeps potion discoveries in the same fixed book spread as recipes', () => {
     const dialogRule = baseCss.match(
       /\.style-dialog\.workshop-page__discoveries-dialog\s*\{(?<body>[^}]*)\}/,

@@ -295,7 +295,6 @@ export class GardenPlotManager {
 
     const label = document.createElement('span');
     label.className = 'garden-page__plot-label';
-    label.dataset.tutorialId = `garden:plot:${tileNumber}:label`;
     label.addEventListener('pointerdown', (event) =>
       this.onTileLabelPressStart(tileNumber, event),
     );
@@ -348,6 +347,7 @@ export class GardenPlotManager {
 
     const boxLabel = document.createElement('span');
     boxLabel.className = 'garden-page__plot-box-label';
+    boxLabel.dataset.tutorialId = `garden:plot:${tileNumber}:label`;
     boxLabel.addEventListener('pointerdown', (event) =>
       this.onTileLabelPressStart(tileNumber, event),
     );

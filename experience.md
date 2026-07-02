@@ -180,7 +180,8 @@
 - Garden cancel/swap dialogs opened from touch-selected seed picker rows need their own one-shot backdrop dedupe; otherwise WebView can close the new dialog with the same synthetic click.
 - Garden seeds and Brewing herbs are tap-first item controls only; do not reintroduce drag/drop for these rows.
 - Brewing herb drag thresholds must not be lower than validated tap slop; otherwise small WebView drift suppresses the synthetic click and adds no herb.
-- Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions there too, not only hidden `.garden-page__plot-label`.
+- Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions and FTUE `data-tutorial-id` there too, not only hidden `.garden-page__plot-label`.
+- FTUE empty Garden plot guidance should target `garden:plot:N` and anchor the pointer to `.garden-page__plot-box-frame`; reserve `garden:plot:N:label` for seed-label choices.
 - Garden plant availability and copy must compare selected seed count to the plot level/multiplier; `>0` is wrong for x2+ plots.
 - Garden empty plot taps without a plantable selected seed should open seed choices; plantable empty plots still plant from the whole slot/row, and seed-name labels open seed choices.
 - Plantable Garden plot taps need a no-drag world pointerup path with click dedupe, same as ready harvest; WebView can drop the native row click after small drift.
@@ -190,6 +191,7 @@
 - Ready Garden plot taps need a no-drag world pointerup path with click dedupe; WebView can turn small finger drift into pan and drop the native click.
 - Buyable Garden plot slots also need a no-drag world pointerup path with click dedupe; otherwise WebView drift can pan the world and suppress the native buy click.
 - FTUE no longer owns username setup; player-facing surfaces should gate on an explicitly saved username and then resume the requested dialog after save.
+- First-run intro/cutscene no longer owns username setup; keep naming prompts in later player-facing profile or social surfaces.
 - Username-gated social/player surfaces should check `PlayerFacade.getSnapshot().hasExplicitUsername`, not the visible username string, because generated defaults can exist.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
 - FTUE blocking-dialog hides should suspend the current lesson; closing settings must not restart typed Elara text from zero.
@@ -201,12 +203,13 @@
 - Top-panel screenshot QA on a fresh FTUE save must reveal `top mana` or complete FTUE first; empty `data-tutorial-reveal` hides the chrome.
 - FTUE should also hide behind ordinary room popups unless the active step targets that popup or explicitly uses popup-only copy guidance.
 - Room announcement overlays are FTUE blockers; add them through `TutorialTargetManager` blocking selectors so hidden toggles pause/resume Elara.
+- Bottom-tab unlock motion can be hidden by the level announcement overlay; delay or replay the lock break/icon reveal when an announcement is visible.
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - Fast-sell picker rows are one action; make the whole visual row the button, but put the FTUE target id on the item-name span.
 - Fast-sell picker item names should bold only when their row is selected; mobile no-hover affordance must not bold every seed/herb/potion row.
 - Fast-sell FTUE should point at the item name, not the row value side, so `sage seed` reads as the target.
-- The first FTUE fast-sell amount beat should highlight the selected `[1]` amount without a pointer; the next sale step points at `sell`.
+- The first FTUE fast-sell amount beat should only boink the selected `[1]` amount, with no open lesson panel or pointer; the next sale step points at `sell`.
 - FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.
 - When fast sell is already open with an item selected, FTUE should target the current amount action (`sell` once current quantity covers missing coin, `+1` while more quantity is still useful) and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
@@ -244,9 +247,7 @@
 - FTUE hidden action buttons need reveal-gate `pointer-events: none` with enough specificity to beat action-bar base button rules.
 - Once FTUE reveals the top panel, keep it visible; players have already unlocked that chrome.
 - FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
-- FTUE tutorial sales should mutate local gameplay inventory/coin through a dedicated tutorial method, never the NPC market backend/demand path.
-- FTUE fast-sell price text should show the tutorial sale quote while the tutorial sale step is active; live NPC fast-sell quotes can contradict the fixed tutorial payout.
-- FTUE market quotes should stay tutorial-owned until the guide completes; letting shared NPC prices or offline rows leak into tutorial coin goals makes Market feel broken.
+- FTUE should not own special market economy. Keep level 1 free, then teach level-up coin through normal fast-sell quotes, quantities, and inventory mutation at level 2.
 - FTUE terminal hides must clear inner lesson/button/pointer state; hiding only the layer lets later click-driven hides re-show stale tutorial UI for one frame.
 - FTUE uses one left Elara lesson button and one lesson panel; do not add separate dialog, hint, prompt, or objective boxes.
 - FTUE advance prompts treat any stage click as `next` and consume the click so underlying controls do not fire.
@@ -271,9 +272,8 @@
 - Draggable Elara placement must test portrait/button overlap with the lesson panel; side-only clamping can shove the panel under Elara near the right edge.
 - Expanded Workshop requirements outside-press collapse must ignore `.tutorial-layer` targets; otherwise dragging Elara closes the requirements panel.
 - FTUE cues targeting the Workshop requirements `pin` must follow the button through the expand animation; a one-frame rect can leave the hand at the old `expand` border position.
-- FTUE unlock order is level 1 Workshop/Market sage seed, level 2 Garden sage herbs, level 3 Research seed studies, then level 4 Brewing and recipe studies.
-- FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: gardening`, and `lesson 4: brewing`.
-- FTUE level-5 theme/settings guidance is passive; it should point to the username settings opener first, then the `theme` settings tab when settings is open.
+- FTUE balance order is level 1 free Workshop sage seed, level 2 Market selling, level 3 Research/mint seed, level 4 Garden herbs, then level 5 Brewing/mana tonic.
+- FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: research`, `lesson 4: gardening`, and `lesson 5: brewing`.
 - FTUE lesson 1 introduces Elara first, then unlocks the top panel for username setup, then greets the saved username before mana guidance.
 - FTUE username target needs the username button rect to fit the visible name text; a flex-filled button makes the pointer drift toward the level/coin side.
 - New focus-target FTUE steps after an open press-to-advance lesson must evaluate as collapsed; carrying the old open-panel state suppresses the first pointer until another refresh.
@@ -579,8 +579,8 @@
 - Auto brew enable UI must set `autoBrewRecipeKey` from the selected recipe before enabling; `BrewingFacade` rejects enabled auto-brew without a recipe key.
 - Auto/manual cauldron UI only enables or disables future automation; auto brew stays unarmed until a successful manual brew, then repeats future cycles.
 - Fast sell starts at level 1 and pays 80% of the NPC bulk sell quote; ruby research raises it to 85/90/95%, while shelf auto-sell keeps the full marginal NPC quote.
-- With Research moved to level 3, level-one FTUE should bank only the 10 coin needed for level 2; do not hold players for mint research before Garden.
-- Nettle seed research stays locked until level 4 so level-3 players keep the 60 coin needed to complete the level-3 task step.
+- Level 1 costs 0 coin and should never depend on tutorial-only sale grants; level 2 is the first systemic coin gate.
+- Nettle seed research stays locked until level 6; level 3 should spend no coin to unlock mint seed, then use normal selling for its level-up cost.
 - NPC and player market stand 2 unlock at player level 3.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
 - Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.
@@ -689,10 +689,12 @@
 - Cutscene scene swaps should render under a near-opaque transition shade; partial fades can reveal image source swaps or decode flicker.
 - Cutscene steps that reuse the same backdrop should not use the black scene-swap cover; reserve blackout for actual backdrop URL changes.
 - When freezing an animated cutscene backdrop, sample computed style before adding no-animation transition classes or the camera can snap back to its base transform.
+- Cutscene text or sprites that must stick to a panning/zooming backdrop should be children of the same animated backdrop layer, not separate scene siblings.
 - Cutscene roots should still cover the full web-wide stage, but scene art and dialogue panels must stay constrained to the fixed authored source width.
 - Peace/disbanded cutscene beats should use a calm world backdrop, not battlefield aftermath or dead-body visuals.
 - Peace-scene rainbow overlays should be subtle one-shot reveals with reduced-motion fallback, not looping decoration.
 - Reward cutscene coin beats should stagger the individual coin sprites while the pile/table position stays fixed; avoid replaying the full drop on follow-up copy beats.
+- Reward cutscene follow-up copy should collect the already-landed rigid coins into the pouch, not replay a falling or jiggly coin drop.
 - Managers subscribed to gameplay snapshots can render every frame; keep buttons stable and update text/state instead of replacing interactive DOM nodes.
 - In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
 - Hidden tab panels should skip list and popup rendering on gameplay snapshots; refresh the active tab on tab switch and visible popups when opened.

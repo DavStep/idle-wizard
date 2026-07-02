@@ -37,7 +37,7 @@ const INTRO_STEPS = Object.freeze([
   Object.freeze({
     id: 'reward',
     scene: 'reward',
-    text: 'your reward for saving the kingdom? a miserable 10 coin.',
+    text: 'your reward for saving the kingdom? a nearly empty pouch.',
     action: 'next',
   }),
   Object.freeze({
@@ -45,13 +45,6 @@ const INTRO_STEPS = Object.freeze([
     scene: 'reward',
     text: 'time to put your magic to better use.',
     action: 'next',
-  }),
-  Object.freeze({
-    id: 'name',
-    scene: 'profile',
-    text: 'every legendary wizard needs a name.',
-    action: 'save name',
-    mode: 'name',
   }),
   Object.freeze({
     id: 'workshop',
@@ -62,20 +55,13 @@ const INTRO_STEPS = Object.freeze([
   Object.freeze({
     id: 'buy-workshop',
     scene: 'workshop',
-    text: 'the sign asks for 10 coin. that is exactly all you have.',
-    action: 'buy workshop',
-  }),
-  Object.freeze({
-    id: 'enter-workshop',
-    scene: 'workshop',
-    text: 'the door opens. time to work.',
+    text: 'the sign says vacant. the key is still under the sill.',
     action: 'enter workshop',
   }),
 ]);
 
 export class FirstRunIntroViewManager {
-  constructor({ playerFacade } = {}) {
-    this.playerFacade = playerFacade;
+  constructor() {
     this.root = null;
     this.refs = {};
     this.stepIndex = 0;
@@ -85,12 +71,7 @@ export class FirstRunIntroViewManager {
     this.backdropFrozen = false;
     this.preloadedImages = [];
     this.onComplete = null;
-    this.onName = null;
     this.handleAdvance = () => this.advance();
-    this.handleSubmit = (event) => {
-      event.preventDefault();
-      this.advance();
-    };
   }
 
   mount(stage) {
@@ -114,6 +95,9 @@ export class FirstRunIntroViewManager {
     this.refs.scene = document.createElement('div');
     this.refs.scene.className = 'first-run-intro__scene';
 
+    this.refs.backdropLayer = document.createElement('div');
+    this.refs.backdropLayer.className = 'first-run-intro__backdrop-layer';
+
     this.refs.backdrop = document.createElement('img');
     this.refs.backdrop.className = 'first-run-intro__backdrop';
     this.refs.backdrop.alt = '';
@@ -129,16 +113,16 @@ export class FirstRunIntroViewManager {
     this.refs.rainbow.setAttribute('aria-hidden', 'true');
     this.refs.coinPile = this.createCoinPile();
     this.refs.workshopSale = this.createWorkshopSaleBoard();
+    this.refs.backdropLayer.append(this.refs.backdrop, this.refs.workshopSale);
     this.refs.transitionShade = document.createElement('div');
     this.refs.transitionShade.className = 'first-run-intro__transition-shade';
     this.refs.transitionShade.setAttribute('aria-hidden', 'true');
 
     this.refs.scene.append(
-      this.refs.backdrop,
+      this.refs.backdropLayer,
       this.refs.rainbow,
       this.refs.demonDefeated,
       this.refs.coinPile,
-      this.refs.workshopSale,
       this.refs.transitionShade,
     );
 
@@ -153,33 +137,14 @@ export class FirstRunIntroViewManager {
     this.refs.text = document.createElement('p');
     this.refs.text.className = 'first-run-intro__text';
 
-    this.refs.form = document.createElement('form');
-    this.refs.form.className = 'first-run-intro__form';
-    this.refs.form.hidden = true;
-    this.refs.form.addEventListener('submit', this.handleSubmit);
-
-    this.refs.nameInput = document.createElement('input');
-    this.refs.nameInput.className = 'style-input first-run-intro__name-input';
-    this.refs.nameInput.type = 'text';
-    this.refs.nameInput.maxLength = 24;
-    this.refs.nameInput.autocomplete = 'off';
-    this.refs.nameInput.enterKeyHint = 'done';
-    this.refs.nameInput.setAttribute('aria-label', 'wizard name');
-
-    this.refs.error = document.createElement('div');
-    this.refs.error.className = 'first-run-intro__error';
-    this.refs.error.hidden = true;
-
     this.refs.advance = document.createElement('button');
     this.refs.advance.className = 'style-button first-run-intro__advance';
     this.refs.advance.type = 'button';
     this.refs.advance.addEventListener('click', this.handleAdvance);
 
-    this.refs.form.append(this.refs.nameInput, this.refs.error);
     this.refs.panel.append(
       this.refs.title,
       this.refs.text,
-      this.refs.form,
       this.refs.advance,
     );
 
@@ -191,7 +156,6 @@ export class FirstRunIntroViewManager {
   unmount() {
     this.clearTransition();
     this.refs.advance?.removeEventListener('click', this.handleAdvance);
-    this.refs.form?.removeEventListener('submit', this.handleSubmit);
     this.root?.remove();
     this.root = null;
     this.refs = {};
@@ -201,16 +165,14 @@ export class FirstRunIntroViewManager {
     this.backdropFrozen = false;
     this.preloadedImages = [];
     this.onComplete = null;
-    this.onName = null;
   }
 
-  show({ onComplete, onName } = {}) {
+  show({ onComplete } = {}) {
     if (!this.root) {
       return;
     }
 
     this.onComplete = typeof onComplete === 'function' ? onComplete : null;
-    this.onName = typeof onName === 'function' ? onName : null;
     this.stepIndex = 0;
     this.motionStep = 0;
     this.clearTransition();
@@ -228,12 +190,6 @@ export class FirstRunIntroViewManager {
 
   advance() {
     if (this.isTransitioning) {
-      return;
-    }
-
-    const step = this.getStep();
-
-    if (step?.mode === 'name' && !this.saveName()) {
       return;
     }
 
@@ -335,17 +291,8 @@ export class FirstRunIntroViewManager {
     this.refs.backdrop.src = nextBackdropUrl;
     this.refs.text.textContent = step.text;
     this.refs.advance.textContent = step.action;
-    this.refs.advance.type = step.mode === 'name' ? 'submit' : 'button';
-    this.refs.form.hidden = step.mode !== 'name';
-    this.refs.error.hidden = true;
-    this.refs.error.textContent = '';
+    this.refs.advance.type = 'button';
     this.restartStepMotion();
-
-    if (step.mode === 'name') {
-      const currentName = this.playerFacade?.getSnapshot?.()?.username ?? '';
-      this.refs.nameInput.value = currentName === 'wizard' ? '' : currentName;
-      window.setTimeout(() => this.refs.nameInput?.focus?.(), 0);
-    }
   }
 
   restartStepMotion() {
@@ -392,31 +339,31 @@ export class FirstRunIntroViewManager {
   }
 
   freezeBackdropVisualState() {
-    const backdrop = this.refs.backdrop;
-    if (!backdrop) {
+    const backdropLayer = this.refs.backdropLayer;
+    if (!backdropLayer) {
       return;
     }
 
-    const view = backdrop.ownerDocument?.defaultView ?? globalThis.window;
-    const style = view?.getComputedStyle?.(backdrop);
+    const view = backdropLayer.ownerDocument?.defaultView ?? globalThis.window;
+    const style = view?.getComputedStyle?.(backdropLayer);
     if (!style) {
       return;
     }
 
-    backdrop.style.transform = style.transform === 'none' ? '' : style.transform;
-    backdrop.style.opacity = style.opacity;
-    backdrop.style.filter = style.filter;
+    backdropLayer.style.transform = style.transform === 'none' ? '' : style.transform;
+    backdropLayer.style.opacity = style.opacity;
+    backdropLayer.style.filter = style.filter;
     this.backdropFrozen = true;
   }
 
   clearFrozenBackdrop() {
-    if (!this.backdropFrozen || !this.refs.backdrop) {
+    if (!this.backdropFrozen || !this.refs.backdropLayer) {
       return;
     }
 
-    this.refs.backdrop.style.removeProperty('transform');
-    this.refs.backdrop.style.removeProperty('opacity');
-    this.refs.backdrop.style.removeProperty('filter');
+    this.refs.backdropLayer.style.removeProperty('transform');
+    this.refs.backdropLayer.style.removeProperty('opacity');
+    this.refs.backdropLayer.style.removeProperty('filter');
     this.backdropFrozen = false;
   }
 
@@ -425,7 +372,7 @@ export class FirstRunIntroViewManager {
       return PEACEFUL_WORLD_URL;
     }
 
-    if (scene === 'reward' || scene === 'profile') {
+    if (scene === 'reward') {
       return REWARD_POUCH_URL;
     }
 
@@ -461,7 +408,7 @@ export class FirstRunIntroViewManager {
   createCoinPile() {
     const pile = document.createElement('div');
     pile.className = 'first-run-intro__coin-pile';
-    pile.setAttribute('aria-label', '10 coin');
+    pile.setAttribute('aria-label', 'old coin pouch');
 
     for (let index = 0; index < 10; index += 1) {
       const coin = createAssetAtlasSprite(
@@ -480,42 +427,22 @@ export class FirstRunIntroViewManager {
   createWorkshopSaleBoard() {
     const board = document.createElement('div');
     board.className = 'first-run-intro__workshop-sale';
-    board.setAttribute('aria-label', 'on sale, 10 coin');
+    board.setAttribute('aria-label', 'vacant, free');
 
     const label = document.createElement('div');
     label.className = 'first-run-intro__workshop-sale-label';
-    label.textContent = 'on sale';
+    label.textContent = 'vacant';
 
     const price = document.createElement('div');
     price.className = 'first-run-intro__workshop-sale-price';
 
-    const icon = createAssetAtlasSprite(
-      'first-run-intro__workshop-sale-icon',
-      'resource:coin',
-    );
     const count = document.createElement('span');
     count.className = 'first-run-intro__workshop-sale-count';
-    count.textContent = 'x10';
+    count.textContent = 'free';
 
-    if (icon) {
-      price.append(icon);
-    }
     price.append(count);
     board.append(label, price);
 
     return board;
-  }
-
-  saveName() {
-    const name = String(this.refs.nameInput?.value ?? '').trim();
-    if (!name) {
-      this.refs.error.textContent = 'enter a name';
-      this.refs.error.hidden = false;
-      this.refs.nameInput?.focus?.();
-      return false;
-    }
-
-    this.onName?.(name);
-    return true;
   }
 }

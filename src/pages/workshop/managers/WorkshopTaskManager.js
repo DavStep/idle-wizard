@@ -1030,7 +1030,7 @@ export class WorkshopTaskManager {
       return;
     }
 
-    const costText = formatCoinPriceText(this.currentLevelCompletion.costCoin);
+    const costText = formatLevelCompletionCostText(this.currentLevelCompletion.costCoin);
     const disabled = !this.canAffordLevelCompletion();
     const nextLevel = this.currentLevelCompletion.level + 1;
     const payoffRows = this.getLevelPayoffRows(this.currentLevelCompletion.level, nextLevel);
@@ -2369,4 +2369,8 @@ export class WorkshopTaskManager {
 
     return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
   }
+}
+
+function formatLevelCompletionCostText(costCoin) {
+  return Number(costCoin) <= 0 ? 'free' : formatCoinPriceText(costCoin);
 }

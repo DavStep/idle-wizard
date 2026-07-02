@@ -111,6 +111,9 @@ describe('base styles', () => {
   it('keeps first-run cutscene art fixed to the authored source width', () => {
     const rootRule = getRuleBody(/\.first-run-intro\s*\{(?<body>[^}]*)\}/);
     const sceneRule = getRuleBody(/\.first-run-intro__scene\s*\{(?<body>[^}]*)\}/);
+    const backdropLayerRule = getRuleBody(
+      /\.first-run-intro__backdrop-layer\s*\{(?<body>[^}]*)\}/,
+    );
     const defeatedDemonRule = getRuleBody(
       /\.first-run-intro__demon--defeated\s*\{(?<body>[^}]*)\}/,
     );
@@ -121,6 +124,8 @@ describe('base styles', () => {
     expect(rootRule).toContain('width: calc(100% / var(--style-ui-scale));');
     expect(sceneRule).toContain('left: var(--style-source-ui-gutter-x);');
     expect(sceneRule).toContain('width: var(--style-source-ui-width);');
+    expect(backdropLayerRule).toContain('transform: scale(1.01);');
+    expect(backdropLayerRule).toContain('will-change: opacity, transform, filter;');
     expect(panelRule).toContain(
       'right: calc(var(--style-source-ui-gutter-x) + 20px);',
     );
@@ -132,10 +137,13 @@ describe('base styles', () => {
       /\.first-run-intro--stable-backdrop\.first-run-intro--step-enter\s+\.first-run-intro__transition-shade,[\s\S]*?animation:\s*none;/,
     );
     expect(baseCss).toMatch(
-      /\.first-run-intro--stable-backdrop\.first-run-intro--step-enter\s+\.first-run-intro__backdrop,[\s\S]*?animation:\s*none;/,
+      /\.first-run-intro--stable-backdrop\.first-run-intro--step-enter\s+\.first-run-intro__backdrop-layer,[\s\S]*?animation:\s*none;/,
     );
     expect(baseCss).toContain(
-      '.first-run-intro--step-enter[data-scene="peace"] .first-run-intro__backdrop',
+      '.first-run-intro--step-enter[data-scene="peace"] .first-run-intro__backdrop-layer',
+    );
+    expect(baseCss).toContain(
+      '.first-run-intro--step-enter[data-scene="workshop"] .first-run-intro__backdrop-layer',
     );
     expect(baseCss).toContain('@keyframes first-run-intro-peace-push');
     expect(baseCss).toContain(
@@ -152,10 +160,41 @@ describe('base styles', () => {
       '.first-run-intro__coin-pile-icon[data-coin-index="10"]',
     );
     expect(baseCss).toContain('--first-run-intro-coin-delay: 325ms;');
+    expect(baseCss).toContain('--first-run-intro-coin-collect-x: -190px;');
     expect(baseCss).toContain('@keyframes first-run-intro-coin-drop');
-    expect(baseCss).toContain('animation: first-run-intro-coin-drop 820ms');
+    expect(baseCss).toContain('@keyframes first-run-intro-coin-collect');
+    expect(baseCss).toContain('animation: first-run-intro-coin-drop 840ms');
+    expect(baseCss).toContain('animation: first-run-intro-coin-collect 620ms');
+    expect(baseCss).toContain(
+      '.first-run-intro--step-enter[data-step="better-use"] .first-run-intro__coin-pile {\n  animation: none;',
+    );
+    expect(baseCss).toContain(
+      '.first-run-intro--step-exit[data-step="reward"][data-backdrop-transition="stable"]\n  .first-run-intro__coin-pile {\n  animation: none;',
+    );
+    expect(baseCss).toContain('translate: 0 -10px;');
+    expect(baseCss).toContain('translate: 0 -3px;');
+    expect(baseCss).toContain('scale: 0.66;');
+    expect(baseCss).toContain('opacity: 0;');
+    expect(baseCss).toMatch(
+      /\.first-run-intro--step-enter\[data-step="workshop"\]\s+\.first-run-intro__workshop-sale\s*\{[\s\S]*?animation:\s*first-run-intro-coin-pile-enter 520ms/,
+    );
+    expect(baseCss).not.toMatch(
+      /\.first-run-intro--step-enter\[data-step="buy-workshop"\]\s+\.first-run-intro__workshop-sale\s*\{[\s\S]*?animation:/,
+    );
+    expect(baseCss).toMatch(
+      /\.first-run-intro--step-enter\[data-step="buy-workshop"\]\s+\.first-run-intro__workshop-sale-price\s*\{[\s\S]*?animation:\s*first-run-intro-workshop-price-boink 210ms/,
+    );
+    expect(baseCss).toContain('@keyframes first-run-intro-workshop-price-boink');
+    expect(baseCss).toContain('scale: 1.07 0.95;');
+    expect(baseCss).toContain('translate: 0 -1px;');
     expect(baseCss).toContain(
       '.first-run-intro--step-enter[data-step="reward"]\n    .first-run-intro__coin-pile-icon,',
+    );
+    expect(baseCss).toContain(
+      '.first-run-intro--step-enter[data-step="better-use"]\n    .first-run-intro__coin-pile-icon,',
+    );
+    expect(baseCss).toContain(
+      '.first-run-intro--step-enter[data-step="buy-workshop"]\n    .first-run-intro__workshop-sale-price,',
     );
   });
 

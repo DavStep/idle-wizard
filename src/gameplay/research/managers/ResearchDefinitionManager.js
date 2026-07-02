@@ -68,10 +68,10 @@ const summonSeedResearches = [
 
 const seedUnlockRequiredPlayerLevels = {
   mintSeed: 3,
-  nettleSeed: 4,
-  lavenderSeed: 5,
-  briarSeed: 7,
-  glowcapSeed: 9,
+  nettleSeed: 6,
+  lavenderSeed: 7,
+  briarSeed: 8,
+  glowcapSeed: 10,
   mandrakeSeed: 11,
   sunrootSeed: 13,
   moonflowerSeed: 16,
@@ -93,10 +93,10 @@ const seedUnlockRequiredPlayerLevels = {
 };
 
 const recipeUnlockRequiredPlayerLevels = {
-  manaTonic: 4,
-  minorHealingPotion: 5,
-  nettleVigor: 6,
-  calmingDraught: 8,
+  manaTonic: 5,
+  minorHealingPotion: 6,
+  nettleVigor: 8,
+  calmingDraught: 9,
   briarWard: 10,
   lanternTonic: 12,
   simpleAntidote: 14,

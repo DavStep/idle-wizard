@@ -46,7 +46,7 @@ describe('ResearchBoxListManager', () => {
   it('colors completed seed unlock research names as seed resources', () => {
     const snapshot = {
       playerLevel: {
-        currentLevel: 4,
+        currentLevel: 5,
       },
       research: {
         boxes: [
@@ -350,7 +350,7 @@ describe('ResearchBoxListManager', () => {
                 costCoin: 0,
                 completed: false,
                 canResearch: true,
-                requiredPlayerLevel: 4,
+                requiredPlayerLevel: 5,
               },
               {
                 id: 'unlockRecipe:minorHealingPotion',
@@ -359,12 +359,12 @@ describe('ResearchBoxListManager', () => {
                 effect: 'brew',
                 description:
                   'allows valid cauldron ingredients to brew minor healing potion.',
-                costCoin: 350,
+                costCoin: 60,
                 completed: false,
                 locked: true,
                 canResearch: false,
                 requiredResearchIds: ['unlockRecipe:manaTonic'],
-                requiredPlayerLevel: 5,
+                requiredPlayerLevel: 6,
               },
             ],
           },
@@ -395,7 +395,7 @@ describe('ResearchBoxListManager', () => {
     expect(onShowResearchInfo).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'unlockRecipe:minorHealingPotion',
-        lockReason: 'requires mana tonic research and level 5.',
+        lockReason: 'requires mana tonic research and level 6.',
       }),
     );
 
@@ -422,12 +422,12 @@ describe('ResearchBoxListManager', () => {
                 effect: 'brew',
                 description:
                   'allows valid cauldron ingredients to brew minor healing potion.',
-                costCoin: 350,
+                costCoin: 60,
                 completed: false,
                 locked: true,
                 canResearch: false,
                 requiredResearchIds: ['unlockRecipe:manaTonic'],
-                requiredPlayerLevel: 5,
+                requiredPlayerLevel: 6,
               },
             ],
           },

@@ -1,6 +1,7 @@
 import { PAGE_UNLOCK_REQUIREMENTS } from '../../managers/PageUnlockManager.js';
 import {
   WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
+  WORKSHOP_INBOX_UNLOCK_LEVEL,
   WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL,
   WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL,
 } from './WorkshopSecondaryActionGateManager.js';
@@ -46,6 +47,10 @@ const WORKSHOP_UNLOCKS = [
   {
     requiredLevel: WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
     values: ['discoveries', 'alliance'],
+  },
+  {
+    requiredLevel: WORKSHOP_INBOX_UNLOCK_LEVEL,
+    values: ['inbox'],
   },
   {
     requiredLevel: WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL,

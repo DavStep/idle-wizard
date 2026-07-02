@@ -10,6 +10,11 @@ import {
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
+const DISCOVERIES_ICON_URL = new URL(
+  '../../../assets/icons/icon-discoveries-journal.webp',
+  import.meta.url,
+).href;
+
 const DISCOVERY_TABS = [
   { id: 'seeds', label: 'seeds' },
   { id: 'herbs', label: 'herbs' },
@@ -76,8 +81,10 @@ export class WorkshopDiscoveriesManager {
       return this.root;
     }
 
-    this.root = document.createElement('div');
-    this.root.className = 'workshop-page__discoveries';
+    this.root = document.createElement('section');
+    this.root.className = 'workshop-page__panel-button workshop-page__discoveries';
+    this.root.dataset.panelSide = 'right';
+    this.root.setAttribute('aria-label', 'discoveries');
 
     this.refs.button = this.createButton();
     this.refs.popup = this.createPopup();
@@ -96,9 +103,31 @@ export class WorkshopDiscoveriesManager {
 
   createButton() {
     const button = document.createElement('button');
-    button.className = 'style-button workshop-page__discoveries-button';
+    button.className =
+      'workshop-page__panel-button-open workshop-page__discoveries-button';
     button.type = 'button';
-    button.textContent = 'discoveries';
+    button.setAttribute('aria-haspopup', 'dialog');
+    button.setAttribute('aria-label', 'open discoveries');
+
+    const iconFrame = document.createElement('span');
+    iconFrame.className = 'workshop-page__discoveries-button-icon-frame';
+    iconFrame.setAttribute('aria-hidden', 'true');
+
+    const icon = document.createElement('img');
+    icon.className = 'workshop-page__discoveries-button-icon';
+    icon.src = DISCOVERIES_ICON_URL;
+    icon.alt = '';
+    icon.loading = 'lazy';
+    icon.decoding = 'async';
+    icon.setAttribute('aria-hidden', 'true');
+
+    const label = document.createElement('span');
+    label.className =
+      'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__discoveries-button-label';
+    label.textContent = 'discoveries';
+
+    iconFrame.append(icon);
+    button.append(iconFrame, label);
     button.addEventListener('click', () => this.show());
     return button;
   }

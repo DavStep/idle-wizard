@@ -366,23 +366,32 @@ describe('WorkshopActionBarManager', () => {
     );
   });
 
-  it('places the secondary action buttons near chat with matching widths', () => {
+  it('places the secondary actions and compact panel openers near chat', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
     const bagRule = baseCss.match(
       /\.workshop-page__action-bar > \.style-button\.workshop-page__bag-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const mailRule = baseCss.match(
-      /\.workshop-page__action-bar > \.style-button\.workshop-page__mail-button\s*\{(?<body>[^}]*)\}/,
+    const mailPanelRule = baseCss.match(
+      /\.workshop-page__action-bar > \.workshop-page__mail-button-panel\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const leaderboardRule = baseCss.match(
-      /\.style-button\.workshop-page__leaderboard-button\s*\{(?<body>[^}]*)\}/,
+    const sidePanelRootRule = baseCss.match(
+      /\.workshop-page__ui-layer > \.workshop-page__leaderboard,\s*\.workshop-page__ui-layer > \.workshop-page__discoveries\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const leaderboardSideRule = baseCss.match(
+      /\.workshop-page__ui-layer > \.workshop-page__leaderboard\s*\{(?<body>[^}]*\bleft:[^}]*)\}/,
+    )?.groups?.body;
+    const discoveriesSideRule = baseCss.match(
+      /\.workshop-page__ui-layer > \.workshop-page__discoveries\s*\{(?<body>[^}]*\bright:[^}]*)\}/,
+    )?.groups?.body;
+    const sidePanelButtonRule = baseCss.match(
+      /\.workshop-page__leaderboard > \.workshop-page__leaderboard-button,\s*\.workshop-page__mail-button-panel > \.workshop-page__mail-button,\s*\.workshop-page__discoveries > \.workshop-page__discoveries-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const sidePanelLabelRule = baseCss.match(
+      /\.workshop-page__leaderboard-button-label,\s*\.workshop-page__mail-button-label,\s*\.workshop-page__discoveries-button-label\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const allianceRule = baseCss.match(
       /\.style-button\.workshop-page__trade-alliance-button\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const discoveriesRule = baseCss.match(
-      /\.style-button\.workshop-page__discoveries-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(rootRule).toMatch(/--workshop-secondary-button-width:\s*100px;/);
@@ -399,37 +408,43 @@ describe('WorkshopActionBarManager', () => {
     );
     expect(bagRule).not.toMatch(/\bbottom:/);
 
-    expect(mailRule).toBeDefined();
-    expect(mailRule).toMatch(
-      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\)\s*\);/,
+    expect(mailPanelRule).toBeDefined();
+    expect(mailPanelRule).toMatch(
+      /\btop:\s*calc\(var\(--style-room-content-top\) \+\s*300px\);/,
     );
-    expect(mailRule).toMatch(
-      /\bleft:\s*calc\(50% - var\(--workshop-secondary-button-half-width\)\);/,
-    );
-    expect(mailRule).toMatch(/\bwidth:\s*var\(--workshop-secondary-button-width\);/);
+    expect(mailPanelRule).toMatch(/\bleft:\s*calc\(50% -\s*22\.75px\);/);
+    expect(mailPanelRule).toMatch(/\bwidth:\s*45\.5px;/);
+    expect(mailPanelRule).toMatch(/\bheight:\s*80\.25px;/);
+    expect(mailPanelRule).toMatch(/\bpointer-events:\s*none;/);
 
-    expect(leaderboardRule).toMatch(
-      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\)\s*\);/,
+    expect(sidePanelRootRule).toBeDefined();
+    expect(sidePanelRootRule).toMatch(
+      /\btop:\s*calc\(var\(--style-room-content-top\) \+\s*223\.75px\);/,
     );
+    expect(sidePanelRootRule).toMatch(/\bwidth:\s*45\.5px;/);
+    expect(sidePanelRootRule).toMatch(/\bheight:\s*80\.25px;/);
+    expect(leaderboardSideRule).toMatch(
+      /\bleft:\s*calc\(var\(--style-room-content-edge\) -\s*14px\);/,
+    );
+    expect(discoveriesSideRule).toMatch(
+      /\bright:\s*calc\(var\(--style-room-content-edge\) -\s*14px\);/,
+    );
+    expect(sidePanelButtonRule).toMatch(/\boverflow:\s*visible;/);
+    expect(sidePanelLabelRule).toMatch(/\bfont-size:\s*5px;/);
+    expect(sidePanelLabelRule).toMatch(/\bline-height:\s*6px;/);
+
     expect(allianceRule).toMatch(
       /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\)\s*\);/,
     );
-    expect(discoveriesRule).toMatch(
-      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\) \+\s*var\(--workshop-secondary-button-row-gap\)\s*\);/,
-    );
-    expect(leaderboardRule).toMatch(
-      /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
-    );
     expect(allianceRule).toMatch(
-      /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
-    );
-    expect(discoveriesRule).toMatch(
       /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
     );
   });
 
   it('opens the moved mail button from the Workshop action cluster', () => {
-    const gameplayFacade = createGameplayFacadeFake();
+    const gameplayFacade = createGameplayFacadeFake({
+      tasks: { currentLevel: 4 },
+    });
     const playerInboxFacade = createPlayerInboxFacadeFake({
       unreadCount: 1,
       claimableCount: 0,
@@ -445,8 +460,15 @@ describe('WorkshopActionBarManager', () => {
     manager.mount(parent);
 
     const mailButton = parent.querySelector('.workshop-page__mail-button');
+    const mailPanel = parent.querySelector('.workshop-page__mail-button-panel');
+    const mailIcon = parent.querySelector('.workshop-page__mail-button-icon');
 
+    expect(mailPanel?.contains(mailButton)).toBe(true);
+    expect(mailButton?.classList.contains('style-button')).toBe(false);
     expect(mailButton?.textContent).toBe('mail');
+    expect(mailIcon?.tagName).toBe('IMG');
+    expect(mailIcon?.getAttribute('src')).toContain('icon-mail-envelope.webp');
+    expect(mailIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(mailButton?.dataset.notification).toBe('true');
     expect(mailButton?.getAttribute('aria-label')).toBe('open inbox, new mail');
 
@@ -459,6 +481,47 @@ describe('WorkshopActionBarManager', () => {
 
     expect(mailButton?.dataset.notification).toBeUndefined();
     expect(mailButton?.getAttribute('aria-label')).toBe('open inbox');
+
+    manager.unmount();
+  });
+
+  it('locks the mail panel until level four', () => {
+    const gameplayFacade = createGameplayFacadeFake({
+      tasks: { currentLevel: 3 },
+    });
+    const onMailClick = vi.fn();
+    const manager = new WorkshopActionBarManager({
+      gameplayFacade,
+      playerInboxFacade: createPlayerInboxFacadeFake({ unreadCount: 1 }),
+      onMailClick,
+    });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+
+    const mailPanel = parent.querySelector('.workshop-page__mail-button-panel');
+    const mailButton = parent.querySelector('.workshop-page__mail-button');
+
+    expect(mailPanel?.hidden).toBe(true);
+    expect(mailPanel?.getAttribute('aria-hidden')).toBe('true');
+    expect(mailButton?.disabled).toBe(true);
+    expect(mailButton?.getAttribute('aria-disabled')).toBe('true');
+
+    mailButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onMailClick).not.toHaveBeenCalled();
+
+    gameplayFacade.getSnapshot().tasks.currentLevel = 4;
+    gameplayFacade.publish();
+
+    expect(mailPanel?.hidden).toBe(false);
+    expect(mailPanel?.getAttribute('aria-hidden')).toBe('false');
+    expect(mailButton?.disabled).toBe(false);
+    expect(mailButton?.getAttribute('aria-disabled')).toBe('false');
+
+    mailButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onMailClick).toHaveBeenCalledTimes(1);
 
     manager.unmount();
   });

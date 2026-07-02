@@ -149,9 +149,9 @@ describe('levelPayoffSummary', () => {
     expect(rows).toEqual([
       {
         label: 'unlocks',
-        value: 'brewing, discoveries, alliance',
-        valueLines: ['brewing', 'discoveries', 'alliance'],
-        notice: 'brewing unlocked, discoveries available, alliance available',
+        value: 'brewing, discoveries, alliance, inbox',
+        valueLines: ['brewing', 'discoveries', 'alliance', 'inbox'],
+        notice: 'brewing unlocked, discoveries available, alliance available, inbox available',
       },
       {
         label: 'mana cap',
@@ -170,7 +170,7 @@ describe('levelPayoffSummary', () => {
       },
     ]);
     expect(formatLevelUpNotice(4, rows)).toBe(
-      'level 4 reached: brewing unlocked, discoveries available, alliance available, +50 mana cap, +1/sec mana regen, +1 crystal',
+      'level 4 reached: brewing unlocked, discoveries available, alliance available, inbox available, +50 mana cap, +1/sec mana regen, +1 crystal',
     );
   });
 
@@ -186,6 +186,7 @@ describe('levelPayoffSummary', () => {
       'leaderboard',
       'discoveries',
       'alliance',
+      'inbox',
     ]);
   });
 });

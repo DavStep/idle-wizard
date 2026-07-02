@@ -40,14 +40,14 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level1-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 4 },
+      { id: 'level1-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 1 },
     ]);
   });
 
-  it('uses the reduced level 1 completion cost', () => {
+  it('uses the free level 1 completion cost', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
-    expect(taskBalanceManager.getLevelCompletionCostCoin(1)).toBe(10);
+    expect(taskBalanceManager.getLevelCompletionCostCoin(1)).toBe(0);
   });
 
   it('accepts legacy SpacetimeDB completionCostGold runtime costs', () => {
@@ -67,9 +67,10 @@ describe('TaskBalanceManager', () => {
     expect(taskBalanceManager.getLevelCompletionCostCoin(1)).toBe(10);
   });
 
-  it('uses reduced level 2 sage requirements with herb first', () => {
+  it('uses level 2 as the first normal market coin gate', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
+    expect(taskBalanceManager.getLevelCompletionCostCoin(2)).toBe(4);
     expect(
       taskBalanceManager.getLevelTasks(2).map((task) => ({
         id: task.id,
@@ -77,12 +78,11 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level2-sage-herb', itemKey: 'sageHerb', requiredQuantity: 2 },
-      { id: 'level2-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 7 },
+      { id: 'level2-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 5 },
     ]);
   });
 
-  it('uses low-tier rounded target level 5 requirements', () => {
+  it('introduces herbs on level 4 requirements', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -92,14 +92,13 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level4-nettle-seeds', itemKey: 'sageSeed', requiredQuantity: 37 },
-      { id: 'level4-nettle-herb', itemKey: 'nettleHerb', requiredQuantity: 29 },
-      { id: 'level4-sage-herb', itemKey: 'mintHerb', requiredQuantity: 15 },
-      { id: 'level4-mana-tonic', itemKey: 'manaTonic', requiredQuantity: 4 },
+      { id: 'level4-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 6 },
+      { id: 'level4-sage-herb', itemKey: 'sageHerb', requiredQuantity: 2 },
+      { id: 'level4-mint-herb', itemKey: 'mintHerb', requiredQuantity: 1 },
     ]);
   });
 
-  it('uses diversified target level 6 through 10 requirements', () => {
+  it('uses diversified level 5 through 9 onboarding requirements', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -111,60 +110,38 @@ describe('TaskBalanceManager', () => {
       ),
     ).toEqual([
       [
-        { itemKey: 'nettleSeed', requiredQuantity: 45 },
-        { itemKey: 'lavenderHerb', requiredQuantity: 36 },
-        { itemKey: 'sageHerb', requiredQuantity: 18 },
-        { itemKey: 'minorHealingPotion', requiredQuantity: 4 },
+        { itemKey: 'sageSeed', requiredQuantity: 8 },
+        { itemKey: 'mintHerb', requiredQuantity: 2 },
+        { itemKey: 'manaTonic', requiredQuantity: 1 },
       ],
       [
-        { itemKey: 'sageSeed', requiredQuantity: 53 },
-        { itemKey: 'nettleHerb', requiredQuantity: 42 },
-        { itemKey: 'mintHerb', requiredQuantity: 21 },
-        { itemKey: 'nettleVigor', requiredQuantity: 5 },
+        { itemKey: 'nettleSeed', requiredQuantity: 6 },
+        { itemKey: 'nettleHerb', requiredQuantity: 3 },
+        { itemKey: 'sageHerb', requiredQuantity: 4 },
+        { itemKey: 'minorHealingPotion', requiredQuantity: 1 },
       ],
       [
-        { itemKey: 'mintSeed', requiredQuantity: 61 },
-        { itemKey: 'briarHerb', requiredQuantity: 49 },
-        { itemKey: 'sageHerb', requiredQuantity: 25 },
-        { itemKey: 'minorHealingPotion', requiredQuantity: 6 },
+        { itemKey: 'lavenderSeed', requiredQuantity: 8 },
+        { itemKey: 'sageSeed', requiredQuantity: 8 },
+        { itemKey: 'mintHerb', requiredQuantity: 5 },
+        { itemKey: 'manaTonic', requiredQuantity: 2 },
       ],
       [
-        { itemKey: 'sageSeed', requiredQuantity: 70 },
-        { itemKey: 'lavenderHerb', requiredQuantity: 56 },
-        { itemKey: 'nettleHerb', requiredQuantity: 28 },
-        { itemKey: 'calmingDraught', requiredQuantity: 7 },
+        { itemKey: 'mintSeed', requiredQuantity: 12 },
+        { itemKey: 'briarSeed', requiredQuantity: 8 },
+        { itemKey: 'lavenderHerb', requiredQuantity: 4 },
+        { itemKey: 'nettleVigor', requiredQuantity: 2 },
       ],
       [
-        { itemKey: 'briarSeed', requiredQuantity: 79 },
-        { itemKey: 'glowcapHerb', requiredQuantity: 46 },
-        { itemKey: 'mintHerb', requiredQuantity: 23 },
-        { itemKey: 'minorHealingPotion', requiredQuantity: 10 },
+        { itemKey: 'lavenderSeed', requiredQuantity: 10 },
+        { itemKey: 'briarHerb', requiredQuantity: 4 },
+        { itemKey: 'nettleHerb', requiredQuantity: 6 },
+        { itemKey: 'calmingDraught', requiredQuantity: 2 },
       ],
     ]);
   });
 
-  it('uses one potion through target level 10 with lighter direct herbs', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-
-    expect(
-      taskBalanceManager.getLevelTasks(9).map((task) => ({
-        id: task.id,
-        itemKey: task.itemKey,
-        requiredQuantity: task.requiredQuantity,
-      })),
-    ).toEqual([
-      { id: 'level9-briar-seeds', itemKey: 'briarSeed', requiredQuantity: 79 },
-      { id: 'level9-glowcap-seeds', itemKey: 'glowcapHerb', requiredQuantity: 46 },
-      { id: 'level9-glowcap-herb', itemKey: 'mintHerb', requiredQuantity: 23 },
-      {
-        id: 'level9-calming-draught',
-        itemKey: 'minorHealingPotion',
-        requiredQuantity: 10,
-      },
-    ]);
-  });
-
-  it('keeps target level 11 as the first stage boss before the level 11 relief row', () => {
+  it('keeps the level 10 onboarding row mixed but light', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     expect(
@@ -174,11 +151,33 @@ describe('TaskBalanceManager', () => {
         requiredQuantity: task.requiredQuantity,
       })),
     ).toEqual([
-      { id: 'level10-briar-ward', itemKey: 'lavenderSeed', requiredQuantity: 106 },
-      { id: 'level10-glowcap-seeds', itemKey: 'briarHerb', requiredQuantity: 57 },
-      { id: 'level10-glowcap-herb', itemKey: 'nettleHerb', requiredQuantity: 38 },
-      { id: 'level10-calming-draught', itemKey: 'briarWard', requiredQuantity: 11 },
-      { id: 'level10-briar-seeds', itemKey: 'nettleVigor', requiredQuantity: 8 },
+      { id: 'level10-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 12 },
+      { id: 'level10-glowcap-seeds', itemKey: 'glowcapSeed', requiredQuantity: 8 },
+      { id: 'level10-sage-herb', itemKey: 'sageHerb', requiredQuantity: 8 },
+      { id: 'level10-briar-ward', itemKey: 'briarWard', requiredQuantity: 2 },
+      {
+        id: 'level10-minor-healing-potion',
+        itemKey: 'minorHealingPotion',
+        requiredQuantity: 3,
+      },
+    ]);
+  });
+
+  it('keeps level 11 as the first post-onboarding relief row', () => {
+    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+
+    expect(
+      taskBalanceManager.getLevelTasks(11).map((task) => ({
+        id: task.id,
+        itemKey: task.itemKey,
+        requiredQuantity: task.requiredQuantity,
+      })),
+    ).toEqual([
+      { id: 'level11-glowcap-seeds', itemKey: 'mintSeed', requiredQuantity: 69 },
+      { id: 'level11-mandrake-seeds', itemKey: 'mandrakeHerb', requiredQuantity: 37 },
+      { id: 'level11-mandrake-herb', itemKey: 'glowcapHerb', requiredQuantity: 25 },
+      { id: 'level11-briar-ward', itemKey: 'manaTonic', requiredQuantity: 6 },
+      { id: 'level11-calming-draught', itemKey: 'calmingDraught', requiredQuantity: 6 },
     ]);
   });
 
@@ -232,7 +231,7 @@ describe('TaskBalanceManager', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
     const levels = taskBalanceManager.getLevels();
     const levelByNumber = new Map(levels.map((level) => [level.level, level]));
-    const bossLevels = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+    const bossLevels = [20, 30, 40, 50, 60, 70, 80, 90, 100];
 
     for (const bossLevel of bossLevels.slice(0, -1)) {
       const bossTotal = getRequiredQuantityTotal(levelByNumber.get(bossLevel));
@@ -254,14 +253,14 @@ describe('TaskBalanceManager', () => {
     }
   });
 
-  it('does not repeat exact requirement items on adjacent levels from target level 6 onward', () => {
+  it('does not repeat exact requirement items on adjacent post-onboarding levels', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
     const levels = taskBalanceManager.getLevels();
 
     for (let index = 1; index < levels.length; index += 1) {
       const level = levels[index];
 
-      if (level.level < 5) {
+      if (level.level <= 10) {
         continue;
       }
 
@@ -293,18 +292,15 @@ describe('TaskBalanceManager', () => {
     }
   });
 
-  it('uses one potion for target levels 5-10 and two potions from target level 11 onward', () => {
+  it('uses five tasks from the post-onboarding curve onward', () => {
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
 
     for (const level of taskBalanceManager.getLevels()) {
-      if (level.level < 4) {
+      if (level.level <= 10) {
         continue;
       }
 
-      const targetLevel = Math.min(level.level + 1, taskBalanceManager.getMaxLevel());
-      const expectedTaskCount = targetLevel <= 10 ? 4 : 5;
-
-      expect(level.tasks, `config level ${level.level}`).toHaveLength(expectedTaskCount);
+      expect(level.tasks, `config level ${level.level}`).toHaveLength(5);
     }
   });
 
@@ -317,7 +313,7 @@ describe('TaskBalanceManager', () => {
     );
 
     for (const level of taskBalanceManager.getLevels()) {
-      if (level.level < 4) {
+      if (level.level <= 10) {
         continue;
       }
 

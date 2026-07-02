@@ -228,10 +228,10 @@ describe('WorkshopWorldNoticeManager', () => {
   it('pins character button notification dots to the label box corner', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const outerBadgeRule = baseCss.match(
-      /\.workshop-page__personal-tasks-open\[data-notification="true"\]::before,\s*\.workshop-page__world-notice-open\[data-notification="true"\]::before\s*\{(?<body>[^}]*)\}/,
+      /\.workshop-page__personal-tasks-open\[data-notification="true"\]::before,\s*\.workshop-page__world-notice-open\[data-notification="true"\]::before,(?:\s*\.workshop-page__mail-button\[data-notification="true"\]::before,?)?\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const labelBadgeRule = baseCss.match(
-      /\.workshop-page__personal-tasks-open\[data-notification="true"\]\s+\.workshop-page__feature-character-label::after,\s*\.workshop-page__world-notice-open\[data-notification="true"\]\s+\.workshop-page__feature-character-label::after\s*\{(?<body>[^}]*)\}/,
+      /\.workshop-page__personal-tasks-open\[data-notification="true"\]\s+\.workshop-page__feature-character-label::after,\s*\.workshop-page__world-notice-open\[data-notification="true"\]\s+\.workshop-page__feature-character-label::after,(?:\s*\.workshop-page__mail-button\[data-notification="true"\]\s+\.workshop-page__feature-character-label::after,?)?\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(outerBadgeRule).toMatch(/\bdisplay:\s*none;/);

@@ -6,6 +6,11 @@ import {
   createWorkshopLeaderboardUserLabel,
 } from './WorkshopLeaderboardRowRenderer.js';
 
+const LEADERBOARD_ICON_URL = new URL(
+  '../../../assets/icons/icon-leaderboard-trophy.webp',
+  import.meta.url,
+).href;
+
 const LEADERBOARD_SCOPES = [
   {
     id: 'singlePlayer',
@@ -108,8 +113,10 @@ export class WorkshopLeaderboardManager {
       return this.root;
     }
 
-    this.root = document.createElement('div');
-    this.root.className = 'workshop-page__leaderboard';
+    this.root = document.createElement('section');
+    this.root.className = 'workshop-page__panel-button workshop-page__leaderboard';
+    this.root.dataset.panelSide = 'left';
+    this.root.setAttribute('aria-label', 'leaderboard');
 
     this.refs.button = this.createButton();
     this.refs.popup = this.createPopup();
@@ -150,9 +157,31 @@ export class WorkshopLeaderboardManager {
 
   createButton() {
     const button = document.createElement('button');
-    button.className = 'style-button workshop-page__leaderboard-button';
+    button.className =
+      'workshop-page__panel-button-open workshop-page__leaderboard-button';
     button.type = 'button';
-    button.textContent = 'leaderboard';
+    button.setAttribute('aria-haspopup', 'dialog');
+    button.setAttribute('aria-label', 'open leaderboard');
+
+    const iconFrame = document.createElement('span');
+    iconFrame.className = 'workshop-page__leaderboard-button-icon-frame';
+    iconFrame.setAttribute('aria-hidden', 'true');
+
+    const icon = document.createElement('img');
+    icon.className = 'workshop-page__leaderboard-button-icon';
+    icon.src = LEADERBOARD_ICON_URL;
+    icon.alt = '';
+    icon.loading = 'lazy';
+    icon.decoding = 'async';
+    icon.setAttribute('aria-hidden', 'true');
+
+    const label = document.createElement('span');
+    label.className =
+      'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__leaderboard-button-label';
+    label.textContent = 'leaderboard';
+
+    iconFrame.append(icon);
+    button.append(iconFrame, label);
     button.addEventListener('click', () => this.show());
     return button;
   }

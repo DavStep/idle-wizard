@@ -3,6 +3,15 @@ import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { getSeedSummonNotification } from '../../notifications/managers/PageNotificationStateManager.js';
+import {
+  WORKSHOP_INBOX_UNLOCK_LEVEL,
+  WorkshopSecondaryActionGateManager,
+} from './WorkshopSecondaryActionGateManager.js';
+
+const MAIL_ICON_URL = new URL(
+  '../../../assets/icons/icon-mail-envelope.webp',
+  import.meta.url,
+).href;
 
 const SUMMON_HOLD_REPEAT_MS = 100;
 const SUMMON_CLICK_SUPPRESSION_MS = 550;
@@ -29,6 +38,9 @@ export class WorkshopActionBarManager {
     this.onSummonNotice = onSummonNotice;
     this.onSummonNoticeList = onSummonNoticeList;
     this.rewardEventsAvailable = rewardEventsAvailable;
+    this.inboxGateManager = new WorkshopSecondaryActionGateManager({
+      unlockLevel: WORKSHOP_INBOX_UNLOCK_LEVEL,
+    });
     this.root = null;
     this.unsubscribe = null;
     this.inboxUnsubscribe = null;
@@ -62,13 +74,13 @@ export class WorkshopActionBarManager {
 
     this.refs.summonButton = this.createSummonButton();
     this.refs.summonInfoButton = this.createSummonInfoButton();
-    this.refs.mailButton = this.createMailButton();
+    this.refs.mailButtonPanel = this.createMailButton();
     this.refs.bagButton = this.createBagButton();
 
     this.root.append(
       this.refs.summonButton,
       this.refs.summonInfoButton,
-      this.refs.mailButton,
+      this.refs.mailButtonPanel,
       this.refs.bagButton,
     );
     parent.append(this.root);
@@ -149,13 +161,47 @@ export class WorkshopActionBarManager {
   }
 
   createMailButton() {
+    const root = document.createElement('section');
+    root.className = 'workshop-page__panel-button workshop-page__mail-button-panel';
+    root.dataset.panelSide = 'center';
+    root.setAttribute('aria-label', 'mail');
+
     const button = document.createElement('button');
-    button.className = 'style-button workshop-page__mail-button';
+    button.className = 'workshop-page__panel-button-open workshop-page__mail-button';
     button.type = 'button';
-    button.textContent = 'mail';
+    button.setAttribute('aria-haspopup', 'dialog');
     button.setAttribute('aria-label', 'open inbox');
-    button.addEventListener('click', () => this.onMailClick?.());
-    return button;
+
+    const iconFrame = document.createElement('span');
+    iconFrame.className = 'workshop-page__mail-button-icon-frame';
+    iconFrame.setAttribute('aria-hidden', 'true');
+
+    const icon = document.createElement('img');
+    icon.className = 'workshop-page__mail-button-icon';
+    icon.src = MAIL_ICON_URL;
+    icon.alt = '';
+    icon.loading = 'lazy';
+    icon.decoding = 'async';
+    icon.setAttribute('aria-hidden', 'true');
+
+    const label = document.createElement('span');
+    label.className =
+      'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__mail-button-label';
+    label.textContent = 'mail';
+
+    iconFrame.append(icon);
+    button.append(iconFrame, label);
+    button.addEventListener('click', (event) => {
+      if (button.disabled) {
+        event.preventDefault();
+        return;
+      }
+
+      this.onMailClick?.();
+    });
+    root.append(button);
+    this.refs.mailButton = button;
+    return root;
   }
 
   onSummonClick(event) {
@@ -415,6 +461,7 @@ export class WorkshopActionBarManager {
     this.setAttribute(this.refs.summonButton, 'aria-disabled', ariaDisabled);
     this.refs.summonButton.disabled = false;
     setNotificationBadge(this.refs.summonButton, getSeedSummonNotification(snapshot));
+    this.inboxGateManager.apply(snapshot, [this.refs.mailButtonPanel]);
   }
 
   renderInbox(snapshot) {

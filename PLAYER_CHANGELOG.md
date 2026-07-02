@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.73
+
+- Made the first Workshop entry and level 1 task free so new wizards reach the first level-up faster.
+- Rebalanced early level requirements and research costs/timers through level 10 for a smoother Market, Research, Garden, and Brewing ramp.
+- Updated Elara's tutorial flow to use normal fast-sell behavior, introduce Research before Garden, and guide Brewing from mana tonic research.
+- Polished Workshop shortcut buttons with mail, leaderboard, and discoveries icons, plus cleaner intro and room unlock animations.
+
 ## 0.2.72
 
 - Moved wizard name setup out of Elara's first lessons so the early tutorial starts faster and social surfaces ask for a name only when needed.

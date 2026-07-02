@@ -147,7 +147,7 @@ function createGameplayFacadeFake() {
         totalTasks: 1,
         completion: {
           level: 1,
-          costCoin: 10,
+          costCoin: 0,
           allTasksCompleted: false,
           atMaxLevel: false,
           completedAllLevels: false,
@@ -162,9 +162,9 @@ function createGameplayFacadeFake() {
             itemKey: 'sageSeed',
             itemLabel: 'sage seed',
             itemKind: 'seed',
-            requiredQuantity: 5,
+            requiredQuantity: 1,
             progressQuantity: 0,
-            remainingQuantity: 5,
+            remainingQuantity: 1,
             ownedQuantity: 0,
             progress: 0,
             maxed: false,
@@ -2535,45 +2535,6 @@ function createGameplayFacadeFake() {
         cooldownSeconds: snapshot.shop.coinOffer.cooldownSeconds,
       };
     },
-    sellTutorialItemForCoin: ({ itemKey, quantity = 1, coinEach = 1, coinTarget = null } = {}) => {
-      const item = getItemDefinitionByKey(itemKey);
-      const requestedQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
-      const remainingCoin = Number.isFinite(coinTarget)
-        ? Math.max(0, Math.floor(Number(coinTarget)) - snapshot.coin.current)
-        : Number.POSITIVE_INFINITY;
-
-      if (remainingCoin <= 0) {
-        return {
-          ok: false,
-          reason: 'coin_target_met',
-        };
-      }
-
-      const targetQuantity = Number.isFinite(remainingCoin)
-        ? Math.min(requestedQuantity, Math.ceil(remainingCoin / coinEach))
-        : requestedQuantity;
-      const sellQuantity = Math.min(targetQuantity, getItemQuantity(item.id));
-
-      if (sellQuantity <= 0 || !removeItemQuantity(item.id, sellQuantity)) {
-        return {
-          ok: false,
-          reason: 'not_enough_items',
-        };
-      }
-
-      const coin = Math.min(remainingCoin, sellQuantity * coinEach);
-      snapshot.coin.current += coin;
-      publish();
-
-      return {
-        ok: true,
-        item,
-        quantity: sellQuantity,
-        coin,
-        currentCoin: snapshot.coin.current,
-        tutorial: true,
-      };
-    },
     fillTradeAllianceItemQuest: (quest) => {
       const item = getItemDefinitionByKey(quest.itemKey);
       const remainingQuantity = Math.max(0, quest.target - quest.progress);
@@ -3720,7 +3681,13 @@ describe('PagesFacade', () => {
     ).toBe(true);
     expect(stage.querySelector('.workshop-page__logs-button')).toBeNull();
     expect(stage.querySelector('.workshop-page__logs')).toBeNull();
-    expect(stage.querySelector('.workshop-page__discoveries-button')?.textContent).toBe(
+    expect(stage.querySelector('.workshop-page__discoveries')?.dataset.panelSide).toBe(
+      'right',
+    );
+    expect(
+      stage.querySelector('.workshop-page__discoveries-button-icon')?.getAttribute('src'),
+    ).toContain('icon-discoveries-journal.webp');
+    expect(stage.querySelector('.workshop-page__discoveries-button-label')?.textContent).toBe(
       'discoveries',
     );
     expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(true);
@@ -4200,7 +4167,7 @@ describe('PagesFacade', () => {
     expect(layer?.querySelector('.tutorial-layer__skip')).toBeNull();
   });
 
-  it('plays first-run intro before Elara and resumes FTUE after the workshop beat', async () => {
+  it('plays first-run intro before Elara and resumes FTUE after the workshop entry', async () => {
     vi.useFakeTimers();
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -4208,6 +4175,7 @@ describe('PagesFacade', () => {
       initialCharacter: 'rowan',
     });
     const setCharacter = vi.spyOn(playerFacade, 'setCharacter');
+    const setUsername = vi.spyOn(playerFacade, 'setUsername');
     const firstRunIntroStorage = createMemoryStorage({
       [FIRST_RUN_INTRO_STORAGE_KEY]: JSON.stringify({ state: 'pending' }),
     });
@@ -4258,13 +4226,13 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.first-run-intro__rainbow')).not.toBeNull();
     expect(stage.querySelector('.tutorial-layer')).toBeNull();
 
-    const backdrop = stage.querySelector('.first-run-intro__backdrop');
+    const backdropLayer = stage.querySelector('.first-run-intro__backdrop-layer');
     const originalGetComputedStyle = window.getComputedStyle.bind(window);
     let sampledBeforeStableClass = false;
     const getComputedStyleSpy = vi
       .spyOn(window, 'getComputedStyle')
       .mockImplementation((element) => {
-        if (element === backdrop) {
+        if (element === backdropLayer) {
           sampledBeforeStableClass = !intro?.classList.contains(
             'first-run-intro--stable-backdrop',
           );
@@ -4281,7 +4249,7 @@ describe('PagesFacade', () => {
     await advance();
     getComputedStyleSpy.mockRestore();
     expect(sampledBeforeStableClass).toBe(true);
-    expect(backdrop?.style.transform).toBe('matrix(1.04, 0, 0, 1.04, 0, -5)');
+    expect(backdropLayer?.style.transform).toBe('matrix(1.04, 0, 0, 1.04, 0, -5)');
     expect(intro?.dataset.scene).toBe('defeated');
 
     await advance({ backdropTransition: 'changing' });
@@ -4303,34 +4271,24 @@ describe('PagesFacade', () => {
       'better use',
     );
 
-    await advance();
-    const nameInput = stage.querySelector('.first-run-intro__name-input');
-    expect(nameInput).not.toBeNull();
-    nameInput.value = 'Mira';
     await advance({ backdropTransition: 'changing' });
-    expect(playerFacade.getSnapshot().username).toBe('Mira');
+    expect(stage.querySelector('.first-run-intro__name-input')).toBeNull();
+    expect(setUsername).not.toHaveBeenCalled();
+    expect(playerFacade.getSnapshot().username).toBe('wizard');
     expect(stage.querySelector('.first-run-intro__avatar')).toBeNull();
     expect(stage.querySelector('.first-run-intro [role="radiogroup"]')).toBeNull();
     expect(setCharacter).not.toHaveBeenCalled();
     expect(playerFacade.getSnapshot().character).toBe('rowan');
     expect(intro?.dataset.scene).toBe('workshop');
     const saleBoard = stage.querySelector('.first-run-intro__workshop-sale');
-    expect(saleBoard?.textContent).toContain('on sale');
-    expect(saleBoard?.textContent).toContain('x10');
-    expect(
-      saleBoard
-        ?.querySelector('.first-run-intro__workshop-sale-icon')
-        ?.getAttribute('data-asset-atlas-frame'),
-    ).toBe('resource:coin');
+    expect(saleBoard?.parentElement).toBe(backdropLayer);
+    expect(saleBoard?.textContent).toContain('vacant');
+    expect(saleBoard?.textContent).toContain('free');
+    expect(saleBoard?.querySelector('.first-run-intro__workshop-sale-icon')).toBeNull();
 
     await advance();
     expect(stage.querySelector('.first-run-intro__text')?.textContent).toContain(
-      '10 coin',
-    );
-
-    await advance();
-    expect(stage.querySelector('.first-run-intro__text')?.textContent).toContain(
-      'door opens',
+      'key is still under the sill',
     );
 
     await advance({ completes: true, backdropTransition: 'changing' });
@@ -4391,11 +4349,12 @@ describe('PagesFacade', () => {
     pagesFacade.unmount();
   });
 
-  it('shows passive FTUE guidance for level five theme settings', () => {
+  it('shows FTUE guidance for level five mana tonic research', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const storage = createMemoryStorage();
     gameplayFacade.getSnapshot().tasks.currentLevel = 5;
+    gameplayFacade.getSnapshot().playerLevel.currentLevel = 5;
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -4405,30 +4364,14 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
     pagesFacade.tutorialFacade.refresh();
 
-    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('find-theme-settings');
-    expect(pagesFacade.tutorialFacade.activeStep?.cueMode).toBe('passive');
-    expect(pagesFacade.tutorialFacade.activeStep?.targetId).toBe('top:username');
+    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('research-mana-tonic');
+    expect(pagesFacade.tutorialFacade.activeStep?.targetId).toBe('page:research');
     expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
-    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
-
-    stage
-      .querySelector('[data-tutorial-id="top:username"]')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    pagesFacade.tutorialFacade.refresh();
-
-    expect(pagesFacade.tutorialFacade.activeStep?.targetId).toBe('top:settings:theme-tab');
-
-    stage
-      .querySelector('[data-tutorial-id="top:settings:theme-tab"]')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    pagesFacade.tutorialFacade.refresh();
-
-    expect(pagesFacade.tutorialFacade.activeStep).toBeNull();
 
     pagesFacade.unmount();
   });
 
-  it('auto-completes FTUE for players already past settings introduction', () => {
+  it('auto-completes FTUE for players already past brewing introduction', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const storage = createMemoryStorage();
@@ -4459,10 +4402,11 @@ describe('PagesFacade', () => {
     );
 
     snapshot.seedInventory[0].quantity = 1;
+    task.requiredQuantity = 2;
     task.progressQuantity = 1;
-    task.remainingQuantity = 9;
+    task.remainingQuantity = 1;
     task.ownedQuantity = 1;
-    task.progress = 0.1;
+    task.progress = 0.5;
     task.canFill = true;
 
     const pagesFacade = new PagesFacade({
@@ -4485,7 +4429,7 @@ describe('PagesFacade', () => {
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(task.progressQuantity).toBe(2);
-    expect(task.remainingQuantity).toBe(3);
+    expect(task.remainingQuantity).toBe(0);
     expect(snapshot.seedInventory[0].quantity).toBe(0);
   });
 
@@ -4726,7 +4670,7 @@ describe('PagesFacade', () => {
     expect(tasks).not.toBeNull();
     expect(tasks.parentElement?.classList.contains('workshop-page__tasks-slot')).toBe(true);
     expect(title?.textContent).toBe('level 2 requirements');
-    expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
+    expect(summaryRow?.textContent).toBe('sage seed0/1turn in');
     expect(rewards?.hidden).toBe(true);
     expect(rewardsToggle?.hidden).toBe(true);
     expect(rewardsToggle?.disabled).toBe(true);
@@ -4808,7 +4752,7 @@ describe('PagesFacade', () => {
 
     expect(tasks).not.toBeNull();
     expect(title?.textContent).toBe('level 2 requirements');
-    expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
+    expect(summaryRow?.textContent).toBe('sage seed0/1turn in');
     expect(stage.querySelector('.workshop-page__tasks-helper')).toBeNull();
     expect(infoPopup?.hidden).toBe(true);
     expect(backdrop?.hidden).toBe(true);
@@ -4869,7 +4813,7 @@ describe('PagesFacade', () => {
     expect(backdrop.hidden).toBe(false);
     expect(list.querySelectorAll('.workshop-page__task')).toHaveLength(1);
     expect(list.querySelector('.workshop-page__task-label')?.textContent).toBe('mint seed');
-    expect(summaryRow?.textContent).toBe('sage seed0/5turn in');
+    expect(summaryRow?.textContent).toBe('sage seed0/1turn in');
     expect(rewards?.hidden).toBe(false);
     expect(rewards?.textContent).toContain('rewards');
     expect(rewards?.textContent).not.toContain('level 2 rewards');
@@ -4939,6 +4883,7 @@ describe('PagesFacade', () => {
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createCompletedTutorialStorage(),
     });
 
     document.body.append(stage);
@@ -5892,12 +5837,12 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
-    snapshot.coin.current = 10;
+    snapshot.coin.current = 0;
     snapshot.tasks.level.completedTasks = 1;
     snapshot.tasks.level.totalTasks = 1;
     snapshot.tasks.level.completion = {
       level: 1,
-      costCoin: 10,
+      costCoin: 0,
       allTasksCompleted: true,
       atMaxLevel: false,
       completedAllLevels: false,
@@ -5965,13 +5910,18 @@ describe('PagesFacade', () => {
         ?.textContent,
     ).toBe('+1');
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
-    expect(button?.textContent).toBe('level up10 coin');
+    expect(button?.textContent).toBe('level upfree');
     expect(button?.disabled).toBe(false);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
+    expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('level up!');
+    expect(stage.querySelector('.room-announcement__level-flow')?.textContent).toBe(
+      'level 1> 2',
+    );
     expect(stage.querySelector('.workshop-page__flyout')?.textContent).toBe(
       'level 2 reached: garden unlocked, +1 garden plot, +50 mana cap, +1/sec mana regen, +1 crystal',
     );

@@ -2,236 +2,216 @@
   "levels": [
     {
       "level": 1,
-      "completionCostCoin": 10,
+      "completionCostCoin": 0,
       "tasks": [
         {
           "id": "level1-sage-seeds",
           "itemKey": "sageSeed",
-          "quantity": 4
+          "quantity": 1
         }
       ]
     },
     {
       "level": 2,
-      "completionCostCoin": 40,
+      "completionCostCoin": 4,
       "tasks": [
-        {
-          "id": "level2-sage-herb",
-          "itemKey": "sageHerb",
-          "quantity": 2
-        },
         {
           "id": "level2-sage-seeds",
           "itemKey": "sageSeed",
-          "quantity": 7
-        }
-      ]
-    },
-    {
-      "level": 3,
-      "completionCostCoin": 90,
-      "tasks": [
-        {
-          "id": "level3-sage-seeds",
-          "itemKey": "sageSeed",
-          "quantity": 29
-        },
-        {
-          "id": "level3-mint-seeds",
-          "itemKey": "mintSeed",
-          "quantity": 7
-        },
-        {
-          "id": "level3-mint-herb",
-          "itemKey": "mintHerb",
-          "quantity": 13
-        }
-      ]
-    },
-    {
-      "level": 4,
-      "completionCostCoin": 160,
-      "tasks": [
-        {
-          "id": "level4-nettle-seeds",
-          "itemKey": "sageSeed",
-          "quantity": 37
-        },
-        {
-          "id": "level4-nettle-herb",
-          "itemKey": "nettleHerb",
-          "quantity": 29
-        },
-        {
-          "id": "level4-sage-herb",
-          "itemKey": "mintHerb",
-          "quantity": 15
-        },
-        {
-          "id": "level4-mana-tonic",
-          "itemKey": "manaTonic",
-          "quantity": 4
-        }
-      ]
-    },
-    {
-      "level": 5,
-      "completionCostCoin": 250,
-      "tasks": [
-        {
-          "id": "level5-nettle-seeds",
-          "itemKey": "nettleSeed",
-          "quantity": 45
-        },
-        {
-          "id": "level5-lavender-seeds",
-          "itemKey": "lavenderHerb",
-          "quantity": 36
-        },
-        {
-          "id": "level5-lavender-herb",
-          "itemKey": "sageHerb",
-          "quantity": 18
-        },
-        {
-          "id": "level5-minor-healing-potion",
-          "itemKey": "minorHealingPotion",
-          "quantity": 4
-        }
-      ]
-    },
-    {
-      "level": 6,
-      "completionCostCoin": 360,
-      "tasks": [
-        {
-          "id": "level6-nettle-vigor",
-          "itemKey": "sageSeed",
-          "quantity": 53
-        },
-        {
-          "id": "level6-lavender-seeds",
-          "itemKey": "nettleHerb",
-          "quantity": 42
-        },
-        {
-          "id": "level6-lavender-herb",
-          "itemKey": "mintHerb",
-          "quantity": 21
-        },
-        {
-          "id": "level6-minor-healing-potion",
-          "itemKey": "nettleVigor",
           "quantity": 5
         }
       ]
     },
     {
+      "level": 3,
+      "completionCostCoin": 8,
+      "tasks": [
+        {
+          "id": "level3-sage-seeds",
+          "itemKey": "sageSeed",
+          "quantity": 6
+        },
+        {
+          "id": "level3-mint-seeds",
+          "itemKey": "mintSeed",
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "completionCostCoin": 16,
+      "tasks": [
+        {
+          "id": "level4-sage-seeds",
+          "itemKey": "sageSeed",
+          "quantity": 6
+        },
+        {
+          "id": "level4-sage-herb",
+          "itemKey": "sageHerb",
+          "quantity": 2
+        },
+        {
+          "id": "level4-mint-herb",
+          "itemKey": "mintHerb",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "completionCostCoin": 30,
+      "tasks": [
+        {
+          "id": "level5-sage-seeds",
+          "itemKey": "sageSeed",
+          "quantity": 8
+        },
+        {
+          "id": "level5-mint-herb",
+          "itemKey": "mintHerb",
+          "quantity": 2
+        },
+        {
+          "id": "level5-mana-tonic",
+          "itemKey": "manaTonic",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "level": 6,
+      "completionCostCoin": 50,
+      "tasks": [
+        {
+          "id": "level6-nettle-seeds",
+          "itemKey": "nettleSeed",
+          "quantity": 6
+        },
+        {
+          "id": "level6-nettle-herb",
+          "itemKey": "nettleHerb",
+          "quantity": 3
+        },
+        {
+          "id": "level6-sage-herb",
+          "itemKey": "sageHerb",
+          "quantity": 4
+        },
+        {
+          "id": "level6-minor-healing-potion",
+          "itemKey": "minorHealingPotion",
+          "quantity": 1
+        }
+      ]
+    },
+    {
       "level": 7,
-      "completionCostCoin": 490,
+      "completionCostCoin": 80,
       "tasks": [
         {
           "id": "level7-lavender-seeds",
-          "itemKey": "mintSeed",
-          "quantity": 61
+          "itemKey": "lavenderSeed",
+          "quantity": 8
         },
         {
-          "id": "level7-briar-seeds",
-          "itemKey": "briarHerb",
-          "quantity": 49
+          "id": "level7-sage-seeds",
+          "itemKey": "sageSeed",
+          "quantity": 8
         },
         {
-          "id": "level7-briar-herb",
-          "itemKey": "sageHerb",
-          "quantity": 25
+          "id": "level7-mint-herb",
+          "itemKey": "mintHerb",
+          "quantity": 5
         },
         {
-          "id": "level7-nettle-vigor",
-          "itemKey": "minorHealingPotion",
-          "quantity": 6
+          "id": "level7-mana-tonic",
+          "itemKey": "manaTonic",
+          "quantity": 2
         }
       ]
     },
     {
       "level": 8,
-      "completionCostCoin": 640,
+      "completionCostCoin": 120,
       "tasks": [
         {
-          "id": "level8-calming-draught",
-          "itemKey": "sageSeed",
-          "quantity": 70
+          "id": "level8-mint-seeds",
+          "itemKey": "mintSeed",
+          "quantity": 12
         },
         {
           "id": "level8-briar-seeds",
-          "itemKey": "lavenderHerb",
-          "quantity": 56
+          "itemKey": "briarSeed",
+          "quantity": 8
         },
         {
-          "id": "level8-briar-herb",
-          "itemKey": "nettleHerb",
-          "quantity": 28
+          "id": "level8-lavender-herb",
+          "itemKey": "lavenderHerb",
+          "quantity": 4
         },
         {
           "id": "level8-nettle-vigor",
-          "itemKey": "calmingDraught",
-          "quantity": 7
+          "itemKey": "nettleVigor",
+          "quantity": 2
         }
       ]
     },
     {
       "level": 9,
-      "completionCostCoin": 810,
+      "completionCostCoin": 170,
       "tasks": [
         {
-          "id": "level9-briar-seeds",
-          "itemKey": "briarSeed",
-          "quantity": 79
+          "id": "level9-lavender-seeds",
+          "itemKey": "lavenderSeed",
+          "quantity": 10
         },
         {
-          "id": "level9-glowcap-seeds",
-          "itemKey": "glowcapHerb",
-          "quantity": 46
+          "id": "level9-briar-herb",
+          "itemKey": "briarHerb",
+          "quantity": 4
         },
         {
-          "id": "level9-glowcap-herb",
-          "itemKey": "mintHerb",
-          "quantity": 23
+          "id": "level9-nettle-herb",
+          "itemKey": "nettleHerb",
+          "quantity": 6
         },
         {
           "id": "level9-calming-draught",
-          "itemKey": "minorHealingPotion",
-          "quantity": 10
+          "itemKey": "calmingDraught",
+          "quantity": 2
         }
       ]
     },
     {
       "level": 10,
-      "completionCostCoin": 1000,
+      "completionCostCoin": 230,
       "tasks": [
         {
-          "id": "level10-briar-ward",
-          "itemKey": "lavenderSeed",
-          "quantity": 106
+          "id": "level10-nettle-seeds",
+          "itemKey": "nettleSeed",
+          "quantity": 12
         },
         {
           "id": "level10-glowcap-seeds",
-          "itemKey": "briarHerb",
-          "quantity": 57
-        },
-        {
-          "id": "level10-glowcap-herb",
-          "itemKey": "nettleHerb",
-          "quantity": 38
-        },
-        {
-          "id": "level10-calming-draught",
-          "itemKey": "briarWard",
-          "quantity": 11
-        },
-        {
-          "id": "level10-briar-seeds",
-          "itemKey": "nettleVigor",
+          "itemKey": "glowcapSeed",
           "quantity": 8
+        },
+        {
+          "id": "level10-sage-herb",
+          "itemKey": "sageHerb",
+          "quantity": 8
+        },
+        {
+          "id": "level10-briar-ward",
+          "itemKey": "briarWard",
+          "quantity": 2
+        },
+        {
+          "id": "level10-minor-healing-potion",
+          "itemKey": "minorHealingPotion",
+          "quantity": 3
         }
       ]
     },

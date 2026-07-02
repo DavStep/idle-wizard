@@ -55,6 +55,7 @@ const OPTIONAL_BOTTOM_PANEL_TAB_BY_ID = new Map(
 );
 
 const LOCK_UNLOCK_ANIMATION_MS = 520;
+const UNLOCK_DELAY_WHILE_ANNOUNCEMENT_MS = 2100;
 
 export class BottomPanelViewManager {
   constructor({ getCurrentPageId, onShowPage, onAction, tabs = BOTTOM_PANEL_TABS } = {}) {
@@ -597,8 +598,10 @@ export class BottomPanelViewManager {
       return;
     }
 
+    const delayMs = this.getUnlockAnimationDelayMs();
     const token = String((Number(button.dataset.unlockAnimationToken) || 0) + 1);
     button.dataset.unlockAnimationToken = token;
+    button.style.setProperty('--room-bottom-tab-unlock-delay', `${delayMs}ms`);
     button.classList.remove('is-unlocking');
     void button.offsetWidth;
     button.classList.add('is-unlocking');
@@ -609,6 +612,7 @@ export class BottomPanelViewManager {
       }
 
       button.classList.remove('is-unlocking');
+      button.style.removeProperty('--room-bottom-tab-unlock-delay');
       delete button.dataset.unlockAnimationToken;
     };
 
@@ -625,7 +629,14 @@ export class BottomPanelViewManager {
     globalThis.setTimeout?.(() => {
       button.removeEventListener('animationend', handleAnimationEnd);
       clearAnimation();
-    }, LOCK_UNLOCK_ANIMATION_MS);
+    }, delayMs + LOCK_UNLOCK_ANIMATION_MS);
+  }
+
+  getUnlockAnimationDelayMs() {
+    const stage = this.root?.parentElement;
+    return stage?.querySelector?.('.room-announcement-layer:not([hidden])')
+      ? UNLOCK_DELAY_WHILE_ANNOUNCEMENT_MS
+      : 0;
   }
 
   getLockedMessage(tab, state) {

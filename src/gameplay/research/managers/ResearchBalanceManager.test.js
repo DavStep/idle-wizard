@@ -56,9 +56,11 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getDurationSeconds(researchCostResearchIds.reduction(1))).toBe(3);
     expect(manager.getDurationSeconds('emerald:plotPlanting:1:2')).toBe(3);
     expect(manager.getDurationSeconds('unlockSeed:sageSeed')).toBe(3);
-    expect(manager.getDurationSeconds('unlockSeed:mintSeed')).toBe(300);
+    expect(manager.getDurationSeconds('unlockSeed:mintSeed')).toBe(60);
+    expect(manager.getDurationSeconds('unlockSeed:glowcapSeed')).toBe(300);
     expect(manager.getDurationSeconds('unlockSeed:pearlrootSeed')).toBe(9_000);
     expect(manager.getDurationSeconds('unlockRecipe:manaTonic')).toBe(10);
+    expect(manager.getDurationSeconds('unlockRecipe:briarWard')).toBe(300);
     expect(manager.getDurationSeconds('unlockRecipe:pearlrootDraught')).toBe(14_400);
     expect(manager.getDurationSeconds('summonSeedsX2')).toBe(600);
     expect(manager.getCost(researchTimeResearchIds.reduction(8))).toEqual({
@@ -101,7 +103,15 @@ describe('ResearchBalanceManager', () => {
     expect(
       manager.getCost('unlockSeed:mintSeed', { researchCostReductionLevel: 1 }),
     ).toEqual({
-      amount: 22,
+      amount: 0,
+      currency: 'coin',
+    });
+    expect(
+      manager.getCost('unlockRecipe:minorHealingPotion', {
+        researchCostReductionLevel: 1,
+      }),
+    ).toEqual({
+      amount: 54,
       currency: 'coin',
     });
     expect(

@@ -6,7 +6,10 @@ import { setNotificationVisibilityPolicy } from '../shared/notificationBadge.js'
 import { TutorialFacade } from './TutorialFacade.js';
 import { TUTORIAL_STORAGE_KEY } from './managers/TutorialProgressManager.js';
 import { TUTORIAL_HINT_REMINDER_MS } from './managers/TutorialReminderManager.js';
-import { TUTORIAL_LESSON_THREE_STUCK_MS } from './managers/TutorialStepManager.js';
+import {
+  TUTORIAL_LESSON_THREE_STUCK_MS,
+  TUTORIAL_STEP_IDS,
+} from './managers/TutorialStepManager.js';
 
 const UI_SCALE = 3;
 const LESSON_HORIZONTAL_CHROME = 24;
@@ -105,7 +108,7 @@ function createLevelOneSnapshot() {
     tasks: {
       currentLevel: 1,
       level: {
-        completion: { canComplete: false, costCoin: 10 },
+        completion: { canComplete: false, costCoin: 0 },
         tasks: [],
       },
     },
@@ -119,12 +122,12 @@ function createLevelOneObjectiveSnapshot() {
     tasks: {
       currentLevel: 1,
       level: {
-        completion: { canComplete: false, costCoin: 10 },
+        completion: { canComplete: false, costCoin: 0 },
         tasks: [
           {
             taskId: 'level1-sage-seeds',
             itemKey: 'sageSeed',
-            requiredQuantity: 4,
+            requiredQuantity: 1,
             progressQuantity: 1,
             canFill: true,
             canComplete: false,
@@ -139,17 +142,17 @@ function createLevelOneObjectiveSnapshot() {
 function createLevelOneSaleSnapshot() {
   return {
     ...createLevelOneSnapshot(),
-    seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+    seedInventory: [{ key: 'sageSeed', quantity: 5 }],
     tasks: {
-      currentLevel: 1,
+      currentLevel: 2,
       level: {
-        completion: { canComplete: false, costCoin: 10 },
+        completion: { canComplete: true, costCoin: 4 },
         tasks: [
           {
-            taskId: 'level1-sage-seeds',
+            taskId: 'level2-sage-seeds',
             itemKey: 'sageSeed',
-            requiredQuantity: 4,
-            progressQuantity: 4,
+            requiredQuantity: 5,
+            progressQuantity: 5,
             remainingQuantity: 0,
             canFill: false,
             canComplete: false,
@@ -185,12 +188,12 @@ function createLevelTwoSageTaskSnapshot(overrides = {}) {
       },
     },
     tasks: {
-      currentLevel: 2,
+      currentLevel: 4,
       level: {
-        completion: { canComplete: false, costCoin: 40 },
+        completion: { canComplete: false, costCoin: 16 },
         tasks: [
           {
-            taskId: 'level2-sage-herb',
+            taskId: 'level4-sage-herb',
             itemKey: 'sageHerb',
             requiredQuantity: 2,
             progressQuantity: 1,
@@ -206,28 +209,13 @@ function createLevelTwoSageTaskSnapshot(overrides = {}) {
   };
 }
 
-const LEVEL_ONE_COMPLETED_STEP_IDS = [
-  'purchase-house',
-  'intro-welcome',
-  'intro-mana-sphere',
-  'first-summon-seed',
-  'first-fill-seed-task',
-  'finish-seed-task',
-  'first-task-complete',
-  'intro-market',
-  'prepare-seed-sale',
-  'open-market',
-  'select-market-stand',
-  'select-sage-seed-sale',
-  'show-selected-sale-amount',
-  'earn-tutorial-coin',
-  'first-sale-complete',
-  'unselect-sage-seed-sale',
-  'level-up-one',
-];
-const LEVEL_ONE_SELECTED_SALE_STEP_IDS = LEVEL_ONE_COMPLETED_STEP_IDS.slice(
+const LEVEL_ONE_COMPLETED_STEP_IDS = TUTORIAL_STEP_IDS.slice(
   0,
-  LEVEL_ONE_COMPLETED_STEP_IDS.indexOf('show-selected-sale-amount'),
+  TUTORIAL_STEP_IDS.indexOf('intro-market'),
+);
+const LEVEL_TWO_SELECTED_SALE_STEP_IDS = TUTORIAL_STEP_IDS.slice(
+  0,
+  TUTORIAL_STEP_IDS.indexOf('show-selected-sale-amount'),
 );
 
 describe('TutorialFacade', () => {
@@ -547,6 +535,7 @@ describe('TutorialFacade', () => {
     const stage = document.createElement('section');
     const popup = document.createElement('section');
     const amount = document.createElement('button');
+    const plusOne = document.createElement('button');
     const item = document.createElement('button');
     const sell = document.createElement('button');
     const gameplayFacade = {
@@ -558,23 +547,26 @@ describe('TutorialFacade', () => {
       getCurrentPageId: () => 'shop',
       storage: createMemoryStorage({
         [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-          completedStepIds: LEVEL_ONE_SELECTED_SALE_STEP_IDS,
+          completedStepIds: LEVEL_TWO_SELECTED_SALE_STEP_IDS,
         }),
       }),
     });
 
     popup.className = 'shop-page__direct-sell-popup';
     amount.dataset.tutorialId = 'shop:directSell:amount';
-    amount.textContent = '1';
+    amount.textContent = '5';
+    plusOne.dataset.tutorialId = 'shop:directSell:amount:+1';
+    plusOne.textContent = '+1';
     item.className = 'shop-page__direct-sell-item-button';
     item.dataset.directSellItemKey = 'sageSeed';
     item.dataset.tutorialId = 'shop:directSell:sageSeed';
     item.setAttribute('aria-pressed', 'true');
     sell.dataset.tutorialId = 'shop:directSell:sell';
-    popup.append(amount, item, sell);
+    popup.append(amount, plusOne, item, sell);
     stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
     setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
     setClientRect(amount, { left: 420, top: 560, width: 120, height: 54 });
+    setClientRect(plusOne, { left: 550, top: 560, width: 80, height: 54 });
     setClientRect(sell, { left: 680, top: 560, width: 140, height: 54 });
     stage.append(popup);
     document.body.append(stage);
@@ -585,6 +577,7 @@ describe('TutorialFacade', () => {
     expect(facade.activeStep?.id).toBe('show-selected-sale-amount');
     expect(facade.progressManager.hasCompleted('show-selected-sale-amount')).toBe(false);
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(true);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
     expect(amount.classList.contains('is-tutorial-target-emphasized')).toBe(true);
     expect(amount.getAttribute('data-tutorial-target-emphasis')).toBe('true');
 
@@ -657,6 +650,7 @@ describe('TutorialFacade', () => {
     const stage = document.createElement('section');
     const tasks = document.createElement('section');
     const taskButton = document.createElement('button');
+    const summonButton = document.createElement('button');
     const gameplayFacade = {
       getSnapshot: () => createLevelOneObjectiveSnapshot(),
       subscribe: () => () => {},
@@ -680,11 +674,13 @@ describe('TutorialFacade', () => {
     tasks.dataset.tutorialId = 'workshop:tasks';
     tasks.setAttribute('aria-expanded', 'true');
     taskButton.dataset.tutorialId = 'task:level1-sage-seeds';
+    summonButton.dataset.tutorialId = 'workshop:summonSeed';
     stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
     setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
     setClientRect(tasks, { left: 48, top: 660, width: 900, height: 280 });
     setClientRect(taskButton, { left: 64, top: 720, width: 760, height: 70 });
-    stage.append(tasks, taskButton);
+    setClientRect(summonButton, { left: 400, top: 1230, width: 280, height: 100 });
+    stage.append(tasks, taskButton, summonButton);
     document.body.append(stage);
 
     facade.mount(stage);
@@ -715,12 +711,12 @@ describe('TutorialFacade', () => {
         plot: { tiles: [] },
       },
       tasks: {
-        currentLevel: 2,
+        currentLevel: 4,
         level: {
-          completion: { canComplete: false, costCoin: 40 },
+          completion: { canComplete: false, costCoin: 16 },
           tasks: [
             {
-              taskId: 'level2-sage-herb',
+              taskId: 'level4-sage-herb',
               itemKey: 'sageHerb',
               requiredQuantity: 2,
               progressQuantity: 0,
@@ -772,18 +768,18 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
-  it('moves to garden after level two requirements are expanded', () => {
+  it('targets garden after level two requirements are expanded', () => {
     let currentPageId = 'workshop';
     const shownPages = [];
     const snapshot = createLevelTwoSageTaskSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 1 }],
       tasks: {
-        currentLevel: 2,
+        currentLevel: 4,
         level: {
-          completion: { canComplete: false, costCoin: 40 },
+          completion: { canComplete: false, costCoin: 16 },
           tasks: [
             {
-              taskId: 'level2-sage-herb',
+              taskId: 'level4-sage-herb',
               itemKey: 'sageHerb',
               requiredQuantity: 2,
               progressQuantity: 0,
@@ -793,11 +789,11 @@ describe('TutorialFacade', () => {
               completed: false,
             },
             {
-              taskId: 'level2-sage-seeds',
+              taskId: 'level4-sage-seeds',
               itemKey: 'sageSeed',
-              requiredQuantity: 7,
+              requiredQuantity: 6,
               progressQuantity: 0,
-              remainingQuantity: 7,
+              remainingQuantity: 6,
               canFill: false,
               canComplete: false,
               completed: false,
@@ -849,7 +845,8 @@ describe('TutorialFacade', () => {
     facade.refresh();
 
     expect(facade.activeStep?.id).toBe('grow-sage');
-    expect(shownPages).toEqual(['garden']);
+    expect(facade.activeStep?.targetId).toBe('page:garden');
+    expect(shownPages).toEqual([]);
 
     facade.unmount();
   });
@@ -865,12 +862,12 @@ describe('TutorialFacade', () => {
         plot: { tiles: [] },
       },
       tasks: {
-        currentLevel: 2,
+        currentLevel: 4,
         level: {
-          completion: { canComplete: false, costCoin: 40 },
+          completion: { canComplete: false, costCoin: 16 },
           tasks: [
             {
-              taskId: 'level2-sage-herb',
+              taskId: 'level4-sage-herb',
               itemKey: 'sageHerb',
               requiredQuantity: 2,
               progressQuantity: 1,
@@ -933,12 +930,12 @@ describe('TutorialFacade', () => {
         plot: { tiles: [] },
       },
       tasks: {
-        currentLevel: 2,
+        currentLevel: 4,
         level: {
-          completion: { canComplete: false, costCoin: 40 },
+          completion: { canComplete: false, costCoin: 16 },
           tasks: [
             {
-              taskId: 'level2-sage-herb',
+              taskId: 'level4-sage-herb',
               itemKey: 'sageHerb',
               requiredQuantity: 2,
               progressQuantity: 1,
@@ -1062,12 +1059,12 @@ describe('TutorialFacade', () => {
         plot: { tiles: [] },
       },
       tasks: {
-        currentLevel: 2,
+        currentLevel: 4,
         level: {
-          completion: { canComplete: false, costCoin: 40 },
+          completion: { canComplete: false, costCoin: 16 },
           tasks: [
             {
-              taskId: 'level2-sage-herb',
+              taskId: 'level4-sage-herb',
               itemKey: 'sageHerb',
               requiredQuantity: 2,
               progressQuantity: 1,
@@ -1132,7 +1129,8 @@ describe('TutorialFacade', () => {
   it('hides the lesson pointer while the sage plot is only growing', () => {
     let snapshot = createLevelTwoSageTaskSnapshot();
     const stage = document.createElement('section');
-    const plotLabel = document.createElement('span');
+    const plotRow = document.createElement('button');
+    const plotFrame = document.createElement('span');
     const gameplayFacade = {
       getSnapshot: () => snapshot,
       subscribe: () => () => {},
@@ -1143,18 +1141,21 @@ describe('TutorialFacade', () => {
       storage: createMemoryStorage(),
     });
 
-    plotLabel.dataset.tutorialId = 'garden:plot:1:label';
+    plotRow.dataset.tutorialId = 'garden:plot:1';
+    plotFrame.className = 'garden-page__plot-box-frame';
+    plotRow.append(plotFrame);
     stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
     setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
-    setClientRect(plotLabel, { left: 160, top: 240, width: 360, height: 54 });
-    stage.append(plotLabel);
+    setClientRect(plotRow, { left: 160, top: 240, width: 360, height: 180 });
+    setClientRect(plotFrame, { left: 190, top: 270, width: 160, height: 120 });
+    stage.append(plotRow);
     document.body.append(stage);
 
     facade.mount(stage);
     facade.refresh();
 
     expect(facade.activeStep?.id).toBe('grow-sage');
-    expect(facade.activeStep?.targetId).toBe('garden:plot:1:label');
+    expect(facade.activeStep?.targetId).toBe('garden:plot:1');
     expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(true);
 

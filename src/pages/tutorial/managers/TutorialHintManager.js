@@ -3081,7 +3081,8 @@ function isVisibleElement(element, root = null) {
 
 function getTargetCueAnchor(target) {
   const targetId = target?.dataset?.tutorialId ?? target?.getAttribute?.('data-tutorial-id');
-  const anchorSelector = TARGET_CUE_ANCHOR_SELECTORS.get(targetId);
+  const anchorSelector =
+    TARGET_CUE_ANCHOR_SELECTORS.get(targetId) ?? getDynamicTargetCueAnchorSelector(targetId);
   const anchor = anchorSelector ? target?.querySelector?.(anchorSelector) : null;
 
   if (anchor && isVisibleElement(anchor, target)) {
@@ -3089,6 +3090,12 @@ function getTargetCueAnchor(target) {
   }
 
   return target;
+}
+
+function getDynamicTargetCueAnchorSelector(targetId) {
+  return /^garden:plot:\d+$/.test(String(targetId ?? ''))
+    ? '.garden-page__plot-box-frame'
+    : null;
 }
 
 function normalizeActionLabel(label) {

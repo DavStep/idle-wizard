@@ -23,26 +23,33 @@ const FLOW_STEPS = [
   'first-summon-seed',
   'first-fill-seed-task',
   'finish-seed-task',
+  'first-task-complete',
+  'level-up-one',
   'intro-market',
   'prepare-seed-sale',
   'open-market',
   'select-market-stand',
   'select-sage-seed-sale',
+  'show-selected-sale-amount',
   'earn-tutorial-coin',
-  'level-up-one',
-  'intro-garden',
-  'grow-sage',
-  'fill-sage-seed-task',
-  'fill-sage-herb-task',
+  'first-sale-complete',
   'level-up-two',
   'intro-research',
   'research-mint-seed',
+  'first-research-complete',
   'fill-mint-seed-task',
-  'fill-mint-herb-task',
+  'fill-sage-seed-task',
   'level-up-three',
+  'intro-garden',
+  'grow-sage',
+  'first-harvest-complete',
+  'fill-sage-herb-task',
+  'fill-mint-herb-task',
+  'level-up-four',
   'research-mana-tonic',
   'intro-brewing',
   'brew-mana-tonic',
+  'first-brew-complete',
   'refill-mana-tonic-cauldron',
 ];
 
@@ -68,6 +75,16 @@ const STEP_ACTIONS = {
     await page.ensureTasksExpanded();
     await page.completeCurrentTask('level1-sage-seeds');
   },
+  'first-task-complete': async (page) => {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+  },
+  'level-up-one': async (page) => {
+    await page.ensurePage('workshop');
+    await page.ensureTasksExpanded();
+    await page.clickActiveTarget();
+    await page.cheat('addItem', 'sageSeed', 5);
+    await page.completeCurrentTask('level2-sage-seeds');
+  },
   'intro-market': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
     await page.cheat('fillMana');
@@ -85,37 +102,21 @@ const STEP_ACTIONS = {
     await page.ensureShopDirectSellPopup();
     await page.clickTarget('shop:directSell:sageSeed');
   },
+  'show-selected-sale-amount': async () => {
+    await sleep(2_100);
+  },
   'earn-tutorial-coin': async (page) => {
     await page.clickTarget('shop:directSell:sell');
+    await page.cheat('addCoin', 4);
   },
-  'level-up-one': async (page) => {
-    await page.clickTarget('page:workshop');
-    await page.ensureTasksExpanded();
-    await page.clickActiveTarget();
-    await page.cheat('addItem', 'sageSeed', 1);
-  },
-  'intro-garden': async (page) => {
+  'first-sale-complete': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
   },
-  'grow-sage': async (page) => {
-    await page.clickTarget('page:garden');
-    await page.cheat('addItem', 'sageHerb', 2);
-    await page.cheat('addItem', 'sageSeed', 7);
-  },
-  'fill-sage-seed-task': async (page) => {
-    await page.clickTarget('page:workshop');
-    await page.ensureTasksExpanded();
-    await page.completeCurrentTask('level2-sage-seeds');
-  },
-  'fill-sage-herb-task': async (page) => {
-    await page.clickTarget('page:workshop');
-    await page.ensureTasksExpanded();
-    await page.completeCurrentTask('level2-sage-herb');
-    await page.cheat('addCoin', 40);
-  },
   'level-up-two': async (page) => {
+    await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
     await page.clickActiveTarget();
+    await page.cheat('addItem', 'sageSeed', 6);
   },
   'intro-research': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
@@ -123,23 +124,51 @@ const STEP_ACTIONS = {
   'research-mint-seed': async (page) => {
     await page.clickTarget('page:research');
     await page.cheat('completeResearch', 'unlockSeed:mintSeed');
-    await page.cheat('addItem', 'mintSeed', 10);
+    await page.cheat('addItem', 'mintSeed', 3);
+  },
+  'first-research-complete': async (page) => {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
   },
   'fill-mint-seed-task': async (page) => {
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
-    await page.completeCurrentTask('level3-sage-seeds');
     await page.completeCurrentTask('level3-mint-seeds');
+  },
+  'fill-sage-seed-task': async (page) => {
+    await page.clickTarget('page:workshop');
+    await page.ensureTasksExpanded();
+    await page.completeCurrentTask('level3-sage-seeds');
+    await page.cheat('addCoin', 8);
+  },
+  'level-up-three': async (page) => {
+    await page.ensureTasksExpanded();
+    await page.clickActiveTarget();
+    await page.cheat('addItem', 'sageSeed', 2);
+  },
+  'intro-garden': async (page) => {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+  },
+  'grow-sage': async (page) => {
+    await page.clickTarget('page:garden');
+    await page.cheat('addItem', 'sageHerb', 2);
+  },
+  'first-harvest-complete': async (page) => {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+  },
+  'fill-sage-herb-task': async (page) => {
+    await page.clickTarget('page:workshop');
+    await page.ensureTasksExpanded();
+    await page.completeCurrentTask('level4-sage-herb');
   },
   'fill-mint-herb-task': async (page) => {
     await page.clickTarget('page:garden');
-    await page.cheat('addItem', 'mintHerb', 18);
+    await page.cheat('addItem', 'mintHerb', 1);
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
-    await page.completeCurrentTask('level3-mint-herb');
-    await page.cheat('addCoin', 80);
+    await page.completeCurrentTask('level4-mint-herb');
+    await page.cheat('addCoin', 16);
   },
-  'level-up-three': async (page) => {
+  'level-up-four': async (page) => {
     await page.ensureTasksExpanded();
     await page.clickActiveTarget();
   },
@@ -155,6 +184,9 @@ const STEP_ACTIONS = {
   'brew-mana-tonic': async (page) => {
     await page.clickTarget('page:brewing');
     await page.cheat('addItem', 'manaTonic', 1);
+  },
+  'first-brew-complete': async (page) => {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
   },
   'refill-mana-tonic-cauldron': async (page) => {
     await page.clickTarget('page:brewing');
@@ -260,21 +292,23 @@ async function prepareStepForCapture(page, stepId) {
     case 'first-fill-seed-task':
     case 'finish-seed-task':
     case 'level-up-one':
-    case 'fill-sage-seed-task':
-    case 'fill-sage-herb-task':
     case 'level-up-two':
     case 'fill-mint-seed-task':
+    case 'fill-sage-seed-task':
     case 'level-up-three':
+    case 'fill-sage-herb-task':
+    case 'fill-mint-herb-task':
+    case 'level-up-four':
       await page.ensurePage('workshop');
       await page.ensureTasksExpanded();
       break;
     case 'select-sage-seed-sale':
+    case 'show-selected-sale-amount':
     case 'earn-tutorial-coin':
       await page.ensurePage('shop');
       await page.ensureShopDirectSellPopup();
       break;
     case 'grow-sage':
-    case 'fill-mint-herb-task':
       await page.ensurePage('garden');
       break;
     case 'research-mint-seed':

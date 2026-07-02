@@ -3,10 +3,7 @@ import { TutorialLogicManager } from './managers/TutorialLogicManager.js';
 import { TutorialProgressManager } from './managers/TutorialProgressManager.js';
 import { TutorialRevealManager } from './managers/TutorialRevealManager.js';
 import { TutorialSaleManager } from './managers/TutorialSaleManager.js';
-import {
-  LEVEL_ONE_TUTORIAL_SALE,
-  TUTORIAL_STEP_IDS,
-} from './managers/TutorialStepManager.js';
+import { TUTORIAL_STEP_IDS } from './managers/TutorialStepManager.js';
 import { TutorialTargetManager } from './managers/TutorialTargetManager.js';
 
 export class TutorialFacade {
@@ -222,7 +219,7 @@ export class TutorialFacade {
 
   getDirectSellQuoteOverride({ item, quantity } = {}) {
     return this.saleManager.getDirectSellQuoteOverride({
-      step: this.getTutorialSalePreviewStep(),
+      step: this.activeStep,
       snapshot: this.gameplayFacade?.getSnapshot?.(),
       item,
       itemKey: item?.key,
@@ -245,26 +242,6 @@ export class TutorialFacade {
       itemKey: item?.key,
       quantity,
     });
-  }
-
-  getTutorialSalePreviewStep() {
-    if (!this.activeStep) {
-      return null;
-    }
-
-    if (this.activeStep.effect === 'tutorial-sale') {
-      return this.activeStep;
-    }
-
-    if (this.activeStep.id !== 'select-sage-seed-sale') {
-      return this.activeStep;
-    }
-
-    return {
-      ...this.activeStep,
-      effect: 'tutorial-sale',
-      sale: LEVEL_ONE_TUTORIAL_SALE,
-    };
   }
 
   refresh() {

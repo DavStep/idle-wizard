@@ -94,10 +94,10 @@ function findResearchSnapshot(gameplayFacade, researchId) {
 
 function unlockRecipeResearch(gameplayFacade, researchId = 'unlockRecipe:manaTonic') {
   const requiredLevelByResearchId = {
-    'unlockRecipe:manaTonic': 4,
-    'unlockRecipe:minorHealingPotion': 5,
+    'unlockRecipe:manaTonic': 5,
+    'unlockRecipe:minorHealingPotion': 6,
   };
-  advanceToLevel(gameplayFacade, requiredLevelByResearchId[researchId] ?? 4);
+  advanceToLevel(gameplayFacade, requiredLevelByResearchId[researchId] ?? 5);
   const research = findResearchSnapshot(gameplayFacade, researchId);
   const currentCoin = gameplayFacade.getSnapshot().coin.current;
   const costCoin = research?.costCoin ?? 0;
@@ -163,29 +163,14 @@ function openFirstPlayerMarketStand(gameplayFacade) {
 }
 
 describe('GameplayFacade', () => {
-  it('sells tutorial items locally for fixed coin', () => {
+  it('starts a new game with 30 mana', () => {
     const { gameplayFacade } = createGameplay();
-    unlockSageSeed(gameplayFacade);
-    gameplayFacade.itemsFacade.addItem(1, 1);
 
-    const result = gameplayFacade.sellTutorialItemForCoin({
-      itemKey: 'sageSeed',
-      quantity: 1,
-      coinEach: 10,
-      coinTarget: 10,
+    expect(gameplayFacade.getSnapshot().mana).toMatchObject({
+      current: 30,
+      cap: 50,
+      perSecond: 1,
     });
-
-    expect(result).toMatchObject({
-      ok: true,
-      quantity: 1,
-      coin: 10,
-      tutorial: true,
-    });
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(10);
-    expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(0);
-    expect(gameplayFacade.getSnapshot().logs.entries[0]?.message).toBe(
-      'sold sage seed for 10 coin',
-    );
   });
 
   it('persists gameplay progress across a new app instance', () => {
@@ -458,6 +443,7 @@ describe('GameplayFacade', () => {
 
   it('fills tasks from inventory and advances player level after coin payment', () => {
     const { gameplayFacade } = createGameplay();
+    finishCurrentTaskLevel(gameplayFacade);
     const [task] = gameplayFacade.getSnapshot().tasks.level.tasks;
     const partialQuantity = task.requiredQuantity - 1;
 
@@ -489,7 +475,7 @@ describe('GameplayFacade', () => {
     });
     expect(gameplayFacade.completeTask(task.taskId)).toMatchObject({
       ok: true,
-      currentLevel: 1,
+      currentLevel: 2,
       advanced: false,
     });
 
@@ -509,26 +495,26 @@ describe('GameplayFacade', () => {
       gameplayFacade.completeTask(remainingTask.taskId);
     }
 
-    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(1);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().tasks.level.completion).toMatchObject({
-      level: 1,
-      costCoin: 10,
+      level: 2,
+      costCoin: 4,
       canComplete: true,
     });
     expect(gameplayFacade.completeTaskLevel()).toMatchObject({
       ok: false,
       reason: 'not_enough_coin',
-      costCoin: 10,
+      costCoin: 4,
     });
 
-    gameplayFacade.coinFacade.add(10);
+    gameplayFacade.coinFacade.add(4);
     expect(gameplayFacade.completeTaskLevel()).toMatchObject({
       ok: true,
-      currentLevel: 2,
+      currentLevel: 3,
       advanced: true,
-      costCoin: 10,
+      costCoin: 4,
     });
-    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
     expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(2);
     expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
   });
@@ -1844,7 +1830,7 @@ describe('GameplayFacade', () => {
     expect(result.quantity).toBe(1);
     expect(result.seed.dropWeight).toBe(1);
     expect(result.seed.key).toBe('sageSeed');
-    expect(snapshot.mana.current).toBe(0);
+    expect(snapshot.mana.current).toBe(30);
     expect(result.seed.label).toMatch(/seed$/);
     expect(snapshot.inventory).toEqual([
       {
@@ -1916,7 +1902,7 @@ describe('GameplayFacade', () => {
         quantity: 2,
       },
     ]);
-    expect(snapshot.mana.current).toBe(0);
+    expect(snapshot.mana.current).toBe(30);
     expect(snapshot.inventory).toEqual([
       {
         itemTypeId: result.seed.id,
@@ -1942,13 +1928,14 @@ describe('GameplayFacade', () => {
       reason: 'no_summonable_seeds',
       cost: 10,
     });
-    expect(snapshot.mana.current).toBe(10);
+    expect(snapshot.mana.current).toBe(40);
     expect(snapshot.seedSummoning.canSummon).toBe(false);
     expect(snapshot.inventory).toEqual([]);
   });
 
   it('rejects seed summoning without enough mana', () => {
     const { gameplayFacade } = createGameplay();
+    gameplayFacade.manaFacade.setCurrent(0);
 
     const result = gameplayFacade.summonSeed();
 
@@ -2272,10 +2259,21 @@ describe('GameplayFacade', () => {
     expect(levelFourResearch.boxes[2].researches[0]).toEqual({
       id: 'unlockRecipe:manaTonic',
       label: 'mana tonic',
-      value: 'free',
+      value: 'locked',
       effect: 'brew',
-      requiredPlayerLevel: 4,
+      requiredPlayerLevel: 5,
       description: 'allows valid cauldron ingredients to brew mana tonic.',
+      costCoin: 0,
+      completed: false,
+      locked: true,
+      canResearch: false,
+    });
+
+    advanceToLevel(gameplayFacade, 5);
+    expect(gameplayFacade.getSnapshot().research.boxes[2].researches[0]).toMatchObject({
+      id: 'unlockRecipe:manaTonic',
+      value: 'free',
+      requiredPlayerLevel: 5,
       costCoin: 0,
       completed: false,
       canResearch: true,
@@ -2336,36 +2334,35 @@ describe('GameplayFacade', () => {
     ]);
   });
 
-  it('buys research with coin from research balance', () => {
+  it('buys paid research with coin from research balance', () => {
     const { gameplayFacade } = createGameplay();
 
-    advanceToLevel(gameplayFacade, 3);
-    gameplayFacade.coinFacade.add(25);
+    advanceToLevel(gameplayFacade, 6);
+    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toMatchObject({ ok: true });
+    gameplayFacade.coinFacade.add(40);
 
-    expect(gameplayFacade.getSnapshot().research.boxes[0].researches[1]).toMatchObject({
-      id: 'unlockSeed:mintSeed',
-      value: '25 coin',
-      costCoin: 25,
+    expect(findResearchSnapshot(gameplayFacade, 'unlockSeed:nettleSeed')).toMatchObject({
+      id: 'unlockSeed:nettleSeed',
+      value: '40 coin',
+      costCoin: 40,
       completed: false,
       canResearch: true,
     });
 
-    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
+    expect(gameplayFacade.buyResearch('unlockSeed:nettleSeed')).toEqual({
       ok: true,
-      researchId: 'unlockSeed:mintSeed',
-      cost: 25,
+      researchId: 'unlockSeed:nettleSeed',
+      cost: 40,
     });
     expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
-    expect(gameplayFacade.getSnapshot().coin.totalGenerated).toBe(75);
-    expect(gameplayFacade.getSnapshot().research.completedResearchIds).toEqual([
-      'unlockSeed:sageSeed',
-      'unlockSeed:mintSeed',
-    ]);
-    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
+    expect(gameplayFacade.getSnapshot().research.completedResearchIds).toContain(
+      'unlockSeed:nettleSeed',
+    );
+    expect(gameplayFacade.buyResearch('unlockSeed:nettleSeed')).toEqual({
       ok: false,
       reason: 'already_researched',
-      researchId: 'unlockSeed:mintSeed',
-      cost: 25,
+      researchId: 'unlockSeed:nettleSeed',
+      cost: 40,
     });
   });
 
@@ -2381,14 +2378,13 @@ describe('GameplayFacade', () => {
     });
 
     advanceToLevel(gameplayFacade, 3);
-    gameplayFacade.coinFacade.add(25);
 
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
       ok: true,
       researchId: 'unlockSeed:mintSeed',
-      durationSeconds: 300,
-      remainingSeconds: 300,
-      cost: 25,
+      durationSeconds: 60,
+      remainingSeconds: 60,
+      cost: 0,
     });
     expect(gameplayFacade.getSnapshot().research.completedResearchIds).toEqual([
       'unlockSeed:sageSeed',
@@ -2397,14 +2393,14 @@ describe('GameplayFacade', () => {
       id: 'unlockSeed:mintSeed',
       value: 'researching',
       inProgress: true,
-      remainingMs: 300_000,
-      totalMs: 300_000,
+      remainingMs: 60_000,
+      totalMs: 60_000,
       canResearch: false,
     });
     expect(gameplayFacade.getSnapshot().logs.entries).toEqual([]);
     expect(researchAnnouncements).toEqual([]);
 
-    ecsFacade.update({ timerDeltaSeconds: 299 });
+    ecsFacade.update({ timerDeltaSeconds: 59 });
 
     expect(gameplayFacade.getSnapshot().research.boxes[0].researches[1]).toMatchObject({
       value: 'researching',
@@ -2454,7 +2450,7 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 10 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(30);
     expect(gameplayFacade.getSnapshot().seedInventory).toContainEqual({
       itemTypeId: 1,
       key: 'sageSeed',
@@ -2480,7 +2476,7 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 20 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(20);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(50);
     expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(0);
 
     expect(gameplayFacade.setSeedSummoningAutoEnabled(true)).toEqual({
@@ -2494,13 +2490,13 @@ describe('GameplayFacade', () => {
 
     ecsFacade.update({ deltaSeconds: 4 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(24);
-    expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(0);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(40);
+    expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(1);
 
     ecsFacade.update({ deltaSeconds: 1 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(15);
-    expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(1);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(31);
+    expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(2);
   });
 
   it('buys advanced speed research with ruby and reveals the next level', () => {
@@ -2569,14 +2565,13 @@ describe('GameplayFacade', () => {
     ).toEqual([researchTimeResearchIds.reduction(2)]);
 
     advanceToLevel(gameplayFacade, 3);
-    gameplayFacade.coinFacade.add(25);
 
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toMatchObject({
       ok: true,
       researchId: 'unlockSeed:mintSeed',
-      durationSeconds: 270,
-      remainingSeconds: 270,
-      cost: 25,
+      durationSeconds: 54,
+      remainingSeconds: 54,
+      cost: 0,
     });
   });
 
@@ -2609,19 +2604,20 @@ describe('GameplayFacade', () => {
         ?.researches.map((research) => research.id),
     ).toEqual([researchCostResearchIds.reduction(2)]);
 
-    advanceToLevel(gameplayFacade, 3);
+    advanceToLevel(gameplayFacade, 6);
+    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toMatchObject({ ok: true });
 
-    expect(findResearchSnapshot(gameplayFacade, 'unlockSeed:mintSeed')).toMatchObject({
-      value: '22 coin',
-      costCoin: 22,
+    expect(findResearchSnapshot(gameplayFacade, 'unlockSeed:nettleSeed')).toMatchObject({
+      value: '36 coin',
+      costCoin: 36,
     });
 
-    gameplayFacade.coinFacade.add(22);
+    gameplayFacade.coinFacade.add(36);
 
-    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toMatchObject({
+    expect(gameplayFacade.buyResearch('unlockSeed:nettleSeed')).toMatchObject({
       ok: true,
-      researchId: 'unlockSeed:mintSeed',
-      cost: 22,
+      researchId: 'unlockSeed:nettleSeed',
+      cost: 36,
     });
   });
 
@@ -2968,12 +2964,11 @@ describe('GameplayFacade', () => {
     });
 
     advanceToLevel(gameplayFacade, 3);
-    gameplayFacade.coinFacade.add(25);
 
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
       ok: true,
       researchId: 'unlockSeed:mintSeed',
-      cost: 25,
+      cost: 0,
     });
     expect(researchAnnouncements).toEqual(['mint seed']);
 
@@ -2981,7 +2976,7 @@ describe('GameplayFacade', () => {
       ok: false,
       reason: 'already_researched',
       researchId: 'unlockSeed:mintSeed',
-      cost: 25,
+      cost: 0,
     });
     expect(researchAnnouncements).toEqual(['mint seed']);
   });
@@ -3048,13 +3043,13 @@ describe('GameplayFacade', () => {
     gameplayFacade.coinFacade.add(10000);
 
     expect(getResearch('unlockSeed:mintSeed')).toMatchObject({
-      value: '25 coin',
+      value: 'free',
       canResearch: true,
     });
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
       ok: true,
       researchId: 'unlockSeed:mintSeed',
-      cost: 25,
+      cost: 0,
     });
 
     expect(getResearch('summonSeedsX3')).toMatchObject({
@@ -3088,7 +3083,7 @@ describe('GameplayFacade', () => {
       cost: 4500,
     });
 
-    advanceToLevel(gameplayFacade, 4);
+    advanceToLevel(gameplayFacade, 5);
 
     expect(getResearch('unlockRecipe:minorHealingPotion')).toMatchObject({
       value: 'locked',
@@ -3101,7 +3096,7 @@ describe('GameplayFacade', () => {
       reason: 'missing_required_research',
       researchId: 'unlockRecipe:minorHealingPotion',
       requiredResearchId: 'unlockRecipe:manaTonic',
-      cost: 350,
+      cost: 60,
     });
 
     expect(gameplayFacade.buyResearch('unlockRecipe:manaTonic')).toEqual({
@@ -3109,9 +3104,9 @@ describe('GameplayFacade', () => {
       researchId: 'unlockRecipe:manaTonic',
       cost: 0,
     });
-    advanceToLevel(gameplayFacade, 5);
+    advanceToLevel(gameplayFacade, 6);
     expect(getResearch('unlockRecipe:minorHealingPotion')).toMatchObject({
-      value: '350 coin',
+      value: '60 coin',
       canResearch: true,
     });
 
@@ -3132,7 +3127,7 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('locks nettle seed research until after level 3 completion', () => {
+  it('locks nettle seed research until level 6', () => {
     const { gameplayFacade } = createGameplay();
     const getResearch = (researchId) =>
       gameplayFacade
@@ -3151,13 +3146,13 @@ describe('GameplayFacade', () => {
     gameplayFacade.coinFacade.add(115);
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toMatchObject({
       ok: true,
-      cost: 25,
+      cost: 0,
     });
 
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(90);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(115);
     expect(getResearch('unlockSeed:nettleSeed')).toMatchObject({
       value: 'locked',
-      requiredPlayerLevel: 4,
+      requiredPlayerLevel: 6,
       locked: true,
       canResearch: false,
     });
@@ -3165,26 +3160,24 @@ describe('GameplayFacade', () => {
       ok: false,
       reason: 'missing_required_level',
       researchId: 'unlockSeed:nettleSeed',
-      requiredPlayerLevel: 4,
-      cost: 120,
+      requiredPlayerLevel: 6,
+      cost: 40,
     });
 
-    finishCurrentTasksWithoutCoin();
-    expect(gameplayFacade.completeTaskLevel()).toMatchObject({
-      ok: true,
-      currentLevel: 4,
-    });
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
+    while (gameplayFacade.getSnapshot().tasks.currentLevel < 6) {
+      finishCurrentTasksWithoutCoin();
+      gameplayFacade.coinFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costCoin);
+      expect(gameplayFacade.completeTaskLevel()).toMatchObject({ ok: true });
+    }
 
-    gameplayFacade.coinFacade.add(120);
     expect(getResearch('unlockSeed:nettleSeed')).toMatchObject({
-      value: '120 coin',
+      value: '40 coin',
       canResearch: true,
     });
     expect(gameplayFacade.buyResearch('unlockSeed:nettleSeed')).toMatchObject({
       ok: true,
       researchId: 'unlockSeed:nettleSeed',
-      cost: 120,
+      cost: 40,
     });
   });
 
@@ -3204,13 +3197,14 @@ describe('GameplayFacade', () => {
   it('rejects research purchase without enough coin', () => {
     const { gameplayFacade } = createGameplay();
 
-    advanceToLevel(gameplayFacade, 3);
+    advanceToLevel(gameplayFacade, 6);
+    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toMatchObject({ ok: true });
 
-    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
+    expect(gameplayFacade.buyResearch('unlockSeed:nettleSeed')).toEqual({
       ok: false,
       reason: 'not_enough_coin',
-      researchId: 'unlockSeed:mintSeed',
-      cost: 25,
+      researchId: 'unlockSeed:nettleSeed',
+      cost: 40,
     });
   });
 
@@ -3265,7 +3259,7 @@ describe('GameplayFacade', () => {
       manaCost: 12,
       durationMs: 30_000,
     });
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(36);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(78);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
@@ -3593,7 +3587,7 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.brewCauldron()).toMatchObject({ ok: true });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(36);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(78);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
     expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
       autoBrewEnabled: true,
@@ -3658,7 +3652,7 @@ describe('GameplayFacade', () => {
         key: 'manaTonic',
       },
     });
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(12);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(42);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toHaveLength(3);
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 1001,
@@ -4452,7 +4446,7 @@ describe('GameplayFacade', () => {
       manaCost: 5,
       durationMs: 80_000,
     });
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(31);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(45);
 
     expect(discoveries.has('ashenMemory')).toBe(true);
     expect(

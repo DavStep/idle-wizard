@@ -1505,6 +1505,25 @@ describe('GardenPlotManager', () => {
     expect(quantity?.dataset.tutorialId).toBeUndefined();
   });
 
+  it('targets the visible plot box label for seed-label tutorial guidance', () => {
+    const parent = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    manager.mount(parent);
+
+    const rowLabel = parent.querySelector('.garden-page__plot-label');
+    const boxLabel = parent.querySelector('.garden-page__plot-box-label');
+    const target = parent.querySelector('[data-tutorial-id="garden:plot:1:label"]');
+
+    expect(target).toBe(boxLabel);
+    expect(rowLabel?.dataset.tutorialId).toBeUndefined();
+    expect(boxLabel?.textContent).toBe('choose');
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('opens seed choices from selected seed text without planting', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

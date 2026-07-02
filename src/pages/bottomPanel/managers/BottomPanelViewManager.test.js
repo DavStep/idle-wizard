@@ -291,9 +291,56 @@ describe('BottomPanelViewManager', () => {
     }
   });
 
+  it('delays visible lock break motion until the level announcement clears', () => {
+    vi.useFakeTimers();
+
+    try {
+      const stage = document.createElement('section');
+      const announcement = document.createElement('section');
+      const manager = new BottomPanelViewManager({
+        getCurrentPageId: () => 'workshop',
+      });
+
+      manager.mount(stage);
+      announcement.className = 'room-announcement-layer';
+      announcement.hidden = false;
+      stage.append(announcement);
+      manager.setPageStates([
+        {
+          id: 'garden',
+          unlocked: false,
+          requiredLevel: 2,
+        },
+      ]);
+
+      const gardenTab = stage.querySelector(
+        '.room-bottom-panel__tab[data-page-id="garden"]',
+      );
+
+      manager.setPageStates([{ id: 'garden', unlocked: true, visible: true }]);
+
+      expect(gardenTab?.classList.contains('is-unlocking')).toBe(true);
+      expect(gardenTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
+        '2100ms',
+      );
+
+      vi.advanceTimersByTime(2100 + 519);
+      expect(gardenTab?.classList.contains('is-unlocking')).toBe(true);
+
+      vi.advanceTimersByTime(1);
+      expect(gardenTab?.classList.contains('is-unlocking')).toBe(false);
+      expect(gardenTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
+        '',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('defines bottom-tab lock break motion with reduced-motion fallback', () => {
     const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
 
+    expect(baseCss).toContain('@keyframes room-bottom-tab-icon-unlock-flyout');
     expect(baseCss).toContain('@keyframes room-bottom-tab-lock-break');
     expect(baseCss).toContain('@keyframes room-bottom-tab-lock-left-break');
     expect(baseCss).toContain('@keyframes room-bottom-tab-lock-right-break');

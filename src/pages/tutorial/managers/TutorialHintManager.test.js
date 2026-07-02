@@ -309,6 +309,49 @@ describe('TutorialHintManager', () => {
     expect(pointer?.style.top).toBe('66px');
   });
 
+  it('anchors garden plot cues to the visible plot frame instead of the wide row', () => {
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const frame = document.createElement('span');
+    const manager = new TutorialHintManager();
+
+    target.className = 'garden-page__plot-row';
+    target.dataset.tutorialId = 'garden:plot:1';
+    frame.className = 'garden-page__plot-box-frame';
+    target.append(frame);
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      target,
+      toClientRect({
+        left: 20,
+        top: 90,
+        width: 120,
+        height: 110,
+      }),
+    );
+    setClientRect(
+      frame,
+      toClientRect({
+        left: 44,
+        top: 112,
+        width: 72,
+        height: 72,
+      }),
+    );
+    stage.append(target);
+    document.body.append(stage);
+
+    manager.mount(stage);
+
+    expect(manager.getTargetCueSourceRect(target)).toEqual({
+      left: 44,
+      top: 112,
+      width: 72,
+      height: 72,
+    });
+  });
+
   it('retries target cue placement after one frame when target layout is not ready', () => {
     const originalRequestAnimationFrame = window.requestAnimationFrame;
     const originalCancelAnimationFrame = window.cancelAnimationFrame;
@@ -944,8 +987,8 @@ describe('TutorialHintManager', () => {
         title: 'lesson 2: market',
         text: 'summon seeds and sell them for level-up coin',
         stepLabel: '11/25',
-        progress: { value: 0, max: 10 },
-        progressLabel: '0/10 coin',
+        progress: { value: 0, max: 4 },
+        progressLabel: '0/4 coin',
         canShowTarget: true,
       });
 
@@ -984,7 +1027,7 @@ describe('TutorialHintManager', () => {
         text: 'this old workshop is for sale.',
         stepLabel: '1/31',
         advanceOnClick: true,
-        advanceLabel: 'purchase house 1000 coin',
+        advanceLabel: 'enter workshop',
         canShowTarget: true,
         variant: 'intro-dialog',
       });
@@ -1001,7 +1044,7 @@ describe('TutorialHintManager', () => {
       expect(lesson?.style.top).toBe('202px');
       expect(button?.hidden).toBe(true);
       expect(advance?.hidden).toBe(false);
-      expect(advance?.textContent).toBe('purchase house 1000 coin');
+      expect(advance?.textContent).toBe('enter workshop');
       expect(showMe?.hidden).toBe(true);
     } finally {
       vi.useRealTimers();
@@ -1676,7 +1719,7 @@ describe('TutorialHintManager', () => {
       manager.guideDragManager.setPlacement({ buttonLeft: 4, buttonTop: 363 }, { save: false });
       manager.showLesson({
         id: 'fast-sell-tab-base',
-        title: 'lesson 3: gardening',
+        title: 'lesson 4: gardening',
         text: 'open herbs tab',
         stepLabel: '21/31',
         canShowTarget: true,
@@ -1690,7 +1733,7 @@ describe('TutorialHintManager', () => {
 
       manager.showLesson({
         id: 'fast-sell-tab-target',
-        title: 'lesson 3: gardening',
+        title: 'lesson 4: gardening',
         text: 'open herbs tab',
         stepLabel: '21/31',
         canShowTarget: true,
@@ -2191,7 +2234,7 @@ describe('TutorialHintManager', () => {
     manager.mount(stage);
     manager.showLesson({
       id: 'research-mint-seed',
-      title: 'lesson 3: gardening',
+      title: 'lesson 4: gardening',
       text: 'research mint seed',
       stepLabel: '19/25',
       attention: false,
@@ -2399,7 +2442,7 @@ describe('TutorialHintManager', () => {
     manager.mount(stage);
     manager.showLesson({
       id: 'research-mint-seed',
-      title: 'lesson 3: gardening',
+      title: 'lesson 4: gardening',
       text: 'research mint seed',
       stepLabel: '19/25',
       progress: { value: 0, max: 1 },
@@ -2491,7 +2534,7 @@ describe('TutorialHintManager', () => {
     manager.mount(stage);
     manager.showLesson({
       id: 'grow-sage-pin',
-      title: 'lesson 3: gardening',
+      title: 'lesson 4: gardening',
       text: 'pin level 3 requirements so they stay open.',
       stepLabel: '19/32',
       progress: { value: 0, max: 2 },
@@ -2582,7 +2625,7 @@ describe('TutorialHintManager', () => {
 
     manager.showLesson({
       id: 'summon-protected',
-      title: 'lesson 3: gardening',
+      title: 'lesson 4: gardening',
       text: 'summon seed',
       stepLabel: '18/31',
       canShowTarget: true,
@@ -2655,7 +2698,7 @@ describe('TutorialHintManager', () => {
     manager.mount(stage);
     manager.showLesson({
       id: 'research-mint-seed',
-      title: 'lesson 3: gardening',
+      title: 'lesson 4: gardening',
       text: 'research mint seed',
       stepLabel: '19/25',
       progress: { value: 0, max: 1 },
@@ -2743,7 +2786,7 @@ describe('TutorialHintManager', () => {
     manager.mount(stage);
     manager.showLesson({
       id: 'research-mint-seed',
-      title: 'lesson 3: gardening',
+      title: 'lesson 4: gardening',
       text: 'research mint seed',
       stepLabel: '19/25',
       progress: { value: 0, max: 1 },

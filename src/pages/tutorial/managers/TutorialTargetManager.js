@@ -38,10 +38,14 @@ export class TutorialTargetManager {
       return null;
     }
 
+    const targets = [...this.stage.querySelectorAll('[data-tutorial-id]')].filter(
+      (element) => element.dataset.tutorialId === targetId,
+    );
+
     return (
-      [...this.stage.querySelectorAll('[data-tutorial-id]')].find(
-        (element) => element.dataset.tutorialId === targetId,
-      ) ?? null
+      targets.find((element) => isVisibleTargetElement(element, this.stage)) ??
+      targets[0] ??
+      null
     );
   }
 
@@ -266,4 +270,36 @@ function getPopupClasses(node) {
 
     return className.endsWith('__popup') || className.endsWith('-popup');
   });
+}
+
+function isVisibleTargetElement(element, root) {
+  if (!element || element.closest?.('[hidden]')) {
+    return false;
+  }
+
+  const rect = element.getBoundingClientRect?.();
+
+  if (!rect || rect.width <= 0 || rect.height <= 0) {
+    return false;
+  }
+
+  const view = element.ownerDocument?.defaultView ?? globalThis.window;
+
+  for (let node = element; node && typeof node.matches === 'function'; node = node.parentElement) {
+    const style = view?.getComputedStyle?.(node);
+
+    if (
+      style?.display === 'none' ||
+      style?.visibility === 'hidden' ||
+      Number.parseFloat(style?.opacity) === 0
+    ) {
+      return false;
+    }
+
+    if (node === root) {
+      break;
+    }
+  }
+
+  return true;
 }

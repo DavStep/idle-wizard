@@ -6,7 +6,7 @@ Screenshots are captured from the real Vite game surface at the authored `1080x2
 
 The automation uses the real `TutorialFacade`, CSS, Elara assets, and `data-tutorial-id` targets. Dev capture hooks only skip waits/background resource tasks and hide the local offline gate so the screenshots show the actual game UI, not a harness.
 
-Current source starts with a purchase dialog and routes room openings through short `market opened`, `garden opened`, `research opened`, and `brewing opened` beats. Username setup is no longer part of FTUE; player-facing social surfaces ask for it when first opened. The Garden opening beat waits until the player has a sage seed or active sage crop; otherwise lesson 3 starts from Workshop requirements and summon guidance so the player is not sent to an empty Garden and back. The first fast-sell lesson selects the item, highlights the selected amount for two seconds without a pointer, then advances to the `sell` button without player input. Coin-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates those routing and room-open changes and should be refreshed the next time tutorial captures are regenerated.
+Current source starts with a free workshop-entry dialog and routes room openings through short `market opened`, `research opened`, `garden opened`, and `brewing opened` beats. Username setup is no longer part of FTUE; player-facing social surfaces ask for it when first opened. Level 1 completes without coin. Level 2 teaches the normal Market fast-sell path, using live `sellItems` quantity and quote data instead of tutorial-owned prices. Level 3 introduces Research and the free mint seed unlock, level 4 introduces herbs through Garden requirements, and level 5 introduces Brewing through mana tonic research. Coin-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates this 35-step order and should be refreshed the next time tutorial captures are regenerated.
 
 ![tutorial flow contact sheet](tutorial-flow/contact-sheet.png)
 
@@ -14,30 +14,40 @@ Current source starts with a purchase dialog and routes room openings through sh
 
 ```mermaid
 flowchart TD
-  S01["1. intro-welcome<br/>lesson 1: introduction"]
-  S02["2. intro-mana-sphere<br/>target: top-panel mana"]
-  S03["3. first-summon-seed<br/>target: summon"]
-  S04["4. first-fill-seed-task<br/>target: task fill"]
-  S05["5. finish-seed-task<br/>objective: seed task"]
-  S06["6. intro-market<br/>lesson 2: market"]
-  S07["7. prepare-seed-sale<br/>objective: one seed to sell"]
-  S08["8. open-market<br/>target: market tab"]
-  S09["9. select-market-stand<br/>target: fast sell button"]
-  S10["10. select-sage-seed-sale<br/>target: fast sell sage seed row"]
-  S11["11. show-selected-sale-amount<br/>highlight: selected amount"]
-  S12["12. earn-tutorial-coin<br/>effect: tutorial fast sell"]
-  S13["13. unselect-sage-seed-sale<br/>target: empty picker row"]
-  S14["14. level-up-one<br/>target: level up"]
-  S15["15. grow-sage<br/>lesson 3: gardening"]
-  S16["16. fill-sage-herb-task<br/>objective: sage task"]
+  S01["1. purchase-house<br/>free entry dialog"]
+  S02["2. intro-welcome<br/>lesson 1: introduction"]
+  S03["3. intro-mana-sphere<br/>target: top-panel mana"]
+  S04["4. first-summon-seed<br/>target: summon"]
+  S05["5. first-fill-seed-task<br/>target: task fill"]
+  S06["6. finish-seed-task<br/>objective: seed task"]
+  S07["7. first-task-complete<br/>checkpoint"]
+  S08["8. level-up-one<br/>target: free level up"]
+  S09["9. intro-market<br/>lesson 2: market"]
+  S10["10. prepare-seed-sale<br/>objective: one seed to sell"]
+  S11["11. open-market<br/>target: market tab"]
+  S12["12. select-market-stand<br/>target: fast sell button"]
+  S13["13. select-sage-seed-sale<br/>target: fast sell sage seed row"]
+  S14["14. show-selected-sale-amount<br/>highlight: selected amount"]
+  S15["15. earn-tutorial-coin<br/>normal fast sell"]
+  S16["16. first-sale-complete<br/>checkpoint"]
   S17["17. level-up-two<br/>target: level up or market"]
-  S18["18. research-mint-seed<br/>passive"]
-  S19["19. fill-mint-seed-task<br/>passive"]
-  S20["20. fill-mint-herb-task<br/>passive"]
-  S21["21. level-up-three<br/>passive"]
-  S22["22. research-mana-tonic<br/>lesson 4: brewing"]
-  S23["23. brew-mana-tonic<br/>objective: first potion"]
-  S24["24. refill-mana-tonic-cauldron<br/>objective: refill cauldron"]
+  S18["18. intro-research<br/>lesson 3: research"]
+  S19["19. research-mint-seed<br/>passive"]
+  S20["20. first-research-complete<br/>checkpoint"]
+  S21["21. fill-mint-seed-task<br/>passive"]
+  S22["22. fill-sage-seed-task<br/>passive"]
+  S23["23. level-up-three<br/>passive"]
+  S24["24. intro-garden<br/>lesson 4: gardening"]
+  S25["25. grow-sage<br/>objective: first herb"]
+  S26["26. first-harvest-complete<br/>checkpoint"]
+  S27["27. fill-sage-herb-task<br/>objective: sage task"]
+  S28["28. fill-mint-herb-task<br/>passive"]
+  S29["29. level-up-four<br/>passive"]
+  S30["30. research-mana-tonic<br/>lesson 5: brewing"]
+  S31["31. intro-brewing<br/>target: brewing tab"]
+  S32["32. brew-mana-tonic<br/>objective: first potion"]
+  S33["33. first-brew-complete<br/>checkpoint"]
+  S34["34. refill-mana-tonic-cauldron<br/>objective: turn in potion"]
   Done["tutorial hidden / complete"]
   G00["coin shortfall"]
   G01{"available fast-sell quantity?"}
@@ -52,35 +62,46 @@ flowchart TD
   G10["no: open seeds/herbs/potions tab"]
   G11["yes: choose first item<br/>with quantity > 0"]
 
-  S01 -->|"next"| S02
-  S02 -->|"next, mana ready"| S03
-  S03 -->|"seed gained"| S04
-  S04 -->|"first fill done"| S05
-  S05 -->|"seed task complete"| S06
-  S06 -->|"next"| S07
-  S07 -->|"seed exists"| S08
-  S08 -->|"Market opened"| S09
-  S09 -->|"fast sell opened"| S10
-  S10 -->|"sage seed selected"| S11
-  S11 -->|"2 seconds"| S12
-  S12 -->|"10 coin earned"| S13
-  S13 -->|"stand emptied"| S14
-  S14 -->|"level 2"| S15
-  S15 -->|"sage grown"| S16
-  S16 -->|"sage task complete"| S17
+  S01 -->|"enter workshop"| S02
+  S02 -->|"next"| S03
+  S03 -->|"next, mana ready"| S04
+  S04 -->|"seed gained"| S05
+  S05 -->|"first fill done"| S06
+  S06 -->|"seed task complete"| S07
+  S07 -->|"next"| S08
+  S08 -->|"level 2"| S09
+  S09 -->|"next"| S10
+  S10 -->|"seed exists"| S11
+  S11 -->|"Market opened"| S12
+  S12 -->|"fast sell opened"| S13
+  S13 -->|"sage seed selected"| S14
+  S14 -->|"2 seconds"| S15
+  S15 -->|"coin earned by normal sale"| S16
+  S16 -->|"next"| S17
   S17 -->|"level 3"| S18
-  S18 -->|"mint seed research complete"| S19
-  S19 -->|"mint seed task complete"| S20
-  S20 -->|"mint herb task complete"| S21
-  S21 -->|"level 4"| S22
-  S22 -->|"mana tonic research started/completed"| S23
-  S23 -->|"first mana tonic brewed"| S24
-  S24 -->|"mana tonic task complete, active brew, or level 5"| Done
+  S18 -->|"Research opened"| S19
+  S19 -->|"mint seed research complete"| S20
+  S20 -->|"next"| S21
+  S21 -->|"mint seed task complete"| S22
+  S22 -->|"sage seed task complete"| S23
+  S23 -->|"level 4"| S24
+  S24 -->|"Garden opened"| S25
+  S25 -->|"sage grown"| S26
+  S26 -->|"next"| S27
+  S27 -->|"sage herb task complete"| S28
+  S28 -->|"mint herb task complete"| S29
+  S29 -->|"level 5"| S30
+  S30 -->|"mana tonic research started/completed"| S31
+  S31 -->|"Brewing opened"| S32
+  S32 -->|"first mana tonic brewed"| S33
+  S33 -->|"next"| S34
+  S34 -->|"mana tonic task complete, active brew, or level 6"| Done
 
   S03 -. "paused while mana is not ready" .-> S03
   S05 -. "target can switch: tasks, task row, summon, mana" .-> S05
   S17 -. "if coin short" .-> G00
-  S21 -. "if coin short" .-> G00
+  S23 -. "if coin short" .-> G00
+  S29 -. "if coin short" .-> G00
   G00 --> G01
   G01 -->|"no"| G02
   G01 -->|"yes"| G03
@@ -96,7 +117,7 @@ flowchart TD
 
 ## Screenshots
 
-The table below is the last captured screenshot set and does not yet include `show-selected-sale-amount`.
+The table below is the last captured screenshot set. It is intentionally retained as historical visual reference, but it does not yet match the current 35-step tutorial order.
 
 | Step | Screenshot |
 |---|---|

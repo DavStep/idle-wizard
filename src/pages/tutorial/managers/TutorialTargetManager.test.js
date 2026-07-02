@@ -247,6 +247,28 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().isBrewingRecipeSelected('minorHealingPotion')).toBe(false);
   });
 
+  it('prefers visible measurable targets when duplicate tutorial ids exist', () => {
+    const stage = document.createElement('section');
+    const hiddenTarget = document.createElement('span');
+    const visibleTarget = document.createElement('span');
+    const manager = new TutorialTargetManager({ stage });
+
+    hiddenTarget.dataset.tutorialId = 'garden:plot:1:label';
+    hiddenTarget.hidden = true;
+    visibleTarget.dataset.tutorialId = 'garden:plot:1:label';
+    visibleTarget.getBoundingClientRect = () => ({
+      left: 10,
+      top: 20,
+      right: 90,
+      bottom: 40,
+      width: 80,
+      height: 20,
+    });
+    stage.append(hiddenTarget, visibleTarget);
+
+    expect(manager.getTarget('garden:plot:1:label')).toBe(visibleTarget);
+  });
+
   it('keeps copy-only popup guidance visible only for the popup it needs', () => {
     const stage = document.createElement('section');
     const directSellPopup = document.createElement('section');

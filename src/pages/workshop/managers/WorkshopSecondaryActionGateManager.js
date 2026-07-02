@@ -1,5 +1,6 @@
 export const WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL = 3;
 export const WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL = 4;
+export const WORKSHOP_INBOX_UNLOCK_LEVEL = 4;
 export const WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL = 7;
 
 export class WorkshopSecondaryActionGateManager {

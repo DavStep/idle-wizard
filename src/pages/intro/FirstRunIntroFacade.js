@@ -5,10 +5,9 @@ export class FirstRunIntroFacade {
   static explain =
     'Shows the opening story before Elara starts teaching, so a new player knows why the workshop matters.';
 
-  constructor({ playerFacade, storage } = {}) {
-    this.playerFacade = playerFacade;
+  constructor({ storage } = {}) {
     this.progressManager = new FirstRunIntroProgressManager({ storage });
-    this.viewManager = new FirstRunIntroViewManager({ playerFacade });
+    this.viewManager = new FirstRunIntroViewManager();
     this.stage = null;
   }
 
@@ -34,7 +33,6 @@ export class FirstRunIntroFacade {
     }
 
     this.viewManager.show({
-      onName: (name) => this.playerFacade?.setUsername?.(name),
       onComplete: () => {
         this.progressManager.markComplete();
         onComplete?.({ shown: true });

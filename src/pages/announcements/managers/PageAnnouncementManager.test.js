@@ -166,7 +166,7 @@ describe('PageAnnouncementManager', () => {
       'unlocks',
     );
     expect(unlockRow?.querySelector('.room-announcement__row-value')?.textContent).toBe(
-      'garden / research / brewing / prestige / leaderboard / discoveries / alliance',
+      'garden / research / brewing / prestige / leaderboard / discoveries / alliance / inbox',
     );
   });
 
