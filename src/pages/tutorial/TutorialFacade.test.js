@@ -209,8 +209,6 @@ function createLevelTwoSageTaskSnapshot(overrides = {}) {
 const LEVEL_ONE_COMPLETED_STEP_IDS = [
   'purchase-house',
   'intro-welcome',
-  'intro-username',
-  'intro-username-return',
   'intro-mana-sphere',
   'first-summon-seed',
   'first-fill-seed-task',
@@ -330,8 +328,6 @@ describe('TutorialFacade', () => {
           completedStepIds: [
             'purchase-house',
             'intro-welcome',
-            'intro-username',
-            'intro-username-return',
             'intro-mana-sphere',
           ],
         }),
@@ -382,8 +378,6 @@ describe('TutorialFacade', () => {
           completedStepIds: [
             'purchase-house',
             'intro-welcome',
-            'intro-username',
-            'intro-username-return',
             'intro-mana-sphere',
           ],
         }),
@@ -607,165 +601,6 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
-  it('keeps the rename lesson collapsed while pointing at username and settings input', async () => {
-    const stage = document.createElement('section');
-    const usernameButton = document.createElement('button');
-    const settings = document.createElement('section');
-    const usernameInput = document.createElement('input');
-    const gameplayFacade = {
-      getSnapshot: () => createLevelOneSnapshot(),
-      subscribe: () => () => {},
-    };
-    const facade = new TutorialFacade({
-      gameplayFacade,
-      getCurrentPageId: () => 'workshop',
-      storage: createMemoryStorage({
-        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-          completedStepIds: ['purchase-house', 'intro-welcome'],
-        }),
-      }),
-    });
-
-    usernameButton.dataset.tutorialId = 'top:username';
-    usernameButton.textContent = 'wizard';
-    settings.className = 'room-top-panel__settings';
-    settings.hidden = true;
-    usernameInput.dataset.tutorialId = 'top:username-input';
-    settings.append(usernameInput);
-    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
-    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
-    setClientRect(usernameButton, { left: 80, top: 80, width: 240, height: 70 });
-    setClientRect(usernameInput, { left: 120, top: 360, width: 520, height: 70 });
-    stage.append(usernameButton, settings);
-    document.body.append(stage);
-
-    facade.mount(stage);
-    facade.refresh();
-
-    expect(facade.activeStep?.id).toBe('intro-username');
-    expect(stage.dataset.tutorialReveal).toBe('top');
-    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
-    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
-
-    settings.hidden = false;
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
-    expect(facade.activeStep?.targetId).toBe('top:username-input');
-    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
-    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
-    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
-    expect(stage.dataset.tutorialReveal).toBe('top');
-
-    settings.hidden = true;
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
-
-    expect(facade.activeStep?.targetId).toBe('top:username');
-    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
-    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
-    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
-    expect(stage.dataset.tutorialReveal).toBe('top');
-
-    facade.unmount();
-  });
-
-  it('reopens rename target guidance after the player closes the help panel', () => {
-    const stage = document.createElement('section');
-    const usernameButton = document.createElement('button');
-    const gameplayFacade = {
-      getSnapshot: () => createLevelOneSnapshot(),
-      subscribe: () => () => {},
-    };
-    const facade = new TutorialFacade({
-      gameplayFacade,
-      getCurrentPageId: () => 'workshop',
-      storage: createMemoryStorage({
-        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-          completedStepIds: ['purchase-house', 'intro-welcome'],
-        }),
-      }),
-    });
-
-    usernameButton.dataset.tutorialId = 'top:username';
-    usernameButton.textContent = 'wizard';
-    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
-    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
-    setClientRect(usernameButton, { left: 80, top: 80, width: 240, height: 70 });
-    stage.append(usernameButton);
-    document.body.append(stage);
-
-    facade.mount(stage);
-    facade.refresh();
-
-    const lessonButton = stage.querySelector('.tutorial-layer__lesson-button');
-
-    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
-    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
-
-    lessonButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(false);
-
-    lessonButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    return new Promise((resolve) => globalThis.requestAnimationFrame(resolve)).then(() => {
-      expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
-      expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
-
-      facade.unmount();
-    });
-  });
-
-  it('lets the username target open settings while waiting for the saved name', () => {
-    let usernameClicks = 0;
-    const stage = document.createElement('section');
-    const usernameButton = document.createElement('button');
-    const gameplayFacade = {
-      getSnapshot: () => createLevelOneSnapshot(),
-      subscribe: () => () => {},
-    };
-    const facade = new TutorialFacade({
-      gameplayFacade,
-      getCurrentPageId: () => 'workshop',
-      storage: createMemoryStorage({
-        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-          completedStepIds: ['purchase-house', 'intro-welcome'],
-        }),
-      }),
-    });
-
-    usernameButton.dataset.tutorialId = 'top:username';
-    usernameButton.textContent = 'wizard';
-    usernameButton.addEventListener('click', () => {
-      usernameClicks += 1;
-    });
-    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
-    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
-    stage.append(usernameButton);
-    document.body.append(stage);
-
-    facade.mount(stage);
-    facade.refresh();
-
-    expect(facade.activeStep?.id).toBe('intro-username');
-
-    const click = new window.MouseEvent('click', { bubbles: true, cancelable: true });
-
-    usernameButton.dispatchEvent(click);
-
-    expect(click.defaultPrevented).toBe(false);
-    expect(usernameClicks).toBe(1);
-    expect(facade.progressManager.hasCompleted('intro-welcome')).toBe(true);
-    expect(facade.progressManager.hasCompleted('intro-username')).toBe(false);
-
-    usernameButton.textContent = 'Mira';
-    facade.refresh();
-
-    expect(facade.progressManager.hasCompleted('intro-username')).toBe(true);
-    expect(facade.activeStep?.id).toBe('intro-username-return');
-
-    facade.unmount();
-  });
-
   it('keeps level three guidance passive until the player is idle', () => {
     let now = 1_000;
     const stage = document.createElement('section');
@@ -834,8 +669,6 @@ describe('TutorialFacade', () => {
           completedStepIds: [
             'purchase-house',
             'intro-welcome',
-            'intro-username',
-            'intro-username-return',
             'intro-mana-sphere',
             'first-summon-seed',
             'first-fill-seed-task',

@@ -189,8 +189,8 @@
 - Ready Garden plot boxes should not show a visible `harvest` label; the ready animation and plot tap affordance are enough.
 - Ready Garden plot taps need a no-drag world pointerup path with click dedupe; WebView can turn small finger drift into pan and drop the native click.
 - Buyable Garden plot slots also need a no-drag world pointerup path with click dedupe; otherwise WebView drift can pan the world and suppress the native buy click.
-- First-run username should not open a startup modal; FTUE points at the top-panel username, which opens settings.
-- FTUE intro username setup should complete on an explicit username save, even if the visible name stays `wizard`.
+- FTUE no longer owns username setup; player-facing surfaces should gate on an explicitly saved username and then resume the requested dialog after save.
+- Username-gated social/player surfaces should check `PlayerFacade.getSnapshot().hasExplicitUsername`, not the visible username string, because generated defaults can exist.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
 - FTUE blocking-dialog hides should suspend the current lesson; closing settings must not restart typed Elara text from zero.
 - FTUE blocking dialogs should preserve the current reveal gate; clearing `data-tutorial-reveal` makes unrevealed room chrome appear behind the dialog.
@@ -686,6 +686,13 @@
 - Do not add decorative visuals unless the user explicitly asks.
 - Cutscene overlays should settle visible while their text step is active; do not fade story-critical art to `opacity: 0` before the player advances.
 - Cutscene sprite overlays should align by visible alpha bounds, not the full PNG box; transparent padding can make grounded characters appear to float.
+- Cutscene scene swaps should render under a near-opaque transition shade; partial fades can reveal image source swaps or decode flicker.
+- Cutscene steps that reuse the same backdrop should not use the black scene-swap cover; reserve blackout for actual backdrop URL changes.
+- When freezing an animated cutscene backdrop, sample computed style before adding no-animation transition classes or the camera can snap back to its base transform.
+- Cutscene roots should still cover the full web-wide stage, but scene art and dialogue panels must stay constrained to the fixed authored source width.
+- Peace/disbanded cutscene beats should use a calm world backdrop, not battlefield aftermath or dead-body visuals.
+- Peace-scene rainbow overlays should be subtle one-shot reveals with reduced-motion fallback, not looping decoration.
+- Reward cutscene coin beats should stagger the individual coin sprites while the pile/table position stays fixed; avoid replaying the full drop on follow-up copy beats.
 - Managers subscribed to gameplay snapshots can render every frame; keep buttons stable and update text/state instead of replacing interactive DOM nodes.
 - In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
 - Hidden tab panels should skip list and popup rendering on gameplay snapshots; refresh the active tab on tab switch and visible popups when opened.

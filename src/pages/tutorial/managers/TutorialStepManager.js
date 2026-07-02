@@ -38,8 +38,6 @@ const LEVEL_THREE_SELL_ITEM_KEYS = [...LEVEL_TWO_SELL_ITEM_KEYS, MINT_SEED_KEY, 
 const LEVEL_ONE_STEP_IDS = [
   'purchase-house',
   'intro-welcome',
-  'intro-username',
-  'intro-username-return',
   'intro-mana-sphere',
   'first-summon-seed',
   'first-fill-seed-task',
@@ -87,8 +85,6 @@ const LEVEL_FIVE_STEP_IDS = ['find-theme-settings'];
 
 const SEEDING_LESSON_STEP_IDS = [
   'intro-welcome',
-  'intro-username',
-  'intro-username-return',
   'intro-mana-sphere',
   'first-summon-seed',
   'first-fill-seed-task',
@@ -125,7 +121,6 @@ export const TUTORIAL_STEP_IDS = [
   ...LEVEL_FIVE_STEP_IDS,
 ];
 
-const REVEAL_TOP = ['top'];
 const REVEAL_MANA = ['top', 'mana'];
 const REVEAL_MANA_SUMMON = ['top', 'mana', 'summon'];
 const REVEAL_MANA_SUMMON_TASKS = ['top', 'mana', 'summon', 'tasks'];
@@ -154,28 +149,6 @@ export const TUTORIAL_STEPS = [
     text: "i'm Elara. let's get the workshop running.",
     advanceOnClick: true,
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
-  },
-  {
-    id: 'intro-username',
-    kind: 'prompt',
-    getTargetId: ({ dom }) =>
-      dom.isUsernameSettingsOpen?.() ? 'top:username-input' : 'top:username',
-    cueMode: 'focus-target',
-    revealTokens: REVEAL_TOP,
-    text: "i don't need your name, but it would be nice to set it here.",
-    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
-    isComplete: ({ dom, snapshot }) =>
-      getCurrentLevel(snapshot) >= 2 || hasCustomUsername(dom),
-  },
-  {
-    id: 'intro-username-return',
-    kind: 'prompt',
-    revealTokens: REVEAL_TOP,
-    getText: ({ dom }) => `hi again, ${getTutorialUsername(dom)}. let's start with mana.`,
-    advanceOnClick: true,
-    isAvailable: ({ dom, snapshot }) =>
-      getCurrentLevel(snapshot) === 1 && hasCustomUsername(dom),
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
   },
   {
@@ -2708,15 +2681,6 @@ function getCurrentLevel(snapshot) {
 
 function getOpenLevelRequirementsText(snapshot) {
   return formatOpenLevelRequirementsLabel(snapshot?.tasks);
-}
-
-function getTutorialUsername(dom) {
-  const username = typeof dom?.getUsername === 'function' ? dom.getUsername() : '';
-  return String(username ?? '').trim() || 'wizard';
-}
-
-function hasCustomUsername(dom) {
-  return getTutorialUsername(dom).toLowerCase() !== 'wizard';
 }
 
 function isNpcMarketSelling(snapshot, itemKey) {

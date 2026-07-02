@@ -15,6 +15,9 @@ describe('BottomPanelViewManager', () => {
 
     manager.mount(stage);
 
+    const brewingTab = stage.querySelector(
+      '.room-bottom-panel__tab[data-page-id="brewing"]',
+    );
     const workshopTab = stage.querySelector(
       '.room-bottom-panel__tab[data-page-id="workshop"]',
     );
@@ -27,6 +30,10 @@ describe('BottomPanelViewManager', () => {
     const marketTab = stage.querySelector(
       '.room-bottom-panel__tab[data-page-id="shop"]',
     );
+    const brewingIconFrame = brewingTab?.querySelector(
+      '.room-bottom-panel__tab-icon-frame',
+    );
+    const brewingIcon = brewingTab?.querySelector('.room-bottom-panel__tab-icon');
     const workshopIconFrame = workshopTab?.querySelector(
       '.room-bottom-panel__tab-icon-frame',
     );
@@ -44,6 +51,13 @@ describe('BottomPanelViewManager', () => {
     );
     const marketIcon = marketTab?.querySelector('.room-bottom-panel__tab-icon');
 
+    expect(brewingIconFrame?.getAttribute('aria-hidden')).toBe('true');
+    expect(brewingIcon?.tagName).toBe('IMG');
+    expect(brewingIcon?.getAttribute('aria-hidden')).toBe('true');
+    expect(brewingIcon?.getAttribute('alt')).toBe('');
+    expect(brewingIcon?.getAttribute('src')).toContain(
+      'icon-brewing-cauldron-tab.webp',
+    );
     expect(workshopIconFrame?.getAttribute('aria-hidden')).toBe('true');
     expect(workshopIcon?.tagName).toBe('IMG');
     expect(workshopIcon?.getAttribute('aria-hidden')).toBe('true');
@@ -72,6 +86,9 @@ describe('BottomPanelViewManager', () => {
     expect(marketIcon?.getAttribute('src')).toContain(
       'icon-shop-market-stall-tab.webp',
     );
+    expect(brewingTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
+      'brewing',
+    );
     expect(workshopTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
       'workshop',
     );
@@ -86,7 +103,7 @@ describe('BottomPanelViewManager', () => {
     );
   });
 
-  it('keeps the research tab icon from changing bottom-tab height', () => {
+  it('keeps bottom tab icons from changing bottom-tab height', () => {
     const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
     const tabRuleIndex = baseCss.indexOf('.room-bottom-panel__tab {');
     const tabRule = baseCss.slice(tabRuleIndex, baseCss.indexOf('}', tabRuleIndex) + 1);
@@ -95,20 +112,59 @@ describe('BottomPanelViewManager', () => {
       iconFrameRuleIndex,
       baseCss.indexOf('}', iconFrameRuleIndex) + 1,
     );
+    const labelRuleIndex = baseCss.indexOf('.room-bottom-panel__tab-label {');
+    const labelRule = baseCss.slice(
+      labelRuleIndex,
+      baseCss.indexOf('}', labelRuleIndex) + 1,
+    );
+    const iconRuleIndex = baseCss.indexOf('.room-bottom-panel__tab-icon {');
+    const iconRule = baseCss.slice(iconRuleIndex, baseCss.indexOf('}', iconRuleIndex) + 1);
+    const selectedRuleIndex = baseCss.indexOf('.room-bottom-panel__tab.is-selected {');
+    const selectedRule = baseCss.slice(
+      selectedRuleIndex,
+      baseCss.indexOf('}', selectedRuleIndex) + 1,
+    );
     const tabScrollClearance = baseCss.match(
       /--style-page-tab-scroll-clearance:\s*calc\(([\s\S]*?)\);/,
     )?.[1];
 
-    expect(baseCss).not.toContain('.room-bottom-panel__research-button {');
     expect(tabRule).toContain('min-height: var(--style-page-tab-button-height);');
     expect(tabRule).toContain('padding: 1px 2px;');
     expect(baseCss).toContain('--style-page-tab-icon-size: calc(38px * 1.3);');
+    expect(baseCss).toContain('--style-page-tab-selected-icon-scale: 1.2;');
+    expect(baseCss).toContain('--style-page-tab-icon-y-offset: 10px;');
+    expect(baseCss).toContain('--style-page-tab-label-y-offset: 7px;');
+    expect(baseCss).toContain('--style-page-tab-label-text-stroke-width: 1px;');
+    expect(baseCss).toContain(
+      '--style-page-tab-label-text-stroke-color: var(--style-surface);',
+    );
     expect(tabScrollClearance).not.toContain('style-page-tab-icon');
+    expect(labelRule).toContain('translate: 0 var(--style-page-tab-label-y-offset);');
+    expect(labelRule).toContain(
+      '-webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)',
+    );
+    expect(labelRule).toContain('paint-order: stroke fill;');
+    expect(labelRule).toContain(
+      'text-shadow: var(--style-page-tab-label-text-stroke-shadow);',
+    );
     expect(iconFrameRule).toContain(
       'bottom: calc(50% - var(--style-page-tab-icon-center-offset));',
     );
-    expect(iconFrameRule).toContain('translate: -50% 10%;');
+    expect(iconFrameRule).toContain(
+      'translate: -50% calc(10% + var(--style-page-tab-icon-y-offset));',
+    );
+    expect(iconFrameRule).toContain('scale: var(--style-page-tab-current-icon-scale, 1);');
     expect(iconFrameRule).not.toContain('top:');
+    expect(iconRule).toContain('scale: var(--style-page-tab-icon-art-scale, 1);');
+    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 0.68;');
+    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 1.09;');
+    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 1.16;');
+    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 0.76;');
+    expect(selectedRule).toContain(
+      '--style-page-tab-current-icon-scale: var(--style-page-tab-selected-icon-scale);',
+    );
+    expect(selectedRule).toContain('font-weight: 400;');
+    expect(selectedRule).not.toContain('font-weight: 700;');
   });
 
   it('applies notification tones to room tabs', () => {
@@ -284,7 +340,18 @@ describe('BottomPanelViewManager', () => {
       lockedFrameIndex,
       baseCss.indexOf('}', lockedFrameIndex) + 1,
     );
+    const selectedFrameIndex = baseCss.indexOf(
+      ':root[data-style-theme="midnight"] .room-bottom-panel__tab.is-selected {',
+    );
+    const selectedFrameBlock = baseCss.slice(
+      selectedFrameIndex,
+      baseCss.indexOf('}', selectedFrameIndex) + 1,
+    );
 
+    expect(fs.existsSync('public/ui/player-card-panel-selected-9slice.png')).toBe(true);
+    expect(baseCss).toContain(
+      '--style-midnight-panel-selected-frame: url("/ui/player-card-panel-selected-9slice.png");',
+    );
     expect(tabFrameBlock).toContain('background: transparent;');
     expect(tabFrameBlock).toContain(
       'border-image-source: var(--style-midnight-panel-frame);',
@@ -294,6 +361,9 @@ describe('BottomPanelViewManager', () => {
     );
     expect(lockedFrameBlock).toContain(
       'border-image-source: var(--style-midnight-panel-frame);',
+    );
+    expect(selectedFrameBlock).toContain(
+      'border-image-source: var(--style-midnight-panel-selected-frame);',
     );
   });
 

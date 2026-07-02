@@ -13,6 +13,10 @@ export class PlayerNameManager {
     return this.username;
   }
 
+  getHasExplicitUsername() {
+    return this.hasExplicitUsername;
+  }
+
   shouldPromptForUsername() {
     return this.profileLoaded && !this.hasExplicitUsername && !this.usernamePromptSeen;
   }
@@ -31,9 +35,12 @@ export class PlayerNameManager {
 
   applyServerProfile(profile = {}) {
     this.profileLoaded = true;
-    this.username = this.normalizeUsername(profile.username);
-    this.hasExplicitUsername =
-      this.isExplicitUsername(profile.username) && this.username !== DEFAULT_USERNAME;
+    const username = this.normalizeUsername(profile.username);
+    const serverHasExplicitUsername =
+      this.isExplicitUsername(profile.username) && username !== DEFAULT_USERNAME;
+    const keepLocalExplicitUsername = this.hasExplicitUsername && this.username === username;
+    this.username = username;
+    this.hasExplicitUsername = keepLocalExplicitUsername || serverHasExplicitUsername;
     this.usernamePromptSeen =
       this.usernamePromptSeen || Boolean(profile.usernamePromptSeen) || this.hasExplicitUsername;
 

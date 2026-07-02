@@ -28,6 +28,7 @@ export class WorkshopPageFacade {
     playerInboxFacade,
     onOpenPlayerInfo,
     onOpenAllianceInfo,
+    onRequirePlayerSurfaceAccess,
     onOpenBag,
     onOpenInbox,
   } = {}) {
@@ -60,16 +61,19 @@ export class WorkshopPageFacade {
       tradeAllianceFacade,
       onOpenPlayerInfo,
       onOpenAllianceInfo,
+      onRequirePlayerSurfaceAccess,
     });
     this.tradeAllianceManager = new WorkshopTradeAllianceManager({
       gameplayFacade,
       tradeAllianceFacade,
       onOpenPlayerInfo,
       onOpenAllianceInfo,
+      onRequirePlayerSurfaceAccess,
     });
     this.discoveriesManager = new WorkshopDiscoveriesManager({
       gameplayFacade,
       onOpenPlayerInfo,
+      onRequirePlayerSurfaceAccess,
     });
     this.taskManager = new WorkshopTaskManager({
       gameplayFacade,
@@ -81,6 +85,7 @@ export class WorkshopPageFacade {
       playerFacade,
       worldEventLeaderboardFacade,
       onOpenPlayerInfo,
+      onRequirePlayerSurfaceAccess,
     });
   }
 

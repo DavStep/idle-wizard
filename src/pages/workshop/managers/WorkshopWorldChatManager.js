@@ -32,12 +32,14 @@ export class WorkshopWorldChatManager {
     worldChatFacade,
     tradeAllianceFacade,
     onOpenPlayerInfo,
+    onRequirePlayerSurfaceAccess,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.playerFacade = playerFacade;
     this.worldChatFacade = worldChatFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.onOpenPlayerInfo = onOpenPlayerInfo;
+    this.onRequirePlayerSurfaceAccess = onRequirePlayerSurfaceAccess;
     this.unlockGateManager = new WorkshopSecondaryActionGateManager();
     this.pendingMessageManager = new WorkshopChatPendingMessageManager({
       limit: MESSAGE_LIMIT,
@@ -325,14 +327,29 @@ export class WorkshopWorldChatManager {
 
   show() {
     if (!this.unlocked) {
-      return;
+      return { ok: false, reason: 'locked', dialogId: 'worldChat' };
     }
 
+    return this.requirePlayerSurfaceAccess(() => this.showUnlocked(), {
+      dialogId: 'worldChat',
+    });
+  }
+
+  showUnlocked() {
     this.previousFocus = document.activeElement;
     this.visible = true;
     this.applyVisibility();
     this.refs.dialog?.focus();
     this.scrollMessagesToBottom({ afterLayout: true });
+    return { ok: true, dialogId: 'worldChat', pageId: 'workshop' };
+  }
+
+  requirePlayerSurfaceAccess(open, meta) {
+    if (typeof this.onRequirePlayerSurfaceAccess === 'function') {
+      return this.onRequirePlayerSurfaceAccess(open, meta);
+    }
+
+    return open();
   }
 
   hide() {

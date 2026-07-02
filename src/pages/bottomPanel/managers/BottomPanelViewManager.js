@@ -9,6 +9,10 @@ const RESEARCH_TAB_ICON_URL = new URL(
   '../../../assets/icons/icon-research-telescope-tab.webp',
   import.meta.url,
 ).href;
+const BREWING_TAB_ICON_URL = new URL(
+  '../../../assets/icons/icon-brewing-cauldron-tab.webp',
+  import.meta.url,
+).href;
 const GARDEN_TAB_ICON_URL = new URL(
   '../../../assets/icons/icon-garden-plot-tab.webp',
   import.meta.url,
@@ -23,6 +27,7 @@ const WORKSHOP_TAB_ICON_URL = new URL(
 ).href;
 
 const TAB_ICON_URL_BY_ID = new Map([
+  ['brewing', BREWING_TAB_ICON_URL],
   ['garden', GARDEN_TAB_ICON_URL],
   ['research', RESEARCH_TAB_ICON_URL],
   ['shop', SHOP_TAB_ICON_URL],

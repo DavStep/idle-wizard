@@ -15,13 +15,10 @@ const VIEWPORT = { width: 1080, height: 2170 };
 const OUT_DIR = path.join(ROOT, 'docs/tutorial-flow/screenshots');
 const CONTACT_SHEET_PATH = path.join(ROOT, 'docs/tutorial-flow/contact-sheet.png');
 const CONTACT_SHEET_URL = 'http://127.0.0.1:55173/docs/tutorial-flow/contact-sheet.html';
-const CAPTURE_USERNAME = 'Mira';
 
 const FLOW_STEPS = [
   'purchase-house',
   'intro-welcome',
-  'intro-username',
-  'intro-username-return',
   'intro-mana-sphere',
   'first-summon-seed',
   'first-fill-seed-task',
@@ -54,12 +51,6 @@ const STEP_ACTIONS = {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
   },
   'intro-welcome': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
-  },
-  'intro-username': async (page) => {
-    await page.setUsername(CAPTURE_USERNAME);
-  },
-  'intro-username-return': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
   },
   'intro-mana-sphere': async (page) => {

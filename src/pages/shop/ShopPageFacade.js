@@ -19,6 +19,7 @@ export class ShopPageFacade {
     gameplayFacade,
     playerShopFacade,
     onOpenPlayerInfo,
+    onRequirePlayerSurfaceAccess,
     onDirectSellOverride,
     getDirectSellQuoteOverride,
     getNpcSellPriceOverride,
@@ -33,6 +34,7 @@ export class ShopPageFacade {
     this.marketTabsManager = new ShopMarketTabsManager({
       gameplayFacade,
       playerShopFacade,
+      onRequirePlayerSurfaceAccess,
       onActiveTabChange: () => this.onActiveMarketTabChange(),
     });
     this.shelfManager = new ShopShelfManager({

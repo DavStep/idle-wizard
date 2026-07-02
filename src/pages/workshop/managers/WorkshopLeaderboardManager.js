@@ -68,12 +68,14 @@ export class WorkshopLeaderboardManager {
     tradeAllianceFacade,
     onOpenPlayerInfo,
     onOpenAllianceInfo,
+    onRequirePlayerSurfaceAccess,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.leaderboardFacade = leaderboardFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.onOpenAllianceInfo = onOpenAllianceInfo;
+    this.onRequirePlayerSurfaceAccess = onRequirePlayerSurfaceAccess;
     this.root = null;
     this.unsubscribeLeaderboard = null;
     this.unsubscribeGameplay = null;
@@ -244,9 +246,15 @@ export class WorkshopLeaderboardManager {
 
   show() {
     if (!this.isButtonAvailable()) {
-      return;
+      return { ok: false, reason: 'unavailable', dialogId: 'leaderboard' };
     }
 
+    return this.requirePlayerSurfaceAccess(() => this.showUnlocked(), {
+      dialogId: 'leaderboard',
+    });
+  }
+
+  showUnlocked() {
     if (!this.releaseTradeAlliancePublicData) {
       this.releaseTradeAlliancePublicData =
         this.tradeAllianceFacade?.retainPublicData?.() ?? null;
@@ -255,6 +263,15 @@ export class WorkshopLeaderboardManager {
     this.visible = true;
     this.applyVisibility();
     this.refs.dialog?.focus();
+    return { ok: true, dialogId: 'leaderboard', pageId: 'workshop' };
+  }
+
+  requirePlayerSurfaceAccess(open, meta) {
+    if (typeof this.onRequirePlayerSurfaceAccess === 'function') {
+      return this.onRequirePlayerSurfaceAccess(open, meta);
+    }
+
+    return open();
   }
 
   isButtonAvailable() {

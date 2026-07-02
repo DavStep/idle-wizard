@@ -65,9 +65,7 @@ export class TutorialLogicManager {
       return this.createEmptyState('blocked');
     }
 
-    const isNewStep =
-      previousStepId !== step?.id ||
-      (step?.id === 'intro-username' && previousTargetId !== step?.targetId);
+    const isNewStep = previousStepId !== step?.id || previousTargetId !== step?.targetId;
     this.activeStep = step;
 
     if (!step) {

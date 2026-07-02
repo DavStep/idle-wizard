@@ -24,7 +24,7 @@ describe('TutorialRevealManager', () => {
 
     manager.setStage(stage);
     manager.update({
-      step: { id: 'intro-username', revealTokens: ['top'] },
+      step: { id: 'intro-mana-sphere', revealTokens: ['top'] },
     });
 
     expect(stage.dataset.tutorialReveal).toBe('top');

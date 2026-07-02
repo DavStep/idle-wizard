@@ -88,10 +88,10 @@ describe('TutorialLogicManager', () => {
   it('keeps focus-target steps collapsed while pointing at the target', () => {
     const target = {};
     const step = createStep({
-      id: 'intro-username',
+      id: 'focus-target-fixture',
       kind: 'prompt',
-      targetId: 'top:username',
-      text: "i don't need your name, but it would be nice to set it here.",
+      targetId: 'top:settings',
+      text: "open settings.",
       progress: null,
       progressLabel: '',
       cueMode: 'focus-target',
@@ -109,7 +109,7 @@ describe('TutorialLogicManager', () => {
     expect(viewState).toMatchObject({
       kind: 'lesson',
       lesson: {
-        id: 'intro-username',
+        id: 'focus-target-fixture',
         autoOpen: false,
         forceOpen: false,
       },
@@ -150,10 +150,10 @@ describe('TutorialLogicManager', () => {
     });
 
     activeStep = createStep({
-      id: 'intro-username',
+      id: 'focus-target-fixture',
       kind: 'prompt',
-      targetId: 'top:username',
-      text: "i don't need your name, but it would be nice to set it here.",
+      targetId: 'top:settings',
+      text: "open settings.",
       progress: null,
       progressLabel: '',
       cueMode: 'focus-target',
@@ -170,7 +170,7 @@ describe('TutorialLogicManager', () => {
     expect(viewState).toMatchObject({
       kind: 'lesson',
       lesson: {
-        id: 'intro-username',
+        id: 'focus-target-fixture',
         autoOpen: false,
         forceOpen: false,
       },
@@ -185,10 +185,10 @@ describe('TutorialLogicManager', () => {
   it('hides focus-target cues while the lesson is open until show me is requested', () => {
     const target = {};
     const step = createStep({
-      id: 'intro-username',
+      id: 'focus-target-fixture',
       kind: 'prompt',
-      targetId: 'top:username',
-      text: "i don't need your name, but it would be nice to set it here.",
+      targetId: 'top:settings',
+      text: "open settings.",
       progress: null,
       progressLabel: '',
       cueMode: 'focus-target',
@@ -223,7 +223,7 @@ describe('TutorialLogicManager', () => {
         dom: {},
         targetResolver: () => target,
         lessonPanelOpen: true,
-        requestedTargetGuidanceStepId: 'intro-username',
+        requestedTargetGuidanceStepId: 'focus-target-fixture',
       }).cue,
     ).toMatchObject({
       kind: 'target-cue',

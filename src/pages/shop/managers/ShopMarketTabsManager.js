@@ -8,10 +8,16 @@ const MARKET_TABS = [
 ];
 
 export class ShopMarketTabsManager {
-  constructor({ gameplayFacade, playerShopFacade, onActiveTabChange } = {}) {
+  constructor({
+    gameplayFacade,
+    playerShopFacade,
+    onActiveTabChange,
+    onRequirePlayerSurfaceAccess,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.playerShopFacade = playerShopFacade;
     this.onActiveTabChange = onActiveTabChange;
+    this.onRequirePlayerSurfaceAccess = onRequirePlayerSurfaceAccess;
     this.notificationStateManager = new PageNotificationStateManager();
     this.root = null;
     this.unsubscribeGameplay = null;
@@ -98,13 +104,36 @@ export class ShopMarketTabsManager {
   }
 
   setActiveTab(tabId) {
-    if (!this.refs.panels.has(tabId) || this.activeTabId === tabId) {
-      return;
+    if (!this.refs.panels.has(tabId)) {
+      return { ok: false, reason: 'unknown_tab', tabId };
     }
 
+    if (this.activeTabId === tabId) {
+      return { ok: true, tabId };
+    }
+
+    if (tabId === 'player') {
+      return this.requirePlayerSurfaceAccess(() => this.applyActiveTab(tabId), {
+        dialogId: 'playerMarket',
+      });
+    }
+
+    return this.applyActiveTab(tabId);
+  }
+
+  applyActiveTab(tabId) {
     this.activeTabId = tabId;
     this.render();
     this.onActiveTabChange?.(tabId);
+    return { ok: true, tabId };
+  }
+
+  requirePlayerSurfaceAccess(open, meta) {
+    if (typeof this.onRequirePlayerSurfaceAccess === 'function') {
+      return this.onRequirePlayerSurfaceAccess(open, meta);
+    }
+
+    return open();
   }
 
   getActiveTabId() {

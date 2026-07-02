@@ -64,11 +64,13 @@ export class WorkshopTradeAllianceManager {
     tradeAllianceFacade,
     onOpenPlayerInfo,
     onOpenAllianceInfo,
+    onRequirePlayerSurfaceAccess,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.onOpenPlayerInfo = onOpenPlayerInfo;
     this.onOpenAllianceInfo = onOpenAllianceInfo;
+    this.onRequirePlayerSurfaceAccess = onRequirePlayerSurfaceAccess;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -246,9 +248,15 @@ export class WorkshopTradeAllianceManager {
 
   show() {
     if (!this.isButtonAvailable()) {
-      return;
+      return { ok: false, reason: 'unavailable', dialogId: 'tradeAlliance' };
     }
 
+    return this.requirePlayerSurfaceAccess(() => this.showUnlocked(), {
+      dialogId: 'tradeAlliance',
+    });
+  }
+
+  showUnlocked() {
     if (!this.releasePublicData) {
       this.releasePublicData = this.tradeAllianceFacade?.retainPublicData?.() ?? null;
     }
@@ -260,6 +268,15 @@ export class WorkshopTradeAllianceManager {
       this.requestQuestScroll(QUEST_SCROLL_ON_OPEN);
       this.applyPendingQuestScroll();
     }
+    return { ok: true, dialogId: 'tradeAlliance', pageId: 'workshop' };
+  }
+
+  requirePlayerSurfaceAccess(open, meta) {
+    if (typeof this.onRequirePlayerSurfaceAccess === 'function') {
+      return this.onRequirePlayerSurfaceAccess(open, meta);
+    }
+
+    return open();
   }
 
   isButtonAvailable() {

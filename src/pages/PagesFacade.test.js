@@ -2838,6 +2838,7 @@ function createPlayerFacadeFake(
   initialTheme = 'midnight',
   {
     shouldPromptForUsername = false,
+    hasExplicitUsername = true,
     initialColorMode = 'resources',
     initialFont = 'lexend',
     initialCharacter = 'elara',
@@ -2855,7 +2856,9 @@ function createPlayerFacadeFake(
     iconMode: initialIconMode,
     progressBar: initialProgressBar,
     plotView: initialPlotView,
+    hasExplicitUsername,
     shouldPromptForUsername,
+    usernamePromptSeen: hasExplicitUsername,
   };
   const listeners = new Set();
   let promptSeenCount = 0;
@@ -2877,7 +2880,9 @@ function createPlayerFacadeFake(
       snapshot = {
         ...snapshot,
         username: username.trim() || 'wizard',
+        hasExplicitUsername: true,
         shouldPromptForUsername: false,
+        usernamePromptSeen: true,
       };
 
       publish();
@@ -2989,6 +2994,7 @@ function createPlayerFacadeFake(
       snapshot = {
         ...snapshot,
         shouldPromptForUsername: false,
+        usernamePromptSeen: true,
       };
 
       publish();
@@ -4216,7 +4222,10 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     const intro = stage.querySelector('.first-run-intro');
-    const advance = async ({ completes = false } = {}) => {
+    const advance = async ({
+      completes = false,
+      backdropTransition = 'stable',
+    } = {}) => {
       const advanceButton = stage.querySelector('.first-run-intro__advance');
       const previousMotionStep = Number(intro?.dataset.motionStep ?? 0);
       stage
@@ -4224,7 +4233,13 @@ describe('PagesFacade', () => {
         ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
       expect(advanceButton?.disabled).toBe(true);
       expect(intro?.classList.contains('first-run-intro--step-exit')).toBe(true);
-      await vi.advanceTimersByTimeAsync(170);
+      expect(intro?.dataset.backdropTransition).toBe(backdropTransition);
+      expect(
+        intro?.classList.contains(
+          `first-run-intro--${backdropTransition}-backdrop`,
+        ),
+      ).toBe(true);
+      await vi.advanceTimersByTimeAsync(210);
       if (completes) {
         expect(intro?.hidden).toBe(true);
         return;
@@ -4239,15 +4254,40 @@ describe('PagesFacade', () => {
     expect(intro?.hidden).toBe(false);
     expect(intro?.dataset.scene).toBe('castle');
     expect(intro?.dataset.motionStep).toBe('1');
+    expect(stage.querySelector('.first-run-intro__mages')).toBeNull();
+    expect(stage.querySelector('.first-run-intro__rainbow')).not.toBeNull();
     expect(stage.querySelector('.tutorial-layer')).toBeNull();
 
+    const backdrop = stage.querySelector('.first-run-intro__backdrop');
+    const originalGetComputedStyle = window.getComputedStyle.bind(window);
+    let sampledBeforeStableClass = false;
+    const getComputedStyleSpy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((element) => {
+        if (element === backdrop) {
+          sampledBeforeStableClass = !intro?.classList.contains(
+            'first-run-intro--stable-backdrop',
+          );
+          return {
+            filter: 'saturate(0.96) contrast(1.02)',
+            opacity: '1',
+            transform: 'matrix(1.04, 0, 0, 1.04, 0, -5)',
+          };
+        }
+
+        return originalGetComputedStyle(element);
+      });
+
     await advance();
+    getComputedStyleSpy.mockRestore();
+    expect(sampledBeforeStableClass).toBe(true);
+    expect(backdrop?.style.transform).toBe('matrix(1.04, 0, 0, 1.04, 0, -5)');
     expect(intro?.dataset.scene).toBe('defeated');
 
-    await advance();
-    expect(intro?.dataset.scene).toBe('mages');
+    await advance({ backdropTransition: 'changing' });
+    expect(intro?.dataset.scene).toBe('peace');
 
-    await advance();
+    await advance({ backdropTransition: 'changing' });
     expect(intro?.dataset.scene).toBe('reward');
     expect(stage.querySelector('.first-run-intro__coin-badge')).toBeNull();
     const rewardCoins = Array.from(
@@ -4267,7 +4307,7 @@ describe('PagesFacade', () => {
     const nameInput = stage.querySelector('.first-run-intro__name-input');
     expect(nameInput).not.toBeNull();
     nameInput.value = 'Mira';
-    await advance();
+    await advance({ backdropTransition: 'changing' });
     expect(playerFacade.getSnapshot().username).toBe('Mira');
     expect(stage.querySelector('.first-run-intro__avatar')).toBeNull();
     expect(stage.querySelector('.first-run-intro [role="radiogroup"]')).toBeNull();
@@ -4293,7 +4333,7 @@ describe('PagesFacade', () => {
       'door opens',
     );
 
-    await advance({ completes: true });
+    await advance({ completes: true, backdropTransition: 'changing' });
 
     expect(intro?.hidden).toBe(true);
     expect(JSON.parse(firstRunIntroStorage.getItem(FIRST_RUN_INTRO_STORAGE_KEY))).toEqual({
@@ -6828,81 +6868,110 @@ describe('PagesFacade', () => {
     expect(settings.hidden).toBe(true);
   });
 
-  it('treats saving the unchanged default name as completing the tutorial step', () => {
+  it('requires a saved username before opening the leaderboard', async () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
-    const playerFacade = createPlayerFacadeFake('wizard');
-    const tutorialStorage = createMemoryStorage({
-      [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-        completedStepIds: ['purchase-house', 'intro-welcome'],
-      }),
+    unlockWorkshopSecondaryActions(gameplayFacade);
+    const playerFacade = createPlayerFacadeFake('wizard', 'midnight', {
+      hasExplicitUsername: false,
     });
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade,
-      tutorialStorage,
     });
 
     pagesFacade.mount(stage);
-    pagesFacade.tutorialFacade.refresh();
 
-    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-username');
-
-    const usernameButton = stage.querySelector('.room-top-panel__username');
+    const leaderboardPopup = stage.querySelector('.workshop-page__leaderboard-popup');
+    const settings = stage.querySelector('.room-top-panel__settings');
+    const input = stage.querySelector('.room-top-panel__username-input');
     const saveButton = stage.querySelector('.room-top-panel__username-save');
 
-    usernameButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    saveButton.click();
-    pagesFacade.tutorialFacade.refresh();
+    stage
+      .querySelector('.workshop-page__leaderboard-button')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(playerFacade.getSnapshot().username).toBe('wizard');
-    expect(pagesFacade.tutorialFacade.progressManager.hasCompleted('intro-username')).toBe(true);
-    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-mana-sphere');
+    expect(leaderboardPopup.hidden).toBe(true);
+    expect(settings.hidden).toBe(false);
+    expect(settings.classList.contains('is-username-prompt')).toBe(true);
+    expect(input.value).toBe('');
+
+    input.value = 'Mira';
+    saveButton.click();
+    await Promise.resolve();
+
+    expect(playerFacade.getSnapshot()).toMatchObject({
+      username: 'Mira',
+      hasExplicitUsername: true,
+    });
+    expect(settings.hidden).toBe(true);
+    expect(leaderboardPopup.hidden).toBe(false);
 
     pagesFacade.unmount();
   });
 
-  it('selects the default tutorial name so typing can replace it immediately', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const playerFacade = createPlayerFacadeFake('wizard');
-    const tutorialStorage = createMemoryStorage({
-      [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-        completedStepIds: ['purchase-house', 'intro-welcome'],
-      }),
-    });
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-      playerFacade,
-      tutorialStorage,
-    });
+  it('routes player-facing dialogs through username setup first', () => {
+    const cases = [
+      {
+        dialogId: 'chat',
+        setup: (gameplayFacade) => unlockWorkshopSecondaryActions(gameplayFacade),
+      },
+      {
+        dialogId: 'discoveries',
+        setup: (gameplayFacade) => unlockWorkshopSecondaryActions(gameplayFacade),
+      },
+      {
+        dialogId: 'alliance',
+        setup: (gameplayFacade) => unlockWorkshopSecondaryActions(gameplayFacade),
+      },
+      {
+        dialogId: 'worldevent',
+        options: { tab: 'leaderboard' },
+        setup: (gameplayFacade) => {
+          unlockWorkshopSecondaryActions(gameplayFacade);
+          unlockWorldNotice(gameplayFacade);
+        },
+      },
+      {
+        dialogId: 'market',
+        options: { tab: 'player' },
+        setup: (gameplayFacade) => {
+          const snapshot = gameplayFacade.getSnapshot();
+          snapshot.tasks.currentLevel = 4;
+          snapshot.playerLevel.currentLevel = 4;
+        },
+      },
+    ];
 
-    pagesFacade.mount(stage);
-    pagesFacade.tutorialFacade.refresh();
+    for (const testCase of cases) {
+      const stage = document.createElement('section');
+      const gameplayFacade = createGameplayFacadeFake();
+      testCase.setup(gameplayFacade);
+      const pagesFacade = new PagesFacade({
+        gameplayFacade,
+        playerFacade: createPlayerFacadeFake('wizard', 'midnight', {
+          hasExplicitUsername: false,
+        }),
+        worldChatFacade: createWorldChatFacadeFake(),
+        tradeAllianceFacade: createTradeAllianceFacadeFake(),
+        playerShopFacade: createPlayerShopFacadeFake(),
+      });
 
-    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-username');
+      pagesFacade.mount(stage);
 
-    const usernameButton = stage.querySelector('.room-top-panel__username');
-    const input = stage.querySelector('.room-top-panel__username-input');
-    const saveButton = stage.querySelector('.room-top-panel__username-save');
+      expect(pagesFacade.openDialog(testCase.dialogId, testCase.options)).toMatchObject({
+        ok: false,
+        reason: 'username_required',
+      });
+      expect(stage.querySelector('.room-top-panel__settings').hidden).toBe(false);
+      expect(
+        stage
+          .querySelector('.room-top-panel__settings')
+          .classList.contains('is-username-prompt'),
+      ).toBe(true);
 
-    usernameButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    input.dispatchEvent(new window.Event('focus'));
-    input.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(input.selectionStart).toBe(0);
-    expect(input.selectionEnd).toBe('wizard'.length);
-
-    input.value = 'Mira';
-    input.dispatchEvent(new window.Event('input', { bubbles: true }));
-    saveButton.click();
-    pagesFacade.tutorialFacade.refresh();
-
-    expect(playerFacade.getSnapshot().username).toBe('Mira');
-    expect(pagesFacade.tutorialFacade.progressManager.hasCompleted('intro-username')).toBe(true);
-    expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-username-return');
-
-    pagesFacade.unmount();
+      pagesFacade.unmount();
+    }
   });
 
   it('shows seed inventory in the bag when the seeds tab is selected', () => {

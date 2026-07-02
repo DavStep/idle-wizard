@@ -2,11 +2,18 @@ import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 
 const CASTLE_RUINS_URL = new URL('../assets/castle-ruins.webp', import.meta.url).href;
 const DEMON_DEFEATED_URL = new URL('../assets/demon-defeated.webp', import.meta.url).href;
-const MAGE_SILHOUETTES_URL = new URL('../assets/mage-silhouettes.webp', import.meta.url).href;
+const PEACEFUL_WORLD_URL = new URL('../assets/peaceful-world.webp', import.meta.url).href;
 const REWARD_POUCH_URL = new URL('../assets/reward-pouch.webp', import.meta.url).href;
 const WORKSHOP_FOR_SALE_URL = new URL('../assets/workshop-for-sale.webp', import.meta.url).href;
 
-const INTRO_STEP_EXIT_MS = 150;
+const INTRO_STEP_EXIT_MS = 180;
+const INTRO_IMAGE_URLS = Object.freeze([
+  CASTLE_RUINS_URL,
+  DEMON_DEFEATED_URL,
+  PEACEFUL_WORLD_URL,
+  REWARD_POUCH_URL,
+  WORKSHOP_FOR_SALE_URL,
+]);
 
 const INTRO_STEPS = Object.freeze([
   Object.freeze({
@@ -23,7 +30,7 @@ const INTRO_STEPS = Object.freeze([
   }),
   Object.freeze({
     id: 'disbanded',
-    scene: 'mages',
+    scene: 'peace',
     text: 'peace returned. the wizard army disbanded.',
     action: 'next',
   }),
@@ -75,6 +82,8 @@ export class FirstRunIntroViewManager {
     this.motionStep = 0;
     this.isTransitioning = false;
     this.transitionTimeoutId = null;
+    this.backdropFrozen = false;
+    this.preloadedImages = [];
     this.onComplete = null;
     this.onName = null;
     this.handleAdvance = () => this.advance();
@@ -92,6 +101,8 @@ export class FirstRunIntroViewManager {
     if (this.root) {
       return this.root;
     }
+
+    this.preloadImages();
 
     this.root = document.createElement('section');
     this.root.className = 'first-run-intro';
@@ -113,10 +124,9 @@ export class FirstRunIntroViewManager {
       'first-run-intro__demon first-run-intro__demon--defeated',
       DEMON_DEFEATED_URL,
     );
-    this.refs.mages = this.createSceneImage(
-      'first-run-intro__mages',
-      MAGE_SILHOUETTES_URL,
-    );
+    this.refs.rainbow = document.createElement('div');
+    this.refs.rainbow.className = 'first-run-intro__rainbow';
+    this.refs.rainbow.setAttribute('aria-hidden', 'true');
     this.refs.coinPile = this.createCoinPile();
     this.refs.workshopSale = this.createWorkshopSaleBoard();
     this.refs.transitionShade = document.createElement('div');
@@ -125,8 +135,8 @@ export class FirstRunIntroViewManager {
 
     this.refs.scene.append(
       this.refs.backdrop,
+      this.refs.rainbow,
       this.refs.demonDefeated,
-      this.refs.mages,
       this.refs.coinPile,
       this.refs.workshopSale,
       this.refs.transitionShade,
@@ -188,6 +198,8 @@ export class FirstRunIntroViewManager {
     this.stepIndex = 0;
     this.motionStep = 0;
     this.isTransitioning = false;
+    this.backdropFrozen = false;
+    this.preloadedImages = [];
     this.onComplete = null;
     this.onName = null;
   }
@@ -239,33 +251,40 @@ export class FirstRunIntroViewManager {
   }
 
   transitionToStep(nextStepIndex) {
+    const backdropChanging = this.isBackdropChangingForStep(nextStepIndex);
     this.startStepExit(() => {
       this.stepIndex = nextStepIndex;
       this.render();
-    });
+    }, { backdropChanging });
   }
 
   transitionToComplete() {
-    this.startStepExit(() => this.complete());
+    this.startStepExit(() => this.complete(), { backdropChanging: true });
   }
 
-  startStepExit(afterExit) {
+  startStepExit(afterExit, { backdropChanging = true } = {}) {
     if (!this.root) {
       return;
     }
 
     this.isTransitioning = true;
     this.refs.advance.disabled = true;
+    if (!backdropChanging) {
+      this.freezeBackdropVisualState();
+    }
+    this.setBackdropTransition(backdropChanging);
     this.root.classList.remove('first-run-intro--step-enter');
     this.root.classList.add('first-run-intro--step-exit');
 
     const delay = this.getStepExitDelay();
     this.transitionTimeoutId = window.setTimeout(() => {
       this.transitionTimeoutId = null;
+      afterExit();
       this.root?.classList.remove('first-run-intro--step-exit');
       this.isTransitioning = false;
-      this.refs.advance.disabled = false;
-      afterExit();
+      if (this.refs.advance) {
+        this.refs.advance.disabled = false;
+      }
     }, delay);
   }
 
@@ -279,7 +298,11 @@ export class FirstRunIntroViewManager {
     this.root?.classList.remove(
       'first-run-intro--step-enter',
       'first-run-intro--step-exit',
+      'first-run-intro--stable-backdrop',
+      'first-run-intro--changing-backdrop',
     );
+    this.root?.removeAttribute('data-backdrop-transition');
+    this.clearFrozenBackdrop();
 
     if (this.refs.advance) {
       this.refs.advance.disabled = false;
@@ -305,7 +328,11 @@ export class FirstRunIntroViewManager {
 
     this.root.dataset.scene = step.scene;
     this.root.dataset.step = step.id;
-    this.refs.backdrop.src = this.getBackdropUrl(step.scene);
+    const nextBackdropUrl = this.getBackdropUrl(step.scene);
+    if (this.refs.backdrop.src !== nextBackdropUrl) {
+      this.clearFrozenBackdrop();
+    }
+    this.refs.backdrop.src = nextBackdropUrl;
     this.refs.text.textContent = step.text;
     this.refs.advance.textContent = step.action;
     this.refs.advance.type = step.mode === 'name' ? 'submit' : 'button';
@@ -338,7 +365,66 @@ export class FirstRunIntroViewManager {
     return INTRO_STEPS[this.stepIndex] ?? null;
   }
 
+  isBackdropChangingForStep(nextStepIndex) {
+    const currentStep = this.getStep();
+    const nextStep = INTRO_STEPS[nextStepIndex] ?? null;
+    if (!currentStep || !nextStep) {
+      return true;
+    }
+
+    return (
+      this.getBackdropUrl(currentStep.scene) !== this.getBackdropUrl(nextStep.scene)
+    );
+  }
+
+  setBackdropTransition(backdropChanging) {
+    if (!this.root) {
+      return;
+    }
+
+    const transitionName = backdropChanging ? 'changing' : 'stable';
+    this.root.classList.remove(
+      'first-run-intro--stable-backdrop',
+      'first-run-intro--changing-backdrop',
+    );
+    this.root.classList.add(`first-run-intro--${transitionName}-backdrop`);
+    this.root.dataset.backdropTransition = transitionName;
+  }
+
+  freezeBackdropVisualState() {
+    const backdrop = this.refs.backdrop;
+    if (!backdrop) {
+      return;
+    }
+
+    const view = backdrop.ownerDocument?.defaultView ?? globalThis.window;
+    const style = view?.getComputedStyle?.(backdrop);
+    if (!style) {
+      return;
+    }
+
+    backdrop.style.transform = style.transform === 'none' ? '' : style.transform;
+    backdrop.style.opacity = style.opacity;
+    backdrop.style.filter = style.filter;
+    this.backdropFrozen = true;
+  }
+
+  clearFrozenBackdrop() {
+    if (!this.backdropFrozen || !this.refs.backdrop) {
+      return;
+    }
+
+    this.refs.backdrop.style.removeProperty('transform');
+    this.refs.backdrop.style.removeProperty('opacity');
+    this.refs.backdrop.style.removeProperty('filter');
+    this.backdropFrozen = false;
+  }
+
   getBackdropUrl(scene) {
+    if (scene === 'peace') {
+      return PEACEFUL_WORLD_URL;
+    }
+
     if (scene === 'reward' || scene === 'profile') {
       return REWARD_POUCH_URL;
     }
@@ -358,6 +444,18 @@ export class FirstRunIntroViewManager {
     image.draggable = false;
     image.setAttribute('aria-hidden', 'true');
     return image;
+  }
+
+  preloadImages() {
+    if (this.preloadedImages.length > 0) {
+      return;
+    }
+
+    this.preloadedImages = INTRO_IMAGE_URLS.map((src) => {
+      const image = document.createElement('img');
+      image.src = src;
+      return image;
+    });
   }
 
   createCoinPile() {

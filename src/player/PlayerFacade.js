@@ -136,6 +136,7 @@ export class PlayerFacade {
   getSnapshot() {
     return {
       username: this.nameManager.getUsername(),
+      hasExplicitUsername: this.nameManager.getHasExplicitUsername(),
       shouldPromptForUsername: this.nameManager.shouldPromptForUsername(),
       usernamePromptSeen: this.nameManager.getUsernamePromptSeen(),
       theme: this.themeManager.getTheme(),

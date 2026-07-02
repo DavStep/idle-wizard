@@ -10,6 +10,7 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot()).toEqual({
       username: 'Arch Mage',
+      hasExplicitUsername: true,
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
       theme: 'midnight',
@@ -29,6 +30,7 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot()).toEqual({
       username: 'wizard',
+      hasExplicitUsername: true,
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
       theme: 'midnight',
@@ -50,6 +52,7 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot()).toMatchObject({
       username: 'wizard',
+      hasExplicitUsername: false,
       shouldPromptForUsername: true,
       usernamePromptSeen: false,
     });
@@ -72,6 +75,7 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot()).toMatchObject({
       username: 'wizard',
+      hasExplicitUsername: false,
       usernamePromptSeen: true,
       shouldPromptForUsername: false,
     });
@@ -82,9 +86,28 @@ describe('PlayerFacade', () => {
 
     playerFacade.applyServerProfile({
       username: 'wizard',
+      hasExplicitUsername: false,
       usernamePromptSeen: false,
     });
     playerFacade.markUsernamePromptSeen();
+    playerFacade.applyServerProfile({
+      username: 'wizard',
+      hasExplicitUsername: false,
+      usernamePromptSeen: false,
+    });
+
+    expect(playerFacade.getSnapshot()).toMatchObject({
+      username: 'wizard',
+      hasExplicitUsername: false,
+      usernamePromptSeen: true,
+      shouldPromptForUsername: false,
+    });
+  });
+
+  it('clears explicit username state when a different default server profile arrives', () => {
+    const playerFacade = new PlayerFacade();
+
+    playerFacade.setUsername('Mira');
     playerFacade.applyServerProfile({
       username: 'wizard',
       usernamePromptSeen: false,
@@ -92,7 +115,7 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot()).toMatchObject({
       username: 'wizard',
-      usernamePromptSeen: true,
+      hasExplicitUsername: false,
       shouldPromptForUsername: false,
     });
   });

@@ -22,9 +22,10 @@ const BOOK_SWIPE_THRESHOLD = 30;
 const BOOK_TURN_CLASS_MS = 220;
 
 export class WorkshopDiscoveriesManager {
-  constructor({ gameplayFacade, onOpenPlayerInfo } = {}) {
+  constructor({ gameplayFacade, onOpenPlayerInfo, onRequirePlayerSurfaceAccess } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.onOpenPlayerInfo = onOpenPlayerInfo;
+    this.onRequirePlayerSurfaceAccess = onRequirePlayerSurfaceAccess;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -243,13 +244,28 @@ export class WorkshopDiscoveriesManager {
 
   show() {
     if (!this.isButtonAvailable()) {
-      return;
+      return { ok: false, reason: 'unavailable', dialogId: 'discoveries' };
     }
 
+    return this.requirePlayerSurfaceAccess(() => this.showUnlocked(), {
+      dialogId: 'discoveries',
+    });
+  }
+
+  showUnlocked() {
     this.previousFocus = document.activeElement;
     this.visible = true;
     this.applyVisibility();
     this.refs.dialog?.focus();
+    return { ok: true, dialogId: 'discoveries', pageId: 'workshop' };
+  }
+
+  requirePlayerSurfaceAccess(open, meta) {
+    if (typeof this.onRequirePlayerSurfaceAccess === 'function') {
+      return this.onRequirePlayerSurfaceAccess(open, meta);
+    }
+
+    return open();
   }
 
   isButtonAvailable() {

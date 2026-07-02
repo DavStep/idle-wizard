@@ -11,6 +11,10 @@ import { BottomPanelFacade } from './bottomPanel/BottomPanelFacade.js';
 import { PageNotificationFacade } from './notifications/PageNotificationFacade.js';
 import { PlayerInfoDialogFacade } from './playerInfo/PlayerInfoDialogFacade.js';
 import { TopPanelFacade } from './topPanel/TopPanelFacade.js';
+import {
+  TOP_PANEL_USERNAME_PROMPT_CLOSED_EVENT,
+  TOP_PANEL_USERNAME_SAVED_EVENT,
+} from './topPanel/topPanelEvents.js';
 import { TutorialFacade } from './tutorial/TutorialFacade.js';
 import { WorkshopPageFacade } from './workshop/WorkshopPageFacade.js';
 import { WorkshopBagManager } from './workshop/managers/WorkshopBagManager.js';
@@ -56,7 +60,12 @@ export class PagesFacade {
   } = {}) {
     this.stage = null;
     this.gameplayFacade = gameplayFacade;
+    this.playerFacade = playerFacade;
     this.npcMarketFacade = npcMarketFacade;
+    this.pendingPlayerSurfaceOpen = null;
+    this.handleUsernameSavedForPlayerSurface = () => this.resumePendingPlayerSurfaceOpen();
+    this.handleUsernamePromptClosedForPlayerSurface = () =>
+      this.clearPendingPlayerSurfaceOpen();
     this.releaseNpcMarketPrices = null;
     this.npcMarketPricesRetained = false;
     this.registryManager = new PageRegistryManager();
@@ -108,18 +117,20 @@ export class PagesFacade {
     });
     this.playerInfoDialogFacade = new PlayerInfoDialogFacade({
       playerInfoFacade,
-      onOpenAllianceInfo: (alliance) => this.allianceInfoDialogFacade.show(alliance),
+      onOpenAllianceInfo: (alliance) => this.openAllianceInfoDialog(alliance),
     });
     this.allianceInfoDialogFacade = new AllianceInfoDialogFacade({
       tradeAllianceFacade,
-      onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
+      onOpenPlayerInfo: (player) => this.openPlayerInfoDialog(player),
     });
     this.worldChatManager = new WorkshopWorldChatManager({
       gameplayFacade,
       playerFacade,
       worldChatFacade,
       tradeAllianceFacade,
-      onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
+      onOpenPlayerInfo: (player) => this.openPlayerInfoDialog(player),
+      onRequirePlayerSurfaceAccess: (open, meta) =>
+        this.requirePlayerSurfaceUsername(open, meta),
     });
     this.firstRunIntroFacade = new FirstRunIntroFacade({
       playerFacade,
@@ -147,8 +158,10 @@ export class PagesFacade {
         worldEventLeaderboardFacade,
         tradeAllianceFacade,
         playerInboxFacade,
-        onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
-        onOpenAllianceInfo: (alliance) => this.allianceInfoDialogFacade.show(alliance),
+        onOpenPlayerInfo: (player) => this.openPlayerInfoDialog(player),
+        onOpenAllianceInfo: (alliance) => this.openAllianceInfoDialog(alliance),
+        onRequirePlayerSurfaceAccess: (open, meta) =>
+          this.requirePlayerSurfaceUsername(open, meta),
         onOpenBag: () => this.toggleInventoryDialog(),
         onOpenInbox: () => this.topPanelFacade.showInbox(),
       }),
@@ -157,7 +170,7 @@ export class PagesFacade {
       'brewing',
       new BrewingPageFacade({
         gameplayFacade,
-        onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
+        onOpenPlayerInfo: (player) => this.openPlayerInfoDialog(player),
       }),
     );
     this.registryManager.register(
@@ -185,7 +198,9 @@ export class PagesFacade {
       new ShopPageFacade({
         gameplayFacade,
         playerShopFacade,
-        onOpenPlayerInfo: (player) => this.playerInfoDialogFacade.show(player),
+        onOpenPlayerInfo: (player) => this.openPlayerInfoDialog(player),
+        onRequirePlayerSurfaceAccess: (open, meta) =>
+          this.requirePlayerSurfaceUsername(open, meta),
         onDirectSellOverride: (sale) =>
           this.tutorialFacade?.handleDirectSellOverride?.(sale) ?? null,
         getDirectSellQuoteOverride: (sale) =>
@@ -207,6 +222,14 @@ export class PagesFacade {
   mount(stage) {
     this.withGameplaySnapshotCache(() => {
       this.stage = stage;
+      stage.addEventListener(
+        TOP_PANEL_USERNAME_SAVED_EVENT,
+        this.handleUsernameSavedForPlayerSurface,
+      );
+      stage.addEventListener(
+        TOP_PANEL_USERNAME_PROMPT_CLOSED_EVENT,
+        this.handleUsernamePromptClosedForPlayerSurface,
+      );
       this.pressFeedbackManager.mount(stage);
       this.currentPageManager.mount(stage);
       this.swipeNavigationManager.mount(stage);
@@ -249,6 +272,15 @@ export class PagesFacade {
     this.swipeNavigationManager.unmount();
     this.currentPageManager.unmount();
     this.pressFeedbackManager.unmount();
+    this.stage?.removeEventListener(
+      TOP_PANEL_USERNAME_SAVED_EVENT,
+      this.handleUsernameSavedForPlayerSurface,
+    );
+    this.stage?.removeEventListener(
+      TOP_PANEL_USERNAME_PROMPT_CLOSED_EVENT,
+      this.handleUsernamePromptClosedForPlayerSurface,
+    );
+    this.pendingPlayerSurfaceOpen = null;
     this.stage = null;
   }
 
@@ -581,13 +613,23 @@ export class PagesFacade {
     }
 
     if (managerId === 'leaderboard') {
-      page.leaderboardManager?.show?.();
-      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+      return (
+        page.leaderboardManager?.show?.() ?? {
+          ok: true,
+          dialogId: managerId,
+          pageId: 'workshop',
+        }
+      );
     }
 
     if (managerId === 'tradeAlliance') {
-      page.tradeAllianceManager?.show?.();
-      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+      return (
+        page.tradeAllianceManager?.show?.() ?? {
+          ok: true,
+          dialogId: managerId,
+          pageId: 'workshop',
+        }
+      );
     }
 
     if (managerId === 'discoveries') {
@@ -595,8 +637,13 @@ export class PagesFacade {
       if (tabId && page.discoveriesManager) {
         page.discoveriesManager.selectedTabId = tabId;
       }
-      page.discoveriesManager?.show?.();
-      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+      return (
+        page.discoveriesManager?.show?.() ?? {
+          ok: true,
+          dialogId: managerId,
+          pageId: 'workshop',
+        }
+      );
     }
 
     if (managerId === 'personalTasks') {
@@ -606,16 +653,24 @@ export class PagesFacade {
 
     if (managerId === 'worldNotice') {
       const tabId = this.normalizeDevDialogTab(options.tab ?? options.view);
-      if (tabId) {
-        page.worldNoticeManager?.onSelectTab?.(tabId);
-      }
       page.worldNoticeManager?.show?.();
+      if (tabId) {
+        const tabResult = page.worldNoticeManager?.onSelectTab?.(tabId);
+        if (tabResult?.ok === false) {
+          return { ...tabResult, dialogId: managerId, pageId: 'workshop', tabId };
+        }
+      }
       return { ok: true, dialogId: managerId, pageId: 'workshop', tabId };
     }
 
     if (managerId === 'worldChat') {
-      this.worldChatManager?.show?.();
-      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+      return (
+        this.worldChatManager?.show?.() ?? {
+          ok: true,
+          dialogId: managerId,
+          pageId: 'workshop',
+        }
+      );
     }
 
     return { ok: false, reason: 'unknown_workshop_dialog', dialogId: managerId };
@@ -625,7 +680,10 @@ export class PagesFacade {
     this.show('shop');
     const page = this.registryManager.get('shop');
     const tabId = this.normalizeShopTabId(options.tab ?? options.view);
-    page.marketTabsManager?.setActiveTab?.(tabId);
+    const tabResult = page.marketTabsManager?.setActiveTab?.(tabId);
+    if (tabResult?.ok === false) {
+      return { ...tabResult, dialogId: 'market', pageId: 'shop', tabId };
+    }
 
     if (options.popup === 'listing') {
       page.playerShelfManager?.showListingPopup?.();
@@ -640,6 +698,68 @@ export class PagesFacade {
     }
 
     return { ok: true, dialogId: 'market', pageId: 'shop', tabId };
+  }
+
+  openPlayerInfoDialog(player) {
+    return this.requirePlayerSurfaceUsername(
+      () => {
+        this.playerInfoDialogFacade.show(player);
+        return { ok: true, dialogId: 'playerInfo' };
+      },
+      { dialogId: 'playerInfo' },
+    );
+  }
+
+  openAllianceInfoDialog(alliance) {
+    return this.requirePlayerSurfaceUsername(
+      () => {
+        this.allianceInfoDialogFacade.show(alliance);
+        return { ok: true, dialogId: 'allianceInfo' };
+      },
+      { dialogId: 'allianceInfo' },
+    );
+  }
+
+  requirePlayerSurfaceUsername(open, { dialogId = 'playerSurface' } = {}) {
+    if (this.hasPlayerSurfaceUsername()) {
+      return open?.() ?? { ok: true, dialogId };
+    }
+
+    this.pendingPlayerSurfaceOpen = typeof open === 'function' ? open : null;
+    this.topPanelFacade.showUsernamePrompt();
+    return { ok: false, reason: 'username_required', dialogId };
+  }
+
+  hasPlayerSurfaceUsername() {
+    if (!this.playerFacade) {
+      return true;
+    }
+
+    const snapshot = this.playerFacade.getSnapshot?.();
+    if (!snapshot || !Object.hasOwn(snapshot, 'hasExplicitUsername')) {
+      return true;
+    }
+
+    return snapshot.hasExplicitUsername === true;
+  }
+
+  resumePendingPlayerSurfaceOpen() {
+    const open = this.pendingPlayerSurfaceOpen;
+    this.pendingPlayerSurfaceOpen = null;
+
+    if (!open) {
+      return;
+    }
+
+    if (!this.stage || !this.hasPlayerSurfaceUsername()) {
+      return;
+    }
+
+    open();
+  }
+
+  clearPendingPlayerSurfaceOpen() {
+    this.pendingPlayerSurfaceOpen = null;
   }
 
   openGuildDialog(dialogId, options = {}) {

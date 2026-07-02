@@ -29,11 +29,13 @@ export class WorkshopWorldNoticeManager {
     playerFacade,
     worldEventLeaderboardFacade,
     onOpenPlayerInfo,
+    onRequirePlayerSurfaceAccess,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.playerFacade = playerFacade;
     this.worldEventLeaderboardFacade = worldEventLeaderboardFacade;
     this.onOpenPlayerInfo = onOpenPlayerInfo;
+    this.onRequirePlayerSurfaceAccess = onRequirePlayerSurfaceAccess;
     this.root = null;
     this.unsubscribe = null;
     this.unsubscribePlayer = null;
@@ -287,11 +289,30 @@ export class WorkshopWorldNoticeManager {
 
   onSelectTab(tabId) {
     if (this.selectedTabId === tabId) {
-      return;
+      return { ok: true, dialogId: 'worldNotice', tabId };
     }
 
+    if (tabId === 'leaderboard') {
+      return this.requirePlayerSurfaceAccess(() => this.selectTab(tabId), {
+        dialogId: 'worldEventLeaderboard',
+      });
+    }
+
+    return this.selectTab(tabId);
+  }
+
+  selectTab(tabId) {
     this.selectedTabId = tabId;
     this.renderPopup(this.currentSnapshot?.worldNotice);
+    return { ok: true, dialogId: 'worldNotice', tabId };
+  }
+
+  requirePlayerSurfaceAccess(open, meta) {
+    if (typeof this.onRequirePlayerSurfaceAccess === 'function') {
+      return this.onRequirePlayerSurfaceAccess(open, meta);
+    }
+
+    return open();
   }
 
   show() {

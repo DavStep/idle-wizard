@@ -24,7 +24,10 @@ import {
 } from '../../../player/playerThemes.js';
 import { getDefaultPlayerVisualSettingsResearched } from '../../../player/playerVisualSettings.js';
 import { getPlayerCharacterImageUrl } from '../../shared/playerCharacterIcon.js';
-import { TOP_PANEL_USERNAME_SAVED_EVENT } from '../topPanelEvents.js';
+import {
+  TOP_PANEL_USERNAME_PROMPT_CLOSED_EVENT,
+  TOP_PANEL_USERNAME_SAVED_EVENT,
+} from '../topPanelEvents.js';
 
 const DEFAULT_SETTINGS_TAB = 'account';
 const DEFAULT_USERNAME = 'wizard';
@@ -80,6 +83,7 @@ export class TopPanelSettingsManager {
     this.settingsTab = DEFAULT_SETTINGS_TAB;
     this.feedbackKind = DEFAULT_FEEDBACK_KIND;
     this.feedbackPending = false;
+    this.savingUsername = false;
     this.primeUsernameSelection = false;
     this.reselectUsernameOnClick = false;
     this.previousFocus = null;
@@ -366,6 +370,7 @@ export class TopPanelSettingsManager {
     this.gameplaySnapshot = null;
     this.visible = false;
     this.feedbackPending = false;
+    this.savingUsername = false;
     this.primeUsernameSelection = false;
     this.reselectUsernameOnClick = false;
     this.previousFocus = null;
@@ -441,8 +446,9 @@ export class TopPanelSettingsManager {
     );
   }
 
-  hide() {
+  hide({ usernameSaved = false } = {}) {
     const wasVisible = this.visible;
+    const wasUsernamePromptMode = this.usernamePromptMode;
     this.visible = false;
     this.usernamePromptMode = false;
     this.feedbackMode = false;
@@ -459,6 +465,10 @@ export class TopPanelSettingsManager {
     }
 
     this.previousFocus = null;
+
+    if (wasVisible && wasUsernamePromptMode && !usernameSaved) {
+      this.dispatchSettingsEvent(TOP_PANEL_USERNAME_PROMPT_CLOSED_EVENT);
+    }
   }
 
   saveUsername() {
@@ -470,19 +480,28 @@ export class TopPanelSettingsManager {
       return;
     }
 
-    this.playerFacade?.setUsername(username);
+    this.savingUsername = true;
+    try {
+      this.playerFacade?.setUsername(username);
+    } finally {
+      this.savingUsername = false;
+    }
+    this.hide({ usernameSaved: true });
+    this.dispatchSettingsEvent(TOP_PANEL_USERNAME_SAVED_EVENT);
+  }
+
+  dispatchSettingsEvent(eventName) {
     const CustomEventClass =
       this.refs?.settings?.ownerDocument?.defaultView?.CustomEvent ?? globalThis.CustomEvent;
     if (typeof CustomEventClass !== 'function') {
-      this.hide();
       return;
     }
+
     this.refs?.settings?.dispatchEvent(
-      new CustomEventClass(TOP_PANEL_USERNAME_SAVED_EVENT, {
+      new CustomEventClass(eventName, {
         bubbles: true,
       }),
     );
-    this.hide();
   }
 
   async sendFeedback() {
@@ -555,6 +574,7 @@ export class TopPanelSettingsManager {
     this.renderVisualSettingPrices();
 
     if (
+      !this.savingUsername &&
       this.usernamePromptMode &&
       !snapshot.shouldPromptForUsername &&
       snapshot.username !== 'wizard'

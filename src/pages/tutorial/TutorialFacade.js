@@ -8,7 +8,6 @@ import {
   TUTORIAL_STEP_IDS,
 } from './managers/TutorialStepManager.js';
 import { TutorialTargetManager } from './managers/TutorialTargetManager.js';
-import { TOP_PANEL_USERNAME_SAVED_EVENT } from '../topPanel/topPanelEvents.js';
 
 export class TutorialFacade {
   static explain =
@@ -87,14 +86,6 @@ export class TutorialFacade {
 
       this.scheduleRefresh();
     };
-    this.handleUsernameSaved = () => {
-      if (this.progressManager.hasCompleted('intro-username')) {
-        return;
-      }
-
-      this.stepManager.advanceStep('intro-username');
-      this.scheduleRefresh();
-    };
   }
 
   mount(stage) {
@@ -113,7 +104,6 @@ export class TutorialFacade {
     this.frameResourceUnsubscribe =
       this.gameplayFacade.subscribeFrameResources?.(this.handleFrameResources) ?? null;
     stage.addEventListener('click', this.handleClick, true);
-    stage.addEventListener(TOP_PANEL_USERNAME_SAVED_EVENT, this.handleUsernameSaved);
     window.addEventListener('resize', this.handleResize);
     this.watchBlockingDialogs();
     this.scheduleRefresh();
@@ -130,7 +120,6 @@ export class TutorialFacade {
     this.disconnectBlockingDialogObserver();
     this.saleManager.cancel();
     this.stage?.removeEventListener('click', this.handleClick, true);
-    this.stage?.removeEventListener(TOP_PANEL_USERNAME_SAVED_EVENT, this.handleUsernameSaved);
     window.removeEventListener('resize', this.handleResize);
     this.hintManager.setAdvanceHandler(null);
     this.hintManager.setObjectivePressHandler(null);

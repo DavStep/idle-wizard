@@ -254,7 +254,7 @@ describe('TutorialStepManager', () => {
       advanceOnClick: true,
       advanceLabel: 'purchase house 1000 coin',
       variant: 'intro-dialog',
-      stepLabel: '1/37',
+      stepLabel: '1/35',
       revealTokens: [],
       text:
         "this old workshop is for sale.\n\nit needs work, but it can become a real potion shop.\n\nElara used to work here. she'll help you get started.",
@@ -282,7 +282,7 @@ describe('TutorialStepManager', () => {
       id: 'intro-welcome',
       kind: 'prompt',
       advanceOnClick: true,
-      stepLabel: '2/37',
+      stepLabel: '2/35',
       revealTokens: [],
       text: "i'm Elara. let's get the workshop running.",
     });
@@ -291,7 +291,7 @@ describe('TutorialStepManager', () => {
   it('highlights top-panel mana after the welcome', () => {
     expect(
       getStep({
-        completed: completedThrough('intro-username-return'),
+        completed: completedThrough('intro-welcome'),
       }),
     ).toMatchObject({
       id: 'intro-mana-sphere',
@@ -300,55 +300,7 @@ describe('TutorialStepManager', () => {
       advanceOnClick: true,
       showPointer: false,
       revealTokens: ['top', 'mana'],
-      stepLabel: '5/37',
-    });
-  });
-
-  it('reveals the top panel and points at username after the introduction', () => {
-    expect(
-      getStep({
-        completed: completedThrough('intro-welcome'),
-      }),
-    ).toMatchObject({
-      id: 'intro-username',
-      kind: 'prompt',
-      targetId: 'top:username',
-      cueMode: 'focus-target',
-      revealTokens: ['top'],
-      stepLabel: '3/37',
-      text: "i don't need your name, but it would be nice to set it here.",
-    });
-  });
-
-  it('continues the introduction after the username is set', () => {
-    expect(
-      getStep({
-        completed: completedThrough('intro-welcome'),
-        dom: createDomFake({ username: 'Mira' }),
-      }),
-    ).toMatchObject({
-      id: 'intro-username-return',
-      kind: 'prompt',
-      advanceOnClick: true,
-      revealTokens: ['top'],
-      stepLabel: '4/37',
-      text: "hi again, Mira. let's start with mana.",
-    });
-  });
-
-  it('points at the username input while settings is open', () => {
-    expect(
-      getStep({
-        completed: completedThrough('intro-welcome'),
-        dom: createDomFake({ usernameSettingsOpen: true }),
-      }),
-    ).toMatchObject({
-      id: 'intro-username',
-      kind: 'prompt',
-      targetId: 'top:username-input',
-      cueMode: 'focus-target',
-      revealTokens: ['top'],
-      stepLabel: '3/37',
+      stepLabel: '3/35',
     });
   });
 
@@ -364,7 +316,7 @@ describe('TutorialStepManager', () => {
       text: 'wait for mana',
       hintText: 'wait for mana',
       cueMode: 'passive',
-      stepLabel: '6/37',
+      stepLabel: '4/35',
     });
   });
 
@@ -387,7 +339,7 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:summonSeed',
       text: 'use your mana to summon seeds.',
       revealTokens: ['top', 'mana', 'summon'],
-      stepLabel: '6/37',
+      stepLabel: '4/35',
     });
   });
 
@@ -425,7 +377,7 @@ describe('TutorialStepManager', () => {
       kind: 'prompt',
       targetId: 'task:level1-sage-seeds',
       text: 'turn in',
-      stepLabel: '7/37',
+      stepLabel: '5/35',
     });
   });
 
@@ -468,7 +420,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'summon and turn in sage seeds for the next level',
       progress: { value: 1, max: 4 },
       progressLabel: '1/4 seeds',
-      stepLabel: '8/37',
+      stepLabel: '6/35',
     });
   });
 
@@ -522,7 +474,7 @@ describe('TutorialStepManager', () => {
         'good. tasks are how the workshop asks for supplies. finish them to restore more of the house.',
       advanceOnClick: true,
       showPointer: false,
-      stepLabel: '9/37',
+      stepLabel: '7/35',
     });
   });
 
@@ -536,7 +488,7 @@ describe('TutorialStepManager', () => {
         'the front room is cleared out.\n\nyou can use it to trade what the workshop makes.',
       advanceLabel: 'continue',
       advanceOnClick: true,
-      stepLabel: '10/37',
+      stepLabel: '8/35',
     });
   });
 
@@ -696,7 +648,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'shop:directSell:sageSeed',
       hintText: 'choose sage seed',
-      stepLabel: '14/37',
+      stepLabel: '12/35',
     });
   });
 
@@ -724,7 +676,7 @@ describe('TutorialStepManager', () => {
       showPointer: false,
       emphasizeTarget: true,
       autoAdvanceMs: 2000,
-      stepLabel: '15/37',
+      stepLabel: '13/35',
     });
   });
 
@@ -755,7 +707,7 @@ describe('TutorialStepManager', () => {
         coinTarget: 10,
       },
       progressLabel: '0/10 coin',
-      stepLabel: '16/37',
+      stepLabel: '14/35',
     });
   });
 
@@ -777,7 +729,7 @@ describe('TutorialStepManager', () => {
       text: 'that was coin. coin pays for level-ups and opens new rooms.',
       advanceLabel: 'open workshop',
       advancePageId: 'workshop',
-      stepLabel: '17/37',
+      stepLabel: '15/35',
     });
   });
 
@@ -824,7 +776,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'workshop:levelUp',
       objectiveText: 'return to workshop and level up',
-      stepLabel: '19/37',
+      stepLabel: '17/35',
     });
   });
 
@@ -855,7 +807,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'tap the empty plot, then choose sage seed.',
       progressLabel: '0/3 sage',
       cueMode: 'delayed-target',
-      stepLabel: '21/37',
+      stepLabel: '19/35',
     });
   });
 
@@ -987,7 +939,7 @@ describe('TutorialStepManager', () => {
       text: 'level 2. the garden is open now.\n\nseeds can become herbs there.',
       advanceLabel: 'open garden',
       advancePageId: 'garden',
-      stepLabel: '20/37',
+      stepLabel: '18/35',
     });
 
     expect(getStep({ snapshot, completed: completedThrough('intro-garden') })).toMatchObject({
@@ -1251,7 +1203,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'good. now turn in sage for the next level.',
       progressLabel: '1/2 sage',
       cueMode: 'delayed-target',
-      stepLabel: '23/37',
+      stepLabel: '21/35',
     });
   });
 
@@ -1301,7 +1253,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'and yes, the next level still requires sage seed.',
       progressLabel: '4/7 sage seeds',
       cueMode: 'delayed-target',
-      stepLabel: '24/37',
+      stepLabel: '22/35',
     });
   });
 
@@ -1335,7 +1287,7 @@ describe('TutorialStepManager', () => {
       hintText: 'open garden',
       objectiveText: 'good. now turn in sage for the next level.',
       progressLabel: '1/2 sage',
-      stepLabel: '23/37',
+      stepLabel: '21/35',
     });
   });
 
@@ -1391,7 +1343,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'wait for sage to grow',
       cueMode: 'passive',
       progressLabel: '1/2 sage',
-      stepLabel: '23/37',
+      stepLabel: '21/35',
     });
   });
 
@@ -1441,7 +1393,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'earn level-up coin in market',
       progress: { value: 10, max: 40 },
       progressLabel: '10/40 coin',
-      stepLabel: '25/37',
+      stepLabel: '23/35',
     });
   });
 
@@ -1455,7 +1407,7 @@ describe('TutorialStepManager', () => {
       hintText: 'fast sell',
       objectiveText: 'earn level-up coin in market',
       progressLabel: '10/40 coin',
-      stepLabel: '25/37',
+      stepLabel: '23/35',
     });
   });
 
@@ -1475,7 +1427,7 @@ describe('TutorialStepManager', () => {
       hintText: 'choose something to sell',
       objectiveText: 'choose something to sell',
       progressLabel: '10/40 coin',
-      stepLabel: '25/37',
+      stepLabel: '23/35',
     });
   });
 
@@ -1517,7 +1469,7 @@ describe('TutorialStepManager', () => {
       hintText: 'herbs',
       objectiveText: 'open herbs tab',
       progressLabel: '10/40 coin',
-      stepLabel: '25/37',
+      stepLabel: '23/35',
     });
   });
 
@@ -1541,7 +1493,7 @@ describe('TutorialStepManager', () => {
       hintText: 'press sell',
       objectiveText: 'press sell',
       progressLabel: '10/40 coin',
-      stepLabel: '25/37',
+      stepLabel: '23/35',
     });
   });
 
@@ -1567,7 +1519,7 @@ describe('TutorialStepManager', () => {
       hintText: '+1',
       objectiveText: 'amount starts at 1. press sell, or +1 if you have more to sell.',
       progressLabel: '10/40 coin',
-      stepLabel: '25/37',
+      stepLabel: '23/35',
     });
   });
 
@@ -1612,7 +1564,7 @@ describe('TutorialStepManager', () => {
       hintText: 'press sell',
       objectiveText: 'press sell',
       progressLabel: '30/40 coin',
-      stepLabel: '25/37',
+      stepLabel: '23/35',
     });
   });
 
@@ -1632,7 +1584,7 @@ describe('TutorialStepManager', () => {
       hintText: 'summon seed',
       objectiveText: 'get sage to sell',
       progressLabel: '10/40 coin',
-      stepLabel: '25/37',
+      stepLabel: '23/35',
     });
   });
 
@@ -1664,7 +1616,7 @@ describe('TutorialStepManager', () => {
       hintText: 'open garden',
       objectiveText: 'get sage to sell',
       progressLabel: '10/40 coin',
-      stepLabel: '25/37',
+      stepLabel: '23/35',
     });
   });
 
@@ -1687,7 +1639,7 @@ describe('TutorialStepManager', () => {
       hintText: 'level up',
       objectiveText: 'level up again',
       progressLabel: '1/1 ready',
-      stepLabel: '25/37',
+      stepLabel: '23/35',
     });
   });
 
@@ -1701,7 +1653,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'research:unlockSeed:mintSeed',
       objectiveText: 'research mint seed',
-      stepLabel: '27/37',
+      stepLabel: '25/35',
     });
   });
 
@@ -1762,7 +1714,7 @@ describe('TutorialStepManager', () => {
       text: 'research unlocks new things the workshop can make. mint seed is available now.',
       advanceOnClick: true,
       showPointer: false,
-      stepLabel: '28/37',
+      stepLabel: '26/35',
     });
   });
 
@@ -1825,7 +1777,7 @@ describe('TutorialStepManager', () => {
       hintText: 'turn in',
       objectiveText: 'turn in mint seed for the next level',
       progressLabel: '7/10 mint seeds',
-      stepLabel: '29/37',
+      stepLabel: '27/35',
     });
   });
 
@@ -1919,7 +1871,7 @@ describe('TutorialStepManager', () => {
       hintText: 'open garden',
       objectiveText: 'turn in mint for the next level',
       progressLabel: '0/18 mint',
-      stepLabel: '30/37',
+      stepLabel: '28/35',
     });
   });
 
@@ -2053,7 +2005,7 @@ describe('TutorialStepManager', () => {
       hintText: 'open market',
       objectiveText: 'earn level-up coin in market',
       progressLabel: '77/80 coin',
-      stepLabel: '31/37',
+      stepLabel: '29/35',
     });
   });
 
@@ -2104,7 +2056,7 @@ describe('TutorialStepManager', () => {
       hintText: 'summon seed',
       objectiveText: 'get mint to sell',
       progressLabel: '77/80 coin',
-      stepLabel: '31/37',
+      stepLabel: '29/35',
     });
   });
 
@@ -2183,7 +2135,7 @@ describe('TutorialStepManager', () => {
       kind: 'objective',
       targetId: 'brewing:herb:sageHerb',
       hintText: 'tap sage to fill cauldron. recipes care about order',
-      stepLabel: '34/37',
+      stepLabel: '32/35',
     });
   });
 
@@ -2212,7 +2164,7 @@ describe('TutorialStepManager', () => {
       id: 'brew-mana-tonic',
       targetId: 'brewing:herb:sageHerb',
       hintText: 'add sage. recipes care about order',
-      stepLabel: '34/37',
+      stepLabel: '32/35',
     });
   });
 
@@ -2246,7 +2198,7 @@ describe('TutorialStepManager', () => {
       id: 'brew-mana-tonic',
       targetId: 'brewing:remove:sageHerb',
       hintText: 'remove extra sage',
-      stepLabel: '34/37',
+      stepLabel: '32/35',
     });
   });
 
@@ -2282,7 +2234,7 @@ describe('TutorialStepManager', () => {
       id: 'brew-mana-tonic',
       targetId: 'brewing:action',
       hintText: 'brew mana tonic',
-      stepLabel: '34/37',
+      stepLabel: '32/35',
     });
   });
 
@@ -2316,7 +2268,7 @@ describe('TutorialStepManager', () => {
       targetId: 'brewing:recipes:close',
       hintText: 'close recipes',
       progressLabel: '0/1 potion',
-      stepLabel: '34/37',
+      stepLabel: '32/35',
     });
   });
 
@@ -2394,7 +2346,7 @@ describe('TutorialStepManager', () => {
         'first potion brewed. brewing uses herbs in order, so the cauldron setup matters.',
       advanceOnClick: true,
       showPointer: false,
-      stepLabel: '35/37',
+      stepLabel: '33/35',
     });
   });
 
@@ -2433,7 +2385,7 @@ describe('TutorialStepManager', () => {
       objectiveText: 'fill the cauldron again',
       progress: { value: 0, max: 3 },
       progressLabel: '0/3 sage',
-      stepLabel: '36/37',
+      stepLabel: '34/35',
     });
   });
 
@@ -2475,7 +2427,7 @@ describe('TutorialStepManager', () => {
       targetId: 'brewing:remove:sageHerb',
       hintText: 'remove extra sage',
       progressLabel: '3/3 sage',
-      stepLabel: '36/37',
+      stepLabel: '34/35',
     });
   });
 
@@ -2520,7 +2472,7 @@ describe('TutorialStepManager', () => {
       targetId: 'brewing:action',
       hintText: 'brew again',
       progressLabel: '3/3 sage',
-      stepLabel: '36/37',
+      stepLabel: '34/35',
     });
   });
 
@@ -2541,7 +2493,7 @@ describe('TutorialStepManager', () => {
         'you can change themes in settings. open settings, then use the configurations tab.',
       hintText: 'open settings',
       cueMode: 'passive',
-      stepLabel: '37/37',
+      stepLabel: '35/35',
     });
   });
 

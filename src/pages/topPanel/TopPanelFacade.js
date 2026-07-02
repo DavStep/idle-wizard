@@ -65,6 +65,10 @@ export class TopPanelFacade {
     this.inboxManager.show();
   }
 
+  showUsernamePrompt() {
+    this.settingsManager.showUsernamePrompt();
+  }
+
   setResourceContext(context = {}) {
     this.resourceDisplayManager.setContextCurrency(context.currency);
   }

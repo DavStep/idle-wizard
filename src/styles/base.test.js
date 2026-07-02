@@ -80,6 +80,9 @@ describe('base styles', () => {
     expect(rootRule).toContain(
       '--style-midnight-panel-frame: url("/ui/player-card-panel-9slice.png");',
     );
+    expect(rootRule).toContain(
+      '--style-midnight-panel-selected-frame: url("/ui/player-card-panel-selected-9slice.png");',
+    );
     expect(sharedFrameRule).toContain(
       'border-image-source: var(--style-midnight-panel-frame);',
     );
@@ -103,6 +106,57 @@ describe('base styles', () => {
 
     expect(sharedFrameRule).toContain('background-clip: padding-box;');
     expect(dialogBackingRule).toContain('background: transparent;');
+  });
+
+  it('keeps first-run cutscene art fixed to the authored source width', () => {
+    const rootRule = getRuleBody(/\.first-run-intro\s*\{(?<body>[^}]*)\}/);
+    const sceneRule = getRuleBody(/\.first-run-intro__scene\s*\{(?<body>[^}]*)\}/);
+    const defeatedDemonRule = getRuleBody(
+      /\.first-run-intro__demon--defeated\s*\{(?<body>[^}]*)\}/,
+    );
+    const panelRule = getRuleBody(
+      /\.style-dialog\.first-run-intro__panel\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(rootRule).toContain('width: calc(100% / var(--style-ui-scale));');
+    expect(sceneRule).toContain('left: var(--style-source-ui-gutter-x);');
+    expect(sceneRule).toContain('width: var(--style-source-ui-width);');
+    expect(panelRule).toContain(
+      'right: calc(var(--style-source-ui-gutter-x) + 20px);',
+    );
+    expect(panelRule).toContain(
+      'left: calc(var(--style-source-ui-gutter-x) + 20px);',
+    );
+    expect(defeatedDemonRule).toContain('top: 370px;');
+    expect(baseCss).toMatch(
+      /\.first-run-intro--stable-backdrop\.first-run-intro--step-enter\s+\.first-run-intro__transition-shade,[\s\S]*?animation:\s*none;/,
+    );
+    expect(baseCss).toMatch(
+      /\.first-run-intro--stable-backdrop\.first-run-intro--step-enter\s+\.first-run-intro__backdrop,[\s\S]*?animation:\s*none;/,
+    );
+    expect(baseCss).toContain(
+      '.first-run-intro--step-enter[data-scene="peace"] .first-run-intro__backdrop',
+    );
+    expect(baseCss).toContain('@keyframes first-run-intro-peace-push');
+    expect(baseCss).toContain(
+      '.first-run-intro--step-enter[data-scene="peace"] .first-run-intro__rainbow',
+    );
+    expect(baseCss).toContain('@keyframes first-run-intro-rainbow-enter');
+    expect(baseCss).toContain(
+      '.first-run-intro--step-enter .first-run-intro__rainbow,',
+    );
+    expect(baseCss).toContain(
+      '.first-run-intro--step-enter[data-step="reward"]',
+    );
+    expect(baseCss).toContain(
+      '.first-run-intro__coin-pile-icon[data-coin-index="10"]',
+    );
+    expect(baseCss).toContain('--first-run-intro-coin-delay: 325ms;');
+    expect(baseCss).toContain('@keyframes first-run-intro-coin-drop');
+    expect(baseCss).toContain('animation: first-run-intro-coin-drop 820ms');
+    expect(baseCss).toContain(
+      '.first-run-intro--step-enter[data-step="reward"]\n    .first-run-intro__coin-pile-icon,',
+    );
   });
 
   it('keeps Workshop level reward text left and point values right under a centered title', () => {

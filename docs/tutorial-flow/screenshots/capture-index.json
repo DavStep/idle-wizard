@@ -12,30 +12,6 @@
     "pointerVisible": false
   },
   {
-    "index": 2,
-    "id": "intro-username",
-    "fileName": "02-intro-username.png",
-    "source": "real-game",
-    "step": "intro-username",
-    "lesson": "i don't need your name, but it would be nice to set it here.",
-    "progress": "",
-    "targetId": "top:username",
-    "page": "workshop",
-    "pointerVisible": true
-  },
-  {
-    "index": 3,
-    "id": "intro-username-return",
-    "fileName": "03-intro-username-return.png",
-    "source": "real-game",
-    "step": "intro-username-return",
-    "lesson": "hi again, Mira. let's start with mana.",
-    "progress": "",
-    "targetId": null,
-    "page": "workshop",
-    "pointerVisible": false
-  },
-  {
     "index": 4,
     "id": "intro-mana-sphere",
     "fileName": "04-intro-mana-sphere.png",

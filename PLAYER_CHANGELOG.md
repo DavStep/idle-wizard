@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.72
+
+- Moved wizard name setup out of Elara's first lessons so the early tutorial starts faster and social surfaces ask for a name only when needed.
+- Polished the first-run story intro with smoother scene changes, a peaceful-world beat, and clearer reward motion.
+- Added Brewing tab art and improved selected bottom navigation frames, icon placement, and label readability.
+- Fixed newly saved wizard names so they stay stable while account profile data refreshes.
+
 ## 0.2.71
 
 - Added a first-run story intro before Elara's lessons so new wizards get the workshop setup before play begins.
