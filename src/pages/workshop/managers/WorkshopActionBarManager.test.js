@@ -372,8 +372,8 @@ describe('WorkshopActionBarManager', () => {
     const bagRule = baseCss.match(
       /\.workshop-page__action-bar > \.style-button\.workshop-page__bag-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const ledgerRule = baseCss.match(
-      /\.workshop-page__action-bar > \.style-button\.workshop-page__ledger-button\s*\{(?<body>[^}]*)\}/,
+    const statsRule = baseCss.match(
+      /\.workshop-page__action-bar > \.style-button\.workshop-page__stats-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const mailRootRule = baseCss.match(
       /\.workshop-page__ui-layer > \.workshop-page__mail\s*\{(?<body>[^}]*)\}/,
@@ -438,16 +438,16 @@ describe('WorkshopActionBarManager', () => {
     );
     expect(bagRule).not.toMatch(/\bbottom:/);
 
-    expect(ledgerRule).toBeDefined();
-    expect(ledgerRule).toMatch(
+    expect(statsRule).toBeDefined();
+    expect(statsRule).toMatch(
       /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\) \+\s*var\(--workshop-secondary-button-row-gap\)\s*\);/,
     );
-    expect(ledgerRule).toMatch(/\bright:\s*0;/);
-    expect(ledgerRule).toMatch(/\bbox-sizing:\s*content-box;/);
-    expect(ledgerRule).toMatch(
+    expect(statsRule).toMatch(/\bright:\s*0;/);
+    expect(statsRule).toMatch(/\bbox-sizing:\s*content-box;/);
+    expect(statsRule).toMatch(
       /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
     );
-    expect(ledgerRule).not.toMatch(/\bbottom:/);
+    expect(statsRule).not.toMatch(/\bbottom:/);
 
     expect(mailRootRule).toBeDefined();
     expect(mailRootRule).toMatch(
@@ -509,31 +509,31 @@ describe('WorkshopActionBarManager', () => {
     expect(sidePanelLabelRule).toMatch(/\btransform:\s*none;/);
 
     expect(allianceRule).toMatch(
-      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\)\s*\);/,
+      /\btop:\s*calc\(var\(--style-room-content-top\) \+\s*155\.5px\);/,
     );
-    expect(allianceRule).toMatch(/\bright:\s*var\(--style-room-content-edge\);/);
+    expect(allianceRule).toMatch(/\bleft:\s*var\(--style-room-chrome-edge\);/);
   });
 
-  it('opens the ledger button from the Workshop action cluster', () => {
+  it('opens the stats button from the Workshop action cluster', () => {
     const gameplayFacade = createGameplayFacadeFake();
-    const onLedgerClick = vi.fn();
+    const onStatsClick = vi.fn();
     const manager = new WorkshopActionBarManager({
       gameplayFacade,
-      onLedgerClick,
+      onStatsClick,
     });
     const parent = document.createElement('div');
 
     manager.mount(parent);
 
-    const button = parent.querySelector('.workshop-page__ledger-button');
+    const button = parent.querySelector('.workshop-page__stats-button');
 
-    expect(button?.textContent).toBe('ledger');
-    expect(button?.getAttribute('aria-label')).toBe('open ledger');
+    expect(button?.textContent).toBe('stats');
+    expect(button?.getAttribute('aria-label')).toBe('open stats');
     expect(button?.querySelector('img, svg')).toBeNull();
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(onLedgerClick).toHaveBeenCalledTimes(1);
+    expect(onStatsClick).toHaveBeenCalledTimes(1);
 
     manager.unmount();
   });

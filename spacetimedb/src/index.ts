@@ -8741,6 +8741,22 @@ function normalizePlayerGameplaySave(
     inboxRewards: normalizeSaveInboxRewards(
       Object.hasOwn(save, 'inboxRewards') ? save.inboxRewards : previousSave.inboxRewards,
     ),
+    stats: normalizeSaveClientStateBranch(
+      Object.hasOwn(save, 'stats') ? save.stats : previousSave.stats,
+      {
+        version: 1,
+        seeds: { total: 0, byKey: {} },
+        herbs: { total: 0, byKey: {} },
+        potions: { total: 0, byKey: {} },
+        coin: {
+          npcTrade: 0,
+          playerTrade: 0,
+          royalties: { total: 0, byPotionKey: {} },
+        },
+        recordedPlayerTradeIds: [],
+        recordedRoyaltyIds: [],
+      },
+    ),
   };
 }
 

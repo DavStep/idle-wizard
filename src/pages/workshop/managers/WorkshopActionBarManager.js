@@ -24,7 +24,7 @@ export class WorkshopActionBarManager {
     playerInboxFacade,
     onBagClick,
     onMailClick,
-    onLedgerClick,
+    onStatsClick,
     onSummonInfoClick,
     onSummonNotice,
     onSummonNoticeList,
@@ -35,7 +35,7 @@ export class WorkshopActionBarManager {
     this.playerInboxFacade = playerInboxFacade;
     this.onBagClick = onBagClick;
     this.onMailClick = onMailClick;
-    this.onLedgerClick = onLedgerClick;
+    this.onStatsClick = onStatsClick;
     this.onSummonInfoClick = onSummonInfoClick;
     this.onSummonNotice = onSummonNotice;
     this.onSummonNoticeList = onSummonNoticeList;
@@ -78,13 +78,13 @@ export class WorkshopActionBarManager {
     this.refs.summonInfoButton = this.createSummonInfoButton();
     this.refs.mailPanel = this.createMailPanel();
     this.refs.bagButton = this.createBagButton();
-    this.refs.ledgerButton = this.createLedgerButton();
+    this.refs.statsButton = this.createStatsButton();
 
     this.root.append(
       this.refs.summonButton,
       this.refs.summonInfoButton,
       this.refs.bagButton,
-      this.refs.ledgerButton,
+      this.refs.statsButton,
     );
     parent.append(this.root, this.refs.mailPanel);
 
@@ -164,13 +164,13 @@ export class WorkshopActionBarManager {
     return button;
   }
 
-  createLedgerButton() {
+  createStatsButton() {
     const button = document.createElement('button');
-    button.className = 'style-button workshop-page__ledger-button';
+    button.className = 'style-button workshop-page__stats-button';
     button.type = 'button';
-    button.textContent = 'ledger';
-    button.setAttribute('aria-label', 'open ledger');
-    button.addEventListener('click', () => this.onLedgerClick?.());
+    button.textContent = 'stats';
+    button.setAttribute('aria-label', 'open stats');
+    button.addEventListener('click', () => this.onStatsClick?.());
     return button;
   }
 

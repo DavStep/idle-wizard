@@ -22,7 +22,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Normal line height and normal letter spacing.
 - Use tabular lining numerals for resource values, costs, counts, timers, and leaderboard numbers.
 - Use bold only for totals, section names, selected/current state, or strong resource values.
-- Do not use below-text lines for hover, hold, press, or ordinary current state. The only underline exception is a neutral selected option in a one-of-many control, such as a tab or button panel button.
+- Do not define mouse-hover states or use below-text lines for hold, press, or ordinary current state. The only underline exception is a neutral selected option in a one-of-many control, such as a tab or button panel button.
 
 ## Color
 
@@ -54,7 +54,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Buttons are small bordered text boxes.
 - Center label text.
 - Native buttons must be reset to look like text boxes, not platform controls.
-- Hover state must not add a below-text line, glow, icon, scale flourish, or background tint.
+- Do not define mouse-hover states or hover-only behavior.
 - Press/active state must not change the background color.
 - Disabled state changes text and border to gray and keeps normal weight.
 - Cooldown/progress fills, if added later, should be flat light gray.

@@ -630,15 +630,135 @@ export class ShopPlayerShelfManager {
       return;
     }
 
-    const claimResult = await this.playerShopFacade?.claimProceeds();
+    const releaseTradeHistory = this.playerShopFacade?.retainTradeHistory?.() ?? null;
+    const claimSnapshot = this.playerShopFacade?.getSnapshot?.() ?? this.lastPlayerShopSnapshot;
+    const statsBreakdown = this.createProceedsStatsBreakdown(claimSnapshot, proceedsCoin);
+    let claimResult;
+
+    try {
+      claimResult = await this.playerShopFacade?.claimProceeds();
+    } finally {
+      releaseTradeHistory?.();
+    }
 
     if (!claimResult?.ok) {
       return;
     }
 
-    this.gameplayFacade.claimPlayerShopSaleProceeds(proceedsCoin);
+    this.gameplayFacade.claimPlayerShopSaleProceeds(proceedsCoin, statsBreakdown);
     this.lastGameplaySnapshot = this.gameplayFacade.getSnapshot();
     this.render();
+  }
+
+  createProceedsStatsBreakdown(snapshot = {}, proceedsCoin = 0) {
+    const ownIdentities = this.getOwnIdentities(snapshot);
+    const playerTrades = [];
+    const royalties = [];
+    let matchedCoin = 0;
+
+    for (const trade of Array.isArray(snapshot.ownTradeHistory) ? snapshot.ownTradeHistory : []) {
+      const tradeId = this.getHistoryId(trade.tradeId ?? trade.trade_id);
+      const buyerIdentity = this.getIdentity(trade.buyerIdentity);
+      const sellerIdentity = this.getIdentity(trade.sellerIdentity);
+
+      if (
+        !tradeId ||
+        !sellerIdentity ||
+        !ownIdentities.has(sellerIdentity) ||
+        (buyerIdentity && ownIdentities.has(buyerIdentity))
+      ) {
+        continue;
+      }
+
+      const coin = this.getPositiveCoin(trade.totalPriceCoin ?? trade.priceCoin);
+
+      if (coin <= 0) {
+        continue;
+      }
+
+      matchedCoin += coin;
+      playerTrades.push({
+        tradeId,
+        coin,
+        itemKey: this.normalizeHistoryText(trade.itemKey),
+        itemLabel: this.normalizeHistoryText(trade.itemLabel),
+      });
+    }
+
+    for (const royalty of Array.isArray(snapshot.ownRoyaltyHistory) ? snapshot.ownRoyaltyHistory : []) {
+      const royaltyId = this.getHistoryId(royalty.royaltyId ?? royalty.royalty_id);
+
+      if (!royaltyId) {
+        continue;
+      }
+
+      const coin = this.getPositiveCoin(royalty.royaltyCoin);
+
+      if (coin <= 0) {
+        continue;
+      }
+
+      matchedCoin += coin;
+      royalties.push({
+        royaltyId,
+        coin,
+        potionKey: this.normalizeHistoryText(royalty.potionKey),
+        potionLabel: this.normalizeHistoryText(royalty.potionLabel),
+      });
+    }
+
+    return {
+      playerTrades,
+      royalties,
+      fallbackPlayerTradeCoin: Math.max(0, this.getPositiveCoin(proceedsCoin) - matchedCoin),
+    };
+  }
+
+  getOwnIdentities(snapshot = {}) {
+    const identities = new Set();
+
+    for (const value of [snapshot.identity, snapshot.playerIdentity, snapshot.ownIdentity]) {
+      const identity = this.getIdentity(value);
+
+      if (identity) {
+        identities.add(identity);
+      }
+    }
+
+    for (const listing of snapshot.ownListings ?? []) {
+      const identity = this.getIdentity(listing?.sellerIdentity);
+
+      if (identity) {
+        identities.add(identity);
+      }
+    }
+
+    for (const request of snapshot.ownRequests ?? []) {
+      const identity = this.getIdentity(request?.requesterIdentity);
+
+      if (identity) {
+        identities.add(identity);
+      }
+    }
+
+    return identities;
+  }
+
+  getIdentity(value) {
+    return String(value ?? '').trim();
+  }
+
+  getHistoryId(value) {
+    return String(value ?? '').trim();
+  }
+
+  normalizeHistoryText(value) {
+    return String(value ?? '').trim();
+  }
+
+  getPositiveCoin(value) {
+    const coin = Math.round((Number(value) || 0) * 100) / 100;
+    return coin > 0 ? coin : 0;
   }
 
   async onBuyListing(listing, quantity = 1) {

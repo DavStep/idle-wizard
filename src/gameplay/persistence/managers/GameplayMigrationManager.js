@@ -1,6 +1,6 @@
 import { normalizePrestigeRunFocus } from '../../prestige/prestigeUnlocks.js';
 
-export const GAMEPLAY_SAVE_VERSION = 9;
+export const GAMEPLAY_SAVE_VERSION = 10;
 
 export class GameplayMigrationManager {
   constructor() {
@@ -18,48 +18,62 @@ export class GameplayMigrationManager {
       return save;
     }
 
+    if (save.version === 9) {
+      return this.createVersion10Save(save);
+    }
+
     if (save.version === 8) {
-      return this.createVersion9Save(save);
+      return this.createVersion10Save(this.createVersion9Save(save));
     }
 
     if (save.version === 7) {
-      return this.createVersion9Save(this.createVersion8Save(save));
+      return this.createVersion10Save(this.createVersion9Save(this.createVersion8Save(save)));
     }
 
     if (save.version === 6) {
-      return this.createVersion9Save(this.createVersion8Save(this.createVersion7Save(save)));
+      return this.createVersion10Save(
+        this.createVersion9Save(this.createVersion8Save(this.createVersion7Save(save))),
+      );
     }
 
     if (save.version === 5) {
-      return this.createVersion9Save(
-        this.createVersion8Save(this.createVersion7Save(this.createVersion6Save(save))),
+      return this.createVersion10Save(
+        this.createVersion9Save(
+          this.createVersion8Save(this.createVersion7Save(this.createVersion6Save(save))),
+        ),
       );
     }
 
     if (save.version === 4) {
-      return this.createVersion9Save(
-        this.createVersion8Save(
-          this.createVersion7Save(this.createVersion6Save(this.createVersion5Save(save))),
+      return this.createVersion10Save(
+        this.createVersion9Save(
+          this.createVersion8Save(
+            this.createVersion7Save(this.createVersion6Save(this.createVersion5Save(save))),
+          ),
         ),
       );
     }
 
     if (save.version === 3) {
-      return this.createVersion9Save(
-        this.createVersion8Save(
-          this.createVersion7Save(
-            this.createVersion6Save(this.createVersion5Save(this.createVersion4Save(save))),
+      return this.createVersion10Save(
+        this.createVersion9Save(
+          this.createVersion8Save(
+            this.createVersion7Save(
+              this.createVersion6Save(this.createVersion5Save(this.createVersion4Save(save))),
+            ),
           ),
         ),
       );
     }
 
     if (save.version === 2) {
-      return this.createVersion9Save(
-        this.createVersion8Save(
-          this.createVersion7Save(
-            this.createVersion6Save(
-              this.createVersion5Save(this.createVersion4Save(this.createVersion3Save(save))),
+      return this.createVersion10Save(
+        this.createVersion9Save(
+          this.createVersion8Save(
+            this.createVersion7Save(
+              this.createVersion6Save(
+                this.createVersion5Save(this.createVersion4Save(this.createVersion3Save(save))),
+              ),
             ),
           ),
         ),
@@ -67,12 +81,14 @@ export class GameplayMigrationManager {
     }
 
     if (save.version === 1) {
-      return this.createVersion9Save(
-        this.createVersion8Save(
-          this.createVersion7Save(
-            this.createVersion6Save(
-              this.createVersion5Save(
-                this.createVersion4Save(this.createVersion3Save(this.createVersion2Save(save))),
+      return this.createVersion10Save(
+        this.createVersion9Save(
+          this.createVersion8Save(
+            this.createVersion7Save(
+              this.createVersion6Save(
+                this.createVersion5Save(
+                  this.createVersion4Save(this.createVersion3Save(this.createVersion2Save(save))),
+                ),
               ),
             ),
           ),
@@ -108,6 +124,7 @@ export class GameplayMigrationManager {
       'tasks',
       'guild',
       'inboxRewards',
+      'stats',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -143,6 +160,7 @@ export class GameplayMigrationManager {
       'tasks',
       'guild',
       'inboxRewards',
+      'stats',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -186,6 +204,7 @@ export class GameplayMigrationManager {
       'worldNotice',
       'guild',
       'inboxRewards',
+      'stats',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -244,6 +263,7 @@ export class GameplayMigrationManager {
       'worldNotice',
       'guild',
       'inboxRewards',
+      'stats',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -309,6 +329,7 @@ export class GameplayMigrationManager {
       'worldNotice',
       'guild',
       'inboxRewards',
+      'stats',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -350,6 +371,7 @@ export class GameplayMigrationManager {
       'worldNotice',
       'guild',
       'inboxRewards',
+      'stats',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -400,6 +422,7 @@ export class GameplayMigrationManager {
       'worldNotice',
       'guild',
       'inboxRewards',
+      'stats',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
@@ -417,6 +440,46 @@ export class GameplayMigrationManager {
   }
 
   createVersion9Save(save) {
+    const migratedSave = {
+      version: 9,
+    };
+
+    for (const key of [
+      'savedAt',
+      'mana',
+      'coin',
+      'gold',
+      'crystal',
+      'emerald',
+      'ruby',
+      'logs',
+      'inventory',
+      'research',
+      'automation',
+      'seedSummoning',
+      'prestige',
+      'visualSettings',
+      'shop',
+      'brewing',
+      'garden',
+      'tasks',
+      'personalTasks',
+      'worldNotice',
+      'guild',
+      'inboxRewards',
+      'stats',
+    ]) {
+      if (save[key] !== undefined) {
+        migratedSave[key] = save[key];
+      }
+    }
+
+    migratedSave.prestige = normalizeMigratedPrestige(migratedSave.prestige);
+
+    return migratedSave;
+  }
+
+  createVersion10Save(save) {
     const migratedSave = {
       version: GAMEPLAY_SAVE_VERSION,
     };
@@ -444,13 +507,16 @@ export class GameplayMigrationManager {
       'worldNotice',
       'guild',
       'inboxRewards',
+      'stats',
     ]) {
       if (save[key] !== undefined) {
         migratedSave[key] = save[key];
       }
     }
 
-    migratedSave.prestige = normalizeMigratedPrestige(migratedSave.prestige);
+    if (!migratedSave.stats) {
+      migratedSave.stats = createEmptyStatsPersistenceSnapshot();
+    }
 
     return migratedSave;
   }
@@ -488,4 +554,23 @@ function normalizeMigratedPrestigeLevels(levels = []) {
   }
 
   return normalizedLevels;
+}
+
+function createEmptyStatsPersistenceSnapshot() {
+  return {
+    version: 1,
+    seeds: { total: 0, byKey: {} },
+    herbs: { total: 0, byKey: {} },
+    potions: { total: 0, byKey: {} },
+    coin: {
+      npcTrade: 0,
+      playerTrade: 0,
+      royalties: {
+        total: 0,
+        byPotionKey: {},
+      },
+    },
+    recordedPlayerTradeIds: [],
+    recordedRoyaltyIds: [],
+  };
 }

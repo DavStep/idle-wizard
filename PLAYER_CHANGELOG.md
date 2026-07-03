@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.76
+
+- Added a Workshop stats popup for lifetime seeds, herbs, potions, NPC trade coin, player trade coin, and potion royalty coin.
+- Replaced the old Workshop ledger shortcut with a clearer `stats` button and tabbed history view.
+- Improved Brewing cauldron controls so recipe, batch, auto-brew, and locked actions stay visible with clearer labels.
+- Tightened mobile/web interaction styling by removing hover-only emphasis and keeping action states readable across room controls.
+
 ## 0.2.75
 
 - Rebalanced level tasks into clearer decade pacing, with relief after each major wall and stronger checkpoints before the next stretch.

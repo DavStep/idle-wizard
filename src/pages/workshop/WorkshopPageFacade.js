@@ -9,7 +9,7 @@ import { WorkshopPersonalTasksManager } from './managers/WorkshopPersonalTasksMa
 import { WorkshopTaskManager } from './managers/WorkshopTaskManager.js';
 import { WorkshopTradeAllianceManager } from './managers/WorkshopTradeAllianceManager.js';
 import { WorkshopWorldNoticeManager } from './managers/WorkshopWorldNoticeManager.js';
-import { WorkshopLedgerManager } from './managers/WorkshopLedgerManager.js';
+import { WorkshopStatsManager } from './managers/WorkshopStatsManager.js';
 import {
   WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
   WorkshopSecondaryActionGateManager,
@@ -88,8 +88,8 @@ export class WorkshopPageFacade {
       onOpenPlayerInfo,
       onRequirePlayerSurfaceAccess,
     });
-    this.ledgerManager = new WorkshopLedgerManager({ gameplayFacade });
-    this.actionBarManager.onLedgerClick = () => this.ledgerManager.show();
+    this.statsManager = new WorkshopStatsManager({ gameplayFacade });
+    this.actionBarManager.onStatsClick = () => this.statsManager.show();
   }
 
   mount(stage) {
@@ -100,7 +100,7 @@ export class WorkshopPageFacade {
     this.taskManager.mount(uiLayer, popupLayer);
     this.personalTasksManager.mount(uiLayer, popupLayer);
     this.worldNoticeManager.mount(uiLayer, popupLayer);
-    this.ledgerManager.mount(popupLayer);
+    this.statsManager.mount(popupLayer);
     this.actionBarManager.mount(uiLayer);
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
@@ -129,7 +129,7 @@ export class WorkshopPageFacade {
     this.tradeAllianceManager.unmount();
     this.leaderboardManager.unmount();
     this.worldNoticeManager.unmount();
-    this.ledgerManager.unmount();
+    this.statsManager.unmount();
     this.personalTasksManager.unmount();
     this.taskManager.unmount();
     this.actionBarManager.unmount();

@@ -79,4 +79,50 @@ describe('GameplayMigrationManager', () => {
       inboxRewards,
     });
   });
+
+  it('adds empty stats when migrating version 9 saves', () => {
+    const manager = new GameplayMigrationManager();
+
+    expect(
+      manager.migrate({
+        version: 9,
+        savedAt: 123,
+      }),
+    ).toMatchObject({
+      version: GAMEPLAY_SAVE_VERSION,
+      stats: {
+        version: 1,
+        seeds: { total: 0, byKey: {} },
+        herbs: { total: 0, byKey: {} },
+        potions: { total: 0, byKey: {} },
+        coin: {
+          npcTrade: 0,
+          playerTrade: 0,
+          royalties: { total: 0, byPotionKey: {} },
+        },
+        recordedPlayerTradeIds: [],
+        recordedRoyaltyIds: [],
+      },
+    });
+  });
+
+  it('preserves stats from server-normalized saves', () => {
+    const manager = new GameplayMigrationManager();
+    const stats = {
+      version: 1,
+      seeds: { total: 3, byKey: { sageSeed: 3 } },
+      coin: { playerTrade: 5 },
+    };
+
+    expect(
+      manager.migrate({
+        version: 3,
+        savedAt: 123,
+        stats,
+      }),
+    ).toMatchObject({
+      version: GAMEPLAY_SAVE_VERSION,
+      stats,
+    });
+  });
 });

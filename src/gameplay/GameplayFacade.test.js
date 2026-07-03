@@ -4974,6 +4974,7 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().coin.current).toBe(5);
     expect(gameplayFacade.getSnapshot().coin.totalGenerated).toBe(0);
+    expect(gameplayFacade.getSnapshot().stats.coin.playerTrade).toBe(5);
     expect(rewardEvents).toEqual([
       expect.objectContaining({
         type: 'coin_collected',
@@ -5001,6 +5002,7 @@ describe('GameplayFacade', () => {
 
     expect(snapshot.coin.current).toBe(15);
     expect(snapshot.coin.totalGenerated).toBe(10);
+    expect(snapshot.stats.coin.playerTrade).toBe(5);
   });
 
   it('persists crystal-tab coin offer cooldown and catches it up offline', () => {
@@ -5323,6 +5325,7 @@ describe('GameplayFacade', () => {
       coin: 5,
     });
     expect(gameplayFacade.getSnapshot().coin.current).toBe(9);
+    expect(gameplayFacade.getSnapshot().stats.coin.playerTrade).toBe(5);
     unsubscribeRewardEvents();
   });
 

@@ -231,6 +231,11 @@
       var(--brewing-page-cauldron-action-height) +
       var(--brewing-page-cauldron-actions-gap) + 6px
   );
+  --brewing-page-cauldron-block-height: calc(
+    var(--brewing-page-cauldron-art-height) +
+      var(--brewing-page-cauldron-actions-gap) +
+      var(--brewing-page-cauldron-action-height)
+  );
   --brewing-page-cauldron-box-gap: 14px;
   --brewing-page-cauldron-box-width: calc(
     var(--brewing-page-cauldron-art-width) +
@@ -2228,7 +2233,7 @@ body {
     .workshop-page__tasks-info-popup,
     .workshop-page__personal-tasks-popup,
     .workshop-page__world-notice-popup,
-    .workshop-page__ledger-popup,
+    .workshop-page__stats-popup,
     .workshop-page__summon-info-popup,
     .brewing-page__recipes-popup,
     .brewing-page__recipe-choice-popup,
@@ -2480,7 +2485,7 @@ body {
     .workshop-page__leaderboard,
     .workshop-page__summon-button,
     .workshop-page__bag-button,
-    .workshop-page__ledger-button,
+    .workshop-page__stats-button,
     .workshop-page__mail,
     .workshop-page__trade-alliance,
     .workshop-page__discoveries,
@@ -2527,7 +2532,7 @@ body {
 }
 
 .workshop-page__bag-button,
-.workshop-page__ledger-button,
+.workshop-page__stats-button,
 .workshop-page__mail,
 .brewing-page__cauldrons > .style-box:nth-child(2),
 .garden-page__herbs,
@@ -2691,12 +2696,6 @@ body {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .room-inventory-panel-button__open:hover .room-inventory-panel-button__label {
-    font-weight: 700;
-  }
-}
-
 .room-inventory-panel-button__open:active .room-inventory-panel-button__icon {
   scale: 0.965;
   translate: 0 1px;
@@ -2775,12 +2774,6 @@ body {
 
 .room-inventory-box__toggle:focus-visible {
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .room-inventory-box__toggle:hover {
-    font-weight: 700;
-  }
 }
 
 .room-inventory-box__toggle:focus {
@@ -3356,13 +3349,6 @@ body {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .tutorial-layer__lesson-show:hover,
-  .tutorial-layer__lesson-advance:hover {
-    font-weight: 700;
-  }
-}
-
 .tutorial-layer__lesson-show:focus,
 .tutorial-layer__lesson-advance:focus {
   outline: none;
@@ -3432,12 +3418,6 @@ body {
 
 .tutorial-layer__advance:focus-visible {
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .tutorial-layer__advance:hover {
-    font-weight: 700;
-  }
 }
 
 .tutorial-layer__advance:focus {
@@ -3845,7 +3825,7 @@ body {
   width: var(--workshop-secondary-button-width);
 }
 
-.workshop-page__action-bar > .style-button.workshop-page__ledger-button {
+.workshop-page__action-bar > .style-button.workshop-page__stats-button {
   position: absolute;
   top: calc(
     var(--style-room-content-top) +
@@ -4435,22 +4415,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
   background: var(--style-active-surface);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .workshop-page__row--interactive:hover .row_key {
-    font-weight: 700;
-  }
-
-  .shop-page__slot-row--interactive:hover
-    :where(.shop-page__slot-item-value, .shop-page__slot-price-value) {
-    font-weight: 700;
-  }
-
-  .shop-page__slot-unlock-button:not(:disabled):hover
-    .shop-page__slot-unlock-action {
-    font-weight: 700;
-  }
-}
-
 .workshop-page__row--interactive:focus {
   outline: none;
 }
@@ -5016,12 +4980,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .workshop-page__tasks-title:hover {
-    font-weight: 700;
-  }
-}
-
 .workshop-page__tasks-title:focus {
   outline: none;
 }
@@ -5030,14 +4988,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__tasks-toggle:focus-visible,
 .workshop-page__level-rewards-toggle:focus-visible {
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .workshop-page__tasks-pin:hover,
-  .workshop-page__tasks-toggle:hover,
-  .workshop-page__level-rewards-toggle:hover {
-    font-weight: 700;
-  }
 }
 
 .workshop-page__tasks-pin:focus,
@@ -5175,11 +5125,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__ui-layer > .workshop-page__trade-alliance {
-  top: calc(
-    var(--style-room-content-top) +
-      var(--workshop-secondary-button-top-offset)
-  );
-  right: var(--style-room-content-edge);
+  top: calc(var(--style-room-content-top) + 155.5px);
+  left: var(--style-room-chrome-edge);
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks[hidden],
@@ -5410,22 +5357,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__trade-alliance-button:focus-visible
   .workshop-page__feature-character-label {
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .workshop-page__personal-tasks-open:hover
-    .workshop-page__feature-character-label,
-  .workshop-page__world-notice-open:hover
-    .workshop-page__feature-character-label,
-  .workshop-page__mail-button:hover .workshop-page__feature-character-label,
-  .workshop-page__leaderboard-button:hover
-    .workshop-page__feature-character-label,
-  .workshop-page__discoveries-button:hover
-    .workshop-page__feature-character-label,
-  .workshop-page__trade-alliance-button:hover
-    .workshop-page__feature-character-label {
-    font-weight: 700;
-  }
 }
 
 .workshop-page__personal-tasks-open:active
@@ -5970,14 +5901,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .brewing-page__herb-button:hover .row_key,
-  .brewing-page__ingredient-row:hover .row_key,
-  .brewing-page__cauldron-guide-step:not(:disabled):hover .row_key {
-    font-weight: 700;
-  }
-}
-
 .brewing-page__herb-button:focus,
 .brewing-page__ingredient-row:focus,
 .brewing-page__cauldron-guide-step:focus {
@@ -5988,11 +5911,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .brewing-page__cauldron-guide-step:disabled {
   color: var(--style-disabled);
   cursor: default;
-}
-
-.brewing-page__herb-button:disabled:hover .row_key,
-.brewing-page__cauldron-guide-step:disabled:hover .row_key {
-  font-weight: normal;
 }
 
 .brewing-page__cauldron {
@@ -6008,30 +5926,51 @@ span.room-seed-pack-composite .room-seed-pack-item {
       var(--brewing-page-cauldron-action-height) +
       var(--brewing-page-cauldron-actions-gap) + 6px
   );
+  --brewing-page-cauldron-block-height: calc(
+    var(--brewing-page-cauldron-art-height) +
+      var(--brewing-page-cauldron-actions-gap) +
+      var(--brewing-page-cauldron-action-height)
+  );
   position: absolute;
   box-sizing: border-box;
   width: var(--brewing-page-cauldron-box-width);
-  min-height: calc(var(--brewing-page-cauldron-art-height) + 28px);
+  min-height: var(--brewing-page-cauldron-block-height);
   cursor: pointer;
 }
 
 .brewing-page__cauldron-boxes {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--brewing-page-cauldron-box-gap);
+  display: block;
+  width: 100%;
 }
 
 .brewing-page__cauldron-recipe-box {
   position: relative;
   box-sizing: border-box;
-  width: var(--brewing-page-cauldron-recipe-box-width);
-  height: var(--brewing-page-cauldron-height);
-  min-height: var(--brewing-page-cauldron-height);
+  width: var(--brewing-page-cauldron-box-width);
+  min-height: var(--brewing-page-cauldron-block-height);
   max-height: none;
-  padding-bottom: 5px;
+  padding: 5px 10px 6px;
 }
 
-.style-box.brewing-page__cauldron-potion-box {
+.brewing-page__cauldron-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--brewing-page-cauldron-box-gap);
+  width: 100%;
+}
+
+.brewing-page__cauldron-content[hidden] {
+  display: none;
+}
+
+.brewing-page__cauldron-recipe-content {
+  flex: 0 0 var(--brewing-page-cauldron-recipe-box-width);
+  width: var(--brewing-page-cauldron-recipe-box-width);
+  min-width: 0;
+  min-height: var(--brewing-page-cauldron-height);
+}
+
+.brewing-page__cauldron-potion-box {
   position: relative;
   box-sizing: border-box;
   display: flex;
@@ -6041,7 +5980,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   height: var(--brewing-page-cauldron-art-height);
   min-height: var(--brewing-page-cauldron-art-height);
   margin-top: 0;
-  padding: 5px 10px 6px;
+  padding: 0;
 }
 
 .brewing-page__cauldron-recipe-box[hidden],
@@ -6054,9 +5993,9 @@ span.room-seed-pack-composite .room-seed-pack-item {
   box-sizing: border-box;
   display: grid;
   place-items: center;
-  width: var(--brewing-page-cauldron-box-width);
-  height: var(--brewing-page-cauldron-height);
-  min-height: var(--brewing-page-cauldron-height);
+  width: 100%;
+  height: var(--brewing-page-cauldron-art-height);
+  min-height: var(--brewing-page-cauldron-art-height);
   text-align: center;
 }
 
@@ -6070,7 +6009,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   display: block;
   width: 100%;
   height: 100%;
-  min-height: var(--brewing-page-cauldron-height);
+  min-height: var(--brewing-page-cauldron-art-height);
   overflow: visible;
   background-color: transparent;
   border: var(--style-border);
@@ -6129,7 +6068,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .brewing-page__cauldron.is-locked {
-  min-height: var(--brewing-page-cauldron-height);
+  min-height: var(--brewing-page-cauldron-block-height);
   cursor: default;
 }
 
@@ -6423,19 +6362,10 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .brewing-page__actions {
-  position: absolute;
-  top: calc(
-    var(--brewing-page-cauldron-height) +
-      var(--brewing-page-cauldron-actions-gap)
-  );
-  bottom: auto;
-  left: calc(
-    var(--brewing-page-cauldron-art-width) +
-      var(--brewing-page-cauldron-box-gap)
-  );
-  z-index: auto;
-  width: var(--brewing-page-cauldron-recipe-box-width);
-  margin-top: 0;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin-top: var(--brewing-page-cauldron-actions-gap);
   background: transparent;
   font-size: var(--style-box-border-label-font-size);
   line-height: var(--style-box-border-label-line-height);
@@ -6453,7 +6383,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .brewing-page__cauldron.is-locked .brewing-page__actions {
-  display: none;
+  display: block;
 }
 
 .brewing-page__action-row {
@@ -6465,7 +6395,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
   min-height: var(--brewing-page-cauldron-action-height);
 }
 
-.style-button.brewing-page__action-button {
+.style-button.brewing-page__action-button,
+.style-button.brewing-page__cauldron-select-recipe-text {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
@@ -6483,6 +6414,12 @@ span.room-seed-pack-composite .room-seed-pack-item {
   border: var(--style-border);
   vertical-align: middle;
   white-space: nowrap;
+}
+
+.style-button.brewing-page__cauldron-select-recipe-text {
+  width: 78px;
+  min-width: 78px;
+  max-width: 78px;
 }
 
 .brewing-page__action-button-label {
@@ -6514,29 +6451,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .style-button.brewing-page__action-button:disabled
   .brewing-page__action-button-cost {
   color: inherit;
-}
-
-.style-box .brewing-page__cauldron-select-recipe-text {
-  position: absolute;
-  right: var(--style-box-title-left);
-  bottom: var(--style-box-border-label-offset);
-  z-index: 2;
-  width: auto;
-  min-width: 0;
-  margin: 0;
-  padding: 0 var(--style-box-border-label-padding-x);
-  border: 0;
-  background: var(--style-surface);
-  appearance: none;
-  color: var(--style-text);
-  font-family: var(--style-font);
-  font-size: var(--style-box-border-label-font-size);
-  font-weight: normal;
-  line-height: var(--style-box-border-label-line-height);
-}
-
-.brewing-page__cauldron .brewing-page__cauldron-select-recipe-text {
-  display: none;
 }
 
 .brewing-page__item-drag-ghost,
@@ -6894,12 +6808,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .workshop-page__world-chat-title:hover {
-    font-weight: 700;
-  }
-}
-
 .workshop-page__world-chat-title:focus {
   outline: none;
 }
@@ -6983,7 +6891,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   z-index: 30;
 }
 
-.workshop-page__ledger-popup {
+.workshop-page__stats-popup {
   position: absolute;
   inset: 0;
   z-index: 30;
@@ -7024,7 +6932,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__tasks-info-popup[hidden],
 .workshop-page__personal-tasks-popup[hidden],
 .workshop-page__world-notice-popup[hidden],
-.workshop-page__ledger-popup[hidden],
+.workshop-page__stats-popup[hidden],
 .workshop-page__world-notice-donate-panel[hidden],
 .workshop-page__summon-info-popup[hidden],
 .room-player-info-popup[hidden],
@@ -7228,7 +7136,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   min-height: var(--style-row-min-height);
 }
 
-.workshop-page__ledger-panel {
+.workshop-page__stats-panel {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -7239,7 +7147,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   transform: translate(-50%, calc(-50% + var(--app-dialog-y-shift, 0px)));
 }
 
-.style-dialog.workshop-page__ledger-dialog {
+.style-dialog.workshop-page__stats-dialog {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -7247,7 +7155,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   height: var(--style-tabbed-dialog-content-height);
 }
 
-.workshop-page__ledger-frame {
+.workshop-page__stats-frame {
   height: calc(
     var(--style-tabbed-dialog-content-height) -
       var(--style-scroll-progress-block-size)
@@ -7256,16 +7164,16 @@ span.room-seed-pack-composite .room-seed-pack-item {
   scrollbar-width: none;
 }
 
-.workshop-page__ledger-frame::-webkit-scrollbar {
+.workshop-page__stats-frame::-webkit-scrollbar {
   display: none;
 }
 
-.workshop-page__ledger-rows {
+.workshop-page__stats-rows {
   display: grid;
   gap: 2px;
 }
 
-.workshop-page__ledger-row {
+.workshop-page__stats-row {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) max-content;
   column-gap: var(--style-row-column-gap);
@@ -7274,23 +7182,23 @@ span.room-seed-pack-composite .room-seed-pack-item {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-.workshop-page__ledger-row.is-locked {
+.workshop-page__stats-row.is-empty {
   color: var(--style-disabled);
 }
 
-.workshop-page__ledger-number {
+.workshop-page__stats-number {
   color: var(--style-muted);
   text-align: right;
 }
 
-.workshop-page__ledger-name {
+.workshop-page__stats-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.workshop-page__ledger-status {
+.workshop-page__stats-status {
   justify-self: end;
   min-width: 38px;
   color: var(--style-text);
@@ -7299,13 +7207,17 @@ span.room-seed-pack-composite .room-seed-pack-item {
   white-space: nowrap;
 }
 
-.workshop-page__ledger-row.is-locked .workshop-page__ledger-number,
-.workshop-page__ledger-row.is-locked .workshop-page__ledger-status,
-.workshop-page__ledger-row.has-progress .workshop-page__ledger-status {
+.workshop-page__stats-row.is-empty .workshop-page__stats-number,
+.workshop-page__stats-row.is-empty .workshop-page__stats-status {
   color: var(--style-muted);
 }
 
-.workshop-page__ledger-tabs {
+.workshop-page__stats-row.is-total .workshop-page__stats-name,
+.workshop-page__stats-row.is-total .workshop-page__stats-status {
+  font-weight: 700;
+}
+
+.workshop-page__stats-tabs {
   display: flex;
   gap: var(--style-dialog-tab-gap);
   margin-top: var(--style-dialog-tab-gap);
@@ -7882,12 +7794,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
   background: var(--workshop-summon-info-selected-surface);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .workshop-page__summon-info-seed-row:hover > .row_key {
-    font-weight: 700;
-  }
-}
-
 .workshop-page__summon-info-seed-row:focus-visible {
   outline: none;
 }
@@ -7930,12 +7836,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .style-button.workshop-page__summon-info-action:focus-visible {
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .style-button.workshop-page__summon-info-action:hover {
-    font-weight: 700;
-  }
 }
 
 .style-button.workshop-page__summon-info-action:focus-visible {
@@ -8055,12 +7955,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__summon-info-weight-choice.is-selected
   .workshop-page__summon-info-weight-check {
   visibility: visible;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .workshop-page__summon-info-weight-choice:hover {
-    font-weight: 700;
-  }
 }
 
 .workshop-page__summon-info-weight-choice:focus-visible {
@@ -8342,12 +8236,6 @@ div.workshop-page__discovery-row {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .workshop-page__discovery-row.is-discovered:hover .row_key {
-    font-weight: 700;
-  }
-}
-
 .workshop-page__discovery-row:focus {
   outline: none;
 }
@@ -8564,12 +8452,6 @@ div.workshop-page__discovery-row {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .room-player-info-link:hover {
-    font-weight: 700;
-  }
-}
-
 .room-player-info-link:focus {
   outline: none;
 }
@@ -8687,12 +8569,6 @@ div.workshop-page__discovery-row {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .workshop-page__trade-alliance-member-row.is-actionable:hover .row_key {
-    font-weight: 700;
-  }
-}
-
 .workshop-page__trade-alliance-member-row.is-actionable:focus {
   outline: none;
 }
@@ -8705,13 +8581,6 @@ div.workshop-page__discovery-row {
 .workshop-page__trade-alliance-list-main.is-actionable:focus .row_key,
 .workshop-page__leaderboard-row.is-actionable:focus .row_key {
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .workshop-page__trade-alliance-list-main.is-actionable:hover .row_key,
-  .workshop-page__leaderboard-row.is-actionable:hover .row_key {
-    font-weight: 700;
-  }
 }
 
 .workshop-page__trade-alliance-list-main.is-actionable:focus,
@@ -8898,13 +8767,6 @@ div.workshop-page__discovery-row {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .shop-page__coin-offer-action:hover {
-    outline: none;
-    font-weight: 700;
-  }
-}
-
 .shop-page__coin-offer-action:disabled {
   color: var(--style-disabled);
   cursor: default;
@@ -8949,13 +8811,6 @@ div.workshop-page__discovery-row {
 .shop-page__crystal-price:focus-visible {
   outline: none;
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .shop-page__crystal-price:hover {
-    outline: none;
-    font-weight: 700;
-  }
 }
 
 .shop-page__crystal-row--header > span:last-child {
@@ -9139,12 +8994,6 @@ div.workshop-page__discovery-row {
 
 .garden-page__inventory-toggle:focus-visible {
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .garden-page__inventory-toggle:hover {
-    font-weight: 700;
-  }
 }
 
 .garden-page__inventory-toggle:focus {
@@ -9339,7 +9188,6 @@ div.workshop-page__discovery-row {
   cursor: pointer;
 }
 
-.garden-page__plot-row:hover,
 .garden-page__plot-row:focus-visible {
   outline: none;
 }
@@ -9355,28 +9203,6 @@ div.workshop-page__discovery-row {
 .garden-page__plot-row.is-selected .garden-page__plot-label,
 .garden-page__plot-row.is-selected .garden-page__plot-box-label {
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .garden-page__plot-row:not(.is-empty, .is-processing, .is-ready):hover
-    .garden-page__plot-action,
-  .garden-page__plot-row.is-empty.is-plantable:hover .garden-page__plot-action,
-  .garden-page__plot-row.is-ready .garden-page__plot-action:hover,
-  .garden-page__plot-row.is-empty .garden-page__plot-action:hover {
-    font-weight: 700;
-  }
-
-  .garden-page__plot-row:not(.is-empty, .is-processing, .is-ready):hover
-    .garden-page__plot-label,
-  .garden-page__plot-row.is-empty .garden-page__plot-label:hover,
-  .garden-page__plot-row.is-empty .garden-page__plot-box-label:hover {
-    font-weight: 700;
-  }
-
-  .garden-page__plot-row.is-empty.is-selected-without-seeds
-    .garden-page__plot-action:hover {
-    font-weight: normal;
-  }
 }
 
 .garden-page__plot-row:disabled {
@@ -9411,14 +9237,6 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot-row.is-ready .garden-page__plot-action {
   min-height: var(--style-box-border-label-line-height);
-}
-
-.garden-page__plot-row:disabled:hover .garden-page__plot-action {
-  font-weight: normal;
-}
-
-.garden-page__plot-row:disabled:hover .garden-page__plot-label {
-  font-weight: normal;
 }
 
 .garden-page__plot-number,
@@ -10147,7 +9965,6 @@ div.workshop-page__discovery-row {
   border-top: var(--style-separator-border);
 }
 
-.garden-page__seed-button:hover .row_key,
 .garden-page__seed-button:focus .row_key,
 .garden-page__seed-button[aria-pressed="true"] .row_key {
   font-weight: normal;
@@ -10170,10 +9987,6 @@ div.workshop-page__discovery-row {
 .garden-page__seed-button:disabled {
   color: var(--style-disabled);
   cursor: default;
-}
-
-.garden-page__seed-button:disabled:hover .row_key {
-  font-weight: normal;
 }
 
 .garden-page__seed-inventory-row.is-draggable {
@@ -10427,7 +10240,6 @@ div.workshop-page__discovery-row {
   color: inherit;
 }
 
-.research-page__research-label-button:hover,
 .research-page__research-label-button:focus {
   font-weight: normal;
 }
@@ -10616,7 +10428,7 @@ div.workshop-page__discovery-row {
 .style-button.room-announcement__close,
 .style-button.workshop-page__personal-tasks-close,
 .style-button.workshop-page__world-notice-close,
-.style-button.workshop-page__ledger-close,
+.style-button.workshop-page__stats-close,
 .style-button.workshop-page__world-notice-donate-close,
 .style-button.workshop-page__world-chat-close,
 .style-button.workshop-page__trade-alliance-close,
@@ -10656,7 +10468,7 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__world-notice-close:active:not(:disabled):not(
     [aria-disabled="true"]
   ),
-.style-button.workshop-page__ledger-close:active:not(:disabled):not(
+.style-button.workshop-page__stats-close:active:not(:disabled):not(
     [aria-disabled="true"]
   ),
 .style-button.workshop-page__world-notice-donate-close:active:not(:disabled):not(
@@ -10938,14 +10750,14 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.brewing-page__quantity-button {
-  width: 34px;
-  min-width: 34px;
+  width: 54px;
+  min-width: 54px;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
 .style-button.brewing-page__auto-button {
-  width: 58px;
-  min-width: 58px;
+  width: 68px;
+  min-width: 68px;
 }
 
 .style-button.brewing-page__quantity-button:active:not(:disabled):not(
@@ -10955,13 +10767,6 @@ div.workshop-page__discovery-row {
     [aria-disabled="true"]
   ) {
   background: var(--style-active-surface);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .style-button.brewing-page__quantity-button:hover,
-  .style-button.brewing-page__auto-button:hover {
-    font-weight: 700;
-  }
 }
 
 .style-button.brewing-page__quantity-button:focus,
@@ -11121,12 +10926,6 @@ div.workshop-page__discovery-row {
 .brewing-page__recipe-row:focus .brewing-page__recipe-select-button,
 .brewing-page__recipe-row.is-selected .brewing-page__recipe-name {
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .brewing-page__recipe-select-button:hover {
-    font-weight: 700;
-  }
 }
 
 .brewing-page__recipe-row:focus {
@@ -11735,13 +11534,6 @@ div.workshop-page__discovery-row {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .shop-page__direct-sell-selected-label:hover,
-  .shop-page__sell-selected-label:hover {
-    font-weight: 700;
-  }
-}
-
 .shop-page__direct-sell-selected-label:active:not(:disabled),
 .shop-page__direct-sell-selected-label[aria-pressed="true"]:not(:disabled),
 .shop-page__sell-selected-label:active:not(:disabled),
@@ -12223,15 +12015,19 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__tabs {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  --room-bottom-panel-tab-width: calc((100% - 24px) / 5);
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px 6px;
   align-items: center;
+  justify-content: center;
 }
 
 .room-bottom-panel__tab {
   position: relative;
+  box-sizing: border-box;
   display: flex;
+  flex: 0 0 var(--room-bottom-panel-tab-width);
   align-items: center;
   justify-content: center;
   min-width: 0;
@@ -12400,13 +12196,6 @@ div.workshop-page__discovery-row {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .room-bottom-panel__tab:hover {
-    border-color: var(--style-stroke);
-    font-weight: 700;
-  }
-}
-
 .room-bottom-panel__tab:focus {
   outline: none;
 }
@@ -12449,13 +12238,6 @@ div.workshop-page__discovery-row {
 .room-bottom-panel__tab.is-locked:focus-visible {
   border-color: var(--style-disabled);
   font-weight: normal;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .room-bottom-panel__tab.is-locked:hover {
-    border-color: var(--style-disabled);
-    font-weight: normal;
-  }
 }
 
 .guild-page__content {
@@ -12650,7 +12432,6 @@ div.workshop-page__discovery-row {
   cursor: default;
 }
 
-.guild-page__row-action:disabled:hover,
 .guild-page__row-action:disabled:focus-visible {
   font-weight: normal;
 }
@@ -12663,14 +12444,6 @@ div.workshop-page__discovery-row {
 .guild-page__row-action:focus-visible {
   font-weight: 700;
   outline: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .guild-page__row-main:hover,
-  .guild-page__row-action:hover {
-    font-weight: 700;
-    outline: none;
-  }
 }
 
 .guild-page__box--request-board .guild-page__rows {
@@ -12732,21 +12505,6 @@ div.workshop-page__discovery-row {
 .guild-page__quest-paper-action:focus-visible {
   font-weight: 700;
   outline: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .guild-page__quest-paper:hover {
-    border: var(--style-border-strong);
-  }
-
-  .guild-page__quest-paper-main:hover,
-  .guild-page__quest-paper-action:hover {
-    font-weight: inherit;
-  }
-
-  .guild-page__quest-paper-action:hover {
-    font-weight: 700;
-  }
 }
 
 .guild-page__request-title,
@@ -12844,7 +12602,6 @@ div.workshop-page__discovery-row {
   white-space: normal;
 }
 
-.guild-page__adventurer-main:hover,
 .guild-page__adventurer-main:focus-visible {
   font-weight: inherit;
 }
@@ -13449,7 +13206,6 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-.room-top-panel__avatar-button:hover,
 .room-top-panel__avatar-button:focus-visible {
   background: var(--style-active-surface);
 }
@@ -13507,12 +13263,6 @@ div.workshop-page__discovery-row {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .room-top-panel__username:hover {
-    font-weight: 700;
-  }
-}
-
 .room-top-panel__username:active {
   background: var(--style-active-surface);
 }
@@ -13541,12 +13291,6 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__level:focus {
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .room-top-panel__level:hover {
-    font-weight: 700;
-  }
 }
 
 .room-top-panel__level:active {
@@ -13738,15 +13482,6 @@ div.workshop-page__discovery-row {
 .room-top-panel__inbox-close:focus-visible {
   outline: none;
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .room-top-panel__settings-close:hover,
-  .room-top-panel__level-close:hover,
-  .room-top-panel__inbox-close:hover {
-    outline: none;
-    font-weight: 700;
-  }
 }
 
 .room-top-panel__level-current {
@@ -14624,13 +14359,6 @@ div.workshop-page__discovery-row {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .room-top-panel__visual-option-name:hover,
-  .room-top-panel__visual-option-price:not(:disabled):hover {
-    font-weight: 700;
-  }
-}
-
 .room-top-panel__visual-option-name:focus-visible,
 .room-top-panel__visual-option-price:focus-visible {
   outline: none;
@@ -15236,7 +14964,6 @@ div.workshop-page__discovery-row {
   display: inline;
 }
 
-.style-button.workshop-page__summon-button:hover .workshop-page__summon-circle,
 .style-button.workshop-page__summon-button:focus-visible
   .workshop-page__summon-circle {
   filter: brightness(1.05);
@@ -15251,13 +14978,6 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__summon-button:focus-visible
   .workshop-page__summon-button-label {
   font-weight: 700;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .style-button.workshop-page__summon-button:hover
-    .workshop-page__summon-button-label {
-    font-weight: 700;
-  }
 }
 
 .style-button.workshop-page__summon-button:is(:active, .is-pressing):not(
@@ -15548,7 +15268,7 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__trade-alliance-tab-button,
 .style-button.workshop-page__personal-tasks-tab-button,
 .style-button.workshop-page__world-notice-tab-button,
-.style-button.workshop-page__ledger-tab-button,
+.style-button.workshop-page__stats-tab-button,
 .style-button.workshop-page__world-chat-tab-button {
   flex: 1 1 0;
   width: auto;
@@ -15635,12 +15355,6 @@ div.workshop-page__discovery-row {
   font-weight: 700;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .shop-page__sell-item-button:hover .row_key {
-    font-weight: 700;
-  }
-}
-
 .shop-page__sell-item-button:active:not(:disabled),
 .shop-page__sell-item-button[aria-pressed="true"] {
   background: var(--style-active-surface);
@@ -15667,7 +15381,7 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__trade-alliance-tab-button[aria-selected="true"],
 .style-button.workshop-page__personal-tasks-tab-button[aria-selected="true"],
 .style-button.workshop-page__world-notice-tab-button[aria-selected="true"],
-.style-button.workshop-page__ledger-tab-button[aria-selected="true"],
+.style-button.workshop-page__stats-tab-button[aria-selected="true"],
 .style-button.workshop-page__world-chat-tab-button[aria-selected="true"] {
   font-weight: 700;
 }
@@ -15677,47 +15391,39 @@ div.workshop-page__discovery-row {
   background: var(--style-active-surface);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .style-button:hover {
-    font-weight: 700;
-  }
-}
-
 .style-button:focus-visible {
   outline: none;
   font-weight: 700;
 }
 
-@media (hover: none) {
-  .room-top-panel__username,
-  .room-top-panel__level,
-  .workshop-page__tasks-title,
-  .workshop-page__tasks-pin,
-  .workshop-page__tasks-toggle,
-  .workshop-page__level-rewards-toggle,
-  .workshop-page__personal-tasks-open,
-  .workshop-page__world-notice-open,
-  .workshop-page__leaderboard-button,
-  .workshop-page__discoveries-button,
-  .shop-page__slot-row--interactive .shop-page__slot-item-value,
-  .shop-page__sell-item-button:not(:disabled):not([aria-disabled="true"])
-    .row_key,
-  .garden-page__plot-row.is-empty:not(.is-selected-without-seeds)
-    .garden-page__plot-action,
-  .garden-page__plot-row.is-empty .garden-page__plot-label,
-  .garden-page__plot-row.is-empty .garden-page__plot-box-label,
-  .garden-page__plot-row.is-ready .garden-page__plot-action {
-    font-weight: 700;
-  }
+.room-top-panel__username,
+.room-top-panel__level,
+.workshop-page__tasks-title,
+.workshop-page__tasks-pin,
+.workshop-page__tasks-toggle,
+.workshop-page__level-rewards-toggle,
+.workshop-page__personal-tasks-open,
+.workshop-page__world-notice-open,
+.workshop-page__leaderboard-button,
+.workshop-page__discoveries-button,
+.shop-page__slot-row--interactive .shop-page__slot-item-value,
+.shop-page__sell-item-button:not(:disabled):not([aria-disabled="true"])
+  .row_key,
+.garden-page__plot-row.is-empty:not(.is-selected-without-seeds)
+  .garden-page__plot-action,
+.garden-page__plot-row.is-empty .garden-page__plot-label,
+.garden-page__plot-row.is-empty .garden-page__plot-box-label,
+.garden-page__plot-row.is-ready .garden-page__plot-action {
+  font-weight: 700;
 }
 
-@media (hover: none) {
-  .shop-page__shelf .shop-page__slot-row--interactive .shop-page__slot-item-value,
-  .shop-page__player-shelf .shop-page__slot-row--interactive .shop-page__slot-item-value,
-  .shop-page__player-request-row.shop-page__slot-row--interactive
-    .shop-page__request-row-item {
-    font-weight: normal;
-  }
+.shop-page__shelf .shop-page__slot-row--interactive .shop-page__slot-item-value,
+.shop-page__player-shelf
+  .shop-page__slot-row--interactive
+  .shop-page__slot-item-value,
+.shop-page__player-request-row.shop-page__slot-row--interactive
+  .shop-page__request-row-item {
+  font-weight: normal;
 }
 
 .shop-page__direct-sell-rows
@@ -15879,12 +15585,6 @@ div.workshop-page__discovery-row {
   opacity: 0.38;
 }
 
-.style-button[aria-disabled="true"]:hover,
-.style-button:disabled:hover,
-.style-button.is-disabled:hover {
-  font-weight: normal;
-}
-
 .style-progress {
   position: relative;
   display: block;
@@ -16029,10 +15729,6 @@ div.workshop-page__discovery-row {
   background: var(--style-surface);
   border: var(--style-border);
   box-shadow: var(--style-tooltip-shadow);
-}
-
-*:hover > .style-tooltip {
-  display: block;
 }
 
 .shop-page__direct-sell-help-popup .shop-page__direct-sell-help-tooltip {
@@ -16265,7 +15961,7 @@ div.workshop-page__discovery-row {
 .workshop-page__tasks-info-popup:not([hidden]),
 .workshop-page__personal-tasks-popup:not([hidden]),
 .workshop-page__world-notice-popup:not([hidden]),
-.workshop-page__ledger-popup:not([hidden]),
+.workshop-page__stats-popup:not([hidden]),
 .workshop-page__summon-info-popup:not([hidden]),
 .brewing-page__recipes-popup:not([hidden]),
 .brewing-page__recipe-choice-popup:not([hidden]),
@@ -16303,7 +15999,7 @@ div.workshop-page__discovery-row {
 .game-stage:has(.workshop-page__personal-tasks-popup:not([hidden]))
   .workshop-page,
 .game-stage:has(.workshop-page__world-notice-popup:not([hidden])) .workshop-page,
-.game-stage:has(.workshop-page__ledger-popup:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__stats-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__summon-info-popup:not([hidden])) .workshop-page,
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
 .game-stage:has(.brewing-page__recipe-choice-popup:not([hidden]))
@@ -16339,7 +16035,7 @@ div.workshop-page__discovery-row {
 .workshop-page__tasks-info-popup:not([hidden]) .style-dialog,
 .workshop-page__personal-tasks-popup:not([hidden]) .style-dialog,
 .workshop-page__world-notice-popup:not([hidden]) .style-dialog,
-.workshop-page__ledger-popup:not([hidden]) .style-dialog,
+.workshop-page__stats-popup:not([hidden]) .style-dialog,
 .workshop-page__summon-info-popup:not([hidden]) .style-dialog,
 .brewing-page__recipes-popup:not([hidden]) .style-dialog,
 .brewing-page__recipe-choice-popup:not([hidden]) .style-dialog,
@@ -17951,7 +17647,7 @@ div.workshop-page__discovery-row {
       .workshop-page__world-notice,
       .workshop-page__summon-button,
       .workshop-page__bag-button,
-      .workshop-page__ledger-button,
+      .workshop-page__stats-button,
       .workshop-page__leaderboard,
       .workshop-page__mail,
       .workshop-page__trade-alliance,

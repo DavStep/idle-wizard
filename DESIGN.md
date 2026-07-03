@@ -115,7 +115,7 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 - **Room Surface:** Room pages, panels, boxes, buttons, dialogs, and border-title backplates.
 - **Muted Text:** Secondary status, helper rows, dividers, and inactive system copy.
 - **Disabled Text:** Locked, empty, unavailable, disabled, and unrevealed rows.
-- **Active Surface:** Same as room surface, so press and hover states never tint backgrounds.
+- **Active Surface:** Same as room surface, so press states never tint backgrounds.
 
 ### Named Rules
 
@@ -163,7 +163,7 @@ Ordinary room UI is flat. Available themes use 2px ordinary borders for clear th
 ### Buttons
 - **Shape:** Sharp text boxes with no radius (0).
 - **Default:** Room surface background, ink text, theme ordinary border, 5px 10px padding.
-- **Hover / Focus:** Use weight or border state; no below-text line, glow, icon, scale, or color flourish.
+- **Focus:** Use weight or border state; no below-text line, glow, icon, scale, or color flourish. Do not define mouse-hover states.
 - **Active:** No background tint; keep labels stable and use existing text/border state only.
 - **Disabled:** Disabled gray text and border, normal weight.
 

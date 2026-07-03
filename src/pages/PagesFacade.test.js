@@ -10210,11 +10210,26 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('empty');
     expect(stage.querySelector('.brewing-page__recipes-button')).toBeNull();
     expect(stage.querySelector('.brewing-page__potions-button')).toBeNull();
-    expect(stage.querySelector('.brewing-page__actions')?.hidden).toBe(true);
-    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('');
-    expect(stage.querySelector('.brewing-page__cauldron-select-recipe-text')?.hidden).toBe(true);
-    expect(stage.querySelector('.brewing-page__actions')?.classList.contains('is-centered')).toBe(
+    expect(stage.querySelector('.brewing-page__actions')?.hidden).toBe(false);
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
+      'brew 12 mana',
+    );
+    expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(true);
+    expect(stage.querySelector('.brewing-page__cauldron-select-recipe-text')?.hidden).toBe(
+      false,
+    );
+    expect(stage.querySelector('.brewing-page__cauldron-select-recipe-text')?.textContent).toBe(
+      'recipes lock',
+    );
+    expect(stage.querySelector('.brewing-page__cauldron-select-recipe-text')?.disabled).toBe(
       true,
+    );
+    expect(stage.querySelector('.brewing-page__quantity-button')?.textContent).toBe('x1 lock');
+    expect(stage.querySelector('.brewing-page__quantity-button')?.disabled).toBe(true);
+    expect(stage.querySelector('.brewing-page__auto-button')?.textContent).toBe('auto lock');
+    expect(stage.querySelector('.brewing-page__auto-button')?.disabled).toBe(true);
+    expect(stage.querySelector('.brewing-page__actions')?.classList.contains('is-centered')).toBe(
+      false,
     );
     expect(stage.querySelector('.brewing-page__clear-button')).toBeNull();
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
@@ -10654,13 +10669,19 @@ describe('PagesFacade', () => {
     const selectRecipeButton = stage.querySelector('.brewing-page__cauldron-select-recipe-text');
     const actions = stage.querySelector('.brewing-page__actions');
 
-    expect(selectRecipeButton?.hidden).toBe(true);
-    expect(actions?.classList.contains('is-centered')).toBe(true);
+    expect(selectRecipeButton?.hidden).toBe(false);
+    expect(selectRecipeButton?.textContent).toBe('recipes lock');
+    expect(selectRecipeButton?.disabled).toBe(true);
+    expect(selectRecipeButton?.classList.contains('is-locked')).toBe(true);
+    expect(actions?.classList.contains('is-centered')).toBe(false);
 
     gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
 
     expect(selectRecipeButton?.hidden).toBe(false);
+    expect(selectRecipeButton?.textContent).toBe('recipes');
+    expect(selectRecipeButton?.disabled).toBe(false);
+    expect(selectRecipeButton?.classList.contains('is-locked')).toBe(false);
     expect(actions?.classList.contains('is-centered')).toBe(false);
 
     stage
@@ -11015,6 +11036,9 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
       'brew 12 mana',
     );
+    expect(
+      stage.querySelector('.brewing-page__action-button')?.classList.contains('is-locked'),
+    ).toBe(false);
     expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(false);
   });
 
@@ -12030,9 +12054,10 @@ describe('PagesFacade', () => {
     expect(
       stage.querySelector('.brewing-page__cauldron-art-liquid')?.hidden,
     ).toBe(true);
-    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe(
-      'brew 12 mana',
-    );
+    expect(stage.querySelector('.brewing-page__action-button')?.textContent).toBe('brew lock');
+    expect(
+      stage.querySelector('.brewing-page__action-button')?.classList.contains('is-locked'),
+    ).toBe(true);
     expect(stage.querySelector('.brewing-page__cauldron-count')?.textContent).toBe('3/5');
     expect(stage.querySelector('.brewing-page__cauldron-status')?.textContent).toBe(
       'mana tonic locked',

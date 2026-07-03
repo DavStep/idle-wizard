@@ -36,7 +36,7 @@
 
 ## Product Shape
 
-- This is an Android-first mobile JavaScript game.
+- This is a PC-first JavaScript game that also supports mobile.
 - macOS `sips` can read project WebP portraits but cannot write them; use `cwebp` for WebP resize/encode.
 - Large PNG web assets are stored uncompressed inside Android APKs and can trip Discord webhook limits; use WebP for full-screen intro/tab art, and delete the old APK before remeasuring because Gradle can update the zip in place.
 - Ignored local `public/qa-data` is still copied by Vite/Capacitor when present; move it out of `public/` before release builds or APK uploads can exceed Discord webhook limits.
@@ -44,7 +44,7 @@
 - Before wiping local SpacetimeDB progress, check `.env.local` for the active `VITE_SPACETIME_DATABASE`; the shared Vite app may use `idle-wizard-codex-run` while `npm run stdb:publish` still targets `idle-wizard`.
 - The authored game viewport is `1080x2170`.
 - Game-stage text copy/paste suppression needs both CSS `user-select`/touch-callout rules and an app-level guard for clipboard, context menu, selectstart, and paste `beforeinput` events.
-- Interactive hover/press states should not tint backgrounds; keep `--style-active-surface` equal to the current surface and rely on weight/border cues, never below-text line decoration.
+- In-game UI no longer supports mouse hover; do not add `:hover` selectors or hover-only behavior. Press/focus states should keep `--style-active-surface` equal to the current surface and rely on weight/border cues, never below-text line decoration.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
 - Web-wide source-scaled overlays must subtract the centered source-layer rect, not the widened stage rect, when converting target screen coords to source coords.
 - Web-wide room dialog backdrops must expand from the centered source layer using root pixel vars like `--app-stage-width` and `--app-source-ui-screen-width`; `%`-based `--style-source-ui-offset-x` resolves against nested popup width and collapses the gutter.
@@ -83,6 +83,7 @@
 - Cauldron tap opens should fire from no-drag world pointerup when the press started on a cauldron; Android/WebView can retarget the native click to the world shell, especially from empty overlays.
 - Cauldron tap drift should use the tap-action tolerance, not the normal world-pan threshold; 4 source pixels can classify WebView finger jitter as a drag.
 - Cauldron action buttons sit inside the cauldron tap opener; stop/suppress action clicks so selected-recipe brews do not reopen the recipes dialog.
+- Brewing cauldron vertical spacing is JS-authored with `CAULDRON_WORLD_ROW_GAP`; update it with any framed cauldron height change or action rows can overlap the next title.
 - Popup forms in snapshot-rendered managers need local drafts captured before replacing content; otherwise timer/mana refreshes clear focused fields.
 - Snapshot-rendered popup forms with active text inputs should keep the same input DOM node mounted during refresh; replacing then refocusing can still close mobile keyboards.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
@@ -144,6 +145,7 @@
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - Player market proceeds add spendable coin only; do not increase `coin.totalGenerated` or leaderboard income from player-to-player trades.
 - `player_shop_proceeds` can include potion discovery royalties from NPC market trades; use own trade history before labeling proceeds as player-market sales.
+- Claim-time player-market stats must retain/read own trade and royalty history before `claimProceeds`; claiming clears aggregate proceeds and lazy history may be released afterward.
 - While-away market reports should use event rows: NPC sale callbacks for `traders bought`, own trade history for player bought/sold-you rows, and `own_potion_recipe_royalty_history` for royalties.
 - Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
 - Player market notifications should only mean a personal trade event: claimable proceeds from an own listing or an available listing matching an own request. Do not dot empty stands, affordable random listings, or matchable requests from other players.
@@ -715,8 +717,8 @@
 - In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
 - Hidden tab panels should skip list and popup rendering on gameplay snapshots; refresh the active tab on tab switch and visible popups when opened.
 - Treat in-game UI as controls, not selectable document text: set non-selection/tap-highlight suppression on `.game-stage` descendants and opt text inputs back into normal selection.
-- Do not use hover-only below-text line decoration; gate hover-only emphasis with `@media (hover: hover) and (pointer: fine)` when touch sticky state matters.
-- Single-choice selected options, such as tabs or one-of button-panel buttons, may show an underline only in their neutral selected state; avoid it while hovered, held, or pressed.
+- Do not add hover-only emphasis, including selectors gated by `@media (hover: hover) and (pointer: fine)`; in-game controls are touch-first.
+- Single-choice selected options, such as tabs or one-of button-panel buttons, may show an underline only in their neutral selected state; avoid it while held or pressed.
 - Locked-but-pressable room tabs should use `.is-locked` plus an explanatory aria-label, not `aria-disabled`, so taps can still open the unlock notice.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
 - Research page uses `snapshot.research.tabs` for full-page regular/automation/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.

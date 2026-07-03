@@ -165,7 +165,7 @@ describe('WorkshopTradeAllianceManager styles', () => {
     );
 
     expect(root?.classList.contains('workshop-page__panel-button')).toBe(true);
-    expect(root?.dataset.panelSide).toBe('right');
+    expect(root?.dataset.panelSide).toBe('left');
     expect(button?.textContent).toBe('alliance');
     expect(button?.getAttribute('aria-label')).toBe('open alliance All Seeing Void');
     expect(

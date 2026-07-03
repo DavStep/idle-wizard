@@ -2248,7 +2248,7 @@ describe('GardenPlotManager', () => {
       /\.garden-page__seed-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const emphasisRule = baseCss.match(
-      /\.garden-page__seed-button:hover \.row_key,\s*\.garden-page__seed-button:focus \.row_key,\s*\.garden-page__seed-button\[aria-pressed="true"\] \.row_key\s*\{(?<body>[^}]*)\}/,
+      /\.garden-page__seed-button:focus \.row_key,\s*\.garden-page__seed-button\[aria-pressed="true"\] \.row_key\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(buttonRule).toBeDefined();
@@ -2257,6 +2257,7 @@ describe('GardenPlotManager', () => {
     expect(buttonRule).toMatch(/\bpadding:\s*0;/);
     expect(emphasisRule).toBeDefined();
     expect(emphasisRule).toMatch(/\bfont-weight:\s*normal;/);
+    expect(baseCss).not.toContain('.garden-page__seed-button:hover');
     expect(baseCss).not.toContain('.garden-page__seed-button:not(:disabled) .row_key');
   });
 

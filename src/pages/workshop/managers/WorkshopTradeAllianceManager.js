@@ -133,7 +133,7 @@ export class WorkshopTradeAllianceManager {
 
     this.root = document.createElement('div');
     this.root.className = 'workshop-page__panel-button workshop-page__trade-alliance';
-    this.root.dataset.panelSide = 'right';
+    this.root.dataset.panelSide = 'left';
     this.root.setAttribute('aria-label', 'trade alliance');
 
     this.refs.button = this.createButton();

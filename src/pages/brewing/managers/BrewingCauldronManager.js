@@ -42,7 +42,7 @@ const WORLD_WIDTH = 560;
 const WORLD_HEIGHT = 1960;
 const WORLD_FIT_PADDING = 16;
 const CAULDRON_BOX_WIDTH = 408;
-const CAULDRON_BOX_HEIGHT = 174;
+const CAULDRON_BOX_HEIGHT = 204;
 const HERB_DRAG_THRESHOLD = 22;
 const ITEM_DRAG_SWAY_X_FACTOR = 0.45;
 const ITEM_DRAG_SWAY_Y_FACTOR = 0.2;
@@ -71,7 +71,7 @@ const WORLD_PAN_RUBBER_LIMIT = 54;
 const WORLD_SETTLE_CLASS_MS = 240;
 const CAULDRON_WORLD_LEFT_OFFSET = 106;
 const CAULDRON_WORLD_TOP_OFFSET = 96;
-const CAULDRON_WORLD_ROW_GAP = 184;
+const CAULDRON_WORLD_ROW_GAP = 204;
 
 export class BrewingCauldronManager {
   constructor({
@@ -275,12 +275,14 @@ export class BrewingCauldronManager {
     const recipeBox = document.createElement('section');
     recipeBox.className = 'brewing-page__cauldron-recipe-box style-box';
 
-    const potionBox = document.createElement('section');
-    potionBox.className = 'brewing-page__cauldron-potion-box style-box';
+    const content = document.createElement('div');
+    content.className = 'brewing-page__cauldron-content';
 
-    const potionTitle = document.createElement('div');
-    potionTitle.className = 'style-box__title brewing-page__cauldron-potion-title';
-    potionTitle.textContent = 'potion';
+    const potionBox = document.createElement('section');
+    potionBox.className = 'brewing-page__cauldron-potion-box';
+
+    const recipeContent = document.createElement('div');
+    recipeContent.className = 'brewing-page__cauldron-recipe-content';
 
     const lockedBox = document.createElement('section');
     lockedBox.className = 'brewing-page__cauldron-locked-box';
@@ -305,16 +307,6 @@ export class BrewingCauldronManager {
     const bubble = document.createElement('div');
     bubble.className = 'brewing-page__cauldron-bubble';
     bubble.textContent = '';
-
-    const selectRecipeButton = document.createElement('button');
-    selectRecipeButton.className = 'brewing-page__cauldron-select-recipe-text';
-    selectRecipeButton.type = 'button';
-    selectRecipeButton.textContent = 'recipes';
-    selectRecipeButton.setAttribute('aria-haspopup', 'dialog');
-    selectRecipeButton.addEventListener('click', () => {
-      this.selectCauldron(safeCauldronIndex);
-      this.onOpenSelectRecipe?.(safeCauldronIndex);
-    });
 
     const guide = document.createElement('div');
     guide.className = 'brewing-page__cauldron-guide';
@@ -392,22 +384,22 @@ export class BrewingCauldronManager {
     cauldronArt.append(cauldronImage, cauldronLiquid);
     previewSummary.append(previewLabel, previewIcon);
     preview.append(cauldronArt, previewSummary);
-    recipeBox.append(title, count, bubble, guide, status, items, active, selectRecipeButton);
-    potionBox.append(potionTitle, preview);
+    recipeContent.append(bubble, guide, status, items, active);
+    potionBox.append(preview);
+    content.append(potionBox, recipeContent);
     lockedFrame.append(lockedLabel);
     lockedBox.append(lockedFrame);
-    boxes.append(potionBox, recipeBox, lockedBox);
-    root.append(
-      boxes,
-      actions.root,
-    );
+    recipeBox.append(title, count, content, lockedBox, actions.root);
+    boxes.append(recipeBox);
+    root.append(boxes);
     return {
       cauldronIndex: safeCauldronIndex,
       root,
       boxes,
       recipeBox,
+      content,
       potionBox,
-      potionTitle,
+      recipeContent,
       lockedBox,
       lockedFrame,
       title,
@@ -424,7 +416,6 @@ export class BrewingCauldronManager {
       previewSummary,
       previewIcon,
       status,
-      selectRecipeButton,
       items,
       active,
       activeText,
@@ -432,6 +423,7 @@ export class BrewingCauldronManager {
       activeProgressFill,
       activeProgressText,
       actions,
+      selectRecipeButton: actions.selectRecipeButton,
       ingredientRows: [],
       cauldronGuideRows: [],
     };
@@ -441,6 +433,18 @@ export class BrewingCauldronManager {
     const root = document.createElement('div');
     root.className = 'brewing-page__actions';
     root.setAttribute('aria-live', 'polite');
+
+    const selectRecipeButton = document.createElement('button');
+    selectRecipeButton.className = 'style-button brewing-page__cauldron-select-recipe-text';
+    selectRecipeButton.type = 'button';
+    selectRecipeButton.textContent = 'recipes';
+    selectRecipeButton.setAttribute('aria-haspopup', 'dialog');
+    selectRecipeButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.suppressWorldClick();
+      this.selectCauldron(cauldronIndex);
+      this.onOpenSelectRecipe?.(cauldronIndex);
+    });
 
     const actionButton = document.createElement('button');
     actionButton.className = 'style-button brewing-page__action-button';
@@ -475,7 +479,7 @@ export class BrewingCauldronManager {
     });
 
     actionButton.append(actionButtonLabel, actionButtonCost);
-    actionRow.append(actionButton, quantityOptions, autoButton);
+    actionRow.append(selectRecipeButton, actionButton, quantityOptions, autoButton);
 
     const message = document.createElement('div');
     message.className = 'brewing-page__message';
@@ -484,6 +488,7 @@ export class BrewingCauldronManager {
     return {
       root,
       actionRow,
+      selectRecipeButton,
       actionButton,
       actionButtonLabel,
       actionButtonCost,
@@ -1955,6 +1960,7 @@ export class BrewingCauldronManager {
     refs.root.classList.toggle('is-current', brewing.cauldronIndex === this.selectedCauldronIndex);
     refs.root.classList.toggle('has-active-brew', Boolean(brewing.activeBrew));
     this.setHidden(refs.recipeBox, false);
+    this.setHidden(refs.content, false);
     this.setHidden(refs.potionBox, false);
     this.setHidden(refs.lockedBox, true);
     this.removeAttribute(refs.root, 'aria-disabled');
@@ -2016,7 +2022,8 @@ export class BrewingCauldronManager {
     refs.root.classList.remove('has-active-brew');
     this.setAttribute(refs.root, 'aria-disabled', isBuyable ? 'false' : 'true');
     this.setAttribute(refs.root, 'aria-label', this.formatLockedCauldronAriaLabel(brewing));
-    this.setHidden(refs.recipeBox, true);
+    this.setHidden(refs.recipeBox, false);
+    this.setHidden(refs.content, true);
     this.setHidden(refs.potionBox, true);
     this.setHidden(refs.lockedBox, false);
     this.setCauldronRowCount(refs);
@@ -2783,6 +2790,7 @@ export class BrewingCauldronManager {
       this.setHidden(refs.actions.actionButtonCost, true);
       this.setResourceText(refs.actions.actionButtonCost, '');
       this.setDisabled(refs.actions.actionButton, true);
+      refs.actions.actionButton.classList.remove('is-locked');
       this.removeAttribute(refs.actions.actionButton, 'data-action');
       this.removeAttribute(refs.actions.actionButton, 'data-tutorial-id');
       this.removeAttribute(refs.actions.actionButton, 'aria-disabled');
@@ -2796,9 +2804,10 @@ export class BrewingCauldronManager {
     }
 
     this.setHidden(refs.actions.root, false);
+    refs.actions.actionButton.classList.toggle('is-locked', action.locked === true);
     this.setText(
       refs.actions.actionButtonLabel,
-      action.hasCost ? `${action.label} ` : action.label,
+      this.formatActionButtonLabel(action),
     );
     this.setHidden(refs.actions.actionButtonCost, !action.hasCost);
     setResourceColor(refs.actions.actionButtonCost, action.costResource ?? 'mana');
@@ -2808,7 +2817,11 @@ export class BrewingCauldronManager {
     );
     this.setDisabled(refs.actions.actionButton, action.disabled);
     this.setAttribute(refs.actions.actionButton, 'data-action', action.id);
-    this.setAttribute(refs.actions.actionButton, 'data-tutorial-id', 'brewing:action');
+    this.setOptionalAttribute(
+      refs.actions.actionButton,
+      'data-tutorial-id',
+      action.disabled ? null : 'brewing:action',
+    );
     this.setAttribute(
       refs.actions.actionButton,
       'aria-disabled',
@@ -2830,28 +2843,30 @@ export class BrewingCauldronManager {
     const labelText = this.formatLockedCauldronActionText(brewing, action);
 
     this.setText(refs.lockedLabel, labelText);
-    this.setHidden(refs.actions.root, true);
+    this.setHidden(refs.actions.root, false);
+    this.renderSelectRecipeButton(refs, brewing);
+    this.renderBrewQuantityOptions(refs, brewing, null);
+    this.renderAutoBrewButton(refs, brewing, null);
 
     if (!action) {
       this.setText(refs.actions.actionButtonLabel, '');
       this.setHidden(refs.actions.actionButtonCost, true);
       this.setResourceText(refs.actions.actionButtonCost, '');
       this.setDisabled(refs.actions.actionButton, true);
+      refs.actions.actionButton.classList.remove('is-locked');
       this.removeAttribute(refs.actions.actionButton, 'data-action');
       this.removeAttribute(refs.actions.actionButton, 'data-tutorial-id');
       this.removeAttribute(refs.actions.actionButton, 'aria-disabled');
       this.removeAttribute(refs.actions.actionButton, 'aria-label');
       setNotificationBadge(refs.actions.actionButton, false);
-      this.renderBrewQuantityOptions(refs, brewing, null);
-      this.renderAutoBrewButton(refs, brewing, null);
       this.renderActionMessage(refs);
-      this.renderSelectRecipeButton(refs, brewing);
       return;
     }
 
+    refs.actions.actionButton.classList.toggle('is-locked', action.locked === true);
     this.setText(
       refs.actions.actionButtonLabel,
-      action.hasCost ? `${action.label} ` : action.label,
+      this.formatActionButtonLabel(action),
     );
     this.setHidden(refs.actions.actionButtonCost, !action.hasCost);
     setResourceColor(refs.actions.actionButtonCost, action.costResource ?? 'mana');
@@ -2869,10 +2884,16 @@ export class BrewingCauldronManager {
     );
     this.setAttribute(refs.actions.actionButton, 'aria-label', action.ariaLabel);
     setNotificationBadge(refs.actions.actionButton, false);
-    this.renderBrewQuantityOptions(refs, brewing, action);
-    this.renderAutoBrewButton(refs, brewing, action);
     this.renderActionMessage(refs);
-    this.renderSelectRecipeButton(refs, brewing);
+  }
+
+  formatActionButtonLabel(action) {
+    if (!action) {
+      return '';
+    }
+
+    const label = action.locked === true ? `${action.label} lock` : action.label;
+    return action.hasCost ? `${label} ` : label;
   }
 
   formatLockedCauldronActionText(brewing, action) {
@@ -2887,7 +2908,7 @@ export class BrewingCauldronManager {
     return `${action.label} ${action.costText ?? ''}`.trim();
   }
 
-  renderBrewQuantityOptions(refs, brewing, action) {
+  renderBrewQuantityOptions(refs, brewing) {
     const root = refs?.actions?.quantityOptions;
 
     if (!root) {
@@ -2895,7 +2916,7 @@ export class BrewingCauldronManager {
     }
 
     const maxBrewQuantity = this.getMaxBrewQuantity(brewing);
-    const visible = action?.id === 'brew' && maxBrewQuantity > 1;
+    const visible = brewing?.unlocked !== false;
     this.setHidden(root, !visible);
 
     if (!visible) {
@@ -2913,8 +2934,18 @@ export class BrewingCauldronManager {
     button.dataset.nextBrewQuantity = String(nextQuantity);
     button.dataset.maxBrewQuantity = String(maxBrewQuantity);
     button.dataset.cauldronIndex = String(this.normalizeCauldronIndex(refs.cauldronIndex));
-    button.textContent = `x${brewQuantity}`;
-    button.setAttribute('aria-label', `brewing x${brewQuantity}; press for x${nextQuantity}`);
+    const locked = maxBrewQuantity <= 1;
+    const disabled = locked || Boolean(brewing?.activeBrew);
+    button.textContent = locked ? `x${brewQuantity} lock` : `x${brewQuantity}`;
+    button.classList.toggle('is-locked', locked);
+    this.setDisabled(button, disabled);
+    this.setAttribute(button, 'aria-disabled', disabled ? 'true' : 'false');
+    button.setAttribute(
+      'aria-label',
+      locked
+        ? 'batch brewing locked'
+        : `brewing x${brewQuantity}; press for x${nextQuantity}`,
+    );
 
     if (button.parentElement !== root || root.children.length !== 1) {
       root.replaceChildren(button);
@@ -2942,20 +2973,36 @@ export class BrewingCauldronManager {
     return button;
   }
 
-  renderAutoBrewButton(refs, brewing, action) {
+  renderAutoBrewButton(refs, brewing) {
     const button = refs?.actions?.autoButton;
 
     if (!button) {
       return;
     }
 
-    const visible = action?.id === 'brew' && brewing.autoBrewAvailable === true;
+    const visible = brewing?.unlocked !== false;
     this.setHidden(button, !visible);
 
     if (!visible) {
       this.setDisabled(button, true);
+      button.classList.remove('is-locked');
       this.removeAttribute(button, 'aria-pressed');
       this.removeAttribute(button, 'aria-label');
+      this.removeAttribute(button, 'aria-disabled');
+      this.removeAttribute(button, 'data-auto-brew-enabled');
+      return;
+    }
+
+    const available = brewing.autoBrewAvailable === true;
+
+    if (!available) {
+      button.dataset.cauldronIndex = String(this.normalizeCauldronIndex(refs.cauldronIndex));
+      this.setText(button, 'auto lock');
+      button.classList.add('is-locked');
+      this.setDisabled(button, true);
+      this.setAttribute(button, 'aria-disabled', 'true');
+      this.removeAttribute(button, 'aria-pressed');
+      this.setAttribute(button, 'aria-label', 'auto brewing locked');
       this.removeAttribute(button, 'data-auto-brew-enabled');
       return;
     }
@@ -2966,8 +3013,10 @@ export class BrewingCauldronManager {
 
     button.dataset.cauldronIndex = String(this.normalizeCauldronIndex(refs.cauldronIndex));
     button.dataset.autoBrewEnabled = enabled ? 'true' : 'false';
+    button.classList.remove('is-locked');
     this.setText(button, label);
     this.setDisabled(button, false);
+    this.setAttribute(button, 'aria-disabled', 'false');
     this.setAttribute(button, 'aria-pressed', enabled ? 'true' : 'false');
     this.setAttribute(button, 'aria-label', `${label} brewing; press for ${nextLabel}`);
   }
@@ -3017,29 +3066,36 @@ export class BrewingCauldronManager {
       return;
     }
 
-    const visible = brewing.canSelectRecipe === true;
+    const visible = brewing?.unlocked !== false;
+    const available = brewing.canSelectRecipe === true;
     this.setHidden(selectRecipeButton, !visible);
     refs.actions.root.classList.toggle('is-centered', !visible);
 
     if (!visible) {
       this.setDisabled(selectRecipeButton, true);
+      selectRecipeButton.classList.remove('is-locked');
       this.setAttribute(selectRecipeButton, 'aria-hidden', 'true');
+      this.removeAttribute(selectRecipeButton, 'aria-disabled');
       this.removeAttribute(selectRecipeButton, 'aria-label');
       this.removeAttribute(selectRecipeButton, 'data-state');
       this.removeAttribute(selectRecipeButton, 'aria-pressed');
       return;
     }
 
-    const label = 'recipes';
+    const label = available ? 'recipes' : 'recipes lock';
     this.setText(selectRecipeButton, label);
-    this.setDisabled(selectRecipeButton, false);
+    this.setDisabled(selectRecipeButton, !available);
+    selectRecipeButton.classList.toggle('is-locked', !available);
+    this.setAttribute(selectRecipeButton, 'aria-disabled', available ? 'false' : 'true');
     this.removeAttribute(selectRecipeButton, 'aria-hidden');
     this.setAttribute(
       selectRecipeButton,
       'aria-label',
-      `open recipes for cauldron ${brewing.cauldronNumber ?? brewing.cauldronIndex + 1}`,
+      available
+        ? `open recipes for cauldron ${brewing.cauldronNumber ?? brewing.cauldronIndex + 1}`
+        : 'recipes locked',
     );
-    this.removeAttribute(selectRecipeButton, 'data-state');
+    this.setAttribute(selectRecipeButton, 'data-state', available ? 'open' : 'locked');
     this.removeAttribute(selectRecipeButton, 'aria-pressed');
   }
 
@@ -3082,6 +3138,7 @@ export class BrewingCauldronManager {
         costText: Number.isFinite(cost) ? formatCoinPriceText(cost) : '',
         costResource: 'coin',
         disabled: brewing.canBuyCauldron !== true,
+        locked: levelLocked || researchLocked,
         ariaLabel: levelLocked
           ? `cauldron ${brewing.cauldronNumber} requires level ${
               brewing.nextCauldronRequiresLevel ?? '?'
@@ -3116,7 +3173,16 @@ export class BrewingCauldronManager {
       (brewing.ingredients?.length ?? 0) === 0 &&
       !brewing.selectedRecipe
     ) {
-      return null;
+      return {
+        id: 'brew',
+        label: 'brew',
+        hasCost: Number.isFinite(brewing.manaCost),
+        costText: Number.isFinite(brewing.manaCost) ? `${brewing.manaCost} mana` : '',
+        costResource: 'mana',
+        disabled: true,
+        locked: false,
+        ariaLabel: 'brew; add herbs or select a recipe first',
+      };
     }
 
     if (!brewing.activeBrew && brewing.ingredients.length === 0 && brewing.selectedRecipe) {
@@ -3126,6 +3192,7 @@ export class BrewingCauldronManager {
         label: 'fill recipe',
         hasCost: false,
         disabled: !canFillRecipe,
+        locked: false,
         ariaLabel: this.formatFillRecipeAriaLabel(brewing, canFillRecipe),
       };
     }
@@ -3137,8 +3204,9 @@ export class BrewingCauldronManager {
     return {
       id: 'brew',
       label: 'brew',
-      hasCost: !brewing.activeBrew && Number.isFinite(brewing.manaCost),
+      hasCost: !recipeLocked && !brewing.activeBrew && Number.isFinite(brewing.manaCost),
       disabled: !canBrew,
+      locked: recipeLocked,
       ariaLabel: this.formatBrewAriaLabel(brewing),
     };
   }

@@ -130,6 +130,8 @@ describe('BottomPanelViewManager', () => {
 
     expect(tabRule).toContain('min-height: var(--style-page-tab-button-height);');
     expect(tabRule).toContain('padding: 1px 2px;');
+    expect(tabRule).toContain('box-sizing: border-box;');
+    expect(tabRule).toContain('flex: 0 0 var(--room-bottom-panel-tab-width);');
     expect(baseCss).toContain('--style-page-tab-icon-size: calc(38px * 1.3);');
     expect(baseCss).toContain('--style-page-tab-selected-icon-scale: 1.2;');
     expect(baseCss).toContain('--style-page-tab-icon-y-offset: 10px;');
@@ -165,6 +167,20 @@ describe('BottomPanelViewManager', () => {
     );
     expect(selectedRule).toContain('font-weight: 400;');
     expect(selectedRule).not.toContain('font-weight: 700;');
+  });
+
+  it('centers unlocked optional room tabs on wrapped bottom-tab rows', () => {
+    const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
+    const tabsRuleIndex = baseCss.indexOf('.room-bottom-panel__tabs {');
+    const tabsRule = baseCss.slice(
+      tabsRuleIndex,
+      baseCss.indexOf('}', tabsRuleIndex) + 1,
+    );
+
+    expect(tabsRule).toContain('--room-bottom-panel-tab-width: calc((100% - 24px) / 5);');
+    expect(tabsRule).toContain('display: flex;');
+    expect(tabsRule).toContain('flex-wrap: wrap;');
+    expect(tabsRule).toContain('justify-content: center;');
   });
 
   it('stacks bottom chrome above normal chrome and below modal layers', () => {

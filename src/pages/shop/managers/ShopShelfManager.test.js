@@ -633,8 +633,8 @@ describe('ShopShelfManager', () => {
     const unlockButtonRule = baseCss.match(
       /\.shop-page__slot-unlock-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const rowTouchRule = baseCss.match(
-      /@media \(hover: none\)\s*\{(?<body>[^{}]*\.shop-page__player-request-row\.shop-page__slot-row--interactive\s*\n\s*\.shop-page__request-row-item[^{}]*)\{/,
+    const rowActionRule = baseCss.match(
+      /\.shop-page__shelf \.shop-page__slot-row--interactive \.shop-page__slot-item-value,\s*\.shop-page__player-shelf\s*\.shop-page__slot-row--interactive\s*\.shop-page__slot-item-value,\s*\.shop-page__player-request-row\.shop-page__slot-row--interactive\s*\.shop-page__request-row-item\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(firstSlotRule).toBeDefined();
@@ -645,17 +645,8 @@ describe('ShopShelfManager', () => {
     expect(unlockButtonRule).toMatch(/\bdisplay:\s*grid;/);
     expect(unlockButtonRule).toMatch(/\bgrid-column:\s*1 \/ -1;/);
     expect(unlockButtonRule).toMatch(/\btouch-action:\s*manipulation;/);
-    expect(rowTouchRule).toBeDefined();
-    expect(rowTouchRule).toContain(
-      '.shop-page__shelf .shop-page__slot-row--interactive .shop-page__slot-item-value',
-    );
-    expect(rowTouchRule).toContain(
-      '.shop-page__player-shelf .shop-page__slot-row--interactive .shop-page__slot-item-value',
-    );
-    expect(rowTouchRule).toContain(
-      '.shop-page__player-request-row.shop-page__slot-row--interactive',
-    );
-    expect(baseCss.slice(baseCss.indexOf(rowTouchRule))).toMatch(/\bfont-weight:\s*normal;/);
+    expect(rowActionRule).toBeDefined();
+    expect(rowActionRule).toMatch(/\bfont-weight:\s*normal;/);
   });
 
   it('formats trader market stand buy costs as compact coin text', () => {

@@ -23,6 +23,7 @@ import { ResearchFacade } from './research/ResearchFacade.js';
 import { RubyFacade } from './ruby/RubyFacade.js';
 import { SeedSummoningFacade } from './seedSummoning/SeedSummoningFacade.js';
 import { ShopFacade } from './shop/ShopFacade.js';
+import { StatsFacade } from './stats/StatsFacade.js';
 import { TasksFacade } from './tasks/TasksFacade.js';
 import { VisualSettingsFacade } from './visualSettings/VisualSettingsFacade.js';
 import { WhileAwayReportFacade } from './whileAway/WhileAwayReportFacade.js';
@@ -57,6 +58,9 @@ export class GameplayFacade {
     this.frameResourceObserverManager = new GameplayStateObserverManager();
     this.rewardEventManager = new GameplayRewardEventManager();
     this.itemsFacade = new ItemsFacade();
+    this.statsFacade = new StatsFacade({
+      itemsFacade: this.itemsFacade,
+    });
     this.manaFacade = new ManaFacade();
     this.coinFacade = new CoinFacade();
     this.crystalFacade = new CrystalFacade();
@@ -173,6 +177,7 @@ export class GameplayFacade {
       emeraldFacade: this.emeraldFacade,
       rubyFacade: this.rubyFacade,
       inboxRewardsFacade: this.inboxRewardsFacade,
+      statsFacade: this.statsFacade,
       gameplayLogFacade: this.gameplayLogFacade,
       itemsFacade: this.itemsFacade,
       researchFacade: this.researchFacade,
@@ -536,6 +541,7 @@ export class GameplayFacade {
       worldNotice: this.worldNoticeFacade.getPersistenceSnapshot(),
       guild: this.guildFacade.getPersistenceSnapshot(),
       inboxRewards: this.inboxRewardsFacade.getPersistenceSnapshot(),
+      stats: this.statsFacade.getPersistenceSnapshot(),
     });
     this.syncPlayerLevelManaEffects();
     this.syncRubyFromPrestige({ resetRun: true });
@@ -631,6 +637,7 @@ export class GameplayFacade {
         quantity: seedCount.quantity,
       });
     }
+    this.statsFacade.recordSeedsGenerated(result.seedCounts ?? []);
     this.whileAwayReportFacade.recordSeedSummoned(result);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SUMMON_SEEDS, result.quantity);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SPEND_MANA, result.cost);
@@ -657,6 +664,7 @@ export class GameplayFacade {
       itemKey: event.potion?.key,
       quantity: event.quantity,
     });
+    this.statsFacade.recordPotionsBrewed(event);
     this.whileAwayReportFacade.recordBrewComplete(event);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.BREW_POTIONS, event.quantity);
     this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.BREW_POTIONS, event.quantity, {
@@ -678,6 +686,7 @@ export class GameplayFacade {
       itemKey: event.herb?.key,
       quantity: event.quantity,
     });
+    this.statsFacade.recordHerbsGrown(event);
     this.whileAwayReportFacade.recordGardenHarvestComplete(event);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.HARVEST_HERBS, event.quantity);
     this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.HARVEST_HERBS, event.quantity, {
@@ -707,6 +716,7 @@ export class GameplayFacade {
       itemKey: event.item?.key,
       quantity: event.quantity ?? 1,
     });
+    this.statsFacade.recordNpcTradeCoin(event.coin);
     this.whileAwayReportFacade.recordItemSold(event);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SELL_ITEMS, event.quantity ?? 1);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_COIN, event.coin);
@@ -1050,9 +1060,17 @@ export class GameplayFacade {
     return this.shopFacade.quoteNpcMarketSell(itemTypeId, quantity);
   }
 
-  claimPlayerShopSaleProceeds(coin) {
+  claimPlayerShopSaleProceeds(coin, statsBreakdown = null) {
     const result = this.shopFacade.claimPlayerShopSaleProceeds(coin);
     if (result.ok) {
+      this.statsFacade.recordPlayerMarketProceeds({
+        proceedsCoin: result.coin,
+        ...(statsBreakdown && typeof statsBreakdown === 'object'
+          ? statsBreakdown
+          : {
+              fallbackPlayerTradeCoin: result.coin,
+            }),
+      });
       this.handleCoinCollected({
         coin: result.coin,
         source: 'player_shop_proceeds',
@@ -1312,6 +1330,7 @@ export class GameplayFacade {
       personalTasks: this.personalTasksFacade.getSnapshot(),
       worldNotice: this.worldNoticeFacade.getSnapshot(),
       guild,
+      stats: this.statsFacade.getSnapshot(),
       prestige: {
         ...prestige,
         milestones: prestige.milestones.map((milestone) => ({
