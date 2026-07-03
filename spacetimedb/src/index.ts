@@ -74,6 +74,7 @@ const MAX_WORLD_EVENT_PERIOD_KEY_LENGTH = 48;
 const MAX_MAINTENANCE_KEY_LENGTH = 96;
 const WORLD_CHAT_HISTORY_LIMIT = 200;
 const PLAYER_SHOP_TRADE_HISTORY_LIMIT = 80;
+const POTION_RECIPE_ROYALTY_HISTORY_LIMIT = 160;
 const PLAYER_SHOP_PUBLIC_MARKET_ROW_LIMIT = 80;
 const MARKET_DEMAND_DAILY_HISTORY_LIMIT = 180;
 const MAX_PLAYER_SHOP_SLOTS = 5;
@@ -347,23 +348,23 @@ const DEFAULT_TASKS_CONFIG = {
           "id": "level4-grow-sage-herb",
           "type": "grow",
           "itemKey": "sageHerb",
-          "quantity": 2
+          "quantity": 4
         },
         {
           "id": "level4-grow-mint-herb",
           "type": "grow",
           "itemKey": "mintHerb",
-          "quantity": 1
+          "quantity": 2
         },
         {
           "id": "level4-turn-in-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 2
+          "quantity": 4
         },
         {
           "id": "level4-turn-in-mint-herb",
           "itemKey": "mintHerb",
-          "quantity": 1
+          "quantity": 2
         }
       ]
     },
@@ -382,12 +383,12 @@ const DEFAULT_TASKS_CONFIG = {
           "id": "level5-brew-mana-tonic",
           "type": "brew",
           "itemKey": "manaTonic",
-          "quantity": 1
+          "quantity": 3
         },
         {
           "id": "level5-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 1
+          "quantity": 3
         }
       ]
     },
@@ -405,24 +406,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level6-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 2,
+          "quantity": 3,
           "type": "brew"
         },
         {
           "id": "level6-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 1
+          "quantity": 2
         },
         {
           "id": "level6-sell-mint-herb",
           "itemKey": "mintHerb",
-          "quantity": 2,
+          "quantity": 3,
           "type": "sell"
         },
         {
           "id": "level6-summon-mint-seed",
           "itemKey": "mintSeed",
-          "quantity": 10,
+          "quantity": 16,
           "type": "summon"
         }
       ]
@@ -434,30 +435,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level7-summon-nettle-seed",
           "itemKey": "nettleSeed",
-          "quantity": 11,
+          "quantity": 17,
           "type": "summon"
         },
         {
           "id": "level7-grow-nettle-herb",
           "itemKey": "nettleHerb",
-          "quantity": 4,
+          "quantity": 6,
           "type": "grow"
         },
         {
           "id": "level7-turn-in-nettle-herb",
           "itemKey": "nettleHerb",
-          "quantity": 3
+          "quantity": 5
         },
         {
           "id": "level7-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 2,
+          "quantity": 3,
           "type": "brew"
         },
         {
           "id": "level7-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 1
+          "quantity": 2
         }
       ]
     },
@@ -475,24 +476,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level8-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 2,
+          "quantity": 6,
           "type": "brew"
         },
         {
           "id": "level8-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 1
+          "quantity": 3
         },
         {
           "id": "level8-sell-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 3,
+          "quantity": 8,
           "type": "sell"
         },
         {
           "id": "level8-summon-nettle-seed",
           "itemKey": "nettleSeed",
-          "quantity": 13,
+          "quantity": 36,
           "type": "summon"
         }
       ]
@@ -504,30 +505,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level9-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 2,
+          "quantity": 6,
           "type": "brew"
         },
         {
           "id": "level9-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 1
+          "quantity": 3
         },
         {
           "id": "level9-sell-mint-herb",
           "itemKey": "mintHerb",
-          "quantity": 3,
+          "quantity": 10,
           "type": "sell"
         },
         {
           "id": "level9-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 14,
+          "quantity": 45,
           "type": "summon"
         },
         {
           "id": "level9-grow-mint-herb",
           "itemKey": "mintHerb",
-          "quantity": 5,
+          "quantity": 16,
           "type": "grow"
         }
       ]
@@ -546,24 +547,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level10-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 2,
+          "quantity": 4,
           "type": "brew"
         },
         {
           "id": "level10-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 1
+          "quantity": 2
         },
         {
           "id": "level10-sell-nettle-herb",
           "itemKey": "nettleHerb",
-          "quantity": 3,
+          "quantity": 6,
           "type": "sell"
         },
         {
           "id": "level10-summon-mint-seed",
           "itemKey": "mintSeed",
-          "quantity": 15,
+          "quantity": 32,
           "type": "summon"
         }
       ]
@@ -575,24 +576,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level11-summon-lavender-seed",
           "itemKey": "lavenderSeed",
-          "quantity": 18,
+          "quantity": 27,
           "type": "summon"
         },
         {
           "id": "level11-grow-lavender-herb",
           "itemKey": "lavenderHerb",
-          "quantity": 7,
+          "quantity": 10,
           "type": "grow"
         },
         {
           "id": "level11-turn-in-lavender-herb",
           "itemKey": "lavenderHerb",
-          "quantity": 5
+          "quantity": 7
         },
         {
           "id": "level11-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 2,
+          "quantity": 3,
           "type": "brew"
         },
         {
@@ -616,24 +617,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level12-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 3,
+          "quantity": 6,
           "type": "brew"
         },
         {
           "id": "level12-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 2
+          "quantity": 4
         },
         {
           "id": "level12-sell-mint-herb",
           "itemKey": "mintHerb",
-          "quantity": 4,
+          "quantity": 9,
           "type": "sell"
         },
         {
           "id": "level12-summon-lavender-seed",
           "itemKey": "lavenderSeed",
-          "quantity": 19,
+          "quantity": 40,
           "type": "summon"
         }
       ]
@@ -645,30 +646,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level13-summon-briar-seed",
           "itemKey": "briarSeed",
-          "quantity": 21,
+          "quantity": 40,
           "type": "summon"
         },
         {
           "id": "level13-grow-briar-herb",
           "itemKey": "briarHerb",
-          "quantity": 7,
+          "quantity": 13,
           "type": "grow"
         },
         {
           "id": "level13-turn-in-briar-herb",
           "itemKey": "briarHerb",
-          "quantity": 5
+          "quantity": 9
         },
         {
           "id": "level13-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 3,
+          "quantity": 6,
           "type": "brew"
         },
         {
           "id": "level13-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 2
+          "quantity": 4
         }
       ]
     },
@@ -686,24 +687,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level14-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 3,
+          "quantity": 9,
           "type": "brew"
         },
         {
           "id": "level14-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 2
+          "quantity": 6
         },
         {
           "id": "level14-sell-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 5,
+          "quantity": 15,
           "type": "sell"
         },
         {
           "id": "level14-summon-nettle-seed",
           "itemKey": "nettleSeed",
-          "quantity": 22,
+          "quantity": 67,
           "type": "summon"
         }
       ]
@@ -715,30 +716,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level15-brew-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 3,
+          "quantity": 8,
           "type": "brew"
         },
         {
           "id": "level15-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 2
+          "quantity": 6
         },
         {
           "id": "level15-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 3,
+          "quantity": 8,
           "type": "brew"
         },
         {
           "id": "level15-sell-mint-herb",
           "itemKey": "mintHerb",
-          "quantity": 5,
+          "quantity": 14,
           "type": "sell"
         },
         {
           "id": "level15-summon-lavender-seed",
           "itemKey": "lavenderSeed",
-          "quantity": 23,
+          "quantity": 64,
           "type": "summon"
         }
       ]
@@ -757,24 +758,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level16-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 3,
+          "quantity": 14,
           "type": "brew"
         },
         {
           "id": "level16-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 2
+          "quantity": 9
         },
         {
           "id": "level16-sell-nettle-herb",
           "itemKey": "nettleHerb",
-          "quantity": 5,
+          "quantity": 23,
           "type": "sell"
         },
         {
           "id": "level16-summon-briar-seed",
           "itemKey": "briarSeed",
-          "quantity": 24,
+          "quantity": 110,
           "type": "summon"
         }
       ]
@@ -786,30 +787,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level17-brew-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 3,
+          "quantity": 13,
           "type": "brew"
         },
         {
           "id": "level17-turn-in-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 2
+          "quantity": 8
         },
         {
           "id": "level17-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 3,
+          "quantity": 13,
           "type": "brew"
         },
         {
           "id": "level17-sell-lavender-herb",
           "itemKey": "lavenderHerb",
-          "quantity": 5,
+          "quantity": 21,
           "type": "sell"
         },
         {
           "id": "level17-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 25,
+          "quantity": 105,
           "type": "summon"
         }
       ]
@@ -828,24 +829,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level18-brew-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 3,
+          "quantity": 19,
           "type": "brew"
         },
         {
           "id": "level18-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 2
+          "quantity": 13
         },
         {
           "id": "level18-sell-briar-herb",
           "itemKey": "briarHerb",
-          "quantity": 6,
+          "quantity": 38,
           "type": "sell"
         },
         {
           "id": "level18-summon-mint-seed",
           "itemKey": "mintSeed",
-          "quantity": 27,
+          "quantity": 172,
           "type": "summon"
         }
       ]
@@ -857,30 +858,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level19-summon-glowcap-seed",
           "itemKey": "glowcapSeed",
-          "quantity": 28,
+          "quantity": 146,
           "type": "summon"
         },
         {
           "id": "level19-grow-glowcap-herb",
           "itemKey": "glowcapHerb",
-          "quantity": 10,
+          "quantity": 52,
           "type": "grow"
         },
         {
           "id": "level19-turn-in-glowcap-herb",
           "itemKey": "glowcapHerb",
-          "quantity": 7
+          "quantity": 36
         },
         {
           "id": "level19-brew-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 3,
+          "quantity": 16,
           "type": "brew"
         },
         {
           "id": "level19-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 2
+          "quantity": 10
         }
       ]
     },
@@ -898,24 +899,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level20-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 3,
+          "quantity": 6,
           "type": "brew"
         },
         {
           "id": "level20-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 2
+          "quantity": 4
         },
         {
           "id": "level20-sell-lavender-herb",
           "itemKey": "lavenderHerb",
-          "quantity": 6,
+          "quantity": 11,
           "type": "sell"
         },
         {
           "id": "level20-summon-glowcap-seed",
           "itemKey": "glowcapSeed",
-          "quantity": 29,
+          "quantity": 55,
           "type": "summon"
         }
       ]
@@ -927,29 +928,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level21-brew-briar-ward",
           "itemKey": "briarWard",
-          "quantity": 4,
+          "quantity": 7,
           "type": "brew"
         },
         {
           "id": "level21-turn-in-briar-ward",
           "itemKey": "briarWard",
-          "quantity": 3
+          "quantity": 5
         },
         {
           "id": "level21-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 4,
+          "quantity": 7,
           "type": "brew"
         },
         {
           "id": "level21-turn-in-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 3
+          "quantity": 5
         },
         {
           "id": "level21-sell-briar-herb",
           "itemKey": "briarHerb",
-          "quantity": 7,
+          "quantity": 12,
           "type": "sell"
         }
       ]
@@ -968,24 +969,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level22-brew-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 4,
+          "quantity": 9,
           "type": "brew"
         },
         {
           "id": "level22-turn-in-briar-ward",
           "itemKey": "briarWard",
-          "quantity": 3
+          "quantity": 7
         },
         {
           "id": "level22-sell-glowcap-herb",
           "itemKey": "glowcapHerb",
-          "quantity": 7,
+          "quantity": 15,
           "type": "sell"
         },
         {
           "id": "level22-summon-mint-seed",
           "itemKey": "mintSeed",
-          "quantity": 33,
+          "quantity": 72,
           "type": "summon"
         }
       ]
@@ -997,19 +998,19 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level23-summon-mandrake-seed",
           "itemKey": "mandrakeSeed",
-          "quantity": 35,
+          "quantity": 70,
           "type": "summon"
         },
         {
           "id": "level23-grow-mandrake-herb",
           "itemKey": "mandrakeHerb",
-          "quantity": 13,
+          "quantity": 26,
           "type": "grow"
         },
         {
           "id": "level23-turn-in-mandrake-herb",
           "itemKey": "mandrakeHerb",
-          "quantity": 9
+          "quantity": 18
         },
         {
           "id": "level23-research-lantern-tonic",
@@ -1021,7 +1022,7 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level23-brew-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 4,
+          "quantity": 8,
           "type": "brew"
         }
       ]
@@ -1033,29 +1034,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level24-brew-lantern-tonic",
           "itemKey": "lanternTonic",
-          "quantity": 4,
+          "quantity": 13,
           "type": "brew"
         },
         {
           "id": "level24-turn-in-lantern-tonic",
           "itemKey": "lanternTonic",
-          "quantity": 3
+          "quantity": 10
         },
         {
           "id": "level24-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 4,
+          "quantity": 13,
           "type": "brew"
         },
         {
           "id": "level24-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 3
+          "quantity": 10
         },
         {
           "id": "level24-sell-briar-herb",
           "itemKey": "briarHerb",
-          "quantity": 8,
+          "quantity": 26,
           "type": "sell"
         }
       ]
@@ -1074,24 +1075,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level25-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 4,
+          "quantity": 16,
           "type": "brew"
         },
         {
           "id": "level25-turn-in-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 3
+          "quantity": 12
         },
         {
           "id": "level25-sell-glowcap-herb",
           "itemKey": "glowcapHerb",
-          "quantity": 8,
+          "quantity": 32,
           "type": "sell"
         },
         {
           "id": "level25-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 37,
+          "quantity": 148,
           "type": "summon"
         }
       ]
@@ -1103,30 +1104,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level26-summon-sunroot-seed",
           "itemKey": "sunrootSeed",
-          "quantity": 38,
+          "quantity": 128,
           "type": "summon"
         },
         {
           "id": "level26-grow-sunroot-herb",
           "itemKey": "sunrootHerb",
-          "quantity": 14,
+          "quantity": 47,
           "type": "grow"
         },
         {
           "id": "level26-turn-in-sunroot-herb",
           "itemKey": "sunrootHerb",
-          "quantity": 10
+          "quantity": 34
         },
         {
           "id": "level26-brew-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 4,
+          "quantity": 13,
           "type": "brew"
         },
         {
           "id": "level26-turn-in-briar-ward",
           "itemKey": "briarWard",
-          "quantity": 3
+          "quantity": 10
         }
       ]
     },
@@ -1144,24 +1145,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level27-brew-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 4,
+          "quantity": 24,
           "type": "brew"
         },
         {
           "id": "level27-turn-in-lantern-tonic",
           "itemKey": "lanternTonic",
-          "quantity": 3
+          "quantity": 18
         },
         {
           "id": "level27-sell-briar-herb",
           "itemKey": "briarHerb",
-          "quantity": 8,
+          "quantity": 49,
           "type": "sell"
         },
         {
           "id": "level27-summon-mandrake-seed",
           "itemKey": "mandrakeSeed",
-          "quantity": 39,
+          "quantity": 237,
           "type": "summon"
         }
       ]
@@ -1173,29 +1174,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level28-brew-simple-antidote",
           "itemKey": "simpleAntidote",
-          "quantity": 5,
+          "quantity": 30,
           "type": "brew"
         },
         {
           "id": "level28-turn-in-simple-antidote",
           "itemKey": "simpleAntidote",
-          "quantity": 4
+          "quantity": 24
         },
         {
           "id": "level28-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 5,
+          "quantity": 30,
           "type": "brew"
         },
         {
           "id": "level28-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 4
+          "quantity": 24
         },
         {
           "id": "level28-sell-glowcap-herb",
           "itemKey": "glowcapHerb",
-          "quantity": 9,
+          "quantity": 54,
           "type": "sell"
         }
       ]
@@ -1214,24 +1215,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level29-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 5,
+          "quantity": 37,
           "type": "brew"
         },
         {
           "id": "level29-turn-in-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 4
+          "quantity": 30
         },
         {
           "id": "level29-sell-mandrake-herb",
           "itemKey": "mandrakeHerb",
-          "quantity": 9,
+          "quantity": 67,
           "type": "sell"
         },
         {
           "id": "level29-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 42,
+          "quantity": 314,
           "type": "summon"
         }
       ]
@@ -1243,24 +1244,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level30-summon-moonflower-seed",
           "itemKey": "moonflowerSeed",
-          "quantity": 43,
+          "quantity": 48,
           "type": "summon"
         },
         {
           "id": "level30-grow-moonflower-herb",
           "itemKey": "moonflowerHerb",
-          "quantity": 16,
+          "quantity": 18,
           "type": "grow"
         },
         {
           "id": "level30-turn-in-moonflower-herb",
           "itemKey": "moonflowerHerb",
-          "quantity": 12
+          "quantity": 13
         },
         {
           "id": "level30-brew-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 5,
+          "quantity": 6,
           "type": "brew"
         },
         {
@@ -1284,24 +1285,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level31-brew-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 5,
+          "quantity": 9,
           "type": "brew"
         },
         {
           "id": "level31-turn-in-lantern-tonic",
           "itemKey": "lanternTonic",
-          "quantity": 4
+          "quantity": 7
         },
         {
           "id": "level31-sell-glowcap-herb",
           "itemKey": "glowcapHerb",
-          "quantity": 10,
+          "quantity": 18,
           "type": "sell"
         },
         {
           "id": "level31-summon-sunroot-seed",
           "itemKey": "sunrootSeed",
-          "quantity": 46,
+          "quantity": 85,
           "type": "summon"
         }
       ]
@@ -1313,29 +1314,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level32-brew-venom-draught",
           "itemKey": "venomDraught",
-          "quantity": 5,
+          "quantity": 11,
           "type": "brew"
         },
         {
           "id": "level32-turn-in-venom-draught",
           "itemKey": "venomDraught",
-          "quantity": 4
+          "quantity": 9
         },
         {
           "id": "level32-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 5,
+          "quantity": 11,
           "type": "brew"
         },
         {
           "id": "level32-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 4
+          "quantity": 9
         },
         {
           "id": "level32-sell-mandrake-herb",
           "itemKey": "mandrakeHerb",
-          "quantity": 10,
+          "quantity": 22,
           "type": "sell"
         }
       ]
@@ -1354,24 +1355,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level33-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 5,
+          "quantity": 14,
           "type": "brew"
         },
         {
           "id": "level33-turn-in-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 4
+          "quantity": 11
         },
         {
           "id": "level33-sell-sunroot-herb",
           "itemKey": "sunrootHerb",
-          "quantity": 10,
+          "quantity": 28,
           "type": "sell"
         },
         {
           "id": "level33-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 49,
+          "quantity": 135,
           "type": "summon"
         }
       ]
@@ -1383,29 +1384,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level34-brew-healing-potion",
           "itemKey": "healingPotion",
-          "quantity": 5,
+          "quantity": 17,
           "type": "brew"
         },
         {
           "id": "level34-turn-in-healing-potion",
           "itemKey": "healingPotion",
-          "quantity": 4
+          "quantity": 14
         },
         {
           "id": "level34-brew-venom-draught",
           "itemKey": "venomDraught",
-          "quantity": 5,
+          "quantity": 17,
           "type": "brew"
         },
         {
           "id": "level34-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 4
+          "quantity": 14
         },
         {
           "id": "level34-sell-moonflower-herb",
           "itemKey": "moonflowerHerb",
-          "quantity": 11,
+          "quantity": 38,
           "type": "sell"
         }
       ]
@@ -1424,24 +1425,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level35-brew-healing-potion",
           "itemKey": "healingPotion",
-          "quantity": 6,
+          "quantity": 23,
           "type": "brew"
         },
         {
           "id": "level35-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 4
+          "quantity": 16
         },
         {
           "id": "level35-sell-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 11,
+          "quantity": 43,
           "type": "sell"
         },
         {
           "id": "level35-summon-nettle-seed",
           "itemKey": "nettleSeed",
-          "quantity": 51,
+          "quantity": 199,
           "type": "summon"
         }
       ]
@@ -1453,30 +1454,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level36-summon-frostmoss-seed",
           "itemKey": "frostmossSeed",
-          "quantity": 52,
+          "quantity": 172,
           "type": "summon"
         },
         {
           "id": "level36-grow-frostmoss-herb",
           "itemKey": "frostmossHerb",
-          "quantity": 19,
+          "quantity": 63,
           "type": "grow"
         },
         {
           "id": "level36-turn-in-frostmoss-herb",
           "itemKey": "frostmossHerb",
-          "quantity": 14
+          "quantity": 46
         },
         {
           "id": "level36-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 6,
+          "quantity": 20,
           "type": "brew"
         },
         {
           "id": "level36-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 4
+          "quantity": 13
         }
       ]
     },
@@ -1494,24 +1495,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level37-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 6,
+          "quantity": 36,
           "type": "brew"
         },
         {
           "id": "level37-turn-in-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 4
+          "quantity": 24
         },
         {
           "id": "level37-sell-moonflower-herb",
           "itemKey": "moonflowerHerb",
-          "quantity": 11,
+          "quantity": 66,
           "type": "sell"
         },
         {
           "id": "level37-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 53,
+          "quantity": 316,
           "type": "summon"
         }
       ]
@@ -1523,29 +1524,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level38-brew-sunroot-stamina",
           "itemKey": "sunrootStamina",
-          "quantity": 6,
+          "quantity": 43,
           "type": "brew"
         },
         {
           "id": "level38-turn-in-sunroot-stamina",
           "itemKey": "sunrootStamina",
-          "quantity": 4
+          "quantity": 28
         },
         {
           "id": "level38-brew-healing-potion",
           "itemKey": "healingPotion",
-          "quantity": 6,
+          "quantity": 43,
           "type": "brew"
         },
         {
           "id": "level38-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 4
+          "quantity": 28
         },
         {
           "id": "level38-sell-frostmoss-herb",
           "itemKey": "frostmossHerb",
-          "quantity": 11,
+          "quantity": 78,
           "type": "sell"
         }
       ]
@@ -1564,24 +1565,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level39-brew-sunroot-stamina",
           "itemKey": "sunrootStamina",
-          "quantity": 6,
+          "quantity": 49,
           "type": "brew"
         },
         {
           "id": "level39-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 4
+          "quantity": 33
         },
         {
           "id": "level39-sell-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 12,
+          "quantity": 99,
           "type": "sell"
         },
         {
           "id": "level39-summon-nettle-seed",
           "itemKey": "nettleSeed",
-          "quantity": 56,
+          "quantity": 460,
           "type": "summon"
         }
       ]
@@ -1593,30 +1594,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level40-summon-dreambell-seed",
           "itemKey": "dreambellSeed",
-          "quantity": 57,
+          "quantity": 64,
           "type": "summon"
         },
         {
           "id": "level40-grow-dreambell-herb",
           "itemKey": "dreambellHerb",
-          "quantity": 21,
+          "quantity": 24,
           "type": "grow"
         },
         {
           "id": "level40-turn-in-dreambell-herb",
           "itemKey": "dreambellHerb",
-          "quantity": 15
+          "quantity": 17
         },
         {
           "id": "level40-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 6,
+          "quantity": 7,
           "type": "brew"
         },
         {
           "id": "level40-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 4
+          "quantity": 5
         }
       ]
     },
@@ -1634,24 +1635,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level41-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 7,
+          "quantity": 12,
           "type": "brew"
         },
         {
           "id": "level41-turn-in-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 5
+          "quantity": 9
         },
         {
           "id": "level41-sell-frostmoss-herb",
           "itemKey": "frostmossHerb",
-          "quantity": 13,
+          "quantity": 23,
           "type": "sell"
         },
         {
           "id": "level41-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 60,
+          "quantity": 106,
           "type": "summon"
         }
       ]
@@ -1663,29 +1664,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level42-brew-moonlit-focus",
           "itemKey": "moonlitFocus",
-          "quantity": 7,
+          "quantity": 15,
           "type": "brew"
         },
         {
           "id": "level42-turn-in-moonlit-focus",
           "itemKey": "moonlitFocus",
-          "quantity": 5
+          "quantity": 10
         },
         {
           "id": "level42-brew-sunroot-stamina",
           "itemKey": "sunrootStamina",
-          "quantity": 7,
+          "quantity": 15,
           "type": "brew"
         },
         {
           "id": "level42-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 5
+          "quantity": 10
         },
         {
           "id": "level42-sell-dreambell-herb",
           "itemKey": "dreambellHerb",
-          "quantity": 13,
+          "quantity": 27,
           "type": "sell"
         }
       ]
@@ -1704,24 +1705,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level43-brew-moonlit-focus",
           "itemKey": "moonlitFocus",
-          "quantity": 7,
+          "quantity": 19,
           "type": "brew"
         },
         {
           "id": "level43-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 5
+          "quantity": 13
         },
         {
           "id": "level43-sell-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 13,
+          "quantity": 34,
           "type": "sell"
         },
         {
           "id": "level43-summon-nettle-seed",
           "itemKey": "nettleSeed",
-          "quantity": 63,
+          "quantity": 167,
           "type": "summon"
         }
       ]
@@ -1733,30 +1734,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level44-summon-star-anise-seed",
           "itemKey": "starAniseSeed",
-          "quantity": 64,
+          "quantity": 143,
           "type": "summon"
         },
         {
           "id": "level44-grow-star-anise-herb",
           "itemKey": "starAniseHerb",
-          "quantity": 23,
+          "quantity": 52,
           "type": "grow"
         },
         {
           "id": "level44-turn-in-star-anise-herb",
           "itemKey": "starAniseHerb",
-          "quantity": 17
+          "quantity": 38
         },
         {
           "id": "level44-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 7,
+          "quantity": 16,
           "type": "brew"
         },
         {
           "id": "level44-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 5
+          "quantity": 11
         }
       ]
     },
@@ -1774,24 +1775,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level45-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 7,
+          "quantity": 28,
           "type": "brew"
         },
         {
           "id": "level45-turn-in-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 5
+          "quantity": 20
         },
         {
           "id": "level45-sell-dreambell-herb",
           "itemKey": "dreambellHerb",
-          "quantity": 14,
+          "quantity": 56,
           "type": "sell"
         },
         {
           "id": "level45-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 65,
+          "quantity": 261,
           "type": "summon"
         }
       ]
@@ -1803,29 +1804,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level46-brew-frostmoss-cleanse",
           "itemKey": "frostmossCleanse",
-          "quantity": 7,
+          "quantity": 35,
           "type": "brew"
         },
         {
           "id": "level46-turn-in-frostmoss-cleanse",
           "itemKey": "frostmossCleanse",
-          "quantity": 5
+          "quantity": 25
         },
         {
           "id": "level46-brew-moonlit-focus",
           "itemKey": "moonlitFocus",
-          "quantity": 7,
+          "quantity": 35,
           "type": "brew"
         },
         {
           "id": "level46-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 5
+          "quantity": 25
         },
         {
           "id": "level46-sell-star-anise-herb",
           "itemKey": "starAniseHerb",
-          "quantity": 14,
+          "quantity": 70,
           "type": "sell"
         }
       ]
@@ -1844,24 +1845,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level47-brew-frostmoss-cleanse",
           "itemKey": "frostmossCleanse",
-          "quantity": 7,
+          "quantity": 43,
           "type": "brew"
         },
         {
           "id": "level47-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 5
+          "quantity": 31
         },
         {
           "id": "level47-sell-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 14,
+          "quantity": 86,
           "type": "sell"
         },
         {
           "id": "level47-summon-nettle-seed",
           "itemKey": "nettleSeed",
-          "quantity": 67,
+          "quantity": 413,
           "type": "summon"
         }
       ]
@@ -1873,30 +1874,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level48-summon-bloodrose-seed",
           "itemKey": "bloodroseSeed",
-          "quantity": 69,
+          "quantity": 342,
           "type": "summon"
         },
         {
           "id": "level48-grow-bloodrose-herb",
           "itemKey": "bloodroseHerb",
-          "quantity": 25,
+          "quantity": 124,
           "type": "grow"
         },
         {
           "id": "level48-turn-in-bloodrose-herb",
           "itemKey": "bloodroseHerb",
-          "quantity": 18
+          "quantity": 89
         },
         {
           "id": "level48-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 7,
+          "quantity": 35,
           "type": "brew"
         },
         {
           "id": "level48-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 5
+          "quantity": 25
         }
       ]
     },
@@ -1914,24 +1915,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level49-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 7,
+          "quantity": 60,
           "type": "brew"
         },
         {
           "id": "level49-turn-in-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 5
+          "quantity": 43
         },
         {
           "id": "level49-sell-star-anise-herb",
           "itemKey": "starAniseHerb",
-          "quantity": 15,
+          "quantity": 128,
           "type": "sell"
         },
         {
           "id": "level49-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 70,
+          "quantity": 598,
           "type": "summon"
         }
       ]
@@ -1943,29 +1944,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level50-brew-sleep-draught",
           "itemKey": "sleepDraught",
-          "quantity": 7,
+          "quantity": 13,
           "type": "brew"
         },
         {
           "id": "level50-turn-in-sleep-draught",
           "itemKey": "sleepDraught",
-          "quantity": 5
+          "quantity": 9
         },
         {
           "id": "level50-brew-frostmoss-cleanse",
           "itemKey": "frostmossCleanse",
-          "quantity": 7,
+          "quantity": 13,
           "type": "brew"
         },
         {
           "id": "level50-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 5
+          "quantity": 9
         },
         {
           "id": "level50-sell-bloodrose-herb",
           "itemKey": "bloodroseHerb",
-          "quantity": 15,
+          "quantity": 27,
           "type": "sell"
         }
       ]
@@ -1984,24 +1985,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level51-brew-sleep-draught",
           "itemKey": "sleepDraught",
-          "quantity": 8,
+          "quantity": 15,
           "type": "brew"
         },
         {
           "id": "level51-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 6
+          "quantity": 11
         },
         {
           "id": "level51-sell-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 16,
+          "quantity": 30,
           "type": "sell"
         },
         {
           "id": "level51-summon-nettle-seed",
           "itemKey": "nettleSeed",
-          "quantity": 74,
+          "quantity": 141,
           "type": "summon"
         }
       ]
@@ -2013,30 +2014,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level52-summon-dragonpepper-seed",
           "itemKey": "dragonpepperSeed",
-          "quantity": 75,
+          "quantity": 116,
           "type": "summon"
         },
         {
           "id": "level52-grow-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 28,
+          "quantity": 43,
           "type": "grow"
         },
         {
           "id": "level52-turn-in-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 21
+          "quantity": 32
         },
         {
           "id": "level52-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 8,
+          "quantity": 12,
           "type": "brew"
         },
         {
           "id": "level52-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 6
+          "quantity": 9
         }
       ]
     },
@@ -2054,24 +2055,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level53-brew-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 8,
+          "quantity": 23,
           "type": "brew"
         },
         {
           "id": "level53-turn-in-calming-draught",
           "itemKey": "calmingDraught",
-          "quantity": 6
+          "quantity": 17
         },
         {
           "id": "level53-sell-bloodrose-herb",
           "itemKey": "bloodroseHerb",
-          "quantity": 16,
+          "quantity": 46,
           "type": "sell"
         },
         {
           "id": "level53-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 77,
+          "quantity": 220,
           "type": "summon"
         }
       ]
@@ -2083,13 +2084,13 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level54-brew-elixir-of-life",
           "itemKey": "elixirOfLife",
-          "quantity": 8,
+          "quantity": 35,
           "type": "brew"
         },
         {
           "id": "level54-turn-in-elixir-of-life",
           "itemKey": "elixirOfLife",
-          "quantity": 6
+          "quantity": 26
         },
         {
           "id": "level54-research-silverleaf-seed",
@@ -2101,13 +2102,13 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level54-brew-sleep-draught",
           "itemKey": "sleepDraught",
-          "quantity": 8,
+          "quantity": 35,
           "type": "brew"
         },
         {
           "id": "level54-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 6
+          "quantity": 26
         }
       ]
     },
@@ -2118,30 +2119,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level55-summon-silverleaf-seed",
           "itemKey": "silverleafSeed",
-          "quantity": 79,
+          "quantity": 234,
           "type": "summon"
         },
         {
           "id": "level55-grow-silverleaf-herb",
           "itemKey": "silverleafHerb",
-          "quantity": 29,
+          "quantity": 86,
           "type": "grow"
         },
         {
           "id": "level55-turn-in-silverleaf-herb",
           "itemKey": "silverleafHerb",
-          "quantity": 21
+          "quantity": 62
         },
         {
           "id": "level55-brew-elixir-of-life",
           "itemKey": "elixirOfLife",
-          "quantity": 8,
+          "quantity": 24,
           "type": "brew"
         },
         {
           "id": "level55-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 6
+          "quantity": 18
         }
       ]
     },
@@ -2159,24 +2160,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level56-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 8,
+          "quantity": 43,
           "type": "brew"
         },
         {
           "id": "level56-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 6
+          "quantity": 32
         },
         {
           "id": "level56-sell-bloodrose-herb",
           "itemKey": "bloodroseHerb",
-          "quantity": 17,
+          "quantity": 91,
           "type": "sell"
         },
         {
           "id": "level56-summon-silverleaf-seed",
           "itemKey": "silverleafSeed",
-          "quantity": 80,
+          "quantity": 429,
           "type": "summon"
         }
       ]
@@ -2188,30 +2189,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level57-brew-star-luck-philtre",
           "itemKey": "starLuckPhiltre",
-          "quantity": 8,
+          "quantity": 41,
           "type": "brew"
         },
         {
           "id": "level57-turn-in-star-luck-philtre",
           "itemKey": "starLuckPhiltre",
-          "quantity": 6
+          "quantity": 31
         },
         {
           "id": "level57-brew-sleep-draught",
           "itemKey": "sleepDraught",
-          "quantity": 8,
+          "quantity": 41,
           "type": "brew"
         },
         {
           "id": "level57-sell-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 17,
+          "quantity": 87,
           "type": "sell"
         },
         {
           "id": "level57-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 81,
+          "quantity": 417,
           "type": "summon"
         }
       ]
@@ -2230,24 +2231,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level58-brew-elixir-of-life",
           "itemKey": "elixirOfLife",
-          "quantity": 9,
+          "quantity": 68,
           "type": "brew"
         },
         {
           "id": "level58-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 7
+          "quantity": 53
         },
         {
           "id": "level58-sell-silverleaf-herb",
           "itemKey": "silverleafHerb",
-          "quantity": 17,
+          "quantity": 128,
           "type": "sell"
         },
         {
           "id": "level58-summon-mint-seed",
           "itemKey": "mintSeed",
-          "quantity": 83,
+          "quantity": 624,
           "type": "summon"
         }
       ]
@@ -2259,30 +2260,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level59-summon-yarrow-seed",
           "itemKey": "yarrowSeed",
-          "quantity": 84,
+          "quantity": 506,
           "type": "summon"
         },
         {
           "id": "level59-grow-yarrow-herb",
           "itemKey": "yarrowHerb",
-          "quantity": 31,
+          "quantity": 187,
           "type": "grow"
         },
         {
           "id": "level59-turn-in-yarrow-herb",
           "itemKey": "yarrowHerb",
-          "quantity": 23
+          "quantity": 138
         },
         {
           "id": "level59-brew-star-luck-philtre",
           "itemKey": "starLuckPhiltre",
-          "quantity": 9,
+          "quantity": 54,
           "type": "brew"
         },
         {
           "id": "level59-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 7
+          "quantity": 42
         }
       ]
     },
@@ -2300,24 +2301,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level60-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 9,
+          "quantity": 16,
           "type": "brew"
         },
         {
           "id": "level60-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 7
+          "quantity": 13
         },
         {
           "id": "level60-sell-dragonpepper-herb",
           "itemKey": "dragonpepperHerb",
-          "quantity": 18,
+          "quantity": 32,
           "type": "sell"
         },
         {
           "id": "level60-summon-yarrow-seed",
           "itemKey": "yarrowSeed",
-          "quantity": 85,
+          "quantity": 153,
           "type": "summon"
         }
       ]
@@ -2329,30 +2330,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level61-brew-deep-dream-vision",
           "itemKey": "deepDreamVision",
-          "quantity": 9,
+          "quantity": 14,
           "type": "brew"
         },
         {
           "id": "level61-turn-in-deep-dream-vision",
           "itemKey": "deepDreamVision",
-          "quantity": 7
+          "quantity": 11
         },
         {
           "id": "level61-brew-elixir-of-life",
           "itemKey": "elixirOfLife",
-          "quantity": 9,
+          "quantity": 14,
           "type": "brew"
         },
         {
           "id": "level61-sell-silverleaf-herb",
           "itemKey": "silverleafHerb",
-          "quantity": 19,
+          "quantity": 30,
           "type": "sell"
         },
         {
           "id": "level61-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 88,
+          "quantity": 141,
           "type": "summon"
         }
       ]
@@ -2371,24 +2372,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level62-brew-star-luck-philtre",
           "itemKey": "starLuckPhiltre",
-          "quantity": 9,
+          "quantity": 23,
           "type": "brew"
         },
         {
           "id": "level62-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 7
+          "quantity": 18
         },
         {
           "id": "level62-sell-yarrow-herb",
           "itemKey": "yarrowHerb",
-          "quantity": 19,
+          "quantity": 48,
           "type": "sell"
         },
         {
           "id": "level62-summon-mint-seed",
           "itemKey": "mintSeed",
-          "quantity": 89,
+          "quantity": 223,
           "type": "summon"
         }
       ]
@@ -2400,30 +2401,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level63-summon-hyssop-seed",
           "itemKey": "hyssopSeed",
-          "quantity": 91,
+          "quantity": 194,
           "type": "summon"
         },
         {
           "id": "level63-grow-hyssop-herb",
           "itemKey": "hyssopHerb",
-          "quantity": 33,
+          "quantity": 70,
           "type": "grow"
         },
         {
           "id": "level63-turn-in-hyssop-herb",
           "itemKey": "hyssopHerb",
-          "quantity": 24
+          "quantity": 51
         },
         {
           "id": "level63-brew-deep-dream-vision",
           "itemKey": "deepDreamVision",
-          "quantity": 9,
+          "quantity": 19,
           "type": "brew"
         },
         {
           "id": "level63-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 7
+          "quantity": 15
         }
       ]
     },
@@ -2441,24 +2442,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level64-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 10,
+          "quantity": 37,
           "type": "brew"
         },
         {
           "id": "level64-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 8
+          "quantity": 30
         },
         {
           "id": "level64-sell-silverleaf-herb",
           "itemKey": "silverleafHerb",
-          "quantity": 19,
+          "quantity": 70,
           "type": "sell"
         },
         {
           "id": "level64-summon-hyssop-seed",
           "itemKey": "hyssopSeed",
-          "quantity": 92,
+          "quantity": 340,
           "type": "summon"
         }
       ]
@@ -2470,30 +2471,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level65-brew-pact-ward",
           "itemKey": "pactWard",
-          "quantity": 10,
+          "quantity": 35,
           "type": "brew"
         },
         {
           "id": "level65-turn-in-pact-ward",
           "itemKey": "pactWard",
-          "quantity": 8
+          "quantity": 28
         },
         {
           "id": "level65-brew-star-luck-philtre",
           "itemKey": "starLuckPhiltre",
-          "quantity": 10,
+          "quantity": 35,
           "type": "brew"
         },
         {
           "id": "level65-sell-yarrow-herb",
           "itemKey": "yarrowHerb",
-          "quantity": 20,
+          "quantity": 70,
           "type": "sell"
         },
         {
           "id": "level65-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 93,
+          "quantity": 324,
           "type": "summon"
         }
       ]
@@ -2512,24 +2513,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level66-brew-deep-dream-vision",
           "itemKey": "deepDreamVision",
-          "quantity": 10,
+          "quantity": 56,
           "type": "brew"
         },
         {
           "id": "level66-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 8
+          "quantity": 45
         },
         {
           "id": "level66-sell-hyssop-herb",
           "itemKey": "hyssopHerb",
-          "quantity": 20,
+          "quantity": 113,
           "type": "sell"
         },
         {
           "id": "level66-summon-mint-seed",
           "itemKey": "mintSeed",
-          "quantity": 94,
+          "quantity": 531,
           "type": "summon"
         }
       ]
@@ -2541,30 +2542,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level67-summon-valerian-seed",
           "itemKey": "valerianSeed",
-          "quantity": 95,
+          "quantity": 454,
           "type": "summon"
         },
         {
           "id": "level67-grow-valerian-herb",
           "itemKey": "valerianHerb",
-          "quantity": 35,
+          "quantity": 167,
           "type": "grow"
         },
         {
           "id": "level67-turn-in-valerian-herb",
           "itemKey": "valerianHerb",
-          "quantity": 26
+          "quantity": 124
         },
         {
           "id": "level67-brew-pact-ward",
           "itemKey": "pactWard",
-          "quantity": 10,
+          "quantity": 48,
           "type": "brew"
         },
         {
           "id": "level67-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 8
+          "quantity": 38
         }
       ]
     },
@@ -2582,24 +2583,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level68-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 10,
+          "quantity": 84,
           "type": "brew"
         },
         {
           "id": "level68-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 8
+          "quantity": 67
         },
         {
           "id": "level68-sell-yarrow-herb",
           "itemKey": "yarrowHerb",
-          "quantity": 20,
+          "quantity": 167,
           "type": "sell"
         },
         {
           "id": "level68-summon-valerian-seed",
           "itemKey": "valerianSeed",
-          "quantity": 97,
+          "quantity": 811,
           "type": "summon"
         }
       ]
@@ -2611,30 +2612,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level69-brew-dragon-courage",
           "itemKey": "dragonCourage",
-          "quantity": 10,
+          "quantity": 76,
           "type": "brew"
         },
         {
           "id": "level69-turn-in-dragon-courage",
           "itemKey": "dragonCourage",
-          "quantity": 8
+          "quantity": 61
         },
         {
           "id": "level69-brew-deep-dream-vision",
           "itemKey": "deepDreamVision",
-          "quantity": 10,
+          "quantity": 76,
           "type": "brew"
         },
         {
           "id": "level69-sell-hyssop-herb",
           "itemKey": "hyssopHerb",
-          "quantity": 20,
+          "quantity": 152,
           "type": "sell"
         },
         {
           "id": "level69-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 98,
+          "quantity": 746,
           "type": "summon"
         }
       ]
@@ -2653,24 +2654,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level70-brew-pact-ward",
           "itemKey": "pactWard",
-          "quantity": 10,
+          "quantity": 20,
           "type": "brew"
         },
         {
           "id": "level70-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 8
+          "quantity": 16
         },
         {
           "id": "level70-sell-valerian-herb",
           "itemKey": "valerianHerb",
-          "quantity": 21,
+          "quantity": 41,
           "type": "sell"
         },
         {
           "id": "level70-summon-mint-seed",
           "itemKey": "mintSeed",
-          "quantity": 99,
+          "quantity": 195,
           "type": "summon"
         }
       ]
@@ -2682,30 +2683,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level71-summon-comfrey-seed",
           "itemKey": "comfreySeed",
-          "quantity": 102,
+          "quantity": 155,
           "type": "summon"
         },
         {
           "id": "level71-grow-comfrey-herb",
           "itemKey": "comfreyHerb",
-          "quantity": 38,
+          "quantity": 58,
           "type": "grow"
         },
         {
           "id": "level71-turn-in-comfrey-herb",
           "itemKey": "comfreyHerb",
-          "quantity": 28
+          "quantity": 43
         },
         {
           "id": "level71-brew-dragon-courage",
           "itemKey": "dragonCourage",
-          "quantity": 11,
+          "quantity": 17,
           "type": "brew"
         },
         {
           "id": "level71-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 8
+          "quantity": 12
         }
       ]
     },
@@ -2723,24 +2724,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level72-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 11,
+          "quantity": 30,
           "type": "brew"
         },
         {
           "id": "level72-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 8
+          "quantity": 22
         },
         {
           "id": "level72-sell-hyssop-herb",
           "itemKey": "hyssopHerb",
-          "quantity": 22,
+          "quantity": 59,
           "type": "sell"
         },
         {
           "id": "level72-summon-comfrey-seed",
           "itemKey": "comfreySeed",
-          "quantity": 103,
+          "quantity": 277,
           "type": "summon"
         }
       ]
@@ -2752,30 +2753,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level73-brew-silverleaf-salve",
           "itemKey": "silverleafSalve",
-          "quantity": 11,
+          "quantity": 28,
           "type": "brew"
         },
         {
           "id": "level73-turn-in-silverleaf-salve",
           "itemKey": "silverleafSalve",
-          "quantity": 8
+          "quantity": 21
         },
         {
           "id": "level73-brew-pact-ward",
           "itemKey": "pactWard",
-          "quantity": 11,
+          "quantity": 28,
           "type": "brew"
         },
         {
           "id": "level73-sell-valerian-herb",
           "itemKey": "valerianHerb",
-          "quantity": 22,
+          "quantity": 57,
           "type": "sell"
         },
         {
           "id": "level73-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 105,
+          "quantity": 270,
           "type": "summon"
         }
       ]
@@ -2794,24 +2795,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level74-brew-dragon-courage",
           "itemKey": "dragonCourage",
-          "quantity": 11,
+          "quantity": 46,
           "type": "brew"
         },
         {
           "id": "level74-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 8
+          "quantity": 33
         },
         {
           "id": "level74-sell-comfrey-herb",
           "itemKey": "comfreyHerb",
-          "quantity": 22,
+          "quantity": 92,
           "type": "sell"
         },
         {
           "id": "level74-summon-mint-seed",
           "itemKey": "mintSeed",
-          "quantity": 106,
+          "quantity": 441,
           "type": "summon"
         }
       ]
@@ -2823,30 +2824,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level75-summon-nightshade-seed",
           "itemKey": "nightshadeSeed",
-          "quantity": 107,
+          "quantity": 369,
           "type": "summon"
         },
         {
           "id": "level75-grow-nightshade-herb",
           "itemKey": "nightshadeHerb",
-          "quantity": 40,
+          "quantity": 138,
           "type": "grow"
         },
         {
           "id": "level75-turn-in-nightshade-herb",
           "itemKey": "nightshadeHerb",
-          "quantity": 30
+          "quantity": 104
         },
         {
           "id": "level75-brew-silverleaf-salve",
           "itemKey": "silverleafSalve",
-          "quantity": 11,
+          "quantity": 38,
           "type": "brew"
         },
         {
           "id": "level75-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 8
+          "quantity": 28
         }
       ]
     },
@@ -2864,24 +2865,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level76-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 11,
+          "quantity": 70,
           "type": "brew"
         },
         {
           "id": "level76-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 8
+          "quantity": 51
         },
         {
           "id": "level76-sell-valerian-herb",
           "itemKey": "valerianHerb",
-          "quantity": 23,
+          "quantity": 146,
           "type": "sell"
         },
         {
           "id": "level76-summon-nightshade-seed",
           "itemKey": "nightshadeSeed",
-          "quantity": 108,
+          "quantity": 688,
           "type": "summon"
         }
       ]
@@ -2893,30 +2894,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level77-brew-yarrow-poultice",
           "itemKey": "yarrowPoultice",
-          "quantity": 11,
+          "quantity": 67,
           "type": "brew"
         },
         {
           "id": "level77-turn-in-yarrow-poultice",
           "itemKey": "yarrowPoultice",
-          "quantity": 8
+          "quantity": 49
         },
         {
           "id": "level77-brew-dragon-courage",
           "itemKey": "dragonCourage",
-          "quantity": 11,
+          "quantity": 67,
           "type": "brew"
         },
         {
           "id": "level77-sell-comfrey-herb",
           "itemKey": "comfreyHerb",
-          "quantity": 23,
+          "quantity": 140,
           "type": "sell"
         },
         {
           "id": "level77-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 109,
+          "quantity": 664,
           "type": "summon"
         }
       ]
@@ -2935,24 +2936,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level78-brew-silverleaf-salve",
           "itemKey": "silverleafSalve",
-          "quantity": 11,
+          "quantity": 104,
           "type": "brew"
         },
         {
           "id": "level78-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 8
+          "quantity": 76
         },
         {
           "id": "level78-sell-nightshade-herb",
           "itemKey": "nightshadeHerb",
-          "quantity": 23,
+          "quantity": 217,
           "type": "sell"
         },
         {
           "id": "level78-summon-mint-seed",
           "itemKey": "mintSeed",
-          "quantity": 111,
+          "quantity": 1048,
           "type": "summon"
         }
       ]
@@ -2964,30 +2965,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level79-summon-belladonna-seed",
           "itemKey": "belladonnaSeed",
-          "quantity": 112,
+          "quantity": 844,
           "type": "summon"
         },
         {
           "id": "level79-grow-belladonna-herb",
           "itemKey": "belladonnaHerb",
-          "quantity": 41,
+          "quantity": 309,
           "type": "grow"
         },
         {
           "id": "level79-turn-in-belladonna-herb",
           "itemKey": "belladonnaHerb",
-          "quantity": 30
+          "quantity": 226
         },
         {
           "id": "level79-brew-yarrow-poultice",
           "itemKey": "yarrowPoultice",
-          "quantity": 11,
+          "quantity": 83,
           "type": "brew"
         },
         {
           "id": "level79-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 8
+          "quantity": 60
         }
       ]
     },
@@ -3005,24 +3006,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level80-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 11,
+          "quantity": 24,
           "type": "brew"
         },
         {
           "id": "level80-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 8
+          "quantity": 18
         },
         {
           "id": "level80-sell-comfrey-herb",
           "itemKey": "comfreyHerb",
-          "quantity": 24,
+          "quantity": 53,
           "type": "sell"
         },
         {
           "id": "level80-summon-belladonna-seed",
           "itemKey": "belladonnaSeed",
-          "quantity": 113,
+          "quantity": 248,
           "type": "summon"
         }
       ]
@@ -3034,30 +3035,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level81-brew-hyssop-clarity",
           "itemKey": "hyssopClarity",
-          "quantity": 12,
+          "quantity": 23,
           "type": "brew"
         },
         {
           "id": "level81-turn-in-hyssop-clarity",
           "itemKey": "hyssopClarity",
-          "quantity": 9
+          "quantity": 17
         },
         {
           "id": "level81-brew-silverleaf-salve",
           "itemKey": "silverleafSalve",
-          "quantity": 12,
+          "quantity": 23,
           "type": "brew"
         },
         {
           "id": "level81-sell-nightshade-herb",
           "itemKey": "nightshadeHerb",
-          "quantity": 24,
+          "quantity": 46,
           "type": "sell"
         },
         {
           "id": "level81-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 116,
+          "quantity": 221,
           "type": "summon"
         }
       ]
@@ -3076,24 +3077,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level82-brew-yarrow-poultice",
           "itemKey": "yarrowPoultice",
-          "quantity": 12,
+          "quantity": 36,
           "type": "brew"
         },
         {
           "id": "level82-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 9
+          "quantity": 27
         },
         {
           "id": "level82-sell-belladonna-herb",
           "itemKey": "belladonnaHerb",
-          "quantity": 25,
+          "quantity": 74,
           "type": "sell"
         },
         {
           "id": "level82-summon-mint-seed",
           "itemKey": "mintSeed",
-          "quantity": 117,
+          "quantity": 348,
           "type": "summon"
         }
       ]
@@ -3105,30 +3106,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level83-summon-wormwood-seed",
           "itemKey": "wormwoodSeed",
-          "quantity": 119,
+          "quantity": 298,
           "type": "summon"
         },
         {
           "id": "level83-grow-wormwood-herb",
           "itemKey": "wormwoodHerb",
-          "quantity": 44,
+          "quantity": 110,
           "type": "grow"
         },
         {
           "id": "level83-turn-in-wormwood-herb",
           "itemKey": "wormwoodHerb",
-          "quantity": 33
+          "quantity": 83
         },
         {
           "id": "level83-brew-hyssop-clarity",
           "itemKey": "hyssopClarity",
-          "quantity": 12,
+          "quantity": 30,
           "type": "brew"
         },
         {
           "id": "level83-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 9
+          "quantity": 23
         }
       ]
     },
@@ -3146,24 +3147,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level84-brew-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 12,
+          "quantity": 55,
           "type": "brew"
         },
         {
           "id": "level84-turn-in-nettle-vigor",
           "itemKey": "nettleVigor",
-          "quantity": 9
+          "quantity": 42
         },
         {
           "id": "level84-sell-nightshade-herb",
           "itemKey": "nightshadeHerb",
-          "quantity": 25,
+          "quantity": 115,
           "type": "sell"
         },
         {
           "id": "level84-summon-wormwood-seed",
           "itemKey": "wormwoodSeed",
-          "quantity": 120,
+          "quantity": 553,
           "type": "summon"
         }
       ]
@@ -3175,13 +3176,13 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level85-brew-valerian-rest",
           "itemKey": "valerianRest",
-          "quantity": 12,
+          "quantity": 79,
           "type": "brew"
         },
         {
           "id": "level85-turn-in-valerian-rest",
           "itemKey": "valerianRest",
-          "quantity": 9
+          "quantity": 60
         },
         {
           "id": "level85-research-snowdrop-seed",
@@ -3193,13 +3194,13 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level85-brew-yarrow-poultice",
           "itemKey": "yarrowPoultice",
-          "quantity": 12,
+          "quantity": 79,
           "type": "brew"
         },
         {
           "id": "level85-sell-belladonna-herb",
           "itemKey": "belladonnaHerb",
-          "quantity": 25,
+          "quantity": 165,
           "type": "sell"
         }
       ]
@@ -3211,30 +3212,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level86-summon-snowdrop-seed",
           "itemKey": "snowdropSeed",
-          "quantity": 122,
+          "quantity": 583,
           "type": "summon"
         },
         {
           "id": "level86-grow-snowdrop-herb",
           "itemKey": "snowdropHerb",
-          "quantity": 45,
+          "quantity": 215,
           "type": "grow"
         },
         {
           "id": "level86-turn-in-snowdrop-herb",
           "itemKey": "snowdropHerb",
-          "quantity": 33
+          "quantity": 158
         },
         {
           "id": "level86-brew-hyssop-clarity",
           "itemKey": "hyssopClarity",
-          "quantity": 12,
+          "quantity": 57,
           "type": "brew"
         },
         {
           "id": "level86-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 9
+          "quantity": 43
         }
       ]
     },
@@ -3252,24 +3253,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level87-brew-valerian-rest",
           "itemKey": "valerianRest",
-          "quantity": 13,
+          "quantity": 111,
           "type": "brew"
         },
         {
           "id": "level87-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 10
+          "quantity": 85
         },
         {
           "id": "level87-sell-nightshade-herb",
           "itemKey": "nightshadeHerb",
-          "quantity": 26,
+          "quantity": 221,
           "type": "sell"
         },
         {
           "id": "level87-summon-wormwood-seed",
           "itemKey": "wormwoodSeed",
-          "quantity": 123,
+          "quantity": 1047,
           "type": "summon"
         }
       ]
@@ -3281,29 +3282,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level88-brew-comfrey-balm",
           "itemKey": "comfreyBalm",
-          "quantity": 13,
+          "quantity": 134,
           "type": "brew"
         },
         {
           "id": "level88-turn-in-comfrey-balm",
           "itemKey": "comfreyBalm",
-          "quantity": 10
+          "quantity": 103
         },
         {
           "id": "level88-brew-yarrow-poultice",
           "itemKey": "yarrowPoultice",
-          "quantity": 13,
+          "quantity": 134,
           "type": "brew"
         },
         {
           "id": "level88-turn-in-valerian-rest",
           "itemKey": "valerianRest",
-          "quantity": 10
+          "quantity": 103
         },
         {
           "id": "level88-sell-belladonna-herb",
           "itemKey": "belladonnaHerb",
-          "quantity": 26,
+          "quantity": 267,
           "type": "sell"
         }
       ]
@@ -3322,24 +3323,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level89-brew-hyssop-clarity",
           "itemKey": "hyssopClarity",
-          "quantity": 13,
+          "quantity": 157,
           "type": "brew"
         },
         {
           "id": "level89-turn-in-comfrey-balm",
           "itemKey": "comfreyBalm",
-          "quantity": 10
+          "quantity": 120
         },
         {
           "id": "level89-sell-wormwood-herb",
           "itemKey": "wormwoodHerb",
-          "quantity": 26,
+          "quantity": 313,
           "type": "sell"
         },
         {
           "id": "level89-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 126,
+          "quantity": 1517,
           "type": "summon"
         }
       ]
@@ -3351,30 +3352,30 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level90-summon-pearlroot-seed",
           "itemKey": "pearlrootSeed",
-          "quantity": 127,
+          "quantity": 205,
           "type": "summon"
         },
         {
           "id": "level90-grow-pearlroot-herb",
           "itemKey": "pearlrootHerb",
-          "quantity": 47,
+          "quantity": 76,
           "type": "grow"
         },
         {
           "id": "level90-turn-in-pearlroot-herb",
           "itemKey": "pearlrootHerb",
-          "quantity": 35
+          "quantity": 56
         },
         {
           "id": "level90-brew-valerian-rest",
           "itemKey": "valerianRest",
-          "quantity": 13,
+          "quantity": 21,
           "type": "brew"
         },
         {
           "id": "level90-turn-in-mana-tonic",
           "itemKey": "manaTonic",
-          "quantity": 10
+          "quantity": 16
         }
       ]
     },
@@ -3392,24 +3393,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level91-brew-comfrey-balm",
           "itemKey": "comfreyBalm",
-          "quantity": 13,
+          "quantity": 36,
           "type": "brew"
         },
         {
           "id": "level91-turn-in-minor-healing-potion",
           "itemKey": "minorHealingPotion",
-          "quantity": 10
+          "quantity": 28
         },
         {
           "id": "level91-sell-belladonna-herb",
           "itemKey": "belladonnaHerb",
-          "quantity": 27,
+          "quantity": 76,
           "type": "sell"
         },
         {
           "id": "level91-summon-snowdrop-seed",
           "itemKey": "snowdropSeed",
-          "quantity": 130,
+          "quantity": 364,
           "type": "summon"
         }
       ]
@@ -3421,29 +3422,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level92-brew-nightshade-veil",
           "itemKey": "nightshadeVeil",
-          "quantity": 13,
+          "quantity": 45,
           "type": "brew"
         },
         {
           "id": "level92-turn-in-nightshade-veil",
           "itemKey": "nightshadeVeil",
-          "quantity": 10
+          "quantity": 35
         },
         {
           "id": "level92-brew-hyssop-clarity",
           "itemKey": "hyssopClarity",
-          "quantity": 13,
+          "quantity": 45,
           "type": "brew"
         },
         {
           "id": "level92-turn-in-comfrey-balm",
           "itemKey": "comfreyBalm",
-          "quantity": 10
+          "quantity": 35
         },
         {
           "id": "level92-sell-wormwood-herb",
           "itemKey": "wormwoodHerb",
-          "quantity": 28,
+          "quantity": 97,
           "type": "sell"
         }
       ]
@@ -3462,24 +3463,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level93-brew-valerian-rest",
           "itemKey": "valerianRest",
-          "quantity": 13,
+          "quantity": 55,
           "type": "brew"
         },
         {
           "id": "level93-turn-in-nightshade-veil",
           "itemKey": "nightshadeVeil",
-          "quantity": 10
+          "quantity": 42
         },
         {
           "id": "level93-sell-snowdrop-herb",
           "itemKey": "snowdropHerb",
-          "quantity": 28,
+          "quantity": 118,
           "type": "sell"
         },
         {
           "id": "level93-summon-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 133,
+          "quantity": 560,
           "type": "summon"
         }
       ]
@@ -3491,29 +3492,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level94-brew-belladonna-sight",
           "itemKey": "belladonnaSight",
-          "quantity": 14,
+          "quantity": 71,
           "type": "brew"
         },
         {
           "id": "level94-turn-in-belladonna-sight",
           "itemKey": "belladonnaSight",
-          "quantity": 11
+          "quantity": 56
         },
         {
           "id": "level94-brew-yarrow-poultice",
           "itemKey": "yarrowPoultice",
-          "quantity": 14,
+          "quantity": 71,
           "type": "brew"
         },
         {
           "id": "level94-turn-in-valerian-rest",
           "itemKey": "valerianRest",
-          "quantity": 11
+          "quantity": 56
         },
         {
           "id": "level94-sell-pearlroot-herb",
           "itemKey": "pearlrootHerb",
-          "quantity": 28,
+          "quantity": 143,
           "type": "sell"
         }
       ]
@@ -3532,24 +3533,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level95-brew-hyssop-clarity",
           "itemKey": "hyssopClarity",
-          "quantity": 14,
+          "quantity": 88,
           "type": "brew"
         },
         {
           "id": "level95-turn-in-comfrey-balm",
           "itemKey": "comfreyBalm",
-          "quantity": 11
+          "quantity": 69
         },
         {
           "id": "level95-sell-sage-herb",
           "itemKey": "sageHerb",
-          "quantity": 28,
+          "quantity": 176,
           "type": "sell"
         },
         {
           "id": "level95-summon-nettle-seed",
           "itemKey": "nettleSeed",
-          "quantity": 135,
+          "quantity": 849,
           "type": "summon"
         }
       ]
@@ -3561,29 +3562,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level96-brew-wormwood-purge",
           "itemKey": "wormwoodPurge",
-          "quantity": 14,
+          "quantity": 111,
           "type": "brew"
         },
         {
           "id": "level96-turn-in-wormwood-purge",
           "itemKey": "wormwoodPurge",
-          "quantity": 11
+          "quantity": 87
         },
         {
           "id": "level96-brew-silverleaf-salve",
           "itemKey": "silverleafSalve",
-          "quantity": 14,
+          "quantity": 111,
           "type": "brew"
         },
         {
           "id": "level96-turn-in-hyssop-clarity",
           "itemKey": "hyssopClarity",
-          "quantity": 11
+          "quantity": 87
         },
         {
           "id": "level96-sell-mint-herb",
           "itemKey": "mintHerb",
-          "quantity": 28,
+          "quantity": 222,
           "type": "sell"
         }
       ]
@@ -3602,24 +3603,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level97-brew-yarrow-poultice",
           "itemKey": "yarrowPoultice",
-          "quantity": 14,
+          "quantity": 135,
           "type": "brew"
         },
         {
           "id": "level97-turn-in-valerian-rest",
           "itemKey": "valerianRest",
-          "quantity": 11
+          "quantity": 106
         },
         {
           "id": "level97-sell-nettle-herb",
           "itemKey": "nettleHerb",
-          "quantity": 29,
+          "quantity": 280,
           "type": "sell"
         },
         {
           "id": "level97-summon-briar-seed",
           "itemKey": "briarSeed",
-          "quantity": 137,
+          "quantity": 1324,
           "type": "summon"
         }
       ]
@@ -3631,29 +3632,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level98-brew-snowdrop-breath",
           "itemKey": "snowdropBreath",
-          "quantity": 14,
+          "quantity": 165,
           "type": "brew"
         },
         {
           "id": "level98-turn-in-snowdrop-breath",
           "itemKey": "snowdropBreath",
-          "quantity": 11
+          "quantity": 130
         },
         {
           "id": "level98-brew-dragon-courage",
           "itemKey": "dragonCourage",
-          "quantity": 14,
+          "quantity": 165,
           "type": "brew"
         },
         {
           "id": "level98-turn-in-yarrow-poultice",
           "itemKey": "yarrowPoultice",
-          "quantity": 11
+          "quantity": 130
         },
         {
           "id": "level98-sell-lavender-herb",
           "itemKey": "lavenderHerb",
-          "quantity": 29,
+          "quantity": 343,
           "type": "sell"
         }
       ]
@@ -3672,24 +3673,24 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level99-brew-silverleaf-salve",
           "itemKey": "silverleafSalve",
-          "quantity": 14,
+          "quantity": 191,
           "type": "brew"
         },
         {
           "id": "level99-turn-in-hyssop-clarity",
           "itemKey": "hyssopClarity",
-          "quantity": 11
+          "quantity": 150
         },
         {
           "id": "level99-sell-briar-herb",
           "itemKey": "briarHerb",
-          "quantity": 29,
+          "quantity": 397,
           "type": "sell"
         },
         {
           "id": "level99-summon-mandrake-seed",
           "itemKey": "mandrakeSeed",
-          "quantity": 140,
+          "quantity": 1915,
           "type": "summon"
         }
       ]
@@ -3701,29 +3702,29 @@ const DEFAULT_TASKS_CONFIG = {
         {
           "id": "level100-brew-pearlroot-draught",
           "itemKey": "pearlrootDraught",
-          "quantity": 14,
+          "quantity": 175,
           "type": "brew"
         },
         {
           "id": "level100-turn-in-pearlroot-draught",
           "itemKey": "pearlrootDraught",
-          "quantity": 11
+          "quantity": 138
         },
         {
           "id": "level100-brew-pact-ward",
           "itemKey": "pactWard",
-          "quantity": 14,
+          "quantity": 175,
           "type": "brew"
         },
         {
           "id": "level100-turn-in-silverleaf-salve",
           "itemKey": "silverleafSalve",
-          "quantity": 11
+          "quantity": 138
         },
         {
           "id": "level100-sell-glowcap-herb",
           "itemKey": "glowcapHerb",
-          "quantity": 29,
+          "quantity": 362,
           "type": "sell"
         }
       ]
@@ -5652,6 +5653,28 @@ const spacetimedb = schema({
       priceScale: t.u32().default(1),
     },
   ),
+  potionRecipeRoyalty: table(
+    {
+      name: 'potion_recipe_royalty',
+      public: true,
+      indexes: [
+        { accessor: 'byRecipientIdentity', algorithm: 'btree', columns: ['recipientIdentity'] },
+        { accessor: 'byAwardedAt', algorithm: 'btree', columns: ['awardedAt'] },
+      ],
+    },
+    {
+      royaltyId: t.uuid().primaryKey(),
+      recipientIdentity: t.identity(),
+      sourceSellerIdentity: t.identity(),
+      sourceSellerUsername: t.string(),
+      potionKey: t.string(),
+      potionLabel: t.string(),
+      royaltyGold: t.u64(),
+      sourceIncomeGold: t.u64(),
+      awardedAt: t.timestamp(),
+      goldScale: t.u32().default(1),
+    },
+  ),
   npcMarketPrice: table(
     {
       name: 'npc_market_price',
@@ -6164,6 +6187,20 @@ const playerShopTradeHistoryResult = t.array(
     priceScale: t.u32(),
   }),
 );
+const ownPotionRecipeRoyaltyHistoryResult = t.array(
+  t.row('OwnPotionRecipeRoyaltyHistoryResult', {
+    royaltyId: t.uuid().primaryKey(),
+    recipientIdentity: t.identity(),
+    sourceSellerIdentity: t.identity(),
+    sourceSellerUsername: t.string(),
+    potionKey: t.string(),
+    potionLabel: t.string(),
+    royaltyGold: t.u64(),
+    sourceIncomeGold: t.u64(),
+    awardedAt: t.timestamp(),
+    goldScale: t.u32(),
+  }),
+);
 
 export const own_player_gameplay_save = spacetimedb.view(
   { name: 'own_player_gameplay_save', public: true },
@@ -6296,6 +6333,12 @@ export const own_player_shop_trade_history = spacetimedb.view(
   { name: 'own_player_shop_trade_history', public: true },
   playerShopTradeHistoryResult,
   (ctx) => getOwnPlayerShopTrades(ctx),
+);
+
+export const own_potion_recipe_royalty_history = spacetimedb.view(
+  { name: 'own_potion_recipe_royalty_history', public: true },
+  ownPotionRecipeRoyaltyHistoryResult,
+  (ctx) => getOwnPotionRecipeRoyalties(ctx),
 );
 
 export const admin_player_gameplay_save = spacetimedb.view(
@@ -7138,8 +7181,55 @@ function grantPotionDiscoveryPassiveGold(
     royaltyGold: toStoredGoldPrice(nextRoyaltyGold),
     royaltyGoldScale: GOLD_PRICE_SCALE,
   });
+  recordPotionRecipeRoyalty(ctx, {
+    discovery,
+    recipientIdentity: discovery.discoveredByIdentity,
+    sourceSellerIdentity: sellerIdentity,
+    sourceIncomeGold: incomeGold,
+    royaltyGold: grantedGold,
+  });
 
   return grantedGold;
+}
+
+function recordPotionRecipeRoyalty(
+  ctx: IdleWizardReducerCtx,
+  {
+    discovery,
+    recipientIdentity,
+    sourceSellerIdentity,
+    sourceIncomeGold,
+    royaltyGold,
+  }: {
+    discovery: any;
+    recipientIdentity: Identity;
+    sourceSellerIdentity: Identity;
+    sourceIncomeGold: number;
+    royaltyGold: number;
+  },
+) {
+  const safeRoyaltyGold = normalizeGoldPrice(royaltyGold);
+
+  if (safeRoyaltyGold === null || safeRoyaltyGold <= 0) {
+    return;
+  }
+
+  const safeSourceIncomeGold = normalizeGoldPrice(sourceIncomeGold) ?? 0;
+  const sourcePlayer = ctx.db.player.identity.find(sourceSellerIdentity);
+
+  ctx.db.potionRecipeRoyalty.insert({
+    royaltyId: ctx.newUuidV7(),
+    recipientIdentity,
+    sourceSellerIdentity,
+    sourceSellerUsername: sourcePlayer?.username ?? DEFAULT_USERNAME,
+    potionKey: String(discovery.potionKey ?? ''),
+    potionLabel: String(discovery.potionLabel ?? ''),
+    royaltyGold: toStoredGoldPrice(safeRoyaltyGold),
+    sourceIncomeGold: toStoredGoldPrice(safeSourceIncomeGold),
+    awardedAt: ctx.timestamp,
+    goldScale: GOLD_PRICE_SCALE,
+  });
+  prunePotionRecipeRoyaltyHistory(ctx);
 }
 
 function findTradeAllianceById(ctx: IdleWizardReducerCtx, allianceId: string) {
@@ -14890,6 +14980,10 @@ function deleteAllPotionDiscoveries(ctx: IdleWizardReducerCtx) {
   for (const discovery of Array.from(ctx.db.potionRecipeDiscovery.iter())) {
     ctx.db.potionRecipeDiscovery.delete(discovery);
   }
+
+  for (const royalty of Array.from(ctx.db.potionRecipeRoyalty.iter())) {
+    ctx.db.potionRecipeRoyalty.delete(royalty);
+  }
 }
 
 function ensurePlayer(
@@ -15147,6 +15241,10 @@ function deleteAllPlayerShopState(ctx: IdleWizardReducerCtx) {
   for (const trade of Array.from(ctx.db.playerShopTrade.iter())) {
     ctx.db.playerShopTrade.delete(trade);
   }
+
+  for (const royalty of Array.from(ctx.db.potionRecipeRoyalty.iter())) {
+    ctx.db.potionRecipeRoyalty.delete(royalty);
+  }
 }
 
 function deletePlayerShopProgressionForIdentity(
@@ -15165,6 +15263,8 @@ function deletePlayerShopProgressionForIdentity(
   if (proceeds) {
     ctx.db.playerShopProceeds.delete(proceeds);
   }
+
+  deletePotionRecipeRoyaltiesForIdentity(ctx, identity);
 }
 
 function deleteAllPlayerGameplaySaves(ctx: IdleWizardReducerCtx) {
@@ -15250,6 +15350,22 @@ function deletePotionDiscoveriesForIdentity(ctx: IdleWizardReducerCtx, identity:
   for (const discovery of Array.from(ctx.db.potionRecipeDiscovery.iter())) {
     if (discovery.discoveredByIdentity.isEqual(identity)) {
       ctx.db.potionRecipeDiscovery.delete(discovery);
+    }
+  }
+
+  deletePotionRecipeRoyaltiesForIdentity(ctx, identity);
+}
+
+function deletePotionRecipeRoyaltiesForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
+  for (const royalty of Array.from(ctx.db.potionRecipeRoyalty.iter())) {
+    if (
+      royalty.recipientIdentity.isEqual(identity) ||
+      royalty.sourceSellerIdentity.isEqual(identity)
+    ) {
+      ctx.db.potionRecipeRoyalty.delete(royalty);
     }
   }
 }
@@ -15415,6 +15531,15 @@ function deletePlayerDataForIdentities(ctx: IdleWizardReducerCtx, identities: Id
   for (const trade of Array.from(ctx.db.playerShopTrade.iter())) {
     if (isTargetIdentity(trade.buyerIdentity) || isTargetIdentity(trade.sellerIdentity)) {
       ctx.db.playerShopTrade.delete(trade);
+    }
+  }
+
+  for (const royalty of Array.from(ctx.db.potionRecipeRoyalty.iter())) {
+    if (
+      isTargetIdentity(royalty.recipientIdentity) ||
+      isTargetIdentity(royalty.sourceSellerIdentity)
+    ) {
+      ctx.db.potionRecipeRoyalty.delete(royalty);
     }
   }
 
@@ -16025,6 +16150,28 @@ function moveAdminPlayerShopRows(
         : trade.sellerUsername,
     });
   }
+
+  for (const royalty of Array.from(ctx.db.potionRecipeRoyalty.iter())) {
+    if (
+      !royalty.recipientIdentity.isEqual(sourceIdentity) &&
+      !royalty.sourceSellerIdentity.isEqual(sourceIdentity)
+    ) {
+      continue;
+    }
+
+    ctx.db.potionRecipeRoyalty.royaltyId.update({
+      ...royalty,
+      recipientIdentity: royalty.recipientIdentity.isEqual(sourceIdentity)
+        ? targetIdentity
+        : royalty.recipientIdentity,
+      sourceSellerIdentity: royalty.sourceSellerIdentity.isEqual(sourceIdentity)
+        ? targetIdentity
+        : royalty.sourceSellerIdentity,
+      sourceSellerUsername: royalty.sourceSellerIdentity.isEqual(sourceIdentity)
+        ? targetUsername
+        : royalty.sourceSellerUsername,
+    });
+  }
 }
 
 function moveAdminMessageRows(
@@ -16362,6 +16509,18 @@ function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function prunePotionRecipeRoyaltyHistory(ctx: IdleWizardReducerCtx) {
+  const rows = Array.from(ctx.db.potionRecipeRoyalty.byAwardedAt.filter(new Range()));
+
+  while (rows.length > POTION_RECIPE_ROYALTY_HISTORY_LIMIT) {
+    const row = rows.shift();
+
+    if (row) {
+      ctx.db.potionRecipeRoyalty.delete(row);
+    }
+  }
+}
+
 function getMarketDemandDailyKey(dayKey: string, itemKey: string): string {
   return `${dayKey}:${itemKey}`;
 }
@@ -16493,6 +16652,12 @@ function getOwnPlayerShopTrades(ctx: { sender: Identity; db: any }) {
     .slice(0, PLAYER_SHOP_TRADE_HISTORY_LIMIT);
 }
 
+function getOwnPotionRecipeRoyalties(ctx: { sender: Identity; db: any }) {
+  return Array.from<any>(ctx.db.potionRecipeRoyalty.byRecipientIdentity.filter(ctx.sender))
+    .sort(comparePotionRecipeRoyaltiesNewestFirst)
+    .slice(0, POTION_RECIPE_ROYALTY_HISTORY_LIMIT);
+}
+
 function comparePlayerShopTradesOldestFirst(left: any, right: any) {
   const leftTradedAt = left.tradedAt.microsSinceUnixEpoch;
   const rightTradedAt = right.tradedAt.microsSinceUnixEpoch;
@@ -16510,6 +16675,25 @@ function comparePlayerShopTradesOldestFirst(left: any, right: any) {
 
 function comparePlayerShopTradesNewestFirst(left: any, right: any) {
   return comparePlayerShopTradesOldestFirst(right, left);
+}
+
+function comparePotionRecipeRoyaltiesOldestFirst(left: any, right: any) {
+  const leftAwardedAt = left.awardedAt.microsSinceUnixEpoch;
+  const rightAwardedAt = right.awardedAt.microsSinceUnixEpoch;
+
+  if (leftAwardedAt < rightAwardedAt) {
+    return -1;
+  }
+
+  if (leftAwardedAt > rightAwardedAt) {
+    return 1;
+  }
+
+  return left.royaltyId.compareTo(right.royaltyId);
+}
+
+function comparePotionRecipeRoyaltiesNewestFirst(left: any, right: any) {
+  return comparePotionRecipeRoyaltiesOldestFirst(right, left);
 }
 
 function isConfiguredNpcMarketAdmin(ctx: IdleWizardReducerCtx): boolean {

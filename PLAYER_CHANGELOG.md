@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.75
+
+- Rebalanced level tasks into clearer decade pacing, with relief after each major wall and stronger checkpoints before the next stretch.
+- Added potion discovery royalty history so while-away reports can show royalty coin earned from other players' NPC potion sales.
+- Improved while-away market reports with clearer rows for traders, player purchases, request fills, and royalty income.
+- Added distinct research completion icons for automation, Garden, Brewing, fast sell, and research upgrade families.
+
 ## 0.2.74
 
 - Added a while-away report so returned players see produced items and NPC market sales from time spent out of the app.

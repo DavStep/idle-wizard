@@ -254,6 +254,23 @@ export type OwnPlayerShopRequest = __Infer<typeof OwnPlayerShopRequest>;
 export const OwnPlayerShopTradeHistory = __t.object("OwnPlayerShopTradeHistory", {});
 export type OwnPlayerShopTradeHistory = __Infer<typeof OwnPlayerShopTradeHistory>;
 
+export const OwnPotionRecipeRoyaltyHistory = __t.object("OwnPotionRecipeRoyaltyHistory", {});
+export type OwnPotionRecipeRoyaltyHistory = __Infer<typeof OwnPotionRecipeRoyaltyHistory>;
+
+export const OwnPotionRecipeRoyaltyHistoryResult = __t.object("OwnPotionRecipeRoyaltyHistoryResult", {
+  royaltyId: __t.uuid(),
+  recipientIdentity: __t.identity(),
+  sourceSellerIdentity: __t.identity(),
+  sourceSellerUsername: __t.string(),
+  potionKey: __t.string(),
+  potionLabel: __t.string(),
+  royaltyGold: __t.u64(),
+  sourceIncomeGold: __t.u64(),
+  awardedAt: __t.timestamp(),
+  goldScale: __t.u32(),
+});
+export type OwnPotionRecipeRoyaltyHistoryResult = __Infer<typeof OwnPotionRecipeRoyaltyHistoryResult>;
+
 export const OwnTradeAllianceChat = __t.object("OwnTradeAllianceChat", {});
 export type OwnTradeAllianceChat = __Infer<typeof OwnTradeAllianceChat>;
 
@@ -523,6 +540,20 @@ export const PotionRecipeDiscoverySnapshotResult = __t.object("PotionRecipeDisco
   royaltyGoldScale: __t.u32(),
 });
 export type PotionRecipeDiscoverySnapshotResult = __Infer<typeof PotionRecipeDiscoverySnapshotResult>;
+
+export const PotionRecipeRoyalty = __t.object("PotionRecipeRoyalty", {
+  royaltyId: __t.uuid(),
+  recipientIdentity: __t.identity(),
+  sourceSellerIdentity: __t.identity(),
+  sourceSellerUsername: __t.string(),
+  potionKey: __t.string(),
+  potionLabel: __t.string(),
+  royaltyGold: __t.u64(),
+  sourceIncomeGold: __t.u64(),
+  awardedAt: __t.timestamp(),
+  goldScale: __t.u32(),
+});
+export type PotionRecipeRoyalty = __Infer<typeof PotionRecipeRoyalty>;
 
 export const PublicPlayerShopListing = __t.object("PublicPlayerShopListing", {});
 export type PublicPlayerShopListing = __Infer<typeof PublicPlayerShopListing>;

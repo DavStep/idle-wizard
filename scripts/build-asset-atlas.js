@@ -106,6 +106,46 @@ const STATUS_ASSETS = [
   ['status:lockDefault', 'src/assets/icons/status/lock-01.png'],
 ];
 
+const RESEARCH_ASSETS = [
+  ['research:autoBottle', 'src/assets/icons/research/icon-research-auto-bottle.png'],
+  ['research:autoBrew', 'src/assets/icons/research/icon-research-auto-brew.png'],
+  ['research:autoHarvest', 'src/assets/icons/research/icon-research-auto-harvest.png'],
+  ['research:autoPlant', 'src/assets/icons/research/icon-research-auto-plant.png'],
+  [
+    'research:autoSeedSpawn',
+    'src/assets/icons/research/icon-research-auto-seed-spawn.png',
+  ],
+  [
+    'research:automationReserve',
+    'src/assets/icons/research/icon-research-automation-reserve.png',
+  ],
+  [
+    'research:cauldronBrewing',
+    'src/assets/icons/research/icon-research-cauldron-brewing.png',
+  ],
+  [
+    'research:cauldronCapacity',
+    'src/assets/icons/research/icon-research-cauldron-capacity.png',
+  ],
+  ['research:cauldronLevel', 'src/assets/icons/research/icon-research-cauldron-level.png'],
+  ['research:fastSell', 'src/assets/icons/research/icon-research-fast-sell.png'],
+  ['research:plotCapacity', 'src/assets/icons/research/icon-research-plot-capacity.png'],
+  ['research:plotGrowth', 'src/assets/icons/research/icon-research-plot-growth.png'],
+  ['research:plotLevel', 'src/assets/icons/research/icon-research-plot-level.png'],
+  [
+    'research:researchCost',
+    'src/assets/icons/research/icon-research-cost.png',
+  ],
+  [
+    'research:researchTime',
+    'src/assets/icons/research/icon-research-time.png',
+  ],
+  [
+    'research:summonMultiplier',
+    'src/assets/icons/research/icon-research-summon-multiplier.png',
+  ],
+];
+
 const ASSETS = [
   ['resource:coin', 'src/assets/icons/icon-coin.png', 96],
   ['resource:crystal', 'src/assets/icons/icon-crystal.png', 96],
@@ -124,6 +164,12 @@ const ASSETS = [
   ]),
   ...POTION_ASSETS.map(([frameName, filePath]) => [frameName, filePath, 128]),
   ...TOOL_ASSETS.map(([frameName, filePath]) => [
+    frameName,
+    filePath,
+    128,
+    { trimTransparent: true },
+  ]),
+  ...RESEARCH_ASSETS.map(([frameName, filePath]) => [
     frameName,
     filePath,
     128,

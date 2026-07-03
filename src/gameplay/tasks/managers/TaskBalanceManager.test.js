@@ -181,10 +181,10 @@ describe('TaskBalanceManager', () => {
         { type: 'turnIn', researchId: null, itemKey: 'mintSeed', requiredQuantity: 3 },
       ],
       [
-        { type: 'grow', researchId: null, itemKey: 'sageHerb', requiredQuantity: 2 },
-        { type: 'grow', researchId: null, itemKey: 'mintHerb', requiredQuantity: 1 },
-        { type: 'turnIn', researchId: null, itemKey: 'sageHerb', requiredQuantity: 2 },
-        { type: 'turnIn', researchId: null, itemKey: 'mintHerb', requiredQuantity: 1 },
+        { type: 'grow', researchId: null, itemKey: 'sageHerb', requiredQuantity: 4 },
+        { type: 'grow', researchId: null, itemKey: 'mintHerb', requiredQuantity: 2 },
+        { type: 'turnIn', researchId: null, itemKey: 'sageHerb', requiredQuantity: 4 },
+        { type: 'turnIn', researchId: null, itemKey: 'mintHerb', requiredQuantity: 2 },
       ],
       [
         {
@@ -193,8 +193,8 @@ describe('TaskBalanceManager', () => {
           itemKey: 'manaTonic',
           requiredQuantity: 1,
         },
-        { type: 'brew', researchId: null, itemKey: 'manaTonic', requiredQuantity: 1 },
-        { type: 'turnIn', researchId: null, itemKey: 'manaTonic', requiredQuantity: 1 },
+        { type: 'brew', researchId: null, itemKey: 'manaTonic', requiredQuantity: 3 },
+        { type: 'turnIn', researchId: null, itemKey: 'manaTonic', requiredQuantity: 3 },
       ],
     ]);
   });
@@ -208,12 +208,40 @@ describe('TaskBalanceManager', () => {
       itemKey: task.itemKey,
       requiredQuantity: task.requiredQuantity,
     }))).toEqual([
-      { type: 'brew', itemKey: 'pearlrootDraught', requiredQuantity: 14 },
-      { type: 'turnIn', itemKey: 'pearlrootDraught', requiredQuantity: 11 },
-      { type: 'brew', itemKey: 'pactWard', requiredQuantity: 14 },
-      { type: 'turnIn', itemKey: 'silverleafSalve', requiredQuantity: 11 },
-      { type: 'sell', itemKey: 'glowcapHerb', requiredQuantity: 29 },
+      { type: 'brew', itemKey: 'pearlrootDraught', requiredQuantity: 175 },
+      { type: 'turnIn', itemKey: 'pearlrootDraught', requiredQuantity: 138 },
+      { type: 'brew', itemKey: 'pactWard', requiredQuantity: 175 },
+      { type: 'turnIn', itemKey: 'silverleafSalve', requiredQuantity: 138 },
+      { type: 'sell', itemKey: 'glowcapHerb', requiredQuantity: 362 },
     ]);
+  });
+
+  it('uses decade walls with relief after each wall', () => {
+    const taskBalanceManager = createManager();
+
+    expect(getLevelEffort(taskBalanceManager, 9)).toBeGreaterThan(
+      getLevelEffort(taskBalanceManager, 8),
+    );
+    expect(getLevelEffort(taskBalanceManager, 9)).toBeGreaterThan(
+      getLevelEffort(taskBalanceManager, 10),
+    );
+    expect(getLevelEffort(taskBalanceManager, 9)).toBeGreaterThan(
+      getLevelEffort(taskBalanceManager, 11),
+    );
+
+    for (const wallLevel of [19, 29, 39, 49, 59, 69, 79, 89, 99]) {
+      const wallEffort = getLevelEffort(taskBalanceManager, wallLevel);
+
+      expect(wallEffort, `config level ${wallLevel}`).toBeGreaterThan(
+        getLevelEffort(taskBalanceManager, wallLevel - 1),
+      );
+      expect(wallEffort, `config level ${wallLevel}`).toBeGreaterThan(
+        getLevelEffort(taskBalanceManager, wallLevel + 1),
+      );
+      expect(wallEffort, `config level ${wallLevel}`).toBeGreaterThan(
+        getLevelEffort(taskBalanceManager, wallLevel + 2),
+      );
+    }
   });
 
   it('keeps task ids unique and level rows compact', () => {
@@ -340,4 +368,28 @@ function expectNextLevelProduction(taskBalanceManager, researchId, expected) {
   const nextSignatures = nextLevel.map((task) => `${task.type}:${task.itemKey}`);
 
   expect(nextSignatures).toEqual(expect.arrayContaining(expected));
+}
+
+function getLevelEffort(taskBalanceManager, levelNumber) {
+  return taskBalanceManager.getLevelTasks(levelNumber).reduce(
+    (total, task) => total + getTaskEffortWeight(task.type) * task.requiredQuantity,
+    0,
+  );
+}
+
+function getTaskEffortWeight(type) {
+  switch (type) {
+    case taskRequirementTypes.SUMMON:
+      return 1;
+    case taskRequirementTypes.GROW:
+    case taskRequirementTypes.SELL:
+      return 2;
+    case taskRequirementTypes.TURN_IN:
+      return 3;
+    case taskRequirementTypes.BREW:
+      return 7;
+    case taskRequirementTypes.RESEARCH:
+    default:
+      return 0;
+  }
 }

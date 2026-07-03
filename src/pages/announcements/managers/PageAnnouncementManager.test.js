@@ -132,12 +132,14 @@ function createPlayerShopFacadeFake(snapshot = {}) {
   const listeners = new Set();
   const state = {
     connected: true,
+    identity: '',
     listings: [],
     ownListings: [],
     requests: [],
     ownRequests: [],
     tradeHistory: [],
     ownTradeHistory: [],
+    ownRoyaltyHistory: [],
     proceedsCoin: 0,
     ...snapshot,
   };
@@ -328,7 +330,7 @@ describe('PageAnnouncementManager', () => {
       ['auto_seed_summoned', 'auto seed summoned', '8 seeds'],
       ['garden_harvested', 'garden harvested', '12 bloodrose'],
       ['brewing_complete', 'brewing complete', '2 mana tonic'],
-      ['npc_market_sold', 'npc market sold', '40 coin'],
+      ['npc_market_sold', 'traders bought', '40 coin'],
     ]);
     expect(
       stage.querySelector(
@@ -376,9 +378,9 @@ describe('PageAnnouncementManager', () => {
       ['auto_seed_summoned', 'auto seed summoned', '8 seeds'],
       ['garden_harvested', 'garden harvested', '12 bloodrose'],
       ['brewing_complete', 'brewing complete', '2 mana tonic'],
-      ['npc_market_sold', 'npc market sold', '40 coin'],
-      ['player_market_sold', 'player market sold', '12 coin'],
-      ['player_request_filled', 'request filled', '3 mint seed'],
+      ['npc_market_sold', 'traders bought', '40 coin'],
+      ['player_market_sold', 'players bought', '12 coin'],
+      ['player_request_filled', 'players sold you', '3 mint seed'],
     ]);
     expect(
       stage.querySelector('.room-announcement__report-icon'),
@@ -476,21 +478,41 @@ describe('PageAnnouncementManager', () => {
       ],
     });
     const playerShopFacade = createPlayerShopFacadeFake({
+      identity: 'self',
       ownListings: [{ sellerIdentity: 'self' }],
       ownRequests: [{ requesterIdentity: 'self', itemKey: 'mintSeed', itemLabel: 'mint seed' }],
       ownTradeHistory: [
+        {
+          tradeId: 'seller-sale-1',
+          buyerIdentity: 'other',
+          buyerUsername: 'Ada',
+          sellerIdentity: 'self',
+          itemKey: 'sageSeed',
+          itemLabel: 'sage seed',
+          quantity: 4,
+          totalPriceCoin: 12,
+        },
         {
           tradeId: 'request-fill-1',
           requestKey: 'self:1',
           buyerIdentity: 'self',
           sellerIdentity: 'other',
+          sellerUsername: 'Mira',
           itemKey: 'mintSeed',
           itemLabel: 'mint seed',
           quantity: 3,
           totalPriceCoin: 9,
         },
       ],
-      proceedsCoin: 12,
+      ownRoyaltyHistory: [
+        {
+          royaltyId: 'royalty-1',
+          potionLabel: 'mana tonic',
+          sourceSellerUsername: 'Lin',
+          royaltyCoin: 2.5,
+        },
+      ],
+      proceedsCoin: 14.5,
     });
 
     const { stage } = mountManagerWithGameplayFacade(gameplayFacade, { playerShopFacade });
@@ -498,13 +520,14 @@ describe('PageAnnouncementManager', () => {
     expect(playerShopFacade.retainTradeHistory).toHaveBeenCalledTimes(1);
     expect(getReportLineParts(stage)).toEqual([
       ['garden_harvested', 'garden harvested', '12 bloodrose'],
-      ['player_market_sold', 'player market sold', '12 coin'],
-      ['player_request_filled', 'request filled', '3 mint seed'],
+      ['player_trade_bought_from_you', 'players bought: Ada', '4 sage seed / 12 coin'],
+      ['player_trade_sold_to_you', 'players sold you: Mira', '3 mint seed / 9 coin'],
+      ['potion_royalty_earned', 'royalties: Lin', 'mana tonic / 2.5 coin'],
     ]);
     expect(
       stage
         .querySelector(
-          '.room-announcement__report-line[data-report-row-type="player_request_filled"] .style-seed-label__icon',
+          '.room-announcement__report-line[data-report-row-type="player_trade_sold_to_you"] .style-seed-label__icon',
         )
         ?.getAttribute('data-seed-pack-item-frame'),
     ).toBe('herb:mintHerb');
@@ -514,7 +537,42 @@ describe('PageAnnouncementManager', () => {
     const snapshot = createSnapshot();
     const gameplayFacade = createGameplayFacadeFake(snapshot, { emitInitial: false });
     const playerShopFacade = createPlayerShopFacadeFake({
+      identity: 'self',
       ownListings: [{ sellerIdentity: 'self' }],
+      proceedsCoin: 0,
+    });
+    const { stage } = mountManagerWithGameplayFacade(gameplayFacade, { playerShopFacade });
+    const layer = stage.querySelector('.room-announcement-layer');
+
+    expect(layer?.hidden).toBe(true);
+
+    playerShopFacade.setSnapshot({
+      proceedsCoin: 40,
+      ownTradeHistory: [
+        {
+          tradeId: 'seller-sale-1',
+          buyerIdentity: 'other',
+          buyerUsername: 'Ada',
+          sellerIdentity: 'self',
+          itemKey: 'sageSeed',
+          itemLabel: 'sage seed',
+          quantity: 4,
+          totalPriceCoin: 40,
+        },
+      ],
+    });
+
+    expect(layer?.hidden).toBe(false);
+    expect(getReportLineParts(stage)).toEqual([
+      ['player_trade_bought_from_you', 'players bought: Ada', '4 sage seed / 40 coin'],
+    ]);
+  });
+
+  it('does not label aggregate proceeds without a seller trade as player market sold', () => {
+    const snapshot = createSnapshot();
+    const gameplayFacade = createGameplayFacadeFake(snapshot, { emitInitial: false });
+    const playerShopFacade = createPlayerShopFacadeFake({
+      identity: 'self',
       proceedsCoin: 0,
     });
     const { stage } = mountManagerWithGameplayFacade(gameplayFacade, { playerShopFacade });
@@ -526,7 +584,7 @@ describe('PageAnnouncementManager', () => {
 
     expect(layer?.hidden).toBe(false);
     expect(getReportLineParts(stage)).toEqual([
-      ['player_market_sold', 'player market sold', '40 coin'],
+      ['market_proceeds', 'market proceeds', '40 coin'],
     ]);
   });
 
@@ -721,6 +779,29 @@ describe('PageAnnouncementManager', () => {
     ).toBe('herb:mintHerb');
   });
 
+  it.each([
+    ['summonSeedsX2', 'research:summonMultiplier'],
+    ['automation:autoSeedSpawn', 'research:autoSeedSpawn'],
+    ['automation:autoPlantTile:1', 'research:autoPlant'],
+    ['automation:autoHarvestPlant:1', 'research:autoHarvest'],
+    ['automation:autoBrewCauldron:1', 'research:autoBrew'],
+    ['automation:autoBottleCauldron:1', 'research:autoBottle'],
+    ['fastSellPayout:1', 'research:fastSell'],
+    ['advanced:researchTime:1', 'research:researchTime'],
+    ['emerald:researchCost:1', 'research:researchCost'],
+    ['advanced:automationReserve:1', 'research:automationReserve'],
+    ['advanced:plotCapacity:6', 'research:plotCapacity'],
+    ['advanced:cauldronCapacity:3', 'research:cauldronCapacity'],
+    ['advanced:cauldronBrewing:1:1', 'research:cauldronBrewing'],
+    ['advanced:plotGrowth:1:1', 'research:plotGrowth'],
+    ['emerald:plotPlanting:1:2', 'research:plotLevel'],
+    ['emerald:cauldronBrewing:1:2', 'research:cauldronLevel'],
+  ])('maps %s to its research family icon', (researchId, frameName) => {
+    const manager = new PageAnnouncementManager();
+
+    expect(manager.getResearchIconFrameName({ id: researchId })).toBe(frameName);
+  });
+
   it('uses facade metadata when completed series research is hidden from visible tabs', () => {
     const snapshot = createSnapshot();
     snapshot.research.tabs[0].boxes[0].researches = [];
@@ -753,6 +834,6 @@ describe('PageAnnouncementManager', () => {
       stage
         .querySelector('.room-announcement__research-icon')
         ?.getAttribute('data-asset-atlas-frame'),
-    ).toBe('resource:research');
+    ).toBe('research:fastSell');
   });
 });

@@ -1,11 +1,13 @@
 const EMPTY_SNAPSHOT = {
   connected: false,
+  identity: '',
   listings: [],
   ownListings: [],
   requests: [],
   ownRequests: [],
   tradeHistory: [],
   ownTradeHistory: [],
+  ownRoyaltyHistory: [],
   proceedsCoin: 0,
 };
 

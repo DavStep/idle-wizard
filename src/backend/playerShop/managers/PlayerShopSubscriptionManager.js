@@ -7,18 +7,21 @@ const OWN_REQUESTS_QUERY = 'SELECT * FROM own_player_shop_request';
 const PROCEEDS_QUERY = 'SELECT * FROM own_player_shop_proceeds';
 const TRADE_HISTORY_QUERY = 'SELECT * FROM player_shop_trade_recent';
 const OWN_TRADE_HISTORY_QUERY = 'SELECT * FROM own_player_shop_trade_history';
+const OWN_ROYALTY_HISTORY_QUERY = 'SELECT * FROM own_potion_recipe_royalty_history';
 const LEGACY_PUBLIC_LISTINGS_QUERY = 'SELECT * FROM player_shop_listing WHERE quantity > 0';
 const LEGACY_OWN_LISTINGS_QUERY = 'SELECT * FROM player_shop_listing WHERE "sellerIdentity" =';
 const LEGACY_PROCEEDS_QUERY = 'SELECT * FROM player_shop_proceeds WHERE "sellerIdentity" =';
 const LEGACY_TRADE_HISTORY_QUERY = 'SELECT * FROM player_shop_trade';
 const EMPTY_SNAPSHOT = {
   connected: false,
+  identity: '',
   listings: [],
   ownListings: [],
   requests: [],
   ownRequests: [],
   tradeHistory: [],
   ownTradeHistory: [],
+  ownRoyaltyHistory: [],
   proceedsCoin: 0,
 };
 
@@ -36,6 +39,7 @@ export class PlayerShopSubscriptionManager {
     this.proceedsTable = null;
     this.tradeHistoryTable = null;
     this.ownTradeHistoryTable = null;
+    this.ownRoyaltyHistoryTable = null;
     this.querySources = {};
     this.marketSubscriptions = [];
     this.tradeHistorySubscriptions = [];
@@ -106,6 +110,14 @@ export class PlayerShopSubscriptionManager {
       legacySnakeName: null,
       legacyQuery: null,
     });
+    const ownRoyaltyHistory = this.findTableSource({
+      camelName: 'ownPotionRecipeRoyaltyHistory',
+      snakeName: 'own_potion_recipe_royalty_history',
+      query: OWN_ROYALTY_HISTORY_QUERY,
+      legacyCamelName: null,
+      legacySnakeName: null,
+      legacyQuery: null,
+    });
     this.publicListingsTable = publicListings.table;
     this.ownListingsTable = ownListings.table;
     this.publicRequestsTable = publicRequests.table;
@@ -114,6 +126,7 @@ export class PlayerShopSubscriptionManager {
       proceeds.query ? proceeds.table : null;
     this.tradeHistoryTable = tradeHistory.table;
     this.ownTradeHistoryTable = ownTradeHistory.table;
+    this.ownRoyaltyHistoryTable = ownRoyaltyHistory.table;
     this.querySources = {
       publicListings,
       ownListings,
@@ -122,6 +135,7 @@ export class PlayerShopSubscriptionManager {
       proceeds,
       tradeHistory,
       ownTradeHistory,
+      ownRoyaltyHistory,
     };
 
     if (!this.ownListingsTable || !this.proceedsTable) {
@@ -168,6 +182,7 @@ export class PlayerShopSubscriptionManager {
     this.proceedsTable = null;
     this.tradeHistoryTable = null;
     this.ownTradeHistoryTable = null;
+    this.ownRoyaltyHistoryTable = null;
     this.querySources = {};
     this.marketSubscriptions = [];
     this.tradeHistorySubscriptions = [];
@@ -279,13 +294,14 @@ export class PlayerShopSubscriptionManager {
       return;
     }
 
-    if (!this.tradeHistoryTable && !this.ownTradeHistoryTable) {
+    if (!this.tradeHistoryTable && !this.ownTradeHistoryTable && !this.ownRoyaltyHistoryTable) {
       return;
     }
 
     if (!this.tradeHistoryTablesBound) {
       this.bindTable(this.tradeHistoryTable);
       this.bindTable(this.ownTradeHistoryTable);
+      this.bindTable(this.ownRoyaltyHistoryTable);
       this.tradeHistoryTablesBound = true;
     }
 
@@ -293,7 +309,7 @@ export class PlayerShopSubscriptionManager {
       return;
     }
 
-    const { tradeHistory, ownTradeHistory } = this.querySources;
+    const { tradeHistory, ownTradeHistory, ownRoyaltyHistory } = this.querySources;
     this.tradeHistorySubscriptions = [
       this.tradeHistoryTable && tradeHistory?.query
         ? this.subscribeOptionalQuery(tradeHistory.query, () => {
@@ -306,6 +322,13 @@ export class PlayerShopSubscriptionManager {
         ? this.subscribeOptionalQuery(ownTradeHistory.query, () => {
             this.unbindTable(this.ownTradeHistoryTable);
             this.ownTradeHistoryTable = null;
+            this.publishFromTables();
+          })
+        : null,
+      this.ownRoyaltyHistoryTable && ownRoyaltyHistory?.query
+        ? this.subscribeOptionalQuery(ownRoyaltyHistory.query, () => {
+            this.unbindTable(this.ownRoyaltyHistoryTable);
+            this.ownRoyaltyHistoryTable = null;
             this.publishFromTables();
           })
         : null,
@@ -332,6 +355,7 @@ export class PlayerShopSubscriptionManager {
     if (this.tradeHistoryTablesBound) {
       this.unbindTable(this.tradeHistoryTable);
       this.unbindTable(this.ownTradeHistoryTable);
+      this.unbindTable(this.ownRoyaltyHistoryTable);
       this.tradeHistoryTablesBound = false;
     }
 
@@ -418,15 +442,18 @@ export class PlayerShopSubscriptionManager {
     ) ?? null;
     const tradeHistory = this.getTradeHistoryRows();
     const ownTradeHistory = this.getOwnTradeHistoryRows(tradeHistory, identityKey);
+    const ownRoyaltyHistory = this.getOwnRoyaltyHistoryRows();
 
     this.publish({
       connected: true,
+      identity: identityKey,
       listings,
       ownListings,
       requests,
       ownRequests,
       tradeHistory,
       ownTradeHistory,
+      ownRoyaltyHistory,
       proceedsCoin:
         this.toCoinPrice(
           proceedsRow?.coin ?? proceedsRow?.gold,
@@ -534,6 +561,28 @@ export class PlayerShopSubscriptionManager {
     }
   }
 
+  getOwnRoyaltyHistoryRows() {
+    if (!this.tradeHistoryActive || !this.ownRoyaltyHistoryTable) {
+      return [];
+    }
+
+    try {
+      return Array.from(this.ownRoyaltyHistoryTable.iter())
+        .map((row) => this.mapRoyalty(row))
+        .sort((left, right) => {
+          if (left.awardedAtMs !== right.awardedAtMs) {
+            return right.awardedAtMs - left.awardedAtMs;
+          }
+
+          return right.royaltyId.localeCompare(left.royaltyId);
+        });
+    } catch {
+      this.unbindTable(this.ownRoyaltyHistoryTable);
+      this.ownRoyaltyHistoryTable = null;
+      return [];
+    }
+  }
+
   findTableSource({
     camelName,
     snakeName,
@@ -587,6 +636,37 @@ export class PlayerShopSubscriptionManager {
       priceCoin,
       totalPriceCoin: totalPriceCoin || priceCoin * quantity,
       tradedAtMs: this.toTimestampMs(row.tradedAt ?? row.traded_at),
+    };
+  }
+
+  mapRoyalty(row) {
+    const goldScale = row.goldScale ?? row.gold_scale;
+    const sourceSellerUsername = row.sourceSellerUsername ?? row.source_seller_username;
+
+    return {
+      royaltyId: this.toId(row.royaltyId ?? row.royalty_id),
+      recipientIdentity: this.toIdentityKey(row.recipientIdentity ?? row.recipient_identity),
+      sourceSellerIdentity: this.toIdentityKey(
+        row.sourceSellerIdentity ?? row.source_seller_identity,
+      ),
+      sourceSellerUsername:
+        typeof sourceSellerUsername === 'string' ? sourceSellerUsername : 'wizard',
+      potionKey: String(row.potionKey ?? row.potion_key ?? ''),
+      potionLabel: this.toDisplayLabel(row.potionLabel ?? row.potion_label),
+      royaltyCoin:
+        this.toCoinPrice(
+          row.royaltyCoin ?? row.royaltyGold ?? row.royalty_coin ?? row.royalty_gold,
+          goldScale,
+        ) ?? 0,
+      sourceIncomeCoin:
+        this.toCoinPrice(
+          row.sourceIncomeCoin ??
+            row.sourceIncomeGold ??
+            row.source_income_coin ??
+            row.source_income_gold,
+          goldScale,
+        ) ?? 0,
+      awardedAtMs: this.toTimestampMs(row.awardedAt ?? row.awarded_at),
     };
   }
 

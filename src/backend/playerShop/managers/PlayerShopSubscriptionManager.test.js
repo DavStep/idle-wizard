@@ -53,6 +53,7 @@ function createConnection({
   tradeHistoryTable = null,
   tradeHistoryRecentTable = null,
   ownTradeHistoryTable = null,
+  ownRoyaltyHistoryTable = null,
   failedQueries = [],
 }) {
   const subscriptions = [];
@@ -69,6 +70,9 @@ function createConnection({
       ...(tradeHistoryTable ? { playerShopTrade: tradeHistoryTable } : {}),
       ...(tradeHistoryRecentTable ? { playerShopTradeRecent: tradeHistoryRecentTable } : {}),
       ...(ownTradeHistoryTable ? { ownPlayerShopTradeHistory: ownTradeHistoryTable } : {}),
+      ...(ownRoyaltyHistoryTable
+        ? { ownPotionRecipeRoyaltyHistory: ownRoyaltyHistoryTable }
+        : {}),
     },
     subscriptions,
     subscriptionBuilder: () => ({
@@ -141,6 +145,7 @@ describe('PlayerShopSubscriptionManager', () => {
 
     expect(manager.getSnapshot()).toMatchObject({
       connected: true,
+      identity: SELF_IDENTITY_HEX,
       proceedsCoin: 7,
       listings: [
         {
@@ -160,6 +165,7 @@ describe('PlayerShopSubscriptionManager', () => {
       ],
       tradeHistory: [],
       ownTradeHistory: [],
+      ownRoyaltyHistory: [],
     });
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
   });
@@ -326,6 +332,7 @@ describe('PlayerShopSubscriptionManager', () => {
     const tradeHistoryTable = createTable([]);
     const tradeHistoryRecentTable = createTable([]);
     const ownTradeHistoryTable = createTable([]);
+    const ownRoyaltyHistoryTable = createTable([]);
     const connection = createConnection({
       listingsTable: createTable([]),
       publicListingsTable,
@@ -337,6 +344,7 @@ describe('PlayerShopSubscriptionManager', () => {
       tradeHistoryTable,
       tradeHistoryRecentTable,
       ownTradeHistoryTable,
+      ownRoyaltyHistoryTable,
     });
     const manager = new PlayerShopSubscriptionManager();
 
@@ -351,6 +359,7 @@ describe('PlayerShopSubscriptionManager', () => {
       'SELECT * FROM public_player_shop_request',
       'SELECT * FROM player_shop_trade_recent',
       'SELECT * FROM own_player_shop_trade_history',
+      'SELECT * FROM own_potion_recipe_royalty_history',
     ]);
   });
 
@@ -363,6 +372,7 @@ describe('PlayerShopSubscriptionManager', () => {
     const ownProceedsTable = createTable([]);
     const tradeHistoryRecentTable = createTable([]);
     const ownTradeHistoryTable = createTable([]);
+    const ownRoyaltyHistoryTable = createTable([]);
     const connection = createConnection({
       listingsTable: createTable([]),
       publicListingsTable,
@@ -373,6 +383,7 @@ describe('PlayerShopSubscriptionManager', () => {
       ownProceedsTable,
       tradeHistoryRecentTable,
       ownTradeHistoryTable,
+      ownRoyaltyHistoryTable,
     });
     const manager = new PlayerShopSubscriptionManager();
 
@@ -388,8 +399,10 @@ describe('PlayerShopSubscriptionManager', () => {
     ]);
     expect(tradeHistoryRecentTable.callbacks.insert).toBeNull();
     expect(ownTradeHistoryTable.callbacks.insert).toBeNull();
+    expect(ownRoyaltyHistoryTable.callbacks.insert).toBeNull();
     expect(manager.getSnapshot().tradeHistory).toEqual([]);
     expect(manager.getSnapshot().ownTradeHistory).toEqual([]);
+    expect(manager.getSnapshot().ownRoyaltyHistory).toEqual([]);
   });
 
   it('subscribes trade history without market rows when only trade history is active', () => {
@@ -401,6 +414,20 @@ describe('PlayerShopSubscriptionManager', () => {
     const ownProceedsTable = createTable([]);
     const tradeHistoryRecentTable = createTable([]);
     const ownTradeHistoryTable = createTable([]);
+    const ownRoyaltyHistoryTable = createTable([
+      {
+        royaltyId: 'royalty-1',
+        recipientIdentity: SELF_IDENTITY_HEX,
+        sourceSellerIdentity: 'seller',
+        sourceSellerUsername: 'Ada',
+        potionKey: 'manaTonic',
+        potionLabel: 'mana tonic',
+        royaltyGold: 125n,
+        sourceIncomeGold: 2500n,
+        goldScale: 100,
+        awardedAt: 300,
+      },
+    ]);
     const connection = createConnection({
       listingsTable: createTable([]),
       publicListingsTable,
@@ -411,6 +438,7 @@ describe('PlayerShopSubscriptionManager', () => {
       ownProceedsTable,
       tradeHistoryRecentTable,
       ownTradeHistoryTable,
+      ownRoyaltyHistoryTable,
     });
     const manager = new PlayerShopSubscriptionManager();
 
@@ -423,9 +451,19 @@ describe('PlayerShopSubscriptionManager', () => {
       'SELECT * FROM own_player_shop_proceeds',
       'SELECT * FROM player_shop_trade_recent',
       'SELECT * FROM own_player_shop_trade_history',
+      'SELECT * FROM own_potion_recipe_royalty_history',
     ]);
     expect(publicListingsTable.callbacks.insert).toBeNull();
     expect(publicRequestsTable.callbacks.insert).toBeNull();
+    expect(manager.getSnapshot().ownRoyaltyHistory).toMatchObject([
+      {
+        royaltyId: 'royalty-1',
+        sourceSellerUsername: 'Ada',
+        potionLabel: 'mana tonic',
+        royaltyCoin: 1.25,
+        sourceIncomeCoin: 25,
+      },
+    ]);
   });
 
   it('keeps listings online when optional trade history query fails', () => {
@@ -465,6 +503,7 @@ describe('PlayerShopSubscriptionManager', () => {
       ],
       tradeHistory: [],
       ownTradeHistory: [],
+      ownRoyaltyHistory: [],
     });
     expect(tradeHistoryTable.callbacks.insert).toBeNull();
   });
@@ -485,12 +524,14 @@ describe('PlayerShopSubscriptionManager', () => {
     expect(proceedsTable.callbacks.insert).toBeNull();
     expect(manager.getSnapshot()).toEqual({
       connected: false,
+      identity: '',
       listings: [],
       ownListings: [],
       requests: [],
       ownRequests: [],
       tradeHistory: [],
       ownTradeHistory: [],
+      ownRoyaltyHistory: [],
       proceedsCoin: 0,
     });
   });

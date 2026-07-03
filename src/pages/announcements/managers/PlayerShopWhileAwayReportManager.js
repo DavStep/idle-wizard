@@ -1,6 +1,6 @@
 export class PlayerShopWhileAwayReportManager {
   static explain =
-    'Turns existing player-market proceeds and request-fill trade rows into while-away report rows without changing market rules.';
+    'Turns player-market trade and royalty history rows into while-away report rows without changing market rules.';
 
   constructor({ playerShopFacade } = {}) {
     this.playerShopFacade = playerShopFacade;
@@ -11,6 +11,7 @@ export class PlayerShopWhileAwayReportManager {
     this.initialized = false;
     this.reportedProceedsCoin = 0;
     this.seenTradeIds = new Set();
+    this.seenRoyaltyIds = new Set();
   }
 
   mount({ onRows } = {}) {
@@ -35,6 +36,7 @@ export class PlayerShopWhileAwayReportManager {
     this.initialized = false;
     this.reportedProceedsCoin = 0;
     this.seenTradeIds.clear();
+    this.seenRoyaltyIds.clear();
   }
 
   handleSnapshot(snapshot) {
@@ -78,32 +80,40 @@ export class PlayerShopWhileAwayReportManager {
     this.snapshot = snapshot;
 
     const rows = [];
-    const proceedsCoin = this.getPositiveCount(snapshot.proceedsCoin, 0);
+    const proceedsCoin = this.getPositiveCoin(snapshot.proceedsCoin);
     const proceedsDelta = proceedsCoin - this.reportedProceedsCoin;
+    const tradeRows = this.consumeTradeRows(snapshot);
+    const royaltyRows = this.consumeRoyaltyRows(snapshot);
 
-    if (proceedsDelta > 0) {
-      rows.push({ type: 'player_market_sold', coin: proceedsDelta });
+    rows.push(...tradeRows.playerBoughtRows);
+    rows.push(...tradeRows.playerSoldYouRows);
+    rows.push(...royaltyRows.rows);
+
+    const matchedProceedsCoin = tradeRows.proceedsCoin + royaltyRows.proceedsCoin;
+    const unmatchedProceedsCoin = proceedsDelta - matchedProceedsCoin;
+    if (unmatchedProceedsCoin > 0) {
+      rows.push({ type: 'market_proceeds', coin: unmatchedProceedsCoin });
     }
 
     this.reportedProceedsCoin = proceedsCoin;
-    rows.push(
-      ...this.consumeTradeRows(snapshot, {
-        sellerSalesCoveredByProceeds: proceedsDelta > 0,
-      }),
-    );
     return rows;
   }
 
-  consumeTradeRows(snapshot = {}, { sellerSalesCoveredByProceeds = false } = {}) {
+  consumeTradeRows(snapshot = {}) {
     const ownIdentities = this.getOwnIdentities(snapshot);
 
     if (ownIdentities.size <= 0) {
-      return [];
+      return {
+        playerBoughtRows: [],
+        playerSoldYouRows: [],
+        proceedsCoin: 0,
+      };
     }
 
     const requestItems = this.getOwnRequestItemKeys(snapshot);
-    const requestFills = new Map();
-    let sellerSaleCoin = 0;
+    const playerBoughtRows = [];
+    const playerSoldYouRows = [];
+    let proceedsCoin = 0;
 
     for (const trade of snapshot.ownTradeHistory ?? []) {
       const tradeId = this.getTradeId(trade);
@@ -118,31 +128,70 @@ export class PlayerShopWhileAwayReportManager {
       const isSeller = sellerIdentity && ownIdentities.has(sellerIdentity);
 
       if (isBuyer && !isSeller && this.isRequestFillTrade(trade, requestItems)) {
-        this.addItemQuantity(requestFills, trade);
+        playerSoldYouRows.push({
+          type: 'player_trade_sold_to_you',
+          label: this.normalizeLabel(trade.itemLabel, 'items'),
+          quantity: this.getPositiveCount(trade.quantity, 1),
+          coin: this.getPositiveCoin(trade.totalPriceCoin ?? trade.priceCoin),
+          username: this.normalizeLabel(trade.sellerUsername, 'player'),
+        });
         this.seenTradeIds.add(tradeId);
         continue;
       }
 
       if (isSeller && !isBuyer) {
-        if (!sellerSalesCoveredByProceeds) {
-          sellerSaleCoin += this.getPositiveCount(trade.totalPriceCoin ?? trade.priceCoin, 0);
-        }
-
+        const coin = this.getPositiveCoin(trade.totalPriceCoin ?? trade.priceCoin);
+        proceedsCoin += coin;
+        playerBoughtRows.push({
+          type: 'player_trade_bought_from_you',
+          label: this.normalizeLabel(trade.itemLabel, 'items'),
+          quantity: this.getPositiveCount(trade.quantity, 1),
+          coin,
+          username: this.normalizeLabel(trade.buyerUsername, 'player'),
+        });
         this.seenTradeIds.add(tradeId);
       }
     }
 
-    const rows = Array.from(requestFills.values()).map((item) => ({
-      type: 'player_request_filled',
-      label: item.label,
-      quantity: item.quantity,
-    }));
+    return {
+      playerBoughtRows,
+      playerSoldYouRows,
+      proceedsCoin,
+    };
+  }
 
-    if (sellerSaleCoin > 0) {
-      rows.push({ type: 'player_market_sold', coin: sellerSaleCoin });
+  consumeRoyaltyRows(snapshot = {}) {
+    const rows = [];
+    let proceedsCoin = 0;
+
+    for (const royalty of snapshot.ownRoyaltyHistory ?? []) {
+      const royaltyId = this.getRoyaltyId(royalty);
+
+      if (!royaltyId || this.seenRoyaltyIds.has(royaltyId)) {
+        continue;
+      }
+
+      const coin = this.getPositiveCoin(royalty.royaltyCoin);
+
+      if (coin <= 0) {
+        this.seenRoyaltyIds.add(royaltyId);
+        continue;
+      }
+
+      proceedsCoin += coin;
+      rows.push({
+        type: 'potion_royalty_earned',
+        label: this.normalizeLabel(royalty.potionLabel, 'potion'),
+        coin,
+        username: this.normalizeLabel(royalty.sourceSellerUsername, 'player'),
+      });
+      this.seenRoyaltyIds.add(royaltyId);
     }
 
-    return rows;
+    return {
+      rows,
+      proceedsCoin,
+    };
   }
 
   getOwnIdentities(snapshot = {}) {
@@ -192,17 +241,6 @@ export class PlayerShopWhileAwayReportManager {
     return Boolean(itemKey && requestItems.has(itemKey));
   }
 
-  addItemQuantity(items, trade = {}) {
-    const key = this.getItemMatchKey(trade) || this.normalizeLabel(trade.itemLabel, 'item');
-    const existing = items.get(key) ?? {
-      label: this.normalizeLabel(trade.itemLabel, 'item'),
-      quantity: 0,
-    };
-
-    existing.quantity += this.getPositiveCount(trade.quantity, 1);
-    items.set(key, existing);
-  }
-
   getItemMatchKey(value = {}) {
     return (
       String(value.itemKey ?? '')
@@ -217,6 +255,10 @@ export class PlayerShopWhileAwayReportManager {
 
   getTradeId(trade = {}) {
     return String(trade.tradeId ?? trade.trade_id ?? '').trim();
+  }
+
+  getRoyaltyId(royalty = {}) {
+    return String(royalty.royaltyId ?? royalty.royalty_id ?? '').trim();
   }
 
   getIdentity(value) {
@@ -234,5 +276,10 @@ export class PlayerShopWhileAwayReportManager {
   getPositiveCount(value, fallback = 1) {
     const count = Math.floor(Number(value) || 0);
     return count > 0 ? count : fallback;
+  }
+
+  getPositiveCoin(value) {
+    const coin = Math.round((Number(value) || 0) * 100) / 100;
+    return coin > 0 ? coin : 0;
   }
 }

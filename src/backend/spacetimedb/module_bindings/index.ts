@@ -123,6 +123,7 @@ import OwnPlayerShopListingRow from "./own_player_shop_listing_table";
 import OwnPlayerShopProceedsRow from "./own_player_shop_proceeds_table";
 import OwnPlayerShopRequestRow from "./own_player_shop_request_table";
 import OwnPlayerShopTradeHistoryRow from "./own_player_shop_trade_history_table";
+import OwnPotionRecipeRoyaltyHistoryRow from "./own_potion_recipe_royalty_history_table";
 import OwnTradeAllianceChatRow from "./own_trade_alliance_chat_table";
 import OwnTradeAllianceOverviewRow from "./own_trade_alliance_overview_table";
 import OwnTradeAllianceRewardInboxRow from "./own_trade_alliance_reward_inbox_table";
@@ -134,6 +135,7 @@ import PlayerShopTradeRow from "./player_shop_trade_table";
 import PlayerInfoSummaryRow from "./player_info_summary_table";
 import PlayerShopTradeRecentRow from "./player_shop_trade_recent_table";
 import PotionRecipeDiscoveryRow from "./potion_recipe_discovery_table";
+import PotionRecipeRoyaltyRow from "./potion_recipe_royalty_table";
 import PotionRecipeDiscoverySnapshotRow from "./potion_recipe_discovery_snapshot_table";
 import PublicPlayerShopListingRow from "./public_player_shop_listing_table";
 import PublicPlayerShopRequestRow from "./public_player_shop_request_table";
@@ -350,6 +352,23 @@ const tablesSchema = __schema({
       { name: 'potion_recipe_discovery_potion_key_key', constraint: 'unique', columns: ['potionKey'] },
     ],
   }, PotionRecipeDiscoveryRow),
+  potionRecipeRoyalty: __table({
+    name: 'potion_recipe_royalty',
+    indexes: [
+      { accessor: 'byAwardedAt', name: 'potion_recipe_royalty_awarded_at_idx_btree', algorithm: 'btree', columns: [
+        'awardedAt',
+      ] },
+      { accessor: 'byRecipientIdentity', name: 'potion_recipe_royalty_recipient_identity_idx_btree', algorithm: 'btree', columns: [
+        'recipientIdentity',
+      ] },
+      { accessor: 'royaltyId', name: 'potion_recipe_royalty_royalty_id_idx_btree', algorithm: 'btree', columns: [
+        'royaltyId',
+      ] },
+    ],
+    constraints: [
+      { name: 'potion_recipe_royalty_royalty_id_key', constraint: 'unique', columns: ['royaltyId'] },
+    ],
+  }, PotionRecipeRoyaltyRow),
   researchConfig: __table({
     name: 'research_config',
     indexes: [
@@ -593,6 +612,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, OwnPlayerShopTradeHistoryRow),
+  own_potion_recipe_royalty_history: __table({
+    name: 'own_potion_recipe_royalty_history',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnPotionRecipeRoyaltyHistoryRow),
   own_trade_alliance_chat: __table({
     name: 'own_trade_alliance_chat',
     indexes: [

@@ -61,6 +61,7 @@
 - When smooth timer bars are desired, derive fill, remaining label, and ARIA percent from one inferred end time; do not let snapshot `progress` disagree with `remainingMs`.
 - Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
 - Research completion announcements should resolve labels/details through `ResearchFacade`; visible research tabs can hide completed series entries before the popup renders.
+- Research completion announcement icons belong in `PageAnnouncementManager` atlas-frame ID-family mapping; keep Research list rows text-first unless explicitly redesigning rows.
 - Page announcement baselines must reset on gameplay persistence load; restored backend saves should not replay old level/research popups.
 - While-away report rows should keep the row label left and the reward/status right; attach item/resource icons to the right-side value instead of adding a separate leading icon slot.
 - While-away reports should list produced items and market outcomes only; skip status-only rows like mana full, plots ready, research complete, and paused automation.
@@ -94,6 +95,8 @@
 - A page means a room view, not a web route.
 - The first page is `Workshop`.
 - Level requirements can be typed action rows; only `turnIn` consumes inventory, while `research`, `summon`, `grow`, `brew`, and `sell` progress from gameplay events and auto-complete at target.
+- Backend task config normalization can reset stored legacy `game_config.tasks` rows to the embedded default; changing default task JSON can immediately rebalance existing players after backend publish.
+- Level requirement pacing should be sawtooth by decade: early relief after each wall, steady middle build, hard level 9, and boss/wall level 10.
 - Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`; Workshop stays the default page. The internal page id is `shop`.
 - Market has no `PageUnlockManager` requirement; gate market-only subscriptions on current page visibility, not unlock state.
 - Show all five room pages in a shared bottom tab panel; bold the current page tab.
@@ -140,6 +143,8 @@
 - Workshop leaderboard UI reads `snapshot.leaderboard.topUsers` when supplied; do not fake income data in gameplay.
 - Leaderboard uses single-player/alliance target tabs plus daily/weekly/monthly/all-time period tabs; do not show a raw `income` tab.
 - Player market proceeds add spendable coin only; do not increase `coin.totalGenerated` or leaderboard income from player-to-player trades.
+- `player_shop_proceeds` can include potion discovery royalties from NPC market trades; use own trade history before labeling proceeds as player-market sales.
+- While-away market reports should use event rows: NPC sale callbacks for `traders bought`, own trade history for player bought/sold-you rows, and `own_potion_recipe_royalty_history` for royalties.
 - Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
 - Player market notifications should only mean a personal trade event: claimable proceeds from an own listing or an available listing matching an own request. Do not dot empty stands, affordable random listings, or matchable requests from other players.
 - Player market tab entry should retain only public listings/requests; trade history subscriptions and DOM rows stay lazy until the `trade history` popup opens.

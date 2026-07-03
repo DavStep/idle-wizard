@@ -123,7 +123,8 @@ The server module defines:
 - `trade_alliance_quest_progress` and `trade_alliance_quest_contribution`: weekly alliance quest progress and per-player contribution rows.
 - `trade_alliance_chat` and `trade_alliance_reward_inbox`: private base tables exposed through sender-scoped views for the current member/reward recipient; alliance chat rows join the sender character for avatar display.
 - `player_shop_listing`: one row per published player market stand, keyed by seller identity and slot number.
-- `player_shop_proceeds`: one row per seller with unclaimed coin from player shop sales.
+- `player_shop_proceeds`: one row per identity with aggregate claimable coin from player shop sales and potion discovery royalties.
+- `potion_recipe_royalty`: one row per awarded potion discovery royalty, exposed to the recipient through `own_potion_recipe_royalty_history`.
 - `potion_recipe_discovery`: global recipe discovery rows; clients subscribe through `potion_recipe_discovery_snapshot`.
 - `npc_market_price`: one row per NPC bazar item, with market price, buy/sell quotes, NPC need, and rolling fulfilled/supply scores. Clients subscribe through `npc_market_price_snapshot`.
 - `npc_market_item_config`: one row per NPC bazar item, with DB-owned base market price.
@@ -162,7 +163,7 @@ Period loops use server UTC time. Daily periods reset at UTC 00:00, which is 04:
 
 `set_player_level` accepts bounded client-reported task levels for shared display. `announce_level_up` is separate and posts a system world-chat row only when task completion advances the local level, so restored saves can sync level without replaying old level-up notices.
 
-Player market exchange reducers are enabled for public listings, public requests, purchases, proceeds, and trade history. The backend caps listing/request quantity at `1000` units, unit price at `1000000` coin, and one trade total at `10000000` coin.
+Player market exchange reducers are enabled for public listings, public requests, purchases, aggregate claimable proceeds, trade history, and own royalty history. The backend caps listing/request quantity at `1000` units, unit price at `1000000` coin, and one trade total at `10000000` coin.
 
 `sell_to_npc` records an NPC buyer sale. It reduces `npc_need`, raises the fulfilled/supply score, increases shared `npc_stock`, and recomputes the backend quote. NPC demand recovers lazily when market rows are touched: the current weekly boundary clears carried demand, then UTC buyer waves add demand, with a large wave at day start and smaller waves every six hours. During a server data reset, the module clears NPC market demand and stock once using a `maintenance_state` key tied to `PLAYER_DATA_RESET_GUARD_MICROS`.
 
@@ -198,6 +199,7 @@ SELECT * FROM own_player_shop_listing
 SELECT * FROM own_player_shop_proceeds
 SELECT * FROM player_shop_trade_recent
 SELECT * FROM own_player_shop_trade_history
+SELECT * FROM own_potion_recipe_royalty_history
 SELECT * FROM npc_market_price_snapshot
 SELECT * FROM potion_recipe_discovery_snapshot
 SELECT * FROM research_config_snapshot

@@ -4,6 +4,7 @@ import {
 } from '../../../assets/atlas/atlasSprite.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 import { createSeedPackIcon, getSeedIconFrameName } from '../../../assets/items/seeds/seedIcons.js';
+import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { appendTextWithItemIcons } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { getLevelPayoffRows } from '../../workshop/managers/levelPayoffSummary.js';
@@ -18,14 +19,36 @@ const RESOURCE_ICON_FRAMES = Object.freeze({
   research: 'resource:research',
   ruby: 'resource:ruby',
 });
+const RESEARCH_ICON_FRAMES = Object.freeze({
+  autoBottle: 'research:autoBottle',
+  autoBrew: 'research:autoBrew',
+  autoHarvest: 'research:autoHarvest',
+  autoPlant: 'research:autoPlant',
+  autoSeedSpawn: 'research:autoSeedSpawn',
+  automationReserve: 'research:automationReserve',
+  cauldronBrewing: 'research:cauldronBrewing',
+  cauldronCapacity: 'research:cauldronCapacity',
+  cauldronLevel: 'research:cauldronLevel',
+  fastSell: 'research:fastSell',
+  plotCapacity: 'research:plotCapacity',
+  plotGrowth: 'research:plotGrowth',
+  plotLevel: 'research:plotLevel',
+  researchCost: 'research:researchCost',
+  researchTime: 'research:researchTime',
+  summonMultiplier: 'research:summonMultiplier',
+});
 const WHILE_AWAY_VISIBLE_ROW_TYPES = new Set([
   'auto_seed_summoned',
   'garden_harvested',
   'brewing_complete',
   'market_sold',
   'npc_market_sold',
+  'market_proceeds',
   'player_market_sold',
+  'player_trade_bought_from_you',
+  'player_trade_sold_to_you',
   'player_request_filled',
+  'potion_royalty_earned',
 ]);
 
 export class PageAnnouncementManager {
@@ -632,20 +655,48 @@ export class PageAnnouncementManager {
       case 'market_sold':
       case 'npc_market_sold':
         return {
-          label: 'npc market sold',
-          value: `${this.getPositiveCount(row.coin)} coin`,
+          label: 'traders bought',
+          value: formatCoinPriceText(this.getPositiveCoin(row.coin)),
+        };
+      case 'market_proceeds':
+        return {
+          label: 'market proceeds',
+          value: formatCoinPriceText(this.getPositiveCoin(row.coin)),
         };
       case 'player_market_sold':
         return {
-          label: 'player market sold',
-          value: `${this.getPositiveCount(row.coin)} coin`,
+          label: 'players bought',
+          value: formatCoinPriceText(this.getPositiveCoin(row.coin)),
         };
-      case 'player_request_filled':
+      case 'player_trade_bought_from_you':
         return {
-          label: 'request filled',
+          label: this.getActorLabel('players bought', row.username),
           value: `${this.getPositiveCount(row.quantity)} ${this.getReportLabel(
             row.label,
             'items',
+          )} / ${formatCoinPriceText(this.getPositiveCoin(row.coin))}`,
+        };
+      case 'player_trade_sold_to_you':
+        return {
+          label: this.getActorLabel('players sold you', row.username),
+          value: `${this.getPositiveCount(row.quantity)} ${this.getReportLabel(
+            row.label,
+            'items',
+          )} / ${formatCoinPriceText(this.getPositiveCoin(row.coin))}`,
+        };
+      case 'player_request_filled':
+        return {
+          label: 'players sold you',
+          value: `${this.getPositiveCount(row.quantity)} ${this.getReportLabel(
+            row.label,
+            'items',
+          )}`,
+        };
+      case 'potion_royalty_earned':
+        return {
+          label: this.getActorLabel('royalties', row.username),
+          value: `${this.getReportLabel(row.label, 'potion')} / ${formatCoinPriceText(
+            this.getPositiveCoin(row.coin),
           )}`,
         };
       case 'auto_seed_summoned':
@@ -675,6 +726,16 @@ export class PageAnnouncementManager {
   getPositiveCount(value) {
     const count = Math.floor(Number(value) || 0);
     return Math.max(1, count);
+  }
+
+  getPositiveCoin(value) {
+    const coin = Math.round((Number(value) || 0) * 100) / 100;
+    return coin > 0 ? coin : 0;
+  }
+
+  getActorLabel(label, username) {
+    const name = this.getReportLabel(username, '');
+    return name ? `${label}: ${name}` : label;
   }
 
   pluralize(label, count) {
@@ -756,12 +817,20 @@ export class PageAnnouncementManager {
   }
 
   getResearchIconFrameName(research = {}) {
-    if (research.id?.startsWith('unlockSeed:')) {
-      return getSeedIconFrameName(research.id.slice('unlockSeed:'.length));
+    const researchId = String(research.id ?? '');
+
+    if (researchId.startsWith('unlockSeed:')) {
+      return getSeedIconFrameName(researchId.slice('unlockSeed:'.length));
     }
 
-    if (research.id?.startsWith('unlockRecipe:')) {
-      return getPotionIconFrameName(research.id.slice('unlockRecipe:'.length));
+    if (researchId.startsWith('unlockRecipe:')) {
+      return getPotionIconFrameName(researchId.slice('unlockRecipe:'.length));
+    }
+
+    const familyFrameName = this.getResearchFamilyIconFrameName(researchId);
+
+    if (familyFrameName) {
+      return familyFrameName;
     }
 
     if (research.actionType === 'levelUp') {
@@ -769,6 +838,74 @@ export class PageAnnouncementManager {
     }
 
     return RESOURCE_ICON_FRAMES.research;
+  }
+
+  getResearchFamilyIconFrameName(researchId = '') {
+    if (/^summonSeedsX\d+$/.test(researchId)) {
+      return RESEARCH_ICON_FRAMES.summonMultiplier;
+    }
+
+    if (researchId === 'automation:autoSeedSpawn') {
+      return RESEARCH_ICON_FRAMES.autoSeedSpawn;
+    }
+
+    if (researchId.startsWith('automation:autoPlantTile:')) {
+      return RESEARCH_ICON_FRAMES.autoPlant;
+    }
+
+    if (researchId.startsWith('automation:autoHarvestPlant:')) {
+      return RESEARCH_ICON_FRAMES.autoHarvest;
+    }
+
+    if (researchId.startsWith('automation:autoBrewCauldron:')) {
+      return RESEARCH_ICON_FRAMES.autoBrew;
+    }
+
+    if (researchId.startsWith('automation:autoBottleCauldron:')) {
+      return RESEARCH_ICON_FRAMES.autoBottle;
+    }
+
+    if (researchId.startsWith('fastSellPayout:')) {
+      return RESEARCH_ICON_FRAMES.fastSell;
+    }
+
+    if (researchId.startsWith('advanced:researchTime:')) {
+      return RESEARCH_ICON_FRAMES.researchTime;
+    }
+
+    if (researchId.startsWith('emerald:researchCost:')) {
+      return RESEARCH_ICON_FRAMES.researchCost;
+    }
+
+    if (researchId.startsWith('advanced:automationReserve:')) {
+      return RESEARCH_ICON_FRAMES.automationReserve;
+    }
+
+    if (researchId.startsWith('advanced:plotCapacity:')) {
+      return RESEARCH_ICON_FRAMES.plotCapacity;
+    }
+
+    if (researchId.startsWith('advanced:cauldronCapacity:')) {
+      return RESEARCH_ICON_FRAMES.cauldronCapacity;
+    }
+
+    if (researchId.startsWith('advanced:cauldronBrewing:')) {
+      return RESEARCH_ICON_FRAMES.cauldronBrewing;
+    }
+
+    if (researchId.startsWith('advanced:plotGrowth:')) {
+      return RESEARCH_ICON_FRAMES.plotGrowth;
+    }
+
+    if (researchId.startsWith('emerald:plotPlanting:')) {
+      return RESEARCH_ICON_FRAMES.plotLevel;
+    }
+
+    if (researchId.startsWith('emerald:cauldronBrewing:')) {
+      return RESEARCH_ICON_FRAMES.cauldronLevel;
+    }
+
+    return null;
   }
 
   getResearchDetailText(research = {}) {
