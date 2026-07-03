@@ -39,6 +39,7 @@
 - This is an Android-first mobile JavaScript game.
 - macOS `sips` can read project WebP portraits but cannot write them; use `cwebp` for WebP resize/encode.
 - Large PNG web assets are stored uncompressed inside Android APKs and can trip Discord webhook limits; use WebP for full-screen intro/tab art, and delete the old APK before remeasuring because Gradle can update the zip in place.
+- Ignored local `public/qa-data` is still copied by Vite/Capacitor when present; move it out of `public/` before release builds or APK uploads can exceed Discord webhook limits.
 - Android dev builds that point at local SpacetimeDB need `adb reverse tcp:3000 tcp:3000`; without it, Pixel WebView loops on `connecting to server`.
 - Before wiping local SpacetimeDB progress, check `.env.local` for the active `VITE_SPACETIME_DATABASE`; the shared Vite app may use `idle-wizard-codex-run` while `npm run stdb:publish` still targets `idle-wizard`.
 - The authored game viewport is `1080x2170`.
