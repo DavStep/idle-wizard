@@ -7,6 +7,10 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
+import {
+  getTaskRequirementVerb,
+  taskRequirementTypes,
+} from '../../../gameplay/tasks/taskRequirementTypes.js';
 import { formatLevelUpNotice, getLevelPayoffRows } from './levelPayoffSummary.js';
 
 const INITIAL_REQUIREMENTS_LABEL = formatLevelRequirementsLabel();
@@ -184,8 +188,10 @@ export class WorkshopTaskManager {
 
     this.refs.summary = document.createElement('div');
     this.refs.summary.className = 'workshop-page__tasks-summary';
+    this.refs.nextLine = document.createElement('div');
+    this.refs.nextLine.className = 'workshop-page__tasks-next';
     this.refs.summaryTask = this.createTaskRow();
-    this.refs.summary.append(this.refs.summaryTask.root);
+    this.refs.summary.append(this.refs.nextLine, this.refs.summaryTask.root);
 
     this.refs.count = document.createElement('span');
     this.refs.count.className = 'workshop-page__tasks-count';
@@ -475,6 +481,7 @@ export class WorkshopTaskManager {
     }
 
     this.renderSummaryTask(summaryTask, taskSnapshot.completedAllLevels);
+    this.renderNextLine(taskSnapshot, displayTasks);
     this.setText(
       this.refs.count,
       taskSnapshot.completedAllLevels
@@ -606,9 +613,71 @@ export class WorkshopTaskManager {
     this.setAttribute(
       this.refs.summary,
       'aria-label',
-      `${task.itemLabel} required for ${this.getRequirementTargetText()}`,
+      `${this.getTaskDisplayLabel(task)} required for ${this.getRequirementTargetText()}`,
     );
     this.renderTaskRow(this.refs.summaryTask, task);
+  }
+
+  renderNextLine(taskSnapshot, displayTasks = this.currentDisplayTasks) {
+    const text = this.getNextLineText(taskSnapshot, displayTasks);
+    this.setHidden(this.refs.nextLine, !text);
+    this.setText(this.refs.nextLine, text ? `next: ${text}` : '');
+  }
+
+  getNextLineText(taskSnapshot, displayTasks = this.currentDisplayTasks) {
+    const task = displayTasks.find((candidate) => candidate && !candidate.completed);
+
+    if (task) {
+      return this.getNextTaskActionText(task);
+    }
+
+    if (taskSnapshot?.completedAllLevels) {
+      return 'done';
+    }
+
+    if (this.shouldShowLevelComplete()) {
+      if (this.canAffordLevelCompletion()) {
+        return 'level up';
+      }
+
+      const missingCoin = Math.max(
+        0,
+        Math.ceil((this.currentLevelCompletion?.costCoin ?? 0) - this.currentCoin),
+      );
+      return missingCoin > 0
+        ? `earn ${formatCoinPriceText(missingCoin)}`
+        : 'level up';
+    }
+
+    return '';
+  }
+
+  getNextTaskActionText(task) {
+    const targetLabel = this.getTaskTargetLabel(task);
+    const remainingQuantity = Math.max(
+      0,
+      Math.ceil(Number(task.remainingQuantity ?? task.requiredQuantity) || 0),
+    );
+
+    if (task.type === taskRequirementTypes.RESEARCH) {
+      return `research ${targetLabel}`;
+    }
+
+    if (task.canComplete) {
+      return `complete ${targetLabel}`;
+    }
+
+    if (task.type === taskRequirementTypes.TURN_IN) {
+      return `${getTaskRequirementVerb(task.type)} ${formatRequirementQuantity(
+        remainingQuantity,
+        targetLabel,
+      )}`;
+    }
+
+    return `${getTaskRequirementVerb(task.type)} ${formatRequirementQuantity(
+      remainingQuantity,
+      targetLabel,
+    )}`;
   }
 
   getCurrentRequirementRowForItemTypeIds(itemTypeIds) {
@@ -856,10 +925,10 @@ export class WorkshopTaskManager {
 
   getTasksHelperText() {
     if (Number.isInteger(this.currentRequirementTargetLevel)) {
-      return `turn in these items to reach level ${this.currentRequirementTargetLevel}. turned-in items are consumed.`;
+      return `finish these requirements to reach level ${this.currentRequirementTargetLevel}. only turn-in rows consume items.`;
     }
 
-    return 'turn in these items to level up. turned-in items are consumed.';
+    return 'finish these requirements to level up. only turn-in rows consume items.';
   }
 
   getRequirementTargetText() {
@@ -931,10 +1000,11 @@ export class WorkshopTaskManager {
     );
     this.setDataset(row.button, 'taskId', task.taskId);
     this.setDataset(row.button, 'tutorialId', `task:${task.taskId}`);
-    this.setText(row.label, task.itemLabel);
+    this.setText(row.label, this.getTaskDisplayLabel(task));
     setItemIconLabel(row.label, task.itemKind, task.itemKey);
     this.setText(row.quantity, quantityText);
     this.setText(row.button, buttonText);
+    this.setHidden(row.button, task.autoProgress === true);
     this.setDisabled(row.button, disabled);
     this.setAttribute(row.button, 'aria-disabled', disabled ? 'true' : 'false');
     this.setAttribute(row.button, 'aria-label', this.getTaskButtonAriaLabel(task, buttonText));
@@ -1150,6 +1220,10 @@ export class WorkshopTaskManager {
       return 'done';
     }
 
+    if (task.autoProgress) {
+      return '';
+    }
+
     if (task.canComplete) {
       return COMPLETE_TEXT;
     }
@@ -1159,18 +1233,18 @@ export class WorkshopTaskManager {
 
   getTaskButtonAriaLabel(task, buttonText) {
     if (task.completed) {
-      return `${task.itemLabel} requirement done for ${this.getRequirementTargetText()}`;
+      return `${this.getTaskDisplayLabel(task)} requirement done for ${this.getRequirementTargetText()}`;
     }
 
     if (task.canComplete) {
-      return `complete ${task.itemLabel} requirement for ${this.getRequirementTargetText()}`;
+      return `complete ${this.getTaskDisplayLabel(task)} requirement for ${this.getRequirementTargetText()}`;
     }
 
     if (task.canFill) {
-      return `turn in ${task.itemLabel} for ${this.getRequirementTargetText()}. turned-in items are consumed`;
+      return `turn in ${this.getTaskTargetLabel(task)} for ${this.getRequirementTargetText()}. turned-in items are consumed`;
     }
 
-    return `${buttonText} ${task.itemLabel} requirement for ${this.getRequirementTargetText()}`;
+    return `${buttonText} ${this.getTaskDisplayLabel(task)} requirement for ${this.getRequirementTargetText()}`;
   }
 
   getTaskRowAriaLabel(task, canReorder = false) {
@@ -1179,14 +1253,22 @@ export class WorkshopTaskManager {
     }
 
     if (canReorder) {
-      return `move ${task.itemLabel} requirement priority with arrow keys or drag`;
+      return `move ${this.getTaskDisplayLabel(task)} requirement priority with arrow keys or drag`;
     }
 
     if (task.completed) {
-      return `${task.itemLabel} requirement done for ${this.getRequirementTargetText()}`;
+      return `${this.getTaskDisplayLabel(task)} requirement done for ${this.getRequirementTargetText()}`;
     }
 
-    return `${task.itemLabel} required for ${this.getRequirementTargetText()}`;
+    return `${this.getTaskDisplayLabel(task)} required for ${this.getRequirementTargetText()}`;
+  }
+
+  getTaskDisplayLabel(task) {
+    return task?.requirementLabel || task?.itemLabel || '';
+  }
+
+  getTaskTargetLabel(task) {
+    return task?.targetLabel || task?.itemLabel || '';
   }
 
   onTaskDragPointerDown(event, rowRoot) {
@@ -2373,4 +2455,15 @@ export class WorkshopTaskManager {
 
 function formatLevelCompletionCostText(costCoin) {
   return Number(costCoin) <= 0 ? 'free' : formatCoinPriceText(costCoin);
+}
+
+function formatRequirementQuantity(quantity, label) {
+  const safeQuantity = Math.max(0, Math.ceil(Number(quantity) || 0));
+  const safeLabel = String(label ?? '').trim();
+
+  if (safeQuantity <= 1) {
+    return safeLabel;
+  }
+
+  return `${safeQuantity} ${safeLabel}`;
 }

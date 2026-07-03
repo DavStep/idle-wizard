@@ -51,14 +51,17 @@ export class PrestigeStateEntityManager {
   }
 
   complete(level) {
-    this.syncMilestones({ completedLevels: [level] });
+    return this.completeLevels([level]);
+  }
 
-    if (!this.hasMilestone(level)) {
-      return false;
-    }
+  completeLevels(levels = []) {
+    const completedLevels = this.prestigeMilestoneBalanceManager.normalizeCompletedLevels([
+      ...this.getCompletedLevels(),
+      ...levels,
+    ]);
 
-    PlayerPrestigeMilestone.isCompleted[this.getEntityId(level)] = 1;
-    return true;
+    this.setCompletedLevels(completedLevels);
+    return levels.every((level) => this.isCompleted(level));
   }
 
   isCompleted(level) {
@@ -70,10 +73,8 @@ export class PrestigeStateEntityManager {
   }
 
   setCompletedLevels(levels = []) {
-    const completedLevels = [...new Set(levels)]
-      .map((level) => this.prestigeMilestoneBalanceManager.normalizeLevel(level))
-      .filter((level) => this.prestigeMilestoneBalanceManager.isMilestoneLevel(level))
-      .sort((left, right) => left - right);
+    const completedLevels =
+      this.prestigeMilestoneBalanceManager.normalizeCompletedLevels(levels);
 
     this.syncMilestones({ completedLevels });
 

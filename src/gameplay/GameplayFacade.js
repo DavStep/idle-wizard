@@ -25,6 +25,7 @@ import { SeedSummoningFacade } from './seedSummoning/SeedSummoningFacade.js';
 import { ShopFacade } from './shop/ShopFacade.js';
 import { TasksFacade } from './tasks/TasksFacade.js';
 import { VisualSettingsFacade } from './visualSettings/VisualSettingsFacade.js';
+import { WhileAwayReportFacade } from './whileAway/WhileAwayReportFacade.js';
 import {
   WORLD_NOTICE_ACTIONS,
   WorldNoticeFacade,
@@ -92,6 +93,7 @@ export class GameplayFacade {
       prestigeFacade: this.prestigeFacade,
       rubyFacade: this.rubyFacade,
     });
+    this.tasksFacade.setResearchFacade(this.researchFacade);
     this.personalTasksFacade = new PersonalTasksFacade({
       crystalFacade: this.crystalFacade,
       coinFacade: this.coinFacade,
@@ -158,9 +160,11 @@ export class GameplayFacade {
       onSeedSummoned: (result) => this.handleSeedSummoned(result),
       onPotionRecipeDiscovery: (potionKey) =>
         void this.potionDiscoveryFacade?.discoverPotionRecipe(potionKey),
+      prestigeFacade: this.prestigeFacade,
       researchFacade: this.researchFacade,
       seedSummoningFacade: this.seedSummoningFacade,
     });
+    this.whileAwayReportFacade = new WhileAwayReportFacade();
     this.persistenceFacade = new GameplayPersistenceFacade({
       storage: persistenceStorage,
       manaFacade: this.manaFacade,
@@ -423,7 +427,7 @@ export class GameplayFacade {
     return result;
   }
 
-  completePrestigeMilestone(level, { confirmedLower = false } = {}) {
+  completePrestigeMilestone(level) {
     const prestigeSnapshot = this.prestigeFacade.getSnapshot();
     const milestone = prestigeSnapshot.milestones.find(
       (candidate) => candidate.level === Math.floor(Number(level)),
@@ -434,19 +438,6 @@ export class GameplayFacade {
       return {
         ok: false,
         reason: 'unknown_milestone',
-      };
-    }
-
-    if (
-      milestone.lowerThanHighestAvailable &&
-      !confirmedLower &&
-      prestigeSnapshot.highestAvailableLevel
-    ) {
-      return {
-        ok: false,
-        reason: 'higher_prestige_available',
-        milestone,
-        highestAvailableLevel: prestigeSnapshot.highestAvailableLevel,
       };
     }
 
@@ -481,6 +472,12 @@ export class GameplayFacade {
         actionType: this.researchFacade.getResearchActionType(result.researchId),
       });
     }
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  setPrestigeRunFocus(focusId) {
+    const result = this.prestigeFacade.setRunFocus(focusId);
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -550,7 +547,18 @@ export class GameplayFacade {
       0,
       Math.floor(Number(this.rubyFacade.getSnapshot().current) || 0),
     );
-    this.rubyFacade.setCurrent(resetRun ? earnedRuby : Math.min(currentRuby, earnedRuby));
+    const committedRuby = Math.max(
+      0,
+      Math.floor(Number(this.researchFacade.getCommittedRubyCostTotal()) || 0),
+    );
+    const missingUnspentRuby = Math.max(0, earnedRuby - committedRuby);
+    const clampedCurrentRuby = Math.min(currentRuby, earnedRuby);
+
+    this.rubyFacade.setCurrent(
+      resetRun
+        ? earnedRuby
+        : Math.max(clampedCurrentRuby, Math.min(missingUnspentRuby, earnedRuby)),
+    );
   }
 
   getPrestigeResetEmeraldCurrent() {
@@ -580,7 +588,9 @@ export class GameplayFacade {
     const completedLevels = new Set(prestige.completedLevels);
 
     if (milestone && !milestone.completed) {
-      completedLevels.add(milestone.level);
+      for (const creditedLevel of milestone.creditedLevels ?? [milestone.level]) {
+        completedLevels.add(creditedLevel);
+      }
     }
 
     const resetLevel = getPrestigeResetLevel(milestoneLevel);
@@ -595,7 +605,13 @@ export class GameplayFacade {
     };
   }
 
-  handleResearchComplete({ label, actionType = 'research' }) {
+  handleResearchComplete({ researchId, label, actionType = 'research' }) {
+    this.tasksFacade.recordAction({
+      type: 'research',
+      researchId,
+      quantity: 1,
+    });
+    this.whileAwayReportFacade.recordResearchComplete({ researchId, label, actionType });
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_RESEARCH, 1);
     this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH, 1);
     this.gameplayLogFacade.logResearchBought({
@@ -608,6 +624,14 @@ export class GameplayFacade {
   }
 
   handleSeedSummoned(result) {
+    for (const seedCount of result.seedCounts ?? []) {
+      this.tasksFacade.recordAction({
+        type: 'summon',
+        itemKey: seedCount.seed?.key,
+        quantity: seedCount.quantity,
+      });
+    }
+    this.whileAwayReportFacade.recordSeedSummoned(result);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SUMMON_SEEDS, result.quantity);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SPEND_MANA, result.cost);
     this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.SUMMON_SEEDS, result.quantity, {
@@ -623,10 +647,17 @@ export class GameplayFacade {
   }
 
   handleBrewStarted(event) {
+    this.whileAwayReportFacade.recordBrewStarted(event);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SPEND_MANA, event?.manaCost);
   }
 
   handleBrewComplete(event) {
+    this.tasksFacade.recordAction({
+      type: 'brew',
+      itemKey: event.potion?.key,
+      quantity: event.quantity,
+    });
+    this.whileAwayReportFacade.recordBrewComplete(event);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.BREW_POTIONS, event.quantity);
     this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.BREW_POTIONS, event.quantity, {
       potion: event.potion,
@@ -642,6 +673,12 @@ export class GameplayFacade {
   }
 
   handleGardenHarvestComplete(event) {
+    this.tasksFacade.recordAction({
+      type: 'grow',
+      itemKey: event.herb?.key,
+      quantity: event.quantity,
+    });
+    this.whileAwayReportFacade.recordGardenHarvestComplete(event);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.HARVEST_HERBS, event.quantity);
     this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.HARVEST_HERBS, event.quantity, {
       herb: event.herb,
@@ -660,10 +697,17 @@ export class GameplayFacade {
       return;
     }
 
+    this.whileAwayReportFacade.recordGardenSeedPlanted(event);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.PLANT_SEEDS, 1);
   }
 
   handleItemSold(event) {
+    this.tasksFacade.recordAction({
+      type: 'sell',
+      itemKey: event.item?.key,
+      quantity: event.quantity ?? 1,
+    });
+    this.whileAwayReportFacade.recordItemSold(event);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SELL_ITEMS, event.quantity ?? 1);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_COIN, event.coin);
     this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.SELL_ITEMS, event.quantity ?? 1, {
@@ -1261,6 +1305,7 @@ export class GameplayFacade {
       logs: this.gameplayLogFacade.getSnapshot(),
       persistence: {
         loadRevision: this.persistenceLoadRevision,
+        awayReportRevision: this.whileAwayReportFacade.getReportRevision(),
       },
       playerLevel: this.playerLevelFacade.getSnapshot(),
       tasks: this.tasksFacade.getSnapshot(),
@@ -1495,6 +1540,7 @@ export class GameplayFacade {
       ? this.levelUpCrystalRewardManager.grantMissingForCurrentLevel()
       : 0;
     this.syncPlayerLevelManaEffects();
+    this.tasksFacade.syncCurrentLevelStateRequirements();
 
     if (loaded) {
       this.applyOfflineTimerCatchup(ecsFacade);
@@ -1523,6 +1569,10 @@ export class GameplayFacade {
     return this.persistenceFacade.consumeProgressResetPending();
   }
 
+  consumeWhileAwayReports() {
+    return this.whileAwayReportFacade.consumeReports();
+  }
+
   syncPlayerLevelManaEffects() {
     this.manaFacade.setLevelUpgradeEffects(this.playerLevelFacade.getManaEffects());
   }
@@ -1530,15 +1580,47 @@ export class GameplayFacade {
   applyOfflineTimerCatchup(ecsFacade) {
     const offlineDeltaSeconds = this.persistenceFacade.consumeOfflineDeltaSeconds();
 
-    if (!Number.isFinite(offlineDeltaSeconds) || offlineDeltaSeconds <= 0) {
-      return;
+    return this.applyAwayTimerCatchup(ecsFacade, {
+      deltaSeconds: offlineDeltaSeconds,
+      source: 'save_load',
+    });
+  }
+
+  applyAwayTimerCatchup(ecsFacade, { deltaSeconds, source = 'resume' } = {}) {
+    const awayDeltaSeconds = Number(deltaSeconds);
+
+    if (
+      !Number.isFinite(awayDeltaSeconds) ||
+      awayDeltaSeconds <= 0 ||
+      typeof ecsFacade?.update !== 'function'
+    ) {
+      return null;
     }
 
-    ecsFacade.update({
-      deltaSeconds: 0,
-      timerDeltaSeconds: offlineDeltaSeconds,
-      offline: true,
+    this.whileAwayReportFacade.beginCatchup({
+      beforeSnapshot: this.getSnapshot(),
+      offlineSeconds: awayDeltaSeconds,
+      source,
     });
+
+    let report = null;
+
+    try {
+      ecsFacade.update({
+        deltaSeconds: 0,
+        timerDeltaSeconds: awayDeltaSeconds,
+        offline: true,
+      });
+      report = this.whileAwayReportFacade.finishCatchup({
+        afterSnapshot: this.getSnapshot(),
+      });
+    } catch (error) {
+      this.whileAwayReportFacade.cancelCatchup();
+      throw error;
+    }
+
     this.persistenceFacade.save();
+    this.publishSnapshot();
+    return report;
   }
 }

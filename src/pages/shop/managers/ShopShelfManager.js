@@ -12,6 +12,7 @@ import {
   NOTIFICATION_TONE_ORANGE,
   setNotificationBadge,
 } from '../../shared/notificationBadge.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import { formatCoinPriceText, normalizeCoinPrice } from '../../../shared/coinPrice.js';
 
@@ -855,8 +856,7 @@ export class ShopShelfManager {
     for (const sellKind of shelf.sellKinds) {
       const button = this.refs.sellControls.tabButtons.get(sellKind.kind);
       const selected = this.selectedSellTab === sellKind.kind;
-      button.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
       setNotificationBadge(
         button,
         shelf.sellItems.some(

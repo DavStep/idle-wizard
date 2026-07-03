@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { EcsFacade } from '../ecs/EcsFacade.js';
 import { GameplayFacade } from './GameplayFacade.js';
+import { taskRequirementTypes } from './tasks/taskRequirementTypes.js';
 import { WORLD_NOTICE_ACTIONS } from './worldNotice/WorldNoticeFacade.js';
 
 function createGameplay({ persistenceNow = () => Date.UTC(2026, 5, 20, 12, 0) } = {}) {
@@ -21,13 +22,27 @@ function finishCurrentTaskLevel(gameplayFacade) {
   const tasks = gameplayFacade.getSnapshot().tasks.level.tasks;
 
   for (const task of tasks) {
-    gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
-    gameplayFacade.fillTask(task.taskId);
-    gameplayFacade.completeTask(task.taskId);
+    finishTaskRequirement(gameplayFacade, task);
   }
 
   gameplayFacade.coinFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costCoin);
   gameplayFacade.completeTaskLevel();
+}
+
+function finishTaskRequirement(gameplayFacade, task) {
+  if (task.type === taskRequirementTypes.TURN_IN) {
+    gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
+    gameplayFacade.fillTask(task.taskId);
+    gameplayFacade.completeTask(task.taskId);
+    return;
+  }
+
+  gameplayFacade.tasksFacade.recordAction({
+    type: task.type,
+    itemKey: task.itemKey,
+    researchId: task.researchId,
+    quantity: task.requiredQuantity,
+  });
 }
 
 function advanceToLevel(gameplayFacade, targetLevel) {

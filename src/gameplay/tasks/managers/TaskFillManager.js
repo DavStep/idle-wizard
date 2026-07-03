@@ -1,3 +1,5 @@
+import { taskRequirementTypes } from '../taskRequirementTypes.js';
+
 export class TaskFillManager {
   constructor({ itemsFacade, taskBalanceManager, taskStateEntityManager }) {
     this.itemsFacade = itemsFacade;
@@ -15,6 +17,10 @@ export class TaskFillManager {
 
     if (this.taskStateEntityManager.isCompleted(taskId)) {
       return { ok: false, reason: 'already_completed', taskId };
+    }
+
+    if (task.type !== taskRequirementTypes.TURN_IN) {
+      return { ok: false, reason: 'not_turn_in_requirement', taskId };
     }
 
     const progressQuantity = this.taskStateEntityManager.getProgress(taskId);

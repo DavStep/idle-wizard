@@ -4,8 +4,10 @@ import {
 } from '../../../assets/atlas/atlasSprite.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 import { createSeedPackIcon, getSeedIconFrameName } from '../../../assets/items/seeds/seedIcons.js';
+import { appendTextWithItemIcons } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { getLevelPayoffRows } from '../../workshop/managers/levelPayoffSummary.js';
+import { PlayerShopWhileAwayReportManager } from './PlayerShopWhileAwayReportManager.js';
 
 const DISPLAY_MS = 2100;
 const RESOURCE_ICON_FRAMES = Object.freeze({
@@ -16,23 +18,51 @@ const RESOURCE_ICON_FRAMES = Object.freeze({
   research: 'resource:research',
   ruby: 'resource:ruby',
 });
+const WHILE_AWAY_VISIBLE_ROW_TYPES = new Set([
+  'auto_seed_summoned',
+  'garden_harvested',
+  'brewing_complete',
+  'market_sold',
+  'npc_market_sold',
+  'player_market_sold',
+  'player_request_filled',
+]);
 
 export class PageAnnouncementManager {
-  constructor({ gameplayFacade, displayMs = DISPLAY_MS } = {}) {
+  constructor({
+    gameplayFacade,
+    playerFacade,
+    playerShopFacade,
+    displayMs = DISPLAY_MS,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.playerFacade = playerFacade;
+    this.playerShopReportManager = new PlayerShopWhileAwayReportManager({ playerShopFacade });
     this.displayMs = displayMs;
     this.layer = null;
     this.panel = null;
     this.title = null;
     this.body = null;
+    this.closeButton = null;
     this.unsubscribe = null;
     this.previousFocus = null;
     this.previousLevel = null;
     this.previousCompletedResearchIds = null;
     this.previousPersistenceLoadRevision = null;
+    this.previousAwayReportRevision = null;
     this.queue = [];
     this.current = null;
     this.hideTimeoutId = null;
+    this.handleLayerClick = (event) => {
+      if (event.target === this.layer) {
+        this.dismissCurrentReport();
+      }
+    };
+    this.handleKeydown = (event) => {
+      if (event.key === 'Escape') {
+        this.dismissCurrentReport();
+      }
+    };
   }
 
   mount(stage) {
@@ -42,8 +72,12 @@ export class PageAnnouncementManager {
 
     this.layer = this.createLayer();
     stage.append(this.layer);
+    stage.ownerDocument?.addEventListener?.('keydown', this.handleKeydown);
     this.unsubscribe =
       this.gameplayFacade?.subscribe?.((snapshot) => this.handleSnapshot(snapshot)) ?? null;
+    this.playerShopReportManager.mount({
+      onRows: (rows) => this.queuePlayerShopWhileAwayRows(rows),
+    });
 
     const baselineSnapshot = this.gameplayFacade?.getSnapshot?.();
 
@@ -51,22 +85,29 @@ export class PageAnnouncementManager {
       this.captureBaseline(baselineSnapshot);
     }
 
+    this.queuePendingWhileAwayReports();
+    this.showNext();
+
     return this.layer;
   }
 
   unmount() {
     this.unsubscribe?.();
+    this.playerShopReportManager.unmount();
     this.unsubscribe = null;
     this.clearHideTimeout();
+    this.layer?.ownerDocument?.removeEventListener?.('keydown', this.handleKeydown);
     this.layer?.remove();
     this.layer = null;
     this.panel = null;
     this.title = null;
     this.body = null;
+    this.closeButton = null;
     this.previousFocus = null;
     this.previousLevel = null;
     this.previousCompletedResearchIds = null;
     this.previousPersistenceLoadRevision = null;
+    this.previousAwayReportRevision = null;
     this.queue = [];
     this.current = null;
   }
@@ -76,6 +117,7 @@ export class PageAnnouncementManager {
     layer.className = 'room-announcement-layer';
     layer.hidden = true;
     layer.setAttribute('aria-hidden', 'true');
+    layer.addEventListener('click', this.handleLayerClick);
 
     this.panel = document.createElement('section');
     this.panel.className = 'room-announcement';
@@ -98,11 +140,22 @@ export class PageAnnouncementManager {
   handleSnapshot(snapshot) {
     if (this.previousCompletedResearchIds === null) {
       this.captureBaseline(snapshot);
+      this.queuePendingWhileAwayReports();
+      this.showNext();
       return;
     }
 
     if (this.hasPersistenceLoadRevisionChanged(snapshot)) {
       this.resetAnnouncementsToBaseline(snapshot);
+      this.queuePendingWhileAwayReports();
+      this.showNext();
+      return;
+    }
+
+    if (this.hasAwayReportRevisionChanged(snapshot)) {
+      this.resetAnnouncementsToBaseline(snapshot);
+      this.queuePendingWhileAwayReports();
+      this.showNext();
       return;
     }
 
@@ -116,6 +169,7 @@ export class PageAnnouncementManager {
     this.previousLevel = this.getPlayerLevel(snapshot);
     this.previousCompletedResearchIds = this.getCompletedResearchIds(snapshot);
     this.previousPersistenceLoadRevision = this.getPersistenceLoadRevision(snapshot);
+    this.previousAwayReportRevision = this.getAwayReportRevision(snapshot);
   }
 
   hasPersistenceLoadRevisionChanged(snapshot = {}) {
@@ -153,6 +207,80 @@ export class PageAnnouncementManager {
     const revision = Number(snapshot?.persistence?.loadRevision);
 
     return Number.isInteger(revision) && revision >= 0 ? revision : null;
+  }
+
+  hasAwayReportRevisionChanged(snapshot = {}) {
+    const nextRevision = this.getAwayReportRevision(snapshot);
+
+    return (
+      this.previousAwayReportRevision !== null &&
+      nextRevision !== null &&
+      nextRevision !== this.previousAwayReportRevision
+    );
+  }
+
+  getAwayReportRevision(snapshot = {}) {
+    const revision = Number(snapshot?.persistence?.awayReportRevision);
+
+    return Number.isInteger(revision) && revision >= 0 ? revision : null;
+  }
+
+  queuePendingWhileAwayReports() {
+    const reports = this.gameplayFacade?.consumeWhileAwayReports?.() ?? [];
+    const playerShopReport = this.playerShopReportManager.consumeReport();
+    let appendedPlayerShopReport = false;
+
+    for (const report of reports) {
+      if (report?.kind !== 'whileAway' || !Array.isArray(report.rows) || report.rows.length <= 0) {
+        continue;
+      }
+
+      const rows = this.getVisibleWhileAwayRows(report.rows);
+
+      if (!appendedPlayerShopReport && Array.isArray(playerShopReport?.rows)) {
+        rows.push(...this.getVisibleWhileAwayRows(playerShopReport.rows));
+        appendedPlayerShopReport = true;
+      }
+
+      if (rows.length > 0) {
+        this.queue.push({ ...report, rows });
+      }
+    }
+
+    if (!appendedPlayerShopReport && Array.isArray(playerShopReport?.rows)) {
+      const rows = this.getVisibleWhileAwayRows(playerShopReport.rows);
+
+      if (rows.length <= 0) {
+        return;
+      }
+
+      this.queue.push({
+        ...playerShopReport,
+        rows,
+      });
+    }
+  }
+
+  queuePlayerShopWhileAwayRows(rows = []) {
+    const visibleRows = this.getVisibleWhileAwayRows(rows);
+
+    if (visibleRows.length <= 0) {
+      return;
+    }
+
+    this.queue.push({
+      kind: 'whileAway',
+      source: 'player_market',
+      offlineSeconds: 0,
+      rows: visibleRows,
+    });
+    this.showNext();
+  }
+
+  getVisibleWhileAwayRows(rows = []) {
+    return (Array.isArray(rows) ? rows : []).filter((row) =>
+      WHILE_AWAY_VISIBLE_ROW_TYPES.has(row?.type),
+    );
   }
 
   queueLevelAnnouncement(snapshot = {}) {
@@ -286,7 +414,9 @@ export class PageAnnouncementManager {
     this.layer.setAttribute('aria-hidden', 'false');
     this.focusWithoutScroll(this.panel);
     this.clearHideTimeout();
-    this.hideTimeoutId = window.setTimeout(() => this.hideCurrent(), this.displayMs);
+    if (this.current.kind !== 'whileAway') {
+      this.hideTimeoutId = window.setTimeout(() => this.hideCurrent(), this.displayMs);
+    }
   }
 
   hideCurrent() {
@@ -308,6 +438,15 @@ export class PageAnnouncementManager {
     this.showNext();
   }
 
+  dismissCurrentReport() {
+    if (this.current?.kind !== 'whileAway') {
+      return false;
+    }
+
+    this.hideCurrent();
+    return true;
+  }
+
   clearHideTimeout() {
     if (!this.hideTimeoutId) {
       return;
@@ -321,11 +460,26 @@ export class PageAnnouncementManager {
     this.panel.dataset.announcementKind = announcement.kind;
 
     if (announcement.kind === 'level') {
+      this.renderStandardAnnouncementChrome();
       this.renderLevelAnnouncement(announcement);
       return;
     }
 
+    if (announcement.kind === 'whileAway') {
+      this.renderWhileAwayReport(announcement);
+      return;
+    }
+
+    this.renderStandardAnnouncementChrome();
     this.renderResearchAnnouncement(announcement);
+  }
+
+  renderStandardAnnouncementChrome() {
+    this.panel.classList.remove('style-dialog', 'room-announcement--report');
+    this.title.className = 'room-announcement__title';
+    this.body.className = 'room-announcement__body';
+    this.closeButton?.remove();
+    this.closeButton = null;
   }
 
   renderLevelAnnouncement({ fromLevel, toLevel, rows = [] }) {
@@ -372,6 +526,159 @@ export class PageAnnouncementManager {
     detail.hidden = detailText.length <= 0;
 
     this.body.replaceChildren(iconStage, label, detail);
+  }
+
+  renderWhileAwayReport(report = {}) {
+    this.panel.classList.add('style-dialog', 'room-announcement--report');
+    this.panel.setAttribute('aria-label', 'while away report');
+    this.title.className = 'style-box__title room-announcement__report-title';
+    this.setText(this.title, 'while away');
+    this.body.className = 'room-announcement__body room-announcement__body--report';
+
+    const closeButton = this.ensureCloseButton();
+    if (!closeButton.isConnected) {
+      this.panel.insertBefore(closeButton, this.body);
+    }
+
+    const rowsRoot = document.createElement('div');
+    rowsRoot.className = 'room-announcement__report-rows';
+    rowsRoot.replaceChildren(
+      ...report.rows.map((row) => this.createWhileAwayReportLine(row)),
+    );
+
+    this.body.replaceChildren(rowsRoot);
+  }
+
+  ensureCloseButton() {
+    if (this.closeButton) {
+      return this.closeButton;
+    }
+
+    const button = document.createElement('button');
+    button.className = 'style-button room-announcement__close';
+    button.type = 'button';
+    button.textContent = 'close';
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.dismissCurrentReport();
+    });
+    this.closeButton = button;
+    return button;
+  }
+
+  createWhileAwayReportLine(row = {}) {
+    const line = document.createElement('div');
+    const rowType = this.getWhileAwayReportRowType(row);
+    line.className = `room-announcement__report-line room-announcement__report-line--${rowType}`;
+    line.dataset.reportRowType = rowType;
+
+    const label = document.createElement('span');
+    label.className = 'room-announcement__report-label';
+
+    const value = document.createElement('span');
+    value.className = 'room-announcement__report-value';
+    this.renderWhileAwayReportLineContent({ label, value, row });
+
+    line.append(label, value);
+    return line;
+  }
+
+  renderWhileAwayReportLineContent({ label, value, row } = {}) {
+    const parts = this.getWhileAwayReportLineParts(row);
+
+    if (label) {
+      label.textContent = parts.label;
+    }
+
+    if (!value) {
+      return;
+    }
+
+    if (!parts.value) {
+      value.hidden = true;
+      value.textContent = '';
+      return;
+    }
+
+    appendTextWithItemIcons(value, parts.value);
+  }
+
+  getWhileAwayReportRowType(row = {}) {
+    return String(row.type ?? 'updated')
+      .replace(/[^a-z0-9_-]+/gi, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase() || 'updated';
+  }
+
+  getWhileAwayReportLineParts(row = {}) {
+    switch (row.type) {
+      case 'garden_harvested':
+        return {
+          label: 'garden harvested',
+          value: `${this.getPositiveCount(row.quantity)} ${this.getReportLabel(
+            row.label,
+            'herbs',
+          )}`,
+        };
+      case 'brewing_complete':
+        return {
+          label: 'brewing complete',
+          value: `${this.getPositiveCount(row.quantity)} ${this.getReportLabel(
+            row.label,
+            'potions',
+          )}`,
+        };
+      case 'market_sold':
+      case 'npc_market_sold':
+        return {
+          label: 'npc market sold',
+          value: `${this.getPositiveCount(row.coin)} coin`,
+        };
+      case 'player_market_sold':
+        return {
+          label: 'player market sold',
+          value: `${this.getPositiveCount(row.coin)} coin`,
+        };
+      case 'player_request_filled':
+        return {
+          label: 'request filled',
+          value: `${this.getPositiveCount(row.quantity)} ${this.getReportLabel(
+            row.label,
+            'items',
+          )}`,
+        };
+      case 'auto_seed_summoned':
+        return {
+          label: 'auto seed summoned',
+          value: `${this.getPositiveCount(row.quantity)} ${this.pluralize(
+            'seed',
+            row.quantity,
+          )}`,
+        };
+      default:
+        return {
+          label: this.getReportLabel(row.label ?? row.type, 'updated'),
+          value: '',
+        };
+    }
+  }
+
+  getReportLabel(value, fallback) {
+    return (
+      String(value ?? '')
+        .replace(/\s+/g, ' ')
+        .trim() || fallback
+    );
+  }
+
+  getPositiveCount(value) {
+    const count = Math.floor(Number(value) || 0);
+    return Math.max(1, count);
+  }
+
+  pluralize(label, count) {
+    return this.getPositiveCount(count) === 1 ? label : `${label}s`;
   }
 
   createRows(rows = []) {

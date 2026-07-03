@@ -50,10 +50,53 @@ export class PrestigeMilestoneBalanceManager {
   }
 
   getTotalRuby(completedLevels = []) {
-    return completedLevels.reduce((total, level) => {
+    return this.normalizeCompletedLevels(completedLevels).reduce((total, level) => {
       const milestone = this.getMilestone(level);
       return milestone ? total + milestone.rewardRuby : total;
     }, 0);
+  }
+
+  getCreditedLevelsForClaim(level, completedLevels = []) {
+    const normalizedLevel = this.normalizeLevel(level);
+
+    if (!this.isMilestoneLevel(normalizedLevel)) {
+      return [];
+    }
+
+    const completed = new Set(this.normalizeCompletedLevels(completedLevels));
+    return this.getMilestoneLevelsThrough(normalizedLevel).filter(
+      (milestoneLevel) => !completed.has(milestoneLevel),
+    );
+  }
+
+  normalizeCompletedLevels(levels = []) {
+    const normalizedLevels = [...new Set(
+      levels
+        .map((level) => this.normalizeLevel(level))
+        .filter((level) => this.isMilestoneLevel(level)),
+    )].sort((left, right) => left - right);
+    const maxLevel = normalizedLevels.at(-1);
+
+    if (!maxLevel) {
+      return [];
+    }
+
+    return this.getMilestoneLevelsThrough(maxLevel);
+  }
+
+  getMilestoneLevelsThrough(level) {
+    const normalizedLevel = this.normalizeLevel(level);
+
+    if (!this.isMilestoneLevel(normalizedLevel)) {
+      return [];
+    }
+
+    const levels = [];
+    for (let milestoneLevel = MILESTONE_STEP; milestoneLevel <= normalizedLevel; milestoneLevel += MILESTONE_STEP) {
+      levels.push(milestoneLevel);
+    }
+
+    return levels;
   }
 
   isMilestoneLevel(level) {

@@ -30,7 +30,7 @@ function createTouchEvent(type, target, { clientX = 120, clientY = 180 } = {}) {
   return event;
 }
 
-function createGameplayFacade(snapshot) {
+function createGameplayFacade(snapshot, overrides = {}) {
   return {
     subscribe(callback) {
       callback(snapshot);
@@ -39,6 +39,8 @@ function createGameplayFacade(snapshot) {
     getSnapshot() {
       return snapshot;
     },
+    setPrestigeRunFocus: () => ({ ok: true }),
+    ...overrides,
   };
 }
 
@@ -99,6 +101,74 @@ describe('ResearchBoxListManager', () => {
       'seed',
     ]);
     expect(lockedRow?.classList.contains('is-unavailable')).toBe(true);
+  });
+
+  it('renders research boxes in the standard scroll list', () => {
+    const snapshot = {
+      playerLevel: {
+        currentLevel: 5,
+      },
+      research: {
+        boxes: [
+          {
+            id: 'seedUnlocks',
+            label: 'seed unlock researches',
+            researches: [
+              {
+                id: 'unlockSeed:sageSeed',
+                label: 'sage seed',
+                value: 'researched',
+                completed: true,
+              },
+              {
+                id: 'unlockSeed:mintSeed',
+                label: 'mint seed',
+                value: 'free',
+                completed: false,
+                canResearch: true,
+                requiredResearchIds: ['unlockSeed:sageSeed'],
+              },
+              {
+                id: 'unlockSeed:nettleSeed',
+                label: 'nettle seed',
+                value: 'locked',
+                completed: false,
+                canResearch: false,
+                locked: true,
+                requiredResearchIds: ['unlockSeed:mintSeed'],
+              },
+            ],
+          },
+        ],
+        completedResearchIds: ['unlockSeed:sageSeed'],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+    });
+    const stage = document.createElement('section');
+
+    manager.mount(stage);
+
+    const content = stage.querySelector('.research-page__content');
+    const list = stage.querySelector('.research-page__box-list');
+    const box = stage.querySelector('.research-page__box');
+    const rows = [...stage.querySelectorAll('.research-page__row')];
+
+    expect(content).not.toBeNull();
+    expect(list?.classList.contains('style-page-scroll')).toBe(true);
+    expect(list?.dataset.scrollCueProgress).toBe('inline');
+    expect(stage.querySelector('.research-page__world-view')).toBeNull();
+    expect(stage.querySelector('.research-page__world-shell')).toBeNull();
+    expect(stage.querySelector('.research-page__zoom-controls')).toBeNull();
+    expect(stage.querySelector('.research-page__tree-connectors')).toBeNull();
+    expect(box?.getAttribute('aria-label')).toBe('seed unlock researches');
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => row.className)).toEqual([
+      'research-page__row is-completed',
+      'research-page__row is-available',
+      'research-page__row is-unavailable is-locked',
+    ]);
   });
 
   it('colors completed advanced and emerald research names and values by resource', () => {
@@ -267,6 +337,35 @@ describe('ResearchBoxListManager', () => {
     expect(css).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
     expect(css).toContain('line-height: var(--style-tiny-line-height);');
     expect(css).toContain('white-space: normal;');
+  });
+
+  it('uses the standard full-page scroll list structure', () => {
+    const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const contentRule = css.match(
+      /\.research-page__content\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const listRule = css.match(
+      /\.research-page__box-list\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(contentRule).toContain('top: var(--style-room-content-top);');
+    expect(contentRule).toContain('right: 16px;');
+    expect(contentRule).toContain('bottom: var(--style-room-chat-clearance);');
+    expect(contentRule).toContain('left: 16px;');
+    expect(listRule).toContain('bottom: var(--style-page-tab-scroll-clearance);');
+    expect(listRule).toContain('display: flex;');
+    expect(listRule).toContain('flex-direction: column;');
+    expect(listRule).toContain('gap: 24px;');
+    expect(listRule).toContain('padding-top: var(--style-page-scroll-padding-top);');
+    expect(listRule).toContain(
+      'padding-bottom: var(--style-page-scroll-padding-bottom);',
+    );
+    expect(listRule).toContain('overflow: hidden auto;');
+    expect(css).not.toContain('.research-page__world-view');
+    expect(css).not.toContain('.research-page__world-shell');
+    expect(css).not.toContain('.research-page__tree-connectors');
+    expect(css).not.toContain('.research-page__tree-node');
+    expect(css).not.toContain('.research-page__zoom-controls');
   });
 
   it('renders active research timers and bars with stepped progress', () => {
@@ -509,6 +608,124 @@ describe('ResearchBoxListManager', () => {
         lockReason: 'requires 1 prestige.',
       }),
     );
+
+    manager.unmount();
+    stage.remove();
+  });
+
+  it('shows slot-full state on timed research rows', () => {
+    const snapshot = {
+      playerLevel: {
+        currentLevel: 17,
+      },
+      prestige: {
+        completedLevels: [],
+      },
+      research: {
+        slots: {
+          active: 1,
+          max: 1,
+          full: true,
+          blockedReason: 'research_slots_full',
+        },
+        boxes: [
+          {
+            id: 'researchTime',
+            label: 'research time research',
+            researches: [
+              {
+                id: 'advanced:researchTime:1',
+                label: 'research time lvl 1',
+                value: '1 ruby',
+                effect: '-10% time',
+                costRuby: 1,
+                costCurrency: 'ruby',
+                completed: false,
+                canResearch: false,
+                blockedReason: 'research_slots_full',
+                requiredResearchIds: [],
+              },
+            ],
+          },
+        ],
+        completedResearchIds: [],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+    });
+    const stage = document.createElement('section');
+    document.body.append(stage);
+
+    manager.mount(stage);
+
+    const button = stage.querySelector('.research-page__research-button');
+    expect(stage.querySelector('.research-page__slot-status')?.textContent).toBe(
+      'timed research slots full: 1/1',
+    );
+    expect(button?.disabled).toBe(true);
+    expect(button?.title).toBe('research slots full.');
+    expect(button?.getAttribute('aria-label')).toContain(
+      'blocked because research slots are full',
+    );
+
+    manager.unmount();
+    stage.remove();
+  });
+
+  it('pins run-focus matching research boxes first', () => {
+    const setPrestigeRunFocus = vi.fn(() => ({ ok: true }));
+    const snapshot = {
+      playerLevel: {
+        currentLevel: 17,
+      },
+      prestige: {
+        completedLevels: [10, 20, 30],
+        runFocus: {
+          unlocked: true,
+          selected: 'capacity',
+          options: [
+            { id: 'none', label: 'none' },
+            { id: 'capacity', label: 'capacity' },
+            { id: 'automation', label: 'automation' },
+          ],
+        },
+      },
+      research: {
+        boxes: [
+          {
+            id: 'researchTime',
+            label: 'research time research',
+            researches: [],
+          },
+          {
+            id: 'plotCapacity',
+            label: 'plot capacity research',
+            researches: [],
+          },
+        ],
+        completedResearchIds: [],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot, { setPrestigeRunFocus }),
+    });
+    const stage = document.createElement('section');
+    document.body.append(stage);
+
+    manager.mount(stage);
+
+    const boxes = [...stage.querySelectorAll('.research-page__box')];
+    expect(stage.querySelector('.research-page__run-focus')?.textContent).toContain(
+      'capacity boxes first',
+    );
+    expect(boxes[0]?.getAttribute('aria-label')).toBe('plot capacity research');
+
+    stage
+      .querySelector('.research-page__run-focus-button[aria-pressed="false"]')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(setPrestigeRunFocus).toHaveBeenCalledWith('none');
 
     manager.unmount();
     stage.remove();

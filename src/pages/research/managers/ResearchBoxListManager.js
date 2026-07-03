@@ -5,6 +5,7 @@ import {
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { setTimerProgressFill, stopTimerProgressFill } from '../../shared/timerProgress.js';
 import { formatRemainingTime } from '../../shared/timerDisplay.js';
 import { createStarLevelLabel, formatStarLevel } from '../../shared/starLevelLabel.js';
@@ -90,14 +91,21 @@ export class ResearchBoxListManager {
   render(snapshot) {
     const tabs = this.getTabs(snapshot);
     const selectedTab = this.getSelectedTab(tabs);
+    const runFocus = this.getRunFocus(snapshot);
+    const researchSlots = this.getResearchSlots(snapshot);
     const boxes = this.decorateBoxes({
       boxes: selectedTab?.boxes ?? [],
       playerLevel: snapshot?.playerLevel?.currentLevel ?? 1,
       prestigeCount: snapshot?.prestige?.completedLevels?.length ?? 0,
+      runFocus,
       researchById: this.getResearchById(tabs),
       completedResearchIds: this.getCompletedResearchIds(snapshot, tabs),
     });
-    const signature = `${selectedTab?.id ?? 'none'}|${tabs
+    const signature = `${selectedTab?.id ?? 'none'}|${runFocus.unlocked}:${
+      runFocus.selected
+    }:${runFocus.options.map((option) => option.id).join(',')}|${
+      researchSlots.active
+    }/${researchSlots.max}/${researchSlots.full}|${tabs
       .map((tab) => `${tab.id}:${tab.label}`)
       .join(',')}|${boxes
       .map(
@@ -121,7 +129,10 @@ export class ResearchBoxListManager {
     this.syncTabs(tabs);
     this.syncTabState(tabs, selectedTab);
     this.rowRefs.clear();
-    this.boxesRoot.replaceChildren(...boxes.map((box) => this.createBox(box)));
+    this.boxesRoot.replaceChildren(
+      ...this.createStatusRows({ runFocus, researchSlots }),
+      ...boxes.map((box) => this.createBox(box)),
+    );
     this.syncResearchProgress(boxes);
   }
 
@@ -157,10 +168,11 @@ export class ResearchBoxListManager {
     boxes = [],
     playerLevel = 1,
     prestigeCount = 0,
+    runFocus,
     researchById,
     completedResearchIds,
   }) {
-    return boxes.map((box) => ({
+    const decoratedBoxes = boxes.map((box) => ({
       ...box,
       researches: (box.researches ?? []).map((research) => ({
         ...research,
@@ -173,6 +185,68 @@ export class ResearchBoxListManager {
         }),
       })),
     }));
+
+    return this.orderBoxesByRunFocus(decoratedBoxes, runFocus?.selected);
+  }
+
+  getRunFocus(snapshot = {}) {
+    const runFocus = snapshot?.prestige?.runFocus;
+    const options = Array.isArray(runFocus?.options) ? runFocus.options : [];
+
+    return {
+      unlocked: runFocus?.unlocked === true,
+      selected: typeof runFocus?.selected === 'string' ? runFocus.selected : 'none',
+      options,
+    };
+  }
+
+  getResearchSlots(snapshot = {}) {
+    const slots = snapshot?.research?.slots;
+    const active = Math.max(0, Math.floor(Number(slots?.active) || 0));
+    const max = Math.max(1, Math.floor(Number(slots?.max) || 1));
+
+    return {
+      active,
+      max,
+      full: slots?.full === true || active >= max,
+    };
+  }
+
+  orderBoxesByRunFocus(boxes = [], selectedFocus = 'none') {
+    if (!selectedFocus || selectedFocus === 'none') {
+      return boxes;
+    }
+
+    return boxes
+      .map((box, index) => ({
+        box,
+        index,
+        priority: this.getRunFocusBoxPriority(box, selectedFocus),
+      }))
+      .sort((left, right) => right.priority - left.priority || left.index - right.index)
+      .map(({ box }) => box);
+  }
+
+  getRunFocusBoxPriority(box = {}, selectedFocus = 'none') {
+    const id = String(box.id ?? '').toLowerCase();
+
+    if (selectedFocus === 'capacity') {
+      return /capacity|plotgrowth|cauldronbrewing/.test(id) ? 1 : 0;
+    }
+
+    if (selectedFocus === 'automation') {
+      return /^auto|automationreserve/.test(id) ? 1 : 0;
+    }
+
+    if (selectedFocus === 'research') {
+      return /researchcost|researchtime/.test(id) ? 1 : 0;
+    }
+
+    if (selectedFocus === 'market') {
+      return /fastsell/.test(id) ? 1 : 0;
+    }
+
+    return 0;
   }
 
   getResearchById(tabs = []) {
@@ -216,6 +290,10 @@ export class ResearchBoxListManager {
     researchById,
     completedResearchIds,
   }) {
+    if (research?.blockedReason === 'research_slots_full') {
+      return 'research slots full.';
+    }
+
     if (!research?.locked) {
       return '';
     }
@@ -320,8 +398,7 @@ export class ResearchBoxListManager {
       }
 
       button.textContent = tab.label;
-      button.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
       setNotificationBadge(button, this.tabHasNotification(tab));
     }
   }
@@ -343,6 +420,66 @@ export class ResearchBoxListManager {
     this.render(this.gameplayFacade.getSnapshot());
   }
 
+  createStatusRows({ runFocus, researchSlots }) {
+    const rows = [];
+
+    if (runFocus.unlocked) {
+      rows.push(this.createRunFocusControls(runFocus));
+    }
+
+    if (researchSlots.full) {
+      rows.push(this.createResearchSlotStatus(researchSlots));
+    }
+
+    return rows;
+  }
+
+  createRunFocusControls(runFocus) {
+    const row = document.createElement('div');
+    row.className = 'research-page__run-focus';
+
+    const label = document.createElement('span');
+    label.className = 'research-page__run-focus-label';
+    label.textContent = 'run focus';
+
+    const controls = document.createElement('span');
+    controls.className = 'research-page__run-focus-controls';
+
+    for (const option of runFocus.options) {
+      const button = document.createElement('button');
+      button.className = 'style-button research-page__run-focus-button';
+      button.type = 'button';
+      button.textContent = option.label ?? option.id;
+      button.setAttribute(
+        'aria-pressed',
+        option.id === runFocus.selected ? 'true' : 'false',
+      );
+      button.addEventListener('click', () => this.setRunFocus(option.id));
+      controls.append(button);
+    }
+
+    const helper = document.createElement('span');
+    helper.className = 'research-page__run-focus-helper';
+    helper.textContent =
+      runFocus.selected === 'none'
+        ? 'standard order'
+        : `${runFocus.selected} boxes first`;
+
+    row.append(label, controls, helper);
+    return row;
+  }
+
+  createResearchSlotStatus(researchSlots) {
+    const row = document.createElement('div');
+    row.className = 'research-page__slot-status';
+    row.textContent = `timed research slots full: ${researchSlots.active}/${researchSlots.max}`;
+    return row;
+  }
+
+  setRunFocus(focusId) {
+    this.gameplayFacade.setPrestigeRunFocus?.(focusId);
+  }
+
   createBox(box) {
     const section = document.createElement('section');
     section.className = `research-page__box research-page__box--${box.id} style-box`;
@@ -354,7 +491,9 @@ export class ResearchBoxListManager {
 
     section.append(
       title,
-      ...this.getDisplayedResearches(box.researches).map((research) => this.createRow(research)),
+      ...this.getDisplayedResearches(box.researches).map((research) =>
+        this.createRow(research),
+      ),
     );
 
     return section;
@@ -377,6 +516,13 @@ export class ResearchBoxListManager {
     const row = document.createElement('div');
     row.className = 'research-page__row';
     row.classList.toggle('is-completed', Boolean(research.completed));
+    row.classList.toggle(
+      'is-available',
+      !research.completed &&
+        !research.inProgress &&
+        !research.locked &&
+        Boolean(research.canResearch),
+    );
     row.classList.toggle(
       'is-unavailable',
       !research.completed && !research.inProgress && !research.canResearch,
@@ -423,6 +569,26 @@ export class ResearchBoxListManager {
 
     this.rowRefs.set(research.id, ref);
     return row;
+  }
+
+  getResearchState(research) {
+    if (research.completed) {
+      return 'completed';
+    }
+
+    if (research.inProgress) {
+      return 'in-progress';
+    }
+
+    if (research.locked) {
+      return 'locked';
+    }
+
+    if (research.canResearch) {
+      return 'available';
+    }
+
+    return 'unavailable';
   }
 
   onLockedRowClick(event, research) {
@@ -877,6 +1043,9 @@ export class ResearchBoxListManager {
     button.disabled = !research.canResearch;
     button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
     button.setAttribute('aria-label', this.formatResearchButtonLabel(research));
+    if (!research.canResearch && research.lockReason) {
+      button.title = research.lockReason;
+    }
     setNotificationBadge(button, research.canResearch);
     button.addEventListener('click', () => this.gameplayFacade.buyResearch(research.id));
     return button;
@@ -906,6 +1075,10 @@ export class ResearchBoxListManager {
       return `${this.formatResearchName(research)} is ${this.getResearchInProgressLabel(
         research,
       )}`;
+    }
+
+    if (research.blockedReason === 'research_slots_full') {
+      return `${this.formatResearchName(research)} is blocked because research slots are full`;
     }
 
     return `${this.getResearchActionVerb(research)} ${this.formatResearchName(

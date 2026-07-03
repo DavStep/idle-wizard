@@ -1,5 +1,6 @@
 import { getItemDisplay } from '../../shared/itemResearchStatus.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import {
   getNextNpcDemandWaveInfo,
   getNpcMarketDemandCap,
@@ -182,8 +183,7 @@ export class ShopDemandManager {
     for (const tab of DEMAND_TABS) {
       const selected = this.selectedTab === tab.kind;
       const button = this.refs.tabButtons.get(tab.kind);
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
     }
 
     const shelf = this.lastSnapshot?.shop?.shelf;

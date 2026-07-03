@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ItemsFacade } from '../../items/ItemsFacade.js';
 import { automationResearchIds } from '../../automation/automationResearchIds.js';
 import { advancedResearchIds } from '../advancedResearchIds.js';
+import { automationReserveResearchIds } from '../automationReserveResearch.js';
 import { capacityResearchIds } from '../capacityResearchIds.js';
 import { emeraldResearchIds } from '../emeraldResearchIds.js';
 import { ResearchBalanceManager } from './ResearchBalanceManager.js';
@@ -14,6 +15,7 @@ function createManager() {
   let maxGardenTiles = 10;
   let maxCauldrons = 5;
   let currentLevel = 15;
+  let completedPrestigeCount = 0;
 
   const manager = new ResearchDefinitionManager({
     itemsFacade: new ItemsFacade(),
@@ -23,7 +25,7 @@ function createManager() {
       getSnapshot: () => ({ currentLevel }),
     },
     prestigeFacade: {
-      getCompletedCount: () => 0,
+      getCompletedCount: () => completedPrestigeCount,
     },
     researchBalanceManager: new ResearchBalanceManager(),
   });
@@ -38,6 +40,9 @@ function createManager() {
     },
     setCurrentLevel: (level) => {
       currentLevel = level;
+    },
+    setCompletedPrestigeCount: (count) => {
+      completedPrestigeCount = count;
     },
   };
 }
@@ -157,6 +162,56 @@ describe('ResearchDefinitionManager', () => {
       id: researchCostResearchIds.reduction(8),
       value: '-80% cost',
       requiredResearchIds: [researchCostResearchIds.reduction(7)],
+    });
+  });
+
+  it('adds prestige-gated automation reserve research rows', () => {
+    const { manager } = createManager();
+    const box = manager
+      .getResearchTabs()
+      .find((tab) => tab.id === 'advanced')
+      ?.boxes.find((nextBox) => nextBox.id === 'automationReserve');
+
+    expect(box?.researches).toMatchObject([
+      {
+        id: automationReserveResearchIds.controls(1),
+        label: 'automation reserve lvl 1',
+        value: '75% preset',
+        requiredPrestigeCount: 4,
+        requiredResearchIds: [],
+      },
+      {
+        id: automationReserveResearchIds.controls(2),
+        value: 'cap preset',
+        requiredPrestigeCount: 4,
+        requiredResearchIds: [automationReserveResearchIds.controls(1)],
+      },
+      {
+        id: automationReserveResearchIds.controls(3),
+        value: '1000 step',
+        requiredPrestigeCount: 4,
+        requiredResearchIds: [automationReserveResearchIds.controls(2)],
+      },
+    ]);
+  });
+
+  it('gates stronger room study levels behind Prestige 5', () => {
+    const { manager } = createManager();
+    const box = manager
+      .getResearchTabs()
+      .find((tab) => tab.id === 'advanced')
+      ?.boxes.find((nextBox) => nextBox.id === 'plotGrowth');
+    const level5 = box?.researches.find(
+      (research) => research.id === advancedResearchIds.plotGrowth(1, 5),
+    );
+    const level6 = box?.researches.find(
+      (research) => research.id === advancedResearchIds.plotGrowth(1, 6),
+    );
+
+    expect(level5).not.toHaveProperty('requiredPrestigeCount');
+    expect(level6).toMatchObject({
+      requiredPrestigeCount: 5,
+      requiredResearchIds: [advancedResearchIds.plotGrowth(1, 5)],
     });
   });
 

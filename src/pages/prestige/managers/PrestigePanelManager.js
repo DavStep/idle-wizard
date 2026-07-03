@@ -1,63 +1,18 @@
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import {
   createStatusIcon,
   STATUS_ICON_CHECK,
   STATUS_ICON_LOCK,
 } from '../../shared/statusIcon.js';
 import { createStarLevelLabel } from '../../shared/starLevelLabel.js';
-import {
-  cauldronCapacityEndCauldronNumber,
-  cauldronCapacityStartCauldronNumber,
-  getCauldronCapacityPrestigeRequirement,
-  getPlotCapacityPrestigeRequirement,
-  plotCapacityEndPlotNumber,
-  plotCapacityStartPlotNumber,
-} from '../../../gameplay/research/capacityResearchIds.js';
+import { getPrestigeUnlocksSnapshot } from '../../../gameplay/prestige/prestigeUnlocks.js';
 
 const PRESTIGE_TABS = [
   { id: 'main', label: 'main' },
   { id: 'points', label: 'points' },
 ];
-
-const PRESTIGE_POINT_REWARDS = createPrestigePointRewards();
-
-function createPrestigePointRewards() {
-  const rewardsByCount = new Map();
-
-  const addReward = (count, label) => {
-    const safeCount = Math.max(1, Math.floor(Number(count) || 1));
-    const rewards = rewardsByCount.get(safeCount) ?? [];
-    rewards.push(label);
-    rewardsByCount.set(safeCount, rewards);
-  };
-
-  for (
-    let plotNumber = plotCapacityStartPlotNumber;
-    plotNumber <= plotCapacityEndPlotNumber;
-    plotNumber += 1
-  ) {
-    addReward(
-      getPlotCapacityPrestigeRequirement(plotNumber),
-      `plot ${plotNumber} capacity`,
-    );
-  }
-
-  for (
-    let cauldronNumber = cauldronCapacityStartCauldronNumber;
-    cauldronNumber <= cauldronCapacityEndCauldronNumber;
-    cauldronNumber += 1
-  ) {
-    addReward(
-      getCauldronCapacityPrestigeRequirement(cauldronNumber),
-      `cauldron ${cauldronNumber} capacity`,
-    );
-  }
-
-  return [...rewardsByCount.entries()]
-    .sort(([left], [right]) => left - right)
-    .map(([count, rewards]) => ({ count, rewards }));
-}
 
 export class PrestigePanelManager {
   static explain =
@@ -275,7 +230,7 @@ export class PrestigePanelManager {
   }
 
   createDescription() {
-    const description = document.createElement('div');
+    const description = document.createElement('ul');
     description.className = 'prestige-page__description-copy';
     description.replaceChildren(
       this.createDescriptionLine(
@@ -291,15 +246,28 @@ export class PrestigePanelManager {
         'the shown crystal, ruby, and emerald totals start the next run.',
       ),
       this.createDescriptionLine(
-        'each completed milestone adds 1 prestige point for capacity rewards.',
+        'claiming a milestone also credits lower unclaimed milestones.',
+      ),
+      this.createDescriptionLine(
+        'each completed milestone adds 1 prestige point for concrete rewards.',
       ),
     );
     return description;
   }
 
   createDescriptionLine(text) {
-    const line = document.createElement('div');
-    line.textContent = text;
+    const line = document.createElement('li');
+    line.className = 'prestige-page__description-line';
+
+    const marker = document.createElement('span');
+    marker.className = 'prestige-page__description-marker';
+    marker.setAttribute('aria-hidden', 'true');
+    marker.textContent = '-';
+
+    const copy = document.createElement('span');
+    copy.textContent = text;
+
+    line.append(marker, copy);
     return line;
   }
 
@@ -309,6 +277,7 @@ export class PrestigePanelManager {
     row.className = 'workshop-page__prestige-row style-box';
     row.classList.toggle('is-completed', state === 'completed');
     row.classList.toggle('is-ready', state === 'ready');
+    row.classList.toggle('is-included', state === 'included');
     row.classList.toggle('is-upcoming', state === 'upcoming');
     row.classList.toggle('is-locked', state === 'locked');
     row.dataset.prestigeState = state;
@@ -349,13 +318,16 @@ export class PrestigePanelManager {
 
   createPointRewardRows(prestige = {}) {
     const completedCount = this.getCompletedPrestigeCount(prestige);
+    const pointRewards = Array.isArray(prestige.unlocks)
+      ? prestige.unlocks
+      : getPrestigeUnlocksSnapshot(completedCount);
     const title = document.createElement('div');
     title.className = 'workshop-page__prestige-point-title';
     title.textContent = 'point rewards';
 
     return [
       title,
-      ...PRESTIGE_POINT_REWARDS.map((pointReward) =>
+      ...pointRewards.map((pointReward) =>
         this.createPointRewardRow(pointReward, completedCount),
       ),
     ];
@@ -373,6 +345,7 @@ export class PrestigePanelManager {
     const reward = document.createElement('div');
     reward.className = 'workshop-page__prestige-point-reward';
     reward.replaceChildren(
+      this.createPointRewardLine(pointReward.label),
       ...pointReward.rewards.map((label) => this.createPointRewardLine(label)),
     );
 
@@ -418,7 +391,7 @@ export class PrestigePanelManager {
   }
 
   createMilestoneAction(milestone) {
-    if (milestone.canComplete) {
+    if (milestone.canComplete && !milestone.lowerThanHighestAvailable) {
       const button = document.createElement('button');
       button.className = 'style-button workshop-page__prestige-action';
       button.type = 'button';
@@ -436,6 +409,10 @@ export class PrestigePanelManager {
     }
 
     if (milestone.canComplete) {
+      if (milestone.lowerThanHighestAvailable) {
+        return 'included';
+      }
+
       return 'ready';
     }
 
@@ -487,17 +464,11 @@ export class PrestigePanelManager {
     this.refs.confirm?.scrollIntoView?.({ block: 'nearest' });
   }
 
-  completePrestige(level, confirmedLower = false) {
-    const result = this.gameplayFacade.completePrestigeMilestone(level, { confirmedLower });
+  completePrestige(level) {
+    const result = this.gameplayFacade.completePrestigeMilestone(level);
 
     if (result.ok) {
       this.confirmingMilestone = null;
-      return;
-    }
-
-    if (result.reason === 'higher_prestige_available') {
-      this.confirmingMilestone = result.milestone;
-      this.applyConfirm();
     }
   }
 
@@ -506,7 +477,7 @@ export class PrestigePanelManager {
       return;
     }
 
-    this.completePrestige(this.confirmingMilestone.level, true);
+    this.completePrestige(this.confirmingMilestone.level);
   }
 
   cancelConfirm() {
@@ -520,7 +491,6 @@ export class PrestigePanelManager {
     }
 
     const milestone = this.confirmingMilestone;
-    const highest = this.lastSnapshot.prestige?.highestAvailableLevel;
     this.refs.confirm.hidden = !milestone;
 
     if (!milestone) {
@@ -531,7 +501,7 @@ export class PrestigePanelManager {
     }
 
     this.refs.confirmMessage.replaceChildren(
-      ...this.createConfirmMessageNodes(milestone, highest),
+      ...this.createConfirmMessageNodes(milestone),
     );
     const targetRow = this.refs.rows.querySelector(
       `[data-prestige-level="${milestone.level}"]`,
@@ -544,15 +514,8 @@ export class PrestigePanelManager {
     }
   }
 
-  createConfirmMessageNodes(milestone, highest) {
+  createConfirmMessageNodes(milestone) {
     const nodes = [];
-
-    if (milestone.lowerThanHighestAvailable && highest) {
-      const warning = document.createElement('div');
-      warning.className = 'workshop-page__prestige-confirm-warning';
-      warning.textContent = `higher prestige available: level ${highest}`;
-      nodes.push(warning);
-    }
 
     const flow = document.createElement('div');
     flow.className = 'workshop-page__prestige-confirm-flow';
@@ -569,6 +532,16 @@ export class PrestigePanelManager {
       ...this.createPrestigeTotalNodes(milestone.nextRun),
     );
     nodes.push(receive);
+
+    const creditedLevels = Array.isArray(milestone.creditedLevels)
+      ? milestone.creditedLevels
+      : [];
+    if (creditedLevels.length > 1) {
+      const included = document.createElement('div');
+      included.className = 'workshop-page__prestige-confirm-included';
+      included.textContent = `also credits levels ${creditedLevels.join(', ')}`;
+      nodes.push(included);
+    }
 
     nodes.push(this.createNextRunSummary(milestone.nextRun));
     return nodes;
@@ -619,8 +592,10 @@ export class PrestigePanelManager {
       parts.push(`${this.normalizeResourceAmount(nextRun.crystal)} crystal`);
     }
 
-    parts.push(`${this.normalizeResourceAmount(milestone.rewardRuby)} ruby`);
-    return `reward: ${parts.join(', ')}`;
+    parts.push(
+      `${this.normalizeResourceAmount(milestone.creditedRuby ?? milestone.rewardRuby)} ruby`,
+    );
+    return `reward: ${parts.join(' ')}`;
   }
 
   createPrestigeTotalNodes(nextRun = {}) {
@@ -628,7 +603,7 @@ export class PrestigePanelManager {
 
     for (const resourceKey of ['crystal', 'ruby', 'emerald']) {
       if (nodes.length > 0) {
-        nodes.push(document.createTextNode(', '));
+        nodes.push(document.createTextNode(' '));
       }
 
       nodes.push(this.createResourceValue(resourceKey, nextRun?.[resourceKey]));
@@ -691,7 +666,7 @@ export class PrestigePanelManager {
         continue;
       }
 
-      button.setAttribute('aria-selected', tab.id === this.selectedTabId ? 'true' : 'false');
+      setSelectedTabState(button, tab.id === this.selectedTabId);
     }
   }
 
@@ -703,9 +678,12 @@ export class PrestigePanelManager {
       currentLevel: prestige.currentLevel,
       completedCount: this.getCompletedPrestigeCount(prestige),
       highestAvailableLevel: prestige.highestAvailableLevel,
+      unlocks: prestige.unlocks,
       milestones: (prestige.milestones ?? []).map((milestone) => ({
         level: milestone.level,
         rewardRuby: milestone.rewardRuby,
+        creditedRuby: milestone.creditedRuby,
+        creditedLevels: milestone.creditedLevels,
         completed: milestone.completed,
         canComplete: milestone.canComplete,
         unlocked: milestone.unlocked,

@@ -8,6 +8,7 @@ import {
   setResourceColor,
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
@@ -540,8 +541,7 @@ export class ShopDirectSellManager {
     for (const tab of DIRECT_SELL_TABS) {
       const selected = this.selectedTab === tab.kind;
       const button = this.refs.tabButtons.get(tab.kind);
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
     }
 
     const items = this.getVisibleItems();

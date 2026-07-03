@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ItemsFacade } from '../../items/ItemsFacade.js';
 import { itemKinds } from '../../items/itemKinds.js';
+import { taskRequirementTypes } from '../taskRequirementTypes.js';
 import { TaskBalanceManager } from './TaskBalanceManager.js';
 
 const potionResearchOrder = [
@@ -23,316 +24,269 @@ const potionResearchOrder = [
   'deepDreamVision',
   'pactWard',
   'dragonCourage',
+  'silverleafSalve',
+  'yarrowPoultice',
+  'hyssopClarity',
+  'valerianRest',
+  'comfreyBalm',
+  'nightshadeVeil',
+  'belladonnaSight',
+  'wormwoodPurge',
+  'snowdropBreath',
+  'pearlrootDraught',
 ];
 
-function getRequiredQuantityTotal(level) {
-  return level.tasks.reduce((total, task) => total + task.requiredQuantity, 0);
+function createManager(balance) {
+  return new TaskBalanceManager({
+    itemsFacade: new ItemsFacade(),
+    ...(balance ? { balance } : {}),
+  });
+}
+
+function getTaskSummary(task) {
+  return {
+    id: task.id,
+    type: task.type,
+    action: task.action,
+    researchId: task.researchId,
+    itemKey: task.itemKey,
+    requiredQuantity: task.requiredQuantity,
+    requirementLabel: task.requirementLabel,
+  };
 }
 
 describe('TaskBalanceManager', () => {
-  it('uses reduced level 1 sage requirements', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-
-    expect(
-      taskBalanceManager.getLevelTasks(1).map((task) => ({
-        id: task.id,
-        itemKey: task.itemKey,
-        requiredQuantity: task.requiredQuantity,
-      })),
-    ).toEqual([
-      { id: 'level1-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 1 },
-    ]);
-  });
-
-  it('uses the free level 1 completion cost', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-
-    expect(taskBalanceManager.getLevelCompletionCostCoin(1)).toBe(0);
-  });
-
-  it('accepts legacy SpacetimeDB completionCostGold runtime costs', () => {
-    const taskBalanceManager = new TaskBalanceManager({
-      itemsFacade: new ItemsFacade(),
-      balance: {
-        levels: [
-          {
-            level: 1,
-            completionCostGold: 10,
-            tasks: [{ id: 'level1-sage-seeds', itemKey: 'sageSeed', quantity: 4 }],
-          },
-        ],
-      },
+  it('keeps legacy item-only rows as turn-in requirements', () => {
+    const taskBalanceManager = createManager({
+      levels: [
+        {
+          level: 1,
+          completionCostGold: 10,
+          tasks: [{ id: 'level1-sage-seeds', itemKey: 'sageSeed', quantity: 4 }],
+        },
+      ],
     });
 
     expect(taskBalanceManager.getLevelCompletionCostCoin(1)).toBe(10);
+    expect(getTaskSummary(taskBalanceManager.getLevelTasks(1)[0])).toEqual({
+      id: 'level1-sage-seeds',
+      type: taskRequirementTypes.TURN_IN,
+      action: taskRequirementTypes.TURN_IN,
+      researchId: null,
+      itemKey: 'sageSeed',
+      requiredQuantity: 4,
+      requirementLabel: 'turn in sage seed',
+    });
   });
 
-  it('uses level 2 as the first normal market coin gate', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-
-    expect(taskBalanceManager.getLevelCompletionCostCoin(2)).toBe(4);
-    expect(
-      taskBalanceManager.getLevelTasks(2).map((task) => ({
-        id: task.id,
-        itemKey: task.itemKey,
-        requiredQuantity: task.requiredQuantity,
-      })),
-    ).toEqual([
-      { id: 'level2-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 5 },
-    ]);
-  });
-
-  it('introduces herbs on level 4 requirements', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-
-    expect(
-      taskBalanceManager.getLevelTasks(4).map((task) => ({
-        id: task.id,
-        itemKey: task.itemKey,
-        requiredQuantity: task.requiredQuantity,
-      })),
-    ).toEqual([
-      { id: 'level4-sage-seeds', itemKey: 'sageSeed', requiredQuantity: 6 },
-      { id: 'level4-sage-herb', itemKey: 'sageHerb', requiredQuantity: 2 },
-      { id: 'level4-mint-herb', itemKey: 'mintHerb', requiredQuantity: 1 },
-    ]);
-  });
-
-  it('uses diversified level 5 through 9 onboarding requirements', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-
-    expect(
-      [5, 6, 7, 8, 9].map((level) =>
-        taskBalanceManager.getLevelTasks(level).map((task) => ({
-          itemKey: task.itemKey,
-          requiredQuantity: task.requiredQuantity,
-        })),
-      ),
-    ).toEqual([
-      [
-        { itemKey: 'sageSeed', requiredQuantity: 8 },
-        { itemKey: 'mintHerb', requiredQuantity: 2 },
-        { itemKey: 'manaTonic', requiredQuantity: 1 },
+  it('parses all requirement types with player-facing labels', () => {
+    const taskBalanceManager = createManager({
+      levels: [
+        {
+          level: 1,
+          completionCostCoin: 0,
+          tasks: [
+            {
+              id: 'research-mint',
+              type: 'research',
+              researchId: 'unlockSeed:mintSeed',
+              quantity: 1,
+            },
+            { id: 'summon-mint', type: 'summon', itemKey: 'mintSeed', quantity: 3 },
+            { id: 'grow-sage', type: 'grow', itemKey: 'sageHerb', quantity: 2 },
+            { id: 'brew-tonic', type: 'brew', itemKey: 'manaTonic', quantity: 1 },
+            { id: 'sell-sage', type: 'sell', itemKey: 'sageSeed', quantity: 1 },
+          ],
+        },
       ],
-      [
-        { itemKey: 'nettleSeed', requiredQuantity: 6 },
-        { itemKey: 'nettleHerb', requiredQuantity: 3 },
-        { itemKey: 'sageHerb', requiredQuantity: 4 },
-        { itemKey: 'minorHealingPotion', requiredQuantity: 1 },
-      ],
-      [
-        { itemKey: 'lavenderSeed', requiredQuantity: 8 },
-        { itemKey: 'sageSeed', requiredQuantity: 8 },
-        { itemKey: 'mintHerb', requiredQuantity: 5 },
-        { itemKey: 'manaTonic', requiredQuantity: 2 },
-      ],
-      [
-        { itemKey: 'mintSeed', requiredQuantity: 12 },
-        { itemKey: 'briarSeed', requiredQuantity: 8 },
-        { itemKey: 'lavenderHerb', requiredQuantity: 4 },
-        { itemKey: 'nettleVigor', requiredQuantity: 2 },
-      ],
-      [
-        { itemKey: 'lavenderSeed', requiredQuantity: 10 },
-        { itemKey: 'briarHerb', requiredQuantity: 4 },
-        { itemKey: 'nettleHerb', requiredQuantity: 6 },
-        { itemKey: 'calmingDraught', requiredQuantity: 2 },
-      ],
-    ]);
-  });
+    });
 
-  it('keeps the level 10 onboarding row mixed but light', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-
-    expect(
-      taskBalanceManager.getLevelTasks(10).map((task) => ({
-        id: task.id,
-        itemKey: task.itemKey,
-        requiredQuantity: task.requiredQuantity,
-      })),
-    ).toEqual([
-      { id: 'level10-nettle-seeds', itemKey: 'nettleSeed', requiredQuantity: 12 },
-      { id: 'level10-glowcap-seeds', itemKey: 'glowcapSeed', requiredQuantity: 8 },
-      { id: 'level10-sage-herb', itemKey: 'sageHerb', requiredQuantity: 8 },
-      { id: 'level10-briar-ward', itemKey: 'briarWard', requiredQuantity: 2 },
+    expect(taskBalanceManager.getLevelTasks(1).map(getTaskSummary)).toEqual([
       {
-        id: 'level10-minor-healing-potion',
-        itemKey: 'minorHealingPotion',
+        id: 'research-mint',
+        type: 'research',
+        action: 'research',
+        researchId: 'unlockSeed:mintSeed',
+        itemKey: 'mintSeed',
+        requiredQuantity: 1,
+        requirementLabel: 'research mint seed',
+      },
+      {
+        id: 'summon-mint',
+        type: 'summon',
+        action: 'summon',
+        researchId: null,
+        itemKey: 'mintSeed',
         requiredQuantity: 3,
+        requirementLabel: 'summon mint seed',
+      },
+      {
+        id: 'grow-sage',
+        type: 'grow',
+        action: 'grow',
+        researchId: null,
+        itemKey: 'sageHerb',
+        requiredQuantity: 2,
+        requirementLabel: 'grow sage',
+      },
+      {
+        id: 'brew-tonic',
+        type: 'brew',
+        action: 'brew',
+        researchId: null,
+        itemKey: 'manaTonic',
+        requiredQuantity: 1,
+        requirementLabel: 'brew mana tonic',
+      },
+      {
+        id: 'sell-sage',
+        type: 'sell',
+        action: 'sell',
+        researchId: null,
+        itemKey: 'sageSeed',
+        requiredQuantity: 1,
+        requirementLabel: 'sell sage seed',
       },
     ]);
   });
 
-  it('keeps level 11 as the first post-onboarding relief row', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+  it('uses action-based onboarding requirements for levels 1 through 5', () => {
+    const taskBalanceManager = createManager();
 
-    expect(
-      taskBalanceManager.getLevelTasks(11).map((task) => ({
-        id: task.id,
+    expect([1, 2, 3, 4, 5].map((level) =>
+      taskBalanceManager.getLevelTasks(level).map((task) => ({
+        type: task.type,
+        researchId: task.researchId,
         itemKey: task.itemKey,
         requiredQuantity: task.requiredQuantity,
       })),
-    ).toEqual([
-      { id: 'level11-glowcap-seeds', itemKey: 'mintSeed', requiredQuantity: 69 },
-      { id: 'level11-mandrake-seeds', itemKey: 'mandrakeHerb', requiredQuantity: 37 },
-      { id: 'level11-mandrake-herb', itemKey: 'glowcapHerb', requiredQuantity: 25 },
-      { id: 'level11-briar-ward', itemKey: 'manaTonic', requiredQuantity: 6 },
-      { id: 'level11-calming-draught', itemKey: 'calmingDraught', requiredQuantity: 6 },
+    )).toEqual([
+      [
+        { type: 'summon', researchId: null, itemKey: 'sageSeed', requiredQuantity: 1 },
+        { type: 'turnIn', researchId: null, itemKey: 'sageSeed', requiredQuantity: 1 },
+      ],
+      [
+        { type: 'summon', researchId: null, itemKey: 'sageSeed', requiredQuantity: 5 },
+        { type: 'sell', researchId: null, itemKey: 'sageSeed', requiredQuantity: 1 },
+        { type: 'turnIn', researchId: null, itemKey: 'sageSeed', requiredQuantity: 4 },
+      ],
+      [
+        {
+          type: 'research',
+          researchId: 'unlockSeed:mintSeed',
+          itemKey: 'mintSeed',
+          requiredQuantity: 1,
+        },
+        { type: 'summon', researchId: null, itemKey: 'mintSeed', requiredQuantity: 3 },
+        { type: 'turnIn', researchId: null, itemKey: 'mintSeed', requiredQuantity: 3 },
+      ],
+      [
+        { type: 'grow', researchId: null, itemKey: 'sageHerb', requiredQuantity: 2 },
+        { type: 'grow', researchId: null, itemKey: 'mintHerb', requiredQuantity: 1 },
+        { type: 'turnIn', researchId: null, itemKey: 'sageHerb', requiredQuantity: 2 },
+        { type: 'turnIn', researchId: null, itemKey: 'mintHerb', requiredQuantity: 1 },
+      ],
+      [
+        {
+          type: 'research',
+          researchId: 'unlockRecipe:manaTonic',
+          itemKey: 'manaTonic',
+          requiredQuantity: 1,
+        },
+        { type: 'brew', researchId: null, itemKey: 'manaTonic', requiredQuantity: 1 },
+        { type: 'turnIn', researchId: null, itemKey: 'manaTonic', requiredQuantity: 1 },
+      ],
     ]);
   });
 
-  it('keeps the level 19 ramp below the level 20 gate', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-
-    expect(
-      taskBalanceManager.getLevelTasks(19).map((task) => ({
-        id: task.id,
-        itemKey: task.itemKey,
-        requiredQuantity: task.requiredQuantity,
-      })),
-    ).toEqual([
-      { id: 'level19-moonflower-seeds', itemKey: 'moonflowerSeed', requiredQuantity: 114 },
-      { id: 'level19-frostmoss-seeds', itemKey: 'sunrootHerb', requiredQuantity: 62 },
-      { id: 'level19-frostmoss-herb', itemKey: 'frostmossHerb', requiredQuantity: 42 },
-      { id: 'level19-healing-potion', itemKey: 'briarWard', requiredQuantity: 12 },
-      { id: 'level19-venom-draught', itemKey: 'venomDraught', requiredQuantity: 8 },
-    ]);
-  });
-
-  it('staggers the level 16 herb and recipe unlock requirements across two rows', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-    const level16ItemKeys = taskBalanceManager.getLevelTasks(16).map((task) => task.itemKey);
-    const level17ItemKeys = taskBalanceManager.getLevelTasks(17).map((task) => task.itemKey);
-
-    expect(level16ItemKeys).toContain('moonflowerHerb');
-    expect(level16ItemKeys).not.toContain('venomDraught');
-    expect(level17ItemKeys).toContain('venomDraught');
-  });
-
-  it('extends the task curve to level 100 with hard-tier quantities', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+  it('extends the richer requirement curve to level 100', () => {
+    const taskBalanceManager = createManager();
 
     expect(taskBalanceManager.getMaxLevel()).toBe(100);
-    expect(
-      taskBalanceManager.getLevelTasks(99).map((task) => ({
-        itemKey: task.itemKey,
-        requiredQuantity: task.requiredQuantity,
-      })),
-    ).toEqual([
-      { itemKey: 'dreambellSeed', requiredQuantity: 1620 },
-      { itemKey: 'starAniseHerb', requiredQuantity: 721 },
-      { itemKey: 'dragonpepperHerb', requiredQuantity: 551 },
-      { itemKey: 'elixirOfLife', requiredQuantity: 147 },
-      { itemKey: 'pactWard', requiredQuantity: 111 },
+    expect(taskBalanceManager.getLevelTasks(100).map((task) => ({
+      type: task.type,
+      itemKey: task.itemKey,
+      requiredQuantity: task.requiredQuantity,
+    }))).toEqual([
+      { type: 'brew', itemKey: 'pearlrootDraught', requiredQuantity: 14 },
+      { type: 'turnIn', itemKey: 'pearlrootDraught', requiredQuantity: 11 },
+      { type: 'brew', itemKey: 'pactWard', requiredQuantity: 14 },
+      { type: 'turnIn', itemKey: 'silverleafSalve', requiredQuantity: 11 },
+      { type: 'sell', itemKey: 'glowcapHerb', requiredQuantity: 29 },
     ]);
   });
 
-  it('keeps ten-level stage bosses hard locally while later bosses rise globally', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-    const levels = taskBalanceManager.getLevels();
-    const levelByNumber = new Map(levels.map((level) => [level.level, level]));
-    const bossLevels = [20, 30, 40, 50, 60, 70, 80, 90, 100];
-
-    for (const bossLevel of bossLevels.slice(0, -1)) {
-      const bossTotal = getRequiredQuantityTotal(levelByNumber.get(bossLevel));
-      const nextOpenerTotal = getRequiredQuantityTotal(levelByNumber.get(bossLevel + 1));
-
-      expect(bossTotal, `level ${bossLevel} boss should exceed next opener`).toBeGreaterThan(
-        nextOpenerTotal,
-      );
-    }
-
-    for (let index = 1; index < bossLevels.length; index += 1) {
-      const previousBoss = getRequiredQuantityTotal(levelByNumber.get(bossLevels[index - 1]));
-      const currentBoss = getRequiredQuantityTotal(levelByNumber.get(bossLevels[index]));
-
-      expect(
-        currentBoss,
-        `level ${bossLevels[index]} boss should exceed previous stage boss`,
-      ).toBeGreaterThan(previousBoss);
-    }
-  });
-
-  it('does not repeat exact requirement items on adjacent post-onboarding levels', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-    const levels = taskBalanceManager.getLevels();
-
-    for (let index = 1; index < levels.length; index += 1) {
-      const level = levels[index];
-
-      if (level.level <= 10) {
-        continue;
-      }
-
-      const previousItemKeys = new Set(levels[index - 1].tasks.map((task) => task.itemKey));
-      const repeatedItemKeys = level.tasks
-        .map((task) => task.itemKey)
-        .filter((itemKey) => previousItemKeys.has(itemKey));
-
-      expect(
-        repeatedItemKeys,
-        `level ${levels[index - 1].level}->${level.level} repeats ${repeatedItemKeys.join(', ')}`,
-      ).toEqual([]);
-    }
-  });
-
-  it('does not repeat the same material set for three consecutive levels', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
-    const levels = taskBalanceManager.getLevels();
-
-    for (let index = 2; index < levels.length; index += 1) {
-      const materialSets = [levels[index - 2], levels[index - 1], levels[index]].map(
-        (level) => level.tasks.map((task) => task.itemKey).join('|'),
-      );
-
-      expect(
-        new Set(materialSets).size,
-        `levels ${levels[index - 2].level}-${levels[index].level} repeat ${materialSets[0]}`,
-      ).toBeGreaterThan(1);
-    }
-  });
-
-  it('uses five tasks from the post-onboarding curve onward', () => {
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade: new ItemsFacade() });
+  it('keeps task ids unique and level rows compact', () => {
+    const taskBalanceManager = createManager();
+    const taskIds = new Set();
 
     for (const level of taskBalanceManager.getLevels()) {
-      if (level.level <= 10) {
-        continue;
-      }
+      expect(level.tasks.length, `config level ${level.level}`).toBeGreaterThanOrEqual(1);
+      expect(level.tasks.length, `config level ${level.level}`).toBeLessThanOrEqual(5);
 
-      expect(level.tasks, `config level ${level.level}`).toHaveLength(5);
-    }
-  });
-
-  it('keeps seed requirements on a different family than same-level items after tutorial levels', () => {
-    const itemsFacade = new ItemsFacade();
-    const taskBalanceManager = new TaskBalanceManager({ itemsFacade });
-    const seedDefinitions = itemsFacade.getSeedDefinitions();
-    const seedFamilyLabelsByKey = new Map(
-      seedDefinitions.map((seed) => [seed.key, seed.label.replace(/ seed$/, '')]),
-    );
-
-    for (const level of taskBalanceManager.getLevels()) {
-      if (level.level <= 10) {
-        continue;
-      }
-
-      const itemLabels = level.tasks
-        .filter((task) => task.itemKind !== itemKinds.seed)
-        .map((task) => task.itemLabel);
-
-      for (const seedTask of level.tasks.filter((task) => task.itemKind === itemKinds.seed)) {
-        const seedFamilyLabel = seedFamilyLabelsByKey.get(seedTask.itemKey);
-
-        expect(
-          itemLabels.some((itemLabel) => itemLabel.includes(seedFamilyLabel)),
-          `level ${level.level} should not pair ${seedTask.itemLabel} with same-family item`,
-        ).toBe(false);
+      for (const task of level.tasks) {
+        expect(taskIds.has(task.id), `duplicate task id ${task.id}`).toBe(false);
+        taskIds.add(task.id);
+        expect(task.requiredQuantity, task.id).toBeGreaterThan(0);
       }
     }
   });
 
-  it('does not skip seed or recipe research order in level tasks', () => {
+  it('hands off research unlocks into production on the next level after onboarding', () => {
+    const taskBalanceManager = createManager();
+
+    expectNextLevelProduction(taskBalanceManager, 'unlockSeed:glowcapSeed', [
+      'summon:glowcapSeed',
+      'grow:glowcapHerb',
+      'turnIn:glowcapHerb',
+    ]);
+    expectNextLevelProduction(taskBalanceManager, 'unlockSeed:mandrakeSeed', [
+      'summon:mandrakeSeed',
+      'grow:mandrakeHerb',
+      'turnIn:mandrakeHerb',
+    ]);
+    expectNextLevelProduction(taskBalanceManager, 'unlockRecipe:lanternTonic', [
+      'brew:lanternTonic',
+      'turnIn:lanternTonic',
+    ]);
+    expectNextLevelProduction(taskBalanceManager, 'unlockRecipe:pearlrootDraught', [
+      'brew:pearlrootDraught',
+      'turnIn:pearlrootDraught',
+    ]);
+  });
+
+  it('uses every requirement type in the default curve', () => {
+    const taskBalanceManager = createManager();
+    const types = new Set(taskBalanceManager.getTasks().map((task) => task.type));
+
+    expect([...types].sort()).toEqual([
+      'brew',
+      'grow',
+      'research',
+      'sell',
+      'summon',
+      'turnIn',
+    ]);
+  });
+
+  it('keeps research unlocks active through the late levels', () => {
+    const taskBalanceManager = createManager();
+    const lateResearchLevels = taskBalanceManager
+      .getLevels()
+      .filter((level) =>
+        level.level >= 80 &&
+        level.tasks.some((task) => task.type === taskRequirementTypes.RESEARCH),
+      )
+      .map((level) => level.level);
+
+    expect(lateResearchLevels).toEqual([80, 82, 84, 85, 87, 89, 91, 93, 95, 97, 99]);
+    expectNextLevelProduction(taskBalanceManager, 'unlockRecipe:pearlrootDraught', [
+      'brew:pearlrootDraught',
+      'turnIn:pearlrootDraught',
+    ]);
+  });
+
+  it('does not skip seed, herb, or recipe order in level tasks', () => {
     const itemsFacade = new ItemsFacade();
     const taskBalanceManager = new TaskBalanceManager({ itemsFacade });
     const seedDefinitions = itemsFacade.getSeedDefinitions();
@@ -374,3 +328,16 @@ describe('TaskBalanceManager', () => {
     }
   });
 });
+
+function expectNextLevelProduction(taskBalanceManager, researchId, expected) {
+  const researchLevel = taskBalanceManager
+    .getLevels()
+    .find((level) => level.tasks.some((task) => task.researchId === researchId));
+
+  expect(researchLevel, researchId).toBeTruthy();
+
+  const nextLevel = taskBalanceManager.getLevelTasks(researchLevel.level + 1);
+  const nextSignatures = nextLevel.map((task) => `${task.type}:${task.itemKey}`);
+
+  expect(nextSignatures).toEqual(expect.arrayContaining(expected));
+}

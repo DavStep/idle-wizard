@@ -3,6 +3,7 @@ import { GardenAutomationManager } from './managers/GardenAutomationManager.js';
 import { SeedSummoningAutomationManager } from './managers/SeedSummoningAutomationManager.js';
 import { SeedSummoningAutomationSettingsManager } from './managers/SeedSummoningAutomationSettingsManager.js';
 import { automationResearchIds } from './automationResearchIds.js';
+import { prestigeUnlockIds } from '../prestige/prestigeUnlocks.js';
 
 export class AutomationFacade {
   static explain =
@@ -16,6 +17,7 @@ export class AutomationFacade {
     onGardenSeedPlanted,
     onSeedSummoned,
     onPotionRecipeDiscovery,
+    prestigeFacade,
     researchFacade,
     seedSummoningFacade,
   } = {}) {
@@ -41,6 +43,7 @@ export class AutomationFacade {
       researchFacade,
     });
     this.registered = false;
+    this.prestigeFacade = prestigeFacade;
     this.researchFacade = researchFacade;
   }
 
@@ -78,13 +81,18 @@ export class AutomationFacade {
   }
 
   setSeedSummoningManaReserve(manaReserve) {
-    return this.seedSummoningSettingsManager.setManaReserve(manaReserve);
+    return this.seedSummoningSettingsManager.setManaReserve(manaReserve, {
+      reserveResearchLevel: this.researchFacade?.getCompletedAutomationReserveLevel?.() ?? 0,
+    });
   }
 
   getSnapshot() {
     return {
       seedSummoning: this.seedSummoningSettingsManager.getSnapshot({
         unlocked: this.hasSeedSummoningResearch(),
+        reserveControlsUnlocked: this.hasReserveControls(),
+        reserveResearchLevel:
+          this.researchFacade?.getCompletedAutomationReserveLevel?.() ?? 0,
       }),
     };
   }
@@ -102,5 +110,9 @@ export class AutomationFacade {
       this.researchFacade?.hasCompletedResearch?.(automationResearchIds.autoSeedSpawn()) ===
       true
     );
+  }
+
+  hasReserveControls() {
+    return this.prestigeFacade?.hasUnlock?.(prestigeUnlockIds.automationReserveControls) === true;
   }
 }

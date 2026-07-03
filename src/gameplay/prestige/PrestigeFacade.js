@@ -1,7 +1,13 @@
 import { PrestigeCompletionManager } from './managers/PrestigeCompletionManager.js';
 import { PrestigeMilestoneBalanceManager } from './managers/PrestigeMilestoneBalanceManager.js';
+import { PrestigeRunFocusManager } from './managers/PrestigeRunFocusManager.js';
 import { PrestigeSnapshotManager } from './managers/PrestigeSnapshotManager.js';
 import { PrestigeStateEntityManager } from './managers/PrestigeStateEntityManager.js';
+import {
+  getPrestigeUnlocksSnapshot,
+  hasPrestigeUnlock,
+  prestigeUnlockIds,
+} from './prestigeUnlocks.js';
 
 export class PrestigeFacade {
   static explain =
@@ -13,6 +19,7 @@ export class PrestigeFacade {
     this.prestigeStateEntityManager = new PrestigeStateEntityManager({
       prestigeMilestoneBalanceManager: this.prestigeMilestoneBalanceManager,
     });
+    this.prestigeRunFocusManager = new PrestigeRunFocusManager();
     this.prestigeCompletionManager = new PrestigeCompletionManager({
       getCurrentLevel: () => this.getCurrentLevel(),
       prestigeMilestoneBalanceManager: this.prestigeMilestoneBalanceManager,
@@ -49,18 +56,42 @@ export class PrestigeFacade {
     return this.prestigeStateEntityManager.getCompletedLevels().length;
   }
 
+  getUnlockSnapshot() {
+    return getPrestigeUnlocksSnapshot(this.getCompletedCount());
+  }
+
+  hasUnlock(unlockId) {
+    return hasPrestigeUnlock(this.getCompletedCount(), unlockId);
+  }
+
+  setRunFocus(focusId) {
+    return this.prestigeRunFocusManager.setRunFocus(focusId, {
+      unlocked: this.hasUnlock(prestigeUnlockIds.runFocus),
+    });
+  }
+
   getCurrentLevel() {
     const snapshot = this.playerLevelFacade?.getSnapshot?.() ?? {};
     return Math.max(1, Math.floor(Number(snapshot.currentLevel) || 1));
   }
 
   getSnapshot() {
-    return this.prestigeSnapshotManager.getSnapshot();
+    const snapshot = this.prestigeSnapshotManager.getSnapshot();
+    const runFocusUnlocked = this.hasUnlock(prestigeUnlockIds.runFocus);
+
+    return {
+      ...snapshot,
+      unlocks: this.getUnlockSnapshot(),
+      runFocus: this.prestigeRunFocusManager.getSnapshot({
+        unlocked: runFocusUnlocked,
+      }),
+    };
   }
 
   getPersistenceSnapshot() {
     return {
       completedLevels: this.prestigeStateEntityManager.getCompletedLevels(),
+      runFocus: this.prestigeRunFocusManager.getRunFocus(),
     };
   }
 
@@ -74,5 +105,8 @@ export class PrestigeFacade {
       ? snapshot.completedLevels
       : [];
     this.prestigeStateEntityManager.setCompletedLevels(completedLevels);
+    this.prestigeRunFocusManager.applyPersistenceSnapshot(snapshot, {
+      unlocked: this.hasUnlock(prestigeUnlockIds.runFocus),
+    });
   }
 }

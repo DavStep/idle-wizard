@@ -1,5 +1,6 @@
 import { PageNotificationStateManager } from '../../notifications/managers/PageNotificationStateManager.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 
 const MARKET_TABS = [
   { id: 'npm', label: 'trader market' },
@@ -165,8 +166,7 @@ export class ShopMarketTabsManager {
       const button = this.refs.buttons.get(tab.id);
       const panel = this.refs.panels.get(tab.id);
 
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
 
       if (panel) {
         panel.hidden = !selected;

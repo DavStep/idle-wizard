@@ -130,6 +130,75 @@ describe('WorkshopTradeAllianceManager styles', () => {
     manager.unmount();
   });
 
+  it('renders a tag-colored layered banner icon for the Workshop alliance button', () => {
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      connected: true,
+      ownAlliance: {
+        allianceId: 'alliance-1',
+        name: 'All Seeing Void',
+        tag: 'VOID',
+        tagColor: 'blue',
+        memberCount: 1,
+        seasonIncome: 0,
+        dailyIncome: 0,
+        seasonKey: '2026-W24',
+      },
+      ownMember: {
+        memberIdentity: 'self',
+        role: 'tradeMaster',
+      },
+      quests: [],
+      contributions: [],
+      rewardInbox: [],
+    });
+    const manager = new WorkshopTradeAllianceManager({ tradeAllianceFacade });
+    const parent = document.createElement('div');
+    const popupParent = document.createElement('div');
+
+    document.body.append(parent, popupParent);
+    manager.mount(parent, popupParent);
+
+    const root = parent.querySelector('.workshop-page__trade-alliance');
+    const button = parent.querySelector('.workshop-page__trade-alliance-button');
+    const iconFrame = button?.querySelector(
+      '.workshop-page__trade-alliance-button-icon-frame',
+    );
+
+    expect(root?.classList.contains('workshop-page__panel-button')).toBe(true);
+    expect(root?.dataset.panelSide).toBe('right');
+    expect(button?.textContent).toBe('alliance');
+    expect(button?.getAttribute('aria-label')).toBe('open alliance All Seeing Void');
+    expect(
+      button?.querySelector('.workshop-page__trade-alliance-button-icon-cloth'),
+    ).not.toBeNull();
+    expect(
+      button
+        ?.querySelector('.workshop-page__trade-alliance-button-icon')
+        ?.getAttribute('src'),
+    ).toContain('icon-alliance-banner-base.webp');
+    expect(
+      iconFrame?.style.getPropertyValue('--workshop-trade-alliance-banner-color'),
+    ).toBe('var(--style-alliance-tag-blue)');
+    expect(
+      iconFrame?.style.getPropertyValue('--workshop-trade-alliance-banner-mask'),
+    ).toContain('icon-alliance-banner-cloth-mask.webp');
+
+    tradeAllianceFacade.emit({
+      connected: true,
+      ownAlliance: null,
+      quests: [],
+      contributions: [],
+      rewardInbox: [],
+    });
+
+    expect(button?.getAttribute('aria-label')).toBe('open trade alliance');
+    expect(
+      iconFrame?.style.getPropertyValue('--workshop-trade-alliance-banner-color'),
+    ).toBe('var(--style-alliance-tag-ink)');
+
+    manager.unmount();
+  });
+
   it('renders quest crystal rewards through resource icon labels', () => {
     const tradeAllianceFacade = createTradeAllianceFacadeFake({
       connected: true,

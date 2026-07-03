@@ -6,7 +6,7 @@ Screenshots are captured from the real Vite game surface at the authored `1080x2
 
 The automation uses the real `TutorialFacade`, CSS, Elara assets, and `data-tutorial-id` targets. Dev capture hooks only skip waits/background resource tasks and hide the local offline gate so the screenshots show the actual game UI, not a harness.
 
-Current source starts with a free workshop-entry dialog and routes room openings through short `market opened`, `research opened`, `garden opened`, and `brewing opened` beats. Username setup is no longer part of FTUE; player-facing social surfaces ask for it when first opened. Level 1 completes without coin. Level 2 teaches the normal Market fast-sell path, using live `sellItems` quantity and quote data instead of tutorial-owned prices. Level 3 introduces Research and the free mint seed unlock, level 4 introduces herbs through Garden requirements, and level 5 introduces Brewing through mana tonic research. Coin-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates this 35-step order and should be refreshed the next time tutorial captures are regenerated.
+Current source starts with a free workshop-entry dialog and routes room openings through short `market opened`, `research opened`, `garden opened`, and `brewing opened` beats. Username setup is no longer part of FTUE; player-facing social surfaces ask for it when first opened. Level 1 completes without coin. Level 2 teaches the current summon, sell, and turn-in requirement order before level-up coin cleanup, using live `sellItems` quantity and quote data instead of tutorial-owned prices. Level 3 introduces Research and the free mint seed unlock, level 4 introduces herbs through Garden requirements, and level 5 introduces Brewing through mana tonic research. Coin-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates this 35-step order and should be refreshed the next time tutorial captures are regenerated.
 
 ![tutorial flow contact sheet](tutorial-flow/contact-sheet.png)
 
@@ -23,31 +23,32 @@ flowchart TD
   S07["7. first-task-complete<br/>checkpoint"]
   S08["8. level-up-one<br/>target: free level up"]
   S09["9. intro-market<br/>lesson 2: market"]
-  S10["10. prepare-seed-sale<br/>objective: one seed to sell"]
+  S10["10. prepare-seed-sale<br/>objective: level-2 summon task"]
   S11["11. open-market<br/>target: market tab"]
   S12["12. select-market-stand<br/>target: fast sell button"]
   S13["13. select-sage-seed-sale<br/>target: fast sell sage seed row"]
   S14["14. show-selected-sale-amount<br/>highlight: selected amount"]
-  S15["15. earn-tutorial-coin<br/>normal fast sell"]
+  S15["15. earn-tutorial-coin<br/>sell one sage seed"]
   S16["16. first-sale-complete<br/>checkpoint"]
-  S17["17. level-up-two<br/>target: level up or market"]
-  S18["18. intro-research<br/>lesson 3: research"]
-  S19["19. research-mint-seed<br/>passive"]
-  S20["20. first-research-complete<br/>checkpoint"]
-  S21["21. fill-mint-seed-task<br/>passive"]
-  S22["22. fill-sage-seed-task<br/>passive"]
-  S23["23. level-up-three<br/>passive"]
-  S24["24. intro-garden<br/>lesson 4: gardening"]
-  S25["25. grow-sage<br/>objective: first herb"]
-  S26["26. first-harvest-complete<br/>checkpoint"]
-  S27["27. fill-sage-herb-task<br/>objective: sage task"]
-  S28["28. fill-mint-herb-task<br/>passive"]
-  S29["29. level-up-four<br/>passive"]
-  S30["30. research-mana-tonic<br/>lesson 5: brewing"]
-  S31["31. intro-brewing<br/>target: brewing tab"]
-  S32["32. brew-mana-tonic<br/>objective: first potion"]
-  S33["33. first-brew-complete<br/>checkpoint"]
-  S34["34. refill-mana-tonic-cauldron<br/>objective: turn in potion"]
+  S17["17. unselect-sage-seed-sale<br/>turn in remaining sage seeds"]
+  S18["18. level-up-two<br/>target: level up or market"]
+  S19["19. intro-research<br/>lesson 3: research"]
+  S20["20. research-mint-seed<br/>passive"]
+  S21["21. first-research-complete<br/>checkpoint"]
+  S22["22. fill-mint-seed-task<br/>passive"]
+  S23["23. fill-sage-seed-task<br/>passive"]
+  S24["24. level-up-three<br/>passive"]
+  S25["25. intro-garden<br/>lesson 4: gardening"]
+  S26["26. grow-sage<br/>objective: first herb"]
+  S27["27. first-harvest-complete<br/>checkpoint"]
+  S28["28. fill-sage-herb-task<br/>objective: sage task"]
+  S29["29. fill-mint-herb-task<br/>passive"]
+  S30["30. level-up-four<br/>passive"]
+  S31["31. research-mana-tonic<br/>lesson 5: brewing"]
+  S32["32. intro-brewing<br/>target: brewing tab"]
+  S33["33. brew-mana-tonic<br/>objective: first potion"]
+  S34["34. first-brew-complete<br/>checkpoint"]
+  S35["35. refill-mana-tonic-cauldron<br/>objective: turn in potion"]
   Done["tutorial hidden / complete"]
   G00["coin shortfall"]
   G01{"available fast-sell quantity?"}
@@ -71,37 +72,38 @@ flowchart TD
   S07 -->|"next"| S08
   S08 -->|"level 2"| S09
   S09 -->|"next"| S10
-  S10 -->|"seed exists"| S11
+  S10 -->|"summon task complete"| S11
   S11 -->|"Market opened"| S12
   S12 -->|"fast sell opened"| S13
   S13 -->|"sage seed selected"| S14
   S14 -->|"2 seconds"| S15
-  S15 -->|"coin earned by normal sale"| S16
+  S15 -->|"one seed sold"| S16
   S16 -->|"next"| S17
-  S17 -->|"level 3"| S18
-  S18 -->|"Research opened"| S19
-  S19 -->|"mint seed research complete"| S20
-  S20 -->|"next"| S21
-  S21 -->|"mint seed task complete"| S22
-  S22 -->|"sage seed task complete"| S23
-  S23 -->|"level 4"| S24
-  S24 -->|"Garden opened"| S25
-  S25 -->|"sage grown"| S26
-  S26 -->|"next"| S27
-  S27 -->|"sage herb task complete"| S28
-  S28 -->|"mint herb task complete"| S29
-  S29 -->|"level 5"| S30
-  S30 -->|"mana tonic research started/completed"| S31
-  S31 -->|"Brewing opened"| S32
-  S32 -->|"first mana tonic brewed"| S33
-  S33 -->|"next"| S34
-  S34 -->|"mana tonic task complete, active brew, or level 6"| Done
+  S17 -->|"turn-in task complete"| S18
+  S18 -->|"level 3"| S19
+  S19 -->|"Research opened"| S20
+  S20 -->|"mint seed research complete"| S21
+  S21 -->|"next"| S22
+  S22 -->|"mint seed task complete"| S23
+  S23 -->|"sage seed task complete"| S24
+  S24 -->|"level 4"| S25
+  S25 -->|"Garden opened"| S26
+  S26 -->|"sage grown"| S27
+  S27 -->|"next"| S28
+  S28 -->|"sage herb task complete"| S29
+  S29 -->|"mint herb task complete"| S30
+  S30 -->|"level 5"| S31
+  S31 -->|"mana tonic research started/completed"| S32
+  S32 -->|"Brewing opened"| S33
+  S33 -->|"first mana tonic brewed"| S34
+  S34 -->|"next"| S35
+  S35 -->|"mana tonic task complete, active brew, or level 6"| Done
 
   S03 -. "paused while mana is not ready" .-> S03
   S05 -. "target can switch: tasks, task row, summon, mana" .-> S05
-  S17 -. "if coin short" .-> G00
-  S23 -. "if coin short" .-> G00
-  S29 -. "if coin short" .-> G00
+  S18 -. "if coin short" .-> G00
+  S24 -. "if coin short" .-> G00
+  S30 -. "if coin short" .-> G00
   G00 --> G01
   G01 -->|"no"| G02
   G01 -->|"yes"| G03

@@ -34,6 +34,7 @@ export class AppLifecycleManager {
     deployRefreshManager,
     appThemeManager,
     reload = () => window.location.reload(),
+    now = () => Date.now(),
   }) {
     this.shellManager = shellManager;
     this.viewportFacade = viewportFacade;
@@ -55,6 +56,7 @@ export class AppLifecycleManager {
     this.deployRefreshManager = deployRefreshManager;
     this.appThemeManager = appThemeManager;
     this.reload = reload;
+    this.now = now;
     this.started = false;
     this.frameLoopStarted = false;
     this.stopping = false;
@@ -66,6 +68,7 @@ export class AppLifecycleManager {
     this.stage = null;
     this.gameSurfacesMounted = false;
     this.hiddenOfflineReason = null;
+    this.hiddenAtMs = null;
     this.freshStartConfirmed = false;
     this.maintenanceUnsubscribe = null;
     this.gameplayTickUnsubscribe = null;
@@ -94,6 +97,7 @@ export class AppLifecycleManager {
     this.deployRefreshManager?.mount(stage);
     this.appVisible = true;
     this.hiddenOfflineReason = null;
+    this.hiddenAtMs = null;
     this.appVisibilityManager.mount({
       onHidden: () => this.handleAppHidden(),
       onVisible: () => this.handleAppVisible(),
@@ -478,6 +482,7 @@ export class AppLifecycleManager {
   }
 
   loadGameplaySave(save, { persistLoaded = false } = {}) {
+    this.hiddenAtMs = null;
     const loaded = this.gameplayFacade.loadPersistenceSave(save, this.ecsFacade);
 
     if (!loaded || persistLoaded) {
@@ -610,6 +615,7 @@ export class AppLifecycleManager {
     }
 
     this.appVisible = false;
+    this.hiddenAtMs = this.now();
     this.connectionRetryManager.clear();
     this.stopFrameLoop();
     void Promise.resolve(
@@ -724,8 +730,26 @@ export class AppLifecycleManager {
     if (this.backendOnline) {
       this.onlineGateManager.hide();
       this.interactionLockManager.unlock();
+      this.applyAwayCatchupAfterHiddenIfNeeded();
       this.startFrameLoop();
     }
+  }
+
+  applyAwayCatchupAfterHiddenIfNeeded() {
+    const hiddenAtMs = this.hiddenAtMs;
+    this.hiddenAtMs = null;
+
+    if (!Number.isFinite(hiddenAtMs) || !this.gameSurfacesMounted) {
+      return null;
+    }
+
+    const nowMs = this.now();
+    const deltaSeconds = (nowMs - hiddenAtMs) / 1_000;
+
+    return this.gameplayFacade.applyAwayTimerCatchup?.(this.ecsFacade, {
+      deltaSeconds,
+      source: 'resume',
+    }) ?? null;
   }
 
   startMaintenanceDrainSave() {
@@ -835,6 +859,7 @@ export class AppLifecycleManager {
     this.backendOnline = false;
     this.appVisible = true;
     this.hiddenOfflineReason = null;
+    this.hiddenAtMs = null;
     this.maintenanceUnsubscribe?.();
     this.maintenanceUnsubscribe = null;
     this.connectionRetryManager.clear();

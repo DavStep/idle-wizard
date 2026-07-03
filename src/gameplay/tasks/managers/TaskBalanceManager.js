@@ -1,7 +1,14 @@
 import taskBalance from '../tasks.json';
+import {
+  formatTaskRequirementLabel,
+  normalizeTaskRequirementType,
+  taskRequirementTypes,
+} from '../taskRequirementTypes.js';
 
 const MAX_TASKS_PER_LEVEL = 5;
 const LEVEL_COMPLETION_COIN_COST_PER_LEVEL = 20;
+const SEED_RESEARCH_PREFIX = 'unlockSeed:';
+const RECIPE_RESEARCH_PREFIX = 'unlockRecipe:';
 
 export class TaskBalanceManager {
   constructor({ balance = taskBalance, itemsFacade }) {
@@ -135,22 +142,81 @@ export class TaskBalanceManager {
             throw new Error(`Task ${task.id} quantity must be a positive integer.`);
           }
 
-          const item = this.itemsFacade.getItemDefinitionByKey(task.itemKey);
+          const type = normalizeTaskRequirementType(task.type);
+
+          if (!type) {
+            throw new Error(`Task ${task.id} type is invalid.`);
+          }
+
+          const target = this.readTaskTarget(task, type);
           seenTaskIds.add(task.id);
 
           return {
             id: task.id,
             index: taskIndex++,
             level: levelNumber,
-            action: 'drop',
-            itemKey: item.key,
-            itemTypeId: item.id,
-            itemLabel: item.label,
-            itemKind: item.kind,
+            type,
+            action: type,
+            researchId: target.researchId,
+            itemKey: target.item?.key ?? null,
+            itemTypeId: target.item?.id ?? null,
+            itemLabel: target.item?.label ?? target.targetLabel,
+            itemKind: target.item?.kind ?? null,
+            targetLabel: target.targetLabel,
+            requirementLabel: formatTaskRequirementLabel(type, target.targetLabel),
             requiredQuantity: task.quantity,
           };
         }),
       };
     });
   }
+
+  readTaskTarget(task, type) {
+    if (type === taskRequirementTypes.RESEARCH) {
+      const researchId =
+        typeof task.researchId === 'string' ? task.researchId.trim() : '';
+
+      if (!researchId) {
+        throw new Error(`Task ${task.id} researchId must be a non-empty string.`);
+      }
+
+      const targetItemKey =
+        typeof task.itemKey === 'string' && task.itemKey.trim().length > 0
+          ? task.itemKey.trim()
+          : getResearchTargetItemKey(researchId);
+      const item = targetItemKey
+        ? this.itemsFacade.getItemDefinitionByKey(targetItemKey)
+        : null;
+
+      if (!item) {
+        throw new Error(`Task ${task.id} research target item is invalid.`);
+      }
+
+      return {
+        researchId,
+        item,
+        targetLabel: item.label,
+      };
+    }
+
+    const item = this.itemsFacade.getItemDefinitionByKey(task.itemKey);
+
+    return {
+      researchId: null,
+      item,
+      targetLabel: item.label,
+    };
+  }
+}
+
+function getResearchTargetItemKey(researchId) {
+  if (researchId.startsWith(SEED_RESEARCH_PREFIX)) {
+    return researchId.slice(SEED_RESEARCH_PREFIX.length);
+  }
+
+  if (researchId.startsWith(RECIPE_RESEARCH_PREFIX)) {
+    return researchId.slice(RECIPE_RESEARCH_PREFIX.length);
+  }
+
+  return null;
 }

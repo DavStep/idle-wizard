@@ -3,6 +3,7 @@ import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { applyMysteryText } from '../../shared/mysteryText.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { createResourceIconLabel } from '../../shared/resourceIconLabel.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { updateScrollCueState } from '../../managers/ScrollCueManager.js';
 
 const BAG_TABS = [
@@ -227,8 +228,7 @@ export class WorkshopBagManager {
     for (const tab of BAG_TABS) {
       const selected = this.selectedTabId === tab.id;
       const button = this.refs.tabButtons?.get(tab.id);
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
     }
   }
 

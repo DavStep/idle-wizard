@@ -17,6 +17,7 @@ import {
   setResourceColor,
   setResourceColorFromText,
 } from '../../shared/resourceColor.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 
 const EMPTY_LOCKED_REQUEST_LABEL = 'empty request';
 const EMPTY_REQUEST_ACTION_LABEL = 'request item';
@@ -857,8 +858,7 @@ export class ShopPlayerRequestManager {
     for (const sellKind of sellKinds) {
       const button = this.refs.itemPicker.tabButtons.get(sellKind.kind);
       const selected = this.selectedRequestTab === sellKind.kind;
-      button.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
     }
 
     const visibleItemTypeIds = new Set(items.map((item) => item.itemTypeId));

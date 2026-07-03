@@ -372,11 +372,14 @@ describe('WorkshopActionBarManager', () => {
     const bagRule = baseCss.match(
       /\.workshop-page__action-bar > \.style-button\.workshop-page__bag-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const mailPanelRule = baseCss.match(
-      /\.workshop-page__action-bar > \.workshop-page__mail-button-panel\s*\{(?<body>[^}]*)\}/,
+    const ledgerRule = baseCss.match(
+      /\.workshop-page__action-bar > \.style-button\.workshop-page__ledger-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const mailRootRule = baseCss.match(
+      /\.workshop-page__ui-layer > \.workshop-page__mail\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const sidePanelRootRule = baseCss.match(
-      /\.workshop-page__ui-layer > \.workshop-page__leaderboard,\s*\.workshop-page__ui-layer > \.workshop-page__discoveries\s*\{(?<body>[^}]*)\}/,
+      /\.workshop-page__ui-layer > \.workshop-page__mail,\s*\.workshop-page__ui-layer > \.workshop-page__leaderboard,\s*\.workshop-page__ui-layer > \.workshop-page__discoveries,\s*\.workshop-page__ui-layer > \.workshop-page__trade-alliance\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const leaderboardSideRule = baseCss.match(
       /\.workshop-page__ui-layer > \.workshop-page__leaderboard\s*\{(?<body>[^}]*\bleft:[^}]*)\}/,
@@ -385,13 +388,40 @@ describe('WorkshopActionBarManager', () => {
       /\.workshop-page__ui-layer > \.workshop-page__discoveries\s*\{(?<body>[^}]*\bright:[^}]*)\}/,
     )?.groups?.body;
     const sidePanelButtonRule = baseCss.match(
-      /\.workshop-page__leaderboard > \.workshop-page__leaderboard-button,\s*\.workshop-page__mail-button-panel > \.workshop-page__mail-button,\s*\.workshop-page__discoveries > \.workshop-page__discoveries-button\s*\{(?<body>[^}]*)\}/,
+      /\.workshop-page__mail > \.workshop-page__mail-button,\s*\.workshop-page__leaderboard > \.workshop-page__leaderboard-button,\s*\.workshop-page__discoveries > \.workshop-page__discoveries-button,\s*\.workshop-page__trade-alliance > \.workshop-page__trade-alliance-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const leftPanelButtonAlignRule = baseCss.match(
+      /\.workshop-page__panel-button\[data-panel-side="left"\]\s*>\s*\.workshop-page__panel-button-open\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const rightPanelButtonAlignRule = baseCss.match(
+      /\.workshop-page__panel-button\[data-panel-side="right"\]\s*>\s*\.workshop-page__panel-button-open\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const timedPanelButtonAlignRule = baseCss.match(
+      /\.workshop-page__panel-button\.has-timer\s*>\s*\.workshop-page__panel-button-open\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const featureCharacterRule = baseCss.match(
+      /\.workshop-page__feature-character\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const leftPanelIconOffsetRule = baseCss.match(
+      /\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__feature-character,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__mail-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__leaderboard-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__discoveries-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const rightPanelIconOffsetRule = baseCss.match(
+      /\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__feature-character,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__mail-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__leaderboard-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__discoveries-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const featureCharacterLabelRule = baseCss.match(
+      /\.workshop-page__feature-character-label\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const rightFeatureCharacterLabelRule = baseCss.match(
+      /\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__feature-character-label\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const sidePanelLabelRule = baseCss.match(
-      /\.workshop-page__leaderboard-button-label,\s*\.workshop-page__mail-button-label,\s*\.workshop-page__discoveries-button-label\s*\{(?<body>[^}]*)\}/,
+      /\.workshop-page__mail-button-label,\s*\.workshop-page__leaderboard-button-label,\s*\.workshop-page__discoveries-button-label,\s*\.workshop-page__trade-alliance-button-label\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const sidePanelIconFrameRule = baseCss.match(
+      /\.workshop-page__mail-button-icon-frame,\s*\.workshop-page__leaderboard-button-icon-frame,\s*\.workshop-page__discoveries-button-icon-frame,\s*\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const allianceRule = baseCss.match(
-      /\.style-button\.workshop-page__trade-alliance-button\s*\{(?<body>[^}]*)\}/,
+      /\.workshop-page__ui-layer > \.workshop-page__trade-alliance\s*\{(?<body>[^}]*\btop:[^}]*)\}/,
     )?.groups?.body;
 
     expect(rootRule).toMatch(/--workshop-secondary-button-width:\s*100px;/);
@@ -408,40 +438,107 @@ describe('WorkshopActionBarManager', () => {
     );
     expect(bagRule).not.toMatch(/\bbottom:/);
 
-    expect(mailPanelRule).toBeDefined();
-    expect(mailPanelRule).toMatch(
-      /\btop:\s*calc\(var\(--style-room-content-top\) \+\s*300px\);/,
+    expect(ledgerRule).toBeDefined();
+    expect(ledgerRule).toMatch(
+      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\) \+\s*var\(--workshop-secondary-button-row-gap\)\s*\);/,
     );
-    expect(mailPanelRule).toMatch(/\bleft:\s*calc\(50% -\s*22\.75px\);/);
-    expect(mailPanelRule).toMatch(/\bwidth:\s*45\.5px;/);
-    expect(mailPanelRule).toMatch(/\bheight:\s*80\.25px;/);
-    expect(mailPanelRule).toMatch(/\bpointer-events:\s*none;/);
+    expect(ledgerRule).toMatch(/\bright:\s*0;/);
+    expect(ledgerRule).toMatch(/\bbox-sizing:\s*content-box;/);
+    expect(ledgerRule).toMatch(
+      /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
+    );
+    expect(ledgerRule).not.toMatch(/\bbottom:/);
+
+    expect(mailRootRule).toBeDefined();
+    expect(mailRootRule).toMatch(
+      /\btop:\s*calc\(var\(--style-room-content-top\) \+\s*155\.5px\);/,
+    );
+    expect(mailRootRule).toMatch(/\bright:\s*var\(--style-room-chrome-edge\);/);
 
     expect(sidePanelRootRule).toBeDefined();
-    expect(sidePanelRootRule).toMatch(
-      /\btop:\s*calc\(var\(--style-room-content-top\) \+\s*223\.75px\);/,
+    expect(baseCss).toMatch(
+      /\.workshop-page__ui-layer > \.workshop-page__leaderboard,\s*\.workshop-page__ui-layer > \.workshop-page__discoveries\s*\{\s*top:\s*calc\(var\(--style-room-content-top\) \+\s*207\.75px\);/,
     );
     expect(sidePanelRootRule).toMatch(/\bwidth:\s*45\.5px;/);
     expect(sidePanelRootRule).toMatch(/\bheight:\s*80\.25px;/);
     expect(leaderboardSideRule).toMatch(
-      /\bleft:\s*calc\(var\(--style-room-content-edge\) -\s*14px\);/,
+      /\bleft:\s*var\(--style-room-chrome-edge\);/,
     );
     expect(discoveriesSideRule).toMatch(
-      /\bright:\s*calc\(var\(--style-room-content-edge\) -\s*14px\);/,
+      /\bright:\s*var\(--style-room-chrome-edge\);/,
     );
     expect(sidePanelButtonRule).toMatch(/\boverflow:\s*visible;/);
-    expect(sidePanelLabelRule).toMatch(/\bfont-size:\s*5px;/);
-    expect(sidePanelLabelRule).toMatch(/\bline-height:\s*6px;/);
+    expect(leftPanelButtonAlignRule).toMatch(/\bjustify-items:\s*start;/);
+    expect(leftPanelButtonAlignRule).toMatch(/\btext-align:\s*left;/);
+    expect(rightPanelButtonAlignRule).toMatch(/\bjustify-items:\s*end;/);
+    expect(rightPanelButtonAlignRule).toMatch(/\btext-align:\s*right;/);
+    expect(timedPanelButtonAlignRule).toMatch(/\bbottom:\s*0;/);
+    expect(featureCharacterRule).toMatch(/\bposition:\s*relative;/);
+    expect(featureCharacterRule).toMatch(/\btop:\s*10px;/);
+    expect(sidePanelIconFrameRule).toMatch(/\btop:\s*10px;/);
+    expect(leftPanelIconOffsetRule).toMatch(/\bleft:\s*-10px;/);
+    expect(rightPanelIconOffsetRule).toMatch(/\bright:\s*-10px;/);
+    expect(featureCharacterLabelRule).toMatch(/\bleft:\s*0;/);
+    expect(featureCharacterLabelRule).toContain(
+      'font-size: calc(var(--style-box-border-label-font-size) * 0.8);',
+    );
+    expect(featureCharacterLabelRule).toContain(
+      'line-height: calc(var(--style-box-border-label-line-height) * 0.8);',
+    );
+    expect(featureCharacterLabelRule).toMatch(/\bbackground:\s*transparent;/);
+    expect(featureCharacterLabelRule).toMatch(/\bborder:\s*0;/);
+    expect(featureCharacterLabelRule).toContain(
+      '-webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)',
+    );
+    expect(featureCharacterLabelRule).toContain(
+      'var(--style-page-tab-label-text-stroke-color);',
+    );
+    expect(featureCharacterLabelRule).toMatch(/\bpaint-order:\s*stroke fill;/);
+    expect(featureCharacterLabelRule).toMatch(
+      /\btext-shadow:\s*var\(--style-page-tab-label-text-stroke-shadow\);/,
+    );
+    expect(rightFeatureCharacterLabelRule).toMatch(/\bright:\s*0;/);
+    expect(rightFeatureCharacterLabelRule).toMatch(/\bleft:\s*auto;/);
+    expect(rightFeatureCharacterLabelRule).toMatch(/\btext-align:\s*right;/);
+    expect(sidePanelLabelRule).toContain(
+      'font-size: calc(var(--style-box-border-label-font-size) * 0.8);',
+    );
+    expect(sidePanelLabelRule).toContain(
+      'line-height: calc(var(--style-box-border-label-line-height) * 0.8);',
+    );
+    expect(sidePanelLabelRule).toMatch(/\btransform:\s*none;/);
 
     expect(allianceRule).toMatch(
       /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\)\s*\);/,
     );
-    expect(allianceRule).toMatch(
-      /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
-    );
+    expect(allianceRule).toMatch(/\bright:\s*var\(--style-room-content-edge\);/);
   });
 
-  it('opens the moved mail button from the Workshop action cluster', () => {
+  it('opens the ledger button from the Workshop action cluster', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const onLedgerClick = vi.fn();
+    const manager = new WorkshopActionBarManager({
+      gameplayFacade,
+      onLedgerClick,
+    });
+    const parent = document.createElement('div');
+
+    manager.mount(parent);
+
+    const button = parent.querySelector('.workshop-page__ledger-button');
+
+    expect(button?.textContent).toBe('ledger');
+    expect(button?.getAttribute('aria-label')).toBe('open ledger');
+    expect(button?.querySelector('img, svg')).toBeNull();
+
+    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(onLedgerClick).toHaveBeenCalledTimes(1);
+
+    manager.unmount();
+  });
+
+  it('opens the inbox as a compact right-panel button', () => {
     const gameplayFacade = createGameplayFacadeFake({
       tasks: { currentLevel: 4 },
     });
@@ -460,15 +557,21 @@ describe('WorkshopActionBarManager', () => {
     manager.mount(parent);
 
     const mailButton = parent.querySelector('.workshop-page__mail-button');
-    const mailPanel = parent.querySelector('.workshop-page__mail-button-panel');
+    const mailPanel = parent.querySelector('.workshop-page__mail');
     const mailIcon = parent.querySelector('.workshop-page__mail-button-icon');
+    const mailLabel = parent.querySelector('.workshop-page__mail-button-label');
 
+    expect(mailPanel?.classList.contains('workshop-page__panel-button')).toBe(true);
+    expect(mailPanel?.dataset.panelSide).toBe('right');
     expect(mailPanel?.contains(mailButton)).toBe(true);
     expect(mailButton?.classList.contains('style-button')).toBe(false);
-    expect(mailButton?.textContent).toBe('mail');
+    expect(mailButton?.classList.contains('workshop-page__panel-button-open')).toBe(
+      true,
+    );
     expect(mailIcon?.tagName).toBe('IMG');
     expect(mailIcon?.getAttribute('src')).toContain('icon-mail-envelope.webp');
     expect(mailIcon?.getAttribute('aria-hidden')).toBe('true');
+    expect(mailLabel?.textContent).toBe('inbox');
     expect(mailButton?.dataset.notification).toBe('true');
     expect(mailButton?.getAttribute('aria-label')).toBe('open inbox, new mail');
 
@@ -485,7 +588,7 @@ describe('WorkshopActionBarManager', () => {
     manager.unmount();
   });
 
-  it('locks the mail panel until level four', () => {
+  it('locks the inbox panel until level four', () => {
     const gameplayFacade = createGameplayFacadeFake({
       tasks: { currentLevel: 3 },
     });
@@ -499,8 +602,8 @@ describe('WorkshopActionBarManager', () => {
 
     manager.mount(parent);
 
-    const mailPanel = parent.querySelector('.workshop-page__mail-button-panel');
     const mailButton = parent.querySelector('.workshop-page__mail-button');
+    const mailPanel = parent.querySelector('.workshop-page__mail');
 
     expect(mailPanel?.hidden).toBe(true);
     expect(mailPanel?.getAttribute('aria-hidden')).toBe('true');

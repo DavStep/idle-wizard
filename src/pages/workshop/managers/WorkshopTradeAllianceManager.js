@@ -10,6 +10,7 @@ import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import {
   getOwnTradeAllianceQuestContribution,
   getTradeAllianceQuestParticipationLock,
@@ -17,6 +18,16 @@ import {
   hasClaimableTradeAllianceQuest,
   isTradeAllianceQuestClaimable,
 } from './tradeAllianceQuestStatus.js';
+
+const ALLIANCE_BANNER_BASE_URL = new URL(
+  '../../../assets/icons/icon-alliance-banner-base.webp',
+  import.meta.url,
+).href;
+
+const ALLIANCE_BANNER_CLOTH_MASK_URL = new URL(
+  '../../../assets/icons/icon-alliance-banner-cloth-mask.webp',
+  import.meta.url,
+).href;
 
 const ROLE_LABELS = {
   tradeMaster: 'trade master',
@@ -121,7 +132,9 @@ export class WorkshopTradeAllianceManager {
     }
 
     this.root = document.createElement('div');
-    this.root.className = 'workshop-page__trade-alliance';
+    this.root.className = 'workshop-page__panel-button workshop-page__trade-alliance';
+    this.root.dataset.panelSide = 'right';
+    this.root.setAttribute('aria-label', 'trade alliance');
 
     this.refs.button = this.createButton();
     this.refs.popup = this.createPopup();
@@ -144,9 +157,40 @@ export class WorkshopTradeAllianceManager {
 
   createButton() {
     const button = document.createElement('button');
-    button.className = 'style-button workshop-page__trade-alliance-button';
+    button.className =
+      'workshop-page__panel-button-open workshop-page__trade-alliance-button';
     button.type = 'button';
-    button.textContent = 'alliance';
+    button.setAttribute('aria-haspopup', 'dialog');
+    button.setAttribute('aria-label', 'open trade alliance');
+
+    const iconFrame = document.createElement('span');
+    iconFrame.className = 'workshop-page__trade-alliance-button-icon-frame';
+    iconFrame.setAttribute('aria-hidden', 'true');
+    iconFrame.style.setProperty(
+      '--workshop-trade-alliance-banner-mask',
+      `url("${ALLIANCE_BANNER_CLOTH_MASK_URL}")`,
+    );
+
+    const cloth = document.createElement('span');
+    cloth.className = 'workshop-page__trade-alliance-button-icon-cloth';
+    cloth.setAttribute('aria-hidden', 'true');
+
+    const icon = document.createElement('img');
+    icon.className = 'workshop-page__trade-alliance-button-icon';
+    icon.src = ALLIANCE_BANNER_BASE_URL;
+    icon.alt = '';
+    icon.loading = 'lazy';
+    icon.decoding = 'async';
+    icon.setAttribute('aria-hidden', 'true');
+
+    const label = document.createElement('span');
+    label.className =
+      'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__trade-alliance-button-label';
+    label.textContent = 'alliance';
+
+    iconFrame.append(cloth, icon);
+    button.append(iconFrame, label);
+    this.refs.buttonIconFrame = iconFrame;
     button.addEventListener('click', () => this.show());
     return button;
   }
@@ -342,7 +386,7 @@ export class WorkshopTradeAllianceManager {
     this.lastSnapshot = snapshot ?? {};
     const ownAlliance = this.lastSnapshot.ownAlliance ?? null;
     this.syncMemberEditState();
-    this.refs.button.textContent = ownAlliance ? 'alliance' : 'alliance';
+    this.syncButtonIconColor(ownAlliance);
     this.renderTitle(ownAlliance);
     this.refs.status.textContent = this.status;
     this.syncQuestTimer();
@@ -373,7 +417,7 @@ export class WorkshopTradeAllianceManager {
         button.type = 'button';
         button.textContent = tab.label;
         button.setAttribute('role', 'tab');
-        button.setAttribute('aria-selected', selectedTabId === tab.id ? 'true' : 'false');
+        setSelectedTabState(button, selectedTabId === tab.id);
         setNotificationBadge(
           button,
           tabs === MEMBER_TABS &&
@@ -406,6 +450,20 @@ export class WorkshopTradeAllianceManager {
     this.refs.title.replaceChildren(
       ...(tag ? [tag, document.createTextNode(' ')] : []),
       document.createTextNode(ownAlliance.name),
+    );
+  }
+
+  syncButtonIconColor(ownAlliance) {
+    const tagColor = normalizeTradeAllianceTagColor(ownAlliance?.tagColor);
+
+    this.refs.buttonIconFrame?.style.setProperty(
+      '--workshop-trade-alliance-banner-color',
+      getTradeAllianceTagColorCssValue(tagColor),
+    );
+
+    this.refs.button?.setAttribute(
+      'aria-label',
+      ownAlliance?.name ? `open alliance ${ownAlliance.name}` : 'open trade alliance',
     );
   }
 

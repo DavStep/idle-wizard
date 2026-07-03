@@ -882,10 +882,10 @@ describe('GardenPlotManager', () => {
       /\.garden-page__world\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const webWideWorldRule = baseCss.match(
-      /\.game-stage\[data-viewport-mode="web-wide"\]\s*:where\(\.brewing-page__world-view,\s*\.garden-page__plot-world\)\s*\{(?<body>[^}]*)\}/,
+      /\.game-stage\[data-viewport-mode="web-wide"\]\s*:where\(\s*\.brewing-page__world-view,\s*\.garden-page__plot-world\s*\)\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const webWideShellRule = baseCss.match(
-      /\.game-stage\[data-viewport-mode="web-wide"\]\s*:where\(\.brewing-page__world-shell,\s*\.garden-page__world-shell\)\s*\{(?<body>[^}]*)\}/,
+      /\.game-stage\[data-viewport-mode="web-wide"\]\s*:where\(\s*\.brewing-page__world-shell,\s*\.garden-page__world-shell\s*\)\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const plotRowsRule = baseCss.match(
       /\.garden-page__plot-rows\s*\{(?<body>[^}]*)\}/,

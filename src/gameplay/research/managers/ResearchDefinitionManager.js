@@ -5,6 +5,12 @@ import {
   getAdvancedResearchLevelReductionPercent,
 } from '../advancedResearchIds.js';
 import {
+  automationReserveResearchIds,
+  automationReserveResearchMaxLevel,
+  getAutomationReserveResearchLabel,
+  getAutomationReserveResearchValue,
+} from '../automationReserveResearch.js';
+import {
   fastSellResearchIds,
   fastSellResearchMaxLevel,
   getFastSellPercent,
@@ -35,6 +41,7 @@ import {
   plotCapacityEndPlotNumber,
   plotCapacityStartPlotNumber,
 } from '../capacityResearchIds.js';
+import { prestigeUnlockIds, prestigeUnlocks } from '../../prestige/prestigeUnlocks.js';
 
 const summonSeedResearches = [
   {
@@ -425,6 +432,11 @@ export class ResearchDefinitionManager {
         researches: this.getResearchTimeResearches(),
       },
       {
+        id: 'automationReserve',
+        label: 'automation reserve research',
+        researches: this.getAutomationReserveResearches(),
+      },
+      {
         id: 'plotCapacity',
         label: 'plot capacity research',
         researches: this.getPlotCapacityResearches(),
@@ -448,6 +460,7 @@ export class ResearchDefinitionManager {
             `cauldron ${cauldronNumber} brewing lvl ${level}`,
           description: (cauldronNumber, level) =>
             `cauldron ${cauldronNumber} brewing time is reduced by ${getAdvancedResearchLevelReductionPercent(level)}%.`,
+          getRequiredPrestigeCount: (level) => this.getStrongerRoomStudyPrestigeCount(level),
         }),
       },
       {
@@ -463,6 +476,7 @@ export class ResearchDefinitionManager {
           label: (plotNumber, level) => `plot ${plotNumber} growth lvl ${level}`,
           description: (plotNumber, level) =>
             `plot ${plotNumber} growth time is reduced by ${getAdvancedResearchLevelReductionPercent(level)}%.`,
+          getRequiredPrestigeCount: (level) => this.getStrongerRoomStudyPrestigeCount(level),
         }),
       },
     ];
@@ -619,11 +633,39 @@ export class ResearchDefinitionManager {
     });
   }
 
-  getAdvancedSlotResearches({ count, getId, seriesId, label, description }) {
+  getAutomationReserveResearches() {
+    return Array.from({ length: automationReserveResearchMaxLevel }, (_value, index) => {
+      const level = index + 1;
+
+      return {
+        id: automationReserveResearchIds.controls(level),
+        label: getAutomationReserveResearchLabel(level),
+        value: getAutomationReserveResearchValue(level),
+        showEffect: true,
+        seriesId: 'automationReserve',
+        requiredPrestigeCount: this.getUnlockPrestigeCount(
+          prestigeUnlockIds.automationReserveControls,
+        ),
+        requiredResearchIds:
+          level > 1 ? [automationReserveResearchIds.controls(level - 1)] : [],
+        description: `improves auto summon mana reserve controls with ${getAutomationReserveResearchValue(level)}.`,
+      };
+    });
+  }
+
+  getAdvancedSlotResearches({
+    count,
+    getId,
+    seriesId,
+    label,
+    description,
+    getRequiredPrestigeCount,
+  }) {
     const researches = [];
 
     for (let targetNumber = 1; targetNumber <= count; targetNumber += 1) {
       for (let level = 1; level <= advancedResearchMaxLevel; level += 1) {
+        const requiredPrestigeCount = getRequiredPrestigeCount?.(level) ?? null;
         researches.push({
           id: getId(targetNumber, level),
           label: label(targetNumber, level),
@@ -632,6 +674,7 @@ export class ResearchDefinitionManager {
           seriesId: seriesId(targetNumber),
           requiredResearchIds:
             level > 1 ? [getId(targetNumber, level - 1)] : [],
+          ...(requiredPrestigeCount ? { requiredPrestigeCount } : {}),
           description: description(targetNumber, level),
         });
       }
@@ -861,6 +904,18 @@ export class ResearchDefinitionManager {
 
   getCurrentPrestigeCount() {
     return this.prestigeFacade?.getCompletedCount?.() ?? 0;
+  }
+
+  getUnlockPrestigeCount(unlockId) {
+    return prestigeUnlocks.find((unlock) => unlock.id === unlockId)?.count ?? null;
+  }
+
+  getStrongerRoomStudyPrestigeCount(level) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+
+    return safeLevel >= 6
+      ? this.getUnlockPrestigeCount(prestigeUnlockIds.strongerRoomStudies)
+      : null;
   }
 
   getResearchTabsCacheKey({

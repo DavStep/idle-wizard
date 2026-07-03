@@ -709,11 +709,14 @@ describe('PressFeedbackManager', () => {
     const root = document.createElement('div');
     const disabled = document.createElement('button');
     const selected = document.createElement('button');
+    const ariaSelected = document.createElement('button');
     const rightClick = document.createElement('button');
     disabled.disabled = true;
     selected.className = 'style-button is-selected';
+    ariaSelected.className = 'style-button';
+    ariaSelected.setAttribute('aria-selected', 'true');
     rightClick.className = 'style-button';
-    root.append(disabled, selected, rightClick);
+    root.append(disabled, selected, ariaSelected, rightClick);
     document.body.append(root);
 
     const manager = new PressFeedbackManager();
@@ -721,10 +724,12 @@ describe('PressFeedbackManager', () => {
 
     dispatchPointer(disabled, 'pointerdown');
     dispatchPointer(selected, 'pointerdown');
+    dispatchPointer(ariaSelected, 'pointerdown');
     dispatchPointer(rightClick, 'pointerdown', { button: 2 });
 
     expect(disabled.classList.contains('is-pressing')).toBe(false);
     expect(selected.classList.contains('is-pressing')).toBe(false);
+    expect(ariaSelected.classList.contains('is-pressing')).toBe(false);
     expect(rightClick.classList.contains('is-pressing')).toBe(false);
 
     manager.unmount();

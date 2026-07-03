@@ -403,4 +403,15 @@ describe('ShopStockManager', () => {
       /\.shop-page__stock-row\[hidden\]\s*\{\s*display:\s*none;\s*\}/,
     );
   });
+
+  it('keeps stock row buy actions unframed in themed buttons', () => {
+    const baseCss = readFileSync(`${process.cwd()}/src/styles/base.css`, 'utf8');
+
+    expect(baseCss).toMatch(
+      /\.style-button\.shop-page__stock-buy-button\s*\{[^}]*border-image:\s*none;/s,
+    );
+    expect(baseCss).toMatch(
+      /:root\[data-style-theme="midnight"\][\s\S]*?\.style-button\.shop-page__stock-buy-button[\s\S]*?\{\s*border-image:\s*none;/,
+    );
+  });
 });

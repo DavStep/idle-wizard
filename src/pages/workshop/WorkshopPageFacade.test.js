@@ -148,13 +148,13 @@ describe('WorkshopPageFacade requirement feedback', () => {
       'right:',
     );
 
-    expect(topOffset).toBe(300);
+    expect(topOffset).toBe(260);
     expect(characterHeight).toBe(80.25);
     expect(personalTasksRule).toMatch(
-      /\bleft:\s*calc\(var\(--style-room-content-edge\) - 14px\);/,
+      /\bleft:\s*var\(--style-room-chrome-edge\);/,
     );
     expect(worldNoticeRule).toMatch(
-      /\bright:\s*calc\(var\(--style-room-content-edge\) - 14px\);/,
+      /\bright:\s*var\(--style-room-chrome-edge\);/,
     );
     expect(baseCss).toMatch(
       /\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__feature-character\s*\{[^}]*\btransform:\s*scaleX\(-1\);/s,

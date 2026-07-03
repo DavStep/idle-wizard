@@ -155,7 +155,7 @@ function createGameplayFacadeFake() {
         },
         tasks: [
           {
-            taskId: 'level1-sage-seeds',
+            taskId: 'level1-turn-in-sage-seed',
             level: 1,
             action: 'drop',
             itemTypeId: 1,
@@ -1606,7 +1606,7 @@ function createGameplayFacadeFake() {
         costCoin: completion.costCoin,
       };
     },
-    completePrestigeMilestone: (level, { confirmedLower = false } = {}) => {
+    completePrestigeMilestone: (level) => {
       const milestone = snapshot.prestige.milestones.find((candidate) => candidate.level === level);
 
       if (!milestone) {
@@ -1616,20 +1616,34 @@ function createGameplayFacadeFake() {
         };
       }
 
-      if (milestone.lowerThanHighestAvailable && !confirmedLower) {
+      if (milestone.completed) {
         return {
           ok: false,
-          reason: 'higher_prestige_available',
+          reason: 'already_completed',
           milestone,
-          highestAvailableLevel: snapshot.prestige.highestAvailableLevel,
         };
       }
 
-      milestone.completed = true;
-      milestone.canComplete = false;
-      milestone.lowerThanHighestAvailable = false;
-      snapshot.prestige.completedLevels.push(level);
-      snapshot.prestige.earnedRuby += milestone.rewardRuby;
+      const creditedMilestones = snapshot.prestige.milestones.filter(
+        (candidate) => candidate.level <= level && !candidate.completed,
+      );
+
+      for (const creditedMilestone of creditedMilestones) {
+        creditedMilestone.completed = true;
+        creditedMilestone.canComplete = false;
+        creditedMilestone.lowerThanHighestAvailable = false;
+      }
+
+      snapshot.prestige.completedLevels = [
+        ...new Set([
+          ...snapshot.prestige.completedLevels,
+          ...creditedMilestones.map((creditedMilestone) => creditedMilestone.level),
+        ]),
+      ].sort((left, right) => left - right);
+      snapshot.prestige.earnedRuby += creditedMilestones.reduce(
+        (total, creditedMilestone) => total + creditedMilestone.rewardRuby,
+        0,
+      );
       snapshot.ruby.current = snapshot.prestige.earnedRuby;
       const resetLevel = getPrestigeResetLevel(level);
       snapshot.tasks.currentLevel = resetLevel;
@@ -1641,6 +1655,8 @@ function createGameplayFacadeFake() {
       return {
         ok: true,
         milestone,
+        creditedLevels: creditedMilestones.map((creditedMilestone) => creditedMilestone.level),
+        completedLevels: snapshot.prestige.completedLevels,
         currentRuby: snapshot.ruby.current,
       };
     },
@@ -4425,7 +4441,7 @@ describe('PagesFacade', () => {
       .querySelector('.tutorial-layer__lesson-button')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     stage
-      .querySelector('.tutorial-layer__lesson')
+      .querySelector('.tutorial-layer__objective')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(task.progressQuantity).toBe(2);
@@ -4703,7 +4719,7 @@ describe('PagesFacade', () => {
 
     expect(infoPopup.hidden).toBe(false);
     expect(infoPopup.querySelector('.workshop-page__tasks-info-copy')?.textContent).toBe(
-      'turn in these items to reach level 2. turned-in items are consumed.',
+      'finish these requirements to reach level 2. only turn-in rows consume items.',
     );
 
     infoPopup
@@ -6974,23 +6990,30 @@ describe('PagesFacade', () => {
     snapshot.playerLevel.currentLevel = 40;
     snapshot.prestige.currentLevel = 40;
     snapshot.prestige.highestAvailableLevel = 40;
-    snapshot.prestige.milestones = [10, 20, 30, 40].map((level) => ({
-      level,
-      rewardRuby: 1,
-      completed: false,
-      unlocked: true,
-      canComplete: true,
-      currentLevel: 40,
-      lowerThanHighestAvailable: level < 40,
-      nextRun: {
-        level: getPrestigeResetLevel(level),
-        mana: 0,
-        coin: 0,
-        crystal: getFakePrestigeResetCrystal(level),
-        emerald: snapshot.emerald.current,
-        ruby: snapshot.prestige.earnedRuby + 1,
-      },
-    }));
+    snapshot.prestige.milestones = [10, 20, 30, 40].map((level, index, levels) => {
+      const creditedLevels = levels.filter((creditedLevel) => creditedLevel <= level);
+      const creditedRuby = creditedLevels.length;
+
+      return {
+        level,
+        rewardRuby: 1,
+        creditedLevels,
+        creditedRuby,
+        completed: false,
+        unlocked: true,
+        canComplete: true,
+        currentLevel: 40,
+        lowerThanHighestAvailable: level < 40,
+        nextRun: {
+          level: getPrestigeResetLevel(level),
+          mana: 0,
+          coin: 0,
+          crystal: getFakePrestigeResetCrystal(level),
+          emerald: snapshot.emerald.current,
+          ruby: snapshot.prestige.earnedRuby + creditedRuby,
+        },
+      };
+    });
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -7021,20 +7044,33 @@ describe('PagesFacade', () => {
       'daily and weekly task progress keeps its normal reset timer.',
     );
     expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
-      'each completed milestone adds 1 prestige point for capacity rewards.',
+      'claiming a milestone also credits lower unclaimed milestones.',
     );
+    expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
+      'each completed milestone adds 1 prestige point for concrete rewards.',
+    );
+    const descriptionLines = [
+      ...page.querySelectorAll('.prestige-page__description-copy > li'),
+    ];
+    expect(descriptionLines).toHaveLength(6);
+    expect(
+      descriptionLines.every(
+        (line) =>
+          line.querySelector('.prestige-page__description-marker')?.textContent === '-',
+      ),
+    ).toBe(true);
     const summary = page.querySelector('.workshop-page__prestige-summary');
     expect(
       summary?.querySelector('.workshop-page__prestige-level-flow')?.textContent,
     ).toBe('level 40 > level 20');
     expect(
       summary?.querySelector('.workshop-page__prestige-receive')?.textContent,
-    ).toBe('on prestige: 20 crystal, 1 ruby, 0 emerald total');
+    ).toBe('on prestige: 20 crystal 4 ruby 0 emerald total');
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
     expect(summary?.querySelector('[data-resource-color="crystal"]')?.textContent).toBe(
       '20 crystal',
     );
-    expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('1 ruby');
+    expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('4 ruby');
     expect(summary?.querySelector('[data-resource-color="emerald"]')?.textContent).toBe(
       '0 emerald',
     );
@@ -7046,10 +7082,12 @@ describe('PagesFacade', () => {
     expect(page.textContent).toContain('level 40');
     const milestoneRows = [...page.querySelectorAll('.workshop-page__prestige-row')];
     expect(milestoneRows[0]?.classList.contains('style-box')).toBe(true);
-    expect(milestoneRows[0]?.dataset.prestigeState).toBe('ready');
+    expect(milestoneRows[0]?.dataset.prestigeState).toBe('included');
     expect(milestoneRows[0]?.querySelector('.workshop-page__prestige-reward')?.textContent).toBe(
-      'reward: 5 crystal, 1 ruby',
+      'reward: 5 crystal 1 ruby',
     );
+    expect(milestoneRows[0]?.querySelector('.workshop-page__prestige-action')).toBeNull();
+    expect(milestoneRows[3]?.dataset.prestigeState).toBe('ready');
     expect(
       page.querySelector(
         '.workshop-page__prestige-reward .style-resource-label--crystal .style-resource-label__icon',
@@ -7066,23 +7104,24 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(page.querySelector('.workshop-page__prestige-confirm').hidden).toBe(false);
-    expect(page.textContent).toContain('higher prestige available: level 40');
-    expect(page.textContent).toContain('level 40 > level 5');
-    expect(page.textContent).toContain('on prestige: 5 crystal, 1 ruby, 0 emerald total');
-    expect(page.textContent).toContain('start level5');
-    expect(page.textContent).toContain('crystal5 crystal');
+    expect(page.textContent).not.toContain('higher prestige available');
+    expect(page.textContent).toContain('also credits levels 10, 20, 30, 40');
+    expect(page.textContent).toContain('level 40 > level 20');
+    expect(page.textContent).toContain('on prestige: 20 crystal 4 ruby 0 emerald total');
+    expect(page.textContent).toContain('start level20');
+    expect(page.textContent).toContain('crystal20 crystal');
     expect(page.textContent).toContain('emerald0 emerald');
-    expect(page.textContent).toContain('ruby1 ruby');
+    expect(page.textContent).toContain('ruby4 ruby');
 
     page
       .querySelector('.workshop-page__prestige-confirm-proceed')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(pagesFacade.getCurrentPageId()).toBe('workshop');
-    expect(stage.querySelector('.prestige-page')).toBeNull();
-    expect(snapshot.prestige.completedLevels).toEqual([10]);
-    expect(snapshot.ruby.current).toBe(1);
-    expect(snapshot.tasks.currentLevel).toBe(getPrestigeResetLevel(10));
+    expect(pagesFacade.getCurrentPageId()).toBe('prestige');
+    expect(stage.querySelector('.prestige-page')).not.toBeNull();
+    expect(snapshot.prestige.completedLevels).toEqual([10, 20, 30, 40]);
+    expect(snapshot.ruby.current).toBe(4);
+    expect(snapshot.tasks.currentLevel).toBe(getPrestigeResetLevel(40));
   });
 
   it('labels prestige roadmap milestones by completion state', () => {
@@ -7256,7 +7295,7 @@ describe('PagesFacade', () => {
     ).toBe('level 20 > level 10');
     expect(
       summary?.querySelector('.workshop-page__prestige-receive')?.textContent,
-    ).toBe('on prestige: 10 crystal, 3 ruby, 3 emerald total');
+    ).toBe('on prestige: 10 crystal 3 ruby 3 emerald total');
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
     expect(summary?.querySelector('[data-resource-color="crystal"]')?.textContent).toBe(
       '10 crystal',
@@ -7315,7 +7354,8 @@ describe('PagesFacade', () => {
       'true',
     ]);
     expect(page.textContent).toContain('1 point earned');
-    expect(page.textContent).toContain('plot 6 capacity');
+    expect(page.textContent).toContain('advanced capacity path');
+    expect(page.textContent).toContain('stronger room studies');
     expect(page.querySelector('.workshop-page__prestige-point-box')).toBeNull();
     expect(page.querySelector('.workshop-page__prestige-point-title')?.textContent).toBe(
       'point rewards',
@@ -7339,7 +7379,7 @@ describe('PagesFacade', () => {
       [...pointRows[1].querySelectorAll('.workshop-page__prestige-point-reward-row')].map(
         (row) => row.textContent,
       ),
-    ).toEqual(['- plot 7 capacity', '- cauldron 4 capacity']);
+    ).toEqual(['- research queue slot', '- one extra timed research slot']);
     expect(pointRows[1]?.textContent).not.toContain(',');
     expect(
       pointRows[1]?.textContent,
@@ -10532,12 +10572,16 @@ describe('PagesFacade', () => {
     cauldrons = [...stage.querySelectorAll('.brewing-page__cauldron')];
     expect(cauldrons).toHaveLength(3);
     expect(cauldrons[1].classList.contains('is-locked')).toBe(false);
-    expect(cauldrons[1].querySelector('.style-box__title')?.textContent).toBe(
-      'cauldron 2 ☆☆☆',
-    );
-    expect(cauldrons[2].querySelector('.style-box__title')?.textContent).toBe(
-      'cauldron 3 ☆☆☆',
-    );
+    expect(
+      cauldrons[1].querySelector(
+        '.brewing-page__cauldron-recipe-box > .style-box__title',
+      )?.textContent,
+    ).toBe('cauldron 2 ☆☆☆');
+    expect(
+      cauldrons[2].querySelector(
+        '.brewing-page__cauldron-recipe-box > .style-box__title',
+      )?.textContent,
+    ).toBe('cauldron 3 ☆☆☆');
     expect(cauldrons[2].classList.contains('is-locked')).toBe(true);
   });
 

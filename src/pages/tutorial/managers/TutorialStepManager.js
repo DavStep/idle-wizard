@@ -18,12 +18,14 @@ const SELECTED_SELL_AMOUNT_AUTO_ADVANCE_MS = 2000;
 const MANA_TONIC_SAGE_COUNT = 3;
 const MANA_TONIC_EXTRA_SAGE_TARGET_ID = `brewing:remove:${SAGE_HERB_KEY}`;
 const MANA_READOUT_TARGET_ID = 'top:mana';
-const LEVEL_ONE_SEED_TASK_ID = 'level1-sage-seeds';
+const LEVEL_ONE_SEED_TASK_ID = 'level1-turn-in-sage-seed';
 const DEFAULT_LEVEL_FOUR_SAGE_GROW_TARGET = 2;
 const TURN_IN_TEXT = 'turn in';
 const COMPLETE_TEXT = 'complete';
 const WORKSHOP_TASKS_PIN_TARGET_ID = 'workshop:tasksPin';
 export const TUTORIAL_LESSON_THREE_STUCK_MS = 2000;
+const LEVEL_TWO_SUMMON_TYPE = 'summon';
+const LEVEL_TWO_SELL_TYPE = 'sell';
 const LEVEL_TWO_SELL_ITEM_KEYS = [SAGE_SEED_KEY];
 const LEVEL_THREE_SELL_ITEM_KEYS = [SAGE_SEED_KEY, MINT_SEED_KEY];
 const LEVEL_FOUR_SELL_ITEM_KEYS = [
@@ -324,47 +326,39 @@ export const TUTORIAL_STEPS = [
   {
     id: 'intro-market',
     kind: 'dialog',
-    targetId: 'page:shop',
+    targetId: 'workshop:summonSeed',
     advanceLabel: 'continue',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     text:
-      'the front room is cleared out.\n\nyou can use it to trade what the workshop makes.',
+      'the front room is cleared out.\n\nfirst, summon sage seeds again. then sell one in market.',
     advanceOnClick: true,
-    allowTargetClick: true,
+    allowTargetClick: false,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete) &&
-      !hasLevelCompletionCoin(snapshot),
+      getCurrentLevel(snapshot) === 2 && !hasLevelTwoSageSellTaskComplete(snapshot),
     isComplete: ({ currentPageId, snapshot }) =>
       getCurrentLevel(snapshot) >= 3 ||
-      currentPageId === 'shop' ||
-      hasLevelCompletionCoin(snapshot),
+      hasLevelTwoSageSummonTaskComplete(snapshot) ||
+      hasLevelTwoSageSellTaskComplete(snapshot) ||
+      currentPageId === 'shop',
   },
   {
     id: 'prepare-seed-sale',
     kind: 'objective',
     pageId: 'workshop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'summon seeds to sell',
-    getTargetId: ({ snapshot }) =>
-      snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID,
-    getHintText: ({ snapshot }) =>
-      snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana',
-    getProgress: ({ snapshot }) => ({
-      value: Math.min(1, getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY)),
-      max: 1,
-    }),
-    getProgressLabel: ({ snapshot }) =>
-      `${Math.min(1, getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY))}/1 seed`,
+    objectiveText: 'summon sage seeds for market',
+    getTargetId: ({ snapshot }) => getLevelTwoSummonTargetId(snapshot),
+    getHintText: ({ snapshot }) => getLevelTwoSummonHintText(snapshot),
+    getProgress: ({ snapshot }) => getLevelTwoSummonProgress(snapshot),
+    getProgressLabel: ({ snapshot }) => getLevelTwoSummonProgressLabel(snapshot),
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete) &&
-      !hasLevelCompletionCoin(snapshot) &&
-      getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY) <= 0,
+      !hasLevelTwoSageSellTaskComplete(snapshot) &&
+      !isLevelTwoSummonRequirementDone(snapshot),
     isComplete: ({ snapshot }) =>
       getCurrentLevel(snapshot) >= 3 ||
-      hasLevelCompletionCoin(snapshot) ||
-      getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY) > 0,
+      hasLevelTwoSageSellTaskComplete(snapshot) ||
+      isLevelTwoSummonRequirementDone(snapshot),
   },
   {
     id: 'open-market',
@@ -378,11 +372,12 @@ export const TUTORIAL_STEPS = [
     getProgressLabel: () => '0/1 market',
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete) &&
-      !hasLevelCompletionCoin(snapshot),
+      !hasLevelTwoSageSellTaskComplete(snapshot) &&
+      hasLevelTwoSageSeedReadyToSell(snapshot),
     isComplete: ({ currentPageId, snapshot }) =>
       getCurrentLevel(snapshot) >= 3 ||
       currentPageId === 'shop' ||
+      hasLevelTwoSageSellTaskComplete(snapshot) ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
   },
   {
@@ -401,10 +396,11 @@ export const TUTORIAL_STEPS = [
     getProgressLabel: ({ dom }) => `${dom.isShopDirectSellPopupOpen?.() ? 1 : 0}/1 open`,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete) &&
-      !hasLevelCompletionCoin(snapshot),
+      !hasLevelTwoSageSellTaskComplete(snapshot) &&
+      hasLevelTwoSageSeedReadyToSell(snapshot),
     isComplete: ({ dom, snapshot }) =>
       getCurrentLevel(snapshot) >= 3 ||
+      hasLevelTwoSageSellTaskComplete(snapshot) ||
       dom.isShopDirectSellPopupOpen?.() ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
   },
@@ -437,10 +433,11 @@ export const TUTORIAL_STEPS = [
       }/1 seed`,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete) &&
-      !hasLevelCompletionCoin(snapshot),
+      !hasLevelTwoSageSellTaskComplete(snapshot) &&
+      hasLevelTwoSageSeedReadyToSell(snapshot),
     isComplete: ({ dom, snapshot }) =>
       getCurrentLevel(snapshot) >= 3 ||
+      hasLevelTwoSageSellTaskComplete(snapshot) ||
       isDirectSellSelected(dom, SAGE_SEED_KEY) ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
   },
@@ -458,108 +455,157 @@ export const TUTORIAL_STEPS = [
     autoAdvanceMs: SELECTED_SELL_AMOUNT_AUTO_ADVANCE_MS,
     isAvailable: ({ dom, snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete) &&
-      !hasLevelCompletionCoin(snapshot) &&
+      !hasLevelTwoSageSellTaskComplete(snapshot) &&
       getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY) > 0 &&
       dom.isShopDirectSellPopupOpen?.() &&
       isDirectSellSelected(dom, SAGE_SEED_KEY),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 3 || hasLevelCompletionCoin(snapshot),
+      getCurrentLevel(snapshot) >= 3 || hasLevelTwoSageSellTaskComplete(snapshot),
   },
   {
     id: 'earn-tutorial-coin',
     kind: 'objective',
     pageId: null,
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'choose amount and press sell',
+    getObjectiveText: ({ currentPageId, dom, snapshot }) =>
+      getLevelTwoSaleObjectiveText({ currentPageId, dom, snapshot }),
     getTargetId: ({ currentPageId, dom, snapshot }) =>
-      getLevelUpCoinTargetId({
-        currentPageId,
-        dom,
-        snapshot,
-        sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
-        getObtainTargetId: getSeedSellObtainTargetId,
-      }),
+      getLevelTwoSaleTargetId({ currentPageId, dom, snapshot }),
     getHintText: ({ currentPageId, dom, snapshot }) =>
-      getLevelUpCoinHintText({
-        currentPageId,
-        dom,
-        snapshot,
-        sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
-        getObtainHintText: getSeedSellObtainHintText,
-      }),
+      getLevelTwoSaleHintText({ currentPageId, dom, snapshot }),
     getAllowedPopupClasses: ({ currentPageId, dom, snapshot }) =>
-      getLevelUpCoinAllowedPopupClasses({
-        currentPageId,
-        dom,
-        snapshot,
-        sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
-      }),
-    getProgress: ({ snapshot }) => ({
-      value: Math.min(getCoin(snapshot), getLevelCompletionCostCoin(snapshot)),
-      max: getLevelCompletionCostCoin(snapshot),
-    }),
-    getProgressLabel: ({ snapshot }) =>
-      `${formatCoinProgressValue(Math.min(getCoin(snapshot), getLevelCompletionCostCoin(snapshot)))}/${formatCoinProgressValue(getLevelCompletionCostCoin(snapshot))} coin`,
+      getLevelTwoSaleAllowedPopupClasses({ currentPageId, dom, snapshot }),
+    getProgress: ({ snapshot }) => getLevelTwoSaleProgress(snapshot),
+    getProgressLabel: ({ snapshot }) => getLevelTwoSaleProgressLabel(snapshot),
     getReminderKey: () => 'earn-tutorial-coin-actions',
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete) &&
-      !hasLevelCompletionCoin(snapshot),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 3 || hasLevelCompletionCoin(snapshot),
+      getCurrentLevel(snapshot) === 2 && !hasLevelTwoSageSellTaskComplete(snapshot),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 3 || hasLevelTwoSageSellTaskComplete(snapshot),
   },
   {
     id: 'first-sale-complete',
     kind: 'prompt',
     targetId: 'page:workshop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    text: 'that was coin. coin pays for level-ups and opens new rooms.',
+    text: 'that was coin. coin pays for level-ups. now turn in the remaining sage seeds.',
     advanceLabel: 'continue',
     advanceOnClick: true,
     allowTargetClick: true,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete) &&
-      hasLevelCompletionCoin(snapshot),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 3,
+      hasLevelTwoSageSellTaskComplete(snapshot) &&
+      !hasLevelTwoSageTurnInTaskComplete(snapshot),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 3 || hasLevelTwoSageTurnInTaskComplete(snapshot),
   },
   {
     id: 'unselect-sage-seed-sale',
     kind: 'objective',
-    pageId: 'shop',
+    pageId: 'workshop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'finish direct sale',
-    getTargetId: () => 'shop:directSell',
-    getHintText: () => 'done selling',
-    getProgress: () => ({
-      value: 1,
-      max: 1,
-    }),
-    getProgressLabel: () => '1/1 sold',
+    getObjectiveText: ({ snapshot }) =>
+      getLevelTwoTurnInAction(snapshot)
+        ? 'turn in remaining sage seeds'
+        : 'summon sage seeds to turn in',
+    getTargetId: ({ currentPageId, dom, snapshot }) =>
+      getLevelTwoTurnInTargetId({ currentPageId, dom, snapshot }),
+    getHintText: ({ currentPageId, dom, snapshot }) =>
+      getLevelTwoTurnInHintText({ currentPageId, dom, snapshot }),
+    getProgress: ({ snapshot }) => getTaskProgress(getLevelTwoSageTurnInTask(snapshot)),
+    getProgressLabel: ({ snapshot }) =>
+      getTaskProgressLabel(getLevelTwoSageTurnInTask(snapshot), 'seeds'),
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete) &&
-      hasLevelCompletionCoin(snapshot),
-    isComplete: () => true,
+      hasLevelTwoSageSellTaskComplete(snapshot) &&
+      !hasLevelTwoSageTurnInTaskComplete(snapshot),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 3 || hasLevelTwoSageTurnInTaskComplete(snapshot),
   },
   {
     id: 'level-up-two',
     kind: 'objective',
-    pageId: 'workshop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'return to workshop and level up',
-    getTargetId: ({ dom }) => (dom.isTasksExpanded() ? 'workshop:levelUp' : 'workshop:tasks'),
-    getHintText: ({ dom, snapshot }) =>
-      dom.isTasksExpanded() ? 'level up' : getOpenLevelRequirementsText(snapshot),
-    getProgress: ({ snapshot }) => ({
-      value: snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0,
-      max: 1,
-    }),
-    getProgressLabel: ({ snapshot }) =>
-      `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`,
+    getObjectiveText: ({ currentPageId, dom, snapshot }) =>
+      hasLevelCompletionCoin(snapshot)
+        ? 'return to workshop and level up'
+        : getLevelUpCoinObjectiveText({
+            currentPageId,
+            dom,
+            snapshot,
+            sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+            emptyObjectiveText: 'summon sage seed to sell',
+          }),
+    getTargetId: ({ currentPageId, dom, snapshot }) => {
+      if (!hasLevelCompletionCoin(snapshot)) {
+        return getLevelUpCoinTargetId({
+          currentPageId,
+          dom,
+          snapshot,
+          sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+          getObtainTargetId: getSeedSellObtainTargetId,
+        });
+      }
+
+      if (currentPageId !== 'workshop') {
+        return 'page:workshop';
+      }
+
+      return dom.isTasksExpanded() ? 'workshop:levelUp' : 'workshop:tasks';
+    },
+    getHintText: ({ currentPageId, dom, snapshot }) => {
+      if (!hasLevelCompletionCoin(snapshot)) {
+        return getLevelUpCoinHintText({
+          currentPageId,
+          dom,
+          snapshot,
+          sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+          getObtainHintText: getSeedSellObtainHintText,
+        });
+      }
+
+      if (currentPageId !== 'workshop') {
+        return 'open workshop';
+      }
+
+      return dom.isTasksExpanded() ? 'level up' : getOpenLevelRequirementsText(snapshot);
+    },
+    getAllowedPopupClasses: ({ currentPageId, dom, snapshot }) => {
+      if (hasLevelCompletionCoin(snapshot)) {
+        return [];
+      }
+
+      return getLevelUpCoinAllowedPopupClasses({
+        currentPageId,
+        dom,
+        snapshot,
+        sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+      });
+    },
+    getProgress: ({ snapshot }) => {
+      if (!hasLevelCompletionCoin(snapshot)) {
+        const costCoin = getLevelCompletionCostCoin(snapshot);
+        return {
+          value: Math.min(getCoin(snapshot), costCoin),
+          max: costCoin,
+        };
+      }
+
+      return {
+        value: snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0,
+        max: 1,
+      };
+    },
+    getProgressLabel: ({ snapshot }) => {
+      if (!hasLevelCompletionCoin(snapshot)) {
+        const costCoin = getLevelCompletionCostCoin(snapshot);
+        return `${formatCoinProgressValue(Math.min(getCoin(snapshot), costCoin))}/${formatCoinProgressValue(costCoin)} coin`;
+      }
+
+      return `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`;
+    },
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 2 &&
-      hasLevelCompletionCoin(snapshot) &&
       Boolean(snapshot?.tasks?.level?.completion?.canComplete),
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 3,
   },
@@ -1477,23 +1523,28 @@ export class TutorialStepManager {
 
     if (
       currentLevel === 2 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete) &&
-      (getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY) > 0 ||
+      (isLevelTwoSummonRequirementDone(snapshot) ||
+        hasLevelTwoSageSellTaskComplete(snapshot) ||
         hasLevelCompletionCoin(snapshot))
     ) {
       this.completeSteps(['prepare-seed-sale']);
     }
 
-    if (isNpcMarketSelling(snapshot, SAGE_SEED_KEY)) {
-      this.completeSteps(['open-market', 'select-market-stand', 'select-sage-seed-sale']);
+    if (isNpcMarketSelling(snapshot, SAGE_SEED_KEY) || hasLevelTwoSageSellTaskComplete(snapshot)) {
+      this.completeSteps([
+        'open-market',
+        'select-market-stand',
+        'select-sage-seed-sale',
+        'show-selected-sale-amount',
+      ]);
     }
 
-    if (currentLevel === 2 && hasLevelCompletionCoin(snapshot)) {
-      this.completeSteps(['prepare-seed-sale', 'earn-tutorial-coin']);
+    if (currentLevel === 2 && hasLevelTwoSageSellTaskComplete(snapshot)) {
+      this.completeSteps(['earn-tutorial-coin']);
+    }
 
-      if (!isNpcMarketSelling(snapshot, SAGE_SEED_KEY)) {
-        this.completeSteps(['unselect-sage-seed-sale']);
-      }
+    if (currentLevel === 2 && hasLevelTwoSageTurnInTaskComplete(snapshot)) {
+      this.completeSteps(['first-sale-complete', 'unselect-sage-seed-sale']);
     }
 
     if (
@@ -1771,6 +1822,242 @@ function formatCoinProgressValue(value) {
 
 function hasLevelCompletionCoin(snapshot) {
   return getCoin(snapshot) >= getLevelCompletionCostCoin(snapshot);
+}
+
+function getLevelTwoSaleObjectiveText({ currentPageId, dom, snapshot }) {
+  const state = getLevelUpCoinMarketState({
+    currentPageId,
+    dom,
+    snapshot,
+    sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+  });
+
+  if (state.kind === 'obtain-item') {
+    return 'summon sage seed to sell';
+  }
+
+  if (state.kind === 'choose-item') {
+    return 'choose sage seed to sell';
+  }
+
+  if (state.kind === 'select-kind') {
+    return `open ${getDirectSellKindLabel(state.itemKind)} tab`;
+  }
+
+  if (state.kind === 'set-amount') {
+    return 'press sell';
+  }
+
+  return 'sell one sage seed in market';
+}
+
+function getLevelTwoSaleTargetId({ currentPageId, dom, snapshot }) {
+  const state = getLevelUpCoinMarketState({
+    currentPageId,
+    dom,
+    snapshot,
+    sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+  });
+
+  if (state.kind === 'open-market') {
+    return 'page:shop';
+  }
+
+  if (state.kind === 'open-fast-sell') {
+    return 'shop:directSell';
+  }
+
+  if (state.kind === 'choose-item') {
+    return `shop:directSell:${state.itemKey}`;
+  }
+
+  if (state.kind === 'select-kind') {
+    return `shop:directSell:tab:${state.itemKind}`;
+  }
+
+  if (state.kind === 'set-amount') {
+    return DIRECT_SELL_CONFIRM_TARGET_ID;
+  }
+
+  if (state.kind !== 'obtain-item') {
+    return null;
+  }
+
+  return getSeedSellObtainTargetId({ currentPageId, dom, snapshot });
+}
+
+function getLevelTwoSaleHintText({ currentPageId, dom, snapshot }) {
+  const state = getLevelUpCoinMarketState({
+    currentPageId,
+    dom,
+    snapshot,
+    sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+  });
+
+  if (state.kind === 'open-market') {
+    return 'open market';
+  }
+
+  if (state.kind === 'open-fast-sell') {
+    return 'fast sell';
+  }
+
+  if (state.kind === 'choose-item') {
+    return 'choose sage seed';
+  }
+
+  if (state.kind === 'select-kind') {
+    return getDirectSellKindLabel(state.itemKind);
+  }
+
+  if (state.kind === 'set-amount') {
+    return 'press sell';
+  }
+
+  if (state.kind !== 'obtain-item') {
+    return '';
+  }
+
+  return getSeedSellObtainHintText({ currentPageId, dom, snapshot });
+}
+
+function getLevelTwoSaleAllowedPopupClasses({ currentPageId, dom, snapshot }) {
+  const state = getLevelUpCoinMarketState({
+    currentPageId,
+    dom,
+    snapshot,
+    sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
+  });
+
+  if (state.kind === 'set-amount') {
+    return [DIRECT_SELL_POPUP_CLASS];
+  }
+
+  return [];
+}
+
+function getLevelTwoSaleProgress(snapshot) {
+  const task = getLevelTwoSageSellTask(snapshot);
+
+  if (task) {
+    return getTaskProgress(task);
+  }
+
+  return {
+    value: hasLevelCompletionCoin(snapshot) ? 1 : 0,
+    max: 1,
+  };
+}
+
+function getLevelTwoSaleProgressLabel(snapshot) {
+  const task = getLevelTwoSageSellTask(snapshot);
+
+  if (task) {
+    return getTaskProgressLabel(task, 'sale');
+  }
+
+  return `${hasLevelCompletionCoin(snapshot) ? 1 : 0}/1 sale`;
+}
+
+function getLevelTwoSummonTargetId(snapshot) {
+  return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
+}
+
+function getLevelTwoSummonHintText(snapshot) {
+  return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
+}
+
+function getLevelTwoSummonProgress(snapshot) {
+  const task = getLevelTwoSageSummonTask(snapshot);
+
+  if (task) {
+    return getTaskProgress(task);
+  }
+
+  return {
+    value: Math.min(1, getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY)),
+    max: 1,
+  };
+}
+
+function getLevelTwoSummonProgressLabel(snapshot) {
+  const task = getLevelTwoSageSummonTask(snapshot);
+
+  if (task) {
+    return getTaskProgressLabel(task, 'seeds');
+  }
+
+  return `${Math.min(1, getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY))}/1 seed`;
+}
+
+function isLevelTwoSummonRequirementDone(snapshot) {
+  const task = getLevelTwoSageSummonTask(snapshot);
+
+  if (task) {
+    return Boolean(task.completed);
+  }
+
+  return getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY) > 0;
+}
+
+function hasLevelTwoSageSeedReadyToSell(snapshot) {
+  return getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY) > 0;
+}
+
+function getLevelTwoTurnInAction(snapshot) {
+  return getTaskAction(snapshot, getLevelTwoSageTurnInTask(snapshot));
+}
+
+function getLevelTwoTurnInTargetId({ currentPageId, dom, snapshot }) {
+  const task = getLevelTwoSageTurnInTask(snapshot);
+  const taskAction = getTaskAction(snapshot, task);
+
+  if (taskAction) {
+    return getTaskActionTargetId({ currentPageId, dom, task });
+  }
+
+  if (currentPageId !== 'workshop') {
+    return 'page:workshop';
+  }
+
+  if (!dom?.isTasksExpanded?.()) {
+    return 'workshop:tasks';
+  }
+
+  if (getOwnedQuantityForTask(snapshot, task) <= 0 && getTaskRemainingQuantity(task) > 0) {
+    return getLevelTwoSummonTargetId(snapshot);
+  }
+
+  return task?.taskId ? `task:${task.taskId}` : null;
+}
+
+function getLevelTwoTurnInHintText({ currentPageId, dom, snapshot }) {
+  const task = getLevelTwoSageTurnInTask(snapshot);
+  const taskAction = getTaskAction(snapshot, task);
+
+  if (taskAction) {
+    return getTaskActionHintText({
+      currentPageId,
+      dom,
+      snapshot,
+      taskAction,
+      fillText: 'turn in sage seeds',
+    });
+  }
+
+  if (currentPageId !== 'workshop') {
+    return 'open workshop';
+  }
+
+  if (!dom?.isTasksExpanded?.()) {
+    return getOpenLevelRequirementsText(snapshot);
+  }
+
+  if (getOwnedQuantityForTask(snapshot, task) <= 0 && getTaskRemainingQuantity(task) > 0) {
+    return getLevelTwoSummonHintText(snapshot);
+  }
+
+  return 'turn in sage seeds';
 }
 
 function getLevelUpCoinObjectiveText({
@@ -2090,8 +2377,10 @@ function getGrowTile(snapshot, seedKey = null) {
 }
 
 function getTaskActionForItem(snapshot, itemKey) {
-  const task = getCurrentTaskForItem(snapshot, itemKey);
+  return getTaskAction(snapshot, getCurrentTaskForItem(snapshot, itemKey));
+}
 
+function getTaskAction(snapshot, task) {
   if (!task || task.completed) {
     return null;
   }
@@ -2401,7 +2690,52 @@ function getCurrentTasks(snapshot) {
 }
 
 function getCurrentTaskForItem(snapshot, itemKey) {
-  return getCurrentTasks(snapshot).find((task) => task.itemKey === itemKey) ?? null;
+  const tasks = getCurrentTasks(snapshot).filter((task) => task.itemKey === itemKey);
+
+  return (
+    tasks.find((task) => !task.completed && isTurnInTask(task)) ??
+    tasks.find((task) => !task.completed) ??
+    tasks.find((task) => isTurnInTask(task)) ??
+    tasks[0] ??
+    null
+  );
+}
+
+function getCurrentTaskForItemByType(snapshot, itemKey, type) {
+  const tasks = getCurrentTasks(snapshot).filter((task) => task.itemKey === itemKey);
+
+  if (type === 'turnIn') {
+    return tasks.find((task) => isTurnInTask(task)) ?? null;
+  }
+
+  return tasks.find((task) => getTaskType(task) === type) ?? null;
+}
+
+function getLevelTwoSageSummonTask(snapshot) {
+  return getCurrentTaskForItemByType(snapshot, SAGE_SEED_KEY, LEVEL_TWO_SUMMON_TYPE);
+}
+
+function getLevelTwoSageSellTask(snapshot) {
+  return getCurrentTaskForItemByType(snapshot, SAGE_SEED_KEY, LEVEL_TWO_SELL_TYPE);
+}
+
+function getLevelTwoSageTurnInTask(snapshot) {
+  return (
+    getCurrentTaskForItemByType(snapshot, SAGE_SEED_KEY, 'turnIn') ??
+    getCurrentTaskForItem(snapshot, SAGE_SEED_KEY)
+  );
+}
+
+function hasLevelTwoSageSummonTaskComplete(snapshot) {
+  return Boolean(getLevelTwoSageSummonTask(snapshot)?.completed);
+}
+
+function hasLevelTwoSageSellTaskComplete(snapshot) {
+  return Boolean(getLevelTwoSageSellTask(snapshot)?.completed);
+}
+
+function hasLevelTwoSageTurnInTaskComplete(snapshot) {
+  return Boolean(getLevelTwoSageTurnInTask(snapshot)?.completed);
 }
 
 function getLevelOneSeedTask(snapshot) {
@@ -2443,7 +2777,20 @@ function hasTaskProgressForItem(snapshot, itemKey) {
 }
 
 function hasCompletedTaskForItem(snapshot, itemKey) {
-  return getCurrentTasks(snapshot).some((task) => task.itemKey === itemKey && task.completed);
+  const tasks = getCurrentTasks(snapshot).filter((task) => task.itemKey === itemKey);
+  const turnInTasks = tasks.filter((task) => isTurnInTask(task));
+  const completionTasks = turnInTasks.length > 0 ? turnInTasks : tasks;
+
+  return completionTasks.some((task) => task.completed);
+}
+
+function isTurnInTask(task) {
+  const type = getTaskType(task);
+  return !type || type === 'turnIn' || type === 'drop';
+}
+
+function getTaskType(task) {
+  return task?.type ?? task?.action ?? null;
 }
 
 function shouldIntroduceLevelTwoRequirements({ currentPageId, dom, snapshot }) {

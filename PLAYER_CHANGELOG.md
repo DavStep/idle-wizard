@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.74
+
+- Added a while-away report so returned players see produced items and NPC market sales from time spent out of the app.
+- Reworked level requirements to track research, summoning, growing, brewing, selling, and turn-ins, with refreshed task balance through the level curve.
+- Expanded prestige rewards with clearer milestone inclusion, point rewards, an extra research slot unlock, run focus, and stronger automation reserve controls.
+- Added the Workshop ledger, improved inbox/alliance side buttons, and polished Research, Prestige, and Brewing panels for cleaner mobile readability.
+
 ## 0.2.73
 
 - Made the first Workshop entry and level 1 task free so new wizards reach the first level-up faster.

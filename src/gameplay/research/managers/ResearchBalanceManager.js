@@ -1,6 +1,10 @@
 import { automationResearchIds } from '../../automation/automationResearchIds.js';
 import { advancedResearchIds, advancedResearchMaxLevel } from '../advancedResearchIds.js';
 import {
+  automationReserveResearchIds,
+  automationReserveResearchMaxLevel,
+} from '../automationReserveResearch.js';
+import {
   capacityResearchIds,
   cauldronCapacityEndCauldronNumber,
   cauldronCapacityStartCauldronNumber,
@@ -197,6 +201,10 @@ function createDefaultAdvancedRubyCosts() {
 
   for (let level = 1; level <= researchCostResearchMaxLevel; level += 1) {
     costs[researchCostResearchIds.reduction(level)] = level;
+  }
+
+  for (let level = 1; level <= automationReserveResearchMaxLevel; level += 1) {
+    costs[automationReserveResearchIds.controls(level)] = level;
   }
 
   for (

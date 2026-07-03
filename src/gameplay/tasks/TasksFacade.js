@@ -1,3 +1,4 @@
+import { TaskActionProgressManager } from './managers/TaskActionProgressManager.js';
 import { TaskBalanceManager } from './managers/TaskBalanceManager.js';
 import { TaskFillManager } from './managers/TaskFillManager.js';
 import { TaskLevelCompletionManager } from './managers/TaskLevelCompletionManager.js';
@@ -7,7 +8,7 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class TasksFacade {
   static explain =
-    'Level requirements give the wizard item turn-ins: turn in the listed drops, complete the filled requirements, then pay coin to level up.';
+    'Level requirements give the wizard compact goals: do the listed actions, turn in any requested items, then pay coin to level up.';
 
   constructor({ itemsFacade }) {
     this.taskBalanceManager = new TaskBalanceManager({ itemsFacade });
@@ -23,6 +24,10 @@ export class TasksFacade {
       taskBalanceManager: this.taskBalanceManager,
       taskStateEntityManager: this.taskStateEntityManager,
     });
+    this.taskActionProgressManager = new TaskActionProgressManager({
+      taskBalanceManager: this.taskBalanceManager,
+      taskStateEntityManager: this.taskStateEntityManager,
+    });
     this.taskSnapshotManager = new TaskSnapshotManager({
       itemsFacade,
       taskBalanceManager: this.taskBalanceManager,
@@ -35,6 +40,10 @@ export class TasksFacade {
     this.taskStateEntityManager.initialize(ecsManagers);
   }
 
+  setResearchFacade(researchFacade) {
+    this.taskActionProgressManager.setResearchFacade(researchFacade);
+  }
+
   applyRuntimeConfig(snapshot = {}) {
     const balance = parseGameConfig(snapshot, 'tasks');
 
@@ -45,6 +54,7 @@ export class TasksFacade {
     try {
       this.taskBalanceManager.setRuntimeBalance(balance);
       this.taskStateEntityManager.syncTaskEntities();
+      this.syncCurrentLevelStateRequirements();
     } catch {
       return;
     }
@@ -58,6 +68,14 @@ export class TasksFacade {
     return this.taskFillManager.completeTask(taskId);
   }
 
+  recordAction(action) {
+    return this.taskActionProgressManager.recordAction(action);
+  }
+
+  syncCurrentLevelStateRequirements() {
+    return this.taskActionProgressManager.syncCurrentLevelStateRequirements();
+  }
+
   getCurrentLevelCompletionSnapshot() {
     return this.taskLevelCompletionManager.getCurrentLevelCompletionSnapshot();
   }
@@ -67,10 +85,17 @@ export class TasksFacade {
   }
 
   completeCurrentLevel() {
-    return this.taskLevelCompletionManager.completeCurrentLevel();
+    const result = this.taskLevelCompletionManager.completeCurrentLevel();
+
+    if (result.ok && result.advanced) {
+      this.syncCurrentLevelStateRequirements();
+    }
+
+    return result;
   }
 
   getSnapshot() {
+    this.syncCurrentLevelStateRequirements();
     return this.taskSnapshotManager.getSnapshot();
   }
 
@@ -87,5 +112,6 @@ export class TasksFacade {
     }
 
     this.taskStateEntityManager.applySnapshot(snapshot);
+    this.syncCurrentLevelStateRequirements();
   }
 }

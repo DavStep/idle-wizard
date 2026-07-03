@@ -6,10 +6,12 @@ import { GameplayFacade, getPrestigeResetLevel } from './GameplayFacade.js';
 import { DEFAULT_PLAYER_LEVEL_BALANCE } from './playerLevel/managers/PlayerLevelBalanceManager.js';
 import { advancedResearchIds } from './research/advancedResearchIds.js';
 import { capacityResearchIds } from './research/capacityResearchIds.js';
+import { automationReserveResearchIds } from './research/automationReserveResearch.js';
 import { emeraldResearchIds } from './research/emeraldResearchIds.js';
 import { fastSellResearchIds } from './research/fastSellResearch.js';
 import { researchCostResearchIds } from './research/researchCostResearch.js';
 import { researchTimeResearchIds } from './research/researchTimeResearch.js';
+import { taskRequirementTypes } from './tasks/taskRequirementTypes.js';
 
 function createMemoryStorage() {
   const values = new Map();
@@ -36,13 +38,13 @@ function createGameplay({
   return { ecsFacade, gameplayFacade };
 }
 
-function makeResearchInstant(gameplayFacade) {
+function makeResearchInstant(gameplayFacade, durationSecondsByResearchId = {}) {
   const researchConfigs = gameplayFacade.researchFacade.researchDefinitionManager
     .getResearches({ includeLevelLockedAutomation: true })
     .map((research) => ({
       researchId: research.id,
       costCoin: gameplayFacade.researchFacade.researchBalanceManager.getCostCoin(research.id),
-      durationSeconds: 0,
+      durationSeconds: durationSecondsByResearchId[research.id] ?? 0,
       enabled: true,
     }));
 
@@ -111,13 +113,27 @@ function finishCurrentTaskLevel(gameplayFacade) {
   const tasks = gameplayFacade.getSnapshot().tasks.level.tasks;
 
   for (const task of tasks) {
-    gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
-    gameplayFacade.fillTask(task.taskId);
-    gameplayFacade.completeTask(task.taskId);
+    finishTaskRequirement(gameplayFacade, task);
   }
 
   gameplayFacade.coinFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costCoin);
   gameplayFacade.completeTaskLevel();
+}
+
+function finishTaskRequirement(gameplayFacade, task) {
+  if (task.type === taskRequirementTypes.TURN_IN) {
+    gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
+    gameplayFacade.fillTask(task.taskId);
+    gameplayFacade.completeTask(task.taskId);
+    return;
+  }
+
+  gameplayFacade.tasksFacade.recordAction({
+    type: task.type,
+    itemKey: task.itemKey,
+    researchId: task.researchId,
+    quantity: task.requiredQuantity,
+  });
 }
 
 function advanceToLevel(gameplayFacade, targetLevel) {
@@ -258,7 +274,7 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
 
     gameplayFacade.itemsFacade.addItem(1, 1);
-    expect(gameplayFacade.fillTask('level1-sage-seeds')).toMatchObject({ ok: true });
+    expect(gameplayFacade.fillTask('level1-turn-in-sage-seed')).toMatchObject({ ok: true });
     gameplayFacade.savePersistenceSnapshot();
 
     const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
@@ -267,7 +283,7 @@ describe('GameplayFacade', () => {
       currentLevel: 1,
       tasks: [
         {
-          taskId: 'level1-sage-seeds',
+          taskId: 'level1-turn-in-sage-seed',
           progressQuantity: 1,
           completed: false,
         },
@@ -444,11 +460,13 @@ describe('GameplayFacade', () => {
   it('fills tasks from inventory and advances player level after coin payment', () => {
     const { gameplayFacade } = createGameplay();
     finishCurrentTaskLevel(gameplayFacade);
-    const [task] = gameplayFacade.getSnapshot().tasks.level.tasks;
+    const task = gameplayFacade
+      .getSnapshot()
+      .tasks.level.tasks.find((candidate) => candidate.type === taskRequirementTypes.TURN_IN);
     const partialQuantity = task.requiredQuantity - 1;
 
     expect(gameplayFacade.getSnapshot().tasks.maxLevel).toBe(100);
-    expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(1);
+    expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(3);
     gameplayFacade.itemsFacade.addItem(task.itemTypeId, partialQuantity);
 
     expect(gameplayFacade.fillTask(task.taskId)).toMatchObject({
@@ -484,15 +502,7 @@ describe('GameplayFacade', () => {
     );
 
     for (const remainingTask of remainingTasks) {
-      gameplayFacade.itemsFacade.addItem(
-        remainingTask.itemTypeId,
-        remainingTask.requiredQuantity,
-      );
-      expect(gameplayFacade.fillTask(remainingTask.taskId)).toMatchObject({
-        ok: true,
-        maxed: true,
-      });
-      gameplayFacade.completeTask(remainingTask.taskId);
+      finishTaskRequirement(gameplayFacade, remainingTask);
     }
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
@@ -515,7 +525,7 @@ describe('GameplayFacade', () => {
       costCoin: 4,
     });
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
-    expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(2);
+    expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(3);
     expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
   });
 
@@ -524,7 +534,9 @@ describe('GameplayFacade', () => {
     const first = createGameplay({ persistenceStorage });
 
     finishCurrentTaskLevel(first.gameplayFacade);
-    const [task] = first.gameplayFacade.getSnapshot().tasks.level.tasks;
+    const task = first.gameplayFacade
+      .getSnapshot()
+      .tasks.level.tasks.find((candidate) => candidate.type === taskRequirementTypes.TURN_IN);
     const partialQuantity = task.requiredQuantity - 1;
     first.gameplayFacade.itemsFacade.addItem(task.itemTypeId, partialQuantity);
     first.gameplayFacade.fillTask(task.taskId);
@@ -535,7 +547,9 @@ describe('GameplayFacade', () => {
     const snapshot = second.gameplayFacade.getSnapshot();
 
     expect(snapshot.tasks.currentLevel).toBe(2);
-    expect(snapshot.tasks.level.tasks[0]).toMatchObject({
+    expect(
+      snapshot.tasks.level.tasks.find((candidate) => candidate.taskId === task.taskId),
+    ).toMatchObject({
       taskId: task.taskId,
       progressQuantity: partialQuantity,
       completed: false,
@@ -548,9 +562,7 @@ describe('GameplayFacade', () => {
     const tasks = first.gameplayFacade.getSnapshot().tasks.level.tasks;
 
     for (const task of tasks) {
-      first.gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
-      first.gameplayFacade.fillTask(task.taskId);
-      first.gameplayFacade.completeTask(task.taskId);
+      finishTaskRequirement(first.gameplayFacade, task);
     }
 
     const costCoin = first.gameplayFacade.getSnapshot().tasks.level.completion.costCoin;
@@ -797,6 +809,92 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(20);
   }, 30_000);
 
+  it('auto-credits lower unclaimed prestige milestones when claiming higher', () => {
+    const { gameplayFacade } = createGameplay();
+
+    advanceToLevel(gameplayFacade, 40);
+
+    const level40 = gameplayFacade
+      .getSnapshot()
+      .prestige.milestones.find((milestone) => milestone.level === 40);
+    expect(level40).toMatchObject({
+      canComplete: true,
+      creditedLevels: [10, 20, 30, 40],
+      creditedRuby: 4,
+      nextRun: {
+        ruby: 4,
+      },
+    });
+
+    expect(gameplayFacade.completePrestigeMilestone(40)).toMatchObject({
+      ok: true,
+      milestone: { level: 40 },
+      creditedLevels: [10, 20, 30, 40],
+      completedLevels: [10, 20, 30, 40],
+      earnedRuby: 4,
+      currentRuby: 4,
+    });
+    expect(gameplayFacade.getSnapshot().prestige.completedLevels).toEqual([
+      10,
+      20,
+      30,
+      40,
+    ]);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(
+      getPrestigeResetLevel(40),
+    );
+  }, 30_000);
+
+  it('derives early prestige unlocks from completed prestige count', () => {
+    const { gameplayFacade } = createGameplay();
+
+    expect(gameplayFacade.setPrestigeRunFocus('capacity')).toMatchObject({
+      ok: true,
+      runFocus: 'none',
+    });
+
+    advanceToLevel(gameplayFacade, 30);
+    expect(gameplayFacade.completePrestigeMilestone(30)).toMatchObject({
+      ok: true,
+      completedLevels: [10, 20, 30],
+    });
+    expect(gameplayFacade.getSnapshot().prestige.unlocks.slice(0, 3)).toMatchObject([
+      { id: 'advancedCapacity', unlocked: true },
+      { id: 'researchQueueSlot', unlocked: true },
+      { id: 'runFocus', unlocked: true },
+    ]);
+    expect(gameplayFacade.setPrestigeRunFocus('capacity')).toMatchObject({
+      ok: true,
+      runFocus: 'capacity',
+    });
+    expect(gameplayFacade.getSnapshot().prestige.runFocus).toMatchObject({
+      unlocked: true,
+      selected: 'capacity',
+    });
+    expect(gameplayFacade.buyResearch(automationReserveResearchIds.controls(1))).toMatchObject({
+      ok: false,
+      reason: 'missing_required_prestige',
+      requiredPrestigeCount: 4,
+    });
+
+    advanceToLevel(gameplayFacade, 40);
+    expect(gameplayFacade.completePrestigeMilestone(40)).toMatchObject({
+      ok: true,
+      completedLevels: [10, 20, 30, 40],
+    });
+    expect(
+      gameplayFacade.getSnapshot().seedSummoning.autoSummoning.reserveControlsUnlocked,
+    ).toBe(true);
+    expect(gameplayFacade.buyResearch(automationReserveResearchIds.controls(1))).toMatchObject({
+      ok: true,
+      cost: 1,
+      costCurrency: 'ruby',
+    });
+    expect(
+      gameplayFacade.getSnapshot().seedSummoning.autoSummoning.reservePresetFractions,
+    ).toContain(0.75);
+  }, 30_000);
+
   it('uses prestige-gated permanent research for extra plots and cauldrons', () => {
     const { gameplayFacade } = createGameplay();
 
@@ -914,6 +1012,29 @@ describe('GameplayFacade', () => {
     ]);
   }, 30_000);
 
+  it('announces auto-credited prestige count to world chat', () => {
+    const { gameplayFacade } = createGameplay();
+    const prestigeAnnouncements = [];
+
+    advanceToLevel(gameplayFacade, 40);
+
+    gameplayFacade.setWorldChatFacade({
+      announcePrestige: (prestige) => {
+        prestigeAnnouncements.push(prestige);
+        return Promise.resolve({ ok: true, ...prestige });
+      },
+    });
+
+    gameplayFacade.completePrestigeMilestone(40);
+
+    expect(prestigeAnnouncements).toEqual([
+      {
+        prestigeCount: 4,
+        playerLevel: 40,
+      },
+    ]);
+  }, 30_000);
+
   it('persists prestige reset data with settings, emeralds, and prestige progress kept', () => {
     const persistenceStorage = createMemoryStorage();
     const { gameplayFacade } = createGameplay({ persistenceStorage });
@@ -1005,17 +1126,11 @@ describe('GameplayFacade', () => {
     second.ecsFacade.destroyWorld();
   }, 30_000);
 
-  it('requires confirmation when a higher prestige milestone is available', () => {
+  it('completes a selected available prestige milestone', () => {
     const { gameplayFacade } = createGameplay();
     advanceToLevel(gameplayFacade, 20);
 
     expect(gameplayFacade.completePrestigeMilestone(10)).toMatchObject({
-      ok: false,
-      reason: 'higher_prestige_available',
-      highestAvailableLevel: 20,
-    });
-
-    expect(gameplayFacade.completePrestigeMilestone(10, { confirmedLower: true })).toMatchObject({
       ok: true,
       milestone: {
         level: 10,
@@ -1036,7 +1151,7 @@ describe('GameplayFacade', () => {
         ruby: { current: 9 },
         inventory: [],
         prestige: {
-          completedLevels: [10, 20],
+          completedLevels: [20],
         },
         research: {
           completedIds: [advancedResearchIds.cauldronBrewing(1, 1)],
@@ -1054,7 +1169,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().ruby.current).toBe(2);
   });
 
-  it('does not refill spent ruby on load before the next prestige reset', () => {
+  it('restores only unspent earned ruby on load before the next prestige reset', () => {
     const persistenceStorage = createMemoryStorage();
     persistenceStorage.setItem(
       'idle-wizard.gameplay.save',
@@ -1081,7 +1196,8 @@ describe('GameplayFacade', () => {
     const { gameplayFacade } = createGameplay({ persistenceStorage });
 
     expect(gameplayFacade.getSnapshot().prestige.earnedRuby).toBe(2);
-    expect(gameplayFacade.getSnapshot().ruby.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().prestige.completedLevels).toEqual([10, 20]);
+    expect(gameplayFacade.getSnapshot().ruby.current).toBe(1);
   });
 
   it('refunds emerald research costs into the next prestige run', () => {
@@ -1580,7 +1696,7 @@ describe('GameplayFacade', () => {
     expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
     expect(snapshot.visualSettings.researched.theme.black).toBe(true);
     expect(snapshot.tasks.currentLevel).toBe(1);
-    expect(snapshot.tasks.level.tasks).toHaveLength(1);
+    expect(snapshot.tasks.level.tasks).toHaveLength(2);
     expect(gameplayFacade.consumeProgressResetPending()).toBe(false);
   });
 
@@ -1873,6 +1989,9 @@ describe('GameplayFacade', () => {
         enabled: true,
         manaReserve: 0,
         maxManaReserve: 5000,
+        reserveControlsUnlocked: false,
+        reservePresetFractions: [0, 0.25, 0.5],
+        reserveStep: 100,
       },
       dropChances: [
         {
@@ -2051,6 +2170,7 @@ describe('GameplayFacade', () => {
       'fastSell',
       'researchCost',
       'researchTime',
+      'automationReserve',
       'plotCapacity',
       'cauldronCapacity',
       'cauldronBrewing',
@@ -2096,10 +2216,10 @@ describe('GameplayFacade', () => {
       costRuby: 1,
       costCurrency: 'ruby',
     });
-    expect(research.tabs[2].boxes[3].researches.map((research) => research.id)).toEqual([
+    expect(research.tabs[2].boxes[4].researches.map((research) => research.id)).toEqual([
       capacityResearchIds.plot(6),
     ]);
-    expect(research.tabs[2].boxes[3].researches[0]).toMatchObject({
+    expect(research.tabs[2].boxes[4].researches[0]).toMatchObject({
       id: capacityResearchIds.plot(6),
       label: 'plot 6 capacity',
       value: 'locked',
@@ -2112,10 +2232,10 @@ describe('GameplayFacade', () => {
       costRuby: 1,
       costCurrency: 'ruby',
     });
-    expect(research.tabs[2].boxes[4].researches.map((research) => research.id)).toEqual([
+    expect(research.tabs[2].boxes[5].researches.map((research) => research.id)).toEqual([
       capacityResearchIds.cauldron(3),
     ]);
-    expect(research.tabs[2].boxes[4].researches[0]).toMatchObject({
+    expect(research.tabs[2].boxes[5].researches[0]).toMatchObject({
       id: capacityResearchIds.cauldron(3),
       label: 'cauldron 3 capacity',
       value: 'locked',
@@ -2128,10 +2248,10 @@ describe('GameplayFacade', () => {
       costRuby: 1,
       costCurrency: 'ruby',
     });
-    expect(research.tabs[2].boxes[5].researches.map((research) => research.id)).toEqual([
+    expect(research.tabs[2].boxes[6].researches.map((research) => research.id)).toEqual([
       advancedResearchIds.cauldronBrewing(1, 1),
     ]);
-    expect(research.tabs[2].boxes[5].researches[0]).toMatchObject({
+    expect(research.tabs[2].boxes[6].researches[0]).toMatchObject({
       id: advancedResearchIds.cauldronBrewing(1, 1),
       label: 'cauldron 1 brewing lvl 1',
       value: '1 ruby',
@@ -2142,7 +2262,7 @@ describe('GameplayFacade', () => {
       costRuby: 1,
       costCurrency: 'ruby',
     });
-    expect(research.tabs[2].boxes[6].researches.map((research) => research.id)).toEqual([
+    expect(research.tabs[2].boxes[7].researches.map((research) => research.id)).toEqual([
       advancedResearchIds.plotGrowth(1, 1),
       advancedResearchIds.plotGrowth(2, 1),
     ]);
@@ -2334,6 +2454,65 @@ describe('GameplayFacade', () => {
     ]);
   });
 
+  it('caps active timed research at one until Prestige 2 unlocks a second slot', () => {
+    const { gameplayFacade } = createGameplay({ instantResearch: false });
+
+    gameplayFacade.rubyFacade.setCurrent(20);
+
+    expect(gameplayFacade.getSnapshot().research.slots).toMatchObject({
+      active: 0,
+      max: 1,
+      full: false,
+    });
+    expect(gameplayFacade.buyResearch(fastSellResearchIds.payout(1))).toMatchObject({
+      ok: true,
+      durationSeconds: 3,
+    });
+    expect(gameplayFacade.getSnapshot().research.slots).toMatchObject({
+      active: 1,
+      max: 1,
+      full: true,
+      blockedReason: 'research_slots_full',
+    });
+    expect(gameplayFacade.buyResearch(researchTimeResearchIds.reduction(1))).toMatchObject({
+      ok: false,
+      reason: 'research_slots_full',
+      researchSlots: {
+        active: 1,
+        max: 1,
+        full: true,
+      },
+    });
+
+    advanceToLevel(gameplayFacade, 20);
+    expect(gameplayFacade.completePrestigeMilestone(20)).toMatchObject({
+      ok: true,
+      completedLevels: [10, 20],
+    });
+    gameplayFacade.rubyFacade.setCurrent(20);
+
+    expect(gameplayFacade.getSnapshot().research.slots).toMatchObject({
+      active: 0,
+      max: 2,
+      full: false,
+    });
+    expect(gameplayFacade.buyResearch(fastSellResearchIds.payout(1))).toMatchObject({
+      ok: true,
+    });
+    expect(gameplayFacade.buyResearch(researchTimeResearchIds.reduction(1))).toMatchObject({
+      ok: true,
+    });
+    expect(gameplayFacade.getSnapshot().research.slots).toMatchObject({
+      active: 2,
+      max: 2,
+      full: true,
+    });
+    expect(gameplayFacade.buyResearch(researchCostResearchIds.reduction(1))).toMatchObject({
+      ok: false,
+      reason: 'research_slots_full',
+    });
+  }, 30_000);
+
   it('buys paid research with coin from research balance', () => {
     const { gameplayFacade } = createGameplay();
 
@@ -2421,6 +2600,64 @@ describe('GameplayFacade', () => {
       'researched mint seed',
     ]);
     expect(researchAnnouncements).toEqual(['mint seed']);
+  });
+
+  it('creates a while-away report for saved-time catch-up results', () => {
+    let nowMs = 0;
+    let shopNowMs = 0;
+    const { ecsFacade, gameplayFacade } = createGameplay({
+      persistenceNow: () => nowMs,
+      shopNow: () => shopNowMs,
+    });
+    setShopAutoSellSeconds(gameplayFacade, 5);
+    makeResearchInstant(gameplayFacade, { 'unlockSeed:mintSeed': 60 });
+    advanceToLevel(gameplayFacade, 4);
+    openFirstNpcMarketStand(gameplayFacade);
+    buyGardenTilesThrough(gameplayFacade, 2);
+    gameplayFacade.itemsFacade.addItem(1, 7);
+
+    expect(gameplayFacade.plantGardenSeed(1, 1)).toMatchObject({ ok: true });
+    expect(gameplayFacade.plantGardenSeed(2, 1)).toMatchObject({ ok: true });
+    expect(
+      gameplayFacade.setSelectedShopShelfSlotSellItem(1, {
+        sellLimitMode: 'amount',
+        sellQuantityLimit: 5,
+      }),
+    ).toMatchObject({ ok: true });
+    expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toMatchObject({
+      ok: true,
+      durationSeconds: 60,
+    });
+
+    gameplayFacade.crystalFacade.add(10);
+    expect(gameplayFacade.buyResearch(automationResearchIds.autoSeedSpawn())).toMatchObject({
+      ok: true,
+    });
+    const manaCap = gameplayFacade.getSnapshot().mana.cap;
+    expect(gameplayFacade.setSeedSummoningManaReserve(manaCap - 5)).toMatchObject({
+      ok: true,
+    });
+    gameplayFacade.manaFacade.setCurrent(0);
+
+    const save = gameplayFacade.createPersistenceSave();
+    nowMs = 60_000;
+    shopNowMs = 60_000;
+
+    expect(gameplayFacade.loadPersistenceSave(save, ecsFacade)).toBe(true);
+
+    const [report] = gameplayFacade.consumeWhileAwayReports();
+    expect(report).toMatchObject({
+      kind: 'whileAway',
+      source: 'save_load',
+      offlineSeconds: 60,
+    });
+    expect(report.rows).toEqual(
+      [
+        { type: 'npc_market_sold', coin: 5 },
+      ],
+    );
+    expect(gameplayFacade.consumeWhileAwayReports()).toEqual([]);
+    expect(gameplayFacade.getSnapshot().persistence.awayReportRevision).toBe(1);
   });
 
   it('buys advanced research with crystal and auto summons seeds', () => {
@@ -3136,9 +3373,7 @@ describe('GameplayFacade', () => {
         .find((research) => research.id === researchId);
     const finishCurrentTasksWithoutCoin = () => {
       for (const task of gameplayFacade.getSnapshot().tasks.level.tasks) {
-        gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
-        gameplayFacade.fillTask(task.taskId);
-        gameplayFacade.completeTask(task.taskId);
+        finishTaskRequirement(gameplayFacade, task);
       }
     };
 

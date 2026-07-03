@@ -21,6 +21,7 @@ Use the smallest check that proves the change, then broaden when touching shared
 - Focused logic change: run the matching `*.test.js`.
 - Shared gameplay, page, backend, persistence, or release behavior: run `npm run check`.
 - UI/layout/tutorial change: run focused tests plus browser screenshot/click QA at the authored mobile surface and a fitted desktop viewport.
+- UI screenshot QA that uses an HTML harness and `/src/styles/base.css` must set `html[data-style-theme="midnight"]`; `npm run check:ui` fails local `tmp/*-harness.html` and `tmp/*-qa.html` files that would fall back to the removed light theme.
 - Backend schema/config change: build/publish locally, regenerate bindings with `npm run stdb:generate`, and do not edit generated bindings by hand.
 
 `npm run check` is the default green gate: lint, tests, production web build.

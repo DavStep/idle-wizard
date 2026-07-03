@@ -30,6 +30,7 @@
 - First-run `connect account` must mark the fresh-start choice confirmed after successful auth; otherwise an empty connected account reopens the start-new gate before creating its fresh save.
 - Removed FTUE skip states must be ignored, not migrated; stale Android WebView `skipped` flags can hide the guide for reset level-1 players.
 - Post-reset replay guards must allow the client baseline save, including default free research like `unlockSeed:sageSeed`; otherwise new post-reset saves can never create a server row.
+- Loading a high QA save into a local identity with no accepted save needs a baseline `set_player_gameplay_save` first; the post-reset replay guard silently ignores high first saves, then `admin_copy_player_progression` can move that progression to the active browser account.
 - Fresh Android installs must show the account/start-fresh choice before any Credential Manager restore; native Google can silently restore a previously authorized account even when app-local data was cleared.
 - Web/mobile Google login must fail closed when ID-token auth is unavailable; browser OIDC code redirects with a web OAuth client surface `client_secret is missing` unless a backend token-exchange endpoint exists.
 
@@ -60,6 +61,8 @@
 - Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
 - Research completion announcements should resolve labels/details through `ResearchFacade`; visible research tabs can hide completed series entries before the popup renders.
 - Page announcement baselines must reset on gameplay persistence load; restored backend saves should not replay old level/research popups.
+- While-away report rows should keep the row label left and the reward/status right; attach item/resource icons to the right-side value instead of adding a separate leading icon slot.
+- While-away reports should list produced items and market outcomes only; skip status-only rows like mana full, plots ready, research complete, and paused automation.
 - Cauldron brew/bottle success state belongs in the active brew text and progress rail; reserve cauldron messages for blocked/error feedback so stale success text does not fight the timer state.
 - Reward flyouts on Android WebView should avoid per-event dynamic `@keyframes`; use transform/opacity Web Animations API paths and cap active particles.
 - Potion collection reward drops should start from the visible cauldron liquid, not the potion preview/icon or whole cauldron box.
@@ -89,6 +92,7 @@
 - FTUE repeated action prompts should show once as brief non-dimming hints, then reappear only after idle time; do not keep alternating guidance through active loops.
 - A page means a room view, not a web route.
 - The first page is `Workshop`.
+- Level requirements can be typed action rows; only `turnIn` consumes inventory, while `research`, `summon`, `grow`, `brew`, and `sell` progress from gameplay events and auto-complete at target.
 - Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`; Workshop stays the default page. The internal page id is `shop`.
 - Market has no `PageUnlockManager` requirement; gate market-only subscriptions on current page visibility, not unlock state.
 - Show all five room pages in a shared bottom tab panel; bold the current page tab.
@@ -148,6 +152,7 @@
 - Brewing's pannable world should mirror Garden's crop pattern: outer world view starts at the screen top, while the inner shell keeps the old top offset and uses visible overflow.
 - Web-wide Garden/Brewing worlds need shells expanded past the centered source UI layer plus positive free-space pan bounds; otherwise desktop crops or left-pins the world.
 - Web-wide Garden initial pan must center the source-width plot world inside the expanded shell; otherwise the top three plots open offset from the top chrome.
+- Research's pannable world should match Garden/Brewing: shell bottom stays `0`, research tabs overlay the map, and world padding stays `24px var(--style-room-content-edge) 0`.
 - Garden plot plant icons must use full atlas sprites; masked atlas sprites flatten herbs into one solid color.
 - Alliance quest notifications need quest/progress/contribution rows retained outside the popup; the full public alliance list can stay popup-retained.
 - Alliance income deltas currently skip if the player has same-week quest contribution or reward rows in another alliance; new alliances can show 0 until weekly reset.
@@ -201,6 +206,7 @@
 - Screenshot QA must dismiss app-level account/server gates before trusting target-dialog DOM checks; the target can exist behind a blocking gate.
 - After screenshot QA viewport changes, wait for `.app-online-gate[hidden]`; the server gate can flash during reconnect and stale screenshots can be blank even if later DOM metrics pass.
 - Top-panel screenshot QA on a fresh FTUE save must reveal `top mana` or complete FTUE first; empty `data-tutorial-reveal` hides the chrome.
+- HTML screenshot harnesses that load `/src/styles/base.css` must set `html[data-style-theme="midnight"]`; missing or `white` themes fall back to the removed light base.
 - FTUE should also hide behind ordinary room popups unless the active step targets that popup or explicitly uses popup-only copy guidance.
 - Room announcement overlays are FTUE blockers; add them through `TutorialTargetManager` blocking selectors so hidden toggles pause/resume Elara.
 - Bottom-tab unlock motion can be hidden by the level announcement overlay; delay or replay the lock break/icon reveal when an announcement is visible.
@@ -221,6 +227,7 @@
 - `npm run tutorial:capture` reuses an already reachable Vite server and deletes old tutorial PNGs before checking capture hooks; confirm `window.tutorialCapture` is mounted before running it against a shared server.
 - In-app Browser screenshots of the full `1080x2170` authored viewport can truncate normal viewport captures; use full-page capture and crop locally when checking bottom chrome.
 - In-app Browser screenshots can omit the transformed bottom-panel overlay even when hit tests and DOM rects see it; verify bottom chrome geometry with live DOM metrics if the capture looks blank.
+- In-app Browser crops can also miss transformed Workshop side-panel DOM controls; trust hit tests, computed rects, and image load state over a blank/offset crop.
 - In-app Browser Playwright evaluate can miss main-world `window.cheats`, and `javascript:` bookmarklets are blocked; do not rely on that path for cheat-driven screenshot setup.
 - In-app Browser Playwright evaluate is read-only for DOM/module work; it cannot import page modules or reveal hidden DOM, so use visible UI actions or an HTTP-served local harness for visual QA.
 - `cheats.showPage(page)` unlocks and saves by default; use `{ unlock: false }` only when fallback behavior is acceptable, or avoid it for no-mutation QA on real local saves.
@@ -248,6 +255,7 @@
 - Once FTUE reveals the top panel, keep it visible; players have already unlocked that chrome.
 - FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
 - FTUE should not own special market economy. Keep level 1 free, then teach level-up coin through normal fast-sell quotes, quantities, and inventory mutation at level 2.
+- FTUE level-2 Market guidance must follow the live task order: summon enough sage seeds, sell one, turn in the remainder, then handle any remaining level-up coin. Do not wait until `completion.canComplete` before showing the summon/sell guidance.
 - FTUE terminal hides must clear inner lesson/button/pointer state; hiding only the layer lets later click-driven hides re-show stale tutorial UI for one frame.
 - FTUE uses one left Elara lesson button and one lesson panel; do not add separate dialog, hint, prompt, or objective boxes.
 - FTUE advance prompts treat any stage click as `next` and consume the click so underlying controls do not fire.
@@ -305,6 +313,7 @@
 - Dev cheats that force garden/shop/brewing slot counts must raise player level or capacity research first; snapshot apply paths clamp counts back to progression caps.
 - Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
 - Prestige ruby summary/reward text needs `setResourceIconText`; `data-resource-color` alone colors text but does not render icons.
+- Multiple reward/resource payout labels should be space-separated, not comma-separated.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
 - Currency amount text and icon belong in one `style-resource-label`; otherwise resource color mode can color only the icon/word and leave the number monochrome.
 - Resource icon amount parsing must include hyphen ranges like `130-180 coin`; otherwise quest reward ranges leave the number muted outside the colored label.
@@ -434,6 +443,7 @@
 - Frame snapshot throttling must publish once when timer work drops to none; otherwise final countdown labels can stick at `1s`.
 - Full gameplay snapshots are expensive on mobile; page mount/show bursts should reuse one scoped snapshot, and heavy sub-snapshots should cache by real invalidation keys.
 - Save-load catch-up should use `savedAt` wall time and apply one timer tick after restoring persisted state/effects.
+- Foreground resume catch-up should use the app hidden timestamp before restarting the frame loop, and clear that timestamp when a save reload already applied the same away time.
 - Normal app gameplay persistence is server-backed through SpacetimeDB `player_gameplay_save`; do not add browser local save paths for player progress.
 - Admin `playerLevel` edits only change server/social level; the actual in-game level shown in room UI comes from `player_gameplay_save.saveJson.tasks.currentLevel`.
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
@@ -784,6 +794,7 @@
 - Global NPC market resets need a one-time server maintenance marker; do not tie shared market wipes to per-player progress reset hooks.
 - NPC stock market uses three ordinary boxes (`seeds`, `herbs`, `potions`) instead of category tabs; reserve each box's bottom border label for expand/collapse.
 - NPC stock buy row controls show only the price (`25 coin`), not a `buy` prefix; enabled prices use coin resource color, disabled/unaffordable prices inherit muted disabled color.
+- NPC stock buy row controls must clear midnight `border-image` after the late theme button-skin block; an earlier transparent border reset still renders framed oversized buttons.
 - NPC stock rows should use the same compact middle/right grid rhythm as market stand rows, not looser float rows.
 - NPC stock row visibility and labels should treat backend `stock` as availability; local inventory quantity can be `0` right after selling into stock.
 - Grid-rendered rows that are toggled with `[hidden]` need an explicit `[hidden] { display: none; }` rule, or authored `display: grid` can keep old category rows visible in browser.

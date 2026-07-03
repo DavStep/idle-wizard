@@ -13,6 +13,7 @@ import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { appendTextWithSeedIcons } from '../../shared/itemIconLabel.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 
 export class ShopTradeHistoryManager {
   constructor({ playerShopFacade, onOpenPlayerInfo } = {}) {
@@ -193,8 +194,7 @@ export class ShopTradeHistoryManager {
     for (const tab of TRADE_HISTORY_TABS) {
       const selected = this.selectedTabId === tab.id;
       const button = this.refs.tabButtons.get(tab.id);
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
     }
 
     if (!this.visible) {

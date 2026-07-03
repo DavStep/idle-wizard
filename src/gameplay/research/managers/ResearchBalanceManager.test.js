@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { automationResearchIds } from '../../automation/automationResearchIds.js';
 import { advancedResearchIds } from '../advancedResearchIds.js';
+import { automationReserveResearchIds } from '../automationReserveResearch.js';
 import { emeraldResearchIds } from '../emeraldResearchIds.js';
 import { ResearchBalanceManager } from './ResearchBalanceManager.js';
 import { researchCostResearchIds } from '../researchCostResearch.js';
@@ -52,6 +53,7 @@ describe('ResearchBalanceManager', () => {
 
     expect(manager.getDurationSeconds('automation:autoPlantTile:1')).toBe(3);
     expect(manager.getDurationSeconds('fastSellPayout:1')).toBe(3);
+    expect(manager.getDurationSeconds(automationReserveResearchIds.controls(1))).toBe(3);
     expect(manager.getDurationSeconds(researchTimeResearchIds.reduction(1))).toBe(3);
     expect(manager.getDurationSeconds(researchCostResearchIds.reduction(1))).toBe(3);
     expect(manager.getDurationSeconds('emerald:plotPlanting:1:2')).toBe(3);
@@ -69,6 +71,10 @@ describe('ResearchBalanceManager', () => {
     });
     expect(manager.getCost(researchCostResearchIds.reduction(8))).toEqual({
       amount: 8,
+      currency: 'ruby',
+    });
+    expect(manager.getCost(automationReserveResearchIds.controls(3))).toEqual({
+      amount: 3,
       currency: 'ruby',
     });
     expect(manager.getCost(automationResearchIds.autoPlantTile(11))).toEqual({
@@ -187,6 +193,31 @@ describe('ResearchBalanceManager', () => {
 
     expect(manager.getCost(researchTimeResearchIds.reduction(1))).toEqual({
       amount: 99,
+      currency: 'ruby',
+    });
+  });
+
+  it('keeps ruby research costs specific to reward lanes', () => {
+    const manager = new ResearchBalanceManager();
+
+    expect(manager.getCost('fastSellPayout:1')).toEqual({
+      amount: 2,
+      currency: 'ruby',
+    });
+    expect(manager.getCost('advanced:plotCapacity:6')).toEqual({
+      amount: 1,
+      currency: 'ruby',
+    });
+    expect(manager.getCost(automationReserveResearchIds.controls(1))).toEqual({
+      amount: 1,
+      currency: 'ruby',
+    });
+    expect(manager.getCost(researchTimeResearchIds.reduction(1))).toEqual({
+      amount: 1,
+      currency: 'ruby',
+    });
+    expect(manager.getCost(advancedResearchIds.plotGrowth(1, 1))).toEqual({
+      amount: 1,
       currency: 'ruby',
     });
   });

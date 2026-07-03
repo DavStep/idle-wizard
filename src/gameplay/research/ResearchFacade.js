@@ -4,12 +4,17 @@ import { ResearchManaEffectManager } from './managers/ResearchManaEffectManager.
 import { ResearchProcessManager } from './managers/ResearchProcessManager.js';
 import { ResearchPurchaseManager } from './managers/ResearchPurchaseManager.js';
 import { ResearchSnapshotManager } from './managers/ResearchSnapshotManager.js';
+import { ResearchSlotManager } from './managers/ResearchSlotManager.js';
 import { ResearchStateEntityManager } from './managers/ResearchStateEntityManager.js';
 import {
   advancedResearchIds,
   advancedResearchMaxLevel,
   applyAdvancedResearchTimeReduction,
 } from './advancedResearchIds.js';
+import {
+  automationReserveResearchIds,
+  automationReserveResearchMaxLevel,
+} from './automationReserveResearch.js';
 import {
   fastSellResearchIds,
   fastSellResearchMaxLevel,
@@ -70,6 +75,10 @@ export class ResearchFacade {
       researchBalanceManager: this.researchBalanceManager,
       researchStateEntityManager: this.researchStateEntityManager,
     });
+    this.researchSlotManager = new ResearchSlotManager({
+      prestigeFacade,
+      researchStateEntityManager: this.researchStateEntityManager,
+    });
     this.researchPurchaseManager = new ResearchPurchaseManager({
       crystalFacade,
       emeraldFacade,
@@ -80,6 +89,7 @@ export class ResearchFacade {
       researchBalanceManager: this.researchBalanceManager,
       researchDefinitionManager: this.researchDefinitionManager,
       researchManaEffectManager: this.researchManaEffectManager,
+      researchSlotManager: this.researchSlotManager,
       researchStateEntityManager: this.researchStateEntityManager,
     });
     this.researchProcessManager = new ResearchProcessManager({
@@ -96,6 +106,7 @@ export class ResearchFacade {
       getResearchCostReductionLevel: () => this.getCompletedResearchCostReductionLevel(),
       researchBalanceManager: this.researchBalanceManager,
       researchDefinitionManager: this.researchDefinitionManager,
+      researchSlotManager: this.researchSlotManager,
       researchStateEntityManager: this.researchStateEntityManager,
     });
     this.initialized = false;
@@ -378,6 +389,22 @@ export class ResearchFacade {
 
     for (let level = 1; level <= fastSellResearchMaxLevel; level += 1) {
       if (!this.researchStateEntityManager.isCompleted(fastSellResearchIds.payout(level))) {
+        break;
+      }
+
+      completedLevel = level;
+    }
+
+    return completedLevel;
+  }
+
+  getCompletedAutomationReserveLevel() {
+    let completedLevel = 0;
+
+    for (let level = 1; level <= automationReserveResearchMaxLevel; level += 1) {
+      if (!this.researchStateEntityManager.isCompleted(
+        automationReserveResearchIds.controls(level),
+      )) {
         break;
       }
 

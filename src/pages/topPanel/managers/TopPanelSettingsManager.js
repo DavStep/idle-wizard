@@ -24,6 +24,7 @@ import {
 } from '../../../player/playerThemes.js';
 import { getDefaultPlayerVisualSettingsResearched } from '../../../player/playerVisualSettings.js';
 import { getPlayerCharacterImageUrl } from '../../shared/playerCharacterIcon.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import {
   TOP_PANEL_USERNAME_PROMPT_CLOSED_EVENT,
   TOP_PANEL_USERNAME_SAVED_EVENT,
@@ -994,9 +995,7 @@ export class TopPanelSettingsManager {
 
     for (const button of this.refs.settingsTabButtons) {
       const selected = button.dataset.settingsTab === activeTab;
-      button.classList.toggle('is-selected', selected);
-      button.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button.tabIndex = selected ? 0 : -1;
+      setSelectedTabState(button, selected, { tabIndex: true });
     }
 
     for (const [tab, pane] of Object.entries(panes)) {

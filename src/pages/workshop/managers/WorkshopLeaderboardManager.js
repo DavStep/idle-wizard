@@ -1,6 +1,7 @@
 import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import {
   createWorkshopLeaderboardRow,
   createWorkshopLeaderboardUserLabel,
@@ -406,15 +407,13 @@ export class WorkshopLeaderboardManager {
     for (const tab of LEADERBOARD_SCOPES) {
       const selected = this.selectedScopeId === tab.id;
       const button = this.refs.scopeTabButtons?.get(tab.id);
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
     }
 
     for (const tab of LEADERBOARD_PERIODS) {
       const selected = this.selectedPeriodId === tab.id;
       const button = this.refs.periodTabButtons?.get(tab.id);
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
     }
   }
 

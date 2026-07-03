@@ -4,8 +4,12 @@ export class PageAnnouncementFacade {
   static explain =
     'Shows short full-screen notices for major progress moments, so level-ups and completed research are hard to miss.';
 
-  constructor({ gameplayFacade } = {}) {
-    this.manager = new PageAnnouncementManager({ gameplayFacade });
+  constructor({ gameplayFacade, playerFacade, playerShopFacade } = {}) {
+    this.manager = new PageAnnouncementManager({
+      gameplayFacade,
+      playerFacade,
+      playerShopFacade,
+    });
   }
 
   mount(stage) {

@@ -11,6 +11,7 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { createCharacterImage } from '../../shared/playerCharacterIcon.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 
 const CARD_TABS = [
   { id: 'stats', label: 'stats' },
@@ -230,8 +231,7 @@ export class GuildPanelManager {
     button.textContent = tab.label;
     button.dataset.guildTab = tab.id;
     button.setAttribute('role', 'tab');
-    button.setAttribute('aria-selected', tab.id === activeTabId ? 'true' : 'false');
-    button.setAttribute('tabindex', tab.id === activeTabId ? '0' : '-1');
+    setSelectedTabState(button, tab.id === activeTabId, { tabIndex: true });
     setNotificationBadge(button, this.getContentTabNotification(guild, tab.id));
     button.addEventListener('click', () => this.setActiveContentTab(tab.id));
     return button;
@@ -1364,7 +1364,7 @@ export class GuildPanelManager {
         button.type = 'button';
         button.textContent = tab.label;
         button.setAttribute('role', 'tab');
-        button.setAttribute('aria-selected', tab.id === this.selectedCardTab ? 'true' : 'false');
+        setSelectedTabState(button, tab.id === this.selectedCardTab);
         button.addEventListener('click', () => {
           this.selectedCardTab = tab.id;
           this.renderPopup();

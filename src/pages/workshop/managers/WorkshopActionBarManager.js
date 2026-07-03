@@ -24,6 +24,7 @@ export class WorkshopActionBarManager {
     playerInboxFacade,
     onBagClick,
     onMailClick,
+    onLedgerClick,
     onSummonInfoClick,
     onSummonNotice,
     onSummonNoticeList,
@@ -34,6 +35,7 @@ export class WorkshopActionBarManager {
     this.playerInboxFacade = playerInboxFacade;
     this.onBagClick = onBagClick;
     this.onMailClick = onMailClick;
+    this.onLedgerClick = onLedgerClick;
     this.onSummonInfoClick = onSummonInfoClick;
     this.onSummonNotice = onSummonNotice;
     this.onSummonNoticeList = onSummonNoticeList;
@@ -74,16 +76,17 @@ export class WorkshopActionBarManager {
 
     this.refs.summonButton = this.createSummonButton();
     this.refs.summonInfoButton = this.createSummonInfoButton();
-    this.refs.mailButtonPanel = this.createMailButton();
+    this.refs.mailPanel = this.createMailPanel();
     this.refs.bagButton = this.createBagButton();
+    this.refs.ledgerButton = this.createLedgerButton();
 
     this.root.append(
       this.refs.summonButton,
       this.refs.summonInfoButton,
-      this.refs.mailButtonPanel,
       this.refs.bagButton,
+      this.refs.ledgerButton,
     );
-    parent.append(this.root);
+    parent.append(this.root, this.refs.mailPanel);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
     this.render(this.gameplayFacade.getSnapshot());
@@ -107,6 +110,7 @@ export class WorkshopActionBarManager {
     this.inboxUnsubscribe?.();
     this.inboxUnsubscribe = null;
     this.root?.remove();
+    this.refs.mailPanel?.remove();
     this.root = null;
     this.refs = {};
   }
@@ -160,11 +164,21 @@ export class WorkshopActionBarManager {
     return button;
   }
 
-  createMailButton() {
+  createLedgerButton() {
+    const button = document.createElement('button');
+    button.className = 'style-button workshop-page__ledger-button';
+    button.type = 'button';
+    button.textContent = 'ledger';
+    button.setAttribute('aria-label', 'open ledger');
+    button.addEventListener('click', () => this.onLedgerClick?.());
+    return button;
+  }
+
+  createMailPanel() {
     const root = document.createElement('section');
-    root.className = 'workshop-page__panel-button workshop-page__mail-button-panel';
-    root.dataset.panelSide = 'center';
-    root.setAttribute('aria-label', 'mail');
+    root.className = 'workshop-page__panel-button workshop-page__mail';
+    root.dataset.panelSide = 'right';
+    root.setAttribute('aria-label', 'inbox');
 
     const button = document.createElement('button');
     button.className = 'workshop-page__panel-button-open workshop-page__mail-button';
@@ -187,7 +201,7 @@ export class WorkshopActionBarManager {
     const label = document.createElement('span');
     label.className =
       'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__mail-button-label';
-    label.textContent = 'mail';
+    label.textContent = 'inbox';
 
     iconFrame.append(icon);
     button.append(iconFrame, label);
@@ -461,7 +475,7 @@ export class WorkshopActionBarManager {
     this.setAttribute(this.refs.summonButton, 'aria-disabled', ariaDisabled);
     this.refs.summonButton.disabled = false;
     setNotificationBadge(this.refs.summonButton, getSeedSummonNotification(snapshot));
-    this.inboxGateManager.apply(snapshot, [this.refs.mailButtonPanel]);
+    this.inboxGateManager.apply(snapshot, [this.refs.mailPanel]);
   }
 
   renderInbox(snapshot) {

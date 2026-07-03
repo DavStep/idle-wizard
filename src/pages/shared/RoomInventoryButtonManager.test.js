@@ -63,7 +63,7 @@ describe('RoomInventoryButtonManager', () => {
     ).toBe('true');
   });
 
-  it('uses the Workshop side-button footprint and smaller centered icons', () => {
+  it('uses the Workshop side-button footprint and edge-aligned icons', () => {
     expect(getRule('.room-inventory-panel-button')).toContain('width: 45.5px;');
     expect(getRule('.room-inventory-panel-button')).toContain('height: 80.25px;');
     expect(getRule('.room-inventory-panel-button__open')).toContain('width: 45.5px;');
@@ -72,23 +72,34 @@ describe('RoomInventoryButtonManager', () => {
     expect(getRule('.room-inventory-panel-button__portrait')).toContain('height: 59.15px;');
     expect(getRule('.room-inventory-panel-button__icon')).toContain('width: 42px;');
     expect(getRule('.room-inventory-panel-button__icon')).toContain('height: 42px;');
-    expect(getRule('.room-inventory-panel-button__label')).toContain('left: 14px;');
+    expect(getRule('.room-inventory-panel-button__label')).toContain('left: 0;');
+    expect(getRule('.room-inventory-panel-button__label')).toContain(
+      'background: transparent;',
+    );
+    expect(getRule('.room-inventory-panel-button__label')).toContain('border: 0;');
+    expect(getRule('.room-inventory-panel-button__label')).toContain(
+      '-webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)',
+    );
     expect(baseCss).toMatch(
-      /\.room-inventory-panel-button\[data-panel-side="right"\]\s+\.room-inventory-panel-button__label\s*\{[^}]*right: 14px;/,
+      /\.room-inventory-panel-button\[data-panel-side="right"\]\s+\.room-inventory-panel-button__label\s*\{[^}]*right: 0;/,
+    );
+    expect(baseCss).toMatch(
+      /\.room-inventory-panel-button\[data-panel-side="right"\]\s+\.room-inventory-panel-button__label\s*\{[^}]*text-align: right;/,
     );
   });
 
-  it('anchors Garden and Brewing inventory buttons on the same side rails', () => {
+  it('anchors Garden and Brewing inventory buttons on the bottom-panel side inset', () => {
     const gardenRule = getRule('.garden-page__inventory-buttons');
     const brewingRule = getRule('.brewing-page__inventory-buttons');
     const gardenPanelRule = getRule('.garden-page__inventory-panel-layer');
     const brewingPanelRule = getRule('.brewing-page__inventory-panel-layer');
 
     expect(gardenRule).toContain('position: absolute;');
-    expect(gardenRule).toContain('right: calc(var(--style-room-content-edge) - 14px);');
+    expect(gardenRule).toContain('right: var(--style-room-chrome-edge);');
     expect(gardenRule).toContain('bottom: var(--style-room-chat-clearance);');
-    expect(gardenRule).toContain('left: calc(var(--style-room-content-edge) - 14px);');
-    expect(brewingRule).toContain('right: calc(var(--style-room-content-edge) - 14px);');
+    expect(gardenRule).toContain('left: var(--style-room-chrome-edge);');
+    expect(brewingRule).toContain('right: var(--style-room-chrome-edge);');
+    expect(brewingRule).toContain('left: var(--style-room-chrome-edge);');
     expect(gardenPanelRule).toContain('var(--room-inventory-panel-y-offset)');
     expect(brewingPanelRule).toContain('var(--room-inventory-panel-y-offset)');
   });

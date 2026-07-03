@@ -7,6 +7,7 @@ import {
 } from '../../shared/playerCharacterIcon.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import {
   createStatusIcon,
   STATUS_ICON_CHECK,
@@ -385,7 +386,7 @@ export class TopPanelViewManager {
       button.textContent = tab.label;
       button.dataset.settingsTab = tab.key;
       button.setAttribute('aria-controls', tab.controls);
-      button.setAttribute('aria-selected', 'false');
+      setSelectedTabState(button, false);
       button.setAttribute('role', 'tab');
       if (tab.key === 'theme') {
         button.dataset.tutorialId = 'top:settings:theme-tab';

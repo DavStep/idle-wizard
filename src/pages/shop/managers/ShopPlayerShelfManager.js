@@ -14,6 +14,7 @@ import {
 import {
   setNotificationBadge,
 } from '../../shared/notificationBadge.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import {
@@ -992,8 +993,7 @@ export class ShopPlayerShelfManager {
     for (const sellKind of shelf.sellKinds) {
       const button = this.refs.listingControls.tabButtons.get(sellKind.kind);
       const selected = this.selectedSellTab === sellKind.kind;
-      button.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
       setNotificationBadge(
         button,
         shelf.sellItems.some(
@@ -1144,8 +1144,7 @@ export class ShopPlayerShelfManager {
     for (const tab of MARKET_BROWSE_TABS) {
       const button = this.refs.marketBrowseTabButtons.get(tab.id);
       const selected = this.selectedMarketBrowseTab === tab.id;
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
     }
   }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { GameplayPersistenceFacade } from './GameplayPersistenceFacade.js';
+import { GAMEPLAY_SAVE_VERSION } from './managers/GameplayMigrationManager.js';
 
 function createSnapshotFacade(snapshot = {}) {
   return {
@@ -120,7 +121,7 @@ describe('GameplayPersistenceFacade', () => {
 
     expect(storageManager.saveAndFlush).toHaveBeenCalledTimes(2);
     expect(storageManager.saveAndFlush.mock.calls[0][0]).toMatchObject({
-      version: 8,
+      version: GAMEPLAY_SAVE_VERSION,
       savedAt: 123,
     });
 

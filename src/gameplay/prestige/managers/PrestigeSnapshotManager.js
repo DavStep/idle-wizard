@@ -24,12 +24,19 @@ export class PrestigeSnapshotManager {
     const milestoneSnapshots = milestones.map((milestone) => {
       const completed = this.prestigeStateEntityManager.isCompleted(milestone.level);
       const unlocked = currentLevel >= milestone.level;
+      const creditedLevels =
+        this.prestigeMilestoneBalanceManager.getCreditedLevelsForClaim(
+          milestone.level,
+          completedLevels,
+        );
 
       return {
         ...milestone,
         completed,
         unlocked,
-        canComplete: unlocked && !completed,
+        canComplete: unlocked && creditedLevels.length > 0,
+        creditedLevels,
+        creditedRuby: this.prestigeMilestoneBalanceManager.getTotalRuby(creditedLevels),
         currentLevel,
       };
     });

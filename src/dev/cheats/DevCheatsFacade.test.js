@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { EcsFacade } from '../../ecs/EcsFacade.js';
 import { GameplayFacade } from '../../gameplay/GameplayFacade.js';
+import { GAMEPLAY_SAVE_VERSION } from '../../gameplay/persistence/managers/GameplayMigrationManager.js';
 import { PlayerFacade } from '../../player/PlayerFacade.js';
 import { DevCheatsFacade } from './DevCheatsFacade.js';
 
@@ -586,7 +587,7 @@ describe('DevCheatsFacade', () => {
 
     const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
     expect(saved).toMatchObject({
-      version: 8,
+      version: GAMEPLAY_SAVE_VERSION,
       coin: { current: 0, totalGenerated: 0 },
       crystal: { current: 1 },
       emerald: { current: 0 },

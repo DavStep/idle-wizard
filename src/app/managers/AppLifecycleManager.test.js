@@ -19,7 +19,9 @@ function createLifecycle({
   appVisibilityManager,
   authFacade,
   freshStartChoiceManager,
+  gameplayFacade,
   maintenanceFacade,
+  now,
   pagesFacade,
   playerFacade,
   reload,
@@ -53,6 +55,20 @@ function createLifecycle({
       return vi.fn();
     }),
   };
+  const gameplayFacadeFake = gameplayFacade ?? {
+    initialize: vi.fn(),
+    shutdown: vi.fn(),
+    afterUpdate: vi.fn(),
+    subscribe: vi.fn((listener) => {
+      gameplayListener = listener;
+      return gameplayTickUnsubscribe;
+    }),
+    getNextGameplayTickDelayMs: vi.fn(() => 1000),
+    loadPersistenceSave: vi.fn(() => true),
+    savePersistenceSnapshot: vi.fn(),
+    savePersistenceSnapshotAndFlush: vi.fn(() => Promise.resolve(true)),
+    applyAwayTimerCatchup: vi.fn(),
+  };
 
   const lifecycle = new AppLifecycleManager({
     shellManager: {
@@ -85,19 +101,7 @@ function createLifecycle({
       destroyWorld: vi.fn(),
       update: vi.fn(),
     },
-    gameplayFacade: {
-      initialize: vi.fn(),
-      shutdown: vi.fn(),
-      afterUpdate: vi.fn(),
-      subscribe: vi.fn((listener) => {
-        gameplayListener = listener;
-        return gameplayTickUnsubscribe;
-      }),
-      getNextGameplayTickDelayMs: vi.fn(() => 1000),
-      loadPersistenceSave: vi.fn(() => true),
-      savePersistenceSnapshot: vi.fn(),
-      savePersistenceSnapshotAndFlush: vi.fn(() => Promise.resolve(true)),
-    },
+    gameplayFacade: gameplayFacadeFake,
     backendFacade: {
       prepare: vi.fn(),
       start: vi.fn((callbacks) => {
@@ -163,6 +167,7 @@ function createLifecycle({
       unmount: vi.fn(),
     },
     reload: reload ?? vi.fn(),
+    now: now ?? (() => Date.now()),
   });
 
   return {
@@ -334,6 +339,53 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayTickManager.start).toHaveBeenCalledTimes(2);
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies hidden-time catch-up before restarting the frame loop', async () => {
+    let nowMs = 1_000;
+    const { lifecycle, getBackendCallbacks, hideApp, showApp } = createLifecycle({
+      now: () => nowMs,
+    });
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+
+    hideApp();
+    nowMs = 61_000;
+    showApp();
+
+    expect(lifecycle.gameplayFacade.applyAwayTimerCatchup).toHaveBeenCalledWith(
+      lifecycle.ecsFacade,
+      { deltaSeconds: 60, source: 'resume' },
+    );
+    expect(
+      lifecycle.gameplayFacade.applyAwayTimerCatchup.mock.invocationCallOrder[0],
+    ).toBeLessThan(lifecycle.gameplayTickManager.start.mock.invocationCallOrder[1]);
+  });
+
+  it('skips hidden-time catch-up after a save reload already handled away time', async () => {
+    let nowMs = 1_000;
+    const { lifecycle, getBackendCallbacks, hideApp, showApp } = createLifecycle({
+      now: () => nowMs,
+    });
+    const save = { tasks: { currentLevel: 2 } };
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+
+    hideApp();
+    lifecycle.loadGameplaySave(save);
+    nowMs = 61_000;
+    showApp();
+
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
+      save,
+      lifecycle.ecsFacade,
+    );
+    expect(lifecycle.gameplayFacade.applyAwayTimerCatchup).not.toHaveBeenCalled();
+    expect(lifecycle.gameplayTickManager.start).toHaveBeenCalledTimes(2);
   });
 
   it('shows account-in-use after returning from a hidden inactive session', async () => {

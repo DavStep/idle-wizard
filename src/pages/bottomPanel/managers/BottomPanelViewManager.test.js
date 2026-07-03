@@ -167,6 +167,31 @@ describe('BottomPanelViewManager', () => {
     expect(selectedRule).not.toContain('font-weight: 700;');
   });
 
+  it('stacks bottom chrome above normal chrome and below modal layers', () => {
+    const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
+    const readRule = (selector) => {
+      const ruleIndex = baseCss.indexOf(selector);
+      expect(ruleIndex).toBeGreaterThanOrEqual(0);
+      return baseCss.slice(ruleIndex, baseCss.indexOf('}', ruleIndex) + 1);
+    };
+    const readZIndex = (selector) => {
+      const zIndex = readRule(selector).match(/\bz-index:\s*(\d+);/)?.[1];
+      expect(zIndex).toBeDefined();
+      return Number(zIndex);
+    };
+
+    const bottomLayerZIndex = readZIndex('.room-bottom-panel-layer {');
+
+    expect(bottomLayerZIndex).toBeGreaterThan(readZIndex('.room-top-panel-layer {'));
+    expect(bottomLayerZIndex).toBeGreaterThan(readZIndex('.room-world-chat-layer {'));
+    expect(readZIndex('.room-page__popup-layer {')).toBeGreaterThan(bottomLayerZIndex);
+    expect(readZIndex('.room-top-panel-layer:has(')).toBeGreaterThan(bottomLayerZIndex);
+    expect(readZIndex('.room-world-chat-layer:has(')).toBeGreaterThan(bottomLayerZIndex);
+    expect(readZIndex('.room-bottom-panel-layer:has(')).toBeGreaterThan(
+      bottomLayerZIndex,
+    );
+  });
+
   it('applies notification tones to room tabs', () => {
     const stage = document.createElement('section');
     const manager = new BottomPanelViewManager({

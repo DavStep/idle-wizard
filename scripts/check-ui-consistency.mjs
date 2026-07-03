@@ -6,6 +6,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 const strict = process.argv.includes('--strict');
+const errors = [];
 const warnings = [];
 
 const sourceExtensions = new Set(['.css', '.js', '.mjs', '.ts']);
@@ -31,6 +32,10 @@ function addWarning(rule, filePath, line, message) {
   warnings.push({ rule, filePath, line, message });
 }
 
+function addError(rule, filePath, line, message) {
+  errors.push({ rule, filePath, line, message });
+}
+
 function walk(dirPath, files = []) {
   for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
     const absolute = path.join(dirPath, entry.name);
@@ -44,6 +49,27 @@ function walk(dirPath, files = []) {
     }
 
     if (sourceExtensions.has(path.extname(entry.name))) {
+      files.push(absolute);
+    }
+  }
+
+  return files;
+}
+
+function walkExisting(dirPath, filter, files = []) {
+  if (!fs.existsSync(dirPath)) {
+    return files;
+  }
+
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    const absolute = path.join(dirPath, entry.name);
+
+    if (entry.isDirectory()) {
+      walkExisting(absolute, filter, files);
+      continue;
+    }
+
+    if (filter(absolute)) {
       files.push(absolute);
     }
   }
@@ -195,19 +221,70 @@ function scanMotionDrift() {
   }
 }
 
+function scanQaHarnessThemes() {
+  const harnessFiles = walkExisting(projectPath('tmp'), (absolute) => {
+    const name = path.basename(absolute);
+    return name.endsWith('-harness.html') || name.endsWith('-qa.html');
+  });
+
+  for (const absolute of harnessFiles) {
+    const relative = path.relative(root, absolute);
+    const source = fs.readFileSync(absolute, 'utf8');
+
+    if (!source.includes('/src/styles/base.css')) {
+      continue;
+    }
+
+    const htmlTagMatch = source.match(/<html\b[^>]*>/i);
+
+    if (!htmlTagMatch) {
+      addError(
+        'qa-harness-theme-missing-html',
+        relative,
+        1,
+        'QA harness loads base.css but has no html tag for theme setup.',
+      );
+      continue;
+    }
+
+    if (!/\bdata-style-theme=["']midnight["']/.test(htmlTagMatch[0])) {
+      addError(
+        'qa-harness-theme',
+        relative,
+        lineForIndex(source, htmlTagMatch.index),
+        'QA harnesses that load base.css must set html[data-style-theme="midnight"] so screenshots do not fall back to the removed light theme.',
+      );
+    }
+  }
+}
+
 scanBottomPanelTabs();
 scanDefaultIconMode();
 scanCssRules();
 scanMotionDrift();
+scanQaHarnessThemes();
 
-if (warnings.length === 0) {
+if (errors.length === 0 && warnings.length === 0) {
   console.log('UI consistency check passed.');
   process.exit(0);
 }
 
-console.log(`UI consistency warnings (${warnings.length})`);
+if (errors.length > 0) {
+  console.error(`UI consistency errors (${errors.length})`);
+  for (const error of errors) {
+    console.error(`- [${error.rule}] ${error.filePath}:${error.line} ${error.message}`);
+  }
+}
+
+if (warnings.length > 0) {
+  console.log(`UI consistency warnings (${warnings.length})`);
+}
 for (const warning of warnings) {
   console.log(`- [${warning.rule}] ${warning.filePath}:${warning.line} ${warning.message}`);
+}
+
+if (errors.length > 0) {
+  process.exit(1);
 }
 
 if (strict) {

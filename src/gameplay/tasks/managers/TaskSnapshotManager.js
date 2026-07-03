@@ -36,18 +36,25 @@ export class TaskSnapshotManager {
   getTaskSnapshot(task) {
     const progressQuantity = this.taskStateEntityManager.getProgress(task.id);
     const completed = this.taskStateEntityManager.isCompleted(task.id);
-    const ownedQuantity = this.itemsFacade.getItemQuantity(task.itemTypeId);
+    const ownedQuantity = Number.isInteger(task.itemTypeId)
+      ? this.itemsFacade.getItemQuantity(task.itemTypeId)
+      : 0;
     const remainingQuantity = Math.max(0, task.requiredQuantity - progressQuantity);
     const maxed = progressQuantity >= task.requiredQuantity;
+    const isTurnIn = task.type === 'turnIn';
 
     return {
       taskId: task.id,
       level: task.level,
       action: task.action,
+      type: task.type,
+      researchId: task.researchId,
       itemTypeId: task.itemTypeId,
       itemKey: task.itemKey,
       itemLabel: task.itemLabel,
       itemKind: task.itemKind,
+      targetLabel: task.targetLabel,
+      requirementLabel: task.requirementLabel,
       requiredQuantity: task.requiredQuantity,
       progressQuantity,
       remainingQuantity,
@@ -55,8 +62,9 @@ export class TaskSnapshotManager {
       progress: task.requiredQuantity <= 0 ? 1 : progressQuantity / task.requiredQuantity,
       maxed,
       completed,
-      canFill: !completed && !maxed && ownedQuantity > 0,
-      canComplete: !completed && maxed,
+      canFill: isTurnIn && !completed && !maxed && ownedQuantity > 0,
+      canComplete: isTurnIn && !completed && maxed,
+      autoProgress: !isTurnIn,
     };
   }
 }

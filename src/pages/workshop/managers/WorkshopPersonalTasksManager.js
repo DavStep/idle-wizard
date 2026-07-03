@@ -5,6 +5,7 @@ import {
   setResourceIconText,
 } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
 
 const PERSONAL_TASK_RESOURCE_BY_ACTION = new Map([
@@ -241,8 +242,7 @@ export class WorkshopPersonalTasksManager {
 
     for (const [tabId, button] of this.refs.tabButtons.entries()) {
       const selected = tabId === this.selectedTab;
-      button.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button.tabIndex = selected ? 0 : -1;
+      setSelectedTabState(button, selected, { tabIndex: true });
       setNotificationBadge(
         button,
         tabId === 'rewards' && this.getVisibleClaimableRewards(personalTasks) > 0,

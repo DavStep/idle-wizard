@@ -1,3 +1,9 @@
+import {
+  getAutomationReserveMaxMana,
+  getAutomationReservePresetFractions,
+  getAutomationReserveStep,
+} from '../../research/automationReserveResearch.js';
+
 export const MAX_SEED_SUMMONING_MANA_RESERVE = 5_000;
 
 export class SeedSummoningAutomationSettingsManager {
@@ -23,8 +29,10 @@ export class SeedSummoningAutomationSettingsManager {
     return this.enabled;
   }
 
-  setManaReserve(manaReserve) {
-    this.manaReserve = this.normalizeManaReserve(manaReserve);
+  setManaReserve(manaReserve, { reserveResearchLevel = 0 } = {}) {
+    this.manaReserve = this.normalizeManaReserve(manaReserve, {
+      reserveResearchLevel,
+    });
 
     return {
       ok: true,
@@ -36,12 +44,24 @@ export class SeedSummoningAutomationSettingsManager {
     return this.manaReserve;
   }
 
-  getSnapshot({ unlocked = false } = {}) {
+  getSnapshot({
+    unlocked = false,
+    reserveControlsUnlocked = false,
+    reserveResearchLevel = 0,
+  } = {}) {
+    const maxManaReserve = Math.max(
+      MAX_SEED_SUMMONING_MANA_RESERVE,
+      getAutomationReserveMaxMana(reserveResearchLevel),
+    );
+
     return {
       unlocked: unlocked === true,
+      reserveControlsUnlocked: reserveControlsUnlocked === true,
       enabled: this.enabled,
-      manaReserve: this.manaReserve,
-      maxManaReserve: MAX_SEED_SUMMONING_MANA_RESERVE,
+      manaReserve: Math.min(this.manaReserve, maxManaReserve),
+      maxManaReserve,
+      reserveStep: getAutomationReserveStep(reserveResearchLevel),
+      reservePresetFractions: getAutomationReservePresetFractions(reserveResearchLevel),
     };
   }
 
@@ -76,13 +96,17 @@ export class SeedSummoningAutomationSettingsManager {
       : snapshot;
   }
 
-  normalizeManaReserve(manaReserve) {
+  normalizeManaReserve(manaReserve, { reserveResearchLevel = 0 } = {}) {
     const reserve = Math.floor(Number(manaReserve));
+    const maxManaReserve = Math.max(
+      MAX_SEED_SUMMONING_MANA_RESERVE,
+      getAutomationReserveMaxMana(reserveResearchLevel),
+    );
 
     if (!Number.isFinite(reserve)) {
       return 0;
     }
 
-    return Math.min(MAX_SEED_SUMMONING_MANA_RESERVE, Math.max(0, reserve));
+    return Math.min(maxManaReserve, Math.max(0, reserve));
   }
 }

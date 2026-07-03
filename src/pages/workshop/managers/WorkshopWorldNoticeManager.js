@@ -9,6 +9,7 @@ import {
   setResourceIconText,
 } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import {
   createWorkshopLeaderboardRow,
   createWorkshopLeaderboardUserLabel,
@@ -537,8 +538,7 @@ export class WorkshopWorldNoticeManager {
     for (const tab of WORLD_NOTICE_TABS) {
       const selected = this.selectedTabId === tab.id;
       const button = this.refs.tabButtons?.get(tab.id);
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
     }
   }
 

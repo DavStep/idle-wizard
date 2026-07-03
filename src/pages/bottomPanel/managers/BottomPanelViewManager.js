@@ -3,6 +3,7 @@ import {
   isNotificationActive,
   setNotificationBadge,
 } from '../../shared/notificationBadge.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { createStatusIcon, STATUS_ICON_LOCK } from '../../shared/statusIcon.js';
 
 const RESEARCH_TAB_ICON_URL = new URL(
@@ -168,8 +169,7 @@ export class BottomPanelViewManager {
       const button = this.tabButtons.get(tab.id);
       const selected = tab.id === pageId;
 
-      button?.classList.toggle('is-selected', selected);
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
+      setSelectedTabState(button, selected);
 
       if (selected) {
         button?.setAttribute('aria-current', 'page');
@@ -409,7 +409,7 @@ export class BottomPanelViewManager {
       button.dataset.tutorialId = `page:${tab.id}`;
       button.hidden = !this.visiblePageIds.has(tab.id);
       button.setAttribute('aria-label', `show ${tab.label}`);
-      button.setAttribute('aria-selected', 'false');
+      setSelectedTabState(button, false);
     }
     button.addEventListener('click', () => this.handleTabClick(tab));
     this.tabButtons.set(tab.id, button);

@@ -100,11 +100,25 @@ describe('base styles', () => {
     const sharedFrameRule = getRuleBody(
       /:root\[data-style-theme="midnight"\]\s*:where\(\s*\.style-panel,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
     );
+    const controlFrameRule = getRuleBody(
+      /:root\[data-style-theme="midnight"\]\s*:where\(\s*\.style-button,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
+    );
+    const progressFrameRule = getRuleBody(
+      /:root\[data-style-theme="midnight"\]\s*:is\(\.style-progress\)\s*\{(?<body>[^}]*)\}/,
+    );
+    const activeControlRule = getRuleBody(
+      /:root\[data-style-theme="midnight"\]\s*\.style-button:is\(:active, \.is-pressing\)[\s\S]*?\.workshop-page__summon-button-text\s*\{(?<body>[^}]*)\}/,
+    );
     const dialogBackingRule = getRuleBody(
       /:root\[data-style-theme="midnight"\]\s*\.style-dialog::before\s*\{(?<body>[^}]*)\}/,
     );
 
+    expect(sharedFrameRule).toContain('background: transparent;');
     expect(sharedFrameRule).toContain('background-clip: padding-box;');
+    expect(sharedFrameRule).not.toContain('background: var(--style-surface);');
+    expect(controlFrameRule).toContain('background: transparent;');
+    expect(progressFrameRule).toContain('background: transparent;');
+    expect(activeControlRule).toContain('background: transparent;');
     expect(dialogBackingRule).toContain('background: transparent;');
   });
 

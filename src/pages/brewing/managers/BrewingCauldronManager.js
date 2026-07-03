@@ -276,17 +276,25 @@ export class BrewingCauldronManager {
     recipeBox.className = 'brewing-page__cauldron-recipe-box style-box';
 
     const potionBox = document.createElement('section');
-    potionBox.className = 'brewing-page__cauldron-potion-box';
+    potionBox.className = 'brewing-page__cauldron-potion-box style-box';
+
+    const potionTitle = document.createElement('div');
+    potionTitle.className = 'style-box__title brewing-page__cauldron-potion-title';
+    potionTitle.textContent = 'potion';
 
     const lockedBox = document.createElement('section');
-    lockedBox.className = 'brewing-page__cauldron-locked-box style-box';
+    lockedBox.className = 'brewing-page__cauldron-locked-box';
     lockedBox.hidden = true;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
     title.textContent = `cauldron ${safeCauldronIndex + 1}`;
 
-    const lockedLabel = document.createElement('div');
+    const lockedFrame = document.createElement('span');
+    lockedFrame.className = 'brewing-page__cauldron-locked-frame';
+    lockedFrame.setAttribute('aria-hidden', 'true');
+
+    const lockedLabel = document.createElement('span');
     lockedLabel.className = 'brewing-page__cauldron-locked-label';
 
     const count = document.createElement('div');
@@ -385,8 +393,9 @@ export class BrewingCauldronManager {
     previewSummary.append(previewLabel, previewIcon);
     preview.append(cauldronArt, previewSummary);
     recipeBox.append(title, count, bubble, guide, status, items, active, selectRecipeButton);
-    potionBox.append(preview);
-    lockedBox.append(lockedLabel);
+    potionBox.append(potionTitle, preview);
+    lockedFrame.append(lockedLabel);
+    lockedBox.append(lockedFrame);
     boxes.append(potionBox, recipeBox, lockedBox);
     root.append(
       boxes,
@@ -398,7 +407,9 @@ export class BrewingCauldronManager {
       boxes,
       recipeBox,
       potionBox,
+      potionTitle,
       lockedBox,
+      lockedFrame,
       title,
       lockedLabel,
       count,
@@ -1947,6 +1958,11 @@ export class BrewingCauldronManager {
     this.setHidden(refs.potionBox, false);
     this.setHidden(refs.lockedBox, true);
     this.removeAttribute(refs.root, 'aria-disabled');
+    this.setAttribute(
+      refs.root,
+      'aria-label',
+      `Cauldron ${brewing.cauldronNumber ?? brewing.cauldronIndex + 1}`,
+    );
     this.renderCauldronTitle(refs.title, brewing);
     this.setText(refs.lockedLabel, '');
     this.setHidden(refs.count, false);
@@ -1999,6 +2015,7 @@ export class BrewingCauldronManager {
     refs.root.classList.remove('is-current');
     refs.root.classList.remove('has-active-brew');
     this.setAttribute(refs.root, 'aria-disabled', isBuyable ? 'false' : 'true');
+    this.setAttribute(refs.root, 'aria-label', this.formatLockedCauldronAriaLabel(brewing));
     this.setHidden(refs.recipeBox, true);
     this.setHidden(refs.potionBox, true);
     this.setHidden(refs.lockedBox, false);
@@ -2076,6 +2093,32 @@ export class BrewingCauldronManager {
       .slice(0, 2)
       .map((ingredient) => `${ingredient.quantity} ${ingredient.label}`)
       .join(', ');
+  }
+
+  formatLockedCauldronAriaLabel(brewing) {
+    const fallbackCauldronNumber = Number.isInteger(brewing?.cauldronIndex)
+      ? brewing.cauldronIndex + 1
+      : '?';
+    const cauldronNumber = brewing?.cauldronNumber ?? fallbackCauldronNumber;
+
+    if (brewing?.nextCauldronLockedByLevel) {
+      return `cauldron ${cauldronNumber} requires level ${
+        brewing.nextCauldronRequiresLevel ?? '?'
+      }`;
+    }
+
+    if (brewing?.nextCauldronLockedByResearch) {
+      return `cauldron ${cauldronNumber} requires research`;
+    }
+
+    if (
+      brewing?.canBuyCauldron === true ||
+      Number.isFinite(brewing?.nextCauldronCost)
+    ) {
+      return `buy cauldron ${cauldronNumber}`;
+    }
+
+    return `cauldron ${cauldronNumber} locked`;
   }
 
   renderCauldronItems(refs, brewing) {

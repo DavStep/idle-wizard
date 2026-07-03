@@ -36,6 +36,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Use a bottom-center border label as the toggle: `expand` when collapsed, `collapse` when open.
 - Expand hidden rows in normal flow inside the same box, without overlaying nearby panels.
 - Workshop tasks are the exception: reserve only the collapsed task slot in normal flow, then let the expanded box overlay lower Workshop content so action controls do not move.
+- Workshop tasks may show one muted `next:` compass line above the summary requirement; it is derived from live requirements, not tutorial copy.
 - Notification dots may appear on `expand` when hidden rows need attention, but never on `collapse`.
 
 ## Popup Structure

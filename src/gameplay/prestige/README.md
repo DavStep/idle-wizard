@@ -4,4 +4,6 @@ Prestige records completed level milestones and resets the run. Completed milest
 
 Milestones are every 10 levels. The default reward is `1 ruby`, with `level 50 = 2 ruby` and `level 100 = 5 ruby`.
 
-Completed prestige count also gates permanent advanced capacity research. Plot capacity 6-12 requires 1-7 completed prestiges; cauldron capacity 3-5 requires 1, 2, and 3 completed prestiges.
+Claiming a milestone also credits every lower unclaimed milestone through the claimed level. A run reset still uses the claimed milestone level, while ruby, prestige point count, next-run previews, and world-chat prestige count use the full credited milestone set. Save normalization fills old prestige gaps such as `[20]` into `[10, 20]`; spent ruby is not refilled, only missing unspent earned ruby is restored.
+
+Completed prestige count unlocks the first reward lane directly: Prestige 1 opens advanced capacity studies, Prestige 2 adds a second timed research slot, Prestige 3 enables the UI-only run focus selector, Prestige 4 enables improved auto summon reserve controls, and Prestige 5 unlocks stronger room study levels 6-10.

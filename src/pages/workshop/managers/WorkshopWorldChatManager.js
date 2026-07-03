@@ -1,6 +1,7 @@
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
 import { createPlayerCharacterIcon } from '../../shared/playerCharacterIcon.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { WorkshopChatPendingMessageManager } from './WorkshopChatPendingMessageManager.js';
 import { WorkshopSecondaryActionGateManager } from './WorkshopSecondaryActionGateManager.js';
 
@@ -447,8 +448,7 @@ export class WorkshopWorldChatManager {
       const selected = this.selectedChannelId === channel.id;
       const disabled = channel.id === 'alliance' && !hasAllianceChat;
       const button = this.refs.tabButtons?.get(channel.id);
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
       button.disabled = disabled;
     }
   }

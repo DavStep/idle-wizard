@@ -19,20 +19,25 @@ export class PrestigeCompletionManager {
       };
     }
 
+    const currentLevel = this.getCurrentLevel();
+    const completedBefore = this.prestigeStateEntityManager.getCompletedLevels();
+    const creditedLevels = this.prestigeMilestoneBalanceManager.getCreditedLevelsForClaim(
+      milestone.level,
+      completedBefore,
+    );
+
     this.prestigeStateEntityManager.syncMilestones({
-      maxLevel: Math.max(this.getCurrentLevel(), milestone.level),
-      completedLevels: [milestone.level],
+      maxLevel: Math.max(currentLevel, milestone.level),
+      completedLevels: [...completedBefore, milestone.level],
     });
 
-    if (this.prestigeStateEntityManager.isCompleted(milestone.level)) {
+    if (creditedLevels.length <= 0) {
       return {
         ok: false,
         reason: 'already_completed',
         milestone,
       };
     }
-
-    const currentLevel = this.getCurrentLevel();
 
     if (currentLevel < milestone.level) {
       return {
@@ -43,13 +48,18 @@ export class PrestigeCompletionManager {
       };
     }
 
-    this.prestigeStateEntityManager.complete(milestone.level);
+    this.prestigeStateEntityManager.completeLevels(creditedLevels);
+    const completedLevels = this.prestigeStateEntityManager.getCompletedLevels();
 
     return {
       ok: true,
       currentLevel,
       milestone,
-      completedLevels: this.prestigeStateEntityManager.getCompletedLevels(),
+      creditedLevels,
+      creditedMilestones: creditedLevels
+        .map((creditedLevel) => this.prestigeMilestoneBalanceManager.getMilestone(creditedLevel))
+        .filter(Boolean),
+      completedLevels,
     };
   }
 }

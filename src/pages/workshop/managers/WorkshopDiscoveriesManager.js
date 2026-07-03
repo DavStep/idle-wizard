@@ -2,6 +2,7 @@ import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
+import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
 import {
   createAssetAtlasMaskedSprite,
@@ -368,8 +369,7 @@ export class WorkshopDiscoveriesManager {
     for (const tab of DISCOVERY_TABS) {
       const selected = this.selectedTabId === tab.id;
       const button = this.refs.tabButtons?.get(tab.id);
-      button?.setAttribute('aria-selected', selected ? 'true' : 'false');
-      button?.setAttribute('tabindex', selected ? '0' : '-1');
+      setSelectedTabState(button, selected, { tabIndex: true });
     }
   }
 
