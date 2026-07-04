@@ -36,11 +36,13 @@ function createBackendWithFakes({ connectGeneratedBindings } = {}) {
   };
   backendFacade.leaderboardFacade = {
     setGameplayFacade: vi.fn(),
+    setSyncReady: vi.fn(),
     connect: vi.fn(),
     disconnect: vi.fn(),
   };
   backendFacade.worldEventLeaderboardFacade = {
     setGameplayFacade: vi.fn(),
+    setSyncReady: vi.fn(),
     connect: vi.fn(),
     disconnect: vi.fn(),
   };
@@ -166,6 +168,14 @@ describe('BackendFacade', () => {
       ),
     ).toEqual([false, true]);
     expect(
+      backendFacade.leaderboardFacade.setSyncReady.mock.calls.map(([ready]) => ready),
+    ).toEqual([false, true]);
+    expect(
+      backendFacade.worldEventLeaderboardFacade.setSyncReady.mock.calls.map(
+        ([ready]) => ready,
+      ),
+    ).toEqual([false, true]);
+    expect(
       backendFacade.gameplaySaveFacade.setReadyToSend.mock.calls.map(
         ([ready]) => ready,
       ),
@@ -253,6 +263,14 @@ describe('BackendFacade', () => {
         ([ready]) => ready,
       ),
     ).toEqual([false]);
+    expect(
+      backendFacade.leaderboardFacade.setSyncReady.mock.calls.map(([ready]) => ready),
+    ).toEqual([false]);
+    expect(
+      backendFacade.worldEventLeaderboardFacade.setSyncReady.mock.calls.map(
+        ([ready]) => ready,
+      ),
+    ).toEqual([false]);
     expect(onOnline).not.toHaveBeenCalled();
 
     finishChoice();
@@ -260,6 +278,14 @@ describe('BackendFacade', () => {
 
     expect(
       backendFacade.gameplaySaveFacade.setReadyToSend.mock.calls.map(
+        ([ready]) => ready,
+      ),
+    ).toEqual([false, true]);
+    expect(
+      backendFacade.leaderboardFacade.setSyncReady.mock.calls.map(([ready]) => ready),
+    ).toEqual([false, true]);
+    expect(
+      backendFacade.worldEventLeaderboardFacade.setSyncReady.mock.calls.map(
         ([ready]) => ready,
       ),
     ).toEqual([false, true]);

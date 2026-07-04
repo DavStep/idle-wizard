@@ -1,9 +1,6 @@
-import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
-
 const CASTLE_RUINS_URL = new URL('../assets/castle-ruins.webp', import.meta.url).href;
 const DEMON_DEFEATED_URL = new URL('../assets/demon-defeated.webp', import.meta.url).href;
 const PEACEFUL_WORLD_URL = new URL('../assets/peaceful-world.webp', import.meta.url).href;
-const REWARD_POUCH_URL = new URL('../assets/reward-pouch.webp', import.meta.url).href;
 const WORKSHOP_FOR_SALE_URL = new URL('../assets/workshop-for-sale.webp', import.meta.url).href;
 
 const INTRO_STEP_EXIT_MS = 180;
@@ -11,7 +8,6 @@ const INTRO_IMAGE_URLS = Object.freeze([
   CASTLE_RUINS_URL,
   DEMON_DEFEATED_URL,
   PEACEFUL_WORLD_URL,
-  REWARD_POUCH_URL,
   WORKSHOP_FOR_SALE_URL,
 ]);
 
@@ -35,27 +31,9 @@ const INTRO_STEPS = Object.freeze([
     action: 'next',
   }),
   Object.freeze({
-    id: 'reward',
-    scene: 'reward',
-    text: 'your reward for saving the kingdom? a nearly empty pouch.',
-    action: 'next',
-  }),
-  Object.freeze({
-    id: 'better-use',
-    scene: 'reward',
-    text: 'time to put your magic to better use.',
-    action: 'next',
-  }),
-  Object.freeze({
     id: 'workshop',
     scene: 'workshop',
     text: 'not every legend ends on a battlefield. some begin with an old workshop.',
-    action: 'next',
-  }),
-  Object.freeze({
-    id: 'buy-workshop',
-    scene: 'workshop',
-    text: 'the sign says vacant. the key is still under the sill.',
     action: 'enter workshop',
   }),
 ]);
@@ -111,7 +89,6 @@ export class FirstRunIntroViewManager {
     this.refs.rainbow = document.createElement('div');
     this.refs.rainbow.className = 'first-run-intro__rainbow';
     this.refs.rainbow.setAttribute('aria-hidden', 'true');
-    this.refs.coinPile = this.createCoinPile();
     this.refs.workshopSale = this.createWorkshopSaleBoard();
     this.refs.backdropLayer.append(this.refs.backdrop, this.refs.workshopSale);
     this.refs.transitionShade = document.createElement('div');
@@ -122,7 +99,6 @@ export class FirstRunIntroViewManager {
       this.refs.backdropLayer,
       this.refs.rainbow,
       this.refs.demonDefeated,
-      this.refs.coinPile,
       this.refs.transitionShade,
     );
 
@@ -372,10 +348,6 @@ export class FirstRunIntroViewManager {
       return PEACEFUL_WORLD_URL;
     }
 
-    if (scene === 'reward') {
-      return REWARD_POUCH_URL;
-    }
-
     if (scene === 'workshop') {
       return WORKSHOP_FOR_SALE_URL;
     }
@@ -403,25 +375,6 @@ export class FirstRunIntroViewManager {
       image.src = src;
       return image;
     });
-  }
-
-  createCoinPile() {
-    const pile = document.createElement('div');
-    pile.className = 'first-run-intro__coin-pile';
-    pile.setAttribute('aria-label', 'old coin pouch');
-
-    for (let index = 0; index < 10; index += 1) {
-      const coin = createAssetAtlasSprite(
-        'first-run-intro__coin-pile-icon',
-        'resource:coin',
-      );
-      if (coin) {
-        coin.dataset.coinIndex = String(index + 1);
-        pile.append(coin);
-      }
-    }
-
-    return pile;
   }
 
   createWorkshopSaleBoard() {

@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.77
+
+- Fixed duplicate empty accounts appearing in world event rankings by waiting for the account save to load before shared score syncs can publish.
+- Hardened the server so pre-save identities cannot publish generated coin or world event points to public leaderboards.
+
 ## 0.2.76
 
 - Added a Workshop stats popup for lifetime seeds, herbs, potions, NPC trade coin, player trade coin, and potion royalty coin.

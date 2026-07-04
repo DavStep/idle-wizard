@@ -23,6 +23,10 @@ export class LeaderboardBackendFacade {
     this.generatedCoinSyncManager.setGameplayFacade(gameplayFacade);
   }
 
+  setSyncReady(ready) {
+    this.generatedCoinSyncManager.setReadyToSync(ready);
+  }
+
   connect(connection, identity) {
     this.subscriptionManager.connect(connection, identity);
     this.generatedCoinSyncManager.connect(connection);

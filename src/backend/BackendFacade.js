@@ -65,7 +65,9 @@ export class BackendFacade {
     onGameplaySaveReady,
   } = {}) {
     this.leaderboardFacade.setGameplayFacade(gameplayFacade);
+    this.leaderboardFacade.setSyncReady(false);
     this.worldEventLeaderboardFacade.setGameplayFacade(gameplayFacade);
+    this.worldEventLeaderboardFacade.setSyncReady(false);
     this.playerInboxFacade.setGameplayFacade(gameplayFacade);
     this.tradeAllianceFacade.setGameplayFacade(gameplayFacade);
     this.tradeAllianceFacade.setRewardProcessingReady(false);
@@ -135,6 +137,8 @@ export class BackendFacade {
           }
 
           this.gameplaySaveFacade.setReadyToSend(true);
+          this.leaderboardFacade.setSyncReady(true);
+          this.worldEventLeaderboardFacade.setSyncReady(true);
           this.playerSyncFacade.setLevelSyncReady(true);
 
           if (gameplayFacade?.consumeProgressResetPending?.()) {

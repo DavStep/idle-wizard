@@ -6637,6 +6637,10 @@ function getPlayerCharacterForIdentity(ctx: { db: any }, identity: Identity): st
   );
 }
 
+function hasAcceptedPlayerGameplaySave(ctx: { db: any }, identity: Identity): boolean {
+  return Boolean(ctx.db.playerGameplaySave.identity.find(identity));
+}
+
 function assertUsernameAvailableForIdentity(
   ctx: IdleWizardReducerCtx,
   username: string,
@@ -13569,7 +13573,7 @@ function getWorldEventLeaderboardSummaryRows(ctx: any) {
   const periodKey = getWorldEventPeriodKey(ctx);
   const entries = Array.from<any>(
     ctx.db.worldEventLeaderboard.byPeriodKey.filter(periodKey),
-  );
+  ).filter((entry) => hasAcceptedPlayerGameplaySave(ctx, entry.identity));
   const rankedByEventId = new Map<string, any[]>();
   const ranksByContributionKey = new Map<string, number>();
   const visibleByContributionKey = new Map<string, any>();
@@ -17501,6 +17505,14 @@ export const set_total_generated_gold = spacetimedb.reducer(
       capPlayerLevel,
     );
 
+    if (
+      !hasAcceptedPlayerGameplaySave(ctx, player.identity) &&
+      reportedTotalIncome !== null &&
+      reportedTotalIncome > 0n
+    ) {
+      return;
+    }
+
     if (shouldIgnorePostResetReportedGold(ctx, player, totalGeneratedGold)) {
       return;
     }
@@ -17584,6 +17596,14 @@ export const set_world_event_contribution_points = spacetimedb.reducer(
     const currentPoints = existingEntry
       ? clampWorldEventLeaderboardPoints(existingEntry.points, safePlayerLevel)
       : 0n;
+
+    if (!hasAcceptedPlayerGameplaySave(ctx, player.identity)) {
+      if (existingEntry) {
+        ctx.db.worldEventLeaderboard.delete(existingEntry);
+      }
+
+      return;
+    }
 
     if (reportedPoints === null) {
       if (!existingEntry) {

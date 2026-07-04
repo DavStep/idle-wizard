@@ -92,6 +92,7 @@
 - World chat dialog should use a fixed upper source-coordinate anchor; focus-within keyboard recentering makes it jump down when the keyboard closes.
 - A Dark Room is style guidance only; do not copy its desktop resolution/layout.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
+- FTUE level-one sage guidance must resolve the turn-in task by item/action too; live configs may still use legacy `level1-sage-seeds` while defaults use `level1-turn-in-sage-seed`.
 - Resource-gated FTUE steps must refresh from `subscribeFrameResources`; top-panel mana can change without a full gameplay snapshot.
 - FTUE repeated action prompts should show once as brief non-dimming hints, then reappear only after idle time; do not keep alternating guidance through active loops.
 - A page means a room view, not a web route.
@@ -258,6 +259,7 @@
 - FTUE Spine target cues should use the pointer Spine, not the removed old hand sprite.
 - Pointer-local Pixi canvases inside the scaled tutorial layer must use `devicePixelRatio * --style-ui-scale` resolution; DPR-only backing stores look pixelated after the room UI scale transform.
 - FTUE opening should reveal the room piece by piece: intro first, then top-panel username, then the top-panel mana readout, then summon, then tasks and room chrome.
+- FTUE graph still includes legacy `fill-sage-seed-task`; default `tasks.json` no longer has a level-3 sage seed turn-in, so dev loaders should report the actual active step for balance-dependent states.
 - Room section entry animations must opt out while `data-tutorial-reveal` is present; opacity/translate animations can override FTUE reveal gates.
 - FTUE intro-only reveal needs an empty `data-tutorial-reveal` attribute; clearing the attribute makes all gated room controls appear.
 - FTUE hidden action buttons need reveal-gate `pointer-events: none` with enough specificity to beat action-bar base button rules.
@@ -456,6 +458,7 @@
 - Normal app gameplay persistence is server-backed through SpacetimeDB `player_gameplay_save`; do not add browser local save paths for player progress.
 - Admin `playerLevel` edits only change server/social level; the actual in-game level shown in room UI comes from `player_gameplay_save.saveJson.tasks.currentLevel`.
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
+- Shared public score syncs, including generated coin and world-event points, must wait for accepted gameplay-save hydration; otherwise cached local progress can attach to a fresh anonymous identity and create duplicate empty leaderboard accounts.
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
 - Gameplay save coalescing must stay short and flush on hide/reload; long pending windows can make recent quest/coin progress look reset after refresh.
 - Android app-background disconnects should defer reconnect UI/retry until foreground; otherwise app switching can race SpacetimeDB session ownership and look like an account reconnect.
@@ -712,8 +715,8 @@
 - Cutscene roots should still cover the full web-wide stage, but scene art and dialogue panels must stay constrained to the fixed authored source width.
 - Peace/disbanded cutscene beats should use a calm world backdrop, not battlefield aftermath or dead-body visuals.
 - Peace-scene rainbow overlays should be subtle one-shot reveals with reduced-motion fallback, not looping decoration.
-- Reward cutscene coin beats should stagger the individual coin sprites while the pile/table position stays fixed; avoid replaying the full drop on follow-up copy beats.
-- Reward cutscene follow-up copy should collect the already-landed rigid coins into the pouch, not replay a falling or jiggly coin drop.
+- Do not reintroduce the first-run reward pouch/coin cutscene beat; it was removed as too poor for the opening flow.
+- Do not reintroduce a second first-run workshop sign/key beat; enter the workshop directly from the first workshop scene.
 - Managers subscribed to gameplay snapshots can render every frame; keep buttons stable and update text/state instead of replacing interactive DOM nodes.
 - In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
 - Hidden tab panels should skip list and popup rendering on gameplay snapshots; refresh the active tab on tab switch and visible popups when opened.

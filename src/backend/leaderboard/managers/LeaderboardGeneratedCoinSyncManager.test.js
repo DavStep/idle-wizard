@@ -42,6 +42,7 @@ describe('LeaderboardGeneratedCoinSyncManager', () => {
         setTotalGeneratedCoin,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     expect(setTotalGeneratedCoin).toHaveBeenCalledWith({ totalGeneratedCoin: 12n });
@@ -64,6 +65,7 @@ describe('LeaderboardGeneratedCoinSyncManager', () => {
         setTotalGeneratedCoin,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     gameplayFacade.publishCoinTotal(3);
@@ -71,6 +73,29 @@ describe('LeaderboardGeneratedCoinSyncManager', () => {
     await Promise.resolve();
 
     expect(setTotalGeneratedCoin).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for gameplay save hydration before reporting generated coin', async () => {
+    const setTotalGeneratedCoin = vi.fn(() => Promise.resolve());
+    const gameplayFacade = createGameplayFacade(7013);
+    const manager = new LeaderboardGeneratedCoinSyncManager({ syncIntervalMs: 0 });
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.connect({
+      reducers: {
+        setTotalGeneratedCoin,
+      },
+    });
+    gameplayFacade.publishCoinTotal(7014);
+    await Promise.resolve();
+
+    expect(setTotalGeneratedCoin).not.toHaveBeenCalled();
+
+    manager.setReadyToSync(true);
+    await Promise.resolve();
+
+    expect(setTotalGeneratedCoin).toHaveBeenCalledTimes(1);
+    expect(setTotalGeneratedCoin).toHaveBeenCalledWith({ totalGeneratedCoin: 7014n });
   });
 
   it('resends the current generated coin total when a new connection attaches', async () => {
@@ -85,6 +110,7 @@ describe('LeaderboardGeneratedCoinSyncManager', () => {
         setTotalGeneratedCoin: firstSetTotalGeneratedCoin,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     manager.disconnect();
@@ -93,6 +119,7 @@ describe('LeaderboardGeneratedCoinSyncManager', () => {
         setTotalGeneratedCoin: secondSetTotalGeneratedCoin,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     expect(firstSetTotalGeneratedCoin).toHaveBeenCalledWith({ totalGeneratedCoin: 11n });
@@ -110,6 +137,7 @@ describe('LeaderboardGeneratedCoinSyncManager', () => {
         set_total_generated_coin: setTotalGeneratedCoin,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     expect(setTotalGeneratedCoin).toHaveBeenCalledWith({ totalGeneratedCoin: 7n });
@@ -126,6 +154,7 @@ describe('LeaderboardGeneratedCoinSyncManager', () => {
         setTotalGeneratedCoin,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     gameplayFacade.publishCoinTotal(99);
@@ -163,6 +192,7 @@ describe('LeaderboardGeneratedCoinSyncManager', () => {
         setTotalGeneratedCoin,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
     await Promise.resolve();
 

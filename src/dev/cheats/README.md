@@ -35,6 +35,8 @@ cheats.setStressText()
 cheats.setDummyLeaderboard()
 cheats.clearDummyLeaderboard()
 cheats.listTutorialStages()
+cheats.getTutorialGraph()
+cheats.loadTutorialStep('t25')
 cheats.setTutorialStage('intro-garden')
 cheats.listDataTemplates()
 cheats.loadDataTemplate('ftwizard')
@@ -84,3 +86,13 @@ Useful view setup commands:
   data, claimable guild state, dummy leaderboards, and all badges.
 - `setDummyLeaderboard()` publishes local dummy normal and world-event leaderboard
   snapshots until `clearDummyLeaderboard()` restores server data.
+- `listTutorialStages()` returns every tutorial/cutscene step with a stable
+  code such as `t01`, the canonical step id, and the matching
+  `cheats.loadTutorialStep("...")` command.
+- `getTutorialGraph()` returns the same steps plus sequential edges and Mermaid
+  graph text for docs or quick inspection.
+- `loadTutorialStep(step)` accepts a step id, `tNN` code, or 1-based number,
+  then resets local gameplay into a minimal matching state, sets tutorial
+  progress so that step is next, moves to the needed page, and reports the
+  active step it landed on. `setTutorialStage(step)` is the same loader unless
+  called with `{ loadState: false }`, which only changes tutorial progress.

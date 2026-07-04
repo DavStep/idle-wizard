@@ -19,3 +19,9 @@ Lesson 4 starts by opening the level 4 requirements when herb tasks are visible,
 Tutorial market steps use the normal direct fast-sell path and live sell quantities. Do not add FTUE-only coin grants, tutorial price overrides, or tutorial-owned inventory mutation; level 1 is free, and level 2 teaches systemic selling.
 
 Players already past level 5 auto-complete the tutorial. Earlier snapshots that already show later progress skip stale lessons.
+
+Dev builds with `VITE_ENABLE_CHEATS=true` expose tutorial step tooling through
+`window.cheats`. Use `cheats.listTutorialStages()` or `cheats.getTutorialGraph()`
+to inspect the current step graph, then `cheats.loadTutorialStep('t01')` or
+`cheats.loadTutorialStep('intro-garden')` to reset local gameplay into the
+matching tutorial/cutscene state for manual QA.

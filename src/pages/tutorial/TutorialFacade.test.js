@@ -691,6 +691,7 @@ describe('TutorialFacade', () => {
     const showButton = stage.querySelector('.tutorial-layer__lesson-show');
 
     expect(facade.activeStep?.id).toBe('finish-seed-task');
+    expect(facade.activeStep?.targetId).toBe('task:level1-sage-seeds');
     expect(lesson?.hidden).toBe(false);
     expect(hint?.hidden).toBe(true);
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);

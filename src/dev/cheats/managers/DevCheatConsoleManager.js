@@ -100,7 +100,10 @@ export class DevCheatConsoleManager {
       setDummyLeaderboard: (options) => run('setDummyLeaderboard', options),
       clearDummyLeaderboard: () => run('clearDummyLeaderboard'),
       listTutorialStages: () => run('listTutorialStages'),
-      setTutorialStage: (stageId) => run('setTutorialStage', stageId),
+      listTutorialSteps: () => run('listTutorialSteps'),
+      getTutorialGraph: () => run('getTutorialGraph'),
+      loadTutorialStep: (stepId, options) => run('loadTutorialStep', stepId, options),
+      setTutorialStage: (stageId, options) => run('setTutorialStage', stageId, options),
       resetData: (confirmation) => run('resetData', confirmation),
       listDataTemplates: () => run('listDataTemplates'),
       loadDataTemplate: (templateIdOrAlias, options) =>

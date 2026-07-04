@@ -159,7 +159,7 @@ Period loops use server UTC time. Daily periods reset at UTC 00:00, which is 04:
 
 `set_total_generated_coin` accepts client-reported lifetime generated coin, but only as a non-decreasing value bounded by player level. Connect-time sanitation clamps old leaderboard rows to the same cap and rolls period counters when the server day/week/month key changes. The accepted delta raises the player's daily, weekly, monthly, and all-time leaderboard income, plus alliance income and current weekly alliance-income quest progress when the player is in an alliance.
 
-`set_world_event_contribution_points` accepts client-reported current weekly event points, but only for the active event period and only as a non-decreasing value bounded by player level. The client subscribes to `world_event_leaderboard_summary`, so the Workshop event leaderboard receives shared user rows instead of only local fallback points.
+`set_world_event_contribution_points` accepts client-reported current weekly event points, but only after that identity has an accepted `player_gameplay_save` row, only for the active event period, and only as a non-decreasing value bounded by player level. The client subscribes to `world_event_leaderboard_summary`, so the Workshop event leaderboard receives shared user rows instead of only local fallback points. The summary hides event rows for identities without an accepted gameplay save so empty pre-hydration accounts cannot appear in the public event ranking.
 
 `set_player_level` accepts bounded client-reported task levels for shared display. `announce_level_up` is separate and posts a system world-chat row only when task completion advances the local level, so restored saves can sync level without replaying old level-up notices.
 

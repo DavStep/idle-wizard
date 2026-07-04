@@ -18,7 +18,7 @@ const SELECTED_SELL_AMOUNT_AUTO_ADVANCE_MS = 2000;
 const MANA_TONIC_SAGE_COUNT = 3;
 const MANA_TONIC_EXTRA_SAGE_TARGET_ID = `brewing:remove:${SAGE_HERB_KEY}`;
 const MANA_READOUT_TARGET_ID = 'top:mana';
-const LEVEL_ONE_SEED_TASK_ID = 'level1-turn-in-sage-seed';
+const LEVEL_ONE_SEED_TASK_IDS = ['level1-sage-seeds', 'level1-turn-in-sage-seed'];
 const DEFAULT_LEVEL_FOUR_SAGE_GROW_TARGET = 2;
 const TURN_IN_TEXT = 'turn in';
 const COMPLETE_TEXT = 'complete';
@@ -121,6 +121,47 @@ export const TUTORIAL_STEP_IDS = [
   ...LEVEL_FIVE_STEP_IDS,
 ];
 
+const TUTORIAL_STEP_GROUPS = [
+  {
+    id: 'level-1',
+    label: 'level 1: introduction',
+    stepIds: LEVEL_ONE_STEP_IDS,
+  },
+  {
+    id: 'level-2',
+    label: 'level 2: market',
+    stepIds: LEVEL_TWO_STEP_IDS,
+  },
+  {
+    id: 'level-3',
+    label: 'level 3: research',
+    stepIds: LEVEL_THREE_STEP_IDS,
+  },
+  {
+    id: 'level-4',
+    label: 'level 4: gardening',
+    stepIds: LEVEL_FOUR_STEP_IDS,
+  },
+  {
+    id: 'level-5',
+    label: 'level 5: brewing',
+    stepIds: LEVEL_FIVE_STEP_IDS,
+  },
+];
+
+const TUTORIAL_STEP_GROUP_BY_STEP_ID = new Map(
+  TUTORIAL_STEP_GROUPS.flatMap((group) =>
+    group.stepIds.map((stepId) => [stepId, group]),
+  ),
+);
+
+const TUTORIAL_STEP_NOTES = new Map([
+  [
+    'fill-sage-seed-task',
+    'balance-dependent: default tasks.json no longer includes a level-3 sage seed turn-in',
+  ],
+]);
+
 const REVEAL_MANA = ['top', 'mana'];
 const REVEAL_MANA_SUMMON = ['top', 'mana', 'summon'];
 const REVEAL_MANA_SUMMON_TASKS = ['top', 'mana', 'summon', 'tasks'];
@@ -170,6 +211,7 @@ export const TUTORIAL_STEPS = [
     targetId: 'workshop:summonSeed',
     revealTokens: REVEAL_MANA_SUMMON,
     text: 'use your mana to summon seeds.',
+    targetCueDelayMs: 2000,
     getPausedText: () => 'wait for mana',
     isPaused: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
@@ -195,12 +237,12 @@ export const TUTORIAL_STEPS = [
 
       const task = getLevelOneSeedTask(snapshot);
 
-      if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
-        return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
-      }
-
       if (task?.canFill || task?.canComplete) {
         return `task:${task.taskId}`;
+      }
+
+      if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
+        return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
       }
 
       return null;
@@ -212,15 +254,19 @@ export const TUTORIAL_STEPS = [
 
       const task = getLevelOneSeedTask(snapshot);
 
-      if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
-        return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
-      }
-
       if (task?.canComplete) {
         return COMPLETE_TEXT;
       }
 
-      return task?.canFill ? TURN_IN_TEXT : '';
+      if (task?.canFill) {
+        return TURN_IN_TEXT;
+      }
+
+      return needsMoreLevelOneSeedsBeforeTurnIn(snapshot)
+        ? snapshot?.seedSummoning?.canSummon
+          ? 'summon seed'
+          : 'wait for mana'
+        : '';
     },
     getPausedText: ({ snapshot }) =>
       snapshot?.seedSummoning?.canSummon ? 'summon more seeds' : 'wait for mana',
@@ -251,12 +297,12 @@ export const TUTORIAL_STEPS = [
 
       const task = getLevelOneSeedTask(snapshot);
 
-      if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
-        return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
-      }
-
       if (task?.canComplete || task?.canFill) {
         return `task:${task.taskId}`;
+      }
+
+      if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
+        return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
       }
 
       return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
@@ -268,16 +314,16 @@ export const TUTORIAL_STEPS = [
 
       const task = getLevelOneSeedTask(snapshot);
 
-      if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
-        return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
-      }
-
       if (task?.canComplete) {
         return COMPLETE_TEXT;
       }
 
       if (task?.canFill) {
         return TURN_IN_TEXT;
+      }
+
+      if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
+        return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
       }
 
       return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
@@ -1415,6 +1461,120 @@ export const TUTORIAL_STEPS = [
   },
 ];
 
+const TUTORIAL_STEP_BY_ID = new Map(TUTORIAL_STEPS.map((step) => [step.id, step]));
+
+export function resolveTutorialStepId(value) {
+  const rawValue = String(value ?? '').trim();
+
+  if (!rawValue) {
+    return null;
+  }
+
+  if (TUTORIAL_STEP_BY_ID.has(rawValue)) {
+    return rawValue;
+  }
+
+  const lowerValue = rawValue.toLowerCase();
+  const codeMatch = lowerValue.match(/^t(?:utorial)?[-_ ]?(\d+)$/);
+  const numericValue = Number(lowerValue);
+  const rawIndex = codeMatch
+    ? Number(codeMatch[1])
+    : Number.isInteger(numericValue)
+      ? numericValue
+      : null;
+
+  if (Number.isInteger(rawIndex)) {
+    const index = rawIndex <= 0 ? rawIndex : rawIndex - 1;
+    return TUTORIAL_STEP_IDS[index] ?? null;
+  }
+
+  const normalizedValue = lowerValue.replace(/[^a-z0-9]/g, '');
+  return (
+    TUTORIAL_STEP_IDS.find(
+      (stepId) => stepId.toLowerCase().replace(/[^a-z0-9]/g, '') === normalizedValue,
+    ) ?? null
+  );
+}
+
+export function getTutorialStepGraph() {
+  const total = TUTORIAL_STEP_IDS.length;
+  const steps = TUTORIAL_STEP_IDS.map((stepId, index) => {
+    const step = TUTORIAL_STEP_BY_ID.get(stepId) ?? { id: stepId };
+    const group = TUTORIAL_STEP_GROUP_BY_STEP_ID.get(stepId) ?? null;
+    const nextId = TUTORIAL_STEP_IDS[index + 1] ?? null;
+    const previousId = TUTORIAL_STEP_IDS[index - 1] ?? null;
+
+    return {
+      id: stepId,
+      code: getTutorialStepCode(index),
+      index: index + 1,
+      total,
+      kind: step.kind ?? 'objective',
+      groupId: group?.id ?? null,
+      groupLabel: group?.label ?? '',
+      lessonTitle: getLessonTitle(step),
+      pageId: typeof step.pageId === 'string' ? step.pageId : null,
+      targetId: typeof step.targetId === 'string' ? step.targetId : null,
+      cueMode: step.cueMode ?? null,
+      autoAdvanceMs: Number.isFinite(step.autoAdvanceMs) ? step.autoAdvanceMs : null,
+      targetCueDelayMs: getTargetCueDelayMs(step),
+      previousId,
+      nextId,
+      note: TUTORIAL_STEP_NOTES.get(stepId) ?? '',
+      cheat: `cheats.loadTutorialStep("${stepId}")`,
+    };
+  });
+  const edges = steps
+    .filter((step) => step.nextId)
+    .map((step) => ({
+      from: step.id,
+      to: step.nextId,
+      label: 'next',
+    }));
+
+  return {
+    ok: true,
+    total,
+    aliases: ['reset', 'start', 'complete', 'done'],
+    sections: TUTORIAL_STEP_GROUPS.map((group) => ({
+      id: group.id,
+      label: group.label,
+      stepIds: [...group.stepIds],
+    })),
+    steps,
+    edges,
+    mermaid: createTutorialStepMermaid(steps, edges),
+  };
+}
+
+function getTutorialStepCode(index) {
+  return `t${String(index + 1).padStart(2, '0')}`;
+}
+
+function createTutorialStepMermaid(steps, edges) {
+  const lines = ['flowchart TD'];
+
+  for (const step of steps) {
+    lines.push(`  ${getMermaidNodeId(step.id)}["${escapeMermaidLabel(
+      `${step.index}. ${step.id}<br/>${step.lessonTitle}`,
+    )}"]`);
+  }
+
+  for (const edge of edges) {
+    lines.push(`  ${getMermaidNodeId(edge.from)} --> ${getMermaidNodeId(edge.to)}`);
+  }
+
+  return lines.join('\n');
+}
+
+function getMermaidNodeId(stepId) {
+  return `S${String(TUTORIAL_STEP_IDS.indexOf(stepId) + 1).padStart(2, '0')}`;
+}
+
+function escapeMermaidLabel(label) {
+  return String(label ?? '').replace(/"/g, '#quot;');
+}
+
 export class TutorialStepManager {
   constructor({ progressManager, getCurrentPageId }) {
     this.progressManager = progressManager;
@@ -1637,6 +1797,7 @@ export class TutorialStepManager {
         advanceLabel: getAdvanceLabel(step, context),
         advancePageId: getAdvancePageId(step, context),
         autoAdvanceMs: getAutoAdvanceMs(step, context),
+        targetCueDelayMs: getTargetCueDelayMs(step, context),
         variant: getVariant(step, context),
         effect: step.effect,
         sale: step.sale,
@@ -1671,6 +1832,7 @@ export class TutorialStepManager {
       advanceLabel: getAdvanceLabel(step, { ...context, targetId, text, hintText }),
       advancePageId: getAdvancePageId(step, { ...context, targetId, text, hintText }),
       autoAdvanceMs: getAutoAdvanceMs(step, { ...context, targetId, text, hintText }),
+      targetCueDelayMs: getTargetCueDelayMs(step, { ...context, targetId, text, hintText }),
       variant: getVariant(step, { ...context, targetId, text, hintText }),
       effect: step.effect,
       sale: step.sale,
@@ -1773,6 +1935,11 @@ function getAdvancePageId(step, context) {
 function getAutoAdvanceMs(step, context) {
   const durationMs = step?.getAutoAdvanceMs?.(context) ?? step?.autoAdvanceMs ?? null;
   return Number.isFinite(durationMs) && durationMs >= 0 ? durationMs : null;
+}
+
+function getTargetCueDelayMs(step, context) {
+  const delayMs = step?.getTargetCueDelayMs?.(context) ?? step?.targetCueDelayMs ?? null;
+  return Number.isFinite(delayMs) && delayMs > 0 ? delayMs : null;
 }
 
 function getVariant(step, context) {
@@ -2739,7 +2906,15 @@ function hasLevelTwoSageTurnInTaskComplete(snapshot) {
 }
 
 function getLevelOneSeedTask(snapshot) {
-  return getCurrentTasks(snapshot).find((task) => task.taskId === LEVEL_ONE_SEED_TASK_ID) ?? null;
+  const tasks = getCurrentTasks(snapshot);
+
+  return (
+    LEVEL_ONE_SEED_TASK_IDS.map((taskId) =>
+      tasks.find((task) => task.taskId === taskId),
+    ).find(Boolean) ??
+    tasks.find((task) => task.itemKey === SAGE_SEED_KEY && isTurnInTask(task)) ??
+    null
+  );
 }
 
 function isLevelOneSeedTaskComplete(snapshot) {

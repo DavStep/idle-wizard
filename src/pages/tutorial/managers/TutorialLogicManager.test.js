@@ -284,6 +284,86 @@ describe('TutorialLogicManager', () => {
     });
   });
 
+  it('delays target cues from a new step target when requested', () => {
+    const target = {};
+    const step = createStep({
+      id: 'first-summon-seed',
+      kind: 'prompt',
+      targetId: 'workshop:summonSeed',
+      text: 'use your mana to summon seeds.',
+      progress: null,
+      progressLabel: '',
+      targetCueDelayMs: 2000,
+    });
+    const { manager, reminderManager } = createManager({ step });
+
+    const waitingState = manager.getViewState({
+      snapshot: {},
+      dom: {},
+      targetResolver: () => target,
+      now: 1000,
+    });
+
+    expect(waitingState).toMatchObject({
+      kind: 'lesson',
+      lesson: {
+        canShowTarget: false,
+      },
+      cue: {
+        kind: 'none',
+        lessonAttention: false,
+        hideTargetImmediate: true,
+        targetCueDelayed: true,
+        nextRefreshAt: 3000,
+      },
+      nextRefreshAt: 3000,
+    });
+    expect(reminderManager.clearVisibleCount).toBe(1);
+
+    const readyState = manager.getViewState({
+      snapshot: {},
+      dom: {},
+      targetResolver: () => target,
+      lessonPanelOpen: true,
+      now: 3000,
+    });
+
+    expect(readyState.cue).toMatchObject({
+      kind: 'target-cue',
+      target,
+      showPointer: true,
+    });
+  });
+
+  it('lets requested guidance bypass a target cue delay', () => {
+    const target = {};
+    const step = createStep({
+      id: 'first-summon-seed',
+      kind: 'prompt',
+      targetId: 'workshop:summonSeed',
+      text: 'use your mana to summon seeds.',
+      progress: null,
+      progressLabel: '',
+      targetCueDelayMs: 2000,
+    });
+    const { manager } = createManager({ step });
+
+    expect(
+      manager.getViewState({
+        snapshot: {},
+        dom: {},
+        targetResolver: () => target,
+        lessonPanelOpen: true,
+        requestedTargetGuidanceStepId: 'first-summon-seed',
+        now: 1000,
+      }).cue,
+    ).toMatchObject({
+      kind: 'target-cue',
+      target,
+      showPointer: true,
+    });
+  });
+
   it('delays target cues while a delayed objective panel is open', () => {
     const target = {};
     const step = createStep({

@@ -24,6 +24,10 @@ export class WorldEventLeaderboardBackendFacade {
     this.syncManager.setGameplayFacade(gameplayFacade);
   }
 
+  setSyncReady(ready) {
+    this.syncManager.setReadyToSync(ready);
+  }
+
   connect(connection, identity) {
     this.subscriptionManager.connect(connection, identity);
     this.syncManager.connect(connection);

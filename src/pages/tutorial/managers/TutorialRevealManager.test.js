@@ -1,10 +1,14 @@
 /* @vitest-environment jsdom */
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TutorialRevealManager } from './TutorialRevealManager.js';
 
 describe('TutorialRevealManager', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('keeps the reveal gate active when the step reveals only Elara', () => {
     const stage = document.createElement('section');
     const manager = new TutorialRevealManager();
@@ -66,6 +70,38 @@ describe('TutorialRevealManager', () => {
     });
     expect(stage.dataset.tutorialReveal).toBe('mana summon tasks top rooms');
     expect(stage.dataset.tutorialTargetId).toBe('page:shop');
+  });
+
+  it('plays the summon reveal animation only when the summon token first appears', () => {
+    vi.useFakeTimers();
+    const stage = document.createElement('section');
+    const manager = new TutorialRevealManager();
+
+    manager.setStage(stage);
+    manager.update({
+      step: { id: 'first-summon-seed', revealTokens: ['top', 'mana', 'summon'] },
+    });
+
+    expect(stage.classList.contains('is-tutorial-summon-revealing')).toBe(true);
+
+    vi.advanceTimersByTime(760);
+
+    expect(stage.classList.contains('is-tutorial-summon-revealing')).toBe(false);
+
+    manager.update({
+      step: { id: 'finish-seed-task', revealTokens: ['top', 'mana', 'summon', 'tasks'] },
+    });
+
+    expect(stage.classList.contains('is-tutorial-summon-revealing')).toBe(false);
+
+    manager.update({
+      step: { id: 'intro-mana-sphere', revealTokens: ['top', 'mana'] },
+    });
+    manager.update({
+      step: { id: 'first-summon-seed', revealTokens: ['top', 'mana', 'summon'] },
+    });
+
+    expect(stage.classList.contains('is-tutorial-summon-revealing')).toBe(true);
   });
 
   it('clears reveal restrictions after the first workflow', () => {

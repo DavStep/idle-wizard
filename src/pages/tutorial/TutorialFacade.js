@@ -3,7 +3,11 @@ import { TutorialLogicManager } from './managers/TutorialLogicManager.js';
 import { TutorialProgressManager } from './managers/TutorialProgressManager.js';
 import { TutorialRevealManager } from './managers/TutorialRevealManager.js';
 import { TutorialSaleManager } from './managers/TutorialSaleManager.js';
-import { TUTORIAL_STEP_IDS } from './managers/TutorialStepManager.js';
+import {
+  TUTORIAL_STEP_IDS,
+  getTutorialStepGraph,
+  resolveTutorialStepId,
+} from './managers/TutorialStepManager.js';
 import { TutorialTargetManager } from './managers/TutorialTargetManager.js';
 
 export class TutorialFacade {
@@ -137,10 +141,10 @@ export class TutorialFacade {
   }
 
   listStages() {
+    const graph = getTutorialStepGraph();
     return {
-      ok: true,
-      stages: [...TUTORIAL_STEP_IDS],
-      aliases: ['reset', 'start', 'complete', 'done'],
+      ...graph,
+      stages: graph.steps.map((step) => step.id),
     };
   }
 
@@ -161,10 +165,8 @@ export class TutorialFacade {
       return this.applyStageCompletedIds([...TUTORIAL_STEP_IDS], null);
     }
 
-    const numericStage = Number(normalizedStageId);
-    const stageIndex = Number.isInteger(numericStage)
-      ? numericStage
-      : TUTORIAL_STEP_IDS.indexOf(normalizedStageId);
+    const resolvedStageId = resolveTutorialStepId(normalizedStageId);
+    const stageIndex = resolvedStageId ? TUTORIAL_STEP_IDS.indexOf(resolvedStageId) : -1;
 
     if (stageIndex < 0 || stageIndex >= TUTORIAL_STEP_IDS.length) {
       return {
@@ -175,8 +177,7 @@ export class TutorialFacade {
       };
     }
 
-    const activeStageId = TUTORIAL_STEP_IDS[stageIndex];
-    return this.applyStageCompletedIds(TUTORIAL_STEP_IDS.slice(0, stageIndex), activeStageId);
+    return this.applyStageCompletedIds(TUTORIAL_STEP_IDS.slice(0, stageIndex), resolvedStageId);
   }
 
   applyStageCompletedIds(completedStepIds, activeStageId) {

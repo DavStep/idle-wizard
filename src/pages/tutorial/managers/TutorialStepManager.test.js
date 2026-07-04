@@ -390,6 +390,102 @@ describe('TutorialStepManager', () => {
     });
   });
 
+  it('waits two seconds before pointing at the first summon seed button', () => {
+    expect(
+      getStep({
+        snapshot: createSnapshot({
+          seedSummoning: {
+            canSummon: true,
+            cost: 10,
+          },
+        }),
+        completed: completedThrough('intro-mana-sphere'),
+      }),
+    ).toMatchObject({
+      id: 'first-summon-seed',
+      targetId: 'workshop:summonSeed',
+      targetCueDelayMs: 2000,
+    });
+  });
+
+  it('points at the first sage task when a summoned seed can be turned in', () => {
+    expect(
+      getStep({
+        snapshot: createSnapshot({
+          seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+          seedSummoning: {
+            canSummon: true,
+            cost: 10,
+          },
+          tasks: {
+            currentLevel: 1,
+            level: {
+              completion: {
+                canComplete: false,
+                costCoin: 0,
+              },
+              tasks: [
+                createTask({
+                  taskId: 'level1-sage-seeds',
+                  itemKey: 'sageSeed',
+                  requiredQuantity: 4,
+                  progressQuantity: 0,
+                  remainingQuantity: 4,
+                  canFill: true,
+                }),
+              ],
+            },
+          },
+        }),
+        dom: createDomFake({ tasksExpanded: true }),
+        completed: completedThrough('first-summon-seed'),
+      }),
+    ).toMatchObject({
+      id: 'first-fill-seed-task',
+      targetId: 'task:level1-sage-seeds',
+      text: 'turn in',
+    });
+  });
+
+  it('keeps pointing at sage turn-in before summon-more fallback on the level-one objective', () => {
+    expect(
+      getStep({
+        snapshot: createSnapshot({
+          seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+          seedSummoning: {
+            canSummon: true,
+            cost: 10,
+          },
+          tasks: {
+            currentLevel: 1,
+            level: {
+              completion: {
+                canComplete: false,
+                costCoin: 0,
+              },
+              tasks: [
+                createTask({
+                  taskId: 'level1-sage-seeds',
+                  itemKey: 'sageSeed',
+                  requiredQuantity: 4,
+                  progressQuantity: 1,
+                  remainingQuantity: 3,
+                  canFill: true,
+                }),
+              ],
+            },
+          },
+        }),
+        dom: createDomFake({ tasksExpanded: true }),
+        completed: completedThrough('first-fill-seed-task'),
+      }),
+    ).toMatchObject({
+      id: 'finish-seed-task',
+      targetId: 'task:level1-sage-seeds',
+      hintText: 'turn in',
+    });
+  });
+
   it('lets level 1 advance without coins after the first seed task', () => {
     expect(
       getStep({

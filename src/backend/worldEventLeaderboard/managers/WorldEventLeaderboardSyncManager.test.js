@@ -48,6 +48,7 @@ describe('WorldEventLeaderboardSyncManager', () => {
         setWorldEventContributionPoints,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     expect(setWorldEventContributionPoints).toHaveBeenCalledWith({
@@ -77,6 +78,7 @@ describe('WorldEventLeaderboardSyncManager', () => {
         setWorldEventContributionPoints,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     gameplayFacade.publishPoints(125);
@@ -84,6 +86,33 @@ describe('WorldEventLeaderboardSyncManager', () => {
     await Promise.resolve();
 
     expect(setWorldEventContributionPoints).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for gameplay save hydration before reporting event points', async () => {
+    const setWorldEventContributionPoints = vi.fn(() => Promise.resolve());
+    const gameplayFacade = createGameplayFacade(7013);
+    const manager = new WorldEventLeaderboardSyncManager({ syncIntervalMs: 0 });
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.connect({
+      reducers: {
+        setWorldEventContributionPoints,
+      },
+    });
+    gameplayFacade.publishPoints(7014);
+    await Promise.resolve();
+
+    expect(setWorldEventContributionPoints).not.toHaveBeenCalled();
+
+    manager.setReadyToSync(true);
+    await Promise.resolve();
+
+    expect(setWorldEventContributionPoints).toHaveBeenCalledTimes(1);
+    expect(setWorldEventContributionPoints).toHaveBeenCalledWith({
+      periodKey: 'weekly-1',
+      eventId: 'fever-lower-quarter',
+      points: 7014n,
+    });
   });
 
   it('reports a new event even when the points total is lower', async () => {
@@ -97,6 +126,7 @@ describe('WorldEventLeaderboardSyncManager', () => {
         set_world_event_contribution_points,
       },
     });
+    manager.setReadyToSync(true);
     await Promise.resolve();
 
     gameplayFacade.publishPoints(25, {

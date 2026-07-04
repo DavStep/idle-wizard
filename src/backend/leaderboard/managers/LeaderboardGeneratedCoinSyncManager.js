@@ -23,6 +23,7 @@ export class LeaderboardGeneratedCoinSyncManager {
     this.now = now;
     this.lastSyncStartedAtMs = Number.NEGATIVE_INFINITY;
     this.syncTimerId = null;
+    this.readyToSync = false;
   }
 
   setGameplayFacade(gameplayFacade) {
@@ -42,7 +43,7 @@ export class LeaderboardGeneratedCoinSyncManager {
 
   connect(connection) {
     this.connection = connection;
-    this.queueCurrentTotalGeneratedCoin();
+    this.queueCurrentTotalGeneratedCoin({ force: true });
     this.flush({ force: true });
   }
 
@@ -50,6 +51,23 @@ export class LeaderboardGeneratedCoinSyncManager {
     this.clearSyncTimer();
     this.syncPromise = null;
     this.connection = null;
+    this.readyToSync = false;
+  }
+
+  setReadyToSync(ready = true) {
+    this.readyToSync = Boolean(ready);
+
+    if (!this.readyToSync) {
+      this.clearSyncTimer();
+      this.pendingTotalGeneratedCoin = null;
+      this.lastQueuedTotalGeneratedCoin = null;
+      this.lastObservedTotalGeneratedCoin = null;
+      return;
+    }
+
+    this.lastObservedTotalGeneratedCoin = null;
+    this.queueCurrentTotalGeneratedCoin({ force: true });
+    this.flush({ force: true });
   }
 
   dispose() {
@@ -60,6 +78,10 @@ export class LeaderboardGeneratedCoinSyncManager {
   }
 
   observe(snapshot) {
+    if (!this.readyToSync) {
+      return;
+    }
+
     const totalGeneratedCoin = this.readTotalGeneratedCoin(snapshot);
     if (!Number.isFinite(totalGeneratedCoin)) {
       return;
@@ -111,6 +133,10 @@ export class LeaderboardGeneratedCoinSyncManager {
 
   flush({ force = false } = {}) {
     if (this.syncPromise || this.pendingTotalGeneratedCoin === null || !this.connection) {
+      return;
+    }
+
+    if (!this.readyToSync) {
       return;
     }
 
@@ -191,7 +217,11 @@ export class LeaderboardGeneratedCoinSyncManager {
     );
   }
 
-  queueCurrentTotalGeneratedCoin() {
+  queueCurrentTotalGeneratedCoin({ force = false } = {}) {
+    if (!this.readyToSync) {
+      return;
+    }
+
     const totalGeneratedCoin = this.readTotalGeneratedCoin(this.gameplayFacade?.getSnapshot?.());
     if (!Number.isFinite(totalGeneratedCoin)) {
       return;
@@ -199,7 +229,7 @@ export class LeaderboardGeneratedCoinSyncManager {
 
     const flooredTotalGeneratedCoin = Math.floor(totalGeneratedCoin);
     if (flooredTotalGeneratedCoin > 0) {
-      this.queue(flooredTotalGeneratedCoin, { force: true });
+      this.queue(flooredTotalGeneratedCoin, { force });
     }
   }
 

@@ -408,12 +408,38 @@ describe('DevCheatsFacade', () => {
       ok: true,
       stages: ['purchase-house', 'intro-garden'],
     });
-    expect(target.cheats.setTutorialStage('intro-garden')).toEqual({
+    expect(target.cheats.getTutorialGraph()).toMatchObject({
+      ok: true,
+      steps: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'purchase-house',
+          code: 't01',
+          cheat: 'cheats.loadTutorialStep("purchase-house")',
+        }),
+      ]),
+    });
+    expect(target.cheats.setTutorialStage('intro-garden')).toMatchObject({
+      ok: true,
+      requestedStepId: 'intro-garden',
+      code: 't25',
+      progress: {
+        ok: true,
+        stage: 'intro-garden',
+        completedStepIds: ['purchase-house'],
+      },
+      snapshot: {
+        level: 4,
+        inventory: [expect.objectContaining({ key: 'sageSeed', quantity: 1 })],
+      },
+    });
+    expect(pagesFacade.setTutorialStage).toHaveBeenCalledWith('intro-garden');
+
+    expect(target.cheats.setTutorialStage('intro-garden', { loadState: false })).toEqual({
       ok: true,
       stage: 'intro-garden',
       completedStepIds: ['purchase-house'],
     });
-    expect(pagesFacade.setTutorialStage).toHaveBeenCalledWith('intro-garden');
+    expect(pagesFacade.setTutorialStage).toHaveBeenLastCalledWith('intro-garden');
   });
 
   it('publishes dummy leaderboard snapshots through backend dev overrides', () => {

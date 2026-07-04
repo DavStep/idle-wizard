@@ -22,6 +22,7 @@ export class TutorialLogicManager {
         getCurrentPageId,
       });
     this.activeStep = null;
+    this.activeCueStartedAt = null;
     this.autoAdvanceStepId = null;
     this.autoAdvanceStartedAt = null;
   }
@@ -37,6 +38,7 @@ export class TutorialLogicManager {
   } = {}) {
     if ((dom?.isNonSettingsBlockingDialogOpen ?? dom?.isBlockingDialogOpen)?.()) {
       this.activeStep = null;
+      this.activeCueStartedAt = null;
       this.clearAutoAdvanceTimer();
       this.reminderManager.discardActivePrompt();
       return this.createEmptyState('blocked');
@@ -51,6 +53,7 @@ export class TutorialLogicManager {
       this.stepManager.advanceStep(step.id);
       this.reminderManager.discardActivePrompt();
       this.activeStep = null;
+      this.activeCueStartedAt = null;
       this.clearAutoAdvanceTimer();
       step = this.stepManager.getActiveStep({ snapshot, dom });
       autoAdvanceAt = this.getAutoAdvanceAt(step, now);
@@ -60,12 +63,16 @@ export class TutorialLogicManager {
 
     if (dom?.isBlockingDialogOpenForStep?.(step, target)) {
       this.activeStep = null;
+      this.activeCueStartedAt = null;
       this.clearAutoAdvanceTimer();
       this.reminderManager.discardActivePrompt();
       return this.createEmptyState('blocked');
     }
 
     const isNewStep = previousStepId !== step?.id || previousTargetId !== step?.targetId;
+    if (isNewStep) {
+      this.activeCueStartedAt = now;
+    }
     this.activeStep = step;
 
     if (!step) {
@@ -83,7 +90,8 @@ export class TutorialLogicManager {
       targetGuidanceRequested: requestedTargetGuidanceStepId === step?.id,
       now,
     });
-    const canShowTarget = Boolean(target) && cue.kind !== 'target-cue';
+    const canShowTarget =
+      Boolean(target) && cue.kind !== 'target-cue' && cue.targetCueDelayed !== true;
 
     return {
       kind: 'lesson',
@@ -128,6 +136,25 @@ export class TutorialLogicManager {
         lessonAttention: false,
         nextRefreshAt: null,
       };
+    }
+
+    const targetCueDelayMs = getTargetCueDelayMs(step);
+    if (targetCueDelayMs > 0 && !targetGuidanceRequested) {
+      const cueStartedAt = Number.isFinite(this.activeCueStartedAt)
+        ? this.activeCueStartedAt
+        : now;
+      const cueAvailableAt = cueStartedAt + targetCueDelayMs;
+
+      if (now < cueAvailableAt) {
+        this.reminderManager.clearVisible();
+        return {
+          kind: 'none',
+          lessonAttention: false,
+          hideTargetImmediate: true,
+          targetCueDelayed: true,
+          nextRefreshAt: cueAvailableAt,
+        };
+      }
     }
 
     if (step.cueMode === 'focus-target') {
@@ -267,6 +294,7 @@ export class TutorialLogicManager {
   resetProgress() {
     this.progressManager?.reset?.();
     this.activeStep = null;
+    this.activeCueStartedAt = null;
     this.clearAutoAdvanceTimer();
     this.reminderManager.discardActivePrompt();
   }
@@ -278,6 +306,7 @@ export class TutorialLogicManager {
 
     this.stepManager.advanceStep(this.activeStep.id);
     this.activeStep = null;
+    this.activeCueStartedAt = null;
     this.clearAutoAdvanceTimer();
     this.reminderManager.discardActivePrompt();
     return true;
@@ -308,4 +337,9 @@ export class TutorialLogicManager {
 function getEarliestRefreshAt(...refreshTimes) {
   const finiteTimes = refreshTimes.filter((refreshAt) => Number.isFinite(refreshAt));
   return finiteTimes.length > 0 ? Math.min(...finiteTimes) : null;
+}
+
+function getTargetCueDelayMs(step) {
+  const delayMs = step?.targetCueDelayMs;
+  return Number.isFinite(delayMs) && delayMs > 0 ? delayMs : 0;
 }

@@ -4272,22 +4272,12 @@ describe('PagesFacade', () => {
     expect(intro?.dataset.scene).toBe('peace');
 
     await advance({ backdropTransition: 'changing' });
-    expect(intro?.dataset.scene).toBe('reward');
-    expect(stage.querySelector('.first-run-intro__coin-badge')).toBeNull();
-    const rewardCoins = Array.from(
-      stage.querySelectorAll('.first-run-intro__coin-pile-icon'),
-    );
-    expect(rewardCoins).toHaveLength(10);
-    expect(
-      rewardCoins.map((coin) => coin.getAttribute('data-asset-atlas-frame')),
-    ).toEqual(Array(10).fill('resource:coin'));
-
-    await advance();
+    expect(intro?.dataset.scene).toBe('workshop');
+    expect(intro?.dataset.step).toBe('workshop');
     expect(stage.querySelector('.first-run-intro__text')?.textContent).toContain(
-      'better use',
+      'old workshop',
     );
-
-    await advance({ backdropTransition: 'changing' });
+    expect(stage.querySelector('.first-run-intro__coin-pile')).toBeNull();
     expect(stage.querySelector('.first-run-intro__name-input')).toBeNull();
     expect(setUsername).not.toHaveBeenCalled();
     expect(playerFacade.getSnapshot().username).toBe('wizard');
@@ -4301,10 +4291,8 @@ describe('PagesFacade', () => {
     expect(saleBoard?.textContent).toContain('vacant');
     expect(saleBoard?.textContent).toContain('free');
     expect(saleBoard?.querySelector('.first-run-intro__workshop-sale-icon')).toBeNull();
-
-    await advance();
-    expect(stage.querySelector('.first-run-intro__text')?.textContent).toContain(
-      'key is still under the sill',
+    expect(stage.querySelector('.first-run-intro__advance')?.textContent).toBe(
+      'enter workshop',
     );
 
     await advance({ completes: true, backdropTransition: 'changing' });

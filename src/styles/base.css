@@ -1368,176 +1368,6 @@ body {
     both;
 }
 
-.first-run-intro__coin-pile {
-  position: absolute;
-  display: none;
-  width: 110px;
-  height: 46px;
-  opacity: 1;
-  pointer-events: none;
-  user-select: none;
-  z-index: 1;
-}
-
-.first-run-intro[data-step="reward"] .first-run-intro__coin-pile,
-.first-run-intro[data-step="better-use"] .first-run-intro__coin-pile {
-  top: 286px;
-  left: 204px;
-  display: block;
-}
-
-.first-run-intro--step-enter[data-step="reward"] .first-run-intro__coin-pile {
-  animation: none;
-}
-
-.first-run-intro--step-enter[data-step="better-use"] .first-run-intro__coin-pile {
-  animation: none;
-}
-
-.first-run-intro--step-exit .first-run-intro__coin-pile {
-  animation: first-run-intro-coin-pile-exit 180ms var(--style-motion-ease-soft)
-    both;
-}
-
-.first-run-intro--step-exit[data-step="reward"][data-backdrop-transition="stable"]
-  .first-run-intro__coin-pile {
-  animation: none;
-}
-
-.first-run-intro__coin-pile-icon {
-  position: absolute;
-  width: 25px;
-  height: 25px;
-  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.4));
-  transform-origin: center bottom;
-}
-
-.first-run-intro--step-enter[data-step="reward"]
-  .first-run-intro__coin-pile-icon {
-  animation: first-run-intro-coin-drop 840ms var(--style-motion-ease-rubber)
-    both;
-  animation-delay: var(--first-run-intro-coin-delay, 0ms);
-  will-change: opacity, scale, translate;
-}
-
-.first-run-intro--step-enter[data-step="better-use"]
-  .first-run-intro__coin-pile-icon {
-  animation: first-run-intro-coin-collect 620ms var(--style-motion-ease-soft)
-    both;
-  animation-delay: var(--first-run-intro-coin-delay, 0ms);
-  will-change: opacity, scale, translate;
-}
-
-.first-run-intro__coin-pile-icon[data-coin-index="1"] {
-  --first-run-intro-coin-delay: 0ms;
-  --first-run-intro-coin-drop-x: -8px;
-  --first-run-intro-coin-collect-x: -116px;
-  --first-run-intro-coin-collect-y: -48px;
-
-  top: 20px;
-  left: 0;
-  rotate: -10deg;
-}
-
-.first-run-intro__coin-pile-icon[data-coin-index="2"] {
-  --first-run-intro-coin-delay: 60ms;
-  --first-run-intro-coin-drop-x: -5px;
-  --first-run-intro-coin-collect-x: -131px;
-  --first-run-intro-coin-collect-y: -43px;
-
-  top: 14px;
-  left: 17px;
-  rotate: 8deg;
-}
-
-.first-run-intro__coin-pile-icon[data-coin-index="3"] {
-  --first-run-intro-coin-delay: 120ms;
-  --first-run-intro-coin-drop-x: -1px;
-  --first-run-intro-coin-collect-x: -148px;
-  --first-run-intro-coin-collect-y: -50px;
-
-  top: 20px;
-  left: 34px;
-  rotate: -4deg;
-}
-
-.first-run-intro__coin-pile-icon[data-coin-index="4"] {
-  --first-run-intro-coin-delay: 180ms;
-  --first-run-intro-coin-drop-x: 4px;
-  --first-run-intro-coin-collect-x: -164px;
-  --first-run-intro-coin-collect-y: -44px;
-
-  top: 14px;
-  left: 51px;
-  rotate: 11deg;
-}
-
-.first-run-intro__coin-pile-icon[data-coin-index="5"] {
-  --first-run-intro-coin-delay: 240ms;
-  --first-run-intro-coin-drop-x: 8px;
-  --first-run-intro-coin-collect-x: -180px;
-  --first-run-intro-coin-collect-y: -50px;
-
-  top: 20px;
-  left: 68px;
-  rotate: -7deg;
-}
-
-.first-run-intro__coin-pile-icon[data-coin-index="6"] {
-  --first-run-intro-coin-delay: 85ms;
-  --first-run-intro-coin-drop-x: -7px;
-  --first-run-intro-coin-collect-x: -122px;
-  --first-run-intro-coin-collect-y: -29px;
-
-  top: 2px;
-  left: 9px;
-  rotate: 5deg;
-}
-
-.first-run-intro__coin-pile-icon[data-coin-index="7"] {
-  --first-run-intro-coin-delay: 145ms;
-  --first-run-intro-coin-drop-x: -3px;
-  --first-run-intro-coin-collect-x: -139px;
-  --first-run-intro-coin-collect-y: -25px;
-
-  top: -3px;
-  left: 26px;
-  rotate: -12deg;
-}
-
-.first-run-intro__coin-pile-icon[data-coin-index="8"] {
-  --first-run-intro-coin-delay: 205ms;
-  --first-run-intro-coin-drop-x: 3px;
-  --first-run-intro-coin-collect-x: -156px;
-  --first-run-intro-coin-collect-y: -31px;
-
-  top: 2px;
-  left: 43px;
-  rotate: 7deg;
-}
-
-.first-run-intro__coin-pile-icon[data-coin-index="9"] {
-  --first-run-intro-coin-delay: 265ms;
-  --first-run-intro-coin-drop-x: 6px;
-  --first-run-intro-coin-collect-x: -173px;
-  --first-run-intro-coin-collect-y: -26px;
-
-  top: -3px;
-  left: 60px;
-  rotate: -5deg;
-}
-
-.first-run-intro__coin-pile-icon[data-coin-index="10"] {
-  --first-run-intro-coin-delay: 325ms;
-  --first-run-intro-coin-drop-x: 9px;
-  --first-run-intro-coin-collect-x: -190px;
-  --first-run-intro-coin-collect-y: -32px;
-
-  top: 2px;
-  left: 77px;
-  rotate: 10deg;
-}
-
 .first-run-intro__workshop-sale {
   position: absolute;
   top: 323px;
@@ -1561,27 +1391,18 @@ body {
   z-index: 1;
 }
 
-.first-run-intro[data-step="workshop"] .first-run-intro__workshop-sale,
-.first-run-intro[data-step="buy-workshop"] .first-run-intro__workshop-sale {
+.first-run-intro[data-step="workshop"] .first-run-intro__workshop-sale {
   display: grid;
 }
 
 .first-run-intro--step-enter[data-step="workshop"]
   .first-run-intro__workshop-sale {
-  animation: first-run-intro-coin-pile-enter 520ms
+  animation: first-run-intro-workshop-sale-enter 520ms
     var(--style-motion-ease-soft) both;
 }
 
-.first-run-intro--step-enter[data-step="buy-workshop"]
-  .first-run-intro__workshop-sale-price {
-  animation: first-run-intro-workshop-price-boink 210ms
-    var(--style-motion-ease-rubber) both;
-  transform-origin: center;
-  will-change: scale, translate;
-}
-
 .first-run-intro--step-exit .first-run-intro__workshop-sale {
-  animation: first-run-intro-coin-pile-exit 180ms var(--style-motion-ease-soft)
+  animation: first-run-intro-workshop-sale-exit 180ms var(--style-motion-ease-soft)
     both;
 }
 
@@ -2931,10 +2752,26 @@ body {
   pointer-events: auto;
 }
 
-.game-stage[data-tutorial-reveal~="summon"]
+.game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
   .workshop-page__action-bar
   > .workshop-page__summon-button {
+  animation: workshop-summon-button-reveal 640ms
+    var(--style-motion-ease-rubber) both;
   pointer-events: auto;
+}
+
+.game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
+  .workshop-page__summon-button
+  .workshop-page__summon-circle {
+  animation: workshop-summon-sign-reveal 640ms
+    var(--style-motion-ease-rubber) both;
+}
+
+.game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
+  .workshop-page__summon-button
+  .workshop-page__summon-button-text {
+  animation: workshop-summon-button-text-reveal 520ms
+    var(--style-motion-ease-rubber) 80ms both;
 }
 
 .tutorial-layer,
@@ -3656,15 +3493,7 @@ body {
   .first-run-intro--step-exit .style-dialog.first-run-intro__panel,
   .first-run-intro--step-enter .first-run-intro__text,
   .first-run-intro--step-enter .style-button.first-run-intro__advance,
-  .first-run-intro--step-enter .first-run-intro__coin-pile,
-  .first-run-intro--step-enter[data-step="reward"]
-    .first-run-intro__coin-pile-icon,
-  .first-run-intro--step-enter[data-step="better-use"]
-    .first-run-intro__coin-pile-icon,
-  .first-run-intro--step-exit .first-run-intro__coin-pile,
   .first-run-intro--step-enter .first-run-intro__workshop-sale,
-  .first-run-intro--step-enter[data-step="buy-workshop"]
-    .first-run-intro__workshop-sale-price,
   .first-run-intro--step-exit .first-run-intro__workshop-sale,
   .first-run-intro--step-enter .first-run-intro__rainbow,
   .first-run-intro--step-exit .first-run-intro__rainbow,
@@ -16616,7 +16445,7 @@ div.workshop-page__discovery-row {
   }
 }
 
-@keyframes first-run-intro-coin-pile-enter {
+@keyframes first-run-intro-workshop-sale-enter {
   0% {
     opacity: 0;
     translate: 0 8px;
@@ -16633,113 +16462,7 @@ div.workshop-page__discovery-row {
   }
 }
 
-@keyframes first-run-intro-workshop-price-boink {
-  0% {
-    scale: 1;
-    translate: 0 0;
-  }
-
-  44% {
-    scale: 1.07 0.95;
-    translate: 0 1px;
-  }
-
-  74% {
-    scale: 0.98 1.04;
-    translate: 0 -1px;
-  }
-
-  100% {
-    scale: 1;
-    translate: 0 0;
-  }
-}
-
-@keyframes first-run-intro-coin-drop {
-  0% {
-    opacity: 0;
-    scale: 0.96;
-    translate: var(--first-run-intro-coin-drop-x, 0) -225px;
-  }
-
-  14% {
-    opacity: 1;
-    scale: 1;
-    translate: calc(var(--first-run-intro-coin-drop-x, 0) * 0.72) -164px;
-  }
-
-  42% {
-    opacity: 1;
-    scale: 1;
-    translate: 0 8px;
-  }
-
-  55% {
-    opacity: 1;
-    scale: 1;
-    translate: 0 -10px;
-  }
-
-  68% {
-    opacity: 1;
-    scale: 1;
-    translate: 0 2px;
-  }
-
-  80% {
-    opacity: 1;
-    scale: 1;
-    translate: 0 -3px;
-  }
-
-  100% {
-    opacity: 1;
-    scale: 1;
-    translate: 0 0;
-  }
-}
-
-@keyframes first-run-intro-coin-collect {
-  0% {
-    opacity: 1;
-    scale: 1;
-    translate: 0 0;
-  }
-
-  24% {
-    opacity: 1;
-    scale: 1;
-    translate:
-      calc(var(--first-run-intro-coin-collect-x, -140px) * 0.28)
-      calc(var(--first-run-intro-coin-collect-y, -34px) * 0.28 - 52px);
-  }
-
-  62% {
-    opacity: 1;
-    scale: 0.9;
-    translate:
-      calc(var(--first-run-intro-coin-collect-x, -140px) * 0.82)
-      calc(var(--first-run-intro-coin-collect-y, -34px) * 0.82 - 8px);
-  }
-
-  84% {
-    opacity: 1;
-    scale: 0.66;
-    translate:
-      var(--first-run-intro-coin-collect-x, -140px)
-      var(--first-run-intro-coin-collect-y, -34px);
-  }
-
-  100% {
-    opacity: 0;
-    scale: 0.52;
-    translate:
-      var(--first-run-intro-coin-collect-x, -140px)
-      var(--first-run-intro-coin-collect-y, -34px);
-  }
-}
-
-@keyframes first-run-intro-coin-pile-exit {
+@keyframes first-run-intro-workshop-sale-exit {
   0% {
     opacity: 1;
     translate: 0 0;
@@ -17504,6 +17227,63 @@ div.workshop-page__discovery-row {
   }
 }
 
+@keyframes workshop-summon-button-reveal {
+  0% {
+    opacity: 0;
+    scale: 0.94;
+    translate: 0 10px;
+  }
+
+  58% {
+    opacity: 1;
+    scale: 1.035;
+    translate: 0 -2px;
+  }
+
+  100% {
+    opacity: 1;
+    scale: 1;
+    translate: 0;
+  }
+}
+
+@keyframes workshop-summon-sign-reveal {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -44%) scale(0.82);
+  }
+
+  64% {
+    opacity: 1;
+    transform: translate(-50%, -52%) scale(1.055);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes workshop-summon-button-text-reveal {
+  0% {
+    opacity: 0;
+    scale: 0.96;
+    translate: 0 5px;
+  }
+
+  68% {
+    opacity: 1;
+    scale: 1.025;
+    translate: 0 -1px;
+  }
+
+  100% {
+    opacity: 1;
+    scale: 1;
+    translate: 0;
+  }
+}
+
 @keyframes room-coin-amt-pop {
   0% {
     opacity: 0;
@@ -17726,6 +17506,27 @@ div.workshop-page__discovery-row {
   .style-button.workshop-page__summon-button.is-summoning
     .workshop-page__summon-circle {
     animation: none;
+  }
+
+  .game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
+    .workshop-page__action-bar
+    > .workshop-page__summon-button,
+  .game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
+    .workshop-page__summon-button
+    .workshop-page__summon-circle,
+  .game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
+    .workshop-page__summon-button
+    .workshop-page__summon-button-text {
+    animation: none;
+    opacity: 1;
+    scale: 1;
+    translate: 0;
+  }
+
+  .game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
+    .workshop-page__summon-button
+    .workshop-page__summon-circle {
+    transform: translate(-50%, -50%);
   }
 
   .room-bottom-panel__tab.is-unlocking .room-bottom-panel__tab-label,

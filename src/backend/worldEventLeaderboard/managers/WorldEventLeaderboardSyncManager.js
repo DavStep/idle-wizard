@@ -20,6 +20,7 @@ export class WorldEventLeaderboardSyncManager {
     this.now = now;
     this.lastSyncStartedAtMs = Number.NEGATIVE_INFINITY;
     this.syncTimerId = null;
+    this.readyToSync = false;
   }
 
   setGameplayFacade(gameplayFacade) {
@@ -47,6 +48,23 @@ export class WorldEventLeaderboardSyncManager {
     this.clearSyncTimer();
     this.syncPromise = null;
     this.connection = null;
+    this.readyToSync = false;
+  }
+
+  setReadyToSync(ready = true) {
+    this.readyToSync = Boolean(ready);
+
+    if (!this.readyToSync) {
+      this.clearSyncTimer();
+      this.pendingContribution = null;
+      this.lastQueuedContribution = null;
+      this.lastObservedContribution = null;
+      return;
+    }
+
+    this.lastObservedContribution = null;
+    this.queueCurrentContribution({ force: true });
+    this.flush({ force: true });
   }
 
   dispose() {
@@ -57,6 +75,10 @@ export class WorldEventLeaderboardSyncManager {
   }
 
   observe(snapshot) {
+    if (!this.readyToSync) {
+      return;
+    }
+
     const contribution = this.readContribution(snapshot);
     if (!contribution) {
       return;
@@ -103,6 +125,10 @@ export class WorldEventLeaderboardSyncManager {
 
   flush({ force = false } = {}) {
     if (this.syncPromise || !this.pendingContribution || !this.connection) {
+      return;
+    }
+
+    if (!this.readyToSync) {
       return;
     }
 
@@ -186,6 +212,10 @@ export class WorldEventLeaderboardSyncManager {
   }
 
   queueCurrentContribution({ force = false } = {}) {
+    if (!this.readyToSync) {
+      return;
+    }
+
     const contribution = this.readContribution(this.gameplayFacade?.getSnapshot?.());
     if (!contribution || contribution.points <= 0) {
       return;

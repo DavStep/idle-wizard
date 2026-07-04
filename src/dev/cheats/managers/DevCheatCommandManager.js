@@ -7,11 +7,36 @@ import {
   plotCapacityStartPlotNumber,
 } from '../../../gameplay/research/capacityResearchIds.js';
 import { PAGE_UNLOCK_REQUIREMENTS } from '../../../pages/managers/PageUnlockManager.js';
-import { TUTORIAL_STEP_IDS } from '../../../pages/tutorial/managers/TutorialStepManager.js';
+import {
+  TUTORIAL_STEP_IDS,
+  getTutorialStepGraph,
+  resolveTutorialStepId,
+} from '../../../pages/tutorial/managers/TutorialStepManager.js';
 
 const RESET_CONFIRMATION = 'RESET';
 const ALL_FEATURES_LEVEL = 100;
 const DEFAULT_DUMMY_LEADERBOARD_COUNT = 12;
+const SAGE_SEED_KEY = 'sageSeed';
+const SAGE_HERB_KEY = 'sageHerb';
+const MINT_SEED_KEY = 'mintSeed';
+const MINT_HERB_KEY = 'mintHerb';
+const MANA_TONIC_KEY = 'manaTonic';
+const MINT_SEED_RESEARCH_ID = 'unlockSeed:mintSeed';
+const MANA_TONIC_RESEARCH_ID = 'unlockRecipe:manaTonic';
+const LEVEL_ONE_SAGE_SEED_TASK_ID = 'level1-turn-in-sage-seed';
+const LEVEL_TWO_SUMMON_SAGE_SEED_TASK_ID = 'level2-summon-sage-seed';
+const LEVEL_TWO_SELL_SAGE_SEED_TASK_ID = 'level2-sell-sage-seed';
+const LEVEL_TWO_TURN_IN_SAGE_SEED_TASK_ID = 'level2-turn-in-sage-seed';
+const LEVEL_THREE_RESEARCH_MINT_SEED_TASK_ID = 'level3-research-mint-seed';
+const LEVEL_THREE_SUMMON_MINT_SEED_TASK_ID = 'level3-summon-mint-seed';
+const LEVEL_THREE_TURN_IN_MINT_SEED_TASK_ID = 'level3-turn-in-mint-seed';
+const LEVEL_THREE_TURN_IN_SAGE_SEED_TASK_ID = 'level3-turn-in-sage-seed';
+const LEVEL_FOUR_GROW_SAGE_HERB_TASK_ID = 'level4-grow-sage-herb';
+const LEVEL_FOUR_GROW_MINT_HERB_TASK_ID = 'level4-grow-mint-herb';
+const LEVEL_FOUR_TURN_IN_SAGE_HERB_TASK_ID = 'level4-turn-in-sage-herb';
+const LEVEL_FOUR_TURN_IN_MINT_HERB_TASK_ID = 'level4-turn-in-mint-herb';
+const LEVEL_FIVE_RESEARCH_MANA_TONIC_TASK_ID = 'level5-research-mana-tonic';
+const LEVEL_FIVE_BREW_MANA_TONIC_TASK_ID = 'level5-brew-mana-tonic';
 
 const FEATURE_LEVELS = Object.freeze({
   workshop: 1,
@@ -75,6 +100,8 @@ const CHEAT_HELP = Object.freeze([
   'cheats.setDummyLeaderboard()',
   'cheats.clearDummyLeaderboard()',
   'cheats.listTutorialStages()',
+  'cheats.getTutorialGraph()',
+  'cheats.loadTutorialStep("t25")',
   'cheats.setTutorialStage("intro-garden")',
   'cheats.resetData("RESET")',
   'cheats.listDataTemplates()',
@@ -217,9 +244,17 @@ export class DevCheatCommandManager {
       case 'listtutorialstages':
       case 'listtutorialsteps':
         return this.listTutorialStages();
+      case 'gettutorialgraph':
+      case 'tutorialgraph':
+      case 'showtutorialgraph':
+        return this.getTutorialGraph();
+      case 'loadtutorialstep':
+      case 'loadtutorialstage':
+      case 'loadtutorial':
+        return this.loadTutorialStep(commandArgs[0], commandArgs[1]);
       case 'settutorialstage':
       case 'settutorialstep':
-        return this.setTutorialStage(commandArgs[0]);
+        return this.setTutorialStage(commandArgs[0], commandArgs[1]);
       case 'resetdata':
         return this.resetData(commandArgs[0]);
       case 'listdatatemplates':
@@ -1537,23 +1572,546 @@ export class DevCheatCommandManager {
   }
 
   listTutorialStages() {
-    if (typeof this.pagesFacade?.listTutorialStages === 'function') {
-      return this.pagesFacade.listTutorialStages();
-    }
+    const result =
+      typeof this.pagesFacade?.listTutorialStages === 'function'
+        ? this.pagesFacade.listTutorialStages()
+        : getTutorialStepGraph();
 
     return {
-      ok: true,
-      stages: [...TUTORIAL_STEP_IDS],
-      aliases: ['reset', 'start', 'complete', 'done'],
+      ...result,
+      stages: result.stages ?? result.steps?.map((step) => step.id) ?? [...TUTORIAL_STEP_IDS],
     };
   }
 
-  setTutorialStage(stageId) {
+  getTutorialGraph() {
+    return getTutorialStepGraph();
+  }
+
+  setTutorialStage(stageId, options = {}) {
+    if (options?.loadState === false) {
+      return this.applyTutorialStageProgress(stageId);
+    }
+
+    return this.loadTutorialStep(stageId, options);
+  }
+
+  loadTutorialStep(stageId, options = {}) {
+    const normalizedStageId = String(stageId ?? '').trim();
+    const lowerStageId = normalizedStageId.toLowerCase();
+
+    if (!normalizedStageId) {
+      return { ok: false, reason: 'invalid_stage_id', stageId };
+    }
+
+    if (lowerStageId === 'complete' || lowerStageId === 'done') {
+      const progress = this.applyTutorialStageProgress(lowerStageId);
+      this.publishAndSave();
+      return {
+        ok: progress.ok !== false,
+        requestedStepId: lowerStageId,
+        progress,
+        activeStep: this.getTutorialActiveStepSummary(),
+      };
+    }
+
+    const stepId =
+      lowerStageId === 'reset' || lowerStageId === 'start'
+        ? TUTORIAL_STEP_IDS[0]
+        : resolveTutorialStepId(normalizedStageId);
+
+    if (!stepId) {
+      return {
+        ok: false,
+        reason: 'unknown_stage',
+        stageId,
+        graph: this.getTutorialGraph(),
+      };
+    }
+
+    const state = this.applyTutorialStepGameplayState(stepId, options);
+
+    if (state.ok === false) {
+      return state;
+    }
+
+    const progress = this.applyTutorialStageProgress(stepId);
+
+    if (progress.ok === false) {
+      return progress;
+    }
+
+    const ui = this.applyTutorialStepUiState(state.preset);
+    this.refreshTutorialNow();
+    const activeStep = this.getTutorialActiveStepSummary();
+    const matched = activeStep ? activeStep.id === stepId : null;
+
+    return {
+      ok: matched !== false,
+      requestedStepId: stepId,
+      code: state.preset.code,
+      matched,
+      ...(matched === false ? { reason: 'active_step_mismatch' } : {}),
+      activeStep,
+      progress,
+      ui,
+      snapshot: this.getTutorialSnapshotSummary(),
+    };
+  }
+
+  applyTutorialStageProgress(stageId) {
     if (typeof this.pagesFacade?.setTutorialStage !== 'function') {
       return { ok: false, reason: 'tutorial_missing' };
     }
 
     return this.pagesFacade.setTutorialStage(stageId);
+  }
+
+  applyTutorialStepGameplayState(stepId, options = {}) {
+    const preset = this.createTutorialStepPreset(stepId, options);
+
+    if (!preset) {
+      return { ok: false, reason: 'unknown_stage', stageId: stepId };
+    }
+
+    const save = this.createTutorialStepSave(preset);
+    const loaded = this.gameplayFacade.loadPersistenceSave(save);
+
+    if (!loaded) {
+      return {
+        ok: false,
+        reason: 'tutorial_load_failed',
+        stageId: stepId,
+      };
+    }
+
+    this.publishAndSave();
+
+    return {
+      ok: true,
+      preset,
+    };
+  }
+
+  createTutorialStepPreset(stepId, options = {}) {
+    const graph = getTutorialStepGraph();
+    const graphStep = graph.steps.find((step) => step.id === stepId);
+
+    if (!graphStep) {
+      return null;
+    }
+
+    const preset = {
+      stepId,
+      code: graphStep.code,
+      level: this.getTutorialStepLevel(stepId),
+      pageId: this.getTutorialStepPageId(stepId),
+      mana: Number.isFinite(options.mana) ? options.mana : 50,
+      coin: Number.isFinite(options.coin) ? options.coin : 0,
+      inventory: {},
+      research: [],
+      tasks: [],
+      garden: {
+        unlockedTiles: 1,
+        tiles: [],
+      },
+      brewing: {
+        unlockedCauldrons: 1,
+        cauldrons: [
+          {
+            cauldronNumber: 1,
+            cauldronItemKeys: [],
+            activeBrew: null,
+          },
+        ],
+      },
+      shop: {
+        shelf: {
+          unlockedSlots: 1,
+          selectedSlotNumber: 1,
+          sellProgressSeconds: 0,
+          slots: [],
+        },
+        playerShelf: {
+          unlockedSlots: 1,
+          selectedSlotNumber: 1,
+          slots: [],
+        },
+        playerRequests: {
+          slots: [],
+        },
+        coinOffer: {
+          cooldownRemainingSeconds: 0,
+        },
+      },
+      ui: {},
+    };
+
+    switch (stepId) {
+      case 'first-fill-seed-task':
+      case 'finish-seed-task':
+        preset.inventory[SAGE_SEED_KEY] = 1;
+        break;
+      case 'first-task-complete':
+      case 'level-up-one':
+        preset.tasks = [
+          this.createTutorialTaskState(LEVEL_ONE_SAGE_SEED_TASK_ID, 1, true),
+        ];
+        break;
+      case 'open-market':
+        this.applyLevelTwoReadyToSellPreset(preset);
+        preset.pageId = 'workshop';
+        break;
+      case 'select-market-stand':
+      case 'select-sage-seed-sale':
+        this.applyLevelTwoReadyToSellPreset(preset);
+        preset.pageId = 'shop';
+        break;
+      case 'show-selected-sale-amount':
+      case 'earn-tutorial-coin':
+        this.applyLevelTwoReadyToSellPreset(preset);
+        preset.pageId = 'shop';
+        preset.ui.openDirectSell = true;
+        preset.ui.directSellItemKey = SAGE_SEED_KEY;
+        break;
+      case 'first-sale-complete':
+      case 'unselect-sage-seed-sale':
+        this.applyLevelTwoSoldPreset(preset);
+        break;
+      case 'level-up-two':
+        this.applyCompletedLevelTwoPreset(preset);
+        break;
+      case 'first-research-complete':
+      case 'fill-mint-seed-task':
+        this.applyMintResearchPreset(preset);
+        preset.inventory[MINT_SEED_KEY] = 3;
+        break;
+      case 'fill-sage-seed-task':
+        this.applyMintSeedTurnInCompletePreset(preset);
+        preset.inventory[SAGE_SEED_KEY] = 6;
+        break;
+      case 'level-up-three':
+        this.applyCompletedLevelThreePreset(preset);
+        break;
+      case 'intro-garden':
+      case 'grow-sage':
+        preset.inventory[SAGE_SEED_KEY] = 1;
+        preset.research.push(MINT_SEED_RESEARCH_ID);
+        break;
+      case 'first-harvest-complete':
+      case 'fill-sage-herb-task':
+        this.applyGardenIntroPreset(preset);
+        preset.inventory[SAGE_HERB_KEY] = 4;
+        break;
+      case 'fill-mint-herb-task':
+        this.applySageHerbCompletePreset(preset);
+        preset.inventory[MINT_HERB_KEY] = 2;
+        break;
+      case 'level-up-four':
+        this.applyCompletedLevelFourPreset(preset);
+        break;
+      case 'intro-brewing':
+      case 'brew-mana-tonic':
+        this.applyManaTonicResearchPreset(preset);
+        preset.inventory[SAGE_HERB_KEY] = 3;
+        break;
+      case 'first-brew-complete':
+      case 'refill-mana-tonic-cauldron':
+        this.applyManaTonicBrewedPreset(preset);
+        break;
+      default:
+        if (preset.level >= 3) {
+          preset.research.push(MINT_SEED_RESEARCH_ID);
+        }
+        break;
+    }
+
+    return preset;
+  }
+
+  applyLevelTwoReadyToSellPreset(preset) {
+    preset.inventory[SAGE_SEED_KEY] = 5;
+    preset.tasks = [
+      this.createTutorialTaskState(LEVEL_TWO_SUMMON_SAGE_SEED_TASK_ID, 5, true),
+    ];
+  }
+
+  applyLevelTwoSoldPreset(preset) {
+    preset.inventory[SAGE_SEED_KEY] = 4;
+    preset.tasks = [
+      this.createTutorialTaskState(LEVEL_TWO_SUMMON_SAGE_SEED_TASK_ID, 5, true),
+      this.createTutorialTaskState(LEVEL_TWO_SELL_SAGE_SEED_TASK_ID, 1, true),
+    ];
+  }
+
+  applyCompletedLevelTwoPreset(preset) {
+    preset.coin = 4;
+    preset.tasks = [
+      this.createTutorialTaskState(LEVEL_TWO_SUMMON_SAGE_SEED_TASK_ID, 5, true),
+      this.createTutorialTaskState(LEVEL_TWO_SELL_SAGE_SEED_TASK_ID, 1, true),
+      this.createTutorialTaskState(LEVEL_TWO_TURN_IN_SAGE_SEED_TASK_ID, 4, true),
+    ];
+  }
+
+  applyMintResearchPreset(preset) {
+    preset.research.push(MINT_SEED_RESEARCH_ID);
+    preset.tasks = [
+      this.createTutorialTaskState(LEVEL_THREE_RESEARCH_MINT_SEED_TASK_ID, 1, true),
+      this.createTutorialTaskState(LEVEL_THREE_SUMMON_MINT_SEED_TASK_ID, 3, true),
+    ];
+  }
+
+  applyMintSeedTurnInCompletePreset(preset) {
+    preset.research.push(MINT_SEED_RESEARCH_ID);
+    preset.tasks = [
+      this.createTutorialTaskState(LEVEL_THREE_RESEARCH_MINT_SEED_TASK_ID, 1, true),
+      this.createTutorialTaskState(LEVEL_THREE_SUMMON_MINT_SEED_TASK_ID, 3, true),
+      this.createTutorialTaskState(LEVEL_THREE_TURN_IN_MINT_SEED_TASK_ID, 3, true),
+      this.createTutorialTaskState(LEVEL_THREE_TURN_IN_SAGE_SEED_TASK_ID, 6, false),
+    ];
+  }
+
+  applyCompletedLevelThreePreset(preset) {
+    preset.coin = 8;
+    preset.research.push(MINT_SEED_RESEARCH_ID);
+    preset.tasks = [
+      this.createTutorialTaskState(LEVEL_THREE_RESEARCH_MINT_SEED_TASK_ID, 1, true),
+      this.createTutorialTaskState(LEVEL_THREE_SUMMON_MINT_SEED_TASK_ID, 3, true),
+      this.createTutorialTaskState(LEVEL_THREE_TURN_IN_MINT_SEED_TASK_ID, 3, true),
+      this.createTutorialTaskState(LEVEL_THREE_TURN_IN_SAGE_SEED_TASK_ID, 6, true),
+    ];
+  }
+
+  applyGardenIntroPreset(preset) {
+    preset.research.push(MINT_SEED_RESEARCH_ID);
+    preset.tasks = [this.createTutorialTaskState(LEVEL_FOUR_GROW_SAGE_HERB_TASK_ID, 1, false)];
+    preset.garden = {
+      unlockedTiles: 1,
+      tiles: [
+        {
+          tileNumber: 1,
+          selectedSeedItemKey: SAGE_SEED_KEY,
+          seedItemKey: null,
+          herbItemKey: null,
+          harvestQuantity: 1,
+          phase: 'empty',
+          totalMs: 0,
+          remainingMs: 0,
+        },
+      ],
+    };
+  }
+
+  applySageHerbCompletePreset(preset) {
+    preset.research.push(MINT_SEED_RESEARCH_ID);
+    preset.tasks = [
+      this.createTutorialTaskState(LEVEL_FOUR_GROW_SAGE_HERB_TASK_ID, 4, true),
+      this.createTutorialTaskState(LEVEL_FOUR_TURN_IN_SAGE_HERB_TASK_ID, 4, true),
+      this.createTutorialTaskState(LEVEL_FOUR_GROW_MINT_HERB_TASK_ID, 2, true),
+    ];
+  }
+
+  applyCompletedLevelFourPreset(preset) {
+    preset.coin = 16;
+    preset.research.push(MINT_SEED_RESEARCH_ID);
+    preset.tasks = [
+      this.createTutorialTaskState(LEVEL_FOUR_GROW_SAGE_HERB_TASK_ID, 4, true),
+      this.createTutorialTaskState(LEVEL_FOUR_GROW_MINT_HERB_TASK_ID, 2, true),
+      this.createTutorialTaskState(LEVEL_FOUR_TURN_IN_SAGE_HERB_TASK_ID, 4, true),
+      this.createTutorialTaskState(LEVEL_FOUR_TURN_IN_MINT_HERB_TASK_ID, 2, true),
+    ];
+  }
+
+  applyManaTonicResearchPreset(preset) {
+    preset.research.push(MINT_SEED_RESEARCH_ID, MANA_TONIC_RESEARCH_ID);
+    preset.tasks = [
+      this.createTutorialTaskState(LEVEL_FIVE_RESEARCH_MANA_TONIC_TASK_ID, 1, true),
+    ];
+  }
+
+  applyManaTonicBrewedPreset(preset) {
+    this.applyManaTonicResearchPreset(preset);
+    preset.inventory[MANA_TONIC_KEY] = 1;
+    preset.tasks.push(this.createTutorialTaskState(LEVEL_FIVE_BREW_MANA_TONIC_TASK_ID, 1, true));
+  }
+
+  createTutorialTaskState(taskId, progressQuantity, completed = false) {
+    return {
+      taskId,
+      progressQuantity,
+      completed,
+    };
+  }
+
+  getTutorialStepLevel(stepId) {
+    const index = TUTORIAL_STEP_IDS.indexOf(stepId);
+
+    if (index < 0) {
+      return 1;
+    }
+
+    if (index < 8) {
+      return 1;
+    }
+
+    if (index < 18) {
+      return 2;
+    }
+
+    if (index < 24) {
+      return 3;
+    }
+
+    if (index < 30) {
+      return 4;
+    }
+
+    return 5;
+  }
+
+  getTutorialStepPageId(stepId) {
+    if (
+      [
+        'open-market',
+        'select-market-stand',
+        'select-sage-seed-sale',
+        'show-selected-sale-amount',
+        'earn-tutorial-coin',
+      ].includes(stepId)
+    ) {
+      return 'shop';
+    }
+
+    if (['research-mint-seed', 'research-mana-tonic'].includes(stepId)) {
+      return 'research';
+    }
+
+    if (['grow-sage', 'fill-mint-herb-task'].includes(stepId)) {
+      return 'garden';
+    }
+
+    if (['brew-mana-tonic', 'refill-mana-tonic-cauldron'].includes(stepId)) {
+      return 'brewing';
+    }
+
+    return 'workshop';
+  }
+
+  createTutorialStepSave(preset) {
+    const save = this.createResetSave();
+    const completedResearchIds = [...new Set(preset.research)];
+
+    return {
+      ...save,
+      savedAt: this.getNow(),
+      mana: {
+        current: preset.mana,
+      },
+      coin: {
+        current: preset.coin,
+        totalGenerated: preset.coin,
+      },
+      inventory: Object.entries(preset.inventory)
+        .filter(([, quantity]) => Math.floor(Number(quantity) || 0) > 0)
+        .map(([itemKey, quantity]) => ({
+          itemKey,
+          quantity: Math.floor(Number(quantity) || 0),
+        })),
+      research: {
+        completedIds: completedResearchIds,
+        inProgress: [],
+      },
+      shop: preset.shop,
+      brewing: preset.brewing,
+      garden: preset.garden,
+      tasks: {
+        currentLevel: preset.level,
+        tasks: preset.tasks,
+      },
+    };
+  }
+
+  applyTutorialStepUiState(preset) {
+    const page =
+      preset.pageId && this.pagesFacade
+        ? this.showPage(preset.pageId, { unlock: true })
+        : { ok: false, reason: 'page_missing' };
+    let directSell = null;
+
+    if (preset.ui.openDirectSell) {
+      directSell = this.openDialog('market', { popup: 'directSell' });
+      const selected = this.selectDirectSellItem(preset.ui.directSellItemKey);
+      directSell = {
+        ...directSell,
+        selected,
+      };
+    }
+
+    return {
+      page,
+      directSell,
+    };
+  }
+
+  selectDirectSellItem(itemKey) {
+    const item = this.getRawItemDefinition(itemKey);
+    const manager = this.pagesFacade?.registryManager?.get?.('shop')?.directSellManager;
+
+    if (!item || !manager) {
+      return {
+        ok: false,
+        reason: item ? 'direct_sell_missing' : 'unknown_item',
+        itemKey,
+      };
+    }
+
+    manager.onSelectTab?.(item.kind);
+
+    if (manager.selectedItemTypeId !== item.id) {
+      manager.onSelectItem?.(item.id);
+    }
+
+    return {
+      ok: true,
+      itemKey: item.key,
+      itemTypeId: item.id,
+    };
+  }
+
+  refreshTutorialNow() {
+    this.pagesFacade?.tutorialFacade?.cancelRefresh?.();
+    this.pagesFacade?.tutorialFacade?.refresh?.();
+  }
+
+  getTutorialActiveStepSummary() {
+    const step = this.pagesFacade?.tutorialFacade?.activeStep ?? null;
+
+    if (!step) {
+      return null;
+    }
+
+    return {
+      id: step.id,
+      kind: step.kind,
+      targetId: step.targetId ?? null,
+      stepLabel: step.stepLabel ?? '',
+      lessonTitle: step.lessonTitle ?? '',
+      text: step.text ?? step.objectiveText ?? step.hintText ?? '',
+      progressLabel: step.progressLabel ?? '',
+    };
+  }
+
+  getTutorialSnapshotSummary() {
+    const snapshot = this.gameplayFacade.getSnapshot();
+
+    return {
+      level: snapshot?.tasks?.currentLevel ?? null,
+      currentPageId: this.pagesFacade?.getCurrentPageId?.() ?? null,
+      mana: snapshot?.mana ?? null,
+      coin: snapshot?.coin ?? null,
+      inventory: snapshot?.inventory ?? [],
+      tasks: snapshot?.tasks?.level?.tasks ?? [],
+      research: snapshot?.research?.completedResearchIds ?? [],
+    };
   }
 
   async resetData(confirmation) {

@@ -320,10 +320,10 @@ describe('WorkshopActionBarManager', () => {
       /\.workshop-page__action-bar \.style-button\.workshop-page__summon-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const circleRule = baseCss.match(
-      /\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/,
+      /(?:^|\n)\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const textRule = baseCss.match(
-      /\.workshop-page__summon-button-text\s*\{(?<body>[^}]*)\}/,
+      /(?:^|\n)\.workshop-page__summon-button-text\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new WorkshopActionBarManager({ gameplayFacade });
@@ -363,6 +363,36 @@ describe('WorkshopActionBarManager', () => {
     expect(baseCss).toContain('transform: translate(-50%, -50%) scale(1.045);');
     expect(baseCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.style-button\.workshop-page__summon-button\.is-summoning[\s\S]*animation:\s*none;/,
+    );
+  });
+
+  it('animates the first tutorial summon reveal without changing the hit box', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const summonRevealRule = baseCss.match(
+      /\.game-stage\.is-tutorial-summon-revealing\[data-tutorial-reveal~="summon"\]\s+\.workshop-page__action-bar\s+>\s+\.workshop-page__summon-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const signRevealRule = baseCss.match(
+      /\.game-stage\.is-tutorial-summon-revealing\[data-tutorial-reveal~="summon"\]\s+\.workshop-page__summon-button\s+\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const textRevealRule = baseCss.match(
+      /\.game-stage\.is-tutorial-summon-revealing\[data-tutorial-reveal~="summon"\]\s+\.workshop-page__summon-button\s+\.workshop-page__summon-button-text\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(summonRevealRule).toMatch(
+      /\banimation:\s*workshop-summon-button-reveal 640ms\s+var\(--style-motion-ease-rubber\)\s+both;/,
+    );
+    expect(summonRevealRule).not.toMatch(/\bwidth:/);
+    expect(signRevealRule).toMatch(
+      /\banimation:\s*workshop-summon-sign-reveal 640ms\s+var\(--style-motion-ease-rubber\)\s+both;/,
+    );
+    expect(textRevealRule).toMatch(
+      /\banimation:\s*workshop-summon-button-text-reveal 520ms\s+var\(--style-motion-ease-rubber\)\s+80ms both;/,
+    );
+    expect(baseCss).toContain('@keyframes workshop-summon-button-reveal');
+    expect(baseCss).toContain('@keyframes workshop-summon-sign-reveal');
+    expect(baseCss).toContain('@keyframes workshop-summon-button-text-reveal');
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.game-stage\.is-tutorial-summon-revealing\[data-tutorial-reveal~="summon"\][\s\S]*\.workshop-page__summon-button-text[\s\S]*animation:\s*none;/,
     );
   });
 

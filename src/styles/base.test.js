@@ -167,49 +167,18 @@ describe('base styles', () => {
     expect(baseCss).toContain(
       '.first-run-intro--step-enter .first-run-intro__rainbow,',
     );
-    expect(baseCss).toContain(
-      '.first-run-intro--step-enter[data-step="reward"]',
-    );
-    expect(baseCss).toContain(
-      '.first-run-intro__coin-pile-icon[data-coin-index="10"]',
-    );
-    expect(baseCss).toContain('--first-run-intro-coin-delay: 325ms;');
-    expect(baseCss).toContain('--first-run-intro-coin-collect-x: -190px;');
-    expect(baseCss).toContain('@keyframes first-run-intro-coin-drop');
-    expect(baseCss).toContain('@keyframes first-run-intro-coin-collect');
-    expect(baseCss).toContain('animation: first-run-intro-coin-drop 840ms');
-    expect(baseCss).toContain('animation: first-run-intro-coin-collect 620ms');
-    expect(baseCss).toContain(
-      '.first-run-intro--step-enter[data-step="better-use"] .first-run-intro__coin-pile {\n  animation: none;',
-    );
-    expect(baseCss).toContain(
-      '.first-run-intro--step-exit[data-step="reward"][data-backdrop-transition="stable"]\n  .first-run-intro__coin-pile {\n  animation: none;',
-    );
-    expect(baseCss).toContain('translate: 0 -10px;');
-    expect(baseCss).toContain('translate: 0 -3px;');
-    expect(baseCss).toContain('scale: 0.66;');
-    expect(baseCss).toContain('opacity: 0;');
+    expect(baseCss).not.toContain('data-step="reward"');
+    expect(baseCss).not.toContain('data-step="better-use"');
+    expect(baseCss).not.toContain('first-run-intro__coin-pile');
+    expect(baseCss).not.toContain('@keyframes first-run-intro-coin-drop');
+    expect(baseCss).not.toContain('@keyframes first-run-intro-coin-collect');
     expect(baseCss).toMatch(
-      /\.first-run-intro--step-enter\[data-step="workshop"\]\s+\.first-run-intro__workshop-sale\s*\{[\s\S]*?animation:\s*first-run-intro-coin-pile-enter 520ms/,
+      /\.first-run-intro--step-enter\[data-step="workshop"\]\s+\.first-run-intro__workshop-sale\s*\{[\s\S]*?animation:\s*first-run-intro-workshop-sale-enter 520ms/,
     );
-    expect(baseCss).not.toMatch(
-      /\.first-run-intro--step-enter\[data-step="buy-workshop"\]\s+\.first-run-intro__workshop-sale\s*\{[\s\S]*?animation:/,
-    );
-    expect(baseCss).toMatch(
-      /\.first-run-intro--step-enter\[data-step="buy-workshop"\]\s+\.first-run-intro__workshop-sale-price\s*\{[\s\S]*?animation:\s*first-run-intro-workshop-price-boink 210ms/,
-    );
-    expect(baseCss).toContain('@keyframes first-run-intro-workshop-price-boink');
-    expect(baseCss).toContain('scale: 1.07 0.95;');
-    expect(baseCss).toContain('translate: 0 -1px;');
-    expect(baseCss).toContain(
-      '.first-run-intro--step-enter[data-step="reward"]\n    .first-run-intro__coin-pile-icon,',
-    );
-    expect(baseCss).toContain(
-      '.first-run-intro--step-enter[data-step="better-use"]\n    .first-run-intro__coin-pile-icon,',
-    );
-    expect(baseCss).toContain(
-      '.first-run-intro--step-enter[data-step="buy-workshop"]\n    .first-run-intro__workshop-sale-price,',
-    );
+    expect(baseCss).not.toContain('data-step="buy-workshop"');
+    expect(baseCss).not.toContain('@keyframes first-run-intro-workshop-price-boink');
+    expect(baseCss).toContain('@keyframes first-run-intro-workshop-sale-enter');
+    expect(baseCss).toContain('@keyframes first-run-intro-workshop-sale-exit');
   });
 
   it('keeps Workshop level reward text left and point values right under a centered title', () => {
