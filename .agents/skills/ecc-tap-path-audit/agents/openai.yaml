@@ -1,0 +1,4 @@
+interface:
+  display_name: "ECC Tap Path Audit"
+  short_description: "Trace tap handlers through final UI state"
+  default_prompt: "Use $ecc-tap-path-audit to audit an Idle Wizard tap or button flow."

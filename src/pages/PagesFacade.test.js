@@ -1341,12 +1341,22 @@ function createGameplayFacadeFake() {
     };
   };
   const syncTaskState = (task) => {
+    if (!task.completed && task.progressQuantity >= task.requiredQuantity) {
+      task.completed = true;
+    }
     task.remainingQuantity = Math.max(0, task.requiredQuantity - task.progressQuantity);
     task.ownedQuantity = getItemQuantity(task.itemTypeId);
     task.progress = task.requiredQuantity <= 0 ? 1 : task.progressQuantity / task.requiredQuantity;
     task.maxed = task.progressQuantity >= task.requiredQuantity;
     task.canFill = !task.completed && !task.maxed && task.ownedQuantity > 0;
-    task.canComplete = !task.completed && task.maxed;
+    task.canComplete = false;
+    snapshot.tasks.level.completedTasks = snapshot.tasks.level.tasks.filter(
+      (candidate) => candidate.completed,
+    ).length;
+    snapshot.tasks.level.completion.allTasksCompleted =
+      snapshot.tasks.level.completedTasks >= snapshot.tasks.level.totalTasks;
+    snapshot.tasks.level.completion.canComplete =
+      snapshot.tasks.level.completion.allTasksCompleted;
   };
 
   const gameplayFacade = {
@@ -1391,14 +1401,6 @@ function createGameplayFacadeFake() {
         };
       }
 
-      if (task.maxed) {
-        return {
-          ok: false,
-          reason: 'ready_to_complete',
-          taskId,
-        };
-      }
-
       const quantity = Math.min(task.ownedQuantity, task.remainingQuantity);
 
       if (quantity <= 0 || !removeItemQuantity(task.itemTypeId, quantity)) {
@@ -1421,6 +1423,7 @@ function createGameplayFacadeFake() {
         progressQuantity: task.progressQuantity,
         requiredQuantity: task.requiredQuantity,
         maxed: task.maxed,
+        completed: task.completed,
       };
     },
     completeTask: (taskId) => {
@@ -1435,6 +1438,14 @@ function createGameplayFacadeFake() {
       }
 
       syncTaskState(task);
+
+      if (task.completed) {
+        return {
+          ok: false,
+          reason: 'already_completed',
+          taskId,
+        };
+      }
 
       if (!task.maxed) {
         return {
@@ -3762,6 +3773,32 @@ describe('PagesFacade', () => {
     expect(
       topPanel.querySelector('[data-tutorial-id="top:mana"]')?.getAttribute('aria-label'),
     ).toBe('mana');
+    expect(
+      topPanel.querySelector('[data-tutorial-id="top:mana:value"]')?.textContent,
+    ).toBe('0/50 mana');
+    expect(
+      topPanel
+        .querySelector('[data-tutorial-id="top:mana:value"]')
+        ?.classList.contains('style-resource-label--mana'),
+    ).toBe(true);
+    expect(
+      topPanel
+        .querySelector('[data-tutorial-id="top:mana:value"] .style-resource-label__amount')
+        ?.dataset.tutorialId,
+    ).toBeUndefined();
+    expect(
+      topPanel.querySelector('[data-tutorial-id="top:mana:regen"]')?.textContent,
+    ).toBe('+1/s');
+    expect(
+      topPanel
+        .querySelector('[data-tutorial-id="top:mana:regen"]')
+        ?.getAttribute('data-tutorial-highlight-padding'),
+    ).toBeNull();
+    expect(
+      topPanel
+        .querySelector('[data-tutorial-id="top:mana:regen"]')
+        ?.getAttribute('data-tutorial-highlight-shape'),
+    ).toBeNull();
     expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain('0 coin');
     expect(
       topPanel
@@ -4187,6 +4224,10 @@ describe('PagesFacade', () => {
     vi.useFakeTimers();
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    gameplayFacade.getSnapshot().tasks.currentLevel = 0;
+    gameplayFacade.getSnapshot().tasks.level.level = 0;
+    gameplayFacade.getSnapshot().tasks.level.completion.level = 0;
+    gameplayFacade.getSnapshot().playerLevel.currentLevel = 0;
     const playerFacade = createPlayerFacadeFake('wizard', 'white', {
       initialCharacter: 'rowan',
     });
@@ -4357,8 +4398,8 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const storage = createMemoryStorage();
-    gameplayFacade.getSnapshot().tasks.currentLevel = 5;
-    gameplayFacade.getSnapshot().playerLevel.currentLevel = 5;
+    gameplayFacade.getSnapshot().tasks.currentLevel = 4;
+    gameplayFacade.getSnapshot().playerLevel.currentLevel = 4;
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -4399,6 +4440,10 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
+    snapshot.tasks.currentLevel = 0;
+    snapshot.tasks.level.level = 0;
+    snapshot.tasks.level.completion.level = 0;
+    snapshot.playerLevel.currentLevel = 0;
     const task = snapshot.tasks.level.tasks[0];
     const completedStepIds = TUTORIAL_STEP_IDS.slice(
       0,
@@ -4517,6 +4562,10 @@ describe('PagesFacade', () => {
   it('suppresses unrelated notifications while a blocking FTUE step is active', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    gameplayFacade.getSnapshot().tasks.currentLevel = 0;
+    gameplayFacade.getSnapshot().tasks.level.level = 0;
+    gameplayFacade.getSnapshot().tasks.level.completion.level = 0;
+    gameplayFacade.getSnapshot().playerLevel.currentLevel = 0;
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -4535,6 +4584,11 @@ describe('PagesFacade', () => {
     expect(shopTab?.dataset.notification).toBeUndefined();
 
     pagesFacade.tutorialFacade.progressManager.completeMany(TUTORIAL_STEP_IDS);
+    gameplayFacade.getSnapshot().tasks.currentLevel = 1;
+    gameplayFacade.getSnapshot().tasks.level.level = 1;
+    gameplayFacade.getSnapshot().tasks.level.completion.level = 1;
+    gameplayFacade.getSnapshot().playerLevel.currentLevel = 1;
+    gameplayFacade.publishSnapshot();
     pagesFacade.tutorialFacade.refresh();
 
     expect(shopTab?.dataset.notification).toBe('true');
@@ -4584,8 +4638,8 @@ describe('PagesFacade', () => {
     );
     expect(level1AddedRows[0].textContent).toBe('garden plots+2');
     expect(level1TotalRows[0].textContent).toBe('garden plots2');
-    expect(levelPopup.textContent).toContain('mana cap');
-    expect(levelPopup.textContent).toContain('mana regen');
+    expect(levelPopup.textContent).toContain('mana capacity');
+    expect(levelPopup.textContent).toContain('mana regeneration');
 
     levelPopup
       .querySelector('.room-top-panel__level-pager-button:last-child')
@@ -4599,25 +4653,25 @@ describe('PagesFacade', () => {
     expect(levelPopup.querySelector('.room-top-panel__level-divider')?.hidden).toBe(false);
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).toContain('garden plots+1');
+    ).not.toContain('garden plots+1');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).toContain('mana cap+50');
+    ).toContain('mana capacity+50 mana');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).toContain('mana regen+1/sec');
+    ).toContain('mana regeneration+1/sec mana');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).toContain('crystal+1');
+    ).toContain('bonus+1 crystal');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
     ).toContain('garden plots3');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
-    ).toContain('mana cap100');
+    ).toContain('mana capacity100 mana');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
-    ).toContain('mana regen2/sec');
+    ).toContain('mana regeneration2/sec mana');
 
     levelPopup
       .querySelector('.room-top-panel__level-pager-button:last-child')
@@ -4633,8 +4687,8 @@ describe('PagesFacade', () => {
     );
     expect(level3AddedText).toContain('trader stands+1');
     expect(level3AddedText).toContain('player stands+1');
-    expect(level3AddedText).toContain('mana cap+50');
-    expect(level3AddedText).toContain('crystal+1');
+    expect(level3AddedText).toContain('mana capacity+50 mana');
+    expect(level3AddedText).toContain('bonus+1 crystal');
     expect(level3TotalRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
       'garden plots',
     );
@@ -5003,6 +5057,80 @@ describe('PagesFacade', () => {
     }
   });
 
+  it('keeps expanded Workshop tasks open when tutorial next retargets to the backdrop', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.tasks.level.totalTasks = 2;
+    snapshot.tasks.level.tasks = [
+      baseTask,
+      {
+        ...baseTask,
+        taskId: 'level1-mint-seeds',
+        itemKey: 'mintSeed',
+        itemLabel: 'mint seed',
+        requiredQuantity: 5,
+        remainingQuantity: 5,
+      },
+    ];
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createMemoryStorage(),
+    });
+
+    stage.style.setProperty('--style-ui-scale', '3');
+    document.body.append(stage);
+
+    try {
+      pagesFacade.mount(stage);
+      pagesFacade.tutorialFacade.hintManager.showLesson({
+        id: 'elara-expanded-tasks-next',
+        title: 'lesson',
+        text: 'tasks are how the workshop asks for supplies.',
+        stepLabel: 'lesson 1: introduction',
+        advanceOnClick: true,
+      });
+
+      const toggle = stage.querySelector('.workshop-page__tasks-toggle');
+      const list = stage.querySelector('.workshop-page__task-list');
+      const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
+      const advance = stage.querySelector('.tutorial-layer__lesson-advance');
+
+      toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(list.hidden).toBe(false);
+      expect(backdrop.hidden).toBe(false);
+
+      advance.dispatchEvent(createPointerEvent('pointerdown', { clientX: 760, clientY: 1540 }));
+      advance.dispatchEvent(
+        new window.MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 760,
+          clientY: 1540,
+        }),
+      );
+      backdrop.dispatchEvent(
+        new window.MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 760,
+          clientY: 1540,
+        }),
+      );
+
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(toggle.textContent).toBe('collapse');
+      expect(list.hidden).toBe(false);
+      expect(backdrop.hidden).toBe(false);
+    } finally {
+      pagesFacade.unmount();
+      stage.remove();
+    }
+  });
+
   it('keeps Workshop tasks expanded across page swaps', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -5041,6 +5169,204 @@ describe('PagesFacade', () => {
     expect(toggle?.getAttribute('aria-expanded')).toBe('true');
     expect(list?.hidden).toBe(false);
     expect(tasks?.classList.contains('is-expanded')).toBe(true);
+  });
+
+  it('collapses expanded Workshop requirements when the target level changes', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const baseTask = snapshot.tasks.level.tasks[0];
+    snapshot.tasks.currentLevel = 0;
+    snapshot.tasks.level.level = 0;
+    snapshot.tasks.level.completion.level = 0;
+    snapshot.playerLevel.currentLevel = 0;
+    snapshot.tasks.level.totalTasks = 2;
+    snapshot.tasks.level.tasks = [
+      baseTask,
+      {
+        ...baseTask,
+        taskId: 'level0-mint-seeds',
+        itemKey: 'mintSeed',
+        itemLabel: 'mint seed',
+        requiredQuantity: 5,
+        remainingQuantity: 5,
+      },
+    ];
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createCompletedTutorialStorage(),
+    });
+
+    pagesFacade.mount(stage);
+
+    const tasks = stage.querySelector('.workshop-page__tasks');
+    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
+    const pinButton = stage.querySelector('.workshop-page__tasks-pin');
+    const list = stage.querySelector('.workshop-page__task-list');
+
+    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    pinButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(pinButton.getAttribute('aria-pressed')).toBe('true');
+    expect(list.hidden).toBe(false);
+
+    snapshot.tasks.currentLevel = 1;
+    snapshot.tasks.level.level = 1;
+    snapshot.tasks.level.completion.level = 1;
+    snapshot.playerLevel.currentLevel = 1;
+    snapshot.tasks.level.tasks = [
+      {
+        ...baseTask,
+        taskId: 'level1-summon-sage-seed',
+        action: 'summon',
+        requiredQuantity: 5,
+        progressQuantity: 0,
+        remainingQuantity: 5,
+        completed: false,
+        maxed: false,
+      },
+      {
+        ...baseTask,
+        taskId: 'level1-sell-sage-seed',
+        action: 'sell',
+        requiredQuantity: 1,
+        progressQuantity: 0,
+        remainingQuantity: 1,
+        completed: false,
+        maxed: false,
+      },
+    ];
+    gameplayFacade.publishSnapshot();
+
+    expect(tasks?.querySelector('.style-box__title')?.textContent).toBe('level 2 requirements');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(pinButton.getAttribute('aria-pressed')).toBe('false');
+    expect(list.hidden).toBe(true);
+    expect(tasks.classList.contains('is-collapsed')).toBe(true);
+
+    pagesFacade.unmount();
+  });
+
+  it('shows the first level-up announcement before the market tutorial resumes', () => {
+    vi.useFakeTimers();
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const task = snapshot.tasks.level.tasks[0];
+    const completedStepIds = TUTORIAL_STEP_IDS.slice(
+      0,
+      TUTORIAL_STEP_IDS.indexOf('first-task-complete') + 1,
+    );
+    snapshot.tasks.currentLevel = 0;
+    snapshot.tasks.level.level = 0;
+    snapshot.tasks.level.completedTasks = 1;
+    snapshot.tasks.level.totalTasks = 1;
+    snapshot.tasks.level.completion = {
+      level: 0,
+      costCoin: 0,
+      allTasksCompleted: true,
+      atMaxLevel: false,
+      completedAllLevels: false,
+      canComplete: true,
+    };
+    snapshot.tasks.level.tasks = [
+      {
+        ...task,
+        level: 0,
+        progressQuantity: task.requiredQuantity,
+        remainingQuantity: 0,
+        progress: 1,
+        maxed: true,
+        completed: true,
+        canFill: false,
+        canComplete: false,
+      },
+    ];
+    snapshot.playerLevel.currentLevel = 0;
+    gameplayFacade.completeTaskLevel = () => {
+      snapshot.tasks.currentLevel = 1;
+      snapshot.tasks.level.level = 1;
+      snapshot.tasks.level.completion = {
+        ...snapshot.tasks.level.completion,
+        level: 1,
+        allTasksCompleted: false,
+        canComplete: false,
+      };
+      snapshot.playerLevel.currentLevel = 1;
+      gameplayFacade.publishSnapshot();
+      return {
+        ok: true,
+        currentLevel: 1,
+        costCoin: 0,
+      };
+    };
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      tutorialStorage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({ completedStepIds }),
+      }),
+    });
+
+    document.body.append(stage);
+
+    try {
+      pagesFacade.mount(stage);
+      pagesFacade.tutorialFacade.refresh();
+
+      expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('level-up-one');
+
+      const levelUpButton = stage.querySelector('.workshop-page__level-complete-button');
+      expect(levelUpButton).not.toBeNull();
+
+      pagesFacade.currentPageManager.currentPage.taskManager.onLevelCompleteButton();
+      pagesFacade.tutorialFacade.refresh();
+
+      expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
+      expect(stage.querySelector('.room-announcement__level-flow')?.textContent).toBe(
+        'level 1',
+      );
+      expect(stage.querySelector('.room-announcement__row')?.textContent).toContain('market');
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('market opened');
+
+      pagesFacade.announcementFacade.manager.hideCurrent();
+      pagesFacade.tutorialFacade.refresh();
+
+      expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
+      expect(stage.querySelector('.room-announcement')?.dataset.announcementKind).toBe('unlock');
+      expect(stage.querySelector('.room-announcement__title')?.textContent).toBe(
+        'market unlocked',
+      );
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('market opened');
+
+      pagesFacade.announcementFacade.manager.hideCurrent();
+      pagesFacade.tutorialFacade.refresh();
+
+      expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(true);
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('market opened');
+
+      vi.advanceTimersByTime(999);
+      pagesFacade.tutorialFacade.refresh();
+
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('market opened');
+
+      vi.advanceTimersByTime(1);
+      pagesFacade.tutorialFacade.refresh();
+
+      expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-market');
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+      expect(stage.querySelector('.tutorial-layer')?.textContent).toContain('market opened');
+    } finally {
+      pagesFacade.unmount();
+      stage.remove();
+      vi.useRealTimers();
+    }
   });
 
   it('keeps pinned Workshop tasks pinned across page swaps', () => {
@@ -5889,30 +6215,32 @@ describe('PagesFacade', () => {
     expect(payoffTitle?.textContent).toBe('rewards');
     expect(payoffRows).toEqual([
       ['unlocks', 'garden'],
-      ['garden plots', '+1'],
-      ['mana cap', '+50'],
-      ['mana regen', '+1/sec'],
-      ['crystal', '+1'],
+      ['mana capacity', '+50 mana'],
+      ['mana regeneration', '+1/sec mana'],
+      ['bonus', '+1 crystal'],
     ]);
     expect(
+      rewards
+        ?.querySelector('.workshop-page__level-payoff-page-icon')
+        ?.getAttribute('src'),
+    ).toContain('icon-garden-plot-tab');
+    expect(
       rewards?.querySelector(
-        '.workshop-page__level-payoff-label .style-resource-label--mana .style-resource-label__icon',
+        '.workshop-page__level-payoff-value .style-resource-label--mana .style-resource-label__icon',
       )?.dataset.assetAtlasFrame,
     ).toBe('resource:mana');
     expect(
-      rewards?.querySelector(
-        '.workshop-page__level-payoff-label .style-resource-label--crystal .style-resource-label__icon',
-      )?.dataset.assetAtlasFrame,
-    ).toBe('resource:crystal');
-    expect(
       rewards
-        ?.querySelectorAll('.workshop-page__level-payoff-value[data-resource-color="mana"]')
+        ?.querySelectorAll(
+          '.workshop-page__level-payoff-value .style-resource-label--mana',
+        )
         .length,
     ).toBe(2);
     expect(
-      rewards?.querySelector('.workshop-page__level-payoff-value[data-resource-color="crystal"]')
-        ?.textContent,
-    ).toBe('+1');
+      rewards?.querySelector(
+        '.workshop-page__level-payoff-value .style-resource-label--crystal .style-resource-label__icon',
+      )?.dataset.assetAtlasFrame,
+    ).toBe('resource:crystal');
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
     expect(button?.textContent).toBe('level upfree');
     expect(button?.disabled).toBe(false);
@@ -5927,7 +6255,7 @@ describe('PagesFacade', () => {
       'level 1> 2',
     );
     expect(stage.querySelector('.workshop-page__flyout')?.textContent).toBe(
-      'level 2 reached: garden unlocked, +1 garden plot, +50 mana cap, +1/sec mana regen, +1 crystal',
+      'level 2 reached: garden unlocked, +50 mana capacity, +1/sec mana regeneration, +1 crystal',
     );
   });
 

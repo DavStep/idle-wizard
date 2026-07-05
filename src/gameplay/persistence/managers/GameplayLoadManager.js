@@ -167,7 +167,8 @@ function getInferredCauldronCapacityResearchIds(save = {}) {
 }
 
 function getLegacyPlayerLevelCaps(save = {}) {
-  const currentLevel = Math.max(1, Math.floor(Number(save?.tasks?.currentLevel) || 1));
+  const normalizedLevel = Math.floor(Number(save?.tasks?.currentLevel));
+  const currentLevel = Number.isFinite(normalizedLevel) ? Math.max(0, normalizedLevel) : 1;
   let caps = LEGACY_PLAYER_LEVEL_CAPS[0];
 
   for (const candidate of LEGACY_PLAYER_LEVEL_CAPS) {

@@ -10,8 +10,16 @@ const TOTAL_PAYOFFS = [
   {
     key: 'maxGardenTiles',
     label: 'garden plots',
+    suppressWhenUnlocks: 'garden',
     formatValue: (delta) => `+${formatNumber(delta)}`,
     formatNotice: (delta) => `+${formatNumber(delta)} garden plot${delta === 1 ? '' : 's'}`,
+  },
+  {
+    key: 'maxCauldrons',
+    label: 'cauldrons',
+    suppressWhenUnlocks: 'brewing',
+    formatValue: (delta) => `+${formatNumber(delta)}`,
+    formatNotice: (delta) => `+${formatNumber(delta)} cauldron${delta === 1 ? '' : 's'}`,
   },
   {
     key: 'maxNpcMarketStands',
@@ -27,15 +35,15 @@ const TOTAL_PAYOFFS = [
   },
   {
     key: 'maxManaCap',
-    label: 'mana cap',
-    formatValue: (delta) => `+${formatNumber(delta)}`,
-    formatNotice: (delta) => `+${formatNumber(delta)} mana cap`,
+    label: 'mana capacity',
+    formatValue: (delta) => `+${formatNumber(delta)} mana`,
+    formatNotice: (delta) => `+${formatNumber(delta)} mana capacity`,
   },
   {
     key: 'manaPerSecond',
-    label: 'mana regen',
-    formatValue: (delta) => `+${formatNumber(delta)}/sec`,
-    formatNotice: (delta) => `+${formatNumber(delta)}/sec mana regen`,
+    label: 'mana regeneration',
+    formatValue: (delta) => `+${formatNumber(delta)}/sec mana`,
+    formatNotice: (delta) => `+${formatNumber(delta)}/sec mana regeneration`,
   },
 ];
 
@@ -59,7 +67,7 @@ const WORKSHOP_UNLOCKS = [
 ];
 
 export function getLevelPayoffRows(snapshot, { fromLevel, toLevel } = {}) {
-  const levelBefore = normalizeLevel(fromLevel);
+  const levelBefore = normalizeLevel(fromLevel, { allowZero: true });
   const levelAfter = normalizeLevel(toLevel ?? levelBefore + 1);
 
   if (levelAfter <= levelBefore) {
@@ -97,12 +105,26 @@ function getUnlockRows(levelBefore, levelAfter) {
   }
 
   const unlockValues = unlocks.map((unlock) => unlock.value);
+  const valueLinePageIds = unlocks.reduce((pageIds, unlock) => {
+    if (unlock.pageId) {
+      pageIds[unlock.value] = unlock.pageId;
+    }
+
+    return pageIds;
+  }, {});
+  const valueLineNotices = unlocks.reduce((notices, unlock) => {
+    notices[unlock.value] = unlock.notice;
+
+    return notices;
+  }, {});
 
   return [
     {
       label: 'unlocks',
       value: unlockValues.join(', '),
       valueLines: unlockValues,
+      ...(Object.keys(valueLinePageIds).length > 0 ? { valueLinePageIds } : {}),
+      valueLineNotices,
       notice: unlocks.map((unlock) => unlock.notice).join(', '),
     },
   ];
@@ -122,16 +144,17 @@ function dedupeUnlocksByValue(unlocks) {
 }
 
 function getPageUnlocks(levelBefore, levelAfter) {
-  return Object.values(PAGE_UNLOCK_REQUIREMENTS)
+  return Object.entries(PAGE_UNLOCK_REQUIREMENTS)
     .filter(
-      (unlock) =>
+      ([, unlock]) =>
         Number.isInteger(unlock.requiredLevel) &&
         levelBefore < unlock.requiredLevel &&
         levelAfter >= unlock.requiredLevel,
     )
-    .map((unlock) => {
+    .map(([pageId, unlock]) => {
       const value = unlock.label ?? 'room';
       return {
+        pageId,
         value,
         notice: `${value} unlocked`,
       };
@@ -152,12 +175,17 @@ function getWorkshopUnlocks(levelBefore, levelAfter) {
 function getPlayerLevelDeltaRows(snapshot, levelBefore, levelAfter) {
   const previousTotals = getLevelTotals(snapshot, levelBefore);
   const nextTotals = getLevelTotals(snapshot, levelAfter);
+  const unlockedPageIds = getUnlockedPageIds(levelBefore, levelAfter);
 
   if (!nextTotals) {
     return [];
   }
 
   return TOTAL_PAYOFFS.map((payoff) => {
+    if (payoff.suppressWhenUnlocks && unlockedPageIds.has(payoff.suppressWhenUnlocks)) {
+      return null;
+    }
+
     const nextValue = Number(nextTotals[payoff.key]);
     const previousValue = Number(previousTotals?.[payoff.key] ?? 0);
     const delta = roundNumber(nextValue - previousValue);
@@ -187,11 +215,24 @@ function getCrystalRows(snapshot, levelAfter) {
 
   return [
     {
-      label: 'crystal',
-      value: `+${formatNumber(amount)}`,
+      label: 'bonus',
+      value: `+${formatNumber(amount)} crystal`,
       notice: `+${formatNumber(amount)} crystal`,
     },
   ];
+}
+
+function getUnlockedPageIds(levelBefore, levelAfter) {
+  return new Set(
+    Object.entries(PAGE_UNLOCK_REQUIREMENTS)
+      .filter(
+        ([, unlock]) =>
+          Number.isInteger(unlock.requiredLevel) &&
+          levelBefore < unlock.requiredLevel &&
+          levelAfter >= unlock.requiredLevel,
+      )
+      .map(([pageId]) => pageId),
+  );
 }
 
 function getLevelTotals(snapshot, level) {
@@ -203,12 +244,15 @@ function getLevelSnapshot(snapshot, level) {
   return levels.find((entry) => entry?.level === level) ?? null;
 }
 
-function normalizeLevel(level) {
-  if (!Number.isInteger(level) || level <= 0) {
-    return 1;
+function normalizeLevel(level, { allowZero = false, fallback = 1 } = {}) {
+  const normalizedLevel = Math.floor(Number(level));
+  const minimumLevel = allowZero ? 0 : 1;
+
+  if (!Number.isInteger(normalizedLevel) || normalizedLevel < minimumLevel) {
+    return fallback;
   }
 
-  return level;
+  return normalizedLevel;
 }
 
 function roundNumber(value) {

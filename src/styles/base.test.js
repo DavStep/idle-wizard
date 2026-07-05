@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { cwd } from 'node:process';
 
+import pngjs from 'pngjs';
 import { describe, expect, it } from 'vitest';
 
+const { PNG } = pngjs;
 const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
 
 function getRuleBody(pattern) {
@@ -131,6 +133,10 @@ describe('base styles', () => {
     const defeatedDemonRule = getRuleBody(
       /\.first-run-intro__demon--defeated\s*\{(?<body>[^}]*)\}/,
     );
+    const defeatedDemonEnterRule = getRuleBody(
+      /\.first-run-intro--step-enter\[data-scene="defeated"\]\s+\.first-run-intro__demon--defeated\s*\{(?<body>[^}]*)\}/,
+    );
+    const rainbowRule = getRuleBody(/\.first-run-intro__rainbow\s*\{(?<body>[^}]*)\}/);
     const panelRule = getRuleBody(
       /\.style-dialog\.first-run-intro__panel\s*\{(?<body>[^}]*)\}/,
     );
@@ -147,6 +153,24 @@ describe('base styles', () => {
       'left: calc(var(--style-source-ui-gutter-x) + 20px);',
     );
     expect(defeatedDemonRule).toContain('top: 370px;');
+    expect(defeatedDemonEnterRule).toContain(
+      'animation: first-run-intro-defeated-enter 360ms',
+    );
+    expect(baseCss).toMatch(
+      /@keyframes first-run-intro-defeated-enter \{[\s\S]*?transform: translateY\(-350px\) scaleX\(0\.86\) scaleY\(0\.96\);/,
+    );
+    expect(baseCss).toMatch(
+      /54% \{[\s\S]*?transform: translateY\(0\) scaleX\(0\.925\) scaleY\(0\.875\);/,
+    );
+    expect(baseCss).toMatch(
+      /72% \{[\s\S]*?transform: translateY\(-6px\) scaleX\(0\.887\) scaleY\(0\.914\);/,
+    );
+    expect(baseCss).toMatch(
+      /100% \{[\s\S]*?transform: translateY\(0\) scale\(0\.9\);/,
+    );
+    expect(rainbowRule).toContain('height: 154px;');
+    expect(rainbowRule).toContain('ellipse at 50% 92%');
+    expect(rainbowRule).toContain('mask-composite: intersect;');
     expect(baseCss).toMatch(
       /\.first-run-intro--stable-backdrop\.first-run-intro--step-enter\s+\.first-run-intro__transition-shade,[\s\S]*?animation:\s*none;/,
     );
@@ -181,6 +205,148 @@ describe('base styles', () => {
     expect(baseCss).toContain('@keyframes first-run-intro-workshop-sale-exit');
   });
 
+  it('keeps the first-run intro dialog on the dedicated filled 9-slices', () => {
+    const introSkinRule = getRuleBody(
+      /\.first-run-intro \.style-dialog\.first-run-intro__panel,\s*\.style-box\.tutorial-layer__lesson\.is-intro-dialog\s*\{(?<body>[^}]*)\}/,
+    );
+    const introTitleRule = getRuleBody(
+      /\.first-run-intro \.style-dialog\.first-run-intro__panel > \.style-box__title,\s*\.style-box\.tutorial-layer__lesson\.is-intro-dialog > \.style-box__title\s*\{(?<body>[^}]*)\}/,
+    );
+    const introButtonRule = getRuleBody(
+      /\.first-run-intro \.style-button\.first-run-intro__advance\s*\{(?<body>[^}]*)\}/,
+    );
+    const introPanelShadowRule = getRuleBody(
+      /\.first-run-intro \.style-dialog\.first-run-intro__panel::after\s*\{(?<body>[^}]*)\}/,
+    );
+    const introLessonRule = findRuleBody(
+      /\.style-box\.tutorial-layer__lesson\.is-intro-dialog\s*\{(?<body>[^}]*)\}/g,
+      (body) => body.includes('box-shadow: none;'),
+    );
+    const introLessonShadowRule = getRuleBody(
+      /\.style-box\.tutorial-layer__lesson\.is-intro-dialog::after\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(introSkinRule).toContain(
+      '--intro-dialog-panel-frame: url("/ui/intro-dialog-panel-9slice.png");',
+    );
+    expect(introSkinRule).toContain(
+      '--intro-dialog-tab-frame: url("/ui/intro-dialog-header-tab-9slice.png");',
+    );
+    expect(introSkinRule).toContain(
+      '--intro-dialog-button-frame: url("/ui/intro-dialog-button-9slice.png");',
+    );
+    expect(introSkinRule).toContain(
+      '--intro-dialog-panel-slice: 31 29 31 29 fill;',
+    );
+    expect(introSkinRule).toContain(
+      '--intro-dialog-tab-slice: 31 29 31 29 fill;',
+    );
+    expect(introSkinRule).toContain(
+      '--intro-dialog-button-slice: 31 29 31 29 fill;',
+    );
+    expect(introSkinRule).toContain(
+      '--intro-dialog-shadow-filter: drop-shadow(var(--intro-dialog-shadow));',
+    );
+    expect(introSkinRule).toContain('background: transparent;');
+    expect(introSkinRule).toContain(
+      'border-image-source: var(--intro-dialog-panel-frame);',
+    );
+    expect(introSkinRule).toContain(
+      'border-image-slice: var(--intro-dialog-panel-slice);',
+    );
+    expect(introSkinRule).not.toContain('linear-gradient(');
+    expect(introTitleRule).toContain(
+      'border-image-source: var(--intro-dialog-tab-frame);',
+    );
+    expect(introTitleRule).toContain(
+      'border-image-slice: var(--intro-dialog-tab-slice);',
+    );
+    expect(introTitleRule).toContain('top: -16px;');
+    expect(introTitleRule).toContain('padding: 2px 18px 3px;');
+    expect(introTitleRule).toContain('line-height: 16px;');
+    expect(introTitleRule).not.toContain('linear-gradient(');
+    expect(introButtonRule).toContain(
+      'border-image-source: var(--intro-dialog-button-frame);',
+    );
+    expect(introButtonRule).toContain(
+      'border-image-slice: var(--intro-dialog-button-slice);',
+    );
+    expect(introButtonRule).not.toContain('linear-gradient(');
+    expect(introPanelShadowRule).toContain('box-shadow: none;');
+    expect(introPanelShadowRule).toContain(
+      'filter: var(--intro-dialog-shadow-filter);',
+    );
+    expect(introLessonRule).toContain('box-shadow: none;');
+    expect(introLessonShadowRule).toContain(
+      'border-image-source: var(--intro-dialog-panel-frame);',
+    );
+    expect(introLessonShadowRule).toContain(
+      'border-image-slice: var(--intro-dialog-panel-slice);',
+    );
+    expect(introLessonShadowRule).toContain(
+      'filter: var(--intro-dialog-shadow-filter);',
+    );
+    expect(baseCss).not.toMatch(
+      /\.first-run-intro \.style-dialog\.first-run-intro__panel::before,\s*\.style-box\.tutorial-layer__lesson\.is-intro-dialog::before\s*\{/,
+    );
+  });
+
+  it('snaps the initial tutorial reveal gate hidden before Elara paints', () => {
+    const primingRule = getRuleBody(
+      /\.game-stage\.is-tutorial-reveal-priming\[data-tutorial-reveal\][\s\S]*?\.room-top-panel__resource\[aria-label="mana"\]\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(baseCss).toContain(
+      '.game-stage.is-tutorial-reveal-priming[data-tutorial-reveal]',
+    );
+    expect(baseCss).toContain('.room-bottom-panel-layer');
+    expect(baseCss).toContain('.workshop-page__tasks');
+    expect(primingRule).toContain('transition: none;');
+  });
+
+  it('keeps the intro header top stretch band free of line artifacts', () => {
+    const header = PNG.sync.read(
+      readFileSync(`${cwd()}/public/ui/intro-dialog-header-tab-9slice.png`),
+    );
+    const xStart = 29;
+    const xEnd = header.width - 29;
+    const yStart = 5;
+    const yEnd = 31;
+
+    function pixelLuminance(x, y) {
+      const offset = (y * header.width + x) * 4;
+      return (
+        header.data[offset] * 0.2126 +
+        header.data[offset + 1] * 0.7152 +
+        header.data[offset + 2] * 0.0722
+      );
+    }
+
+    function rowLuminance(y) {
+      let total = 0;
+      let count = 0;
+      for (let x = xStart; x < xEnd; x += 1) {
+        const offset = (y * header.width + x) * 4;
+        if (header.data[offset + 3] === 0) {
+          continue;
+        }
+
+        total += pixelLuminance(x, y);
+        count += 1;
+      }
+
+      return total / count;
+    }
+
+    const maxInternalRowJump = Array.from(
+      { length: yEnd - yStart },
+      (_, index) =>
+        Math.abs(rowLuminance(yStart + index + 1) - rowLuminance(yStart + index)),
+    ).reduce((max, jump) => Math.max(max, jump), 0);
+
+    expect(maxInternalRowJump).toBeLessThan(1);
+  });
+
   it('keeps Workshop level reward text left and point values right under a centered title', () => {
     const titleRule = getRuleBody(/\.workshop-page__level-payoff-title\s*\{(?<body>[^}]*)\}/);
     const rowsRule = getRuleBody(/\.workshop-page__level-payoff-rows\s*\{(?<body>[^}]*)\}/);
@@ -191,6 +357,12 @@ describe('base styles', () => {
     const valueRule = getRuleBody(/\.workshop-page__level-payoff-value\s*\{(?<body>[^}]*)\}/);
     const listValueRule = getRuleBody(
       /\.workshop-page__level-payoff-value--list\s*\{(?<body>[^}]*)\}/,
+    );
+    const valueLineRule = getRuleBody(
+      /\.workshop-page__level-payoff-value-line\s*\{(?<body>[^}]*)\}/,
+    );
+    const pageIconRule = getRuleBody(
+      /\.workshop-page__level-payoff-page-icon\s*\{(?<body>[^}]*)\}/,
     );
 
     expect(titleRule).toContain('text-align: center;');
@@ -208,6 +380,10 @@ describe('base styles', () => {
     expect(listValueRule).toContain('justify-self: start;');
     expect(listValueRule).toContain('align-items: flex-start;');
     expect(listValueRule).toContain('text-align: left;');
+    expect(valueLineRule).toContain('display: inline-flex;');
+    expect(valueLineRule).toContain('align-items: center;');
+    expect(pageIconRule).toContain('width: 1.25em;');
+    expect(pageIconRule).toContain('height: 1.25em;');
   });
 
 });

@@ -3,6 +3,22 @@ import { describe, expect, it } from 'vitest';
 import { PlayerLevelBalanceManager } from './PlayerLevelBalanceManager.js';
 
 describe('PlayerLevelBalanceManager', () => {
+  it('keeps base mana and starter room caps before level one', () => {
+    const manager = new PlayerLevelBalanceManager();
+
+    expect(manager.getEffects(0)).toEqual({
+      maxGardenTiles: 2,
+      maxCauldrons: 1,
+      maxShopSlots: 0,
+      maxNpcMarketStands: 0,
+      maxPlayerMarketStands: 0,
+      maxManaCap: 50,
+      manaPerSecond: 1,
+    });
+    expect(manager.getCrystalRewardThroughLevel(0)).toBe(0);
+    expect(manager.getCrystalRewardForLevelRange(0, 1)).toBe(1);
+  });
+
   it('keeps default plot and cauldron caps below prestige capacity', () => {
     const manager = new PlayerLevelBalanceManager();
 

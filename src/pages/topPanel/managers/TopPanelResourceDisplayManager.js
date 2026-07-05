@@ -42,17 +42,19 @@ export class TopPanelResourceDisplayManager {
     this.latestSnapshot = snapshot;
     const mana = snapshot.mana ?? {};
     const coin = snapshot.coin?.current ?? 0;
-    const level = snapshot.tasks?.currentLevel ?? 1;
+    const level = this.getVisibleLevel(snapshot);
     const coinText = formatCoinPriceText(coin);
 
     this.setResourceText(
       this.refs.manaValue,
       `${Math.floor(mana.current ?? 0)}/${mana.cap ?? 0} mana`,
     );
-    this.setText(this.refs.manaRateValue, formatManaRate(mana.perSecond));
+    this.setManaValueTutorialTarget();
+    this.setText(this.refs.manaRateText ?? this.refs.manaRateValue, formatManaRate(mana.perSecond));
     this.setResourceText(this.refs.coinValue, coinText);
     this.renderContextCurrency(snapshot);
-    this.setText(this.refs.levelValue, `level ${level}`);
+    this.setText(this.refs.levelValue, level === null ? '' : `level ${level}`);
+    this.setHidden(this.refs.levelButton ?? this.refs.levelValue, level === null);
   }
 
   renderFrameResources(snapshot) {
@@ -123,10 +125,38 @@ export class TopPanelResourceDisplayManager {
     }
   }
 
+  setManaValueTutorialTarget() {
+    const label = this.refs?.manaValue?.querySelector?.('.style-resource-label--mana');
+    const amount = label?.querySelector?.('.style-resource-label__amount');
+
+    label?.setAttribute('data-tutorial-id', 'top:mana:value');
+    label?.removeAttribute('data-tutorial-highlight-padding');
+    label?.removeAttribute('data-tutorial-highlight-shape');
+
+    amount?.removeAttribute('data-tutorial-id');
+    amount?.removeAttribute('data-tutorial-highlight-padding');
+    amount?.removeAttribute('data-tutorial-highlight-shape');
+  }
+
   setAttribute(element, name, value) {
     if (element.getAttribute(name) !== value) {
       element.setAttribute(name, value);
     }
+  }
+
+  setHidden(element, hidden) {
+    if (!element) {
+      return;
+    }
+
+    element.hidden = Boolean(hidden);
+  }
+
+  getVisibleLevel(snapshot) {
+    const rawLevel = snapshot?.tasks?.currentLevel ?? snapshot?.playerLevel?.currentLevel ?? null;
+    const level = Math.floor(Number(rawLevel));
+
+    return Number.isFinite(level) && level >= 1 ? level : null;
   }
 }
 

@@ -1,0 +1,20 @@
+{
+	"nodes":[
+		{"id":"6666666666666001","type":"file","x":0,"y":0,"width":340,"height":180,"file":"Home.md","color":"5"},
+		{"id":"6666666666666002","type":"file","x":440,"y":-340,"width":360,"height":210,"file":"gdd/Home.md","color":"4"},
+		{"id":"6666666666666003","type":"file","x":440,"y":-80,"width":360,"height":210,"file":"mechanics/Home.md","color":"3"},
+		{"id":"6666666666666004","type":"file","x":440,"y":180,"width":360,"height":210,"file":"balance/Home.md","color":"2"},
+		{"id":"6666666666666005","type":"file","x":880,"y":-80,"width":360,"height":210,"file":"tutorial/Home.md","color":"6"},
+		{"id":"6666666666666006","type":"file","x":1320,"y":-80,"width":380,"height":210,"file":"engineering-liveops/Home.md","color":"1"},
+		{"id":"6666666666666007","type":"file","x":880,"y":220,"width":360,"height":180,"file":"World Index.base","color":"5"}
+	],
+	"edges":[
+		{"id":"6666666666666e01","fromNode":"6666666666666001","fromSide":"right","toNode":"6666666666666002","toSide":"left","label":"design"},
+		{"id":"6666666666666e02","fromNode":"6666666666666002","fromSide":"bottom","toNode":"6666666666666003","toSide":"top","label":"player promise becomes systems"},
+		{"id":"6666666666666e03","fromNode":"6666666666666003","fromSide":"bottom","toNode":"6666666666666004","toSide":"top","label":"tuned by"},
+		{"id":"6666666666666e04","fromNode":"6666666666666003","fromSide":"right","toNode":"6666666666666005","toSide":"left","label":"taught by"},
+		{"id":"6666666666666e05","fromNode":"6666666666666004","fromSide":"right","toNode":"6666666666666005","toSide":"bottom","label":"early pacing"},
+		{"id":"6666666666666e06","fromNode":"6666666666666005","fromSide":"right","toNode":"6666666666666006","toSide":"left","label":"qa and support"},
+		{"id":"6666666666666e07","fromNode":"6666666666666001","fromSide":"bottom","toNode":"6666666666666007","toSide":"left","label":"index"}
+	]
+}

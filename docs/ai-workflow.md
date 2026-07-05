@@ -5,7 +5,7 @@ Use this when an AI agent or contributor needs to change the repo without guessi
 ## Entry Points
 
 1. Read `AGENTS.md` for mandatory project rules.
-2. Read `experience.md` for durable lessons and current traps.
+2. Read `experience.md`, then read the routed `docs/obsidian/engineering-liveops/experience/` files for durable lessons and current traps in the touched area.
 3. Read `docs/architecture.md` for boundaries and feature locations.
 4. For UI work, also read `docs/style.md` and `docs/ui-patterns.md`.
 5. For tutorial/FTUE work, use the local `idle-wizard-tutorial-ui` skill and its QA checklist.
@@ -21,6 +21,10 @@ Use the smallest check that proves the change, then broaden when touching shared
 - Focused logic change: run the matching `*.test.js`.
 - Shared gameplay, page, backend, persistence, or release behavior: run `npm run check`.
 - UI/layout/tutorial change: run focused tests plus browser screenshot/click QA at the authored mobile surface and a fitted desktop viewport.
+- Tap/button/mobile-WebView interaction change or bug: use `ecc-tap-path-audit` to trace handler order, state writes, backdrop/synthetic click behavior, and final visible state.
+- Browser UI QA: use `ecc-browser-qa`; missing screenshot or baseline evidence means `INCONCLUSIVE`, not pass.
+- Bug fixes: use `ecc-ai-regression-testing` to choose the smallest guard that would have caught the actual failure.
+- Release/deploy smoke: use `ecc-canary-watch` for read-only HTTP, asset, console/network, backend-gate, and critical-room checks.
 - UI screenshot QA that uses an HTML harness and `/src/styles/base.css` must set `html[data-style-theme="midnight"]`; `npm run check:ui` fails local `tmp/*-harness.html` and `tmp/*-qa.html` files that would fall back to the removed light theme.
 - Backend schema/config change: build/publish locally, regenerate bindings with `npm run stdb:generate`, and do not edit generated bindings by hand.
 

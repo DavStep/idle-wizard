@@ -1,0 +1,28 @@
+filters:
+  and:
+    - file.hasTag("tutorial")
+    - file.ext == "md"
+properties:
+  status:
+    displayName: Status
+  world:
+    displayName: World
+  file.tags:
+    displayName: Tags
+views:
+  - type: table
+    name: Tutorial Notes
+    order:
+      - file.name
+      - status
+      - world
+      - file.tags
+      - file.mtime
+  - type: list
+    name: Risks
+    filters:
+      and:
+        - file.hasTag("risk")
+    order:
+      - file.name
+      - status

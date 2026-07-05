@@ -3,37 +3,9 @@ import {
   isNotificationActive,
   setNotificationBadge,
 } from '../../shared/notificationBadge.js';
+import { getPageIconUrl } from '../../shared/pageIcons.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { createStatusIcon, STATUS_ICON_LOCK } from '../../shared/statusIcon.js';
-
-const RESEARCH_TAB_ICON_URL = new URL(
-  '../../../assets/icons/icon-research-telescope-tab.webp',
-  import.meta.url,
-).href;
-const BREWING_TAB_ICON_URL = new URL(
-  '../../../assets/icons/icon-brewing-cauldron-tab.webp',
-  import.meta.url,
-).href;
-const GARDEN_TAB_ICON_URL = new URL(
-  '../../../assets/icons/icon-garden-plot-tab.webp',
-  import.meta.url,
-).href;
-const SHOP_TAB_ICON_URL = new URL(
-  '../../../assets/icons/icon-shop-market-stall-tab.webp',
-  import.meta.url,
-).href;
-const WORKSHOP_TAB_ICON_URL = new URL(
-  '../../../assets/icons/icon-workshop-house-tab.webp',
-  import.meta.url,
-).href;
-
-const TAB_ICON_URL_BY_ID = new Map([
-  ['brewing', BREWING_TAB_ICON_URL],
-  ['garden', GARDEN_TAB_ICON_URL],
-  ['research', RESEARCH_TAB_ICON_URL],
-  ['shop', SHOP_TAB_ICON_URL],
-  ['workshop', WORKSHOP_TAB_ICON_URL],
-]);
 
 export const BOTTOM_PANEL_TABS = [
   { id: 'brewing', label: 'brewing' },
@@ -55,7 +27,7 @@ const OPTIONAL_BOTTOM_PANEL_TAB_BY_ID = new Map(
   OPTIONAL_BOTTOM_PANEL_TABS.map((tab) => [tab.id, tab]),
 );
 
-const LOCK_UNLOCK_ANIMATION_MS = 520;
+const LOCK_UNLOCK_ANIMATION_MS = 560;
 const UNLOCK_DELAY_WHILE_ANNOUNCEMENT_MS = 2100;
 
 export class BottomPanelViewManager {
@@ -420,7 +392,7 @@ export class BottomPanelViewManager {
   }
 
   createTabIcon(tab) {
-    const iconUrl = TAB_ICON_URL_BY_ID.get(tab.id);
+    const iconUrl = getPageIconUrl(tab.id);
 
     if (!iconUrl || this.isActionTab(tab)) {
       return null;
@@ -617,7 +589,7 @@ export class BottomPanelViewManager {
     };
 
     const handleAnimationEnd = (event) => {
-      if (event.animationName !== 'room-bottom-tab-lock-break') {
+      if (event.animationName !== 'room-bottom-tab-icon-unlock-flyout') {
         return;
       }
 
@@ -634,9 +606,19 @@ export class BottomPanelViewManager {
 
   getUnlockAnimationDelayMs() {
     const stage = this.root?.parentElement;
-    return stage?.querySelector?.('.room-announcement-layer:not([hidden])')
-      ? UNLOCK_DELAY_WHILE_ANNOUNCEMENT_MS
-      : 0;
+    const announcement = stage?.querySelector?.('.room-announcement-layer:not([hidden])');
+
+    if (!announcement) {
+      return 0;
+    }
+
+    const announcementDelayMs = Math.round(
+      Number(announcement.dataset.announcementUnlockDelayMs),
+    );
+
+    return Number.isFinite(announcementDelayMs) && announcementDelayMs > 0
+      ? announcementDelayMs
+      : UNLOCK_DELAY_WHILE_ANNOUNCEMENT_MS;
   }
 
   getLockedMessage(tab, state) {

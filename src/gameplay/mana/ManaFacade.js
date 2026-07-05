@@ -9,7 +9,7 @@ export class ManaFacade {
     'Mana is the player energy jar: it fills over time, stops at a cap, and actions can spend it.';
 
   constructor({
-    initialCurrent = 30,
+    initialCurrent = 40,
     initialCap = 50,
     initialPerSecond = 1,
   } = {}) {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Idle Wizard Bugfixing"
+  short_description: "Reproduce, isolate, fix, and validate bugs"
+  default_prompt: "Use $idle-wizard-bugfixing to reproduce, isolate, fix, and validate an Idle Wizard bug."

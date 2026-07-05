@@ -30,6 +30,13 @@ export const PLAYER_CHARACTER_OPTIONS = Object.freeze([
   Object.freeze({ key: 'adventurer_helmhammer', label: 'helm hammer' }),
   Object.freeze({ key: 'adventurer_bluebandana', label: 'blue bandana' }),
   Object.freeze({ key: 'adventurer_purpleaxe', label: 'purple axe' }),
+  Object.freeze({ key: 'adventurer_redplume_sword', label: 'red plume' }),
+  Object.freeze({ key: 'adventurer_blondshield_guard', label: 'blond shield' }),
+  Object.freeze({ key: 'adventurer_greenscarf_dagger', label: 'green dagger' }),
+  Object.freeze({ key: 'adventurer_headband_furguard', label: 'headband fur' }),
+  Object.freeze({ key: 'adventurer_silverhair_spear', label: 'silver spear' }),
+  Object.freeze({ key: 'adventurer_greenhood_archer', label: 'green hood' }),
+  Object.freeze({ key: 'adventurer_hornhelm_axe', label: 'horn axe' }),
 ]);
 
 export const DEFAULT_UNLOCKED_PLAYER_CHARACTER_KEYS = Object.freeze([

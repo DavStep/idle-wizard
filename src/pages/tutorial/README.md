@@ -4,7 +4,7 @@ Elara Starbrew teaches through one lesson surface after the first purchase dialo
 
 Tutorial logic is unified through `TutorialLogicManager`. `TutorialStepManager` chooses and normalizes the current step, step definitions own reveal tokens and effects, `TutorialReminderManager` owns timing, and `TutorialLogicManager` returns the single view state the facade renders. Keep new tutorial flow rules in that path instead of branching directly inside `TutorialFacade`.
 
-The guide covers a free level 1 seed task and level-up, level 2 summon/sell/turn-in requirements with normal fast-sell rules, level 3 Research and mint seed requirements, level 4 Garden herb requirements, and level 5 Brewing with mana tonic research. It has no skip state.
+The guide covers a free level 1 seed task and level-up, level 2 summon/sell/turn-in requirements with normal fast-sell rules, level 3 Research and mint seed requirements, level 4 Garden herb requirements, and level 5 Brewing with mana tonic research. After the first summon, only mana and the summon button stay revealed until the fifth first-lesson sage seed. Then Elara explains task requirements before the level requirement box is revealed and pointed at the sage seed turn-in. It has no skip state.
 
 The first tutorial fast-sell sequence selects the item, boinks the amount value for two seconds without opening the lesson panel or showing a pointer, then automatically advances to the `sell` button. Do not add a manual skip or a second hint box for that amount beat.
 

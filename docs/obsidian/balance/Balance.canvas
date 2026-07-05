@@ -1,0 +1,21 @@
+{
+	"nodes":[
+		{"id":"2222222222222001","type":"file","x":0,"y":0,"width":320,"height":180,"file":"balance/Home.md","color":"5"},
+		{"id":"2222222222222002","type":"file","x":420,"y":-300,"width":340,"height":180,"file":"balance/Balance Sources.md","color":"4"},
+		{"id":"2222222222222003","type":"file","x":420,"y":-80,"width":340,"height":200,"file":"balance/Level Curve.md","color":"3"},
+		{"id":"2222222222222004","type":"file","x":420,"y":180,"width":340,"height":200,"file":"balance/Currencies.md","color":"2"},
+		{"id":"2222222222222005","type":"file","x":840,"y":-80,"width":340,"height":200,"file":"balance/Capacity Gates.md","color":"6"},
+		{"id":"2222222222222006","type":"file","x":840,"y":180,"width":340,"height":200,"file":"balance/Market Tuning.md","color":"1"},
+		{"id":"2222222222222007","type":"file","x":1260,"y":-80,"width":340,"height":200,"file":"balance/Prestige Tuning.md","color":"4"},
+		{"id":"2222222222222008","type":"file","x":1260,"y":180,"width":340,"height":180,"file":"balance/Balance Watchlist.md","color":"1"}
+	],
+	"edges":[
+		{"id":"2222222222222e01","fromNode":"2222222222222001","fromSide":"right","toNode":"2222222222222002","toSide":"left","label":"reads"},
+		{"id":"2222222222222e02","fromNode":"2222222222222002","fromSide":"bottom","toNode":"2222222222222003","toSide":"top","label":"defines"},
+		{"id":"2222222222222e03","fromNode":"2222222222222003","fromSide":"bottom","toNode":"2222222222222004","toSide":"top","label":"spends"},
+		{"id":"2222222222222e04","fromNode":"2222222222222003","fromSide":"right","toNode":"2222222222222005","toSide":"left","label":"gates"},
+		{"id":"2222222222222e05","fromNode":"2222222222222004","fromSide":"right","toNode":"2222222222222006","toSide":"left","label":"prices"},
+		{"id":"2222222222222e06","fromNode":"2222222222222005","fromSide":"right","toNode":"2222222222222007","toSide":"left","label":"expands"},
+		{"id":"2222222222222e07","fromNode":"2222222222222006","fromSide":"right","toNode":"2222222222222008","toSide":"left","label":"watch"}
+	]
+}

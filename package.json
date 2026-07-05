@@ -1,6 +1,6 @@
 {
   "name": "idle-wizard",
-  "version": "0.2.77",
+  "version": "0.2.78",
   "private": true,
   "type": "module",
   "scripts": {
@@ -26,6 +26,7 @@
     "qa:data:sync": "node scripts/qa-data.js sync --server maincloud --database idle-wizard",
     "qa:data:from-backup": "node scripts/qa-data.js from-backup",
     "balance:sim": "node scripts/balance-sim.js",
+    "balance:lab": "node --import ./scripts/register-json-module-loader.mjs scripts/balance-lab.js",
     "tutorial:capture": "node scripts/capture-tutorial-flow.js",
     "mobile:sync": "npm run mobile:sync:prod",
     "mobile:sync:dev": "npm run build:dev && npx cap sync android",

@@ -1,0 +1,4 @@
+interface:
+  display_name: "ECC AI Regression Testing"
+  short_description: "Turn real bugs into focused regression guards"
+  default_prompt: "Use $ecc-ai-regression-testing after fixing a bug to add the right regression guard."

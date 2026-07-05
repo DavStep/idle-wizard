@@ -15,7 +15,7 @@ export class TaskSnapshotManager {
     const currentLevel = this.taskStateEntityManager.getCurrentLevel();
     const maxLevel = this.taskBalanceManager.getMaxLevel();
     const tasks = this.taskBalanceManager
-      .getLevelTasks(currentLevel)
+      .getCurrentLevelTasks(currentLevel)
       .map((task) => this.getTaskSnapshot(task));
     const completedTasks = tasks.filter((task) => task.completed).length;
 
@@ -63,7 +63,7 @@ export class TaskSnapshotManager {
       maxed,
       completed,
       canFill: isTurnIn && !completed && !maxed && ownedQuantity > 0,
-      canComplete: isTurnIn && !completed && maxed,
+      canComplete: false,
       autoProgress: !isTurnIn,
     };
   }

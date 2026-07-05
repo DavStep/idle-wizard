@@ -4,11 +4,15 @@ import { TutorialProgressManager } from './managers/TutorialProgressManager.js';
 import { TutorialRevealManager } from './managers/TutorialRevealManager.js';
 import { TutorialSaleManager } from './managers/TutorialSaleManager.js';
 import {
+  TUTORIAL_ADVANCE_ACTIONS,
   TUTORIAL_STEP_IDS,
   getTutorialStepGraph,
   resolveTutorialStepId,
 } from './managers/TutorialStepManager.js';
 import { TutorialTargetManager } from './managers/TutorialTargetManager.js';
+
+const TUTORIAL_REVEAL_PRIMING_CLASS = 'is-tutorial-reveal-priming';
+const POST_ANNOUNCEMENT_TUTORIAL_RESUME_DELAY_MS = 1000;
 
 export class TutorialFacade {
   static explain =
@@ -46,6 +50,9 @@ export class TutorialFacade {
     this.autoAdvanceTimeout = null;
     this.autoAdvanceStepId = null;
     this.blockingDialogObserver = null;
+    this.roomAnnouncementWasOpen = false;
+    this.roomAnnouncementResumeDelayActive = false;
+    this.roomAnnouncementResumeTimeout = null;
     this.activeStep = null;
     this.requestedTargetGuidanceStepId = null;
     this.notificationVisibilityPolicyKey = '';
@@ -97,6 +104,7 @@ export class TutorialFacade {
     this.stage = stage;
     this.targetManager.setStage(stage);
     this.revealManager.setStage(stage);
+    this.primeRevealGate();
     this.hintManager.mount(stage);
     this.hintManager.setAdvanceHandler(this.handleAdvance);
     this.hintManager.setObjectivePressHandler(this.handleObjectivePress);
@@ -110,6 +118,42 @@ export class TutorialFacade {
     this.scheduleRefresh();
   }
 
+  primeRevealGate() {
+    this.stage?.classList.add(TUTORIAL_REVEAL_PRIMING_CLASS);
+
+    try {
+      this.applyPrimedRevealGate();
+      void this.stage?.offsetWidth;
+    } finally {
+      this.stage?.classList.remove(TUTORIAL_REVEAL_PRIMING_CLASS);
+    }
+  }
+
+  applyPrimedRevealGate() {
+    const snapshot = this.gameplayFacade?.getSnapshot?.();
+    this.stepManager.syncSnapshotProgress(snapshot);
+
+    if (this.stepManager.hasCompletedAllSteps()) {
+      this.revealManager.clear();
+      return;
+    }
+
+    const step = this.stepManager.getActiveStep({
+      snapshot,
+      dom: this.targetManager.getDomState(),
+    });
+
+    if (!step) {
+      this.revealManager.clear();
+      return;
+    }
+
+    this.revealManager.update({
+      step,
+      revealTokens: step.revealTokens,
+    });
+  }
+
   unmount() {
     this.unsubscribe?.();
     this.frameResourceUnsubscribe?.();
@@ -118,6 +162,7 @@ export class TutorialFacade {
     this.cancelRefresh();
     this.cancelReminderRefresh();
     this.cancelAutoAdvance();
+    this.cancelRoomAnnouncementResumeDelay();
     this.disconnectBlockingDialogObserver();
     this.saleManager.cancel();
     this.stage?.removeEventListener('click', this.handleClick, true);
@@ -129,6 +174,7 @@ export class TutorialFacade {
     this.updateNotificationVisibilityPolicy(null);
     this.revealManager.setStage(null);
     this.targetManager.setStage(null);
+    this.roomAnnouncementWasOpen = false;
     this.stage = null;
   }
 
@@ -259,6 +305,15 @@ export class TutorialFacade {
       return;
     }
 
+    if (this.shouldHoldForRoomAnnouncementResume()) {
+      const viewState = this.logicManager.createEmptyState('blocked');
+      this.syncRequestedTargetGuidance(viewState, this.hintManager.isLessonPanelOpen());
+      this.logicManager.activeStep = null;
+      this.activeStep = null;
+      this.applyViewState(viewState);
+      return;
+    }
+
     const dom = this.targetManager.getDomState();
     const lessonPanelOpen = this.hintManager.isLessonPanelOpen();
     const viewState = this.logicManager.getViewState({
@@ -305,10 +360,13 @@ export class TutorialFacade {
       const target = viewState.step?.targetId
         ? this.targetManager.getTarget(viewState.step.targetId)
         : null;
+      const highlightTargets = this.getHighlightTargets(viewState.step);
 
       this.hintManager.showLesson({
         ...viewState.lesson,
         target,
+        highlightTargets,
+        dimBackdrop: viewState.lesson?.advanceOnClick === true,
         hideTargetCue: false,
       });
       this.saleManager.update({
@@ -343,8 +401,20 @@ export class TutorialFacade {
     this.hintManager.hideTargetCue({ immediate: cue.hideTargetImmediate === true });
   }
 
+  getHighlightTargets(step) {
+    if (!Array.isArray(step?.highlightTargetIds)) {
+      return [];
+    }
+
+    return step.highlightTargetIds
+      .map((targetId) => this.targetManager.getTarget(targetId))
+      .filter(Boolean);
+  }
+
   advanceActiveStep() {
-    const advancePageId = this.activeStep?.advancePageId;
+    const step = this.activeStep;
+    const advancePageId = step?.advancePageId;
+    const advanceAction = step?.advanceAction;
 
     if (!this.logicManager.advanceActiveStep()) {
       return;
@@ -354,12 +424,33 @@ export class TutorialFacade {
     this.clearRequestedTargetGuidance();
     this.cancelAutoAdvance();
     this.hintManager.hideTargetCue({ immediate: Boolean(advancePageId) });
+    this.applyAdvanceAction(advanceAction);
 
     if (advancePageId && this.onShowPage) {
       this.onShowPage(advancePageId);
     }
 
     this.scheduleRefresh();
+  }
+
+  applyAdvanceAction(action) {
+    if (action !== TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS) {
+      return;
+    }
+
+    const target = this.targetManager.getTarget('workshop:tasks');
+
+    if (
+      !target ||
+      target.hidden ||
+      target.disabled ||
+      target.getAttribute?.('aria-expanded') === 'true' ||
+      typeof target.click !== 'function'
+    ) {
+      return;
+    }
+
+    target.click();
   }
 
   applyAutoPage(step) {
@@ -588,6 +679,48 @@ export class TutorialFacade {
   disconnectBlockingDialogObserver() {
     this.blockingDialogObserver?.disconnect?.();
     this.blockingDialogObserver = null;
+  }
+
+  shouldHoldForRoomAnnouncementResume() {
+    if (this.isRoomAnnouncementOpen()) {
+      this.roomAnnouncementWasOpen = true;
+      this.cancelRoomAnnouncementResumeDelay();
+      return false;
+    }
+
+    if (this.roomAnnouncementWasOpen) {
+      this.roomAnnouncementWasOpen = false;
+      this.startRoomAnnouncementResumeDelay();
+    }
+
+    return this.roomAnnouncementResumeDelayActive;
+  }
+
+  isRoomAnnouncementOpen() {
+    return Boolean(this.stage?.querySelector?.('.room-announcement-layer:not([hidden])'));
+  }
+
+  startRoomAnnouncementResumeDelay() {
+    if (this.roomAnnouncementResumeDelayActive) {
+      return;
+    }
+
+    this.roomAnnouncementResumeDelayActive = true;
+    this.roomAnnouncementResumeTimeout = globalThis.setTimeout(() => {
+      this.roomAnnouncementResumeDelayActive = false;
+      this.roomAnnouncementResumeTimeout = null;
+      this.scheduleRefresh();
+    }, POST_ANNOUNCEMENT_TUTORIAL_RESUME_DELAY_MS);
+    this.roomAnnouncementResumeTimeout?.unref?.();
+  }
+
+  cancelRoomAnnouncementResumeDelay() {
+    if (this.roomAnnouncementResumeTimeout !== null) {
+      globalThis.clearTimeout(this.roomAnnouncementResumeTimeout);
+    }
+
+    this.roomAnnouncementResumeTimeout = null;
+    this.roomAnnouncementResumeDelayActive = false;
   }
 
 }

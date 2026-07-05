@@ -1,0 +1,17 @@
+{
+	"nodes":[
+		{"id":"1111111111111001","type":"file","x":0,"y":0,"width":320,"height":180,"file":"gdd/Home.md","color":"5"},
+		{"id":"1111111111111002","type":"file","x":420,"y":-260,"width":340,"height":180,"file":"gdd/Design Pillars.md","color":"4"},
+		{"id":"1111111111111003","type":"file","x":420,"y":-40,"width":340,"height":220,"file":"gdd/Room Map.md","color":"3"},
+		{"id":"1111111111111004","type":"file","x":420,"y":220,"width":340,"height":200,"file":"gdd/Player Journey.md","color":"2"},
+		{"id":"1111111111111005","type":"file","x":840,"y":-40,"width":320,"height":200,"file":"gdd/Interface Style.md","color":"6"},
+		{"id":"1111111111111006","type":"file","x":840,"y":220,"width":320,"height":180,"file":"gdd/GDD Open Questions.md","color":"1"}
+	],
+	"edges":[
+		{"id":"1111111111111e01","fromNode":"1111111111111001","fromSide":"right","toNode":"1111111111111002","toSide":"left","label":"defines"},
+		{"id":"1111111111111e02","fromNode":"1111111111111001","fromSide":"right","toNode":"1111111111111003","toSide":"left","label":"maps"},
+		{"id":"1111111111111e03","fromNode":"1111111111111003","fromSide":"bottom","toNode":"1111111111111004","toSide":"top","label":"routes"},
+		{"id":"1111111111111e04","fromNode":"1111111111111002","fromSide":"right","toNode":"1111111111111005","toSide":"left","label":"constrains"},
+		{"id":"1111111111111e05","fromNode":"1111111111111004","fromSide":"right","toNode":"1111111111111006","toSide":"left","label":"raises"}
+	]
+}

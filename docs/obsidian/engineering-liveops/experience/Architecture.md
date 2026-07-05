@@ -1,0 +1,181 @@
+---
+title: Experience: Architecture
+tags:
+  - engineering
+  - liveops
+  - experience
+status: active
+world: engineering-liveops
+experience_type: architecture
+---
+
+# Experience: Architecture
+
+- Use full ECS for gameplay.
+- Every micro feature should have its own manager.
+- Big features need facades with compact non-programmer explanations.
+- Full gameplay snapshots can publish during frame timers; cache expensive static catalogs/lookups such as research definitions instead of rebuilding them per snapshot.
+- No-subscriber gameplay publishes should refresh cheap frame metadata without building full snapshots; no-storage persistence should skip save construction because broad facade tests amplify both costs.
+- Renamed save branches need server normalizer aliases and client load fallbacks; otherwise server-normalized restarts can silently reset cooldowns.
+- SpacetimeDB reducers should use primary keys and existing indexes for identity/alliance lookups; maintenance reducers that touch many players should sweep each table once from an identity set, not call per-player cleanup that rescans tables.
+- `PressFeedbackManager` can route the `.is-pressing` class to a child selector via `data-press-feedback-target`; use it when a control's art should press without moving its label/sign container.
+- UI click sounds live in `src/audio/uiClicks`; trigger them through `PressFeedbackManager` so individual button managers do not duplicate sound hooks.
+- Idle Witch Craft's button tap cue uses `idlefarmer-mouth-pop.wav` plus a short triangle tone; Idle Wizard mirrors that in `src/audio/uiClicks/assets/ui-click-pop.wav`.
+- During Pixi migration, hidden DOM managers can still receive gameplay reward events; route feedback through one visible renderer per event or duplicate notices appear.
+- Pixi migration should not replace page facades with duplicated page logic before parity; keep existing DOM managers as the source of truth and mirror/render their state until visuals and interactions match.
+- Pixi DOM mirroring should be opt-in/debug only; hiding live DOM and repainting a canvas snapshot caps visible motion and burns mobile frame budget.
+- Pixi DOM mirror must render `.style-dialog::after`; popup border and shadow live there while the real dialog border is transparent.
+- Pixi `autoDensity` can write inline canvas pixel sizes; reassert `width/height: 100%` after init so the authored 1080x2170 canvas fits the scaled stage.
+- Pixi text rasterizes before parent scale; wait for web fonts and render text textures at source-scale resolution or the UI looks like wrong/blurry fonts.
+- Spine Pixi runtime major/minor must match the Spine Editor major/minor used to export skeletons; current `@esotericsoftware/spine-pixi-v8` needs Pixi `>=8.16`.
+- Idle Outpost `farming-tile.skel` is Spine `4.0.64`; in Idle Wizard prefer cropped atlas PNGs or a re-export before loading it through the Spine 4.3 runtime.
+- Pixi DOM mirror must schedule renders on pointerdown/up/cancel; interval-only rendering can miss short `:active` button press states.
+- Atlas sprites in DOM should use inline SVG `viewBox` crops instead of CSS background positioning; they scale like images and keep Pixi mirror frame lookup simple.
+- Generated atlases need transparent-pixel alpha bleed and edge extrusion; raw RGB garbage or blank padding can show as seams when Pixi/SVG scales sprites.
+- Inline SVG atlas crops used as text-size item icons need wide gutters; 2px padding lets adjacent herb frames bleed into minified sprites.
+- `herbIcons` label entries need matching atlas frames; missing herb frames can render stray `null` text in rich item labels.
+- Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
+- `capacitor.config.json` must not set `server.url` for packaged APK QA; Capacitor loads that remote page instead of bundled `dist`, hiding local UI/CSS changes.
+- Android Activity soft input mode must stay `adjustNothing`; otherwise the OS can pan/resize the whole WebView when the keyboard opens, before CSS dialog lifting runs.
+- Android WebView press feedback should not rely on CSS `:active` alone; mirror it with a pointer-driven `.is-pressing` class for stable touch scale.
+- Android WebView touch actions should activate from validated `pointerup` and suppress the following native click; long holds can otherwise show press feedback but drop the action.
+- When running the game locally, verify the local SpacetimeDB backend is running on `http://127.0.0.1:3000` before debugging client offline/auth behavior.
+- New client-owned gameplay save branches must be added to `normalizePlayerGameplaySave`; otherwise SpacetimeDB rewrites the save without that branch on server round-trip.
+- SpacetimeDB save normalization must mirror client permanent capacity math: capacity research raises to `base capacity + bonus` even after prestige reset level, or server keeps spent coin but drops bought plots/cauldrons.
+- Slot-specific research visibility must use completed permanent capacity research as well as player-level caps; otherwise prestige plots/cauldrons hide their automation/speed/emerald rows.
+- For stuck live account sessions, invalidate the `player_session` row by replacing its connection id rather than only deleting it; an empty row can let the stale open client pass the active-session gate again.
+- Local app DB name can come from `.env.local`, while SpacetimeDB CLI defaults to `spacetime.json`; use `--no-config` or the env database name when querying/publishing Codex local DBs.
+- SpacetimeDB SQL does not support `IN (SELECT ...)` subqueries; filtered maintenance deletes need reducer-side identity collection.
+- SpacetimeDB subscription SQL supports only `SELECT * FROM ... WHERE ...`; put public row caps in server views, not `ORDER BY`/`LIMIT` client subscriptions.
+- When live maintenance needs a backend reducer while the worktree has unrelated backend edits, publish a temporary module from a clean base plus only the maintenance patch.
+- Signed release APK handoff files should be named `idle-wizard-<package-version>-release.apk`; unsigned release APKs keep `-unsigned` in the filename.
+- `npm run android:run:prod` installs a debug build with production web assets; for a true Android release build on a test device, run `npm run android:assembleRelease`, then zipalign/sign the unsigned APK with a local key before `adb install`.
+- Discord APK uploads need a channel webhook URL in `DISCORD_APK_WEBHOOK_URL`; invite links cannot post files.
+- Discord APK uploads require a current-version player changelog from `PLAYER_CHANGELOG.md` or `DISCORD_APK_CHANGELOG`; skip only for internal testing with `DISCORD_APK_SKIP_CHANGELOG=1`.
+- Release process must inspect recent logs/changelog/git changes for big player-facing features like guilds, advanced brewing/gardening, events, or daily/weekly quests; when present, post a separate friendly feature spotlight through `DISCORD_FEATURE_WEBHOOK_URL` that explains what it is and how it works without number-heavy balance details.
+- User saying `release` means run release automation: version up by default, checks, build, commit/push all current changes on main, deploy changed backend, and post APK to Discord.
+- Live browser/tutorial QA on the shared dev server can hit the `server required` single-account gate after reload if another client owns the session; close the other client or use a fresh local session before screenshot work.
+- When the shared single-account gate blocks local UI QA, mount the affected facade in a temporary localhost HTML harness instead of clearing browser storage or touching the live player save.
+- The in-app browser blocks `data:` QA harnesses; serve temporary module harnesses through Vite on `127.0.0.1:55173` so source imports stay same-origin.
+- Temporary Vite UI harnesses must define `--design-width` and `--design-height`; app bootstrap normally supplies them, and `.game-stage` can collapse without them.
+- Temporary Vite UI harnesses must set `--style-ui-scale` to `3 * min(width/1080, height/2170, 1)`; leaving the default `3` compresses source UI in desktop screenshots.
+- Put temporary Vite UI harness HTML at the repo root when it imports source modules or bare deps; `public/` serves raw HTML and bare imports fail.
+- Transient Playwright `page.setContent` UI harnesses must first `goto` the Vite origin before importing `/src/...`; `about:blank` gets blocked by CORS.
+- FTUE placement harnesses should use memory-backed Elara storage and matching `data-tutorial-reveal` tokens; persisted drag placement or entry animations can mask auto-placement logic.
+- If the in-app browser cannot reach `127.0.0.1:55173` or `localhost:55173`, use the Vite network URL printed by `npm run dev`; shell checks can still use localhost.
+- UI storage helpers should prefer `window.localStorage` and validate `getItem`/`setItem`; Vitest can expose a bad global `localStorage` that reads stale tutorial progress.
+- Release automation bumps `package.json`/`package-lock.json` by patch by default; use `--no-version-bump` only when explicitly asked not to version up.
+- Before running release automation, add the next-version `PLAYER_CHANGELOG.md` section; release preflight checks notes before build/push.
+- `spacetime publish --server maincloud` can prompt once for live publish and again for breaking view/schema changes; release automation must pipe both confirmations.
+- Raising playable max level needs matching SpacetimeDB caps (`MAX_REPORTED_PLAYER_LEVEL`, `MAX_GAME_CONFIG_LEVELS`) plus prod `playerLevel` and `tasks` config rows; otherwise prod clips/rejects the new curve.
+- Permanent prestige capacity upgrades should preserve only capacity research IDs through prestige reset; ordinary ruby speed research remains run-scoped.
+- Permanent prestige capacity upgrades should make the researched slot cap buyable immediately in the run; do not require replaying to the old level cap first.
+- When adding SpacetimeDB columns to existing tables, append fields at the end; inserting into the middle is treated as table reordering and requires manual migration.
+- Shared player profile display fields need the full chain: player table, own-profile view, leaderboard/public views when other users see them, frontend sync mappers, and regenerated bindings.
+- Top-panel selected character belongs in its own 58px avatar cell when icon mode is `icons`; keep the username opener text-only so FTUE username targeting stays tight.
+- Top-panel avatar and picker image rules must be more specific than `.style-player-character-icon`; otherwise the generic 18px inline icon rule shrinks them.
+- Current 87x108 avatar PNGs should keep visible art bottom near a 14px transparent bottom gap; larger gaps leave empty floor in the square picker/top-panel crop.
+- New selectable avatar keys must be mirrored in `PLAYER_CHARACTER_OPTIONS`, `playerCharacterIcon.js`, SpacetimeDB `PLAYER_CHARACTERS`, and the visual-settings character cost config, or settings/profile sync can show blank images or normalize the choice back to Elara.
+- Avatar picker locked and selected states should use the shared status atlas icons (`status:lockDefault` and `status:checkDefault`), matching bottom tabs and prestige.
+- Settings character selector portraits should eager-load; lazy-loaded local PNGs can briefly render as blank boxes when the Account tab opens or during screenshot QA.
+- Tiny shared character icons should use small derived assets, not full 864x1080 portrait PNGs; full portraits can push Discord APK uploads over the size limit.
+- A paused Maincloud database makes phone builds look auth/offline-broken and can block `spacetime publish` pre-checks with 503; verify `spacetime sql ... --server maincloud` and use dashboard `Start Database` before Android auth testing.
+- SpacetimeDB auth tokens are server-scoped; when switching local/maincloud, retry once anonymously after a stored-token connect failure.
+- Unlinked player saves depend on the anonymous SpacetimeDB token; mirror it into Android native SharedPreferences and retry backup token copies before anonymous reconnect.
+- First-run account-choice gates must happen before anonymous SpacetimeDB connect; `clientConnected` creates player/account rows.
+- Android connected-account restore should try native Google authorized-account auto-select before showing the first-run `connect account` choice; stored server tokens can disappear across reinstall-style release handoffs.
+- A remembered native Google profile plus stored SpacetimeDB token is still a connected account after the Google ID token expires; use it to suppress fresh-start/account prompts while native restore refreshes the token.
+- Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
+- Client release version comes from `package.json` `version`, starts at `0.0.0`, and should be bumped with `package-lock.json` before each deploy.
+- Android release `versionName` and `versionCode` should derive from `package.json` so APK metadata matches web release labels.
+- Keep gameplay rules separate from DOM/canvas rendering and SpacetimeDB transport.
+- bitECS 0.4 component calls use entity-first order: `addComponent(world, eid, component)`.
+- Player-facing event logs belong in gameplay/logs; page code should only render snapshot logs.
+- Completion logs for timed systems should come from system-manager callbacks, not from page button clicks.
+- Timed gameplay should consume uncapped `frame.timerDeltaSeconds`; keep capped `frame.deltaSeconds` only for render/UI stability.
+- Gameplay mechanics should run from a sleeping timeout tick, not a permanent render rAF; wake it from player-action snapshots and active timers.
+- Frame snapshot throttling must publish once when timer work drops to none; otherwise final countdown labels can stick at `1s`.
+- Full gameplay snapshots are expensive on mobile; page mount/show bursts should reuse one scoped snapshot, and heavy sub-snapshots should cache by real invalidation keys.
+- Save-load catch-up should use `savedAt` wall time and apply one timer tick after restoring persisted state/effects.
+- Foreground resume catch-up should use the app hidden timestamp before restarting the frame loop, and clear that timestamp when a save reload already applied the same away time.
+- Normal app gameplay persistence is server-backed through SpacetimeDB `player_gameplay_save`; do not add browser local save paths for player progress.
+- Admin `playerLevel` edits only change server/social level; the actual in-game level shown in room UI comes from `player_gameplay_save.saveJson.tasks.currentLevel`.
+- Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
+- Shared public score syncs, including generated coin and world-event points, must wait for accepted gameplay-save hydration; otherwise cached local progress can attach to a fresh anonymous identity and create duplicate empty leaderboard accounts.
+- Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
+- Gameplay save coalescing must stay short and flush on hide/reload; long pending windows can make recent quest/coin progress look reset after refresh.
+- Android app-background disconnects should defer reconnect UI/retry until foreground; otherwise app switching can race SpacetimeDB session ownership and look like an account reconnect.
+- Google account linking must stash the current in-memory gameplay save before auth handoff, then ask whether to forget device data or overwrite the connected account before server saves resume.
+- Web Google account linking must use Google Identity Services ID-token callback only; if GIS cannot display/load, return `web_unavailable` instead of falling back to OIDC code redirect.
+- Stale web OIDC callback URLs should be cleaned without code exchange; a backend token-exchange endpoint is required before restoring browser OIDC code flow.
+- Fresh-start account gates must render `oidc.error`/`cancelled`; otherwise failed Google returns look like a dead `not connected` retry loop.
+- If a level 1 device save links into a Google account with a save above level 1, keep the Google account automatically and skip the choice prompt.
+- Account-link pending saves need attempt scoping and visible failure handling; silent `localStorage` failure can drop device progress when linking into an existing account.
+- Account linking should use Google OIDC directly, not SpacetimeAuth, so the player sees only the Google account picker/consent before returning to the game.
+- Android account linking should use native Google Credential Manager, not hosted browser OIDC fallback; browser code callbacks can reopen the app and then fail token exchange with `client_secret is missing`.
+- Legacy mobile auth redirects need an explicit native marker and Android `intent://` handoff if re-enabled for experiments; do not use them for production login without backend exchange.
+- Android Credential Manager `GetCredentialCancellationException` is a neutral cancel for UI; if it happens after account selection, verify the Android OAuth client package and SHA-1.
+- Player-distributed Android prod APKs must be signed with a Google OAuth-registered cert; debug-signed prod builds can connect only if that debug SHA-1 is registered for `com.idlewizard.game`.
+- Native Google sign-in returns inside the same WebView, so persist the native user and reload/reconnect after success; web OIDC redirect handled that implicitly.
+- SpacetimeDB computes OIDC identities from `iss` + `sub`, so a direct Google ID token creates a stable account without a SpacetimeAuth hop.
+- Historical player rows cannot prove Google-link status unless the server stored auth issuer/provider at connect time.
+- Google ID-token parsing must bind browser `atob` to its owning window and decode JWT payload bytes as UTF-8; raw `atob` strings can make valid tokens look invalid.
+- Single-account-device locks should use server `ctx.connectionId` plus an own-session view; latest connect wins, old clients block themselves, and old disconnects must not clear the new active session.
+- All player-owned SpacetimeDB write reducers should call `assertActivePlayerSession(ctx)` before mutating rows; the single-account lock is only as strong as its least-guarded reducer.
+- Account-in-use gates must not rely on visible overlay DOM; keep a stage-level input lock active and discard pending save/level sync when a newer connection takes over.
+- Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
+- Username prompt seen is monotonic; stale client/server profile echoes must not turn it false or the first-run name dialog can reopen after dismissal.
+- First-run account choice happens before `onOnline`; hide the server gate before awaiting that dialog or new players can look stuck at `connecting to server...`.
+- Empty connected accounts must keep the account/start gate open until `start new`; loading a null gameplay save immediately creates baseline server data.
+- Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
+- Gameplay save migrations must carry `visualSettings`; dropping it makes free theme/font/color unlocks vanish after refresh.
+- SpacetimeDB gameplay-save sanitizer must explicitly keep every client save branch, including visualSettings, or reducer writes will silently drop it before reload.
+- Automation player settings save under `automation`; update client persistence and the SpacetimeDB save sanitizer together or settings reset after backend save.
+- Server save sanitation must merge previous completed research into non-prestige saves; stale clients can omit newer research ids and otherwise get stuck behind the anti-downgrade guard.
+- Incorrect completed research ids can survive through that anti-downgrade merge; live support fixes should remove the bad raw id and kick the player session so stale clients re-save against the corrected row.
+- Server task-save sanitation must treat `tasks.currentLevel` as the paid player level; completed task rows only mean level-ready and must not infer a level-up.
+- Task retunes should keep existing task ids stable when only changing required items; task ids are persisted progress keys.
+- SpacetimeDB gameplay-save sanitizer must preserve `shop.playerRequests`; otherwise player request rows reload as empty after restart.
+- SpacetimeDB brewing save sanitizer must preserve `brewing.cauldrons`; keeping only legacy `cauldronItemKeys` drops cauldron 2+ after restart.
+- Prestige reset saves intentionally lower run level, coin, and research; server anti-downgrade guards must allow that only when `prestige.completedLevels` grows, and must reject prestige regression afterward.
+- Prestige reset level is half the completed prestige milestone level; level 10 still resets to paid player level 5, and new prestige runs should not go back to level 1.
+- Prestige completion world-chat notices are separate from task level-up notices; announce the claimed prestige milestone before resetting the run.
+- After prestige, leaderboard and alliance income must advance from accepted save run-coin deltas; comparing new run `coin.totalGenerated` directly against all-time leaderboard total stalls score growth.
+- SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
+- Crystal earn-back floors must subtract committed automation research, not only completed automation research; otherwise reload can refund crystal while in-progress research keeps ticking.
+- SpacetimeDB UUID primary-key lookups need stored UUID values, not stringified ids; passing string ids can fatal inside reducer serialization.
+- If SpacetimeDB logs say `External attempt to call nonexistent reducer`, the deployed backend is stale relative to generated client bindings; publish the backend before debugging UI flow.
+- SpacetimeDB consumption hotspots are always-on global `SELECT *` subscriptions, per-client global reducers, and full JSON save writes; prefer own/top/small views, lazy page subscriptions, and throttled/deduped writes.
+- Global client subscriptions should target indexed server views (`*_snapshot`, own views, or top/recent views), not raw public tables; `SELECT *` on base tables can keep sequential-scan warnings alive even when tables are small.
+- SpacetimeDB energy warnings can still name tables that already have indexes when many clients subscribe to full snapshot views; verify deployed schema before adding duplicate indexes.
+- Player profile/info popups should subscribe to bounded visible-identity summary views, not global player/profile tables.
+- Current-player profile subscriptions should use `own_player_profile`; never fall back to `SELECT * FROM player` when identity SQL formatting is unavailable.
+- SpacetimeDB one-time startup maintenance uses `STARTUP_MAINTENANCE_STATE_KEY`; bump that key when adding new backfills/sanitizers that must run after deploy.
+- SpacetimeDB identity subscription filters use `0x${identity.toHexString()}` literals; quote camel-case column names such as `"sellerIdentity"` in raw SQL strings.
+- Global background work like NPC market ticks should be scheduled or single-owner server work, not one reducer interval per connected client.
+- NPC market replenishment is owned by the SpacetimeDB `npc_market_tick_schedule` table; clients should not call market tick reducers on connect or intervals.
+- NPC market auto-sell uses one shelf-level wall-clock timer; changing a selected stand item does not reset it, and each completed cycle attempts all eligible selected stands.
+- Gameplay autosaves should avoid `savedAt`-only writes; unchanged saves still consume write bytes, reducer work, and own-save subscription egress. Current autosave interval is `30s`, with pagehide/deploy-refresh flushing for close/reload.
+- Gameplay save subscription is hydration-only; unsubscribe after own-save ready because single-account locking makes live own-save echo unnecessary.
+- Timer-driven personal task progress must request an immediate gameplay save; otherwise a completed daily quest can be lost before autosave and make weekly quest points short after the next daily reset.
+- SpacetimeDB subscription cleanup must be locally idempotent; `isEnded()` can still be false after `unsubscribe()` was requested, and a second call throws.
+- Automatic frame snapshots must be deduped before publishing; unchanged snapshots make every page subscriber rerender and can burn 120Hz mobile frame budget.
+- Mana/resource frame ticks should use a cheap top-panel resource stream; full gameplay snapshots are for actions, cap/timer boundaries, and other state changes.
+- For Pixel/WebView perf checks, keep the phone awake and profile CPU: Android adaptive refresh can make raw rAF look capped when static, while full gameplay snapshot construction can still be the actual hot path.
+- World chat preview/full chat should subscribe to `world_chat_recent`, not the full `world_chat` table.
+- World chat recent views and pruning must sort by `sentAt` plus `messageId` before slicing/deleting; relying on index iteration order can drop fresh messages once the 200-row cap is reached.
+- The shared Workshop chat popup multiplexes world/alliance chat; world sends call `sendMessage`, alliance sends call `sendChatMessage`.
+- World/alliance chat send reducers can reject for rate, level-sync, session, membership, or maintenance reasons; backend managers should preserve those reasons so the shared popup can show specific status text instead of a vague failure.
+- World chat user rate limits should ignore `system` rows, and alliance chat should rate-limit only against the sender's own alliance chat rows.
+- World chat can have live preview data while still hidden/disabled by the level-3 Workshop secondary-action gate or first-run account gate; check those before debugging transport.
+- World chat sends must wait for backend player-level sync before calling `send_world_chat_message`; the reducer gates on server `player.playerLevel`, not just local Workshop unlock state.
+- Explicit pre-chat player-level flushes must requeue the current gameplay snapshot level even if observers already saw that value; otherwise stale server `playerLevel` can reject unlocked chat sends.
+- `send_world_chat_message` should also heal `player.playerLevel` from the accepted `player_gameplay_save` before the level gate; old clients or stale `set_player_level` calls can otherwise leave level-3+ saves unable to chat.
+- All `.style-progress` bars share one source height; do not add per-use rail height overrides for chat, scroll cues, timers, or task bars.
+- Shared `.style-progress` rails need `flex: 0 0 auto`; flex dialogs can otherwise shrink the rail below the shared height.
+- Tabbed popup panel widths must equal dialog content width plus `20px` side padding and `2px` border on both sides; otherwise bottom tabs misalign with the dialog frame.
+- When adding period leaderboard counters, seed blank legacy periods from existing all-time totals before normal period refresh resets them.
+- Server weekly/monthly loops are anchored at Monday, 2026-06-08 00:00 UTC; weekly is 7 days, monthly is 30 days, and UTC midnight is Armenia 04:00.
+- Level-gated research rows can be hidden, but research state still needs all configured ids so completed hidden rows load and persist.
+- Large generated research catalogs should put prerequisite ids on row definitions; per-row snapshot rendering must not re-read full definitions.
+- Research entity sync is hot-path sensitive; create catalog entities once, then answer per-row state from ECS components without rebuilding definitions.

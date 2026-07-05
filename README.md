@@ -105,7 +105,7 @@ Do not add new gameplay behavior beyond the explicit request. If requested gamep
 Start with:
 
 - `AGENTS.md`: mandatory project rules for agents.
-- `experience.md`: durable lessons and current traps.
+- `experience.md`: durable-lesson router; follow it into `docs/obsidian/engineering-liveops/experience/` for the touched area.
 - `docs/ai-workflow.md`: verification ladder, repo map, and safe edit workflow.
 - `docs/architecture.md`: layer boundaries and feature layout.
 - `docs/style.md` and `docs/ui-patterns.md`: required UI style/patterns.

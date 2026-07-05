@@ -1,0 +1,28 @@
+filters:
+  and:
+    - file.hasTag("gdd")
+    - file.ext == "md"
+properties:
+  status:
+    displayName: Status
+  world:
+    displayName: World
+  file.tags:
+    displayName: Tags
+views:
+  - type: table
+    name: GDD Notes
+    order:
+      - file.name
+      - status
+      - world
+      - file.tags
+      - file.mtime
+  - type: list
+    name: Questions
+    filters:
+      and:
+        - file.hasTag("question")
+    order:
+      - file.name
+      - status

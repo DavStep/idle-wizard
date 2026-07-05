@@ -2,7 +2,11 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { TutorialStepManager, TUTORIAL_STEP_IDS } from './TutorialStepManager.js';
+import {
+  TutorialStepManager,
+  TUTORIAL_ADVANCE_ACTIONS,
+  TUTORIAL_STEP_IDS,
+} from './TutorialStepManager.js';
 
 function createProgressFake(completedStepIds = []) {
   const completed = new Set(completedStepIds);
@@ -102,17 +106,17 @@ function createSnapshot(overrides = {}) {
       },
     },
     tasks: {
-      currentLevel: 1,
+      currentLevel: 0,
       level: {
         completion: {
           canComplete: false,
-          costCoin: 0,
+          costCoin: 10,
         },
         tasks: [
           createTask({
             taskId: 'level1-turn-in-sage-seed',
             itemKey: 'sageSeed',
-            requiredQuantity: 1,
+            requiredQuantity: 5,
           }),
         ],
       },
@@ -142,20 +146,49 @@ function completedThrough(stepId) {
 function createLevelOneCompleteSnapshot() {
   return createSnapshot({
     tasks: {
-      currentLevel: 1,
+      currentLevel: 0,
       level: {
         completion: {
           canComplete: true,
+          costCoin: 10,
+        },
+        tasks: [
+          createTask({
+            taskId: 'level1-turn-in-sage-seed',
+            itemKey: 'sageSeed',
+            requiredQuantity: 5,
+            progressQuantity: 5,
+            remainingQuantity: 0,
+            completed: true,
+          }),
+        ],
+      },
+    },
+  });
+}
+
+function createLevelOneReadyToTurnInSnapshot() {
+  return createSnapshot({
+    seedInventory: [{ key: 'sageSeed', quantity: 5 }],
+    seedSummoning: {
+      canSummon: true,
+      cost: 10,
+    },
+    tasks: {
+      currentLevel: 0,
+      level: {
+        completion: {
+          canComplete: false,
           costCoin: 0,
         },
         tasks: [
           createTask({
             taskId: 'level1-turn-in-sage-seed',
             itemKey: 'sageSeed',
-            requiredQuantity: 1,
-            progressQuantity: 1,
-            remainingQuantity: 0,
-            completed: true,
+            requiredQuantity: 5,
+            progressQuantity: 0,
+            remainingQuantity: 5,
+            canFill: true,
           }),
         ],
       },
@@ -170,7 +203,7 @@ function createLevelTwoSnapshot(overrides = {}) {
       cost: 10,
     },
     tasks: {
-      currentLevel: 2,
+      currentLevel: 1,
       level: {
         completion: {
           canComplete: false,
@@ -215,7 +248,7 @@ function createLevelThreeSnapshot(overrides = {}) {
     },
     seedInventory: [{ key: 'mintSeed', quantity: 3 }],
     tasks: {
-      currentLevel: 3,
+      currentLevel: 2,
       level: {
         completion: {
           canComplete: false,
@@ -273,7 +306,7 @@ function createLevelFourSnapshot(overrides = {}) {
       inProgressResearches: [],
     },
     tasks: {
-      currentLevel: 4,
+      currentLevel: 3,
       level: {
         completion: {
           canComplete: false,
@@ -335,7 +368,7 @@ function createLevelFiveSnapshot(overrides = {}) {
       inProgressResearches: [],
     },
     tasks: {
-      currentLevel: 5,
+      currentLevel: 4,
       level: {
         completion: {
           canComplete: false,
@@ -386,7 +419,7 @@ describe('TutorialStepManager', () => {
       kind: 'dialog',
       advanceLabel: 'enter workshop',
       variant: 'intro-dialog',
-      stepLabel: '1/35',
+      stepLabel: '1/37',
     });
   });
 
@@ -408,17 +441,60 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('points at the first sage task when a summoned seed can be turned in', () => {
+  it('explains level requirements once five summoned seeds can be turned in', () => {
+    expect(
+      getStep({
+        snapshot: createLevelOneReadyToTurnInSnapshot(),
+        dom: createDomFake({ tasksExpanded: true }),
+        completed: completedThrough('first-summon-seed'),
+      }),
+    ).toMatchObject({
+      id: 'intro-level-requirements',
+      text: "for each new lesson or skill, i'll ask you to complete a few tasks.",
+      advanceLabel: 'show requirements',
+      advanceAction: TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS,
+    });
+  });
+
+  it('points at the first sage task after the level requirements explanation', () => {
+    expect(
+      getStep({
+        snapshot: createLevelOneReadyToTurnInSnapshot(),
+        dom: createDomFake({ tasksExpanded: true }),
+        completed: completedThrough('intro-level-requirements'),
+      }),
+    ).toMatchObject({
+      id: 'first-fill-seed-task',
+      targetId: 'task:level1-turn-in-sage-seed',
+      text: 'turn in',
+    });
+  });
+
+  it('does not require expanding level 1 requirements before the visible turn-in row', () => {
+    expect(
+      getStep({
+        snapshot: createLevelOneReadyToTurnInSnapshot(),
+        dom: createDomFake({ tasksExpanded: false }),
+        completed: completedThrough('intro-level-requirements'),
+      }),
+    ).toMatchObject({
+      id: 'first-fill-seed-task',
+      targetId: 'task:level1-turn-in-sage-seed',
+      text: 'turn in',
+    });
+  });
+
+  it('keeps the level 1 finish objective on the visible turn-in row while collapsed', () => {
     expect(
       getStep({
         snapshot: createSnapshot({
-          seedInventory: [{ key: 'sageSeed', quantity: 1 }],
+          seedInventory: [{ key: 'sageSeed', quantity: 3 }],
           seedSummoning: {
-            canSummon: true,
+            canSummon: false,
             cost: 10,
           },
           tasks: {
-            currentLevel: 1,
+            currentLevel: 0,
             level: {
               completion: {
                 canComplete: false,
@@ -426,11 +502,50 @@ describe('TutorialStepManager', () => {
               },
               tasks: [
                 createTask({
-                  taskId: 'level1-sage-seeds',
+                  taskId: 'level1-turn-in-sage-seed',
                   itemKey: 'sageSeed',
-                  requiredQuantity: 4,
+                  requiredQuantity: 5,
+                  progressQuantity: 2,
+                  remainingQuantity: 3,
+                  canFill: true,
+                }),
+              ],
+            },
+          },
+        }),
+        dom: createDomFake({ tasksExpanded: false }),
+        completed: completedThrough('first-fill-seed-task'),
+      }),
+    ).toMatchObject({
+      id: 'finish-seed-task',
+      targetId: 'task:level1-turn-in-sage-seed',
+      hintText: 'turn in',
+    });
+  });
+
+  it('keeps only mana and summon revealed before the fifth seed', () => {
+    expect(
+      getStep({
+        snapshot: createSnapshot({
+          seedInventory: [{ key: 'sageSeed', quantity: 4 }],
+          seedSummoning: {
+            canSummon: true,
+            cost: 10,
+          },
+          tasks: {
+            currentLevel: 0,
+            level: {
+              completion: {
+                canComplete: false,
+                costCoin: 0,
+              },
+              tasks: [
+                createTask({
+                  taskId: 'level1-turn-in-sage-seed',
+                  itemKey: 'sageSeed',
+                  requiredQuantity: 5,
                   progressQuantity: 0,
-                  remainingQuantity: 4,
+                  remainingQuantity: 5,
                   canFill: true,
                 }),
               ],
@@ -441,52 +556,16 @@ describe('TutorialStepManager', () => {
         completed: completedThrough('first-summon-seed'),
       }),
     ).toMatchObject({
-      id: 'first-fill-seed-task',
-      targetId: 'task:level1-sage-seeds',
-      text: 'turn in',
+      id: 'summon-five-seeds',
+      targetId: 'workshop:summonSeed',
+      hintText: 'summon seed',
+      objectiveText: 'summon 5 sage seeds',
+      revealTokens: ['top', 'mana', 'summon'],
+      progressLabel: '4/5 seeds',
     });
   });
 
-  it('keeps pointing at sage turn-in before summon-more fallback on the level-one objective', () => {
-    expect(
-      getStep({
-        snapshot: createSnapshot({
-          seedInventory: [{ key: 'sageSeed', quantity: 1 }],
-          seedSummoning: {
-            canSummon: true,
-            cost: 10,
-          },
-          tasks: {
-            currentLevel: 1,
-            level: {
-              completion: {
-                canComplete: false,
-                costCoin: 0,
-              },
-              tasks: [
-                createTask({
-                  taskId: 'level1-sage-seeds',
-                  itemKey: 'sageSeed',
-                  requiredQuantity: 4,
-                  progressQuantity: 1,
-                  remainingQuantity: 3,
-                  canFill: true,
-                }),
-              ],
-            },
-          },
-        }),
-        dom: createDomFake({ tasksExpanded: true }),
-        completed: completedThrough('first-fill-seed-task'),
-      }),
-    ).toMatchObject({
-      id: 'finish-seed-task',
-      targetId: 'task:level1-sage-seeds',
-      hintText: 'turn in',
-    });
-  });
-
-  it('lets level 1 advance without coins after the first seed task', () => {
+  it('lets level 1 advance with starter coins after the first seed task', () => {
     expect(
       getStep({
         snapshot: createLevelOneCompleteSnapshot(),
@@ -497,7 +576,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-one',
       targetId: 'workshop:levelUp',
       progressLabel: '1/1 ready',
-      stepLabel: '8/35',
+      stepLabel: '10/37',
     });
   });
 
@@ -507,7 +586,7 @@ describe('TutorialStepManager', () => {
       kind: 'dialog',
       targetId: 'workshop:summonSeed',
       lessonTitle: 'market opened',
-      stepLabel: '9/35',
+      stepLabel: '11/37',
     });
   });
 
@@ -543,7 +622,7 @@ describe('TutorialStepManager', () => {
         },
       },
       tasks: {
-        currentLevel: 2,
+        currentLevel: 1,
         level: {
           completion: { canComplete: false, costCoin: 4 },
           tasks: [
@@ -592,7 +671,7 @@ describe('TutorialStepManager', () => {
       targetId: 'shop:directSell:sell',
       hintText: 'press sell',
       progressLabel: '0/1 sale',
-      stepLabel: '15/35',
+      stepLabel: '17/37',
     });
   });
 
@@ -616,7 +695,7 @@ describe('TutorialStepManager', () => {
             },
           },
           tasks: {
-            currentLevel: 2,
+            currentLevel: 1,
             level: {
               completion: { canComplete: false, costCoin: 4 },
               tasks: [
@@ -694,7 +773,7 @@ describe('TutorialStepManager', () => {
         snapshot: createLevelTwoSnapshot({
           seedInventory: [{ key: 'sageSeed', quantity: 4 }],
           tasks: {
-            currentLevel: 2,
+            currentLevel: 1,
             level: {
               completion: { canComplete: false, costCoin: 4 },
               tasks: [
@@ -745,7 +824,7 @@ describe('TutorialStepManager', () => {
         snapshot: createLevelTwoSnapshot({
           coin: { current: 0.8 },
           tasks: {
-            currentLevel: 2,
+            currentLevel: 1,
             level: {
               completion: { canComplete: true, costCoin: 4 },
               tasks: [
@@ -795,7 +874,7 @@ describe('TutorialStepManager', () => {
         snapshot: createLevelTwoSnapshot({
           coin: { current: 4 },
           tasks: {
-            currentLevel: 2,
+            currentLevel: 1,
             level: {
               completion: { canComplete: true, costCoin: 4 },
               tasks: [
@@ -836,7 +915,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-two',
       targetId: 'workshop:levelUp',
       progressLabel: '1/1 ready',
-      stepLabel: '18/35',
+      stepLabel: '20/37',
     });
   });
 
@@ -848,7 +927,7 @@ describe('TutorialStepManager', () => {
           seedInventory: [],
           research: { completedResearchIds: [], inProgressResearches: [] },
           tasks: {
-            currentLevel: 3,
+            currentLevel: 2,
             level: {
               completion: { canComplete: false, costCoin: 8 },
               tasks: [
@@ -869,7 +948,7 @@ describe('TutorialStepManager', () => {
       id: 'research-mint-seed',
       targetId: 'research:unlockSeed:mintSeed',
       objectiveText: 'research mint seed',
-      stepLabel: '20/35',
+      stepLabel: '22/37',
     });
   });
 
@@ -884,7 +963,7 @@ describe('TutorialStepManager', () => {
       id: 'fill-mint-seed-task',
       targetId: 'task:level3-turn-in-mint-seed',
       hintText: 'turn in',
-      stepLabel: '22/35',
+      stepLabel: '24/37',
     });
   });
 
@@ -893,7 +972,7 @@ describe('TutorialStepManager', () => {
       getStep({
         snapshot: createLevelThreeSnapshot({
           tasks: {
-            currentLevel: 3,
+            currentLevel: 2,
             level: {
               completion: { canComplete: false, costCoin: 8 },
               tasks: [
@@ -923,7 +1002,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'fill-sage-seed-task',
       targetId: 'task:level3-turn-in-sage-seed',
-      stepLabel: '23/35',
+      stepLabel: '25/37',
     });
   });
 
@@ -940,7 +1019,7 @@ describe('TutorialStepManager', () => {
             },
           },
           tasks: {
-            currentLevel: 3,
+            currentLevel: 2,
             level: {
               completion: { canComplete: true, costCoin: 8 },
               tasks: [
@@ -969,7 +1048,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-three',
       targetId: 'page:shop',
       progressLabel: '6.4/8 coin',
-      stepLabel: '24/35',
+      stepLabel: '26/37',
     });
   });
 
@@ -979,7 +1058,7 @@ describe('TutorialStepManager', () => {
       kind: 'dialog',
       targetId: 'page:garden',
       lessonTitle: 'garden opened',
-      stepLabel: '25/35',
+      stepLabel: '27/37',
     });
   });
 
@@ -992,8 +1071,8 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'grow-sage',
       targetId: 'workshop:tasks',
-      hintText: 'open level 5 requirements',
-      stepLabel: '26/35',
+      hintText: 'open level 4 requirements',
+      stepLabel: '28/37',
     });
   });
 
@@ -1003,7 +1082,7 @@ describe('TutorialStepManager', () => {
         snapshot: createLevelFourSnapshot({
           inventory: [{ key: 'sageHerb', quantity: 1 }],
           tasks: {
-            currentLevel: 4,
+            currentLevel: 3,
             level: {
               completion: { canComplete: false, costCoin: 16 },
               tasks: [
@@ -1026,7 +1105,7 @@ describe('TutorialStepManager', () => {
       id: 'fill-sage-herb-task',
       targetId: 'task:level4-turn-in-sage-herb',
       hintText: 'turn in sage',
-      stepLabel: '28/35',
+      stepLabel: '30/37',
     });
   });
 
@@ -1035,7 +1114,7 @@ describe('TutorialStepManager', () => {
       getStep({
         snapshot: createLevelFourSnapshot({
           tasks: {
-            currentLevel: 4,
+            currentLevel: 3,
             level: {
               completion: { canComplete: false, costCoin: 16 },
               tasks: [
@@ -1063,7 +1142,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'fill-mint-herb-task',
       targetId: 'page:garden',
-      stepLabel: '29/35',
+      stepLabel: '31/37',
     });
   });
 
@@ -1080,7 +1159,7 @@ describe('TutorialStepManager', () => {
             },
           },
           tasks: {
-            currentLevel: 4,
+            currentLevel: 3,
             level: {
               completion: { canComplete: true, costCoin: 16 },
               tasks: [
@@ -1109,7 +1188,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-four',
       targetId: 'page:shop',
       progressLabel: '10/16 coin',
-      stepLabel: '30/35',
+      stepLabel: '32/37',
     });
   });
 
@@ -1117,7 +1196,7 @@ describe('TutorialStepManager', () => {
     expect(getStep({ pageId: 'research', snapshot: createLevelFiveSnapshot() })).toMatchObject({
       id: 'research-mana-tonic',
       targetId: 'research:unlockRecipe:manaTonic',
-      stepLabel: '31/35',
+      stepLabel: '33/37',
     });
   });
 
@@ -1137,7 +1216,7 @@ describe('TutorialStepManager', () => {
       id: 'brew-mana-tonic',
       targetId: 'brewing:herb:sageHerb',
       hintText: 'tap sage to fill cauldron. recipes care about order',
-      stepLabel: '33/35',
+      stepLabel: '35/37',
     });
   });
 
@@ -1151,7 +1230,7 @@ describe('TutorialStepManager', () => {
             inProgressResearches: [],
           },
           tasks: {
-            currentLevel: 5,
+            currentLevel: 4,
             level: {
               completion: { canComplete: false, costCoin: 30 },
               tasks: [
@@ -1174,18 +1253,18 @@ describe('TutorialStepManager', () => {
       id: 'refill-mana-tonic-cauldron',
       targetId: 'task:level5-turn-in-mana-tonic',
       hintText: 'turn in mana tonic',
-      stepLabel: '35/35',
+      stepLabel: '37/37',
     });
   });
 
-  it('completes FTUE once the player reaches level 6', () => {
+  it('completes FTUE once the player reaches level 5', () => {
     const progress = createProgressFake();
 
     expect(
       getStep({
         snapshot: createSnapshot({
           tasks: {
-            currentLevel: 6,
+            currentLevel: 5,
             level: { completion: { canComplete: false, costCoin: 50 }, tasks: [] },
           },
         }),

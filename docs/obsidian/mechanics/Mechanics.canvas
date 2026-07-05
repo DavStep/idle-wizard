@@ -1,0 +1,22 @@
+{
+	"nodes":[
+		{"id":"3333333333333001","type":"file","x":0,"y":0,"width":320,"height":180,"file":"mechanics/Home.md","color":"5"},
+		{"id":"3333333333333002","type":"file","x":420,"y":0,"width":340,"height":190,"file":"mechanics/Core Loop.md","color":"4"},
+		{"id":"3333333333333003","type":"file","x":840,"y":-260,"width":340,"height":200,"file":"mechanics/Tasks And Leveling.md","color":"3"},
+		{"id":"3333333333333004","type":"file","x":840,"y":0,"width":340,"height":220,"file":"mechanics/Production Systems.md","color":"2"},
+		{"id":"3333333333333005","type":"file","x":1260,"y":-260,"width":340,"height":220,"file":"mechanics/Research And Unlocks.md","color":"6"},
+		{"id":"3333333333333006","type":"file","x":1260,"y":0,"width":340,"height":220,"file":"mechanics/Market Systems.md","color":"1"},
+		{"id":"3333333333333007","type":"file","x":1680,"y":-260,"width":340,"height":220,"file":"mechanics/Prestige And Automation.md","color":"4"},
+		{"id":"3333333333333008","type":"file","x":1680,"y":0,"width":340,"height":220,"file":"mechanics/Events And Social.md","color":"5"}
+	],
+	"edges":[
+		{"id":"3333333333333e01","fromNode":"3333333333333001","fromSide":"right","toNode":"3333333333333002","toSide":"left","label":"starts"},
+		{"id":"3333333333333e02","fromNode":"3333333333333002","fromSide":"right","toNode":"3333333333333003","toSide":"left","label":"advances"},
+		{"id":"3333333333333e03","fromNode":"3333333333333002","fromSide":"right","toNode":"3333333333333004","toSide":"left","label":"produces"},
+		{"id":"3333333333333e04","fromNode":"3333333333333004","fromSide":"right","toNode":"3333333333333005","toSide":"left","label":"unlocks"},
+		{"id":"3333333333333e05","fromNode":"3333333333333003","fromSide":"right","toNode":"3333333333333005","toSide":"left","label":"requires"},
+		{"id":"3333333333333e06","fromNode":"3333333333333004","fromSide":"right","toNode":"3333333333333006","toSide":"left","label":"sells"},
+		{"id":"3333333333333e07","fromNode":"3333333333333005","fromSide":"right","toNode":"3333333333333007","toSide":"left","label":"expands"},
+		{"id":"3333333333333e08","fromNode":"3333333333333006","fromSide":"right","toNode":"3333333333333008","toSide":"left","label":"shares"}
+	]
+}

@@ -5,6 +5,7 @@ iconKey from this list and must not use elara.
 
 adventurer_blackarmor_sword: black-haired blue-eyed sword fighter in black and gold armor, holding a short sword.
 adventurer_blacksmith: red-haired worker with a dark red headband and leather apron, holding a hammer.
+adventurer_blondshield_guard: blond ponytailed guard in blue and leather gear, holding a round shield.
 adventurer_blondsword: blond blue-eyed light-armored swordsman with a blue scarf and raised sword.
 adventurer_bluebandana: blue-haired traveler with a red scarf and a blue bandana-like head wrap.
 adventurer_bluequiver_archer: dark blue-haired archer in blue-gray clothes, carrying a full quiver.
@@ -16,8 +17,12 @@ adventurer_goldshield_guard: blond guard in gold-trimmed armor, holding a blue-a
 adventurer_grayquiver_archer: pale blond archer in gray-brown gear, carrying a quiver.
 adventurer_greenbow_archer: green-haired archer in tan clothes, holding a curved bow.
 adventurer_greencloak_spear: brown-haired spear fighter in green cloak and light armor.
+adventurer_greenhood_archer: brown-haired archer under a green hood, carrying arrows.
+adventurer_greenscarf_dagger: black-haired knife user with a green scarf, holding a dagger.
 adventurer_greenscarf_shield: brown-haired guard with a green scarf, armor, and round shield.
+adventurer_headband_furguard: brown-haired fur-cloaked guard with a red headband.
 adventurer_helmhammer: armored guard in a steel helmet, holding a square-headed hammer.
+adventurer_hornhelm_axe: orange-haired axe fighter in a horned helmet and fur cloak.
 adventurer_hoodblade: brown-haired knife user in an olive hood, holding a short blade.
 adventurer_lamplighter: black-haired scout in a brown cap, holding a lantern.
 adventurer_minstrel: brown-haired musician in a blue cap with feather, holding a small lute.
@@ -29,12 +34,14 @@ adventurer_pouchrunner: black-haired runner in dark clothes, holding a small mon
 adventurer_purpleaxe: purple-haired axe fighter in red-brown gear, holding a curved axe.
 adventurer_redaxe_guard: red-haired axe fighter in tan armor, holding a double-headed axe.
 adventurer_redbow_archer: red-haired archer in green clothes, holding a curved bow.
+adventurer_redplume_sword: red-haired helmeted sword fighter with a red plume.
 adventurer_redscarf_sword: black-haired sword fighter with a red scarf and silver armor.
 adventurer_redspearman: red-haired spear fighter in dark armor, holding a wide spear point.
 adventurer_sapling: brown-haired field worker in a cream cap, holding a tiny sapling.
 adventurer_scrollcap: gray-haired scholar in a stitched brown cap, holding scrolls.
 adventurer_shadowdagger: purple-eyed rogue in a black hood, holding a dagger.
 adventurer_shieldguard: brown-haired guard in a steel helmet, holding a round shield.
+adventurer_silverhair_spear: silver-haired spear fighter in dark gear, holding an upright spear.
 adventurer_steelward: blond shield guard with a pale headband, blue shirt, and gray shield.
 adventurer_treasurehunter: white-haired treasure hunter in goggles and a brown hat, giving a thumbs-up.
 adventurer_troubadour: brown-haired musician in a red cap with feather, holding a small lute.

@@ -66,16 +66,23 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().isTasksPinned()).toBe(true);
   });
 
-  it('treats app, announcement, and top-panel dialogs as tutorial blockers', () => {
+  it('treats marked blockers, app, announcement, and top-panel dialogs as tutorial blockers', () => {
     const stage = document.createElement('section');
+    const customBlocker = document.createElement('section');
     const accountChoice = document.createElement('section');
     const freshStartChoice = document.createElement('section');
     const announcement = document.createElement('section');
     const levelPopup = document.createElement('section');
     const manager = new TutorialTargetManager({ stage });
 
+    customBlocker.dataset.tutorialBlocker = 'true';
+    document.body.append(stage, customBlocker);
+
+    expect(manager.getDomState().isBlockingDialogOpen()).toBe(true);
+
+    customBlocker.hidden = true;
     accountChoice.className = 'app-account-link-choice';
-    document.body.append(stage, accountChoice);
+    document.body.append(accountChoice);
 
     expect(manager.getDomState().isBlockingDialogOpen()).toBe(true);
 

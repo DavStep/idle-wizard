@@ -1,0 +1,25 @@
+filters:
+  and:
+    - file.hasTag("mechanics")
+    - file.ext == "md"
+properties:
+  status:
+    displayName: Status
+  world:
+    displayName: World
+  file.tags:
+    displayName: Tags
+views:
+  - type: table
+    name: Mechanics Notes
+    order:
+      - file.name
+      - status
+      - world
+      - file.tags
+      - file.mtime
+  - type: list
+    name: Systems
+    order:
+      - file.name
+      - file.tags

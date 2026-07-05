@@ -114,12 +114,12 @@ export class TaskStateEntityManager {
 
   areLevelTasksCompleted(levelNumber) {
     return this.taskBalanceManager
-      .getLevelTasks(levelNumber)
+      .getCurrentLevelTasks(levelNumber)
       .every((task) => this.isCompleted(task.id));
   }
 
   areAllLevelsCompleted() {
-    return this.areLevelTasksCompleted(this.taskBalanceManager.getMaxLevel());
+    return this.getCurrentLevel() >= this.taskBalanceManager.getMaxLevel();
   }
 
   getTaskStateSnapshots() {
@@ -134,7 +134,7 @@ export class TaskStateEntityManager {
     const currentLevel = this.getCurrentLevel();
 
     return this.taskBalanceManager
-      .getLevelTasks(currentLevel)
+      .getCurrentLevelTasks(currentLevel)
       .map((task) => ({
         taskId: task.id,
         progressQuantity: this.getProgress(task.id),
@@ -171,13 +171,19 @@ export class TaskStateEntityManager {
   }
 
   getFirstIncompleteLevel() {
-    for (const level of this.taskBalanceManager.getLevels()) {
-      if (!this.areLevelTasksCompleted(level.level)) {
-        return level.level;
+    const maxLevel = this.taskBalanceManager.getMaxLevel();
+
+    for (
+      let level = this.taskBalanceManager.getInitialLevel();
+      level < maxLevel;
+      level += 1
+    ) {
+      if (!this.areLevelTasksCompleted(level)) {
+        return level;
       }
     }
 
-    return this.taskBalanceManager.getMaxLevel();
+    return maxLevel;
   }
 
   getTaskEntityId(taskId) {

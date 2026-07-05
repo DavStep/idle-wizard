@@ -11,7 +11,7 @@ export class TaskFillManager {
     const task = this.taskBalanceManager.getTask(taskId);
     const currentLevel = this.taskStateEntityManager.getCurrentLevel();
 
-    if (task.level !== currentLevel) {
+    if (!this.taskBalanceManager.isTaskActiveForCurrentLevel(task, currentLevel)) {
       return { ok: false, reason: 'not_current_level', taskId };
     }
 
@@ -26,7 +26,7 @@ export class TaskFillManager {
     const progressQuantity = this.taskStateEntityManager.getProgress(taskId);
 
     if (progressQuantity >= task.requiredQuantity) {
-      return { ok: false, reason: 'ready_to_complete', taskId };
+      return this.completeFilledTask(task);
     }
 
     const remainingQuantity = task.requiredQuantity - progressQuantity;
@@ -45,7 +45,7 @@ export class TaskFillManager {
 
     const nextProgressQuantity = this.taskStateEntityManager.addProgress(taskId, fillQuantity);
 
-    return {
+    const result = {
       ok: true,
       taskId,
       item: {
@@ -59,13 +59,50 @@ export class TaskFillManager {
       requiredQuantity: task.requiredQuantity,
       maxed: nextProgressQuantity >= task.requiredQuantity,
     };
+
+    if (result.maxed) {
+      const completion = this.taskStateEntityManager.completeTask(taskId);
+      result.completed = true;
+      result.levelBefore = completion.levelBefore;
+      result.currentLevel = completion.levelAfter;
+      result.advanced = completion.advanced;
+      result.completedAllLevels = completion.completedAllLevels;
+    } else {
+      result.completed = false;
+    }
+
+    return result;
+  }
+
+  completeFilledTask(task) {
+    const completion = this.taskStateEntityManager.completeTask(task.id);
+
+    return {
+      ok: true,
+      taskId: task.id,
+      item: {
+        itemTypeId: task.itemTypeId,
+        key: task.itemKey,
+        label: task.itemLabel,
+        kind: task.itemKind,
+      },
+      quantity: 0,
+      progressQuantity: task.requiredQuantity,
+      requiredQuantity: task.requiredQuantity,
+      maxed: true,
+      completed: true,
+      levelBefore: completion.levelBefore,
+      currentLevel: completion.levelAfter,
+      advanced: completion.advanced,
+      completedAllLevels: completion.completedAllLevels,
+    };
   }
 
   completeTask(taskId) {
     const task = this.taskBalanceManager.getTask(taskId);
     const currentLevel = this.taskStateEntityManager.getCurrentLevel();
 
-    if (task.level !== currentLevel) {
+    if (!this.taskBalanceManager.isTaskActiveForCurrentLevel(task, currentLevel)) {
       return { ok: false, reason: 'not_current_level', taskId };
     }
 

@@ -1,0 +1,86 @@
+---
+title: Experience: Backend And Android
+tags:
+  - engineering
+  - liveops
+  - experience
+status: active
+world: engineering-liveops
+experience_type: backend-android
+---
+
+# Experience: Backend And Android
+
+- Backend target is SpacetimeDB.
+- Player feedback is server-backed through private `player_feedback` rows written by `submit_feedback`; dashboard review should add a guarded read surface later.
+- Top-panel `report a bug` and `request a feature` reuse `submit_feedback` with `bug report:` / `feature request:` body prefixes.
+- SpacetimeDB reducers are public entry points; never use first-come admin claim or raw client leaderboard/shop values without server-side caps.
+- Server-visible names/messages should strip all Unicode control and format chars; partial bidi lists miss zero-width spoofing.
+- Private player-owned tables need a sender-scoped client read path, such as an own-row view; `SELECT *` subscriptions on public base tables leak every row.
+- SpacetimeDB TypeScript UUID values expose `compareTo`/string conversion, not `isEqual`; normalize UUID keys before comparing alliance IDs.
+- Player market exchange, NPC market pressure, research announcements, potion discoveries, leaderboard totals, and public player levels must stay locked down until the server owns the matching state; capped client reports are still spoofable.
+- Generated-coin leaderboard values are stored in `leaderboard.totalIncome`; UI should prefer that over any legacy `totalGeneratedCoin` field.
+- Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.
+- Runtime balance/catalog config lives in SpacetimeDB `game_config`: `tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `tradeAlliance`, `items`, and `potionRecipes`; client source defaults are only bootstrap fallbacks before subscription data applies.
+- Task balance default changes need a matching `game_config.tasks` update path, such as a narrow legacy-value normalizer or an admin upsert; valid stored rows do not change just because source defaults changed.
+- Item catalog default value changes need a matching `game_config.items` update path; existing valid item rows override source catalog defaults.
+- When adding new fields to SpacetimeDB `game_config` JSON, server normalization and client readers must default legacy rows; otherwise old hosted config can silently disable the new behavior.
+- Catalog-backed `game_config` arrays need merge-by-key normalization for new catalog entries; valid old rows will not self-heal from defaults unless the normalizer appends missing entries.
+- World chat is server-backed through the `world_chat` table and `send_world_chat_message` reducer; Workshop UI must stay offline-safe when bindings/backend are absent.
+- World chat rows store `allianceTag` at send time; chat display should format tagged senders as `[TAG] username(lvl)`.
+- Trade alliance weekly quests are configured by `game_config.tradeAlliance.weeklyQuests`; legacy `dailyQuests` config is still accepted, and current server-verified source is capped `allianceIncome`.
+- Trade alliance member `dailyContribution` is a legacy column name; it now stores current weekly contribution and resets with weekly quest progress.
+- Trade alliance chat and reward inbox stay private base tables with sender-scoped `own_trade_alliance_*` views; do not subscribe clients to private base tables.
+- Trade alliance reward inbox processing must wait until gameplay save hydration finishes; otherwise local crystal can be granted then overwritten by the loaded save while the server reward is collected.
+- Trade alliance claimed quest UI needs collected own reward rows; hiding collected inbox rows makes claimed quests render as claimable again after auto-collect.
+- Trade alliance quest rewards must be capped per player/quest/week across all alliances; reward keys or guards that include alliance id allow clan hopping to claim again.
+- Trade alliance item-fill quest ids must be `itemFill:<itemKey>`; the server validates that key against the exact configured seed or potion item before accepting fills.
+- Trade alliance contribution lookups must include alliance id, quest id, period key, and contributor identity; same-week progress in another alliance locks quest participation until reset or rejoin.
+- Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.
+- Level-up chat announcements use explicit `announce_level_up` calls from successful task completion, not generic `set_player_level` sync, so restored saves do not replay old level-up notices.
+- Level-up and prestige system chat announcements should bypass normal user-message rate limits; their duplicate guards are the cap, and chat traffic must not hide progression notices.
+- Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.
+- When asked to run the project, also check whether SpacetimeDB backend is running; start it if port `3000` has no backend listener.
+- The client must block play until SpacetimeDB connects, and must stop the frame loop again when the backend disconnects.
+- Transient SpacetimeDB `connect_error`/`disconnect` states should keep the gate in `connecting to server...` and retry; reserve `server unavailable` for hard startup/schema failures.
+- Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
+- App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
+- Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields and gameplay save JSON, but not trusted public level/rank state.
+- Leaderboard own-rank display should match the connected SpacetimeDB identity from the full subscribed leaderboard, not username or top-ten rows.
+- Shared player level displays use server `playerLevel`; do not trust `tasks.currentLevel` for other players until task completion is server-authoritative.
+- Player level milestones come from SpacetimeDB `game_config.playerLevel`; they unlock permission to buy higher caps, never grant the tile/stand for free.
+- Cauldron unlocks must be bought one at a time; level milestones only raise the max purchasable cauldron cap, never bulk-unlock cauldrons.
+- Server `DEFAULT_PLAYER_LEVEL_CONFIG_JSON` must mirror the client bootstrap default; hosted `game_config.playerLevel` can override milestones.
+- Player-level balance changes that should affect hosted rows need a keyed backend backfill; changing only defaults leaves existing `game_config.playerLevel` rows untouched.
+- Garden/brewing max-slot balance changes also need hosted `game_config` normalization for old default cost arrays, or existing rows keep exposing the old slot counts.
+- Player level sets mana cap and mana regen from `game_config.playerLevel`; there are no separate mana research bonuses.
+- Player-level crystal rewards come from `game_config.playerLevel`; level 1 now grants the reward too, while level-up deltas should only pay newly reached levels.
+- Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
+- Garden tile and market stand purchases should fail with `level_locked` before checking coin when the next buy exceeds the current level milestone cap.
+- Leaderboard total generated coin should stay admin/server-owned until coin generation is server-authoritative; local lifetime totals are useful for player saves, not trusted shared ranking.
+- Global progress resets should bump the gameplay save version and migrate old saves to keep only `coin.totalGenerated`; username and leaderboard identity live outside gameplay save.
+- Hydrate profile fields from the server `player` row before pushing local values; otherwise local defaults can overwrite saved DB profile data.
+- New client-only profile visual fields must not be sent to `set_player_profile` until the SpacetimeDB player schema and generated bindings support them.
+- Queue explicit profile edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's choices.
+- First-run username prompts should wait until player profile hydration marks default `wizard` as server-confirmed; local startup defaults are not enough.
+- SpacetimeDB table callbacks pass inserted/updated rows; use those callback rows for player profile sync because immediate table scans can still read stale usernames.
+- Local SpacetimeDB CLI target should be `local` (`http://127.0.0.1:3000`); anonymous publish cannot update an existing dev DB.
+- Use `spacetime --no-config` when CLI commands must target `.env.local`/Maincloud DB names directly; otherwise `spacetime.json` can force `idle-wizard`.
+- Keep local web `VITE_SPACETIME_URI` on `ws://127.0.0.1:3000`; LAN/`localhost` overrides can make the browser show `server required` while the backend is actually running.
+- Browser auth is origin-scoped; `localhost`, `127.0.0.1`, and LAN URLs can load different SpacetimeDB identities unless account recovery/migration exists.
+- Dynamic market prices should be server-authoritative and shared through SpacetimeDB subscriptions.
+- NPC market backend can expose shared baseline prices/need, but client buy/sell calls must not mutate shared stock or demand until server-owned inventory/coin exists.
+- NPC market auto-sell must reserve/decrement visible demand locally across same-item stands and catch-up cycles before calling reducers; otherwise stale demand snapshots spam `sell_to_npc` panics.
+- NPC market base prices are DB-owned in `npc_market_item_config`; use `claim_npc_market_admin` once, then `set_npc_market_item_base_price` to change them without another deploy. `npc_market_price` remains the derived live quote table.
+- Market price amounts are cent-rounded floats and visible prices use two decimals; use shared coin-price helpers instead of flooring.
+- Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local coin.
+- Player shop trade history is server-backed through `player_shop_trade`; clients should tolerate older backends missing the table by showing empty history.
+- Maincloud currently has no full action-log table; balance reads can only infer behavior from `player`, `leaderboard`, `world_chat`, player-shop tables, `npc_market_price`, and potion discoveries until analytics exists.
+- Gameplay save raw JSON must stay below the server cap before reducer normalization; cap noisy client branches like logs and do not persist full future task catalogs.
+- Client migrations must preserve newer branches present on lower-version server-normalized saves; Maincloud can return `version: 3` with `guild` state, and dropping it resets player guilds.
+- Android packaging uses Capacitor.
+- Capacitor 8 Android builds require JDK 21 here.
+- Capacitor Android serves bundled assets as `https://localhost` by default; local `ws://` SpacetimeDB is blocked as mixed content unless `server.androidScheme` is `http` and cleartext is allowed, then the app is rebuilt/synced.
+- Capacitor 8 iOS should use CocoaPods here (`npx cap add ios --packagemanager CocoaPods`); the SPM path can hide core APIs like `CAPPluginCall.reject`.
+- Xcode 15.4 on macOS 26 can fail `Assets.xcassets` with `AssetCatalogSimulatorAgent` FIFO handshakes; simulator builds can still verify code with `EXCLUDED_SOURCE_FILE_NAMES=Assets.xcassets`.
+- Localhost ports `5173` and `5174` were already shadowed; `55173` worked for this project.

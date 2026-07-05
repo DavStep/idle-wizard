@@ -6,7 +6,10 @@ const WITCH_GUIDE_URL = new URL(
   '../../../assets/characters/elara.png',
   import.meta.url,
 ).href;
+const SVG_NS = 'http://www.w3.org/2000/svg';
 const GUIDE_NAME = 'Elara Starbrew';
+const HIGHLIGHT_BACKDROP_OPACITY = 0.58;
+const HIGHLIGHT_PADDING = 3;
 const HINT_WIDTH = 190;
 const HINT_PADDED_WIDTH = HINT_WIDTH + 24;
 const HINT_HEIGHT = 56;
@@ -129,12 +132,21 @@ const OBJECTIVE_PLACEMENTS = [
     buttonTop: 166 + OBJECTIVE_HEIGHT - PORTRAIT_HEIGHT + 9,
   },
 ];
+let highlightMaskIdCounter = 0;
 
 export class TutorialHintManager {
   constructor({ storage, pointerSpineManager = new TutorialPointerSpineManager() } = {}) {
     this.stage = null;
     this.root = null;
     this.backdrop = null;
+    this.backdropMask = null;
+    this.backdropMaskBase = null;
+    this.backdropShade = null;
+    this.highlightRects = [];
+    this.highlightTargets = [];
+    this.highlightFrame = null;
+    this.highlightFollowState = null;
+    this.highlightMaskId = `tutorial-highlight-mask-${++highlightMaskIdCounter}`;
     this.pointer = null;
     this.portrait = null;
     this.hint = null;
@@ -163,6 +175,8 @@ export class TutorialHintManager {
     this.objectiveVariant = null;
     this.objectiveCopyText = '';
     this.objectiveTarget = null;
+    this.objectiveHighlightTargets = [];
+    this.objectiveDimBackdrop = false;
     this.blockingDialogSuspended = false;
     this.pointerState = null;
     this.pointerHideTimeout = null;
@@ -204,9 +218,28 @@ export class TutorialHintManager {
     this.root.hidden = true;
     this.root.setAttribute('aria-label', `${GUIDE_NAME} guide`);
 
-    this.backdrop = document.createElement('div');
-    this.backdrop.className = 'tutorial-layer__backdrop';
+    this.backdrop = createSvgElement(document, 'svg');
+    this.backdrop.setAttribute('class', 'tutorial-layer__backdrop');
     this.backdrop.setAttribute('aria-hidden', 'true');
+    this.backdrop.setAttribute('focusable', 'false');
+    this.backdrop.setAttribute('hidden', '');
+    this.backdrop.hidden = true;
+
+    const backdropDefs = createSvgElement(document, 'defs');
+    this.backdropMask = createSvgElement(document, 'mask');
+    this.backdropMask.id = this.highlightMaskId;
+    this.backdropMask.setAttribute('maskUnits', 'userSpaceOnUse');
+
+    this.backdropMaskBase = createSvgElement(document, 'rect');
+    this.backdropMaskBase.setAttribute('fill', 'white');
+    this.backdropMask.append(this.backdropMaskBase);
+    backdropDefs.append(this.backdropMask);
+
+    this.backdropShade = createSvgElement(document, 'rect');
+    this.backdropShade.setAttribute('fill', 'black');
+    this.backdropShade.setAttribute('fill-opacity', String(HIGHLIGHT_BACKDROP_OPACITY));
+    this.backdropShade.setAttribute('mask', `url(#${this.highlightMaskId})`);
+    this.backdrop.append(backdropDefs, this.backdropShade);
 
     this.pointer = document.createElement('span');
     this.pointer.className = 'tutorial-layer__pointer';
@@ -397,10 +430,18 @@ export class TutorialHintManager {
   }
 
   unmount() {
+    this.clearHighlightFrame();
     this.root?.remove();
     this.stage = null;
     this.root = null;
     this.backdrop = null;
+    this.backdropMask = null;
+    this.backdropMaskBase = null;
+    this.backdropShade = null;
+    this.highlightRects = [];
+    this.highlightTargets = [];
+    this.highlightFrame = null;
+    this.highlightFollowState = null;
     this.pointer = null;
     this.pointerSpineManager.unmount();
     this.portrait = null;
@@ -430,6 +471,8 @@ export class TutorialHintManager {
     this.objectiveVariant = null;
     this.objectiveCopyText = '';
     this.objectiveTarget = null;
+    this.objectiveHighlightTargets = [];
+    this.objectiveDimBackdrop = false;
     this.blockingDialogSuspended = false;
     this.clearTargetCueFrame();
     this.clearMovingTargetCueFrame();
@@ -543,6 +586,8 @@ export class TutorialHintManager {
     advanceLabel = 'next',
     canShowTarget = false,
     target,
+    highlightTargets = [],
+    dimBackdrop = false,
     variant = null,
     hideTargetCue = true,
   }) {
@@ -565,6 +610,8 @@ export class TutorialHintManager {
     const hasProgress = normalizedProgress !== null;
     this.objectiveCopyText = text ?? '';
     this.objectiveTarget = target ?? null;
+    this.objectiveHighlightTargets = normalizeHighlightTargets(highlightTargets);
+    this.objectiveDimBackdrop = Boolean(dimBackdrop);
     this.blockingDialogSuspended = false;
     this.root.hidden = false;
     this.objectiveButton.hidden = objectiveVariant === 'intro-dialog';
@@ -603,6 +650,7 @@ export class TutorialHintManager {
     );
     this.setObjectiveAttention(attention);
     this.updateObjectiveCopy();
+    this.applyLessonBackdrop();
 
     if (this.objectivePanelOpen) {
       this.hidePromptBox();
@@ -859,6 +907,7 @@ export class TutorialHintManager {
     this.hidePrompt();
     this.resetTypedText(this.objectiveText);
     this.updateObjectiveCopy();
+    this.applyLessonBackdrop();
     this.positionObjective();
     this.syncRootVisibility();
   }
@@ -875,6 +924,7 @@ export class TutorialHintManager {
     this.objectivePanelOpen = false;
     this.clearTypedText(this.objectiveText);
     this.hideTargetCue();
+    this.applyLessonBackdrop();
     this.updateObjectiveButtonState();
     this.applyObjectiveAttention();
     this.positionObjective();
@@ -920,6 +970,7 @@ export class TutorialHintManager {
     }
 
     this.hideTargetCue({ immediate: true });
+    this.hideHighlights();
 
     if (this.objective) {
       this.clearObjectiveHideTimeout();
@@ -943,6 +994,8 @@ export class TutorialHintManager {
     this.objectiveVariant = null;
     this.objectiveCopyText = '';
     this.objectiveTarget = null;
+    this.objectiveHighlightTargets = [];
+    this.objectiveDimBackdrop = false;
     this.blockingDialogSuspended = false;
     this.clearAllTypewriterTimers();
     this.resetTypedText(this.text);
@@ -1002,12 +1055,15 @@ export class TutorialHintManager {
       this.setSpeaking(this.objectiveButton, false);
     }
 
+    this.hideHighlights();
     this.objectivePanelOpen = false;
     this.objectiveAttentionActive = false;
     this.objectiveStepId = null;
     this.objectiveVariant = null;
     this.objectiveCopyText = '';
     this.objectiveTarget = null;
+    this.objectiveHighlightTargets = [];
+    this.objectiveDimBackdrop = false;
     this.blockingDialogSuspended = false;
     this.resetTypedText(this.objectiveText);
     this.syncRootVisibility();
@@ -1025,8 +1081,202 @@ export class TutorialHintManager {
     }
   }
 
+  applyLessonBackdrop() {
+    const shouldShowBackdrop =
+      this.objectivePanelOpen &&
+      (this.objectiveDimBackdrop || this.objectiveHighlightTargets.length > 0);
+
+    if (!shouldShowBackdrop) {
+      this.hideHighlights();
+      return;
+    }
+
+    this.showHighlights(this.objectiveHighlightTargets, {
+      fallbackBackdrop: this.objectiveDimBackdrop,
+    });
+  }
+
+  showHighlights(targets = [], { fallbackBackdrop = false } = {}) {
+    this.clearHighlightFrame();
+    this.highlightTargets = normalizeHighlightTargets(targets);
+    const result = this.renderHighlights(this.highlightTargets, { fallbackBackdrop });
+
+    if (!result.ok) {
+      this.hideHighlights();
+      return;
+    }
+
+    this.highlightFollowState = {
+      targets: this.highlightTargets,
+      fallbackBackdrop,
+      frameCount: 0,
+      lastRectKey: result.rectKey,
+      settledFrames: 0,
+    };
+    this.scheduleHighlightFrame();
+  }
+
+  renderHighlights(targets = [], { fallbackBackdrop = false } = {}) {
+    if (
+      !this.backdrop ||
+      !this.backdropMask ||
+      !this.backdropMaskBase ||
+      !this.backdropShade
+    ) {
+      return { ok: false, rectKey: '' };
+    }
+
+    const bounds = this.getBackdropSourceBounds();
+    const highlightShapes = targets
+      .filter((target) => isHighlightableElement(target, this.stage))
+      .map((target) => ({
+        highlightMode: getHighlightMode(target),
+        padding: getHighlightPadding(target),
+        rect: this.getBackdropSourceRect(target),
+        target,
+      }))
+      .filter(({ rect }) => Boolean(rect))
+      .map(({ highlightMode, padding, rect, target }) => ({
+        highlightMode,
+        rect: padSourceRect(rect, highlightMode === 'text' ? 0 : padding, bounds),
+        target,
+      }))
+      .filter(({ rect }) => rect.width > 0 && rect.height > 0);
+
+    this.clearHighlightRects();
+
+    if (highlightShapes.length === 0 && !fallbackBackdrop) {
+      return { ok: false, rectKey: '' };
+    }
+
+    const width = Math.max(1, bounds.width);
+    const height = Math.max(1, bounds.height);
+    this.backdrop.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    this.backdrop.setAttribute('width', String(width));
+    this.backdrop.setAttribute('height', String(height));
+    setSvgRect(this.backdropMaskBase, { x: 0, y: 0, width, height });
+    setSvgRect(this.backdropShade, { x: 0, y: 0, width, height });
+
+    this.highlightRects = highlightShapes.map(({ highlightMode, rect, target }) =>
+      highlightMode === 'text'
+        ? createTextHighlight(this.backdrop.ownerDocument, target, rect)
+        : createRectHighlight(this.backdrop.ownerDocument, rect),
+    );
+    this.backdropMask.append(...this.highlightRects);
+    this.backdrop.removeAttribute('hidden');
+    this.backdrop.hidden = false;
+    this.syncRootVisibility();
+
+    return {
+      ok: true,
+      rectKey:
+        highlightShapes.length > 0
+          ? formatHighlightShapesKey(highlightShapes)
+          : `full:${formatSvgNumber(width)}x${formatSvgNumber(height)}`,
+    };
+  }
+
+  hideHighlights() {
+    this.clearHighlightFrame();
+    this.highlightTargets = [];
+    this.highlightFollowState = null;
+    this.clearHighlightRects();
+    this.backdrop?.setAttribute('hidden', '');
+    if (this.backdrop) {
+      this.backdrop.hidden = true;
+    }
+    this.syncRootVisibility();
+  }
+
+  clearHighlightRects() {
+    this.highlightRects.forEach((rect) => rect.remove());
+    this.highlightRects = [];
+  }
+
+  scheduleHighlightFrame() {
+    if (this.highlightFrame !== null) {
+      return;
+    }
+
+    const view = this.getWindow();
+
+    if (typeof view?.requestAnimationFrame !== 'function') {
+      return;
+    }
+
+    this.highlightFrame = view.requestAnimationFrame(() => {
+      this.highlightFrame = null;
+      this.followHighlights();
+    });
+  }
+
+  followHighlights() {
+    const state = this.highlightFollowState;
+
+    if (!state || !this.root || !this.stage || this.backdrop?.hasAttribute('hidden')) {
+      this.clearHighlightFrame();
+      return;
+    }
+
+    if (!state.targets.every((target) => target?.isConnected)) {
+      this.hideHighlights();
+      return;
+    }
+
+    const result = this.renderHighlights(state.targets, {
+      fallbackBackdrop: state.fallbackBackdrop,
+    });
+
+    if (!result.ok) {
+      this.hideHighlights();
+      return;
+    }
+
+    state.settledFrames = result.rectKey === state.lastRectKey ? state.settledFrames + 1 : 0;
+    state.lastRectKey = result.rectKey;
+    state.frameCount += 1;
+
+    if (
+      state.frameCount < MOVING_TARGET_CUE_MAX_FRAMES &&
+      state.settledFrames < MOVING_TARGET_CUE_SETTLED_FRAMES
+    ) {
+      this.scheduleHighlightFrame();
+      return;
+    }
+
+    this.clearHighlightFrame();
+  }
+
+  clearHighlightFrame() {
+    const view = this.getWindow();
+
+    if (this.highlightFrame !== null) {
+      view?.cancelAnimationFrame?.(this.highlightFrame);
+      this.highlightFrame = null;
+    }
+
+    this.highlightFollowState = null;
+  }
+
   getSourceRect(target) {
     const layerRect = this.getSourceLayerRect();
+    const targetRect = target.getBoundingClientRect();
+    const scale = this.getUiScale();
+
+    if (!layerRect || (targetRect.width <= 0 && targetRect.height <= 0)) {
+      return null;
+    }
+
+    return {
+      left: (targetRect.left - layerRect.left) / scale,
+      top: (targetRect.top - layerRect.top) / scale,
+      width: targetRect.width / scale,
+      height: targetRect.height / scale,
+    };
+  }
+
+  getBackdropSourceRect(target) {
+    const layerRect = this.getBackdropSourceLayerRect();
     const targetRect = target.getBoundingClientRect();
     const scale = this.getUiScale();
 
@@ -2040,8 +2290,28 @@ export class TutorialHintManager {
     return stageRect?.width > 0 && stageRect?.height > 0 ? stageRect : null;
   }
 
+  getBackdropSourceLayerRect() {
+    const stageRect = this.stage?.getBoundingClientRect?.();
+
+    if (stageRect?.width > 0 && stageRect?.height > 0) {
+      return stageRect;
+    }
+
+    return this.getSourceLayerRect();
+  }
+
   getSourceBounds() {
     const rect = this.getSourceLayerRect();
+    const scale = this.getUiScale();
+
+    return {
+      width: rect?.width > 0 ? rect.width / scale : 360,
+      height: rect?.height > 0 ? rect.height / scale : 720,
+    };
+  }
+
+  getBackdropSourceBounds() {
+    const rect = this.getBackdropSourceLayerRect();
     const scale = this.getUiScale();
 
     return {
@@ -2506,12 +2776,14 @@ export class TutorialHintManager {
     const hasTargetCue =
       Boolean(this.pointer && !this.pointer.hidden) ||
       Boolean(this.portrait && !this.portrait.hidden);
+    const hasHighlights = Boolean(this.backdrop && !this.backdrop.hasAttribute('hidden'));
 
     this.root.hidden =
       Boolean(this.hint?.hidden) &&
       Boolean(this.objective?.hidden) &&
       Boolean(this.objectiveButton?.hidden) &&
-      !hasTargetCue;
+      !hasTargetCue &&
+      !hasHighlights;
   }
 
   updateObjectiveCopy() {
@@ -2751,6 +3023,120 @@ export class TutorialHintManager {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function createSvgElement(documentRef, tagName) {
+  return documentRef.createElementNS(SVG_NS, tagName);
+}
+
+function setSvgRect(element, { x, y, width, height }) {
+  element.setAttribute('x', formatSvgNumber(x));
+  element.setAttribute('y', formatSvgNumber(y));
+  element.setAttribute('width', formatSvgNumber(width));
+  element.setAttribute('height', formatSvgNumber(height));
+}
+
+function createRectHighlight(documentRef, rect) {
+  const highlight = createSvgElement(documentRef, 'rect');
+  highlight.setAttribute('fill', 'black');
+  setSvgRect(highlight, {
+    x: rect.left,
+    y: rect.top,
+    width: rect.width,
+    height: rect.height,
+  });
+  return highlight;
+}
+
+function createTextHighlight(documentRef, target, rect) {
+  const view = target?.ownerDocument?.defaultView ?? globalThis.window;
+  const style = view?.getComputedStyle?.(target);
+  const highlight = createSvgElement(documentRef, 'text');
+  const text = String(target?.textContent ?? '');
+
+  highlight.setAttribute('fill', 'black');
+  highlight.setAttribute('x', formatSvgNumber(rect.left));
+  highlight.setAttribute('y', formatSvgNumber(rect.top + rect.height));
+  highlight.setAttribute('textLength', formatSvgNumber(rect.width));
+  highlight.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+
+  if (style?.fontFamily) {
+    highlight.setAttribute('font-family', style.fontFamily);
+  }
+
+  if (style?.fontSize) {
+    highlight.setAttribute('font-size', style.fontSize);
+  }
+
+  if (style?.fontWeight) {
+    highlight.setAttribute('font-weight', style.fontWeight);
+  }
+
+  if (style?.fontStyle) {
+    highlight.setAttribute('font-style', style.fontStyle);
+  }
+
+  highlight.textContent = text;
+  return highlight;
+}
+
+function formatSvgNumber(value) {
+  return String(Number.isFinite(value) ? Math.round(value * 100) / 100 : 0);
+}
+
+function normalizeHighlightTargets(targets) {
+  if (!Array.isArray(targets)) {
+    return [];
+  }
+
+  return targets.filter(
+    (target, index, list) => target && list.indexOf(target) === index,
+  );
+}
+
+function getHighlightPadding(target) {
+  const padding = Number.parseFloat(target?.dataset?.tutorialHighlightPadding);
+
+  if (!Number.isFinite(padding)) {
+    return HIGHLIGHT_PADDING;
+  }
+
+  return clamp(padding, 0, HIGHLIGHT_PADDING);
+}
+
+function getHighlightMode(target) {
+  return target?.dataset?.tutorialHighlightShape === 'text' ? 'text' : 'rect';
+}
+
+function padSourceRect(rect, padding, bounds) {
+  const left = clamp(rect.left - padding, 0, bounds.width);
+  const top = clamp(rect.top - padding, 0, bounds.height);
+  const right = clamp(rect.left + rect.width + padding, 0, bounds.width);
+  const bottom = clamp(rect.top + rect.height + padding, 0, bounds.height);
+
+  return {
+    left,
+    top,
+    width: Math.max(0, right - left),
+    height: Math.max(0, bottom - top),
+  };
+}
+
+function formatHighlightShapesKey(shapes) {
+  return shapes
+    .map(({ highlightMode, rect, target }) =>
+      [
+        highlightMode,
+        target?.dataset?.tutorialId ?? '',
+        rect.left,
+        rect.top,
+        rect.width,
+        rect.height,
+      ]
+        .map((value) => (typeof value === 'number' ? formatSvgNumber(value) : value))
+        .join(','),
+    )
+    .join('|');
 }
 
 function estimateInlineWidth(text) {
@@ -3052,6 +3438,14 @@ function createObjectivePlacement(objectiveTop) {
 }
 
 function isVisibleElement(element, root = null) {
+  return isRenderableElement(element, root, { requireVisibleOpacity: true });
+}
+
+function isHighlightableElement(element, root = null) {
+  return isRenderableElement(element, root, { requireVisibleOpacity: false });
+}
+
+function isRenderableElement(element, root = null, { requireVisibleOpacity = true } = {}) {
   const rect = element.getBoundingClientRect();
 
   if (element.closest?.('[hidden]') || rect.width <= 0 || rect.height <= 0) {
@@ -3066,7 +3460,7 @@ function isVisibleElement(element, root = null) {
     if (
       style?.display === 'none' ||
       style?.visibility === 'hidden' ||
-      Number.parseFloat(style?.opacity) === 0
+      (requireVisibleOpacity && Number.parseFloat(style?.opacity) === 0)
     ) {
       return false;
     }

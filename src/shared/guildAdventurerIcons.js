@@ -3,6 +3,7 @@ export const DEFAULT_GUILD_ADVENTURER_ICON_KEY = 'adventurer_packscout';
 export const GUILD_ADVENTURER_ICON_KEYS = Object.freeze([
   'adventurer_blackarmor_sword',
   'adventurer_blacksmith',
+  'adventurer_blondshield_guard',
   'adventurer_blondsword',
   'adventurer_bluebandana',
   'adventurer_bluequiver_archer',
@@ -14,8 +15,12 @@ export const GUILD_ADVENTURER_ICON_KEYS = Object.freeze([
   'adventurer_grayquiver_archer',
   'adventurer_greenbow_archer',
   'adventurer_greencloak_spear',
+  'adventurer_greenhood_archer',
+  'adventurer_greenscarf_dagger',
   'adventurer_greenscarf_shield',
+  'adventurer_headband_furguard',
   'adventurer_helmhammer',
+  'adventurer_hornhelm_axe',
   'adventurer_hoodblade',
   'adventurer_lamplighter',
   'adventurer_minstrel',
@@ -27,12 +32,14 @@ export const GUILD_ADVENTURER_ICON_KEYS = Object.freeze([
   'adventurer_purpleaxe',
   'adventurer_redaxe_guard',
   'adventurer_redbow_archer',
+  'adventurer_redplume_sword',
   'adventurer_redscarf_sword',
   'adventurer_redspearman',
   'adventurer_sapling',
   'adventurer_scrollcap',
   'adventurer_shadowdagger',
   'adventurer_shieldguard',
+  'adventurer_silverhair_spear',
   'adventurer_steelward',
   'adventurer_treasurehunter',
   'adventurer_troubadour',
@@ -52,18 +59,21 @@ const GUILD_ADVENTURER_ICON_KEY_SET = new Set(GUILD_ADVENTURER_ICON_KEYS);
 const PERSONALITY_ICON_POOLS = Object.freeze({
   brawler: [
     'adventurer_redscarf_sword',
+    'adventurer_redplume_sword',
     'adventurer_redaxe_guard',
     'adventurer_helmhammer',
     'knight',
   ],
   burglar: [
     'adventurer_shadowdagger',
+    'adventurer_greenscarf_dagger',
     'adventurer_hoodblade',
     'adventurer_pouchrunner',
     'rogue',
   ],
   coward: [
     'adventurer_greenscarf_shield',
+    'adventurer_blondshield_guard',
     'adventurer_shieldguard',
     'adventurer_steelward',
     'traveler',
@@ -71,6 +81,7 @@ const PERSONALITY_ICON_POOLS = Object.freeze({
   drinker: [
     'adventurer_bluebandana',
     'adventurer_furguard',
+    'adventurer_headband_furguard',
     'adventurer_blacksmith',
     'miner',
   ],
@@ -88,6 +99,7 @@ const PERSONALITY_ICON_POOLS = Object.freeze({
   ],
   gloryHound: [
     'adventurer_plumehelm_sword',
+    'adventurer_hornhelm_axe',
     'adventurer_goldshield_guard',
     'adventurer_purpleaxe',
     'bard',
@@ -100,6 +112,7 @@ const PERSONALITY_ICON_POOLS = Object.freeze({
   ],
   reckless: [
     'adventurer_redspearman',
+    'adventurer_silverhair_spear',
     'adventurer_bluescarf_spear',
     'adventurer_redbow_archer',
     'ranger',
@@ -122,6 +135,7 @@ const STAT_ICON_POOLS = Object.freeze({
   agility: [
     'adventurer_redbow_archer',
     'adventurer_greenbow_archer',
+    'adventurer_greenhood_archer',
     'adventurer_bluequiver_archer',
     'ranger',
   ],
@@ -133,12 +147,14 @@ const STAT_ICON_POOLS = Object.freeze({
   ],
   cunning: [
     'adventurer_shadowdagger',
+    'adventurer_greenscarf_dagger',
     'adventurer_hoodblade',
     'adventurer_treasurehunter',
     'rogue',
   ],
   discipline: [
     'adventurer_steelward',
+    'adventurer_silverhair_spear',
     'adventurer_cleric',
     'adventurer_shieldguard',
     'adventurer_greencloak_spear',
@@ -146,6 +162,7 @@ const STAT_ICON_POOLS = Object.freeze({
   endurance: [
     'adventurer_greenscarf_shield',
     'adventurer_furguard',
+    'adventurer_headband_furguard',
     'adventurer_blackarmor_sword',
     'knight',
   ],
@@ -158,6 +175,7 @@ const STAT_ICON_POOLS = Object.freeze({
   strength: [
     'adventurer_redscarf_sword',
     'adventurer_redaxe_guard',
+    'adventurer_hornhelm_axe',
     'adventurer_helmhammer',
     'adventurer_purpleaxe',
   ],
@@ -173,6 +191,7 @@ const FALLBACK_ICON_POOL = Object.freeze([
   DEFAULT_GUILD_ADVENTURER_ICON_KEY,
   'adventurer_olivehood_archer',
   'adventurer_brownhood_archer',
+  'adventurer_greenhood_archer',
   'adventurer_grayquiver_archer',
   'adventurer_greencloak_spear',
 ]);

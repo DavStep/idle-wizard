@@ -2,6 +2,11 @@ import { DEFAULT_PAGE_SWIPE_ORDER } from './PageSwipeNavigationManager.js';
 import { WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL } from '../workshop/managers/WorkshopSecondaryActionGateManager.js';
 
 export const PAGE_UNLOCK_REQUIREMENTS = {
+  shop: {
+    requiredLevel: 1,
+    label: 'market',
+    message: 'market unlocks at level 1',
+  },
   garden: {
     requiredLevel: 2,
     label: 'garden',
@@ -91,8 +96,14 @@ export class PageUnlockManager {
       snapshot.playerLevel?.currentLevel ??
       snapshot.tasks?.currentLevel ??
       snapshot.tasks?.level?.level ??
-      1;
+      null;
 
-    return Math.max(1, Math.floor(Number(level) || 1));
+    if (level === null || level === undefined) {
+      return 1;
+    }
+
+    const normalizedLevel = Math.floor(Number(level));
+
+    return Number.isFinite(normalizedLevel) ? Math.max(0, normalizedLevel) : 1;
   }
 }

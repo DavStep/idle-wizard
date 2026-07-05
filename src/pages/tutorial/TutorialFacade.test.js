@@ -92,7 +92,7 @@ function createLevelThreeSnapshot() {
       shelf: { slots: [] },
     },
     tasks: {
-      currentLevel: 3,
+      currentLevel: 2,
       level: {
         completion: { canComplete: false, costCoin: 80 },
         tasks: [],
@@ -106,9 +106,9 @@ function createLevelOneSnapshot() {
   return {
     ...createLevelThreeSnapshot(),
     tasks: {
-      currentLevel: 1,
+      currentLevel: 0,
       level: {
-        completion: { canComplete: false, costCoin: 0 },
+        completion: { canComplete: false, costCoin: 10 },
         tasks: [],
       },
     },
@@ -120,15 +120,41 @@ function createLevelOneObjectiveSnapshot() {
     ...createLevelOneSnapshot(),
     seedSummoning: { canSummon: true },
     tasks: {
-      currentLevel: 1,
+      currentLevel: 0,
+      level: {
+        completion: { canComplete: false, costCoin: 10 },
+        tasks: [
+          {
+            taskId: 'level1-turn-in-sage-seed',
+            itemKey: 'sageSeed',
+            requiredQuantity: 1,
+            progressQuantity: 1,
+            canFill: true,
+            canComplete: false,
+            completed: false,
+          },
+        ],
+      },
+    },
+  };
+}
+
+function createLevelOneReadyToTurnInSnapshot() {
+  return {
+    ...createLevelOneSnapshot(),
+    seedInventory: [{ key: 'sageSeed', quantity: 5 }],
+    seedSummoning: { canSummon: true },
+    tasks: {
+      currentLevel: 0,
       level: {
         completion: { canComplete: false, costCoin: 0 },
         tasks: [
           {
-            taskId: 'level1-sage-seeds',
+            taskId: 'level1-turn-in-sage-seed',
             itemKey: 'sageSeed',
-            requiredQuantity: 1,
-            progressQuantity: 1,
+            requiredQuantity: 5,
+            progressQuantity: 0,
+            remainingQuantity: 5,
             canFill: true,
             canComplete: false,
             completed: false,
@@ -144,7 +170,7 @@ function createLevelOneSaleSnapshot() {
     ...createLevelOneSnapshot(),
     seedInventory: [{ key: 'sageSeed', quantity: 5 }],
     tasks: {
-      currentLevel: 2,
+      currentLevel: 1,
       level: {
         completion: { canComplete: true, costCoin: 4 },
         tasks: [
@@ -188,7 +214,7 @@ function createLevelTwoSageTaskSnapshot(overrides = {}) {
       },
     },
     tasks: {
-      currentLevel: 4,
+      currentLevel: 3,
       level: {
         completion: { canComplete: false, costCoin: 16 },
         tasks: [
@@ -223,6 +249,83 @@ describe('TutorialFacade', () => {
     vi.useRealTimers();
     setNotificationVisibilityPolicy(null);
     document.body.textContent = '';
+  });
+
+  it('primes the intro reveal gate before the first animation-frame refresh', () => {
+    const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
+    const originalCancelAnimationFrame = globalThis.cancelAnimationFrame;
+    const hadRequestAnimationFrame = 'requestAnimationFrame' in globalThis;
+    const hadCancelAnimationFrame = 'cancelAnimationFrame' in globalThis;
+    const frames = [];
+    let facade = null;
+
+    Object.defineProperty(globalThis, 'requestAnimationFrame', {
+      configurable: true,
+      value: vi.fn((callback) => {
+        frames.push(callback);
+        return frames.length;
+      }),
+      writable: true,
+    });
+    Object.defineProperty(globalThis, 'cancelAnimationFrame', {
+      configurable: true,
+      value: vi.fn(),
+      writable: true,
+    });
+
+    try {
+      const stage = document.createElement('section');
+      const gameplayFacade = {
+        getSnapshot: () => createLevelOneSnapshot(),
+        subscribe: () => () => {},
+      };
+      facade = new TutorialFacade({
+        gameplayFacade,
+        getCurrentPageId: () => 'workshop',
+        storage: createMemoryStorage({
+          [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+            completedStepIds: ['purchase-house'],
+          }),
+        }),
+      });
+
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      document.body.append(stage);
+
+      facade.mount(stage);
+
+      expect(stage.dataset.tutorialReveal).toBe('');
+      expect(stage.hasAttribute('data-tutorial-reveal')).toBe(true);
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+
+      frames.shift()?.(0);
+
+      expect(facade.activeStep?.id).toBe('intro-welcome');
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+    } finally {
+      facade?.unmount();
+
+      if (hadRequestAnimationFrame) {
+        Object.defineProperty(globalThis, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(globalThis, 'requestAnimationFrame');
+      }
+
+      if (hadCancelAnimationFrame) {
+        Object.defineProperty(globalThis, 'cancelAnimationFrame', {
+          configurable: true,
+          value: originalCancelAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(globalThis, 'cancelAnimationFrame');
+      }
+    }
   });
 
   it('treats any press as next while an advance prompt is active', () => {
@@ -265,6 +368,69 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
+  it('expands level 1 requirements when showing them from the lesson prompt', () => {
+    let expanded = false;
+    const stage = document.createElement('section');
+    const tasksToggle = document.createElement('button');
+    const taskButton = document.createElement('button');
+    const gameplayFacade = {
+      getSnapshot: () => createLevelOneReadyToTurnInSnapshot(),
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: [
+            'purchase-house',
+            'intro-welcome',
+            'intro-mana-sphere',
+            'first-summon-seed',
+            'summon-five-seeds',
+          ],
+        }),
+      }),
+    });
+
+    tasksToggle.dataset.tutorialId = 'workshop:tasks';
+    tasksToggle.setAttribute('aria-expanded', 'false');
+    tasksToggle.addEventListener('click', () => {
+      expanded = true;
+      tasksToggle.setAttribute('aria-expanded', 'true');
+    });
+    taskButton.dataset.tutorialId = 'task:level1-turn-in-sage-seed';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(tasksToggle, { left: 64, top: 780, width: 240, height: 50 });
+    setClientRect(taskButton, { left: 64, top: 720, width: 760, height: 70 });
+    stage.append(tasksToggle, taskButton);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('intro-level-requirements');
+    const backdrop = stage.querySelector('.tutorial-layer__backdrop');
+    const maskRects = [...(backdrop?.querySelectorAll('mask rect') ?? [])];
+
+    expect(backdrop?.hasAttribute('hidden')).toBe(false);
+    expect(backdrop?.getAttribute('viewBox')).toBe('0 0 360 720');
+    expect(maskRects).toHaveLength(1);
+
+    stage
+      .querySelector('.tutorial-layer__lesson-advance')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+    facade.refresh();
+
+    expect(expanded).toBe(true);
+    expect(tasksToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(facade.activeStep?.id).toBe('first-fill-seed-task');
+    expect(facade.activeStep?.targetId).toBe('task:level1-turn-in-sage-seed');
+
+    facade.unmount();
+  });
+
   it('lets Elara button toggle instead of advancing an active lesson', () => {
     const stage = document.createElement('section');
     const usernameButton = document.createElement('button');
@@ -298,6 +464,87 @@ describe('TutorialFacade', () => {
     expect(facade.progressManager.hasCompleted('intro-welcome')).toBe(false);
     expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
     expect(lessonButton?.getAttribute('aria-label')).toBe('open lesson');
+
+    facade.unmount();
+  });
+
+  it('spotlights the mana value and regen during the mana intro step', () => {
+    const stage = document.createElement('section');
+    const mana = document.createElement('span');
+    const manaValue = document.createElement('span');
+    const manaRegen = document.createElement('span');
+    const snapshot = {
+      ...createLevelOneSnapshot(),
+      tasks: {
+        ...createLevelOneSnapshot().tasks,
+        currentLevel: 0,
+      },
+    };
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'workshop',
+      storage: createMemoryStorage({
+        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
+          completedStepIds: ['purchase-house', 'intro-welcome'],
+        }),
+      }),
+    });
+
+    mana.dataset.tutorialId = 'top:mana';
+    manaValue.dataset.tutorialId = 'top:mana:value';
+    manaRegen.dataset.tutorialId = 'top:mana:regen';
+    mana.append(manaValue, manaRegen);
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      mana,
+      toClientRect({
+        left: 54,
+        top: 18,
+        width: 92,
+        height: 40,
+      }),
+    );
+    setClientRect(
+      manaValue,
+      toClientRect({
+        left: 60,
+        top: 20,
+        width: 80,
+        height: 18,
+      }),
+    );
+    setClientRect(
+      manaRegen,
+      toClientRect({
+        left: 60,
+        top: 40,
+        width: 36,
+        height: 14,
+      }),
+    );
+    stage.append(mana);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    const backdrop = stage.querySelector('.tutorial-layer__backdrop');
+    const maskRects = [...(backdrop?.querySelectorAll('mask rect') ?? [])];
+
+    expect(facade.activeStep?.id).toBe('intro-mana-sphere');
+    expect(backdrop?.hasAttribute('hidden')).toBe(false);
+    expect(maskRects).toHaveLength(3);
+    expect(
+      maskRects.slice(1).map((rect) => [rect.getAttribute('x'), rect.getAttribute('y')]),
+    ).toEqual([
+      ['57', '17'],
+      ['57', '37'],
+    ]);
 
     facade.unmount();
   });
@@ -486,7 +733,8 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
-  it('pauses the lesson while a room announcement is active', async () => {
+  it('pauses the lesson while a room announcement is active and waits before resuming', async () => {
+    vi.useFakeTimers();
     const stage = document.createElement('section');
     const announcement = document.createElement('section');
     const gameplayFacade = {
@@ -513,21 +761,32 @@ describe('TutorialFacade', () => {
     facade.mount(stage);
     facade.refresh();
 
-    expect(facade.activeStep?.id).toBe('intro-welcome');
-    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+    try {
+      expect(facade.activeStep?.id).toBe('intro-welcome');
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
 
-    announcement.hidden = false;
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+      announcement.hidden = false;
+      await Promise.resolve();
 
-    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
 
-    announcement.hidden = true;
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+      announcement.hidden = true;
+      await Promise.resolve();
 
-    expect(facade.activeStep?.id).toBe('intro-welcome');
-    expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
 
-    facade.unmount();
+      vi.advanceTimersByTime(999);
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
+
+      vi.advanceTimersByTime(1);
+      facade.refresh();
+
+      expect(facade.activeStep?.id).toBe('intro-welcome');
+      expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
+    } finally {
+      facade.unmount();
+      vi.useRealTimers();
+    }
   });
 
   it('auto-advances the selected fast-sell amount explanation', () => {
@@ -673,7 +932,7 @@ describe('TutorialFacade', () => {
 
     tasks.dataset.tutorialId = 'workshop:tasks';
     tasks.setAttribute('aria-expanded', 'true');
-    taskButton.dataset.tutorialId = 'task:level1-sage-seeds';
+    taskButton.dataset.tutorialId = 'task:level1-turn-in-sage-seed';
     summonButton.dataset.tutorialId = 'workshop:summonSeed';
     stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
     setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
@@ -691,7 +950,7 @@ describe('TutorialFacade', () => {
     const showButton = stage.querySelector('.tutorial-layer__lesson-show');
 
     expect(facade.activeStep?.id).toBe('finish-seed-task');
-    expect(facade.activeStep?.targetId).toBe('task:level1-sage-seeds');
+    expect(facade.activeStep?.targetId).toBe('task:level1-turn-in-sage-seed');
     expect(lesson?.hidden).toBe(false);
     expect(hint?.hidden).toBe(true);
     expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
@@ -712,7 +971,7 @@ describe('TutorialFacade', () => {
         plot: { tiles: [] },
       },
       tasks: {
-        currentLevel: 4,
+        currentLevel: 3,
         level: {
           completion: { canComplete: false, costCoin: 16 },
           tasks: [
@@ -775,7 +1034,7 @@ describe('TutorialFacade', () => {
     const snapshot = createLevelTwoSageTaskSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 1 }],
       tasks: {
-        currentLevel: 4,
+        currentLevel: 3,
         level: {
           completion: { canComplete: false, costCoin: 16 },
           tasks: [
@@ -863,7 +1122,7 @@ describe('TutorialFacade', () => {
         plot: { tiles: [] },
       },
       tasks: {
-        currentLevel: 4,
+        currentLevel: 3,
         level: {
           completion: { canComplete: false, costCoin: 16 },
           tasks: [
@@ -931,7 +1190,7 @@ describe('TutorialFacade', () => {
         plot: { tiles: [] },
       },
       tasks: {
-        currentLevel: 4,
+        currentLevel: 3,
         level: {
           completion: { canComplete: false, costCoin: 16 },
           tasks: [
@@ -1060,7 +1319,7 @@ describe('TutorialFacade', () => {
         plot: { tiles: [] },
       },
       tasks: {
-        currentLevel: 4,
+        currentLevel: 3,
         level: {
           completion: { canComplete: false, costCoin: 16 },
           tasks: [

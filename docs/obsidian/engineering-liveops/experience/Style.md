@@ -1,0 +1,228 @@
+---
+title: Experience: Style
+tags:
+  - engineering
+  - liveops
+  - experience
+status: active
+world: engineering-liveops
+experience_type: style
+---
+
+# Experience: Style
+
+- The project style is based on `https://adarkroom.doublespeakgames.com/`.
+- Idle Witch Craft source herb icons live in sibling `../idle-whitch-craft/core/assets/items/herbs`; `../idle-witch-craft 2/raws/items/herbs` has matching raw copies.
+- Idle Wizard herb icon fixes should preserve the local 256x256 source silhouette/style; sibling Idle Witch Craft herb PNGs are old-size art and mismatch if copied directly.
+- Herb label atlas frames should trim transparent padding at build time so 256x256 source art fills text-size icon labels.
+- Idle Witch Craft seed pack icons live in sibling `../idle-whitch-craft/core/assets/misc/seedpacks`; `../idle-witch-craft 2/raws/misc/seedpacks` has matching raw copies.
+- Seed pack labels should render as one SVG atlas composite; nested absolutely positioned SVGs can show the herb mark without the pack in browser crops.
+- Idle Witch Craft item drop and coin flyout parity lives in `../idle-whitch-craft/core/MobilePreview.ts` plus `../idle-whitch-craft/core/mobile.css` keyframes around `mobile-workshop-item-drop`, `mobile-seed-burst`, and `mobile-coin-amt-pop`.
+- Idle Witch Craft launcher icon source lives at `../idle-whitch-craft/core/assets/ui/icons/game-icon.png`; generated Android launcher PNGs live under `../idle-whitch-craft/core/android/app/src/main/res/mipmap-*`.
+- Idle Witch Craft splash loading gradient progress bar CSS lives at `../idle-whitch-craft/core/splash.css`.
+- Progress bar style is a separate visual setting (`regular`/`gradient`), not part of a theme.
+- Shared `.style-progress` rails are border-box; fills sit inside the bordered rail, so callers normally use `width: 100%`.
+- Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
+- Body-level reward visual nodes must size from fitted stage CSS variables, not `vw`; otherwise mobile item drops ignore the scaled room UI and look tiny.
+- Reward particles anchored to room controls must measure and animate in `.game-stage` coordinates, not raw `document.body` viewport coords; the fitted stage can drift or double body-fixed positions on web/mobile.
+- Icon-mode reward text should hide only after visual nodes actually spawn; reduced-motion/mobile fallbacks need visible text.
+- Resource color and icon modes are fixed on; normalize stale `monochrome`/`none` visual values to `resources`/`icons` and do not show those choices in settings.
+- Workshop summon weight colors are semantic: `none` uses ruby, `low` seed, `medium` coin, and `high` herb.
+- Potion item names intentionally stay uncolored; do not assign pink or another category resource color to potions.
+- For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
+- Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
+- Room inventory entrypoints should follow Workshop `tasks`/`event`: icon/portrait over a small bordered lowercase label box, not icon-only buttons.
+- Workshop task row reordering should use CSS-transition FLIP, not `Element.animate`; the in-app browser target can lack WAAPI.
+- Room UI animation should use sine-ish interpolation; keep rubber from tiny keyframe overshoot, not y>1 easing curves.
+- Shared press/release motion should use individual `scale`/`translate`, not `transform`, so centered or positioned controls keep their existing transforms.
+- Use high-contrast text, quiet midnight-default surfaces, readable text, compact panels, and minimal decoration.
+- Player-facing UI labels should stay lowercase, including seed, herb, potion, research, event, and task labels; preserve user-entered names as typed.
+- Project typography uses `Lexend` at `13px` source size with tabular lining numerals for values.
+- Keep popup/dialog titles at `14px`; ordinary block titles and body text share the source size.
+- Box titles use bold weight.
+- Non-title labels that sit on a box border (counts, close/current controls, bottom-edge actions/tabs) use smaller text and a fixed line box centered on the border line.
+- Mobile readability comes from the room UI scale layer, not from changing the source font size upward.
+- Source UI scale must follow the fitted viewport scale, not stay fixed at `3`, so web and mobile views both fit.
+- Fresh-start account gates need viewport-fixed positioning; stage-clipped absolute dialogs can be cut off on short desktop web viewports.
+- Mobile keyboard resize must not recompute scale from the shrunken visual height while text input is focused or while the keyboard is closing after focus leaves.
+- Text-entry viewport locks should start on press; some mobile WebViews resize for the keyboard before `focusin`.
+- Text-entry focus should use `preventScroll` so mobile browsers do not pan the game surface.
+- Text-entry dialogs should sit high enough that the mobile keyboard does not cover save/cancel actions.
+- Text-entry dialog save buttons should save on `pointerdown` so keyboard blur cannot move the scaled layout before click submit.
+- For Android safe areas, let chrome backgrounds visually extend behind status/gesture areas and inset only interactive content; avoid black gutter padding.
+- Non-dialog boxes stay simple: `1px` border, compact padding, no shadow.
+- Popup/dialog panels can use the thicker event-panel treatment: `2px` border and `5px 5px 5px #666` shadow in source UI units.
+- Shared chrome overlays with the same z-index paint by DOM order; visible bottom-panel lock notices must raise the bottom panel layer above the passive chat preview.
+- Popup/dialog shadow tokens must contrast with the active theme surface.
+- Mana amount and regen live in the top panel; Workshop no longer has a separate mana resource box.
+- Workshop no longer has a separate `seeds` block; `summon` and `bag` sit above world chat.
+- Workshop `bag` opens a tabbed popup for currencies, seeds, herbs, and potions.
+- Do not add decorative visuals unless the user explicitly asks.
+- Cutscene overlays should settle visible while their text step is active; do not fade story-critical art to `opacity: 0` before the player advances.
+- Cutscene sprite overlays should align by visible alpha bounds, not the full PNG box; transparent padding can make grounded characters appear to float.
+- Cutscene scene swaps should render under a near-opaque transition shade; partial fades can reveal image source swaps or decode flicker.
+- Cutscene steps that reuse the same backdrop should not use the black scene-swap cover; reserve blackout for actual backdrop URL changes.
+- When freezing an animated cutscene backdrop, sample computed style before adding no-animation transition classes or the camera can snap back to its base transform.
+- Cutscene text or sprites that must stick to a panning/zooming backdrop should be children of the same animated backdrop layer, not separate scene siblings.
+- Cutscene roots should still cover the full web-wide stage, but scene art and dialogue panels must stay constrained to the fixed authored source width.
+- Peace/disbanded cutscene beats should use a calm world backdrop, not battlefield aftermath or dead-body visuals.
+- Peace-scene rainbow overlays should be subtle one-shot reveals with reduced-motion fallback, not looping decoration.
+- Do not reintroduce the first-run reward pouch/coin cutscene beat; it was removed as too poor for the opening flow.
+- Do not reintroduce a second first-run workshop sign/key beat; enter the workshop directly from the first workshop scene.
+- Managers subscribed to gameplay snapshots can render every frame; keep buttons stable and update text/state instead of replacing interactive DOM nodes.
+- In per-frame snapshot renderers, guard `textContent`/attribute writes; setting the same `textContent` still replaces text nodes and can flicker in the scaled mobile WebView.
+- Hidden tab panels should skip list and popup rendering on gameplay snapshots; refresh the active tab on tab switch and visible popups when opened.
+- Treat in-game UI as controls, not selectable document text: set non-selection/tap-highlight suppression on `.game-stage` descendants and opt text inputs back into normal selection.
+- Do not add hover-only emphasis, including selectors gated by `@media (hover: hover) and (pointer: fine)`; in-game controls are touch-first.
+- Single-choice selected options, such as tabs or one-of button-panel buttons, may show an underline only in their neutral selected state; avoid it while held or pressed.
+- Locked-but-pressable room tabs should use `.is-locked` plus an explanatory aria-label, not `aria-disabled`, so taps can still open the unlock notice.
+- Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
+- Research page uses `snapshot.research.tabs` for full-page regular/automation/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
+- Automation research is target-specific (`automation:autoPlantTile:1`, `automation:autoBrewCauldron:1`), not global per action type.
+- Research blocks should render no more than 3 locked rows each; keep deeper locked research hidden until earlier items unlock.
+- Completed research rows display `researched` and keep the same fixed value-slot height as price controls.
+- Research price controls are unboxed right-aligned text buttons; preserve click behavior without visible price boxes.
+- Research name clicks open a `style-dialog` info popup; keep explanation text on the research definition snapshot.
+- Brewing recipe popup hides locked recipes; recipe names are bold, ingredient rows align flush with names, and `time:` details stay muted.
+- Brewing recipe popup ingredient rows show required amount on the left (`- 3 sage`) and owned count on the right (`owned 31`), not `(31/3) sage`.
+- Brewing recipe popup uses only the dialog title `recipes`; do not add a second inner `recipes` group title or extra list top padding.
+- Brewing recipe popup select rows need a fixed checkbox slot; `[ ]` to `[x]` and focus bold can otherwise reflow the row.
+- Brewing recipe page-turn ghosts must stretch recipe rows like live pages; otherwise bottom select buttons jump upward during the animation.
+- Brewing active brew timer text belongs next to the active brew label, not inside the progress rail.
+- Brewing completion flows brew timer -> manual start bottling action -> bottling timer -> collect-ready state; potion inventory is granted only by the collect action.
+- Reward flyouts that should show item icons need exact item labels/counts; generic text like `3 seeds found` cannot render item icons.
+- Brewing cauldron count lives as a normal-weight border-corner label like `0/5`; empty cauldron status stays blank and `empty` is centered in the box.
+- Empty cauldron item containers are absolute only in the empty state; override their normal fixed scroll height or `empty` centers in the top strip instead of the full cauldron.
+- Brewing cauldron should not show a standalone `unknown mix` status row; no-match staged herbs already read through the wasted potion preview/action.
+- Brewing cauldron box should stay compact at partial fill, but leave action-row clearance for status plus five distinct ingredient rows.
+- Brewing cauldron derived height vars must be scoped on `.brewing-page__cauldron`; `:root` custom props resolve before per-cauldron row-count overrides and can leave the list stuck at three rows.
+- Brewing cauldron top spacing must reserve the herb-list scroll progress rail so overflow herb rows do not touch the cauldron border.
+- Brewing cauldron should not show separate `empty` or visible `remove` controls; ingredient rows stay tappable/ARIA-labeled for correction while visible copy stays contents-only.
+- Brewing action messages render only blocked/error feedback under the action; do not render successful brew/bottle helper text there.
+- Brewing active brew state belongs only in the active brew/progress row; keep cauldron status blank while brewing, brewed, bottling, or bottled.
+- Brewing action row should sit close under the cauldron; avoid a large vertical gap between cauldron and brew/bottle/collect controls.
+- Brewing cauldron staged ingredients display as adjacent quantity groups like `2 nettle`; do not show numbered slots or visible action words.
+- Brewing flow boxes can be broken by the late shared absolute-position style block; remove flow-managed Brewing boxes from that block when converting them to scroll layout.
+- Brewing workbench must reserve bottom clearance for fixed `recipes`/`potions` buttons so scroll content cannot render underneath them.
+- Seed summon feedback is a transient flyout, not a persistent row in the `seeds` block.
+- Web-wide reward/drop effect sizing should use fitted source UI width; `--app-stage-width` includes desktop gutters.
+- Seed summon logs list exact seed labels/counts, never a generic `summoned N seeds`.
+- Inventory info lists separate item type knowledge from unlock state: balance catalog item types are known by default; only explicitly unknown zero-count rows show fixed-length ASCII with `locked`; action pickers show only unlocked/researched or owned items.
+- Unknown item/potion masks use static six-character `??????` labels with `aria-label="unknown"`; do not use animated matrix/glitch text.
+- Tabbed popups put tab buttons below and outside the bordered `.style-dialog`; keep modal role/focus on the wrapper.
+- Keep an `8px` source gap between tabbed popup dialogs and their bottom tab buttons.
+- Popup tab buttons use the same `2px` stroke as popup dialogs.
+- Discoveries popup tab height is the canonical dialog-tab height: use `calc(var(--style-row-min-height) * 2)` and do not shrink dialog tabs to border-label height.
+- Tabbed popup wrappers should own centering/enter animation; do not also animate the nested `.style-dialog` with centered-dialog transforms.
+- Dialog close controls should sit as normal-weight border labels, like titles but not bold, not as boxed buttons inside the panel.
+- Guild charter tag setup should mirror trade alliance creation: stacked fields, `tag color`, square swatch buttons, and `create` copy.
+- Room UI layer uses `box-sizing: content-box`; wrappers that center fixed-width `.style-dialog` content must account for dialog padding and borders.
+- Padded inputs inside flex columns need `box-sizing: border-box` or explicit width math; content-box `width: 100%` overflows columns.
+- Full-width padded dialog buttons also need `box-sizing: border-box`; otherwise their right borders clip outside the popup content.
+- Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
+- Zero-cost garden plot and market stand buy controls display `free`, not `0g` or `0 coin`.
+- Coin displays amount-first as `<compact amount> coin` everywhere, including top chrome; use `25 coin` and `123k coin`, never `25g` or `coin 25`.
+- Task level-up is manual after every task in the current level is done; the Workshop task list shows a bottom `complete` action that spends the configured level completion coin.
+- Mana current/cap displays use tight fractions like `8/100`; spaces around `/` waste too much row width.
+- Top panel layout uses two rows: username full-width above mana/coin/context currency, so resource text does not squeeze names.
+- Hidden top-panel context currency needs an explicit `[hidden]` display rule because resource flex CSS can otherwise override the browser default.
+- Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
+- Top panel coin should keep amount and `coin` in the same fitted value span; a separate suffix can leave clipped values like `308... coin`.
+- Clicking the top-panel username opens settings; username editing and visual theme choices live there.
+- Settings use bottom tabs outside the popup border: `account`, `report`, and `configurations`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
+- Settings account controls should stay visible: label the tab `account`, and keep `connect account` visible disabled with `login unavailable` when OIDC config is missing.
+- Account data conflict dialogs should put row-local `select` actions next to `this device` and `account`; the account row should include the account username.
+- Clicking the top-panel level opens a one-level-at-a-time milestone dialog; navigate with previous/next level controls instead of a full level list.
+- Level milestone dialogs use the selected level as the title, omit current/open/max filler, show gained `+N` rows above a divider, then total limits with right-aligned numbers.
+- Level milestone previous/next navigation uses bottom tabs outside the bordered dialog, not inline pager text.
+- Level milestone dialog content uses fixed height with internal scrolling so changing levels does not resize the popup.
+- Level milestone dialogs show a centered top-border `current` label only when the selected level is the player current level.
+- Player visual theme is stored on `PlayerFacade` snapshot and applied globally by `AppThemeManager` through `html[data-style-theme]`.
+- Player visual theme options live in `src/player/playerThemes.js`; settings render from that list, and theme colors are CSS vars in `src/styles/base.css`.
+- Player visual themes also need matching allowlist or alias entries in SpacetimeDB; otherwise profile sync normalizes them back to the default theme.
+- Theme borders use `--style-stroke` through `--style-border`; keep text contrast independent when a theme wants dim strokes.
+- Midnight popups should use dark shadow tokens; light shadows read as a harsh glow on the dark room surface.
+- Midnight 9-slice PNGs must put border art across the full `32px` slice; early center fill makes CSS `border-image` render as a hairline.
+- Compact header/button 9-slices need flat internal top stretch bands; baked horizontal bands in the top slice compress into visible lines when `border-image` scales them down. Preserve side and corner cap pixels unless the source edge itself is wrong.
+- Player font options live in `src/player/playerFonts.js`, apply through `html[data-style-font]`, and need matching SpacetimeDB `PLAYER_FONTS` entries to survive profile sync.
+- Bundled player fonts need an `@fontsource/<font>` dependency plus `src/main.js` CSS imports; CSS fallback alone is not enough for Android/offline builds.
+- Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
+- Profile sync can echo stale server visual values after a local choice; keep in-flight client choices optimistic until a matching server echo arrives.
+- Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; midnight, Lexend, and regular progress bars start researched, while other selectable visual options show their price/free research action until researched.
+- Zero-cost visual setting names should not unlock or select directly; tap `free` to research first, then tap the option name to select.
+- Mixed resource strings need separate marked spans for each semantic part; a single text detector cannot color both `Seed` and trailing `coin`.
+- Resource color selectors must be strong enough to beat component text color on buttons/rows, while disabled/locked states should still inherit muted color.
+- If `data-resource-color` sits on the same row as `is-empty`/`is-locked`, set disabled color on that row; reserve `inherit` for child resource spans inside disabled parents.
+- Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
+- Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
+- NPC market reset must clear shared `npcStock` to `0` plus restore `npcNeed` to target; stock is server state and can survive player-data resets.
+- Global NPC market resets need a one-time server maintenance marker; do not tie shared market wipes to per-player progress reset hooks.
+- NPC stock market uses three ordinary boxes (`seeds`, `herbs`, `potions`) instead of category tabs; reserve each box's bottom border label for expand/collapse.
+- NPC stock buy row controls show only the price (`25 coin`), not a `buy` prefix; enabled prices use coin resource color, disabled/unaffordable prices inherit muted disabled color.
+- NPC stock buy row controls must clear midnight `border-image` after the late theme button-skin block; an earlier transparent border reset still renders framed oversized buttons.
+- NPC stock rows should use the same compact middle/right grid rhythm as market stand rows, not looser float rows.
+- NPC stock row visibility and labels should treat backend `stock` as availability; local inventory quantity can be `0` right after selling into stock.
+- Grid-rendered rows that are toggled with `[hidden]` need an explicit `[hidden] { display: none; }` rule, or authored `display: grid` can keep old category rows visible in browser.
+- Any buy control that colors a price as a resource must clear that resource color when the control is disabled/unaffordable, or muted disabled text will be overridden.
+- Numbered slot rows must never leave the middle content blank; unlocked empty rows should say the next action (`select`, `request item`), while locked empty rows keep labels like `empty stand` or `empty request` with state in the right slot.
+- Scrollable room and dialog lists should use the shared scroll cue: transparent bottom fade plus scroll progress, matching the logs popup math.
+- Shared scroll progress rails must be real `.style-progress` siblings below the scroll frame, not sticky pseudo-elements inside row content.
+- Shared scroll cue styling must not override positioned room containers; absolute content panels lose their right/bottom insets if `.style-scroll-cue` changes `position`.
+- Dialog scroll panes must show the shared bottom progress rail and use the select-recipe dialog spacing: rail below the frame, default `--style-scroll-progress-gap`, and normal dialog bottom padding.
+- World event dialog content should stay a flex column: fixed header, scroll frame, then normal shared scroll rail. Do not use grid `:has()` spacer rows or rail margin overrides there.
+- Scrollable popup content that opens from `hidden` needs one deferred frame before pinning to bottom; hidden flex layouts can report stale scroll geometry.
+- Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
+- Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is bolded, not line-decorated or boxed.
+- World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
+- Page-level content tabs should sit fixed just above world chat, like Research/Market; make the active tab panel scroll above them instead of putting tabs in normal top content flow.
+- World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
+- Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
+- Notification dots use `data-notification="true"` on existing controls; page tab dots roll up from `PageNotificationFacade` snapshot state.
+- Market sub-tab notification dots should derive from `PageNotificationStateManager` shop children so `player market` mirrors the orange player-listing/proceeds/listing badges instead of only the bottom Market tab showing them.
+- FTUE notification suppression is a visible badge policy only; keep gameplay notification state intact and allow only the current tutorial target during non-passive blocking steps.
+- Notification tones use red for normal priority and orange for one tier lower; page tabs show red if any child notification is red, otherwise orange.
+- Notification dots sit at each notified control's top-right corner, offset out by 3px.
+- Scroll containers that hold notification dots need invisible top/right bleed so offset dots do not get clipped without moving the controls.
+- Expand/collapse toggles may show a notification only in the collapsed `expand` state; the `collapse` state should never have a notification dot.
+- If notification dots grow beyond page-level flags, move to a provider tree with centralized child aggregation and graph validation instead of ad hoc booleans.
+- Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
+- Gameplay state `subscribe` is passive; managers that diff state must seed their baseline from `gameplayFacade.getSnapshot()` on mount.
+- World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
+- World chat system sender labels use the resource-color system accent; avoid adding a separate chat-only color mode.
+- Successful world/alliance chat sends should render a local sent row until the matching subscription row arrives; reducer success can precede the table/view echo.
+- Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
+- Compact world chat preview rows should stay one line with ellipsis; wrapping belongs in the full popup only.
+- World chat popup rows need normal block flow plus at least `--style-row-min-height` line-height; fixed 16px chat line-height can overlap wrapped rows.
+- Room page content must reserve `--style-room-chat-clearance`, including the chat border-title overhang; otherwise lower page blocks render under shared world chat.
+- Raising `--style-room-chat-bottom` also raises every `--style-room-chat-clearance` consumer, including Workshop bag/prestige; manually keep fixed Workshop secondary rows in the same lower stack.
+- Workshop task/event character openers need about `20px` source vertical gap; Android touch targeting can pick the lower event when the gap is only about `12px`.
+- Main room page content panels should also use the Research-width `16px` source side inset.
+- Workshop tasks sit below the top panel and stay collapsed until the bottom-border expand action is pressed.
+- Workshop collapsed task summary renders the first task as a full task row; a bottom-border `expand`/`collapse` action reveals the remaining rows, and progress count stays as the top-right border label.
+- Workshop collapsed task summary should preview the first incomplete task in level order; expanded task display keeps incomplete rows before completed rows.
+- Reuse the Workshop-style box expansion pattern for future boxes: one summary row remains visible, top-right border label shows progress/count, bottom-center border label toggles `expand`/`collapse`, and expanded rows appear in normal flow inside the same box.
+- Workshop task border labels need higher-specificity or late CSS overrides because generic `.style-box` padding and `.style-box :where(button, ...)` font-size rules otherwise override component styles.
+- Workshop tasks reserve collapsed height in normal flow, then expanded requirements overlay lower Workshop content; do not push action controls down.
+- Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
+- Pinned Workshop tasks must also persist across room page swaps; temporary mount setup should not clear `pinned`.
+- Workshop task action buttons use a 10px source font so `complete` fits the fixed 58px action slot.
+- Workshop task progress rails should stay `width: 100%`; subtracting `2 * --style-border-width` makes the rail end short of the task row/action button.
+- Workshop level-rewards hide/show is not the task collapse action; touch retarget/backdrop duplicate clicks after toggling rewards must be suppressed so expanded requirements stay open.
+- Workshop level-rewards hidden state should persist with expanded/pinned task state across room swaps, and reset only when the target requirement level changes.
+- Mobile page swipes listen in capture phase; horizontal drags on room controls navigate, while taps still activate controls. Inputs, dialogs, and draggable targets stay blocked.
+- Swipe ghost-click suppression must clear on a new touch/pointer start, or the first real tap after swiping into a room can be swallowed.
+- Synthetic mobile tap clicks need descendant and same-coordinate retarget suppression; otherwise the native follow-up click can hit a newly opened popup backdrop and close it immediately.
+- Popup rows must not be `replaceChildren`-reordered every frame; mobile taps can lose their click when the touched button is reinserted.
+- Hidden popups should not reuse another popup's action button class; broad selectors and clicks can hit hidden controls first.
+- Cauldron ingredient remove buttons also need stable DOM nodes across snapshot renders; mobile click fires after touchend and can miss replaced targets.
+- Rows with author `display` rules need explicit `[hidden] { display: none; }`; UA hidden can be overridden and still affect flex layout.
+- Page boxes that also use `.style-box` must reassert `position: absolute` after the shared `.style-box` rule, or they become relative and can overflow.
+- Scroll panes whose first child is a `.style-box` need top clearance equal to the box-title overhang, or the embedded border title clips at scroll top.
+- Logs popup shows newest entries first, starts at top, and uses scroll progress plus bottom fade instead of showing a native scrollbar.
+- Logs popup should auto-pin new entries only while the player is at top; preserve manual scroll position otherwise.
+- Timed progress bars should visually match the logs dialog rail: 3px high, compact black border, black fill, no visible timer label inside the rail.
+- Smooth timed progress bars with compositor `transform` transitions from the latest snapshot to completion; do not raise gameplay snapshot cadence just to reduce visible stepping.
+- Brewing selected recipe requirements render inside the cauldron as `placed/required` plus `need N`/`ready`; keep them stable before and after drops.
+- Brewing selected recipe rows are correction targets through tap/ARIA only; do not reintroduce visible `next` or `remove` text into the cauldron body.
+- Garden plot `.is-empty` means the plot has no active plant, not that its selected seed label is unavailable; keep resource-color overrides scoped so zero-count selected seeds can still show seed color.
+- Research item-name spans need their own `data-resource-color`; item icons alone do not color the text, and locked rows rely on the unavailable ancestor to suppress that color.

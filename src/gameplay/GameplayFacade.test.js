@@ -21,7 +21,20 @@ function createMemoryStorage() {
   };
 }
 
+function getSavedPersonalTask(storage, taskKey) {
+  return getSavedPersonalTasks(storage)?.periods?.daily?.tasks?.find(
+    (task) => task.taskKey === taskKey,
+  );
+}
+
+function getSavedPersonalTasks(storage) {
+  const rawSave = storage.getItem('idle-wizard.gameplay.save');
+  const save = rawSave ? JSON.parse(rawSave) : null;
+  return save?.personalTasks;
+}
+
 function createGameplay({
+  baseline = 'level1',
   instantResearch = true,
   persistenceStorage,
   persistenceNow = () => 0,
@@ -31,11 +44,32 @@ function createGameplay({
   const gameplayFacade = new GameplayFacade({ persistenceStorage, persistenceNow, shopNow });
   ecsFacade.createWorld();
   gameplayFacade.initialize(ecsFacade);
+  if (baseline === 'level1' && gameplayFacade.getSnapshot().persistence.loadRevision === 0) {
+    applyLevelOneTestBaseline(gameplayFacade);
+  }
   if (instantResearch) {
     makeResearchInstant(gameplayFacade);
   }
   gameplayFacade.setNpcMarketFacade(createNpcMarketFacadeFake(gameplayFacade));
   return { ecsFacade, gameplayFacade };
+}
+
+function applyLevelOneTestBaseline(gameplayFacade) {
+  gameplayFacade.tasksFacade.applyPersistenceSnapshot({
+    currentLevel: 1,
+    tasks: [],
+  });
+  gameplayFacade.syncPlayerLevelManaEffects();
+  gameplayFacade.manaFacade.applyPersistenceSnapshot({
+    current: 30,
+    cap: 50,
+    perSecond: 1,
+  });
+  gameplayFacade.coinFacade.applyPersistenceSnapshot({
+    current: 0,
+    totalGenerated: 0,
+  });
+  gameplayFacade.crystalFacade.applyPersistenceSnapshot({ current: 1 });
 }
 
 function makeResearchInstant(gameplayFacade, durationSecondsByResearchId = {}) {
@@ -124,7 +158,6 @@ function finishTaskRequirement(gameplayFacade, task) {
   if (task.type === taskRequirementTypes.TURN_IN) {
     gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
     gameplayFacade.fillTask(task.taskId);
-    gameplayFacade.completeTask(task.taskId);
     return;
   }
 
@@ -179,14 +212,20 @@ function openFirstPlayerMarketStand(gameplayFacade) {
 }
 
 describe('GameplayFacade', () => {
-  it('starts a new game with 30 mana', () => {
-    const { gameplayFacade } = createGameplay();
+  it('starts a new game at level 0 with tutorial resources', () => {
+    const { gameplayFacade } = createGameplay({ baseline: 'fresh' });
 
     expect(gameplayFacade.getSnapshot().mana).toMatchObject({
-      current: 30,
+      current: 40,
       cap: 50,
       perSecond: 1,
     });
+    expect(gameplayFacade.getSnapshot().coin).toMatchObject({
+      current: 10,
+      totalGenerated: 0,
+    });
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(0);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(0);
   });
 
   it('persists gameplay progress across a new app instance', () => {
@@ -271,7 +310,7 @@ describe('GameplayFacade', () => {
 
   it('persists only changed current-level task rows', () => {
     const persistenceStorage = createMemoryStorage();
-    const { gameplayFacade } = createGameplay({ persistenceStorage });
+    const { gameplayFacade } = createGameplay({ baseline: 'fresh', persistenceStorage });
 
     gameplayFacade.itemsFacade.addItem(1, 1);
     expect(gameplayFacade.fillTask('level1-turn-in-sage-seed')).toMatchObject({ ok: true });
@@ -280,7 +319,7 @@ describe('GameplayFacade', () => {
     const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
 
     expect(saved.tasks).toEqual({
-      currentLevel: 1,
+      currentLevel: 0,
       tasks: [
         {
           taskId: 'level1-turn-in-sage-seed',
@@ -290,6 +329,32 @@ describe('GameplayFacade', () => {
       ],
     });
     expect(JSON.stringify(saved).length).toBeLessThan(50_000);
+  });
+
+  it('treats fully turned-in restored requirements as completed', () => {
+    const { gameplayFacade } = createGameplay({ baseline: 'fresh' });
+
+    gameplayFacade.tasksFacade.applyPersistenceSnapshot({
+      currentLevel: 0,
+      tasks: [
+        {
+          taskId: 'level1-turn-in-sage-seed',
+          progressQuantity: 5,
+          completed: false,
+        },
+      ],
+    });
+
+    const task = gameplayFacade
+      .getSnapshot()
+      .tasks.level.tasks.find((candidate) => candidate.taskId === 'level1-turn-in-sage-seed');
+
+    expect(task).toMatchObject({
+      progressQuantity: 5,
+      completed: true,
+      canFill: false,
+      canComplete: false,
+    });
   });
 
   it('clamps restored garden and market capacity to the saved player level', () => {
@@ -459,7 +524,6 @@ describe('GameplayFacade', () => {
 
   it('fills tasks from inventory and advances player level after coin payment', () => {
     const { gameplayFacade } = createGameplay();
-    finishCurrentTaskLevel(gameplayFacade);
     const task = gameplayFacade
       .getSnapshot()
       .tasks.level.tasks.find((candidate) => candidate.type === taskRequirementTypes.TURN_IN);
@@ -490,11 +554,20 @@ describe('GameplayFacade', () => {
       quantity: task.requiredQuantity - partialQuantity,
       progressQuantity: task.requiredQuantity,
       maxed: true,
+      completed: true,
+    });
+    expect(
+      gameplayFacade.getSnapshot().tasks.level.tasks.find(
+        (candidate) => candidate.taskId === task.taskId,
+      ),
+    ).toMatchObject({
+      completed: true,
+      canComplete: false,
     });
     expect(gameplayFacade.completeTask(task.taskId)).toMatchObject({
-      ok: true,
-      currentLevel: 2,
-      advanced: false,
+      ok: false,
+      reason: 'already_completed',
+      taskId: task.taskId,
     });
 
     const remainingTasks = gameplayFacade.getSnapshot().tasks.level.tasks.filter(
@@ -505,9 +578,9 @@ describe('GameplayFacade', () => {
       finishTaskRequirement(gameplayFacade, remainingTask);
     }
 
-    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(1);
     expect(gameplayFacade.getSnapshot().tasks.level.completion).toMatchObject({
-      level: 2,
+      level: 1,
       costCoin: 4,
       canComplete: true,
     });
@@ -520,11 +593,11 @@ describe('GameplayFacade', () => {
     gameplayFacade.coinFacade.add(4);
     expect(gameplayFacade.completeTaskLevel()).toMatchObject({
       ok: true,
-      currentLevel: 3,
+      currentLevel: 2,
       advanced: true,
       costCoin: 4,
     });
-    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(3);
     expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
   });
@@ -1696,7 +1769,7 @@ describe('GameplayFacade', () => {
     expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
     expect(snapshot.visualSettings.researched.theme.black).toBe(true);
     expect(snapshot.tasks.currentLevel).toBe(1);
-    expect(snapshot.tasks.level.tasks).toHaveLength(2);
+    expect(snapshot.tasks.level.tasks).toHaveLength(3);
     expect(gameplayFacade.consumeProgressResetPending()).toBe(false);
   });
 
@@ -4214,6 +4287,52 @@ describe('GameplayFacade', () => {
       label: 'sage',
       kind: 'herb',
       quantity: 1,
+    });
+  });
+
+  it('saves timer-driven personal task completions before the next autosave window', () => {
+    const persistenceStorage = createMemoryStorage();
+    const { ecsFacade, gameplayFacade } = createGameplay({ persistenceStorage });
+
+    advanceToLevel(gameplayFacade, 4);
+    const harvestTask = gameplayFacade
+      .getSnapshot()
+      .personalTasks.daily.tasks.find((task) => task.taskKey === 'harvest');
+    gameplayFacade.recordPersonalTaskAction(
+      harvestTask.actionType,
+      harvestTask.requiredQuantity - 1,
+    );
+    gameplayFacade.publishAndSaveSnapshot();
+
+    gameplayFacade.itemsFacade.addItem(1, 1);
+    expect(gameplayFacade.plantGardenSeed(1, 1)).toMatchObject({ ok: true });
+    ecsFacade.update({ deltaSeconds: 60, timerDeltaSeconds: 60 });
+    expect(gameplayFacade.startGardenHarvest(1)).toMatchObject({ ok: true });
+    expect(getSavedPersonalTask(persistenceStorage, 'harvest')).toMatchObject({
+      progressQuantity: harvestTask.requiredQuantity - 1,
+      completed: false,
+    });
+    expect(getSavedPersonalTasks(persistenceStorage)?.periods?.weekly).toMatchObject({
+      currentPoints: 0,
+    });
+
+    ecsFacade.update({ deltaSeconds: 3, timerDeltaSeconds: 3 });
+    gameplayFacade.afterUpdate({ deltaSeconds: 3, timerDeltaSeconds: 3 });
+
+    expect(
+      gameplayFacade
+        .getSnapshot()
+        .personalTasks.daily.tasks.find((task) => task.taskKey === 'harvest'),
+    ).toMatchObject({
+      progressQuantity: harvestTask.requiredQuantity,
+      completed: true,
+    });
+    expect(getSavedPersonalTask(persistenceStorage, 'harvest')).toMatchObject({
+      progressQuantity: harvestTask.requiredQuantity,
+      completed: true,
+    });
+    expect(getSavedPersonalTasks(persistenceStorage)?.periods?.weekly).toMatchObject({
+      currentPoints: harvestTask.pointValue,
     });
   });
 

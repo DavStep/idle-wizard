@@ -16,6 +16,7 @@ const MAIL_ICON_URL = new URL(
 const SUMMON_HOLD_REPEAT_MS = 100;
 const SUMMON_CLICK_SUPPRESSION_MS = 550;
 const SUMMON_EFFECT_MS = 520;
+const SUMMON_TOUCH_RELEASE_SLOP_PX = 22;
 
 export class WorkshopActionBarManager {
   constructor({
@@ -52,6 +53,7 @@ export class WorkshopActionBarManager {
     this.summonHoldPointerId = null;
     this.summonHoldPointerType = '';
     this.summonHoldActivated = false;
+    this.summonClickHandledDuringPointer = false;
     this.suppressSummonClickUntilMs = 0;
     this.handleSummonPointerDown = (event) => this.onSummonPointerDown(event);
     this.handleSummonClick = (event) => this.onSummonClick(event);
@@ -226,6 +228,10 @@ export class WorkshopActionBarManager {
       return;
     }
 
+    if (this.summonHoldPointerId !== null) {
+      this.summonClickHandledDuringPointer = true;
+    }
+
     this.onSummonSeed();
   }
 
@@ -238,6 +244,7 @@ export class WorkshopActionBarManager {
     this.stopSummonHold({ suppressClick: false });
     this.summonHoldPointerId = event.pointerId;
     this.summonHoldPointerType = event.pointerType ?? '';
+    this.summonClickHandledDuringPointer = false;
     this.addSummonHoldListeners();
     this.scheduleNextSummon();
   }
@@ -247,7 +254,16 @@ export class WorkshopActionBarManager {
       return;
     }
 
+    const shouldActivateQuickTap = this.shouldActivateSummonQuickTap(event);
+    const shouldPlayHaptic = this.summonHoldPointerType !== 'mouse';
     this.stopSummonHold();
+
+    if (!shouldActivateQuickTap) {
+      return;
+    }
+
+    this.suppressNextSummonClick();
+    this.onSummonSeed({ playManualHaptic: shouldPlayHaptic });
   }
 
   onDocumentPointerCancel(event) {
@@ -334,6 +350,7 @@ export class WorkshopActionBarManager {
     this.removeSummonHoldListeners();
     this.summonHoldPointerId = null;
     this.summonHoldPointerType = '';
+    this.summonClickHandledDuringPointer = false;
 
     if (suppressClick && this.summonHoldActivated) {
       this.suppressNextSummonClick();
@@ -361,6 +378,48 @@ export class WorkshopActionBarManager {
 
   shouldPlaySummonHoldHaptic() {
     return this.summonHoldPointerId !== null && this.summonHoldPointerType !== 'mouse';
+  }
+
+  shouldActivateSummonQuickTap(event) {
+    if (
+      this.summonHoldPointerType === 'mouse' ||
+      this.summonHoldActivated ||
+      this.summonClickHandledDuringPointer
+    ) {
+      return false;
+    }
+
+    return this.isPointerReleaseOnSummonButton(event);
+  }
+
+  isPointerReleaseOnSummonButton(event) {
+    const button = this.refs.summonButton;
+
+    if (!button || !Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) {
+      return false;
+    }
+
+    const releaseTarget = button.ownerDocument?.elementFromPoint?.(
+      event.clientX,
+      event.clientY,
+    );
+
+    if (releaseTarget) {
+      return releaseTarget === button || button.contains(releaseTarget);
+    }
+
+    const rect = button.getBoundingClientRect?.();
+
+    if (!rect) {
+      return false;
+    }
+
+    return (
+      event.clientX >= rect.left - SUMMON_TOUCH_RELEASE_SLOP_PX &&
+      event.clientX <= rect.right + SUMMON_TOUCH_RELEASE_SLOP_PX &&
+      event.clientY >= rect.top - SUMMON_TOUCH_RELEASE_SLOP_PX &&
+      event.clientY <= rect.bottom + SUMMON_TOUCH_RELEASE_SLOP_PX
+    );
   }
 
   playManualSummonHaptic() {

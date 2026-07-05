@@ -49,6 +49,12 @@ export function getPrestigeResetLevel(level) {
   return Math.max(PRESTIGE_MIN_RESET_LEVEL, resetLevel);
 }
 
+function normalizeFrameLevel(level) {
+  const normalizedLevel = Math.floor(Number(level));
+
+  return Number.isFinite(normalizedLevel) ? Math.max(0, normalizedLevel) : 0;
+}
+
 export class GameplayFacade {
   static explain =
     'Runs the player resources and actions: mana fills up, actions spend it, and owned things change.';
@@ -207,6 +213,7 @@ export class GameplayFacade {
     this.snapshotCacheDepth = 0;
     this.cachedSnapshot = null;
     this.persistenceLoadRevision = 0;
+    this.personalTaskSavePending = false;
   }
 
   setPersistenceStorage(storageManager) {
@@ -321,6 +328,7 @@ export class GameplayFacade {
 
   afterUpdate(frame = {}) {
     this.publishFrameSnapshot(frame);
+    this.flushPendingPersonalTaskSave();
     this.persistenceFacade.afterUpdate(frame);
   }
 
@@ -377,6 +385,9 @@ export class GameplayFacade {
 
   fillTask(taskId) {
     const result = this.tasksFacade.fillTask(taskId);
+    if (result.ok && result.completed) {
+      this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS, 1);
+    }
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -756,7 +767,13 @@ export class GameplayFacade {
   }
 
   recordPersonalTaskAction(actionType, quantity = 1) {
-    return this.personalTasksFacade.recordAction(actionType, quantity);
+    const result = this.personalTasksFacade.recordAction(actionType, quantity);
+
+    if (result?.changed) {
+      this.personalTaskSavePending = true;
+    }
+
+    return result;
   }
 
   claimPersonalTaskReward(periodType, taskId) {
@@ -1497,7 +1514,7 @@ export class GameplayFacade {
       crystal: Math.floor(Number(resources.crystal?.current) || 0),
       emerald: Math.floor(Number(resources.emerald?.current) || 0),
       ruby: Math.floor(Number(resources.ruby?.current) || 0),
-      level: Math.floor(Number(resources.tasks?.currentLevel) || 1),
+      level: normalizeFrameLevel(resources.tasks?.currentLevel),
     });
   }
 
@@ -1546,7 +1563,20 @@ export class GameplayFacade {
 
   publishAndSaveSnapshot() {
     this.publishSnapshot();
-    this.persistenceFacade.save();
+    this.saveGameplaySnapshot();
+  }
+
+  saveGameplaySnapshot() {
+    this.personalTaskSavePending = false;
+    return this.persistenceFacade.save();
+  }
+
+  flushPendingPersonalTaskSave() {
+    if (!this.personalTaskSavePending) {
+      return false;
+    }
+
+    return this.saveGameplaySnapshot();
   }
 
   loadPersistenceSave(save, ecsFacade) {
@@ -1638,7 +1668,7 @@ export class GameplayFacade {
       throw error;
     }
 
-    this.persistenceFacade.save();
+    this.saveGameplaySnapshot();
     this.publishSnapshot();
     return report;
   }

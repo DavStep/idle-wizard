@@ -8,6 +8,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { TUTORIAL_STEP_IDS } from '../src/pages/tutorial/managers/TutorialStepManager.js';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const APP_URL = 'http://127.0.0.1:55173/';
@@ -15,43 +17,19 @@ const VIEWPORT = { width: 1080, height: 2170 };
 const OUT_DIR = path.join(ROOT, 'docs/tutorial-flow/screenshots');
 const CONTACT_SHEET_PATH = path.join(ROOT, 'docs/tutorial-flow/contact-sheet.png');
 const CONTACT_SHEET_URL = 'http://127.0.0.1:55173/docs/tutorial-flow/contact-sheet.html';
+const CHECK_ONLY = process.argv.includes('--check');
 
-const FLOW_STEPS = [
-  'purchase-house',
-  'intro-welcome',
-  'intro-mana-sphere',
-  'first-summon-seed',
-  'first-fill-seed-task',
-  'finish-seed-task',
-  'first-task-complete',
-  'level-up-one',
-  'intro-market',
-  'prepare-seed-sale',
-  'open-market',
-  'select-market-stand',
-  'select-sage-seed-sale',
-  'show-selected-sale-amount',
-  'earn-tutorial-coin',
-  'first-sale-complete',
-  'level-up-two',
-  'intro-research',
-  'research-mint-seed',
-  'first-research-complete',
-  'fill-mint-seed-task',
+export const OPTIONAL_CAPTURE_STEP_IDS = Object.freeze([
   'fill-sage-seed-task',
-  'level-up-three',
-  'intro-garden',
-  'grow-sage',
-  'first-harvest-complete',
-  'fill-sage-herb-task',
-  'fill-mint-herb-task',
-  'level-up-four',
-  'research-mana-tonic',
-  'intro-brewing',
-  'brew-mana-tonic',
-  'first-brew-complete',
-  'refill-mana-tonic-cauldron',
-];
+]);
+const OPTIONAL_CAPTURE_STEP_ID_SET = new Set(OPTIONAL_CAPTURE_STEP_IDS);
+const FLOW_STEPS = TUTORIAL_STEP_IDS.filter(
+  (stepId) => !OPTIONAL_CAPTURE_STEP_ID_SET.has(stepId),
+);
+
+export function getTutorialCaptureStepIds() {
+  return [...FLOW_STEPS];
+}
 
 const STEP_ACTIONS = {
   'purchase-house': async (page) => {
@@ -67,13 +45,20 @@ const STEP_ACTIONS = {
   'first-summon-seed': async (page) => {
     await page.clickTarget('workshop:summonSeed');
   },
+  'summon-five-seeds': async (page) => {
+    await page.cheat('addItem', 'sageSeed', 4);
+    await page.recordTaskAction({ type: 'summon', itemKey: 'sageSeed', quantity: 4 });
+  },
+  'intro-level-requirements': async (page) => {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+  },
   'first-fill-seed-task': async (page) => {
     await page.ensureTasksExpanded();
     await page.clickActiveTarget();
   },
   'finish-seed-task': async (page) => {
     await page.ensureTasksExpanded();
-    await page.completeCurrentTask('level1-sage-seeds');
+    await page.completeTurnInTaskByItem('sageSeed');
   },
   'first-task-complete': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
@@ -82,15 +67,14 @@ const STEP_ACTIONS = {
     await page.ensurePage('workshop');
     await page.ensureTasksExpanded();
     await page.clickActiveTarget();
-    await page.cheat('addItem', 'sageSeed', 5);
-    await page.completeCurrentTask('level2-sage-seeds');
   },
   'intro-market': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
     await page.cheat('fillMana');
   },
   'prepare-seed-sale': async (page) => {
-    await page.clickTarget('workshop:summonSeed');
+    await page.cheat('addItem', 'sageSeed', 5);
+    await page.recordTaskAction({ type: 'summon', itemKey: 'sageSeed', quantity: 5 });
   },
   'open-market': async (page) => {
     await page.clickTarget('page:shop');
@@ -112,11 +96,15 @@ const STEP_ACTIONS = {
   'first-sale-complete': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
   },
+  'unselect-sage-seed-sale': async (page) => {
+    await page.clickTarget('page:workshop');
+    await page.ensureTasksExpanded();
+    await page.completeTurnInTaskByItem('sageSeed');
+  },
   'level-up-two': async (page) => {
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
     await page.clickActiveTarget();
-    await page.cheat('addItem', 'sageSeed', 6);
   },
   'intro-research': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
@@ -124,6 +112,7 @@ const STEP_ACTIONS = {
   'research-mint-seed': async (page) => {
     await page.clickTarget('page:research');
     await page.cheat('completeResearch', 'unlockSeed:mintSeed');
+    await page.recordTaskAction({ type: 'research', researchId: 'unlockSeed:mintSeed' });
     await page.cheat('addItem', 'mintSeed', 3);
   },
   'first-research-complete': async (page) => {
@@ -132,12 +121,8 @@ const STEP_ACTIONS = {
   'fill-mint-seed-task': async (page) => {
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
-    await page.completeCurrentTask('level3-mint-seeds');
-  },
-  'fill-sage-seed-task': async (page) => {
-    await page.clickTarget('page:workshop');
-    await page.ensureTasksExpanded();
-    await page.completeCurrentTask('level3-sage-seeds');
+    await page.recordTaskAction({ type: 'summon', itemKey: 'mintSeed', quantity: 3 });
+    await page.completeTurnInTaskByItem('mintSeed');
     await page.cheat('addCoin', 8);
   },
   'level-up-three': async (page) => {
@@ -150,7 +135,8 @@ const STEP_ACTIONS = {
   },
   'grow-sage': async (page) => {
     await page.clickTarget('page:garden');
-    await page.cheat('addItem', 'sageHerb', 2);
+    await page.cheat('addItem', 'sageHerb', 4);
+    await page.recordTaskAction({ type: 'grow', itemKey: 'sageHerb', quantity: 4 });
   },
   'first-harvest-complete': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
@@ -158,14 +144,15 @@ const STEP_ACTIONS = {
   'fill-sage-herb-task': async (page) => {
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
-    await page.completeCurrentTask('level4-sage-herb');
+    await page.completeTurnInTaskByItem('sageHerb');
   },
   'fill-mint-herb-task': async (page) => {
     await page.clickTarget('page:garden');
-    await page.cheat('addItem', 'mintHerb', 1);
+    await page.cheat('addItem', 'mintHerb', 2);
+    await page.recordTaskAction({ type: 'grow', itemKey: 'mintHerb', quantity: 2 });
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
-    await page.completeCurrentTask('level4-mint-herb');
+    await page.completeTurnInTaskByItem('mintHerb');
     await page.cheat('addCoin', 16);
   },
   'level-up-four': async (page) => {
@@ -175,6 +162,7 @@ const STEP_ACTIONS = {
   'research-mana-tonic': async (page) => {
     await page.clickTarget('page:research');
     await page.cheat('completeResearch', 'unlockRecipe:manaTonic');
+    await page.recordTaskAction({ type: 'research', researchId: 'unlockRecipe:manaTonic' });
     await page.cheat('addItem', 'sageHerb', 6);
     await page.cheat('fillMana');
   },
@@ -184,6 +172,7 @@ const STEP_ACTIONS = {
   'brew-mana-tonic': async (page) => {
     await page.clickTarget('page:brewing');
     await page.cheat('addItem', 'manaTonic', 1);
+    await page.recordTaskAction({ type: 'brew', itemKey: 'manaTonic', quantity: 1 });
   },
   'first-brew-complete': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
@@ -198,15 +187,52 @@ const STEP_ACTIONS = {
   },
 };
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+export function assertCaptureContract() {
+  const sourceStepIds = new Set(TUTORIAL_STEP_IDS);
+  const unknownOptionalSteps = OPTIONAL_CAPTURE_STEP_IDS.filter(
+    (stepId) => !sourceStepIds.has(stepId),
+  );
+
+  if (unknownOptionalSteps.length > 0) {
+    throw new Error(
+      `Optional tutorial capture steps are not in source graph: ${unknownOptionalSteps.join(', ')}`,
+    );
+  }
+
+  const missingActions = FLOW_STEPS.filter(
+    (stepId) => typeof STEP_ACTIONS[stepId] !== 'function',
+  );
+
+  if (missingActions.length > 0) {
+    throw new Error(`Tutorial capture steps are missing actions: ${missingActions.join(', ')}`);
+  }
+
+  return {
+    sourceCount: TUTORIAL_STEP_IDS.length,
+    captureCount: FLOW_STEPS.length,
+    optionalStepIds: [...OPTIONAL_CAPTURE_STEP_IDS],
+  };
+}
+
+if (isDirectRun()) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
 
 async function main() {
+  const contract = assertCaptureContract();
+
+  if (CHECK_ONLY) {
+    console.log(
+      `tutorial capture contract ok: ${contract.captureCount}/${contract.sourceCount} source steps captured, optional=${contract.optionalStepIds.join(', ') || 'none'}`,
+    );
+    return;
+  }
+
   assertChromeExists();
   fs.mkdirSync(OUT_DIR, { recursive: true });
-  removeOldScreenshots();
 
   const server = await ensureDevServer();
   const browser = await ChromeSession.launch();
@@ -229,6 +255,7 @@ async function main() {
     );
     await page.startFresh();
     await page.waitForStep(FLOW_STEPS[0]);
+    removeOldScreenshots();
 
     const captures = [];
 
@@ -240,6 +267,7 @@ async function main() {
       const fileName = `${String(index).padStart(2, '0')}-${stepId}.png`;
 
       await page.assertNoHighlightBox();
+      await page.assertActiveTargetResolvable();
       await page.captureScreenshot(path.join(OUT_DIR, fileName));
       captures.push({
         index,
@@ -291,10 +319,12 @@ async function prepareStepForCapture(page, stepId) {
   switch (stepId) {
     case 'first-fill-seed-task':
     case 'finish-seed-task':
+    case 'summon-five-seeds':
+    case 'intro-level-requirements':
+    case 'unselect-sage-seed-sale':
     case 'level-up-one':
     case 'level-up-two':
     case 'fill-mint-seed-task':
-    case 'fill-sage-seed-task':
     case 'level-up-three':
     case 'fill-sage-herb-task':
     case 'fill-mint-herb-task':
@@ -655,6 +685,21 @@ class TutorialPage {
     return result;
   }
 
+  async recordTaskAction(action) {
+    const result = await this.run(
+      (taskAction) => window.tutorialCapture.recordTaskAction(taskAction),
+      action,
+    );
+
+    if (!result?.ok) {
+      throw new Error(`Failed to record task action: ${JSON.stringify(result ?? null)}`);
+    }
+
+    await sleep(150);
+    await this.hideOnlineGate();
+    return result;
+  }
+
   async completeTaskWithItems(taskId, itemKey, quantity) {
     const result = await this.run(
       (id, key, amount) => window.tutorialCapture.completeTaskWithItems(id, key, amount),
@@ -666,6 +711,23 @@ class TutorialPage {
     if (!result?.ok) {
       throw new Error(
         `Failed to complete task ${taskId}: ${JSON.stringify(result ?? null)}`,
+      );
+    }
+
+    await sleep(150);
+    await this.hideOnlineGate();
+    return result;
+  }
+
+  async completeTurnInTaskByItem(itemKey) {
+    const result = await this.run(
+      (key) => window.tutorialCapture.completeTurnInTaskByItem(key),
+      itemKey,
+    );
+
+    if (!result?.ok) {
+      throw new Error(
+        `Failed to complete turn-in task for ${itemKey}: ${JSON.stringify(result ?? null)}`,
       );
     }
 
@@ -715,6 +777,26 @@ class TutorialPage {
     );
   }
 
+  async assertActiveTargetResolvable() {
+    const result = await this.run(() => {
+      const step = window.tutorialCapture.getState().activeStep;
+
+      if (!step?.targetId) {
+        return { ok: true, skipped: true };
+      }
+
+      return window.tutorialCapture.getTargetState(step.targetId);
+    });
+
+    if (!result?.ok) {
+      throw new Error(
+        `Active tutorial target is not capturable: ${JSON.stringify(result ?? null)}`,
+      );
+    }
+
+    return result;
+  }
+
   async captureScreenshot(filePath) {
     const { data } = await this.client.send(
       'Page.captureScreenshot',
@@ -749,6 +831,10 @@ class TutorialPage {
     );
     fs.writeFileSync(filePath, Buffer.from(data, 'base64'));
   }
+}
+
+function isDirectRun() {
+  return process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 }
 
 class ChromeSession {

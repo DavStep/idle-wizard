@@ -27,7 +27,7 @@ export class TaskActionProgressManager {
     const currentLevel = this.taskStateEntityManager.getCurrentLevel();
     const updates = [];
 
-    for (const task of this.taskBalanceManager.getLevelTasks(currentLevel)) {
+    for (const task of this.taskBalanceManager.getCurrentLevelTasks(currentLevel)) {
       if (!this.matchesAction(task, { type, itemKey, researchId })) {
         continue;
       }
@@ -49,12 +49,13 @@ export class TaskActionProgressManager {
     const currentLevel = this.taskStateEntityManager.getCurrentLevel();
     const updates = [];
 
-    for (const task of this.taskBalanceManager.getLevelTasks(currentLevel)) {
-      if (!isActionRequirement(task.type) || this.taskStateEntityManager.isCompleted(task.id)) {
+    for (const task of this.taskBalanceManager.getCurrentLevelTasks(currentLevel)) {
+      if (this.taskStateEntityManager.isCompleted(task.id)) {
         continue;
       }
 
       if (
+        isActionRequirement(task.type) &&
         task.type === taskRequirementTypes.RESEARCH &&
         this.researchFacade?.hasCompletedResearch?.(task.researchId)
       ) {

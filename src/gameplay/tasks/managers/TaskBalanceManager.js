@@ -7,6 +7,7 @@ import {
 
 const MAX_TASKS_PER_LEVEL = 5;
 const LEVEL_COMPLETION_COIN_COST_PER_LEVEL = 20;
+const INITIAL_PLAYER_LEVEL = 0;
 const SEED_RESEARCH_PREFIX = 'unlockSeed:';
 const RECIPE_RESEARCH_PREFIX = 'unlockRecipe:';
 
@@ -68,19 +69,23 @@ export class TaskBalanceManager {
     return this.levels.find((level) => level.level === levelNumber)?.tasks ?? [];
   }
 
+  getCurrentLevelTasks(currentLevel) {
+    return this.getLevelTasks(this.getRequirementTargetLevel(currentLevel));
+  }
+
   getLevelCompletionCostCoin(levelNumber) {
-    const clampedLevel = this.clampLevelNumber(levelNumber);
-    const configuredCost = this.levels.find((level) => level.level === clampedLevel)?.completionCostCoin;
+    const targetLevel = this.getRequirementTargetLevel(levelNumber);
+    const configuredCost = this.levels.find((level) => level.level === targetLevel)?.completionCostCoin;
 
     if (Number.isInteger(configuredCost) && configuredCost >= 0) {
       return configuredCost;
     }
 
-    return clampedLevel * LEVEL_COMPLETION_COIN_COST_PER_LEVEL;
+    return targetLevel * LEVEL_COMPLETION_COIN_COST_PER_LEVEL;
   }
 
   getInitialLevel() {
-    return this.levels[0]?.level ?? 1;
+    return INITIAL_PLAYER_LEVEL;
   }
 
   getMaxLevel() {
@@ -93,6 +98,20 @@ export class TaskBalanceManager {
     }
 
     return Math.max(this.getInitialLevel(), Math.min(levelNumber, this.getMaxLevel()));
+  }
+
+  getRequirementTargetLevel(currentLevel) {
+    const safeCurrentLevel = this.clampLevelNumber(currentLevel);
+
+    if (safeCurrentLevel >= this.getMaxLevel()) {
+      return this.getMaxLevel();
+    }
+
+    return Math.max(this.levels[0]?.level ?? 1, safeCurrentLevel + 1);
+  }
+
+  isTaskActiveForCurrentLevel(task, currentLevel) {
+    return task?.level === this.getRequirementTargetLevel(currentLevel);
   }
 
   readLevels(balance = this.balance) {

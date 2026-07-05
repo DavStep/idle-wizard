@@ -58,6 +58,7 @@ function createSnapshot() {
           unlocked: true,
           totals: {
             maxGardenTiles: 2,
+            maxCauldrons: 1,
             maxManaCap: 50,
             manaPerSecond: 1,
           },
@@ -69,6 +70,7 @@ function createSnapshot() {
           unlocked: false,
           totals: {
             maxGardenTiles: 3,
+            maxCauldrons: 1,
             maxManaCap: 100,
             manaPerSecond: 2,
           },
@@ -175,6 +177,56 @@ function getReportLineParts(stage) {
 }
 
 describe('PageAnnouncementManager', () => {
+  it('shows the first playable level-up announcement from level zero', () => {
+    const snapshot = createSnapshot();
+    snapshot.tasks.currentLevel = 0;
+    snapshot.playerLevel.currentLevel = 0;
+    const { gameplayFacade, manager, stage } = mountManager(snapshot);
+
+    expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(true);
+
+    snapshot.tasks.currentLevel = 1;
+    snapshot.playerLevel.currentLevel = 1;
+    gameplayFacade.publishSnapshot();
+
+    const layer = stage.querySelector('.room-announcement-layer');
+    expect(layer?.hidden).toBe(false);
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('level up!');
+    expect(stage.querySelector('.room-announcement__level-flow')?.textContent).toBe('level 1');
+    expect(stage.querySelector('.room-announcement__level-from')?.textContent).toBe('level 1');
+    expect(stage.querySelector('.room-announcement__level-to')?.hidden).toBe(true);
+    expect(
+      [...stage.querySelectorAll('.room-announcement__row')].map((row) => [
+        row.querySelector('.room-announcement__row-label')?.textContent,
+        row.querySelector('.room-announcement__row-value')?.textContent,
+      ]),
+    ).toEqual([
+      ['unlocks', 'market'],
+      ['garden plots', '+2'],
+      ['cauldrons', '+1'],
+      ['mana capacity', '+50 mana'],
+      ['mana regeneration', '+1/sec mana'],
+    ]);
+    expect(layer?.dataset.announcementUnlockDelayMs).toBe('20000');
+
+    manager.hideCurrent();
+
+    expect(layer?.hidden).toBe(false);
+    expect(stage.querySelector('.room-announcement')?.dataset.announcementKind).toBe('unlock');
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe(
+      'market unlocked',
+    );
+    expect(stage.querySelector('.room-announcement__unlock-label')?.textContent).toBe('market');
+    expect(stage.querySelector('.room-announcement__unlock-detail')?.textContent).toBe(
+      'new room available',
+    );
+    expect(
+      stage
+        .querySelector('.room-announcement__unlock-icon')
+        ?.getAttribute('src'),
+    ).toContain('icon-shop-market-stall-tab');
+  });
+
   it('shows a full-screen level-up announcement after level increases', () => {
     const snapshot = createSnapshot();
     const { gameplayFacade, stage } = mountManager(snapshot);
@@ -202,10 +254,9 @@ describe('PageAnnouncementManager', () => {
       ]),
     ).toEqual([
       ['unlocks', 'garden'],
-      ['garden plots', '+1'],
-      ['mana cap', '+50'],
-      ['mana regen', '+1/sec'],
-      ['crystal', '+1'],
+      ['mana capacity', '+50 mana'],
+      ['mana regeneration', '+1/sec mana'],
+      ['bonus', '+1 crystal'],
     ]);
   });
 
@@ -697,6 +748,13 @@ describe('PageAnnouncementManager', () => {
     expect(layer?.hidden).toBe(false);
 
     vi.advanceTimersByTime(1);
+    expect(layer?.hidden).toBe(false);
+    expect(stage.querySelector('.room-announcement')?.dataset.announcementKind).toBe('unlock');
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe(
+      'garden unlocked',
+    );
+
+    vi.advanceTimersByTime(2100);
     expect(layer?.hidden).toBe(true);
   });
 

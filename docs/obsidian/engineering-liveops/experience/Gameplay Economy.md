@@ -1,0 +1,131 @@
+---
+title: Experience: Gameplay Economy
+tags:
+  - engineering
+  - liveops
+  - experience
+status: active
+world: engineering-liveops
+experience_type: gameplay-economy
+---
+
+# Experience: Gameplay Economy
+
+- Mana has generation and a cap; both upgrade through player level baseline plus research bonuses.
+- Cookie Clicker-like balance needs a compounding production spine; current Idle Wizard has prestige but still lacks random boost events, achievement multipliers, and producer-tier buy scaling.
+- Summoning seeds consumes mana.
+- Canonical seed display names are lowercase: sage, mint, nettle, lavender, briar, glowcap, mandrake, sunroot, moonflower, frostmoss, dreambell, star anise, bloodrose, dragonpepper.
+- Seed drop preferences multiply base seed `dropWeight` at roll time (`none` 0, `low` 1, `medium` 2, `high` 3); keep config `dropWeight` unchanged and use effective weight for odds.
+- Prestige keeps seed drop preferences while ordinary seed unlock research resets; repair inactive restored drops by forcing unlocked `sageSeed` to `medium`.
+- Seeds produce herbs, and herbs have growth duration.
+- Garden page herb inventory should read owned counts from `snapshot.garden.herbs`; Brewing's herb snapshot can subtract staged cauldron ingredients.
+- Garden and Brewing herb/potion use panels show only researched/unlocked or owned items; hide locked zero-count rows completely.
+- Brewing is active: herbs can be staged in cauldron order, brew spends mana, valid unlocked recipes make potions, and invalid mixes make wasted potion.
+- Potion recipe ingredient order matters; expand grouped quantities in listed order for matching.
+- Brewing recipe-book UI should read `snapshot.brewing.recipes` and show only unlocked recipes; locked recipes stay hidden until research unlocks them.
+- Brewing `maxCauldrons` is only the level cap; bought slots persist as `brewing.unlockedCauldrons`.
+- Unknown potion recipes are not paid research entries; they unlock globally through the SpacetimeDB `potion_recipe_discovery` table when a player brews the hidden recipe.
+- Player-visible discovery reducers must not silently return behind feature flags; client success with no table row makes recipes look undiscovered.
+- Potion discovery table inserts must not depend on world-chat announcement rate limits; chat is secondary to the global unlock.
+- Potion discovery chat announcements should include the player, potion name, and full ingredient recipe, with a distinct coin system-row style.
+- Potion discovery royalties are earned only from other players' sales, and discovery rows show lifetime royalty income per recipe.
+- Undiscovered hidden potion matches should preview like wasted mixes, including wasted mana cost; only global discovery reveals the real recipe UI.
+- Brewing keeps the action button generic (`brew (N mana)`) as a one-line bottom-left cauldron border label; cauldron status carries matched potion, locked recipe, and wasted mix state.
+- Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
+- Brewing page unmounts should clear DOM/subscriptions only; selected recipe and current cauldron state must survive room swaps so `fill recipe` stays available after bottling.
+- Brewing recipe selection comes from the recipes popup; selected recipes render their requirements inside the cauldron as stable placed/required rows even when ingredients are missing.
+- Brewing recipes popup is recipe-only: show recipe info and selection controls there, while cauldron contents/actions stay on the cauldron surface.
+- Brewing `fill recipe` is only actionable before a brew starts; active brew phases must not show it or its notification dot because gameplay rejects recipe prep as `brew_in_progress`.
+- Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 sage`), not expanded numbered slots.
+- Brewing recipe guide height follows the selected recipe's grouped ingredient row count through the guide CSS variable.
+- Brewing recipe popup rows use an explicit `select` action; do not hide recipe selection behind the recipe name.
+- Brewing shows bottom `herbs` and `potions` icon buttons; herbs expands the add-to-cauldron box, and potions expands an inline owned-potion box from `snapshot.inventory`.
+- Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
+- wasted potion is not researchable and sells for 1 coin by item-level sell price override.
+- Research prices come from SpacetimeDB `research_config`/`game_config.research`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
+- Live regular-coin research prices are overridden by `research_config`; prod price changes must update both `game_config.research` and matching `research_config` rows.
+- Research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
+- Research timers are capped at `4 hours`; premium-currency research is intentionally quick.
+- Emerald research time reduction applies only when starting future research; it does not rewrite active timers.
+- Emerald plot/cauldron level-up prices are upgrade-rank based, not slot based: first level-up costs 1 emerald, second costs 2, for any plot/cauldron.
+- Mana production and cap are level rewards only; mana sphere research rows were removed, and each level gives the old research step values (+50 cap, +1/sec).
+- Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
+- `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
+- Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
+- `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
+- Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `12s` to `210s` by herb tier.
+- Crystal is the hard currency; it appears in the top panel only where usable, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and automation research spends it.
+- Ruby starts at `0`, has no source yet, appears in the top panel only where usable, and advanced research spends it on per-slot speed upgrades.
+- Prestige ruby is derived from completed prestige milestones minus committed ruby research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.
+- Prestige resets run data but preserves current emerald currency; emerald research remains run-scoped unless explicitly made permanent.
+- Crystal shop offers live as the third tab inside Market; rows show only bundle and price, with no `each` or note columns.
+- Crystal shop price controls open a support-unavailable popup; do not add payment or crystal grant logic until transactions are requested.
+- Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
+- Early task levels must not require items gated far beyond the current research tier; use larger quantities of near-tier seeds, herbs, and potions instead.
+- Task persistence stores progress rows for all configured task ids, even on level 1; the visible task list must come from the current-level snapshot, not the raw save array.
+- Task balance should not skip research order; first task use of seed/herb or recipe tiers must walk the configured research chain.
+- Level 10 is the first big progression milestone; level 9 can be a stronger gate before that unlock.
+- Milestone levels should not dip easier than the gate before them; when raising level 9, raise level 10+ to preserve curve.
+- Recipe research order can differ from potion item catalog order; keep item order stable to avoid potion type-id churn, and order prerequisites by ingredient tier.
+- Automation research spends crystal via client balance; existing backend `research_config.cost_coin` should not decide automation research currency.
+- Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
+- Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
+- Auto brew recipe/enabled state is per cauldron; selecting a recipe in cauldron 2+ must not rewrite cauldron 1 automation.
+- Auto brew enable UI must set `autoBrewRecipeKey` from the selected recipe before enabling; `BrewingFacade` rejects enabled auto-brew without a recipe key.
+- Auto/manual cauldron UI only enables or disables future automation; auto brew stays unarmed until a successful manual brew, then repeats future cycles.
+- Fast sell starts at level 1 and pays 80% of the NPC bulk sell quote; ruby research raises it to 85/90/95%, while shelf auto-sell keeps the full marginal NPC quote.
+- Level 1 costs 0 coin and should never depend on tutorial-only sale grants; level 2 is the first systemic coin gate.
+- Nettle seed research stays locked until level 6; level 3 should spend no coin to unlock mint seed, then use normal selling for its level-up cost.
+- NPC and player market stand 2 unlock at player level 3.
+- NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
+- Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.
+- NPC market price UI should read backend-derived `sellCoin` and `sellNeed` from the shop snapshot; do not duplicate price balance in page code.
+- NPC market auto-sell should not sell when the backend quote is missing or backend need is zero.
+- NPC market `basePriceCoin` is not the visible sell payout; neutral `npcBuyPriceCoin` is about 80% of base, so DB base values should be `ceil(targetSell / 0.8)`.
+- NPC market demand stays in the backend/snapshot and gates sales, but current NPC market UI hides demand; visible labels show item plus sell price only.
+- NPC market stand and sell-picker labels include available quantity as `<item> (N)` before the sell price.
+- NPC market selected stand rows show the total value for the current quantity; `quoteNpcMarketSell` is fast-sell priced and should not drive stand row totals.
+- NPC market demand is player-visible only through the `demand` top-border popup, grouped by `seed`/`herb`/`potion`, with locked rows gray below a divider.
+- NPC market selected stands should keep need available from slot snapshots internally, because selected items may be hidden from picker rows.
+- NPC market sell picker should allow selecting zero-demand items; auto-sell already pauses when backend need is zero.
+- NPC market future locked stands display `locked`; only the next locked stand displays its buy action.
+- NPC market sell picker opens only after `selectShopShelfSlot` returns `ok: true`; failed locked-stand selection leaves the old selected stand in the snapshot.
+- NPC market blank stand row space is inert; item/select text opens the sell picker, and the buy button owns locked-stand purchases.
+- NPC market prices should follow uncapped `npcNeed / targetNeed` pressure; avoid hard price caps that hide real scarcity.
+- NPC market tick logic must not clamp `npcNeed` against a zero `maxNeed`; that drains all demand to `0` on the first due tick.
+- Player market listings reserve local inventory quantity and store a per-item coin value; they do not auto-sell over time.
+- Market sellable quantities must subtract Brewing cauldron-staged herbs and selected Garden seeds, but not unfinished task requirements; NPC and player market sales should use available quantities, not raw item stacks.
+- Player market listing popup stages item choice locally; only `place` publishes the listing and reserves inventory.
+- Player market listing popup keeps selected item, quantity, coin each, and `place` in the top listing space; item choices sit below a divider with no separate item row.
+- Player market server listings own market quantity, while local gameplay owns inventory and coin changes after reducer success.
+- Player market listing prices should use only global sanity caps and trade-total limits; do not cap by item base price multiplier, because cheap seeds need arbitrary player-set prices.
+- Player market publishing depends on `ENABLE_PLAYER_SHOP_EXCHANGE`; when false, server reducers throw and the UI shows `listing failed`.
+- Market page uses visible `npc market` / `player market` / `crystals` tabs; legacy internal NPC tab id can remain `npm`.
+- Crystal tab coin offer grants current level * 20 coin only on manual collect, then starts a 2h cooldown; offline time can clear cooldown but must not auto-claim coin; ready state owns Market/crystals notification dots.
+- Player market requests publish to backend request rows for public `buying` visibility; fulfillment is still not a server trade without escrow/delivery semantics.
+- Player market request item pickers should source catalog/inventory snapshots, not NPC price or sell rows.
+- Player market requests use local numbered slots that follow player market stand unlock state.
+- Player market request data is local gameplay-save state mirrored to backend request rows; local saves still preserve own slots across reload/server restart.
+- Player market browse dialog groups listings by seller and lets buyers choose quantity per listing before buying.
+- Garden plot is a compact world of plot boxes, not a bordered `plots` panel or row-view toggle; show open plots plus only the next buy slot, with no future locked summary.
+- Garden plot rows use one right-aligned status/action slot; do not split phase and action into separate columns.
+- Garden plot number cells use the shared numbered-row label (`1.`, `2.`) and spacing, matching market stand/request rows.
+- Keep Garden seed choice in a popup opened from an empty plot row/seed label; do not put seed lists inline in the plot.
+- Garden empty-plot blank row space is inert; use the seed/empty label to change selection and the right action to choose or plant.
+- Garden plot right-action hit areas must be real block/flex boxes; inline spans ignore min-size and make mobile taps land on label/blank row behavior.
+- Inventory-style seed/herb/potion rows should display `locked` instead of `0` when the matching research is incomplete.
+- Garden seed picker title is `choose seed`; hide locked/unresearched seeds, but keep researched zero-count seeds visible/selectable and gray.
+- Garden tiles keep selected seed separate from active crop; harvest completion preserves selection but does not auto-replant. Player must press `plant`.
+- Garden seed selection is locked while a tile has an active crop; active crop saves should restore selected seed from the planted crop.
+- Garden growth/harvest timer text belongs next to the right action label, not inside the progress rail.
+- Garden plot right-side action labels (`choose`, `no seeds`, `buy`, `growing`, `harvest`) should share the smaller growing-label size.
+- Garden plot row height must include the progress rail slot even when no progress is shown; hide the rail but keep the space.
+- Garden plot row notification dots are row-local; do not add parent `:has([data-notification])` bleed margins to `.garden-page__plot-rows`, or plot boxes jump when readiness changes.
+- Garden herb harvest reward drops should originate from the plant inside the plot box; use the progress rail only as a row-mode fallback.
+- Garden plot soil art should read as soil at level 1; avoid parchment-white defaults, and deepen upgraded soil from a rich brown starting point.
+- Garden plot upgrade art should use per-level soil sprites: higher levels get darker and cleaner with fewer rocks/weeds; tinting one base sprite is too subtle.
+- Garden plot bottom-left star labels can look like dark rocks in screenshots; inspect DOM/assets before redrawing soil decoration.
+- Keep herbs below the plot with enough space for active progress rows; bounded plot scrolling is acceptable once many plots are unlocked.
+- Garden page overflow belongs to `.garden-page__ui-layer`; plot and herb boxes should grow to content instead of using fixed inner row heights.
+- Garden seed/herb inventory boxes open from bottom icon buttons, reset hidden on room swaps, and collapsed previews show three item rows.
+- Garden seed/herb inventory expansion should keep the expanded box inside the page scroll viewport, converting scaled DOM rect deltas back to source scroll pixels.

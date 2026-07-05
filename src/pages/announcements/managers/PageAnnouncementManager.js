@@ -6,6 +6,7 @@ import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcon
 import { createSeedPackIcon, getSeedIconFrameName } from '../../../assets/items/seeds/seedIcons.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { appendTextWithItemIcons } from '../../shared/itemIconLabel.js';
+import { createPageIcon } from '../../shared/pageIcons.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { getLevelPayoffRows } from '../../workshop/managers/levelPayoffSummary.js';
 import { PlayerShopWhileAwayReportManager } from './PlayerShopWhileAwayReportManager.js';
@@ -138,6 +139,7 @@ export class PageAnnouncementManager {
   createLayer() {
     const layer = document.createElement('section');
     layer.className = 'room-announcement-layer';
+    layer.dataset.tutorialBlocker = 'true';
     layer.hidden = true;
     layer.setAttribute('aria-hidden', 'true');
     layer.addEventListener('click', this.handleLayerClick);
@@ -216,6 +218,7 @@ export class PageAnnouncementManager {
     if (this.layer) {
       this.layer.hidden = true;
       this.layer.setAttribute('aria-hidden', 'true');
+      delete this.layer.dataset.announcementUnlockDelayMs;
     }
 
     this.body?.replaceChildren();
@@ -317,15 +320,49 @@ export class PageAnnouncementManager {
       return;
     }
 
+    const rows = getLevelPayoffRows(snapshot, {
+      fromLevel: this.previousLevel,
+      toLevel: nextLevel,
+    });
+
     this.queue.push({
       kind: 'level',
       fromLevel: this.previousLevel,
       toLevel: nextLevel,
-      rows: getLevelPayoffRows(snapshot, {
-        fromLevel: this.previousLevel,
-        toLevel: nextLevel,
-      }),
+      rows,
     });
+
+    const unlockAnnouncement = this.getFeatureUnlockAnnouncement(rows);
+
+    if (unlockAnnouncement) {
+      this.queue.push(unlockAnnouncement);
+    }
+  }
+
+  getFeatureUnlockAnnouncement(rows = []) {
+    const unlockRow = rows.find(
+      (row) => row?.label === 'unlocks' && Array.isArray(row.valueLines),
+    );
+    const values = unlockRow?.valueLines?.filter(
+      (value) => typeof value === 'string' && value.trim(),
+    );
+
+    if (!values?.length) {
+      return null;
+    }
+
+    const pageIds = unlockRow.valueLinePageIds ?? {};
+    const notices = unlockRow.valueLineNotices ?? {};
+
+    return {
+      kind: 'unlock',
+      values,
+      pageIds,
+      notices: values.reduce((result, value) => {
+        result[value] = notices[value] ?? `${value} unlocked`;
+        return result;
+      }, {}),
+    };
   }
 
   queueResearchAnnouncements(snapshot = {}) {
@@ -349,7 +386,7 @@ export class PageAnnouncementManager {
       Number(snapshot?.tasks?.currentLevel ?? snapshot?.playerLevel?.currentLevel),
     );
 
-    return Number.isInteger(level) && level > 0 ? level : null;
+    return Number.isInteger(level) && level >= 0 ? level : null;
   }
 
   getCompletedResearchIds(snapshot = {}) {
@@ -427,6 +464,7 @@ export class PageAnnouncementManager {
 
   showNext() {
     if (this.current || this.queue.length <= 0 || !this.layer) {
+      this.updateLayerTimingMetadata();
       return;
     }
 
@@ -440,6 +478,7 @@ export class PageAnnouncementManager {
     if (this.current.kind !== 'whileAway') {
       this.hideTimeoutId = window.setTimeout(() => this.hideCurrent(), this.displayMs);
     }
+    this.updateLayerTimingMetadata();
   }
 
   hideCurrent() {
@@ -452,6 +491,7 @@ export class PageAnnouncementManager {
     this.layer.setAttribute('aria-hidden', 'true');
     this.body.replaceChildren();
     this.current = null;
+    this.updateLayerTimingMetadata();
 
     if (this.previousFocus && document.contains(this.previousFocus)) {
       this.focusWithoutScroll(this.previousFocus);
@@ -459,6 +499,24 @@ export class PageAnnouncementManager {
 
     this.previousFocus = null;
     this.showNext();
+  }
+
+  updateLayerTimingMetadata() {
+    if (!this.layer) {
+      return;
+    }
+
+    const timedAnnouncementCount =
+      (this.current && this.current.kind !== 'whileAway' && !this.layer.hidden ? 1 : 0) +
+      this.queue.filter((announcement) => announcement?.kind !== 'whileAway').length;
+    const delayMs = timedAnnouncementCount * this.displayMs;
+
+    if (delayMs > 0) {
+      this.layer.dataset.announcementUnlockDelayMs = String(delayMs);
+      return;
+    }
+
+    delete this.layer.dataset.announcementUnlockDelayMs;
   }
 
   dismissCurrentReport() {
@@ -493,6 +551,12 @@ export class PageAnnouncementManager {
       return;
     }
 
+    if (announcement.kind === 'unlock') {
+      this.renderStandardAnnouncementChrome();
+      this.renderFeatureUnlockAnnouncement(announcement);
+      return;
+    }
+
     this.renderStandardAnnouncementChrome();
     this.renderResearchAnnouncement(announcement);
   }
@@ -507,7 +571,10 @@ export class PageAnnouncementManager {
 
   renderLevelAnnouncement({ fromLevel, toLevel, rows = [] }) {
     this.setText(this.title, 'level up!');
-    this.panel.setAttribute('aria-label', `level up level ${fromLevel} to ${toLevel}`);
+    this.panel.setAttribute(
+      'aria-label',
+      fromLevel <= 0 ? `level up level ${toLevel}` : `level up level ${fromLevel} to ${toLevel}`,
+    );
 
     const range = this.createLevelFlow({ fromLevel, toLevel });
 
@@ -516,17 +583,22 @@ export class PageAnnouncementManager {
   }
 
   createLevelFlow({ fromLevel, toLevel }) {
+    const firstPlayableLevel = fromLevel <= 0;
     const range = document.createElement('div');
     range.className = 'room-announcement__level-flow';
-    range.setAttribute('aria-label', `level ${fromLevel} > ${toLevel}`);
+    range.setAttribute(
+      'aria-label',
+      firstPlayableLevel ? `level ${toLevel} reached` : `level ${fromLevel} > ${toLevel}`,
+    );
 
     const from = document.createElement('span');
     from.className = 'room-announcement__level-from';
-    from.textContent = `level ${fromLevel}`;
+    from.textContent = firstPlayableLevel ? `level ${toLevel}` : `level ${fromLevel}`;
 
     const to = document.createElement('span');
     to.className = 'room-announcement__level-to';
-    to.textContent = `> ${toLevel}`;
+    to.textContent = firstPlayableLevel ? '' : `> ${toLevel}`;
+    to.hidden = firstPlayableLevel;
 
     range.append(from, to);
     return range;
@@ -549,6 +621,63 @@ export class PageAnnouncementManager {
     detail.hidden = detailText.length <= 0;
 
     this.body.replaceChildren(iconStage, label, detail);
+  }
+
+  renderFeatureUnlockAnnouncement({ values = [], pageIds = {}, notices = {} } = {}) {
+    const firstValue = values[0] ?? 'feature';
+    const singleUnlock = values.length === 1;
+    const titleText = singleUnlock
+      ? notices[firstValue] ?? `${firstValue} unlocked`
+      : 'features unlocked';
+    this.setText(this.title, titleText);
+    this.panel.setAttribute('aria-label', titleText);
+
+    if (!singleUnlock) {
+      this.body.replaceChildren(
+        this.createRows([
+          {
+            label: 'unlocked',
+            value: values.join(', '),
+            valueLines: values,
+          },
+        ]),
+      );
+      return;
+    }
+
+    const iconStage = this.createFeatureUnlockIconStage(pageIds[firstValue]);
+    const label = document.createElement('div');
+    label.className = 'room-announcement__research-label room-announcement__unlock-label';
+    label.textContent = firstValue;
+
+    const detail = document.createElement('div');
+    detail.className = 'room-announcement__research-detail room-announcement__unlock-detail';
+    detail.textContent = pageIds[firstValue] ? 'new room available' : 'new feature available';
+
+    this.body.replaceChildren(iconStage, label, detail);
+  }
+
+  createFeatureUnlockIconStage(pageId) {
+    const stage = document.createElement('div');
+    stage.className = 'room-announcement__research-icon-stage room-announcement__unlock-icon-stage';
+    stage.setAttribute('aria-hidden', 'true');
+
+    const icon = createPageIcon(
+      pageId,
+      'room-announcement__research-icon room-announcement__unlock-icon',
+    );
+
+    if (icon) {
+      stage.append(icon);
+      return stage;
+    }
+
+    const fallback = document.createElement('span');
+    fallback.className =
+      'room-announcement__research-fallback-icon room-announcement__unlock-fallback-icon';
+    fallback.textContent = 'feature';
+    stage.append(fallback);
+    return stage;
   }
 
   renderWhileAwayReport(report = {}) {

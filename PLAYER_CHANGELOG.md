@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.78
+
+- Reworked the earliest level requirements so new wizards build toward level 1 with a fuller sage seed task and coin step.
+- Improved Elara's early tutorial with clearer mana, task, and unlock highlighting, plus safer timing around room announcements.
+- Added clearer level-up and room-unlock announcements with room icons and more readable reward labels.
+- Added more selectable adventurer portraits and kept the server visual-settings list in sync.
+
 ## 0.2.77
 
 - Fixed duplicate empty accounts appearing in world event rankings by waiting for the account save to load before shared score syncs can publish.

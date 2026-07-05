@@ -22,6 +22,12 @@ For any tutorial, FTUE, Elara guide box, objective panel, target hint, tutorial 
 
 For general repo orientation, verification scope, and safe edit workflow, read `docs/ai-workflow.md`.
 
+For any bug report, regression, failing check, broken gameplay/UI/backend behavior, mobile/WebView defect, save/load mismatch, visual defect, or vague "X is broken" request, use `idle-wizard-bugfixing` before editing.
+
+The bugfixing agent must establish reproduction steps, isolate the exact root cause, add or update a regression guard when practical, fix narrowly, validate against the original reproduction, and update the routed experience docs only with durable lessons.
+
+Selected ECC-derived skills live under `.agents/skills/ecc-*` as advisory QA additions. Use them when their descriptions match, but Idle Wizard project rules, the `experience.md` router and routed `docs/obsidian/engineering-liveops/experience/` files, and local `idle-wizard-*` skills override ECC guidance on conflicts. Do not install full ECC profiles, global hooks, global MCP config, memory, or worktree orchestration unless the user explicitly asks for that scoped change.
+
 A Dark Room-style blocks use titles embedded over the top border on white background, not separate headings inside bordered panels.
 
 Use A Dark Room's source UI proportions, including `16px` source text, inside the room UI scale layer. Do not inflate the font directly to make mobile text readable.
@@ -32,9 +38,9 @@ Ordinary non-dialog boxes stay simple: white theme uses `1px` borders; non-white
 
 ## Experience Rules
 
-- Read `experience.md` before making project decisions.
-- When learning something new and crucial that would have saved time or resources, update `experience.md`.
-- Keep `experience.md` categorized.
+- Read `experience.md` before making project decisions, then read the routed `docs/obsidian/engineering-liveops/experience/` files for the touched area.
+- When learning something new and crucial that would have saved time or resources, update the most specific routed experience file.
+- Keep `experience.md` as the routing head, not the long lesson store.
 - Add only durable project lessons, not ordinary progress notes or duplicate facts.
 - Keep entries short and directly useful for future work.
 

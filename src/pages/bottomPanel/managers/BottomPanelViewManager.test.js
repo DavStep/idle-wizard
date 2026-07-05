@@ -319,7 +319,7 @@ describe('BottomPanelViewManager', () => {
 
       const event = new window.Event('animationend', { bubbles: true });
       Object.defineProperty(event, 'animationName', {
-        value: 'room-bottom-tab-lock-break',
+        value: 'room-bottom-tab-icon-unlock-flyout',
       });
       gardenTab?.dispatchEvent(event);
 
@@ -365,12 +365,59 @@ describe('BottomPanelViewManager', () => {
         '2100ms',
       );
 
-      vi.advanceTimersByTime(2100 + 519);
+      vi.advanceTimersByTime(2100 + 559);
       expect(gardenTab?.classList.contains('is-unlocking')).toBe(true);
 
       vi.advanceTimersByTime(1);
       expect(gardenTab?.classList.contains('is-unlocking')).toBe(false);
       expect(gardenTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
+        '',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('uses the announcement queue delay for visible unlock motion', () => {
+    vi.useFakeTimers();
+
+    try {
+      const stage = document.createElement('section');
+      const announcement = document.createElement('section');
+      const manager = new BottomPanelViewManager({
+        getCurrentPageId: () => 'workshop',
+      });
+
+      manager.mount(stage);
+      announcement.className = 'room-announcement-layer';
+      announcement.hidden = false;
+      announcement.dataset.announcementUnlockDelayMs = '4200';
+      stage.append(announcement);
+      manager.setPageStates([
+        {
+          id: 'shop',
+          unlocked: false,
+          requiredLevel: 1,
+        },
+      ]);
+
+      const marketTab = stage.querySelector(
+        '.room-bottom-panel__tab[data-page-id="shop"]',
+      );
+
+      manager.setPageStates([{ id: 'shop', unlocked: true, visible: true }]);
+
+      expect(marketTab?.classList.contains('is-unlocking')).toBe(true);
+      expect(marketTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
+        '4200ms',
+      );
+
+      vi.advanceTimersByTime(4200 + 559);
+      expect(marketTab?.classList.contains('is-unlocking')).toBe(true);
+
+      vi.advanceTimersByTime(1);
+      expect(marketTab?.classList.contains('is-unlocking')).toBe(false);
+      expect(marketTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
         '',
       );
     } finally {

@@ -153,6 +153,13 @@ describe('TaskBalanceManager', () => {
   it('uses action-based onboarding requirements for levels 1 through 5', () => {
     const taskBalanceManager = createManager();
 
+    expect(taskBalanceManager.getInitialLevel()).toBe(0);
+    expect(taskBalanceManager.getCurrentLevelTasks(0).map((task) => task.id)).toEqual([
+      'level1-summon-sage-seed',
+      'level1-turn-in-sage-seed',
+    ]);
+    expect(taskBalanceManager.getLevelCompletionCostCoin(0)).toBe(10);
+
     expect([1, 2, 3, 4, 5].map((level) =>
       taskBalanceManager.getLevelTasks(level).map((task) => ({
         type: task.type,
@@ -162,8 +169,8 @@ describe('TaskBalanceManager', () => {
       })),
     )).toEqual([
       [
-        { type: 'summon', researchId: null, itemKey: 'sageSeed', requiredQuantity: 1 },
-        { type: 'turnIn', researchId: null, itemKey: 'sageSeed', requiredQuantity: 1 },
+        { type: 'summon', researchId: null, itemKey: 'sageSeed', requiredQuantity: 5 },
+        { type: 'turnIn', researchId: null, itemKey: 'sageSeed', requiredQuantity: 5 },
       ],
       [
         { type: 'summon', researchId: null, itemKey: 'sageSeed', requiredQuantity: 5 },

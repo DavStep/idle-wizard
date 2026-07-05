@@ -2,18 +2,18 @@
   "levels": [
     {
       "level": 1,
-      "completionCostCoin": 0,
+      "completionCostCoin": 10,
       "tasks": [
         {
           "id": "level1-summon-sage-seed",
           "type": "summon",
           "itemKey": "sageSeed",
-          "quantity": 1
+          "quantity": 5
         },
         {
           "id": "level1-turn-in-sage-seed",
           "itemKey": "sageSeed",
-          "quantity": 1
+          "quantity": 5
         }
       ]
     },

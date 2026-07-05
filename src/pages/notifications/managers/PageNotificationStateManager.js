@@ -34,9 +34,7 @@ export class PageNotificationStateManager {
   getWorkshopPage(snapshot, tradeAlliance = {}) {
     return this.createPage({
       seeds: getSeedSummonNotification(snapshot),
-      tasks: (snapshot.tasks?.level?.tasks ?? []).some(
-        (task) => task.canFill === true || task.canComplete === true,
-      ),
+      tasks: (snapshot.tasks?.level?.tasks ?? []).some((task) => task.canFill === true),
       personalTasks: hasClaimablePersonalTaskReward(snapshot),
       alliance: getTradeAllianceQuestNotification(snapshot, tradeAlliance),
     });

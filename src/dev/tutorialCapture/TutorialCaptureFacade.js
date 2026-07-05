@@ -48,10 +48,13 @@ export class TutorialCaptureFacade {
       showPage: (pageId) => this.showPage(pageId),
       setUsername: (username) => this.setUsername(username),
       clickTarget: (targetId) => this.clickTarget(targetId),
+      getTargetState: (targetId) => this.getTargetState(targetId),
       clickSelector: (selector) => this.clickSelector(selector),
       clickByText: (text, selector) => this.clickByText(text, selector),
+      recordTaskAction: (action) => this.recordTaskAction(action),
       completeTaskWithItems: (taskId, itemKey, quantity) =>
         this.completeTaskWithItems(taskId, itemKey, quantity),
+      completeTurnInTaskByItem: (itemKey) => this.completeTurnInTaskByItem(itemKey),
       completeCurrentTask: (taskId) => this.completeCurrentTask(taskId),
     });
   }
@@ -223,6 +226,33 @@ export class TutorialCaptureFacade {
     return { ok: true, state: this.getState() };
   }
 
+  getTargetState(targetId) {
+    const target = this.app?.pagesFacade?.tutorialFacade?.targetManager?.getTarget?.(targetId);
+
+    if (!target) {
+      return { ok: false, reason: 'target_missing', targetId };
+    }
+
+    const rect = target.getBoundingClientRect?.();
+    const hidden = Boolean(target.hidden || target.closest?.('[hidden]'));
+    const measurable = Boolean(rect && rect.width > 0 && rect.height > 0);
+
+    return {
+      ok: !hidden && measurable,
+      targetId,
+      hidden,
+      measurable,
+      rect: rect
+        ? {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+          }
+        : null,
+    };
+  }
+
   clickSelector(selector) {
     const target = this.getStage()?.querySelector?.(selector);
 
@@ -247,6 +277,25 @@ export class TutorialCaptureFacade {
     target.click();
     this.refreshTutorial();
     return { ok: true, state: this.getState() };
+  }
+
+  recordTaskAction(action) {
+    const gameplay = this.app?.gameplayFacade;
+
+    if (!gameplay?.tasksFacade?.recordAction) {
+      return { ok: false, reason: 'tasks_facade_missing', action };
+    }
+
+    const result = gameplay.tasksFacade.recordAction(action);
+    gameplay.publishAndSaveSnapshot?.();
+    this.refreshTutorial();
+
+    return {
+      ok: result?.ok !== false,
+      action,
+      result,
+      state: this.getState(),
+    };
   }
 
   completeTaskWithItems(taskId, itemKey, quantity) {
@@ -297,6 +346,25 @@ export class TutorialCaptureFacade {
         (Number(task.remainingQuantity) || 0) - (Number(task.ownedQuantity) || 0),
       ),
     );
+  }
+
+  completeTurnInTaskByItem(itemKey) {
+    const task = this.app?.gameplayFacade
+      ?.getSnapshot?.()
+      ?.tasks?.level?.tasks?.find((candidate) => {
+        if (candidate?.itemKey !== itemKey || candidate?.completed) {
+          return false;
+        }
+
+        const type = candidate.type ?? candidate.action ?? null;
+        return !type || type === 'turnIn' || type === 'drop';
+      });
+
+    if (!task) {
+      return { ok: false, reason: 'turn_in_task_missing', itemKey };
+    }
+
+    return this.completeCurrentTask(task.taskId);
   }
 
   getStage() {

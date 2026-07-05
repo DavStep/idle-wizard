@@ -91,7 +91,8 @@ export class TopPanelViewManager {
     this.refs.levelButton = document.createElement('button');
     this.refs.levelButton.className = 'room-top-panel__level';
     this.refs.levelButton.type = 'button';
-    this.refs.levelButton.textContent = 'level 1';
+    this.refs.levelButton.textContent = '';
+    this.refs.levelButton.hidden = true;
     this.refs.levelButton.setAttribute('aria-label', 'open level rewards');
     this.refs.levelValue = this.refs.levelButton;
 
@@ -125,6 +126,7 @@ export class TopPanelViewManager {
     if (label === 'mana') {
       resource.classList.add('room-top-panel__resource--mana');
       resource.dataset.tutorialId = 'top:mana';
+      setManaAmountTutorialTarget(val);
       this.refs.manaValue = val;
     }
 
@@ -145,7 +147,11 @@ export class TopPanelViewManager {
 
       this.refs.manaRateValue = document.createElement('span');
       this.refs.manaRateValue.className = 'room-top-panel__mana-rate';
-      this.refs.manaRateValue.textContent = '+0/s';
+      this.refs.manaRateText = document.createElement('span');
+      this.refs.manaRateText.className = 'room-top-panel__mana-rate-value';
+      this.refs.manaRateText.dataset.tutorialId = 'top:mana:regen';
+      this.refs.manaRateText.textContent = '+0/s';
+      this.refs.manaRateValue.append(this.refs.manaRateText);
 
       resource.append(line, this.refs.manaRateValue);
       return resource;
@@ -899,4 +905,17 @@ export class TopPanelViewManager {
 
     return this.refs.inboxPopup;
   }
+}
+
+function setManaAmountTutorialTarget(element) {
+  const label = element?.querySelector?.('.style-resource-label--mana');
+  const amount = label?.querySelector?.('.style-resource-label__amount');
+
+  label?.setAttribute('data-tutorial-id', 'top:mana:value');
+  label?.removeAttribute('data-tutorial-highlight-padding');
+  label?.removeAttribute('data-tutorial-highlight-shape');
+
+  amount?.removeAttribute('data-tutorial-id');
+  amount?.removeAttribute('data-tutorial-highlight-padding');
+  amount?.removeAttribute('data-tutorial-highlight-shape');
 }

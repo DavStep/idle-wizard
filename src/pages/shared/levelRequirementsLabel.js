@@ -5,7 +5,7 @@ export function getLevelRequirementTargetLevel(taskSnapshot = {}) {
     Number(taskSnapshot?.level?.level ?? taskSnapshot?.currentLevel),
   );
 
-  if (!Number.isFinite(currentLevel) || currentLevel < 1) {
+  if (!Number.isFinite(currentLevel) || currentLevel < 0) {
     return null;
   }
 

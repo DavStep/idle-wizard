@@ -163,6 +163,247 @@ describe('TutorialHintManager', () => {
     expect(target.getAttribute('data-tutorial-target-emphasis')).toBe('true');
   });
 
+  it('dims the stage through a masked backdrop while leaving highlighted targets visible', () => {
+    const stage = document.createElement('section');
+    const topPanel = document.createElement('div');
+    const manaValue = document.createElement('span');
+    const manaRegen = document.createElement('span');
+    const manager = new TutorialHintManager();
+
+    useFixedLessonSize(manager);
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1440, height: 2160 });
+    setClientRect(
+      manaValue,
+      toClientRect({
+        left: 180,
+        top: 20,
+        width: 80,
+        height: 18,
+      }),
+    );
+    setClientRect(
+      manaRegen,
+      toClientRect({
+        left: 180,
+        top: 40,
+        width: 36,
+        height: 14,
+      }),
+    );
+    topPanel.style.opacity = '0';
+    topPanel.append(manaValue, manaRegen);
+    stage.append(topPanel);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    setClientRect(manager.root, { left: 180, top: 0, width: 1080, height: 2160 });
+    manager.showLesson({
+      id: 'intro-mana-sphere',
+      text: 'this is your mana.',
+      highlightTargets: [manaValue, manaRegen],
+    });
+
+    const backdrop = stage.querySelector('.tutorial-layer__backdrop');
+    const shade = [...(backdrop?.children ?? [])].find(
+      (child) => child.tagName.toLowerCase() === 'rect',
+    );
+    const maskRects = [...(backdrop?.querySelectorAll('mask rect') ?? [])];
+
+    expect(backdrop?.hasAttribute('hidden')).toBe(false);
+    expect(backdrop?.getAttribute('viewBox')).toBe('0 0 480 720');
+    expect(shade?.getAttribute('fill-opacity')).toBe('0.58');
+    expect(maskRects).toHaveLength(3);
+    expect(
+      maskRects.slice(1).map((rect) => ({
+        x: rect.getAttribute('x'),
+        y: rect.getAttribute('y'),
+        width: rect.getAttribute('width'),
+        height: rect.getAttribute('height'),
+      })),
+    ).toEqual([
+      { x: '177', y: '17', width: '86', height: '24' },
+      { x: '177', y: '37', width: '42', height: '20' },
+    ]);
+
+    manager.hide();
+
+    expect(backdrop?.hasAttribute('hidden')).toBe(true);
+    expect(backdrop?.querySelectorAll('mask rect')).toHaveLength(1);
+  });
+
+  it('dims the whole stage for advance lessons without highlight targets', () => {
+    const stage = document.createElement('section');
+    const manager = new TutorialHintManager();
+
+    useFixedLessonSize(manager);
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showLesson({
+      id: 'first-task-complete',
+      title: 'lesson 1: introduction',
+      text: 'tasks are how the workshop asks for supplies.',
+      advanceOnClick: true,
+      dimBackdrop: true,
+    });
+
+    const backdrop = stage.querySelector('.tutorial-layer__backdrop');
+    const maskRects = [...(backdrop?.querySelectorAll('mask rect') ?? [])];
+
+    expect(backdrop?.hasAttribute('hidden')).toBe(false);
+    expect(backdrop?.getAttribute('viewBox')).toBe('0 0 360 720');
+    expect(maskRects).toHaveLength(1);
+    expect(maskRects[0]?.getAttribute('width')).toBe('360');
+    expect(maskRects[0]?.getAttribute('height')).toBe('720');
+
+    manager.closeLessonPanel();
+
+    expect(backdrop?.hasAttribute('hidden')).toBe(true);
+
+    manager.openLessonPanel();
+
+    expect(backdrop?.hasAttribute('hidden')).toBe(false);
+    expect(backdrop?.querySelectorAll('mask rect')).toHaveLength(1);
+  });
+
+  it('can cut text-shaped highlight holes instead of rectangular target holes', () => {
+    const stage = document.createElement('section');
+    const manaValue = document.createElement('span');
+    const manager = new TutorialHintManager();
+
+    useFixedLessonSize(manager);
+    manaValue.dataset.tutorialHighlightShape = 'text';
+    manaValue.textContent = '50/50';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      manaValue,
+      toClientRect({
+        left: 60,
+        top: 20,
+        width: 40,
+        height: 13,
+      }),
+    );
+    stage.append(manaValue);
+    document.body.append(stage);
+
+    manager.mount(stage);
+    manager.showLesson({
+      id: 'intro-mana-sphere',
+      text: 'this is your mana.',
+      highlightTargets: [manaValue],
+    });
+
+    const backdrop = stage.querySelector('.tutorial-layer__backdrop');
+    const maskRects = [...(backdrop?.querySelectorAll('mask rect') ?? [])];
+    const maskText = backdrop?.querySelector('mask text');
+
+    expect(maskRects).toHaveLength(1);
+    expect(maskText?.textContent).toBe('50/50');
+    expect(maskText?.getAttribute('x')).toBe('60');
+    expect(maskText?.getAttribute('y')).toBe('33');
+    expect(maskText?.getAttribute('textLength')).toBe('40');
+    expect(maskText?.hasAttribute('dominant-baseline')).toBe(false);
+  });
+
+  it('remeasures highlighted text holes while reveal targets settle', () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const originalCancelAnimationFrame = window.cancelAnimationFrame;
+    const hadRequestAnimationFrame = 'requestAnimationFrame' in window;
+    const hadCancelAnimationFrame = 'cancelAnimationFrame' in window;
+    const frames = [];
+    const requestAnimationFrame = vi.fn((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const cancelAnimationFrame = vi.fn();
+    Object.defineProperty(window, 'requestAnimationFrame', {
+      configurable: true,
+      value: requestAnimationFrame,
+      writable: true,
+    });
+    Object.defineProperty(window, 'cancelAnimationFrame', {
+      configurable: true,
+      value: cancelAnimationFrame,
+      writable: true,
+    });
+
+    let manager = null;
+
+    try {
+      const stage = document.createElement('section');
+      const manaValue = document.createElement('span');
+      let manaValueRect = toClientRect({
+        left: 60,
+        top: 24,
+        width: 40,
+        height: 13,
+      });
+      manager = new TutorialHintManager();
+
+      useFixedLessonSize(manager);
+      manaValue.dataset.tutorialHighlightShape = 'text';
+      manaValue.textContent = '50/50';
+      manaValue.getBoundingClientRect = () => ({
+        x: manaValueRect.left,
+        y: manaValueRect.top,
+        right: manaValueRect.left + manaValueRect.width,
+        bottom: manaValueRect.top + manaValueRect.height,
+        ...manaValueRect,
+      });
+      stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+      setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+      stage.append(manaValue);
+      document.body.append(stage);
+
+      manager.mount(stage);
+      manager.showLesson({
+        id: 'intro-mana-sphere',
+        text: 'this is your mana.',
+        highlightTargets: [manaValue],
+      });
+
+      expect(stage.querySelector('mask text')?.getAttribute('y')).toBe('37');
+      expect(requestAnimationFrame).toHaveBeenCalledTimes(1);
+
+      manaValueRect = toClientRect({
+        left: 60,
+        top: 20,
+        width: 40,
+        height: 13,
+      });
+      frames.shift()?.(0);
+
+      expect(stage.querySelector('mask text')?.getAttribute('y')).toBe('33');
+    } finally {
+      manager?.unmount();
+
+      if (hadRequestAnimationFrame) {
+        Object.defineProperty(window, 'requestAnimationFrame', {
+          configurable: true,
+          value: originalRequestAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'requestAnimationFrame');
+      }
+
+      if (hadCancelAnimationFrame) {
+        Object.defineProperty(window, 'cancelAnimationFrame', {
+          configurable: true,
+          value: originalCancelAnimationFrame,
+          writable: true,
+        });
+      } else {
+        Reflect.deleteProperty(window, 'cancelAnimationFrame');
+      }
+    }
+  });
+
   it('mounts and pauses the Spine pointer with target cue visibility', () => {
     const stage = document.createElement('section');
     const target = document.createElement('button');

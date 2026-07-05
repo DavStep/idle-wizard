@@ -18,10 +18,14 @@ const SELECTED_SELL_AMOUNT_AUTO_ADVANCE_MS = 2000;
 const MANA_TONIC_SAGE_COUNT = 3;
 const MANA_TONIC_EXTRA_SAGE_TARGET_ID = `brewing:remove:${SAGE_HERB_KEY}`;
 const MANA_READOUT_TARGET_ID = 'top:mana';
-const LEVEL_ONE_SEED_TASK_IDS = ['level1-sage-seeds', 'level1-turn-in-sage-seed'];
+const MANA_VALUE_TARGET_ID = 'top:mana:value';
+const MANA_REGEN_TARGET_ID = 'top:mana:regen';
+const LEVEL_ONE_SEED_TASK_IDS = ['level1-turn-in-sage-seed'];
+export const TUTORIAL_ADVANCE_ACTIONS = Object.freeze({
+  EXPAND_WORKSHOP_TASKS: 'expand-workshop-tasks',
+});
 const DEFAULT_LEVEL_FOUR_SAGE_GROW_TARGET = 2;
 const TURN_IN_TEXT = 'turn in';
-const COMPLETE_TEXT = 'complete';
 const WORKSHOP_TASKS_PIN_TARGET_ID = 'workshop:tasksPin';
 export const TUTORIAL_LESSON_THREE_STUCK_MS = 2000;
 const LEVEL_TWO_SUMMON_TYPE = 'summon';
@@ -40,6 +44,8 @@ const LEVEL_ONE_STEP_IDS = [
   'intro-welcome',
   'intro-mana-sphere',
   'first-summon-seed',
+  'summon-five-seeds',
+  'intro-level-requirements',
   'first-fill-seed-task',
   'finish-seed-task',
   'first-task-complete',
@@ -89,6 +95,8 @@ const SEEDING_LESSON_STEP_IDS = [
   'intro-welcome',
   'intro-mana-sphere',
   'first-summon-seed',
+  'summon-five-seeds',
+  'intro-level-requirements',
   'first-fill-seed-task',
   'finish-seed-task',
 ];
@@ -177,9 +185,9 @@ export const TUTORIAL_STEPS = [
       "this old workshop is for sale.\n\nit needs work, but it can become a real potion shop.\n\nElara used to work here. she'll help you get started.",
     advanceLabel: 'enter workshop',
     advanceOnClick: true,
-    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 0,
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 2 ||
+      getCurrentLevel(snapshot) >= 1 ||
       hasAnySeedQuantity(snapshot) ||
       hasAnySeedTaskProgress(snapshot),
   },
@@ -189,8 +197,8 @@ export const TUTORIAL_STEPS = [
     revealTokens: [],
     text: "i'm Elara. let's get the workshop running.",
     advanceOnClick: true,
-    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 0,
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 1,
   },
   {
     id: 'intro-mana-sphere',
@@ -198,11 +206,12 @@ export const TUTORIAL_STEPS = [
     pageId: 'workshop',
     targetId: MANA_READOUT_TARGET_ID,
     revealTokens: REVEAL_MANA,
+    highlightTargetIds: [MANA_VALUE_TARGET_ID, MANA_REGEN_TARGET_ID],
     text: 'this is your mana. it fills over time, up to the cap shown here.',
     advanceOnClick: true,
     showPointer: false,
-    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 1,
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 0,
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 1,
   },
   {
     id: 'first-summon-seed',
@@ -214,116 +223,132 @@ export const TUTORIAL_STEPS = [
     targetCueDelayMs: 2000,
     getPausedText: () => 'wait for mana',
     isPaused: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 1 &&
+      getCurrentLevel(snapshot) === 0 &&
       !hasAnySeedTaskProgress(snapshot) &&
       !hasAnySeedQuantity(snapshot) &&
       !snapshot?.seedSummoning?.canSummon,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 1 && !hasAnySeedTaskProgress(snapshot),
+      getCurrentLevel(snapshot) === 0 && !hasAnySeedTaskProgress(snapshot),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 2 ||
+      getCurrentLevel(snapshot) >= 1 ||
       hasAnySeedTaskProgress(snapshot) ||
       hasAnySeedQuantity(snapshot),
+  },
+  {
+    id: 'summon-five-seeds',
+    kind: 'objective',
+    pageId: 'workshop',
+    revealTokens: REVEAL_MANA_SUMMON,
+    objectiveText: 'summon 5 sage seeds',
+    getTargetId: ({ snapshot }) =>
+      snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID,
+    getHintText: ({ snapshot }) =>
+      snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana',
+    getPausedText: () => 'wait for mana',
+    getProgress: ({ snapshot }) => getLevelOneSeedReadyProgress(snapshot),
+    getProgressLabel: ({ snapshot }) => getLevelOneSeedReadyProgressLabel(snapshot),
+    isPaused: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 0 &&
+      hasAnySeedQuantity(snapshot) &&
+      !hasEnoughLevelOneSeedsToTurnIn(snapshot) &&
+      !snapshot?.seedSummoning?.canSummon,
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 0 &&
+      !hasAnySeedTaskProgress(snapshot) &&
+      hasAnySeedQuantity(snapshot) &&
+      !hasEnoughLevelOneSeedsToTurnIn(snapshot),
+    isComplete: ({ snapshot }) =>
+      getCurrentLevel(snapshot) >= 1 ||
+      hasAnySeedTaskProgress(snapshot) ||
+      hasEnoughLevelOneSeedsToTurnIn(snapshot),
+  },
+  {
+    id: 'intro-level-requirements',
+    kind: 'prompt',
+    pageId: 'workshop',
+    revealTokens: REVEAL_MANA_SUMMON,
+    text: "for each new lesson or skill, i'll ask you to complete a few tasks.",
+    advanceLabel: 'show requirements',
+    advanceOnClick: true,
+    advanceAction: TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS,
+    showPointer: false,
+    isAvailable: ({ snapshot }) =>
+      getCurrentLevel(snapshot) === 0 &&
+      !hasAnySeedTaskProgress(snapshot) &&
+      hasEnoughLevelOneSeedsToTurnIn(snapshot),
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 1 || hasAnySeedTaskProgress(snapshot),
   },
   {
     id: 'first-fill-seed-task',
     kind: 'prompt',
     pageId: 'workshop',
     revealTokens: REVEAL_MANA_SUMMON_TASKS,
-    getTargetId: ({ dom, snapshot }) => {
-      if (!dom.isTasksExpanded()) {
-        return 'workshop:tasks';
-      }
-
+    getTargetId: ({ snapshot }) => {
       const task = getLevelOneSeedTask(snapshot);
-
-      if (task?.canFill || task?.canComplete) {
-        return `task:${task.taskId}`;
-      }
 
       if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
         return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
       }
 
-      return null;
-    },
-    getText: ({ dom, snapshot }) => {
-      if (!dom.isTasksExpanded()) {
-        return getOpenLevelRequirementsText(snapshot);
+      if (task?.canFill) {
+        return `task:${task.taskId}`;
       }
 
+      return null;
+    },
+    getText: ({ snapshot }) => {
       const task = getLevelOneSeedTask(snapshot);
 
-      if (task?.canComplete) {
-        return COMPLETE_TEXT;
+      if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
+        return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
       }
 
       if (task?.canFill) {
         return TURN_IN_TEXT;
       }
 
-      return needsMoreLevelOneSeedsBeforeTurnIn(snapshot)
-        ? snapshot?.seedSummoning?.canSummon
-          ? 'summon seed'
-          : 'wait for mana'
-        : '';
+      return '';
     },
     getPausedText: ({ snapshot }) =>
       snapshot?.seedSummoning?.canSummon ? 'summon more seeds' : 'wait for mana',
-    isPaused: ({ dom, snapshot }) => {
-      if (!dom.isTasksExpanded()) {
-        return false;
-      }
-
+    isPaused: ({ snapshot }) => {
       const task = getLevelOneSeedTask(snapshot);
-      return !task?.canComplete && !task?.canFill;
+      return !task?.canFill;
     },
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 1 &&
+      getCurrentLevel(snapshot) === 0 &&
       !hasAnySeedTaskProgress(snapshot) &&
-      getItemQuantity(snapshot, SAGE_SEED_KEY) > 0,
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2 || hasAnySeedTaskProgress(snapshot),
+      hasEnoughLevelOneSeedsToTurnIn(snapshot),
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 1 || hasAnySeedTaskProgress(snapshot),
   },
   {
     id: 'finish-seed-task',
     kind: 'objective',
     pageId: 'workshop',
     revealTokens: REVEAL_MANA_SUMMON_TASKS,
-    objectiveText: 'summon and turn in sage seeds for the next level',
-    getTargetId: ({ dom, snapshot }) => {
-      if (!dom.isTasksExpanded()) {
-        return 'workshop:tasks';
-      }
-
+    objectiveText: 'summon and turn in 5 sage seeds for level 1',
+    getTargetId: ({ snapshot }) => {
       const task = getLevelOneSeedTask(snapshot);
-
-      if (task?.canComplete || task?.canFill) {
-        return `task:${task.taskId}`;
-      }
 
       if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
         return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
       }
 
-      return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
-    },
-    getHintText: ({ dom, snapshot }) => {
-      if (!dom.isTasksExpanded()) {
-        return getOpenLevelRequirementsText(snapshot);
+      if (task?.canFill) {
+        return `task:${task.taskId}`;
       }
 
+      return snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID;
+    },
+    getHintText: ({ snapshot }) => {
       const task = getLevelOneSeedTask(snapshot);
 
-      if (task?.canComplete) {
-        return COMPLETE_TEXT;
+      if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
+        return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
       }
 
       if (task?.canFill) {
         return TURN_IN_TEXT;
-      }
-
-      if (needsMoreLevelOneSeedsBeforeTurnIn(snapshot)) {
-        return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
       }
 
       return snapshot?.seedSummoning?.canSummon ? 'summon seed' : 'wait for mana';
@@ -332,9 +357,11 @@ export const TUTORIAL_STEPS = [
     getProgressLabel: ({ snapshot }) => getTaskProgressLabel(getLevelOneSeedTask(snapshot), 'seeds'),
     getReminderKey: () => 'finish-seed-task-actions',
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 1 && !isLevelOneSeedTaskComplete(snapshot),
+      getCurrentLevel(snapshot) === 0 &&
+      !isLevelOneSeedTaskComplete(snapshot) &&
+      (hasAnySeedTaskProgress(snapshot) || hasEnoughLevelOneSeedsToTurnIn(snapshot)),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 2 || isLevelOneSeedTaskComplete(snapshot),
+      getCurrentLevel(snapshot) >= 1 || isLevelOneSeedTaskComplete(snapshot),
   },
   {
     id: 'first-task-complete',
@@ -344,10 +371,10 @@ export const TUTORIAL_STEPS = [
     advanceOnClick: true,
     showPointer: false,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 1 &&
+      getCurrentLevel(snapshot) === 0 &&
       isLevelOneSeedTaskComplete(snapshot) &&
       Boolean(snapshot?.tasks?.level?.completion?.canComplete),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 1,
   },
   {
     id: 'level-up-one',
@@ -365,9 +392,9 @@ export const TUTORIAL_STEPS = [
     getProgressLabel: ({ snapshot }) =>
       `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 1 &&
+      getCurrentLevel(snapshot) === 0 &&
       Boolean(snapshot?.tasks?.level?.completion?.canComplete),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 1,
   },
   {
     id: 'intro-market',
@@ -380,9 +407,9 @@ export const TUTORIAL_STEPS = [
     advanceOnClick: true,
     allowTargetClick: false,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 && !hasLevelTwoSageSellTaskComplete(snapshot),
+      getCurrentLevel(snapshot) === 1 && !hasLevelTwoSageSellTaskComplete(snapshot),
     isComplete: ({ currentPageId, snapshot }) =>
-      getCurrentLevel(snapshot) >= 3 ||
+      getCurrentLevel(snapshot) >= 2 ||
       hasLevelTwoSageSummonTaskComplete(snapshot) ||
       hasLevelTwoSageSellTaskComplete(snapshot) ||
       currentPageId === 'shop',
@@ -398,11 +425,11 @@ export const TUTORIAL_STEPS = [
     getProgress: ({ snapshot }) => getLevelTwoSummonProgress(snapshot),
     getProgressLabel: ({ snapshot }) => getLevelTwoSummonProgressLabel(snapshot),
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
+      getCurrentLevel(snapshot) === 1 &&
       !hasLevelTwoSageSellTaskComplete(snapshot) &&
       !isLevelTwoSummonRequirementDone(snapshot),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 3 ||
+      getCurrentLevel(snapshot) >= 2 ||
       hasLevelTwoSageSellTaskComplete(snapshot) ||
       isLevelTwoSummonRequirementDone(snapshot),
   },
@@ -417,11 +444,11 @@ export const TUTORIAL_STEPS = [
     getProgress: () => ({ value: 0, max: 1 }),
     getProgressLabel: () => '0/1 market',
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
+      getCurrentLevel(snapshot) === 1 &&
       !hasLevelTwoSageSellTaskComplete(snapshot) &&
       hasLevelTwoSageSeedReadyToSell(snapshot),
     isComplete: ({ currentPageId, snapshot }) =>
-      getCurrentLevel(snapshot) >= 3 ||
+      getCurrentLevel(snapshot) >= 2 ||
       currentPageId === 'shop' ||
       hasLevelTwoSageSellTaskComplete(snapshot) ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
@@ -441,11 +468,11 @@ export const TUTORIAL_STEPS = [
     }),
     getProgressLabel: ({ dom }) => `${dom.isShopDirectSellPopupOpen?.() ? 1 : 0}/1 open`,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
+      getCurrentLevel(snapshot) === 1 &&
       !hasLevelTwoSageSellTaskComplete(snapshot) &&
       hasLevelTwoSageSeedReadyToSell(snapshot),
     isComplete: ({ dom, snapshot }) =>
-      getCurrentLevel(snapshot) >= 3 ||
+      getCurrentLevel(snapshot) >= 2 ||
       hasLevelTwoSageSellTaskComplete(snapshot) ||
       dom.isShopDirectSellPopupOpen?.() ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
@@ -478,11 +505,11 @@ export const TUTORIAL_STEPS = [
           : 0
       }/1 seed`,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
+      getCurrentLevel(snapshot) === 1 &&
       !hasLevelTwoSageSellTaskComplete(snapshot) &&
       hasLevelTwoSageSeedReadyToSell(snapshot),
     isComplete: ({ dom, snapshot }) =>
-      getCurrentLevel(snapshot) >= 3 ||
+      getCurrentLevel(snapshot) >= 2 ||
       hasLevelTwoSageSellTaskComplete(snapshot) ||
       isDirectSellSelected(dom, SAGE_SEED_KEY) ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
@@ -500,13 +527,13 @@ export const TUTORIAL_STEPS = [
     emphasizeTarget: true,
     autoAdvanceMs: SELECTED_SELL_AMOUNT_AUTO_ADVANCE_MS,
     isAvailable: ({ dom, snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
+      getCurrentLevel(snapshot) === 1 &&
       !hasLevelTwoSageSellTaskComplete(snapshot) &&
       getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY) > 0 &&
       dom.isShopDirectSellPopupOpen?.() &&
       isDirectSellSelected(dom, SAGE_SEED_KEY),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 3 || hasLevelTwoSageSellTaskComplete(snapshot),
+      getCurrentLevel(snapshot) >= 2 || hasLevelTwoSageSellTaskComplete(snapshot),
   },
   {
     id: 'earn-tutorial-coin',
@@ -525,9 +552,9 @@ export const TUTORIAL_STEPS = [
     getProgressLabel: ({ snapshot }) => getLevelTwoSaleProgressLabel(snapshot),
     getReminderKey: () => 'earn-tutorial-coin-actions',
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 && !hasLevelTwoSageSellTaskComplete(snapshot),
+      getCurrentLevel(snapshot) === 1 && !hasLevelTwoSageSellTaskComplete(snapshot),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 3 || hasLevelTwoSageSellTaskComplete(snapshot),
+      getCurrentLevel(snapshot) >= 2 || hasLevelTwoSageSellTaskComplete(snapshot),
   },
   {
     id: 'first-sale-complete',
@@ -539,11 +566,11 @@ export const TUTORIAL_STEPS = [
     advanceOnClick: true,
     allowTargetClick: true,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
+      getCurrentLevel(snapshot) === 1 &&
       hasLevelTwoSageSellTaskComplete(snapshot) &&
       !hasLevelTwoSageTurnInTaskComplete(snapshot),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 3 || hasLevelTwoSageTurnInTaskComplete(snapshot),
+      getCurrentLevel(snapshot) >= 2 || hasLevelTwoSageTurnInTaskComplete(snapshot),
   },
   {
     id: 'unselect-sage-seed-sale',
@@ -562,11 +589,11 @@ export const TUTORIAL_STEPS = [
     getProgressLabel: ({ snapshot }) =>
       getTaskProgressLabel(getLevelTwoSageTurnInTask(snapshot), 'seeds'),
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
+      getCurrentLevel(snapshot) === 1 &&
       hasLevelTwoSageSellTaskComplete(snapshot) &&
       !hasLevelTwoSageTurnInTaskComplete(snapshot),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 3 || hasLevelTwoSageTurnInTaskComplete(snapshot),
+      getCurrentLevel(snapshot) >= 2 || hasLevelTwoSageTurnInTaskComplete(snapshot),
   },
   {
     id: 'level-up-two',
@@ -651,9 +678,9 @@ export const TUTORIAL_STEPS = [
       return `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`;
     },
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
+      getCurrentLevel(snapshot) === 1 &&
       Boolean(snapshot?.tasks?.level?.completion?.canComplete),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 3,
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
   },
   {
     id: 'intro-garden',
@@ -665,9 +692,9 @@ export const TUTORIAL_STEPS = [
     advanceOnClick: true,
     allowTargetClick: true,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 4 && hasSageSeedSource(snapshot),
+      getCurrentLevel(snapshot) === 3 && hasSageSeedSource(snapshot),
     isComplete: ({ currentPageId, snapshot }) =>
-      getCurrentLevel(snapshot) >= 5 ||
+      getCurrentLevel(snapshot) >= 4 ||
       currentPageId === 'garden' ||
       hasGrownEnoughSageForLesson(snapshot) ||
       hasTaskActionForItem(snapshot, SAGE_HERB_KEY),
@@ -817,9 +844,9 @@ export const TUTORIAL_STEPS = [
       `${getLessonSageGrowCount(snapshot)}/${getLessonSageGrowTarget(snapshot)} sage`,
     getReminderKey: () => 'lesson-three-sage-actions',
     getReminderMs: () => TUTORIAL_LESSON_THREE_STUCK_MS,
-    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 4,
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 3,
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 5 ||
+      getCurrentLevel(snapshot) >= 4 ||
       hasGrownEnoughSageForLesson(snapshot) ||
       hasTaskActionForItem(snapshot, SAGE_HERB_KEY),
   },
@@ -830,13 +857,13 @@ export const TUTORIAL_STEPS = [
     advanceOnClick: true,
     showPointer: false,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 4 &&
+      getCurrentLevel(snapshot) === 3 &&
       !hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY) &&
       (hasTaskActionForItem(snapshot, SAGE_HERB_KEY) ||
         getItemQuantity(snapshot, SAGE_HERB_KEY) > 0 ||
         hasTaskProgressForItem(snapshot, SAGE_HERB_KEY)),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 5 || hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY),
+      getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY),
   },
   {
     id: 'fill-sage-herb-task',
@@ -873,18 +900,18 @@ export const TUTORIAL_STEPS = [
     getReminderKey: () => 'lesson-three-sage-actions',
     getReminderMs: () => TUTORIAL_LESSON_THREE_STUCK_MS,
     isPaused: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 4 &&
+      getCurrentLevel(snapshot) === 3 &&
       (getItemQuantity(snapshot, SAGE_HERB_KEY) > 0 ||
         hasTaskProgressForItem(snapshot, SAGE_HERB_KEY)) &&
       isWaitingForCrop(snapshot, SAGE_SEED_KEY) &&
       !hasTaskActionForItem(snapshot, SAGE_HERB_KEY),
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 4 &&
+      getCurrentLevel(snapshot) === 3 &&
       (hasTaskActionForItem(snapshot, SAGE_HERB_KEY) ||
         getItemQuantity(snapshot, SAGE_HERB_KEY) > 0 ||
         hasTaskProgressForItem(snapshot, SAGE_HERB_KEY)),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 5 || hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY),
+      getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY),
   },
   {
     id: 'intro-research',
@@ -895,9 +922,9 @@ export const TUTORIAL_STEPS = [
     advanceLabel: 'continue',
     advanceOnClick: true,
     allowTargetClick: true,
-    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 3,
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 2,
     isComplete: ({ currentPageId, snapshot }) =>
-      getCurrentLevel(snapshot) >= 4 ||
+      getCurrentLevel(snapshot) >= 3 ||
       currentPageId === 'research' ||
       hasCompletedResearch(snapshot, MINT_SEED_RESEARCH_ID) ||
       hasTaskActionForItem(snapshot, MINT_SEED_KEY),
@@ -916,9 +943,9 @@ export const TUTORIAL_STEPS = [
     }),
     getProgressLabel: ({ snapshot }) =>
       `${hasStartedOrCompletedResearch(snapshot, MINT_SEED_RESEARCH_ID) ? 1 : 0}/1 research`,
-    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) >= 3,
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 4 ||
+      getCurrentLevel(snapshot) >= 3 ||
       hasCompletedResearch(snapshot, MINT_SEED_RESEARCH_ID) ||
       hasTaskActionForItem(snapshot, MINT_SEED_KEY),
   },
@@ -929,11 +956,11 @@ export const TUTORIAL_STEPS = [
     advanceOnClick: true,
     showPointer: false,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 3 &&
+      getCurrentLevel(snapshot) === 2 &&
       hasCompletedResearch(snapshot, MINT_SEED_RESEARCH_ID) &&
       !hasCompletedTaskForItem(snapshot, MINT_SEED_KEY),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, MINT_SEED_KEY),
+      getCurrentLevel(snapshot) >= 3 || hasCompletedTaskForItem(snapshot, MINT_SEED_KEY),
   },
   {
     id: 'fill-mint-seed-task',
@@ -960,14 +987,14 @@ export const TUTORIAL_STEPS = [
     getProgressLabel: ({ snapshot }) =>
       getTaskProgressLabel(getCurrentTaskForItem(snapshot, MINT_SEED_KEY), 'mint seeds'),
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 3 &&
+      getCurrentLevel(snapshot) === 2 &&
       (hasCompletedResearch(snapshot, MINT_SEED_RESEARCH_ID) ||
         hasTaskActionForItem(snapshot, MINT_SEED_KEY) ||
         hasTaskProgressForItem(snapshot, MINT_SEED_KEY)) &&
       Boolean(getCurrentTaskForItem(snapshot, MINT_SEED_KEY)) &&
       !hasCompletedTaskForItem(snapshot, MINT_SEED_KEY),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, MINT_SEED_KEY),
+      getCurrentLevel(snapshot) >= 3 || hasCompletedTaskForItem(snapshot, MINT_SEED_KEY),
   },
   {
     id: 'fill-sage-seed-task',
@@ -982,11 +1009,11 @@ export const TUTORIAL_STEPS = [
     getProgressLabel: ({ snapshot }) =>
       getTaskProgressLabel(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY), 'sage seeds'),
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 3 &&
+      getCurrentLevel(snapshot) === 2 &&
       Boolean(getCurrentTaskForItem(snapshot, SAGE_SEED_KEY)) &&
       !hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY),
+      getCurrentLevel(snapshot) >= 3 || hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY),
   },
   {
     id: 'fill-mint-herb-task',
@@ -1034,18 +1061,18 @@ export const TUTORIAL_STEPS = [
     getProgressLabel: ({ snapshot }) =>
       getTaskProgressLabel(getCurrentTaskForItem(snapshot, MINT_HERB_KEY), 'mint'),
     isPaused: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 4 &&
+      getCurrentLevel(snapshot) === 3 &&
       hasCompletedTaskForItem(snapshot, MINT_SEED_KEY) &&
       Boolean(getCurrentTaskForItem(snapshot, MINT_HERB_KEY)) &&
       !hasCompletedTaskForItem(snapshot, MINT_HERB_KEY) &&
       isWaitingForCrop(snapshot, MINT_SEED_KEY) &&
       !hasTaskActionForItem(snapshot, MINT_HERB_KEY),
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 4 &&
+      getCurrentLevel(snapshot) === 3 &&
       Boolean(getCurrentTaskForItem(snapshot, MINT_HERB_KEY)) &&
       !hasCompletedTaskForItem(snapshot, MINT_HERB_KEY),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 5 || hasCompletedTaskForItem(snapshot, MINT_HERB_KEY),
+      getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, MINT_HERB_KEY),
   },
   {
     id: 'level-up-three',
@@ -1130,9 +1157,9 @@ export const TUTORIAL_STEPS = [
       return `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`;
     },
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 3 &&
+      getCurrentLevel(snapshot) === 2 &&
       Boolean(snapshot?.tasks?.level?.completion?.canComplete),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 4,
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 3,
   },
   {
     id: 'level-up-four',
@@ -1217,9 +1244,9 @@ export const TUTORIAL_STEPS = [
       return `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`;
     },
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 4 &&
+      getCurrentLevel(snapshot) === 3 &&
       Boolean(snapshot?.tasks?.level?.completion?.canComplete),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 5,
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 4,
   },
   {
     id: 'research-mana-tonic',
@@ -1234,9 +1261,9 @@ export const TUTORIAL_STEPS = [
     }),
     getProgressLabel: ({ snapshot }) =>
       `${hasStartedOrCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID) ? 1 : 0}/1 research`,
-    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) >= 5,
+    isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) >= 4,
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 6 ||
+      getCurrentLevel(snapshot) >= 5 ||
       hasStartedOrCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID) ||
       hasTaskActionForItem(snapshot, MANA_TONIC_KEY) ||
       hasBrewedManaTonic(snapshot),
@@ -1251,9 +1278,9 @@ export const TUTORIAL_STEPS = [
     advanceOnClick: true,
     allowTargetClick: true,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 5 && hasCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID),
+      getCurrentLevel(snapshot) === 4 && hasCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID),
     isComplete: ({ currentPageId, snapshot }) =>
-      getCurrentLevel(snapshot) >= 6 || currentPageId === 'brewing' || hasBrewedManaTonic(snapshot),
+      getCurrentLevel(snapshot) >= 5 || currentPageId === 'brewing' || hasBrewedManaTonic(snapshot),
   },
   {
     id: 'brew-mana-tonic',
@@ -1342,9 +1369,9 @@ export const TUTORIAL_STEPS = [
     getProgressLabel: ({ snapshot }) =>
       `${hasBrewedManaTonic(snapshot) ? 1 : 0}/1 potion`,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 5 && hasCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID),
+      getCurrentLevel(snapshot) >= 4 && hasCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 6 || hasBrewedManaTonic(snapshot),
+      getCurrentLevel(snapshot) >= 5 || hasBrewedManaTonic(snapshot),
   },
   {
     id: 'first-brew-complete',
@@ -1354,12 +1381,12 @@ export const TUTORIAL_STEPS = [
     advanceOnClick: true,
     showPointer: false,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 5 &&
+      getCurrentLevel(snapshot) === 4 &&
       hasBrewedManaTonic(snapshot) &&
       !hasCompletedTaskForItem(snapshot, MANA_TONIC_KEY) &&
       !isActiveManaTonicBrew(snapshot),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 6 ||
+      getCurrentLevel(snapshot) >= 5 ||
       hasCompletedTaskForItem(snapshot, MANA_TONIC_KEY) ||
       isActiveManaTonicBrew(snapshot),
   },
@@ -1449,13 +1476,13 @@ export const TUTORIAL_STEPS = [
         : `${getManaTonicCauldronFillCount(snapshot)}/${MANA_TONIC_SAGE_COUNT} sage`,
     getReminderKey: () => 'refill-mana-tonic-cauldron-actions',
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 5 &&
+      getCurrentLevel(snapshot) === 4 &&
       (hasTaskActionForItem(snapshot, MANA_TONIC_KEY) ||
         (hasCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID) &&
           hasBrewedManaTonic(snapshot))) &&
       !hasCompletedTaskForItem(snapshot, MANA_TONIC_KEY),
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 6 ||
+      getCurrentLevel(snapshot) >= 5 ||
       hasCompletedTaskForItem(snapshot, MANA_TONIC_KEY) ||
       isActiveManaTonicBrew(snapshot),
   },
@@ -1645,23 +1672,23 @@ export class TutorialStepManager {
       return;
     }
 
-    if (currentLevel >= 6) {
+    if (currentLevel >= 5) {
       this.completeSteps(TUTORIAL_STEP_IDS);
       return;
     }
 
-    if (currentLevel >= 5) {
+    if (currentLevel >= 4) {
       this.completeSteps([
         ...LEVEL_ONE_STEP_IDS,
         ...LEVEL_TWO_STEP_IDS,
         ...LEVEL_THREE_STEP_IDS,
         ...LEVEL_FOUR_STEP_IDS,
       ]);
-    } else if (currentLevel >= 4) {
-      this.completeSteps([...LEVEL_ONE_STEP_IDS, ...LEVEL_TWO_STEP_IDS, ...LEVEL_THREE_STEP_IDS]);
     } else if (currentLevel >= 3) {
-      this.completeSteps([...LEVEL_ONE_STEP_IDS, ...LEVEL_TWO_STEP_IDS]);
+      this.completeSteps([...LEVEL_ONE_STEP_IDS, ...LEVEL_TWO_STEP_IDS, ...LEVEL_THREE_STEP_IDS]);
     } else if (currentLevel >= 2) {
+      this.completeSteps([...LEVEL_ONE_STEP_IDS, ...LEVEL_TWO_STEP_IDS]);
+    } else if (currentLevel >= 1) {
       this.completeSteps(LEVEL_ONE_STEP_IDS);
     }
 
@@ -1673,8 +1700,12 @@ export class TutorialStepManager {
       this.completeSteps(['first-summon-seed']);
     }
 
+    if (hasEnoughLevelOneSeedsToTurnIn(snapshot)) {
+      this.completeSteps(['summon-five-seeds']);
+    }
+
     if (hasAnySeedTaskProgress(snapshot)) {
-      this.completeSteps(['first-fill-seed-task']);
+      this.completeSteps(['summon-five-seeds', 'intro-level-requirements', 'first-fill-seed-task']);
     }
 
     if (isLevelOneSeedTaskComplete(snapshot)) {
@@ -1682,7 +1713,7 @@ export class TutorialStepManager {
     }
 
     if (
-      currentLevel === 2 &&
+      currentLevel === 1 &&
       (isLevelTwoSummonRequirementDone(snapshot) ||
         hasLevelTwoSageSellTaskComplete(snapshot) ||
         hasLevelCompletionCoin(snapshot))
@@ -1699,22 +1730,22 @@ export class TutorialStepManager {
       ]);
     }
 
-    if (currentLevel === 2 && hasLevelTwoSageSellTaskComplete(snapshot)) {
+    if (currentLevel === 1 && hasLevelTwoSageSellTaskComplete(snapshot)) {
       this.completeSteps(['earn-tutorial-coin']);
     }
 
-    if (currentLevel === 2 && hasLevelTwoSageTurnInTaskComplete(snapshot)) {
+    if (currentLevel === 1 && hasLevelTwoSageTurnInTaskComplete(snapshot)) {
       this.completeSteps(['first-sale-complete', 'unselect-sage-seed-sale']);
     }
 
     if (
-      currentLevel >= 4 &&
+      currentLevel >= 3 &&
       (hasGrownEnoughSageForLesson(snapshot) || hasTaskActionForItem(snapshot, SAGE_HERB_KEY))
     ) {
       this.completeSteps(['intro-garden', 'grow-sage']);
     }
 
-    if (currentLevel === 3 && hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY)) {
+    if (currentLevel === 2 && hasCompletedTaskForItem(snapshot, SAGE_SEED_KEY)) {
       this.completeSteps(['fill-sage-seed-task']);
     }
 
@@ -1789,6 +1820,7 @@ export class TutorialStepManager {
         reminderKey: step.getReminderKey?.(context) ?? null,
         reminderMs: getReminderMs(step, context),
         revealTokens: getRevealTokens(step),
+        highlightTargetIds: getHighlightTargetIds(step, context),
         allowedPopupClasses: [],
         allowTargetClick: step.allowTargetClick === true,
         cueMode: getCueMode(step, context),
@@ -1799,6 +1831,7 @@ export class TutorialStepManager {
         autoAdvanceMs: getAutoAdvanceMs(step, context),
         targetCueDelayMs: getTargetCueDelayMs(step, context),
         variant: getVariant(step, context),
+        advanceAction: step.advanceAction,
         effect: step.effect,
         sale: step.sale,
       };
@@ -1826,6 +1859,7 @@ export class TutorialStepManager {
       reminderKey: step.getReminderKey?.({ ...context, targetId, text, hintText }) ?? null,
       reminderMs: getReminderMs(step, { ...context, targetId, text, hintText }),
       revealTokens: getRevealTokens(step),
+      highlightTargetIds: getHighlightTargetIds(step, { ...context, targetId, text, hintText }),
       allowedPopupClasses: getAllowedPopupClasses(step, { ...context, targetId, text, hintText }),
       cueMode: getCueMode(step, { ...context, targetId, text, hintText }),
       autoPageId: getAutoPageId(step, { ...context, targetId, text, hintText }),
@@ -1834,6 +1868,7 @@ export class TutorialStepManager {
       autoAdvanceMs: getAutoAdvanceMs(step, { ...context, targetId, text, hintText }),
       targetCueDelayMs: getTargetCueDelayMs(step, { ...context, targetId, text, hintText }),
       variant: getVariant(step, { ...context, targetId, text, hintText }),
+      advanceAction: step.advanceAction,
       effect: step.effect,
       sale: step.sale,
     };
@@ -1895,6 +1930,16 @@ function getLessonTitle(step) {
 
 function getRevealTokens(step) {
   return Array.isArray(step?.revealTokens) ? step.revealTokens : null;
+}
+
+function getHighlightTargetIds(step, context) {
+  const targetIds = step?.getHighlightTargetIds?.(context) ?? step?.highlightTargetIds ?? [];
+
+  if (!Array.isArray(targetIds)) {
+    return [];
+  }
+
+  return targetIds.filter((targetId) => typeof targetId === 'string' && targetId.length > 0);
 }
 
 function getReminderMs(step, context) {
@@ -2552,10 +2597,6 @@ function getTaskAction(snapshot, task) {
     return null;
   }
 
-  if (canCompleteTask(task)) {
-    return { kind: 'complete', task };
-  }
-
   if (canFillTaskWithOwnedItem(snapshot, task)) {
     return { kind: 'fill', task };
   }
@@ -2583,7 +2624,6 @@ function getTaskActionHintText({
   currentPageId,
   dom,
   snapshot,
-  taskAction,
   fillText = TURN_IN_TEXT,
 }) {
   if (currentPageId !== 'workshop') {
@@ -2594,23 +2634,11 @@ function getTaskActionHintText({
     return getOpenLevelRequirementsText(snapshot);
   }
 
-  return taskAction.kind === 'complete' ? COMPLETE_TEXT : fillText;
-}
-
-function canCompleteTask(task) {
-  if (!task || task.completed) {
-    return false;
-  }
-
-  if (task.canComplete === true || task.maxed === true) {
-    return true;
-  }
-
-  return getTaskRemainingQuantity(task) <= 0;
+  return fillText;
 }
 
 function canFillTaskWithOwnedItem(snapshot, task) {
-  if (!task || task.completed || canCompleteTask(task)) {
+  if (!task || task.completed) {
     return false;
   }
 
@@ -2925,7 +2953,7 @@ function isLevelOneSeedTaskComplete(snapshot) {
 function needsMoreLevelOneSeedsBeforeTurnIn(snapshot) {
   const task = getLevelOneSeedTask(snapshot);
 
-  if (!task || task.completed || task.canComplete) {
+  if (!task || task.completed) {
     return false;
   }
 
@@ -2934,6 +2962,37 @@ function needsMoreLevelOneSeedsBeforeTurnIn(snapshot) {
   const ownedQuantity = getOwnedQuantityForTask(snapshot, task);
 
   return progressQuantity + ownedQuantity < requiredQuantity;
+}
+
+function hasEnoughLevelOneSeedsToTurnIn(snapshot) {
+  const task = getLevelOneSeedTask(snapshot);
+
+  if (!task) {
+    return false;
+  }
+
+  const progressQuantity = Math.max(0, Math.floor(Number(task.progressQuantity) || 0));
+  const requiredQuantity = Math.max(1, Math.floor(Number(task.requiredQuantity) || 1));
+  const ownedQuantity = getOwnedQuantityForTask(snapshot, task);
+
+  return progressQuantity + ownedQuantity >= requiredQuantity;
+}
+
+function getLevelOneSeedReadyProgress(snapshot) {
+  const task = getLevelOneSeedTask(snapshot);
+  const max = Math.max(1, Math.floor(Number(task?.requiredQuantity) || 5));
+  const progressQuantity = Math.max(0, Math.floor(Number(task?.progressQuantity) || 0));
+  const ownedQuantity = task
+    ? getOwnedQuantityForTask(snapshot, task)
+    : getItemQuantity(snapshot, SAGE_SEED_KEY);
+  const value = Math.min(max, progressQuantity + ownedQuantity);
+
+  return { value, max };
+}
+
+function getLevelOneSeedReadyProgressLabel(snapshot) {
+  const progress = getLevelOneSeedReadyProgress(snapshot);
+  return `${progress.value}/${progress.max} seeds`;
 }
 
 function hasAnySeedTaskProgress(snapshot) {
@@ -2970,7 +3029,7 @@ function getTaskType(task) {
 
 function shouldIntroduceLevelTwoRequirements({ currentPageId, dom, snapshot }) {
   return (
-    getCurrentLevel(snapshot) === 4 &&
+    getCurrentLevel(snapshot) === 3 &&
     currentPageId === 'workshop' &&
     getLessonSageGrowCount(snapshot) <= 0 &&
     hasLevelTwoSageRequirements(snapshot) &&
@@ -2980,7 +3039,7 @@ function shouldIntroduceLevelTwoRequirements({ currentPageId, dom, snapshot }) {
 
 function shouldPinLevelTwoRequirements({ currentPageId, dom, snapshot }) {
   return (
-    getCurrentLevel(snapshot) === 4 &&
+    getCurrentLevel(snapshot) === 3 &&
     currentPageId === 'workshop' &&
     getLessonSageGrowCount(snapshot) <= 0 &&
     hasLevelTwoSageRequirements(snapshot) &&
@@ -2991,7 +3050,7 @@ function shouldPinLevelTwoRequirements({ currentPageId, dom, snapshot }) {
 
 function shouldSummonForLevelTwoRequirements({ currentPageId, dom, snapshot }) {
   return (
-    getCurrentLevel(snapshot) === 4 &&
+    getCurrentLevel(snapshot) === 3 &&
     currentPageId === 'workshop' &&
     getLessonSageGrowCount(snapshot) <= 0 &&
     hasLevelTwoSageRequirements(snapshot) &&
@@ -3139,7 +3198,7 @@ function hasGrownEnoughSageForLesson(snapshot) {
 
 function isGrowSageWaitState(snapshot) {
   return (
-    getCurrentLevel(snapshot) === 4 &&
+    getCurrentLevel(snapshot) === 3 &&
     !hasGrownEnoughSageForLesson(snapshot) &&
     isWaitingForCrop(snapshot, SAGE_SEED_KEY)
   );
@@ -3217,7 +3276,9 @@ function getManaTonicCauldronSageCount(snapshot) {
 }
 
 function getCurrentLevel(snapshot) {
-  return Math.max(1, Math.floor(Number(snapshot?.tasks?.currentLevel) || 1));
+  const level = Math.floor(Number(snapshot?.tasks?.currentLevel));
+
+  return Number.isFinite(level) ? Math.max(0, level) : 1;
 }
 
 function getOpenLevelRequirementsText(snapshot) {

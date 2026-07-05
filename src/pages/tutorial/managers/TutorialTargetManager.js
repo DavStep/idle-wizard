@@ -1,4 +1,5 @@
 export const GLOBAL_BLOCKING_DIALOG_SELECTORS = [
+  '[data-tutorial-blocker="true"]:not([hidden])',
   '.app-account-link-choice:not([hidden])',
   '.app-fresh-start-choice:not([hidden])',
   '.mobile-auth-bridge:not([hidden])',

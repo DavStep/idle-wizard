@@ -1,0 +1,20 @@
+{
+	"nodes":[
+		{"id":"4444444444444001","type":"file","x":0,"y":0,"width":340,"height":180,"file":"engineering-liveops/Home.md","color":"5"},
+		{"id":"4444444444444002","type":"file","x":440,"y":-260,"width":360,"height":200,"file":"engineering-liveops/Architecture Boundaries.md","color":"4"},
+		{"id":"4444444444444003","type":"file","x":440,"y":0,"width":360,"height":200,"file":"engineering-liveops/Backend Authority.md","color":"3"},
+		{"id":"4444444444444004","type":"file","x":880,"y":0,"width":360,"height":200,"file":"engineering-liveops/Save And Sync.md","color":"1"},
+		{"id":"4444444444444005","type":"file","x":880,"y":-260,"width":360,"height":200,"file":"engineering-liveops/Runtime QA.md","color":"6"},
+		{"id":"4444444444444006","type":"file","x":1320,"y":-260,"width":360,"height":200,"file":"engineering-liveops/Release Workflow.md","color":"2"},
+		{"id":"4444444444444007","type":"file","x":1320,"y":0,"width":360,"height":200,"file":"engineering-liveops/Operational Risks.md","color":"1"}
+	],
+	"edges":[
+		{"id":"4444444444444e01","fromNode":"4444444444444001","fromSide":"right","toNode":"4444444444444002","toSide":"left","label":"orients"},
+		{"id":"4444444444444e02","fromNode":"4444444444444002","fromSide":"bottom","toNode":"4444444444444003","toSide":"top","label":"separates"},
+		{"id":"4444444444444e03","fromNode":"4444444444444003","fromSide":"right","toNode":"4444444444444004","toSide":"left","label":"guards"},
+		{"id":"4444444444444e04","fromNode":"4444444444444002","fromSide":"right","toNode":"4444444444444005","toSide":"left","label":"checks"},
+		{"id":"4444444444444e05","fromNode":"4444444444444005","fromSide":"right","toNode":"4444444444444006","toSide":"left","label":"proves"},
+		{"id":"4444444444444e06","fromNode":"4444444444444004","fromSide":"right","toNode":"4444444444444007","toSide":"left","label":"risks"},
+		{"id":"4444444444444e07","fromNode":"4444444444444006","fromSide":"bottom","toNode":"4444444444444007","toSide":"top","label":"prevents"}
+	]
+}

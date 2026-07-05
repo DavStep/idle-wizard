@@ -1,0 +1,30 @@
+{
+	"nodes":[
+		{"id":"5555555555555001","type":"file","x":0,"y":0,"width":340,"height":180,"file":"tutorial/Home.md","color":"5"},
+		{"id":"5555555555555002","type":"file","x":430,"y":-260,"width":360,"height":200,"file":"tutorial/00 Source/Tutorial Source Map.md","color":"4"},
+		{"id":"5555555555555003","type":"file","x":430,"y":0,"width":340,"height":190,"file":"tutorial/01 Flow/Level 1 Introduction.md","color":"3"},
+		{"id":"5555555555555004","type":"file","x":840,"y":0,"width":340,"height":190,"file":"tutorial/01 Flow/Level 2 Market.md","color":"2"},
+		{"id":"5555555555555005","type":"file","x":1250,"y":0,"width":340,"height":190,"file":"tutorial/01 Flow/Level 3 Research.md","color":"6"},
+		{"id":"5555555555555006","type":"file","x":1660,"y":0,"width":340,"height":190,"file":"tutorial/01 Flow/Level 4 Gardening.md","color":"4"},
+		{"id":"5555555555555007","type":"file","x":2070,"y":0,"width":340,"height":190,"file":"tutorial/01 Flow/Level 5 Brewing.md","color":"1"},
+		{"id":"5555555555555008","type":"file","x":840,"y":-260,"width":360,"height":200,"file":"tutorial/02 Rules/Tutorial Surface Rules.md","color":"5"},
+		{"id":"5555555555555009","type":"file","x":1250,"y":-260,"width":360,"height":200,"file":"tutorial/02 Rules/Target And Reveal Rules.md","color":"3"},
+		{"id":"5555555555555010","type":"file","x":840,"y":260,"width":360,"height":200,"file":"tutorial/03 Branches/Coin Shortfall Branch.md","color":"2"},
+		{"id":"5555555555555011","type":"file","x":1660,"y":-260,"width":360,"height":200,"file":"tutorial/04 QA/QA And Capture.md","color":"6"},
+		{"id":"5555555555555012","type":"file","x":2070,"y":-260,"width":360,"height":200,"file":"tutorial/05 Risks/Tutorial Risks.md","color":"1"}
+	],
+	"edges":[
+		{"id":"5555555555555e01","fromNode":"5555555555555001","fromSide":"right","toNode":"5555555555555002","toSide":"left","label":"reads"},
+		{"id":"5555555555555e02","fromNode":"5555555555555002","fromSide":"bottom","toNode":"5555555555555003","toSide":"top","label":"starts"},
+		{"id":"5555555555555e03","fromNode":"5555555555555003","fromSide":"right","toNode":"5555555555555004","toSide":"left","label":"level 2"},
+		{"id":"5555555555555e04","fromNode":"5555555555555004","fromSide":"right","toNode":"5555555555555005","toSide":"left","label":"level 3"},
+		{"id":"5555555555555e05","fromNode":"5555555555555005","fromSide":"right","toNode":"5555555555555006","toSide":"left","label":"level 4"},
+		{"id":"5555555555555e06","fromNode":"5555555555555006","fromSide":"right","toNode":"5555555555555007","toSide":"left","label":"level 5"},
+		{"id":"5555555555555e07","fromNode":"5555555555555002","fromSide":"right","toNode":"5555555555555008","toSide":"left","label":"renders"},
+		{"id":"5555555555555e08","fromNode":"5555555555555008","fromSide":"right","toNode":"5555555555555009","toSide":"left","label":"places"},
+		{"id":"5555555555555e09","fromNode":"5555555555555004","fromSide":"bottom","toNode":"5555555555555010","toSide":"top","label":"shortfall"},
+		{"id":"5555555555555e10","fromNode":"5555555555555009","fromSide":"right","toNode":"5555555555555011","toSide":"left","label":"qa"},
+		{"id":"5555555555555e11","fromNode":"5555555555555011","fromSide":"right","toNode":"5555555555555012","toSide":"left","label":"risks"},
+		{"id":"5555555555555e12","fromNode":"5555555555555005","fromSide":"top","toNode":"5555555555555012","toSide":"bottom","label":"balance drift"}
+	]
+}

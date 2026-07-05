@@ -52,7 +52,7 @@ describe('DevCheatsFacade', () => {
 
     expect(target.cheats.help()).toMatchObject({ ok: true });
     expect(target.cheat('addCoin 25')).toMatchObject({ ok: true });
-    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(25);
+    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(35);
     expect(logger.info).toHaveBeenCalledWith('Dev cheats enabled. Run cheats.help().');
 
     facade.unmount();
@@ -74,11 +74,11 @@ describe('DevCheatsFacade', () => {
     });
     expect(target.cheats.addCoin(100)).toMatchObject({
       ok: true,
-      coin: { current: 100, totalGenerated: 100 },
+      coin: { current: 110, totalGenerated: 100 },
     });
     expect(target.cheats.addCrystal(7)).toMatchObject({
       ok: true,
-      crystal: { current: 8 },
+      crystal: { current: 7 },
     });
     expect(target.cheats.addEmerald(2)).toMatchObject({
       ok: true,
@@ -421,14 +421,14 @@ describe('DevCheatsFacade', () => {
     expect(target.cheats.setTutorialStage('intro-garden')).toMatchObject({
       ok: true,
       requestedStepId: 'intro-garden',
-      code: 't25',
+      code: 't27',
       progress: {
         ok: true,
         stage: 'intro-garden',
         completedStepIds: ['purchase-house'],
       },
       snapshot: {
-        level: 4,
+        level: 3,
         inventory: [expect.objectContaining({ key: 'sageSeed', quantity: 1 })],
       },
     });
@@ -572,7 +572,7 @@ describe('DevCheatsFacade', () => {
       reason: 'confirmation_required',
       confirmation: 'RESET',
     });
-    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(50);
+    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(60);
   });
 
   it('resets gameplay data and clears server player-market progress', async () => {
@@ -601,9 +601,9 @@ describe('DevCheatsFacade', () => {
       scope: 'gameplay_progress',
       playerShop: { ok: true },
       snapshot: {
-        mana: { current: 0, cap: 50, perSecond: 1 },
-        coin: { current: 0, totalGenerated: 0 },
-        crystal: { current: 1 },
+        mana: { current: 40, cap: 50, perSecond: 1 },
+        coin: { current: 10, totalGenerated: 0 },
+        crystal: { current: 0 },
         emerald: { current: 0 },
         inventory: [],
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
@@ -614,8 +614,8 @@ describe('DevCheatsFacade', () => {
     const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
     expect(saved).toMatchObject({
       version: GAMEPLAY_SAVE_VERSION,
-      coin: { current: 0, totalGenerated: 0 },
-      crystal: { current: 1 },
+      coin: { current: 10, totalGenerated: 0 },
+      crystal: { current: 0 },
       emerald: { current: 0 },
       ruby: { current: 0 },
       inventory: [],
@@ -641,6 +641,6 @@ describe('DevCheatsFacade', () => {
       ok: false,
       reason: 'backend_save_not_ready',
     });
-    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(50);
+    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(60);
   });
 });

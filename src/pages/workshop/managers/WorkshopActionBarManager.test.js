@@ -64,11 +64,16 @@ function createPlayerInboxFacadeFake(overrides = {}) {
   };
 }
 
-function dispatchPointer(target, type, { pointerId = 1, pointerType = 'touch' } = {}) {
+function dispatchPointer(
+  target,
+  type,
+  { pointerId = 1, pointerType = 'touch', ...options } = {},
+) {
   const event = new window.MouseEvent(type, {
     bubbles: true,
     cancelable: true,
     button: 0,
+    ...options,
   });
 
   Object.defineProperty(event, 'pointerId', { value: pointerId });
@@ -173,6 +178,67 @@ describe('WorkshopActionBarManager', () => {
       manager.unmount();
     } finally {
       vi.useRealTimers();
+    }
+  });
+
+  it('summons on quick touch release when native click delivery is suppressed', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const hapticsFacade = { playUiTap: vi.fn() };
+    const manager = new WorkshopActionBarManager({ gameplayFacade, hapticsFacade });
+    const parent = document.createElement('div');
+    const originalElementFromPoint = document.elementFromPoint;
+    let summons = 0;
+    gameplayFacade.summonSeed = () => {
+      summons += 1;
+      return { ok: true, seed: { label: 'sage seed' }, quantity: 1 };
+    };
+
+    try {
+      manager.mount(parent);
+
+      const button = parent.querySelector('.workshop-page__summon-button');
+      document.elementFromPoint = () => button;
+
+      dispatchPointer(button, 'pointerdown', { clientX: 120, clientY: 240 });
+      dispatchPointer(document, 'pointerup', { clientX: 120, clientY: 240 });
+
+      expect(summons).toBe(1);
+      expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
+
+      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+      expect(summons).toBe(1);
+    } finally {
+      document.elementFromPoint = originalElementFromPoint;
+      manager.unmount();
+    }
+  });
+
+  it('does not double summon when synthetic click already handled the active touch press', () => {
+    const gameplayFacade = createGameplayFacadeFake();
+    const manager = new WorkshopActionBarManager({ gameplayFacade });
+    const parent = document.createElement('div');
+    const originalElementFromPoint = document.elementFromPoint;
+    let summons = 0;
+    gameplayFacade.summonSeed = () => {
+      summons += 1;
+      return { ok: true, seed: { label: 'sage seed' }, quantity: 1 };
+    };
+
+    try {
+      manager.mount(parent);
+
+      const button = parent.querySelector('.workshop-page__summon-button');
+      document.elementFromPoint = () => button;
+
+      dispatchPointer(button, 'pointerdown', { clientX: 120, clientY: 240 });
+      button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      dispatchPointer(document, 'pointerup', { clientX: 120, clientY: 240 });
+
+      expect(summons).toBe(1);
+    } finally {
+      document.elementFromPoint = originalElementFromPoint;
+      manager.unmount();
     }
   });
 
@@ -394,6 +460,22 @@ describe('WorkshopActionBarManager', () => {
     expect(baseCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.game-stage\.is-tutorial-summon-revealing\[data-tutorial-reveal~="summon"\][\s\S]*\.workshop-page__summon-button-text[\s\S]*animation:\s*none;/,
     );
+  });
+
+  it('keeps the tutorial-revealed summon button tappable after the reveal animation', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const hiddenActionRule = baseCss.match(
+      /\.game-stage\[data-tutorial-reveal\]\s+\.workshop-page__action-bar\s+>\s+\.style-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const revealInteractionRule = baseCss.match(
+      /\.game-stage\[data-tutorial-reveal~="top"\]\s+\.room-top-panel-layer\s+:where\(button,[\s\S]*?\.game-stage\[data-tutorial-reveal~="tasks"\]\s+\.workshop-page__tasks\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(baseCss).toMatch(
+      /\.game-stage\[data-tutorial-reveal~="summon"\]\s+\.workshop-page__action-bar\s+>\s+\.style-button\.workshop-page__summon-button/,
+    );
+    expect(hiddenActionRule).toMatch(/\bpointer-events:\s*none;/);
+    expect(revealInteractionRule).toMatch(/\bpointer-events:\s*auto;/);
   });
 
   it('places the secondary actions and compact panel openers near chat', () => {

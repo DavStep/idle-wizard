@@ -1,0 +1,215 @@
+{
+  "main": {
+    "id": "4a20186ee5833d6f",
+    "type": "split",
+    "children": [
+      {
+        "id": "7220edb170314a7c",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f3b69f63799a5519",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "02 Rules/Tutorial Surface Rules.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Tutorial Surface Rules"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "55c76cd35abfbce3",
+    "type": "split",
+    "children": [
+      {
+        "id": "b22c9c0341bea2b8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "8502b92ff58b41d8",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "89f343d3a62781b6",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "d9a0f730ab1f31d0",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "a71111197180017a",
+    "type": "split",
+    "children": [
+      {
+        "id": "4963a5673f99f03b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4a83fd972bc255c1",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "02 Rules/Tutorial Surface Rules.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Tutorial Surface Rules"
+            }
+          },
+          {
+            "id": "424bed41ec257423",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "02 Rules/Tutorial Surface Rules.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Tutorial Surface Rules"
+            }
+          },
+          {
+            "id": "a35ed89e7ce9c982",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "de8072e06c9b4f87",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "5d4da0df2c13ed6a",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "02 Rules/Tutorial Surface Rules.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Tutorial Surface Rules"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "f3b69f63799a5519",
+  "lastOpenFiles": [
+    "02 Rules/Target And Reveal Rules.md",
+    "01 Flow/Level 1 Introduction.md",
+    "00 Source/Tutorial Source Map.md",
+    "01 Flow/Level 5 Brewing.md",
+    "01 Flow/Level 4 Gardening.md",
+    "01 Flow/Level 3 Research.md",
+    "01 Flow/Level 2 Market.md",
+    "Tutorial.canvas",
+    "Level 5 Brewing.md",
+    "05 Risks/Tutorial Risks.md",
+    "05 Risks",
+    "04 QA/QA And Capture.md",
+    "04 QA",
+    "03 Branches/Coin Shortfall Branch.md",
+    "03 Branches",
+    "02 Rules/Tutorial Surface Rules.md",
+    "02 Rules",
+    "01 Flow",
+    "00 Source",
+    "Level 3 Research.md",
+    "Level 2 Market.md",
+    "Level 1 Introduction.md",
+    "QA And Capture.md",
+    "Tutorial Source Map.md",
+    "Tutorial Risks.md",
+    "Tutorial Index.base"
+  ]
+}

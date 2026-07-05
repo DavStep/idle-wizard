@@ -1,0 +1,38 @@
+filters:
+  and:
+    - 'file.ext == "md"'
+    - not:
+        - file.inFolder(".obsidian")
+
+properties:
+  status:
+    displayName: "Status"
+  world:
+    displayName: "World"
+  file.folder:
+    displayName: "Folder"
+  file.tags:
+    displayName: "Tags"
+
+views:
+  - type: table
+    name: "All Notes"
+    order:
+      - file.name
+      - world
+      - status
+      - file.folder
+      - file.tags
+      - file.mtime
+    groupBy:
+      property: world
+      direction: ASC
+  - type: list
+    name: "Risks"
+    filters:
+      and:
+        - file.hasTag("risk")
+    order:
+      - file.name
+      - world
+      - status

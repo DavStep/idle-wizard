@@ -23,6 +23,7 @@ const MINT_HERB_KEY = 'mintHerb';
 const MANA_TONIC_KEY = 'manaTonic';
 const MINT_SEED_RESEARCH_ID = 'unlockSeed:mintSeed';
 const MANA_TONIC_RESEARCH_ID = 'unlockRecipe:manaTonic';
+const LEVEL_ONE_SUMMON_SAGE_SEED_TASK_ID = 'level1-summon-sage-seed';
 const LEVEL_ONE_SAGE_SEED_TASK_ID = 'level1-turn-in-sage-seed';
 const LEVEL_TWO_SUMMON_SAGE_SEED_TASK_ID = 'level2-summon-sage-seed';
 const LEVEL_TWO_SELL_SAGE_SEED_TASK_ID = 'level2-sell-sage-seed';
@@ -101,7 +102,7 @@ const CHEAT_HELP = Object.freeze([
   'cheats.clearDummyLeaderboard()',
   'cheats.listTutorialStages()',
   'cheats.getTutorialGraph()',
-  'cheats.loadTutorialStep("t25")',
+  'cheats.loadTutorialStep("t27")',
   'cheats.setTutorialStage("intro-garden")',
   'cheats.resetData("RESET")',
   'cheats.listDataTemplates()',
@@ -1705,8 +1706,8 @@ export class DevCheatCommandManager {
       code: graphStep.code,
       level: this.getTutorialStepLevel(stepId),
       pageId: this.getTutorialStepPageId(stepId),
-      mana: Number.isFinite(options.mana) ? options.mana : 50,
-      coin: Number.isFinite(options.coin) ? options.coin : 0,
+      mana: Number.isFinite(options.mana) ? options.mana : 40,
+      coin: Number.isFinite(options.coin) ? options.coin : 10,
       inventory: {},
       research: [],
       tasks: [],
@@ -1747,14 +1748,35 @@ export class DevCheatCommandManager {
     };
 
     switch (stepId) {
-      case 'first-fill-seed-task':
-      case 'finish-seed-task':
+      case 'summon-five-seeds':
         preset.inventory[SAGE_SEED_KEY] = 1;
+        preset.tasks = [
+          this.createTutorialTaskState(LEVEL_ONE_SUMMON_SAGE_SEED_TASK_ID, 1, false),
+        ];
+        break;
+      case 'intro-level-requirements':
+        preset.inventory[SAGE_SEED_KEY] = 5;
+        preset.tasks = [
+          this.createTutorialTaskState(LEVEL_ONE_SUMMON_SAGE_SEED_TASK_ID, 5, true),
+        ];
+        break;
+      case 'first-fill-seed-task':
+        preset.inventory[SAGE_SEED_KEY] = 5;
+        preset.tasks = [
+          this.createTutorialTaskState(LEVEL_ONE_SUMMON_SAGE_SEED_TASK_ID, 5, true),
+        ];
+        break;
+      case 'finish-seed-task':
+        preset.inventory[SAGE_SEED_KEY] = 5;
+        preset.tasks = [
+          this.createTutorialTaskState(LEVEL_ONE_SUMMON_SAGE_SEED_TASK_ID, 5, true),
+        ];
         break;
       case 'first-task-complete':
       case 'level-up-one':
         preset.tasks = [
-          this.createTutorialTaskState(LEVEL_ONE_SAGE_SEED_TASK_ID, 1, true),
+          this.createTutorialTaskState(LEVEL_ONE_SUMMON_SAGE_SEED_TASK_ID, 5, true),
+          this.createTutorialTaskState(LEVEL_ONE_SAGE_SEED_TASK_ID, 5, true),
         ];
         break;
       case 'open-market':
@@ -1819,7 +1841,7 @@ export class DevCheatCommandManager {
         this.applyManaTonicBrewedPreset(preset);
         break;
       default:
-        if (preset.level >= 3) {
+        if (preset.level >= 2) {
           preset.research.push(MINT_SEED_RESEARCH_ID);
         }
         break;
@@ -1946,26 +1968,26 @@ export class DevCheatCommandManager {
     const index = TUTORIAL_STEP_IDS.indexOf(stepId);
 
     if (index < 0) {
+      return 0;
+    }
+
+    if (index < 10) {
+      return 0;
+    }
+
+    if (index < 20) {
       return 1;
     }
 
-    if (index < 8) {
-      return 1;
-    }
-
-    if (index < 18) {
+    if (index < 26) {
       return 2;
     }
 
-    if (index < 24) {
+    if (index < 32) {
       return 3;
     }
 
-    if (index < 30) {
-      return 4;
-    }
-
-    return 5;
+    return 4;
   }
 
   getTutorialStepPageId(stepId) {
@@ -2579,10 +2601,10 @@ export class DevCheatCommandManager {
       version: GAMEPLAY_SAVE_VERSION,
       savedAt: this.getNow(),
       mana: {
-        current: 0,
+        current: 40,
       },
       coin: {
-        current: 0,
+        current: 10,
         totalGenerated: 0,
       },
       crystal: {
@@ -2716,7 +2738,7 @@ export class DevCheatCommandManager {
   }
 
   getCurrentLevel() {
-    return this.gameplayFacade.getSnapshot().playerLevel?.currentLevel ?? 1;
+    return this.gameplayFacade.getSnapshot().playerLevel?.currentLevel ?? 0;
   }
 
   getGardenMaxTiles() {

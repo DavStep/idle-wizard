@@ -4,6 +4,7 @@ import {
   getLevelRequirementTargetLevel,
 } from '../../shared/levelRequirementsLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
+import { createPageIcon } from '../../shared/pageIcons.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
@@ -15,19 +16,12 @@ import { formatLevelUpNotice, getLevelPayoffRows } from './levelPayoffSummary.js
 
 const INITIAL_REQUIREMENTS_LABEL = formatLevelRequirementsLabel();
 const TURN_IN_TEXT = 'turn in';
-const COMPLETE_TEXT = 'complete';
 const EXPANDED_CONTENT_MOTION_MS = 225;
 const TASK_REORDER_MOTION_MS = 225;
 const TASK_REORDER_EARLY_THRESHOLD_RATIO = 0.2;
 const DUPLICATE_TOUCH_CLICK_SUPPRESSION_MS = 450;
 const TASK_REORDER_TRANSITION =
   'transform 225ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms linear';
-const LEVEL_PAYOFF_RESOURCE_BY_LABEL = Object.freeze({
-  'mana cap': 'mana',
-  'mana regen': 'mana',
-  crystal: 'crystal',
-});
-
 export class WorkshopTaskManager {
   constructor({ gameplayFacade, onLevelUpNotice } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -60,10 +54,16 @@ export class WorkshopTaskManager {
     this.rewardsHidden = false;
     this.levelRewardsTogglePressPointerType = '';
     this.suppressNextLevelRewardsOutsideClick = false;
+    this.suppressNextTutorialLayerOutsidePress = false;
     this.infoVisible = false;
     this.previousFocus = null;
     this.suppressNextOutsideClick = false;
+    this.tutorialLayerOutsidePressSuppressionTimeoutId = null;
     this.handleBackdropPress = (event) => {
+      if (this.consumeTutorialLayerOutsidePress(event)) {
+        return;
+      }
+
       if (this.suppressLevelRewardsOutsideClick(event)) {
         return;
       }
@@ -71,6 +71,10 @@ export class WorkshopTaskManager {
       this.collapseFromOutsidePress(event);
     };
     this.handleOutsidePress = (event) => {
+      if (this.consumeTutorialLayerOutsidePress(event)) {
+        return;
+      }
+
       if (this.suppressLevelRewardsOutsideClick(event)) {
         return;
       }
@@ -99,7 +103,8 @@ export class WorkshopTaskManager {
 
       const target = event.target;
 
-      if (target?.closest?.('.tutorial-layer')) {
+      if (this.isTutorialLayerEvent(event)) {
+        this.suppressTutorialLayerOutsidePress();
         return;
       }
 
@@ -281,6 +286,7 @@ export class WorkshopTaskManager {
     this.refs.levelRewardsToggle?.removeEventListener('click', this.handleLevelRewardsToggleClick);
     this.cancelExpandedContentMotion();
     this.clearDuplicateTouchClickSuppression();
+    this.clearTutorialLayerOutsidePressSuppression();
     this.stopTaskDragListeners();
     this.clearTaskDragPreview(this.dragState);
     this.cancelRowAnimations();
@@ -304,6 +310,8 @@ export class WorkshopTaskManager {
     this.duplicateTouchClickSuppressionTimeoutId = null;
     this.levelRewardsTogglePressPointerType = '';
     this.suppressNextLevelRewardsOutsideClick = false;
+    this.suppressNextTutorialLayerOutsidePress = false;
+    this.tutorialLayerOutsidePressSuppressionTimeoutId = null;
     this.infoVisible = false;
     this.previousFocus = null;
     this.dragState = null;
@@ -450,6 +458,65 @@ export class WorkshopTaskManager {
     return true;
   }
 
+  suppressTutorialLayerOutsidePress() {
+    this.suppressNextTutorialLayerOutsidePress = true;
+    this.clearTutorialLayerOutsidePressSuppression({ preserveSuppression: true });
+
+    const window = this.root?.ownerDocument?.defaultView;
+    if (!window?.setTimeout) {
+      return;
+    }
+
+    this.tutorialLayerOutsidePressSuppressionTimeoutId = window.setTimeout(() => {
+      this.suppressNextTutorialLayerOutsidePress = false;
+      this.tutorialLayerOutsidePressSuppressionTimeoutId = null;
+    }, DUPLICATE_TOUCH_CLICK_SUPPRESSION_MS);
+  }
+
+  clearTutorialLayerOutsidePressSuppression({ preserveSuppression = false } = {}) {
+    const window = this.root?.ownerDocument?.defaultView;
+
+    if (this.tutorialLayerOutsidePressSuppressionTimeoutId !== null) {
+      window?.clearTimeout?.(this.tutorialLayerOutsidePressSuppressionTimeoutId);
+      this.tutorialLayerOutsidePressSuppressionTimeoutId = null;
+    }
+
+    if (!preserveSuppression) {
+      this.suppressNextTutorialLayerOutsidePress = false;
+    }
+  }
+
+  consumeTutorialLayerOutsidePress(event) {
+    if (!this.suppressNextTutorialLayerOutsidePress || this.isTutorialLayerEvent(event)) {
+      return false;
+    }
+
+    const target = event?.target;
+    if (target && this.root?.contains(target)) {
+      return false;
+    }
+
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    event?.stopImmediatePropagation?.();
+    this.clearTutorialLayerOutsidePressSuppression();
+    return true;
+  }
+
+  isTutorialLayerEvent(event) {
+    const target = event?.target;
+
+    if (target?.closest?.('.tutorial-layer')) {
+      return true;
+    }
+
+    return Boolean(
+      event
+        ?.composedPath?.()
+        ?.some((node) => node?.classList?.contains?.('tutorial-layer')),
+    );
+  }
+
   render(snapshot) {
     const taskSnapshot = snapshot?.tasks;
 
@@ -587,7 +654,7 @@ export class WorkshopTaskManager {
         (this.canAffordLevelCompletion() ||
           [...this.rowsByTaskId.keys()].some((taskId) => {
             const task = this.currentTasksById.get(taskId);
-            return task?.canFill || task?.canComplete;
+            return task?.canFill;
           })),
     );
   }
@@ -661,10 +728,6 @@ export class WorkshopTaskManager {
 
     if (task.type === taskRequirementTypes.RESEARCH) {
       return `research ${targetLabel}`;
-    }
-
-    if (task.canComplete) {
-      return `complete ${targetLabel}`;
     }
 
     if (task.type === taskRequirementTypes.TURN_IN) {
@@ -911,6 +974,11 @@ export class WorkshopTaskManager {
 
     if (this.currentRequirementTargetLevel !== requirementTargetLevel) {
       this.rewardsHidden = false;
+      if (this.currentRequirementTargetLevel !== null) {
+        this.cancelExpandedContentMotion();
+        this.expanded = false;
+        this.pinned = false;
+      }
     }
 
     this.currentRequirementsLabel = requirementsLabel;
@@ -944,11 +1012,7 @@ export class WorkshopTaskManager {
       return;
     }
 
-    if (task.canComplete) {
-      this.gameplayFacade.completeTask(taskId);
-    } else {
-      this.gameplayFacade.fillTask(taskId);
-    }
+    this.gameplayFacade.fillTask(taskId);
 
     this.render(this.gameplayFacade.getSnapshot());
   }
@@ -987,7 +1051,7 @@ export class WorkshopTaskManager {
   renderTaskRow(row, task, { isFirstCompleted = false } = {}) {
     const quantityText = `${task.progressQuantity}/${task.requiredQuantity}`;
     const buttonText = this.getButtonText(task);
-    const disabled = !task.canFill && !task.canComplete;
+    const disabled = !task.canFill;
 
     row.root.classList.toggle('is-completed', task.completed);
     row.root.classList.toggle('is-maxed', task.maxed);
@@ -1173,7 +1237,7 @@ export class WorkshopTaskManager {
     container.replaceChildren(
       ...displayRows.map((row) => {
         const valueLines = Array.isArray(row.valueLines) ? row.valueLines : [];
-        const resourceKey = this.getLevelPayoffResourceKey(row);
+        const valueLinePageIds = row.valueLinePageIds ?? {};
         const root = document.createElement('div');
         root.className = 'workshop-page__level-payoff-row';
         root.classList.toggle('workshop-page__level-payoff-row--list', valueLines.length > 0);
@@ -1184,24 +1248,20 @@ export class WorkshopTaskManager {
 
         const label = document.createElement('span');
         label.className = 'workshop-page__level-payoff-label';
-        setResourceIconText(label, row.label);
+        label.textContent = row.label;
 
         const value = document.createElement('span');
         value.className = 'workshop-page__level-payoff-value';
-        setResourceColor(value, resourceKey);
 
         if (valueLines.length > 0) {
           value.classList.add('workshop-page__level-payoff-value--list');
           value.replaceChildren(
-            ...valueLines.map((line) => {
-              const item = document.createElement('span');
-              item.className = 'workshop-page__level-payoff-value-line';
-              item.textContent = line;
-              return item;
-            }),
+            ...valueLines.map((line) =>
+              this.createLevelPayoffValueLine(line, valueLinePageIds[line]),
+            ),
           );
         } else {
-          value.textContent = row.value;
+          setResourceIconText(value, row.value);
         }
 
         root.append(label, value);
@@ -1210,9 +1270,17 @@ export class WorkshopTaskManager {
     );
   }
 
-  getLevelPayoffResourceKey(row) {
-    const label = String(row?.label ?? '').toLowerCase();
-    return LEVEL_PAYOFF_RESOURCE_BY_LABEL[label] ?? null;
+  createLevelPayoffValueLine(line, pageId) {
+    const item = document.createElement('span');
+    item.className = 'workshop-page__level-payoff-value-line';
+
+    const icon = createPageIcon(pageId, 'workshop-page__level-payoff-page-icon');
+    const text = document.createElement('span');
+    text.className = 'workshop-page__level-payoff-value-line-text';
+    text.textContent = line;
+
+    item.replaceChildren(...(icon ? [icon, text] : [text]));
+    return item;
   }
 
   getButtonText(task) {
@@ -1224,20 +1292,12 @@ export class WorkshopTaskManager {
       return '';
     }
 
-    if (task.canComplete) {
-      return COMPLETE_TEXT;
-    }
-
     return TURN_IN_TEXT;
   }
 
   getTaskButtonAriaLabel(task, buttonText) {
     if (task.completed) {
       return `${this.getTaskDisplayLabel(task)} requirement done for ${this.getRequirementTargetText()}`;
-    }
-
-    if (task.canComplete) {
-      return `complete ${this.getTaskDisplayLabel(task)} requirement for ${this.getRequirementTargetText()}`;
     }
 
     if (task.canFill) {

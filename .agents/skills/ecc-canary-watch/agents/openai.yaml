@@ -1,0 +1,4 @@
+interface:
+  display_name: "ECC Canary Watch"
+  short_description: "Post-release smoke and asset health checks"
+  default_prompt: "Use $ecc-canary-watch to verify an Idle Wizard release or deployed build."

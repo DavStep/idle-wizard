@@ -1,0 +1,4 @@
+interface:
+  display_name: "ECC Browser QA"
+  short_description: "Browser smoke, visual, and interaction QA"
+  default_prompt: "Use $ecc-browser-qa to verify an Idle Wizard UI change in the browser."

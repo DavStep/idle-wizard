@@ -15,11 +15,13 @@ Always use these skills for Idle Wizard UI work:
 
 1. `impeccable` for interface critique, layout judgment, hierarchy, accessibility, responsive behavior, and browser/screenshot iteration.
 2. `idle-wizard-ui-consistency` for local style law and drift checks.
+3. `ecc-browser-qa` when visible UI work needs browser smoke, screenshot, interaction, or accessibility evidence.
 
 Add specialist skills when the surface requires them:
 
 - Use `idle-wizard-tutorial-ui` for tutorial, FTUE, Elara guide boxes, objective panels, target hints, tutorial overlays, action reminders, pointer cues, `data-tutorial-id`, or tutorial popup/dialog work.
 - Use `idle-wizard-haptics` for haptic feedback, vibration, touch press confirmation, Capacitor Haptics, `navigator.vibrate`, or local haptic settings.
+- Use `ecc-tap-path-audit` for tap, click, row, tab, popup, drag/pan, WebView, or final-state interaction issues.
 
 If the task is only an audit or recommendation, still use `impeccable` and `idle-wizard-ui-consistency`.
 
@@ -61,4 +63,4 @@ Use the smallest set that matches risk:
 - Full app safety: `npm run check`
 - Focused tests: `npm test -- <path-or-pattern>`
 - Runtime status: `npm run dev:status` and `lsof -nP -sTCP:LISTEN -iTCP:3000`
-- Screenshot QA: authored `1080x2170` plus fitted desktop viewport for changed visible UI
+- Screenshot QA: `ecc-browser-qa` with authored `1080x2170` plus fitted desktop viewport for changed visible UI

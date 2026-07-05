@@ -7,6 +7,19 @@ import {
 } from './levelRequirementsLabel.js';
 
 describe('levelRequirementsLabel', () => {
+  it('labels level zero requirements as the path to level one', () => {
+    const tasks = {
+      currentLevel: 0,
+      maxLevel: 20,
+      level: {
+        level: 0,
+      },
+    };
+
+    expect(getLevelRequirementTargetLevel(tasks)).toBe(1);
+    expect(formatLevelRequirementsLabel(tasks)).toBe('level 1 requirements');
+  });
+
   it('labels requirements with the level the player is trying to reach', () => {
     const tasks = {
       currentLevel: 4,

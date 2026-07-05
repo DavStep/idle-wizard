@@ -178,7 +178,7 @@ export class PlayerLevelBalanceManager {
       return null;
     }
 
-    const safeLevel = this.clampLevelNumber(levelNumber);
+    const safeLevel = Math.max(1, this.clampLevelNumber(levelNumber));
 
     return {
       maxManaCap: this.roundStat(
@@ -204,7 +204,7 @@ export class PlayerLevelBalanceManager {
   }
 
   getRangeStatIncrease(ranges, levelNumber) {
-    const safeLevel = this.clampLevelNumber(levelNumber);
+    const safeLevel = Math.max(1, this.clampLevelNumber(levelNumber));
 
     return ranges.reduce((total, range) => {
       const fromLevel = Math.max(2, range.fromLevel);
@@ -223,12 +223,12 @@ export class PlayerLevelBalanceManager {
   }
 
   getCrystalRewardThroughLevel(levelNumber) {
-    const safeLevel = this.clampLevelNumber(levelNumber);
+    const safeLevel = Math.max(0, this.clampLevelNumber(levelNumber));
     return this.roundStat(safeLevel * this.crystalRewards.perLevel);
   }
 
   getCrystalRewardForLevelRange(levelBefore, levelAfter) {
-    const safeLevelBefore = this.clampLevelNumber(levelBefore);
+    const safeLevelBefore = Math.max(0, this.clampLevelNumber(levelBefore));
     const safeLevelAfter = this.clampLevelNumber(levelAfter);
 
     if (safeLevelAfter <= safeLevelBefore) {
@@ -290,7 +290,7 @@ export class PlayerLevelBalanceManager {
   }
 
   getLevel(levelNumber) {
-    const safeLevel = Number.isInteger(levelNumber) ? levelNumber : 1;
+    const safeLevel = Math.max(1, this.getNormalizedLevelNumber(levelNumber));
     let level = this.milestones[0];
 
     for (const milestone of this.milestones) {
@@ -617,8 +617,12 @@ export class PlayerLevelBalanceManager {
   }
 
   clampLevelNumber(levelNumber) {
-    const safeLevel = Number.isInteger(levelNumber) ? levelNumber : 1;
-    return Math.max(1, Math.min(safeLevel, this.maxLevel));
+    const safeLevel = this.getNormalizedLevelNumber(levelNumber);
+    return Math.max(0, Math.min(safeLevel, this.maxLevel));
+  }
+
+  getNormalizedLevelNumber(levelNumber) {
+    return Number.isInteger(levelNumber) ? levelNumber : 1;
   }
 
   roundStat(value) {

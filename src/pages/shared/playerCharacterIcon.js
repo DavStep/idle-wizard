@@ -12,6 +12,10 @@ const CHARACTER_IMAGE_URLS = Object.freeze({
     '../../assets/characters/adventurer_blacksmith.png',
     import.meta.url,
   ).href,
+  adventurer_blondshield_guard: new URL(
+    '../../assets/characters/adventurer_blondshield_guard.png',
+    import.meta.url,
+  ).href,
   adventurer_blondsword: new URL(
     '../../assets/characters/adventurer_blondsword.png',
     import.meta.url,
@@ -56,8 +60,20 @@ const CHARACTER_IMAGE_URLS = Object.freeze({
     '../../assets/characters/adventurer_greencloak_spear.png',
     import.meta.url,
   ).href,
+  adventurer_greenhood_archer: new URL(
+    '../../assets/characters/adventurer_greenhood_archer.png',
+    import.meta.url,
+  ).href,
   adventurer_greenscarf_shield: new URL(
     '../../assets/characters/adventurer_greenscarf_shield.png',
+    import.meta.url,
+  ).href,
+  adventurer_greenscarf_dagger: new URL(
+    '../../assets/characters/adventurer_greenscarf_dagger.png',
+    import.meta.url,
+  ).href,
+  adventurer_headband_furguard: new URL(
+    '../../assets/characters/adventurer_headband_furguard.png',
     import.meta.url,
   ).href,
   guild_secretary: new URL(
@@ -66,6 +82,10 @@ const CHARACTER_IMAGE_URLS = Object.freeze({
   ).href,
   adventurer_helmhammer: new URL(
     '../../assets/characters/adventurer_helmhammer.png',
+    import.meta.url,
+  ).href,
+  adventurer_hornhelm_axe: new URL(
+    '../../assets/characters/adventurer_hornhelm_axe.png',
     import.meta.url,
   ).href,
   adventurer_hoodblade: new URL(
@@ -116,6 +136,10 @@ const CHARACTER_IMAGE_URLS = Object.freeze({
     '../../assets/characters/adventurer_redscarf_sword.png',
     import.meta.url,
   ).href,
+  adventurer_redplume_sword: new URL(
+    '../../assets/characters/adventurer_redplume_sword.png',
+    import.meta.url,
+  ).href,
   adventurer_redspearman: new URL(
     '../../assets/characters/adventurer_redspearman.png',
     import.meta.url,
@@ -130,6 +154,10 @@ const CHARACTER_IMAGE_URLS = Object.freeze({
   ).href,
   adventurer_shadowdagger: new URL(
     '../../assets/characters/adventurer_shadowdagger.png',
+    import.meta.url,
+  ).href,
+  adventurer_silverhair_spear: new URL(
+    '../../assets/characters/adventurer_silverhair_spear.png',
     import.meta.url,
   ).href,
   adventurer_shieldguard: new URL(

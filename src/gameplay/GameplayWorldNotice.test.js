@@ -33,7 +33,6 @@ function finishTaskRequirement(gameplayFacade, task) {
   if (task.type === taskRequirementTypes.TURN_IN) {
     gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
     gameplayFacade.fillTask(task.taskId);
-    gameplayFacade.completeTask(task.taskId);
     return;
   }
 

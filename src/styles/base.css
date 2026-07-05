@@ -1286,9 +1286,9 @@ body {
   left: 58px;
   display: none;
   width: 248px;
-  height: 134px;
+  height: 154px;
   background: radial-gradient(
-    ellipse at 50% 100%,
+    ellipse at 50% 92%,
     transparent 0 50%,
     rgb(154 82 76 / 0.28) 51% 54%,
     rgb(188 130 74 / 0.27) 55% 58%,
@@ -1298,21 +1298,37 @@ body {
     rgb(119 97 146 / 0.21) 71% 74%,
     transparent 75%
   );
-  border-radius: 248px 248px 0 0;
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    #000 25%,
-    #000 75%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    #000 25%,
-    #000 75%,
-    transparent 100%
-  );
+  border-radius: 248px 248px 10px 10px;
+  -webkit-mask-image:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      #000 25%,
+      #000 75%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      #000 0%,
+      #000 82%,
+      transparent 100%
+    );
+  mask-image:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      #000 25%,
+      #000 75%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      #000 0%,
+      #000 82%,
+      transparent 100%
+    );
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
   opacity: 0;
   pointer-events: none;
   user-select: none;
@@ -1364,7 +1380,7 @@ body {
 
 .first-run-intro--step-enter[data-scene="defeated"]
   .first-run-intro__demon--defeated {
-  animation: first-run-intro-defeated-enter 520ms var(--style-motion-ease-soft)
+  animation: first-run-intro-defeated-enter 360ms var(--style-motion-ease)
     both;
 }
 
@@ -1436,7 +1452,8 @@ body {
   bottom: 26px;
   left: calc(var(--style-source-ui-gutter-x) + 20px);
   box-sizing: border-box;
-  min-height: 105px;
+  min-height: 125px;
+  padding: 27px 20px 20px;
   outline: none;
   z-index: 3;
 }
@@ -1453,8 +1470,9 @@ body {
 
 .first-run-intro__text {
   min-height: 34px;
-  margin: 0 0 10px;
+  margin: 0 0 15px;
   overflow-wrap: anywhere;
+  line-height: 1.23;
 }
 
 .first-run-intro--step-enter .first-run-intro__text {
@@ -1471,6 +1489,9 @@ body {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
+  min-height: 26px;
+  padding-top: 4px;
+  padding-bottom: 4px;
   margin-bottom: 0;
   white-space: nowrap;
 }
@@ -2721,6 +2742,21 @@ body {
     translate var(--style-motion-normal) var(--style-motion-ease);
 }
 
+.game-stage.is-tutorial-reveal-priming[data-tutorial-reveal]
+  :where(
+    .room-top-panel-layer,
+    .room-bottom-panel-layer,
+    .room-world-chat-layer,
+    .workshop-page__action-bar > .style-button,
+    .workshop-page__tasks,
+    .workshop-page__personal-tasks,
+    .workshop-page__world-notice
+  ),
+.game-stage.is-tutorial-reveal-priming[data-tutorial-reveal]
+  .room-top-panel__resource[aria-label="mana"] {
+  transition: none;
+}
+
 .game-stage[data-tutorial-reveal]
   :where(.room-top-panel-layer, .room-bottom-panel-layer)
   :where(button, [role="button"], input, select, textarea) {
@@ -2747,7 +2783,9 @@ body {
   .room-bottom-panel-layer
   :where(button, [role="button"]),
 .game-stage[data-tutorial-reveal~="mana"] .room-top-panel__resource[aria-label="mana"],
-.game-stage[data-tutorial-reveal~="summon"] .workshop-page__summon-button,
+.game-stage[data-tutorial-reveal~="summon"]
+  .workshop-page__action-bar
+  > .style-button.workshop-page__summon-button,
 .game-stage[data-tutorial-reveal~="tasks"] .workshop-page__tasks {
   pointer-events: auto;
 }
@@ -2785,8 +2823,23 @@ body {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: transparent;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
   pointer-events: none;
+}
+
+.game-stage[data-viewport-mode="web-wide"] .tutorial-layer__backdrop {
+  left: calc(var(--style-source-ui-gutter-x) * -1);
+  right: auto;
+  width: calc(
+    100% + var(--style-source-ui-gutter-x) + var(--style-source-ui-gutter-x)
+  );
+}
+
+.tutorial-layer__backdrop[hidden] {
+  display: none;
 }
 
 .tutorial-layer__pointer {
@@ -5417,6 +5470,22 @@ span.room-seed-pack-composite .room-seed-pack-item {
   align-items: flex-start;
   text-align: left;
   white-space: normal;
+}
+
+.workshop-page__level-payoff-value-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--style-icon-label-gap);
+  min-width: 0;
+}
+
+.workshop-page__level-payoff-page-icon {
+  flex: 0 0 auto;
+  width: 1.25em;
+  height: 1.25em;
+  object-fit: contain;
+  object-position: center;
+  vertical-align: -0.24em;
 }
 
 .workshop-page__level-complete-action {
@@ -13199,6 +13268,12 @@ div.workshop-page__discovery-row {
   line-height: var(--style-box-border-label-line-height);
 }
 
+.room-top-panel__resource-val [data-tutorial-id="top:mana:value"],
+.room-top-panel__mana-rate-value {
+  display: inline-block;
+  line-height: 1;
+}
+
 .room-top-panel__settings {
   position: absolute;
   inset: 0;
@@ -15777,6 +15852,103 @@ div.workshop-page__discovery-row {
   border-image: none;
 }
 
+.first-run-intro .style-dialog.first-run-intro__panel,
+.style-box.tutorial-layer__lesson.is-intro-dialog {
+  --intro-dialog-panel-frame: url("/ui/intro-dialog-panel-9slice.png");
+  --intro-dialog-tab-frame: url("/ui/intro-dialog-header-tab-9slice.png");
+  --intro-dialog-button-frame: url("/ui/intro-dialog-button-9slice.png");
+  --intro-dialog-panel-slice: 31 29 31 29 fill;
+  --intro-dialog-tab-slice: 31 29 31 29 fill;
+  --intro-dialog-button-slice: 31 29 31 29 fill;
+  --intro-dialog-text: #eee8dc;
+  --intro-dialog-shadow: 3px 4px 4px rgb(0 0 0 / 0.62);
+  --intro-dialog-shadow-filter: drop-shadow(var(--intro-dialog-shadow));
+  isolation: isolate;
+  color: var(--intro-dialog-text);
+  text-shadow: 0 0.5px 0.5px rgb(0 0 0 / 0.55);
+  background: transparent;
+  border-image-source: var(--intro-dialog-panel-frame);
+  border-image-slice: var(--intro-dialog-panel-slice);
+}
+
+.first-run-intro .style-dialog.first-run-intro__panel::after {
+  z-index: -1;
+  box-shadow: none;
+  filter: var(--intro-dialog-shadow-filter);
+  border-image-source: var(--intro-dialog-panel-frame);
+  border-image-slice: var(--intro-dialog-panel-slice);
+}
+
+.style-box.tutorial-layer__lesson.is-intro-dialog {
+  box-shadow: none;
+}
+
+.style-box.tutorial-layer__lesson.is-intro-dialog::after {
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border: var(--style-border-strong);
+  border-color: transparent;
+  border-image-source: var(--intro-dialog-panel-frame);
+  border-image-slice: var(--intro-dialog-panel-slice);
+  border-image-width: var(--style-midnight-frame-width);
+  border-image-repeat: stretch;
+  filter: var(--intro-dialog-shadow-filter);
+  pointer-events: none;
+  content: " ";
+}
+
+.first-run-intro .style-dialog.first-run-intro__panel > .first-run-intro__text,
+.style-box.tutorial-layer__lesson.is-intro-dialog
+  > :is(
+    .tutorial-layer__lesson-text,
+    .tutorial-layer__lesson-progress,
+    .tutorial-layer__lesson-progress-label
+  ) {
+  position: relative;
+  z-index: 1;
+}
+
+.first-run-intro .style-dialog.first-run-intro__panel > .first-run-intro__advance,
+.style-box.tutorial-layer__lesson.is-intro-dialog
+  > :is(
+    .tutorial-layer__lesson-step-label,
+    .tutorial-layer__lesson-show,
+    .tutorial-layer__lesson-advance
+  ) {
+  z-index: 1;
+}
+
+.first-run-intro .style-dialog.first-run-intro__panel > .style-box__title,
+.style-box.tutorial-layer__lesson.is-intro-dialog > .style-box__title {
+  top: -16px;
+  left: 14px;
+  z-index: 2;
+  min-width: 138px;
+  padding: 2px 18px 3px;
+  color: var(--intro-dialog-text);
+  line-height: 16px;
+  text-align: center;
+  text-shadow: 0 0.5px 0.5px rgb(0 0 0 / 0.58);
+  background: transparent;
+  border: 2px solid transparent;
+  border-image-source: var(--intro-dialog-tab-frame);
+  border-image-slice: var(--intro-dialog-tab-slice);
+  border-image-width: var(--style-midnight-frame-control-width);
+  border-image-repeat: stretch;
+  -webkit-text-stroke: 0;
+}
+
+.first-run-intro .style-button.first-run-intro__advance {
+  color: var(--intro-dialog-text);
+  text-shadow: 0 0.5px 0.5px rgb(0 0 0 / 0.52);
+  background: transparent;
+  box-shadow: none;
+  border-image-source: var(--intro-dialog-button-frame);
+  border-image-slice: var(--intro-dialog-button-slice);
+  border-image-width: var(--style-midnight-frame-control-width);
+}
+
 ::selection {
   background-color: transparent;
 }
@@ -16378,7 +16550,26 @@ div.workshop-page__discovery-row {
 @keyframes first-run-intro-defeated-enter {
   0% {
     opacity: 0;
-    transform: translateY(12px) scale(0.84);
+    transform: translateY(-350px) scaleX(0.86) scaleY(0.96);
+  }
+
+  16% {
+    opacity: 1;
+  }
+
+  54% {
+    opacity: 1;
+    transform: translateY(0) scaleX(0.925) scaleY(0.875);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translateY(-6px) scaleX(0.887) scaleY(0.914);
+  }
+
+  88% {
+    opacity: 1;
+    transform: translateY(0) scaleX(0.905) scaleY(0.895);
   }
 
   100% {

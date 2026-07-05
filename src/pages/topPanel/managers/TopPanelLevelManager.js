@@ -1,4 +1,10 @@
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import { PAGE_UNLOCK_REQUIREMENTS } from '../../managers/PageUnlockManager.js';
+
+const LIMIT_UNLOCK_PAGE_BY_KEY = Object.freeze({
+  maxGardenTiles: 'garden',
+  maxCauldrons: 'brewing',
+});
 
 export class TopPanelLevelManager {
   constructor({ gameplayFacade } = {}) {
@@ -70,9 +76,15 @@ export class TopPanelLevelManager {
       return;
     }
 
+    const currentLevel = this.getPlayerLevel(this.lastSnapshot).currentLevel;
+
+    if (!Number.isFinite(currentLevel) || currentLevel < 1) {
+      return;
+    }
+
     this.previousFocus = document.activeElement;
     this.visible = true;
-    this.selectedLevel = this.getPlayerLevel(this.lastSnapshot).currentLevel;
+    this.selectedLevel = currentLevel;
     this.applyVisibility();
     this.render(this.lastSnapshot);
     this.focusWithoutScroll(this.refs.levelPanel);
@@ -195,7 +207,11 @@ export class TopPanelLevelManager {
 
   renderSections(levelSnapshot, playerLevel, selectedLevel) {
     const previousTotals = this.getTotalsForLevel(playerLevel, selectedLevel - 1);
-    const addedRows = this.formatAddedRows(levelSnapshot.effects ?? [], previousTotals);
+    const addedRows = this.formatAddedRows(
+      levelSnapshot.effects ?? [],
+      previousTotals,
+      selectedLevel,
+    );
     const totalRows = this.formatTotalRows(this.getTotals(levelSnapshot));
 
     this.setHidden(this.refs.levelAddedLabel, addedRows.length <= 0);
@@ -226,23 +242,23 @@ export class TopPanelLevelManager {
 
     const key = document.createElement('span');
     key.className = 'room-top-panel__level-effect-label';
-    setResourceIconText(key, label);
+    key.textContent = label;
 
     const val = document.createElement('span');
     val.className = 'room-top-panel__level-effect-value';
-    val.textContent = value;
+    setResourceIconText(val, value);
 
     row.append(key, val);
     return row;
   }
 
-  formatAddedRows(effects, previousTotals) {
+  formatAddedRows(effects, previousTotals, selectedLevel) {
     return effects
-      .map((effect) => this.formatAddedEffect(effect, previousTotals))
+      .map((effect) => this.formatAddedEffect(effect, previousTotals, selectedLevel))
       .filter(Boolean);
   }
 
-  formatAddedEffect(effect, previousTotals) {
+  formatAddedEffect(effect, previousTotals, selectedLevel) {
     if (
       !effect ||
       effect === 'current level' ||
@@ -257,14 +273,18 @@ export class TopPanelLevelManager {
       [/^max cauldrons (\d+)$/, 'maxCauldrons', 'cauldrons', ''],
       [/^max (?:npc|trader) market stands (\d+)$/, 'maxNpcMarketStands', 'trader stands', ''],
       [/^max player market stands (\d+)$/, 'maxPlayerMarketStands', 'player stands', ''],
-      [/^max mana cap ([\d.]+)$/, 'maxManaCap', 'mana cap', ''],
-      [/^mana regen ([\d.]+)\/sec$/, 'manaPerSecond', 'mana regen', '/sec'],
+      [/^max mana cap ([\d.]+)$/, 'maxManaCap', 'mana capacity', ' mana'],
+      [/^mana regen ([\d.]+)\/sec$/, 'manaPerSecond', 'mana regeneration', '/sec mana'],
     ];
 
     for (const [pattern, key, label, suffix] of limitRows) {
       const match = effect.match(pattern);
 
       if (match) {
+        if (this.shouldSuppressLimitRowAtUnlock(key, selectedLevel)) {
+          return null;
+        }
+
         const total = Number(match[1]);
         const previous = previousTotals?.[key] ?? 0;
         const added = total - previous;
@@ -292,10 +312,20 @@ export class TopPanelLevelManager {
     const crystalRewardMatch = effect.match(/^crystal reward ([\d.]+)$/);
 
     if (crystalRewardMatch) {
-      return { label: 'crystal', value: `+${this.formatNumber(Number(crystalRewardMatch[1]))}` };
+      return {
+        label: 'bonus',
+        value: `+${this.formatNumber(Number(crystalRewardMatch[1]))} crystal`,
+      };
     }
 
     return { label: effect, value: '' };
+  }
+
+  shouldSuppressLimitRowAtUnlock(key, selectedLevel) {
+    const pageId = LIMIT_UNLOCK_PAGE_BY_KEY[key];
+    const requiredLevel = pageId ? PAGE_UNLOCK_REQUIREMENTS[pageId]?.requiredLevel : null;
+
+    return Number.isInteger(requiredLevel) && selectedLevel === requiredLevel;
   }
 
   formatTotalRows(totals) {
@@ -308,8 +338,8 @@ export class TopPanelLevelManager {
       ['cauldrons', totals.maxCauldrons, ''],
       ['trader stands', totals.maxNpcMarketStands, ''],
       ['player stands', totals.maxPlayerMarketStands, ''],
-      ['mana cap', totals.maxManaCap, ''],
-      ['mana regen', totals.manaPerSecond, '/sec'],
+      ['mana capacity', totals.maxManaCap, ' mana'],
+      ['mana regeneration', totals.manaPerSecond, '/sec mana'],
     ]
       .filter(([, value]) => Number.isFinite(value))
       .map(([label, value, suffix]) => ({

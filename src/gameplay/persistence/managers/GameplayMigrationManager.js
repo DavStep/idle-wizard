@@ -518,6 +518,14 @@ export class GameplayMigrationManager {
       migratedSave.stats = createEmptyStatsPersistenceSnapshot();
     }
 
+    if (!Number.isInteger(migratedSave.tasks?.currentLevel)) {
+      migratedSave.tasks = {
+        ...(migratedSave.tasks ?? {}),
+        currentLevel: 1,
+        tasks: migratedSave.tasks?.tasks ?? [],
+      };
+    }
+
     return migratedSave;
   }
 
