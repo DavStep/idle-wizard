@@ -321,7 +321,7 @@
   --style-motion-ease-soft: cubic-bezier(0.39, 0.575, 0.565, 1);
   --style-motion-ease-rubber: cubic-bezier(0.39, 0.575, 0.565, 1);
   --style-motion-ease-expand-rubber: cubic-bezier(0.22, 1, 0.36, 1);
-  --guild-page-paper-frame: url("/ui/guild-quest-paper-9slice.png");
+  --guild-page-paper-frame: url("/ui/guild-quest/paper-9slice.png");
   --guild-page-paper-frame-slice: 32 fill;
   --guild-page-paper-frame-width: 5px;
   --guild-page-paper-surface: #f6f3ec;
