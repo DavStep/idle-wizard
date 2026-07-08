@@ -30,7 +30,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Midnight-theme strokes: muted blue-gray, currently `#3f465c`.
 - Page and surface: dark midnight tones, currently `#1c1e26` and `#17191f`.
 - Disabled/secondary text and borders: medium gray.
-- Resource words and amounts can use resource colors; potion item names stay normal text, not a pink/category color.
+- Currency displays must show the currency icon and color the full amount plus currency word with that currency color; potion item names stay normal text, not a pink/category color.
 - The page background may use the explicit mild bottom-to-top room identity gradient; boxes, buttons, dialogs, and labels stay on the normal surface.
 
 ## Boxes

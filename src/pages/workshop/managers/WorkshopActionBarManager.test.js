@@ -533,11 +533,18 @@ describe('WorkshopActionBarManager', () => {
       /\.workshop-page__mail-button-icon-frame,\s*\.workshop-page__leaderboard-button-icon-frame,\s*\.workshop-page__discoveries-button-icon-frame,\s*\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const allianceRule = baseCss.match(
-      /\.workshop-page__ui-layer > \.workshop-page__trade-alliance\s*\{(?<body>[^}]*\btop:[^}]*)\}/,
+      /\.workshop-page__ui-layer > \.workshop-page__trade-alliance\s*\{(?<body>[^}]*\bleft:[^}]*)\}/,
     )?.groups?.body;
 
     expect(rootRule).toMatch(/--workshop-secondary-button-width:\s*100px;/);
     expect(rootRule).toMatch(/--workshop-secondary-button-half-width:\s*50px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-width:\s*45\.5px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-height:\s*80\.25px;/);
+    expect(rootRule).toMatch(
+      /--workshop-panel-button-open-height:\s*68\.25px;/,
+    );
+    expect(rootRule).toMatch(/--workshop-panel-button-label-bottom:\s*3\.9px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-row-shift-y:\s*60px;/);
 
     expect(bagRule).toBeDefined();
     expect(bagRule).toMatch(
@@ -562,17 +569,27 @@ describe('WorkshopActionBarManager', () => {
     expect(statsRule).not.toMatch(/\bbottom:/);
 
     expect(mailRootRule).toBeDefined();
-    expect(mailRootRule).toMatch(
-      /\btop:\s*calc\(var\(--style-room-content-top\) \+\s*155\.5px\);/,
-    );
     expect(mailRootRule).toMatch(/\bright:\s*var\(--style-room-chrome-edge\);/);
 
     expect(sidePanelRootRule).toBeDefined();
-    expect(baseCss).toMatch(
-      /\.workshop-page__ui-layer > \.workshop-page__leaderboard,\s*\.workshop-page__ui-layer > \.workshop-page__discoveries\s*\{\s*top:\s*calc\(var\(--style-room-content-top\) \+\s*207\.75px\);/,
+    expect(sidePanelRootRule).toContain(
+      '--workshop-panel-button-row-1-label-y',
     );
-    expect(sidePanelRootRule).toMatch(/\bwidth:\s*45\.5px;/);
-    expect(sidePanelRootRule).toMatch(/\bheight:\s*80\.25px;/);
+    expect(sidePanelRootRule).toContain(
+      'var(--workshop-panel-button-label-offset-y)',
+    );
+    expect(sidePanelRootRule).toMatch(
+      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-panel-button-label-row-y\) -\s*var\(--workshop-panel-button-label-offset-y\)\s*\);/,
+    );
+    expect(baseCss).toMatch(
+      /\.workshop-page__ui-layer > \.workshop-page__leaderboard,\s*\.workshop-page__ui-layer > \.workshop-page__discoveries\s*\{[^}]*--workshop-panel-button-row-2-label-y/s,
+    );
+    expect(sidePanelRootRule).toMatch(
+      /\bwidth:\s*var\(--workshop-panel-button-width\);/,
+    );
+    expect(sidePanelRootRule).toMatch(
+      /\bheight:\s*var\(--workshop-panel-button-height\);/,
+    );
     expect(leaderboardSideRule).toMatch(
       /\bleft:\s*var\(--style-room-chrome-edge\);/,
     );
@@ -595,7 +612,7 @@ describe('WorkshopActionBarManager', () => {
       'font-size: calc(var(--style-box-border-label-font-size) * 0.8);',
     );
     expect(featureCharacterLabelRule).toContain(
-      'line-height: calc(var(--style-box-border-label-line-height) * 0.8);',
+      'line-height: var(--workshop-panel-button-label-line-height);',
     );
     expect(featureCharacterLabelRule).toMatch(/\bbackground:\s*transparent;/);
     expect(featureCharacterLabelRule).toMatch(/\bborder:\s*0;/);
@@ -616,13 +633,10 @@ describe('WorkshopActionBarManager', () => {
       'font-size: calc(var(--style-box-border-label-font-size) * 0.8);',
     );
     expect(sidePanelLabelRule).toContain(
-      'line-height: calc(var(--style-box-border-label-line-height) * 0.8);',
+      'line-height: var(--workshop-panel-button-label-line-height);',
     );
     expect(sidePanelLabelRule).toMatch(/\btransform:\s*none;/);
 
-    expect(allianceRule).toMatch(
-      /\btop:\s*calc\(var\(--style-room-content-top\) \+\s*155\.5px\);/,
-    );
     expect(allianceRule).toMatch(/\bleft:\s*var\(--style-room-chrome-edge\);/);
   });
 

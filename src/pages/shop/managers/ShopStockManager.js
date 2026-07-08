@@ -482,7 +482,7 @@ export class ShopStockManager {
     setResourceIconText(refs.button, buying ? 'buying' : this.getBuyButtonText(item));
     refs.button.disabled = buying || !canBuy;
     refs.button.setAttribute('aria-disabled', refs.button.disabled ? 'true' : 'false');
-    setResourceColor(refs.button, refs.button.disabled ? null : 'coin');
+    setResourceColor(refs.button, null);
   }
 
   renderStatus(kind, message) {
@@ -734,7 +734,7 @@ export class ShopStockManager {
       return 'empty';
     }
 
-    return formatCoinPriceText(displayQuote.priceCoin);
+    return `buy ${formatCoinPriceText(displayQuote.priceCoin)}`;
   }
 
   getCannotBuyStatus(item) {

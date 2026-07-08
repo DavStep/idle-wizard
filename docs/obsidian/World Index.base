@@ -1,22 +1,23 @@
 filters:
   and:
-    - 'file.ext == "md"'
+    - file.ext == "md"
     - not:
         - file.inFolder(".obsidian")
-
 properties:
   status:
-    displayName: "Status"
+    displayName: Status
   world:
-    displayName: "World"
+    displayName: World
   file.folder:
-    displayName: "Folder"
+    displayName: Folder
   file.tags:
-    displayName: "Tags"
-
+    displayName: Tags
 views:
   - type: table
-    name: "All Notes"
+    name: All Notes
+    groupBy:
+      property: world
+      direction: ASC
     order:
       - file.name
       - world
@@ -24,11 +25,8 @@ views:
       - file.folder
       - file.tags
       - file.mtime
-    groupBy:
-      property: world
-      direction: ASC
   - type: list
-    name: "Risks"
+    name: Risks
     filters:
       and:
         - file.hasTag("risk")

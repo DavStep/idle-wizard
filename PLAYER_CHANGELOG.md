@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.79
+
+- Added automatic world event reward settlement so qualified rankings send inbox rewards after an event period ends.
+- Made inbox reward claiming safer by saving granted rewards before the server marks mail collected.
+- Fixed server save cleanup so active next-level task progress is preserved across save reloads.
+- Polished Workshop stats, inbox rewards, Guild request posting, Brewing cauldron actions, and shop buy labels with clearer icons and tighter layouts.
+
 ## 0.2.78
 
 - Reworked the earliest level requirements so new wizards build toward level 1 with a fuller sage seed task and coin step.

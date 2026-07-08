@@ -867,3 +867,9 @@ export const WorldEventLeaderboardSummaryResult = __t.object("WorldEventLeaderbo
 });
 export type WorldEventLeaderboardSummaryResult = __Infer<typeof WorldEventLeaderboardSummaryResult>;
 
+export const WorldEventRewardSettlementTick = __t.object("WorldEventRewardSettlementTick", {
+  tickId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type WorldEventRewardSettlementTick = __Infer<typeof WorldEventRewardSettlementTick>;
+

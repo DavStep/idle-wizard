@@ -91,7 +91,7 @@ export class TutorialCaptureFacade {
         this.app?.onlineGateManager?.root && !this.app.onlineGateManager.root.hidden,
       ),
       freshStartVisible: Boolean(
-        stage?.querySelector('.app-fresh-start-choice:not([hidden])'),
+        this.getDocumentRoot()?.querySelector('.app-fresh-start-choice:not([hidden])'),
       ),
       completedStepIds: [...(tutorial?.progressManager?.completedStepIds ?? [])],
       targetIds: [...(stage?.querySelectorAll('[data-tutorial-id]') ?? [])].map(
@@ -126,7 +126,7 @@ export class TutorialCaptureFacade {
     const manager = this.app?.lifecycleManager?.freshStartChoiceManager;
     const button =
       manager?.refs?.freshButton ??
-      this.getStage()?.querySelector?.(
+      this.getDocumentRoot()?.querySelector?.(
         '.app-fresh-start-choice__button--fresh:not([hidden])',
       );
 
@@ -254,7 +254,9 @@ export class TutorialCaptureFacade {
   }
 
   clickSelector(selector) {
-    const target = this.getStage()?.querySelector?.(selector);
+    const target =
+      this.getStage()?.querySelector?.(selector) ??
+      this.getDocumentRoot()?.querySelector?.(selector);
 
     if (!target) {
       return { ok: false, reason: 'selector_missing', selector };
@@ -267,7 +269,10 @@ export class TutorialCaptureFacade {
 
   clickByText(text, selector = 'button') {
     const wanted = String(text ?? '').trim();
-    const elements = [...(this.getStage()?.querySelectorAll?.(selector) ?? [])];
+    const elements = [
+      ...(this.getStage()?.querySelectorAll?.(selector) ?? []),
+      ...(this.getDocumentRoot()?.querySelectorAll?.(selector) ?? []),
+    ];
     const target = elements.find((element) => element.textContent.trim() === wanted);
 
     if (!target) {
@@ -289,13 +294,44 @@ export class TutorialCaptureFacade {
     const result = gameplay.tasksFacade.recordAction(action);
     gameplay.publishAndSaveSnapshot?.();
     this.refreshTutorial();
+    const alreadyComplete = result?.ok === false && this.hasCompletedMatchingTaskAction(action);
 
     return {
-      ok: result?.ok !== false,
+      ok: result?.ok !== false || alreadyComplete,
       action,
       result,
+      ...(alreadyComplete ? { reason: 'already_completed' } : {}),
       state: this.getState(),
     };
+  }
+
+  hasCompletedMatchingTaskAction(action) {
+    return (
+      this.app?.gameplayFacade
+        ?.getSnapshot?.()
+        ?.tasks?.level?.tasks?.some(
+          (task) => task?.completed && this.taskMatchesAction(task, action),
+        ) === true
+    );
+  }
+
+  taskMatchesAction(task, action) {
+    const actionType = String(action?.type ?? action?.action ?? '').trim();
+    const taskType = String(task?.type ?? task?.action ?? '').trim();
+
+    if (actionType && taskType && actionType !== taskType) {
+      return false;
+    }
+
+    if (action?.researchId) {
+      return task?.researchId === action.researchId;
+    }
+
+    if (action?.itemKey) {
+      return task?.itemKey === action.itemKey;
+    }
+
+    return false;
   }
 
   completeTaskWithItems(taskId, itemKey, quantity) {
@@ -318,11 +354,12 @@ export class TutorialCaptureFacade {
 
     const fill = gameplay.tasksFacade?.fillTask?.(taskId);
     const complete = gameplay.tasksFacade?.completeTask?.(taskId);
+    const completeOk = complete?.ok !== false || complete?.reason === 'already_completed';
     gameplay.publishAndSaveSnapshot?.();
     this.refreshTutorial();
 
     return {
-      ok: fill?.ok !== false && complete?.ok !== false,
+      ok: fill?.ok !== false && completeOk,
       fill,
       complete,
       state: this.getState(),
@@ -369,6 +406,15 @@ export class TutorialCaptureFacade {
 
   getStage() {
     return this.app?.viewportFacade?.getStageElement?.() ?? null;
+  }
+
+  getDocumentRoot() {
+    return (
+      this.getStage()?.ownerDocument ??
+      this.target?.document ??
+      globalThis.document ??
+      null
+    );
   }
 }
 

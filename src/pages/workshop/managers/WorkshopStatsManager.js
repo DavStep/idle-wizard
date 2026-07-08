@@ -1,4 +1,7 @@
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
+import { setItemIconLabel } from '../../shared/itemIconLabel.js';
+import { setResourceColor } from '../../shared/resourceColor.js';
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 
 const STATS_TABS = [
@@ -186,7 +189,12 @@ export class WorkshopStatsManager {
     const tab = stats.tabs.find((candidate) => candidate.id === this.selectedTabId) ??
       stats.tabs[0];
     const signature = `${tab.id}:${tab.rows
-      .map((row) => `${row.label}:${row.status}:${row.state}`)
+      .map(
+        (row) =>
+          `${row.label}:${row.status}:${row.state}:${row.itemKind ?? ''}:${row.itemKey ?? ''}:${
+            row.resource ?? ''
+          }`,
+      )
       .join('|')}`;
 
     if (signature === this.renderedSignature) {
@@ -194,9 +202,7 @@ export class WorkshopStatsManager {
     }
 
     this.renderedSignature = signature;
-    this.refs.rows.replaceChildren(
-      ...tab.rows.map((row, index) => this.createRow(row, index + 1)),
-    );
+    this.refs.rows.replaceChildren(...tab.rows.map((row) => this.createRow(row)));
   }
 
   updateTabs() {
@@ -207,25 +213,26 @@ export class WorkshopStatsManager {
     }
   }
 
-  createRow(row, number) {
+  createRow(row) {
     const root = document.createElement('div');
     root.className = 'workshop-page__stats-row';
     root.classList.toggle('is-total', row.state === 'total');
     root.classList.toggle('is-empty', row.state === 'empty');
-
-    const numberCell = document.createElement('span');
-    numberCell.className = 'workshop-page__stats-number';
-    numberCell.textContent = `${number}.`;
+    setResourceColor(root, row.itemKind);
 
     const name = document.createElement('span');
     name.className = 'workshop-page__stats-name';
     name.textContent = row.label;
+    setItemIconLabel(name, row.itemKind, row.itemKey);
 
     const status = document.createElement('span');
     status.className = 'workshop-page__stats-status';
     status.textContent = row.status;
+    if (row.resource === 'coin') {
+      setResourceIconText(status, row.status);
+    }
 
-    root.append(numberCell, name, status);
+    root.append(name, status);
     return root;
   }
 
@@ -254,7 +261,7 @@ export function createWorkshopStatsSnapshot(snapshot = {}) {
         label: 'seeds',
         rows: [
           createCountRow('total seeds generated', seeds.total, { total: true }),
-          ...createItemCountRows(seeds.items),
+          ...createItemCountRows(seeds.items, 'seed'),
         ],
       },
       {
@@ -262,7 +269,7 @@ export function createWorkshopStatsSnapshot(snapshot = {}) {
         label: 'herbs',
         rows: [
           createCountRow('total herbs grown', herbs.total, { total: true }),
-          ...createItemCountRows(herbs.items),
+          ...createItemCountRows(herbs.items, 'herb'),
         ],
       },
       {
@@ -270,7 +277,7 @@ export function createWorkshopStatsSnapshot(snapshot = {}) {
         label: 'potions',
         rows: [
           createCountRow('total potions brewed', potions.total, { total: true }),
-          ...createItemCountRows(potions.items),
+          ...createItemCountRows(potions.items, 'potion'),
         ],
       },
       {
@@ -287,36 +294,65 @@ export function createWorkshopStatsSnapshot(snapshot = {}) {
   };
 }
 
-function createItemCountRows(items = []) {
+function createItemCountRows(items = [], itemKind = null) {
   return (Array.isArray(items) ? items : []).map((item) =>
-    createCountRow(item?.label, item?.quantity),
+    createCountRow(item?.label, item?.quantity, {
+      itemKey: item?.key,
+      itemKind,
+      resource: itemKind,
+    }),
   );
 }
 
 function createRoyaltyRows(items = []) {
   return (Array.isArray(items) ? items : []).map((item) =>
-    createCoinRow(`${normalizeLabel(item?.potionLabel, 'potion')} royalties`, item?.coin),
+    createCoinRow(`${normalizeLabel(item?.potionLabel, 'potion')} royalties`, item?.coin, {
+      itemKey: item?.potionKey,
+      itemKind: 'potion',
+    }),
   );
 }
 
-function createCountRow(label, value, { total = false } = {}) {
+function createCountRow(
+  label,
+  value,
+  { itemKey = null, itemKind = null, resource = null, total = false } = {},
+) {
   const quantity = normalizeCount(value);
-
-  return {
+  const row = {
     label: normalizeLabel(label, 'unknown'),
     status: String(quantity),
     state: total ? 'total' : quantity > 0 ? 'filled' : 'empty',
   };
+
+  return addRowRenderMetadata(row, { itemKey, itemKind, resource });
 }
 
-function createCoinRow(label, value, { total = false } = {}) {
+function createCoinRow(label, value, { itemKey = null, itemKind = null, total = false } = {}) {
   const coin = normalizeCoin(value);
-
-  return {
+  const row = {
     label: normalizeLabel(label, 'coin'),
     status: formatCoinPriceText(coin),
     state: total ? 'total' : coin > 0 ? 'filled' : 'empty',
   };
+
+  return addRowRenderMetadata(row, { itemKey, itemKind, resource: 'coin' });
+}
+
+function addRowRenderMetadata(row, { itemKey = null, itemKind = null, resource = null } = {}) {
+  if (itemKey) {
+    row.itemKey = itemKey;
+  }
+
+  if (itemKind) {
+    row.itemKind = itemKind;
+  }
+
+  if (resource) {
+    row.resource = resource;
+  }
+
+  return row;
 }
 
 function normalizeCount(value) {

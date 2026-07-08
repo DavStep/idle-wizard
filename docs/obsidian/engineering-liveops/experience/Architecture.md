@@ -101,6 +101,7 @@ experience_type: architecture
 - Normal app gameplay persistence is server-backed through SpacetimeDB `player_gameplay_save`; do not add browser local save paths for player progress.
 - Admin `playerLevel` edits only change server/social level; the actual in-game level shown in room UI comes from `player_gameplay_save.saveJson.tasks.currentLevel`.
 - Server gameplay saves must not flush before own-save hydration; drop pre-hydration queued saves so startup/pagehide defaults cannot overwrite real progress.
+- Reconnect gameplay-save hydration must prefer already-hydrated pending local saves over stale own-save rows; mobile background flushes can disconnect before ack and the stale row would otherwise roll back visible progress.
 - Shared public score syncs, including generated coin and world-event points, must wait for accepted gameplay-save hydration; otherwise cached local progress can attach to a fresh anonymous identity and create duplicate empty leaderboard accounts.
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
 - Gameplay save coalescing must stay short and flush on hide/reload; long pending windows can make recent quest/coin progress look reset after refresh.
@@ -126,14 +127,14 @@ experience_type: architecture
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Username prompt seen is monotonic; stale client/server profile echoes must not turn it false or the first-run name dialog can reopen after dismissal.
 - First-run account choice happens before `onOnline`; hide the server gate before awaiting that dialog or new players can look stuck at `connecting to server...`.
-- Empty connected accounts must keep the account/start gate open until `start new`; loading a null gameplay save immediately creates baseline server data.
+- Empty connected accounts should load a null gameplay save and create the baseline server data under that connected identity; do not show the account/start gate again.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
 - Gameplay save migrations must carry `visualSettings`; dropping it makes free theme/font/color unlocks vanish after refresh.
 - SpacetimeDB gameplay-save sanitizer must explicitly keep every client save branch, including visualSettings, or reducer writes will silently drop it before reload.
 - Automation player settings save under `automation`; update client persistence and the SpacetimeDB save sanitizer together or settings reset after backend save.
 - Server save sanitation must merge previous completed research into non-prestige saves; stale clients can omit newer research ids and otherwise get stuck behind the anti-downgrade guard.
 - Incorrect completed research ids can survive through that anti-downgrade merge; live support fixes should remove the bad raw id and kick the player session so stale clients re-save against the corrected row.
-- Server task-save sanitation must treat `tasks.currentLevel` as the paid player level; completed task rows only mean level-ready and must not infer a level-up.
+- Server task-save sanitation must treat `tasks.currentLevel` as the paid player level, and preserve active requirement rows from `currentLevel + 1`; completed task rows only mean level-ready and must not infer a level-up.
 - Task retunes should keep existing task ids stable when only changing required items; task ids are persisted progress keys.
 - SpacetimeDB gameplay-save sanitizer must preserve `shop.playerRequests`; otherwise player request rows reload as empty after restart.
 - SpacetimeDB brewing save sanitizer must preserve `brewing.cauldrons`; keeping only legacy `cauldronItemKeys` drops cauldron 2+ after restart.

@@ -29,6 +29,7 @@ function createBackendWithFakes({ connectGeneratedBindings } = {}) {
     discardPreHydrationSave: vi.fn(),
     discardPendingSaves: vi.fn(),
     disconnect: vi.fn(),
+    getPendingHydratedSave: vi.fn(() => null),
     setReadyToSend: vi.fn(),
     setSyncUnhealthyHandler: vi.fn((handler) => {
       syncUnhealthyHandler = handler;
@@ -212,6 +213,38 @@ describe('BackendFacade', () => {
       backendFacade.tradeAllianceFacade.setRewardProcessingReady.mock.invocationCallOrder[1],
     );
     expect(onOnline).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes a hydrated pending local save during reconnect hydration', async () => {
+    const serverSave = { version: 2, coin: { current: 10 } };
+    const pendingHydratedSave = { version: 2, coin: { current: 25 } };
+    const { backendFacade } = createBackendWithFakes();
+    const onGameplaySaveReady = vi.fn();
+
+    backendFacade.gameplaySaveFacade.connect.mockImplementation(
+      (_connection, _identity, { onReady } = {}) => {
+        onReady?.({ ok: true, save: serverSave, updatedAtMs: 123 });
+        return true;
+      },
+    );
+    backendFacade.gameplaySaveFacade.getPendingHydratedSave.mockReturnValue(
+      pendingHydratedSave,
+    );
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+      onGameplaySaveReady,
+    });
+    await flushPromises();
+
+    expect(onGameplaySaveReady).toHaveBeenCalledWith({
+      save: serverSave,
+      updatedAtMs: 123,
+      pendingHydratedSave,
+    });
   });
 
   it('wires world chat sends through player level sync', async () => {

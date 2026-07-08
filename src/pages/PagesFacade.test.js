@@ -3835,7 +3835,7 @@ describe('PagesFacade', () => {
     expect(pagesFacade.getCurrentPageId()).toBe('workshop');
     expect(stage.querySelector('.research-page')).toBeNull();
     expect(stage.querySelector('.room-bottom-panel__lock-message')?.textContent).toBe(
-      'research unlocks at level 3',
+      'research unlocks at level 2',
     );
 
     clickRoomTab(stage, 'brewing');
@@ -6214,7 +6214,7 @@ describe('PagesFacade', () => {
     expect(rewards?.hidden).toBe(false);
     expect(payoffTitle?.textContent).toBe('rewards');
     expect(payoffRows).toEqual([
-      ['unlocks', 'garden'],
+      ['unlocks', 'garden, research'],
       ['mana capacity', '+50 mana'],
       ['mana regeneration', '+1/sec mana'],
       ['bonus', '+1 crystal'],
@@ -6255,7 +6255,7 @@ describe('PagesFacade', () => {
       'level 1> 2',
     );
     expect(stage.querySelector('.workshop-page__flyout')?.textContent).toBe(
-      'level 2 reached: garden unlocked, +50 mana capacity, +1/sec mana regeneration, +1 crystal',
+      'level 2 reached: garden unlocked, research unlocked, +50 mana capacity, +1/sec mana regeneration, +1 crystal',
     );
   });
 
@@ -10521,6 +10521,10 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__world-shell')).not.toBeNull();
     expect(stage.querySelector('.brewing-page__herbs')).not.toBeNull();
     expect(stage.querySelector('.brewing-page__herbs')?.hidden).toBe(true);
+    expect(
+      stage.querySelector('.brewing-page__inventory-button--herbs button')?.dataset
+        .tutorialId,
+    ).toBe('brewing:inventory:herbs');
     expect(stage.querySelector('.brewing-page__cauldron')).not.toBeNull();
     expect(stage.querySelector('.brewing-page__guide')).toBeNull();
     expect(stage.querySelector('.brewing-page__cauldron')?.textContent).toContain('empty');
@@ -10540,9 +10544,9 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.brewing-page__cauldron-select-recipe-text')?.disabled).toBe(
       true,
     );
-    expect(stage.querySelector('.brewing-page__quantity-button')?.textContent).toBe('x1 lock');
+    expect(stage.querySelector('.brewing-page__quantity-button')?.textContent).toBe('x1');
     expect(stage.querySelector('.brewing-page__quantity-button')?.disabled).toBe(true);
-    expect(stage.querySelector('.brewing-page__auto-button')?.textContent).toBe('auto lock');
+    expect(stage.querySelector('.brewing-page__auto-button')?.textContent).toBe('auto');
     expect(stage.querySelector('.brewing-page__auto-button')?.disabled).toBe(true);
     expect(stage.querySelector('.brewing-page__actions')?.classList.contains('is-centered')).toBe(
       false,
@@ -10908,12 +10912,15 @@ describe('PagesFacade', () => {
         '.brewing-page__cauldron-recipe-box > .style-box__title',
       )?.textContent,
     ).toBe('cauldron 2 ☆☆☆');
-    expect(
-      cauldrons[2].querySelector(
-        '.brewing-page__cauldron-recipe-box > .style-box__title',
-      )?.textContent,
-    ).toBe('cauldron 3 ☆☆☆');
+    const nextLockedTitle = cauldrons[2].querySelector(
+      '.brewing-page__cauldron-recipe-box > .style-box__title',
+    );
     expect(cauldrons[2].classList.contains('is-locked')).toBe(true);
+    expect(nextLockedTitle?.hidden).toBe(true);
+    expect(nextLockedTitle?.textContent).toBe('');
+    expect(
+      cauldrons[2].querySelector('.brewing-page__cauldron-locked-label')?.textContent,
+    ).toBe('locked');
   });
 
   it('opens the cauldron dialog from the clicked world cauldron', () => {
@@ -12015,7 +12022,7 @@ describe('PagesFacade', () => {
       ),
     ).toBe(true);
     expect(stage.querySelector('.room-bottom-panel__lock-message')?.textContent).toBe(
-      'research unlocks at level 3',
+      'research unlocks at level 2',
     );
   });
 

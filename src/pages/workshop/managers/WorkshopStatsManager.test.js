@@ -95,6 +95,24 @@ describe('WorkshopStatsManager', () => {
       ['royalties', '2.5 coin'],
       ['mana tonic royalties', '2.5 coin'],
     ]);
+    expect(getTab(stats, 'seeds').rows[1]).toMatchObject({
+      itemKey: 'sageSeed',
+      itemKind: 'seed',
+      resource: 'seed',
+    });
+    expect(getTab(stats, 'herbs').rows[1]).toMatchObject({
+      itemKey: 'sageHerb',
+      itemKind: 'herb',
+      resource: 'herb',
+    });
+    expect(getTab(stats, 'potions').rows[1]).toMatchObject({
+      itemKey: 'manaTonic',
+      itemKind: 'potion',
+      resource: 'potion',
+    });
+    expect(getTab(stats, 'coin').rows[0]).toMatchObject({
+      resource: 'coin',
+    });
   });
 
   it('defaults missing stats to zero rows without throwing', () => {
@@ -114,7 +132,7 @@ describe('WorkshopStatsManager', () => {
     ]);
   });
 
-  it('renders a compact tabbed stats popup with numbered text rows', () => {
+  it('renders a compact tabbed stats popup with colored item icons and coin values', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new WorkshopStatsManager({ gameplayFacade });
     const parent = document.createElement('div');
@@ -132,18 +150,45 @@ describe('WorkshopStatsManager', () => {
     expect(title?.textContent).toBe('stats');
     expect(tabs.map((tab) => tab.textContent)).toEqual(['seeds', 'herbs', 'potions', 'coin']);
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
-    expect(rows[0].querySelector('.workshop-page__stats-number')?.textContent).toBe('1.');
+    expect(rows[0].querySelector('.workshop-page__stats-number')).toBeNull();
     expect(rows[0].querySelector('.workshop-page__stats-name')?.textContent).toBe(
       'total seeds generated',
     );
     expect(rows[0].querySelector('.workshop-page__stats-status')?.textContent).toBe('3');
-    expect(parent.querySelector('img, svg')).toBeNull();
+    expect(rows[1].getAttribute('data-resource-color')).toBe('seed');
+    expect(rows[1].querySelector('.workshop-page__stats-name')?.textContent).toBe('sage seed');
+    expect(
+      rows[1].querySelector('.workshop-page__stats-name')?.classList.contains('style-seed-label'),
+    ).toBe(true);
+    expect(
+      rows[1].querySelector('.workshop-page__stats-name .style-seed-label__icon'),
+    ).not.toBeNull();
+
+    tabs[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const herbRows = [...parent.querySelectorAll('.workshop-page__stats-row')];
+    expect(herbRows[1].getAttribute('data-resource-color')).toBe('herb');
+    expect(
+      herbRows[1].querySelector('.workshop-page__stats-name .style-herb-label__icon')?.dataset
+        .assetAtlasFrame,
+    ).toBe('herb:sageHerb');
+
+    tabs[2].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const potionRows = [...parent.querySelectorAll('.workshop-page__stats-row')];
+    expect(
+      potionRows[1].querySelector('.workshop-page__stats-name .style-potion-label__icon')?.dataset
+        .assetAtlasFrame,
+    ).toBe('potion:manaTonic');
 
     tabs[3].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(tabs[3].getAttribute('aria-selected')).toBe('true');
     expect(parent.textContent).toContain('player trade');
     expect(parent.textContent).toContain('mana tonic royalties');
+    expect(
+      parent.querySelector('.workshop-page__stats-status .style-resource-label--coin'),
+    ).not.toBeNull();
 
     manager.unmount();
   });

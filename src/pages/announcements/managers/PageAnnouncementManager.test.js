@@ -130,44 +130,6 @@ function mountManagerWithGameplayFacade(
   return { manager, stage };
 }
 
-function createPlayerShopFacadeFake(snapshot = {}) {
-  const listeners = new Set();
-  const state = {
-    connected: true,
-    identity: '',
-    listings: [],
-    ownListings: [],
-    requests: [],
-    ownRequests: [],
-    tradeHistory: [],
-    ownTradeHistory: [],
-    ownRoyaltyHistory: [],
-    proceedsCoin: 0,
-    ...snapshot,
-  };
-
-  const publish = () => {
-    for (const listener of listeners) {
-      listener(state);
-    }
-  };
-
-  return {
-    getSnapshot: () => state,
-    retainTradeHistory: vi.fn(() => vi.fn()),
-    subscribe: (listener) => {
-      listeners.add(listener);
-      listener(state);
-      return () => listeners.delete(listener);
-    },
-    publish,
-    setSnapshot: (nextSnapshot = {}) => {
-      Object.assign(state, nextSnapshot);
-      publish();
-    },
-  };
-}
-
 function getReportLineParts(stage) {
   return [...stage.querySelectorAll('.room-announcement__report-line')].map((line) => [
     line.dataset.reportRowType,
@@ -253,7 +215,7 @@ describe('PageAnnouncementManager', () => {
         row.querySelector('.room-announcement__row-value')?.textContent,
       ]),
     ).toEqual([
-      ['unlocks', 'garden'],
+      ['unlocks', 'garden / research'],
       ['mana capacity', '+50 mana'],
       ['mana regeneration', '+1/sec mana'],
       ['bonus', '+1 crystal'],
@@ -412,8 +374,6 @@ describe('PageAnnouncementManager', () => {
             { type: 'garden_harvested', label: 'bloodrose', quantity: 12 },
             { type: 'brewing_complete', label: 'mana tonic', quantity: 2 },
             { type: 'npc_market_sold', coin: 40 },
-            { type: 'player_market_sold', coin: 12 },
-            { type: 'player_request_filled', label: 'mint seed', quantity: 3 },
           ],
         },
       ],
@@ -430,8 +390,6 @@ describe('PageAnnouncementManager', () => {
       ['garden_harvested', 'garden harvested', '12 bloodrose'],
       ['brewing_complete', 'brewing complete', '2 mana tonic'],
       ['npc_market_sold', 'traders bought', '40 coin'],
-      ['player_market_sold', 'players bought', '12 coin'],
-      ['player_request_filled', 'players sold you', '3 mint seed'],
     ]);
     expect(
       stage.querySelector('.room-announcement__report-icon'),
@@ -501,142 +459,107 @@ describe('PageAnnouncementManager', () => {
         ?.getAttribute('data-asset-atlas-frame'),
     ).toBe('seed:regular');
     expect(
-      lineByType.player_request_filled
-        ?.querySelector('.room-announcement__report-value .style-seed-label__icon')
-        ?.getAttribute('data-seed-pack-item-frame'),
-    ).toBe('herb:mintHerb');
-    expect(
-      lineByType.player_market_sold
-        ?.querySelector('.room-announcement__report-value .style-resource-label__icon')
-        ?.getAttribute('data-asset-atlas-frame'),
-    ).toBe('resource:coin');
-    expect(
       lineByType.npc_market_sold
         ?.querySelector('.room-announcement__report-value .style-resource-label__icon')
         ?.getAttribute('data-asset-atlas-frame'),
     ).toBe('resource:coin');
   });
 
-  it('adds player market sales and request fills to the pending while-away report', () => {
+  it('filters player-to-player trade rows out of while-away reports', () => {
     const snapshot = createSnapshot();
     const gameplayFacade = createGameplayFacadeFake(snapshot, {
       emitInitial: false,
       reports: [
         {
           kind: 'whileAway',
-          rows: [{ type: 'garden_harvested', label: 'bloodrose', quantity: 12 }],
+          rows: [
+            { type: 'garden_harvested', label: 'bloodrose', quantity: 12 },
+            { type: 'player_market_sold', coin: 12 },
+            { type: 'player_request_filled', label: 'mint seed', quantity: 3 },
+            {
+              type: 'player_trade_bought_from_you',
+              label: 'sage seed',
+              quantity: 4,
+              coin: 12,
+              username: 'Ada',
+            },
+            {
+              type: 'player_trade_sold_to_you',
+              label: 'mint seed',
+              quantity: 3,
+              coin: 9,
+              username: 'Mira',
+            },
+            { type: 'market_proceeds', coin: 40 },
+            {
+              type: 'potion_royalty_earned',
+              label: 'mana tonic',
+              coin: 2.5,
+              username: 'Lin',
+            },
+            { type: 'npc_market_sold', coin: 4 },
+          ],
         },
       ],
     });
-    const playerShopFacade = createPlayerShopFacadeFake({
-      identity: 'self',
-      ownListings: [{ sellerIdentity: 'self' }],
-      ownRequests: [{ requesterIdentity: 'self', itemKey: 'mintSeed', itemLabel: 'mint seed' }],
-      ownTradeHistory: [
-        {
-          tradeId: 'seller-sale-1',
-          buyerIdentity: 'other',
-          buyerUsername: 'Ada',
-          sellerIdentity: 'self',
-          itemKey: 'sageSeed',
-          itemLabel: 'sage seed',
-          quantity: 4,
-          totalPriceCoin: 12,
-        },
-        {
-          tradeId: 'request-fill-1',
-          requestKey: 'self:1',
-          buyerIdentity: 'self',
-          sellerIdentity: 'other',
-          sellerUsername: 'Mira',
-          itemKey: 'mintSeed',
-          itemLabel: 'mint seed',
-          quantity: 3,
-          totalPriceCoin: 9,
-        },
-      ],
-      ownRoyaltyHistory: [
-        {
-          royaltyId: 'royalty-1',
-          potionLabel: 'mana tonic',
-          sourceSellerUsername: 'Lin',
-          royaltyCoin: 2.5,
-        },
-      ],
-      proceedsCoin: 14.5,
-    });
+    const playerShopFacade = {
+      retainTradeHistory: vi.fn(() => vi.fn()),
+      subscribe: vi.fn(),
+    };
 
     const { stage } = mountManagerWithGameplayFacade(gameplayFacade, { playerShopFacade });
 
-    expect(playerShopFacade.retainTradeHistory).toHaveBeenCalledTimes(1);
+    expect(playerShopFacade.retainTradeHistory).not.toHaveBeenCalled();
+    expect(playerShopFacade.subscribe).not.toHaveBeenCalled();
     expect(getReportLineParts(stage)).toEqual([
       ['garden_harvested', 'garden harvested', '12 bloodrose'],
-      ['player_trade_bought_from_you', 'players bought: Ada', '4 sage seed / 12 coin'],
-      ['player_trade_sold_to_you', 'players sold you: Mira', '3 mint seed / 9 coin'],
-      ['potion_royalty_earned', 'royalties: Lin', 'mana tonic / 2.5 coin'],
+      ['npc_market_sold', 'traders bought', '4 coin'],
     ]);
     expect(
-      stage
-        .querySelector(
-          '.room-announcement__report-line[data-report-row-type="player_trade_sold_to_you"] .style-seed-label__icon',
-        )
-        ?.getAttribute('data-seed-pack-item-frame'),
-    ).toBe('herb:mintHerb');
+      [...stage.querySelectorAll('.room-announcement__report-line')].map(
+        (line) => line.dataset.reportRowType,
+      ),
+    ).not.toEqual(
+      expect.arrayContaining([
+        'player_market_sold',
+        'player_request_filled',
+        'player_trade_bought_from_you',
+        'player_trade_sold_to_you',
+        'market_proceeds',
+        'potion_royalty_earned',
+      ]),
+    );
   });
 
-  it('queues player market proceeds that arrive after mount', () => {
+  it('does not open a while-away report for only player-to-player trade rows', () => {
     const snapshot = createSnapshot();
-    const gameplayFacade = createGameplayFacadeFake(snapshot, { emitInitial: false });
-    const playerShopFacade = createPlayerShopFacadeFake({
-      identity: 'self',
-      ownListings: [{ sellerIdentity: 'self' }],
-      proceedsCoin: 0,
-    });
-    const { stage } = mountManagerWithGameplayFacade(gameplayFacade, { playerShopFacade });
-    const layer = stage.querySelector('.room-announcement-layer');
-
-    expect(layer?.hidden).toBe(true);
-
-    playerShopFacade.setSnapshot({
-      proceedsCoin: 40,
-      ownTradeHistory: [
+    const gameplayFacade = createGameplayFacadeFake(snapshot, {
+      emitInitial: false,
+      reports: [
         {
-          tradeId: 'seller-sale-1',
-          buyerIdentity: 'other',
-          buyerUsername: 'Ada',
-          sellerIdentity: 'self',
-          itemKey: 'sageSeed',
-          itemLabel: 'sage seed',
-          quantity: 4,
-          totalPriceCoin: 40,
+          kind: 'whileAway',
+          rows: [
+            { type: 'player_market_sold', coin: 12 },
+            { type: 'player_request_filled', label: 'mint seed', quantity: 3 },
+            {
+              type: 'player_trade_bought_from_you',
+              label: 'sage seed',
+              quantity: 4,
+              coin: 12,
+            },
+            { type: 'player_trade_sold_to_you', label: 'mint seed', quantity: 3, coin: 9 },
+            { type: 'market_proceeds', coin: 40 },
+            { type: 'potion_royalty_earned', label: 'mana tonic', coin: 2.5 },
+          ],
         },
       ],
     });
 
-    expect(layer?.hidden).toBe(false);
-    expect(getReportLineParts(stage)).toEqual([
-      ['player_trade_bought_from_you', 'players bought: Ada', '4 sage seed / 40 coin'],
-    ]);
-  });
-
-  it('does not label aggregate proceeds without a seller trade as player market sold', () => {
-    const snapshot = createSnapshot();
-    const gameplayFacade = createGameplayFacadeFake(snapshot, { emitInitial: false });
-    const playerShopFacade = createPlayerShopFacadeFake({
-      identity: 'self',
-      proceedsCoin: 0,
-    });
-    const { stage } = mountManagerWithGameplayFacade(gameplayFacade, { playerShopFacade });
+    const { stage } = mountManagerWithGameplayFacade(gameplayFacade);
     const layer = stage.querySelector('.room-announcement-layer');
 
     expect(layer?.hidden).toBe(true);
-
-    playerShopFacade.setSnapshot({ proceedsCoin: 40 });
-
-    expect(layer?.hidden).toBe(false);
-    expect(getReportLineParts(stage)).toEqual([
-      ['market_proceeds', 'market proceeds', '40 coin'],
-    ]);
+    expect(getReportLineParts(stage)).toEqual([]);
   });
 
   it('keeps while-away report rewards right-aligned', () => {
@@ -751,7 +674,7 @@ describe('PageAnnouncementManager', () => {
     expect(layer?.hidden).toBe(false);
     expect(stage.querySelector('.room-announcement')?.dataset.announcementKind).toBe('unlock');
     expect(stage.querySelector('.room-announcement__title')?.textContent).toBe(
-      'garden unlocked',
+      'features unlocked',
     );
 
     vi.advanceTimersByTime(2100);

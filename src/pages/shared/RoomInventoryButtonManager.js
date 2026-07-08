@@ -42,7 +42,7 @@ export class RoomInventoryButtonManager {
     this.buttonRefs.clear();
   }
 
-  createButton({ tabId, label, icon, className = '', side = 'left' }) {
+  createButton({ tabId, label, icon, className = '', side = 'left', tutorialId = null }) {
     const root = document.createElement('section');
     root.className = ['room-inventory-panel-button', className]
       .filter(Boolean)
@@ -54,6 +54,9 @@ export class RoomInventoryButtonManager {
     button.className = 'room-inventory-panel-button__open';
     button.type = 'button';
     button.dataset.inventoryTab = tabId;
+    if (tutorialId) {
+      button.dataset.tutorialId = tutorialId;
+    }
     button.title = `open ${label}`;
     button.setAttribute('aria-label', `open ${label}`);
     button.setAttribute('aria-expanded', 'false');

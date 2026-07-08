@@ -1,6 +1,6 @@
 {
   "name": "idle-wizard",
-  "version": "0.2.78",
+  "version": "0.2.79",
   "private": true,
   "type": "module",
   "scripts": {
@@ -45,7 +45,7 @@
     "stdb:start": "PATH=\"$HOME/.local/bin:$PATH\" spacetime start",
     "stdb:build": "PATH=\"$HOME/.local/bin:$PATH\" spacetime build --module-path ./spacetimedb",
     "stdb:publish": "PATH=\"$HOME/.local/bin:$PATH\" spacetime publish idle-wizard --server local --module-path ./spacetimedb",
-    "stdb:publish:maincloud": "PATH=\"$HOME/.local/bin:$PATH\" spacetime publish idle-wizard --server maincloud --module-path ./spacetimedb",
+    "stdb:publish:maincloud": "PATH=\"$HOME/.local/bin:$PATH\" spacetime publish idle-wizard --server maincloud --module-path ./spacetimedb --delete-data=never",
     "stdb:generate": "PATH=\"$HOME/.local/bin:$PATH\" spacetime generate --lang typescript --out-dir ./src/backend/spacetimedb/module_bindings --module-path ./spacetimedb",
     "stdb:dev": "PATH=\"$HOME/.local/bin:$PATH\" spacetime dev idle-wizard --server local --yes --module-path ./spacetimedb --module-bindings-path ./src/backend/spacetimedb/module_bindings --run \"npm run dev\""
   },

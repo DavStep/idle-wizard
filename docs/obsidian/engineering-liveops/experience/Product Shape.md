@@ -128,7 +128,7 @@ experience_type: product-shape
 - Player market proceeds add spendable coin only; do not increase `coin.totalGenerated` or leaderboard income from player-to-player trades.
 - `player_shop_proceeds` can include potion discovery royalties from NPC market trades; use own trade history before labeling proceeds as player-market sales.
 - Claim-time player-market stats must retain/read own trade and royalty history before `claimProceeds`; claiming clears aggregate proceeds and lazy history may be released afterward.
-- While-away market reports should use event rows: NPC sale callbacks for `traders bought`, own trade history for player bought/sold-you rows, and `own_potion_recipe_royalty_history` for royalties.
+- Welcome-back/while-away market reports should use NPC sale callbacks for `traders bought`; do not retain player-shop trade history or show player-to-player bought/sold-you, request-fill, generic player-shop proceeds, or royalty rows there.
 - Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
 - Player market notifications should only mean a personal trade event: claimable proceeds from an own listing or an available listing matching an own request. Do not dot empty stands, affordable random listings, or matchable requests from other players.
 - Player market tab entry should retain only public listings/requests; trade history subscriptions and DOM rows stay lazy until the `trade history` popup opens.
@@ -201,6 +201,7 @@ experience_type: product-shape
 - FTUE text-shaped spotlight holes must remeasure for a few RAFs during reveal transitions; web-wide SVG backdrops need explicit `100% + gutters` width because `width:auto` can stop short.
 - Icon-mode top-panel resource FTUE spotlights should target the resource label wrapper with an element hole; SVG text holes can ghost the amount and leave the icon dimmed.
 - HTML screenshot harnesses that load `/src/styles/base.css` must set `html[data-style-theme="midnight"]`; missing or `white` themes fall back to the removed light base.
+- Resource-label screenshot harnesses must also set `html[data-style-color="resources"][data-style-icons="icons"]`; otherwise coin/herb/seed colors and icons collapse to default text-mode CSS unlike the live app.
 - FTUE should also hide behind ordinary room popups unless the active step targets that popup or explicitly uses popup-only copy guidance.
 - Room announcement overlays are FTUE blockers; add them through `TutorialTargetManager` blocking selectors so hidden toggles pause/resume Elara.
 - Bottom-tab unlock motion can be hidden by the level announcement overlay; delay or replay the lock break/icon reveal when an announcement is visible.
@@ -272,6 +273,7 @@ experience_type: product-shape
 - FTUE grow-sage should stay visible during planted sage wait states; hide pointer/show-me guidance there, but do not pause Elara entirely.
 - Elara objective placement must avoid the level-3 Workshop secondary button band; collision-check visible controls instead of hard-coding one lower-left slot.
 - Elara collision fallback should prefer the lower default slot when multiple placements clear protected controls; first-safe ordering can put her in the upper lane.
+- Elara guidance for the Workshop summon button should prefer the clear lower slot; bottom page-tab tutorial targets are future navigation, not a reason to place the lesson above summon.
 - Elara objective placement must also avoid visible research sub-tabs; otherwise the tab corner peeks under the lesson border-label area.
 - Elara objective placement must protect the whole fast-sell tab strip when targeting one tab; a single tab rect can leave the guide covering adjacent tab controls.
 - Draggable Elara placement must test portrait/button overlap with the lesson panel; side-only clamping can shove the panel under Elara near the right edge.
@@ -312,7 +314,7 @@ experience_type: product-shape
 - Prestige ruby summary/reward text needs `setResourceIconText`; `data-resource-color` alone colors text but does not render icons.
 - Multiple reward/resource payout labels should be space-separated, not comma-separated.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
-- Currency amount text and icon belong in one `style-resource-label`; otherwise resource color mode can color only the icon/word and leave the number monochrome.
+- Currency amount text and icon always belong in one `style-resource-label`; render currency labels through `setResourceIconText` or `createResourceIconLabel` so the icon is present and the full amount plus currency word uses the currency color.
 - Resource icon amount parsing must include hyphen ranges like `130-180 coin`; otherwise quest reward ranges leave the number muted outside the colored label.
 - Guild quest reward ranges use generic `coin`/`seeds`/`herbs` text, so render them with `setResourceIconText` rather than item-name icon helpers.
 - Player character generation workflow is removed; do not add/rebuild selectable avatar generation unless the user explicitly asks.

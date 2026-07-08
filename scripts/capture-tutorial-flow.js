@@ -20,6 +20,8 @@ const CONTACT_SHEET_URL = 'http://127.0.0.1:55173/docs/tutorial-flow/contact-she
 const CHECK_ONLY = process.argv.includes('--check');
 
 export const OPTIONAL_CAPTURE_STEP_IDS = Object.freeze([
+  'purchase-house',
+  'finish-seed-task',
   'fill-sage-seed-task',
 ]);
 const OPTIONAL_CAPTURE_STEP_ID_SET = new Set(OPTIONAL_CAPTURE_STEP_IDS);
@@ -254,6 +256,7 @@ async function main() {
       { timeoutMs: 20_000 },
     );
     await page.startFresh();
+    await completeFirstRunIntro(page);
     await page.waitForStep(FLOW_STEPS[0]);
     removeOldScreenshots();
 
@@ -358,6 +361,34 @@ async function prepareStepForCapture(page, stepId) {
   await page.waitForStep(stepId);
   await page.waitForLessonText();
   await page.waitForImages();
+}
+
+async function completeFirstRunIntro(page) {
+  await page.waitForExpression(
+    `typeof window.tutorialCapture === 'object' && (
+      Boolean(document.querySelector('.first-run-intro:not([hidden])')) ||
+      Boolean(window.tutorialCapture.getState().activeStep)
+    )`,
+    { timeoutMs: 20_000 },
+  );
+
+  for (let count = 0; count < 10; count += 1) {
+    const visible = await page.run(() =>
+      Boolean(document.querySelector('.first-run-intro:not([hidden])')),
+    );
+
+    if (!visible) {
+      break;
+    }
+
+    await page.clickSelector('.first-run-intro__advance:not([hidden])');
+    await sleep(700);
+  }
+
+  const state = await page.getState();
+  if (state.activeStep?.id === 'purchase-house') {
+    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+  }
 }
 
 async function ensureDevServer() {
@@ -752,7 +783,9 @@ class TutorialPage {
 
   waitForImages() {
     return this.waitForExpression(
-      `Array.from(document.images).every((image) => image.complete && image.naturalWidth > 0)`,
+      `Array.from(document.images)
+        .filter((image) => !image.closest('[hidden]'))
+        .every((image) => image.complete && image.naturalWidth > 0)`,
     );
   }
 
@@ -789,8 +822,15 @@ class TutorialPage {
     });
 
     if (!result?.ok) {
+      const state = await this.getState();
       throw new Error(
-        `Active tutorial target is not capturable: ${JSON.stringify(result ?? null)}`,
+        `Active tutorial target is not capturable: ${JSON.stringify({
+          result: result ?? null,
+          activeStep: state.activeStep,
+          currentPageId: state.currentPageId,
+          targetIds: state.targetIds,
+          snapshot: state.snapshot,
+        })}`,
       );
     }
 

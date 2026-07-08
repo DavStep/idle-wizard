@@ -74,7 +74,7 @@ const summonSeedResearches = [
 ];
 
 const seedUnlockRequiredPlayerLevels = {
-  mintSeed: 3,
+  mintSeed: 2,
   nettleSeed: 6,
   lavenderSeed: 7,
   briarSeed: 8,
@@ -100,7 +100,7 @@ const seedUnlockRequiredPlayerLevels = {
 };
 
 const recipeUnlockRequiredPlayerLevels = {
-  manaTonic: 5,
+  manaTonic: 4,
   minorHealingPotion: 6,
   nettleVigor: 8,
   calmingDraught: 9,

@@ -13,9 +13,9 @@ export const PAGE_UNLOCK_REQUIREMENTS = {
     message: 'garden unlocks at level 2',
   },
   research: {
-    requiredLevel: 3,
+    requiredLevel: 2,
     label: 'research',
-    message: 'research unlocks at level 3',
+    message: 'research unlocks at level 2',
   },
   brewing: {
     requiredLevel: 4,

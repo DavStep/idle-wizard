@@ -94,13 +94,14 @@ experience_type: style
 - Brewing cauldron count lives as a normal-weight border-corner label like `0/5`; empty cauldron status stays blank and `empty` is centered in the box.
 - Empty cauldron item containers are absolute only in the empty state; override their normal fixed scroll height or `empty` centers in the top strip instead of the full cauldron.
 - Brewing cauldron should not show a standalone `unknown mix` status row; no-match staged herbs already read through the wasted potion preview/action.
-- Brewing cauldron box should stay compact at partial fill, but leave action-row clearance for status plus five distinct ingredient rows.
+- Brewing cauldron box should stay compact at partial fill, but leave row clearance for status plus five distinct ingredient rows.
 - Brewing cauldron derived height vars must be scoped on `.brewing-page__cauldron`; `:root` custom props resolve before per-cauldron row-count overrides and can leave the list stuck at three rows.
 - Brewing cauldron top spacing must reserve the herb-list scroll progress rail so overflow herb rows do not touch the cauldron border.
 - Brewing cauldron should not show separate `empty` or visible `remove` controls; ingredient rows stay tappable/ARIA-labeled for correction while visible copy stays contents-only.
 - Brewing action messages render only blocked/error feedback under the action; do not render successful brew/bottle helper text there.
 - Brewing active brew state belongs only in the active brew/progress row; keep cauldron status blank while brewing, brewed, bottling, or bottled.
-- Brewing action row should sit close under the cauldron; avoid a large vertical gap between cauldron and brew/bottle/collect controls.
+- Brewing cauldron action controls sit outside the bordered box in a right-side stack; keep button dimensions synced, and target hidden/disabled action CSS outside `.style-box` scope.
+- Brewing locked/research cauldron placeholders are only the dotted locked frame; hide the normal cauldron title/count and style-box frame/background.
 - Brewing cauldron staged ingredients display as adjacent quantity groups like `2 nettle`; do not show numbered slots or visible action words.
 - Brewing flow boxes can be broken by the late shared absolute-position style block; remove flow-managed Brewing boxes from that block when converting them to scroll layout.
 - Brewing workbench must reserve bottom clearance for fixed `recipes`/`potions` buttons so scroll content cannot render underneath them.
@@ -158,7 +159,7 @@ experience_type: style
 - NPC market reset must clear shared `npcStock` to `0` plus restore `npcNeed` to target; stock is server state and can survive player-data resets.
 - Global NPC market resets need a one-time server maintenance marker; do not tie shared market wipes to per-player progress reset hooks.
 - NPC stock market uses three ordinary boxes (`seeds`, `herbs`, `potions`) instead of category tabs; reserve each box's bottom border label for expand/collapse.
-- NPC stock buy row controls show only the price (`25 coin`), not a `buy` prefix; enabled prices use coin resource color, disabled/unaffordable prices inherit muted disabled color.
+- NPC stock buy row controls show `buy 25 coin` in a compact right slot; keep the verb normal text, keep the coin amount resource-colored, and let disabled/unaffordable prices inherit muted disabled color.
 - NPC stock buy row controls must clear midnight `border-image` after the late theme button-skin block; an earlier transparent border reset still renders framed oversized buttons.
 - NPC stock rows should use the same compact middle/right grid rhythm as market stand rows, not looser float rows.
 - NPC stock row visibility and labels should treat backend `stock` as availability; local inventory quantity can be `0` right after selling into stock.

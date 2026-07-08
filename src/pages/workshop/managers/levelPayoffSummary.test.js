@@ -141,11 +141,11 @@ describe('levelPayoffSummary', () => {
     expect(getLevelPayoffRows(snapshot, { fromLevel: 1, toLevel: 2 })).toEqual([
       {
         label: 'unlocks',
-        value: 'garden',
-        valueLines: ['garden'],
-        valueLinePageIds: { garden: 'garden' },
-        valueLineNotices: { garden: 'garden unlocked' },
-        notice: 'garden unlocked',
+        value: 'garden, research',
+        valueLines: ['garden', 'research'],
+        valueLinePageIds: { garden: 'garden', research: 'research' },
+        valueLineNotices: { garden: 'garden unlocked', research: 'research unlocked' },
+        notice: 'garden unlocked, research unlocked',
       },
       {
         label: 'mana capacity',
@@ -171,14 +171,12 @@ describe('levelPayoffSummary', () => {
     expect(rows).toEqual([
       {
         label: 'unlocks',
-        value: 'research, leaderboard',
-        valueLines: ['research', 'leaderboard'],
-        valueLinePageIds: { research: 'research' },
+        value: 'leaderboard',
+        valueLines: ['leaderboard'],
         valueLineNotices: {
-          research: 'research unlocked',
           leaderboard: 'leaderboard available',
         },
-        notice: 'research unlocked, leaderboard available',
+        notice: 'leaderboard available',
       },
       {
         label: 'mana capacity',
@@ -197,7 +195,7 @@ describe('levelPayoffSummary', () => {
       },
     ]);
     expect(formatLevelUpNotice(3, rows)).toBe(
-      'level 3 reached: research unlocked, leaderboard available, +50 mana capacity, +1/sec mana regeneration, +1 crystal',
+      'level 3 reached: leaderboard available, +50 mana capacity, +1/sec mana regeneration, +1 crystal',
     );
   });
 

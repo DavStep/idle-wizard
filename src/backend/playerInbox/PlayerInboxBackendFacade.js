@@ -89,6 +89,16 @@ export class PlayerInboxBackendFacade {
         };
       }
 
+      const flushResult = await this.flushGameplayRewardSave();
+      if (!flushResult.ok) {
+        return {
+          ok: true,
+          pendingServer: true,
+          reason: flushResult.reason,
+          grant: grantResult,
+        };
+      }
+
       const collectResult = await this.actionManager.collectReward(safeMailKey);
       if (!collectResult?.ok) {
         return {
@@ -105,6 +115,22 @@ export class PlayerInboxBackendFacade {
       };
     } finally {
       this.processingMailKeys.delete(safeMailKey);
+    }
+  }
+
+  async flushGameplayRewardSave() {
+    const flush = this.gameplayFacade?.savePersistenceSnapshotAndFlush;
+    if (typeof flush !== 'function') {
+      return { ok: false, reason: 'gameplay_flush_unavailable' };
+    }
+
+    try {
+      const result = await flush.call(this.gameplayFacade);
+      return result === false
+        ? { ok: false, reason: 'gameplay_flush_failed' }
+        : { ok: true };
+    } catch {
+      return { ok: false, reason: 'gameplay_flush_failed' };
     }
   }
 }

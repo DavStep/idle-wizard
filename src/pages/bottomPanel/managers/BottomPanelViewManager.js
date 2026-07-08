@@ -28,7 +28,6 @@ const OPTIONAL_BOTTOM_PANEL_TAB_BY_ID = new Map(
 );
 
 const LOCK_UNLOCK_ANIMATION_MS = 560;
-const UNLOCK_DELAY_WHILE_ANNOUNCEMENT_MS = 2100;
 
 export class BottomPanelViewManager {
   constructor({ getCurrentPageId, onShowPage, onAction, tabs = BOTTOM_PANEL_TABS } = {}) {
@@ -67,6 +66,9 @@ export class BottomPanelViewManager {
     this.visiblePageIds = new Set(
       tabs.filter((tab) => !this.isActionTab(tab)).map((tab) => tab.id),
     );
+    this.pendingUnlockAnimationButtons = new Set();
+    this.announcementUnlockObserver = null;
+    this.observedAnnouncementLayer = null;
     this.hasCustomVisiblePageIds = false;
     this.refs = {
       tabList: null,
@@ -122,6 +124,8 @@ export class BottomPanelViewManager {
     this.root = null;
     this.tabButtons.clear();
     this.swipeTargetPageId = null;
+    this.pendingUnlockAnimationButtons.clear();
+    this.disconnectAnnouncementUnlockObserver();
     this.refs = {
       tabList: null,
       lockPopup: null,
@@ -221,6 +225,8 @@ export class BottomPanelViewManager {
 
       if (wasLocked && !locked && visible && !button.hidden) {
         this.restartUnlockAnimation(button);
+      } else if (locked || !visible || button.hidden) {
+        this.cancelPendingUnlockAnimation(button);
       }
 
       if (!visible) {
@@ -570,10 +576,13 @@ export class BottomPanelViewManager {
       return;
     }
 
-    const delayMs = this.getUnlockAnimationDelayMs();
+    if (this.queueUnlockAnimationUntilAnnouncementClears(button)) {
+      return;
+    }
+
     const token = String((Number(button.dataset.unlockAnimationToken) || 0) + 1);
     button.dataset.unlockAnimationToken = token;
-    button.style.setProperty('--room-bottom-tab-unlock-delay', `${delayMs}ms`);
+    button.style.removeProperty('--room-bottom-tab-unlock-delay');
     button.classList.remove('is-unlocking');
     void button.offsetWidth;
     button.classList.add('is-unlocking');
@@ -601,24 +610,98 @@ export class BottomPanelViewManager {
     globalThis.setTimeout?.(() => {
       button.removeEventListener('animationend', handleAnimationEnd);
       clearAnimation();
-    }, delayMs + LOCK_UNLOCK_ANIMATION_MS);
+    }, LOCK_UNLOCK_ANIMATION_MS);
   }
 
-  getUnlockAnimationDelayMs() {
-    const stage = this.root?.parentElement;
-    const announcement = stage?.querySelector?.('.room-announcement-layer:not([hidden])');
+  queueUnlockAnimationUntilAnnouncementClears(button) {
+    const announcement = this.getVisibleAnnouncementLayer();
 
     if (!announcement) {
-      return 0;
+      return false;
     }
 
-    const announcementDelayMs = Math.round(
-      Number(announcement.dataset.announcementUnlockDelayMs),
-    );
+    button.classList.remove('is-unlocking');
+    button.style.removeProperty('--room-bottom-tab-unlock-delay');
+    delete button.dataset.unlockAnimationToken;
+    this.pendingUnlockAnimationButtons.add(button);
+    this.observeAnnouncementLayer(announcement);
+    return true;
+  }
 
-    return Number.isFinite(announcementDelayMs) && announcementDelayMs > 0
-      ? announcementDelayMs
-      : UNLOCK_DELAY_WHILE_ANNOUNCEMENT_MS;
+  getVisibleAnnouncementLayer() {
+    const stage = this.root?.parentElement;
+
+    return stage?.querySelector?.('.room-announcement-layer:not([hidden])') ?? null;
+  }
+
+  observeAnnouncementLayer(announcement) {
+    if (this.observedAnnouncementLayer === announcement && this.announcementUnlockObserver) {
+      return;
+    }
+
+    this.disconnectAnnouncementUnlockObserver();
+
+    const MutationObserverCtor =
+      announcement.ownerDocument?.defaultView?.MutationObserver ?? globalThis.MutationObserver;
+
+    if (typeof MutationObserverCtor !== 'function') {
+      return;
+    }
+
+    this.observedAnnouncementLayer = announcement;
+    this.announcementUnlockObserver = new MutationObserverCtor(() => {
+      this.flushPendingUnlockAnimationsIfAnnouncementCleared();
+    });
+    this.announcementUnlockObserver.observe(announcement, {
+      attributes: true,
+      attributeFilter: ['hidden', 'aria-hidden'],
+    });
+  }
+
+  flushPendingUnlockAnimationsIfAnnouncementCleared() {
+    const announcement = this.observedAnnouncementLayer;
+    const stage = this.root?.parentElement;
+
+    if (announcement && stage?.contains(announcement) && !announcement.hidden) {
+      return;
+    }
+
+    this.disconnectAnnouncementUnlockObserver();
+    this.flushPendingUnlockAnimations();
+  }
+
+  flushPendingUnlockAnimations() {
+    const buttons = [...this.pendingUnlockAnimationButtons];
+    this.pendingUnlockAnimationButtons.clear();
+
+    for (const button of buttons) {
+      if (
+        !this.root?.contains(button) ||
+        button.hidden ||
+        button.classList.contains('is-locked')
+      ) {
+        continue;
+      }
+
+      this.restartUnlockAnimation(button);
+    }
+  }
+
+  cancelPendingUnlockAnimation(button) {
+    if (!button) {
+      return;
+    }
+
+    this.pendingUnlockAnimationButtons.delete(button);
+    if (this.pendingUnlockAnimationButtons.size <= 0) {
+      this.disconnectAnnouncementUnlockObserver();
+    }
+  }
+
+  disconnectAnnouncementUnlockObserver() {
+    this.announcementUnlockObserver?.disconnect();
+    this.announcementUnlockObserver = null;
+    this.observedAnnouncementLayer = null;
   }
 
   getLockedMessage(tab, state) {
@@ -696,6 +779,8 @@ export class BottomPanelViewManager {
 
     if (wasLocked && enabled) {
       this.restartUnlockAnimation(button);
+    } else if (!enabled || !visible) {
+      this.cancelPendingUnlockAnimation(button);
     }
   }
 

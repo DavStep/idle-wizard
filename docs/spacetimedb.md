@@ -145,7 +145,7 @@ Player inbox mail uses deterministic keys in the form `sourceType:sourceKey:reci
 - `admin_send_player_inbox_broadcast(sourceKey, title, body, coinReward, crystalReward, rubyReward, emeraldReward, itemRewardsJson)`
 - `admin_settle_world_event_inbox_rewards(periodKey, eventId, headline)`
 
-`itemRewardsJson` is an array like `[{"itemKey":"sageSeed","quantity":5}]`. Broadcasts create rows only for current `player` rows. Event settlement ranks `world_event_leaderboard` rows by points descending then identity, requires at least `2000` points, and sends the current event-tier crystal/emerald rewards to qualified players.
+`itemRewardsJson` is an array like `[{"itemKey":"sageSeed","quantity":5}]`. Broadcasts create rows only for current `player` rows. Event settlement ranks `world_event_leaderboard` rows by points descending then identity, requires at least `2000` points, and sends the current event-tier crystal/emerald rewards to qualified players. A private `world_event_reward_settlement_tick` schedule checks once per minute and settles ended world-event periods automatically; the admin settlement reducer remains a manual backfill/test path.
 
 `set_player_gameplay_save` validates bounded JSON and stores the sender's gameplay save in `player_gameplay_save`. On startup, the web client waits for the own-save subscription before opening the room gate, applies the saved gameplay snapshot, unsubscribes from the own-save stream, and then autosaves back through the reducer. Gameplay save data no longer uses browser local storage in normal app wiring.
 
@@ -219,4 +219,4 @@ The client does not need to subscribe to `npc_market_item_config` for normal pla
 
 Trade alliance client code subscribes to public alliance/member/application/progress rows plus sender-scoped private views for alliance chat and reward inbox. Claiming a quest creates a reward inbox row on the server; the client grants the local crystal reward, then calls `collect_trade_alliance_reward` to mark it collected.
 
-Player inbox client code subscribes to `own_player_inbox_mail`. Opening the top-panel `mail` dialog marks visible mail read. Claiming a reward grants currencies/items locally once, persists claimed mail keys inside gameplay save `inboxRewards`, then calls `collect_player_inbox_mail_reward` so server retry confirmations cannot duplicate local rewards.
+Player inbox client code subscribes to `own_player_inbox_mail`. Opening the top-panel `mail` dialog marks visible mail read. Claiming a reward grants currencies/items locally once, force-flushes the updated gameplay save with claimed mail keys inside `inboxRewards`, then calls `collect_player_inbox_mail_reward` so server retry confirmations cannot duplicate local rewards or mark mail collected before the local reward survives.

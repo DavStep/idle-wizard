@@ -1287,7 +1287,11 @@ export const TUTORIAL_STEPS = [
     kind: 'objective',
     pageId: 'brewing',
     objectiveText: 'brew mana tonic',
-    getTargetId: ({ dom, snapshot }) => {
+    getTargetId: ({ currentPageId, dom, snapshot }) => {
+      if (currentPageId !== 'brewing') {
+        return 'page:brewing';
+      }
+
       if (dom.isBrewingRecipePopupOpen()) {
         if (isBrewingRecipeSelected(dom, MANA_TONIC_KEY)) {
           return 'brewing:recipes:close';
@@ -1318,9 +1322,17 @@ export const TUTORIAL_STEPS = [
         return 'brewing:action';
       }
 
+      if (canAddManaTonicSage(snapshot) && !dom.isBrewingHerbInventoryOpen?.()) {
+        return 'brewing:inventory:herbs';
+      }
+
       return canAddManaTonicSage(snapshot) ? `brewing:herb:${SAGE_HERB_KEY}` : null;
     },
-    getHintText: ({ dom, snapshot }) => {
+    getHintText: ({ currentPageId, dom, snapshot }) => {
+      if (currentPageId !== 'brewing') {
+        return 'open brewing';
+      }
+
       if (dom.isBrewingRecipePopupOpen()) {
         if (isBrewingRecipeSelected(dom, MANA_TONIC_KEY)) {
           return 'close recipes';
@@ -1354,6 +1366,10 @@ export const TUTORIAL_STEPS = [
 
       if (isManaTonicCauldronReady(snapshot)) {
         return 'brew mana tonic';
+      }
+
+      if (canAddManaTonicSage(snapshot) && !dom.isBrewingHerbInventoryOpen?.()) {
+        return 'open herbs';
       }
 
       if (getManaTonicCauldronFillCount(snapshot) > 0) {
@@ -1421,6 +1437,10 @@ export const TUTORIAL_STEPS = [
         return MANA_TONIC_EXTRA_SAGE_TARGET_ID;
       }
 
+      if (canAddManaTonicSage(snapshot) && !dom.isBrewingHerbInventoryOpen?.()) {
+        return 'brewing:inventory:herbs';
+      }
+
       return canAddManaTonicSage(snapshot) ? `brewing:herb:${SAGE_HERB_KEY}` : null;
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
@@ -1455,6 +1475,10 @@ export const TUTORIAL_STEPS = [
 
       if (hasExtraManaTonicSage(snapshot)) {
         return 'remove extra sage';
+      }
+
+      if (canAddManaTonicSage(snapshot) && !dom.isBrewingHerbInventoryOpen?.()) {
+        return 'open herbs';
       }
 
       const progress = getManaTonicCauldronFillCount(snapshot);
@@ -3229,8 +3253,19 @@ function isWaitingForCrop(snapshot, seedKey) {
 function hasBrewedManaTonic(snapshot) {
   return (
     getItemQuantity(snapshot, MANA_TONIC_KEY) > 0 ||
-    hasTaskProgressForItem(snapshot, MANA_TONIC_KEY) ||
+    hasTaskProgressForItemType(snapshot, MANA_TONIC_KEY, ['brew', 'turnIn', 'drop', null]) ||
     hasCompletedTaskForItem(snapshot, MANA_TONIC_KEY)
+  );
+}
+
+function hasTaskProgressForItemType(snapshot, itemKey, types = []) {
+  const acceptedTypes = new Set(types);
+
+  return getCurrentTasks(snapshot).some(
+    (task) =>
+      task.itemKey === itemKey &&
+      acceptedTypes.has(getTaskType(task)) &&
+      task.progressQuantity > 0,
   );
 }
 

@@ -365,7 +365,7 @@ describe('GuildPanelManager', () => {
     expect(
       popupLayer.querySelector('.guild-page__popup-panel')?.dataset.popupKind,
     ).toBe('requestStack');
-    expect(popupLayer.querySelector('.style-box__title')?.textContent).toBe('incoming quests');
+    expect(popupLayer.querySelector('.style-box__title')?.textContent).toBe('Incoming Quests');
     expect(popupLayer.querySelector('.guild-page__request-paper-title')?.textContent).toBe(
       'old road escort',
     );
@@ -373,19 +373,45 @@ describe('GuildPanelManager', () => {
       '1/1',
     );
     expect(popupLayer.querySelector('.guild-page__request-stack-next')?.textContent).toBe(
-      'only page',
+      'Only Page',
     );
     expect(popupLayer.querySelector('.guild-page__request-stack-next')?.disabled).toBe(true);
-    const stackRewardRow = [...popupLayer.querySelectorAll('.guild-page__row')].find(
-      (row) => row.querySelector('.guild-page__row-key')?.textContent === 'reward',
+    expect(popupLayer.querySelector('.guild-page__request-list')).not.toBeNull();
+    expect(
+      [...popupLayer.querySelectorAll('.guild-page__request-list-item')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['1Old Road Escort']);
+    expect(
+      popupLayer.querySelector('.guild-page__request-list-item.is-selected .guild-page__request-list-photo'),
+    ).not.toBeNull();
+    expect(popupLayer.querySelector('.guild-page__request-detail-card')).not.toBeNull();
+    expect(
+      [
+        ...popupLayer.querySelectorAll(
+          '.guild-page__popup-actions .guild-page__request-stack-action',
+        ),
+      ].map((button) => button.textContent),
+    ).toEqual(['Post', 'Only Page']);
+    expect(popupLayer.querySelector('.guild-page__request-stack-note')?.textContent).toBe(
+      'Papers rotate to the back when you open the next one.',
     );
-    expect(stackRewardRow?.textContent).toBe('reward20 coin, 5 seeds, or 6 herbs');
+    expect(
+      popupLayer.querySelector('.guild-page__request-paper-content .guild-page__wide-button'),
+    ).toBeNull();
+    expect(
+      popupLayer.querySelector('.style-dialog.guild-page__dialog')?.nextElementSibling,
+    ).toBe(popupLayer.querySelector('.guild-page__popup-actions'));
+    const stackRewardRow = [...popupLayer.querySelectorAll('.guild-page__row')].find(
+      (row) => row.querySelector('.guild-page__row-key')?.textContent === 'Reward',
+    );
+    expect(stackRewardRow?.textContent).toBe('Reward20 coin5 seeds6 herbs');
     expect(stackRewardRow?.querySelector('.style-resource-label--coin')).not.toBeNull();
     expect(stackRewardRow?.querySelector('.style-resource-label--seed')).not.toBeNull();
     expect(stackRewardRow?.querySelector('.style-resource-label--herb')).not.toBeNull();
 
     popupLayer
-      .querySelector('.guild-page__request-paper-content .guild-page__wide-button')
+      .querySelector('.guild-page__request-stack-post')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(gameplayFacade.removeGuildRequest).toHaveBeenCalledWith('request-1');
@@ -489,6 +515,13 @@ describe('GuildPanelManager', () => {
     expect(popupLayer.querySelector('.guild-page__request-paper-page')?.textContent).toBe(
       '1/3',
     );
+    expect(
+      [
+        ...popupLayer.querySelectorAll(
+          '.guild-page__popup-actions .guild-page__request-stack-action',
+        ),
+      ].map((button) => button.textContent),
+    ).toEqual(['Post', 'Next Page']);
 
     popupLayer
       .querySelector('.guild-page__request-stack-next')
@@ -1228,7 +1261,12 @@ describe('GuildPanelManager', () => {
     )?.groups?.body;
 
     expect(boardRule).toMatch(/\bgrid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/);
-    expect(paperRule).toMatch(/\bborder:\s*var\(--style-border\);/);
+    expect(paperRule).toMatch(
+      /\bborder:\s*var\(--guild-page-paper-frame-width\) solid transparent;/,
+    );
+    expect(paperRule).toContain(
+      'border-image-source: var(--guild-page-paper-frame);',
+    );
     expect(paperRule).toMatch(/\bmin-height:\s*106px;/);
     expect(paperMainRule).toMatch(/\bflex-direction:\s*column;/);
     expect(requestLineRule).toMatch(/\bwhite-space:\s*normal;/);
@@ -1242,18 +1280,18 @@ describe('GuildPanelManager', () => {
   it('keeps guild request reward resources on resource colors', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const coinRule = baseCss.match(
-      /\.guild-page__request-reward\s+\[data-resource-color="coin"\]\s*\{(?<body>[^}]*)\}/,
+      /\.guild-page__request-reward\s+\[data-resource-color="coin"\],\s*\.guild-page__request-paper-content\s+\[data-resource-color="coin"\]\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const seedRule = baseCss.match(
-      /\.guild-page__request-reward\s+\[data-resource-color="seed"\]\s*\{(?<body>[^}]*)\}/,
+      /\.guild-page__request-reward\s+\[data-resource-color="seed"\],\s*\.guild-page__request-paper-content\s+\[data-resource-color="seed"\]\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const herbRule = baseCss.match(
-      /\.guild-page__request-reward\s+\[data-resource-color="herb"\]\s*\{(?<body>[^}]*)\}/,
+      /\.guild-page__request-reward\s+\[data-resource-color="herb"\],\s*\.guild-page__request-paper-content\s+\[data-resource-color="herb"\]\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(coinRule).toMatch(/\bcolor:\s*var\(--style-resource-coin\);/);
-    expect(seedRule).toMatch(/\bcolor:\s*var\(--style-resource-seed\);/);
-    expect(herbRule).toMatch(/\bcolor:\s*var\(--style-resource-herb\);/);
+    expect(coinRule).toMatch(/\bcolor:\s*var\(--guild-page-paper-coin\);/);
+    expect(seedRule).toMatch(/\bcolor:\s*var\(--guild-page-paper-seed\);/);
+    expect(herbRule).toMatch(/\bcolor:\s*var\(--guild-page-paper-herb\);/);
   });
 
   it('populates guild settings fields and keeps in-progress edits through refreshes', () => {
@@ -1439,25 +1477,101 @@ describe('GuildPanelManager', () => {
     const requestDialogRule = baseCss.match(
       /\.guild-page__popup-panel\[data-popup-kind="request"\]\s+\.style-dialog\.guild-page__dialog\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const stackUnderlayRule = baseCss.match(
-      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]::before,\s*\.guild-page__popup-panel\[data-popup-kind="requestStack"\]::after\s*\{(?<body>[^}]*)\}/,
+    const stackDialogRule = baseCss.match(
+      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]\s+\.style-dialog\.guild-page__dialog\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackTitleRule = baseCss.match(
+      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]\s+\.style-dialog\.guild-page__dialog\s+>\s+\.style-box__title\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackCloseRule = baseCss.match(
+      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]\s+\.guild-page__close\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackListRule = baseCss.match(
+      /\.guild-page__request-list\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackListItemRule = baseCss.match(
+      /\.guild-page__request-list-item\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackNormalListLabelRule = baseCss.match(
+      /\.guild-page__request-list-item:not\(\.is-selected\)\s+:where\(\.guild-page__request-list-number,\s*\.guild-page__request-list-title\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackSelectedListNumberRule = baseCss.match(
+      /\.guild-page__request-list-item\.is-selected\s+\.guild-page__request-list-number\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackPaperclipRule = baseCss.match(
+      /\.guild-page__request-list-paperclip\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const stackTurnRule = baseCss.match(
-      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]\.is-turning-page\s+\.style-dialog\.guild-page__dialog\s*\{(?<body>[^}]*)\}/,
+      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]\.is-turning-page\s+\.guild-page__request-paper-content\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const stackNextRule = baseCss.match(
-      /\.style-button\.guild-page__request-stack-next\s*\{(?<body>[^}]*)\}/,
+    const stackActionRule = baseCss.match(
+      /\.style-button\.guild-page__request-stack-action\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const questPaperRule = baseCss.match(
+      /\.guild-page__quest-paper\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const requestPaperRule = baseCss.match(
+      /\.guild-page__request-paper-content\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const requestDetailRule = baseCss.match(
+      /\.guild-page__request-detail-card\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const requestDetailPageRule = baseCss.match(
+      /\.guild-page__request-detail-card\s+\.guild-page__request-paper-page\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const requestDetailSealRule = baseCss.match(
+      /\.guild-page__request-detail-seal\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(requestDialogRule).toContain('guild-request-paper-zoom');
-    expect(stackUnderlayRule).toMatch(/\bborder:\s*var\(--style-border-strong\);/);
-    expect(stackUnderlayRule).toMatch(/\bz-index:\s*0;/);
+    expect(stackDialogRule).toContain(
+      'border-image-source: var(--guild-page-quest-dialog-frame);',
+    );
+    expect(stackDialogRule).toMatch(/\bheight:\s*327px;/);
+    expect(stackDialogRule).toMatch(/\bpadding:\s*13px 2px 42px;/);
+    expect(stackTitleRule).toContain('background: var(--guild-page-quest-banner)');
+    expect(stackTitleRule).toMatch(/\btop:\s*-52px;/);
+    expect(stackTitleRule).toMatch(/\bbox-sizing:\s*border-box;/);
+    expect(stackTitleRule).toMatch(/\bpadding:\s*6px 54px 17px;/);
+    expect(stackCloseRule).toContain(
+      'border-image-source: var(--guild-page-quest-close-frame);',
+    );
+    expect(stackCloseRule).toMatch(/\btop:\s*auto;/);
+    expect(stackCloseRule).toMatch(/\bright:\s*-24px;/);
+    expect(stackCloseRule).toMatch(/\bbottom:\s*-60px;/);
+    expect(stackCloseRule).toMatch(/\bz-index:\s*-1;/);
+    expect(stackCloseRule).toMatch(/\bbackground:\s*transparent;/);
+    expect(stackListRule).toMatch(/\bflex-direction:\s*column;/);
+    expect(stackListItemRule).toMatch(/\bcolumn-gap:\s*2px;/);
+    expect(stackNormalListLabelRule).toMatch(/\btranslate:\s*0 -5px;/);
+    expect(stackSelectedListNumberRule).toMatch(/\btranslate:\s*0 -3px;/);
+    expect(stackPaperclipRule).toMatch(/\btop:\s*-14px;/);
+    expect(baseCss).not.toContain('--guild-page-quest-selected-frame');
+    expect(baseCss).not.toMatch(/\.guild-page__request-list-item\.is-selected::after/);
     expect(stackTurnRule).toContain('guild-request-page-under');
-    expect(stackNextRule).toMatch(/\bfont-size:\s*var\(--style-box-border-label-font-size\);/);
+    expect(stackActionRule).toContain(
+      'border-image-source: var(--guild-page-quest-button-brown-frame);',
+    );
+    expect(stackActionRule).toMatch(/\bbackground:\s*transparent;/);
+    expect(questPaperRule).toContain(
+      'border-image-source: var(--guild-page-paper-frame);',
+    );
+    expect(requestPaperRule).toContain(
+      'border-image-source: var(--guild-page-paper-frame);',
+    );
+    expect(requestDetailRule).toContain(
+      'border-image-source: var(--guild-page-quest-paper-frame);',
+    );
+    expect(requestDetailPageRule).toMatch(/\btop:\s*9px;/);
+    expect(requestDetailPageRule).toMatch(/\bright:\s*9px;/);
+    expect(requestDetailSealRule).toMatch(/\bright:\s*9px;/);
+    expect(requestDetailSealRule).toMatch(/\bbottom:\s*9px;/);
+    expect(requestDetailSealRule).toMatch(/\bwidth:\s*28px;/);
     expect(baseCss).toMatch(/@keyframes guild-request-paper-zoom/);
+    expect(baseCss).toMatch(/@keyframes guild-request-page-settle/);
     expect(baseCss).toMatch(/@keyframes guild-request-page-under/);
     expect(baseCss).toMatch(
-      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]\.is-turning-page[\s\S]*animation:\s*none;/,
+      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]\s+\.guild-page__request-paper-content[\s\S]*animation:\s*none;/,
     );
   });
 

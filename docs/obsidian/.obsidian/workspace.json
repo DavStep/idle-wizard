@@ -4,21 +4,24 @@
     "type": "split",
     "children": [
       {
-        "id": "c345abd8d7316cfa",
+        "id": "60b1e0b3da9ea0e8",
         "type": "tabs",
         "children": [
           {
-            "id": "6985298efc4edd55",
+            "id": "00820ef59f00cfc9",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "canvas",
               "state": {
-                "file": "mechanics/Core Loop.md",
-                "mode": "source",
-                "source": false
+                "file": "Idle Wizard.canvas",
+                "viewState": {
+                  "x": 850,
+                  "y": 30,
+                  "zoom": -1.4404623820707079
+                }
               },
-              "icon": "lucide-file",
-              "title": "Core Loop"
+              "icon": "lucide-layout-dashboard",
+              "title": "Idle Wizard"
             }
           }
         ]
@@ -164,13 +167,25 @@
               "icon": "lucide-list",
               "title": "Outline of Tutorial"
             }
+          },
+          {
+            "id": "b0f079e4723cd180",
+            "type": "leaf",
+            "state": {
+              "type": "file-properties",
+              "state": {
+                "file": "Idle Wizard.canvas"
+              },
+              "icon": "lucide-info",
+              "title": "File properties for Idle Wizard"
+            }
           }
-        ]
+        ],
+        "currentTab": 5
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -183,43 +198,43 @@
       "bases:Create new base": false
     }
   },
-  "active": "6985298efc4edd55",
+  "active": "00820ef59f00cfc9",
   "lastOpenFiles": [
-    "mechanics/Guilds.md",
-    "balance/Level Curve.md",
-    "balance/Market Tuning.md",
+    "World Index.base",
+    "README.md",
+    "Idle Wizard.canvas",
+    "Home.md",
+    "tutorial/Tutorial.canvas",
+    "tutorial/Home.md",
+    "tutorial/Tutorial Index.base",
+    "mechanics/Core Loop.md",
+    "engineering-liveops/experience/Architecture.md",
     "balance/Prestige Tuning.md",
+    "balance/Market Tuning.md",
     "balance/Home.md",
-    "balance/Capacity Gates.md",
     "balance/Balance Watchlist.md",
     "balance/Balance Sources.md",
+    "gdd/GDD Open Questions.md",
+    "gdd/Home.md",
+    "gdd/GDD.canvas",
+    "gdd/GDD Index.base",
+    "gdd/Interface Style.md",
+    "gdd/Player Journey.md",
+    "gdd/Room Map.md",
+    "mechanics/Guilds.md",
+    "balance/Level Curve.md",
+    "balance/Capacity Gates.md",
     "balance/Balance Index.base",
     "balance/Balance.canvas",
     "tutorial/03 Branches/Coin Shortfall Branch.md",
     "tutorial/02 Rules/Tutorial Surface Rules.md",
     "engineering-liveops/Architecture Boundaries.md",
     "Experiences.md",
-    "tutorial/Home.md",
     "tutorial/05 Risks/Tutorial Risks.md",
-    "tutorial/Tutorial Index.base",
-    "tutorial/Tutorial.canvas",
     "engineering-liveops/Backend Authority.md",
     "engineering-liveops/Engineering Index.base",
     "engineering-liveops/Engineering Liveops.canvas",
     "engineering-liveops/Experience System.md",
-    "engineering-liveops/Experience Index.md",
-    "engineering-liveops/experience/Style.md",
-    "engineering-liveops/experience/Product Shape.md",
-    "engineering-liveops/experience/Gameplay Economy.md",
-    "engineering-liveops/experience/Development Operations.md",
-    "engineering-liveops/experience/Communication.md",
-    "engineering-liveops/experience/Backend And Android.md",
-    "engineering-liveops/experience/Architecture.md",
-    "engineering-liveops/experience",
-    "tutorial/01 Flow/Level 1 Introduction.md",
-    "tutorial/00 Source/Tutorial Source Map.md",
-    "gdd/GDD.canvas",
-    "gdd/GDD Index.base",
-    "Idle Wizard.canvas"
+    "engineering-liveops/experience"
   ]
 }

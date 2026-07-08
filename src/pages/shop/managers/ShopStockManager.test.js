@@ -87,11 +87,12 @@ describe('ShopStockManager', () => {
       'sage seed (3)',
     );
     expect(seedBox?.querySelector('.shop-page__stock-buy-button')?.textContent).toBe(
-      '1.25 coin',
+      'buy 1.25 coin',
     );
     expect(
       seedBox
         .querySelector('.shop-page__stock-buy-button')
+        ?.querySelector('[data-resource-color]')
         ?.getAttribute('data-resource-color'),
     ).toBe('coin');
     expect(seedBox?.querySelector('.shop-page__stock-buy-button')?.disabled).toBe(
@@ -188,7 +189,7 @@ describe('ShopStockManager', () => {
 
     const button = stage.querySelector('.shop-page__stock-buy-button');
 
-    expect(button?.textContent).toBe('1.25 coin');
+    expect(button?.textContent).toBe('buy 1.25 coin');
     expect(button?.disabled).toBe(true);
     expect(button?.getAttribute('data-resource-color')).toBeNull();
 
@@ -236,7 +237,7 @@ describe('ShopStockManager', () => {
 
     const button = stage.querySelector('.shop-page__stock-buy-button');
 
-    expect(button?.textContent).toBe('12.5 coin');
+    expect(button?.textContent).toBe('buy 12.5 coin');
     expect(button?.disabled).toBe(true);
     expect(button?.getAttribute('data-resource-color')).toBeNull();
 
@@ -409,6 +410,12 @@ describe('ShopStockManager', () => {
 
     expect(baseCss).toMatch(
       /\.style-button\.shop-page__stock-buy-button\s*\{[^}]*border-image:\s*none;/s,
+    );
+    expect(baseCss).toMatch(
+      /\.shop-page__stock-row\s*\{[^}]*--shop-page-stock-buy-width:\s*86px;/s,
+    );
+    expect(baseCss).toMatch(
+      /\.style-button\.shop-page__stock-buy-button\s*\{[^}]*min-width:\s*var\(--shop-page-stock-buy-width\);/s,
     );
     expect(baseCss).toMatch(
       /:root\[data-style-theme="midnight"\][\s\S]*?\.style-button\.shop-page__stock-buy-button[\s\S]*?\{\s*border-image:\s*none;/,

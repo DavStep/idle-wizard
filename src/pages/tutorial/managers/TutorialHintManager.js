@@ -2233,6 +2233,13 @@ export class TutorialHintManager {
       return null;
     }
 
+    if (getTutorialTargetId(target) === 'workshop:summonSeed') {
+      return {
+        direction: 'up',
+        targetRect,
+      };
+    }
+
     const visibleTargetRects = [...this.stage.querySelectorAll('[data-tutorial-id]')]
       .filter(
         (element) =>
@@ -3474,7 +3481,7 @@ function isRenderableElement(element, root = null, { requireVisibleOpacity = tru
 }
 
 function getTargetCueAnchor(target) {
-  const targetId = target?.dataset?.tutorialId ?? target?.getAttribute?.('data-tutorial-id');
+  const targetId = getTutorialTargetId(target);
   const anchorSelector =
     TARGET_CUE_ANCHOR_SELECTORS.get(targetId) ?? getDynamicTargetCueAnchorSelector(targetId);
   const anchor = anchorSelector ? target?.querySelector?.(anchorSelector) : null;
@@ -3484,6 +3491,10 @@ function getTargetCueAnchor(target) {
   }
 
   return target;
+}
+
+function getTutorialTargetId(target) {
+  return target?.dataset?.tutorialId ?? target?.getAttribute?.('data-tutorial-id') ?? '';
 }
 
 function getDynamicTargetCueAnchorSelector(targetId) {

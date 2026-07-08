@@ -1256,9 +1256,7 @@ export class WorkshopTaskManager {
         if (valueLines.length > 0) {
           value.classList.add('workshop-page__level-payoff-value--list');
           value.replaceChildren(
-            ...valueLines.map((line) =>
-              this.createLevelPayoffValueLine(line, valueLinePageIds[line]),
-            ),
+            ...this.createLevelPayoffValueNodes(valueLines, valueLinePageIds),
           );
         } else {
           setResourceIconText(value, row.value);
@@ -1268,6 +1266,22 @@ export class WorkshopTaskManager {
         return root;
       }),
     );
+  }
+
+  createLevelPayoffValueNodes(valueLines, valueLinePageIds = {}) {
+    return valueLines.flatMap((line, index) => {
+      const nodes = [];
+
+      if (index > 0) {
+        const separator = document.createElement('span');
+        separator.hidden = true;
+        separator.textContent = ', ';
+        nodes.push(separator);
+      }
+
+      nodes.push(this.createLevelPayoffValueLine(line, valueLinePageIds[line]));
+      return nodes;
+    });
   }
 
   createLevelPayoffValueLine(line, pageId) {

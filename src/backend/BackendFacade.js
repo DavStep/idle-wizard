@@ -118,10 +118,18 @@ export class BackendFacade {
           this.playerSyncFacade.markGameplaySaveHydrated();
 
           try {
-            await onGameplaySaveReady?.({
+            const readyPayload = {
               save: result?.save ?? null,
               updatedAtMs: result?.updatedAtMs ?? 0,
-            });
+            };
+            const pendingHydratedSave =
+              this.gameplaySaveFacade.getPendingHydratedSave?.() ?? null;
+
+            if (pendingHydratedSave) {
+              readyPayload.pendingHydratedSave = pendingHydratedSave;
+            }
+
+            await onGameplaySaveReady?.(readyPayload);
           } catch (error) {
             if (accountSessionInactive) {
               return;

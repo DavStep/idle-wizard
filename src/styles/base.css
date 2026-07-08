@@ -186,6 +186,31 @@
   --workshop-secondary-button-row-gap: 40px;
   --workshop-secondary-button-width: 100px;
   --workshop-secondary-button-half-width: 50px;
+  --workshop-panel-button-width: 45.5px;
+  --workshop-panel-button-height: 80.25px;
+  --workshop-panel-button-open-height: 68.25px;
+  --workshop-panel-button-label-bottom: 3.9px;
+  --workshop-panel-button-label-line-height: calc(
+    var(--style-box-border-label-line-height) * 0.8
+  );
+  --workshop-panel-button-label-offset-y: calc(
+    var(--workshop-panel-button-height) -
+      var(--workshop-panel-button-label-bottom) -
+      var(--workshop-panel-button-label-line-height)
+  );
+  --workshop-panel-button-row-shift-y: 60px;
+  --workshop-panel-button-row-1-label-y: calc(
+    155.5px + var(--workshop-panel-button-label-offset-y) +
+      var(--workshop-panel-button-row-shift-y)
+  );
+  --workshop-panel-button-row-2-label-y: calc(
+    207.75px + var(--workshop-panel-button-label-offset-y) +
+      var(--workshop-panel-button-row-shift-y)
+  );
+  --workshop-panel-button-row-3-label-y: calc(
+    260px + var(--workshop-panel-button-label-offset-y) +
+      var(--workshop-panel-button-row-shift-y)
+  );
   --style-main-box-width: 280px;
   --style-room-nav-button-width: 100px;
   --brewing-page-guide-sequence-height: var(--style-row-min-height);
@@ -223,24 +248,40 @@
   );
   --brewing-page-cauldron-action-height: 28px;
   --brewing-page-cauldron-actions-gap: 4px;
+  --brewing-page-cauldron-action-column-gap: 6px;
+  --brewing-page-cauldron-side-actions-gap: 8px;
+  --brewing-page-cauldron-action-button-width: var(--style-button-width);
+  --brewing-page-cauldron-action-button-height: var(
+    --brewing-page-cauldron-action-height
+  );
+  --brewing-page-cauldron-action-button-frame: url("/ui/player-card-button-brown-fill-9slice.png");
+  --brewing-page-cauldron-action-button-disabled-frame: url("/ui/player-card-button-brown-dark-fill-9slice.png");
+  --brewing-page-cauldron-action-button-slice: 31 29 31 29 fill;
+  --brewing-page-cauldron-action-button-border-image-width: 5px 6px;
+  --brewing-page-cauldron-action-button-text: #f3e1d2;
+  --brewing-page-cauldron-action-button-muted-text: #d8bba5;
+  --brewing-page-cauldron-action-button-disabled-text: #c9aa95;
   --brewing-page-cauldron-recipe-box-width: 216px;
   --brewing-page-cauldron-art-width: 178px;
   --brewing-page-cauldron-art-scale: 0.9;
+  --brewing-page-cauldron-art-extra-height: 38px;
   --brewing-page-cauldron-art-height: calc(
     var(--brewing-page-cauldron-height) +
-      var(--brewing-page-cauldron-action-height) +
-      var(--brewing-page-cauldron-actions-gap) + 6px
+      var(--brewing-page-cauldron-art-extra-height)
   );
-  --brewing-page-cauldron-block-height: calc(
-    var(--brewing-page-cauldron-art-height) +
-      var(--brewing-page-cauldron-actions-gap) +
-      var(--brewing-page-cauldron-action-height)
+  --brewing-page-cauldron-block-height: var(
+    --brewing-page-cauldron-art-height
   );
   --brewing-page-cauldron-box-gap: 14px;
   --brewing-page-cauldron-box-width: calc(
     var(--brewing-page-cauldron-art-width) +
       var(--brewing-page-cauldron-box-gap) +
       var(--brewing-page-cauldron-recipe-box-width)
+  );
+  --brewing-page-cauldron-node-width: calc(
+    var(--brewing-page-cauldron-box-width) +
+      var(--brewing-page-cauldron-side-actions-gap) +
+      var(--brewing-page-cauldron-action-button-width)
   );
   --brewing-page-herbs-box-clearance: 0px;
   --brewing-page-herb-rows-height: 132px;
@@ -280,6 +321,28 @@
   --style-motion-ease-soft: cubic-bezier(0.39, 0.575, 0.565, 1);
   --style-motion-ease-rubber: cubic-bezier(0.39, 0.575, 0.565, 1);
   --style-motion-ease-expand-rubber: cubic-bezier(0.22, 1, 0.36, 1);
+  --guild-page-paper-frame: url("/ui/guild-quest-paper-9slice.png");
+  --guild-page-paper-frame-slice: 32 fill;
+  --guild-page-paper-frame-width: 5px;
+  --guild-page-paper-surface: #f6f3ec;
+  --guild-page-paper-text: #221d17;
+  --guild-page-paper-muted: #665e54;
+  --guild-page-paper-coin: oklch(45% 0.13 96);
+  --guild-page-paper-seed: oklch(45% 0.08 58);
+  --guild-page-paper-herb: oklch(42% 0.12 145);
+  --guild-page-quest-dialog-frame: url("/ui/guild-quest/dialog-panel-9slice.png");
+  --guild-page-quest-dialog-frame-slice: 44 fill;
+  --guild-page-quest-paper-frame: url("/ui/guild-quest/paper-9slice.png");
+  --guild-page-quest-paper-frame-slice: 42 fill;
+  --guild-page-quest-list-row-frame: url("/ui/guild-quest/list-row-9slice.png");
+  --guild-page-quest-list-row-frame-slice: 32 24 32 24 fill;
+  --guild-page-quest-button-green-frame: url("/ui/guild-quest/button-green-9slice.png");
+  --guild-page-quest-button-brown-frame: url("/ui/guild-quest/button-brown-9slice.png");
+  --guild-page-quest-button-frame-slice: 44 28 44 28 fill;
+  --guild-page-quest-close-frame: url("/ui/guild-quest/close-panel-9slice.png");
+  --guild-page-quest-close-frame-slice: 28 fill;
+  --guild-page-quest-banner: url("/ui/guild-quest/banner.png");
+  --guild-page-quest-close-x: url("/ui/guild-quest/close-x.png");
   --style-block-shadow: 5px 5px 5px var(--style-muted);
   --style-dialog-shadow: var(--style-block-shadow);
   --style-overlay-shadow: 5px 5px 5px var(--style-muted);
@@ -4959,11 +5022,18 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks,
 .workshop-page__ui-layer > .workshop-page__world-notice {
+  --workshop-panel-button-label-row-y: var(
+    --workshop-panel-button-row-3-label-y
+  );
   position: absolute;
   z-index: 1;
-  top: calc(var(--style-room-content-top) + 260px);
-  width: 45.5px;
-  height: 80.25px;
+  top: calc(
+    var(--style-room-content-top) +
+      var(--workshop-panel-button-label-row-y) -
+      var(--workshop-panel-button-label-offset-y)
+  );
+  width: var(--workshop-panel-button-width);
+  height: var(--workshop-panel-button-height);
   margin: 0;
   pointer-events: none;
 }
@@ -4980,22 +5050,31 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__ui-layer > .workshop-page__leaderboard,
 .workshop-page__ui-layer > .workshop-page__discoveries,
 .workshop-page__ui-layer > .workshop-page__trade-alliance {
+  --workshop-panel-button-label-row-y: var(
+    --workshop-panel-button-row-1-label-y
+  );
   position: absolute;
   z-index: 1;
-  width: 45.5px;
-  height: 80.25px;
+  top: calc(
+    var(--style-room-content-top) +
+      var(--workshop-panel-button-label-row-y) -
+      var(--workshop-panel-button-label-offset-y)
+  );
+  width: var(--workshop-panel-button-width);
+  height: var(--workshop-panel-button-height);
   margin: 0;
   pointer-events: none;
 }
 
 .workshop-page__ui-layer > .workshop-page__mail {
-  top: calc(var(--style-room-content-top) + 155.5px);
   right: var(--style-room-chrome-edge);
 }
 
 .workshop-page__ui-layer > .workshop-page__leaderboard,
 .workshop-page__ui-layer > .workshop-page__discoveries {
-  top: calc(var(--style-room-content-top) + 207.75px);
+  --workshop-panel-button-label-row-y: var(
+    --workshop-panel-button-row-2-label-y
+  );
 }
 
 .workshop-page__ui-layer > .workshop-page__leaderboard {
@@ -5007,7 +5086,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__ui-layer > .workshop-page__trade-alliance {
-  top: calc(var(--style-room-content-top) + 155.5px);
   left: var(--style-room-chrome-edge);
 }
 
@@ -5055,8 +5133,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 45.5px;
-  height: 68.25px;
+  width: var(--workshop-panel-button-width);
+  height: var(--workshop-panel-button-open-height);
   padding: 0;
   margin: 0;
   appearance: none;
@@ -5163,16 +5241,16 @@ span.room-seed-pack-composite .room-seed-pack-item {
   position: absolute;
   left: 0;
   right: auto;
-  bottom: 3.9px;
+  bottom: var(--workshop-panel-button-label-bottom);
   z-index: 2;
   display: inline-block;
-  min-height: calc(var(--style-box-border-label-line-height) * 0.8);
+  min-height: var(--workshop-panel-button-label-line-height);
   padding: 0;
   color: var(--style-text);
   font-family: var(--style-font);
   font-size: calc(var(--style-box-border-label-font-size) * 0.8);
   font-weight: normal;
-  line-height: calc(var(--style-box-border-label-line-height) * 0.8);
+  line-height: var(--workshop-panel-button-label-line-height);
   white-space: nowrap;
   background: transparent;
   border: 0;
@@ -5597,7 +5675,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   position: absolute;
   top: 0;
   left: 0;
-  width: 560px;
+  width: 670px;
   height: 1960px;
   transform-origin: 0 0;
   transform: translate3d(
@@ -5821,24 +5899,25 @@ span.room-seed-pack-composite .room-seed-pack-item {
   );
   --brewing-page-cauldron-art-height: calc(
     var(--brewing-page-cauldron-height) +
-      var(--brewing-page-cauldron-action-height) +
-      var(--brewing-page-cauldron-actions-gap) + 6px
+      var(--brewing-page-cauldron-art-extra-height)
   );
-  --brewing-page-cauldron-block-height: calc(
-    var(--brewing-page-cauldron-art-height) +
-      var(--brewing-page-cauldron-actions-gap) +
-      var(--brewing-page-cauldron-action-height)
+  --brewing-page-cauldron-block-height: var(
+    --brewing-page-cauldron-art-height
   );
   position: absolute;
   box-sizing: border-box;
-  width: var(--brewing-page-cauldron-box-width);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--brewing-page-cauldron-side-actions-gap);
+  width: var(--brewing-page-cauldron-node-width);
   min-height: var(--brewing-page-cauldron-block-height);
   cursor: pointer;
 }
 
 .brewing-page__cauldron-boxes {
   display: block;
-  width: 100%;
+  flex: 0 0 var(--brewing-page-cauldron-box-width);
+  width: var(--brewing-page-cauldron-box-width);
 }
 
 .brewing-page__cauldron-recipe-box {
@@ -5848,6 +5927,10 @@ span.room-seed-pack-composite .room-seed-pack-item {
   min-height: var(--brewing-page-cauldron-block-height);
   max-height: none;
   padding: 5px 10px 6px;
+}
+
+.brewing-page__cauldron.is-locked .brewing-page__cauldron-recipe-box {
+  background: transparent;
 }
 
 .brewing-page__cauldron-content {
@@ -5895,6 +5978,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   height: var(--brewing-page-cauldron-art-height);
   min-height: var(--brewing-page-cauldron-art-height);
   text-align: center;
+  background: transparent;
 }
 
 .brewing-page__cauldron-locked-box[hidden] {
@@ -5911,7 +5995,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   overflow: visible;
   background-color: transparent;
   border: var(--style-border);
-  border-style: dashed;
+  border-style: dotted;
   border-color: color-mix(in srgb, var(--style-stroke) 45%, transparent);
 }
 
@@ -6262,8 +6346,9 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .brewing-page__actions {
   position: relative;
   z-index: 2;
-  width: 100%;
-  margin-top: var(--brewing-page-cauldron-actions-gap);
+  flex: 0 0 var(--brewing-page-cauldron-action-button-width);
+  width: var(--brewing-page-cauldron-action-button-width);
+  margin-top: 0;
   background: transparent;
   font-size: var(--style-box-border-label-font-size);
   line-height: var(--style-box-border-label-line-height);
@@ -6277,7 +6362,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .brewing-page__actions.is-centered .brewing-page__action-row {
-  justify-content: center;
+  align-items: stretch;
 }
 
 .brewing-page__cauldron.is-locked .brewing-page__actions {
@@ -6286,11 +6371,12 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .brewing-page__action-row {
   display: flex;
+  flex-direction: column;
   align-items: stretch;
-  gap: 6px;
+  gap: var(--brewing-page-cauldron-action-column-gap);
   width: 100%;
-  height: var(--brewing-page-cauldron-action-height);
-  min-height: var(--brewing-page-cauldron-action-height);
+  height: auto;
+  min-height: 0;
 }
 
 .style-button.brewing-page__action-button,
@@ -6300,24 +6386,32 @@ span.room-seed-pack-composite .room-seed-pack-item {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: var(--style-button-width);
-  max-width: var(--style-button-width);
-  min-width: var(--style-button-width);
-  height: 28px;
+  width: var(--brewing-page-cauldron-action-button-width);
+  max-width: var(--brewing-page-cauldron-action-button-width);
+  min-width: var(--brewing-page-cauldron-action-button-width);
+  height: var(--brewing-page-cauldron-action-button-height);
   padding: 5px 8px;
   margin: 0;
   font-size: var(--style-font-size);
   line-height: normal;
-  background: var(--style-surface);
+  color: var(--brewing-page-cauldron-action-button-text);
+  background: transparent;
   border: var(--style-border);
+  border-color: transparent;
+  border-image-source: var(--brewing-page-cauldron-action-button-frame);
+  border-image-slice: var(--brewing-page-cauldron-action-button-slice);
+  border-image-width: var(
+    --brewing-page-cauldron-action-button-border-image-width
+  );
+  border-image-repeat: stretch;
   vertical-align: middle;
   white-space: nowrap;
 }
 
 .style-button.brewing-page__cauldron-select-recipe-text {
-  width: 78px;
-  min-width: 78px;
-  max-width: 78px;
+  width: var(--brewing-page-cauldron-action-button-width);
+  min-width: var(--brewing-page-cauldron-action-button-width);
+  max-width: var(--brewing-page-cauldron-action-button-width);
 }
 
 .brewing-page__action-button-label {
@@ -6327,21 +6421,30 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .brewing-page__action-button-cost {
   margin-left: 3px;
   margin-top: 0;
-  color: var(--style-muted);
+  color: var(--brewing-page-cauldron-action-button-muted-text);
   font-size: inherit;
   font-variant-numeric: tabular-nums lining-nums;
   line-height: inherit;
 }
 
-.style-button.brewing-page__action-button:active:not(:disabled):not(
-    [aria-disabled="true"]
-  ) {
-  background: var(--style-active-surface);
+.brewing-page__actions
+  .style-button.brewing-page__action-button:is(:active, .is-pressing):not(
+    :disabled
+  ):not([aria-disabled="true"]),
+.brewing-page__actions
+  .style-button.brewing-page__cauldron-select-recipe-text:is(
+    :active,
+    .is-pressing
+  ):not(:disabled):not([aria-disabled="true"]) {
+  background: transparent;
 }
 
 .style-button.brewing-page__action-button[aria-disabled="true"],
 .style-button.brewing-page__action-button:disabled {
-  border-color: var(--style-disabled);
+  color: var(--brewing-page-cauldron-action-button-disabled-text);
+  background: transparent;
+  border-color: transparent;
+  border-image-source: var(--brewing-page-cauldron-action-button-disabled-frame);
 }
 
 .style-button.brewing-page__action-button[aria-disabled="true"]
@@ -6349,6 +6452,33 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .style-button.brewing-page__action-button:disabled
   .brewing-page__action-button-cost {
   color: inherit;
+}
+
+.brewing-page__actions
+  .style-button.brewing-page__action-button
+  .brewing-page__action-button-cost[data-resource-color="coin"],
+.brewing-page__actions
+  .style-button.brewing-page__action-button
+  .brewing-page__action-button-cost[data-resource-color="coin"]
+  .style-resource-label--coin {
+  color: var(--style-resource-coin);
+}
+
+.brewing-page__action-button-cost[data-resource-color="coin"]
+  .style-resource-label__icon {
+  display: inline-block;
+}
+
+.brewing-page__action-button-cost[data-resource-color="coin"]
+  .style-resource-label__amount
+  + .style-resource-label__spacer
+  + .style-resource-label__icon {
+  margin-left: var(--style-icon-label-gap);
+}
+
+.brewing-page__action-button-cost[data-resource-color="coin"]
+  :where(.style-resource-label__text, .style-resource-label__spacer) {
+  display: none;
 }
 
 .brewing-page__item-drag-ghost,
@@ -6414,18 +6544,22 @@ span.room-seed-pack-composite .room-seed-pack-item {
   }
 }
 
-.style-box .brewing-page__cauldron-select-recipe-text[hidden] {
+.style-button.brewing-page__cauldron-select-recipe-text[hidden],
+.style-button.brewing-page__quantity-button[hidden],
+.style-button.brewing-page__auto-button[hidden] {
   display: none;
 }
 
-.style-box .brewing-page__cauldron-select-recipe-text:disabled,
-.style-box .brewing-page__cauldron-select-recipe-text[aria-disabled="true"] {
-  color: var(--style-disabled);
+.style-button.brewing-page__cauldron-select-recipe-text:disabled,
+.style-button.brewing-page__cauldron-select-recipe-text[aria-disabled="true"] {
+  color: var(--brewing-page-cauldron-action-button-disabled-text);
+  background: transparent;
+  border-color: transparent;
+  border-image-source: var(--brewing-page-cauldron-action-button-disabled-frame);
   cursor: default;
 }
 
-.style-box
-  .brewing-page__cauldron-select-recipe-text:not(:disabled):not(
+.style-button.brewing-page__cauldron-select-recipe-text:not(:disabled):not(
     [aria-disabled="true"]
   ) {
   cursor: pointer;
@@ -6673,9 +6807,9 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__leaderboard-button-label,
 .workshop-page__discoveries-button-label,
 .workshop-page__trade-alliance-button-label {
-  min-height: calc(var(--style-box-border-label-line-height) * 0.8);
+  min-height: var(--workshop-panel-button-label-line-height);
   font-size: calc(var(--style-box-border-label-font-size) * 0.8);
-  line-height: calc(var(--style-box-border-label-line-height) * 0.8);
+  line-height: var(--workshop-panel-button-label-line-height);
   transform: none;
 }
 
@@ -7073,7 +7207,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__stats-row {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(0, 1fr) max-content;
   column-gap: var(--style-row-column-gap);
   align-items: center;
   min-height: var(--style-row-min-height);
@@ -10619,9 +10753,10 @@ div.workshop-page__discovery-row {
 }
 
 .brewing-page__quantity-options {
-  display: inline-flex;
+  display: flex;
   align-items: stretch;
   justify-content: flex-end;
+  width: 100%;
 }
 
 .style-button.brewing-page__quantity-button,
@@ -10630,41 +10765,63 @@ div.workshop-page__discovery-row {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 28px;
+  width: var(--brewing-page-cauldron-action-button-width);
+  max-width: var(--brewing-page-cauldron-action-button-width);
+  min-width: var(--brewing-page-cauldron-action-button-width);
+  height: var(--brewing-page-cauldron-action-button-height);
   justify-self: end;
-  padding: 5px 0;
+  padding: 5px 8px;
   margin: 0;
   appearance: none;
-  color: var(--style-text);
+  color: var(--brewing-page-cauldron-action-button-text);
   font-family: var(--style-font);
   font-size: var(--style-font-size);
   font-weight: normal;
   line-height: normal;
   text-align: center;
-  background: var(--style-surface);
+  background: transparent;
   border: var(--style-border);
+  border-color: transparent;
+  border-image-source: var(--brewing-page-cauldron-action-button-frame);
+  border-image-slice: var(--brewing-page-cauldron-action-button-slice);
+  border-image-width: var(
+    --brewing-page-cauldron-action-button-border-image-width
+  );
+  border-image-repeat: stretch;
   border-radius: 0;
   vertical-align: middle;
 }
 
 .style-button.brewing-page__quantity-button {
-  width: 54px;
-  min-width: 54px;
+  width: var(--brewing-page-cauldron-action-button-width);
+  min-width: var(--brewing-page-cauldron-action-button-width);
   font-variant-numeric: tabular-nums lining-nums;
 }
 
 .style-button.brewing-page__auto-button {
-  width: 68px;
-  min-width: 68px;
+  width: var(--brewing-page-cauldron-action-button-width);
+  min-width: var(--brewing-page-cauldron-action-button-width);
 }
 
-.style-button.brewing-page__quantity-button:active:not(:disabled):not(
-    [aria-disabled="true"]
-  ),
-.style-button.brewing-page__auto-button:active:not(:disabled):not(
-    [aria-disabled="true"]
-  ) {
-  background: var(--style-active-surface);
+.brewing-page__actions
+  .style-button.brewing-page__quantity-button:is(:active, .is-pressing):not(
+    :disabled
+  ):not([aria-disabled="true"]),
+.brewing-page__actions
+  .style-button.brewing-page__auto-button:is(:active, .is-pressing):not(
+    :disabled
+  ):not([aria-disabled="true"]) {
+  background: transparent;
+}
+
+.style-button.brewing-page__quantity-button[aria-disabled="true"],
+.style-button.brewing-page__quantity-button:disabled,
+.style-button.brewing-page__auto-button[aria-disabled="true"],
+.style-button.brewing-page__auto-button:disabled {
+  color: var(--brewing-page-cauldron-action-button-disabled-text);
+  background: transparent;
+  border-color: transparent;
+  border-image-source: var(--brewing-page-cauldron-action-button-disabled-frame);
 }
 
 .style-button.brewing-page__quantity-button:focus,
@@ -11274,9 +11431,11 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__stock-row {
+  --shop-page-stock-buy-width: 86px;
+
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(
-      var(--style-row-right-slot-width),
+      var(--shop-page-stock-buy-width),
       max-content
     );
   align-items: center;
@@ -11300,7 +11459,7 @@ div.workshop-page__discovery-row {
 .shop-page__stock-row .row_val {
   float: none;
   justify-self: end;
-  min-width: var(--style-row-right-slot-width);
+  min-width: var(--shop-page-stock-buy-width);
   text-align: right;
 }
 
@@ -12357,11 +12516,17 @@ div.workshop-page__discovery-row {
 .guild-page__quest-paper {
   position: relative;
   display: flex;
+  box-sizing: border-box;
   min-width: 0;
   min-height: 106px;
-  padding: 6px 7px calc(var(--style-box-border-label-line-height) + 5px);
-  background: var(--style-surface);
-  border: var(--style-border);
+  padding: 7px 8px calc(var(--style-box-border-label-line-height) + 6px);
+  color: var(--guild-page-paper-text);
+  background: var(--guild-page-paper-surface);
+  border: var(--guild-page-paper-frame-width) solid transparent;
+  border-image-source: var(--guild-page-paper-frame);
+  border-image-slice: var(--guild-page-paper-frame-slice);
+  border-image-width: var(--guild-page-paper-frame-width);
+  border-image-repeat: stretch;
   transform-origin: center;
 }
 
@@ -12369,7 +12534,7 @@ div.workshop-page__discovery-row {
 .guild-page__quest-paper-action {
   min-width: 0;
   padding: 0;
-  color: var(--style-text);
+  color: inherit;
   font: inherit;
   background: transparent;
   border: 0;
@@ -12389,14 +12554,15 @@ div.workshop-page__discovery-row {
   position: absolute;
   right: 7px;
   bottom: 2px;
-  color: var(--style-muted);
+  color: var(--guild-page-paper-muted);
   font-size: var(--style-box-border-label-font-size);
   line-height: var(--style-box-border-label-line-height);
   text-align: right;
 }
 
 .guild-page__quest-paper:focus-within {
-  border: var(--style-border-strong);
+  outline: 1px solid var(--guild-page-paper-text);
+  outline-offset: -5px;
 }
 
 .guild-page__quest-paper-main:focus-visible,
@@ -12422,26 +12588,38 @@ div.workshop-page__discovery-row {
 
 .guild-page__request-meta,
 .guild-page__request-reward {
-  color: var(--style-muted);
+  color: var(--guild-page-paper-muted);
 }
 
-.guild-page__request-reward [data-resource-color="coin"] {
-  color: var(--style-resource-coin);
+.guild-page__request-reward [data-resource-color="coin"],
+.guild-page__request-paper-content [data-resource-color="coin"] {
+  color: var(--guild-page-paper-coin);
 }
 
-.guild-page__request-reward [data-resource-color="seed"] {
-  color: var(--style-resource-seed);
+.guild-page__request-reward [data-resource-color="seed"],
+.guild-page__request-paper-content [data-resource-color="seed"] {
+  color: var(--guild-page-paper-seed);
 }
 
-.guild-page__request-reward [data-resource-color="herb"] {
-  color: var(--style-resource-herb);
+.guild-page__request-reward [data-resource-color="herb"],
+.guild-page__request-paper-content [data-resource-color="herb"] {
+  color: var(--guild-page-paper-herb);
 }
 
 .guild-page__request-paper-content {
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   gap: 8px;
   min-height: 0;
+  padding: 9px 10px 10px;
+  color: var(--guild-page-paper-text);
+  background: var(--guild-page-paper-surface);
+  border: var(--guild-page-paper-frame-width) solid transparent;
+  border-image-source: var(--guild-page-paper-frame);
+  border-image-slice: var(--guild-page-paper-frame-slice);
+  border-image-width: var(--guild-page-paper-frame-width);
+  border-image-repeat: stretch;
 }
 
 .guild-page__request-paper-header {
@@ -12461,7 +12639,7 @@ div.workshop-page__discovery-row {
 }
 
 .guild-page__request-paper-page {
-  color: var(--style-muted);
+  color: var(--guild-page-paper-muted);
   font-size: var(--style-box-border-label-font-size);
   font-variant-numeric: tabular-nums lining-nums;
   line-height: var(--style-box-border-label-line-height);
@@ -12699,30 +12877,8 @@ div.workshop-page__discovery-row {
   transform: translate(-50%, calc(-50% + var(--app-dialog-y-shift, 0px)));
 }
 
-.guild-page__popup-panel[data-popup-kind="requestStack"]::before,
-.guild-page__popup-panel[data-popup-kind="requestStack"]::after {
-  position: absolute;
-  right: -4px;
-  left: 4px;
-  z-index: 0;
-  pointer-events: none;
-  content: "";
-  background: var(--style-surface);
-  border: var(--style-border-strong);
-}
-
-.guild-page__popup-panel[data-popup-kind="requestStack"]::before {
-  top: 7px;
-  bottom: -7px;
-  opacity: 0.56;
-  transform: translate(4px, 5px);
-}
-
-.guild-page__popup-panel[data-popup-kind="requestStack"]::after {
-  top: 13px;
-  bottom: -13px;
-  opacity: 0.34;
-  transform: translate(8px, 10px);
+.guild-page__popup-panel[data-popup-kind="requestStack"] {
+  width: 350px;
 }
 
 .guild-page__popup-panel[data-popup-kind="charter"] {
@@ -12761,14 +12917,85 @@ div.workshop-page__discovery-row {
 }
 
 .guild-page__popup-panel[data-popup-kind="requestStack"] .style-dialog.guild-page__dialog {
+  box-sizing: border-box;
   z-index: 2;
+  width: 350px;
+  height: 327px;
+  padding: 13px 2px 42px;
+  color: var(--guild-page-paper-text);
+  background: transparent;
+  border: 17px solid transparent;
+  border-image-source: var(--guild-page-quest-dialog-frame);
+  border-image-slice: var(--guild-page-quest-dialog-frame-slice);
+  border-image-width: 17px;
+  border-image-repeat: stretch;
+  box-shadow: none;
+}
+
+.guild-page__popup-panel[data-popup-kind="requestStack"]
+  .style-dialog.guild-page__dialog::before,
+.guild-page__popup-panel[data-popup-kind="requestStack"]
+  .style-dialog.guild-page__dialog::after {
+  display: none;
+}
+
+.guild-page__popup-panel[data-popup-kind="requestStack"]
+  .style-dialog.guild-page__dialog
+  > .style-box__title {
+  box-sizing: border-box;
+  top: -52px;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 252px;
+  height: 57px;
+  padding: 6px 54px 17px;
+  color: #f1e7d5;
+  font-size: var(--style-dialog-title-font-size);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  background: var(--guild-page-quest-banner) center / contain no-repeat;
+  text-shadow:
+    0 1px 0 #231912,
+    1px 0 0 #231912,
+    0 -1px 0 #231912,
+    -1px 0 0 #231912;
+  transform: translateX(-50%);
+}
+
+.guild-page__popup-panel[data-popup-kind="requestStack"] .guild-page__close {
+  top: auto;
+  right: -24px;
+  bottom: -60px;
+  z-index: -1;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  min-height: 0;
+  padding: 0;
+  font-size: 0;
+  background: transparent;
+  border: 7px solid transparent;
+  border-image-source: var(--guild-page-quest-close-frame);
+  border-image-slice: var(--guild-page-quest-close-frame-slice);
+  border-image-width: 7px;
+  border-image-repeat: stretch;
+}
+
+.guild-page__popup-panel[data-popup-kind="requestStack"] .guild-page__close::after {
+  position: absolute;
+  inset: 0 3px 3px 0;
+  pointer-events: none;
+  content: "";
+  background: var(--guild-page-quest-close-x) center / contain no-repeat;
 }
 
 .guild-page__popup-panel[data-popup-kind="requestStack"].is-turning-page
-  .style-dialog.guild-page__dialog {
+  .guild-page__request-paper-content {
   animation: guild-request-page-under var(--style-motion-expand)
-    var(--style-motion-ease-rubber) both;
-  transform-origin: 80% 78%;
+    var(--style-motion-ease-soft) both;
+  transform-origin: 50% 100%;
 }
 
 .guild-page__popup-content {
@@ -12782,31 +13009,373 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
+.guild-page__popup-panel[data-popup-kind="requestStack"] .guild-page__popup-content {
+  display: block;
+  height: 100%;
+  overflow: visible;
+}
+
+.guild-page__popup-actions {
+  position: relative;
+  z-index: 21;
+  display: flex;
+  gap: var(--style-dialog-tab-gap);
+  justify-content: flex-end;
+  margin-top: var(--style-dialog-tab-gap);
+}
+
+.guild-page__popup-actions:empty {
+  display: none;
+}
+
 .guild-page__request-stack-wrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  height: 100%;
   min-height: 0;
 }
 
 .guild-page__request-stack {
-  position: relative;
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 9px;
+  align-items: stretch;
+  height: 216px;
   min-height: 0;
 }
 
-.guild-page__request-stack-controls {
-  display: flex;
-  justify-content: flex-end;
+.guild-page__popup-panel[data-popup-kind="requestStack"]
+  .guild-page__request-paper-content {
+  animation: guild-request-page-settle var(--style-motion-normal)
+    var(--style-motion-ease-rubber) both;
+  transform-origin: 50% 0;
 }
 
-.style-button.guild-page__request-stack-next {
-  width: auto;
-  min-width: 86px;
-  min-height: var(--style-row-min-height);
-  padding: 1px 6px;
+.guild-page__request-stack-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 102px;
+  gap: 13px;
+  width: 100%;
+}
+
+.style-button.guild-page__request-stack-action {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 31px;
+  padding: 0 8px 2px;
   margin: 0;
+  color: #f0e2ca;
+  font-size: var(--style-font-size);
+  font-weight: 700;
+  line-height: 1;
+  text-shadow:
+    0 1px 0 #2b2119,
+    1px 0 0 #2b2119,
+    0 -1px 0 #2b2119,
+    -1px 0 0 #2b2119;
+  background: transparent;
+  border: 10px solid transparent;
+  border-image-source: var(--guild-page-quest-button-brown-frame);
+  border-image-slice: var(--guild-page-quest-button-frame-slice);
+  border-image-width: 10px;
+  border-image-repeat: stretch;
+}
+
+.style-button.guild-page__request-stack-post {
+  border-image-source: var(--guild-page-quest-button-green-frame);
+}
+
+.style-button.guild-page__request-stack-action:disabled {
+  color: #b9aa92;
+  opacity: 0.72;
+}
+
+.guild-page__popup-panel[data-popup-kind="requestStack"] .guild-page__popup-actions {
+  position: absolute;
+  right: 32px;
+  bottom: 10px;
+  left: 24px;
+  z-index: 24;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 0;
+}
+
+.guild-page__request-stack-note {
+  color: #a89678;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  text-shadow: 0 1px 0 #211912;
+}
+
+.guild-page__request-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.guild-page__request-list-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  column-gap: 2px;
+  align-items: center;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 24px;
+  padding: 2px 5px 3px;
+  appearance: none;
+  color: var(--guild-page-paper-text);
+  font: inherit;
+  font-size: 8.8px;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 7px solid transparent;
+  border-image-source: var(--guild-page-quest-list-row-frame);
+  border-image-slice: var(--guild-page-quest-list-row-frame-slice);
+  border-image-width: 7px;
+  border-image-repeat: stretch;
+}
+
+.guild-page__request-list-item.is-selected {
+  grid-template-rows: max-content 1fr;
+  align-items: start;
+  min-height: 112px;
+  padding: 6px;
+  border-width: 9px;
+  border-image-source: var(--guild-page-quest-paper-frame);
+  border-image-slice: var(--guild-page-quest-paper-frame-slice);
+  border-image-width: 9px;
+}
+
+.guild-page__request-list-number {
+  position: relative;
+  z-index: 2;
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  color: #f1e7d5;
   font-size: var(--style-box-border-label-font-size);
-  line-height: var(--style-box-border-label-line-height);
+  font-weight: 700;
+  line-height: 1;
+  background: #4a3929;
+  border: 1px solid #2c2118;
+  box-shadow: inset 0 0 0 1px rgb(255 238 197 / 18%);
+}
+
+.guild-page__request-list-title {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guild-page__request-list-item.is-selected .guild-page__request-list-title {
+  overflow: hidden;
+  font-size: 8.7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guild-page__request-list-item:not(.is-selected)
+  :where(.guild-page__request-list-number, .guild-page__request-list-title) {
+  translate: 0 -5px;
+}
+
+.guild-page__request-list-item.is-selected .guild-page__request-list-number {
+  translate: 0 -3px;
+}
+
+.guild-page__request-list-photo {
+  position: relative;
+  z-index: 2;
+  grid-column: 1 / -1;
+  justify-self: center;
+  box-sizing: border-box;
+  width: 100px;
+  height: 60px;
+  padding: 3px;
+  margin-top: 5px;
+  background: #c9a875;
+  border: 1px solid rgb(63 45 28 / 62%);
+  object-fit: cover;
+  object-position: 50% 58%;
+  pointer-events: none;
+}
+
+.guild-page__request-list-paperclip {
+  position: absolute;
+  top: -14px;
+  left: -14px;
+  z-index: 4;
+  width: 22px;
+  height: auto;
+  pointer-events: none;
+  rotate: -12deg;
+}
+
+.guild-page__request-detail-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  padding: 15px 9px 10px;
+  font-size: 9px;
+  background: transparent;
+  border: 9px solid transparent;
+  border-image-source: var(--guild-page-quest-paper-frame);
+  border-image-slice: var(--guild-page-quest-paper-frame-slice);
+  border-image-width: 9px;
+  border-image-repeat: stretch;
+}
+
+.guild-page__request-detail-card > :not(.guild-page__request-detail-seal) {
+  position: relative;
+  z-index: 1;
+}
+
+.guild-page__request-detail-card .guild-page__request-paper-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.guild-page__request-detail-card .guild-page__request-paper-page {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  min-height: 19px;
+  padding: 0 4px 1px;
+  color: #f1e7d5;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  background: #4a3929;
+  border: 1px solid #2c2118;
+  box-shadow: inset 0 0 0 1px rgb(255 238 197 / 18%);
+}
+
+.guild-page__request-detail-lore {
+  min-height: 37px;
+  max-width: 91px;
+  padding-right: 0;
+  margin: 22px 0 1px;
+  font-size: 9.6px;
+  font-weight: 700;
+  line-height: 1.14;
+  overflow-wrap: anywhere;
+}
+
+.guild-page__request-detail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+}
+
+.guild-page__request-detail-row {
+  grid-template-columns: 12px 34px minmax(0, 1fr);
+  min-height: 17px;
+  padding: 1px 0;
+  border-top: 1px solid rgb(72 55 38 / 22%);
+  column-gap: 4px;
+  font-size: 7.8px;
+  line-height: 1.06;
+}
+
+.guild-page__request-detail-row .guild-page__row-key {
+  font-weight: 700;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.guild-page__request-detail-row .guild-page__row-value {
+  color: var(--guild-page-paper-text);
+  font-size: 7px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.guild-page__request-detail-row--reward {
+  min-height: 32px;
+}
+
+.guild-page__request-detail-row--medium .guild-page__row-value {
+  color: #a45f2d;
+}
+
+.guild-page__request-detail-row--hard .guild-page__row-value {
+  color: #8e352e;
+}
+
+.guild-page__request-detail-row--easy .guild-page__row-value {
+  color: #466b3c;
+}
+
+.guild-page__request-detail-icon {
+  align-self: start;
+  justify-self: center;
+  width: 11px;
+  height: 11px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.guild-page__request-detail-row .style-resource-label {
+  justify-content: flex-end;
+  line-height: 1.06;
+  white-space: nowrap;
+}
+
+.guild-page__request-detail-row .style-resource-label__icon {
+  width: 9px;
+  height: 9px;
+}
+
+.guild-page__request-detail-reward-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-end;
+  line-height: 1.04;
+}
+
+.guild-page__request-detail-reward-line {
+  display: inline-flex;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.guild-page__request-detail-seal {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  z-index: 0;
+  width: 28px;
+  height: auto;
+  pointer-events: none;
 }
 
 .guild-page__card-info {
@@ -13422,46 +13991,42 @@ div.workshop-page__discovery-row {
 .room-top-panel__inbox-rows {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   min-height: 100%;
 }
 
 .room-top-panel__inbox-row {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
-  gap: var(--style-row-column-gap);
+  gap: calc(var(--style-row-column-gap) + 2px);
   align-items: start;
   min-height: calc(var(--style-row-min-height) * 2);
-  padding: 5px 0;
-  border-bottom: var(--style-border);
-}
-
-.room-top-panel__inbox-row:first-child {
-  padding-top: 0;
-}
-
-.room-top-panel__inbox-row:last-child {
-  border-bottom: 0;
+  padding: 8px 10px;
+  background: var(--style-surface);
+  border: var(--style-border);
 }
 
 .room-top-panel__inbox-row-main {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
 .room-top-panel__inbox-row-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
-  gap: var(--style-row-column-gap);
-  align-items: baseline;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-start;
   min-width: 0;
 }
 
 .room-top-panel__inbox-row-title {
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
+  color: var(--style-text);
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -13484,9 +14049,27 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
+.room-top-panel__inbox-row-status--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--style-box-border-label-line-height);
+  min-height: var(--style-box-border-label-line-height);
+}
+
+.room-top-panel__inbox-row-status-icon {
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+
 .room-top-panel__inbox-row-body {
   min-width: 0;
   margin: 0;
+  color: color-mix(in srgb, var(--style-text) 82%, var(--style-muted));
+  font-size: calc(var(--style-font-size) - 1px);
+  font-weight: 400;
+  line-height: 1.28;
   overflow: visible;
   text-overflow: clip;
   white-space: normal;
@@ -13494,6 +14077,10 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__inbox-row-reward {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 7px;
+  align-items: center;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
@@ -15071,7 +15658,7 @@ div.workshop-page__discovery-row {
 
 .style-button.shop-page__stock-buy-button {
   width: auto;
-  min-width: var(--style-row-right-slot-width);
+  min-width: var(--shop-page-stock-buy-width);
   padding: 0;
   margin: 0;
   line-height: normal;
@@ -15728,6 +16315,83 @@ div.workshop-page__discovery-row {
 }
 
 :root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__action-button,
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__cauldron-select-recipe-text,
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__quantity-button,
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__auto-button {
+  color: var(--brewing-page-cauldron-action-button-text);
+  background: transparent;
+  border-color: transparent;
+  border-image-source: var(--brewing-page-cauldron-action-button-frame);
+  border-image-slice: var(--brewing-page-cauldron-action-button-slice);
+  border-image-width: var(
+    --brewing-page-cauldron-action-button-border-image-width
+  );
+  border-image-repeat: stretch;
+}
+
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__action-button:is(:active, .is-pressing):not(
+    :disabled
+  ):not([aria-disabled="true"]),
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__cauldron-select-recipe-text:is(
+    :active,
+    .is-pressing
+  ):not(:disabled):not([aria-disabled="true"]),
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__quantity-button:is(:active, .is-pressing):not(
+    :disabled
+  ):not([aria-disabled="true"]),
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__auto-button:is(:active, .is-pressing):not(
+    :disabled
+  ):not([aria-disabled="true"]) {
+  background: transparent;
+}
+
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__action-button[aria-disabled="true"],
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__action-button:disabled,
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__cauldron-select-recipe-text[aria-disabled="true"],
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__cauldron-select-recipe-text:disabled,
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__quantity-button[aria-disabled="true"],
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__quantity-button:disabled,
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__auto-button[aria-disabled="true"],
+:root[data-style-theme="midnight"]
+  .brewing-page__actions
+  .style-button.brewing-page__auto-button:disabled {
+  color: var(--brewing-page-cauldron-action-button-disabled-text);
+  background: transparent;
+  border-color: transparent;
+  border-image-source: var(--brewing-page-cauldron-action-button-disabled-frame);
+}
+
+:root[data-style-theme="midnight"]
   :where(
     .style-box .style-button:not(.workshop-page__summon-button),
     .style-dialog .style-button:not(.workshop-page__summon-button),
@@ -15800,14 +16464,52 @@ div.workshop-page__discovery-row {
         .is-disabled
       )
       .tutorial-layer__objective-button-label
-  ) {
+) {
   border-image-source: var(--style-midnight-button-disabled-frame);
+}
+
+:root[data-style-theme="midnight"]
+  .guild-page__popup-panel[data-popup-kind="requestStack"]
+  .style-button.guild-page__request-stack-action {
+  background: transparent;
+  border-image-source: var(--guild-page-quest-button-brown-frame);
+  border-image-slice: var(--guild-page-quest-button-frame-slice);
+  border-image-width: 10px;
+}
+
+:root[data-style-theme="midnight"]
+  .guild-page__popup-panel[data-popup-kind="requestStack"]
+  .style-button.guild-page__request-stack-post {
+  border-image-source: var(--guild-page-quest-button-green-frame);
+}
+
+.brewing-page__cauldron.is-locked .brewing-page__cauldron-recipe-box.style-box {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-image: none;
+}
+
+.brewing-page__cauldron.is-locked
+  .brewing-page__cauldron-recipe-box
+  > .style-box__title,
+.brewing-page__cauldron.is-locked .brewing-page__cauldron-count {
+  display: none;
 }
 
 :root[data-style-theme="midnight"]
   .room-top-panel__theme-preview[data-preview-theme="midnight"]
   .room-top-panel__theme-preview-box {
   border-image-width: var(--style-midnight-frame-compact-width);
+}
+
+:root[data-style-theme="midnight"] .room-top-panel__inbox-row {
+  background: transparent;
+  border-color: transparent;
+  border-image-source: var(--style-midnight-panel-frame);
+  border-image-slice: var(--style-midnight-frame-slice);
+  border-image-width: var(--style-midnight-frame-compact-width);
+  border-image-repeat: stretch;
 }
 
 :root[data-style-theme="midnight"] .room-bottom-panel__tab,
@@ -17105,20 +17807,37 @@ div.workshop-page__discovery-row {
   }
 }
 
-@keyframes guild-request-page-under {
+@keyframes guild-request-page-settle {
   0% {
-    opacity: 1;
-    transform: translate(0, 0) scale(1);
+    opacity: 0.62;
+    transform: translateY(-12px) scale(0.985);
   }
 
-  56% {
-    opacity: 0.92;
-    transform: translate(12px, -2px) scale(0.99);
+  68% {
+    opacity: 1;
+    transform: translateY(1px) scale(1.004);
   }
 
   100% {
-    opacity: 0.55;
-    transform: translate(8px, 17px) scale(0.965);
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes guild-request-page-under {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  56% {
+    opacity: 0.86;
+    transform: translateY(10px) scale(0.987);
+  }
+
+  100% {
+    opacity: 0.46;
+    transform: translateY(28px) scale(0.96);
   }
 }
 
@@ -17685,8 +18404,8 @@ div.workshop-page__discovery-row {
   .guild-page__box--secretary-upgraded
     :where(.guild-page__row-value, .guild-page__wide-button),
   .guild-page__popup-panel[data-popup-kind="request"] .style-dialog.guild-page__dialog,
-  .guild-page__popup-panel[data-popup-kind="requestStack"].is-turning-page
-    .style-dialog.guild-page__dialog {
+  .guild-page__popup-panel[data-popup-kind="requestStack"]
+    .guild-page__request-paper-content {
     animation: none;
     opacity: 1;
     scale: 1;

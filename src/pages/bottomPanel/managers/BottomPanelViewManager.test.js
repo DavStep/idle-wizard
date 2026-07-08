@@ -6,6 +6,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { BottomPanelViewManager } from './BottomPanelViewManager.js';
 
+async function waitForMutationObserver() {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 describe('BottomPanelViewManager', () => {
   it('renders bottom tab icons as decorative button art', () => {
     const stage = document.createElement('section');
@@ -332,7 +337,7 @@ describe('BottomPanelViewManager', () => {
     }
   });
 
-  it('delays visible lock break motion until the level announcement clears', () => {
+  it('starts visible lock break motion after the announcement layer clears', async () => {
     vi.useFakeTimers();
 
     try {
@@ -360,12 +365,20 @@ describe('BottomPanelViewManager', () => {
 
       manager.setPageStates([{ id: 'garden', unlocked: true, visible: true }]);
 
-      expect(gardenTab?.classList.contains('is-unlocking')).toBe(true);
+      expect(gardenTab?.classList.contains('is-unlocking')).toBe(false);
       expect(gardenTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
-        '2100ms',
+        '',
       );
 
-      vi.advanceTimersByTime(2100 + 559);
+      announcement.hidden = true;
+      await waitForMutationObserver();
+
+      expect(gardenTab?.classList.contains('is-unlocking')).toBe(true);
+      expect(gardenTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
+        '',
+      );
+
+      vi.advanceTimersByTime(559);
       expect(gardenTab?.classList.contains('is-unlocking')).toBe(true);
 
       vi.advanceTimersByTime(1);
@@ -378,7 +391,7 @@ describe('BottomPanelViewManager', () => {
     }
   });
 
-  it('uses the announcement queue delay for visible unlock motion', () => {
+  it('waits through queued announcement swaps before playing visible unlock motion', async () => {
     vi.useFakeTimers();
 
     try {
@@ -391,7 +404,6 @@ describe('BottomPanelViewManager', () => {
       manager.mount(stage);
       announcement.className = 'room-announcement-layer';
       announcement.hidden = false;
-      announcement.dataset.announcementUnlockDelayMs = '4200';
       stage.append(announcement);
       manager.setPageStates([
         {
@@ -407,19 +419,26 @@ describe('BottomPanelViewManager', () => {
 
       manager.setPageStates([{ id: 'shop', unlocked: true, visible: true }]);
 
-      expect(marketTab?.classList.contains('is-unlocking')).toBe(true);
-      expect(marketTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
-        '4200ms',
-      );
-
-      vi.advanceTimersByTime(4200 + 559);
-      expect(marketTab?.classList.contains('is-unlocking')).toBe(true);
-
-      vi.advanceTimersByTime(1);
       expect(marketTab?.classList.contains('is-unlocking')).toBe(false);
       expect(marketTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
         '',
       );
+
+      announcement.hidden = true;
+      announcement.hidden = false;
+      await waitForMutationObserver();
+
+      expect(marketTab?.classList.contains('is-unlocking')).toBe(false);
+
+      announcement.hidden = true;
+      await waitForMutationObserver();
+
+      expect(marketTab?.classList.contains('is-unlocking')).toBe(true);
+      expect(marketTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
+        '',
+      );
+
+      vi.runOnlyPendingTimers();
     } finally {
       vi.useRealTimers();
     }

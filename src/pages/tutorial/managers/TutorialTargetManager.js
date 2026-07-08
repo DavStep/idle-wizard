@@ -71,6 +71,8 @@ export class TutorialTargetManager {
         Boolean(this.stage?.querySelector('.garden-page__seed-popup:not([hidden])')),
       isBrewingRecipePopupOpen: () =>
         Boolean(this.stage?.querySelector('.brewing-page__recipes-popup:not([hidden])')),
+      isBrewingHerbInventoryOpen: () =>
+        Boolean(this.stage?.querySelector('.brewing-page__herbs:not([hidden])')),
       isBrewingRecipeSelected: (recipeKey) =>
         Boolean(getSelectedBrewingRecipeRow(this.stage, recipeKey)),
       isShopSellPopupOpen: () =>

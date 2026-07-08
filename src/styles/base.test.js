@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { cwd } from 'node:process';
 
 import pngjs from 'pngjs';
@@ -345,6 +345,98 @@ describe('base styles', () => {
     ).reduce((max, jump) => Math.max(max, jump), 0);
 
     expect(maxInternalRowJump).toBeLessThan(1);
+  });
+
+  it('keeps guild quest PNG assets free of green-screen matte edges', () => {
+    const assetDir = `${cwd()}/public/ui/guild-quest`;
+    const assetNames = readdirSync(assetDir).filter((name) => name.endsWith('.png'));
+    const failures = [];
+
+    function isBrightGreen(r, g, b) {
+      return (r === 0 && g === 255 && b === 0) || (g >= 220 && r <= 80 && b <= 80);
+    }
+
+    function isDarkGreenMatte(r, g, b) {
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+
+      return (
+        g > Math.max(r, b) + 15 &&
+        max > 0 &&
+        (max - min) / max >= 0.7 &&
+        max / 255 <= 0.32
+      );
+    }
+
+    function isNearTransparentEdge(png, x, y) {
+      const radius = 3;
+
+      if (
+        x < radius ||
+        y < radius ||
+        x >= png.width - radius ||
+        y >= png.height - radius
+      ) {
+        return true;
+      }
+
+      for (
+        let yy = Math.max(0, y - radius);
+        yy < Math.min(png.height, y + radius + 1);
+        yy += 1
+      ) {
+        for (
+          let xx = Math.max(0, x - radius);
+          xx < Math.min(png.width, x + radius + 1);
+          xx += 1
+        ) {
+          const offset = (yy * png.width + xx) * 4;
+          if (png.data[offset + 3] === 0) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    for (const assetName of assetNames) {
+      const png = PNG.sync.read(readFileSync(`${assetDir}/${assetName}`));
+      let brightGreen = 0;
+      let matteEdge = 0;
+
+      for (let y = 0; y < png.height; y += 1) {
+        for (let x = 0; x < png.width; x += 1) {
+          const offset = (y * png.width + x) * 4;
+          const r = png.data[offset];
+          const g = png.data[offset + 1];
+          const b = png.data[offset + 2];
+          const a = png.data[offset + 3];
+
+          if (a === 0) {
+            continue;
+          }
+
+          if (isBrightGreen(r, g, b)) {
+            brightGreen += 1;
+          }
+
+          if (
+            assetName !== 'icon-herbs.png' &&
+            isDarkGreenMatte(r, g, b) &&
+            isNearTransparentEdge(png, x, y)
+          ) {
+            matteEdge += 1;
+          }
+        }
+      }
+
+      if (brightGreen > 0 || matteEdge > 0) {
+        failures.push(`${assetName}: bright=${brightGreen}, matteEdge=${matteEdge}`);
+      }
+    }
+
+    expect(failures).toEqual([]);
   });
 
   it('keeps Workshop level reward text left and point values right under a centered title', () => {

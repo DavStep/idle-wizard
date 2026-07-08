@@ -235,10 +235,11 @@ export class AppLifecycleManager {
     }
   }
 
-  async handleGameplaySaveReady({ save } = {}) {
+  async handleGameplaySaveReady({ save, pendingHydratedSave } = {}) {
     const accountLinkSave = this.getPendingAccountLinkSave();
+    const saveToLoad = accountLinkSave ? save : (pendingHydratedSave ?? save);
     const shouldPromptForFreshStart = this.shouldPromptForFreshStart({
-      save,
+      save: saveToLoad,
       accountLinkSave,
     });
 
@@ -297,17 +298,18 @@ export class AppLifecycleManager {
       }
     }
 
-    if (!save && !accountLinkSave) {
+    if (!saveToLoad && !accountLinkSave) {
       this.pagesFacade.resetFirstRunIntroProgress?.();
       this.pagesFacade.resetTutorialProgress?.();
     }
 
-    this.loadGameplaySave(save);
+    this.loadGameplaySave(saveToLoad);
   }
 
   shouldPromptForFreshStart({ save, accountLinkSave } = {}) {
     return (
       !this.freshStartConfirmed &&
+      !this.isAuthenticatedAccount() &&
       !save &&
       !accountLinkSave
     );

@@ -27,6 +27,7 @@ const CONTENT_TABS = [
 ];
 
 const GUILD_SECRETARY_ICON_KEY = 'guild_secretary';
+const GUILD_QUEST_ASSET_PATH = '/ui/guild-quest/';
 
 export class GuildPanelManager {
   constructor({ gameplayFacade } = {}) {
@@ -869,16 +870,19 @@ export class GuildPanelManager {
     this.refs.closeButton.className = 'style-button guild-page__close';
     this.refs.closeButton.type = 'button';
     this.refs.closeButton.textContent = 'close';
+    this.refs.closeButton.setAttribute('aria-label', 'close');
     this.refs.closeButton.addEventListener('click', () => this.hidePopup());
     this.refs.popupContent = document.createElement('div');
     this.refs.popupContent.className = 'guild-page__popup-content';
+    this.refs.popupActions = document.createElement('div');
+    this.refs.popupActions.className = 'guild-page__popup-actions';
     this.refs.popupTabs = document.createElement('div');
     this.refs.popupTabs.className = 'guild-page__tabs';
     this.refs.popupTabs.setAttribute('role', 'tablist');
     this.refs.popupTabs.setAttribute('aria-label', 'guild card details');
 
     dialog.append(this.refs.popupTitle, this.refs.closeButton, this.refs.popupContent);
-    panel.append(dialog, this.refs.popupTabs);
+    panel.append(dialog, this.refs.popupActions, this.refs.popupTabs);
     popup.append(panel);
     this.refs.popup = popup;
     this.refs.popupPanel = panel;
@@ -952,6 +956,7 @@ export class GuildPanelManager {
     }
 
     this.refs.popupPanel.dataset.popupKind = this.selectedCardKind ?? '';
+    this.refs.popupActions?.replaceChildren();
 
     if (this.selectedCardKind === 'charter') {
       this.renderCharterDialog();
@@ -1113,37 +1118,262 @@ export class GuildPanelManager {
     const boardFull =
       (this.snapshot.board?.length ?? 0) >= (this.snapshot.secretary?.boardSlots ?? 0);
 
-    this.refs.popupTitle.textContent = 'incoming quests';
+    this.refs.popupTitle.textContent = 'Incoming Quests';
     this.refs.popupTabs.replaceChildren();
-    const stack = document.createElement('div');
-    stack.className = 'guild-page__request-stack';
-    stack.append(
-      this.createRequestPaperContent(request, {
-        showTitle: true,
-        pageLabel: `${this.requestStackIndex + 1}/${requests.length}`,
-        actionLabel: boardFull ? 'board full' : 'post',
-        actionDisabled: boardFull,
-        onAction: () => {
-          this.gameplayFacade?.postGuildRequest?.(request.id);
-          this.hidePopup();
-        },
-      }),
-    );
 
     const controls = document.createElement('div');
     controls.className = 'guild-page__request-stack-controls';
-    const nextButton = document.createElement('button');
-    nextButton.className = 'style-button guild-page__request-stack-next';
-    nextButton.type = 'button';
-    nextButton.textContent = requests.length > 1 ? 'next page' : 'only page';
-    nextButton.disabled = requests.length <= 1;
-    nextButton.addEventListener('click', () => this.turnAvailableRequestPage());
-    controls.append(nextButton);
 
-    const content = document.createElement('div');
-    content.className = 'guild-page__request-stack-wrap';
-    content.append(stack, controls);
-    this.refs.popupContent.replaceChildren(content);
+    const postButton = this.createRequestStackButton(
+      boardFull ? 'Board Full' : 'Post',
+      'guild-page__request-stack-post',
+      () => {
+        this.gameplayFacade?.postGuildRequest?.(request.id);
+        this.hidePopup();
+      },
+      { disabled: boardFull },
+    );
+
+    const nextButton = this.createRequestStackButton(
+      requests.length > 1 ? 'Next Page' : 'Only Page',
+      'guild-page__request-stack-next',
+      () => this.turnAvailableRequestPage(),
+      { disabled: requests.length <= 1 },
+    );
+    controls.append(postButton, nextButton);
+
+    const note = document.createElement('div');
+    note.className = 'guild-page__request-stack-note';
+    note.textContent = 'Papers rotate to the back when you open the next one.';
+
+    this.refs.popupContent.replaceChildren(
+      this.createRequestStackPreview(requests, request),
+    );
+    this.refs.popupActions.replaceChildren(controls, note);
+  }
+
+  createRequestStackPreview(requests, selectedRequest) {
+    const wrap = document.createElement('div');
+    wrap.className = 'guild-page__request-stack-wrap';
+
+    const stack = document.createElement('div');
+    stack.className = 'guild-page__request-stack';
+    stack.append(
+      this.createRequestStackList(requests),
+      this.createRequestStackDetail(
+        selectedRequest,
+        `${this.requestStackIndex + 1}/${requests.length}`,
+      ),
+    );
+
+    wrap.append(stack);
+    return wrap;
+  }
+
+  createRequestStackList(requests) {
+    const list = document.createElement('div');
+    list.className = 'guild-page__request-list';
+    list.setAttribute('aria-label', 'incoming quest pages');
+
+    for (const item of this.getRequestStackDisplayItems(requests)) {
+      list.append(this.createRequestStackListItem(item));
+    }
+
+    return list;
+  }
+
+  getRequestStackDisplayItems(requests) {
+    return requests.map((_, offset) => {
+      const requestIndex = (this.requestStackIndex + offset) % requests.length;
+      return {
+        request: requests[requestIndex],
+        requestIndex,
+        selected: offset === 0,
+      };
+    });
+  }
+
+  createRequestStackListItem({ request, requestIndex, selected }) {
+    const button = document.createElement('button');
+    button.className = 'guild-page__request-list-item';
+    button.type = 'button';
+    button.dataset.questIndex = String(requestIndex);
+    button.setAttribute('aria-label', `open ${request.title} quest`);
+    button.classList.toggle('is-selected', selected);
+    button.addEventListener('click', () => this.selectAvailableRequestIndex(requestIndex));
+
+    const number = document.createElement('span');
+    number.className = 'guild-page__request-list-number';
+    number.textContent = String(requestIndex + 1);
+
+    const title = document.createElement('span');
+    title.className = 'guild-page__request-list-title';
+    title.textContent = this.toQuestDisplayCase(request.title);
+
+    button.append(number, title);
+
+    if (selected) {
+      button.append(
+        this.createQuestAssetImage(
+          'paperclip.png',
+          'guild-page__request-list-paperclip',
+        ),
+        this.createQuestAssetImage(
+          'quest-photo-smuggler-tunnel.png',
+          'guild-page__request-list-photo',
+        ),
+      );
+    }
+
+    return button;
+  }
+
+  selectAvailableRequestIndex(requestIndex) {
+    const requests = this.getAvailableRequestStack();
+
+    if (
+      !Number.isInteger(requestIndex) ||
+      requestIndex < 0 ||
+      requestIndex >= requests.length ||
+      requestIndex === this.requestStackIndex
+    ) {
+      return;
+    }
+
+    this.requestStackIndex = requestIndex;
+    this.renderPopup();
+  }
+
+  createRequestStackDetail(request, pageLabel) {
+    const detail = document.createElement('section');
+    detail.className = 'guild-page__request-paper-content guild-page__request-detail-card';
+
+    const title = document.createElement('div');
+    title.className = 'guild-page__request-paper-title';
+    title.textContent = request.title;
+
+    const page = document.createElement('div');
+    page.className = 'guild-page__request-paper-page';
+    page.textContent = pageLabel;
+
+    const lore = document.createElement('p');
+    lore.className = 'guild-page__request-detail-lore';
+    lore.textContent = request.lore ?? '';
+
+    const rows = document.createElement('div');
+    rows.className = 'guild-page__request-paper-rows guild-page__request-detail-rows guild-page__rows';
+    rows.append(
+      this.createRequestDetailRow({
+        icon: 'icon-difficulty.png',
+        label: 'Difficulty',
+        value: this.toQuestDisplayCase(request.difficulty),
+        className: `guild-page__request-detail-row--${this.getCssToken(
+          request.difficulty ?? 'normal',
+        )}`,
+      }),
+      this.createRequestDetailRow({
+        icon: 'icon-stats.png',
+        label: 'Stats',
+        value: this.toQuestDisplayCase(request.statLabel),
+      }),
+      this.createRequestDetailRow({
+        icon: 'icon-reward.png',
+        label: 'Reward',
+        value: this.createRequestStackRewardText(request.rewardText),
+        className: 'guild-page__request-detail-row--reward',
+      }),
+      this.createRequestDetailRow({
+        icon: 'icon-expires.png',
+        label: 'Expires',
+        value: request.expiresLabel ?? 'now',
+      }),
+    );
+
+    if (request.eventLabel) {
+      rows.append(
+        this.createRequestDetailRow({
+          icon: 'wax-seal.png',
+          label: 'Event',
+          value: request.eventLabel,
+        }),
+      );
+    }
+
+    detail.append(
+      title,
+      page,
+      lore,
+      rows,
+      this.createQuestAssetImage('wax-seal.png', 'guild-page__request-detail-seal'),
+    );
+    return detail;
+  }
+
+  createRequestDetailRow({ icon, label, value, className = '' }) {
+    const row = document.createElement('div');
+    row.className = ['guild-page__row guild-page__request-detail-row', className]
+      .filter(Boolean)
+      .join(' ');
+
+    row.append(this.createQuestAssetImage(icon, 'guild-page__request-detail-icon'));
+
+    const key = document.createElement('span');
+    key.className = 'guild-page__row-key';
+    key.textContent = label;
+
+    const val = document.createElement('span');
+    val.className = 'guild-page__row-value';
+
+    const NodeConstructor = globalThis.Node;
+
+    if (NodeConstructor && value instanceof NodeConstructor) {
+      val.append(value);
+    } else {
+      val.textContent = String(value ?? '');
+    }
+
+    row.append(key, val);
+    return row;
+  }
+
+  createRequestStackRewardText(value) {
+    const reward = document.createElement('span');
+    reward.className = 'guild-page__request-detail-reward-list';
+    const parts = String(value ?? '')
+      .split(/\s*(?:,|\bor\b)\s*/i)
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    for (const part of parts.length > 0 ? parts : [String(value ?? '')]) {
+      const line = document.createElement('span');
+      line.className = 'guild-page__request-detail-reward-line';
+      setResourceIconText(line, part);
+      reward.append(line);
+    }
+
+    return reward;
+  }
+
+  toQuestDisplayCase(value) {
+    return String(value ?? '').replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
+  }
+
+  createQuestAssetImage(fileName, className) {
+    const image = document.createElement('img');
+    image.className = className;
+    image.src = `${GUILD_QUEST_ASSET_PATH}${fileName}`;
+    image.alt = '';
+    image.setAttribute('aria-hidden', 'true');
+    image.draggable = false;
+    return image;
+  }
+
+  getCssToken(value) {
+    return String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 
   createRequestPaperContent(
@@ -1203,6 +1433,18 @@ export class GuildPanelManager {
     }
 
     return content;
+  }
+
+  createRequestStackButton(label, className, onClick, { disabled = false } = {}) {
+    const button = document.createElement('button');
+    button.className = ['style-button guild-page__request-stack-action', className]
+      .filter(Boolean)
+      .join(' ');
+    button.type = 'button';
+    button.textContent = label;
+    button.disabled = disabled;
+    button.addEventListener('click', onClick);
+    return button;
   }
 
   getAvailableRequestStack() {

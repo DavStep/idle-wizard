@@ -24,6 +24,7 @@ function createDomFake({
   tasksPinned = false,
   seedPopupOpen = false,
   recipePopupOpen = false,
+  brewingHerbInventoryOpen = false,
   selectedBrewingRecipeKey = null,
   shopDirectSellPopupOpen = false,
   directSellTabKind = 'seed',
@@ -32,6 +33,7 @@ function createDomFake({
 } = {}) {
   return {
     isBrewingRecipePopupOpen: () => recipePopupOpen,
+    isBrewingHerbInventoryOpen: () => brewingHerbInventoryOpen,
     isBrewingRecipeSelected: (recipeKey) => selectedBrewingRecipeKey === recipeKey,
     isGardenSeedPopupOpen: () => seedPopupOpen,
     isShopDirectSellItemSelected: (itemKey) => directSellItemKey === itemKey,
@@ -1211,12 +1213,80 @@ describe('TutorialStepManager', () => {
           },
         }),
         completed: completedThrough('intro-brewing'),
+        dom: createDomFake({ brewingHerbInventoryOpen: true }),
       }),
     ).toMatchObject({
       id: 'brew-mana-tonic',
       targetId: 'brewing:herb:sageHerb',
       hintText: 'tap sage to fill cauldron. recipes care about order',
       stepLabel: '35/37',
+    });
+  });
+
+  it('opens the Brewing herbs inventory before targeting sage', () => {
+    expect(
+      getStep({
+        pageId: 'brewing',
+        snapshot: createLevelFiveSnapshot({
+          research: {
+            completedResearchIds: ['unlockRecipe:manaTonic'],
+            inProgressResearches: [],
+          },
+        }),
+        completed: completedThrough('intro-brewing'),
+      }),
+    ).toMatchObject({
+      id: 'brew-mana-tonic',
+      targetId: 'brewing:inventory:herbs',
+      hintText: 'open herbs',
+      stepLabel: '35/37',
+    });
+  });
+
+  it('does not treat mana tonic research task progress as a brewed potion', () => {
+    expect(
+      getStep({
+        pageId: 'research',
+        snapshot: createLevelFiveSnapshot({
+          research: {
+            completedResearchIds: ['unlockRecipe:manaTonic'],
+            inProgressResearches: [],
+          },
+          tasks: {
+            currentLevel: 4,
+            level: {
+              completion: { canComplete: false, costCoin: 30 },
+              tasks: [
+                createTask({
+                  taskId: 'level5-research-mana-tonic',
+                  itemKey: 'manaTonic',
+                  type: 'research',
+                  requiredQuantity: 1,
+                  progressQuantity: 1,
+                  remainingQuantity: 0,
+                  completed: true,
+                }),
+                createTask({
+                  taskId: 'level5-brew-mana-tonic',
+                  itemKey: 'manaTonic',
+                  type: 'brew',
+                  requiredQuantity: 1,
+                }),
+                createTask({
+                  taskId: 'level5-turn-in-mana-tonic',
+                  itemKey: 'manaTonic',
+                  requiredQuantity: 1,
+                }),
+              ],
+            },
+          },
+        }),
+        completed: completedThrough('research-mana-tonic'),
+      }),
+    ).toMatchObject({
+      id: 'intro-brewing',
+      targetId: 'page:brewing',
+      stepLabel: '34/37',
     });
   });
 

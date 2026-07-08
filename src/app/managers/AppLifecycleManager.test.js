@@ -1115,16 +1115,24 @@ describe('AppLifecycleManager', () => {
     );
   });
 
-  it('waits for start new before creating data for an authenticated account with no save', async () => {
-    let resolveChoice;
+  it('loads hydrated pending local progress instead of a stale server save on reconnect', async () => {
+    const serverSave = { version: 2, coin: { current: 10 } };
+    const pendingHydratedSave = { version: 2, coin: { current: 25 } };
+    const { lifecycle } = createLifecycle();
+
+    await lifecycle.handleGameplaySaveReady({ save: serverSave, pendingHydratedSave });
+
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
+      pendingHydratedSave,
+      lifecycle.ecsFacade,
+    );
+  });
+
+  it('starts new with an authenticated account that has no gameplay save', async () => {
     const freshStartChoiceManager = {
       mount: vi.fn(),
-      choose: vi.fn(
-        () =>
-          new Promise((resolve) => {
-            resolveChoice = resolve;
-          }),
-      ),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      hide: vi.fn(),
       unmount: vi.fn(),
     };
     const authFacade = {
@@ -1136,33 +1144,23 @@ describe('AppLifecycleManager', () => {
     const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
     lifecycle.gameplayFacade.loadPersistenceSave.mockReturnValueOnce(false);
 
-    const readyPromise = lifecycle.handleGameplaySaveReady({ save: null });
-    await flushPromises();
+    await lifecycle.handleGameplaySaveReady({ save: null });
 
-    expect(freshStartChoiceManager.choose).toHaveBeenCalledWith({
-      authSnapshot: { oidc: { authenticated: true } },
-      statusText: null,
-      keepOpenOnConnect: true,
-    });
-    expect(lifecycle.pagesFacade.resetTutorialProgress).not.toHaveBeenCalled();
-    expect(lifecycle.gameplayFacade.loadPersistenceSave).not.toHaveBeenCalled();
-    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).not.toHaveBeenCalled();
-
-    resolveChoice(FRESH_START_CHOICE_START_FRESH);
-    await readyPromise;
-
+    expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(freshStartChoiceManager.hide).toHaveBeenCalledTimes(1);
     expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
-    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenLastCalledWith(
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
       null,
       lifecycle.ecsFacade,
     );
     expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
   });
 
-  it('waits for start new when a remembered account token has no save', async () => {
+  it('starts new with a remembered account token that has no gameplay save', async () => {
     const freshStartChoiceManager = {
       mount: vi.fn(),
       choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      hide: vi.fn(),
       unmount: vi.fn(),
     };
     const authFacade = {
@@ -1179,20 +1177,45 @@ describe('AppLifecycleManager', () => {
 
     await lifecycle.handleGameplaySaveReady({ save: null });
 
-    expect(freshStartChoiceManager.choose).toHaveBeenCalledWith({
-      authSnapshot: {
-        hasToken: true,
-        oidc: { authenticated: false, remembered: true },
-      },
-      statusText: null,
-      keepOpenOnConnect: true,
-    });
+    expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(freshStartChoiceManager.hide).toHaveBeenCalledTimes(1);
     expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
       null,
       lifecycle.ecsFacade,
     );
     expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps account-link choices based on the server save when pending local progress exists', async () => {
+    const deviceSave = { tasks: { currentLevel: 4 } };
+    const accountSave = { tasks: { currentLevel: 2 } };
+    const pendingHydratedSave = { tasks: { currentLevel: 5 } };
+    const accountLinkChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve('forget_device')),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => deviceSave),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({ oidc: { authenticated: true } })),
+    };
+    const { lifecycle } = createLifecycle({ accountLinkChoiceManager, authFacade });
+
+    await lifecycle.handleGameplaySaveReady({
+      save: accountSave,
+      pendingHydratedSave,
+    });
+
+    expect(accountLinkChoiceManager.choose).toHaveBeenCalledWith({
+      deviceSave,
+      accountSave,
+    });
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
+      accountSave,
+      lifecycle.ecsFacade,
+    );
   });
 
   it('starts new without prompting when a new Google account has no save', async () => {

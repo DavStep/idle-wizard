@@ -65,20 +65,6 @@ function getWorkshopCharacterRuleBody(baseCss) {
   )?.groups?.body;
 }
 
-function getWorkshopCharacterTopOffset(baseCss) {
-  return Number(
-    getWorkshopCharacterRuleBody(baseCss)
-      ?.match(/top:\s*calc\(var\(--style-room-content-top\) \+ ([\d.]+)px\);/)
-      ?.at(1),
-  );
-}
-
-function getWorkshopCharacterHeight(baseCss) {
-  return Number(
-    getWorkshopCharacterRuleBody(baseCss)?.match(/height:\s*([\d.]+)px;/)?.at(1),
-  );
-}
-
 function getRootPixelValue(baseCss, propertyName) {
   return Number(
     baseCss.match(new RegExp(`${propertyName}:\\s*([\\d.]+)px;`))?.at(1),
@@ -136,8 +122,8 @@ describe('WorkshopPageFacade requirement feedback', () => {
 
   it('keeps task and notice characters in bottom-aligned side slots', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const topOffset = getWorkshopCharacterTopOffset(baseCss);
-    const characterHeight = getWorkshopCharacterHeight(baseCss);
+    const rootRule = getRuleBody(baseCss, ':root');
+    const characterRule = getWorkshopCharacterRuleBody(baseCss);
     const personalTasksRule = getRuleBody(
       baseCss,
       '\\.workshop-page__ui-layer > \\.workshop-page__personal-tasks',
@@ -148,8 +134,16 @@ describe('WorkshopPageFacade requirement feedback', () => {
       'right:',
     );
 
-    expect(topOffset).toBe(260);
-    expect(characterHeight).toBe(80.25);
+    expect(rootRule).toMatch(/--workshop-panel-button-row-shift-y:\s*60px;/);
+    expect(characterRule).toContain(
+      '--workshop-panel-button-row-3-label-y',
+    );
+    expect(characterRule).toContain(
+      'var(--workshop-panel-button-label-offset-y)',
+    );
+    expect(characterRule).toMatch(
+      /\bheight:\s*var\(--workshop-panel-button-height\);/,
+    );
     expect(personalTasksRule).toMatch(
       /\bleft:\s*var\(--style-room-chrome-edge\);/,
     );

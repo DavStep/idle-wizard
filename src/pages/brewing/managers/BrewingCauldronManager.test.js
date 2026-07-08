@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { cwd } from 'node:process';
 
 import { describe, expect, it, vi } from 'vitest';
@@ -564,8 +564,8 @@ describe('BrewingCauldronManager', () => {
       world.style.getPropertyValue('--brewing-page-world-pan-y'),
     );
 
-    expect(rubberPanX).toBeLessThan(-360);
-    expect(rubberPanX).toBeGreaterThan(-414);
+    expect(rubberPanX).toBeLessThan(-470);
+    expect(rubberPanX).toBeGreaterThan(-524);
     expect(rubberPanY).toBeLessThan(-1760);
     expect(rubberPanY).toBeGreaterThan(-1814);
 
@@ -577,7 +577,7 @@ describe('BrewingCauldronManager', () => {
       }),
     );
 
-    expect(world.style.getPropertyValue('--brewing-page-world-pan-x')).toBe('-360px');
+    expect(world.style.getPropertyValue('--brewing-page-world-pan-x')).toBe('-470px');
     expect(world.style.getPropertyValue('--brewing-page-world-pan-y')).toBe('-1760px');
     expect(world.style.getPropertyValue('--brewing-page-world-zoom')).toBe('1');
     expect(world.classList.contains('is-settling')).toBe(true);
@@ -875,7 +875,7 @@ describe('BrewingCauldronManager', () => {
 
     const cauldron = parent.querySelector('.brewing-page__cauldron');
 
-    expect(worldRule).toContain('width: 560px;');
+    expect(worldRule).toContain('width: 670px;');
     expect(worldRule).toContain('height: 1960px;');
     expect(cauldron?.style.left).toBe('122px');
     expect(cauldron?.style.top).toBe('112px');
@@ -893,11 +893,11 @@ describe('BrewingCauldronManager', () => {
       ),
     ).toEqual([
       { x: 122, y: 112 },
-      { x: 122, y: 316 },
-      { x: 122, y: 520 },
-      { x: 122, y: 724 },
-      { x: 122, y: 928 },
-      { x: 122, y: 1132 },
+      { x: 122, y: 284 },
+      { x: 122, y: 456 },
+      { x: 122, y: 628 },
+      { x: 122, y: 800 },
+      { x: 122, y: 972 },
     ]);
   });
 
@@ -951,7 +951,7 @@ describe('BrewingCauldronManager', () => {
     const first = manager.getCauldronWorldPosition(0);
     const second = manager.getCauldronWorldPosition(1);
     const firstLeft = manager.worldPan.x + first.x * manager.worldZoom;
-    const secondRight = manager.worldPan.x + (second.x + 408) * manager.worldZoom;
+    const secondRight = manager.worldPan.x + (second.x + 516) * manager.worldZoom;
 
     expect(firstLeft).toBeGreaterThanOrEqual(15.9);
     expect(secondRight).toBeLessThanOrEqual(344.1);
@@ -1012,15 +1012,15 @@ describe('BrewingCauldronManager', () => {
     const first = manager.getCauldronWorldPosition(0);
     const second = manager.getCauldronWorldPosition(1);
     const firstLeft = manager.worldPan.x + first.x * manager.worldZoom;
-    const secondRight = manager.worldPan.x + (second.x + 408) * manager.worldZoom;
+    const secondRight = manager.worldPan.x + (second.x + 516) * manager.worldZoom;
 
     expect(bounds.minX).toBe(0);
-    expect(bounds.maxX).toBe(640);
+    expect(bounds.maxX).toBe(530);
     expect(manager.worldZoom).toBe(1);
     expect(firstLeft).toBeGreaterThan(300);
     expect(secondRight).toBeLessThan(900);
     expect(manager.worldPan.x).toBeGreaterThanOrEqual(bounds.minX);
-    expect(manager.worldPan.x + 762).toBeLessThanOrEqual(1200);
+    expect(manager.worldPan.x + 670).toBeLessThanOrEqual(1200);
 
     manager.unmount();
     parent.remove();
@@ -1070,7 +1070,15 @@ describe('BrewingCauldronManager', () => {
 
     const locked = parent.querySelectorAll('.brewing-page__cauldron')[1];
     const action = locked.querySelector('.brewing-page__action-button');
+    const actionCost = action?.querySelector('.brewing-page__action-button-cost');
     const actions = locked.querySelector('.brewing-page__actions');
+    const recipeButton = locked.querySelector('.brewing-page__cauldron-select-recipe-text');
+    const quantityOptions = locked.querySelector('.brewing-page__quantity-options');
+    const quantityButton = locked.querySelector('.brewing-page__quantity-button');
+    const autoButton = locked.querySelector('.brewing-page__auto-button');
+    const lockedTitle = locked.querySelector(
+      '.brewing-page__cauldron-recipe-box > .style-box__title',
+    );
     const count = locked.querySelector('.brewing-page__cauldron-count');
     const content = locked.querySelector('.brewing-page__cauldron-content');
     const lockedBox = locked.querySelector('.brewing-page__cauldron-locked-box');
@@ -1085,6 +1093,15 @@ describe('BrewingCauldronManager', () => {
     const lockedLabelRule = baseCss.match(
       /\.brewing-page__cauldron-locked-label\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const lockedRecipeBoxRule = baseCss.match(
+      /\.brewing-page__cauldron\.is-locked\s+\.brewing-page__cauldron-recipe-box\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const lockedRecipeBoxFrameRule = baseCss.match(
+      /\.brewing-page__cauldron\.is-locked\s+\.brewing-page__cauldron-recipe-box\.style-box\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const lockedChromeRule = baseCss.match(
+      /\.brewing-page__cauldron\.is-locked\s+\.brewing-page__cauldron-recipe-box\s+>\s+\.style-box__title,[\s\S]*?\.brewing-page__cauldron-count\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const hiddenSubBoxRule = baseCss.match(
       /\.brewing-page__cauldron-recipe-box\[hidden\],\s*\.brewing-page__cauldron-potion-box\[hidden\]\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -1094,6 +1111,18 @@ describe('BrewingCauldronManager', () => {
     const hiddenCountRule = baseCss.match(
       /\.brewing-page__cauldron-count\[hidden\]\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const hiddenSideActionRule = baseCss.match(
+      /\.style-button\.brewing-page__cauldron-select-recipe-text\[hidden\],\s*\.style-button\.brewing-page__quantity-button\[hidden\],\s*\.style-button\.brewing-page__auto-button\[hidden\]\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const coinCostRule = baseCss.match(
+      /\.brewing-page__actions\s+\.style-button\.brewing-page__action-button\s+\.brewing-page__action-button-cost\[data-resource-color="coin"\],[\s\S]*?\.style-resource-label--coin\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const coinCostIconRule = baseCss.match(
+      /\.brewing-page__action-button-cost\[data-resource-color="coin"\]\s+\.style-resource-label__icon\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const coinCostTextRule = baseCss.match(
+      /\.brewing-page__action-button-cost\[data-resource-color="coin"\]\s+:where\(\.style-resource-label__text,\s*\.style-resource-label__spacer\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect(locked.classList.contains('is-locked')).toBe(true);
     expect(locked.classList.contains('is-buyable')).toBe(false);
@@ -1102,11 +1131,18 @@ describe('BrewingCauldronManager', () => {
     expect(baseLockedBoxRule).toContain('display: grid;');
     expect(baseLockedBoxRule).toContain('place-items: center;');
     expect(baseLockedBoxRule).toContain('text-align: center;');
+    expect(baseLockedBoxRule).toContain('background: transparent;');
+    expect(lockedRecipeBoxRule).toContain('background: transparent;');
+    expect(lockedRecipeBoxFrameRule).toContain('padding: 0;');
+    expect(lockedRecipeBoxFrameRule).toContain('background: transparent;');
+    expect(lockedRecipeBoxFrameRule).toContain('border: 0;');
+    expect(lockedRecipeBoxFrameRule).toContain('border-image: none;');
+    expect(lockedChromeRule).toContain('display: none;');
     expect(lockedFrameRule).toContain('width: 100%;');
     expect(lockedFrameRule).toContain('height: 100%;');
     expect(lockedFrameRule).toContain('min-height: var(--brewing-page-cauldron-art-height);');
     expect(lockedFrameRule).toContain('border: var(--style-border);');
-    expect(lockedFrameRule).toContain('border-style: dashed;');
+    expect(lockedFrameRule).toContain('border-style: dotted;');
     expect(lockedFrameRule).toContain(
       'color-mix(in srgb, var(--style-stroke) 45%, transparent)',
     );
@@ -1117,10 +1153,16 @@ describe('BrewingCauldronManager', () => {
     expect(hiddenSubBoxRule).toContain('display: none;');
     expect(lockedActionsRule).toContain('display: block;');
     expect(hiddenCountRule).toContain('display: none;');
+    expect(hiddenSideActionRule).toContain('display: none;');
+    expect(coinCostRule).toContain('color: var(--style-resource-coin);');
+    expect(coinCostIconRule).toContain('display: inline-block;');
+    expect(coinCostTextRule).toContain('display: none;');
     expect(lockedBox?.hidden).toBe(false);
     expect(lockedBox?.querySelector('.style-box__title')).toBeNull();
+    expect(lockedTitle?.hidden).toBe(true);
+    expect(lockedTitle?.textContent).toBe('');
     expect(lockedFrame).not.toBeNull();
-    expect(lockedLabel?.textContent).toBe('buy 3 coin');
+    expect(lockedLabel?.textContent).toBe('locked');
     expect(locked.querySelector('.brewing-page__cauldron-recipe-box')?.hidden).toBe(false);
     expect(content?.hidden).toBe(true);
     expect(locked.querySelector('.brewing-page__cauldron-potion-box')?.hidden).toBe(true);
@@ -1129,7 +1171,20 @@ describe('BrewingCauldronManager', () => {
     expect(locked.querySelector('.brewing-page__cauldron-items')?.hidden).toBe(true);
     expect(locked.querySelector('.brewing-page__cauldron-preview-label')?.hidden).toBe(true);
     expect(actions?.hidden).toBe(false);
+    expect(recipeButton?.hidden).toBe(true);
+    expect(quantityOptions?.hidden).toBe(true);
+    expect(quantityButton).toBeNull();
+    expect(autoButton?.hidden).toBe(true);
     expect(action?.textContent).toBe('buy 3 coin');
+    expect(actionCost?.dataset.resourceColor).toBe('coin');
+    expect(
+      actionCost?.querySelector('.style-resource-label--coin .style-resource-label__amount')
+        ?.textContent,
+    ).toBe('3');
+    expect(
+      actionCost?.querySelector('.style-resource-label--coin .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:coin');
     expect(action?.disabled).toBe(true);
 
     snapshot.coin.current = 3;
@@ -1139,7 +1194,7 @@ describe('BrewingCauldronManager', () => {
     expect(locked.classList.contains('is-buyable')).toBe(true);
     expect(locked.getAttribute('aria-disabled')).toBe('false');
     expect(locked.getAttribute('aria-label')).toBe('buy cauldron 2');
-    expect(lockedLabel?.textContent).toBe('buy 3 coin');
+    expect(lockedLabel?.textContent).toBe('locked');
     expect(actions?.hidden).toBe(false);
     expect(count?.hidden).toBe(true);
     expect(action?.disabled).toBe(false);
@@ -2690,6 +2745,8 @@ describe('BrewingCauldronManager', () => {
     const recipeButton = parent.querySelector('.brewing-page__cauldron-select-recipe-text');
     const actionButton = parent.querySelector('.brewing-page__action-button');
     const quantityOptions = parent.querySelector('.brewing-page__quantity-options');
+    const actions = parent.querySelector('.brewing-page__actions');
+    const cauldronBox = parent.querySelector('.brewing-page__cauldron-recipe-box');
     const actionsRule = baseCss.match(
       /\.brewing-page__actions\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -2705,8 +2762,17 @@ describe('BrewingCauldronManager', () => {
     const quantityButtonRule = baseCss.match(
       /\.style-button\.brewing-page__quantity-button,\s*\.style-button\.brewing-page__auto-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const midnightActionButtonRule = baseCss.match(
+      /:root\[data-style-theme="midnight"\]\s+\.brewing-page__actions\s+\.style-button\.brewing-page__action-button,[\s\S]*?\.style-button\.brewing-page__auto-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
 
     expect([...parent.querySelectorAll('.brewing-page__quantity-button')]).toHaveLength(1);
+    expect(
+      existsSync(`${cwd()}/public/ui/player-card-button-brown-fill-9slice.png`),
+    ).toBe(true);
+    expect(
+      existsSync(`${cwd()}/public/ui/player-card-button-brown-dark-fill-9slice.png`),
+    ).toBe(true);
     expect(quantityButton?.classList.contains('style-button')).toBe(true);
     expect(quantityButton?.textContent).toBe('x3');
     expect(quantityButton?.dataset.brewQuantity).toBe('3');
@@ -2715,21 +2781,88 @@ describe('BrewingCauldronManager', () => {
     expect(actionButton?.previousElementSibling).toBe(recipeButton);
     expect(quantityOptions?.previousElementSibling).toBe(actionButton);
     expect(quantityOptions?.parentElement).toBe(actionRow);
+    expect(actions?.closest('.brewing-page__cauldron-recipe-box')).toBeNull();
+    expect(cauldronBox?.parentElement?.nextElementSibling).toBe(actions);
     expect(actionsRule).toContain('position: relative;');
     expect(actionsRule).toContain('z-index: 2;');
-    expect(actionsRule).toContain('width: 100%;');
-    expect(actionsRule).toContain('margin-top: var(--brewing-page-cauldron-actions-gap);');
+    expect(actionsRule).toContain(
+      'width: var(--brewing-page-cauldron-action-button-width);',
+    );
+    expect(actionsRule).toContain('margin-top: 0;');
+    expect(actionsRule).toContain(
+      'flex: 0 0 var(--brewing-page-cauldron-action-button-width);',
+    );
+    expect(actionRowRule).toContain('flex-direction: column;');
     expect(actionRowRule).toContain('align-items: stretch;');
-    expect(actionRowRule).toContain('height: var(--brewing-page-cauldron-action-height);');
-    expect(actionButtonRule).toContain('width: var(--style-button-width);');
-    expect(actionButtonRule).toContain('height: 28px;');
+    expect(actionRowRule).toContain(
+      'gap: var(--brewing-page-cauldron-action-column-gap);',
+    );
+    expect(actionRowRule).toContain('height: auto;');
+    expect(actionButtonRule).toContain(
+      'width: var(--brewing-page-cauldron-action-button-width);',
+    );
+    expect(actionButtonRule).toContain(
+      'height: var(--brewing-page-cauldron-action-button-height);',
+    );
+    expect(actionButtonRule).toContain(
+      'color: var(--brewing-page-cauldron-action-button-text);',
+    );
+    expect(actionButtonRule).toContain('background: transparent;');
+    expect(actionButtonRule).toContain('border-color: transparent;');
+    expect(actionButtonRule).toContain(
+      'border-image-source: var(--brewing-page-cauldron-action-button-frame);',
+    );
+    expect(actionButtonRule).toContain(
+      'border-image-slice: var(--brewing-page-cauldron-action-button-slice);',
+    );
+    expect(actionButtonRule).toContain(
+      '--brewing-page-cauldron-action-button-border-image-width',
+    );
+    expect(actionButtonRule).toContain('border-image-repeat: stretch;');
     expect(actionButtonRule).toContain('white-space: nowrap;');
+    expect(quantityOptionsRule).toContain('display: flex;');
     expect(quantityOptionsRule).toContain('align-items: stretch;');
-    expect(quantityButtonRule).toContain('height: 28px;');
+    expect(quantityOptionsRule).toContain('width: 100%;');
+    expect(quantityButtonRule).toContain(
+      'height: var(--brewing-page-cauldron-action-button-height);',
+    );
+    expect(quantityButtonRule).toContain(
+      'width: var(--brewing-page-cauldron-action-button-width);',
+    );
+    expect(quantityButtonRule).toContain(
+      'color: var(--brewing-page-cauldron-action-button-text);',
+    );
+    expect(quantityButtonRule).toContain('background: transparent;');
+    expect(quantityButtonRule).toContain('border-color: transparent;');
+    expect(quantityButtonRule).toContain(
+      'border-image-source: var(--brewing-page-cauldron-action-button-frame);',
+    );
+    expect(quantityButtonRule).toContain(
+      'border-image-slice: var(--brewing-page-cauldron-action-button-slice);',
+    );
+    expect(quantityButtonRule).toContain(
+      '--brewing-page-cauldron-action-button-border-image-width',
+    );
+    expect(quantityButtonRule).toContain('border-image-repeat: stretch;');
     expect(quantityButtonRule).toContain('display: inline-flex;');
     expect(quantityButtonRule).toContain('align-items: center;');
     expect(quantityButtonRule).toContain('justify-content: center;');
     expect(quantityButtonRule).toContain('margin: 0;');
+    expect(midnightActionButtonRule).toContain('background: transparent;');
+    expect(midnightActionButtonRule).toContain('border-color: transparent;');
+    expect(midnightActionButtonRule).toContain(
+      'border-image-source: var(--brewing-page-cauldron-action-button-frame);',
+    );
+    expect(midnightActionButtonRule).toContain(
+      'border-image-slice: var(--brewing-page-cauldron-action-button-slice);',
+    );
+    expect(midnightActionButtonRule).toContain(
+      '--brewing-page-cauldron-action-button-border-image-width',
+    );
+    expect(midnightActionButtonRule).toContain('border-image-repeat: stretch;');
+    expect(baseCss).toContain(
+      'border-image-source: var(--brewing-page-cauldron-action-button-disabled-frame);',
+    );
     expect(quantityButtonRule).toContain('border: var(--style-border);');
     expect(actionButton?.getAttribute('aria-label')).toBe(
       'brew 3 mana tonic, costs 36 mana',
@@ -2937,11 +3070,11 @@ describe('BrewingCauldronManager', () => {
     expect(recipeButton?.textContent).toBe('recipes');
     expect(recipeButton?.disabled).toBe(false);
     expect(quantityButton?.hidden).toBe(false);
-    expect(quantityButton?.textContent).toBe('x1 lock');
+    expect(quantityButton?.textContent).toBe('x1');
     expect(quantityButton?.disabled).toBe(true);
     expect(quantityButton?.classList.contains('is-locked')).toBe(true);
     expect(autoButton?.hidden).toBe(false);
-    expect(autoButton?.textContent).toBe('auto lock');
+    expect(autoButton?.textContent).toBe('auto');
     expect(autoButton?.disabled).toBe(true);
     expect(autoButton?.classList.contains('is-locked')).toBe(true);
 
@@ -2949,7 +3082,7 @@ describe('BrewingCauldronManager', () => {
     parent.remove();
   });
 
-  it('shows the potion result label with the brew action beneath it', () => {
+  it('shows the potion result label with the brew action beside the cauldron box', () => {
     const snapshot = {
       brewing: {
         herbs: [],
@@ -2979,6 +3112,8 @@ describe('BrewingCauldronManager', () => {
     let icon = parent.querySelector('.brewing-page__cauldron-preview-icon');
     const cauldronLiquid = parent.querySelector('.brewing-page__cauldron-art-liquid');
     const action = parent.querySelector('.brewing-page__action-button');
+    const actions = parent.querySelector('.brewing-page__actions');
+    const recipeBox = parent.querySelector('.brewing-page__cauldron-recipe-box');
 
     expect(label?.hidden).toBe(false);
     expect(label?.textContent).toBe('wasted potion');
@@ -2988,6 +3123,8 @@ describe('BrewingCauldronManager', () => {
     expect(cauldronLiquid?.hidden).toBe(true);
     expect(cauldronLiquid?.dataset.potionLiquidKey).toBeUndefined();
     expect(action?.closest('.brewing-page__cauldron-preview')).toBeNull();
+    expect(actions?.closest('.brewing-page__cauldron-recipe-box')).toBeNull();
+    expect(recipeBox?.parentElement?.nextElementSibling).toBe(actions);
     expect(action?.closest('.brewing-page__cauldron')).toBe(preview?.closest('.brewing-page__cauldron'));
     expect(action?.textContent).toBe('brew 5 mana');
 
@@ -3057,7 +3194,11 @@ describe('BrewingCauldronManager', () => {
     expect(cauldronRule).toContain(
       'var(--style-row-min-height) * var(--brewing-page-cauldron-row-count)',
     );
-    expect(cauldronRule).toContain('var(--brewing-page-cauldron-action-height)');
+    expect(cauldronRule).toContain(
+      '--brewing-page-cauldron-block-height: var(',
+    );
+    expect(cauldronRule).toContain('display: flex;');
+    expect(cauldronRule).toContain('width: var(--brewing-page-cauldron-node-width);');
 
     const baseSnapshot = {
       brewing: {

@@ -38,11 +38,11 @@ const HERB_COLUMN_COUNT = 2;
 const COLLAPSED_HERB_ROW_COUNT = 3;
 const COLLAPSED_HERB_COUNT = HERB_COLUMN_COUNT * COLLAPSED_HERB_ROW_COUNT;
 const WORLD_EDGE_EXTENSION = 16;
-const WORLD_WIDTH = 560;
+const WORLD_WIDTH = 670;
 const WORLD_HEIGHT = 1960;
 const WORLD_FIT_PADDING = 16;
-const CAULDRON_BOX_WIDTH = 408;
-const CAULDRON_BOX_HEIGHT = 204;
+const CAULDRON_BOX_WIDTH = 516;
+const CAULDRON_BOX_HEIGHT = 146;
 const HERB_DRAG_THRESHOLD = 22;
 const ITEM_DRAG_SWAY_X_FACTOR = 0.45;
 const ITEM_DRAG_SWAY_Y_FACTOR = 0.2;
@@ -71,7 +71,7 @@ const WORLD_PAN_RUBBER_LIMIT = 54;
 const WORLD_SETTLE_CLASS_MS = 240;
 const CAULDRON_WORLD_LEFT_OFFSET = 106;
 const CAULDRON_WORLD_TOP_OFFSET = 96;
-const CAULDRON_WORLD_ROW_GAP = 204;
+const CAULDRON_WORLD_ROW_GAP = 172;
 
 export class BrewingCauldronManager {
   constructor({
@@ -389,9 +389,9 @@ export class BrewingCauldronManager {
     content.append(potionBox, recipeContent);
     lockedFrame.append(lockedLabel);
     lockedBox.append(lockedFrame);
-    recipeBox.append(title, count, content, lockedBox, actions.root);
+    recipeBox.append(title, count, content, lockedBox);
     boxes.append(recipeBox);
-    root.append(boxes);
+    root.append(boxes, actions.root);
     return {
       cauldronIndex: safeCauldronIndex,
       root,
@@ -1963,6 +1963,7 @@ export class BrewingCauldronManager {
     this.setHidden(refs.content, false);
     this.setHidden(refs.potionBox, false);
     this.setHidden(refs.lockedBox, true);
+    this.setHidden(refs.title, false);
     this.removeAttribute(refs.root, 'aria-disabled');
     this.setAttribute(
       refs.root,
@@ -2027,7 +2028,8 @@ export class BrewingCauldronManager {
     this.setHidden(refs.potionBox, true);
     this.setHidden(refs.lockedBox, false);
     this.setCauldronRowCount(refs);
-    this.renderCauldronTitle(refs.title, brewing);
+    this.setHidden(refs.title, true);
+    this.setText(refs.title, '');
     this.setHidden(refs.preview, false);
     this.setHidden(refs.previewLabel, true);
     this.setHidden(refs.previewSummary, true);
@@ -2840,9 +2842,7 @@ export class BrewingCauldronManager {
   }
 
   renderLockedCauldronAction(refs, brewing, action) {
-    const labelText = this.formatLockedCauldronActionText(brewing, action);
-
-    this.setText(refs.lockedLabel, labelText);
+    this.setText(refs.lockedLabel, 'locked');
     this.setHidden(refs.actions.root, false);
     this.renderSelectRecipeButton(refs, brewing);
     this.renderBrewQuantityOptions(refs, brewing, null);
@@ -2896,18 +2896,6 @@ export class BrewingCauldronManager {
     return action.hasCost ? `${label} ` : label;
   }
 
-  formatLockedCauldronActionText(brewing, action) {
-    if (!action) {
-      return this.formatCauldronBubble(brewing);
-    }
-
-    if (!action.hasCost) {
-      return action.label;
-    }
-
-    return `${action.label} ${action.costText ?? ''}`.trim();
-  }
-
   renderBrewQuantityOptions(refs, brewing) {
     const root = refs?.actions?.quantityOptions;
 
@@ -2936,7 +2924,7 @@ export class BrewingCauldronManager {
     button.dataset.cauldronIndex = String(this.normalizeCauldronIndex(refs.cauldronIndex));
     const locked = maxBrewQuantity <= 1;
     const disabled = locked || Boolean(brewing?.activeBrew);
-    button.textContent = locked ? `x${brewQuantity} lock` : `x${brewQuantity}`;
+    button.textContent = `x${brewQuantity}`;
     button.classList.toggle('is-locked', locked);
     this.setDisabled(button, disabled);
     this.setAttribute(button, 'aria-disabled', disabled ? 'true' : 'false');
@@ -2997,7 +2985,7 @@ export class BrewingCauldronManager {
 
     if (!available) {
       button.dataset.cauldronIndex = String(this.normalizeCauldronIndex(refs.cauldronIndex));
-      this.setText(button, 'auto lock');
+      this.setText(button, 'auto');
       button.classList.add('is-locked');
       this.setDisabled(button, true);
       this.setAttribute(button, 'aria-disabled', 'true');

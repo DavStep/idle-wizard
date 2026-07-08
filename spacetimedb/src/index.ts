@@ -1,4 +1,4 @@
-import { Identity, Timestamp, Uuid } from 'spacetimedb';
+import { Identity, ScheduleAt, Timestamp, Uuid } from 'spacetimedb';
 import {
   schema,
   table,
@@ -7,6 +7,7 @@ import {
   type ReducerCtx,
   type InferSchema,
 } from 'spacetimedb/server';
+import { normalizeSaveTasks } from './saveTasksNormalizer';
 
 const DEFAULT_USERNAME = 'wizard';
 const DEFAULT_PLAYER_LEVEL = 1;
@@ -140,6 +141,8 @@ const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
 const WORLD_EVENT_LEADERBOARD_SUMMARY_LIMIT = 100;
 const WORLD_EVENT_LEADERBOARD_POINTS_CAP_PER_LEVEL = 1_000_000n;
 const WORLD_EVENT_REWARD_QUALIFICATION_POINTS = 2_000n;
+const WORLD_EVENT_REWARD_SETTLEMENT_INTERVAL_MICROS = 60n * 1_000_000n;
+const WORLD_EVENT_REWARD_SETTLEMENT_STATE_PREFIX = 'world-event-reward-settlement';
 const WORLD_EVENT_REWARD_TIERS = [
   { minRank: 1, maxRank: 1, emeraldReward: 5, crystalReward: 10 },
   { minRank: 2, maxRank: 2, emeraldReward: 3, crystalReward: 7 },
@@ -5271,6 +5274,18 @@ const gameConfigCatalog = [
   { configKey: 'maintenance', configJson: DEFAULT_MAINTENANCE_CONFIG_JSON },
 ];
 
+const worldEventRewardSettlementTick = table(
+  {
+    name: 'world_event_reward_settlement_tick',
+    public: false,
+    scheduled: (): any => run_world_event_reward_settlement_tick,
+  },
+  {
+    tickId: t.u64().primaryKey(),
+    scheduledAt: t.scheduleAt(),
+  },
+);
+
 const spacetimedb = schema({
   player: table(
     { public: true },
@@ -5310,6 +5325,7 @@ const spacetimedb = schema({
       updatedAt: t.timestamp(),
     },
   ),
+  worldEventRewardSettlementTick,
   playerInboxMail: table(
     {
       name: 'player_inbox_mail',
@@ -6954,6 +6970,29 @@ function getMonthlyPeriodKey(ctx: IdleWizardReducerCtx): string {
 
 function getWorldEventPeriodKey(ctx: IdleWizardReducerCtx): string {
   return `weekly-${getWeeklyPeriodKey(ctx)}`;
+}
+
+function getWorldEventPeriodIndex(periodKey: string): number | null {
+  const safePeriodKey = normalizeWorldEventPeriodKey(periodKey);
+  const match = /^weekly-(\d+)$/.exec(safePeriodKey);
+
+  if (!match) {
+    return null;
+  }
+
+  const periodIndex = Number(match[1]);
+  return Number.isSafeInteger(periodIndex) && periodIndex >= 0 ? periodIndex : null;
+}
+
+function isEndedWorldEventPeriod(ctx: IdleWizardReducerCtx, periodKey: string): boolean {
+  const periodIndex = getWorldEventPeriodIndex(periodKey);
+  const currentPeriodIndex = getWorldEventPeriodIndex(getWorldEventPeriodKey(ctx));
+
+  return (
+    periodIndex !== null &&
+    currentPeriodIndex !== null &&
+    periodIndex < currentPeriodIndex
+  );
 }
 
 function getTradeAllianceDayKey(ctx: IdleWizardReducerCtx): string {
@@ -10258,94 +10297,6 @@ function getSaveRequiredPrestigeCount(researchId: string): number {
   return 0;
 }
 
-function normalizeSaveTasks(
-  value: unknown,
-  taskCatalog: ReturnType<typeof getSaveTaskCatalog>,
-  previousLevel: number | null,
-) {
-  const taskState = isRecord(value) ? value : {};
-  const savedTasks = Array.isArray(taskState.tasks) ? taskState.tasks : [];
-  const savedTasksById = new Map(
-    savedTasks
-      .filter((task): task is Record<string, unknown> => isRecord(task))
-      .map((task) => [String(task.taskId ?? ''), task]),
-  );
-  const reportedLevel = taskState.currentLevel === undefined
-    ? null
-    : clampSaveInteger(
-        taskState.currentLevel,
-        taskCatalog.initialLevel,
-        taskCatalog.maxLevel,
-        taskCatalog.initialLevel,
-      );
-  const maxAllowedLevel = previousLevel === null
-    ? taskCatalog.initialLevel
-    : Math.min(taskCatalog.maxLevel, previousLevel + 1);
-  const fallbackLevel = previousLevel ?? taskCatalog.initialLevel;
-  const candidateLevel = Math.min(
-    reportedLevel ?? fallbackLevel,
-    maxAllowedLevel,
-  );
-  const normalizedTasks = taskCatalog.tasks.map((task) => {
-    const savedTask = savedTasksById.get(task.id);
-    const progressQuantity = clampSaveInteger(
-      savedTask?.progressQuantity,
-      0,
-      task.quantity,
-      0,
-    );
-    const completed =
-      task.level < candidateLevel ||
-      (Boolean(savedTask?.completed) && progressQuantity >= task.quantity);
-
-    return {
-      taskId: task.id,
-      progressQuantity: completed ? task.quantity : progressQuantity,
-      completed,
-      level: task.level,
-      requiredQuantity: task.quantity,
-    };
-  });
-  const derivedLevel = getFirstIncompleteSaveLevel(normalizedTasks, taskCatalog);
-  const currentLevel = Math.min(
-    reportedLevel ?? fallbackLevel,
-    derivedLevel,
-    maxAllowedLevel,
-  );
-
-  return {
-    currentLevel,
-    tasks: normalizedTasks
-      .filter((task) => task.level === currentLevel)
-      .filter((task) => task.progressQuantity > 0 || task.completed)
-      .map((task) => ({
-        taskId: task.taskId,
-        progressQuantity: task.progressQuantity,
-        completed: task.completed,
-      })),
-  };
-}
-
-function getFirstIncompleteSaveLevel(
-  tasks: Array<{
-    taskId: string;
-    progressQuantity: number;
-    completed: boolean;
-    level: number;
-    requiredQuantity: number;
-  }>,
-  taskCatalog: ReturnType<typeof getSaveTaskCatalog>,
-): number {
-  for (const level of taskCatalog.levels) {
-    const levelTasks = tasks.filter((task) => task.level === level);
-    if (!levelTasks.every((task) => task.completed)) {
-      return level;
-    }
-  }
-
-  return taskCatalog.maxLevel;
-}
-
 function normalizeSaveShop(
   value: unknown,
   itemCatalog: Map<string, string>,
@@ -13470,6 +13421,137 @@ function getWorldEventRewardTier(rank: number) {
       (tier) => rank >= tier.minRank && rank <= tier.maxRank,
     ) ?? null
   );
+}
+
+function getWorldEventSettlementStateKey(periodKey: string, eventId: string): string {
+  return `${WORLD_EVENT_REWARD_SETTLEMENT_STATE_PREFIX}:${periodKey}:${eventId}`;
+}
+
+function formatWorldEventHeadline(eventId: string): string {
+  return normalizePlayerInboxText(
+    normalizeWorldEventId(eventId).replace(/-/g, ' '),
+    MAX_PLAYER_INBOX_TITLE_LENGTH,
+    eventId,
+  );
+}
+
+function ensureWorldEventRewardSettlementTick(ctx: IdleWizardReducerCtx) {
+  if (ctx.db.worldEventRewardSettlementTick.tickId.find(1n)) {
+    return;
+  }
+
+  ctx.db.worldEventRewardSettlementTick.insert({
+    tickId: 1n,
+    scheduledAt: ScheduleAt.interval(WORLD_EVENT_REWARD_SETTLEMENT_INTERVAL_MICROS),
+  });
+}
+
+function settleWorldEventInboxRewards(
+  ctx: IdleWizardReducerCtx,
+  {
+    periodKey,
+    eventId,
+    headline,
+    markSettled = false,
+  }: {
+    periodKey: string;
+    eventId: string;
+    headline: string;
+    markSettled?: boolean;
+  },
+) {
+  const safePeriodKey = normalizeWorldEventPeriodKey(periodKey);
+  const safeEventId = normalizeWorldEventId(eventId);
+  if (!safePeriodKey || !safeEventId) {
+    throw new Error('Invalid world event reward settlement key.');
+  }
+
+  const stateKey = getWorldEventSettlementStateKey(safePeriodKey, safeEventId);
+  if (markSettled && ctx.db.maintenanceState.stateKey.find(stateKey)) {
+    return 0;
+  }
+
+  const eventEntries = Array.from(ctx.db.worldEventLeaderboard.byPeriodKey.filter(safePeriodKey))
+    .filter((entry) => normalizeWorldEventId(entry.eventId) === safeEventId);
+  const rankedEntries = getRankedWorldEventLeaderboardEntries(eventEntries);
+  const eventHeadline =
+    normalizePlayerInboxText(headline, MAX_PLAYER_INBOX_TITLE_LENGTH) || safeEventId;
+  const sourceKey = `${safePeriodKey}:${safeEventId}`;
+  let insertedMailCount = 0;
+
+  rankedEntries.forEach((entry, index) => {
+    const points = toBigInt(entry.points);
+    if (points < WORLD_EVENT_REWARD_QUALIFICATION_POINTS) {
+      return;
+    }
+
+    const player = ctx.db.player.identity.find(entry.identity);
+    if (!player) {
+      return;
+    }
+
+    const rank = index + 1;
+    const tier = getWorldEventRewardTier(rank);
+    if (!tier) {
+      return;
+    }
+
+    const rewards = normalizePlayerInboxRewards(ctx, {
+      coinReward: 0n,
+      crystalReward: tier.crystalReward,
+      rubyReward: 0,
+      emeraldReward: tier.emeraldReward,
+      itemRewardsJson: '[]',
+    });
+
+    if (
+      insertPlayerInboxMail(ctx, {
+        recipientIdentity: player.identity,
+        sourceType: 'worldEvent',
+        sourceKey,
+        senderLabel: 'world event',
+        title: 'event finished',
+        body: `you placed #${rank} in ${eventHeadline} with ${points.toString()} points. here are your rewards.`,
+        rewards,
+      })
+    ) {
+      insertedMailCount += 1;
+    }
+  });
+
+  if (markSettled && !ctx.db.maintenanceState.stateKey.find(stateKey)) {
+    ctx.db.maintenanceState.insert({
+      stateKey,
+      appliedAt: ctx.timestamp,
+    });
+  }
+
+  return insertedMailCount;
+}
+
+function settleEndedWorldEventInboxRewards(ctx: IdleWizardReducerCtx) {
+  const eventKeys = new Set<string>();
+
+  for (const entry of Array.from(ctx.db.worldEventLeaderboard.iter())) {
+    const periodKey = normalizeWorldEventPeriodKey(entry.periodKey);
+    const eventId = normalizeWorldEventId(entry.eventId);
+
+    if (!periodKey || !eventId || !isEndedWorldEventPeriod(ctx, periodKey)) {
+      continue;
+    }
+
+    eventKeys.add(`${periodKey}:${eventId}`);
+  }
+
+  for (const eventKey of eventKeys) {
+    const [periodKey, eventId] = eventKey.split(':');
+    settleWorldEventInboxRewards(ctx, {
+      periodKey,
+      eventId,
+      headline: formatWorldEventHeadline(eventId),
+      markSettled: true,
+    });
+  }
 }
 
 function getLeaderboardPeriodDefaults(ctx: IdleWizardReducerCtx, income = 0n) {
@@ -16775,6 +16857,8 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   runPlayerLevelManaRegenBackfillOnce(ctx);
   runPlayerLevelCauldronCapBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
+  ensureWorldEventRewardSettlementTick(ctx);
+  settleEndedWorldEventInboxRewards(ctx);
 
   if (getMaintenanceConfig(ctx).mode === MAINTENANCE_MODE_LOCKED) {
     return;
@@ -16812,7 +16896,17 @@ export const init = spacetimedb.init((ctx) => {
   runPlayerLevelManaRegenBackfillOnce(ctx);
   runPlayerLevelCauldronCapBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
+  ensureWorldEventRewardSettlementTick(ctx);
+  settleEndedWorldEventInboxRewards(ctx);
 });
+
+export const run_world_event_reward_settlement_tick = spacetimedb.reducer(
+  { arg: worldEventRewardSettlementTick.rowType },
+  (ctx) => {
+    ensureWorldEventRewardSettlementTick(ctx);
+    settleEndedWorldEventInboxRewards(ctx);
+  },
+);
 
 export const onDisconnect = spacetimedb.clientDisconnected((ctx) => {
   if (!isActivePlayerSession(ctx)) {
@@ -17805,47 +17899,11 @@ export const admin_settle_world_event_inbox_rewards = spacetimedb.reducer(
       throw new Error('Invalid world event reward settlement key.');
     }
 
-    const eventEntries = Array.from(ctx.db.worldEventLeaderboard.byPeriodKey.filter(safePeriodKey))
-      .filter((entry) => normalizeWorldEventId(entry.eventId) === safeEventId);
-    const rankedEntries = getRankedWorldEventLeaderboardEntries(eventEntries);
-    const eventHeadline =
-      normalizePlayerInboxText(headline, MAX_PLAYER_INBOX_TITLE_LENGTH) || safeEventId;
-    const sourceKey = `${safePeriodKey}:${safeEventId}`;
-
-    rankedEntries.forEach((entry, index) => {
-      const points = toBigInt(entry.points);
-      if (points < WORLD_EVENT_REWARD_QUALIFICATION_POINTS) {
-        return;
-      }
-
-      const player = ctx.db.player.identity.find(entry.identity);
-      if (!player) {
-        return;
-      }
-
-      const rank = index + 1;
-      const tier = getWorldEventRewardTier(rank);
-      if (!tier) {
-        return;
-      }
-
-      const rewards = normalizePlayerInboxRewards(ctx, {
-        coinReward: 0n,
-        crystalReward: tier.crystalReward,
-        rubyReward: 0,
-        emeraldReward: tier.emeraldReward,
-        itemRewardsJson: '[]',
-      });
-
-      insertPlayerInboxMail(ctx, {
-        recipientIdentity: player.identity,
-        sourceType: 'worldEvent',
-        sourceKey,
-        senderLabel: 'world event',
-        title: 'event finished',
-        body: `you placed #${rank} in ${eventHeadline} with ${points.toString()} points. here are your rewards.`,
-        rewards,
-      });
+    settleWorldEventInboxRewards(ctx, {
+      periodKey: safePeriodKey,
+      eventId: safeEventId,
+      headline,
+      markSettled: isEndedWorldEventPeriod(ctx, safePeriodKey),
     });
   },
 );

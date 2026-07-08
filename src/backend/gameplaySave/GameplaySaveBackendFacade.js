@@ -45,6 +45,10 @@ export class GameplaySaveBackendFacade {
     this.sendManager.discardPendingSaves();
   }
 
+  getPendingHydratedSave() {
+    return this.sendManager.getPendingHydratedSave();
+  }
+
   setReadyToSend(ready = true) {
     this.sendManager.setReadyToSend(ready);
   }

@@ -108,7 +108,6 @@ export class PagesFacade {
     this.announcementFacade = new PageAnnouncementFacade({
       gameplayFacade,
       playerFacade,
-      playerShopFacade,
     });
     this.topPanelFacade = new TopPanelFacade({
       gameplayFacade,

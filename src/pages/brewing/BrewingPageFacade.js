@@ -37,6 +37,7 @@ export class BrewingPageFacade {
           icon: 'herbs',
           side: 'left',
           className: 'brewing-page__inventory-button brewing-page__inventory-button--herbs',
+          tutorialId: 'brewing:inventory:herbs',
         },
         {
           tabId: 'potions',

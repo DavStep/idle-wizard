@@ -84,6 +84,26 @@ describe('GameplaySaveSendManager', () => {
     expect(set_player_gameplay_save).not.toHaveBeenCalled();
   });
 
+  it('exposes hydrated pending saves for reconnect hydration', () => {
+    const save = { version: 2, coin: { current: 7 } };
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
+
+    manager.restorePending(JSON.stringify(save), true);
+
+    expect(manager.getPendingHydratedSave()).toEqual(save);
+  });
+
+  it('does not expose pre-hydration pending saves for reconnect hydration', () => {
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
+
+    manager.restorePending(
+      JSON.stringify({ version: 2, coin: { current: 7 } }),
+      false,
+    );
+
+    expect(manager.getPendingHydratedSave()).toBeNull();
+  });
+
   it('keeps saves made after server hydration across reconnects', () => {
     const failingSetPlayerGameplaySave = vi.fn(() => {
       throw new Error('offline');

@@ -9,7 +9,6 @@ import { appendTextWithItemIcons } from '../../shared/itemIconLabel.js';
 import { createPageIcon } from '../../shared/pageIcons.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { getLevelPayoffRows } from '../../workshop/managers/levelPayoffSummary.js';
-import { PlayerShopWhileAwayReportManager } from './PlayerShopWhileAwayReportManager.js';
 
 const DISPLAY_MS = 2100;
 const RESOURCE_ICON_FRAMES = Object.freeze({
@@ -44,24 +43,16 @@ const WHILE_AWAY_VISIBLE_ROW_TYPES = new Set([
   'brewing_complete',
   'market_sold',
   'npc_market_sold',
-  'market_proceeds',
-  'player_market_sold',
-  'player_trade_bought_from_you',
-  'player_trade_sold_to_you',
-  'player_request_filled',
-  'potion_royalty_earned',
 ]);
 
 export class PageAnnouncementManager {
   constructor({
     gameplayFacade,
     playerFacade,
-    playerShopFacade,
     displayMs = DISPLAY_MS,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.playerFacade = playerFacade;
-    this.playerShopReportManager = new PlayerShopWhileAwayReportManager({ playerShopFacade });
     this.displayMs = displayMs;
     this.layer = null;
     this.panel = null;
@@ -99,9 +90,6 @@ export class PageAnnouncementManager {
     stage.ownerDocument?.addEventListener?.('keydown', this.handleKeydown);
     this.unsubscribe =
       this.gameplayFacade?.subscribe?.((snapshot) => this.handleSnapshot(snapshot)) ?? null;
-    this.playerShopReportManager.mount({
-      onRows: (rows) => this.queuePlayerShopWhileAwayRows(rows),
-    });
 
     const baselineSnapshot = this.gameplayFacade?.getSnapshot?.();
 
@@ -117,7 +105,6 @@ export class PageAnnouncementManager {
 
   unmount() {
     this.unsubscribe?.();
-    this.playerShopReportManager.unmount();
     this.unsubscribe = null;
     this.clearHideTimeout();
     this.layer?.ownerDocument?.removeEventListener?.('keydown', this.handleKeydown);
@@ -253,8 +240,6 @@ export class PageAnnouncementManager {
 
   queuePendingWhileAwayReports() {
     const reports = this.gameplayFacade?.consumeWhileAwayReports?.() ?? [];
-    const playerShopReport = this.playerShopReportManager.consumeReport();
-    let appendedPlayerShopReport = false;
 
     for (const report of reports) {
       if (report?.kind !== 'whileAway' || !Array.isArray(report.rows) || report.rows.length <= 0) {
@@ -263,44 +248,10 @@ export class PageAnnouncementManager {
 
       const rows = this.getVisibleWhileAwayRows(report.rows);
 
-      if (!appendedPlayerShopReport && Array.isArray(playerShopReport?.rows)) {
-        rows.push(...this.getVisibleWhileAwayRows(playerShopReport.rows));
-        appendedPlayerShopReport = true;
-      }
-
       if (rows.length > 0) {
         this.queue.push({ ...report, rows });
       }
     }
-
-    if (!appendedPlayerShopReport && Array.isArray(playerShopReport?.rows)) {
-      const rows = this.getVisibleWhileAwayRows(playerShopReport.rows);
-
-      if (rows.length <= 0) {
-        return;
-      }
-
-      this.queue.push({
-        ...playerShopReport,
-        rows,
-      });
-    }
-  }
-
-  queuePlayerShopWhileAwayRows(rows = []) {
-    const visibleRows = this.getVisibleWhileAwayRows(rows);
-
-    if (visibleRows.length <= 0) {
-      return;
-    }
-
-    this.queue.push({
-      kind: 'whileAway',
-      source: 'player_market',
-      offlineSeconds: 0,
-      rows: visibleRows,
-    });
-    this.showNext();
   }
 
   getVisibleWhileAwayRows(rows = []) {
@@ -787,47 +738,6 @@ export class PageAnnouncementManager {
           label: 'traders bought',
           value: formatCoinPriceText(this.getPositiveCoin(row.coin)),
         };
-      case 'market_proceeds':
-        return {
-          label: 'market proceeds',
-          value: formatCoinPriceText(this.getPositiveCoin(row.coin)),
-        };
-      case 'player_market_sold':
-        return {
-          label: 'players bought',
-          value: formatCoinPriceText(this.getPositiveCoin(row.coin)),
-        };
-      case 'player_trade_bought_from_you':
-        return {
-          label: this.getActorLabel('players bought', row.username),
-          value: `${this.getPositiveCount(row.quantity)} ${this.getReportLabel(
-            row.label,
-            'items',
-          )} / ${formatCoinPriceText(this.getPositiveCoin(row.coin))}`,
-        };
-      case 'player_trade_sold_to_you':
-        return {
-          label: this.getActorLabel('players sold you', row.username),
-          value: `${this.getPositiveCount(row.quantity)} ${this.getReportLabel(
-            row.label,
-            'items',
-          )} / ${formatCoinPriceText(this.getPositiveCoin(row.coin))}`,
-        };
-      case 'player_request_filled':
-        return {
-          label: 'players sold you',
-          value: `${this.getPositiveCount(row.quantity)} ${this.getReportLabel(
-            row.label,
-            'items',
-          )}`,
-        };
-      case 'potion_royalty_earned':
-        return {
-          label: this.getActorLabel('royalties', row.username),
-          value: `${this.getReportLabel(row.label, 'potion')} / ${formatCoinPriceText(
-            this.getPositiveCoin(row.coin),
-          )}`,
-        };
       case 'auto_seed_summoned':
         return {
           label: 'auto seed summoned',
@@ -860,11 +770,6 @@ export class PageAnnouncementManager {
   getPositiveCoin(value) {
     const coin = Math.round((Number(value) || 0) * 100) / 100;
     return coin > 0 ? coin : 0;
-  }
-
-  getActorLabel(label, username) {
-    const name = this.getReportLabel(username, '');
-    return name ? `${label}: ${name}` : label;
   }
 
   pluralize(label, count) {

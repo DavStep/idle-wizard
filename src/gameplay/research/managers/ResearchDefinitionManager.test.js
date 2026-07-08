@@ -84,6 +84,28 @@ describe('ResearchDefinitionManager', () => {
     expect(manager.hasConfiguredResearch('unlockRecipe:manaTonic')).toBe(true);
   });
 
+  it('keeps mint seed research available during level 3 requirements', () => {
+    const { manager, setCurrentLevel } = createManager();
+    setCurrentLevel(2);
+
+    expect(manager.getMissingRequiredPlayerLevel('unlockSeed:mintSeed')).toBeNull();
+    expect(manager.getResearch('unlockSeed:mintSeed')).toMatchObject({
+      id: 'unlockSeed:mintSeed',
+      requiredPlayerLevel: 2,
+    });
+  });
+
+  it('keeps mana tonic research available during level 5 requirements', () => {
+    const { manager, setCurrentLevel } = createManager();
+    setCurrentLevel(4);
+
+    expect(manager.getMissingRequiredPlayerLevel('unlockRecipe:manaTonic')).toBeNull();
+    expect(manager.getResearch('unlockRecipe:manaTonic')).toMatchObject({
+      id: 'unlockRecipe:manaTonic',
+      requiredPlayerLevel: 4,
+    });
+  });
+
   it('shows slot researches unlocked by completed capacity research', () => {
     const { manager, setMaxGardenTiles, setMaxCauldrons } = createManager();
     setMaxGardenTiles(3);

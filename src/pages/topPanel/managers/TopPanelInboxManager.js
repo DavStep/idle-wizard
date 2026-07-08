@@ -1,3 +1,6 @@
+import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import { createStatusIcon, STATUS_ICON_CHECK } from '../../shared/statusIcon.js';
+
 export class TopPanelInboxManager {
   constructor({ playerInboxFacade } = {}) {
     this.playerInboxFacade = playerInboxFacade;
@@ -168,7 +171,7 @@ export class TopPanelInboxManager {
     if (mail.hasReward) {
       const reward = document.createElement('div');
       reward.className = 'room-top-panel__inbox-row-reward';
-      reward.textContent = mail.rewardText || 'reward';
+      setResourceIconText(reward, this.formatRewardText(mail.rewardText));
       main.append(reward);
     }
 
@@ -182,8 +185,18 @@ export class TopPanelInboxManager {
       action.append(status);
     } else if (mail.rewardCollected) {
       const status = document.createElement('span');
-      status.className = 'room-top-panel__inbox-row-status';
-      status.textContent = 'claimed';
+      status.className = 'room-top-panel__inbox-row-status room-top-panel__inbox-row-status--icon';
+      status.setAttribute('aria-label', 'claimed');
+      status.title = 'claimed';
+      const checkIcon = createStatusIcon(
+        'room-top-panel__inbox-row-status-icon',
+        STATUS_ICON_CHECK,
+      );
+      if (checkIcon) {
+        status.append(checkIcon);
+      } else {
+        status.textContent = 'claimed';
+      }
       action.append(status);
     } else {
       const button = document.createElement('button');
@@ -211,6 +224,11 @@ export class TopPanelInboxManager {
     const time = this.formatTime(mail.createdAtMs);
 
     return time ? `${sender} · ${time}` : sender;
+  }
+
+  formatRewardText(rewardText) {
+    const value = String(rewardText || 'reward').trim() || 'reward';
+    return value.replace(/,\s+(?=[+-]?\d|\?)/g, ' ');
   }
 
   formatTime(createdAtMs) {

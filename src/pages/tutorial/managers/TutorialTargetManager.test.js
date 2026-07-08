@@ -254,6 +254,22 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().isBrewingRecipeSelected('minorHealingPotion')).toBe(false);
   });
 
+  it('reads whether the Brewing herbs inventory is open', () => {
+    const stage = document.createElement('section');
+    const herbs = document.createElement('section');
+    const manager = new TutorialTargetManager({ stage });
+
+    herbs.className = 'brewing-page__herbs';
+    herbs.hidden = true;
+    stage.append(herbs);
+
+    expect(manager.getDomState().isBrewingHerbInventoryOpen()).toBe(false);
+
+    herbs.hidden = false;
+
+    expect(manager.getDomState().isBrewingHerbInventoryOpen()).toBe(true);
+  });
+
   it('prefers visible measurable targets when duplicate tutorial ids exist', () => {
     const stage = document.createElement('section');
     const hiddenTarget = document.createElement('span');

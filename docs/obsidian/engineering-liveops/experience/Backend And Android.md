@@ -32,8 +32,10 @@ experience_type: backend-android
 - Trade alliance member `dailyContribution` is a legacy column name; it now stores current weekly contribution and resets with weekly quest progress.
 - Trade alliance chat and reward inbox stay private base tables with sender-scoped `own_trade_alliance_*` views; do not subscribe clients to private base tables.
 - Trade alliance reward inbox processing must wait until gameplay save hydration finishes; otherwise local crystal can be granted then overwritten by the loaded save while the server reward is collected.
+- Server inbox rewards should mark mail collected only after the local reward save is force-flushed; otherwise a reload can lose the grant while the server hides the claim.
 - Trade alliance claimed quest UI needs collected own reward rows; hiding collected inbox rows makes claimed quests render as claimable again after auto-collect.
 - Trade alliance quest rewards must be capped per player/quest/week across all alliances; reward keys or guards that include alliance id allow clan hopping to claim again.
+- World-event reward payout needs a server-owned settlement trigger; otherwise ended periods pay only if an admin manually calls the backfill reducer.
 - Trade alliance item-fill quest ids must be `itemFill:<itemKey>`; the server validates that key against the exact configured seed or potion item before accepting fills.
 - Trade alliance contribution lookups must include alliance id, quest id, period key, and contributor identity; same-week progress in another alliance locks quest participation until reset or rejoin.
 - Research purchase announcements are server-backed through `announce_research`, which writes gray `system` world chat rows using the server player username.

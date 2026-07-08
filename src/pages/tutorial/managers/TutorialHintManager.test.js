@@ -2108,6 +2108,77 @@ describe('TutorialHintManager', () => {
     stage.remove();
   });
 
+  it('keeps dragged summon guidance under the summon button when page tabs sit below it', () => {
+    const stage = document.createElement('section');
+    const summonButton = document.createElement('button');
+    const marketTab = document.createElement('button');
+    const brewingTab = document.createElement('button');
+    const manager = new TutorialHintManager({ storage: createMemoryStorage() });
+    const summonTargetRect = {
+      left: 136,
+      top: 410,
+      right: 224,
+      bottom: 442,
+    };
+
+    summonButton.className = 'style-button workshop-page__summon-button';
+    summonButton.dataset.tutorialId = 'workshop:summonSeed';
+    marketTab.dataset.tutorialId = 'page:shop';
+    brewingTab.dataset.tutorialId = 'page:brewing';
+    stage.append(summonButton, marketTab, brewingTab);
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(
+      summonButton,
+      toClientRect({
+        left: summonTargetRect.left,
+        top: summonTargetRect.top,
+        width: summonTargetRect.right - summonTargetRect.left,
+        height: summonTargetRect.bottom - summonTargetRect.top,
+      }),
+    );
+    setClientRect(
+      marketTab,
+      toClientRect({
+        left: 272,
+        top: 656,
+        width: 64,
+        height: 32,
+      }),
+    );
+    setClientRect(
+      brewingTab,
+      toClientRect({
+        left: 24,
+        top: 656,
+        width: 64,
+        height: 32,
+      }),
+    );
+    document.body.append(stage);
+
+    useFixedLessonSize(manager);
+    manager.mount(stage);
+    manager.guideDragManager.setPlacement({ buttonLeft: 4, buttonTop: 352 }, { save: false });
+    manager.showLesson({
+      id: 'summon-market-progress',
+      title: 'lesson 2: market',
+      text: 'summon sage seeds for market',
+      stepLabel: '12/37',
+      canShowTarget: true,
+      target: summonButton,
+    });
+
+    const lesson = stage.querySelector('.tutorial-layer__lesson');
+    const lessonRect = getLessonRect(lesson);
+
+    expect(lessonRect.top).toBeGreaterThanOrEqual(summonTargetRect.bottom);
+    expect(overlaps(lessonRect, summonTargetRect)).toBe(false);
+
+    manager.unmount();
+    stage.remove();
+  });
+
   it('keeps the default lesson placement when it already clears the summon target', () => {
     const stage = document.createElement('section');
     const requirement = document.createElement('button');

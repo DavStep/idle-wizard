@@ -129,6 +129,18 @@ export class GameplaySaveSendManager {
     this.clearInFlightSave();
   }
 
+  getPendingHydratedSave() {
+    if (this.pendingSaveWasHydrated && this.pendingSaveJson) {
+      return this.parseSaveJson(this.pendingSaveJson);
+    }
+
+    if (this.inFlightSaveWasHydrated && this.inFlightSaveJson) {
+      return this.parseSaveJson(this.inFlightSaveJson);
+    }
+
+    return null;
+  }
+
   flush({ force = false } = {}) {
     if (
       !this.readyToSend ||
@@ -376,6 +388,15 @@ export class GameplaySaveSendManager {
       saveJson.length > 0 &&
       saveJson.length <= MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH
     );
+  }
+
+  parseSaveJson(saveJson) {
+    try {
+      const save = JSON.parse(saveJson);
+      return save && typeof save === 'object' && !Array.isArray(save) ? save : null;
+    } catch {
+      return null;
+    }
   }
 
   findSetPlayerGameplaySaveReducer() {

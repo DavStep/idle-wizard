@@ -44,7 +44,7 @@ describe('TopPanelInboxManager', () => {
           read: false,
           hasReward: true,
           rewardCollected: false,
-          rewardText: '5 coin',
+          rewardText: '5 coin, 1 emerald',
           reward: { coin: 5, crystal: 0, ruby: 0, emerald: 0, items: [] },
         },
       ],
@@ -64,6 +64,15 @@ describe('TopPanelInboxManager', () => {
     expect(inboxFacade.markVisibleRead).toHaveBeenCalledTimes(1);
     expect(popup.textContent).toContain('gift');
     expect(popup.textContent).toContain('5 coin');
+    expect(popup.textContent).toContain('1 emerald');
+    expect(popup.querySelector('.room-top-panel__inbox-row-reward')?.textContent).toBe(
+      '5 coin 1 emerald',
+    );
+    expect(
+      [...popup.querySelectorAll('.room-top-panel__inbox-row-reward .style-resource-label__icon')]
+        .map((icon) => icon.dataset.assetAtlasFrame)
+        .filter(Boolean),
+    ).toEqual(['resource:coin', 'resource:emerald']);
 
     popup
       .querySelector('.room-top-panel__inbox-claim')
@@ -71,6 +80,45 @@ describe('TopPanelInboxManager', () => {
     await Promise.resolve();
 
     expect(inboxFacade.claimReward).toHaveBeenCalledWith('admin:gift:identity');
+    manager.unmount();
+    viewManager.unmount();
+  });
+
+  it('uses a check icon for claimed reward mail', () => {
+    const stage = document.createElement('section');
+    const viewManager = new TopPanelViewManager();
+    viewManager.mount(stage);
+    const snapshot = {
+      connected: true,
+      unreadCount: 0,
+      claimableCount: 0,
+      mail: [
+        {
+          mailKey: 'world-event:done:identity',
+          senderLabel: 'world event',
+          title: 'event finished',
+          body: 'here are your rewards.',
+          createdAtMs: Date.UTC(2026, 6, 6),
+          read: true,
+          hasReward: true,
+          rewardCollected: true,
+          rewardText: '3 crystal',
+          reward: { coin: 0, crystal: 3, ruby: 0, emerald: 0, items: [] },
+        },
+      ],
+    };
+    const manager = new TopPanelInboxManager({ playerInboxFacade: createInboxFacade(snapshot) });
+
+    manager.mount(viewManager.getRefs());
+    manager.show();
+
+    const status = stage.querySelector('.room-top-panel__inbox-row-status--icon');
+    expect(status?.getAttribute('aria-label')).toBe('claimed');
+    expect(status?.textContent).toBe('');
+    expect(status?.querySelector('.room-top-panel__inbox-row-status-icon')?.dataset.assetAtlasFrame).toBe(
+      'status:checkDefault',
+    );
+
     manager.unmount();
     viewManager.unmount();
   });
