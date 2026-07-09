@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.81
+
+- Fixed Google account linking so connecting an existing device save to a new account keeps the player's current progress instead of returning them to a fresh start.
+
 ## 0.2.80
 
 - Fixed Android account connection releases by keeping APK signing on the current account-compatible certificate while using a smaller release build for uploads.

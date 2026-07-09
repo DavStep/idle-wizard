@@ -35,7 +35,7 @@ experience_type: communication
 - Player profile sync must wait on `own_player_profile` as well as `player`; otherwise reconnect can push default username/theme/avatar before hydration and overwrite saved profile data.
 - A temporarily empty own-profile subscription must not sync local defaults; suppress profile publishes while marking the prompt loaded, then wait for the row or a real user edit.
 - Fresh empty gameplay saves must reset browser FTUE progress before loading the null save; otherwise stale completed tutorial storage hides Elara on new data.
-- Google account linking to an identity with no server save should start a fresh save and reset FTUE progress; do not import the stashed device save into that new account.
+- Google account linking with a pending device save and no server save must load and persist the device save under the connected account; showing a fresh start here loses visible player progress.
 - First-run `connect account` must mark the fresh-start choice confirmed after successful auth; otherwise an empty connected account reopens the start-new gate before creating its fresh save.
 - Removed FTUE skip states must be ignored, not migrated; stale Android WebView `skipped` flags can hide the guide for reset level-1 players.
 - Post-reset replay guards must allow the client baseline save, including default free research like `unlockSeed:sageSeed`; otherwise new post-reset saves can never create a server row.

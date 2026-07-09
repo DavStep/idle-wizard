@@ -106,7 +106,7 @@ experience_type: architecture
 - Gameplay save writes need an ack timeout; if save sync stalls, stop play and reconnect instead of leaving later saves pending only in memory.
 - Gameplay save coalescing must stay short and flush on hide/reload; long pending windows can make recent quest/coin progress look reset after refresh.
 - Android app-background disconnects should defer reconnect UI/retry until foreground; otherwise app switching can race SpacetimeDB session ownership and look like an account reconnect.
-- Google account linking must stash the current in-memory gameplay save before auth handoff, then ask whether to forget device data or overwrite the connected account before server saves resume.
+- Google account linking must stash the current in-memory gameplay save before auth handoff. If the connected account has no server save, persist the stashed device save automatically; if it has a save, ask whether to forget device data or overwrite the connected account before server saves resume.
 - Web Google account linking must use Google Identity Services ID-token callback only; if GIS cannot display/load, return `web_unavailable` instead of falling back to OIDC code redirect.
 - Stale web OIDC callback URLs should be cleaned without code exchange; a backend token-exchange endpoint is required before restoring browser OIDC code flow.
 - Fresh-start account gates must render `oidc.error`/`cancelled`; otherwise failed Google returns look like a dead `not connected` retry loop.
