@@ -47,7 +47,7 @@ Full release automation is:
 npm run release
 ```
 
-It bumps the patch version by default, preflights release notes, runs lint, tests, production web build, production debug-signed APK build, optional SpacetimeDB Maincloud publish when `spacetimedb/` changed, git commit/push of all current changes from `main`, and Discord APK upload. Use `RELEASE_BACKEND=always` to force backend publish or `RELEASE_BACKEND=skip` to skip it. Use `npm run release -- --no-version-bump` or `npm run release -- --skip-git` only when you explicitly do not want the default version bump or push.
+It bumps the patch version by default, preflights release notes, runs lint, tests, production web build, a minified Android release build signed with the current account-compatible debug key, optional SpacetimeDB Maincloud publish when `spacetimedb/` changed, git commit/push of all current changes from `main`, and Discord APK upload. Use `RELEASE_BACKEND=always` to force backend publish or `RELEASE_BACKEND=skip` to skip it. Use `RELEASE_APK=release` only after a real release keystore and matching Google OAuth SHA-1 are ready. Use `npm run release -- --no-version-bump` or `npm run release -- --skip-git` only when you explicitly do not want the default version bump or push.
 
 For the full release checklist and post-release verification, use `docs/release-workflow.md`.
 

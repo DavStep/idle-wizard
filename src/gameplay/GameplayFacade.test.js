@@ -3436,7 +3436,7 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('locks nettle seed research until level 6', () => {
+  it('keeps nettle seed research available during level 6 requirements', () => {
     const { gameplayFacade } = createGameplay();
     const getResearch = (researchId) =>
       gameplayFacade
@@ -3459,7 +3459,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().coin.current).toBe(115);
     expect(getResearch('unlockSeed:nettleSeed')).toMatchObject({
       value: 'locked',
-      requiredPlayerLevel: 6,
+      requiredPlayerLevel: 5,
       locked: true,
       canResearch: false,
     });
@@ -3467,11 +3467,11 @@ describe('GameplayFacade', () => {
       ok: false,
       reason: 'missing_required_level',
       researchId: 'unlockSeed:nettleSeed',
-      requiredPlayerLevel: 6,
+      requiredPlayerLevel: 5,
       cost: 40,
     });
 
-    while (gameplayFacade.getSnapshot().tasks.currentLevel < 6) {
+    while (gameplayFacade.getSnapshot().tasks.currentLevel < 5) {
       finishCurrentTasksWithoutCoin();
       gameplayFacade.coinFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costCoin);
       expect(gameplayFacade.completeTaskLevel()).toMatchObject({ ok: true });

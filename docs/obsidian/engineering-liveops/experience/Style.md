@@ -207,6 +207,7 @@ experience_type: style
 - Workshop tasks expansion persists across room page swaps; do not reset it on page manager unmount.
 - Pinned Workshop tasks must also persist across room page swaps; temporary mount setup should not clear `pinned`.
 - Workshop task action buttons use a 10px source font so `complete` fits the fixed 58px action slot.
+- Workshop task action buttons must be `box-sizing: border-box`; content-box padding makes the fixed 58px slot render wider and overlap quantity text.
 - Workshop task progress rails should stay `width: 100%`; subtracting `2 * --style-border-width` makes the rail end short of the task row/action button.
 - Workshop level-rewards hide/show is not the task collapse action; touch retarget/backdrop duplicate clicks after toggling rewards must be suppressed so expanded requirements stay open.
 - Workshop level-rewards hidden state should persist with expanded/pinned task state across room swaps, and reset only when the target requirement level changes.

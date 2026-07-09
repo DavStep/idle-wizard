@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.80
+
+- Fixed Android account connection releases by keeping APK signing on the current account-compatible certificate while using a smaller release build for uploads.
+
 ## 0.2.79
 
 - Added automatic world event reward settlement so qualified rankings send inbox rewards after an event period ends.

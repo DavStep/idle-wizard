@@ -5405,10 +5405,10 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__task-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(52px, max-content) 78px;
+  grid-template-columns: minmax(0, 1fr) minmax(40px, max-content) 58px;
   align-items: center;
   min-height: var(--style-row-min-height);
-  column-gap: 16px;
+  column-gap: var(--style-row-column-gap);
 }
 
 .workshop-page__task.is-draggable .workshop-page__task-row {
@@ -5613,11 +5613,16 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .style-button.workshop-page__task-button {
+  box-sizing: border-box;
   justify-self: end;
-  width: 78px;
+  width: 58px;
+  min-width: 0;
   padding: 1px 4px;
   margin-bottom: 0;
+  overflow: hidden;
   font-size: var(--style-tiny-font-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .style-button.workshop-page__level-complete-button {

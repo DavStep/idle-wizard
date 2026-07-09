@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ItemsFacade } from '../../items/ItemsFacade.js';
 import { automationResearchIds } from '../../automation/automationResearchIds.js';
+import taskBalance from '../../tasks/tasks.json';
 import { advancedResearchIds } from '../advancedResearchIds.js';
 import { automationReserveResearchIds } from '../automationReserveResearch.js';
 import { capacityResearchIds } from '../capacityResearchIds.js';
@@ -104,6 +105,27 @@ describe('ResearchDefinitionManager', () => {
       id: 'unlockRecipe:manaTonic',
       requiredPlayerLevel: 4,
     });
+  });
+
+  it('keeps task-required research available when that requirement is active', () => {
+    const { manager, setCurrentLevel } = createManager();
+
+    for (const level of taskBalance.levels) {
+      const activePlayerLevel = level.level - 1;
+
+      for (const task of level.tasks) {
+        if (task.type !== 'research') {
+          continue;
+        }
+
+        setCurrentLevel(activePlayerLevel);
+
+        expect(
+          manager.getMissingRequiredPlayerLevel(task.researchId),
+          `${task.researchId} must be available during level ${level.level} requirements`,
+        ).toBeNull();
+      }
+    }
   });
 
   it('shows slot researches unlocked by completed capacity research', () => {

@@ -66,9 +66,13 @@ http://localhost
 
 The current Android app uses Google Credential Manager through the native
 `NativeGoogleAuth` Capacitor plugin. Keep the Android OAuth client package name
-and SHA-1 configured in Google Cloud. The older native OIDC handoff flow is
-disabled in production because browser-side code exchange against the web OAuth
-client can fail with `client_secret is missing`.
+and SHA-1 configured in Google Cloud. Player APKs must be signed with the same
+certificate registered for `com.idlewizard.game`; the current pre-production
+release flow uses the existing Android debug key because that is the account
+compatible certificate. Before switching to a true release keystore, register
+that keystore SHA-1 and test account connect/restore on device. The older native
+OIDC handoff flow is disabled in production because browser-side code exchange
+against the web OAuth client can fail with `client_secret is missing`.
 
 Configure Google OAuth with these authorized redirect URIs only if the fallback
 native/mobile handoff flow is enabled:

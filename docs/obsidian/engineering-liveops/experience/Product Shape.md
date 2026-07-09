@@ -14,7 +14,7 @@ experience_type: product-shape
 - This is a PC-first JavaScript game that also supports mobile.
 - macOS `sips` can read project WebP portraits but cannot write them; use `cwebp` for WebP resize/encode.
 - Large PNG web assets are stored uncompressed inside Android APKs and can trip Discord webhook limits; use WebP for full-screen intro/tab art, and delete the old APK before remeasuring because Gradle can update the zip in place.
-- If Discord rejects the 10 MB production debug APK, build `npm run android:assembleRelease`, zipalign/sign the unsigned release APK with the local debug keystore, and post that smaller debug-signed release APK; use `DISCORD_APK_CHANGELOG_FILE=/dev/null DISCORD_APK_SKIP_CHANGELOG=1 DISCORD_FEATURE_SKIP=1` to avoid reposting notes after the changelog already succeeded.
+- The default release APK path builds the smaller minified release APK and signs it with the existing debug keystore; keep `DISCORD_APK_CHANGELOG_FILE=/dev/null DISCORD_APK_SKIP_CHANGELOG=1 DISCORD_FEATURE_SKIP=1` for manual reposts after a changelog already succeeded.
 - Ignored local `public/qa-data` is still copied by Vite/Capacitor when present; move it out of `public/` before release builds or APK uploads can exceed Discord webhook limits.
 - Android dev builds that point at local SpacetimeDB need `adb reverse tcp:3000 tcp:3000`; without it, Pixel WebView loops on `connecting to server`.
 - Before wiping local SpacetimeDB progress, check `.env.local` for the active `VITE_SPACETIME_DATABASE`; the shared Vite app may use `idle-wizard-codex-run` while `npm run stdb:publish` still targets `idle-wizard`.

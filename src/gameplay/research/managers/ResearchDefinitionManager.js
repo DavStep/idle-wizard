@@ -75,7 +75,7 @@ const summonSeedResearches = [
 
 const seedUnlockRequiredPlayerLevels = {
   mintSeed: 2,
-  nettleSeed: 6,
+  nettleSeed: 5,
   lavenderSeed: 7,
   briarSeed: 8,
   glowcapSeed: 10,

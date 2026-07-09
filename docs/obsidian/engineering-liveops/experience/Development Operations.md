@@ -42,6 +42,7 @@ experience_type: development-operations
 - Maincloud energy usage is dashboard-only at `/settings/energy-usage`; the SpacetimeDB CLI token can list/publish DBs but does not authenticate that dashboard loader.
 - Optional Google login is controlled by `VITE_GOOGLE_AUTH_CLIENT_ID`; the Google OAuth client ID is public config and can live in `.env.production`.
 - Browser Google login must use Google Identity Services to receive a Google-signed ID token in a JavaScript callback; Google code flow needs backend token exchange and `oidc-client-ts` rejects legacy implicit `id_token`.
+- Current player APK release automation must keep using the OAuth-compatible Android debug certificate until a true release keystore SHA-1 is registered and account connect/restore is device-tested.
 - OIDC redirect state must use persistent `localStorage` through `stateStore`; default session storage can disappear on Android/new-tab OAuth returns and produce callback state errors.
 - The sibling dashboard repo is `../idle-wizard-dashboard`; it runs on Vite port `55183` and syncs generated SpacetimeDB bindings from this repo.
 - Plain Node dev scripts that import `GameplayFacade` need the repo JSON module loader/register path because `TaskBalanceManager` imports `tasks.json` without Node import attributes; Vitest/Vite handle it without that loader.

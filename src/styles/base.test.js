@@ -304,6 +304,24 @@ describe('base styles', () => {
     expect(primingRule).toContain('transition: none;');
   });
 
+  it('keeps Workshop requirement row actions compact for long labels', () => {
+    const taskRowRule = getRuleBody(/\.workshop-page__task-row\s*\{(?<body>[^}]*)\}/);
+    const taskButtonRule = getRuleBody(
+      /\.style-button\.workshop-page__task-button\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(taskRowRule).toContain(
+      'grid-template-columns: minmax(0, 1fr) minmax(40px, max-content) 58px;',
+    );
+    expect(taskRowRule).toContain('column-gap: var(--style-row-column-gap);');
+    expect(taskButtonRule).toContain('box-sizing: border-box;');
+    expect(taskButtonRule).toContain('width: 58px;');
+    expect(taskButtonRule).toContain('font-size: var(--style-tiny-font-size);');
+    expect(taskButtonRule).toContain('overflow: hidden;');
+    expect(taskButtonRule).toContain('text-overflow: ellipsis;');
+    expect(taskButtonRule).toContain('white-space: nowrap;');
+  });
+
   it('keeps the intro header top stretch band free of line artifacts', () => {
     const header = PNG.sync.read(
       readFileSync(`${cwd()}/public/ui/intro-dialog-header-tab-9slice.png`),

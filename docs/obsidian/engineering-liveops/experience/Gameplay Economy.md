@@ -75,7 +75,7 @@ experience_type: gameplay-economy
 - Auto/manual cauldron UI only enables or disables future automation; auto brew stays unarmed until a successful manual brew, then repeats future cycles.
 - Fast sell starts at level 1 and pays 80% of the NPC bulk sell quote; ruby research raises it to 85/90/95%, while shelf auto-sell keeps the full marginal NPC quote.
 - Level 1 costs 0 coin and should never depend on tutorial-only sale grants; level 2 is the first systemic coin gate.
-- Nettle seed research stays locked until level 6; level 3 should spend no coin to unlock mint seed, then use normal selling for its level-up cost.
+- Research unlock gates for task requirements must be no higher than `target task level - 1`; e.g. nettle seed must unlock at level 5 because it is a level 6 requirement shown while the player is level 5.
 - NPC and player market stand 2 unlock at player level 3.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
 - Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.

@@ -174,10 +174,10 @@
             "state": {
               "type": "file-properties",
               "state": {
-                "file": "Idle Wizard.canvas"
+                "file": "Untitled.md"
               },
               "icon": "lucide-info",
-              "title": "File properties for Idle Wizard"
+              "title": "File properties for Untitled"
             }
           }
         ],
@@ -198,11 +198,12 @@
       "bases:Create new base": false
     }
   },
-  "active": "00820ef59f00cfc9",
+  "active": "05eb8488ee452073",
   "lastOpenFiles": [
+    "Idle Wizard.canvas",
+    "Untitled.md",
     "World Index.base",
     "README.md",
-    "Idle Wizard.canvas",
     "Home.md",
     "tutorial/Tutorial.canvas",
     "tutorial/Home.md",
@@ -234,7 +235,6 @@
     "engineering-liveops/Backend Authority.md",
     "engineering-liveops/Engineering Index.base",
     "engineering-liveops/Engineering Liveops.canvas",
-    "engineering-liveops/Experience System.md",
     "engineering-liveops/experience"
   ]
 }

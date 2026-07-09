@@ -116,7 +116,7 @@ experience_type: architecture
 - Android account linking should use native Google Credential Manager, not hosted browser OIDC fallback; browser code callbacks can reopen the app and then fail token exchange with `client_secret is missing`.
 - Legacy mobile auth redirects need an explicit native marker and Android `intent://` handoff if re-enabled for experiments; do not use them for production login without backend exchange.
 - Android Credential Manager `GetCredentialCancellationException` is a neutral cancel for UI; if it happens after account selection, verify the Android OAuth client package and SHA-1.
-- Player-distributed Android prod APKs must be signed with a Google OAuth-registered cert; debug-signed prod builds can connect only if that debug SHA-1 is registered for `com.idlewizard.game`.
+- Player-distributed Android APKs must be signed with the cert registered for Google OAuth; the current pre-production channel uses the existing debug cert, so switching to a release cert is an auth migration that needs a registered SHA-1 and device restore test.
 - Native Google sign-in returns inside the same WebView, so persist the native user and reload/reconnect after success; web OIDC redirect handled that implicitly.
 - SpacetimeDB computes OIDC identities from `iss` + `sub`, so a direct Google ID token creates a stable account without a SpacetimeAuth hop.
 - Historical player rows cannot prove Google-link status unless the server stored auth issuer/provider at connect time.
