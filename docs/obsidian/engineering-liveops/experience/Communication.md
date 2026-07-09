@@ -42,3 +42,4 @@ experience_type: communication
 - Loading a high QA save into a local identity with no accepted save needs a baseline `set_player_gameplay_save` first; the post-reset replay guard silently ignores high first saves, then `admin_copy_player_progression` can move that progression to the active browser account.
 - Fresh Android installs must show the account/start-fresh choice before any Credential Manager restore; native Google can silently restore a previously authorized account even when app-local data was cleared.
 - Web/mobile Google login must fail closed when ID-token auth is unavailable; browser OIDC code redirects with a web OAuth client surface `client_secret is missing` unless a backend token-exchange endpoint exists.
+- Every account-connect entry point that can run after gameplay mounts must pass `createPersistenceSave()` as `pendingGameplaySave`; otherwise the Google identity switch can load an empty account without offering the device/account save choice.

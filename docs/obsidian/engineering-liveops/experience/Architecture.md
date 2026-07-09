@@ -110,7 +110,7 @@ experience_type: architecture
 - Web Google account linking must use Google Identity Services ID-token callback only; if GIS cannot display/load, return `web_unavailable` instead of falling back to OIDC code redirect.
 - Stale web OIDC callback URLs should be cleaned without code exchange; a backend token-exchange endpoint is required before restoring browser OIDC code flow.
 - Fresh-start account gates must render `oidc.error`/`cancelled`; otherwise failed Google returns look like a dead `not connected` retry loop.
-- If a level 1 device save links into a Google account with a save above level 1, keep the Google account automatically and skip the choice prompt.
+- If a mounted device save links into a Google account that already has gameplay progress, always show the account-link choice dialog; only pre-game account connects should skip pending device-save capture.
 - Account-link pending saves need attempt scoping and visible failure handling; silent `localStorage` failure can drop device progress when linking into an existing account.
 - Account linking should use Google OIDC directly, not SpacetimeAuth, so the player sees only the Google account picker/consent before returning to the game.
 - Android account linking should use native Google Credential Manager, not hosted browser OIDC fallback; browser code callbacks can reopen the app and then fail token exchange with `client_secret is missing`.

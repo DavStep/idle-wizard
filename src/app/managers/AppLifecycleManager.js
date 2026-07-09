@@ -256,17 +256,6 @@ export class AppLifecycleManager {
         return;
       }
 
-      if (
-        this.shouldKeepLinkedAccountSave({
-          deviceSave: accountLinkSave,
-          accountSave: save,
-        })
-      ) {
-        this.clearPendingAccountLinkSave();
-        this.loadGameplaySave(save, { persistLoaded: true });
-        return;
-      }
-
       const choiceOptions = {
         deviceSave: accountLinkSave,
         accountSave: save,
@@ -387,11 +376,25 @@ export class AppLifecycleManager {
       return Promise.resolve({ ok: false, reason: 'disabled' });
     }
 
-    return Promise.resolve(authFacade.signInWithGoogle()).catch((error) => ({
+    const pendingGameplaySave = this.createPendingAccountLinkGameplaySave();
+    const signInResult = pendingGameplaySave
+      ? authFacade.signInWithGoogle({ pendingGameplaySave })
+      : authFacade.signInWithGoogle();
+
+    return Promise.resolve(signInResult).catch((error) => ({
       ok: false,
       reason: 'exception',
       message: this.getErrorText(error),
     }));
+  }
+
+  createPendingAccountLinkGameplaySave() {
+    if (!this.gameSurfacesMounted) {
+      return null;
+    }
+
+    const save = this.gameplayFacade.createPersistenceSave?.();
+    return save && typeof save === 'object' ? save : null;
   }
 
   async tryRestoreConnectedAccount() {
@@ -459,26 +462,6 @@ export class AppLifecycleManager {
       'unknown_reason',
       'web_unavailable',
     ].includes(String(reason ?? '').trim());
-  }
-
-  shouldKeepLinkedAccountSave({ deviceSave, accountSave } = {}) {
-    return (
-      this.getSaveCurrentLevel(deviceSave) === 1 &&
-      this.getSaveCurrentLevel(accountSave) > 1
-    );
-  }
-
-  getSaveCurrentLevel(save) {
-    if (!save || typeof save !== 'object') {
-      return 1;
-    }
-
-    return this.getPositiveInteger(save.tasks?.currentLevel, 1);
-  }
-
-  getPositiveInteger(value, fallback) {
-    const number = Number(value);
-    return Number.isInteger(number) && number > 0 ? number : fallback;
   }
 
   loadGameplaySave(save, { persistLoaded = false } = {}) {

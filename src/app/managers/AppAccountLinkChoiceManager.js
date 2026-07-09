@@ -51,7 +51,7 @@ export class AppAccountLinkChoiceManager {
 
     const warning = document.createElement('p');
     warning.className = 'app-account-link-choice__warning';
-    warning.textContent = 'selecting this device replaces the account save';
+    warning.textContent = 'the progress you do not select will be lost';
 
     dialog.append(title, message, rows, warning);
     panel.append(dialog);

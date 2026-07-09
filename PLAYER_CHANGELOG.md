@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.82
+
+- Fixed account connection from an in-progress game so current device progress is saved before Google login, then either binds to an empty account or asks which save to keep when that Google account already has progress.
+
 ## 0.2.81
 
 - Fixed Google account linking so connecting an existing device save to a new account keeps the player's current progress instead of returning them to a fresh start.

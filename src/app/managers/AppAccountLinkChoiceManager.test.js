@@ -31,6 +31,9 @@ describe('AppAccountLinkChoiceManager', () => {
     expect(stage.querySelector('.app-account-link-choice').hidden).toBe(false);
     expect(stage.textContent).toContain('level 5, 12 coin, 2 crystal');
     expect(stage.textContent).toContain('username Mira, level 2, 3 coin, 0 crystal');
+    expect(stage.textContent).toContain(
+      'the progress you do not select will be lost',
+    );
 
     stage
       .querySelectorAll('.app-account-link-choice__button')[0]

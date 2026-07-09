@@ -822,6 +822,41 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
   });
 
+  it('does not stash a default save before gameplay is mounted', async () => {
+    const createPersistenceSave = vi.fn(() => ({ tasks: { currentLevel: 4 } }));
+    const authFacade = {
+      signInWithGoogle: vi.fn(() => Promise.resolve({ ok: true })),
+    };
+    const { lifecycle } = createLifecycle({ authFacade });
+    lifecycle.gameplayFacade.createPersistenceSave = createPersistenceSave;
+
+    await lifecycle.connectFreshStartAccount();
+
+    expect(createPersistenceSave).not.toHaveBeenCalled();
+    expect(authFacade.signInWithGoogle).toHaveBeenCalledWith();
+  });
+
+  it('stashes mounted local progress before connecting an account', async () => {
+    const deviceSave = {
+      tasks: { currentLevel: 4 },
+      coin: { current: 25 },
+      crystal: { current: 1 },
+    };
+    const authFacade = {
+      signInWithGoogle: vi.fn(() => Promise.resolve({ ok: true })),
+    };
+    const { lifecycle } = createLifecycle({ authFacade });
+    lifecycle.gameSurfacesMounted = true;
+    lifecycle.gameplayFacade.createPersistenceSave = vi.fn(() => deviceSave);
+
+    await lifecycle.connectFreshStartAccount();
+
+    expect(lifecycle.gameplayFacade.createPersistenceSave).toHaveBeenCalledTimes(1);
+    expect(authFacade.signInWithGoogle).toHaveBeenCalledWith({
+      pendingGameplaySave: deviceSave,
+    });
+  });
+
   it('pauses gameplay and flushes the last save when maintenance drains', async () => {
     const { lifecycle, getBackendCallbacks, setMaintenance } = createLifecycle();
 
@@ -1245,7 +1280,7 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the connected account without prompting when the device save is level 1', async () => {
+  it('asks before replacing an existing account save even when device save is level 1', async () => {
     const deviceSave = { tasks: { currentLevel: 1 } };
     const accountSave = { tasks: { currentLevel: 2 } };
     const accountLinkChoiceManager = {
@@ -1263,10 +1298,13 @@ describe('AppLifecycleManager', () => {
     await lifecycle.handleGameplaySaveReady({ save: accountSave });
 
     expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
-    expect(accountLinkChoiceManager.choose).not.toHaveBeenCalled();
+    expect(accountLinkChoiceManager.choose).toHaveBeenCalledWith({
+      deviceSave,
+      accountSave,
+    });
     expect(authFacade.clearPendingAccountLinkSave).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
-      accountSave,
+      deviceSave,
       lifecycle.ecsFacade,
     );
     expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
