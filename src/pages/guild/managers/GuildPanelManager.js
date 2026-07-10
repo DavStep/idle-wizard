@@ -1166,8 +1166,30 @@ export class GuildPanelManager {
       ),
     );
 
-    wrap.append(stack);
+    wrap.append(stack, this.createRequestStackProgress(requests.length));
     return wrap;
+  }
+
+  createRequestStackProgress(totalRequests) {
+    const total = Math.max(1, Number(totalRequests) || 0);
+    const current = Math.min(total, Math.max(1, this.requestStackIndex + 1));
+    const fillPercent = Number(((current / total) * 100).toFixed(2));
+
+    const progress = document.createElement('div');
+    progress.className = 'style-progress guild-page__request-stack-progress';
+    progress.setAttribute('role', 'progressbar');
+    progress.setAttribute('aria-label', 'quest page progress');
+    progress.setAttribute('aria-valuemin', '0');
+    progress.setAttribute('aria-valuemax', String(total));
+    progress.setAttribute('aria-valuenow', String(current));
+    progress.setAttribute('aria-valuetext', `${current}/${total}`);
+
+    const fill = document.createElement('div');
+    fill.className = 'style-progress__fill guild-page__request-stack-progress-fill';
+    fill.style.width = `${fillPercent}%`;
+    progress.append(fill);
+
+    return progress;
   }
 
   createRequestStackList(requests) {

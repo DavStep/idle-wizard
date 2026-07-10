@@ -7298,6 +7298,67 @@ describe('PagesFacade', () => {
     expect(bag.hidden).toBe(false);
   });
 
+  it('opens the guild quest posting stack dialog by dev surface id', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    snapshot.tasks.currentLevel = 15;
+    snapshot.playerLevel.currentLevel = 15;
+    snapshot.guild = {
+      unlocked: true,
+      created: true,
+      profile: {
+        name: 'QA Order',
+        tag: 'QA',
+        color: 'black',
+      },
+      secretary: {
+        level: 1,
+        hiredCap: 2,
+        boardSlots: 3,
+      },
+      adventurers: [],
+      applicants: [],
+      logs: [],
+      board: [],
+      normalBoard: [],
+      eventBoard: [],
+      availableRequests: [
+        {
+          id: 'request-1',
+          title: 'old road escort',
+          lore: 'a village asks for a quiet guard.',
+          difficulty: 'easy',
+          statLabel: 'strength',
+          rewardText: '20 coin, 5 seeds, or 6 herbs',
+          expiresLabel: '12m',
+        },
+      ],
+      boardWaveLabel: '12m',
+    };
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+    });
+
+    pagesFacade.mount(stage);
+
+    expect(pagesFacade.openDialog('guildQuestPosting')).toMatchObject({
+      ok: true,
+      dialogId: 'guildrequeststack',
+      pageId: 'guild',
+      requestCount: 1,
+    });
+
+    const popup = stage.querySelector('.guild-page__popup-panel[data-popup-kind="requestStack"]');
+    expect(popup).not.toBeNull();
+    expect(popup.querySelector('.style-box__title')?.textContent).toBe('Incoming Quests');
+    expect(popup.querySelector('.guild-page__request-paper-title')?.textContent).toBe(
+      'old road escort',
+    );
+    expect(popup.querySelector('.guild-page__request-stack-post')?.textContent).toBe('Post');
+  });
+
   it('shows prestige milestones and confirms lower milestone prestige', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

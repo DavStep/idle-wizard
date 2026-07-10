@@ -61,6 +61,45 @@ describe('DevCheatsFacade', () => {
     expect(target.cheat()).toBe('previous');
   });
 
+  it('opens requested dev UI surfaces from the URL after gates clear', () => {
+    const timers = [];
+    const pagesFacade = {
+      openDialog: vi.fn((dialogId, options) => ({ ok: true, dialogId, options })),
+      syncPageUnlocks: vi.fn(),
+    };
+    const { app } = createApp({ pagesFacade });
+    const target = {
+      location: {
+        search: '?devUi=guildQuestPosting',
+        hash: '',
+      },
+      document: {
+        querySelector: vi.fn(() => null),
+      },
+      setTimeout: vi.fn((callback) => {
+        timers.push(callback);
+        return timers.length;
+      }),
+      clearTimeout: vi.fn(),
+    };
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const facade = new DevCheatsFacade({ app, target, logger });
+
+    facade.mount();
+    expect(pagesFacade.openDialog).not.toHaveBeenCalled();
+
+    timers.shift()?.();
+
+    expect(pagesFacade.openDialog).toHaveBeenCalledWith('guildRequestStack', {});
+    expect(logger.info).toHaveBeenCalledWith(
+      'Dev UI surface request complete.',
+      expect.objectContaining({
+        ok: true,
+        surfaceId: 'guildQuestPosting',
+      }),
+    );
+  });
+
   it('mutates gameplay through explicit cheat commands', () => {
     const { app } = createApp();
     const target = {};
@@ -319,7 +358,7 @@ describe('DevCheatsFacade', () => {
       getPlayerShopFacade: () => playerShopFacade,
     };
     const pagesFacade = {
-      openDialog: vi.fn(() => ({ ok: true, dialogId: 'worldEvent' })),
+      openDialog: vi.fn((dialogId, options) => ({ ok: true, dialogId, options })),
       setDevNotifications: vi.fn((snapshot) => ({ ok: true, snapshot })),
       syncPageUnlocks: vi.fn(),
     };
@@ -376,6 +415,23 @@ describe('DevCheatsFacade', () => {
     expect(pagesFacade.openDialog).toHaveBeenCalledWith('worldEvent', {
       tab: 'leaderboard',
     });
+    expect(target.cheats.listUiSurfaces()).toMatchObject({
+      ok: true,
+      surfaces: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'guildQuestPosting',
+          command: 'cheats.openUi("guildQuestPosting")',
+        }),
+      ]),
+    });
+    expect(target.cheats.openUi('guildQuestPosting')).toMatchObject({
+      ok: true,
+      surfaceId: 'guildQuestPosting',
+      dialog: {
+        dialogId: 'guildRequestStack',
+      },
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('guildRequestStack', {});
 
     expect(target.cheats.setStressText()).toMatchObject({
       ok: true,

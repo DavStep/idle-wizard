@@ -96,6 +96,8 @@ const CHEAT_HELP = Object.freeze([
   'cheats.setGuildState("full")',
   'cheats.setBackendState("offline")',
   'cheats.openDialog("worldEvent", { tab: "leaderboard" })',
+  'cheats.listUiSurfaces()',
+  'cheats.openUi("guildQuestPosting")',
   'cheats.setTimers("allReady")',
   'cheats.setStressText()',
   'cheats.setDummyLeaderboard()',
@@ -111,6 +113,56 @@ const CHEAT_HELP = Object.freeze([
   'cheats.listResearch()',
   'cheats.snapshot()',
 ]);
+
+const UI_SURFACE_DEFINITIONS = Object.freeze([
+  { id: 'workshop', kind: 'page', pageId: 'workshop' },
+  { id: 'brewing', kind: 'page', pageId: 'brewing' },
+  { id: 'garden', kind: 'page', pageId: 'garden' },
+  { id: 'research', kind: 'page', pageId: 'research' },
+  { id: 'marketPage', kind: 'page', pageId: 'shop', aliases: ['shop'] },
+  { id: 'guild', kind: 'page', pageId: 'guild' },
+  { id: 'bag', kind: 'dialog', dialogId: 'bag', aliases: ['inventory'] },
+  { id: 'seeds', kind: 'dialog', dialogId: 'seeds' },
+  { id: 'herbs', kind: 'dialog', dialogId: 'herbs' },
+  { id: 'potions', kind: 'dialog', dialogId: 'potions' },
+  { id: 'summonInfo', kind: 'dialog', dialogId: 'summonInfo', aliases: ['summon'] },
+  { id: 'leaderboard', kind: 'dialog', dialogId: 'leaderboard', aliases: ['leaderboards'] },
+  { id: 'alliance', kind: 'dialog', dialogId: 'alliance', aliases: ['alliances'] },
+  { id: 'discoveries', kind: 'dialog', dialogId: 'discoveries', aliases: ['discovery'] },
+  { id: 'personalTasks', kind: 'dialog', dialogId: 'personalTasks', aliases: ['tasks'] },
+  {
+    id: 'worldEvent',
+    kind: 'dialog',
+    dialogId: 'worldEvent',
+    aliases: ['event', 'worldNotice'],
+  },
+  { id: 'worldChat', kind: 'dialog', dialogId: 'worldChat', aliases: ['chat'] },
+  { id: 'market', kind: 'dialog', dialogId: 'market', aliases: ['shopDialog'] },
+  { id: 'guildCharter', kind: 'dialog', dialogId: 'guildCharter' },
+  { id: 'guildSettings', kind: 'dialog', dialogId: 'guildSettings' },
+  { id: 'guildRequest', kind: 'dialog', dialogId: 'guildRequest' },
+  {
+    id: 'guildQuestPosting',
+    kind: 'dialog',
+    dialogId: 'guildRequestStack',
+    setup: 'guildFull',
+    aliases: ['guildRequestStack', 'guildQuests', 'incomingGuildQuests'],
+  },
+  { id: 'guildAdventurer', kind: 'dialog', dialogId: 'guildAdventurer' },
+  { id: 'settings', kind: 'dialog', dialogId: 'settings', aliases: ['configurations'] },
+  { id: 'feedback', kind: 'dialog', dialogId: 'feedback' },
+  { id: 'bug', kind: 'dialog', dialogId: 'bug' },
+  { id: 'feature', kind: 'dialog', dialogId: 'feature' },
+  { id: 'level', kind: 'dialog', dialogId: 'level', aliases: ['levels'] },
+  { id: 'inbox', kind: 'dialog', dialogId: 'inbox', aliases: ['mail'] },
+]);
+
+const UI_SURFACE_LOOKUP = new Map(
+  UI_SURFACE_DEFINITIONS.flatMap((surface) => [
+    [normalizeSurfaceId(surface.id), surface],
+    ...(surface.aliases ?? []).map((alias) => [normalizeSurfaceId(alias), surface]),
+  ]),
+);
 
 export class DevCheatCommandManager {
   constructor({
@@ -227,6 +279,15 @@ export class DevCheatCommandManager {
       case 'opendialog':
       case 'showdialog':
         return this.openDialog(commandArgs[0], commandArgs[1]);
+      case 'listuisurfaces':
+      case 'listsurfaces':
+      case 'ui':
+        return this.listUiSurfaces();
+      case 'openui':
+      case 'showui':
+      case 'opensurface':
+      case 'showsurface':
+        return this.openUi(commandArgs[0], commandArgs[1]);
       case 'settimers':
       case 'timers':
         return this.setTimers(commandArgs[0], commandArgs[1]);
@@ -1442,6 +1503,108 @@ export class DevCheatCommandManager {
     }
 
     return this.pagesFacade.openDialog(dialogId, options);
+  }
+
+  listUiSurfaces() {
+    return {
+      ok: true,
+      surfaces: UI_SURFACE_DEFINITIONS.map((surface) => ({
+        id: surface.id,
+        kind: surface.kind,
+        pageId: surface.pageId ?? null,
+        dialogId: surface.dialogId ?? null,
+        aliases: [...(surface.aliases ?? [])],
+        command: `cheats.openUi("${surface.id}")`,
+      })),
+    };
+  }
+
+  openUi(surfaceId, options = {}) {
+    const normalizedSurfaceId = normalizeSurfaceId(surfaceId);
+
+    if (!normalizedSurfaceId) {
+      return { ok: false, reason: 'invalid_ui_surface_id', surfaceId };
+    }
+
+    if (normalizedSurfaceId.startsWith('page')) {
+      const pageId = normalizedSurfaceId.slice('page'.length);
+      return this.decorateUiResult(surfaceId, this.showPage(pageId, options));
+    }
+
+    if (normalizedSurfaceId.startsWith('dialog')) {
+      const dialogId = normalizedSurfaceId.slice('dialog'.length);
+      return this.decorateUiResult(surfaceId, this.openDialog(dialogId, options));
+    }
+
+    const surface = UI_SURFACE_LOOKUP.get(normalizedSurfaceId);
+
+    if (surface) {
+      return this.openKnownUiSurface(surface, options);
+    }
+
+    const dialogResult = this.openDialog(surfaceId, options);
+
+    if (dialogResult.ok !== false || dialogResult.reason !== 'unknown_dialog') {
+      return this.decorateUiResult(surfaceId, dialogResult);
+    }
+
+    const pageResult = this.showPage(surfaceId, options);
+
+    if (pageResult.ok !== false) {
+      return this.decorateUiResult(surfaceId, pageResult);
+    }
+
+    return {
+      ok: false,
+      reason: 'unknown_ui_surface',
+      surfaceId,
+      knownSurfaces: UI_SURFACE_DEFINITIONS.map((surfaceDefinition) => surfaceDefinition.id),
+    };
+  }
+
+  openKnownUiSurface(surface, options = {}) {
+    if (surface.setup === 'guildFull') {
+      return this.openGuildQuestPostingSurface(surface, options);
+    }
+
+    const result =
+      surface.kind === 'page'
+        ? this.showPage(surface.pageId, options)
+        : this.openDialog(surface.dialogId, options);
+
+    return this.decorateUiResult(surface.id, result, surface);
+  }
+
+  openGuildQuestPostingSurface(surface, options = {}) {
+    const {
+      setup = true,
+      guildPreset = 'full',
+      guildOptions = {},
+      ...dialogOptions
+    } = options ?? {};
+    const state = setup
+      ? this.setGuildState(guildPreset, { adventurers: 2, ...guildOptions })
+      : { ok: true, skipped: true };
+
+    if (state.ok === false) {
+      return this.decorateUiResult(surface.id, state, surface);
+    }
+
+    const dialog = this.openDialog(surface.dialogId, dialogOptions);
+
+    return {
+      ...this.decorateUiResult(surface.id, dialog, surface),
+      state,
+      dialog,
+    };
+  }
+
+  decorateUiResult(surfaceId, result, surface = null) {
+    return {
+      ...result,
+      surfaceId: surface?.id ?? surfaceId,
+      surfaceKind: surface?.kind ?? (result?.pageId ? 'page' : 'dialog'),
+    };
   }
 
   setTimers(presetOrOptions = 'allReady', optionsArg = {}) {
@@ -3262,4 +3425,11 @@ export class DevCheatCommandManager {
       value: number,
     };
   }
+}
+
+function normalizeSurfaceId(surfaceId) {
+  return String(surfaceId ?? '')
+    .trim()
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase();
 }

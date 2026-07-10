@@ -30,6 +30,8 @@ cheats.setWorldEventState('complete')
 cheats.setGuildState('claimable')
 cheats.setBackendState('offline')
 cheats.openDialog('worldEvent', { tab: 'leaderboard' })
+cheats.listUiSurfaces()
+cheats.openUi('guildQuestPosting')
 cheats.setTimers('allReady')
 cheats.setStressText()
 cheats.setDummyLeaderboard()
@@ -80,6 +82,17 @@ Useful view setup commands:
   account-in-use, and save-failed online gate views.
 - `openDialog(dialog, options)` opens mounted UI surfaces such as leaderboard,
   worldEvent, market, guild request/adventurer, settings, and level popups.
+- `listUiSurfaces()` lists named page/dialog surfaces available to UI QA.
+- `openUi(surface, options)` opens a named page/dialog surface. It delegates to
+  `showPage`/`openDialog` for simple surfaces and includes setup recipes for
+  composed flows such as `guildQuestPosting`, the incoming quest stack with the
+  `Post` action.
+- Dialog visual work should use `openUi(surface)` or `/?devUi=surface` for
+  iteration and screenshots. Add a surface recipe first when the target dialog
+  is not yet directly openable.
+- Browser QA can also navigate to `/?devUi=guildQuestPosting`. The request waits
+  until app-level gates such as fresh-start, intro, and offline overlays are
+  hidden, then runs `openUi(surface)`.
 - `setTimers(preset)` supports allReady, half, almostDone, and longRunning for
   garden, brewing, and market timers.
 - `setStressText()` loads long names, overflowing inventory, full market/event

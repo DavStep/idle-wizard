@@ -227,6 +227,8 @@ experience_type: product-shape
 - In-app Browser Playwright evaluate can miss main-world `window.cheats`, and `javascript:` bookmarklets are blocked; do not rely on that path for cheat-driven screenshot setup.
 - In-app Browser Playwright evaluate is read-only for DOM/module work; it cannot import page modules or reveal hidden DOM, so use visible UI actions or an HTTP-served local harness for visual QA.
 - `cheats.showPage(page)` unlocks and saves by default; use `{ unlock: false }` only when fallback behavior is acceptable, or avoid it for no-mutation QA on real local saves.
+- New dialogs, windows, pages, popups, and notable UI surfaces should be registered in the dev UI opener (`cheats.openUi(surfaceId)` / `?devUi=surfaceId`) as part of the change that creates them.
+- Dialog visual changes should use the dev UI opener for browser iteration and screenshots; if the target dialog lacks an opener recipe, add that recipe before polishing visuals.
 - In-app Browser blocks `data:` and `file:` fixture pages; use the real app state or an HTTP-served local harness for browser UI QA.
 - Local preview harnesses that must survive after a Codex command exits need a real daemon/session detach; plain `nohup ... &` can be cleaned up by the command harness.
 - For raster 9-slice extraction, preserve source pixels with clean samples, color-keying, and gutter trims; geometric chamfers or redrawn mirrored lines can make the asset look vectorized.

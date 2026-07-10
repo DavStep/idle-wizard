@@ -95,6 +95,8 @@ export class DevCheatConsoleManager {
       setGuildState: (preset, options) => run('setGuildState', preset, options),
       setBackendState: (state, options) => run('setBackendState', state, options),
       openDialog: (dialogId, options) => run('openDialog', dialogId, options),
+      listUiSurfaces: () => run('listUiSurfaces'),
+      openUi: (surfaceId, options) => run('openUi', surfaceId, options),
       setTimers: (preset, options) => run('setTimers', preset, options),
       setStressText: (options) => run('setStressText', options),
       setDummyLeaderboard: (options) => run('setDummyLeaderboard', options),

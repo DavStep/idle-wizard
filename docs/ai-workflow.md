@@ -21,6 +21,7 @@ Use the smallest check that proves the change, then broaden when touching shared
 - Focused logic change: run the matching `*.test.js`.
 - Shared gameplay, page, backend, persistence, or release behavior: run `npm run check`.
 - UI/layout/tutorial change: run focused tests plus browser screenshot/click QA at the authored mobile surface and a fitted desktop viewport.
+- Dialog visual work: open the dialog through `cheats.openUi(surfaceId)` or `?devUi=surfaceId` for iteration and screenshots. If that path does not exist, add it before visual QA.
 - Tap/button/mobile-WebView interaction change or bug: use `ecc-tap-path-audit` to trace handler order, state writes, backdrop/synthetic click behavior, and final visible state.
 - Browser UI QA: use `ecc-browser-qa`; missing screenshot or baseline evidence means `INCONCLUSIVE`, not pass.
 - Bug fixes: use `ecc-ai-regression-testing` to choose the smallest guard that would have caught the actual failure.
@@ -35,6 +36,7 @@ Use the smallest check that proves the change, then broaden when touching shared
 When a feature change would be meaningfully faster or safer with a repo-local helper, add the smallest reusable dev tool instead of relying on a hidden one-off command.
 
 - Prefer an `npm` script, checked-in harness, fixture generator, capture script, or focused validator that future agents can run directly.
+- Any new dialog, window, page, popup, or notable UI surface should get a dev command path, usually through `cheats.openUi(surfaceId)` and `?devUi=surfaceId`, so future QA can open it directly.
 - Document the command, required env flags, and intended use in this file when it is broad, or in the feature-local `README.md` when it is feature-specific.
 - Keep tools deterministic and scoped to the current repo; do not make them start duplicate Vite or SpacetimeDB processes.
 - Reuse documented tools before creating a near-duplicate helper.

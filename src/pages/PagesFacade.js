@@ -408,6 +408,9 @@ export class PagesFacade {
       case 'guildcharter':
       case 'guildsettings':
       case 'guildrequest':
+      case 'guildrequeststack':
+      case 'guildquestposting':
+      case 'guildquests':
       case 'guildadventurer':
         return this.openGuildDialog(normalizedDialogId, options);
       case 'settings':
@@ -781,6 +784,31 @@ export class PagesFacade {
     }
 
     const snapshot = this.getGameplaySnapshot().guild ?? {};
+
+    if (
+      dialogId === 'guildrequeststack' ||
+      dialogId === 'guildquestposting' ||
+      dialogId === 'guildquests'
+    ) {
+      const requestCount = snapshot.availableRequests?.length ?? 0;
+
+      if (requestCount <= 0) {
+        return {
+          ok: false,
+          reason: 'no_available_guild_requests',
+          dialogId: 'guildrequeststack',
+          pageId: 'guild',
+        };
+      }
+
+      manager?.showAvailableRequestsDialog?.();
+      return {
+        ok: true,
+        dialogId: 'guildrequeststack',
+        pageId: 'guild',
+        requestCount,
+      };
+    }
 
     if (dialogId === 'guildrequest') {
       const requestId =

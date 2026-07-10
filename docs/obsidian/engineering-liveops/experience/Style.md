@@ -170,6 +170,7 @@ experience_type: style
 - Shared scroll progress rails must be real `.style-progress` siblings below the scroll frame, not sticky pseudo-elements inside row content.
 - Shared scroll cue styling must not override positioned room containers; absolute content panels lose their right/bottom insets if `.style-scroll-cue` changes `position`.
 - Dialog scroll panes must show the shared bottom progress rail and use the select-recipe dialog spacing: rail below the frame, default `--style-scroll-progress-gap`, and normal dialog bottom padding.
+- Custom non-scroll popups that reuse `.guild-page__popup-content` should hide the inherited scroll cue and reserve explicit slots for any page progress rail and action buttons.
 - World event dialog content should stay a flex column: fixed header, scroll frame, then normal shared scroll rail. Do not use grid `:has()` spacer rows or rail margin overrides there.
 - Scrollable popup content that opens from `hidden` needs one deferred frame before pinning to bottom; hidden flex layouts can report stale scroll geometry.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.

@@ -383,6 +383,12 @@ describe('GuildPanelManager', () => {
       ),
     ).toEqual(['1Old Road Escort']);
     expect(
+      popupLayer.querySelector('.guild-page__request-stack-progress')?.getAttribute('aria-valuetext'),
+    ).toBe('1/1');
+    expect(
+      popupLayer.querySelector('.guild-page__request-stack-progress-fill')?.style.width,
+    ).toBe('100%');
+    expect(
       popupLayer.querySelector('.guild-page__request-list-item.is-selected .guild-page__request-list-photo'),
     ).not.toBeNull();
     expect(popupLayer.querySelector('.guild-page__request-detail-card')).not.toBeNull();
@@ -516,6 +522,12 @@ describe('GuildPanelManager', () => {
       '1/3',
     );
     expect(
+      popupLayer.querySelector('.guild-page__request-stack-progress')?.getAttribute('aria-valuetext'),
+    ).toBe('1/3');
+    expect(
+      popupLayer.querySelector('.guild-page__request-stack-progress-fill')?.style.width,
+    ).toBe('33.33%');
+    expect(
       [
         ...popupLayer.querySelectorAll(
           '.guild-page__popup-actions .guild-page__request-stack-action',
@@ -549,6 +561,12 @@ describe('GuildPanelManager', () => {
     expect(popupLayer.querySelector('.guild-page__request-paper-page')?.textContent).toBe(
       '2/3',
     );
+    expect(
+      popupLayer.querySelector('.guild-page__request-stack-progress')?.getAttribute('aria-valuetext'),
+    ).toBe('2/3');
+    expect(
+      popupLayer.querySelector('.guild-page__request-stack-progress-fill')?.style.width,
+    ).toBe('66.67%');
   });
 
   it('shows the guild tag and name as one left-aligned hall row', () => {
@@ -1489,6 +1507,15 @@ describe('GuildPanelManager', () => {
     const stackListRule = baseCss.match(
       /\.guild-page__request-list\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const stackWrapRule = baseCss.match(
+      /\.guild-page__request-stack-wrap\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackProgressRule = baseCss.match(
+      /\.guild-page__request-stack-progress\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackProgressFillRule = baseCss.match(
+      /\.guild-page__request-stack-progress-fill\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const stackListItemRule = baseCss.match(
       /\.guild-page__request-list-item\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -1503,6 +1530,9 @@ describe('GuildPanelManager', () => {
     )?.groups?.body;
     const stackTurnRule = baseCss.match(
       /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]\.is-turning-page\s+\.guild-page__request-paper-content\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const stackActionsRule = baseCss.match(
+      /\.guild-page__popup-panel\[data-popup-kind="requestStack"\]\s+\.guild-page__popup-actions\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const stackActionRule = baseCss.match(
       /\.style-button\.guild-page__request-stack-action\s*\{(?<body>[^}]*)\}/,
@@ -1519,6 +1549,9 @@ describe('GuildPanelManager', () => {
     const requestDetailPageRule = baseCss.match(
       /\.guild-page__request-detail-card\s+\.guild-page__request-paper-page\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const requestDetailValueRule = baseCss.match(
+      /\.guild-page__request-detail-row\s+\.guild-page__row-value\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const requestDetailSealRule = baseCss.match(
       /\.guild-page__request-detail-seal\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -1527,8 +1560,8 @@ describe('GuildPanelManager', () => {
     expect(stackDialogRule).toContain(
       'border-image-source: var(--guild-page-quest-dialog-frame);',
     );
-    expect(stackDialogRule).toMatch(/\bheight:\s*327px;/);
-    expect(stackDialogRule).toMatch(/\bpadding:\s*13px 2px 42px;/);
+    expect(stackDialogRule).toMatch(/\bheight:\s*305px;/);
+    expect(stackDialogRule).toMatch(/\bpadding:\s*13px 2px;/);
     expect(stackTitleRule).toContain('background: var(--guild-page-quest-banner)');
     expect(stackTitleRule).toMatch(/\btop:\s*-52px;/);
     expect(stackTitleRule).toMatch(/\bbox-sizing:\s*border-box;/);
@@ -1542,6 +1575,12 @@ describe('GuildPanelManager', () => {
     expect(stackCloseRule).toMatch(/\bz-index:\s*-1;/);
     expect(stackCloseRule).toMatch(/\bbackground:\s*transparent;/);
     expect(stackListRule).toMatch(/\bflex-direction:\s*column;/);
+    expect(stackListRule).toMatch(/\boverflow:\s*hidden auto;/);
+    expect(stackWrapRule).toMatch(/\bflex:\s*1 1 auto;/);
+    expect(stackWrapRule).toMatch(/\bwidth:\s*100%;/);
+    expect(stackProgressRule).toMatch(/\bflex:\s*0 0 var\(--style-progress-total-height\);/);
+    expect(stackProgressRule).toMatch(/\bborder-image:\s*none;/);
+    expect(stackProgressFillRule).toMatch(/\bbackground:\s*#a89678;/);
     expect(stackListItemRule).toMatch(/\bcolumn-gap:\s*2px;/);
     expect(stackNormalListLabelRule).toMatch(/\btranslate:\s*0 -5px;/);
     expect(stackSelectedListNumberRule).toMatch(/\btranslate:\s*0 -3px;/);
@@ -1549,6 +1588,9 @@ describe('GuildPanelManager', () => {
     expect(baseCss).not.toContain('--guild-page-quest-selected-frame');
     expect(baseCss).not.toMatch(/\.guild-page__request-list-item\.is-selected::after/);
     expect(stackTurnRule).toContain('guild-request-page-under');
+    expect(stackActionsRule).toMatch(/\bposition:\s*relative;/);
+    expect(stackActionsRule).toMatch(/\bbottom:\s*auto;/);
+    expect(stackActionsRule).toMatch(/\bmargin:\s*8px 32px 0 24px;/);
     expect(stackActionRule).toContain(
       'border-image-source: var(--guild-page-quest-button-brown-frame);',
     );
@@ -1564,6 +1606,8 @@ describe('GuildPanelManager', () => {
     );
     expect(requestDetailPageRule).toMatch(/\btop:\s*9px;/);
     expect(requestDetailPageRule).toMatch(/\bright:\s*9px;/);
+    expect(requestDetailValueRule).toMatch(/\bwhite-space:\s*normal;/);
+    expect(requestDetailValueRule).toMatch(/\boverflow-wrap:\s*anywhere;/);
     expect(requestDetailSealRule).toMatch(/\bright:\s*9px;/);
     expect(requestDetailSealRule).toMatch(/\bbottom:\s*9px;/);
     expect(requestDetailSealRule).toMatch(/\bwidth:\s*28px;/);
