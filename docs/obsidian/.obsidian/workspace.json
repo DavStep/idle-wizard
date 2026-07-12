@@ -13,15 +13,15 @@
             "state": {
               "type": "canvas",
               "state": {
-                "file": "Idle Wizard.canvas",
+                "file": "tutorial/Tutorial.canvas",
                 "viewState": {
-                  "x": 850,
-                  "y": 30,
-                  "zoom": -1.4404623820707079
+                  "x": 1228.473595718511,
+                  "y": 92.25272870609044,
+                  "zoom": -0.8533367490179535
                 }
               },
               "icon": "lucide-layout-dashboard",
-              "title": "Idle Wizard"
+              "title": "Tutorial"
             }
           }
         ]
@@ -174,10 +174,10 @@
             "state": {
               "type": "file-properties",
               "state": {
-                "file": "Untitled.md"
+                "file": "tutorial/Tutorial.canvas"
               },
               "icon": "lucide-info",
-              "title": "File properties for Untitled"
+              "title": "File properties for Tutorial"
             }
           }
         ],
@@ -198,16 +198,20 @@
       "bases:Create new base": false
     }
   },
-  "active": "05eb8488ee452073",
+  "active": "00820ef59f00cfc9",
   "lastOpenFiles": [
-    "Idle Wizard.canvas",
+    "tutorial/Tutorial Index.base",
+    "tutorial/01 Flow/Level 4 Gardening.md",
+    "tutorial/01 Flow/Level 3 Research.md",
+    "tutorial/01 Flow/Level 2 Market.md",
+    "tutorial/01 Flow/Level 1 Introduction.md",
     "Untitled.md",
+    "Idle Wizard.canvas",
     "World Index.base",
     "README.md",
     "Home.md",
     "tutorial/Tutorial.canvas",
     "tutorial/Home.md",
-    "tutorial/Tutorial Index.base",
     "mechanics/Core Loop.md",
     "engineering-liveops/experience/Architecture.md",
     "balance/Prestige Tuning.md",
@@ -229,10 +233,6 @@
     "balance/Balance.canvas",
     "tutorial/03 Branches/Coin Shortfall Branch.md",
     "tutorial/02 Rules/Tutorial Surface Rules.md",
-    "engineering-liveops/Architecture Boundaries.md",
-    "Experiences.md",
-    "tutorial/05 Risks/Tutorial Risks.md",
-    "engineering-liveops/Backend Authority.md",
     "engineering-liveops/Engineering Index.base",
     "engineering-liveops/Engineering Liveops.canvas",
     "engineering-liveops/experience"

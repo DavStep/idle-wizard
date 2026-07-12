@@ -244,7 +244,7 @@ const PLAYER_CHARACTERS = new Set([
   'adventurer_treasurehunter',
 ]);
 const PLAYER_ICON_MODES = new Set(['icons']);
-const PLAYER_PROGRESS_BARS = new Set(['regular', 'gradient']);
+const PLAYER_PROGRESS_BARS = new Set(['regular', 'gradient', 'notched']);
 const PLAYER_PLOT_VIEWS = new Set(['rows', 'boxes']);
 const DEFAULT_SAVE_COMPLETED_RESEARCH_IDS = new Set(['unlockSeed:sageSeed']);
 const TRADE_ALLIANCE_JOIN_MODES = new Set(['open', 'apply', 'closed']);
@@ -5244,6 +5244,7 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
     progressBar: {
       regular: 0,
       gradient: 0,
+      notched: 0,
     },
     plotView: {
       rows: 0,

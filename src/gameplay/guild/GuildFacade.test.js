@@ -112,6 +112,29 @@ describe('GuildFacade', () => {
     });
   });
 
+  it('caps generated and restored available requests at ten', () => {
+    const { facade } = createFacade({ level: 100, coin: 200_000 });
+    facade.createGuild({ name: 'ash hall', tag: 'ASH', color: 'red' });
+
+    for (let level = 2; level <= 5; level += 1) {
+      expect(facade.upgradeSecretary()).toMatchObject({
+        ok: true,
+        secretary: { level },
+      });
+    }
+
+    expect(facade.getSnapshot().availableRequests).toHaveLength(10);
+
+    const persisted = facade.getPersistenceSnapshot();
+    persisted.availableRequests = Array.from({ length: 12 }, (_, index) => ({
+      ...persisted.availableRequests[index % persisted.availableRequests.length],
+      id: `restored-request-${index + 1}`,
+    }));
+    facade.applyPersistenceSnapshot(persisted);
+
+    expect(facade.getPersistenceSnapshot().availableRequests).toHaveLength(10);
+  });
+
   it('rejects guild tags that cannot render as alliance tags', () => {
     const { facade } = createFacade();
 

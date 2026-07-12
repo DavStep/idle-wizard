@@ -9,6 +9,10 @@ export const PLAYER_PROGRESS_BAR_OPTIONS = Object.freeze([
     key: 'gradient',
     label: 'gradient',
   }),
+  Object.freeze({
+    key: 'notched',
+    label: 'bronze',
+  }),
 ]);
 
 const PROGRESS_BAR_KEYS = new Set(PLAYER_PROGRESS_BAR_OPTIONS.map((mode) => mode.key));
@@ -18,6 +22,9 @@ const PROGRESS_BAR_ALIASES = new Map([
   ['plain', 'regular'],
   ['gradinet', 'gradient'],
   ['grad', 'gradient'],
+  ['bronze', 'notched'],
+  ['tally', 'notched'],
+  ['ticks', 'notched'],
 ]);
 
 export function normalizePlayerProgressBar(progressBar) {

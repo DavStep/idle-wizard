@@ -21,6 +21,7 @@ const MAX_GUILD_NAME_LENGTH = 24;
 const MIN_GUILD_TAG_LENGTH = 2;
 const MAX_GUILD_TAG_LENGTH = 5;
 const MAX_BOARD_SEQUENCE = 1_000_000;
+export const GUILD_MAX_AVAILABLE_REQUESTS = 10;
 
 export { GUILD_CHARTER_COST_COIN, GUILD_STATS, GUILD_UNLOCK_LEVEL };
 
@@ -430,7 +431,10 @@ export class GuildFacade {
         ? snapshot.board.map((request) => this.sanitizeRequest(request)).filter(Boolean)
         : [],
       availableRequests: Array.isArray(snapshot.availableRequests)
-        ? snapshot.availableRequests.map((request) => this.sanitizeRequest(request)).filter(Boolean)
+        ? snapshot.availableRequests
+            .map((request) => this.sanitizeRequest(request))
+            .filter(Boolean)
+            .slice(0, GUILD_MAX_AVAILABLE_REQUESTS)
         : [],
       logs: Array.isArray(snapshot.logs) ? snapshot.logs.slice(0, 80) : [],
       nextLogId: clampInt(snapshot.nextLogId, 1, 1_000_000),
@@ -457,6 +461,7 @@ export class GuildFacade {
     }
 
     changed = this.pruneExpiredRequests() || changed;
+    changed = this.trimAvailableRequests() || changed;
     changed = this.ensureAvailableRequests() || changed;
     return changed;
   }
@@ -507,10 +512,24 @@ export class GuildFacade {
   }
 
   getAvailableRequestCount(secretary) {
-    return Math.max(
-      secretary.boardSlots,
-      Math.min(secretary.boardSlots + 2, secretary.boardSlots * 2),
+    return Math.min(
+      GUILD_MAX_AVAILABLE_REQUESTS,
+      Math.max(
+        secretary.boardSlots,
+        Math.min(secretary.boardSlots + 2, secretary.boardSlots * 2),
+      ),
     );
+  }
+
+  trimAvailableRequests() {
+    const requests = this.state.availableRequests ?? [];
+
+    if (requests.length <= GUILD_MAX_AVAILABLE_REQUESTS) {
+      return false;
+    }
+
+    this.state.availableRequests = requests.slice(0, GUILD_MAX_AVAILABLE_REQUESTS);
+    return true;
   }
 
   runSimulation() {
@@ -761,6 +780,10 @@ export class GuildFacade {
     this.state.availableRequests.push(request);
     this.state.availableRequests.sort(
       (left, right) => (Number(left.sequence) || 0) - (Number(right.sequence) || 0),
+    );
+    this.state.availableRequests = this.state.availableRequests.slice(
+      0,
+      GUILD_MAX_AVAILABLE_REQUESTS,
     );
   }
 

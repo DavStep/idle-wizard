@@ -17,11 +17,11 @@ describe('PlayerProgressBarManager', () => {
   it('loads a stored progress bar', () => {
     const manager = new PlayerProgressBarManager({
       storage: createMemoryStorage({
-        'idle-wizard.player.progressBar': 'gradient',
+        'idle-wizard.player.progressBar': 'notched',
       }),
     });
 
-    expect(manager.getProgressBar()).toBe('gradient');
+    expect(manager.getProgressBar()).toBe('notched');
   });
 
   it('stores the selected progress bar', () => {

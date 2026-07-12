@@ -20,7 +20,7 @@ experience_type: style
 - Idle Witch Craft item drop and coin flyout parity lives in `../idle-whitch-craft/core/MobilePreview.ts` plus `../idle-whitch-craft/core/mobile.css` keyframes around `mobile-workshop-item-drop`, `mobile-seed-burst`, and `mobile-coin-amt-pop`.
 - Idle Witch Craft launcher icon source lives at `../idle-whitch-craft/core/assets/ui/icons/game-icon.png`; generated Android launcher PNGs live under `../idle-whitch-craft/core/android/app/src/main/res/mipmap-*`.
 - Idle Witch Craft splash loading gradient progress bar CSS lives at `../idle-whitch-craft/core/splash.css`.
-- Progress bar style is a separate visual setting (`regular`/`gradient`), not part of a theme.
+- Progress bar style is a separate visual setting (`regular`/`gradient`/`notched`), not part of a theme; the `notched` key is player-facing `bronze` and uses a solid bronze fill with continuous light/dark inset strokes, never ticks or dashes.
 - Shared `.style-progress` rails are border-box; fills sit inside the bordered rail, so callers normally use `width: 100%`.
 - Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
 - Body-level reward visual nodes must size from fitted stage CSS variables, not `vw`; otherwise mobile item drops ignore the scaled room UI and look tiny.
@@ -117,6 +117,8 @@ experience_type: style
 - Tabbed popup wrappers should own centering/enter animation; do not also animate the nested `.style-dialog` with centered-dialog transforms.
 - Dialog close controls should sit as normal-weight border labels, like titles but not bold, not as boxed buttons inside the panel.
 - Guild charter tag setup should mirror trade alliance creation: stacked fields, `tag color`, square swatch buttons, and `create` copy.
+- Guild incoming-quest indices and the current/total page count are unboxed dark-sepia text printed directly on their paper surfaces; right-align list indices in a fixed column and align the page count to the detail paper's top-right content inset.
+- Guild quest page turns must keep the dialog, list-paper, and detail-paper 9-slice nodes mounted; rebuilding those `border-image` nodes causes a black Chromium/WebView repaint frame during the transition.
 - Room UI layer uses `box-sizing: content-box`; wrappers that center fixed-width `.style-dialog` content must account for dialog padding and borders.
 - Padded inputs inside flex columns need `box-sizing: border-box` or explicit width math; content-box `width: 100%` overflows columns.
 - Full-width padded dialog buttons also need `box-sizing: border-box`; otherwise their right borders clip outside the popup content.
@@ -145,6 +147,7 @@ experience_type: style
 - Midnight popups should use dark shadow tokens; light shadows read as a harsh glow on the dark room surface.
 - Midnight 9-slice PNGs must put border art across the full `32px` slice; early center fill makes CSS `border-image` render as a hairline.
 - Compact header/button 9-slices need flat internal top stretch bands; baked horizontal bands in the top slice compress into visible lines when `border-image` scales them down. Preserve side and corner cap pixels unless the source edge itself is wrong.
+- Nine-slice generator metadata uses left/top/right/bottom margins and reports adjusted values after alpha-cropping; convert those final margins to CSS top/right/bottom/left order or the slice joins render as visible grid seams.
 - Player font options live in `src/player/playerFonts.js`, apply through `html[data-style-font]`, and need matching SpacetimeDB `PLAYER_FONTS` entries to survive profile sync.
 - Bundled player fonts need an `@fontsource/<font>` dependency plus `src/main.js` CSS imports; CSS fallback alone is not enough for Android/offline builds.
 - Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.

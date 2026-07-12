@@ -96,6 +96,7 @@ describe('TopPanelViewManager', () => {
     ).toEqual([
       ['regular', '68%'],
       ['gradient', '68%'],
+      ['notched', '68%'],
     ]);
 
     expect(
@@ -160,6 +161,32 @@ describe('TopPanelViewManager', () => {
     }));
 
     expect(iconPreviews).toEqual([]);
+  });
+
+  it('renders the bronze progress style with a continuous engraved stroke', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const notchedRootRule = baseCss.match(
+      /:root\[data-style-progress="notched"\]\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const notchedPreviewRule = baseCss.match(
+      /\.room-top-panel__progress-preview\[data-preview-progress="notched"\]\s+\.room-top-panel__preview-progress-fill\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(notchedRootRule).toMatch(
+      /--style-progress-fill-background:\s*var\(--style-progress-notched-fill\);/,
+    );
+    expect(notchedRootRule).toMatch(
+      /--style-progress-fill-shadow:\s*inset 0 1px 0\s*var\(--style-progress-notched-stroke-light\),\s*inset 0 -1px 0 var\(--style-progress-notched-stroke-dark\);/,
+    );
+    expect(baseCss).not.toMatch(
+      /:root\[data-style-progress="notched"\][^{]*\.style-progress[^:]*::after/,
+    );
+    expect(notchedPreviewRule).toMatch(
+      /\bbackground:\s*var\(--style-progress-notched-fill\);/,
+    );
+    expect(notchedPreviewRule).toMatch(
+      /\bbox-shadow:\s*inset 0 1px 0 var\(--style-progress-notched-stroke-light\),\s*inset 0 -1px 0 var\(--style-progress-notched-stroke-dark\);/,
+    );
   });
 
   it('keeps top-panel character images larger than the shared inline icon default', () => {

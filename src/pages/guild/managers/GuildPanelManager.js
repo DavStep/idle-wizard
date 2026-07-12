@@ -28,6 +28,7 @@ const CONTENT_TABS = [
 
 const GUILD_SECRETARY_ICON_KEY = 'guild_secretary';
 const GUILD_QUEST_ASSET_PATH = '/ui/guild-quest/';
+const GUILD_REQUEST_PAGE_TURN_MS = 205;
 
 export class GuildPanelManager {
   constructor({ gameplayFacade } = {}) {
@@ -881,8 +882,8 @@ export class GuildPanelManager {
     this.refs.popupTabs.setAttribute('role', 'tablist');
     this.refs.popupTabs.setAttribute('aria-label', 'guild card details');
 
-    dialog.append(this.refs.popupTitle, this.refs.closeButton, this.refs.popupContent);
-    panel.append(dialog, this.refs.popupActions, this.refs.popupTabs);
+    dialog.append(this.refs.popupTitle, this.refs.popupContent);
+    panel.append(dialog, this.refs.closeButton, this.refs.popupActions, this.refs.popupTabs);
     popup.append(panel);
     this.refs.popup = popup;
     this.refs.popupPanel = panel;
@@ -957,6 +958,7 @@ export class GuildPanelManager {
 
     this.refs.popupPanel.dataset.popupKind = this.selectedCardKind ?? '';
     this.refs.popupActions?.replaceChildren();
+    this.refs.popupPanel?.insertBefore(this.refs.closeButton, this.refs.popupActions);
 
     if (this.selectedCardKind === 'charter') {
       this.renderCharterDialog();
@@ -1128,8 +1130,11 @@ export class GuildPanelManager {
       boardFull ? 'Board Full' : 'Post',
       'guild-page__request-stack-post',
       () => {
-        this.gameplayFacade?.postGuildRequest?.(request.id);
-        this.hidePopup();
+        const selectedRequest = this.getAvailableRequestStack()[this.requestStackIndex];
+        if (selectedRequest) {
+          this.gameplayFacade?.postGuildRequest?.(selectedRequest.id);
+          this.hidePopup();
+        }
       },
       { disabled: boardFull },
     );
@@ -1146,10 +1151,10 @@ export class GuildPanelManager {
     note.className = 'guild-page__request-stack-note';
     note.textContent = 'Papers rotate to the back when you open the next one.';
 
-    this.refs.popupContent.replaceChildren(
-      this.createRequestStackPreview(requests, request),
-    );
-    this.refs.popupActions.replaceChildren(controls, note);
+    const preview = this.createRequestStackPreview(requests, request);
+    preview.append(note);
+    this.refs.popupContent.replaceChildren(preview);
+    this.refs.popupActions.replaceChildren(controls, this.refs.closeButton);
   }
 
   createRequestStackPreview(requests, selectedRequest) {
@@ -1171,25 +1176,36 @@ export class GuildPanelManager {
   }
 
   createRequestStackProgress(totalRequests) {
-    const total = Math.max(1, Number(totalRequests) || 0);
-    const current = Math.min(total, Math.max(1, this.requestStackIndex + 1));
-    const fillPercent = Number(((current / total) * 100).toFixed(2));
-
     const progress = document.createElement('div');
     progress.className = 'style-progress guild-page__request-stack-progress';
     progress.setAttribute('role', 'progressbar');
     progress.setAttribute('aria-label', 'quest page progress');
+
+    const fill = document.createElement('div');
+    fill.className = 'style-progress__fill guild-page__request-stack-progress-fill';
+    progress.append(fill);
+    this.updateRequestStackProgress(progress, totalRequests);
+
+    return progress;
+  }
+
+  updateRequestStackProgress(progress, totalRequests) {
+    if (!progress) {
+      return;
+    }
+
+    const total = Math.max(1, Number(totalRequests) || 0);
+    const current = Math.min(total, Math.max(1, this.requestStackIndex + 1));
+    const fillPercent = Number(((current / total) * 100).toFixed(2));
+
     progress.setAttribute('aria-valuemin', '0');
     progress.setAttribute('aria-valuemax', String(total));
     progress.setAttribute('aria-valuenow', String(current));
     progress.setAttribute('aria-valuetext', `${current}/${total}`);
-
-    const fill = document.createElement('div');
-    fill.className = 'style-progress__fill guild-page__request-stack-progress-fill';
-    fill.style.width = `${fillPercent}%`;
-    progress.append(fill);
-
-    return progress;
+    const fill = progress.querySelector('.guild-page__request-stack-progress-fill');
+    if (fill) {
+      fill.style.width = `${fillPercent}%`;
+    }
   }
 
   createRequestStackList(requests) {
@@ -1202,6 +1218,18 @@ export class GuildPanelManager {
     }
 
     return list;
+  }
+
+  updateRequestStackList(list, requests) {
+    const items = this.getRequestStackDisplayItems(requests);
+    const buttons = [...(list?.children ?? [])];
+
+    if (!list || buttons.length !== items.length) {
+      list?.replaceChildren(...items.map((item) => this.createRequestStackListItem(item)));
+      return;
+    }
+
+    items.forEach((item, index) => this.updateRequestStackListItem(buttons[index], item));
   }
 
   getRequestStackDisplayItems(requests) {
@@ -1219,10 +1247,17 @@ export class GuildPanelManager {
     const button = document.createElement('button');
     button.className = 'guild-page__request-list-item';
     button.type = 'button';
+    button.addEventListener('click', () => {
+      this.selectAvailableRequestIndex(Number(button.dataset.questIndex));
+    });
+    this.updateRequestStackListItem(button, { request, requestIndex, selected });
+    return button;
+  }
+
+  updateRequestStackListItem(button, { request, requestIndex, selected }) {
     button.dataset.questIndex = String(requestIndex);
     button.setAttribute('aria-label', `open ${request.title} quest`);
     button.classList.toggle('is-selected', selected);
-    button.addEventListener('click', () => this.selectAvailableRequestIndex(requestIndex));
 
     const number = document.createElement('span');
     number.className = 'guild-page__request-list-number';
@@ -1232,10 +1267,10 @@ export class GuildPanelManager {
     title.className = 'guild-page__request-list-title';
     title.textContent = this.toQuestDisplayCase(request.title);
 
-    button.append(number, title);
+    const children = [number, title];
 
     if (selected) {
-      button.append(
+      children.push(
         this.createQuestAssetImage(
           'paperclip.png',
           'guild-page__request-list-paperclip',
@@ -1246,8 +1281,7 @@ export class GuildPanelManager {
         ),
       );
     }
-
-    return button;
+    button.replaceChildren(...children);
   }
 
   selectAvailableRequestIndex(requestIndex) {
@@ -1263,7 +1297,31 @@ export class GuildPanelManager {
     }
 
     this.requestStackIndex = requestIndex;
-    this.renderPopup();
+    this.updateVisibleRequestStackPage(requests);
+  }
+
+  updateVisibleRequestStackPage(requests = this.getAvailableRequestStack()) {
+    const wrap = this.refs.popupContent?.querySelector('.guild-page__request-stack-wrap');
+    const stack = wrap?.querySelector('.guild-page__request-stack');
+    const list = stack?.querySelector('.guild-page__request-list');
+    const detail = stack?.querySelector('.guild-page__request-detail-card');
+    const request = requests[this.requestStackIndex];
+
+    if (!wrap || !list || !detail || !request) {
+      this.renderPopup();
+      return;
+    }
+
+    this.updateRequestStackList(list, requests);
+    const nextDetail = this.createRequestStackDetail(
+      request,
+      `${this.requestStackIndex + 1}/${requests.length}`,
+    );
+    detail.replaceChildren(...nextDetail.children);
+    this.updateRequestStackProgress(
+      wrap.querySelector('.guild-page__request-stack-progress'),
+      requests.length,
+    );
   }
 
   createRequestStackDetail(request, pageLabel) {
@@ -1480,27 +1538,19 @@ export class GuildPanelManager {
       return;
     }
 
-    const finishTurn = () => {
-      const latestRequests = this.getAvailableRequestStack();
-      this.requestStackIndex =
-        latestRequests.length > 0
-          ? (this.requestStackIndex + 1) % latestRequests.length
-          : 0;
-      this.requestStackTimer = null;
-      this.refs.popupPanel?.classList.remove('is-turning-page');
-      this.renderPopup();
-    };
-
     const prefersReducedMotion =
       globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
 
-    if (prefersReducedMotion) {
-      finishTurn();
-      return;
-    }
+    this.requestStackIndex = (this.requestStackIndex + 1) % requests.length;
+    this.updateVisibleRequestStackPage(requests);
 
-    this.refs.popupPanel?.classList.add('is-turning-page');
-    this.requestStackTimer = globalThis.setTimeout(finishTurn, 225);
+    if (!prefersReducedMotion) {
+      this.refs.popupPanel?.classList.add('is-turning-page');
+      this.requestStackTimer = globalThis.setTimeout(() => {
+        this.requestStackTimer = null;
+        this.refs.popupPanel?.classList.remove('is-turning-page');
+      }, GUILD_REQUEST_PAGE_TURN_MS);
+    }
   }
 
   clearRequestStackTimer() {

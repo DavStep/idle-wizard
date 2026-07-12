@@ -94,12 +94,12 @@ describe('AppThemeManager', () => {
     playerFacade.setTheme('midnight');
     playerFacade.setFont('comic sans mono');
     playerFacade.setIconMode('none');
-    playerFacade.setProgressBar('regular');
+    playerFacade.setProgressBar('notched');
 
     expect(document.documentElement.dataset.styleTheme).toBe('midnight');
     expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
     expect(document.documentElement.dataset.styleIcons).toBe('icons');
-    expect(document.documentElement.dataset.styleProgress).toBe('regular');
+    expect(document.documentElement.dataset.styleProgress).toBe('notched');
 
     playerFacade.setFont('google-lexend');
 

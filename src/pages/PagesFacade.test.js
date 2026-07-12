@@ -6500,7 +6500,7 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__progress-bar-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['regular', 'gradient']);
+    ).toEqual(['regular', 'gradient', 'bronze']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__icon-button')].map(
         (button) => button.textContent,
@@ -6521,6 +6521,7 @@ describe('PagesFacade', () => {
       'researched',
       'free',
       'researched',
+      'free',
       'free',
     ]);
     expect(

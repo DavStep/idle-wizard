@@ -1391,12 +1391,16 @@ export class DevCheatCommandManager {
       createdAtMs: now,
     };
 
+    const defaultSecretaryLevel =
+      preset === 'full' || preset === 'claimable' || preset === 'urgent' ? 3 : 1;
+    const secretaryLevel = Math.min(
+      5,
+      Math.max(1, Math.floor(Number(options.secretaryLevel) || defaultSecretaryLevel)),
+    );
+
     guildFacade.applyPersistenceSnapshot({
       profile,
-      secretaryLevel:
-        preset === 'full' || preset === 'claimable' || preset === 'urgent'
-          ? 3
-          : 1,
+      secretaryLevel,
       lastSimAtMs: now,
       applicants: [],
       adventurers: [],
@@ -1435,7 +1439,11 @@ export class DevCheatCommandManager {
         },
       ],
     }));
-    const boardCount = Math.max(0, Math.floor(Number(options.board) || 2));
+    const requestedBoardCount = Number(options.board);
+    const boardCount = Math.max(
+      0,
+      Math.floor(Number.isFinite(requestedBoardCount) ? requestedBoardCount : 2),
+    );
     const board = state.availableRequests.slice(0, boardCount);
 
     guildFacade.applyPersistenceSnapshot({
@@ -1583,7 +1591,12 @@ export class DevCheatCommandManager {
       ...dialogOptions
     } = options ?? {};
     const state = setup
-      ? this.setGuildState(guildPreset, { adventurers: 2, ...guildOptions })
+      ? this.setGuildState(guildPreset, {
+          adventurers: 2,
+          secretaryLevel: 5,
+          board: 0,
+          ...guildOptions,
+        })
       : { ok: true, skipped: true };
 
     if (state.ok === false) {
