@@ -237,7 +237,6 @@ export class TopPanelViewManager {
     this.refs.avatarPane.id = 'room-top-panel-settings-avatar';
     this.refs.avatarPane.className =
       'room-top-panel__settings-pane room-top-panel__avatar-pane';
-    this.refs.avatarPane.setAttribute('role', 'tabpanel');
     this.refs.avatarPane.setAttribute('aria-label', 'avatar');
     const characterSection = this.createVisualSettingSection('character', {
       boxed: false,
@@ -836,16 +835,13 @@ export class TopPanelViewManager {
     this.refs.levelPreviousButton.className =
       'style-button room-top-panel__level-pager-button';
     this.refs.levelPreviousButton.type = 'button';
-    this.refs.levelPreviousButton.setAttribute('role', 'tab');
 
     this.refs.levelNextButton = document.createElement('button');
     this.refs.levelNextButton.className = 'style-button room-top-panel__level-pager-button';
     this.refs.levelNextButton.type = 'button';
-    this.refs.levelNextButton.setAttribute('role', 'tab');
 
     pager.append(this.refs.levelPreviousButton, this.refs.levelNextButton);
     pager.setAttribute('aria-label', 'Level navigation');
-    pager.setAttribute('role', 'tablist');
 
     this.refs.levelCloseButton = document.createElement('button');
     this.refs.levelCloseButton.className = 'room-top-panel__level-close';

@@ -761,6 +761,12 @@ describe('GardenPlotManager', () => {
     const centeredActionRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-row\.is-buy-slot\s+\.garden-page__plot-box-action\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const pressedFrameRule = baseCss.match(
+      /\.garden-page__plot\s+\.garden-page__plot-row\.is-buy-slot:is\(:active, \.is-pressing\):not\(:disabled\)\s+\.garden-page__plot-box-frame\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const tooltipRule = baseCss.match(
+      /\.garden-page__plot-buy-tooltip\.is-visible\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const boughtFrameRule = baseCss.match(
       /\.garden-page__plot\s+\.garden-page__plot-row\.is-newly-bought\s+\.garden-page__plot-box-frame\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -782,6 +788,13 @@ describe('GardenPlotManager', () => {
     expect(centeredActionRule).toContain('bottom: auto;');
     expect(centeredActionRule).toContain('text-align: center;');
     expect(centeredActionRule).toContain('transform: translate(-50%, -50%);');
+    expect(pressedFrameRule).toContain('scale: var(--style-press-scale);');
+    expect(pressedFrameRule).toContain('translate: 0 1px;');
+    expect(tooltipRule).toContain('display: block;');
+    expect(tooltipRule).toContain('animation: garden-page-plot-buy-tooltip-in');
+    expect(baseCss).toMatch(
+      /\.garden-page__plot-row\.is-unaffordable[\s\S]*\.garden-page__plot-buy-tooltip[\s\S]*\[data-resource-color="coin"\][\s\S]*color:\s*var\(--style-resource-coin\);/,
+    );
     expect(boughtFrameRule).toContain(
       'animation: garden-page-plot-buy-frame var(--style-motion-normal)',
     );
@@ -1328,7 +1341,7 @@ describe('GardenPlotManager', () => {
     expect(plotRow.disabled).toBe(false);
   });
 
-  it('keeps unaffordable plot buy prices disabled without coin color', () => {
+  it('keeps unaffordable plot slots pressable and shows the missing coin tooltip', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -1346,14 +1359,75 @@ describe('GardenPlotManager', () => {
 
     expect(plotRow.classList.contains('is-buy-slot')).toBe(true);
     expect(actionLabel?.textContent).toBe('buy 25 coin');
-    expect(plotRow.disabled).toBe(true);
+    expect(plotRow.disabled).toBe(false);
+    expect(plotRow.classList.contains('is-unaffordable')).toBe(true);
     expect(actionLabel?.getAttribute('data-resource-color')).toBeNull();
+
+    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const tooltip = plotRow.querySelector('.garden-page__plot-buy-tooltip');
+
+    expect(gameplayFacade.buyGardenTile).not.toHaveBeenCalled();
+    expect(tooltip?.textContent).toBe('missing 25 coin');
+    expect(tooltip?.classList.contains('is-visible')).toBe(true);
+    expect(tooltip?.getAttribute('role')).toBe('status');
+    expect(tooltip?.getAttribute('aria-label')).toBe('missing 25 coin');
+    expect(tooltip?.querySelector('.style-resource-label--coin')).not.toBeNull();
+    expect(tooltip?.querySelector('.style-resource-label__icon')).not.toBeNull();
 
     snapshot.coin.current = 25;
     gameplayFacade.publish();
 
     expect(plotRow.disabled).toBe(false);
+    expect(plotRow.classList.contains('is-unaffordable')).toBe(false);
     expect(actionLabel?.getAttribute('data-resource-color')).toBe('coin');
+  });
+
+  it('shows the missing coin tooltip from a touch-like world tap with small drift', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    snapshot.garden.plot.maxTiles = 2;
+    snapshot.garden.plot.tileCosts = [0, 25];
+    snapshot.garden.plot.nextTileNumber = 2;
+    snapshot.garden.plot.nextTileCost = 25;
+    snapshot.garden.plot.tiles.push({
+      ...snapshot.garden.plot.tiles[0],
+      tileNumber: 2,
+      unlocked: false,
+    });
+
+    manager.mount(parent);
+
+    const shell = parent.querySelector('.garden-page__world-shell');
+    const buyRow = parent.querySelector('[data-garden-tile-number="2"]');
+
+    dispatchPointer(buyRow, 'pointerdown', {
+      pointerId: 1,
+      clientX: 100,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointermove', {
+      pointerId: 1,
+      clientX: 106,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 1,
+      clientX: 106,
+      clientY: 100,
+    });
+
+    expect(gameplayFacade.buyGardenTile).not.toHaveBeenCalled();
+    expect(buyRow.querySelector('.garden-page__plot-buy-tooltip')?.textContent).toBe(
+      'missing 25 coin',
+    );
+
+    manager.unmount();
+    parent.remove();
   });
 
   it('marks a newly bought plot for one snap animation', () => {

@@ -9,7 +9,6 @@ export class ResearchSnapshotManager {
     getResearchCostReductionLevel,
     researchBalanceManager,
     researchDefinitionManager,
-    researchSlotManager,
     researchStateEntityManager,
   }) {
     this.crystalFacade = crystalFacade;
@@ -19,7 +18,6 @@ export class ResearchSnapshotManager {
     this.getResearchCostReductionLevel = getResearchCostReductionLevel;
     this.researchBalanceManager = researchBalanceManager;
     this.researchDefinitionManager = researchDefinitionManager;
-    this.researchSlotManager = researchSlotManager;
     this.researchStateEntityManager = researchStateEntityManager;
   }
 
@@ -37,7 +35,6 @@ export class ResearchSnapshotManager {
       boxes: tabs[0]?.boxes ?? [],
       completedResearchIds,
       inProgressResearches: this.researchStateEntityManager.getInProgressResearches(),
-      slots: this.researchSlotManager?.getSnapshot?.() ?? { active: 0, max: 1, full: false },
     };
   }
 
@@ -63,7 +60,6 @@ export class ResearchSnapshotManager {
   getResearchSnapshot(research, completedResearchIds = []) {
     const researchOptions = { completedResearchIds };
     const cost = this.getResearchCost(research.id);
-    const durationSeconds = this.researchBalanceManager.getDurationSeconds(research.id);
     const completed = this.researchStateEntityManager.isCompleted(research.id);
     const progress = this.researchStateEntityManager.getProgressSnapshot(research.id);
     const requiredResearchIds =
@@ -88,13 +84,6 @@ export class ResearchSnapshotManager {
       !completed &&
       !progress.inProgress &&
       (!hasRequiredResearch || !hasRequiredPlayerLevel || !hasRequiredPrestigeCount);
-    const slotsFull =
-      !completed &&
-      !progress.inProgress &&
-      !locked &&
-      durationSeconds > 0 &&
-      this.researchSlotManager?.canStartTimedResearch?.() === false;
-
     return {
       ...research,
       effect: research.value,
@@ -120,11 +109,9 @@ export class ResearchSnapshotManager {
           }
         : {}),
       ...(locked ? { locked: true } : {}),
-      ...(slotsFull ? { blockedReason: 'research_slots_full' } : {}),
       canResearch:
         !completed &&
         !progress.inProgress &&
-        !slotsFull &&
         hasRequiredResearch &&
         hasRequiredPlayerLevel &&
         hasRequiredPrestigeCount &&

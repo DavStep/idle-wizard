@@ -20,7 +20,7 @@ experience_type: product-shape
 - Before wiping local SpacetimeDB progress, check `.env.local` for the active `VITE_SPACETIME_DATABASE`; the shared Vite app may use `idle-wizard-codex-run` while `npm run stdb:publish` still targets `idle-wizard`.
 - The authored game viewport is `1080x2170`.
 - Game-stage text copy/paste suppression needs both CSS `user-select`/touch-callout rules and an app-level guard for clipboard, context menu, selectstart, and paste `beforeinput` events.
-- In-game UI no longer supports mouse hover; do not add `:hover` selectors or hover-only behavior. Press/focus states should keep `--style-active-surface` equal to the current surface and rely on weight/border cues, never below-text line decoration.
+- In-game UI no longer supports mouse hover; do not add `:hover` selectors or hover-only behavior. Press/focus states should keep `--style-active-surface` equal to the current surface, preserve font weight, and rely on border cues, never below-text line decoration.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
 - Web-wide source-scaled overlays must subtract the centered source-layer rect, not the widened stage rect, when converting target screen coords to source coords.
 - Web-wide room dialog backdrops must expand from the centered source layer using root pixel vars like `--app-stage-width` and `--app-source-ui-screen-width`; `%`-based `--style-source-ui-offset-x` resolves against nested popup width and collapses the gutter.
@@ -82,7 +82,7 @@ experience_type: product-shape
 - Level requirement pacing should be sawtooth by decade: early relief after each wall, steady middle build, hard level 9, and boss/wall level 10.
 - Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`; Workshop stays the default page. The internal page id is `shop`.
 - Market has no `PageUnlockManager` requirement; gate market-only subscriptions on current page visibility, not unlock state.
-- Show all five room pages in a shared bottom tab panel; bold the current page tab.
+- Show all five room pages in a shared bottom tab panel; keep tab font weight stable and use the selected frame for the current page.
 - Bottom panel wrapper transparency needs a late `.style-panel.room-bottom-panel` reset after themed frame rules; leave the tab buttons to own their surfaces.
 - Swipe navigation should follow the full visible bottom-tab order and route locked targets through the bottom-panel lock notice; unlocked-only swipe order makes locked adjacent rooms feel like dead swipes.
 - Interactive room surfaces that own drag or pinch gestures should set `data-page-swipe-block="true"`; stage-level swipe capture otherwise steals their horizontal drags before the surface can own them.
@@ -169,7 +169,7 @@ experience_type: product-shape
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or bold text there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker visible labels need stable hit targets and click/backdrop dedupe; icon/text fragments inside those labels should not own separate hit testing.
-- Trader demand market sell-picker rows should activate on validated touch release, not touchstart, so scroll drags do not select rows; bold only the selected picker row.
+- Trader demand market sell-picker rows should activate on validated touch release, not touchstart, so scroll drags do not select rows; selection must not change the picker row's font weight.
 - Scrollable choice/item rows should activate on validated touch release with a small movement tolerance; keep press-start only for non-scroll openers where mobile click retargets.
 - Garden selected seed labels need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening seed choices.
 - Garden cancel/swap dialogs opened from touch-selected seed picker rows need their own one-shot backdrop dedupe; otherwise WebView can close the new dialog with the same synthetic click.
@@ -209,7 +209,7 @@ experience_type: product-shape
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - Fast-sell picker rows are one action; make the whole visual row the button, but put the FTUE target id on the item-name span.
-- Fast-sell picker item names should bold only when their row is selected; mobile no-hover affordance must not bold every seed/herb/potion row.
+- Fast-sell picker item names keep normal weight before and after selection; mobile no-hover affordances must not change row font weight.
 - Fast-sell FTUE should point at the item name, not the row value side, so `sage seed` reads as the target.
 - The first FTUE fast-sell amount beat should only boink the selected `[1]` amount, with no open lesson panel or pointer; the next sale step points at `sell`.
 - FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.

@@ -529,3 +529,20 @@ describe('base styles', () => {
   });
 
 });
+
+describe('interaction typography', () => {
+  it('keeps font weight stable across interaction states', () => {
+    const stateSelector =
+      /:focus|\.is-(?:active|current|selected)(?![-\w])|\[aria-(?:checked|pressed|selected)="true"\]|selected-(?:item|label)/;
+    const boldStateSelectors = [...baseCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter(([, selector, body]) => {
+        return (
+          stateSelector.test(selector) &&
+          /font-weight\s*:\s*(?:700|bold)\s*;/.test(body)
+        );
+      })
+      .map(([, selector]) => selector.trim().replace(/\s+/g, ' '));
+
+    expect(boldStateSelectors).toEqual([]);
+  });
+});

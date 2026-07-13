@@ -337,8 +337,11 @@ export class PrestigePanelManager {
     const row = document.createElement('section');
     row.className = 'workshop-page__prestige-point-row style-box';
     row.classList.toggle('is-completed', completedCount >= pointReward.count);
-    row.classList.toggle('is-next', completedCount + 1 === pointReward.count);
-    row.classList.toggle('is-locked', pointReward.count > completedCount + 1);
+    row.classList.toggle('is-next', pointReward.next === true);
+    row.classList.toggle(
+      'is-locked',
+      pointReward.count > completedCount && pointReward.next !== true,
+    );
 
     const count = this.createPrestigePointCount(pointReward.count);
 
@@ -351,7 +354,7 @@ export class PrestigePanelManager {
 
     const status = document.createElement('span');
     status.className = 'workshop-page__prestige-point-status';
-    status.textContent = this.getPointRewardStatus(pointReward.count, completedCount);
+    status.textContent = this.getPointRewardStatus(pointReward, completedCount);
 
     row.append(count, status, reward);
     return row;
@@ -697,12 +700,12 @@ export class PrestigePanelManager {
     return Array.isArray(prestige.completedLevels) ? prestige.completedLevels.length : 0;
   }
 
-  getPointRewardStatus(count, completedCount) {
-    if (completedCount >= count) {
+  getPointRewardStatus(pointReward, completedCount) {
+    if (completedCount >= pointReward.count) {
       return 'unlocked';
     }
 
-    if (completedCount + 1 === count) {
+    if (pointReward.next === true) {
       return 'next';
     }
 

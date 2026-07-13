@@ -933,8 +933,8 @@ describe('GameplayFacade', () => {
     });
     expect(gameplayFacade.getSnapshot().prestige.unlocks.slice(0, 3)).toMatchObject([
       { id: 'advancedCapacity', unlocked: true },
-      { id: 'researchQueueSlot', unlocked: true },
       { id: 'runFocus', unlocked: true },
+      { id: 'automationReserveControls', unlocked: false },
     ]);
     expect(gameplayFacade.setPrestigeRunFocus('capacity')).toMatchObject({
       ok: true,
@@ -2526,63 +2526,24 @@ describe('GameplayFacade', () => {
     ]);
   });
 
-  it('caps active timed research at one until Prestige 2 unlocks a second slot', () => {
+  it('allows multiple timed researches to run concurrently', () => {
     const { gameplayFacade } = createGameplay({ instantResearch: false });
 
     gameplayFacade.rubyFacade.setCurrent(20);
 
-    expect(gameplayFacade.getSnapshot().research.slots).toMatchObject({
-      active: 0,
-      max: 1,
-      full: false,
-    });
     expect(gameplayFacade.buyResearch(fastSellResearchIds.payout(1))).toMatchObject({
       ok: true,
       durationSeconds: 3,
     });
-    expect(gameplayFacade.getSnapshot().research.slots).toMatchObject({
-      active: 1,
-      max: 1,
-      full: true,
-      blockedReason: 'research_slots_full',
-    });
-    expect(gameplayFacade.buyResearch(researchTimeResearchIds.reduction(1))).toMatchObject({
-      ok: false,
-      reason: 'research_slots_full',
-      researchSlots: {
-        active: 1,
-        max: 1,
-        full: true,
-      },
-    });
-
-    advanceToLevel(gameplayFacade, 20);
-    expect(gameplayFacade.completePrestigeMilestone(20)).toMatchObject({
-      ok: true,
-      completedLevels: [10, 20],
-    });
-    gameplayFacade.rubyFacade.setCurrent(20);
-
-    expect(gameplayFacade.getSnapshot().research.slots).toMatchObject({
-      active: 0,
-      max: 2,
-      full: false,
-    });
-    expect(gameplayFacade.buyResearch(fastSellResearchIds.payout(1))).toMatchObject({
-      ok: true,
-    });
     expect(gameplayFacade.buyResearch(researchTimeResearchIds.reduction(1))).toMatchObject({
       ok: true,
-    });
-    expect(gameplayFacade.getSnapshot().research.slots).toMatchObject({
-      active: 2,
-      max: 2,
-      full: true,
+      durationSeconds: 3,
     });
     expect(gameplayFacade.buyResearch(researchCostResearchIds.reduction(1))).toMatchObject({
-      ok: false,
-      reason: 'research_slots_full',
+      ok: true,
+      durationSeconds: 3,
     });
+    expect(gameplayFacade.getSnapshot().research.inProgressResearches).toHaveLength(3);
   }, 30_000);
 
   it('buys paid research with coin from research balance', () => {

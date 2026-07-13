@@ -11,10 +11,14 @@
             "id": "375fa9122440f76d",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "Prestige Tuning.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "Prestige Tuning"
             }
           }
         ]
@@ -177,5 +181,15 @@
     }
   },
   "active": "375fa9122440f76d",
-  "lastOpenFiles": []
+  "lastOpenFiles": [
+    "Level Curve.md",
+    "Home.md",
+    "Capacity Gates.md",
+    "Balance Watchlist.md",
+    "Balance Index.base",
+    "Prestige Tuning.md",
+    "Market Tuning.md",
+    "Balance Sources.md",
+    "Balance.canvas"
+  ]
 }

@@ -139,7 +139,7 @@ function createGameplayFacade(snapshot) {
 }
 
 describe('ShopDirectSellManager', () => {
-  it('keeps fast-sell item names normal weight until selected', () => {
+  it('keeps fast-sell item names normal weight after selection', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const unselectedRule = baseCss.match(
       /\.shop-page__direct-sell-rows\s+\.shop-page__direct-sell-item-button:not\(\[aria-pressed="true"\]\)\s+\.row_key,\s*\.shop-page__direct-sell-rows\s+\.shop-page__direct-sell-item-button:not\(\[aria-pressed="true"\]\)\s+\.shop-page__direct-sell-target-label\s*\{(?<body>[^}]*)\}/,
@@ -150,8 +150,7 @@ describe('ShopDirectSellManager', () => {
 
     expect(unselectedRule).toBeDefined();
     expect(unselectedRule).toMatch(/\bfont-weight:\s*normal;/);
-    expect(selectedRule).toBeDefined();
-    expect(selectedRule).toMatch(/\bfont-weight:\s*700;/);
+    expect(selectedRule).toBeUndefined();
   });
 
   it('formats empty demand as no buyers', () => {

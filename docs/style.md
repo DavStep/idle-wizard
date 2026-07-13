@@ -21,7 +21,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Normal font weight by default.
 - Normal line height and normal letter spacing.
 - Use tabular lining numerals for resource values, costs, counts, timers, and leaderboard numbers.
-- Use bold only for totals, section names, selected/current state, or strong resource values.
+- Use bold only for totals, section names, or strong resource values. Selected, current, pressed, checked, active, and focus states keep the same font weight as their resting state.
 - Do not define mouse-hover states or use below-text lines for hold, press, or ordinary current state. The only underline exception is a neutral selected option in a one-of-many control, such as a tab or button panel button.
 
 ## Color
@@ -45,6 +45,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Popup/dialog panels may use `2px` themed borders, `20px` padding, and a bottom-right shadow in source UI units.
 - Theme popup/dialog shadows should stay visible by contrasting with the active surface.
 - Tabbed dialogs use a fixed panel height. If tab content is taller than that height, keep the bottom tabs fixed and scroll the content with the shared scroll cue.
+- Every true tab button uses the bottom room tab state skin: the normal panel frame when unselected and the selected panel frame when selected. Drive both views through the shared selected-tab state; previous/next pagers are ordinary navigation buttons, not tabs.
 - Shared scroll progress rails use the logs dialog pattern: a separate `style-progress` rail below the scroll frame, never over the last row.
 - Tooltips follow the active theme's ordinary border width, active surface, and a small offset gray shadow.
 - Ordinary room/page surfaces should not use shadows.
@@ -87,7 +88,7 @@ This project should use the same kind of minimal text-game language, without cop
 - Scale source UI by `3 * viewport-scale`, clamped at the authored viewport, so both web and mobile views fit.
 - Do not copy A Dark Room's desktop `700px` layout dimensions.
 - Keep future page UI as sparse panels positioned inside the room view.
-- Show all five room page names in the bottom panel and bold the current page tab.
+- Show all five room page names in the bottom panel. Keep every tab at the same font weight and use the selected frame for the current page.
 - Keep bottom-border category tabs and paired actions edge-weighted: first left, middle centered, last right, with the border line visible between labels.
 - Reuse documented UI motifs from `docs/ui-patterns.md` before creating a new row, box, popup, tab, or border label treatment.
 - Avoid gradients, textures, illustrations, decorative icons, rounded cards, and decorative shadows.

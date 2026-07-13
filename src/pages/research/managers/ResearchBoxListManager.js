@@ -92,7 +92,6 @@ export class ResearchBoxListManager {
     const tabs = this.getTabs(snapshot);
     const selectedTab = this.getSelectedTab(tabs);
     const runFocus = this.getRunFocus(snapshot);
-    const researchSlots = this.getResearchSlots(snapshot);
     const boxes = this.decorateBoxes({
       boxes: selectedTab?.boxes ?? [],
       playerLevel: snapshot?.playerLevel?.currentLevel ?? 1,
@@ -103,9 +102,7 @@ export class ResearchBoxListManager {
     });
     const signature = `${selectedTab?.id ?? 'none'}|${runFocus.unlocked}:${
       runFocus.selected
-    }:${runFocus.options.map((option) => option.id).join(',')}|${
-      researchSlots.active
-    }/${researchSlots.max}/${researchSlots.full}|${tabs
+    }:${runFocus.options.map((option) => option.id).join(',')}|${tabs
       .map((tab) => `${tab.id}:${tab.label}`)
       .join(',')}|${boxes
       .map(
@@ -130,7 +127,7 @@ export class ResearchBoxListManager {
     this.syncTabState(tabs, selectedTab);
     this.rowRefs.clear();
     this.boxesRoot.replaceChildren(
-      ...this.createStatusRows({ runFocus, researchSlots }),
+      ...this.createStatusRows({ runFocus }),
       ...boxes.map((box) => this.createBox(box)),
     );
     this.syncResearchProgress(boxes);
@@ -197,18 +194,6 @@ export class ResearchBoxListManager {
       unlocked: runFocus?.unlocked === true,
       selected: typeof runFocus?.selected === 'string' ? runFocus.selected : 'none',
       options,
-    };
-  }
-
-  getResearchSlots(snapshot = {}) {
-    const slots = snapshot?.research?.slots;
-    const active = Math.max(0, Math.floor(Number(slots?.active) || 0));
-    const max = Math.max(1, Math.floor(Number(slots?.max) || 1));
-
-    return {
-      active,
-      max,
-      full: slots?.full === true || active >= max,
     };
   }
 
@@ -290,10 +275,6 @@ export class ResearchBoxListManager {
     researchById,
     completedResearchIds,
   }) {
-    if (research?.blockedReason === 'research_slots_full') {
-      return 'research slots full.';
-    }
-
     if (!research?.locked) {
       return '';
     }
@@ -420,15 +401,11 @@ export class ResearchBoxListManager {
     this.render(this.gameplayFacade.getSnapshot());
   }
 
-  createStatusRows({ runFocus, researchSlots }) {
+  createStatusRows({ runFocus }) {
     const rows = [];
 
     if (runFocus.unlocked) {
       rows.push(this.createRunFocusControls(runFocus));
-    }
-
-    if (researchSlots.full) {
-      rows.push(this.createResearchSlotStatus(researchSlots));
     }
 
     return rows;
@@ -466,13 +443,6 @@ export class ResearchBoxListManager {
         : `${runFocus.selected} boxes first`;
 
     row.append(label, controls, helper);
-    return row;
-  }
-
-  createResearchSlotStatus(researchSlots) {
-    const row = document.createElement('div');
-    row.className = 'research-page__slot-status';
-    row.textContent = `timed research slots full: ${researchSlots.active}/${researchSlots.max}`;
     return row;
   }
 
@@ -1075,10 +1045,6 @@ export class ResearchBoxListManager {
       return `${this.formatResearchName(research)} is ${this.getResearchInProgressLabel(
         research,
       )}`;
-    }
-
-    if (research.blockedReason === 'research_slots_full') {
-      return `${this.formatResearchName(research)} is blocked because research slots are full`;
     }
 
     return `${this.getResearchActionVerb(research)} ${this.formatResearchName(

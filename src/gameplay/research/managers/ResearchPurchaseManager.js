@@ -11,7 +11,6 @@ export class ResearchPurchaseManager {
     researchBalanceManager,
     researchDefinitionManager,
     researchManaEffectManager,
-    researchSlotManager,
     researchStateEntityManager,
   }) {
     this.crystalFacade = crystalFacade;
@@ -23,7 +22,6 @@ export class ResearchPurchaseManager {
     this.researchBalanceManager = researchBalanceManager;
     this.researchDefinitionManager = researchDefinitionManager;
     this.researchManaEffectManager = researchManaEffectManager;
-    this.researchSlotManager = researchSlotManager;
     this.researchStateEntityManager = researchStateEntityManager;
   }
 
@@ -109,16 +107,6 @@ export class ResearchPurchaseManager {
     const durationSeconds = this.getReducedDurationSeconds(
       this.researchBalanceManager.getDurationSeconds(normalizedResearchId),
     );
-
-    if (durationSeconds > 0 && !this.researchSlotManager?.canStartTimedResearch?.()) {
-      return {
-        ok: false,
-        reason: 'research_slots_full',
-        researchId: normalizedResearchId,
-        researchSlots: this.researchSlotManager?.getSnapshot?.(),
-        ...this.getCostResult(cost),
-      };
-    }
 
     if (!this.getCurrencyFacade(cost.currency)?.spend(cost.amount)) {
       return {

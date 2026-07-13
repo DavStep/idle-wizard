@@ -1,6 +1,5 @@
 export const prestigeUnlockIds = Object.freeze({
   advancedCapacity: 'advancedCapacity',
-  researchQueueSlot: 'researchQueueSlot',
   runFocus: 'runFocus',
   automationReserveControls: 'automationReserveControls',
   strongerRoomStudies: 'strongerRoomStudies',
@@ -20,12 +19,6 @@ export const prestigeUnlocks = Object.freeze([
     count: 1,
     label: 'advanced capacity path',
     rewards: ['plot and cauldron capacity studies'],
-  },
-  {
-    id: prestigeUnlockIds.researchQueueSlot,
-    count: 2,
-    label: 'research queue slot',
-    rewards: ['one extra timed research slot'],
   },
   {
     id: prestigeUnlockIds.runFocus,
@@ -49,11 +42,12 @@ export const prestigeUnlocks = Object.freeze([
 
 export function getPrestigeUnlocksSnapshot(completedCount = 0) {
   const safeCount = normalizePrestigeCount(completedCount);
+  const nextUnlockCount = prestigeUnlocks.find((unlock) => unlock.count > safeCount)?.count;
 
   return prestigeUnlocks.map((unlock) => ({
     ...unlock,
     unlocked: safeCount >= unlock.count,
-    next: safeCount + 1 === unlock.count,
+    next: unlock.count === nextUnlockCount,
   }));
 }
 
@@ -61,10 +55,6 @@ export function hasPrestigeUnlock(completedCount = 0, unlockId) {
   const unlock = prestigeUnlocks.find((candidate) => candidate.id === unlockId);
 
   return Boolean(unlock) && normalizePrestigeCount(completedCount) >= unlock.count;
-}
-
-export function getResearchSlotLimit(completedCount = 0) {
-  return hasPrestigeUnlock(completedCount, prestigeUnlockIds.researchQueueSlot) ? 2 : 1;
 }
 
 export function normalizePrestigeRunFocus(focusId) {

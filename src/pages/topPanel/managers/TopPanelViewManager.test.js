@@ -67,6 +67,14 @@ describe('TopPanelViewManager', () => {
       ['theme', 'configurations'],
     ]);
     expect(
+      [...stage.querySelectorAll('.room-top-panel__settings-tab-button')].every(
+        (button) => button.getAttribute('role') === 'tab',
+      ),
+    ).toBe(true);
+    expect(
+      stage.querySelector('.room-top-panel__level-pager')?.getAttribute('role'),
+    ).toBeNull();
+    expect(
       [
         ...stage.querySelectorAll(
           '.room-top-panel__device-section .room-top-panel__preference-label',

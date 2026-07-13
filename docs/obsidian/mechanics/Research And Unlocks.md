@@ -22,9 +22,9 @@ level-ups.
 - Research time and cost reductions use ruby stages.
 - Capacity research can permanently make advanced plots and cauldrons buyable.
 
-## Timed Slots
+## Timed Research
 
-Timed research has one active slot by default. Prestige 2 raises the cap to two.
+Timed researches can run concurrently without a slot limit.
 
 ## Related
 

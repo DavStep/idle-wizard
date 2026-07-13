@@ -45,6 +45,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Close controls sit as normal-weight border labels, not boxed inner buttons.
 - Tabbed dialog close controls sit on the top-right border so the bottom edge stays clear for tabs.
 - Tabbed popups put tabs below and outside the bordered dialog, with the same stroke as the popup.
+- True tab buttons reuse the bottom room tabs' normal and selected frame backgrounds. Use the shared selected-tab state so every tab has explicit selected and unselected views; do not assign tab semantics to previous/next pager buttons.
 - Standard tabbed popups use `--style-tabbed-dialog-width` on the panel and `260px` content width on the dialog. Wider `286px` dialogs must use the wider panel token too; never mix a standard tab panel with a wider dialog.
 - Tabbed dialogs keep a fixed bordered panel height; overflowing tab content scrolls inside that panel and uses a logs-style progress rail below the scroll frame, not inside the rows.
 - Every scrollable dialog pane should opt into the shared scroll cue rail; keep the rail below the scroll frame with the same `--style-scroll-progress-gap` and bottom padding rhythm as the select recipe dialog.

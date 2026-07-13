@@ -7748,7 +7748,7 @@ describe('PagesFacade', () => {
     );
     expect(pointRows[0]?.textContent).toContain('unlocked');
     expect(pointRows[1]?.querySelector('.workshop-page__prestige-point-count')?.textContent).toBe(
-      '★★2 points',
+      '★★★3 points',
     );
     expect(pointRows[3]?.querySelector('.style-star-level')?.dataset.starTone).toBe(
       'orange',
@@ -7757,7 +7757,7 @@ describe('PagesFacade', () => {
       [...pointRows[1].querySelectorAll('.workshop-page__prestige-point-reward-row')].map(
         (row) => row.textContent,
       ),
-    ).toEqual(['- research queue slot', '- one extra timed research slot']);
+    ).toEqual(['- run focus', '- current-run research focus selector']);
     expect(pointRows[1]?.textContent).not.toContain(',');
     expect(
       pointRows[1]?.textContent,
@@ -11892,10 +11892,19 @@ describe('PagesFacade', () => {
     expect(rows[1].querySelector('.garden-page__plot-box-action')?.textContent).toBe(
       'buy 1 coin',
     );
-    expect(rows[1].disabled).toBe(true);
+    expect(rows[1].disabled).toBe(false);
+    expect(rows[1].classList.contains('is-unaffordable')).toBe(true);
+
+    rows[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const buyTooltip = rows[1].querySelector('.garden-page__plot-buy-tooltip');
+    expect(buyTooltip?.getAttribute('aria-label')).toBe('missing 1 coin');
+    expect(buyTooltip?.classList.contains('is-visible')).toBe(true);
+    expect(buyTooltip?.querySelector('.style-resource-label--coin')).not.toBeNull();
 
     gameplayFacade.setCoin(1);
     expect(rows[1].disabled).toBe(false);
+    expect(rows[1].classList.contains('is-unaffordable')).toBe(false);
 
     rows[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 

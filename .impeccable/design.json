@@ -108,7 +108,7 @@
       "refersTo": "button",
       "description": "Default bordered text button for room actions.",
       "html": "<button class=\"ds-style-button\">summon</button>",
-      "css": ".ds-style-button { position: relative; width: 100px; padding: 5px 10px; appearance: none; color: var(--style-text, #1a1a1a); font-family: var(--style-font, Lexend, ui-sans-serif, system-ui, sans-serif); font-size: var(--style-font-size, 15px); line-height: normal; text-align: center; cursor: pointer; background: var(--style-surface, #e5e5e5); border: var(--style-border, 1px solid #1a1a1a); border-radius: 0; transition: color 140ms linear, border-color 140ms linear, background-color 140ms linear; } .ds-style-button:hover, .ds-style-button:focus-visible { outline: none; font-weight: 700; } .ds-style-button:active { background: var(--style-active-surface, #d6d6d6); } .ds-style-button:disabled { color: var(--style-disabled, #969696); border-color: var(--style-disabled, #969696); cursor: default; font-weight: normal; }"
+      "css": ".ds-style-button { position: relative; width: 100px; padding: 5px 10px; appearance: none; color: var(--style-text, #1a1a1a); font-family: var(--style-font, Lexend, ui-sans-serif, system-ui, sans-serif); font-size: var(--style-font-size, 15px); line-height: normal; text-align: center; cursor: pointer; background: var(--style-surface, #e5e5e5); border: var(--style-border, 1px solid #1a1a1a); border-radius: 0; transition: color 140ms linear, border-color 140ms linear, background-color 140ms linear; } .ds-style-button:focus-visible { outline: none; } .ds-style-button:active { background: var(--style-active-surface, #d6d6d6); } .ds-style-button:disabled { color: var(--style-disabled, #969696); border-color: var(--style-disabled, #969696); cursor: default; font-weight: normal; }"
     },
     {
       "name": "Room Box",
@@ -130,9 +130,9 @@
       "name": "Bottom Room Tabs",
       "kind": "nav",
       "refersTo": "bottom-room-tabs",
-      "description": "Five shared page tabs with bold selection.",
+      "description": "Five shared page tabs with stable text weight and a selected frame.",
       "html": "<nav class=\"ds-bottom-panel\"><button>brewing</button><button>garden</button><button class=\"is-selected\">workshop</button><button>research</button><button>market</button></nav>",
-      "css": ".ds-bottom-panel { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; padding: 5px 0; color: var(--style-text, #1a1a1a); font-family: var(--style-font, Lexend, ui-sans-serif, system-ui, sans-serif); font-size: 13px; background: var(--style-surface, #e5e5e5); border: var(--style-border, 1px solid #1a1a1a); } .ds-bottom-panel button { min-width: 0; min-height: 20px; padding: 1px 0; overflow: hidden; appearance: none; color: inherit; font: inherit; text-align: center; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; background: transparent; border: 1px solid transparent; border-radius: 0; } .ds-bottom-panel button:hover, .ds-bottom-panel button:focus-visible, .ds-bottom-panel button.is-selected { outline: none; font-weight: 700; }"
+      "css": ".ds-bottom-panel { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; padding: 5px 0; color: var(--style-text, #1a1a1a); font-family: var(--style-font, Lexend, ui-sans-serif, system-ui, sans-serif); font-size: 13px; background: var(--style-surface, #e5e5e5); border: var(--style-border, 1px solid #1a1a1a); } .ds-bottom-panel button { min-width: 0; min-height: 20px; padding: 1px 0; overflow: hidden; appearance: none; color: inherit; font: inherit; text-align: center; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; background: transparent; border: 1px solid transparent; border-radius: 0; } .ds-bottom-panel button:focus-visible { outline: none; } .ds-bottom-panel button.is-selected { border-color: var(--style-text, #1a1a1a); }"
     },
     {
       "name": "Progress Rail",

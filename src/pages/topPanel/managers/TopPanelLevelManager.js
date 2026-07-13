@@ -191,8 +191,6 @@ export class TopPanelLevelManager {
     this.setDisabled(this.refs.levelNextButton, !hasNext);
     this.setAttribute(this.refs.levelPreviousButton, 'aria-disabled', hasPrevious ? 'false' : 'true');
     this.setAttribute(this.refs.levelNextButton, 'aria-disabled', hasNext ? 'false' : 'true');
-    this.setAttribute(this.refs.levelPreviousButton, 'aria-selected', 'false');
-    this.setAttribute(this.refs.levelNextButton, 'aria-selected', 'false');
     this.setAttribute(
       this.refs.levelPreviousButton,
       'aria-label',

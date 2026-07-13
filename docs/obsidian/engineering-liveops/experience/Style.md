@@ -75,6 +75,7 @@ experience_type: style
 - Treat in-game UI as controls, not selectable document text: set non-selection/tap-highlight suppression on `.game-stage` descendants and opt text inputs back into normal selection.
 - Do not add hover-only emphasis, including selectors gated by `@media (hover: hover) and (pointer: fine)`; in-game controls are touch-first.
 - Single-choice selected options, such as tabs or one-of button-panel buttons, may show an underline only in their neutral selected state; avoid it while held or pressed.
+- All true tabs use `setSelectedTabState` and the bottom room tab frames: `--style-midnight-panel-frame` unselected and `--style-midnight-panel-selected-frame` selected. Previous/next pagers are navigation buttons and must not use tab roles or `aria-selected`.
 - Locked-but-pressable room tabs should use `.is-locked` plus an explanatory aria-label, not `aria-disabled`, so taps can still open the unlock notice.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
 - Research page uses `snapshot.research.tabs` for full-page regular/automation/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
@@ -86,7 +87,7 @@ experience_type: style
 - Brewing recipe popup hides locked recipes; recipe names are bold, ingredient rows align flush with names, and `time:` details stay muted.
 - Brewing recipe popup ingredient rows show required amount on the left (`- 3 sage`) and owned count on the right (`owned 31`), not `(31/3) sage`.
 - Brewing recipe popup uses only the dialog title `recipes`; do not add a second inner `recipes` group title or extra list top padding.
-- Brewing recipe popup select rows need a fixed checkbox slot; `[ ]` to `[x]` and focus bold can otherwise reflow the row.
+- Brewing recipe popup select rows need a fixed checkbox slot; `[ ]` to `[x]` must not reflow the row, and focus or selection must not change font weight.
 - Brewing recipe page-turn ghosts must stretch recipe rows like live pages; otherwise bottom select buttons jump upward during the animation.
 - Brewing active brew timer text belongs next to the active brew label, not inside the progress rail.
 - Brewing completion flows brew timer -> manual start bottling action -> bottling timer -> collect-ready state; potion inventory is granted only by the collect action.
@@ -168,6 +169,7 @@ experience_type: style
 - NPC stock row visibility and labels should treat backend `stock` as availability; local inventory quantity can be `0` right after selling into stock.
 - Grid-rendered rows that are toggled with `[hidden]` need an explicit `[hidden] { display: none; }` rule, or authored `display: grid` can keep old category rows visible in browser.
 - Any buy control that colors a price as a resource must clear that resource color when the control is disabled/unaffordable, or muted disabled text will be overridden.
+- Resource-colored feedback tooltips inside locked or unaffordable controls must reassert their resource color; the shared disabled-ancestor rule otherwise mutes the tooltip too.
 - Numbered slot rows must never leave the middle content blank; unlocked empty rows should say the next action (`select`, `request item`), while locked empty rows keep labels like `empty stand` or `empty request` with state in the right slot.
 - Scrollable room and dialog lists should use the shared scroll cue: transparent bottom fade plus scroll progress, matching the logs popup math.
 - Shared scroll progress rails must be real `.style-progress` siblings below the scroll frame, not sticky pseudo-elements inside row content.
@@ -177,7 +179,7 @@ experience_type: style
 - World event dialog content should stay a flex column: fixed header, scroll frame, then normal shared scroll rail. Do not use grid `:has()` spacer rows or rail margin overrides there.
 - Scrollable popup content that opens from `hidden` needs one deferred frame before pinning to bottom; hidden flex layouts can report stale scroll geometry.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
-- Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); active tab is bolded, not line-decorated or boxed.
+- Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); all tabs keep stable font weight and the active tab uses its selected frame.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
 - Page-level content tabs should sit fixed just above world chat, like Research/Market; make the active tab panel scroll above them instead of putting tabs in normal top content flow.
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.

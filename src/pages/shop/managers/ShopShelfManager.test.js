@@ -1546,7 +1546,7 @@ describe('ShopShelfManager', () => {
     });
   });
 
-  it('keeps NPC market sell picker emphasis selected-only with shared scroll rail gap', () => {
+  it('keeps NPC market sell picker weight stable with the shared scroll rail gap', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const unselectedRule = baseCss.match(
       /\.shop-page__sell-popup\s+\.shop-page__sell-item-button:not\(\[aria-pressed="true"\]\)\s+\.row_key\s*\{(?<body>[^}]*)\}/,
@@ -1559,7 +1559,7 @@ describe('ShopShelfManager', () => {
     )?.groups?.body;
 
     expect(unselectedRule).toMatch(/\bfont-weight:\s*normal;/);
-    expect(selectedRule).toMatch(/\bfont-weight:\s*700;/);
+    expect(selectedRule).toBeUndefined();
     expect(listRule).toMatch(
       /\bvar\(--style-scroll-progress-block-size\)/,
     );

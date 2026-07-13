@@ -24,7 +24,6 @@ level.
 ## Unlock Lanes
 
 - Prestige 1: advanced capacity studies.
-- Prestige 2: second timed research slot.
 - Prestige 3: UI-only run focus selector.
 - Prestige 4: improved auto summon reserve controls.
 - Prestige 5: stronger room study levels 6-10.

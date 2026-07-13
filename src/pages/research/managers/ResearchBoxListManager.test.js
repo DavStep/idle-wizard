@@ -613,21 +613,12 @@ describe('ResearchBoxListManager', () => {
     stage.remove();
   });
 
-  it('shows slot-full state on timed research rows', () => {
+  it('does not render a timed research slot limit', () => {
     const snapshot = {
-      playerLevel: {
-        currentLevel: 17,
-      },
-      prestige: {
-        completedLevels: [],
-      },
+      playerLevel: { currentLevel: 17 },
+      prestige: { completedLevels: [] },
       research: {
-        slots: {
-          active: 1,
-          max: 1,
-          full: true,
-          blockedReason: 'research_slots_full',
-        },
+        slots: { active: 2, max: 2, full: true },
         boxes: [
           {
             id: 'researchTime',
@@ -638,11 +629,8 @@ describe('ResearchBoxListManager', () => {
                 label: 'research time lvl 1',
                 value: '1 ruby',
                 effect: '-10% time',
-                costRuby: 1,
-                costCurrency: 'ruby',
                 completed: false,
-                canResearch: false,
-                blockedReason: 'research_slots_full',
+                canResearch: true,
                 requiredResearchIds: [],
               },
             ],
@@ -659,15 +647,8 @@ describe('ResearchBoxListManager', () => {
 
     manager.mount(stage);
 
-    const button = stage.querySelector('.research-page__research-button');
-    expect(stage.querySelector('.research-page__slot-status')?.textContent).toBe(
-      'timed research slots full: 1/1',
-    );
-    expect(button?.disabled).toBe(true);
-    expect(button?.title).toBe('research slots full.');
-    expect(button?.getAttribute('aria-label')).toContain(
-      'blocked because research slots are full',
-    );
+    expect(stage.querySelector('.research-page__slot-status')).toBeNull();
+    expect(stage.querySelector('.research-page__research-button')?.disabled).toBe(false);
 
     manager.unmount();
     stage.remove();

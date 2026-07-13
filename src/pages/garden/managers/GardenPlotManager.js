@@ -55,6 +55,7 @@ const SEED_DRAG_THRESHOLD = 22;
 const SEED_DROP_PLOT_MS = 220;
 const SEED_DROP_RETURN_MS = 190;
 const SEED_DROP_RECEIVE_MS = 240;
+const BUY_TOOLTIP_VISIBLE_MS = 1800;
 const SCISSORS_CLOSED_FRAME = 'tool:herbCuttingScissorsClosed';
 const SCISSORS_OPEN_FRAME = 'tool:herbCuttingScissorsOpen';
 
@@ -376,11 +377,16 @@ export class GardenPlotManager {
     const boxTimer = document.createElement('span');
     boxTimer.className = 'garden-page__plot-box-timer';
 
+    const buyTooltip = document.createElement('span');
+    buyTooltip.className = 'style-tooltip garden-page__plot-buy-tooltip';
+    buyTooltip.setAttribute('role', 'status');
+    buyTooltip.setAttribute('aria-live', 'polite');
+
     progress.append(fill, progressText);
     action.append(actionLabel, actionGap, actionTimer);
     boxAction.append(boxActionLabel, boxActionGap, boxTimer);
     boxFrame.append(boxNumber, boxLevel, boxLabel, boxPlant, boxScissors, boxAction);
-    button.append(number, label, state, action, boxFrame, progress);
+    button.append(number, label, state, action, boxFrame, progress, buyTooltip);
     this.tileRefs.set(tileNumber, {
       button,
       label,
@@ -403,6 +409,7 @@ export class GardenPlotManager {
       boxActionLabel,
       boxActionGap,
       boxTimer,
+      buyTooltip,
     });
     this.refs.rows.append(button);
   }
@@ -570,22 +577,28 @@ export class GardenPlotManager {
     if (!tile.unlocked) {
       const lockedTileAction = isNextLockedTile ? this.formatLockedTileAction(plot) : '';
       const lockedTileDisabled =
-        !isNextLockedTile ||
-        plot.nextTileLockedByLevel ||
-        plot.nextTileLockedByResearch ||
+        !isNextLockedTile || plot.nextTileLockedByLevel || plot.nextTileLockedByResearch;
+      const unaffordable =
+        isNextLockedTile &&
+        !lockedTileDisabled &&
+        Number.isFinite(plot.nextTileCost) &&
         coin.current < plot.nextTileCost;
+      refs.button.classList.toggle('is-unaffordable', unaffordable);
+      if (!unaffordable) {
+        refs.buyTooltip.classList.remove('is-visible');
+      }
       this.setText(refs.label, '');
       setItemIconLabel(refs.label, null);
       setResourceColor(refs.label, null);
       this.clearPlotLevel(refs.state);
       this.setTileAction(refs, {
         label: lockedTileAction,
-        colorResource: !lockedTileDisabled,
+        colorResource: !lockedTileDisabled && !unaffordable,
       });
       this.setBoxTile(refs, tile, {
         label: '',
         action: lockedTileAction,
-        actionColorResource: !lockedTileDisabled,
+        actionColorResource: !lockedTileDisabled && !unaffordable,
         showNumber: false,
         showLevel: false,
       });
@@ -603,6 +616,8 @@ export class GardenPlotManager {
 
     refs.button.disabled = false;
     refs.button.setAttribute('aria-disabled', 'false');
+    refs.button.classList.remove('is-unaffordable');
+    refs.buyTooltip.classList.remove('is-visible');
 
     if (tile.phase === 'empty') {
       const emptyTileDisplay = this.getPlotLabelDisplay(tile);
@@ -1127,6 +1142,13 @@ export class GardenPlotManager {
       return { ok: false };
     }
 
+    const cost = Number(plot.nextTileCost);
+    const currentCoin = Number(snapshot.coin?.current ?? 0);
+    if (Number.isFinite(cost) && currentCoin < cost) {
+      this.showMissingCoinTooltip(refs, cost - currentCoin);
+      return { ok: false, reason: 'insufficient_coin' };
+    }
+
     const result = this.gameplayFacade.buyGardenTile();
 
     this.render(this.gameplayFacade.getSnapshot());
@@ -1136,6 +1158,24 @@ export class GardenPlotManager {
     }
 
     return result;
+  }
+
+  showMissingCoinTooltip(refs, missingCoin) {
+    if (!refs?.buyTooltip) {
+      return;
+    }
+
+    const message = `missing ${formatCoinPriceText(Math.max(0, missingCoin))}`;
+    setResourceIconText(refs.buyTooltip, message);
+    refs.buyTooltip.setAttribute('aria-label', message);
+    refs.buyTooltip.classList.remove('is-visible');
+    void refs.buyTooltip.offsetWidth;
+    refs.buyTooltip.classList.add('is-visible');
+    this.setTransientClassTimeout(
+      refs.buyTooltip,
+      'is-visible',
+      BUY_TOOLTIP_VISIBLE_MS,
+    );
   }
 
   startGardenHarvest(tileNumber) {
@@ -1769,7 +1809,7 @@ export class GardenPlotManager {
       return null;
     }
 
-    return (snapshot.coin?.current ?? 0) >= cost ? tileNumber : null;
+    return tileNumber;
   }
 
   getLabelTileNumberFromEvent(event) {

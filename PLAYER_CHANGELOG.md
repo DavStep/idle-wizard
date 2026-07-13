@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.83
+
+- Removed timed research slot limits so multiple studies can run at the same time without waiting for a queue slot.
+- Improved Garden plot buying with clearer unaffordable states and a missing-coin message when a locked plot is tapped.
+- Polished tabs and selection states across the game so labels stay visually stable while selected frames show the active choice.
+
 ## 0.2.82
 
 - Fixed account connection from an in-progress game so current device progress is saved before Google login, then either binds to an empty account or asks which save to keep when that Google account already has progress.

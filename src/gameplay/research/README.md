@@ -6,4 +6,4 @@ Current scope uses SpacetimeDB `research_config` for regular coin overrides and 
 
 Capacity researches are advanced ruby studies. `plot 6-12 capacity` requires 1-7 completed prestiges, and `cauldron 3-5 capacity` requires 1-3 completed prestiges. Completed capacity research is permanent across prestige resets, permanently spends ruby, and makes that capacity buyable immediately in the run without waiting for the level cap. Slot-specific automation, speed, and emerald researches use the higher of the player-level cap and completed capacity research, so prestige slots get their matching rows. Speed research still resets with the run.
 
-Timed research has one active slot by default. Prestige 2 raises the cap to two active timed studies; over-cap in-progress studies may finish, but new timed starts return `research_slots_full` until a slot opens. Prestige 5 gates advanced plot growth and cauldron brewing levels 6-10.
+Timed researches can run concurrently without a slot limit. Prestige 5 gates advanced plot growth and cauldron brewing levels 6-10.
