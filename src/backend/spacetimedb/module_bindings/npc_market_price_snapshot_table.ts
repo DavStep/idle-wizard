@@ -28,4 +28,5 @@ export default __t.row({
   targetNeed: __t.u64().name("target_need"),
   maxNeed: __t.u64().name("max_need"),
   priceScale: __t.u32().name("price_scale"),
+  marketId: __t.string().name("market_id"),
 });

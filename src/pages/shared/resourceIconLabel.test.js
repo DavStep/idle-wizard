@@ -26,7 +26,7 @@ describe('resource icon labels', () => {
       'resource:crystal',
       'resource:emerald',
       'resource:ruby',
-      'seed:regular',
+      'seed:pack',
       'herb:sageHerb',
     ]);
     expect(element.querySelector('.style-resource-label--coin')?.textContent).toBe('2 coin');

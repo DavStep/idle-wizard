@@ -245,6 +245,77 @@ describe('PlayerShopSubscriptionManager', () => {
     });
   });
 
+  it('filters listings and requests to the active market tier', () => {
+    const listingsTable = createTable([
+      {
+        listingKey: 'small:1',
+        marketId: 'smallTown',
+        sellerIdentity: 'small-seller',
+        username: 'Small',
+        slotNumber: 1,
+        itemKey: 'sageSeed',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        quantity: 1,
+        priceCoin: 2n,
+      },
+      {
+        listingKey: 'city:1',
+        marketId: 'cityBazaar',
+        sellerIdentity: 'city-seller',
+        username: 'City',
+        slotNumber: 1,
+        itemKey: 'sageSeed',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        quantity: 1,
+        priceCoin: 7n,
+      },
+    ]);
+    const publicRequestsTable = createTable([
+      {
+        requestKey: 'small:2',
+        marketId: 'smallTown',
+        requesterIdentity: 'small-buyer',
+        username: 'Small buyer',
+        slotNumber: 2,
+        itemKey: 'sageSeed',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        quantity: 1,
+        priceCoin: 1n,
+      },
+      {
+        requestKey: 'city:2',
+        marketId: 'cityBazaar',
+        requesterIdentity: 'city-buyer',
+        username: 'City buyer',
+        slotNumber: 2,
+        itemKey: 'sageSeed',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        quantity: 1,
+        priceCoin: 6n,
+      },
+    ]);
+    const proceedsTable = createTable([]);
+    const connection = createConnection({
+      listingsTable,
+      publicRequestsTable,
+      proceedsTable,
+    });
+    const manager = new PlayerShopSubscriptionManager();
+
+    manager.setActiveMarketId('cityBazaar');
+    manager.connect(connection, SELF_IDENTITY);
+    manager.setPublicDataActive(true);
+
+    expect(manager.getSnapshot()).toMatchObject({
+      listings: [expect.objectContaining({ listingKey: 'city:1', marketId: 'cityBazaar' })],
+      requests: [expect.objectContaining({ requestKey: 'city:2', marketId: 'cityBazaar' })],
+    });
+  });
+
   it('publishes own and global trade history newest first', () => {
     const listingsTable = createTable([]);
     const proceedsTable = createTable([]);

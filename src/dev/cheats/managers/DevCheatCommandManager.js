@@ -12,6 +12,7 @@ import {
   getTutorialStepGraph,
   resolveTutorialStepId,
 } from '../../../pages/tutorial/managers/TutorialStepManager.js';
+import { marketLicences } from '../../../shared/marketLicence.js';
 
 const RESET_CONFIRMATION = 'RESET';
 const ALL_FEATURES_LEVEL = 100;
@@ -76,6 +77,8 @@ const CHEAT_HELP = Object.freeze([
   'cheats.setNotifications({ garden: true, market: true })',
   'cheats.clearNotifications()',
   'cheats.setLevel(level)',
+  'await cheats.setPrestigeStars(stars)',
+  'cheats.getMarketLicence()',
   'cheats.showPage("garden")',
   'cheats.unlockFeature("garden")',
   'cheats.unlockAllFeatures()',
@@ -221,6 +224,15 @@ export class DevCheatCommandManager {
       case 'setlevel':
       case 'level':
         return this.setLevel(commandArgs[0]);
+      case 'setprestigestars':
+      case 'setprestige':
+      case 'prestigestars':
+        return this.setPrestigeStars(commandArgs[0]);
+      case 'getmarketlicence':
+      case 'getmarketlicense':
+      case 'marketlicence':
+      case 'marketlicense':
+        return this.getMarketLicence();
       case 'showpage':
       case 'setpage':
       case 'view':
@@ -611,6 +623,72 @@ export class DevCheatCommandManager {
       capped: nextLevel !== safeLevel.value,
       playerLevel: this.gameplayFacade.getSnapshot().playerLevel,
     };
+  }
+
+  async setPrestigeStars(stars) {
+    const safeStars = this.readNonNegativeInteger(stars, 'stars');
+
+    if (!safeStars.ok) {
+      return safeStars;
+    }
+
+    const maxMarketStars = Math.max(
+      ...marketLicences.map((licence) => licence.requiredStars),
+    );
+
+    if (safeStars.value > maxMarketStars) {
+      return {
+        ok: false,
+        reason: 'market_star_limit_exceeded',
+        field: 'stars',
+        value: safeStars.value,
+        maxStars: maxMarketStars,
+      };
+    }
+
+    const prestigeFacade = this.gameplayFacade.prestigeFacade;
+
+    if (typeof prestigeFacade?.applyPersistenceSnapshot !== 'function') {
+      return { ok: false, reason: 'prestige_missing' };
+    }
+
+    const completedLevels = Array.from(
+      { length: safeStars.value },
+      (_, index) => (index + 1) * 10,
+    );
+    const levelBefore = prestigeFacade.getCompletedCount?.() ?? 0;
+    const previousPrestige = prestigeFacade.getPersistenceSnapshot?.() ?? {};
+
+    prestigeFacade.applyPersistenceSnapshot({
+      ...previousPrestige,
+      completedLevels,
+    });
+    this.gameplayFacade.syncRubyFromPrestige?.();
+    this.publishAndSave();
+
+    const saved = await Promise.resolve(
+      this.gameplayFacade.savePersistenceSnapshotAndFlush?.(),
+    );
+    const market = this.getMarketLicence().market;
+
+    return {
+      ok: saved !== false,
+      ...(saved === false ? { reason: 'save_failed' } : {}),
+      stars: safeStars.value,
+      starsBefore: levelBefore,
+      completedLevels,
+      market,
+    };
+  }
+
+  getMarketLicence() {
+    const market = this.gameplayFacade.marketLicenceFacade?.getSnapshot?.();
+
+    if (!market) {
+      return { ok: false, reason: 'market_licence_missing' };
+    }
+
+    return { ok: true, market };
   }
 
   showPage(pageId, options = {}) {
@@ -3428,6 +3506,24 @@ export class DevCheatCommandManager {
       return {
         ok: false,
         reason: 'invalid_positive_integer',
+        field: label,
+        value,
+      };
+    }
+
+    return {
+      ok: true,
+      value: number,
+    };
+  }
+
+  readNonNegativeInteger(value, label) {
+    const number = Number(value);
+
+    if (!Number.isInteger(number) || number < 0) {
+      return {
+        ok: false,
+        reason: 'invalid_non_negative_integer',
         field: label,
         value,
       };

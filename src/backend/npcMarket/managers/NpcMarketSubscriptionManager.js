@@ -1,4 +1,5 @@
 import { normalizeCoinPrice } from '../../../shared/coinPrice.js';
+import { defaultMarketId, isMarketId } from '../../../shared/marketLicence.js';
 
 const PRICES_QUERY = 'SELECT * FROM npc_market_price_snapshot';
 const LEGACY_PRICES_QUERY = 'SELECT * FROM npc_market_price';
@@ -16,6 +17,7 @@ export class NpcMarketSubscriptionManager {
     this.subscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.pricesByItemKey = new Map();
+    this.activeMarketId = defaultMarketId;
     this.handleTableChange = () => this.publishFromTables();
   }
 
@@ -68,6 +70,11 @@ export class NpcMarketSubscriptionManager {
     return this.pricesByItemKey.get(itemKey) ?? null;
   }
 
+  setActiveMarketId(marketId) {
+    this.activeMarketId = isMarketId(marketId) ? marketId : defaultMarketId;
+    this.publishFromTables();
+  }
+
   bindTable(table) {
     table.onInsert?.(this.handleTableChange);
     table.onUpdate?.(this.handleTableChange);
@@ -95,6 +102,7 @@ export class NpcMarketSubscriptionManager {
     }
 
     const prices = Array.from(this.pricesTable.iter())
+      .filter((row) => this.getRowMarketId(row) === this.activeMarketId)
       .map((row) => this.mapPrice(row))
       .sort((left, right) => {
         const kindCompare = left.itemKind.localeCompare(right.itemKind);
@@ -117,6 +125,7 @@ export class NpcMarketSubscriptionManager {
 
     return {
       itemKey: String(row.itemKey ?? row.item_key ?? ''),
+      marketId: this.getRowMarketId(row),
       itemLabel: this.toDisplayLabel(row.itemLabel ?? row.item_label),
       itemKind: String(row.itemKind ?? row.item_kind ?? ''),
       basePriceCoin:
@@ -166,6 +175,11 @@ export class NpcMarketSubscriptionManager {
       snapshot.prices.map((price) => [price.itemKey, price]),
     );
     this.onSnapshot?.(snapshot);
+  }
+
+  getRowMarketId(row) {
+    const marketId = row.marketId ?? row.market_id ?? defaultMarketId;
+    return isMarketId(marketId) ? marketId : defaultMarketId;
   }
 
   toTimestampMs(value) {

@@ -1539,7 +1539,7 @@ describe('GardenPlotManager', () => {
 
     expect(mintButton).not.toBeNull();
     expect(mintButton.dataset.resourceColor).toBe('seed');
-    expect(mintButton.querySelector('.row_key')?.classList.contains('style-seed-label')).toBe(
+    expect(mintButton.querySelector('.row_val')?.classList.contains('style-seed-label')).toBe(
       true,
     );
     expect(mintButton.querySelector('.style-seed-label__icon')).not.toBeNull();
@@ -1570,13 +1570,19 @@ describe('GardenPlotManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const seedTarget = parent.querySelector('[data-tutorial-id="garden:seed:mintSeed"]');
-    const quantity = parent.querySelector('.garden-page__seed-button > .row_val');
     const button = seedTarget?.closest('.garden-page__seed-button');
+    const quantity = button?.querySelector('.row_val');
 
     expect(seedTarget?.classList.contains('row_key')).toBe(true);
     expect(button?.dataset.tutorialId).toBeUndefined();
     expect(button?.textContent).toBe('mint seed1');
     expect(quantity?.dataset.tutorialId).toBeUndefined();
+    expect(seedTarget?.classList.contains('style-seed-label')).toBe(false);
+    expect(quantity?.classList.contains('style-seed-label')).toBe(true);
+    expect(quantity?.firstElementChild?.textContent).toBe('1');
+    expect(quantity?.lastElementChild?.classList.contains('style-seed-label__icon')).toBe(
+      true,
+    );
   });
 
   it('targets the visible plot box label for seed-label tutorial guidance', () => {
@@ -1815,7 +1821,7 @@ describe('GardenPlotManager', () => {
     expect(ghost?.style.top).toBe('46px');
     expect(
       ghost?.querySelector('.garden-page__item-drag-ghost-icon')?.dataset.assetAtlasFrame,
-    ).toBe('seed:regular');
+    ).toBe('seed:pack');
 
     dispatchPointer(document, 'pointerup', {
       pointerId: 1,

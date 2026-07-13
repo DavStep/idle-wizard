@@ -1,10 +1,11 @@
 import { PlayerShopListingManager } from './managers/PlayerShopListingManager.js';
 import { PlayerShopStateObserverManager } from './managers/PlayerShopStateObserverManager.js';
 import { PlayerShopSubscriptionManager } from './managers/PlayerShopSubscriptionManager.js';
+import { defaultMarketId, isMarketId } from '../../shared/marketLicence.js';
 
 export class PlayerShopBackendFacade {
   static explain =
-    'Shares player market listings and request rows through the server so players can see each other\'s market offers.';
+    'Shares player listings and requests through the server only with players in the same permanent market licence.';
 
   constructor() {
     this.stateObserverManager = new PlayerShopStateObserverManager();
@@ -19,6 +20,7 @@ export class PlayerShopBackendFacade {
     this.marketDataRetainCount = 0;
     this.tradeHistoryRetainCount = 0;
     this.devSnapshot = null;
+    this.activeMarketId = defaultMarketId;
   }
 
   connect(connection, identity) {
@@ -95,6 +97,12 @@ export class PlayerShopBackendFacade {
 
   setSlotListing(slot) {
     return this.listingManager.setSlotListing(slot);
+  }
+
+  setActiveMarketId(marketId) {
+    this.activeMarketId = isMarketId(marketId) ? marketId : defaultMarketId;
+    this.listingManager.setActiveMarketId(this.activeMarketId);
+    this.subscriptionManager.setActiveMarketId(this.activeMarketId);
   }
 
   clearSlotListing(slotNumber) {

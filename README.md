@@ -66,6 +66,21 @@ cheats.addCoin(1000)
 cheats.addCrystal(10)
 cheats.addItem('sageSeed', 5)
 cheats.completeResearch('unlockSeed:sageSeed')
+await cheats.setPrestigeStars(6)
+cheats.getMarketLicence()
+```
+
+Use `await cheats.setPrestigeStars(stars)` to test the active Prestige Market licence.
+It writes permanent milestone progress and waits for the save to reach the local backend;
+it does not spoof a market id. Test a single account in ascending order, or use
+`await cheats.resetData('RESET')` before returning to a lower tier:
+
+```js
+await cheats.setPrestigeStars(0)  // Small Town Market
+await cheats.setPrestigeStars(1)  // Crossroads Market
+await cheats.setPrestigeStars(3)  // City Bazaar
+await cheats.setPrestigeStars(6)  // Grand Exchange
+await cheats.setPrestigeStars(10) // Arcane Exchange
 ```
 
 ## GitHub Pages

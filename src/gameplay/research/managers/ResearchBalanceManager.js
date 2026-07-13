@@ -153,12 +153,12 @@ const DEFAULT_RESEARCH_BALANCE = {
     'unlockRecipe:pearlrootDraught': 1700000,
     ...createDefaultAutomationCosts(),
   },
-  researchCostsCrystal: {
+  researchCostsCrystal: createDefaultMultiplierCosts(),
+  researchCostsRuby: {
     'automation:autoSeedSpawn': 10,
     ...createDefaultAutomationCosts(),
   },
-  researchCostsRuby: createDefaultAdvancedRubyCosts(),
-  researchCostsEmerald: createDefaultEmeraldCosts(),
+  researchCostsEmerald: createDefaultAdvancedCosts(),
 };
 
 DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds = createDefaultResearchDurations(
@@ -188,7 +188,7 @@ function createDefaultAutomationCosts() {
   return costs;
 }
 
-function createDefaultAdvancedRubyCosts() {
+function createDefaultAdvancedCosts() {
   const costs = {};
 
   fastSellResearchCostsRuby.forEach((cost, index) => {
@@ -242,7 +242,7 @@ function createDefaultAdvancedRubyCosts() {
   return costs;
 }
 
-function createDefaultEmeraldCosts() {
+function createDefaultMultiplierCosts() {
   const costs = {};
 
   for (let plotNumber = 1; plotNumber <= plotCapacityEndPlotNumber; plotNumber += 1) {
@@ -346,7 +346,58 @@ export class ResearchBalanceManager {
     this.costCrystalByResearchId = this.readCostCrystalByResearchId();
     this.costRubyByResearchId = this.readCostRubyByResearchId();
     this.costEmeraldByResearchId = this.readCostEmeraldByResearchId();
+    this.migrateCurrencyRoleCosts();
     this.durationSecondsByResearchId = this.readDurationSecondsByResearchId();
+  }
+
+  migrateCurrencyRoleCosts() {
+    const crystalCosts = this.getConfiguredCurrencyCosts('researchCostsCrystal');
+    const rubyCosts = this.getConfiguredCurrencyCosts('researchCostsRuby');
+    const emeraldCosts = this.getConfiguredCurrencyCosts('researchCostsEmerald');
+
+    this.costCrystalByResearchId = this.getMigratedCurrencyCosts({
+      defaults: DEFAULT_RESEARCH_BALANCE.researchCostsCrystal,
+      currentCosts: crystalCosts,
+      legacyCosts: emeraldCosts,
+    });
+    this.costRubyByResearchId = this.getMigratedCurrencyCosts({
+      defaults: DEFAULT_RESEARCH_BALANCE.researchCostsRuby,
+      currentCosts: rubyCosts,
+      legacyCosts: crystalCosts,
+    });
+    this.costEmeraldByResearchId = this.getMigratedCurrencyCosts({
+      defaults: DEFAULT_RESEARCH_BALANCE.researchCostsEmerald,
+      currentCosts: emeraldCosts,
+      legacyCosts: rubyCosts,
+    });
+  }
+
+  getConfiguredCurrencyCosts(key) {
+    const costs = this.balance?.[key];
+
+    return costs && typeof costs === 'object' && !Array.isArray(costs) ? costs : {};
+  }
+
+  getMigratedCurrencyCosts({ defaults, currentCosts, legacyCosts }) {
+    const knownCurrencyResearchIds = new Set([
+      ...Object.keys(DEFAULT_RESEARCH_BALANCE.researchCostsCrystal),
+      ...Object.keys(DEFAULT_RESEARCH_BALANCE.researchCostsRuby),
+      ...Object.keys(DEFAULT_RESEARCH_BALANCE.researchCostsEmerald),
+    ]);
+    const costs = {};
+
+    for (const [researchId, amount] of Object.entries(currentCosts)) {
+      if (!knownCurrencyResearchIds.has(researchId)) {
+        costs[researchId] = amount;
+      }
+    }
+
+    for (const [researchId, defaultAmount] of Object.entries(defaults)) {
+      const configuredAmount = currentCosts[researchId] ?? legacyCosts[researchId];
+      costs[researchId] = configuredAmount ?? defaultAmount;
+    }
+
+    return costs;
   }
 
   getCost(researchId, { researchCostReductionLevel = 0 } = {}) {

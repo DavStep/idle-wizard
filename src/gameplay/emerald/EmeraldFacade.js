@@ -3,7 +3,7 @@ import { EmeraldSpendManager } from './managers/EmeraldSpendManager.js';
 
 export class EmeraldFacade {
   static explain =
-    'Emerald is an upgrade currency: plot and cauldron level-ups spend it to batch planting and brewing.';
+    'Emerald is an upgrade currency for advanced research such as capacity, speed, and efficiency.';
 
   constructor({ initialCurrent = 0 } = {}) {
     this.emeraldEntityManager = new EmeraldEntityManager({ initialCurrent });

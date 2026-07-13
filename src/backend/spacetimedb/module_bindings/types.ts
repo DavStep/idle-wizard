@@ -112,6 +112,7 @@ export const MarketDemandDaily = __t.object("MarketDemandDaily", {
   supplyScore: __t.u64(),
   updatedAt: __t.timestamp(),
   priceScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type MarketDemandDaily = __Infer<typeof MarketDemandDaily>;
 
@@ -133,6 +134,7 @@ export const MarketDemandDailySnapshotResult = __t.object("MarketDemandDailySnap
   supplyScore: __t.u64(),
   updatedAt: __t.timestamp(),
   priceScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type MarketDemandDailySnapshotResult = __Infer<typeof MarketDemandDailySnapshotResult>;
 
@@ -154,6 +156,8 @@ export const NpcMarketItemConfig = __t.object("NpcMarketItemConfig", {
   volatilityBps: __t.u64(),
   enabled: __t.bool(),
   priceScale: __t.u32(),
+  marketId: __t.string(),
+  catalogItemKey: __t.string(),
 });
 export type NpcMarketItemConfig = __Infer<typeof NpcMarketItemConfig>;
 
@@ -175,6 +179,8 @@ export const NpcMarketPrice = __t.object("NpcMarketPrice", {
   targetNeed: __t.u64(),
   maxNeed: __t.u64(),
   priceScale: __t.u32(),
+  marketId: __t.string(),
+  catalogItemKey: __t.string(),
 });
 export type NpcMarketPrice = __Infer<typeof NpcMarketPrice>;
 
@@ -199,6 +205,7 @@ export const NpcMarketPriceSnapshotResult = __t.object("NpcMarketPriceSnapshotRe
   targetNeed: __t.u64(),
   maxNeed: __t.u64(),
   priceScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type NpcMarketPriceSnapshotResult = __Infer<typeof NpcMarketPriceSnapshotResult>;
 
@@ -245,6 +252,7 @@ export const OwnPlayerShopProceedsResult = __t.object("OwnPlayerShopProceedsResu
   gold: __t.u64(),
   updatedAt: __t.timestamp(),
   goldScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type OwnPlayerShopProceedsResult = __Infer<typeof OwnPlayerShopProceedsResult>;
 
@@ -268,6 +276,7 @@ export const OwnPotionRecipeRoyaltyHistoryResult = __t.object("OwnPotionRecipeRo
   sourceIncomeGold: __t.u64(),
   awardedAt: __t.timestamp(),
   goldScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type OwnPotionRecipeRoyaltyHistoryResult = __Infer<typeof OwnPotionRecipeRoyaltyHistoryResult>;
 
@@ -453,8 +462,19 @@ export const PlayerShopListing = __t.object("PlayerShopListing", {
   priceGold: __t.u64(),
   updatedAt: __t.timestamp(),
   priceScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type PlayerShopListing = __Infer<typeof PlayerShopListing>;
+
+export const PlayerShopMarketProceeds = __t.object("PlayerShopMarketProceeds", {
+  proceedsKey: __t.string(),
+  sellerIdentity: __t.identity(),
+  marketId: __t.string(),
+  gold: __t.u64(),
+  updatedAt: __t.timestamp(),
+  goldScale: __t.u32(),
+});
+export type PlayerShopMarketProceeds = __Infer<typeof PlayerShopMarketProceeds>;
 
 export const PlayerShopProceeds = __t.object("PlayerShopProceeds", {
   sellerIdentity: __t.identity(),
@@ -476,6 +496,7 @@ export const PlayerShopRequest = __t.object("PlayerShopRequest", {
   priceGold: __t.u64(),
   updatedAt: __t.timestamp(),
   priceScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type PlayerShopRequest = __Infer<typeof PlayerShopRequest>;
 
@@ -493,6 +514,7 @@ export const PlayerShopTrade = __t.object("PlayerShopTrade", {
   totalPriceGold: __t.u64(),
   tradedAt: __t.timestamp(),
   priceScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type PlayerShopTrade = __Infer<typeof PlayerShopTrade>;
 
@@ -510,6 +532,7 @@ export const PlayerShopTradeHistoryResult = __t.object("PlayerShopTradeHistoryRe
   totalPriceGold: __t.u64(),
   tradedAt: __t.timestamp(),
   priceScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type PlayerShopTradeHistoryResult = __Infer<typeof PlayerShopTradeHistoryResult>;
 
@@ -552,6 +575,7 @@ export const PotionRecipeRoyalty = __t.object("PotionRecipeRoyalty", {
   sourceIncomeGold: __t.u64(),
   awardedAt: __t.timestamp(),
   goldScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type PotionRecipeRoyalty = __Infer<typeof PotionRecipeRoyalty>;
 
@@ -570,6 +594,7 @@ export const PublicPlayerShopListingResult = __t.object("PublicPlayerShopListing
   priceGold: __t.u64(),
   updatedAt: __t.timestamp(),
   priceScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type PublicPlayerShopListingResult = __Infer<typeof PublicPlayerShopListingResult>;
 
@@ -588,6 +613,7 @@ export const PublicPlayerShopRequestResult = __t.object("PublicPlayerShopRequest
   priceGold: __t.u64(),
   updatedAt: __t.timestamp(),
   priceScale: __t.u32(),
+  marketId: __t.string(),
 });
 export type PublicPlayerShopRequestResult = __Infer<typeof PublicPlayerShopRequestResult>;
 

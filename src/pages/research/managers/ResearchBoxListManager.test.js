@@ -171,7 +171,7 @@ describe('ResearchBoxListManager', () => {
     ]);
   });
 
-  it('colors completed advanced and emerald research names and values by resource', () => {
+  it('colors completed advanced and crystal multiplier research names and values by resource', () => {
     const snapshot = {
       playerLevel: {
         currentLevel: 9,
@@ -190,14 +190,16 @@ describe('ResearchBoxListManager', () => {
                     id: 'advanced:plotGrowth:1:1',
                     label: 'auto plant tile 1',
                     value: 'researched',
-                    costRuby: 1,
-                    costCurrency: 'ruby',
+                    costEmerald: 1,
+                    costCurrency: 'emerald',
                     completed: true,
                   },
                   {
                     id: 'advanced:plotGrowth:2:1',
                     label: 'auto plant tile 2',
-                    value: '1 ruby',
+                    value: '1 emerald',
+                    costEmerald: 1,
+                    costCurrency: 'emerald',
                     completed: false,
                     canResearch: true,
                   },
@@ -207,7 +209,7 @@ describe('ResearchBoxListManager', () => {
           },
           {
             id: 'emerald',
-            label: 'emerald research',
+            label: 'crystal research',
             boxes: [
               {
                 id: 'cauldronBrewing',
@@ -222,17 +224,21 @@ describe('ResearchBoxListManager', () => {
                     actionType: 'levelUp',
                     level: 2,
                     starLevel: 1,
+                    costCrystal: 1,
+                    costCurrency: 'crystal',
                     completed: true,
                   },
                   {
                     id: 'emerald:cauldronBrewing:1:3',
                     label: 'cauldron 1',
-                    value: '2 emerald',
+                    value: '2 crystal',
                     effect: 'x3 potions',
                     showEffect: true,
                     actionType: 'levelUp',
                     level: 3,
                     starLevel: 2,
+                    costCrystal: 2,
+                    costCurrency: 'crystal',
                     completed: false,
                     canResearch: true,
                   },
@@ -263,16 +269,16 @@ describe('ResearchBoxListManager', () => {
 
     expect(
       completedRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
-    ).toBe('ruby');
+    ).toBe('emerald');
     expect(
       completedRow?.querySelector('.research-page__research-value')?.dataset.resourceColor,
-    ).toBe('ruby');
+    ).toBe('emerald');
     expect(
       availableRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
     ).toBeUndefined();
     expect(
       availableRow?.querySelector('.research-page__research-button')?.dataset.resourceColor,
-    ).toBe('ruby');
+    ).toBe('emerald');
 
     manager.onSelectTab('emerald');
 
@@ -296,22 +302,22 @@ describe('ResearchBoxListManager', () => {
     expect(
       completedEmeraldName?.querySelector('.style-star-level')?.dataset.starCount,
     ).toBe('1');
-    expect(completedEmeraldName?.dataset.resourceColor).toBe('emerald');
+    expect(completedEmeraldName?.dataset.resourceColor).toBe('crystal');
     expect(completedEmeraldValue?.textContent).toBe('★');
     expect(
       completedEmeraldValue?.querySelector('.style-star-level')?.dataset.starCount,
     ).toBe('1');
-    expect(completedEmeraldValue?.dataset.resourceColor).toBe('emerald');
+    expect(completedEmeraldValue?.dataset.resourceColor).toBe('crystal');
     expect(availableEmeraldName?.textContent).toBe('cauldron 1 ★★');
     expect(stage.textContent).not.toContain('cauldron 1 lvl');
     expect(
       availableEmeraldRow?.querySelector('.research-page__research-button')?.dataset.resourceColor,
-    ).toBe('emerald');
+    ).toBe('crystal');
     expect(
       availableEmeraldRow
         ?.querySelector('.research-page__research-button')
         ?.getAttribute('aria-label'),
-    ).toBe('level up cauldron 1 ★★ x3 potions for 2 emerald');
+    ).toBe('level up cauldron 1 ★★ x3 potions for 2 crystal');
   });
 
   it('lets completed research values use resource color styling', () => {

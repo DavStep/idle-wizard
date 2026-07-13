@@ -211,6 +211,8 @@ describe('ShopShelfManager', () => {
         (button) => button.textContent,
       ),
     ).toEqual(['trader market', 'player market', 'crystals']);
+    expect(stage.querySelector('.shop-page__market-identity')?.textContent)
+      .toBe('Small Town Market');
     const playerTab = [...stage.querySelectorAll('.shop-page__market-tab-button')].find(
       (button) => button.textContent === 'player market',
     );

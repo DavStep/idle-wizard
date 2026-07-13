@@ -25,7 +25,9 @@ export class ShopFacade {
   constructor({
     coinFacade,
     itemsFacade,
+    marketLicenceFacade,
     playerLevelFacade,
+    playerShopFacade,
     researchFacade,
     npcMarketFacade,
     onItemSold,
@@ -36,6 +38,7 @@ export class ShopFacade {
     this.shopNpcPriceManager = new ShopNpcPriceManager({
       npcMarketFacade,
       playerLevelFacade,
+      getActiveMarketId: () => this.getActiveMarketLicence().id,
     });
     this.shopSellKindManager = new ShopSellKindManager();
     this.shopSellItemVisibilityManager = new ShopSellItemVisibilityManager({
@@ -131,11 +134,19 @@ export class ShopFacade {
       now,
     });
     this.itemsFacade = itemsFacade;
+    this.marketLicenceFacade = marketLicenceFacade;
     this.playerLevelFacade = playerLevelFacade;
+    this.playerShopFacade = playerShopFacade;
   }
 
   setNpcMarketFacade(npcMarketFacade) {
     this.shopNpcPriceManager.setNpcMarketFacade(npcMarketFacade);
+    this.syncActiveMarketLicence();
+  }
+
+  setPlayerShopFacade(playerShopFacade) {
+    this.playerShopFacade = playerShopFacade;
+    this.syncActiveMarketLicence();
   }
 
   applyRuntimeConfig(snapshot = {}) {
@@ -252,6 +263,8 @@ export class ShopFacade {
   }
 
   getSnapshot() {
+    const market = this.getActiveMarketLicence();
+    this.syncActiveMarketLicence(market);
     const unlockedSlots = this.shopShelfEntityManager.getUnlockedSlots();
     const playerUnlockedSlots = this.shopPlayerShelfEntityManager.getUnlockedSlots();
     const maxSlots = this.shopBalanceManager.getMaxShelfSlots();
@@ -275,6 +288,7 @@ export class ShopFacade {
     }));
 
     return {
+      market,
       shelf: {
         unlockedSlots,
         maxSlots,
@@ -330,6 +344,19 @@ export class ShopFacade {
 
   getMaxSlotsByLevel() {
     return this.getMaxNpcMarketStandsByLevel();
+  }
+
+  getActiveMarketLicence() {
+    return this.marketLicenceFacade?.getActiveLicence?.() ?? {
+      id: 'smallTown',
+      name: 'Small Town Market',
+      requiredStars: 0,
+    };
+  }
+
+  syncActiveMarketLicence(market = this.getActiveMarketLicence()) {
+    this.playerShopFacade?.setActiveMarketId?.(market.id);
+    this.shopNpcPriceManager?.setActiveMarketId?.(market.id);
   }
 
   getMaxNpcMarketStandsByLevel() {

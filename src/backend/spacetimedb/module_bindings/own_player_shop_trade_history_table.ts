@@ -24,4 +24,5 @@ export default __t.row({
   totalPriceGold: __t.u64().name("total_price_gold"),
   tradedAt: __t.timestamp().name("traded_at"),
   priceScale: __t.u32().name("price_scale"),
+  marketId: __t.string().name("market_id"),
 });

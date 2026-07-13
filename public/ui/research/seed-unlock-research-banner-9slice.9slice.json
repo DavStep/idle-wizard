@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "seed-unlock-research-banner-9slice.png",
+  "workingAsset": null,
+  "scaleWorkflow": {
+    "workScale": 1,
+    "downscaleResample": "lanczos",
+    "alphaCrop": {
+      "enabled": true,
+      "threshold": 0,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 496,
+        "height": 111
+      },
+      "changed": false
+    }
+  },
+  "source": {
+    "path": "/Users/davitstepanyan/Documents/idle-wizard/tmp/imagegen/banners/reference-tuned/trimmed/seed-unlock-research-banner.png",
+    "width": 760,
+    "height": 111,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 760,
+      "height": 111
+    }
+  },
+  "sourceCropSize": {
+    "width": 760,
+    "height": 111
+  },
+  "slice": {
+    "left": 200,
+    "top": 55,
+    "right": 200,
+    "bottom": 55
+  },
+  "mode": "distilled",
+  "distill": {
+    "sampleX": 332,
+    "sampleY": 55,
+    "centerWidth": 96,
+    "centerHeight": 1,
+    "cornerSource": "source",
+    "edgeSource": "source"
+  },
+  "cleanup": {
+    "symmetrizeCorners": false,
+    "symmetrizeEdges": false,
+    "transparentChamfer": 0,
+    "transparentChamferAaScale": 4,
+    "transparentInset": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "brownBackgroundKey": null,
+    "sideGutterTrim": {
+      "transparentThroughPx": 0,
+      "fadePx": 2
+    },
+    "allowTransparentGutters": false,
+    "geometricMask": false
+  },
+  "rendering": {
+    "stretch": "width-only",
+    "fixedHeight": 111,
+    "consumerRule": "Keep the authored height; vary width only.",
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "validation": {
+    "rasterOnly": true,
+    "pngSignatureChecked": true,
+    "naturalRoundTripExact": true,
+    "cornerRoundTripExact": true,
+    "alpha": {
+      "transparent": 9189,
+      "translucent": 10089,
+      "opaque": 35778
+    },
+    "alphaBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 496,
+      "height": 111
+    },
+    "transparentGutters": {
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "bottom": 0
+    },
+    "passesNoGutterGate": true,
+    "uniqueColors": {
+      "all": 11594,
+      "corners": 9292,
+      "edges": 3802
+    },
+    "workAsset": {
+      "size": {
+        "width": 496,
+        "height": 111
+      },
+      "slice": {
+        "left": 200,
+        "top": 55,
+        "right": 200,
+        "bottom": 55
+      },
+      "naturalRoundTripExact": true,
+      "cornerRoundTripExact": true,
+      "alpha": {
+        "transparent": 9189,
+        "translucent": 10089,
+        "opaque": 35778
+      },
+      "alphaBounds": {
+        "x": 0,
+        "y": 0,
+        "width": 496,
+        "height": 111
+      },
+      "transparentGutters": {
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "bottom": 0
+      },
+      "uniqueColors": {
+        "all": 11594,
+        "corners": 9292,
+        "edges": 3802
+      }
+    }
+  },
+  "qa": {
+    "sheet": "seed-unlock-research-banner-9slice-qa-sheet.png",
+    "examples": [
+      {
+        "label": "original: 760x111",
+        "width": 760,
+        "height": 111
+      },
+      {
+        "label": "width stretched: 1102x111",
+        "width": 1102,
+        "height": 111
+      }
+    ]
+  }
+}

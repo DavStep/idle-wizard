@@ -437,7 +437,7 @@ export const TUTORIAL_STEPS = [
     id: 'open-market',
     kind: 'objective',
     pageId: 'shop',
-    targetId: 'shop:directSell',
+    targetId: 'page:shop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'sell sage seeds in market',
     text: 'fast sell',

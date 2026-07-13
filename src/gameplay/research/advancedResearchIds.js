@@ -1,4 +1,4 @@
-export const advancedResearchMaxLevel = 10;
+export const advancedResearchMaxLevel = 12;
 export const advancedResearchMinTimeMultiplier = 0.1;
 
 export const advancedResearchIds = Object.freeze({

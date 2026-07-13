@@ -30,4 +30,4 @@ Timed researches can run concurrently without a slot limit.
 
 - [[Tasks And Leveling]]
 - [[Production Systems]]
-- [[Prestige And Automation]]
+- [[Prestige]]

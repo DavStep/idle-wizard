@@ -7,27 +7,15 @@ import { getHerbIconFrameName, getHerbIconKeyByLabel } from '../herbs/herbIcons.
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 const SEED_PACK_ITEM_SCALE = 0.44;
-
-export const seedIconVariantFrameNames = Object.freeze({
-  black: 'seed:black',
-  gray: 'seed:gray',
-  regular: 'seed:regular',
-});
+const SEED_PACK_ITEM_CENTER_Y_RATIO = 0.63;
+const SEED_PACK_FRAME_NAME = 'seed:pack';
 
 export function getSeedIconFrameName(seed = null) {
   return getSeedPackBaseFrameName(seed);
 }
 
-export function getSeedPackBaseFrameName(seed = null) {
-  if (seed?.rarity === 'legendary') {
-    return seedIconVariantFrameNames.black;
-  }
-
-  if (seed?.rarity === 'rare') {
-    return seedIconVariantFrameNames.gray;
-  }
-
-  return seedIconVariantFrameNames.regular;
+export function getSeedPackBaseFrameName() {
+  return SEED_PACK_FRAME_NAME;
 }
 
 export function getHerbKeyForSeed(seed = null) {
@@ -93,7 +81,7 @@ export function createSeedPackIcon(
   });
   const itemSize = Math.min(packFrame.width, packFrame.height) * SEED_PACK_ITEM_SCALE;
   const itemX = packFrame.width / 2 - itemSize / 2;
-  const itemY = packFrame.height * 0.54 - itemSize / 2;
+  const itemY = packFrame.height * SEED_PACK_ITEM_CENTER_Y_RATIO - itemSize / 2;
   const item = createAtlasFrameSprite(itemClassName, itemFrameName, {
     height: itemSize,
     width: itemSize,

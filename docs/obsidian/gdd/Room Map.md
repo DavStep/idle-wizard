@@ -44,7 +44,11 @@ timers, unlock effects, summon filtering, and potion permissions.
 ## Market
 
 Market contains trader market, player market, and crystals tabs. Trader market
-has fast sell, automatic trader demand stands, and shared trader stock.
+has fast sell, automatic trader demand stands, and shared trader stock. Its
+appearance and economy follow the player's permanent Prestige market licence:
+Small Town Market, Crossroads Market, City Bazaar, Grand Exchange, then Arcane
+Exchange. Each licence has separate NPC demand, stock, prices, and player-trade
+rows, so late-game players cannot distort early-market balance.
 
 ## Related
 

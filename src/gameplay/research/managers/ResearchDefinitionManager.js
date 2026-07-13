@@ -219,7 +219,7 @@ export class ResearchDefinitionManager {
       },
       {
         id: 'emerald',
-        label: 'emerald research',
+        label: 'crystal research',
         boxes: this.getEmeraldResearchBoxes({
           includeLevelLockedAutomation,
           completedResearchIds,
@@ -456,8 +456,8 @@ export class ResearchDefinitionManager {
           }),
           getId: advancedResearchIds.cauldronBrewing,
           seriesId: (cauldronNumber) => `advanced:cauldronBrewing:${cauldronNumber}`,
-          label: (cauldronNumber, level) =>
-            `cauldron ${cauldronNumber} brewing lvl ${level}`,
+          label: (cauldronNumber) => `cauldron ${cauldronNumber} brewing`,
+          starLevel: (level) => level,
           description: (cauldronNumber, level) =>
             `cauldron ${cauldronNumber} brewing time is reduced by ${getAdvancedResearchLevelReductionPercent(level)}%.`,
           getRequiredPrestigeCount: (level) => this.getStrongerRoomStudyPrestigeCount(level),
@@ -473,7 +473,8 @@ export class ResearchDefinitionManager {
           }),
           getId: advancedResearchIds.plotGrowth,
           seriesId: (plotNumber) => `advanced:plotGrowth:${plotNumber}`,
-          label: (plotNumber, level) => `plot ${plotNumber} growth lvl ${level}`,
+          label: (plotNumber) => `plot ${plotNumber} growth`,
+          starLevel: (level) => level,
           description: (plotNumber, level) =>
             `plot ${plotNumber} growth time is reduced by ${getAdvancedResearchLevelReductionPercent(level)}%.`,
           getRequiredPrestigeCount: (level) => this.getStrongerRoomStudyPrestigeCount(level),
@@ -658,6 +659,7 @@ export class ResearchDefinitionManager {
     getId,
     seriesId,
     label,
+    starLevel,
     description,
     getRequiredPrestigeCount,
   }) {
@@ -671,6 +673,7 @@ export class ResearchDefinitionManager {
           label: label(targetNumber, level),
           value: `-${getAdvancedResearchLevelReductionPercent(level)}% time`,
           showEffect: true,
+          ...(starLevel ? { starLevel: starLevel(level) } : {}),
           seriesId: seriesId(targetNumber),
           requiredResearchIds:
             level > 1 ? [getId(targetNumber, level - 1)] : [],

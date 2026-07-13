@@ -317,7 +317,7 @@ describe('GuildPanelManager', () => {
     expect(
       boardReward?.querySelector('.style-resource-label--seed .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
-    ).toBe('seed:regular');
+    ).toBe('seed:pack');
     expect(
       boardReward?.querySelector('.style-resource-label--herb .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,

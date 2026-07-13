@@ -73,6 +73,8 @@ export class DevCheatConsoleManager {
       setNotifications: (notifications) => run('setNotifications', notifications),
       clearNotifications: () => run('clearNotifications'),
       setLevel: (level) => run('setLevel', level),
+      setPrestigeStars: (stars) => run('setPrestigeStars', stars),
+      getMarketLicence: () => run('getMarketLicence'),
       showPage: (pageId, options) => run('showPage', pageId, options),
       unlockFeature: (featureId) => run('unlockFeature', featureId),
       unlockAllFeatures: () => run('unlockAllFeatures'),

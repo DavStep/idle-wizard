@@ -121,10 +121,10 @@ describe('item icon labels', () => {
     expect(element.textContent).toBe('sage seed (3)');
     expect(element.classList.contains('style-seed-label')).toBe(true);
     expect(icon).not.toBeNull();
-    expect(icon?.dataset.assetAtlasFrame).toBe('seed:regular');
+    expect(icon?.dataset.assetAtlasFrame).toBe('seed:pack');
     expect(icon?.dataset.seedPackItemFrame).toBe('herb:sageHerb');
     expect(icon?.querySelector('.style-seed-pack-composite__base')?.dataset.assetAtlasFrame).toBe(
-      'seed:regular',
+      'seed:pack',
     );
     expect(icon?.querySelector('.style-seed-pack-composite__item')?.dataset.assetAtlasFrame).toBe(
       'herb:sageHerb',

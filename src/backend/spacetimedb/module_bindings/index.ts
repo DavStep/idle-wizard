@@ -109,11 +109,8 @@ import GameConfigRow from "./game_config_table";
 import GameConfigSnapshotRow from "./game_config_snapshot_table";
 import LeaderboardRow from "./leaderboard_table";
 import LeaderboardSummaryRow from "./leaderboard_summary_table";
-import MarketDemandDailyRow from "./market_demand_daily_table";
 import MarketDemandDailySnapshotRow from "./market_demand_daily_snapshot_table";
 import NpcMarketAdminRow from "./npc_market_admin_table";
-import NpcMarketItemConfigRow from "./npc_market_item_config_table";
-import NpcMarketPriceRow from "./npc_market_price_table";
 import NpcMarketPriceSnapshotRow from "./npc_market_price_snapshot_table";
 import OwnPlayerGameplaySaveRow from "./own_player_gameplay_save_table";
 import OwnPlayerInboxMailRow from "./own_player_inbox_mail_table";
@@ -128,14 +125,9 @@ import OwnTradeAllianceChatRow from "./own_trade_alliance_chat_table";
 import OwnTradeAllianceOverviewRow from "./own_trade_alliance_overview_table";
 import OwnTradeAllianceRewardInboxRow from "./own_trade_alliance_reward_inbox_table";
 import PlayerRow from "./player_table";
-import PlayerShopListingRow from "./player_shop_listing_table";
-import PlayerShopProceedsRow from "./player_shop_proceeds_table";
-import PlayerShopRequestRow from "./player_shop_request_table";
-import PlayerShopTradeRow from "./player_shop_trade_table";
 import PlayerInfoSummaryRow from "./player_info_summary_table";
 import PlayerShopTradeRecentRow from "./player_shop_trade_recent_table";
 import PotionRecipeDiscoveryRow from "./potion_recipe_discovery_table";
-import PotionRecipeRoyaltyRow from "./potion_recipe_royalty_table";
 import PotionRecipeDiscoverySnapshotRow from "./potion_recipe_discovery_snapshot_table";
 import PublicPlayerShopListingRow from "./public_player_shop_listing_table";
 import PublicPlayerShopRequestRow from "./public_player_shop_request_table";
@@ -197,23 +189,6 @@ const tablesSchema = __schema({
       { name: 'leaderboard_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, LeaderboardRow),
-  marketDemandDaily: __table({
-    name: 'market_demand_daily',
-    indexes: [
-      { accessor: 'analyticsKey', name: 'market_demand_daily_analytics_key_idx_btree', algorithm: 'btree', columns: [
-        'analyticsKey',
-      ] },
-      { accessor: 'byDayKey', name: 'market_demand_daily_day_key_idx_btree', algorithm: 'btree', columns: [
-        'dayKey',
-      ] },
-      { accessor: 'byUpdatedAt', name: 'market_demand_daily_updated_at_idx_btree', algorithm: 'btree', columns: [
-        'updatedAt',
-      ] },
-    ],
-    constraints: [
-      { name: 'market_demand_daily_analytics_key_key', constraint: 'unique', columns: ['analyticsKey'] },
-    ],
-  }, MarketDemandDailyRow),
   npcMarketAdmin: __table({
     name: 'npc_market_admin',
     indexes: [
@@ -225,37 +200,6 @@ const tablesSchema = __schema({
       { name: 'npc_market_admin_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, NpcMarketAdminRow),
-  npcMarketItemConfig: __table({
-    name: 'npc_market_item_config',
-    indexes: [
-      { accessor: 'itemKey', name: 'npc_market_item_config_item_key_idx_btree', algorithm: 'btree', columns: [
-        'itemKey',
-      ] },
-      { accessor: 'byUpdatedAt', name: 'npc_market_item_config_updated_at_idx_btree', algorithm: 'btree', columns: [
-        'updatedAt',
-      ] },
-    ],
-    constraints: [
-      { name: 'npc_market_item_config_item_key_key', constraint: 'unique', columns: ['itemKey'] },
-    ],
-  }, NpcMarketItemConfigRow),
-  npcMarketPrice: __table({
-    name: 'npc_market_price',
-    indexes: [
-      { accessor: 'itemKey', name: 'npc_market_price_item_key_idx_btree', algorithm: 'btree', columns: [
-        'itemKey',
-      ] },
-      { accessor: 'byItemKind', name: 'npc_market_price_item_kind_idx_btree', algorithm: 'btree', columns: [
-        'itemKind',
-      ] },
-      { accessor: 'byUpdatedAt', name: 'npc_market_price_updated_at_idx_btree', algorithm: 'btree', columns: [
-        'updatedAt',
-      ] },
-    ],
-    constraints: [
-      { name: 'npc_market_price_item_key_key', constraint: 'unique', columns: ['itemKey'] },
-    ],
-  }, NpcMarketPriceRow),
   player: __table({
     name: 'player',
     indexes: [
@@ -267,77 +211,6 @@ const tablesSchema = __schema({
       { name: 'player_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, PlayerRow),
-  playerShopListing: __table({
-    name: 'player_shop_listing',
-    indexes: [
-      { accessor: 'listingKey', name: 'player_shop_listing_listing_key_idx_btree', algorithm: 'btree', columns: [
-        'listingKey',
-      ] },
-      { accessor: 'byQuantity', name: 'player_shop_listing_quantity_idx_btree', algorithm: 'btree', columns: [
-        'quantity',
-      ] },
-      { accessor: 'bySellerIdentity', name: 'player_shop_listing_seller_identity_idx_btree', algorithm: 'btree', columns: [
-        'sellerIdentity',
-      ] },
-      { accessor: 'byUpdatedAt', name: 'player_shop_listing_updated_at_idx_btree', algorithm: 'btree', columns: [
-        'updatedAt',
-      ] },
-    ],
-    constraints: [
-      { name: 'player_shop_listing_listing_key_key', constraint: 'unique', columns: ['listingKey'] },
-    ],
-  }, PlayerShopListingRow),
-  playerShopProceeds: __table({
-    name: 'player_shop_proceeds',
-    indexes: [
-      { accessor: 'sellerIdentity', name: 'player_shop_proceeds_seller_identity_idx_btree', algorithm: 'btree', columns: [
-        'sellerIdentity',
-      ] },
-    ],
-    constraints: [
-      { name: 'player_shop_proceeds_seller_identity_key', constraint: 'unique', columns: ['sellerIdentity'] },
-    ],
-  }, PlayerShopProceedsRow),
-  playerShopRequest: __table({
-    name: 'player_shop_request',
-    indexes: [
-      { accessor: 'byQuantity', name: 'player_shop_request_quantity_idx_btree', algorithm: 'btree', columns: [
-        'quantity',
-      ] },
-      { accessor: 'requestKey', name: 'player_shop_request_request_key_idx_btree', algorithm: 'btree', columns: [
-        'requestKey',
-      ] },
-      { accessor: 'byRequesterIdentity', name: 'player_shop_request_requester_identity_idx_btree', algorithm: 'btree', columns: [
-        'requesterIdentity',
-      ] },
-      { accessor: 'byUpdatedAt', name: 'player_shop_request_updated_at_idx_btree', algorithm: 'btree', columns: [
-        'updatedAt',
-      ] },
-    ],
-    constraints: [
-      { name: 'player_shop_request_request_key_key', constraint: 'unique', columns: ['requestKey'] },
-    ],
-  }, PlayerShopRequestRow),
-  playerShopTrade: __table({
-    name: 'player_shop_trade',
-    indexes: [
-      { accessor: 'byBuyerIdentity', name: 'player_shop_trade_buyer_identity_idx_btree', algorithm: 'btree', columns: [
-        'buyerIdentity',
-      ] },
-      { accessor: 'bySellerIdentity', name: 'player_shop_trade_seller_identity_idx_btree', algorithm: 'btree', columns: [
-        'sellerIdentity',
-      ] },
-      { accessor: 'tradeId', name: 'player_shop_trade_trade_id_idx_btree', algorithm: 'btree', columns: [
-        'tradeId',
-      ] },
-      { accessor: 'byTradedAt', name: 'player_shop_trade_traded_at_idx_btree', algorithm: 'btree', columns: [
-        'tradedAt',
-      ] },
-    ],
-    constraints: [
-      { name: 'player_shop_trade_trade_id_key', constraint: 'unique', columns: ['tradeId'] },
-    ],
-  }, PlayerShopTradeRow),
   potionRecipeDiscovery: __table({
     name: 'potion_recipe_discovery',
     indexes: [
@@ -352,23 +225,6 @@ const tablesSchema = __schema({
       { name: 'potion_recipe_discovery_potion_key_key', constraint: 'unique', columns: ['potionKey'] },
     ],
   }, PotionRecipeDiscoveryRow),
-  potionRecipeRoyalty: __table({
-    name: 'potion_recipe_royalty',
-    indexes: [
-      { accessor: 'byAwardedAt', name: 'potion_recipe_royalty_awarded_at_idx_btree', algorithm: 'btree', columns: [
-        'awardedAt',
-      ] },
-      { accessor: 'byRecipientIdentity', name: 'potion_recipe_royalty_recipient_identity_idx_btree', algorithm: 'btree', columns: [
-        'recipientIdentity',
-      ] },
-      { accessor: 'royaltyId', name: 'potion_recipe_royalty_royalty_id_idx_btree', algorithm: 'btree', columns: [
-        'royaltyId',
-      ] },
-    ],
-    constraints: [
-      { name: 'potion_recipe_royalty_royalty_id_key', constraint: 'unique', columns: ['royaltyId'] },
-    ],
-  }, PotionRecipeRoyaltyRow),
   researchConfig: __table({
     name: 'research_config',
     indexes: [

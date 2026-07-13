@@ -606,6 +606,71 @@ describe('TutorialStepManager', () => {
     });
   });
 
+  it('guides level 2 players from the Market tab to fast sell', () => {
+    const snapshot = createLevelTwoSnapshot({
+      shop: {
+        shelf: {
+          slots: [],
+          sellItems: [
+            {
+              key: 'sageSeed',
+              kind: 'seed',
+              quantity: 5,
+              fastSellCoin: 0.8,
+              sellNeed: 1000,
+            },
+          ],
+        },
+      },
+      tasks: {
+        currentLevel: 1,
+        level: {
+          completion: { canComplete: false, costCoin: 4 },
+          tasks: [
+            createTask({
+              taskId: 'level2-summon-sage-seed',
+              itemKey: 'sageSeed',
+              type: 'summon',
+              requiredQuantity: 5,
+              progressQuantity: 5,
+              remainingQuantity: 0,
+              completed: true,
+            }),
+            createTask({
+              taskId: 'level2-sell-sage-seed',
+              itemKey: 'sageSeed',
+              type: 'sell',
+              requiredQuantity: 1,
+              progressQuantity: 0,
+              remainingQuantity: 1,
+            }),
+            createTask({
+              taskId: 'level2-turn-in-sage-seed',
+              itemKey: 'sageSeed',
+              requiredQuantity: 4,
+              progressQuantity: 0,
+              remainingQuantity: 4,
+            }),
+          ],
+        },
+      },
+    });
+    const completed = completedThrough('prepare-seed-sale');
+
+    expect(getStep({ snapshot, completed })).toMatchObject({
+      id: 'open-market',
+      targetId: 'page:shop',
+      objectiveText: 'sell sage seeds in market',
+      stepLabel: '13/37',
+    });
+    expect(getStep({ pageId: 'shop', snapshot, completed })).toMatchObject({
+      id: 'select-market-stand',
+      targetId: 'shop:directSell',
+      objectiveText: 'open fast sell',
+      stepLabel: '14/37',
+    });
+  });
+
   it('uses normal fast sell controls for the level 2 sale task', () => {
     const snapshot = createLevelTwoSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 5 }],

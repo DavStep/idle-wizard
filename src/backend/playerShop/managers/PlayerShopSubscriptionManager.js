@@ -1,4 +1,5 @@
 import { normalizeCoinPrice } from '../../../shared/coinPrice.js';
+import { defaultMarketId, isMarketId } from '../../../shared/marketLicence.js';
 
 const PUBLIC_LISTINGS_QUERY = 'SELECT * FROM public_player_shop_listing';
 const OWN_LISTINGS_QUERY = 'SELECT * FROM own_player_shop_listing';
@@ -30,6 +31,7 @@ export class PlayerShopSubscriptionManager {
     this.onSnapshot = onSnapshot;
     this.connection = null;
     this.identity = null;
+    this.activeMarketId = defaultMarketId;
     this.marketDataActive = false;
     this.tradeHistoryActive = false;
     this.publicListingsTable = null;
@@ -194,6 +196,11 @@ export class PlayerShopSubscriptionManager {
 
   getSnapshot() {
     return this.snapshot;
+  }
+
+  setActiveMarketId(marketId) {
+    this.activeMarketId = isMarketId(marketId) ? marketId : defaultMarketId;
+    this.publishFromTables();
   }
 
   setPublicDataActive(active = true) {
@@ -392,6 +399,7 @@ export class PlayerShopSubscriptionManager {
     const publicListings = Array.from(
       this.marketDataActive ? this.publicListingsTable?.iter?.() ?? [] : [],
     )
+      .filter((row) => this.getRowMarketId(row) === this.activeMarketId)
       .map((row) => this.mapListing(row))
       .sort((left, right) => {
         const nameCompare = left.username.localeCompare(right.username);
@@ -405,7 +413,9 @@ export class PlayerShopSubscriptionManager {
     const ownListingSource =
       this.marketDataActive && this.ownListingsTable === this.publicListingsTable
         ? publicListings
-        : Array.from(this.ownListingsTable.iter()).map((row) => this.mapListing(row));
+        : Array.from(this.ownListingsTable.iter())
+            .filter((row) => this.getRowMarketId(row) === this.activeMarketId)
+            .map((row) => this.mapListing(row));
     const ownListings = ownListingSource.filter(
       (listing) => listing.sellerIdentity === identityKey,
     );
@@ -416,6 +426,7 @@ export class PlayerShopSubscriptionManager {
     const publicRequests = Array.from(
       this.marketDataActive ? this.publicRequestsTable?.iter?.() ?? [] : [],
     )
+      .filter((row) => this.getRowMarketId(row) === this.activeMarketId)
       .map((row) => this.mapRequest(row))
       .sort((left, right) => {
         const nameCompare = left.username.localeCompare(right.username);
@@ -429,7 +440,9 @@ export class PlayerShopSubscriptionManager {
     const ownRequestSource =
       this.marketDataActive && this.ownRequestsTable === this.publicRequestsTable
         ? publicRequests
-        : Array.from(this.ownRequestsTable?.iter?.() ?? []).map((row) => this.mapRequest(row));
+        : Array.from(this.ownRequestsTable?.iter?.() ?? [])
+            .filter((row) => this.getRowMarketId(row) === this.activeMarketId)
+            .map((row) => this.mapRequest(row));
     const ownRequests = ownRequestSource.filter(
       (request) => request.requesterIdentity === identityKey,
     );
@@ -438,7 +451,9 @@ export class PlayerShopSubscriptionManager {
         request.requesterIdentity !== identityKey && request.quantity > 0 && request.priceCoin > 0,
     );
     const proceedsRow = Array.from(this.proceedsTable.iter()).find(
-      (row) => this.toIdentityKey(row.sellerIdentity ?? row.seller_identity) === identityKey,
+      (row) =>
+        this.getRowMarketId(row) === this.activeMarketId &&
+        this.toIdentityKey(row.sellerIdentity ?? row.seller_identity) === identityKey,
     ) ?? null;
     const tradeHistory = this.getTradeHistoryRows();
     const ownTradeHistory = this.getOwnTradeHistoryRows(tradeHistory, identityKey);
@@ -475,6 +490,7 @@ export class PlayerShopSubscriptionManager {
 
     return {
       listingKey: String(row.listingKey ?? row.listing_key ?? ''),
+      marketId: this.getRowMarketId(row),
       sellerIdentity: this.toIdentityKey(row.sellerIdentity ?? row.seller_identity),
       username: typeof row.username === 'string' ? row.username : 'wizard',
       slotNumber: this.toNumber(row.slotNumber ?? row.slot_number),
@@ -498,6 +514,7 @@ export class PlayerShopSubscriptionManager {
 
     return {
       requestKey: String(row.requestKey ?? row.request_key ?? ''),
+      marketId: this.getRowMarketId(row),
       requesterIdentity: this.toIdentityKey(row.requesterIdentity ?? row.requester_identity),
       username: typeof row.username === 'string' ? row.username : 'wizard',
       slotNumber: this.toNumber(row.slotNumber ?? row.slot_number),
@@ -518,6 +535,7 @@ export class PlayerShopSubscriptionManager {
 
     try {
       return Array.from(this.tradeHistoryTable.iter())
+        .filter((row) => this.getRowMarketId(row) === this.activeMarketId)
         .map((row) => this.mapTrade(row))
         .sort((left, right) => {
           if (left.tradedAtMs !== right.tradedAtMs) {
@@ -546,6 +564,7 @@ export class PlayerShopSubscriptionManager {
 
     try {
       return Array.from(this.ownTradeHistoryTable.iter())
+        .filter((row) => this.getRowMarketId(row) === this.activeMarketId)
         .map((row) => this.mapTrade(row))
         .sort((left, right) => {
           if (left.tradedAtMs !== right.tradedAtMs) {
@@ -568,6 +587,7 @@ export class PlayerShopSubscriptionManager {
 
     try {
       return Array.from(this.ownRoyaltyHistoryTable.iter())
+        .filter((row) => this.getRowMarketId(row) === this.activeMarketId)
         .map((row) => this.mapRoyalty(row))
         .sort((left, right) => {
           if (left.awardedAtMs !== right.awardedAtMs) {
@@ -625,6 +645,7 @@ export class PlayerShopSubscriptionManager {
 
     return {
       tradeId: this.toId(row.tradeId ?? row.trade_id),
+      marketId: this.getRowMarketId(row),
       buyerIdentity: this.toIdentityKey(row.buyerIdentity ?? row.buyer_identity),
       buyerUsername: typeof buyerUsername === 'string' ? buyerUsername : 'wizard',
       sellerIdentity: this.toIdentityKey(row.sellerIdentity ?? row.seller_identity),
@@ -645,6 +666,7 @@ export class PlayerShopSubscriptionManager {
 
     return {
       royaltyId: this.toId(row.royaltyId ?? row.royalty_id),
+      marketId: this.getRowMarketId(row),
       recipientIdentity: this.toIdentityKey(row.recipientIdentity ?? row.recipient_identity),
       sourceSellerIdentity: this.toIdentityKey(
         row.sourceSellerIdentity ?? row.source_seller_identity,
@@ -673,6 +695,11 @@ export class PlayerShopSubscriptionManager {
   publish(snapshot) {
     this.snapshot = snapshot;
     this.onSnapshot?.(snapshot);
+  }
+
+  getRowMarketId(row) {
+    const marketId = row.marketId ?? row.market_id ?? defaultMarketId;
+    return isMarketId(marketId) ? marketId : defaultMarketId;
   }
 
   toIdentityKey(identity) {

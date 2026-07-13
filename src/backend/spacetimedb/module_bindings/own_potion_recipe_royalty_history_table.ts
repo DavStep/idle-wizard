@@ -21,4 +21,5 @@ export default __t.row({
   sourceIncomeGold: __t.u64().name("source_income_gold"),
   awardedAt: __t.timestamp().name("awarded_at"),
   goldScale: __t.u32().name("gold_scale"),
+  marketId: __t.string().name("market_id"),
 });

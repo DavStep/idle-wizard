@@ -15,7 +15,24 @@ export function getEmeraldResearchCost({ multiplier }) {
     Math.floor(Number(multiplier) || emeraldResearchMinMultiplier),
   );
 
-  return safeMultiplier - emeraldResearchMinMultiplier + 1;
+  return 2 ** (safeMultiplier - emeraldResearchMinMultiplier + 1);
+}
+
+export function getLegacyMultiplierResearchCrystalCost(researchId) {
+  const match = /^emerald:(?:plotPlanting|cauldronBrewing):(\d+):(\d+)$/.exec(
+    String(researchId ?? ''),
+  );
+  const multiplier = Number(match?.[2]);
+
+  if (
+    !Number.isInteger(multiplier) ||
+    multiplier < emeraldResearchMinMultiplier ||
+    multiplier > emeraldResearchMaxMultiplier
+  ) {
+    return null;
+  }
+
+  return multiplier - emeraldResearchMinMultiplier + 1;
 }
 
 export function getEmeraldResearchStarLevel(multiplier) {

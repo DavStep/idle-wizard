@@ -691,9 +691,9 @@
 }
 
 .style-seed-label__icon {
-  width: 1.115em;
-  height: 1.502em;
-  vertical-align: -0.34em;
+  width: 1.287em;
+  height: 1.401em;
+  vertical-align: -0.29em;
 }
 
 .style-seed-pack-composite {
@@ -2309,7 +2309,7 @@ body {
 }
 
 .room-announcement__research-icon.style-seed-pack-composite {
-  width: 60px;
+  width: 80px;
   height: 86px;
 }
 
@@ -3895,7 +3895,7 @@ body {
 
 .room-item-drop.room-seed-pack-composite {
   width: 100%;
-  aspect-ratio: 119 / 167;
+  aspect-ratio: 119 / 128;
 }
 
 span.room-seed-pack-composite .room-seed-pack-base,
@@ -8776,9 +8776,22 @@ div.workshop-page__discovery-row {
   gap: 3px;
 }
 
-.shop-page__market-panel {
+.shop-page__market-identity {
   position: absolute;
   top: var(--style-room-content-top);
+  right: var(--style-room-content-edge);
+  left: var(--style-room-content-edge);
+  z-index: 11;
+  min-height: var(--style-row-min-height);
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-row-min-height);
+  text-align: center;
+}
+
+.shop-page__market-panel {
+  position: absolute;
+  top: calc(var(--style-room-content-top) + var(--style-row-min-height) + 4px);
   right: var(--style-room-content-edge);
   bottom: calc(var(--style-room-chat-clearance) + var(--style-page-tab-scroll-clearance));
   left: var(--style-room-content-edge);
@@ -9931,6 +9944,11 @@ div.workshop-page__discovery-row {
 .garden-page__seed-button > .row_val {
   justify-self: end;
   white-space: nowrap;
+}
+
+.garden-page__seed-button > .row_val .style-seed-label__icon {
+  margin-right: 0;
+  margin-left: var(--style-icon-label-gap);
 }
 
 .garden-page__seed-divider {
@@ -16454,7 +16472,7 @@ div.workshop-page__discovery-row {
 .first-run-intro .style-dialog.first-run-intro__panel,
 .style-box.tutorial-layer__lesson.is-intro-dialog {
   --intro-dialog-panel-frame: url("/ui/intro-dialog-panel-9slice.png");
-  --intro-dialog-tab-frame: url("/ui/intro-dialog-header-tab-9slice.png");
+  --intro-dialog-tab-frame: url("/ui/intro-dialog-header-tab-9slice-v2.png");
   --intro-dialog-button-frame: url("/ui/intro-dialog-button-9slice.png");
   --intro-dialog-panel-slice: 31 29 31 29 fill;
   --intro-dialog-tab-slice: 31 29 31 29 fill;

@@ -950,8 +950,10 @@ export class GardenPlotManager {
       refs.row.classList.toggle('is-empty', seed.quantity <= 0);
       refs.row.classList.toggle('is-unresearched', false);
       this.setText(refs.label, seed.label);
-      setItemIconLabel(refs.label, 'seed', seed.key);
+      setItemIconLabel(refs.label, null);
       this.setText(refs.quantity, String(seed.quantity));
+      setItemIconLabel(refs.quantity, 'seed', seed.key);
+      this.moveSeedPackAfterQuantity(refs.quantity);
       refs.button.disabled = false;
       refs.button.setAttribute('aria-disabled', 'false');
       refs.button.setAttribute(
@@ -963,6 +965,15 @@ export class GardenPlotManager {
     }
 
     this.applySeedRowOrder(seeds);
+  }
+
+  moveSeedPackAfterQuantity(quantity) {
+    const icon = quantity.querySelector('.style-seed-label__icon');
+    const text = quantity.querySelector('.style-seed-label__text');
+
+    if (icon && text) {
+      quantity.append(text, icon);
+    }
   }
 
   applySeedRowOrder(seeds) {

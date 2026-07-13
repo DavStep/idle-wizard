@@ -891,15 +891,15 @@ export class PagesFacade {
     }
 
     if (this.researchTabId === 'automation') {
-      return { currency: 'crystal' };
-    }
-
-    if (this.researchTabId === 'advanced') {
       return { currency: 'ruby' };
     }
 
-    if (this.researchTabId === 'emerald') {
+    if (this.researchTabId === 'advanced') {
       return { currency: 'emerald' };
+    }
+
+    if (this.researchTabId === 'emerald') {
+      return { currency: 'crystal' };
     }
 
     return {};

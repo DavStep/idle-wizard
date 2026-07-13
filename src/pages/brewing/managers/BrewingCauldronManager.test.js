@@ -1490,7 +1490,7 @@ describe('BrewingCauldronManager', () => {
     expect(baseCss).toContain('scale(0.99, 1.01)');
     expect(baseCss).toContain('.brewing-page__item-drag-ghost.is-settling');
     expect(manager.getItemDragFrameName({ itemKind: 'seed', itemKey: 'sageSeed' })).toBe(
-      'seed:regular',
+      'seed:pack',
     );
     const seedIcon = manager.createItemDragIcon({
       itemKind: 'seed',
@@ -1498,7 +1498,7 @@ describe('BrewingCauldronManager', () => {
       itemLabel: 'sage seed',
     });
     expect(seedIcon?.classList.contains('style-seed-pack-composite')).toBe(true);
-    expect(seedIcon?.dataset.assetAtlasFrame).toBe('seed:regular');
+    expect(seedIcon?.dataset.assetAtlasFrame).toBe('seed:pack');
     expect(seedIcon?.dataset.seedPackItemFrame).toBe('herb:sageHerb');
     expect(manager.getItemDragFrameName({ itemKind: 'herb', itemKey: 'sageHerb' })).toBe(
       'herb:sageHerb',

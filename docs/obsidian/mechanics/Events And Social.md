@@ -34,5 +34,5 @@ reducers, mirror chat, and grant crystal rewards from claimed weekly quests.
 ## Related
 
 - [[Market Systems]]
-- [[Prestige And Automation]]
+- [[Prestige]]
 - [[Guilds]]

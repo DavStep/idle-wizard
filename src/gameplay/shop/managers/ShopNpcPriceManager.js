@@ -5,15 +5,20 @@ const REAL_NPC_MARKET_MIN_LEVEL = 4;
 const FAKE_NPC_MARKET_DEMAND = 1000;
 
 export class ShopNpcPriceManager {
-  constructor({ npcMarketFacade = null, playerLevelFacade = null } = {}) {
+  constructor({ npcMarketFacade = null, playerLevelFacade = null, getActiveMarketId } = {}) {
     this.npcMarketFacade = npcMarketFacade;
     this.playerLevelFacade = playerLevelFacade;
+    this.getActiveMarketId = getActiveMarketId;
     this.releasePriceRetention = null;
   }
 
   setNpcMarketFacade(npcMarketFacade) {
     this.releaseRetainedPrices();
     this.npcMarketFacade = npcMarketFacade;
+  }
+
+  setActiveMarketId(marketId) {
+    this.npcMarketFacade?.setActiveMarketId?.(marketId);
   }
 
   getNpcBuyPriceCoin(item) {
@@ -111,6 +116,7 @@ export class ShopNpcPriceManager {
     return this.npcMarketFacade?.sellToNpc?.({
       itemKey: item.key,
       quantity,
+      marketId: this.getMarketId(),
     }) ?? Promise.resolve({
       ok: false,
       reason: 'offline',
@@ -143,6 +149,7 @@ export class ShopNpcPriceManager {
     return this.npcMarketFacade?.buyFromNpc?.({
       itemKey: item.key,
       quantity,
+      marketId: this.getMarketId(),
     }) ?? Promise.resolve({
       ok: false,
       reason: 'offline',
@@ -196,6 +203,10 @@ export class ShopNpcPriceManager {
     }
 
     return safeLevel;
+  }
+
+  getMarketId() {
+    return this.getActiveMarketId?.() ?? 'smallTown';
   }
 
   getFakeNpcBuyPriceCoin(item = {}) {

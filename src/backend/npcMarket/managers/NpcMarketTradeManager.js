@@ -11,7 +11,7 @@ export class NpcMarketTradeManager {
     this.connection = null;
   }
 
-  async sellToNpc({ itemKey, quantity = 1 }) {
+  async sellToNpc({ itemKey, quantity = 1, marketId = 'smallTown' }) {
     const sellToNpc = this.findReducer('sellToNpc', 'sell_to_npc');
 
     if (!sellToNpc) {
@@ -25,6 +25,7 @@ export class NpcMarketTradeManager {
       await sellToNpc({
         itemKey,
         quantity,
+        marketId,
       });
 
       return {
@@ -38,7 +39,7 @@ export class NpcMarketTradeManager {
     }
   }
 
-  async buyFromNpc({ itemKey, quantity = 1 }) {
+  async buyFromNpc({ itemKey, quantity = 1, marketId = 'smallTown' }) {
     const buyFromNpc = this.findReducer('buyFromNpc', 'buy_from_npc');
 
     if (!buyFromNpc) {
@@ -52,6 +53,7 @@ export class NpcMarketTradeManager {
       await buyFromNpc({
         itemKey,
         quantity,
+        marketId,
       });
 
       return {

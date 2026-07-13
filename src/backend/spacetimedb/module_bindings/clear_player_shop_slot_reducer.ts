@@ -11,5 +11,6 @@ import {
 } from "spacetimedb";
 
 export default {
+  marketId: __t.string(),
   slotNumber: __t.u8(),
 };

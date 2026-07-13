@@ -20,6 +20,8 @@ world: gdd
 6. Use Garden to grow herbs.
 7. Research and brew mana tonic.
 8. Reach the first harder checkpoints and eventually prestige.
+9. At the first Prestige star, move from Small Town Market to Crossroads Market
+   and begin a new, separately balanced trade economy.
 
 ## Progression Feel
 

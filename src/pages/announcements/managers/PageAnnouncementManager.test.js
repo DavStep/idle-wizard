@@ -457,7 +457,7 @@ describe('PageAnnouncementManager', () => {
       lineByType.auto_seed_summoned
         ?.querySelector('.room-announcement__report-value .style-resource-label--seed .style-resource-label__icon')
         ?.getAttribute('data-asset-atlas-frame'),
-    ).toBe('seed:regular');
+    ).toBe('seed:pack');
     expect(
       lineByType.npc_market_sold
         ?.querySelector('.room-announcement__report-value .style-resource-label__icon')
@@ -749,9 +749,9 @@ describe('PageAnnouncementManager', () => {
       stage
         .querySelector('.room-announcement__research-silhouette')
         ?.getAttribute('data-asset-atlas-frame'),
-    ).toBe('seed:regular');
+    ).toBe('seed:pack');
     expect(icon?.classList.contains('style-seed-pack-composite')).toBe(true);
-    expect(icon?.getAttribute('data-asset-atlas-frame')).toBe('seed:regular');
+    expect(icon?.getAttribute('data-asset-atlas-frame')).toBe('seed:pack');
     expect(icon?.getAttribute('data-seed-pack-item-frame')).toBe('herb:mintHerb');
     expect(
       icon?.querySelector('.style-seed-pack-composite__item')?.getAttribute(

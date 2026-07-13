@@ -119,6 +119,7 @@ export class ResearchPurchaseManager {
 
     if (durationSeconds > 0) {
       this.researchStateEntityManager.start(normalizedResearchId, durationSeconds);
+      this.recordCrystalCost(normalizedResearchId, cost);
 
       return {
         ok: true,
@@ -130,6 +131,7 @@ export class ResearchPurchaseManager {
     }
 
     this.researchStateEntityManager.complete(normalizedResearchId);
+    this.recordCrystalCost(normalizedResearchId, cost);
     this.researchManaEffectManager.syncCompletedEffects();
 
     return {
@@ -179,5 +181,13 @@ export class ResearchPurchaseManager {
     return {
       cost: cost.amount,
     };
+  }
+
+  recordCrystalCost(researchId, cost) {
+    if (cost.currency !== 'crystal') {
+      return;
+    }
+
+    this.researchStateEntityManager.recordCrystalCost(researchId, cost.amount);
   }
 }

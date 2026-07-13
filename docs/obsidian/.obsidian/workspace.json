@@ -11,17 +11,14 @@
             "id": "00820ef59f00cfc9",
             "type": "leaf",
             "state": {
-              "type": "canvas",
+              "type": "markdown",
               "state": {
-                "file": "tutorial/Tutorial.canvas",
-                "viewState": {
-                  "x": 1228.473595718511,
-                  "y": 92.25272870609044,
-                  "zoom": -0.8533367490179535
-                }
+                "file": "balance/Prestige Tuning.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "lucide-layout-dashboard",
-              "title": "Tutorial"
+              "icon": "lucide-file",
+              "title": "Prestige Tuning"
             }
           }
         ]
@@ -174,10 +171,10 @@
             "state": {
               "type": "file-properties",
               "state": {
-                "file": "tutorial/Tutorial.canvas"
+                "file": "balance/Prestige Tuning.md"
               },
               "icon": "lucide-info",
-              "title": "File properties for Tutorial"
+              "title": "File properties for Prestige Tuning"
             }
           }
         ],
@@ -200,39 +197,40 @@
   },
   "active": "00820ef59f00cfc9",
   "lastOpenFiles": [
+    "mechanics/Prestige Stars.md",
+    "mechanics/Prestige Milestones.md",
+    "mechanics/Prestige.md",
+    "balance/Market Tuning.md",
+    "balance/Prestige Tuning.md",
+    "balance/Capacity Gates.md",
+    "balance/Level Curve.md",
+    "mechanics/Prestige And Automation.md",
+    "mechanics/Production Systems.md",
+    "mechanics/Research And Unlocks.md",
+    "mechanics/Guilds.md",
+    "mechanics/Events And Social.md",
+    "mechanics/Core Loop.md",
+    "Home.md",
+    "Idle Wizard.canvas",
+    "README.md",
+    "World Index.base",
+    "Experiences.md",
+    "tutorial/Tutorial.canvas",
     "tutorial/Tutorial Index.base",
+    "mechanics/Tasks And Leveling.md",
     "tutorial/01 Flow/Level 4 Gardening.md",
     "tutorial/01 Flow/Level 3 Research.md",
     "tutorial/01 Flow/Level 2 Market.md",
     "tutorial/01 Flow/Level 1 Introduction.md",
     "Untitled.md",
-    "Idle Wizard.canvas",
-    "World Index.base",
-    "README.md",
-    "Home.md",
-    "tutorial/Tutorial.canvas",
     "tutorial/Home.md",
-    "mechanics/Core Loop.md",
     "engineering-liveops/experience/Architecture.md",
-    "balance/Prestige Tuning.md",
-    "balance/Market Tuning.md",
     "balance/Home.md",
     "balance/Balance Watchlist.md",
-    "balance/Balance Sources.md",
-    "gdd/GDD Open Questions.md",
-    "gdd/Home.md",
     "gdd/GDD.canvas",
     "gdd/GDD Index.base",
-    "gdd/Interface Style.md",
-    "gdd/Player Journey.md",
-    "gdd/Room Map.md",
-    "mechanics/Guilds.md",
-    "balance/Level Curve.md",
-    "balance/Capacity Gates.md",
     "balance/Balance Index.base",
     "balance/Balance.canvas",
-    "tutorial/03 Branches/Coin Shortfall Branch.md",
-    "tutorial/02 Rules/Tutorial Surface Rules.md",
     "engineering-liveops/Engineering Index.base",
     "engineering-liveops/Engineering Liveops.canvas",
     "engineering-liveops/experience"

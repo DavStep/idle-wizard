@@ -3,7 +3,7 @@ import { CrystalSpendManager } from './managers/CrystalSpendManager.js';
 
 export class CrystalFacade {
   static explain =
-    'Crystal is hard currency: it is kept separate from earned coin so premium spending can use clear rules later.';
+    'Crystal is hard currency used to level up plots and cauldrons into larger batches.';
 
   constructor({ initialCurrent = 0 } = {}) {
     this.crystalEntityManager = new CrystalEntityManager({ initialCurrent });

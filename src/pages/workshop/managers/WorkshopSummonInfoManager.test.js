@@ -132,7 +132,7 @@ describe('WorkshopSummonInfoManager', () => {
       parent
         .querySelector('.workshop-page__summon-info-selected-name .style-seed-label__icon')
         ?.dataset.assetAtlasFrame,
-    ).toBe('seed:regular');
+    ).toBe('seed:pack');
     expect(parent.querySelector('.workshop-page__summon-info-editor')?.textContent).toContain(
       'chance25%',
     );

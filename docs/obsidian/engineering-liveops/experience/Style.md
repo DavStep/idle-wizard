@@ -16,7 +16,7 @@ experience_type: style
 - Idle Wizard herb icon fixes should preserve the local 256x256 source silhouette/style; sibling Idle Witch Craft herb PNGs are old-size art and mismatch if copied directly.
 - Herb label atlas frames should trim transparent padding at build time so 256x256 source art fills text-size icon labels.
 - Idle Witch Craft seed pack icons live in sibling `../idle-whitch-craft/core/assets/misc/seedpacks`; `../idle-witch-craft 2/raws/misc/seedpacks` has matching raw copies.
-- Seed pack labels should render as one SVG atlas composite; nested absolutely positioned SVGs can show the herb mark without the pack in browser crops.
+- Seed packs use the shared transparent blank `src/assets/items/seeds/seed-pack.png` base; render each as one SVG atlas composite through `createSeedPackIcon` so the herb mark stays code-overlaid, never baked into the bag art.
 - Idle Witch Craft item drop and coin flyout parity lives in `../idle-whitch-craft/core/MobilePreview.ts` plus `../idle-whitch-craft/core/mobile.css` keyframes around `mobile-workshop-item-drop`, `mobile-seed-burst`, and `mobile-coin-amt-pop`.
 - Idle Witch Craft launcher icon source lives at `../idle-whitch-craft/core/assets/ui/icons/game-icon.png`; generated Android launcher PNGs live under `../idle-whitch-craft/core/android/app/src/main/res/mipmap-*`.
 - Idle Witch Craft splash loading gradient progress bar CSS lives at `../idle-whitch-craft/core/splash.css`.

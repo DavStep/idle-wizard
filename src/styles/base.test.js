@@ -230,7 +230,7 @@ describe('base styles', () => {
       '--intro-dialog-panel-frame: url("/ui/intro-dialog-panel-9slice.png");',
     );
     expect(introSkinRule).toContain(
-      '--intro-dialog-tab-frame: url("/ui/intro-dialog-header-tab-9slice.png");',
+      '--intro-dialog-tab-frame: url("/ui/intro-dialog-header-tab-9slice-v2.png");',
     );
     expect(introSkinRule).toContain(
       '--intro-dialog-button-frame: url("/ui/intro-dialog-button-9slice.png");',
@@ -324,7 +324,7 @@ describe('base styles', () => {
 
   it('keeps the intro header top stretch band free of line artifacts', () => {
     const header = PNG.sync.read(
-      readFileSync(`${cwd()}/public/ui/intro-dialog-header-tab-9slice.png`),
+      readFileSync(`${cwd()}/public/ui/intro-dialog-header-tab-9slice-v2.png`),
     );
     const xStart = 29;
     const xEnd = header.width - 29;

@@ -162,7 +162,7 @@ export class ResearchFacade {
     return this.researchStateEntityManager
       .getCompletedResearchIds()
       .reduce(
-        (total, researchId) => total + this.researchBalanceManager.getCostCrystal(researchId),
+        (total, researchId) => total + this.getCommittedCrystalResearchCost(researchId),
         0,
       );
   }
@@ -176,8 +176,15 @@ export class ResearchFacade {
     ]);
 
     return [...researchIds].reduce(
-      (total, researchId) => total + this.researchBalanceManager.getCostCrystal(researchId),
+      (total, researchId) => total + this.getCommittedCrystalResearchCost(researchId),
       0,
+    );
+  }
+
+  getCommittedCrystalResearchCost(researchId) {
+    return (
+      this.researchStateEntityManager.getCrystalCost(researchId) ??
+      this.researchBalanceManager.getCostCrystal(researchId)
     );
   }
 
@@ -472,6 +479,7 @@ export class ResearchFacade {
     return {
       completedIds: this.researchStateEntityManager.getCompletedResearchIds(),
       inProgress: this.researchStateEntityManager.getInProgressResearches(),
+      crystalCostById: this.researchStateEntityManager.getCrystalCostsByResearchId(),
     };
   }
 
@@ -495,6 +503,8 @@ export class ResearchFacade {
     if (Array.isArray(snapshot.inProgress)) {
       this.researchStateEntityManager.setInProgressResearches(snapshot.inProgress);
     }
+
+    this.researchStateEntityManager.setCrystalCostsByResearchId(snapshot.crystalCostById);
 
     this.researchManaEffectManager.syncCompletedEffects();
   }

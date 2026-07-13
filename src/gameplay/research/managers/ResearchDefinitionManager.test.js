@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ItemsFacade } from '../../items/ItemsFacade.js';
 import { automationResearchIds } from '../../automation/automationResearchIds.js';
 import taskBalance from '../../tasks/tasks.json';
-import { advancedResearchIds } from '../advancedResearchIds.js';
+import { advancedResearchIds, advancedResearchMaxLevel } from '../advancedResearchIds.js';
 import { automationReserveResearchIds } from '../automationReserveResearch.js';
 import { capacityResearchIds } from '../capacityResearchIds.js';
 import { emeraldResearchIds } from '../emeraldResearchIds.js';
@@ -256,6 +256,29 @@ describe('ResearchDefinitionManager', () => {
     expect(level6).toMatchObject({
       requiredPrestigeCount: 5,
       requiredResearchIds: [advancedResearchIds.plotGrowth(1, 5)],
+    });
+  });
+
+  it('offers twelve star-ranked advanced studies for each room slot', () => {
+    const { manager } = createManager();
+    const box = manager
+      .getResearchTabs()
+      .find((tab) => tab.id === 'advanced')
+      ?.boxes.find((nextBox) => nextBox.id === 'plotGrowth');
+    const plotOneResearches = box?.researches.filter((research) =>
+      research.id.startsWith('advanced:plotGrowth:1:'),
+    );
+
+    expect(plotOneResearches).toHaveLength(advancedResearchMaxLevel);
+    expect(plotOneResearches?.[0]).toMatchObject({
+      id: advancedResearchIds.plotGrowth(1, 1),
+      label: 'plot 1 growth',
+      starLevel: 1,
+    });
+    expect(plotOneResearches?.at(-1)).toMatchObject({
+      id: advancedResearchIds.plotGrowth(1, 12),
+      starLevel: 12,
+      requiredResearchIds: [advancedResearchIds.plotGrowth(1, 11)],
     });
   });
 

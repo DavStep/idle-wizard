@@ -818,16 +818,10 @@ export class ResearchBoxListManager {
   }
 
   getResearchNameResourceColor(research, itemKind) {
-    if (this.isCompletedRubyResearch(research)) {
-      return 'ruby';
-    }
+    const currency = this.getCompletedResearchCurrency(research);
 
-    if (this.isCompletedAdvancedResearch(research)) {
-      return 'crystal';
-    }
-
-    if (this.isCompletedEmeraldResearch(research)) {
-      return 'emerald';
+    if (currency) {
+      return currency;
     }
 
     return itemKind;
@@ -845,16 +839,14 @@ export class ResearchBoxListManager {
     return null;
   }
 
-  isCompletedAdvancedResearch(research) {
-    return Boolean(research?.completed) && research.id?.startsWith('advanced:');
-  }
+  getCompletedResearchCurrency(research) {
+    if (!research?.completed) {
+      return null;
+    }
 
-  isCompletedEmeraldResearch(research) {
-    return Boolean(research?.completed) && research.id?.startsWith('emerald:');
-  }
-
-  isCompletedRubyResearch(research) {
-    return Boolean(research?.completed) && research.costCurrency === 'ruby';
+    return ['crystal', 'ruby', 'emerald'].includes(research.costCurrency)
+      ? research.costCurrency
+      : null;
   }
 
   getResearchItemKey(research) {
@@ -921,18 +913,10 @@ export class ResearchBoxListManager {
   }
 
   setResearchValueResourceColor(element, research) {
-    if (this.isCompletedRubyResearch(research)) {
-      setResourceColor(element, 'ruby');
-      return;
-    }
+    const currency = this.getCompletedResearchCurrency(research);
 
-    if (this.isCompletedAdvancedResearch(research)) {
-      setResourceColor(element, 'crystal');
-      return;
-    }
-
-    if (this.isCompletedEmeraldResearch(research)) {
-      setResourceColor(element, 'emerald');
+    if (currency) {
+      setResourceColor(element, currency);
       return;
     }
 

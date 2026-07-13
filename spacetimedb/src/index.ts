@@ -8,6 +8,12 @@ import {
   type InferSchema,
 } from 'spacetimedb/server';
 import { normalizeSaveTasks } from './saveTasksNormalizer';
+import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
+import {
+  defaultMarketId,
+  marketLicences,
+  resolveMarketLicence,
+} from '../../src/shared/marketLicence.js';
 
 const DEFAULT_USERNAME = 'wizard';
 const DEFAULT_PLAYER_LEVEL = 1;
@@ -4150,10 +4156,7 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   ...getAutomationDefaultCostGoldById(),
 };
 
-const researchDefaultCostCrystalById: Record<string, number> =
-  getAutomationDefaultCostCrystalById();
-
-const ADVANCED_RESEARCH_MAX_LEVEL = 10;
+const ADVANCED_RESEARCH_MAX_LEVEL = 12;
 const FAST_SELL_RESEARCH_MAX_LEVEL = 3;
 const RESEARCH_TIME_REDUCTION_MAX_LEVEL = 8;
 const RESEARCH_COST_REDUCTION_MAX_LEVEL = 8;
@@ -4173,7 +4176,7 @@ const plotCapacityResearchNumbers = [6, 7, 8, 9, 10, 11, 12];
 const cauldronCapacityResearchNumbers = [3, 4, 5];
 const emeraldResearchMultipliers = [2, 3, 4, 5];
 
-function getAdvancedResearchCostRubyById(): Record<string, number> {
+function getAdvancedResearchCostById(): Record<string, number> {
   const costs: Record<string, number> = {};
 
   for (let level = 1; level <= FAST_SELL_RESEARCH_MAX_LEVEL; level += 1) {
@@ -4215,9 +4218,6 @@ function getAdvancedResearchCostRubyById(): Record<string, number> {
   return costs;
 }
 
-const researchDefaultCostRubyById: Record<string, number> =
-  getAdvancedResearchCostRubyById();
-
 function getEmeraldResearchCost(multiplier: number): number {
   const firstMultiplier = emeraldResearchMultipliers[0] ?? 2;
   const safeMultiplier = Math.max(
@@ -4225,7 +4225,7 @@ function getEmeraldResearchCost(multiplier: number): number {
     Math.floor(Number(multiplier) || firstMultiplier),
   );
 
-  return safeMultiplier - firstMultiplier + 1;
+  return 2 ** (safeMultiplier - firstMultiplier + 1);
 }
 
 function getEmeraldResearchCostById(): Record<string, number> {
@@ -4248,8 +4248,12 @@ function getEmeraldResearchCostById(): Record<string, number> {
   return costs;
 }
 
-const researchDefaultCostEmeraldById: Record<string, number> =
+const researchDefaultCostCrystalById: Record<string, number> =
   getEmeraldResearchCostById();
+const researchDefaultCostRubyById: Record<string, number> =
+  getAutomationDefaultCostCrystalById();
+const researchDefaultCostEmeraldById: Record<string, number> =
+  getAdvancedResearchCostById();
 
 function getLegacyEmeraldResearchCostById(): Record<string, readonly bigint[]> {
   const costs: Record<string, readonly bigint[]> = {};
@@ -4258,6 +4262,7 @@ function getLegacyEmeraldResearchCostById(): Record<string, readonly bigint[]> {
     for (const multiplier of emeraldResearchMultipliers) {
       costs[`emerald:plotPlanting:${plotNumber}:${multiplier}`] = [
         BigInt(plotNumber * Math.max(1, multiplier - 1)),
+        BigInt(multiplier - (emeraldResearchMultipliers[0] ?? 2) + 1),
       ];
     }
   }
@@ -4266,6 +4271,7 @@ function getLegacyEmeraldResearchCostById(): Record<string, readonly bigint[]> {
     for (const multiplier of emeraldResearchMultipliers) {
       costs[`emerald:cauldronBrewing:${cauldronNumber}:${multiplier}`] = [
         BigInt(cauldronNumber * Math.max(1, multiplier - 1)),
+        BigInt(multiplier - (emeraldResearchMultipliers[0] ?? 2) + 1),
       ];
     }
   }
@@ -4275,6 +4281,12 @@ function getLegacyEmeraldResearchCostById(): Record<string, readonly bigint[]> {
 
 const researchLegacyCostEmeraldById: Record<string, readonly bigint[]> =
   getLegacyEmeraldResearchCostById();
+
+const researchCurrencyCostIds = new Set([
+  ...Object.keys(researchDefaultCostCrystalById),
+  ...Object.keys(researchDefaultCostRubyById),
+  ...Object.keys(researchDefaultCostEmeraldById),
+]);
 
 const QUICK_RESEARCH_DURATION_SECONDS = 3n;
 const DEFAULT_RESEARCH_DURATION_SECONDS = 10n * 60n;
@@ -5035,6 +5047,27 @@ function toNumberRecord(record: Record<string, bigint>): Record<string, number> 
   );
 }
 
+function normalizeResearchCurrencyCostRecord(
+  defaults: Record<string, number>,
+  currentCosts: Record<string, unknown>,
+  legacyCosts: Record<string, unknown>,
+): Record<string, unknown> {
+  const normalized: Record<string, unknown> = {};
+
+  for (const [researchId, cost] of Object.entries(currentCosts)) {
+    if (!researchCurrencyCostIds.has(researchId)) {
+      normalized[researchId] = cost;
+    }
+  }
+
+  for (const [researchId, defaultCost] of Object.entries(defaults)) {
+    normalized[researchId] =
+      currentCosts[researchId] ?? legacyCosts[researchId] ?? defaultCost;
+  }
+
+  return normalized;
+}
+
 function getDefaultItemsConfig() {
   return {
     seeds: herbCatalog.map((herb, index) => ({
@@ -5615,9 +5648,10 @@ const spacetimedb = schema({
   playerShopListing: table(
     {
       name: 'player_shop_listing',
-      public: true,
+      public: false,
       indexes: [
         { accessor: 'bySellerIdentity', algorithm: 'btree', columns: ['sellerIdentity'] },
+        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
         { accessor: 'byQuantity', algorithm: 'btree', columns: ['quantity'] },
         { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
       ],
@@ -5634,14 +5668,16 @@ const spacetimedb = schema({
       priceGold: t.u64(),
       updatedAt: t.timestamp(),
       priceScale: t.u32().default(1),
+      marketId: t.string().default(defaultMarketId),
     },
   ),
   playerShopRequest: table(
     {
       name: 'player_shop_request',
-      public: true,
+      public: false,
       indexes: [
         { accessor: 'byRequesterIdentity', algorithm: 'btree', columns: ['requesterIdentity'] },
+        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
         { accessor: 'byQuantity', algorithm: 'btree', columns: ['quantity'] },
         { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
       ],
@@ -5658,12 +5694,13 @@ const spacetimedb = schema({
       priceGold: t.u64(),
       updatedAt: t.timestamp(),
       priceScale: t.u32().default(1),
+      marketId: t.string().default(defaultMarketId),
     },
   ),
   playerShopProceeds: table(
     {
       name: 'player_shop_proceeds',
-      public: true,
+      public: false,
     },
     {
       sellerIdentity: t.identity().primaryKey(),
@@ -5672,13 +5709,32 @@ const spacetimedb = schema({
       goldScale: t.u32().default(1),
     },
   ),
+  playerShopMarketProceeds: table(
+    {
+      name: 'player_shop_market_proceeds',
+      public: false,
+      indexes: [
+        { accessor: 'bySellerIdentity', algorithm: 'btree', columns: ['sellerIdentity'] },
+        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
+      ],
+    },
+    {
+      proceedsKey: t.string().primaryKey(),
+      sellerIdentity: t.identity(),
+      marketId: t.string(),
+      gold: t.u64(),
+      updatedAt: t.timestamp(),
+      goldScale: t.u32().default(1),
+    },
+  ),
   playerShopTrade: table(
     {
       name: 'player_shop_trade',
-      public: true,
+      public: false,
       indexes: [
         { accessor: 'byBuyerIdentity', algorithm: 'btree', columns: ['buyerIdentity'] },
         { accessor: 'bySellerIdentity', algorithm: 'btree', columns: ['sellerIdentity'] },
+        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
         { accessor: 'byTradedAt', algorithm: 'btree', columns: ['tradedAt'] },
       ],
     },
@@ -5696,14 +5752,16 @@ const spacetimedb = schema({
       totalPriceGold: t.u64(),
       tradedAt: t.timestamp(),
       priceScale: t.u32().default(1),
+      marketId: t.string().default(defaultMarketId),
     },
   ),
   potionRecipeRoyalty: table(
     {
       name: 'potion_recipe_royalty',
-      public: true,
+      public: false,
       indexes: [
         { accessor: 'byRecipientIdentity', algorithm: 'btree', columns: ['recipientIdentity'] },
+        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
         { accessor: 'byAwardedAt', algorithm: 'btree', columns: ['awardedAt'] },
       ],
     },
@@ -5718,14 +5776,16 @@ const spacetimedb = schema({
       sourceIncomeGold: t.u64(),
       awardedAt: t.timestamp(),
       goldScale: t.u32().default(1),
+      marketId: t.string().default(defaultMarketId),
     },
   ),
   npcMarketPrice: table(
     {
       name: 'npc_market_price',
-      public: true,
+      public: false,
       indexes: [
         { accessor: 'byItemKind', algorithm: 'btree', columns: ['itemKind'] },
+        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
         { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
       ],
     },
@@ -5747,14 +5807,17 @@ const spacetimedb = schema({
       targetNeed: t.u64().default(0n),
       maxNeed: t.u64().default(0n),
       priceScale: t.u32().default(1),
+      marketId: t.string().default(defaultMarketId),
+      catalogItemKey: t.string().default(''),
     },
   ),
   marketDemandDaily: table(
     {
       name: 'market_demand_daily',
-      public: true,
+      public: false,
       indexes: [
         { accessor: 'byDayKey', algorithm: 'btree', columns: ['dayKey'] },
+        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
         { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
       ],
     },
@@ -5773,13 +5836,17 @@ const spacetimedb = schema({
       supplyScore: t.u64(),
       updatedAt: t.timestamp(),
       priceScale: t.u32().default(1),
+      marketId: t.string().default(defaultMarketId),
     },
   ),
   npcMarketItemConfig: table(
     {
       name: 'npc_market_item_config',
-      public: true,
-      indexes: [{ accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] }],
+      public: false,
+      indexes: [
+        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
+        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
+      ],
     },
     {
       itemKey: t.string().primaryKey(),
@@ -5792,6 +5859,8 @@ const spacetimedb = schema({
       volatilityBps: t.u64().default(0n),
       enabled: t.bool().default(true),
       priceScale: t.u32().default(1),
+      marketId: t.string().default(defaultMarketId),
+      catalogItemKey: t.string().default(''),
     },
   ),
   npcMarketAdmin: table(
@@ -6083,6 +6152,7 @@ const npcMarketPriceSnapshotResult = t.array(
     targetNeed: t.u64(),
     maxNeed: t.u64(),
     priceScale: t.u32(),
+    marketId: t.string(),
   }),
 );
 const marketDemandDailySnapshotResult = t.array(
@@ -6101,6 +6171,7 @@ const marketDemandDailySnapshotResult = t.array(
     supplyScore: t.u64(),
     updatedAt: t.timestamp(),
     priceScale: t.u32(),
+    marketId: t.string(),
   }),
 );
 const tradeAllianceSnapshotResult = t.array(
@@ -6190,6 +6261,7 @@ const publicPlayerShopListingResult = t.array(
     priceGold: t.u64(),
     updatedAt: t.timestamp(),
     priceScale: t.u32(),
+    marketId: t.string(),
   }),
 );
 const publicPlayerShopRequestResult = t.array(
@@ -6205,6 +6277,7 @@ const publicPlayerShopRequestResult = t.array(
     priceGold: t.u64(),
     updatedAt: t.timestamp(),
     priceScale: t.u32(),
+    marketId: t.string(),
   }),
 );
 const ownPlayerShopProceedsResult = t.option(
@@ -6213,6 +6286,7 @@ const ownPlayerShopProceedsResult = t.option(
     gold: t.u64(),
     updatedAt: t.timestamp(),
     goldScale: t.u32(),
+    marketId: t.string(),
   }),
 );
 const playerShopTradeHistoryResult = t.array(
@@ -6230,6 +6304,7 @@ const playerShopTradeHistoryResult = t.array(
     totalPriceGold: t.u64(),
     tradedAt: t.timestamp(),
     priceScale: t.u32(),
+    marketId: t.string(),
   }),
 );
 const ownPotionRecipeRoyaltyHistoryResult = t.array(
@@ -6244,6 +6319,7 @@ const ownPotionRecipeRoyaltyHistoryResult = t.array(
     sourceIncomeGold: t.u64(),
     awardedAt: t.timestamp(),
     goldScale: t.u32(),
+    marketId: t.string(),
   }),
 );
 
@@ -6296,16 +6372,35 @@ export const research_config_snapshot = spacetimedb.view(
 export const npc_market_price_snapshot = spacetimedb.view(
   { name: 'npc_market_price_snapshot', public: true },
   npcMarketPriceSnapshotResult,
-  (ctx) => Array.from(ctx.db.npcMarketPrice.byItemKind.filter(new Range())),
+  (ctx) => {
+    const marketId = getActiveMarketId(ctx);
+
+    return Array.from(ctx.db.npcMarketPrice.byItemKind.filter(new Range()))
+      .filter((row) => getRowMarketId(row) === marketId)
+      .map((row) => ({
+        ...row,
+        itemKey: getNpcMarketCatalogItemKey(row),
+        marketId,
+      }));
+  },
 );
 
 export const market_demand_daily_snapshot = spacetimedb.view(
   { name: 'market_demand_daily_snapshot', public: true },
   marketDemandDailySnapshotResult,
-  (ctx) =>
-    Array.from(ctx.db.marketDemandDaily.byUpdatedAt.filter(new Range()))
+  (ctx) => {
+    const marketId = getActiveMarketId(ctx);
+
+    return Array.from(ctx.db.marketDemandDaily.byUpdatedAt.filter(new Range()))
+      .filter((row) => getRowMarketId(row) === marketId)
+      .map((row) => ({
+        ...row,
+        itemKey: getNpcMarketCatalogItemKey(row),
+        marketId,
+      }))
       .slice(-MARKET_DEMAND_DAILY_HISTORY_LIMIT)
-      .reverse(),
+      .reverse();
+  },
 );
 
 export const trade_alliance_snapshot = spacetimedb.view(
@@ -6341,49 +6436,94 @@ export const trade_alliance_quest_contribution_snapshot = spacetimedb.view(
 export const public_player_shop_listing = spacetimedb.view(
   { name: 'public_player_shop_listing', public: true },
   publicPlayerShopListingResult,
-  (ctx) => getRecentPublicPlayerShopListings(ctx),
+  (ctx) => {
+    const marketId = getActiveMarketId(ctx);
+    return getRecentPublicPlayerShopListings(ctx).map((row) => ({ ...row, marketId }));
+  },
 );
 
 export const own_player_shop_listing = spacetimedb.view(
   { name: 'own_player_shop_listing', public: true },
   publicPlayerShopListingResult,
-  (ctx) => Array.from(ctx.db.playerShopListing.bySellerIdentity.filter(ctx.sender)),
+  (ctx) => {
+    const marketId = getActiveMarketId(ctx);
+    return Array.from(ctx.db.playerShopListing.bySellerIdentity.filter(ctx.sender))
+      .filter((row) => getRowMarketId(row) === marketId)
+      .map((row) => ({ ...row, marketId }));
+  },
 );
 
 export const public_player_shop_request = spacetimedb.view(
   { name: 'public_player_shop_request', public: true },
   publicPlayerShopRequestResult,
-  (ctx) => getRecentPublicPlayerShopRequests(ctx),
+  (ctx) => {
+    const marketId = getActiveMarketId(ctx);
+    return getRecentPublicPlayerShopRequests(ctx).map((row) => ({ ...row, marketId }));
+  },
 );
 
 export const own_player_shop_request = spacetimedb.view(
   { name: 'own_player_shop_request', public: true },
   publicPlayerShopRequestResult,
-  (ctx) => Array.from(ctx.db.playerShopRequest.byRequesterIdentity.filter(ctx.sender)),
+  (ctx) => {
+    const marketId = getActiveMarketId(ctx);
+    return Array.from(ctx.db.playerShopRequest.byRequesterIdentity.filter(ctx.sender))
+      .filter((row) => getRowMarketId(row) === marketId)
+      .map((row) => ({ ...row, marketId }));
+  },
 );
 
 export const own_player_shop_proceeds = spacetimedb.view(
   { name: 'own_player_shop_proceeds', public: true },
   ownPlayerShopProceedsResult,
-  (ctx) => ctx.db.playerShopProceeds.sellerIdentity.find(ctx.sender) ?? undefined,
+  (ctx) => {
+    const marketId = getActiveMarketId(ctx);
+
+    if (marketId === defaultMarketId) {
+      const legacyProceeds = ctx.db.playerShopProceeds.sellerIdentity.find(ctx.sender);
+      return legacyProceeds ? { ...legacyProceeds, marketId } : undefined;
+    }
+
+    const proceeds = ctx.db.playerShopMarketProceeds.proceedsKey.find(
+      getPlayerShopMarketProceedsKey(ctx.sender, marketId),
+    );
+    return proceeds
+      ? {
+          sellerIdentity: proceeds.sellerIdentity,
+          gold: proceeds.gold,
+          updatedAt: proceeds.updatedAt,
+          goldScale: proceeds.goldScale,
+          marketId,
+        }
+      : undefined;
+  },
 );
 
 export const player_shop_trade_recent = spacetimedb.view(
   { name: 'player_shop_trade_recent', public: true },
   playerShopTradeHistoryResult,
-  (ctx) => getRecentPlayerShopTrades(ctx),
+  (ctx) => {
+    const marketId = getActiveMarketId(ctx);
+    return getRecentPlayerShopTrades(ctx).map((row) => ({ ...row, marketId }));
+  },
 );
 
 export const own_player_shop_trade_history = spacetimedb.view(
   { name: 'own_player_shop_trade_history', public: true },
   playerShopTradeHistoryResult,
-  (ctx) => getOwnPlayerShopTrades(ctx),
+  (ctx) => {
+    const marketId = getActiveMarketId(ctx);
+    return getOwnPlayerShopTrades(ctx).map((row) => ({ ...row, marketId }));
+  },
 );
 
 export const own_potion_recipe_royalty_history = spacetimedb.view(
   { name: 'own_potion_recipe_royalty_history', public: true },
   ownPotionRecipeRoyaltyHistoryResult,
-  (ctx) => getOwnPotionRecipeRoyalties(ctx),
+  (ctx) => {
+    const marketId = getActiveMarketId(ctx);
+    return getOwnPotionRecipeRoyalties(ctx).map((row) => ({ ...row, marketId }));
+  },
 );
 
 export const admin_player_gameplay_save = spacetimedb.view(
@@ -7096,6 +7236,36 @@ function normalizePlayerShopText(value: string, maxLength: number): string {
     .slice(0, maxLength);
 }
 
+function getRowMarketId(row: any): string {
+  return normalizeMarketId(String(row?.marketId ?? defaultMarketId));
+}
+
+function getActiveMarketId(
+  ctx: { sender: Identity; db: any },
+  identity: Identity = ctx.sender,
+): string {
+  const save = ctx.db.playerGameplaySave.identity.find(identity);
+  const completedStars = readSavedPrestigeCompletedLevels(save?.saveJson)?.length ?? 0;
+  return resolveMarketLicence(completedStars).id;
+}
+
+function assertActiveMarket(ctx: IdleWizardReducerCtx, marketId: string): string {
+  const completedStars = readSavedPrestigeCompletedLevels(
+    ctx.db.playerGameplaySave.identity.find(ctx.sender)?.saveJson,
+  )?.length ?? 0;
+  return assertMarketScope(completedStars, String(marketId ?? ''));
+}
+
+function getMarketScopedItemKey(marketId: string, itemKey: string): string {
+  const safeItemKey = normalizeNpcMarketItemKey(itemKey);
+  return getMarketScopedKey(marketId, safeItemKey);
+}
+
+function getNpcMarketCatalogItemKey(row: any): string {
+  const catalogItemKey = normalizeNpcMarketItemKey(String(row?.catalogItemKey ?? ''));
+  return catalogItemKey || normalizeNpcMarketItemKey(String(row?.itemKey ?? ''));
+}
+
 function getPlayerShopCatalogItem(itemKey: string) {
   const safeItemKey = normalizePlayerShopText(itemKey, MAX_ITEM_KEY_LENGTH);
   const catalogItem = npcMarketCatalogByItemKey.get(safeItemKey);
@@ -7152,26 +7322,49 @@ function getUnknownPotionCatalogItem(potionKey: string) {
   return catalogItem;
 }
 
-function getPlayerShopListingKey(ctx: IdleWizardReducerCtx, slotNumber: number): string {
-  return `${ctx.sender.toHexString()}:${slotNumber}`;
+function getPlayerShopListingKey(
+  ctx: IdleWizardReducerCtx,
+  slotNumber: number,
+  marketId = defaultMarketId,
+): string {
+  return getPlayerShopListingKeyForIdentity(ctx.sender, slotNumber, marketId);
 }
 
-function getPlayerShopListingKeyForIdentity(identity: Identity, slotNumber: number): string {
-  return `${identity.toHexString()}:${slotNumber}`;
+function getPlayerShopListingKeyForIdentity(
+  identity: Identity,
+  slotNumber: number,
+  marketId = defaultMarketId,
+): string {
+  const baseKey = `${identity.toHexString()}:${slotNumber}`;
+  return getMarketScopedKey(marketId, baseKey);
 }
 
-function getPlayerShopRequestKey(ctx: IdleWizardReducerCtx, slotNumber: number): string {
-  return getPlayerShopRequestKeyForIdentity(ctx.sender, slotNumber);
+function getPlayerShopRequestKey(
+  ctx: IdleWizardReducerCtx,
+  slotNumber: number,
+  marketId = defaultMarketId,
+): string {
+  return getPlayerShopRequestKeyForIdentity(ctx.sender, slotNumber, marketId);
 }
 
-function getPlayerShopRequestKeyForIdentity(identity: Identity, slotNumber: number): string {
-  return `${identity.toHexString()}:${slotNumber}`;
+function getPlayerShopRequestKeyForIdentity(
+  identity: Identity,
+  slotNumber: number,
+  marketId = defaultMarketId,
+): string {
+  const baseKey = `${identity.toHexString()}:${slotNumber}`;
+  return getMarketScopedKey(marketId, baseKey);
+}
+
+function getPlayerShopMarketProceedsKey(identity: Identity, marketId: string): string {
+  return `${normalizeMarketId(marketId)}:${identity.toHexString()}`;
 }
 
 function addClaimablePlayerShopGold(
   ctx: IdleWizardReducerCtx,
   recipientIdentity: Identity,
   gold: number,
+  marketId = defaultMarketId,
   { clampToCap = false }: { clampToCap?: boolean } = {},
 ): number {
   const safeGold = normalizeGoldPrice(gold);
@@ -7180,7 +7373,18 @@ function addClaimablePlayerShopGold(
     return 0;
   }
 
-  const existingProceeds = ctx.db.playerShopProceeds.sellerIdentity.find(recipientIdentity);
+  const safeMarketId = normalizeMarketId(marketId);
+  const legacyProceeds =
+    safeMarketId === defaultMarketId
+      ? ctx.db.playerShopProceeds.sellerIdentity.find(recipientIdentity)
+      : undefined;
+  const marketProceeds =
+    safeMarketId === defaultMarketId
+      ? undefined
+      : ctx.db.playerShopMarketProceeds.proceedsKey.find(
+          getPlayerShopMarketProceedsKey(recipientIdentity, safeMarketId),
+        );
+  const existingProceeds = legacyProceeds ?? marketProceeds;
   const currentProceedsGold = existingProceeds
     ? decodeStoredGoldPrice(existingProceeds.gold, existingProceeds.goldScale) ?? 0
     : 0;
@@ -7198,16 +7402,32 @@ function addClaimablePlayerShopGold(
     return 0;
   }
 
-  if (existingProceeds) {
+  if (legacyProceeds) {
     ctx.db.playerShopProceeds.sellerIdentity.update({
-      ...existingProceeds,
+      ...legacyProceeds,
+      gold: toStoredGoldPrice(nextProceedsGold),
+      goldScale: GOLD_PRICE_SCALE,
+      updatedAt: ctx.timestamp,
+    });
+  } else if (marketProceeds) {
+    ctx.db.playerShopMarketProceeds.proceedsKey.update({
+      ...marketProceeds,
+      gold: toStoredGoldPrice(nextProceedsGold),
+      goldScale: GOLD_PRICE_SCALE,
+      updatedAt: ctx.timestamp,
+    });
+  } else if (safeMarketId === defaultMarketId) {
+    ctx.db.playerShopProceeds.insert({
+      sellerIdentity: recipientIdentity,
       gold: toStoredGoldPrice(nextProceedsGold),
       goldScale: GOLD_PRICE_SCALE,
       updatedAt: ctx.timestamp,
     });
   } else {
-    ctx.db.playerShopProceeds.insert({
+    ctx.db.playerShopMarketProceeds.insert({
+      proceedsKey: getPlayerShopMarketProceedsKey(recipientIdentity, safeMarketId),
       sellerIdentity: recipientIdentity,
+      marketId: safeMarketId,
       gold: toStoredGoldPrice(nextProceedsGold),
       goldScale: GOLD_PRICE_SCALE,
       updatedAt: ctx.timestamp,
@@ -7222,6 +7442,7 @@ function grantPotionDiscoveryPassiveGold(
   potionKey: string,
   incomeGold: number,
   sellerIdentity: Identity,
+  marketId = defaultMarketId,
 ): number {
   const discovery = ctx.db.potionRecipeDiscovery.potionKey.find(normalizePotionKey(potionKey));
 
@@ -7237,6 +7458,7 @@ function grantPotionDiscoveryPassiveGold(
     ctx,
     discovery.discoveredByIdentity,
     passiveGold,
+    marketId,
     { clampToCap: true },
   );
 
@@ -7259,6 +7481,7 @@ function grantPotionDiscoveryPassiveGold(
     sourceSellerIdentity: sellerIdentity,
     sourceIncomeGold: incomeGold,
     royaltyGold: grantedGold,
+    marketId,
   });
 
   return grantedGold;
@@ -7272,12 +7495,14 @@ function recordPotionRecipeRoyalty(
     sourceSellerIdentity,
     sourceIncomeGold,
     royaltyGold,
+    marketId = defaultMarketId,
   }: {
     discovery: any;
     recipientIdentity: Identity;
     sourceSellerIdentity: Identity;
     sourceIncomeGold: number;
     royaltyGold: number;
+    marketId?: string;
   },
 ) {
   const safeRoyaltyGold = normalizeGoldPrice(royaltyGold);
@@ -7300,6 +7525,7 @@ function recordPotionRecipeRoyalty(
     sourceIncomeGold: toStoredGoldPrice(safeSourceIncomeGold),
     awardedAt: ctx.timestamp,
     goldScale: GOLD_PRICE_SCALE,
+    marketId: normalizeMarketId(marketId),
   });
   prunePotionRecipeRoyaltyHistory(ctx);
 }
@@ -7917,76 +8143,65 @@ function normalizeGameConfigJson(
       changed = true;
     }
 
-    if (isRecord(parsedConfig.researchCostsCrystal)) {
-      const existingCostsCrystal = parsedConfig.researchCostsCrystal;
-      const missingCrystalCost = Object.keys(researchDefaultCostCrystalById).some(
-        (researchId) => existingCostsCrystal[researchId] === undefined,
-      );
+    const existingCostsCrystal = isRecord(parsedConfig.researchCostsCrystal)
+      ? parsedConfig.researchCostsCrystal
+      : {};
+    const existingCostsRuby = isRecord(parsedConfig.researchCostsRuby)
+      ? parsedConfig.researchCostsRuby
+      : {};
+    const existingCostsEmerald = isRecord(parsedConfig.researchCostsEmerald)
+      ? parsedConfig.researchCostsEmerald
+      : {};
+    const nextCostsCrystal = normalizeResearchCurrencyCostRecord(
+      researchDefaultCostCrystalById,
+      existingCostsCrystal,
+      existingCostsEmerald,
+    );
+    const nextCostsRuby = normalizeResearchCurrencyCostRecord(
+      researchDefaultCostRubyById,
+      existingCostsRuby,
+      existingCostsCrystal,
+    );
+    const nextCostsEmerald = normalizeResearchCurrencyCostRecord(
+      researchDefaultCostEmeraldById,
+      existingCostsEmerald,
+      existingCostsRuby,
+    );
+    let replacedLegacyCrystalCost = false;
 
-      if (missingCrystalCost) {
-        normalizedResearchConfig.researchCostsCrystal = {
-          ...researchDefaultCostCrystalById,
-          ...existingCostsCrystal,
-        };
-        changed = true;
+    for (const [researchId, legacyCostEmeraldValues] of Object.entries(
+      researchLegacyCostEmeraldById,
+    )) {
+      const currentCostCrystal = Number(nextCostsCrystal[researchId]);
+      const defaultCostCrystal = Number(researchDefaultCostCrystalById[researchId]);
+      if (
+        currentCostCrystal === defaultCostCrystal ||
+        !legacyCostEmeraldValues.some(
+          (legacyCostEmerald) => currentCostCrystal === Number(legacyCostEmerald),
+        )
+      ) {
+        continue;
       }
-    } else {
-      normalizedResearchConfig.researchCostsCrystal = researchDefaultCostCrystalById;
+
+      nextCostsCrystal[researchId] = researchDefaultCostCrystalById[researchId];
+      replacedLegacyCrystalCost = true;
+    }
+
+    if (
+      JSON.stringify(existingCostsCrystal) !== JSON.stringify(nextCostsCrystal) ||
+      replacedLegacyCrystalCost
+    ) {
+      normalizedResearchConfig.researchCostsCrystal = nextCostsCrystal;
       changed = true;
     }
 
-    if (isRecord(parsedConfig.researchCostsRuby)) {
-      const existingCostsRuby = parsedConfig.researchCostsRuby;
-      const missingRubyCost = Object.keys(researchDefaultCostRubyById).some(
-        (researchId) => existingCostsRuby[researchId] === undefined,
-      );
-
-      if (missingRubyCost) {
-        normalizedResearchConfig.researchCostsRuby = {
-          ...researchDefaultCostRubyById,
-          ...existingCostsRuby,
-        };
-        changed = true;
-      }
-    } else {
-      normalizedResearchConfig.researchCostsRuby = researchDefaultCostRubyById;
+    if (JSON.stringify(existingCostsRuby) !== JSON.stringify(nextCostsRuby)) {
+      normalizedResearchConfig.researchCostsRuby = nextCostsRuby;
       changed = true;
     }
 
-    if (isRecord(parsedConfig.researchCostsEmerald)) {
-      const existingCostsEmerald = parsedConfig.researchCostsEmerald;
-      const missingEmeraldCost = Object.keys(researchDefaultCostEmeraldById).some(
-        (researchId) => existingCostsEmerald[researchId] === undefined,
-      );
-      const nextCostsEmerald = {
-        ...researchDefaultCostEmeraldById,
-        ...existingCostsEmerald,
-      };
-      let replacedLegacyEmeraldCost = false;
-      for (const [researchId, legacyCostEmeraldValues] of Object.entries(
-        researchLegacyCostEmeraldById,
-      )) {
-        const currentCostEmerald = Number(nextCostsEmerald[researchId]);
-        const defaultCostEmerald = Number(researchDefaultCostEmeraldById[researchId]);
-        if (
-          currentCostEmerald === defaultCostEmerald ||
-          !legacyCostEmeraldValues.some(
-            (legacyCostEmerald) => currentCostEmerald === Number(legacyCostEmerald),
-          )
-        ) {
-          continue;
-        }
-
-        nextCostsEmerald[researchId] = researchDefaultCostEmeraldById[researchId];
-        replacedLegacyEmeraldCost = true;
-      }
-
-      if (missingEmeraldCost || replacedLegacyEmeraldCost) {
-        normalizedResearchConfig.researchCostsEmerald = nextCostsEmerald;
-        changed = true;
-      }
-    } else {
-      normalizedResearchConfig.researchCostsEmerald = researchDefaultCostEmeraldById;
+    if (JSON.stringify(existingCostsEmerald) !== JSON.stringify(nextCostsEmerald)) {
+      normalizedResearchConfig.researchCostsEmerald = nextCostsEmerald;
       changed = true;
     }
 
@@ -8753,11 +8968,19 @@ function normalizePlayerGameplaySave(
   const tasks = normalizeSaveTasks(save.tasks, taskCatalog, previousLevel);
   const prestige = normalizeSavePrestige(save.prestige);
   const inferredCapacityResearchIds = getSaveInferredCapacityResearchIds(save);
-  const research = normalizeSaveResearch(
+  const normalizedResearch = normalizeSaveResearch(
     save.research,
     prestige.completedLevels.length,
     inferredCapacityResearchIds,
   );
+  const research = {
+    ...normalizedResearch,
+    crystalCostById: normalizeSaveResearchCrystalCosts(
+      ctx,
+      save.research,
+      normalizedResearch,
+    ),
+  };
   const normalizedCoin = normalizeSaveGold(readSaveCoinBranch(save));
   const levelLimits = applySaveCapacityResearchLimits(
     getSaveLevelLimits(ctx, tasks.currentLevel),
@@ -9044,7 +9267,7 @@ function createAdminPlayerLevelSaveJson(
   const research: Record<string, unknown> = isRecord(normalizedSave.research)
     ? normalizedSave.research
     : {};
-  const minimumCurrentCrystal = getMinimumCurrentCrystalForSave(ctx, playerLevel, {
+  const researchForCrystal = {
     completedIds: Array.isArray(research.completedIds)
       ? research.completedIds.map((researchId: unknown) => String(researchId))
       : [],
@@ -9053,6 +9276,14 @@ function createAdminPlayerLevelSaveJson(
           isRecord(progress),
         )
       : [],
+  };
+  const minimumCurrentCrystal = getMinimumCurrentCrystalForSave(ctx, playerLevel, {
+    ...researchForCrystal,
+    crystalCostById: normalizeSaveResearchCrystalCosts(
+      ctx,
+      research,
+      researchForCrystal,
+    ),
   });
   const nextSaveJson = JSON.stringify({
     ...normalizedSave,
@@ -9755,6 +9986,7 @@ function getMinimumCurrentCrystalForSave(
   research: {
     completedIds: string[];
     inProgress?: Array<{ researchId?: string }>;
+    crystalCostById?: Record<string, number>;
   },
 ) {
   const earnedLevelCrystal =
@@ -9768,7 +10000,8 @@ function getMinimumCurrentCrystalForSave(
       : []),
   ]);
   const spentCrystal = [...committedResearchIds].reduce(
-    (total, researchId) => total + getResearchCrystalCost(ctx, researchId),
+    (total, researchId) =>
+      total + getResearchCrystalCost(ctx, researchId, research.crystalCostById),
     0,
   );
 
@@ -9795,7 +10028,21 @@ function getPlayerLevelCrystalPerLevel(ctx: IdleWizardReducerCtx) {
   return Math.min(amount, MAX_PLAYER_SAVE_CURRENT_CRYSTAL);
 }
 
-function getResearchCrystalCost(ctx: IdleWizardReducerCtx, researchId: string) {
+function getResearchCrystalCost(
+  ctx: IdleWizardReducerCtx,
+  researchId: string,
+  crystalCostById?: Record<string, number>,
+) {
+  if (researchDefaultCostCrystalById[researchId] === undefined) {
+    return 0;
+  }
+
+  const persistedCost = Number(crystalCostById?.[researchId]);
+
+  if (Number.isInteger(persistedCost) && persistedCost >= 0) {
+    return persistedCost;
+  }
+
   const config = getParsedGameConfig(
     ctx,
     'research',
@@ -9850,7 +10097,15 @@ function backfillGameplaySaveLevelCrystalsJson(
     MAX_REPORTED_PLAYER_LEVEL,
     DEFAULT_PLAYER_LEVEL,
   );
-  const research = normalizeSaveResearch(save.research);
+  const normalizedResearch = normalizeSaveResearch(save.research);
+  const research = {
+    ...normalizedResearch,
+    crystalCostById: normalizeSaveResearchCrystalCosts(
+      ctx,
+      save.research,
+      normalizedResearch,
+    ),
+  };
   const minimumCurrentCrystal = getMinimumCurrentCrystalForSave(
     ctx,
     currentLevel,
@@ -10116,6 +10371,63 @@ function normalizeSaveResearch(
     completedIds: [...accepted],
     inProgress: normalizeSaveInProgressResearches(value, accepted, prestigeCount),
   };
+}
+
+function normalizeSaveResearchCrystalCosts(
+  ctx: IdleWizardReducerCtx,
+  value: unknown,
+  research: {
+    completedIds: string[];
+    inProgress?: Array<{ researchId?: string }>;
+  },
+) {
+  const storedCosts =
+    isRecord(value) && isRecord(value.crystalCostById) ? value.crystalCostById : {};
+  const committedResearchIds = new Set([
+    ...research.completedIds,
+    ...(Array.isArray(research.inProgress)
+      ? research.inProgress
+          .map((progress) => normalizeResearchId(String(progress?.researchId ?? '')))
+          .filter((researchId) => researchDefaultCostCrystalById[researchId] !== undefined)
+      : []),
+  ]);
+  const normalizedCosts: Record<string, number> = {};
+
+  for (const researchId of committedResearchIds) {
+    if (researchDefaultCostCrystalById[researchId] === undefined) {
+      continue;
+    }
+
+    const defaultCost = getResearchCrystalCost(ctx, researchId);
+    const legacyCost = getLegacyMultiplierResearchCrystalCost(researchId);
+    const storedCost = Number(storedCosts[researchId]);
+
+    normalizedCosts[researchId] =
+      Number.isInteger(storedCost) &&
+      storedCost >= 0 &&
+      storedCost <= MAX_PLAYER_SAVE_CURRENT_CRYSTAL
+        ? storedCost
+        : (legacyCost ?? defaultCost);
+  }
+
+  return normalizedCosts;
+}
+
+function getLegacyMultiplierResearchCrystalCost(researchId: string): number | null {
+  const match = /^emerald:(?:plotPlanting|cauldronBrewing):(\d+):(\d+)$/.exec(researchId);
+  const multiplier = Number(match?.[2]);
+  const firstMultiplier = emeraldResearchMultipliers[0] ?? 2;
+  const lastMultiplier = emeraldResearchMultipliers.at(-1) ?? firstMultiplier;
+
+  if (
+    !Number.isInteger(multiplier) ||
+    multiplier < firstMultiplier ||
+    multiplier > lastMultiplier
+  ) {
+    return null;
+  }
+
+  return multiplier - firstMultiplier + 1;
 }
 
 function normalizeSaveInProgressResearches(
@@ -11903,6 +12215,23 @@ function mergePreviousResearchProgressIntoSaveJson(
   const mergedResearch = {
     completedIds: mergedCompletedIds,
     inProgress: mergedInProgress,
+    crystalCostById: normalizeSaveResearchCrystalCosts(
+      ctx,
+      {
+        crystalCostById: {
+          ...(isRecord(previousSave.research) && isRecord(previousSave.research.crystalCostById)
+            ? previousSave.research.crystalCostById
+            : {}),
+          ...(isRecord(safeSave.research) && isRecord(safeSave.research.crystalCostById)
+            ? safeSave.research.crystalCostById
+            : {}),
+        },
+      },
+      {
+        completedIds: mergedCompletedIds,
+        inProgress: mergedInProgress,
+      },
+    ),
   };
 
   if (mergedResearch.completedIds.length <= safeResearch.completedIds.length) {
@@ -13750,6 +14079,7 @@ function getWorldEventLeaderboardSummaryRows(ctx: any) {
 }
 
 function getPlayerInfoSummaryRows(ctx: any) {
+  const activeMarketId = getActiveMarketId(ctx);
   const identities = new Map<string, Identity>();
   const addIdentity = (identity: Identity | null | undefined) => {
     if (!identity) {
@@ -13814,13 +14144,13 @@ function getPlayerInfoSummaryRows(ctx: any) {
   }
 
   for (const listing of ctx.db.playerShopListing.byQuantity.filter(new Range())) {
-    if (Number(listing.quantity) > 0) {
+    if (getRowMarketId(listing) === activeMarketId && Number(listing.quantity) > 0) {
       addIdentity(listing.sellerIdentity);
     }
   }
 
   for (const request of ctx.db.playerShopRequest.byQuantity.filter(new Range())) {
-    if (Number(request.quantity) > 0) {
+    if (getRowMarketId(request) === activeMarketId && Number(request.quantity) > 0) {
       addIdentity(request.requesterIdentity);
     }
   }
@@ -14197,7 +14527,7 @@ function applyNpcMarketAutoTune(
   );
 
   if (stepBps !== 0 && nextBasePriceGold !== marketConfig.basePriceGold) {
-    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(marketConfig.itemKey);
+    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(marketConfig.storageKey);
 
     if (existingConfig) {
       ctx.db.npcMarketItemConfig.itemKey.update({
@@ -14238,8 +14568,11 @@ function getNpcMarketRowWithQuotes(row: any, marketPriceGold: number) {
 function ensureNpcMarketItemConfig(
   ctx: IdleWizardReducerCtx,
   catalogItem: (typeof npcMarketCatalog)[number],
+  marketId = defaultMarketId,
 ) {
-  const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(catalogItem.itemKey);
+  const safeMarketId = normalizeMarketId(marketId);
+  const storageKey = getMarketScopedItemKey(safeMarketId, catalogItem.itemKey);
+  const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(storageKey);
 
   if (existingConfig) {
     const itemLabel =
@@ -14285,7 +14618,9 @@ function ensureNpcMarketItemConfig(
       existingConfig.priceScale === GOLD_PRICE_SCALE &&
       existingConfig.targetStock === targetStock &&
       existingConfig.volatilityBps === volatilityBps &&
-      existingConfig.enabled === enabled
+      existingConfig.enabled === enabled &&
+      getRowMarketId(existingConfig) === safeMarketId &&
+      getNpcMarketCatalogItemKey(existingConfig) === catalogItem.itemKey
     ) {
       return existingConfig;
     }
@@ -14301,11 +14636,13 @@ function ensureNpcMarketItemConfig(
       volatilityBps,
       enabled,
       updatedAt: ctx.timestamp,
+      marketId: safeMarketId,
+      catalogItemKey: catalogItem.itemKey,
     });
   }
 
   return ctx.db.npcMarketItemConfig.insert({
-    itemKey: catalogItem.itemKey,
+    itemKey: storageKey,
     itemLabel: catalogItem.itemLabel,
     itemKind: catalogItem.itemKind,
     defaultBasePriceGold: toStoredGoldPrice(catalogItem.basePriceGold),
@@ -14315,6 +14652,8 @@ function ensureNpcMarketItemConfig(
     volatilityBps: catalogItem.volatilityBps,
     enabled: true,
     updatedAt: ctx.timestamp,
+    marketId: safeMarketId,
+    catalogItemKey: catalogItem.itemKey,
   });
 }
 
@@ -14326,11 +14665,13 @@ function normalizeNpcMarketRuntimeConfig(row: any, catalogItem?: (typeof npcMark
   );
 
   return {
-    itemKey: normalizeNpcMarketItemKey(row.itemKey),
+    storageKey: normalizeNpcMarketItemKey(row.itemKey),
+    marketId: getRowMarketId(row),
+    itemKey: getNpcMarketCatalogItemKey(row),
     itemLabel:
       normalizePlayerShopText(row.itemLabel, MAX_ITEM_LABEL_LENGTH) ||
       catalogItem?.itemLabel ||
-      normalizeNpcMarketItemKey(row.itemKey),
+      getNpcMarketCatalogItemKey(row),
     itemKind:
       normalizePlayerShopText(row.itemKind, MAX_ITEM_KIND_LENGTH) ||
       catalogItem?.itemKind ||
@@ -14353,12 +14694,17 @@ function normalizeNpcMarketRuntimeConfig(row: any, catalogItem?: (typeof npcMark
   };
 }
 
-function getNpcMarketRuntimeConfig(ctx: IdleWizardReducerCtx, itemKey: string) {
+function getNpcMarketRuntimeConfig(
+  ctx: IdleWizardReducerCtx,
+  itemKey: string,
+  marketId = defaultMarketId,
+) {
   const safeItemKey = normalizeNpcMarketItemKey(itemKey);
+  const safeMarketId = normalizeMarketId(marketId);
   const catalogItem = npcMarketCatalogByItemKey.get(safeItemKey);
   const itemConfig = catalogItem
-    ? ensureNpcMarketItemConfig(ctx, catalogItem)
-    : ctx.db.npcMarketItemConfig.itemKey.find(safeItemKey);
+    ? ensureNpcMarketItemConfig(ctx, catalogItem, safeMarketId)
+    : ctx.db.npcMarketItemConfig.itemKey.find(getMarketScopedItemKey(safeMarketId, safeItemKey));
 
   if (!itemConfig) {
     throw new Error('Unknown NPC market item.');
@@ -14373,17 +14719,27 @@ function getNpcMarketRuntimeConfig(ctx: IdleWizardReducerCtx, itemKey: string) {
   return runtimeConfig;
 }
 
-function deleteNpcMarketPriceIfPresent(ctx: IdleWizardReducerCtx, itemKey: string) {
-  const existingRow = ctx.db.npcMarketPrice.itemKey.find(itemKey);
+function deleteNpcMarketPriceIfPresent(
+  ctx: IdleWizardReducerCtx,
+  itemKey: string,
+  marketId = defaultMarketId,
+) {
+  const existingRow = ctx.db.npcMarketPrice.itemKey.find(
+    getMarketScopedItemKey(marketId, itemKey),
+  );
 
   if (existingRow) {
     ctx.db.npcMarketPrice.delete(existingRow);
   }
 }
 
-function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
-  const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey);
-  const existingRow = ctx.db.npcMarketPrice.itemKey.find(marketConfig.itemKey);
+function ensureNpcMarketItem(
+  ctx: IdleWizardReducerCtx,
+  itemKey: string,
+  marketId = defaultMarketId,
+) {
+  const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey, marketId);
+  const existingRow = ctx.db.npcMarketPrice.itemKey.find(marketConfig.storageKey);
 
   if (existingRow) {
     const needState = getNpcMarketRecoveredNeedState(
@@ -14424,6 +14780,8 @@ function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
       ...normalizedRow,
       itemLabel: marketConfig.itemLabel,
       itemKind: marketConfig.itemKind,
+      marketId: marketConfig.marketId,
+      catalogItemKey: marketConfig.itemKey,
       basePriceGold: toStoredGoldPrice(marketConfig.basePriceGold),
       priceScale: GOLD_PRICE_SCALE,
       targetStock: marketConfig.targetStock,
@@ -14446,7 +14804,7 @@ function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
   );
 
   return ctx.db.npcMarketPrice.insert({
-    itemKey: marketConfig.itemKey,
+    itemKey: marketConfig.storageKey,
     itemLabel: marketConfig.itemLabel,
     itemKind: marketConfig.itemKind,
     basePriceGold: toStoredGoldPrice(marketConfig.basePriceGold),
@@ -14463,20 +14821,24 @@ function ensureNpcMarketItem(ctx: IdleWizardReducerCtx, itemKey: string) {
     supplyScore: 0n,
     updatedAt: ctx.timestamp,
     lastTickAt: ctx.timestamp,
+    marketId: marketConfig.marketId,
+    catalogItemKey: marketConfig.itemKey,
   });
 }
 
 function ensureNpcMarketCatalog(ctx: IdleWizardReducerCtx) {
-  for (const catalogItem of npcMarketCatalog) {
-    const config = normalizeNpcMarketRuntimeConfig(
-      ensureNpcMarketItemConfig(ctx, catalogItem),
-      catalogItem,
-    );
+  for (const market of marketLicences) {
+    for (const catalogItem of npcMarketCatalog) {
+      const config = normalizeNpcMarketRuntimeConfig(
+        ensureNpcMarketItemConfig(ctx, catalogItem, market.id),
+        catalogItem,
+      );
 
-    if (config.enabled) {
-      ensureNpcMarketItem(ctx, catalogItem.itemKey);
-    } else {
-      deleteNpcMarketPriceIfPresent(ctx, catalogItem.itemKey);
+      if (config.enabled) {
+        ensureNpcMarketItem(ctx, catalogItem.itemKey, market.id);
+      } else {
+        deleteNpcMarketPriceIfPresent(ctx, catalogItem.itemKey, market.id);
+      }
     }
   }
 }
@@ -15369,6 +15731,10 @@ function deleteAllPlayerShopState(ctx: IdleWizardReducerCtx) {
     ctx.db.playerShopProceeds.delete(proceeds);
   }
 
+  for (const proceeds of Array.from(ctx.db.playerShopMarketProceeds.iter())) {
+    ctx.db.playerShopMarketProceeds.delete(proceeds);
+  }
+
   for (const trade of Array.from(ctx.db.playerShopTrade.iter())) {
     ctx.db.playerShopTrade.delete(trade);
   }
@@ -15393,6 +15759,12 @@ function deletePlayerShopProgressionForIdentity(
   const proceeds = ctx.db.playerShopProceeds.sellerIdentity.find(identity);
   if (proceeds) {
     ctx.db.playerShopProceeds.delete(proceeds);
+  }
+
+  for (const proceeds of Array.from(
+    ctx.db.playerShopMarketProceeds.bySellerIdentity.filter(identity),
+  )) {
+    ctx.db.playerShopMarketProceeds.delete(proceeds);
   }
 
   deletePotionRecipeRoyaltiesForIdentity(ctx, identity);
@@ -16200,7 +16572,11 @@ function moveAdminPlayerShopRows(
       continue;
     }
 
-    const targetKey = getPlayerShopListingKeyForIdentity(targetIdentity, listing.slotNumber);
+    const targetKey = getPlayerShopListingKeyForIdentity(
+      targetIdentity,
+      listing.slotNumber,
+      getRowMarketId(listing),
+    );
     const existingTarget = ctx.db.playerShopListing.listingKey.find(targetKey);
     if (existingTarget) {
       ctx.db.playerShopListing.delete(existingTarget);
@@ -16221,7 +16597,11 @@ function moveAdminPlayerShopRows(
       continue;
     }
 
-    const targetKey = getPlayerShopRequestKeyForIdentity(targetIdentity, request.slotNumber);
+    const targetKey = getPlayerShopRequestKeyForIdentity(
+      targetIdentity,
+      request.slotNumber,
+      getRowMarketId(request),
+    );
     const existingTarget = ctx.db.playerShopRequest.requestKey.find(targetKey);
     if (existingTarget) {
       ctx.db.playerShopRequest.delete(existingTarget);
@@ -16255,6 +16635,33 @@ function moveAdminPlayerShopRows(
       });
     }
     ctx.db.playerShopProceeds.delete(sourceProceeds);
+  }
+
+  for (const sourceProceeds of Array.from(
+    ctx.db.playerShopMarketProceeds.bySellerIdentity.filter(sourceIdentity),
+  )) {
+    const marketId = getRowMarketId(sourceProceeds);
+    const targetKey = getPlayerShopMarketProceedsKey(targetIdentity, marketId);
+    const targetProceeds = ctx.db.playerShopMarketProceeds.proceedsKey.find(targetKey);
+    const mergedGold = toBigInt(sourceProceeds.gold) + toBigInt(targetProceeds?.gold ?? 0n);
+
+    if (targetProceeds) {
+      ctx.db.playerShopMarketProceeds.proceedsKey.update({
+        ...targetProceeds,
+        gold: mergedGold,
+        updatedAt: ctx.timestamp,
+      });
+    } else {
+      ctx.db.playerShopMarketProceeds.insert({
+        ...sourceProceeds,
+        proceedsKey: targetKey,
+        sellerIdentity: targetIdentity,
+        marketId,
+        updatedAt: ctx.timestamp,
+      });
+    }
+
+    ctx.db.playerShopMarketProceeds.delete(sourceProceeds);
   }
 
   for (const trade of Array.from(ctx.db.playerShopTrade.iter())) {
@@ -16652,8 +17059,8 @@ function prunePotionRecipeRoyaltyHistory(ctx: IdleWizardReducerCtx) {
   }
 }
 
-function getMarketDemandDailyKey(dayKey: string, itemKey: string): string {
-  return `${dayKey}:${itemKey}`;
+function getMarketDemandDailyKey(dayKey: string, marketId: string, itemKey: string): string {
+  return getMarketScopedKey(marketId, `${dayKey}:${itemKey}`);
 }
 
 function recordMarketDemandDaily(
@@ -16678,8 +17085,9 @@ function recordMarketDemandDaily(
   },
 ) {
   const dayKey = getDailyPeriodKey(ctx);
-  const itemKey = String(row.itemKey ?? '');
-  const analyticsKey = getMarketDemandDailyKey(dayKey, itemKey);
+  const marketId = getRowMarketId(row);
+  const itemKey = getNpcMarketCatalogItemKey(row);
+  const analyticsKey = getMarketDemandDailyKey(dayKey, marketId, itemKey);
   const existing = ctx.db.marketDemandDaily.analyticsKey.find(analyticsKey);
   const nextRow = {
     analyticsKey,
@@ -16696,6 +17104,7 @@ function recordMarketDemandDaily(
     supplyScore,
     updatedAt: ctx.timestamp,
     priceScale: GOLD_PRICE_SCALE,
+    marketId,
   };
 
   if (existing) {
@@ -16720,24 +17129,30 @@ function pruneMarketDemandDailyHistory(ctx: IdleWizardReducerCtx) {
 }
 
 function getRecentPlayerShopTrades(ctx: { db: any }) {
+  const marketId = getActiveMarketId(ctx as IdleWizardReducerCtx);
   return Array.from<any>(ctx.db.playerShopTrade.byTradedAt.filter(new Range()))
+    .filter((trade) => getRowMarketId(trade) === marketId)
     .slice(-PLAYER_SHOP_TRADE_HISTORY_LIMIT)
     .reverse();
 }
 
 function getRecentPublicPlayerShopListings(ctx: { sender: Identity; db: any }) {
+  const marketId = getActiveMarketId(ctx as IdleWizardReducerCtx);
   return getRecentPublicPlayerShopRows(
     ctx.db.playerShopListing.byUpdatedAt.filter(new Range()),
     ctx.sender,
     'sellerIdentity',
+    marketId,
   );
 }
 
 function getRecentPublicPlayerShopRequests(ctx: { sender: Identity; db: any }) {
+  const marketId = getActiveMarketId(ctx as IdleWizardReducerCtx);
   return getRecentPublicPlayerShopRows(
     ctx.db.playerShopRequest.byUpdatedAt.filter(new Range()),
     ctx.sender,
     'requesterIdentity',
+    marketId,
   );
 }
 
@@ -16745,6 +17160,7 @@ function getRecentPublicPlayerShopRows(
   rows: Iterable<any>,
   sender: Identity,
   identityField: string,
+  marketId: string,
 ) {
   const recentRows: any[] = [];
 
@@ -16752,6 +17168,7 @@ function getRecentPublicPlayerShopRows(
     if (
       toBigInt(row.quantity) <= 0n ||
       toBigInt(row.priceGold) <= 0n ||
+      getRowMarketId(row) !== marketId ||
       row[identityField]?.isEqual?.(sender)
     ) {
       continue;
@@ -16768,6 +17185,7 @@ function getRecentPublicPlayerShopRows(
 }
 
 function getOwnPlayerShopTrades(ctx: { sender: Identity; db: any }) {
+  const marketId = getActiveMarketId(ctx as IdleWizardReducerCtx);
   const byTradeId = new Map<string, any>();
   const addRows = (rows: Iterable<any>) => {
     for (const row of rows) {
@@ -16779,12 +17197,15 @@ function getOwnPlayerShopTrades(ctx: { sender: Identity; db: any }) {
   addRows(ctx.db.playerShopTrade.bySellerIdentity.filter(ctx.sender));
 
   return Array.from<any>(byTradeId.values())
+    .filter((trade) => getRowMarketId(trade) === marketId)
     .sort(comparePlayerShopTradesNewestFirst)
     .slice(0, PLAYER_SHOP_TRADE_HISTORY_LIMIT);
 }
 
 function getOwnPotionRecipeRoyalties(ctx: { sender: Identity; db: any }) {
+  const marketId = getActiveMarketId(ctx as IdleWizardReducerCtx);
   return Array.from<any>(ctx.db.potionRecipeRoyalty.byRecipientIdentity.filter(ctx.sender))
+    .filter((royalty) => getRowMarketId(royalty) === marketId)
     .sort(comparePotionRecipeRoyaltiesNewestFirst)
     .slice(0, POTION_RECIPE_ROYALTY_HISTORY_LIMIT);
 }
@@ -18828,6 +19249,7 @@ export const discover_potion_recipe = spacetimedb.reducer(
 
 export const set_player_shop_slot = spacetimedb.reducer(
   {
+    marketId: t.string(),
     slotNumber: t.u8(),
     itemKey: t.string(),
     itemLabel: t.string(),
@@ -18835,7 +19257,7 @@ export const set_player_shop_slot = spacetimedb.reducer(
     quantity: t.u32(),
     priceGold: t.f64(),
   },
-  (ctx, { slotNumber, itemKey, itemLabel, itemKind, quantity, priceGold }) => {
+  (ctx, { marketId, slotNumber, itemKey, itemLabel, itemKind, quantity, priceGold }) => {
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
@@ -18843,6 +19265,7 @@ export const set_player_shop_slot = spacetimedb.reducer(
     }
 
     const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
+    const activeMarketId = assertActiveMarket(ctx, marketId);
     const catalogItem = getPlayerShopCatalogItem(itemKey);
     const safeItemKey = catalogItem.itemKey;
     const safeItemLabel = catalogItem.itemLabel;
@@ -18858,7 +19281,7 @@ export const set_player_shop_slot = spacetimedb.reducer(
     }
 
     const player = ensurePlayer(ctx);
-    const listingKey = getPlayerShopListingKey(ctx, safeSlotNumber);
+    const listingKey = getPlayerShopListingKey(ctx, safeSlotNumber, activeMarketId);
     const existingListing = ctx.db.playerShopListing.listingKey.find(listingKey);
     const nextListing = {
       listingKey,
@@ -18872,6 +19295,7 @@ export const set_player_shop_slot = spacetimedb.reducer(
       priceGold: toStoredGoldPrice(safePriceGold),
       priceScale: GOLD_PRICE_SCALE,
       updatedAt: ctx.timestamp,
+      marketId: activeMarketId,
     };
 
     if (existingListing) {
@@ -18884,12 +19308,13 @@ export const set_player_shop_slot = spacetimedb.reducer(
 );
 
 export const clear_player_shop_slot = spacetimedb.reducer(
-  { slotNumber: t.u8() },
-  (ctx, { slotNumber }) => {
+  { marketId: t.string(), slotNumber: t.u8() },
+  (ctx, { marketId, slotNumber }) => {
     assertActivePlayerSession(ctx);
 
     const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
-    const listingKey = getPlayerShopListingKey(ctx, safeSlotNumber);
+    const activeMarketId = assertActiveMarket(ctx, marketId);
+    const listingKey = getPlayerShopListingKey(ctx, safeSlotNumber, activeMarketId);
     const existingListing = ctx.db.playerShopListing.listingKey.find(listingKey);
 
     if (!existingListing || !existingListing.sellerIdentity.isEqual(ctx.sender)) {
@@ -18902,6 +19327,7 @@ export const clear_player_shop_slot = spacetimedb.reducer(
 
 export const set_player_shop_request = spacetimedb.reducer(
   {
+    marketId: t.string(),
     slotNumber: t.u8(),
     itemKey: t.string(),
     itemLabel: t.string(),
@@ -18909,7 +19335,7 @@ export const set_player_shop_request = spacetimedb.reducer(
     quantity: t.u32(),
     priceGold: t.f64(),
   },
-  (ctx, { slotNumber, itemKey, itemLabel, itemKind, quantity, priceGold }) => {
+  (ctx, { marketId, slotNumber, itemKey, itemLabel, itemKind, quantity, priceGold }) => {
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
@@ -18917,6 +19343,7 @@ export const set_player_shop_request = spacetimedb.reducer(
     }
 
     const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
+    const activeMarketId = assertActiveMarket(ctx, marketId);
     const catalogItem = getPlayerShopCatalogItem(itemKey);
     const safeItemKey = catalogItem.itemKey;
     const safeItemLabel = catalogItem.itemLabel;
@@ -18932,7 +19359,7 @@ export const set_player_shop_request = spacetimedb.reducer(
     }
 
     const player = ensurePlayer(ctx);
-    const requestKey = getPlayerShopRequestKey(ctx, safeSlotNumber);
+    const requestKey = getPlayerShopRequestKey(ctx, safeSlotNumber, activeMarketId);
     const existingRequest = ctx.db.playerShopRequest.requestKey.find(requestKey);
     const nextRequest = {
       requestKey,
@@ -18946,6 +19373,7 @@ export const set_player_shop_request = spacetimedb.reducer(
       priceGold: toStoredGoldPrice(safePriceGold),
       priceScale: GOLD_PRICE_SCALE,
       updatedAt: ctx.timestamp,
+      marketId: activeMarketId,
     };
 
     if (existingRequest) {
@@ -18958,12 +19386,13 @@ export const set_player_shop_request = spacetimedb.reducer(
 );
 
 export const clear_player_shop_request = spacetimedb.reducer(
-  { slotNumber: t.u8() },
-  (ctx, { slotNumber }) => {
+  { marketId: t.string(), slotNumber: t.u8() },
+  (ctx, { marketId, slotNumber }) => {
     assertActivePlayerSession(ctx);
 
     const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
-    const requestKey = getPlayerShopRequestKey(ctx, safeSlotNumber);
+    const activeMarketId = assertActiveMarket(ctx, marketId);
+    const requestKey = getPlayerShopRequestKey(ctx, safeSlotNumber, activeMarketId);
     const existingRequest = ctx.db.playerShopRequest.requestKey.find(requestKey);
 
     if (!existingRequest || !existingRequest.requesterIdentity.isEqual(ctx.sender)) {
@@ -18975,8 +19404,8 @@ export const clear_player_shop_request = spacetimedb.reducer(
 );
 
 export const buy_player_shop_listing = spacetimedb.reducer(
-  { listingKey: t.string(), quantity: t.u32() },
-  (ctx, { listingKey, quantity }) => {
+  { marketId: t.string(), listingKey: t.string(), quantity: t.u32() },
+  (ctx, { marketId, listingKey, quantity }) => {
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
@@ -18984,10 +19413,15 @@ export const buy_player_shop_listing = spacetimedb.reducer(
     }
 
     const safeListingKey = normalizePlayerShopText(listingKey, 120);
+    const activeMarketId = assertActiveMarket(ctx, marketId);
     const listing = ctx.db.playerShopListing.listingKey.find(safeListingKey);
 
     if (!listing) {
       throw new Error('Player shop listing no longer exists.');
+    }
+
+    if (getRowMarketId(listing) !== activeMarketId) {
+      throw new Error('Player shop listing belongs to another market.');
     }
 
     if (listing.sellerIdentity.isEqual(ctx.sender)) {
@@ -19021,12 +19455,13 @@ export const buy_player_shop_listing = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
     });
 
-    addClaimablePlayerShopGold(ctx, listing.sellerIdentity, proceedsGold);
+    addClaimablePlayerShopGold(ctx, listing.sellerIdentity, proceedsGold, activeMarketId);
     grantPotionDiscoveryPassiveGold(
       ctx,
       listing.itemKey,
       proceedsGold,
       listing.sellerIdentity,
+      activeMarketId,
     );
 
     ctx.db.playerShopTrade.insert({
@@ -19043,30 +19478,42 @@ export const buy_player_shop_listing = spacetimedb.reducer(
       totalPriceGold: toStoredGoldPrice(proceedsGold),
       priceScale: GOLD_PRICE_SCALE,
       tradedAt: ctx.timestamp,
+      marketId: activeMarketId,
     });
     prunePlayerShopTradeHistory(ctx);
   },
 );
 
-export const claim_player_shop_proceeds = spacetimedb.reducer({}, (ctx) => {
-  assertActivePlayerSession(ctx);
+export const claim_player_shop_proceeds = spacetimedb.reducer(
+  { marketId: t.string() },
+  (ctx, { marketId }) => {
+    assertActivePlayerSession(ctx);
 
-  if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
-    throw new Error('Player shop exchange requires server inventory.');
-  }
+    if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
+      throw new Error('Player shop exchange requires server inventory.');
+    }
 
-  const proceeds = ctx.db.playerShopProceeds.sellerIdentity.find(ctx.sender);
+    const activeMarketId = assertActiveMarket(ctx, marketId);
+    if (activeMarketId === defaultMarketId) {
+      const proceeds = ctx.db.playerShopProceeds.sellerIdentity.find(ctx.sender);
+      if (proceeds) {
+        ctx.db.playerShopProceeds.delete(proceeds);
+      }
+      return;
+    }
 
-  if (!proceeds) {
-    return;
-  }
-
-  ctx.db.playerShopProceeds.delete(proceeds);
-});
+    const proceeds = ctx.db.playerShopMarketProceeds.proceedsKey.find(
+      getPlayerShopMarketProceedsKey(ctx.sender, activeMarketId),
+    );
+    if (proceeds) {
+      ctx.db.playerShopMarketProceeds.delete(proceeds);
+    }
+  },
+);
 
 export const sell_to_npc = spacetimedb.reducer(
-  { itemKey: t.string(), quantity: t.u32() },
-  (ctx, { itemKey, quantity }) => {
+  { marketId: t.string(), itemKey: t.string(), quantity: t.u32() },
+  (ctx, { marketId, itemKey, quantity }) => {
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_NPC_MARKET_PRESSURE) {
@@ -19074,9 +19521,10 @@ export const sell_to_npc = spacetimedb.reducer(
     }
 
     const safeQuantity = validateNpcMarketQuantity(quantity);
-    const row = ensureNpcMarketItem(ctx, itemKey);
+    const activeMarketId = assertActiveMarket(ctx, marketId);
+    const row = ensureNpcMarketItem(ctx, itemKey, activeMarketId);
     const tradeQuantity = BigInt(safeQuantity);
-    const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey);
+    const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey, activeMarketId);
     const needState = getNpcMarketNeedState(row, marketConfig.targetStock);
     const npcStock = getNpcMarketStock(row);
     const demandScore = toBigInt(row.demandScore);
@@ -19132,13 +19580,14 @@ export const sell_to_npc = spacetimedb.reducer(
       itemKey,
       totalSellGold,
       ctx.sender,
+      activeMarketId,
     );
   },
 );
 
 export const buy_from_npc = spacetimedb.reducer(
-  { itemKey: t.string(), quantity: t.u32() },
-  (ctx, { itemKey, quantity }) => {
+  { marketId: t.string(), itemKey: t.string(), quantity: t.u32() },
+  (ctx, { marketId, itemKey, quantity }) => {
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_NPC_MARKET_PRESSURE) {
@@ -19146,10 +19595,11 @@ export const buy_from_npc = spacetimedb.reducer(
     }
 
     const safeQuantity = validateNpcMarketQuantity(quantity);
-    const row = ensureNpcMarketItem(ctx, itemKey);
+    const activeMarketId = assertActiveMarket(ctx, marketId);
+    const row = ensureNpcMarketItem(ctx, itemKey, activeMarketId);
 
     const tradeQuantity = BigInt(safeQuantity);
-    const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey);
+    const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey, activeMarketId);
     const needState = getNpcMarketNeedState(row, marketConfig.targetStock);
     const npcStock = getNpcMarketStock(row);
     const demandScore = toBigInt(row.demandScore);
@@ -19229,6 +19679,7 @@ export const claim_npc_market_admin = spacetimedb.reducer({}, (ctx) => {
 
 export const upsert_npc_market_item_config = spacetimedb.reducer(
   {
+    marketId: t.string(),
     itemKey: t.string(),
     itemLabel: t.string(),
     itemKind: t.string(),
@@ -19241,6 +19692,7 @@ export const upsert_npc_market_item_config = spacetimedb.reducer(
     ctx,
     {
       itemKey,
+      marketId,
       itemLabel,
       itemKind,
       basePriceGold,
@@ -19252,6 +19704,7 @@ export const upsert_npc_market_item_config = spacetimedb.reducer(
     assertGameConfigAdmin(ctx);
 
     const safeItemKey = normalizeNpcMarketItemKey(itemKey);
+    const safeMarketId = normalizeMarketId(marketId);
     const safeItemLabel = normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH);
     const safeItemKind = normalizePlayerShopText(itemKind, MAX_ITEM_KIND_LENGTH);
 
@@ -19263,7 +19716,8 @@ export const upsert_npc_market_item_config = spacetimedb.reducer(
     const safeTargetStock = validateNpcMarketTargetStock(targetStock);
     const safeVolatilityBps = validateNpcMarketVolatilityBps(volatilityBps);
     const catalogItem = npcMarketCatalogByItemKey.get(safeItemKey);
-    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(safeItemKey);
+    const storageKey = getMarketScopedItemKey(safeMarketId, safeItemKey);
+    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(storageKey);
     const defaultBasePriceGold = existingConfig
       ? normalizeNpcMarketBasePriceGold(
           existingConfig.defaultBasePriceGold,
@@ -19272,7 +19726,7 @@ export const upsert_npc_market_item_config = spacetimedb.reducer(
         )
       : (catalogItem?.basePriceGold ?? safeBasePriceGold);
     const nextConfig = {
-      itemKey: safeItemKey,
+      itemKey: storageKey,
       itemLabel: safeItemLabel,
       itemKind: safeItemKind,
       defaultBasePriceGold: toStoredGoldPrice(defaultBasePriceGold),
@@ -19282,6 +19736,8 @@ export const upsert_npc_market_item_config = spacetimedb.reducer(
       volatilityBps: safeVolatilityBps,
       enabled,
       updatedAt: ctx.timestamp,
+      marketId: safeMarketId,
+      catalogItemKey: safeItemKey,
     };
 
     if (existingConfig) {
@@ -19294,11 +19750,11 @@ export const upsert_npc_market_item_config = spacetimedb.reducer(
     }
 
     if (!enabled) {
-      deleteNpcMarketPriceIfPresent(ctx, safeItemKey);
+      deleteNpcMarketPriceIfPresent(ctx, safeItemKey, safeMarketId);
       return;
     }
 
-    const existingRow = ctx.db.npcMarketPrice.itemKey.find(safeItemKey);
+    const existingRow = ctx.db.npcMarketPrice.itemKey.find(storageKey);
 
     if (existingRow) {
       const marketConfig = normalizeNpcMarketRuntimeConfig(nextConfig, catalogItem);
@@ -19326,17 +19782,20 @@ export const upsert_npc_market_item_config = spacetimedb.reducer(
       return;
     }
 
-    ensureNpcMarketItem(ctx, safeItemKey);
+    ensureNpcMarketItem(ctx, safeItemKey, safeMarketId);
   },
 );
 
 export const remove_npc_market_item_config = spacetimedb.reducer(
-  { itemKey: t.string() },
-  (ctx, { itemKey }) => {
+  { marketId: t.string(), itemKey: t.string() },
+  (ctx, { marketId, itemKey }) => {
     assertGameConfigAdmin(ctx);
 
     const safeItemKey = normalizeNpcMarketItemKey(itemKey);
-    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(safeItemKey);
+    const safeMarketId = normalizeMarketId(marketId);
+    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(
+      getMarketScopedItemKey(safeMarketId, safeItemKey),
+    );
 
     if (existingConfig) {
       ctx.db.npcMarketItemConfig.itemKey.update({
@@ -19346,19 +19805,20 @@ export const remove_npc_market_item_config = spacetimedb.reducer(
       });
     }
 
-    deleteNpcMarketPriceIfPresent(ctx, safeItemKey);
+    deleteNpcMarketPriceIfPresent(ctx, safeItemKey, safeMarketId);
   },
 );
 
 export const set_npc_market_item_base_price = spacetimedb.reducer(
-  { itemKey: t.string(), basePriceGold: t.f64() },
-  (ctx, { itemKey, basePriceGold }) => {
+  { marketId: t.string(), itemKey: t.string(), basePriceGold: t.f64() },
+  (ctx, { marketId, itemKey, basePriceGold }) => {
     assertGameConfigAdmin(ctx);
 
-    const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey);
+    const safeMarketId = normalizeMarketId(marketId);
+    const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey, safeMarketId);
     const safeBasePriceGold = validateNpcMarketBasePriceGold(basePriceGold);
     const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(
-      marketConfig.itemKey,
+      marketConfig.storageKey,
     );
 
     if (!existingConfig) {
@@ -19372,10 +19832,10 @@ export const set_npc_market_item_base_price = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
     });
 
-    const existingRow = ctx.db.npcMarketPrice.itemKey.find(marketConfig.itemKey);
+    const existingRow = ctx.db.npcMarketPrice.itemKey.find(marketConfig.storageKey);
 
     if (!existingRow) {
-      ensureNpcMarketItem(ctx, marketConfig.itemKey);
+      ensureNpcMarketItem(ctx, marketConfig.itemKey, safeMarketId);
       return;
     }
 

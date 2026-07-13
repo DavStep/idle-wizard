@@ -25,4 +25,5 @@ export default __t.row({
   supplyScore: __t.u64().name("supply_score"),
   updatedAt: __t.timestamp().name("updated_at"),
   priceScale: __t.u32().name("price_scale"),
+  marketId: __t.string().name("market_id"),
 });

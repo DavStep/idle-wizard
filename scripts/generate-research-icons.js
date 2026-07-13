@@ -28,7 +28,7 @@ const sourcePaths = Object.freeze({
   research: 'src/assets/icons/icon-research-telescope-tab.webp',
   ruby: 'src/assets/icons/icon-ruby.png',
   seedBox: 'src/assets/icons/icon-seed-box.png',
-  seedPack: 'src/assets/items/seeds/seed-pack-regular.png',
+  seedPack: 'src/assets/items/seeds/seed-pack.png',
 });
 
 const recipes = Object.freeze([

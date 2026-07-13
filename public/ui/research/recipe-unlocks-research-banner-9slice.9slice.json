@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "recipe-unlocks-research-banner-9slice.png",
+  "workingAsset": null,
+  "scaleWorkflow": {
+    "workScale": 1,
+    "downscaleResample": "lanczos",
+    "alphaCrop": {
+      "enabled": true,
+      "threshold": 0,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 491,
+        "height": 100
+      },
+      "changed": false
+    }
+  },
+  "source": {
+    "path": "/Users/davitstepanyan/Documents/idle-wizard/tmp/imagegen/banners/seam-aligned/trimmed/recipe-unlocks-research-banner.png",
+    "width": 760,
+    "height": 100,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 760,
+      "height": 100
+    }
+  },
+  "sourceCropSize": {
+    "width": 760,
+    "height": 100
+  },
+  "slice": {
+    "left": 198,
+    "top": 49,
+    "right": 197,
+    "bottom": 50
+  },
+  "mode": "distilled",
+  "distill": {
+    "sampleX": 332,
+    "sampleY": 49,
+    "centerWidth": 96,
+    "centerHeight": 1,
+    "cornerSource": "source",
+    "edgeSource": "source"
+  },
+  "cleanup": {
+    "symmetrizeCorners": false,
+    "symmetrizeEdges": false,
+    "transparentChamfer": 0,
+    "transparentChamferAaScale": 4,
+    "transparentInset": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "brownBackgroundKey": null,
+    "sideGutterTrim": {
+      "transparentThroughPx": 0,
+      "fadePx": 2
+    },
+    "allowTransparentGutters": false,
+    "geometricMask": false
+  },
+  "rendering": {
+    "stretch": "width-only",
+    "fixedHeight": 100,
+    "consumerRule": "Keep the authored height; vary width only.",
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "validation": {
+    "rasterOnly": true,
+    "pngSignatureChecked": true,
+    "naturalRoundTripExact": true,
+    "cornerRoundTripExact": true,
+    "alpha": {
+      "transparent": 12384,
+      "translucent": 4064,
+      "opaque": 32652
+    },
+    "alphaBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 491,
+      "height": 100
+    },
+    "transparentGutters": {
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "bottom": 0
+    },
+    "passesNoGutterGate": true,
+    "uniqueColors": {
+      "all": 5641,
+      "corners": 5448,
+      "edges": 480
+    },
+    "workAsset": {
+      "size": {
+        "width": 491,
+        "height": 100
+      },
+      "slice": {
+        "left": 198,
+        "top": 49,
+        "right": 197,
+        "bottom": 50
+      },
+      "naturalRoundTripExact": true,
+      "cornerRoundTripExact": true,
+      "alpha": {
+        "transparent": 12384,
+        "translucent": 4064,
+        "opaque": 32652
+      },
+      "alphaBounds": {
+        "x": 0,
+        "y": 0,
+        "width": 491,
+        "height": 100
+      },
+      "transparentGutters": {
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "bottom": 0
+      },
+      "uniqueColors": {
+        "all": 5641,
+        "corners": 5448,
+        "edges": 480
+      }
+    }
+  },
+  "qa": {
+    "sheet": "recipe-unlocks-research-banner-9slice-qa-sheet.png",
+    "examples": [
+      {
+        "label": "original: 760x100",
+        "width": 760,
+        "height": 100
+      },
+      {
+        "label": "width stretched: 1102x100",
+        "width": 1102,
+        "height": 100
+      }
+    ]
+  }
+}

@@ -47,17 +47,17 @@ experience_type: gameplay-economy
 - Research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
 - Research timers are capped at `4 hours`; premium-currency research is intentionally quick.
 - Emerald research time reduction applies only when starting future research; it does not rewrite active timers.
-- Emerald plot/cauldron level-up prices are upgrade-rank based, not slot based: first level-up costs 1 emerald, second costs 2, for any plot/cauldron.
+- Crystal plot/cauldron level-up prices are upgrade-rank based, not slot based: first level-up costs 1 crystal, second costs 2, for any plot/cauldron.
 - Mana production and cap are level rewards only; mana sphere research rows were removed, and each level gives the old research step values (+50 cap, +1/sec).
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `12s` to `210s` by herb tier.
-- Crystal is the hard currency; it appears in the top panel only where usable, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and automation research spends it.
-- Ruby starts at `0`, has no source yet, appears in the top panel only where usable, and advanced research spends it on per-slot speed upgrades.
-- Prestige ruby is derived from completed prestige milestones minus committed ruby research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.
-- Prestige resets run data but preserves current emerald currency; emerald research remains run-scoped unless explicitly made permanent.
+- Crystal is the hard currency; it appears in the top panel only where usable, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and plot/cauldron multiplier research spends it.
+- Ruby is the prestige currency; it appears in the top panel only where usable, and automation research spends it.
+- Prestige ruby is derived from completed prestige milestones minus committed ruby automation research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.
+- Prestige resets run data but preserves current emerald currency; advanced emerald research remains run-scoped unless explicitly made permanent.
 - Crystal shop offers live as the third tab inside Market; rows show only bundle and price, with no `each` or note columns.
 - Crystal shop price controls open a support-unavailable popup; do not add payment or crystal grant logic until transactions are requested.
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
@@ -67,13 +67,13 @@ experience_type: gameplay-economy
 - Level 10 is the first big progression milestone; level 9 can be a stronger gate before that unlock.
 - Milestone levels should not dip easier than the gate before them; when raising level 9, raise level 10+ to preserve curve.
 - Recipe research order can differ from potion item catalog order; keep item order stable to avoid potion type-id churn, and order prerequisites by ingredient tier.
-- Automation research spends crystal via client balance; existing backend `research_config.cost_coin` should not decide automation research currency.
-- Numbered automation research costs equal the target number in crystal: tier 1 costs 1, tier 2 costs 2, etc.
+- Automation research spends ruby via client balance; existing backend `research_config.cost_coin` should not decide automation research currency.
+- Numbered automation research costs equal the target number in ruby: tier 1 costs 1, tier 2 costs 2, etc.
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
 - Auto brew recipe/enabled state is per cauldron; selecting a recipe in cauldron 2+ must not rewrite cauldron 1 automation.
 - Auto brew enable UI must set `autoBrewRecipeKey` from the selected recipe before enabling; `BrewingFacade` rejects enabled auto-brew without a recipe key.
 - Auto/manual cauldron UI only enables or disables future automation; auto brew stays unarmed until a successful manual brew, then repeats future cycles.
-- Fast sell starts at level 1 and pays 80% of the NPC bulk sell quote; ruby research raises it to 85/90/95%, while shelf auto-sell keeps the full marginal NPC quote.
+- Fast sell starts at level 1 and pays 80% of the NPC bulk sell quote; emerald research raises it to 85/90/95%, while shelf auto-sell keeps the full marginal NPC quote.
 - Level 1 costs 0 coin and should never depend on tutorial-only sale grants; level 2 is the first systemic coin gate.
 - Research unlock gates for task requirements must be no higher than `target task level - 1`; e.g. nettle seed must unlock at level 5 because it is a level 6 requirement shown while the player is level 5.
 - NPC and player market stand 2 unlock at player level 3.

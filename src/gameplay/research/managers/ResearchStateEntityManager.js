@@ -10,6 +10,7 @@ export class ResearchStateEntityManager {
     this.researchDefinitionManager = researchDefinitionManager;
     this.defaultCompletedResearchIds = defaultCompletedResearchIds;
     this.entityIdsByResearchId = new Map();
+    this.crystalCostsByResearchId = new Map();
     this.ecsManagers = null;
     this.researchEntitiesSynced = false;
   }
@@ -231,6 +232,63 @@ export class ResearchStateEntityManager {
     }
 
     return inProgressResearches;
+  }
+
+  setCrystalCostsByResearchId(costsByResearchId = {}) {
+    this.syncResearchEntities();
+    this.crystalCostsByResearchId.clear();
+
+    if (!costsByResearchId || typeof costsByResearchId !== 'object') {
+      return;
+    }
+
+    for (const [researchId, cost] of Object.entries(costsByResearchId)) {
+      const normalizedResearchId = this.normalizeResearchId(researchId);
+      const safeCost = Math.floor(Number(cost));
+
+      if (
+        !this.entityIdsByResearchId.has(normalizedResearchId) ||
+        !Number.isFinite(safeCost) ||
+        safeCost < 0 ||
+        (!this.isCompleted(normalizedResearchId) && !this.isInProgress(normalizedResearchId))
+      ) {
+        continue;
+      }
+
+      this.crystalCostsByResearchId.set(normalizedResearchId, safeCost);
+    }
+  }
+
+  recordCrystalCost(researchId, cost) {
+    const normalizedResearchId = this.normalizeResearchId(researchId);
+    const safeCost = Math.floor(Number(cost));
+
+    if (
+      !this.entityIdsByResearchId.has(normalizedResearchId) ||
+      !Number.isFinite(safeCost) ||
+      safeCost < 0
+    ) {
+      return;
+    }
+
+    this.crystalCostsByResearchId.set(normalizedResearchId, safeCost);
+  }
+
+  getCrystalCost(researchId) {
+    return this.crystalCostsByResearchId.get(this.normalizeResearchId(researchId));
+  }
+
+  getCrystalCostsByResearchId() {
+    const committedResearchIds = new Set([
+      ...this.getCompletedResearchIds(),
+      ...this.getInProgressResearches().map((research) => research.researchId),
+    ]);
+
+    return Object.fromEntries(
+      [...this.crystalCostsByResearchId].filter(([researchId]) =>
+        committedResearchIds.has(researchId),
+      ),
+    );
   }
 
   hasInProgressResearches() {

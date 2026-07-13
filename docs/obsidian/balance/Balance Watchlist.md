@@ -20,6 +20,10 @@ after backend publish.
 Level 1-3 NPC demand is intentionally local fake gameplay data. Do not tune
 backend NPC market behavior against those early levels.
 
+Market demand, stock, price pressure, player listings, and requests must always
+be scoped by market licence. Sharing even one of those pools lets late-game
+players rebalance an early player's economy.
+
 ## Prestige Risk
 
 Ruby current is derived from completed milestones at run start; spent ruby is

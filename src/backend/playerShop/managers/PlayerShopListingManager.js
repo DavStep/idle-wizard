@@ -1,10 +1,12 @@
 import { normalizePositiveCoinPrice } from '../../../shared/coinPrice.js';
+import { defaultMarketId, isMarketId } from '../../../shared/marketLicence.js';
 
 const MAX_PLAYER_SHOP_SLOTS = 5;
 
 export class PlayerShopListingManager {
   constructor() {
     this.connection = null;
+    this.activeMarketId = defaultMarketId;
   }
 
   connect(connection) {
@@ -13,6 +15,10 @@ export class PlayerShopListingManager {
 
   disconnect() {
     this.connection = null;
+  }
+
+  setActiveMarketId(marketId) {
+    this.activeMarketId = isMarketId(marketId) ? marketId : defaultMarketId;
   }
 
   async setSlotListing(slot) {
@@ -35,6 +41,7 @@ export class PlayerShopListingManager {
 
     try {
       await setPlayerShopSlot({
+        marketId: this.activeMarketId,
         slotNumber: slot.slotNumber,
         itemKey: slot.itemKey,
         itemLabel: slot.itemLabel,
@@ -66,7 +73,7 @@ export class PlayerShopListingManager {
     }
 
     try {
-      await clearPlayerShopSlot({ slotNumber });
+      await clearPlayerShopSlot({ marketId: this.activeMarketId, slotNumber });
 
       return {
         ok: true,
@@ -102,6 +109,7 @@ export class PlayerShopListingManager {
 
     try {
       await setPlayerShopRequest({
+        marketId: this.activeMarketId,
         slotNumber: slot.slotNumber,
         itemKey: slot.itemKey,
         itemLabel: slot.itemLabel,
@@ -136,7 +144,7 @@ export class PlayerShopListingManager {
     }
 
     try {
-      await clearPlayerShopRequest({ slotNumber });
+      await clearPlayerShopRequest({ marketId: this.activeMarketId, slotNumber });
 
       return {
         ok: true,
@@ -164,6 +172,7 @@ export class PlayerShopListingManager {
 
     try {
       await buyPlayerShopListing({
+        marketId: this.activeMarketId,
         listingKey,
         quantity,
       });
@@ -193,7 +202,7 @@ export class PlayerShopListingManager {
     }
 
     try {
-      await claimPlayerShopProceeds({});
+      await claimPlayerShopProceeds({ marketId: this.activeMarketId });
 
       return {
         ok: true,
@@ -229,7 +238,7 @@ export class PlayerShopListingManager {
     if (clearPlayerShopSlot) {
       for (let slotNumber = 1; slotNumber <= MAX_PLAYER_SHOP_SLOTS; slotNumber += 1) {
         try {
-          await clearPlayerShopSlot({ slotNumber });
+          await clearPlayerShopSlot({ marketId: this.activeMarketId, slotNumber });
         } catch {
           failed = true;
         }
@@ -239,7 +248,7 @@ export class PlayerShopListingManager {
     if (clearPlayerShopRequest) {
       for (let slotNumber = 1; slotNumber <= MAX_PLAYER_SHOP_SLOTS; slotNumber += 1) {
         try {
-          await clearPlayerShopRequest({ slotNumber });
+          await clearPlayerShopRequest({ marketId: this.activeMarketId, slotNumber });
         } catch {
           failed = true;
         }
@@ -248,7 +257,7 @@ export class PlayerShopListingManager {
 
     if (claimPlayerShopProceeds) {
       try {
-        await claimPlayerShopProceeds({});
+        await claimPlayerShopProceeds({ marketId: this.activeMarketId });
       } catch {
         failed = true;
       }

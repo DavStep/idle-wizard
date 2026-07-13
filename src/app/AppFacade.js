@@ -42,6 +42,7 @@ export class AppFacade {
     this.gameplayFacade.setPersistenceStorage(this.backendFacade.getGameplaySaveFacade());
     this.gameplayFacade.setGameConfigFacade(this.backendFacade.getGameConfigFacade());
     this.gameplayFacade.setNpcMarketFacade(this.backendFacade.getNpcMarketFacade());
+    this.gameplayFacade.setPlayerShopFacade(this.backendFacade.getPlayerShopFacade());
     this.gameplayFacade.setPotionDiscoveryFacade(
       this.backendFacade.getPotionDiscoveryFacade(),
     );

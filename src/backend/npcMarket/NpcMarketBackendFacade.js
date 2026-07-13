@@ -1,10 +1,11 @@
 import { NpcMarketStateObserverManager } from './managers/NpcMarketStateObserverManager.js';
 import { NpcMarketSubscriptionManager } from './managers/NpcMarketSubscriptionManager.js';
 import { NpcMarketTradeManager } from './managers/NpcMarketTradeManager.js';
+import { defaultMarketId, isMarketId } from '../../shared/marketLicence.js';
 
 export class NpcMarketBackendFacade {
   static explain =
-    'Shares NPC bazar prices and stock through the server so all players see the same trader market.';
+    'Shares NPC prices and stock through the server inside each player’s permanent market licence.';
 
   constructor() {
     this.stateObserverManager = new NpcMarketStateObserverManager();
@@ -15,6 +16,7 @@ export class NpcMarketBackendFacade {
     this.connection = null;
     this.priceRetainCount = 0;
     this.pricesActive = false;
+    this.activeMarketId = defaultMarketId;
   }
 
   connect(connection) {
@@ -37,6 +39,11 @@ export class NpcMarketBackendFacade {
 
   getSnapshot() {
     return this.subscriptionManager.getSnapshot();
+  }
+
+  setActiveMarketId(marketId) {
+    this.activeMarketId = isMarketId(marketId) ? marketId : defaultMarketId;
+    this.subscriptionManager.setActiveMarketId(this.activeMarketId);
   }
 
   subscribe(listener) {
@@ -98,12 +105,12 @@ export class NpcMarketBackendFacade {
     return this.getPrice(itemKey)?.npcStock ?? null;
   }
 
-  sellToNpc({ itemKey, quantity = 1 }) {
-    return this.tradeManager.sellToNpc({ itemKey, quantity });
+  sellToNpc({ itemKey, quantity = 1, marketId = this.activeMarketId }) {
+    return this.tradeManager.sellToNpc({ itemKey, quantity, marketId });
   }
 
-  buyFromNpc({ itemKey, quantity = 1 }) {
-    return this.tradeManager.buyFromNpc({ itemKey, quantity });
+  buyFromNpc({ itemKey, quantity = 1, marketId = this.activeMarketId }) {
+    return this.tradeManager.buyFromNpc({ itemKey, quantity, marketId });
   }
 
   resetMarket() {

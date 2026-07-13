@@ -1,6 +1,7 @@
 import { normalizePrestigeRunFocus } from '../../prestige/prestigeUnlocks.js';
+import { getLegacyMultiplierResearchCrystalCost } from '../../research/emeraldResearchIds.js';
 
-export const GAMEPLAY_SAVE_VERSION = 10;
+export const GAMEPLAY_SAVE_VERSION = 11;
 
 export class GameplayMigrationManager {
   constructor() {
@@ -16,6 +17,10 @@ export class GameplayMigrationManager {
 
     if (save.version === GAMEPLAY_SAVE_VERSION) {
       return save;
+    }
+
+    if (save.version === 10) {
+      return this.createVersion10Save(save);
     }
 
     if (save.version === 9) {
@@ -526,6 +531,12 @@ export class GameplayMigrationManager {
       };
     }
 
+    if (migratedSave.research && typeof migratedSave.research === 'object') {
+      migratedSave.research = createLegacyMultiplierResearchCrystalCostSnapshot(
+        migratedSave.research,
+      );
+    }
+
     return migratedSave;
   }
 
@@ -562,6 +573,40 @@ function normalizeMigratedPrestigeLevels(levels = []) {
   }
 
   return normalizedLevels;
+}
+
+function createLegacyMultiplierResearchCrystalCostSnapshot(research) {
+  const completedIds = Array.isArray(research.completedIds) ? research.completedIds : [];
+  const inProgress = Array.isArray(research.inProgress) ? research.inProgress : [];
+  const committedResearchIds = new Set([
+    ...completedIds,
+    ...inProgress.map((progress) => progress?.researchId),
+  ]);
+  const existingCosts =
+    research.crystalCostById && typeof research.crystalCostById === 'object'
+      ? research.crystalCostById
+      : {};
+  const crystalCostById = {};
+
+  for (const researchId of committedResearchIds) {
+    if (typeof researchId !== 'string') {
+      continue;
+    }
+
+    const existingCost = Math.floor(Number(existingCosts[researchId]));
+    const legacyCost = getLegacyMultiplierResearchCrystalCost(researchId);
+
+    if (Number.isFinite(existingCost) && existingCost >= 0) {
+      crystalCostById[researchId] = existingCost;
+    } else if (legacyCost !== null) {
+      crystalCostById[researchId] = legacyCost;
+    }
+  }
+
+  return {
+    ...research,
+    crystalCostById,
+  };
 }
 
 function createEmptyStatsPersistenceSnapshot() {

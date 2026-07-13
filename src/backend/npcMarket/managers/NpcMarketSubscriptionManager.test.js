@@ -132,4 +132,40 @@ describe('NpcMarketSubscriptionManager', () => {
       prices: [],
     });
   });
+
+  it('does not expose another market tier’s stock or prices', () => {
+    const pricesTable = createTable([
+      {
+        itemKey: 'sageSeed',
+        marketId: 'smallTown',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        marketPriceCoin: 2n,
+        npcBuyPriceCoin: 1n,
+        npcStock: 4n,
+      },
+      {
+        itemKey: 'sageSeed',
+        marketId: 'arcaneExchange',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        marketPriceCoin: 9n,
+        npcBuyPriceCoin: 6n,
+        npcStock: 17n,
+      },
+    ]);
+    const manager = new NpcMarketSubscriptionManager();
+
+    manager.setActiveMarketId('arcaneExchange');
+    manager.connect(createConnection({ pricesTable }));
+
+    expect(manager.getSnapshot().prices).toEqual([
+      expect.objectContaining({
+        itemKey: 'sageSeed',
+        marketId: 'arcaneExchange',
+        marketPriceCoin: 9,
+        npcStock: 17,
+      }),
+    ]);
+  });
 });

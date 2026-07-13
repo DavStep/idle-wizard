@@ -19,6 +19,6 @@ working through game behavior before touching source.
 - [[Production Systems]]
 - [[Research And Unlocks]]
 - [[Market Systems]]
-- [[Prestige And Automation]]
+- [[Prestige]]
 - [[Events And Social]]
 - [[Guilds]]

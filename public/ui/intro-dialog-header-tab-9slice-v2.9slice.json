@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "intro-dialog-header-tab-9slice-v2.png",
+  "workingAsset": null,
+  "scaleWorkflow": {
+    "workScale": 1,
+    "downscaleResample": "lanczos",
+    "alphaCrop": {
+      "enabled": false
+    }
+  },
+  "source": {
+    "path": "/Users/davitstepanyan/Documents/idle-wizard/public/ui/intro-dialog-header-tab-9slice.png",
+    "width": 597,
+    "height": 127,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 597,
+      "height": 127
+    }
+  },
+  "sourceCropSize": {
+    "width": 597,
+    "height": 127
+  },
+  "slice": {
+    "left": 29,
+    "top": 31,
+    "right": 29,
+    "bottom": 31
+  },
+  "mode": "distilled",
+  "distill": {
+    "sampleX": 250,
+    "sampleY": 31,
+    "centerWidth": 96,
+    "centerHeight": 65,
+    "cornerSource": "source",
+    "edgeSource": "source"
+  },
+  "cleanup": {
+    "symmetrizeCorners": false,
+    "symmetrizeEdges": false,
+    "transparentChamfer": 0,
+    "transparentChamferAaScale": 4,
+    "transparentInset": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "brownBackgroundKey": null,
+    "sideGutterTrim": {
+      "transparentThroughPx": 0,
+      "fadePx": 2
+    },
+    "allowTransparentGutters": false,
+    "geometricMask": false
+  },
+  "rendering": {
+    "stretch": "edges-and-center",
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "validation": {
+    "rasterOnly": true,
+    "pngSignatureChecked": true,
+    "naturalRoundTripExact": true,
+    "cornerRoundTripExact": true,
+    "alpha": {
+      "transparent": 1121,
+      "translucent": 533,
+      "opaque": 17904
+    },
+    "alphaBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 154,
+      "height": 127
+    },
+    "transparentGutters": {
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "bottom": 0
+    },
+    "passesNoGutterGate": true,
+    "uniqueColors": {
+      "all": 3347,
+      "corners": 2113,
+      "edges": 1540
+    },
+    "workAsset": {
+      "size": {
+        "width": 154,
+        "height": 127
+      },
+      "slice": {
+        "left": 29,
+        "top": 31,
+        "right": 29,
+        "bottom": 31
+      },
+      "naturalRoundTripExact": true,
+      "cornerRoundTripExact": true,
+      "alpha": {
+        "transparent": 1121,
+        "translucent": 533,
+        "opaque": 17904
+      },
+      "alphaBounds": {
+        "x": 0,
+        "y": 0,
+        "width": 154,
+        "height": 127
+      },
+      "transparentGutters": {
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "bottom": 0
+      },
+      "uniqueColors": {
+        "all": 3347,
+        "corners": 2113,
+        "edges": 1540
+      }
+    }
+  },
+  "qa": {
+    "sheet": "intro-dialog-header-tab-9slice-v2-qa-sheet.png",
+    "examples": [
+      {
+        "label": "original: 597x127",
+        "width": 597,
+        "height": 127
+      },
+      {
+        "label": "height stretched: 597x287",
+        "width": 597,
+        "height": 287
+      },
+      {
+        "label": "width stretched: 866x127",
+        "width": 866,
+        "height": 127
+      },
+      {
+        "label": "both stretched: 866x287",
+        "width": 866,
+        "height": 287
+      }
+    ]
+  }
+}

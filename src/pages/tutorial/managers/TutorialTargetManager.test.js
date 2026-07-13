@@ -292,6 +292,26 @@ describe('TutorialTargetManager', () => {
     expect(manager.getTarget('garden:plot:1:label')).toBe(visibleTarget);
   });
 
+  it('keeps a measurable target eligible while its page is fading in', () => {
+    const stage = document.createElement('section');
+    const target = document.createElement('button');
+    const manager = new TutorialTargetManager({ stage });
+
+    target.dataset.tutorialId = 'shop:directSell';
+    target.style.opacity = '0';
+    target.getBoundingClientRect = () => ({
+      left: 10,
+      top: 20,
+      right: 90,
+      bottom: 40,
+      width: 80,
+      height: 20,
+    });
+    stage.append(target);
+
+    expect(manager.getTarget('shop:directSell')).toBe(target);
+  });
+
   it('keeps copy-only popup guidance visible only for the popup it needs', () => {
     const stage = document.createElement('section');
     const directSellPopup = document.createElement('section');

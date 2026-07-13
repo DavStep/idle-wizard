@@ -30,4 +30,4 @@ research. Unknown mixes become wasted potion.
 
 - [[Core Loop]]
 - [[Research And Unlocks]]
-- [[Prestige And Automation]]
+- [[Prestige]]

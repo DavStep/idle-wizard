@@ -8,6 +8,7 @@ import { GuildFacade } from './guild/GuildFacade.js';
 import { InboxRewardsFacade } from './inboxRewards/InboxRewardsFacade.js';
 import { ItemsFacade } from './items/ItemsFacade.js';
 import { ManaFacade } from './mana/ManaFacade.js';
+import { MarketLicenceFacade } from './market/MarketLicenceFacade.js';
 import { GameplayRewardEventManager } from './managers/GameplayRewardEventManager.js';
 import { GameplayStateObserverManager } from './managers/GameplayStateObserverManager.js';
 import { LevelUpCrystalRewardManager } from './managers/LevelUpCrystalRewardManager.js';
@@ -145,9 +146,13 @@ export class GameplayFacade {
       itemsFacade: this.itemsFacade,
       researchFacade: this.researchFacade,
     });
+    this.marketLicenceFacade = new MarketLicenceFacade({
+      prestigeFacade: this.prestigeFacade,
+    });
     this.shopFacade = new ShopFacade({
       coinFacade: this.coinFacade,
       itemsFacade: this.itemsFacade,
+      marketLicenceFacade: this.marketLicenceFacade,
       playerLevelFacade: this.playerLevelFacade,
       researchFacade: this.researchFacade,
       getReservedItemQuantity: (itemTypeId) => this.getReservedShopItemQuantity(itemTypeId),
@@ -209,6 +214,7 @@ export class GameplayFacade {
     this.lastFrameSnapshotBuildTime = Number.NEGATIVE_INFINITY;
     this.lastFrameSnapshotKey = '';
     this.lastFrameResourceSnapshotKey = '';
+    this.lastFrameSeedSummoningAvailable = false;
     this.lastFrameHadTimerWork = false;
     this.snapshotCacheDepth = 0;
     this.cachedSnapshot = null;
@@ -254,6 +260,14 @@ export class GameplayFacade {
 
   setNpcMarketFacade(npcMarketFacade) {
     this.shopFacade.setNpcMarketFacade(npcMarketFacade);
+
+    if (this.initialized) {
+      this.publishSnapshot();
+    }
+  }
+
+  setPlayerShopFacade(playerShopFacade) {
+    this.shopFacade.setPlayerShopFacade(playerShopFacade);
 
     if (this.initialized) {
       this.publishSnapshot();
@@ -1420,8 +1434,14 @@ export class GameplayFacade {
 
     const snapshotKey = this.getFrameSnapshotKey();
     const shouldRefresh = this.shouldRefreshFrameSnapshot(time, hasTimerWork);
+    const seedSummoningBecameAvailable = this.updateFrameSeedSummoningAvailability();
 
-    if (snapshotKey === this.lastFrameSnapshotKey && !shouldRefresh && !timerWorkCompleted) {
+    if (
+      snapshotKey === this.lastFrameSnapshotKey &&
+      !shouldRefresh &&
+      !timerWorkCompleted &&
+      !seedSummoningBecameAvailable
+    ) {
       this.lastFrameHadTimerWork = hasTimerWork;
       return false;
     }
@@ -1455,6 +1475,7 @@ export class GameplayFacade {
     this.lastFrameSnapshotBuildTime = frameTime;
     this.lastFrameHadTimerWork = hasTimerWork;
     this.lastFrameResourceSnapshotKey = this.getFrameResourceSnapshotKey();
+    this.lastFrameSeedSummoningAvailable = this.seedSummoningFacade.canSummonSeed();
   }
 
   getFrameSnapshotKey() {
@@ -1467,6 +1488,14 @@ export class GameplayFacade {
       manaCap: cap,
       guild: this.guildFacade.getFrameSnapshotKey(),
     });
+  }
+
+  updateFrameSeedSummoningAvailability() {
+    const canSummonSeed = this.seedSummoningFacade.canSummonSeed();
+    const becameAvailable = !this.lastFrameSeedSummoningAvailable && canSummonSeed;
+
+    this.lastFrameSeedSummoningAvailable = canSummonSeed;
+    return becameAvailable;
   }
 
   shouldRefreshFrameSnapshot(time, hasTimerWork = this.hasFrameTimerWork()) {

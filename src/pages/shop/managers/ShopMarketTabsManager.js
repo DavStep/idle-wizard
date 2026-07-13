@@ -44,6 +44,10 @@ export class ShopMarketTabsManager {
     this.root = document.createElement('section');
     this.root.className = 'shop-page__market-root';
 
+    this.refs.marketIdentity = document.createElement('div');
+    this.refs.marketIdentity.className = 'shop-page__market-identity';
+    this.refs.marketIdentity.setAttribute('aria-live', 'polite');
+
     this.refs.tabs = document.createElement('div');
     this.refs.tabs.className = 'shop-page__market-tabs';
     this.refs.tabs.setAttribute('aria-label', 'Market type');
@@ -58,11 +62,13 @@ export class ShopMarketTabsManager {
       this.root.append(panel);
     }
 
+    this.root.append(this.refs.marketIdentity);
     this.root.prepend(this.refs.tabs);
     parent.append(this.root);
     this.render();
     this.unsubscribeGameplay = this.gameplayFacade?.subscribe?.((snapshot) => {
       this.lastGameplaySnapshot = snapshot;
+      this.renderMarketIdentity();
       this.renderNotifications();
     }) ?? null;
     this.unsubscribePlayerShop = this.playerShopFacade?.subscribe?.((snapshot) => {
@@ -73,6 +79,7 @@ export class ShopMarketTabsManager {
     this.lastPlayerShopSnapshot = (
       this.playerShopFacade?.getSnapshot?.() ?? this.lastPlayerShopSnapshot
     ) ?? null;
+    this.renderMarketIdentity();
     this.renderNotifications();
 
     return this.root;
@@ -161,6 +168,8 @@ export class ShopMarketTabsManager {
   }
 
   render() {
+    this.renderMarketIdentity();
+
     for (const tab of MARKET_TABS) {
       const selected = this.activeTabId === tab.id;
       const button = this.refs.buttons.get(tab.id);
@@ -171,6 +180,16 @@ export class ShopMarketTabsManager {
       if (panel) {
         panel.hidden = !selected;
       }
+    }
+  }
+
+  renderMarketIdentity() {
+    const market = this.lastGameplaySnapshot?.shop?.market ??
+      this.gameplayFacade?.getSnapshot?.()?.shop?.market;
+    const name = String(market?.name ?? 'Small Town Market');
+
+    if (this.refs.marketIdentity) {
+      this.refs.marketIdentity.textContent = name;
     }
   }
 

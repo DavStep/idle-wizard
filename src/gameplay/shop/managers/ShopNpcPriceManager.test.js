@@ -85,6 +85,7 @@ describe('ShopNpcPriceManager', () => {
     expect(sellToNpc).toHaveBeenCalledWith({
       itemKey: 'sageSeed',
       quantity: 3,
+      marketId: 'smallTown',
     });
   });
 
@@ -191,6 +192,7 @@ describe('ShopNpcPriceManager', () => {
     expect(sellToNpc).toHaveBeenCalledWith({
       itemKey: 'sageSeed',
       quantity: 3,
+      marketId: 'smallTown',
     });
   });
 
@@ -220,6 +222,22 @@ describe('ShopNpcPriceManager', () => {
     expect(buyFromNpc).toHaveBeenCalledWith({
       itemKey: 'sageSeed',
       quantity: 2,
+      marketId: 'smallTown',
+    });
+  });
+
+  it('sells starter goods through the active high-tier market', async () => {
+    const sellToNpc = vi.fn().mockResolvedValue({ ok: true });
+    const manager = new ShopNpcPriceManager({
+      getActiveMarketId: () => 'arcaneExchange',
+      npcMarketFacade: { sellToNpc },
+    });
+
+    await expect(manager.recordSellToNpc(sageSeed, 1)).resolves.toEqual({ ok: true });
+    expect(sellToNpc).toHaveBeenCalledWith({
+      itemKey: 'sageSeed',
+      quantity: 1,
+      marketId: 'arcaneExchange',
     });
   });
 });

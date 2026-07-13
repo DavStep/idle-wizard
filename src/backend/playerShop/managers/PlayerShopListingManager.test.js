@@ -18,13 +18,13 @@ describe('PlayerShopListingManager', () => {
     await expect(manager.clearOwnProgress()).resolves.toEqual({ ok: true });
     expect(clearPlayerShopSlot).toHaveBeenCalledTimes(5);
     expect(clearPlayerShopSlot.mock.calls.map(([args]) => args)).toEqual([
-      { slotNumber: 1 },
-      { slotNumber: 2 },
-      { slotNumber: 3 },
-      { slotNumber: 4 },
-      { slotNumber: 5 },
+      { marketId: 'smallTown', slotNumber: 1 },
+      { marketId: 'smallTown', slotNumber: 2 },
+      { marketId: 'smallTown', slotNumber: 3 },
+      { marketId: 'smallTown', slotNumber: 4 },
+      { marketId: 'smallTown', slotNumber: 5 },
     ]);
-    expect(claimPlayerShopProceeds).toHaveBeenCalledWith({});
+    expect(claimPlayerShopProceeds).toHaveBeenCalledWith({ marketId: 'smallTown' });
   });
 
   it('uses snake-case reset reducers when camel-case bindings are missing', async () => {
@@ -41,6 +41,6 @@ describe('PlayerShopListingManager', () => {
 
     await expect(manager.clearOwnProgress()).resolves.toEqual({ ok: true });
     expect(clearPlayerShopSlot).toHaveBeenCalledTimes(5);
-    expect(claimPlayerShopProceeds).toHaveBeenCalledWith({});
+    expect(claimPlayerShopProceeds).toHaveBeenCalledWith({ marketId: 'smallTown' });
   });
 });

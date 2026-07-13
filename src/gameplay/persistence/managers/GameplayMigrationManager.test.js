@@ -4,6 +4,7 @@ import {
   GAMEPLAY_SAVE_VERSION,
   GameplayMigrationManager,
 } from './GameplayMigrationManager.js';
+import { emeraldResearchIds } from '../../research/emeraldResearchIds.js';
 
 describe('GameplayMigrationManager', () => {
   it('migrates legacy gold saves to coin while keeping the legacy mirror', () => {
@@ -102,6 +103,36 @@ describe('GameplayMigrationManager', () => {
         },
         recordedPlayerTradeIds: [],
         recordedRoyaltyIds: [],
+      },
+    });
+  });
+
+  it('keeps the amount already paid for legacy multiplier research', () => {
+    const manager = new GameplayMigrationManager();
+    const plotMultiplier = emeraldResearchIds.plotPlanting(1, 3);
+    const cauldronMultiplier = emeraldResearchIds.cauldronBrewing(2, 5);
+
+    expect(
+      manager.migrate({
+        version: 10,
+        research: {
+          completedIds: [plotMultiplier],
+          inProgress: [
+            {
+              researchId: cauldronMultiplier,
+              totalSeconds: 30,
+              remainingSeconds: 12,
+            },
+          ],
+        },
+      }),
+    ).toMatchObject({
+      version: GAMEPLAY_SAVE_VERSION,
+      research: {
+        crystalCostById: {
+          [plotMultiplier]: 2,
+          [cauldronMultiplier]: 4,
+        },
       },
     });
   });

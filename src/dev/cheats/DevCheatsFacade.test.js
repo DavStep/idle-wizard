@@ -149,6 +149,45 @@ describe('DevCheatsFacade', () => {
     expect(snapshot.research.completedResearchIds).toContain('unlockRecipe:manaTonic');
   });
 
+  it('sets permanent Prestige stars and flushes the active market licence', async () => {
+    const { app, persistenceStorage } = createApp();
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+
+    await expect(target.cheats.setPrestigeStars(1)).resolves.toMatchObject({
+      ok: true,
+      stars: 1,
+      completedLevels: [10],
+      market: {
+        id: 'crossroads',
+        name: 'Crossroads Market',
+        completedStars: 1,
+      },
+    });
+
+    await expect(target.cheat('setPrestigeStars 6')).resolves.toMatchObject({
+      ok: true,
+      stars: 6,
+      completedLevels: [10, 20, 30, 40, 50, 60],
+      market: {
+        id: 'grandExchange',
+        completedStars: 6,
+      },
+    });
+    expect(target.cheats.getMarketLicence()).toMatchObject({
+      ok: true,
+      market: {
+        id: 'grandExchange',
+        completedStars: 6,
+      },
+    });
+
+    const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
+    expect(saved.prestige.completedLevels).toEqual([10, 20, 30, 40, 50, 60]);
+  });
+
   it('sets level-gated garden views directly', () => {
     const { app } = createApp();
     const target = {};

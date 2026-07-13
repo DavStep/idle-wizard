@@ -975,7 +975,8 @@ function createGameplayFacadeFake() {
       researches: [
         {
           id: 'advanced:cauldronBrewing:1:1',
-          label: 'cauldron 1 brewing lvl 1',
+          label: 'cauldron 1 brewing',
+          starLevel: 1,
           value: '1 ruby',
           effect: '-5% time',
           showEffect: true,
@@ -994,7 +995,8 @@ function createGameplayFacadeFake() {
       researches: [
         {
           id: 'advanced:plotGrowth:1:1',
-          label: 'plot 1 growth lvl 1',
+          label: 'plot 1 growth',
+          starLevel: 1,
           value: '1 ruby',
           effect: '-5% time',
           showEffect: true,
@@ -1110,7 +1112,7 @@ function createGameplayFacadeFake() {
     },
     {
       id: 'emerald',
-      label: 'emerald research',
+      label: 'crystal research',
       boxes: emeraldResearchBoxes,
     },
   ];
@@ -4008,7 +4010,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.prestige-page .style-dialog')).toBeNull();
   });
 
-  it('shows crystal, ruby, or emerald in the top panel only on matching research tabs', () => {
+  it('shows ruby, emerald, or crystal in the top panel on matching research tabs', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 3);
@@ -4033,21 +4035,6 @@ describe('PagesFacade', () => {
 
     clickResearchTab('automation');
 
-    const crystal = stage.querySelector('.room-top-panel__resource[aria-label="crystal"]');
-    const crystalValue = crystal?.querySelector('.room-top-panel__resource-val');
-    expect(crystal?.hidden).toBe(false);
-    expect(crystal?.textContent).toBe('0 crystal');
-    expect(
-      crystalValue?.querySelector('.style-resource-label--crystal .style-resource-label__amount')
-        ?.textContent,
-    ).toBe('0');
-    expect(
-      crystal?.querySelector('.style-resource-label--crystal .style-resource-label__icon')
-        ?.dataset.assetAtlasFrame,
-    ).toBe('resource:crystal');
-
-    clickResearchTab('advanced research');
-
     const ruby = stage.querySelector('.room-top-panel__resource[aria-label="ruby"]');
     const rubyValue = ruby?.querySelector('.room-top-panel__resource-val');
     expect(ruby?.hidden).toBe(false);
@@ -4061,15 +4048,30 @@ describe('PagesFacade', () => {
         ?.dataset.assetAtlasFrame,
     ).toBe('resource:ruby');
 
-    clickResearchTab('emerald research');
+    clickResearchTab('advanced research');
 
     const emerald = stage.querySelector('.room-top-panel__resource[aria-label="emerald"]');
+    const emeraldValue = emerald?.querySelector('.room-top-panel__resource-val');
     expect(emerald?.hidden).toBe(false);
     expect(emerald?.textContent).toBe('0 emerald');
+    expect(
+      emeraldValue?.querySelector('.style-resource-label--emerald .style-resource-label__amount')
+        ?.textContent,
+    ).toBe('0');
     expect(
       emerald?.querySelector('.style-resource-label--emerald .style-resource-label__icon')
         ?.dataset.assetAtlasFrame,
     ).toBe('resource:emerald');
+
+    clickResearchTab('crystal research');
+
+    const crystal = stage.querySelector('.room-top-panel__resource[aria-label="crystal"]');
+    expect(crystal?.hidden).toBe(false);
+    expect(crystal?.textContent).toBe('0 crystal');
+    expect(
+      crystal?.querySelector('.style-resource-label--crystal .style-resource-label__icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('resource:crystal');
 
     clickResearchTab('regular research');
     expect(resources?.classList.contains('has-special-currency')).toBe(false);
@@ -10653,7 +10655,7 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.research-page__tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['regular research', 'automation', 'advanced research', 'emerald research']);
+    ).toEqual(['regular research', 'automation', 'advanced research', 'crystal research']);
     expect(stage.querySelector('.research-page__box-list')?.nextElementSibling).toBe(
       stage.querySelector('.research-page__tabs'),
     );
@@ -11097,7 +11099,7 @@ describe('PagesFacade', () => {
     );
   });
 
-  it('switches the research page between regular, automation, advanced, and emerald research', () => {
+  it('switches the research page between regular, automation, advanced, and crystal research', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 3);
@@ -11116,7 +11118,7 @@ describe('PagesFacade', () => {
       (button) => button.textContent === 'advanced research',
     );
     const emeraldTab = [...stage.querySelectorAll('.research-page__tab-button')].find(
-      (button) => button.textContent === 'emerald research',
+      (button) => button.textContent === 'crystal research',
     );
 
     expect(automationTab).not.toBeNull();
@@ -11149,7 +11151,7 @@ describe('PagesFacade', () => {
       'cauldron brewing research',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'cauldron 1 brewing lvl 1',
+      'cauldron 1 brewing ★',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('1 ruby');
     expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
@@ -11169,7 +11171,7 @@ describe('PagesFacade', () => {
       '1 emerald',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
-      'cauldron 1 brewing lvl 1',
+      'cauldron 1 brewing ★',
     );
   });
 

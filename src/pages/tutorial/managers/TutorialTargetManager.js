@@ -293,8 +293,7 @@ function isVisibleTargetElement(element, root) {
 
     if (
       style?.display === 'none' ||
-      style?.visibility === 'hidden' ||
-      Number.parseFloat(style?.opacity) === 0
+      style?.visibility === 'hidden'
     ) {
       return false;
     }
