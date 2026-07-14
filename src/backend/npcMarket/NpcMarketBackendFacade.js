@@ -42,8 +42,14 @@ export class NpcMarketBackendFacade {
   }
 
   setActiveMarketId(marketId) {
-    this.activeMarketId = isMarketId(marketId) ? marketId : defaultMarketId;
-    this.subscriptionManager.setActiveMarketId(this.activeMarketId);
+    const nextMarketId = isMarketId(marketId) ? marketId : defaultMarketId;
+
+    if (nextMarketId === this.activeMarketId) {
+      return;
+    }
+
+    this.activeMarketId = nextMarketId;
+    this.subscriptionManager.setActiveMarketId(nextMarketId);
   }
 
   subscribe(listener) {

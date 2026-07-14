@@ -7,16 +7,18 @@ import {
   STATUS_ICON_LOCK,
 } from '../../shared/statusIcon.js';
 import { createStarLevelLabel } from '../../shared/starLevelLabel.js';
+import { marketLicences } from '../../../shared/marketLicence.js';
 import { getPrestigeUnlocksSnapshot } from '../../../gameplay/prestige/prestigeUnlocks.js';
 
 const PRESTIGE_TABS = [
   { id: 'main', label: 'main' },
   { id: 'points', label: 'points' },
 ];
+const MARKET_LICENCE_TOOLTIP_ID = 'prestige-page__market-licence-tooltip';
 
 export class PrestigePanelManager {
   static explain =
-    'Shows prestige milestones and permanent point rewards so the player can reset a run when ready.';
+    'Shows prestige milestones, permanent point rewards, and permanent market licences so the player can reset a run when ready.';
 
   constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -27,6 +29,8 @@ export class PrestigePanelManager {
     this.lastSnapshot = {};
     this.renderedSignature = '';
     this.selectedTabId = PRESTIGE_TABS[0].id;
+    this.openMarketLicence = null;
+    this.marketLicenceTooltipTarget = null;
   }
 
   mount(parent) {
@@ -60,6 +64,7 @@ export class PrestigePanelManager {
     this.refs.rows.className = 'workshop-page__prestige-rows';
     this.refs.confirm = this.createConfirmPanel();
     this.refs.tabs = this.createTabs();
+    this.refs.marketLicenceTooltip = this.createMarketLicenceTooltip();
 
     this.refs.dialog.append(
       this.refs.title,
@@ -68,7 +73,7 @@ export class PrestigePanelManager {
     );
     this.refs.body.append(this.refs.dialog, this.refs.rows, this.refs.confirm);
     this.refs.panel.append(this.refs.body, this.refs.tabs);
-    this.root.append(this.refs.panel);
+    this.root.append(this.refs.panel, this.refs.marketLicenceTooltip);
     parent.append(this.root);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
@@ -148,6 +153,7 @@ export class PrestigePanelManager {
       ? tabId
       : PRESTIGE_TABS[0].id;
     this.confirmingMilestone = null;
+    this.hideMarketLicenceTooltip();
     this.renderedSignature = '';
     this.render(this.lastSnapshot);
   }
@@ -161,6 +167,8 @@ export class PrestigePanelManager {
     this.confirmingMilestone = null;
     this.lastSnapshot = {};
     this.renderedSignature = '';
+    this.openMarketLicence = null;
+    this.marketLicenceTooltipTarget = null;
   }
 
   render(snapshot) {
@@ -174,6 +182,7 @@ export class PrestigePanelManager {
 
     const signature = this.createRenderSignature(this.lastSnapshot);
     if (signature !== this.renderedSignature) {
+      this.hideMarketLicenceTooltip();
       this.renderedSignature = signature;
       this.refs.rows.replaceChildren(...this.createRows(this.lastSnapshot));
     }
@@ -251,6 +260,12 @@ export class PrestigePanelManager {
       this.createDescriptionLine(
         'each completed milestone adds 1 prestige point for concrete rewards.',
       ),
+      this.createDescriptionLine(
+        'points 1, 3, 6, and 10 permanently unlock new market licences.',
+      ),
+      this.createDescriptionLine(
+        'the highest licence stays active after resets. tap its ? in points for details.',
+      ),
     );
     return description;
   }
@@ -318,9 +333,7 @@ export class PrestigePanelManager {
 
   createPointRewardRows(prestige = {}) {
     const completedCount = this.getCompletedPrestigeCount(prestige);
-    const pointRewards = Array.isArray(prestige.unlocks)
-      ? prestige.unlocks
-      : getPrestigeUnlocksSnapshot(completedCount);
+    const pointRewards = this.getPointRewards(prestige, completedCount);
     const title = document.createElement('div');
     title.className = 'workshop-page__prestige-point-title';
     title.textContent = 'point rewards';
@@ -347,10 +360,7 @@ export class PrestigePanelManager {
 
     const reward = document.createElement('div');
     reward.className = 'workshop-page__prestige-point-reward';
-    reward.replaceChildren(
-      this.createPointRewardLine(pointReward.label),
-      ...pointReward.rewards.map((label) => this.createPointRewardLine(label)),
-    );
+    reward.replaceChildren(...this.createPointRewardLines(pointReward));
 
     const status = document.createElement('span');
     status.className = 'workshop-page__prestige-point-status';
@@ -358,6 +368,70 @@ export class PrestigePanelManager {
 
     row.append(count, status, reward);
     return row;
+  }
+
+  getPointRewards(prestige = {}, completedCount = 0) {
+    const unlocks = Array.isArray(prestige.unlocks)
+      ? prestige.unlocks
+      : getPrestigeUnlocksSnapshot(completedCount);
+    const rewardsByCount = new Map();
+
+    for (const unlock of unlocks) {
+      const count = Math.max(0, Math.floor(Number(unlock?.count) || 0));
+      if (count <= 0) {
+        continue;
+      }
+
+      rewardsByCount.set(count, {
+        count,
+        label: String(unlock.label ?? ''),
+        rewards: Array.isArray(unlock.rewards) ? unlock.rewards : [],
+      });
+    }
+
+    for (const licence of marketLicences) {
+      if (licence.requiredStars <= 0) {
+        continue;
+      }
+
+      const reward = rewardsByCount.get(licence.requiredStars) ?? {
+        count: licence.requiredStars,
+        label: '',
+        rewards: [],
+      };
+      reward.marketLicence = licence;
+      rewardsByCount.set(licence.requiredStars, reward);
+    }
+
+    const nextCount = [...rewardsByCount.keys()]
+      .sort((left, right) => left - right)
+      .find((count) => count > completedCount);
+
+    return [...rewardsByCount.values()]
+      .sort((left, right) => left.count - right.count)
+      .map((reward) => ({
+        ...reward,
+        unlocked: completedCount >= reward.count,
+        next: reward.count === nextCount,
+      }));
+  }
+
+  createPointRewardLines(pointReward = {}) {
+    const lines = [];
+
+    if (pointReward.marketLicence) {
+      lines.push(this.createMarketLicenceRewardLine(pointReward.marketLicence));
+    }
+
+    if (pointReward.label) {
+      lines.push(this.createPointRewardLine(pointReward.label));
+    }
+
+    for (const label of pointReward.rewards ?? []) {
+      lines.push(this.createPointRewardLine(label));
+    }
+
+    return lines;
   }
 
   createPrestigePointCount(count) {
@@ -391,6 +465,108 @@ export class PrestigePanelManager {
     row.className = 'workshop-page__prestige-point-reward-row';
     row.textContent = `- ${label}`;
     return row;
+  }
+
+  createMarketLicenceRewardLine(licence) {
+    const row = document.createElement('div');
+    row.className = 'workshop-page__prestige-point-reward-row workshop-page__prestige-market-reward';
+
+    const label = document.createElement('span');
+    label.textContent = `- ${licence.name}`;
+
+    const help = document.createElement('button');
+    help.className = 'style-button workshop-page__prestige-market-help';
+    help.type = 'button';
+    help.textContent = '?';
+    help.setAttribute('aria-controls', MARKET_LICENCE_TOOLTIP_ID);
+    help.setAttribute('aria-expanded', 'false');
+    help.setAttribute('aria-label', `what does ${licence.name} unlock?`);
+    help.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.toggleMarketLicenceTooltip(licence, help);
+    });
+
+    row.append(label, help);
+    return row;
+  }
+
+  createMarketLicenceTooltip() {
+    const tooltip = document.createElement('section');
+    tooltip.id = MARKET_LICENCE_TOOLTIP_ID;
+    tooltip.className = 'style-tooltip prestige-page__market-licence-tooltip';
+    tooltip.hidden = true;
+    tooltip.setAttribute('role', 'tooltip');
+    return tooltip;
+  }
+
+  toggleMarketLicenceTooltip(licence, target) {
+    if (this.openMarketLicence?.id === licence.id) {
+      this.hideMarketLicenceTooltip();
+      return;
+    }
+
+    this.openMarketLicence = licence;
+    this.marketLicenceTooltipTarget = target;
+    this.refs.marketLicenceTooltip.textContent = this.getMarketLicenceTooltipText(licence);
+    this.refs.marketLicenceTooltip.hidden = false;
+    target.setAttribute('aria-expanded', 'true');
+    this.positionMarketLicenceTooltip();
+  }
+
+  hideMarketLicenceTooltip() {
+    this.marketLicenceTooltipTarget?.setAttribute('aria-expanded', 'false');
+    if (this.refs.marketLicenceTooltip) {
+      this.refs.marketLicenceTooltip.hidden = true;
+    }
+    this.openMarketLicence = null;
+    this.marketLicenceTooltipTarget = null;
+  }
+
+  getMarketLicenceTooltipText(licence = {}) {
+    const requiredPoints = Math.max(0, Math.floor(Number(licence.requiredStars) || 0));
+    return `${licence.name} unlocks at ${requiredPoints} ${this.pluralize(requiredPoints, 'prestige point')}. all trader and player-market trade permanently moves here. it has its own prices, demand, stock, listings, requests, and proceeds. earlier goods remain available, but earlier markets do not.`;
+  }
+
+  positionMarketLicenceTooltip() {
+    const target = this.marketLicenceTooltipTarget;
+    const tooltip = this.refs.marketLicenceTooltip;
+
+    if (!target || !tooltip || tooltip.hidden || !this.root) {
+      return;
+    }
+
+    const targetRect = target.getBoundingClientRect();
+    const rootRect = this.root.getBoundingClientRect();
+    const rootWidth = this.root.clientWidth || this.root.offsetWidth || rootRect.width || 0;
+    const rootHeight = this.root.clientHeight || this.root.offsetHeight || rootRect.height || 0;
+    const scaleX = rootWidth > 0 ? rootRect.width / rootWidth : 1;
+    const scaleY = rootHeight > 0 ? rootRect.height / rootHeight : 1;
+    const safeScaleX = Number.isFinite(scaleX) && scaleX > 0 ? scaleX : 1;
+    const safeScaleY = Number.isFinite(scaleY) && scaleY > 0 ? scaleY : 1;
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const tooltipWidth =
+      tooltip.offsetWidth || tooltip.clientWidth || tooltipRect.width / safeScaleX;
+    const tooltipHeight =
+      tooltip.offsetHeight || tooltip.clientHeight || tooltipRect.height / safeScaleY;
+    const targetRight = (targetRect.right - rootRect.left) / safeScaleX;
+    const targetTop = (targetRect.top - rootRect.top) / safeScaleY;
+    const targetBottom = (targetRect.bottom - rootRect.top) / safeScaleY;
+    const inset = 8;
+    const gap = 6;
+    const maxLeft = Math.max(inset, rootWidth - tooltipWidth - inset);
+
+    let left = Math.min(Math.max(targetRight - tooltipWidth, inset), maxLeft);
+    let top = targetTop - tooltipHeight - gap;
+
+    if (top < inset) {
+      top = targetBottom + gap;
+    }
+
+    const maxTop = Math.max(inset, rootHeight - tooltipHeight - inset);
+    top = Math.min(Math.max(top, inset), maxTop);
+
+    tooltip.style.left = `${Math.round(left)}px`;
+    tooltip.style.top = `${Math.round(top)}px`;
   }
 
   createMilestoneAction(milestone) {

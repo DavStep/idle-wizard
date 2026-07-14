@@ -209,6 +209,8 @@ export class GameplayFacade {
     this.worldChatFacade = null;
     this.gameConfigFacade = null;
     this.gameConfigUnsubscribe = null;
+    this.npcMarketUnsubscribe = null;
+    this.npcMarketSnapshotPublishScheduled = false;
     this.initialized = false;
     this.lastFrameSnapshotPublishTime = Number.NEGATIVE_INFINITY;
     this.lastFrameSnapshotBuildTime = Number.NEGATIVE_INFINITY;
@@ -259,7 +261,12 @@ export class GameplayFacade {
   }
 
   setNpcMarketFacade(npcMarketFacade) {
+    this.npcMarketUnsubscribe?.();
+    this.npcMarketUnsubscribe = null;
     this.shopFacade.setNpcMarketFacade(npcMarketFacade);
+    this.npcMarketUnsubscribe = npcMarketFacade?.subscribe?.(() => {
+      this.scheduleNpcMarketSnapshotPublish();
+    }) ?? null;
 
     if (this.initialized) {
       this.publishSnapshot();
@@ -316,6 +323,7 @@ export class GameplayFacade {
     if (loaded) {
       this.persistenceLoadRevision += 1;
     }
+    this.shopFacade.syncActiveMarketLicence();
     this.syncRubyFromPrestige();
     const backfilledCrystal = this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
     this.syncPlayerLevelManaEffects();
@@ -334,6 +342,9 @@ export class GameplayFacade {
     this.persistenceFacade.stop();
     this.gameConfigUnsubscribe?.();
     this.gameConfigUnsubscribe = null;
+    this.npcMarketUnsubscribe?.();
+    this.npcMarketUnsubscribe = null;
+    this.npcMarketSnapshotPublishScheduled = false;
     this.stateObserverManager.clear();
     this.frameResourceObserverManager.clear();
     this.rewardEventManager.clear();
@@ -477,6 +488,8 @@ export class GameplayFacade {
       this.publishAndSaveSnapshot();
       return result;
     }
+
+    this.shopFacade.syncActiveMarketLicence();
 
     void this.worldChatFacade?.announcePrestige?.({
       prestigeCount: result.completedLevels?.length,
@@ -1613,6 +1626,7 @@ export class GameplayFacade {
     if (loaded) {
       this.persistenceLoadRevision += 1;
     }
+    this.shopFacade.syncActiveMarketLicence();
     this.syncRubyFromPrestige();
     const backfilledCrystal = loaded
       ? this.levelUpCrystalRewardManager.grantMissingForCurrentLevel()
@@ -1649,6 +1663,21 @@ export class GameplayFacade {
 
   consumeWhileAwayReports() {
     return this.whileAwayReportFacade.consumeReports();
+  }
+
+  scheduleNpcMarketSnapshotPublish() {
+    if (!this.initialized || this.npcMarketSnapshotPublishScheduled) {
+      return;
+    }
+
+    this.npcMarketSnapshotPublishScheduled = true;
+    Promise.resolve().then(() => {
+      this.npcMarketSnapshotPublishScheduled = false;
+
+      if (this.initialized) {
+        this.publishSnapshot();
+      }
+    });
   }
 
   syncPlayerLevelManaEffects() {

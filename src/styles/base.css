@@ -4700,6 +4700,43 @@ span.room-seed-pack-composite .room-seed-pack-item {
   min-height: var(--style-row-min-height);
 }
 
+.workshop-page__prestige-market-reward {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.style-button.workshop-page__prestige-market-help {
+  width: auto;
+  min-width: var(--style-box-border-label-line-height);
+  padding: 0 1px;
+  margin: 0;
+  color: inherit;
+  font-size: var(--style-box-border-label-font-size);
+  font-weight: normal;
+  line-height: var(--style-box-border-label-line-height);
+  background: var(--style-surface);
+  border: 0;
+}
+
+.style-button.workshop-page__prestige-market-help:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
+  background: var(--style-active-surface);
+}
+
+.prestige-page__market-licence-tooltip {
+  z-index: 30;
+  display: block;
+  width: 180px;
+  text-align: left;
+  white-space: normal;
+}
+
+.prestige-page__market-licence-tooltip[hidden] {
+  display: none;
+}
+
 .style-button.workshop-page__prestige-action {
   justify-self: stretch;
   width: auto;

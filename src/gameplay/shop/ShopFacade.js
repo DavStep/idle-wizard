@@ -264,7 +264,6 @@ export class ShopFacade {
 
   getSnapshot() {
     const market = this.getActiveMarketLicence();
-    this.syncActiveMarketLicence(market);
     const unlockedSlots = this.shopShelfEntityManager.getUnlockedSlots();
     const playerUnlockedSlots = this.shopPlayerShelfEntityManager.getUnlockedSlots();
     const maxSlots = this.shopBalanceManager.getMaxShelfSlots();

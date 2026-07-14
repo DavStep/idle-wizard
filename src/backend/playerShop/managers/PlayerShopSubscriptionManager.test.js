@@ -103,6 +103,16 @@ function createConnection({
 }
 
 describe('PlayerShopSubscriptionManager', () => {
+  it('does not republish when the market id is unchanged', () => {
+    const onSnapshot = vi.fn();
+    const manager = new PlayerShopSubscriptionManager({ onSnapshot });
+
+    manager.setActiveMarketId('crossroads');
+    manager.setActiveMarketId('crossroads');
+
+    expect(onSnapshot).toHaveBeenCalledTimes(1);
+  });
+
   it('publishes other listings, own listings, and proceeds', () => {
     const snapshots = [];
     const listingsTable = createTable([

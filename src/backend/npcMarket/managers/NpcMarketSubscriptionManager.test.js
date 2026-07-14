@@ -168,4 +168,14 @@ describe('NpcMarketSubscriptionManager', () => {
       }),
     ]);
   });
+
+  it('does not republish when the market id is unchanged', () => {
+    const onSnapshot = vi.fn();
+    const manager = new NpcMarketSubscriptionManager({ onSnapshot });
+
+    manager.setActiveMarketId('crossroads');
+    manager.setActiveMarketId('crossroads');
+
+    expect(onSnapshot).toHaveBeenCalledTimes(1);
+  });
 });

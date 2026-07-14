@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { EcsFacade } from '../ecs/EcsFacade.js';
 import { automationResearchIds } from './automation/automationResearchIds.js';
@@ -3165,6 +3165,84 @@ describe('GameplayFacade', () => {
       totalPriceCoin: 11.2,
     });
     expect(backendSells).toEqual([{ itemKey: 'sageSeed', quantity: 2 }]);
+  });
+
+  it('keeps market subscriptions stable while gameplay snapshots are read', () => {
+    const { gameplayFacade } = createGameplay();
+    const setNpcMarketId = vi.fn();
+    const setPlayerMarketId = vi.fn();
+
+    gameplayFacade.setNpcMarketFacade({
+      getNpcBuyPriceCoin: () => 1,
+      getNpcNeed: () => 1000,
+      setActiveMarketId: setNpcMarketId,
+    });
+    gameplayFacade.setPlayerShopFacade({
+      setActiveMarketId: setPlayerMarketId,
+    });
+
+    const npcCallsAfterSetup = setNpcMarketId.mock.calls.length;
+    const playerCallsAfterSetup = setPlayerMarketId.mock.calls.length;
+
+    gameplayFacade.getSnapshot();
+    gameplayFacade.getSnapshot();
+    gameplayFacade.getSnapshot();
+
+    expect(setNpcMarketId).toHaveBeenCalledTimes(npcCallsAfterSetup);
+    expect(setPlayerMarketId).toHaveBeenCalledTimes(playerCallsAfterSetup);
+  });
+
+  it('publishes NPC quotes once after a subscription update burst', async () => {
+    const { gameplayFacade } = createGameplay();
+    advanceToLevel(gameplayFacade, 4);
+    gameplayFacade.itemsFacade.addItem(1, 1);
+
+    let price = null;
+    let listener = null;
+    gameplayFacade.setNpcMarketFacade({
+      getPrice: () => price,
+      getNpcBuyPriceCoin: () => price?.npcBuyPriceCoin ?? null,
+      getNpcNeed: () => price?.npcNeed ?? null,
+      getNpcSellPriceCoin: () => price?.npcSellPriceCoin ?? null,
+      getNpcStock: () => price?.npcStock ?? null,
+      subscribe(callback) {
+        listener = callback;
+        return () => {
+          listener = null;
+        };
+      },
+    });
+    const publishedSnapshots = [];
+    const unsubscribe = gameplayFacade.subscribe((snapshot) => {
+      publishedSnapshots.push(snapshot);
+    });
+
+    price = {
+      basePriceCoin: 1,
+      marketPriceCoin: 3,
+      npcBuyPriceCoin: 2,
+      npcSellPriceCoin: 4,
+      npcNeed: 12,
+      targetNeed: 20,
+      targetStock: 20,
+      npcStock: 9,
+    };
+    listener({ connected: true, prices: [price] });
+    listener({ connected: true, prices: [price] });
+    await Promise.resolve();
+
+    expect(publishedSnapshots).toHaveLength(1);
+    const sageSeed = publishedSnapshots[0].shop.stock.items.find(
+      (item) => item.key === 'sageSeed',
+    );
+
+    expect(sageSeed).toMatchObject({
+      sellNeed: 12,
+      stock: 9,
+    });
+    expect(sageSeed.buyCoin).toBeGreaterThan(0);
+    expect(sageSeed.sellCoin).toBeGreaterThan(0);
+    unsubscribe();
   });
 
   it('advanced speed research lowers plot growth and cauldron brewing timers', () => {

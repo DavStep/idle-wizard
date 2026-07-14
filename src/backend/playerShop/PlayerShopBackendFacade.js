@@ -100,9 +100,15 @@ export class PlayerShopBackendFacade {
   }
 
   setActiveMarketId(marketId) {
-    this.activeMarketId = isMarketId(marketId) ? marketId : defaultMarketId;
-    this.listingManager.setActiveMarketId(this.activeMarketId);
-    this.subscriptionManager.setActiveMarketId(this.activeMarketId);
+    const nextMarketId = isMarketId(marketId) ? marketId : defaultMarketId;
+
+    if (nextMarketId === this.activeMarketId) {
+      return;
+    }
+
+    this.activeMarketId = nextMarketId;
+    this.listingManager.setActiveMarketId(nextMarketId);
+    this.subscriptionManager.setActiveMarketId(nextMarketId);
   }
 
   clearSlotListing(slotNumber) {

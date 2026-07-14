@@ -161,6 +161,7 @@ experience_type: architecture
 - Timer-driven personal task progress must request an immediate gameplay save; otherwise a completed daily quest can be lost before autosave and make weekly quest points short after the next daily reset.
 - SpacetimeDB subscription cleanup must be locally idempotent; `isEnded()` can still be false after `unsubscribe()` was requested, and a second call throws.
 - Automatic frame snapshots must be deduped before publishing; unchanged snapshots make every page subscriber rerender and can burn 120Hz mobile frame budget.
+- Snapshot getters must stay read-only: synchronize subscription selectors on hydration, prestige, or facade attachment, and coalesce backend quote bursts into one gameplay publish.
 - Mana/resource frame ticks should use a cheap top-panel resource stream; full gameplay snapshots are for actions, cap/timer boundaries, and other state changes.
 - For Pixel/WebView perf checks, keep the phone awake and profile CPU: Android adaptive refresh can make raw rAF look capped when static, while full gameplay snapshot construction can still be the actual hot path.
 - World chat preview/full chat should subscribe to `world_chat_recent`, not the full `world_chat` table.

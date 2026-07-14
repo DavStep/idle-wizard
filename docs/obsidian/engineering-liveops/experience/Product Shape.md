@@ -313,6 +313,7 @@ experience_type: product-shape
 - Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` is a gated room page that stays hidden until level 7.
 - Dev cheats that force garden/shop/brewing slot counts must raise player level or capacity research first; snapshot apply paths clamp counts back to progression caps.
 - Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
+- Prestige points UI must show the 1/3/6/10 market-licence thresholds and explain that each highest unlocked licence permanently owns its separate trade pool.
 - Prestige ruby summary/reward text needs `setResourceIconText`; `data-resource-color` alone colors text but does not render icons.
 - Multiple reward/resource payout labels should be space-separated, not comma-separated.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.

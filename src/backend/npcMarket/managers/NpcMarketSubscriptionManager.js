@@ -71,7 +71,13 @@ export class NpcMarketSubscriptionManager {
   }
 
   setActiveMarketId(marketId) {
-    this.activeMarketId = isMarketId(marketId) ? marketId : defaultMarketId;
+    const nextMarketId = isMarketId(marketId) ? marketId : defaultMarketId;
+
+    if (nextMarketId === this.activeMarketId) {
+      return;
+    }
+
+    this.activeMarketId = nextMarketId;
     this.publishFromTables();
   }
 

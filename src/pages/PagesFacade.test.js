@@ -7429,10 +7429,13 @@ describe('PagesFacade', () => {
     expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
       'each completed milestone adds 1 prestige point for concrete rewards.',
     );
+    expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
+      'points 1, 3, 6, and 10 permanently unlock new market licences.',
+    );
     const descriptionLines = [
       ...page.querySelectorAll('.prestige-page__description-copy > li'),
     ];
-    expect(descriptionLines).toHaveLength(6);
+    expect(descriptionLines).toHaveLength(8);
     expect(
       descriptionLines.every(
         (line) =>
@@ -7736,11 +7739,14 @@ describe('PagesFacade', () => {
     expect(page.textContent).toContain('1 point earned');
     expect(page.textContent).toContain('advanced capacity path');
     expect(page.textContent).toContain('stronger room studies');
+    expect(page.textContent).toContain('Crossroads Market');
+    expect(page.textContent).toContain('Arcane Exchange');
     expect(page.querySelector('.workshop-page__prestige-point-box')).toBeNull();
     expect(page.querySelector('.workshop-page__prestige-point-title')?.textContent).toBe(
       'point rewards',
     );
     const pointRows = [...page.querySelectorAll('.workshop-page__prestige-point-row')];
+    expect(pointRows).toHaveLength(6);
     expect(pointRows[0]?.classList.contains('style-box')).toBe(true);
     expect(pointRows[0]?.querySelector('.workshop-page__prestige-point-count')?.textContent).toBe(
       '★1 point',
@@ -7759,11 +7765,32 @@ describe('PagesFacade', () => {
       [...pointRows[1].querySelectorAll('.workshop-page__prestige-point-reward-row')].map(
         (row) => row.textContent,
       ),
-    ).toEqual(['- run focus', '- current-run research focus selector']);
+    ).toEqual([
+      '- City Bazaar?',
+      '- run focus',
+      '- current-run research focus selector',
+    ]);
     expect(pointRows[1]?.textContent).not.toContain(',');
     expect(
       pointRows[1]?.textContent,
     ).toContain('next');
+
+    const arcaneHelp = [...page.querySelectorAll('.workshop-page__prestige-market-help')].find(
+      (button) => button.getAttribute('aria-label') === 'what does Arcane Exchange unlock?',
+    );
+    arcaneHelp.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const marketTooltip = page.querySelector('.prestige-page__market-licence-tooltip');
+    expect(arcaneHelp.getAttribute('aria-expanded')).toBe('true');
+    expect(marketTooltip.hidden).toBe(false);
+    expect(marketTooltip.getAttribute('role')).toBe('tooltip');
+    expect(marketTooltip.textContent).toContain('Arcane Exchange unlocks at 10 prestige points');
+    expect(marketTooltip.textContent).toContain('own prices, demand, stock, listings');
+
+    arcaneHelp.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(arcaneHelp.getAttribute('aria-expanded')).toBe('false');
+    expect(marketTooltip.hidden).toBe(true);
   });
 
   it('separates researched seed inventory rows from unresearched rows', () => {

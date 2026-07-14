@@ -64,4 +64,17 @@ describe('NpcMarketBackendFacade', () => {
 
     expect(subscriptionManager.disconnect).toHaveBeenCalledTimes(2);
   });
+
+  it('does not republish a market that is already active', () => {
+    const facade = new NpcMarketBackendFacade();
+    facade.subscriptionManager = {
+      setActiveMarketId: vi.fn(),
+    };
+
+    facade.setActiveMarketId('crossroads');
+    facade.setActiveMarketId('crossroads');
+
+    expect(facade.subscriptionManager.setActiveMarketId).toHaveBeenCalledTimes(1);
+    expect(facade.subscriptionManager.setActiveMarketId).toHaveBeenCalledWith('crossroads');
+  });
 });

@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.85
+
+- Fixed Market prices and stock getting stuck offline after opening the room or changing market licence tiers.
+- Reduced Market lag by preventing unchanged market subscriptions from rebuilding shop data during normal game updates.
+
 ## 0.2.84
 
 - Added Prestige market licences: stars unlock Crossroads, City Bazaar, Grand Exchange, and Arcane Exchange, each with separate NPC demand, prices, listings, requests, and proceeds.
