@@ -35,6 +35,7 @@ experience_type: development-operations
 - Deploy-triggered page refresh should only load compatible new code after migrations/sanitizers preserve player saves; refresh must not write defaults over hydrated user data.
 - Deploy refresh must call gameplay save-and-flush before `location.reload()` so open tabs persist current progress before swapping bundles.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
+- Backend release detection must compare `spacetimedb/` with the previous release commit, not only the dirty worktree; otherwise a precommitted schema can ship only to the client.
 - Release automation must let `.env.production` override `.env.local` for `VITE_*`; otherwise local SpacetimeDB values can leak into release APKs.
 - Ignored `public/qa-data/` is still Vite/Capacitor build input; delete or move it outside `public/` before any production web or Android build, or player QA saves can ship in `dist`/APK assets.
 - For safe Maincloud schema deploys, append new columns to existing tables, give them `default(...)`, and publish with `--delete-data=never`; otherwise existing player/account rows may block migration.

@@ -18,6 +18,7 @@ import {
   isDebugApkAllowed,
   resolveReleaseApkMode,
 } from './release-apk-policy.js';
+import { shouldPublishBackend } from './release-backend-policy.js';
 
 const rootDir = process.cwd();
 const options = parseOptions(process.argv.slice(2));
@@ -91,7 +92,7 @@ try {
   fail(error.message);
 }
 
-if (shouldPublishBackend(backendMode)) {
+if (shouldPublishBackend(backendMode, getBackendReleaseState())) {
   step('spacetimedb maincloud publish');
   run('npm', ['run', 'stdb:publish:maincloud'], { input: 'y\ny\n' });
 }
@@ -402,20 +403,31 @@ async function preflightDiscordNotes(version) {
   }
 }
 
-function shouldPublishBackend(mode) {
-  if (mode === 'skip') {
-    return false;
-  }
+function getBackendReleaseState() {
+  const backendChangesInWorktree = Boolean(
+    capture('git', ['status', '--porcelain', '--', 'spacetimedb']).trim(),
+  );
+  const lastReleaseCommit = capture('git', [
+    'log',
+    '-1',
+    '--format=%H',
+    '--grep',
+    '^release:',
+  ]).trim();
+  const backendChangedSinceLastRelease = !lastReleaseCommit || Boolean(
+    capture('git', [
+      'diff',
+      '--name-only',
+      `${lastReleaseCommit}..HEAD`,
+      '--',
+      'spacetimedb',
+    ]).trim(),
+  );
 
-  if (mode === 'always') {
-    return true;
-  }
-
-  if (mode !== 'auto') {
-    fail(`Unknown backend mode: ${mode}. Use auto, always, or skip.`);
-  }
-
-  return Boolean(capture('git', ['status', '--porcelain', '--', 'spacetimedb']).trim());
+  return {
+    backendChangesInWorktree,
+    backendChangedSinceLastRelease,
+  };
 }
 
 function parseOptions(rawArgs) {

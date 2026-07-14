@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.86
+
+- Fixed Prestige Market stock and prices getting stuck offline.
+
 ## 0.2.85
 
 - Fixed Market prices and stock getting stuck offline after opening the room or changing market licence tiers.

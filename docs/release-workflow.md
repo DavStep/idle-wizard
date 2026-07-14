@@ -49,15 +49,9 @@ node -p "require('./package.json').version"
 - Tell the release command explicitly when not bumping or not pushing:
   `npm run release -- --no-version-bump` or `npm run release -- --skip-git`.
 
-If backend changes are already committed before the release command runs, force a
-backend publish:
-
-```sh
-RELEASE_BACKEND=always npm run release
-```
-
-The default backend mode only publishes when `spacetimedb/` is dirty at release
-time.
+The default backend mode publishes whenever `spacetimedb/` differs from the
+latest `release:` commit, including changes already committed before the release
+command starts. Use `RELEASE_BACKEND=always` to force a resync of Maincloud.
 
 ## Normal Release
 
