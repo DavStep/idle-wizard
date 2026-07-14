@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.84
+
+- Added Prestige market licences: stars unlock Crossroads, City Bazaar, Grand Exchange, and Arcane Exchange, each with separate NPC demand, prices, listings, requests, and proceeds.
+- Expanded permanent Prestige rewards with capacity studies, run focus, auto-summon reserve controls, and stronger Garden and Brewing study levels.
+- Rebalanced research currencies so automation uses rubies, research speed, cost, and reserve studies use emeralds, and plot and cauldron multipliers use crystals.
+
 ## 0.2.83
 
 - Removed timed research slot limits so multiple studies can run at the same time without waiting for a queue slot.
