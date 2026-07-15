@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.88
+
+- Fixed coin balances above 250,000 being cut back to 250,000 after saving and reloading.
+- Fixed Guild section taps being mistaken for room-swipe gestures.
+- Made Guild dialogs use the same full-room backdrop as other game dialogs.
+
 ## 0.2.87
 
 - Fixed Brewing cauldron batch, recipe, and auto-brew choices sometimes reverting after a reload.

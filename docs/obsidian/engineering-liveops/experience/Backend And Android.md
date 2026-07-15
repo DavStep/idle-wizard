@@ -82,6 +82,7 @@ experience_type: backend-android
 - Player shop trade history is server-backed through `player_shop_trade`; clients should tolerate older backends missing the table by showing empty history.
 - Maincloud currently has no full action-log table; balance reads can only infer behavior from `player`, `leaderboard`, `world_chat`, player-shop tables, `npc_market_price`, and potion discoveries until analytics exists.
 - Gameplay save raw JSON must stay below the server cap before reducer normalization; cap noisy client branches like logs and do not persist full future task catalogs.
+- Gameplay save currency ceilings must cover every legitimate economy balance; a lower normalizer cap silently destroys the excess on the next save/reload round trip.
 - Client migrations must preserve newer branches present on lower-version server-normalized saves; Maincloud can return `version: 3` with `guild` state, and dropping it resets player guilds.
 - Android packaging uses Capacitor.
 - Capacitor 8 Android builds require JDK 21 here.

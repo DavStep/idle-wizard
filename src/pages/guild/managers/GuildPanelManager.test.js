@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { cwd } from 'node:process';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { PageSwipeNavigationManager } from '../../managers/PageSwipeNavigationManager.js';
 import { GuildPanelManager } from './GuildPanelManager.js';
 
 function createGuildSnapshot(overrides = {}) {
@@ -121,6 +122,19 @@ function mountManager(gameplayFacade) {
   return { manager, parent, popupLayer };
 }
 
+function dispatchTouchPointer(target, type, { clientX, clientY }) {
+  const event = new window.Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperties(event, {
+    clientX: { value: clientX },
+    clientY: { value: clientY },
+    isPrimary: { value: true },
+    pointerId: { value: 1 },
+    pointerType: { value: 'touch' },
+  });
+  target.dispatchEvent(event);
+  return event;
+}
+
 afterEach(() => {
   vi.useRealTimers();
   document.body.replaceChildren();
@@ -168,6 +182,9 @@ describe('GuildPanelManager', () => {
       );
 
     const tabButtons = getTabButtons();
+    expect(parent.querySelector('.guild-page__content-tabs')?.dataset.pageSwipeBlock).toBe(
+      'true',
+    );
     expect(tabButtons.map((button) => button.textContent)).toEqual([
       'hall',
       'board',
@@ -208,6 +225,32 @@ describe('GuildPanelManager', () => {
 
     expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe('log');
     expect(getBoxTitles()).toEqual(['guild log']);
+  });
+
+  it('keeps guild tab taps out of page-swipe capture', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent } = mountManager(gameplayFacade);
+    const stage = document.createElement('section');
+    const pageSwipeManager = new PageSwipeNavigationManager({
+      getCurrentPageId: () => 'guild',
+    });
+    const boardTab = parent.querySelector(
+      '.guild-page__content-tab-button[data-guild-tab="board"]',
+    );
+
+    stage.append(parent);
+    document.body.append(stage);
+    pageSwipeManager.mount(stage);
+
+    dispatchTouchPointer(boardTab, 'pointerdown', { clientX: 100, clientY: 100 });
+    const move = dispatchTouchPointer(boardTab, 'pointermove', { clientX: 120, clientY: 100 });
+
+    expect(move.defaultPrevented).toBe(false);
+
+    boardTab?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe('board');
+
+    pageSwipeManager.unmount();
   });
 
   it('keeps selected guild room tab across snapshot refreshes', () => {
@@ -1772,6 +1815,24 @@ describe('GuildPanelManager', () => {
     expect(panelRule).toContain('var(--app-dialog-y-shift, 0px)');
     expect(keyboardRule).toContain(
       '--app-dialog-y-shift: var(--app-keyboard-dialog-shift);',
+    );
+  });
+
+  it('uses the shared stage-wide backdrop treatment for guild dialogs', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const guildPopupRule = baseCss.match(
+      /\.guild-page__popup\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(guildPopupRule).not.toMatch(/\bbackground:/);
+    expect(baseCss).toMatch(
+      /\.shop-page__stock-buy-popup:not\(\[hidden\]\),\s*\.guild-page__popup:not\(\[hidden\]\),\s*\.room-player-info-popup:not\(\[hidden\]\),/,
+    );
+    expect(baseCss).toMatch(
+      /\.shop-page__stock-buy-popup,\s*\.guild-page__popup,\s*\.room-top-panel__settings,/,
+    );
+    expect(baseCss).toMatch(
+      /\.game-stage:has\(\.guild-page__popup:not\(\[hidden\]\)\)\s+\.guild-page,/,
     );
   });
 

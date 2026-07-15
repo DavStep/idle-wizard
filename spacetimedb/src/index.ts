@@ -8,6 +8,12 @@ import {
   type InferSchema,
 } from 'spacetimedb/server';
 import { normalizeSaveTasks } from './saveTasksNormalizer';
+import {
+  clampSaveGoldPrice,
+  MAX_PLAYER_SAVE_CURRENT_GOLD,
+  MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD,
+  normalizeSaveGold,
+} from './saveGoldNormalizer';
 import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
 import {
   defaultMarketId,
@@ -61,6 +67,7 @@ const MAX_PLAYER_INBOX_REWARD_TEXT_LENGTH = 160;
 const MAX_PLAYER_INBOX_ITEM_REWARDS_JSON_LENGTH = 4_000;
 const MAX_PLAYER_INBOX_ITEM_REWARDS = 16;
 const MAX_PLAYER_INBOX_ITEM_REWARD_QUANTITY = 100_000;
+const MAX_PLAYER_INBOX_COIN_REWARD = 250_000;
 const DEFAULT_TRADE_ALLIANCE_TAG_COLOR = 'ink';
 const WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS = 15n * 1_000_000n;
 const WORLD_CHAT_RATE_LIMIT_MAX_MESSAGES = 3;
@@ -132,14 +139,12 @@ const MAX_PLAYER_SAVE_ITEM_STACKS = 400;
 const MAX_PLAYER_SAVE_CAULDRONS = 20;
 const MAX_PLAYER_SAVE_MANA_CURRENT = 5_000;
 const MAX_PLAYER_SAVE_MANA_PER_SECOND = 100;
-const MAX_PLAYER_SAVE_CURRENT_GOLD = 250_000;
 const MAX_PLAYER_SAVE_CURRENT_CRYSTAL = 100;
 const MAX_PLAYER_SAVE_CURRENT_EMERALD = 10_000;
 const MAX_PLAYER_SAVE_CURRENT_RUBY = 10_000;
 const MAX_PLAYER_SAVE_BATCH_MULTIPLIER = 5;
 const MAX_PLAYER_SAVE_AUTO_SEED_MANA_RESERVE = MAX_PLAYER_SAVE_MANA_CURRENT;
 const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
-const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
 const MAX_PLAYER_SAVE_SHOP_COIN_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
 const MAX_PLAYER_SAVE_INBOX_CLAIMED_MAIL_KEYS = 500;
 const LEADERBOARD_SUMMARY_LIMIT = 100;
@@ -9756,20 +9761,6 @@ function normalizeSaveResource(value: unknown) {
   };
 }
 
-function normalizeSaveGold(value: unknown) {
-  const gold = isRecord(value) ? value : {};
-  const current = clampSaveGoldPrice(gold.current, BigInt(MAX_PLAYER_SAVE_CURRENT_GOLD));
-  const totalGenerated = clampSaveGoldPrice(
-    gold.totalGenerated,
-    BigInt(MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD),
-  );
-
-  return {
-    current,
-    totalGenerated: Math.max(current, totalGenerated),
-  };
-}
-
 function normalizeSaveCrystal(value: unknown, minimumCurrent = 0) {
   const crystal = isRecord(value) ? value : {};
   const current = clampSaveInteger(
@@ -12518,16 +12509,6 @@ function clampSaveNumber(
   return clampNumber(number, min, max);
 }
 
-function clampSaveGoldPrice(value: unknown, max: bigint): number {
-  const price = normalizeGoldPrice(typeof value === 'bigint' ? value : Number(value));
-
-  if (price === null) {
-    return 0;
-  }
-
-  return clampNumber(price, 0, Number(max));
-}
-
 function normalizeSaveItemQuantity(value: unknown): number {
   const number = Math.floor(Number(value));
 
@@ -13457,7 +13438,7 @@ function getPlayerInboxMailKey(
 function normalizePlayerInboxCoinReward(value: unknown): bigint {
   const reward = typeof value === 'bigint' ? value : toBigInt(Number(value));
 
-  if (reward < 0n || reward > BigInt(MAX_PLAYER_SAVE_CURRENT_GOLD)) {
+  if (reward < 0n || reward > BigInt(MAX_PLAYER_INBOX_COIN_REWARD)) {
     throw new Error('Invalid inbox coin reward.');
   }
 

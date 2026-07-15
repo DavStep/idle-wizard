@@ -2167,6 +2167,7 @@ body {
     .shop-page__demand-popup,
     .shop-page__crystal-support-popup,
     .shop-page__stock-buy-popup,
+    .guild-page__popup,
     .room-top-panel__settings,
     .room-top-panel__inbox-popup,
     .room-top-panel__level-popup
@@ -12820,7 +12821,6 @@ div.workshop-page__discovery-row {
   display: block;
   padding: 0;
   pointer-events: auto;
-  background: rgb(var(--style-backdrop-rgb) / 54%);
 }
 
 .guild-page__popup[hidden] {
@@ -16633,6 +16633,7 @@ div.workshop-page__discovery-row {
 .shop-page__demand-popup:not([hidden]),
 .shop-page__crystal-support-popup:not([hidden]),
 .shop-page__stock-buy-popup:not([hidden]),
+.guild-page__popup:not([hidden]),
 .room-player-info-popup:not([hidden]),
 .room-alliance-info-popup:not([hidden]),
 .room-announcement-layer:not([hidden]),
@@ -16672,6 +16673,7 @@ div.workshop-page__discovery-row {
 .game-stage:has(.shop-page__demand-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__crystal-support-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__stock-buy-popup:not([hidden])) .shop-page,
+.game-stage:has(.guild-page__popup:not([hidden])) .guild-page,
 .game-stage:has(.room-player-info-popup:not([hidden])) .workshop-page,
 .game-stage:has(.room-player-info-popup:not([hidden])) .brewing-page,
 .game-stage:has(.room-player-info-popup:not([hidden])) .garden-page,

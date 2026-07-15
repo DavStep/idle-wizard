@@ -216,6 +216,7 @@ export class GuildPanelManager {
   createContentTabs(activeTabId, guild) {
     const tabs = document.createElement('div');
     tabs.className = 'guild-page__content-tabs';
+    tabs.dataset.pageSwipeBlock = 'true';
     tabs.setAttribute('aria-label', 'Guild sections');
     tabs.setAttribute('role', 'tablist');
 
