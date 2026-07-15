@@ -141,6 +141,26 @@ export class GameplaySaveSendManager {
     return null;
   }
 
+  discardHydratedSaveIfServerIsAtLeastAsNew(updatedAtMs) {
+    const pendingSave = this.getPendingHydratedSave();
+    const serverUpdatedAtMs = Number(updatedAtMs);
+    const pendingSavedAtMs = Number(pendingSave?.savedAt);
+
+    if (
+      !pendingSave ||
+      !Number.isFinite(serverUpdatedAtMs) ||
+      serverUpdatedAtMs <= 0 ||
+      !Number.isFinite(pendingSavedAtMs) ||
+      pendingSavedAtMs <= 0 ||
+      pendingSavedAtMs > serverUpdatedAtMs
+    ) {
+      return false;
+    }
+
+    this.discardPendingSaves();
+    return true;
+  }
+
   flush({ force = false } = {}) {
     if (
       !this.readyToSend ||

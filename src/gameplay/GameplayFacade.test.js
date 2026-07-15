@@ -3084,6 +3084,21 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.itemsFacade.getItemQuantity(2001)).toBe(1);
   });
 
+  it('force-flushes a cauldron batch choice so it survives an immediate reload', () => {
+    const { gameplayFacade } = createGameplay();
+    const storageManager = {
+      canSave: vi.fn(() => true),
+      save: vi.fn(() => true),
+      saveAndFlush: vi.fn(() => true),
+    };
+
+    gameplayFacade.setPersistenceStorage(storageManager);
+    gameplayFacade.setBrewingBrewQuantity(1);
+
+    expect(storageManager.save).not.toHaveBeenCalled();
+    expect(storageManager.saveAndFlush).toHaveBeenCalledTimes(1);
+  });
+
   it('starts fast sell at 80% payout and raises it with emerald research', () => {
     const { gameplayFacade } = createGameplay();
 

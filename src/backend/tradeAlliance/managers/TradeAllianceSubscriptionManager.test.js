@@ -264,6 +264,52 @@ describe('TradeAllianceSubscriptionManager', () => {
     });
   });
 
+  it('keeps a known own alliance after a subscription error', () => {
+    let onError = null;
+    const manager = new TradeAllianceSubscriptionManager();
+
+    manager.tables = {
+      overview: createTable([createOverviewRow()]),
+      alliances: createTable(),
+      members: createTable(),
+      applications: createTable(),
+      quests: createTable(),
+      contributions: createTable(),
+      chat: createTable(),
+      rewards: createTable(),
+    };
+    manager.connection = {
+      subscriptionBuilder: () => ({
+        onApplied() {
+          return this;
+        },
+        onError(callback) {
+          onError = callback;
+          return this;
+        },
+        subscribe() {
+          return null;
+        },
+      }),
+    };
+
+    manager.publishFromTables();
+    manager.subscribeQuery('SELECT * FROM trade_alliance_member_snapshot');
+    onError();
+
+    expect(manager.getSnapshot()).toMatchObject({
+      connected: true,
+      ownMember: {
+        memberIdentity: 'self',
+        role: 'tradeMaster',
+      },
+      ownAlliance: {
+        allianceId: 'alliance-1',
+        tag: 'VOID',
+      },
+    });
+  });
+
   it('keeps quest table listeners while public alliance data is released', () => {
     const tables = {
       ownTradeAllianceOverview: createObservableTable([createOverviewRow()]),

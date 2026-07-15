@@ -93,6 +93,26 @@ describe('GameplaySaveSendManager', () => {
     expect(manager.getPendingHydratedSave()).toEqual(save);
   });
 
+  it('discards a hydrated pending save when the server has an equal or newer snapshot', () => {
+    const save = { version: 2, savedAt: 120, coin: { current: 7 } };
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
+
+    manager.restorePending(JSON.stringify(save), true);
+
+    expect(manager.discardHydratedSaveIfServerIsAtLeastAsNew(120)).toBe(true);
+    expect(manager.getPendingHydratedSave()).toBeNull();
+  });
+
+  it('keeps a hydrated pending save that is newer than the server snapshot', () => {
+    const save = { version: 2, savedAt: 121, coin: { current: 7 } };
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
+
+    manager.restorePending(JSON.stringify(save), true);
+
+    expect(manager.discardHydratedSaveIfServerIsAtLeastAsNew(120)).toBe(false);
+    expect(manager.getPendingHydratedSave()).toEqual(save);
+  });
+
   it('does not expose pre-hydration pending saves for reconnect hydration', () => {
     const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
 

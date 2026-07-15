@@ -28,6 +28,7 @@ function createBackendWithFakes({ connectGeneratedBindings } = {}) {
     }),
     discardPreHydrationSave: vi.fn(),
     discardPendingSaves: vi.fn(),
+    discardHydratedSaveIfServerIsAtLeastAsNew: vi.fn(),
     disconnect: vi.fn(),
     getPendingHydratedSave: vi.fn(() => null),
     setReadyToSend: vi.fn(),
@@ -245,6 +246,9 @@ describe('BackendFacade', () => {
       updatedAtMs: 123,
       pendingHydratedSave,
     });
+    expect(
+      backendFacade.gameplaySaveFacade.discardHydratedSaveIfServerIsAtLeastAsNew,
+    ).toHaveBeenCalledWith(123);
   });
 
   it('wires world chat sends through player level sync', async () => {

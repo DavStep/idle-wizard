@@ -232,7 +232,7 @@ export class TradeAllianceSubscriptionManager {
     return this.connection
       ?.subscriptionBuilder()
       .onApplied(() => this.publishFromTables())
-      .onError(() => this.publish({ ...EMPTY_SNAPSHOT }))
+      .onError(() => this.publish({ ...this.snapshot }))
       .subscribe(query);
   }
 

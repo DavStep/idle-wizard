@@ -17,6 +17,7 @@ experience_type: backend-android
 - SpacetimeDB reducers are public entry points; never use first-come admin claim or raw client leaderboard/shop values without server-side caps.
 - Server-visible names/messages should strip all Unicode control and format chars; partial bidi lists miss zero-width spoofing.
 - Private player-owned tables need a sender-scoped client read path, such as an own-row view; `SELECT *` subscriptions on public base tables leak every row.
+- Subscription errors must not replace a hydrated own-row snapshot with empty state; keep the last known state until a real row change arrives.
 - SpacetimeDB TypeScript UUID values expose `compareTo`/string conversion, not `isEqual`; normalize UUID keys before comparing alliance IDs.
 - Player market exchange, NPC market pressure, research announcements, potion discoveries, leaderboard totals, and public player levels must stay locked down until the server owns the matching state; capped client reports are still spoofable.
 - Generated-coin leaderboard values are stored in `leaderboard.totalIncome`; UI should prefer that over any legacy `totalGeneratedCoin` field.
@@ -48,6 +49,8 @@ experience_type: backend-android
 - Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
 - Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields and gameplay save JSON, but not trusted public level/rank state.
+- On reconnect, discard a hydrated pending gameplay save when the server row is at least as new; resending it can roll back unrelated coin or cauldron batch settings.
+- Cauldron batch, recipe, and auto-brew choices must force-flush instead of waiting for the normal save throttle; a reload can otherwise restore the prior option values.
 - Leaderboard own-rank display should match the connected SpacetimeDB identity from the full subscribed leaderboard, not username or top-ten rows.
 - Shared player level displays use server `playerLevel`; do not trust `tasks.currentLevel` for other players until task completion is server-authoritative.
 - Player level milestones come from SpacetimeDB `game_config.playerLevel`; they unlock permission to buy higher caps, never grant the tile/stand for free.

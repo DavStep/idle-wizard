@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.87
+
+- Fixed Brewing cauldron batch, recipe, and auto-brew choices sometimes reverting after a reload.
+- Prevented stale reconnect saves from overwriting newer progress, including coin and cauldron settings.
+- Kept the alliance panel intact when a temporary live subscription error occurs.
+
 ## 0.2.86
 
 - Fixed Prestige Market stock and prices getting stuck offline.

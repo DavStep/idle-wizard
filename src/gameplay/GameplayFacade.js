@@ -932,25 +932,25 @@ export class GameplayFacade {
 
   setBrewingAutoBrewRecipe(recipeKey, cauldronIndex = 0) {
     const result = this.brewingFacade.setAutoBrewRecipeKey(recipeKey, cauldronIndex);
-    this.publishAndSaveSnapshot();
+    this.publishAndFlushSnapshot();
     return result;
   }
 
   setBrewingAutoBrewEnabled(enabled, cauldronIndex = 0) {
     const result = this.brewingFacade.setAutoBrewEnabled(enabled, cauldronIndex);
-    this.publishAndSaveSnapshot();
+    this.publishAndFlushSnapshot();
     return result;
   }
 
   toggleBrewingAutoBrewEnabled(cauldronIndex = 0) {
     const result = this.brewingFacade.toggleAutoBrewEnabled(cauldronIndex);
-    this.publishAndSaveSnapshot();
+    this.publishAndFlushSnapshot();
     return result;
   }
 
   setBrewingBrewQuantity(quantity, cauldronIndex = 0) {
     const result = this.brewingFacade.setBrewQuantity(quantity, cauldronIndex);
-    this.publishAndSaveSnapshot();
+    this.publishAndFlushSnapshot();
     return result;
   }
 
@@ -1606,6 +1606,11 @@ export class GameplayFacade {
   publishAndSaveSnapshot() {
     this.publishSnapshot();
     this.saveGameplaySnapshot();
+  }
+
+  publishAndFlushSnapshot() {
+    this.publishSnapshot();
+    void this.savePersistenceSnapshotAndFlush();
   }
 
   saveGameplaySnapshot() {
