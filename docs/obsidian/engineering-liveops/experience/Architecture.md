@@ -138,6 +138,7 @@ experience_type: architecture
 - Task retunes should keep existing task ids stable when only changing required items; task ids are persisted progress keys.
 - SpacetimeDB gameplay-save sanitizer must preserve `shop.playerRequests`; otherwise player request rows reload as empty after restart.
 - SpacetimeDB brewing save sanitizer must preserve `brewing.cauldrons`; keeping only legacy `cauldronItemKeys` drops cauldron 2+ after restart.
+- Every field in a numbered cauldron save record must be mirrored by the server sanitizer and tested through the shared per-cauldron normalizer; top-level cauldron-1 aliases do not protect later slots.
 - Prestige reset saves intentionally lower run level, coin, and research; server anti-downgrade guards must allow that only when `prestige.completedLevels` grows, and must reject prestige regression afterward.
 - Prestige reset level is half the completed prestige milestone level; level 10 still resets to paid player level 5, and new prestige runs should not go back to level 1.
 - Prestige completion world-chat notices are separate from task level-up notices; announce the claimed prestige milestone before resetting the run.

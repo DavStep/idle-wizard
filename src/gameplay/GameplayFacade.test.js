@@ -3907,7 +3907,7 @@ describe('GameplayFacade', () => {
     });
   }, 10_000);
 
-  it('persists bought cauldrons and potion inventory across restart', () => {
+  it('persists independent cauldron state and potion inventory across restart', () => {
     const persistenceStorage = createMemoryStorage();
     const first = createGameplay({ persistenceStorage });
 
@@ -3927,6 +3927,21 @@ describe('GameplayFacade', () => {
       ok: true,
       cauldronNumber: 2,
     });
+    expect(first.gameplayFacade.setBrewingAutoBrewRecipe('manaTonic', 0)).toMatchObject({
+      ok: true,
+    });
+    expect(first.gameplayFacade.setBrewingAutoBrewEnabled(true, 0)).toMatchObject({
+      ok: true,
+      autoBrewArmed: false,
+    });
+    first.gameplayFacade.brewingFacade.armAutoBrew(0);
+    expect(first.gameplayFacade.setBrewingAutoBrewRecipe('manaTonic', 1)).toMatchObject({
+      ok: true,
+    });
+    expect(first.gameplayFacade.setBrewingAutoBrewEnabled(true, 1)).toMatchObject({
+      ok: true,
+      autoBrewArmed: false,
+    });
     first.gameplayFacade.savePersistenceSnapshot();
     first.ecsFacade.destroyWorld();
 
@@ -3936,6 +3951,16 @@ describe('GameplayFacade', () => {
     expect(snapshot.brewing.unlockedCauldrons).toBe(2);
     expect(snapshot.brewing.cauldrons).toHaveLength(2);
     expect(snapshot.brewing.cauldrons[1].ingredients).toHaveLength(3);
+    expect(snapshot.brewing.cauldrons[0]).toMatchObject({
+      autoBrewEnabled: true,
+      autoBrewArmed: true,
+      autoBrewRecipeKey: 'manaTonic',
+    });
+    expect(snapshot.brewing.cauldrons[1]).toMatchObject({
+      autoBrewEnabled: true,
+      autoBrewArmed: false,
+      autoBrewRecipeKey: 'manaTonic',
+    });
     expect(snapshot.inventory).toContainEqual({
       itemTypeId: 2001,
       key: 'manaTonic',

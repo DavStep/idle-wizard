@@ -14,6 +14,7 @@ import {
   MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD,
   normalizeSaveGold,
 } from './saveGoldNormalizer';
+import { normalizeSaveCauldronAutomationState } from './saveBrewingNormalizer';
 import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
 import {
   defaultMarketId,
@@ -10798,6 +10799,7 @@ function normalizeSaveBrewing(
           cauldronItemKeys: brewing.cauldronItemKeys,
           activeBrew: brewing.activeBrew,
           autoBrewEnabled: brewing.autoBrewEnabled,
+          autoBrewArmed: brewing.autoBrewArmed,
           autoBrewRecipeKey: brewing.autoBrewRecipeKey,
           brewQuantity: brewing.brewQuantity,
         },
@@ -10809,6 +10811,7 @@ function normalizeSaveBrewing(
       cauldronItemKeys: string[];
       activeBrew: ReturnType<typeof normalizeSaveActiveBrew>;
       autoBrewEnabled: boolean;
+      autoBrewArmed: boolean;
       autoBrewRecipeKey: string | null;
       brewQuantity: number | null;
     }
@@ -10838,6 +10841,14 @@ function normalizeSaveBrewing(
     const autoBrewEnabled =
       sourceCauldron.autoBrewEnabled ??
       (cauldronNumber === 1 ? brewing.autoBrewEnabled : false);
+    const autoBrewArmed =
+      sourceCauldron.autoBrewArmed ??
+      (cauldronNumber === 1 ? brewing.autoBrewArmed : undefined);
+    const automationState = normalizeSaveCauldronAutomationState({
+      autoBrewEnabled,
+      autoBrewArmed,
+      autoBrewRecipeKey: safeAutoBrewRecipeKey,
+    });
     const brewQuantity = normalizeSaveSelectedNumber(
       sourceCauldron.brewQuantity ?? (cauldronNumber === 1 ? brewing.brewQuantity : null),
       MAX_PLAYER_SAVE_BATCH_MULTIPLIER,
@@ -10850,8 +10861,7 @@ function normalizeSaveBrewing(
         itemCatalog,
       ),
       activeBrew: normalizeSaveActiveBrew(sourceCauldron.activeBrew, itemCatalog),
-      autoBrewEnabled: Boolean(safeAutoBrewRecipeKey && autoBrewEnabled),
-      autoBrewRecipeKey: safeAutoBrewRecipeKey,
+      ...automationState,
       brewQuantity,
     });
   }
@@ -10872,12 +10882,14 @@ function normalizeSaveBrewing(
       cauldronItemKeys: [],
       activeBrew: null,
       autoBrewEnabled: false,
+      autoBrewArmed: false,
       autoBrewRecipeKey: null,
       brewQuantity: null,
     };
 
   return {
     autoBrewEnabled: primaryCauldron.autoBrewEnabled,
+    autoBrewArmed: primaryCauldron.autoBrewArmed,
     autoBrewRecipeKey: primaryCauldron.autoBrewRecipeKey,
     brewQuantity: primaryCauldron.brewQuantity,
     unlockedCauldrons,
@@ -10895,6 +10907,7 @@ function getLegacyUnlockedCauldronCount(
       cauldronItemKeys: string[];
       activeBrew: ReturnType<typeof normalizeSaveActiveBrew>;
       autoBrewEnabled: boolean;
+      autoBrewArmed: boolean;
       autoBrewRecipeKey: string | null;
       brewQuantity: number | null;
     }

@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.89
+
+- Fixed extra Brewing cauldrons forgetting their individual auto-brew state after restarting the game.
+
 ## 0.2.88
 
 - Fixed coin balances above 250,000 being cut back to 250,000 after saving and reloading.
