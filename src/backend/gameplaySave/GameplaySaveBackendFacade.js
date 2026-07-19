@@ -49,8 +49,8 @@ export class GameplaySaveBackendFacade {
     return this.sendManager.getPendingHydratedSave();
   }
 
-  discardHydratedSaveIfServerIsAtLeastAsNew(updatedAtMs) {
-    return this.sendManager.discardHydratedSaveIfServerIsAtLeastAsNew(updatedAtMs);
+  discardHydratedSaveIfServerIsAtLeastAsNew(serverSave) {
+    return this.sendManager.discardHydratedSaveIfServerIsAtLeastAsNew(serverSave);
   }
 
   setReadyToSend(ready = true) {

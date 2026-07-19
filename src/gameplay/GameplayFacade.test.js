@@ -3922,6 +3922,26 @@ describe('GameplayFacade', () => {
       ok: true,
       cauldronNumber: 2,
     });
+    first.gameplayFacade.crystalFacade.add(24);
+    for (const cauldronNumber of [1, 2]) {
+      for (const multiplier of [2, 3, 4]) {
+        expect(
+          first.gameplayFacade.buyResearch(
+            emeraldResearchIds.cauldronBrewing(cauldronNumber, multiplier),
+          ),
+        ).toMatchObject({ ok: true });
+      }
+    }
+    expect(first.gameplayFacade.setBrewingBrewQuantity(1, 0)).toMatchObject({
+      ok: true,
+      brewQuantity: 1,
+      maxBrewQuantity: 4,
+    });
+    expect(first.gameplayFacade.setBrewingBrewQuantity(1, 1)).toMatchObject({
+      ok: true,
+      brewQuantity: 1,
+      maxBrewQuantity: 4,
+    });
 
     expect(first.gameplayFacade.prepareBrewingRecipe('manaTonic', 1)).toMatchObject({
       ok: true,
@@ -3952,11 +3972,15 @@ describe('GameplayFacade', () => {
     expect(snapshot.brewing.cauldrons).toHaveLength(2);
     expect(snapshot.brewing.cauldrons[1].ingredients).toHaveLength(3);
     expect(snapshot.brewing.cauldrons[0]).toMatchObject({
+      brewQuantity: 1,
+      maxBrewQuantity: 4,
       autoBrewEnabled: true,
       autoBrewArmed: true,
       autoBrewRecipeKey: 'manaTonic',
     });
     expect(snapshot.brewing.cauldrons[1]).toMatchObject({
+      brewQuantity: 1,
+      maxBrewQuantity: 4,
       autoBrewEnabled: true,
       autoBrewArmed: false,
       autoBrewRecipeKey: 'manaTonic',

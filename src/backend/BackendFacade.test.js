@@ -248,7 +248,7 @@ describe('BackendFacade', () => {
     });
     expect(
       backendFacade.gameplaySaveFacade.discardHydratedSaveIfServerIsAtLeastAsNew,
-    ).toHaveBeenCalledWith(123);
+    ).toHaveBeenCalledWith(serverSave);
   });
 
   it('wires world chat sends through player level sync', async () => {

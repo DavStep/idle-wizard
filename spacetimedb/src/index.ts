@@ -15,6 +15,11 @@ import {
   normalizeSaveGold,
 } from './saveGoldNormalizer';
 import { normalizeSaveCauldronAutomationState } from './saveBrewingNormalizer';
+import {
+  normalizeSaveClientSequence,
+  normalizeSaveClientSessionId,
+  normalizeSaveClientTimestamp,
+} from './saveClientTimestampNormalizer';
 import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
 import { appendMissingItemConfigRows as appendMissingItemConfigRowsByKey } from './itemConfigRows';
 import {
@@ -9096,6 +9101,9 @@ function normalizePlayerGameplaySave(
     savedAt: preserveSavedAt
       ? normalizeSaveExistingTimestamp(save.savedAt, ctx)
       : normalizeSaveTimestamp(ctx),
+    clientSavedAt: normalizeSaveClientTimestamp(save.clientSavedAt ?? save.savedAt),
+    clientSaveSessionId: normalizeSaveClientSessionId(save.clientSaveSessionId),
+    clientSaveSequence: normalizeSaveClientSequence(save.clientSaveSequence),
     mana: normalizeSaveResource(save.mana),
     coin: normalizedCoin,
     gold: normalizedCoin,

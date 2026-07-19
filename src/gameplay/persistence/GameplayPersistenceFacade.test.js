@@ -71,6 +71,18 @@ describe('GameplayPersistenceFacade', () => {
     expect(storageManager.save).toHaveBeenCalledTimes(1);
   });
 
+  it('gives rapid saves a stable client session and increasing sequence', () => {
+    const facade = createPersistenceFacade();
+    const firstSave = facade.createSave();
+    const secondSave = facade.createSave();
+
+    expect(firstSave.savedAt).toBe(123);
+    expect(secondSave.savedAt).toBe(123);
+    expect(firstSave.clientSaveSessionId).toBe(secondSave.clientSaveSessionId);
+    expect(firstSave.clientSaveSequence).toBe(1);
+    expect(secondSave.clientSaveSequence).toBe(2);
+  });
+
   it('flushes the latest save before page reload and when the page hides', () => {
     const windowListeners = new Map();
     const documentListeners = new Map();

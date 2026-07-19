@@ -123,7 +123,7 @@ export class BackendFacade {
               updatedAtMs: result?.updatedAtMs ?? 0,
             };
             this.gameplaySaveFacade.discardHydratedSaveIfServerIsAtLeastAsNew?.(
-              readyPayload.updatedAtMs,
+              readyPayload.save,
             );
             const pendingHydratedSave =
               this.gameplaySaveFacade.getPendingHydratedSave?.() ?? null;

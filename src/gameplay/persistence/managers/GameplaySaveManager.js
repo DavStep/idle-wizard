@@ -51,14 +51,19 @@ export class GameplaySaveManager {
     this.worldNoticeFacade = worldNoticeFacade;
     this.guildFacade = guildFacade;
     this.now = now;
+    this.clientSaveSessionId = createClientSaveSessionId();
+    this.clientSaveSequence = 0;
   }
 
   createSave() {
     const coin = this.coinFacade.getSnapshot();
+    this.clientSaveSequence += 1;
 
     return {
       version: GAMEPLAY_SAVE_VERSION,
       savedAt: this.now(),
+      clientSaveSessionId: this.clientSaveSessionId,
+      clientSaveSequence: this.clientSaveSequence,
       mana: this.manaFacade.getSnapshot(),
       coin,
       gold: coin,
@@ -83,4 +88,14 @@ export class GameplaySaveManager {
       guild: this.guildFacade.getPersistenceSnapshot(),
     };
   }
+}
+
+function createClientSaveSessionId() {
+  const randomUuid = globalThis.crypto?.randomUUID?.();
+
+  if (typeof randomUuid === 'string' && randomUuid.length > 0) {
+    return randomUuid;
+  }
+
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }

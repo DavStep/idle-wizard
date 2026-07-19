@@ -93,23 +93,63 @@ describe('GameplaySaveSendManager', () => {
     expect(manager.getPendingHydratedSave()).toEqual(save);
   });
 
-  it('discards a hydrated pending save when the server has an equal or newer snapshot', () => {
-    const save = { version: 2, savedAt: 120, coin: { current: 7 } };
+  it('discards a hydrated pending save when the server accepted that client save or a later one', () => {
+    const save = {
+      version: 2,
+      savedAt: 120,
+      clientSaveSessionId: 'session-1',
+      clientSaveSequence: 2,
+      coin: { current: 7 },
+    };
     const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
 
     manager.restorePending(JSON.stringify(save), true);
 
-    expect(manager.discardHydratedSaveIfServerIsAtLeastAsNew(120)).toBe(true);
+    expect(
+      manager.discardHydratedSaveIfServerIsAtLeastAsNew({
+        version: 3,
+        savedAt: 500,
+        clientSavedAt: 120,
+        clientSaveSessionId: 'session-1',
+        clientSaveSequence: 2,
+        coin: { current: 7 },
+      }),
+    ).toBe(true);
     expect(manager.getPendingHydratedSave()).toBeNull();
   });
 
-  it('keeps a hydrated pending save that is newer than the server snapshot', () => {
-    const save = { version: 2, savedAt: 121, coin: { current: 7 } };
+  it('keeps newer pending cauldron choices even when the server write time is later', () => {
+    const save = {
+      version: 2,
+      savedAt: 121,
+      clientSaveSessionId: 'session-1',
+      clientSaveSequence: 3,
+      brewing: {
+        cauldrons: [
+          { cauldronNumber: 1, brewQuantity: 1 },
+          { cauldronNumber: 2, brewQuantity: 1 },
+        ],
+      },
+    };
     const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
 
     manager.restorePending(JSON.stringify(save), true);
 
-    expect(manager.discardHydratedSaveIfServerIsAtLeastAsNew(120)).toBe(false);
+    expect(
+      manager.discardHydratedSaveIfServerIsAtLeastAsNew({
+        version: 3,
+        savedAt: 500,
+        clientSavedAt: 120,
+        clientSaveSessionId: 'session-1',
+        clientSaveSequence: 2,
+        brewing: {
+          cauldrons: [
+            { cauldronNumber: 1, brewQuantity: 1 },
+            { cauldronNumber: 2, brewQuantity: null },
+          ],
+        },
+      }),
+    ).toBe(false);
     expect(manager.getPendingHydratedSave()).toEqual(save);
   });
 

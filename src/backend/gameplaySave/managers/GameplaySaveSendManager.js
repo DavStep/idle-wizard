@@ -141,18 +141,22 @@ export class GameplaySaveSendManager {
     return null;
   }
 
-  discardHydratedSaveIfServerIsAtLeastAsNew(updatedAtMs) {
+  discardHydratedSaveIfServerIsAtLeastAsNew(serverSave) {
     const pendingSave = this.getPendingHydratedSave();
-    const serverUpdatedAtMs = Number(updatedAtMs);
-    const pendingSavedAtMs = Number(pendingSave?.savedAt);
+    const serverSessionId = serverSave?.clientSaveSessionId;
+    const pendingSessionId = pendingSave?.clientSaveSessionId;
+    const serverSequence = Number(serverSave?.clientSaveSequence);
+    const pendingSequence = Number(pendingSave?.clientSaveSequence);
 
     if (
       !pendingSave ||
-      !Number.isFinite(serverUpdatedAtMs) ||
-      serverUpdatedAtMs <= 0 ||
-      !Number.isFinite(pendingSavedAtMs) ||
-      pendingSavedAtMs <= 0 ||
-      pendingSavedAtMs > serverUpdatedAtMs
+      typeof serverSessionId !== 'string' ||
+      serverSessionId !== pendingSessionId ||
+      !Number.isSafeInteger(serverSequence) ||
+      serverSequence <= 0 ||
+      !Number.isSafeInteger(pendingSequence) ||
+      pendingSequence <= 0 ||
+      pendingSequence > serverSequence
     ) {
       return false;
     }
@@ -399,6 +403,8 @@ export class GameplaySaveSendManager {
 
     const meaningfulSave = { ...save };
     delete meaningfulSave.savedAt;
+    delete meaningfulSave.clientSaveSessionId;
+    delete meaningfulSave.clientSaveSequence;
     return JSON.stringify(meaningfulSave);
   }
 
