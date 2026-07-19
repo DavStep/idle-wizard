@@ -1,3 +1,5 @@
+import { GameplaySaveJournalManager } from './GameplaySaveJournalManager.js';
+
 const DEFAULT_SYNC_TIMEOUT_MS = 10_000;
 const DEFAULT_SYNC_INTERVAL_MS = 5_000;
 const MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH = 250_000;
@@ -10,14 +12,17 @@ export class GameplaySaveSendManager {
     clearTimeoutFn = globalThis.clearTimeout?.bind(globalThis),
     now = () => Date.now(),
     onSyncUnhealthy = null,
+    journalManager = new GameplaySaveJournalManager(),
   } = {}) {
     this.connection = null;
     this.pendingSaveJson = null;
     this.pendingSaveWasHydrated = false;
     this.pendingSaveContentKey = null;
+    this.pendingSaveBaseServerRevision = null;
     this.inFlightSaveJson = null;
     this.inFlightSaveWasHydrated = false;
     this.inFlightSaveContentKey = null;
+    this.inFlightSaveBaseServerRevision = null;
     this.syncPromise = null;
     this.syncAttemptId = 0;
     this.syncTimeoutId = null;
@@ -28,14 +33,31 @@ export class GameplaySaveSendManager {
     this.clearTimeoutFn = clearTimeoutFn;
     this.now = now;
     this.onSyncUnhealthy = onSyncUnhealthy;
+    this.journalManager = journalManager;
     this.readyToSend = false;
     this.lastSyncedSaveContentKey = null;
+    this.lastAcceptedServerRevision = null;
     this.lastSyncStartedAtMs = Number.NEGATIVE_INFINITY;
     this.syncTimerId = null;
   }
 
-  connect(connection) {
+  connect(connection, identity = null) {
     this.connection = connection;
+    const journal = this.journalManager.connect(identity);
+
+    if (
+      !this.pendingSaveWasHydrated &&
+      !this.inFlightSaveWasHydrated &&
+      journal?.saveJson
+    ) {
+      this.restorePending(
+        journal.saveJson,
+        true,
+        journal.saveContentKey,
+        journal.baseServerRevision,
+      );
+    }
+
     this.flush();
   }
 
@@ -46,6 +68,7 @@ export class GameplaySaveSendManager {
     this.lastSyncStartedAtMs = Number.NEGATIVE_INFINITY;
     this.connection = null;
     this.readyToSend = false;
+    this.journalManager.disconnect();
   }
 
   setSyncUnhealthyHandler(handler) {
@@ -81,6 +104,11 @@ export class GameplaySaveSendManager {
       this.pendingSaveJson = saveJson;
       this.pendingSaveWasHydrated = this.readyToSend;
       this.pendingSaveContentKey = saveContentKey;
+      this.pendingSaveBaseServerRevision = this.lastAcceptedServerRevision;
+
+      if (this.pendingSaveWasHydrated) {
+        this.writePendingSaveJournal();
+      }
     } catch {
       return false;
     }
@@ -118,6 +146,7 @@ export class GameplaySaveSendManager {
     this.pendingSaveJson = null;
     this.pendingSaveWasHydrated = false;
     this.pendingSaveContentKey = null;
+    this.pendingSaveBaseServerRevision = null;
   }
 
   discardPendingSaves() {
@@ -126,7 +155,9 @@ export class GameplaySaveSendManager {
     this.pendingSaveJson = null;
     this.pendingSaveWasHydrated = false;
     this.pendingSaveContentKey = null;
+    this.pendingSaveBaseServerRevision = null;
     this.clearInFlightSave();
+    this.journalManager.clear();
   }
 
   getPendingHydratedSave() {
@@ -143,13 +174,18 @@ export class GameplaySaveSendManager {
 
   discardHydratedSaveIfServerIsAtLeastAsNew(serverSave) {
     const pendingSave = this.getPendingHydratedSave();
+    const serverRevision = this.getServerRevision(serverSave);
+    this.lastAcceptedServerRevision = serverRevision;
     const serverSessionId = serverSave?.clientSaveSessionId;
     const pendingSessionId = pendingSave?.clientSaveSessionId;
     const serverSequence = Number(serverSave?.clientSaveSequence);
     const pendingSequence = Number(pendingSave?.clientSaveSequence);
 
+    if (!pendingSave) {
+      return false;
+    }
+
     if (
-      !pendingSave ||
       typeof serverSessionId !== 'string' ||
       serverSessionId !== pendingSessionId ||
       !Number.isSafeInteger(serverSequence) ||
@@ -158,6 +194,17 @@ export class GameplaySaveSendManager {
       pendingSequence <= 0 ||
       pendingSequence > serverSequence
     ) {
+      const pendingBaseServerRevision = this.getPendingBaseServerRevision();
+
+      if (
+        serverSessionId !== pendingSessionId &&
+        pendingBaseServerRevision &&
+        !this.serverMatchesRevision(serverSave, pendingBaseServerRevision)
+      ) {
+        this.discardPendingSaves();
+        return true;
+      }
+
       return false;
     }
 
@@ -188,12 +235,15 @@ export class GameplaySaveSendManager {
     const saveJson = this.pendingSaveJson;
     const saveWasHydrated = this.pendingSaveWasHydrated;
     const saveContentKey = this.pendingSaveContentKey;
+    const saveBaseServerRevision = this.pendingSaveBaseServerRevision;
     this.pendingSaveJson = null;
     this.pendingSaveWasHydrated = false;
     this.pendingSaveContentKey = null;
+    this.pendingSaveBaseServerRevision = null;
     this.inFlightSaveJson = saveJson;
     this.inFlightSaveWasHydrated = saveWasHydrated;
     this.inFlightSaveContentKey = saveContentKey;
+    this.inFlightSaveBaseServerRevision = saveBaseServerRevision;
 
     let syncResult;
     try {
@@ -232,6 +282,17 @@ export class GameplaySaveSendManager {
 
         if (outcome?.ok) {
           this.lastSyncedSaveContentKey = this.inFlightSaveContentKey;
+          this.lastAcceptedServerRevision = this.getServerRevision(
+            this.parseSaveJson(this.inFlightSaveJson),
+          );
+
+          if (this.pendingSaveJson) {
+            this.pendingSaveBaseServerRevision = this.lastAcceptedServerRevision;
+            this.writePendingSaveJournal();
+          } else {
+            this.journalManager.clear();
+          }
+
           this.clearInFlightSave();
           shouldFlush = true;
           return true;
@@ -262,10 +323,17 @@ export class GameplaySaveSendManager {
       });
   }
 
-  restorePending(saveJson, saveWasHydrated = true, saveContentKey = null) {
+  restorePending(
+    saveJson,
+    saveWasHydrated = true,
+    saveContentKey = null,
+    baseServerRevision = null,
+  ) {
     this.pendingSaveJson = saveJson;
     this.pendingSaveWasHydrated = saveWasHydrated;
-    this.pendingSaveContentKey = saveContentKey;
+    this.pendingSaveContentKey =
+      saveContentKey ?? this.getSaveContentKey(this.parseSaveJson(saveJson), saveJson);
+    this.pendingSaveBaseServerRevision = baseServerRevision;
   }
 
   restoreInFlightSave() {
@@ -276,6 +344,7 @@ export class GameplaySaveSendManager {
     if (!this.pendingSaveJson) {
       this.pendingSaveJson = this.inFlightSaveJson;
       this.pendingSaveContentKey = this.inFlightSaveContentKey;
+      this.pendingSaveBaseServerRevision = this.inFlightSaveBaseServerRevision;
     }
 
     this.pendingSaveWasHydrated =
@@ -287,6 +356,7 @@ export class GameplaySaveSendManager {
     this.inFlightSaveJson = null;
     this.inFlightSaveWasHydrated = false;
     this.inFlightSaveContentKey = null;
+    this.inFlightSaveBaseServerRevision = null;
   }
 
   beginSyncAttempt() {
@@ -423,6 +493,75 @@ export class GameplaySaveSendManager {
     } catch {
       return null;
     }
+  }
+
+  writePendingSaveJournal() {
+    if (!this.pendingSaveWasHydrated || !this.pendingSaveJson) {
+      return false;
+    }
+
+    return this.journalManager.save({
+      saveJson: this.pendingSaveJson,
+      saveContentKey: this.pendingSaveContentKey,
+      baseServerRevision: this.pendingSaveBaseServerRevision,
+    });
+  }
+
+  getPendingBaseServerRevision() {
+    if (this.pendingSaveWasHydrated && this.pendingSaveJson) {
+      return this.pendingSaveBaseServerRevision;
+    }
+
+    if (this.inFlightSaveWasHydrated && this.inFlightSaveJson) {
+      return this.inFlightSaveBaseServerRevision;
+    }
+
+    return null;
+  }
+
+  getServerRevision(save) {
+    if (!save || typeof save !== 'object') {
+      return { empty: true };
+    }
+
+    const clientSaveSessionId = save.clientSaveSessionId;
+    const clientSaveSequence = Number(save.clientSaveSequence);
+
+    if (
+      typeof clientSaveSessionId === 'string' &&
+      clientSaveSessionId &&
+      Number.isSafeInteger(clientSaveSequence) &&
+      clientSaveSequence > 0
+    ) {
+      return { clientSaveSessionId, clientSaveSequence };
+    }
+
+    return {
+      contentKey: this.getSaveContentKey(save, JSON.stringify(save)),
+    };
+  }
+
+  serverMatchesRevision(serverSave, revision) {
+    if (revision?.empty === true) {
+      return !serverSave || typeof serverSave !== 'object';
+    }
+
+    if (
+      typeof revision?.clientSaveSessionId === 'string' &&
+      Number.isSafeInteger(revision?.clientSaveSequence)
+    ) {
+      return (
+        serverSave?.clientSaveSessionId === revision.clientSaveSessionId &&
+        Number(serverSave?.clientSaveSequence) === revision.clientSaveSequence
+      );
+    }
+
+    return Boolean(
+      typeof revision?.contentKey === 'string' &&
+        serverSave &&
+        this.getSaveContentKey(serverSave, JSON.stringify(serverSave)) ===
+          revision.contentKey,
+    );
   }
 
   findSetPlayerGameplaySaveReducer() {

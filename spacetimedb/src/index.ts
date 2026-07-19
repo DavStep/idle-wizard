@@ -20,6 +20,7 @@ import {
   normalizeSaveClientSessionId,
   normalizeSaveClientTimestamp,
 } from './saveClientTimestampNormalizer';
+import { normalizeSaveSelectedNumber } from './saveSelectedNumberNormalizer';
 import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
 import { appendMissingItemConfigRows as appendMissingItemConfigRowsByKey } from './itemConfigRows';
 import {
@@ -10873,11 +10874,6 @@ function normalizeSaveSlotRows<T>(
   return [...rowsBySlotNumber.values()].sort(
     (left, right) => left.slotNumber - right.slotNumber,
   );
-}
-
-function normalizeSaveSelectedNumber(value: unknown, max: number): number | null {
-  const selected = clampSaveInteger(value, 1, max, 0);
-  return selected > 0 ? selected : null;
 }
 
 function normalizeSaveBrewing(

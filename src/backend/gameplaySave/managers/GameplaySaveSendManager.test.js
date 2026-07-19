@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { GameplaySaveSendManager } from './GameplaySaveSendManager.js';
+import { GameplaySaveJournalManager } from './GameplaySaveJournalManager.js';
+
+function createStorage() {
+  const values = new Map();
+
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem: (key) => values.delete(key),
+  };
+}
 
 describe('GameplaySaveSendManager', () => {
   it('sends gameplay save JSON through the generated reducer', () => {
@@ -228,6 +239,137 @@ describe('GameplaySaveSendManager', () => {
 
     resolveFirstSave();
     await Promise.resolve();
+  });
+
+  it('recovers the latest cauldron configuration after a full process restart', () => {
+    const storage = createStorage();
+    const firstSetPlayerGameplaySave = vi.fn(() => new Promise(() => {}));
+    const first = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      journalManager: new GameplaySaveJournalManager({ storage }),
+    });
+    const serverSave = {
+      version: 3,
+      clientSaveSessionId: 'server-session',
+      clientSaveSequence: 4,
+      brewing: {
+        cauldrons: [
+          { cauldronNumber: 1, brewQuantity: null },
+          { cauldronNumber: 2, brewQuantity: null },
+        ],
+      },
+    };
+    const firstChangedSave = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 5,
+      brewing: {
+        cauldrons: [
+          { cauldronNumber: 1, brewQuantity: null },
+          {
+            cauldronNumber: 2,
+            brewQuantity: 4,
+            autoBrewEnabled: false,
+            autoBrewRecipeKey: 'manaTonic',
+          },
+        ],
+      },
+    };
+    const latestSave = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 6,
+      brewing: {
+        cauldrons: [
+          { cauldronNumber: 1, brewQuantity: null },
+          {
+            cauldronNumber: 2,
+            brewQuantity: 4,
+            autoBrewEnabled: true,
+            autoBrewArmed: false,
+            autoBrewRecipeKey: 'manaTonic',
+          },
+        ],
+      },
+    };
+
+    first.connect(
+      { reducers: { setPlayerGameplaySave: firstSetPlayerGameplaySave } },
+      'player-1',
+    );
+    first.discardHydratedSaveIfServerIsAtLeastAsNew(serverSave);
+    first.setReadyToSend(true);
+    first.save(firstChangedSave);
+    first.save(latestSave);
+
+    expect(firstSetPlayerGameplaySave).toHaveBeenCalledTimes(1);
+
+    const replaySave = vi.fn(() => Promise.resolve());
+    const restarted = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      journalManager: new GameplaySaveJournalManager({ storage }),
+    });
+
+    restarted.save({
+      version: 3,
+      clientSaveSessionId: 'new-process-default',
+      clientSaveSequence: 1,
+      brewing: {
+        cauldrons: [
+          { cauldronNumber: 1, brewQuantity: null },
+          { cauldronNumber: 2, brewQuantity: null },
+        ],
+      },
+    });
+    restarted.connect(
+      { reducers: { setPlayerGameplaySave: replaySave } },
+      'player-1',
+    );
+    restarted.discardHydratedSaveIfServerIsAtLeastAsNew(firstChangedSave);
+
+    expect(restarted.getPendingHydratedSave()).toEqual(latestSave);
+
+    restarted.setReadyToSend(true);
+
+    expect(replaySave).toHaveBeenCalledWith({
+      saveJson: JSON.stringify(latestSave),
+    });
+  });
+
+  it('does not replay a journal over a save advanced by another session', () => {
+    const storage = createStorage();
+    const journalManager = new GameplaySaveJournalManager({ storage });
+    journalManager.connect('player-1');
+    journalManager.save({
+      saveJson: JSON.stringify({
+        version: 3,
+        clientSaveSessionId: 'stale-session',
+        clientSaveSequence: 2,
+        coin: { current: 10 },
+      }),
+      baseServerRevision: {
+        clientSaveSessionId: 'base-session',
+        clientSaveSequence: 8,
+      },
+    });
+    journalManager.disconnect();
+
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      journalManager,
+    });
+    manager.connect({ reducers: {} }, 'player-1');
+
+    expect(
+      manager.discardHydratedSaveIfServerIsAtLeastAsNew({
+        version: 3,
+        clientSaveSessionId: 'other-device-session',
+        clientSaveSequence: 1,
+        coin: { current: 50 },
+      }),
+    ).toBe(true);
+    expect(manager.getPendingHydratedSave()).toBeNull();
+    expect(journalManager.load()).toBeNull();
   });
 
   it('discards pending and in-flight saves after an account takeover', () => {

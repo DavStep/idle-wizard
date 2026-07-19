@@ -12,7 +12,7 @@ export class GameplaySaveBackendFacade {
 
   connect(connection, identity, { onReady } = {}) {
     this.sendManager.setReadyToSend(false);
-    this.sendManager.connect(connection);
+    this.sendManager.connect(connection, identity);
     return this.subscriptionManager.connect(connection, identity, { onReady });
   }
 
