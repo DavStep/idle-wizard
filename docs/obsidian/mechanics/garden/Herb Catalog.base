@@ -1,0 +1,35 @@
+filters:
+  and:
+    - file.hasTag("entity/herb")
+    - file.inFolder("mechanics/garden/herbs")
+properties:
+  catalog_order:
+    displayName: "#"
+  base_growth_time:
+    displayName: "Base growth"
+  base_sell_coin:
+    displayName: "Base sell"
+  grows_from:
+    displayName: "Seed"
+  unlocked_by:
+    displayName: "Research"
+  used_in:
+    displayName: "Potion recipes"
+  implementation:
+    displayName: "Implementation"
+views:
+  - type: table
+    name: "Herbs"
+    order:
+      - catalog_order
+      - file.name
+      - base_growth_time
+      - base_sell_coin
+      - grows_from
+      - unlocked_by
+      - used_in
+  - type: list
+    name: "Herb Notes"
+    order:
+      - file.name
+

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "balance/Prestige Tuning.md",
+                "file": "mechanics/Market Systems.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Prestige Tuning"
+              "title": "Market Systems"
             }
           }
         ]
@@ -171,10 +171,10 @@
             "state": {
               "type": "file-properties",
               "state": {
-                "file": "balance/Prestige Tuning.md"
+                "file": "mechanics/Market Systems.md"
               },
               "icon": "lucide-info",
-              "title": "File properties for Prestige Tuning"
+              "title": "File properties for Market Systems"
             }
           }
         ],
@@ -197,42 +197,47 @@
   },
   "active": "00820ef59f00cfc9",
   "lastOpenFiles": [
-    "mechanics/Prestige Stars.md",
-    "mechanics/Prestige Milestones.md",
-    "mechanics/Prestige.md",
-    "balance/Market Tuning.md",
-    "balance/Prestige Tuning.md",
-    "balance/Capacity Gates.md",
-    "balance/Level Curve.md",
-    "mechanics/Prestige And Automation.md",
-    "mechanics/Production Systems.md",
-    "mechanics/Research And Unlocks.md",
-    "mechanics/Guilds.md",
-    "mechanics/Events And Social.md",
-    "mechanics/Core Loop.md",
-    "Home.md",
+    "mechanics/market/Market.canvas",
+    "mechanics/market/licences/Grand Exchange.md",
+    "mechanics/market/licences/Crossroads Market.md",
+    "mechanics/market/licences/Small Town Market.md",
+    "mechanics/market/licences/City Bazaar.md",
+    "mechanics/market/licences/Arcane Exchange.md",
+    "mechanics/market/licences",
+    "mechanics/market/Trader Stands.md",
+    "mechanics/market/Sellable Quantity.md",
+    "mechanics/market/Proceeds Royalties And History.md",
+    "mechanics/market/Player Requests.md",
+    "mechanics/market/Player Market.md",
+    "mechanics/market/Player Listings.md",
+    "mechanics/market/NPC Stock.md",
+    "mechanics/market/NPC Market.md",
+    "mechanics/market/Market Runtime Config.md",
+    "mechanics/market/Market Licences.md",
+    "mechanics/market/Market Components.base",
+    "mechanics/market/Market Authority.md",
+    "mechanics/market/Fast Sell.md",
+    "mechanics/market/Demand And Pricing.md",
+    "mechanics/market/Crystal Shop.md",
+    "mechanics/market/Browse And Purchase.md",
+    "mechanics/market",
+    "mechanics/garden/Garden And Herbs.canvas",
+    "mechanics/potions/potions/Yarrow Poultice.md",
+    "mechanics/potions/potions/Wormwood Purge.md",
+    "mechanics/potions/potions/Wasted Potion.md",
+    "mechanics/potions/potions/Venom Draught.md",
+    "mechanics/potions/potions/Valerian Rest.md",
+    "mechanics/potions/potions",
+    "mechanics/potions/Potion Catalog.base",
+    "mechanics/potions",
+    "mechanics/garden/seeds",
+    "mechanics/garden/research",
+    "mechanics/garden/plots",
+    "mechanics/garden/herbs",
     "Idle Wizard.canvas",
-    "README.md",
-    "World Index.base",
-    "Experiences.md",
     "tutorial/Tutorial.canvas",
-    "tutorial/Tutorial Index.base",
-    "mechanics/Tasks And Leveling.md",
-    "tutorial/01 Flow/Level 4 Gardening.md",
-    "tutorial/01 Flow/Level 3 Research.md",
-    "tutorial/01 Flow/Level 2 Market.md",
-    "tutorial/01 Flow/Level 1 Introduction.md",
-    "Untitled.md",
-    "tutorial/Home.md",
-    "engineering-liveops/experience/Architecture.md",
-    "balance/Home.md",
-    "balance/Balance Watchlist.md",
     "gdd/GDD.canvas",
-    "gdd/GDD Index.base",
-    "balance/Balance Index.base",
     "balance/Balance.canvas",
-    "engineering-liveops/Engineering Index.base",
-    "engineering-liveops/Engineering Liveops.canvas",
-    "engineering-liveops/experience"
+    "engineering-liveops/Engineering Liveops.canvas"
   ]
 }

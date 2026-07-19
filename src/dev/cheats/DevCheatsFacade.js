@@ -1,6 +1,7 @@
 import { DevCheatCommandManager } from './managers/DevCheatCommandManager.js';
 import { DevCheatConsoleManager } from './managers/DevCheatConsoleManager.js';
 import { QaDataFacade } from '../qaData/QaDataFacade.js';
+import { DevConsoleFacade } from '../console/DevConsoleFacade.js';
 
 const DEV_UI_QUERY_KEYS = ['devUi', 'uiSurface'];
 const DEV_UI_RETRY_MS = 250;
@@ -29,6 +30,12 @@ export class DevCheatsFacade {
       playerFacade: app?.playerFacade,
       qaDataFacade: this.qaDataFacade,
     });
+    this.devConsoleFacade = new DevConsoleFacade({
+      commandManager: this.commandManager,
+      target,
+      logger,
+    });
+    this.commandManager.setDevConsoleFacade(this.devConsoleFacade);
     this.consoleManager = new DevCheatConsoleManager({
       commandManager: this.commandManager,
       target,
@@ -40,11 +47,13 @@ export class DevCheatsFacade {
 
   mount() {
     this.consoleManager.mount();
+    this.devConsoleFacade.mount();
     this.mountRequestedUiSurface();
   }
 
   unmount() {
     this.clearDevUiTimer();
+    this.devConsoleFacade.unmount();
     this.consoleManager.unmount();
   }
 

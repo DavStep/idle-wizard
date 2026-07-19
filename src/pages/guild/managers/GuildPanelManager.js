@@ -185,7 +185,7 @@ export class GuildPanelManager {
 
   renderCreatedSections(guild) {
     const activeTab = this.getActiveContentTab();
-    const tabs = this.createContentTabs(activeTab.id, guild);
+    const tabs = this.createOrUpdateContentTabs(activeTab.id, guild);
     const panel = this.createOrUpdateContentPanel(
       activeTab,
       this.getContentTabSections(guild, activeTab.id),
@@ -194,9 +194,7 @@ export class GuildPanelManager {
       panel === this.refs.contentPanel && panel.parentElement === this.root;
 
     if (keptPanel) {
-      if (this.refs.contentTabs?.parentElement === this.root) {
-        this.refs.contentTabs.replaceWith(tabs);
-      } else {
+      if (tabs.parentElement !== this.root) {
         this.root.insertBefore(tabs, panel);
       }
 
@@ -211,6 +209,38 @@ export class GuildPanelManager {
 
     this.refs.contentTabs = tabs;
     this.refs.contentPanel = panel;
+  }
+
+  createOrUpdateContentTabs(activeTabId, guild) {
+    const tabs = this.refs.contentTabs;
+
+    if (tabs?.parentElement !== this.root) {
+      return this.createContentTabs(activeTabId, guild);
+    }
+
+    const tabButtons = new Map(
+      [...tabs.querySelectorAll('.guild-page__content-tab-button')].map((button) => [
+        button.dataset.guildTab,
+        button,
+      ]),
+    );
+
+    if (tabButtons.size !== CONTENT_TABS.length) {
+      return this.createContentTabs(activeTabId, guild);
+    }
+
+    for (const tab of CONTENT_TABS) {
+      const button = tabButtons.get(tab.id);
+
+      if (!button) {
+        return this.createContentTabs(activeTabId, guild);
+      }
+
+      setSelectedTabState(button, tab.id === activeTabId, { tabIndex: true });
+      setNotificationBadge(button, this.getContentTabNotification(guild, tab.id));
+    }
+
+    return tabs;
   }
 
   createContentTabs(activeTabId, guild) {

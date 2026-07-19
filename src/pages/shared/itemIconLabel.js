@@ -1,4 +1,5 @@
 import { createAssetAtlasSprite } from '../../assets/atlas/atlasSprite.js';
+import { getIngredientIconFrameName } from '../../assets/items/ingredients/ingredientIcons.js';
 import { createSeedPackIcon, getSeedIconFrameName } from '../../assets/items/seeds/seedIcons.js';
 import {
   getHerbIconKeyByLabel,
@@ -15,6 +16,7 @@ import { appendResourceIconMatchParts } from './resourceIconLabel.js';
 export const SEED_ICON_LABEL_CLASS = 'style-seed-label';
 export const HERB_ICON_LABEL_CLASS = 'style-herb-label';
 export const POTION_ICON_LABEL_CLASS = 'style-potion-label';
+export const INGREDIENT_ICON_LABEL_CLASS = 'style-ingredient-label';
 
 const RESOURCE_WORD_MATCH_PATTERN =
   /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
@@ -62,6 +64,18 @@ export function setItemIconLabel(element, kind, itemKey = null) {
       kind: 'potion',
       className: POTION_ICON_LABEL_CLASS,
       getIconFrameName: getPotionIconFrameName,
+    });
+    return;
+  }
+
+  if (normalizedKind === 'ingredient') {
+    setImageItemIconLabel({
+      element,
+      text: element.textContent,
+      itemKey,
+      kind: 'ingredient',
+      className: INGREDIENT_ICON_LABEL_CLASS,
+      getIconFrameName: getIngredientIconFrameName,
     });
     return;
   }
@@ -159,7 +173,12 @@ function setImageItemIconLabel({
     return;
   }
 
-  element.classList.remove(SEED_ICON_LABEL_CLASS, HERB_ICON_LABEL_CLASS, POTION_ICON_LABEL_CLASS);
+  element.classList.remove(
+    SEED_ICON_LABEL_CLASS,
+    HERB_ICON_LABEL_CLASS,
+    POTION_ICON_LABEL_CLASS,
+    INGREDIENT_ICON_LABEL_CLASS,
+  );
   element.classList.add(className);
   element.dataset.itemIconKind = kind;
   element.dataset.itemIconKey = normalizedKey;
@@ -182,14 +201,20 @@ function clearImageItemIconLabel(element) {
   const hasImageLabel =
     element.classList.contains(SEED_ICON_LABEL_CLASS) ||
     element.classList.contains(HERB_ICON_LABEL_CLASS) ||
-    element.classList.contains(POTION_ICON_LABEL_CLASS);
+    element.classList.contains(POTION_ICON_LABEL_CLASS) ||
+    element.classList.contains(INGREDIENT_ICON_LABEL_CLASS);
 
   if (!hasImageLabel) {
     return;
   }
 
   const text = element.textContent;
-  element.classList.remove(SEED_ICON_LABEL_CLASS, HERB_ICON_LABEL_CLASS, POTION_ICON_LABEL_CLASS);
+  element.classList.remove(
+    SEED_ICON_LABEL_CLASS,
+    HERB_ICON_LABEL_CLASS,
+    POTION_ICON_LABEL_CLASS,
+    INGREDIENT_ICON_LABEL_CLASS,
+  );
   delete element.dataset.itemIconKind;
   delete element.dataset.itemIconKey;
   element.textContent = text;

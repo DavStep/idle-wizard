@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { gameAssetAtlasFrames } from '../../assets/generated/game-asset-atlas.generated.js';
 import { herbIconFrameNamesByKey } from '../../assets/items/herbs/herbIcons.js';
+import { ingredientIconFrameNamesByKey } from '../../assets/items/ingredients/ingredientIcons.js';
 import {
   appendTextWithItemIcons,
   setItemIconLabel,
@@ -62,6 +63,19 @@ describe('item icon labels', () => {
     expect(element.classList.contains('style-herb-label')).toBe(true);
     expect(icon).not.toBeNull();
     expect(icon?.dataset.assetAtlasFrame).toBe('herb:sageHerb');
+  });
+
+  it('marks ingredient labels with their generated ingredient icons', () => {
+    const element = document.createElement('span');
+    element.textContent = 'cyclops eye';
+
+    setItemIconLabel(element, 'ingredient', 'cyclopsEye');
+
+    const icon = element.querySelector('.style-ingredient-label__icon');
+    expect(element.textContent).toBe('cyclops eye');
+    expect(element.classList.contains('style-ingredient-label')).toBe(true);
+    expect(icon?.dataset.assetAtlasFrame).toBe('ingredient:cyclopsEye');
+    expect(Object.keys(ingredientIconFrameNamesByKey)).toHaveLength(59);
   });
 
   it('marks late-game herb and potion labels with item icons', () => {

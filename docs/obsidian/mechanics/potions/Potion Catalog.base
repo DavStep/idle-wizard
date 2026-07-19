@@ -1,0 +1,60 @@
+filters:
+  and:
+    - file.hasTag("entity/potion")
+    - file.inFolder("mechanics/potions/potions")
+properties:
+  catalog_order:
+    displayName: "#"
+  recipe_access:
+    displayName: "Access"
+  required_player_level:
+    displayName: "Player level"
+  mana_cost:
+    displayName: "Mana"
+  brew_time:
+    displayName: "Brew time"
+  base_sell_coin:
+    displayName: "Base sell"
+  ingredients:
+    displayName: "Herbs"
+  unlock_research_id:
+    displayName: "Research ID"
+  default_research_cost_coin:
+    displayName: "Research cost"
+  default_research_duration:
+    displayName: "Research time"
+views:
+  - type: table
+    name: "All Potions"
+    order:
+      - catalog_order
+      - file.name
+      - recipe_access
+      - required_player_level
+      - mana_cost
+      - brew_time
+      - base_sell_coin
+      - ingredients
+  - type: table
+    name: "Researchable Recipes"
+    filters:
+      and:
+        - 'recipe_access == "research"'
+    order:
+      - file.name
+      - required_player_level
+      - default_research_cost_coin
+      - default_research_duration
+      - unlock_research_id
+      - ingredients
+  - type: table
+    name: "Discoverable Recipes"
+    filters:
+      and:
+        - 'recipe_access == "global discovery"'
+    order:
+      - file.name
+      - mana_cost
+      - brew_time
+      - ingredients
+

@@ -5,12 +5,14 @@ import { setResourceColor } from '../../shared/resourceColor.js';
 import { createResourceIconLabel } from '../../shared/resourceIconLabel.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { updateScrollCueState } from '../../managers/ScrollCueManager.js';
+import { ingredientRarities } from '../../../gameplay/items/ingredientCatalog.js';
 
 const BAG_TABS = [
   { id: 'currencies', label: 'currencies' },
   { id: 'seeds', label: 'seeds' },
   { id: 'herbs', label: 'herbs' },
   { id: 'potions', label: 'potions' },
+  { id: 'ingredients', label: 'ingredients' },
 ];
 
 const CURRENCY_ROWS = [
@@ -292,6 +294,11 @@ export class WorkshopBagManager {
   }
 
   renderItemRows(snapshot, kind) {
+    if (kind === 'ingredient') {
+      this.renderIngredientRows(snapshot);
+      return;
+    }
+
     const { unlocked, locked } = this.getGroupedItemRows(snapshot, kind);
     const rows = [
       ...unlocked.map((item) => this.createItemRow(snapshot, item)),
@@ -300,6 +307,24 @@ export class WorkshopBagManager {
     ];
 
     this.refs.rows.replaceChildren(...(rows.length ? rows : [this.createEmptyRow(kind)]));
+  }
+
+  renderIngredientRows(snapshot) {
+    const ingredients = this.getIngredientRows(snapshot);
+    const rows = ingredientRarities.flatMap((rarity) => {
+      const rarityItems = ingredients.filter((ingredient) => ingredient.rarity === rarity);
+
+      if (rarityItems.length <= 0) {
+        return [];
+      }
+
+      return [
+        this.createRarityDivider(rarity),
+        ...rarityItems.map((ingredient) => this.createItemRow(snapshot, ingredient)),
+      ];
+    });
+
+    this.refs.rows.replaceChildren(...(rows.length ? rows : [this.createEmptyRow('ingredient')]));
   }
 
   getGroupedItemRows(snapshot, kind) {
@@ -325,6 +350,10 @@ export class WorkshopBagManager {
 
     if (kind === 'potion') {
       return this.getPotionRows(snapshot);
+    }
+
+    if (kind === 'ingredient') {
+      return this.getIngredientRows(snapshot);
     }
 
     return [];
@@ -395,6 +424,23 @@ export class WorkshopBagManager {
     return [...rowsByKey.values()];
   }
 
+  getIngredientRows(snapshot) {
+    if (snapshot.ingredientInventory?.length) {
+      return snapshot.ingredientInventory;
+    }
+
+    return (snapshot.inventory ?? []).filter((item) => item.kind === 'ingredient');
+  }
+
+  createRarityDivider(rarity) {
+    const divider = document.createElement('div');
+    divider.className = 'workshop-page__bag-rarity-divider';
+    divider.dataset.rarity = rarity;
+    divider.setAttribute('role', 'separator');
+    divider.textContent = rarity;
+    return divider;
+  }
+
   createDivider() {
     const divider = document.createElement('div');
     divider.className = 'workshop-page__bag-divider';
@@ -409,6 +455,9 @@ export class WorkshopBagManager {
     row.classList.toggle('is-empty', item.quantity <= 0);
     row.classList.toggle('is-locked', display.locked);
     row.classList.toggle('is-unknown', display.unknown);
+    if (item.rarity) {
+      row.dataset.rarity = item.rarity;
+    }
     setResourceColor(row, item.kind);
 
     const key = document.createElement('span');
@@ -469,6 +518,7 @@ export class WorkshopBagManager {
           item.known,
           item.unknown,
           item.discoveryType,
+          item.rarity,
         ].join(':'),
       )
       .join('|')}`;

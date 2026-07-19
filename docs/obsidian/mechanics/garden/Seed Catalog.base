@@ -1,0 +1,29 @@
+filters:
+  and:
+    - file.hasTag("entity/seed")
+    - file.inFolder("mechanics/garden/seeds")
+properties:
+  catalog_order:
+    displayName: "#"
+  summon_mana_cost:
+    displayName: "Mana"
+  drop_weight:
+    displayName: "Base weight"
+  base_sell_coin:
+    displayName: "Base sell"
+  produces:
+    displayName: "Produces"
+  unlocked_by:
+    displayName: "Research"
+views:
+  - type: table
+    name: "Seeds"
+    order:
+      - catalog_order
+      - file.name
+      - summon_mana_cost
+      - drop_weight
+      - base_sell_coin
+      - produces
+      - unlocked_by
+

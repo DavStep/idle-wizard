@@ -10,42 +10,42 @@
       "enabled": true,
       "threshold": 0,
       "crop": {
-        "x": 0,
-        "y": 0,
-        "width": 496,
-        "height": 111
+        "x": 5,
+        "y": 3,
+        "width": 164,
+        "height": 41
       },
-      "changed": false
+      "changed": true
     }
   },
   "source": {
-    "path": "/Users/davitstepanyan/Documents/idle-wizard/tmp/imagegen/banners/reference-tuned/trimmed/seed-unlock-research-banner.png",
-    "width": 760,
-    "height": 111,
+    "path": "/private/tmp/idle-wizard-banner-reextract/sources/seed-unlock-research-banner.png",
+    "width": 444,
+    "height": 50,
     "mode": "RGBA",
     "crop": {
       "x": 0,
       "y": 0,
-      "width": 760,
-      "height": 111
+      "width": 444,
+      "height": 50
     }
   },
   "sourceCropSize": {
-    "width": 760,
-    "height": 111
+    "width": 444,
+    "height": 50
   },
   "slice": {
-    "left": 200,
-    "top": 55,
-    "right": 200,
-    "bottom": 55
+    "left": 89,
+    "top": 17,
+    "right": 69,
+    "bottom": 20
   },
   "mode": "distilled",
   "distill": {
-    "sampleX": 332,
-    "sampleY": 55,
-    "centerWidth": 96,
-    "centerHeight": 1,
+    "sampleX": 94,
+    "sampleY": 23,
+    "centerWidth": 6,
+    "centerHeight": 4,
     "cornerSource": "source",
     "edgeSource": "source"
   },
@@ -70,7 +70,7 @@
   },
   "rendering": {
     "stretch": "width-only",
-    "fixedHeight": 111,
+    "fixedHeight": 50,
     "consumerRule": "Keep the authored height; vary width only.",
     "qaResample": "nearest",
     "browserPreviewSmoothingDefault": false
@@ -81,15 +81,15 @@
     "naturalRoundTripExact": true,
     "cornerRoundTripExact": true,
     "alpha": {
-      "transparent": 9189,
-      "translucent": 10089,
-      "opaque": 35778
+      "transparent": 1505,
+      "translucent": 0,
+      "opaque": 5219
     },
     "alphaBounds": {
       "x": 0,
       "y": 0,
-      "width": 496,
-      "height": 111
+      "width": 164,
+      "height": 41
     },
     "transparentGutters": {
       "left": 0,
@@ -99,44 +99,44 @@
     },
     "passesNoGutterGate": true,
     "uniqueColors": {
-      "all": 11594,
-      "corners": 9292,
-      "edges": 3802
+      "all": 4623,
+      "corners": 4136,
+      "edges": 689
     },
     "workAsset": {
       "size": {
-        "width": 496,
-        "height": 111
+        "width": 180,
+        "height": 44
       },
       "slice": {
-        "left": 200,
-        "top": 55,
-        "right": 200,
-        "bottom": 55
+        "left": 94,
+        "top": 20,
+        "right": 80,
+        "bottom": 20
       },
       "naturalRoundTripExact": true,
       "cornerRoundTripExact": true,
       "alpha": {
-        "transparent": 9189,
-        "translucent": 10089,
-        "opaque": 35778
+        "transparent": 2701,
+        "translucent": 0,
+        "opaque": 5219
       },
       "alphaBounds": {
-        "x": 0,
-        "y": 0,
-        "width": 496,
-        "height": 111
+        "x": 5,
+        "y": 3,
+        "width": 164,
+        "height": 41
       },
       "transparentGutters": {
-        "left": 0,
-        "right": 0,
-        "top": 0,
+        "left": 5,
+        "right": 11,
+        "top": 3,
         "bottom": 0
       },
       "uniqueColors": {
-        "all": 11594,
-        "corners": 9292,
-        "edges": 3802
+        "all": 5003,
+        "corners": 4503,
+        "edges": 742
       }
     }
   },
@@ -144,14 +144,24 @@
     "sheet": "seed-unlock-research-banner-9slice-qa-sheet.png",
     "examples": [
       {
-        "label": "original: 760x111",
-        "width": 760,
-        "height": 111
+        "label": "original: 444x50",
+        "width": 444,
+        "height": 50
       },
       {
-        "label": "width stretched: 1102x111",
-        "width": 1102,
-        "height": 111
+        "label": "height stretched: 444x210",
+        "width": 444,
+        "height": 210
+      },
+      {
+        "label": "width stretched: 684x50",
+        "width": 684,
+        "height": 50
+      },
+      {
+        "label": "both stretched: 684x210",
+        "width": 684,
+        "height": 210
       }
     ]
   }

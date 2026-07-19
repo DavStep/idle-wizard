@@ -183,6 +183,15 @@ describe('ResearchBalanceManager', () => {
     });
   });
 
+  it('prices auto seed spawn at 2 ruby', () => {
+    const manager = new ResearchBalanceManager();
+
+    expect(manager.getCost(automationResearchIds.autoSeedSpawn())).toEqual({
+      amount: 2,
+      currency: 'ruby',
+    });
+  });
+
   it('moves legacy ruby advanced costs into emerald', () => {
     const manager = new ResearchBalanceManager({
       balance: {

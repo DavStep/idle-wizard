@@ -234,7 +234,7 @@
     "emerald:cauldronBrewing:5:5": 16
   },
   "researchCostsRuby": {
-    "automation:autoSeedSpawn": 10,
+    "automation:autoSeedSpawn": 2,
     "automation:autoPlantTile:1": 1,
     "automation:autoPlantTile:2": 2,
     "automation:autoPlantTile:3": 3,

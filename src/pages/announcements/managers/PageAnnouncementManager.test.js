@@ -6,6 +6,7 @@ import { cwd } from 'node:process';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PageAnnouncementManager } from './PageAnnouncementManager.js';
+import { FEATURE_UNLOCK_FLYOUT_EVENT } from '../featureUnlockEvents.js';
 
 const managers = new Set();
 
@@ -187,6 +188,17 @@ describe('PageAnnouncementManager', () => {
         .querySelector('.room-announcement__unlock-icon')
         ?.getAttribute('src'),
     ).toContain('icon-shop-market-stall-tab');
+
+    const flyoutEvent = vi.fn();
+    stage.addEventListener(FEATURE_UNLOCK_FLYOUT_EVENT, flyoutEvent);
+    manager.hideCurrent();
+
+    expect(flyoutEvent).toHaveBeenCalledTimes(1);
+    expect(flyoutEvent.mock.calls[0][0].detail).toEqual({
+      features: [{ value: 'market', pageId: 'shop' }],
+      pageIds: ['shop'],
+      sourceRect: { left: 0, top: 0, width: 0, height: 0 },
+    });
   });
 
   it('shows a full-screen level-up announcement after level increases', () => {
@@ -220,6 +232,29 @@ describe('PageAnnouncementManager', () => {
       ['mana regeneration', '+1/sec mana'],
       ['bonus', '+1 crystal'],
     ]);
+  });
+
+  it('hands off workshop feature unlocks that do not have page ids', () => {
+    const snapshot = createSnapshot();
+    const { manager, stage } = mountManager(snapshot);
+    const flyoutEvent = vi.fn();
+    stage.addEventListener(FEATURE_UNLOCK_FLYOUT_EVENT, flyoutEvent);
+    manager.current = {
+      kind: 'unlock',
+      values: ['leaderboard'],
+      pageIds: {},
+      notices: { leaderboard: 'leaderboard available' },
+    };
+    manager.renderAnnouncement(manager.current);
+    manager.layer.hidden = false;
+
+    manager.hideCurrent();
+
+    expect(flyoutEvent).toHaveBeenCalledTimes(1);
+    expect(flyoutEvent.mock.calls[0][0].detail.features).toEqual([
+      { value: 'leaderboard', pageId: null },
+    ]);
+    expect(flyoutEvent.mock.calls[0][0].detail.pageIds).toEqual([]);
   });
 
   it('keeps multi-level unlock announcements in a stable row layout', () => {

@@ -25,6 +25,7 @@ server-authoritative write paths where they exist.
 
 ## Related
 
+- [[Guild System Plan]]
 - [[Tasks And Leveling]]
 - [[Production Systems]]
 - [[Market Systems]]

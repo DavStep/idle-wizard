@@ -1,0 +1,29 @@
+filters:
+  and:
+    - file.hasTag("progression/seed-research")
+    - file.inFolder("mechanics/garden/research")
+properties:
+  catalog_order:
+    displayName: "#"
+  required_player_level:
+    displayName: "Player level"
+  default_cost_coin:
+    displayName: "Base cost"
+  default_duration:
+    displayName: "Base time"
+  prerequisite:
+    displayName: "Requires"
+  unlocks:
+    displayName: "Unlocks"
+views:
+  - type: table
+    name: "Seed Unlocks"
+    order:
+      - catalog_order
+      - file.name
+      - required_player_level
+      - default_cost_coin
+      - default_duration
+      - prerequisite
+      - unlocks
+

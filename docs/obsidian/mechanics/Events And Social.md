@@ -26,6 +26,10 @@ matching actions keep adding contribution points after completion.
 [[Guilds|Guild]] is a private player hall unlocked at level 15. Heavy state
 stays in the gameplay save. Adventurers simulate in lazy 10-minute ticks.
 
+[[Guild System Plan]] proposes connecting Guild commissions to production,
+weekly world-event contribution, public adventurer profiles, and server-owned
+competition.
+
 ## Trade Alliance
 
 Trade alliances are player groups. Backend facades watch alliance tables, send
@@ -36,3 +40,4 @@ reducers, mirror chat, and grant crystal rewards from claimed weekly quests.
 - [[Market Systems]]
 - [[Prestige]]
 - [[Guilds]]
+- [[Guild System Plan]]

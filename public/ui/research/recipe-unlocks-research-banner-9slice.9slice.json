@@ -10,42 +10,42 @@
       "enabled": true,
       "threshold": 0,
       "crop": {
-        "x": 0,
+        "x": 6,
         "y": 0,
-        "width": 491,
-        "height": 100
+        "width": 81,
+        "height": 40
       },
-      "changed": false
+      "changed": true
     }
   },
   "source": {
-    "path": "/Users/davitstepanyan/Documents/idle-wizard/tmp/imagegen/banners/seam-aligned/trimmed/recipe-unlocks-research-banner.png",
-    "width": 760,
-    "height": 100,
+    "path": "/private/tmp/idle-wizard-banner-reextract/sources/recipe-unlocks-research-banner.png",
+    "width": 385,
+    "height": 44,
     "mode": "RGBA",
     "crop": {
       "x": 0,
       "y": 0,
-      "width": 760,
-      "height": 100
+      "width": 385,
+      "height": 44
     }
   },
   "sourceCropSize": {
-    "width": 760,
-    "height": 100
+    "width": 385,
+    "height": 44
   },
   "slice": {
-    "left": 198,
-    "top": 49,
-    "right": 197,
-    "bottom": 50
+    "left": 42,
+    "top": 18,
+    "right": 31,
+    "bottom": 18
   },
   "mode": "distilled",
   "distill": {
-    "sampleX": 332,
-    "sampleY": 49,
-    "centerWidth": 96,
-    "centerHeight": 1,
+    "sampleX": 316,
+    "sampleY": 20,
+    "centerWidth": 8,
+    "centerHeight": 4,
     "cornerSource": "source",
     "edgeSource": "source"
   },
@@ -70,7 +70,7 @@
   },
   "rendering": {
     "stretch": "width-only",
-    "fixedHeight": 100,
+    "fixedHeight": 44,
     "consumerRule": "Keep the authored height; vary width only.",
     "qaResample": "nearest",
     "browserPreviewSmoothingDefault": false
@@ -81,15 +81,15 @@
     "naturalRoundTripExact": true,
     "cornerRoundTripExact": true,
     "alpha": {
-      "transparent": 12384,
-      "translucent": 4064,
-      "opaque": 32652
+      "transparent": 928,
+      "translucent": 0,
+      "opaque": 2312
     },
     "alphaBounds": {
       "x": 0,
       "y": 0,
-      "width": 491,
-      "height": 100
+      "width": 81,
+      "height": 40
     },
     "transparentGutters": {
       "left": 0,
@@ -99,44 +99,44 @@
     },
     "passesNoGutterGate": true,
     "uniqueColors": {
-      "all": 5641,
-      "corners": 5448,
-      "edges": 480
+      "all": 2157,
+      "corners": 1792,
+      "edges": 472
     },
     "workAsset": {
       "size": {
-        "width": 491,
-        "height": 100
+        "width": 106,
+        "height": 40
       },
       "slice": {
-        "left": 198,
-        "top": 49,
-        "right": 197,
-        "bottom": 50
+        "left": 48,
+        "top": 18,
+        "right": 50,
+        "bottom": 18
       },
       "naturalRoundTripExact": true,
       "cornerRoundTripExact": true,
       "alpha": {
-        "transparent": 12384,
-        "translucent": 4064,
-        "opaque": 32652
+        "transparent": 1928,
+        "translucent": 0,
+        "opaque": 2312
       },
       "alphaBounds": {
-        "x": 0,
+        "x": 6,
         "y": 0,
-        "width": 491,
-        "height": 100
+        "width": 81,
+        "height": 40
       },
       "transparentGutters": {
-        "left": 0,
-        "right": 0,
+        "left": 6,
+        "right": 19,
         "top": 0,
         "bottom": 0
       },
       "uniqueColors": {
-        "all": 5641,
-        "corners": 5448,
-        "edges": 480
+        "all": 2649,
+        "corners": 2217,
+        "edges": 566
       }
     }
   },
@@ -144,14 +144,24 @@
     "sheet": "recipe-unlocks-research-banner-9slice-qa-sheet.png",
     "examples": [
       {
-        "label": "original: 760x100",
-        "width": 760,
-        "height": 100
+        "label": "original: 385x44",
+        "width": 385,
+        "height": 44
       },
       {
-        "label": "width stretched: 1102x100",
-        "width": 1102,
-        "height": 100
+        "label": "height stretched: 385x204",
+        "width": 385,
+        "height": 204
+      },
+      {
+        "label": "width stretched: 625x44",
+        "width": 625,
+        "height": 44
+      },
+      {
+        "label": "both stretched: 625x204",
+        "width": 625,
+        "height": 204
       }
     ]
   }

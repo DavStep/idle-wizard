@@ -256,7 +256,7 @@ describe('TopPanelViewManager', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
     const itemIconRule = baseCss.match(
-      /\.style-seed-label__icon,\s*\.style-herb-label__icon,\s*\.style-potion-label__icon\s*\{(?<body>[^}]*)\}/,
+      /\.style-seed-label__icon,\s*\.style-herb-label__icon,\s*\.style-potion-label__icon,\s*\.style-ingredient-label__icon\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const globalSpacerRule = baseCss.match(
       /:root\[data-style-icons="icons"\]\s+\.style-resource-label__spacer\s*\{(?<body>[^}]*)\}/,

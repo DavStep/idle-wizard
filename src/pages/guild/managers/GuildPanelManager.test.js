@@ -5,6 +5,7 @@ import { cwd } from 'node:process';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PageSwipeNavigationManager } from '../../managers/PageSwipeNavigationManager.js';
+import { PressFeedbackManager } from '../../managers/PressFeedbackManager.js';
 import { GuildPanelManager } from './GuildPanelManager.js';
 
 function createGuildSnapshot(overrides = {}) {
@@ -251,6 +252,43 @@ describe('GuildPanelManager', () => {
     expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe('board');
 
     pageSwipeManager.unmount();
+  });
+
+  it('keeps a tab clickable when a live snapshot arrives during the touch', () => {
+    const gameplayFacade = createGameplayFacadeFake(createCreatedGuildSnapshot());
+    const { parent } = mountManager(gameplayFacade);
+    const stage = document.createElement('section');
+    const pressFeedbackManager = new PressFeedbackManager();
+    const originalElementFromPoint = document.elementFromPoint;
+    const firstBoardTab = parent.querySelector(
+      '.guild-page__content-tab-button[data-guild-tab="board"]',
+    );
+
+    stage.append(parent);
+    document.body.append(stage);
+    pressFeedbackManager.mount(stage);
+
+    try {
+      document.elementFromPoint = () => firstBoardTab;
+      dispatchTouchPointer(firstBoardTab, 'pointerdown', { clientX: 100, clientY: 100 });
+
+      gameplayFacade.emitGuild(createCreatedGuildSnapshot({ boardWaveLabel: '11m' }));
+
+      const refreshedBoardTab = parent.querySelector(
+        '.guild-page__content-tab-button[data-guild-tab="board"]',
+      );
+      expect(refreshedBoardTab).toBe(firstBoardTab);
+      document.elementFromPoint = () => refreshedBoardTab;
+      dispatchTouchPointer(refreshedBoardTab, 'pointerup', { clientX: 100, clientY: 100 });
+      refreshedBoardTab?.dispatchEvent(
+        new window.MouseEvent('click', { bubbles: true, clientX: 100, clientY: 100 }),
+      );
+
+      expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe('board');
+    } finally {
+      document.elementFromPoint = originalElementFromPoint;
+      pressFeedbackManager.unmount();
+    }
   });
 
   it('keeps selected guild room tab across snapshot refreshes', () => {

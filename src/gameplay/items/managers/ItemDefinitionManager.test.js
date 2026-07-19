@@ -80,4 +80,143 @@ describe('ItemDefinitionManager', () => {
     expect(manager.getUnknownPotionDefinitions()).toHaveLength(10);
     expect(manager.getDefinition(2001).kind).toBe('potion');
   });
+
+  it('defines active ingredients in stable rarity groups', () => {
+    const manager = new ItemDefinitionManager();
+    const ingredients = manager.getIngredientDefinitions();
+
+    expect(ingredients).toHaveLength(59);
+    expect(ingredients[0]).toEqual({
+      id: 3001,
+      key: 'ratTail',
+      label: 'rat tail',
+      kind: 'ingredient',
+      rarity: 'common',
+    });
+    expect(manager.getDefinitionByKey('cyclopsEye')).toMatchObject({
+      id: 3021,
+      kind: 'ingredient',
+      rarity: 'rare',
+    });
+    expect(manager.getDefinitionByKey('featherOfEternity')).toEqual({
+      id: 3060,
+      key: 'featherOfEternity',
+      label: 'feather of eternity',
+      kind: 'ingredient',
+      rarity: 'mythical',
+    });
+    expect(
+      Object.fromEntries(
+        ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythical'].map(
+          (rarity) => [
+            rarity,
+            ingredients.filter((ingredient) => ingredient.rarity === rarity).length,
+          ],
+        ),
+      ),
+    ).toEqual({
+      common: 10,
+      uncommon: 9,
+      rare: 10,
+      epic: 10,
+      legendary: 10,
+      mythical: 10,
+    });
+  });
+
+  it('keeps default ingredients when an older runtime item config omits them', () => {
+    const manager = new ItemDefinitionManager();
+
+    manager.setRuntimeConfig({
+      seeds: [
+        {
+          id: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          producesHerbTypeId: 1001,
+          dropWeight: 1,
+          summonManaCost: 10,
+          baseSellPrice: 1,
+        },
+      ],
+      herbs: [
+        {
+          id: 1001,
+          key: 'sageHerb',
+          label: 'sage',
+          growthDurationMs: 12_000,
+          baseSellPrice: 6,
+        },
+      ],
+      potions: [
+        {
+          id: 2001,
+          key: 'manaTonic',
+          label: 'mana tonic',
+          baseSellPrice: 55,
+        },
+      ],
+    });
+
+    expect(manager.getIngredientDefinitions()).toHaveLength(59);
+    expect(manager.getDefinitionByKey('dragonFang').rarity).toBe('epic');
+  });
+
+  it('filters the retired living mandrake root from older runtime configs', () => {
+    const manager = new ItemDefinitionManager();
+    const legacyConfig = manager.createDefinitionsFromConfig({
+      seeds: [
+        {
+          id: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          producesHerbTypeId: 1001,
+          dropWeight: 1,
+          summonManaCost: 10,
+          baseSellPrice: 1,
+        },
+      ],
+      herbs: [
+        {
+          id: 1001,
+          key: 'sageHerb',
+          label: 'sage',
+          growthDurationMs: 12_000,
+          baseSellPrice: 6,
+        },
+      ],
+      potions: [
+        {
+          id: 2001,
+          key: 'manaTonic',
+          label: 'mana tonic',
+          baseSellPrice: 55,
+        },
+      ],
+      ingredients: [
+        {
+          id: 3019,
+          key: 'livingMandrakeRoot',
+          label: 'living mandrake root',
+          rarity: 'uncommon',
+        },
+        {
+          id: 3021,
+          key: 'cyclopsEye',
+          label: 'cyclops eye',
+          rarity: 'rare',
+        },
+      ],
+    });
+
+    expect(legacyConfig.ingredientDefinitions).toEqual([
+      {
+        id: 3021,
+        key: 'cyclopsEye',
+        label: 'cyclops eye',
+        kind: 'ingredient',
+        rarity: 'rare',
+      },
+    ]);
+  });
 });

@@ -54,11 +54,18 @@ describe('DevCheatsFacade', () => {
     expect(target.cheat('addCoin 25')).toMatchObject({ ok: true });
     expect(app.gameplayFacade.getSnapshot().coin.current).toBe(35);
     expect(logger.info).toHaveBeenCalledWith('Dev cheats enabled. Run cheats.help().');
+    expect(target.devConsole).toEqual(
+      expect.objectContaining({
+        open: expect.any(Function),
+        run: expect.any(Function),
+      }),
+    );
 
     facade.unmount();
 
     expect(target.cheats).toEqual({ previous: true });
     expect(target.cheat()).toBe('previous');
+    expect(target.devConsole).toBeUndefined();
   });
 
   it('opens requested dev UI surfaces from the URL after gates clear', () => {
@@ -457,6 +464,10 @@ describe('DevCheatsFacade', () => {
     expect(target.cheats.listUiSurfaces()).toMatchObject({
       ok: true,
       surfaces: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'devConsole',
+          kind: 'tool',
+        }),
         expect.objectContaining({
           id: 'guildQuestPosting',
           command: 'cheats.openUi("guildQuestPosting")',

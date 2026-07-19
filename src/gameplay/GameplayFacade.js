@@ -1357,6 +1357,7 @@ export class GameplayFacade {
       ruby: this.rubyFacade.getSnapshot(),
       inventory: this.itemsFacade.getInventorySnapshot(),
       seedInventory: this.itemsFacade.getSeedInventorySnapshot(),
+      ingredientInventory: this.itemsFacade.getIngredientInventorySnapshot(),
       seedSummoning,
       automation,
       brewing: this.brewingFacade.getSnapshot(),

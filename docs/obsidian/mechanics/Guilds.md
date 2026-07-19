@@ -17,6 +17,11 @@ Guilds are private player halls unlocked at level 15. The player spends a
 1.5k coin charter, chooses a name, tag, and color, then hires adventurers who
 take request-board work without direct micromanagement.
 
+> [!info] Proposed Redesign
+> [[Guild System Plan]] describes a connected, server-authoritative target
+> design. This note remains the source of truth for current behavior until that
+> proposal is approved and implemented.
+
 ## Place In The Loop
 
 Guilds sit after the core production economy is established. They convert coin
@@ -94,6 +99,7 @@ outcome quality.
 
 ## Related
 
+- [[Guild System Plan]]
 - [[Core Loop]]
 - [[Tasks And Leveling]]
 - [[Production Systems]]

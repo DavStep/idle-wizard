@@ -52,7 +52,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-dragonpepper.png"
   },
   "herb:dreambellHerb": {
-    "x": 32,
+    "x": 261,
     "y": 1355,
     "width": 128,
     "height": 121,
@@ -61,7 +61,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-dreambell.png"
   },
   "herb:frostmossHerb": {
-    "x": 352,
+    "x": 1487,
     "y": 1355,
     "width": 128,
     "height": 113,
@@ -70,7 +70,7 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/items/herbs/herb-frostmoss.png"
   },
   "herb:glowcapHerb": {
-    "x": 192,
+    "x": 1086,
     "y": 1355,
     "width": 128,
     "height": 115,
@@ -221,6 +221,537 @@ export const gameAssetAtlasFrames = Object.freeze({
     "originalWidth": 256,
     "originalHeight": 256,
     "source": "src/assets/items/herbs/herb-yarrow.png"
+  },
+  "ingredient:ancientLichPhylactery": {
+    "x": 993,
+    "y": 1355,
+    "width": 61,
+    "height": 116,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-ancient-lich-phylactery.png"
+  },
+  "ingredient:archdemonHorn": {
+    "x": 724,
+    "y": 1509,
+    "width": 89,
+    "height": 109,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-archdemon-horn.png"
+  },
+  "ingredient:bansheeVeil": {
+    "x": 870,
+    "y": 1788,
+    "width": 88,
+    "height": 95,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-banshee-veil.png"
+  },
+  "ingredient:basiliskScale": {
+    "x": 148,
+    "y": 1653,
+    "width": 91,
+    "height": 102,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-basilisk-scale.png"
+  },
+  "ingredient:batHeart": {
+    "x": 1719,
+    "y": 1653,
+    "width": 106,
+    "height": 97,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-bat-heart.png"
+  },
+  "ingredient:beetleShell": {
+    "x": 267,
+    "y": 1788,
+    "width": 110,
+    "height": 96,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-beetle-shell.png"
+  },
+  "ingredient:celestialStagAntler": {
+    "x": 1647,
+    "y": 1355,
+    "width": 97,
+    "height": 113,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-celestial-stag-antler.png"
+  },
+  "ingredient:chaosBeastCore": {
+    "x": 1064,
+    "y": 1509,
+    "width": 100,
+    "height": 107,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-chaos-beast-core.png"
+  },
+  "ingredient:chimeraMane": {
+    "x": 1328,
+    "y": 1509,
+    "width": 78,
+    "height": 106,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-chimera-mane.png"
+  },
+  "ingredient:cockatriceBeak": {
+    "x": 1401,
+    "y": 1653,
+    "width": 83,
+    "height": 99,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-cockatrice-beak.png"
+  },
+  "ingredient:cosmicPhoenixAsh": {
+    "x": 503,
+    "y": 1653,
+    "width": 102,
+    "height": 101,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-cosmic-phoenix-ash.png"
+  },
+  "ingredient:crowFeather": {
+    "x": 1032,
+    "y": 1653,
+    "width": 91,
+    "height": 100,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-crow-feather.png"
+  },
+  "ingredient:cyclopsEye": {
+    "x": 1857,
+    "y": 1653,
+    "width": 94,
+    "height": 97,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-cyclops-eye.png"
+  },
+  "ingredient:devilWing": {
+    "x": 1543,
+    "y": 1509,
+    "width": 91,
+    "height": 104,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-devil-wing.png"
+  },
+  "ingredient:dragonFang": {
+    "x": 271,
+    "y": 1653,
+    "width": 84,
+    "height": 102,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-dragon-fang.png"
+  },
+  "ingredient:dryadBark": {
+    "x": 153,
+    "y": 1788,
+    "width": 82,
+    "height": 97,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-dryad-bark.png"
+  },
+  "ingredient:fallenAngelFeather": {
+    "x": 644,
+    "y": 1355,
+    "width": 93,
+    "height": 117,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-fallen-angel-feather.png"
+  },
+  "ingredient:featherOfEternity": {
+    "x": 152,
+    "y": 1917,
+    "width": 127,
+    "height": 73,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-feather-of-eternity.png"
+  },
+  "ingredient:firstFlameFragment": {
+    "x": 540,
+    "y": 1355,
+    "width": 72,
+    "height": 121,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-first-flame-fragment.png"
+  },
+  "ingredient:frogLeg": {
+    "x": 1516,
+    "y": 1653,
+    "width": 63,
+    "height": 99,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-frog-leg.png"
+  },
+  "ingredient:frostGiantBlood": {
+    "x": 769,
+    "y": 1355,
+    "width": 83,
+    "height": 116,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-frost-giant-blood.png"
+  },
+  "ingredient:gargoyleHeart": {
+    "x": 637,
+    "y": 1653,
+    "width": 104,
+    "height": 100,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-gargoyle-heart.png"
+  },
+  "ingredient:goblinEar": {
+    "x": 143,
+    "y": 1509,
+    "width": 90,
+    "height": 111,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-goblin-ear.png"
+  },
+  "ingredient:golemPebble": {
+    "x": 1242,
+    "y": 1788,
+    "width": 100,
+    "height": 92,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-golem-pebble.png"
+  },
+  "ingredient:griffinTalon": {
+    "x": 387,
+    "y": 1653,
+    "width": 84,
+    "height": 102,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-griffin-talon.png"
+  },
+  "ingredient:harpyFeather": {
+    "x": 1768,
+    "y": 1509,
+    "width": 96,
+    "height": 103,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-harpy-feather.png"
+  },
+  "ingredient:hydraHeart": {
+    "x": 1776,
+    "y": 1355,
+    "width": 94,
+    "height": 113,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-hydra-heart.png"
+  },
+  "ingredient:impHorn": {
+    "x": 641,
+    "y": 1788,
+    "width": 70,
+    "height": 96,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-imp-horn.png"
+  },
+  "ingredient:krakenInk": {
+    "x": 884,
+    "y": 1355,
+    "width": 77,
+    "height": 116,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-kraken-ink.png"
+  },
+  "ingredient:leviathanScale": {
+    "x": 905,
+    "y": 1653,
+    "width": 95,
+    "height": 100,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-leviathan-scale.png"
+  },
+  "ingredient:manticoreBarb": {
+    "x": 1246,
+    "y": 1355,
+    "width": 92,
+    "height": 115,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-manticore-barb.png"
+  },
+  "ingredient:mermaidTear": {
+    "x": 505,
+    "y": 1509,
+    "width": 80,
+    "height": 110,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-mermaid-tear.png"
+  },
+  "ingredient:mimicTongue": {
+    "x": 537,
+    "y": 1788,
+    "width": 72,
+    "height": 96,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-mimic-tongue.png"
+  },
+  "ingredient:moonGoddessHair": {
+    "x": 1370,
+    "y": 1355,
+    "width": 85,
+    "height": 114,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-moon-goddess-hair.png"
+  },
+  "ingredient:moonMothWing": {
+    "x": 1896,
+    "y": 1509,
+    "width": 91,
+    "height": 103,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-moon-moth-wing.png"
+  },
+  "ingredient:nightmareHoof": {
+    "x": 1438,
+    "y": 1509,
+    "width": 73,
+    "height": 106,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-nightmare-hoof.png"
+  },
+  "ingredient:ogreKnuckle": {
+    "x": 32,
+    "y": 1788,
+    "width": 89,
+    "height": 97,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-ogre-knuckle.png"
+  },
+  "ingredient:phoenixFeather": {
+    "x": 148,
+    "y": 1355,
+    "width": 81,
+    "height": 122,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-phoenix-feather.png"
+  },
+  "ingredient:primordialDragonHeart": {
+    "x": 1902,
+    "y": 1355,
+    "width": 97,
+    "height": 112,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-primordial-dragon-heart.png"
+  },
+  "ingredient:ratTail": {
+    "x": 1625,
+    "y": 1788,
+    "width": 81,
+    "height": 90,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-rat-tail.png"
+  },
+  "ingredient:slimeCore": {
+    "x": 743,
+    "y": 1788,
+    "width": 95,
+    "height": 95,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-slime-core.png"
+  },
+  "ingredient:snakeFang": {
+    "x": 1155,
+    "y": 1653,
+    "width": 85,
+    "height": 100,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-snake-fang.png"
+  },
+  "ingredient:sphinxWhisker": {
+    "x": 990,
+    "y": 1788,
+    "width": 100,
+    "height": 94,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-sphinx-whisker.png"
+  },
+  "ingredient:spiderSilk": {
+    "x": 32,
+    "y": 1653,
+    "width": 84,
+    "height": 103,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-spider-silk.png"
+  },
+  "ingredient:starEaterTooth": {
+    "x": 421,
+    "y": 1355,
+    "width": 87,
+    "height": 121,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-star-eater-tooth.png"
+  },
+  "ingredient:sunbirdHeart": {
+    "x": 265,
+    "y": 1509,
+    "width": 82,
+    "height": 111,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-sunbird-heart.png"
+  },
+  "ingredient:tearOfAForgottenGod": {
+    "x": 32,
+    "y": 1509,
+    "width": 79,
+    "height": 112,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-tear-of-a-forgotten-god.png"
+  },
+  "ingredient:thunderbirdPlume": {
+    "x": 617,
+    "y": 1509,
+    "width": 75,
+    "height": 110,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-thunderbird-plume.png"
+  },
+  "ingredient:timeWyrmScale": {
+    "x": 379,
+    "y": 1509,
+    "width": 94,
+    "height": 110,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-time-wyrm-scale.png"
+  },
+  "ingredient:titansEmber": {
+    "x": 1272,
+    "y": 1653,
+    "width": 97,
+    "height": 99,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-titans-ember.png"
+  },
+  "ingredient:toadEye": {
+    "x": 1122,
+    "y": 1788,
+    "width": 88,
+    "height": 94,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-toad-eye.png"
+  },
+  "ingredient:trollTooth": {
+    "x": 1611,
+    "y": 1653,
+    "width": 76,
+    "height": 98,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-troll-tooth.png"
+  },
+  "ingredient:unicornHornShard": {
+    "x": 845,
+    "y": 1509,
+    "width": 79,
+    "height": 109,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-unicorn-horn-shard.png"
+  },
+  "ingredient:vampireLordFang": {
+    "x": 956,
+    "y": 1509,
+    "width": 76,
+    "height": 109,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-vampire-lord-fang.png"
+  },
+  "ingredient:voidKrakenPearl": {
+    "x": 773,
+    "y": 1653,
+    "width": 100,
+    "height": 100,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-void-kraken-pearl.png"
+  },
+  "ingredient:werewolfClaw": {
+    "x": 1666,
+    "y": 1509,
+    "width": 70,
+    "height": 104,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-werewolf-claw.png"
+  },
+  "ingredient:worldSerpentVenom": {
+    "x": 32,
+    "y": 1355,
+    "width": 84,
+    "height": 122,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-world-serpent-venom.png"
+  },
+  "ingredient:wraithDust": {
+    "x": 1196,
+    "y": 1509,
+    "width": 100,
+    "height": 106,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-wraith-dust.png"
+  },
+  "ingredient:wyvernStinger": {
+    "x": 1498,
+    "y": 1788,
+    "width": 95,
+    "height": 91,
+    "originalWidth": 128,
+    "originalHeight": 128,
+    "source": "src/assets/items/ingredients/ingredient-wyvern-stinger.png"
   },
   "potion:ashenMemory": {
     "x": 832,
@@ -736,8 +1267,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/research/icon-research-summon-multiplier.png"
   },
   "resource:coin": {
-    "x": 640,
-    "y": 1355,
+    "x": 1374,
+    "y": 1788,
     "width": 92,
     "height": 92,
     "originalWidth": 92,
@@ -745,8 +1276,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-coin.png"
   },
   "resource:crystal": {
-    "x": 764,
-    "y": 1355,
+    "x": 1738,
+    "y": 1788,
     "width": 68,
     "height": 88,
     "originalWidth": 68,
@@ -754,8 +1285,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-crystal.png"
   },
   "resource:emerald": {
-    "x": 864,
-    "y": 1355,
+    "x": 1838,
+    "y": 1788,
     "width": 65,
     "height": 88,
     "originalWidth": 65,
@@ -763,8 +1294,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-emerald.png"
   },
   "resource:mana": {
-    "x": 961,
-    "y": 1355,
+    "x": 1935,
+    "y": 1788,
     "width": 60,
     "height": 88,
     "originalWidth": 60,
@@ -772,8 +1303,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-mana-drop.png"
   },
   "resource:research": {
-    "x": 512,
-    "y": 1355,
+    "x": 409,
+    "y": 1788,
     "width": 96,
     "height": 96,
     "originalWidth": 512,
@@ -781,8 +1312,8 @@ export const gameAssetAtlasFrames = Object.freeze({
     "source": "src/assets/icons/icon-research.png"
   },
   "resource:ruby": {
-    "x": 1053,
-    "y": 1355,
+    "x": 32,
+    "y": 1917,
     "width": 88,
     "height": 85,
     "originalWidth": 88,

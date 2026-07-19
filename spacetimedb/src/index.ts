@@ -3897,6 +3897,82 @@ const herbCatalog = [
   { key: 'pearlroot', label: 'pearlroot', growthDurationMs: 520_000 },
 ];
 
+const ingredientRarities = new Set([
+  'common',
+  'uncommon',
+  'rare',
+  'epic',
+  'legendary',
+  'mythical',
+]);
+const retiredIngredientKeys = new Set(['livingMandrakeRoot']);
+
+const ingredientCatalog = ([
+  { key: 'ratTail', label: 'rat tail', rarity: 'common' },
+  { key: 'crowFeather', label: 'crow feather', rarity: 'common' },
+  { key: 'frogLeg', label: 'frog leg', rarity: 'common' },
+  { key: 'toadEye', label: 'toad eye', rarity: 'common' },
+  { key: 'snakeFang', label: 'snake fang', rarity: 'common' },
+  { key: 'beetleShell', label: 'beetle shell', rarity: 'common' },
+  { key: 'goblinEar', label: 'goblin ear', rarity: 'common' },
+  { key: 'batHeart', label: 'bat heart', rarity: 'common' },
+  { key: 'spiderSilk', label: 'spider silk', rarity: 'common' },
+  { key: 'slimeCore', label: 'slime core', rarity: 'common' },
+  { key: 'trollTooth', label: 'troll tooth', rarity: 'uncommon' },
+  { key: 'ogreKnuckle', label: 'ogre knuckle', rarity: 'uncommon' },
+  { key: 'impHorn', label: 'imp horn', rarity: 'uncommon' },
+  { key: 'harpyFeather', label: 'harpy feather', rarity: 'uncommon' },
+  { key: 'moonMothWing', label: 'moon moth wing', rarity: 'uncommon' },
+  { key: 'golemPebble', label: 'golem pebble', rarity: 'uncommon' },
+  { key: 'mimicTongue', label: 'mimic tongue', rarity: 'uncommon' },
+  { key: 'cockatriceBeak', label: 'cockatrice beak', rarity: 'uncommon' },
+  // Type ID 3019 belonged to livingMandrakeRoot and remains reserved.
+  null,
+  { key: 'dryadBark', label: 'dryad bark', rarity: 'uncommon' },
+  { key: 'cyclopsEye', label: 'cyclops eye', rarity: 'rare' },
+  { key: 'werewolfClaw', label: 'werewolf claw', rarity: 'rare' },
+  { key: 'basiliskScale', label: 'basilisk scale', rarity: 'rare' },
+  { key: 'griffinTalon', label: 'griffin talon', rarity: 'rare' },
+  { key: 'mermaidTear', label: 'mermaid tear', rarity: 'rare' },
+  { key: 'wraithDust', label: 'wraith dust', rarity: 'rare' },
+  { key: 'wyvernStinger', label: 'wyvern stinger', rarity: 'rare' },
+  { key: 'manticoreBarb', label: 'manticore barb', rarity: 'rare' },
+  { key: 'bansheeVeil', label: 'banshee veil', rarity: 'rare' },
+  { key: 'gargoyleHeart', label: 'gargoyle heart', rarity: 'rare' },
+  { key: 'devilWing', label: 'devil wing', rarity: 'epic' },
+  { key: 'krakenInk', label: 'kraken ink', rarity: 'epic' },
+  { key: 'chimeraMane', label: 'chimera mane', rarity: 'epic' },
+  { key: 'vampireLordFang', label: 'vampire lord fang', rarity: 'epic' },
+  { key: 'sphinxWhisker', label: 'sphinx whisker', rarity: 'epic' },
+  { key: 'nightmareHoof', label: 'nightmare hoof', rarity: 'epic' },
+  { key: 'thunderbirdPlume', label: 'thunderbird plume', rarity: 'epic' },
+  { key: 'frostGiantBlood', label: 'frost giant blood', rarity: 'epic' },
+  { key: 'hydraHeart', label: 'hydra heart', rarity: 'epic' },
+  { key: 'dragonFang', label: 'dragon fang', rarity: 'epic' },
+  { key: 'phoenixFeather', label: 'phoenix feather', rarity: 'legendary' },
+  { key: 'unicornHornShard', label: 'unicorn horn shard', rarity: 'legendary' },
+  { key: 'leviathanScale', label: 'leviathan scale', rarity: 'legendary' },
+  { key: 'fallenAngelFeather', label: 'fallen angel feather', rarity: 'legendary' },
+  { key: 'celestialStagAntler', label: 'celestial stag antler', rarity: 'legendary' },
+  { key: 'titansEmber', label: "titan's ember", rarity: 'legendary' },
+  { key: 'archdemonHorn', label: 'archdemon horn', rarity: 'legendary' },
+  { key: 'timeWyrmScale', label: 'time wyrm scale', rarity: 'legendary' },
+  { key: 'sunbirdHeart', label: 'sunbird heart', rarity: 'legendary' },
+  { key: 'voidKrakenPearl', label: 'void kraken pearl', rarity: 'legendary' },
+  { key: 'ancientLichPhylactery', label: 'ancient lich phylactery', rarity: 'mythical' },
+  { key: 'worldSerpentVenom', label: 'world serpent venom', rarity: 'mythical' },
+  { key: 'primordialDragonHeart', label: 'primordial dragon heart', rarity: 'mythical' },
+  { key: 'tearOfAForgottenGod', label: 'tear of a forgotten god', rarity: 'mythical' },
+  { key: 'starEaterTooth', label: 'star-eater tooth', rarity: 'mythical' },
+  { key: 'moonGoddessHair', label: 'moon goddess hair', rarity: 'mythical' },
+  { key: 'cosmicPhoenixAsh', label: 'cosmic phoenix ash', rarity: 'mythical' },
+  { key: 'firstFlameFragment', label: 'first flame fragment', rarity: 'mythical' },
+  { key: 'chaosBeastCore', label: 'chaos beast core', rarity: 'mythical' },
+  { key: 'featherOfEternity', label: 'feather of eternity', rarity: 'mythical' },
+] as const).flatMap((ingredient, index) =>
+  ingredient ? [{ id: 3001 + index, ...ingredient }] : [],
+);
+
 const knownPotionCatalog = [
   { key: 'manaTonic', label: 'mana tonic' },
   { key: 'minorHealingPotion', label: 'minor healing potion' },
@@ -4081,7 +4157,7 @@ function getAutomationDefaultCostGoldById(): Record<string, bigint> {
 
 function getAutomationDefaultCostCrystalById(): Record<string, number> {
   const costs: Record<string, number> = {
-    'automation:autoSeedSpawn': 10,
+    'automation:autoSeedSpawn': 2,
   };
 
   for (let tileNumber = 1; tileNumber <= MAX_AUTOMATION_GARDEN_TILES; tileNumber += 1) {
@@ -5114,6 +5190,12 @@ function getDefaultItemsConfig() {
           : roundGoldPrice(
               ((potionMarketBasePriceGoldByKey[potion.key] ?? 0) * NPC_MARKET_BUY_BPS) / 10_000,
             ),
+    })),
+    ingredients: ingredientCatalog.map((ingredient) => ({
+      id: ingredient.id,
+      key: ingredient.key,
+      label: ingredient.label,
+      rarity: ingredient.rarity,
     })),
   };
 }
@@ -8168,6 +8250,10 @@ function normalizeGameConfigJson(
       existingCostsRuby,
       existingCostsCrystal,
     );
+    if (Number(nextCostsRuby['automation:autoSeedSpawn']) === 10) {
+      nextCostsRuby['automation:autoSeedSpawn'] =
+        researchDefaultCostRubyById['automation:autoSeedSpawn'];
+    }
     const nextCostsEmerald = normalizeResearchCurrencyCostRecord(
       researchDefaultCostEmeraldById,
       existingCostsEmerald,
@@ -8856,10 +8942,13 @@ function normalizeItemsGameConfigJson(
   const normalizedConfig = { ...parsedConfig };
   let changed = false;
 
-  for (const key of ['seeds', 'herbs', 'potions']) {
+  for (const key of ['seeds', 'herbs', 'potions', 'ingredients']) {
+    const existingRows = key === 'ingredients'
+      ? removeRetiredItemConfigRows(parsedConfig[key], retiredIngredientKeys)
+      : parsedConfig[key];
     const normalizedList = normalizeLegacyItemConfigRows(
       appendMissingItemConfigRows(
-        parsedConfig[key],
+        existingRows,
         defaultConfig[key],
       ),
       defaultConfig[key],
@@ -8872,6 +8961,20 @@ function normalizeItemsGameConfigJson(
   }
 
   return changed ? JSON.stringify(normalizedConfig) : originalJson;
+}
+
+function removeRetiredItemConfigRows(existingRows: unknown, retiredKeys: Set<string>) {
+  if (!Array.isArray(existingRows)) {
+    return existingRows;
+  }
+
+  const activeRows = existingRows.filter((row) =>
+    isRecord(row)
+      ? !retiredKeys.has(normalizeNpcMarketItemKey(String(row.key ?? '')))
+      : true,
+  );
+
+  return activeRows.length === existingRows.length ? existingRows : activeRows;
 }
 
 function normalizeLegacyItemConfigRows(existingRows: unknown, defaultRows: unknown) {
@@ -11060,12 +11163,14 @@ function getSaveItemCatalog(ctx: IdleWizardReducerCtx): Map<string, string> {
     seeds?: unknown;
     herbs?: unknown;
     potions?: unknown;
+    ingredients?: unknown;
   };
   const itemCatalog = new Map<string, string>();
 
   addSaveItemCatalogRows(itemCatalog, config.seeds, 'seed');
   addSaveItemCatalogRows(itemCatalog, config.herbs, 'herb');
   addSaveItemCatalogRows(itemCatalog, config.potions, 'potion');
+  addSaveItemCatalogRows(itemCatalog, config.ingredients, 'ingredient');
   return itemCatalog;
 }
 
@@ -13076,7 +13181,12 @@ function validateTradeAllianceGameConfig(value: unknown) {
 }
 
 function validateItemsGameConfig(value: unknown) {
-  const config = value as { seeds?: unknown; herbs?: unknown; potions?: unknown };
+  const config = value as {
+    seeds?: unknown;
+    herbs?: unknown;
+    potions?: unknown;
+    ingredients?: unknown;
+  };
   const seenIds = new Set<number>();
   const seenKeys = new Set<string>();
 
@@ -13101,6 +13211,16 @@ function validateItemsGameConfig(value: unknown) {
     seenIds,
     seenKeys,
   });
+
+  if (config.ingredients !== undefined) {
+    validateItemDefinitionList(config.ingredients, {
+      expectedKind: 'ingredient',
+      minCount: 1,
+      maxCount: 150,
+      seenIds,
+      seenKeys,
+    });
+  }
 }
 
 function validateItemDefinitionList(
@@ -13112,7 +13232,7 @@ function validateItemDefinitionList(
     seenIds,
     seenKeys,
   }: {
-    expectedKind: 'seed' | 'herb' | 'potion';
+    expectedKind: 'seed' | 'herb' | 'potion' | 'ingredient';
     minCount: number;
     maxCount: number;
     seenIds: Set<number>;
@@ -13155,6 +13275,16 @@ function validateItemDefinitionList(
     if (expectedKind === 'herb') {
       validatePositiveNumber(item.growthDurationMs, 'Invalid herb item config.');
       validateNonNegativeNumber(item.baseSellPrice, 'Invalid herb item config.');
+      continue;
+    }
+
+    if (expectedKind === 'ingredient') {
+      const rarity = String(item.rarity ?? '').trim().toLowerCase();
+
+      if (!ingredientRarities.has(rarity)) {
+        throw new Error('Invalid ingredient item config.');
+      }
+
       continue;
     }
 

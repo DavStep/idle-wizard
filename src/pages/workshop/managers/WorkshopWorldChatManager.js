@@ -25,6 +25,12 @@ const MESSAGE_LIMIT = 40;
 const MAX_MESSAGE_LENGTH = 160;
 const CHAT_AGE_MINUTE_MS = 60_000;
 const CHAT_AGE_REFRESH_FUZZ_MS = 250;
+const SYSTEM_PLAYER_ANNOUNCEMENT_PATTERNS = [
+  /^(?<username>.{1,24})(?<detail> reached level \d+)$/u,
+  /^(?<username>.{1,24})(?<detail> reached ⭐ \d+, completing prestige level \d+)$/u,
+  /^(?<username>.{1,24})(?<detail> researched .+)$/u,
+  /^(?<username>.{1,24})(?<detail> unlocked the recipe of .+)$/u,
+];
 
 export class WorkshopWorldChatManager {
   constructor({
@@ -475,7 +481,7 @@ export class WorkshopWorldChatManager {
 
     const body = document.createElement('span');
     body.className = 'workshop-page__world-chat-body';
-    body.textContent = message.body;
+    body.append(...this.createBodyContent(message, { interactiveSender }));
 
     const content = document.createElement('span');
     content.className = 'workshop-page__world-chat-content';
@@ -493,6 +499,47 @@ export class WorkshopWorldChatManager {
     }
 
     return row;
+  }
+
+  createBodyContent(message, { interactiveSender = true } = {}) {
+    const body = String(message?.body ?? '');
+    const announcement = this.getSystemPlayerAnnouncement(body);
+
+    if (!interactiveSender || !this.isSystemMessage(message) || !announcement) {
+      return [document.createTextNode(body)];
+    }
+
+    return [
+      createPlayerInfoLink(
+        {
+          identity: message?.senderIdentity,
+          username: announcement.username,
+          character: message?.character,
+        },
+        {
+          onOpenPlayerInfo: this.onOpenPlayerInfo,
+          text: announcement.username,
+          className:
+            'workshop-page__world-chat-player-link workshop-page__world-chat-system-player-link',
+        },
+      ),
+      document.createTextNode(announcement.detail),
+    ];
+  }
+
+  getSystemPlayerAnnouncement(body) {
+    for (const pattern of SYSTEM_PLAYER_ANNOUNCEMENT_PATTERNS) {
+      const match = pattern.exec(body);
+
+      if (match?.groups?.username && match.groups.detail) {
+        return {
+          username: match.groups.username,
+          detail: match.groups.detail,
+        };
+      }
+    }
+
+    return null;
   }
 
   getMessagesWithBody(messages) {

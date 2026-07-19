@@ -6,6 +6,7 @@ import {
 import { getPageIconUrl } from '../../shared/pageIcons.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { createStatusIcon, STATUS_ICON_LOCK } from '../../shared/statusIcon.js';
+import { FEATURE_UNLOCK_FLYOUT_EVENT } from '../../announcements/featureUnlockEvents.js';
 
 export const BOTTOM_PANEL_TABS = [
   { id: 'brewing', label: 'brewing' },
@@ -27,7 +28,14 @@ const OPTIONAL_BOTTOM_PANEL_TAB_BY_ID = new Map(
   OPTIONAL_BOTTOM_PANEL_TABS.map((tab) => [tab.id, tab]),
 );
 
-const LOCK_UNLOCK_ANIMATION_MS = 560;
+const FEATURE_UNLOCK_FLYOUT_MS = 520;
+const FEATURE_UNLOCK_FLYOUT_CLEANUP_BUFFER_MS = 120;
+const FEATURE_UNLOCK_TARGET_SELECTORS = Object.freeze({
+  alliance: '.workshop-page__trade-alliance-button',
+  discoveries: '.workshop-page__discoveries-button',
+  inbox: '.workshop-page__mail-button',
+  leaderboard: '.workshop-page__leaderboard-button',
+});
 
 export class BottomPanelViewManager {
   constructor({ getCurrentPageId, onShowPage, onAction, tabs = BOTTOM_PANEL_TABS } = {}) {
@@ -67,6 +75,7 @@ export class BottomPanelViewManager {
       tabs.filter((tab) => !this.isActionTab(tab)).map((tab) => tab.id),
     );
     this.pendingUnlockAnimationButtons = new Set();
+    this.activeUnlockFlyouts = new Map();
     this.announcementUnlockObserver = null;
     this.observedAnnouncementLayer = null;
     this.hasCustomVisiblePageIds = false;
@@ -89,6 +98,7 @@ export class BottomPanelViewManager {
         this.refs.lockPopup?.classList.remove('is-entering');
       }
     };
+    this.handleFeatureUnlockFlyout = (event) => this.onFeatureUnlockFlyout(event);
     this.handleKeydown = (event) => {
       if (this.refs.lockPopup?.hidden || event.key !== 'Escape') {
         return;
@@ -112,6 +122,7 @@ export class BottomPanelViewManager {
     this.root.className = 'room-bottom-panel-layer';
     this.root.append(this.createPanel(), this.createLockedPagePopup());
     stage.append(this.root);
+    stage.addEventListener(FEATURE_UNLOCK_FLYOUT_EVENT, this.handleFeatureUnlockFlyout);
     this.setCurrentPageId(this.getCurrentPageId?.());
     document.addEventListener('keydown', this.handleKeydown);
 
@@ -120,6 +131,13 @@ export class BottomPanelViewManager {
 
   unmount() {
     document.removeEventListener('keydown', this.handleKeydown);
+    this.root?.parentElement?.removeEventListener(
+      FEATURE_UNLOCK_FLYOUT_EVENT,
+      this.handleFeatureUnlockFlyout,
+    );
+    for (const button of this.activeUnlockFlyouts.keys()) {
+      this.clearUnlockFlyout(button);
+    }
     this.root?.remove();
     this.root = null;
     this.tabButtons.clear();
@@ -571,46 +589,222 @@ export class BottomPanelViewManager {
     button.classList.add('is-swipe-bumped');
   }
 
-  restartUnlockAnimation(button) {
+  restartUnlockAnimation(
+    button,
+    { sourceRect = null, delayMs = 0, skipAnnouncementQueue = false } = {},
+  ) {
     if (!button) {
       return;
     }
 
-    if (this.queueUnlockAnimationUntilAnnouncementClears(button)) {
+    if (!skipAnnouncementQueue && this.queueUnlockAnimationUntilAnnouncementClears(button)) {
       return;
     }
 
-    const token = String((Number(button.dataset.unlockAnimationToken) || 0) + 1);
-    button.dataset.unlockAnimationToken = token;
-    button.style.removeProperty('--room-bottom-tab-unlock-delay');
-    button.classList.remove('is-unlocking');
-    void button.offsetWidth;
-    button.classList.add('is-unlocking');
+    this.playUnlockIconFlyout(button, { sourceRect, delayMs });
+  }
 
-    const clearAnimation = () => {
-      if (button.dataset.unlockAnimationToken !== token) {
-        return;
+  onFeatureUnlockFlyout(event) {
+    const pageIds = Array.isArray(event?.detail?.pageIds) ? event.detail.pageIds : [];
+    const features = Array.isArray(event?.detail?.features)
+      ? event.detail.features
+      : pageIds.map((pageId) => ({ pageId, value: pageId }));
+    const sourceRect = this.normalizeRect(event?.detail?.sourceRect);
+
+    for (const feature of features) {
+      const target = this.getFeatureUnlockTarget(feature);
+      const pageButton = feature?.pageId ? this.tabButtons.get(feature.pageId) : null;
+
+      if (
+        !target ||
+        target.hidden ||
+        target.classList.contains('is-locked') ||
+        !this.root?.parentElement?.contains(target)
+      ) {
+        continue;
       }
 
-      button.classList.remove('is-unlocking');
-      button.style.removeProperty('--room-bottom-tab-unlock-delay');
-      delete button.dataset.unlockAnimationToken;
-    };
-
-    const handleAnimationEnd = (event) => {
-      if (event.animationName !== 'room-bottom-tab-icon-unlock-flyout') {
-        return;
+      if (pageButton) {
+        this.pendingUnlockAnimationButtons.delete(pageButton);
       }
+      this.restartUnlockAnimation(target, { sourceRect, skipAnnouncementQueue: true });
+    }
 
-      button.removeEventListener('animationend', handleAnimationEnd);
-      clearAnimation();
+    if (this.pendingUnlockAnimationButtons.size <= 0) {
+      this.disconnectAnnouncementUnlockObserver();
+    }
+  }
+
+  getFeatureUnlockTarget({ value, pageId } = {}) {
+    if (pageId) {
+      return this.tabButtons.get(pageId) ?? null;
+    }
+
+    const selector = FEATURE_UNLOCK_TARGET_SELECTORS[String(value ?? '')];
+    return selector ? (this.root?.parentElement?.querySelector(selector) ?? null) : null;
+  }
+
+  playUnlockIconFlyout(target, { sourceRect = null, delayMs = 0 } = {}) {
+    this.clearUnlockFlyout(target);
+
+    if (this.prefersReducedMotion(target)) {
+      return null;
+    }
+
+    const iconFrame = target.querySelector(
+      '.room-bottom-panel__tab-icon-frame, [class*="-button-icon-frame"]',
+    );
+    const targetRect = this.normalizeRect(iconFrame?.getBoundingClientRect?.());
+
+    if (!iconFrame || !targetRect || targetRect.width <= 0 || targetRect.height <= 0) {
+      return null;
+    }
+
+    const originRect = sourceRect ?? this.getFallbackUnlockSourceRect(target);
+
+    if (!originRect) {
+      return null;
+    }
+
+    const flyout = iconFrame.cloneNode(true);
+    flyout.classList.add('room-feature-unlock-flyout');
+    flyout.style.width = `${targetRect.width}px`;
+    flyout.style.height = `${targetRect.height}px`;
+    flyout.style.removeProperty('animation');
+    iconFrame.ownerDocument.body?.append(flyout);
+
+    if (typeof flyout.animate !== 'function') {
+      flyout.remove();
+      return null;
+    }
+
+    target.classList.add('is-receiving-unlock-icon');
+    const animation = flyout.animate(
+      this.buildUnlockFlyoutKeyframes(originRect, targetRect),
+      {
+        duration: FEATURE_UNLOCK_FLYOUT_MS,
+        delay: Math.max(0, Number(delayMs) || 0),
+        easing: 'linear',
+        fill: 'both',
+      },
+    );
+    const active = { animation, flyout, timeoutId: null };
+    active.timeoutId = globalThis.setTimeout?.(
+      () => this.clearUnlockFlyout(target, active),
+      FEATURE_UNLOCK_FLYOUT_MS + Math.max(0, Number(delayMs) || 0) +
+        FEATURE_UNLOCK_FLYOUT_CLEANUP_BUFFER_MS,
+    );
+
+    this.activeUnlockFlyouts.set(target, active);
+    animation?.finished?.then(
+      () => this.clearUnlockFlyout(target, active),
+      () => this.clearUnlockFlyout(target, active),
+    );
+    return flyout;
+  }
+
+  buildUnlockFlyoutKeyframes(sourceRect, targetRect) {
+    const from = {
+      x: sourceRect.left + sourceRect.width * 0.5,
+      y: sourceRect.top + sourceRect.height * 0.5,
     };
+    const to = {
+      x: targetRect.left + targetRect.width * 0.5,
+      y: targetRect.top + targetRect.height * 0.5,
+    };
+    const distanceX = to.x - from.x;
+    const control = {
+      x: from.x + distanceX * 0.52,
+      y: Math.min(from.y, to.y) - Math.max(42, Math.abs(distanceX) * 0.14),
+    };
+    const sourceScale = Math.max(
+      1.2,
+      Math.min(
+        2.2,
+        Math.max(
+          sourceRect.width / targetRect.width,
+          sourceRect.height / targetRect.height,
+        ),
+      ),
+    );
+    const frames = [];
 
-    button.addEventListener('animationend', handleAnimationEnd);
-    globalThis.setTimeout?.(() => {
-      button.removeEventListener('animationend', handleAnimationEnd);
-      clearAnimation();
-    }, LOCK_UNLOCK_ANIMATION_MS);
+    for (let sample = 0; sample <= 10; sample += 1) {
+      const progress = sample / 10;
+      const inverse = 1 - progress;
+      const centerX =
+        inverse * inverse * from.x +
+        2 * inverse * progress * control.x +
+        progress * progress * to.x;
+      const centerY =
+        inverse * inverse * from.y +
+        2 * inverse * progress * control.y +
+        progress * progress * to.y;
+      const scale = sourceScale + (1 - sourceScale) * Math.pow(progress, 0.82);
+
+      frames.push({
+        offset: progress,
+        opacity: sample === 0 ? 0.92 : 1,
+        transform: `translate3d(${(centerX - targetRect.width * 0.5).toFixed(1)}px, ${(centerY - targetRect.height * 0.5).toFixed(1)}px, 0) scale(${scale.toFixed(3)})`,
+      });
+    }
+
+    return frames;
+  }
+
+  getFallbackUnlockSourceRect(target) {
+    const stageRect = this.normalizeRect(this.root?.parentElement?.getBoundingClientRect?.());
+    const buttonRect = this.normalizeRect(target?.getBoundingClientRect?.());
+
+    if (!stageRect || !buttonRect) {
+      return null;
+    }
+
+    return {
+      left: stageRect.left + stageRect.width * 0.5 - buttonRect.width * 0.5,
+      top: stageRect.top + stageRect.height * 0.44 - buttonRect.height * 0.5,
+      width: buttonRect.width,
+      height: buttonRect.height,
+    };
+  }
+
+  normalizeRect(rect) {
+    if (!rect) {
+      return null;
+    }
+
+    const left = Number(rect.left);
+    const top = Number(rect.top);
+    const width = Number(rect.width);
+    const height = Number(rect.height);
+
+    return [left, top, width, height].every(Number.isFinite)
+      ? { left, top, width, height }
+      : null;
+  }
+
+  prefersReducedMotion(target) {
+    return Boolean(
+      target?.ownerDocument?.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)')
+        ?.matches,
+    );
+  }
+
+  clearUnlockFlyout(target, expectedActive = null) {
+    const active = this.activeUnlockFlyouts.get(target);
+
+    if (expectedActive && active !== expectedActive) {
+      return;
+    }
+
+    if (active?.timeoutId) {
+      globalThis.clearTimeout?.(active.timeoutId);
+    }
+
+    this.activeUnlockFlyouts.delete(target);
+    active?.animation?.cancel?.();
+    active?.flyout?.remove();
+    target?.classList.remove('is-receiving-unlock-icon');
   }
 
   queueUnlockAnimationUntilAnnouncementClears(button) {
@@ -620,9 +814,6 @@ export class BottomPanelViewManager {
       return false;
     }
 
-    button.classList.remove('is-unlocking');
-    button.style.removeProperty('--room-bottom-tab-unlock-delay');
-    delete button.dataset.unlockAnimationToken;
     this.pendingUnlockAnimationButtons.add(button);
     this.observeAnnouncementLayer(announcement);
     return true;
@@ -693,6 +884,7 @@ export class BottomPanelViewManager {
     }
 
     this.pendingUnlockAnimationButtons.delete(button);
+    this.clearUnlockFlyout(button);
     if (this.pendingUnlockAnimationButtons.size <= 0) {
       this.disconnectAnnouncementUnlockObserver();
     }

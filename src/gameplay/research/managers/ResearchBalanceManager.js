@@ -155,7 +155,7 @@ const DEFAULT_RESEARCH_BALANCE = {
   },
   researchCostsCrystal: createDefaultMultiplierCosts(),
   researchCostsRuby: {
-    'automation:autoSeedSpawn': 10,
+    'automation:autoSeedSpawn': 2,
     ...createDefaultAutomationCosts(),
   },
   researchCostsEmerald: createDefaultAdvancedCosts(),

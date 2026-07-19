@@ -75,6 +75,7 @@ experience_type: product-shape
 - FTUE level-one sage guidance must resolve the turn-in task by item/action too; live configs may still use legacy `level1-sage-seeds` while defaults use `level1-turn-in-sage-seed`.
 - Resource-gated FTUE steps must refresh from `subscribeFrameResources`; top-panel mana can change without a full gameplay snapshot.
 - FTUE repeated action prompts should show once as brief non-dimming hints, then reappear only after idle time; do not keep alternating guidance through active loops.
+- Level-two FTUE fast sell must target `+1` until all five summoned Sage Seeds are selected, then target `sell`; because the turn-in task still needs four seeds, the follow-up must guide another four summons.
 - A page means a room view, not a web route.
 - The first page is `Workshop`.
 - Level requirements can be typed action rows; only `turnIn` consumes inventory, while `research`, `summon`, `grow`, `brew`, and `sell` progress from gameplay events and auto-complete at target.

@@ -10530,6 +10530,103 @@ describe('PagesFacade', () => {
     expect(row?.querySelector('.workshop-page__world-chat-age')).not.toBeNull();
   });
 
+  it('opens player info from the username inside a system world chat message', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();
+    const worldChatFacade = createWorldChatFacadeFake({
+      messages: [
+        {
+          id: '1',
+          senderIdentity: 'sender-ada',
+          username: 'system',
+          character: 'mira',
+          playerLevel: 0,
+          body: 'Ada reached level 14',
+          sentAtMs: 1_000,
+        },
+        {
+          id: '2',
+          senderIdentity: 'sender-ada',
+          username: 'system',
+          character: 'mira',
+          playerLevel: 0,
+          body: 'Ada reached ⭐ 2, completing prestige level 14',
+          sentAtMs: 2_000,
+        },
+        {
+          id: '3',
+          senderIdentity: 'sender-ada',
+          username: 'system',
+          character: 'mira',
+          playerLevel: 0,
+          body: 'Ada researched mana tonic',
+          sentAtMs: 3_000,
+        },
+        {
+          id: '4',
+          senderIdentity: 'sender-ada',
+          username: 'system',
+          character: 'mira',
+          playerLevel: 0,
+          body: 'Ada unlocked the recipe of ashen memory: 1 sage, 1 lavender',
+          sentAtMs: 4_000,
+        },
+        {
+          id: '5',
+          senderIdentity: 'market-admin',
+          username: 'system',
+          playerLevel: 0,
+          body: 'traders filled the market. go see what they need.',
+          sentAtMs: 5_000,
+        },
+      ],
+    });
+    const playerInfoFacade = createPlayerInfoFacadeFake({
+      players: [
+        {
+          identity: 'sender-ada',
+          username: 'Ada',
+          character: 'mira',
+          totalProducedCoin: 1234,
+          playerLevel: 14,
+          prestigeCount: 2,
+        },
+      ],
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+      playerFacade: createPlayerFacadeFake(),
+      playerInfoFacade,
+      worldChatFacade,
+    });
+
+    pagesFacade.mount(stage);
+    stage
+      .querySelector('.workshop-page__world-chat-button')
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const chatPopup = stage.querySelector('.workshop-page__world-chat-popup');
+    const playerLink = chatPopup.querySelector(
+      '.workshop-page__world-chat-system-player-link',
+    );
+
+    expect(playerLink?.textContent).toBe('Ada');
+    expect(chatPopup.querySelectorAll('.workshop-page__world-chat-system-player-link')).toHaveLength(
+      4,
+    );
+
+    playerLink.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    const playerInfoPopup = stage.querySelector('.room-player-info-popup');
+    expect(playerInfoPopup.hidden).toBe(false);
+    expect(playerInfoPopup.querySelector('.room-player-info-name-line')?.textContent).toBe('Ada');
+    expect(playerInfoPopup.querySelector('.room-player-info-main-rows')?.textContent).toContain(
+      'level14',
+    );
+
+    pagesFacade.unmount();
+  });
+
   it('marks potion recipe discovery chat announcements', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createWorkshopSecondaryUnlockedGameplayFacade();

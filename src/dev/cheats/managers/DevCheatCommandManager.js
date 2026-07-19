@@ -118,6 +118,7 @@ const CHEAT_HELP = Object.freeze([
 ]);
 
 const UI_SURFACE_DEFINITIONS = Object.freeze([
+  { id: 'devConsole', kind: 'tool' },
   { id: 'workshop', kind: 'page', pageId: 'workshop' },
   { id: 'brewing', kind: 'page', pageId: 'brewing' },
   { id: 'garden', kind: 'page', pageId: 'garden' },
@@ -182,6 +183,11 @@ export class DevCheatCommandManager {
     this.pagesFacade = pagesFacade;
     this.playerFacade = playerFacade;
     this.qaDataFacade = qaDataFacade;
+    this.devConsoleFacade = null;
+  }
+
+  setDevConsoleFacade(devConsoleFacade) {
+    this.devConsoleFacade = devConsoleFacade;
   }
 
   run(command, ...args) {
@@ -1649,6 +1655,14 @@ export class DevCheatCommandManager {
   }
 
   openKnownUiSurface(surface, options = {}) {
+    if (surface.kind === 'tool' && surface.id === 'devConsole') {
+      const result = this.devConsoleFacade?.open?.() ?? {
+        ok: false,
+        reason: 'dev_console_missing',
+      };
+      return this.decorateUiResult(surface.id, result, surface);
+    }
+
     if (surface.setup === 'guildFull') {
       return this.openGuildQuestPostingSurface(surface, options);
     }

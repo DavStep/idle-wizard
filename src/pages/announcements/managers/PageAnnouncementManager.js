@@ -9,6 +9,7 @@ import { appendTextWithItemIcons } from '../../shared/itemIconLabel.js';
 import { createPageIcon } from '../../shared/pageIcons.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { getLevelPayoffRows } from '../../workshop/managers/levelPayoffSummary.js';
+import { FEATURE_UNLOCK_FLYOUT_EVENT } from '../featureUnlockEvents.js';
 
 const DISPLAY_MS = 2100;
 const RESOURCE_ICON_FRAMES = Object.freeze({
@@ -438,6 +439,7 @@ export class PageAnnouncementManager {
     }
 
     this.clearHideTimeout();
+    this.dispatchFeatureUnlockFlyout();
     this.layer.hidden = true;
     this.layer.setAttribute('aria-hidden', 'true');
     this.body.replaceChildren();
@@ -450,6 +452,60 @@ export class PageAnnouncementManager {
 
     this.previousFocus = null;
     this.showNext();
+  }
+
+  dispatchFeatureUnlockFlyout() {
+    if (this.current?.kind !== 'unlock' || !this.layer) {
+      return;
+    }
+
+    const pageIds = [...new Set(Object.values(this.current.pageIds ?? {}))].filter(
+      (pageId) => typeof pageId === 'string' && pageId.trim(),
+    );
+
+    if (!Array.isArray(this.current.values) || this.current.values.length <= 0) {
+      return;
+    }
+
+    const source =
+      this.body?.querySelector('.room-announcement__unlock-icon-stage') ?? this.panel;
+    const sourceRect = this.serializeRect(source?.getBoundingClientRect?.());
+    const EventCtor = this.layer.ownerDocument?.defaultView?.CustomEvent ?? globalThis.CustomEvent;
+
+    if (typeof EventCtor !== 'function') {
+      return;
+    }
+
+    this.layer.dispatchEvent(
+      new EventCtor(FEATURE_UNLOCK_FLYOUT_EVENT, {
+        bubbles: true,
+        detail: {
+          features: this.current.values.map((value) => ({
+            value,
+            pageId: this.current.pageIds?.[value] ?? null,
+          })),
+          pageIds,
+          sourceRect,
+        },
+      }),
+    );
+  }
+
+  serializeRect(rect) {
+    if (!rect) {
+      return null;
+    }
+
+    const left = Number(rect.left);
+    const top = Number(rect.top);
+    const width = Number(rect.width);
+    const height = Number(rect.height);
+
+    if (![left, top, width, height].every(Number.isFinite)) {
+      return null;
+    }
+
+    return { left, top, width, height };
   }
 
   updateLayerTimingMetadata() {

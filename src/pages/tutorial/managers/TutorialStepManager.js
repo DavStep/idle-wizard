@@ -561,7 +561,13 @@ export const TUTORIAL_STEPS = [
     kind: 'prompt',
     targetId: 'page:workshop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    text: 'that was coin. coin pays for level-ups. now turn in the remaining sage seeds.',
+    getText: ({ snapshot }) => {
+      const remainingQuantity = getTaskRemainingQuantity(
+        getLevelTwoSageTurnInTask(snapshot),
+      );
+      const seedLabel = remainingQuantity === 1 ? 'sage seed' : 'sage seeds';
+      return `that was coin. coin pays for level-ups. now summon ${remainingQuantity} ${seedLabel} to turn in.`;
+    },
     advanceLabel: 'continue',
     advanceOnClick: true,
     allowTargetClick: true,
@@ -2081,7 +2087,9 @@ function getLevelTwoSaleObjectiveText({ currentPageId, dom, snapshot }) {
   }
 
   if (state.kind === 'set-amount') {
-    return 'press sell';
+    return state.canIncreaseToMax
+      ? `select all ${state.maxQuantity} sage seeds to sell`
+      : 'press sell';
   }
 
   return 'sell one sage seed in market';
@@ -2112,7 +2120,9 @@ function getLevelTwoSaleTargetId({ currentPageId, dom, snapshot }) {
   }
 
   if (state.kind === 'set-amount') {
-    return DIRECT_SELL_CONFIRM_TARGET_ID;
+    return state.canIncreaseToMax
+      ? DIRECT_SELL_PLUS_ONE_TARGET_ID
+      : DIRECT_SELL_CONFIRM_TARGET_ID;
   }
 
   if (state.kind !== 'obtain-item') {
@@ -2147,7 +2157,7 @@ function getLevelTwoSaleHintText({ currentPageId, dom, snapshot }) {
   }
 
   if (state.kind === 'set-amount') {
-    return 'press sell';
+    return state.canIncreaseToMax ? '+1' : 'press sell';
   }
 
   if (state.kind !== 'obtain-item') {
@@ -2455,10 +2465,13 @@ function getLevelUpCoinMarketState({
 
   if (selectedItemKey && getAvailableSellItemQuantity(snapshot, selectedItemKey) > 0) {
     const selectedQuantity = getSelectedDirectSellQuantity(dom);
+    const maxQuantity = getSelectedDirectSellMaxQuantity(snapshot, selectedItemKey);
     return {
       kind: 'set-amount',
+      maxQuantity,
+      canIncreaseToMax: maxQuantity > selectedQuantity,
       canIncrease:
-        getSelectedDirectSellMaxQuantity(snapshot, selectedItemKey) > selectedQuantity &&
+        maxQuantity > selectedQuantity &&
         !doesSelectedSellQuantityCoverCoinShortfall({
           snapshot,
           itemKey: selectedItemKey,

@@ -3,6 +3,15 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.90
+
+- Added an ingredient section to the Workshop bag, with rarity groups and unique artwork for the new ingredient catalog.
+- Improved room unlocks so the unlocked feature icon travels from the announcement into its room tab.
+- Reduced the crystal cost of auto-summon research from 10 to 2.
+- Made world-chat level, prestige, research, and recipe announcements link to the featured player's profile.
+- Improved Elara's early Market guidance so the required sage seed amount and sell quantity stay accurate.
+- Kept Guild tabs stable while live updates refresh their content and notification badges.
+
 ## 0.2.89
 
 - Fixed extra Brewing cauldrons forgetting their individual auto-brew state after restarting the game.

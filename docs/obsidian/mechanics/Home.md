@@ -22,3 +22,7 @@ working through game behavior before touching source.
 - [[Prestige]]
 - [[Events And Social]]
 - [[Guilds]]
+
+## Plans
+
+- [[Guild System Plan]]

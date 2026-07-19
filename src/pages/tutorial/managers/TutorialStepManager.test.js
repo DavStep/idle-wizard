@@ -671,7 +671,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('uses normal fast sell controls for the level 2 sale task', () => {
+  it('guides all five sage seeds into the level 2 fast sale before sell', () => {
     const snapshot = createLevelTwoSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 5 }],
       shop: {
@@ -722,6 +722,28 @@ describe('TutorialStepManager', () => {
       },
     });
 
+    for (const directSellQuantity of [1, 2, 3, 4]) {
+      expect(
+        getStep({
+          pageId: 'shop',
+          snapshot,
+          dom: createDomFake({
+            shopDirectSellPopupOpen: true,
+            directSellItemKey: 'sageSeed',
+            directSellQuantity,
+          }),
+          completed: completedThrough('show-selected-sale-amount'),
+        }),
+      ).toMatchObject({
+        id: 'earn-tutorial-coin',
+        targetId: 'shop:directSell:amount:+1',
+        hintText: '+1',
+        objectiveText: 'select all 5 sage seeds to sell',
+        progressLabel: '0/1 sale',
+        stepLabel: '17/37',
+      });
+    }
+
     expect(
       getStep({
         pageId: 'shop',
@@ -729,7 +751,7 @@ describe('TutorialStepManager', () => {
         dom: createDomFake({
           shopDirectSellPopupOpen: true,
           directSellItemKey: 'sageSeed',
-          directSellQuantity: 1,
+          directSellQuantity: 5,
         }),
         completed: completedThrough('show-selected-sale-amount'),
       }),
@@ -737,6 +759,7 @@ describe('TutorialStepManager', () => {
       id: 'earn-tutorial-coin',
       targetId: 'shop:directSell:sell',
       hintText: 'press sell',
+      objectiveText: 'press sell',
       progressLabel: '0/1 sale',
       stepLabel: '17/37',
     });
@@ -834,53 +857,65 @@ describe('TutorialStepManager', () => {
     expect(step.sale).toBeUndefined();
   });
 
-  it('returns level 2 players to the remaining seed turn-in after selling once', () => {
+  it('asks level 2 players to summon the turn-in seeds after selling all five', () => {
+    const snapshot = createLevelTwoSnapshot({
+      seedInventory: [{ key: 'sageSeed', quantity: 0 }],
+      tasks: {
+        currentLevel: 1,
+        level: {
+          completion: { canComplete: false, costCoin: 4 },
+          tasks: [
+            createTask({
+              taskId: 'level2-summon-sage-seed',
+              itemKey: 'sageSeed',
+              type: 'summon',
+              requiredQuantity: 5,
+              progressQuantity: 5,
+              remainingQuantity: 0,
+              completed: true,
+            }),
+            createTask({
+              taskId: 'level2-sell-sage-seed',
+              itemKey: 'sageSeed',
+              type: 'sell',
+              requiredQuantity: 1,
+              progressQuantity: 1,
+              remainingQuantity: 0,
+              completed: true,
+            }),
+            createTask({
+              taskId: 'level2-turn-in-sage-seed',
+              itemKey: 'sageSeed',
+              requiredQuantity: 4,
+              progressQuantity: 0,
+              remainingQuantity: 4,
+            }),
+          ],
+        },
+      },
+    });
+
     expect(
       getStep({
-        snapshot: createLevelTwoSnapshot({
-          seedInventory: [{ key: 'sageSeed', quantity: 4 }],
-          tasks: {
-            currentLevel: 1,
-            level: {
-              completion: { canComplete: false, costCoin: 4 },
-              tasks: [
-                createTask({
-                  taskId: 'level2-summon-sage-seed',
-                  itemKey: 'sageSeed',
-                  type: 'summon',
-                  requiredQuantity: 5,
-                  progressQuantity: 5,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-                createTask({
-                  taskId: 'level2-sell-sage-seed',
-                  itemKey: 'sageSeed',
-                  type: 'sell',
-                  requiredQuantity: 1,
-                  progressQuantity: 1,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-                createTask({
-                  taskId: 'level2-turn-in-sage-seed',
-                  itemKey: 'sageSeed',
-                  requiredQuantity: 4,
-                  progressQuantity: 0,
-                  remainingQuantity: 4,
-                  canFill: true,
-                }),
-              ],
-            },
-          },
-        }),
+        pageId: 'shop',
+        snapshot,
+        completed: completedThrough('earn-tutorial-coin'),
+      }),
+    ).toMatchObject({
+      id: 'first-sale-complete',
+      text: 'that was coin. coin pays for level-ups. now summon 4 sage seeds to turn in.',
+    });
+
+    expect(
+      getStep({
+        snapshot,
         dom: createDomFake({ tasksExpanded: true }),
         completed: completedThrough('first-sale-complete'),
       }),
     ).toMatchObject({
       id: 'unselect-sage-seed-sale',
-      targetId: 'task:level2-turn-in-sage-seed',
-      hintText: 'turn in sage seeds',
+      targetId: 'workshop:summonSeed',
+      hintText: 'summon seed',
       progressLabel: '0/4 seeds',
     });
   });

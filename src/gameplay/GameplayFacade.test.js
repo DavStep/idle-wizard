@@ -2216,11 +2216,11 @@ describe('GameplayFacade', () => {
     expect(research.tabs[1].boxes[0].researches[0]).toEqual({
       id: automationResearchIds.autoSeedSpawn(),
       label: 'auto seed spawn',
-      value: '10 ruby',
+      value: '2 ruby',
       effect: 'auto',
       description: 'summons researched seeds when enough mana is available.',
       costCoin: 0,
-      costRuby: 10,
+      costRuby: 2,
       costCurrency: 'ruby',
       completed: false,
       canResearch: false,
@@ -2695,7 +2695,7 @@ describe('GameplayFacade', () => {
       durationSeconds: 60,
     });
 
-    gameplayFacade.rubyFacade.add(10);
+    gameplayFacade.rubyFacade.add(2);
     expect(gameplayFacade.buyResearch(automationResearchIds.autoSeedSpawn())).toMatchObject({
       ok: true,
     });
@@ -2736,16 +2736,16 @@ describe('GameplayFacade', () => {
       ok: false,
       reason: 'not_enough_ruby',
       researchId: automationResearchIds.autoSeedSpawn(),
-      cost: 10,
+      cost: 2,
       costCurrency: 'ruby',
     });
 
-    gameplayFacade.rubyFacade.add(10);
+    gameplayFacade.rubyFacade.add(2);
 
     expect(gameplayFacade.buyResearch(automationResearchIds.autoSeedSpawn())).toEqual({
       ok: true,
       researchId: automationResearchIds.autoSeedSpawn(),
-      cost: 10,
+      cost: 2,
       costCurrency: 'ruby',
     });
     expect(gameplayFacade.getSnapshot().ruby.current).toBe(0);
@@ -2767,7 +2767,7 @@ describe('GameplayFacade', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     unlockSageSeed(gameplayFacade);
-    gameplayFacade.rubyFacade.add(10);
+    gameplayFacade.rubyFacade.add(2);
 
     expect(gameplayFacade.buyResearch(automationResearchIds.autoSeedSpawn())).toMatchObject({
       ok: true,
@@ -3298,7 +3298,7 @@ describe('GameplayFacade', () => {
 
     unlockSageSeed(gameplayFacade);
     gameplayFacade.coinFacade.add(80);
-    gameplayFacade.rubyFacade.add(11);
+    gameplayFacade.rubyFacade.add(3);
     gameplayFacade.itemsFacade.addItem(1001, 3);
 
     expect(unlockRecipeResearch(gameplayFacade)).toMatchObject({

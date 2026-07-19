@@ -2,6 +2,11 @@
 
 Dev cheats expose console helpers only when `VITE_ENABLE_CHEATS=true`.
 
+The in-app developer console is available in the same builds. Press backtick
+(`` ` ``) to open its top drawer, or run `cheats.openUi('devConsole')`. The
+drawer provides command suggestions, history, output, and quick actions while
+using the same approved command bridge documented below.
+
 ```js
 cheats.help()
 cheats.fillMana()
@@ -32,6 +37,7 @@ cheats.setBackendState('offline')
 cheats.openDialog('worldEvent', { tab: 'leaderboard' })
 cheats.listUiSurfaces()
 cheats.openUi('guildQuestPosting')
+cheats.openUi('devConsole')
 cheats.setTimers('allReady')
 cheats.setStressText()
 cheats.setDummyLeaderboard()

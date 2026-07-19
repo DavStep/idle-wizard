@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 
 import pngjs from 'pngjs';
 
+import { ingredientCatalog } from '../src/gameplay/items/ingredientCatalog.js';
+
 const { PNG } = pngjs;
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -90,6 +92,11 @@ const POTION_ASSETS = [
   ['potion:generic', 'src/assets/items/potions/potion-generic.png'],
 ];
 
+const INGREDIENT_ASSETS = ingredientCatalog.map((ingredient) => [
+  `ingredient:${ingredient.key}`,
+  `src/assets/items/ingredients/ingredient-${ingredient.assetSlug}.png`,
+]);
+
 const TOOL_ASSETS = [
   [
     'tool:herbCuttingScissorsClosed',
@@ -161,6 +168,12 @@ const ASSETS = [
     { trimTransparent: true },
   ]),
   ...POTION_ASSETS.map(([frameName, filePath]) => [frameName, filePath, 128]),
+  ...INGREDIENT_ASSETS.map(([frameName, filePath]) => [
+    frameName,
+    filePath,
+    128,
+    { trimTransparent: true },
+  ]),
   ...TOOL_ASSETS.map(([frameName, filePath]) => [
     frameName,
     filePath,

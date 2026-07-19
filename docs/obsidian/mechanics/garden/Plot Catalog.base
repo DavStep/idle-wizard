@@ -1,0 +1,28 @@
+filters:
+  and:
+    - file.hasTag("entity/plot")
+    - file.inFolder("mechanics/garden/plots")
+properties:
+  plot_number:
+    displayName: "Plot"
+  unlock_path:
+    displayName: "Available through"
+  required_player_level:
+    displayName: "Player level"
+  required_prestiges:
+    displayName: "Prestiges"
+  purchase_cost_coin:
+    displayName: "Buy cost"
+  capacity_research_id:
+    displayName: "Capacity research"
+views:
+  - type: table
+    name: "Plots"
+    order:
+      - plot_number
+      - unlock_path
+      - required_player_level
+      - required_prestiges
+      - purchase_cost_coin
+      - capacity_research_id
+

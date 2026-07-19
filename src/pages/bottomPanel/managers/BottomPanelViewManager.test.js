@@ -4,11 +4,62 @@ import fs from 'node:fs';
 
 import { describe, expect, it, vi } from 'vitest';
 
+import { FEATURE_UNLOCK_FLYOUT_EVENT } from '../../announcements/featureUnlockEvents.js';
 import { BottomPanelViewManager } from './BottomPanelViewManager.js';
 
 async function waitForMutationObserver() {
   await Promise.resolve();
   await Promise.resolve();
+}
+
+function installElementAnimationMock() {
+  const prototype = window.HTMLElement.prototype;
+  const originalDescriptor = Object.getOwnPropertyDescriptor(prototype, 'animate');
+  const animation = {
+    cancel: vi.fn(),
+    finished: new Promise(() => {}),
+  };
+  const animate = vi.fn(() => animation);
+
+  Object.defineProperty(prototype, 'animate', {
+    configurable: true,
+    value: animate,
+  });
+
+  return {
+    animate,
+    animation,
+    restore() {
+      if (originalDescriptor) {
+        Object.defineProperty(prototype, 'animate', originalDescriptor);
+        return;
+      }
+
+      delete prototype.animate;
+    },
+  };
+}
+
+function setUnlockFlyoutGeometry(stage, tab) {
+  const iconFrame = tab?.querySelector('.room-bottom-panel__tab-icon-frame');
+  stage.getBoundingClientRect = () => ({
+    left: 10,
+    top: 20,
+    width: 1080,
+    height: 2170,
+  });
+  tab.getBoundingClientRect = () => ({
+    left: 400,
+    top: 1900,
+    width: 100,
+    height: 80,
+  });
+  iconFrame.getBoundingClientRect = () => ({
+    left: 425,
+    top: 1912,
+    width: 50,
+    height: 50,
+  });
 }
 
 describe('BottomPanelViewManager', () => {
@@ -293,8 +344,9 @@ describe('BottomPanelViewManager', () => {
     expect(popup?.dataset.pageId).toBeUndefined();
   });
 
-  it('breaks the lock icon when a locked tab unlocks', () => {
+  it('flies one feature icon into its slot when a locked tab unlocks', () => {
     vi.useFakeTimers();
+    const animationMock = installElementAnimationMock();
 
     try {
       const stage = document.createElement('section');
@@ -314,31 +366,37 @@ describe('BottomPanelViewManager', () => {
       const gardenTab = stage.querySelector(
         '.room-bottom-panel__tab[data-page-id="garden"]',
       );
+      setUnlockFlyoutGeometry(stage, gardenTab);
 
       expect(gardenTab?.classList.contains('is-locked')).toBe(true);
 
       manager.setPageStates([{ id: 'garden', unlocked: true, visible: true }]);
 
       expect(gardenTab?.classList.contains('is-locked')).toBe(false);
-      expect(gardenTab?.classList.contains('is-unlocking')).toBe(true);
-
-      const event = new window.Event('animationend', { bubbles: true });
-      Object.defineProperty(event, 'animationName', {
-        value: 'room-bottom-tab-icon-unlock-flyout',
-      });
-      gardenTab?.dispatchEvent(event);
-
-      expect(gardenTab?.classList.contains('is-unlocking')).toBe(false);
-      expect(gardenTab?.dataset.unlockAnimationToken).toBeUndefined();
+      expect(gardenTab?.classList.contains('is-receiving-unlock-icon')).toBe(true);
+      expect(document.querySelectorAll('.room-feature-unlock-flyout')).toHaveLength(1);
+      expect(
+        document.querySelector('.room-feature-unlock-flyout img')?.getAttribute('src'),
+      ).toContain('icon-garden-plot-tab.webp');
+      expect(animationMock.animate).toHaveBeenCalledTimes(1);
+      const [keyframes, options] = animationMock.animate.mock.calls[0];
+      expect(keyframes).toHaveLength(11);
+      expect(keyframes.at(-1)?.transform).toContain('translate3d(425.0px, 1912.0px, 0)');
+      expect(options).toMatchObject({ duration: 520, easing: 'linear', fill: 'both' });
 
       vi.runOnlyPendingTimers();
+      expect(document.querySelector('.room-feature-unlock-flyout')).toBeNull();
+      expect(gardenTab?.classList.contains('is-receiving-unlock-icon')).toBe(false);
     } finally {
+      vi.runOnlyPendingTimers();
+      animationMock.restore();
       vi.useRealTimers();
     }
   });
 
-  it('starts visible lock break motion after the announcement layer clears', async () => {
+  it('uses the unlock announcement as the flyout origin without duplicating the icon', async () => {
     vi.useFakeTimers();
+    const animationMock = installElementAnimationMock();
 
     try {
       const stage = document.createElement('section');
@@ -362,37 +420,41 @@ describe('BottomPanelViewManager', () => {
       const gardenTab = stage.querySelector(
         '.room-bottom-panel__tab[data-page-id="garden"]',
       );
+      setUnlockFlyoutGeometry(stage, gardenTab);
 
       manager.setPageStates([{ id: 'garden', unlocked: true, visible: true }]);
 
-      expect(gardenTab?.classList.contains('is-unlocking')).toBe(false);
-      expect(gardenTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
-        '',
+      expect(document.querySelector('.room-feature-unlock-flyout')).toBeNull();
+
+      announcement.dispatchEvent(
+        new window.CustomEvent(FEATURE_UNLOCK_FLYOUT_EVENT, {
+          bubbles: true,
+          detail: {
+            pageIds: ['garden'],
+            sourceRect: { left: 490, top: 700, width: 100, height: 100 },
+          },
+        }),
+      );
+
+      expect(document.querySelectorAll('.room-feature-unlock-flyout')).toHaveLength(1);
+      expect(animationMock.animate).toHaveBeenCalledTimes(1);
+      expect(animationMock.animate.mock.calls[0][0][0]?.transform).toContain(
+        'translate3d(515.0px, 725.0px, 0)',
       );
 
       announcement.hidden = true;
       await waitForMutationObserver();
-
-      expect(gardenTab?.classList.contains('is-unlocking')).toBe(true);
-      expect(gardenTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
-        '',
-      );
-
-      vi.advanceTimersByTime(559);
-      expect(gardenTab?.classList.contains('is-unlocking')).toBe(true);
-
-      vi.advanceTimersByTime(1);
-      expect(gardenTab?.classList.contains('is-unlocking')).toBe(false);
-      expect(gardenTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
-        '',
-      );
+      expect(animationMock.animate).toHaveBeenCalledTimes(1);
     } finally {
+      vi.runOnlyPendingTimers();
+      animationMock.restore();
       vi.useRealTimers();
     }
   });
 
-  it('waits through queued announcement swaps before playing visible unlock motion', async () => {
+  it('falls back to the stage origin when an announcement clears without a handoff', async () => {
     vi.useFakeTimers();
+    const animationMock = installElementAnimationMock();
 
     try {
       const stage = document.createElement('section');
@@ -416,46 +478,86 @@ describe('BottomPanelViewManager', () => {
       const marketTab = stage.querySelector(
         '.room-bottom-panel__tab[data-page-id="shop"]',
       );
+      setUnlockFlyoutGeometry(stage, marketTab);
 
       manager.setPageStates([{ id: 'shop', unlocked: true, visible: true }]);
 
-      expect(marketTab?.classList.contains('is-unlocking')).toBe(false);
-      expect(marketTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
-        '',
-      );
-
-      announcement.hidden = true;
-      announcement.hidden = false;
-      await waitForMutationObserver();
-
-      expect(marketTab?.classList.contains('is-unlocking')).toBe(false);
+      expect(animationMock.animate).not.toHaveBeenCalled();
 
       announcement.hidden = true;
       await waitForMutationObserver();
 
-      expect(marketTab?.classList.contains('is-unlocking')).toBe(true);
-      expect(marketTab?.style.getPropertyValue('--room-bottom-tab-unlock-delay')).toBe(
-        '',
-      );
-
-      vi.runOnlyPendingTimers();
+      expect(animationMock.animate).toHaveBeenCalledTimes(1);
+      expect(document.querySelectorAll('.room-feature-unlock-flyout')).toHaveLength(1);
     } finally {
+      vi.runOnlyPendingTimers();
+      animationMock.restore();
       vi.useRealTimers();
     }
   });
 
-  it('defines bottom-tab lock break motion with reduced-motion fallback', () => {
+  it('flies a workshop feature icon into its feature slot', () => {
+    vi.useFakeTimers();
+    const animationMock = installElementAnimationMock();
+
+    try {
+      const stage = document.createElement('section');
+      const featureButton = document.createElement('button');
+      featureButton.className = 'workshop-page__leaderboard-button';
+      const iconFrame = document.createElement('span');
+      iconFrame.className = 'workshop-page__leaderboard-button-icon-frame';
+      const icon = document.createElement('img');
+      icon.src = '/feature-leaderboard.webp';
+      iconFrame.append(icon);
+      featureButton.append(iconFrame);
+      stage.append(featureButton);
+
+      const manager = new BottomPanelViewManager({
+        getCurrentPageId: () => 'workshop',
+      });
+      manager.mount(stage);
+      iconFrame.getBoundingClientRect = () => ({
+        left: 80,
+        top: 380,
+        width: 46,
+        height: 46,
+      });
+
+      stage.dispatchEvent(
+        new window.CustomEvent(FEATURE_UNLOCK_FLYOUT_EVENT, {
+          bubbles: true,
+          detail: {
+            features: [{ value: 'leaderboard', pageId: null }],
+            pageIds: [],
+            sourceRect: { left: 490, top: 700, width: 100, height: 100 },
+          },
+        }),
+      );
+
+      expect(document.querySelectorAll('.room-feature-unlock-flyout')).toHaveLength(1);
+      expect(
+        document.querySelector('.room-feature-unlock-flyout img')?.getAttribute('src'),
+      ).toContain('feature-leaderboard.webp');
+      expect(featureButton.classList.contains('is-receiving-unlock-icon')).toBe(true);
+      expect(animationMock.animate).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.runOnlyPendingTimers();
+      animationMock.restore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('styles a single fixed icon flyout with a reduced-motion fallback', () => {
     const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
 
-    expect(baseCss).toContain('@keyframes room-bottom-tab-icon-unlock-flyout');
-    expect(baseCss).toContain('@keyframes room-bottom-tab-lock-break');
-    expect(baseCss).toContain('@keyframes room-bottom-tab-lock-left-break');
-    expect(baseCss).toContain('@keyframes room-bottom-tab-lock-right-break');
+    expect(baseCss).toContain('.room-feature-unlock-flyout {');
+    expect(baseCss).toContain('will-change: transform, opacity;');
+    expect(baseCss).not.toContain('@keyframes room-bottom-tab-lock-break');
     expect(baseCss).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.room-bottom-panel__tab\.is-unlocking \.room-bottom-panel__tab-lock[\s\S]*animation:\s*none;/,
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.room-feature-unlock-flyout\s*\{[\s\S]*display:\s*none;/,
     );
     expect(baseCss).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.room-bottom-panel__tab\.is-unlocking \.room-bottom-panel__tab-lock\s*\{[\s\S]*opacity:\s*0;/,
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.is-receiving-unlock-icon[\s\S]*visibility:\s*visible;/,
     );
   });
 

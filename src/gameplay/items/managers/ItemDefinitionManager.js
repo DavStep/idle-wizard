@@ -1,4 +1,9 @@
 import { itemKinds } from '../itemKinds.js';
+import {
+  ingredientCatalog,
+  ingredientRarities,
+  retiredIngredientKeys,
+} from '../ingredientCatalog.js';
 
 const HERB_TYPE_ID_START = 1001;
 const POTION_TYPE_ID_START = 2001;
@@ -194,12 +199,21 @@ const seedDefinitions = herbCatalog.map((herb, index) => ({
   baseSellPrice: 1,
 }));
 
+const ingredientDefinitions = ingredientCatalog.map((ingredient) => ({
+  id: ingredient.id,
+  key: ingredient.key,
+  label: ingredient.label,
+  kind: itemKinds.ingredient,
+  rarity: ingredient.rarity,
+}));
+
 export class ItemDefinitionManager {
   constructor() {
     this.setDefinitions({
       seedDefinitions,
       herbDefinitions,
       potionDefinitions,
+      ingredientDefinitions,
     });
   }
 
@@ -207,10 +221,16 @@ export class ItemDefinitionManager {
     this.setDefinitions(this.createDefinitionsFromConfig(config));
   }
 
-  setDefinitions({ seedDefinitions, herbDefinitions, potionDefinitions }) {
+  setDefinitions({
+    seedDefinitions,
+    herbDefinitions,
+    potionDefinitions,
+    ingredientDefinitions: nextIngredientDefinitions = ingredientDefinitions,
+  }) {
     this.seedDefinitions = seedDefinitions;
     this.herbDefinitions = herbDefinitions;
     this.potionDefinitions = potionDefinitions;
+    this.ingredientDefinitions = nextIngredientDefinitions;
     this.definitionsById = new Map();
     this.definitionsByKey = new Map();
 
@@ -218,6 +238,7 @@ export class ItemDefinitionManager {
       ...this.seedDefinitions,
       ...this.herbDefinitions,
       ...this.potionDefinitions,
+      ...this.ingredientDefinitions,
     ]) {
       if (this.definitionsById.has(definition.id) || this.definitionsByKey.has(definition.key)) {
         throw new Error('Duplicate item definition.');
@@ -253,11 +274,20 @@ export class ItemDefinitionManager {
       ...(potion.hasRecipe === undefined ? {} : { hasRecipe: Boolean(potion.hasRecipe) }),
       baseSellPrice: this.readNonNegativeNumber(potion.baseSellPrice),
     }));
+    const ingredients = Array.isArray(config.ingredients)
+      ? this.readDefinitions(config.ingredients, itemKinds.ingredient)
+          .filter((ingredient) => !retiredIngredientKeys.includes(ingredient.key))
+          .map((ingredient) => ({
+            ...ingredient,
+            rarity: this.readIngredientRarity(ingredient.rarity),
+          }))
+      : ingredientDefinitions;
 
     return {
       seedDefinitions: seeds,
       herbDefinitions: herbs,
       potionDefinitions: potions,
+      ingredientDefinitions: ingredients,
     };
   }
 
@@ -311,6 +341,16 @@ export class ItemDefinitionManager {
     return value;
   }
 
+  readIngredientRarity(value) {
+    const rarity = this.readNonEmptyString(value).toLowerCase();
+
+    if (!ingredientRarities.includes(rarity)) {
+      throw new Error('Item config requires a known ingredient rarity.');
+    }
+
+    return rarity;
+  }
+
   getSeedDefinitions() {
     return this.seedDefinitions;
   }
@@ -321,6 +361,10 @@ export class ItemDefinitionManager {
 
   getPotionDefinitions() {
     return this.potionDefinitions;
+  }
+
+  getIngredientDefinitions() {
+    return this.ingredientDefinitions;
   }
 
   getRecipePotionDefinitions() {

@@ -12,40 +12,40 @@
       "crop": {
         "x": 0,
         "y": 0,
-        "width": 453,
-        "height": 100
+        "width": 103,
+        "height": 38
       },
-      "changed": false
+      "changed": true
     }
   },
   "source": {
-    "path": "/Users/davitstepanyan/Documents/idle-wizard/tmp/imagegen/banners/seam-aligned/trimmed/summon-seeds-unlock-banner.png",
-    "width": 760,
-    "height": 100,
+    "path": "/private/tmp/idle-wizard-banner-reextract/sources/summon-seeds-unlock-banner.png",
+    "width": 351,
+    "height": 46,
     "mode": "RGBA",
     "crop": {
       "x": 0,
       "y": 0,
-      "width": 760,
-      "height": 100
+      "width": 351,
+      "height": 46
     }
   },
   "sourceCropSize": {
-    "width": 760,
-    "height": 100
+    "width": 351,
+    "height": 46
   },
   "slice": {
-    "left": 176,
-    "top": 49,
-    "right": 181,
-    "bottom": 50
+    "left": 55,
+    "top": 19,
+    "right": 40,
+    "bottom": 15
   },
   "mode": "distilled",
   "distill": {
-    "sampleX": 332,
-    "sampleY": 49,
-    "centerWidth": 96,
-    "centerHeight": 1,
+    "sampleX": 292,
+    "sampleY": 21,
+    "centerWidth": 8,
+    "centerHeight": 4,
     "cornerSource": "source",
     "edgeSource": "source"
   },
@@ -70,7 +70,7 @@
   },
   "rendering": {
     "stretch": "width-only",
-    "fixedHeight": 100,
+    "fixedHeight": 46,
     "consumerRule": "Keep the authored height; vary width only.",
     "qaResample": "nearest",
     "browserPreviewSmoothingDefault": false
@@ -81,15 +81,15 @@
     "naturalRoundTripExact": true,
     "cornerRoundTripExact": true,
     "alpha": {
-      "transparent": 10146,
-      "translucent": 3180,
-      "opaque": 31974
+      "transparent": 787,
+      "translucent": 0,
+      "opaque": 3127
     },
     "alphaBounds": {
       "x": 0,
       "y": 0,
-      "width": 453,
-      "height": 100
+      "width": 103,
+      "height": 38
     },
     "transparentGutters": {
       "left": 0,
@@ -99,44 +99,44 @@
     },
     "passesNoGutterGate": true,
     "uniqueColors": {
-      "all": 4310,
-      "corners": 4161,
-      "edges": 466
+      "all": 2869,
+      "corners": 2466,
+      "edges": 521
     },
     "workAsset": {
       "size": {
-        "width": 453,
-        "height": 100
+        "width": 103,
+        "height": 42
       },
       "slice": {
-        "left": 176,
-        "top": 49,
-        "right": 181,
-        "bottom": 50
+        "left": 55,
+        "top": 19,
+        "right": 40,
+        "bottom": 19
       },
       "naturalRoundTripExact": true,
       "cornerRoundTripExact": true,
       "alpha": {
-        "transparent": 10146,
-        "translucent": 3180,
-        "opaque": 31974
+        "transparent": 1199,
+        "translucent": 0,
+        "opaque": 3127
       },
       "alphaBounds": {
         "x": 0,
         "y": 0,
-        "width": 453,
-        "height": 100
+        "width": 103,
+        "height": 38
       },
       "transparentGutters": {
         "left": 0,
         "right": 0,
         "top": 0,
-        "bottom": 0
+        "bottom": 4
       },
       "uniqueColors": {
-        "all": 4310,
-        "corners": 4161,
-        "edges": 466
+        "all": 2962,
+        "corners": 2561,
+        "edges": 531
       }
     }
   },
@@ -144,14 +144,24 @@
     "sheet": "summon-seeds-unlock-banner-9slice-qa-sheet.png",
     "examples": [
       {
-        "label": "original: 760x100",
-        "width": 760,
-        "height": 100
+        "label": "original: 351x46",
+        "width": 351,
+        "height": 46
       },
       {
-        "label": "width stretched: 1102x100",
-        "width": 1102,
-        "height": 100
+        "label": "height stretched: 351x206",
+        "width": 351,
+        "height": 206
+      },
+      {
+        "label": "width stretched: 591x46",
+        "width": 591,
+        "height": 46
+      },
+      {
+        "label": "both stretched: 591x206",
+        "width": 591,
+        "height": 206
       }
     ]
   }

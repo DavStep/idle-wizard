@@ -1,0 +1,429 @@
+{
+  "nodes": [
+    {
+      "id": "0000000000000001",
+      "type": "group",
+      "x": -60,
+      "y": -100,
+      "width": 400,
+      "height": 650,
+      "label": "Start here",
+      "color": "5"
+    },
+    {
+      "id": "0000000000000002",
+      "type": "group",
+      "x": 380,
+      "y": -420,
+      "width": 860,
+      "height": 1080,
+      "label": "Grow herbs",
+      "color": "4"
+    },
+    {
+      "id": "0000000000000003",
+      "type": "group",
+      "x": 1280,
+      "y": -420,
+      "width": 760,
+      "height": 1220,
+      "label": "Unlock and improve",
+      "color": "6"
+    },
+    {
+      "id": "0000000000000004",
+      "type": "group",
+      "x": 2080,
+      "y": -420,
+      "width": 760,
+      "height": 900,
+      "label": "Use and sell",
+      "color": "2"
+    },
+    {
+      "id": "0000000000000005",
+      "type": "file",
+      "x": 0,
+      "y": 0,
+      "width": 280,
+      "height": 180,
+      "file": "mechanics/garden/Garden And Herbs.md",
+      "color": "4"
+    },
+    {
+      "id": "0000000000000006",
+      "type": "file",
+      "x": 0,
+      "y": 270,
+      "width": 280,
+      "height": 180,
+      "file": "mechanics/garden/Herb Catalog.base",
+      "color": "4"
+    },
+    {
+      "id": "0000000000000007",
+      "type": "file",
+      "x": 420,
+      "y": -330,
+      "width": 320,
+      "height": 180,
+      "file": "mechanics/garden/Seed Summoning.md",
+      "color": "3"
+    },
+    {
+      "id": "0000000000000008",
+      "type": "file",
+      "x": 820,
+      "y": -330,
+      "width": 360,
+      "height": 180,
+      "file": "mechanics/garden/Seed Catalog.base",
+      "color": "3"
+    },
+    {
+      "id": "0000000000000009",
+      "type": "file",
+      "x": 420,
+      "y": -40,
+      "width": 320,
+      "height": 200,
+      "file": "mechanics/garden/Garden Lifecycle.md",
+      "color": "4"
+    },
+    {
+      "id": "000000000000000a",
+      "type": "file",
+      "x": 820,
+      "y": -40,
+      "width": 360,
+      "height": 200,
+      "file": "mechanics/garden/Herb Catalog.base",
+      "color": "4"
+    },
+    {
+      "id": "000000000000000b",
+      "type": "file",
+      "x": 420,
+      "y": 260,
+      "width": 320,
+      "height": 200,
+      "file": "mechanics/garden/Garden Plots.md",
+      "color": "2"
+    },
+    {
+      "id": "000000000000000c",
+      "type": "file",
+      "x": 820,
+      "y": 260,
+      "width": 360,
+      "height": 200,
+      "file": "mechanics/garden/Plot Catalog.base",
+      "color": "2"
+    },
+    {
+      "id": "000000000000000d",
+      "type": "file",
+      "x": 1320,
+      "y": -330,
+      "width": 320,
+      "height": 200,
+      "file": "mechanics/garden/Seed Unlock Research.md",
+      "color": "6"
+    },
+    {
+      "id": "000000000000000e",
+      "type": "file",
+      "x": 1680,
+      "y": -330,
+      "width": 300,
+      "height": 200,
+      "file": "mechanics/garden/Garden Research.base",
+      "color": "6"
+    },
+    {
+      "id": "000000000000000f",
+      "type": "file",
+      "x": 1320,
+      "y": -40,
+      "width": 320,
+      "height": 200,
+      "file": "mechanics/garden/Plot Research.md",
+      "color": "6"
+    },
+    {
+      "id": "0000000000000010",
+      "type": "file",
+      "x": 1680,
+      "y": -40,
+      "width": 300,
+      "height": 200,
+      "file": "mechanics/garden/Plot Capacity Research.md",
+      "color": "6"
+    },
+    {
+      "id": "0000000000000011",
+      "type": "file",
+      "x": 1320,
+      "y": 260,
+      "width": 320,
+      "height": 200,
+      "file": "mechanics/garden/Plot Automation Research.md",
+      "color": "6"
+    },
+    {
+      "id": "0000000000000012",
+      "type": "file",
+      "x": 1680,
+      "y": 260,
+      "width": 300,
+      "height": 200,
+      "file": "mechanics/garden/Plot Growth Research.md",
+      "color": "6"
+    },
+    {
+      "id": "0000000000000013",
+      "type": "file",
+      "x": 1320,
+      "y": 560,
+      "width": 320,
+      "height": 180,
+      "file": "mechanics/garden/Plot Levels.md",
+      "color": "6"
+    },
+    {
+      "id": "0000000000000014",
+      "type": "file",
+      "x": 1680,
+      "y": 560,
+      "width": 300,
+      "height": 180,
+      "file": "mechanics/garden/Garden Runtime Config.md",
+      "color": "1"
+    },
+    {
+      "id": "0000000000000015",
+      "type": "file",
+      "x": 2120,
+      "y": -320,
+      "width": 300,
+      "height": 200,
+      "file": "mechanics/potions/Potion Recipes.md",
+      "color": "5"
+    },
+    {
+      "id": "0000000000000016",
+      "type": "file",
+      "x": 2480,
+      "y": -320,
+      "width": 300,
+      "height": 200,
+      "file": "mechanics/potions/Potion Catalog.base",
+      "color": "5"
+    },
+    {
+      "id": "0000000000000017",
+      "type": "file",
+      "x": 2120,
+      "y": 20,
+      "width": 300,
+      "height": 200,
+      "file": "mechanics/Market Systems.md",
+      "color": "1"
+    },
+    {
+      "id": "0000000000000018",
+      "type": "file",
+      "x": 2480,
+      "y": 20,
+      "width": 300,
+      "height": 200,
+      "file": "mechanics/potions/Potion Discovery.md",
+      "color": "5"
+    }
+  ],
+  "edges": [
+    {
+      "id": "0000000000000019",
+      "fromNode": "0000000000000005",
+      "fromSide": "right",
+      "toNode": "0000000000000007",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "starts with"
+    },
+    {
+      "id": "000000000000001a",
+      "fromNode": "0000000000000005",
+      "fromSide": "right",
+      "toNode": "000000000000000b",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "uses space"
+    },
+    {
+      "id": "000000000000001b",
+      "fromNode": "0000000000000005",
+      "fromSide": "right",
+      "toNode": "0000000000000006",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "browse"
+    },
+    {
+      "id": "000000000000001c",
+      "fromNode": "0000000000000007",
+      "fromSide": "right",
+      "toNode": "0000000000000008",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "seed catalog"
+    },
+    {
+      "id": "000000000000001d",
+      "fromNode": "0000000000000008",
+      "fromSide": "right",
+      "toNode": "000000000000000d",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "unlocked by"
+    },
+    {
+      "id": "000000000000001e",
+      "fromNode": "000000000000000d",
+      "fromSide": "right",
+      "toNode": "000000000000000e",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "browse"
+    },
+    {
+      "id": "000000000000001f",
+      "fromNode": "0000000000000007",
+      "fromSide": "bottom",
+      "toNode": "0000000000000009",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "supplies seeds"
+    },
+    {
+      "id": "0000000000000020",
+      "fromNode": "000000000000000b",
+      "fromSide": "top",
+      "toNode": "0000000000000009",
+      "toSide": "bottom",
+      "toEnd": "arrow",
+      "label": "hosts"
+    },
+    {
+      "id": "0000000000000021",
+      "fromNode": "0000000000000009",
+      "fromSide": "right",
+      "toNode": "000000000000000a",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "produces"
+    },
+    {
+      "id": "0000000000000022",
+      "fromNode": "000000000000000b",
+      "fromSide": "right",
+      "toNode": "000000000000000c",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "browse"
+    },
+    {
+      "id": "0000000000000023",
+      "fromNode": "000000000000000f",
+      "fromSide": "left",
+      "toNode": "000000000000000b",
+      "toSide": "right",
+      "toEnd": "arrow",
+      "label": "modifies"
+    },
+    {
+      "id": "0000000000000024",
+      "fromNode": "000000000000000f",
+      "fromSide": "right",
+      "toNode": "0000000000000010",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "capacity lane"
+    },
+    {
+      "id": "0000000000000025",
+      "fromNode": "000000000000000f",
+      "fromSide": "bottom",
+      "toNode": "0000000000000011",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "automation lane"
+    },
+    {
+      "id": "0000000000000026",
+      "fromNode": "000000000000000f",
+      "fromSide": "right",
+      "toNode": "0000000000000012",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "growth lane"
+    },
+    {
+      "id": "0000000000000027",
+      "fromNode": "000000000000000f",
+      "fromSide": "bottom",
+      "toNode": "0000000000000013",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "yield lane"
+    },
+    {
+      "id": "0000000000000028",
+      "fromNode": "0000000000000005",
+      "fromSide": "bottom",
+      "toNode": "0000000000000014",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "effective values",
+      "color": "1"
+    },
+    {
+      "id": "0000000000000029",
+      "fromNode": "000000000000000a",
+      "fromSide": "right",
+      "toNode": "0000000000000015",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "ingredients in"
+    },
+    {
+      "id": "000000000000002a",
+      "fromNode": "0000000000000015",
+      "fromSide": "right",
+      "toNode": "0000000000000016",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "browse"
+    },
+    {
+      "id": "000000000000002b",
+      "fromNode": "0000000000000015",
+      "fromSide": "right",
+      "toNode": "0000000000000018",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "hidden recipes"
+    },
+    {
+      "id": "000000000000002c",
+      "fromNode": "000000000000000a",
+      "fromSide": "right",
+      "toNode": "0000000000000017",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "sold through",
+      "color": "1"
+    }
+  ]
+}
+

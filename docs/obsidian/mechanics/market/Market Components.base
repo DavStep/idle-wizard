@@ -1,0 +1,44 @@
+filters:
+  and:
+    - file.hasTag("system/market")
+    - file.inFolder("mechanics/market")
+properties:
+  note_type:
+    displayName: "Type"
+  implementation:
+    displayName: "Implementation"
+  backend_role:
+    displayName: "Backend role"
+  required_prestige_stars:
+    displayName: "Prestige stars"
+  source_scope:
+    displayName: "Value scope"
+views:
+  - type: table
+    name: "Components"
+    filters:
+      and:
+        - 'note_type == "trading-component"'
+    order:
+      - file.name
+      - implementation
+      - backend_role
+      - source_scope
+  - type: table
+    name: "Market Licences"
+    filters:
+      and:
+        - 'note_type == "market-licence"'
+    order:
+      - required_prestige_stars
+      - file.name
+      - implementation
+  - type: list
+    name: "Source Status"
+    filters:
+      and:
+        - 'note_type == "source-status"'
+    order:
+      - file.name
+      - implementation
+

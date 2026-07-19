@@ -14,7 +14,8 @@ world: gdd
 - What is the long-term fantasy of prestige beyond earning ruby and opening
   advanced research lanes?
 - How social should guilds and trade alliances become before they need deeper
-  backend authority?
+  backend authority? See the proposed
+  [[mechanics/Guild System Plan|Guild System Plan]].
 - Which world events should become recurring event families, and which should
   stay one-off world news?
 

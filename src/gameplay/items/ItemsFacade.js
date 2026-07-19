@@ -5,7 +5,7 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class ItemsFacade {
   static explain =
-    'Knows what seeds, herbs, potions, and recipes are, and keeps count of owned items.';
+    'Knows what seeds, herbs, potions, ingredients, and recipes are, and keeps count of owned items.';
 
   constructor() {
     this.itemDefinitionManager = new ItemDefinitionManager();
@@ -100,6 +100,10 @@ export class ItemsFacade {
     return this.itemDefinitionManager.getPotionDefinitions();
   }
 
+  getIngredientDefinitions() {
+    return this.itemDefinitionManager.getIngredientDefinitions();
+  }
+
   getRecipePotionDefinitions() {
     return this.itemDefinitionManager.getRecipePotionDefinitions();
   }
@@ -138,6 +142,15 @@ export class ItemsFacade {
       kind: definition.kind,
       quantity: this.inventoryStackManager.getQuantity(definition.id),
     }));
+  }
+
+  getIngredientInventorySnapshot() {
+    return this.getIngredientDefinitions().map((definition) =>
+      this.createItemSnapshot(
+        definition,
+        this.inventoryStackManager.getQuantity(definition.id),
+      ),
+    );
   }
 
   getDiscoverySnapshot({ getPotionDiscovery } = {}) {
@@ -242,6 +255,10 @@ export class ItemsFacade {
 
     if (definition.baseSellPrice !== undefined) {
       snapshot.baseSellPrice = definition.baseSellPrice;
+    }
+
+    if (definition.rarity) {
+      snapshot.rarity = definition.rarity;
     }
 
     return snapshot;
