@@ -16,6 +16,7 @@ import {
 } from './saveGoldNormalizer';
 import { normalizeSaveCauldronAutomationState } from './saveBrewingNormalizer';
 import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
+import { appendMissingItemConfigRows as appendMissingItemConfigRowsByKey } from './itemConfigRows';
 import {
   defaultMarketId,
   marketLicences,
@@ -9012,22 +9013,11 @@ function normalizeLegacyItemConfigRows(existingRows: unknown, defaultRows: unkno
 }
 
 function appendMissingItemConfigRows(existingRows: unknown, defaultRows: unknown) {
-  if (!Array.isArray(existingRows) || !Array.isArray(defaultRows)) {
-    return existingRows;
-  }
-
-  const seenKeys = new Set(
-    existingRows
-      .filter((row): row is Record<string, unknown> => isRecord(row))
-      .map((row) => normalizeNpcMarketItemKey(String(row.key ?? ''))),
+  return appendMissingItemConfigRowsByKey(
+    existingRows,
+    defaultRows,
+    (row) => normalizeNpcMarketItemKey(String(row.key ?? '')),
   );
-  const missingRows = defaultRows.filter((row) =>
-    isRecord(row)
-      ? !seenKeys.has(normalizeNpcMarketItemKey(String(row.key ?? '')))
-      : false,
-  );
-
-  return missingRows.length > 0 ? [...existingRows, ...missingRows] : existingRows;
 }
 
 function validatePlayerGameplaySaveJson(

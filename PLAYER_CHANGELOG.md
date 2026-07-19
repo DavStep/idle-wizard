@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.91
+
+- Fixed the new ingredient catalog not being added to existing live item configuration after updating.
+
 ## 0.2.90
 
 - Added an ingredient section to the Workshop bag, with rarity groups and unique artwork for the new ingredient catalog.
