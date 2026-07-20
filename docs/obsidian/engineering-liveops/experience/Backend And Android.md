@@ -1,5 +1,5 @@
 ---
-title: Experience: Backend And Android
+title: "Experience: Backend And Android"
 tags:
   - engineering
   - liveops
@@ -63,7 +63,7 @@ experience_type: backend-android
 - Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
 - Garden tile and market stand purchases should fail with `level_locked` before checking coin when the next buy exceeds the current level milestone cap.
 - Leaderboard total generated coin should stay admin/server-owned until coin generation is server-authoritative; local lifetime totals are useful for player saves, not trusted shared ranking.
-- Global progress resets should bump the gameplay save version and migrate old saves to keep only `coin.totalGenerated`; username and leaderboard identity live outside gameplay save.
+- Google account links are represented by the Google-derived SpacetimeDB identity/token, not a game-owned email row; an identity-preserving global reset must retain `player.identity`, reset the rest of that row to fresh defaults, clear `player_session`, and delete player-owned progression/shared rows.
 - Hydrate profile fields from the server `player` row before pushing local values; otherwise local defaults can overwrite saved DB profile data.
 - New client-only profile visual fields must not be sent to `set_player_profile` until the SpacetimeDB player schema and generated bindings support them.
 - Queue explicit profile edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's choices.
@@ -74,7 +74,7 @@ experience_type: backend-android
 - Keep local web `VITE_SPACETIME_URI` on `ws://127.0.0.1:3000`; LAN/`localhost` overrides can make the browser show `server required` while the backend is actually running.
 - Browser auth is origin-scoped; `localhost`, `127.0.0.1`, and LAN URLs can load different SpacetimeDB identities unless account recovery/migration exists.
 - Dynamic market prices should be server-authoritative and shared through SpacetimeDB subscriptions.
-- NPC market backend can expose shared baseline prices/need, but client buy/sell calls must not mutate shared stock or demand until server-owned inventory/coin exists.
+- Current NPC/player exchange mutates shared backend market state while player inventory and coin remain client-owned; treat it as coordinated shared state, not full server-authoritative escrow.
 - NPC market auto-sell must reserve/decrement visible demand locally across same-item stands and catch-up cycles before calling reducers; otherwise stale demand snapshots spam `sell_to_npc` panics.
 - NPC market base prices are DB-owned in `npc_market_item_config`; use `claim_npc_market_admin` once, then `set_npc_market_item_base_price` to change them without another deploy. `npc_market_price` remains the derived live quote table.
 - Market price amounts are cent-rounded floats and visible prices use two decimals; use shared coin-price helpers instead of flooring.

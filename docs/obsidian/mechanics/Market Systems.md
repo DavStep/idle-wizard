@@ -1,57 +1,63 @@
 ---
-title: Market Systems
+title: "Market Systems"
+aliases:
+  - Trading
+  - Trading System
+  - Market
 tags:
   - mechanics
-  - market
+  - system/market
+  - hub
 status: active
 world: mechanics
+note_type: system
+system: market
+implementation: shipped
+verified_on: 2026-07-19
 ---
-
+ldron
 # Market Systems
 
-## Market Licences
+The Market room contains Trader/NPC sales, player trading, and the crystals tab. Permanent market licences isolate both NPC and player economies.
 
-Each player trades through one permanent Prestige market licence. The active
-licence is the highest one unlocked; it does not reset with a run. Licences
-protect early players by separating the economies rather than merely changing
-the market's appearance.
+> [!tip] Start visually
+> Open [[mechanics/market/Market.canvas|Market graph]], then click any component or market type.
 
-| Stars | Market | Role |
-| --- | --- | --- |
-| 0 | Small Town Market | Stable starter trade. |
-| 1 | Crossroads Market | Standard regional trade. |
-| 3 | City Bazaar | Higher-volume trade and changing local demand. |
-| 6 | Grand Exchange | Valuable goods and volatile demand. |
-| 10 | Arcane Exchange | Endgame trade and special orders. |
+## Tabs
 
-The market catalogue is data-driven. A higher market accepts the goods needed
-for its player's current run, including earlier goods, but only against that
-market's own demand. A player cannot trade through an earlier licence after
-unlocking a newer one.
+- [[mechanics/market/NPC Market|Trader / NPC Market]]
+  - [[mechanics/market/Fast Sell|Fast Sell]]
+  - [[mechanics/market/Trader Stands|Automatic Trader Stands]]
+  - [[mechanics/market/NPC Stock|Shared NPC Stock]]
+  - [[mechanics/market/Demand And Pricing|Demand and Pricing]]
+- [[mechanics/market/Player Market|Player Market]]
+  - [[mechanics/market/Player Listings|Listings]]
+  - [[mechanics/market/Player Requests|Requests]]
+  - [[mechanics/market/Browse And Purchase|Browse and Purchase]]
+  - [[mechanics/market/Proceeds Royalties And History|Proceeds, Royalties, and History]]
+- [[mechanics/market/Crystal Shop|Crystals]]
 
-## Trader Market
+## Browse components
 
-Trader stands sell selected inventory on a shared 30-minute wall-clock cadence.
-Fast sell uses the same marginal quote and demand but pays a reduced percentage.
-Quotes, demand, and stock belong to the active market licence.
+![[mechanics/market/Market Components.base#Components]]
 
-## Trader Stock
+## Permanent market types
 
-Shared stock comes from the active market's backend quote snapshot. Buying
-spends local coin, adds local items, and calls the backend stock reducer before
-local application.
+[[mechanics/market/Market Licences|Market Licences]] selects the highest unlocked licence from permanent Prestige stars. All five source-default markets currently use the same catalog and balance, but their demand, stock, prices, listings, and requests are isolated.
 
-## Player Market
+![[mechanics/market/Market Components.base#Market Licences]]
 
-Player listings reserve local inventory. Other players can buy listings, and
-claiming proceeds adds local coin after reducer success. Public request rows are
-visibility only until escrow/delivery behavior is explicit.
+## Truth boundaries
 
-Listings, requests, and browsing are limited to the active market licence.
-Players in different markets never share player-market rows.
+- [[mechanics/market/Market Authority|Market Authority]] explains what the backend and client each own.
+- [[mechanics/market/Market Runtime Config|Market Runtime Config]] records the current shop-key mismatch and effective fallback.
+- [[balance/Market Tuning|Market Tuning]] contains balance-level rules.
 
-## Related
+## Source map
 
-- [[Core Loop]]
-- [[Tasks And Leveling]]
-- [[Events And Social]]
+- `src/pages/shop/`
+- `src/gameplay/shop/`
+- `src/gameplay/market/`
+- `src/backend/npcMarket/`
+- `src/backend/playerShop/`
+- `spacetimedb/src/index.ts`

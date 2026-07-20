@@ -6,7 +6,10 @@
 		{"id":"6666666666666004","type":"file","x":440,"y":180,"width":360,"height":210,"file":"balance/Home.md","color":"2"},
 		{"id":"6666666666666005","type":"file","x":880,"y":-80,"width":360,"height":210,"file":"tutorial/Home.md","color":"6"},
 		{"id":"6666666666666006","type":"file","x":1320,"y":-80,"width":380,"height":210,"file":"engineering-liveops/Home.md","color":"1"},
-		{"id":"6666666666666007","type":"file","x":880,"y":220,"width":360,"height":180,"file":"World Index.base","color":"5"}
+		{"id":"6666666666666007","type":"file","x":880,"y":220,"width":360,"height":180,"file":"World Index.base","color":"5"},
+		{"id":"6666666666666008","type":"file","file":"mechanics/garden/Garden And Herbs.md","x":880,"y":-430,"width":360,"height":220,"color":"4"},
+		{"id":"6666666666666009","type":"file","file":"mechanics/potions/Potion Recipes.md","x":1300,"y":-430,"width":360,"height":220,"color":"5"},
+		{"id":"666666666666600a","type":"file","file":"mechanics/Market Systems.md","x":1720,"y":-430,"width":360,"height":220,"color":"1"}
 	],
 	"edges":[
 		{"id":"6666666666666e01","fromNode":"6666666666666001","fromSide":"right","toNode":"6666666666666002","toSide":"left","label":"design"},
@@ -15,6 +18,10 @@
 		{"id":"6666666666666e04","fromNode":"6666666666666003","fromSide":"right","toNode":"6666666666666005","toSide":"left","label":"taught by"},
 		{"id":"6666666666666e05","fromNode":"6666666666666004","fromSide":"right","toNode":"6666666666666005","toSide":"bottom","label":"early pacing"},
 		{"id":"6666666666666e06","fromNode":"6666666666666005","fromSide":"right","toNode":"6666666666666006","toSide":"left","label":"qa and support"},
-		{"id":"6666666666666e07","fromNode":"6666666666666001","fromSide":"bottom","toNode":"6666666666666007","toSide":"left","label":"index"}
+		{"id":"6666666666666e07","fromNode":"6666666666666001","fromSide":"bottom","toNode":"6666666666666007","toSide":"left","label":"index"},
+		{"id":"6666666666666e08","fromNode":"6666666666666003","fromSide":"top","toNode":"6666666666666008","toSide":"left","toEnd":"arrow","label":"garden and herbs"},
+		{"id":"6666666666666e09","fromNode":"6666666666666008","fromSide":"right","toNode":"6666666666666009","toSide":"left","toEnd":"arrow","label":"brews"},
+		{"id":"6666666666666e0a","fromNode":"6666666666666008","fromSide":"right","toNode":"666666666666600a","toSide":"left","toEnd":"arrow","label":"sells"},
+		{"id":"6666666666666e0b","fromNode":"6666666666666009","fromSide":"right","toNode":"666666666666600a","toSide":"left","toEnd":"arrow","label":"trades"}
 	]
 }

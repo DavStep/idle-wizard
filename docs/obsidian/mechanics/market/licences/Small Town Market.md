@@ -24,7 +24,7 @@ related:
 
 # Small Town Market
 
-Small Town Market becomes active at **0 permanent Prestige stars** and remains active until Crossroads Market unlocks at 1 stars.
+Small Town Market is the starting licence at **0 permanent Prestige stars** and remains active until Crossroads Market unlocks at 1 star.
 
 - It scopes NPC demand, quotes, stock, price tuning, player listings, requests, and proceeds.
 - It uses the same source-default item catalog and balance as the other licences.
@@ -43,4 +43,3 @@ Small Town Market becomes active at **0 permanent Prestige stars** and remains a
 - `src/shared/marketLicence.js`
 - `src/gameplay/market/`
 - `spacetimedb/src/marketScope.ts`
-

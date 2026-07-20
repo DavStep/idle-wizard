@@ -1,5 +1,5 @@
 ---
-title: Experience: Architecture
+title: "Experience: Architecture"
 tags:
   - engineering
   - liveops
@@ -68,7 +68,7 @@ experience_type: architecture
 - Before running release automation, add the next-version `PLAYER_CHANGELOG.md` section; release preflight checks notes before build/push.
 - `spacetime publish --server maincloud` can prompt once for live publish and again for breaking view/schema changes; release automation must pipe both confirmations.
 - Raising playable max level needs matching SpacetimeDB caps (`MAX_REPORTED_PLAYER_LEVEL`, `MAX_GAME_CONFIG_LEVELS`) plus prod `playerLevel` and `tasks` config rows; otherwise prod clips/rejects the new curve.
-- Permanent prestige capacity upgrades should preserve only capacity research IDs through prestige reset; ordinary ruby speed research remains run-scoped.
+- Permanent prestige capacity upgrades should preserve only capacity research IDs through prestige reset; ordinary emerald speed research remains run-scoped.
 - Permanent prestige capacity upgrades should make the researched slot cap buyable immediately in the run; do not require replaying to the old level cap first.
 - When adding SpacetimeDB columns to existing tables, append fields at the end; inserting into the middle is treated as table reordering and requires manual migration.
 - Shared player profile display fields need the full chain: player table, own-profile view, leaderboard/public views when other users see them, frontend sync mappers, and regenerated bindings.
@@ -144,7 +144,7 @@ experience_type: architecture
 - Prestige completion world-chat notices are separate from task level-up notices; announce the claimed prestige milestone before resetting the run.
 - After prestige, leaderboard and alliance income must advance from accepted save run-coin deltas; comparing new run `coin.totalGenerated` directly against all-time leaderboard total stalls score growth.
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
-- Crystal earn-back floors must subtract committed automation research, not only completed automation research; otherwise reload can refund crystal while in-progress research keeps ticking.
+- Crystal earn-back floors must subtract committed Crystal-cost research, including in-progress plot/cauldron multiplier levels; otherwise reload can refund Crystal while that research keeps ticking.
 - SpacetimeDB UUID primary-key lookups need stored UUID values, not stringified ids; passing string ids can fatal inside reducer serialization.
 - If SpacetimeDB logs say `External attempt to call nonexistent reducer`, the deployed backend is stale relative to generated client bindings; publish the backend before debugging UI flow.
 - SpacetimeDB consumption hotspots are always-on global `SELECT *` subscriptions, per-client global reducers, and full JSON save writes; prefer own/top/small views, lazy page subscriptions, and throttled/deduped writes.
@@ -155,7 +155,7 @@ experience_type: architecture
 - SpacetimeDB one-time startup maintenance uses `STARTUP_MAINTENANCE_STATE_KEY`; bump that key when adding new backfills/sanitizers that must run after deploy.
 - SpacetimeDB identity subscription filters use `0x${identity.toHexString()}` literals; quote camel-case column names such as `"sellerIdentity"` in raw SQL strings.
 - Global background work like NPC market ticks should be scheduled or single-owner server work, not one reducer interval per connected client.
-- NPC market replenishment is owned by the SpacetimeDB `npc_market_tick_schedule` table; clients should not call market tick reducers on connect or intervals.
+- NPC market demand recovery is derived lazily from elapsed time and the anchored reset/wave cadence; do not add per-client market tick reducers.
 - NPC market auto-sell uses one shelf-level wall-clock timer; changing a selected stand item does not reset it, and each completed cycle attempts all eligible selected stands.
 - Gameplay autosaves should avoid `savedAt`-only writes; unchanged saves still consume write bytes, reducer work, and own-save subscription egress. Current autosave interval is `30s`, with pagehide/deploy-refresh flushing for close/reload.
 - Gameplay save subscription is hydration-only; unsubscribe after own-save ready because single-account locking makes live own-save echo unnecessary.

@@ -36,11 +36,10 @@ choose seed → plant → grow → ready → harvest → herb inventory
 - Input: [[mechanics/garden/Seed Summoning|Seed Summoning]]
 - Space: [[mechanics/garden/Garden Plots|Garden Plots]]
 - Modifiers: [[mechanics/garden/Plot Research|Plot Research]]
-- Output: [[mechanics/potions/Potion Recipes|Potion Recipes]] and [[mechanics/market/Market Systems|Market Systems]]
+- Output: [[mechanics/potions/Potion Recipes|Potion Recipes]] and [[mechanics/Market Systems|Market Systems]]
 
 ## Source of truth
 
 - `src/gameplay/garden/managers/GardenPlantingManager.js`
 - `src/gameplay/garden/managers/GardenProcessManager.js`
 - `src/gameplay/garden/managers/GardenTileEntityManager.js`
-

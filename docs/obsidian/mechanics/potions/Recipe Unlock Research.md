@@ -23,7 +23,7 @@ Twenty-eight known potion recipes unlock in one strict chain. Each potion note s
 
 - Mana tonic is the first recipe and has no recipe prerequisite.
 - Coin research-cost reduction can lower the paid amount.
-- Current effective values use client defaults because the stored Maincloud research object still uses a rejected legacy field name.
+- Displayed costs and durations are client fallback values. A live SpacetimeDB `research_config` row can override either value even though the broader Maincloud research object is rejected.
 - Research makes the known recipe brewable; it does not change ingredient order.
 
 ## Related
@@ -31,4 +31,3 @@ Twenty-eight known potion recipes unlock in one strict chain. Each potion note s
 - [[mechanics/potions/Potion Recipes|Potion Recipes]]
 - [[mechanics/garden/Seed Unlock Research|Seed Unlock Research]]
 - [[mechanics/garden/Garden Runtime Config|Runtime Config Status]]
-

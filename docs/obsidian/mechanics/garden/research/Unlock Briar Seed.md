@@ -22,7 +22,7 @@ default_duration: "4m"
 prerequisite: "[[mechanics/garden/research/Unlock Lavender Seed|Unlock Lavender Seed]]"
 unlocks: "[[mechanics/garden/seeds/Briar Seed|Briar Seed]]"
 produces_access_to: "[[mechanics/garden/herbs/Briar Herb|Briar]]"
-value_scope: current-client-default
+value_scope: client-fallback-before-live-research-config
 verified_on: 2026-07-19
 source_files:
   - src/gameplay/research/managers/ResearchDefinitionManager.js
@@ -41,5 +41,4 @@ Completing this study adds [[mechanics/garden/seeds/Briar Seed|Briar Seed]] to [
 | Prerequisite | [[mechanics/garden/research/Unlock Lavender Seed|Unlock Lavender Seed]] |
 
 > [!note] Value scope
-> These are the current effective client defaults. Coin-cost reduction may lower the paid amount. See [[mechanics/garden/Garden Runtime Config|Runtime Config Status]] before changing balance.
-
+> These are client fallback values, not guaranteed live values. A matching SpacetimeDB `research_config` row can override coin cost and duration; coin-cost reduction can then lower the paid amount. See [[mechanics/garden/Garden Runtime Config|Runtime Config Status]] before changing balance.

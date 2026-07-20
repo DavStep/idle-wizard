@@ -3,23 +3,48 @@ filters:
     - file.hasTag("mechanics")
     - file.ext == "md"
 properties:
+  note_type:
+    displayName: Type
+  system:
+    displayName: System
+  implementation:
+    displayName: Implementation
   status:
     displayName: Status
-  world:
-    displayName: World
   file.tags:
     displayName: Tags
 views:
   - type: table
-    name: Mechanics Notes
+    name: System Maps
+    filters:
+      or:
+        - note_type == "system"
+        - note_type == "system-map"
     order:
       - file.name
+      - system
+      - implementation
       - status
-      - world
+  - type: table
+    name: Entities
+    filters:
+      or:
+        - note_type == "herb"
+        - note_type == "seed"
+        - note_type == "plot"
+        - note_type == "potion"
+        - note_type == "market-licence"
+    order:
+      - file.name
+      - note_type
+      - system
+      - implementation
+  - type: table
+    name: All Mechanics
+    order:
+      - file.name
+      - note_type
+      - system
+      - status
       - file.tags
       - file.mtime
-  - type: list
-    name: Systems
-    order:
-      - file.name
-      - file.tags

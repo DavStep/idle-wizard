@@ -23,6 +23,12 @@ working through game behavior before touching source.
 - [[Events And Social]]
 - [[Guilds]]
 
+## Detailed System Maps
+
+- [[mechanics/garden/Garden And Herbs|Garden and Herbs]] · [[mechanics/garden/Garden And Herbs.canvas|graph]]
+- [[mechanics/potions/Potion Recipes|Potion Recipes]]
+- [[mechanics/Market Systems|Market Systems]] · [[mechanics/market/Market.canvas|graph]]
+
 ## Plans
 
 - [[Guild System Plan]]

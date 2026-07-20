@@ -29,7 +29,7 @@ Seeds are summoned, unlocked through research, planted in purchased plots, grown
 - [[mechanics/garden/Plot Catalog.base|Plots]] — purchase cost, level or Prestige gate, and research.
 - [[mechanics/garden/Garden Research.base|Garden research]] — the ordered seed-unlock chain.
 - [[mechanics/potions/Potion Recipes|Potion recipes]] — every clickable potion connected to its ingredients.
-- [[mechanics/market/Market Systems|Market systems]] — where seeds, herbs, and potions are sold.
+- [[mechanics/Market Systems|Market systems]] — where seeds, herbs, and potions are sold.
 
 ## Herb catalog
 
@@ -51,4 +51,3 @@ Seeds are summoned, unlocked through research, planted in purchased plots, grown
 - `src/gameplay/research/`
 - `src/gameplay/brewing/`
 - `spacetimedb/src/index.ts`
-

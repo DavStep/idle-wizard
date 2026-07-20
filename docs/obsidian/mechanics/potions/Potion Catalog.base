@@ -6,26 +6,26 @@ properties:
   catalog_order:
     displayName: "#"
   recipe_access:
-    displayName: "Access"
+    displayName: Access
   required_player_level:
-    displayName: "Player level"
+    displayName: Player level
   mana_cost:
-    displayName: "Mana"
+    displayName: Mana
   brew_time:
-    displayName: "Brew time"
+    displayName: Brew time
   base_sell_coin:
-    displayName: "Base sell"
+    displayName: Base sell
   ingredients:
-    displayName: "Herbs"
+    displayName: Herbs
   unlock_research_id:
-    displayName: "Research ID"
+    displayName: Research ID
   default_research_cost_coin:
-    displayName: "Research cost"
+    displayName: Research cost
   default_research_duration:
-    displayName: "Research time"
+    displayName: Research time
 views:
   - type: table
-    name: "All Potions"
+    name: All Potions
     order:
       - catalog_order
       - file.name
@@ -36,10 +36,10 @@ views:
       - base_sell_coin
       - ingredients
   - type: table
-    name: "Researchable Recipes"
+    name: Researchable Recipes
     filters:
       and:
-        - 'recipe_access == "research"'
+        - recipe_access == "research"
     order:
       - file.name
       - required_player_level
@@ -47,14 +47,16 @@ views:
       - default_research_duration
       - unlock_research_id
       - ingredients
+    sort:
+      - property: required_player_level
+        direction: ASC
   - type: table
-    name: "Discoverable Recipes"
+    name: Discoverable Recipes
     filters:
       and:
-        - 'recipe_access == "global discovery"'
+        - recipe_access == "global discovery"
     order:
       - file.name
       - mana_cost
       - brew_time
       - ingredients
-

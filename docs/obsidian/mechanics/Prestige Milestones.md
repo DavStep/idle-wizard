@@ -1,11 +1,12 @@
 ---
-title: Prestige Milestones
+title: "Prestige Milestones"
 tags:
   - mechanics
   - prestige
   - ruby
 status: active
 world: mechanics
+note_type: progression
 ---
 
 # Prestige Milestones & Rubies
@@ -24,8 +25,8 @@ the ruby rewards for that milestone and every earlier milestone you missed.
 ## Ruby By Milestone
 
 The **total ruby** column is what a player has earned from Prestige milestones
-if they claim through that row. Current ruby can be lower after spending ruby on
-advanced studies; spent ruby does not return on the next Prestige.
+if they claim through that row. Current Ruby can be lower after spending Ruby on
+automation studies; spent Ruby does not return on the next Prestige.
 
 | Claim level | Next run starts at | Ruby at this milestone | Total ruby |
 | --- | --- | --- | --- |

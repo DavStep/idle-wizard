@@ -1,18 +1,30 @@
 ---
-title: Idle Wizard Home
+title: "Idle Wizard Home"
 tags:
   - obsidian
   - project-map
   - hub
 status: active
 world: whole-game
+note_type: system
 ---
 
 # Idle Wizard Home
 
-This is the main Obsidian vault for the whole game. Use folders for local focus,
-and use the root graph to see how design, balance, mechanics, tutorial, and
-engineering risks connect.
+Choose a system, then move from its graph to a list or an individual note.
+
+## Game logic
+
+- [[mechanics/garden/Garden And Herbs|Garden and Herbs]] · [[mechanics/garden/Garden And Herbs.canvas|graph]] · [[mechanics/garden/Herb Catalog.base|herb list]]
+- [[mechanics/potions/Potion Recipes|Potion Recipes]] · [[mechanics/potions/Potion Catalog.base|potion list]]
+- [[mechanics/Market Systems|Market Systems]] · [[mechanics/market/Market.canvas|graph]] · [[mechanics/market/Market Components.base|component list]]
+
+## Whole-project views
+
+- [[Idle Wizard.canvas|Whole-game Canvas]]
+- [[World Index.base|All notes]]
+- Obsidian global graph — organic project connections.
+- Obsidian local graph — neighbors of the current note.
 
 ## Worlds
 
@@ -22,13 +34,10 @@ engineering risks connect.
 - [[tutorial/Home|Tutorial]]
 - [[engineering-liveops/Home|Engineering Liveops]]
 
-## Start Here
+## Project memory
 
 - [[Experiences]]
-- [[Idle Wizard.canvas]]
-- [[World Index.base]]
+- [[engineering-liveops/Experience Index|Experience Index]]
 
-> [!note] Vault Shape
-> Separate folders are enough separation. Separate vaults are still useful for
-> deep focus, but the root vault is the better default because backlinks and
-> graph view can cross domains.
+> [!tip] Reading depth
+> Canvas for orientation, Base for comparison, entity note for detail, source files for implementation truth.

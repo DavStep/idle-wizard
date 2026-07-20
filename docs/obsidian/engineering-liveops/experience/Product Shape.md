@@ -1,5 +1,5 @@
 ---
-title: Experience: Product Shape
+title: "Experience: Product Shape"
 tags:
   - engineering
   - liveops
@@ -334,11 +334,11 @@ experience_type: product-shape
 - Task difficulty uses two curves: global bands by level range plus local ten-level boss/relief rhythm, so 10/20/30/... are gates and the next row is easier.
 - Do not require a newly unlocked herb and newly unlocked recipe in the same task row; stagger the second new thing into a later row.
 - Research balance/default config is mirrored in `ResearchBalanceManager`, `src/gameplay/research/research-balance.json`, `scripts/balance-sim.js`, and `spacetimedb/src/index.ts`; update all together when changing research costs/currencies.
-- Cauldron star display starts at 0 stars; the first emerald cauldron level-up costs 1 emerald and displays 1 star while the internal brew multiplier becomes 2.
+- Cauldron star display starts at 0 stars; the first cauldron level-up costs 2 crystal and displays 1 star while the internal brew multiplier becomes 2.
 - Plot and cauldron star UI should render `level - 1` upgrade stars; unupgraded multiplier level 1 is 0 filled stars with three empty slots.
 - SpacetimeDB task runtime config can still expose legacy `completionCostGold`; client task balance must treat it as `completionCostCoin` or level-up prices fall back to `level * 20`.
 - Player-level mana progression is mirrored in frontend defaults and SpacetimeDB default/validator/backfill; update all three when changing the regen curve.
-- Emerald plot/cauldron upgrades should read as `level up` / `lvl N` in player UI; keep internal research ids if needed, but do not present them as ordinary research.
+- Crystal plot/cauldron upgrades should read as `level up` / `lvl N` in player UI; keep legacy internal research ids if needed, but do not present them as ordinary research.
 - Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.
 - Workshop task drag-sort spans a fixed summary row plus list rows; move the real row with transform, translate neighbors around a virtual drop index, and commit priority only on drop.
 - Workshop task drag-sort thresholds must compare the lifted row center, not pointer Y; grab offset otherwise makes rows swap too early or late.

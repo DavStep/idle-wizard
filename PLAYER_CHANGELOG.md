@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.94
+
+- Made full player resets safer by preserving connected account identities while returning profile and gameplay data to fresh-start defaults.
+
 ## 0.2.93
 
 - Fixed maximum Brewing batch choices being rewritten to x1 after closing and reopening the game.

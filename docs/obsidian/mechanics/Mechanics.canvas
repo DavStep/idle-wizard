@@ -6,8 +6,10 @@
 		{"id":"3333333333333004","type":"file","x":840,"y":0,"width":340,"height":220,"file":"mechanics/Production Systems.md","color":"2"},
 		{"id":"3333333333333005","type":"file","x":1260,"y":-260,"width":340,"height":220,"file":"mechanics/Research And Unlocks.md","color":"6"},
 		{"id":"3333333333333006","type":"file","x":1260,"y":0,"width":340,"height":220,"file":"mechanics/Market Systems.md","color":"1"},
-		{"id":"3333333333333007","type":"file","x":1680,"y":-260,"width":340,"height":220,"file":"mechanics/Prestige And Automation.md","color":"4"},
-		{"id":"3333333333333008","type":"file","x":1680,"y":0,"width":340,"height":220,"file":"mechanics/Events And Social.md","color":"5"}
+		{"id":"3333333333333007","type":"file","x":1680,"y":-260,"width":340,"height":220,"file":"mechanics/Prestige.md","color":"4"},
+		{"id":"3333333333333008","type":"file","x":1680,"y":0,"width":340,"height":220,"file":"mechanics/Events And Social.md","color":"5"},
+		{"id":"3333333333333009","type":"file","file":"mechanics/garden/Garden And Herbs.md","x":840,"y":320,"width":340,"height":220,"color":"4"},
+		{"id":"333333333333300a","type":"file","file":"mechanics/potions/Potion Recipes.md","x":1260,"y":320,"width":340,"height":220,"color":"5"}
 	],
 	"edges":[
 		{"id":"3333333333333e01","fromNode":"3333333333333001","fromSide":"right","toNode":"3333333333333002","toSide":"left","label":"starts"},
@@ -17,6 +19,12 @@
 		{"id":"3333333333333e05","fromNode":"3333333333333003","fromSide":"right","toNode":"3333333333333005","toSide":"left","label":"requires"},
 		{"id":"3333333333333e06","fromNode":"3333333333333004","fromSide":"right","toNode":"3333333333333006","toSide":"left","label":"sells"},
 		{"id":"3333333333333e07","fromNode":"3333333333333005","fromSide":"right","toNode":"3333333333333007","toSide":"left","label":"expands"},
-		{"id":"3333333333333e08","fromNode":"3333333333333006","fromSide":"right","toNode":"3333333333333008","toSide":"left","label":"shares"}
+		{"id":"3333333333333e08","fromNode":"3333333333333006","fromSide":"right","toNode":"3333333333333008","toSide":"left","label":"shares"},
+		{"id":"3333333333333e09","fromNode":"3333333333333004","fromSide":"bottom","toNode":"3333333333333009","toSide":"top","toEnd":"arrow","label":"grows"},
+		{"id":"3333333333333e0a","fromNode":"3333333333333009","fromSide":"right","toNode":"333333333333300a","toSide":"left","toEnd":"arrow","label":"brews"},
+		{"id":"3333333333333e0b","fromNode":"3333333333333009","fromSide":"right","toNode":"3333333333333006","toSide":"bottom","toEnd":"arrow","label":"sells"},
+		{"id":"3333333333333e0c","fromNode":"333333333333300a","fromSide":"top","toNode":"3333333333333006","toSide":"bottom","toEnd":"arrow","label":"sells"},
+		{"id":"3333333333333e0d","fromNode":"3333333333333005","fromSide":"bottom","toNode":"3333333333333009","toSide":"top","toEnd":"arrow","label":"unlocks"},
+		{"id":"3333333333333e0e","fromNode":"3333333333333005","fromSide":"bottom","toNode":"333333333333300a","toSide":"top","toEnd":"arrow","label":"unlocks"}
 	]
 }

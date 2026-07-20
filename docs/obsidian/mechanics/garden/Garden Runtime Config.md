@@ -30,7 +30,9 @@ verified_on: 2026-07-19
 - Stored Garden JSON uses `tileCostsGold`; the client requires `tileCostsCoin`.
 - Stored Research JSON uses `researchCostsGold`; the client requires `researchCostsCoin`.
 
-Those objects are rejected, so the current client uses its JavaScript fallback values. The effective Garden harvest phase is **3 seconds**, even though Maincloud currently stores 10 seconds. Seed/recipe research notes therefore show current client defaults, not the rejected stored overrides.
+Those two `game_config` objects are rejected, so Garden uses its JavaScript fallback and the effective harvest phase is **3 seconds**, even though Maincloud currently stores 10 seconds.
+
+Research has a second live layer: individual SpacetimeDB `research_config` rows can override a study's coin cost and duration after the rejected `game_config.research` fallback is loaded. Seed and recipe notes therefore show **client fallback values**, not guaranteed live values. Query the matching live row before changing or comparing research balance.
 
 Before changing balance, verify both the backend field name and the value actually accepted by the current client.
 
@@ -39,4 +41,3 @@ Before changing balance, verify both the backend field name and the value actual
 - `src/gameplay/garden/managers/GardenBalanceManager.js`
 - `src/gameplay/research/managers/ResearchBalanceManager.js`
 - `spacetimedb/src/index.ts`
-

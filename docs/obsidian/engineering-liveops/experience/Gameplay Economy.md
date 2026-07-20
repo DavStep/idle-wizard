@@ -1,5 +1,5 @@
 ---
-title: Experience: Gameplay Economy
+title: "Experience: Gameplay Economy"
 tags:
   - engineering
   - liveops
@@ -11,10 +11,10 @@ experience_type: gameplay-economy
 
 # Experience: Gameplay Economy
 
-- Mana has generation and a cap; both upgrade through player level baseline plus research bonuses.
+- Mana has generation and a cap; both progress through player-level rewards. The old mana research rows are removed.
 - Cookie Clicker-like balance needs a compounding production spine; current Idle Wizard has prestige but still lacks random boost events, achievement multipliers, and producer-tier buy scaling.
 - Summoning seeds consumes mana.
-- Canonical seed display names are lowercase: sage, mint, nettle, lavender, briar, glowcap, mandrake, sunroot, moonflower, frostmoss, dreambell, star anise, bloodrose, dragonpepper.
+- Canonical seed display names are lowercase: sage, mint, nettle, lavender, briar, glowcap, mandrake, sunroot, moonflower, frostmoss, dreambell, star anise, bloodrose, dragonpepper, silverleaf, yarrow, hyssop, valerian, comfrey, nightshade, belladonna, wormwood, snowdrop, pearlroot.
 - Seed drop preferences multiply base seed `dropWeight` at roll time (`none` 0, `low` 1, `medium` 2, `high` 3); keep config `dropWeight` unchanged and use effective weight for odds.
 - Prestige keeps seed drop preferences while ordinary seed unlock research resets; repair inactive restored drops by forcing unlocked `sageSeed` to `medium`.
 - Seeds produce herbs, and herbs have growth duration.
@@ -42,19 +42,19 @@ experience_type: gameplay-economy
 - Brewing recipe popup rows use an explicit `select` action; do not hide recipe selection behind the recipe name.
 - Brewing shows bottom `herbs` and `potions` icon buttons; herbs expands the add-to-cauldron box, and potions expands an inline owned-potion box from `snapshot.inventory`.
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
-- wasted potion is not researchable and sells for 1 coin by item-level sell price override.
+- Wasted potion is not researchable. Its source fallback base sell value is 1 coin; the verified Maincloud item value is 0.8 coin.
 - Research prices come from SpacetimeDB `research_config`/`game_config.research`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
 - Live regular-coin research prices are overridden by `research_config`; prod price changes must update both `game_config.research` and matching `research_config` rows.
 - Research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
 - Research timers are capped at `4 hours`; premium-currency research is intentionally quick.
 - Emerald research time reduction applies only when starting future research; it does not rewrite active timers.
-- Crystal plot/cauldron level-up prices are upgrade-rank based, not slot based: first level-up costs 1 crystal, second costs 2, for any plot/cauldron.
+- Crystal plot/cauldron level-up prices are upgrade-rank based, not slot based: first level-up costs 2 crystal, second costs 4, for any plot/cauldron.
 - Mana production and cap are level rewards only; mana sphere research rows were removed, and each level gives the old research step values (+50 cap, +1/sec).
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
-- Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `12s` to `210s` by herb tier.
+- Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `12s` to `520s` across the 24-herb catalog.
 - Crystal is the hard currency; it appears in the top panel only where usable, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and plot/cauldron multiplier research spends it.
 - Ruby is the prestige currency; it appears in the top panel only where usable, and automation research spends it.
 - Prestige ruby is derived from completed prestige milestones minus committed ruby automation research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.
@@ -77,7 +77,7 @@ experience_type: gameplay-economy
 - Fast sell starts at level 1 and pays 80% of the NPC bulk sell quote; emerald research raises it to 85/90/95%, while shelf auto-sell keeps the full marginal NPC quote.
 - Level 1 costs 0 coin and should never depend on tutorial-only sale grants; level 2 is the first systemic coin gate.
 - Research unlock gates for task requirements must be no higher than `target task level - 1`; e.g. nettle seed must unlock at level 5 because it is a level 6 requirement shown while the player is level 5.
-- NPC and player market stand 2 unlock at player level 3.
+- NPC and player market stand 2 unlock at player level 5.
 - NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
 - Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.
 - NPC market price UI should read backend-derived `sellCoin` and `sellNeed` from the shop snapshot; do not duplicate price balance in page code.
@@ -101,7 +101,7 @@ experience_type: gameplay-economy
 - Player market server listings own market quantity, while local gameplay owns inventory and coin changes after reducer success.
 - Player market listing prices should use only global sanity caps and trade-total limits; do not cap by item base price multiplier, because cheap seeds need arbitrary player-set prices.
 - Player market publishing depends on `ENABLE_PLAYER_SHOP_EXCHANGE`; when false, server reducers throw and the UI shows `listing failed`.
-- Market page uses visible `npc market` / `player market` / `crystals` tabs; legacy internal NPC tab id can remain `npm`.
+- Market page uses visible `trader market` / `player market` / `crystals` tabs; legacy internal NPC tab id can remain `npm`.
 - Crystal tab coin offer grants current level * 20 coin only on manual collect, then starts a 2h cooldown; offline time can clear cooldown but must not auto-claim coin; ready state owns Market/crystals notification dots.
 - Player market requests publish to backend request rows for public `buying` visibility; fulfillment is still not a server trade without escrow/delivery semantics.
 - Player market request item pickers should source catalog/inventory snapshots, not NPC price or sell rows.

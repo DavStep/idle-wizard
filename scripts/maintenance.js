@@ -35,6 +35,7 @@ const DEFAULT_MESSAGE = 'maintenance in progress';
 const PLAYER_PROGRESSION_RESET_TABLES = [
   'player',
   'player_gameplay_save',
+  'player_session',
   'player_inbox_mail',
   'player_feedback',
   'leaderboard',
@@ -50,14 +51,13 @@ const PLAYER_PROGRESSION_RESET_TABLES = [
   'player_shop_listing',
   'player_shop_request',
   'player_shop_proceeds',
+  'player_shop_market_proceeds',
   'player_shop_trade',
   'potion_recipe_discovery',
+  'potion_recipe_royalty',
   'npc_market_price',
 ];
-const ALL_PLAYER_DATA_WIPE_TABLES = [
-  ...PLAYER_PROGRESSION_RESET_TABLES,
-  'player_session',
-];
+const ALL_PLAYER_DATA_WIPE_TABLES = [...PLAYER_PROGRESSION_RESET_TABLES];
 
 const args = process.argv.slice(2);
 const action = args[0] ?? 'help';
@@ -235,7 +235,7 @@ function printPlan() {
 10. node scripts/maintenance.js publish --server maincloud --database idle-wizard --confirm-live
 11. node scripts/maintenance.js off --server maincloud --database idle-wizard --confirm-live
 
-Full progression reset order after schema has admin_reset_player_progression_data:
+Full player reset (preserve identity) order after schema has admin_reset_player_progression_data:
 0. Close/navigate away active game clients where possible.
 1. node scripts/maintenance.js drain --server maincloud --database idle-wizard --confirm-live
 2. Wait 2-3 minutes.
@@ -417,7 +417,15 @@ function verifyPlayerGameplaySave() {
 
 function verifyPlayerProgressionReset() {
   runSql('SELECT COUNT(*) AS player_count FROM player');
+  runSql("SELECT COUNT(*) AS non_default_username FROM player WHERE username <> 'wizard'");
+  runSql("SELECT COUNT(*) AS non_default_theme FROM player WHERE theme <> 'midnight'");
+  runSql("SELECT COUNT(*) AS non_default_font FROM player WHERE font <> 'lexend'");
+  runSql("SELECT COUNT(*) AS non_default_color_mode FROM player WHERE color_mode <> 'resources'");
+  runSql("SELECT COUNT(*) AS non_default_character FROM player WHERE character <> 'elara'");
+  runSql('SELECT COUNT(*) AS prompted_username FROM player WHERE username_prompt_seen = true');
+  runSql('SELECT COUNT(*) AS connected_player_count FROM player WHERE connected = true');
   runSql('SELECT COUNT(*) AS above_level_1 FROM player WHERE player_level > 1');
+  runSql('SELECT COUNT(*) AS player_session_count FROM player_session');
   runSql('SELECT COUNT(*) AS save_count FROM player_gameplay_save');
   runSql('SELECT COUNT(*) AS inbox_mail_count FROM player_inbox_mail');
   runSql('SELECT COUNT(*) AS player_feedback_count FROM player_feedback');
@@ -434,8 +442,10 @@ function verifyPlayerProgressionReset() {
   runSql('SELECT COUNT(*) AS player_shop_listing_count FROM player_shop_listing');
   runSql('SELECT COUNT(*) AS player_shop_request_count FROM player_shop_request');
   runSql('SELECT COUNT(*) AS player_shop_proceeds_count FROM player_shop_proceeds');
+  runSql('SELECT COUNT(*) AS player_shop_market_proceeds_count FROM player_shop_market_proceeds');
   runSql('SELECT COUNT(*) AS player_shop_trade_count FROM player_shop_trade');
   runSql('SELECT COUNT(*) AS potion_discovery_count FROM potion_recipe_discovery');
+  runSql('SELECT COUNT(*) AS potion_royalty_count FROM potion_recipe_royalty');
   runSql(
     'SELECT item_key, npc_need, npc_stock, demand_score, supply_score FROM npc_market_price LIMIT 10',
   );
@@ -732,9 +742,9 @@ function buildDefaultResetDiscordMessage(resetKey, { fullPlayerDataWipe = false 
   return [
     '**Idle Wizard reset notice**',
     '',
-    'Hey everyone. We are doing a full progression reset for Idle Wizard.',
+    'Hey everyone. We are doing a full player reset for Idle Wizard.',
     '',
-    'This keeps your account, name, and profile settings, but clears gameplay progress: saves, inbox mail, leaderboards, event points, world chat history, feedback, alliances, player market listings/requests, potion discoveries, and shared market pressure. Everyone starts fresh at level 1 after maintenance ends.',
+    'This keeps only your account identity and, if connected, your Google account link. It clears your name, profile settings, saves, inbox mail, leaderboards, event points, world chat history, feedback, alliances, player market activity, potion discoveries, and shared market pressure. Everyone starts as a fresh level 1 wizard after maintenance ends.',
     '',
     'Why this is happening: the game is still in early testing, and the economy/server systems have changed enough that old progress can leave players in unfair or broken states. A clean reset gives the next build a fair baseline and helps us tune the game properly.',
     '',

@@ -22,7 +22,7 @@ default_duration: "50m"
 prerequisite: "[[mechanics/garden/research/Unlock Dragonpepper Seed|Unlock Dragonpepper Seed]]"
 unlocks: "[[mechanics/garden/seeds/Silverleaf Seed|Silverleaf Seed]]"
 produces_access_to: "[[mechanics/garden/herbs/Silverleaf Herb|Silverleaf]]"
-value_scope: current-client-default
+value_scope: client-fallback-before-live-research-config
 verified_on: 2026-07-19
 source_files:
   - src/gameplay/research/managers/ResearchDefinitionManager.js
@@ -41,5 +41,4 @@ Completing this study adds [[mechanics/garden/seeds/Silverleaf Seed|Silverleaf S
 | Prerequisite | [[mechanics/garden/research/Unlock Dragonpepper Seed|Unlock Dragonpepper Seed]] |
 
 > [!note] Value scope
-> These are the current effective client defaults. Coin-cost reduction may lower the paid amount. See [[mechanics/garden/Garden Runtime Config|Runtime Config Status]] before changing balance.
-
+> These are client fallback values, not guaranteed live values. A matching SpacetimeDB `research_config` row can override coin cost and duration; coin-cost reduction can then lower the paid amount. See [[mechanics/garden/Garden Runtime Config|Runtime Config Status]] before changing balance.

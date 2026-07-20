@@ -1,10 +1,11 @@
 ---
-title: Currencies
+title: "Currencies"
 tags:
   - balance
   - currency
 status: active
 world: balance
+note_type: balance
 ---
 
 # Currencies
@@ -23,20 +24,22 @@ research. It is earned through market flows and other normal loops.
 
 ## Crystal
 
-Crystal is granted by player level, including level 1. It is spent on automation
-research and also appears in shop support flows.
+Crystal is granted by player level, including level 1. It pays for plot and
+cauldron multiplier levels and configured visual unlocks. It also appears in
+shop support flows.
 
 ## Ruby
 
-Ruby comes from prestige milestones. It supports advanced capacity, automation,
-research-efficiency, room, and friction lanes. Current ruby is derived at run
-start from completed prestige milestones.
+Ruby comes from Prestige milestones and pays for run-scoped automation such as
+auto summon, planting, harvesting, brewing, and bottling. Current Ruby is
+derived from completed Prestige milestones minus committed Ruby research.
 
 ## Emerald
 
-Emerald persists through prestige resets and funds plot/cauldron level-ups.
-Upgrade level determines the emerald price, independent of the specific plot or
-cauldron.
+Emerald persists through Prestige resets and pays for advanced studies such as
+capacity, growth speed, research efficiency, Fast Sell, and automation reserve.
+Only explicitly permanent studies, such as capacity, survive as completed
+research across Prestige.
 
 ## Related
 

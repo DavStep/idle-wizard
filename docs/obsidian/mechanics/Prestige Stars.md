@@ -15,10 +15,10 @@ research options; they are not spent.
 
 | Stars | Unlock | What it does |
 | --- | --- | --- |
-| 1 | Crossroads Market and advanced capacity path | Permanently moves trade to the Crossroads Market and opens ruby studies for more garden plots and cauldrons. The extra capacity must still be bought. |
+| 1 | Crossroads Market and advanced capacity path | Permanently moves trade to the Crossroads Market and opens emerald studies for more garden plots and cauldrons. The extra capacity must still be bought. |
 | 2 | No new unlock | There is currently no separate 2-star reward. |
 | 3 | City Bazaar and run focus | Permanently moves trade to the City Bazaar and lets the player choose capacity, automation, research, or market as the current run focus. This is currently a selector only. |
-| 4 | Automation reserve controls | Opens ruby research for auto-summon reserve presets. |
+| 4 | Automation reserve controls | Opens emerald research for auto-summon reserve presets. |
 | 5 | Stronger room studies | Opens advanced plot-growth and cauldron-brewing study levels 6–10. |
 | 6 | Grand Exchange | Permanently moves trade to the Grand Exchange. |
 | 10 | Arcane Exchange | Permanently moves trade to the Arcane Exchange. |

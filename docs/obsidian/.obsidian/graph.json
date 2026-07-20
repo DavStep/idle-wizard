@@ -1,0 +1,72 @@
+{
+  "collapse-filter": false,
+  "search": "-path:.obsidian",
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": true,
+  "showOrphans": false,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:\"mechanics/garden/herbs\"",
+      "color": {
+        "a": 1,
+        "rgb": 6662510
+      }
+    },
+    {
+      "query": "path:\"mechanics/garden/seeds\"",
+      "color": {
+        "a": 1,
+        "rgb": 14203214
+      }
+    },
+    {
+      "query": "path:\"mechanics/garden/plots\"",
+      "color": {
+        "a": 1,
+        "rgb": 14257226
+      }
+    },
+    {
+      "query": "path:\"mechanics/garden/research\"",
+      "color": {
+        "a": 1,
+        "rgb": 10185686
+      }
+    },
+    {
+      "query": "path:\"mechanics/potions/potions\"",
+      "color": {
+        "a": 1,
+        "rgb": 5286345
+      }
+    },
+    {
+      "query": "path:\"mechanics/market/licences\"",
+      "color": {
+        "a": 1,
+        "rgb": 13589095
+      }
+    },
+    {
+      "query": "path:\"mechanics/market\"",
+      "color": {
+        "a": 1,
+        "rgb": 14711391
+      }
+    }
+  ],
+  "collapse-display": false,
+  "showArrow": true,
+  "textFadeMultiplier": -0.3,
+  "nodeSizeMultiplier": 1.1,
+  "lineSizeMultiplier": 1.05,
+  "collapse-forces": true,
+  "centerStrength": 0.45,
+  "repelStrength": 12,
+  "linkStrength": 1,
+  "linkDistance": 180,
+  "scale": 1.0678331532045844,
+  "close": true
+}

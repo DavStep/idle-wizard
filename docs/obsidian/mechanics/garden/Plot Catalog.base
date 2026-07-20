@@ -20,9 +20,9 @@ views:
     name: "Plots"
     order:
       - plot_number
+      - file.name
       - unlock_path
       - required_player_level
       - required_prestiges
       - purchase_cost_coin
       - capacity_research_id
-

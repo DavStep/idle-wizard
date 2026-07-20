@@ -1,5 +1,5 @@
 ---
-title: Experience: Communication
+title: "Experience: Communication"
 tags:
   - engineering
   - liveops
@@ -26,7 +26,7 @@ experience_type: communication
 - For player-save maintenance, use `drain` first so updated clients stop and flush, then `locked` before backup/migration so old clients cannot overwrite migrated rows.
 - Single-account support currency grants need a server pending-grant guard through the next client save; active clients can reconnect and autosave stale in-memory currency over a one-shot admin save edit.
 - When correcting live currency after a bad admin grant, clear the stale `player-currency-grant-pending:*` row or it can preserve/refill the old amount on future saves.
-- Full player progression wipes should use `admin_reset_player_progression_data` while maintenance is `locked`, after `backup-reset`; do not do ad hoc table deletes.
+- Full player resets that preserve identity should use `admin_reset_player_progression_data` while maintenance is `locked`, after `backup-reset`; it clears profile/session/progression data and keeps only the `player.identity` value, so do not substitute ad hoc table deletes.
 - Full reset backup/verify tooling must include every reducer-deleted player table, including inbox mail, feedback, world-event leaderboard rows, and player shop requests.
 - Maintenance helper `--dry-run` paths must return before any reducer call; the confirmation guard alone does not make an action non-mutating.
 - Full progression resets should post a human Discord notice before the reducer runs, using the reset/maintenance webhook rather than the APK upload webhook.

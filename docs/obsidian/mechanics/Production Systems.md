@@ -1,33 +1,32 @@
 ---
-title: Production Systems
+title: "Production Systems"
 tags:
   - mechanics
   - production
 status: active
 world: mechanics
+note_type: system-map
 ---
 
 # Production Systems
 
-## Seed Summoning
+Production turns mana into seeds, herbs, and potions.
 
-Seed summoning spends mana and rolls researched seed drops. Player preferences
-multiply base drop weights, but at least one researched seed must stay active.
+```text
+mana → seed summoning → garden plots → herbs → potion recipes
+                                      └→ market
+```
 
-## Garden
+## Open the detailed systems
 
-Garden tiles are bought, selected with a seed, planted, grown, harvested, and
-then replanted by player action. Canceling in-progress growth or harvest returns
-the planted seed and clears selection.
+- [[mechanics/garden/Seed Summoning|Seed Summoning]]
+- [[mechanics/garden/Garden And Herbs|Garden and Herbs]]
+- [[mechanics/garden/Garden Plots|Garden Plots]]
+- [[mechanics/potions/Potion Recipes|Potion Recipes]]
+- [[mechanics/Market Systems|Market Systems]]
 
-## Brewing
+## Related progression
 
-Brewing stages owned herbs in cauldron order, spends mana, and starts one active
-brew. Known recipes require matching ingredient order and completed recipe
-research. Unknown mixes become wasted potion.
-
-## Related
-
-- [[Core Loop]]
 - [[Research And Unlocks]]
+- [[Tasks And Leveling]]
 - [[Prestige]]

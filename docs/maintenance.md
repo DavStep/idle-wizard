@@ -115,13 +115,14 @@ PATH="$HOME/.local/bin:$PATH" spacetime sql \
   "SELECT identity, current_gold, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10"
 ```
 
-## Full Player Progression Reset
+## Full Player Reset (Preserve Identity)
 
-Use this only when intentionally wiping player progression while keeping account
-identity/profile rows. This preserves `player` rows (`identity`, username, theme,
-font, color mode, selected character icon, username prompt state,
-Google-derived identity), but resets shared player level to 1 and deletes
-gameplay/progression state.
+Use this only when intentionally making every player start over while preserving
+their account identity and any connected Google account. The Google connection is
+represented by the Google-derived SpacetimeDB identity/token rather than a game
+table. This keeps each `player.identity`, resets every other `player` field to a
+fresh-account value, clears active player sessions, and deletes gameplay and
+shared player state.
 
 The reset requires `locked` maintenance mode and a one-time reset key. Before
 running it, drain active clients, lock writes, and take a progression backup:
@@ -136,6 +137,7 @@ This backs up:
 ```txt
 player
 player_gameplay_save
+player_session
 player_inbox_mail
 player_feedback
 leaderboard
@@ -144,6 +146,7 @@ world_chat
 trade_alliance*
 player_shop*
 potion_recipe_discovery
+potion_recipe_royalty
 npc_market_price
 ```
 
@@ -185,8 +188,9 @@ node scripts/maintenance.js verify-reset \
 
 Expected post-reset counts:
 
-- `player_count` remains nonzero if accounts exist.
-- `above_level_1` is `0`.
+- `player_count` remains nonzero if accounts exist, preserving their identities.
+- all non-default profile counts, `prompted_username`, `connected_player_count`,
+  `above_level_1`, and `player_session_count` are `0`.
 - gameplay saves, inbox mail, player feedback, leaderboard, world event
   leaderboard, world chat, alliance rows, player shop rows, and potion discovery
   rows are `0`.

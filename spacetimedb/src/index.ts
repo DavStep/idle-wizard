@@ -24,18 +24,21 @@ import { normalizeSaveSelectedNumber } from './saveSelectedNumberNormalizer';
 import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
 import { appendMissingItemConfigRows as appendMissingItemConfigRowsByKey } from './itemConfigRows';
 import {
+  createIdentityOnlyPlayerReset,
+  DEFAULT_PLAYER_CHARACTER,
+  DEFAULT_PLAYER_COLOR_MODE,
+  DEFAULT_PLAYER_FONT,
+  DEFAULT_PLAYER_LEVEL,
+  DEFAULT_PLAYER_THEME,
+  DEFAULT_USERNAME,
+} from './playerIdentityReset';
+import {
   defaultMarketId,
   marketLicences,
   resolveMarketLicence,
 } from '../../src/shared/marketLicence.js';
 
-const DEFAULT_USERNAME = 'wizard';
-const DEFAULT_PLAYER_LEVEL = 1;
 const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
-const DEFAULT_PLAYER_THEME = 'midnight';
-const DEFAULT_PLAYER_FONT = 'lexend';
-const DEFAULT_PLAYER_COLOR_MODE = 'resources';
-const DEFAULT_PLAYER_CHARACTER = 'elara';
 const DEFAULT_PLAYER_ICON_MODE = 'icons';
 const DEFAULT_PLAYER_PROGRESS_BAR = 'regular';
 const DEFAULT_PLAYER_PLOT_VIEW = 'boxes';
@@ -16393,19 +16396,9 @@ function deleteTradeAllianceProgressionForIdentity(
   refreshAdminMergedAlliance(ctx, allianceId);
 }
 
-function resetAllPlayerSharedProgress(ctx: IdleWizardReducerCtx) {
+function resetAllPlayersToFreshProfiles(ctx: IdleWizardReducerCtx) {
   for (const player of Array.from(ctx.db.player.iter())) {
-    ctx.db.player.identity.update({
-      ...player,
-      username: normalizeUsername(player.username),
-      playerLevel: DEFAULT_PLAYER_LEVEL,
-      theme: normalizePlayerTheme(player.theme),
-      font: normalizePlayerFont(player.font),
-      colorMode: normalizePlayerColorMode(player.colorMode),
-      character: normalizePlayerCharacter(player.character),
-      usernamePromptSeen: Boolean(player.usernamePromptSeen),
-      lastSeenAt: ctx.timestamp,
-    });
+    ctx.db.player.identity.update(createIdentityOnlyPlayerReset(player, ctx.timestamp));
   }
 }
 
@@ -20175,8 +20168,9 @@ export const admin_reset_player_progression_data = spacetimedb.reducer(
     deleteAllPlayerShopState(ctx);
     deleteAllPotionDiscoveries(ctx);
     deleteAllPlayerFeedback(ctx);
+    deleteAllPlayerSessions(ctx);
     resetNpcMarketRows(ctx, { resetStock: true });
-    resetAllPlayerSharedProgress(ctx);
+    resetAllPlayersToFreshProfiles(ctx);
 
     ctx.db.maintenanceState.insert({
       stateKey,

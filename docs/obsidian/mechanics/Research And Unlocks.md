@@ -1,33 +1,38 @@
 ---
-title: Research And Unlocks
+title: "Research and Unlocks"
 tags:
   - mechanics
-  - research
+  - progression/research
   - unlock
 status: active
 world: mechanics
+note_type: system-map
 ---
 
-# Research And Unlocks
+# Research and Unlocks
 
-Research is the catalog of studies shown in the Research room. It owns regular
-coin studies, automation crystal studies, ruby advanced studies, and emerald
-level-ups.
+Research is the catalog of studies shown in the Research room.
 
-## Unlock Families
+## Currency families
 
-- Seed unlocks add seeds to the summon pool in catalog order.
-- Recipe unlocks gate potion brewing and require previous potion research.
-- Fast sell research increases instant sale payout.
-- Research time and cost reductions use ruby stages.
-- Capacity research can permanently make advanced plots and cauldrons buyable.
+| Family | Currency | Examples |
+| --- | --- | --- |
+| Regular content unlocks | coin | seed and recipe unlocks |
+| Automation | ruby | auto summon, plant, harvest, brew, bottle |
+| Advanced studies | emerald | capacity, speed, research efficiency, fast sell |
+| Plot and cauldron levels | crystal | x2–x5 input/output levels |
 
-## Timed Research
+## Detailed paths
 
-Timed researches can run concurrently without a slot limit.
+- [[mechanics/garden/Seed Unlock Research|Seed Unlock Research]]
+- [[mechanics/potions/Recipe Unlock Research|Recipe Unlock Research]]
+- [[mechanics/garden/Plot Research|Plot Research]]
+- [[mechanics/market/Fast Sell|Fast Sell Research]]
+- [[mechanics/garden/Garden Runtime Config|Garden and Research Runtime Status]]
 
-## Related
+Timed research can run concurrently without a slot limit. Seed and recipe chains are ordered. Only permanent capacity studies survive Prestige; run-scoped research resets.
 
-- [[Tasks And Leveling]]
-- [[Production Systems]]
-- [[Prestige]]
+## Source of truth
+
+- `src/gameplay/research/`
+- `spacetimedb/src/index.ts`
