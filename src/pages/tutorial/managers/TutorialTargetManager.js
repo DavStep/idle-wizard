@@ -108,6 +108,13 @@ export class TutorialTargetManager {
       },
       isTasksPinned: () => {
         const pin = this.stage?.querySelector('.workshop-page__tasks-pin');
+        const sequentialRequest = this.stage?.querySelector(
+          '.workshop-page__tasks[data-quest-mode="sequential"]',
+        );
+
+        if (sequentialRequest && (!pin || pin.hidden)) {
+          return true;
+        }
 
         return (
           pin?.getAttribute('aria-pressed') === 'true' ||

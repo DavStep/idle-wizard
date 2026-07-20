@@ -153,6 +153,20 @@ function createGameplayFacadeFake() {
           completedAllLevels: false,
           canComplete: false,
         },
+        questProgress: {
+          currentXp: 0,
+          requiredXp: 40,
+          progress: 0,
+          xpPerQuest: 20,
+          completedQuests: 0,
+          totalQuests: 2,
+          targetLevel: 2,
+          activeQuest: {
+            kind: 'task',
+            taskId: 'level1-turn-in-sage-seed',
+            xpReward: 20,
+          },
+        },
         tasks: [
           {
             taskId: 'level1-turn-in-sage-seed',
@@ -952,11 +966,11 @@ function createGameplayFacadeFake() {
   const advancedResearchBoxes = [
     {
       id: 'fastSell',
-      label: 'fast sell research',
+      label: 'haggling research',
       researches: [
         {
           id: 'fastSellPayout:1',
-          label: 'fast sell lvl 1',
+          label: 'haggling lvl 1',
           value: '2 ruby',
           effect: '85% payout',
           showEffect: true,
@@ -3928,19 +3942,19 @@ describe('PagesFacade', () => {
     expect(playerShopFacade.retainMarketData).not.toHaveBeenCalled();
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
-      .find((button) => button.textContent === 'player market')
+      .find((button) => button.textContent === 'players')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerShopFacade.retainMarketData).toHaveBeenCalledTimes(1);
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
-      .find((button) => button.textContent === 'trader market')
+      .find((button) => button.textContent === 'traders')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(releaseMarketData).toHaveBeenCalledTimes(1);
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
-      .find((button) => button.textContent === 'player market')
+      .find((button) => button.textContent === 'players')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerShopFacade.retainMarketData).toHaveBeenCalledTimes(2);
@@ -4705,7 +4719,7 @@ describe('PagesFacade', () => {
     expect(levelPopup.hidden).toBe(true);
   });
 
-  it('shows a single Workshop task without an expand action', () => {
+  it("shows one active elara request with its xp reward and level progress", () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
       gameplayFacade: createGameplayFacadeFake(),
@@ -4726,10 +4740,13 @@ describe('PagesFacade', () => {
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
     const rewards = stage.querySelector('.workshop-page__level-rewards');
     const rewardsToggle = stage.querySelector('.workshop-page__level-rewards-toggle');
+    const xpValue = stage.querySelector('.workshop-page__quest-progress-value');
+    const xpFill = stage.querySelector('.workshop-page__quest-progress-fill');
+    const xpReward = stage.querySelector('.workshop-page__quest-reward');
 
     expect(tasks).not.toBeNull();
     expect(tasks.parentElement?.classList.contains('workshop-page__tasks-slot')).toBe(true);
-    expect(title?.textContent).toBe('level 2 requirements');
+    expect(title?.textContent).toBe("elara's request");
     expect(summaryRow?.textContent).toBe('sage seed0/1turn in');
     expect(rewards?.hidden).toBe(true);
     expect(rewardsToggle?.hidden).toBe(true);
@@ -4741,7 +4758,13 @@ describe('PagesFacade', () => {
       summary?.querySelector('.workshop-page__task-progress-fill')?.style.width,
     ).toBe('0%');
     expect(stage.querySelector('.workshop-page__tasks-level')).toBeNull();
-    expect(count?.textContent).toBe('0/1');
+    expect(count?.textContent).toBe('level 2');
+    expect(xpValue?.textContent).toBe('0/40 xp');
+    expect(xpFill?.style.getPropertyValue('--style-progress-fill-scale')).toBe('0');
+    expect(xpReward?.textContent).toBe('reward: 20 xp');
+    expect(tasks?.dataset.questMode).toBe('sequential');
+    expect(tasks?.dataset.tutorialId).toBe('workshop:tasks');
+    expect(tasks?.getAttribute('aria-expanded')).toBe('true');
     expect(pinButton?.hidden).toBe(true);
     expect(pinButton?.disabled).toBe(true);
     expect(pinButton?.dataset.tutorialId).toBeUndefined();
@@ -4763,7 +4786,7 @@ describe('PagesFacade', () => {
 
     expect(infoPopup.hidden).toBe(false);
     expect(infoPopup.querySelector('.workshop-page__tasks-info-copy')?.textContent).toBe(
-      'finish these requirements to reach level 2. only turn-in rows consume items.',
+      "complete elara's requests one at a time to reach level 2. each request gives xp. turn-in requests consume items.",
     );
 
     infoPopup
@@ -4771,484 +4794,6 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(infoPopup.hidden).toBe(true);
-  });
-
-  it('shows Workshop tasks collapsed and expands multiple tasks from the bottom action', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    snapshot.tasks.level.totalTasks = 2;
-    snapshot.tasks.level.tasks = [
-      baseTask,
-      {
-        ...baseTask,
-        taskId: 'level1-mint-seeds',
-        itemKey: 'mintSeed',
-        itemLabel: 'mint seed',
-        requiredQuantity: 5,
-        remainingQuantity: 5,
-      },
-    ];
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-      playerFacade: createPlayerFacadeFake(),
-    });
-
-    pagesFacade.mount(stage);
-
-    const tasks = stage.querySelector('.workshop-page__tasks');
-    const title = tasks?.querySelector('.style-box__title');
-    const summary = stage.querySelector('.workshop-page__tasks-summary');
-    const infoPopup = stage.querySelector('.workshop-page__tasks-info-popup');
-    const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
-    const count = stage.querySelector('.workshop-page__tasks-count');
-    const pinButton = stage.querySelector('.workshop-page__tasks-pin');
-    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
-    const list = stage.querySelector('.workshop-page__task-list');
-    const summaryRow = summary?.querySelector('.workshop-page__task-row');
-    const rewards = stage.querySelector('.workshop-page__level-rewards');
-    const rewardsToggle = stage.querySelector('.workshop-page__level-rewards-toggle');
-
-    expect(tasks).not.toBeNull();
-    expect(title?.textContent).toBe('level 2 requirements');
-    expect(summaryRow?.textContent).toBe('sage seed0/1turn in');
-    expect(stage.querySelector('.workshop-page__tasks-helper')).toBeNull();
-    expect(infoPopup?.hidden).toBe(true);
-    expect(backdrop?.hidden).toBe(true);
-    expect(count?.textContent).toBe('0/2');
-    expect(pinButton?.hidden).toBe(false);
-    expect(pinButton?.textContent).toBe('pin');
-    expect(pinButton?.getAttribute('aria-pressed')).toBe('false');
-    expect(pinButton?.dataset.tutorialId).toBe('workshop:tasksPin');
-    expect(toggle?.hidden).toBe(false);
-    expect(toggle?.textContent).toBe('expand');
-    expect(toggle?.dataset.tutorialId).toBe('workshop:tasks');
-    expect(toggle?.dataset.notification).toBeUndefined();
-    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
-    expect(list?.hidden).toBe(true);
-    expect(list?.querySelectorAll('.workshop-page__task')).toHaveLength(1);
-    expect(rewards?.hidden).toBe(true);
-    expect(rewardsToggle?.hidden).toBe(true);
-
-    pinButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(toggle.textContent).toBe('collapse');
-    expect(pinButton.textContent).toBe('unpin');
-    expect(pinButton.getAttribute('aria-pressed')).toBe('true');
-    expect(tasks.classList.contains('is-pinned')).toBe(true);
-    expect(backdrop.hidden).toBe(true);
-    expect(list.hidden).toBe(false);
-    expect(rewards?.hidden).toBe(false);
-
-    document.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
-
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(tasks.classList.contains('is-pinned')).toBe(true);
-    expect(backdrop.hidden).toBe(true);
-
-    pinButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(pinButton.textContent).toBe('pin');
-    expect(pinButton.getAttribute('aria-pressed')).toBe('false');
-    expect(tasks.classList.contains('is-pinned')).toBe(false);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(backdrop.hidden).toBe(false);
-
-    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(pinButton.textContent).toBe('pin');
-    expect(pinButton.getAttribute('aria-pressed')).toBe('false');
-    expect(backdrop.hidden).toBe(true);
-    expect(list.hidden).toBe(true);
-
-    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(toggle.textContent).toBe('collapse');
-    expect(toggle.dataset.notification).toBeUndefined();
-    expect(list.hidden).toBe(false);
-    expect(backdrop.hidden).toBe(false);
-    expect(list.querySelectorAll('.workshop-page__task')).toHaveLength(1);
-    expect(list.querySelector('.workshop-page__task-label')?.textContent).toBe('mint seed');
-    expect(summaryRow?.textContent).toBe('sage seed0/1turn in');
-    expect(rewards?.hidden).toBe(false);
-    expect(rewards?.textContent).toContain('rewards');
-    expect(rewards?.textContent).not.toContain('level 2 rewards');
-    expect(rewardsToggle?.hidden).toBe(true);
-    expect(rewardsToggle?.disabled).toBe(true);
-    expect(pinButton?.textContent).toBe('pin');
-    expect(pinButton?.getAttribute('aria-pressed')).toBe('false');
-    expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
-    expect(tasks.classList.contains('is-expanded')).toBe(true);
-
-    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(toggle.textContent).toBe('expand');
-    expect(toggle.dataset.notification).toBeUndefined();
-    expect(list.hidden).toBe(true);
-    expect(backdrop.hidden).toBe(true);
-    expect(rewards?.hidden).toBe(true);
-    expect(pinButton.hidden).toBe(false);
-    expect(pinButton.textContent).toBe('pin');
-    expect(rewardsToggle.hidden).toBe(true);
-    expect(tasks.classList.contains('is-collapsed')).toBe(true);
-
-    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(list.hidden).toBe(false);
-    expect(backdrop.hidden).toBe(false);
-
-    backdrop.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(list.hidden).toBe(true);
-    expect(backdrop.hidden).toBe(true);
-
-    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(list.hidden).toBe(false);
-
-    document.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
-
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(list.hidden).toBe(true);
-    expect(backdrop.hidden).toBe(true);
-  });
-
-  it('keeps Workshop tasks expanded when a touch reward toggle retargets to the backdrop', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    snapshot.tasks.currentLevel = 2;
-    snapshot.tasks.level.level = 2;
-    snapshot.tasks.level.completion.level = 2;
-    snapshot.playerLevel.currentLevel = 2;
-    snapshot.tasks.level.totalTasks = 2;
-    snapshot.tasks.level.tasks = [
-      baseTask,
-      {
-        ...baseTask,
-        taskId: 'level1-mint-seeds',
-        itemKey: 'mintSeed',
-        itemLabel: 'mint seed',
-        requiredQuantity: 5,
-        remainingQuantity: 5,
-      },
-    ];
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-      playerFacade: createPlayerFacadeFake(),
-      tutorialStorage: createCompletedTutorialStorage(),
-    });
-
-    document.body.append(stage);
-    pagesFacade.mount(stage);
-
-    const tasks = stage.querySelector('.workshop-page__tasks');
-    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
-    const list = stage.querySelector('.workshop-page__task-list');
-    const rewards = stage.querySelector('.workshop-page__level-rewards');
-    const rewardsToggle = stage.querySelector('.workshop-page__level-rewards-toggle');
-    const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
-    const originalElementFromPoint = document.elementFromPoint;
-
-    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(rewards?.hidden).toBe(false);
-    expect(rewardsToggle?.textContent).toBe('hide rewards');
-
-    try {
-      document.elementFromPoint = () => rewardsToggle;
-      rewardsToggle.dispatchEvent(
-        createPointerEvent('pointerdown', { clientX: 900, clientY: 500 }),
-      );
-      document.dispatchEvent(
-        createPointerEvent('pointerup', { clientX: 900, clientY: 500 }),
-      );
-
-      expect(rewards.hidden).toBe(true);
-      expect(toggle.getAttribute('aria-expanded')).toBe('true');
-
-      backdrop.dispatchEvent(
-        new window.MouseEvent('click', {
-          bubbles: true,
-          cancelable: true,
-          clientX: 902,
-          clientY: 502,
-        }),
-      );
-    } finally {
-      document.elementFromPoint = originalElementFromPoint;
-    }
-
-    expect(rewards.hidden).toBe(true);
-    expect(rewardsToggle.textContent).toBe('show rewards');
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(toggle.textContent).toBe('collapse');
-    expect(list.hidden).toBe(false);
-    expect(backdrop.hidden).toBe(false);
-    expect(tasks.classList.contains('is-expanded')).toBe(true);
-
-    pagesFacade.unmount();
-    stage.remove();
-  });
-
-  it('keeps expanded Workshop tasks open while dragging Elara', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    snapshot.tasks.level.totalTasks = 2;
-    snapshot.tasks.level.tasks = [
-      baseTask,
-      {
-        ...baseTask,
-        taskId: 'level1-mint-seeds',
-        itemKey: 'mintSeed',
-        itemLabel: 'mint seed',
-        requiredQuantity: 5,
-        remainingQuantity: 5,
-      },
-    ];
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-      playerFacade: createPlayerFacadeFake(),
-      tutorialStorage: createMemoryStorage(),
-    });
-
-    stage.style.setProperty('--style-ui-scale', '3');
-    document.body.append(stage);
-
-    try {
-      pagesFacade.mount(stage);
-      pagesFacade.tutorialFacade.hintManager.showLesson({
-        id: 'elara-expanded-tasks-drag',
-        title: 'lesson',
-        text: 'move me',
-        stepLabel: 'qa',
-      });
-
-      const toggle = stage.querySelector('.workshop-page__tasks-toggle');
-      const list = stage.querySelector('.workshop-page__task-list');
-      const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
-      const button = stage.querySelector('.tutorial-layer__lesson-button');
-      const lesson = stage.querySelector('.tutorial-layer__lesson');
-
-      toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-      expect(toggle.getAttribute('aria-expanded')).toBe('true');
-      expect(list.hidden).toBe(false);
-      expect(backdrop.hidden).toBe(false);
-
-      button.dispatchEvent(createPointerEvent('pointerdown', { clientX: 20, clientY: 300 }));
-      document.dispatchEvent(createPointerEvent('pointermove', { clientX: 20, clientY: 340 }));
-      document.dispatchEvent(createPointerEvent('pointerup', { clientX: 20, clientY: 340 }));
-
-      expect(toggle.getAttribute('aria-expanded')).toBe('true');
-      expect(list.hidden).toBe(false);
-      expect(backdrop.hidden).toBe(false);
-      expect(lesson.hidden).toBe(false);
-    } finally {
-      pagesFacade.unmount();
-      stage.remove();
-    }
-  });
-
-  it('keeps expanded Workshop tasks open when tutorial next retargets to the backdrop', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    snapshot.tasks.level.totalTasks = 2;
-    snapshot.tasks.level.tasks = [
-      baseTask,
-      {
-        ...baseTask,
-        taskId: 'level1-mint-seeds',
-        itemKey: 'mintSeed',
-        itemLabel: 'mint seed',
-        requiredQuantity: 5,
-        remainingQuantity: 5,
-      },
-    ];
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-      playerFacade: createPlayerFacadeFake(),
-      tutorialStorage: createMemoryStorage(),
-    });
-
-    stage.style.setProperty('--style-ui-scale', '3');
-    document.body.append(stage);
-
-    try {
-      pagesFacade.mount(stage);
-      pagesFacade.tutorialFacade.hintManager.showLesson({
-        id: 'elara-expanded-tasks-next',
-        title: 'lesson',
-        text: 'tasks are how the workshop asks for supplies.',
-        stepLabel: 'lesson 1: introduction',
-        advanceOnClick: true,
-      });
-
-      const toggle = stage.querySelector('.workshop-page__tasks-toggle');
-      const list = stage.querySelector('.workshop-page__task-list');
-      const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
-      const advance = stage.querySelector('.tutorial-layer__lesson-advance');
-
-      toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-      expect(toggle.getAttribute('aria-expanded')).toBe('true');
-      expect(list.hidden).toBe(false);
-      expect(backdrop.hidden).toBe(false);
-
-      advance.dispatchEvent(createPointerEvent('pointerdown', { clientX: 760, clientY: 1540 }));
-      advance.dispatchEvent(
-        new window.MouseEvent('click', {
-          bubbles: true,
-          cancelable: true,
-          clientX: 760,
-          clientY: 1540,
-        }),
-      );
-      backdrop.dispatchEvent(
-        new window.MouseEvent('click', {
-          bubbles: true,
-          cancelable: true,
-          clientX: 760,
-          clientY: 1540,
-        }),
-      );
-
-      expect(toggle.getAttribute('aria-expanded')).toBe('true');
-      expect(toggle.textContent).toBe('collapse');
-      expect(list.hidden).toBe(false);
-      expect(backdrop.hidden).toBe(false);
-    } finally {
-      pagesFacade.unmount();
-      stage.remove();
-    }
-  });
-
-  it('keeps Workshop tasks expanded across page swaps', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    snapshot.tasks.level.totalTasks = 2;
-    snapshot.tasks.level.tasks = [
-      baseTask,
-      {
-        ...baseTask,
-        taskId: 'level1-mint-seeds',
-        itemKey: 'mintSeed',
-        itemLabel: 'mint seed',
-        requiredQuantity: 5,
-        remainingQuantity: 5,
-      },
-    ];
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-      playerFacade: createPlayerFacadeFake(),
-    });
-
-    pagesFacade.mount(stage);
-
-    stage
-      .querySelector('.workshop-page__tasks-toggle')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    pagesFacade.show('brewing');
-    pagesFacade.show('workshop');
-
-    const tasks = stage.querySelector('.workshop-page__tasks');
-    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
-    const list = stage.querySelector('.workshop-page__task-list');
-
-    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
-    expect(list?.hidden).toBe(false);
-    expect(tasks?.classList.contains('is-expanded')).toBe(true);
-  });
-
-  it('collapses expanded Workshop requirements when the target level changes', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    snapshot.tasks.currentLevel = 0;
-    snapshot.tasks.level.level = 0;
-    snapshot.tasks.level.completion.level = 0;
-    snapshot.playerLevel.currentLevel = 0;
-    snapshot.tasks.level.totalTasks = 2;
-    snapshot.tasks.level.tasks = [
-      baseTask,
-      {
-        ...baseTask,
-        taskId: 'level0-mint-seeds',
-        itemKey: 'mintSeed',
-        itemLabel: 'mint seed',
-        requiredQuantity: 5,
-        remainingQuantity: 5,
-      },
-    ];
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-      playerFacade: createPlayerFacadeFake(),
-      tutorialStorage: createCompletedTutorialStorage(),
-    });
-
-    pagesFacade.mount(stage);
-
-    const tasks = stage.querySelector('.workshop-page__tasks');
-    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
-    const pinButton = stage.querySelector('.workshop-page__tasks-pin');
-    const list = stage.querySelector('.workshop-page__task-list');
-
-    toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    pinButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(pinButton.getAttribute('aria-pressed')).toBe('true');
-    expect(list.hidden).toBe(false);
-
-    snapshot.tasks.currentLevel = 1;
-    snapshot.tasks.level.level = 1;
-    snapshot.tasks.level.completion.level = 1;
-    snapshot.playerLevel.currentLevel = 1;
-    snapshot.tasks.level.tasks = [
-      {
-        ...baseTask,
-        taskId: 'level1-summon-sage-seed',
-        action: 'summon',
-        requiredQuantity: 5,
-        progressQuantity: 0,
-        remainingQuantity: 5,
-        completed: false,
-        maxed: false,
-      },
-      {
-        ...baseTask,
-        taskId: 'level1-sell-sage-seed',
-        action: 'sell',
-        requiredQuantity: 1,
-        progressQuantity: 0,
-        remainingQuantity: 1,
-        completed: false,
-        maxed: false,
-      },
-    ];
-    gameplayFacade.publishSnapshot();
-
-    expect(tasks?.querySelector('.style-box__title')?.textContent).toBe('level 2 requirements');
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(pinButton.getAttribute('aria-pressed')).toBe('false');
-    expect(list.hidden).toBe(true);
-    expect(tasks.classList.contains('is-collapsed')).toBe(true);
-
-    pagesFacade.unmount();
   });
 
   it('shows the first level-up announcement before the market tutorial resumes', () => {
@@ -5371,801 +4916,7 @@ describe('PagesFacade', () => {
     }
   });
 
-  it('keeps pinned Workshop tasks pinned across page swaps', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    snapshot.tasks.currentLevel = 2;
-    snapshot.tasks.level.level = 2;
-    snapshot.tasks.level.completion.level = 2;
-    snapshot.playerLevel.currentLevel = 2;
-    snapshot.tasks.level.totalTasks = 2;
-    snapshot.tasks.level.tasks = [
-      baseTask,
-      {
-        ...baseTask,
-        taskId: 'level1-mint-seeds',
-        itemKey: 'mintSeed',
-        itemLabel: 'mint seed',
-        requiredQuantity: 5,
-        remainingQuantity: 5,
-      },
-    ];
-    const pagesFacade = new PagesFacade({
-      gameplayFacade,
-      playerFacade: createPlayerFacadeFake(),
-    });
-
-    pagesFacade.mount(stage);
-
-    stage
-      .querySelector('.workshop-page__tasks-pin')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    stage
-      .querySelector('.workshop-page__level-rewards-toggle')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(stage.querySelector('.workshop-page__level-rewards')?.hidden).toBe(true);
-
-    pagesFacade.show('garden');
-    expect(pagesFacade.getCurrentPageId()).toBe('garden');
-    pagesFacade.show('workshop');
-
-    const tasks = stage.querySelector('.workshop-page__tasks');
-    const pinButton = stage.querySelector('.workshop-page__tasks-pin');
-    const toggle = stage.querySelector('.workshop-page__tasks-toggle');
-    const list = stage.querySelector('.workshop-page__task-list');
-    const rewards = stage.querySelector('.workshop-page__level-rewards');
-    const rewardsToggle = stage.querySelector('.workshop-page__level-rewards-toggle');
-    const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
-
-    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
-    expect(list?.hidden).toBe(false);
-    expect(rewards?.hidden).toBe(true);
-    expect(rewardsToggle?.textContent).toBe('show rewards');
-    expect(rewardsToggle?.getAttribute('aria-expanded')).toBe('false');
-    expect(pinButton?.textContent).toBe('unpin');
-    expect(pinButton?.getAttribute('aria-pressed')).toBe('true');
-    expect(tasks?.classList.contains('is-pinned')).toBe(true);
-    expect(backdrop?.hidden).toBe(true);
-  });
-
-  it('lets expanded Workshop tasks be dragged from the row to change priority', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    snapshot.tasks.level.totalTasks = 3;
-    snapshot.tasks.level.tasks = [
-      baseTask,
-      {
-        ...baseTask,
-        taskId: 'level1-mint-seeds',
-        itemKey: 'mintSeed',
-        itemLabel: 'mint seed',
-        requiredQuantity: 5,
-        remainingQuantity: 5,
-      },
-      {
-        ...baseTask,
-        taskId: 'level1-nettle-seeds',
-        itemKey: 'nettleSeed',
-        itemLabel: 'nettle seed',
-        requiredQuantity: 8,
-        remainingQuantity: 8,
-      },
-    ];
-
-    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect;
-    const makeRect = (top) => ({
-      x: 0,
-      y: top,
-      top,
-      left: 0,
-      right: 240,
-      bottom: top + 22,
-      width: 240,
-      height: 22,
-      toJSON: () => ({}),
-    });
-
-    window.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
-      if (this.classList?.contains('workshop-page__task')) {
-        if (this.parentElement?.classList?.contains('workshop-page__tasks-summary')) {
-          return makeRect(60);
-        }
-
-        if (this.parentElement?.classList?.contains('workshop-page__task-list')) {
-          const rows = [
-            ...this.parentElement.querySelectorAll(':scope > .workshop-page__task'),
-          ];
-          return makeRect(90 + rows.indexOf(this) * 30);
-        }
-      }
-
-      return makeRect(0);
-    };
-    document.dispatchEvent(
-      new window.MouseEvent('pointerdown', { bubbles: true, cancelable: true }),
-    );
-    document.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
-    document.body.append(stage);
-
-    let pagesFacade = null;
-
-    try {
-      pagesFacade = new PagesFacade({
-        gameplayFacade,
-        playerFacade: createPlayerFacadeFake(),
-      });
-
-      pagesFacade.mount(stage);
-
-      const toggle = stage.querySelector('.workshop-page__tasks-toggle');
-      toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-      const summary = stage.querySelector('.workshop-page__tasks-summary');
-      const list = stage.querySelector('.workshop-page__task-list');
-      const getVisibleLabels = () => [
-        summary.querySelector('.workshop-page__task-label')?.textContent,
-        ...[...list.querySelectorAll('.workshop-page__task-label')].map(
-          (label) => label.textContent,
-        ),
-      ];
-      const getFlowLabels = () => getVisibleLabels().filter(Boolean);
-
-      expect(getVisibleLabels()).toEqual(['sage seed', 'mint seed', 'nettle seed']);
-      expect(stage.querySelector('.workshop-page__task-drag')).toBeNull();
-      expect(document.body.querySelector('.workshop-page__task-drag-ghost')).toBeNull();
-
-      const movedMintRow = list.querySelector('.workshop-page__task');
-      movedMintRow.dispatchEvent(
-        new window.MouseEvent('pointerdown', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 100,
-        }),
-      );
-      document.dispatchEvent(
-        new window.MouseEvent('pointermove', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 40,
-        }),
-      );
-
-      expect(stage.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
-      expect(getFlowLabels()).toEqual(['sage seed', 'mint seed', 'nettle seed']);
-      const draggedRow = list.querySelector(
-        '.workshop-page__task.is-dragging.is-drag-lifted',
-      );
-      expect(draggedRow?.querySelector('.workshop-page__task-label')?.textContent).toBe(
-        'mint seed',
-      );
-      expect(draggedRow?.style.position).toBe('relative');
-      expect(draggedRow?.style.zIndex).toBe('98');
-      expect(draggedRow?.style.display).not.toBe('none');
-      expect(document.body.querySelector('.workshop-page__task-drag-ghost')).toBeNull();
-      expect(
-        summary.querySelector('.workshop-page__task.is-reordering .workshop-page__task-label')
-          ?.textContent,
-      ).toBe('sage seed');
-
-      document.dispatchEvent(
-        new window.MouseEvent('pointerup', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 40,
-        }),
-      );
-
-      expect(getVisibleLabels()).toEqual(['mint seed', 'sage seed', 'nettle seed']);
-      expect(stage.querySelector('.workshop-page__task.is-drag-lifted')).toBeNull();
-
-      const mintSummaryRow = summary.querySelector('.workshop-page__task');
-      mintSummaryRow.dispatchEvent(
-        new window.MouseEvent('pointerdown', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 70,
-        }),
-      );
-      document.dispatchEvent(
-        new window.MouseEvent('pointermove', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 110,
-        }),
-      );
-      document.dispatchEvent(
-        new window.MouseEvent('pointerup', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 110,
-        }),
-      );
-
-      expect(getVisibleLabels()).toEqual(['sage seed', 'mint seed', 'nettle seed']);
-      expect(summary.querySelector('.workshop-page__task.is-reordering')).toBeNull();
-
-      const mintRow = list.querySelector('.workshop-page__task');
-      mintRow.dispatchEvent(
-        new window.KeyboardEvent('keydown', {
-          bubbles: true,
-          key: 'ArrowDown',
-        }),
-      );
-
-      expect(getVisibleLabels()).toEqual(['sage seed', 'nettle seed', 'mint seed']);
-    } finally {
-      pagesFacade?.unmount();
-      stage.remove();
-      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
-    }
-  });
-
-  it('keeps Workshop task drag above rows and commits fast downward drops', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    snapshot.tasks.level.totalTasks = 4;
-    snapshot.tasks.level.tasks = [
-      baseTask,
-      {
-        ...baseTask,
-        taskId: 'level1-mint-seeds',
-        itemKey: 'mintSeed',
-        itemLabel: 'mint seed',
-        requiredQuantity: 5,
-        remainingQuantity: 5,
-      },
-      {
-        ...baseTask,
-        taskId: 'level1-nettle-seeds',
-        itemKey: 'nettleSeed',
-        itemLabel: 'nettle seed',
-        requiredQuantity: 8,
-        remainingQuantity: 8,
-      },
-      {
-        ...baseTask,
-        taskId: 'level1-lavender-seeds',
-        itemKey: 'lavenderSeed',
-        itemLabel: 'lavender seed',
-        requiredQuantity: 9,
-        remainingQuantity: 9,
-      },
-    ];
-
-    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect;
-    const makeRect = (top) => ({
-      x: 0,
-      y: top,
-      top,
-      left: 0,
-      right: 240,
-      bottom: top + 22,
-      width: 240,
-      height: 22,
-      toJSON: () => ({}),
-    });
-
-    window.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
-      if (this.classList?.contains('workshop-page__task')) {
-        if (this.parentElement?.classList?.contains('workshop-page__tasks-summary')) {
-          return makeRect(60);
-        }
-
-        if (this.parentElement?.classList?.contains('workshop-page__task-list')) {
-          const rows = [
-            ...this.parentElement.querySelectorAll(':scope > .workshop-page__task'),
-          ];
-          return makeRect(90 + rows.indexOf(this) * 30);
-        }
-      }
-
-      return makeRect(0);
-    };
-    document.body.append(stage);
-    let pagesFacade = null;
-
-    try {
-      pagesFacade = new PagesFacade({
-        gameplayFacade,
-        playerFacade: createPlayerFacadeFake(),
-      });
-
-      pagesFacade.mount(stage);
-      stage
-        .querySelector('.workshop-page__tasks-toggle')
-        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-      const summary = stage.querySelector('.workshop-page__tasks-summary');
-      const list = stage.querySelector('.workshop-page__task-list');
-      const getVisibleLabels = () => [
-        summary.querySelector('.workshop-page__task-label')?.textContent,
-        ...[...list.querySelectorAll('.workshop-page__task-label')].map(
-          (label) => label.textContent,
-        ),
-      ];
-      const mintRow = list.querySelector('.workshop-page__task');
-
-      expect(getVisibleLabels()).toEqual([
-        'sage seed',
-        'mint seed',
-        'nettle seed',
-        'lavender seed',
-      ]);
-
-      mintRow.dispatchEvent(
-        new window.MouseEvent('pointerdown', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 100,
-        }),
-      );
-      document.dispatchEvent(
-        new window.MouseEvent('pointermove', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 170,
-        }),
-      );
-
-      const draggedRow = list.querySelector('.workshop-page__task.is-drag-lifted');
-      const movedRows = [...list.querySelectorAll('.workshop-page__task.is-reordering')].map(
-        (row) => row.querySelector('.workshop-page__task-label')?.textContent,
-      );
-
-      expect(draggedRow?.querySelector('.workshop-page__task-label')?.textContent).toBe(
-        'mint seed',
-      );
-      expect(draggedRow?.style.zIndex).toBe('98');
-      expect(draggedRow?.style.transition).toBe('none');
-      expect(movedRows).toEqual(['nettle seed', 'lavender seed']);
-      expect(stage.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
-
-      document.dispatchEvent(
-        new window.MouseEvent('pointerup', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 170,
-        }),
-      );
-
-      expect(getVisibleLabels()).toEqual([
-        'sage seed',
-        'nettle seed',
-        'lavender seed',
-        'mint seed',
-      ]);
-      expect(stage.querySelector('.workshop-page__task.is-drag-lifted')).toBeNull();
-      const droppedMintRow = [...list.querySelectorAll('.workshop-page__task')].find(
-        (row) => row.querySelector('.workshop-page__task-label')?.textContent === 'mint seed',
-      );
-      expect(droppedMintRow?.classList.contains('is-reordering')).toBe(true);
-      expect(droppedMintRow?.style.transition).toContain('transform 225ms');
-    } finally {
-      pagesFacade?.unmount();
-      stage.remove();
-      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
-    }
-  });
-
-  it('keeps completed Workshop tasks fixed below active drag sorting', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    const createTask = ({ taskId, itemLabel, completed = false }) => ({
-      ...baseTask,
-      taskId,
-      itemLabel,
-      progressQuantity: completed ? baseTask.requiredQuantity : 0,
-      remainingQuantity: completed ? 0 : baseTask.requiredQuantity,
-      progress: completed ? 1 : 0,
-      maxed: completed,
-      completed,
-      canFill: false,
-      canComplete: false,
-    });
-
-    snapshot.tasks.level.completedTasks = 1;
-    snapshot.tasks.level.totalTasks = 3;
-    snapshot.tasks.level.tasks = [
-      createTask({ taskId: 'level1-sage-seeds', itemLabel: 'sage seed' }),
-      createTask({ taskId: 'level1-mint-seeds', itemLabel: 'mint seed' }),
-      createTask({
-        taskId: 'level1-lavender-seeds',
-        itemLabel: 'lavender seed',
-        completed: true,
-      }),
-    ];
-
-    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect;
-    const makeRect = (top) => ({
-      x: 0,
-      y: top,
-      top,
-      left: 0,
-      right: 240,
-      bottom: top + 22,
-      width: 240,
-      height: 22,
-      toJSON: () => ({}),
-    });
-
-    window.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
-      if (this.classList?.contains('workshop-page__task')) {
-        if (this.parentElement?.classList?.contains('workshop-page__tasks-summary')) {
-          return makeRect(60);
-        }
-
-        if (this.parentElement?.classList?.contains('workshop-page__task-list')) {
-          const rows = [
-            ...this.parentElement.querySelectorAll(':scope > .workshop-page__task'),
-          ];
-          return makeRect(90 + rows.indexOf(this) * 30);
-        }
-      }
-
-      return makeRect(0);
-    };
-    document.body.append(stage);
-    let pagesFacade = null;
-
-    try {
-      pagesFacade = new PagesFacade({
-        gameplayFacade,
-        playerFacade: createPlayerFacadeFake(),
-      });
-
-      pagesFacade.mount(stage);
-      stage
-        .querySelector('.workshop-page__tasks-toggle')
-        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-      const summary = stage.querySelector('.workshop-page__tasks-summary');
-      const list = stage.querySelector('.workshop-page__task-list');
-      const getVisibleLabels = () => [
-        summary.querySelector('.workshop-page__task-label')?.textContent,
-        ...[...list.querySelectorAll('.workshop-page__task-label')].map(
-          (label) => label.textContent,
-        ),
-      ];
-      const getTaskRow = (itemLabel) =>
-        [...stage.querySelectorAll('.workshop-page__task')].find(
-          (row) => row.querySelector('.workshop-page__task-label')?.textContent === itemLabel,
-        );
-      const lavenderRow = getTaskRow('lavender seed');
-
-      expect(getVisibleLabels()).toEqual(['sage seed', 'mint seed', 'lavender seed']);
-      expect(lavenderRow?.classList.contains('is-draggable')).toBe(false);
-      expect(lavenderRow?.tabIndex).toBe(-1);
-
-      lavenderRow.dispatchEvent(
-        new window.MouseEvent('pointerdown', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 130,
-        }),
-      );
-      document.dispatchEvent(
-        new window.MouseEvent('pointermove', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 40,
-        }),
-      );
-      lavenderRow.dispatchEvent(
-        new window.KeyboardEvent('keydown', {
-          bubbles: true,
-          key: 'ArrowUp',
-        }),
-      );
-
-      expect(stage.querySelector('.workshop-page__task.is-drag-lifted')).toBeNull();
-      expect(getVisibleLabels()).toEqual(['sage seed', 'mint seed', 'lavender seed']);
-
-      const sageRow = getTaskRow('sage seed');
-      sageRow.dispatchEvent(
-        new window.MouseEvent('pointerdown', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 70,
-        }),
-      );
-      document.dispatchEvent(
-        new window.MouseEvent('pointermove', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 220,
-        }),
-      );
-
-      expect(lavenderRow.classList.contains('is-reordering')).toBe(false);
-
-      document.dispatchEvent(
-        new window.MouseEvent('pointerup', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 220,
-        }),
-      );
-
-      expect(getVisibleLabels()).toEqual(['mint seed', 'sage seed', 'lavender seed']);
-    } finally {
-      pagesFacade?.unmount();
-      stage.remove();
-      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
-    }
-  });
-
-  it('moves Workshop task rows shortly before the dragged row center crosses another row center', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    snapshot.tasks.level.totalTasks = 3;
-    snapshot.tasks.level.tasks = [
-      baseTask,
-      {
-        ...baseTask,
-        taskId: 'level1-mint-seeds',
-        itemKey: 'mintSeed',
-        itemLabel: 'mint seed',
-        requiredQuantity: 5,
-        remainingQuantity: 5,
-      },
-      {
-        ...baseTask,
-        taskId: 'level1-nettle-seeds',
-        itemKey: 'nettleSeed',
-        itemLabel: 'nettle seed',
-        requiredQuantity: 8,
-        remainingQuantity: 8,
-      },
-    ];
-
-    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect;
-    const makeRect = (top) => ({
-      x: 0,
-      y: top,
-      top,
-      left: 0,
-      right: 240,
-      bottom: top + 22,
-      width: 240,
-      height: 22,
-      toJSON: () => ({}),
-    });
-
-    window.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
-      if (this.classList?.contains('workshop-page__task')) {
-        if (this.parentElement?.classList?.contains('workshop-page__tasks-summary')) {
-          return makeRect(60);
-        }
-
-        if (this.parentElement?.classList?.contains('workshop-page__task-list')) {
-          const rows = [
-            ...this.parentElement.querySelectorAll(':scope > .workshop-page__task'),
-          ];
-          return makeRect(90 + rows.indexOf(this) * 30);
-        }
-      }
-
-      return makeRect(0);
-    };
-    document.body.append(stage);
-    let pagesFacade = null;
-
-    try {
-      pagesFacade = new PagesFacade({
-        gameplayFacade,
-        playerFacade: createPlayerFacadeFake(),
-      });
-
-      pagesFacade.mount(stage);
-      stage
-        .querySelector('.workshop-page__tasks-toggle')
-        .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-      const summary = stage.querySelector('.workshop-page__tasks-summary');
-      const list = stage.querySelector('.workshop-page__task-list');
-      const getVisibleLabels = () => [
-        summary.querySelector('.workshop-page__task-label')?.textContent,
-        ...[...list.querySelectorAll('.workshop-page__task-label')].map(
-          (label) => label.textContent,
-        ),
-      ];
-      const mintRow = list.querySelector('.workshop-page__task');
-
-      expect(getVisibleLabels()).toEqual(['sage seed', 'mint seed', 'nettle seed']);
-
-      mintRow.dispatchEvent(
-        new window.MouseEvent('pointerdown', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 111,
-        }),
-      );
-
-      expect(summary.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
-      expect(list.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
-
-      document.dispatchEvent(
-        new window.MouseEvent('pointermove', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 86,
-        }),
-      );
-
-      expect(summary.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
-      expect(summary.querySelector('.workshop-page__task.is-reordering')).toBeNull();
-
-      document.dispatchEvent(
-        new window.MouseEvent('pointermove', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 85,
-        }),
-      );
-
-      expect(summary.querySelector('.workshop-page__task-drag-placeholder')).toBeNull();
-      expect(
-        summary.querySelector('.workshop-page__task.is-reordering .workshop-page__task-label')
-          ?.textContent,
-      ).toBe('sage seed');
-
-      document.dispatchEvent(
-        new window.MouseEvent('pointerup', {
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          clientY: 85,
-        }),
-      );
-
-      expect(getVisibleLabels()).toEqual(['mint seed', 'sage seed', 'nettle seed']);
-    } finally {
-      pagesFacade?.unmount();
-      stage.remove();
-      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
-    }
-  });
-
-  it('keeps Workshop task row nodes stable when completed tasks move down', () => {
-    const stage = document.createElement('section');
-    const gameplayFacade = createGameplayFacadeFake();
-    const snapshot = gameplayFacade.getSnapshot();
-    const baseTask = snapshot.tasks.level.tasks[0];
-    const createTask = ({ taskId, itemLabel, completed = false }) => ({
-      ...baseTask,
-      taskId,
-      itemLabel,
-      progressQuantity: completed ? baseTask.requiredQuantity : 0,
-      remainingQuantity: completed ? 0 : baseTask.requiredQuantity,
-      progress: completed ? 1 : 0,
-      maxed: completed,
-      completed,
-      canFill: false,
-      canComplete: false,
-    });
-
-    snapshot.tasks.level.completedTasks = 1;
-    snapshot.tasks.level.totalTasks = 4;
-    snapshot.tasks.level.tasks = [
-      createTask({ taskId: 'level1-sage-seeds', itemLabel: 'sage seed' }),
-      createTask({ taskId: 'level1-mint-seeds', itemLabel: 'mint seed' }),
-      createTask({ taskId: 'level1-nettle-seeds', itemLabel: 'nettle seed' }),
-      createTask({
-        taskId: 'level1-lavender-seeds',
-        itemLabel: 'lavender seed',
-        completed: true,
-      }),
-    ];
-
-    const originalGetBoundingClientRect = window.HTMLElement.prototype.getBoundingClientRect;
-    const makeRect = (top) => ({
-      x: 0,
-      y: top,
-      top,
-      left: 0,
-      right: 240,
-      bottom: top + 22,
-      width: 240,
-      height: 22,
-      toJSON: () => ({}),
-    });
-
-    window.HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
-      if (this.classList?.contains('workshop-page__task')) {
-        if (this.parentElement?.classList?.contains('workshop-page__task-list')) {
-          const rows = [
-            ...this.parentElement.querySelectorAll(':scope > .workshop-page__task'),
-          ];
-          return makeRect(100 + rows.indexOf(this) * 28);
-        }
-
-        if (this.parentElement?.classList?.contains('workshop-page__tasks-summary')) {
-          return makeRect(60);
-        }
-      }
-
-      return makeRect(0);
-    };
-    document.body.append(stage);
-    let pagesFacade = null;
-
-    try {
-      pagesFacade = new PagesFacade({
-        gameplayFacade,
-        playerFacade: createPlayerFacadeFake(),
-      });
-
-      pagesFacade.mount(stage);
-      pagesFacade.currentPageManager.currentPage.taskManager.setExpanded(true);
-
-      const list = stage.querySelector('.workshop-page__task-list');
-      const getLabels = () =>
-        [...list.querySelectorAll('.workshop-page__task-label')].map((label) => label.textContent);
-
-      expect(getLabels()).toEqual(['mint seed', 'nettle seed', 'lavender seed']);
-      expect(list.querySelector('.is-first-completed .workshop-page__task-label')?.textContent).toBe(
-        'lavender seed',
-      );
-      const mintRow = list.querySelector('.workshop-page__task');
-
-      snapshot.tasks.level.completedTasks = 2;
-      snapshot.tasks.level.tasks = snapshot.tasks.level.tasks.map((task) =>
-        task.taskId === 'level1-mint-seeds'
-          ? {
-              ...task,
-              progressQuantity: task.requiredQuantity,
-              remainingQuantity: 0,
-              progress: 1,
-              maxed: true,
-              completed: true,
-            }
-          : task,
-      );
-      gameplayFacade.publishSnapshot();
-
-      const rowsAfter = [...list.querySelectorAll('.workshop-page__task')];
-      expect(getLabels()).toEqual(['nettle seed', 'mint seed', 'lavender seed']);
-      expect(rowsAfter[1]).toBe(mintRow);
-      expect(mintRow.classList.contains('is-completed')).toBe(true);
-      expect(mintRow.classList.contains('is-first-completed')).toBe(true);
-      expect(mintRow.classList.contains('is-reordering')).toBe(true);
-      expect(mintRow.style.transition).toContain('transform 225ms');
-    } finally {
-      pagesFacade?.unmount();
-      stage.remove();
-      window.HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
-    }
-  });
-
-  it('shows Workshop level completion without expand when there is one task', () => {
+  it('shows the coin payment as the final request', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -6179,6 +4930,22 @@ describe('PagesFacade', () => {
       atMaxLevel: false,
       completedAllLevels: false,
       canComplete: true,
+    };
+    snapshot.tasks.level.questProgress = {
+      currentXp: 20,
+      requiredXp: 40,
+      progress: 0.5,
+      xpPerQuest: 20,
+      completedQuests: 1,
+      totalQuests: 2,
+      targetLevel: 2,
+      activeQuest: {
+        kind: 'levelUp',
+        taskId: 'level-1-level-up',
+        targetLevel: 2,
+        costCoin: 0,
+        xpReward: 20,
+      },
     };
     snapshot.tasks.level.tasks = snapshot.tasks.level.tasks.map((task) => ({
       ...task,
@@ -6204,47 +4971,17 @@ describe('PagesFacade', () => {
     const completion = stage.querySelector('.workshop-page__level-complete');
     const button = stage.querySelector('.workshop-page__level-complete-button');
     const rewards = stage.querySelector('.workshop-page__level-rewards');
-    const payoffTitle = rewards?.querySelector('.workshop-page__level-payoff-title');
-    const payoffRows = [
-      ...rewards.querySelectorAll('.workshop-page__level-payoff-row'),
-    ].map((row) => [
-      row.querySelector('.workshop-page__level-payoff-label')?.textContent,
-      row.querySelector('.workshop-page__level-payoff-value')?.textContent,
-    ]);
+    const xpValue = stage.querySelector('.workshop-page__quest-progress-value');
+    const xpFill = stage.querySelector('.workshop-page__quest-progress-fill');
+    const xpReward = stage.querySelector('.workshop-page__quest-reward');
 
     expect(completion?.hidden).toBe(false);
-    expect(rewards?.hidden).toBe(false);
-    expect(payoffTitle?.textContent).toBe('rewards');
-    expect(payoffRows).toEqual([
-      ['unlocks', 'garden, research'],
-      ['mana capacity', '+50 mana'],
-      ['mana regeneration', '+1/sec mana'],
-      ['bonus', '+1 crystal'],
-    ]);
-    expect(
-      rewards
-        ?.querySelector('.workshop-page__level-payoff-page-icon')
-        ?.getAttribute('src'),
-    ).toContain('icon-garden-plot-tab');
-    expect(
-      rewards?.querySelector(
-        '.workshop-page__level-payoff-value .style-resource-label--mana .style-resource-label__icon',
-      )?.dataset.assetAtlasFrame,
-    ).toBe('resource:mana');
-    expect(
-      rewards
-        ?.querySelectorAll(
-          '.workshop-page__level-payoff-value .style-resource-label--mana',
-        )
-        .length,
-    ).toBe(2);
-    expect(
-      rewards?.querySelector(
-        '.workshop-page__level-payoff-value .style-resource-label--crystal .style-resource-label__icon',
-      )?.dataset.assetAtlasFrame,
-    ).toBe('resource:crystal');
+    expect(rewards?.hidden).toBe(true);
+    expect(xpValue?.textContent).toBe('20/40 xp');
+    expect(xpFill?.style.getPropertyValue('--style-progress-fill-scale')).toBe('0.5');
+    expect(xpReward?.textContent).toBe('reward: 20 xp');
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
-    expect(button?.textContent).toBe('level upfree');
+    expect(button?.textContent).toBe('reach level 2free');
     expect(button?.disabled).toBe(false);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -10799,7 +9536,7 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.shop-page__market-tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['trader market', 'player market', 'crystals']);
+    ).toEqual(['traders', 'players', 'crystals']);
     expect(
       stage
         .querySelector('.shop-page__market-tab-button')
@@ -10807,15 +9544,15 @@ describe('PagesFacade', () => {
     ).toBe('true');
     expect(stage.querySelector('.shop-page__shelf')).not.toBeNull();
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      'trader demand market',
+      'your stalls',
     );
-    expect(stage.querySelector('.shop-page__direct-sell-box')).not.toBeNull();
-    expect(stage.querySelector('.shop-page__direct-sell-box')?.textContent).toContain(
-      'fast sell',
+    expect(stage.querySelector('.shop-page__direct-sell-controls')).not.toBeNull();
+    expect(stage.querySelector('.shop-page__direct-sell-controls')?.textContent).toContain(
+      'sell to trader',
     );
-    expect(stage.querySelector('.shop-page__stock')).not.toBeNull();
-    expect(stage.querySelector('.shop-page__stock')?.textContent).toContain(
-      'trader stock market',
+    expect(stage.querySelector('.shop-page__ledger-controls')).not.toBeNull();
+    expect(stage.querySelector('.shop-page__ledger-controls')?.textContent).toContain(
+      'market ledger',
     );
     expect(stage.querySelector('.shop-page__market-panel--crystals')?.hidden).toBe(true);
 
@@ -13559,7 +12296,7 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'shop');
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
-      .find((button) => button.textContent === 'player market')
+      .find((button) => button.textContent === 'players')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(

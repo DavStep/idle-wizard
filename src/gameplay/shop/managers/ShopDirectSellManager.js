@@ -9,6 +9,7 @@ export class ShopDirectSellManager {
     shopNpcPriceManager,
     shopNpcSellQuoteManager,
     shopSellAvailabilityManager,
+    getItemAccess,
     onItemSold,
   } = {}) {
     this.coinFacade = coinFacade;
@@ -17,6 +18,7 @@ export class ShopDirectSellManager {
     this.shopNpcPriceManager = shopNpcPriceManager;
     this.shopNpcSellQuoteManager = shopNpcSellQuoteManager;
     this.shopSellAvailabilityManager = shopSellAvailabilityManager;
+    this.getItemAccess = getItemAccess;
     this.onItemSold = onItemSold;
   }
 
@@ -31,6 +33,16 @@ export class ShopDirectSellManager {
     }
 
     const item = this.itemsFacade.getItemDefinition(itemTypeId);
+    const marketAccess = this.getItemAccess?.(item);
+
+    if (marketAccess && !marketAccess.tradedHere) {
+      return {
+        ok: false,
+        reason: 'market_locked',
+        requiredMarket: marketAccess.requiredMarket,
+      };
+    }
+
     const availableQuantity = this.getAvailableQuantity(itemTypeId);
 
     if (availableQuantity < safeQuantity) {

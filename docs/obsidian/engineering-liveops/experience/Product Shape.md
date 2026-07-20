@@ -41,6 +41,7 @@ experience_type: product-shape
 - Page announcement baselines must reset on gameplay persistence load; restored backend saves should not replay old level/research popups.
 - Page announcement level baselines must accept pre-level `0`; the first playable `0 -> 1` level-up should queue the level 1/market unlock notice, not treat level 1 as the initial baseline.
 - Feature unlocks should remain separate queued room announcements after the level-up card; the level-up reward row and Elara lesson copy do not replace the unlock card.
+- Feature unlock announcements should clone each destination icon and measure each icon's own source rect; one shared origin makes multi-unlock flyouts detach from the icons players just saw.
 - While-away report rows should keep the row label left and the reward/status right; attach item/resource icons to the right-side value instead of adding a separate leading icon slot.
 - While-away reports should list produced items and market outcomes only; skip status-only rows like mana full, plots ready, research complete, and paused automation.
 - Cauldron brew/bottle success state belongs in the active brew text and progress rail; reserve cauldron messages for blocked/error feedback so stale success text does not fight the timer state.
@@ -269,7 +270,7 @@ experience_type: product-shape
 - FTUE mana tonic recipe guidance should point to the recipe popup `close` label after the recipe is selected; do not keep cueing the selected row.
 - FTUE mana tonic brew guidance must require an unlocked `manaTonic` cauldron match, not just `canBrew`; `canBrew` is also true for wasted mixes. Overfilled sage should target the remove row before brew.
 - FTUE `grow sage` should open the lesson immediately, then show the target pointer only after about 2s of no player activity or an explicit `show me`; keep later lesson-3 sage guidance on the same delayed pointer path.
-- FTUE Garden opening should wait for a usable sage source; otherwise lesson 3 should open requirements and summon first instead of sending players to empty Garden and back.
+- FTUE Garden opening should wait for a usable sage source; otherwise the active Elara request should route through summoning before sending players to an empty Garden and back.
 - FTUE level-2 task order should match the visible level-2 task row order; showing `sage` before `sage seed` keeps the gardening lesson coherent.
 - FTUE garden herb guidance must compare the requested `seedKey` with tile `selectedSeedKey`/`seedKey`; otherwise mint tasks can point at sage-selected plots with mint copy.
 - FTUE grow-sage should treat planted active sage as a current source; seed inventory dropping to zero during growth must not route guidance back to Workshop.
@@ -280,8 +281,6 @@ experience_type: product-shape
 - Elara objective placement must also avoid visible research sub-tabs; otherwise the tab corner peeks under the lesson border-label area.
 - Elara objective placement must protect the whole fast-sell tab strip when targeting one tab; a single tab rect can leave the guide covering adjacent tab controls.
 - Draggable Elara placement must test portrait/button overlap with the lesson panel; side-only clamping can shove the panel under Elara near the right edge.
-- Expanded Workshop requirements outside-press collapse must ignore `.tutorial-layer` targets; otherwise dragging Elara closes the requirements panel.
-- FTUE cues targeting the Workshop requirements `pin` must follow the button through the expand animation; a one-frame rect can leave the hand at the old `expand` border position.
 - FTUE balance order is level 1 free Workshop sage seed, level 2 Market selling, level 3 Research/mint seed, level 4 Garden herbs, then level 5 Brewing/mana tonic.
 - FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: research`, `lesson 4: gardening`, and `lesson 5: brewing`.
 - FTUE lesson 1 introduces Elara first, then unlocks the top panel for username setup, then greets the saved username before mana guidance.
@@ -293,7 +292,6 @@ experience_type: product-shape
 - FTUE lesson body copy typewrites only until the player has seen that exact step/copy once; reopening an already revealed guide shows full text immediately.
 - FTUE lesson panels should measure final copy/progress first and set box size before typewriter text appears; do not let panels resize as copy reveals.
 - FTUE target cues should be pointer-only while the lesson panel is open or the player asks with `show me`; never stack a target hint box with a lesson box.
-- When FTUE points to a bottom page tab while Workshop tasks are expanded, keep the bottom tab panel undimmed; the task-expanded chrome opacity makes the target read disabled.
 - FTUE pointer rendering must not rewrite unchanged placement/style on every render; repeated DOM writes restart the cue animation before it can move.
 - Open FTUE lesson refreshes should let `applyCue` own target-cue visibility; hiding the cue during `showLesson` and showing it again resets pointer motion every refresh.
 - FTUE target cues should hide a stale pointer immediately when the next target has no measurable rect yet; leaving the old cue visible reads as slow or wrong target guidance.
@@ -327,8 +325,7 @@ experience_type: product-shape
 - Chibi character image prompts must lock exact eye construction: half-lidded sleepy eyes, small flat oval pupils, same pupil size/position, and no round anime/shiny dot pupils.
 - Generated character sheet cuts need dark/magenta background QA against `mira.png`; use premultiplied-alpha resizing, de-matte pale edges, and remove opaque neutral-white holes near hair/props or sheet artifacts remain.
 - The Workshop bag popup is PagesFacade-owned global catalog UI; Garden/Brewing icon buttons expand inline room inventory boxes instead of opening the global bag.
-- Workshop task box titles should read `level N requirements`, where N is the target level, not generic next-level wording.
-- Workshop task expansion/pinning should reset when the target level changes after level-up, so the next level starts collapsed while page-swap persistence remains.
+- Workshop main progression is one always-open `elara's request` at a time, with a 20 XP reward and level XP rail; do not restore the old expandable, pinnable, reorderable requirements checklist.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
 - Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from target level 6 onward, adjacent rows should not reuse exact requirement item keys.
 - Task difficulty uses two curves: global bands by level range plus local ten-level boss/relief rhythm, so 10/20/30/... are gates and the next row is easier.
@@ -340,11 +337,6 @@ experience_type: product-shape
 - Player-level mana progression is mirrored in frontend defaults and SpacetimeDB default/validator/backfill; update all three when changing the regen curve.
 - Crystal plot/cauldron upgrades should read as `level up` / `lvl N` in player UI; keep legacy internal research ids if needed, but do not present them as ordinary research.
 - Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.
-- Workshop task drag-sort spans a fixed summary row plus list rows; move the real row with transform, translate neighbors around a virtual drop index, and commit priority only on drop.
-- Workshop task drag-sort thresholds must compare the lifted row center, not pointer Y; grab offset otherwise makes rows swap too early or late.
-- Workshop task drag-sort should not render an empty placeholder gap; shift neighboring rows slightly before the lifted row crosses their center for smoother ordering.
-- Workshop task drag-sort is only for incomplete requirements; completed requirements stay fixed below the active group and are not draggable.
-- Workshop task drag-sort needs expanded-content overflow visible during drag; otherwise list rows clip under the summary row and look like they lose top-layer order.
 - Workshop summon button text must overlay the summon circle, not stack below it; stacking drops the label into the secondary action row.
 - Workshop summon button press feedback must not use generic `transform: scale(...)`; it needs to preserve its `translate(-50%, -50%)` centering or pointer release can miss the moved button.
 - Workshop summon button press feedback should keep `.is-pressing` on the real button, like leaderboard, then CSS-route the visual press to the `summon seed` label only.

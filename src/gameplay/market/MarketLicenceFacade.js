@@ -1,4 +1,5 @@
 import { MarketLicenceResolverManager } from './managers/MarketLicenceResolverManager.js';
+import { MarketAccessManager } from './managers/MarketAccessManager.js';
 
 export class MarketLicenceFacade {
   static explain =
@@ -7,6 +8,7 @@ export class MarketLicenceFacade {
   constructor({ prestigeFacade } = {}) {
     this.prestigeFacade = prestigeFacade;
     this.marketLicenceResolverManager = new MarketLicenceResolverManager();
+    this.marketAccessManager = new MarketAccessManager();
   }
 
   getActiveLicence() {
@@ -24,6 +26,18 @@ export class MarketLicenceFacade {
       ...licence,
       completedStars: this.getCompletedStarCount(),
     };
+  }
+
+  getStallCount() {
+    return this.marketAccessManager.getStallCount(this.getActiveLicence());
+  }
+
+  getItemAccess(item) {
+    return this.marketAccessManager.getItemAccess(item, this.getActiveLicence());
+  }
+
+  isItemTraded(item) {
+    return this.getItemAccess(item).tradedHere;
   }
 
   getCompletedStarCount() {

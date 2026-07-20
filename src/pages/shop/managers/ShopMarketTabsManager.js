@@ -3,8 +3,8 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 
 const MARKET_TABS = [
-  { id: 'npm', label: 'trader market' },
-  { id: 'player', label: 'player market' },
+  { id: 'npm', label: 'traders' },
+  { id: 'player', label: 'players' },
   { id: 'crystals', label: 'crystals' },
 ];
 
@@ -47,6 +47,10 @@ export class ShopMarketTabsManager {
     this.refs.marketIdentity = document.createElement('div');
     this.refs.marketIdentity.className = 'shop-page__market-identity';
     this.refs.marketIdentity.setAttribute('aria-live', 'polite');
+    this.refs.marketName = document.createElement('span');
+    this.refs.marketRank = document.createElement('span');
+    this.refs.marketRank.className = 'shop-page__market-rank';
+    this.refs.marketIdentity.append(this.refs.marketName, this.refs.marketRank);
 
     this.refs.tabs = document.createElement('div');
     this.refs.tabs.className = 'shop-page__market-tabs';
@@ -189,7 +193,13 @@ export class ShopMarketTabsManager {
     const name = String(market?.name ?? 'Small Town Market');
 
     if (this.refs.marketIdentity) {
-      this.refs.marketIdentity.textContent = name;
+      const rank = Math.max(1, Math.min(5, Math.floor(Number(market?.rank) || 1)));
+      this.refs.marketName.textContent = name.toLowerCase();
+      this.refs.marketRank.textContent = ` ${'★'.repeat(rank)}`;
+      this.refs.marketIdentity.setAttribute(
+        'aria-label',
+        `${name}, market rank ${rank} of 5`,
+      );
     }
   }
 

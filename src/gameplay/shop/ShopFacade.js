@@ -34,6 +34,10 @@ export class ShopFacade {
     getReservedItemQuantity,
     now,
   } = {}) {
+    this.itemsFacade = itemsFacade;
+    this.marketLicenceFacade = marketLicenceFacade;
+    this.playerLevelFacade = playerLevelFacade;
+    this.playerShopFacade = playerShopFacade;
     this.shopBalanceManager = new ShopBalanceManager();
     this.shopNpcPriceManager = new ShopNpcPriceManager({
       npcMarketFacade,
@@ -92,6 +96,8 @@ export class ShopFacade {
       shopSellKindManager: this.shopSellKindManager,
       shopShelfEntityManager: this.shopShelfEntityManager,
       shopSellAvailabilityManager: this.shopSellAvailabilityManager,
+      getAccessibleSlotCount: () => this.getMarketStallCount(),
+      getItemAccess: (item) => this.getMarketItemAccess(item),
     });
     this.shopPlayerShelfListingManager = new ShopPlayerShelfListingManager({
       coinFacade,
@@ -99,6 +105,8 @@ export class ShopFacade {
       shopSellKindManager: this.shopSellKindManager,
       shopSellAvailabilityManager: this.shopSellAvailabilityManager,
       shopPlayerShelfEntityManager: this.shopPlayerShelfEntityManager,
+      getAccessibleSlotCount: () => this.getMarketStallCount(),
+      getItemAccess: (item) => this.getMarketItemAccess(item),
     });
     this.shopPlayerRequestManager = new ShopPlayerRequestManager({
       itemsFacade,
@@ -106,12 +114,15 @@ export class ShopFacade {
       shopPlayerRequestEntityManager: this.shopPlayerRequestEntityManager,
       isRequestSlotUnlocked: (slotNumber) =>
         this.shopPlayerShelfEntityManager.isSlotUnlocked(slotNumber),
+      getAccessibleSlotCount: () => this.getMarketStallCount(),
+      getItemAccess: (item) => this.getMarketItemAccess(item),
     });
     this.shopStockPurchaseManager = new ShopStockPurchaseManager({
       coinFacade,
       itemsFacade,
       shopNpcPriceManager: this.shopNpcPriceManager,
       shopStockPriceQuoteManager: this.shopStockPriceQuoteManager,
+      getItemAccess: (item) => this.getMarketItemAccess(item),
     });
     this.shopDirectSellManager = new ShopDirectSellManager({
       coinFacade,
@@ -120,6 +131,7 @@ export class ShopFacade {
       shopNpcPriceManager: this.shopNpcPriceManager,
       shopNpcSellQuoteManager: this.shopNpcSellQuoteManager,
       shopSellAvailabilityManager: this.shopSellAvailabilityManager,
+      getItemAccess: (item) => this.getMarketItemAccess(item),
       onItemSold,
     });
     this.shopAutoSellManager = new ShopAutoSellManager({
@@ -130,13 +142,11 @@ export class ShopFacade {
       shopNpcSellQuoteManager: this.shopNpcSellQuoteManager,
       shopSellAvailabilityManager: this.shopSellAvailabilityManager,
       shopShelfEntityManager: this.shopShelfEntityManager,
+      getAccessibleSlotCount: () => this.getMarketStallCount(),
+      getItemAccess: (item) => this.getMarketItemAccess(item),
       onItemSold,
       now,
     });
-    this.itemsFacade = itemsFacade;
-    this.marketLicenceFacade = marketLicenceFacade;
-    this.playerLevelFacade = playerLevelFacade;
-    this.playerShopFacade = playerShopFacade;
   }
 
   setNpcMarketFacade(npcMarketFacade) {
@@ -264,22 +274,7 @@ export class ShopFacade {
 
   getSnapshot() {
     const market = this.getActiveMarketLicence();
-    const unlockedSlots = this.shopShelfEntityManager.getUnlockedSlots();
-    const playerUnlockedSlots = this.shopPlayerShelfEntityManager.getUnlockedSlots();
-    const maxSlots = this.shopBalanceManager.getMaxShelfSlots();
-    const maxUnlockedSlotsByLevel = Math.min(maxSlots, this.getMaxNpcMarketStandsByLevel());
-    const maxPlayerUnlockedSlotsByLevel = Math.min(
-      maxSlots,
-      this.getMaxPlayerMarketStandsByLevel(),
-    );
-    const nextSlotNumber = unlockedSlots + 1;
-    const nextSlotCost = this.shopBalanceManager.getSlotCost(nextSlotNumber);
-    const nextPlayerSlotNumber = playerUnlockedSlots + 1;
-    const nextPlayerSlotCost = this.shopBalanceManager.getSlotCost(nextPlayerSlotNumber);
-    const nextSlotLockedByLevel =
-      nextSlotCost !== null && nextSlotNumber > maxUnlockedSlotsByLevel;
-    const nextPlayerSlotLockedByLevel =
-      nextPlayerSlotCost !== null && nextPlayerSlotNumber > maxPlayerUnlockedSlotsByLevel;
+    const marketStallCount = this.syncMarketCapacity();
     const sellableItems = this.getAvailableSellableItemSnapshots();
     const visibleSellItems = this.getVisibleSellItemSnapshots(sellableItems);
     const sellKinds = this.shopSellKindManager.getSellKinds().map((sellKind) => ({
@@ -289,49 +284,43 @@ export class ShopFacade {
     return {
       market,
       shelf: {
-        unlockedSlots,
-        maxSlots,
-        maxUnlockedSlotsByLevel,
-        slotCosts: this.shopBalanceManager.getSlotCosts(),
-        nextSlotNumber: nextSlotCost === null ? null : nextSlotNumber,
-        nextSlotCost,
-        nextSlotLockedByLevel,
-        nextSlotRequiresLevel: nextSlotLockedByLevel
-          ? this.playerLevelFacade?.getRequiredLevelForNpcMarketStand(nextSlotNumber) ?? null
-          : null,
+        unlockedSlots: marketStallCount,
+        maxSlots: marketStallCount,
+        maxUnlockedSlotsByLevel: marketStallCount,
+        slotCosts: [],
+        nextSlotNumber: null,
+        nextSlotCost: null,
+        nextSlotLockedByLevel: false,
+        nextSlotRequiresLevel: null,
         selectedSlotNumber: this.shopShelfEntityManager.getSelectedSlotNumber(),
         sellProgressSeconds: this.shopShelfEntityManager.getSellProgressSeconds(),
         autoSellSeconds: this.shopBalanceManager.getAutoSellSeconds(),
         sellKinds,
         sellItems: visibleSellItems,
-        slots: this.getSlotSnapshots(sellableItems),
+        slots: this.getSlotSnapshots(sellableItems).slice(0, marketStallCount),
       },
       playerShelf: {
-        unlockedSlots: playerUnlockedSlots,
-        maxSlots,
-        maxUnlockedSlotsByLevel: maxPlayerUnlockedSlotsByLevel,
-        slotCosts: this.shopBalanceManager.getSlotCosts(),
-        nextSlotNumber: nextPlayerSlotCost === null ? null : nextPlayerSlotNumber,
-        nextSlotCost: nextPlayerSlotCost,
-        nextSlotLockedByLevel: nextPlayerSlotLockedByLevel,
-        nextSlotRequiresLevel: nextPlayerSlotLockedByLevel
-          ? this.playerLevelFacade?.getRequiredLevelForPlayerMarketStand(nextPlayerSlotNumber) ?? null
-          : null,
+        unlockedSlots: marketStallCount,
+        maxSlots: marketStallCount,
+        maxUnlockedSlotsByLevel: marketStallCount,
+        slotCosts: [],
+        nextSlotNumber: null,
+        nextSlotCost: null,
+        nextSlotLockedByLevel: false,
+        nextSlotRequiresLevel: null,
         selectedSlotNumber: this.shopPlayerShelfEntityManager.getSelectedSlotNumber(),
         sellKinds,
         sellItems: visibleSellItems,
-        slots: this.getPlayerSlotSnapshots(),
+        slots: this.getPlayerSlotSnapshots().slice(0, marketStallCount),
       },
       playerRequests: {
-        unlockedSlots: playerUnlockedSlots,
-        maxSlots,
-        maxUnlockedSlotsByLevel: maxPlayerUnlockedSlotsByLevel,
-        nextSlotNumber: nextPlayerSlotCost === null ? null : nextPlayerSlotNumber,
-        nextSlotLockedByLevel: nextPlayerSlotLockedByLevel,
-        nextSlotRequiresLevel: nextPlayerSlotLockedByLevel
-          ? this.playerLevelFacade?.getRequiredLevelForPlayerMarketStand(nextPlayerSlotNumber) ?? null
-          : null,
-        slots: this.getPlayerRequestSlotSnapshots(playerUnlockedSlots),
+        unlockedSlots: marketStallCount,
+        maxSlots: marketStallCount,
+        maxUnlockedSlotsByLevel: marketStallCount,
+        nextSlotNumber: null,
+        nextSlotLockedByLevel: false,
+        nextSlotRequiresLevel: null,
+        slots: this.getPlayerRequestSlotSnapshots(marketStallCount).slice(0, marketStallCount),
       },
       stock: {
         sellKinds,
@@ -350,7 +339,45 @@ export class ShopFacade {
       id: 'smallTown',
       name: 'Small Town Market',
       requiredStars: 0,
+      rank: 1,
     };
+  }
+
+  getMarketStallCount() {
+    return this.marketLicenceFacade?.getStallCount?.() ?? 1;
+  }
+
+  getMarketItemAccess(item) {
+    return this.marketLicenceFacade?.getItemAccess?.(item) ?? {
+      grade: 1,
+      tradedHere: true,
+      requiredMarket: this.getActiveMarketLicence(),
+    };
+  }
+
+  syncMarketCapacity() {
+    const stallCount = Math.min(
+      this.shopBalanceManager.getMaxShelfSlots(),
+      this.getMarketStallCount(),
+    );
+
+    while (this.shopShelfEntityManager.getUnlockedSlots() < stallCount) {
+      if (!this.shopShelfEntityManager.unlockNextSlot()) break;
+    }
+
+    while (this.shopPlayerShelfEntityManager.getUnlockedSlots() < stallCount) {
+      if (!this.shopPlayerShelfEntityManager.unlockNextSlot()) break;
+    }
+
+    if ((this.shopShelfEntityManager.getSelectedSlotNumber() ?? 1) > stallCount) {
+      this.shopShelfEntityManager.selectSlot(1);
+    }
+
+    if ((this.shopPlayerShelfEntityManager.getSelectedSlotNumber() ?? 1) > stallCount) {
+      this.shopPlayerShelfEntityManager.selectSlot(1);
+    }
+
+    return stallCount;
   }
 
   syncActiveMarketLicence(market = this.getActiveMarketLicence()) {
@@ -383,8 +410,13 @@ export class ShopFacade {
     return this.shopSellItemVisibilityManager
       .getVisibleSellItems(sellableItems)
       .map((item) => {
-        const npcPrice = this.shopNpcPriceManager.getNpcPrice(item);
-        const sellCoin = this.shopNpcPriceManager.getNpcBuyPriceCoin(item);
+        const marketAccess = this.getMarketItemAccess(item);
+        const npcPrice = marketAccess.tradedHere
+          ? this.shopNpcPriceManager.getNpcPrice(item)
+          : null;
+        const sellCoin = marketAccess.tradedHere
+          ? this.shopNpcPriceManager.getNpcBuyPriceCoin(item)
+          : null;
 
         return {
           ...item,
@@ -399,14 +431,20 @@ export class ShopFacade {
                 targetNeed: npcPrice.targetNeed,
                 maxNeed: npcPrice.maxNeed,
                 targetStock: npcPrice.targetStock,
+                priceHistory: npcPrice.priceHistory ?? [],
               }
             : {}),
+          marketGrade: marketAccess.grade,
+          tradedHere: marketAccess.tradedHere,
+          requiredMarket: marketAccess.requiredMarket,
           sellCoin,
           fastSellCoin: this.shopDirectSellManager.getFastSellPriceCoin(sellCoin),
           fastSellPercent,
-          sellNeed: this.shopNpcPriceManager.getNpcNeed(item),
-          buyCoin: this.shopNpcPriceManager.getNpcSellPriceCoin(item),
-          stock: this.shopNpcPriceManager.getNpcStock(item),
+          sellNeed: marketAccess.tradedHere ? this.shopNpcPriceManager.getNpcNeed(item) : null,
+          buyCoin: marketAccess.tradedHere
+            ? this.shopNpcPriceManager.getNpcSellPriceCoin(item)
+            : null,
+          stock: marketAccess.tradedHere ? this.shopNpcPriceManager.getNpcStock(item) : null,
         };
       });
   }
@@ -431,6 +469,7 @@ export class ShopFacade {
 
       const item = this.itemsFacade.getItemDefinition(slot.sellItemTypeId);
       const sellableItem = sellableItemsById.get(slot.sellItemTypeId);
+      const marketAccess = this.getMarketItemAccess(item);
 
       return {
         ...slot,
@@ -440,8 +479,11 @@ export class ShopFacade {
         sellQuantity: sellableItem?.quantity ?? 0,
         sellLimitMode: slot.sellLimitMode ?? 'all',
         sellQuantityLimit: slot.sellLimitMode === 'amount' ? slot.sellQuantityLimit ?? 0 : null,
-        sellCoin: this.shopNpcPriceManager.getNpcBuyPriceCoin(item),
-        sellNeed: this.shopNpcPriceManager.getNpcNeed(item),
+        marketGrade: marketAccess.grade,
+        tradedHere: marketAccess.tradedHere,
+        requiredMarket: marketAccess.requiredMarket,
+        sellCoin: marketAccess.tradedHere ? this.shopNpcPriceManager.getNpcBuyPriceCoin(item) : null,
+        sellNeed: marketAccess.tradedHere ? this.shopNpcPriceManager.getNpcNeed(item) : null,
       };
     });
   }
@@ -458,12 +500,16 @@ export class ShopFacade {
       }
 
       const item = this.itemsFacade.getItemDefinition(slot.itemTypeId);
+      const marketAccess = this.getMarketItemAccess(item);
 
       return {
         ...slot,
         itemKey: item.key,
         itemKind: item.kind,
         itemLabel: item.label,
+        marketGrade: marketAccess.grade,
+        tradedHere: marketAccess.tradedHere,
+        requiredMarket: marketAccess.requiredMarket,
       };
     });
   }
@@ -486,6 +532,7 @@ export class ShopFacade {
       }
 
       const item = this.itemsFacade.getItemDefinition(slot.itemTypeId);
+      const marketAccess = this.getMarketItemAccess(item);
 
       return {
         ...slot,
@@ -493,6 +540,9 @@ export class ShopFacade {
         itemKey: item.key,
         itemKind: item.kind,
         itemLabel: item.label,
+        marketGrade: marketAccess.grade,
+        tradedHere: marketAccess.tradedHere,
+        requiredMarket: marketAccess.requiredMarket,
       };
     });
   }
@@ -501,12 +551,11 @@ export class ShopFacade {
     const snapshot = this.getSnapshot();
     const shelf = snapshot.shelf;
     const playerShelf = snapshot.playerShelf;
-    const playerRequests = snapshot.playerRequests;
     const coinOffer = this.shopCoinOfferManager.getPersistenceSnapshot();
 
     return {
       shelf: {
-        unlockedSlots: shelf.unlockedSlots,
+        unlockedSlots: this.shopShelfEntityManager.getUnlockedSlots(),
         selectedSlotNumber: shelf.selectedSlotNumber,
         sellProgressSeconds: this.shopShelfEntityManager.getSellProgressSeconds(),
         slots: this.shopShelfEntityManager.getSlotSnapshots().map((slot) => ({
@@ -520,7 +569,7 @@ export class ShopFacade {
         })),
       },
       playerShelf: {
-        unlockedSlots: playerShelf.unlockedSlots,
+        unlockedSlots: this.shopPlayerShelfEntityManager.getUnlockedSlots(),
         selectedSlotNumber: playerShelf.selectedSlotNumber,
         slots: this.shopPlayerShelfEntityManager.getSlotSnapshots().map((slot) => ({
           slotNumber: slot.slotNumber,
@@ -530,7 +579,9 @@ export class ShopFacade {
         })),
       },
       playerRequests: {
-        slots: playerRequests.slots
+        slots: this.getPlayerRequestSlotSnapshots(
+          this.shopPlayerShelfEntityManager.getUnlockedSlots(),
+        )
           .filter((slot) => slot.unlocked && slot.itemTypeId)
           .map((slot) => ({
             slotNumber: slot.slotNumber,
@@ -564,7 +615,7 @@ export class ShopFacade {
       : [];
 
     this.shopShelfEntityManager.applySnapshot({
-      unlockedSlots: this.clampUnlockedSlotsByLevel(shelfSnapshot.unlockedSlots),
+      unlockedSlots: this.clampUnlockedSlots(shelfSnapshot.unlockedSlots),
       selectedSlotNumber: shelfSnapshot.selectedSlotNumber,
       sellProgressSeconds: shelfSnapshot.sellProgressSeconds,
       slots,
@@ -584,7 +635,7 @@ export class ShopFacade {
       : [];
 
     this.shopPlayerShelfEntityManager.applySnapshot({
-      unlockedSlots: this.clampPlayerUnlockedSlotsByLevel(playerShelfSnapshot?.unlockedSlots),
+      unlockedSlots: this.clampUnlockedSlots(playerShelfSnapshot?.unlockedSlots),
       selectedSlotNumber: playerShelfSnapshot?.selectedSlotNumber,
       slots: playerSlots,
     });
@@ -608,21 +659,14 @@ export class ShopFacade {
     this.shopCoinOfferManager.applyPersistenceSnapshot(
       snapshot.coinOffer ?? snapshot.goldOffer,
     );
+    this.syncMarketCapacity();
   }
 
-  clampUnlockedSlotsByLevel(unlockedSlots) {
+  clampUnlockedSlots(unlockedSlots) {
     if (!Number.isInteger(unlockedSlots)) {
       return unlockedSlots;
     }
 
-    return Math.min(unlockedSlots, this.getMaxNpcMarketStandsByLevel());
-  }
-
-  clampPlayerUnlockedSlotsByLevel(unlockedSlots) {
-    if (!Number.isInteger(unlockedSlots)) {
-      return unlockedSlots;
-    }
-
-    return Math.min(unlockedSlots, this.getMaxPlayerMarketStandsByLevel());
+    return Math.min(unlockedSlots, this.shopBalanceManager.getMaxShelfSlots());
   }
 }

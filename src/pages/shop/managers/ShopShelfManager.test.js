@@ -210,11 +210,11 @@ describe('ShopShelfManager', () => {
       [...stage.querySelectorAll('.shop-page__market-tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['trader market', 'player market', 'crystals']);
+    ).toEqual(['traders', 'players', 'crystals']);
     expect(stage.querySelector('.shop-page__market-identity')?.textContent)
-      .toBe('Small Town Market');
+      .toBe('small town market ★');
     const playerTab = [...stage.querySelectorAll('.shop-page__market-tab-button')].find(
-      (button) => button.textContent === 'player market',
+      (button) => button.textContent === 'players',
     );
 
     expect(npcPanel.hidden).toBe(false);
@@ -298,9 +298,9 @@ describe('ShopShelfManager', () => {
     manager.mount(stage);
 
     const buttons = [...stage.querySelectorAll('.shop-page__market-tab-button')];
-    const playerTab = buttons.find((button) => button.textContent === 'player market');
+    const playerTab = buttons.find((button) => button.textContent === 'players');
     const crystalsTab = buttons.find((button) => button.textContent === 'crystals');
-    const npcTab = buttons.find((button) => button.textContent === 'trader market');
+    const npcTab = buttons.find((button) => button.textContent === 'traders');
 
     expect(playerTab?.dataset.notification).toBeUndefined();
     expect(playerTab?.dataset.notificationTone).toBeUndefined();
@@ -2647,7 +2647,7 @@ describe('ShopShelfManager', () => {
     manager.mount(stage, popupLayer);
 
     expect(stage.querySelector('.shop-page__shelf-timer')?.textContent).toBe(
-      'timer 15m',
+      'traders arrive in 15m',
     );
     expect(stage.querySelector('.shop-page__slot-timer-value')).toBeNull();
     expect(stage.querySelector('.shop-page__slot-row .row_val')?.textContent).toBe(
@@ -2658,7 +2658,7 @@ describe('ShopShelfManager', () => {
     manager.render(gameplaySnapshot);
 
     expect(stage.querySelector('.shop-page__shelf-timer')?.textContent).toBe(
-      'timer ready',
+      'traders arrive in ready',
     );
 
     manager.unmount();

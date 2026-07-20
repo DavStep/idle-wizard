@@ -195,7 +195,13 @@ describe('PageAnnouncementManager', () => {
 
     expect(flyoutEvent).toHaveBeenCalledTimes(1);
     expect(flyoutEvent.mock.calls[0][0].detail).toEqual({
-      features: [{ value: 'market', pageId: 'shop' }],
+      features: [
+        {
+          value: 'market',
+          pageId: 'shop',
+          sourceRect: { left: 0, top: 0, width: 0, height: 0 },
+        },
+      ],
       pageIds: ['shop'],
       sourceRect: { left: 0, top: 0, width: 0, height: 0 },
     });
@@ -238,6 +244,15 @@ describe('PageAnnouncementManager', () => {
     const snapshot = createSnapshot();
     const { manager, stage } = mountManager(snapshot);
     const flyoutEvent = vi.fn();
+    const button = document.createElement('button');
+    button.className = 'workshop-page__leaderboard-button';
+    const destinationIconFrame = document.createElement('span');
+    destinationIconFrame.className = 'workshop-page__leaderboard-button-icon-frame';
+    const destinationIcon = document.createElement('img');
+    destinationIcon.src = '/feature-leaderboard.webp';
+    destinationIconFrame.append(destinationIcon);
+    button.append(destinationIconFrame);
+    stage.append(button);
     stage.addEventListener(FEATURE_UNLOCK_FLYOUT_EVENT, flyoutEvent);
     manager.current = {
       kind: 'unlock',
@@ -248,31 +263,81 @@ describe('PageAnnouncementManager', () => {
     manager.renderAnnouncement(manager.current);
     manager.layer.hidden = false;
 
+    expect(
+      stage
+        .querySelector('.room-announcement__unlock-icon-source img')
+        ?.getAttribute('src'),
+    ).toContain('feature-leaderboard.webp');
+
     manager.hideCurrent();
 
     expect(flyoutEvent).toHaveBeenCalledTimes(1);
     expect(flyoutEvent.mock.calls[0][0].detail.features).toEqual([
-      { value: 'leaderboard', pageId: null },
+      {
+        value: 'leaderboard',
+        pageId: null,
+        sourceRect: { left: 0, top: 0, width: 0, height: 0 },
+      },
     ]);
     expect(flyoutEvent.mock.calls[0][0].detail.pageIds).toEqual([]);
   });
 
-  it('keeps multi-level unlock announcements in a stable row layout', () => {
+  it('shows every multi-level unlock as an icon item', () => {
     const snapshot = createSnapshot();
-    const { gameplayFacade, stage } = mountManager(snapshot);
+    const { gameplayFacade, manager, stage } = mountManager(snapshot);
 
     snapshot.tasks.currentLevel = 10;
     snapshot.playerLevel.currentLevel = 10;
     gameplayFacade.publishSnapshot();
 
-    const unlockRow = stage.querySelector('.room-announcement__row');
-    expect(unlockRow?.classList.contains('room-announcement__row--list')).toBe(true);
-    expect(unlockRow?.querySelector('.room-announcement__row-label')?.textContent).toBe(
-      'unlocks',
+    manager.hideCurrent();
+
+    const items = [...stage.querySelectorAll('.room-announcement__unlock-item')];
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe(
+      'features unlocked',
     );
-    expect(unlockRow?.querySelector('.room-announcement__row-value')?.textContent).toBe(
-      'garden / research / brewing / prestige / leaderboard / discoveries / alliance / inbox',
+    expect(items).toHaveLength(8);
+    expect(
+      items.map((item) => item.querySelector('.room-announcement__unlock-label')?.textContent),
+    ).toEqual([
+      'garden',
+      'research',
+      'brewing',
+      'prestige',
+      'leaderboard',
+      'discoveries',
+      'alliance',
+      'inbox',
+    ]);
+    expect(stage.querySelectorAll('.room-announcement__unlock-icon-stage')).toHaveLength(8);
+    expect(stage.querySelectorAll('.room-announcement__unlock-detail:not([hidden])')).toHaveLength(
+      0,
     );
+  });
+
+  it('keeps the non-persistent feature unlock preview open until its backdrop is tapped', () => {
+    vi.useFakeTimers();
+    const snapshot = createSnapshot();
+    const { manager, stage } = mountManager(snapshot);
+    const flyoutEvent = vi.fn();
+    stage.addEventListener(FEATURE_UNLOCK_FLYOUT_EVENT, flyoutEvent);
+
+    expect(
+      manager.showFeatureUnlockPreview({
+        values: ['market'],
+        pageIds: { market: 'shop' },
+      }),
+    ).toEqual({ ok: true, dialogId: 'featureUnlockAnnouncement' });
+
+    vi.runOnlyPendingTimers();
+    expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
+
+    stage
+      .querySelector('.room-announcement-layer')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(true);
+    expect(flyoutEvent).toHaveBeenCalledTimes(1);
   });
 
   it('allows long announcement values to wrap without collapsing labels', () => {
@@ -730,6 +795,9 @@ describe('PageAnnouncementManager', () => {
     );
     expect(baseCss).toContain('animation: room-announcement-research-icon 390ms');
     expect(baseCss).toContain('var(--style-motion-ease-rubber) 180ms both;');
+    expect(baseCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.room-announcement__unlock-icon-source[\s\S]*animation: none;/,
+    );
   });
 
   it('shows completed research with a silhouette and actual icon', () => {

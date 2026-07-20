@@ -4,7 +4,7 @@ Elara Starbrew teaches through one lesson surface after the first purchase dialo
 
 Tutorial logic is unified through `TutorialLogicManager`. `TutorialStepManager` chooses and normalizes the current step, step definitions own reveal tokens and effects, `TutorialReminderManager` owns timing, and `TutorialLogicManager` returns the single view state the facade renders. Keep new tutorial flow rules in that path instead of branching directly inside `TutorialFacade`.
 
-The guide covers a free level 1 seed task and level-up, level 2 summon/sell/turn-in requirements with normal fast-sell rules, level 3 Research and mint seed requirements, level 4 Garden herb requirements, and level 5 Brewing with mana tonic research. After the first summon, only mana and the summon button stay revealed until the fifth first-lesson sage seed. Then Elara explains task requirements before the level requirement box is revealed and pointed at the sage seed turn-in. It has no skip state.
+The guide covers the sequential main requests for a free level 1 seed task and level-up, level 2 summon/sell/turn-in play with normal fast-sell rules, level 3 Research and mint seed requests, level 4 Garden herb requests, and level 5 Brewing with mana tonic research. After the first summon, only mana and the summon button stay revealed until the fifth first-lesson sage seed. Then Elara explains that she gives one request at a time before her request box is revealed and pointed at the sage seed turn-in. It has no skip state.
 
 The first tutorial fast-sell sequence selects the item, boinks the amount value for two seconds without opening the lesson panel or showing a pointer, then automatically advances to the `sell` button. Do not add a manual skip or a second hint box for that amount beat.
 
@@ -14,7 +14,7 @@ Level-up coin guidance must read Market `shop.shelf.sellItems` quantities before
 
 The target cue keeps the same diagonal placement math and uses the Spine pointer on a pointer-local Pixi canvas. Rotate the Spine shell by placement so the authored upward tap points at the target anchor.
 
-Lesson 4 starts by opening the level 4 requirements when herb tasks are visible, then sends players to Garden for the first sage grow using the live sage-herb requirement target, so they see why the summon/plant loop matters. The lesson panel opens immediately, but target pointer help waits for the 2-second gardening idle window or an explicit `show me` press. The gardening lesson fills the visible sage herb task before circling to mint herb. Later herb objectives use the same delayed target pointer behavior, then point only when the player appears stuck.
+Lesson 4 follows the active level 4 request, then sends players to Garden for the first sage grow using the live sage-herb target, so they see why the summon/plant loop matters. The lesson panel opens immediately, but target pointer help waits for the 2-second gardening idle window or an explicit `show me` press. Later herb objectives use the same delayed target pointer behavior, then point only when the player appears stuck.
 
 Tutorial market steps use the normal direct fast-sell path and live sell quantities. Do not add FTUE-only coin grants, tutorial price overrides, or tutorial-owned inventory mutation; level 1 is free, and level 2 teaches systemic selling.
 

@@ -3,6 +3,7 @@ import { defaultMarketId, isMarketId } from '../../../shared/marketLicence.js';
 
 const PRICES_QUERY = 'SELECT * FROM npc_market_price_snapshot';
 const LEGACY_PRICES_QUERY = 'SELECT * FROM npc_market_price';
+const PRICE_HISTORY_QUERY = 'SELECT * FROM market_price_hourly_snapshot';
 const EMPTY_SNAPSHOT = {
   connected: false,
   prices: [],
@@ -13,6 +14,7 @@ export class NpcMarketSubscriptionManager {
     this.onSnapshot = onSnapshot;
     this.connection = null;
     this.pricesTable = null;
+    this.priceHistoryTable = null;
     this.pricesQuery = PRICES_QUERY;
     this.subscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
@@ -30,6 +32,10 @@ export class NpcMarketSubscriptionManager {
       connection?.db?.npcMarketPrice ??
       connection?.db?.npc_market_price ??
       null;
+    this.priceHistoryTable =
+      connection?.db?.marketPriceHourlySnapshot ??
+      connection?.db?.market_price_hourly_snapshot ??
+      null;
     this.pricesQuery =
       connection?.db?.npcMarketPriceSnapshot || connection?.db?.npc_market_price_snapshot
         ? PRICES_QUERY
@@ -41,12 +47,17 @@ export class NpcMarketSubscriptionManager {
     }
 
     this.bindTable(this.pricesTable);
-    this.subscriptions = [this.subscribeQuery(this.pricesQuery)].filter(Boolean);
+    this.bindTable(this.priceHistoryTable);
+    this.subscriptions = [
+      this.subscribeQuery(this.pricesQuery),
+      this.priceHistoryTable ? this.subscribeQuery(PRICE_HISTORY_QUERY) : null,
+    ].filter(Boolean);
     this.publishFromTables();
   }
 
   disconnect() {
     this.unbindTable(this.pricesTable);
+    this.unbindTable(this.priceHistoryTable);
 
     for (const subscription of this.subscriptions) {
       if (!subscription.isEnded?.()) {
@@ -56,6 +67,7 @@ export class NpcMarketSubscriptionManager {
 
     this.connection = null;
     this.pricesTable = null;
+    this.priceHistoryTable = null;
     this.pricesQuery = PRICES_QUERY;
     this.subscriptions = [];
     this.pricesByItemKey = new Map();
@@ -82,9 +94,9 @@ export class NpcMarketSubscriptionManager {
   }
 
   bindTable(table) {
-    table.onInsert?.(this.handleTableChange);
-    table.onUpdate?.(this.handleTableChange);
-    table.onDelete?.(this.handleTableChange);
+    table?.onInsert?.(this.handleTableChange);
+    table?.onUpdate?.(this.handleTableChange);
+    table?.onDelete?.(this.handleTableChange);
   }
 
   unbindTable(table) {
@@ -107,9 +119,16 @@ export class NpcMarketSubscriptionManager {
       return;
     }
 
+    const priceHistoryByItemKey = this.getPriceHistoryByItemKey();
     const prices = Array.from(this.pricesTable.iter())
       .filter((row) => this.getRowMarketId(row) === this.activeMarketId)
-      .map((row) => this.mapPrice(row))
+      .map((row) => {
+        const price = this.mapPrice(row);
+        return {
+          ...price,
+          priceHistory: priceHistoryByItemKey.get(price.itemKey) ?? [],
+        };
+      })
       .sort((left, right) => {
         const kindCompare = left.itemKind.localeCompare(right.itemKind);
 
@@ -172,6 +191,54 @@ export class NpcMarketSubscriptionManager {
       supplyScore: this.toNumber(row.supplyScore ?? row.supply_score),
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
       lastTickAtMs: this.toTimestampMs(row.lastTickAt ?? row.last_tick_at),
+    };
+  }
+
+  getPriceHistoryByItemKey() {
+    const historyByItemKey = new Map();
+
+    if (!this.priceHistoryTable) {
+      return historyByItemKey;
+    }
+
+    for (const row of this.priceHistoryTable.iter()) {
+      if (this.getRowMarketId(row) !== this.activeMarketId) {
+        continue;
+      }
+
+      const history = this.mapPriceHistory(row);
+      const rows = historyByItemKey.get(history.itemKey) ?? [];
+      rows.push(history);
+      historyByItemKey.set(history.itemKey, rows);
+    }
+
+    for (const rows of historyByItemKey.values()) {
+      rows.sort((left, right) => left.updatedAtMs - right.updatedAtMs);
+    }
+
+    return historyByItemKey;
+  }
+
+  mapPriceHistory(row) {
+    const priceScale = row.priceScale ?? row.price_scale;
+
+    return {
+      itemKey: String(row.itemKey ?? row.item_key ?? ''),
+      marketPriceCoin: this.toCoinPrice(
+        row.marketPriceCoin ?? row.marketPriceGold ?? row.market_price_gold,
+        priceScale,
+      ) ?? 0,
+      npcBuyPriceCoin: this.toCoinPrice(
+        row.npcBuyPriceCoin ?? row.npcBuyPriceGold ?? row.npc_buy_price_gold,
+        priceScale,
+      ) ?? 0,
+      npcSellPriceCoin: this.toCoinPrice(
+        row.npcSellPriceCoin ?? row.npcSellPriceGold ?? row.npc_sell_price_gold,
+        priceScale,
+      ) ?? 0,
+      npcNeed: this.toNumber(row.npcNeed ?? row.npc_need),
+      npcStock: this.toNumber(row.npcStock ?? row.npc_stock),
+      updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
     };
   }
 

@@ -38,4 +38,18 @@ describe('MarketLicenceFacade', () => {
     playerState.currentRunLevel = 1;
     expect(facade.getActiveMarketId()).toBe('grandExchange');
   });
+
+  it.each([
+    [0, 1],
+    [1, 2],
+    [3, 3],
+    [6, 4],
+    [10, 5],
+  ])('uses completed star count %i for market rank %i', (completedStars, rank) => {
+    const facade = new MarketLicenceFacade({
+      prestigeFacade: createPrestigeFacade(completedStars),
+    });
+
+    expect(facade.getSnapshot()).toMatchObject({ rank });
+  });
 });

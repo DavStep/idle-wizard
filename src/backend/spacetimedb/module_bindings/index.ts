@@ -110,6 +110,7 @@ import GameConfigSnapshotRow from "./game_config_snapshot_table";
 import LeaderboardRow from "./leaderboard_table";
 import LeaderboardSummaryRow from "./leaderboard_summary_table";
 import MarketDemandDailySnapshotRow from "./market_demand_daily_snapshot_table";
+import MarketPriceHourlySnapshotRow from "./market_price_hourly_snapshot_table";
 import NpcMarketAdminRow from "./npc_market_admin_table";
 import NpcMarketPriceSnapshotRow from "./npc_market_price_snapshot_table";
 import OwnPlayerGameplaySaveRow from "./own_player_gameplay_save_table";
@@ -405,6 +406,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MarketDemandDailySnapshotRow),
+  market_price_hourly_snapshot: __table({
+    name: 'market_price_hourly_snapshot',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MarketPriceHourlySnapshotRow),
   npc_market_price_snapshot: __table({
     name: 'npc_market_price_snapshot',
     indexes: [

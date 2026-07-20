@@ -472,8 +472,24 @@ describe('DevCheatsFacade', () => {
           id: 'guildQuestPosting',
           command: 'cheats.openUi("guildQuestPosting")',
         }),
+        expect.objectContaining({
+          id: 'featureUnlockAnnouncement',
+          command: 'cheats.openUi("featureUnlockAnnouncement")',
+        }),
       ]),
     });
+    const publishAndSaveSpy = vi.spyOn(app.gameplayFacade, 'publishAndSaveSnapshot');
+    publishAndSaveSpy.mockClear();
+    expect(target.cheats.openUi('featureUnlockAnnouncement')).toMatchObject({
+      ok: true,
+      surfaceId: 'featureUnlockAnnouncement',
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith(
+      'featureUnlockAnnouncement',
+      {},
+    );
+    expect(publishAndSaveSpy).not.toHaveBeenCalled();
+
     expect(target.cheats.openUi('guildQuestPosting')).toMatchObject({
       ok: true,
       surfaceId: 'guildQuestPosting',

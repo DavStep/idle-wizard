@@ -3,11 +3,13 @@ export class TaskSnapshotManager {
     itemsFacade,
     taskBalanceManager,
     taskLevelCompletionManager,
+    taskQuestProgressManager,
     taskStateEntityManager,
   }) {
     this.itemsFacade = itemsFacade;
     this.taskBalanceManager = taskBalanceManager;
     this.taskLevelCompletionManager = taskLevelCompletionManager;
+    this.taskQuestProgressManager = taskQuestProgressManager;
     this.taskStateEntityManager = taskStateEntityManager;
   }
 
@@ -18,17 +20,35 @@ export class TaskSnapshotManager {
       .getCurrentLevelTasks(currentLevel)
       .map((task) => this.getTaskSnapshot(task));
     const completedTasks = tasks.filter((task) => task.completed).length;
+    const completion = this.taskLevelCompletionManager.getCurrentLevelCompletionSnapshot();
+    const completedAllLevels = this.taskStateEntityManager.areAllLevelsCompleted();
+    const questProgress = this.taskQuestProgressManager.getSnapshot({
+      currentLevel,
+      maxLevel,
+      tasks,
+      completion,
+      completedAllLevels,
+    });
+    const activeTaskId = questProgress.activeQuest?.kind === 'task'
+      ? questProgress.activeQuest.taskId
+      : null;
 
     return {
       currentLevel,
       maxLevel,
-      completedAllLevels: this.taskStateEntityManager.areAllLevelsCompleted(),
+      completedAllLevels,
       level: {
         level: currentLevel,
         completedTasks,
         totalTasks: tasks.length,
-        completion: this.taskLevelCompletionManager.getCurrentLevelCompletionSnapshot(),
-        tasks,
+        completion,
+        questProgress,
+        tasks: tasks.map((task) => ({
+          ...task,
+          isActiveQuest: task.taskId === activeTaskId,
+          canFill: task.taskId === activeTaskId && task.canFill,
+          xpReward: questProgress.xpPerQuest,
+        })),
       },
     };
   }

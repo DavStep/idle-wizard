@@ -257,6 +257,10 @@ export class ItemsFacade {
       snapshot.baseSellPrice = definition.baseSellPrice;
     }
 
+    if (definition.marketGrade !== undefined) {
+      snapshot.marketGrade = definition.marketGrade;
+    }
+
     if (definition.rarity) {
       snapshot.rarity = definition.rarity;
     }

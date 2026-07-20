@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.96
+
+- Replaced the old level requirement list with one Elara request at a time, with XP rewards and a progress bar toward the next level.
+- Reworked Market licences so each market rank adds a stall and opens trade for more advanced goods.
+- Added a Market Ledger for comparing trader prices, stock, buyers, recent price changes, and purchases in one place.
+- Improved feature unlock announcements so newly opened rooms and shortcuts travel into their destination controls.
+
 ## 0.2.95
 
 - Fixed open clients briefly resuming stale pre-reset progress and then appearing to reset a second time after refreshing.

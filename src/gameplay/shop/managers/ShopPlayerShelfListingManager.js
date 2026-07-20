@@ -14,15 +14,27 @@ export class ShopPlayerShelfListingManager {
     shopSellKindManager,
     shopSellAvailabilityManager,
     shopPlayerShelfEntityManager,
+    getAccessibleSlotCount,
+    getItemAccess,
   }) {
     this.coinFacade = coinFacade;
     this.itemsFacade = itemsFacade;
     this.shopSellKindManager = shopSellKindManager;
     this.shopSellAvailabilityManager = shopSellAvailabilityManager;
     this.shopPlayerShelfEntityManager = shopPlayerShelfEntityManager;
+    this.getAccessibleSlotCount = getAccessibleSlotCount;
+    this.getItemAccess = getItemAccess;
   }
 
   selectSlot(slotNumber) {
+    if (slotNumber > (this.getAccessibleSlotCount?.() ?? Number.POSITIVE_INFINITY)) {
+      return {
+        ok: false,
+        reason: 'market_locked',
+        slotNumber,
+      };
+    }
+
     if (!this.shopPlayerShelfEntityManager.selectSlot(slotNumber)) {
       return {
         ok: false,
@@ -81,6 +93,16 @@ export class ShopPlayerShelfListingManager {
     }
 
     const item = this.itemsFacade.getItemDefinition(itemTypeId);
+    const marketAccess = this.getItemAccess?.(item);
+
+    if (marketAccess && !marketAccess.tradedHere) {
+      return {
+        ok: false,
+        reason: 'market_locked',
+        itemTypeId,
+        requiredMarket: marketAccess.requiredMarket,
+      };
+    }
 
     if (!this.shopSellKindManager.isSellKind(item.kind)) {
       return {
@@ -213,6 +235,15 @@ export class ShopPlayerShelfListingManager {
         ok: false,
         reason: 'unknown_item',
         itemKey,
+      };
+    }
+
+    const marketAccess = this.getItemAccess?.(item);
+    if (marketAccess && !marketAccess.tradedHere) {
+      return {
+        ok: false,
+        reason: 'market_locked',
+        requiredMarket: marketAccess.requiredMarket,
       };
     }
 

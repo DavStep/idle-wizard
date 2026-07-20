@@ -24,14 +24,10 @@ export class TaskActionProgressManager {
       };
     }
 
-    const currentLevel = this.taskStateEntityManager.getCurrentLevel();
     const updates = [];
+    const task = this.taskStateEntityManager.getActiveTask();
 
-    for (const task of this.taskBalanceManager.getCurrentLevelTasks(currentLevel)) {
-      if (!this.matchesAction(task, { type, itemKey, researchId })) {
-        continue;
-      }
-
+    if (task && this.matchesAction(task, { type, itemKey, researchId })) {
       const update = this.addActionProgress(task, safeQuantity);
 
       if (update) {
@@ -46,12 +42,13 @@ export class TaskActionProgressManager {
   }
 
   syncCurrentLevelStateRequirements() {
-    const currentLevel = this.taskStateEntityManager.getCurrentLevel();
     const updates = [];
 
-    for (const task of this.taskBalanceManager.getCurrentLevelTasks(currentLevel)) {
-      if (this.taskStateEntityManager.isCompleted(task.id)) {
-        continue;
+    while (true) {
+      const task = this.taskStateEntityManager.getActiveTask();
+
+      if (!task) {
+        break;
       }
 
       if (
@@ -72,7 +69,10 @@ export class TaskActionProgressManager {
           levelBefore: completion.levelBefore,
           currentLevel: completion.levelAfter,
         });
+        continue;
       }
+
+      break;
     }
 
     return {

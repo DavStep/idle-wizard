@@ -9,7 +9,11 @@ import { appendTextWithItemIcons } from '../../shared/itemIconLabel.js';
 import { createPageIcon } from '../../shared/pageIcons.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { getLevelPayoffRows } from '../../workshop/managers/levelPayoffSummary.js';
-import { FEATURE_UNLOCK_FLYOUT_EVENT } from '../featureUnlockEvents.js';
+import {
+  FEATURE_UNLOCK_FLYOUT_EVENT,
+  getFeatureUnlockIconFrame,
+  getFeatureUnlockTarget,
+} from '../featureUnlockEvents.js';
 
 const DISPLAY_MS = 2100;
 const RESOURCE_ICON_FRAMES = Object.freeze({
@@ -102,6 +106,34 @@ export class PageAnnouncementManager {
     this.showNext();
 
     return this.layer;
+  }
+
+  showFeatureUnlockPreview({ values = [], pageIds = {}, notices = {} } = {}) {
+    const normalizedValues = (Array.isArray(values) ? values : []).filter(
+      (value) => typeof value === 'string' && value.trim(),
+    );
+
+    if (!this.layer || normalizedValues.length <= 0) {
+      return { ok: false, reason: this.layer ? 'features_missing' : 'announcements_not_mounted' };
+    }
+
+    this.clearHideTimeout();
+    this.queue = [];
+    this.current = {
+      kind: 'unlock',
+      preview: true,
+      values: normalizedValues,
+      pageIds,
+      notices,
+    };
+    this.previousFocus = document.activeElement;
+    this.renderAnnouncement(this.current);
+    this.layer.hidden = false;
+    this.layer.setAttribute('aria-hidden', 'false');
+    this.focusWithoutScroll(this.panel);
+    this.updateLayerTimingMetadata();
+
+    return { ok: true, dialogId: 'featureUnlockAnnouncement' };
   }
 
   unmount() {
@@ -427,7 +459,7 @@ export class PageAnnouncementManager {
     this.layer.setAttribute('aria-hidden', 'false');
     this.focusWithoutScroll(this.panel);
     this.clearHideTimeout();
-    if (this.current.kind !== 'whileAway') {
+    if (this.current.kind !== 'whileAway' && !this.current.preview) {
       this.hideTimeoutId = window.setTimeout(() => this.hideCurrent(), this.displayMs);
     }
     this.updateLayerTimingMetadata();
@@ -467,9 +499,13 @@ export class PageAnnouncementManager {
       return;
     }
 
-    const source =
-      this.body?.querySelector('.room-announcement__unlock-icon-stage') ?? this.panel;
-    const sourceRect = this.serializeRect(source?.getBoundingClientRect?.());
+    const sourceStages = new Map(
+      [...(this.body?.querySelectorAll('.room-announcement__unlock-icon-stage') ?? [])].map(
+        (stage) => [stage.dataset.featureUnlockValue, stage],
+      ),
+    );
+    const fallbackSource = this.panel;
+    const sourceRect = this.serializeRect(fallbackSource?.getBoundingClientRect?.());
     const EventCtor = this.layer.ownerDocument?.defaultView?.CustomEvent ?? globalThis.CustomEvent;
 
     if (typeof EventCtor !== 'function') {
@@ -480,10 +516,15 @@ export class PageAnnouncementManager {
       new EventCtor(FEATURE_UNLOCK_FLYOUT_EVENT, {
         bubbles: true,
         detail: {
-          features: this.current.values.map((value) => ({
-            value,
-            pageId: this.current.pageIds?.[value] ?? null,
-          })),
+          features: this.current.values.map((value) => {
+            const source = sourceStages.get(value) ?? fallbackSource;
+
+            return {
+              value,
+              pageId: this.current.pageIds?.[value] ?? null,
+              sourceRect: this.serializeRect(source?.getBoundingClientRect?.()),
+            };
+          }),
           pageIds,
           sourceRect,
         },
@@ -527,6 +568,11 @@ export class PageAnnouncementManager {
   }
 
   dismissCurrentReport() {
+    if (this.current?.preview) {
+      this.hideCurrent();
+      return true;
+    }
+
     if (this.current?.kind !== 'whileAway') {
       return false;
     }
@@ -639,35 +685,63 @@ export class PageAnnouncementManager {
     this.setText(this.title, titleText);
     this.panel.setAttribute('aria-label', titleText);
 
-    if (!singleUnlock) {
-      this.body.replaceChildren(
-        this.createRows([
-          {
-            label: 'unlocked',
-            value: values.join(', '),
-            valueLines: values,
-          },
-        ]),
-      );
-      return;
-    }
+    const items = document.createElement('div');
+    items.className = 'room-announcement__unlock-items';
+    items.classList.toggle('room-announcement__unlock-items--multiple', !singleUnlock);
+    items.replaceChildren(
+      ...values.map((value, index) =>
+        this.createFeatureUnlockItem({
+          value,
+          pageId: pageIds[value],
+          singleUnlock,
+          index,
+        }),
+      ),
+    );
+    this.body.replaceChildren(items);
+  }
 
-    const iconStage = this.createFeatureUnlockIconStage(pageIds[firstValue]);
+  createFeatureUnlockItem({ value, pageId, singleUnlock, index }) {
+    const item = document.createElement('div');
+    item.className = 'room-announcement__unlock-item';
+    item.style.setProperty('--room-announcement-unlock-index', index);
+
+    const iconStage = this.createFeatureUnlockIconStage({ value, pageId, compact: !singleUnlock });
     const label = document.createElement('div');
     label.className = 'room-announcement__research-label room-announcement__unlock-label';
-    label.textContent = firstValue;
+    label.textContent = value;
 
     const detail = document.createElement('div');
     detail.className = 'room-announcement__research-detail room-announcement__unlock-detail';
-    detail.textContent = pageIds[firstValue] ? 'new room available' : 'new feature available';
+    detail.textContent = pageId ? 'new room available' : 'new feature available';
+    detail.hidden = !singleUnlock;
 
-    this.body.replaceChildren(iconStage, label, detail);
+    item.append(iconStage, label, detail);
+    return item;
   }
 
-  createFeatureUnlockIconStage(pageId) {
+  createFeatureUnlockIconStage({ value, pageId, compact = false }) {
     const stage = document.createElement('div');
     stage.className = 'room-announcement__research-icon-stage room-announcement__unlock-icon-stage';
+    stage.dataset.featureUnlockValue = value;
     stage.setAttribute('aria-hidden', 'true');
+
+    const target = getFeatureUnlockTarget(this.layer?.parentElement, { value, pageId });
+    const targetIconFrame = getFeatureUnlockIconFrame(target);
+
+    if (targetIconFrame) {
+      const iconFrame = targetIconFrame.cloneNode(true);
+      iconFrame.classList.add('room-announcement__unlock-icon-source');
+      iconFrame.style.position = 'relative';
+      iconFrame.style.inset = 'auto';
+      iconFrame.style.width = compact ? '52px' : '76px';
+      iconFrame.style.height = compact ? '60px' : '86px';
+      iconFrame.style.scale = '1';
+      iconFrame.style.translate = 'none';
+      iconFrame.style.transform = 'none';
+      stage.append(iconFrame);
+      return stage;
+    }
 
     const icon = createPageIcon(
       pageId,

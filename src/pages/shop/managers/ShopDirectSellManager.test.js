@@ -161,7 +161,7 @@ describe('ShopDirectSellManager', () => {
     expect(manager.getSellFailureText('demand_too_low', { need: 2 })).toBe('only 2 buyers');
   });
 
-  it('opens fast sell, recalculates totals, and clamps sales to trader need', async () => {
+  it('opens a trader offer, recalculates totals, and clamps sales to trader need', async () => {
     const buttonParent = document.createElement('section');
     const popupParent = document.createElement('section');
     const snapshot = {
@@ -189,26 +189,23 @@ describe('ShopDirectSellManager', () => {
 
     manager.mount({ buttonParent, popupParent });
 
-    const box = buttonParent.querySelector('.shop-page__direct-sell-box');
+    const controls = buttonParent.querySelector('.shop-page__direct-sell-controls');
     const openButton = buttonParent.querySelector('.shop-page__direct-sell-button');
     const helpButton = buttonParent.querySelector('.shop-page__direct-sell-help-button');
     const helpPopup = popupParent.querySelector('.shop-page__direct-sell-help-popup');
     const helpTooltip = popupParent.querySelector('.shop-page__direct-sell-help-tooltip');
-    expect(box?.querySelector('.style-box__title')?.textContent).toBe('fast sell');
-    expect(box?.querySelector('.shop-page__direct-sell-summary')?.textContent).toBe(
-      'instant sale80% payout',
-    );
-    expect(openButton?.textContent).toBe('fast sell');
+    expect(controls?.getAttribute('aria-label')).toBe('sell to trader');
+    expect(openButton?.textContent).toBe('sell to trader');
     expect(openButton?.dataset.tutorialId).toBe('shop:directSell');
-    expect(helpButton?.textContent).toBe('?');
+    expect(helpButton?.textContent).toBe('[i]');
     expect(helpPopup?.hidden).toBe(true);
 
     helpButton.click();
 
     expect(helpButton?.getAttribute('aria-expanded')).toBe('true');
     expect(helpPopup?.hidden).toBe(false);
-    expect(helpTooltip?.textContent).toContain('80% of full trader price');
-    expect(helpTooltip?.textContent).toContain('wait for the timer');
+    expect(helpTooltip?.textContent).toContain('sell now for 80%');
+    expect(helpTooltip?.textContent).toContain('stalls wait');
 
     openButton.click();
 
@@ -217,7 +214,7 @@ describe('ShopDirectSellManager', () => {
 
     const popup = popupParent.querySelector('.shop-page__direct-sell-popup');
     expect(popup?.hidden).toBe(false);
-    expect(popup?.textContent).toContain('fast sell');
+    expect(popup?.textContent).toContain('trader offer');
     expect(popup?.textContent).toContain('no item selected');
     expect(popup?.textContent).toContain('select item');
     expect(popup.querySelector('.shop-page__direct-sell-field')?.hidden).toBe(false);
@@ -264,7 +261,7 @@ describe('ShopDirectSellManager', () => {
       popup.querySelector('.shop-page__direct-sell-selected-label')?.getAttribute('aria-pressed'),
     ).toBe('true');
     expect(popup.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(
-      'sage seed x5demand 3',
+      'sage seed x5buyers want 3',
     );
     expect(popup.querySelector('.shop-page__direct-sell-field')?.hidden).toBe(false);
     expect(popup.querySelector('.shop-page__direct-sell-confirm')?.hidden).toBe(false);
@@ -299,7 +296,7 @@ describe('ShopDirectSellManager', () => {
     herbsTab.click();
 
     expect(popup.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(
-      'sage seed x5demand 3',
+      'sage seed x5buyers want 3',
     );
 
     const input = popup.querySelector('.shop-page__direct-sell-input');
@@ -378,7 +375,7 @@ describe('ShopDirectSellManager', () => {
     expect(onSelectItemSpy).toHaveBeenCalledTimes(1);
     expect(
       popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent,
-    ).toBe('sage seed x5demand 3');
+    ).toBe('sage seed x5buyers want 3');
     expect(
       popupParent.querySelector('.shop-page__direct-sell-item-button')?.getAttribute('aria-pressed'),
     ).toBe('true');
@@ -427,7 +424,7 @@ describe('ShopDirectSellManager', () => {
 
       expect(
         popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent,
-      ).toBe('sage seed x5demand 3');
+      ).toBe('sage seed x5buyers want 3');
       expect(
         popupParent.querySelector('.shop-page__direct-sell-item-button')?.getAttribute(
           'aria-pressed',
@@ -800,7 +797,7 @@ describe('ShopDirectSellManager', () => {
     itemButton?.click();
 
     expect(popupParent.querySelector('.shop-page__direct-sell-selected-row')?.textContent).toBe(
-      'sage seed x2demand 3',
+      'sage seed x2buyers want 3',
     );
     expect(
       popupParent.querySelector('.shop-page__direct-sell-confirm-label')?.textContent,

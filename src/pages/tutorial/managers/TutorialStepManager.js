@@ -1,7 +1,4 @@
-import {
-  formatOpenLevelRequirementsLabel,
-  getLevelRequirementTargetLevel,
-} from '../../shared/levelRequirementsLabel.js';
+import { getLevelRequirementTargetLevel } from '../../shared/levelRequirementsLabel.js';
 
 const SAGE_SEED_KEY = 'sageSeed';
 const SAGE_HERB_KEY = 'sageHerb';
@@ -267,8 +264,8 @@ export const TUTORIAL_STEPS = [
     kind: 'prompt',
     pageId: 'workshop',
     revealTokens: REVEAL_MANA_SUMMON,
-    text: "for each new lesson or skill, i'll ask you to complete a few tasks.",
-    advanceLabel: 'show requirements',
+    text: "i'll give you one request at a time. complete it to earn xp toward your next level.",
+    advanceLabel: 'show request',
     advanceOnClick: true,
     advanceAction: TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS,
     showPointer: false,
@@ -440,7 +437,7 @@ export const TUTORIAL_STEPS = [
     targetId: 'page:shop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'sell sage seeds in market',
-    text: 'fast sell',
+    text: 'sell to trader',
     getProgress: () => ({ value: 0, max: 1 }),
     getProgressLabel: () => '0/1 market',
     isAvailable: ({ snapshot }) =>
@@ -460,8 +457,8 @@ export const TUTORIAL_STEPS = [
     targetId: 'shop:directSell',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     getObjectiveText: ({ currentPageId }) =>
-      currentPageId === 'shop' ? 'open fast sell' : 'open market',
-    text: 'fast sell',
+      currentPageId === 'shop' ? 'open trader offer' : 'open market',
+    text: 'sell to trader',
     getProgress: ({ dom }) => ({
       value: dom.isShopDirectSellPopupOpen?.() ? 1 : 0,
       max: 1,
@@ -488,7 +485,7 @@ export const TUTORIAL_STEPS = [
         ? `shop:directSell:${SAGE_SEED_KEY}`
         : 'shop:directSell',
     getHintText: ({ dom }) =>
-      dom.isShopDirectSellPopupOpen?.() ? 'choose sage seed' : 'fast sell',
+      dom.isShopDirectSellPopupOpen?.() ? 'choose sage seed' : 'sell to trader',
     getProgress: ({ dom, snapshot }) => ({
       value:
         isDirectSellSelected(dom, SAGE_SEED_KEY) ||
@@ -2145,7 +2142,7 @@ function getLevelTwoSaleHintText({ currentPageId, dom, snapshot }) {
   }
 
   if (state.kind === 'open-fast-sell') {
-    return 'fast sell';
+    return 'sell to trader';
   }
 
   if (state.kind === 'choose-item') {
@@ -2401,7 +2398,7 @@ function getLevelUpCoinHintText({
   }
 
   if (state.kind === 'open-fast-sell') {
-    return 'fast sell';
+    return 'sell to trader';
   }
 
   if (state.kind === 'choose-item') {
@@ -3174,7 +3171,7 @@ function getLevelTwoRequirementPinText(snapshot) {
   const targetLevel = getLevelRequirementTargetLevel(snapshot?.tasks);
   const levelText = targetLevel ? `level ${targetLevel}` : 'these';
 
-  return `pin ${levelText} requirements so they stay open.`;
+  return `follow elara's request for ${levelText}.`;
 }
 
 function formatLevelTwoSageRequirementList(snapshot) {
@@ -3330,7 +3327,8 @@ function getCurrentLevel(snapshot) {
 }
 
 function getOpenLevelRequirementsText(snapshot) {
-  return formatOpenLevelRequirementsLabel(snapshot?.tasks);
+  const targetLevel = getLevelRequirementTargetLevel(snapshot?.tasks);
+  return targetLevel ? `open elara's level ${targetLevel} request` : "open elara's request";
 }
 
 function isNpcMarketSelling(snapshot, itemKey) {

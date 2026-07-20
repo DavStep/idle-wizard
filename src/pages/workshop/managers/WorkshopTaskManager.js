@@ -1,6 +1,5 @@
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import {
-  formatLevelRequirementsLabel,
   getLevelRequirementTargetLevel,
 } from '../../shared/levelRequirementsLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
@@ -14,7 +13,7 @@ import {
 } from '../../../gameplay/tasks/taskRequirementTypes.js';
 import { formatLevelUpNotice, getLevelPayoffRows } from './levelPayoffSummary.js';
 
-const INITIAL_REQUIREMENTS_LABEL = formatLevelRequirementsLabel();
+const ELARA_REQUEST_LABEL = "elara's request";
 const TURN_IN_TEXT = 'turn in';
 const EXPANDED_CONTENT_MOTION_MS = 225;
 const TASK_REORDER_MOTION_MS = 225;
@@ -37,8 +36,10 @@ export class WorkshopTaskManager {
     this.currentCoin = 0;
     this.currentSnapshot = null;
     this.currentFirstCompletedTaskId = null;
-    this.currentRequirementsLabel = INITIAL_REQUIREMENTS_LABEL;
+    this.currentRequirementsLabel = ELARA_REQUEST_LABEL;
     this.currentRequirementTargetLevel = null;
+    this.currentQuestTargetLevel = null;
+    this.questProgressResetFrame = null;
     this.taskPriorityByLevel = new Map();
     this.dragState = null;
     this.skipNextRowAnimationTaskId = null;
@@ -168,6 +169,9 @@ export class WorkshopTaskManager {
     this.root = document.createElement('section');
     this.root.className = 'workshop-page__tasks style-box is-collapsed';
     this.root.setAttribute('aria-label', this.currentRequirementsLabel);
+    this.root.setAttribute('aria-expanded', 'true');
+    this.root.dataset.tutorialId = 'workshop:tasks';
+    this.root.dataset.questMode = 'sequential';
 
     this.refs.slot = document.createElement('div');
     this.refs.slot.className = 'workshop-page__tasks-slot';
@@ -200,7 +204,42 @@ export class WorkshopTaskManager {
 
     this.refs.count = document.createElement('span');
     this.refs.count.className = 'workshop-page__tasks-count';
-    this.refs.count.textContent = '0/5';
+    this.refs.count.textContent = 'level 1';
+
+    this.refs.questProgress = document.createElement('div');
+    this.refs.questProgress.className = 'workshop-page__quest-progress';
+
+    this.refs.questProgressMeta = document.createElement('div');
+    this.refs.questProgressMeta.className = 'workshop-page__quest-progress-meta';
+
+    this.refs.questProgressLabel = document.createElement('span');
+    this.refs.questProgressLabel.className = 'workshop-page__quest-progress-label';
+    this.refs.questProgressLabel.textContent = 'level progress';
+
+    this.refs.questProgressValue = document.createElement('span');
+    this.refs.questProgressValue.className = 'workshop-page__quest-progress-value';
+    this.refs.questProgressValue.setAttribute('aria-live', 'polite');
+
+    this.refs.questProgressRail = document.createElement('div');
+    this.refs.questProgressRail.className = 'style-progress workshop-page__quest-progress-rail';
+    this.refs.questProgressRail.setAttribute('role', 'progressbar');
+
+    this.refs.questProgressFill = document.createElement('span');
+    this.refs.questProgressFill.className =
+      'style-progress__fill is-smooth-progress-fill workshop-page__quest-progress-fill';
+    this.refs.questProgressRail.append(this.refs.questProgressFill);
+    this.refs.questProgressMeta.append(
+      this.refs.questProgressLabel,
+      this.refs.questProgressValue,
+    );
+    this.refs.questProgress.append(
+      this.refs.questProgressMeta,
+      this.refs.questProgressRail,
+    );
+
+    this.refs.questReward = document.createElement('span');
+    this.refs.questReward.className = 'workshop-page__quest-reward';
+    this.refs.questReward.textContent = 'reward: 20 xp';
 
     this.refs.list = document.createElement('div');
     this.refs.list.className = 'workshop-page__task-list';
@@ -248,8 +287,10 @@ export class WorkshopTaskManager {
     this.root.append(
       this.refs.title,
       this.refs.count,
+      this.refs.questProgress,
       this.refs.summary,
       this.refs.expandedContent,
+      this.refs.questReward,
       this.refs.pinButton,
       this.refs.toggleButton,
       this.refs.levelRewardsToggle,
@@ -304,7 +345,12 @@ export class WorkshopTaskManager {
     this.currentCoin = 0;
     this.currentSnapshot = null;
     this.currentFirstCompletedTaskId = null;
-    this.currentRequirementsLabel = INITIAL_REQUIREMENTS_LABEL;
+    this.currentRequirementsLabel = ELARA_REQUEST_LABEL;
+    this.currentQuestTargetLevel = null;
+    if (this.questProgressResetFrame !== null) {
+      globalThis.cancelAnimationFrame?.(this.questProgressResetFrame);
+    }
+    this.questProgressResetFrame = null;
     this.expandingExpandedContent = false;
     this.collapsingExpandedContent = false;
     this.duplicateTouchClickSuppressionTimeoutId = null;
@@ -533,13 +579,14 @@ export class WorkshopTaskManager {
     const tasks = taskSnapshot.level.tasks ?? [];
     this.setRequirementContext(taskSnapshot);
     const displayTasks = this.getDisplayTasks(tasks, taskSnapshot);
-    const [summaryTask, ...listTasks] = displayTasks;
+    const [summaryTask] = displayTasks;
+    const listTasks = [];
     this.currentSnapshot = snapshot;
     this.currentTasksById = new Map(tasks.map((task) => [task.taskId, task]));
     this.currentDisplayTasks = displayTasks;
     this.currentLevelCompletion = taskSnapshot.level.completion ?? null;
     this.currentCoin = Number(snapshot?.coin?.current) || 0;
-    this.currentFirstCompletedTaskId = this.getFirstCompletedTaskId(displayTasks);
+    this.currentFirstCompletedTaskId = null;
     const rowMovement = this.ensureRows(listTasks);
     this.setCanToggleTasks(listTasks.length > 0);
 
@@ -548,19 +595,22 @@ export class WorkshopTaskManager {
     }
 
     this.renderSummaryTask(summaryTask, taskSnapshot.completedAllLevels);
-    this.renderNextLine(taskSnapshot, displayTasks);
+    this.setHidden(this.refs.nextLine, true);
+    this.renderQuestProgress(taskSnapshot.level.questProgress);
     this.setText(
       this.refs.count,
       taskSnapshot.completedAllLevels
         ? 'done'
-        : `${taskSnapshot.level.completedTasks}/${taskSnapshot.level.totalTasks}`,
+        : Number.isInteger(taskSnapshot.level.questProgress?.targetLevel)
+          ? `level ${taskSnapshot.level.questProgress.targetLevel}`
+          : this.getRequirementTargetText(),
     );
     this.setAttribute(
       this.refs.count,
       'aria-label',
       taskSnapshot.completedAllLevels
-        ? `all ${this.currentRequirementsLabel} met`
-        : `${taskSnapshot.level.completedTasks} of ${taskSnapshot.level.totalTasks} ${this.currentRequirementsLabel} met`,
+        ? 'all main quests complete'
+        : `progress toward level ${taskSnapshot.level.questProgress?.targetLevel ?? ''}`.trim(),
     );
     this.root.classList.toggle('is-all-complete', taskSnapshot.completedAllLevels);
 
@@ -568,7 +618,6 @@ export class WorkshopTaskManager {
       this.renderTask(task);
     }
 
-    this.renderLevelRewards();
     this.syncExpansionState();
     this.animateMovedRows(rowMovement);
     this.skipNextRowAnimationTaskId = null;
@@ -580,18 +629,73 @@ export class WorkshopTaskManager {
   }
 
   getDisplayTasks(tasks, taskSnapshot = this.currentSnapshot?.tasks) {
-    const priority = this.getTaskPriorityMap(taskSnapshot);
+    const activeTaskId = taskSnapshot?.level?.questProgress?.activeQuest?.taskId;
+    const activeTask = activeTaskId
+      ? tasks.find((task) => task.taskId === activeTaskId)
+      : tasks.find((task) => !task.completed);
 
-    return [
-      ...this.sortTasksByPriority(
-        tasks.filter((task) => !task.completed),
-        priority,
-      ),
-      ...this.sortTasksByPriority(
-        tasks.filter((task) => task.completed),
-        priority,
-      ),
-    ];
+    return activeTask ? [activeTask] : [];
+  }
+
+  renderQuestProgress(questProgress) {
+    if (!this.refs.questProgress || !questProgress) {
+      return;
+    }
+
+    const currentXp = Math.max(0, Math.floor(Number(questProgress.currentXp) || 0));
+    const requiredXp = Math.max(0, Math.floor(Number(questProgress.requiredXp) || 0));
+    const progress = requiredXp > 0 ? Math.min(1, currentXp / requiredXp) : 1;
+    const targetLevel = Number(questProgress.targetLevel);
+    const targetLevelChanged =
+      this.currentQuestTargetLevel !== null &&
+      Number.isInteger(targetLevel) &&
+      targetLevel !== this.currentQuestTargetLevel;
+
+    if (targetLevelChanged) {
+      this.refs.questProgressFill.classList.add('is-resetting');
+    }
+
+    this.setText(this.refs.questProgressValue, `${currentXp}/${requiredXp} xp`);
+    this.setStyleProperty(
+      this.refs.questProgressFill,
+      '--style-progress-fill-scale',
+      String(progress),
+    );
+    this.setAttribute(this.refs.questProgressRail, 'aria-valuemin', '0');
+    this.setAttribute(this.refs.questProgressRail, 'aria-valuemax', String(requiredXp));
+    this.setAttribute(this.refs.questProgressRail, 'aria-valuenow', String(currentXp));
+    this.setAttribute(
+      this.refs.questProgressRail,
+      'aria-label',
+      `${currentXp} of ${requiredXp} xp toward level ${questProgress.targetLevel}`,
+    );
+    this.setText(
+      this.refs.questProgressLabel,
+      questProgress.activeQuest ? 'level progress' : 'quest progress',
+    );
+    this.setHidden(this.refs.questReward, !questProgress.activeQuest);
+    this.setText(
+      this.refs.questReward,
+      questProgress.activeQuest
+        ? `reward: ${questProgress.activeQuest.xpReward ?? questProgress.xpPerQuest} xp`
+        : '',
+    );
+
+    this.currentQuestTargetLevel = Number.isInteger(targetLevel)
+      ? targetLevel
+      : this.currentQuestTargetLevel;
+
+    if (targetLevelChanged) {
+      globalThis.cancelAnimationFrame?.(this.questProgressResetFrame);
+      if (typeof globalThis.requestAnimationFrame === 'function') {
+        this.questProgressResetFrame = globalThis.requestAnimationFrame(() => {
+          this.refs.questProgressFill?.classList.remove('is-resetting');
+          this.questProgressResetFrame = null;
+        });
+      } else {
+        this.refs.questProgressFill.classList.remove('is-resetting');
+      }
+    }
   }
 
   getFirstCompletedTaskId(displayTasks) {
@@ -969,7 +1073,6 @@ export class WorkshopTaskManager {
   }
 
   setRequirementContext(taskSnapshot) {
-    const requirementsLabel = formatLevelRequirementsLabel(taskSnapshot);
     const requirementTargetLevel = getLevelRequirementTargetLevel(taskSnapshot);
 
     if (this.currentRequirementTargetLevel !== requirementTargetLevel) {
@@ -981,22 +1084,22 @@ export class WorkshopTaskManager {
       }
     }
 
-    this.currentRequirementsLabel = requirementsLabel;
+    this.currentRequirementsLabel = ELARA_REQUEST_LABEL;
     this.currentRequirementTargetLevel = requirementTargetLevel;
-    this.setAttribute(this.root, 'aria-label', requirementsLabel);
-    this.setText(this.refs.title, requirementsLabel);
-    this.setAttribute(this.refs.title, 'aria-label', `show ${requirementsLabel} info`);
-    this.setAttribute(this.refs.infoDialog, 'aria-label', `${requirementsLabel} information`);
-    this.setText(this.refs.infoTitle, requirementsLabel);
+    this.setAttribute(this.root, 'aria-label', ELARA_REQUEST_LABEL);
+    this.setText(this.refs.title, ELARA_REQUEST_LABEL);
+    this.setAttribute(this.refs.title, 'aria-label', `show ${ELARA_REQUEST_LABEL} info`);
+    this.setAttribute(this.refs.infoDialog, 'aria-label', `${ELARA_REQUEST_LABEL} information`);
+    this.setText(this.refs.infoTitle, ELARA_REQUEST_LABEL);
     this.setText(this.refs.infoBody, this.getTasksHelperText());
   }
 
   getTasksHelperText() {
     if (Number.isInteger(this.currentRequirementTargetLevel)) {
-      return `finish these requirements to reach level ${this.currentRequirementTargetLevel}. only turn-in rows consume items.`;
+      return `complete elara's requests one at a time to reach level ${this.currentRequirementTargetLevel}. each request gives xp. turn-in requests consume items.`;
     }
 
-    return 'finish these requirements to level up. only turn-in rows consume items.';
+    return "complete elara's requests one at a time. each request gives xp. turn-in requests consume items.";
   }
 
   getRequirementTargetText() {
@@ -1126,13 +1229,7 @@ export class WorkshopTaskManager {
   }
 
   shouldShowLevelRewards() {
-    const hiddenByUser = this.canToggleLevelRewards() && this.rewardsHidden;
-
-    return Boolean(
-      this.shouldOfferLevelRewards() &&
-        this.hasLevelRewardsLayout() &&
-        !hiddenByUser,
-    );
+    return false;
   }
 
   hasLevelRewardsLayout() {
@@ -1170,6 +1267,7 @@ export class WorkshopTaskManager {
     const payoffRows = this.getLevelPayoffRows(this.currentLevelCompletion.level, nextLevel);
     const payoffPreview = this.getLevelPayoffPreview(nextLevel, payoffRows);
 
+    this.setText(row.label, `reach level ${nextLevel}`);
     setResourceIconText(row.cost, costText);
     this.setDisabled(row.button, disabled);
     this.setAttribute(row.button, 'aria-disabled', disabled ? 'true' : 'false');
@@ -2072,6 +2170,12 @@ export class WorkshopTaskManager {
   setStyleWidth(element, value) {
     if (element?.style?.width !== value) {
       element.style.width = value;
+    }
+  }
+
+  setStyleProperty(element, property, value) {
+    if (element?.style?.getPropertyValue(property) !== value) {
+      element?.style?.setProperty(property, value);
     }
   }
 

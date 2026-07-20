@@ -101,14 +101,14 @@ describe('RewardFlyoutManager', () => {
     expect(document.querySelector('.room-coin-amt-pop')).toBeNull();
   });
 
-  it('plays bought item drops from the market row and caps visual drops at twelve', () => {
+  it('plays bought item drops from the ledger buy dialog and caps visual drops at twelve', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const host = document.createElement('section');
     const popup = document.createElement('section');
-    popup.className = 'shop-page__stock-buy-popup';
+    popup.className = 'shop-page__ledger-buy-dialog';
 
     const stockItem = document.createElement('span');
-    stockItem.dataset.shopStockItemKey = 'sageSeed';
+    stockItem.dataset.shopLedgerItemKey = 'sageSeed';
     setRect(stockItem, { left: 240, top: 360, width: 120, height: 30 });
     popup.append(stockItem);
     host.append(popup);

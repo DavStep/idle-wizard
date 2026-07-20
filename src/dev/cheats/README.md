@@ -37,6 +37,7 @@ cheats.setBackendState('offline')
 cheats.openDialog('worldEvent', { tab: 'leaderboard' })
 cheats.listUiSurfaces()
 cheats.openUi('guildQuestPosting')
+cheats.openUi('featureUnlockAnnouncement')
 cheats.openUi('devConsole')
 cheats.setTimers('allReady')
 cheats.setStressText()
@@ -99,6 +100,9 @@ Useful view setup commands:
 - Browser QA can also navigate to `/?devUi=guildQuestPosting`. The request waits
   until app-level gates such as fresh-start, intro, and offline overlays are
   hidden, then runs `openUi(surface)`.
+- `/?devUi=featureUnlockAnnouncement` opens a non-persistent eight-feature unlock
+  preview; tapping its backdrop closes it and runs the icon handoff without
+  changing gameplay state.
 - `setTimers(preset)` supports allReady, half, almostDone, and longRunning for
   garden, brewing, and market timers.
 - `setStressText()` loads long names, overflowing inventory, full market/event

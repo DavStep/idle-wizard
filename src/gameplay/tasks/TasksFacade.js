@@ -4,11 +4,12 @@ import { TaskFillManager } from './managers/TaskFillManager.js';
 import { TaskLevelCompletionManager } from './managers/TaskLevelCompletionManager.js';
 import { TaskSnapshotManager } from './managers/TaskSnapshotManager.js';
 import { TaskStateEntityManager } from './managers/TaskStateEntityManager.js';
+import { TaskQuestProgressManager } from './managers/TaskQuestProgressManager.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class TasksFacade {
   static explain =
-    'Level requirements give the wizard compact goals: do the listed actions, turn in any requested items, then pay coin to level up.';
+    "Elara gives the wizard one main request at a time. Each request grants XP, and the final coin request completes the level.";
 
   constructor({ itemsFacade }) {
     this.taskBalanceManager = new TaskBalanceManager({ itemsFacade });
@@ -28,10 +29,12 @@ export class TasksFacade {
       taskBalanceManager: this.taskBalanceManager,
       taskStateEntityManager: this.taskStateEntityManager,
     });
+    this.taskQuestProgressManager = new TaskQuestProgressManager();
     this.taskSnapshotManager = new TaskSnapshotManager({
       itemsFacade,
       taskBalanceManager: this.taskBalanceManager,
       taskLevelCompletionManager: this.taskLevelCompletionManager,
+      taskQuestProgressManager: this.taskQuestProgressManager,
       taskStateEntityManager: this.taskStateEntityManager,
     });
   }

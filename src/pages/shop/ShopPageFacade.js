@@ -1,5 +1,4 @@
 import { ShopCrystalOfferManager } from './managers/ShopCrystalOfferManager.js';
-import { ShopDemandManager } from './managers/ShopDemandManager.js';
 import { ShopDirectSellManager } from './managers/ShopDirectSellManager.js';
 import { ShopCoinOfferManager } from './managers/ShopCoinOfferManager.js';
 import { ShopMarketTabsManager } from './managers/ShopMarketTabsManager.js';
@@ -7,7 +6,7 @@ import { ShopPlayerRequestManager } from './managers/ShopPlayerRequestManager.js
 import { ShopPlayerShelfManager } from './managers/ShopPlayerShelfManager.js';
 import { ShopRoomViewManager } from './managers/ShopRoomViewManager.js';
 import { ShopShelfManager } from './managers/ShopShelfManager.js';
-import { ShopStockManager } from './managers/ShopStockManager.js';
+import { ShopMarketLedgerManager } from './managers/ShopMarketLedgerManager.js';
 import { ShopTradeHistoryManager } from './managers/ShopTradeHistoryManager.js';
 import { RewardFlyoutManager } from '../shared/RewardFlyoutManager.js';
 
@@ -41,13 +40,12 @@ export class ShopPageFacade {
       gameplayFacade,
       getSellPriceOverride: getNpcSellPriceOverride,
     });
-    this.demandManager = new ShopDemandManager({ gameplayFacade });
     this.directSellManager = new ShopDirectSellManager({
       gameplayFacade,
       onSellOverride: onDirectSellOverride,
       getSellQuoteOverride: getDirectSellQuoteOverride,
     });
-    this.stockManager = new ShopStockManager({
+    this.marketLedgerManager = new ShopMarketLedgerManager({
       gameplayFacade,
       getBuyQuoteOverride: getNpcStockBuyQuoteOverride,
     });
@@ -81,16 +79,15 @@ export class ShopPageFacade {
     const npmMarketPanel = this.marketTabsManager.getPanel('npm');
     const playerMarketPanel = this.marketTabsManager.getPanel('player');
     const crystalsPanel = this.marketTabsManager.getPanel('crystals');
-    this.directSellManager.mount({
-      buttonParent: npmMarketPanel,
-      popupParent: popupLayer,
-    });
     const shelfRoot = this.shelfManager.mount(npmMarketPanel, popupLayer);
-    this.demandManager.mount({
+    this.directSellManager.mount({
       buttonParent: shelfRoot,
       popupParent: popupLayer,
     });
-    this.stockManager.mount(npmMarketPanel, popupLayer);
+    this.marketLedgerManager.mount({
+      buttonParent: shelfRoot,
+      popupParent: popupLayer,
+    });
     this.playerRequestManager.mount(playerMarketPanel, popupLayer);
     this.playerShelfManager.mount(playerMarketPanel, popupLayer);
     this.tradeHistoryManager.mount({
@@ -112,9 +109,8 @@ export class ShopPageFacade {
     this.tradeHistoryManager.unmount();
     this.playerShelfManager.unmount();
     this.playerRequestManager.unmount();
-    this.stockManager.unmount();
+    this.marketLedgerManager.unmount();
     this.directSellManager.unmount();
-    this.demandManager.unmount();
     this.shelfManager.unmount();
     this.flyoutManager.unmount();
     this.marketTabsManager.unmount();
@@ -151,8 +147,7 @@ export class ShopPageFacade {
     if (activeTabId === 'npm') {
       const snapshot = this.gameplayFacade?.getSnapshot?.();
       this.shelfManager.render(snapshot);
-      this.demandManager.render();
-      this.stockManager.render();
+      this.marketLedgerManager.render();
       return;
     }
 

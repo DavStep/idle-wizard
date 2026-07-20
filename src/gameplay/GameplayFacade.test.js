@@ -193,22 +193,16 @@ function buyCauldronsThrough(gameplayFacade, targetCauldronCount) {
 
 function openFirstNpcMarketStand(gameplayFacade) {
   advanceToLevel(gameplayFacade, 4);
-  const result = gameplayFacade.buyShopShelfSlot();
-  expect(result).toMatchObject({
-    ok: true,
-    slotNumber: 1,
-  });
-  return result;
+  const shelf = gameplayFacade.getSnapshot().shop.shelf;
+  expect(shelf).toMatchObject({ unlockedSlots: 1, selectedSlotNumber: 1 });
+  return shelf;
 }
 
 function openFirstPlayerMarketStand(gameplayFacade) {
   advanceToLevel(gameplayFacade, 4);
-  const result = gameplayFacade.buyPlayerShopShelfSlot();
-  expect(result).toMatchObject({
-    ok: true,
-    slotNumber: 1,
-  });
-  return result;
+  const shelf = gameplayFacade.getSnapshot().shop.playerShelf;
+  expect(shelf).toMatchObject({ unlockedSlots: 1, selectedSlotNumber: 1 });
+  return shelf;
 }
 
 describe('GameplayFacade', () => {
@@ -305,8 +299,8 @@ describe('GameplayFacade', () => {
         kind: 'herb',
       },
     ]);
-    expect(snapshot.shop.shelf.unlockedSlots).toBe(0);
-    expect(snapshot.shop.playerRequests.unlockedSlots).toBe(0);
+    expect(snapshot.shop.shelf.unlockedSlots).toBe(1);
+    expect(snapshot.shop.playerRequests.unlockedSlots).toBe(1);
   });
 
   it('increments persistence load revision only when a save is restored', () => {
@@ -336,6 +330,8 @@ describe('GameplayFacade', () => {
     const persistenceStorage = createMemoryStorage();
     const { gameplayFacade } = createGameplay({ baseline: 'fresh', persistenceStorage });
 
+    const [firstTask] = gameplayFacade.getSnapshot().tasks.level.tasks;
+    finishTaskRequirement(gameplayFacade, firstTask);
     gameplayFacade.itemsFacade.addItem(1, 1);
     expect(gameplayFacade.fillTask('level1-turn-in-sage-seed')).toMatchObject({ ok: true });
     gameplayFacade.savePersistenceSnapshot();
@@ -346,6 +342,11 @@ describe('GameplayFacade', () => {
       currentLevel: 0,
       tasks: [
         {
+          taskId: 'level1-summon-sage-seed',
+          progressQuantity: 5,
+          completed: true,
+        },
+        {
           taskId: 'level1-turn-in-sage-seed',
           progressQuantity: 1,
           completed: false,
@@ -355,7 +356,7 @@ describe('GameplayFacade', () => {
     expect(JSON.stringify(saved).length).toBeLessThan(50_000);
   });
 
-  it('treats fully turned-in restored requirements as completed', () => {
+  it('waits to complete fully restored progress until that request becomes active', () => {
     const { gameplayFacade } = createGameplay({ baseline: 'fresh' });
 
     gameplayFacade.tasksFacade.applyPersistenceSnapshot({
@@ -369,16 +370,26 @@ describe('GameplayFacade', () => {
       ],
     });
 
-    const task = gameplayFacade
+    let task = gameplayFacade
       .getSnapshot()
       .tasks.level.tasks.find((candidate) => candidate.taskId === 'level1-turn-in-sage-seed');
 
     expect(task).toMatchObject({
       progressQuantity: 5,
-      completed: true,
+      completed: false,
       canFill: false,
       canComplete: false,
     });
+
+    const activeTask = gameplayFacade
+      .getSnapshot()
+      .tasks.level.tasks.find((candidate) => candidate.isActiveQuest);
+    finishTaskRequirement(gameplayFacade, activeTask);
+    task = gameplayFacade
+      .getSnapshot()
+      .tasks.level.tasks.find((candidate) => candidate.taskId === 'level1-turn-in-sage-seed');
+
+    expect(task.completed).toBe(true);
   });
 
   it('clamps restored garden and market capacity to the saved player level', () => {
@@ -421,8 +432,8 @@ describe('GameplayFacade', () => {
     const snapshot = gameplayFacade.getSnapshot();
 
     expect(snapshot.garden.plot.unlockedTiles).toBe(2);
-    expect(snapshot.shop.shelf.unlockedSlots).toBe(0);
-    expect(snapshot.shop.playerShelf.unlockedSlots).toBe(0);
+    expect(snapshot.shop.shelf.unlockedSlots).toBe(1);
+    expect(snapshot.shop.playerShelf.unlockedSlots).toBe(1);
   });
 
   it('grandfathers old level-cap plots and cauldrons into capacity research', () => {
@@ -548,9 +559,11 @@ describe('GameplayFacade', () => {
 
   it('fills tasks from inventory and advances player level after coin payment', () => {
     const { gameplayFacade } = createGameplay();
-    const task = gameplayFacade
-      .getSnapshot()
-      .tasks.level.tasks.find((candidate) => candidate.type === taskRequirementTypes.TURN_IN);
+    const tasks = gameplayFacade.getSnapshot().tasks.level.tasks;
+    const task = tasks.find((candidate) => candidate.type === taskRequirementTypes.TURN_IN);
+    for (const earlierTask of tasks.slice(0, tasks.indexOf(task))) {
+      finishTaskRequirement(gameplayFacade, earlierTask);
+    }
     const partialQuantity = task.requiredQuantity - 1;
 
     expect(gameplayFacade.getSnapshot().tasks.maxLevel).toBe(100);
@@ -626,14 +639,44 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
   });
 
+  it('collects progress for only the active elara request', () => {
+    const { gameplayFacade } = createGameplay();
+    const [activeRequest, laterRequest] = gameplayFacade.getSnapshot().tasks.level.tasks;
+
+    expect(activeRequest.isActiveQuest).toBe(true);
+    expect(laterRequest.isActiveQuest).toBe(false);
+    expect(
+      gameplayFacade.tasksFacade.recordAction({
+        type: laterRequest.type,
+        itemKey: laterRequest.itemKey,
+        researchId: laterRequest.researchId,
+        quantity: laterRequest.requiredQuantity,
+      }),
+    ).toMatchObject({ ok: false, updates: [] });
+    expect(gameplayFacade.getSnapshot().tasks.level.questProgress.currentXp).toBe(0);
+
+    finishTaskRequirement(gameplayFacade, activeRequest);
+
+    expect(gameplayFacade.getSnapshot().tasks.level.questProgress).toMatchObject({
+      currentXp: 20,
+      activeQuest: {
+        kind: 'task',
+        taskId: laterRequest.taskId,
+        xpReward: 20,
+      },
+    });
+  });
+
   it('persists task progress and player level', () => {
     const persistenceStorage = createMemoryStorage();
     const first = createGameplay({ persistenceStorage });
 
     finishCurrentTaskLevel(first.gameplayFacade);
-    const task = first.gameplayFacade
-      .getSnapshot()
-      .tasks.level.tasks.find((candidate) => candidate.type === taskRequirementTypes.TURN_IN);
+    const tasks = first.gameplayFacade.getSnapshot().tasks.level.tasks;
+    const task = tasks.find((candidate) => candidate.type === taskRequirementTypes.TURN_IN);
+    for (const earlierTask of tasks.slice(0, tasks.indexOf(task))) {
+      finishTaskRequirement(first.gameplayFacade, earlierTask);
+    }
     const partialQuantity = task.requiredQuantity - 1;
     first.gameplayFacade.itemsFacade.addItem(task.itemTypeId, partialQuantity);
     first.gameplayFacade.fillTask(task.taskId);
@@ -796,7 +839,7 @@ describe('GameplayFacade', () => {
     expect(snapshot.inventory).toEqual([]);
     expect(snapshot.research.completedResearchIds).toEqual(['unlockSeed:sageSeed']);
     expect(snapshot.brewing.ingredients).toEqual([]);
-    expect(snapshot.shop.shelf.selectedSlotNumber).toBeNull();
+    expect(snapshot.shop.shelf.selectedSlotNumber).toBe(1);
     expect(snapshot.logs.entries).toEqual([]);
     expect(snapshot.visualSettings.researched.theme.black).toBe(true);
     expect(snapshot.mana).toMatchObject({
@@ -1609,7 +1652,7 @@ describe('GameplayFacade', () => {
       label: 'config sage seed',
     });
     expect(snapshot.shop.shelf).toMatchObject({
-      slotCosts: [0, 22],
+      slotCosts: [],
       autoSellSeconds: 3,
     });
     expect(snapshot.brewing).toMatchObject({
@@ -2286,7 +2329,7 @@ describe('GameplayFacade', () => {
     ]);
     expect(research.tabs[2].boxes[0].researches[0]).toMatchObject({
       id: fastSellResearchIds.payout(1),
-      label: 'fast sell lvl 1',
+      label: 'haggling lvl 1',
       value: '2 emerald',
       effect: '85% payout',
       showEffect: true,
@@ -4176,7 +4219,7 @@ describe('GameplayFacade', () => {
         quantity: 1,
       },
     ]);
-    expect(gameplayFacade.getSnapshot().shop.shelf.sellItems).toContainEqual({
+    expect(gameplayFacade.getSnapshot().shop.shelf.sellItems).toContainEqual(expect.objectContaining({
       itemTypeId: 2029,
       key: 'wastedPotion',
       label: 'wasted potion',
@@ -4184,98 +4227,44 @@ describe('GameplayFacade', () => {
       hasRecipe: false,
       baseSellPrice: 1,
       quantity: 1,
-      sellCoin: 1,
-      fastSellCoin: 0.8,
+      sellCoin: null,
+      fastSellCoin: 0,
       fastSellPercent: 80,
-      sellNeed: 1000,
+      sellNeed: null,
       buyCoin: null,
       stock: null,
-    });
+      marketGrade: 4,
+      tradedHere: false,
+    }));
   });
 
-  it('buys NPC market stands with costs from shop balance', () => {
-    let shopNowMs = 0;
-    const { ecsFacade, gameplayFacade } = createGameplay({
-      shopNow: () => shopNowMs,
-    });
-    setShopAutoSellSeconds(gameplayFacade, 5);
+  it('grants market stalls from the permanent market licence', () => {
+    const { gameplayFacade } = createGameplay();
 
     expect(gameplayFacade.getSnapshot().shop.shelf).toMatchObject({
-      unlockedSlots: 0,
-      maxSlots: 5,
-      maxUnlockedSlotsByLevel: 0,
-      slotCosts: [0, 50, 150, 400, 1000],
-      nextSlotNumber: 1,
-      nextSlotCost: 0,
-      nextSlotLockedByLevel: true,
-      nextSlotRequiresLevel: 4,
-      selectedSlotNumber: null,
-    });
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
-    expect(gameplayFacade.buyShopShelfSlot()).toEqual({
-      ok: false,
-      reason: 'level_locked',
-      requiredLevel: 4,
-      slotNumber: 1,
+      unlockedSlots: 1,
+      maxSlots: 1,
+      slotCosts: [],
+      nextSlotNumber: null,
+      nextSlotCost: null,
+      selectedSlotNumber: 1,
     });
 
-    advanceToLevel(gameplayFacade, 4);
-    expect(gameplayFacade.buyShopShelfSlot()).toEqual({
-      ok: true,
-      cost: 0,
-      slotNumber: 1,
-    });
-    unlockSageSeed(gameplayFacade);
-    ecsFacade.update({ deltaSeconds: 10 });
-    const summonResult = gameplayFacade.summonSeed();
-    gameplayFacade.itemsFacade.addItem(summonResult.seed.id, 10);
-    expect(gameplayFacade.setSelectedShopShelfSlotSellItem(summonResult.seed.id)).toEqual({
-      ok: true,
-      slotNumber: 1,
-      sellLimitMode: 'all',
-      sellQuantityLimit: null,
-      item: {
-        itemTypeId: summonResult.seed.id,
-        key: summonResult.seed.key,
-        label: summonResult.seed.label,
-        kind: 'seed',
+    gameplayFacade.prestigeFacade.applyPersistenceSnapshot({ completedLevels: [10] });
+
+    expect(gameplayFacade.getSnapshot().shop).toMatchObject({
+      market: { id: 'crossroads', rank: 2 },
+      shelf: {
+        unlockedSlots: 2,
+        maxSlots: 2,
+        selectedSlotNumber: 1,
+      },
+      playerShelf: {
+        unlockedSlots: 2,
+        maxSlots: 2,
+        selectedSlotNumber: 1,
       },
     });
-
-    shopNowMs = 5_000;
-    ecsFacade.update({ deltaSeconds: 5 });
-
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(11);
-    expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
-    expect(gameplayFacade.buyShopShelfSlot()).toEqual({
-      ok: false,
-      reason: 'level_locked',
-      requiredLevel: 5,
-      slotNumber: 2,
-    });
-
-    advanceToLevel(gameplayFacade, 5);
-
-    expect(gameplayFacade.buyShopShelfSlot()).toEqual({
-      ok: false,
-      reason: 'not_enough_coin',
-      cost: 50,
-      slotNumber: 2,
-    });
-
-    advanceToLevel(gameplayFacade, 5);
-    gameplayFacade.coinFacade.add(39);
-
-    expect(gameplayFacade.buyShopShelfSlot()).toEqual({
-      ok: true,
-      cost: 50,
-      slotNumber: 2,
-    });
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
-    expect(gameplayFacade.getSnapshot().shop.shelf.unlockedSlots).toBe(2);
-    expect(gameplayFacade.getSnapshot().shop.shelf.nextSlotCost).toBe(150);
-    expect(gameplayFacade.getSnapshot().shop.shelf.nextSlotLockedByLevel).toBe(true);
-    expect(gameplayFacade.getSnapshot().shop.shelf.nextSlotRequiresLevel).toBe(10);
   });
 
   it('buys garden tiles with costs from garden balance', () => {
@@ -4861,30 +4850,17 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('rejects NPC market stand purchase without enough coin', () => {
+  it('keeps higher-grade goods visible but unavailable in the starting market', () => {
     const { gameplayFacade } = createGameplay();
+    const pearlroot = gameplayFacade
+      .getSnapshot()
+      .shop.shelf.sellItems.find((item) => item.key === 'pearlrootDraught');
 
-    expect(gameplayFacade.buyShopShelfSlot()).toEqual({
-      ok: false,
-      reason: 'level_locked',
-      requiredLevel: 4,
-      slotNumber: 1,
-    });
-
-    advanceToLevel(gameplayFacade, 4);
-
-    expect(gameplayFacade.buyShopShelfSlot()).toEqual({
-      ok: true,
-      cost: 0,
-      slotNumber: 1,
-    });
-    expect(gameplayFacade.getSnapshot().shop.shelf.unlockedSlots).toBe(1);
-
-    expect(gameplayFacade.buyShopShelfSlot()).toEqual({
-      ok: false,
-      reason: 'level_locked',
-      requiredLevel: 5,
-      slotNumber: 2,
+    expect(pearlroot).toMatchObject({
+      marketGrade: 5,
+      tradedHere: false,
+      sellCoin: null,
+      requiredMarket: { id: 'arcaneExchange' },
     });
   });
 
@@ -5025,7 +5001,9 @@ describe('GameplayFacade', () => {
     });
     expect(initialSellItems.find((item) => item.key === 'pearlrootDraught')).toMatchObject({
       quantity: 0,
-      sellCoin: 740,
+      sellCoin: null,
+      marketGrade: 5,
+      tradedHere: false,
     });
 
     gameplayFacade.coinFacade.add(80);
@@ -5142,12 +5120,8 @@ describe('GameplayFacade', () => {
     setShopAutoSellSeconds(gameplayFacade, 5);
 
     openFirstNpcMarketStand(gameplayFacade);
-    advanceToLevel(gameplayFacade, 5);
-    gameplayFacade.coinFacade.add(50);
-    expect(gameplayFacade.buyShopShelfSlot()).toMatchObject({
-      ok: true,
-      slotNumber: 2,
-    });
+    gameplayFacade.prestigeFacade.applyPersistenceSnapshot({ completedLevels: [10] });
+    expect(gameplayFacade.getSnapshot().shop.shelf.unlockedSlots).toBe(2);
 
     gameplayFacade.itemsFacade.addItem(1, 1);
     gameplayFacade.itemsFacade.addItem(2, 1);

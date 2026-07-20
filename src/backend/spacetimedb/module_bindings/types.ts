@@ -138,6 +138,43 @@ export const MarketDemandDailySnapshotResult = __t.object("MarketDemandDailySnap
 });
 export type MarketDemandDailySnapshotResult = __Infer<typeof MarketDemandDailySnapshotResult>;
 
+export const MarketPriceHourly = __t.object("MarketPriceHourly", {
+  snapshotKey: __t.string(),
+  hourKey: __t.string(),
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  marketPriceGold: __t.u64(),
+  npcBuyPriceGold: __t.u64(),
+  npcSellPriceGold: __t.u64(),
+  npcNeed: __t.u64(),
+  npcStock: __t.u64(),
+  updatedAt: __t.timestamp(),
+  priceScale: __t.u32(),
+  marketId: __t.string(),
+});
+export type MarketPriceHourly = __Infer<typeof MarketPriceHourly>;
+
+export const MarketPriceHourlySnapshot = __t.object("MarketPriceHourlySnapshot", {});
+export type MarketPriceHourlySnapshot = __Infer<typeof MarketPriceHourlySnapshot>;
+
+export const MarketPriceHourlySnapshotResult = __t.object("MarketPriceHourlySnapshotResult", {
+  snapshotKey: __t.string(),
+  hourKey: __t.string(),
+  itemKey: __t.string(),
+  itemLabel: __t.string(),
+  itemKind: __t.string(),
+  marketPriceGold: __t.u64(),
+  npcBuyPriceGold: __t.u64(),
+  npcSellPriceGold: __t.u64(),
+  npcNeed: __t.u64(),
+  npcStock: __t.u64(),
+  updatedAt: __t.timestamp(),
+  priceScale: __t.u32(),
+  marketId: __t.string(),
+});
+export type MarketPriceHourlySnapshotResult = __Infer<typeof MarketPriceHourlySnapshotResult>;
+
 export const NpcMarketAdmin = __t.object("NpcMarketAdmin", {
   identity: __t.identity(),
   username: __t.string(),

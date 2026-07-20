@@ -86,6 +86,7 @@ experience_type: architecture
 - Android connected-account restore should try native Google authorized-account auto-select before showing the first-run `connect account` choice; stored server tokens can disappear across reinstall-style release handoffs.
 - A remembered native Google profile plus stored SpacetimeDB token is still a connected account after the Google ID token expires; use it to suppress fresh-start/account prompts while native restore refreshes the token.
 - Dev-only runtime tools should be gated by explicit `VITE_*` env flags and loaded through dynamic imports so prod builds omit them.
+- Market dev cheats must read the absolute stall cap from `ShopBalanceManager`, not snapshot `maxSlots`; the snapshot cap is the active licence rank and prevents cheats from raising that rank.
 - Client release version comes from `package.json` `version`, starts at `0.0.0`, and should be bumped with `package-lock.json` before each deploy.
 - Android release `versionName` and `versionCode` should derive from `package.json` so APK metadata matches web release labels.
 - Keep gameplay rules separate from DOM/canvas rendering and SpacetimeDB transport.

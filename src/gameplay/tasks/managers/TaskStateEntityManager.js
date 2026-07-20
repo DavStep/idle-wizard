@@ -87,6 +87,20 @@ export class TaskStateEntityManager {
     return PlayerTaskProgress.isCompleted[this.getTaskEntityId(taskId)] === 1;
   }
 
+  getActiveTask() {
+    const currentLevel = this.getCurrentLevel();
+
+    return (
+      this.taskBalanceManager
+        .getCurrentLevelTasks(currentLevel)
+        .find((task) => !this.isCompleted(task.id)) ?? null
+    );
+  }
+
+  isActiveTask(taskId) {
+    return this.getActiveTask()?.id === taskId;
+  }
+
   completeTask(taskId) {
     const levelBefore = this.getCurrentLevel();
     PlayerTaskProgress.isCompleted[this.getTaskEntityId(taskId)] = 1;

@@ -64,6 +64,7 @@ experience_type: gameplay-economy
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
 - Early task levels must not require items gated far beyond the current research tier; use larger quantities of near-tier seeds, herbs, and potions instead.
 - Task persistence stores progress rows for all configured task ids, even on level 1; the visible task list must come from the current-level snapshot, not the raw save array.
+- Main tasks are an ordered Elara request chain. Only the first incomplete request collects progress, every request is worth 20 derived XP, and the existing coin level-up payment is the final request.
 - Task balance should not skip research order; first task use of seed/herb or recipe tiers must walk the configured research chain.
 - Level 10 is the first big progression milestone; level 9 can be a stronger gate before that unlock.
 - Milestone levels should not dip easier than the gate before them; when raising level 9, raise level 10+ to preserve curve.

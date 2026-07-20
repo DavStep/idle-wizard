@@ -14,6 +14,7 @@ describe('ItemDefinitionManager', () => {
       kind: 'herb',
       growthDurationMs: 12_000,
       baseSellPrice: 6,
+      marketGrade: 1,
     });
     expect(manager.getDefinitionByKey('dragonpepperHerb')).toEqual({
       id: 1014,
@@ -22,6 +23,7 @@ describe('ItemDefinitionManager', () => {
       kind: 'herb',
       growthDurationMs: 210_000,
       baseSellPrice: 52,
+      marketGrade: 3,
     });
     expect(manager.getDefinitionByKey('pearlrootHerb')).toEqual({
       id: 1024,
@@ -30,6 +32,7 @@ describe('ItemDefinitionManager', () => {
       kind: 'herb',
       growthDurationMs: 520_000,
       baseSellPrice: 328,
+      marketGrade: 5,
     });
     expect(manager.getSeedDefinition(1).producesHerbTypeId).toBe(1001);
     expect(manager.getSeedDefinition(14).producesHerbTypeId).toBe(1014);
@@ -41,6 +44,7 @@ describe('ItemDefinitionManager', () => {
       label: 'mana tonic',
       kind: 'potion',
       baseSellPrice: 55,
+      marketGrade: 1,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2018,
@@ -48,6 +52,7 @@ describe('ItemDefinitionManager', () => {
       label: 'pact ward',
       kind: 'potion',
       baseSellPrice: 270,
+      marketGrade: 3,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2019,
@@ -60,6 +65,7 @@ describe('ItemDefinitionManager', () => {
       known: false,
       researchable: false,
       baseSellPrice: 130,
+      marketGrade: 3,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2029,
@@ -68,6 +74,7 @@ describe('ItemDefinitionManager', () => {
       kind: 'potion',
       hasRecipe: false,
       baseSellPrice: 1,
+      marketGrade: 4,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
       id: 2039,
@@ -75,6 +82,7 @@ describe('ItemDefinitionManager', () => {
       label: 'pearlroot draught',
       kind: 'potion',
       baseSellPrice: 740,
+      marketGrade: 5,
     });
     expect(manager.getRecipePotionDefinitions()).toHaveLength(28);
     expect(manager.getUnknownPotionDefinitions()).toHaveLength(10);

@@ -10,17 +10,25 @@ export class ShopPlayerRequestManager {
     shopSellKindManager,
     shopPlayerRequestEntityManager,
     isRequestSlotUnlocked = () => false,
+    getAccessibleSlotCount,
+    getItemAccess,
   } = {}) {
     this.itemsFacade = itemsFacade;
     this.shopSellKindManager = shopSellKindManager;
     this.shopPlayerRequestEntityManager = shopPlayerRequestEntityManager;
     this.isRequestSlotUnlocked = isRequestSlotUnlocked;
+    this.getAccessibleSlotCount = getAccessibleSlotCount;
+    this.getItemAccess = getItemAccess;
   }
 
   setRequest(slotNumber, { itemTypeId, quantity, priceCoin }) {
     const safeSlotNumber = Math.floor(Number(slotNumber));
 
-    if (!Number.isInteger(safeSlotNumber) || !this.isRequestSlotUnlocked(safeSlotNumber)) {
+    if (
+      !Number.isInteger(safeSlotNumber) ||
+      safeSlotNumber > (this.getAccessibleSlotCount?.() ?? Number.POSITIVE_INFINITY) ||
+      !this.isRequestSlotUnlocked(safeSlotNumber)
+    ) {
       return {
         ok: false,
         reason: 'slot_locked',
@@ -62,6 +70,16 @@ export class ShopPlayerRequestManager {
     }
 
     const item = this.itemsFacade.getItemDefinition(itemTypeId);
+    const marketAccess = this.getItemAccess?.(item);
+
+    if (marketAccess && !marketAccess.tradedHere) {
+      return {
+        ok: false,
+        reason: 'market_locked',
+        itemTypeId,
+        requiredMarket: marketAccess.requiredMarket,
+      };
+    }
 
     if (!this.shopSellKindManager.isSellKind(item.kind)) {
       return {

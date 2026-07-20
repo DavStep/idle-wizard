@@ -441,6 +441,8 @@ export class RewardFlyoutManager {
   getShopBoughtItemAnchor(event) {
     if (event.source === 'npc_stock') {
       return (
+        this.getNpcLedgerBuyDialogAnchor(event.item?.key) ??
+        this.getNpcLedgerRowAnchor(event.item?.key) ??
         this.getNpcStockBuyDialogAnchor(event.item?.key) ??
         this.getNpcStockRowAnchor(event.item?.key) ??
         this.root?.parentElement?.querySelector('.shop-page__stock')
@@ -456,6 +458,28 @@ export class RewardFlyoutManager {
     }
 
     return this.root?.parentElement ?? null;
+  }
+
+  getNpcLedgerBuyDialogAnchor(itemKey) {
+    const dialog = this.root?.parentElement?.querySelector(
+      '.shop-page__ledger-buy-dialog:not([hidden])',
+    );
+    return this.findElementByDataset(
+      dialog,
+      '[data-shop-ledger-item-key]',
+      'shopLedgerItemKey',
+      itemKey,
+    );
+  }
+
+  getNpcLedgerRowAnchor(itemKey) {
+    const row = this.findElementByDataset(
+      this.root?.parentElement,
+      '.shop-page__ledger-item-row',
+      'shopLedgerItemKey',
+      itemKey,
+    );
+    return row?.querySelector('span') ?? row;
   }
 
   getNpcStockBuyDialogAnchor(itemKey) {

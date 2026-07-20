@@ -1,5 +1,11 @@
 # Feature Announcements
 
+## 0.2.96
+
+Elara's requests now give each level a clearer journey. Instead of showing every requirement at once, Elara presents one request at a time. Completing it awards XP, fills the level progress bar, and reveals the next request until the final level-up step is ready.
+
+Markets have also become more distinct. Better licences open more stalls and let traders handle more advanced goods, while the new Market Ledger brings prices, stock, buyer demand, recent changes, and trader purchases together in one readable place.
+
 ## 0.2.71
 
 Idle Wizard now opens with a short story intro.

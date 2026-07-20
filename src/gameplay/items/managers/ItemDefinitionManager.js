@@ -4,6 +4,7 @@ import {
   ingredientRarities,
   retiredIngredientKeys,
 } from '../ingredientCatalog.js';
+import { getMarketGradeForCatalogIndex } from '../../../shared/marketLicence.js';
 
 const HERB_TYPE_ID_START = 1001;
 const POTION_TYPE_ID_START = 2001;
@@ -172,6 +173,7 @@ const herbDefinitions = herbCatalog.map((herb, index) => ({
   kind: itemKinds.herb,
   growthDurationMs: herb.growthDurationMs,
   baseSellPrice: herbSellPricesByKey[herb.key],
+  marketGrade: getMarketGradeForCatalogIndex(index, herbCatalog.length),
 }));
 
 const potionDefinitions = potionCatalog.map((potion, index) => ({
@@ -186,6 +188,7 @@ const potionDefinitions = potionCatalog.map((potion, index) => ({
   ...(potion.researchable === undefined ? {} : { researchable: potion.researchable }),
   ...(potion.hasRecipe === false ? { hasRecipe: false } : {}),
   baseSellPrice: potion.baseSellPrice ?? potionSellPricesByKey[potion.key],
+  marketGrade: getMarketGradeForCatalogIndex(index, potionCatalog.length),
 }));
 
 const seedDefinitions = herbCatalog.map((herb, index) => ({
@@ -197,6 +200,7 @@ const seedDefinitions = herbCatalog.map((herb, index) => ({
   dropWeight: 1,
   summonManaCost: SEED_SUMMON_MANA_COST,
   baseSellPrice: 1,
+  marketGrade: getMarketGradeForCatalogIndex(index, herbCatalog.length),
 }));
 
 const ingredientDefinitions = ingredientCatalog.map((ingredient) => ({
@@ -250,19 +254,21 @@ export class ItemDefinitionManager {
   }
 
   createDefinitionsFromConfig(config = {}) {
-    const seeds = this.readDefinitions(config.seeds, itemKinds.seed).map((seed) => ({
+    const seeds = this.readDefinitions(config.seeds, itemKinds.seed).map((seed, index, rows) => ({
       ...seed,
       producesHerbTypeId: this.readPositiveInteger(seed.producesHerbTypeId),
       dropWeight: this.readPositiveNumber(seed.dropWeight ?? 1),
       summonManaCost: this.readNonNegativeNumber(seed.summonManaCost ?? SEED_SUMMON_MANA_COST),
       baseSellPrice: this.readNonNegativeNumber(seed.baseSellPrice ?? 1),
+      marketGrade: getMarketGradeForCatalogIndex(index, rows.length),
     }));
-    const herbs = this.readDefinitions(config.herbs, itemKinds.herb).map((herb) => ({
+    const herbs = this.readDefinitions(config.herbs, itemKinds.herb).map((herb, index, rows) => ({
       ...herb,
       growthDurationMs: this.readPositiveNumber(herb.growthDurationMs),
       baseSellPrice: this.readNonNegativeNumber(herb.baseSellPrice),
+      marketGrade: getMarketGradeForCatalogIndex(index, rows.length),
     }));
-    const potions = this.readDefinitions(config.potions, itemKinds.potion).map((potion) => ({
+    const potions = this.readDefinitions(config.potions, itemKinds.potion).map((potion, index, rows) => ({
       ...potion,
       ...(potion.discoveryType ? { discoveryType: String(potion.discoveryType) } : {}),
       ...(potion.type ? { type: String(potion.type) } : {}),
@@ -273,6 +279,7 @@ export class ItemDefinitionManager {
         : { researchable: Boolean(potion.researchable) }),
       ...(potion.hasRecipe === undefined ? {} : { hasRecipe: Boolean(potion.hasRecipe) }),
       baseSellPrice: this.readNonNegativeNumber(potion.baseSellPrice),
+      marketGrade: getMarketGradeForCatalogIndex(index, rows.length),
     }));
     const ingredients = Array.isArray(config.ingredients)
       ? this.readDefinitions(config.ingredients, itemKinds.ingredient)

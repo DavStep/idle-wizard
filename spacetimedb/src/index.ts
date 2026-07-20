@@ -40,6 +40,9 @@ import {
 } from './tradeAllianceAccess';
 import {
   defaultMarketId,
+  getMarketGradeForCatalogIndex,
+  getMarketRank,
+  isItemGradeTradedInMarket,
   marketLicences,
   resolveMarketLicence,
 } from '../../src/shared/marketLicence.js';
@@ -108,6 +111,7 @@ const PLAYER_SHOP_TRADE_HISTORY_LIMIT = 80;
 const POTION_RECIPE_ROYALTY_HISTORY_LIMIT = 160;
 const PLAYER_SHOP_PUBLIC_MARKET_ROW_LIMIT = 80;
 const MARKET_DEMAND_DAILY_HISTORY_LIMIT = 180;
+const MARKET_PRICE_HOURLY_HISTORY_PER_ITEM = 4;
 const MAX_PLAYER_SHOP_SLOTS = 5;
 const MAX_PLAYER_SHOP_LISTING_QUANTITY = 1_000;
 const MAX_PLAYER_SHOP_PRICE_GOLD = 1_000_000;
@@ -180,6 +184,7 @@ const WORLD_EVENT_REWARD_TIERS = [
   { minRank: 26, maxRank: Number.MAX_SAFE_INTEGER, emeraldReward: 0, crystalReward: 1 },
 ];
 const PERIOD_DAY_MICROS = 86_400_000_000n;
+const PERIOD_HOUR_MICROS = 3_600_000_000n;
 const PERIOD_WEEK_DAYS = 7n;
 const PERIOD_MONTH_DAYS = 30n;
 const PERIOD_LOOP_ANCHOR_MICROS = 1_780_876_800_000_000n; // 2026-06-08 00:00 UTC, Armenia 04:00.
@@ -4919,23 +4924,25 @@ function getSeedMarketBasePriceGold(herb: (typeof herbCatalog)[number]): number 
 }
 
 const npcMarketCatalog = [
-  ...herbCatalog.map((herb) => ({
+  ...herbCatalog.map((herb, index) => ({
     itemKey: `${herb.key}Seed`,
     itemLabel: `${herb.label} seed`,
     itemKind: 'seed',
     basePriceGold: getSeedMarketBasePriceGold(herb),
     targetStock: 1_000n,
     volatilityBps: 1_200n,
+    marketGrade: getMarketGradeForCatalogIndex(index, herbCatalog.length),
   })),
-  ...herbCatalog.map((herb) => ({
+  ...herbCatalog.map((herb, index) => ({
     itemKey: `${herb.key}Herb`,
     itemLabel: herb.label,
     itemKind: 'herb',
     basePriceGold: herbMarketBasePriceGoldByKey[herb.key] ?? 2,
     targetStock: 800n,
     volatilityBps: 1_000n,
+    marketGrade: getMarketGradeForCatalogIndex(index, herbCatalog.length),
   })),
-  ...potionCatalog.map((potion) => ({
+  ...potionCatalog.map((potion, index) => ({
     itemKey: potion.key,
     itemLabel: potion.label,
     itemKind: 'potion',
@@ -4945,6 +4952,7 @@ const npcMarketCatalog = [
         : potionMarketBasePriceGoldByKey[potion.key] ?? 5,
     targetStock: 300n,
     volatilityBps: 800n,
+    marketGrade: getMarketGradeForCatalogIndex(index, potionCatalog.length),
   })),
 ];
 
@@ -5009,7 +5017,7 @@ const advancedResearchCatalog = [
     const level = index + 1;
     return {
       id: `fastSellPayout:${level}`,
-      label: `fast sell lvl ${level}`,
+      label: `haggling lvl ${level}`,
       groupId: 'fastSell',
     };
   }),
@@ -5943,6 +5951,33 @@ const spacetimedb = schema({
       marketId: t.string().default(defaultMarketId),
     },
   ),
+  marketPriceHourly: table(
+    {
+      name: 'market_price_hourly',
+      public: false,
+      indexes: [
+        { accessor: 'byHourKey', algorithm: 'btree', columns: ['hourKey'] },
+        { accessor: 'byItemKey', algorithm: 'btree', columns: ['itemKey'] },
+        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
+        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
+      ],
+    },
+    {
+      snapshotKey: t.string().primaryKey(),
+      hourKey: t.string(),
+      itemKey: t.string(),
+      itemLabel: t.string(),
+      itemKind: t.string(),
+      marketPriceGold: t.u64(),
+      npcBuyPriceGold: t.u64(),
+      npcSellPriceGold: t.u64(),
+      npcNeed: t.u64(),
+      npcStock: t.u64(),
+      updatedAt: t.timestamp(),
+      priceScale: t.u32().default(1),
+      marketId: t.string().default(defaultMarketId),
+    },
+  ),
   npcMarketItemConfig: table(
     {
       name: 'npc_market_item_config',
@@ -6278,6 +6313,23 @@ const marketDemandDailySnapshotResult = t.array(
     marketId: t.string(),
   }),
 );
+const marketPriceHourlySnapshotResult = t.array(
+  t.row('MarketPriceHourlySnapshotResult', {
+    snapshotKey: t.string().primaryKey(),
+    hourKey: t.string(),
+    itemKey: t.string(),
+    itemLabel: t.string(),
+    itemKind: t.string(),
+    marketPriceGold: t.u64(),
+    npcBuyPriceGold: t.u64(),
+    npcSellPriceGold: t.u64(),
+    npcNeed: t.u64(),
+    npcStock: t.u64(),
+    updatedAt: t.timestamp(),
+    priceScale: t.u32(),
+    marketId: t.string(),
+  }),
+);
 const tradeAllianceSnapshotResult = t.array(
   t.row('TradeAllianceSnapshotResult', {
     allianceId: t.uuid().primaryKey(),
@@ -6480,7 +6532,13 @@ export const npc_market_price_snapshot = spacetimedb.view(
     const marketId = getActiveMarketId(ctx);
 
     return Array.from(ctx.db.npcMarketPrice.byItemKind.filter(new Range()))
-      .filter((row) => getRowMarketId(row) === marketId)
+      .filter((row) => {
+        const catalogItem = npcMarketCatalogByItemKey.get(getNpcMarketCatalogItemKey(row));
+        return (
+          getRowMarketId(row) === marketId &&
+          (!catalogItem || isItemGradeTradedInMarket(catalogItem.marketGrade, marketId))
+        );
+      })
       .map((row) => ({
         ...row,
         itemKey: getNpcMarketCatalogItemKey(row),
@@ -6504,6 +6562,21 @@ export const market_demand_daily_snapshot = spacetimedb.view(
       }))
       .slice(-MARKET_DEMAND_DAILY_HISTORY_LIMIT)
       .reverse();
+  },
+);
+
+export const market_price_hourly_snapshot = spacetimedb.view(
+  { name: 'market_price_hourly_snapshot', public: true },
+  marketPriceHourlySnapshotResult,
+  (ctx) => {
+    const marketId = getActiveMarketId(ctx);
+
+    return Array.from(ctx.db.marketPriceHourly.byUpdatedAt.filter(new Range()))
+      .filter((row) =>
+        getRowMarketId(row) === marketId &&
+        isPlayerShopRowTradedInMarket(row, marketId))
+      .slice(-(npcMarketCatalog.length * MARKET_PRICE_HOURLY_HISTORY_PER_ITEM))
+      .map((row) => ({ ...row, marketId }));
   },
 );
 
@@ -6552,7 +6625,8 @@ export const own_player_shop_listing = spacetimedb.view(
   (ctx) => {
     const marketId = getActiveMarketId(ctx);
     return Array.from(ctx.db.playerShopListing.bySellerIdentity.filter(ctx.sender))
-      .filter((row) => getRowMarketId(row) === marketId)
+      .filter((row) =>
+        getRowMarketId(row) === marketId && isPlayerShopRowTradedInMarket(row, marketId))
       .map((row) => ({ ...row, marketId }));
   },
 );
@@ -6572,7 +6646,8 @@ export const own_player_shop_request = spacetimedb.view(
   (ctx) => {
     const marketId = getActiveMarketId(ctx);
     return Array.from(ctx.db.playerShopRequest.byRequesterIdentity.filter(ctx.sender))
-      .filter((row) => getRowMarketId(row) === marketId)
+      .filter((row) =>
+        getRowMarketId(row) === marketId && isPlayerShopRowTradedInMarket(row, marketId))
       .map((row) => ({ ...row, marketId }));
   },
 );
@@ -7370,7 +7445,20 @@ function getNpcMarketCatalogItemKey(row: any): string {
   return catalogItemKey || normalizeNpcMarketItemKey(String(row?.itemKey ?? ''));
 }
 
-function getPlayerShopCatalogItem(itemKey: string) {
+function assertMarketCatalogItemAccess<
+  T extends { marketGrade?: number; itemKey?: string },
+>(
+  catalogItem: T,
+  marketId: string,
+): T {
+  if (!isItemGradeTradedInMarket(catalogItem.marketGrade ?? 1, marketId)) {
+    throw new Error('Item is not traded in this market.');
+  }
+
+  return catalogItem;
+}
+
+function getPlayerShopCatalogItem(itemKey: string, marketId: string) {
   const safeItemKey = normalizePlayerShopText(itemKey, MAX_ITEM_KEY_LENGTH);
   const catalogItem = npcMarketCatalogByItemKey.get(safeItemKey);
 
@@ -7378,7 +7466,7 @@ function getPlayerShopCatalogItem(itemKey: string) {
     throw new Error('Unknown player shop item.');
   }
 
-  return catalogItem;
+  return assertMarketCatalogItemAccess(catalogItem, marketId);
 }
 
 function validatePlayerShopQuantity(quantity: number): number {
@@ -7871,6 +7959,16 @@ function validatePlayerShopSlotNumber(slotNumber: number): number {
 
   if (safeSlotNumber < 1 || safeSlotNumber > MAX_PLAYER_SHOP_SLOTS) {
     throw new Error('Invalid player shop slot.');
+  }
+
+  return safeSlotNumber;
+}
+
+function validatePlayerShopSlotNumberForMarket(slotNumber: number, marketId: string): number {
+  const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
+
+  if (safeSlotNumber > getMarketRank(marketId)) {
+    throw new Error('Player shop slot requires a higher market rank.');
   }
 
   return safeSlotNumber;
@@ -14836,6 +14934,11 @@ function getNpcMarketRuntimeConfig(
   const safeItemKey = normalizeNpcMarketItemKey(itemKey);
   const safeMarketId = normalizeMarketId(marketId);
   const catalogItem = npcMarketCatalogByItemKey.get(safeItemKey);
+
+  if (catalogItem) {
+    assertMarketCatalogItemAccess(catalogItem, safeMarketId);
+  }
+
   const itemConfig = catalogItem
     ? ensureNpcMarketItemConfig(ctx, catalogItem, safeMarketId)
     : ctx.db.npcMarketItemConfig.itemKey.find(getMarketScopedItemKey(safeMarketId, safeItemKey));
@@ -14963,6 +15066,10 @@ function ensureNpcMarketItem(
 function ensureNpcMarketCatalog(ctx: IdleWizardReducerCtx) {
   for (const market of marketLicences) {
     for (const catalogItem of npcMarketCatalog) {
+      if (!isItemGradeTradedInMarket(catalogItem.marketGrade, market.id)) {
+        continue;
+      }
+
       const config = normalizeNpcMarketRuntimeConfig(
         ensureNpcMarketItemConfig(ctx, catalogItem, market.id),
         catalogItem,
@@ -17266,6 +17373,67 @@ function pruneMarketDemandDailyHistory(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function recordMarketPriceHourly(
+  ctx: IdleWizardReducerCtx,
+  row: any,
+  {
+    marketPriceGold,
+    npcNeed,
+    npcStock,
+  }: {
+    marketPriceGold: number;
+    npcNeed: bigint;
+    npcStock: bigint;
+  },
+) {
+  const hourKey = String(getContextTimestampMicros(ctx) / PERIOD_HOUR_MICROS);
+  const marketId = getRowMarketId(row);
+  const itemKey = getNpcMarketCatalogItemKey(row);
+  const snapshotKey = getMarketScopedKey(marketId, `${hourKey}:${itemKey}`);
+  const existing = ctx.db.marketPriceHourly.snapshotKey.find(snapshotKey);
+  const nextRow = {
+    snapshotKey,
+    hourKey,
+    itemKey,
+    itemLabel: String(row.itemLabel ?? itemKey),
+    itemKind: String(row.itemKind ?? ''),
+    marketPriceGold: toStoredGoldPrice(marketPriceGold),
+    npcBuyPriceGold: toStoredGoldPrice(getNpcBuyPriceGold(marketPriceGold)),
+    npcSellPriceGold: toStoredGoldPrice(getNpcSellPriceGold(marketPriceGold)),
+    npcNeed,
+    npcStock,
+    updatedAt: ctx.timestamp,
+    priceScale: GOLD_PRICE_SCALE,
+    marketId,
+  };
+
+  if (existing) {
+    ctx.db.marketPriceHourly.snapshotKey.update(nextRow);
+  } else {
+    ctx.db.marketPriceHourly.insert(nextRow);
+  }
+
+  pruneMarketPriceHourlyHistory(ctx, marketId, itemKey);
+}
+
+function pruneMarketPriceHourlyHistory(
+  ctx: IdleWizardReducerCtx,
+  marketId: string,
+  itemKey: string,
+) {
+  const rows = Array.from(ctx.db.marketPriceHourly.byItemKey.filter(itemKey))
+    .filter((row) => getRowMarketId(row) === marketId)
+    .sort((left, right) =>
+      Number(left.updatedAt.microsSinceUnixEpoch - right.updatedAt.microsSinceUnixEpoch));
+
+  while (rows.length > MARKET_PRICE_HOURLY_HISTORY_PER_ITEM) {
+    const row = rows.shift();
+    if (row) {
+      ctx.db.marketPriceHourly.delete(row);
+    }
+  }
+}
+
 function getRecentPlayerShopTrades(ctx: { db: any }) {
   const marketId = getActiveMarketId(ctx as IdleWizardReducerCtx);
   return Array.from<any>(ctx.db.playerShopTrade.byTradedAt.filter(new Range()))
@@ -17307,6 +17475,7 @@ function getRecentPublicPlayerShopRows(
       toBigInt(row.quantity) <= 0n ||
       toBigInt(row.priceGold) <= 0n ||
       getRowMarketId(row) !== marketId ||
+      !isPlayerShopRowTradedInMarket(row, marketId) ||
       row[identityField]?.isEqual?.(sender)
     ) {
       continue;
@@ -17320,6 +17489,15 @@ function getRecentPublicPlayerShopRows(
   }
 
   return recentRows.reverse();
+}
+
+function isPlayerShopRowTradedInMarket(row: any, marketId: string): boolean {
+  const itemKey = normalizeNpcMarketItemKey(String(row?.itemKey ?? ''));
+  const catalogItem = npcMarketCatalogByItemKey.get(itemKey);
+
+  return Boolean(
+    catalogItem && isItemGradeTradedInMarket(catalogItem.marketGrade, marketId),
+  );
 }
 
 function getOwnPlayerShopTrades(ctx: { sender: Identity; db: any }) {
@@ -19402,9 +19580,9 @@ export const set_player_shop_slot = spacetimedb.reducer(
       throw new Error('Player shop exchange requires server inventory.');
     }
 
-    const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
     const activeMarketId = assertActiveMarket(ctx, marketId);
-    const catalogItem = getPlayerShopCatalogItem(itemKey);
+    const safeSlotNumber = validatePlayerShopSlotNumberForMarket(slotNumber, activeMarketId);
+    const catalogItem = getPlayerShopCatalogItem(itemKey, activeMarketId);
     const safeItemKey = catalogItem.itemKey;
     const safeItemLabel = catalogItem.itemLabel;
     const safeItemKind = catalogItem.itemKind;
@@ -19480,9 +19658,9 @@ export const set_player_shop_request = spacetimedb.reducer(
       throw new Error('Player shop exchange requires server inventory.');
     }
 
-    const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
     const activeMarketId = assertActiveMarket(ctx, marketId);
-    const catalogItem = getPlayerShopCatalogItem(itemKey);
+    const safeSlotNumber = validatePlayerShopSlotNumberForMarket(slotNumber, activeMarketId);
+    const catalogItem = getPlayerShopCatalogItem(itemKey, activeMarketId);
     const safeItemKey = catalogItem.itemKey;
     const safeItemLabel = catalogItem.itemLabel;
     const safeItemKind = catalogItem.itemKind;
@@ -19561,6 +19739,8 @@ export const buy_player_shop_listing = spacetimedb.reducer(
     if (getRowMarketId(listing) !== activeMarketId) {
       throw new Error('Player shop listing belongs to another market.');
     }
+
+    getPlayerShopCatalogItem(listing.itemKey, activeMarketId);
 
     if (listing.sellerIdentity.isEqual(ctx.sender)) {
       throw new Error('Cannot buy your own player shop listing.');
@@ -19713,6 +19893,11 @@ export const sell_to_npc = spacetimedb.reducer(
       demandScore: tunedMarket.demandScore,
       supplyScore: tunedMarket.supplyScore,
     });
+    recordMarketPriceHourly(ctx, row, {
+      marketPriceGold: nextMarketPriceGold,
+      npcNeed: nextNpcNeed,
+      npcStock: nextNpcStock,
+    });
     grantPotionDiscoveryPassiveGold(
       ctx,
       itemKey,
@@ -19785,6 +19970,11 @@ export const buy_from_npc = spacetimedb.reducer(
       targetStock: marketConfig.targetStock,
       demandScore: tunedMarket.demandScore,
       supplyScore: tunedMarket.supplyScore,
+    });
+    recordMarketPriceHourly(ctx, row, {
+      marketPriceGold: nextMarketPriceGold,
+      npcNeed: nextNpcNeed,
+      npcStock: nextNpcStock,
     });
   },
 );

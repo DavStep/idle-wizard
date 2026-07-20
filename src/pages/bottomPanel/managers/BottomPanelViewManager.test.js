@@ -430,6 +430,13 @@ describe('BottomPanelViewManager', () => {
         new window.CustomEvent(FEATURE_UNLOCK_FLYOUT_EVENT, {
           bubbles: true,
           detail: {
+            features: [
+              {
+                value: 'garden',
+                pageId: 'garden',
+                sourceRect: { left: 300, top: 600, width: 80, height: 80 },
+              },
+            ],
             pageIds: ['garden'],
             sourceRect: { left: 490, top: 700, width: 100, height: 100 },
           },
@@ -439,7 +446,7 @@ describe('BottomPanelViewManager', () => {
       expect(document.querySelectorAll('.room-feature-unlock-flyout')).toHaveLength(1);
       expect(animationMock.animate).toHaveBeenCalledTimes(1);
       expect(animationMock.animate.mock.calls[0][0][0]?.transform).toContain(
-        'translate3d(515.0px, 725.0px, 0)',
+        'translate3d(315.0px, 615.0px, 0)',
       );
 
       announcement.hidden = true;
@@ -653,6 +660,9 @@ describe('BottomPanelViewManager', () => {
 
     expect(prestigeButton?.dataset.pageId).toBe('prestige');
     expect(prestigeButton?.dataset.actionId).toBeUndefined();
+    expect(
+      prestigeButton?.querySelector('.room-bottom-panel__tab-icon')?.getAttribute('src'),
+    ).toContain('icon-crystal.png');
     expect(prestigeButton?.style.visibility).toBe('');
     expect(prestigeButton?.tabIndex).toBe(0);
     prestigeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));

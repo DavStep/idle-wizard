@@ -6,7 +6,11 @@ import {
 import { getPageIconUrl } from '../../shared/pageIcons.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { createStatusIcon, STATUS_ICON_LOCK } from '../../shared/statusIcon.js';
-import { FEATURE_UNLOCK_FLYOUT_EVENT } from '../../announcements/featureUnlockEvents.js';
+import {
+  FEATURE_UNLOCK_FLYOUT_EVENT,
+  getFeatureUnlockIconFrame,
+  getFeatureUnlockTarget,
+} from '../../announcements/featureUnlockEvents.js';
 
 export const BOTTOM_PANEL_TABS = [
   { id: 'brewing', label: 'brewing' },
@@ -30,13 +34,6 @@ const OPTIONAL_BOTTOM_PANEL_TAB_BY_ID = new Map(
 
 const FEATURE_UNLOCK_FLYOUT_MS = 520;
 const FEATURE_UNLOCK_FLYOUT_CLEANUP_BUFFER_MS = 120;
-const FEATURE_UNLOCK_TARGET_SELECTORS = Object.freeze({
-  alliance: '.workshop-page__trade-alliance-button',
-  discoveries: '.workshop-page__discoveries-button',
-  inbox: '.workshop-page__mail-button',
-  leaderboard: '.workshop-page__leaderboard-button',
-});
-
 export class BottomPanelViewManager {
   constructor({ getCurrentPageId, onShowPage, onAction, tabs = BOTTOM_PANEL_TABS } = {}) {
     this.getCurrentPageId = getCurrentPageId;
@@ -627,7 +624,10 @@ export class BottomPanelViewManager {
       if (pageButton) {
         this.pendingUnlockAnimationButtons.delete(pageButton);
       }
-      this.restartUnlockAnimation(target, { sourceRect, skipAnnouncementQueue: true });
+      this.restartUnlockAnimation(target, {
+        sourceRect: this.normalizeRect(feature?.sourceRect) ?? sourceRect,
+        skipAnnouncementQueue: true,
+      });
     }
 
     if (this.pendingUnlockAnimationButtons.size <= 0) {
@@ -636,12 +636,7 @@ export class BottomPanelViewManager {
   }
 
   getFeatureUnlockTarget({ value, pageId } = {}) {
-    if (pageId) {
-      return this.tabButtons.get(pageId) ?? null;
-    }
-
-    const selector = FEATURE_UNLOCK_TARGET_SELECTORS[String(value ?? '')];
-    return selector ? (this.root?.parentElement?.querySelector(selector) ?? null) : null;
+    return getFeatureUnlockTarget(this.root?.parentElement, { value, pageId });
   }
 
   playUnlockIconFlyout(target, { sourceRect = null, delayMs = 0 } = {}) {
@@ -651,9 +646,7 @@ export class BottomPanelViewManager {
       return null;
     }
 
-    const iconFrame = target.querySelector(
-      '.room-bottom-panel__tab-icon-frame, [class*="-button-icon-frame"]',
-    );
+    const iconFrame = getFeatureUnlockIconFrame(target);
     const targetRect = this.normalizeRect(iconFrame?.getBoundingClientRect?.());
 
     if (!iconFrame || !targetRect || targetRect.width <= 0 || targetRect.height <= 0) {

@@ -39,6 +39,10 @@ const LEVEL_FOUR_TURN_IN_SAGE_HERB_TASK_ID = 'level4-turn-in-sage-herb';
 const LEVEL_FOUR_TURN_IN_MINT_HERB_TASK_ID = 'level4-turn-in-mint-herb';
 const LEVEL_FIVE_RESEARCH_MANA_TONIC_TASK_ID = 'level5-research-mana-tonic';
 const LEVEL_FIVE_BREW_MANA_TONIC_TASK_ID = 'level5-brew-mana-tonic';
+const NON_PERSISTENT_DEV_DIALOGS = new Set([
+  'featureunlockannouncement',
+  'featureunlocks',
+]);
 
 const FEATURE_LEVELS = Object.freeze({
   workshop: 1,
@@ -158,6 +162,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
   { id: 'bug', kind: 'dialog', dialogId: 'bug' },
   { id: 'feature', kind: 'dialog', dialogId: 'feature' },
   { id: 'level', kind: 'dialog', dialogId: 'level', aliases: ['levels'] },
+  {
+    id: 'featureUnlockAnnouncement',
+    kind: 'dialog',
+    dialogId: 'featureUnlockAnnouncement',
+    aliases: ['featureUnlocks'],
+  },
   { id: 'inbox', kind: 'dialog', dialogId: 'inbox', aliases: ['mail'] },
 ]);
 
@@ -1158,6 +1168,7 @@ export class DevCheatCommandManager {
 
     const maxSlots = this.getShopMaxSlots();
     const unlockedSlots = Math.min(safeCount.value, maxSlots);
+    this.ensureMarketStallCount(unlockedSlots);
     this.ensureLevelForNpcMarketStand(unlockedSlots);
     const snapshot = this.gameplayFacade.shopFacade.getPersistenceSnapshot();
 
@@ -1191,6 +1202,7 @@ export class DevCheatCommandManager {
 
     const maxSlots = this.getShopMaxSlots();
     const unlockedSlots = Math.min(safeCount.value, maxSlots);
+    this.ensureMarketStallCount(unlockedSlots);
     this.ensureLevelForPlayerMarketStand(unlockedSlots);
     const snapshot = this.gameplayFacade.shopFacade.getPersistenceSnapshot();
 
@@ -1228,6 +1240,29 @@ export class DevCheatCommandManager {
       trader,
       player,
     };
+  }
+
+  ensureMarketStallCount(count) {
+    const licenceIndex = Math.max(0, Math.min(marketLicences.length, count) - 1);
+    const licence = marketLicences[licenceIndex];
+    const prestigeFacade = this.gameplayFacade.prestigeFacade;
+
+    if (!licence || typeof prestigeFacade?.applyPersistenceSnapshot !== 'function') {
+      return;
+    }
+
+    const currentStars = prestigeFacade.getCompletedCount?.() ?? 0;
+    const requiredStars = Math.max(currentStars, licence.requiredStars);
+    const snapshot = prestigeFacade.getPersistenceSnapshot?.() ?? {};
+
+    prestigeFacade.applyPersistenceSnapshot({
+      ...snapshot,
+      completedLevels: Array.from(
+        { length: requiredStars },
+        (_unused, index) => (index + 1) * 10,
+      ),
+    });
+    this.gameplayFacade.syncRubyFromPrestige?.();
   }
 
   setMarketState(presetOrOptions = 'full', optionsArg = {}) {
@@ -1585,6 +1620,14 @@ export class DevCheatCommandManager {
 
     if (!normalizedDialogId) {
       return { ok: false, reason: 'invalid_dialog_id', dialogId };
+    }
+
+    if (NON_PERSISTENT_DEV_DIALOGS.has(normalizedDialogId)) {
+      if (!this.pagesFacade || typeof this.pagesFacade.openDialog !== 'function') {
+        return { ok: false, reason: 'pages_missing' };
+      }
+
+      return this.pagesFacade.openDialog(dialogId, options);
     }
 
     this.ensureFeatureForDialog(normalizedDialogId);
@@ -3035,8 +3078,8 @@ export class DevCheatCommandManager {
     const snapshot = this.gameplayFacade.getSnapshot().shop?.shelf;
 
     return (
-      snapshot?.maxSlots ??
       this.gameplayFacade.shopFacade?.shopBalanceManager?.getMaxShelfSlots?.() ??
+      snapshot?.maxSlots ??
       1
     );
   }

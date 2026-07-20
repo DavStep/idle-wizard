@@ -9,11 +9,13 @@ export class ShopStockPurchaseManager {
     itemsFacade,
     shopNpcPriceManager,
     shopStockPriceQuoteManager,
+    getItemAccess,
   } = {}) {
     this.coinFacade = coinFacade;
     this.itemsFacade = itemsFacade;
     this.shopNpcPriceManager = shopNpcPriceManager;
     this.shopStockPriceQuoteManager = shopStockPriceQuoteManager;
+    this.getItemAccess = getItemAccess;
   }
 
   async buyItem({ itemTypeId, quantity = 1 } = {}) {
@@ -27,6 +29,14 @@ export class ShopStockPurchaseManager {
     }
 
     const item = this.itemsFacade.getItemDefinition(itemTypeId);
+    const marketAccess = this.getItemAccess?.(item);
+    if (marketAccess && !marketAccess.tradedHere) {
+      return {
+        ok: false,
+        reason: 'market_locked',
+        requiredMarket: marketAccess.requiredMarket,
+      };
+    }
     const quote = this.quoteItem({ itemTypeId, quantity: safeQuantity });
 
     if (!quote.ok) {
@@ -83,6 +93,14 @@ export class ShopStockPurchaseManager {
     }
 
     const item = this.itemsFacade.getItemDefinition(itemTypeId);
+    const marketAccess = this.getItemAccess?.(item);
+    if (marketAccess && !marketAccess.tradedHere) {
+      return {
+        ok: false,
+        reason: 'market_locked',
+        requiredMarket: marketAccess.requiredMarket,
+      };
+    }
     const quote = this.shopStockPriceQuoteManager?.quoteItem({
       item,
       quantity: safeQuantity,

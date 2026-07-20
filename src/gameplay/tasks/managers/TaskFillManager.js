@@ -19,6 +19,10 @@ export class TaskFillManager {
       return { ok: false, reason: 'already_completed', taskId };
     }
 
+    if (!this.taskStateEntityManager.isActiveTask(taskId)) {
+      return { ok: false, reason: 'not_active_quest', taskId };
+    }
+
     if (task.type !== taskRequirementTypes.TURN_IN) {
       return { ok: false, reason: 'not_turn_in_requirement', taskId };
     }
@@ -108,6 +112,10 @@ export class TaskFillManager {
 
     if (this.taskStateEntityManager.isCompleted(taskId)) {
       return { ok: false, reason: 'already_completed', taskId };
+    }
+
+    if (!this.taskStateEntityManager.isActiveTask(taskId)) {
+      return { ok: false, reason: 'not_active_quest', taskId };
     }
 
     if (this.taskStateEntityManager.getProgress(taskId) < task.requiredQuantity) {

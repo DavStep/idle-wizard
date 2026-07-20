@@ -452,8 +452,8 @@ describe('TutorialStepManager', () => {
       }),
     ).toMatchObject({
       id: 'intro-level-requirements',
-      text: "for each new lesson or skill, i'll ask you to complete a few tasks.",
-      advanceLabel: 'show requirements',
+      text: "i'll give you one request at a time. complete it to earn xp toward your next level.",
+      advanceLabel: 'show request',
       advanceAction: TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS,
     });
   });
@@ -606,7 +606,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('guides level 2 players from the Market tab to fast sell', () => {
+  it('guides level 2 players from the Market tab to sell to trader', () => {
     const snapshot = createLevelTwoSnapshot({
       shop: {
         shelf: {
@@ -666,7 +666,7 @@ describe('TutorialStepManager', () => {
     expect(getStep({ pageId: 'shop', snapshot, completed })).toMatchObject({
       id: 'select-market-stand',
       targetId: 'shop:directSell',
-      objectiveText: 'open fast sell',
+      objectiveText: 'open trader offer',
       stepLabel: '14/37',
     });
   });
@@ -1173,7 +1173,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'grow-sage',
       targetId: 'workshop:tasks',
-      hintText: 'open level 4 requirements',
+      hintText: "open elara's level 4 request",
       stepLabel: '28/37',
     });
   });

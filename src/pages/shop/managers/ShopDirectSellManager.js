@@ -147,18 +147,12 @@ export class ShopDirectSellManager {
 
   createControls() {
     const root = document.createElement('section');
-    root.className = 'shop-page__direct-sell-box style-box';
-    root.setAttribute('aria-label', 'fast sell');
-
-    const title = document.createElement('div');
-    title.className = 'style-box__title';
-    title.textContent = 'fast sell';
+    root.className = 'shop-page__direct-sell-controls';
+    root.setAttribute('aria-label', 'sell to trader');
 
     this.refs.button = this.createButton();
     this.refs.help = this.createHelpControl();
-    this.refs.summary = this.createSummaryRow();
-
-    root.append(title, this.refs.summary.row, this.refs.button, this.refs.help.root);
+    root.append(this.refs.button, this.refs.help.root);
     return root;
   }
 
@@ -166,9 +160,9 @@ export class ShopDirectSellManager {
     const button = document.createElement('button');
     button.className = 'style-button shop-page__direct-sell-button';
     button.type = 'button';
-    button.textContent = 'fast sell';
+    button.textContent = 'sell to trader';
     button.dataset.tutorialId = 'shop:directSell';
-    button.setAttribute('aria-label', 'fast sell to trader');
+    button.setAttribute('aria-label', 'sell to trader now');
     button.addEventListener('click', () => this.show());
     return button;
   }
@@ -180,10 +174,10 @@ export class ShopDirectSellManager {
     const button = document.createElement('button');
     button.className = 'style-button shop-page__direct-sell-help-button';
     button.type = 'button';
-    button.textContent = '?';
+    button.textContent = '[i]';
     button.setAttribute('aria-controls', DIRECT_SELL_HELP_TOOLTIP_ID);
     button.setAttribute('aria-expanded', 'false');
-    button.setAttribute('aria-label', 'what is fast sell?');
+    button.setAttribute('aria-label', 'how trader offers work');
     button.addEventListener('click', (event) => {
       event.stopPropagation();
       this.toggleHelp();
@@ -213,7 +207,7 @@ export class ShopDirectSellManager {
 
     const panel = document.createElement('section');
     panel.className = 'shop-page__direct-sell-panel';
-    panel.setAttribute('aria-label', 'fast sell to trader');
+    panel.setAttribute('aria-label', 'trader offer');
     panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('role', 'dialog');
     panel.tabIndex = -1;
@@ -223,7 +217,7 @@ export class ShopDirectSellManager {
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'fast sell';
+    title.textContent = 'trader offer';
 
     const closeButton = document.createElement('button');
     closeButton.className = 'style-button shop-page__direct-sell-close';
@@ -323,7 +317,7 @@ export class ShopDirectSellManager {
   createTabs() {
     const tabs = document.createElement('div');
     tabs.className = 'shop-page__direct-sell-tabs';
-    tabs.setAttribute('aria-label', 'fast sell item type');
+    tabs.setAttribute('aria-label', 'trader offer item type');
     tabs.setAttribute('role', 'tablist');
 
     for (const tab of DIRECT_SELL_TABS) {
@@ -564,7 +558,7 @@ export class ShopDirectSellManager {
     const display = getItemDisplay(this.lastSnapshot, item, item.quantity);
     const selected = this.selectedItemTypeId === item.itemTypeId;
     const selling = this.sellingItemTypeId === item.itemTypeId;
-    const canSelect = item.quantity > 0 && shouldShowItemInActionList(
+    const canSelect = item.tradedHere !== false && item.quantity > 0 && shouldShowItemInActionList(
       this.lastSnapshot,
       item,
       item.quantity,
@@ -583,7 +577,10 @@ export class ShopDirectSellManager {
     refs.targetLabel.textContent = `${display.label} x${display.quantity}`;
     setItemIconLabel(refs.targetLabel, item.kind, item.key);
     setResourceColor(refs.targetLabel, item.kind);
-    setResourceIconText(refs.value, this.formatSellCoin(this.getDisplayPriceCoin(item)));
+    setResourceIconText(
+      refs.value,
+      item.tradedHere === false ? 'not traded here' : this.formatSellCoin(this.getDisplayPriceCoin(item)),
+    );
     setResourceColorFromText(refs.value, refs.value.textContent);
   }
 
@@ -705,10 +702,9 @@ export class ShopDirectSellManager {
     }
 
     const fastSellPercent = this.getFastSellPercent();
-    this.refs.helpPopup.tooltip.textContent =
-      fastSellPercent === null
-        ? 'fast sell sells now for less than full trader price. market stands wait for the timer and pay 100%.'
-        : `fast sell sells now for ${fastSellPercent}% of full trader price. market stands wait for the timer and pay 100%.`;
+    this.refs.helpPopup.tooltip.textContent = fastSellPercent === null
+      ? 'sell now for less. stalls wait and pay the full price.'
+      : `sell now for ${fastSellPercent}%. stalls wait and pay the full price.`;
 
     if (this.helpVisible) {
       this.positionHelpPopup();
@@ -855,6 +851,10 @@ export class ShopDirectSellManager {
   }
 
   getNoSellReason(item) {
+    if (item?.tradedHere === false) {
+      return 'market_locked';
+    }
+
     const quantity = Number.isFinite(item?.quantity) ? Math.floor(item.quantity) : 0;
 
     if (quantity <= 0) {
@@ -884,14 +884,14 @@ export class ShopDirectSellManager {
     const sellNeed = this.getSellNeed(item);
 
     if (sellNeed === null) {
-      return 'demand ?';
+      return 'buyers ?';
     }
 
     if (sellNeed <= 0) {
       return 'no buyers';
     }
 
-    return `demand ${sellNeed}`;
+    return `buyers want ${sellNeed}`;
   }
 
   getFastSellCoin(item) {
@@ -951,6 +951,13 @@ export class ShopDirectSellManager {
   }
 
   getSellFailureText(reason, quote = null, item = null) {
+    if (reason === 'market_locked') {
+      const requiredMarket = quote?.requiredMarket ?? item?.requiredMarket;
+      return requiredMarket?.name
+        ? `${String(requiredMarket.name).toLowerCase()} required`
+        : 'not traded here';
+    }
+
     if (reason === 'not_enough_items') {
       return 'not enough items';
     }

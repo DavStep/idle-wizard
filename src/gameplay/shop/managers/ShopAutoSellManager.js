@@ -7,6 +7,8 @@ export class ShopAutoSellManager {
     shopNpcSellQuoteManager,
     shopSellAvailabilityManager,
     shopShelfEntityManager,
+    getAccessibleSlotCount,
+    getItemAccess,
     onItemSold,
     now = () => Date.now(),
   }) {
@@ -17,6 +19,8 @@ export class ShopAutoSellManager {
     this.shopNpcSellQuoteManager = shopNpcSellQuoteManager;
     this.shopSellAvailabilityManager = shopSellAvailabilityManager;
     this.shopShelfEntityManager = shopShelfEntityManager;
+    this.getAccessibleSlotCount = getAccessibleSlotCount;
+    this.getItemAccess = getItemAccess;
     this.onItemSold = onItemSold;
     this.now = now;
     this.registered = false;
@@ -155,6 +159,8 @@ export class ShopAutoSellManager {
   getActiveSellSlots() {
     return this.shopShelfEntityManager
       .getSlotSnapshots()
+      .filter((slot) =>
+        slot.slotNumber <= (this.getAccessibleSlotCount?.() ?? Number.POSITIVE_INFINITY))
       .filter((slot) => this.isActiveSellSlot(slot));
   }
 
@@ -339,9 +345,15 @@ export class ShopAutoSellManager {
   }
 
   isActiveSellSlot(slot) {
+    const item = slot?.sellItemTypeId
+      ? this.itemsFacade.getItemDefinition(slot.sellItemTypeId)
+      : null;
+    const marketAccess = item ? this.getItemAccess?.(item) : null;
+
     return Boolean(
       slot?.unlocked &&
         slot.sellItemTypeId &&
+        (!marketAccess || marketAccess.tradedHere) &&
         (slot.sellLimitMode !== 'amount' || this.getSlotQuantityLimit(slot) > 0),
     );
   }

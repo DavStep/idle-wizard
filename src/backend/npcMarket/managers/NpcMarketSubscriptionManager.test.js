@@ -39,12 +39,13 @@ function createTable(rows) {
   };
 }
 
-function createConnection({ pricesTable }) {
+function createConnection({ pricesTable, priceHistoryTable = null }) {
   const subscriptions = [];
 
   return {
     db: {
       npcMarketPrice: pricesTable,
+      ...(priceHistoryTable ? { marketPriceHourlySnapshot: priceHistoryTable } : {}),
     },
     subscriptions,
     subscriptionBuilder: () => ({
@@ -177,5 +178,46 @@ describe('NpcMarketSubscriptionManager', () => {
     manager.setActiveMarketId('crossroads');
 
     expect(onSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('adds active-market hourly history to each item price', () => {
+    const pricesTable = createTable([
+      {
+        itemKey: 'sageSeed',
+        marketId: 'smallTown',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        marketPriceCoin: 3n,
+      },
+    ]);
+    const priceHistoryTable = createTable([
+      {
+        itemKey: 'sageSeed',
+        marketId: 'smallTown',
+        marketPriceCoin: 2n,
+        npcBuyPriceCoin: 1n,
+        npcSellPriceCoin: 4n,
+        npcNeed: 8n,
+        npcStock: 12n,
+        updatedAt: { microsSinceUnixEpoch: 3_600_000_000n },
+      },
+      {
+        itemKey: 'sageSeed',
+        marketId: 'arcaneExchange',
+        marketPriceCoin: 99n,
+      },
+    ]);
+    const manager = new NpcMarketSubscriptionManager();
+
+    manager.connect(createConnection({ pricesTable, priceHistoryTable }));
+
+    expect(manager.getPrice('sageSeed')?.priceHistory).toEqual([
+      expect.objectContaining({
+        marketPriceCoin: 2,
+        npcNeed: 8,
+        npcStock: 12,
+        updatedAtMs: 3_600_000,
+      }),
+    ]);
   });
 });

@@ -4,14 +4,26 @@ export class ShopShelfSlotSelectionManager {
     shopSellKindManager,
     shopShelfEntityManager,
     shopSellAvailabilityManager,
+    getAccessibleSlotCount,
+    getItemAccess,
   }) {
     this.itemsFacade = itemsFacade;
     this.shopSellKindManager = shopSellKindManager;
     this.shopShelfEntityManager = shopShelfEntityManager;
     this.shopSellAvailabilityManager = shopSellAvailabilityManager;
+    this.getAccessibleSlotCount = getAccessibleSlotCount;
+    this.getItemAccess = getItemAccess;
   }
 
   selectSlot(slotNumber) {
+    if (slotNumber > (this.getAccessibleSlotCount?.() ?? Number.POSITIVE_INFINITY)) {
+      return {
+        ok: false,
+        reason: 'market_locked',
+        slotNumber,
+      };
+    }
+
     if (!this.shopShelfEntityManager.selectSlot(slotNumber)) {
       return {
         ok: false,
@@ -37,6 +49,16 @@ export class ShopShelfSlotSelectionManager {
     }
 
     const item = this.itemsFacade.getItemDefinition(itemTypeId);
+    const marketAccess = this.getItemAccess?.(item);
+
+    if (marketAccess && !marketAccess.tradedHere) {
+      return {
+        ok: false,
+        reason: 'market_locked',
+        itemTypeId,
+        requiredMarket: marketAccess.requiredMarket,
+      };
+    }
 
     if (!this.shopSellKindManager.isSellKind(item.kind)) {
       return {

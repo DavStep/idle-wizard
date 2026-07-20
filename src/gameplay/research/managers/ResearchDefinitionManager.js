@@ -418,7 +418,7 @@ export class ResearchDefinitionManager {
     return [
       {
         id: 'fastSell',
-        label: 'fast sell research',
+        label: 'haggling research',
         researches: this.getFastSellResearches(),
       },
       {
@@ -587,13 +587,13 @@ export class ResearchDefinitionManager {
 
       return {
         id: fastSellResearchIds.payout(level),
-        label: `fast sell lvl ${level}`,
+        label: `haggling lvl ${level}`,
         value: `${percent}% payout`,
         showEffect: true,
         seriesId: 'fastSell',
         requiredResearchIds:
           level > 1 ? [fastSellResearchIds.payout(level - 1)] : [],
-        description: `fast sell pays ${percent}% of npc bulk sell price.`,
+        description: `traders offer ${percent}% for an immediate sale.`,
       };
     });
   }

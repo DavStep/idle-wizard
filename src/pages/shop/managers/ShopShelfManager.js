@@ -89,14 +89,15 @@ export class ShopShelfManager {
 
     this.root = document.createElement('section');
     this.root.className = 'shop-page__shelf style-box';
-    this.root.setAttribute('aria-label', 'trader demand market');
+    this.root.setAttribute('aria-label', 'your stalls');
 
     this.refs.title = this.createTitle();
     this.refs.timer = this.createTimer();
+    this.refs.help = this.createHelp();
     this.refs.rows = [];
     this.refs.popup = this.createSellPopup();
 
-    this.root.append(this.refs.title, this.refs.timer);
+    this.root.append(this.refs.title, this.refs.timer, this.refs.help.root);
     parent.append(this.root);
     popupParent.append(this.refs.popup);
     document.addEventListener('keydown', this.handleKeydown);
@@ -135,16 +136,39 @@ export class ShopShelfManager {
   createTitle() {
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'trader demand market';
+    title.textContent = 'your stalls';
     return title;
   }
 
   createTimer() {
     const timer = document.createElement('span');
     timer.className = 'shop-page__shelf-timer';
-    timer.setAttribute('aria-label', 'trader demand market timer');
+    timer.setAttribute('aria-label', 'time until traders arrive');
     timer.hidden = true;
     return timer;
+  }
+
+  createHelp() {
+    const root = document.createElement('div');
+    root.className = 'shop-page__shelf-help';
+    const button = document.createElement('button');
+    button.className = 'style-button shop-page__shelf-help-button';
+    button.type = 'button';
+    button.textContent = '[i]';
+    button.setAttribute('aria-label', 'how stalls work');
+    button.setAttribute('aria-expanded', 'false');
+    const tooltip = document.createElement('div');
+    tooltip.className = 'style-tooltip shop-page__shelf-help-tooltip';
+    tooltip.textContent = 'traders buy from stalls at full price. each market rank adds one stall.';
+    tooltip.hidden = true;
+    tooltip.setAttribute('role', 'tooltip');
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      tooltip.hidden = !tooltip.hidden;
+      button.setAttribute('aria-expanded', tooltip.hidden ? 'false' : 'true');
+    });
+    root.append(button, tooltip);
+    return { root, button, tooltip };
   }
 
   createSlotRow(slotNumber) {
@@ -831,7 +855,7 @@ export class ShopShelfManager {
     const timerText = this.formatShelfTimer(shelf);
 
     this.refs.timer.hidden = !timerText;
-    this.setText(this.refs.timer, timerText ? `timer ${timerText}` : '');
+    this.setText(this.refs.timer, timerText ? `traders arrive in ${timerText}` : '');
   }
 
   formatLockedSlotAction(shelf, cost) {
@@ -1130,6 +1154,17 @@ export class ShopShelfManager {
       : { label: slot.sellLabel, quantity: String(quantity) };
     const itemText = `${display.label} (${display.quantity})`;
 
+    if (slot.tradedHere === false || sellItem?.tradedHere === false) {
+      return {
+        itemKey: displayItem.key,
+        itemText,
+        itemKind: displayItem.kind,
+        itemEmpty: display.empty,
+        priceText: 'not traded here',
+        priceResource: null,
+      };
+    }
+
     if (amountMode && quantity <= 0) {
       return {
         itemKey: displayItem.key,
@@ -1343,12 +1378,16 @@ export class ShopShelfManager {
     return Boolean(
       slot?.unlocked &&
         slot.sellItemTypeId &&
+        slot.tradedHere !== false &&
         (slot.sellLimitMode !== 'amount' ||
           Math.max(0, Math.floor(Number(slot.sellQuantityLimit) || 0)) > 0),
     );
   }
 
   getMarkFailureText(reason) {
+    if (reason === 'market_locked') {
+      return 'not traded here';
+    }
     if (reason === 'invalid_quantity') {
       return 'bad amount';
     }
@@ -1405,6 +1444,7 @@ export class ShopShelfManager {
 
   canSelectSellItem(snapshot, item) {
     return (
+      item.tradedHere !== false &&
       shouldShowItemInActionList(snapshot, item, item.quantity) &&
       Number.isFinite(item.sellCoin) &&
       item.sellCoin > 0

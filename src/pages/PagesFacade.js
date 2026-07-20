@@ -423,6 +423,9 @@ export class PagesFacade {
       case 'level':
       case 'levels':
         return this.openTopPanelDialog('level', options);
+      case 'featureunlockannouncement':
+      case 'featureunlocks':
+        return this.announcementFacade.showFeatureUnlockPreview(options);
       case 'mail':
       case 'inbox':
         return this.openTopPanelDialog('inbox', options);
@@ -701,6 +704,8 @@ export class PagesFacade {
       page.shelfManager?.showSellPopup?.();
     } else if (options.popup === 'directSell') {
       page.directSellManager?.show?.();
+    } else if (options.popup === 'marketLedger') {
+      page.marketLedgerManager?.show?.();
     }
 
     return { ok: true, dialogId: 'market', pageId: 'shop', tabId };
