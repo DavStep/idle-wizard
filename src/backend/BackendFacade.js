@@ -96,9 +96,16 @@ export class BackendFacade {
           this.accountSessionInactive = true;
           this.gameplaySaveFacade.discardPendingSaves();
           this.playerSyncFacade.discardPendingPlayerLevel();
-          this.disconnectBackendFacades();
-          this.spacetimeDbFacade.disconnect();
-          onOffline?.({ reason: 'account_in_use' });
+          const maintenanceActive = this.maintenanceFacade.getSnapshot()?.active === true;
+          this.disconnectBackendFacades({ keepGameConfig: maintenanceActive });
+
+          if (!maintenanceActive) {
+            this.spacetimeDbFacade.disconnect();
+          }
+
+          onOffline?.({
+            reason: maintenanceActive ? 'maintenance_session_invalidated' : 'account_in_use',
+          });
         };
         const finishGameplaySaveReady = async (result) => {
           if (gameplaySaveReady || accountSessionInactive) {
@@ -240,9 +247,11 @@ export class BackendFacade {
     return 'connect_error';
   }
 
-  disconnectBackendFacades() {
+  disconnectBackendFacades({ keepGameConfig = false } = {}) {
     this.accountSessionFacade.disconnect();
-    this.gameConfigFacade.disconnect();
+    if (!keepGameConfig) {
+      this.gameConfigFacade.disconnect();
+    }
     this.gameplaySaveFacade.disconnect();
     this.leaderboardFacade.disconnect();
     this.worldEventLeaderboardFacade.disconnect();

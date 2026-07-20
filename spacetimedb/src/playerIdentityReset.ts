@@ -23,3 +23,15 @@ export function createIdentityOnlyPlayerReset<
     character: DEFAULT_PLAYER_CHARACTER,
   };
 }
+
+export function createInvalidatedPlayerSession<
+  Session extends { identity: unknown },
+  ConnectionId,
+  ResetTimestamp,
+>(session: Session, maintenanceConnectionId: ConnectionId, resetAt: ResetTimestamp) {
+  return {
+    ...session,
+    activeConnectionId: maintenanceConnectionId,
+    updatedAt: resetAt,
+  };
+}

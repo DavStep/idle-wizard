@@ -77,6 +77,7 @@ export class AppLifecycleManager {
     );
     this.maintenanceFlushPromise = null;
     this.maintenanceFlushKey = '';
+    this.reloadAfterLockedMaintenance = false;
   }
 
   start() {
@@ -686,6 +687,9 @@ export class AppLifecycleManager {
 
   handleMaintenanceChange(snapshot) {
     this.maintenanceSnapshot = this.normalizeMaintenanceSnapshot(snapshot);
+    if (this.maintenanceSnapshot.mode === 'locked') {
+      this.reloadAfterLockedMaintenance = true;
+    }
     this.applyMaintenanceState();
   }
 
@@ -709,6 +713,14 @@ export class AppLifecycleManager {
 
     this.maintenanceFlushPromise = null;
     this.maintenanceFlushKey = '';
+
+    if (this.reloadAfterLockedMaintenance) {
+      this.reloadAfterLockedMaintenance = false;
+      this.interactionLockManager.lock('maintenance');
+      this.stopFrameLoop();
+      this.reload();
+      return;
+    }
 
     if (this.backendOnline) {
       this.onlineGateManager.hide();
@@ -843,6 +855,7 @@ export class AppLifecycleManager {
     this.appVisible = true;
     this.hiddenOfflineReason = null;
     this.hiddenAtMs = null;
+    this.reloadAfterLockedMaintenance = false;
     this.maintenanceUnsubscribe?.();
     this.maintenanceUnsubscribe = null;
     this.connectionRetryManager.clear();

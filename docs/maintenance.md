@@ -121,8 +121,8 @@ Use this only when intentionally making every player start over while preserving
 their account identity and any connected Google account. The Google connection is
 represented by the Google-derived SpacetimeDB identity/token rather than a game
 table. This keeps each `player.identity`, resets every other `player` field to a
-fresh-account value, clears active player sessions, and deletes gameplay and
-shared player state.
+fresh-account value, invalidates active player sessions so stale clients cannot
+write, and deletes gameplay and shared player state.
 
 The reset requires `locked` maintenance mode and a one-time reset key. Before
 running it, drain active clients, lock writes, and take a progression backup:
@@ -190,7 +190,10 @@ Expected post-reset counts:
 
 - `player_count` remains nonzero if accounts exist, preserving their identities.
 - all non-default profile counts, `prompted_username`, `connected_player_count`,
-  `above_level_1`, and `player_session_count` are `0`.
+  and `above_level_1` are `0`.
+- `invalidated_session_guard_count` may remain nonzero for clients that were open
+  during reset; those rows deliberately reject stale writes and are replaced on
+  the next real connection.
 - gameplay saves, inbox mail, player feedback, leaderboard, world event
   leaderboard, world chat, alliance rows, player shop rows, and potion discovery
   rows are `0`.

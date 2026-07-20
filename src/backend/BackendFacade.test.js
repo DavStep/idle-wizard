@@ -380,6 +380,38 @@ describe('BackendFacade', () => {
     expect(onOffline).toHaveBeenCalledWith({ reason: 'account_in_use' });
   });
 
+  it('keeps the maintenance feed connected when reset invalidates the active session', async () => {
+    const { backendFacade } = createBackendWithFakes();
+    const onOffline = vi.fn();
+    let onInactive = null;
+    backendFacade.maintenanceFacade = {
+      getSnapshot: vi.fn(() => ({ active: true, mode: 'locked' })),
+    };
+    backendFacade.accountSessionFacade.connect.mockImplementation((_connection, options) => {
+      onInactive = options.onInactive;
+      return true;
+    });
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+      onOffline,
+    });
+    await flushPromises();
+
+    onInactive();
+
+    expect(backendFacade.accountSessionFacade.disconnect).toHaveBeenCalled();
+    expect(backendFacade.gameplaySaveFacade.disconnect).toHaveBeenCalled();
+    expect(backendFacade.gameConfigFacade.disconnect).not.toHaveBeenCalled();
+    expect(backendFacade.spacetimeDbFacade.disconnect).not.toHaveBeenCalled();
+    expect(onOffline).toHaveBeenCalledWith({
+      reason: 'maintenance_session_invalidated',
+    });
+  });
+
   it('reports paused and no-energy connection errors as non-transient reasons', async () => {
     const pausedError = new Error('database is paused');
     const noEnergyError = new Error('out of energy');

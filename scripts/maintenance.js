@@ -425,7 +425,7 @@ function verifyPlayerProgressionReset() {
   runSql('SELECT COUNT(*) AS prompted_username FROM player WHERE username_prompt_seen = true');
   runSql('SELECT COUNT(*) AS connected_player_count FROM player WHERE connected = true');
   runSql('SELECT COUNT(*) AS above_level_1 FROM player WHERE player_level > 1');
-  runSql('SELECT COUNT(*) AS player_session_count FROM player_session');
+  runSql('SELECT COUNT(*) AS invalidated_session_guard_count FROM player_session');
   runSql('SELECT COUNT(*) AS save_count FROM player_gameplay_save');
   runSql('SELECT COUNT(*) AS inbox_mail_count FROM player_inbox_mail');
   runSql('SELECT COUNT(*) AS player_feedback_count FROM player_feedback');

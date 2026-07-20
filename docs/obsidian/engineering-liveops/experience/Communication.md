@@ -38,7 +38,7 @@ experience_type: communication
 - Google account linking with a pending device save and no server save must load and persist the device save under the connected account; showing a fresh start here loses visible player progress.
 - First-run `connect account` must mark the fresh-start choice confirmed after successful auth; otherwise an empty connected account reopens the start-new gate before creating its fresh save.
 - Removed FTUE skip states must be ignored, not migrated; stale Android WebView `skipped` flags can hide the guide for reset level-1 players.
-- Post-reset replay guards must allow the client baseline save, including default free research like `unlockSeed:sageSeed`; otherwise new post-reset saves can never create a server row.
+- Post-reset replay guards must allow the client baseline save, including default free research like `unlockSeed:sageSeed` and starting coin with `current: 10, totalGenerated: 0`; server normalization must not reclassify grants as generated leaderboard income.
 - Loading a high QA save into a local identity with no accepted save needs a baseline `set_player_gameplay_save` first; the post-reset replay guard silently ignores high first saves, then `admin_copy_player_progression` can move that progression to the active browser account.
 - Fresh Android installs must show the account/start-fresh choice before any Credential Manager restore; native Google can silently restore a previously authorized account even when app-local data was cleared.
 - Web/mobile Google login must fail closed when ID-token auth is unavailable; browser OIDC code redirects with a web OAuth client surface `client_secret is missing` unless a backend token-exchange endpoint exists.

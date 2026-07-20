@@ -914,8 +914,9 @@ describe('AppLifecycleManager', () => {
     );
   });
 
-  it('resumes gameplay when maintenance turns off', async () => {
-    const { lifecycle, getBackendCallbacks, setMaintenance } = createLifecycle();
+  it('reloads fresh server state instead of resuming stale memory after locked maintenance', async () => {
+    const reload = vi.fn();
+    const { lifecycle, getBackendCallbacks, setMaintenance } = createLifecycle({ reload });
 
     lifecycle.start();
     await flushPromises();
@@ -934,7 +935,34 @@ describe('AppLifecycleManager', () => {
       updatedAtMs: 13,
     });
 
-    expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(2);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayTickManager.start).toHaveBeenCalledTimes(1);
+    expect(lifecycle.interactionLockManager.unlock).toHaveBeenCalledTimes(1);
+  });
+
+  it('resumes gameplay without reloading when drain maintenance is cancelled before locking', async () => {
+    const reload = vi.fn();
+    const { lifecycle, getBackendCallbacks, setMaintenance } = createLifecycle({ reload });
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+    setMaintenance({
+      mode: 'drain',
+      message: 'maintenance in progress',
+      active: true,
+      updatedAtMs: 14,
+    });
+    await flushPromises();
+
+    setMaintenance({
+      mode: 'off',
+      message: 'maintenance in progress',
+      active: false,
+      updatedAtMs: 15,
+    });
+
+    expect(reload).not.toHaveBeenCalled();
     expect(lifecycle.gameplayTickManager.start).toHaveBeenCalledTimes(2);
   });
 

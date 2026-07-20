@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { createIdentityOnlyPlayerReset } from './playerIdentityReset';
+import {
+  createIdentityOnlyPlayerReset,
+  createInvalidatedPlayerSession,
+} from './playerIdentityReset';
 
 describe('identity-only player reset', () => {
   it('keeps only the player identity and replaces every profile field with fresh defaults', () => {
@@ -32,6 +35,29 @@ describe('identity-only player reset', () => {
       usernamePromptSeen: false,
       font: 'lexend',
       character: 'elara',
+    });
+  });
+
+  it('invalidates an open player session without deleting its ownership guard', () => {
+    const playerIdentity = { toHexString: () => 'player-identity' };
+    const staleConnectionId = { toHexString: () => 'stale-player-connection' };
+    const maintenanceConnectionId = { toHexString: () => 'maintenance-connection' };
+    const resetAt = { microsSinceUnixEpoch: 2n };
+
+    expect(
+      createInvalidatedPlayerSession(
+        {
+          identity: playerIdentity,
+          activeConnectionId: staleConnectionId,
+          updatedAt: { microsSinceUnixEpoch: 1n },
+        },
+        maintenanceConnectionId,
+        resetAt,
+      ),
+    ).toEqual({
+      identity: playerIdentity,
+      activeConnectionId: maintenanceConnectionId,
+      updatedAt: resetAt,
     });
   });
 });

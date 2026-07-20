@@ -13,6 +13,7 @@ import {
   MAX_PLAYER_SAVE_CURRENT_GOLD,
   MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD,
   normalizeSaveGold,
+  readSaveTotalGeneratedGold,
 } from './saveGoldNormalizer';
 import { normalizeSaveCauldronAutomationState } from './saveBrewingNormalizer';
 import {
@@ -25,6 +26,7 @@ import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './mark
 import { appendMissingItemConfigRows as appendMissingItemConfigRowsByKey } from './itemConfigRows';
 import {
   createIdentityOnlyPlayerReset,
+  createInvalidatedPlayerSession,
   DEFAULT_PLAYER_CHARACTER,
   DEFAULT_PLAYER_COLOR_MODE,
   DEFAULT_PLAYER_FONT,
@@ -32,6 +34,10 @@ import {
   DEFAULT_PLAYER_THEME,
   DEFAULT_USERNAME,
 } from './playerIdentityReset';
+import {
+  isTradeAllianceUnlocked,
+  TRADE_ALLIANCE_UNLOCK_LEVEL,
+} from './tradeAllianceAccess';
 import {
   defaultMarketId,
   marketLicences,
@@ -7691,6 +7697,20 @@ function getTradeAllianceMember(ctx: IdleWizardReducerCtx, identity = ctx.sender
   return ctx.db.tradeAllianceMember.memberIdentity.find(identity) ?? null;
 }
 
+function assertTradeAllianceUnlocked(ctx: IdleWizardReducerCtx) {
+  let player = ensurePlayer(ctx);
+  const gameplaySave = ctx.db.playerGameplaySave.identity.find(ctx.sender);
+  if (gameplaySave) {
+    player = syncPlayerLevelFromGameplaySave(ctx, player, gameplaySave.saveJson);
+  }
+
+  if (!isTradeAllianceUnlocked(normalizePlayerLevel(player.playerLevel))) {
+    throw new Error(`Trade alliances unlock at level ${TRADE_ALLIANCE_UNLOCK_LEVEL}.`);
+  }
+
+  return player;
+}
+
 function findTradeAllianceMemberByIdentityHex(
   ctx: IdleWizardReducerCtx,
   identityHex: string,
@@ -11881,16 +11901,9 @@ function readSavedTotalGeneratedGold(saveJson?: string): bigint | null {
   try {
     const save = JSON.parse(saveJson);
     const gold = isRecord(save) ? readSaveCoinBranch(save) : {};
-    const totalGenerated = [
-      gold.totalGenerated,
-      gold.totalGeneratedGold,
-      gold.totalIncome,
-      gold.current,
-    ]
-      .map((value) => Number(value))
-      .find((value) => Number.isFinite(value) && value > 0);
+    const totalGenerated = readSaveTotalGeneratedGold(gold);
 
-    if (totalGenerated === undefined || !Number.isFinite(totalGenerated)) {
+    if (totalGenerated === null || !Number.isFinite(totalGenerated)) {
       return null;
     }
 
@@ -15909,6 +15922,20 @@ function deleteAllPlayerSessions(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function invalidateAllPlayerSessions(ctx: IdleWizardReducerCtx) {
+  const maintenanceConnectionId = ctx.connectionId;
+  if (!maintenanceConnectionId) {
+    deleteAllPlayerSessions(ctx);
+    return;
+  }
+
+  for (const session of Array.from(ctx.db.playerSession.iter())) {
+    ctx.db.playerSession.identity.update(
+      createInvalidatedPlayerSession(session, maintenanceConnectionId, ctx.timestamp),
+    );
+  }
+}
+
 function deleteAllPlayerFeedback(ctx: IdleWizardReducerCtx) {
   for (const row of Array.from(ctx.db.playerFeedback.iter())) {
     ctx.db.playerFeedback.delete(row);
@@ -18524,12 +18551,12 @@ export const create_trade_alliance = spacetimedb.reducer(
   },
   (ctx, { name, tag, tagColor, description, joinMode }) => {
     assertActivePlayerSession(ctx);
+    const player = assertTradeAllianceUnlocked(ctx);
 
     if (getTradeAllianceMember(ctx)) {
       throw new Error('Already in an alliance.');
     }
 
-    const player = ensurePlayer(ctx);
     ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
     const safeName = validateTradeAllianceName(name);
     const normalizedName = getTradeAllianceNormalizedName(safeName);
@@ -18626,6 +18653,7 @@ export const join_trade_alliance = spacetimedb.reducer(
   { allianceId: t.string() },
   (ctx, { allianceId }) => {
     assertActivePlayerSession(ctx);
+    const player = assertTradeAllianceUnlocked(ctx);
 
     if (getTradeAllianceMember(ctx)) {
       throw new Error('Already in an alliance.');
@@ -18642,7 +18670,6 @@ export const join_trade_alliance = spacetimedb.reducer(
       throw new Error('Alliance is full.');
     }
 
-    const player = ensurePlayer(ctx);
     ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
 
     ctx.db.tradeAllianceMember.insert({
@@ -18671,6 +18698,7 @@ export const apply_trade_alliance = spacetimedb.reducer(
   { allianceId: t.string() },
   (ctx, { allianceId }) => {
     assertActivePlayerSession(ctx);
+    const player = assertTradeAllianceUnlocked(ctx);
 
     if (getTradeAllianceMember(ctx)) {
       throw new Error('Already in an alliance.');
@@ -18705,7 +18733,6 @@ export const apply_trade_alliance = spacetimedb.reducer(
       return;
     }
 
-    const player = ensurePlayer(ctx);
     ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
     ctx.db.tradeAllianceApplication.insert({
       applicationKey,
@@ -20168,7 +20195,7 @@ export const admin_reset_player_progression_data = spacetimedb.reducer(
     deleteAllPlayerShopState(ctx);
     deleteAllPotionDiscoveries(ctx);
     deleteAllPlayerFeedback(ctx);
-    deleteAllPlayerSessions(ctx);
+    invalidateAllPlayerSessions(ctx);
     resetNpcMarketRows(ctx, { resetStock: true });
     resetAllPlayersToFreshProfiles(ctx);
 
@@ -20353,7 +20380,7 @@ export const admin_reset_player_progression_by_identity = spacetimedb.reducer(
     deleteTradeAllianceProgressionForIdentity(ctx, nextPlayer.identity);
     deletePlayerShopProgressionForIdentity(ctx, nextPlayer.identity);
     deletePlayerFeedbackForIdentity(ctx, nextPlayer.identity);
-    deleteAdminPlayerSession(ctx, nextPlayer.identity);
+    kickAdminPlayerSession(ctx, nextPlayer.identity);
 
     ctx.db.maintenanceState.insert({
       stateKey,

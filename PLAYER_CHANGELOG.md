@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.95
+
+- Fixed open clients briefly resuming stale pre-reset progress and then appearing to reset a second time after refreshing.
+- Added server-side level checks so fresh level-1 accounts cannot create, join, or apply to an alliance through stale controls.
+- Fixed fresh-reset accounts having their first save rejected because the starting coin grant was mistaken for generated income.
+
 ## 0.2.94
 
 - Made full player resets safer by preserving connected account identities while returning profile and gameplay data to fresh-start defaults.
