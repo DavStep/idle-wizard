@@ -168,7 +168,7 @@ experience_type: product-shape
 - NPC market weekly reset must use the same anchored Monday UTC period as leaderboards/events; start recovery at `weekStart - 1` so the day-start buyer wave is added after the reset.
 - NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or stall/stock totals drift.
 - NPC market demand/prices are fake local gameplay values until player level 4; do not debug level 1-3 timed stalls against backend NPC rows.
-- NPC trader stands each own an independent five-second progress clock. Render batch, remaining seconds, and current value on each loaded row.
+- NPC trader stands each own an independent five-second progress clock. Keep a stable two-line stand height: render item, batch, and current value first, then the progress rail and remaining seconds together below.
 - Loaded trader items are physically removed from inventory and returned on unload. Loader `mark xN` / `mark all` controls are local drafts that transfer once; do not persist a parallel reservation or sell-limit mode.
 - Level 4+ NPC auto-sell needs retained backend price rows while any stand has an item; if prices are missing at a timer boundary, keep that cycle pending instead of resetting it away.
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or bold text there.

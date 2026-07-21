@@ -129,6 +129,9 @@
   --style-row-min-height: 20px;
   --style-row-column-gap: 6px;
   --style-row-right-slot-width: 100px;
+  --shop-page-slot-row-min-height: calc(
+    var(--style-row-min-height) + var(--style-progress-total-height) + 7px
+  );
   --style-world-chat-row-height: 16px;
   --style-world-chat-row-gap: 0px;
   --style-world-chat-box-padding-y: 2.5px;
@@ -4321,7 +4324,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
     );
   align-items: center;
   column-gap: var(--style-row-column-gap);
-  min-height: var(--style-row-min-height);
+  min-height: var(--shop-page-slot-row-min-height);
   clear: both;
 }
 
@@ -4374,8 +4377,9 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .shop-page__slot-value {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
-  align-items: baseline;
+  align-items: center;
   column-gap: var(--style-row-column-gap);
+  row-gap: 3px;
   min-width: 0;
   text-align: left;
 }
@@ -4385,9 +4389,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .shop-page__slot-item-column {
-  display: grid;
   min-width: 0;
-  row-gap: 2px;
 }
 
 .shop-page__slot-item-value,
@@ -4425,6 +4427,16 @@ span.room-seed-pack-composite .room-seed-pack-item {
   white-space: nowrap;
 }
 
+.shop-page__slot-progress-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  min-width: 0;
+  min-height: var(--style-progress-total-height);
+  column-gap: 4px;
+}
+
 .shop-page__slot-progress {
   width: 100%;
 }
@@ -4437,6 +4449,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   min-width: 2ch;
   color: var(--style-text);
   font-size: var(--style-tiny-font-size);
+  font-variant-numeric: tabular-nums lining-nums;
   text-align: right;
 }
 

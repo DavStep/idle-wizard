@@ -173,6 +173,8 @@ export class ShopShelfManager {
     batchSeparator.className = 'shop-page__slot-status-separator';
     batchSeparator.textContent = '·';
     batchSeparator.setAttribute('aria-hidden', 'true');
+    const progressRow = document.createElement('span');
+    progressRow.className = 'shop-page__slot-progress-row';
     const progress = document.createElement('span');
     progress.className =
       'style-progress style-progress--timer shop-page__slot-progress';
@@ -185,21 +187,12 @@ export class ShopShelfManager {
     progress.append(progressFill);
     const timerValue = document.createElement('span');
     timerValue.className = 'shop-page__slot-timer-value';
-    const priceSeparator = document.createElement('span');
-    priceSeparator.className = 'shop-page__slot-status-separator';
-    priceSeparator.textContent = '·';
-    priceSeparator.setAttribute('aria-hidden', 'true');
     const priceValue = document.createElement('span');
     priceValue.className = 'shop-page__slot-price-value';
-    itemColumn.append(itemValue, progress);
-    statusValue.append(
-      batchValue,
-      batchSeparator,
-      timerValue,
-      priceSeparator,
-      priceValue,
-    );
-    value.append(itemColumn, statusValue);
+    itemColumn.append(itemValue);
+    statusValue.append(batchValue, batchSeparator, priceValue);
+    progressRow.append(progress, timerValue);
+    value.append(itemColumn, statusValue, progressRow);
     row.append(label, value);
     return {
       row,
@@ -210,10 +203,10 @@ export class ShopShelfManager {
       statusValue,
       batchValue,
       batchSeparator,
+      progressRow,
       progress,
       progressFill,
       timerValue,
-      priceSeparator,
       priceValue,
     };
   }
@@ -657,8 +650,6 @@ export class ShopShelfManager {
         refs.progress.hidden = true;
         refs.progress.setAttribute('aria-valuenow', '0');
         refs.timerValue.textContent = '';
-        refs.priceSeparator.textContent = '';
-        refs.priceSeparator.hidden = true;
         setResourceIconText(refs.priceValue, 'select');
         setResourceColor(refs.priceValue, null);
         stopTimerProgressFill(refs.progressFill, 0);
@@ -688,8 +679,6 @@ export class ShopShelfManager {
       refs.batchSeparator.textContent = '·';
       refs.batchSeparator.hidden = false;
       refs.progress.hidden = false;
-      refs.priceSeparator.textContent = '·';
-      refs.priceSeparator.hidden = false;
       setResourceIconText(refs.priceValue, priceText);
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
       setTimerProgressFill(

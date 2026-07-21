@@ -615,7 +615,7 @@ describe('ShopShelfManager', () => {
     expect(rowActionRule).toMatch(/\bfont-weight:\s*normal;/);
   });
 
-  it('shows the stall progress rail beneath the item name', () => {
+  it('shows the stall progress rail and timer together beneath the item row', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
     const gameplaySnapshot = {
@@ -661,9 +661,10 @@ describe('ShopShelfManager', () => {
 
     const itemColumn = stage.querySelector('.shop-page__slot-item-column');
     const status = stage.querySelector('.shop-page__slot-status-value');
-    const progress = itemColumn?.querySelector('.shop-page__slot-progress');
-    const fill = itemColumn?.querySelector('.shop-page__slot-progress-fill');
-    const timer = status?.querySelector('.shop-page__slot-timer-value');
+    const progressRow = stage.querySelector('.shop-page__slot-progress-row');
+    const progress = progressRow?.querySelector('.shop-page__slot-progress');
+    const fill = progressRow?.querySelector('.shop-page__slot-progress-fill');
+    const timer = progressRow?.querySelector('.shop-page__slot-timer-value');
 
     expect(status?.classList.contains('is-active')).toBe(true);
     expect(status?.querySelector('.shop-page__slot-batch-value')?.textContent).toBe('x1');
@@ -675,14 +676,38 @@ describe('ShopShelfManager', () => {
     expect(itemColumn?.firstElementChild).toBe(
       stage.querySelector('.shop-page__slot-item-value'),
     );
-    expect(itemColumn?.lastElementChild).toBe(progress);
+    expect(itemColumn?.lastElementChild).toBe(itemColumn?.firstElementChild);
+    expect(progressRow?.firstElementChild).toBe(progress);
+    expect(progressRow?.lastElementChild).toBe(timer);
     expect(status?.querySelector('.shop-page__slot-progress')).toBeNull();
+    expect(status?.querySelector('.shop-page__slot-timer-value')).toBeNull();
     expect(timer?.textContent).toBe('3s');
     expect(status?.querySelector('.shop-page__slot-price-value')?.textContent).toContain(
       '5 coin',
     );
 
     manager.unmount();
+  });
+
+  it('reserves the larger two-line stall height and full-width progress row', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const slotRowRule = baseCss.match(
+      /\.shop-page__slot-row\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const progressRowRule = baseCss.match(
+      /\.shop-page__slot-progress-row\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(baseCss).toMatch(
+      /--shop-page-slot-row-min-height:\s*calc\(\s*var\(--style-row-min-height\) \+ var\(--style-progress-total-height\) \+ 7px\s*\);/,
+    );
+    expect(slotRowRule).toMatch(
+      /min-height:\s*var\(--shop-page-slot-row-min-height\);/,
+    );
+    expect(progressRowRule).toMatch(/grid-column:\s*1 \/ -1;/);
+    expect(progressRowRule).toMatch(
+      /grid-template-columns:\s*minmax\(0, 1fr\) max-content;/,
+    );
   });
 
   it('opens NPC market sell picker from the stand row', () => {

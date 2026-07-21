@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.101
+
+- Made Market stall rows taller and placed each sale timer beside its progress bar for easier scanning.
+
 ## 0.2.100
 
 - Improved Market stall loading with a clearer item-marking flow, faster press-and-hold transfers, and live sale progress.
