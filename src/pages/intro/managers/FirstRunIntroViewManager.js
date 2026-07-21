@@ -327,8 +327,6 @@ export class FirstRunIntroViewManager {
     }
 
     backdropLayer.style.transform = style.transform === 'none' ? '' : style.transform;
-    backdropLayer.style.opacity = style.opacity;
-    backdropLayer.style.filter = style.filter;
     this.backdropFrozen = true;
   }
 
@@ -338,8 +336,6 @@ export class FirstRunIntroViewManager {
     }
 
     this.refs.backdropLayer.style.removeProperty('transform');
-    this.refs.backdropLayer.style.removeProperty('opacity');
-    this.refs.backdropLayer.style.removeProperty('filter');
     this.backdropFrozen = false;
   }
 

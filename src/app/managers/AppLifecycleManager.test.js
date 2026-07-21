@@ -553,6 +553,48 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
   });
 
+  it('shows the fresh-start gate when native auth appears during prepare on fresh app data', async () => {
+    let authenticated = false;
+    let resolveChoice;
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveChoice = resolve;
+          }),
+      ),
+      render: vi.fn(),
+      hide: vi.fn(),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({
+        hasToken: authenticated,
+        oidc: { authenticated, enabled: true },
+      })),
+      signInWithGoogle: vi.fn(),
+    };
+    const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
+    lifecycle.backendFacade.prepare.mockImplementation(() => {
+      authenticated = true;
+      return Promise.resolve();
+    });
+
+    lifecycle.start();
+    await flushPromises();
+
+    expect(freshStartChoiceManager.choose).toHaveBeenCalledTimes(1);
+    expect(lifecycle.backendFacade.start).not.toHaveBeenCalled();
+
+    resolveChoice(FRESH_START_CHOICE_START_FRESH);
+    await flushPromises();
+
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+  });
+
   it('does not mount game surfaces behind the fresh-start gate', async () => {
     let resolveChoice;
     const freshStartChoiceManager = {

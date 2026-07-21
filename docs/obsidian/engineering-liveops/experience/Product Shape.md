@@ -34,6 +34,8 @@ experience_type: product-shape
 - Garden, Brewing, and Research timer bars should use the shared timer-progress end-time binding instead of per-surface stepped fill logic.
 - Timer progress bars should not depend on 250ms gameplay snapshots for visual smoothness; snapshots provide authoritative state, while UI derives in-between fill and label time.
 - First-run cutscene animations need a per-step replay trigger; scene/data-state selectors alone do not replay when advancing through steps that reuse the same scene.
+- First-run intro controls must remain allowed through the app interaction lock because the intro can mount before the backend finishes its online transition and sits above the server gate.
+- Stable first-run backdrop transitions may freeze transform only; freezing an in-progress opacity or filter can preserve a black scene after a fast `next` tap.
 - When smooth timer bars are desired, derive fill, remaining label, and ARIA percent from one inferred end time; do not let snapshot `progress` disagree with `remainingMs`.
 - Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
 - Research completion announcements should resolve labels/details through `ResearchFacade`; visible research tabs can hide completed series entries before the popup renders.

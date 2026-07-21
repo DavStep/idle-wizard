@@ -2,6 +2,7 @@ const DEFAULT_ALLOWED_SELECTOR = [
   '.app-online-gate',
   '.app-account-link-choice',
   '.app-fresh-start-choice',
+  '.first-run-intro',
   '.app-deploy-refresh',
 ].join(', ');
 

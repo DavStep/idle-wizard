@@ -52,6 +52,31 @@ describe('AppInteractionLockManager', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  it('allows the first-run intro to advance while the backend lock is active', () => {
+    const stage = document.createElement('section');
+    const intro = document.createElement('section');
+    const button = document.createElement('button');
+    const onClick = vi.fn();
+    intro.className = 'first-run-intro';
+    button.addEventListener('click', onClick);
+    intro.append(button);
+    stage.append(intro);
+    document.body.append(stage);
+    const manager = new AppInteractionLockManager();
+
+    manager.mount(stage);
+    manager.lock('connecting');
+    const event = new window.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
+    const dispatched = button.dispatchEvent(event);
+
+    expect(dispatched).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
   it('allows stage events after unlock and unmount', () => {
     const stage = document.createElement('section');
     const button = document.createElement('button');

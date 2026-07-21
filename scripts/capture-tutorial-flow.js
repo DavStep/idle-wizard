@@ -18,6 +18,8 @@ const OUT_DIR = path.join(ROOT, 'docs/tutorial-flow/screenshots');
 const CONTACT_SHEET_PATH = path.join(ROOT, 'docs/tutorial-flow/contact-sheet.png');
 const CONTACT_SHEET_URL = 'http://127.0.0.1:55173/docs/tutorial-flow/contact-sheet.html';
 const CHECK_ONLY = process.argv.includes('--check');
+const FIRST_RUN_ONLY = process.argv.includes('--first-run-only');
+const FIRST_RUN_OUT_DIR = path.join(ROOT, 'tmp/first-run-qa');
 
 export const OPTIONAL_CAPTURE_STEP_IDS = Object.freeze([
   'purchase-house',
@@ -247,6 +249,10 @@ async function main() {
       `typeof window.tutorialCapture === 'object' && typeof window.cheats === 'object'`,
       { timeoutMs: 20_000 },
     );
+    if (FIRST_RUN_ONLY) {
+      await captureFirstRunFlow(page);
+      return;
+    }
     await page.run(() => {
       window.localStorage.removeItem('idle-wizard.tutorial.v4');
     });
@@ -313,6 +319,46 @@ async function main() {
     await browser.close();
     await server.stopIfOwned();
   }
+}
+
+async function captureFirstRunFlow(page) {
+  fs.mkdirSync(FIRST_RUN_OUT_DIR, { recursive: true });
+  await page.waitForExpression(
+    `window.tutorialCapture.getState().freshStartVisible === true`,
+    { timeoutMs: 20_000 },
+  );
+  await page.captureScreenshot(path.join(FIRST_RUN_OUT_DIR, 'account-choice-1080x2170.png'));
+
+  await page.setViewport(1800, 1200);
+  await sleep(250);
+  await page.captureScreenshot(path.join(FIRST_RUN_OUT_DIR, 'account-choice-1800x1200.png'));
+
+  await page.setViewport(VIEWPORT.width, VIEWPORT.height);
+  await page.startFresh();
+  await page.waitForExpression(
+    `Boolean(document.querySelector('.first-run-intro:not([hidden])'))`,
+    { timeoutMs: 20_000 },
+  );
+  await page.waitForImages();
+  await sleep(2_500);
+  await page.captureScreenshot(path.join(FIRST_RUN_OUT_DIR, 'intro-castle-1080x2170.png'));
+
+  await page.setViewport(1800, 1200);
+  await sleep(250);
+  await page.captureScreenshot(path.join(FIRST_RUN_OUT_DIR, 'intro-castle-1800x1200.png'));
+
+  await page.clickSelector('.first-run-intro__advance:not([hidden])');
+  await page.waitForExpression(
+    `document.querySelector('.first-run-intro:not([hidden])')?.dataset.step === 'defeated'`,
+    { timeoutMs: 5_000 },
+  );
+  await page.waitForExpression(
+    `document.querySelector('.first-run-intro__advance:not([hidden])')?.disabled === false`,
+    { timeoutMs: 5_000 },
+  );
+  await sleep(500);
+  await page.captureScreenshot(path.join(FIRST_RUN_OUT_DIR, 'intro-next-1800x1200.png'));
+  console.log(`captured ${path.relative(ROOT, FIRST_RUN_OUT_DIR)}`);
 }
 
 async function prepareStepForCapture(page, stepId) {

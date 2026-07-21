@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.99
+
+- Fixed fresh Android launches skipping the `connect account` or `start new` choice when Google restored an old native sign-in.
+- Fixed the opening story background disappearing and kept its `next` button responsive while the server connection finishes.
+
 ## 0.2.98
 
 - Reworked trader stalls so items are loaded from inventory and each stall sells independently every five seconds at the full trader quote.

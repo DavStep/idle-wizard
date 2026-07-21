@@ -126,6 +126,9 @@ export class AppLifecycleManager {
     this.backendConnectionFlowActive = true;
 
     try {
+      const hadConnectableAccountBeforePrepare = this.hasConnectableAccount(
+        this.getAuthSnapshot(),
+      );
       let authSnapshot = null;
 
       try {
@@ -149,7 +152,11 @@ export class AppLifecycleManager {
         authSnapshot = this.getAuthSnapshot();
       }
 
-      if (this.shouldPromptBeforeInitialConnect(authSnapshot)) {
+      if (
+        this.shouldPromptBeforeInitialConnect(authSnapshot, {
+          hadConnectableAccountBeforePrepare,
+        })
+      ) {
         promptedBeforeConnect = true;
         this.onlineGateManager.hide();
         await this.chooseFreshStart({
@@ -324,8 +331,13 @@ export class AppLifecycleManager {
     );
   }
 
-  shouldPromptBeforeInitialConnect(authSnapshot = this.getAuthSnapshot()) {
-    return !this.hasConnectableAccount(authSnapshot) && !this.freshStartConfirmed;
+  shouldPromptBeforeInitialConnect(
+    authSnapshot = this.getAuthSnapshot(),
+    { hadConnectableAccountBeforePrepare } = {},
+  ) {
+    const hadConnectableAccountAtLaunch =
+      hadConnectableAccountBeforePrepare ?? this.hasConnectableAccount(authSnapshot);
+    return !hadConnectableAccountAtLaunch && !this.freshStartConfirmed;
   }
 
   shouldRestoreConnectedAccountBeforeInitialConnect(
