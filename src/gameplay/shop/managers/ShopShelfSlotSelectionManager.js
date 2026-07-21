@@ -148,7 +148,7 @@ export class ShopShelfSlotSelectionManager {
   normalizeQuantity(quantity) {
     const safeQuantity = Math.floor(Number(quantity));
     return Number.isInteger(safeQuantity) && safeQuantity > 0
-      ? Math.min(10_000, safeQuantity)
+      ? Math.min(MAX_STALL_LOADED_QUANTITY, safeQuantity)
       : 0;
   }
 

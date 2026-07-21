@@ -29,13 +29,21 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Buy/place/claim prices stay right-aligned and use tabular numerals.
 - Disabled or locked right-side actions use muted text and keep the same row height as enabled rows.
 
+## Hold-Selection Lists
+
+- Trader stall loaders use full-width inventory-row buttons with a quiet background and a larger gap between rows.
+- Pressing or holding an inventory row adds to a local draft; pressing or holding the separate `current` row removes from it.
+- Quick taps change one item. Hold repeats start from an inventory-aware step (about one per 2,000 available items, capped at 100), then double about every seven repeats; calculate the curve from the quantity captured when the hold begins.
+- Keep resource/icon colors unchanged when selected. Use only the row background to show selection.
+- `mark xN` and `mark all` apply the draft with one gameplay update; hold repeats must not publish full gameplay snapshots.
+
 ## Expandable Boxes
 
 - Collapsed boxes keep one full summary row visible inside the box.
 - Use a top-right border label for count or progress, such as `2/5`.
 - Use a bottom-center border label as the toggle: `expand` when collapsed, `collapse` when open.
 - Expand hidden rows in normal flow inside the same box, without overlaying nearby panels.
-- Workshop main progression uses one always-open `elara's request` box. Show only the active request; the shared top panel owns a continuous level rail with thin dividers, a compact level-star badge, and the small left-aligned remaining-quest caption underneath. Each configured request plus the final coin payment owns one segment. Do not add XP copy, an expandable checklist, pinning, or task reordering.
+- Workshop main progression uses one always-open `elara's request` box. Show only the active request; the shared top panel owns a continuous level rail with thin dividers, a compact level-star badge, and the small left-aligned remaining-quest caption underneath. Each configured request owns one segment; add a final coin segment only when the level completion cost is positive. Keep the whole progress row hidden during FTUE until requests are revealed. Do not add XP copy, an expandable checklist, pinning, or task reordering.
 
 ## Popup Structure
 

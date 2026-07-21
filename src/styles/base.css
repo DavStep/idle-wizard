@@ -494,11 +494,21 @@
   position: relative;
   box-sizing: border-box;
   width: 100%;
-  min-height: 240px;
   padding: 18px 10px 10px;
   overflow: visible;
 }
 
+.style-dialog.shop-page__ledger-book {
+  display: flex;
+  flex-direction: column;
+  height: 240px;
+}
+
+.style-dialog.shop-page__ledger-buy-dialog {
+  min-height: 240px;
+}
+
+.style-dialog.shop-page__ledger-book[hidden],
 .style-dialog.shop-page__ledger-buy-dialog[hidden],
 .shop-page__ledger-tabs[hidden],
 .shop-page__ledger-detail[hidden],
@@ -538,7 +548,7 @@
 .shop-page__ledger-history {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 3px;
+  gap: 6px;
   margin: 4px 0;
 }
 
@@ -588,6 +598,8 @@
 }
 
 .shop-page__ledger-rows {
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: 250px;
   overflow: hidden auto;
   scrollbar-width: none;
@@ -3102,6 +3114,15 @@ body {
     translate var(--style-motion-normal) var(--style-motion-ease);
 }
 
+.game-stage[data-tutorial-reveal] .room-top-panel__quest-progress {
+  display: none;
+}
+
+.game-stage[data-tutorial-reveal~="tasks"]
+  .room-top-panel__quest-progress:not([hidden]) {
+  display: grid;
+}
+
 .game-stage.is-tutorial-reveal-priming[data-tutorial-reveal]
   :where(
     .room-top-panel-layer,
@@ -4363,6 +4384,12 @@ span.room-seed-pack-composite .room-seed-pack-item {
   justify-self: end;
 }
 
+.shop-page__slot-item-column {
+  display: grid;
+  min-width: 0;
+  row-gap: 2px;
+}
+
 .shop-page__slot-item-value,
 .shop-page__request-row-item {
   min-width: 0;
@@ -4385,6 +4412,32 @@ span.room-seed-pack-composite .room-seed-pack-item {
   font-variant-numeric: tabular-nums lining-nums;
   text-align: right;
   white-space: nowrap;
+}
+
+.shop-page__slot-status-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  min-width: 0;
+  column-gap: 3px;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+
+.shop-page__slot-progress {
+  width: 100%;
+}
+
+.shop-page__slot-progress[hidden] {
+  display: none;
+}
+
+.shop-page__slot-timer-value {
+  min-width: 2ch;
+  color: var(--style-text);
+  font-size: var(--style-tiny-font-size);
+  text-align: right;
 }
 
 .shop-page__shelf-timer {
@@ -11487,9 +11540,21 @@ div.workshop-page__discovery-row {
 
 .style-dialog.shop-page__sell-dialog {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 260px;
   height: var(--style-tabbed-dialog-content-height);
   overflow: visible;
+  --shop-page-sell-row-surface: color-mix(
+    in srgb,
+    var(--style-stroke) 14%,
+    var(--style-surface)
+  );
+  --shop-page-sell-row-selected-surface: color-mix(
+    in srgb,
+    var(--style-stroke) 34%,
+    var(--style-surface)
+  );
 }
 
 .style-dialog.shop-page__request-dialog {
@@ -11936,6 +12001,78 @@ div.workshop-page__discovery-row {
   justify-content: flex-end;
 }
 
+.shop-page__sell-selection {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.shop-page__sell-current {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) max-content;
+  column-gap: var(--style-row-column-gap);
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 8px;
+  appearance: none;
+  color: var(--style-text);
+  font: inherit;
+  text-align: left;
+  background: var(--shop-page-sell-row-surface);
+  border: 0;
+  border-radius: 0;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.shop-page__sell-current:not(:disabled) {
+  cursor: pointer;
+}
+
+.shop-page__sell-current[data-has-selection="true"] {
+  background: var(--shop-page-sell-row-selected-surface);
+}
+
+.shop-page__sell-current-label {
+  color: var(--style-muted);
+}
+
+.shop-page__sell-current-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-page__sell-current-quantity {
+  justify-self: end;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+
+.shop-page__sell-current
+  :where(
+    .style-resource-label__icon,
+    .style-resource-label__text,
+    .style-seed-label__icon,
+    .style-seed-label__text,
+    .style-herb-label__icon,
+    .style-herb-label__text,
+    .style-potion-label__icon,
+    .style-potion-label__text
+  ) {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.shop-page__sell-current:focus-visible {
+  outline: var(--style-border);
+  outline-offset: -1px;
+}
+
 .amount-selection-row {
   display: grid;
   grid-template-columns:
@@ -12158,6 +12295,15 @@ div.workshop-page__discovery-row {
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
+}
+
+.shop-page__sell-dialog > .shop-page__sell-item-list {
+  display: grid;
+  flex: 1 1 auto;
+  align-content: start;
+  min-height: 0;
+  height: auto;
+  gap: 6px;
 }
 
 .shop-page__sell-controls:not(.shop-page__player-listing-controls)
@@ -16274,6 +16420,21 @@ div.workshop-page__discovery-row {
   -webkit-user-select: none;
 }
 
+.shop-page__sell-dialog
+  > .shop-page__sell-item-list
+  .shop-page__sell-item-row {
+  min-height: 34px;
+}
+
+.shop-page__sell-dialog
+  > .shop-page__sell-item-list
+  .shop-page__sell-item-button {
+  box-sizing: border-box;
+  min-height: 34px;
+  padding: 5px 8px;
+  background: var(--shop-page-sell-row-surface);
+}
+
 .shop-page__slot-item-value {
   touch-action: pan-y;
   user-select: none;
@@ -16331,6 +16492,16 @@ div.workshop-page__discovery-row {
 .shop-page__sell-item-button:active:not(:disabled),
 .shop-page__sell-item-button[aria-pressed="true"] {
   background: var(--style-active-surface);
+}
+
+.shop-page__sell-dialog
+  > .shop-page__sell-item-list
+  .shop-page__sell-item-button:active:not(:disabled),
+.shop-page__sell-dialog
+  > .shop-page__sell-item-list
+  .shop-page__sell-item-button[aria-pressed="true"] {
+  color: var(--style-text);
+  background: var(--shop-page-sell-row-selected-surface);
 }
 
 .shop-page__sell-item-button:focus {

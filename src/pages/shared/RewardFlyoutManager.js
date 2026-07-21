@@ -275,19 +275,14 @@ export class RewardFlyoutManager {
     }
 
     if (event.type === 'item_sold') {
-      const itemAnchor = this.getAnchorForEvent(event);
-      const coinAnchor = this.getShopSlotCoinAnchor(event.slotNumber) ?? itemAnchor;
-      const itemDropCount = this.playItemDrop(
-        this.getItemDropSource(event.item, event.item?.kind),
-        itemAnchor,
-        event.item?.kind,
-      );
-      const coinCount = this.animateCoinsToCoin(
+      const coinAnchor =
+        this.getShopSlotCoinAnchor(event.slotNumber) ?? this.getAnchorForEvent(event);
+      return this.animateCoinsToCoin(
         coinAnchor,
         event.coin ?? 0,
         this.formatRewardMessage(event),
+        { showParticles: false },
       );
-      return itemDropCount + coinCount;
     }
 
     if (event.type === 'item_bought') {
@@ -835,7 +830,7 @@ export class RewardFlyoutManager {
     drop.style.setProperty('--toss-peak', `${peak.toFixed(1)}px`);
   }
 
-  animateCoinsToCoin(source, amount, title) {
+  animateCoinsToCoin(source, amount, title, { showParticles = true } = {}) {
     const safeAmount = Math.max(0, Number(amount) || 0);
     if (safeAmount <= 0) {
       return 0;
@@ -869,7 +864,9 @@ export class RewardFlyoutManager {
     };
     const dx = to.x - from.x;
     const dy = to.y - from.y;
-    const coinCount = this.getCoinParticleCount(safeAmount, visualParent);
+    const coinCount = showParticles
+      ? this.getCoinParticleCount(safeAmount, visualParent)
+      : 0;
     let maxLife = 0;
 
     for (let index = 0; index < coinCount; index += 1) {

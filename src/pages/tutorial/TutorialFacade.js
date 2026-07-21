@@ -641,14 +641,22 @@ export class TutorialFacade {
 
     this.disconnectBlockingDialogObserver();
     this.blockingDialogObserver = new MutationObserverClass((mutations) => {
-      if (this.targetManager.hasBlockingDialogMutation(mutations)) {
+      const hasTargetStateMutation = mutations.some(
+        (mutation) =>
+          mutation.type === 'attributes' &&
+          mutation.attributeName === 'data-has-selection',
+      );
+      if (
+        hasTargetStateMutation ||
+        this.targetManager.hasBlockingDialogMutation(mutations)
+      ) {
         this.cancelRefresh();
         this.refresh();
       }
     });
     this.blockingDialogObserver.observe(root, {
       attributes: true,
-      attributeFilter: ['hidden'],
+      attributeFilter: ['hidden', 'data-has-selection'],
       childList: true,
       subtree: true,
     });

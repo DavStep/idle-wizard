@@ -6,15 +6,34 @@ import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor, setResourceColorFromText } from '../../shared/resourceColor.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
+import { formatRemainingTime } from '../../shared/timerDisplay.js';
+import {
+  setTimerProgressFill,
+  stopTimerProgressFill,
+} from '../../shared/timerProgress.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
 const HOLD_DELAY_MS = 350;
 const HOLD_REPEAT_MS = 100;
 const HOLD_MOVE_TOLERANCE_PX = 10;
+const HOLD_INITIAL_STEP_DIVISOR = 2_000;
+const HOLD_INITIAL_STEP_CAP = 100;
+const HOLD_RAMP_DOUBLING_REPEATS = 7;
 
-export function getDynamicStallTransferStep(quantity) {
-  const safeQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
-  return Math.min(500, Math.max(1, Math.ceil(safeQuantity * 0.05)));
+export function getDynamicStallTransferStep(maxQuantity, repeatIndex = 0) {
+  const safeMaxQuantity = Math.max(1, Math.floor(Number(maxQuantity) || 1));
+  const safeRepeatIndex = Math.max(0, Math.floor(Number(repeatIndex) || 0));
+  const initialStep = Math.min(
+    HOLD_INITIAL_STEP_CAP,
+    Math.max(1, Math.ceil(safeMaxQuantity / HOLD_INITIAL_STEP_DIVISOR)),
+  );
+  const rampMultiplier = Math.max(
+    1,
+    Math.round(
+      2 ** Math.min(20, safeRepeatIndex / HOLD_RAMP_DOUBLING_REPEATS),
+    ),
+  );
+  return Math.min(safeMaxQuantity, initialStep * rampMultiplier);
 }
 
 export class ShopShelfManager {
@@ -26,6 +45,9 @@ export class ShopShelfManager {
     this.unsubscribe = null;
     this.visible = false;
     this.selectedSellTab = 'seed';
+    this.draftSellItemTypeId = null;
+    this.draftSellQuantity = 0;
+    this.statusText = '';
     this.activeHold = null;
     this.suppressRowClickSlotNumber = null;
     this.previousFocus = null;
@@ -62,6 +84,9 @@ export class ShopShelfManager {
 
   unmount() {
     this.endHold({ commit: true });
+    for (const refs of this.refs.rows) {
+      stopTimerProgressFill(refs.progressFill, 0);
+    }
     this.unsubscribe?.();
     document.removeEventListener('keydown', this.handleKeydown);
     this.root?.remove();
@@ -70,6 +95,7 @@ export class ShopShelfManager {
     this.refs = { rows: [], tabButtons: new Map(), itemButtons: new Map() };
     this.unsubscribe = null;
     this.visible = false;
+    this.resetSellDraft();
   }
 
   createHelp() {
@@ -131,6 +157,8 @@ export class ShopShelfManager {
     label.textContent = `${slotNumber}.`;
     const value = document.createElement('span');
     value.className = 'row_val shop-page__slot-value';
+    const itemColumn = document.createElement('span');
+    itemColumn.className = 'shop-page__slot-item-column';
     const itemValue = document.createElement('span');
     itemValue.className = 'shop-page__slot-item-value';
     itemValue.dataset.tutorialId = `shop:stand:${slotNumber}`;
@@ -138,10 +166,56 @@ export class ShopShelfManager {
       this.beginUnloadHold(event, slotNumber),
     );
     const statusValue = document.createElement('span');
-    statusValue.className = 'shop-page__slot-price-value';
-    value.append(itemValue, statusValue);
+    statusValue.className = 'shop-page__slot-status-value';
+    const batchValue = document.createElement('span');
+    batchValue.className = 'shop-page__slot-batch-value';
+    const batchSeparator = document.createElement('span');
+    batchSeparator.className = 'shop-page__slot-status-separator';
+    batchSeparator.textContent = '·';
+    batchSeparator.setAttribute('aria-hidden', 'true');
+    const progress = document.createElement('span');
+    progress.className =
+      'style-progress style-progress--timer shop-page__slot-progress';
+    progress.setAttribute('role', 'progressbar');
+    progress.setAttribute('aria-label', `stall ${slotNumber} sale progress`);
+    progress.setAttribute('aria-valuemin', '0');
+    progress.setAttribute('aria-valuemax', '100');
+    const progressFill = document.createElement('span');
+    progressFill.className = 'style-progress__fill shop-page__slot-progress-fill';
+    progress.append(progressFill);
+    const timerValue = document.createElement('span');
+    timerValue.className = 'shop-page__slot-timer-value';
+    const priceSeparator = document.createElement('span');
+    priceSeparator.className = 'shop-page__slot-status-separator';
+    priceSeparator.textContent = '·';
+    priceSeparator.setAttribute('aria-hidden', 'true');
+    const priceValue = document.createElement('span');
+    priceValue.className = 'shop-page__slot-price-value';
+    itemColumn.append(itemValue, progress);
+    statusValue.append(
+      batchValue,
+      batchSeparator,
+      timerValue,
+      priceSeparator,
+      priceValue,
+    );
+    value.append(itemColumn, statusValue);
     row.append(label, value);
-    return { row, label, value, itemValue, statusValue };
+    return {
+      row,
+      label,
+      value,
+      itemColumn,
+      itemValue,
+      statusValue,
+      batchValue,
+      batchSeparator,
+      progress,
+      progressFill,
+      timerValue,
+      priceSeparator,
+      priceValue,
+    };
   }
 
   createSellPopup() {
@@ -166,12 +240,47 @@ export class ShopShelfManager {
     close.type = 'button';
     close.textContent = 'close';
     close.addEventListener('click', () => this.hideSellPopup());
-    const summary = document.createElement('div');
-    summary.className = 'shop-page__sell-selected-row';
-    summary.setAttribute('aria-live', 'polite');
-    const instructions = document.createElement('div');
-    instructions.className = 'shop-page__sell-status';
-    instructions.textContent = 'tap to load 1. hold to load faster.';
+    const selection = document.createElement('section');
+    selection.className = 'shop-page__sell-selection';
+    selection.setAttribute('aria-label', 'current selection');
+    const current = document.createElement('button');
+    current.className = 'shop-page__sell-current';
+    current.type = 'button';
+    current.dataset.tutorialId = 'shop:sell:current';
+    current.addEventListener('pointerdown', (event) =>
+      this.beginDraftRemoveHold(event),
+    );
+    current.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      this.changeDraftQuantity(-1);
+    });
+    const currentLabel = document.createElement('span');
+    currentLabel.className = 'shop-page__sell-current-label';
+    currentLabel.textContent = 'current';
+    const currentItem = document.createElement('span');
+    currentItem.className = 'shop-page__sell-current-item';
+    const currentQuantity = document.createElement('span');
+    currentQuantity.className = 'shop-page__sell-current-quantity';
+    current.append(currentLabel, currentItem, currentQuantity);
+    const actions = document.createElement('div');
+    actions.className = 'shop-page__sell-action-row';
+    const markAll = document.createElement('button');
+    markAll.className = 'style-button shop-page__sell-mark-all-button';
+    markAll.type = 'button';
+    markAll.textContent = 'mark all';
+    markAll.addEventListener('click', () => this.markDraft({ all: true }));
+    const mark = document.createElement('button');
+    mark.className = 'style-button shop-page__sell-mark-button';
+    mark.type = 'button';
+    mark.dataset.tutorialId = 'shop:sell:mark';
+    mark.addEventListener('click', () => this.markDraft());
+    actions.append(markAll, mark);
+    const status = document.createElement('div');
+    status.className = 'shop-page__sell-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    selection.append(current, actions, status);
     const divider = document.createElement('div');
     divider.className = 'shop-page__sell-divider';
     const itemList = document.createElement('div');
@@ -179,12 +288,17 @@ export class ShopShelfManager {
     const tabs = document.createElement('div');
     tabs.className = 'shop-page__sell-tabs';
     tabs.setAttribute('role', 'tablist');
-    dialog.append(title, close, summary, instructions, divider, itemList);
+    dialog.append(title, close, selection, divider, itemList);
     panel.append(dialog, tabs);
     popup.append(panel);
     this.refs.dialog = panel;
-    this.refs.summary = summary;
-    this.refs.instructions = instructions;
+    this.refs.selection = selection;
+    this.refs.current = current;
+    this.refs.currentItem = currentItem;
+    this.refs.currentQuantity = currentQuantity;
+    this.refs.markAll = markAll;
+    this.refs.mark = mark;
+    this.refs.status = status;
     this.refs.itemList = itemList;
     this.refs.tabs = tabs;
     return popup;
@@ -225,13 +339,12 @@ export class ShopShelfManager {
       button.dataset.shopSellItemKey = item.key;
       button.dataset.tutorialId = `shop:sell:${item.key}`;
       button.addEventListener('pointerdown', (event) =>
-        this.beginLoadHold(event, item.itemTypeId),
+        this.beginDraftAddHold(event, item.itemTypeId),
       );
       button.addEventListener('keydown', (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
-        this.loadItem(item.itemTypeId);
-        this.gameplayFacade.commitShopShelfChanges?.();
+        this.selectDraftItem(item.itemTypeId, 1);
       });
       const label = document.createElement('span');
       label.className = 'row_key';
@@ -249,6 +362,7 @@ export class ShopShelfManager {
     if (!result.ok) return;
     const slot = this.getSelectedSlot(this.gameplayFacade.getSnapshot()?.shop?.shelf);
     if (slot?.sellKind) this.selectedSellTab = slot.sellKind;
+    this.resetSellDraft();
     this.previousFocus = document.activeElement;
     this.visible = true;
     this.applyPopupVisibility();
@@ -273,14 +387,43 @@ export class ShopShelfManager {
     this.previousFocus = null;
   }
 
-  beginLoadHold(event, itemTypeId) {
+  beginDraftAddHold(event, itemTypeId) {
     const refs = this.refs.itemButtons.get(itemTypeId);
     if (event.button !== 0 || refs?.button.disabled) return;
+    const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
+    const item = shelf?.sellItems?.find((candidate) => candidate.itemTypeId === itemTypeId);
+    const maxQuantity = this.getMaxDraftQuantity(shelf, item);
     event.preventDefault();
     this.beginHold(event, {
-      key: `load:${itemTypeId}`,
+      key: `draft-add:${itemTypeId}`,
       immediate: true,
-      onStep: () => this.loadItem(itemTypeId),
+      onImmediateStep: () => this.selectDraftItem(itemTypeId, 1),
+      onStep: (repeatIndex) =>
+        this.selectDraftItem(
+          itemTypeId,
+          getDynamicStallTransferStep(maxQuantity, repeatIndex),
+        ),
+    });
+  }
+
+  beginDraftRemoveHold(event) {
+    if (
+      event.button !== 0 ||
+      this.draftSellItemTypeId === null ||
+      this.draftSellQuantity <= 0
+    ) {
+      return;
+    }
+    const maxQuantity = this.draftSellQuantity;
+    event.preventDefault();
+    this.beginHold(event, {
+      key: 'draft-remove',
+      immediate: true,
+      onImmediateStep: () => this.changeDraftQuantity(-1),
+      onStep: (repeatIndex) =>
+        this.changeDraftQuantity(
+          -getDynamicStallTransferStep(maxQuantity, repeatIndex),
+        ),
     });
   }
 
@@ -289,20 +432,34 @@ export class ShopShelfManager {
       .getSnapshot()
       ?.shop?.shelf?.slots?.find((candidate) => candidate.slotNumber === slotNumber);
     if (event.button !== 0 || !slot?.sellItemTypeId || slot.loadedQuantity <= 0) return;
+    const maxQuantity = slot.loadedQuantity;
     this.beginHold(event, {
       key: `unload:${slotNumber}`,
       immediate: false,
-      onStep: () => {
+      onStep: (repeatIndex) => {
         this.gameplayFacade.selectShopShelfSlot(slotNumber);
-        return this.unloadItem();
+        return this.unloadItem(
+          getDynamicStallTransferStep(maxQuantity, repeatIndex),
+        );
       },
+      commitOnEnd: true,
       onActivated: () => {
         this.suppressRowClickSlotNumber = slotNumber;
       },
     });
   }
 
-  beginHold(event, { key, immediate, onStep, onActivated = null }) {
+  beginHold(
+    event,
+    {
+      key,
+      immediate,
+      onStep,
+      onImmediateStep = onStep,
+      onActivated = null,
+      commitOnEnd = false,
+    },
+  ) {
     this.endHold({ commit: true });
     const point = { x: event.clientX, y: event.clientY };
     const hold = {
@@ -315,6 +472,8 @@ export class ShopShelfManager {
       onActivated,
       didChange: false,
       activated: false,
+      commitOnEnd,
+      repeatIndex: 0,
       delayId: null,
       repeatId: null,
       move: null,
@@ -337,7 +496,9 @@ export class ShopShelfManager {
       }
     };
     hold.end = (endEvent) => {
-      if (endEvent.pointerId === hold.pointerId) this.endHold({ commit: hold.didChange });
+      if (endEvent.pointerId === hold.pointerId) {
+        this.endHold({ commit: hold.commitOnEnd && hold.didChange });
+      }
     };
     this.activeHold = hold;
     hold.target.setPointerCapture?.(hold.pointerId);
@@ -347,12 +508,14 @@ export class ShopShelfManager {
     document.addEventListener('pointermove', hold.move);
     document.addEventListener('pointerup', hold.end);
     document.addEventListener('pointercancel', hold.end);
-    if (immediate) this.runHoldStep(hold);
+    if (immediate) this.runHoldStep(hold, onImmediateStep);
     hold.delayId = globalThis.setTimeout(activate, HOLD_DELAY_MS);
   }
 
-  runHoldStep(hold) {
-    const result = hold.onStep?.();
+  runHoldStep(hold, step = hold.onStep) {
+    const isRepeatStep = step === hold.onStep;
+    const result = step?.(hold.repeatIndex);
+    if (isRepeatStep) hold.repeatIndex += 1;
     if (result?.ok) hold.didChange = true;
   }
 
@@ -371,22 +534,102 @@ export class ShopShelfManager {
       hold.target.releasePointerCapture(hold.pointerId);
     }
     this.activeHold = null;
-    if (commit && hold.didChange) this.gameplayFacade.commitShopShelfChanges?.();
+    if (commit && hold.commitOnEnd && hold.didChange) {
+      this.gameplayFacade.commitShopShelfChanges?.();
+    }
   }
 
-  loadItem(itemTypeId) {
+  selectDraftItem(itemTypeId, quantity = 1) {
+    const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
+    const item = shelf?.sellItems?.find((candidate) => candidate.itemTypeId === itemTypeId);
+    if (!item) return { ok: false, reason: 'item_missing' };
+
+    if (this.draftSellItemTypeId !== itemTypeId) {
+      this.draftSellItemTypeId = itemTypeId;
+      this.draftSellQuantity = 0;
+    }
+    this.selectedSellTab = item.kind;
+    this.statusText = '';
+    return this.changeDraftQuantity(quantity, shelf);
+  }
+
+  changeDraftQuantity(delta, shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf) {
+    const item = shelf?.sellItems?.find(
+      (candidate) => candidate.itemTypeId === this.draftSellItemTypeId,
+    );
+    if (!item) {
+      this.resetSellDraft();
+      this.renderSellDraft(shelf);
+      return { ok: false, reason: 'item_missing' };
+    }
+
+    const maxQuantity = this.getMaxDraftQuantity(shelf, item);
+    const nextQuantity = Math.max(
+      0,
+      Math.min(maxQuantity, this.draftSellQuantity + Math.floor(Number(delta) || 0)),
+    );
+    if (nextQuantity === this.draftSellQuantity) {
+      return { ok: false, reason: nextQuantity <= 0 ? 'empty_selection' : 'selection_full' };
+    }
+
+    this.draftSellQuantity = nextQuantity;
+    if (nextQuantity === 0) this.draftSellItemTypeId = null;
+    this.statusText = '';
+    this.renderSellDraft(shelf);
+    return { ok: true, quantity: nextQuantity };
+  }
+
+  markDraft({ all = false } = {}) {
+    const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
+    const item = shelf?.sellItems?.find(
+      (candidate) => candidate.itemTypeId === this.draftSellItemTypeId,
+    );
+    const quantity = all
+      ? this.getMaxDraftQuantity(shelf, item)
+      : this.draftSellQuantity;
+    if (!item || quantity <= 0) return { ok: false, reason: 'empty_selection' };
+
+    const result = this.gameplayFacade.loadSelectedShopShelfSlotItem(
+      item.itemTypeId,
+      quantity,
+    );
+    if (result?.ok) {
+      this.resetSellDraft();
+    } else {
+      this.statusText = this.getLoadFailureText(result?.reason);
+    }
+    this.render(this.gameplayFacade.getSnapshot());
+    return result;
+  }
+
+  getMaxDraftQuantity(shelf, item) {
+    if (!item) return 0;
+    const slot = this.getSelectedSlot(shelf);
+    const remainingCapacity = Math.max(0, 1_000_000 - (slot?.loadedQuantity ?? 0));
+    return Math.min(Math.max(0, Math.floor(Number(item.quantity) || 0)), remainingCapacity);
+  }
+
+  resetSellDraft() {
+    this.draftSellItemTypeId = null;
+    this.draftSellQuantity = 0;
+    this.statusText = '';
+  }
+
+  loadItem(itemTypeId, quantity = null) {
     const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
     const slot = this.getSelectedSlot(shelf);
-    const step = getDynamicStallTransferStep(slot?.loadedQuantity ?? 0);
+    const step =
+      quantity ?? getDynamicStallTransferStep(slot?.loadedQuantity ?? 0, 0);
     return this.gameplayFacade.loadSelectedShopShelfSlotItem(itemTypeId, step, {
       save: false,
     });
   }
 
-  unloadItem() {
+  unloadItem(quantity = null) {
     const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
     const slot = this.getSelectedSlot(shelf);
-    const step = getDynamicStallTransferStep(slot?.loadedQuantity ?? 0);
+    const step =
+      quantity ?? getDynamicStallTransferStep(slot?.loadedQuantity ?? 0, 0);
     return this.gameplayFacade.unloadSelectedShopShelfSlotItem(step, { save: false });
   }
 
@@ -407,7 +650,18 @@ export class ShopShelfManager {
       if (!slot.sellItemTypeId) {
         refs.itemValue.textContent = 'empty stand';
         refs.itemValue.removeAttribute('aria-label');
-        refs.statusValue.textContent = 'select';
+        refs.statusValue.classList.remove('is-active');
+        refs.batchValue.textContent = '';
+        refs.batchSeparator.textContent = '';
+        refs.batchSeparator.hidden = true;
+        refs.progress.hidden = true;
+        refs.progress.setAttribute('aria-valuenow', '0');
+        refs.timerValue.textContent = '';
+        refs.priceSeparator.textContent = '';
+        refs.priceSeparator.hidden = true;
+        setResourceIconText(refs.priceValue, 'select');
+        setResourceColor(refs.priceValue, null);
+        stopTimerProgressFill(refs.progressFill, 0);
         setItemIconLabel(refs.itemValue, null);
         setResourceColor(refs.itemValue, null);
         continue;
@@ -424,14 +678,30 @@ export class ShopShelfManager {
       );
       setItemIconLabel(refs.itemValue, slot.sellKind, slot.sellKey);
       setResourceColor(refs.itemValue, slot.sellKind);
-      const remaining = this.getRemainingSeconds(slot, shelf.autoSellSeconds);
       const batch = Math.min(slot.batchSize ?? 1, slot.loadedQuantity);
       const unitCoin = this.getDisplaySellCoin(slot);
       const priceText = Number.isFinite(unitCoin)
         ? formatCoinPriceText(unitCoin * batch)
         : 'offline';
-      setResourceIconText(refs.statusValue, `x${batch} · ${remaining}s · ${priceText}`);
-      setResourceColorFromText(refs.statusValue, refs.statusValue.textContent);
+      refs.statusValue.classList.add('is-active');
+      refs.batchValue.textContent = `x${batch}`;
+      refs.batchSeparator.textContent = '·';
+      refs.batchSeparator.hidden = false;
+      refs.progress.hidden = false;
+      refs.priceSeparator.textContent = '·';
+      refs.priceSeparator.hidden = false;
+      setResourceIconText(refs.priceValue, priceText);
+      setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
+      setTimerProgressFill(
+        refs.progressFill,
+        this.getStallTimer(slot, shelf.autoSellSeconds),
+        {
+          onUpdate: ({ remainingMs, percent }) => {
+            refs.timerValue.textContent = formatRemainingTime(remainingMs);
+            refs.progress.setAttribute('aria-valuenow', String(percent));
+          },
+        },
+      );
     }
 
     if (this.visible) this.renderPopup(snapshot, shelf);
@@ -443,12 +713,15 @@ export class ShopShelfManager {
       refs.row.hidden = true;
     }
     const selectedSlot = this.getSelectedSlot(shelf);
-    this.refs.summary.textContent = selectedSlot?.sellItemTypeId
-      ? `stall ${selectedSlot.slotNumber}: ${selectedSlot.sellLabel} x${selectedSlot.loadedQuantity}`
-      : `stall ${shelf.selectedSlotNumber}: empty`;
-    this.refs.instructions.textContent = selectedSlot?.sellItemTypeId
-      ? 'hold the same item to load faster. hold the stall item to return it.'
-      : 'tap to load 1. hold to load faster.';
+    const draftItem = shelf.sellItems.find(
+      (item) => item.itemTypeId === this.draftSellItemTypeId,
+    );
+    if (
+      !draftItem ||
+      this.draftSellQuantity > this.getMaxDraftQuantity(shelf, draftItem)
+    ) {
+      this.resetSellDraft();
+    }
 
     for (const kind of shelf.sellKinds) {
       setSelectedTabState(
@@ -471,7 +744,7 @@ export class ShopShelfManager {
       refs.button.setAttribute('aria-disabled', refs.button.disabled ? 'true' : 'false');
       refs.button.setAttribute(
         'aria-pressed',
-        selectedSlot?.sellItemTypeId === item.itemTypeId ? 'true' : 'false',
+        this.draftSellItemTypeId === item.itemTypeId ? 'true' : 'false',
       );
       refs.label.textContent = `${display.label} (${display.quantity})`;
       setItemIconLabel(refs.label, item.kind, item.key);
@@ -479,16 +752,66 @@ export class ShopShelfManager {
       setResourceIconText(refs.quantity, this.formatSellCoin(this.getDisplaySellCoin(item)));
       setResourceColorFromText(refs.quantity, refs.quantity.textContent);
     }
+
+    this.renderSellDraft(shelf);
+  }
+
+  renderSellDraft(shelf) {
+    if (!this.refs.current) return;
+    const item = shelf?.sellItems?.find(
+      (candidate) => candidate.itemTypeId === this.draftSellItemTypeId,
+    );
+    const hasSelection = Boolean(item && this.draftSellQuantity > 0);
+
+    this.refs.current.disabled = !hasSelection;
+    this.refs.current.setAttribute('aria-disabled', hasSelection ? 'false' : 'true');
+    this.refs.current.setAttribute('aria-pressed', hasSelection ? 'true' : 'false');
+    this.refs.current.dataset.hasSelection = hasSelection ? 'true' : 'false';
+    this.refs.current.setAttribute(
+      'aria-label',
+      hasSelection
+        ? `current ${item.label}, ${this.draftSellQuantity} selected; press to remove one`
+        : 'current selection empty',
+    );
+    this.refs.currentItem.textContent = hasSelection ? item.label : 'empty';
+    setItemIconLabel(
+      this.refs.currentItem,
+      hasSelection ? item.kind : null,
+      hasSelection ? item.key : null,
+    );
+    setResourceColor(this.refs.currentItem, hasSelection ? item.kind : null);
+    this.refs.currentQuantity.textContent = hasSelection
+      ? `x${this.draftSellQuantity}`
+      : '';
+
+    this.refs.mark.disabled = !hasSelection;
+    this.refs.mark.setAttribute('aria-disabled', hasSelection ? 'false' : 'true');
+    this.refs.mark.textContent = `mark x${hasSelection ? this.draftSellQuantity : 0}`;
+    this.refs.markAll.disabled = !hasSelection;
+    this.refs.markAll.setAttribute('aria-disabled', hasSelection ? 'false' : 'true');
+    this.refs.status.textContent = this.statusText;
+    this.refs.status.hidden = !this.statusText;
+
+    for (const [itemTypeId, refs] of this.refs.itemButtons) {
+      refs.button.setAttribute(
+        'aria-pressed',
+        hasSelection && itemTypeId === item.itemTypeId ? 'true' : 'false',
+      );
+    }
   }
 
   getSelectedSlot(shelf) {
     return shelf?.slots?.find((slot) => slot.slotNumber === shelf.selectedSlotNumber) ?? null;
   }
 
-  getRemainingSeconds(slot, cycleSeconds) {
+  getStallTimer(slot, cycleSeconds) {
     const cycle = Math.max(1, Number(cycleSeconds) || 5);
     const progress = Math.max(0, Number(slot.sellProgressSeconds) || 0) % cycle;
-    return Math.max(1, Math.ceil(cycle - progress));
+    return {
+      progress: progress / cycle,
+      remainingMs: (cycle - progress) * 1_000,
+      totalMs: cycle * 1_000,
+    };
   }
 
   getDisplaySellCoin(item) {
@@ -498,6 +821,14 @@ export class ShopShelfManager {
 
   formatSellCoin(coin) {
     return Number.isFinite(coin) ? formatCoinPriceText(coin) : '? coin';
+  }
+
+  getLoadFailureText(reason) {
+    if (reason === 'stall_full') return 'stall full';
+    if (reason === 'not_enough_items') return 'not enough items';
+    if (reason === 'different_item_loaded') return 'return the current item first';
+    if (reason === 'market_locked') return 'not traded here';
+    return 'could not mark items';
   }
 
   applyPopupVisibility() {

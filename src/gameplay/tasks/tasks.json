@@ -2,7 +2,7 @@
   "levels": [
     {
       "level": 1,
-      "completionCostCoin": 10,
+      "completionCostCoin": 0,
       "tasks": [
         {
           "id": "level1-summon-sage-seed",

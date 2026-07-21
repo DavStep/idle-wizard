@@ -550,7 +550,7 @@ export class ShopMarketLedgerManager {
     const previous = Number(oldest?.marketPriceCoin);
     if (!Number.isFinite(previous)) return '—';
     const delta = item.marketPriceCoin - previous;
-    if (delta === 0) return `— 0 / ${hours}h`;
+    if (delta === 0) return `0 / ${hours}h`;
     return `${delta > 0 ? '↑' : '↓'} ${delta > 0 ? '+' : '−'}${formatCoinPriceText(Math.abs(delta))} / ${hours}h`;
   }
 

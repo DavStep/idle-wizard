@@ -100,17 +100,18 @@ If the feature is large enough to be a top-level area, place its facade directly
 
 ## Dev Server Rules
 
-- Use one shared Vite dev server on `http://127.0.0.1:55173/`.
+- Use one shared Vite dev server on `http://127.0.0.1:55173/` by default.
 - Before starting `npm run dev`, check `npm run dev:status`; if port `55173` is already listening, reuse that server.
-- Do not pass alternate Vite ports or let Vite auto-increment to `55174+`.
+- When parallel agents' runtime processes interfere with each other, an agent may use explicit alternate ports for an isolated runtime. The agent must own those processes and stop every alternate-port listener when its work completes; never rely on Vite auto-increment.
 - If port `55173` is held by a stale Vite process, stop it with `npm run dev:kill`, then start `npm run dev` once.
-- Keep SpacetimeDB on `http://127.0.0.1:3000`; do not start duplicate backend processes.
-- Before claiming local browser/manual QA, confirm both Vite `55173` and SpacetimeDB `3000` are up.
+- Keep SpacetimeDB on `http://127.0.0.1:3000` by default; only isolate it on an explicit alternate port when parallel-agent interference requires it, and clean it up with the rest of the isolated runtime.
+- Before claiming local browser/manual QA, confirm the exact Vite and SpacetimeDB endpoints used for that QA are up.
 - Check Vite with `npm run dev:status`.
 - Check SpacetimeDB with `lsof -nP -sTCP:LISTEN -iTCP:3000`.
+- For an isolated runtime, check its explicit ports directly and record the process IDs so cleanup is deterministic.
 - If both frontend and backend need a cold start, prefer `npm run stdb:dev` from the primary worktree.
 - If Vite is already running but backend is missing, run `npm run stdb:start`, then `npm run stdb:publish`; run `npm run stdb:generate` too if bindings are missing or schema changed.
-- When multiple agents work in parallel, only one should own live local runtime processes; other agents reuse them and do not start duplicates.
+- When multiple agents work in parallel, prefer one owner for shared live local runtime processes. Agents that require isolation may own explicit alternate-port runtimes, but must not leave those listeners running after completion.
 
 ## Ambiguity Rule
 

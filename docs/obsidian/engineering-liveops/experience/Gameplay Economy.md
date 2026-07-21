@@ -76,7 +76,7 @@ experience_type: gameplay-economy
 - Auto brew enable UI must set `autoBrewRecipeKey` from the selected recipe before enabling; `BrewingFacade` rejects enabled auto-brew without a recipe key.
 - Auto/manual cauldron UI only enables or disables future automation; auto brew stays unarmed until a successful manual brew, then repeats future cycles.
 - Manual fast sell is removed; trader stands always use the full marginal NPC quote.
-- Level 1 costs 0 coin and should never depend on tutorial-only sale grants; level 2 is the first systemic coin gate.
+- Fresh games start with 0 coin. Level 1 costs 0 coin, has no coin-request segment, and should never depend on tutorial-only grants; level 2 is the first systemic coin gate.
 - Research unlock gates for task requirements must be no higher than `target task level - 1`; e.g. nettle seed must unlock at level 5 because it is a level 6 requirement shown while the player is level 5.
 - Market licence rank grants one through five NPC and player stands.
 - NPC market stands hold one item type, sell one item per independent five-second cycle, and can be staffed by advanced research to sell two per cycle.

@@ -33,7 +33,7 @@ describe('RewardFlyoutManager', () => {
     vi.unstubAllGlobals();
   });
 
-  it('plays Idle Witch Craft-style item drops and coin flyout when icons are enabled', () => {
+  it('keeps automatic sale feedback to one lightweight amount pop when icons are enabled', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const host = document.createElement('section');
     const summonCircle = document.createElement('span');
@@ -75,8 +75,8 @@ describe('RewardFlyoutManager', () => {
       slotNumber: 1,
     });
 
-    expect(document.querySelectorAll('.room-item-drop.is-seed-burst')).toHaveLength(3);
-    expect(document.querySelectorAll('.room-seed-pack-composite')).toHaveLength(3);
+    expect(document.querySelectorAll('.room-item-drop.is-seed-burst')).toHaveLength(2);
+    expect(document.querySelectorAll('.room-seed-pack-composite')).toHaveLength(2);
     expect(
       document.querySelector('.room-seed-pack-composite')?.dataset.seedPackItemFrame,
     ).toBe('herb:sageHerb');
@@ -87,10 +87,9 @@ describe('RewardFlyoutManager', () => {
     expect(document.querySelector('.room-reward-flyout')?.classList).toContain(
       'is-visual-only',
     );
-    expect(document.querySelectorAll('.room-coin-particle').length).toBeGreaterThanOrEqual(3);
+    expect(document.querySelectorAll('.room-coin-particle')).toHaveLength(0);
+    expect(document.querySelectorAll('.room-coin-amt-pop')).toHaveLength(1);
     expect(document.querySelector('.room-coin-amt-pop')?.textContent).toBe('+1000G');
-    expect(document.querySelector('.room-coin-particle')?.style.left).toBe('465px');
-    expect(document.querySelector('.room-coin-particle')?.style.top).toBe('373.2px');
     expect(document.querySelector('.room-coin-amt-pop')?.style.left).toBe('465px');
     expect(document.querySelector('.room-coin-amt-pop')?.style.top).toBe('369.2px');
 

@@ -329,7 +329,7 @@ const DEFAULT_TASKS_CONFIG = {
   "levels": [
     {
       "level": 1,
-      "completionCostCoin": 10,
+      "completionCostCoin": 0,
       "tasks": [
         {
           "id": "level1-summon-sage-seed",
@@ -8796,7 +8796,9 @@ function normalizeTasksGameConfigJson(
     return DEFAULT_TASKS_CONFIG_JSON;
   }
 
-  const normalizedLevels = normalizeLegacyLevel5Tasks(levels);
+  const normalizedLevels = normalizeLegacyLevelOneCompletionCost(
+    normalizeLegacyLevel5Tasks(levels),
+  );
 
   if (normalizedLevels === levels) {
     return originalJson;
@@ -8806,6 +8808,35 @@ function normalizeTasksGameConfigJson(
     ...parsedConfig,
     levels: normalizedLevels,
   });
+}
+
+function normalizeLegacyLevelOneCompletionCost(levels: unknown[]): unknown[] {
+  const levelOneIndex = levels.findIndex(
+    (levelConfig) => isRecord(levelConfig) && Number(levelConfig.level) === 1,
+  );
+
+  if (levelOneIndex < 0) {
+    return levels;
+  }
+
+  const levelOne = levels[levelOneIndex];
+
+  if (
+    !isRecord(levelOne) ||
+    Number(levelOne.completionCostCoin ?? levelOne.completionCostGold) !== 10
+  ) {
+    return levels;
+  }
+
+  return levels.map((levelConfig, index) =>
+    index === levelOneIndex && isRecord(levelConfig)
+      ? {
+          ...levelConfig,
+          completionCostCoin: 0,
+          completionCostGold: undefined,
+        }
+      : levelConfig,
+  );
 }
 
 function shouldResetTasksGameConfigToDefault(levels: unknown[]): boolean {

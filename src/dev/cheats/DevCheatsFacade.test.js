@@ -52,7 +52,7 @@ describe('DevCheatsFacade', () => {
 
     expect(target.cheats.help()).toMatchObject({ ok: true });
     expect(target.cheat('addCoin 25')).toMatchObject({ ok: true });
-    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(35);
+    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(25);
     expect(logger.info).toHaveBeenCalledWith('Dev cheats enabled. Run cheats.help().');
     expect(target.devConsole).toEqual(
       expect.objectContaining({
@@ -120,7 +120,7 @@ describe('DevCheatsFacade', () => {
     });
     expect(target.cheats.addCoin(100)).toMatchObject({
       ok: true,
-      coin: { current: 110, totalGenerated: 100 },
+      coin: { current: 100, totalGenerated: 100 },
     });
     expect(target.cheats.addCrystal(7)).toMatchObject({
       ok: true,
@@ -481,6 +481,10 @@ describe('DevCheatsFacade', () => {
           id: 'topPanelQuestProgress',
           command: 'cheats.openUi("topPanelQuestProgress")',
         }),
+        expect.objectContaining({
+          id: 'traderStallLoader',
+          command: 'cheats.openUi("traderStallLoader")',
+        }),
       ]),
     });
     const publishAndSaveSpy = vi.spyOn(app.gameplayFacade, 'publishAndSaveSnapshot');
@@ -519,6 +523,15 @@ describe('DevCheatsFacade', () => {
     });
     expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('guildRequestStack', {});
 
+    expect(target.cheats.openUi('traderStallLoader')).toMatchObject({
+      ok: true,
+      surfaceId: 'traderStallLoader',
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('market', {
+      tab: 'npm',
+      popup: 'sell',
+    });
+
     expect(target.cheats.setStressText()).toMatchObject({
       ok: true,
       results: {
@@ -530,6 +543,8 @@ describe('DevCheatsFacade', () => {
 
   it('bridges tutorial stages through pages facade', () => {
     const pagesFacade = {
+      show: vi.fn(),
+      getCurrentPageId: vi.fn(() => 'workshop'),
       listTutorialStages: vi.fn(() => ({
         ok: true,
         stages: ['purchase-house', 'intro-garden'],
@@ -571,10 +586,28 @@ describe('DevCheatsFacade', () => {
       },
       snapshot: {
         level: 3,
+        coin: { current: 0, totalGenerated: 0 },
         inventory: [expect.objectContaining({ key: 'sageSeed', quantity: 1 })],
       },
     });
     expect(pagesFacade.setTutorialStage).toHaveBeenCalledWith('intro-garden');
+
+    expect(target.cheats.setTutorialStage('intro-mana-sphere')).toMatchObject({
+      ok: true,
+      requestedStepId: 'intro-mana-sphere',
+      snapshot: {
+        level: 0,
+        coin: { current: 0, totalGenerated: 0 },
+      },
+      ui: {
+        page: {
+          ok: true,
+          pageId: 'workshop',
+          unlocked: false,
+        },
+      },
+    });
+    expect(pagesFacade.show).toHaveBeenCalledWith('workshop');
 
     expect(target.cheats.setTutorialStage('intro-garden', { loadState: false })).toEqual({
       ok: true,
@@ -714,7 +747,7 @@ describe('DevCheatsFacade', () => {
       reason: 'confirmation_required',
       confirmation: 'RESET',
     });
-    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(60);
+    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(50);
   });
 
   it('resets gameplay data and clears server player-market progress', async () => {
@@ -744,7 +777,7 @@ describe('DevCheatsFacade', () => {
       playerShop: { ok: true },
       snapshot: {
         mana: { current: 40, cap: 50, perSecond: 1 },
-        coin: { current: 10, totalGenerated: 0 },
+        coin: { current: 0, totalGenerated: 0 },
         crystal: { current: 0 },
         emerald: { current: 0 },
         inventory: [],
@@ -756,7 +789,7 @@ describe('DevCheatsFacade', () => {
     const saved = JSON.parse(persistenceStorage.getItem('idle-wizard.gameplay.save'));
     expect(saved).toMatchObject({
       version: GAMEPLAY_SAVE_VERSION,
-      coin: { current: 10, totalGenerated: 0 },
+      coin: { current: 0, totalGenerated: 0 },
       crystal: { current: 0 },
       emerald: { current: 0 },
       ruby: { current: 0 },
@@ -783,6 +816,6 @@ describe('DevCheatsFacade', () => {
       ok: false,
       reason: 'backend_save_not_ready',
     });
-    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(60);
+    expect(app.gameplayFacade.getSnapshot().coin.current).toBe(50);
   });
 });

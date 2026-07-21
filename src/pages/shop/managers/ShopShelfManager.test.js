@@ -615,6 +615,76 @@ describe('ShopShelfManager', () => {
     expect(rowActionRule).toMatch(/\bfont-weight:\s*normal;/);
   });
 
+  it('shows the stall progress rail beneath the item name', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      coin: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          autoSellSeconds: 5,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 1,
+              sellKind: 'seed',
+              sellKey: 'sageSeed',
+              sellLabel: 'sage seed',
+              loadedQuantity: 13,
+              batchSize: 1,
+              sellCoin: 5,
+              sellProgressSeconds: 2,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+    };
+    const manager = new ShopShelfManager({ gameplayFacade });
+
+    manager.mount(stage, popupLayer);
+
+    const itemColumn = stage.querySelector('.shop-page__slot-item-column');
+    const status = stage.querySelector('.shop-page__slot-status-value');
+    const progress = itemColumn?.querySelector('.shop-page__slot-progress');
+    const fill = itemColumn?.querySelector('.shop-page__slot-progress-fill');
+    const timer = status?.querySelector('.shop-page__slot-timer-value');
+
+    expect(status?.classList.contains('is-active')).toBe(true);
+    expect(status?.querySelector('.shop-page__slot-batch-value')?.textContent).toBe('x1');
+    expect(progress?.classList.contains('style-progress')).toBe(true);
+    expect(progress?.classList.contains('style-progress--timer')).toBe(true);
+    expect(progress?.getAttribute('role')).toBe('progressbar');
+    expect(progress?.getAttribute('aria-valuenow')).toBe('40');
+    expect(fill?.style.transform).toBe('scaleX(0.4)');
+    expect(itemColumn?.firstElementChild).toBe(
+      stage.querySelector('.shop-page__slot-item-value'),
+    );
+    expect(itemColumn?.lastElementChild).toBe(progress);
+    expect(status?.querySelector('.shop-page__slot-progress')).toBeNull();
+    expect(timer?.textContent).toBe('3s');
+    expect(status?.querySelector('.shop-page__slot-price-value')?.textContent).toContain(
+      '5 coin',
+    );
+
+    manager.unmount();
+  });
+
   it('opens NPC market sell picker from the stand row', () => {
     const stage = document.createElement('section');
     const popupLayer = document.createElement('section');
@@ -788,6 +858,13 @@ describe('ShopShelfManager', () => {
       /\bvar\(--style-scroll-progress-block-size\)/,
     );
     expect(baseCss).not.toMatch(/--shop-page-sell-scroll-progress-gap:/);
+    expect(baseCss).toMatch(
+      /\.shop-page__sell-dialog\s*>\s*\.shop-page__sell-item-list\s*\{(?<body>[^}]*)\}/,
+    );
+    expect(baseCss).toMatch(
+      /\.shop-page__sell-item-button\[aria-pressed="true"\]\s*\{\s*color:\s*var\(--style-text\);\s*background:\s*var\(--shop-page-sell-row-selected-surface\);/,
+    );
+    expect(baseCss).toContain('gap: 6px;');
   });
 
   it('shows zero-cost player market stand buys as free', () => {

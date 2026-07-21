@@ -208,6 +208,21 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().isShopSellPopupOpen()).toBe(false);
   });
 
+  it('reads whether the stall loader has a local selection', () => {
+    const stage = document.createElement('section');
+    const current = document.createElement('button');
+    const manager = new TutorialTargetManager({ stage });
+
+    current.className = 'shop-page__sell-current';
+    current.dataset.hasSelection = 'false';
+    stage.append(current);
+
+    expect(manager.getDomState().hasShopSellSelection()).toBe(false);
+
+    current.dataset.hasSelection = 'true';
+    expect(manager.getDomState().hasShopSellSelection()).toBe(true);
+  });
+
   it('allows popup guidance when the active target is inside the open popup', () => {
     const stage = document.createElement('section');
     const popup = document.createElement('section');

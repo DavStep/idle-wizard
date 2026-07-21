@@ -40,17 +40,18 @@ When a feature change would be meaningfully faster or safer with a repo-local he
 - Any new dialog, window, page, popup, or notable UI surface should get a dev command path, usually through `cheats.openUi(surfaceId)` and `?devUi=surfaceId`, so future QA can open it directly.
 - Any reference-driven state must be reproducible through that checked-in path, a data template, tutorial loader, or focused harness. Do not use temporary source branches, read-only DOM mutation, or undocumented local state as final screenshot setup.
 - Document the command, required env flags, and intended use in this file when it is broad, or in the feature-local `README.md` when it is feature-specific.
-- Keep tools deterministic and scoped to the current repo; do not make them start duplicate Vite or SpacetimeDB processes.
+- Keep tools deterministic and scoped to the current repo; prefer shared Vite and SpacetimeDB processes. If parallel agents interfere, isolated runtimes may use explicit alternate ports, with one clear owner responsible for stopping every alternate listener when finished.
 - Reuse documented tools before creating a near-duplicate helper.
 
 ## Shared Local Runtime
 
 Live browser/Android/manual QA must happen from the primary branch/worktree that owns the shared local services. Alternate branches/worktrees can help with code edits and static checks, but they must not claim runtime verification unless they also own the running services.
 
-Before local runtime QA, confirm both services:
+Before local runtime QA, confirm both shared services, or the exact isolated endpoints selected for the QA:
 
 - `npm run dev:status`
 - `lsof -nP -sTCP:LISTEN -iTCP:3000`
+- For an isolated runtime, replace those defaults with direct checks of its explicit ports and retain the process IDs for cleanup.
 - If the shared runtime should survive terminal closes, start `npm run local:keepalive` once. It detaches a watchdog that keeps Vite `55173` and SpacetimeDB `3000` up.
 
 If neither service is up and live QA is needed, prefer `npm run stdb:dev` from the primary worktree. If Vite is already up, start the backend with `npm run stdb:start`, publish with `npm run stdb:publish`, and regenerate bindings with `npm run stdb:generate` when schema or bindings changed.
@@ -83,6 +84,6 @@ Keep managers narrow. Split a manager once it has two reasons to change.
 
 - Ask before implementing unclear gameplay behavior.
 - Do not add new seed, herb, potion, selling, economy, inventory, or progression behavior beyond the explicit request.
-- Do not start another Vite port; use `npm run dev:status`, then shared `http://127.0.0.1:55173/`.
+- Reuse shared `http://127.0.0.1:55173/` after `npm run dev:status` unless parallel-agent interference requires an explicit isolated port; the owning agent must stop the isolated listener on completion.
 - Do not create a separate branch/worktree just to do live local QA; shared services only represent one checkout.
 - Do not use raw generated database APIs outside backend boundaries.

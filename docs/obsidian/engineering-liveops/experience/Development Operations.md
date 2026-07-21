@@ -11,10 +11,10 @@ experience_type: development-operations
 
 # Experience: Development Operations
 
-- Use one shared Vite dev server at `http://127.0.0.1:55173/` with `strictPort`; parallel agents should reuse it, not start `55174+`.
+- Use the shared Vite dev server at `http://127.0.0.1:55173/` with `strictPort` by default. If parallel agents interfere, give each isolated runtime explicit ports and a clear owner; never rely on auto-increment, and stop every alternate listener when that agent finishes.
 - Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.
 - Shared live local QA belongs to one primary branch/worktree; helper branches/worktrees can prep code or run static checks, but runtime verification is invalid unless that checkout owns the running Vite and SpacetimeDB processes.
-- Before claiming local runtime verification, confirm both Vite `55173` and SpacetimeDB `3000`; frontend-only status is not enough.
+- Before claiming local runtime verification, confirm both the Vite and SpacetimeDB endpoints used by that QA; frontend-only status is not enough. For isolated runtimes, retain process IDs so cleanup is deterministic.
 - Visual QA for deep page states needs deterministic real-game state recipes; ad hoc clicks/cheats make agents miss screenshots or verify the wrong state.
 - In-app Browser blocks `data:` QA harness URLs; use the real local app or a checked-in/local route instead of ad hoc data-url visual harnesses.
 - Source-scaled room UI clicks in in-app Browser QA should use DOM rect screen coordinates with `tab.cua.click`; Playwright locator clicks can miss scaled controls.
@@ -48,3 +48,4 @@ experience_type: development-operations
 - OIDC redirect state must use persistent `localStorage` through `stateStore`; default session storage can disappear on Android/new-tab OAuth returns and produce callback state errors.
 - The sibling dashboard repo is `../idle-wizard-dashboard`; it runs on Vite port `55183` and syncs generated SpacetimeDB bindings from this repo.
 - Plain Node dev scripts that import `GameplayFacade` need the repo JSON module loader/register path because `TaskBalanceManager` imports `tasks.json` without Node import attributes; Vitest/Vite handle it without that loader.
+- Local-runtime watchdog PID probes must treat sandbox `EPERM` as unknown, not dead; deleting `monitor.pid` on an uninspectable live process creates duplicate monitors and competing service restarts.

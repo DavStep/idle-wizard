@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.100
+
+- Improved Market stall loading with a clearer item-marking flow, faster press-and-hold transfers, and live sale progress.
+- Made the first level free to complete and aligned fresh games to start with zero coin.
+- Updated Elara's early Market guidance and reward feedback to match the revised flow.
+
 ## 0.2.99
 
 - Fixed fresh Android launches skipping the `connect account` or `start new` choice when Google restored an old native sign-in.

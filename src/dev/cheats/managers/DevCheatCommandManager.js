@@ -152,6 +152,13 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
   },
   { id: 'worldChat', kind: 'dialog', dialogId: 'worldChat', aliases: ['chat'] },
   { id: 'market', kind: 'dialog', dialogId: 'market', aliases: ['shopDialog'] },
+  {
+    id: 'traderStallLoader',
+    kind: 'dialog',
+    dialogId: 'market',
+    options: { tab: 'npm', popup: 'sell' },
+    aliases: ['stallLoader', 'loadStall'],
+  },
   { id: 'guildCharter', kind: 'dialog', dialogId: 'guildCharter' },
   { id: 'guildSettings', kind: 'dialog', dialogId: 'guildSettings' },
   { id: 'guildRequest', kind: 'dialog', dialogId: 'guildRequest' },
@@ -1727,10 +1734,11 @@ export class DevCheatCommandManager {
       return this.openTopPanelQuestProgressSurface(surface, options);
     }
 
+    const resolvedOptions = { ...(surface.options ?? {}), ...(options ?? {}) };
     const result =
       surface.kind === 'page'
-        ? this.showPage(surface.pageId, options)
-        : this.openDialog(surface.dialogId, options);
+        ? this.showPage(surface.pageId, resolvedOptions)
+        : this.openDialog(surface.dialogId, resolvedOptions);
 
     return this.decorateUiResult(surface.id, result, surface);
   }
@@ -2063,7 +2071,7 @@ export class DevCheatCommandManager {
       level: this.getTutorialStepLevel(stepId),
       pageId: this.getTutorialStepPageId(stepId),
       mana: Number.isFinite(options.mana) ? options.mana : 40,
-      coin: Number.isFinite(options.coin) ? options.coin : 10,
+      coin: Number.isFinite(options.coin) ? options.coin : 0,
       inventory: {},
       research: [],
       tasks: [],
@@ -2408,7 +2416,7 @@ export class DevCheatCommandManager {
   applyTutorialStepUiState(preset) {
     const page =
       preset.pageId && this.pagesFacade
-        ? this.showPage(preset.pageId, { unlock: true })
+        ? this.showPage(preset.pageId, { unlock: false })
         : { ok: false, reason: 'page_missing' };
     let stall = null;
 
@@ -2927,7 +2935,7 @@ export class DevCheatCommandManager {
         current: 40,
       },
       coin: {
-        current: 10,
+        current: 0,
         totalGenerated: 0,
       },
       crystal: {

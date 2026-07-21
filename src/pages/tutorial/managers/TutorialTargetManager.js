@@ -77,6 +77,12 @@ export class TutorialTargetManager {
         Boolean(getSelectedBrewingRecipeRow(this.stage, recipeKey)),
       isShopSellPopupOpen: () =>
         Boolean(this.stage?.querySelector('.shop-page__sell-popup:not([hidden])')),
+      hasShopSellSelection: () =>
+        Boolean(
+          this.stage?.querySelector(
+            '.shop-page__sell-current[data-has-selection="true"]',
+          ),
+        ),
       isShopSellTabSelected: (kind) =>
         Boolean(
           this.stage?.querySelector(

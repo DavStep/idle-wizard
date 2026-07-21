@@ -27,6 +27,7 @@ function createDomFake({
   brewingHerbInventoryOpen = false,
   selectedBrewingRecipeKey = null,
   shopSellPopupOpen = false,
+  shopSellSelection = false,
   sellTabKind = 'seed',
 } = {}) {
   return {
@@ -34,6 +35,7 @@ function createDomFake({
     isBrewingHerbInventoryOpen: () => brewingHerbInventoryOpen,
     isBrewingRecipeSelected: (recipeKey) => selectedBrewingRecipeKey === recipeKey,
     isGardenSeedPopupOpen: () => seedPopupOpen,
+    hasShopSellSelection: () => shopSellSelection,
     isShopSellPopupOpen: () => shopSellPopupOpen,
     isShopSellTabSelected: (kind) => sellTabKind === kind,
     isTasksExpanded: () => tasksExpanded,
@@ -728,10 +730,27 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'select-sage-seed-sale',
       targetId: 'shop:sell:sageSeed',
-      hintText: 'hold sage seed to load it',
-      objectiveText: 'choose sage seed to sell',
+      hintText: 'add sage seeds',
+      objectiveText: 'load sage seed into the stall',
       progressLabel: '0/1 seed',
       stepLabel: '15/36',
+    });
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        dom: createDomFake({
+          shopSellPopupOpen: true,
+          shopSellSelection: true,
+        }),
+        completed: completedThrough('select-market-stand'),
+      }),
+    ).toMatchObject({
+      id: 'select-sage-seed-sale',
+      targetId: 'shop:sell:mark',
+      hintText: 'mark selected seeds',
+      objectiveText: 'load sage seed into the stall',
     });
 
     snapshot.shop.shelf.slots = [

@@ -1,5 +1,7 @@
 /* @vitest-environment jsdom */
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ShopMarketLedgerManager } from './ShopMarketLedgerManager.js';
@@ -29,6 +31,57 @@ function createGameplayFacade(snapshot) {
 }
 
 describe('ShopMarketLedgerManager', () => {
+  it('spaces price-history blocks apart and leaves a zero trend unsigned', () => {
+    const buttonParent = document.createElement('section');
+    const popupParent = document.createElement('section');
+    const snapshot = {
+      coin: { current: 100 },
+      research: { completedResearchIds: [] },
+      shop: {
+        market: { id: 'smallTown', name: 'Small Town Market', rank: 1 },
+        stock: {
+          items: [{
+            itemTypeId: 1,
+            key: 'sageSeed',
+            label: 'sage seed',
+            kind: 'seed',
+            researched: true,
+            quantity: 2,
+            tradedHere: true,
+            marketPriceCoin: 10,
+            sellCoin: 8,
+            buyCoin: 12,
+            sellNeed: 7,
+            stock: 4,
+            priceHistory: [
+              { hourKey: '7', marketPriceCoin: 10, updatedAtMs: 7 * 3_600_000 },
+            ],
+          }],
+        },
+      },
+    };
+    const manager = new ShopMarketLedgerManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+      now: () => 10 * 3_600_000,
+    });
+
+    manager.mount({ buttonParent, popupParent });
+    buttonParent.querySelector('.shop-page__ledger-open')?.click();
+
+    const trend = popupParent.querySelector(
+      '.shop-page__ledger-item-row > span:last-child',
+    )?.textContent;
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const historyRule = baseCss.match(
+      /\.shop-page__ledger-history\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(trend).toBe('0 / 3h');
+    expect(historyRule).toMatch(/\bgap:\s*6px;/);
+
+    manager.unmount();
+  });
+
   it('shows concise help and a ranked, tabbed price catalogue', () => {
     const buttonParent = document.createElement('section');
     const popupParent = document.createElement('section');

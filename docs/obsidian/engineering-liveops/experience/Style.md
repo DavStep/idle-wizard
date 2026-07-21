@@ -130,7 +130,7 @@ experience_type: style
 - Coin displays amount-first as `<compact amount> coin` everywhere, including top chrome; use `25 coin` and `123k coin`, never `25g` or `coin 25`.
 - Task level-up is manual after every task in the current level is done; the Workshop task list shows a bottom `complete` action that spends the configured level completion coin.
 - Mana current/cap displays use tight fractions like `8/100`; spaces around `/` waste too much row width.
-- Top panel uses the compact player-card composition: large owned avatar left, username and currencies top, mana below, then the star level badge beside a 3–6 segment request rail and remaining-quest copy. The badge replaces duplicate level text, and XP is not player-facing.
+- Top panel uses the compact player-card composition: large owned avatar left, username and currencies top, mana below, then the star level badge beside the request rail and remaining-quest copy. During FTUE, keep the entire request row hidden until Elara reveals requests. The badge replaces duplicate level text, and XP is not player-facing.
 - Main-request completion snaps Elara's request box, then flies stars in screen coordinates from its right edge into the level badge before advancing the rail. On rollover, complete the old rail before the badge jumps, changes level, and resets. Cap active particles, use Web Animations instead of dynamic keyframes, skip motion when reduced motion is requested, and reset the diff baseline on persistence load.
 - Hidden top-panel context currency needs an explicit `[hidden]` display rule because resource flex CSS can otherwise override the browser default.
 - Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.

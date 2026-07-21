@@ -318,6 +318,19 @@ describe('TopPanelViewManager', () => {
 
   });
 
+  it('keeps quest progress hidden until first-run requests are revealed', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const hiddenRule = baseCss.match(
+      /\.game-stage\[data-tutorial-reveal\]\s+\.room-top-panel__quest-progress\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const revealedRule = baseCss.match(
+      /\.game-stage\[data-tutorial-reveal~="tasks"\]\s+\.room-top-panel__quest-progress:not\(\[hidden\]\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(hiddenRule).toMatch(/\bdisplay:\s*none;/);
+    expect(revealedRule).toMatch(/\bdisplay:\s*grid;/);
+  });
+
   it('keeps amount-icon labels tight when resource words are hidden', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;

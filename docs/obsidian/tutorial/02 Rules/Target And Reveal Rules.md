@@ -21,7 +21,7 @@ Important target families:
 - `workshop:summonSeed`
 - `workshop:tasks`, `workshop:tasksPin`
 - `page:market`, `page:research`, `page:garden`, `page:brewing`
-- `shop:stand:<number>`, `shop:sell:<itemKey>`, `shop:sell:tab:<kind>`
+- `shop:stand:<number>`, `shop:sell:<itemKey>`, `shop:sell:mark`, `shop:sell:tab:<kind>`
 - `research:unlockSeed:mintSeed`
 - `research:unlockRecipe:manaTonic`
 - Garden plot and seed label targets such as `garden:plot:1` and

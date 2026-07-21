@@ -85,7 +85,16 @@ describe('ShopShelfSlotSelectionManager', () => {
     expect(slot).toMatchObject({ sellItemTypeId: 1, loadedQuantity: 5 });
   });
 
-  it('caps a single transfer request and the total persisted stand capacity', () => {
+  it('loads a full large inventory in one request up to the persisted stand capacity', () => {
+    const bulk = createHarness({ inventoryQuantity: 25_000 });
+
+    expect(bulk.manager.loadSelectedSlot(1, 25_000)).toMatchObject({
+      ok: true,
+      quantity: 25_000,
+      loadedQuantity: 25_000,
+    });
+    expect(bulk.getInventory()).toBe(0);
+
     const nearFull = createHarness({ inventoryQuantity: 20_000, loadedQuantity: 999_995 });
 
     expect(nearFull.manager.loadSelectedSlot(1, 50_000)).toMatchObject({

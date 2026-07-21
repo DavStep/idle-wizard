@@ -474,13 +474,19 @@ export const TUTORIAL_STEPS = [
     kind: 'objective',
     pageId: 'shop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'choose sage seed to sell',
+    objectiveText: 'load sage seed into the stall',
     getTargetId: ({ dom }) =>
       dom.isShopSellPopupOpen?.()
-        ? `shop:sell:${SAGE_SEED_KEY}`
+        ? dom.hasShopSellSelection?.()
+          ? 'shop:sell:mark'
+          : `shop:sell:${SAGE_SEED_KEY}`
         : 'shop:stand:1',
     getHintText: ({ dom }) =>
-      dom.isShopSellPopupOpen?.() ? 'hold sage seed to load it' : 'open the first stall',
+      dom.isShopSellPopupOpen?.()
+        ? dom.hasShopSellSelection?.()
+          ? 'mark selected seeds'
+          : 'add sage seeds'
+        : 'open the first stall',
     getProgress: ({ snapshot }) => ({
       value:
         isNpcMarketSelling(snapshot, SAGE_SEED_KEY)
@@ -2046,7 +2052,9 @@ function getLevelTwoSaleObjectiveText({ currentPageId, dom, snapshot }) {
   }
 
   if (state.kind === 'choose-item') {
-    return 'choose sage seed to sell';
+    return dom.hasShopSellSelection?.()
+      ? 'mark selected seeds'
+      : 'choose sage seed to sell';
   }
 
   if (state.kind === 'select-kind') return `open ${getSellKindLabel(state.itemKind)} tab`;
@@ -2073,7 +2081,9 @@ function getLevelTwoSaleTargetId({ currentPageId, dom, snapshot }) {
   }
 
   if (state.kind === 'choose-item') {
-    return `shop:sell:${state.itemKey}`;
+    return dom.hasShopSellSelection?.()
+      ? 'shop:sell:mark'
+      : `shop:sell:${state.itemKey}`;
   }
 
   if (state.kind === 'select-kind') {
@@ -2104,7 +2114,7 @@ function getLevelTwoSaleHintText({ currentPageId, dom, snapshot }) {
   }
 
   if (state.kind === 'choose-item') {
-    return 'choose sage seed';
+    return dom.hasShopSellSelection?.() ? 'mark selected seeds' : 'choose sage seed';
   }
 
   if (state.kind === 'select-kind') {
@@ -2274,7 +2284,9 @@ function getLevelUpCoinObjectiveText({
   }
 
   if (state.kind === 'choose-item') {
-    return 'choose something to sell';
+    return dom.hasShopSellSelection?.()
+      ? 'mark selected items'
+      : 'choose something to sell';
   }
 
   if (state.kind === 'select-kind') return `open ${getSellKindLabel(state.itemKind)} tab`;
@@ -2307,7 +2319,9 @@ function getLevelUpCoinTargetId({
   }
 
   if (state.kind === 'choose-item') {
-    return `shop:sell:${state.itemKey}`;
+    return dom.hasShopSellSelection?.()
+      ? 'shop:sell:mark'
+      : `shop:sell:${state.itemKey}`;
   }
 
   if (state.kind === 'select-kind') {
@@ -2344,7 +2358,9 @@ function getLevelUpCoinHintText({
   }
 
   if (state.kind === 'choose-item') {
-    return 'choose something to sell';
+    return dom.hasShopSellSelection?.()
+      ? 'mark selected items'
+      : 'choose something to sell';
   }
 
   if (state.kind === 'select-kind') {

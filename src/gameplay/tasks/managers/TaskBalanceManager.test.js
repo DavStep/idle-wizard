@@ -158,7 +158,7 @@ describe('TaskBalanceManager', () => {
       'level1-summon-sage-seed',
       'level1-turn-in-sage-seed',
     ]);
-    expect(taskBalanceManager.getLevelCompletionCostCoin(0)).toBe(10);
+    expect(taskBalanceManager.getLevelCompletionCostCoin(0)).toBe(0);
 
     expect([1, 2, 3, 4, 5].map((level) =>
       taskBalanceManager.getLevelTasks(level).map((task) => ({

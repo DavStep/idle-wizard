@@ -47,7 +47,27 @@ describe('TaskQuestProgressManager', () => {
     expect(snapshot.progress).toBeCloseTo((4 / 5) / 3);
   });
 
-  it('turns the coin payment into the final request', () => {
+  it('does not add a final request for a free level completion', () => {
+    const manager = new TaskQuestProgressManager();
+    const snapshot = manager.getSnapshot({
+      currentLevel: 0,
+      maxLevel: 10,
+      tasks: [
+        { taskId: 'one', completed: true },
+        { taskId: 'two', completed: true },
+      ],
+      completion: { canComplete: true, costCoin: 0 },
+    });
+
+    expect(snapshot).toMatchObject({
+      progress: 1,
+      completedQuests: 2,
+      totalQuests: 2,
+      activeQuest: null,
+    });
+  });
+
+  it('turns a paid level completion into the final request', () => {
     const manager = new TaskQuestProgressManager();
     const snapshot = manager.getSnapshot({
       currentLevel: 2,

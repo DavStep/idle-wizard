@@ -156,7 +156,7 @@ function createGameplayFacadeFake() {
         questProgress: {
           progress: 0,
           completedQuests: 0,
-          totalQuests: 2,
+          totalQuests: 1,
           targetLevel: 2,
           activeQuest: {
             kind: 'task',
@@ -2850,6 +2850,12 @@ function clickNpcMarketStandLabel(stage, index = 0) {
   return label;
 }
 
+function markShopSellSelection(stage) {
+  const button = stage.querySelector('.shop-page__sell-mark-button');
+  expect(button).not.toBeNull();
+  button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+}
+
 function createPlayerFacadeFake(
   initialUsername = 'wizard',
   initialTheme = 'midnight',
@@ -4775,10 +4781,10 @@ describe('PagesFacade', () => {
     ).toBe('0%');
     expect(stage.querySelector('.workshop-page__tasks-level')).toBeNull();
     expect(stage.querySelector('.workshop-page__tasks-count')).toBeNull();
-    expect(questText?.textContent).toBe('Complete 2 more quests to level up');
+    expect(questText?.textContent).toBe('Complete 1 more quest to level up');
     expect(questRail?.getAttribute('aria-valuenow')).toBe('0');
-    expect(questRail?.getAttribute('aria-valuemax')).toBe('2');
-    expect(questSegments).toHaveLength(2);
+    expect(questRail?.getAttribute('aria-valuemax')).toBe('1');
+    expect(questSegments).toHaveLength(1);
     expect(stage.querySelector('.workshop-page__quest-reward')).toBeNull();
     expect(tasks?.dataset.questMode).toBe('sequential');
     expect(tasks?.dataset.tutorialId).toBe('workshop:tasks');
@@ -4933,16 +4939,16 @@ describe('PagesFacade', () => {
     }
   });
 
-  it('shows the coin payment as the final request', () => {
+  it('shows a paid level completion as the final request', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
-    snapshot.coin.current = 0;
+    snapshot.coin.current = 4;
     snapshot.tasks.level.completedTasks = 1;
     snapshot.tasks.level.totalTasks = 1;
     snapshot.tasks.level.completion = {
       level: 1,
-      costCoin: 0,
+      costCoin: 4,
       allTasksCompleted: true,
       atMaxLevel: false,
       completedAllLevels: false,
@@ -4957,7 +4963,7 @@ describe('PagesFacade', () => {
         kind: 'levelUp',
         taskId: 'level-1-level-up',
         targetLevel: 2,
-        costCoin: 0,
+        costCoin: 4,
       },
     };
     snapshot.tasks.level.tasks = snapshot.tasks.level.tasks.map((task) => ({
@@ -4996,7 +5002,7 @@ describe('PagesFacade', () => {
     expect(questSegments[0]?.classList.contains('is-complete')).toBe(true);
     expect(stage.querySelector('.workshop-page__quest-reward')).toBeNull();
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
-    expect(button?.textContent).toBe('reach level 2free');
+    expect(button?.textContent).toBe('reach level 24 coin');
     expect(button?.disabled).toBe(false);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -12019,6 +12025,10 @@ describe('PagesFacade', () => {
     );
     seedButton.dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
     seedButton.dispatchEvent(createPointerEvent('pointerup', { clientX: 1, clientY: 1 }));
+    expect(stage.querySelector('.shop-page__sell-current')?.textContent).toContain(
+      'currentsage seedx1',
+    );
+    markShopSellSelection(stage);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
       '1.sage seed (1)',
@@ -12059,6 +12069,7 @@ describe('PagesFacade', () => {
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.dataset.shopSellItemKey === 'manaTonic')
       .dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
+    markShopSellSelection(stage);
 
     const itemValue = stage.querySelector('.shop-page__slot-item-value');
     const priceValue = stage.querySelector('.shop-page__slot-price-value');
@@ -12101,6 +12112,7 @@ describe('PagesFacade', () => {
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.dataset.shopSellItemKey === 'sageSeed')
       .dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
+    markShopSellSelection(stage);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
       '1.sage seed (1)',
@@ -12132,6 +12144,7 @@ describe('PagesFacade', () => {
       (button) => button.dataset.shopSellItemKey === 'sageSeed',
     );
     seedButton.dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
+    markShopSellSelection(stage);
 
     gameplayFacade.setShopSellCoin('seed', 7);
 
@@ -12206,6 +12219,7 @@ describe('PagesFacade', () => {
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.dataset.shopSellItemKey === 'sageSeed')
       .dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
+    markShopSellSelection(stage);
 
     gameplayFacade.setShopSellItems([]);
 

@@ -48,6 +48,7 @@ experience_type: product-shape
 - While-away reports should list produced items and market outcomes only; skip status-only rows like mana full, plots ready, research complete, and paused automation.
 - Cauldron brew/bottle success state belongs in the active brew text and progress rail; reserve cauldron messages for blocked/error feedback so stale success text does not fight the timer state.
 - Reward flyouts on Android WebView should avoid per-event dynamic `@keyframes`; use transform/opacity Web Animations API paths and cap active particles.
+- Recurring trader-stall sales should use the lightweight coin amount/pulse feedback; item tosses plus flying coin particles every cycle cause short Android WebView frame drops.
 - Potion collection reward drops should start from the visible cauldron liquid, not the potion preview/icon or whole cauldron box.
 - Cauldron potion preview labels need a fixed-width summary that can overflow the 86px potion box; `max-width: 100%` clamps labels and truncates names under world zoom.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
@@ -168,12 +169,12 @@ experience_type: product-shape
 - NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or stall/stock totals drift.
 - NPC market demand/prices are fake local gameplay values until player level 4; do not debug level 1-3 timed stalls against backend NPC rows.
 - NPC trader stands each own an independent five-second progress clock. Render batch, remaining seconds, and current value on each loaded row.
-- Loaded trader items are physically removed from inventory and returned on unload; do not reintroduce parallel reservation or fixed/all mark state.
+- Loaded trader items are physically removed from inventory and returned on unload. Loader `mark xN` / `mark all` controls are local drafts that transfer once; do not persist a parallel reservation or sell-limit mode.
 - Level 4+ NPC auto-sell needs retained backend price rows while any stand has an item; if prices are missing at a timer boundary, keep that cycle pending instead of resetting it away.
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or bold text there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker visible labels need stable hit targets and click/backdrop dedupe; icon/text fragments inside those labels should not own separate hit testing.
-- Trader loader rows transfer once on pointerdown, repeat after the hold delay, cancel after a 10px move, and persist once on release; selection must not change row font weight.
+- Trader loader rows update a local draft on pointerdown/hold, cancel after a 10px move, and publish gameplay only when `mark xN` or `mark all` is pressed; selection changes row background, never resource text color or font weight.
 - Scrollable choice/item rows should activate on validated touch release with a small movement tolerance; keep press-start only for non-scroll openers where mobile click retargets.
 - Garden selected seed labels need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening seed choices.
 - Garden cancel/swap dialogs opened from touch-selected seed picker rows need their own one-shot backdrop dedupe; otherwise WebView can close the new dialog with the same synthetic click.
@@ -213,7 +214,7 @@ experience_type: product-shape
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - Trader loader rows are one action; make the whole visual row the button and put FTUE ids on that button (`shop:sell:<itemKey>`).
-- FTUE Market teaching is `open first stall -> hold sage seed to load -> wait for timed sale`; there is no amount or confirm step.
+- FTUE Market teaching is `open first stall -> add sage seed -> mark selected seed -> wait for timed sale`; target `shop:sell:mark` once the local draft exists.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE lesson border-action buttons need late `.style-box .tutorial-layer__...` overrides, because the global `.style-box :where(button, ...)` rule can re-inflate them to body size.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
@@ -254,7 +255,7 @@ experience_type: product-shape
 - FTUE hidden action buttons need reveal-gate `pointer-events: none` with enough specificity to beat action-bar base button rules.
 - Once FTUE reveals the top panel, keep it visible; players have already unlocked that chrome.
 - FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
-- FTUE should not own special market economy. Keep level 1 free, then teach level-up coin through normal timed stalls at level 2.
+- FTUE should not own special market economy. Keep level 1 free with no coin-request segment, then teach level-up coin through normal timed stalls at level 2.
 - FTUE level-2 Market guidance must follow the live task order: summon enough sage seeds, sell one, turn in the remainder, then handle any remaining level-up coin. Do not wait until `completion.canComplete` before showing the summon/sell guidance.
 - FTUE terminal hides must clear inner lesson/button/pointer state; hiding only the layer lets later click-driven hides re-show stale tutorial UI for one frame.
 - FTUE uses one left Elara lesson button and one lesson panel; do not add separate dialog, hint, prompt, or objective boxes.

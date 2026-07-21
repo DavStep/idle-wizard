@@ -9,7 +9,7 @@ export class TaskQuestProgressManager {
     const atMaxLevel = completedAllLevels || currentLevel >= maxLevel;
     const activeTask = tasks.find((task) => !task.completed) ?? null;
     const taskQuestCount = tasks.length;
-    const hasLevelUpQuest = !atMaxLevel;
+    const hasLevelUpQuest = !atMaxLevel && Number(completion?.costCoin) > 0;
     const totalQuests = taskQuestCount + (hasLevelUpQuest ? 1 : 0);
     const completedQuests = tasks.filter((task) => task.completed).length;
     const targetLevel = atMaxLevel ? currentLevel : currentLevel + 1;
@@ -19,6 +19,7 @@ export class TaskQuestProgressManager {
       currentLevel,
       targetLevel,
       atMaxLevel,
+      hasLevelUpQuest,
     });
     const activeQuestProgress = activeQuest?.kind === 'task'
       ? Math.max(0, Math.min(1, Number(activeQuest.progress) || 0))
@@ -35,7 +36,14 @@ export class TaskQuestProgressManager {
     };
   }
 
-  getActiveQuest({ activeTask, completion, currentLevel, targetLevel, atMaxLevel }) {
+  getActiveQuest({
+    activeTask,
+    completion,
+    currentLevel,
+    targetLevel,
+    atMaxLevel,
+    hasLevelUpQuest,
+  }) {
     if (activeTask) {
       return {
         kind: 'task',
@@ -44,7 +52,7 @@ export class TaskQuestProgressManager {
       };
     }
 
-    if (!atMaxLevel && completion?.canComplete) {
+    if (!atMaxLevel && hasLevelUpQuest && completion?.canComplete) {
       return {
         kind: 'levelUp',
         taskId: `level-${currentLevel}-level-up`,

@@ -13,6 +13,11 @@ import {
 import { spawn, spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  canReuseMonitorPid,
+  probeMonitorProcess,
+  probePidAlive,
+} from './local-runtime-process.js';
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const scriptPath = fileURLToPath(import.meta.url);
@@ -358,28 +363,14 @@ function getAliveMonitorPid() {
     return null;
   }
 
-  if (!isPidAlive(pid) || !isMonitorProcess(pid)) {
+  const pidAlive = probePidAlive(pid);
+  const monitorProcess = pidAlive === false ? false : probeMonitorProcess(pid, scriptPath);
+  if (!canReuseMonitorPid(pidAlive, monitorProcess)) {
     rmSync(monitorPidPath, { force: true });
     return null;
   }
 
   return pid;
-}
-
-function isPidAlive(pid) {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function isMonitorProcess(pid) {
-  const result = spawnSync('ps', ['-p', String(pid), '-o', 'command='], {
-    encoding: 'utf8',
-  });
-  return result.status === 0 && result.stdout.includes(scriptPath) && result.stdout.includes('monitor');
 }
 
 function readState() {

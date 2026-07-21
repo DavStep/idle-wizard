@@ -223,7 +223,7 @@ describe('GameplayFacade', () => {
       perSecond: 1,
     });
     expect(gameplayFacade.getSnapshot().coin).toMatchObject({
-      current: 10,
+      current: 0,
       totalGenerated: 0,
     });
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(0);

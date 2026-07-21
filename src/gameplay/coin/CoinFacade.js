@@ -5,7 +5,7 @@ export class CoinFacade {
   static explain =
     'Coin is market money: selling adds it, and market stands spend it.';
 
-  constructor({ initialCurrent = 10 } = {}) {
+  constructor({ initialCurrent = 0 } = {}) {
     this.coinEntityManager = new CoinEntityManager({ initialCurrent });
     this.coinSpendManager = new CoinSpendManager({
       coinEntityManager: this.coinEntityManager,
