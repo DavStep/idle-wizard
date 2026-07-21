@@ -244,36 +244,6 @@ export class TutorialFacade {
     };
   }
 
-  handleDirectSellOverride({ item, quantity } = {}) {
-    const snapshot = this.gameplayFacade?.getSnapshot?.();
-    const dom = this.targetManager.getDomState();
-    const result = this.saleManager.handleDirectSellOverride({
-      step: this.activeStep,
-      snapshot,
-      dom,
-      gameplayFacade: this.gameplayFacade,
-      item,
-      itemKey: item?.key,
-      quantity,
-    });
-
-    if (result?.handled) {
-      this.scheduleRefresh();
-    }
-
-    return result;
-  }
-
-  getDirectSellQuoteOverride({ item, quantity } = {}) {
-    return this.saleManager.getDirectSellQuoteOverride({
-      step: this.activeStep,
-      snapshot: this.gameplayFacade?.getSnapshot?.(),
-      item,
-      itemKey: item?.key,
-      quantity,
-    });
-  }
-
   getNpcSellPriceOverride({ item } = {}) {
     return this.saleManager.getNpcSellPriceOverride({
       snapshot: this.gameplayFacade?.getSnapshot?.(),

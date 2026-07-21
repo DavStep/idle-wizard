@@ -7,11 +7,7 @@ const MINT_HERB_KEY = 'mintHerb';
 const MINT_SEED_RESEARCH_ID = 'unlockSeed:mintSeed';
 const MANA_TONIC_KEY = 'manaTonic';
 const MANA_TONIC_RESEARCH_ID = 'unlockRecipe:manaTonic';
-const DIRECT_SELL_POPUP_CLASS = 'shop-page__direct-sell-popup';
-const DIRECT_SELL_AMOUNT_TARGET_ID = 'shop:directSell:amount';
-const DIRECT_SELL_PLUS_ONE_TARGET_ID = 'shop:directSell:amount:+1';
-const DIRECT_SELL_CONFIRM_TARGET_ID = 'shop:directSell:sell';
-const SELECTED_SELL_AMOUNT_AUTO_ADVANCE_MS = 2000;
+const STALL_SELL_POPUP_CLASS = 'shop-page__sell-popup';
 const MANA_TONIC_SAGE_COUNT = 3;
 const MANA_TONIC_EXTRA_SAGE_TARGET_ID = `brewing:remove:${SAGE_HERB_KEY}`;
 const MANA_READOUT_TARGET_ID = 'top:mana';
@@ -55,7 +51,6 @@ const LEVEL_TWO_STEP_IDS = [
   'open-market',
   'select-market-stand',
   'select-sage-seed-sale',
-  'show-selected-sale-amount',
   'earn-tutorial-coin',
   'first-sale-complete',
   'unselect-sage-seed-sale',
@@ -437,7 +432,7 @@ export const TUTORIAL_STEPS = [
     targetId: 'page:shop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'sell sage seeds in market',
-    text: 'sell to trader',
+    text: 'load a market stall',
     getProgress: () => ({ value: 0, max: 1 }),
     getProgressLabel: () => '0/1 market',
     isAvailable: ({ snapshot }) =>
@@ -454,16 +449,16 @@ export const TUTORIAL_STEPS = [
     id: 'select-market-stand',
     kind: 'objective',
     pageId: 'shop',
-    targetId: 'shop:directSell',
+    targetId: 'shop:stand:1',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     getObjectiveText: ({ currentPageId }) =>
-      currentPageId === 'shop' ? 'open trader offer' : 'open market',
-    text: 'sell to trader',
+      currentPageId === 'shop' ? 'open the first stall' : 'open market',
+    text: 'open a stall',
     getProgress: ({ dom }) => ({
-      value: dom.isShopDirectSellPopupOpen?.() ? 1 : 0,
+      value: dom.isShopSellPopupOpen?.() ? 1 : 0,
       max: 1,
     }),
-    getProgressLabel: ({ dom }) => `${dom.isShopDirectSellPopupOpen?.() ? 1 : 0}/1 open`,
+    getProgressLabel: ({ dom }) => `${dom.isShopSellPopupOpen?.() ? 1 : 0}/1 open`,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       !hasLevelTwoSageSellTaskComplete(snapshot) &&
@@ -471,7 +466,7 @@ export const TUTORIAL_STEPS = [
     isComplete: ({ dom, snapshot }) =>
       getCurrentLevel(snapshot) >= 2 ||
       hasLevelTwoSageSellTaskComplete(snapshot) ||
-      dom.isShopDirectSellPopupOpen?.() ||
+      dom.isShopSellPopupOpen?.() ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
   },
   {
@@ -481,22 +476,20 @@ export const TUTORIAL_STEPS = [
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'choose sage seed to sell',
     getTargetId: ({ dom }) =>
-      dom.isShopDirectSellPopupOpen?.()
-        ? `shop:directSell:${SAGE_SEED_KEY}`
-        : 'shop:directSell',
+      dom.isShopSellPopupOpen?.()
+        ? `shop:sell:${SAGE_SEED_KEY}`
+        : 'shop:stand:1',
     getHintText: ({ dom }) =>
-      dom.isShopDirectSellPopupOpen?.() ? 'choose sage seed' : 'sell to trader',
-    getProgress: ({ dom, snapshot }) => ({
+      dom.isShopSellPopupOpen?.() ? 'hold sage seed to load it' : 'open the first stall',
+    getProgress: ({ snapshot }) => ({
       value:
-        isDirectSellSelected(dom, SAGE_SEED_KEY) ||
         isNpcMarketSelling(snapshot, SAGE_SEED_KEY)
           ? 1
           : 0,
       max: 1,
     }),
-    getProgressLabel: ({ dom, snapshot }) =>
+    getProgressLabel: ({ snapshot }) =>
       `${
-        isDirectSellSelected(dom, SAGE_SEED_KEY) ||
         isNpcMarketSelling(snapshot, SAGE_SEED_KEY)
           ? 1
           : 0
@@ -505,32 +498,10 @@ export const TUTORIAL_STEPS = [
       getCurrentLevel(snapshot) === 1 &&
       !hasLevelTwoSageSellTaskComplete(snapshot) &&
       hasLevelTwoSageSeedReadyToSell(snapshot),
-    isComplete: ({ dom, snapshot }) =>
+    isComplete: ({ snapshot }) =>
       getCurrentLevel(snapshot) >= 2 ||
       hasLevelTwoSageSellTaskComplete(snapshot) ||
-      isDirectSellSelected(dom, SAGE_SEED_KEY) ||
       isNpcMarketSelling(snapshot, SAGE_SEED_KEY),
-  },
-  {
-    id: 'show-selected-sale-amount',
-    kind: 'objective',
-    pageId: 'shop',
-    targetId: DIRECT_SELL_AMOUNT_TARGET_ID,
-    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'this number is the amount selected to sell.',
-    allowedPopupClasses: [DIRECT_SELL_POPUP_CLASS],
-    cueMode: 'focus-target',
-    showPointer: false,
-    emphasizeTarget: true,
-    autoAdvanceMs: SELECTED_SELL_AMOUNT_AUTO_ADVANCE_MS,
-    isAvailable: ({ dom, snapshot }) =>
-      getCurrentLevel(snapshot) === 1 &&
-      !hasLevelTwoSageSellTaskComplete(snapshot) &&
-      getAvailableSellItemQuantity(snapshot, SAGE_SEED_KEY) > 0 &&
-      dom.isShopDirectSellPopupOpen?.() &&
-      isDirectSellSelected(dom, SAGE_SEED_KEY),
-    isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 2 || hasLevelTwoSageSellTaskComplete(snapshot),
   },
   {
     id: 'earn-tutorial-coin',
@@ -1753,7 +1724,6 @@ export class TutorialStepManager {
         'open-market',
         'select-market-stand',
         'select-sage-seed-sale',
-        'show-selected-sale-amount',
       ]);
     }
 
@@ -2079,15 +2049,9 @@ function getLevelTwoSaleObjectiveText({ currentPageId, dom, snapshot }) {
     return 'choose sage seed to sell';
   }
 
-  if (state.kind === 'select-kind') {
-    return `open ${getDirectSellKindLabel(state.itemKind)} tab`;
-  }
-
-  if (state.kind === 'set-amount') {
-    return state.canIncreaseToMax
-      ? `select all ${state.maxQuantity} sage seeds to sell`
-      : 'press sell';
-  }
+  if (state.kind === 'select-kind') return `open ${getSellKindLabel(state.itemKind)} tab`;
+  if (state.kind === 'open-stall') return 'open a market stall';
+  if (state.kind === 'wait-for-sale') return 'wait for the stall to sell';
 
   return 'sell one sage seed in market';
 }
@@ -2104,22 +2068,16 @@ function getLevelTwoSaleTargetId({ currentPageId, dom, snapshot }) {
     return 'page:shop';
   }
 
-  if (state.kind === 'open-fast-sell') {
-    return 'shop:directSell';
+  if (state.kind === 'open-stall') {
+    return `shop:stand:${state.slotNumber}`;
   }
 
   if (state.kind === 'choose-item') {
-    return `shop:directSell:${state.itemKey}`;
+    return `shop:sell:${state.itemKey}`;
   }
 
   if (state.kind === 'select-kind') {
-    return `shop:directSell:tab:${state.itemKind}`;
-  }
-
-  if (state.kind === 'set-amount') {
-    return state.canIncreaseToMax
-      ? DIRECT_SELL_PLUS_ONE_TARGET_ID
-      : DIRECT_SELL_CONFIRM_TARGET_ID;
+    return `shop:sell:tab:${state.itemKind}`;
   }
 
   if (state.kind !== 'obtain-item') {
@@ -2141,8 +2099,8 @@ function getLevelTwoSaleHintText({ currentPageId, dom, snapshot }) {
     return 'open market';
   }
 
-  if (state.kind === 'open-fast-sell') {
-    return 'sell to trader';
+  if (state.kind === 'open-stall') {
+    return 'open a stall';
   }
 
   if (state.kind === 'choose-item') {
@@ -2150,11 +2108,7 @@ function getLevelTwoSaleHintText({ currentPageId, dom, snapshot }) {
   }
 
   if (state.kind === 'select-kind') {
-    return getDirectSellKindLabel(state.itemKind);
-  }
-
-  if (state.kind === 'set-amount') {
-    return state.canIncreaseToMax ? '+1' : 'press sell';
+    return getSellKindLabel(state.itemKind);
   }
 
   if (state.kind !== 'obtain-item') {
@@ -2172,11 +2126,9 @@ function getLevelTwoSaleAllowedPopupClasses({ currentPageId, dom, snapshot }) {
     sellItemKeys: LEVEL_TWO_SELL_ITEM_KEYS,
   });
 
-  if (state.kind === 'set-amount') {
-    return [DIRECT_SELL_POPUP_CLASS];
-  }
-
-  return [];
+  return state.kind === 'choose-item' || state.kind === 'select-kind'
+    ? [STALL_SELL_POPUP_CLASS]
+    : [];
 }
 
 function getLevelTwoSaleProgress(snapshot) {
@@ -2325,15 +2277,9 @@ function getLevelUpCoinObjectiveText({
     return 'choose something to sell';
   }
 
-  if (state.kind === 'select-kind') {
-    return `open ${getDirectSellKindLabel(state.itemKind)} tab`;
-  }
-
-  if (state.kind === 'set-amount') {
-    return state.canIncrease
-      ? 'amount starts at 1. press sell, or +1 if you have more to sell.'
-      : 'press sell';
-  }
+  if (state.kind === 'select-kind') return `open ${getSellKindLabel(state.itemKind)} tab`;
+  if (state.kind === 'open-stall') return 'open a market stall';
+  if (state.kind === 'wait-for-sale') return 'wait for the loaded stall';
 
   return 'earn level-up coin in market';
 }
@@ -2356,20 +2302,16 @@ function getLevelUpCoinTargetId({
     return 'page:shop';
   }
 
-  if (state.kind === 'open-fast-sell') {
-    return 'shop:directSell';
+  if (state.kind === 'open-stall') {
+    return `shop:stand:${state.slotNumber}`;
   }
 
   if (state.kind === 'choose-item') {
-    return `shop:directSell:${state.itemKey}`;
+    return `shop:sell:${state.itemKey}`;
   }
 
   if (state.kind === 'select-kind') {
-    return `shop:directSell:tab:${state.itemKind}`;
-  }
-
-  if (state.kind === 'set-amount') {
-    return state.canIncrease ? DIRECT_SELL_PLUS_ONE_TARGET_ID : DIRECT_SELL_CONFIRM_TARGET_ID;
+    return `shop:sell:tab:${state.itemKind}`;
   }
 
   if (state.kind !== 'obtain-item') {
@@ -2397,8 +2339,8 @@ function getLevelUpCoinHintText({
     return 'open market';
   }
 
-  if (state.kind === 'open-fast-sell') {
-    return 'sell to trader';
+  if (state.kind === 'open-stall') {
+    return 'open a stall';
   }
 
   if (state.kind === 'choose-item') {
@@ -2406,11 +2348,7 @@ function getLevelUpCoinHintText({
   }
 
   if (state.kind === 'select-kind') {
-    return getDirectSellKindLabel(state.itemKind);
-  }
-
-  if (state.kind === 'set-amount') {
-    return state.canIncrease ? '+1' : 'press sell';
+    return getSellKindLabel(state.itemKind);
   }
 
   if (state.kind !== 'obtain-item') {
@@ -2433,11 +2371,9 @@ function getLevelUpCoinAllowedPopupClasses({
     sellItemKeys,
   });
 
-  if (state.kind === 'set-amount') {
-    return [DIRECT_SELL_POPUP_CLASS];
-  }
-
-  return [];
+  return state.kind === 'choose-item' || state.kind === 'select-kind'
+    ? [STALL_SELL_POPUP_CLASS]
+    : [];
 }
 
 function getLevelUpCoinMarketState({
@@ -2446,6 +2382,16 @@ function getLevelUpCoinMarketState({
   snapshot,
   sellItemKeys,
 }) {
+  const loadedSlot = (snapshot?.shop?.shelf?.slots ?? []).find(
+    (slot) =>
+      slot?.unlocked &&
+      slot.loadedQuantity > 0 &&
+      sellItemKeys.includes(slot.sellKey),
+  );
+  if (loadedSlot) {
+    return { kind: 'wait-for-sale', slotNumber: loadedSlot.slotNumber };
+  }
+
   if (!hasAnyAvailableSellItemQuantity(snapshot, sellItemKeys)) {
     return { kind: 'obtain-item' };
   }
@@ -2454,27 +2400,11 @@ function getLevelUpCoinMarketState({
     return { kind: 'open-market' };
   }
 
-  if (!dom?.isShopDirectSellPopupOpen?.()) {
-    return { kind: 'open-fast-sell' };
-  }
-
-  const selectedItemKey = getSelectedDirectSellItemKey(dom, sellItemKeys);
-
-  if (selectedItemKey && getAvailableSellItemQuantity(snapshot, selectedItemKey) > 0) {
-    const selectedQuantity = getSelectedDirectSellQuantity(dom);
-    const maxQuantity = getSelectedDirectSellMaxQuantity(snapshot, selectedItemKey);
-    return {
-      kind: 'set-amount',
-      maxQuantity,
-      canIncreaseToMax: maxQuantity > selectedQuantity,
-      canIncrease:
-        maxQuantity > selectedQuantity &&
-        !doesSelectedSellQuantityCoverCoinShortfall({
-          snapshot,
-          itemKey: selectedItemKey,
-          quantity: selectedQuantity,
-        }),
-    };
+  if (!dom?.isShopSellPopupOpen?.()) {
+    const openSlot = (snapshot?.shop?.shelf?.slots ?? []).find(
+      (slot) => slot?.unlocked && !slot.sellItemTypeId,
+    );
+    return { kind: 'open-stall', slotNumber: openSlot?.slotNumber ?? 1 };
   }
 
   const item = getFirstAvailableSellItem(snapshot, sellItemKeys);
@@ -2483,7 +2413,7 @@ function getLevelUpCoinMarketState({
     return { kind: 'obtain-item' };
   }
 
-  if (item.kind && !dom?.isShopDirectSellTabSelected?.(item.kind)) {
+  if (item.kind && !dom?.isShopSellTabSelected?.(item.kind)) {
     return { kind: 'select-kind', itemKind: item.kind };
   }
 
@@ -2525,60 +2455,7 @@ function getPositiveQuantity(item) {
   return Math.max(0, Math.floor(Number(item?.quantity) || 0));
 }
 
-function getSelectedDirectSellMaxQuantity(snapshot, itemKey) {
-  const sellItems = snapshot?.shop?.shelf?.sellItems;
-
-  if (!Array.isArray(sellItems)) {
-    return getAvailableSellItemQuantity(snapshot, itemKey);
-  }
-
-  return sellItems
-    .filter((item) => item?.key === itemKey)
-    .reduce((total, item) => total + getPositiveSellQuantity(item), 0);
-}
-
-function getSelectedDirectSellQuantity(dom) {
-  const quantity = Math.floor(Number(dom?.getShopDirectSellQuantity?.()));
-
-  return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
-}
-
-function doesSelectedSellQuantityCoverCoinShortfall({ snapshot, itemKey, quantity }) {
-  const unitCoin = getDirectSellUnitCoin(snapshot, itemKey);
-
-  if (!Number.isFinite(unitCoin) || unitCoin <= 0) {
-    return quantity > 1;
-  }
-
-  return unitCoin * quantity >= getLevelCompletionCostCoin(snapshot) - getCoin(snapshot);
-}
-
-function getDirectSellUnitCoin(snapshot, itemKey) {
-  const item = snapshot?.shop?.shelf?.sellItems?.find(
-    (sellItem) => sellItem?.key === itemKey,
-  );
-  const fastSellCoin = Number(item?.fastSellCoin);
-
-  if (Number.isFinite(fastSellCoin) && fastSellCoin > 0) {
-    return fastSellCoin;
-  }
-
-  const sellCoin = Number(item?.sellCoin);
-  return Number.isFinite(sellCoin) && sellCoin > 0 ? sellCoin : null;
-}
-
-function getPositiveSellQuantity(item) {
-  const quantity = getPositiveQuantity(item);
-  const sellNeed = Number(item?.sellNeed);
-
-  if (!Number.isFinite(sellNeed) || sellNeed < 0) {
-    return quantity;
-  }
-
-  return Math.min(quantity, Math.floor(sellNeed));
-}
-
-function getDirectSellKindLabel(kind) {
+function getSellKindLabel(kind) {
   if (kind === 'herb') {
     return 'herbs';
   }
@@ -2588,10 +2465,6 @@ function getDirectSellKindLabel(kind) {
   }
 
   return 'seeds';
-}
-
-function getSelectedDirectSellItemKey(dom, itemKeys) {
-  return itemKeys.find((itemKey) => dom?.isShopDirectSellItemSelected?.(itemKey)) ?? null;
 }
 
 function getGrowTile(snapshot, seedKey = null) {
@@ -3333,12 +3206,8 @@ function getOpenLevelRequirementsText(snapshot) {
 
 function isNpcMarketSelling(snapshot, itemKey) {
   return (snapshot?.shop?.shelf?.slots ?? []).some(
-    (slot) => slot?.unlocked && slot.sellKey === itemKey,
+    (slot) => slot?.unlocked && slot.sellKey === itemKey && slot.loadedQuantity > 0,
   );
-}
-
-function isDirectSellSelected(dom, itemKey) {
-  return Boolean(dom?.isShopDirectSellItemSelected?.(itemKey));
 }
 
 function isBrewingRecipeSelected(dom, recipeKey) {

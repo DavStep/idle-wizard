@@ -1888,7 +1888,7 @@ describe('TutorialHintManager', () => {
     }
   });
 
-  it('animates the open lesson away from the fast-sell tab strip target', () => {
+  it('animates the open lesson away from the stall-loader tab strip target', () => {
     const originalRequestAnimationFrame = window.requestAnimationFrame;
     const originalCancelAnimationFrame = window.cancelAnimationFrame;
     const hadRequestAnimationFrame = 'requestAnimationFrame' in window;
@@ -1928,9 +1928,9 @@ describe('TutorialHintManager', () => {
         bottom: 382,
       };
 
-      tabs.className = 'shop-page__direct-sell-tabs';
-      herbsTab.className = 'style-button shop-page__direct-sell-tab-button';
-      herbsTab.dataset.tutorialId = 'shop:directSell:tab:herb';
+      tabs.className = 'shop-page__sell-tabs';
+      herbsTab.className = 'style-button shop-page__sell-tab-button';
+      herbsTab.dataset.tutorialId = 'shop:sell:tab:herb';
       tabs.append(herbsTab);
       stage.append(tabs);
       stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
@@ -1959,7 +1959,7 @@ describe('TutorialHintManager', () => {
       manager.mount(stage);
       manager.guideDragManager.setPlacement({ buttonLeft: 4, buttonTop: 363 }, { save: false });
       manager.showLesson({
-        id: 'fast-sell-tab-base',
+        id: 'stall-loader-tab-base',
         title: 'lesson 4: gardening',
         text: 'open herbs tab',
         stepLabel: '21/31',
@@ -1973,7 +1973,7 @@ describe('TutorialHintManager', () => {
       expect(overlaps(baseLessonRect, tabStrip)).toBe(true);
 
       manager.showLesson({
-        id: 'fast-sell-tab-target',
+        id: 'stall-loader-tab-target',
         title: 'lesson 4: gardening',
         text: 'open herbs tab',
         stepLabel: '21/31',

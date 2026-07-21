@@ -19,7 +19,7 @@ Research is the catalog of studies shown in the Research room.
 | --- | --- | --- |
 | Regular content unlocks | coin | seed and recipe unlocks |
 | Automation | ruby | auto summon, plant, harvest, brew, bottle |
-| Advanced studies | emerald | capacity, speed, research efficiency, haggling |
+| Advanced studies | emerald | capacity, speed, research efficiency, stall staffing |
 | Plot and cauldron levels | crystal | x2–x5 input/output levels |
 
 ## Detailed paths
@@ -27,7 +27,7 @@ Research is the catalog of studies shown in the Research room.
 - [[mechanics/garden/Seed Unlock Research|Seed Unlock Research]]
 - [[mechanics/potions/Recipe Unlock Research|Recipe Unlock Research]]
 - [[mechanics/garden/Plot Research|Plot Research]]
-- [[mechanics/market/Fast Sell|Fast Sell Research]]
+- [[mechanics/market/Trader Stands|Stall Staffing Research]]
 - [[mechanics/garden/Garden Runtime Config|Garden and Research Runtime Status]]
 
 Timed research can run concurrently without a slot limit. Seed and recipe chains are ordered. Only permanent capacity studies survive Prestige; run-scoped research resets.

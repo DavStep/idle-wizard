@@ -23,8 +23,8 @@ verified_on: 2026-07-19
 
 The client silently keeps its fallback when that runtime object is invalid. Effective current values are therefore:
 
-- Stand costs: 0, 50, 150, 400, 1,000 coin.
-- Shared automatic sale cycle: 1,800 seconds.
+- Stand costs remain unused because market licence rank grants capacity.
+- Independent automatic stand cycle: 5 seconds.
 
 Market quotes, need, stock, listings, and proceeds are live backend data and must be queried when exact current state matters.
 
@@ -32,4 +32,3 @@ Market quotes, need, stock, listings, and proceeds are live backend data and mus
 
 - `src/gameplay/shop/managers/ShopBalanceManager.js`
 - `spacetimedb/src/index.ts`
-

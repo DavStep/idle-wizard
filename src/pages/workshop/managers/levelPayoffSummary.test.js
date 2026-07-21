@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatLevelUpNotice, getLevelPayoffRows } from './levelPayoffSummary.js';
+import { getLevelPayoffRows } from './levelPayoffSummary.js';
 
 const snapshot = {
   playerLevel: {
@@ -132,9 +132,6 @@ describe('levelPayoffSummary', () => {
         notice: '+1/sec mana regeneration',
       },
     ]);
-    expect(formatLevelUpNotice(1, rows)).toBe(
-      'level 1 reached: market unlocked, +2 garden plots, +1 cauldron, +50 mana capacity, +1/sec mana regeneration',
-    );
   });
 
   it('uses only real level-two unlocks and rewards', () => {
@@ -194,9 +191,6 @@ describe('levelPayoffSummary', () => {
         notice: '+1 crystal',
       },
     ]);
-    expect(formatLevelUpNotice(3, rows)).toBe(
-      'level 3 reached: leaderboard available, +50 mana capacity, +1/sec mana regeneration, +1 crystal',
-    );
   });
 
   it('moves discoveries and alliance to the level-four unlock list without an initial cauldron row', () => {
@@ -232,9 +226,6 @@ describe('levelPayoffSummary', () => {
         notice: '+1 crystal',
       },
     ]);
-    expect(formatLevelUpNotice(4, rows)).toBe(
-      'level 4 reached: brewing unlocked, discoveries available, alliance available, inbox available, +50 mana capacity, +1/sec mana regeneration, +1 crystal',
-    );
   });
 
   it('shows garden and cauldron capacity after those feature unlock levels', () => {

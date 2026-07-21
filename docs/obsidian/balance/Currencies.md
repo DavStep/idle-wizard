@@ -37,7 +37,7 @@ derived from completed Prestige milestones minus committed Ruby research.
 ## Emerald
 
 Emerald persists through Prestige resets and pays for advanced studies such as
-capacity, growth speed, research efficiency, Fast Sell, and automation reserve.
+capacity, growth speed, research efficiency, stall staffing, and automation reserve.
 Only explicitly permanent studies, such as capacity, survive as completed
 research across Prestige.
 

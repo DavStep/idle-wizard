@@ -297,6 +297,11 @@
     "automation:autoBottleCauldron:10": 10
   },
   "researchCostsEmerald": {
+    "advanced:stallStaffing:1": 1,
+    "advanced:stallStaffing:2": 2,
+    "advanced:stallStaffing:3": 3,
+    "advanced:stallStaffing:4": 4,
+    "advanced:stallStaffing:5": 5,
     "advanced:researchTime:1": 1,
     "advanced:researchTime:2": 2,
     "advanced:researchTime:3": 3,

@@ -27,6 +27,26 @@ describe('TaskQuestProgressManager', () => {
     });
   });
 
+  it('includes partial active-request progress in the continuous level rail', () => {
+    const manager = new TaskQuestProgressManager();
+    const snapshot = manager.getSnapshot({
+      currentLevel: 1,
+      maxLevel: 10,
+      tasks: [
+        { taskId: 'summon-sage', completed: false, progress: 4 / 5 },
+        { taskId: 'later', completed: false, progress: 0 },
+      ],
+      completion: { canComplete: false, costCoin: 4 },
+    });
+
+    expect(snapshot.activeQuest).toMatchObject({
+      kind: 'task',
+      taskId: 'summon-sage',
+      progress: 4 / 5,
+    });
+    expect(snapshot.progress).toBeCloseTo((4 / 5) / 3);
+  });
+
   it('turns the coin payment into the final request', () => {
     const manager = new TaskQuestProgressManager();
     const snapshot = manager.getSnapshot({

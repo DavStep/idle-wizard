@@ -165,31 +165,6 @@ function createLevelOneReadyToTurnInSnapshot() {
   };
 }
 
-function createLevelOneSaleSnapshot() {
-  return {
-    ...createLevelOneSnapshot(),
-    seedInventory: [{ key: 'sageSeed', quantity: 5 }],
-    tasks: {
-      currentLevel: 1,
-      level: {
-        completion: { canComplete: true, costCoin: 4 },
-        tasks: [
-          {
-            taskId: 'level2-sage-seeds',
-            itemKey: 'sageSeed',
-            requiredQuantity: 5,
-            progressQuantity: 5,
-            remainingQuantity: 0,
-            canFill: false,
-            canComplete: false,
-            completed: true,
-          },
-        ],
-      },
-    },
-  };
-}
-
 function createLevelTwoSageTaskSnapshot(overrides = {}) {
   return {
     ...createLevelThreeSnapshot(),
@@ -239,11 +214,6 @@ const LEVEL_ONE_COMPLETED_STEP_IDS = TUTORIAL_STEP_IDS.slice(
   0,
   TUTORIAL_STEP_IDS.indexOf('intro-market'),
 );
-const LEVEL_TWO_SELECTED_SALE_STEP_IDS = TUTORIAL_STEP_IDS.slice(
-  0,
-  TUTORIAL_STEP_IDS.indexOf('show-selected-sale-amount'),
-);
-
 describe('TutorialFacade', () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -846,70 +816,6 @@ describe('TutorialFacade', () => {
       facade.unmount();
       vi.useRealTimers();
     }
-  });
-
-  it('auto-advances the selected fast-sell amount explanation', () => {
-    vi.useFakeTimers();
-    const stage = document.createElement('section');
-    const popup = document.createElement('section');
-    const amount = document.createElement('button');
-    const plusOne = document.createElement('button');
-    const item = document.createElement('button');
-    const sell = document.createElement('button');
-    const gameplayFacade = {
-      getSnapshot: () => createLevelOneSaleSnapshot(),
-      subscribe: () => () => {},
-    };
-    const facade = new TutorialFacade({
-      gameplayFacade,
-      getCurrentPageId: () => 'shop',
-      storage: createMemoryStorage({
-        [TUTORIAL_STORAGE_KEY]: JSON.stringify({
-          completedStepIds: LEVEL_TWO_SELECTED_SALE_STEP_IDS,
-        }),
-      }),
-    });
-
-    popup.className = 'shop-page__direct-sell-popup';
-    amount.dataset.tutorialId = 'shop:directSell:amount';
-    amount.textContent = '5';
-    plusOne.dataset.tutorialId = 'shop:directSell:amount:+1';
-    plusOne.textContent = '+1';
-    item.className = 'shop-page__direct-sell-item-button';
-    item.dataset.directSellItemKey = 'sageSeed';
-    item.dataset.tutorialId = 'shop:directSell:sageSeed';
-    item.setAttribute('aria-pressed', 'true');
-    sell.dataset.tutorialId = 'shop:directSell:sell';
-    popup.append(amount, plusOne, item, sell);
-    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
-    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
-    setClientRect(amount, { left: 420, top: 560, width: 120, height: 54 });
-    setClientRect(plusOne, { left: 550, top: 560, width: 80, height: 54 });
-    setClientRect(sell, { left: 680, top: 560, width: 140, height: 54 });
-    stage.append(popup);
-    document.body.append(stage);
-
-    facade.mount(stage);
-    facade.refresh();
-
-    expect(facade.activeStep?.id).toBe('show-selected-sale-amount');
-    expect(facade.progressManager.hasCompleted('show-selected-sale-amount')).toBe(false);
-    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(true);
-    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
-    expect(amount.classList.contains('is-tutorial-target-emphasized')).toBe(true);
-    expect(amount.getAttribute('data-tutorial-target-emphasis')).toBe('true');
-
-    vi.advanceTimersByTime(1999);
-
-    expect(facade.activeStep?.id).toBe('show-selected-sale-amount');
-
-    vi.advanceTimersByTime(1);
-
-    expect(facade.progressManager.hasCompleted('show-selected-sale-amount')).toBe(true);
-    expect(facade.activeStep?.id).toBe('earn-tutorial-coin');
-    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(false);
-
-    facade.unmount();
   });
 
   it('keeps level three guidance passive until the player is idle', () => {

@@ -16,6 +16,7 @@ import {
 } from '../featureUnlockEvents.js';
 
 const DISPLAY_MS = 2100;
+const LEVEL_REWARD_REVEAL_DELAY_MS = 1180;
 const RESOURCE_ICON_FRAMES = Object.freeze({
   coin: 'resource:coin',
   crystal: 'resource:crystal',
@@ -34,7 +35,7 @@ const RESEARCH_ICON_FRAMES = Object.freeze({
   cauldronBrewing: 'research:cauldronBrewing',
   cauldronCapacity: 'research:cauldronCapacity',
   cauldronLevel: 'research:cauldronLevel',
-  fastSell: 'research:fastSell',
+  stallStaffing: 'research:fastSell',
   plotCapacity: 'research:plotCapacity',
   plotGrowth: 'research:plotGrowth',
   plotLevel: 'research:plotLevel',
@@ -460,7 +461,10 @@ export class PageAnnouncementManager {
     this.focusWithoutScroll(this.panel);
     this.clearHideTimeout();
     if (this.current.kind !== 'whileAway' && !this.current.preview) {
-      this.hideTimeoutId = window.setTimeout(() => this.hideCurrent(), this.displayMs);
+      this.hideTimeoutId = window.setTimeout(
+        () => this.hideCurrent(),
+        this.getAnnouncementDuration(this.current),
+      );
     }
     this.updateLayerTimingMetadata();
   }
@@ -554,10 +558,14 @@ export class PageAnnouncementManager {
       return;
     }
 
-    const timedAnnouncementCount =
-      (this.current && this.current.kind !== 'whileAway' && !this.layer.hidden ? 1 : 0) +
-      this.queue.filter((announcement) => announcement?.kind !== 'whileAway').length;
-    const delayMs = timedAnnouncementCount * this.displayMs;
+    const currentDelay =
+      this.current && this.current.kind !== 'whileAway' && !this.layer.hidden
+        ? this.getAnnouncementDuration(this.current)
+        : 0;
+    const queuedDelay = this.queue
+      .filter((announcement) => announcement?.kind !== 'whileAway')
+      .reduce((total, announcement) => total + this.getAnnouncementDuration(announcement), 0);
+    const delayMs = currentDelay + queuedDelay;
 
     if (delayMs > 0) {
       this.layer.dataset.announcementUnlockDelayMs = String(delayMs);
@@ -565,6 +573,19 @@ export class PageAnnouncementManager {
     }
 
     delete this.layer.dataset.announcementUnlockDelayMs;
+  }
+
+  getAnnouncementDuration(announcement) {
+    const revealDelay =
+      announcement?.kind === 'level' && !this.prefersReducedMotion()
+        ? LEVEL_REWARD_REVEAL_DELAY_MS
+        : 0;
+    return this.displayMs + revealDelay;
+  }
+
+  prefersReducedMotion() {
+    const windowRef = this.layer?.ownerDocument?.defaultView;
+    return Boolean(windowRef?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
   }
 
   dismissCurrentReport() {
@@ -592,6 +613,7 @@ export class PageAnnouncementManager {
 
   renderAnnouncement(announcement) {
     this.panel.dataset.announcementKind = announcement.kind;
+    this.layer.dataset.announcementKind = announcement.kind;
 
     if (announcement.kind === 'level') {
       this.renderStandardAnnouncementChrome();
@@ -622,39 +644,11 @@ export class PageAnnouncementManager {
     this.closeButton = null;
   }
 
-  renderLevelAnnouncement({ fromLevel, toLevel, rows = [] }) {
-    this.setText(this.title, 'level up!');
-    this.panel.setAttribute(
-      'aria-label',
-      fromLevel <= 0 ? `level up level ${toLevel}` : `level up level ${fromLevel} to ${toLevel}`,
-    );
-
-    const range = this.createLevelFlow({ fromLevel, toLevel });
-
+  renderLevelAnnouncement({ toLevel, rows = [] }) {
+    this.setText(this.title, 'rewards');
+    this.panel.setAttribute('aria-label', `level ${toLevel} rewards`);
     const rowsRoot = this.createRows(rows);
-    this.body.replaceChildren(range, rowsRoot);
-  }
-
-  createLevelFlow({ fromLevel, toLevel }) {
-    const firstPlayableLevel = fromLevel <= 0;
-    const range = document.createElement('div');
-    range.className = 'room-announcement__level-flow';
-    range.setAttribute(
-      'aria-label',
-      firstPlayableLevel ? `level ${toLevel} reached` : `level ${fromLevel} > ${toLevel}`,
-    );
-
-    const from = document.createElement('span');
-    from.className = 'room-announcement__level-from';
-    from.textContent = firstPlayableLevel ? `level ${toLevel}` : `level ${fromLevel}`;
-
-    const to = document.createElement('span');
-    to.className = 'room-announcement__level-to';
-    to.textContent = firstPlayableLevel ? '' : `> ${toLevel}`;
-    to.hidden = firstPlayableLevel;
-
-    range.append(from, to);
-    return range;
+    this.body.replaceChildren(rowsRoot);
   }
 
   renderResearchAnnouncement({ research }) {
@@ -1029,8 +1023,8 @@ export class PageAnnouncementManager {
       return RESEARCH_ICON_FRAMES.autoBottle;
     }
 
-    if (researchId.startsWith('fastSellPayout:')) {
-      return RESEARCH_ICON_FRAMES.fastSell;
+    if (researchId.startsWith('advanced:stallStaffing:')) {
+      return RESEARCH_ICON_FRAMES.stallStaffing;
     }
 
     if (researchId.startsWith('advanced:researchTime:')) {

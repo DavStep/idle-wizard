@@ -2,7 +2,7 @@ const DEFAULT_SHOP_BALANCE = {
   shopShelf: {
     initialUnlockedSlots: 0,
     slotCostsCoin: [0, 50, 150, 400, 1000],
-    autoSellSeconds: 1_800,
+    autoSellSeconds: 5,
   },
 };
 

@@ -11,10 +11,10 @@ import {
   getAutomationReserveResearchValue,
 } from '../automationReserveResearch.js';
 import {
-  fastSellResearchIds,
-  fastSellResearchMaxLevel,
-  getFastSellPercent,
-} from '../fastSellResearch.js';
+  stallStaffingBatchSize,
+  stallStaffingMaxStalls,
+  stallStaffingResearchIds,
+} from '../stallStaffingResearch.js';
 import {
   getResearchTimeReductionPercent,
   researchTimeResearchIds,
@@ -417,9 +417,9 @@ export class ResearchDefinitionManager {
   } = {}) {
     return [
       {
-        id: 'fastSell',
-        label: 'haggling research',
-        researches: this.getFastSellResearches(),
+        id: 'stallStaffing',
+        label: 'stall staffing research',
+        researches: this.getStallStaffingResearches(),
       },
       {
         id: 'researchCost',
@@ -580,20 +580,20 @@ export class ResearchDefinitionManager {
     return researches;
   }
 
-  getFastSellResearches() {
-    return Array.from({ length: fastSellResearchMaxLevel }, (_value, index) => {
-      const level = index + 1;
-      const percent = getFastSellPercent(level);
-
+  getStallStaffingResearches() {
+    return Array.from({ length: stallStaffingMaxStalls }, (_value, index) => {
+      const stallNumber = index + 1;
       return {
-        id: fastSellResearchIds.payout(level),
-        label: `haggling lvl ${level}`,
-        value: `${percent}% payout`,
+        id: stallStaffingResearchIds.capacity(stallNumber),
+        label: `stall ${stallNumber} staffing`,
+        value: `x${stallStaffingBatchSize} items`,
         showEffect: true,
-        seriesId: 'fastSell',
+        seriesId: 'stallStaffing',
         requiredResearchIds:
-          level > 1 ? [fastSellResearchIds.payout(level - 1)] : [],
-        description: `traders offer ${percent}% for an immediate sale.`,
+          stallNumber > 1
+            ? [stallStaffingResearchIds.capacity(stallNumber - 1)]
+            : [],
+        description: `stall ${stallNumber} sells ${stallStaffingBatchSize} items every cycle.`,
       };
     });
   }

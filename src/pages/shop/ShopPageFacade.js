@@ -1,5 +1,4 @@
 import { ShopCrystalOfferManager } from './managers/ShopCrystalOfferManager.js';
-import { ShopDirectSellManager } from './managers/ShopDirectSellManager.js';
 import { ShopCoinOfferManager } from './managers/ShopCoinOfferManager.js';
 import { ShopMarketTabsManager } from './managers/ShopMarketTabsManager.js';
 import { ShopPlayerRequestManager } from './managers/ShopPlayerRequestManager.js';
@@ -19,8 +18,6 @@ export class ShopPageFacade {
     playerShopFacade,
     onOpenPlayerInfo,
     onRequirePlayerSurfaceAccess,
-    onDirectSellOverride,
-    getDirectSellQuoteOverride,
     getNpcSellPriceOverride,
     getNpcStockBuyQuoteOverride,
   } = {}) {
@@ -39,11 +36,6 @@ export class ShopPageFacade {
     this.shelfManager = new ShopShelfManager({
       gameplayFacade,
       getSellPriceOverride: getNpcSellPriceOverride,
-    });
-    this.directSellManager = new ShopDirectSellManager({
-      gameplayFacade,
-      onSellOverride: onDirectSellOverride,
-      getSellQuoteOverride: getDirectSellQuoteOverride,
     });
     this.marketLedgerManager = new ShopMarketLedgerManager({
       gameplayFacade,
@@ -80,10 +72,6 @@ export class ShopPageFacade {
     const playerMarketPanel = this.marketTabsManager.getPanel('player');
     const crystalsPanel = this.marketTabsManager.getPanel('crystals');
     const shelfRoot = this.shelfManager.mount(npmMarketPanel, popupLayer);
-    this.directSellManager.mount({
-      buttonParent: shelfRoot,
-      popupParent: popupLayer,
-    });
     this.marketLedgerManager.mount({
       buttonParent: shelfRoot,
       popupParent: popupLayer,
@@ -110,7 +98,6 @@ export class ShopPageFacade {
     this.playerShelfManager.unmount();
     this.playerRequestManager.unmount();
     this.marketLedgerManager.unmount();
-    this.directSellManager.unmount();
     this.shelfManager.unmount();
     this.flyoutManager.unmount();
     this.marketTabsManager.unmount();

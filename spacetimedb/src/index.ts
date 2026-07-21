@@ -4261,13 +4261,12 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
 };
 
 const ADVANCED_RESEARCH_MAX_LEVEL = 12;
-const FAST_SELL_RESEARCH_MAX_LEVEL = 3;
+const STALL_STAFFING_RESEARCH_COUNT = 5;
 const RESEARCH_TIME_REDUCTION_MAX_LEVEL = 8;
 const RESEARCH_COST_REDUCTION_MAX_LEVEL = 8;
 const AUTOMATION_RESERVE_RESEARCH_MAX_LEVEL = 3;
 const AUTOMATION_RESERVE_REQUIRED_PRESTIGE_COUNT = 4;
 const STRONGER_ROOM_STUDY_REQUIRED_PRESTIGE_COUNT = 5;
-const fastSellResearchCostsRuby = [2, 5, 10];
 const advancedResearchCauldronNumbers = Array.from(
   { length: MAX_AUTOMATION_CAULDRONS },
   (_value, index) => index + 1,
@@ -4283,8 +4282,8 @@ const emeraldResearchMultipliers = [2, 3, 4, 5];
 function getAdvancedResearchCostById(): Record<string, number> {
   const costs: Record<string, number> = {};
 
-  for (let level = 1; level <= FAST_SELL_RESEARCH_MAX_LEVEL; level += 1) {
-    costs[`fastSellPayout:${level}`] = fastSellResearchCostsRuby[level - 1] ?? 0;
+  for (let stallNumber = 1; stallNumber <= STALL_STAFFING_RESEARCH_COUNT; stallNumber += 1) {
+    costs[`advanced:stallStaffing:${stallNumber}`] = stallNumber;
   }
 
   for (let level = 1; level <= RESEARCH_TIME_REDUCTION_MAX_LEVEL; level += 1) {
@@ -5014,12 +5013,12 @@ const automationResearchCatalog = [
 ];
 
 const advancedResearchCatalog = [
-  ...Array.from({ length: FAST_SELL_RESEARCH_MAX_LEVEL }, (_value, index) => {
-    const level = index + 1;
+  ...Array.from({ length: STALL_STAFFING_RESEARCH_COUNT }, (_value, index) => {
+    const stallNumber = index + 1;
     return {
-      id: `fastSellPayout:${level}`,
-      label: `haggling lvl ${level}`,
-      groupId: 'fastSell',
+      id: `advanced:stallStaffing:${stallNumber}`,
+      label: `stall ${stallNumber} staffing`,
+      groupId: 'stallStaffing',
     };
   }),
   ...Array.from({ length: RESEARCH_COST_REDUCTION_MAX_LEVEL }, (_value, index) => {
@@ -5243,7 +5242,7 @@ const DEFAULT_SHOP_CONFIG_JSON = toGameConfigJson({
   shopShelf: {
     initialUnlockedSlots: 0,
     slotCostsGold: [0, 50, 150, 400, 1000],
-    autoSellSeconds: 1_800,
+    autoSellSeconds: 5,
   },
 });
 const DEFAULT_RESEARCH_CONFIG_JSON = toGameConfigJson({
@@ -10553,6 +10552,11 @@ function hasSavePersistedCauldronWork(cauldron: Record<string, unknown>) {
   );
 }
 
+function migrateLegacyMarketResearchId(researchId: string): string {
+  const match = /^fastSellPayout:([1-3])$/.exec(researchId);
+  return match ? `advanced:stallStaffing:${match[1]}` : researchId;
+}
+
 function normalizeSaveResearch(
   value: unknown,
   prestigeCount = 0,
@@ -10560,7 +10564,9 @@ function normalizeSaveResearch(
 ) {
   const completedIds = isRecord(value) && Array.isArray(value.completedIds)
     ? value.completedIds
-        .map((researchId) => normalizeResearchId(String(researchId ?? '')))
+        .map((researchId) =>
+          migrateLegacyMarketResearchId(normalizeResearchId(String(researchId ?? ''))),
+        )
         .filter((researchId) => researchCatalogById.has(researchId))
     : [];
   const inferredIds = new Set(
@@ -10670,7 +10676,9 @@ function normalizeSaveInProgressResearches(
       continue;
     }
 
-    const researchId = normalizeResearchId(String(progress.researchId ?? ''));
+    const researchId = migrateLegacyMarketResearchId(
+      normalizeResearchId(String(progress.researchId ?? '')),
+    );
     if (
       !researchCatalogById.has(researchId) ||
       completedIds.has(researchId) ||
@@ -10739,10 +10747,10 @@ function getSaveRequiredResearchIds(researchId: string): string[] {
     return targetNumber > 1 ? [`automation:${automationMatch[1]}:${targetNumber - 1}`] : [];
   }
 
-  const fastSellMatch = /^fastSellPayout:(\d+)$/.exec(researchId);
-  if (fastSellMatch) {
-    const level = Number(fastSellMatch[1]);
-    return level > 1 ? [`fastSellPayout:${level - 1}`] : [];
+  const stallStaffingMatch = /^advanced:stallStaffing:(\d+)$/.exec(researchId);
+  if (stallStaffingMatch) {
+    const stallNumber = Number(stallStaffingMatch[1]);
+    return stallNumber > 1 ? [`advanced:stallStaffing:${stallNumber - 1}`] : [];
   }
 
   const researchTimeMatch = /^advanced:researchTime:(\d+)$/.exec(researchId);
@@ -10888,10 +10896,35 @@ function normalizeSaveShopShelf(
   const slots = normalizeSaveSlotRows(shelf.slots, unlockedSlots, (slot) => {
     const itemKey = normalizeSaveItemKey(slot.sellItemKey);
     const itemKind = itemCatalog.get(itemKey);
+    const hasLoadedQuantity = Object.prototype.hasOwnProperty.call(slot, 'loadedQuantity');
+    const legacySellLimitMode = slot.sellLimitMode === 'amount' ? 'amount' : 'all';
 
     return {
       slotNumber: clampSaveInteger(slot.slotNumber, 1, MAX_PLAYER_SHOP_SLOTS, 1),
       sellItemKey: itemKind ? itemKey : null,
+      ...(hasLoadedQuantity
+        ? {
+            loadedQuantity: itemKind
+              ? clampSaveInteger(
+                  slot.loadedQuantity,
+                  0,
+                  MAX_GAME_CONFIG_RESOURCE_LIMIT,
+                  0,
+                )
+              : 0,
+          }
+        : {
+            sellLimitMode: legacySellLimitMode,
+            sellQuantityLimit:
+              legacySellLimitMode === 'amount'
+                ? clampSaveInteger(
+                    slot.sellQuantityLimit,
+                    0,
+                    NPC_MARKET_MAX_TRADE_QUANTITY,
+                    0,
+                  )
+                : null,
+          }),
       sellProgressSeconds: clampSaveNumber(
         slot.sellProgressSeconds,
         0,
@@ -15399,7 +15432,7 @@ function runStartupMaintenanceOnce(ctx: IdleWizardReducerCtx) {
     return;
   }
 
-  backfillShopConfigForDirectSell(ctx);
+  backfillShopConfigForIndependentStalls(ctx);
   backfillPlayerLevelMarketStandMilestones(ctx);
   sanitizeSharedPlayerRows(ctx);
   backfillLeaderboardTotalIncomeFromGameplaySaves(ctx);
@@ -15518,7 +15551,7 @@ function backfillPlayerLevelCauldronCaps(ctx: IdleWizardReducerCtx) {
   });
 }
 
-function backfillShopConfigForDirectSell(ctx: IdleWizardReducerCtx) {
+function backfillShopConfigForIndependentStalls(ctx: IdleWizardReducerCtx) {
   const row = ctx.db.gameConfig.configKey.find('shop');
   if (!row) {
     return;
@@ -15537,7 +15570,7 @@ function backfillShopConfigForDirectSell(ctx: IdleWizardReducerCtx) {
   }
 
   if (
-    Number(shopShelf.autoSellSeconds) === 1_800 &&
+    Number(shopShelf.autoSellSeconds) === 5 &&
     Number(shopShelf.initialUnlockedSlots ?? 0) === 0
   ) {
     return;
@@ -15548,7 +15581,7 @@ function backfillShopConfigForDirectSell(ctx: IdleWizardReducerCtx) {
     shopShelf: {
       ...shopShelf,
       initialUnlockedSlots: 0,
-      autoSellSeconds: 1_800,
+      autoSellSeconds: 5,
     },
   }));
 

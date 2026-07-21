@@ -8,9 +8,9 @@ import { advancedResearchIds } from './research/advancedResearchIds.js';
 import { capacityResearchIds } from './research/capacityResearchIds.js';
 import { automationReserveResearchIds } from './research/automationReserveResearch.js';
 import { emeraldResearchIds } from './research/emeraldResearchIds.js';
-import { fastSellResearchIds } from './research/fastSellResearch.js';
 import { researchCostResearchIds } from './research/researchCostResearch.js';
 import { researchTimeResearchIds } from './research/researchTimeResearch.js';
+import { stallStaffingResearchIds } from './research/stallStaffingResearch.js';
 import { taskRequirementTypes } from './tasks/taskRequirementTypes.js';
 
 function createMemoryStorage() {
@@ -842,7 +842,7 @@ describe('GameplayFacade', () => {
     gameplayFacade.buyVisualSettingOption('theme', 'black');
     gameplayFacade.buyResearch('unlockSeed:sageSeed');
     gameplayFacade.addBrewingIngredient(1001);
-    gameplayFacade.setSelectedShopShelfSlotSellItem(1);
+    gameplayFacade.loadSelectedShopShelfSlotItem(1, 1);
     advanceToLevel(gameplayFacade, 10);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(10);
@@ -1709,7 +1709,8 @@ describe('GameplayFacade', () => {
     unlockSageSeed(gameplayFacade);
     ecsFacade.update({ deltaSeconds: 10 });
     const summonResult = gameplayFacade.summonSeed();
-    await gameplayFacade.sellNpcMarketItem(summonResult.seed.id, 1);
+    gameplayFacade.loadSelectedShopShelfSlotItem(summonResult.seed.id, 1);
+    ecsFacade.update({ deltaSeconds: 5 });
 
     gameplayFacade.itemsFacade.addItem(1001, 2);
     gameplayFacade.itemsFacade.addItem(1002, 1);
@@ -2347,7 +2348,7 @@ describe('GameplayFacade', () => {
       costCurrency: 'ruby',
     });
     expect(research.tabs[2].boxes.map((box) => box.id)).toEqual([
-      'fastSell',
+      'stallStaffing',
       'researchCost',
       'researchTime',
       'automationReserve',
@@ -2357,17 +2358,17 @@ describe('GameplayFacade', () => {
       'plotGrowth',
     ]);
     expect(research.tabs[2].boxes[0].researches.map((research) => research.id)).toEqual([
-      fastSellResearchIds.payout(1),
+      stallStaffingResearchIds.capacity(1),
     ]);
     expect(research.tabs[2].boxes[0].researches[0]).toMatchObject({
-      id: fastSellResearchIds.payout(1),
-      label: 'haggling lvl 1',
-      value: '2 emerald',
-      effect: '85% payout',
+      id: stallStaffingResearchIds.capacity(1),
+      label: 'stall 1 staffing',
+      value: '1 emerald',
+      effect: 'x2 items',
       showEffect: true,
       requiredResearchIds: [],
       costCoin: 0,
-      costEmerald: 2,
+      costEmerald: 1,
       costCurrency: 'emerald',
     });
     expect(research.tabs[2].boxes[1].researches.map((research) => research.id)).toEqual([
@@ -2639,7 +2640,7 @@ describe('GameplayFacade', () => {
 
     gameplayFacade.emeraldFacade.setCurrent(20);
 
-    expect(gameplayFacade.buyResearch(fastSellResearchIds.payout(1))).toMatchObject({
+    expect(gameplayFacade.buyResearch(stallStaffingResearchIds.capacity(1))).toMatchObject({
       ok: true,
       durationSeconds: 3,
     });
@@ -2760,10 +2761,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.plantGardenSeed(1, 1)).toMatchObject({ ok: true });
     expect(gameplayFacade.plantGardenSeed(2, 1)).toMatchObject({ ok: true });
     expect(
-      gameplayFacade.setSelectedShopShelfSlotSellItem(1, {
-        sellLimitMode: 'amount',
-        sellQuantityLimit: 5,
-      }),
+      gameplayFacade.loadSelectedShopShelfSlotItem(1, 5),
     ).toMatchObject({ ok: true });
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toMatchObject({
       ok: true,
@@ -3174,45 +3172,27 @@ describe('GameplayFacade', () => {
     expect(storageManager.saveAndFlush).toHaveBeenCalledTimes(1);
   });
 
-  it('starts fast sell at 80% payout and raises it with emerald research', () => {
+  it('researches x2 sales for each stall independently', () => {
     const { gameplayFacade } = createGameplay();
 
-    gameplayFacade.itemsFacade.addItem(1, 1);
-
-    expect(gameplayFacade.quoteNpcMarketSell(1, 1)).toMatchObject({
+    gameplayFacade.emeraldFacade.add(3);
+    expect(gameplayFacade.buyResearch(stallStaffingResearchIds.capacity(1))).toMatchObject({
       ok: true,
-      priceCoin: 1,
-      totalPriceCoin: 1,
-      fastSellPercent: 80,
+      cost: 1,
+      costCurrency: 'emerald',
     });
-
-    gameplayFacade.emeraldFacade.add(17);
-    expect(gameplayFacade.buyResearch(fastSellResearchIds.payout(1))).toMatchObject({
+    expect(gameplayFacade.researchFacade.getStallBatchSize(1)).toBe(2);
+    expect(gameplayFacade.researchFacade.getStallBatchSize(2)).toBe(1);
+    expect(gameplayFacade.buyResearch(stallStaffingResearchIds.capacity(2))).toMatchObject({
       ok: true,
       cost: 2,
       costCurrency: 'emerald',
     });
-    expect(gameplayFacade.buyResearch(fastSellResearchIds.payout(2))).toMatchObject({
-      ok: true,
-      cost: 5,
-      costCurrency: 'emerald',
-    });
-    expect(gameplayFacade.buyResearch(fastSellResearchIds.payout(3))).toMatchObject({
-      ok: true,
-      cost: 10,
-      costCurrency: 'emerald',
-    });
-
-    expect(gameplayFacade.quoteNpcMarketSell(1, 1)).toMatchObject({
-      ok: true,
-      priceCoin: 1,
-      totalPriceCoin: 1,
-      fastSellPercent: 95,
-    });
+    expect(gameplayFacade.researchFacade.getStallBatchSize(2)).toBe(2);
   });
 
-  it('keeps NPC demand and prices fake until player reaches level 4', async () => {
-    const { gameplayFacade } = createGameplay();
+  it('keeps NPC demand and prices fake until player reaches level 4', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
     const backendSells = [];
     gameplayFacade.setNpcMarketFacade({
       getNpcBuyPriceCoin: () => 7,
@@ -3229,14 +3209,10 @@ describe('GameplayFacade', () => {
       (item) => item.key === 'sageSeed',
     )).toMatchObject({
       sellCoin: 1,
-      fastSellCoin: 1,
       sellNeed: 1000,
     });
-    await expect(gameplayFacade.sellNpcMarketItem(1, 2)).resolves.toMatchObject({
-      ok: true,
-      priceCoin: 1,
-      totalPriceCoin: 2,
-    });
+    expect(gameplayFacade.loadSelectedShopShelfSlotItem(1, 2)).toMatchObject({ ok: true });
+    ecsFacade.update({ deltaSeconds: 5 });
     expect(backendSells).toEqual([]);
 
     advanceToLevel(gameplayFacade, 4);
@@ -3246,14 +3222,10 @@ describe('GameplayFacade', () => {
       (item) => item.key === 'sageSeed',
     )).toMatchObject({
       sellCoin: 7,
-      fastSellCoin: 6,
       sellNeed: 12,
     });
-    await expect(gameplayFacade.sellNpcMarketItem(1, 2)).resolves.toMatchObject({
-      ok: true,
-      priceCoin: 6,
-      totalPriceCoin: 12,
-    });
+    expect(gameplayFacade.loadSelectedShopShelfSlotItem(1, 2)).toMatchObject({ ok: true });
+    ecsFacade.update({ deltaSeconds: 10 });
     expect(backendSells).toEqual([{ itemKey: 'sageSeed', quantity: 2 }]);
   });
 
@@ -4260,8 +4232,6 @@ describe('GameplayFacade', () => {
       baseSellPrice: 1,
       quantity: 1,
       sellCoin: null,
-      fastSellCoin: 0,
-      fastSellPercent: 80,
       sellNeed: null,
       buyCoin: null,
       stock: null,
@@ -5071,18 +5041,18 @@ describe('GameplayFacade', () => {
     ecsFacade.update({ deltaSeconds: 10 });
     const summonResult = gameplayFacade.summonSeed();
     gameplayFacade.itemsFacade.addItem(summonResult.seed.id, 10);
-    gameplayFacade.setSelectedShopShelfSlotSellItem(summonResult.seed.id);
+    gameplayFacade.loadSelectedShopShelfSlotItem(summonResult.seed.id, 11);
 
     shopNowMs = 4_000;
     ecsFacade.update({ deltaSeconds: 4 });
 
     expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
-    expect(gameplayFacade.getSnapshot().inventory).toHaveLength(1);
+    expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
 
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 1 });
 
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(11);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(1);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
       slotNumber: 1,
@@ -5090,11 +5060,11 @@ describe('GameplayFacade', () => {
       sellItemTypeId: summonResult.seed.id,
       sellKind: 'seed',
       sellLabel: summonResult.seed.label,
-      sellQuantity: 0,
+      loadedQuantity: 10,
     });
   });
 
-  it('auto sells only a fixed marked NPC market amount', () => {
+  it('auto sells only items physically loaded into the NPC market stand', () => {
     let shopNowMs = 0;
     const { ecsFacade, gameplayFacade } = createGameplay({
       shopNow: () => shopNowMs,
@@ -5107,20 +5077,17 @@ describe('GameplayFacade', () => {
     const summonResult = gameplayFacade.summonSeed();
     gameplayFacade.itemsFacade.addItem(summonResult.seed.id, 10);
     expect(
-      gameplayFacade.setSelectedShopShelfSlotSellItem(summonResult.seed.id, {
-        sellLimitMode: 'amount',
-        sellQuantityLimit: 7,
-      }),
+      gameplayFacade.loadSelectedShopShelfSlotItem(summonResult.seed.id, 7),
     ).toMatchObject({
       ok: true,
-      sellLimitMode: 'amount',
-      sellQuantityLimit: 7,
+      quantity: 7,
+      loadedQuantity: 7,
     });
 
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(7);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(1);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
         itemTypeId: summonResult.seed.id,
@@ -5132,19 +5099,17 @@ describe('GameplayFacade', () => {
     ]);
     expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
       sellItemTypeId: summonResult.seed.id,
-      sellLimitMode: 'amount',
-      sellQuantityLimit: 0,
-      sellQuantity: 4,
+      loadedQuantity: 6,
     });
 
     shopNowMs = 10_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(7);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(2);
     expect(gameplayFacade.getSnapshot().inventory[0].quantity).toBe(4);
   });
 
-  it('uses one NPC market timer for the whole shop', () => {
+  it('keeps an independent NPC market timer on every stand', () => {
     let shopNowMs = 0;
     const { ecsFacade, gameplayFacade } = createGameplay({
       shopNow: () => shopNowMs,
@@ -5157,27 +5122,28 @@ describe('GameplayFacade', () => {
 
     gameplayFacade.itemsFacade.addItem(1, 1);
     gameplayFacade.itemsFacade.addItem(2, 1);
-    gameplayFacade.setSelectedShopShelfSlotSellItem(1);
+    gameplayFacade.loadSelectedShopShelfSlotItem(1, 1);
 
     shopNowMs = 4_000;
     ecsFacade.update({ deltaSeconds: 4 });
 
-    expect(gameplayFacade.getSnapshot().shop.shelf.sellProgressSeconds).toBe(4);
     expect(gameplayFacade.getSnapshot().shop.shelf.slots[0].sellProgressSeconds).toBe(4);
 
     gameplayFacade.selectShopShelfSlot(2);
-    gameplayFacade.setSelectedShopShelfSlotSellItem(2);
+    gameplayFacade.loadSelectedShopShelfSlotItem(2, 1);
 
-    expect(gameplayFacade.getSnapshot().shop.shelf.sellProgressSeconds).toBe(4);
     expect(gameplayFacade.getSnapshot().shop.shelf.slots[0].sellProgressSeconds).toBe(4);
-    expect(gameplayFacade.getSnapshot().shop.shelf.slots[1].sellProgressSeconds).toBe(4);
+    expect(gameplayFacade.getSnapshot().shop.shelf.slots[1].sellProgressSeconds).toBe(0);
 
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 1 });
 
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(2);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(1);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
-    expect(gameplayFacade.getSnapshot().shop.shelf.sellProgressSeconds).toBe(0);
+    expect(gameplayFacade.getSnapshot().shop.shelf.slots[1]).toMatchObject({
+      loadedQuantity: 1,
+      sellProgressSeconds: 1,
+    });
   });
 
   it('collects the crystal-tab coin offer and cools it down', () => {
@@ -5363,16 +5329,16 @@ describe('GameplayFacade', () => {
     gameplayFacade.itemsFacade.addItem(1001, 3);
     gameplayFacade.addBrewingIngredient(1001);
     gameplayFacade.addBrewingIngredient(1001);
-    gameplayFacade.setSelectedShopShelfSlotSellItem(1001);
+    gameplayFacade.loadSelectedShopShelfSlotItem(1001, 1);
 
     expect(gameplayFacade.getSnapshot().shop.shelf.sellItems.find((item) => item.key === 'sageHerb'))
       .toMatchObject({
-        quantity: 1,
+        quantity: 0,
         sellCoin: 6,
       });
     expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
       sellItemTypeId: 1001,
-      sellQuantity: 1,
+      loadedQuantity: 1,
     });
 
     shopNowMs = 5_000;
@@ -5419,14 +5385,15 @@ describe('GameplayFacade', () => {
     openFirstNpcMarketStand(gameplayFacade);
 
     gameplayFacade.itemsFacade.addItem(1, 1);
-    gameplayFacade.setSelectedShopShelfSlotSellItem(1);
+    gameplayFacade.loadSelectedShopShelfSlotItem(1, 1);
 
     shopNowMs = 4_000;
     ecsFacade.update({ deltaSeconds: 4 });
 
-    expect(gameplayFacade.clearSelectedShopShelfSlotSellItem()).toEqual({
+    expect(gameplayFacade.unloadSelectedShopShelfSlotItemAll()).toMatchObject({
       ok: true,
       slotNumber: 1,
+      quantity: 1,
     });
     expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
       slotNumber: 1,
@@ -5667,7 +5634,7 @@ describe('GameplayFacade', () => {
 
     gameplayFacade.itemsFacade.addItem(1, 1);
     gameplayFacade.itemsFacade.addItem(2, 1);
-    gameplayFacade.setSelectedShopShelfSlotSellItem(2);
+    gameplayFacade.loadSelectedShopShelfSlotItem(2, 1);
 
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 5 });

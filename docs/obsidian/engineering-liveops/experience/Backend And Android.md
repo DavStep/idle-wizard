@@ -79,7 +79,7 @@ experience_type: backend-android
 - Browser auth is origin-scoped; `localhost`, `127.0.0.1`, and LAN URLs can load different SpacetimeDB identities unless account recovery/migration exists.
 - Dynamic market prices should be server-authoritative and shared through SpacetimeDB subscriptions.
 - Current NPC/player exchange mutates shared backend market state while player inventory and coin remain client-owned; treat it as coordinated shared state, not full server-authoritative escrow.
-- NPC market auto-sell must reserve/decrement visible demand locally across same-item stands and catch-up cycles before calling reducers; otherwise stale demand snapshots spam `sell_to_npc` panics.
+- NPC market auto-sell must reserve/decrement visible demand locally across same-item stands, aggregate reports per item, and split reducer calls at 10,000; otherwise stale demand snapshots or oversized calls fail `sell_to_npc`.
 - NPC market base prices are DB-owned in `npc_market_item_config`; use `claim_npc_market_admin` once, then `set_npc_market_item_base_price` to change them without another deploy. `npc_market_price` remains the derived live quote table.
 - Coin balances and market prices are whole numbers. Use the shared coin-price helpers so positive fractional legacy values round up and every positive price stays at least `1` coin.
 - Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local coin.

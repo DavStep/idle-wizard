@@ -21,7 +21,6 @@ backend_role: shared quotes, demand, and stock
 source_scope: mixed
 verified_on: 2026-07-19
 related:
-  - "[[mechanics/market/Fast Sell|Fast Sell]]"
   - "[[mechanics/market/Trader Stands|Trader Stands]]"
   - "[[mechanics/market/NPC Stock|NPC Stock]]"
   - "[[mechanics/market/Demand And Pricing|Demand and Pricing]]"
@@ -33,8 +32,7 @@ The player-facing tab is **traders**. Code and backend features commonly call it
 
 ## Components
 
-- [[mechanics/market/Fast Sell|Sell to Trader]] — an immediate reduced-price Trader Offer.
-- [[mechanics/market/Trader Stands|Trader Stands]] — automatic sales on a shared half-hour cycle.
+- [[mechanics/market/Trader Stands|Trader Stands]] — loaded automatic sales on independent five-second cycles.
 - [[mechanics/market/Market Ledger|Market Ledger]] — prices, recent movement, buyer need, stock, and buying.
 - [[mechanics/market/Demand And Pricing|Demand and Pricing]] — shared need, quotes, recovery, and tuning.
 - [[mechanics/market/Sellable Quantity|Sellable Quantity]] — inventory minus garden/brewing reservations.

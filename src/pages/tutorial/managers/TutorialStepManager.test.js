@@ -26,20 +26,16 @@ function createDomFake({
   recipePopupOpen = false,
   brewingHerbInventoryOpen = false,
   selectedBrewingRecipeKey = null,
-  shopDirectSellPopupOpen = false,
-  directSellTabKind = 'seed',
-  directSellItemKey = null,
-  directSellQuantity = 1,
+  shopSellPopupOpen = false,
+  sellTabKind = 'seed',
 } = {}) {
   return {
     isBrewingRecipePopupOpen: () => recipePopupOpen,
     isBrewingHerbInventoryOpen: () => brewingHerbInventoryOpen,
     isBrewingRecipeSelected: (recipeKey) => selectedBrewingRecipeKey === recipeKey,
     isGardenSeedPopupOpen: () => seedPopupOpen,
-    isShopDirectSellItemSelected: (itemKey) => directSellItemKey === itemKey,
-    isShopDirectSellPopupOpen: () => shopDirectSellPopupOpen,
-    isShopDirectSellTabSelected: (kind) => directSellTabKind === kind,
-    getShopDirectSellQuantity: () => directSellQuantity,
+    isShopSellPopupOpen: () => shopSellPopupOpen,
+    isShopSellTabSelected: (kind) => sellTabKind === kind,
     isTasksExpanded: () => tasksExpanded,
     isTasksPinned: () => tasksPinned,
   };
@@ -421,7 +417,7 @@ describe('TutorialStepManager', () => {
       kind: 'dialog',
       advanceLabel: 'enter workshop',
       variant: 'intro-dialog',
-      stepLabel: '1/37',
+      stepLabel: '1/36',
     });
   });
 
@@ -578,7 +574,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-one',
       targetId: 'workshop:levelUp',
       progressLabel: '1/1 ready',
-      stepLabel: '10/37',
+      stepLabel: '10/36',
     });
   });
 
@@ -588,7 +584,7 @@ describe('TutorialStepManager', () => {
       kind: 'dialog',
       targetId: 'workshop:summonSeed',
       lessonTitle: 'market opened',
-      stepLabel: '11/37',
+      stepLabel: '11/36',
     });
   });
 
@@ -661,17 +657,17 @@ describe('TutorialStepManager', () => {
       id: 'open-market',
       targetId: 'page:shop',
       objectiveText: 'sell sage seeds in market',
-      stepLabel: '13/37',
+      stepLabel: '13/36',
     });
     expect(getStep({ pageId: 'shop', snapshot, completed })).toMatchObject({
       id: 'select-market-stand',
-      targetId: 'shop:directSell',
-      objectiveText: 'open trader offer',
-      stepLabel: '14/37',
+      targetId: 'shop:stand:1',
+      objectiveText: 'open the first stall',
+      stepLabel: '14/36',
     });
   });
 
-  it('guides all five sage seeds into the level 2 fast sale before sell', () => {
+  it('guides level 2 players to load sage seed and wait for the stall', () => {
     const snapshot = createLevelTwoSnapshot({
       seedInventory: [{ key: 'sageSeed', quantity: 5 }],
       shop: {
@@ -722,46 +718,44 @@ describe('TutorialStepManager', () => {
       },
     });
 
-    for (const directSellQuantity of [1, 2, 3, 4]) {
-      expect(
-        getStep({
-          pageId: 'shop',
-          snapshot,
-          dom: createDomFake({
-            shopDirectSellPopupOpen: true,
-            directSellItemKey: 'sageSeed',
-            directSellQuantity,
-          }),
-          completed: completedThrough('show-selected-sale-amount'),
-        }),
-      ).toMatchObject({
-        id: 'earn-tutorial-coin',
-        targetId: 'shop:directSell:amount:+1',
-        hintText: '+1',
-        objectiveText: 'select all 5 sage seeds to sell',
-        progressLabel: '0/1 sale',
-        stepLabel: '17/37',
-      });
-    }
-
     expect(
       getStep({
         pageId: 'shop',
         snapshot,
-        dom: createDomFake({
-          shopDirectSellPopupOpen: true,
-          directSellItemKey: 'sageSeed',
-          directSellQuantity: 5,
-        }),
-        completed: completedThrough('show-selected-sale-amount'),
+        dom: createDomFake({ shopSellPopupOpen: true }),
+        completed: completedThrough('select-market-stand'),
+      }),
+    ).toMatchObject({
+      id: 'select-sage-seed-sale',
+      targetId: 'shop:sell:sageSeed',
+      hintText: 'hold sage seed to load it',
+      objectiveText: 'choose sage seed to sell',
+      progressLabel: '0/1 seed',
+      stepLabel: '15/36',
+    });
+
+    snapshot.shop.shelf.slots = [
+      {
+        slotNumber: 1,
+        unlocked: true,
+        sellItemTypeId: 1,
+        sellKey: 'sageSeed',
+        loadedQuantity: 1,
+      },
+    ];
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        completed: completedThrough('select-sage-seed-sale'),
       }),
     ).toMatchObject({
       id: 'earn-tutorial-coin',
-      targetId: 'shop:directSell:sell',
-      hintText: 'press sell',
-      objectiveText: 'press sell',
+      targetId: null,
+      hintText: '',
+      objectiveText: 'wait for the stall to sell',
       progressLabel: '0/1 sale',
-      stepLabel: '17/37',
+      stepLabel: '16/36',
     });
   });
 
@@ -817,7 +811,7 @@ describe('TutorialStepManager', () => {
             },
           },
         }),
-        dom: createDomFake({ shopDirectSellPopupOpen: true }),
+        dom: createDomFake({ shopSellPopupOpen: true }),
         completed: completedThrough('select-market-stand'),
       }),
     ).toMatchObject({
@@ -828,30 +822,34 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('does not attach a tutorial sale effect to the market objective', () => {
+  it('does not attach a tutorial sale effect to the timed market objective', () => {
     const step = getStep({
       pageId: 'shop',
       snapshot: createLevelTwoSnapshot({
         seedInventory: [{ key: 'sageSeed', quantity: 5 }],
         shop: {
           shelf: {
-            slots: [],
+            slots: [
+              {
+                slotNumber: 1,
+                unlocked: true,
+                sellItemTypeId: 1,
+                sellKey: 'sageSeed',
+                loadedQuantity: 1,
+              },
+            ],
             sellItems: [{ key: 'sageSeed', kind: 'seed', quantity: 5, fastSellCoin: 0.8 }],
           },
         },
       }),
-      dom: createDomFake({
-        shopDirectSellPopupOpen: true,
-        directSellItemKey: 'sageSeed',
-        directSellQuantity: 5,
-      }),
-      completed: completedThrough('show-selected-sale-amount'),
+      completed: completedThrough('select-sage-seed-sale'),
     });
 
     expect(step).toMatchObject({
       id: 'earn-tutorial-coin',
-      targetId: 'shop:directSell:sell',
-      hintText: 'press sell',
+      targetId: null,
+      hintText: '',
+      objectiveText: 'wait for the stall to sell',
     });
     expect(step.effect).toBeUndefined();
     expect(step.sale).toBeUndefined();
@@ -1017,7 +1015,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-two',
       targetId: 'workshop:levelUp',
       progressLabel: '1/1 ready',
-      stepLabel: '20/37',
+      stepLabel: '19/36',
     });
   });
 
@@ -1050,7 +1048,7 @@ describe('TutorialStepManager', () => {
       id: 'research-mint-seed',
       targetId: 'research:unlockSeed:mintSeed',
       objectiveText: 'research mint seed',
-      stepLabel: '22/37',
+      stepLabel: '21/36',
     });
   });
 
@@ -1065,7 +1063,7 @@ describe('TutorialStepManager', () => {
       id: 'fill-mint-seed-task',
       targetId: 'task:level3-turn-in-mint-seed',
       hintText: 'turn in',
-      stepLabel: '24/37',
+      stepLabel: '23/36',
     });
   });
 
@@ -1104,7 +1102,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'fill-sage-seed-task',
       targetId: 'task:level3-turn-in-sage-seed',
-      stepLabel: '25/37',
+      stepLabel: '24/36',
     });
   });
 
@@ -1150,7 +1148,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-three',
       targetId: 'page:shop',
       progressLabel: '6.4/8 coin',
-      stepLabel: '26/37',
+      stepLabel: '25/36',
     });
   });
 
@@ -1160,7 +1158,7 @@ describe('TutorialStepManager', () => {
       kind: 'dialog',
       targetId: 'page:garden',
       lessonTitle: 'garden opened',
-      stepLabel: '27/37',
+      stepLabel: '26/36',
     });
   });
 
@@ -1174,7 +1172,7 @@ describe('TutorialStepManager', () => {
       id: 'grow-sage',
       targetId: 'workshop:tasks',
       hintText: "open elara's level 4 request",
-      stepLabel: '28/37',
+      stepLabel: '27/36',
     });
   });
 
@@ -1207,7 +1205,7 @@ describe('TutorialStepManager', () => {
       id: 'fill-sage-herb-task',
       targetId: 'task:level4-turn-in-sage-herb',
       hintText: 'turn in sage',
-      stepLabel: '30/37',
+      stepLabel: '29/36',
     });
   });
 
@@ -1244,7 +1242,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'fill-mint-herb-task',
       targetId: 'page:garden',
-      stepLabel: '31/37',
+      stepLabel: '30/36',
     });
   });
 
@@ -1290,7 +1288,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-four',
       targetId: 'page:shop',
       progressLabel: '10/16 coin',
-      stepLabel: '32/37',
+      stepLabel: '31/36',
     });
   });
 
@@ -1298,7 +1296,7 @@ describe('TutorialStepManager', () => {
     expect(getStep({ pageId: 'research', snapshot: createLevelFiveSnapshot() })).toMatchObject({
       id: 'research-mana-tonic',
       targetId: 'research:unlockRecipe:manaTonic',
-      stepLabel: '33/37',
+      stepLabel: '32/36',
     });
   });
 
@@ -1319,7 +1317,7 @@ describe('TutorialStepManager', () => {
       id: 'brew-mana-tonic',
       targetId: 'brewing:herb:sageHerb',
       hintText: 'tap sage to fill cauldron. recipes care about order',
-      stepLabel: '35/37',
+      stepLabel: '34/36',
     });
   });
 
@@ -1339,7 +1337,7 @@ describe('TutorialStepManager', () => {
       id: 'brew-mana-tonic',
       targetId: 'brewing:inventory:herbs',
       hintText: 'open herbs',
-      stepLabel: '35/37',
+      stepLabel: '34/36',
     });
   });
 
@@ -1386,7 +1384,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'intro-brewing',
       targetId: 'page:brewing',
-      stepLabel: '34/37',
+      stepLabel: '33/36',
     });
   });
 
@@ -1423,7 +1421,7 @@ describe('TutorialStepManager', () => {
       id: 'refill-mana-tonic-cauldron',
       targetId: 'task:level5-turn-in-mana-tonic',
       hintText: 'turn in mana tonic',
-      stepLabel: '37/37',
+      stepLabel: '36/36',
     });
   });
 

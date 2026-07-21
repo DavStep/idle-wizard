@@ -514,21 +514,21 @@ describe('TutorialLogicManager', () => {
   });
 
   it('auto-advances timed steps after their delay', () => {
-    const amountTarget = {};
-    const sellTarget = {};
+    const explanationTarget = {};
+    const nextTarget = {};
     const completed = [];
     const timedStep = createStep({
-      id: 'show-selected-sale-amount',
-      targetId: 'shop:directSell:amount',
-      objectiveText: 'this number is the amount selected to sell.',
+      id: 'timed-explanation',
+      targetId: 'example:timed',
+      objectiveText: 'this explanation advances after a delay.',
       showPointer: false,
       emphasizeTarget: true,
       autoAdvanceMs: 2000,
     });
     const sellStep = createStep({
-      id: 'earn-tutorial-coin',
-      targetId: 'shop:directSell:sell',
-      objectiveText: 'press sell',
+      id: 'next-action',
+      targetId: 'example:next',
+      objectiveText: 'continue',
     });
     const reminderManager = createReminderFake();
     const manager = new TutorialLogicManager({
@@ -540,7 +540,7 @@ describe('TutorialLogicManager', () => {
       },
     });
     const targetResolver = (targetId) =>
-      targetId === 'shop:directSell:amount' ? amountTarget : sellTarget;
+      targetId === 'example:timed' ? explanationTarget : nextTarget;
 
     const waitingState = manager.getViewState({
       snapshot: {},
@@ -552,10 +552,10 @@ describe('TutorialLogicManager', () => {
     expect(waitingState).toMatchObject({
       kind: 'lesson',
       step: {
-        id: 'show-selected-sale-amount',
+        id: 'timed-explanation',
       },
       cue: {
-        target: amountTarget,
+        target: explanationTarget,
         showPointer: false,
         emphasizeTarget: true,
       },
@@ -571,15 +571,15 @@ describe('TutorialLogicManager', () => {
       now: 3000,
     });
 
-    expect(completed).toEqual(['show-selected-sale-amount']);
+    expect(completed).toEqual(['timed-explanation']);
     expect(reminderManager.discardCount).toBe(1);
     expect(advancedState).toMatchObject({
       kind: 'lesson',
       step: {
-        id: 'earn-tutorial-coin',
+        id: 'next-action',
       },
       cue: {
-        target: sellTarget,
+        target: nextTarget,
       },
     });
   });
@@ -587,7 +587,7 @@ describe('TutorialLogicManager', () => {
   it('passes the resolved target into popup blocker checks', () => {
     const target = {};
     const step = createStep({
-      targetId: 'shop:directSell:sageSeed',
+      targetId: 'shop:sell:sageSeed',
     });
     const { manager } = createManager({ step });
     let blockerTarget = null;

@@ -15,11 +15,11 @@ Use the component notes for behavior and this note for the balance summary.
 ## Trader market defaults
 
 - Real backend quotes begin at player level 4.
-- Automatic stands share one 1,800-second wall-clock cycle.
-- Stand costs are 0, 50, 150, 400, and 1,000 coin.
-- Fast Sell pays 80%, then 85/90/95% through emerald research costing 2/5/10.
+- Every automatic stand has its own 5-second cycle.
+- Market licence rank grants the available stands; there is no run-coin stand cost.
+- Base throughput is 1 item per cycle. Staffing studies cost 1/2/3/4/5 emerald and make the matching stand sell 2 items per cycle.
 
-See [[mechanics/market/NPC Market|NPC Market]], [[mechanics/market/Trader Stands|Trader Stands]], and [[mechanics/market/Fast Sell|Fast Sell]].
+See [[mechanics/market/NPC Market|NPC Market]] and [[mechanics/market/Trader Stands|Trader Stands]].
 
 ## Demand defaults
 

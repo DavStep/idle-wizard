@@ -1,3 +1,5 @@
+const MAX_BACKEND_TRADE_QUANTITY = 10_000;
+
 export class ShopAutoSellManager {
   constructor({
     coinFacade,
@@ -5,33 +7,27 @@ export class ShopAutoSellManager {
     shopBalanceManager,
     shopNpcPriceManager,
     shopNpcSellQuoteManager,
-    shopSellAvailabilityManager,
     shopShelfEntityManager,
     getAccessibleSlotCount,
     getItemAccess,
+    getStallBatchSize,
     onItemSold,
-    now = () => Date.now(),
   }) {
     this.coinFacade = coinFacade;
     this.itemsFacade = itemsFacade;
     this.shopBalanceManager = shopBalanceManager;
     this.shopNpcPriceManager = shopNpcPriceManager;
     this.shopNpcSellQuoteManager = shopNpcSellQuoteManager;
-    this.shopSellAvailabilityManager = shopSellAvailabilityManager;
     this.shopShelfEntityManager = shopShelfEntityManager;
     this.getAccessibleSlotCount = getAccessibleSlotCount;
     this.getItemAccess = getItemAccess;
+    this.getStallBatchSize = getStallBatchSize;
     this.onItemSold = onItemSold;
-    this.now = now;
     this.registered = false;
-    this.pendingCycleCount = 0;
   }
 
   register(systemManager) {
-    if (this.registered) {
-      return;
-    }
-
+    if (this.registered) return;
     systemManager.register({
       update: (_world, frame) => this.update(this.getTimerDeltaSeconds(frame)),
     });
@@ -39,171 +35,101 @@ export class ShopAutoSellManager {
   }
 
   update(deltaSeconds) {
-    const autoSellSeconds = this.shopBalanceManager.getAutoSellSeconds();
-    const nowSeconds = this.getNowSeconds();
-    const progressSeconds = this.getGlobalProgressSeconds(autoSellSeconds, nowSeconds);
     const activeSlots = this.getActiveSellSlots();
-    this.syncPriceRetention(activeSlots);
-
-    if (activeSlots.length <= 0) {
-      this.pendingCycleCount = 0;
-      this.shopShelfEntityManager.setSellProgressSeconds(progressSeconds);
+    this.shopNpcPriceManager?.syncPriceRetention?.(activeSlots.length > 0);
+    if (activeSlots.length <= 0 || !Number.isFinite(deltaSeconds) || deltaSeconds <= 0) {
       return;
     }
 
-    this.pendingCycleCount += this.getElapsedCycleCount({
-      autoSellSeconds,
-      deltaSeconds,
-      nowSeconds,
-    });
+    const cycleSeconds = this.shopBalanceManager.getAutoSellSeconds();
+    const npcNeedByItemKey = new Map();
+    const backendQuantityByItemKey = new Map();
 
-    this.processPendingCycles(activeSlots);
+    for (const slot of activeSlots) {
+      const sale = this.processSlot(slot, {
+        cycleSeconds,
+        deltaSeconds,
+        npcNeedByItemKey,
+      });
+      if (!sale?.item?.key || sale.quantity <= 0) continue;
+      backendQuantityByItemKey.set(
+        sale.item.key,
+        (backendQuantityByItemKey.get(sale.item.key) ?? 0) + sale.quantity,
+      );
+    }
 
-    this.shopShelfEntityManager.setSellProgressSeconds(progressSeconds);
+    this.recordBackendSales(backendQuantityByItemKey);
   }
 
   hasFrameTimerWork() {
     return this.getActiveSellSlots().length > 0;
   }
 
-  syncPriceRetention(activeSlots) {
-    this.shopNpcPriceManager?.syncPriceRetention?.(activeSlots.length > 0);
-  }
+  processSlot(slot, { cycleSeconds, deltaSeconds, npcNeedByItemKey }) {
+    if (!Number.isFinite(cycleSeconds) || cycleSeconds <= 0) return null;
 
-  getNowSeconds() {
-    const nowMs = this.now?.();
-
-    return Number.isFinite(nowMs) ? Math.max(0, nowMs / 1000) : 0;
-  }
-
-  getGlobalProgressSeconds(autoSellSeconds, nowSeconds = this.getNowSeconds()) {
-    if (!Number.isFinite(autoSellSeconds) || autoSellSeconds <= 0) {
-      return 0;
-    }
-
-    return nowSeconds % autoSellSeconds;
-  }
-
-  getElapsedCycleCount({ autoSellSeconds, deltaSeconds, nowSeconds }) {
-    if (
-      !Number.isFinite(autoSellSeconds) ||
-      autoSellSeconds <= 0 ||
-      !Number.isFinite(deltaSeconds) ||
-      deltaSeconds <= 0 ||
-      !Number.isFinite(nowSeconds)
-    ) {
-      return 0;
-    }
-
-    const previousNowSeconds = Math.max(0, nowSeconds - deltaSeconds);
-    const previousCycle = Math.floor(previousNowSeconds / autoSellSeconds);
-    const currentCycle = Math.floor(nowSeconds / autoSellSeconds);
-
-    return Math.max(0, currentCycle - previousCycle);
-  }
-
-  sellShopCycle(slots) {
-    return this.sellShopCycleWithDemandState(slots, new Map());
-  }
-
-  sellShopCycleWithDemandState(slots, npcNeedByItemKey) {
-    let soldAny = false;
-    let blocked = false;
-
-    for (const slot of slots) {
-      const result = this.sellSlot(slot, { npcNeedByItemKey });
-
-      if (result.sold) {
-        soldAny = true;
-      }
-
-      if (result.blocked) {
-        blocked = true;
-      }
-    }
-
-    return { soldAny, blocked };
-  }
-
-  processPendingCycles(activeSlots) {
-    const npcNeedByItemKey = new Map();
-    let currentActiveSlots = activeSlots;
-
-    while (this.pendingCycleCount > 0) {
-      const result = this.sellShopCycleWithDemandState(
-        currentActiveSlots,
-        npcNeedByItemKey,
+    const progressSeconds = Math.max(0, Number(slot.sellProgressSeconds) || 0) + deltaSeconds;
+    const cyclesDue = Math.floor(progressSeconds / cycleSeconds);
+    if (cyclesDue <= 0) {
+      this.shopShelfEntityManager.setSlotSellProgressSeconds(
+        slot.slotNumber,
+        progressSeconds,
       );
-
-      if (result.soldAny) {
-        this.pendingCycleCount -= 1;
-        currentActiveSlots = this.getActiveSellSlots();
-
-        if (currentActiveSlots.length <= 0) {
-          this.pendingCycleCount = 0;
-          return;
-        }
-
-        continue;
-      }
-
-      if (result.blocked) {
-        return;
-      }
-
-      this.pendingCycleCount = 0;
-      return;
+      return null;
     }
-  }
 
-  getActiveSellSlots() {
-    return this.shopShelfEntityManager
+    const result = this.sellSlot(slot, {
+      cyclesDue,
+      npcNeedByItemKey,
+    });
+    if (result.blocked) {
+      this.shopShelfEntityManager.setSlotSellProgressSeconds(
+        slot.slotNumber,
+        progressSeconds,
+      );
+      return null;
+    }
+
+    const remainingProgressSeconds = progressSeconds % cycleSeconds;
+    const nextSlot = this.shopShelfEntityManager
       .getSlotSnapshots()
-      .filter((slot) =>
-        slot.slotNumber <= (this.getAccessibleSlotCount?.() ?? Number.POSITIVE_INFINITY))
-      .filter((slot) => this.isActiveSellSlot(slot));
+      .find((candidate) => candidate.slotNumber === slot.slotNumber);
+    if (nextSlot?.loadedQuantity > 0) {
+      this.shopShelfEntityManager.setSlotSellProgressSeconds(
+        slot.slotNumber,
+        remainingProgressSeconds,
+      );
+    }
+    return result.sold ? result : null;
   }
 
-  sellSlot(slot, { npcNeedByItemKey = null } = {}) {
+  sellSlot(slot, { cyclesDue = 1, npcNeedByItemKey = null } = {}) {
     const item = this.itemsFacade.getItemDefinition(slot.sellItemTypeId);
-    const availableQuantity = this.getAvailableQuantity(slot.sellItemTypeId);
-
-    if (availableQuantity <= 0) {
-      return { sold: false, blocked: false };
-    }
-
     const coin = this.shopNpcPriceManager.getNpcBuyPriceCoin(item);
-
     if (!Number.isFinite(coin)) {
       return { sold: false, blocked: this.isPriceDataPending() };
     }
-
-    if (coin <= 0) {
-      return { sold: false, blocked: false };
-    }
+    if (coin <= 0) return { sold: false, blocked: false };
 
     const npcNeed = this.getAvailableNpcNeed(item, npcNeedByItemKey);
-
     if (!Number.isFinite(npcNeed)) {
       return { sold: false, blocked: this.isPriceDataPending() };
     }
+    if (npcNeed <= 0) return { sold: false, blocked: false };
 
-    if (npcNeed <= 0) {
-      return { sold: false, blocked: false };
-    }
-
-    const quantity = this.getBulkSellQuantity(slot.sellItemTypeId, {
-      availableQuantity,
+    const batchSize = Math.max(
+      1,
+      Math.floor(Number(this.getStallBatchSize?.(slot.slotNumber)) || 1),
+    );
+    const quantity = Math.min(
+      slot.loadedQuantity,
       npcNeed,
-      slot,
-    });
-
-    if (quantity <= 0 || !this.canSellItem(slot.sellItemTypeId, quantity)) {
-      return { sold: false, blocked: false };
-    }
+      cyclesDue * batchSize,
+      MAX_BACKEND_TRADE_QUANTITY,
+    );
+    if (quantity <= 0) return { sold: false, blocked: false };
 
     const quote = this.quoteSale(item, quantity, coin, { npcNeed });
-
     if (!quote.ok) {
       return {
         sold: false,
@@ -213,24 +139,28 @@ export class ShopAutoSellManager {
       };
     }
 
-    const soldItem = this.itemsFacade.removeItem(slot.sellItemTypeId, quantity);
-
-    if (!soldItem) {
-      return { sold: false, blocked: false };
-    }
-
-    const totalCoin = quote.totalPriceCoin;
-    this.coinFacade.add(totalCoin);
-    this.shopShelfEntityManager.consumeSlotSellQuantityLimit?.(slot.slotNumber, quantity);
+    this.coinFacade.add(quote.totalPriceCoin);
+    this.shopShelfEntityManager.changeSlotLoadedQuantity(slot.slotNumber, -quantity);
     this.consumeNpcNeed(item, quantity, npcNeedByItemKey);
-    void this.shopNpcPriceManager.recordSellToNpc(item, quantity);
     this.onItemSold?.({
       item,
-      coin: totalCoin,
+      coin: quote.totalPriceCoin,
       quantity,
       slotNumber: slot.slotNumber,
     });
-    return { sold: true, blocked: false };
+    return { sold: true, blocked: false, item, quantity };
+  }
+
+  recordBackendSales(quantityByItemKey) {
+    for (const [itemKey, totalQuantity] of quantityByItemKey) {
+      const item = this.itemsFacade.safeGetDefinitionByKey(itemKey);
+      let remaining = totalQuantity;
+      while (item && remaining > 0) {
+        const quantity = Math.min(MAX_BACKEND_TRADE_QUANTITY, remaining);
+        void this.shopNpcPriceManager.recordSellToNpc(item, quantity);
+        remaining -= quantity;
+      }
+    }
   }
 
   getTimerDeltaSeconds(frame = {}) {
@@ -239,109 +169,15 @@ export class ShopAutoSellManager {
       : frame.deltaSeconds;
   }
 
-  canSellItem(itemTypeId, quantity) {
-    return this.shopSellAvailabilityManager?.canRemoveItem(itemTypeId, quantity) ?? true;
-  }
-
-  isPriceDataPending() {
-    return this.shopNpcPriceManager?.needsBackendPrices?.() !== false;
-  }
-
-  getBulkSellQuantity(itemTypeId, {
-    availableQuantity = this.getAvailableQuantity(itemTypeId),
-    npcNeed = this.getNpcNeed(itemTypeId),
-    slot = null,
-  } = {}) {
-    if (
-      !Number.isFinite(availableQuantity) ||
-      availableQuantity <= 0 ||
-      !Number.isFinite(npcNeed)
-    ) {
-      return 0;
-    }
-
-    const slotQuantityLimit = this.getSlotQuantityLimit(slot);
-
-    return Math.max(
-      0,
-      Math.min(
-        10_000,
-        Math.floor(availableQuantity),
-        npcNeed,
-        slotQuantityLimit ?? Number.POSITIVE_INFINITY,
-      ),
-    );
-  }
-
-  getAvailableQuantity(itemTypeId) {
-    const availableQuantity =
-      this.shopSellAvailabilityManager?.getAvailableQuantity?.(itemTypeId) ??
-      this.itemsFacade?.getItemQuantity?.(itemTypeId) ??
-      0;
-
-    if (!Number.isFinite(availableQuantity) || availableQuantity <= 0) {
-      return 0;
-    }
-
-    return Math.floor(availableQuantity);
-  }
-
-  getNpcNeed(itemTypeId) {
-    const item = this.itemsFacade.getItemDefinition(itemTypeId);
-
-    return this.getNpcNeedForItem(item);
-  }
-
-  getNpcNeedForItem(item) {
-    if (typeof this.shopNpcPriceManager.getNpcNeed !== 'function') {
-      return 10_000;
-    }
-
-    const need = this.shopNpcPriceManager.getNpcNeed?.(item);
-
-    if (!Number.isFinite(need)) {
-      return null;
-    }
-
-    if (need <= 0) {
-      return 0;
-    }
-
-    return Math.floor(need);
-  }
-
-  getAvailableNpcNeed(item, npcNeedByItemKey) {
-    const itemKey = this.getNpcNeedItemKey(item);
-
-    if (!itemKey || !npcNeedByItemKey) {
-      return this.getNpcNeedForItem(item);
-    }
-
-    if (!npcNeedByItemKey.has(itemKey)) {
-      npcNeedByItemKey.set(itemKey, this.getNpcNeedForItem(item));
-    }
-
-    return npcNeedByItemKey.get(itemKey);
-  }
-
-  consumeNpcNeed(item, quantity, npcNeedByItemKey) {
-    const itemKey = this.getNpcNeedItemKey(item);
-
-    if (!itemKey || !npcNeedByItemKey) {
-      return;
-    }
-
-    const npcNeed = npcNeedByItemKey.get(itemKey);
-
-    if (!Number.isFinite(npcNeed)) {
-      return;
-    }
-
-    npcNeedByItemKey.set(itemKey, Math.max(0, npcNeed - quantity));
-  }
-
-  getNpcNeedItemKey(item) {
-    return item?.key ? String(item.key) : null;
+  getActiveSellSlots() {
+    return this.shopShelfEntityManager
+      .getSlotSnapshots()
+      .filter(
+        (slot) =>
+          slot.slotNumber <=
+          (this.getAccessibleSlotCount?.() ?? Number.POSITIVE_INFINITY),
+      )
+      .filter((slot) => this.isActiveSellSlot(slot));
   }
 
   isActiveSellSlot(slot) {
@@ -349,44 +185,51 @@ export class ShopAutoSellManager {
       ? this.itemsFacade.getItemDefinition(slot.sellItemTypeId)
       : null;
     const marketAccess = item ? this.getItemAccess?.(item) : null;
-
     return Boolean(
       slot?.unlocked &&
         slot.sellItemTypeId &&
-        (!marketAccess || marketAccess.tradedHere) &&
-        (slot.sellLimitMode !== 'amount' || this.getSlotQuantityLimit(slot) > 0),
+        slot.loadedQuantity > 0 &&
+        (!marketAccess || marketAccess.tradedHere),
     );
   }
 
-  getSlotQuantityLimit(slot) {
-    if (slot?.sellLimitMode !== 'amount') {
-      return null;
-    }
+  isPriceDataPending() {
+    return this.shopNpcPriceManager?.needsBackendPrices?.() !== false;
+  }
 
-    const quantity = Math.floor(Number(slot.sellQuantityLimit));
-    if (!Number.isInteger(quantity) || quantity <= 0) {
-      return 0;
+  getAvailableNpcNeed(item, npcNeedByItemKey) {
+    const itemKey = item?.key ? String(item.key) : null;
+    if (!itemKey || !npcNeedByItemKey) return this.getNpcNeedForItem(item);
+    if (!npcNeedByItemKey.has(itemKey)) {
+      npcNeedByItemKey.set(itemKey, this.getNpcNeedForItem(item));
     }
+    return npcNeedByItemKey.get(itemKey);
+  }
 
-    return quantity;
+  getNpcNeedForItem(item) {
+    if (typeof this.shopNpcPriceManager.getNpcNeed !== 'function') return 10_000;
+    const need = this.shopNpcPriceManager.getNpcNeed?.(item);
+    if (!Number.isFinite(need)) return null;
+    return need <= 0 ? 0 : Math.floor(need);
+  }
+
+  consumeNpcNeed(item, quantity, npcNeedByItemKey) {
+    const itemKey = item?.key ? String(item.key) : null;
+    if (!itemKey || !npcNeedByItemKey) return;
+    const npcNeed = npcNeedByItemKey.get(itemKey);
+    if (Number.isFinite(npcNeed)) {
+      npcNeedByItemKey.set(itemKey, Math.max(0, npcNeed - quantity));
+    }
   }
 
   quoteSale(item, quantity, fallbackPriceCoin, { npcNeed = null } = {}) {
-    const quote = this.shopNpcSellQuoteManager?.quoteItem?.({
-      item,
-      quantity,
-      npcNeed,
-    });
-
-    if (quote) {
-      return quote;
-    }
-
-    return {
-      ok: true,
-      quantity,
-      priceCoin: fallbackPriceCoin,
-      totalPriceCoin: fallbackPriceCoin * quantity,
-    };
+    return (
+      this.shopNpcSellQuoteManager?.quoteItem?.({ item, quantity, npcNeed }) ?? {
+        ok: true,
+        quantity,
+        priceCoin: fallbackPriceCoin,
+        totalPriceCoin: fallbackPriceCoin * quantity,
+      }
+    );
   }
 }

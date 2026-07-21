@@ -13,15 +13,17 @@ note_type: trading-component
 system: market
 implementation: shipped
 stand_count: 5
-sale_cycle_seconds: 1800
-backend_role: automatic NPC sales
-source_scope: current-client-default
-verified_on: 2026-07-19
+sale_cycle_seconds: 5
+base_batch_size: 1
+staffed_batch_size: 2
+backend_role: shared NPC demand updates
+source_scope: client-scheduled-and-backend-validated
+verified_on: 2026-07-21
 ---
 
 # Trader Stands
 
-Trader stands automatically sell one selected seed, herb, or potion type on one shared wall-clock cycle aligned to **:00** and **:30**.
+Each trader stand sells from its own loaded stock on an independent five-second cycle.
 
 | Market rank | Available stalls |
 | ---: | ---: |
@@ -31,18 +33,23 @@ Trader stands automatically sell one selected seed, herb, or potion type on one 
 | ★★★★ | 4 |
 | ★★★★★ | 5 |
 
-- Stalls are granted by the permanent active market licence; there is no stand purchase.
-- A stand can sell **all** available matching items or a fixed remaining quantity.
-- Changing a selected item or marked quantity does not reset the shared timer.
-- Each eligible stand attempts its sale every cycle.
-- Successful automatic sales receive the full marginal NPC buy quote.
-- Backend need must be above zero.
-- See [[mechanics/market/Sellable Quantity|Sellable Quantity]] for reservations.
+- Tap a stand to open the loader, then press or hold an item to transfer it from inventory.
+- Hold the loaded item on the stand to return stock to inventory.
+- A stand contains one item type at a time and clears when its loaded quantity reaches zero.
+- Base throughput is 1 item every 5 seconds.
+- `advanced:stallStaffing:N` changes stand N to 2 items every 5 seconds.
+- Every stand keeps independent progress, including offline catch-up.
+- Same-item demand is reserved locally across stands, then backend reports are aggregated and split into reducer-safe chunks.
+- The server validates active market scope, item catalog membership, demand, and a maximum of 10,000 items per reducer call.
 
-Legacy saves may contain assignments in higher slots. Those records stay saved but inactive until the matching rank returns.
+Loaded quantities are capped at 1,000,000 per stand in save normalization. Legacy fixed/all assignments migrate once into physical loaded stock. Legacy `fastSellPayout:1..3` research maps to staffing stands 1–3.
+
+Player inventory and coin remain client-owned; see [[mechanics/market/Market Authority|Market Authority]].
 
 ## Source of truth
 
 - `src/gameplay/shop/managers/ShopAutoSellManager.js`
+- `src/gameplay/shop/managers/ShopShelfSlotSelectionManager.js`
 - `src/gameplay/shop/managers/ShopBalanceManager.js`
-- `src/gameplay/playerLevel/player-level-balance.json`
+- `src/gameplay/research/stallStaffingResearch.js`
+- `spacetimedb/src/index.ts`

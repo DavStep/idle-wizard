@@ -160,18 +160,18 @@ experience_type: product-shape
 - Non-button text/row press targets should fire synthetic click on touch/pointer press-start with click dedupe; native buttons should activate on release/click. Use `data-press-start-click="false"` only when a non-button target needs validated release.
 - `.is-locked` is not a disabled signal for shared press handling; use native `disabled`, `aria-disabled="true"`, or `.is-disabled` so buyable locked rows and locked room tabs still synth-click on web.
 - Native dialog/open/submit buttons should activate on validated pointerup/click; do not add touchstart/pointerdown action handlers to buttons unless the interaction is a true hold/drag setup.
-- NPC market stand press-start opens must ignore the immediate retargeted backdrop click; otherwise the `sell` picker flashes open and closes on mobile/WebView.
+- NPC market stand rows open the loader on ordinary click/keyboard activation; reserve pointerdown handling for the actual load/unload hold controls.
 - NPC market demand recovery uses lazy capped UTC buyer waves, not a smooth 5-minute/half-life regen or hard daily reset; backend and `npcMarketPricing.js` must stay mirrored.
 - NPC market weekly reset must use the same anchored Monday UTC period as leaderboards/events; start recovery at `weekStart - 1` so the day-start buyer wave is added after the reset.
-- NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or fast-sell/stock totals drift.
-- NPC market demand/prices are fake local gameplay values until player level 4; do not debug level 1-3 fast-sell against backend NPC rows.
-- NPC demand market auto-sell uses one shared wall-clock timer aligned to `:00` and `:30`; render it as a box-level bottom border label, not inside each stand row.
-- NPC demand market catch-up cycles must refresh active stand snapshots after each sale; fixed `amount` marks can hit zero mid-update and must not keep selling from a stale slot snapshot.
+- NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or stall/stock totals drift.
+- NPC market demand/prices are fake local gameplay values until player level 4; do not debug level 1-3 timed stalls against backend NPC rows.
+- NPC trader stands each own an independent five-second progress clock. Render batch, remaining seconds, and current value on each loaded row.
+- Loaded trader items are physically removed from inventory and returned on unload; do not reintroduce parallel reservation or fixed/all mark state.
 - Level 4+ NPC auto-sell needs retained backend price rows while any stand has an item; if prices are missing at a timer boundary, keep that cycle pending instead of resetting it away.
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or bold text there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker visible labels need stable hit targets and click/backdrop dedupe; icon/text fragments inside those labels should not own separate hit testing.
-- Trader demand market sell-picker rows should activate on validated touch release, not touchstart, so scroll drags do not select rows; selection must not change the picker row's font weight.
+- Trader loader rows transfer once on pointerdown, repeat after the hold delay, cancel after a 10px move, and persist once on release; selection must not change row font weight.
 - Scrollable choice/item rows should activate on validated touch release with a small movement tolerance; keep press-start only for non-scroll openers where mobile click retargets.
 - Garden selected seed labels need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening seed choices.
 - Garden cancel/swap dialogs opened from touch-selected seed picker rows need their own one-shot backdrop dedupe; otherwise WebView can close the new dialog with the same synthetic click.
@@ -210,12 +210,8 @@ experience_type: product-shape
 - After a room announcement closes, keep FTUE hidden for one more beat so bottom-tab unlock motion can finish before Elara resumes.
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
-- Fast-sell picker rows are one action; make the whole visual row the button, but put the FTUE target id on the item-name span.
-- Fast-sell picker item names keep normal weight before and after selection; mobile no-hover affordances must not change row font weight.
-- Fast-sell FTUE should point at the item name, not the row value side, so `sage seed` reads as the target.
-- The first FTUE fast-sell amount beat should only boink the selected `[1]` amount, with no open lesson panel or pointer; the next sale step points at `sell`.
-- FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.
-- When Trader Offer is already open with an item selected, FTUE should target the current amount action (`sell` once current quantity covers missing coin, `+1` while more quantity is still useful) and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
+- Trader loader rows are one action; make the whole visual row the button and put FTUE ids on that button (`shop:sell:<itemKey>`).
+- FTUE Market teaching is `open first stall -> hold sage seed to load -> wait for timed sale`; there is no amount or confirm step.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE lesson border-action buttons need late `.style-box .tutorial-layer__...` overrides, because the global `.style-box :where(button, ...)` rule can re-inflate them to body size.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
@@ -256,14 +252,14 @@ experience_type: product-shape
 - FTUE hidden action buttons need reveal-gate `pointer-events: none` with enough specificity to beat action-bar base button rules.
 - Once FTUE reveals the top panel, keep it visible; players have already unlocked that chrome.
 - FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
-- FTUE should not own special market economy. Keep level 1 free, then teach level-up coin through normal fast-sell quotes, quantities, and inventory mutation at level 2.
+- FTUE should not own special market economy. Keep level 1 free, then teach level-up coin through normal timed stalls at level 2.
 - FTUE level-2 Market guidance must follow the live task order: summon enough sage seeds, sell one, turn in the remainder, then handle any remaining level-up coin. Do not wait until `completion.canComplete` before showing the summon/sell guidance.
 - FTUE terminal hides must clear inner lesson/button/pointer state; hiding only the layer lets later click-driven hides re-show stale tutorial UI for one frame.
 - FTUE uses one left Elara lesson button and one lesson panel; do not add separate dialog, hint, prompt, or objective boxes.
 - FTUE advance prompts treat any stage click as `next` and consume the click so underlying controls do not fire.
 - FTUE level-up objectives should point to Market and show coin progress when completed tasks are blocked only by missing level-up coin.
 - FTUE level-up prompts should target the full completion row, not only the button, so the needed coin stays visible.
-- FTUE level-up coin guidance should choose fast-sell targets from `shop.shelf.sellItems` available quantities, not raw inventory; reserved items can show `x0` and must route back to a source, while available items on another category should first target that tab.
+- FTUE level-up coin guidance should prefer an already loaded matching stall, then choose loader targets from `shop.shelf.sellItems`; unavailable items route back to a source and another category first targets its tab.
 - Wide FTUE context rows can keep `data-tutorial-id` on the row while the pointer uses a child CTA anchor; otherwise the hand may point back to row center.
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
 - FTUE acquisition, research, and brewing lessons must first check live task `ownedQuantity`/remaining requirements; if the task can consume an already-owned item, point to the task before asking for another source.
@@ -279,7 +275,7 @@ experience_type: product-shape
 - Elara collision fallback should prefer the lower default slot when multiple placements clear protected controls; first-safe ordering can put her in the upper lane.
 - Elara guidance for the Workshop summon button should prefer the clear lower slot; bottom page-tab tutorial targets are future navigation, not a reason to place the lesson above summon.
 - Elara objective placement must also avoid visible research sub-tabs; otherwise the tab corner peeks under the lesson border-label area.
-- Elara objective placement must protect the whole fast-sell tab strip when targeting one tab; a single tab rect can leave the guide covering adjacent tab controls.
+- Elara objective placement must protect the whole stall-loader tab strip when targeting one tab; a single tab rect can leave the guide covering adjacent tab controls.
 - Draggable Elara placement must test portrait/button overlap with the lesson panel; side-only clamping can shove the panel under Elara near the right edge.
 - FTUE balance order is level 1 free Workshop sage seed, level 2 Market selling, level 3 Research/mint seed, level 4 Garden herbs, then level 5 Brewing/mana tonic.
 - FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: research`, `lesson 4: gardening`, and `lesson 5: brewing`.

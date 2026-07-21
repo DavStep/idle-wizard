@@ -167,55 +167,45 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().isThemeSettingsTabOpen()).toBe(false);
   });
 
-  it('reads the selected fast-sell tab', () => {
+  it('reads the selected stall item tab', () => {
     const stage = document.createElement('section');
     const popup = document.createElement('section');
     const seedsTab = document.createElement('button');
     const herbsTab = document.createElement('button');
     const manager = new TutorialTargetManager({ stage });
 
-    popup.className = 'shop-page__direct-sell-popup';
-    seedsTab.className = 'shop-page__direct-sell-tab-button';
-    seedsTab.dataset.directSellKind = 'seed';
+    popup.className = 'shop-page__sell-popup';
+    seedsTab.className = 'shop-page__sell-tab-button';
+    seedsTab.dataset.tutorialId = 'shop:sell:tab:seed';
     seedsTab.setAttribute('aria-selected', 'true');
-    herbsTab.className = 'shop-page__direct-sell-tab-button';
-    herbsTab.dataset.directSellKind = 'herb';
+    herbsTab.className = 'shop-page__sell-tab-button';
+    herbsTab.dataset.tutorialId = 'shop:sell:tab:herb';
     herbsTab.setAttribute('aria-selected', 'false');
     popup.append(seedsTab, herbsTab);
     stage.append(popup);
 
-    expect(manager.getDomState().isShopDirectSellTabSelected('seed')).toBe(true);
-    expect(manager.getDomState().isShopDirectSellTabSelected('herb')).toBe(false);
+    expect(manager.getDomState().isShopSellTabSelected('seed')).toBe(true);
+    expect(manager.getDomState().isShopSellTabSelected('herb')).toBe(false);
 
     seedsTab.setAttribute('aria-selected', 'false');
     herbsTab.setAttribute('aria-selected', 'true');
 
-    expect(manager.getDomState().isShopDirectSellTabSelected('seed')).toBe(false);
-    expect(manager.getDomState().isShopDirectSellTabSelected('herb')).toBe(true);
+    expect(manager.getDomState().isShopSellTabSelected('seed')).toBe(false);
+    expect(manager.getDomState().isShopSellTabSelected('herb')).toBe(true);
   });
 
-  it('reads the visible fast-sell quantity', () => {
+  it('reads whether the stall loader popup is open', () => {
     const stage = document.createElement('section');
     const popup = document.createElement('section');
-    const valueButton = document.createElement('button');
-    const input = document.createElement('input');
     const manager = new TutorialTargetManager({ stage });
 
-    popup.className = 'shop-page__direct-sell-popup';
-    valueButton.className = 'amount-selection-row__value';
-    valueButton.textContent = '3';
-    input.className = 'shop-page__direct-sell-input';
-    input.value = '7';
-    input.hidden = true;
-    popup.append(valueButton, input);
+    popup.className = 'shop-page__sell-popup';
     stage.append(popup);
 
-    expect(manager.getDomState().getShopDirectSellQuantity()).toBe(3);
+    expect(manager.getDomState().isShopSellPopupOpen()).toBe(true);
 
-    valueButton.hidden = true;
-    input.hidden = false;
-
-    expect(manager.getDomState().getShopDirectSellQuantity()).toBe(7);
+    popup.hidden = true;
+    expect(manager.getDomState().isShopSellPopupOpen()).toBe(false);
   });
 
   it('allows popup guidance when the active target is inside the open popup', () => {
@@ -224,8 +214,8 @@ describe('TutorialTargetManager', () => {
     const target = document.createElement('button');
     const manager = new TutorialTargetManager({ stage });
 
-    popup.className = 'shop-page__direct-sell-popup';
-    target.dataset.tutorialId = 'shop:directSell:sageSeed';
+    popup.className = 'shop-page__sell-popup';
+    target.dataset.tutorialId = 'shop:sell:sageSeed';
     popup.append(target);
     stage.append(popup);
     document.body.append(stage);
@@ -233,7 +223,7 @@ describe('TutorialTargetManager', () => {
     expect(
       manager
         .getDomState()
-        .isBlockingDialogOpenForStep({ targetId: 'shop:directSell:sageSeed' }, target),
+        .isBlockingDialogOpenForStep({ targetId: 'shop:sell:sageSeed' }, target),
     ).toBe(false);
   });
 
@@ -297,7 +287,7 @@ describe('TutorialTargetManager', () => {
     const target = document.createElement('button');
     const manager = new TutorialTargetManager({ stage });
 
-    target.dataset.tutorialId = 'shop:directSell';
+    target.dataset.tutorialId = 'shop:stand:1';
     target.style.opacity = '0';
     target.getBoundingClientRect = () => ({
       left: 10,
@@ -309,24 +299,24 @@ describe('TutorialTargetManager', () => {
     });
     stage.append(target);
 
-    expect(manager.getTarget('shop:directSell')).toBe(target);
+    expect(manager.getTarget('shop:stand:1')).toBe(target);
   });
 
   it('keeps copy-only popup guidance visible only for the popup it needs', () => {
     const stage = document.createElement('section');
-    const directSellPopup = document.createElement('section');
+    const sellPopup = document.createElement('section');
     const otherPopup = document.createElement('section');
     const manager = new TutorialTargetManager({ stage });
 
-    directSellPopup.className = 'shop-page__direct-sell-popup';
+    sellPopup.className = 'shop-page__sell-popup';
     otherPopup.className = 'workshop-page__leaderboard-popup';
-    stage.append(directSellPopup, otherPopup);
+    stage.append(sellPopup, otherPopup);
     document.body.append(stage);
 
     expect(
       manager.getDomState().isBlockingDialogOpenForStep({
         targetId: null,
-        allowedPopupClasses: ['shop-page__direct-sell-popup'],
+        allowedPopupClasses: ['shop-page__sell-popup'],
       }),
     ).toBe(true);
 
@@ -335,7 +325,7 @@ describe('TutorialTargetManager', () => {
     expect(
       manager.getDomState().isBlockingDialogOpenForStep({
         targetId: null,
-        allowedPopupClasses: ['shop-page__direct-sell-popup'],
+        allowedPopupClasses: ['shop-page__sell-popup'],
       }),
     ).toBe(false);
   });

@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.98
+
+- Reworked trader stalls so items are loaded from inventory and each stall sells independently every five seconds at the full trader quote.
+- Added press-and-hold loading and unloading, with clear stall stock, batch size, sale value, and countdown feedback.
+- Replaced haggling with five stall-staffing studies that let each researched stall sell two items per cycle, while preserving completed legacy research.
+- Updated Elara's Market lesson and coin-shortfall guidance to teach the new timed-stall flow.
+
 ## 0.2.97
 
 - Fixed fresh and reset games starting past Elara's first request, while keeping progressed saves from replaying onto reset accounts.

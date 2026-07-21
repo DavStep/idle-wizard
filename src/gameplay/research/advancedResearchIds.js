@@ -5,6 +5,7 @@ export const advancedResearchIds = Object.freeze({
   cauldronBrewing: (cauldronNumber, level) =>
     `advanced:cauldronBrewing:${cauldronNumber}:${level}`,
   plotGrowth: (plotNumber, level) => `advanced:plotGrowth:${plotNumber}:${level}`,
+  stallStaffing: (stallNumber) => `advanced:stallStaffing:${stallNumber}`,
 });
 
 export function getAdvancedResearchLevelReductionPercent() {

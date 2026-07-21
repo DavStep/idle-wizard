@@ -7,6 +7,7 @@ import { emeraldResearchIds } from '../emeraldResearchIds.js';
 import { ResearchBalanceManager } from './ResearchBalanceManager.js';
 import { researchCostResearchIds } from '../researchCostResearch.js';
 import { researchTimeResearchIds } from '../researchTimeResearch.js';
+import { stallStaffingResearchIds } from '../stallStaffingResearch.js';
 
 describe('ResearchBalanceManager', () => {
   it('caps research durations at four hours', () => {
@@ -52,7 +53,7 @@ describe('ResearchBalanceManager', () => {
     const manager = new ResearchBalanceManager();
 
     expect(manager.getDurationSeconds('automation:autoPlantTile:1')).toBe(3);
-    expect(manager.getDurationSeconds('fastSellPayout:1')).toBe(3);
+    expect(manager.getDurationSeconds(stallStaffingResearchIds.capacity(1))).toBe(3);
     expect(manager.getDurationSeconds(automationReserveResearchIds.controls(1))).toBe(3);
     expect(manager.getDurationSeconds(researchTimeResearchIds.reduction(1))).toBe(3);
     expect(manager.getDurationSeconds(researchCostResearchIds.reduction(1))).toBe(3);
@@ -211,8 +212,8 @@ describe('ResearchBalanceManager', () => {
   it('keeps emerald research costs specific to advanced lanes', () => {
     const manager = new ResearchBalanceManager();
 
-    expect(manager.getCost('fastSellPayout:1')).toEqual({
-      amount: 2,
+    expect(manager.getCost(stallStaffingResearchIds.capacity(1))).toEqual({
+      amount: 1,
       currency: 'emerald',
     });
     expect(manager.getCost('advanced:plotCapacity:6')).toEqual({

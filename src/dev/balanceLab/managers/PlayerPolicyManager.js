@@ -263,11 +263,11 @@ export class PlayerPolicyManager {
     const sellTarget = this.getCurrentSellTaskTarget(snapshot);
     const reserves = this.getReservedQuantities(snapshot);
     const sellableItems = [...snapshot.shop.stock.items]
-      .filter((item) => item.quantity > 0 && item.fastSellCoin > 0)
+      .filter((item) => item.quantity > 0 && item.sellCoin > 0)
       .sort((left, right) => {
         if (sellTarget && left.key === sellTarget.itemKey) return -1;
         if (sellTarget && right.key === sellTarget.itemKey) return 1;
-        return right.fastSellCoin - left.fastSellCoin;
+        return right.sellCoin - left.sellCoin;
       });
 
     for (const item of sellableItems) {
@@ -280,9 +280,17 @@ export class PlayerPolicyManager {
         continue;
       }
 
-      const result = await gameplayFacade.sellNpcMarketItem(item.itemTypeId, quantity);
+      const slot = snapshot.shop.shelf.slots.find(
+        (candidate) => candidate.unlocked && !candidate.sellItemTypeId,
+      ) ?? snapshot.shop.shelf.slots.find((candidate) => candidate.unlocked);
+      if (!slot) continue;
+      gameplayFacade.selectShopShelfSlot(slot.slotNumber);
+      const result = gameplayFacade.loadSelectedShopShelfSlotItem(
+        item.itemTypeId,
+        quantity,
+      );
       if (result.ok) {
-        return this.action('sell', `sell ${quantity} ${item.key}`, result);
+        return this.action('load-stall', `load ${quantity} ${item.key}`, result);
       }
     }
 

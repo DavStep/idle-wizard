@@ -26,7 +26,7 @@ world: tutorial
   blockers.
 - `TutorialRevealManager.js` applies reveal gates to the room surface.
 - `TutorialReminderManager.js` handles idle timing and reminder visibility.
-- `TutorialSaleManager.js` routes fast-sell and coin-shortfall tutorial state.
+- `TutorialSaleManager.js` keeps tutorial price/stock overrides disabled; timed-stall routing lives in step helpers.
 - `TutorialPointerSpineManager.js` owns the pointer cue asset.
 - `TutorialGuideDragManager.js` owns dragging the Elara button.
 

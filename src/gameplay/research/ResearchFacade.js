@@ -15,10 +15,10 @@ import {
   automationReserveResearchMaxLevel,
 } from './automationReserveResearch.js';
 import {
-  fastSellResearchIds,
-  fastSellResearchMaxLevel,
-  getFastSellPercent as getFastSellPercentForLevel,
-} from './fastSellResearch.js';
+  getStallBatchSize as getStallBatchSizeForResearch,
+  stallStaffingResearchIds,
+  stallStaffingMaxStalls,
+} from './stallStaffingResearch.js';
 import {
   getResearchTimeReductionPercent as getResearchTimeReductionPercentForLevel,
   researchTimeResearchIds,
@@ -340,8 +340,11 @@ export class ResearchFacade {
     return completedMultiplier;
   }
 
-  getFastSellPercent() {
-    return getFastSellPercentForLevel(this.getCompletedFastSellLevel());
+  getStallBatchSize(stallNumber) {
+    return getStallBatchSizeForResearch({
+      stallNumber,
+      completedResearchIds: this.researchStateEntityManager.getCompletedResearchIds(),
+    });
   }
 
   getResearchTimeReductionPercent() {
@@ -384,18 +387,11 @@ export class ResearchFacade {
     return completedLevel;
   }
 
-  getCompletedFastSellLevel() {
-    let completedLevel = 0;
-
-    for (let level = 1; level <= fastSellResearchMaxLevel; level += 1) {
-      if (!this.researchStateEntityManager.isCompleted(fastSellResearchIds.payout(level))) {
-        break;
-      }
-
-      completedLevel = level;
-    }
-
-    return completedLevel;
+  getRequiredStallStaffingResearchId(stallNumber) {
+    const safeStallNumber = Math.floor(Number(stallNumber));
+    return safeStallNumber >= 1 && safeStallNumber <= stallStaffingMaxStalls
+      ? stallStaffingResearchIds.capacity(safeStallNumber)
+      : null;
   }
 
   getCompletedAutomationReserveLevel() {
@@ -496,16 +492,30 @@ export class ResearchFacade {
 
     if (Array.isArray(snapshot.completedIds)) {
       this.researchStateEntityManager.setCompletedResearchIds(
-        snapshot.completedIds.filter((researchId) => typeof researchId === 'string'),
+        snapshot.completedIds
+          .filter((researchId) => typeof researchId === 'string')
+          .map(migrateLegacyFastSellResearchId),
       );
     }
 
     if (Array.isArray(snapshot.inProgress)) {
-      this.researchStateEntityManager.setInProgressResearches(snapshot.inProgress);
+      this.researchStateEntityManager.setInProgressResearches(
+        snapshot.inProgress.map((research) => ({
+          ...research,
+          researchId: migrateLegacyFastSellResearchId(research?.researchId),
+        })),
+      );
     }
 
     this.researchStateEntityManager.setCrystalCostsByResearchId(snapshot.crystalCostById);
 
     this.researchManaEffectManager.syncCompletedEffects();
   }
+}
+
+function migrateLegacyFastSellResearchId(researchId) {
+  const match = /^fastSellPayout:([1-3])$/.exec(String(researchId ?? ''));
+  return match
+    ? stallStaffingResearchIds.capacity(Number(match[1]))
+    : researchId;
 }

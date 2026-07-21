@@ -6,7 +6,7 @@ Screenshots are captured from the real Vite game surface at the authored `1080x2
 
 The automation uses the real `TutorialFacade`, CSS, Elara assets, and `data-tutorial-id` targets. Dev capture hooks only skip waits/background resource tasks and hide the local offline gate so the screenshots show the actual game UI, not a harness.
 
-Current source has a 37-step source order. The default screenshot capture tracks 36 of those steps and intentionally excludes the legacy balance-conditional `fill-sage-seed-task` branch because default `tasks.json` no longer has a level-3 sage seed turn-in. The source starts with a free workshop-entry dialog and routes room openings through short `market opened`, `research opened`, `garden opened`, and `brewing opened` beats. Username setup is no longer part of FTUE; player-facing social surfaces ask for it when first opened. Level 1 completes without coin. Level 2 teaches the current summon, sell-to-trader, and turn-in requirement order before level-up coin cleanup, using live `sellItems` quantity and quote data instead of tutorial-owned prices. Legacy `shop:directSell` tutorial ids remain stable. Level 3 introduces Research and the free mint seed unlock, level 4 introduces herbs through Garden requirements, and level 5 introduces Brewing through mana tonic research. Coin-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates the current source order and should be refreshed with `npm run tutorial:capture`.
+Current source has a 36-step source order. The default screenshot capture tracks 35 of those steps and intentionally excludes the balance-conditional `fill-sage-seed-task` branch because default `tasks.json` no longer has a level-3 sage seed turn-in. Level 2 teaches the timed stall flow: open the Market, open the first stall, hold sage seed to load it, then wait for the stall's five-second sale. Coin-shortfall guidance uses available Market quantities, loaded stall state, and the `shop:sell:*` tutorial targets. The screenshot set below predates the current source order and should be refreshed with `npm run tutorial:capture`.
 
 ![tutorial flow contact sheet](tutorial-flow/contact-sheet.png)
 
@@ -28,31 +28,30 @@ This table mirrors `getTutorialStepGraph()` from `TutorialStepManager.js`.
 | `t10` | `level-up-one` | objective | lesson 1: introduction | workshop |  |  |
 | `t11` | `intro-market` | dialog | market opened |  | workshop:summonSeed |  |
 | `t12` | `prepare-seed-sale` | objective | lesson 2: market | workshop |  |  |
-| `t13` | `open-market` | objective | lesson 2: market | shop | shop:directSell |  |
-| `t14` | `select-market-stand` | objective | lesson 2: market | shop | shop:directSell |  |
+| `t13` | `open-market` | objective | lesson 2: market | shop | page:shop |  |
+| `t14` | `select-market-stand` | objective | lesson 2: market | shop | shop:stand:1 |  |
 | `t15` | `select-sage-seed-sale` | objective | lesson 2: market | shop |  |  |
-| `t16` | `show-selected-sale-amount` | objective | lesson 2: market | shop | shop:directSell:amount | focus-target; auto 2000ms |
-| `t17` | `earn-tutorial-coin` | objective | lesson 2: market |  |  |  |
-| `t18` | `first-sale-complete` | prompt | lesson 2: market |  | page:workshop |  |
-| `t19` | `unselect-sage-seed-sale` | objective | lesson 2: market | workshop |  |  |
-| `t20` | `level-up-two` | objective | lesson 2: market |  |  |  |
-| `t21` | `intro-research` | dialog | research opened |  | page:research |  |
-| `t22` | `research-mint-seed` | objective | lesson 3: research | research | research:unlockSeed:mintSeed | passive |
-| `t23` | `first-research-complete` | prompt | lesson 3: research |  |  |  |
-| `t24` | `fill-mint-seed-task` | objective | lesson 3: research |  |  | passive |
-| `t25` | `fill-sage-seed-task` | objective | lesson 3: research |  |  | passive; legacy balance-conditional branch excluded from default capture |
-| `t26` | `level-up-three` | objective | lesson 3: research |  |  | passive |
-| `t27` | `intro-garden` | dialog | garden opened |  | page:garden |  |
-| `t28` | `grow-sage` | objective | lesson 4: gardening |  |  | delayed-target |
-| `t29` | `first-harvest-complete` | prompt | lesson 4: gardening |  |  |  |
-| `t30` | `fill-sage-herb-task` | objective | lesson 4: gardening |  |  | delayed-target |
-| `t31` | `fill-mint-herb-task` | objective | lesson 4: gardening |  |  | passive |
-| `t32` | `level-up-four` | objective | lesson 4: gardening |  |  | passive |
-| `t33` | `research-mana-tonic` | objective | lesson 5: brewing | research | research:unlockRecipe:manaTonic |  |
-| `t34` | `intro-brewing` | dialog | brewing opened |  | page:brewing |  |
-| `t35` | `brew-mana-tonic` | objective | lesson 5: brewing | brewing |  |  |
-| `t36` | `first-brew-complete` | prompt | lesson 5: brewing |  |  |  |
-| `t37` | `refill-mana-tonic-cauldron` | objective | lesson 5: brewing |  |  |  |
+| `t16` | `earn-tutorial-coin` | objective | lesson 2: market |  |  | timed stall wait |
+| `t17` | `first-sale-complete` | prompt | lesson 2: market |  | page:workshop |  |
+| `t18` | `unselect-sage-seed-sale` | objective | lesson 2: market | workshop |  |  |
+| `t19` | `level-up-two` | objective | lesson 2: market |  |  |  |
+| `t20` | `intro-research` | dialog | research opened |  | page:research |  |
+| `t21` | `research-mint-seed` | objective | lesson 3: research | research | research:unlockSeed:mintSeed | passive |
+| `t22` | `first-research-complete` | prompt | lesson 3: research |  |  |  |
+| `t23` | `fill-mint-seed-task` | objective | lesson 3: research |  |  | passive |
+| `t24` | `fill-sage-seed-task` | objective | lesson 3: research |  |  | passive; balance-conditional branch excluded from default capture |
+| `t25` | `level-up-three` | objective | lesson 3: research |  |  | passive |
+| `t26` | `intro-garden` | dialog | garden opened |  | page:garden |  |
+| `t27` | `grow-sage` | objective | lesson 4: gardening |  |  | delayed-target |
+| `t28` | `first-harvest-complete` | prompt | lesson 4: gardening |  |  |  |
+| `t29` | `fill-sage-herb-task` | objective | lesson 4: gardening |  |  | delayed-target |
+| `t30` | `fill-mint-herb-task` | objective | lesson 4: gardening |  |  | passive |
+| `t31` | `level-up-four` | objective | lesson 4: gardening |  |  | passive |
+| `t32` | `research-mana-tonic` | objective | lesson 5: brewing | research | research:unlockRecipe:manaTonic |  |
+| `t33` | `intro-brewing` | dialog | brewing opened |  | page:brewing |  |
+| `t34` | `brew-mana-tonic` | objective | lesson 5: brewing | brewing |  |  |
+| `t35` | `first-brew-complete` | prompt | lesson 5: brewing |  |  |  |
+| `t36` | `refill-mana-tonic-cauldron` | objective | lesson 5: brewing |  |  |  |
 
 ## Graph
 
@@ -73,28 +72,27 @@ flowchart TD
   S13["13. open-market<br/>lesson 2: market"]
   S14["14. select-market-stand<br/>lesson 2: market"]
   S15["15. select-sage-seed-sale<br/>lesson 2: market"]
-  S16["16. show-selected-sale-amount<br/>lesson 2: market"]
-  S17["17. earn-tutorial-coin<br/>lesson 2: market"]
-  S18["18. first-sale-complete<br/>lesson 2: market"]
-  S19["19. unselect-sage-seed-sale<br/>lesson 2: market"]
-  S20["20. level-up-two<br/>lesson 2: market"]
-  S21["21. intro-research<br/>research opened"]
-  S22["22. research-mint-seed<br/>lesson 3: research"]
-  S23["23. first-research-complete<br/>lesson 3: research"]
-  S24["24. fill-mint-seed-task<br/>lesson 3: research"]
-  S25["25. fill-sage-seed-task<br/>legacy conditional"]
-  S26["26. level-up-three<br/>lesson 3: research"]
-  S27["27. intro-garden<br/>garden opened"]
-  S28["28. grow-sage<br/>lesson 4: gardening"]
-  S29["29. first-harvest-complete<br/>lesson 4: gardening"]
-  S30["30. fill-sage-herb-task<br/>lesson 4: gardening"]
-  S31["31. fill-mint-herb-task<br/>lesson 4: gardening"]
-  S32["32. level-up-four<br/>lesson 4: gardening"]
-  S33["33. research-mana-tonic<br/>lesson 5: brewing"]
-  S34["34. intro-brewing<br/>brewing opened"]
-  S35["35. brew-mana-tonic<br/>lesson 5: brewing"]
-  S36["36. first-brew-complete<br/>lesson 5: brewing"]
-  S37["37. refill-mana-tonic-cauldron<br/>lesson 5: brewing"]
+  S16["16. earn-tutorial-coin<br/>lesson 2: market"]
+  S17["17. first-sale-complete<br/>lesson 2: market"]
+  S18["18. unselect-sage-seed-sale<br/>lesson 2: market"]
+  S19["19. level-up-two<br/>lesson 2: market"]
+  S20["20. intro-research<br/>research opened"]
+  S21["21. research-mint-seed<br/>lesson 3: research"]
+  S22["22. first-research-complete<br/>lesson 3: research"]
+  S23["23. fill-mint-seed-task<br/>lesson 3: research"]
+  S24["24. fill-sage-seed-task<br/>conditional"]
+  S25["25. level-up-three<br/>lesson 3: research"]
+  S26["26. intro-garden<br/>garden opened"]
+  S27["27. grow-sage<br/>lesson 4: gardening"]
+  S28["28. first-harvest-complete<br/>lesson 4: gardening"]
+  S29["29. fill-sage-herb-task<br/>lesson 4: gardening"]
+  S30["30. fill-mint-herb-task<br/>lesson 4: gardening"]
+  S31["31. level-up-four<br/>lesson 4: gardening"]
+  S32["32. research-mana-tonic<br/>lesson 5: brewing"]
+  S33["33. intro-brewing<br/>brewing opened"]
+  S34["34. brew-mana-tonic<br/>lesson 5: brewing"]
+  S35["35. first-brew-complete<br/>lesson 5: brewing"]
+  S36["36. refill-mana-tonic-cauldron<br/>lesson 5: brewing"]
   Done["tutorial hidden / complete"]
 
   S01 --> S02
@@ -120,8 +118,8 @@ flowchart TD
   S21 --> S22
   S22 --> S23
   S23 --> S24
+  S23 -. "default balance skips sage seed task" .-> S25
   S24 --> S25
-  S24 -. "default balance skips sage seed task" .-> S26
   S25 --> S26
   S26 --> S27
   S27 --> S28
@@ -133,8 +131,7 @@ flowchart TD
   S33 --> S34
   S34 --> S35
   S35 --> S36
-  S36 --> S37
-  S37 --> Done
+  S36 --> Done
 ```
 
 ## Coin Shortfall Branch
@@ -144,14 +141,14 @@ Level-up steps can route through this branch when the player is short on coin.
 ```mermaid
 flowchart TD
   G00["coin shortfall"]
-  G01{"available trader-offer quantity?"}
+  G01{"available stall item quantity?"}
   G02["no: obtain source<br/>sage or mint"]
   G03{"on Market page?"}
   G04["no: open Market"]
-  G05{"trader offer open?"}
-  G06["no: sell to trader"]
-  G07{"item selected and quantity > 0?"}
-  G08["yes: target sell if enough<br/>otherwise +1"]
+  G05{"stall loader open?"}
+  G06["no: open empty stall"]
+  G07{"matching item loaded?"}
+  G08["yes: wait for timed sale"]
   G09{"matching tab open?"}
   G10["no: open seeds/herbs/potions tab"]
   G11["yes: choose first item<br/>with quantity > 0"]
@@ -171,7 +168,7 @@ flowchart TD
 
 ## Screenshots
 
-The table below is the last captured screenshot set. It is intentionally retained as historical visual reference, but it does not cover the current 37-step tutorial source order or the 36-step default capture set.
+The table below is the last captured screenshot set. It is intentionally retained as historical visual reference, but it does not cover the current 36-step tutorial source order or the 35-step default capture set.
 
 | Step | Screenshot |
 |---|---|

@@ -75,24 +75,22 @@ experience_type: gameplay-economy
 - Auto brew recipe/enabled state is per cauldron; selecting a recipe in cauldron 2+ must not rewrite cauldron 1 automation.
 - Auto brew enable UI must set `autoBrewRecipeKey` from the selected recipe before enabling; `BrewingFacade` rejects enabled auto-brew without a recipe key.
 - Auto/manual cauldron UI only enables or disables future automation; auto brew stays unarmed until a successful manual brew, then repeats future cycles.
-- Fast sell starts at level 1 and pays 80% of the NPC bulk sell quote; emerald research raises it to 85/90/95%, while shelf auto-sell keeps the full marginal NPC quote.
+- Manual fast sell is removed; trader stands always use the full marginal NPC quote.
 - Level 1 costs 0 coin and should never depend on tutorial-only sale grants; level 2 is the first systemic coin gate.
 - Research unlock gates for task requirements must be no higher than `target task level - 1`; e.g. nettle seed must unlock at level 5 because it is a level 6 requirement shown while the player is level 5.
-- NPC and player market stand 2 unlock at player level 5.
-- NPC market stands auto-sell one selected item type over time; open a popup with `seed`/`herb`/`potion` tabs to choose exact items.
+- Market licence rank grants one through five NPC and player stands.
+- NPC market stands hold one item type, sell one item per independent five-second cycle, and can be staffed by advanced research to sell two per cycle.
 - Selecting an NPC market stand should only open the sell picker; do not show a `selected stand N` shelf message.
 - NPC market price UI should read backend-derived `sellCoin` and `sellNeed` from the shop snapshot; do not duplicate price balance in page code.
 - NPC market auto-sell should not sell when the backend quote is missing or backend need is zero.
 - NPC market `basePriceCoin` is not the visible sell payout; neutral `npcBuyPriceCoin` is about 80% of base, so DB base values should be `ceil(targetSell / 0.8)`.
 - NPC market demand stays in the backend/snapshot and gates sales, but current NPC market UI hides demand; visible labels show item plus sell price only.
-- NPC market stand and sell-picker labels include available quantity as `<item> (N)` before the sell price.
-- NPC market selected stand rows show the total value for the current quantity; `quoteNpcMarketSell` is fast-sell priced and should not drive stand row totals.
+- NPC market stand labels show loaded quantity; loader labels show currently available inventory quantity.
+- NPC market stand rows show the next batch value, not the total value of all loaded stock.
 - NPC market demand is player-visible only through the `demand` top-border popup, grouped by `seed`/`herb`/`potion`, with locked rows gray below a divider.
 - NPC market selected stands should keep need available from slot snapshots internally, because selected items may be hidden from picker rows.
 - NPC market sell picker should allow selecting zero-demand items; auto-sell already pauses when backend need is zero.
-- NPC market future locked stands display `locked`; only the next locked stand displays its buy action.
-- NPC market sell picker opens only after `selectShopShelfSlot` returns `ok: true`; failed locked-stand selection leaves the old selected stand in the snapshot.
-- NPC market blank stand row space is inert; item/select text opens the sell picker, and the buy button owns locked-stand purchases.
+- NPC market loader opens only after `selectShopShelfSlot` returns `ok: true`.
 - NPC market prices should follow uncapped `npcNeed / targetNeed` pressure; avoid hard price caps that hide real scarcity.
 - NPC market tick logic must not clamp `npcNeed` against a zero `maxNeed`; that drains all demand to `0` on the first due tick.
 - Player market listings reserve local inventory quantity and store a per-item coin value; they do not auto-sell over time.

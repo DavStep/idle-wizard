@@ -13,19 +13,25 @@ export class TaskQuestProgressManager {
     const totalQuests = taskQuestCount + (hasLevelUpQuest ? 1 : 0);
     const completedQuests = tasks.filter((task) => task.completed).length;
     const targetLevel = atMaxLevel ? currentLevel : currentLevel + 1;
+    const activeQuest = this.getActiveQuest({
+      activeTask,
+      completion,
+      currentLevel,
+      targetLevel,
+      atMaxLevel,
+    });
+    const activeQuestProgress = activeQuest?.kind === 'task'
+      ? Math.max(0, Math.min(1, Number(activeQuest.progress) || 0))
+      : 0;
 
     return {
-      progress: totalQuests > 0 ? completedQuests / totalQuests : 1,
+      progress: totalQuests > 0
+        ? Math.min(1, (completedQuests + activeQuestProgress) / totalQuests)
+        : 1,
       completedQuests,
       totalQuests,
       targetLevel,
-      activeQuest: this.getActiveQuest({
-        activeTask,
-        completion,
-        currentLevel,
-        targetLevel,
-        atMaxLevel,
-      }),
+      activeQuest,
     };
   }
 
@@ -34,6 +40,7 @@ export class TaskQuestProgressManager {
       return {
         kind: 'task',
         taskId: activeTask.taskId,
+        progress: Math.max(0, Math.min(1, Number(activeTask.progress) || 0)),
       };
     }
 

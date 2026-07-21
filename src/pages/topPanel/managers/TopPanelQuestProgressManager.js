@@ -1,6 +1,13 @@
 const QUEST_FLIGHT_COUNT = 3;
-const QUEST_FLIGHT_DURATION_MS = 620;
+const REQUEST_SNAP_DURATION_MS = 230;
+const QUEST_FLIGHT_START_MS = 190;
+const QUEST_FLIGHT_DURATION_MS = 520;
 const QUEST_FLIGHT_STAGGER_MS = 35;
+const QUEST_PROGRESS_SETTLE_MS =
+  QUEST_FLIGHT_START_MS + QUEST_FLIGHT_DURATION_MS + QUEST_FLIGHT_STAGGER_MS * 2 - 55;
+const QUEST_PROGRESS_FILL_MS = 205;
+const LEVEL_BADGE_JUMP_MS = 230;
+const LEVEL_VALUE_CHANGE_MS = 92;
 const QUEST_RECEIVE_PULSE_MS = 180;
 const MAX_ACTIVE_QUEST_FLIGHTS = 6;
 
@@ -15,6 +22,8 @@ export class TopPanelQuestProgressManager {
     this.receiveTimeoutId = null;
     this.receiveClearTimeoutId = null;
     this.activeFlights = [];
+    this.sequenceTimeoutIds = new Set();
+    this.completionSource = null;
     this.previewProgress = null;
   }
 
@@ -35,6 +44,7 @@ export class TopPanelQuestProgressManager {
     this.unsubscribe?.();
     this.unsubscribe = null;
     this.cancelReset();
+    this.cancelCompletionSequence();
     this.clearReceiveTimers();
     this.clearFlights();
     this.refs = null;
@@ -57,6 +67,7 @@ export class TopPanelQuestProgressManager {
     const loadRevision = Number(snapshot?.persistence?.loadRevision) || 0;
 
     if (!progress) {
+      this.cancelCompletionSequence();
       this.refs.questRow.hidden = true;
       this.previousProgress = null;
       this.previousLoadRevision = loadRevision;
@@ -72,18 +83,30 @@ export class TopPanelQuestProgressManager {
     const completedDelta = this.previousProgress && !loadRevisionChanged
       ? this.getCompletedDelta(this.previousProgress, normalized)
       : 0;
+    const duplicateDuringSequence =
+      this.sequenceTimeoutIds.size > 0 &&
+      !loadRevisionChanged &&
+      this.hasSameProgress(this.previousProgress, normalized);
 
-    if (targetLevelChanged) {
-      this.refs.questRow.classList.add('is-resetting');
+    if (duplicateDuringSequence) {
+      this.previousLoadRevision = loadRevision;
+      return;
     }
 
-    this.renderProgress(normalized);
-
-    if (completedDelta > 0) {
-      this.showQuestFlight({
-        completedQuests: normalized.completedQuests,
+    if (completedDelta > 0 && !this.prefersReducedMotion()) {
+      this.startCompletionSequence({
+        previous: this.previousProgress,
+        next: normalized,
         levelChanged: targetLevelChanged,
       });
+    } else {
+      this.cancelCompletionSequence();
+
+      if (targetLevelChanged) {
+        this.refs.questRow.classList.add('is-resetting');
+      }
+
+      this.renderProgress(normalized);
     }
 
     this.previousProgress = normalized;
@@ -95,9 +118,19 @@ export class TopPanelQuestProgressManager {
   }
 
   normalizeProgress(progress = {}) {
+    const completedQuests = Math.max(0, Math.floor(Number(progress.completedQuests) || 0));
+    const totalQuests = Math.max(0, Math.floor(Number(progress.totalQuests) || 0));
+    const providedProgress = Number(progress.progress);
+    const completedProgress = totalQuests > 0
+      ? Math.min(1, completedQuests / totalQuests)
+      : 1;
+
     return {
-      completedQuests: Math.max(0, Math.floor(Number(progress.completedQuests) || 0)),
-      totalQuests: Math.max(0, Math.floor(Number(progress.totalQuests) || 0)),
+      progress: Number.isFinite(providedProgress)
+        ? Math.max(completedProgress, Math.min(1, providedProgress))
+        : completedProgress,
+      completedQuests,
+      totalQuests,
       targetLevel: Math.max(0, Math.floor(Number(progress.targetLevel) || 0)),
       activeQuest: progress.activeQuest ?? null,
     };
@@ -110,16 +143,15 @@ export class TopPanelQuestProgressManager {
 
     this.refs.questRow.hidden = false;
     this.renderSegments(completedQuests, progress.totalQuests);
-    const completedRatio = progress.totalQuests > 0
-      ? completedQuests / progress.totalQuests
-      : 0;
+    const completedRatio = progress.progress;
+    const progressQuests = progress.totalQuests * completedRatio;
     this.refs.questProgressFill?.style.setProperty(
       '--room-top-panel-quest-fill-clip-right',
       `${(1 - completedRatio) * 100}%`,
     );
     this.refs.questProgressRail.setAttribute('aria-valuemin', '0');
     this.refs.questProgressRail.setAttribute('aria-valuemax', String(progress.totalQuests));
-    this.refs.questProgressRail.setAttribute('aria-valuenow', String(completedQuests));
+    this.refs.questProgressRail.setAttribute('aria-valuenow', String(progressQuests));
     this.refs.questProgressRail.classList.toggle(
       'is-complete',
       progress.totalQuests > 0 && completedQuests >= progress.totalQuests,
@@ -136,8 +168,14 @@ export class TopPanelQuestProgressManager {
     }
 
     const progressLabel = `${completedQuests} of ${progress.totalQuests} quests complete${targetSuffix}`;
+    const activeQuestPercent = Math.round(
+      Math.max(0, Math.min(1, progressQuests - completedQuests)) * 100,
+    );
+    const progressValueText = activeQuestPercent > 0
+      ? `${progressLabel}, current quest ${activeQuestPercent}% complete`
+      : progressLabel;
     this.refs.questProgressRail.setAttribute('aria-label', progressLabel);
-    this.refs.questProgressRail.setAttribute('aria-valuetext', progressLabel);
+    this.refs.questProgressRail.setAttribute('aria-valuetext', progressValueText);
   }
 
   renderSegments(completedQuests, totalQuests) {
@@ -179,33 +217,123 @@ export class TopPanelQuestProgressManager {
     return 0;
   }
 
-  showQuestFlight({ completedQuests, levelChanged }) {
+  hasSameProgress(previous, current) {
+    return Boolean(
+      previous &&
+      current &&
+      previous.progress === current.progress &&
+      previous.completedQuests === current.completedQuests &&
+      previous.totalQuests === current.totalQuests &&
+      previous.targetLevel === current.targetLevel &&
+      previous.activeQuest?.kind === current.activeQuest?.kind &&
+      previous.activeQuest?.taskId === current.activeQuest?.taskId
+    );
+  }
+
+  startCompletionSequence({ previous, next, levelChanged }) {
+    this.cancelCompletionSequence();
+
+    const source = this.getCompletionSource();
+    const destination = this.getElementRect(this.refs?.levelButton);
+    this.completionSource = source;
+    source?.classList.add('is-completing-request');
+    this.scheduleSequence(
+      () => source?.classList.remove('is-completing-request'),
+      REQUEST_SNAP_DURATION_MS,
+    );
+
+    if (levelChanged) {
+      this.holdPreviousLevel(previous, next);
+    }
+
+    this.renderProgress(previous);
+    this.scheduleSequence(
+      () => this.showQuestFlight({ source, destination }),
+      QUEST_FLIGHT_START_MS,
+    );
+    this.scheduleSequence(() => {
+      if (levelChanged) {
+        this.renderProgress({
+          ...previous,
+          progress: 1,
+          completedQuests: previous.totalQuests,
+        });
+        this.scheduleLevelRollover(next);
+        return;
+      }
+
+      this.renderProgress(next);
+      this.pulseDestination(this.refs.levelButton, 0);
+    }, QUEST_PROGRESS_SETTLE_MS);
+  }
+
+  scheduleLevelRollover(next) {
+    this.scheduleSequence(() => {
+      this.refs?.levelButton?.classList.add('is-leveling-up');
+      this.scheduleSequence(() => this.showNextLevel(next), LEVEL_VALUE_CHANGE_MS);
+      this.scheduleSequence(() => {
+        this.refs?.levelButton?.classList.remove('is-leveling-up');
+        this.refs?.questRow?.classList.add('is-resetting');
+        this.renderProgress(next);
+        this.scheduleResetEnd();
+      }, LEVEL_BADGE_JUMP_MS);
+    }, QUEST_PROGRESS_FILL_MS);
+  }
+
+  holdPreviousLevel(previous, next) {
+    const previousLevel = Math.max(0, previous.targetLevel - 1);
+    const nextLevel = Math.max(0, next.targetLevel - 1);
+
+    if (previousLevel <= 0) {
+      this.refs.levelValue.textContent = '';
+      this.refs.levelButton.hidden = true;
+      this.refs.levelButton.setAttribute('aria-label', `level ${nextLevel} arriving`);
+      return;
+    }
+
+    this.refs.levelValue.textContent = String(previousLevel);
+    this.refs.levelButton.hidden = false;
+    this.refs.levelButton.setAttribute(
+      'aria-label',
+      `level ${previousLevel}, open level rewards`,
+    );
+  }
+
+  showNextLevel(next) {
+    const nextLevel = Math.max(0, next.targetLevel - 1);
+    this.refs.levelButton.hidden = nextLevel <= 0;
+    this.refs.levelValue.textContent = nextLevel > 0 ? String(nextLevel) : '';
+    this.refs.levelButton.setAttribute(
+      'aria-label',
+      nextLevel > 0 ? `level ${nextLevel}, open level rewards` : 'level unavailable',
+    );
+  }
+
+  showQuestFlight({ source, destination }) {
     if (!this.refs || this.prefersReducedMotion()) {
       return;
     }
 
-    const destinationElement = levelChanged
-      ? this.refs.levelButton
-      : this.refs.questSegments.children[Math.max(0, completedQuests - 1)];
-    const destination = this.getElementRect(destinationElement);
-    const origin = this.getFlightOrigin(destination);
+    const destinationElement = this.refs.levelButton;
+    const target = destination ?? this.getElementRect(destinationElement);
+    const origin = this.getFlightOrigin(source, target);
 
-    if (!destination || !origin) {
+    if (!target || !origin) {
       this.pulseDestination(destinationElement, 0);
       return;
     }
 
     const documentRef = this.refs.questRow.ownerDocument;
-    const iconSize = Math.max(12, Math.min(18, destination.height || 14));
+    const iconSize = Math.max(12, Math.min(18, target.height || 14));
 
     for (let index = 0; index < QUEST_FLIGHT_COUNT; index += 1) {
       this.trimFlights();
       const flight = documentRef.createElement('img');
       const spread = (index - 1) * iconSize * 0.55;
-      const startX = origin.left + origin.width / 2 - iconSize / 2 + spread;
+      const startX = origin.right - iconSize * 1.4 + spread;
       const startY = origin.top + origin.height / 2 - iconSize / 2;
-      const endX = destination.left + destination.width / 2 - iconSize / 2;
-      const endY = destination.top + destination.height / 2 - iconSize / 2;
+      const endX = target.left + target.width / 2 - iconSize / 2;
+      const endY = target.top + target.height / 2 - iconSize / 2;
       const travelX = endX - startX;
       const travelY = endY - startY;
       const arc = Math.min(32, Math.max(14, Math.abs(travelY) * 0.1));
@@ -250,22 +378,16 @@ export class TopPanelQuestProgressManager {
         .then(() => this.removeFlight(flight));
     }
 
-    this.pulseDestination(destinationElement, QUEST_FLIGHT_DURATION_MS - 70);
   }
 
-  getFlightOrigin(destination) {
-    const documentRef = this.refs?.questRow?.ownerDocument;
-    const activeElement = documentRef?.activeElement;
-    const request = documentRef?.querySelector?.(
-      '.workshop-page__tasks-summary:not([hidden]), .workshop-page__level-complete:not([hidden])',
-    );
+  getCompletionSource() {
+    return this.refs?.questRow?.ownerDocument?.querySelector?.(
+      '.workshop-page__tasks:not([hidden])',
+    ) ?? null;
+  }
 
-    return (
-      this.getElementRect(activeElement) ??
-      this.getElementRect(request) ??
-      this.getElementRect(this.refs?.panel) ??
-      destination
-    );
+  getFlightOrigin(source, destination) {
+    return this.getElementRect(source) ?? this.getElementRect(this.refs?.panel) ?? destination;
   }
 
   getElementRect(element) {
@@ -382,5 +504,34 @@ export class TopPanelQuestProgressManager {
     }
 
     this.activeFlights = [];
+  }
+
+  scheduleSequence(callback, delayMs) {
+    const windowRef = this.refs?.questRow?.ownerDocument?.defaultView;
+
+    if (!windowRef?.setTimeout) {
+      callback();
+      return null;
+    }
+
+    const timeoutId = windowRef.setTimeout(() => {
+      this.sequenceTimeoutIds.delete(timeoutId);
+      callback();
+    }, delayMs);
+    this.sequenceTimeoutIds.add(timeoutId);
+    return timeoutId;
+  }
+
+  cancelCompletionSequence() {
+    const windowRef = this.refs?.questRow?.ownerDocument?.defaultView;
+
+    for (const timeoutId of this.sequenceTimeoutIds) {
+      windowRef?.clearTimeout?.(timeoutId);
+    }
+
+    this.sequenceTimeoutIds.clear();
+    this.completionSource?.classList.remove('is-completing-request');
+    this.completionSource = null;
+    this.refs?.levelButton?.classList.remove('is-leveling-up');
   }
 }

@@ -204,10 +204,6 @@ export class PagesFacade {
         onOpenPlayerInfo: (player) => this.openPlayerInfoDialog(player),
         onRequirePlayerSurfaceAccess: (open, meta) =>
           this.requirePlayerSurfaceUsername(open, meta),
-        onDirectSellOverride: (sale) =>
-          this.tutorialFacade?.handleDirectSellOverride?.(sale) ?? null,
-        getDirectSellQuoteOverride: (sale) =>
-          this.tutorialFacade?.getDirectSellQuoteOverride?.(sale) ?? null,
         getNpcSellPriceOverride: (sale) =>
           this.tutorialFacade?.getNpcSellPriceOverride?.(sale) ?? null,
         getNpcStockBuyQuoteOverride: (sale) =>
@@ -711,8 +707,6 @@ export class PagesFacade {
       page.tradeHistoryManager?.show?.();
     } else if (options.popup === 'sell') {
       page.shelfManager?.showSellPopup?.();
-    } else if (options.popup === 'directSell') {
-      page.directSellManager?.show?.();
     } else if (options.popup === 'marketLedger') {
       page.marketLedgerManager?.show?.();
     }

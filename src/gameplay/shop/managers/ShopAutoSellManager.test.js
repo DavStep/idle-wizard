@@ -1,691 +1,221 @@
 import { describe, expect, it, vi } from 'vitest';
-
 import { ShopAutoSellManager } from './ShopAutoSellManager.js';
 
-function createSlotManager({
+const sageSeed = { id: 1, key: 'sageSeed', kind: 'seed', label: 'sage seed' };
+
+function createHarness({
   slots = [
     {
       slotNumber: 1,
       unlocked: true,
       sellItemTypeId: 1,
+      loadedQuantity: 3,
+      sellProgressSeconds: 0,
     },
   ],
-  initialProgressSeconds = 0,
+  batchSize = 1,
+  npcNeed = 100,
+  priceCoin = 4,
 } = {}) {
-  let progressSeconds = initialProgressSeconds;
+  const slotState = slots.map((slot) => ({ ...slot }));
+  const addCoin = vi.fn();
+  const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
+  const onItemSold = vi.fn();
+  const setSlotSellProgressSeconds = vi.fn((slotNumber, seconds) => {
+    const slot = slotState.find((candidate) => candidate.slotNumber === slotNumber);
+    if (slot) slot.sellProgressSeconds = seconds;
+  });
+  const changeSlotLoadedQuantity = vi.fn((slotNumber, delta) => {
+    const slot = slotState.find((candidate) => candidate.slotNumber === slotNumber);
+    if (!slot) return null;
+    slot.loadedQuantity = Math.max(0, slot.loadedQuantity + delta);
+    if (slot.loadedQuantity === 0) {
+      slot.sellItemTypeId = null;
+      slot.sellProgressSeconds = 0;
+    }
+    return slot.loadedQuantity;
+  });
+  const syncPriceRetention = vi.fn();
+  const manager = new ShopAutoSellManager({
+    coinFacade: { add: addCoin },
+    itemsFacade: {
+      getItemDefinition: (id) => (id === sageSeed.id ? sageSeed : null),
+      safeGetDefinitionByKey: (key) => (key === sageSeed.key ? sageSeed : null),
+    },
+    shopBalanceManager: { getAutoSellSeconds: () => 5 },
+    shopNpcPriceManager: {
+      getNpcBuyPriceCoin: () => priceCoin,
+      getNpcNeed: () => npcNeed,
+      needsBackendPrices: () => false,
+      recordSellToNpc,
+      syncPriceRetention,
+    },
+    shopNpcSellQuoteManager: {
+      quoteItem: ({ quantity }) => ({
+        ok: true,
+        quantity,
+        priceCoin,
+        totalPriceCoin: quantity * priceCoin,
+      }),
+    },
+    shopShelfEntityManager: {
+      changeSlotLoadedQuantity,
+      getSlotSnapshots: () => slotState.map((slot) => ({ ...slot })),
+      setSlotSellProgressSeconds,
+    },
+    getAccessibleSlotCount: () => 5,
+    getItemAccess: () => ({ tradedHere: true }),
+    getStallBatchSize: () => batchSize,
+    onItemSold,
+  });
 
   return {
-    getSlotSnapshots: () => slots,
-    getSellProgressSeconds: () => progressSeconds,
-    setSellProgressSeconds: (nextProgressSeconds) => {
-      progressSeconds = nextProgressSeconds;
-    },
-    consumeSlotSellQuantityLimit: (slotNumber, quantity) => {
-      const slot = slots.find((candidate) => candidate.slotNumber === slotNumber);
-
-      if (slot?.sellLimitMode !== 'amount') {
-        return null;
-      }
-
-      slot.sellQuantityLimit = Math.max(0, slot.sellQuantityLimit - quantity);
-      return slot.sellQuantityLimit;
-    },
+    addCoin,
+    changeSlotLoadedQuantity,
+    manager,
+    onItemSold,
+    recordSellToNpc,
+    setSlotSellProgressSeconds,
+    slotState,
+    syncPriceRetention,
   };
 }
 
 describe('ShopAutoSellManager', () => {
-  it('bulk sells available items at the static NPC price', () => {
-    const nowMs = 5_000;
-    const addCoin = vi.fn();
-    const removeItem = vi.fn().mockReturnValue({
-      itemTypeId: 1,
-      key: 'sageSeed',
-      label: 'sage seed',
-      kind: 'seed',
-      quantity: 3,
-    });
-    const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
-    const manager = new ShopAutoSellManager({
-      coinFacade: {
-        add: addCoin,
-      },
-      itemsFacade: {
-        getItemDefinition: () => ({
-          id: 1,
-          key: 'sageSeed',
-          label: 'sage seed',
-          kind: 'seed',
-        }),
-        getItemQuantity: () => 3,
-        removeItem,
-      },
-      shopBalanceManager: {
-        getAutoSellSeconds: () => 5,
-      },
-      shopNpcPriceManager: {
-        getNpcBuyPriceCoin: () => 4,
-        recordSellToNpc,
-      },
-      shopShelfEntityManager: createSlotManager(),
-      now: () => nowMs,
-    });
-
-    manager.update(5);
-
-    expect(removeItem).toHaveBeenCalledWith(1, 3);
-    expect(addCoin).toHaveBeenCalledWith(12);
-    expect(recordSellToNpc).toHaveBeenCalledWith(
-      {
-        id: 1,
-        key: 'sageSeed',
-        label: 'sage seed',
-        kind: 'seed',
-      },
-      3,
-    );
-  });
-
-  it('does not sell reserved cauldron quantities', () => {
-    let nowMs = 5_000;
-    let quantity = 3;
-    const addCoin = vi.fn();
-    const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
-      if (quantity < removeQuantity) {
-        return null;
-      }
-
-      quantity -= removeQuantity;
-      return {
-        itemTypeId: 1001,
-        key: 'sageHerb',
-        label: 'sage',
-        kind: 'herb',
-        quantity: removeQuantity,
-      };
-    });
-    const manager = new ShopAutoSellManager({
-      coinFacade: {
-        add: addCoin,
-      },
-      itemsFacade: {
-        getItemDefinition: () => ({
-          id: 1001,
-          key: 'sageHerb',
-          label: 'sage',
-          kind: 'herb',
-        }),
-        removeItem,
-      },
-      shopBalanceManager: {
-        getAutoSellSeconds: () => 5,
-      },
-      shopNpcPriceManager: {
-        getNpcBuyPriceCoin: () => 6,
-        recordSellToNpc: vi.fn(),
-      },
-      shopSellAvailabilityManager: {
-        getAvailableQuantity: () => quantity - 2,
-        canRemoveItem: (_itemTypeId, removeQuantity) => quantity - 2 >= removeQuantity,
-      },
-      shopShelfEntityManager: createSlotManager(),
-      now: () => nowMs,
-    });
-
-    manager.update(5);
-    nowMs = 10_000;
-    manager.update(5);
-
-    expect(quantity).toBe(2);
-    expect(removeItem).toHaveBeenCalledTimes(1);
-    expect(addCoin).toHaveBeenCalledTimes(1);
-    expect(addCoin).toHaveBeenCalledWith(6);
-  });
-
-  it('sells only the marked NPC stand amount and decrements it', () => {
-    let nowMs = 5_000;
-    let quantity = 5;
-    const addCoin = vi.fn();
-    const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
-      quantity -= removeQuantity;
-      return {
-        itemTypeId: 1,
-        key: 'sageSeed',
-        label: 'sage seed',
-        kind: 'seed',
-        quantity: removeQuantity,
-      };
-    });
-    const slotManager = createSlotManager({
-      slots: [
-        {
-          slotNumber: 1,
-          unlocked: true,
-          sellItemTypeId: 1,
-          sellLimitMode: 'amount',
-          sellQuantityLimit: 2,
-        },
-      ],
-    });
-    const manager = new ShopAutoSellManager({
-      coinFacade: {
-        add: addCoin,
-      },
-      itemsFacade: {
-        getItemDefinition: () => ({
-          id: 1,
-          key: 'sageSeed',
-          label: 'sage seed',
-          kind: 'seed',
-        }),
-        getItemQuantity: () => quantity,
-        removeItem,
-      },
-      shopBalanceManager: {
-        getAutoSellSeconds: () => 5,
-      },
-      shopNpcPriceManager: {
-        getNpcBuyPriceCoin: () => 4,
-        getNpcNeed: () => 10,
-        recordSellToNpc: vi.fn(),
-      },
-      shopShelfEntityManager: slotManager,
-      now: () => nowMs,
-    });
-
-    manager.update(5);
-
-    expect(removeItem).toHaveBeenCalledWith(1, 2);
-    expect(addCoin).toHaveBeenCalledWith(8);
-    expect(quantity).toBe(3);
-    expect(slotManager.getSlotSnapshots()[0].sellQuantityLimit).toBe(0);
-
-    nowMs = 10_000;
-    manager.update(5);
-
-    expect(removeItem).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not repeat a completed fixed NPC stand amount across pending cycles', () => {
-    const nowMs = 15_000;
-    let quantity = 10;
-    const addCoin = vi.fn();
-    const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
-      quantity -= removeQuantity;
-      return {
-        itemTypeId: 1,
-        key: 'sageSeed',
-        label: 'sage seed',
-        kind: 'seed',
-        quantity: removeQuantity,
-      };
-    });
-    const slotManager = createSlotManager({
-      slots: [
-        {
-          slotNumber: 1,
-          unlocked: true,
-          sellItemTypeId: 1,
-          sellLimitMode: 'amount',
-          sellQuantityLimit: 2,
-        },
-      ],
-    });
-    const manager = new ShopAutoSellManager({
-      coinFacade: {
-        add: addCoin,
-      },
-      itemsFacade: {
-        getItemDefinition: () => ({
-          id: 1,
-          key: 'sageSeed',
-          label: 'sage seed',
-          kind: 'seed',
-        }),
-        getItemQuantity: () => quantity,
-        removeItem,
-      },
-      shopBalanceManager: {
-        getAutoSellSeconds: () => 5,
-      },
-      shopNpcPriceManager: {
-        getNpcBuyPriceCoin: () => 4,
-        getNpcNeed: () => 10,
-        recordSellToNpc: vi.fn(),
-      },
-      shopShelfEntityManager: slotManager,
-      now: () => nowMs,
-    });
-
-    manager.update(15);
-
-    expect(removeItem).toHaveBeenCalledTimes(1);
-    expect(removeItem).toHaveBeenCalledWith(1, 2);
-    expect(addCoin).toHaveBeenCalledTimes(1);
-    expect(quantity).toBe(8);
-    expect(slotManager.getSlotSnapshots()[0]).toMatchObject({
-      sellLimitMode: 'amount',
-      sellQuantityLimit: 0,
-    });
-  });
-
-  it('sells all eligible NPC stands on one shared shop timer', () => {
-    let nowMs = 4_000;
-    const addCoin = vi.fn();
-    const quantities = new Map([
-      [1, 2],
-      [2, 3],
-    ]);
-    const definitions = new Map([
-      [
-        1,
-        {
-          id: 1,
-          key: 'sageSeed',
-          label: 'sage seed',
-          kind: 'seed',
-        },
-      ],
-      [
-        2,
-        {
-          id: 2,
-          key: 'mintSeed',
-          label: 'mint seed',
-          kind: 'seed',
-        },
-      ],
-    ]);
-    const removeItem = vi.fn((itemTypeId, quantity) => {
-      const availableQuantity = quantities.get(itemTypeId) ?? 0;
-
-      if (availableQuantity < quantity) {
-        return null;
-      }
-
-      quantities.set(itemTypeId, availableQuantity - quantity);
-      return {
-        itemTypeId,
-        ...definitions.get(itemTypeId),
-        quantity,
-      };
-    });
-    const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
-    const slotManager = createSlotManager({
-      slots: [
-        {
-          slotNumber: 1,
-          unlocked: true,
-          sellItemTypeId: 1,
-        },
-        {
-          slotNumber: 2,
-          unlocked: true,
-          sellItemTypeId: 2,
-        },
-      ],
-    });
-    const manager = new ShopAutoSellManager({
-      coinFacade: {
-        add: addCoin,
-      },
-      itemsFacade: {
-        getItemDefinition: (itemTypeId) => definitions.get(itemTypeId),
-        getItemQuantity: (itemTypeId) => quantities.get(itemTypeId) ?? 0,
-        removeItem,
-      },
-      shopBalanceManager: {
-        getAutoSellSeconds: () => 5,
-      },
-      shopNpcPriceManager: {
-        getNpcBuyPriceCoin: (item) => (item.id === 1 ? 4 : 7),
-        recordSellToNpc,
-      },
-      shopShelfEntityManager: slotManager,
-      now: () => nowMs,
-    });
+  it('sells one loaded item from a stand every five seconds', () => {
+    const { addCoin, manager, recordSellToNpc, slotState } = createHarness();
 
     manager.update(4);
+    expect(slotState[0].loadedQuantity).toBe(3);
+    expect(slotState[0].sellProgressSeconds).toBe(4);
 
-    expect(removeItem).not.toHaveBeenCalled();
-    expect(slotManager.getSellProgressSeconds()).toBe(4);
-
-    nowMs = 5_000;
     manager.update(1);
-
-    expect(removeItem).toHaveBeenCalledWith(1, 2);
-    expect(removeItem).toHaveBeenCalledWith(2, 3);
-    expect(addCoin).toHaveBeenCalledWith(8);
-    expect(addCoin).toHaveBeenCalledWith(21);
-    expect(slotManager.getSellProgressSeconds()).toBe(0);
+    expect(slotState[0].loadedQuantity).toBe(2);
+    expect(slotState[0].sellProgressSeconds).toBe(0);
+    expect(addCoin).toHaveBeenCalledWith(4);
+    expect(recordSellToNpc).toHaveBeenCalledWith(sageSeed, 1);
   });
 
-  it('does not over-submit NPC demand across same-item stands in one timer cycle', () => {
-    let nowMs = 5_000;
-    let quantity = 10;
-    const addCoin = vi.fn();
-    const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
-      quantity -= removeQuantity;
-      return {
-        itemTypeId: 1,
-        key: 'sageSeed',
-        label: 'sage seed',
-        kind: 'seed',
-        quantity: removeQuantity,
-      };
-    });
-    const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
-    const slotManager = createSlotManager({
+  it('uses the researched x2 batch without changing the five-second cycle', () => {
+    const { addCoin, manager, slotState } = createHarness({ batchSize: 2 });
+
+    manager.update(5);
+
+    expect(slotState[0].loadedQuantity).toBe(1);
+    expect(addCoin).toHaveBeenCalledWith(8);
+  });
+
+  it('keeps progress independently for every stand', () => {
+    const { manager, slotState } = createHarness({
       slots: [
         {
           slotNumber: 1,
           unlocked: true,
           sellItemTypeId: 1,
+          loadedQuantity: 2,
+          sellProgressSeconds: 4,
         },
         {
           slotNumber: 2,
           unlocked: true,
           sellItemTypeId: 1,
+          loadedQuantity: 2,
+          sellProgressSeconds: 1,
         },
       ],
     });
-    const manager = new ShopAutoSellManager({
-      coinFacade: {
-        add: addCoin,
-      },
-      itemsFacade: {
-        getItemDefinition: () => ({
-          id: 1,
-          key: 'sageSeed',
-          label: 'sage seed',
-          kind: 'seed',
-        }),
-        getItemQuantity: () => quantity,
-        removeItem,
-      },
-      shopBalanceManager: {
-        getAutoSellSeconds: () => 5,
-      },
-      shopNpcPriceManager: {
-        getNpcBuyPriceCoin: () => 4,
-        getNpcNeed: () => 3,
-        recordSellToNpc,
-      },
-      shopShelfEntityManager: slotManager,
-      now: () => nowMs,
-    });
 
-    manager.update(5);
-
-    expect(removeItem).toHaveBeenCalledTimes(1);
-    expect(removeItem).toHaveBeenCalledWith(1, 3);
-    expect(addCoin).toHaveBeenCalledWith(12);
-    expect(recordSellToNpc).toHaveBeenCalledTimes(1);
-    expect(recordSellToNpc).toHaveBeenCalledWith(
-      {
-        id: 1,
-        key: 'sageSeed',
-        label: 'sage seed',
-        kind: 'seed',
-      },
-      3,
-    );
-  });
-
-  it('does not over-submit NPC demand across catch-up timer cycles', () => {
-    const nowMs = 15_000;
-    let quantity = 10;
-    const addCoin = vi.fn();
-    const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
-      quantity -= removeQuantity;
-      return {
-        itemTypeId: 1,
-        key: 'sageSeed',
-        label: 'sage seed',
-        kind: 'seed',
-        quantity: removeQuantity,
-      };
-    });
-    const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
-    const manager = new ShopAutoSellManager({
-      coinFacade: {
-        add: addCoin,
-      },
-      itemsFacade: {
-        getItemDefinition: () => ({
-          id: 1,
-          key: 'sageSeed',
-          label: 'sage seed',
-          kind: 'seed',
-        }),
-        getItemQuantity: () => quantity,
-        removeItem,
-      },
-      shopBalanceManager: {
-        getAutoSellSeconds: () => 5,
-      },
-      shopNpcPriceManager: {
-        getNpcBuyPriceCoin: () => 4,
-        getNpcNeed: () => 3,
-        recordSellToNpc,
-      },
-      shopShelfEntityManager: createSlotManager(),
-      now: () => nowMs,
-    });
-
-    manager.update(15);
-
-    expect(removeItem).toHaveBeenCalledTimes(1);
-    expect(removeItem).toHaveBeenCalledWith(1, 3);
-    expect(addCoin).toHaveBeenCalledWith(12);
-    expect(recordSellToNpc).toHaveBeenCalledTimes(1);
-  });
-
-  it('syncs the shop timer to global wall-clock boundaries', () => {
-    let nowMs = 3_605_000;
-    let quantity = 2;
-    const addCoin = vi.fn();
-    const removeItem = vi.fn((_itemTypeId, removeQuantity) => {
-      if (quantity < removeQuantity) {
-        return null;
-      }
-
-      quantity -= removeQuantity;
-      return {
-        itemTypeId: 1,
-        key: 'sageSeed',
-        label: 'sage seed',
-        kind: 'seed',
-        quantity: removeQuantity,
-      };
-    });
-    const slotManager = createSlotManager();
-    const manager = new ShopAutoSellManager({
-      coinFacade: {
-        add: addCoin,
-      },
-      itemsFacade: {
-        getItemDefinition: () => ({
-          id: 1,
-          key: 'sageSeed',
-          label: 'sage seed',
-          kind: 'seed',
-        }),
-        getItemQuantity: () => quantity,
-        removeItem,
-      },
-      shopBalanceManager: {
-        getAutoSellSeconds: () => 1_800,
-      },
-      shopNpcPriceManager: {
-        getNpcBuyPriceCoin: () => 4,
-        recordSellToNpc: vi.fn(),
-      },
-      shopShelfEntityManager: slotManager,
-      now: () => nowMs,
-    });
-
-    manager.update(600);
-
-    expect(removeItem).toHaveBeenCalledWith(1, 2);
-    expect(addCoin).toHaveBeenCalledWith(8);
-    expect(slotManager.getSellProgressSeconds()).toBe(5);
-
-    nowMs = 3_610_000;
-    manager.update(5);
-
-    expect(removeItem).toHaveBeenCalledTimes(1);
-    expect(slotManager.getSellProgressSeconds()).toBe(10);
-  });
-
-  it('does not sell when backend NPC price is missing', () => {
-    let nowMs = 5_000;
-    const addCoin = vi.fn();
-    const removeItem = vi.fn();
-    const manager = new ShopAutoSellManager({
-      coinFacade: {
-        add: addCoin,
-      },
-      itemsFacade: {
-        getItemDefinition: () => ({
-          id: 1,
-          key: 'sageSeed',
-          label: 'sage seed',
-          kind: 'seed',
-        }),
-        removeItem,
-      },
-      shopBalanceManager: {
-        getAutoSellSeconds: () => 5,
-      },
-      shopNpcPriceManager: {
-        getNpcBuyPriceCoin: () => null,
-        recordSellToNpc: vi.fn(),
-      },
-      shopShelfEntityManager: createSlotManager(),
-      now: () => nowMs,
-    });
-
-    manager.update(5);
-
-    expect(removeItem).not.toHaveBeenCalled();
-    expect(addCoin).not.toHaveBeenCalled();
-  });
-
-  it('keeps a completed cycle pending until backend NPC prices are ready', () => {
-    let nowMs = 5_000;
-    let priceCoin = null;
-    let npcNeed = null;
-    const addCoin = vi.fn();
-    const removeItem = vi.fn().mockReturnValue({
-      itemTypeId: 1,
-      key: 'sageSeed',
-      label: 'sage seed',
-      kind: 'seed',
-      quantity: 3,
-    });
-    const recordSellToNpc = vi.fn().mockResolvedValue({ ok: true });
-    const manager = new ShopAutoSellManager({
-      coinFacade: {
-        add: addCoin,
-      },
-      itemsFacade: {
-        getItemDefinition: () => ({
-          id: 1,
-          key: 'sageSeed',
-          label: 'sage seed',
-          kind: 'seed',
-        }),
-        getItemQuantity: () => 3,
-        removeItem,
-      },
-      shopBalanceManager: {
-        getAutoSellSeconds: () => 5,
-      },
-      shopNpcPriceManager: {
-        getNpcBuyPriceCoin: () => priceCoin,
-        getNpcNeed: () => npcNeed,
-        recordSellToNpc,
-        syncPriceRetention: vi.fn(),
-      },
-      shopShelfEntityManager: createSlotManager(),
-      now: () => nowMs,
-    });
-
-    manager.update(5);
-
-    expect(removeItem).not.toHaveBeenCalled();
-    expect(addCoin).not.toHaveBeenCalled();
-
-    priceCoin = 4;
-    npcNeed = 10;
-    nowMs = 6_000;
     manager.update(1);
 
-    expect(removeItem).toHaveBeenCalledWith(1, 3);
-    expect(addCoin).toHaveBeenCalledWith(12);
-    expect(recordSellToNpc).toHaveBeenCalledWith(
-      {
-        id: 1,
-        key: 'sageSeed',
-        label: 'sage seed',
-        kind: 'seed',
-      },
-      3,
-    );
+    expect(slotState[0]).toMatchObject({ loadedQuantity: 1, sellProgressSeconds: 0 });
+    expect(slotState[1]).toMatchObject({ loadedQuantity: 2, sellProgressSeconds: 2 });
   });
 
-  it('retains backend NPC prices only while a stand has an item selected', () => {
-    let slots = [
-      {
-        slotNumber: 1,
-        unlocked: true,
-        sellItemTypeId: 1,
-      },
-    ];
-    const syncPriceRetention = vi.fn();
-    let progressSeconds = 0;
-    const slotManager = {
-      getSlotSnapshots: () => slots,
-      getSellProgressSeconds: () => progressSeconds,
-      setSellProgressSeconds: (nextProgressSeconds) => {
-        progressSeconds = nextProgressSeconds;
-      },
-    };
-    const manager = new ShopAutoSellManager({
-      coinFacade: {
-        add: vi.fn(),
-      },
-      itemsFacade: {
-        getItemDefinition: () => ({
-          id: 1,
-          key: 'sageSeed',
-          label: 'sage seed',
-          kind: 'seed',
-        }),
-        getItemQuantity: () => 0,
-        removeItem: vi.fn(),
-      },
-      shopBalanceManager: {
-        getAutoSellSeconds: () => 5,
-      },
-      shopNpcPriceManager: {
-        getNpcBuyPriceCoin: () => 4,
-        recordSellToNpc: vi.fn(),
-        syncPriceRetention,
-      },
-      shopShelfEntityManager: slotManager,
+  it('catches up elapsed cycles arithmetically and stops at loaded stock', () => {
+    const { addCoin, manager, onItemSold, slotState } = createHarness({ batchSize: 2 });
+
+    manager.update(20);
+
+    expect(slotState[0].loadedQuantity).toBe(0);
+    expect(addCoin).toHaveBeenCalledWith(12);
+    expect(onItemSold).toHaveBeenCalledTimes(1);
+  });
+
+  it('shares current NPC demand across stands and submits one aggregated update', () => {
+    const { addCoin, manager, recordSellToNpc, slotState } = createHarness({
+      npcNeed: 3,
+      batchSize: 2,
+      slots: [
+        {
+          slotNumber: 1,
+          unlocked: true,
+          sellItemTypeId: 1,
+          loadedQuantity: 4,
+          sellProgressSeconds: 0,
+        },
+        {
+          slotNumber: 2,
+          unlocked: true,
+          sellItemTypeId: 1,
+          loadedQuantity: 4,
+          sellProgressSeconds: 0,
+        },
+      ],
     });
 
+    manager.update(5);
+
+    expect(slotState.map((slot) => slot.loadedQuantity)).toEqual([2, 3]);
+    expect(addCoin).toHaveBeenNthCalledWith(1, 8);
+    expect(addCoin).toHaveBeenNthCalledWith(2, 4);
+    expect(recordSellToNpc).toHaveBeenCalledTimes(1);
+    expect(recordSellToNpc).toHaveBeenCalledWith(sageSeed, 3);
+  });
+
+  it('splits aggregated backend reports at the reducer security limit', () => {
+    const { manager, recordSellToNpc } = createHarness({
+      npcNeed: 20_000,
+      batchSize: 2,
+      slots: [
+        {
+          slotNumber: 1,
+          unlocked: true,
+          sellItemTypeId: 1,
+          loadedQuantity: 10_000,
+          sellProgressSeconds: 0,
+        },
+        {
+          slotNumber: 2,
+          unlocked: true,
+          sellItemTypeId: 1,
+          loadedQuantity: 10_000,
+          sellProgressSeconds: 0,
+        },
+      ],
+    });
+
+    manager.update(25_000);
+
+    expect(recordSellToNpc).toHaveBeenCalledTimes(2);
+    expect(recordSellToNpc).toHaveBeenNthCalledWith(1, sageSeed, 10_000);
+    expect(recordSellToNpc).toHaveBeenNthCalledWith(2, sageSeed, 10_000);
+  });
+
+  it('keeps a due cycle pending while backend prices are unavailable', () => {
+    const { manager, slotState } = createHarness({ priceCoin: null });
+    manager.shopNpcPriceManager.needsBackendPrices = () => true;
+
+    manager.update(5);
+
+    expect(slotState[0]).toMatchObject({ loadedQuantity: 3, sellProgressSeconds: 5 });
+    expect(manager.hasFrameTimerWork()).toBe(true);
+  });
+
+  it('retains prices only while at least one loaded stand is active', () => {
+    const { manager, slotState, syncPriceRetention } = createHarness();
+
     manager.update(0);
-
-    slots = [
-      {
-        slotNumber: 1,
-        unlocked: true,
-        sellItemTypeId: null,
-      },
-    ];
-
+    slotState[0].loadedQuantity = 0;
     manager.update(0);
 
     expect(syncPriceRetention).toHaveBeenNthCalledWith(1, true);

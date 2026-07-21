@@ -1,9 +1,4 @@
-import {
-  ShopShelf,
-  ShopShelfSlot,
-  shopSellLimitModeNames,
-  shopSellLimitModes,
-} from '../components/ShopComponents.js';
+import { ShopShelf, ShopShelfSlot } from '../components/ShopComponents.js';
 
 export class ShopShelfEntityManager {
   constructor({ initialUnlockedSlots = 0, maxSlots }) {
@@ -23,7 +18,6 @@ export class ShopShelfEntityManager {
     this.entityId = ecsManagers.entities.createEntity();
     ecsManagers.components.add(this.entityId, ShopShelf);
     ShopShelf.selectedSlotNumber[this.entityId] = this.initialUnlockedSlots > 0 ? 1 : 0;
-    ShopShelf.sellProgressSeconds[this.entityId] = 0;
 
     for (let slotNumber = 1; slotNumber <= this.maxSlots; slotNumber += 1) {
       this.createSlotEntity(slotNumber);
@@ -54,8 +48,7 @@ export class ShopShelfEntityManager {
     ShopShelfSlot.slotNumber[slotEntityId] = slotNumber;
     ShopShelfSlot.isUnlocked[slotEntityId] = slotNumber <= this.initialUnlockedSlots ? 1 : 0;
     ShopShelfSlot.sellItemTypeId[slotEntityId] = 0;
-    ShopShelfSlot.sellLimitMode[slotEntityId] = shopSellLimitModes.all;
-    ShopShelfSlot.sellQuantityLimit[slotEntityId] = 0;
+    ShopShelfSlot.loadedQuantity[slotEntityId] = 0;
     ShopShelfSlot.sellProgressSeconds[slotEntityId] = 0;
     this.slotEntityIds.push(slotEntityId);
   }
@@ -104,20 +97,21 @@ export class ShopShelfEntityManager {
     return true;
   }
 
-  assignSlotSellItem(slotNumber, itemTypeId, sellLimit = {}) {
+  assignSlotSellItem(slotNumber, itemTypeId, loadedQuantity = 0) {
     if (!this.isSlotUnlocked(slotNumber)) {
       return false;
     }
 
     const slotEntityId = this.getSlotEntityId(slotNumber);
     const safeItemTypeId = Number.isInteger(itemTypeId) && itemTypeId > 0 ? itemTypeId : 0;
-    const normalizedLimit = this.normalizeSellLimit({
-      itemTypeId: safeItemTypeId,
-      ...sellLimit,
-    });
+    const safeLoadedQuantity = safeItemTypeId
+      ? Math.max(0, Math.floor(Number(loadedQuantity) || 0))
+      : 0;
     ShopShelfSlot.sellItemTypeId[slotEntityId] = safeItemTypeId;
-    ShopShelfSlot.sellLimitMode[slotEntityId] = normalizedLimit.sellLimitMode;
-    ShopShelfSlot.sellQuantityLimit[slotEntityId] = normalizedLimit.sellQuantityLimit;
+    ShopShelfSlot.loadedQuantity[slotEntityId] = safeLoadedQuantity;
+    if (!safeItemTypeId || safeLoadedQuantity <= 0) {
+      ShopShelfSlot.sellProgressSeconds[slotEntityId] = 0;
+    }
     return true;
   }
 
@@ -125,74 +119,63 @@ export class ShopShelfEntityManager {
     return this.assignSlotSellItem(slotNumber, 0);
   }
 
-  consumeSlotSellQuantityLimit(slotNumber, quantity) {
+  changeSlotLoadedQuantity(slotNumber, delta) {
     if (!this.isSlotUnlocked(slotNumber)) {
       return null;
     }
 
-    const safeQuantity = Math.max(0, Math.floor(Number(quantity)));
-    if (!Number.isInteger(safeQuantity) || safeQuantity <= 0) {
+    const safeDelta = Math.trunc(Number(delta));
+    if (!Number.isInteger(safeDelta) || safeDelta === 0) {
       return null;
     }
 
     const slotEntityId = this.getSlotEntityId(slotNumber);
-    if (ShopShelfSlot.sellLimitMode[slotEntityId] !== shopSellLimitModes.amount) {
-      return null;
-    }
-
     const currentQuantity = Math.max(
       0,
-      Math.floor(Number(ShopShelfSlot.sellQuantityLimit[slotEntityId]) || 0),
+      Math.floor(Number(ShopShelfSlot.loadedQuantity[slotEntityId]) || 0),
     );
-    const nextQuantity = Math.max(0, currentQuantity - safeQuantity);
-    ShopShelfSlot.sellQuantityLimit[slotEntityId] = nextQuantity;
+    const nextQuantity = Math.max(0, currentQuantity + safeDelta);
+    ShopShelfSlot.loadedQuantity[slotEntityId] = nextQuantity;
+    if (nextQuantity <= 0) {
+      ShopShelfSlot.sellItemTypeId[slotEntityId] = 0;
+      ShopShelfSlot.sellProgressSeconds[slotEntityId] = 0;
+    }
     return nextQuantity;
+  }
+
+  setSlotSellProgressSeconds(slotNumber, seconds) {
+    const slotEntityId = this.getSlotEntityId(slotNumber);
+    ShopShelfSlot.sellProgressSeconds[slotEntityId] = Math.max(
+      0,
+      Number.isFinite(seconds) ? seconds : 0,
+    );
   }
 
   isSlotUnlocked(slotNumber) {
     return ShopShelfSlot.isUnlocked[this.getSlotEntityId(slotNumber)] === 1;
   }
 
-  getSellProgressSeconds() {
-    return ShopShelf.sellProgressSeconds[this.getEntityId()] ?? 0;
-  }
-
-  setSellProgressSeconds(seconds) {
-    const safeSeconds = Math.max(0, Number.isFinite(seconds) ? seconds : 0);
-    ShopShelf.sellProgressSeconds[this.getEntityId()] = safeSeconds;
-
-    for (const slotEntityId of this.getActiveSlotEntityIds()) {
-      ShopShelfSlot.sellProgressSeconds[slotEntityId] =
-        ShopShelfSlot.isUnlocked[slotEntityId] === 1 ? safeSeconds : 0;
-    }
-  }
-
-  applySnapshot({ unlockedSlots, selectedSlotNumber, sellProgressSeconds, slots = [] } = {}) {
+  applySnapshot({ unlockedSlots, selectedSlotNumber, slots = [] } = {}) {
     const safeUnlockedSlots = Number.isInteger(unlockedSlots)
       ? Math.max(this.initialUnlockedSlots, Math.min(unlockedSlots, this.maxSlots))
       : this.initialUnlockedSlots;
-    const safeSellProgressSeconds = Number.isFinite(sellProgressSeconds)
-      ? Math.max(0, sellProgressSeconds)
-      : this.getLegacySellProgressSeconds(slots, safeUnlockedSlots);
-
     for (const slotEntityId of this.getActiveSlotEntityIds()) {
       const slotNumber = ShopShelfSlot.slotNumber[slotEntityId];
       const slot = slots.find((candidate) => candidate?.slotNumber === slotNumber);
       const isUnlocked = slotNumber <= safeUnlockedSlots;
       const sellItemTypeId = isUnlocked ? slot?.sellItemTypeId || 0 : 0;
-      const normalizedLimit = this.normalizeSellLimit({
-        itemTypeId: sellItemTypeId,
-        sellLimitMode: slot?.sellLimitMode,
-        sellQuantityLimit: slot?.sellQuantityLimit,
-      });
+      const loadedQuantity = sellItemTypeId
+        ? Math.max(0, Math.floor(Number(slot?.loadedQuantity) || 0))
+        : 0;
 
       ShopShelfSlot.isUnlocked[slotEntityId] = isUnlocked ? 1 : 0;
-      ShopShelfSlot.sellItemTypeId[slotEntityId] = sellItemTypeId;
-      ShopShelfSlot.sellLimitMode[slotEntityId] = normalizedLimit.sellLimitMode;
-      ShopShelfSlot.sellQuantityLimit[slotEntityId] = normalizedLimit.sellQuantityLimit;
-      ShopShelfSlot.sellProgressSeconds[slotEntityId] = isUnlocked ? safeSellProgressSeconds : 0;
+      ShopShelfSlot.sellItemTypeId[slotEntityId] = loadedQuantity > 0 ? sellItemTypeId : 0;
+      ShopShelfSlot.loadedQuantity[slotEntityId] = loadedQuantity;
+      ShopShelfSlot.sellProgressSeconds[slotEntityId] =
+        isUnlocked && loadedQuantity > 0
+          ? Math.max(0, Number(slot?.sellProgressSeconds) || 0)
+          : 0;
     }
-    ShopShelf.sellProgressSeconds[this.getEntityId()] = safeSellProgressSeconds;
 
     const selectedIsValid =
       Number.isInteger(selectedSlotNumber) &&
@@ -218,63 +201,19 @@ export class ShopShelfEntityManager {
   }
 
   getSlotSnapshots() {
-    const sellProgressSeconds = this.getSellProgressSeconds();
-
     return this.getActiveSlotEntityIds().map((slotEntityId) => ({
       slotNumber: ShopShelfSlot.slotNumber[slotEntityId],
       unlocked: ShopShelfSlot.isUnlocked[slotEntityId] === 1,
       sellItemTypeId: ShopShelfSlot.sellItemTypeId[slotEntityId] || null,
-      sellLimitMode: this.getSellLimitModeName(ShopShelfSlot.sellLimitMode[slotEntityId]),
-      sellQuantityLimit:
-        ShopShelfSlot.sellLimitMode[slotEntityId] === shopSellLimitModes.amount
-          ? Math.max(0, Math.floor(Number(ShopShelfSlot.sellQuantityLimit[slotEntityId]) || 0))
-          : null,
-      sellProgressSeconds: ShopShelfSlot.isUnlocked[slotEntityId] === 1 ? sellProgressSeconds : 0,
+      loadedQuantity: Math.max(
+        0,
+        Math.floor(Number(ShopShelfSlot.loadedQuantity[slotEntityId]) || 0),
+      ),
+      sellProgressSeconds:
+        ShopShelfSlot.isUnlocked[slotEntityId] === 1
+          ? Math.max(0, Number(ShopShelfSlot.sellProgressSeconds[slotEntityId]) || 0)
+          : 0,
     }));
-  }
-
-  normalizeSellLimit({ itemTypeId, sellLimitMode, sellQuantityLimit } = {}) {
-    if (!Number.isInteger(itemTypeId) || itemTypeId <= 0) {
-      return {
-        sellLimitMode: shopSellLimitModes.all,
-        sellQuantityLimit: 0,
-      };
-    }
-
-    const mode =
-      sellLimitMode === shopSellLimitModes.amount || sellLimitMode === 'amount'
-        ? shopSellLimitModes.amount
-        : shopSellLimitModes.all;
-
-    if (mode !== shopSellLimitModes.amount) {
-      return {
-        sellLimitMode: shopSellLimitModes.all,
-        sellQuantityLimit: 0,
-      };
-    }
-
-    const quantity = Math.max(0, Math.floor(Number(sellQuantityLimit) || 0));
-    return {
-      sellLimitMode: shopSellLimitModes.amount,
-      sellQuantityLimit: quantity,
-    };
-  }
-
-  getSellLimitModeName(mode) {
-    return shopSellLimitModeNames[mode] ?? 'all';
-  }
-
-  getLegacySellProgressSeconds(slots = [], unlockedSlots = this.getUnlockedSlots()) {
-    return Math.max(
-      0,
-      ...slots
-        .filter((slot) => Number.isInteger(slot?.slotNumber) && slot.slotNumber <= unlockedSlots)
-        .map((slot) =>
-          Number.isFinite(slot?.sellProgressSeconds)
-            ? Math.max(0, slot.sellProgressSeconds)
-            : 0,
-        ),
-    );
   }
 
   getActiveSlotEntityIds() {

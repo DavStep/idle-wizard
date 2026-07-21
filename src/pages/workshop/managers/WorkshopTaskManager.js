@@ -11,7 +11,7 @@ import {
   getTaskRequirementVerb,
   taskRequirementTypes,
 } from '../../../gameplay/tasks/taskRequirementTypes.js';
-import { formatLevelUpNotice, getLevelPayoffRows } from './levelPayoffSummary.js';
+import { getLevelPayoffRows } from './levelPayoffSummary.js';
 
 const ELARA_REQUEST_LABEL = "elara's request";
 const TURN_IN_TEXT = 'turn in';
@@ -22,9 +22,8 @@ const DUPLICATE_TOUCH_CLICK_SUPPRESSION_MS = 450;
 const TASK_REORDER_TRANSITION =
   'transform 225ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms linear';
 export class WorkshopTaskManager {
-  constructor({ gameplayFacade, onLevelUpNotice } = {}) {
+  constructor({ gameplayFacade } = {}) {
     this.gameplayFacade = gameplayFacade;
-    this.onLevelUpNotice = onLevelUpNotice;
     this.root = null;
     this.unsubscribe = null;
     this.refs = {};
@@ -995,22 +994,8 @@ export class WorkshopTaskManager {
   }
 
   onLevelCompleteButton() {
-    const currentLevel = this.currentLevelCompletion?.level ?? null;
-    const nextLevel = Number.isInteger(currentLevel) ? currentLevel + 1 : null;
-    const payoffRows =
-      Number.isInteger(currentLevel) && Number.isInteger(nextLevel)
-        ? this.getLevelPayoffRows(currentLevel, nextLevel)
-        : [];
-    const result = this.gameplayFacade.completeTaskLevel?.();
+    this.gameplayFacade.completeTaskLevel?.();
     this.render(this.gameplayFacade.getSnapshot());
-
-    if (result?.ok && Number.isInteger(result.currentLevel) && result.currentLevel === nextLevel) {
-      this.onLevelUpNotice?.({
-        level: result.currentLevel,
-        rows: payoffRows,
-        message: formatLevelUpNotice(result.currentLevel, payoffRows),
-      });
-    }
   }
 
   renderTask(task) {

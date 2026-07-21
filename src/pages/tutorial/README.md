@@ -4,19 +4,17 @@ Elara Starbrew teaches through one lesson surface after the first purchase dialo
 
 Tutorial logic is unified through `TutorialLogicManager`. `TutorialStepManager` chooses and normalizes the current step, step definitions own reveal tokens and effects, `TutorialReminderManager` owns timing, and `TutorialLogicManager` returns the single view state the facade renders. Keep new tutorial flow rules in that path instead of branching directly inside `TutorialFacade`.
 
-The guide covers the sequential main requests for a free level 1 seed task and level-up, level 2 summon/sell/turn-in play with normal trader-offer rules, level 3 Research and mint seed requests, level 4 Garden herb requests, and level 5 Brewing with mana tonic research. After the first summon, only mana and the summon button stay revealed until the fifth first-lesson sage seed. Then Elara explains that she gives one request at a time before her request box is revealed and pointed at the sage seed turn-in. It has no skip state.
+The guide covers the sequential main requests for a free level 1 seed task and level-up, level 2 summon/load/wait/turn-in play with normal trader-stand rules, level 3 Research and mint seed requests, level 4 Garden herb requests, and level 5 Brewing with mana tonic research. After the first summon, only mana and the summon button stay revealed until the fifth first-lesson sage seed. Then Elara explains that she gives one request at a time before her request box is revealed and pointed at the sage seed turn-in. It has no skip state.
 
-The first tutorial trader-offer sequence selects the item, boinks the amount value for two seconds without opening the lesson panel or showing a pointer, then automatically advances to the `sell` button. Do not add a manual skip or a second hint box for that amount beat.
+The first Market sequence opens stand 1, points at `shop:sell:sageSeed`, and tells the player to hold it to load stock. Once matching stock is loaded, the objective becomes a passive wait for the five-second sale. There is no amount-selection or confirm beat.
 
-When later level-up coin goals already have the Trader Offer open and an item selected, Elara points at `sell` if the current amount covers the missing coin, or at `+1` if the amount can still usefully increase. The popup amount resets to `1` on open so the first sell read stays clear.
-
-Level-up coin guidance must read Market `shop.shelf.sellItems` quantities before pointing at `sell to trader`. Raw inventory can include items reserved by Garden, Brewing, or listings; if the matching trader-offer row would show `x0`, guide back to the next source instead of the disabled row. If a sellable item exists on another item tab, point to that tab before pointing to the item row.
+Later coin guidance first reuses a loaded matching stall. Otherwise it reads `shop.shelf.sellItems`, opens an empty stall, selects the required category tab, and points to the item. If no available item exists, guide back to its source instead of a disabled loader row.
 
 The target cue keeps the same diagonal placement math and uses the Spine pointer on a pointer-local Pixi canvas. Rotate the Spine shell by placement so the authored upward tap points at the target anchor.
 
 Lesson 4 follows the active level 4 request, then sends players to Garden for the first sage grow using the live sage-herb target, so they see why the summon/plant loop matters. The lesson panel opens immediately, but target pointer help waits for the 2-second gardening idle window or an explicit `show me` press. Later herb objectives use the same delayed target pointer behavior, then point only when the player appears stuck.
 
-Tutorial market steps use the normal Trader Offer path and live sell quantities. Keep legacy `shop:directSell` target ids for compatibility. Do not add FTUE-only coin grants, tutorial price overrides, or tutorial-owned inventory mutation; level 1 is free, and level 2 teaches systemic selling.
+Tutorial market steps use normal timed stands and `shop:stand:*` / `shop:sell:*` targets. Do not add FTUE-only coin grants, tutorial price overrides, or tutorial-owned inventory mutation; level 1 is free, and level 2 teaches systemic selling.
 
 Players already past level 5 auto-complete the tutorial. Earlier snapshots that already show later progress skip stale lessons.
 

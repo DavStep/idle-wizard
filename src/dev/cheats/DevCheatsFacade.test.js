@@ -563,7 +563,7 @@ describe('DevCheatsFacade', () => {
     expect(target.cheats.setTutorialStage('intro-garden')).toMatchObject({
       ok: true,
       requestedStepId: 'intro-garden',
-      code: 't27',
+      code: 't26',
       progress: {
         ok: true,
         stage: 'intro-garden',

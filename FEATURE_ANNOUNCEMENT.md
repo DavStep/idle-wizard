@@ -1,5 +1,11 @@
 # Feature Announcements
 
+## 0.2.98
+
+Trader stalls now hold real stock and sell on their own five-second cycles. Tap a stall, then press or hold an item to load it from your inventory; hold the loaded item on the stall to take stock back. Every stall shows its remaining stock, next-sale countdown, batch size, and current trader value.
+
+The old instant Trader Offer has retired, so every NPC sale now receives the full trader quote. Its haggling studies have become stall-staffing studies: research a specific stall to make it sell two items per cycle. Existing haggling progress carries over automatically.
+
 ## 0.2.96
 
 Elara's requests now give each level a clearer journey. Instead of showing every requirement at once, Elara presents one request at a time. Completing it awards XP, fills the level progress bar, and reveals the next request until the final level-up step is ready.

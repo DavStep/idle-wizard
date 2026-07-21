@@ -20,7 +20,7 @@ const FEATURE_UNLOCK_PREVIEW_PAGE_IDS = Object.freeze({
 
 export class PageAnnouncementFacade {
   static explain =
-    'Shows short full-screen notices for major progress moments, so level-ups and completed research are hard to miss.';
+    'Shows short full-screen reward, unlock, and research notices after major progress moments.';
 
   constructor({ gameplayFacade, playerFacade } = {}) {
     this.manager = new PageAnnouncementManager({

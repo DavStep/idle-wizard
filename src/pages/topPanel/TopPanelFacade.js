@@ -44,10 +44,10 @@ export class TopPanelFacade {
     this.viewManager.mount(stage);
     const refs = this.viewManager.getRefs();
     this.authManager.mount(refs);
+    this.resourceDisplayManager.mount(refs);
     this.questProgressManager.mount(refs);
     this.levelManager.mount(refs);
     this.inboxManager.mount(refs);
-    this.resourceDisplayManager.mount(refs);
     this.fitManager.mount(refs);
     this.settingsManager.mount(refs);
     this.usernamePromptManager.mount();
@@ -57,10 +57,10 @@ export class TopPanelFacade {
     this.usernamePromptManager.unmount();
     this.settingsManager.unmount();
     this.fitManager.unmount();
-    this.resourceDisplayManager.unmount();
     this.inboxManager.unmount();
     this.levelManager.unmount();
     this.questProgressManager.unmount();
+    this.resourceDisplayManager.unmount();
     this.authManager.unmount();
     this.viewManager.unmount();
   }

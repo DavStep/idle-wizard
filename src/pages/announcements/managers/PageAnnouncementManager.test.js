@@ -140,7 +140,7 @@ function getReportLineParts(stage) {
 }
 
 describe('PageAnnouncementManager', () => {
-  it('shows the first playable level-up announcement from level zero', () => {
+  it('shows only first-level rewards after the level-zero transition', () => {
     const snapshot = createSnapshot();
     snapshot.tasks.currentLevel = 0;
     snapshot.playerLevel.currentLevel = 0;
@@ -154,10 +154,11 @@ describe('PageAnnouncementManager', () => {
 
     const layer = stage.querySelector('.room-announcement-layer');
     expect(layer?.hidden).toBe(false);
-    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('level up!');
-    expect(stage.querySelector('.room-announcement__level-flow')?.textContent).toBe('level 1');
-    expect(stage.querySelector('.room-announcement__level-from')?.textContent).toBe('level 1');
-    expect(stage.querySelector('.room-announcement__level-to')?.hidden).toBe(true);
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('rewards');
+    expect(stage.querySelector('.room-announcement__level-flow')).toBeNull();
+    expect(stage.querySelector('.room-announcement')?.getAttribute('aria-label')).toBe(
+      'level 1 rewards',
+    );
     expect(
       [...stage.querySelectorAll('.room-announcement__row')].map((row) => [
         row.querySelector('.room-announcement__row-label')?.textContent,
@@ -170,7 +171,7 @@ describe('PageAnnouncementManager', () => {
       ['mana capacity', '+50 mana'],
       ['mana regeneration', '+1/sec mana'],
     ]);
-    expect(layer?.dataset.announcementUnlockDelayMs).toBe('20000');
+    expect(layer?.dataset.announcementUnlockDelayMs).toBe('21180');
 
     manager.hideCurrent();
 
@@ -207,7 +208,7 @@ describe('PageAnnouncementManager', () => {
     });
   });
 
-  it('shows a full-screen level-up announcement after level increases', () => {
+  it('shows a rewards-only announcement after level increases', () => {
     const snapshot = createSnapshot();
     const { gameplayFacade, stage } = mountManager(snapshot);
 
@@ -223,10 +224,11 @@ describe('PageAnnouncementManager', () => {
       false,
     );
     expect(stage.querySelector('.room-announcement__close')).toBeNull();
-    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('level up!');
-    expect(stage.querySelector('.room-announcement__level-flow')?.textContent).toBe('level 1> 2');
-    expect(stage.querySelector('.room-announcement__level-from')?.textContent).toBe('level 1');
-    expect(stage.querySelector('.room-announcement__level-to')?.textContent).toBe('> 2');
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('rewards');
+    expect(stage.querySelector('.room-announcement__level-flow')).toBeNull();
+    expect(stage.querySelector('.room-announcement')?.getAttribute('aria-label')).toBe(
+      'level 2 rewards',
+    );
     expect(
       [...stage.querySelectorAll('.room-announcement__row')].map((row) => [
         row.querySelector('.room-announcement__row-label')?.textContent,
@@ -366,7 +368,8 @@ describe('PageAnnouncementManager', () => {
     gameplayFacade.publishSnapshot();
 
     expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
-    expect(stage.querySelector('.room-announcement__level-flow')?.textContent).toBe('level 1> 2');
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('rewards');
+    expect(stage.querySelector('.room-announcement__level-flow')).toBeNull();
   });
 
   it('does not replay saved level and research announcements after persistence hydration', () => {
@@ -389,8 +392,8 @@ describe('PageAnnouncementManager', () => {
     gameplayFacade.publishSnapshot();
 
     expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
-    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('level up!');
-    expect(stage.querySelector('.room-announcement__level-flow')?.textContent).toBe('level 2> 3');
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('rewards');
+    expect(stage.querySelector('.room-announcement__level-flow')).toBeNull();
   });
 
   it('keeps announcements open until the timed flow completes', () => {
@@ -767,7 +770,7 @@ describe('PageAnnouncementManager', () => {
     const layer = stage.querySelector('.room-announcement-layer');
     expect(layer?.hidden).toBe(false);
 
-    vi.advanceTimersByTime(2099);
+    vi.advanceTimersByTime(3279);
     expect(layer?.hidden).toBe(false);
 
     vi.advanceTimersByTime(1);
@@ -781,17 +784,14 @@ describe('PageAnnouncementManager', () => {
     expect(layer?.hidden).toBe(true);
   });
 
-  it('uses x2 faster announcement animation timings', () => {
+  it('delays level rewards until the badge sequence finishes', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
 
     expect(baseCss).toContain('animation: room-announcement-panel-enter 130ms');
-    expect(baseCss).toContain('animation: room-announcement-title-flyout 450ms');
-    expect(baseCss).toContain('animation: room-announcement-level-from-sequence 580ms');
-    expect(baseCss).toContain('var(--style-motion-ease-rubber) 320ms both;');
-    expect(baseCss).toContain('animation: room-announcement-level-to-enter 270ms');
-    expect(baseCss).toContain('var(--style-motion-ease-rubber) 720ms both;');
+    expect(baseCss).toContain('var(--style-motion-ease-soft) 1180ms both;');
+    expect(baseCss).toContain('var(--style-motion-ease-rubber) 1180ms both;');
     expect(baseCss).toContain(
-      'calc(970ms + (var(--room-announcement-row-index, 0) * 55ms)) both;',
+      '1260ms + (var(--room-announcement-row-index, 0) * 55ms)',
     );
     expect(baseCss).toContain('animation: room-announcement-research-icon 390ms');
     expect(baseCss).toContain('var(--style-motion-ease-rubber) 180ms both;');
@@ -870,7 +870,7 @@ describe('PageAnnouncementManager', () => {
     ['automation:autoHarvestPlant:1', 'research:autoHarvest'],
     ['automation:autoBrewCauldron:1', 'research:autoBrew'],
     ['automation:autoBottleCauldron:1', 'research:autoBottle'],
-    ['fastSellPayout:1', 'research:fastSell'],
+    ['advanced:stallStaffing:1', 'research:fastSell'],
     ['advanced:researchTime:1', 'research:researchTime'],
     ['emerald:researchCost:1', 'research:researchCost'],
     ['advanced:automationReserve:1', 'research:automationReserve'],
@@ -894,14 +894,14 @@ describe('PageAnnouncementManager', () => {
     gameplayFacade.researchFacade = {
       getResearchAnnouncementSnapshot: (researchId) => ({
         id: researchId,
-        label: 'fast sell lvl 1',
-        effect: '85% payout',
+        label: 'staff stall 1',
+        effect: 'sells 2 items per cycle',
         value: 'researched',
         costCurrency: 'ruby',
       }),
     };
 
-    snapshot.research.completedResearchIds = ['fastSellPayout:1'];
+    snapshot.research.completedResearchIds = ['advanced:stallStaffing:1'];
     gameplayFacade.publishSnapshot();
 
     expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
@@ -909,10 +909,10 @@ describe('PageAnnouncementManager', () => {
       'research complete',
     );
     expect(stage.querySelector('.room-announcement__research-label')?.textContent).toBe(
-      'fast sell lvl 1',
+      'staff stall 1',
     );
     expect(stage.querySelector('.room-announcement__research-detail')?.textContent).toBe(
-      '85% payout',
+      'sells 2 items per cycle',
     );
     expect(
       stage

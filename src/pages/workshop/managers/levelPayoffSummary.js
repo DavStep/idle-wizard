@@ -81,19 +81,6 @@ export function getLevelPayoffRows(snapshot, { fromLevel, toLevel } = {}) {
   ];
 }
 
-export function formatLevelUpNotice(level, rows = []) {
-  const safeLevel = normalizeLevel(level);
-  const notices = rows
-    .map((row) => row?.notice)
-    .filter((notice) => typeof notice === 'string' && notice.length > 0);
-
-  if (notices.length <= 0) {
-    return `level ${safeLevel} reached`;
-  }
-
-  return `level ${safeLevel} reached: ${notices.join(', ')}`;
-}
-
 function getUnlockRows(levelBefore, levelAfter) {
   const unlocks = dedupeUnlocksByValue([
     ...getPageUnlocks(levelBefore, levelAfter),

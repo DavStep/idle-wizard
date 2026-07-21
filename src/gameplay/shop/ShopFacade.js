@@ -1,6 +1,5 @@
 import { ShopBalanceManager } from './managers/ShopBalanceManager.js';
 import { ShopAutoSellManager } from './managers/ShopAutoSellManager.js';
-import { ShopDirectSellManager } from './managers/ShopDirectSellManager.js';
 import { ShopShelfEntityManager } from './managers/ShopShelfEntityManager.js';
 import { ShopShelfSlotSelectionManager } from './managers/ShopShelfSlotSelectionManager.js';
 import { ShopSellItemVisibilityManager } from './managers/ShopSellItemVisibilityManager.js';
@@ -107,16 +106,6 @@ export class ShopFacade {
       shopStockPriceQuoteManager: this.shopStockPriceQuoteManager,
       getItemAccess: (item) => this.getMarketItemAccess(item),
     });
-    this.shopDirectSellManager = new ShopDirectSellManager({
-      coinFacade,
-      itemsFacade,
-      researchFacade,
-      shopNpcPriceManager: this.shopNpcPriceManager,
-      shopNpcSellQuoteManager: this.shopNpcSellQuoteManager,
-      shopSellAvailabilityManager: this.shopSellAvailabilityManager,
-      getItemAccess: (item) => this.getMarketItemAccess(item),
-      onItemSold,
-    });
     this.shopAutoSellManager = new ShopAutoSellManager({
       coinFacade,
       itemsFacade,
@@ -127,6 +116,7 @@ export class ShopFacade {
       shopShelfEntityManager: this.shopShelfEntityManager,
       getAccessibleSlotCount: () => this.getMarketStallCount(),
       getItemAccess: (item) => this.getMarketItemAccess(item),
+      getStallBatchSize: (slotNumber) => researchFacade?.getStallBatchSize?.(slotNumber) ?? 1,
       onItemSold,
       now,
     });
@@ -200,12 +190,16 @@ export class ShopFacade {
     return this.shopPlayerShelfListingManager.selectSlot(slotNumber);
   }
 
-  setSelectedShelfSlotSellItem(itemTypeId, sellLimit) {
-    return this.shopShelfSlotSelectionManager.setSelectedSlotSellItem(itemTypeId, sellLimit);
+  loadSelectedShelfSlotItem(itemTypeId, quantity = 1) {
+    return this.shopShelfSlotSelectionManager.loadSelectedSlot(itemTypeId, quantity);
   }
 
-  clearSelectedShelfSlotSellItem() {
-    return this.shopShelfSlotSelectionManager.clearSelectedSlotSellItem();
+  unloadSelectedShelfSlotItem(quantity = 1) {
+    return this.shopShelfSlotSelectionManager.unloadSelectedSlot(quantity);
+  }
+
+  unloadSelectedShelfSlotItemAll() {
+    return this.shopShelfSlotSelectionManager.unloadSelectedSlotAll();
   }
 
   setSelectedPlayerShelfSlotListing(listing) {
@@ -238,14 +232,6 @@ export class ShopFacade {
 
   quoteStockPurchase(itemTypeId, quantity = 1) {
     return this.shopStockPurchaseManager.quoteItem({ itemTypeId, quantity });
-  }
-
-  sellNpcMarketItem(itemTypeId, quantity = 1) {
-    return this.shopDirectSellManager.sellItem({ itemTypeId, quantity });
-  }
-
-  quoteNpcMarketSell(itemTypeId, quantity = 1) {
-    return this.shopDirectSellManager.quoteItem({ itemTypeId, quantity });
   }
 
   claimPlayerShopSaleProceeds(coin) {
@@ -284,11 +270,10 @@ export class ShopFacade {
         nextSlotLockedByLevel: false,
         nextSlotRequiresLevel: null,
         selectedSlotNumber: this.shopShelfEntityManager.getSelectedSlotNumber(),
-        sellProgressSeconds: this.shopShelfEntityManager.getSellProgressSeconds(),
         autoSellSeconds: this.shopBalanceManager.getAutoSellSeconds(),
         sellKinds,
         sellItems: visibleSellItems,
-        slots: this.getSlotSnapshots(sellableItems).slice(0, marketStallCount),
+        slots: this.getSlotSnapshots().slice(0, marketStallCount),
       },
       playerShelf: {
         unlockedSlots: marketStallCount,
@@ -376,8 +361,6 @@ export class ShopFacade {
   }
 
   getVisibleSellItemSnapshots(sellableItems = this.getAvailableSellableItemSnapshots()) {
-    const fastSellPercent = this.shopDirectSellManager.getFastSellPercent();
-
     return this.shopSellItemVisibilityManager
       .getVisibleSellItems(sellableItems)
       .map((item) => {
@@ -409,8 +392,6 @@ export class ShopFacade {
           tradedHere: marketAccess.tradedHere,
           requiredMarket: marketAccess.requiredMarket,
           sellCoin,
-          fastSellCoin: this.shopDirectSellManager.getFastSellPriceCoin(sellCoin),
-          fastSellPercent,
           sellNeed: marketAccess.tradedHere ? this.shopNpcPriceManager.getNpcNeed(item) : null,
           buyCoin: marketAccess.tradedHere
             ? this.shopNpcPriceManager.getNpcSellPriceCoin(item)
@@ -420,9 +401,7 @@ export class ShopFacade {
       });
   }
 
-  getSlotSnapshots(sellableItems = this.getAvailableSellableItemSnapshots()) {
-    const sellableItemsById = new Map(sellableItems.map((item) => [item.itemTypeId, item]));
-
+  getSlotSnapshots() {
     return this.shopShelfEntityManager.getSlotSnapshots().map((slot) => {
       if (!slot.sellItemTypeId) {
         return {
@@ -430,16 +409,14 @@ export class ShopFacade {
           sellKind: null,
           sellKey: null,
           sellLabel: null,
-          sellQuantity: null,
-          sellLimitMode: 'all',
-          sellQuantityLimit: null,
+          loadedQuantity: 0,
+          batchSize: 1,
           sellCoin: null,
           sellNeed: null,
         };
       }
 
       const item = this.itemsFacade.getItemDefinition(slot.sellItemTypeId);
-      const sellableItem = sellableItemsById.get(slot.sellItemTypeId);
       const marketAccess = this.getMarketItemAccess(item);
 
       return {
@@ -447,9 +424,9 @@ export class ShopFacade {
         sellKind: item.kind,
         sellKey: item.key,
         sellLabel: item.label,
-        sellQuantity: sellableItem?.quantity ?? 0,
-        sellLimitMode: slot.sellLimitMode ?? 'all',
-        sellQuantityLimit: slot.sellLimitMode === 'amount' ? slot.sellQuantityLimit ?? 0 : null,
+        sellQuantity: slot.loadedQuantity,
+        loadedQuantity: slot.loadedQuantity,
+        batchSize: this.shopAutoSellManager.getStallBatchSize?.(slot.slotNumber) ?? 1,
         marketGrade: marketAccess.grade,
         tradedHere: marketAccess.tradedHere,
         requiredMarket: marketAccess.requiredMarket,
@@ -528,14 +505,12 @@ export class ShopFacade {
       shelf: {
         unlockedSlots: this.shopShelfEntityManager.getUnlockedSlots(),
         selectedSlotNumber: shelf.selectedSlotNumber,
-        sellProgressSeconds: this.shopShelfEntityManager.getSellProgressSeconds(),
         slots: this.shopShelfEntityManager.getSlotSnapshots().map((slot) => ({
           slotNumber: slot.slotNumber,
           sellItemKey: slot.sellItemTypeId
             ? this.itemsFacade.getItemDefinition(slot.sellItemTypeId).key
             : null,
-          sellLimitMode: slot.sellLimitMode ?? 'all',
-          sellQuantityLimit: slot.sellLimitMode === 'amount' ? slot.sellQuantityLimit ?? 0 : null,
+          loadedQuantity: slot.loadedQuantity,
           sellProgressSeconds: slot.sellProgressSeconds,
         })),
       },
@@ -573,22 +548,12 @@ export class ShopFacade {
 
     const shelfSnapshot = snapshot.shelf ?? snapshot;
     const slots = Array.isArray(shelfSnapshot.slots)
-      ? shelfSnapshot.slots.map((slot) => ({
-          slotNumber: slot.slotNumber,
-          sellItemTypeId:
-            typeof slot.sellItemKey === 'string'
-              ? this.itemsFacade.safeGetDefinitionByKey(slot.sellItemKey)?.id
-              : 0,
-          sellLimitMode: slot.sellLimitMode,
-          sellQuantityLimit: slot.sellQuantityLimit,
-          sellProgressSeconds: slot.sellProgressSeconds,
-        }))
+      ? shelfSnapshot.slots.map((slot) => this.normalizePersistedStall(slot))
       : [];
 
     this.shopShelfEntityManager.applySnapshot({
       unlockedSlots: this.clampUnlockedSlots(shelfSnapshot.unlockedSlots),
       selectedSlotNumber: shelfSnapshot.selectedSlotNumber,
-      sellProgressSeconds: shelfSnapshot.sellProgressSeconds,
       slots,
     });
 
@@ -631,6 +596,47 @@ export class ShopFacade {
       snapshot.coinOffer ?? snapshot.goldOffer,
     );
     this.syncMarketCapacity();
+  }
+
+  normalizePersistedStall(slot = {}) {
+    const itemTypeId =
+      typeof slot.sellItemKey === 'string'
+        ? this.itemsFacade.safeGetDefinitionByKey(slot.sellItemKey)?.id ?? 0
+        : 0;
+    const cycleSeconds = this.shopBalanceManager.getAutoSellSeconds();
+    const sellProgressSeconds = Number.isFinite(slot.sellProgressSeconds)
+      ? Math.max(0, slot.sellProgressSeconds) % cycleSeconds
+      : 0;
+
+    if (Object.hasOwn(slot, 'loadedQuantity')) {
+      return {
+        slotNumber: slot.slotNumber,
+        sellItemTypeId: itemTypeId,
+        loadedQuantity: Math.max(0, Math.floor(Number(slot.loadedQuantity) || 0)),
+        sellProgressSeconds,
+      };
+    }
+
+    if (!itemTypeId) {
+      return { slotNumber: slot.slotNumber, sellItemTypeId: 0, loadedQuantity: 0 };
+    }
+
+    const availableQuantity = this.shopSellAvailabilityManager.getAvailableQuantity(itemTypeId);
+    const requestedQuantity =
+      slot.sellLimitMode === 'amount'
+        ? Math.max(0, Math.floor(Number(slot.sellQuantityLimit) || 0))
+        : availableQuantity;
+    const loadedQuantity = Math.min(availableQuantity, requestedQuantity, 1_000_000);
+    if (loadedQuantity > 0) {
+      this.itemsFacade.removeItem(itemTypeId, loadedQuantity);
+    }
+
+    return {
+      slotNumber: slot.slotNumber,
+      sellItemTypeId: loadedQuantity > 0 ? itemTypeId : 0,
+      loadedQuantity,
+      sellProgressSeconds,
+    };
   }
 
   clampUnlockedSlots(unlockedSlots) {

@@ -1016,16 +1016,26 @@ export class GameplayFacade {
     return result;
   }
 
-  setSelectedShopShelfSlotSellItem(itemTypeId, sellLimit) {
-    const result = this.shopFacade.setSelectedShelfSlotSellItem(itemTypeId, sellLimit);
+  loadSelectedShopShelfSlotItem(itemTypeId, quantity = 1, { save = true } = {}) {
+    const result = this.shopFacade.loadSelectedShelfSlotItem(itemTypeId, quantity);
+    save ? this.publishAndSaveSnapshot() : this.publishSnapshot();
+    return result;
+  }
+
+  unloadSelectedShopShelfSlotItem(quantity = 1, { save = true } = {}) {
+    const result = this.shopFacade.unloadSelectedShelfSlotItem(quantity);
+    save ? this.publishAndSaveSnapshot() : this.publishSnapshot();
+    return result;
+  }
+
+  unloadSelectedShopShelfSlotItemAll() {
+    const result = this.shopFacade.unloadSelectedShelfSlotItemAll();
     this.publishAndSaveSnapshot();
     return result;
   }
 
-  clearSelectedShopShelfSlotSellItem() {
-    const result = this.shopFacade.clearSelectedShelfSlotSellItem();
+  commitShopShelfChanges() {
     this.publishAndSaveSnapshot();
-    return result;
   }
 
   setSelectedPlayerShopShelfSlotListing(listing) {
@@ -1096,16 +1106,6 @@ export class GameplayFacade {
 
   quoteNpcMarketStockPurchase(itemTypeId, quantity = 1) {
     return this.shopFacade.quoteStockPurchase(itemTypeId, quantity);
-  }
-
-  async sellNpcMarketItem(itemTypeId, quantity = 1) {
-    const result = await this.shopFacade.sellNpcMarketItem(itemTypeId, quantity);
-    this.publishAndSaveSnapshot();
-    return result;
-  }
-
-  quoteNpcMarketSell(itemTypeId, quantity = 1) {
-    return this.shopFacade.quoteNpcMarketSell(itemTypeId, quantity);
   }
 
   claimPlayerShopSaleProceeds(coin, statsBreakdown = null) {

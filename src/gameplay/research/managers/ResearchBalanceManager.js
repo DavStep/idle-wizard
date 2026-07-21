@@ -12,9 +12,9 @@ import {
   plotCapacityStartPlotNumber,
 } from '../capacityResearchIds.js';
 import {
-  fastSellResearchCostsRuby,
-  fastSellResearchIds,
-} from '../fastSellResearch.js';
+  stallStaffingMaxStalls,
+  stallStaffingResearchIds,
+} from '../stallStaffingResearch.js';
 import {
   researchTimeResearchIds,
   researchTimeResearchMaxLevel,
@@ -191,10 +191,6 @@ function createDefaultAutomationCosts() {
 function createDefaultAdvancedCosts() {
   const costs = {};
 
-  fastSellResearchCostsRuby.forEach((cost, index) => {
-    costs[fastSellResearchIds.payout(index + 1)] = cost;
-  });
-
   for (let level = 1; level <= researchTimeResearchMaxLevel; level += 1) {
     costs[researchTimeResearchIds.reduction(level)] = level;
   }
@@ -205,6 +201,10 @@ function createDefaultAdvancedCosts() {
 
   for (let level = 1; level <= automationReserveResearchMaxLevel; level += 1) {
     costs[automationReserveResearchIds.controls(level)] = level;
+  }
+
+  for (let stallNumber = 1; stallNumber <= stallStaffingMaxStalls; stallNumber += 1) {
+    costs[stallStaffingResearchIds.capacity(stallNumber)] = stallNumber;
   }
 
   for (

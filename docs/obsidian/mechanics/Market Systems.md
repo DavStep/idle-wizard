@@ -15,7 +15,6 @@ system: market
 implementation: shipped
 verified_on: 2026-07-19
 ---
-ldron
 # Market Systems
 
 The Market room contains Trader/NPC sales, player trading, and the crystals tab. Permanent market licences isolate both NPC and player economies.
@@ -26,7 +25,6 @@ The Market room contains Trader/NPC sales, player trading, and the crystals tab.
 ## Tabs
 
 - [[mechanics/market/NPC Market|Traders]]
-  - [[mechanics/market/Fast Sell|Sell to Trader]]
   - [[mechanics/market/Trader Stands|Automatic Trader Stands]]
   - [[mechanics/market/Market Ledger|Market Ledger]]
   - [[mechanics/market/NPC Stock|Shared NPC Stock]]

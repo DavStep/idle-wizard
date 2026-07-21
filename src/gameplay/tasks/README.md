@@ -1,6 +1,6 @@
 # Tasks
 
-Main quests turn normal Workshop actions into player level progress. The Workshop shows one `elara's request` at a time. Every completed request fills one segment in the shared top-panel level rail.
+Main quests turn normal Workshop actions into player level progress. The Workshop shows one `elara's request` at a time. Every completed request fills one segment in the shared top-panel level rail, and the active request's partial progress fills its current segment proportionally.
 
 Each level gets its ordered request chain from SpacetimeDB `game_config.tasks`. Requests can be `research`, `summon`, `grow`, `brew`, `sell`, or `turnIn` (legacy rows with no `type` are `turnIn`). Only the current request collects progress. Action requests auto-complete when they hit their target. Turn-in requests consume submitted items until their required quantity is full, then auto-complete. After the configured requests, paying the existing level completion coin cost is the final segment; completing it advances the level.
 

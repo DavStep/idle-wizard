@@ -509,7 +509,7 @@ function createGameplayFacadeFake() {
       },
       shelf: {
         unlockedSlots: 1,
-        maxSlots: 5,
+        maxSlots: 1,
         slotCosts: [0, 1, 3, 6, 10],
         nextSlotNumber: 2,
         nextSlotCost: 1,
@@ -555,7 +555,10 @@ function createGameplayFacadeFake() {
             unlocked: true,
             sellItemTypeId: null,
             sellKind: null,
+            sellKey: null,
             sellLabel: null,
+            loadedQuantity: 0,
+            batchSize: 1,
             sellProgressSeconds: 0,
           },
           {
@@ -957,19 +960,19 @@ function createGameplayFacadeFake() {
   ];
   const advancedResearchBoxes = [
     {
-      id: 'fastSell',
-      label: 'haggling research',
+      id: 'stallStaffing',
+      label: 'stall staffing research',
       researches: [
         {
-          id: 'fastSellPayout:1',
-          label: 'haggling lvl 1',
-          value: '2 ruby',
-          effect: '85% payout',
+          id: 'advanced:stallStaffing:1',
+          label: 'stall 1 staffing',
+          value: '1 emerald',
+          effect: 'x2 items',
           showEffect: true,
           requiredResearchIds: [],
           costCoin: 0,
-          costRuby: 2,
-          costCurrency: 'ruby',
+          costEmerald: 1,
+          costCurrency: 'emerald',
           completed: false,
           canResearch: false,
         },
@@ -2296,7 +2299,7 @@ function createGameplayFacadeFake() {
         autoBrewEnabled: snapshot.brewing.autoBrewEnabled,
       };
     },
-    setSelectedShopShelfSlotSellItem: (itemTypeId) => {
+    loadSelectedShopShelfSlotItem: (itemTypeId, quantity = 1) => {
       const slotNumber = snapshot.shop.shelf.selectedSlotNumber;
       const slot = snapshot.shop.shelf.slots.find(
         (shelfSlot) => shelfSlot.slotNumber === slotNumber,
@@ -2308,7 +2311,12 @@ function createGameplayFacadeFake() {
       slot.sellKind = item.kind;
       slot.sellKey = item.key;
       slot.sellLabel = item.label;
-      slot.sellQuantity = item.quantity;
+      const loadedQuantity = Math.min(quantity, item.quantity);
+      if (loadedQuantity <= 0) return { ok: false, reason: 'not_enough_items' };
+      item.quantity -= loadedQuantity;
+      slot.loadedQuantity = (slot.loadedQuantity ?? 0) + loadedQuantity;
+      slot.sellQuantity = slot.loadedQuantity;
+      slot.batchSize = 1;
       slot.sellCoin = item.sellCoin;
       slot.sellNeed = item.sellNeed;
       publish();
@@ -2316,13 +2324,24 @@ function createGameplayFacadeFake() {
         ok: true,
         slotNumber,
         item,
+        quantity: loadedQuantity,
       };
     },
-    clearSelectedShopShelfSlotSellItem: () => {
+    unloadSelectedShopShelfSlotItem: (quantity = 1) => {
       const slotNumber = snapshot.shop.shelf.selectedSlotNumber;
       const slot = snapshot.shop.shelf.slots.find(
         (shelfSlot) => shelfSlot.slotNumber === slotNumber,
       );
+      const unloadedQuantity = Math.min(quantity, slot.loadedQuantity ?? 0);
+      const item = snapshot.shop.shelf.sellItems.find(
+        (sellItem) => sellItem.itemTypeId === slot.sellItemTypeId,
+      );
+      if (item) item.quantity += unloadedQuantity;
+      slot.loadedQuantity = Math.max(0, (slot.loadedQuantity ?? 0) - unloadedQuantity);
+      if (slot.loadedQuantity > 0) {
+        publish();
+        return { ok: true, slotNumber, quantity: unloadedQuantity };
+      }
       slot.sellItemTypeId = null;
       slot.sellKind = null;
       slot.sellKey = null;
@@ -2335,8 +2354,10 @@ function createGameplayFacadeFake() {
       return {
         ok: true,
         slotNumber,
+        quantity: unloadedQuantity,
       };
     },
+    commitShopShelfChanges: () => {},
     setSelectedPlayerShopShelfSlotListing: ({ itemTypeId, quantity, priceCoin }) => {
       const slotNumber = snapshot.shop.playerShelf.selectedSlotNumber;
       const slot = snapshot.shop.playerShelf.slots.find(
@@ -4869,9 +4890,8 @@ describe('PagesFacade', () => {
       pagesFacade.tutorialFacade.refresh();
 
       expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
-      expect(stage.querySelector('.room-announcement__level-flow')?.textContent).toBe(
-        'level 1',
-      );
+      expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('rewards');
+      expect(stage.querySelector('.room-announcement__level-flow')).toBeNull();
       expect(stage.querySelector('.room-announcement__row')?.textContent).toContain('market');
       expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
       expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('market opened');
@@ -4984,13 +5004,9 @@ describe('PagesFacade', () => {
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
     expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
-    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('level up!');
-    expect(stage.querySelector('.room-announcement__level-flow')?.textContent).toBe(
-      'level 1> 2',
-    );
-    expect(stage.querySelector('.workshop-page__flyout')?.textContent).toBe(
-      'level 2 reached: garden unlocked, research unlocked, +50 mana capacity, +1/sec mana regeneration, +1 crystal',
-    );
+    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('rewards');
+    expect(stage.querySelector('.room-announcement__level-flow')).toBeNull();
+    expect(stage.querySelector('.workshop-page__flyout')).toBeNull();
   });
 
   it('shows seed summon feedback as a flyout', () => {
@@ -9541,10 +9557,8 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
       'your stalls',
     );
-    expect(stage.querySelector('.shop-page__direct-sell-controls')).not.toBeNull();
-    expect(stage.querySelector('.shop-page__direct-sell-controls')?.textContent).toContain(
-      'sell to trader',
-    );
+    expect(stage.querySelector('.shop-page__direct-sell-controls')).toBeNull();
+    expect(stage.querySelector('.shop-page__shelf-help')?.textContent).toContain('[i]');
     expect(stage.querySelector('.shop-page__ledger-controls')).not.toBeNull();
     expect(stage.querySelector('.shop-page__ledger-controls')?.textContent).toContain(
       'market ledger',
@@ -11970,6 +11984,7 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
+    gameplayFacade.setShopSellItemQuantity(1, 5);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
     });
@@ -11985,7 +12000,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain('herbs');
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain('potions');
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain(
-      'sage seed (0) 1 coin',
+      'sage seed (5)',
     );
     expect(
       stage.querySelector('.shop-page__sell-dialog .shop-page__sell-tab-button'),
@@ -11997,22 +12012,20 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.shop-page__sell-item-row')]
         .filter((row) => !row.hidden)
         .map((row) => row.textContent)[0],
-    ).toBe('empty');
+    ).toContain('sage seed (5)');
 
     const seedButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'sage seed (0) 1 coin',
+      (button) => button.dataset.shopSellItemKey === 'sageSeed',
     );
-    seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    stage
-      .querySelector('.shop-page__sell-mark-all-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    seedButton.dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
+    seedButton.dispatchEvent(createPointerEvent('pointerup', { clientX: 1, clientY: 1 }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (0) 1 coin',
+      '1.sage seed (1)',
     );
     const seedItemValue = stage.querySelector('.shop-page__slot-item-value');
     expect(seedItemValue?.getAttribute('data-resource-color')).toBe('seed');
-    expect(seedItemValue?.classList.contains('is-empty')).toBe(true);
+    expect(seedItemValue?.classList.contains('is-empty')).toBe(false);
     expect(
       stage
         .querySelector('.shop-page__slot-price-value')
@@ -12021,7 +12034,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain(
       '1. sells sage seed',
     );
-    expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
+    expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(false);
   });
 
   it('colors NPC market item names and prices separately', () => {
@@ -12029,6 +12042,7 @@ describe('PagesFacade', () => {
     const gameplayFacade = createGameplayFacadeFake();
     gameplayFacade.setCoin(3);
     gameplayFacade.buyResearch('unlockRecipe:manaTonic');
+    gameplayFacade.setShopSellItemQuantity(2001, 2);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
     });
@@ -12043,26 +12057,23 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'mana tonic (0) 5 coin')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    stage
-      .querySelector('.shop-page__sell-mark-all-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      .find((button) => button.dataset.shopSellItemKey === 'manaTonic')
+      .dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
 
     const itemValue = stage.querySelector('.shop-page__slot-item-value');
     const priceValue = stage.querySelector('.shop-page__slot-price-value');
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.mana tonic (0) 5 coin',
+      '1.mana tonic (1)',
     );
-    expect(itemValue?.textContent).toBe('mana tonic (0)');
+    expect(itemValue?.textContent).toBe('mana tonic (1)');
     expect(itemValue?.getAttribute('data-resource-color')).toBe('potion');
-    expect(itemValue?.classList.contains('is-empty')).toBe(true);
-    expect(priceValue?.textContent).toBe(' 5 coin');
+    expect(itemValue?.classList.contains('is-empty')).toBe(false);
+    expect(priceValue?.textContent).toContain('5 coin');
     expect(priceValue?.getAttribute('data-resource-color')).toBe('coin');
   });
 
-  it('does not open shop sell picker for locked NPC market stands', () => {
+  it('does not render inaccessible NPC market stands', () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
       gameplayFacade: createGameplayFacadeFake(),
@@ -12071,19 +12082,14 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'shop');
 
-    const lockedRows = [...stage.querySelectorAll('.shop-page__slot-row')].filter(
-      (row) => !row.classList.contains('shop-page__slot-row--interactive'),
-    );
-    expect(lockedRows.every((row) => row.classList.contains('is-locked'))).toBe(true);
-    lockedRows[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
+    expect(stage.querySelectorAll('.shop-page__shelf .shop-page__slot-row')).toHaveLength(1);
   });
 
-  it('clears selected NPC market stand item from the sell picker', () => {
+  it('returns a loaded NPC market stand item to inventory', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
+    gameplayFacade.setShopSellItemQuantity(1, 1);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
     });
@@ -12093,38 +12099,27 @@ describe('PagesFacade', () => {
 
     clickNpcMarketStandLabel(stage);
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'sage seed (0) 1 coin')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    stage
-      .querySelector('.shop-page__sell-mark-all-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      .find((button) => button.dataset.shopSellItemKey === 'sageSeed')
+      .dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (0) 1 coin',
+      '1.sage seed (1)',
     );
 
-    clickNpcMarketStandLabel(stage);
-
-    const visibleRows = [...stage.querySelectorAll('.shop-page__sell-item-row')].filter(
-      (row) => !row.hidden,
-    );
-    const emptyButton = visibleRows[0].querySelector('.shop-page__sell-item-button');
-    expect(emptyButton.textContent).toBe('empty');
-    expect(emptyButton.classList.contains('shop-page__sell-empty-button')).toBe(false);
-    expect(visibleRows[0].classList.contains('shop-page__sell-empty-row')).toBe(false);
-    emptyButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    gameplayFacade.unloadSelectedShopShelfSlotItem(1);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
       '1.empty standselect',
     );
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('1.select');
-    expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
+    expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(false);
   });
 
   it('updates visible shop sell prices from gameplay snapshots while hiding needs', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
+    gameplayFacade.setShopSellItemQuantity(1, 1);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
     });
@@ -12134,30 +12129,27 @@ describe('PagesFacade', () => {
     clickNpcMarketStandLabel(stage);
 
     const seedButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'sage seed (0) 1 coin',
+      (button) => button.dataset.shopSellItemKey === 'sageSeed',
     );
-    seedButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    stage
-      .querySelector('.shop-page__sell-mark-all-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    seedButton.dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
 
     gameplayFacade.setShopSellCoin('seed', 7);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (0) 7 coin',
+      '1.sage seed (1)',
     );
 
     gameplayFacade.setShopSellNeed(1, 4);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (0) 7 coin',
+      '1.sage seed (1)',
     );
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('need 4');
 
     clickNpcMarketStandLabel(stage);
 
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain(
-      'sage seed (0) 7 coin',
+      'sage seed (0)',
     );
   });
 
@@ -12190,10 +12182,10 @@ describe('PagesFacade', () => {
       row.textContent.includes('sage seed'),
     );
     const mintButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'mint seed (1) 1 coin',
+      (button) => button.dataset.shopSellItemKey === 'mintSeed',
     );
 
-    expect(visibleRows).toEqual(['empty', 'mint seed (1) 1 coin']);
+    expect(visibleRows).toEqual(['mint seed (1)1 coin']);
     expect(mintButton?.disabled).toBe(false);
     expect(sageRow?.hidden ?? true).toBe(true);
   });
@@ -12202,6 +12194,7 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
+    gameplayFacade.setShopSellItemQuantity(1, 1);
     const pagesFacade = new PagesFacade({
       gameplayFacade,
     });
@@ -12211,16 +12204,13 @@ describe('PagesFacade', () => {
     clickNpcMarketStandLabel(stage);
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'sage seed (0) 1 coin')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    stage
-      .querySelector('.shop-page__sell-mark-all-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+      .find((button) => button.dataset.shopSellItemKey === 'sageSeed')
+      .dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
 
     gameplayFacade.setShopSellItems([]);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (0) 1 coin',
+      '1.sage seed (1)',
     );
   });
 
@@ -12243,7 +12233,7 @@ describe('PagesFacade', () => {
     herbsButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const sageHerbButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
-      (button) => button.textContent === 'sage (0) 2 coin',
+      (button) => button.dataset.shopSellItemKey === 'sageHerb',
     );
     expect(sageHerbButton.closest('.shop-page__sell-item-row').hidden).toBe(false);
 

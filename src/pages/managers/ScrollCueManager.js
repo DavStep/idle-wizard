@@ -18,7 +18,7 @@ const SCROLL_CUE_SELECTOR = [
   '.shop-page__market-rows',
   '.shop-page__trade-history-rows',
   '.shop-page__demand-rows',
-  '.shop-page__direct-sell-rows',
+  '.shop-page__sell-item-list',
   '.shop-page__ledger-rows',
   '.shop-page__stock-rows',
   '.shop-page__sell-item-list',

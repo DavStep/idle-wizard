@@ -1277,9 +1277,9 @@ export class DevCheatCommandManager {
     const maxSlots = this.getShopMaxSlots();
     const requestedSlots = Math.max(1, Math.floor(Number(options.slots) || 3));
     const unlockedSlots = Math.min(requestedSlots, maxSlots);
-    const readyProgressSeconds = 0;
-    const halfProgressSeconds = 45;
-    const longProgressSeconds = 120;
+    const readyProgressSeconds = 5;
+    const halfProgressSeconds = 2.5;
+    const longProgressSeconds = 30;
     const sellProgressSeconds =
       preset === 'ready' || preset === 'allready'
         ? readyProgressSeconds
@@ -1305,13 +1305,20 @@ export class DevCheatCommandManager {
     const shelfSlots =
       preset === 'empty' || preset === 'none' || preset === 'clear'
         ? []
-        : Array.from({ length: unlockedSlots }, (_unused, index) => ({
-            slotNumber: index + 1,
-            sellItemKey: itemKeys[index % itemKeys.length],
-            sellLimitMode: index % 2 === 0 ? 'all' : 'amount',
-            sellQuantityLimit: index % 2 === 0 ? null : 10 + index,
-            sellProgressSeconds,
-          }));
+        : Array.from({ length: unlockedSlots }, (_unused, index) => {
+            const sellItemKey = itemKeys[index % itemKeys.length];
+            const loadedQuantity = Math.min(inventoryQuantity, 10 + index);
+            const item = this.gameplayFacade.itemsFacade.safeGetDefinitionByKey(sellItemKey);
+            if (item) {
+              this.gameplayFacade.itemsFacade.removeItem(item.id, loadedQuantity);
+            }
+            return {
+              slotNumber: index + 1,
+              sellItemKey,
+              loadedQuantity,
+              sellProgressSeconds,
+            };
+          });
     const playerSlots =
       preset === 'empty' || preset === 'none' || preset === 'clear'
         ? []
@@ -2133,16 +2140,14 @@ export class DevCheatCommandManager {
         preset.pageId = 'workshop';
         break;
       case 'select-market-stand':
-      case 'select-sage-seed-sale':
         this.applyLevelTwoReadyToSellPreset(preset);
         preset.pageId = 'shop';
         break;
-      case 'show-selected-sale-amount':
+      case 'select-sage-seed-sale':
       case 'earn-tutorial-coin':
         this.applyLevelTwoReadyToSellPreset(preset);
         preset.pageId = 'shop';
-        preset.ui.openDirectSell = true;
-        preset.ui.directSellItemKey = SAGE_SEED_KEY;
+        preset.ui.openStall = true;
         break;
       case 'first-sale-complete':
       case 'unselect-sage-seed-sale':
@@ -2324,15 +2329,15 @@ export class DevCheatCommandManager {
       return 0;
     }
 
-    if (index < 20) {
+    if (index < 19) {
       return 1;
     }
 
-    if (index < 26) {
+    if (index < 25) {
       return 2;
     }
 
-    if (index < 32) {
+    if (index < 31) {
       return 3;
     }
 
@@ -2345,7 +2350,6 @@ export class DevCheatCommandManager {
         'open-market',
         'select-market-stand',
         'select-sage-seed-sale',
-        'show-selected-sale-amount',
         'earn-tutorial-coin',
       ].includes(stepId)
     ) {
@@ -2406,45 +2410,15 @@ export class DevCheatCommandManager {
       preset.pageId && this.pagesFacade
         ? this.showPage(preset.pageId, { unlock: true })
         : { ok: false, reason: 'page_missing' };
-    let directSell = null;
+    let stall = null;
 
-    if (preset.ui.openDirectSell) {
-      directSell = this.openDialog('market', { popup: 'directSell' });
-      const selected = this.selectDirectSellItem(preset.ui.directSellItemKey);
-      directSell = {
-        ...directSell,
-        selected,
-      };
+    if (preset.ui.openStall) {
+      stall = this.openDialog('market', { popup: 'sell' });
     }
 
     return {
       page,
-      directSell,
-    };
-  }
-
-  selectDirectSellItem(itemKey) {
-    const item = this.getRawItemDefinition(itemKey);
-    const manager = this.pagesFacade?.registryManager?.get?.('shop')?.directSellManager;
-
-    if (!item || !manager) {
-      return {
-        ok: false,
-        reason: item ? 'direct_sell_missing' : 'unknown_item',
-        itemKey,
-      };
-    }
-
-    manager.onSelectTab?.(item.kind);
-
-    if (manager.selectedItemTypeId !== item.id) {
-      manager.onSelectItem?.(item.id);
-    }
-
-    return {
-      ok: true,
-      itemKey: item.key,
-      itemTypeId: item.id,
+      stall,
     };
   }
 

@@ -245,7 +245,7 @@ describe('ScrollCueManager', () => {
     const root = document.createElement('div');
     const classNames = [
       'style-dialog-scroll',
-      'shop-page__direct-sell-rows',
+      'shop-page__sell-item-list',
       'guild-page__popup-content',
       'guild-page__card-details',
       'room-alliance-info-content',

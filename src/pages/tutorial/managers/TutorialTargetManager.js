@@ -21,7 +21,7 @@ const POPUP_TARGET_PREFIXES = new Map([
   ['top:username-input', ['room-top-panel__settings']],
   ['garden:seed:', ['garden-page__seed-popup']],
   ['brewing:recipe:', ['brewing-page__recipes-popup']],
-  ['shop:directSell:', ['shop-page__direct-sell-popup']],
+  ['shop:sell:', ['shop-page__sell-popup']],
 ]);
 const NON_SETTINGS_BLOCKING_DIALOG_SELECTORS = GLOBAL_BLOCKING_DIALOG_SELECTORS;
 
@@ -77,21 +77,12 @@ export class TutorialTargetManager {
         Boolean(getSelectedBrewingRecipeRow(this.stage, recipeKey)),
       isShopSellPopupOpen: () =>
         Boolean(this.stage?.querySelector('.shop-page__sell-popup:not([hidden])')),
-      isShopDirectSellPopupOpen: () =>
-        Boolean(this.stage?.querySelector('.shop-page__direct-sell-popup:not([hidden])')),
-      isShopDirectSellTabSelected: (kind) =>
+      isShopSellTabSelected: (kind) =>
         Boolean(
           this.stage?.querySelector(
-            `.shop-page__direct-sell-tab-button[data-direct-sell-kind="${kind}"][aria-selected="true"]`,
+            `[data-tutorial-id="shop:sell:tab:${kind}"][aria-selected="true"]`,
           ),
         ),
-      isShopDirectSellItemSelected: (itemKey) =>
-        Boolean(
-          this.stage?.querySelector(
-            `.shop-page__direct-sell-item-button[data-direct-sell-item-key="${itemKey}"][aria-pressed="true"]`,
-          ),
-        ),
-      getShopDirectSellQuantity: () => getShopDirectSellQuantity(this.stage),
       getUsername: () =>
         this.stage
           ?.querySelector('[data-tutorial-id="top:username"]')
@@ -209,16 +200,6 @@ function isThemeSettingsTabOpen(stage) {
       !themeTab.closest('[hidden]') &&
       themeTab.getAttribute('aria-selected') === 'true',
   );
-}
-
-function getShopDirectSellQuantity(stage) {
-  const popup = stage?.querySelector('.shop-page__direct-sell-popup:not([hidden])');
-  const input = popup?.querySelector('.shop-page__direct-sell-input:not([hidden])');
-  const valueButton = popup?.querySelector('.amount-selection-row__value:not([hidden])');
-  const value = input?.value ?? valueButton?.textContent;
-  const quantity = Math.floor(Number(value));
-
-  return Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
 }
 
 function getSelectedBrewingRecipeRow(stage, recipeKey) {
