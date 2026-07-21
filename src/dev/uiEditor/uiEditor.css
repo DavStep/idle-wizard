@@ -1,0 +1,335 @@
+:root {
+  --ui-editor-left-width: 280px;
+  --ui-editor-right-width: 320px;
+  --ui-editor-bg: #11141a;
+  --ui-editor-surface: #181c23;
+  --ui-editor-surface-raised: #202630;
+  --ui-editor-border: #39414f;
+  --ui-editor-text: #e8ebf0;
+  --ui-editor-muted: #aeb6c2;
+  --ui-editor-accent: #66a6ff;
+  --ui-editor-error: #ff8e8e;
+  --ui-editor-success: #8ee0ad;
+}
+
+.idle-ui-editor,
+.idle-ui-editor * {
+  box-sizing: border-box;
+}
+
+.idle-ui-editor {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  color: var(--ui-editor-text);
+  font: 13px/1.35 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  pointer-events: none;
+}
+
+.idle-ui-editor__panel {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid var(--ui-editor-border);
+  background: var(--ui-editor-bg);
+  pointer-events: auto;
+}
+
+.idle-ui-editor__hierarchy {
+  left: 0;
+  width: var(--ui-editor-left-width);
+}
+
+.idle-ui-editor__inspector {
+  right: 0;
+  width: var(--ui-editor-right-width);
+  overflow-y: auto;
+}
+
+.idle-ui-editor h2,
+.idle-ui-editor h3,
+.idle-ui-editor p,
+.idle-ui-editor dl {
+  margin: 0;
+}
+
+.idle-ui-editor h2 {
+  font-size: 15px;
+}
+
+.idle-ui-editor h3 {
+  color: var(--ui-editor-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.idle-ui-editor__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.idle-ui-editor__button,
+.idle-ui-editor input {
+  min-height: 28px;
+  border: 1px solid var(--ui-editor-border);
+  border-radius: 0;
+  background: var(--ui-editor-surface);
+  color: var(--ui-editor-text);
+  font: inherit;
+}
+
+.idle-ui-editor__button {
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.idle-ui-editor__button[aria-pressed="true"],
+.idle-ui-editor__button[data-dirty="true"] {
+  border-color: var(--ui-editor-accent);
+  color: var(--ui-editor-accent);
+}
+
+.idle-ui-editor__button:focus-visible,
+.idle-ui-editor input:focus-visible,
+.idle-ui-editor__tree-item:focus-visible,
+.idle-ui-editor__outline-label:focus-visible {
+  outline: 2px solid var(--ui-editor-accent);
+  outline-offset: 1px;
+}
+
+.idle-ui-editor__button:disabled,
+.idle-ui-editor input:disabled {
+  color: #707988;
+  cursor: default;
+}
+
+.idle-ui-editor input {
+  width: 100%;
+  padding: 4px 6px;
+}
+
+.idle-ui-editor__search {
+  flex: 0 0 auto;
+}
+
+.idle-ui-editor__tree {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  border: 1px solid var(--ui-editor-border);
+  background: var(--ui-editor-surface);
+}
+
+.idle-ui-editor__tree-item {
+  display: grid;
+  width: 100%;
+  min-height: 25px;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px 3px calc(6px + var(--tree-depth, 0) * 12px);
+  border: 0;
+  border-bottom: 1px solid #272d36;
+  background: transparent;
+  color: var(--ui-editor-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.idle-ui-editor__tree-item > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idle-ui-editor__tree-item small {
+  color: var(--ui-editor-muted);
+  font-size: 10px;
+}
+
+.idle-ui-editor__tree-item[aria-selected="true"] {
+  background: var(--ui-editor-surface-raised);
+  color: var(--ui-editor-accent);
+}
+
+.idle-ui-editor__tree-item[data-hidden="true"] {
+  opacity: 0.5;
+}
+
+.idle-ui-editor__tree-caret {
+  color: var(--ui-editor-muted);
+}
+
+.idle-ui-editor__selection-title {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.idle-ui-editor__selector {
+  display: block;
+  max-height: 72px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid var(--ui-editor-border);
+  background: #0b0e13;
+  color: var(--ui-editor-muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.idle-ui-editor__status {
+  min-height: 18px;
+  color: var(--ui-editor-muted);
+}
+
+.idle-ui-editor__status[data-tone="error"] {
+  color: var(--ui-editor-error);
+}
+
+.idle-ui-editor__status[data-tone="success"] {
+  color: var(--ui-editor-success);
+}
+
+.idle-ui-editor__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--ui-editor-border);
+  background: var(--ui-editor-surface);
+}
+
+.idle-ui-editor__details {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 5px 8px;
+}
+
+.idle-ui-editor__details dt {
+  color: var(--ui-editor-muted);
+}
+
+.idle-ui-editor__details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.idle-ui-editor__metrics {
+  color: var(--ui-editor-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.idle-ui-editor__field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.idle-ui-editor__field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--ui-editor-muted);
+  font-size: 11px;
+}
+
+.idle-ui-editor__field--wide {
+  width: 100%;
+}
+
+.idle-ui-editor__outline {
+  position: fixed;
+  z-index: 214;
+  min-width: 2px;
+  min-height: 2px;
+  border: 2px solid var(--ui-editor-accent);
+  pointer-events: none;
+}
+
+.idle-ui-editor__outline-label {
+  position: absolute;
+  bottom: 100%;
+  left: -2px;
+  max-width: 240px;
+  min-height: 22px;
+  overflow: hidden;
+  padding: 2px 6px;
+  border: 1px solid var(--ui-editor-accent);
+  border-radius: 0;
+  background: var(--ui-editor-accent);
+  color: #07111f;
+  font: 11px/16px ui-sans-serif, system-ui, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: move;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.idle-ui-editor__prefab {
+  position: fixed;
+  top: 24px;
+  right: calc(var(--ui-editor-right-width) + 24px);
+  bottom: 24px;
+  left: calc(var(--ui-editor-left-width) + 24px);
+  z-index: 212;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  border: 1px solid var(--ui-editor-border);
+  background: #0b0e13;
+  pointer-events: auto;
+}
+
+.idle-ui-editor__prefab[hidden] {
+  display: none;
+}
+
+.idle-ui-editor__prefab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--ui-editor-border);
+  background: var(--ui-editor-surface);
+}
+
+.idle-ui-editor__prefab-stage.game-stage {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  place-items: center;
+  overflow: auto;
+  border: 0;
+  background: var(--style-surface, #17191f);
+  transform: none;
+  touch-action: auto;
+  user-select: text;
+}
+
+.idle-ui-editor__prefab-stage > * {
+  max-width: calc(100% - 48px);
+  max-height: calc(100% - 48px);
+}
+
+.game-stage[data-ui-editor-mode="select"] {
+  cursor: crosshair;
+}
+
+@media (max-width: 1100px) {
+  :root {
+    --ui-editor-left-width: 230px;
+    --ui-editor-right-width: 270px;
+  }
+}

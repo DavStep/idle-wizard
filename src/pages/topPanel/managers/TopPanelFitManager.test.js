@@ -12,8 +12,8 @@ describe('fitTopPanelResourceFont', () => {
       valueNaturalWidth: 70,
     });
 
-    expect(fitTopPanelResourceFont(resources)).toBe(13);
-    expect(resources.style.getPropertyValue('--room-top-panel-resource-font-size')).toBe('13px');
+    expect(fitTopPanelResourceFont(resources)).toBe(10);
+    expect(resources.style.getPropertyValue('--room-top-panel-resource-font-size')).toBe('10px');
     expect(resources.classList.contains('is-resource-font-shrunk')).toBe(false);
   });
 
@@ -25,8 +25,8 @@ describe('fitTopPanelResourceFont', () => {
       valueNaturalWidth: 96,
     });
 
-    expect(fitTopPanelResourceFont(resources)).toBe(10);
-    expect(resources.style.getPropertyValue('--room-top-panel-resource-font-size')).toBe('10px');
+    expect(fitTopPanelResourceFont(resources)).toBe(8);
+    expect(resources.style.getPropertyValue('--room-top-panel-resource-font-size')).toBe('8px');
     expect(resources.classList.contains('is-resource-font-shrunk')).toBe(true);
   });
 
@@ -38,8 +38,8 @@ describe('fitTopPanelResourceFont', () => {
       valueNaturalWidth: 160,
     });
 
-    expect(fitTopPanelResourceFont(resources)).toBe(10);
-    expect(resources.style.getPropertyValue('--room-top-panel-resource-font-size')).toBe('10px');
+    expect(fitTopPanelResourceFont(resources)).toBe(8);
+    expect(resources.style.getPropertyValue('--room-top-panel-resource-font-size')).toBe('8px');
   });
 
   it('restores default source size when a later value fits', () => {
@@ -49,10 +49,10 @@ describe('fitTopPanelResourceFont', () => {
       valueClientWidth: 80,
       valueNaturalWidth: 70,
     });
-    resources.style.setProperty('--room-top-panel-resource-font-size', '10px');
+    resources.style.setProperty('--room-top-panel-resource-font-size', '8px');
 
-    expect(fitTopPanelResourceFont(resources)).toBe(13);
-    expect(resources.style.getPropertyValue('--room-top-panel-resource-font-size')).toBe('13px');
+    expect(fitTopPanelResourceFont(resources)).toBe(10);
+    expect(resources.style.getPropertyValue('--room-top-panel-resource-font-size')).toBe('10px');
   });
 });
 

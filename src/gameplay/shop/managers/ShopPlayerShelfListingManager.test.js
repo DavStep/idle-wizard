@@ -89,7 +89,7 @@ describe('ShopPlayerShelfListingManager', () => {
     expect(quantity).toBe(2);
   });
 
-  it('keeps player market listing prices as two-decimal values', () => {
+  it('normalizes player market listing prices to whole coin', () => {
     const spend = vi.fn().mockReturnValue(true);
     const addItem = vi.fn();
     const removeItem = vi.fn().mockReturnValue(true);
@@ -118,7 +118,7 @@ describe('ShopPlayerShelfListingManager', () => {
     ).toMatchObject({
       ok: true,
       quantity: 1,
-      priceCoin: 4.25,
+      priceCoin: 5,
     });
 
     expect(
@@ -129,10 +129,10 @@ describe('ShopPlayerShelfListingManager', () => {
       }),
     ).toMatchObject({
       ok: true,
-      priceCoin: 0.75,
-      totalPriceCoin: 2.25,
+      priceCoin: 1,
+      totalPriceCoin: 3,
     });
-    expect(spend).toHaveBeenCalledWith(2.25);
+    expect(spend).toHaveBeenCalledWith(3);
   });
 
   it('rejects player market listing quantities and prices above the backend cap', () => {

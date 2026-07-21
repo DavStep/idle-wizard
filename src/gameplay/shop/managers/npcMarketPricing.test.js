@@ -79,14 +79,15 @@ describe('npcMarketPricing', () => {
     });
   });
 
-  it('uses soft demand instead of collapsing empty demand to a hard cent floor', () => {
-    expect(
-      getNpcMarketPriceFromNeed({
-        basePriceCoin: 10,
-        itemKind: 'seed',
-        npcNeed: 0,
-        targetNeed: 1_000,
-      }),
-    ).toBeGreaterThan(0.01);
+  it('keeps soft-demand prices at the one-coin minimum', () => {
+    const price = getNpcMarketPriceFromNeed({
+      basePriceCoin: 10,
+      itemKind: 'seed',
+      npcNeed: 0,
+      targetNeed: 1_000,
+    });
+
+    expect(price).toBeGreaterThanOrEqual(1);
+    expect(Number.isInteger(price)).toBe(true);
   });
 });

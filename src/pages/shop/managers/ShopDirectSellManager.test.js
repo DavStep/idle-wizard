@@ -270,9 +270,9 @@ describe('ShopDirectSellManager', () => {
       'sell x1',
     );
     expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
-      '1.12 coin',
+      '2 coin',
     );
-    expect(popup.textContent).not.toContain('total1.12 coin');
+    expect(popup.textContent).not.toContain('total2 coin');
 
     const incrementButton = [...popup.querySelectorAll('.shop-page__direct-sell-step')].find(
       (button) => button.textContent === '+1',
@@ -286,7 +286,7 @@ describe('ShopDirectSellManager', () => {
       'sell x2',
     );
     expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
-      '2.08 coin',
+      '3 coin',
     );
 
     const herbsTab = [...popup.querySelectorAll('.shop-page__direct-sell-tab-button')].find(
@@ -311,7 +311,7 @@ describe('ShopDirectSellManager', () => {
       'sell x3',
     );
     expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
-      '3.36 coin',
+      '4 coin',
     );
 
     input.value = '2';
@@ -322,7 +322,7 @@ describe('ShopDirectSellManager', () => {
       'sell x2',
     );
     expect(confirmButton?.querySelector('.shop-page__direct-sell-confirm-value')?.textContent).toBe(
-      '2.08 coin',
+      '3 coin',
     );
     expect(popup.querySelector('.shop-page__direct-sell-confirm')?.disabled).toBe(
       false,

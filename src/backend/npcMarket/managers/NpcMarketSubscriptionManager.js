@@ -223,6 +223,7 @@ export class NpcMarketSubscriptionManager {
     const priceScale = row.priceScale ?? row.price_scale;
 
     return {
+      hourKey: String(row.hourKey ?? row.hour_key ?? ''),
       itemKey: String(row.itemKey ?? row.item_key ?? ''),
       marketPriceCoin: this.toCoinPrice(
         row.marketPriceCoin ?? row.marketPriceGold ?? row.market_price_gold,

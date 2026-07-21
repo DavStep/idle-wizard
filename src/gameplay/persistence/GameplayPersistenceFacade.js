@@ -135,6 +135,10 @@ export class GameplayPersistenceFacade {
     return this.saveManager.createSave();
   }
 
+  createRuntimeSnapshot() {
+    return this.saveManager.createRuntimeSnapshot();
+  }
+
   saveAndFlush() {
     if (this.storageManager.canSave?.() === false) {
       return false;

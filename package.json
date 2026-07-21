@@ -1,6 +1,6 @@
 {
   "name": "idle-wizard",
-  "version": "0.2.96",
+  "version": "0.2.97",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,6 +21,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "check:ui": "node scripts/check-ui-consistency.mjs",
+    "ui:compare": "node scripts/build-ui-reference-review.mjs",
     "check": "npm run lint && npm test && npm run build",
     "release": "node scripts/release.js",
     "qa:data:sync": "node scripts/qa-data.js sync --server maincloud --database idle-wizard",

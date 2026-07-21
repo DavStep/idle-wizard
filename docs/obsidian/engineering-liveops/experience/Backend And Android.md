@@ -50,9 +50,13 @@ experience_type: backend-android
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
 - Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields and gameplay save JSON, but not trusted public level/rank state.
 - On reconnect, discard a hydrated pending gameplay save when the server row is at least as new; resending it can roll back unrelated coin or cauldron batch settings.
+- A resolved SpacetimeDB reducer promise is not gameplay-save durability proof; keep the own-save subscription live and clear the local journal only after observing the exact client session/sequence in the server row.
+- An authoritative empty gameplay-save row must replace stale runtime with the canonical fresh state, then persist and observe that baseline before gameplay opens.
+- Missing own-session rows and session subscription errors must fail closed; treating them as active lets invalidated clients continue writing, while observation errors should reconnect without deleting the gameplay-save journal.
 - Cauldron batch, recipe, and auto-brew choices must force-flush instead of waiting for the normal save throttle; a reload can otherwise restore the prior option values.
 - Leaderboard own-rank display should match the connected SpacetimeDB identity from the full subscribed leaderboard, not username or top-ten rows.
 - Shared player level displays use server `playerLevel`; do not trust `tasks.currentLevel` for other players until task completion is server-authoritative.
+- Fresh gameplay saves use `tasks.currentLevel: 0` while the public server player level defaults to `1`; task-save normalization must preserve level 0 as the state working toward level 1.
 - Player level milestones come from SpacetimeDB `game_config.playerLevel`; they unlock permission to buy higher caps, never grant the tile/stand for free.
 - Cauldron unlocks must be bought one at a time; level milestones only raise the max purchasable cauldron cap, never bulk-unlock cauldrons.
 - Server `DEFAULT_PLAYER_LEVEL_CONFIG_JSON` must mirror the client bootstrap default; hosted `game_config.playerLevel` can override milestones.
@@ -61,7 +65,7 @@ experience_type: backend-android
 - Player level sets mana cap and mana regen from `game_config.playerLevel`; there are no separate mana research bonuses.
 - Player-level crystal rewards come from `game_config.playerLevel`; level 1 now grants the reward too, while level-up deltas should only pay newly reached levels.
 - Level milestone text supports display-only `unlocks` and `researchUnlocks`; do not treat them as gameplay gates until the specific feature asks for that rule.
-- Garden tile and market stand purchases should fail with `level_locked` before checking coin when the next buy exceeds the current level milestone cap.
+- Garden tile purchases should fail with `level_locked` before checking coin when the next buy exceeds the current level milestone cap; market stalls are licence-rank grants, not purchases.
 - Leaderboard total generated coin should stay admin/server-owned until coin generation is server-authoritative; local lifetime totals are useful for player saves, not trusted shared ranking.
 - Google account links are represented by the Google-derived SpacetimeDB identity/token, not a game-owned email row; an identity-preserving global reset must retain `player.identity`, reset the rest of that row to fresh defaults, invalidate existing `player_session` rows, delete player-owned progression/shared rows, and force clients that observed locked maintenance to reload before gameplay resumes.
 - Hydrate profile fields from the server `player` row before pushing local values; otherwise local defaults can overwrite saved DB profile data.
@@ -77,7 +81,7 @@ experience_type: backend-android
 - Current NPC/player exchange mutates shared backend market state while player inventory and coin remain client-owned; treat it as coordinated shared state, not full server-authoritative escrow.
 - NPC market auto-sell must reserve/decrement visible demand locally across same-item stands and catch-up cycles before calling reducers; otherwise stale demand snapshots spam `sell_to_npc` panics.
 - NPC market base prices are DB-owned in `npc_market_item_config`; use `claim_npc_market_admin` once, then `set_npc_market_item_base_price` to change them without another deploy. `npc_market_price` remains the derived live quote table.
-- Market price amounts are cent-rounded floats and visible prices use two decimals; use shared coin-price helpers instead of flooring.
+- Coin balances and market prices are whole numbers. Use the shared coin-price helpers so positive fractional legacy values round up and every positive price stays at least `1` coin.
 - Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local coin.
 - Player shop trade history is server-backed through `player_shop_trade`; clients should tolerate older backends missing the table by showing empty history.
 - Maincloud currently has no full action-log table; balance reads can only infer behavior from `player`, `leaderboard`, `world_chat`, player-shop tables, `npc_market_price`, and potion discoveries until analytics exists.

@@ -405,6 +405,7 @@ describe('DevCheatsFacade', () => {
     };
     const pagesFacade = {
       openDialog: vi.fn((dialogId, options) => ({ ok: true, dialogId, options })),
+      setTopPanelQuestProgressPreview: vi.fn((progress) => ({ ok: true, progress })),
       setDevNotifications: vi.fn((snapshot) => ({ ok: true, snapshot })),
       syncPageUnlocks: vi.fn(),
     };
@@ -476,6 +477,10 @@ describe('DevCheatsFacade', () => {
           id: 'featureUnlockAnnouncement',
           command: 'cheats.openUi("featureUnlockAnnouncement")',
         }),
+        expect.objectContaining({
+          id: 'topPanelQuestProgress',
+          command: 'cheats.openUi("topPanelQuestProgress")',
+        }),
       ]),
     });
     const publishAndSaveSpy = vi.spyOn(app.gameplayFacade, 'publishAndSaveSnapshot');
@@ -487,6 +492,21 @@ describe('DevCheatsFacade', () => {
     expect(pagesFacade.openDialog).toHaveBeenLastCalledWith(
       'featureUnlockAnnouncement',
       {},
+    );
+    expect(publishAndSaveSpy).not.toHaveBeenCalled();
+
+    expect(target.cheats.openUi('topPanelQuestProgress')).toMatchObject({
+      ok: true,
+      surfaceId: 'topPanelQuestProgress',
+      surfaceKind: 'preview',
+      progress: {
+        completedQuests: 1,
+        totalQuests: 4,
+        targetLevel: 2,
+      },
+    });
+    expect(pagesFacade.setTopPanelQuestProgressPreview).toHaveBeenCalledWith(
+      expect.objectContaining({ completedQuests: 1, totalQuests: 4 }),
     );
     expect(publishAndSaveSpy).not.toHaveBeenCalled();
 

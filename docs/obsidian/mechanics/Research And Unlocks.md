@@ -19,7 +19,7 @@ Research is the catalog of studies shown in the Research room.
 | --- | --- | --- |
 | Regular content unlocks | coin | seed and recipe unlocks |
 | Automation | ruby | auto summon, plant, harvest, brew, bottle |
-| Advanced studies | emerald | capacity, speed, research efficiency, fast sell |
+| Advanced studies | emerald | capacity, speed, research efficiency, haggling |
 | Plot and cauldron levels | crystal | x2–x5 input/output levels |
 
 ## Detailed paths

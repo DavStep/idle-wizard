@@ -351,7 +351,7 @@ describe('ShopShelfManager', () => {
     const [quantityInput, coinInput] =
       popup.querySelectorAll('.shop-page__request-input');
     quantityInput.value = '2';
-    coinInput.value = '3.25';
+    coinInput.value = '4';
 
     popup
       .querySelector('.shop-page__request-place-button')
@@ -359,7 +359,7 @@ describe('ShopShelfManager', () => {
 
     expect(popup.hidden).toBe(true);
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '2.mint seed (2) 3.25 coin',
+      '2.mint seed (2) 4 coin',
     );
 
     requestRows[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -376,7 +376,7 @@ describe('ShopShelfManager', () => {
       '1.sage seed (1) 1 coin',
     );
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '2.mint seed (2) 3.25 coin',
+      '2.mint seed (2) 4 coin',
     );
 
     stage
@@ -391,7 +391,7 @@ describe('ShopShelfManager', () => {
       'request item',
     );
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '2.mint seed (2) 3.25 coin',
+      '2.mint seed (2) 4 coin',
     );
 
     manager.unmount();
@@ -417,20 +417,20 @@ describe('ShopShelfManager', () => {
     const [quantityInput, coinInput] =
       popup.querySelectorAll('.shop-page__request-input');
     quantityInput.value = '3';
-    coinInput.value = '2.5';
+    coinInput.value = '3';
     popup
       .querySelector('.shop-page__request-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.mint seed (3) 2.5 coin',
+      '1.mint seed (3) 3 coin',
     );
 
     manager.unmount();
     manager.mount(stage, popupLayer);
 
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.mint seed (3) 2.5 coin',
+      '1.mint seed (3) 3 coin',
     );
 
     manager.unmount();
@@ -462,7 +462,7 @@ describe('ShopShelfManager', () => {
     const [quantityInput, coinInput] =
       popup.querySelectorAll('.shop-page__request-input');
     quantityInput.value = '4';
-    coinInput.value = '3.25';
+    coinInput.value = '4';
     popup
       .querySelector('.shop-page__request-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -474,11 +474,11 @@ describe('ShopShelfManager', () => {
       itemLabel: 'mint seed',
       itemKind: 'seed',
       quantity: 4,
-      priceCoin: 3.25,
+      priceCoin: 4,
     });
     expect(popup.hidden).toBe(true);
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.mint seed (4) 3.25 coin',
+      '1.mint seed (4) 4 coin',
     );
 
     stage
@@ -521,6 +521,9 @@ describe('ShopShelfManager', () => {
       popup.querySelectorAll('.shop-page__request-input');
     expect(quantityInput.getAttribute('max')).toBe('1000');
     expect(coinInput.getAttribute('max')).toBe('1000000');
+    expect(coinInput.getAttribute('min')).toBe('1');
+    expect(coinInput.getAttribute('step')).toBe('1');
+    expect(coinInput.inputMode).toBe('numeric');
 
     quantityInput.value = '1001';
     coinInput.value = '1';
@@ -532,7 +535,7 @@ describe('ShopShelfManager', () => {
     expect(playerShopFacade.setSlotRequest).not.toHaveBeenCalled();
 
     quantityInput.value = '1';
-    coinInput.value = '1000000.01';
+    coinInput.value = '1000001';
     popup
       .querySelector('.shop-page__request-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -1898,7 +1901,7 @@ describe('ShopShelfManager', () => {
           itemLabel: 'mint seed',
           itemKind: 'seed',
           quantity: 4,
-          priceCoin: 3.25,
+      priceCoin: 4,
         },
       ],
       ownRequests: [],
@@ -1958,7 +1961,7 @@ describe('ShopShelfManager', () => {
     expect(listingPopup?.querySelector('.shop-page__player-listing-input')?.value).toBe('4');
     expect(
       listingPopup?.querySelectorAll('.shop-page__player-listing-input')?.[1]?.value,
-    ).toBe('3.25');
+    ).toBe('4');
 
     manager.unmount();
   });
@@ -2044,6 +2047,9 @@ describe('ShopShelfManager', () => {
     );
     expect(quantityInput.getAttribute('max')).toBe('1000');
     expect(priceInput.getAttribute('max')).toBe('1000000');
+    expect(priceInput.getAttribute('min')).toBe('1');
+    expect(priceInput.getAttribute('step')).toBe('1');
+    expect(priceInput.inputMode).toBe('numeric');
 
     quantityInput.value = '1001';
     priceInput.value = '1';
@@ -2057,7 +2063,7 @@ describe('ShopShelfManager', () => {
     expect(playerShopFacade.setSlotListing).not.toHaveBeenCalled();
 
     quantityInput.value = '1';
-    priceInput.value = '1000000.01';
+    priceInput.value = '1000001';
     popup
       .querySelector('.shop-page__player-listing-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -2722,7 +2728,7 @@ describe('ShopShelfManager', () => {
               label: 'sage seed',
               kind: 'seed',
               quantity: 8,
-              sellCoin: 0.01,
+              sellCoin: 1,
               sellNeed: 0,
             },
           ],
@@ -2772,7 +2778,7 @@ describe('ShopShelfManager', () => {
     manager.showSellPopup();
 
     const sageButton = [...popupLayer.querySelectorAll('.shop-page__sell-item-button')]
-      .find((button) => button.textContent === 'sage seed (8) 0.01 coin');
+      .find((button) => button.textContent === 'sage seed (8) 1 coin');
 
     expect(sageButton?.disabled).toBe(false);
     expect(

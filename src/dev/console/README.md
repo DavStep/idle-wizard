@@ -10,5 +10,6 @@ stage. It is available only when `VITE_ENABLE_CHEATS=true`.
 - Open it directly with `cheats.openUi('devConsole')`,
   `devConsole.open()`, or `/?devUi=devConsole`.
 
-The input is parsed as commands and JSON-style arguments. It does not evaluate
-arbitrary JavaScript or expose the internal app object.
+The input is parsed as commands and JSON-compatible arguments. String arguments
+may use single or double quotes. It does not evaluate arbitrary JavaScript or
+expose the internal app object.

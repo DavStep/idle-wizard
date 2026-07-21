@@ -320,14 +320,6 @@ export class PlayerLevelBalanceManager {
       effects.push(`max cauldrons ${level.maxCauldrons}`);
     }
 
-    if (!previousLevel || level.maxNpcMarketStands > previousLevel.maxNpcMarketStands) {
-      effects.push(`max trader market stands ${level.maxNpcMarketStands}`);
-    }
-
-    if (!previousLevel || level.maxPlayerMarketStands > previousLevel.maxPlayerMarketStands) {
-      effects.push(`max player market stands ${level.maxPlayerMarketStands}`);
-    }
-
     for (const unlock of level.unlocks) {
       effects.push(`unlocks ${unlock}`);
     }

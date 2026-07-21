@@ -16,10 +16,11 @@ const LEDGER_TABS = [
 ];
 
 export class ShopMarketLedgerManager {
-  constructor({ gameplayFacade, getBuyQuoteOverride } = {}) {
+  constructor({ gameplayFacade, getBuyQuoteOverride, now = () => Date.now() } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.getBuyQuoteOverride =
       typeof getBuyQuoteOverride === 'function' ? getBuyQuoteOverride : null;
+    this.now = now;
     this.root = null;
     this.unsubscribe = null;
     this.lastSnapshot = null;
@@ -532,23 +533,49 @@ export class ShopMarketLedgerManager {
   }
 
   getHistoryValues(item) {
-    const history = Array.isArray(item?.priceHistory)
-      ? [...item.priceHistory].sort((left, right) => right.updatedAtMs - left.updatedAtMs)
-      : [];
-    return [item?.marketPriceCoin, ...history.map((row) => row.marketPriceCoin), null, null, null]
-      .slice(0, 4);
+    const historyByHoursAgo = this.getHistoryByHoursAgo(item);
+    return [
+      item?.marketPriceCoin,
+      historyByHoursAgo.get(1)?.marketPriceCoin ?? null,
+      historyByHoursAgo.get(2)?.marketPriceCoin ?? null,
+      historyByHoursAgo.get(3)?.marketPriceCoin ?? null,
+    ];
   }
 
   getTrendText(item) {
-    const history = Array.isArray(item?.priceHistory) ? item.priceHistory : [];
-    if (!Number.isFinite(item?.marketPriceCoin) || history.length === 0) return '—';
-    const oldest = [...history].sort((left, right) => left.updatedAtMs - right.updatedAtMs)[0];
+    const historyByHoursAgo = this.getHistoryByHoursAgo(item);
+    const hours = [3, 2, 1].find((candidate) => historyByHoursAgo.has(candidate));
+    if (!Number.isFinite(item?.marketPriceCoin) || !hours) return '—';
+    const oldest = historyByHoursAgo.get(hours);
     const previous = Number(oldest?.marketPriceCoin);
     if (!Number.isFinite(previous)) return '—';
     const delta = item.marketPriceCoin - previous;
-    const hours = Math.max(1, Math.min(3, history.length));
     if (delta === 0) return `— 0 / ${hours}h`;
     return `${delta > 0 ? '↑' : '↓'} ${delta > 0 ? '+' : '−'}${formatCoinPriceText(Math.abs(delta))} / ${hours}h`;
+  }
+
+  getHistoryByHoursAgo(item) {
+    const currentHour = Math.floor(Number(this.now?.()) / 3_600_000);
+    const historyByHoursAgo = new Map();
+
+    if (!Number.isFinite(currentHour)) return historyByHoursAgo;
+
+    for (const row of Array.isArray(item?.priceHistory) ? item.priceHistory : []) {
+      const rowHour = this.getHistoryHour(row);
+      const hoursAgo = currentHour - rowHour;
+      if (Number.isInteger(hoursAgo) && hoursAgo >= 1 && hoursAgo <= 3) {
+        historyByHoursAgo.set(hoursAgo, row);
+      }
+    }
+
+    return historyByHoursAgo;
+  }
+
+  getHistoryHour(row) {
+    const rawHourKey = String(row?.hourKey ?? '').trim();
+    const hourKey = Number(rawHourKey);
+    if (rawHourKey && Number.isInteger(hourKey)) return hourKey;
+    return Math.floor(Number(row?.updatedAtMs) / 3_600_000);
   }
 
   getRequiredMarketLabel(item) {

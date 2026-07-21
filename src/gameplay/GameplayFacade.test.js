@@ -33,6 +33,14 @@ function getSavedPersonalTasks(storage) {
   return save?.personalTasks;
 }
 
+function stripSaveRevision(save) {
+  const runtimeSave = { ...save };
+  delete runtimeSave.savedAt;
+  delete runtimeSave.clientSaveSessionId;
+  delete runtimeSave.clientSaveSequence;
+  return runtimeSave;
+}
+
 function createGameplay({
   baseline = 'level1',
   instantResearch = true,
@@ -220,6 +228,31 @@ describe('GameplayFacade', () => {
     });
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(0);
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(0);
+  });
+
+  it('restores the canonical fresh runtime instead of keeping stale in-memory progress', () => {
+    const { gameplayFacade } = createGameplay({ baseline: 'fresh' });
+    const freshSave = gameplayFacade.createPersistenceSave();
+
+    gameplayFacade.manaFacade.applyPersistenceSnapshot({ current: 3 });
+    gameplayFacade.coinFacade.applyPersistenceSnapshot({
+      current: 90,
+      totalGenerated: 80,
+    });
+    gameplayFacade.crystalFacade.applyPersistenceSnapshot({ current: 7 });
+    gameplayFacade.itemsFacade.addItem(1, 4);
+    gameplayFacade.tasksFacade.applyPersistenceSnapshot({
+      currentLevel: 4,
+      tasks: [],
+    });
+
+    expect(stripSaveRevision(gameplayFacade.createPersistenceSave())).not.toEqual(
+      stripSaveRevision(freshSave),
+    );
+    expect(gameplayFacade.resetPersistenceState()).toBe(true);
+    expect(stripSaveRevision(gameplayFacade.createPersistenceSave())).toEqual(
+      stripSaveRevision(freshSave),
+    );
   });
 
   it('publishes a snapshot when mana reaches the available seed summon cost', () => {
@@ -653,16 +686,15 @@ describe('GameplayFacade', () => {
         quantity: laterRequest.requiredQuantity,
       }),
     ).toMatchObject({ ok: false, updates: [] });
-    expect(gameplayFacade.getSnapshot().tasks.level.questProgress.currentXp).toBe(0);
+    expect(gameplayFacade.getSnapshot().tasks.level.questProgress.completedQuests).toBe(0);
 
     finishTaskRequirement(gameplayFacade, activeRequest);
 
     expect(gameplayFacade.getSnapshot().tasks.level.questProgress).toMatchObject({
-      currentXp: 20,
+      completedQuests: 1,
       activeQuest: {
         kind: 'task',
         taskId: laterRequest.taskId,
-        xpReward: 20,
       },
     });
   });
@@ -1698,7 +1730,7 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toEqual([
       'summoned sage seed',
-      'sold sage seed for 0.8 coin',
+      'sold sage seed for 1 coin',
       'brewed wasted potion',
       'planted sage seed',
       'harvested sage',
@@ -1717,7 +1749,7 @@ describe('GameplayFacade', () => {
     expect(rewardEvents[1]).toMatchObject({
       type: 'item_sold',
       item: { label: 'sage seed' },
-      coin: 0.8,
+      coin: 1,
       quantity: 1,
     });
     expect(rewardEvents[2]).toMatchObject({
@@ -3149,8 +3181,8 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.quoteNpcMarketSell(1, 1)).toMatchObject({
       ok: true,
-      priceCoin: 0.8,
-      totalPriceCoin: 0.8,
+      priceCoin: 1,
+      totalPriceCoin: 1,
       fastSellPercent: 80,
     });
 
@@ -3173,8 +3205,8 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.quoteNpcMarketSell(1, 1)).toMatchObject({
       ok: true,
-      priceCoin: 0.95,
-      totalPriceCoin: 0.95,
+      priceCoin: 1,
+      totalPriceCoin: 1,
       fastSellPercent: 95,
     });
   });
@@ -3197,13 +3229,13 @@ describe('GameplayFacade', () => {
       (item) => item.key === 'sageSeed',
     )).toMatchObject({
       sellCoin: 1,
-      fastSellCoin: 0.8,
+      fastSellCoin: 1,
       sellNeed: 1000,
     });
     await expect(gameplayFacade.sellNpcMarketItem(1, 2)).resolves.toMatchObject({
       ok: true,
-      priceCoin: 0.8,
-      totalPriceCoin: 1.6,
+      priceCoin: 1,
+      totalPriceCoin: 2,
     });
     expect(backendSells).toEqual([]);
 
@@ -3214,13 +3246,13 @@ describe('GameplayFacade', () => {
       (item) => item.key === 'sageSeed',
     )).toMatchObject({
       sellCoin: 7,
-      fastSellCoin: 5.6,
+      fastSellCoin: 6,
       sellNeed: 12,
     });
     await expect(gameplayFacade.sellNpcMarketItem(1, 2)).resolves.toMatchObject({
       ok: true,
-      priceCoin: 5.6,
-      totalPriceCoin: 11.2,
+      priceCoin: 6,
+      totalPriceCoin: 12,
     });
     expect(backendSells).toEqual([{ itemKey: 'sageSeed', quantity: 2 }]);
   });

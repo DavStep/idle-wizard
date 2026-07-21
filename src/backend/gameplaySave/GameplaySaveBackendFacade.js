@@ -7,13 +7,24 @@ export class GameplaySaveBackendFacade {
 
   constructor() {
     this.sendManager = new GameplaySaveSendManager();
-    this.subscriptionManager = new GameplaySaveSubscriptionManager();
+    this.subscriptionManager = new GameplaySaveSubscriptionManager({
+      onSnapshot: ({ save } = {}) => this.sendManager.observeServerSave(save),
+    });
   }
 
   connect(connection, identity, { onReady } = {}) {
+    this.sendManager.setHydrated(false);
     this.sendManager.setReadyToSend(false);
     this.sendManager.connect(connection, identity);
-    return this.subscriptionManager.connect(connection, identity, { onReady });
+    return this.subscriptionManager.connect(connection, identity, {
+      onReady: (result) => {
+        if (result?.ok !== false) {
+          this.sendManager.setHydrated(true);
+        }
+
+        return onReady?.(result);
+      },
+    });
   }
 
   disconnect() {

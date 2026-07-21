@@ -13,7 +13,7 @@ world: mechanics
 note_type: trading-component
 system: market
 implementation: shipped
-player_facing_name: trader market
+player_facing_name: traders
 internal_tab_id: npm
 page_unlock_level: 1
 backend_quotes_from_level: 4
@@ -29,13 +29,13 @@ related:
 
 # NPC Market
 
-The player-facing tab is **trader market**. Code and backend features commonly call it the NPC market; the legacy internal tab id is `npm`.
+The player-facing tab is **traders**. Code and backend features commonly call it the NPC market; the legacy internal tab id is `npm`.
 
 ## Components
 
-- [[mechanics/market/Fast Sell|Fast Sell]] — immediate manual sale at a reduced percentage.
+- [[mechanics/market/Fast Sell|Sell to Trader]] — an immediate reduced-price Trader Offer.
 - [[mechanics/market/Trader Stands|Trader Stands]] — automatic sales on a shared half-hour cycle.
-- [[mechanics/market/NPC Stock|NPC Stock]] — shared items players can buy.
+- [[mechanics/market/Market Ledger|Market Ledger]] — prices, recent movement, buyer need, stock, and buying.
 - [[mechanics/market/Demand And Pricing|Demand and Pricing]] — shared need, quotes, recovery, and tuning.
 - [[mechanics/market/Sellable Quantity|Sellable Quantity]] — inventory minus garden/brewing reservations.
 
@@ -47,11 +47,10 @@ The player-facing tab is **trader market**. Code and backend features commonly c
 
 ## Items
 
-Seeds, herbs, and potions can be quoted. Ingredient inventory is not part of the current market catalog.
+Seeds, herbs, and potions are divided into five progression-ordered grades. A market trades its own grade and all lower grades; player listings and requests use the same restriction. Ingredient inventory is not part of the market catalogue.
 
 ## Source of truth
 
 - `src/gameplay/shop/`
 - `src/backend/npcMarket/`
 - `spacetimedb/src/index.ts`
-

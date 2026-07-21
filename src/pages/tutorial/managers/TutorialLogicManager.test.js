@@ -56,6 +56,46 @@ function createManager({ step, reminderManager = createReminderFake() } = {}) {
 }
 
 describe('TutorialLogicManager', () => {
+  it('uses the active quest alone when its label matches the lesson objective', () => {
+    const step = createStep({
+      objectiveText: 'research mana tonic.',
+      revealTokens: ['top', 'rooms'],
+    });
+    const { manager, reminderManager } = createManager({ step });
+
+    const viewState = manager.getViewState({
+      snapshot: {
+        tasks: {
+          level: {
+            questProgress: {
+              activeQuest: {
+                kind: 'task',
+                taskId: 'level5-research-mana-tonic',
+              },
+            },
+            tasks: [
+              {
+                taskId: 'level5-research-mana-tonic',
+                requirementLabel: 'research mana tonic',
+              },
+            ],
+          },
+        },
+      },
+      dom: {},
+      targetResolver: () => ({}),
+      lessonPanelOpen: true,
+    });
+
+    expect(viewState).toMatchObject({
+      kind: 'quest',
+      step,
+      revealTokens: ['top', 'rooms'],
+      cue: { kind: 'none' },
+    });
+    expect(reminderManager.clearVisibleCount).toBe(1);
+  });
+
   it('returns one target cue for a newly started active objective', () => {
     const target = {};
     const step = createStep();

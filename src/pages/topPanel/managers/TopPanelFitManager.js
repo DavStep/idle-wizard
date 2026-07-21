@@ -1,6 +1,6 @@
 const RESOURCE_FONT_SIZE_PROPERTY = '--room-top-panel-resource-font-size';
-const RESOURCE_FONT_MAX = 13;
-const RESOURCE_FONT_MIN = 10;
+const RESOURCE_FONT_MAX = 10;
+const RESOURCE_FONT_MIN = 8;
 const FIT_TOLERANCE = 1;
 
 export function fitTopPanelResourceFont(
@@ -89,11 +89,13 @@ export class TopPanelFitManager {
   }
 
   mount(refs) {
-    if (this.resources || !refs?.resources) {
+    const fitContainer = refs?.resourceFitContainer ?? refs?.resources;
+
+    if (this.resources || !fitContainer) {
       return;
     }
 
-    this.resources = refs.resources;
+    this.resources = fitContainer;
     this.window = this.resources.ownerDocument?.defaultView ?? globalThis;
 
     const ResizeObserverCtor = this.window?.ResizeObserver ?? globalThis.ResizeObserver;

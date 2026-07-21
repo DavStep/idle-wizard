@@ -22,6 +22,7 @@ experience_type: development-operations
 - Keep top-level docs current with implemented systems; agents trust README/architecture docs early, so stale future-scope text causes wrong plans.
 - When a feature needs faster or safer repeat work, add the smallest reusable dev tool and document its command/env in `docs/ai-workflow.md` or the feature README.
 - Full player-save backup must use SpacetimeDB SQL/export or a dedicated admin reducer; `admin_player_gameplay_save` currently exposes only summary fields, not raw `saveJson`.
+- High-level QA saves must flush one level at a time because backend save normalization allows only `previousLevel + 1`; deep-clone every intermediate save because gameplay hydration mutates nested branches.
 - SpacetimeDB CLI `sql` calls trigger `on_connect`; after reset verification, run final deletes for `player`/`leaderboard` and stop querying.
 - Match verification to risk: tiny deterministic edits can use inspection or a focused check, while shared runtime/UI changes justify lint, tests, build, and browser/device checks.
 - Tutorial placement tests that create default `TutorialHintManager` instances must clear shared `localStorage`; saved Elara drag placement leaks across full-file CI runs.

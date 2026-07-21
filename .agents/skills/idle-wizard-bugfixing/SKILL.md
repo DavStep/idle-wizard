@@ -52,7 +52,7 @@ Do not patch broad symptoms while the failure point is still unknown unless the 
 Add the smallest guard that would have caught the bug when practical:
 
 - Focused unit/integration test for logic, ECS, reducers, persistence, pricing, timers, or facades
-- UI test, harness assertion, screenshot/click QA, or DOM metric check for visual and interaction defects
+- UI test, reproducible harness/dev-surface assertion, screenshot/click QA, or DOM metric check for visual and interaction defects. For reference-parity bugs, follow `docs/visual-reference-qa.md`; a CSS token assertion alone cannot guard optical alignment or composition.
 - Manual reproduction checklist only when automation would be misleading or too costly for the change
 
 Use `ecc-ai-regression-testing` to choose the guard shape. For tap, button, row, popup, tutorial-target, or mobile/WebView interaction bugs, also use `ecc-tap-path-audit` before deciding the fix.
@@ -77,7 +77,7 @@ Validate in this order:
 3. Run the smallest broader check needed by risk:
    - Focused logic change: matching `*.test.js`
    - Shared gameplay, backend, persistence, or page behavior: `npm run check`
-   - UI/layout/tutorial change: focused tests plus browser screenshot/click QA at authored `1080x2170` and fitted desktop; use `ecc-browser-qa` for browser evidence and verdicts
+   - UI/layout/tutorial change: focused tests plus browser screenshot/click QA at authored `1080x2170` and fitted desktop; use `ecc-browser-qa` for browser evidence and verdicts. Reference-driven fixes additionally require a native-pixel close crop and side-by-side/overlay comparison.
    - Backend schema/config change: local build/publish, `npm run stdb:generate`, and no manual generated binding edits
 
 Do not claim browser/manual QA unless Vite `55173` and required SpacetimeDB `3000` status checks pass.

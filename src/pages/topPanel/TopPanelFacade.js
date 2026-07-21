@@ -2,6 +2,7 @@ import { TopPanelAuthManager } from './managers/TopPanelAuthManager.js';
 import { TopPanelFitManager } from './managers/TopPanelFitManager.js';
 import { TopPanelInboxManager } from './managers/TopPanelInboxManager.js';
 import { TopPanelLevelManager } from './managers/TopPanelLevelManager.js';
+import { TopPanelQuestProgressManager } from './managers/TopPanelQuestProgressManager.js';
 import { TopPanelResourceDisplayManager } from './managers/TopPanelResourceDisplayManager.js';
 import { TopPanelSettingsManager } from './managers/TopPanelSettingsManager.js';
 import { TopPanelUsernamePromptManager } from './managers/TopPanelUsernamePromptManager.js';
@@ -22,6 +23,7 @@ export class TopPanelFacade {
   } = {}) {
     this.viewManager = new TopPanelViewManager();
     this.authManager = new TopPanelAuthManager({ authFacade, gameplayFacade });
+    this.questProgressManager = new TopPanelQuestProgressManager({ gameplayFacade });
     this.fitManager = new TopPanelFitManager();
     this.levelManager = new TopPanelLevelManager({ gameplayFacade });
     this.inboxManager = new TopPanelInboxManager({ playerInboxFacade });
@@ -42,6 +44,7 @@ export class TopPanelFacade {
     this.viewManager.mount(stage);
     const refs = this.viewManager.getRefs();
     this.authManager.mount(refs);
+    this.questProgressManager.mount(refs);
     this.levelManager.mount(refs);
     this.inboxManager.mount(refs);
     this.resourceDisplayManager.mount(refs);
@@ -57,6 +60,7 @@ export class TopPanelFacade {
     this.resourceDisplayManager.unmount();
     this.inboxManager.unmount();
     this.levelManager.unmount();
+    this.questProgressManager.unmount();
     this.authManager.unmount();
     this.viewManager.unmount();
   }
@@ -71,5 +75,10 @@ export class TopPanelFacade {
 
   setResourceContext(context = {}) {
     this.resourceDisplayManager.setContextCurrency(context.currency);
+  }
+
+  setQuestProgressPreview(progress = null) {
+    this.questProgressManager.setPreviewProgress(progress);
+    return { ok: true, progress };
   }
 }

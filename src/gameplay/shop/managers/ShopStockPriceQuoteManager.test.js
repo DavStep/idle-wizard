@@ -29,9 +29,10 @@ describe('ShopStockPriceQuoteManager', () => {
     expect(quote).toMatchObject({
       ok: true,
       quantity: 1000,
-      priceCoin: 1.2,
+      priceCoin: 2,
     });
-    expect(quote.totalPriceCoin).toBeGreaterThan(1.2 * 1000);
+    expect(quote.totalPriceCoin).toBeGreaterThan(2 * 1000);
+    expect(Number.isInteger(quote.totalPriceCoin)).toBe(true);
   });
 
   it('does not cap prices at the old max need boundary', () => {
@@ -66,8 +67,8 @@ describe('ShopStockPriceQuoteManager', () => {
 
     expect(manager.quoteItem({ item: sageSeed, quantity: 3 })).toMatchObject({
       ok: true,
-      priceCoin: 1.25,
-      totalPriceCoin: 3.75,
+      priceCoin: 2,
+      totalPriceCoin: 6,
     });
   });
 });

@@ -26,6 +26,7 @@ Check Vite with `npm run dev:status`. Check SpacetimeDB with
 - Focused logic change: matching test file.
 - Shared gameplay/page/backend/persistence/release change: `npm run check`.
 - UI/layout/tutorial change: focused tests plus screenshot/click QA.
+- Visual-reference change: follow `docs/visual-reference-qa.md`, use a reproducible state, and require a native-pixel close crop plus `npm run ui:compare` overlay evidence.
 - Backend schema/config change: publish locally and regenerate bindings.
 
 ## Related

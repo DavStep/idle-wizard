@@ -6,7 +6,7 @@ Screenshots are captured from the real Vite game surface at the authored `1080x2
 
 The automation uses the real `TutorialFacade`, CSS, Elara assets, and `data-tutorial-id` targets. Dev capture hooks only skip waits/background resource tasks and hide the local offline gate so the screenshots show the actual game UI, not a harness.
 
-Current source has a 37-step source order. The default screenshot capture tracks 36 of those steps and intentionally excludes the legacy balance-conditional `fill-sage-seed-task` branch because default `tasks.json` no longer has a level-3 sage seed turn-in. The source starts with a free workshop-entry dialog and routes room openings through short `market opened`, `research opened`, `garden opened`, and `brewing opened` beats. Username setup is no longer part of FTUE; player-facing social surfaces ask for it when first opened. Level 1 completes without coin. Level 2 teaches the current summon, sell, and turn-in requirement order before level-up coin cleanup, using live `sellItems` quantity and quote data instead of tutorial-owned prices. Level 3 introduces Research and the free mint seed unlock, level 4 introduces herbs through Garden requirements, and level 5 introduces Brewing through mana tonic research. Coin-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates the current source order and should be refreshed with `npm run tutorial:capture`.
+Current source has a 37-step source order. The default screenshot capture tracks 36 of those steps and intentionally excludes the legacy balance-conditional `fill-sage-seed-task` branch because default `tasks.json` no longer has a level-3 sage seed turn-in. The source starts with a free workshop-entry dialog and routes room openings through short `market opened`, `research opened`, `garden opened`, and `brewing opened` beats. Username setup is no longer part of FTUE; player-facing social surfaces ask for it when first opened. Level 1 completes without coin. Level 2 teaches the current summon, sell-to-trader, and turn-in requirement order before level-up coin cleanup, using live `sellItems` quantity and quote data instead of tutorial-owned prices. Legacy `shop:directSell` tutorial ids remain stable. Level 3 introduces Research and the free mint seed unlock, level 4 introduces herbs through Garden requirements, and level 5 introduces Brewing through mana tonic research. Coin-shortfall guidance uses the Market `sellItems` available quantity, not raw inventory, so reserved items that show as `x0` do not become targets. The screenshot set below predates the current source order and should be refreshed with `npm run tutorial:capture`.
 
 ![tutorial flow contact sheet](tutorial-flow/contact-sheet.png)
 
@@ -144,12 +144,12 @@ Level-up steps can route through this branch when the player is short on coin.
 ```mermaid
 flowchart TD
   G00["coin shortfall"]
-  G01{"available fast-sell quantity?"}
+  G01{"available trader-offer quantity?"}
   G02["no: obtain source<br/>sage or mint"]
   G03{"on Market page?"}
   G04["no: open Market"]
-  G05{"fast sell open?"}
-  G06["no: open fast sell"]
+  G05{"trader offer open?"}
+  G06["no: sell to trader"]
   G07{"item selected and quantity > 0?"}
   G08["yes: target sell if enough<br/>otherwise +1"]
   G09{"matching tab open?"}

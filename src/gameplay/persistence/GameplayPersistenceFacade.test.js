@@ -83,6 +83,17 @@ describe('GameplayPersistenceFacade', () => {
     expect(secondSave.clientSaveSequence).toBe(2);
   });
 
+  it('captures fresh runtime state without consuming a client save revision', () => {
+    const facade = createPersistenceFacade();
+
+    expect(facade.createRuntimeSnapshot()).toMatchObject({
+      mana: {},
+      coin: {},
+      tasks: {},
+    });
+    expect(facade.createSave().clientSaveSequence).toBe(1);
+  });
+
   it('flushes the latest save before page reload and when the page hides', () => {
     const windowListeners = new Map();
     const documentListeners = new Map();

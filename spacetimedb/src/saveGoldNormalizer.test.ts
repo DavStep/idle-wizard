@@ -40,6 +40,18 @@ describe('normalizeSaveGold', () => {
     });
   });
 
+  it('rounds legacy fractional coin upward without removing player coin', () => {
+    expect(
+      normalizeSaveGold({
+        current: 1.01,
+        totalGenerated: 10.01,
+      }),
+    ).toEqual({
+      current: 2,
+      totalGenerated: 11,
+    });
+  });
+
   it('still caps current and lifetime coin at the server save ceiling', () => {
     expect(
       normalizeSaveGold({

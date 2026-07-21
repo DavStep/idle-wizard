@@ -16,12 +16,12 @@ Level-up steps can route through Market when the player is short on coin.
 
 ```mermaid
 flowchart TD
-  A["coin shortfall"] --> B{"available fast-sell quantity?"}
+  A["coin shortfall"] --> B{"available trader-offer quantity?"}
   B -->|"no"| C["obtain source: sage or mint"]
   B -->|"yes"| D{"on Market page?"}
   D -->|"no"| E["open Market"]
-  D -->|"yes"| F{"fast sell open?"}
-  F -->|"no"| G["open fast sell"]
+  D -->|"yes"| F{"trader offer open?"}
+  F -->|"no"| G["sell to trader"]
   F -->|"yes"| H{"item selected and quantity > 0?"}
   H -->|"yes"| I["target sell if enough, otherwise +1"]
   H -->|"no"| J{"matching tab open?"}
@@ -33,7 +33,7 @@ flowchart TD
 
 Coin guidance reads Market `shop.shelf.sellItems` quantities. Raw inventory may
 include items reserved by Garden, Brewing, or listings, so it can point at items
-that fast sell correctly shows as unavailable.
+that the trader offer correctly shows as unavailable.
 
 ## Related
 

@@ -55,6 +55,8 @@ experience_type: style
 - Shared chrome overlays with the same z-index paint by DOM order; visible bottom-panel lock notices must raise the bottom panel layer above the passive chat preview.
 - Popup/dialog shadow tokens must contrast with the active theme surface.
 - Mana amount and regen live in the top panel; Workshop no longer has a separate mana resource box.
+- A segmented level rail is one continuous fill with divider ticks over it; separate rounded pills break the intended composition. Keep its remaining-quest caption small and left-aligned below the rail.
+- Reference-driven UI QA needs a native-pixel close crop and overlay review of explicit anchors. Full-screen thumbnails and CSS-value tests miss icon/text optical centers, visible-alpha grounding, badge centering, and detailed rail geometry.
 - Workshop no longer has a separate `seeds` block; `summon` and `bag` sit above world chat.
 - Workshop `bag` opens a tabbed popup for currencies, seeds, herbs, and potions.
 - Do not add decorative visuals unless the user explicitly asks.
@@ -128,7 +130,8 @@ experience_type: style
 - Coin displays amount-first as `<compact amount> coin` everywhere, including top chrome; use `25 coin` and `123k coin`, never `25g` or `coin 25`.
 - Task level-up is manual after every task in the current level is done; the Workshop task list shows a bottom `complete` action that spends the configured level completion coin.
 - Mana current/cap displays use tight fractions like `8/100`; spaces around `/` waste too much row width.
-- Top panel layout uses two rows: username full-width above mana/coin/context currency, so resource text does not squeeze names.
+- Top panel uses the compact player-card composition: large owned avatar left, username and currencies top, mana below, then the star level badge beside a 3–6 segment request rail and remaining-quest copy. The badge replaces duplicate level text, and XP is not player-facing.
+- Main-request completion stars fly in screen coordinates from the visible request or active action into the newly filled segment; the final coin request lands on the level badge during rollover. Cap active particles, use Web Animations instead of dynamic keyframes, skip motion when reduced motion is requested, and reset the diff baseline on persistence load.
 - Hidden top-panel context currency needs an explicit `[hidden]` display rule because resource flex CSS can otherwise override the browser default.
 - Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
 - Top panel coin should keep amount and `coin` in the same fitted value span; a separate suffix can leave clipped values like `308... coin`.
@@ -149,6 +152,11 @@ experience_type: style
 - Midnight 9-slice PNGs must put border art across the full `32px` slice; early center fill makes CSS `border-image` render as a hairline.
 - Compact header/button 9-slices need flat internal top stretch bands; baked horizontal bands in the top slice compress into visible lines when `border-image` scales them down. Preserve side and corner cap pixels unless the source edge itself is wrong.
 - Nine-slice generator metadata uses left/top/right/bottom margins and reports adjusted values after alpha-cropping; convert those final margins to CSS top/right/bottom/left order or the slice joins render as visible grid seams.
+- Progress-rail nine-slices must preserve their fixed rounded end regions and leave only a 1px vertical center band, but do not assume a full capsule: references with a short straight end section need a corner radius smaller than half the source height.
+- Simple geometric nine-slices should be authored as deterministic CSS and browser-rendered to PNG; screenshot extraction bakes compression, background texture, and irregular stroke weight into every stretched state.
+- Reveal rounded progress fills with clipping or width, not `scaleX`; scaling compresses the cap geometry along with the progress amount.
+- Validate a nine-slice frame and its live DOM fill separately; a clean generated PNG cannot catch gradients, inset highlights, or shadows added by the fill CSS.
+- Keep flat geometric web rails in CSS; converting them to a raster nine-slice adds border-image scaling variables and makes simple corner radii harder to match.
 - Player font options live in `src/player/playerFonts.js`, apply through `html[data-style-font]`, and need matching SpacetimeDB `PLAYER_FONTS` entries to survive profile sync.
 - Bundled player fonts need an `@fontsource/<font>` dependency plus `src/main.js` CSS imports; CSS fallback alone is not enough for Android/offline builds.
 - Player resource color mode is separate from visual theme and applies through `html[data-style-color]` plus `data-resource-color` markers.
@@ -162,7 +170,7 @@ experience_type: style
 - Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
 - NPC market reset must clear shared `npcStock` to `0` plus restore `npcNeed` to target; stock is server state and can survive player-data resets.
 - Global NPC market resets need a one-time server maintenance marker; do not tie shared market wipes to per-player progress reset hooks.
-- NPC stock market uses three ordinary boxes (`seeds`, `herbs`, `potions`) instead of category tabs; reserve each box's bottom border label for expand/collapse.
+- NPC stock lives in the tabbed Market Ledger (`seeds`, `herbs`, `potions`), with compact `you sell` / `you buy` / `change` columns and selected-row history details.
 - NPC stock buy row controls show `buy 25 coin` in a compact right slot; keep the verb normal text, keep the coin amount resource-colored, and let disabled/unaffordable prices inherit muted disabled color.
 - NPC stock buy row controls must clear midnight `border-image` after the late theme button-skin block; an earlier transparent border reset still renders framed oversized buttons.
 - NPC stock rows should use the same compact middle/right grid rhythm as market stand rows, not looser float rows.

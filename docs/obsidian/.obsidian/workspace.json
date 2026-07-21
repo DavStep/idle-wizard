@@ -196,6 +196,7 @@
   },
   "active": "58fea7245869387e",
   "lastOpenFiles": [
+    "mechanics/market/Market Ledger.md",
     "mechanics/Core Loop.md",
     "mechanics/Research And Unlocks.md",
     "mechanics/Tasks And Leveling.md",
@@ -229,7 +230,6 @@
     "mechanics/market/Proceeds Royalties And History.md",
     "mechanics/market/Player Requests.md",
     "mechanics/market/Player Listings.md",
-    "mechanics/market/NPC Stock.md",
     "mechanics/market/Market Components.base",
     "mechanics/market",
     "mechanics/garden/Garden And Herbs.canvas",

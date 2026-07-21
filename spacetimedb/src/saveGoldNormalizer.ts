@@ -60,7 +60,11 @@ function normalizeGoldPrice(value: bigint | number): number | null {
     return null;
   }
 
-  return Math.round((number + Number.EPSILON) * 100) / 100;
+  if (number === 0) {
+    return 0;
+  }
+
+  return Math.max(1, Math.ceil(number));
 }
 
 function clampNumber(value: number, min: number, max: number): number {

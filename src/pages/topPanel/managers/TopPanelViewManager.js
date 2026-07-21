@@ -14,6 +14,8 @@ import {
   STATUS_ICON_LOCK,
 } from '../../shared/statusIcon.js';
 
+const QUEST_STARS_ICON_URL = `${import.meta.env.BASE_URL ?? '/'}ui/level-star.webp`;
+
 export class TopPanelViewManager {
   constructor() {
     this.root = null;
@@ -91,25 +93,80 @@ export class TopPanelViewManager {
     this.refs.levelButton = document.createElement('button');
     this.refs.levelButton.className = 'room-top-panel__level';
     this.refs.levelButton.type = 'button';
-    this.refs.levelButton.textContent = '';
     this.refs.levelButton.hidden = true;
     this.refs.levelButton.setAttribute('aria-label', 'open level rewards');
-    this.refs.levelValue = this.refs.levelButton;
+
+    this.refs.levelStar = document.createElement('img');
+    this.refs.levelStar.className = 'room-top-panel__level-star';
+    this.refs.levelStar.src = QUEST_STARS_ICON_URL;
+    this.refs.levelStar.alt = '';
+    this.refs.levelStar.setAttribute('aria-hidden', 'true');
+    this.refs.levelStar.loading = 'eager';
+
+    this.refs.levelValue = document.createElement('span');
+    this.refs.levelValue.className = 'room-top-panel__level-value';
+    this.refs.levelButton.append(this.refs.levelStar, this.refs.levelValue);
 
     const identityRow = document.createElement('div');
     identityRow.className = 'room-top-panel__identity-row';
     const contextCurrency = this.createResource('crystal', '0 crystal');
-    identityRow.append(this.refs.usernameButton, this.refs.levelButton);
+    const rightStatus = document.createElement('div');
+    rightStatus.className = 'room-top-panel__right-status';
+    rightStatus.append(this.createResource('coin', '0 coin'), contextCurrency);
+    identityRow.append(this.refs.usernameButton, rightStatus);
 
     this.refs.resources = document.createElement('div');
     this.refs.resources.className = 'room-top-panel__resources';
     this.refs.resources.setAttribute('aria-label', 'resources');
-    const rightStatus = document.createElement('div');
-    rightStatus.className = 'room-top-panel__right-status';
-    rightStatus.append(this.createResource('coin', '0 coin'), contextCurrency);
-    this.refs.resources.append(this.createResource('mana', '0/0 mana'), rightStatus);
+    this.refs.resources.append(this.createResource('mana', '0/0 mana'));
 
-    panel.append(this.refs.usernameAvatarButton, identityRow, this.refs.resources);
+    this.refs.questRow = document.createElement('div');
+    this.refs.questRow.className = 'room-top-panel__quest-progress';
+    this.refs.questRow.hidden = true;
+
+    const questProgressBody = document.createElement('div');
+    questProgressBody.className = 'room-top-panel__quest-progress-body';
+
+    this.refs.questProgressRail = document.createElement('div');
+    this.refs.questProgressRail.className = 'room-top-panel__quest-progress-rail';
+    this.refs.questProgressRail.setAttribute('role', 'progressbar');
+
+    this.refs.questProgressFill = document.createElement('span');
+    this.refs.questProgressFill.className = 'room-top-panel__quest-progress-fill';
+    this.refs.questProgressFill.setAttribute('aria-hidden', 'true');
+
+    this.refs.questSegments = document.createElement('div');
+    this.refs.questSegments.className = 'room-top-panel__quest-segments';
+    this.refs.questSegments.setAttribute('aria-hidden', 'true');
+    this.refs.questProgressRail.append(
+      this.refs.questProgressFill,
+      this.refs.questSegments,
+    );
+
+    this.refs.questProgressText = document.createElement('span');
+    this.refs.questProgressText.className = 'room-top-panel__quest-progress-text';
+    this.refs.questProgressText.setAttribute('aria-live', 'polite');
+
+    this.refs.questRemainingValue = document.createElement('strong');
+    this.refs.questRemainingValue.className = 'room-top-panel__quest-remaining';
+
+    this.refs.questProgressLead = document.createTextNode('');
+    this.refs.questProgressTail = document.createTextNode('');
+    this.refs.questProgressText.append(
+      this.refs.questProgressLead,
+      this.refs.questRemainingValue,
+      this.refs.questProgressTail,
+    );
+    questProgressBody.append(this.refs.questProgressRail, this.refs.questProgressText);
+    this.refs.questRow.append(this.refs.levelButton, questProgressBody);
+
+    panel.append(
+      this.refs.usernameAvatarButton,
+      identityRow,
+      this.refs.resources,
+      this.refs.questRow,
+    );
+    this.refs.resourceFitContainer = panel;
     return panel;
   }
 

@@ -240,7 +240,7 @@ describe('PlayerShopSubscriptionManager', () => {
           username: 'Hershel',
           itemLabel: 'mint seed',
           quantity: 4,
-          priceCoin: 3.25,
+          priceCoin: 4,
         },
       ],
       ownRequests: [
@@ -541,7 +541,7 @@ describe('PlayerShopSubscriptionManager', () => {
         royaltyId: 'royalty-1',
         sourceSellerUsername: 'Ada',
         potionLabel: 'mana tonic',
-        royaltyCoin: 1.25,
+        royaltyCoin: 2,
         sourceIncomeCoin: 25,
       },
     ]);

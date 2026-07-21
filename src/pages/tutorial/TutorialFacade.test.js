@@ -328,6 +328,65 @@ describe('TutorialFacade', () => {
     }
   });
 
+  it('hides Elara when the active quest already says the same thing as the lesson', () => {
+    const stage = document.createElement('section');
+    const researchButton = document.createElement('button');
+    const snapshot = {
+      ...createLevelThreeSnapshot(),
+      tasks: {
+        currentLevel: 4,
+        level: {
+          completion: { canComplete: false, costCoin: 30 },
+          questProgress: {
+            activeQuest: {
+              kind: 'task',
+              taskId: 'level5-research-mana-tonic',
+            },
+          },
+          tasks: [
+            {
+              taskId: 'level5-research-mana-tonic',
+              type: 'research',
+              researchId: 'unlockRecipe:manaTonic',
+              itemKey: 'manaTonic',
+              requirementLabel: 'research mana tonic',
+              requiredQuantity: 1,
+              progressQuantity: 0,
+              remainingQuantity: 1,
+              completed: false,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      subscribe: () => () => {},
+    };
+    const facade = new TutorialFacade({
+      gameplayFacade,
+      getCurrentPageId: () => 'research',
+      storage: createMemoryStorage(),
+    });
+
+    researchButton.dataset.tutorialId = 'research:unlockRecipe:manaTonic';
+    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
+    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
+    setClientRect(researchButton, { left: 64, top: 720, width: 760, height: 70 });
+    stage.append(researchButton);
+    document.body.append(stage);
+
+    facade.mount(stage);
+    facade.refresh();
+
+    expect(facade.activeStep?.id).toBe('research-mana-tonic');
+    expect(stage.querySelector('.tutorial-layer__lesson-button')?.hidden).toBe(true);
+    expect(stage.querySelector('.tutorial-layer__lesson')?.hidden).toBe(true);
+    expect(stage.querySelector('.tutorial-layer__pointer')?.hidden).toBe(true);
+
+    facade.unmount();
+  });
+
   it('treats any press as next while an advance prompt is active', () => {
     let underlyingClicks = 0;
     const stage = document.createElement('section');

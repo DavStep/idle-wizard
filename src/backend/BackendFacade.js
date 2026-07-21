@@ -87,24 +87,33 @@ export class BackendFacade {
       onConnect: (connection, identity) => {
         let gameplaySaveReady = false;
         let accountSessionInactive = false;
-        const handleAccountSessionInactive = () => {
+        const handleAccountSessionInactive = ({ reason = 'account_in_use' } = {}) => {
           if (accountSessionInactive) {
             return;
           }
 
           accountSessionInactive = true;
           this.accountSessionInactive = true;
-          this.gameplaySaveFacade.discardPendingSaves();
-          this.playerSyncFacade.discardPendingPlayerLevel();
+          const sessionInvalidated = reason !== 'account_session_error';
+          if (sessionInvalidated) {
+            this.gameplaySaveFacade.discardPendingSaves();
+            this.playerSyncFacade.discardPendingPlayerLevel();
+          }
           const maintenanceActive = this.maintenanceFacade.getSnapshot()?.active === true;
-          this.disconnectBackendFacades({ keepGameConfig: maintenanceActive });
+          const keepMaintenanceFeed =
+            maintenanceActive || reason === 'account_session_missing';
+          this.disconnectBackendFacades({ keepGameConfig: keepMaintenanceFeed });
 
-          if (!maintenanceActive) {
+          if (!keepMaintenanceFeed) {
             this.spacetimeDbFacade.disconnect();
           }
 
           onOffline?.({
-            reason: maintenanceActive ? 'maintenance_session_invalidated' : 'account_in_use',
+            reason: keepMaintenanceFeed
+              ? 'maintenance_session_invalidated'
+              : sessionInvalidated
+                ? 'account_in_use'
+                : 'disconnect',
           });
         };
         const finishGameplaySaveReady = async (result) => {
@@ -129,9 +138,13 @@ export class BackendFacade {
               save: result?.save ?? null,
               updatedAtMs: result?.updatedAtMs ?? 0,
             };
-            this.gameplaySaveFacade.discardHydratedSaveIfServerIsAtLeastAsNew?.(
-              readyPayload.save,
-            );
+            if (readyPayload.save) {
+              this.gameplaySaveFacade.discardHydratedSaveIfServerIsAtLeastAsNew?.(
+                readyPayload.save,
+              );
+            } else {
+              this.gameplaySaveFacade.discardPendingSaves();
+            }
             const pendingHydratedSave =
               this.gameplaySaveFacade.getPendingHydratedSave?.() ?? null;
 
@@ -139,7 +152,22 @@ export class BackendFacade {
               readyPayload.pendingHydratedSave = pendingHydratedSave;
             }
 
-            await onGameplaySaveReady?.(readyPayload);
+            let gameplaySaveSendingEnabled = false;
+            const enableSaveSending = () => {
+              if (gameplaySaveSendingEnabled || accountSessionInactive) {
+                return false;
+              }
+
+              gameplaySaveSendingEnabled = true;
+              this.gameplaySaveFacade.setReadyToSend(true);
+              return true;
+            };
+
+            await onGameplaySaveReady?.(readyPayload, { enableSaveSending });
+
+            if (!gameplaySaveSendingEnabled) {
+              enableSaveSending();
+            }
           } catch (error) {
             if (accountSessionInactive) {
               return;
@@ -154,7 +182,6 @@ export class BackendFacade {
             return;
           }
 
-          this.gameplaySaveFacade.setReadyToSend(true);
           this.leaderboardFacade.setSyncReady(true);
           this.worldEventLeaderboardFacade.setSyncReady(true);
           this.playerSyncFacade.setLevelSyncReady(true);
@@ -167,6 +194,7 @@ export class BackendFacade {
           onOnline?.({ connection, identity });
         };
 
+        this.gameConfigFacade.connect(connection);
         this.accountSessionFacade.connect(connection, {
           onInactive: handleAccountSessionInactive,
         });
@@ -174,7 +202,6 @@ export class BackendFacade {
           return;
         }
 
-        this.gameConfigFacade.connect(connection);
         this.leaderboardFacade.connect(connection, identity);
         this.worldEventLeaderboardFacade.connect(connection, identity);
         this.worldChatFacade.connect(connection);

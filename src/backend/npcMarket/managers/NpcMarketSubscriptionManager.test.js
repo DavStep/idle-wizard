@@ -75,6 +75,7 @@ describe('NpcMarketSubscriptionManager', () => {
   it('publishes NPC market prices by item key', () => {
     const pricesTable = createTable([
       {
+        hourKey: '1',
         itemKey: 'sageSeed',
         itemLabel: 'sage seed',
         itemKind: 'seed',
@@ -192,6 +193,7 @@ describe('NpcMarketSubscriptionManager', () => {
     ]);
     const priceHistoryTable = createTable([
       {
+        hourKey: '1',
         itemKey: 'sageSeed',
         marketId: 'smallTown',
         marketPriceCoin: 2n,
@@ -213,6 +215,7 @@ describe('NpcMarketSubscriptionManager', () => {
 
     expect(manager.getPrice('sageSeed')?.priceHistory).toEqual([
       expect.objectContaining({
+        hourKey: '1',
         marketPriceCoin: 2,
         npcNeed: 8,
         npcStock: 12,

@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  MAIN_QUEST_XP_REWARD,
-  TaskQuestProgressManager,
-} from './TaskQuestProgressManager.js';
+import { TaskQuestProgressManager } from './TaskQuestProgressManager.js';
 
 describe('TaskQuestProgressManager', () => {
   it('shows only the first incomplete task as the active request', () => {
@@ -19,15 +16,13 @@ describe('TaskQuestProgressManager', () => {
     });
 
     expect(snapshot).toMatchObject({
-      currentXp: MAIN_QUEST_XP_REWARD,
-      requiredXp: MAIN_QUEST_XP_REWARD * 4,
+      progress: 0.25,
       completedQuests: 1,
       totalQuests: 4,
       targetLevel: 3,
       activeQuest: {
         kind: 'task',
         taskId: 'active',
-        xpReward: MAIN_QUEST_XP_REWARD,
       },
     });
   });
@@ -45,13 +40,13 @@ describe('TaskQuestProgressManager', () => {
     });
 
     expect(snapshot).toMatchObject({
-      currentXp: MAIN_QUEST_XP_REWARD * 2,
-      requiredXp: MAIN_QUEST_XP_REWARD * 3,
+      progress: 2 / 3,
+      completedQuests: 2,
+      totalQuests: 3,
       activeQuest: {
         kind: 'levelUp',
         targetLevel: 3,
         costCoin: 8,
-        xpReward: MAIN_QUEST_XP_REWARD,
       },
     });
   });

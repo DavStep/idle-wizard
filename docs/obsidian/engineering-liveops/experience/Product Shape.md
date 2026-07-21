@@ -76,7 +76,7 @@ experience_type: product-shape
 - FTUE level-one sage guidance must resolve the turn-in task by item/action too; live configs may still use legacy `level1-sage-seeds` while defaults use `level1-turn-in-sage-seed`.
 - Resource-gated FTUE steps must refresh from `subscribeFrameResources`; top-panel mana can change without a full gameplay snapshot.
 - FTUE repeated action prompts should show once as brief non-dimming hints, then reappear only after idle time; do not keep alternating guidance through active loops.
-- Level-two FTUE fast sell must target `+1` until all five summoned Sage Seeds are selected, then target `sell`; because the turn-in task still needs four seeds, the follow-up must guide another four summons.
+- Level-two FTUE Trader Offer must target `+1` until all five summoned Sage Seeds are selected, then target `sell`; because the turn-in task still needs four seeds, the follow-up must guide another four summons.
 - A page means a room view, not a web route.
 - The first page is `Workshop`.
 - Level requirements can be typed action rows; only `turnIn` consumes inventory, while `research`, `summon`, `grow`, `brew`, and `sell` progress from gameplay events and auto-complete at target.
@@ -131,7 +131,7 @@ experience_type: product-shape
 - `player_shop_proceeds` can include potion discovery royalties from NPC market trades; use own trade history before labeling proceeds as player-market sales.
 - Claim-time player-market stats must retain/read own trade and royalty history before `claimProceeds`; claiming clears aggregate proceeds and lazy history may be released afterward.
 - Welcome-back/while-away market reports should use NPC sale callbacks for `traders bought`; do not retain player-shop trade history or show player-to-player bought/sold-you, request-fill, generic player-shop proceeds, or royalty rows there.
-- Market should show `fast sell` as its own titled box, separate from the 30-minute NPC stand box, so instant vs timed selling reads immediately.
+- Market keeps `sell to trader` and `market ledger` as bottom-border actions on `your stalls`; the Trader Offer dialog distinguishes immediate reduced payout from timed full-price stalls.
 - Player market notifications should only mean a personal trade event: claimable proceeds from an own listing or an available listing matching an own request. Do not dot empty stands, affordable random listings, or matchable requests from other players.
 - Player market tab entry should retain only public listings/requests; trade history subscriptions and DOM rows stay lazy until the `trade history` popup opens.
 - Market tab panels need inline-only scroll cues; sibling progress rails after the absolute panel render at the top of the room behind top chrome.
@@ -215,7 +215,7 @@ experience_type: product-shape
 - Fast-sell FTUE should point at the item name, not the row value side, so `sage seed` reads as the target.
 - The first FTUE fast-sell amount beat should only boink the selected `[1]` amount, with no open lesson panel or pointer; the next sale step points at `sell`.
 - FTUE fast-sell market sale should trigger from the real `sell` confirm action, not from selecting the item row; once sage seed is selected, Elara should point at `sell`.
-- When fast sell is already open with an item selected, FTUE should target the current amount action (`sell` once current quantity covers missing coin, `+1` while more quantity is still useful) and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
+- When Trader Offer is already open with an item selected, FTUE should target the current amount action (`sell` once current quantity covers missing coin, `+1` while more quantity is still useful) and reset the popup amount to `1`; pointing at the closed-state opener or a stale bulk quantity is confusing.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE lesson border-action buttons need late `.style-box .tutorial-layer__...` overrides, because the global `.style-box :where(button, ...)` rule can re-inflate them to body size.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
@@ -310,9 +310,9 @@ experience_type: product-shape
 - FTUE guide auto-move should not rely on inline `style.translate` for the moving wrapper, because active CSS keyframe animations that also set `translate` can override it and make the guide jump.
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` is a gated room page that stays hidden until level 7.
-- Dev cheats that force garden/shop/brewing slot counts must raise player level or capacity research first; snapshot apply paths clamp counts back to progression caps.
+- Dev cheats that force garden/brewing capacity must satisfy their progression gates; market slot count is derived from permanent licence rank instead of run-level capacity.
 - Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
-- Prestige points UI must show the 1/3/6/10 market-licence thresholds and explain that each highest unlocked licence permanently owns its separate trade pool.
+- Prestige points UI must show the 1/3/6/10 market-licence thresholds and explain that rank adds one stall and opens the next cumulative item-grade band in its separate trade pool.
 - Prestige ruby summary/reward text needs `setResourceIconText`; `data-resource-color` alone colors text but does not render icons.
 - Multiple reward/resource payout labels should be space-separated, not comma-separated.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.

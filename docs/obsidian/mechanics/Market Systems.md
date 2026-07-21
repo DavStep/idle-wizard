@@ -25,12 +25,13 @@ The Market room contains Trader/NPC sales, player trading, and the crystals tab.
 
 ## Tabs
 
-- [[mechanics/market/NPC Market|Trader / NPC Market]]
-  - [[mechanics/market/Fast Sell|Fast Sell]]
+- [[mechanics/market/NPC Market|Traders]]
+  - [[mechanics/market/Fast Sell|Sell to Trader]]
   - [[mechanics/market/Trader Stands|Automatic Trader Stands]]
+  - [[mechanics/market/Market Ledger|Market Ledger]]
   - [[mechanics/market/NPC Stock|Shared NPC Stock]]
   - [[mechanics/market/Demand And Pricing|Demand and Pricing]]
-- [[mechanics/market/Player Market|Player Market]]
+- [[mechanics/market/Player Market|Players]]
   - [[mechanics/market/Player Listings|Listings]]
   - [[mechanics/market/Player Requests|Requests]]
   - [[mechanics/market/Browse And Purchase|Browse and Purchase]]
@@ -43,7 +44,7 @@ The Market room contains Trader/NPC sales, player trading, and the crystals tab.
 
 ## Permanent market types
 
-[[mechanics/market/Market Licences|Market Licences]] selects the highest unlocked licence from permanent Prestige stars. All five source-default markets currently use the same catalog and balance, but their demand, stock, prices, listings, and requests are isolated.
+[[mechanics/market/Market Licences|Market Licences]] selects the highest unlocked licence from permanent Prestige stars. Rank grants one through five stalls and cumulative item-grade access. Demand, stock, prices, listings, and requests remain isolated per licence.
 
 ![[mechanics/market/Market Components.base#Market Licences]]
 

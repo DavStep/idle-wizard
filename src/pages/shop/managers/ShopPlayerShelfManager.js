@@ -21,6 +21,7 @@ import {
   formatCoinPrice,
   formatCoinPriceText,
   multiplyCoinPrice,
+  normalizeCoinPrice,
   parsePositiveCoinPrice,
 } from '../../../shared/coinPrice.js';
 import {
@@ -248,10 +249,10 @@ export class ShopPlayerShelfManager {
     const quantityField = this.createNumberField('quantity', 'quantity', 'Listing quantity');
     const priceField = this.createNumberField('coin each', 'coin each', 'Listing coin value per item');
     quantityField.input.max = String(PLAYER_MARKET_MAX_QUANTITY);
-    priceField.input.inputMode = 'decimal';
-    priceField.input.min = '0.01';
+    priceField.input.inputMode = 'numeric';
+    priceField.input.min = '1';
     priceField.input.max = String(PLAYER_MARKET_MAX_PRICE_COIN);
-    priceField.input.step = '0.01';
+    priceField.input.step = '1';
     this.refs.quantityInput = quantityField.input;
     this.refs.priceInput = priceField.input;
     fields.append(quantityField.field, priceField.field);
@@ -757,7 +758,7 @@ export class ShopPlayerShelfManager {
   }
 
   getPositiveCoin(value) {
-    const coin = Math.round((Number(value) || 0) * 100) / 100;
+    const coin = normalizeCoinPrice(value) ?? 0;
     return coin > 0 ? coin : 0;
   }
 

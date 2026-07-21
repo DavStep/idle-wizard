@@ -16,6 +16,8 @@ Before making new UI, check `docs/style.md` and `docs/ui-patterns.md` for an exi
 
 For any UI, UX, layout, visual, popup, dialog, screen, page, button, label, or flow change, use `idle-wizard-ui-workflow`; it routes through `impeccable`, `idle-wizard-ui-consistency`, and the required product/style docs before editing.
 
+When the user provides a visual reference or requests composition accuracy, also follow `docs/visual-reference-qa.md`. Define measurable visual anchors before editing, use a reproducible real-app state, and require a native-pixel close crop plus side-by-side/overlay comparison before claiming parity.
+
 For any animation, motion, transition, micro-interaction, animated feedback, or "animate this" request, use `$impeccable animate <target>` by default.
 
 For any tutorial, FTUE, Elara guide box, objective panel, target hint, tutorial overlay, action reminder, pointer cue, data-tutorial-id placement, or tutorial popup/dialog work, use `idle-wizard-ui-workflow`; it must also use `idle-wizard-tutorial-ui`, which owns final tutorial-box placement, collision, stacking, and screenshot QA rules.

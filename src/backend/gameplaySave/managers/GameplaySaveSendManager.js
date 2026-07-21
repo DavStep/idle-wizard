@@ -27,6 +27,8 @@ export class GameplaySaveSendManager {
     this.syncAttemptId = 0;
     this.syncTimeoutId = null;
     this.resolveSyncCancel = null;
+    this.resolveSyncAccepted = null;
+    this.syncAcceptedServerSave = null;
     this.syncTimeoutMs = syncTimeoutMs;
     this.syncIntervalMs = syncIntervalMs;
     this.setTimeoutFn = setTimeoutFn;
@@ -34,15 +36,21 @@ export class GameplaySaveSendManager {
     this.now = now;
     this.onSyncUnhealthy = onSyncUnhealthy;
     this.journalManager = journalManager;
+    this.hydrated = false;
     this.readyToSend = false;
     this.lastSyncedSaveContentKey = null;
     this.lastAcceptedServerRevision = null;
+    this.lastObservedServerSave = null;
     this.lastSyncStartedAtMs = Number.NEGATIVE_INFINITY;
     this.syncTimerId = null;
   }
 
   connect(connection, identity = null) {
     this.connection = connection;
+    this.hydrated = false;
+    this.lastSyncedSaveContentKey = null;
+    this.lastAcceptedServerRevision = null;
+    this.lastObservedServerSave = null;
     const journal = this.journalManager.connect(identity);
 
     if (
@@ -67,12 +75,18 @@ export class GameplaySaveSendManager {
     this.clearSyncTimer();
     this.lastSyncStartedAtMs = Number.NEGATIVE_INFINITY;
     this.connection = null;
+    this.hydrated = false;
     this.readyToSend = false;
+    this.lastObservedServerSave = null;
     this.journalManager.disconnect();
   }
 
   setSyncUnhealthyHandler(handler) {
     this.onSyncUnhealthy = typeof handler === 'function' ? handler : null;
+  }
+
+  setHydrated(hydrated = true) {
+    this.hydrated = Boolean(hydrated);
   }
 
   setReadyToSend(ready = true) {
@@ -102,7 +116,7 @@ export class GameplaySaveSendManager {
       }
 
       this.pendingSaveJson = saveJson;
-      this.pendingSaveWasHydrated = this.readyToSend;
+      this.pendingSaveWasHydrated = this.hydrated;
       this.pendingSaveContentKey = saveContentKey;
       this.pendingSaveBaseServerRevision = this.lastAcceptedServerRevision;
 
@@ -212,6 +226,21 @@ export class GameplaySaveSendManager {
     return true;
   }
 
+  observeServerSave(serverSave) {
+    this.lastObservedServerSave =
+      serverSave && typeof serverSave === 'object' && !Array.isArray(serverSave)
+        ? serverSave
+        : null;
+
+    if (!this.inFlightSaveJson || !this.isObservedInFlightRevision(serverSave)) {
+      return false;
+    }
+
+    this.syncAcceptedServerSave = serverSave;
+    this.resolveAcceptedSyncIfReady();
+    return true;
+  }
+
   flush({ force = false } = {}) {
     if (
       !this.readyToSend ||
@@ -236,6 +265,7 @@ export class GameplaySaveSendManager {
     const saveWasHydrated = this.pendingSaveWasHydrated;
     const saveContentKey = this.pendingSaveContentKey;
     const saveBaseServerRevision = this.pendingSaveBaseServerRevision;
+    this.writePendingSaveJournal();
     this.pendingSaveJson = null;
     this.pendingSaveWasHydrated = false;
     this.pendingSaveContentKey = null;
@@ -245,28 +275,27 @@ export class GameplaySaveSendManager {
     this.inFlightSaveContentKey = saveContentKey;
     this.inFlightSaveBaseServerRevision = saveBaseServerRevision;
 
+    this.clearSyncTimer();
+    this.lastSyncStartedAtMs = this.now();
+    const attemptId = this.beginSyncAttempt();
+    const acceptedOutcome = this.createSyncAcceptedOutcome();
+    this.recordLastObservedInFlightRevision();
+
     let syncResult;
     try {
       syncResult = setPlayerGameplaySave({ saveJson });
     } catch (error) {
       this.restoreInFlightSave();
+      this.cancelSyncAttempt('gameplay_save_error');
       this.notifySyncUnhealthy('gameplay_save_error', error);
       return;
     }
 
-    this.clearSyncTimer();
-    this.lastSyncStartedAtMs = this.now();
-    const attemptId = this.beginSyncAttempt();
     let shouldFlush = false;
-    const reducerOutcome = Promise.resolve(syncResult)
-      .then(() => ({ ok: true }))
-      .catch((error) => ({
-        ok: false,
-        reason: 'gameplay_save_error',
-        error,
-      }));
+    const reducerFailureOutcome = this.createReducerFailureOutcome(syncResult);
     const outcomes = [
-      reducerOutcome,
+      acceptedOutcome,
+      reducerFailureOutcome,
       this.createSyncTimeoutOutcome(attemptId),
       this.createSyncCancelOutcome(),
     ].filter(Boolean);
@@ -279,11 +308,12 @@ export class GameplaySaveSendManager {
 
         this.clearSyncTimeout();
         this.resolveSyncCancel = null;
+        this.resolveSyncAccepted = null;
 
         if (outcome?.ok) {
           this.lastSyncedSaveContentKey = this.inFlightSaveContentKey;
           this.lastAcceptedServerRevision = this.getServerRevision(
-            this.parseSaveJson(this.inFlightSaveJson),
+            outcome.serverSave,
           );
 
           if (this.pendingSaveJson) {
@@ -316,6 +346,8 @@ export class GameplaySaveSendManager {
 
         this.syncPromise = null;
         this.resolveSyncCancel = null;
+        this.resolveSyncAccepted = null;
+        this.syncAcceptedServerSave = null;
 
         if (shouldFlush) {
           this.flush();
@@ -363,6 +395,8 @@ export class GameplaySaveSendManager {
     this.syncAttemptId += 1;
     this.clearSyncTimeout();
     this.resolveSyncCancel = null;
+    this.resolveSyncAccepted = null;
+    this.syncAcceptedServerSave = null;
     return this.syncAttemptId;
   }
 
@@ -371,6 +405,8 @@ export class GameplaySaveSendManager {
     this.syncAttemptId += 1;
     this.clearSyncTimeout();
     this.resolveSyncCancel = null;
+    this.resolveSyncAccepted = null;
+    this.syncAcceptedServerSave = null;
     this.syncPromise = null;
 
     if (resolveSyncCancel) {
@@ -403,6 +439,77 @@ export class GameplaySaveSendManager {
     return new Promise((resolve) => {
       this.resolveSyncCancel = resolve;
     });
+  }
+
+  createSyncAcceptedOutcome() {
+    return new Promise((resolve) => {
+      this.resolveSyncAccepted = resolve;
+    });
+  }
+
+  createReducerFailureOutcome(syncResult) {
+    return new Promise((resolve) => {
+      Promise.resolve(syncResult).then(
+        () => {},
+        (error) => {
+          resolve({
+            ok: false,
+            reason: 'gameplay_save_error',
+            error,
+          });
+        },
+      );
+    });
+  }
+
+  resolveAcceptedSyncIfReady() {
+    if (
+      !this.syncAcceptedServerSave ||
+      typeof this.resolveSyncAccepted !== 'function'
+    ) {
+      return false;
+    }
+
+    const resolve = this.resolveSyncAccepted;
+    this.resolveSyncAccepted = null;
+    resolve({
+      ok: true,
+      serverSave: this.syncAcceptedServerSave,
+    });
+    return true;
+  }
+
+  recordLastObservedInFlightRevision() {
+    if (
+      !this.lastObservedServerSave ||
+      !this.isObservedInFlightRevision(this.lastObservedServerSave)
+    ) {
+      return false;
+    }
+
+    this.syncAcceptedServerSave = this.lastObservedServerSave;
+    this.resolveAcceptedSyncIfReady();
+    return true;
+  }
+
+  isObservedInFlightRevision(serverSave) {
+    const inFlightSave = this.parseSaveJson(this.inFlightSaveJson);
+    const clientSaveSessionId = inFlightSave?.clientSaveSessionId;
+    const clientSaveSequence = Number(inFlightSave?.clientSaveSequence);
+
+    if (
+      typeof clientSaveSessionId !== 'string' ||
+      !clientSaveSessionId ||
+      !Number.isSafeInteger(clientSaveSequence) ||
+      clientSaveSequence <= 0
+    ) {
+      return false;
+    }
+
+    return (
+      serverSave?.clientSaveSessionId === clientSaveSessionId &&
+      Number(serverSave?.clientSaveSequence) === clientSaveSequence
+    );
   }
 
   clearSyncTimeout() {

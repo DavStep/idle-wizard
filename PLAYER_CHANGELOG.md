@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.97
+
+- Fixed fresh and reset games starting past Elara's first request, while keeping progressed saves from replaying onto reset accounts.
+- Hardened account sessions and save confirmation so stale or disconnected clients cannot overwrite newer progress.
+- Standardized Market prices to whole coins and corrected the Ledger's hourly price history and trends.
+- Moved the active Elara request and level progress into the top panel so the current objective stays visible across rooms.
+
 ## 0.2.96
 
 - Replaced the old level requirement list with one Elara request at a time, with XP rewards and a progress bar toward the next level.

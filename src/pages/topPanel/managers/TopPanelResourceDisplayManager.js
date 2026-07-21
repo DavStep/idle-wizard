@@ -53,8 +53,13 @@ export class TopPanelResourceDisplayManager {
     this.setText(this.refs.manaRateText ?? this.refs.manaRateValue, formatManaRate(mana.perSecond));
     this.setResourceText(this.refs.coinValue, coinText);
     this.renderContextCurrency(snapshot);
-    this.setText(this.refs.levelValue, level === null ? '' : `level ${level}`);
+    this.setText(this.refs.levelValue, level === null ? '' : String(level));
     this.setHidden(this.refs.levelButton ?? this.refs.levelValue, level === null);
+    this.setAttribute(
+      this.refs.levelButton,
+      'aria-label',
+      level === null ? 'level unavailable' : `level ${level}, open level rewards`,
+    );
   }
 
   renderFrameResources(snapshot) {

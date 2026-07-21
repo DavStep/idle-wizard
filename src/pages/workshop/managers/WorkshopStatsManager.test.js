@@ -91,9 +91,9 @@ describe('WorkshopStatsManager', () => {
     ]);
     expect(getTab(stats, 'coin').rows.map((row) => [row.label, row.status])).toEqual([
       ['npc trade', '12 coin'],
-      ['player trade', '8.5 coin'],
-      ['royalties', '2.5 coin'],
-      ['mana tonic royalties', '2.5 coin'],
+      ['player trade', '9 coin'],
+      ['royalties', '3 coin'],
+      ['mana tonic royalties', '3 coin'],
     ]);
     expect(getTab(stats, 'seeds').rows[1]).toMatchObject({
       itemKey: 'sageSeed',

@@ -65,6 +65,7 @@ function createLifecycle({
     }),
     getNextGameplayTickDelayMs: vi.fn(() => 1000),
     loadPersistenceSave: vi.fn(() => true),
+    resetPersistenceState: vi.fn(() => true),
     savePersistenceSnapshot: vi.fn(),
     savePersistenceSnapshotAndFlush: vi.fn(() => Promise.resolve(true)),
     applyAwayTimerCatchup: vi.fn(),
@@ -805,8 +806,6 @@ describe('AppLifecycleManager', () => {
       freshStartChoiceManager,
       authFacade,
     });
-    lifecycle.gameplayFacade.loadPersistenceSave.mockReturnValueOnce(false);
-
     lifecycle.start();
     await flushPromises();
     await flushPromises();
@@ -815,11 +814,10 @@ describe('AppLifecycleManager', () => {
     expect(authFacade.signInWithGoogle).toHaveBeenCalledTimes(1);
     expect(freshStartChoiceManager.choose).toHaveBeenCalledTimes(1);
     expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
-    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
-      null,
-      lifecycle.ecsFacade,
-    );
-    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayFacade.resetPersistenceState).toHaveBeenCalledTimes(1);
+    expect(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('does not stash a default save before gameplay is mounted', async () => {
@@ -1000,7 +998,9 @@ describe('AppLifecycleManager', () => {
       deviceSave,
       lifecycle.ecsFacade,
     );
-    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+    expect(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('asks before loading fresh gameplay data for an anonymous empty save', async () => {
@@ -1010,8 +1010,6 @@ describe('AppLifecycleManager', () => {
       unmount: vi.fn(),
     };
     const { lifecycle } = createLifecycle({ freshStartChoiceManager });
-    lifecycle.gameplayFacade.loadPersistenceSave.mockReturnValueOnce(false);
-
     await lifecycle.handleGameplaySaveReady({ save: null });
 
     expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
@@ -1023,12 +1021,11 @@ describe('AppLifecycleManager', () => {
     expect(
       lifecycle.onlineGateManager.hide.mock.invocationCallOrder[0],
     ).toBeLessThan(freshStartChoiceManager.choose.mock.invocationCallOrder[0]);
-    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
-      null,
-      lifecycle.ecsFacade,
-    );
+    expect(lifecycle.gameplayFacade.resetPersistenceState).toHaveBeenCalledTimes(1);
     expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
-    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+    expect(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('resets old tutorial progress before loading fresh gameplay data', async () => {
@@ -1043,15 +1040,13 @@ describe('AppLifecycleManager', () => {
       resetTutorialProgress: vi.fn(),
     };
     const { lifecycle } = createLifecycle({ freshStartChoiceManager, pagesFacade });
-    lifecycle.gameplayFacade.loadPersistenceSave.mockReturnValueOnce(false);
-
     await lifecycle.handleGameplaySaveReady({ save: null });
 
     expect(pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
     expect(
       pagesFacade.resetTutorialProgress.mock.invocationCallOrder[0],
     ).toBeLessThan(
-      lifecycle.gameplayFacade.loadPersistenceSave.mock.invocationCallOrder[0],
+      lifecycle.gameplayFacade.resetPersistenceState.mock.invocationCallOrder[0],
     );
   });
 
@@ -1082,10 +1077,7 @@ describe('AppLifecycleManager', () => {
       statusText: 'login cancelled',
       keepOpenOnConnect: true,
     });
-    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
-      null,
-      lifecycle.ecsFacade,
-    );
+    expect(lifecycle.gameplayFacade.resetPersistenceState).toHaveBeenCalledTimes(1);
     expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
   });
 
@@ -1189,6 +1181,55 @@ describe('AppLifecycleManager', () => {
       pendingHydratedSave,
       lifecycle.ecsFacade,
     );
+    expect(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush,
+    ).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats an empty server save as authoritative over stale pending progress', async () => {
+    const pendingHydratedSave = { version: 11, tasks: { currentLevel: 8 } };
+    const enableSaveSending = vi.fn();
+    const { lifecycle } = createLifecycle();
+
+    await lifecycle.handleGameplaySaveReady(
+      { save: null, pendingHydratedSave },
+      { enableSaveSending },
+    );
+
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).not.toHaveBeenCalled();
+    expect(lifecycle.gameplayFacade.resetPersistenceState).toHaveBeenCalledTimes(1);
+    expect(enableSaveSending).toHaveBeenCalledTimes(1);
+    expect(
+      enableSaveSending.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush.mock
+        .invocationCallOrder[0],
+    );
+  });
+
+  it('does not mount fresh gameplay until the baseline save is acknowledged', async () => {
+    let acknowledgeSave = null;
+    const { lifecycle, stage } = createLifecycle();
+    lifecycle.stage = stage;
+    lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          acknowledgeSave = resolve;
+        }),
+    );
+
+    const ready = lifecycle.handleGameplaySaveReady(
+      { save: null },
+      { enableSaveSending: vi.fn() },
+    );
+    await flushPromises();
+
+    expect(lifecycle.pagesFacade.mount).not.toHaveBeenCalled();
+
+    acknowledgeSave(true);
+    await ready;
+
+    expect(lifecycle.pagesFacade.mount).toHaveBeenCalledWith(stage);
   });
 
   it('starts new with an authenticated account that has no gameplay save', async () => {
@@ -1205,18 +1246,15 @@ describe('AppLifecycleManager', () => {
       signInWithGoogle: vi.fn(),
     };
     const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
-    lifecycle.gameplayFacade.loadPersistenceSave.mockReturnValueOnce(false);
-
     await lifecycle.handleGameplaySaveReady({ save: null });
 
     expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
     expect(freshStartChoiceManager.hide).toHaveBeenCalledTimes(1);
     expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
-    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
-      null,
-      lifecycle.ecsFacade,
-    );
-    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayFacade.resetPersistenceState).toHaveBeenCalledTimes(1);
+    expect(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('starts new with a remembered account token that has no gameplay save', async () => {
@@ -1236,18 +1274,15 @@ describe('AppLifecycleManager', () => {
       signInWithGoogle: vi.fn(),
     };
     const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
-    lifecycle.gameplayFacade.loadPersistenceSave.mockReturnValueOnce(false);
-
     await lifecycle.handleGameplaySaveReady({ save: null });
 
     expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
     expect(freshStartChoiceManager.hide).toHaveBeenCalledTimes(1);
     expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
-    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
-      null,
-      lifecycle.ecsFacade,
-    );
-    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayFacade.resetPersistenceState).toHaveBeenCalledTimes(1);
+    expect(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('keeps account-link choices based on the server save when pending local progress exists', async () => {
@@ -1301,11 +1336,42 @@ describe('AppLifecycleManager', () => {
     expect(accountLinkChoiceManager.choose).not.toHaveBeenCalled();
     expect(authFacade.clearPendingAccountLinkSave).toHaveBeenCalledTimes(1);
     expect(lifecycle.pagesFacade.resetTutorialProgress).not.toHaveBeenCalled();
+    expect(lifecycle.gameplayFacade.resetPersistenceState).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
       deviceSave,
       lifecycle.ecsFacade,
     );
-    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+    expect(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush,
+    ).toHaveBeenCalledTimes(2);
+    expect(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush.mock
+        .invocationCallOrder[0],
+    ).toBeLessThan(
+      lifecycle.gameplayFacade.loadPersistenceSave.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('keeps pending device progress until an empty linked account acknowledges it', async () => {
+    const deviceSave = { tasks: { currentLevel: 4 } };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => deviceSave),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({ oidc: { authenticated: true } })),
+    };
+    const { lifecycle } = createLifecycle({ authFacade });
+    lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+
+    await expect(
+      lifecycle.handleGameplaySaveReady({ save: null }),
+    ).rejects.toThrow('Gameplay save was not acknowledged by the server.');
+
+    expect(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush,
+    ).toHaveBeenCalledTimes(2);
+    expect(authFacade.clearPendingAccountLinkSave).not.toHaveBeenCalled();
   });
 
   it('asks before replacing an existing account save even when device save is level 1', async () => {
@@ -1335,7 +1401,9 @@ describe('AppLifecycleManager', () => {
       deviceSave,
       lifecycle.ecsFacade,
     );
-    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+    expect(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('forgets the device save when selected after Google login', async () => {
@@ -1359,7 +1427,9 @@ describe('AppLifecycleManager', () => {
       accountSave,
       lifecycle.ecsFacade,
     );
-    expect(lifecycle.gameplayFacade.savePersistenceSnapshot).toHaveBeenCalledTimes(1);
+    expect(
+      lifecycle.gameplayFacade.savePersistenceSnapshotAndFlush,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the gate up when backend startup fails', async () => {

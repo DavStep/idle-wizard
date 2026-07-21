@@ -48,6 +48,7 @@ import {
 } from '../../src/shared/marketLicence.js';
 
 const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
+const DEFAULT_GAMEPLAY_SAVE_CURRENT_LEVEL = 0;
 const DEFAULT_PLAYER_ICON_MODE = 'icons';
 const DEFAULT_PLAYER_PROGRESS_BAR = 'regular';
 const DEFAULT_PLAYER_PLOT_VIEW = 'boxes';
@@ -7484,11 +7485,13 @@ function validatePlayerShopQuantity(quantity: number): number {
 }
 
 function validatePlayerShopPriceGold(priceGold: bigint | number): number {
+  const inputPriceGold = Number(priceGold);
   const safePriceGold = normalizeGoldPrice(priceGold);
 
   if (
+    !Number.isInteger(inputPriceGold) ||
     safePriceGold === null ||
-    safePriceGold < 0.01 ||
+    safePriceGold < 1 ||
     safePriceGold > MAX_PLAYER_SHOP_PRICE_GOLD
   ) {
     throw new Error('Invalid player shop price.');
@@ -8030,7 +8033,11 @@ function clampNumber(value: number, min: number, max: number): number {
 }
 
 function roundGoldPrice(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
+  if (value === 0) {
+    return 0;
+  }
+
+  return value > 0 ? Math.max(1, Math.ceil(value)) : Math.ceil(value);
 }
 
 function normalizeGoldPrice(value: bigint | number): number | null {
@@ -8087,7 +8094,7 @@ function normalizeNpcMarketBasePriceGold(
 ): number {
   const safeValue = decodeStoredGoldPrice(value, scaleValue);
 
-  if (safeValue === null || safeValue < 0.01 || safeValue > NPC_MARKET_MAX_BASE_PRICE_GOLD) {
+  if (safeValue === null || safeValue < 1 || safeValue > NPC_MARKET_MAX_BASE_PRICE_GOLD) {
     return fallback;
   }
 
@@ -8099,7 +8106,7 @@ function validateNpcMarketBasePriceGold(basePriceGold: bigint | number): number 
 
   if (
     safeBasePriceGold === null ||
-    safeBasePriceGold < 0.01 ||
+    safeBasePriceGold < 1 ||
     safeBasePriceGold > NPC_MARKET_MAX_BASE_PRICE_GOLD
   ) {
     throw new Error('Invalid NPC market base price.');
@@ -11337,7 +11344,10 @@ function getSaveTaskCatalog(ctx: IdleWizardReducerCtx) {
   return {
     levels,
     tasks,
-    initialLevel: levels[0] ?? DEFAULT_PLAYER_LEVEL,
+    initialLevel: Math.max(
+      DEFAULT_GAMEPLAY_SAVE_CURRENT_LEVEL,
+      (levels[0] ?? DEFAULT_PLAYER_LEVEL) - 1,
+    ),
     maxLevel: levels.at(-1) ?? DEFAULT_PLAYER_LEVEL,
   };
 }
@@ -11983,7 +11993,8 @@ function readSavedCurrentLevel(saveJson?: string): number | null {
   try {
     const save = JSON.parse(saveJson);
     const currentLevel = Number(save?.tasks?.currentLevel);
-    return Number.isInteger(currentLevel) && currentLevel >= DEFAULT_PLAYER_LEVEL
+    return Number.isInteger(currentLevel) &&
+      currentLevel >= DEFAULT_GAMEPLAY_SAVE_CURRENT_LEVEL
       ? currentLevel
       : null;
   } catch {
@@ -12160,7 +12171,10 @@ function syncLeaderboardIncomeFromGameplaySave(
 
 function saveJsonHasReplayProgress(saveJson: string): boolean {
   const currentLevel = readSavedCurrentLevel(saveJson);
-  if (currentLevel !== null && currentLevel > DEFAULT_PLAYER_LEVEL) {
+  if (
+    currentLevel !== null &&
+    currentLevel > DEFAULT_GAMEPLAY_SAVE_CURRENT_LEVEL
+  ) {
     return true;
   }
 
@@ -12178,6 +12192,24 @@ function saveJsonHasReplayProgress(saveJson: string): boolean {
     const save: unknown = JSON.parse(saveJson);
     if (!isRecord(save)) {
       return false;
+    }
+
+    const taskState = isRecord(save.tasks) ? save.tasks : {};
+    const savedTasks = Array.isArray(taskState.tasks) ? taskState.tasks : [];
+    if (
+      savedTasks.some((task) => {
+        if (!isRecord(task)) {
+          return false;
+        }
+
+        const progressQuantity = Math.floor(Number(task.progressQuantity));
+        return (
+          task.completed === true ||
+          (Number.isFinite(progressQuantity) && progressQuantity > 0)
+        );
+      })
+    ) {
+      return true;
     }
 
     const inventory = Array.isArray(save.inventory) ? save.inventory : [];
@@ -12238,48 +12270,26 @@ function isPostResetPlayerWithoutAcceptedSave(
   );
 }
 
-function shouldIgnorePostResetFirstSave(
+function shouldRejectPostResetFirstSave(
   ctx: IdleWizardReducerCtx,
   player: ReturnType<typeof ensurePlayer>,
   existingSave: PlayerGameplaySaveRowValue | undefined,
-  safeSaveJson: string,
+  clientSaveJson: string,
 ): boolean {
   return (
     !existingSave &&
     isPostResetPlayerWithoutAcceptedSave(ctx, player) &&
-    saveJsonHasReplayProgress(safeSaveJson)
+    saveJsonHasReplayProgress(clientSaveJson)
   );
 }
 
-function shouldIgnorePostResetReportedLevel(
+function shouldRejectPostResetReportedLevel(
   ctx: IdleWizardReducerCtx,
   player: ReturnType<typeof ensurePlayer>,
   playerLevel: number,
 ): boolean {
   return (
     playerLevel > DEFAULT_PLAYER_LEVEL &&
-    isPostResetPlayerWithoutAcceptedSave(ctx, player)
-  );
-}
-
-function shouldIgnorePostResetReportedGold(
-  ctx: IdleWizardReducerCtx,
-  player: ReturnType<typeof ensurePlayer>,
-  totalGeneratedGold: bigint | number,
-): boolean {
-  const capPlayerLevel = getLeaderboardCapPlayerLevel(
-    ctx,
-    player.identity,
-    player.playerLevel,
-  );
-  const reportedTotalIncome = normalizeReportedLeaderboardTotalIncome(
-    toBigInt(totalGeneratedGold),
-    capPlayerLevel,
-  );
-
-  return (
-    reportedTotalIncome !== null &&
-    reportedTotalIncome > 0n &&
     isPostResetPlayerWithoutAcceptedSave(ctx, player)
   );
 }
@@ -12305,11 +12315,11 @@ function upsertPlayerSession(ctx: IdleWizardReducerCtx) {
 function isActivePlayerSession(ctx: IdleWizardReducerCtx): boolean {
   const connectionId = ctx.connectionId;
   if (!connectionId) {
-    return true;
+    return false;
   }
 
   const session = ctx.db.playerSession.identity.find(ctx.sender);
-  return !session || session.activeConnectionId.isEqual(connectionId);
+  return Boolean(session && session.activeConnectionId.isEqual(connectionId));
 }
 
 function assertActivePlayerSession(
@@ -14712,7 +14722,7 @@ function getNpcMarketSellTotalGold(
   needState: ReturnType<typeof getNpcMarketNeedState>,
   quantity: number,
 ): number {
-  let totalCents = 0;
+  let totalGold = 0;
 
   for (let offset = 0; offset < quantity; offset += 1) {
     const offsetNeed = BigInt(offset);
@@ -14723,10 +14733,10 @@ function getNpcMarketSellTotalGold(
       needState.targetNeed,
       needState.maxNeed,
     );
-    totalCents += Math.round(getNpcBuyPriceGold(marketPriceGold) * 100);
+    totalGold += getNpcBuyPriceGold(marketPriceGold);
   }
 
-  return roundGoldPrice(totalCents / 100);
+  return roundGoldPrice(totalGold);
 }
 
 function getNpcMarketAutoTuneThreshold(targetStock: bigint): bigint {
@@ -18152,6 +18162,10 @@ export const set_player_gameplay_save = spacetimedb.reducer(
     const player = ensurePlayer(ctx);
 
     const existingSave = ctx.db.playerGameplaySave.identity.find(ctx.sender) ?? undefined;
+    if (shouldRejectPostResetFirstSave(ctx, player, existingSave, saveJson)) {
+      throw new Error('Progressed first gameplay save requires an accepted fresh save.');
+    }
+
     let safeSaveJson = mergePreviousResearchProgressIntoSaveJson(
       ctx,
       validatePlayerGameplaySaveJson(
@@ -18167,9 +18181,6 @@ export const set_player_gameplay_save = spacetimedb.reducer(
       safeSaveJson,
       existingSave?.saveJson,
     );
-    if (shouldIgnorePostResetFirstSave(ctx, player, existingSave, safeSaveJson)) {
-      return;
-    }
 
     const allowsRunProgressReset = assertClientSaveDoesNotDowngradeProgress(
       existingSave,
@@ -18209,8 +18220,8 @@ export const set_player_level = spacetimedb.reducer(
     const player = ensurePlayer(ctx, { touchLastSeen: false });
     const safePlayerLevel = normalizePlayerLevel(playerLevel);
 
-    if (shouldIgnorePostResetReportedLevel(ctx, player, safePlayerLevel)) {
-      return;
+    if (shouldRejectPostResetReportedLevel(ctx, player, safePlayerLevel)) {
+      throw new Error('Player level requires an accepted gameplay save.');
     }
 
     if (safePlayerLevel <= player.playerLevel) {
@@ -18248,8 +18259,8 @@ export const announce_level_up = spacetimedb.reducer(
 
     const player = ensurePlayer(ctx);
 
-    if (shouldIgnorePostResetReportedLevel(ctx, player, safePlayerLevel)) {
-      return;
+    if (shouldRejectPostResetReportedLevel(ctx, player, safePlayerLevel)) {
+      throw new Error('Player level requires an accepted gameplay save.');
     }
 
     const alreadyAtLevel = safePlayerLevel <= player.playerLevel;
@@ -18305,8 +18316,8 @@ export const announce_prestige = spacetimedb.reducer(
 
     const player = ensurePlayer(ctx);
 
-    if (shouldIgnorePostResetReportedLevel(ctx, player, safePlayerLevel)) {
-      return;
+    if (shouldRejectPostResetReportedLevel(ctx, player, safePlayerLevel)) {
+      throw new Error('Player level requires an accepted gameplay save.');
     }
 
     const nextPlayer =
@@ -18364,23 +18375,23 @@ export const set_total_generated_gold = spacetimedb.reducer(
       totalGeneratedGold,
       capPlayerLevel,
     );
+    const hasAcceptedGameplaySave = hasAcceptedPlayerGameplaySave(ctx, player.identity);
 
-    if (
-      !hasAcceptedPlayerGameplaySave(ctx, player.identity) &&
-      reportedTotalIncome !== null &&
-      reportedTotalIncome > 0n
-    ) {
-      return;
-    }
+    if (!hasAcceptedGameplaySave) {
+      if (reportedTotalIncome === null) {
+        throw new Error('Invalid generated coin total.');
+      }
 
-    if (shouldIgnorePostResetReportedGold(ctx, player, totalGeneratedGold)) {
-      return;
+      if (reportedTotalIncome > 0n) {
+        throw new Error('Generated coin requires an accepted gameplay save.');
+      }
     }
 
     const rawExistingEntry = ctx.db.leaderboard.identity.find(player.identity);
     if (
       !rawExistingEntry &&
-      (reportedTotalIncome === null || reportedTotalIncome <= 0n) &&
+      reportedTotalIncome !== null &&
+      reportedTotalIncome <= 0n &&
       isPostResetPlayerWithoutAcceptedSave(ctx, player)
     ) {
       return;

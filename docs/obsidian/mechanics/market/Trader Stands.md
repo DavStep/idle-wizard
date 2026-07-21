@@ -23,15 +23,15 @@ verified_on: 2026-07-19
 
 Trader stands automatically sell one selected seed, herb, or potion type on one shared wall-clock cycle aligned to **:00** and **:30**.
 
-| Stand | Player level | Coin cost |
-| ---: | ---: | ---: |
-| 1 | 4 | 0 |
-| 2 | 5 | 50 |
-| 3 | 10 | 150 |
-| 4 | 13 | 400 |
-| 5 | 17 | 1,000 |
+| Market rank | Available stalls |
+| ---: | ---: |
+| ★ | 1 |
+| ★★ | 2 |
+| ★★★ | 3 |
+| ★★★★ | 4 |
+| ★★★★★ | 5 |
 
-- Player level raises the buy cap; the stand must still be purchased.
+- Stalls are granted by the permanent active market licence; there is no stand purchase.
 - A stand can sell **all** available matching items or a fixed remaining quantity.
 - Changing a selected item or marked quantity does not reset the shared timer.
 - Each eligible stand attempts its sale every cycle.
@@ -39,12 +39,10 @@ Trader stands automatically sell one selected seed, herb, or potion type on one 
 - Backend need must be above zero.
 - See [[mechanics/market/Sellable Quantity|Sellable Quantity]] for reservations.
 
-> [!warning] Runtime config
-> The backend shop row currently uses a legacy key rejected by the client, so these are the effective client fallback costs and timing. See [[mechanics/market/Market Runtime Config|Market Runtime Config]].
+Legacy saves may contain assignments in higher slots. Those records stay saved but inactive until the matching rank returns.
 
 ## Source of truth
 
 - `src/gameplay/shop/managers/ShopAutoSellManager.js`
 - `src/gameplay/shop/managers/ShopBalanceManager.js`
 - `src/gameplay/playerLevel/player-level-balance.json`
-

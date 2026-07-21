@@ -20,6 +20,13 @@ function findRuleBody(pattern, predicate) {
 }
 
 describe('base styles', () => {
+  it('opens the Garden in its settled state without a page-entry animation', () => {
+    const gardenPageRule = getRuleBody(/\.garden-page\s*\{(?<body>[^}]*)\}/);
+
+    expect(gardenPageRule).toContain('position: absolute;');
+    expect(gardenPageRule).not.toContain('animation:');
+  });
+
   it('uses stroked box and dialog titles only in the root fallback', () => {
     const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
     const nonWhiteThemeRule = getRuleBody(

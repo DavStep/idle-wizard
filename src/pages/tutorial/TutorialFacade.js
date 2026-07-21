@@ -352,6 +352,14 @@ export class TutorialFacade {
 
     this.revealManager.update(viewState);
 
+    if (viewState.kind === 'quest') {
+      this.clearRequestedTargetGuidance();
+      this.cancelAutoAdvance();
+      this.saleManager.cancel();
+      this.hintManager.hide();
+      return;
+    }
+
     if (viewState.kind === 'lesson') {
       if (this.applyAutoPage(viewState.step)) {
         return;

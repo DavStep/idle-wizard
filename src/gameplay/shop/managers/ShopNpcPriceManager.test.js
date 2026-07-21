@@ -120,14 +120,14 @@ describe('ShopNpcPriceManager', () => {
     expect(releasePrices).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps decimal NPC buy prices to cents', () => {
+  it('normalizes NPC buy prices to whole coin', () => {
     const manager = new ShopNpcPriceManager({
       npcMarketFacade: {
         getNpcBuyPriceCoin: () => 0.805,
       },
     });
 
-    expect(manager.getNpcBuyPriceCoin(sageSeed)).toBe(0.81);
+    expect(manager.getNpcBuyPriceCoin(sageSeed)).toBe(1);
   });
 
   it('uses backend NPC need when available', () => {

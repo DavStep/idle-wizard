@@ -53,8 +53,8 @@ describe('ShopMarketLedgerManager', () => {
               sellNeed: 7,
               stock: 4,
               priceHistory: [
-                { marketPriceCoin: 8, updatedAtMs: 1 },
-                { marketPriceCoin: 9, updatedAtMs: 2 },
+                { hourKey: '7', marketPriceCoin: 8, updatedAtMs: 7 * 3_600_000 },
+                { hourKey: '9', marketPriceCoin: 9, updatedAtMs: 9 * 3_600_000 },
               ],
             },
             {
@@ -71,12 +71,28 @@ describe('ShopMarketLedgerManager', () => {
                 rank: 5,
               },
             },
+            {
+              itemTypeId: 101,
+              key: 'sage',
+              label: 'sage',
+              kind: 'herb',
+              researched: true,
+              quantity: 2,
+              tradedHere: true,
+              marketPriceCoin: 15,
+              sellCoin: 12,
+              buyCoin: 18,
+              sellNeed: 3,
+              stock: 2,
+              priceHistory: [],
+            },
           ],
         },
       },
     };
     const manager = new ShopMarketLedgerManager({
       gameplayFacade: createGameplayFacade(snapshot),
+      now: () => 10 * 3_600_000,
     });
 
     manager.mount({ buttonParent, popupParent });
@@ -100,7 +116,7 @@ describe('ShopMarketLedgerManager', () => {
 
     const rows = [...popup.querySelectorAll('.shop-page__ledger-item-row')];
     expect(rows[0].textContent).toContain('sage seed');
-    expect(rows[0].textContent).toContain('↑ +2 coin / 2h');
+    expect(rows[0].textContent).toContain('↑ +2 coin / 3h');
     expect(rows[1].textContent).toContain('not traded');
     expect(rows[1].textContent).toContain('arcane exchange ★★★★★');
 
@@ -112,7 +128,13 @@ describe('ShopMarketLedgerManager', () => {
       [...popup.querySelectorAll('.shop-page__ledger-history > div')].map(
         (cell) => cell.textContent,
       ),
-    ).toEqual(['now10 coin', '1h9 coin', '2h8 coin', '3h—']);
+    ).toEqual(['now10 coin', '1h9 coin', '2h—', '3h8 coin']);
+
+    popup.querySelector('[role="tab"]:nth-child(2)')?.click();
+    expect(rows[0].hidden).toBe(true);
+    const herbRow = popup.querySelector('[data-shop-ledger-item-key="sage"]');
+    expect(herbRow?.hidden).toBe(false);
+    expect(herbRow?.textContent).toContain('sage');
 
     manager.unmount();
   });

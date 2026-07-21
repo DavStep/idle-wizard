@@ -28,7 +28,8 @@ only after paying the level completion coin cost.
 ## Effects
 
 Player level controls mana cap, mana regen, crystal reward, and buy caps for
-garden tiles, cauldrons, NPC market stands, and player market stands.
+garden tiles and cauldrons. Prestige market rank controls market stalls and
+which item grades local traders accept.
 
 ## Related
 

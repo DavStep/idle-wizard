@@ -31,6 +31,9 @@ Before claiming live browser QA:
    - Capture authored mobile surface `1080x2170`.
    - Capture a fitted desktop viewport.
    - Verify no text overlap, clipping, off-stage popup, incorrect source scale, or room chrome collision.
+   - For a changed surface, also capture a native-pixel close crop and inspect it at `100%`; a downscaled full-screen screenshot can hide baseline, optical-center, and one-source-pixel errors.
+   - When a visual reference exists, follow `docs/visual-reference-qa.md` and generate `npm run ui:compare` side-by-side/overlay evidence from equivalent semantic crops.
+   - Record component-specific parity: icon/text optical centers, text baselines, visible-alpha edge anchors, proportions, and detailed progress-rail geometry when applicable.
    - If no relevant screenshot or visual baseline exists, report `INCONCLUSIVE`, not `PASS`.
 
 3. Interaction:
@@ -45,6 +48,7 @@ Before claiming live browser QA:
 5. Report:
    - Include URL, viewport(s), runtime status, smoke result, interaction result, screenshot evidence, and verdict.
    - Verdicts: `PASS`, `FIX REQUIRED`, or `INCONCLUSIVE`.
+   - Any explicit reference-contract mismatch forces `FIX REQUIRED`, even when tests and the full-screen smoke are green.
 
 ## Report Shape
 

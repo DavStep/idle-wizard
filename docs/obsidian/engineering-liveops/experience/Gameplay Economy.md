@@ -102,11 +102,13 @@ experience_type: gameplay-economy
 - Player market server listings own market quantity, while local gameplay owns inventory and coin changes after reducer success.
 - Player market listing prices should use only global sanity caps and trade-total limits; do not cap by item base price multiplier, because cheap seeds need arbitrary player-set prices.
 - Player market publishing depends on `ENABLE_PLAYER_SHOP_EXCHANGE`; when false, server reducers throw and the UI shows `listing failed`.
-- Market page uses visible `trader market` / `player market` / `crystals` tabs; legacy internal NPC tab id can remain `npm`.
+- Market page uses visible `traders` / `players` / `crystals` tabs; legacy internal NPC tab id can remain `npm`.
 - Crystal tab coin offer grants current level * 20 coin only on manual collect, then starts a 2h cooldown; offline time can clear cooldown but must not auto-claim coin; ready state owns Market/crystals notification dots.
 - Player market requests publish to backend request rows for public `buying` visibility; fulfillment is still not a server trade without escrow/delivery semantics.
 - Player market request item pickers should source catalog/inventory snapshots, not NPC price or sell rows.
-- Player market requests use local numbered slots that follow player market stand unlock state.
+- NPC stalls and player listing/request slots equal active market rank; keep inaccessible legacy slot data saved but inactive.
+- Market item grades gate NPC sell/buy and player listings/requests alike; never let player trading bypass the active licence catalogue.
+- Hourly price history is backend-authored per market and item; the ledger may show missing points but must not fabricate them.
 - Player market request data is local gameplay-save state mirrored to backend request rows; local saves still preserve own slots across reload/server restart.
 - Player market browse dialog groups listings by seller and lets buyers choose quantity per listing before buying.
 - Garden plot is a compact world of plot boxes, not a bordered `plots` panel or row-view toggle; show open plots plus only the next buy slot, with no future locked summary.

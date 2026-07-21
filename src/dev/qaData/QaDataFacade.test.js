@@ -126,6 +126,67 @@ describe('QaDataFacade', () => {
     expect(savePersistenceSnapshotAndFlush).toHaveBeenCalledTimes(1);
   });
 
+  it('persists high-level templates through each server-accepted level step', async () => {
+    let currentLevel = 18;
+    const loadedTotalGenerated = [];
+    const loadPersistenceSave = vi.fn((save) => {
+      currentLevel = save.tasks.currentLevel;
+      loadedTotalGenerated.push(save.coin.totalGenerated);
+      save.coin.totalGenerated -= 1;
+      return true;
+    });
+    const savePersistenceSnapshotAndFlush = vi.fn(() => Promise.resolve(true));
+    const gameplayFacade = {
+      loadPersistenceSave,
+      savePersistenceSnapshotAndFlush,
+      getSnapshot: () => ({ tasks: { currentLevel } }),
+    };
+    const manifest = {
+      templates: [
+        {
+          id: 'aloofbaker2',
+          label: 'Aloofbaker2 (level 20)',
+          level: 20,
+          path: '/qa-data/templates/aloofbaker2.json',
+        },
+      ],
+    };
+    const template = {
+      save: {
+        version: 7,
+        coin: { current: 50, totalGenerated: 100 },
+        tasks: {
+          currentLevel: 20,
+          tasks: [{ taskId: 'level21-task', progressQuantity: 0 }],
+        },
+      },
+    };
+    const facade = new QaDataFacade({
+      templateManager: new QaDataTemplateManager({
+        gameplayFacade,
+        fetchFn: createFetch({
+          manifest,
+          templates: {
+            '/qa-data/templates/aloofbaker2.json': template,
+          },
+        }),
+        now: () => 500,
+      }),
+    });
+
+    await expect(facade.loadTemplate('Aloofbaker2')).resolves.toMatchObject({
+      ok: true,
+      template: 'aloofbaker2',
+      level: 20,
+    });
+    expect(loadPersistenceSave.mock.calls.map(([save]) => save.tasks.currentLevel)).toEqual([
+      19,
+      20,
+    ]);
+    expect(savePersistenceSnapshotAndFlush).toHaveBeenCalledTimes(2);
+    expect(loadedTotalGenerated).toEqual([100, 100]);
+  });
+
   it('rejects template paths outside the local QA data directory', async () => {
     const facade = new QaDataFacade({
       templateManager: new QaDataTemplateManager({

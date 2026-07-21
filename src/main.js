@@ -26,6 +26,7 @@ if (!redirectMobileOidcCallbackToApp()) {
   const app = new AppFacade({ root });
   let devCheatsFacade = null;
   let tutorialCaptureFacade = null;
+  let uiEditorFacade = null;
   let disposed = false;
 
   app.start();
@@ -54,11 +55,26 @@ if (!redirectMobileOidcCallbackToApp()) {
     );
   }
 
+  if (
+    import.meta.env.DEV &&
+    import.meta.env.VITE_ENABLE_UI_EDITOR === 'true'
+  ) {
+    void import('./dev/uiEditor/UiEditorFacade.js').then(({ UiEditorFacade }) => {
+      if (disposed) {
+        return;
+      }
+
+      uiEditorFacade = new UiEditorFacade({ app });
+      uiEditorFacade.mount();
+    });
+  }
+
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       disposed = true;
       devCheatsFacade?.unmount();
       tutorialCaptureFacade?.unmount();
+      uiEditorFacade?.unmount();
       app.stop();
     });
   }

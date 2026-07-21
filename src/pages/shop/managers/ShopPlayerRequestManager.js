@@ -177,10 +177,10 @@ export class ShopPlayerRequestManager {
 
     this.refs.quantityField = this.createQuantityField();
     this.refs.coinField = this.createNumberField('coin each', 'Coin offered per item');
-    this.refs.coinField.input.inputMode = 'decimal';
-    this.refs.coinField.input.min = '0.01';
+    this.refs.coinField.input.inputMode = 'numeric';
+    this.refs.coinField.input.min = '1';
     this.refs.coinField.input.max = String(PLAYER_MARKET_MAX_PRICE_COIN);
-    this.refs.coinField.input.step = '0.01';
+    this.refs.coinField.input.step = '1';
     this.refs.itemPicker = this.createItemPicker();
     this.refs.itemTabs = this.createItemTabs();
 

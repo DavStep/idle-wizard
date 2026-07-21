@@ -39,6 +39,7 @@ Quotes follow a soft pressure curve around `npcNeed / targetNeed`. Each [[mechan
 - Demand resets at the anchored Monday weekly boundary.
 - There is no current scheduled market-tick table; recovery is computed from elapsed time.
 - Auto-tuning starts after at least `max(5% of target, 10)` traded units and moves base price by at most 2.5% per tuning window.
+- Successful buys and sells update an hourly per-market, per-item snapshot; the latest four rows feed the Market Ledger's `now` through `3h` history.
 
 Actual item payouts are dynamic. Item `baseSellPrice` is only the pre-level-4 local value and a reference point.
 
@@ -47,4 +48,3 @@ Actual item payouts are dynamic. Item `baseSellPrice` is only the pre-level-4 lo
 - `src/gameplay/shop/managers/npcMarketPricing.js`
 - `src/backend/npcMarket/`
 - `spacetimedb/src/index.ts`
-

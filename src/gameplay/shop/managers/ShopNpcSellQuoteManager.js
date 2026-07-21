@@ -112,7 +112,7 @@ export class ShopNpcSellQuoteManager {
       return multiplyCoinPrice(fallbackPriceCoin, quantity);
     }
 
-    let totalCents = 0;
+    let totalPriceCoin = 0;
 
     for (let offset = 0; offset < quantity; offset += 1) {
       const marketPriceCoin = getNpcMarketPriceFromNeed({
@@ -128,9 +128,9 @@ export class ShopNpcSellQuoteManager {
         return multiplyCoinPrice(fallbackPriceCoin, quantity);
       }
 
-      totalCents += Math.round(unitPriceCoin * 100);
+      totalPriceCoin += unitPriceCoin;
     }
 
-    return normalizeCoinPrice(totalCents / 100);
+    return normalizeCoinPrice(totalPriceCoin);
   }
 }

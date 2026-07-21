@@ -1,5 +1,3 @@
-export const MAIN_QUEST_XP_REWARD = 20;
-
 export class TaskQuestProgressManager {
   getSnapshot({
     currentLevel,
@@ -14,15 +12,10 @@ export class TaskQuestProgressManager {
     const hasLevelUpQuest = !atMaxLevel;
     const totalQuests = taskQuestCount + (hasLevelUpQuest ? 1 : 0);
     const completedQuests = tasks.filter((task) => task.completed).length;
-    const requiredXp = totalQuests * MAIN_QUEST_XP_REWARD;
-    const currentXp = completedQuests * MAIN_QUEST_XP_REWARD;
     const targetLevel = atMaxLevel ? currentLevel : currentLevel + 1;
 
     return {
-      currentXp,
-      requiredXp,
-      progress: requiredXp > 0 ? currentXp / requiredXp : 1,
-      xpPerQuest: MAIN_QUEST_XP_REWARD,
+      progress: totalQuests > 0 ? completedQuests / totalQuests : 1,
       completedQuests,
       totalQuests,
       targetLevel,
@@ -41,7 +34,6 @@ export class TaskQuestProgressManager {
       return {
         kind: 'task',
         taskId: activeTask.taskId,
-        xpReward: MAIN_QUEST_XP_REWARD,
       };
     }
 
@@ -51,7 +43,6 @@ export class TaskQuestProgressManager {
         taskId: `level-${currentLevel}-level-up`,
         targetLevel,
         costCoin: completion.costCoin,
-        xpReward: MAIN_QUEST_XP_REWARD,
       };
     }
 

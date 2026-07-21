@@ -154,17 +154,13 @@ function createGameplayFacadeFake() {
           canComplete: false,
         },
         questProgress: {
-          currentXp: 0,
-          requiredXp: 40,
           progress: 0,
-          xpPerQuest: 20,
           completedQuests: 0,
           totalQuests: 2,
           targetLevel: 2,
           activeQuest: {
             kind: 'task',
             taskId: 'level1-turn-in-sage-seed',
-            xpReward: 20,
           },
         },
         tasks: [
@@ -217,8 +213,6 @@ function createGameplayFacadeFake() {
           effects: [
             'max garden tiles 2',
             'max cauldrons 1',
-            'max trader market stands 1',
-            'max player market stands 1',
             'max mana cap 50',
             'mana regen 1/sec',
           ],
@@ -255,8 +249,6 @@ function createGameplayFacadeFake() {
             manaPerSecond: 3,
           },
           effects: [
-            'max trader market stands 2',
-            'max player market stands 2',
             'max mana cap 150',
             'mana regen 3/sec',
             'crystal reward 1',
@@ -3778,6 +3770,9 @@ describe('PagesFacade', () => {
     expect(topPanel.children[0]?.className).toBe('room-top-panel__avatar-button');
     expect(topPanel.children[1]?.className).toBe('room-top-panel__identity-row');
     expect(topPanel.children[2]?.classList.contains('room-top-panel__resources')).toBe(true);
+    expect(topPanel.children[3]?.classList.contains('room-top-panel__quest-progress')).toBe(
+      true,
+    );
     expect(
       topPanel.querySelector('.room-top-panel__identity-row .room-top-panel__username')
         ?.textContent,
@@ -3815,7 +3810,9 @@ describe('PagesFacade', () => {
         .querySelector('[data-tutorial-id="top:mana:regen"]')
         ?.getAttribute('data-tutorial-highlight-shape'),
     ).toBeNull();
-    expect(topPanel.querySelector('.room-top-panel__resources')?.textContent).toContain('0 coin');
+    expect(topPanel.querySelector('.room-top-panel__identity-row')?.textContent).toContain(
+      '0 coin',
+    );
     expect(
       topPanel
         .querySelector('.room-top-panel__resources')
@@ -4107,8 +4104,8 @@ describe('PagesFacade', () => {
     const coin = stage.querySelector('.room-top-panel__resource[aria-label="coin"]');
     const value = coin?.querySelector('.room-top-panel__resource-val');
 
-    expect(coin?.textContent).toBe('308.33 coin');
-    expect(value?.textContent).toBe('308.33 coin');
+    expect(coin?.textContent).toBe('309 coin');
+    expect(value?.textContent).toBe('309 coin');
     expect(coin?.querySelector('.room-top-panel__resource-key')).toBeNull();
   });
 
@@ -4624,7 +4621,8 @@ describe('PagesFacade', () => {
     const levelButton = stage.querySelector('.room-top-panel__level');
     const levelPopup = stage.querySelector('.room-top-panel__level-popup');
 
-    expect(levelButton?.textContent).toBe('level 1');
+    expect(levelButton?.textContent).toBe('1');
+    expect(levelButton?.getAttribute('aria-label')).toBe('level 1, open level rewards');
     expect(levelPopup?.hidden).toBe(true);
 
     levelButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -4701,8 +4699,6 @@ describe('PagesFacade', () => {
     const [level3TotalRow] = levelPopup.querySelectorAll(
       '.room-top-panel__level-total-rows .room-top-panel__level-effect-row',
     );
-    expect(level3AddedText).toContain('trader stands+1');
-    expect(level3AddedText).toContain('player stands+1');
     expect(level3AddedText).toContain('mana capacity+50 mana');
     expect(level3AddedText).toContain('bonus+1 crystal');
     expect(level3TotalRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
@@ -4719,7 +4715,7 @@ describe('PagesFacade', () => {
     expect(levelPopup.hidden).toBe(true);
   });
 
-  it("shows one active elara request with its xp reward and level progress", () => {
+  it("shows one active elara request with segmented top-panel level progress", () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
       gameplayFacade: createGameplayFacadeFake(),
@@ -4733,16 +4729,15 @@ describe('PagesFacade', () => {
     const summary = stage.querySelector('.workshop-page__tasks-summary');
     const infoPopup = stage.querySelector('.workshop-page__tasks-info-popup');
     const backdrop = stage.querySelector('.workshop-page__tasks-backdrop');
-    const count = stage.querySelector('.workshop-page__tasks-count');
     const pinButton = stage.querySelector('.workshop-page__tasks-pin');
     const toggle = stage.querySelector('.workshop-page__tasks-toggle');
     const list = stage.querySelector('.workshop-page__task-list');
     const summaryRow = summary?.querySelector('.workshop-page__task-row');
     const rewards = stage.querySelector('.workshop-page__level-rewards');
     const rewardsToggle = stage.querySelector('.workshop-page__level-rewards-toggle');
-    const xpValue = stage.querySelector('.workshop-page__quest-progress-value');
-    const xpFill = stage.querySelector('.workshop-page__quest-progress-fill');
-    const xpReward = stage.querySelector('.workshop-page__quest-reward');
+    const questText = stage.querySelector('.room-top-panel__quest-progress-text');
+    const questRail = stage.querySelector('.room-top-panel__quest-progress-rail');
+    const questSegments = stage.querySelectorAll('.room-top-panel__quest-segment');
 
     expect(tasks).not.toBeNull();
     expect(tasks.parentElement?.classList.contains('workshop-page__tasks-slot')).toBe(true);
@@ -4758,10 +4753,12 @@ describe('PagesFacade', () => {
       summary?.querySelector('.workshop-page__task-progress-fill')?.style.width,
     ).toBe('0%');
     expect(stage.querySelector('.workshop-page__tasks-level')).toBeNull();
-    expect(count?.textContent).toBe('level 2');
-    expect(xpValue?.textContent).toBe('0/40 xp');
-    expect(xpFill?.style.getPropertyValue('--style-progress-fill-scale')).toBe('0');
-    expect(xpReward?.textContent).toBe('reward: 20 xp');
+    expect(stage.querySelector('.workshop-page__tasks-count')).toBeNull();
+    expect(questText?.textContent).toBe('Complete 2 more quests to level up');
+    expect(questRail?.getAttribute('aria-valuenow')).toBe('0');
+    expect(questRail?.getAttribute('aria-valuemax')).toBe('2');
+    expect(questSegments).toHaveLength(2);
+    expect(stage.querySelector('.workshop-page__quest-reward')).toBeNull();
     expect(tasks?.dataset.questMode).toBe('sequential');
     expect(tasks?.dataset.tutorialId).toBe('workshop:tasks');
     expect(tasks?.getAttribute('aria-expanded')).toBe('true');
@@ -4786,7 +4783,7 @@ describe('PagesFacade', () => {
 
     expect(infoPopup.hidden).toBe(false);
     expect(infoPopup.querySelector('.workshop-page__tasks-info-copy')?.textContent).toBe(
-      "complete elara's requests one at a time to reach level 2. each request gives xp. turn-in requests consume items.",
+      "complete elara's requests one at a time to reach level 2. each request fills one level segment. turn-in requests consume items.",
     );
 
     infoPopup
@@ -4932,10 +4929,7 @@ describe('PagesFacade', () => {
       canComplete: true,
     };
     snapshot.tasks.level.questProgress = {
-      currentXp: 20,
-      requiredXp: 40,
       progress: 0.5,
-      xpPerQuest: 20,
       completedQuests: 1,
       totalQuests: 2,
       targetLevel: 2,
@@ -4944,7 +4938,6 @@ describe('PagesFacade', () => {
         taskId: 'level-1-level-up',
         targetLevel: 2,
         costCoin: 0,
-        xpReward: 20,
       },
     };
     snapshot.tasks.level.tasks = snapshot.tasks.level.tasks.map((task) => ({
@@ -4971,15 +4964,17 @@ describe('PagesFacade', () => {
     const completion = stage.querySelector('.workshop-page__level-complete');
     const button = stage.querySelector('.workshop-page__level-complete-button');
     const rewards = stage.querySelector('.workshop-page__level-rewards');
-    const xpValue = stage.querySelector('.workshop-page__quest-progress-value');
-    const xpFill = stage.querySelector('.workshop-page__quest-progress-fill');
-    const xpReward = stage.querySelector('.workshop-page__quest-reward');
+    const questText = stage.querySelector('.room-top-panel__quest-progress-text');
+    const questRail = stage.querySelector('.room-top-panel__quest-progress-rail');
+    const questSegments = stage.querySelectorAll('.room-top-panel__quest-segment');
 
     expect(completion?.hidden).toBe(false);
     expect(rewards?.hidden).toBe(true);
-    expect(xpValue?.textContent).toBe('20/40 xp');
-    expect(xpFill?.style.getPropertyValue('--style-progress-fill-scale')).toBe('0.5');
-    expect(xpReward?.textContent).toBe('reward: 20 xp');
+    expect(questText?.textContent).toBe('Complete 1 more quest to level up');
+    expect(questRail?.getAttribute('aria-valuenow')).toBe('1');
+    expect(questSegments).toHaveLength(2);
+    expect(questSegments[0]?.classList.contains('is-complete')).toBe(true);
+    expect(stage.querySelector('.workshop-page__quest-reward')).toBeNull();
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
     expect(button?.textContent).toBe('reach level 2free');
     expect(button?.disabled).toBe(false);
@@ -8434,7 +8429,7 @@ describe('PagesFacade', () => {
       discoveredRow?.querySelector('.workshop-page__discovery-potion-name')?.textContent,
     ).toBe('silverleaf quiet');
     expect(discoveredRow?.querySelector('.workshop-page__discovery-royalties')?.textContent).toBe(
-      'royalties 12.5 coin',
+      'royalties 13 coin',
     );
     expect(discoveredRow?.textContent).toContain('- 1 mint');
     expect(discoveredRow?.textContent).toContain('34 mana required');
@@ -12326,14 +12321,14 @@ describe('PagesFacade', () => {
     const [requestQuantityInput, requestCoinInput] =
       requestPopup.querySelectorAll('.shop-page__request-input');
     requestQuantityInput.value = '3';
-    requestCoinInput.value = '2.5';
+    requestCoinInput.value = '3';
     requestPopup
       .querySelector('.shop-page__request-place-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(requestPopup.hidden).toBe(true);
     expect(stage.querySelector('.shop-page__player-request')?.textContent).toContain(
-      '1.sage seed (3) 2.5 coin',
+      '1.sage seed (3) 3 coin',
     );
 
     expect(stage.querySelector('.shop-page__player-shelf')?.textContent).toContain(
@@ -12431,6 +12426,27 @@ describe('PagesFacade', () => {
 
     expect(gameplayFacade.getSnapshot().coin.current).toBe(9);
     expect(claimProceedsButton.hidden).toBe(true);
+  });
+
+  it('suppresses the tutorial dimmer only while the top-panel preview is active', () => {
+    const stage = document.createElement('main');
+    const setQuestProgressPreview = vi.fn(() => ({ ok: true }));
+    const pagesFacade = Object.create(PagesFacade.prototype);
+    pagesFacade.stage = stage;
+    pagesFacade.topPanelFacade = { setQuestProgressPreview };
+
+    pagesFacade.setTopPanelQuestProgressPreview({ completedQuests: 1, totalQuests: 4 });
+
+    expect(stage.hasAttribute('data-dev-top-panel-preview')).toBe(true);
+    expect(setQuestProgressPreview).toHaveBeenLastCalledWith({
+      completedQuests: 1,
+      totalQuests: 4,
+    });
+
+    pagesFacade.setTopPanelQuestProgressPreview(null);
+
+    expect(stage.hasAttribute('data-dev-top-panel-preview')).toBe(false);
+    expect(setQuestProgressPreview).toHaveBeenLastCalledWith(null);
   });
 
 });

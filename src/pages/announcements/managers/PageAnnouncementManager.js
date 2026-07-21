@@ -4,7 +4,7 @@ import {
 } from '../../../assets/atlas/atlasSprite.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 import { createSeedPackIcon, getSeedIconFrameName } from '../../../assets/items/seeds/seedIcons.js';
-import { formatCoinPriceText } from '../../../shared/coinPrice.js';
+import { formatCoinPriceText, normalizeCoinPrice } from '../../../shared/coinPrice.js';
 import { appendTextWithItemIcons } from '../../shared/itemIconLabel.js';
 import { createPageIcon } from '../../shared/pageIcons.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
@@ -898,7 +898,7 @@ export class PageAnnouncementManager {
   }
 
   getPositiveCoin(value) {
-    const coin = Math.round((Number(value) || 0) * 100) / 100;
+    const coin = normalizeCoinPrice(value) ?? 0;
     return coin > 0 ? coin : 0;
   }
 

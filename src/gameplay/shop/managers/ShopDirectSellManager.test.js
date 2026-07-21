@@ -86,17 +86,17 @@ describe('ShopDirectSellManager', () => {
     await expect(manager.sellItem({ itemTypeId: 1, quantity: 2 })).resolves.toMatchObject({
       ok: true,
       quantity: 2,
-      priceCoin: 0.64,
-      totalPriceCoin: 1.24,
+      priceCoin: 1,
+      totalPriceCoin: 2,
       fastSellPercent: 80,
     });
     expect(recordSellToNpc).toHaveBeenCalledWith(sageSeed, 2);
     expect(removeItem).toHaveBeenCalledWith(1, 2);
-    expect(addCoin).toHaveBeenCalledWith(1.24);
+    expect(addCoin).toHaveBeenCalledWith(2);
     expect(onItemSold).toHaveBeenCalledWith(
       expect.objectContaining({
         item: sageSeed,
-        coin: 1.24,
+        coin: 2,
         quantity: 2,
         source: 'direct_sell',
       }),

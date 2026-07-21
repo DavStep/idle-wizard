@@ -70,20 +70,30 @@ export class QaDataTemplateManager {
     }
 
     const loadSave = refreshSavedAt ? { ...save, savedAt: this.now() } : save;
-    const loaded = this.gameplayFacade.loadPersistenceSave(loadSave);
+    const currentLevel = this.readCurrentLevel();
+    const progressionSaves = this.createProgressionSaves(loadSave, currentLevel);
+    let saved = false;
 
-    if (!loaded) {
-      return {
-        ok: false,
-        reason: 'template_load_failed',
-        template: templateEntry.id,
-      };
+    for (const progressionSave of progressionSaves) {
+      const loaded = this.gameplayFacade.loadPersistenceSave(progressionSave);
+
+      if (!loaded) {
+        return {
+          ok: false,
+          reason: 'template_load_failed',
+          template: templateEntry.id,
+        };
+      }
+
+      saved = await Promise.resolve(
+        this.gameplayFacade.savePersistenceSnapshotAndFlush?.() ??
+          this.gameplayFacade.savePersistenceSnapshot?.(),
+      );
+
+      if (!saved) {
+        break;
+      }
     }
-
-    const saved = await Promise.resolve(
-      this.gameplayFacade.savePersistenceSnapshotAndFlush?.() ??
-        this.gameplayFacade.savePersistenceSnapshot?.(),
-    );
 
     return {
       ok: Boolean(saved),
@@ -95,6 +105,53 @@ export class QaDataTemplateManager {
       username: templateEntry.username ?? null,
       snapshot: this.gameplayFacade.getSnapshot?.(),
     };
+  }
+
+  createProgressionSaves(save, currentLevel) {
+    const targetLevel = this.readSaveLevel(save);
+
+    if (
+      currentLevel === null ||
+      targetLevel === null ||
+      targetLevel <= currentLevel + 1
+    ) {
+      return [save];
+    }
+
+    return Array.from(
+      { length: targetLevel - currentLevel },
+      (_, index) => {
+        const level = currentLevel + index + 1;
+        const progressionSave = this.cloneSave(save);
+
+        return level === targetLevel
+          ? progressionSave
+          : {
+              ...progressionSave,
+              tasks: {
+                ...progressionSave.tasks,
+                currentLevel: level,
+              },
+            };
+      },
+    );
+  }
+
+  cloneSave(save) {
+    return JSON.parse(JSON.stringify(save));
+  }
+
+  readCurrentLevel() {
+    return this.readLevel(this.gameplayFacade.getSnapshot?.()?.tasks?.currentLevel);
+  }
+
+  readSaveLevel(save) {
+    return this.readLevel(save?.tasks?.currentLevel);
+  }
+
+  readLevel(value) {
+    const level = Number(value);
+    return Number.isInteger(level) && level >= 0 ? level : null;
   }
 
   async loadManifest() {

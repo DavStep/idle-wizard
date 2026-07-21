@@ -56,7 +56,6 @@ export class GameplaySaveManager {
   }
 
   createSave() {
-    const coin = this.coinFacade.getSnapshot();
     this.clientSaveSequence += 1;
 
     return {
@@ -64,6 +63,14 @@ export class GameplaySaveManager {
       savedAt: this.now(),
       clientSaveSessionId: this.clientSaveSessionId,
       clientSaveSequence: this.clientSaveSequence,
+      ...this.createRuntimeSnapshot(),
+    };
+  }
+
+  createRuntimeSnapshot() {
+    const coin = this.coinFacade.getSnapshot();
+
+    return {
       mana: this.manaFacade.getSnapshot(),
       coin,
       gold: coin,

@@ -26,6 +26,41 @@ function createTaskCatalog(): SaveTaskCatalog {
 }
 
 describe('normalizeSaveTasks', () => {
+  it('keeps the authoritative fresh baseline at level 0 before level 1 tasks', () => {
+    const taskCatalog = {
+      ...createTaskCatalog(),
+      initialLevel: 0,
+    };
+
+    expect(
+      normalizeSaveTasks(
+        {
+          currentLevel: 0,
+          tasks: [],
+        },
+        taskCatalog,
+        null,
+      ),
+    ).toEqual({
+      currentLevel: 0,
+      tasks: [],
+    });
+
+    expect(
+      normalizeSaveTasks(
+        {
+          currentLevel: 1,
+          tasks: [],
+        },
+        taskCatalog,
+        0,
+      ),
+    ).toEqual({
+      currentLevel: 1,
+      tasks: [],
+    });
+  });
+
   it('keeps paid level 43 active level 44 star anise progress after backend save normalization', () => {
     const taskCatalog: SaveTaskCatalog = {
       levels: [43, 44],

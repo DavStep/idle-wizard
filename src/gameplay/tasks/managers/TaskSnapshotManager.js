@@ -47,7 +47,6 @@ export class TaskSnapshotManager {
           ...task,
           isActiveQuest: task.taskId === activeTaskId,
           canFill: task.taskId === activeTaskId && task.canFill,
-          xpReward: questProgress.xpPerQuest,
         })),
       },
     };

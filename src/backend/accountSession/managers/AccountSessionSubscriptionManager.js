@@ -2,7 +2,7 @@ const OWN_PLAYER_SESSION_QUERY = 'SELECT * FROM own_player_session';
 
 const EMPTY_SNAPSHOT = {
   connected: false,
-  active: true,
+  active: false,
   activeConnectionId: '',
   ownConnectionId: '',
   updatedAtMs: 0,
@@ -18,7 +18,11 @@ export class AccountSessionSubscriptionManager {
     this.onInactive = null;
     this.inactiveDelivered = false;
     this.snapshot = { ...EMPTY_SNAPSHOT };
-    this.handleTableChange = () => this.publishFromTable();
+    this.handleTableInsert = (_context, row) =>
+      row ? this.publishRow(row) : this.publishFromTable();
+    this.handleTableUpdate = (_context, _oldRow, newRow) =>
+      newRow ? this.publishRow(newRow) : this.publishFromTable();
+    this.handleTableDelete = () => this.publishRow(null);
   }
 
   connect(connection, { onInactive } = {}) {
@@ -33,16 +37,34 @@ export class AccountSessionSubscriptionManager {
       null;
 
     if (!this.table || !this.connectionId) {
-      this.publish({ ...EMPTY_SNAPSHOT });
+      this.publishInactive({
+        connected: false,
+        reason: 'account_session_error',
+      });
       return false;
     }
 
-    this.bindTable(this.table);
-    this.subscription = connection
+    const table = this.table;
+    this.bindTable(table);
+    const subscription = connection
       .subscriptionBuilder()
       .onApplied(() => this.publishFromTable())
-      .onError(() => this.publish({ ...EMPTY_SNAPSHOT }))
+      .onError(() =>
+        this.publishInactive({
+          connected: false,
+          reason: 'account_session_error',
+        }),
+      )
       .subscribe(OWN_PLAYER_SESSION_QUERY);
+
+    if (this.connection !== connection || this.table !== table) {
+      if (!subscription?.isEnded?.()) {
+        subscription?.unsubscribe?.();
+      }
+      return false;
+    }
+
+    this.subscription = subscription;
 
     return true;
   }
@@ -68,32 +90,38 @@ export class AccountSessionSubscriptionManager {
   }
 
   bindTable(table) {
-    table?.onInsert?.(this.handleTableChange);
-    table?.onUpdate?.(this.handleTableChange);
-    table?.onDelete?.(this.handleTableChange);
+    table?.onInsert?.(this.handleTableInsert);
+    table?.onUpdate?.(this.handleTableUpdate);
+    table?.onDelete?.(this.handleTableDelete);
   }
 
   unbindTable(table) {
-    table?.removeOnInsert?.(this.handleTableChange);
-    table?.removeOnUpdate?.(this.handleTableChange);
-    table?.removeOnDelete?.(this.handleTableChange);
+    table?.removeOnInsert?.(this.handleTableInsert);
+    table?.removeOnUpdate?.(this.handleTableUpdate);
+    table?.removeOnDelete?.(this.handleTableDelete);
   }
 
   publishFromTable() {
     if (!this.table || !this.connectionId) {
-      this.publish({ ...EMPTY_SNAPSHOT });
+      this.publishInactive({ connected: false });
       return;
     }
 
     const row = this.table.iter().next().value ?? null;
+    this.publishRow(row);
+  }
+
+  publishRow(row) {
     const activeConnectionId =
       row?.activeConnectionId ?? row?.active_connection_id ?? null;
     const activeConnectionIdKey = this.toConnectionIdKey(activeConnectionId);
     const ownConnectionIdKey = this.toConnectionIdKey(this.connectionId);
-    const active =
-      !activeConnectionId ||
-      !ownConnectionIdKey ||
-      this.isSameConnectionId(activeConnectionId, this.connectionId);
+    const active = Boolean(
+      row &&
+        activeConnectionIdKey &&
+        ownConnectionIdKey &&
+        this.isSameConnectionId(activeConnectionId, this.connectionId),
+    );
 
     this.publish({
       connected: true,
@@ -104,8 +132,17 @@ export class AccountSessionSubscriptionManager {
     });
 
     if (!active) {
-      this.deliverInactive();
+      this.deliverInactive(row ? 'account_in_use' : 'account_session_missing');
     }
+  }
+
+  publishInactive({ connected = false, reason = 'account_in_use' } = {}) {
+    this.publish({
+      ...EMPTY_SNAPSHOT,
+      connected,
+      ownConnectionId: this.toConnectionIdKey(this.connectionId),
+    });
+    this.deliverInactive(reason);
   }
 
   publish(snapshot) {
@@ -113,13 +150,13 @@ export class AccountSessionSubscriptionManager {
     this.onSnapshot?.(snapshot);
   }
 
-  deliverInactive() {
+  deliverInactive(reason = 'account_in_use') {
     if (this.inactiveDelivered) {
       return;
     }
 
     this.inactiveDelivered = true;
-    this.onInactive?.({ reason: 'account_in_use' });
+    this.onInactive?.({ reason });
   }
 
   isSameConnectionId(left, right) {

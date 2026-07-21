@@ -40,11 +40,11 @@ describe('ShopStockPurchaseManager', () => {
         kind: 'seed',
       },
       quantity: 1,
-      priceCoin: 1.21,
-      totalPriceCoin: 1.21,
+      priceCoin: 2,
+      totalPriceCoin: 2,
     });
     expect(recordBuyFromNpc).toHaveBeenCalledWith(sageSeed, 1);
-    expect(spend).toHaveBeenCalledWith(1.21);
+    expect(spend).toHaveBeenCalledWith(2);
     expect(addItem).toHaveBeenCalledWith(1, 1);
   });
 

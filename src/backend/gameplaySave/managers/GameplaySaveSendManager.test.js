@@ -187,6 +187,7 @@ describe('GameplaySaveSendManager', () => {
         set_player_gameplay_save: failingSetPlayerGameplaySave,
       },
     });
+    manager.setHydrated(true);
     manager.setReadyToSend(true);
     manager.save({ version: 2, coin: { current: 3 } });
     manager.disconnect();
@@ -219,6 +220,7 @@ describe('GameplaySaveSendManager', () => {
         setPlayerGameplaySave: firstSetPlayerGameplaySave,
       },
     });
+    manager.setHydrated(true);
     manager.setReadyToSend(true);
     manager.save({ version: 2, coin: { current: 3 } });
 
@@ -298,6 +300,7 @@ describe('GameplaySaveSendManager', () => {
       'player-1',
     );
     first.discardHydratedSaveIfServerIsAtLeastAsNew(serverSave);
+    first.setHydrated(true);
     first.setReadyToSend(true);
     first.save(firstChangedSave);
     first.save(latestSave);
@@ -443,15 +446,15 @@ describe('GameplaySaveSendManager', () => {
     expect(clearTimeoutFn).not.toHaveBeenCalled();
   });
 
-  it('waits for a save to flush when requested', async () => {
-    let resolveSave;
-    const setPlayerGameplaySave = vi.fn(
-      () =>
-        new Promise((resolve) => {
-          resolveSave = resolve;
-        }),
-    );
+  it('accepts an observed save revision even while the reducer promise is pending', async () => {
+    const setPlayerGameplaySave = vi.fn(() => new Promise(() => {}));
     const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
+    const save = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 1,
+      coin: { current: 9 },
+    };
 
     manager.connect({
       reducers: {
@@ -460,7 +463,7 @@ describe('GameplaySaveSendManager', () => {
     });
     manager.setReadyToSend(true);
 
-    const flush = manager.saveAndFlush({ version: 2, coin: { current: 9 } });
+    const flush = manager.saveAndFlush(save);
     let settled = false;
     flush.then(() => {
       settled = true;
@@ -471,10 +474,279 @@ describe('GameplaySaveSendManager', () => {
     expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
     expect(settled).toBe(false);
 
-    resolveSave();
+    manager.observeServerSave(save);
 
     await expect(flush).resolves.toBe(true);
     expect(settled).toBe(true);
+  });
+
+  it('keeps the journal until the exact sent revision is observed on the server', async () => {
+    const storage = createStorage();
+    const journalManager = new GameplaySaveJournalManager({ storage });
+    let journalAtReducerCall = null;
+    const setPlayerGameplaySave = vi.fn(() => {
+      journalAtReducerCall = journalManager.load();
+      return Promise.resolve();
+    });
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      journalManager,
+    });
+    const save = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 7,
+      coin: { current: 25 },
+    };
+
+    manager.connect({ reducers: { setPlayerGameplaySave } }, 'player-1');
+    manager.discardHydratedSaveIfServerIsAtLeastAsNew(null);
+    manager.setHydrated(true);
+    manager.setReadyToSend(true);
+
+    const flush = manager.saveAndFlush(save);
+    let settled = false;
+    flush.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
+    expect(journalAtReducerCall).toMatchObject({ saveJson: JSON.stringify(save) });
+    expect(settled).toBe(false);
+    expect(journalManager.load()).toMatchObject({ saveJson: JSON.stringify(save) });
+
+    manager.observeServerSave({
+      ...save,
+      clientSaveSequence: 6,
+    });
+    await Promise.resolve();
+
+    expect(settled).toBe(false);
+    expect(journalManager.load()).not.toBeNull();
+
+    manager.observeServerSave(save);
+
+    await expect(flush).resolves.toBe(true);
+    expect(journalManager.load()).toBeNull();
+  });
+
+  it('times out after a mismatched server snapshot without clearing recovery state', async () => {
+    const storage = createStorage();
+    const journalManager = new GameplaySaveJournalManager({ storage });
+    let timeoutCallback = null;
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 50,
+      setTimeoutFn: (callback) => {
+        timeoutCallback = callback;
+        return 'timer-1';
+      },
+      journalManager,
+    });
+    const save = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 9,
+      coin: { current: 40 },
+    };
+
+    manager.connect(
+      { reducers: { setPlayerGameplaySave: () => Promise.resolve() } },
+      'player-1',
+    );
+    manager.discardHydratedSaveIfServerIsAtLeastAsNew(null);
+    manager.setHydrated(true);
+    manager.setReadyToSend(true);
+
+    const flush = manager.saveAndFlush(save);
+    manager.observeServerSave({
+      ...save,
+      clientSaveSessionId: 'other-session',
+    });
+    await Promise.resolve();
+
+    expect(timeoutCallback).toEqual(expect.any(Function));
+    timeoutCallback();
+
+    await expect(flush).resolves.toBe(false);
+    expect(journalManager.load()).toMatchObject({ saveJson: JSON.stringify(save) });
+    expect(manager.getPendingHydratedSave()).toEqual(save);
+  });
+
+  it('rebases a newer journal only after the prior revision is observed', async () => {
+    const storage = createStorage();
+    const journalManager = new GameplaySaveJournalManager({ storage });
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      syncIntervalMs: 60_000,
+      setTimeoutFn: vi.fn(() => 'timer-1'),
+      now: () => 1_000,
+      journalManager,
+    });
+    const firstSave = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 10,
+      coin: { current: 50 },
+    };
+    const latestSave = {
+      ...firstSave,
+      clientSaveSequence: 11,
+      coin: { current: 55 },
+    };
+
+    manager.connect(
+      { reducers: { setPlayerGameplaySave: () => Promise.resolve() } },
+      'player-1',
+    );
+    manager.discardHydratedSaveIfServerIsAtLeastAsNew(null);
+    manager.setHydrated(true);
+    manager.setReadyToSend(true);
+    manager.save(firstSave);
+    const firstSync = manager.syncPromise;
+    manager.save(latestSave);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(journalManager.load()).toMatchObject({
+      saveJson: JSON.stringify(latestSave),
+      baseServerRevision: { empty: true },
+    });
+
+    manager.observeServerSave(firstSave);
+    await firstSync;
+
+    expect(journalManager.load()).toMatchObject({
+      saveJson: JSON.stringify(latestSave),
+      baseServerRevision: {
+        clientSaveSessionId: 'client-session',
+        clientSaveSequence: 10,
+      },
+    });
+  });
+
+  it('journals a post-hydration baseline before sends are enabled', () => {
+    const storage = createStorage();
+    const journalManager = new GameplaySaveJournalManager({ storage });
+    const setPlayerGameplaySave = vi.fn(() => Promise.resolve());
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      journalManager,
+    });
+    const save = {
+      version: 3,
+      clientSaveSessionId: 'fresh-session',
+      clientSaveSequence: 1,
+      coin: { current: 10 },
+    };
+
+    manager.connect({ reducers: { setPlayerGameplaySave } }, 'player-1');
+    manager.discardHydratedSaveIfServerIsAtLeastAsNew(null);
+
+    expect(manager.setHydrated).toEqual(expect.any(Function));
+    manager.setHydrated(true);
+    manager.save(save);
+
+    expect(setPlayerGameplaySave).not.toHaveBeenCalled();
+    expect(journalManager.load()).toMatchObject({ saveJson: JSON.stringify(save) });
+  });
+
+  it('resends identical content after reconnect when the server row may be empty', async () => {
+    const firstReducer = vi.fn(() => Promise.resolve());
+    const secondReducer = vi.fn(() => Promise.resolve());
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
+    const firstSave = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 1,
+      coin: { current: 10 },
+    };
+    const secondSave = {
+      ...firstSave,
+      clientSaveSequence: 2,
+    };
+
+    manager.connect({ reducers: { setPlayerGameplaySave: firstReducer } }, 'player-1');
+    manager.setHydrated(true);
+    manager.setReadyToSend(true);
+    const firstFlush = manager.saveAndFlush(firstSave);
+    manager.observeServerSave(firstSave);
+    await expect(firstFlush).resolves.toBe(true);
+
+    manager.disconnect();
+    manager.connect({ reducers: { setPlayerGameplaySave: secondReducer } }, 'player-1');
+    manager.setHydrated(true);
+    manager.setReadyToSend(true);
+    const secondFlush = manager.saveAndFlush(secondSave);
+
+    expect(secondReducer).toHaveBeenCalledTimes(1);
+    manager.observeServerSave(secondSave);
+    await expect(secondFlush).resolves.toBe(true);
+  });
+
+  it('keeps a rejected save journaled for reconnect recovery', async () => {
+    const storage = createStorage();
+    const journalManager = new GameplaySaveJournalManager({ storage });
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      journalManager,
+    });
+    const save = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 8,
+      coin: { current: 30 },
+    };
+
+    manager.connect(
+      {
+        reducers: {
+          setPlayerGameplaySave: () => Promise.reject(new Error('rejected')),
+        },
+      },
+      'player-1',
+    );
+    manager.discardHydratedSaveIfServerIsAtLeastAsNew(null);
+    manager.setHydrated(true);
+    manager.setReadyToSend(true);
+
+    await expect(manager.saveAndFlush(save)).resolves.toBe(false);
+    expect(journalManager.load()).toMatchObject({ saveJson: JSON.stringify(save) });
+    expect(manager.getPendingHydratedSave()).toEqual(save);
+  });
+
+  it('cancels an in-flight flush on disconnect without clearing its journal', async () => {
+    const storage = createStorage();
+    const journalManager = new GameplaySaveJournalManager({ storage });
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      journalManager,
+    });
+    const save = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 12,
+      coin: { current: 60 },
+    };
+
+    manager.connect(
+      { reducers: { setPlayerGameplaySave: () => new Promise(() => {}) } },
+      'player-1',
+    );
+    manager.discardHydratedSaveIfServerIsAtLeastAsNew(null);
+    manager.setHydrated(true);
+    manager.setReadyToSend(true);
+
+    const flush = manager.saveAndFlush(save);
+    manager.disconnect();
+
+    await expect(flush).resolves.toBe(false);
+
+    const journalReader = new GameplaySaveJournalManager({ storage });
+    journalReader.connect('player-1');
+    expect(journalReader.load()).toMatchObject({ saveJson: JSON.stringify(save) });
+    expect(manager.getPendingHydratedSave()).toEqual(save);
   });
 
   it('does not resend saves when only savedAt changed', async () => {
@@ -487,11 +759,24 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, savedAt: 100, coin: { current: 9 } });
+    const firstSave = {
+      version: 3,
+      savedAt: 100,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 1,
+      coin: { current: 9 },
+    };
+    manager.save(firstSave);
     await Promise.resolve();
+    manager.observeServerSave(firstSave);
+    await manager.syncPromise;
     await Promise.resolve();
 
-    manager.save({ version: 2, savedAt: 200, coin: { current: 9 } });
+    manager.save({
+      ...firstSave,
+      savedAt: 200,
+      clientSaveSequence: 2,
+    });
     await Promise.resolve();
 
     expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
@@ -518,12 +803,25 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, coin: { current: 1 } });
+    const firstSave = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 1,
+      coin: { current: 1 },
+    };
+    const secondSave = {
+      ...firstSave,
+      clientSaveSequence: 2,
+      coin: { current: 2 },
+    };
+    manager.save(firstSave);
     await Promise.resolve();
+    manager.observeServerSave(firstSave);
+    await manager.syncPromise;
     await Promise.resolve();
 
     nowMs += 5_000;
-    manager.save({ version: 2, coin: { current: 2 } });
+    manager.save(secondSave);
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
@@ -537,7 +835,7 @@ describe('GameplaySaveSendManager', () => {
 
     expect(setPlayerGameplaySave).toHaveBeenCalledTimes(2);
     expect(setPlayerGameplaySave).toHaveBeenLastCalledWith({
-      saveJson: JSON.stringify({ version: 2, coin: { current: 2 } }),
+      saveJson: JSON.stringify(secondSave),
     });
   });
 
@@ -561,12 +859,24 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, coin: { current: 1 } });
+    const firstSave = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 1,
+      coin: { current: 1 },
+    };
+    manager.save(firstSave);
+    await Promise.resolve();
+    manager.observeServerSave(firstSave);
     await manager.syncPromise;
     await Promise.resolve();
 
     nowMs += 1_000;
-    manager.save({ version: 2, coin: { current: 2 } });
+    manager.save({
+      ...firstSave,
+      clientSaveSequence: 2,
+      coin: { current: 2 },
+    });
     await Promise.resolve();
 
     expect(setPlayerGameplaySave).toHaveBeenCalledTimes(1);
@@ -588,17 +898,31 @@ describe('GameplaySaveSendManager', () => {
       },
     });
     manager.setReadyToSend(true);
-    manager.save({ version: 2, coin: { current: 1 } });
+    const firstSave = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 1,
+      coin: { current: 1 },
+    };
+    const secondSave = {
+      ...firstSave,
+      clientSaveSequence: 2,
+      coin: { current: 2 },
+    };
+    manager.save(firstSave);
     await Promise.resolve();
+    manager.observeServerSave(firstSave);
+    await manager.syncPromise;
 
     nowMs += 5_000;
-    await expect(
-      manager.saveAndFlush({ version: 2, coin: { current: 2 } }),
-    ).resolves.toBe(true);
+    const flush = manager.saveAndFlush(secondSave);
+    await Promise.resolve();
+    manager.observeServerSave(secondSave);
+    await expect(flush).resolves.toBe(true);
 
     expect(setPlayerGameplaySave).toHaveBeenCalledTimes(2);
     expect(setPlayerGameplaySave).toHaveBeenLastCalledWith({
-      saveJson: JSON.stringify({ version: 2, coin: { current: 2 } }),
+      saveJson: JSON.stringify(secondSave),
     });
   });
 });

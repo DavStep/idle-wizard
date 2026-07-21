@@ -93,6 +93,27 @@ describe('DevConsoleFacade', () => {
     facade.unmount();
   });
 
+  it('accepts documented single-quoted QA template commands', async () => {
+    const commandManager = createCommandManager();
+    const facade = new DevConsoleFacade({ commandManager, target: window });
+    facade.mount();
+    facade.open();
+
+    const input = document.querySelector('.dev-console__input');
+    input.value = "cheats.loadDataTemplate('Aloofbaker2')";
+    input.dispatchEvent(
+      new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+    );
+
+    await vi.waitFor(() => {
+      expect(commandManager.run).toHaveBeenCalledWith(
+        'loadDataTemplate',
+        'Aloofbaker2',
+      );
+    });
+    facade.unmount();
+  });
+
   it('does not open when backtick is typed into another editable field', () => {
     const field = document.createElement('textarea');
     document.body.append(field);

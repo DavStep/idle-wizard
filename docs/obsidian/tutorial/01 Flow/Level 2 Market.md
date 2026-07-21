@@ -10,8 +10,8 @@ world: tutorial
 
 # Level 2 Market
 
-Lesson 2 teaches the normal summon, fast-sell, and turn-in requirement order.
-The flow uses live fast-sell quantity and quote state, not tutorial-owned prices.
+Lesson 2 teaches the normal summon, sell-to-trader, and turn-in requirement order.
+The flow uses live trader-offer quantity and quote state, not tutorial-owned prices.
 
 | Code | Step | Kind | Page | Target | Cue |
 |---|---|---|---|---|---|
@@ -32,7 +32,7 @@ The flow uses live fast-sell quantity and quote state, not tutorial-owned prices
   lesson panel or showing a pointer.
 - Later coin-shortfall guidance points at `sell` or `+1` based on the current
   selected amount and missing coin.
-- If the matching fast-sell row would show `x0`, Elara routes back to a source
+- If the matching trader-offer row would show `x0`, Elara routes back to a source
   action instead of a disabled row.
 
 ## Related

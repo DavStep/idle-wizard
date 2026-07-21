@@ -28,10 +28,10 @@ describe('ShopNpcSellQuoteManager', () => {
     expect(quote).toMatchObject({
       ok: true,
       quantity: 1000,
-      priceCoin: 0.8,
+      priceCoin: 1,
     });
-    expect(quote.totalPriceCoin).toBeLessThan(0.8 * 1000);
-    expect(quote.totalPriceCoin).toBeGreaterThan(0);
+    expect(quote.totalPriceCoin).toBe(1000);
+    expect(Number.isInteger(quote.totalPriceCoin)).toBe(true);
   });
 
   it('blocks direct NPC sells above current demand', () => {
@@ -81,7 +81,7 @@ describe('ShopNpcSellQuoteManager', () => {
     expect(manager.quoteItem({ item: sageSeed, quantity: 3 })).toMatchObject({
       ok: true,
       quantity: 3,
-      totalPriceCoin: 2.4,
+      totalPriceCoin: 3,
     });
   });
 });

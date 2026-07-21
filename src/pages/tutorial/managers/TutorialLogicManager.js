@@ -80,6 +80,18 @@ export class TutorialLogicManager {
       return this.createEmptyState('hidden');
     }
 
+    if (isDuplicateOfActiveQuest(step, snapshot)) {
+      this.clearAutoAdvanceTimer();
+      this.reminderManager.clearVisible();
+      return {
+        kind: 'quest',
+        step,
+        cue: { kind: 'none' },
+        nextRefreshAt: null,
+        revealTokens: step.revealTokens,
+      };
+    }
+
     const autoOpen = this.shouldAutoOpen(step);
     const forceOpen = Boolean(isNewStep && autoOpen);
     const panelOpen = Boolean((!isNewStep && lessonPanelOpen) || forceOpen);
@@ -332,6 +344,33 @@ export class TutorialLogicManager {
     this.autoAdvanceStepId = null;
     this.autoAdvanceStartedAt = null;
   }
+}
+
+function isDuplicateOfActiveQuest(step, snapshot) {
+  if (step?.kind !== 'objective') {
+    return false;
+  }
+
+  const activeQuest = snapshot?.tasks?.level?.questProgress?.activeQuest;
+
+  if (activeQuest?.kind !== 'task' || !activeQuest.taskId) {
+    return false;
+  }
+
+  const activeTask = (snapshot?.tasks?.level?.tasks ?? []).find(
+    (task) => task?.taskId === activeQuest.taskId,
+  );
+  const questLabel = normalizeInstruction(activeTask?.requirementLabel);
+  const lessonLabel = normalizeInstruction(step.objectiveText);
+
+  return Boolean(questLabel && lessonLabel && questLabel === lessonLabel);
+}
+
+function normalizeInstruction(value) {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 }
 
 function getEarliestRefreshAt(...refreshTimes) {

@@ -222,6 +222,7 @@ export class GameplayFacade {
     this.cachedSnapshot = null;
     this.persistenceLoadRevision = 0;
     this.personalTaskSavePending = false;
+    this.freshRuntimeSnapshot = null;
   }
 
   setPersistenceStorage(storageManager) {
@@ -319,6 +320,9 @@ export class GameplayFacade {
     this.shopFacade.initialize(ecsManagers);
     this.gardenFacade.initialize(ecsManagers);
     this.automationFacade.initialize(ecsManagers);
+    this.freshRuntimeSnapshot ??= clonePersistenceSnapshot(
+      this.persistenceFacade.createRuntimeSnapshot(),
+    );
     const loaded = this.persistenceFacade.load();
     if (loaded) {
       this.persistenceLoadRevision += 1;
@@ -1651,6 +1655,28 @@ export class GameplayFacade {
     return loaded;
   }
 
+  resetPersistenceState() {
+    if (!this.freshRuntimeSnapshot) {
+      return false;
+    }
+
+    const loaded = this.persistenceFacade.applyRuntimeSave(
+      clonePersistenceSnapshot(this.freshRuntimeSnapshot),
+    );
+    if (!loaded) {
+      return false;
+    }
+
+    this.persistenceLoadRevision += 1;
+    this.shopFacade.syncActiveMarketLicence();
+    this.syncRubyFromPrestige();
+    this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
+    this.syncPlayerLevelManaEffects();
+    this.tasksFacade.syncCurrentLevelStateRequirements();
+    this.publishSnapshot();
+    return true;
+  }
+
   savePersistenceSnapshot() {
     return this.persistenceFacade.save();
   }
@@ -1736,4 +1762,8 @@ export class GameplayFacade {
     this.publishSnapshot();
     return report;
   }
+}
+
+function clonePersistenceSnapshot(snapshot) {
+  return JSON.parse(JSON.stringify(snapshot));
 }

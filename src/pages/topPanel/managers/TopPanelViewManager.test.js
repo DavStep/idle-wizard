@@ -25,6 +25,19 @@ describe('TopPanelViewManager', () => {
     expect(usernameButton?.querySelector('.room-top-panel__username-label')?.textContent).toBe(
       'wizard',
     );
+    expect(
+      stage.querySelector('.room-top-panel__quest-progress')?.hasAttribute('hidden'),
+    ).toBe(true);
+    expect(stage.querySelector('.room-top-panel__level-star')?.getAttribute('src')).toContain(
+      '/ui/level-star.webp',
+    );
+    expect(stage.querySelector('.room-top-panel__quest-progress-fill')).not.toBeNull();
+    expect(
+      stage.querySelector('.room-top-panel__quest-progress-rail')?.getAttribute('role'),
+    ).toBe('progressbar');
+    expect(
+      stage.querySelector('.room-top-panel__quest-progress-text')?.getAttribute('aria-live'),
+    ).toBe('polite');
 
     expect(
       stage.querySelector(
@@ -228,7 +241,7 @@ describe('TopPanelViewManager', () => {
     )?.groups?.body;
 
     expect(topAvatarRule).toMatch(/\bwidth:\s*var\(--room-top-panel-avatar-size\);/);
-    expect(topAvatarRule).toMatch(/\bheight:\s*var\(--room-top-panel-avatar-size\);/);
+    expect(topAvatarRule).toMatch(/\bheight:\s*86px;/);
     expect(topAvatarRule).toMatch(/\bborder:\s*0;/);
     expect(pickerFrameRule).toMatch(/\bwidth:\s*72px;/);
     expect(pickerFrameRule).toMatch(/\bheight:\s*72px;/);
@@ -242,14 +255,67 @@ describe('TopPanelViewManager', () => {
     expect(checkedIconRule).toMatch(/\bdisplay:\s*flex;/);
   });
 
-  it('keeps top-panel identity chrome tight to the left edge', () => {
+  it('reserves compact spacing for the composed player card', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const topPanelRule = baseCss.match(
       /\.style-panel\.room-top-panel\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(topPanelRule).toMatch(/\bgap:\s*2px 6px;/);
-    expect(topPanelRule).toMatch(/\bpadding-left:\s*2px;/);
+    expect(topPanelRule).toMatch(/--room-top-panel-avatar-size:\s*64px;/);
+    expect(topPanelRule).toMatch(/--room-top-panel-avatar-column-size:\s*50px;/);
+    expect(topPanelRule).toMatch(/--room-top-panel-level-size:\s*28px;/);
+    expect(topPanelRule).toMatch(/\bgap:\s*2px 7px;/);
+    expect(topPanelRule).toMatch(/\bpadding-bottom:\s*9px;/);
+    expect(topPanelRule).toMatch(/\bpadding-left:\s*3px;/);
+  });
+
+  it('uses one continuous quest fill, divider ticks, and compact caption copy', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
+    const fillRule = baseCss.match(
+      /\.room-top-panel__quest-progress-fill\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const railRule = baseCss.match(
+      /\.room-top-panel__quest-progress-rail\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const segmentsRule = baseCss.match(
+      /\.room-top-panel__quest-segments\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const segmentRule = baseCss.match(
+      /\.room-top-panel__quest-segment\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const dividerRule = baseCss.match(
+      /\.room-top-panel__quest-segment \+ \.room-top-panel__quest-segment\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const completedDividerRule = baseCss.match(
+      /\.room-top-panel__quest-segment\.is-complete\s*\+\s*\.room-top-panel__quest-segment::before\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const captionRule = baseCss.match(
+      /\.room-top-panel__quest-progress-text\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(rootRule).toMatch(/--style-resource-mana:\s*#2da9ff;/);
+    expect(fillRule).toMatch(
+      /\bclip-path:\s*inset\(0 var\(--room-top-panel-quest-fill-clip-right, 100%\) 0 0\);/,
+    );
+    expect(fillRule).not.toMatch(/scaleX/);
+    expect(baseCss).not.toMatch(/--room-top-panel-quest-track-frame/);
+    expect(baseCss).not.toMatch(/\.room-top-panel__quest-progress-rail::before/);
+    expect(railRule).toMatch(/\bbackground:\s*#0d1118;/);
+    expect(railRule).toMatch(/\bborder:\s*1px solid #41434d;/);
+    expect(railRule).toMatch(/\bborder-radius:\s*5px;/);
+    expect(fillRule).toMatch(/\binset:\s*2px;/);
+    expect(segmentsRule).toMatch(/\binset:\s*2px;/);
+    expect(fillRule).toMatch(/\bbackground:\s*#8740df;/);
+    expect(fillRule).toMatch(/\bborder-radius:\s*2\.5px 0 0 2\.5px;/);
+    expect(fillRule).toMatch(/\bbox-shadow:\s*none;/);
+    expect(fillRule).not.toMatch(/linear-gradient/);
+    expect(segmentRule).toMatch(/\bbackground:\s*transparent;/);
+    expect(dividerRule).toMatch(/\bposition:\s*relative;/);
+    expect(completedDividerRule).toMatch(/\bbackground:\s*rgb\(32 19 49 \/ 82%\);/);
+    expect(captionRule).toMatch(/\bfont-size:\s*7px;/);
+    expect(captionRule).toMatch(/\btext-align:\s*left;/);
+
   });
 
   it('keeps amount-icon labels tight when resource words are hidden', () => {

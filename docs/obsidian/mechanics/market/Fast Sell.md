@@ -1,5 +1,8 @@
 ---
-title: "Fast Sell"
+title: "Sell to Trader"
+aliases:
+  - Fast Sell
+  - Trader Offer
 tags:
   - mechanics
   - system/market
@@ -22,11 +25,11 @@ source_scope: effective-client-and-backend
 verified_on: 2026-07-19
 ---
 
-# Fast Sell
+# Sell to Trader
 
-Fast Sell is the immediate manual sale path inside [[mechanics/market/NPC Market|Trader Market]].
+Sell to Trader is the immediate manual sale path inside [[mechanics/market/NPC Market|Traders]]. It opens a **Trader Offer** dialog. Internal ids still use `fastSell` for save compatibility.
 
-| Research | Payout | Emerald cost | Time |
+| Haggling | Payout | Emerald cost | Time |
 | --- | ---: | ---: | ---: |
 | none | 80% | — | — |
 | `fastSellPayout:1` | 85% | 2 | 3s |
@@ -44,4 +47,3 @@ Fast Sell is the immediate manual sale path inside [[mechanics/market/NPC Market
 - `src/gameplay/shop/managers/ShopDirectSellManager.js`
 - `src/gameplay/research/fastSellResearch.js`
 - `src/gameplay/research/managers/ResearchBalanceManager.js`
-

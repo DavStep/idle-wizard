@@ -26,7 +26,14 @@ Permanent Prestige stars select one active market. The highest unlocked licence 
 
 - The licence never resets with a run.
 - Each licence has isolated demand, price tuning, NPC stock, listings, requests, and proceeds.
+- Rank grants the same number of NPC stalls and player listing/request slots.
+- Item access is cumulative: a rank trades item grades up to that rank.
 - The client derives it from permanent completed Prestige stars.
 - The server derives it independently and rejects forged cross-market calls.
-- All five default licences currently use the same catalog and balance. Names such as “volatile” or “special orders” are design flavor, not separate implemented rules.
-
+| Licence | Rank | Prestige stars | Stalls | Item grades |
+| --- | ---: | ---: | ---: | --- |
+| Small Town Market | ★ | 0 | 1 | 1 |
+| Crossroads Market | ★★ | 1 | 2 | 1–2 |
+| City Bazaar | ★★★ | 3 | 3 | 1–3 |
+| Grand Exchange | ★★★★ | 6 | 4 | 1–4 |
+| Arcane Exchange | ★★★★★ | 10 | 5 | 1–5 |

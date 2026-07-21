@@ -35,7 +35,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Use a top-right border label for count or progress, such as `2/5`.
 - Use a bottom-center border label as the toggle: `expand` when collapsed, `collapse` when open.
 - Expand hidden rows in normal flow inside the same box, without overlaying nearby panels.
-- Workshop main progression uses one always-open `elara's request` box. Show only the active request, its 20 XP reward, and the level XP rail; do not add an expandable checklist, pinning, or task reordering.
+- Workshop main progression uses one always-open `elara's request` box. Show only the active request; the shared top panel owns a continuous level rail with thin dividers, a compact level-star badge, and the small left-aligned remaining-quest caption underneath. Each configured request plus the final coin payment owns one segment. Do not add XP copy, an expandable checklist, pinning, or task reordering.
 
 ## Popup Structure
 
@@ -48,3 +48,4 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Tabbed dialogs keep a fixed bordered panel height; overflowing tab content scrolls inside that panel and uses a logs-style progress rail below the scroll frame, not inside the rows.
 - Every scrollable dialog pane should opt into the shared scroll cue rail; keep the rail below the scroll frame with the same `--style-scroll-progress-gap` and bottom padding rhythm as the select recipe dialog.
 - Popup rows should keep stable DOM nodes during snapshot updates so mobile taps do not miss after touchend.
+- Book-like catalogues use compact column headers and stable selectable rows; selecting a row reveals a short detail/history block in the same dialog instead of stacking another catalogue modal.

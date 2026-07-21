@@ -563,6 +563,15 @@ export class PagesFacade {
     this.topPanelFacade.setResourceContext(this.getTopPanelResourceContext());
   }
 
+  setTopPanelQuestProgressPreview(progress = null) {
+    if (!this.stage) {
+      return { ok: false, reason: 'pages_not_mounted' };
+    }
+
+    this.stage.toggleAttribute('data-dev-top-panel-preview', Boolean(progress));
+    return this.topPanelFacade.setQuestProgressPreview(progress);
+  }
+
   applyTutorialNotificationVisibilityPolicy(policy) {
     setNotificationVisibilityPolicy(policy, { root: this.stage });
     this.notificationFacade.publish();

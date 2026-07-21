@@ -160,10 +160,13 @@ describe('BackendFacade', () => {
     });
     await flushPromises();
 
-    expect(onGameplaySaveReady).toHaveBeenCalledWith({
-      save: null,
-      updatedAtMs: 0,
-    });
+    expect(onGameplaySaveReady).toHaveBeenCalledWith(
+      {
+        save: null,
+        updatedAtMs: 0,
+      },
+      { enableSaveSending: expect.any(Function) },
+    );
     expect(
       backendFacade.tradeAllianceFacade.setRewardProcessingReady.mock.calls.map(
         ([ready]) => ready,
@@ -241,11 +244,14 @@ describe('BackendFacade', () => {
     });
     await flushPromises();
 
-    expect(onGameplaySaveReady).toHaveBeenCalledWith({
-      save: serverSave,
-      updatedAtMs: 123,
-      pendingHydratedSave,
-    });
+    expect(onGameplaySaveReady).toHaveBeenCalledWith(
+      {
+        save: serverSave,
+        updatedAtMs: 123,
+        pendingHydratedSave,
+      },
+      { enableSaveSending: expect.any(Function) },
+    );
     expect(
       backendFacade.gameplaySaveFacade.discardHydratedSaveIfServerIsAtLeastAsNew,
     ).toHaveBeenCalledWith(serverSave);
@@ -329,6 +335,70 @@ describe('BackendFacade', () => {
     expect(onOnline).toHaveBeenCalledTimes(1);
   });
 
+  it('allows a hydration baseline to save while keeping gameplay offline', async () => {
+    const { backendFacade } = createBackendWithFakes();
+    let acknowledgeBaseline = null;
+    const onGameplaySaveReady = vi.fn(
+      (_snapshot, { enableSaveSending }) =>
+        new Promise((resolve) => {
+          enableSaveSending();
+          acknowledgeBaseline = resolve;
+        }),
+    );
+    const onOnline = vi.fn();
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+      onGameplaySaveReady,
+      onOnline,
+    });
+    await Promise.resolve();
+
+    expect(
+      backendFacade.gameplaySaveFacade.setReadyToSend.mock.calls.map(
+        ([ready]) => ready,
+      ),
+    ).toEqual([false, true]);
+    expect(onOnline).not.toHaveBeenCalled();
+
+    acknowledgeBaseline();
+    await flushPromises();
+
+    expect(
+      backendFacade.gameplaySaveFacade.setReadyToSend.mock.calls.map(
+        ([ready]) => ready,
+      ),
+    ).toEqual([false, true]);
+    expect(onOnline).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays offline when hydration persistence fails', async () => {
+    const { backendFacade } = createBackendWithFakes();
+    const failure = new Error('save was not acknowledged');
+    const onOffline = vi.fn();
+    const onOnline = vi.fn();
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+      onGameplaySaveReady: vi.fn(() => Promise.reject(failure)),
+      onOnline,
+      onOffline,
+    });
+    await flushPromises();
+
+    expect(onOnline).not.toHaveBeenCalled();
+    expect(onOffline).toHaveBeenCalledWith({
+      reason: 'gameplay_save_ready_error',
+      error: failure,
+    });
+  });
+
   it('disconnects and reports offline when gameplay save sync gets stuck', async () => {
     const { backendFacade, getSyncUnhealthyHandler } = createBackendWithFakes();
     const onOffline = vi.fn();
@@ -369,6 +439,7 @@ describe('BackendFacade', () => {
       onOffline,
     });
     await flushPromises();
+    backendFacade.gameplaySaveFacade.discardPendingSaves.mockClear();
 
     onInactive();
 
@@ -378,6 +449,35 @@ describe('BackendFacade', () => {
     expect(backendFacade.gameplaySaveFacade.disconnect).toHaveBeenCalled();
     expect(backendFacade.spacetimeDbFacade.disconnect).toHaveBeenCalledTimes(1);
     expect(onOffline).toHaveBeenCalledWith({ reason: 'account_in_use' });
+  });
+
+  it('keeps the save journal when account-session observation fails', async () => {
+    const { backendFacade } = createBackendWithFakes();
+    const onOffline = vi.fn();
+    let onInactive = null;
+    backendFacade.accountSessionFacade.connect.mockImplementation((_connection, options) => {
+      onInactive = options.onInactive;
+      return true;
+    });
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+      onOffline,
+    });
+    await flushPromises();
+    backendFacade.gameplaySaveFacade.discardPendingSaves.mockClear();
+    backendFacade.playerSyncFacade.discardPendingPlayerLevel.mockClear();
+
+    onInactive({ reason: 'account_session_error' });
+
+    expect(backendFacade.gameplaySaveFacade.discardPendingSaves).not.toHaveBeenCalled();
+    expect(backendFacade.playerSyncFacade.discardPendingPlayerLevel).not.toHaveBeenCalled();
+    expect(backendFacade.gameplaySaveFacade.disconnect).toHaveBeenCalled();
+    expect(backendFacade.spacetimeDbFacade.disconnect).toHaveBeenCalledTimes(1);
+    expect(onOffline).toHaveBeenCalledWith({ reason: 'disconnect' });
   });
 
   it('keeps the maintenance feed connected when reset invalidates the active session', async () => {
@@ -405,6 +505,32 @@ describe('BackendFacade', () => {
 
     expect(backendFacade.accountSessionFacade.disconnect).toHaveBeenCalled();
     expect(backendFacade.gameplaySaveFacade.disconnect).toHaveBeenCalled();
+    expect(backendFacade.gameConfigFacade.disconnect).not.toHaveBeenCalled();
+    expect(backendFacade.spacetimeDbFacade.disconnect).not.toHaveBeenCalled();
+    expect(onOffline).toHaveBeenCalledWith({
+      reason: 'maintenance_session_invalidated',
+    });
+  });
+
+  it('keeps the maintenance feed when a locked connection has no session row', async () => {
+    const { backendFacade } = createBackendWithFakes();
+    const onOffline = vi.fn();
+    backendFacade.accountSessionFacade.connect.mockImplementation(
+      (_connection, { onInactive }) => {
+        onInactive({ reason: 'account_session_missing' });
+        return false;
+      },
+    );
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+      onOffline,
+    });
+
+    expect(backendFacade.gameConfigFacade.connect).toHaveBeenCalledTimes(1);
     expect(backendFacade.gameConfigFacade.disconnect).not.toHaveBeenCalled();
     expect(backendFacade.spacetimeDbFacade.disconnect).not.toHaveBeenCalled();
     expect(onOffline).toHaveBeenCalledWith({

@@ -123,6 +123,12 @@ const CHEAT_HELP = Object.freeze([
 
 const UI_SURFACE_DEFINITIONS = Object.freeze([
   { id: 'devConsole', kind: 'tool' },
+  {
+    id: 'topPanelQuestProgress',
+    kind: 'preview',
+    setup: 'topPanelQuestProgress',
+    aliases: ['questProgress', 'topPanelProgress'],
+  },
   { id: 'workshop', kind: 'page', pageId: 'workshop' },
   { id: 'brewing', kind: 'page', pageId: 'brewing' },
   { id: 'garden', kind: 'page', pageId: 'garden' },
@@ -1710,12 +1716,44 @@ export class DevCheatCommandManager {
       return this.openGuildQuestPostingSurface(surface, options);
     }
 
+    if (surface.setup === 'topPanelQuestProgress') {
+      return this.openTopPanelQuestProgressSurface(surface, options);
+    }
+
     const result =
       surface.kind === 'page'
         ? this.showPage(surface.pageId, options)
         : this.openDialog(surface.dialogId, options);
 
     return this.decorateUiResult(surface.id, result, surface);
+  }
+
+  openTopPanelQuestProgressSurface(surface, options = {}) {
+    if (typeof this.pagesFacade?.setTopPanelQuestProgressPreview !== 'function') {
+      return this.decorateUiResult(
+        surface.id,
+        { ok: false, reason: 'pages_missing' },
+        surface,
+      );
+    }
+
+    const totalQuests = Math.max(1, Math.floor(Number(options.totalQuests) || 4));
+    const completedQuests = Math.min(
+      totalQuests,
+      Math.max(0, Math.floor(Number(options.completedQuests) || 1)),
+    );
+    const progress = {
+      completedQuests,
+      totalQuests,
+      targetLevel: Math.max(1, Math.floor(Number(options.targetLevel) || 2)),
+      activeQuest: { kind: 'task', taskId: 'dev-top-panel-preview' },
+    };
+    const result = this.pagesFacade.setTopPanelQuestProgressPreview(progress);
+
+    return {
+      ...this.decorateUiResult(surface.id, result, surface),
+      progress,
+    };
   }
 
   openGuildQuestPostingSurface(surface, options = {}) {

@@ -2,7 +2,7 @@
 
 Player level reads the task level and turns it into configured account-wide milestones.
 
-The current scope gates how many garden tiles, cauldrons, trader market stands, and player market stands can be bought. SpacetimeDB `game_config.playerLevel` decides which buys the current level permits. Reaching a milestone does not grant the tile, cauldron, or stand for free.
+The current scope gates how many garden tiles and cauldrons can be bought. SpacetimeDB `game_config.playerLevel` decides which buys the current level permits. Reaching a milestone does not grant a tile or cauldron for free. Market stalls and traded item grades instead come from the active market rank unlocked through prestige.
 
 Player level also sets mana cap and mana regen through the `mana` progression in `game_config.playerLevel`. Each level gives +50 cap. Mana regen starts at 1/sec on level 1, then level-ups to 2-5 add +1/sec each, 6-10 add +0.5/sec each, and 11+ add +0.25/sec each.
 

@@ -67,11 +67,11 @@ describe('StatsFacade', () => {
     });
 
     expect(facade.getSnapshot().coin).toMatchObject({
-      npcTrade: 12.25,
-      playerTrade: 7.5,
+      npcTrade: 13,
+      playerTrade: 8,
       royalties: {
-        total: 2.5,
-        items: [{ potionKey: 'manaTonic', potionLabel: 'mana tonic', coin: 2.5 }],
+        total: 3,
+        items: [{ potionKey: 'manaTonic', potionLabel: 'mana tonic', coin: 3 }],
       },
     });
   });

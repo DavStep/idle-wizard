@@ -20,6 +20,8 @@ verified_on: 2026-07-19
 
 NPC stock is shared inside one [[mechanics/market/Market Licences|market licence]].
 
+Players browse and buy it through the [[mechanics/market/Market Ledger|Market Ledger]], not separate stock boxes.
+
 - Selling to the NPC decreases need and adds the sold quantity to shared stock.
 - Buying decreases shared stock and raises need.
 - The neutral player buy price is 120% of the market price.
@@ -38,4 +40,3 @@ NPC stock is shared inside one [[mechanics/market/Market Licences|market licence
 - `src/gameplay/shop/managers/ShopStockPurchaseManager.js`
 - `src/gameplay/shop/managers/ShopStockPriceQuoteManager.js`
 - `src/backend/npcMarket/`
-

@@ -1,5 +1,4 @@
-const COIN_PRICE_FACTOR = 100;
-const COIN_PRICE_PATTERN = /^\d+(?:\.\d{0,2})?$/;
+const COIN_PRICE_PATTERN = /^\d+$/;
 const COMPACT_COIN_UNITS = [
   { value: 1_000_000_000_000, suffix: 't' },
   { value: 1_000_000_000, suffix: 'b' },
@@ -14,7 +13,11 @@ export function normalizeCoinPrice(value) {
     return null;
   }
 
-  return Math.round((number + Number.EPSILON) * COIN_PRICE_FACTOR) / COIN_PRICE_FACTOR;
+  if (number === 0) {
+    return 0;
+  }
+
+  return Math.max(1, Math.ceil(number));
 }
 
 export function normalizePositiveCoinPrice(value) {
@@ -45,7 +48,7 @@ export function multiplyCoinPrice(price, quantity) {
 
 export function formatCoinPrice(value) {
   const price = normalizeCoinPrice(value);
-  return price === null ? '?' : price.toFixed(2);
+  return price === null ? '?' : String(price);
 }
 
 export function formatCoinAmount(value) {
@@ -56,7 +59,7 @@ export function formatCoinAmount(value) {
   }
 
   if (price < 1_000) {
-    return trimCoinDecimals(price.toFixed(2));
+    return String(price);
   }
 
   const unit = COMPACT_COIN_UNITS.find((candidate) => price >= candidate.value);

@@ -198,9 +198,9 @@ export class AppLifecycleManager {
       const result = await this.backendFacade.start({
         gameplayFacade: this.gameplayFacade,
         playerFacade: this.playerFacade,
-        onGameplaySaveReady: (snapshot) => {
+        onGameplaySaveReady: (snapshot, controls) => {
           if (this.isCurrentBackendAttempt(attempt)) {
-            return this.handleGameplaySaveReady(snapshot);
+            return this.handleGameplaySaveReady(snapshot, controls);
           }
 
           return undefined;
@@ -236,9 +236,16 @@ export class AppLifecycleManager {
     }
   }
 
-  async handleGameplaySaveReady({ save, pendingHydratedSave } = {}) {
+  async handleGameplaySaveReady(
+    { save, pendingHydratedSave } = {},
+    { enableSaveSending } = {},
+  ) {
     const accountLinkSave = this.getPendingAccountLinkSave();
-    const saveToLoad = accountLinkSave ? save : (pendingHydratedSave ?? save);
+    const saveToLoad = accountLinkSave
+      ? save
+      : save
+        ? (pendingHydratedSave ?? save)
+        : null;
     const shouldPromptForFreshStart = this.shouldPromptForFreshStart({
       save: saveToLoad,
       accountLinkSave,
@@ -252,8 +259,12 @@ export class AppLifecycleManager {
       this.onlineGateManager.hide();
 
       if (!save) {
+        await this.persistFreshGameplayBaseline({ enableSaveSending });
+        await this.loadGameplaySave(accountLinkSave, {
+          persistLoaded: true,
+          enableSaveSending,
+        });
         this.clearPendingAccountLinkSave();
-        this.loadGameplaySave(accountLinkSave, { persistLoaded: true });
         return;
       }
 
@@ -267,14 +278,21 @@ export class AppLifecycleManager {
       }
 
       const choice = await this.accountLinkChoiceManager.choose(choiceOptions);
-      this.clearPendingAccountLinkSave();
 
       if (choice === ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT) {
-        this.loadGameplaySave(accountLinkSave, { persistLoaded: true });
+        await this.loadGameplaySave(accountLinkSave, {
+          persistLoaded: true,
+          enableSaveSending,
+        });
+        this.clearPendingAccountLinkSave();
         return;
       }
 
-      this.loadGameplaySave(save, { persistLoaded: true });
+      await this.loadGameplaySave(save, {
+        persistLoaded: true,
+        enableSaveSending,
+      });
+      this.clearPendingAccountLinkSave();
       return;
     }
 
@@ -291,7 +309,10 @@ export class AppLifecycleManager {
       this.pagesFacade.resetTutorialProgress?.();
     }
 
-    this.loadGameplaySave(saveToLoad);
+    await this.loadGameplaySave(saveToLoad, {
+      requireDurableSave: Boolean(pendingHydratedSave && save),
+      enableSaveSending,
+    });
   }
 
   shouldPromptForFreshStart({ save, accountLinkSave } = {}) {
@@ -465,15 +486,61 @@ export class AppLifecycleManager {
     ].includes(String(reason ?? '').trim());
   }
 
-  loadGameplaySave(save, { persistLoaded = false } = {}) {
+  async loadGameplaySave(
+    save,
+    {
+      persistLoaded = false,
+      requireDurableSave = false,
+      enableSaveSending,
+    } = {},
+  ) {
     this.hiddenAtMs = null;
+    const serverHasSave = Boolean(save && typeof save === 'object');
+    if (!serverHasSave) {
+      await this.persistFreshGameplayBaseline({ enableSaveSending });
+      this.mountGameSurfaces();
+      return true;
+    }
+
     const loaded = this.gameplayFacade.loadPersistenceSave(save, this.ecsFacade);
 
-    if (!loaded || persistLoaded) {
-      this.gameplayFacade.savePersistenceSnapshot();
+    if (!loaded) {
+      throw new Error('Server gameplay save could not be restored.');
+    }
+
+    if (persistLoaded || requireDurableSave) {
+      enableSaveSending?.();
+      const saved = await Promise.resolve(
+        this.gameplayFacade.savePersistenceSnapshotAndFlush(),
+      );
+
+      if (!saved) {
+        throw new Error('Gameplay save was not acknowledged by the server.');
+      }
     }
 
     this.mountGameSurfaces();
+    return true;
+  }
+
+  async persistFreshGameplayBaseline({ enableSaveSending } = {}) {
+    this.hiddenAtMs = null;
+    const reset = this.gameplayFacade.resetPersistenceState?.();
+
+    if (!reset) {
+      throw new Error('Fresh gameplay state could not be created.');
+    }
+
+    enableSaveSending?.();
+    const saved = await Promise.resolve(
+      this.gameplayFacade.savePersistenceSnapshotAndFlush(),
+    );
+
+    if (!saved) {
+      throw new Error('Gameplay save was not acknowledged by the server.');
+    }
+
+    return true;
   }
 
   mountGameSurfaces() {

@@ -87,7 +87,7 @@ describe('ShopStockManager', () => {
       'sage seed (3)',
     );
     expect(seedBox?.querySelector('.shop-page__stock-buy-button')?.textContent).toBe(
-      'buy 1.25 coin',
+      'buy 2 coin',
     );
     expect(
       seedBox
@@ -108,7 +108,7 @@ describe('ShopStockManager', () => {
     expect(stage.querySelector('.shop-page__stock-buy-popup')?.hidden).toBe(false);
     expect(gameplayFacade.buyNpcMarketStockItem).not.toHaveBeenCalled();
     expect(stage.querySelector('.shop-page__stock-buy-dialog')?.textContent).toContain(
-      'total1.25 coin',
+      'total2 coin',
     );
 
     const stepButtons = [
@@ -131,7 +131,7 @@ describe('ShopStockManager', () => {
     expect(gameplayFacade.quoteNpcMarketStockPurchase).toHaveBeenLastCalledWith(1, 2);
     expect(input.value).toBe('2');
     expect(stage.querySelector('.shop-page__stock-buy-dialog')?.textContent).toContain(
-      'total2.6 coin',
+      'total3 coin',
     );
 
     stepButtons.find((button) => button.textContent === '+100').click();
@@ -149,7 +149,7 @@ describe('ShopStockManager', () => {
 
     expect(gameplayFacade.quoteNpcMarketStockPurchase).toHaveBeenLastCalledWith(1, 2);
     expect(stage.querySelector('.shop-page__stock-buy-dialog')?.textContent).toContain(
-      'total2.6 coin',
+      'total3 coin',
     );
 
     await manager.onConfirmBuy();
@@ -189,7 +189,7 @@ describe('ShopStockManager', () => {
 
     const button = stage.querySelector('.shop-page__stock-buy-button');
 
-    expect(button?.textContent).toBe('buy 1.25 coin');
+    expect(button?.textContent).toBe('buy 2 coin');
     expect(button?.disabled).toBe(true);
     expect(button?.getAttribute('data-resource-color')).toBeNull();
 
@@ -237,7 +237,7 @@ describe('ShopStockManager', () => {
 
     const button = stage.querySelector('.shop-page__stock-buy-button');
 
-    expect(button?.textContent).toBe('buy 12.5 coin');
+    expect(button?.textContent).toBe('buy 13 coin');
     expect(button?.disabled).toBe(true);
     expect(button?.getAttribute('data-resource-color')).toBeNull();
 

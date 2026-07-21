@@ -59,8 +59,11 @@ describe('TopPanelResourceDisplayManager', () => {
       manaHighlightTarget?.getAttribute('data-tutorial-highlight-shape'),
     ).toBeNull();
     expect(refs.coinValue.textContent).toBe('7 coin');
-    expect(refs.levelValue.textContent).toBe('level 2');
+    expect(refs.levelValue.textContent).toBe('2');
     expect(refs.levelButton.hidden).toBe(false);
+    expect(refs.levelButton.getAttribute('aria-label')).toBe(
+      'level 2, open level rewards',
+    );
   });
 
   it('hides the level label before the first level-up', () => {

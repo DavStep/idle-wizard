@@ -73,18 +73,94 @@ export class DevConsoleCommandManager {
       return [];
     }
 
-    const jsonArguments = trimmedArguments.replace(
-      OBJECT_KEY_PATTERN,
-      '$1"$2"$3',
-    );
-
     try {
+      const normalizedArguments = this.normalizeSingleQuotedStrings(trimmedArguments);
+      const jsonArguments = normalizedArguments.replace(
+        OBJECT_KEY_PATTERN,
+        '$1"$2"$3',
+      );
       return JSON.parse(`[${jsonArguments}]`);
     } catch {
       throw new Error(
-        'arguments must use numbers, booleans, arrays, or JSON-style quoted strings',
+        'arguments must use numbers, booleans, arrays, or quoted strings',
       );
     }
+  }
+
+  normalizeSingleQuotedStrings(argumentsText) {
+    let normalized = '';
+    let singleQuotedValue = '';
+    let quote = null;
+
+    for (let index = 0; index < argumentsText.length; index += 1) {
+      const character = argumentsText[index];
+
+      if (quote === '"') {
+        normalized += character;
+
+        if (character === '\\' && index + 1 < argumentsText.length) {
+          index += 1;
+          normalized += argumentsText[index];
+        } else if (character === '"') {
+          quote = null;
+        }
+
+        continue;
+      }
+
+      if (quote === "'") {
+        if (character === "'") {
+          normalized += JSON.stringify(singleQuotedValue);
+          singleQuotedValue = '';
+          quote = null;
+          continue;
+        }
+
+        if (character === '\n' || character === '\r') {
+          throw new Error('unterminated string');
+        }
+
+        if (character !== '\\') {
+          singleQuotedValue += character;
+          continue;
+        }
+
+        const escapedCharacter = argumentsText[index + 1];
+
+        if (escapedCharacter === undefined) {
+          throw new Error('unterminated string');
+        }
+
+        const escapeValues = {
+          b: '\b',
+          f: '\f',
+          n: '\n',
+          r: '\r',
+          t: '\t',
+          v: '\v',
+        };
+        singleQuotedValue += escapeValues[escapedCharacter] ?? escapedCharacter;
+        index += 1;
+        continue;
+      }
+
+      if (character === "'") {
+        quote = "'";
+        continue;
+      }
+
+      normalized += character;
+
+      if (character === '"') {
+        quote = '"';
+      }
+    }
+
+    if (quote === "'") {
+      throw new Error('unterminated string');
+    }
+
+    return normalized;
   }
 
   readCommandName(template) {
