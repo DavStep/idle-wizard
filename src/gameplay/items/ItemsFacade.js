@@ -1,4 +1,5 @@
 import { InventoryStackManager } from './managers/InventoryStackManager.js';
+import { ItemProductionObserverManager } from './managers/ItemProductionObserverManager.js';
 import { ItemDefinitionManager } from './managers/ItemDefinitionManager.js';
 import { PotionRecipeManager } from './managers/PotionRecipeManager.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
@@ -15,6 +16,7 @@ export class ItemsFacade {
     this.inventoryStackManager = new InventoryStackManager({
       itemDefinitionManager: this.itemDefinitionManager,
     });
+    this.itemProductionObserverManager = new ItemProductionObserverManager();
   }
 
   initialize(ecsManagers) {
@@ -40,6 +42,17 @@ export class ItemsFacade {
 
   addItem(itemTypeId, quantity) {
     this.inventoryStackManager.addItem(itemTypeId, quantity);
+  }
+
+  addProducedItem(itemTypeId, quantity) {
+    const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
+    if (safeQuantity <= 0) return;
+    this.inventoryStackManager.addItem(itemTypeId, safeQuantity);
+    this.itemProductionObserverManager.publish({ itemTypeId, quantity: safeQuantity });
+  }
+
+  subscribeProducedItems(listener) {
+    return this.itemProductionObserverManager.subscribe(listener);
   }
 
   removeFirstItemByKind(kind, quantity = 1) {

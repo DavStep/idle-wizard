@@ -50,6 +50,8 @@ export class ShopShelfEntityManager {
     ShopShelfSlot.sellItemTypeId[slotEntityId] = 0;
     ShopShelfSlot.loadedQuantity[slotEntityId] = 0;
     ShopShelfSlot.sellProgressSeconds[slotEntityId] = 0;
+    ShopShelfSlot.futureItemTypeId[slotEntityId] = 0;
+    ShopShelfSlot.futurePendingQuantity[slotEntityId] = 0;
     this.slotEntityIds.push(slotEntityId);
   }
 
@@ -151,6 +153,40 @@ export class ShopShelfEntityManager {
     );
   }
 
+  setSlotFutureItem(slotNumber, itemTypeId, pendingQuantity = 0) {
+    if (!this.isSlotUnlocked(slotNumber)) {
+      return false;
+    }
+
+    const slotEntityId = this.getSlotEntityId(slotNumber);
+    const safeItemTypeId = Number.isInteger(itemTypeId) && itemTypeId > 0 ? itemTypeId : 0;
+    ShopShelfSlot.futureItemTypeId[slotEntityId] = safeItemTypeId;
+    ShopShelfSlot.futurePendingQuantity[slotEntityId] = safeItemTypeId
+      ? Math.max(0, Math.floor(Number(pendingQuantity) || 0))
+      : 0;
+    return true;
+  }
+
+  changeSlotFuturePendingQuantity(slotNumber, delta) {
+    if (!this.isSlotUnlocked(slotNumber)) {
+      return null;
+    }
+
+    const safeDelta = Math.trunc(Number(delta));
+    if (!Number.isInteger(safeDelta) || safeDelta === 0) {
+      return null;
+    }
+
+    const slotEntityId = this.getSlotEntityId(slotNumber);
+    const currentQuantity = Math.max(
+      0,
+      Math.floor(Number(ShopShelfSlot.futurePendingQuantity[slotEntityId]) || 0),
+    );
+    const nextQuantity = Math.max(0, currentQuantity + safeDelta);
+    ShopShelfSlot.futurePendingQuantity[slotEntityId] = nextQuantity;
+    return nextQuantity;
+  }
+
   isSlotUnlocked(slotNumber) {
     return ShopShelfSlot.isUnlocked[this.getSlotEntityId(slotNumber)] === 1;
   }
@@ -167,6 +203,10 @@ export class ShopShelfEntityManager {
       const loadedQuantity = sellItemTypeId
         ? Math.max(0, Math.floor(Number(slot?.loadedQuantity) || 0))
         : 0;
+      const futureItemTypeId = isUnlocked ? slot?.futureItemTypeId || 0 : 0;
+      const futurePendingQuantity = futureItemTypeId
+        ? Math.max(0, Math.floor(Number(slot?.futurePendingQuantity) || 0))
+        : 0;
 
       ShopShelfSlot.isUnlocked[slotEntityId] = isUnlocked ? 1 : 0;
       ShopShelfSlot.sellItemTypeId[slotEntityId] = loadedQuantity > 0 ? sellItemTypeId : 0;
@@ -175,6 +215,8 @@ export class ShopShelfEntityManager {
         isUnlocked && loadedQuantity > 0
           ? Math.max(0, Number(slot?.sellProgressSeconds) || 0)
           : 0;
+      ShopShelfSlot.futureItemTypeId[slotEntityId] = futureItemTypeId;
+      ShopShelfSlot.futurePendingQuantity[slotEntityId] = futurePendingQuantity;
     }
 
     const selectedIsValid =
@@ -213,6 +255,11 @@ export class ShopShelfEntityManager {
         ShopShelfSlot.isUnlocked[slotEntityId] === 1
           ? Math.max(0, Number(ShopShelfSlot.sellProgressSeconds[slotEntityId]) || 0)
           : 0,
+      futureItemTypeId: ShopShelfSlot.futureItemTypeId[slotEntityId] || null,
+      futurePendingQuantity: Math.max(
+        0,
+        Math.floor(Number(ShopShelfSlot.futurePendingQuantity[slotEntityId]) || 0),
+      ),
     }));
   }
 

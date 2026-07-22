@@ -65,7 +65,11 @@ export class SeedSummonRequestManager {
     const seedCounts = this.getSeedCounts(seeds);
 
     for (const seedCount of seedCounts) {
-      this.itemsFacade.addItem(seedCount.seed.id, seedCount.quantity);
+      (this.itemsFacade.addProducedItem ?? this.itemsFacade.addItem).call(
+        this.itemsFacade,
+        seedCount.seed.id,
+        seedCount.quantity,
+      );
     }
 
     return {

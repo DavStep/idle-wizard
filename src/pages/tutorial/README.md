@@ -4,9 +4,9 @@ Elara Starbrew teaches through one lesson surface after the first purchase dialo
 
 Tutorial logic is unified through `TutorialLogicManager`. `TutorialStepManager` chooses and normalizes the current step, step definitions own reveal tokens and effects, `TutorialReminderManager` owns timing, and `TutorialLogicManager` returns the single view state the facade renders. Keep new tutorial flow rules in that path instead of branching directly inside `TutorialFacade`.
 
-The guide covers the sequential main requests for a free level 1 seed task and level-up, level 2 summon/load/wait/turn-in play with normal trader-stand rules, level 3 Research and mint seed requests, level 4 Garden herb requests, and level 5 Brewing with mana tonic research. After the first summon, only mana and the summon button stay revealed until the fifth first-lesson sage seed. Then Elara explains that she gives one request at a time before her request box is revealed and pointed at the sage seed turn-in. It has no skip state.
+The guide covers the sequential main requests for a free level 1 seed task with automatic level-up, level 2 summon/load/wait/turn-in play with normal trader-stand rules, level 3 Research and mint seed requests, level 4 Garden herb requests, and level 5 Brewing with mana tonic research. After the first summon, only mana and the summon button stay revealed until the fifth first-lesson sage seed. Then Elara explains that she gives one request at a time before her request box is revealed and pointed at the sage seed turn-in. It has no skip state.
 
-The first Market sequence opens stand 1, points at `shop:sell:sageSeed`, then points at `shop:sell:mark` after the player drafts an amount. Once matching stock is loaded, the objective becomes a passive wait for the five-second sale.
+The first Market sequence opens stand 1, points at `shop:sell:sageSeed`, moves the percentage rail to `25%` so one of the five lesson seeds is selected, then points at `shop:sell:mark`. Once matching stock is loaded, the objective becomes a passive wait for the five-second sale.
 
 Later coin guidance first reuses a loaded matching stall. Otherwise it reads `shop.shelf.sellItems`, opens an empty stall, selects the required category tab, and points to the item. If no available item exists, guide back to its source instead of a disabled loader row.
 

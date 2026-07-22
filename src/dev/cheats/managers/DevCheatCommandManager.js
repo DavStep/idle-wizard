@@ -25,7 +25,6 @@ const MANA_TONIC_KEY = 'manaTonic';
 const MINT_SEED_RESEARCH_ID = 'unlockSeed:mintSeed';
 const MANA_TONIC_RESEARCH_ID = 'unlockRecipe:manaTonic';
 const LEVEL_ONE_SUMMON_SAGE_SEED_TASK_ID = 'level1-summon-sage-seed';
-const LEVEL_ONE_SAGE_SEED_TASK_ID = 'level1-turn-in-sage-seed';
 const LEVEL_TWO_SUMMON_SAGE_SEED_TASK_ID = 'level2-summon-sage-seed';
 const LEVEL_TWO_SELL_SAGE_SEED_TASK_ID = 'level2-sell-sage-seed';
 const LEVEL_TWO_TURN_IN_SAGE_SEED_TASK_ID = 'level2-turn-in-sage-seed';
@@ -2136,13 +2135,6 @@ export class DevCheatCommandManager {
           this.createTutorialTaskState(LEVEL_ONE_SUMMON_SAGE_SEED_TASK_ID, 5, true),
         ];
         break;
-      case 'first-task-complete':
-      case 'level-up-one':
-        preset.tasks = [
-          this.createTutorialTaskState(LEVEL_ONE_SUMMON_SAGE_SEED_TASK_ID, 5, true),
-          this.createTutorialTaskState(LEVEL_ONE_SAGE_SEED_TASK_ID, 5, true),
-        ];
-        break;
       case 'open-market':
         this.applyLevelTwoReadyToSellPreset(preset);
         preset.pageId = 'workshop';
@@ -2333,19 +2325,19 @@ export class DevCheatCommandManager {
       return 0;
     }
 
-    if (index < 10) {
+    if (index < 8) {
       return 0;
     }
 
-    if (index < 19) {
+    if (index < 17) {
       return 1;
     }
 
-    if (index < 25) {
+    if (index < 23) {
       return 2;
     }
 
-    if (index < 31) {
+    if (index < 29) {
       return 3;
     }
 

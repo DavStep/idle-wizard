@@ -29,13 +29,13 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Buy/place/claim prices stay right-aligned and use tabular numerals.
 - Disabled or locked right-side actions use muted text and keep the same row height as enabled rows.
 
-## Hold-Selection Lists
+## Percentage Allocation Lists
 
 - Trader stall loaders use full-width inventory-row buttons with a quiet background and a larger gap between rows.
-- Pressing or holding an inventory row adds to a local draft; pressing or holding the separate `current` row removes from it.
-- Quick taps change one item. Hold repeats start from an inventory-aware step (about one per 2,000 available items, capped at 100), then double about every seven repeats; calculate the curve from the quantity captured when the hold begins.
-- Keep resource/icon colors unchanged when selected. Use only the row background to show selection.
-- `mark xN` and `mark all` apply the draft with one gameplay update; hold repeats must not publish full gameplay snapshots.
+- Tapping an inventory row selects one current item without moving stock. The selected row keeps resource/icon colors unchanged and uses only the row background for selection.
+- The allocation rail has five exact steps: `0%`, `25%`, `50%`, `75%`, and `100%`. Percentages reconcile against matching stock already loaded plus matching stock still in inventory; `0%` returns the loaded stock.
+- `mark xN` applies the selected percentage in one gameplay update. `mark future` is a separate toggle that continuously routes newly produced copies to that stand without consuming stock already owned when enabled.
+- A stand waiting for future production keeps its item target after loaded stock reaches zero and reads `waiting for <item>` instead of `empty stand`.
 
 ## Expandable Boxes
 
@@ -43,7 +43,7 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 - Use a top-right border label for count or progress, such as `2/5`.
 - Use a bottom-center border label as the toggle: `expand` when collapsed, `collapse` when open.
 - Expand hidden rows in normal flow inside the same box, without overlaying nearby panels.
-- Workshop main progression uses one always-open `elara's request` box. Show only the active request; the shared top panel owns a continuous level rail with thin dividers, a compact level-star badge, and the small left-aligned remaining-quest caption underneath. Each configured request owns one segment; add a final coin segment only when the level completion cost is positive. Keep the whole progress row hidden during FTUE until requests are revealed. Do not add XP copy, an expandable checklist, pinning, or task reordering.
+- Workshop main progression uses one always-open `elara's request` box. Show only the active request; the shared top panel owns a continuous level rail with thin dividers, a compact level-star badge, and the small left-aligned remaining-quest caption underneath. Each configured request owns one segment. When all requests are complete, relabel the progression box `level up` for the separate coin payment; never count or label that payment as an Elara request. Keep the whole progress row hidden at level 0 and reveal it after the automatic transition reaches level 1. Do not add XP copy, an expandable checklist, pinning, or task reordering.
 
 ## Popup Structure
 

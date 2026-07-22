@@ -25,7 +25,7 @@ export class GardenAutomationManager {
         continue;
       }
 
-      if (!this.hasResearch(automationResearchIds.autoHarvestPlant(tile.tileNumber))) {
+      if (!this.hasResearch(automationResearchIds.autoPlantTile(tile.tileNumber))) {
         continue;
       }
 
@@ -69,8 +69,7 @@ export class GardenAutomationManager {
   isGardenAutomationResearchId(researchId) {
     return (
       typeof researchId === 'string' &&
-      (researchId.startsWith('automation:autoPlantTile:') ||
-        researchId.startsWith('automation:autoHarvestPlant:'))
+      researchId.startsWith('automation:autoPlantTile:')
     );
   }
 }

@@ -6,8 +6,8 @@ Use this when an AI agent or contributor needs to change the repo without guessi
 
 1. Read `AGENTS.md` for mandatory project rules.
 2. Read `experience.md`, then read the routed `docs/obsidian/engineering-liveops/experience/` files for durable lessons and current traps in the touched area.
-3. Read `docs/architecture.md` for boundaries and feature locations.
-4. For UI work, also read `docs/style.md` and `docs/ui-patterns.md`.
+3. Read `docs/architecture.md` when the change crosses feature boundaries or needs architecture placement.
+4. For structural or visual UI work, also read `docs/style.md` and `docs/ui-patterns.md`.
 5. For tutorial/FTUE work, use the local `idle-wizard-tutorial-ui` skill and its QA checklist.
 6. For release work, read `docs/release-workflow.md`.
 7. Read the feature-local `README.md` before editing a feature folder.
@@ -18,9 +18,11 @@ If docs conflict with source, inspect source and tests, then update the stale do
 
 Use the smallest check that proves the change, then broaden when touching shared behavior.
 
+- Nonvisual copy, label, catalog, or definition change with unchanged rendering/interaction: run the matching focused tests. Skip the full UI workflow, browser screenshots, and `npm run check` unless another risk category below applies.
 - Focused logic change: run the matching `*.test.js`.
-- Shared gameplay, page, backend, persistence, or release behavior: run `npm run check`.
-- UI/layout/tutorial change: run focused tests plus browser screenshot/click QA at the authored mobile surface and a fitted desktop viewport.
+- Feature-local gameplay or page behavior: run the owning feature tests and the smallest integration test that proves the changed boundary.
+- Shared infrastructure, cross-feature behavior, persistence-format changes, backend schema changes, or release behavior: run `npm run check` plus the relevant platform build/check.
+- Structural UI, layout, interaction, or tutorial change: run focused tests plus browser screenshot/click QA at the authored mobile surface and a fitted desktop viewport.
 - Visual-reference/composition change: follow `docs/visual-reference-qa.md`; define the target anchors before editing, open a reproducible real-app state, capture a native-pixel close crop, and run `npm run ui:compare`. Green tests and a full-screen thumbnail do not prove parity.
 - Dialog visual work: open the dialog through `cheats.openUi(surfaceId)` or `?devUi=surfaceId` for iteration and screenshots. If that path does not exist, add it before visual QA.
 - Tap/button/mobile-WebView interaction change or bug: use `ecc-tap-path-audit` to trace handler order, state writes, backdrop/synthetic click behavior, and final visible state.
@@ -30,7 +32,7 @@ Use the smallest check that proves the change, then broaden when touching shared
 - UI screenshot QA that uses an HTML harness and `/src/styles/base.css` must set `html[data-style-theme="midnight"]`; `npm run check:ui` fails local `tmp/*-harness.html` and `tmp/*-qa.html` files that would fall back to the removed light theme.
 - Backend schema/config change: build/publish locally, regenerate bindings with `npm run stdb:generate`, and do not edit generated bindings by hand.
 
-`npm run check` is the default green gate: lint, tests, production web build.
+`npm run check` is the broad green gate for shared, cross-feature, persistence, schema, and release work. It is not required for the focused fast path.
 
 ## Reusable Dev Tools
 

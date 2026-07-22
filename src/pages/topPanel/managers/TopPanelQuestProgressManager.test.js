@@ -10,6 +10,22 @@ afterEach(() => {
 });
 
 describe('TopPanelQuestProgressManager', () => {
+  it('keeps quest progress hidden until the player reaches level 1', () => {
+    const { gameplayFacade, refs, emit } = createFixture({ currentLevel: 0 });
+    const manager = new TopPanelQuestProgressManager({ gameplayFacade });
+
+    manager.mount(refs);
+
+    expect(refs.questRow.hidden).toBe(true);
+
+    emit(createSnapshot({ currentLevel: 1, completedQuests: 0 }));
+
+    expect(refs.questRow.hidden).toBe(false);
+    expect(refs.questProgressText.textContent).toBe('Complete 4 more quests to level up');
+
+    manager.unmount();
+  });
+
   it('renders one segment per quest and the remaining quest count', () => {
     const { gameplayFacade, refs } = createFixture();
     const manager = new TopPanelQuestProgressManager({ gameplayFacade });
@@ -247,9 +263,9 @@ describe('TopPanelQuestProgressManager', () => {
   });
 });
 
-function createFixture({ completedQuests = 1, progress = null } = {}) {
+function createFixture({ completedQuests = 1, currentLevel = 2, progress = null } = {}) {
   let listener = null;
-  let snapshot = createSnapshot({ completedQuests, progress });
+  let snapshot = createSnapshot({ completedQuests, currentLevel, progress });
   const gameplayFacade = {
     getSnapshot: () => snapshot,
     subscribe: (nextListener) => {
@@ -292,10 +308,16 @@ function createFixture({ completedQuests = 1, progress = null } = {}) {
   };
 }
 
-function createSnapshot({ completedQuests = 1, loadRevision = 0, progress = null } = {}) {
+function createSnapshot({
+  completedQuests = 1,
+  currentLevel = 2,
+  loadRevision = 0,
+  progress = null,
+} = {}) {
   return {
     persistence: { loadRevision },
     tasks: {
+      currentLevel,
       level: {
         questProgress: progress ?? createProgress({ completedQuests }),
       },

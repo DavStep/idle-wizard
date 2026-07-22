@@ -25,7 +25,7 @@ export class BrewingAutomationManager {
   }
 
   autoBottleBrewedPotion(cauldronNumber) {
-    if (!this.hasResearch(automationResearchIds.autoBottleCauldron(cauldronNumber))) {
+    if (!this.hasResearch(automationResearchIds.autoBrewCauldron(cauldronNumber))) {
       return;
     }
 
@@ -73,8 +73,7 @@ export class BrewingAutomationManager {
   isBrewingAutomationResearchId(researchId) {
     return (
       typeof researchId === 'string' &&
-      (researchId.startsWith('automation:autoBrewCauldron:') ||
-        researchId.startsWith('automation:autoBottleCauldron:'))
+      researchId.startsWith('automation:autoBrewCauldron:')
     );
   }
 

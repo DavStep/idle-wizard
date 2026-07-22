@@ -16,9 +16,9 @@ describe('TaskQuestProgressManager', () => {
     });
 
     expect(snapshot).toMatchObject({
-      progress: 0.25,
+      progress: 1 / 3,
       completedQuests: 1,
-      totalQuests: 4,
+      totalQuests: 3,
       targetLevel: 3,
       activeQuest: {
         kind: 'task',
@@ -44,7 +44,7 @@ describe('TaskQuestProgressManager', () => {
       taskId: 'summon-sage',
       progress: 4 / 5,
     });
-    expect(snapshot.progress).toBeCloseTo((4 / 5) / 3);
+    expect(snapshot.progress).toBeCloseTo((4 / 5) / 2);
   });
 
   it('does not add a final request for a free level completion', () => {
@@ -67,7 +67,7 @@ describe('TaskQuestProgressManager', () => {
     });
   });
 
-  it('turns a paid level completion into the final request', () => {
+  it('does not turn a paid level completion into an elara request', () => {
     const manager = new TaskQuestProgressManager();
     const snapshot = manager.getSnapshot({
       currentLevel: 2,
@@ -80,14 +80,10 @@ describe('TaskQuestProgressManager', () => {
     });
 
     expect(snapshot).toMatchObject({
-      progress: 2 / 3,
+      progress: 1,
       completedQuests: 2,
-      totalQuests: 3,
-      activeQuest: {
-        kind: 'levelUp',
-        targetLevel: 3,
-        costCoin: 8,
-      },
+      totalQuests: 2,
+      activeQuest: null,
     });
   });
 });

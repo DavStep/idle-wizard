@@ -2,7 +2,7 @@
 
 Main quests turn normal Workshop actions into player level progress. The Workshop shows one `elara's request` at a time. Every completed request fills one segment in the shared top-panel level rail, and the active request's partial progress fills its current segment proportionally.
 
-Each level gets its ordered request chain from SpacetimeDB `game_config.tasks`. Requests can be `research`, `summon`, `grow`, `brew`, `sell`, or `turnIn` (legacy rows with no `type` are `turnIn`). Only the current request collects progress. Action requests auto-complete when they hit their target. Turn-in requests consume submitted items until their required quantity is full, then auto-complete. A positive level completion coin cost adds one final segment; free level completions do not. Completing the level advances it.
+Each level gets its ordered request chain from SpacetimeDB `game_config.tasks`. Requests can be `research`, `summon`, `grow`, `brew`, `sell`, or `turnIn` (legacy rows with no `type` are `turnIn`). Only the current request collects progress. Action requests auto-complete when they hit their target. Turn-in requests consume submitted items until their required quantity is full, then auto-complete. Every configured request owns one level-rail segment. The level-up coin payment is a separate action after the requests, not an Elara request or rail segment. Completing that action advances the level.
 
 Level 1 is free and fresh games start with `0` coin. The first paid level completion is level 2, after the tutorial has taught normal Market selling.
 

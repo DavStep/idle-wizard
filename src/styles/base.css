@@ -4328,6 +4328,141 @@ span.room-seed-pack-composite .room-seed-pack-item {
   clear: both;
 }
 
+.shop-page__shelf > .shop-page__slot-row {
+  --shop-page-stall-visual-size: 50px;
+
+  position: relative;
+  display: grid;
+  grid-template-areas:
+    "title capacity batch"
+    "visual item price"
+    "visual progress progress";
+  grid-template-columns: var(--shop-page-stall-visual-size) minmax(0, 1fr) max-content;
+  grid-template-rows: var(--style-row-min-height) 28px minmax(12px, auto);
+  min-height: 84px;
+  padding: 8px 10px 7px;
+  border: var(--style-border);
+  column-gap: 10px;
+  row-gap: 3px;
+}
+
+.shop-page__shelf > .shop-page__slot-row:not(:last-of-type) {
+  margin-bottom: 10px;
+}
+
+.shop-page__shelf > .shop-page__slot-row > .shop-page__slot-title {
+  grid-area: title;
+  justify-self: start;
+  width: max-content;
+  font-weight: bold;
+  text-align: left;
+}
+
+.shop-page__shelf > .shop-page__slot-row > .shop-page__slot-capacity-value {
+  grid-area: capacity;
+  align-self: center;
+  justify-self: start;
+  color: var(--style-muted);
+  font-size: var(--style-box-border-label-font-size);
+  letter-spacing: 2px;
+  line-height: var(--style-row-min-height);
+  white-space: nowrap;
+}
+
+.shop-page__shelf > .shop-page__slot-row > .shop-page__slot-value,
+.shop-page__shelf .shop-page__slot-item-column,
+.shop-page__shelf .shop-page__slot-status-value,
+.shop-page__shelf .shop-page__slot-item-value:is(
+    .style-seed-label,
+    .style-herb-label,
+    .style-potion-label,
+    .style-ingredient-label
+  ) {
+  display: contents;
+}
+
+.shop-page__shelf
+  .shop-page__slot-item-value
+  :where(
+    .style-seed-label__icon,
+    .style-herb-label__icon,
+    .style-potion-label__icon,
+    .style-ingredient-label__icon
+  ) {
+  box-sizing: border-box;
+  display: block;
+  grid-area: visual;
+  align-self: center;
+  justify-self: stretch;
+  width: var(--shop-page-stall-visual-size);
+  height: var(--shop-page-stall-visual-size);
+  padding: 5px;
+  margin: 0;
+  object-fit: contain;
+  border: var(--style-border);
+  vertical-align: 0;
+}
+
+.shop-page__shelf
+  .shop-page__slot-item-value
+  :where(
+    .style-seed-label__text,
+    .style-herb-label__text,
+    .style-potion-label__text,
+    .style-ingredient-label__text
+  ) {
+  grid-area: item;
+  align-self: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-page__shelf .shop-page__slot-item-value:not([data-item-icon-kind]) {
+  grid-area: item;
+  align-self: center;
+}
+
+.shop-page__shelf .shop-page__slot-quantity-value {
+  grid-area: visual;
+  align-self: end;
+  justify-self: center;
+  z-index: 1;
+  min-width: 28px;
+  padding: 0 3px;
+  color: var(--style-text);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  text-align: center;
+  white-space: nowrap;
+  background: var(--style-surface);
+  border: var(--style-border);
+  transform: translateY(2px);
+}
+
+.shop-page__shelf .shop-page__slot-batch-value {
+  grid-area: batch;
+  align-self: center;
+  justify-self: end;
+  font-weight: bold;
+}
+
+.shop-page__shelf .shop-page__slot-status-separator {
+  display: none;
+}
+
+.shop-page__shelf .shop-page__slot-price-value {
+  grid-area: price;
+  align-self: center;
+  justify-self: end;
+}
+
+.shop-page__shelf .shop-page__slot-progress-row {
+  grid-area: progress;
+  align-self: center;
+}
+
 .shop-page__slot-row > .row_key {
   float: none;
   grid-column: 1;
@@ -10719,7 +10854,7 @@ div.workshop-page__discovery-row {
   padding: 0;
   margin-bottom: 0;
   line-height: var(--style-research-row-height);
-  text-align: right;
+  text-align: center;
   background: transparent;
   border: 0;
   font-variant-numeric: tabular-nums lining-nums;
@@ -12041,10 +12176,6 @@ div.workshop-page__discovery-row {
   -webkit-user-select: none;
 }
 
-.shop-page__sell-current:not(:disabled) {
-  cursor: pointer;
-}
-
 .shop-page__sell-current[data-has-selection="true"] {
   background: var(--shop-page-sell-row-selected-surface);
 }
@@ -12081,9 +12212,105 @@ div.workshop-page__discovery-row {
   -webkit-user-drag: none;
 }
 
-.shop-page__sell-current:focus-visible {
+.shop-page__sell-allocation {
+  display: grid;
+  gap: 1px;
+  padding: 0 2px;
+}
+
+.shop-page__sell-allocation-range {
+  width: 100%;
+  height: 14px;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.shop-page__sell-allocation-range::-webkit-slider-runnable-track {
+  box-sizing: border-box;
+  height: 3px;
+  background: var(--style-surface);
+  border: var(--style-border);
+}
+
+.shop-page__sell-allocation-range::-moz-range-track {
+  box-sizing: border-box;
+  height: 3px;
+  background: var(--style-surface);
+  border: var(--style-border);
+}
+
+.shop-page__sell-allocation-range::-webkit-slider-thumb {
+  width: 7px;
+  height: 13px;
+  margin-top: -6px;
+  appearance: none;
+  background: var(--style-text);
+  border: 0;
+  border-radius: 0;
+}
+
+.shop-page__sell-allocation-range::-moz-range-thumb {
+  width: 7px;
+  height: 13px;
+  background: var(--style-text);
+  border: 0;
+  border-radius: 0;
+}
+
+.shop-page__sell-allocation-range:focus-visible {
   outline: var(--style-border);
-  outline-offset: -1px;
+  outline-offset: 1px;
+}
+
+.shop-page__sell-allocation-range:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.shop-page__sell-allocation-ticks {
+  position: relative;
+  height: 15px;
+  margin: 0 3.5px;
+  font-size: 9px;
+  color: var(--style-muted);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.shop-page__sell-allocation-tick {
+  position: absolute;
+  top: 0;
+  left: calc(var(--shop-page-sell-allocation-percentage) * 1%);
+  display: grid;
+  gap: 1px;
+  justify-items: center;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  line-height: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
+
+.shop-page__sell-allocation-tick::before {
+  width: 2px;
+  height: 3px;
+  background: var(--style-stroke);
+  content: "";
+}
+
+.shop-page__sell-allocation-tick:focus-visible {
+  outline: var(--style-border);
+  outline-offset: 1px;
+}
+
+.shop-page__sell-allocation-tick:disabled {
+  cursor: default;
 }
 
 .amount-selection-row {
@@ -12362,6 +12589,18 @@ div.workshop-page__discovery-row {
 
 :root[data-style-theme="midnight"]
   :where(.style-panel, .style-box, .style-dialog, .style-overlay, .style-tooltip) {
+  background: transparent;
+  background-clip: padding-box;
+  border-color: transparent;
+  border-image-source: var(--style-midnight-panel-frame);
+  border-image-slice: var(--style-midnight-frame-slice);
+  border-image-width: var(--style-midnight-frame-width);
+  border-image-repeat: stretch;
+}
+
+:root[data-style-theme="midnight"]
+  .shop-page__shelf
+  > .shop-page__slot-row {
   background: transparent;
   background-clip: padding-box;
   border-color: transparent;
@@ -16270,8 +16509,11 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.shop-page__sell-mark-button,
-.style-button.shop-page__sell-mark-all-button {
-  width: 86px;
+.style-button.shop-page__sell-future-button {
+  box-sizing: border-box;
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
   padding: 1px 5px;
   margin: 0;
 }
@@ -17184,6 +17426,32 @@ div.workshop-page__discovery-row {
 
 :root[data-style-theme="midnight"]
   .style-button[role="tab"][aria-selected="true"] {
+  background: transparent;
+  border-image-source: var(--style-midnight-panel-selected-frame);
+}
+
+:root[data-style-theme="midnight"]
+  .shop-page__sell-current,
+:root[data-style-theme="midnight"]
+  .shop-page__sell-dialog
+  > .shop-page__sell-item-list
+  .shop-page__sell-item-button {
+  background: transparent;
+  background-clip: padding-box;
+  border: var(--style-border);
+  border-color: transparent;
+  border-image-source: var(--style-midnight-panel-frame);
+  border-image-slice: var(--style-midnight-frame-slice);
+  border-image-width: var(--style-midnight-frame-compact-width);
+  border-image-repeat: stretch;
+}
+
+:root[data-style-theme="midnight"]
+  .shop-page__sell-current[data-has-selection="true"],
+:root[data-style-theme="midnight"]
+  .shop-page__sell-dialog
+  > .shop-page__sell-item-list
+  .shop-page__sell-item-button[aria-pressed="true"] {
   background: transparent;
   border-image-source: var(--style-midnight-panel-selected-frame);
 }

@@ -64,14 +64,6 @@ const STEP_ACTIONS = {
     await page.ensureTasksExpanded();
     await page.completeTurnInTaskByItem('sageSeed');
   },
-  'first-task-complete': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
-  },
-  'level-up-one': async (page) => {
-    await page.ensurePage('workshop');
-    await page.ensureTasksExpanded();
-    await page.clickActiveTarget();
-  },
   'intro-market': async (page) => {
     await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
     await page.cheat('fillMana');
@@ -371,7 +363,6 @@ async function prepareStepForCapture(page, stepId) {
     case 'summon-five-seeds':
     case 'intro-level-requirements':
     case 'unselect-sage-seed-sale':
-    case 'level-up-one':
     case 'level-up-two':
     case 'fill-mint-seed-task':
     case 'level-up-three':

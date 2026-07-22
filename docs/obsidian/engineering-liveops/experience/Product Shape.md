@@ -77,9 +77,10 @@ experience_type: product-shape
 - FTUE reveal-gated action loops need an active step while waiting for repeated actions; a null step clears `data-tutorial-reveal` and shows unrevealed room UI.
 - FTUE reveal `pointer-events` enables must match or exceed the hidden action selector specificity; visible controls can otherwise remain untappable after reveal animations end.
 - FTUE level-one sage guidance must resolve the turn-in task by item/action too; live configs may still use legacy `level1-sage-seeds` while defaults use `level1-turn-in-sage-seed`.
+- The final level-0 request must advance to level 1 before publishing; never expose an intermediate `all quests complete` rail or clickable `reach level 1` row, and migrate completed legacy level-0 saves on load.
 - Resource-gated FTUE steps must refresh from `subscribeFrameResources`; top-panel mana can change without a full gameplay snapshot.
 - FTUE repeated action prompts should show once as brief non-dimming hints, then reappear only after idle time; do not keep alternating guidance through active loops.
-- Level-two FTUE Trader Offer must target `+1` until all five summoned Sage Seeds are selected, then target `sell`; because the turn-in task still needs four seeds, the follow-up must guide another four summons.
+- Level-two FTUE trader-stand loading selects Sage Seed, targets the percentage rail until it reads `25%`, then targets `mark x1`; this sells one of five lesson seeds and preserves four for turn-in.
 - A page means a room view, not a web route.
 - The first page is `Workshop`.
 - Level requirements can be typed action rows; only `turnIn` consumes inventory, while `research`, `summon`, `grow`, `brew`, and `sell` progress from gameplay events and auto-complete at target.
@@ -163,18 +164,18 @@ experience_type: product-shape
 - Non-button text/row press targets should fire synthetic click on touch/pointer press-start with click dedupe; native buttons should activate on release/click. Use `data-press-start-click="false"` only when a non-button target needs validated release.
 - `.is-locked` is not a disabled signal for shared press handling; use native `disabled`, `aria-disabled="true"`, or `.is-disabled` so buyable locked rows and locked room tabs still synth-click on web.
 - Native dialog/open/submit buttons should activate on validated pointerup/click; do not add touchstart/pointerdown action handlers to buttons unless the interaction is a true hold/drag setup.
-- NPC market stand rows open the loader on ordinary click/keyboard activation; reserve pointerdown handling for the actual load/unload hold controls.
+- NPC market stand rows and loader item rows use ordinary click/keyboard activation; the percentage-allocation flow has no pointerdown/hold transfer path.
 - NPC market demand recovery uses lazy capped UTC buyer waves, not a smooth 5-minute/half-life regen or hard daily reset; backend and `npcMarketPricing.js` must stay mirrored.
 - NPC market weekly reset must use the same anchored Monday UTC period as leaderboards/events; start recovery at `weekStart - 1` so the day-start buyer wave is added after the reset.
 - NPC market live price math is mirrored in `npcMarketPricing.js`; update the server formula and frontend quote helper together or stall/stock totals drift.
 - NPC market demand/prices are fake local gameplay values until player level 4; do not debug level 1-3 timed stalls against backend NPC rows.
 - NPC trader stands each own an independent five-second progress clock. Keep a stable two-line stand height: render item, batch, and current value first, then the progress rail and remaining seconds together below.
-- Loaded trader items are physically removed from inventory and returned on unload. Loader `mark xN` / `mark all` controls are local drafts that transfer once; do not persist a parallel reservation or sell-limit mode.
+- Loaded trader items are physically removed from inventory and returned when allocation moves down. The stepped percentage is transient UI state; only physical loaded stock and the explicit future-production target persist.
 - Level 4+ NPC auto-sell needs retained backend price rows while any stand has an item; if prices are missing at a timer boundary, keep that cycle pending instead of resetting it away.
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or bold text there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker visible labels need stable hit targets and click/backdrop dedupe; icon/text fragments inside those labels should not own separate hit testing.
-- Trader loader rows update a local draft on pointerdown/hold, cancel after a 10px move, and publish gameplay only when `mark xN` or `mark all` is pressed; selection changes row background, never resource text color or font weight.
+- Trader loader rows select one current item on click. The `0%` / `25%` / `50%` / `75%` / `100%` rail reconciles loaded plus available matching stock in one update, while `mark future` persists a separate item target and queues only copies produced after enablement.
 - Scrollable choice/item rows should activate on validated touch release with a small movement tolerance; keep press-start only for non-scroll openers where mobile click retargets.
 - Garden selected seed labels need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening seed choices.
 - Garden cancel/swap dialogs opened from touch-selected seed picker rows need their own one-shot backdrop dedupe; otherwise WebView can close the new dialog with the same synthetic click.
@@ -214,7 +215,7 @@ experience_type: product-shape
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - Trader loader rows are one action; make the whole visual row the button and put FTUE ids on that button (`shop:sell:<itemKey>`).
-- FTUE Market teaching is `open first stall -> add sage seed -> mark selected seed -> wait for timed sale`; target `shop:sell:mark` once the local draft exists.
+- FTUE Market teaching is `open first stall -> select sage seed -> set 25% -> mark one seed -> wait for timed sale`; target `shop:sell:percentage` until `25%`, then `shop:sell:mark`.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE lesson border-action buttons need late `.style-box .tutorial-layer__...` overrides, because the global `.style-box :where(button, ...)` rule can re-inflate them to body size.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.

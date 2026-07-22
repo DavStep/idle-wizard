@@ -8,6 +8,8 @@ export const ShopShelfSlot = {
   sellItemTypeId: [],
   loadedQuantity: [],
   sellProgressSeconds: [],
+  futureItemTypeId: [],
+  futurePendingQuantity: [],
 };
 
 export const PlayerShopShelf = {

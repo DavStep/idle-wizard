@@ -23,7 +23,11 @@ export class GardenProcessManager {
 
     for (const harvest of this.gardenTileEntityManager.completeFinishedHarvests()) {
       const quantity = Math.max(1, Math.floor(Number(harvest.harvestQuantity) || 1));
-      this.itemsFacade.addItem(harvest.herbItemTypeId, quantity);
+      (this.itemsFacade.addProducedItem ?? this.itemsFacade.addItem).call(
+        this.itemsFacade,
+        harvest.herbItemTypeId,
+        quantity,
+      );
       this.onHarvestComplete?.({
         herb: this.itemsFacade.getItemDefinition(harvest.herbItemTypeId),
         quantity,

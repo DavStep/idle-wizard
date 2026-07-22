@@ -4160,7 +4160,6 @@ function getAutomationDefaultCostGoldById(): Record<string, bigint> {
 
   for (let tileNumber = 1; tileNumber <= MAX_AUTOMATION_GARDEN_TILES; tileNumber += 1) {
     costs[`automation:autoPlantTile:${tileNumber}`] = BigInt(tileNumber);
-    costs[`automation:autoHarvestPlant:${tileNumber}`] = BigInt(tileNumber);
   }
 
   for (
@@ -4170,7 +4169,6 @@ function getAutomationDefaultCostGoldById(): Record<string, bigint> {
   ) {
     const cost = BigInt(cauldronNumber);
     costs[`automation:autoBrewCauldron:${cauldronNumber}`] = cost;
-    costs[`automation:autoBottleCauldron:${cauldronNumber}`] = cost;
     costs[`automation:autoCollectCauldron:${cauldronNumber}`] = cost;
   }
 
@@ -4184,7 +4182,6 @@ function getAutomationDefaultCostCrystalById(): Record<string, number> {
 
   for (let tileNumber = 1; tileNumber <= MAX_AUTOMATION_GARDEN_TILES; tileNumber += 1) {
     costs[`automation:autoPlantTile:${tileNumber}`] = tileNumber;
-    costs[`automation:autoHarvestPlant:${tileNumber}`] = tileNumber;
   }
 
   for (
@@ -4193,7 +4190,6 @@ function getAutomationDefaultCostCrystalById(): Record<string, number> {
     cauldronNumber += 1
   ) {
     costs[`automation:autoBrewCauldron:${cauldronNumber}`] = cauldronNumber;
-    costs[`automation:autoBottleCauldron:${cauldronNumber}`] = cauldronNumber;
     costs[`automation:autoCollectCauldron:${cauldronNumber}`] = cauldronNumber;
   }
 
@@ -4987,23 +4983,13 @@ const automationResearchCatalog = [
   },
   ...automationGardenTileNumbers.map((tileNumber) => ({
     id: `automation:autoPlantTile:${tileNumber}`,
-    label: `auto plant tile ${tileNumber}`,
+    label: `automate plot ${tileNumber}`,
     groupId: 'autoPlantTiles',
-  })),
-  ...automationGardenTileNumbers.map((tileNumber) => ({
-    id: `automation:autoHarvestPlant:${tileNumber}`,
-    label: `auto harvest tile ${tileNumber}`,
-    groupId: 'autoHarvestTiles',
   })),
   ...automationCauldronNumbers.map((cauldronNumber) => ({
     id: `automation:autoBrewCauldron:${cauldronNumber}`,
-    label: `auto brew cauldron ${cauldronNumber}`,
+    label: `automate cauldron ${cauldronNumber}`,
     groupId: 'autoBrewCauldrons',
-  })),
-  ...automationCauldronNumbers.map((cauldronNumber) => ({
-    id: `automation:autoBottleCauldron:${cauldronNumber}`,
-    label: `auto bottle cauldron ${cauldronNumber}`,
-    groupId: 'autoBottleCauldrons',
   })),
   ...automationCauldronNumbers.map((cauldronNumber) => ({
     id: `automation:autoCollectCauldron:${cauldronNumber}`,
@@ -5161,7 +5147,10 @@ function normalizeResearchCurrencyCostRecord(
   const normalized: Record<string, unknown> = {};
 
   for (const [researchId, cost] of Object.entries(currentCosts)) {
-    if (!researchCurrencyCostIds.has(researchId)) {
+    if (
+      !researchCurrencyCostIds.has(researchId) &&
+      !isLegacySplitAutomationResearchId(researchId)
+    ) {
       normalized[researchId] = cost;
     }
   }
@@ -5172,6 +5161,23 @@ function normalizeResearchCurrencyCostRecord(
   }
 
   return normalized;
+}
+
+function isLegacySplitAutomationResearchId(researchId: string): boolean {
+  return (
+    /^automation:autoHarvestPlant:\d+$/.test(researchId) ||
+    /^automation:autoBottleCauldron:\d+$/.test(researchId)
+  );
+}
+
+function removeLegacySplitAutomationEntries(
+  record: Record<string, unknown>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(record).filter(
+      ([researchId]) => !isLegacySplitAutomationResearchId(researchId),
+    ),
+  );
 }
 
 function getDefaultItemsConfig() {
@@ -8338,7 +8344,7 @@ function normalizeGameConfigJson(
       );
       const nextCostsGold = {
         ...defaultResearchCostsGold,
-        ...existingCostsGold,
+        ...removeLegacySplitAutomationEntries(existingCostsGold),
       };
       const replacedLegacyGoldCost = Object.entries(researchLegacyCostGoldById).some(
         ([researchId, legacyCostGoldValues]) => {
@@ -8356,7 +8362,11 @@ function normalizeGameConfigJson(
         },
       );
 
-      if (missingGoldCost || replacedLegacyGoldCost) {
+      if (
+        missingGoldCost ||
+        replacedLegacyGoldCost ||
+        JSON.stringify(existingCostsGold) !== JSON.stringify(nextCostsGold)
+      ) {
         normalizedResearchConfig.researchCostsGold = nextCostsGold;
         changed = true;
       }
@@ -8442,7 +8452,7 @@ function normalizeGameConfigJson(
       );
       const nextDurations = {
         ...defaultResearchDurationsSeconds,
-        ...existingDurations,
+        ...removeLegacySplitAutomationEntries(existingDurations),
       };
       let replacedLegacyDuration = false;
 
@@ -8508,7 +8518,11 @@ function normalizeGameConfigJson(
         replacedLegacyDuration = true;
       }
 
-      if (missingDuration || replacedLegacyDuration) {
+      if (
+        missingDuration ||
+        replacedLegacyDuration ||
+        JSON.stringify(existingDurations) !== JSON.stringify(nextDurations)
+      ) {
         normalizedResearchConfig.researchDurationsSeconds = nextDurations;
         changed = true;
       }
@@ -10588,6 +10602,25 @@ function migrateLegacyMarketResearchId(researchId: string): string {
   return match ? `advanced:stallStaffing:${match[1]}` : researchId;
 }
 
+function migrateLegacySplitAutomationResearchId(researchId: string): string {
+  const harvestMatch = /^automation:autoHarvestPlant:(\d+)$/.exec(researchId);
+
+  if (harvestMatch) {
+    return `automation:autoPlantTile:${harvestMatch[1]}`;
+  }
+
+  const bottleMatch = /^automation:autoBottleCauldron:(\d+)$/.exec(researchId);
+  return bottleMatch
+    ? `automation:autoBrewCauldron:${bottleMatch[1]}`
+    : researchId;
+}
+
+function migrateLegacyResearchId(researchId: string): string {
+  return migrateLegacyMarketResearchId(
+    migrateLegacySplitAutomationResearchId(researchId),
+  );
+}
+
 function normalizeSaveResearch(
   value: unknown,
   prestigeCount = 0,
@@ -10596,7 +10629,7 @@ function normalizeSaveResearch(
   const completedIds = isRecord(value) && Array.isArray(value.completedIds)
     ? value.completedIds
         .map((researchId) =>
-          migrateLegacyMarketResearchId(normalizeResearchId(String(researchId ?? ''))),
+          migrateLegacyResearchId(normalizeResearchId(String(researchId ?? ''))),
         )
         .filter((researchId) => researchCatalogById.has(researchId))
     : [];
@@ -10707,7 +10740,7 @@ function normalizeSaveInProgressResearches(
       continue;
     }
 
-    const researchId = migrateLegacyMarketResearchId(
+    const researchId = migrateLegacyResearchId(
       normalizeResearchId(String(progress.researchId ?? '')),
     );
     if (
@@ -10927,6 +10960,10 @@ function normalizeSaveShopShelf(
   const slots = normalizeSaveSlotRows(shelf.slots, unlockedSlots, (slot) => {
     const itemKey = normalizeSaveItemKey(slot.sellItemKey);
     const itemKind = itemCatalog.get(itemKey);
+    const futureItemKey = normalizeSaveItemKey(slot.futureItemKey);
+    const futureItemKind = itemCatalog.get(futureItemKey);
+    const safeFutureItemKey =
+      futureItemKind && (!itemKind || itemKey === futureItemKey) ? futureItemKey : null;
     const hasLoadedQuantity = Object.prototype.hasOwnProperty.call(slot, 'loadedQuantity');
     const legacySellLimitMode = slot.sellLimitMode === 'amount' ? 'amount' : 'all';
 
@@ -10962,6 +10999,15 @@ function normalizeSaveShopShelf(
         MAX_GAME_CONFIG_RESOURCE_LIMIT,
         0,
       ),
+      futureItemKey: safeFutureItemKey,
+      futurePendingQuantity: safeFutureItemKey
+        ? clampSaveInteger(
+            slot.futurePendingQuantity,
+            0,
+            MAX_GAME_CONFIG_RESOURCE_LIMIT,
+            0,
+          )
+        : 0,
     };
   });
   const legacySellProgressSeconds = Math.max(
@@ -12111,7 +12157,9 @@ function normalizeSaveCompletedResearchIds(completedIds: unknown): string[] | nu
 
   const requested = new Set(
     completedIds
-      .map((researchId: unknown) => normalizeResearchId(String(researchId ?? '')))
+      .map((researchId: unknown) =>
+        migrateLegacyResearchId(normalizeResearchId(String(researchId ?? ''))),
+      )
       .filter((researchId: string) => researchCatalogById.has(researchId)),
   );
 
@@ -12134,7 +12182,9 @@ function readSavedNonDefaultResearchCount(saveJson?: string): number | null {
 
     return new Set(
       research.completedIds
-        .map((researchId: unknown) => normalizeResearchId(String(researchId ?? '')))
+        .map((researchId: unknown) =>
+          migrateLegacyResearchId(normalizeResearchId(String(researchId ?? ''))),
+        )
         .filter(
           (researchId: string) =>
             researchCatalogById.has(researchId) &&
@@ -15219,6 +15269,12 @@ function ensureResearchConfig(
 }
 
 function ensureResearchConfigCatalog(ctx: IdleWizardReducerCtx) {
+  for (const config of Array.from(ctx.db.researchConfig.iter())) {
+    if (isLegacySplitAutomationResearchId(config.researchId)) {
+      ctx.db.researchConfig.delete(config);
+    }
+  }
+
   for (const catalogResearch of researchCatalog) {
     ensureResearchConfig(ctx, catalogResearch);
   }

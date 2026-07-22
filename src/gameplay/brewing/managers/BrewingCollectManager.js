@@ -30,7 +30,11 @@ export class BrewingCollectManager {
       };
     }
 
-    this.itemsFacade.addItem(collected.resultItemTypeId, collected.resultQuantity);
+    (this.itemsFacade.addProducedItem ?? this.itemsFacade.addItem).call(
+      this.itemsFacade,
+      collected.resultItemTypeId,
+      collected.resultQuantity,
+    );
 
     const potion = this.itemsFacade.getItemDefinition(collected.resultItemTypeId);
 

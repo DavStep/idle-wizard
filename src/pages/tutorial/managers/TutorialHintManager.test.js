@@ -243,7 +243,7 @@ describe('TutorialHintManager', () => {
 
     manager.mount(stage);
     manager.showLesson({
-      id: 'first-task-complete',
+      id: 'intro-welcome',
       title: 'lesson 1: introduction',
       text: 'tasks are how the workshop asks for supplies.',
       advanceOnClick: true,

@@ -33,8 +33,8 @@ Each trader stand sells from its own loaded stock on an independent five-second 
 | ★★★★ | 4 |
 | ★★★★★ | 5 |
 
-- Tap a stand to open the loader, then press or hold an item to transfer it from inventory.
-- Hold the loaded item on the stand to return stock to inventory.
+- Tap a stand to open the loader, select an item, choose `0%` / `25%` / `50%` / `75%` / `100%`, then mark that share of matching stock.
+- `0%` returns loaded stock. `mark future` continuously loads newly produced copies until stopped without taking stock already owned when it is enabled.
 - A stand contains one item type at a time and clears when its loaded quantity reaches zero.
 - Base throughput is 1 item every 5 seconds.
 - `advanced:stallStaffing:N` changes stand N to 2 items every 5 seconds.
@@ -50,6 +50,7 @@ Player inventory and coin remain client-owned; see [[mechanics/market/Market Aut
 
 - `src/gameplay/shop/managers/ShopAutoSellManager.js`
 - `src/gameplay/shop/managers/ShopShelfSlotSelectionManager.js`
+- `src/gameplay/shop/managers/ShopShelfFutureLoadManager.js`
 - `src/gameplay/shop/managers/ShopBalanceManager.js`
 - `src/gameplay/research/stallStaffingResearch.js`
 - `spacetimedb/src/index.ts`

@@ -1,0 +1,168 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="midnight"
+  data-style-font="lexend"
+  data-style-icons="icons"
+  data-style-color="resources"
+  data-style-progress="regular"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard market stalls recipe</title>
+    <link rel="stylesheet" href="/src/styles/base.css">
+    <style>
+      body {
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+
+      .recipe-viewport {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .game-stage {
+        --design-width: 1080;
+        --design-height: 2170;
+        --source-ui-scale: 3;
+        --app-stage-width: 1080px;
+        --app-stage-height: 2170px;
+        --app-source-ui-screen-width: 1080px;
+
+        width: 1080px;
+        height: 2170px;
+        max-width: none;
+        max-height: none;
+        transform-origin: top left;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="recipe-viewport">
+      <main class="game-stage" aria-label="Market stall visual recipe">
+        <article class="shop-page" aria-label="Market room">
+          <div class="shop-page__wall" aria-hidden="true"></div>
+          <div class="shop-page__floor" aria-hidden="true"></div>
+          <div class="shop-page__ui-layer">
+            <div
+              class="shop-page__market-identity"
+              aria-label="Crossroads Market, market rank 2 of 5"
+            >
+              <span>crossroads market</span>
+              <span class="shop-page__market-rank"> ★★</span>
+            </div>
+            <section
+              class="shop-page__market-panel shop-page__market-panel--npm"
+              aria-label="traders"
+            ></section>
+          </div>
+        </article>
+        <div class="room-page__popup-layer shop-page__popup-layer"></div>
+      </main>
+    </div>
+
+    <script type="module">
+      import '@fontsource/lexend/400.css';
+      import '@fontsource/lexend/700.css';
+      import { ShopShelfManager } from '/src/pages/shop/managers/ShopShelfManager.js';
+      import { stopTimerProgressFill } from '/src/pages/shared/timerProgress.js';
+
+      const recipeViewport = document.querySelector('.recipe-viewport');
+      const gameStage = document.querySelector('.game-stage');
+      const fitRecipe = () => {
+        const scale = Math.min(window.innerWidth / 1080, window.innerHeight / 2170, 1);
+        recipeViewport.style.width = `${1080 * scale}px`;
+        recipeViewport.style.height = `${2170 * scale}px`;
+        gameStage.style.transform = `scale(${scale})`;
+      };
+      fitRecipe();
+      window.addEventListener('resize', fitRecipe);
+
+      const snapshot = {
+        coin: { current: 5770 },
+        research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+        shop: {
+          shelf: {
+            maxSlots: 2,
+            selectedSlotNumber: 1,
+            autoSellSeconds: 5,
+            slotCosts: [0, 0],
+            sellKinds: [{ kind: 'seed', label: 'seeds' }],
+            sellItems: [
+              {
+                itemTypeId: 1,
+                key: 'sageSeed',
+                label: 'sage seed',
+                kind: 'seed',
+                quantity: 0,
+                sellCoin: 1,
+                sellNeed: 10,
+              },
+            ],
+            slots: [
+              {
+                slotNumber: 1,
+                unlocked: true,
+                sellItemTypeId: 1,
+                sellKind: 'seed',
+                sellKey: 'sageSeed',
+                sellLabel: 'sage seed',
+                loadedQuantity: 462,
+                batchSize: 3,
+                sellCoin: 1,
+                sellProgressSeconds: 2.5,
+              },
+              {
+                slotNumber: 2,
+                unlocked: true,
+                sellItemTypeId: 1,
+                sellKind: 'seed',
+                sellKey: 'sageSeed',
+                sellLabel: 'sage seed',
+                loadedQuantity: 462,
+                batchSize: 3,
+                sellCoin: 1,
+                sellProgressSeconds: 2.5,
+              },
+            ],
+          },
+        },
+      };
+      const gameplayFacade = {
+        getSnapshot: () => snapshot,
+        subscribe: (callback) => {
+          callback(snapshot);
+          return () => {};
+        },
+        selectShopShelfSlot: (slotNumber) => {
+          snapshot.shop.shelf.selectedSlotNumber = slotNumber;
+          return { ok: true, slotNumber };
+        },
+      };
+      const panel = document.querySelector('.shop-page__market-panel');
+      const popupLayer = document.querySelector('.shop-page__popup-layer');
+      const shelfManager = new ShopShelfManager({ gameplayFacade });
+      const shelf = shelfManager.mount(panel, popupLayer);
+      for (const refs of shelfManager.refs.rows) {
+        stopTimerProgressFill(refs.progressFill, 0.5);
+        refs.progress.setAttribute('aria-valuenow', '50');
+        refs.timerValue.textContent = '2s';
+      }
+
+      const ledgerControls = document.createElement('div');
+      ledgerControls.className = 'shop-page__ledger-controls';
+      ledgerControls.innerHTML = `
+        <button class="style-button shop-page__ledger-open" type="button">market ledger</button>
+        <button
+          class="style-button shop-page__ledger-help-button"
+          type="button"
+          aria-label="how the market ledger works"
+        >[i]</button>
+      `;
+      shelf.append(ledgerControls);
+    </script>
+  </body>
+</html>

@@ -173,7 +173,6 @@ function createDefaultAutomationCosts() {
 
   for (let plotNumber = 1; plotNumber <= plotCapacityEndPlotNumber; plotNumber += 1) {
     costs[automationResearchIds.autoPlantTile(plotNumber)] = plotNumber;
-    costs[automationResearchIds.autoHarvestPlant(plotNumber)] = plotNumber;
   }
 
   for (
@@ -182,7 +181,6 @@ function createDefaultAutomationCosts() {
     cauldronNumber += 1
   ) {
     costs[automationResearchIds.autoBrewCauldron(cauldronNumber)] = cauldronNumber;
-    costs[automationResearchIds.autoBottleCauldron(cauldronNumber)] = cauldronNumber;
   }
 
   return costs;

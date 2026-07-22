@@ -82,15 +82,7 @@ describe('ResearchBalanceManager', () => {
       amount: 11,
       currency: 'ruby',
     });
-    expect(manager.getCost(automationResearchIds.autoHarvestPlant(12))).toEqual({
-      amount: 12,
-      currency: 'ruby',
-    });
     expect(manager.getCost(automationResearchIds.autoBrewCauldron(5))).toEqual({
-      amount: 5,
-      currency: 'ruby',
-    });
-    expect(manager.getCost(automationResearchIds.autoBottleCauldron(5))).toEqual({
       amount: 5,
       currency: 'ruby',
     });

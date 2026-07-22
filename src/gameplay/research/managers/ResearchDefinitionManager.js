@@ -354,58 +354,30 @@ export class ResearchDefinitionManager {
       },
       {
         id: 'autoPlantTiles',
-        label: 'auto plant tile research',
+        label: 'plot automation research',
         researches: this.getNumberedResearches({
           count: this.getAutomationGardenTileCount({
             includeLevelLockedAutomation,
             completedResearchIds,
           }),
           getId: automationResearchIds.autoPlantTile,
-          label: (tileNumber) => `auto plant tile ${tileNumber}`,
+          label: (tileNumber) => `automate plot ${tileNumber}`,
           description: (tileNumber) =>
-            `garden tile ${tileNumber} plants its selected seed when one is available.`,
-        }),
-      },
-      {
-        id: 'autoHarvestTiles',
-        label: 'auto harvest tile research',
-        researches: this.getNumberedResearches({
-          count: this.getAutomationGardenTileCount({
-            includeLevelLockedAutomation,
-            completedResearchIds,
-          }),
-          getId: automationResearchIds.autoHarvestPlant,
-          label: (tileNumber) => `auto harvest tile ${tileNumber}`,
-          description: (tileNumber) =>
-            `garden tile ${tileNumber} starts harvesting ready plants without a tap.`,
+            `plot ${tileNumber} plants its selected seed and harvests ready herbs automatically.`,
         }),
       },
       {
         id: 'autoBrewCauldrons',
-        label: 'auto brew cauldron research',
+        label: 'cauldron automation research',
         researches: this.getNumberedResearches({
           count: this.getAutomationCauldronCount({
             includeLevelLockedAutomation,
             completedResearchIds,
           }),
           getId: automationResearchIds.autoBrewCauldron,
-          label: (cauldronNumber) => `auto brew cauldron ${cauldronNumber}`,
+          label: (cauldronNumber) => `automate cauldron ${cauldronNumber}`,
           description: (cauldronNumber) =>
-            `cauldron ${cauldronNumber} starts brewing when staged ingredients and mana are ready.`,
-        }),
-      },
-      {
-        id: 'autoBottleCauldrons',
-        label: 'auto bottle cauldron research',
-        researches: this.getNumberedResearches({
-          count: this.getAutomationCauldronCount({
-            includeLevelLockedAutomation,
-            completedResearchIds,
-          }),
-          getId: automationResearchIds.autoBottleCauldron,
-          label: (cauldronNumber) => `auto bottle cauldron ${cauldronNumber}`,
-          description: (cauldronNumber) =>
-            `cauldron ${cauldronNumber} starts bottling finished brews without a tap. potions enter inventory when bottling ends.`,
+            `cauldron ${cauldronNumber} brews its armed recipe and bottles finished brews automatically.`,
         }),
       },
     ];

@@ -879,11 +879,11 @@ function createGameplayFacadeFake() {
     },
     {
       id: 'autoPlantTiles',
-      label: 'auto plant tile research',
+      label: 'plot automation research',
       researches: [
         {
           id: 'automation:autoPlantTile:1',
-          label: 'auto plant tile 1',
+          label: 'automate plot 1',
           value: '1 crystal',
           effect: 'auto',
           costCoin: 0,
@@ -894,7 +894,7 @@ function createGameplayFacadeFake() {
         },
         {
           id: 'automation:autoPlantTile:2',
-          label: 'auto plant tile 2',
+          label: 'automate plot 2',
           value: 'locked',
           effect: 'auto',
           costCoin: 0,
@@ -907,46 +907,12 @@ function createGameplayFacadeFake() {
       ],
     },
     {
-      id: 'autoHarvestTiles',
-      label: 'auto harvest tile research',
-      researches: [
-        {
-          id: 'automation:autoHarvestPlant:1',
-          label: 'auto harvest tile 1',
-          value: '1 crystal',
-          effect: 'auto',
-          costCoin: 0,
-          costCrystal: 1,
-          costCurrency: 'crystal',
-          completed: false,
-          canResearch: false,
-        },
-      ],
-    },
-    {
       id: 'autoBrewCauldrons',
-      label: 'auto brew cauldron research',
+      label: 'cauldron automation research',
       researches: [
         {
           id: 'automation:autoBrewCauldron:1',
-          label: 'auto brew cauldron 1',
-          value: '1 crystal',
-          effect: 'auto',
-          costCoin: 0,
-          costCrystal: 1,
-          costCurrency: 'crystal',
-          completed: false,
-          canResearch: false,
-        },
-      ],
-    },
-    {
-      id: 'autoBottleCauldrons',
-      label: 'auto bottle cauldron research',
-      researches: [
-        {
-          id: 'automation:autoBottleCauldron:1',
-          label: 'auto bottle cauldron 1',
+          label: 'automate cauldron 1',
           value: '1 crystal',
           effect: 'auto',
           costCoin: 0,
@@ -2356,6 +2322,53 @@ function createGameplayFacadeFake() {
         slotNumber,
         quantity: unloadedQuantity,
       };
+    },
+    setSelectedShopShelfSlotAllocation: (itemTypeId, percentage) => {
+      const slotNumber = snapshot.shop.shelf.selectedSlotNumber;
+      const slot = snapshot.shop.shelf.slots.find(
+        (shelfSlot) => shelfSlot.slotNumber === slotNumber,
+      );
+      const item = snapshot.shop.shelf.sellItems.find(
+        (sellItem) => sellItem.itemTypeId === itemTypeId,
+      );
+      if (!slot || !item) return { ok: false, reason: 'item_missing' };
+      if (slot.sellItemTypeId && slot.sellItemTypeId !== itemTypeId) {
+        return { ok: false, reason: 'different_item_loaded' };
+      }
+      const loadedQuantity = slot.sellItemTypeId === itemTypeId
+        ? slot.loadedQuantity ?? 0
+        : 0;
+      const totalQuantity = item.quantity + loadedQuantity;
+      const targetQuantity = Math.floor((totalQuantity * percentage) / 100);
+      item.quantity -= targetQuantity - loadedQuantity;
+      slot.sellItemTypeId = targetQuantity > 0 ? item.itemTypeId : null;
+      slot.sellKind = targetQuantity > 0 ? item.kind : null;
+      slot.sellKey = targetQuantity > 0 ? item.key : null;
+      slot.sellLabel = targetQuantity > 0 ? item.label : null;
+      slot.loadedQuantity = targetQuantity;
+      slot.sellQuantity = targetQuantity;
+      slot.batchSize = 1;
+      slot.sellCoin = targetQuantity > 0 ? item.sellCoin : null;
+      slot.sellNeed = targetQuantity > 0 ? item.sellNeed : null;
+      publish();
+      return { ok: true, slotNumber, percentage, targetQuantity };
+    },
+    setSelectedShopShelfFutureItem: (itemTypeId, enabled) => {
+      const slotNumber = snapshot.shop.shelf.selectedSlotNumber;
+      const slot = snapshot.shop.shelf.slots.find(
+        (shelfSlot) => shelfSlot.slotNumber === slotNumber,
+      );
+      const item = snapshot.shop.shelf.sellItems.find(
+        (sellItem) => sellItem.itemTypeId === itemTypeId,
+      );
+      if (!slot || !item) return { ok: false, reason: 'item_missing' };
+      slot.futureItemTypeId = enabled ? item.itemTypeId : null;
+      slot.futureItemKey = enabled ? item.key : null;
+      slot.futureItemKind = enabled ? item.kind : null;
+      slot.futureItemLabel = enabled ? item.label : null;
+      slot.futurePendingQuantity = 0;
+      publish();
+      return { ok: true, enabled, itemTypeId: enabled ? itemTypeId : null };
     },
     commitShopShelfChanges: () => {},
     setSelectedPlayerShopShelfSlotListing: ({ itemTypeId, quantity, priceCoin }) => {
@@ -4820,7 +4833,7 @@ describe('PagesFacade', () => {
     expect(infoPopup.hidden).toBe(true);
   });
 
-  it('shows the first level-up announcement before the market tutorial resumes', () => {
+  it('shows the automatic level-1 announcement before the market tutorial resumes', () => {
     vi.useFakeTimers();
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
@@ -4828,51 +4841,34 @@ describe('PagesFacade', () => {
     const task = snapshot.tasks.level.tasks[0];
     const completedStepIds = TUTORIAL_STEP_IDS.slice(
       0,
-      TUTORIAL_STEP_IDS.indexOf('first-task-complete') + 1,
+      TUTORIAL_STEP_IDS.indexOf('finish-seed-task') + 1,
     );
     snapshot.tasks.currentLevel = 0;
     snapshot.tasks.level.level = 0;
-    snapshot.tasks.level.completedTasks = 1;
+    snapshot.tasks.level.completedTasks = 0;
     snapshot.tasks.level.totalTasks = 1;
     snapshot.tasks.level.completion = {
       level: 0,
       costCoin: 0,
-      allTasksCompleted: true,
+      allTasksCompleted: false,
       atMaxLevel: false,
       completedAllLevels: false,
-      canComplete: true,
+      canComplete: false,
     };
     snapshot.tasks.level.tasks = [
       {
         ...task,
         level: 0,
-        progressQuantity: task.requiredQuantity,
-        remainingQuantity: 0,
-        progress: 1,
-        maxed: true,
-        completed: true,
+        progressQuantity: task.requiredQuantity - 1,
+        remainingQuantity: 1,
+        progress: (task.requiredQuantity - 1) / task.requiredQuantity,
+        maxed: false,
+        completed: false,
         canFill: false,
         canComplete: false,
       },
     ];
     snapshot.playerLevel.currentLevel = 0;
-    gameplayFacade.completeTaskLevel = () => {
-      snapshot.tasks.currentLevel = 1;
-      snapshot.tasks.level.level = 1;
-      snapshot.tasks.level.completion = {
-        ...snapshot.tasks.level.completion,
-        level: 1,
-        allTasksCompleted: false,
-        canComplete: false,
-      };
-      snapshot.playerLevel.currentLevel = 1;
-      gameplayFacade.publishSnapshot();
-      return {
-        ok: true,
-        currentLevel: 1,
-        costCoin: 0,
-      };
-    };
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -4887,14 +4883,21 @@ describe('PagesFacade', () => {
       pagesFacade.mount(stage);
       pagesFacade.tutorialFacade.refresh();
 
-      expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('level-up-one');
+      expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
 
-      const levelUpButton = stage.querySelector('.workshop-page__level-complete-button');
-      expect(levelUpButton).not.toBeNull();
-
-      pagesFacade.currentPageManager.currentPage.taskManager.onLevelCompleteButton();
+      snapshot.tasks.currentLevel = 1;
+      snapshot.tasks.level.level = 1;
+      snapshot.tasks.level.completion = {
+        ...snapshot.tasks.level.completion,
+        level: 1,
+        allTasksCompleted: false,
+        canComplete: false,
+      };
+      snapshot.playerLevel.currentLevel = 1;
+      gameplayFacade.publishSnapshot();
       pagesFacade.tutorialFacade.refresh();
 
+      expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
       expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
       expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('rewards');
       expect(stage.querySelector('.room-announcement__level-flow')).toBeNull();
@@ -4939,7 +4942,7 @@ describe('PagesFacade', () => {
     }
   });
 
-  it('shows a paid level completion as the final request', () => {
+  it('keeps a paid level completion separate from elara requests', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -4955,16 +4958,11 @@ describe('PagesFacade', () => {
       canComplete: true,
     };
     snapshot.tasks.level.questProgress = {
-      progress: 0.5,
+      progress: 1,
       completedQuests: 1,
-      totalQuests: 2,
+      totalQuests: 1,
       targetLevel: 2,
-      activeQuest: {
-        kind: 'levelUp',
-        taskId: 'level-1-level-up',
-        targetLevel: 2,
-        costCoin: 4,
-      },
+      activeQuest: null,
     };
     snapshot.tasks.level.tasks = snapshot.tasks.level.tasks.map((task) => ({
       ...task,
@@ -4995,10 +4993,11 @@ describe('PagesFacade', () => {
     const questSegments = stage.querySelectorAll('.room-top-panel__quest-segment');
 
     expect(completion?.hidden).toBe(false);
+    expect(stage.querySelector('.workshop-page__tasks-title')?.textContent).toBe('level up');
     expect(rewards?.hidden).toBe(true);
-    expect(questText?.textContent).toBe('Complete 1 more quest to level up');
+    expect(questText?.textContent).toBe('all quests complete');
     expect(questRail?.getAttribute('aria-valuenow')).toBe('1');
-    expect(questSegments).toHaveLength(2);
+    expect(questSegments).toHaveLength(1);
     expect(questSegments[0]?.classList.contains('is-complete')).toBe(true);
     expect(stage.querySelector('.workshop-page__quest-reward')).toBeNull();
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
@@ -10008,10 +10007,10 @@ describe('PagesFacade', () => {
 
     expect(automationTab.getAttribute('aria-selected')).toBe('true');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'auto plant tile research',
+      'plot automation research',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'auto plant tile 1',
+      'automate plot 1',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
       '1 crystal',
@@ -10031,7 +10030,7 @@ describe('PagesFacade', () => {
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('1 ruby');
     expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
-      'auto plant tile research',
+      'plot automation research',
     );
 
     emeraldTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -12023,15 +12022,14 @@ describe('PagesFacade', () => {
     const seedButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
       (button) => button.dataset.shopSellItemKey === 'sageSeed',
     );
-    seedButton.dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
-    seedButton.dispatchEvent(createPointerEvent('pointerup', { clientX: 1, clientY: 1 }));
+    seedButton.click();
     expect(stage.querySelector('.shop-page__sell-current')?.textContent).toContain(
-      'currentsage seedx1',
+      'currentsage seedx5',
     );
     markShopSellSelection(stage);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (1)',
+      'stall 1 sage seed 5',
     );
     const seedItemValue = stage.querySelector('.shop-page__slot-item-value');
     expect(seedItemValue?.getAttribute('data-resource-color')).toBe('seed');
@@ -12068,16 +12066,16 @@ describe('PagesFacade', () => {
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.dataset.shopSellItemKey === 'manaTonic')
-      .dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
+      .click();
     markShopSellSelection(stage);
 
     const itemValue = stage.querySelector('.shop-page__slot-item-value');
     const priceValue = stage.querySelector('.shop-page__slot-price-value');
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.mana tonic (1)',
+      'stall 1 mana tonic 2',
     );
-    expect(itemValue?.textContent).toBe('mana tonic (1)');
+    expect(itemValue?.textContent).toBe('mana tonic');
     expect(itemValue?.getAttribute('data-resource-color')).toBe('potion');
     expect(itemValue?.classList.contains('is-empty')).toBe(false);
     expect(priceValue?.textContent).toContain('5 coin');
@@ -12111,19 +12109,21 @@ describe('PagesFacade', () => {
     clickNpcMarketStandLabel(stage);
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.dataset.shopSellItemKey === 'sageSeed')
-      .dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
+      .click();
     markShopSellSelection(stage);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (1)',
+      'stall 1 sage seed 1',
     );
 
     gameplayFacade.unloadSelectedShopShelfSlotItem(1);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.empty standselect',
+      'stall 1 empty standselect',
     );
-    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('1.select');
+    expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain(
+      'stall 1 select',
+    );
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(false);
   });
 
@@ -12143,19 +12143,19 @@ describe('PagesFacade', () => {
     const seedButton = [...stage.querySelectorAll('.shop-page__sell-item-button')].find(
       (button) => button.dataset.shopSellItemKey === 'sageSeed',
     );
-    seedButton.dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
+    seedButton.click();
     markShopSellSelection(stage);
 
     gameplayFacade.setShopSellCoin('seed', 7);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (1)',
+      'stall 1 sage seed 1',
     );
 
     gameplayFacade.setShopSellNeed(1, 4);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (1)',
+      'stall 1 sage seed 1',
     );
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain('need 4');
 
@@ -12218,13 +12218,13 @@ describe('PagesFacade', () => {
 
     [...stage.querySelectorAll('.shop-page__sell-item-button')]
       .find((button) => button.dataset.shopSellItemKey === 'sageSeed')
-      .dispatchEvent(createPointerEvent('pointerdown', { clientX: 1, clientY: 1 }));
+      .click();
     markShopSellSelection(stage);
 
     gameplayFacade.setShopSellItems([]);
 
     expect(stage.querySelector('.shop-page__shelf')?.textContent).toContain(
-      '1.sage seed (1)',
+      'stall 1 sage seed 1',
     );
   });
 

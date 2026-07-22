@@ -93,7 +93,7 @@ export class PageNotificationStateManager {
       (item) => item.quantity > 0,
     );
     const hasNpcEmptyStand = (shop.shelf?.slots ?? []).some(
-      (slot) => slot.unlocked && !slot.sellItemTypeId,
+      (slot) => slot.unlocked && !slot.sellItemTypeId && !slot.futureItemTypeId,
     );
 
     return this.createPage({

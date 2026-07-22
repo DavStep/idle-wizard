@@ -331,9 +331,13 @@ export class GameplayFacade {
     this.syncRubyFromPrestige();
     const backfilledCrystal = this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
     this.syncPlayerLevelManaEffects();
+    this.tasksFacade.syncCurrentLevelStateRequirements();
+    const startingLevelCompletion = loaded
+      ? this.completeStartingLevelIfReady({ announce: false })
+      : null;
     if (loaded) {
       this.applyOfflineTimerCatchup(ecsFacade);
-      if (backfilledCrystal > 0) {
+      if (backfilledCrystal > 0 || startingLevelCompletion?.advanced) {
         this.persistenceFacade.save();
       }
     }
@@ -416,6 +420,7 @@ export class GameplayFacade {
     const result = this.tasksFacade.fillTask(taskId);
     if (result.ok && result.completed) {
       this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS, 1);
+      this.completeStartingLevelIfReady();
     }
     this.publishAndSaveSnapshot();
     return result;
@@ -425,8 +430,21 @@ export class GameplayFacade {
     const result = this.tasksFacade.completeTask(taskId);
     if (result.ok) {
       this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS, 1);
+      this.completeStartingLevelIfReady();
     }
     this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  completeStartingLevelIfReady({ announce = true } = {}) {
+    const completion = this.tasksFacade.getCurrentLevelCompletionSnapshot();
+
+    if (completion.level !== 0 || !completion.canComplete) {
+      return null;
+    }
+
+    const result = this.tasksFacade.completeCurrentLevel();
+    this.applyTaskLevelCompletion(result, { announce });
     return result;
   }
 
@@ -458,18 +476,28 @@ export class GameplayFacade {
 
     this.coinFacade.spend(completion.costCoin);
     const result = this.tasksFacade.completeCurrentLevel();
-
-    if (result.ok && result.advanced) {
-      this.levelUpCrystalRewardManager.grantForLevelRange(
-        result.levelBefore ?? result.level,
-        result.currentLevel,
-      );
-      this.syncPlayerLevelManaEffects();
-      void this.worldChatFacade?.announceLevelUp?.(result.currentLevel);
-    }
+    this.applyTaskLevelCompletion(result);
 
     this.publishAndSaveSnapshot();
     return result;
+  }
+
+  applyTaskLevelCompletion(result, { announce = true } = {}) {
+    if (!result?.ok || !result.advanced) {
+      return false;
+    }
+
+    this.levelUpCrystalRewardManager.grantForLevelRange(
+      result.levelBefore ?? result.level,
+      result.currentLevel,
+    );
+    this.syncPlayerLevelManaEffects();
+
+    if (announce) {
+      void this.worldChatFacade?.announceLevelUp?.(result.currentLevel);
+    }
+
+    return true;
   }
 
   completePrestigeMilestone(level) {
@@ -1030,6 +1058,18 @@ export class GameplayFacade {
 
   unloadSelectedShopShelfSlotItemAll() {
     const result = this.shopFacade.unloadSelectedShelfSlotItemAll();
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  setSelectedShopShelfSlotAllocation(itemTypeId, percentage) {
+    const result = this.shopFacade.setSelectedShelfSlotAllocation(itemTypeId, percentage);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  setSelectedShopShelfFutureItem(itemTypeId, enabled) {
+    const result = this.shopFacade.setSelectedShelfFutureItem(itemTypeId, enabled);
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -1643,10 +1683,13 @@ export class GameplayFacade {
       : 0;
     this.syncPlayerLevelManaEffects();
     this.tasksFacade.syncCurrentLevelStateRequirements();
+    const startingLevelCompletion = loaded
+      ? this.completeStartingLevelIfReady({ announce: false })
+      : null;
 
     if (loaded) {
       this.applyOfflineTimerCatchup(ecsFacade);
-      if (backfilledCrystal > 0) {
+      if (backfilledCrystal > 0 || startingLevelCompletion?.advanced) {
         this.persistenceFacade.save();
       }
     }

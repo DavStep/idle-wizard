@@ -14,6 +14,7 @@ import {
 import { getLevelPayoffRows } from './levelPayoffSummary.js';
 
 const ELARA_REQUEST_LABEL = "elara's request";
+const LEVEL_UP_LABEL = 'level up';
 const TURN_IN_TEXT = 'turn in';
 const EXPANDED_CONTENT_MOTION_MS = 225;
 const TASK_REORDER_MOTION_MS = 225;
@@ -947,6 +948,13 @@ export class WorkshopTaskManager {
 
   setRequirementContext(taskSnapshot) {
     const requirementTargetLevel = getLevelRequirementTargetLevel(taskSnapshot);
+    const hasActiveRequest = (taskSnapshot?.level?.tasks ?? []).some(
+      (task) => !task.completed,
+    );
+    const requirementsLabel =
+      !hasActiveRequest && taskSnapshot?.level?.completion?.canComplete
+        ? LEVEL_UP_LABEL
+        : ELARA_REQUEST_LABEL;
 
     if (this.currentRequirementTargetLevel !== requirementTargetLevel) {
       this.rewardsHidden = false;
@@ -957,17 +965,29 @@ export class WorkshopTaskManager {
       }
     }
 
-    this.currentRequirementsLabel = ELARA_REQUEST_LABEL;
+    this.currentRequirementsLabel = requirementsLabel;
     this.currentRequirementTargetLevel = requirementTargetLevel;
-    this.setAttribute(this.root, 'aria-label', ELARA_REQUEST_LABEL);
-    this.setText(this.refs.title, ELARA_REQUEST_LABEL);
-    this.setAttribute(this.refs.title, 'aria-label', `show ${ELARA_REQUEST_LABEL} info`);
-    this.setAttribute(this.refs.infoDialog, 'aria-label', `${ELARA_REQUEST_LABEL} information`);
-    this.setText(this.refs.infoTitle, ELARA_REQUEST_LABEL);
-    this.setText(this.refs.infoBody, this.getTasksHelperText());
+    this.setAttribute(this.root, 'aria-label', requirementsLabel);
+    this.setText(this.refs.title, requirementsLabel);
+    this.setAttribute(this.refs.title, 'aria-label', `show ${requirementsLabel} info`);
+    this.setAttribute(this.refs.infoDialog, 'aria-label', `${requirementsLabel} information`);
+    this.setText(this.refs.infoTitle, requirementsLabel);
+    this.setText(this.refs.infoBody, this.getTasksHelperText(taskSnapshot));
   }
 
-  getTasksHelperText() {
+  getTasksHelperText(taskSnapshot = this.currentSnapshot?.tasks) {
+    if (this.currentRequirementsLabel === LEVEL_UP_LABEL) {
+      const costCoin = Math.max(
+        0,
+        Math.floor(Number(taskSnapshot?.level?.completion?.costCoin) || 0),
+      );
+      const target = Number.isInteger(this.currentRequirementTargetLevel)
+        ? `level ${this.currentRequirementTargetLevel}`
+        : 'the next level';
+
+      return `spend ${formatCoinPriceText(costCoin)} to reach ${target}.`;
+    }
+
     if (Number.isInteger(this.currentRequirementTargetLevel)) {
       return `complete elara's requests one at a time to reach level ${this.currentRequirementTargetLevel}. each request fills one level segment. turn-in requests consume items.`;
     }

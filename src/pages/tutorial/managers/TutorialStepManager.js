@@ -41,8 +41,6 @@ const LEVEL_ONE_STEP_IDS = [
   'intro-level-requirements',
   'first-fill-seed-task',
   'finish-seed-task',
-  'first-task-complete',
-  'level-up-one',
 ];
 
 const LEVEL_TWO_STEP_IDS = [
@@ -104,8 +102,6 @@ const LESSON_TITLE_BY_STEP_ID = new Map([
   ...RESEARCH_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 3: research']),
   ...GARDENING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 4: gardening']),
   ...BREWING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 5: brewing']),
-  ['first-task-complete', 'lesson 1: introduction'],
-  ['level-up-one', 'lesson 1: introduction'],
   ['purchase-house', 'the story begins'],
   ['intro-market', 'market opened'],
   ['intro-research', 'research opened'],
@@ -356,39 +352,6 @@ export const TUTORIAL_STEPS = [
       getCurrentLevel(snapshot) >= 1 || isLevelOneSeedTaskComplete(snapshot),
   },
   {
-    id: 'first-task-complete',
-    kind: 'prompt',
-    revealTokens: REVEAL_MANA_SUMMON_TASKS,
-    text: 'tasks are how the workshop asks for supplies. finish them to restore more of the house.',
-    advanceOnClick: true,
-    showPointer: false,
-    isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 0 &&
-      isLevelOneSeedTaskComplete(snapshot) &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 1,
-  },
-  {
-    id: 'level-up-one',
-    kind: 'objective',
-    pageId: 'workshop',
-    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'level up',
-    getTargetId: ({ dom }) => (dom.isTasksExpanded() ? 'workshop:levelUp' : 'workshop:tasks'),
-    getHintText: ({ dom, snapshot }) =>
-      dom.isTasksExpanded() ? 'level up' : getOpenLevelRequirementsText(snapshot),
-    getProgress: ({ snapshot }) => ({
-      value: snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0,
-      max: 1,
-    }),
-    getProgressLabel: ({ snapshot }) =>
-      `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`,
-    isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 0 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 1,
-  },
-  {
     id: 'intro-market',
     kind: 'dialog',
     targetId: 'workshop:summonSeed',
@@ -475,18 +438,20 @@ export const TUTORIAL_STEPS = [
     pageId: 'shop',
     revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'load sage seed into the stall',
-    getTargetId: ({ dom }) =>
-      dom.isShopSellPopupOpen?.()
-        ? dom.hasShopSellSelection?.()
-          ? 'shop:sell:mark'
-          : `shop:sell:${SAGE_SEED_KEY}`
-        : 'shop:stand:1',
-    getHintText: ({ dom }) =>
-      dom.isShopSellPopupOpen?.()
-        ? dom.hasShopSellSelection?.()
-          ? 'mark selected seeds'
-          : 'add sage seeds'
-        : 'open the first stall',
+    getTargetId: ({ dom }) => {
+      if (!dom.isShopSellPopupOpen?.()) return 'shop:stand:1';
+      if (!dom.hasShopSellSelection?.()) return `shop:sell:${SAGE_SEED_KEY}`;
+      return dom.isShopSellPercentageSelected?.(25)
+        ? 'shop:sell:mark'
+        : 'shop:sell:percentage';
+    },
+    getHintText: ({ dom }) => {
+      if (!dom.isShopSellPopupOpen?.()) return 'open the first stall';
+      if (!dom.hasShopSellSelection?.()) return 'select sage seed';
+      return dom.isShopSellPercentageSelected?.(25)
+        ? 'mark one seed'
+        : 'set 25%';
+    },
     getProgress: ({ snapshot }) => ({
       value:
         isNpcMarketSelling(snapshot, SAGE_SEED_KEY)

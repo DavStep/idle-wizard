@@ -448,6 +448,25 @@ describe('PageNotificationStateManager', () => {
     });
   });
 
+  it('does not mark a stand that is waiting for future production as empty', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+    snapshot.research.completedResearchIds = ['unlockSeed:sageSeed'];
+    snapshot.shop.shelf.sellItems = [
+      { itemTypeId: 1, key: 'sageSeed', kind: 'seed', quantity: 1 },
+    ];
+    snapshot.shop.shelf.slots = [
+      {
+        slotNumber: 1,
+        unlocked: true,
+        sellItemTypeId: null,
+        futureItemTypeId: 1,
+      },
+    ];
+
+    expect(manager.getSnapshot(snapshot).pages.shop.children.npcListing).toBe(false);
+  });
+
   it('marks player market only when another listing matches an own request', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();

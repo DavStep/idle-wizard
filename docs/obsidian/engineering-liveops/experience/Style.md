@@ -81,10 +81,10 @@ experience_type: style
 - Locked-but-pressable room tabs should use `.is-locked` plus an explanatory aria-label, not `aria-disabled`, so taps can still open the unlock notice.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
 - Research page uses `snapshot.research.tabs` for full-page regular/automation/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
-- Automation research is target-specific (`automation:autoPlantTile:1`, `automation:autoBrewCauldron:1`), not global per action type.
+- Automation research is target-specific (`automation:autoPlantTile:1`, `automation:autoBrewCauldron:1`): one plot study combines plant + harvest, and one cauldron study combines brew + bottle.
 - Research blocks should render no more than 3 locked rows each; keep deeper locked research hidden until earlier items unlock.
 - Completed research rows display `researched` and keep the same fixed value-slot height as price controls.
-- Research price controls are unboxed right-aligned text buttons; preserve click behavior without visible price boxes.
+- Research price controls are unboxed text buttons in the fixed right-side slot; center the price/icon group within that control and preserve click behavior without visible price boxes.
 - Research name clicks open a `style-dialog` info popup; keep explanation text on the research definition snapshot.
 - Brewing recipe popup hides locked recipes; recipe names are bold, ingredient rows align flush with names, and `time:` details stay muted.
 - Brewing recipe popup ingredient rows show required amount on the left (`- 3 sage`) and owned count on the right (`owned 31`), not `(31/3) sage`.

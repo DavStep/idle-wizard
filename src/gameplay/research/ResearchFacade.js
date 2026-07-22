@@ -19,6 +19,7 @@ import {
   stallStaffingResearchIds,
   stallStaffingMaxStalls,
 } from './stallStaffingResearch.js';
+import { migrateLegacySplitAutomationResearchId } from '../automation/automationResearchIds.js';
 import {
   getResearchTimeReductionPercent as getResearchTimeReductionPercentForLevel,
   researchTimeResearchIds,
@@ -494,7 +495,7 @@ export class ResearchFacade {
       this.researchStateEntityManager.setCompletedResearchIds(
         snapshot.completedIds
           .filter((researchId) => typeof researchId === 'string')
-          .map(migrateLegacyFastSellResearchId),
+          .map(migrateLegacyResearchId),
       );
     }
 
@@ -502,7 +503,7 @@ export class ResearchFacade {
       this.researchStateEntityManager.setInProgressResearches(
         snapshot.inProgress.map((research) => ({
           ...research,
-          researchId: migrateLegacyFastSellResearchId(research?.researchId),
+          researchId: migrateLegacyResearchId(research?.researchId),
         })),
       );
     }
@@ -513,9 +514,10 @@ export class ResearchFacade {
   }
 }
 
-function migrateLegacyFastSellResearchId(researchId) {
-  const match = /^fastSellPayout:([1-3])$/.exec(String(researchId ?? ''));
+function migrateLegacyResearchId(researchId) {
+  const automationResearchId = migrateLegacySplitAutomationResearchId(researchId);
+  const match = /^fastSellPayout:([1-3])$/.exec(String(automationResearchId ?? ''));
   return match
     ? stallStaffingResearchIds.capacity(Number(match[1]))
-    : researchId;
+    : automationResearchId;
 }

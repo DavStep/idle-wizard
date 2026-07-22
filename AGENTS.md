@@ -14,7 +14,9 @@ The project `STYLE` is defined in `docs/style.md`. It is inspired by A Dark Room
 
 Before making new UI, check `docs/style.md` and `docs/ui-patterns.md` for an existing similar concept, then reuse that row, box, popup, tab, and border-label pattern instead of inventing a near-duplicate.
 
-For any UI, UX, layout, visual, popup, dialog, screen, page, button, label, or flow change, use `idle-wizard-ui-workflow`; it routes through `impeccable`, `idle-wizard-ui-consistency`, and the required product/style docs before editing.
+For structural or visual UI, UX, layout, popup, dialog, screen, page, button, or flow changes, use `idle-wizard-ui-workflow`; it routes through `impeccable`, `idle-wizard-ui-consistency`, and the required product/style docs before editing.
+
+Nonvisual copy, label, catalog, and definition changes use the focused fast path when they reuse existing rendering and do not change markup, layout, styling, interaction, accessibility semantics, persistence shape, or backend schema. For the focused fast path, read only the touched feature README, source flow, and matching tests; do not invoke the full UI workflow, browser screenshot QA, or `npm run check` solely because text is player-facing. Run the smallest focused tests that prove the change, and broaden verification only when those tests fail or the change crosses a shared boundary.
 
 When the user provides a visual reference or requests composition accuracy, also follow `docs/visual-reference-qa.md`. Define measurable visual anchors before editing, use a reproducible real-app state, and require a native-pixel close crop plus side-by-side/overlay comparison before claiming parity.
 

@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.102
+
+- Reworked Market stall loading with quick stock percentages and a `mark future` option that automatically loads newly produced items.
+- Improved stall cards and Elara's Market guidance to make loaded stock, sale progress, and the new allocation flow clearer.
+
 ## 0.2.101
 
 - Made Market stall rows taller and placed each sale timer beside its progress bar for easier scanning.

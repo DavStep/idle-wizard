@@ -123,4 +123,31 @@ describe('ShopShelfSlotSelectionManager', () => {
     expect(harness.getInventory()).toBe(100);
     expect(harness.removeItem).not.toHaveBeenCalled();
   });
+
+  it('reconciles a selected stand to stepped percentages of total matching stock', () => {
+    const { getInventory, manager, slot } = createHarness({ inventoryQuantity: 100 });
+
+    expect(manager.setSelectedSlotAllocation(1, 50)).toMatchObject({
+      ok: true,
+      percentage: 50,
+      targetQuantity: 50,
+      totalQuantity: 100,
+    });
+    expect(getInventory()).toBe(50);
+    expect(slot.loadedQuantity).toBe(50);
+
+    expect(manager.setSelectedSlotAllocation(1, 25)).toMatchObject({
+      ok: true,
+      targetQuantity: 25,
+    });
+    expect(getInventory()).toBe(75);
+    expect(slot.loadedQuantity).toBe(25);
+
+    expect(manager.setSelectedSlotAllocation(1, 0)).toMatchObject({
+      ok: true,
+      targetQuantity: 0,
+    });
+    expect(getInventory()).toBe(100);
+    expect(slot.sellItemTypeId).toBeNull();
+  });
 });

@@ -13,43 +13,25 @@ import {
 } from '../../shared/timerProgress.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
-const HOLD_DELAY_MS = 350;
-const HOLD_REPEAT_MS = 100;
-const HOLD_MOVE_TOLERANCE_PX = 10;
-const HOLD_INITIAL_STEP_DIVISOR = 2_000;
-const HOLD_INITIAL_STEP_CAP = 100;
-const HOLD_RAMP_DOUBLING_REPEATS = 7;
-
-export function getDynamicStallTransferStep(maxQuantity, repeatIndex = 0) {
-  const safeMaxQuantity = Math.max(1, Math.floor(Number(maxQuantity) || 1));
-  const safeRepeatIndex = Math.max(0, Math.floor(Number(repeatIndex) || 0));
-  const initialStep = Math.min(
-    HOLD_INITIAL_STEP_CAP,
-    Math.max(1, Math.ceil(safeMaxQuantity / HOLD_INITIAL_STEP_DIVISOR)),
-  );
-  const rampMultiplier = Math.max(
-    1,
-    Math.round(
-      2 ** Math.min(20, safeRepeatIndex / HOLD_RAMP_DOUBLING_REPEATS),
-    ),
-  );
-  return Math.min(safeMaxQuantity, initialStep * rampMultiplier);
-}
+const STALL_ALLOCATION_PERCENTAGES = [0, 25, 50, 75, 100];
 
 export class ShopShelfManager {
   constructor({ gameplayFacade, getSellPriceOverride } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.getSellPriceOverride = getSellPriceOverride;
     this.root = null;
-    this.refs = { rows: [], tabButtons: new Map(), itemButtons: new Map() };
+    this.refs = {
+      rows: [],
+      tabButtons: new Map(),
+      itemButtons: new Map(),
+      percentageButtons: new Map(),
+    };
     this.unsubscribe = null;
     this.visible = false;
     this.selectedSellTab = 'seed';
     this.draftSellItemTypeId = null;
-    this.draftSellQuantity = 0;
+    this.draftSellPercentage = 100;
     this.statusText = '';
-    this.activeHold = null;
-    this.suppressRowClickSlotNumber = null;
     this.previousFocus = null;
     this.handleKeydown = (event) => {
       if (event.key === 'Escape' && this.visible) {
@@ -83,7 +65,6 @@ export class ShopShelfManager {
   }
 
   unmount() {
-    this.endHold({ commit: true });
     for (const refs of this.refs.rows) {
       stopTimerProgressFill(refs.progressFill, 0);
     }
@@ -92,7 +73,12 @@ export class ShopShelfManager {
     this.root?.remove();
     this.refs.popup?.remove();
     this.root = null;
-    this.refs = { rows: [], tabButtons: new Map(), itemButtons: new Map() };
+    this.refs = {
+      rows: [],
+      tabButtons: new Map(),
+      itemButtons: new Map(),
+      percentageButtons: new Map(),
+    };
     this.unsubscribe = null;
     this.visible = false;
     this.resetSellDraft();
@@ -110,7 +96,7 @@ export class ShopShelfManager {
     const tooltip = document.createElement('div');
     tooltip.className = 'style-tooltip shop-page__shelf-help-tooltip';
     tooltip.textContent =
-      'tap a stall to load it. hold its item to return items. each stall sells every 5 seconds.';
+      'tap a stall to choose an item and mark a share. future marking loads newly produced copies.';
     tooltip.hidden = true;
     tooltip.setAttribute('role', 'tooltip');
     button.addEventListener('click', (event) => {
@@ -128,33 +114,20 @@ export class ShopShelfManager {
     row.dataset.shopSlotNumber = String(slotNumber);
     row.setAttribute('role', 'button');
     row.tabIndex = 0;
-    row.addEventListener('click', () => {
-      if (this.suppressRowClickSlotNumber === slotNumber) {
-        this.suppressRowClickSlotNumber = null;
-        return;
-      }
-      this.openSlot(slotNumber);
-    });
+    row.addEventListener('click', () => this.openSlot(slotNumber));
     row.addEventListener('keydown', (event) => {
-      if (event.key === 'Delete' || event.key === 'Backspace') {
-        const slot = this.gameplayFacade
-          .getSnapshot()
-          ?.shop?.shelf?.slots?.find((candidate) => candidate.slotNumber === slotNumber);
-        if (!slot?.sellItemTypeId || slot.loadedQuantity <= 0) return;
-        event.preventDefault();
-        this.gameplayFacade.selectShopShelfSlot(slotNumber);
-        const result = this.unloadItem();
-        if (result?.ok) this.gameplayFacade.commitShopShelfChanges?.();
-        return;
-      }
       if (event.key !== 'Enter' && event.key !== ' ') return;
       event.preventDefault();
       this.openSlot(slotNumber);
     });
 
     const label = document.createElement('span');
-    label.className = 'row_key';
-    label.textContent = `${slotNumber}.`;
+    label.className = 'row_key shop-page__slot-title';
+    label.dataset.slotNumber = String(slotNumber);
+    label.textContent = `stall ${slotNumber} `;
+    const capacityValue = document.createElement('span');
+    capacityValue.className = 'shop-page__slot-capacity-value';
+    capacityValue.setAttribute('aria-hidden', 'true');
     const value = document.createElement('span');
     value.className = 'row_val shop-page__slot-value';
     const itemColumn = document.createElement('span');
@@ -162,9 +135,8 @@ export class ShopShelfManager {
     const itemValue = document.createElement('span');
     itemValue.className = 'shop-page__slot-item-value';
     itemValue.dataset.tutorialId = `shop:stand:${slotNumber}`;
-    itemValue.addEventListener('pointerdown', (event) =>
-      this.beginUnloadHold(event, slotNumber),
-    );
+    const quantityValue = document.createElement('span');
+    quantityValue.className = 'shop-page__slot-quantity-value';
     const statusValue = document.createElement('span');
     statusValue.className = 'shop-page__slot-status-value';
     const batchValue = document.createElement('span');
@@ -189,17 +161,19 @@ export class ShopShelfManager {
     timerValue.className = 'shop-page__slot-timer-value';
     const priceValue = document.createElement('span');
     priceValue.className = 'shop-page__slot-price-value';
-    itemColumn.append(itemValue);
+    itemColumn.append(itemValue, quantityValue);
     statusValue.append(batchValue, batchSeparator, priceValue);
     progressRow.append(progress, timerValue);
     value.append(itemColumn, statusValue, progressRow);
-    row.append(label, value);
+    row.append(label, value, capacityValue);
     return {
       row,
       label,
+      capacityValue,
       value,
       itemColumn,
       itemValue,
+      quantityValue,
       statusValue,
       batchValue,
       batchSeparator,
@@ -236,18 +210,10 @@ export class ShopShelfManager {
     const selection = document.createElement('section');
     selection.className = 'shop-page__sell-selection';
     selection.setAttribute('aria-label', 'current selection');
-    const current = document.createElement('button');
+    const current = document.createElement('div');
     current.className = 'shop-page__sell-current';
-    current.type = 'button';
+    current.setAttribute('role', 'status');
     current.dataset.tutorialId = 'shop:sell:current';
-    current.addEventListener('pointerdown', (event) =>
-      this.beginDraftRemoveHold(event),
-    );
-    current.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-      event.preventDefault();
-      this.changeDraftQuantity(-1);
-    });
     const currentLabel = document.createElement('span');
     currentLabel.className = 'shop-page__sell-current-label';
     currentLabel.textContent = 'current';
@@ -256,24 +222,58 @@ export class ShopShelfManager {
     const currentQuantity = document.createElement('span');
     currentQuantity.className = 'shop-page__sell-current-quantity';
     current.append(currentLabel, currentItem, currentQuantity);
+    const allocation = document.createElement('div');
+    allocation.className = 'shop-page__sell-allocation';
+    const allocationRange = document.createElement('input');
+    allocationRange.className = 'shop-page__sell-allocation-range';
+    allocationRange.type = 'range';
+    allocationRange.min = '0';
+    allocationRange.max = '100';
+    allocationRange.step = '25';
+    allocationRange.value = '100';
+    allocationRange.dataset.tutorialId = 'shop:sell:percentage';
+    allocationRange.setAttribute('aria-label', 'share of current stock to mark');
+    allocationRange.addEventListener('input', () => {
+      this.selectDraftPercentage(Number(allocationRange.value));
+    });
+    const allocationTicks = document.createElement('div');
+    allocationTicks.className = 'shop-page__sell-allocation-ticks';
+    allocationTicks.setAttribute('aria-label', 'stock share points');
+    for (const percentage of STALL_ALLOCATION_PERCENTAGES) {
+      const tick = document.createElement('button');
+      tick.className = 'shop-page__sell-allocation-tick';
+      tick.type = 'button';
+      tick.textContent = `${percentage}%`;
+      tick.dataset.shopSellPercentage = String(percentage);
+      tick.setAttribute('aria-label', `${percentage} percent`);
+      tick.style.setProperty(
+        '--shop-page-sell-allocation-percentage',
+        String(percentage),
+      );
+      tick.addEventListener('click', () => this.selectDraftPercentage(percentage));
+      this.refs.percentageButtons.set(percentage, tick);
+      allocationTicks.append(tick);
+    }
+    allocation.append(allocationRange, allocationTicks);
     const actions = document.createElement('div');
     actions.className = 'shop-page__sell-action-row';
-    const markAll = document.createElement('button');
-    markAll.className = 'style-button shop-page__sell-mark-all-button';
-    markAll.type = 'button';
-    markAll.textContent = 'mark all';
-    markAll.addEventListener('click', () => this.markDraft({ all: true }));
     const mark = document.createElement('button');
     mark.className = 'style-button shop-page__sell-mark-button';
     mark.type = 'button';
     mark.dataset.tutorialId = 'shop:sell:mark';
     mark.addEventListener('click', () => this.markDraft());
-    actions.append(markAll, mark);
+    const future = document.createElement('button');
+    future.className = 'style-button shop-page__sell-future-button';
+    future.type = 'button';
+    future.dataset.tutorialId = 'shop:sell:future';
+    future.textContent = 'mark future';
+    future.addEventListener('click', () => this.toggleFutureDraft());
+    actions.append(mark, future);
     const status = document.createElement('div');
     status.className = 'shop-page__sell-status';
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
-    selection.append(current, actions, status);
+    selection.append(current, allocation, actions, status);
     const divider = document.createElement('div');
     divider.className = 'shop-page__sell-divider';
     const itemList = document.createElement('div');
@@ -289,8 +289,10 @@ export class ShopShelfManager {
     this.refs.current = current;
     this.refs.currentItem = currentItem;
     this.refs.currentQuantity = currentQuantity;
-    this.refs.markAll = markAll;
+    this.refs.allocation = allocation;
+    this.refs.allocationRange = allocationRange;
     this.refs.mark = mark;
+    this.refs.future = future;
     this.refs.status = status;
     this.refs.itemList = itemList;
     this.refs.tabs = tabs;
@@ -331,14 +333,7 @@ export class ShopShelfManager {
       button.type = 'button';
       button.dataset.shopSellItemKey = item.key;
       button.dataset.tutorialId = `shop:sell:${item.key}`;
-      button.addEventListener('pointerdown', (event) =>
-        this.beginDraftAddHold(event, item.itemTypeId),
-      );
-      button.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        this.selectDraftItem(item.itemTypeId, 1);
-      });
+      button.addEventListener('click', () => this.selectDraftItem(item.itemTypeId));
       const label = document.createElement('span');
       label.className = 'row_key';
       const quantity = document.createElement('span');
@@ -355,7 +350,8 @@ export class ShopShelfManager {
     if (!result.ok) return;
     const slot = this.getSelectedSlot(this.gameplayFacade.getSnapshot()?.shop?.shelf);
     if (slot?.sellKind) this.selectedSellTab = slot.sellKind;
-    this.resetSellDraft();
+    if (!slot?.sellKind && slot?.futureItemKind) this.selectedSellTab = slot.futureItemKind;
+    this.resetSellDraft(slot);
     this.previousFocus = document.activeElement;
     this.visible = true;
     this.applyPopupVisibility();
@@ -370,7 +366,6 @@ export class ShopShelfManager {
   }
 
   hideSellPopup() {
-    this.endHold({ commit: true });
     const wasVisible = this.visible;
     this.visible = false;
     this.applyPopupVisibility();
@@ -380,250 +375,103 @@ export class ShopShelfManager {
     this.previousFocus = null;
   }
 
-  beginDraftAddHold(event, itemTypeId) {
-    const refs = this.refs.itemButtons.get(itemTypeId);
-    if (event.button !== 0 || refs?.button.disabled) return;
-    const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
-    const item = shelf?.sellItems?.find((candidate) => candidate.itemTypeId === itemTypeId);
-    const maxQuantity = this.getMaxDraftQuantity(shelf, item);
-    event.preventDefault();
-    this.beginHold(event, {
-      key: `draft-add:${itemTypeId}`,
-      immediate: true,
-      onImmediateStep: () => this.selectDraftItem(itemTypeId, 1),
-      onStep: (repeatIndex) =>
-        this.selectDraftItem(
-          itemTypeId,
-          getDynamicStallTransferStep(maxQuantity, repeatIndex),
-        ),
-    });
-  }
-
-  beginDraftRemoveHold(event) {
-    if (
-      event.button !== 0 ||
-      this.draftSellItemTypeId === null ||
-      this.draftSellQuantity <= 0
-    ) {
-      return;
-    }
-    const maxQuantity = this.draftSellQuantity;
-    event.preventDefault();
-    this.beginHold(event, {
-      key: 'draft-remove',
-      immediate: true,
-      onImmediateStep: () => this.changeDraftQuantity(-1),
-      onStep: (repeatIndex) =>
-        this.changeDraftQuantity(
-          -getDynamicStallTransferStep(maxQuantity, repeatIndex),
-        ),
-    });
-  }
-
-  beginUnloadHold(event, slotNumber) {
-    const slot = this.gameplayFacade
-      .getSnapshot()
-      ?.shop?.shelf?.slots?.find((candidate) => candidate.slotNumber === slotNumber);
-    if (event.button !== 0 || !slot?.sellItemTypeId || slot.loadedQuantity <= 0) return;
-    const maxQuantity = slot.loadedQuantity;
-    this.beginHold(event, {
-      key: `unload:${slotNumber}`,
-      immediate: false,
-      onStep: (repeatIndex) => {
-        this.gameplayFacade.selectShopShelfSlot(slotNumber);
-        return this.unloadItem(
-          getDynamicStallTransferStep(maxQuantity, repeatIndex),
-        );
-      },
-      commitOnEnd: true,
-      onActivated: () => {
-        this.suppressRowClickSlotNumber = slotNumber;
-      },
-    });
-  }
-
-  beginHold(
-    event,
-    {
-      key,
-      immediate,
-      onStep,
-      onImmediateStep = onStep,
-      onActivated = null,
-      commitOnEnd = false,
-    },
-  ) {
-    this.endHold({ commit: true });
-    const point = { x: event.clientX, y: event.clientY };
-    const hold = {
-      key,
-      pointerId: event.pointerId,
-      target: event.currentTarget,
-      startX: point.x,
-      startY: point.y,
-      onStep,
-      onActivated,
-      didChange: false,
-      activated: false,
-      commitOnEnd,
-      repeatIndex: 0,
-      delayId: null,
-      repeatId: null,
-      move: null,
-      end: null,
-    };
-    const activate = () => {
-      if (this.activeHold !== hold) return;
-      hold.activated = true;
-      hold.onActivated?.();
-      this.runHoldStep(hold);
-      hold.repeatId = globalThis.setInterval(() => this.runHoldStep(hold), HOLD_REPEAT_MS);
-    };
-    hold.move = (moveEvent) => {
-      if (moveEvent.pointerId !== hold.pointerId) return;
-      if (
-        Math.hypot(moveEvent.clientX - hold.startX, moveEvent.clientY - hold.startY) >
-        HOLD_MOVE_TOLERANCE_PX
-      ) {
-        this.endHold({ commit: hold.didChange });
-      }
-    };
-    hold.end = (endEvent) => {
-      if (endEvent.pointerId === hold.pointerId) {
-        this.endHold({ commit: hold.commitOnEnd && hold.didChange });
-      }
-    };
-    this.activeHold = hold;
-    hold.target.setPointerCapture?.(hold.pointerId);
-    hold.target.addEventListener('pointermove', hold.move);
-    hold.target.addEventListener('pointerup', hold.end);
-    hold.target.addEventListener('pointercancel', hold.end);
-    document.addEventListener('pointermove', hold.move);
-    document.addEventListener('pointerup', hold.end);
-    document.addEventListener('pointercancel', hold.end);
-    if (immediate) this.runHoldStep(hold, onImmediateStep);
-    hold.delayId = globalThis.setTimeout(activate, HOLD_DELAY_MS);
-  }
-
-  runHoldStep(hold, step = hold.onStep) {
-    const isRepeatStep = step === hold.onStep;
-    const result = step?.(hold.repeatIndex);
-    if (isRepeatStep) hold.repeatIndex += 1;
-    if (result?.ok) hold.didChange = true;
-  }
-
-  endHold({ commit = false } = {}) {
-    const hold = this.activeHold;
-    if (!hold) return;
-    globalThis.clearTimeout(hold.delayId);
-    globalThis.clearInterval(hold.repeatId);
-    hold.target.removeEventListener('pointermove', hold.move);
-    hold.target.removeEventListener('pointerup', hold.end);
-    hold.target.removeEventListener('pointercancel', hold.end);
-    document.removeEventListener('pointermove', hold.move);
-    document.removeEventListener('pointerup', hold.end);
-    document.removeEventListener('pointercancel', hold.end);
-    if (hold.target.hasPointerCapture?.(hold.pointerId)) {
-      hold.target.releasePointerCapture(hold.pointerId);
-    }
-    this.activeHold = null;
-    if (commit && hold.commitOnEnd && hold.didChange) {
-      this.gameplayFacade.commitShopShelfChanges?.();
-    }
-  }
-
-  selectDraftItem(itemTypeId, quantity = 1) {
+  selectDraftItem(itemTypeId) {
     const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
     const item = shelf?.sellItems?.find((candidate) => candidate.itemTypeId === itemTypeId);
     if (!item) return { ok: false, reason: 'item_missing' };
 
-    if (this.draftSellItemTypeId !== itemTypeId) {
-      this.draftSellItemTypeId = itemTypeId;
-      this.draftSellQuantity = 0;
-    }
+    this.draftSellItemTypeId = itemTypeId;
+    this.draftSellPercentage = 100;
     this.selectedSellTab = item.kind;
     this.statusText = '';
-    return this.changeDraftQuantity(quantity, shelf);
-  }
-
-  changeDraftQuantity(delta, shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf) {
-    const item = shelf?.sellItems?.find(
-      (candidate) => candidate.itemTypeId === this.draftSellItemTypeId,
-    );
-    if (!item) {
-      this.resetSellDraft();
-      this.renderSellDraft(shelf);
-      return { ok: false, reason: 'item_missing' };
-    }
-
-    const maxQuantity = this.getMaxDraftQuantity(shelf, item);
-    const nextQuantity = Math.max(
-      0,
-      Math.min(maxQuantity, this.draftSellQuantity + Math.floor(Number(delta) || 0)),
-    );
-    if (nextQuantity === this.draftSellQuantity) {
-      return { ok: false, reason: nextQuantity <= 0 ? 'empty_selection' : 'selection_full' };
-    }
-
-    this.draftSellQuantity = nextQuantity;
-    if (nextQuantity === 0) this.draftSellItemTypeId = null;
-    this.statusText = '';
     this.renderSellDraft(shelf);
-    return { ok: true, quantity: nextQuantity };
+    return { ok: true, itemTypeId };
   }
 
-  markDraft({ all = false } = {}) {
+  selectDraftPercentage(percentage) {
+    if (this.draftSellItemTypeId === null) return { ok: false, reason: 'empty_selection' };
+    if (!STALL_ALLOCATION_PERCENTAGES.includes(percentage)) {
+      return { ok: false, reason: 'invalid_percentage' };
+    }
+
+    this.draftSellPercentage = percentage;
+    this.statusText = '';
+    this.renderSellDraft(this.gameplayFacade.getSnapshot()?.shop?.shelf);
+    return { ok: true, percentage };
+  }
+
+  markDraft() {
     const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
     const item = shelf?.sellItems?.find(
       (candidate) => candidate.itemTypeId === this.draftSellItemTypeId,
     );
-    const quantity = all
-      ? this.getMaxDraftQuantity(shelf, item)
-      : this.draftSellQuantity;
-    if (!item || quantity <= 0) return { ok: false, reason: 'empty_selection' };
+    if (!item) return { ok: false, reason: 'empty_selection' };
 
-    const result = this.gameplayFacade.loadSelectedShopShelfSlotItem(
+    const result = this.gameplayFacade.setSelectedShopShelfSlotAllocation(
       item.itemTypeId,
-      quantity,
+      this.draftSellPercentage,
     );
-    if (result?.ok) {
-      this.resetSellDraft();
-    } else {
+    if (!result?.ok) {
       this.statusText = this.getLoadFailureText(result?.reason);
     }
     this.render(this.gameplayFacade.getSnapshot());
     return result;
   }
 
-  getMaxDraftQuantity(shelf, item) {
+  toggleFutureDraft() {
+    const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
+    const slot = this.getSelectedSlot(shelf);
+    const item = shelf?.sellItems?.find(
+      (candidate) => candidate.itemTypeId === this.draftSellItemTypeId,
+    );
+    if (!item) return { ok: false, reason: 'empty_selection' };
+    const enabled = slot?.futureItemTypeId !== item.itemTypeId;
+    const result = this.gameplayFacade.setSelectedShopShelfFutureItem(
+      item.itemTypeId,
+      enabled,
+    );
+    if (!result?.ok) this.statusText = this.getLoadFailureText(result?.reason);
+    this.render(this.gameplayFacade.getSnapshot());
+    return result;
+  }
+
+  getAllocationTotal(shelf, item) {
     if (!item) return 0;
     const slot = this.getSelectedSlot(shelf);
-    const remainingCapacity = Math.max(0, 1_000_000 - (slot?.loadedQuantity ?? 0));
-    return Math.min(Math.max(0, Math.floor(Number(item.quantity) || 0)), remainingCapacity);
+    const loadedQuantity = slot?.sellItemTypeId === item.itemTypeId
+      ? slot.loadedQuantity
+      : 0;
+    return Math.max(0, Math.floor(Number(item.quantity) || 0)) + loadedQuantity;
   }
 
-  resetSellDraft() {
-    this.draftSellItemTypeId = null;
-    this.draftSellQuantity = 0;
+  getDraftTargetQuantity(shelf, item) {
+    return Math.floor(
+      (this.getAllocationTotal(shelf, item) * this.draftSellPercentage) / 100,
+    );
+  }
+
+  resetSellDraft(slot = null) {
+    this.draftSellItemTypeId = slot?.sellItemTypeId ?? slot?.futureItemTypeId ?? null;
+    const totalQuantity =
+      Math.max(0, Number(slot?.loadedQuantity) || 0) +
+      Math.max(0, Number(
+        this.gameplayFacade
+          .getSnapshot()
+          ?.shop?.shelf?.sellItems?.find(
+            (item) => item.itemTypeId === this.draftSellItemTypeId,
+          )?.quantity,
+      ) || 0);
+    const currentPercentage = totalQuantity > 0
+      ? ((slot?.loadedQuantity ?? 0) / totalQuantity) * 100
+      : 0;
+    this.draftSellPercentage = STALL_ALLOCATION_PERCENTAGES.reduce(
+      (closest, percentage) =>
+        Math.abs(percentage - currentPercentage) < Math.abs(closest - currentPercentage)
+          ? percentage
+          : closest,
+      0,
+    );
     this.statusText = '';
-  }
-
-  loadItem(itemTypeId, quantity = null) {
-    const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
-    const slot = this.getSelectedSlot(shelf);
-    const step =
-      quantity ?? getDynamicStallTransferStep(slot?.loadedQuantity ?? 0, 0);
-    return this.gameplayFacade.loadSelectedShopShelfSlotItem(itemTypeId, step, {
-      save: false,
-    });
-  }
-
-  unloadItem(quantity = null) {
-    const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
-    const slot = this.getSelectedSlot(shelf);
-    const step =
-      quantity ?? getDynamicStallTransferStep(slot?.loadedQuantity ?? 0, 0);
-    return this.gameplayFacade.unloadSelectedShopShelfSlotItem(step, { save: false });
   }
 
   render(snapshot = this.gameplayFacade.getSnapshot()) {
@@ -639,10 +487,21 @@ export class ShopShelfManager {
       }
       refs.row.hidden = false;
       refs.row.setAttribute('aria-label', `open stall ${slot.slotNumber}`);
-      refs.row.classList.toggle('is-empty', !slot.sellItemTypeId);
+      refs.row.classList.toggle(
+        'is-empty',
+        !slot.sellItemTypeId && !slot.futureItemTypeId,
+      );
       if (!slot.sellItemTypeId) {
-        refs.itemValue.textContent = 'empty stand';
-        refs.itemValue.removeAttribute('aria-label');
+        const waitingForFuture = Boolean(slot.futureItemTypeId);
+        refs.itemValue.textContent = waitingForFuture
+          ? `waiting for ${slot.futureItemLabel}`
+          : 'empty stand';
+        refs.itemValue.setAttribute(
+          'aria-label',
+          waitingForFuture
+            ? `open stall ${slot.slotNumber}, waiting for future ${slot.futureItemLabel}`
+            : `open empty stall ${slot.slotNumber}`,
+        );
         refs.statusValue.classList.remove('is-active');
         refs.batchValue.textContent = '';
         refs.batchSeparator.textContent = '';
@@ -650,11 +509,23 @@ export class ShopShelfManager {
         refs.progress.hidden = true;
         refs.progress.setAttribute('aria-valuenow', '0');
         refs.timerValue.textContent = '';
-        setResourceIconText(refs.priceValue, 'select');
+        setResourceIconText(refs.priceValue, waitingForFuture ? 'future' : 'select');
         setResourceColor(refs.priceValue, null);
         stopTimerProgressFill(refs.progressFill, 0);
-        setItemIconLabel(refs.itemValue, null);
-        setResourceColor(refs.itemValue, null);
+        setItemIconLabel(
+          refs.itemValue,
+          waitingForFuture ? slot.futureItemKind : null,
+          waitingForFuture ? slot.futureItemKey : null,
+        );
+        refs.quantityValue.hidden = true;
+        refs.quantityValue.textContent = '';
+        refs.capacityValue.textContent = '★'.repeat(
+          Math.max(1, Math.floor(Number(slot.batchSize) || 1)),
+        );
+        setResourceColor(
+          refs.itemValue,
+          waitingForFuture ? slot.futureItemKind : null,
+        );
         continue;
       }
 
@@ -662,14 +533,19 @@ export class ShopShelfManager {
         label: slot.sellLabel,
         quantity: String(slot.loadedQuantity),
       };
-      refs.itemValue.textContent = `${display.label} (${display.quantity})`;
+      refs.itemValue.textContent = display.label;
       refs.itemValue.setAttribute(
         'aria-label',
-        `hold to return ${display.label} from stall ${slot.slotNumber}`,
+        `open stall ${slot.slotNumber}, ${display.quantity} ${display.label} marked${
+          slot.futureItemTypeId ? ', future marking on' : ''
+        }`,
       );
       setItemIconLabel(refs.itemValue, slot.sellKind, slot.sellKey);
+      refs.quantityValue.hidden = false;
+      refs.quantityValue.textContent = ` ${display.quantity}`;
       setResourceColor(refs.itemValue, slot.sellKind);
       const batch = Math.min(slot.batchSize ?? 1, slot.loadedQuantity);
+      refs.capacityValue.textContent = '★'.repeat(Math.max(1, batch));
       const unitCoin = this.getDisplaySellCoin(slot);
       const priceText = Number.isFinite(unitCoin)
         ? formatCoinPriceText(unitCoin * batch)
@@ -705,12 +581,7 @@ export class ShopShelfManager {
     const draftItem = shelf.sellItems.find(
       (item) => item.itemTypeId === this.draftSellItemTypeId,
     );
-    if (
-      !draftItem ||
-      this.draftSellQuantity > this.getMaxDraftQuantity(shelf, draftItem)
-    ) {
-      this.resetSellDraft();
-    }
+    if (!draftItem && this.draftSellItemTypeId !== null) this.resetSellDraft();
 
     for (const kind of shelf.sellKinds) {
       setSelectedTabState(
@@ -728,8 +599,11 @@ export class ShopShelfManager {
         shouldShowItemInActionList(snapshot, item, item.quantity);
       const differentItemLoaded =
         selectedSlot?.sellItemTypeId && selectedSlot.sellItemTypeId !== item.itemTypeId;
+      const differentFutureItem =
+        selectedSlot?.futureItemTypeId &&
+        selectedSlot.futureItemTypeId !== item.itemTypeId;
       refs.row.hidden = !visible;
-      refs.button.disabled = Boolean(differentItemLoaded) || item.quantity <= 0;
+      refs.button.disabled = Boolean(differentItemLoaded || differentFutureItem);
       refs.button.setAttribute('aria-disabled', refs.button.disabled ? 'true' : 'false');
       refs.button.setAttribute(
         'aria-pressed',
@@ -750,16 +624,21 @@ export class ShopShelfManager {
     const item = shelf?.sellItems?.find(
       (candidate) => candidate.itemTypeId === this.draftSellItemTypeId,
     );
-    const hasSelection = Boolean(item && this.draftSellQuantity > 0);
+    const hasSelection = Boolean(item);
+    const slot = this.getSelectedSlot(shelf);
+    const targetQuantity = hasSelection ? this.getDraftTargetQuantity(shelf, item) : 0;
+    const loadedQuantity = slot?.sellItemTypeId === item?.itemTypeId
+      ? slot.loadedQuantity
+      : 0;
+    const futureEnabled = Boolean(
+      hasSelection && slot?.futureItemTypeId === item.itemTypeId,
+    );
 
-    this.refs.current.disabled = !hasSelection;
-    this.refs.current.setAttribute('aria-disabled', hasSelection ? 'false' : 'true');
-    this.refs.current.setAttribute('aria-pressed', hasSelection ? 'true' : 'false');
     this.refs.current.dataset.hasSelection = hasSelection ? 'true' : 'false';
     this.refs.current.setAttribute(
       'aria-label',
       hasSelection
-        ? `current ${item.label}, ${this.draftSellQuantity} selected; press to remove one`
+        ? `current ${item.label}, ${this.draftSellPercentage} percent, ${targetQuantity} marked`
         : 'current selection empty',
     );
     this.refs.currentItem.textContent = hasSelection ? item.label : 'empty';
@@ -769,15 +648,29 @@ export class ShopShelfManager {
       hasSelection ? item.key : null,
     );
     setResourceColor(this.refs.currentItem, hasSelection ? item.kind : null);
-    this.refs.currentQuantity.textContent = hasSelection
-      ? `x${this.draftSellQuantity}`
-      : '';
+    this.refs.currentQuantity.textContent = hasSelection ? `x${targetQuantity}` : '';
 
-    this.refs.mark.disabled = !hasSelection;
-    this.refs.mark.setAttribute('aria-disabled', hasSelection ? 'false' : 'true');
-    this.refs.mark.textContent = `mark x${hasSelection ? this.draftSellQuantity : 0}`;
-    this.refs.markAll.disabled = !hasSelection;
-    this.refs.markAll.setAttribute('aria-disabled', hasSelection ? 'false' : 'true');
+    this.refs.allocationRange.disabled = !hasSelection;
+    this.refs.allocationRange.value = String(this.draftSellPercentage);
+    this.refs.allocationRange.setAttribute(
+      'aria-valuetext',
+      hasSelection
+        ? `${this.draftSellPercentage} percent, ${targetQuantity} items`
+        : 'no item selected',
+    );
+    for (const [percentage, button] of this.refs.percentageButtons) {
+      button.disabled = !hasSelection;
+      button.setAttribute('aria-pressed', percentage === this.draftSellPercentage ? 'true' : 'false');
+    }
+
+    const allocationChanges = hasSelection && targetQuantity !== loadedQuantity;
+    this.refs.mark.disabled = !allocationChanges;
+    this.refs.mark.setAttribute('aria-disabled', allocationChanges ? 'false' : 'true');
+    this.refs.mark.textContent = `mark x${targetQuantity}`;
+    this.refs.future.disabled = !hasSelection;
+    this.refs.future.setAttribute('aria-disabled', hasSelection ? 'false' : 'true');
+    this.refs.future.setAttribute('aria-pressed', futureEnabled ? 'true' : 'false');
+    this.refs.future.textContent = futureEnabled ? 'stop future' : 'mark future';
     this.refs.status.textContent = this.statusText;
     this.refs.status.hidden = !this.statusText;
 

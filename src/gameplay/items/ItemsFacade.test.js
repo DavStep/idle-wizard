@@ -36,4 +36,17 @@ describe('ItemsFacade ingredients', () => {
 
     expect(restoredItemsFacade.getItemQuantity(cyclopsEye.id)).toBe(3);
   });
+
+  it('distinguishes newly produced items from ordinary inventory returns', () => {
+    const itemsFacade = createItemsFacade();
+    const sageSeed = itemsFacade.getItemDefinitionByKey('sageSeed');
+    const productions = [];
+    itemsFacade.subscribeProducedItems((production) => productions.push(production));
+
+    itemsFacade.addItem(sageSeed.id, 3);
+    itemsFacade.addProducedItem(sageSeed.id, 2);
+
+    expect(itemsFacade.getItemQuantity(sageSeed.id)).toBe(5);
+    expect(productions).toEqual([{ itemTypeId: sageSeed.id, quantity: 2 }]);
+  });
 });

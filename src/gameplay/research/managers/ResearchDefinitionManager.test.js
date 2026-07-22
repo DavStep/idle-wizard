@@ -85,6 +85,33 @@ describe('ResearchDefinitionManager', () => {
     expect(manager.hasConfiguredResearch('unlockRecipe:manaTonic')).toBe(true);
   });
 
+  it('offers one combined automation research per plot and cauldron', () => {
+    const { manager } = createManager();
+    const automationBoxes = manager
+      .getResearchTabs()
+      .find((tab) => tab.id === 'automation')?.boxes;
+    const plotResearch = automationBoxes
+      ?.find((box) => box.id === 'autoPlantTiles')
+      ?.researches[0];
+    const cauldronResearch = automationBoxes
+      ?.find((box) => box.id === 'autoBrewCauldrons')
+      ?.researches[0];
+
+    expect(automationBoxes?.map((box) => box.id)).toEqual([
+      'autoSeedSpawn',
+      'autoPlantTiles',
+      'autoBrewCauldrons',
+    ]);
+    expect(plotResearch).toMatchObject({
+      id: automationResearchIds.autoPlantTile(1),
+      label: 'automate plot 1',
+    });
+    expect(cauldronResearch).toMatchObject({
+      id: automationResearchIds.autoBrewCauldron(1),
+      label: 'automate cauldron 1',
+    });
+  });
+
   it('keeps mint seed research available during level 3 requirements', () => {
     const { manager, setCurrentLevel } = createManager();
     setCurrentLevel(2);

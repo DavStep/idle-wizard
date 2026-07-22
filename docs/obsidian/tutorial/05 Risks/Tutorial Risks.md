@@ -12,8 +12,8 @@ world: tutorial
 ## Stale Visual Reference
 
 The existing screenshot table in `docs/tutorial-flow.md` is retained as
-historical visual reference. It does not cover the current 37-step source order
-or the 36-step default capture set, even though the text graph/table now mirror
+historical visual reference. It does not cover the current 34-step source order
+or the 31-step default capture set, even though the text graph/table now mirror
 source. Run `node scripts/capture-tutorial-flow.js --check` first, then refresh
 it with `npm run tutorial:capture`.
 

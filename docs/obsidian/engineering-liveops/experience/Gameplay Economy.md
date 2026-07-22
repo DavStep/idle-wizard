@@ -64,13 +64,14 @@ experience_type: gameplay-economy
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
 - Early task levels must not require items gated far beyond the current research tier; use larger quantities of near-tier seeds, herbs, and potions instead.
 - Task persistence stores progress rows for all configured task ids, even on level 1; the visible task list must come from the current-level snapshot, not the raw save array.
-- Main tasks are an ordered Elara request chain. Only the first incomplete request collects progress, every request is worth 20 derived XP, and the existing coin level-up payment is the final request.
+- Main tasks are an ordered Elara request chain and only the first incomplete request collects progress. The coin-paid level-up is a separate transaction after the chain; never expose it as an Elara request or count it as a request-rail segment.
 - Task balance should not skip research order; first task use of seed/herb or recipe tiers must walk the configured research chain.
 - Level 10 is the first big progression milestone; level 9 can be a stronger gate before that unlock.
 - Milestone levels should not dip easier than the gate before them; when raising level 9, raise level 10+ to preserve curve.
 - Recipe research order can differ from potion item catalog order; keep item order stable to avoid potion type-id churn, and order prerequisites by ingredient tier.
 - Automation research spends ruby via client balance; existing backend `research_config.cost_coin` should not decide automation research currency.
 - Numbered automation research costs equal the target number in ruby: tier 1 costs 1, tier 2 costs 2, etc.
+- Numbered plot automation owns both planting and harvesting; numbered cauldron automation owns both brewing and bottling. Migrate legacy split harvest/bottle ids into the surviving target study.
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
 - Auto brew recipe/enabled state is per cauldron; selecting a recipe in cauldron 2+ must not rewrite cauldron 1 automation.
 - Auto brew enable UI must set `autoBrewRecipeKey` from the selected recipe before enabling; `BrewingFacade` rejects enabled auto-brew without a recipe key.

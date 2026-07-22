@@ -64,9 +64,11 @@ export class TopPanelQuestProgressManager {
     }
 
     const progress = this.previewProgress ?? snapshot?.tasks?.level?.questProgress ?? null;
+    const currentLevel = snapshot?.tasks?.currentLevel;
+    const beforeLevelOne = Number.isInteger(currentLevel) && currentLevel < 1;
     const loadRevision = Number(snapshot?.persistence?.loadRevision) || 0;
 
-    if (!progress) {
+    if (!progress || beforeLevelOne) {
       this.cancelCompletionSequence();
       this.refs.questRow.hidden = true;
       this.previousProgress = null;

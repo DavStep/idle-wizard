@@ -665,6 +665,8 @@ describe('ShopShelfManager', () => {
     const progress = progressRow?.querySelector('.shop-page__slot-progress');
     const fill = progressRow?.querySelector('.shop-page__slot-progress-fill');
     const timer = progressRow?.querySelector('.shop-page__slot-timer-value');
+    const capacity = stage.querySelector('.shop-page__slot-capacity-value');
+    const quantity = stage.querySelector('.shop-page__slot-quantity-value');
 
     expect(status?.classList.contains('is-active')).toBe(true);
     expect(status?.querySelector('.shop-page__slot-batch-value')?.textContent).toBe('x1');
@@ -676,7 +678,7 @@ describe('ShopShelfManager', () => {
     expect(itemColumn?.firstElementChild).toBe(
       stage.querySelector('.shop-page__slot-item-value'),
     );
-    expect(itemColumn?.lastElementChild).toBe(itemColumn?.firstElementChild);
+    expect(itemColumn?.lastElementChild).toBe(quantity);
     expect(progressRow?.firstElementChild).toBe(progress);
     expect(progressRow?.lastElementChild).toBe(timer);
     expect(status?.querySelector('.shop-page__slot-progress')).toBeNull();
@@ -685,17 +687,21 @@ describe('ShopShelfManager', () => {
     expect(status?.querySelector('.shop-page__slot-price-value')?.textContent).toContain(
       '5 coin',
     );
+    expect(capacity?.textContent).toBe('★');
+    expect(capacity?.getAttribute('aria-hidden')).toBe('true');
+    expect(quantity?.textContent).toBe(' 13');
+    expect(itemColumn?.textContent).toBe('sage seed 13');
 
     manager.unmount();
   });
 
-  it('reserves the larger two-line stall height and full-width progress row', () => {
+  it('uses the sketch-aligned stall card grid and full-width progress row', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const slotRowRule = baseCss.match(
       /\.shop-page__slot-row\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const progressRowRule = baseCss.match(
-      /\.shop-page__slot-progress-row\s*\{(?<body>[^}]*)\}/,
+      /(?:^|\n)\.shop-page__slot-progress-row\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
     expect(baseCss).toMatch(
@@ -703,6 +709,12 @@ describe('ShopShelfManager', () => {
     );
     expect(slotRowRule).toMatch(
       /min-height:\s*var\(--shop-page-slot-row-min-height\);/,
+    );
+    expect(baseCss).toMatch(
+      /\.shop-page__shelf > \.shop-page__slot-row\s*\{[\s\S]*?grid-template-areas:\s*\n\s*"title capacity batch"\s*\n\s*"visual item price"\s*\n\s*"visual progress progress";/,
+    );
+    expect(baseCss).toMatch(
+      /\.shop-page__shelf > \.shop-page__slot-row\s*\{[\s\S]*?min-height:\s*84px;/,
     );
     expect(progressRowRule).toMatch(/grid-column:\s*1 \/ -1;/);
     expect(progressRowRule).toMatch(

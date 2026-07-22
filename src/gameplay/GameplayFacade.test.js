@@ -230,6 +230,88 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(0);
   });
 
+  it('reaches level 1 automatically without publishing a ready level-zero state', () => {
+    const { gameplayFacade } = createGameplay({ baseline: 'fresh' });
+    const publishedSnapshots = [];
+    const runtimeTaskBalance = JSON.parse(
+      JSON.stringify(gameplayFacade.tasksFacade.taskBalanceManager.balance),
+    );
+    runtimeTaskBalance.levels[0].completionCostCoin = 10;
+    gameplayFacade.applyRuntimeConfig({
+      gameConfigs: [
+        {
+          configKey: 'tasks',
+          configJson: JSON.stringify(runtimeTaskBalance),
+        },
+      ],
+    });
+    const [summonTask] = gameplayFacade.getSnapshot().tasks.level.tasks;
+
+    gameplayFacade.tasksFacade.recordAction({
+      type: summonTask.type,
+      itemKey: summonTask.itemKey,
+      quantity: summonTask.requiredQuantity,
+    });
+    const task = gameplayFacade.getSnapshot().tasks.level.tasks.find(
+      (candidate) => candidate.type === taskRequirementTypes.TURN_IN,
+    );
+
+    gameplayFacade.subscribe((snapshot) => {
+      publishedSnapshots.push(snapshot);
+    });
+    gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
+
+    expect(gameplayFacade.fillTask(task.taskId)).toMatchObject({
+      ok: true,
+      completed: true,
+    });
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(1);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().tasks.level.completion).toMatchObject({
+      level: 1,
+      canComplete: false,
+    });
+    expect(
+      publishedSnapshots.some(
+        (snapshot) =>
+          snapshot.tasks.currentLevel === 0 &&
+          snapshot.tasks.level.completion.canComplete === true,
+      ),
+    ).toBe(false);
+  });
+
+  it('moves a completed legacy level-zero save to level 1 during load', () => {
+    const persistenceStorage = createMemoryStorage();
+    const first = createGameplay({ baseline: 'fresh', persistenceStorage });
+    const [summonTask] = first.gameplayFacade.getSnapshot().tasks.level.tasks;
+
+    first.gameplayFacade.tasksFacade.recordAction({
+      type: summonTask.type,
+      itemKey: summonTask.itemKey,
+      quantity: summonTask.requiredQuantity,
+    });
+    const task = first.gameplayFacade.getSnapshot().tasks.level.tasks.find(
+      (candidate) => candidate.type === taskRequirementTypes.TURN_IN,
+    );
+
+    first.gameplayFacade.itemsFacade.addItem(task.itemTypeId, task.requiredQuantity);
+    expect(first.gameplayFacade.tasksFacade.fillTask(task.taskId)).toMatchObject({
+      ok: true,
+      completed: true,
+    });
+    first.gameplayFacade.saveGameplaySnapshot();
+    first.gameplayFacade.shutdown();
+    first.ecsFacade.destroyWorld();
+
+    const second = createGameplay({ baseline: 'fresh', persistenceStorage });
+
+    expect(second.gameplayFacade.getSnapshot().tasks.currentLevel).toBe(1);
+    expect(second.gameplayFacade.getSnapshot().tasks.level.completion).toMatchObject({
+      level: 1,
+      canComplete: false,
+    });
+  });
+
   it('restores the canonical fresh runtime instead of keeping stale in-memory progress', () => {
     const { gameplayFacade } = createGameplay({ baseline: 'fresh' });
     const freshSave = gameplayFacade.createPersistenceSave();
@@ -467,6 +549,46 @@ describe('GameplayFacade', () => {
     expect(snapshot.garden.plot.unlockedTiles).toBe(2);
     expect(snapshot.shop.shelf.unlockedSlots).toBe(1);
     expect(snapshot.shop.playerShelf.unlockedSlots).toBe(1);
+  });
+
+  it('migrates split harvest and bottle research into combined automation', () => {
+    const persistenceStorage = createMemoryStorage();
+    persistenceStorage.setItem(
+      'idle-wizard.gameplay.save',
+      JSON.stringify({
+        version: 3,
+        mana: {},
+        coin: {},
+        crystal: {},
+        ruby: {},
+        logs: {},
+        inventory: [],
+        research: {
+          completedIds: [
+            automationResearchIds.autoHarvestPlant(1),
+            automationResearchIds.autoBottleCauldron(1),
+          ],
+        },
+        brewing: {},
+        garden: {},
+        tasks: {
+          currentLevel: 1,
+          tasks: [],
+        },
+      }),
+    );
+
+    const { gameplayFacade } = createGameplay({ persistenceStorage });
+    const completedResearchIds = gameplayFacade.getSnapshot().research.completedResearchIds;
+
+    expect(completedResearchIds).toContain(automationResearchIds.autoPlantTile(1));
+    expect(completedResearchIds).toContain(automationResearchIds.autoBrewCauldron(1));
+    expect(completedResearchIds).not.toContain(
+      automationResearchIds.autoHarvestPlant(1),
+    );
+    expect(completedResearchIds).not.toContain(
+      automationResearchIds.autoBottleCauldron(1),
+    );
   });
 
   it('grandfathers old level-cap plots and cauldrons into capacity research', () => {
@@ -1123,11 +1245,6 @@ describe('GameplayFacade', () => {
       costRuby: 6,
       costCurrency: 'ruby',
     });
-    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoHarvestPlant(6))).toMatchObject({
-      id: automationResearchIds.autoHarvestPlant(6),
-      costRuby: 6,
-      costCurrency: 'ruby',
-    });
     expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoPlantTile(7))).toBeUndefined();
 
     advanceToLevel(gameplayFacade, 20);
@@ -1152,11 +1269,6 @@ describe('GameplayFacade', () => {
     });
     expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoBrewCauldron(3))).toMatchObject({
       id: automationResearchIds.autoBrewCauldron(3),
-      costRuby: 3,
-      costCurrency: 'ruby',
-    });
-    expect(findResearchSnapshot(gameplayFacade, automationResearchIds.autoBottleCauldron(3))).toMatchObject({
-      id: automationResearchIds.autoBottleCauldron(3),
       costRuby: 3,
       costCurrency: 'ruby',
     });
@@ -2285,9 +2397,7 @@ describe('GameplayFacade', () => {
     expect(research.tabs[1].boxes.map((box) => box.id)).toEqual([
       'autoSeedSpawn',
       'autoPlantTiles',
-      'autoHarvestTiles',
       'autoBrewCauldrons',
-      'autoBottleCauldrons',
     ]);
     expect(research.tabs[1].boxes[0].researches[0]).toEqual({
       id: automationResearchIds.autoSeedSpawn(),
@@ -2303,10 +2413,10 @@ describe('GameplayFacade', () => {
     });
     expect(research.tabs[1].boxes[1].researches[0]).toEqual({
       id: automationResearchIds.autoPlantTile(1),
-      label: 'auto plant tile 1',
+      label: 'automate plot 1',
       value: '1 ruby',
       effect: 'auto',
-      description: 'garden tile 1 plants its selected seed when one is available.',
+      description: 'plot 1 plants its selected seed and harvests ready herbs automatically.',
       costCoin: 0,
       costRuby: 1,
       costCurrency: 'ruby',
@@ -2315,7 +2425,7 @@ describe('GameplayFacade', () => {
     });
     expect(research.tabs[1].boxes[1].researches[1]).toMatchObject({
       id: automationResearchIds.autoPlantTile(2),
-      label: 'auto plant tile 2',
+      label: 'automate plot 2',
       value: 'locked',
       requiredResearchIds: [automationResearchIds.autoPlantTile(1)],
       costCoin: 0,
@@ -2328,21 +2438,14 @@ describe('GameplayFacade', () => {
       automationResearchIds.autoPlantTile(2),
     ]);
     expect(research.tabs[1].boxes[2].researches.map((research) => research.id)).toEqual([
-      automationResearchIds.autoHarvestPlant(1),
-      automationResearchIds.autoHarvestPlant(2),
-    ]);
-    expect(research.tabs[1].boxes[3].researches.map((research) => research.id)).toEqual([
       automationResearchIds.autoBrewCauldron(1),
     ]);
-    expect(research.tabs[1].boxes[4].researches.map((research) => research.id)).toEqual([
-      automationResearchIds.autoBottleCauldron(1),
-    ]);
-    expect(research.tabs[1].boxes[3].researches[0]).toMatchObject({
+    expect(research.tabs[1].boxes[2].researches[0]).toMatchObject({
       id: automationResearchIds.autoBrewCauldron(1),
-      label: 'auto brew cauldron 1',
+      label: 'automate cauldron 1',
       value: '1 ruby',
       description:
-        'cauldron 1 starts brewing when staged ingredients and mana are ready.',
+        'cauldron 1 brews its armed recipe and bottles finished brews automatically.',
       costCoin: 0,
       costRuby: 1,
       costCurrency: 'ruby',
@@ -2594,15 +2697,8 @@ describe('GameplayFacade', () => {
       automationResearchIds.autoPlantTile(1),
       automationResearchIds.autoPlantTile(2),
     ]);
-    expect(getAutomationBoxResearchIds('autoHarvestTiles')).toEqual([
-      automationResearchIds.autoHarvestPlant(1),
-      automationResearchIds.autoHarvestPlant(2),
-    ]);
     expect(getAutomationBoxResearchIds('autoBrewCauldrons')).toEqual([
       automationResearchIds.autoBrewCauldron(1),
-    ]);
-    expect(getAutomationBoxResearchIds('autoBottleCauldrons')).toEqual([
-      automationResearchIds.autoBottleCauldron(1),
     ]);
 
     finishCurrentTaskLevel(gameplayFacade);
@@ -2618,20 +2714,9 @@ describe('GameplayFacade', () => {
       automationResearchIds.autoPlantTile(4),
       automationResearchIds.autoPlantTile(5),
     ]);
-    expect(getAutomationBoxResearchIds('autoHarvestTiles')).toEqual([
-      automationResearchIds.autoHarvestPlant(1),
-      automationResearchIds.autoHarvestPlant(2),
-      automationResearchIds.autoHarvestPlant(3),
-      automationResearchIds.autoHarvestPlant(4),
-      automationResearchIds.autoHarvestPlant(5),
-    ]);
     expect(getAutomationBoxResearchIds('autoBrewCauldrons')).toEqual([
       automationResearchIds.autoBrewCauldron(1),
       automationResearchIds.autoBrewCauldron(2),
-    ]);
-    expect(getAutomationBoxResearchIds('autoBottleCauldrons')).toEqual([
-      automationResearchIds.autoBottleCauldron(1),
-      automationResearchIds.autoBottleCauldron(2),
     ]);
   });
 
@@ -4077,11 +4162,6 @@ describe('GameplayFacade', () => {
       cost: 1,
       costCurrency: 'ruby',
     });
-    expect(gameplayFacade.buyResearch(automationResearchIds.autoBottleCauldron(1))).toMatchObject({
-      ok: true,
-      cost: 1,
-      costCurrency: 'ruby',
-    });
     expect(gameplayFacade.setBrewingAutoBrewRecipe('manaTonic')).toMatchObject({
       ok: true,
       autoBrewRecipeKey: 'manaTonic',
@@ -4653,17 +4733,12 @@ describe('GameplayFacade', () => {
     finishCurrentTaskLevel(gameplayFacade);
     finishCurrentTaskLevel(gameplayFacade);
     gameplayFacade.coinFacade.add(25);
-    gameplayFacade.rubyFacade.add(2);
+    gameplayFacade.rubyFacade.add(1);
     expect(gameplayFacade.buyGardenTile()).toMatchObject({
       ok: true,
       tileNumber: 2,
     });
     expect(gameplayFacade.buyResearch(automationResearchIds.autoPlantTile(1))).toMatchObject({
-      ok: true,
-      cost: 1,
-      costCurrency: 'ruby',
-    });
-    expect(gameplayFacade.buyResearch(automationResearchIds.autoHarvestPlant(1))).toMatchObject({
       ok: true,
       cost: 1,
       costCurrency: 'ruby',
@@ -4716,8 +4791,7 @@ describe('GameplayFacade', () => {
     });
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toEqual([
       'opened garden plot 2',
-      'researched auto plant tile 1',
-      'researched auto harvest tile 1',
+      'researched automate plot 1',
       'planted sage seed',
       'planted sage seed',
       'harvested sage',
@@ -5107,6 +5181,35 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.getSnapshot().coin.current).toBe(2);
     expect(gameplayFacade.getSnapshot().inventory[0].quantity).toBe(4);
+  });
+
+  it('marks only newly produced copies for a stand when future loading is enabled', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+    openFirstNpcMarketStand(gameplayFacade);
+    unlockSageSeed(gameplayFacade);
+    ecsFacade.update({ deltaSeconds: 10 });
+    gameplayFacade.itemsFacade.addItem(1, 10);
+
+    expect(gameplayFacade.setSelectedShopShelfFutureItem(1, true)).toMatchObject({
+      ok: true,
+      enabled: true,
+    });
+    const summon = gameplayFacade.summonSeed();
+
+    expect(summon.ok).toBe(true);
+    expect(gameplayFacade.getSnapshot().inventory).toContainEqual(
+      expect.objectContaining({ itemTypeId: 1, quantity: 10 }),
+    );
+    expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
+      sellItemTypeId: 1,
+      loadedQuantity: 1,
+      futureItemTypeId: 1,
+      futurePendingQuantity: 0,
+    });
+    expect(gameplayFacade.createPersistenceSave().shop.shelf.slots[0]).toMatchObject({
+      futureItemKey: 'sageSeed',
+      futurePendingQuantity: 0,
+    });
   });
 
   it('keeps an independent NPC market timer on every stand', () => {

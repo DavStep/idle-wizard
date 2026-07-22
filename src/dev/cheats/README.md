@@ -102,7 +102,7 @@ Useful view setup commands:
   until app-level gates such as fresh-start, intro, and offline overlays are
   hidden, then runs `openUi(surface)`.
 - `/?devUi=traderStallLoader` opens the trader stall item loader directly for
-  hold-selection and dialog screenshot QA.
+  percentage-allocation, future-marking, and dialog screenshot QA.
 - `/?devUi=featureUnlockAnnouncement` opens a non-persistent eight-feature unlock
   preview; tapping its backdrop closes it and runs the icon handoff without
   changing gameplay state.

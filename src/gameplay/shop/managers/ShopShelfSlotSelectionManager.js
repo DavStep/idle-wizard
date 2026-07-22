@@ -1,4 +1,4 @@
-const MAX_STALL_LOADED_QUANTITY = 1_000_000;
+export const MAX_STALL_LOADED_QUANTITY = 1_000_000;
 
 export class ShopShelfSlotSelectionManager {
   constructor({
@@ -35,6 +35,15 @@ export class ShopShelfSlotSelectionManager {
       return { ok: false, reason: 'no_selected_slot' };
     }
 
+    return this.loadSlot(selectedSlotNumber, itemTypeId, quantity);
+  }
+
+  loadSlot(slotNumber, itemTypeId, quantity = 1) {
+    const slot = this.getSlot(slotNumber);
+    if (!slot?.unlocked) {
+      return { ok: false, reason: 'slot_locked', slotNumber };
+    }
+
     const safeQuantity = this.normalizeQuantity(quantity);
     if (!safeQuantity) {
       return { ok: false, reason: 'invalid_quantity', itemTypeId };
@@ -55,7 +64,6 @@ export class ShopShelfSlotSelectionManager {
       return { ok: false, reason: 'item_not_sellable', itemTypeId };
     }
 
-    const slot = this.getSelectedSlot();
     if (slot.sellItemTypeId && slot.sellItemTypeId !== itemTypeId) {
       return { ok: false, reason: 'different_item_loaded', itemTypeId };
     }
@@ -77,17 +85,17 @@ export class ShopShelfSlotSelectionManager {
 
     if (!slot.sellItemTypeId) {
       this.shopShelfEntityManager.assignSlotSellItem(
-        selectedSlotNumber,
+        slotNumber,
         itemTypeId,
         loadQuantity,
       );
     } else {
-      this.shopShelfEntityManager.changeSlotLoadedQuantity(selectedSlotNumber, loadQuantity);
+      this.shopShelfEntityManager.changeSlotLoadedQuantity(slotNumber, loadQuantity);
     }
 
     return {
       ok: true,
-      slotNumber: selectedSlotNumber,
+      slotNumber,
       quantity: loadQuantity,
       loadedQuantity: slot.loadedQuantity + loadQuantity,
       item: {
@@ -131,6 +139,36 @@ export class ShopShelfSlotSelectionManager {
     };
   }
 
+  setSelectedSlotAllocation(itemTypeId, percentage) {
+    const selectedSlotNumber = this.shopShelfEntityManager.getSelectedSlotNumber();
+    if (!selectedSlotNumber) {
+      return { ok: false, reason: 'no_selected_slot' };
+    }
+
+    const safePercentage = Math.max(0, Math.min(100, Math.floor(Number(percentage) || 0)));
+    const slot = this.getSlot(selectedSlotNumber);
+    if (slot.sellItemTypeId && slot.sellItemTypeId !== itemTypeId) {
+      return { ok: false, reason: 'different_item_loaded', itemTypeId };
+    }
+
+    const loadedQuantity = slot.sellItemTypeId === itemTypeId ? slot.loadedQuantity : 0;
+    const totalQuantity = this.getAvailableQuantity(itemTypeId) + loadedQuantity;
+    const targetQuantity = Math.floor((totalQuantity * safePercentage) / 100);
+    const delta = targetQuantity - loadedQuantity;
+    const result = delta > 0
+      ? this.loadSlot(selectedSlotNumber, itemTypeId, delta)
+      : delta < 0
+        ? this.unloadSelectedSlot(-delta)
+        : { ok: true, slotNumber: selectedSlotNumber, quantity: 0, loadedQuantity };
+
+    return {
+      ...result,
+      percentage: safePercentage,
+      targetQuantity,
+      totalQuantity,
+    };
+  }
+
   unloadSelectedSlotAll() {
     const slot = this.getSelectedSlot();
     return this.unloadSelectedSlot(slot?.loadedQuantity ?? 0);
@@ -142,6 +180,14 @@ export class ShopShelfSlotSelectionManager {
       this.shopShelfEntityManager
         .getSlotSnapshots()
         .find((slot) => slot.slotNumber === selectedSlotNumber) ?? null
+    );
+  }
+
+  getSlot(slotNumber) {
+    return (
+      this.shopShelfEntityManager
+        .getSlotSnapshots()
+        .find((slot) => slot.slotNumber === slotNumber) ?? null
     );
   }
 

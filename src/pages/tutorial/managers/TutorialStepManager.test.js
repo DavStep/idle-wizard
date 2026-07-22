@@ -28,6 +28,7 @@ function createDomFake({
   selectedBrewingRecipeKey = null,
   shopSellPopupOpen = false,
   shopSellSelection = false,
+  shopSellPercentage = 100,
   sellTabKind = 'seed',
 } = {}) {
   return {
@@ -36,6 +37,7 @@ function createDomFake({
     isBrewingRecipeSelected: (recipeKey) => selectedBrewingRecipeKey === recipeKey,
     isGardenSeedPopupOpen: () => seedPopupOpen,
     hasShopSellSelection: () => shopSellSelection,
+    isShopSellPercentageSelected: (percentage) => shopSellPercentage === percentage,
     isShopSellPopupOpen: () => shopSellPopupOpen,
     isShopSellTabSelected: (kind) => sellTabKind === kind,
     isTasksExpanded: () => tasksExpanded,
@@ -141,30 +143,6 @@ function getStep({ pageId = 'workshop', snapshot, dom, completed = [], progress 
 function completedThrough(stepId) {
   const index = TUTORIAL_STEP_IDS.indexOf(stepId);
   return index >= 0 ? TUTORIAL_STEP_IDS.slice(0, index + 1) : [];
-}
-
-function createLevelOneCompleteSnapshot() {
-  return createSnapshot({
-    tasks: {
-      currentLevel: 0,
-      level: {
-        completion: {
-          canComplete: true,
-          costCoin: 10,
-        },
-        tasks: [
-          createTask({
-            taskId: 'level1-turn-in-sage-seed',
-            itemKey: 'sageSeed',
-            requiredQuantity: 5,
-            progressQuantity: 5,
-            remainingQuantity: 0,
-            completed: true,
-          }),
-        ],
-      },
-    },
-  });
 }
 
 function createLevelOneReadyToTurnInSnapshot() {
@@ -419,7 +397,7 @@ describe('TutorialStepManager', () => {
       kind: 'dialog',
       advanceLabel: 'enter workshop',
       variant: 'intro-dialog',
-      stepLabel: '1/36',
+      stepLabel: '1/34',
     });
   });
 
@@ -565,28 +543,13 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('lets level 1 advance with starter coins after the first seed task', () => {
-    expect(
-      getStep({
-        snapshot: createLevelOneCompleteSnapshot(),
-        dom: createDomFake({ tasksExpanded: true }),
-        completed: completedThrough('first-task-complete'),
-      }),
-    ).toMatchObject({
-      id: 'level-up-one',
-      targetId: 'workshop:levelUp',
-      progressLabel: '1/1 ready',
-      stepLabel: '10/36',
-    });
-  });
-
   it('introduces level 2 by telling the player to summon before market', () => {
     expect(getStep({ snapshot: createLevelTwoSnapshot() })).toMatchObject({
       id: 'intro-market',
       kind: 'dialog',
       targetId: 'workshop:summonSeed',
       lessonTitle: 'market opened',
-      stepLabel: '11/36',
+      stepLabel: '9/34',
     });
   });
 
@@ -659,13 +622,13 @@ describe('TutorialStepManager', () => {
       id: 'open-market',
       targetId: 'page:shop',
       objectiveText: 'sell sage seeds in market',
-      stepLabel: '13/36',
+      stepLabel: '11/34',
     });
     expect(getStep({ pageId: 'shop', snapshot, completed })).toMatchObject({
       id: 'select-market-stand',
       targetId: 'shop:stand:1',
       objectiveText: 'open the first stall',
-      stepLabel: '14/36',
+      stepLabel: '12/34',
     });
   });
 
@@ -730,10 +693,10 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'select-sage-seed-sale',
       targetId: 'shop:sell:sageSeed',
-      hintText: 'add sage seeds',
+      hintText: 'select sage seed',
       objectiveText: 'load sage seed into the stall',
       progressLabel: '0/1 seed',
-      stepLabel: '15/36',
+      stepLabel: '13/34',
     });
 
     expect(
@@ -748,8 +711,26 @@ describe('TutorialStepManager', () => {
       }),
     ).toMatchObject({
       id: 'select-sage-seed-sale',
+      targetId: 'shop:sell:percentage',
+      hintText: 'set 25%',
+      objectiveText: 'load sage seed into the stall',
+    });
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        dom: createDomFake({
+          shopSellPopupOpen: true,
+          shopSellSelection: true,
+          shopSellPercentage: 25,
+        }),
+        completed: completedThrough('select-market-stand'),
+      }),
+    ).toMatchObject({
+      id: 'select-sage-seed-sale',
       targetId: 'shop:sell:mark',
-      hintText: 'mark selected seeds',
+      hintText: 'mark one seed',
       objectiveText: 'load sage seed into the stall',
     });
 
@@ -774,7 +755,7 @@ describe('TutorialStepManager', () => {
       hintText: '',
       objectiveText: 'wait for the stall to sell',
       progressLabel: '0/1 sale',
-      stepLabel: '16/36',
+      stepLabel: '14/34',
     });
   });
 
@@ -1034,7 +1015,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-two',
       targetId: 'workshop:levelUp',
       progressLabel: '1/1 ready',
-      stepLabel: '19/36',
+      stepLabel: '17/34',
     });
   });
 
@@ -1067,7 +1048,7 @@ describe('TutorialStepManager', () => {
       id: 'research-mint-seed',
       targetId: 'research:unlockSeed:mintSeed',
       objectiveText: 'research mint seed',
-      stepLabel: '21/36',
+      stepLabel: '19/34',
     });
   });
 
@@ -1082,7 +1063,7 @@ describe('TutorialStepManager', () => {
       id: 'fill-mint-seed-task',
       targetId: 'task:level3-turn-in-mint-seed',
       hintText: 'turn in',
-      stepLabel: '23/36',
+      stepLabel: '21/34',
     });
   });
 
@@ -1121,7 +1102,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'fill-sage-seed-task',
       targetId: 'task:level3-turn-in-sage-seed',
-      stepLabel: '24/36',
+      stepLabel: '22/34',
     });
   });
 
@@ -1167,7 +1148,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-three',
       targetId: 'page:shop',
       progressLabel: '6.4/8 coin',
-      stepLabel: '25/36',
+      stepLabel: '23/34',
     });
   });
 
@@ -1177,7 +1158,7 @@ describe('TutorialStepManager', () => {
       kind: 'dialog',
       targetId: 'page:garden',
       lessonTitle: 'garden opened',
-      stepLabel: '26/36',
+      stepLabel: '24/34',
     });
   });
 
@@ -1191,7 +1172,7 @@ describe('TutorialStepManager', () => {
       id: 'grow-sage',
       targetId: 'workshop:tasks',
       hintText: "open elara's level 4 request",
-      stepLabel: '27/36',
+      stepLabel: '25/34',
     });
   });
 
@@ -1224,7 +1205,7 @@ describe('TutorialStepManager', () => {
       id: 'fill-sage-herb-task',
       targetId: 'task:level4-turn-in-sage-herb',
       hintText: 'turn in sage',
-      stepLabel: '29/36',
+      stepLabel: '27/34',
     });
   });
 
@@ -1261,7 +1242,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'fill-mint-herb-task',
       targetId: 'page:garden',
-      stepLabel: '30/36',
+      stepLabel: '28/34',
     });
   });
 
@@ -1307,7 +1288,7 @@ describe('TutorialStepManager', () => {
       id: 'level-up-four',
       targetId: 'page:shop',
       progressLabel: '10/16 coin',
-      stepLabel: '31/36',
+      stepLabel: '29/34',
     });
   });
 
@@ -1315,7 +1296,7 @@ describe('TutorialStepManager', () => {
     expect(getStep({ pageId: 'research', snapshot: createLevelFiveSnapshot() })).toMatchObject({
       id: 'research-mana-tonic',
       targetId: 'research:unlockRecipe:manaTonic',
-      stepLabel: '32/36',
+      stepLabel: '30/34',
     });
   });
 
@@ -1336,7 +1317,7 @@ describe('TutorialStepManager', () => {
       id: 'brew-mana-tonic',
       targetId: 'brewing:herb:sageHerb',
       hintText: 'tap sage to fill cauldron. recipes care about order',
-      stepLabel: '34/36',
+      stepLabel: '32/34',
     });
   });
 
@@ -1356,7 +1337,7 @@ describe('TutorialStepManager', () => {
       id: 'brew-mana-tonic',
       targetId: 'brewing:inventory:herbs',
       hintText: 'open herbs',
-      stepLabel: '34/36',
+      stepLabel: '32/34',
     });
   });
 
@@ -1403,7 +1384,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'intro-brewing',
       targetId: 'page:brewing',
-      stepLabel: '33/36',
+      stepLabel: '31/34',
     });
   });
 
@@ -1440,7 +1421,7 @@ describe('TutorialStepManager', () => {
       id: 'refill-mana-tonic-cauldron',
       targetId: 'task:level5-turn-in-mana-tonic',
       hintText: 'turn in mana tonic',
-      stepLabel: '36/36',
+      stepLabel: '34/34',
     });
   });
 

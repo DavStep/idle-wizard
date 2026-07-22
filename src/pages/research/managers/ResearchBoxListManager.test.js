@@ -345,6 +345,15 @@ describe('ResearchBoxListManager', () => {
     expect(css).toContain('white-space: normal;');
   });
 
+  it('centers research prices inside their action buttons', () => {
+    const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const buttonRule = css.match(
+      /\.style-button\.research-page__research-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(buttonRule).toContain('text-align: center;');
+  });
+
   it('uses the standard full-page scroll list structure', () => {
     const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const contentRule = css.match(

@@ -9,7 +9,7 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class TasksFacade {
   static explain =
-    "Elara gives the wizard one main request at a time. Each completed request fills one level segment, and paid level completions add a final coin segment.";
+    'Elara gives the wizard one main request at a time. Each completed request fills one level segment; the separate level-up action pays any required coin.';
 
   constructor({ itemsFacade }) {
     this.taskBalanceManager = new TaskBalanceManager({ itemsFacade });
