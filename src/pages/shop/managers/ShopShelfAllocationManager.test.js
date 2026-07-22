@@ -82,7 +82,29 @@ function createHarness({ loadedQuantity = 0, sageQuantity = 1_000 } = {}) {
     publish();
     return { ok: true, enabled, itemTypeId: enabled ? itemTypeId : null };
   });
+  const clearSelectedShopShelfSlot = vi.fn(() => {
+    if (slot.sellItemTypeId === sageSeed.itemTypeId) {
+      sageSeed.quantity += slot.loadedQuantity;
+    }
+    if (slot.sellItemTypeId === mintSeed.itemTypeId) {
+      mintSeed.quantity += slot.loadedQuantity;
+    }
+    slot.sellItemTypeId = null;
+    slot.sellKey = null;
+    slot.sellKind = null;
+    slot.sellLabel = null;
+    slot.sellCoin = null;
+    slot.loadedQuantity = 0;
+    slot.futureItemTypeId = null;
+    slot.futureItemKey = null;
+    slot.futureItemKind = null;
+    slot.futureItemLabel = null;
+    slot.futurePendingQuantity = 0;
+    publish();
+    return { ok: true, slotNumber: 1, returnedQuantity: loadedQuantity };
+  });
   const gameplayFacade = {
+    clearSelectedShopShelfSlot,
     getSnapshot: () => snapshot,
     selectShopShelfSlot,
     setSelectedShopShelfFutureItem,
@@ -100,6 +122,7 @@ function createHarness({ loadedQuantity = 0, sageQuantity = 1_000 } = {}) {
 
   return {
     manager,
+    clearSelectedShopShelfSlot,
     mintSeed,
     popupLayer,
     sageSeed,
@@ -115,7 +138,7 @@ afterEach(() => {
 });
 
 describe('ShopShelfManager percentage allocation', () => {
-  it('shows an empty current row and five stepped percentage points before selection', () => {
+  it('shows an empty current row and a five-percent progress slider before selection', () => {
     const harness = createHarness();
     harness.manager.showSellPopup();
     const popup = harness.popupLayer.querySelector('.shop-page__sell-popup');
@@ -126,26 +149,11 @@ describe('ShopShelfManager percentage allocation', () => {
     expect(popup.querySelector('.shop-page__sell-allocation-range')).toMatchObject({
       min: '0',
       max: '100',
-      step: '25',
+      step: '5',
       disabled: true,
     });
-    expect(
-      [...popup.querySelectorAll('.shop-page__sell-allocation-tick')].map(
-        (tick) => tick.textContent,
-      ),
-    ).toEqual(['0%', '25%', '50%', '75%', '100%']);
-    expect(
-      [...popup.querySelectorAll('.shop-page__sell-allocation-tick')].map(
-        (tick) => tick.style.getPropertyValue(
-          '--shop-page-sell-allocation-percentage',
-        ),
-      ),
-    ).toEqual(['0', '25', '50', '75', '100']);
-    expect(
-      [...popup.querySelectorAll('.shop-page__sell-allocation-tick')].every(
-        (tick) => tick.disabled,
-      ),
-    ).toBe(true);
+    expect(popup.querySelector('.shop-page__sell-allocation-progress')).not.toBeNull();
+    expect(popup.querySelectorAll('.shop-page__sell-allocation-tick')).toHaveLength(0);
     expect(popup.textContent).not.toContain('hold');
   });
 
@@ -167,21 +175,42 @@ describe('ShopShelfManager percentage allocation', () => {
     const harness = createHarness();
     harness.manager.showSellPopup();
     harness.popupLayer.querySelector('[data-shop-sell-item-key="sageSeed"]').click();
-    harness.popupLayer.querySelector('[data-shop-sell-percentage="25"]').click();
+    const range = harness.popupLayer.querySelector('.shop-page__sell-allocation-range');
+    range.value = '25';
+    range.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     expect(harness.popupLayer.querySelector('.shop-page__sell-mark-button').textContent)
       .toBe('mark x250');
-    expect(
-      harness.popupLayer
-        .querySelector('[data-shop-sell-percentage="25"]')
-        .getAttribute('aria-pressed'),
-    ).toBe('true');
     harness.popupLayer.querySelector('.shop-page__sell-mark-button').click();
 
     expect(harness.setSelectedShopShelfSlotAllocation).toHaveBeenCalledOnce();
     expect(harness.setSelectedShopShelfSlotAllocation).toHaveBeenCalledWith(1, 25);
     expect(harness.slot.loadedQuantity).toBe(250);
     expect(harness.sageSeed.quantity).toBe(750);
+    expect(harness.popupLayer.querySelector('.shop-page__sell-popup').hidden).toBe(true);
+  });
+
+  it('moves the marked quantity in five-percent steps', () => {
+    const harness = createHarness();
+    harness.manager.showSellPopup();
+    harness.popupLayer.querySelector('[data-shop-sell-item-key="sageSeed"]').click();
+    const range = harness.popupLayer.querySelector('.shop-page__sell-allocation-range');
+
+    range.value = '5';
+    range.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    expect(harness.popupLayer.querySelector('.shop-page__sell-mark-button').textContent)
+      .toBe('mark x50');
+
+    range.value = '100';
+    range.dispatchEvent(new window.Event('input', { bubbles: true }));
+    range.dispatchEvent(
+      new window.KeyboardEvent('keydown', { bubbles: true, key: 'ArrowLeft' }),
+    );
+
+    expect(range.value).toBe('95');
+    expect(harness.popupLayer.querySelector('.shop-page__sell-mark-button').textContent)
+      .toBe('mark x950');
   });
 
   it('uses 0% to return all currently marked stock', () => {
@@ -210,6 +239,7 @@ describe('ShopShelfManager percentage allocation', () => {
     expect(harness.setSelectedShopShelfFutureItem).toHaveBeenCalledWith(2, true);
     expect(future.textContent).toBe('stop future');
     expect(future.getAttribute('aria-pressed')).toBe('true');
+    expect(harness.popupLayer.querySelector('.shop-page__sell-popup').hidden).toBe(true);
     expect(harness.stage.querySelector('.shop-page__slot-item-value')?.textContent)
       .toContain('waiting for mint seed');
   });
@@ -220,10 +250,40 @@ describe('ShopShelfManager percentage allocation', () => {
     harness.popupLayer.querySelector('[data-shop-sell-item-key="sageSeed"]').click();
     const future = harness.popupLayer.querySelector('.shop-page__sell-future-button');
     future.click();
+    harness.manager.showSellPopup();
     future.click();
 
     expect(harness.setSelectedShopShelfFutureItem).toHaveBeenLastCalledWith(1, false);
     expect(future.textContent).toBe('mark future');
+  });
+
+  it('clears loaded stock and future marking, then closes the dialog', () => {
+    const harness = createHarness({ loadedQuantity: 100, sageQuantity: 900 });
+    harness.manager.showSellPopup();
+
+    harness.popupLayer.querySelector('.shop-page__sell-clear-button').click();
+
+    expect(harness.clearSelectedShopShelfSlot).toHaveBeenCalledOnce();
+    expect(harness.slot.loadedQuantity).toBe(0);
+    expect(harness.sageSeed.quantity).toBe(1_000);
+    expect(harness.popupLayer.querySelector('.shop-page__sell-popup').hidden).toBe(true);
+  });
+
+  it('keeps item icon nodes stable across unchanged timer renders', () => {
+    const harness = createHarness();
+    harness.manager.showSellPopup();
+    harness.popupLayer.querySelector('[data-shop-sell-item-key="sageSeed"]').click();
+    const itemLabel = harness.popupLayer.querySelector(
+      '[data-shop-sell-item-key="sageSeed"] .row_key',
+    );
+    const currentLabel = harness.popupLayer.querySelector('.shop-page__sell-current-item');
+    const itemIcon = itemLabel.querySelector('.style-seed-label__icon');
+    const currentIcon = currentLabel.querySelector('.style-seed-label__icon');
+
+    harness.manager.render(harness.manager.gameplayFacade.getSnapshot());
+
+    expect(itemLabel.querySelector('.style-seed-label__icon')).toBe(itemIcon);
+    expect(currentLabel.querySelector('.style-seed-label__icon')).toBe(currentIcon);
   });
 
   it('disables other item types while a stand has loaded or future-marked stock', () => {

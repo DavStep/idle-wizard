@@ -44,6 +44,10 @@ When a feature change would be meaningfully faster or safer with a repo-local he
 - Document the command, required env flags, and intended use in this file when it is broad, or in the feature-local `README.md` when it is feature-specific.
 - Keep tools deterministic and scoped to the current repo; prefer shared Vite and SpacetimeDB processes. If parallel agents interfere, isolated runtimes may use explicit alternate ports, with one clear owner responsible for stopping every alternate listener when finished.
 - Reuse documented tools before creating a near-duplicate helper.
+- For an isolated live level-20 state, run `npm run preview:level20 -- --port 55175`
+  and open the printed `?devLevel=20` URL. The command checks or starts local
+  SpacetimeDB, builds into ignored `tmp/level20-dist`, and leaves the preview
+  detached. Stop its recorded process with `npm run preview:level20:stop`.
 
 ## Shared Local Runtime
 

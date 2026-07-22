@@ -68,6 +68,10 @@ export class ShopAutoSellManager {
   processSlot(slot, { cycleSeconds, deltaSeconds, npcNeedByItemKey }) {
     if (!Number.isFinite(cycleSeconds) || cycleSeconds <= 0) return null;
 
+    const item = this.itemsFacade.getItemDefinition(slot.sellItemTypeId);
+    const npcNeed = this.getAvailableNpcNeed(item, npcNeedByItemKey);
+    if (Number.isFinite(npcNeed) && npcNeed <= 0) return null;
+
     const progressSeconds = Math.max(0, Number(slot.sellProgressSeconds) || 0) + deltaSeconds;
     const cyclesDue = Math.floor(progressSeconds / cycleSeconds);
     if (cyclesDue <= 0) {

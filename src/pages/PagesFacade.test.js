@@ -12042,7 +12042,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain(
       '1. sells sage seed',
     );
-    expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(false);
+    expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
   });
 
   it('colors NPC market item names and prices separately', () => {
@@ -12124,7 +12124,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__shelf')?.textContent).not.toContain(
       'stall 1 select',
     );
-    expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(false);
+    expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
   });
 
   it('updates visible shop sell prices from gameplay snapshots while hiding needs', () => {

@@ -33,8 +33,8 @@ Use this file to record repeated interface choices. Before adding new UI, check 
 
 - Trader stall loaders use full-width inventory-row buttons with a quiet background and a larger gap between rows.
 - Tapping an inventory row selects one current item without moving stock. The selected row keeps resource/icon colors unchanged and uses only the row background for selection.
-- The allocation rail has five exact steps: `0%`, `25%`, `50%`, `75%`, and `100%`. Percentages reconcile against matching stock already loaded plus matching stock still in inventory; `0%` returns the loaded stock.
-- `mark xN` applies the selected percentage in one gameplay update. `mark future` is a separate toggle that continuously routes newly produced copies to that stand without consuming stock already owned when enabled.
+- The allocation control is a progress rail with a draggable knob and `5%` steps from `0%` through `100%`. Do not show percentage labels under the rail. Percentages reconcile against matching stock already loaded plus matching stock still in inventory.
+- `mark xN` applies the selected percentage in one gameplay update. `clear` returns loaded stock and stops future marking. `mark future` is a separate toggle that continuously routes newly produced copies to that stand without consuming stock already owned when enabled. Successful mark, clear, and future actions close the loader.
 - A stand waiting for future production keeps its item target after loaded stock reaches zero and reads `waiting for <item>` instead of `empty stand`.
 
 ## Expandable Boxes

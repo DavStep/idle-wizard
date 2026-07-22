@@ -695,6 +695,69 @@ describe('ShopShelfManager', () => {
     manager.unmount();
   });
 
+  it('replaces sale progress with the next merchant arrival while demand is empty', () => {
+    const stage = document.createElement('section');
+    const popupLayer = document.createElement('section');
+    const gameplaySnapshot = {
+      coin: { current: 0 },
+      research: { completedResearchIds: ['unlockSeed:briarSeed'] },
+      shop: {
+        shelf: {
+          maxSlots: 1,
+          selectedSlotNumber: 1,
+          autoSellSeconds: 5,
+          slotCosts: [0],
+          sellKinds: [{ kind: 'seed', label: 'seeds' }],
+          sellItems: [],
+          slots: [
+            {
+              slotNumber: 1,
+              unlocked: true,
+              sellItemTypeId: 3,
+              sellKind: 'seed',
+              sellKey: 'briarSeed',
+              sellLabel: 'briar seed',
+              loadedQuantity: 13,
+              batchSize: 1,
+              sellCoin: 5,
+              sellNeed: 0,
+              targetNeed: 1_000,
+              maxNeed: 1_500,
+              sellProgressSeconds: 2,
+              tradedHere: true,
+            },
+          ],
+        },
+      },
+    };
+    const gameplayFacade = {
+      subscribe(callback) {
+        callback(gameplaySnapshot);
+        return () => {};
+      },
+      getSnapshot() {
+        return gameplaySnapshot;
+      },
+    };
+    const manager = new ShopShelfManager({
+      gameplayFacade,
+      now: () => 6 * 60 * 60 * 1_000 - 61 * 60 * 1_000,
+    });
+
+    manager.mount(stage, popupLayer);
+
+    const progressRow = stage.querySelector('.shop-page__slot-progress-row');
+    const progress = progressRow?.querySelector('.shop-page__slot-progress');
+    const status = progressRow?.querySelector('.shop-page__slot-timer-value');
+
+    expect(progressRow?.classList.contains('is-paused')).toBe(true);
+    expect(progress?.hidden).toBe(true);
+    expect(progress?.getAttribute('aria-valuenow')).toBe('0');
+    expect(status?.textContent).toBe('no demand · merchants in 1h 1m');
+
+    manager.unmount();
+  });
+
   it('uses the sketch-aligned stall card grid and full-width progress row', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const slotRowRule = baseCss.match(

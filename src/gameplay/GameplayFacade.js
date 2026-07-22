@@ -1074,6 +1074,12 @@ export class GameplayFacade {
     return result;
   }
 
+  clearSelectedShopShelfSlot() {
+    const result = this.shopFacade.clearSelectedShelfSlot();
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   commitShopShelfChanges() {
     this.publishAndSaveSnapshot();
   }

@@ -223,6 +223,32 @@ export class ShopFacade {
     return this.shopShelfFutureLoadManager.setSelectedFutureItem(itemTypeId, enabled);
   }
 
+  clearSelectedShelfSlot() {
+    const slot = this.shopShelfSlotSelectionManager.getSelectedSlot();
+    if (!slot) return { ok: false, reason: 'no_selected_slot' };
+
+    if (slot.futureItemTypeId) {
+      const futureResult = this.shopShelfFutureLoadManager.setSelectedFutureItem(
+        slot.futureItemTypeId,
+        false,
+      );
+      if (!futureResult?.ok) return futureResult;
+    }
+
+    let returnedQuantity = 0;
+    if (slot.sellItemTypeId && slot.loadedQuantity > 0) {
+      const unloadResult = this.shopShelfSlotSelectionManager.unloadSelectedSlotAll();
+      if (!unloadResult?.ok) return unloadResult;
+      returnedQuantity = unloadResult.quantity;
+    }
+
+    return {
+      ok: true,
+      slotNumber: slot.slotNumber,
+      returnedQuantity,
+    };
+  }
+
   setSelectedPlayerShelfSlotListing(listing) {
     return this.shopPlayerShelfListingManager.setSelectedSlotListing(listing);
   }
@@ -438,6 +464,8 @@ export class ShopFacade {
           batchSize: 1,
           sellCoin: null,
           sellNeed: null,
+          targetNeed: null,
+          maxNeed: null,
           futureItemKind: futureItem?.kind ?? null,
           futureItemKey: futureItem?.key ?? null,
           futureItemLabel: futureItem?.label ?? null,
@@ -446,6 +474,9 @@ export class ShopFacade {
 
       const item = this.itemsFacade.getItemDefinition(slot.sellItemTypeId);
       const marketAccess = this.getMarketItemAccess(item);
+      const npcPrice = marketAccess.tradedHere
+        ? this.shopNpcPriceManager.getNpcPrice(item)
+        : null;
 
       return {
         ...slot,
@@ -460,6 +491,8 @@ export class ShopFacade {
         requiredMarket: marketAccess.requiredMarket,
         sellCoin: marketAccess.tradedHere ? this.shopNpcPriceManager.getNpcBuyPriceCoin(item) : null,
         sellNeed: marketAccess.tradedHere ? this.shopNpcPriceManager.getNpcNeed(item) : null,
+        targetNeed: npcPrice?.targetNeed ?? null,
+        maxNeed: npcPrice?.maxNeed ?? null,
         futureItemKind: futureItem?.kind ?? null,
         futureItemKey: futureItem?.key ?? null,
         futureItemLabel: futureItem?.label ?? null,

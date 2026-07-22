@@ -5212,6 +5212,28 @@ describe('GameplayFacade', () => {
     });
   });
 
+  it('clears loaded stock and future loading from the selected trader stall', () => {
+    const { gameplayFacade } = createGameplay();
+    openFirstNpcMarketStand(gameplayFacade);
+    unlockSageSeed(gameplayFacade);
+    gameplayFacade.itemsFacade.addItem(1, 10);
+    gameplayFacade.setSelectedShopShelfSlotAllocation(1, 50);
+    gameplayFacade.setSelectedShopShelfFutureItem(1, true);
+
+    expect(gameplayFacade.clearSelectedShopShelfSlot()).toMatchObject({
+      ok: true,
+      returnedQuantity: 5,
+      slotNumber: 1,
+    });
+    expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(10);
+    expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
+      sellItemTypeId: null,
+      loadedQuantity: 0,
+      futureItemTypeId: null,
+      futurePendingQuantity: 0,
+    });
+  });
+
   it('keeps an independent NPC market timer on every stand', () => {
     let shopNowMs = 0;
     const { ecsFacade, gameplayFacade } = createGameplay({

@@ -4,11 +4,16 @@ import { QaDataFacade } from '../qaData/QaDataFacade.js';
 import { DevConsoleFacade } from '../console/DevConsoleFacade.js';
 
 const DEV_UI_QUERY_KEYS = ['devUi', 'uiSurface'];
+const DEV_LEVEL_QUERY_KEY = 'devLevel';
 const DEV_UI_RETRY_MS = 250;
 const DEV_UI_MAX_ATTEMPTS = 80;
 const DEV_UI_BLOCKING_SELECTOR = [
   '.app-fresh-start-choice:not([hidden])',
   '.first-run-intro:not([hidden])',
+  '.app-online-gate:not([hidden])',
+].join(',');
+const DEV_LEVEL_BLOCKING_SELECTOR = [
+  '.app-fresh-start-choice:not([hidden])',
   '.app-online-gate:not([hidden])',
 ].join(',');
 
@@ -43,18 +48,124 @@ export class DevCheatsFacade {
     });
     this.devUiRequest = null;
     this.devUiTimer = null;
+    this.devLevelRequest = null;
+    this.devLevelTimer = null;
   }
 
   mount() {
     this.consoleManager.mount();
     this.devConsoleFacade.mount();
+    this.mountRequestedLevel();
     this.mountRequestedUiSurface();
   }
 
   unmount() {
+    this.clearDevLevelTimer();
     this.clearDevUiTimer();
     this.devConsoleFacade.unmount();
     this.consoleManager.unmount();
+  }
+
+  mountRequestedLevel() {
+    const level = this.readRequestedLevel();
+
+    if (level === null) {
+      return;
+    }
+
+    this.devLevelRequest = {
+      level,
+      attempts: 0,
+    };
+    this.scheduleRequestedLevelApply(0);
+  }
+
+  readRequestedLevel() {
+    const location = this.target?.location ?? globalThis.location;
+
+    if (!location) {
+      return null;
+    }
+
+    const params = new URLSearchParams(location.search ?? '');
+    const hashParams = new URLSearchParams(
+      String(location.hash ?? '').replace(/^#/, ''),
+    );
+    const rawLevel = params.get(DEV_LEVEL_QUERY_KEY)
+      ?? hashParams.get(DEV_LEVEL_QUERY_KEY);
+
+    if (rawLevel === null) {
+      return null;
+    }
+
+    const level = Number(rawLevel);
+
+    if (!Number.isInteger(level) || level < 1) {
+      this.logger?.warn?.('Ignored invalid dev level request.', { level: rawLevel });
+      return null;
+    }
+
+    return level;
+  }
+
+  scheduleRequestedLevelApply(delayMs = DEV_UI_RETRY_MS) {
+    this.clearDevLevelTimer();
+    const setTimer = this.target?.setTimeout ?? globalThis.setTimeout;
+
+    if (typeof setTimer !== 'function') {
+      return;
+    }
+
+    this.devLevelTimer = setTimer(() => this.tryApplyRequestedLevel(), delayMs);
+  }
+
+  tryApplyRequestedLevel() {
+    this.devLevelTimer = null;
+
+    if (!this.devLevelRequest) {
+      return;
+    }
+
+    this.devLevelRequest.attempts += 1;
+
+    if (this.hasBlockingLevelGate()) {
+      this.retryRequestedLevelApply();
+      return;
+    }
+
+    const result = this.commandManager.setLevel(this.devLevelRequest.level);
+
+    this.logger?.info?.('Dev level request complete.', result);
+    this.devLevelRequest = null;
+  }
+
+  retryRequestedLevelApply() {
+    if (
+      !this.devLevelRequest
+      || this.devLevelRequest.attempts >= DEV_UI_MAX_ATTEMPTS
+    ) {
+      this.logger?.warn?.('Dev level request timed out.', this.devLevelRequest);
+      this.devLevelRequest = null;
+      return;
+    }
+
+    this.scheduleRequestedLevelApply();
+  }
+
+  hasBlockingLevelGate() {
+    const document = this.target?.document ?? globalThis.document;
+
+    return Boolean(document?.querySelector?.(DEV_LEVEL_BLOCKING_SELECTOR));
+  }
+
+  clearDevLevelTimer() {
+    if (this.devLevelTimer === null) {
+      return;
+    }
+
+    const clearTimer = this.target?.clearTimeout ?? globalThis.clearTimeout;
+    clearTimer?.(this.devLevelTimer);
+    this.devLevelTimer = null;
   }
 
   mountRequestedUiSurface() {

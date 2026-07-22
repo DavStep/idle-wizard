@@ -211,6 +211,31 @@ describe('ShopAutoSellManager', () => {
     expect(manager.hasFrameTimerWork()).toBe(true);
   });
 
+  it('pauses a loaded stand while trader demand is empty', () => {
+    const { addCoin, manager, recordSellToNpc, slotState } = createHarness({
+      npcNeed: 0,
+      slots: [
+        {
+          slotNumber: 1,
+          unlocked: true,
+          sellItemTypeId: 1,
+          loadedQuantity: 3,
+          sellProgressSeconds: 2,
+        },
+      ],
+    });
+
+    manager.update(4);
+
+    expect(slotState[0]).toMatchObject({
+      loadedQuantity: 3,
+      sellProgressSeconds: 2,
+    });
+    expect(addCoin).not.toHaveBeenCalled();
+    expect(recordSellToNpc).not.toHaveBeenCalled();
+    expect(manager.hasFrameTimerWork()).toBe(true);
+  });
+
   it('retains prices only while at least one loaded stand is active', () => {
     const { manager, slotState, syncPriceRetention } = createHarness();
 

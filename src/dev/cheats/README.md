@@ -55,6 +55,17 @@ cheats.resetData('RESET')
 
 Production mode sets `VITE_ENABLE_CHEATS=false`, so `src/main.js` does not load this feature.
 
+Run `npm run preview:level20 -- --port 55175` for an isolated development build
+at `http://127.0.0.1:55175/?devLevel=20`. Its files live in
+`tmp/level20-dist`, so another build cannot replace the running preview. The
+URL waits for the server and fresh-start choice, then reapplies level 20 on
+each reload. Choose `start new` when the account gate appears; persistence is
+not required for this live QA state. The preview stays detached; stop its
+recorded process with `npm run preview:level20:stop`.
+
+Any development build can use `/?devLevel=20` to apply a positive level after
+the server and fresh-start gates clear.
+
 `resetData` clears current gameplay progress and player-market listings for the current
 server identity. It keeps auth, profile, global config, global discoveries, and chat.
 

@@ -1,6 +1,6 @@
 {
   "name": "idle-wizard",
-  "version": "0.2.102",
+  "version": "0.2.103",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,6 +15,8 @@
     "build": "npm run build:prod --",
     "prebuild:dev": "npm run assets:atlas",
     "build:dev": "vite build --mode development",
+    "preview:level20": "node scripts/preview-level20.js",
+    "preview:level20:stop": "node scripts/preview-level20.js --stop",
     "prebuild:prod": "npm run assets:atlas",
     "build:prod": "vite build --mode production",
     "preview": "vite preview --host 0.0.0.0 --port 55174 --strictPort",

@@ -12,6 +12,8 @@ The Market Ledger combines trader sell offers, buy prices, stock, buyer need, an
 
 Trader market prices use progression-aware base values, a soft demand curve, and a capped live demand value. Demand resets at the anchored weekly boundary, then buyer waves add demand lazily when a row is touched. The UTC wave cadence is a large wave at day start, then smaller waves every six hours; unused demand caps at 1.5x target. Base prices autotune on sell/buy reducers after enough real trade volume: sell-heavy windows nudge base price down, buy-heavy windows nudge it up, then the pressure counters reset.
 
+Loaded trader stalls pause their sale progress when buyer demand reaches zero, keep the live market price subscription active, and resume from the same progress when the next buyer wave restores demand.
+
 Coin is whole-number currency. Positive prices and payouts round up to the next whole coin, so the minimum positive price is `1` coin. Player listing and request fields accept integers only.
 
 The player market uses the same market-rank slot count and item-grade catalogue as NPC trading, so player listings cannot bypass a small market's restrictions. A listed player stand reserves the chosen item quantity from inventory and stores a per-item coin value. Player listings and requests cap at `1000` units and `1000000` coin per unit, matching the backend reducers. Clearing a stand returns the reserved quantity. Market purchases from other players spend local coin and add the bought item; claimed sale proceeds add local coin.

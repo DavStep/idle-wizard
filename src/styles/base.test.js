@@ -535,12 +535,12 @@ describe('base styles', () => {
     expect(pageIconRule).toContain('height: 1.25em;');
   });
 
-  it('aligns trader allocation labels to exact percentage anchors and uses midnight panel frames', () => {
-    const ticksRule = getRuleBody(
-      /\.shop-page__sell-allocation-ticks\s*\{(?<body>[^}]*)\}/,
+  it('layers the trader allocation input over a progress rail and uses midnight panel frames', () => {
+    const controlRule = getRuleBody(
+      /\.shop-page__sell-allocation-control\s*\{(?<body>[^}]*)\}/,
     );
-    const tickRule = getRuleBody(
-      /\.shop-page__sell-allocation-tick\s*\{(?<body>[^}]*)\}/,
+    const progressRule = getRuleBody(
+      /\.shop-page__sell-allocation-progress\s*\{(?<body>[^}]*)\}/,
     );
     const midnightRowFrameRule = getRuleBody(
       /:root\[data-style-theme="midnight"\]\s*\.shop-page__sell-current,[\s\S]*?\.shop-page__sell-item-button\s*\{(?<body>[^}]*)\}/,
@@ -549,12 +549,9 @@ describe('base styles', () => {
       /:root\[data-style-theme="midnight"\]\s*\.shop-page__sell-current\[data-has-selection="true"\],[\s\S]*?\.shop-page__sell-item-button\[aria-pressed="true"\]\s*\{(?<body>[^}]*)\}/,
     );
 
-    expect(ticksRule).toContain('position: relative;');
-    expect(ticksRule).toContain('margin: 0 3.5px;');
-    expect(tickRule).toContain(
-      'left: calc(var(--shop-page-sell-allocation-percentage) * 1%);',
-    );
-    expect(tickRule).toContain('transform: translateX(-50%);');
+    expect(controlRule).toContain('position: relative;');
+    expect(progressRule).toContain('position: absolute;');
+    expect(progressRule).toContain('pointer-events: none;');
     expect(midnightRowFrameRule).toContain('background: transparent;');
     expect(midnightRowFrameRule).toContain(
       'border-image-source: var(--style-midnight-panel-frame);',

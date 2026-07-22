@@ -101,6 +101,17 @@
                 sellCoin: 1,
                 sellNeed: 10,
               },
+              {
+                itemTypeId: 3,
+                key: 'briarSeed',
+                label: 'briar seed',
+                kind: 'seed',
+                quantity: 0,
+                sellCoin: 5,
+                sellNeed: 0,
+                targetNeed: 1000,
+                maxNeed: 1500,
+              },
             ],
             slots: [
               {
@@ -118,13 +129,17 @@
               {
                 slotNumber: 2,
                 unlocked: true,
-                sellItemTypeId: 1,
+                sellItemTypeId: 3,
                 sellKind: 'seed',
-                sellKey: 'sageSeed',
-                sellLabel: 'sage seed',
-                loadedQuantity: 462,
+                sellKey: 'briarSeed',
+                sellLabel: 'briar seed',
+                loadedQuantity: 144,
                 batchSize: 3,
-                sellCoin: 1,
+                sellCoin: 5,
+                sellNeed: 0,
+                targetNeed: 1000,
+                maxNeed: 1500,
+                tradedHere: true,
                 sellProgressSeconds: 2.5,
               },
             ],
@@ -147,6 +162,7 @@
       const shelfManager = new ShopShelfManager({ gameplayFacade });
       const shelf = shelfManager.mount(panel, popupLayer);
       for (const refs of shelfManager.refs.rows) {
+        if (refs.progressRow.classList.contains('is-paused')) continue;
         stopTimerProgressFill(refs.progressFill, 0.5);
         refs.progress.setAttribute('aria-valuenow', '50');
         refs.timerValue.textContent = '2s';

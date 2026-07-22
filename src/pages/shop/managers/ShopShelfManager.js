@@ -12,19 +12,23 @@ import {
   stopTimerProgressFill,
 } from '../../shared/timerProgress.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
+import {
+  getNextNpcDemandWaveInfo,
+  normalizeCount,
+} from '../../../gameplay/shop/managers/npcMarketPricing.js';
 
-const STALL_ALLOCATION_PERCENTAGES = [0, 25, 50, 75, 100];
+const STALL_ALLOCATION_STEP = 5;
 
 export class ShopShelfManager {
-  constructor({ gameplayFacade, getSellPriceOverride } = {}) {
+  constructor({ gameplayFacade, getSellPriceOverride, now = () => Date.now() } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.getSellPriceOverride = getSellPriceOverride;
+    this.now = typeof now === 'function' ? now : () => Date.now();
     this.root = null;
     this.refs = {
       rows: [],
       tabButtons: new Map(),
       itemButtons: new Map(),
-      percentageButtons: new Map(),
     };
     this.unsubscribe = null;
     this.visible = false;
@@ -77,7 +81,6 @@ export class ShopShelfManager {
       rows: [],
       tabButtons: new Map(),
       itemButtons: new Map(),
-      percentageButtons: new Map(),
     };
     this.unsubscribe = null;
     this.visible = false;
@@ -224,37 +227,46 @@ export class ShopShelfManager {
     current.append(currentLabel, currentItem, currentQuantity);
     const allocation = document.createElement('div');
     allocation.className = 'shop-page__sell-allocation';
+    const allocationControl = document.createElement('div');
+    allocationControl.className = 'shop-page__sell-allocation-control';
+    const allocationProgress = document.createElement('span');
+    allocationProgress.className =
+      'style-progress shop-page__sell-allocation-progress';
+    allocationProgress.setAttribute('aria-hidden', 'true');
+    const allocationProgressFill = document.createElement('span');
+    allocationProgressFill.className =
+      'style-progress__fill is-smooth-progress-fill shop-page__sell-allocation-progress-fill';
+    allocationProgress.append(allocationProgressFill);
     const allocationRange = document.createElement('input');
     allocationRange.className = 'shop-page__sell-allocation-range';
     allocationRange.type = 'range';
     allocationRange.min = '0';
     allocationRange.max = '100';
-    allocationRange.step = '25';
+    allocationRange.step = String(STALL_ALLOCATION_STEP);
     allocationRange.value = '100';
     allocationRange.dataset.tutorialId = 'shop:sell:percentage';
     allocationRange.setAttribute('aria-label', 'share of current stock to mark');
     allocationRange.addEventListener('input', () => {
       this.selectDraftPercentage(Number(allocationRange.value));
     });
-    const allocationTicks = document.createElement('div');
-    allocationTicks.className = 'shop-page__sell-allocation-ticks';
-    allocationTicks.setAttribute('aria-label', 'stock share points');
-    for (const percentage of STALL_ALLOCATION_PERCENTAGES) {
-      const tick = document.createElement('button');
-      tick.className = 'shop-page__sell-allocation-tick';
-      tick.type = 'button';
-      tick.textContent = `${percentage}%`;
-      tick.dataset.shopSellPercentage = String(percentage);
-      tick.setAttribute('aria-label', `${percentage} percent`);
-      tick.style.setProperty(
-        '--shop-page-sell-allocation-percentage',
-        String(percentage),
+    allocationRange.addEventListener('keydown', (event) => {
+      const direction = {
+        ArrowDown: -1,
+        ArrowLeft: -1,
+        ArrowRight: 1,
+        ArrowUp: 1,
+      }[event.key];
+      if (!direction) return;
+      event.preventDefault();
+      this.selectDraftPercentage(
+        Math.max(
+          0,
+          Math.min(100, this.draftSellPercentage + direction * STALL_ALLOCATION_STEP),
+        ),
       );
-      tick.addEventListener('click', () => this.selectDraftPercentage(percentage));
-      this.refs.percentageButtons.set(percentage, tick);
-      allocationTicks.append(tick);
-    }
-    allocation.append(allocationRange, allocationTicks);
+    });
+    allocationControl.append(allocationProgress, allocationRange);
+    allocation.append(allocationControl);
     const actions = document.createElement('div');
     actions.className = 'shop-page__sell-action-row';
     const mark = document.createElement('button');
@@ -262,13 +274,18 @@ export class ShopShelfManager {
     mark.type = 'button';
     mark.dataset.tutorialId = 'shop:sell:mark';
     mark.addEventListener('click', () => this.markDraft());
+    const clear = document.createElement('button');
+    clear.className = 'style-button shop-page__sell-clear-button';
+    clear.type = 'button';
+    clear.textContent = 'clear';
+    clear.addEventListener('click', () => this.clearDraft());
     const future = document.createElement('button');
     future.className = 'style-button shop-page__sell-future-button';
     future.type = 'button';
     future.dataset.tutorialId = 'shop:sell:future';
     future.textContent = 'mark future';
     future.addEventListener('click', () => this.toggleFutureDraft());
-    actions.append(mark, future);
+    actions.append(mark, clear, future);
     const status = document.createElement('div');
     status.className = 'shop-page__sell-status';
     status.setAttribute('role', 'status');
@@ -290,8 +307,10 @@ export class ShopShelfManager {
     this.refs.currentItem = currentItem;
     this.refs.currentQuantity = currentQuantity;
     this.refs.allocation = allocation;
+    this.refs.allocationProgressFill = allocationProgressFill;
     this.refs.allocationRange = allocationRange;
     this.refs.mark = mark;
+    this.refs.clear = clear;
     this.refs.future = future;
     this.refs.status = status;
     this.refs.itemList = itemList;
@@ -390,7 +409,12 @@ export class ShopShelfManager {
 
   selectDraftPercentage(percentage) {
     if (this.draftSellItemTypeId === null) return { ok: false, reason: 'empty_selection' };
-    if (!STALL_ALLOCATION_PERCENTAGES.includes(percentage)) {
+    if (
+      !Number.isInteger(percentage) ||
+      percentage < 0 ||
+      percentage > 100 ||
+      percentage % STALL_ALLOCATION_STEP !== 0
+    ) {
       return { ok: false, reason: 'invalid_percentage' };
     }
 
@@ -413,8 +437,22 @@ export class ShopShelfManager {
     );
     if (!result?.ok) {
       this.statusText = this.getLoadFailureText(result?.reason);
+      this.renderSellDraft(this.gameplayFacade.getSnapshot()?.shop?.shelf);
+      return result;
     }
-    this.render(this.gameplayFacade.getSnapshot());
+    this.hideSellPopup();
+    return result;
+  }
+
+  clearDraft() {
+    const result = this.gameplayFacade.clearSelectedShopShelfSlot();
+    if (!result?.ok) {
+      this.statusText = this.getLoadFailureText(result?.reason);
+      this.renderSellDraft(this.gameplayFacade.getSnapshot()?.shop?.shelf);
+      return result;
+    }
+
+    this.hideSellPopup();
     return result;
   }
 
@@ -430,8 +468,12 @@ export class ShopShelfManager {
       item.itemTypeId,
       enabled,
     );
-    if (!result?.ok) this.statusText = this.getLoadFailureText(result?.reason);
-    this.render(this.gameplayFacade.getSnapshot());
+    if (!result?.ok) {
+      this.statusText = this.getLoadFailureText(result?.reason);
+      this.renderSellDraft(this.gameplayFacade.getSnapshot()?.shop?.shelf);
+      return result;
+    }
+    this.hideSellPopup();
     return result;
   }
 
@@ -464,12 +506,12 @@ export class ShopShelfManager {
     const currentPercentage = totalQuantity > 0
       ? ((slot?.loadedQuantity ?? 0) / totalQuantity) * 100
       : 0;
-    this.draftSellPercentage = STALL_ALLOCATION_PERCENTAGES.reduce(
-      (closest, percentage) =>
-        Math.abs(percentage - currentPercentage) < Math.abs(closest - currentPercentage)
-          ? percentage
-          : closest,
+    this.draftSellPercentage = Math.max(
       0,
+      Math.min(
+        100,
+        Math.round(currentPercentage / STALL_ALLOCATION_STEP) * STALL_ALLOCATION_STEP,
+      ),
     );
     this.statusText = '';
   }
@@ -493,9 +535,10 @@ export class ShopShelfManager {
       );
       if (!slot.sellItemTypeId) {
         const waitingForFuture = Boolean(slot.futureItemTypeId);
-        refs.itemValue.textContent = waitingForFuture
-          ? `waiting for ${slot.futureItemLabel}`
-          : 'empty stand';
+        setTextContentIfChanged(
+          refs.itemValue,
+          waitingForFuture ? `waiting for ${slot.futureItemLabel}` : 'empty stand',
+        );
         refs.itemValue.setAttribute(
           'aria-label',
           waitingForFuture
@@ -506,6 +549,7 @@ export class ShopShelfManager {
         refs.batchValue.textContent = '';
         refs.batchSeparator.textContent = '';
         refs.batchSeparator.hidden = true;
+        refs.progressRow.classList.remove('is-paused');
         refs.progress.hidden = true;
         refs.progress.setAttribute('aria-valuenow', '0');
         refs.timerValue.textContent = '';
@@ -533,7 +577,7 @@ export class ShopShelfManager {
         label: slot.sellLabel,
         quantity: String(slot.loadedQuantity),
       };
-      refs.itemValue.textContent = display.label;
+      setTextContentIfChanged(refs.itemValue, display.label);
       refs.itemValue.setAttribute(
         'aria-label',
         `open stall ${slot.slotNumber}, ${display.quantity} ${display.label} marked${
@@ -554,9 +598,19 @@ export class ShopShelfManager {
       refs.batchValue.textContent = `x${batch}`;
       refs.batchSeparator.textContent = '·';
       refs.batchSeparator.hidden = false;
-      refs.progress.hidden = false;
       setResourceIconText(refs.priceValue, priceText);
       setResourceColorFromText(refs.priceValue, refs.priceValue.textContent);
+      const pauseText = this.getStallPauseText(slot);
+      refs.progressRow.classList.toggle('is-paused', Boolean(pauseText));
+      if (pauseText) {
+        refs.progress.hidden = true;
+        refs.progress.setAttribute('aria-valuenow', '0');
+        refs.timerValue.textContent = pauseText;
+        stopTimerProgressFill(refs.progressFill, 0);
+        continue;
+      }
+
+      refs.progress.hidden = false;
       setTimerProgressFill(
         refs.progressFill,
         this.getStallTimer(slot, shelf.autoSellSeconds),
@@ -570,6 +624,27 @@ export class ShopShelfManager {
     }
 
     if (this.visible) this.renderPopup(snapshot, shelf);
+  }
+
+  getStallPauseText(slot) {
+    if (slot?.tradedHere === false) {
+      const marketName = String(slot.requiredMarket?.name ?? '').trim().toLowerCase();
+      return marketName ? `prestige for ${marketName}` : 'prestige for higher market';
+    }
+
+    const sellNeed = normalizeCount(slot?.sellNeed);
+    if (sellNeed === null || sellNeed > 0) return '';
+
+    const nextWave = getNextNpcDemandWaveInfo({
+      targetNeed: slot?.targetNeed,
+      maxNeed: slot?.maxNeed,
+      nowMs: this.now(),
+    });
+    if (!nextWave) return 'no demand';
+
+    return `no demand · merchants in ${formatRemainingTime(
+      nextWave.nextWaveAtMs - this.now(),
+    )}`;
   }
 
   renderPopup(snapshot, shelf) {
@@ -609,7 +684,7 @@ export class ShopShelfManager {
         'aria-pressed',
         this.draftSellItemTypeId === item.itemTypeId ? 'true' : 'false',
       );
-      refs.label.textContent = `${display.label} (${display.quantity})`;
+      setTextContentIfChanged(refs.label, `${display.label} (${display.quantity})`);
       setItemIconLabel(refs.label, item.kind, item.key);
       setResourceColor(refs.label, item.kind);
       setResourceIconText(refs.quantity, this.formatSellCoin(this.getDisplaySellCoin(item)));
@@ -641,7 +716,7 @@ export class ShopShelfManager {
         ? `current ${item.label}, ${this.draftSellPercentage} percent, ${targetQuantity} marked`
         : 'current selection empty',
     );
-    this.refs.currentItem.textContent = hasSelection ? item.label : 'empty';
+    setTextContentIfChanged(this.refs.currentItem, hasSelection ? item.label : 'empty');
     setItemIconLabel(
       this.refs.currentItem,
       hasSelection ? item.kind : null,
@@ -652,21 +727,23 @@ export class ShopShelfManager {
 
     this.refs.allocationRange.disabled = !hasSelection;
     this.refs.allocationRange.value = String(this.draftSellPercentage);
+    this.refs.allocationProgressFill.style.setProperty(
+      '--style-progress-fill-scale',
+      String(this.draftSellPercentage / 100),
+    );
     this.refs.allocationRange.setAttribute(
       'aria-valuetext',
       hasSelection
         ? `${this.draftSellPercentage} percent, ${targetQuantity} items`
         : 'no item selected',
     );
-    for (const [percentage, button] of this.refs.percentageButtons) {
-      button.disabled = !hasSelection;
-      button.setAttribute('aria-pressed', percentage === this.draftSellPercentage ? 'true' : 'false');
-    }
-
     const allocationChanges = hasSelection && targetQuantity !== loadedQuantity;
     this.refs.mark.disabled = !allocationChanges;
     this.refs.mark.setAttribute('aria-disabled', allocationChanges ? 'false' : 'true');
     this.refs.mark.textContent = `mark x${targetQuantity}`;
+    const canClear = Boolean(slot?.sellItemTypeId || slot?.futureItemTypeId);
+    this.refs.clear.disabled = !canClear;
+    this.refs.clear.setAttribute('aria-disabled', canClear ? 'false' : 'true');
     this.refs.future.disabled = !hasSelection;
     this.refs.future.setAttribute('aria-disabled', hasSelection ? 'false' : 'true');
     this.refs.future.setAttribute('aria-pressed', futureEnabled ? 'true' : 'false');
@@ -718,5 +795,12 @@ export class ShopShelfManager {
     this.refs.popup.hidden = !this.visible;
     this.refs.popup.classList.toggle('is-visible', this.visible);
     this.refs.popup.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
+  }
+}
+
+function setTextContentIfChanged(element, text) {
+  const value = String(text ?? '');
+  if (element.textContent !== value) {
+    element.textContent = value;
   }
 }

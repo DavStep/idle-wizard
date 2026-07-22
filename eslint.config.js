@@ -11,6 +11,7 @@ export default [
       'dist/**',
       'ios/App/App/public/**',
       'node_modules/**',
+      'tmp/**',
       'spacetimedb/dist/**',
       'src/backend/spacetimedb/module_bindings/**',
     ],

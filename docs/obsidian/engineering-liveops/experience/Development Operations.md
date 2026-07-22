@@ -21,6 +21,7 @@ experience_type: development-operations
 - Fresh-start browser QA resets FTUE progress; after choosing `start fresh`, write completed `idle-wizard.tutorial.v4` storage and reload before normal room-click automation.
 - Keep top-level docs current with implemented systems; agents trust README/architecture docs early, so stale future-scope text causes wrong plans.
 - When a feature needs faster or safer repeat work, add the smallest reusable dev tool and document its command/env in `docs/ai-workflow.md` or the feature README.
+- Isolated Vite previews must build into their own ignored output directory; using shared `dist` lets unrelated builds replace the assets under a running QA preview.
 - Full player-save backup must use SpacetimeDB SQL/export or a dedicated admin reducer; `admin_player_gameplay_save` currently exposes only summary fields, not raw `saveJson`.
 - High-level QA saves must flush one level at a time because backend save normalization allows only `previousLevel + 1`; deep-clone every intermediate save because gameplay hydration mutates nested branches.
 - SpacetimeDB CLI `sql` calls trigger `on_connect`; after reset verification, run final deletes for `player`/`leaderboard` and stop querying.

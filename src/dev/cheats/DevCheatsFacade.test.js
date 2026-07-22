@@ -107,6 +107,42 @@ describe('DevCheatsFacade', () => {
     );
   });
 
+  it('applies a requested dev level after the fresh-start gate clears', () => {
+    const timers = [];
+    let blocked = true;
+    const { app } = createApp();
+    const target = {
+      location: {
+        search: '?devLevel=20',
+        hash: '',
+      },
+      document: {
+        querySelector: vi.fn(() => (blocked ? {} : null)),
+      },
+      setTimeout: vi.fn((callback) => {
+        timers.push(callback);
+        return timers.length;
+      }),
+      clearTimeout: vi.fn(),
+    };
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const facade = new DevCheatsFacade({ app, target, logger });
+
+    facade.mount();
+    timers.shift()?.();
+
+    expect(app.gameplayFacade.getSnapshot().tasks.currentLevel).not.toBe(20);
+
+    blocked = false;
+    timers.shift()?.();
+
+    expect(app.gameplayFacade.getSnapshot().tasks.currentLevel).toBe(20);
+    expect(logger.info).toHaveBeenCalledWith(
+      'Dev level request complete.',
+      expect.objectContaining({ ok: true, level: 20 }),
+    );
+  });
+
   it('mutates gameplay through explicit cheat commands', () => {
     const { app } = createApp();
     const target = {};
