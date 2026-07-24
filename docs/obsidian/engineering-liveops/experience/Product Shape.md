@@ -18,7 +18,7 @@ experience_type: product-shape
 - Ignored local `public/qa-data` is still copied by Vite/Capacitor when present; move it out of `public/` before release builds or APK uploads can exceed Discord webhook limits.
 - Android dev builds that point at local SpacetimeDB need `adb reverse tcp:3000 tcp:3000`; without it, Pixel WebView loops on `connecting to server`.
 - Before wiping local SpacetimeDB progress, check `.env.local` for the active `VITE_SPACETIME_DATABASE`; the shared Vite app may use `idle-wizard-codex-run` while `npm run stdb:publish` still targets `idle-wizard`.
-- The authored game viewport is `1080x2170`.
+- The logical game viewport matches Root Run at `390x844` and uses Root Run-style contain-fit scaling.
 - Game-stage text copy/paste suppression needs both CSS `user-select`/touch-callout rules and an app-level guard for clipboard, context menu, selectstart, and paste `beforeinput` events.
 - In-game UI no longer supports mouse hover; do not add `:hover` selectors or hover-only behavior. Press/focus states should keep `--style-active-surface` equal to the current surface, preserve font weight, and rely on border cues, never below-text line decoration.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
@@ -54,7 +54,7 @@ experience_type: product-shape
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
 - Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
-- Progress rails should use a real `.style-progress` border with the fill inside the content box; overlay pseudo-borders let scaled fills bleed across border pixels.
+- Progress rails should use the real `.style-progress` capsule with the fill inside its inset gap; drive the fill by width or a live right edge so rounded caps are never compressed.
 - Level-up announcement rows can contain long multi-level unlock lists; keep a stable label column and let the value column wrap so labels do not collapse to one character per line.
 - Workshop requirement rewards and level-up announcements share `levelPayoffSummary`, but the top-panel level popup parses player-level effects separately in `TopPanelLevelManager`; update both paths for reward wording or capacity-display rules.
 - Prestige reset crystal should use the cumulative player-level reward through the reset level; level 1 grants crystal too, so a reset to level 10 starts with 10 crystals under the default curve.
@@ -102,7 +102,7 @@ experience_type: product-shape
 - Weekly events should be framed as `weekly world event` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
 - Personal tasks have only daily quest rows; completed daily quests add points to both daily and weekly reward tracks, separate from weekly world events and alliance quests.
 - Prestige resets the run but preserves personal task daily/weekly progress until the normal period rollover.
-- Tabbed dialog close labels belong on the top-right border; reserve the bottom edge for the tab strip.
+- Tabbed dialog close controls use the shared round X asset at the top-right corner; reserve the bottom edge for the tab strip and keep back/previous/next as text navigation.
 - Nested dialogs inside an existing popup need their own full-layer backdrop; otherwise the parent popup text bleeds through during dialog enter/fade.
 - Personal tasks is a standard tabbed popup: `--style-tabbed-dialog-width` panel with `260px` dialog content. Do not pair that panel with a `286px` dialog or the border becomes wider than the tabs.
 - Personal task badges should count only visible milestone rewards; task rows give points and should not carry reward claim buttons.
@@ -123,8 +123,8 @@ experience_type: product-shape
 - Main and world event leaderboard user rows share `WorkshopLeaderboardRowRenderer`; do not fork icon/tag/name/level DOM in each dialog.
 - Keep event qualification copy in tasks/rewards, not under the leaderboard rows; the leaderboard tab should stay table-only.
 - World event dialog top header should stay fixed with a separator; split points and resolve time into separate rows, and keep task text wrapping in a list.
-- World event dialog overflow belongs on `.workshop-page__world-notice-frame`; register that frame with `ScrollCueManager` so the shared progress rail appears only when needed.
-- World event leaderboard rows must not carry `.workshop-page__leaderboard-rows`; that creates a nested scroll cue and snaps mobile scroll on refresh.
+- World event dialog overflow belongs on `.workshop-page__world-notice-frame`; register that frame with `ScrollCueManager` so the shared vertical scrollbar appears only when needed.
+- World event leaderboard rows must not carry `.workshop-page__leaderboard-rows`; that creates a nested scroll viewport and snaps mobile scroll on refresh.
 - World event same-tab refreshes must restore `.workshop-page__world-notice-frame.scrollTop`; live snapshot/leaderboard updates otherwise bounce mobile scrolling back to the top.
 - World event same-tab refreshes should reuse the existing `.workshop-page__world-notice-frame`; replacing the scroll element can still break mobile momentum even when `scrollTop` is restored.
 - World event character entry belongs on Workshop only; Garden should not mount or place `WorkshopWorldNoticeManager`.
@@ -138,8 +138,8 @@ experience_type: product-shape
 - Market keeps `sell to trader` and `market ledger` as bottom-border actions on `your stalls`; the Trader Offer dialog distinguishes immediate reduced payout from timed full-price stalls.
 - Player market notifications should only mean a personal trade event: claimable proceeds from an own listing or an available listing matching an own request. Do not dot empty stands, affordable random listings, or matchable requests from other players.
 - Player market tab entry should retain only public listings/requests; trade history subscriptions and DOM rows stay lazy until the `trade history` popup opens.
-- Market tab panels need inline-only scroll cues; sibling progress rails after the absolute panel render at the top of the room behind top chrome.
-- Full-page room scroll roots should use `style-page-scroll` on the actual scrolling element with inline cues; wrapper-level scroll cues miss overflow and lose the shared top/bottom chrome cuts.
+- Market tab panels use the shared vertical scrollbar directly on the absolute scrolling panel; never append a sibling progress rail.
+- All managed scroll panels, including full-page rooms, dialogs, popups, and bounded lists, use `style-page-scroll` on the actual scrolling element; wrapper-level scrollbar styling misses overflow, and a second scroll class lets behavior drift.
 - Page swipe direction lock should wait for a clear axis ratio, and `style-page-scroll` roots need `touch-action: pan-y`; otherwise tiny early vertical drift inside scroll pages can steal horizontal swipes.
 - Scaled full-page UI layers should stay unscrolled; put an inner source-positioned scroll root inside them, or content can visibly pass under top/bottom chrome before clipping.
 - Garden's inner scroll root should stop at `--style-room-chat-clearance` only; adding bottom tab clearance double-counts the shared world-chat gap.
@@ -207,7 +207,7 @@ experience_type: product-shape
 - FTUE text-shaped spotlight holes must remeasure for a few RAFs during reveal transitions; web-wide SVG backdrops need explicit `100% + gutters` width because `width:auto` can stop short.
 - Icon-mode top-panel resource FTUE spotlights should target the resource label wrapper with an element hole; SVG text holes can ghost the amount and leave the icon dimmed.
 - HTML screenshot harnesses that load `/src/styles/base.css` must set `html[data-style-theme="midnight"]`; missing or `white` themes fall back to the removed light base.
-- Resource-label screenshot harnesses must also set `html[data-style-color="resources"][data-style-icons="icons"]`; otherwise coin/herb/seed colors and icons collapse to default text-mode CSS unlike the live app.
+- Resource-label screenshot harnesses must set `html[data-style-icons="icons"]`; resource and currency text stays monochrome, while icon mode must still match the live app.
 - FTUE should also hide behind ordinary room popups unless the active step targets that popup or explicitly uses popup-only copy guidance.
 - Room announcement overlays are FTUE blockers; add them through `TutorialTargetManager` blocking selectors so hidden toggles pause/resume Elara.
 - Bottom-tab unlock motion can be hidden by the level announcement overlay; delay or replay the lock break/icon reveal when an announcement is visible.
@@ -223,7 +223,7 @@ experience_type: product-shape
 - Tutorial screenshots should come from real-game automation; deterministic harness controls can drift from live tutorial behavior and create misleading previews.
 - Dev browser automation exposes `window.cheats` with `VITE_ENABLE_CHEATS=true`, but `window.tutorialCapture` needs its own `VITE_ENABLE_TUTORIAL_CAPTURE=true`; cheats alone do not mount the tutorial capture helper.
 - `npm run tutorial:capture` reuses an already reachable Vite server and deletes old tutorial PNGs before checking capture hooks; confirm `window.tutorialCapture` is mounted before running it against a shared server.
-- In-app Browser screenshots of the full `1080x2170` authored viewport can truncate normal viewport captures; use full-page capture and crop locally when checking bottom chrome.
+- In-app Browser screenshots of the full `390x844` authored viewport can truncate normal viewport captures; use full-page capture and crop locally when checking bottom chrome.
 - In-app Browser screenshots can omit the transformed bottom-panel overlay even when hit tests and DOM rects see it; verify bottom chrome geometry with live DOM metrics if the capture looks blank.
 - In-app Browser crops can also miss transformed Workshop side-panel DOM controls; trust hit tests, computed rects, and image load state over a blank/offset crop.
 - In-app Browser Playwright evaluate can miss main-world `window.cheats`, and `javascript:` bookmarklets are blocked; do not rely on that path for cheat-driven screenshot setup.
@@ -256,14 +256,13 @@ experience_type: product-shape
 - FTUE hidden action buttons need reveal-gate `pointer-events: none` with enough specificity to beat action-bar base button rules.
 - Once FTUE reveals the top panel, keep it visible; players have already unlocked that chrome.
 - FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
-- FTUE should not own special market economy. Keep level 1 free with no coin-request segment, then teach level-up coin through normal timed stalls at level 2.
-- FTUE level-2 Market guidance must follow the live task order: summon enough sage seeds, sell one, turn in the remainder, then handle any remaining level-up coin. Do not wait until `completion.canComplete` before showing the summon/sell guidance.
+- FTUE should not own special market economy. Teach the normal timed-stall sale as a level-2 request, never as a currency prerequisite for level-up.
+- FTUE level-2 Market guidance must follow the live task order: summon enough sage seeds, sell one, then turn in the remainder. Do not wait until `completion.canComplete` before showing the summon/sell guidance.
 - FTUE terminal hides must clear inner lesson/button/pointer state; hiding only the layer lets later click-driven hides re-show stale tutorial UI for one frame.
 - FTUE uses one left Elara lesson button and one lesson panel; do not add separate dialog, hint, prompt, or objective boxes.
 - FTUE advance prompts treat any stage click as `next` and consume the click so underlying controls do not fire.
-- FTUE level-up objectives should point to Market and show coin progress when completed tasks are blocked only by missing level-up coin.
-- FTUE level-up prompts should target the full completion row, not only the button, so the needed coin stays visible.
-- FTUE level-up coin guidance should prefer an already loaded matching stall, then choose loader targets from `shop.shelf.sellItems`; unavailable items route back to a source and another category first targets its tab.
+- FTUE level-up objectives should point directly to the Workshop completion action once all requests are complete.
+- FTUE level-up prompts should target the full completion row so the action keeps a stable, readable tutorial target.
 - Wide FTUE context rows can keep `data-tutorial-id` on the row while the pointer uses a child CTA anchor; otherwise the hand may point back to row center.
 - Objective shortfall guidance should point to the next obtain control; existing task progress is not proof the player has a current source.
 - FTUE acquisition, research, and brewing lessons must first check live task `ownedQuantity`/remaining requirements; if the task can consume an already-owned item, point to the task before asking for another source.
@@ -311,17 +310,17 @@ experience_type: product-shape
 - After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
 - Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` is a gated room page that stays hidden until level 7.
 - Dev cheats that force garden/brewing capacity must satisfy their progression gates; market slot count is derived from permanent licence rank instead of run-level capacity.
-- Prestige summary copy should keep normal text uncolored; put ruby resource color only on the amount span.
+- Prestige summary copy and ruby amounts use the surrounding normal text color; keep the ruby icon attached to the amount.
 - Prestige points UI must show the 1/3/6/10 market-licence thresholds and explain that rank adds one stall and opens the next cumulative item-grade band in its separate trade pool.
-- Prestige ruby summary/reward text needs `setResourceIconText`; `data-resource-color` alone colors text but does not render icons.
+- Prestige ruby summary/reward text needs `setResourceIconText`; semantic resource metadata does not render icons by itself.
 - Multiple reward/resource payout labels should be space-separated, not comma-separated.
 - Resource icon parsing should skip `mana tonic` and `mana sphere`; those are a potion/name and a block name, not generic mana currency labels.
-- Currency amount text and icon always belong in one `style-resource-label`; render currency labels through `setResourceIconText` or `createResourceIconLabel` so the icon is present and the full amount plus currency word uses the currency color.
+- Currency amount text and icon always belong in one `style-resource-label`; render currency labels through `setResourceIconText` or `createResourceIconLabel` so the icon is present while the amount and currency word inherit the surrounding text color.
 - Resource icon amount parsing must include hyphen ranges like `130-180 coin`; otherwise quest reward ranges leave the number muted outside the colored label.
 - Guild quest reward ranges use generic `coin`/`seeds`/`herbs` text, so render them with `setResourceIconText` rather than item-name icon helpers.
 - Player character generation workflow is removed; do not add/rebuild selectable avatar generation unless the user explicitly asks.
-- Shared character PNGs in `src/assets/characters` are legacy public-row display assets, not a selectable customization system.
-- Guild adventurers should use a fitting non-Elara `iconKey` from `src/assets/characters/character-descriptions.txt`.
+- Shared character PNGs in `assets/game/source/characters` are legacy public-row display assets, not a selectable customization system.
+- Guild adventurers should use a fitting non-Elara `iconKey` from `assets/game/source/characters/character-descriptions.txt`.
 - Chibi character image prompts must lock exact eye construction: half-lidded sleepy eyes, small flat oval pupils, same pupil size/position, and no round anime/shiny dot pupils.
 - Generated character sheet cuts need dark/magenta background QA against `mira.png`; use premultiplied-alpha resizing, de-matte pale edges, and remove opaque neutral-white holes near hair/props or sheet artifacts remain.
 - The Workshop bag popup is PagesFacade-owned global catalog UI; Garden/Brewing icon buttons expand inline room inventory boxes instead of opening the global bag.
@@ -333,7 +332,7 @@ experience_type: product-shape
 - Research balance/default config is mirrored in `ResearchBalanceManager`, `src/gameplay/research/research-balance.json`, `scripts/balance-sim.js`, and `spacetimedb/src/index.ts`; update all together when changing research costs/currencies.
 - Cauldron star display starts at 0 stars; the first cauldron level-up costs 2 crystal and displays 1 star while the internal brew multiplier becomes 2.
 - Plot and cauldron star UI should render `level - 1` upgrade stars; unupgraded multiplier level 1 is 0 filled stars with three empty slots.
-- SpacetimeDB task runtime config can still expose legacy `completionCostGold`; client task balance must treat it as `completionCostCoin` or level-up prices fall back to `level * 20`.
+- SpacetimeDB task runtime config can still expose legacy `completionCostGold` or `completionCostCoin`; normalize either into `coinBudget` for daily/world scaling and never expose it as a level-up price.
 - Player-level mana progression is mirrored in frontend defaults and SpacetimeDB default/validator/backfill; update all three when changing the regen curve.
 - Crystal plot/cauldron upgrades should read as `level up` / `lvl N` in player UI; keep legacy internal research ids if needed, but do not present them as ordinary research.
 - Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.

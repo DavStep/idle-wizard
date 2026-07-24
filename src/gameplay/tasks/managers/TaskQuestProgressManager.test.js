@@ -67,7 +67,7 @@ describe('TaskQuestProgressManager', () => {
     });
   });
 
-  it('does not turn a paid level completion into an elara request', () => {
+  it('does not turn the manual level-up action into an elara request', () => {
     const manager = new TaskQuestProgressManager();
     const snapshot = manager.getSnapshot({
       currentLevel: 2,

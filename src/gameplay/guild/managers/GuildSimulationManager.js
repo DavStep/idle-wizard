@@ -14,14 +14,14 @@ const TICK_MS = 10 * 60 * 1000;
 const HOSPITAL_BASE_MS = 2 * 60 * 60 * 1000;
 
 const LIFE_ACTIONS = Object.freeze([
-  { id: 'train', text: 'trains until the straps complain.', morale: 0, fatigue: 5 },
-  { id: 'read', text: 'reads old warnings and takes some seriously.', morale: 1, fatigue: 2 },
-  { id: 'tavern', text: 'drinks at the tavern and laughs too loudly.', morale: 8, fatigue: 8 },
-  { id: 'family', text: 'visits home and returns with cleaner hands.', morale: 10, fatigue: -2 },
-  { id: 'redLantern', text: 'spends coin in the red-lantern lane.', morale: 6, fatigue: 4 },
-  { id: 'theft', text: 'tries a quiet theft and calls it practice.', morale: 4, fatigue: 3 },
-  { id: 'sleep', text: 'sleeps like a dropped sack.', morale: 2, fatigue: -20 },
-  { id: 'argue', text: 'argues over nothing useful.', morale: -5, fatigue: 2 },
+  { id: 'train', text: 'Trains until the straps complain.', morale: 0, fatigue: 5 },
+  { id: 'read', text: 'Reads old warnings and takes some seriously.', morale: 1, fatigue: 2 },
+  { id: 'tavern', text: 'Drinks at the tavern and laughs too loudly.', morale: 8, fatigue: 8 },
+  { id: 'family', text: 'Visits home and returns with cleaner hands.', morale: 10, fatigue: -2 },
+  { id: 'redLantern', text: 'Spends coin in the red-lantern lane.', morale: 6, fatigue: 4 },
+  { id: 'theft', text: 'Tries a quiet theft and calls it practice.', morale: 4, fatigue: 3 },
+  { id: 'sleep', text: 'Sleeps like a dropped sack.', morale: 2, fatigue: -20 },
+  { id: 'argue', text: 'Argues over nothing useful.', morale: -5, fatigue: 2 },
 ]);
 
 export class GuildSimulationManager {

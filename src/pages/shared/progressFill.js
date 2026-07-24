@@ -16,8 +16,8 @@ function clampProgress(progress) {
   return Math.max(0, Math.min(1, value));
 }
 
-function formatScale(progress) {
-  return String(Number(clampProgress(progress).toFixed(4)));
+function formatWidth(progress) {
+  return `${Number((clampProgress(progress) * 100).toFixed(4))}%`;
 }
 
 function getView(element) {
@@ -39,19 +39,14 @@ function prefersReducedMotion(element) {
   return Boolean(matchMedia('(prefers-reduced-motion: reduce)')?.matches);
 }
 
-function applyScale(element, progress) {
-  const scale = formatScale(progress);
-  const transform = `scaleX(${scale})`;
+function applyWidth(element, progress) {
+  const width = formatWidth(progress);
 
-  if (element.style.getPropertyValue('--style-progress-fill-scale') !== scale) {
-    element.style.setProperty('--style-progress-fill-scale', scale);
-  }
+  setStyleValue(element, 'width', width);
+  setStyleValue(element, 'transform', '');
+  element.style.removeProperty('--style-progress-fill-scale');
 
-  if (element.style.transform !== transform) {
-    element.style.transform = transform;
-  }
-
-  return scale;
+  return width;
 }
 
 function setStyleValue(element, property, value) {
@@ -64,7 +59,7 @@ function commitCurrentStyle(element) {
   const computedStyle = getView(element)?.getComputedStyle?.(element);
 
   if (computedStyle) {
-    return computedStyle.transform;
+    return computedStyle.width;
   }
 
   return element.getBoundingClientRect();
@@ -110,17 +105,17 @@ export function stopProgressFill(element, progress = 0) {
     return;
   }
 
-  const scale = formatScale(progress);
+  const width = formatWidth(progress);
   const transition = 'none';
   const existingState = progressStates.get(element);
 
   if (
     existingState?.mode === 'stopped' &&
-    existingState.scale === scale &&
+    existingState.width === width &&
     existingState.transition === transition &&
-    element.style.width === '100%' &&
+    element.style.width === width &&
     element.style.transition === transition &&
-    element.style.transform === `scaleX(${scale})` &&
+    element.style.transform === '' &&
     !element.classList.contains(RUNNING_PROGRESS_CLASS)
   ) {
     return;
@@ -129,11 +124,10 @@ export function stopProgressFill(element, progress = 0) {
   clearProgressState(element);
   element.classList.add(SMOOTH_PROGRESS_CLASS);
   element.classList.remove(RUNNING_PROGRESS_CLASS);
-  setStyleValue(element, 'width', '100%');
   setStyleValue(element, 'transition', transition);
   progressStates.set(element, {
     mode: 'stopped',
-    scale: applyScale(element, progress),
+    width: applyWidth(element, progress),
     transition,
   });
 }
@@ -154,7 +148,6 @@ export function setProgressFill(
   const smoothMode = getSmoothMode(smooth);
 
   element.classList.add(SMOOTH_PROGRESS_CLASS);
-  setStyleValue(element, 'width', '100%');
 
   if (
     safeProgress <= 0 &&
@@ -168,17 +161,17 @@ export function setProgressFill(
     const stepTransitionMs = getStepTransitionMs(stepMs, remainingMs);
     const transition = prefersReducedMotion(element) || stepTransitionMs <= 0
       ? 'none'
-      : `transform ${stepTransitionMs}ms linear`;
-    const scale = formatScale(safeProgress);
+      : `width ${stepTransitionMs}ms linear`;
+    const width = formatWidth(safeProgress);
     const existingState = progressStates.get(element);
 
     if (
       existingState?.mode === 'step' &&
-      existingState.scale === scale &&
+      existingState.width === width &&
       existingState.transition === transition &&
-      element.style.width === '100%' &&
+      element.style.width === width &&
       element.style.transition === transition &&
-      element.style.transform === `scaleX(${scale})` &&
+      element.style.transform === '' &&
       !element.classList.contains(RUNNING_PROGRESS_CLASS)
     ) {
       return safeProgress;
@@ -189,7 +182,7 @@ export function setProgressFill(
     setStyleValue(element, 'transition', transition);
     progressStates.set(element, {
       mode: 'step',
-      scale: applyScale(element, safeProgress),
+      width: applyWidth(element, safeProgress),
       transition,
     });
     return safeProgress;
@@ -221,10 +214,10 @@ export function setProgressFill(
   clearProgressState(element);
   element.classList.remove(RUNNING_PROGRESS_CLASS);
   setStyleValue(element, 'transition', 'none');
-  applyScale(element, safeProgress);
+  applyWidth(element, safeProgress);
 
   const handleTransitionEnd = (event) => {
-    if (event.propertyName !== 'transform') {
+    if (event.propertyName !== 'width') {
       return;
     }
 
@@ -243,8 +236,8 @@ export function setProgressFill(
 
     commitCurrentStyle(element);
     element.classList.add(RUNNING_PROGRESS_CLASS);
-    element.style.transition = `transform ${Math.ceil(safeRemainingMs)}ms linear`;
-    applyScale(element, 1);
+    element.style.transition = `width ${Math.ceil(safeRemainingMs)}ms linear`;
+    applyWidth(element, 1);
   });
 
   return safeProgress;

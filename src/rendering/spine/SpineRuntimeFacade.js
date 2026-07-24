@@ -8,10 +8,14 @@ export class SpineRuntimeFacade {
     assetManager = new SpineAssetManager(),
     whenPixiReady = async () => null,
     getLayers = () => null,
+    attachToElement = () => false,
+    detachFromElement = () => {},
   } = {}) {
     this.assetManager = assetManager;
     this.whenPixiReady = whenPixiReady;
     this.getLayers = getLayers;
+    this.attachDisplayObjectToElement = attachToElement;
+    this.detachDisplayObjectFromElement = detachFromElement;
   }
 
   loadSkeleton(definition) {
@@ -50,6 +54,14 @@ export class SpineRuntimeFacade {
     }
 
     return layer;
+  }
+
+  attachToElement(element, displayObject, options) {
+    return this.attachDisplayObjectToElement(element, displayObject, options);
+  }
+
+  detachFromElement(element, displayObject) {
+    this.detachDisplayObjectFromElement(element, displayObject);
   }
 
   applyPosition(spine, position) {

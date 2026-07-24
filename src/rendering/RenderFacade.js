@@ -35,6 +35,10 @@ export class RenderFacade {
     this.spineRuntimeFacade = spineRuntimeFacade ?? new SpineRuntimeFacade({
       whenPixiReady: () => this.canvasManager.whenReady(),
       getLayers: () => this.canvasManager.getPixiLayers(),
+      attachToElement: (element, object, options) =>
+        this.canvasManager.attachUiDisplayObject(element, object, options),
+      detachFromElement: (element, object) =>
+        this.canvasManager.detachUiDisplayObject(element, object),
     });
   }
 

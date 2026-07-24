@@ -2,6 +2,10 @@ import {
   DEFAULT_PLAYER_THEME,
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
+import {
+  DEFAULT_PLAYER_FONT,
+  normalizePlayerFont,
+} from '../../../player/playerFonts.js';
 
 const PLAYER_PROFILE_QUERY = 'SELECT * FROM own_player_profile';
 const LEGACY_PLAYER_QUERY = 'SELECT * FROM player WHERE identity =';
@@ -98,7 +102,7 @@ export class PlayerProfileSubscriptionManager {
     return {
       username: row.username,
       theme: normalizePlayerTheme(row.theme ?? DEFAULT_PLAYER_THEME),
-      font: row.font ?? 'lexend',
+      font: normalizePlayerFont(row.font ?? DEFAULT_PLAYER_FONT),
       colorMode: row.colorMode ?? row.color_mode ?? 'resources',
       character: row.character ?? 'elara',
       usernamePromptSeen: Boolean(

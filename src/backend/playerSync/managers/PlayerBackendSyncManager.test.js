@@ -79,7 +79,7 @@ describe('PlayerBackendSyncManager', () => {
     expect(setPlayerProfile).toHaveBeenCalledWith({
       username: 'Merlin',
       theme: 'midnight',
-      font: 'lexend',
+      font: 'lilita-one',
       colorMode: 'resources',
       character: 'elara',
       usernamePromptSeen: true,
@@ -144,7 +144,7 @@ describe('PlayerBackendSyncManager', () => {
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'Mira',
       theme: 'black',
-      font: 'lexend',
+      font: 'lilita-one',
       colorMode: 'resources',
       character: 'elara',
       usernamePromptSeen: true,
@@ -283,7 +283,7 @@ describe('PlayerBackendSyncManager', () => {
     manager.applyServerProfile({
       username: 'wizard',
       theme: 'white',
-      font: 'lexend',
+      font: 'lilita-one',
       colorMode: 'resources',
       character: 'mira',
       usernamePromptSeen: false,
@@ -296,7 +296,7 @@ describe('PlayerBackendSyncManager', () => {
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'wizard',
       theme: 'black',
-      font: 'lexend',
+      font: 'lilita-one',
       colorMode: 'resources',
       character: 'mira',
       usernamePromptSeen: false,
@@ -313,7 +313,7 @@ describe('PlayerBackendSyncManager', () => {
 
     expect(playerFacade.getSnapshot()).toMatchObject({
       theme: 'black',
-      font: 'lexend',
+      font: 'lilita-one',
       character: 'mira',
     });
   });

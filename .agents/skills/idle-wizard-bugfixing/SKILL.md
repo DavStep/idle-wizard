@@ -77,7 +77,7 @@ Validate in this order:
 3. Run the smallest broader check needed by risk:
    - Focused logic change: matching `*.test.js`
    - Shared gameplay, backend, persistence, or page behavior: `npm run check`
-   - UI/layout/tutorial change: focused tests plus browser screenshot/click QA at authored `1080x2170` and fitted desktop; use `ecc-browser-qa` for browser evidence and verdicts. Reference-driven fixes additionally require a native-pixel close crop and side-by-side/overlay comparison.
+   - UI/layout/tutorial change: focused tests plus browser screenshot/click QA at authored `390x844` and fitted desktop; use `ecc-browser-qa` for browser evidence and verdicts. Reference-driven fixes additionally require a native-pixel close crop and side-by-side/overlay comparison.
    - Backend schema/config change: local build/publish, `npm run stdb:generate`, and no manual generated binding edits
 
 Do not claim browser/manual QA unless Vite `55173` and required SpacetimeDB `3000` status checks pass.

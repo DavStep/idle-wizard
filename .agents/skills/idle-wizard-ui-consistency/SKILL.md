@@ -24,11 +24,12 @@ If the task is an audit or visual cleanup, also read the latest relevant file un
 
 ## Consistency Gates
 
+- Every visible or interactive building block must map to a documented entry in the reusable widget library in `docs/ui-patterns.md`, preserve an existing widget contract as a feature-local extension, or have explicit user approval from the `idle-wizard-ui-workflow` Widget Admission Gate. Treat a new scroll behavior, box/dialog type, control pattern, compound component, or meaningfully different state/variant as a new widget.
 - Default room navigation is five bottom tabs: `brewing`, `garden`, `workshop`, `research`, and `market`. Advanced, guild, prestige, and future tabs need an explicit unlock or redesign surface before they appear in default chrome.
 - Ordinary non-dialog panels use `style-box`: white theme gets `1px` borders, non-white themes get `2px` borders, compact padding, no shadow.
 - Popup and modal panels use `style-dialog`: strong border, `20px` dialog padding, and the bottom-right dialog shadow. Do not copy dialog weight into ordinary boxes.
 - Typography stays source-scale: `13px` body text, `14px` dialog titles, `11px` border labels, and no direct font inflation for mobile readability.
-- A Dark Room-style block titles are embedded over the top border on a white background. Do not add separate headings inside bordered panels when the border-label pattern fits.
+- A Dark Room-style block titles are embedded transparently over the top border. Do not add a title background or separate headings inside bordered panels when the border-label pattern fits.
 - Rows keep the project rhythm: left number or marker, middle text/content, fixed right action or status. Avoid row layouts that introduce icon-first scanning unless the feature explicitly owns iconography.
 - Default visual language is monochrome: black text, white surfaces, serif text, thin black borders, almost no decoration. Gradients, resource colors, large icons, portrait art, glow, and character-heavy treatment are exceptions for explicit customization/profile/tutorial contexts, not the default state.
 - Top chrome is text-first and quiet. Avatar, coin, and icon affordances must not dominate the default room surface.
@@ -38,7 +39,7 @@ If the task is an audit or visual cleanup, also read the latest relevant file un
 - Reference-driven progress rails must match the named geometry separately: outer stroke, track color, inner inset, fill thickness, end-cap shape, divider count/positions, and caption alignment. A generic segmented rail is not parity.
 - Tutorial UI must also use `idle-wizard-tutorial-ui`; that skill owns tutorial box placement, collision, stacking, pointer cues, and screenshot QA.
 - Motion is subtle, stateful, and reduced-motion compatible. Prefer opacity and transform. Treat width, height, margin, padding, bounce, overshoot, and elastic easing as drift unless the task explicitly requires them.
-- The authored viewport is `1080x2170`. UI should scale from that logical surface without changing the authored layout.
+- The authored viewport matches Root Run at `390x844`. UI should contain-fit from that logical surface without changing the authored layout.
 - Page names sit bottom center of the room view. Do not duplicate page identity through extra top headings.
 - The Workshop resource/action block is `mana sphere`; the summon seed button sits outside it; clicking `seeds` opens seed inventory breakdown.
 
@@ -50,6 +51,7 @@ When reviewing UI consistency, report:
 2. Most consistent UI elements, so future work can copy them.
 3. Concrete fixes in priority order.
 4. Verification performed and any remaining risk.
+5. `New widgets: none` or the approved widgets introduced.
 
 ## Verification
 
@@ -57,7 +59,7 @@ For UI implementation changes, run:
 
 - `npm run check:ui`
 - Focused tests for touched managers/components.
-- Screenshot QA at the authored `1080x2170` surface and at a fitted desktop viewport when runtime UI is affected.
+- Screenshot QA at the authored `390x844` surface and at a fitted desktop viewport when runtime UI is affected.
 - For visual-reference work, follow `docs/visual-reference-qa.md`, inspect a native-pixel close crop, and generate the `npm run ui:compare` side-by-side/overlay artifact.
 
 Use `npm run check:ui -- --strict` only when the branch is ready to fail on all currently detected drift.

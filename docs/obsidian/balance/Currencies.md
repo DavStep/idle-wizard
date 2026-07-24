@@ -19,8 +19,8 @@ slowly from level 11 onward.
 
 ## Coin
 
-Coin pays level completion costs, market purchases, capacity buys, and regular
-research. It is earned through market flows and other normal loops.
+Coin pays market purchases, capacity buys, and regular research. It is earned
+through market flows and other normal loops. Player level-up never spends coin.
 
 ## Crystal
 

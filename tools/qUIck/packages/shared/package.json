@@ -1,0 +1,17 @@
+{
+  "name": "@figma-pixi/shared",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -b tsconfig.json",
+    "test": "npm run build && node dist/layerNameParser.test.js",
+    "clean": "powershell -Command \"if (Test-Path dist) { Remove-Item -Recurse -Force dist }\""
+  }
+}

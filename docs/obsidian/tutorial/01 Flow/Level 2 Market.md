@@ -28,11 +28,9 @@ The flow uses live available quantities and loaded stall state, not tutorial-own
 ## Design Notes
 
 - Elara points to the first stand, then `shop:sell:sageSeed`, then `shop:sell:percentage` for `25%`, then `shop:sell:mark`, and waits while the loaded stall sells.
-- Later coin-shortfall guidance reuses loaded matching stalls before opening an empty stall.
-- If the matching loader row has no available stock, Elara routes back to a source action.
+- The sale is a normal level-2 request, not a prerequisite coin payment for level-up.
 
 ## Related
 
-- [[Coin Shortfall Branch]]
 - [[Target And Reveal Rules]]
 - [[Level 3 Research]]

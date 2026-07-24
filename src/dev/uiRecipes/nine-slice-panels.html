@@ -1,0 +1,99 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="witchcraft"
+  data-style-font="lilita-one"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard nine-slice panel recipe</title>
+    <link rel="stylesheet" href="/src/styles/base.css">
+    <style>
+      body {
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+
+      .recipe-viewport {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .game-stage {
+        --design-width: 390;
+        --design-height: 844;
+        --source-ui-scale: 1;
+        --style-ui-scale: 1;
+        --app-stage-width: 390px;
+        --app-stage-height: 844px;
+        --app-source-ui-screen-width: 390px;
+
+        display: grid;
+        align-content: start;
+        gap: 40px;
+        width: 390px;
+        height: 844px;
+        padding: 48px 18px;
+        max-width: none;
+        max-height: none;
+        transform-origin: top left;
+      }
+
+      .recipe-panel {
+        box-sizing: border-box;
+        width: 354px;
+        min-height: 0;
+        padding: 14px;
+      }
+
+      .recipe-panel--compact {
+        height: 46px;
+      }
+
+      .recipe-panel--task {
+        height: 55px;
+      }
+
+      .recipe-panel--status {
+        height: 82.3125px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="recipe-viewport">
+      <main class="game-stage" aria-label="Nine-slice panel visual recipe">
+        <section class="recipe-panel recipe-panel--compact style-box">
+          <div class="style-box__title">compact panel</div>
+        </section>
+        <section class="recipe-panel recipe-panel--task style-box">
+          <div class="style-box__title">task panel</div>
+        </section>
+        <section class="recipe-panel recipe-panel--status style-box">
+          <div class="style-box__title">status panel</div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+
+      const requestedTheme = new URLSearchParams(location.search).get('theme');
+      if (['black', 'midnight', 'witchcraft'].includes(requestedTheme)) {
+        document.documentElement.dataset.styleTheme = requestedTheme;
+      }
+
+      const recipeViewport = document.querySelector('.recipe-viewport');
+      const gameStage = document.querySelector('.game-stage');
+      const fitRecipe = () => {
+        const scale = Math.min(window.innerWidth / 390, window.innerHeight / 844);
+        recipeViewport.style.width = `${390 * scale}px`;
+        recipeViewport.style.height = `${844 * scale}px`;
+        gameStage.style.transform = `scale(${scale})`;
+      };
+      fitRecipe();
+      window.addEventListener('resize', fitRecipe);
+    </script>
+  </body>
+</html>

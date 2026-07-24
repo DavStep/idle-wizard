@@ -6,13 +6,17 @@ This repo is a JavaScript mobile game project for `Idle Wizard`.
 
 Use Ponytail-style engineering by default: read the touched flow first, then choose the smallest correct change. Prefer deleting, reusing existing project code, standard library/native platform features, and already-installed dependencies before adding new code or abstractions. Keep communication concise, technical, and no-filler. Stop only when the user asks for normal mode.
 
-The target design viewport is `1080x2170`. Treat that as the authored game surface size, then scale it to the user's device without changing the logical layout.
+The target game viewport matches Root Run at `390x844`. Treat that as the logical game surface, then contain-fit it to the user's device without changing the logical layout.
 
 Do not add seed, herb, potion, selling, economy, inventory, progression, or other gameplay code until the user explicitly requests that feature.
 
 The project `STYLE` is defined in `docs/style.md`. It is inspired by A Dark Room: black text, white surfaces, readable serif text with some character, thin game-gray borders, compact text panels, and almost no decoration.
 
-Before making new UI, check `docs/style.md` and `docs/ui-patterns.md` for an existing similar concept, then reuse that row, box, popup, tab, and border-label pattern instead of inventing a near-duplicate.
+Before making new UI, check `docs/style.md` and the reusable widget library in `docs/ui-patterns.md` for an existing similar concept, then reuse that row, box, popup, tab, scroll pane, control, and border-label pattern instead of inventing a near-duplicate.
+
+Every structural or visual UI task has a widget-admission gate before product code changes. Classify each requested element as `reuse`, `extension`, or `new widget`. A new widget includes a new primitive, compound component, scroll behavior, box/dialog type, control pattern, or a visual/interaction variant that changes an existing widget's contract. If any new widget is needed, stop and ask the user for approval with one batched list containing the proposed name, purpose, closest existing widget and why it is insufficient, states/variants, intended reuse scope, and a visual preview at the authored `390x844` surface. Proposal previews must stay disposable and outside product runtime code. Implement only approved widgets, then add them to `docs/ui-patterns.md` with their source and approved contract. Every UI completion report must include `New widgets: none` or list the approved widgets introduced.
+
+qUIck dialog/screen ZIP workflow: export ZIPs from the bundled qUIck Figma plugin into `qUIck-inbox/`. Before building or updating a qUIck dialog, screen, HUD, or component, run `npm run import:quick-ui` from the project root. The command validates and installs the export under `public/generated-ui`, rebuilds the generated UI atlas, and deletes each ZIP only after the full import succeeds. Do not manually extract these ZIPs. Follow `docs/quick-ui-workflow.md` for layer tags, nine-slice review, preview, and runtime binding.
 
 For structural or visual UI, UX, layout, popup, dialog, screen, page, button, or flow changes, use `idle-wizard-ui-workflow`; it routes through `impeccable`, `idle-wizard-ui-consistency`, and the required product/style docs before editing.
 
@@ -32,11 +36,11 @@ The bugfixing agent must establish reproduction steps, isolate the exact root ca
 
 Selected ECC-derived skills live under `.agents/skills/ecc-*` as advisory QA additions. Use them when their descriptions match, but Idle Wizard project rules, the `experience.md` router and routed `docs/obsidian/engineering-liveops/experience/` files, and local `idle-wizard-*` skills override ECC guidance on conflicts. Do not install full ECC profiles, global hooks, global MCP config, memory, or worktree orchestration unless the user explicitly asks for that scoped change.
 
-A Dark Room-style blocks use titles embedded over the top border on white background, not separate headings inside bordered panels.
+A Dark Room-style blocks use transparent titles embedded over the top border, not separate headings inside bordered panels.
 
 Use A Dark Room's source UI proportions, including `16px` source text, inside the room UI scale layer. Do not inflate the font directly to make mobile text readable.
 
-Source UI scale must follow the fitted viewport scale, not stay fixed at `3`, so both desktop web and mobile views fit.
+Source UI scale must follow Root Run's fitted viewport scale from the `390x844` logical surface, including desktop upscaling, so both web and mobile views fit.
 
 Ordinary non-dialog boxes stay simple: white theme uses `1px` borders; non-white themes use `2px` borders; all keep compact padding and no shadow. Reserve the thicker border and bottom-right shadow for popup/dialog panels. The Workshop resource/action block is called `mana sphere`; the summon seed button sits outside it. Clicking `seeds` in it opens the seed inventory breakdown. Page names sit at the bottom center of the room view.
 

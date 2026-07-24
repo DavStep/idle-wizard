@@ -24,7 +24,6 @@ workshop entry through mana tonic brewing.
 - [[Level 5 Brewing]]
 - [[Tutorial Surface Rules]]
 - [[Target And Reveal Rules]]
-- [[Coin Shortfall Branch]]
 - [[QA And Capture]]
 - [[Tutorial Risks]]
 

@@ -39,7 +39,7 @@ Default to read-only checks. Do not alter live player data, post production mess
 4. Critical visual smoke:
    - Workshop can become visible.
    - Top panel, bottom tabs, page name, and current room chrome are present.
-   - No obvious scaling failure at the authored `1080x2170` surface and a fitted desktop viewport.
+   - No obvious scaling failure at the authored `390x844` surface and a fitted desktop viewport.
 
 5. Release-specific checks:
    - For Android: confirm the intended build flavor and APK path; use `adb reverse tcp:3000 tcp:3000` only for local-backend dev builds.

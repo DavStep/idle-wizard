@@ -67,7 +67,8 @@ describe('TaskBalanceManager', () => {
       ],
     });
 
-    expect(taskBalanceManager.getLevelCompletionCostCoin(1)).toBe(10);
+    expect(taskBalanceManager.getLevelCoinBudget(1)).toBe(10);
+    expect(taskBalanceManager.getLevels()[0]).not.toHaveProperty('completionCostGold');
     expect(getTaskSummary(taskBalanceManager.getLevelTasks(1)[0])).toEqual({
       id: 'level1-sage-seeds',
       type: taskRequirementTypes.TURN_IN,
@@ -84,7 +85,7 @@ describe('TaskBalanceManager', () => {
       levels: [
         {
           level: 1,
-          completionCostCoin: 0,
+          coinBudget: 0,
           tasks: [
             {
               id: 'research-mint',
@@ -158,7 +159,7 @@ describe('TaskBalanceManager', () => {
       'level1-summon-sage-seed',
       'level1-turn-in-sage-seed',
     ]);
-    expect(taskBalanceManager.getLevelCompletionCostCoin(0)).toBe(0);
+    expect(taskBalanceManager.getLevelCoinBudget(0)).toBe(0);
 
     expect([1, 2, 3, 4, 5].map((level) =>
       taskBalanceManager.getLevelTasks(level).map((task) => ({

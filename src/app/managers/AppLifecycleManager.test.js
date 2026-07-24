@@ -194,6 +194,12 @@ describe('AppLifecycleManager', () => {
     await flushPromises();
 
     expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
+    expect(lifecycle.renderFacade.mount).toHaveBeenCalledWith(stage);
+    expect(
+      lifecycle.renderFacade.mount.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      lifecycle.onlineGateManager.mount.mock.invocationCallOrder[0],
+    );
     expect(lifecycle.textClipboardGuardManager.mount).toHaveBeenCalledWith(stage);
     expect(lifecycle.interactionLockManager.mount).toHaveBeenCalledWith(stage);
     expect(lifecycle.interactionLockManager.lock).toHaveBeenCalledWith('connecting');
@@ -465,16 +471,20 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
   });
 
-  it('unmounts the deploy refresh gate when the app stops', async () => {
+  it('unmounts gates and the persistent renderer before gameplay surfaces mount', async () => {
     const { lifecycle } = createLifecycle();
 
     lifecycle.start();
     await flushPromises();
+
+    expect(lifecycle.pagesFacade.mount).not.toHaveBeenCalled();
     lifecycle.stop();
 
     expect(lifecycle.interactionLockManager.unmount).toHaveBeenCalledTimes(1);
     expect(lifecycle.textClipboardGuardManager.unmount).toHaveBeenCalledTimes(1);
     expect(lifecycle.deployRefreshManager.unmount).toHaveBeenCalledTimes(1);
+    expect(lifecycle.renderFacade.unmount).toHaveBeenCalledTimes(1);
+    expect(lifecycle.pagesFacade.unmount).not.toHaveBeenCalled();
   });
 
   it('mounts and unmounts the account link choice gate with the stage', async () => {
@@ -628,19 +638,22 @@ describe('AppLifecycleManager', () => {
 
     expect(freshStartChoiceManager.choose).toHaveBeenCalledTimes(1);
     expect(lifecycle.pagesFacade.mount).not.toHaveBeenCalled();
-    expect(lifecycle.renderFacade.mount).not.toHaveBeenCalled();
+    expect(lifecycle.renderFacade.mount).toHaveBeenCalledWith(stage);
+    expect(
+      lifecycle.renderFacade.mount.mock.invocationCallOrder[0],
+    ).toBeLessThan(freshStartChoiceManager.mount.mock.invocationCallOrder[0]);
 
     resolveChoice(FRESH_START_CHOICE_START_FRESH);
     await flushPromises();
 
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
     expect(lifecycle.pagesFacade.mount).not.toHaveBeenCalled();
-    expect(lifecycle.renderFacade.mount).not.toHaveBeenCalled();
+    expect(lifecycle.renderFacade.mount).toHaveBeenCalledTimes(1);
 
     await getBackendCallbacks().onGameplaySaveReady({ save: null });
 
     expect(lifecycle.pagesFacade.mount).toHaveBeenCalledWith(stage);
-    expect(lifecycle.renderFacade.mount).toHaveBeenCalledWith(stage);
+    expect(lifecycle.renderFacade.mount).toHaveBeenCalledTimes(1);
   });
 
   it('connects without the fresh-start gate when an account token exists', async () => {

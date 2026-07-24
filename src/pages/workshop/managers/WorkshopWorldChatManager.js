@@ -183,7 +183,8 @@ export class WorkshopWorldChatManager {
     this.refs.title = this.createTitle();
     this.refs.closeButton = this.createCloseButton();
     this.refs.messages = document.createElement('div');
-    this.refs.messages.className = 'workshop-page__world-chat-messages';
+    this.refs.messages.className =
+      'workshop-page__world-chat-messages style-page-scroll';
     this.refs.status = document.createElement('div');
     this.refs.status.className = 'workshop-page__world-chat-status';
     this.refs.form = this.createForm();

@@ -113,7 +113,8 @@ export class ShopTradeHistoryManager {
     this.refs.dialog = panel;
     this.refs.title = this.createTitle();
     this.refs.rows = document.createElement('div');
-    this.refs.rows.className = 'shop-page__trade-history-rows';
+    this.refs.rows.className =
+      'shop-page__trade-history-rows style-page-scroll';
     this.refs.tabs = this.createTabs();
 
     dialog.append(this.refs.title, this.refs.rows);

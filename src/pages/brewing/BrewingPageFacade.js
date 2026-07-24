@@ -118,6 +118,14 @@ export class BrewingPageFacade {
     this.roomViewManager.unmount();
   }
 
+  deactivate() {
+    this.activeInventoryTab = null;
+    this.potionInventoryManager.setVisible(false);
+    this.inventoryButtonManager.setActiveTab(null);
+    this.recipeChoiceDialogManager.hide();
+    this.recipeBookManager.hide();
+  }
+
   mountInventoryPanelLayer(uiLayer) {
     if (this.inventoryPanelLayer || !uiLayer) {
       return;

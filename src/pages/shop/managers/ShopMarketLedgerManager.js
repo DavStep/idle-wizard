@@ -7,6 +7,7 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor, setResourceColorFromText } from '../../shared/resourceColor.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
+import { setInfoButtonIcon } from '../../shared/infoButton.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
 const LEDGER_TABS = [
@@ -105,7 +106,7 @@ export class ShopMarketLedgerManager {
     this.refs.helpButton = document.createElement('button');
     this.refs.helpButton.className = 'style-button shop-page__ledger-help-button';
     this.refs.helpButton.type = 'button';
-    this.refs.helpButton.textContent = '[i]';
+    setInfoButtonIcon(this.refs.helpButton);
     this.refs.helpButton.setAttribute('aria-label', 'how the market ledger works');
     this.refs.helpButton.setAttribute('aria-expanded', 'false');
     this.refs.helpButton.addEventListener('click', (event) => {
@@ -151,7 +152,7 @@ export class ShopMarketLedgerManager {
     header.className = 'shop-page__ledger-row shop-page__ledger-row--header';
     header.innerHTML = '<span>item</span><span>you sell</span><span>you buy</span><span>change</span>';
     this.refs.rowsRoot = document.createElement('div');
-    this.refs.rowsRoot.className = 'shop-page__ledger-rows';
+    this.refs.rowsRoot.className = 'shop-page__ledger-rows style-page-scroll';
     this.refs.status = document.createElement('div');
     this.refs.status.className = 'shop-page__ledger-status';
 
@@ -239,7 +240,7 @@ export class ShopMarketLedgerManager {
     title.className = 'style-box__title';
     title.textContent = 'buy from trader';
     const back = document.createElement('button');
-    back.className = 'style-button shop-page__ledger-close';
+    back.className = 'style-button shop-page__ledger-back';
     back.type = 'button';
     back.textContent = 'back';
     back.addEventListener('click', () => this.closeBuy());
@@ -323,7 +324,7 @@ export class ShopMarketLedgerManager {
   render() {
     if (!this.lastSnapshot) return;
     const market = this.lastSnapshot.shop?.market;
-    this.refs.title.textContent = `${String(market?.name ?? 'market').toLowerCase()} ledger`;
+    this.refs.title.textContent = `${String(market?.name ?? 'market')} ledger`;
     this.applyHelpVisibility();
     if (!this.visible) return;
 
@@ -580,7 +581,9 @@ export class ShopMarketLedgerManager {
 
   getRequiredMarketLabel(item) {
     const market = item?.requiredMarket;
-    return market?.name ? `${String(market.name).toLowerCase()} ${'★'.repeat(market.rank ?? 1)}` : 'higher market';
+    return market?.name
+      ? `${String(market.name)} ${'★'.repeat(market.rank ?? 1)}`
+      : 'higher market';
   }
 
   getBuyQuote(item, quantity) {

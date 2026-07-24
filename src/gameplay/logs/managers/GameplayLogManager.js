@@ -75,7 +75,7 @@ export class GameplayLogManager {
   }
 
   normalizeMessage(message) {
-    return String(message ?? '').trim().toLowerCase().slice(0, MAX_LOG_MESSAGE_LENGTH);
+    return String(message ?? '').trim().slice(0, MAX_LOG_MESSAGE_LENGTH);
   }
 
   pruneEntries() {

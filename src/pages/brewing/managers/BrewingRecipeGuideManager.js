@@ -36,7 +36,7 @@ export class BrewingRecipeGuideManager {
     const recipeRow = this.createRow('recipe');
 
     const sequence = document.createElement('div');
-    sequence.className = 'brewing-page__guide-sequence';
+    sequence.className = 'brewing-page__guide-sequence style-page-scroll';
 
     this.root.append(title, recipeRow.row, sequence);
     this.refs = {

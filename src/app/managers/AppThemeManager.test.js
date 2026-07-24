@@ -7,7 +7,7 @@ import { AppThemeManager } from './AppThemeManager.js';
 function createPlayerFacade(
   initialTheme = 'midnight',
   initialColorMode = 'resources',
-  initialFont = 'lexend',
+  initialFont = 'lilita-one',
   initialIconMode = 'icons',
   initialProgressBar = 'regular',
 ) {
@@ -103,7 +103,7 @@ describe('AppThemeManager', () => {
 
     playerFacade.setFont('google-lexend');
 
-    expect(document.documentElement.dataset.styleFont).toBe('lexend');
+    expect(document.documentElement.dataset.styleFont).toBe('lilita-one');
 
     playerFacade.setTheme('witchcraft');
 
@@ -114,7 +114,7 @@ describe('AppThemeManager', () => {
     playerFacade.setColorMode('colored');
 
     expect(document.documentElement.dataset.styleTheme).toBe('black');
-    expect(document.documentElement.dataset.styleFont).toBe('lexend');
+    expect(document.documentElement.dataset.styleFont).toBe('lilita-one');
     expect(document.documentElement.dataset.styleColor).toBe('resources');
 
     playerFacade.setTheme('mild-white');
@@ -123,7 +123,7 @@ describe('AppThemeManager', () => {
 
     manager.unmount();
     expect(document.documentElement.dataset.styleTheme).toBe('midnight');
-    expect(document.documentElement.dataset.styleFont).toBe('lexend');
+    expect(document.documentElement.dataset.styleFont).toBe('lilita-one');
     expect(document.documentElement.dataset.styleColor).toBe('resources');
     expect(document.documentElement.dataset.styleIcons).toBe('icons');
     expect(document.documentElement.dataset.styleProgress).toBe('regular');

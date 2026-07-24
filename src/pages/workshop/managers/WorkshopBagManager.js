@@ -4,7 +4,6 @@ import { applyMysteryText } from '../../shared/mysteryText.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { createResourceIconLabel } from '../../shared/resourceIconLabel.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
-import { updateScrollCueState } from '../../managers/ScrollCueManager.js';
 import { ingredientRarities } from '../../../gameplay/items/ingredientCatalog.js';
 
 const BAG_TABS = [
@@ -33,7 +32,6 @@ export class WorkshopBagManager {
     this.lastSnapshot = {};
     this.renderedSignature = '';
     this.previousFocus = null;
-    this.handleRowsScroll = () => this.updateScrollProgress();
     this.handleRootClick = (event) => {
       if (event.target === this.root) {
         this.hide();
@@ -77,25 +75,11 @@ export class WorkshopBagManager {
     this.refs.frame = document.createElement('div');
     this.refs.frame.className = 'workshop-page__bag-frame';
     this.refs.rows = document.createElement('div');
-    this.refs.rows.className = 'workshop-page__bag-rows';
-    this.refs.rows.addEventListener('scroll', this.handleRowsScroll);
-    this.refs.progress = document.createElement('div');
-    this.refs.progress.className =
-      'style-progress style-scroll-cue-progress workshop-page__bag-progress';
-    this.refs.progress.setAttribute('aria-hidden', 'true');
-    this.refs.progressFill = document.createElement('div');
-    this.refs.progressFill.className =
-      'style-progress__fill style-scroll-cue-progress-fill workshop-page__bag-progress-fill';
-    this.refs.progress.append(this.refs.progressFill);
+    this.refs.rows.className = 'workshop-page__bag-rows style-page-scroll';
     this.refs.tabs = this.createTabs();
 
     this.refs.frame.append(this.refs.rows);
-    this.refs.dialog.append(
-      this.refs.title,
-      this.refs.closeButton,
-      this.refs.frame,
-      this.refs.progress,
-    );
+    this.refs.dialog.append(this.refs.title, this.refs.closeButton, this.refs.frame);
     this.refs.panel.append(this.refs.dialog, this.refs.tabs);
     this.root.append(this.refs.panel);
     parent.append(this.root);
@@ -159,7 +143,6 @@ export class WorkshopBagManager {
     this.visible = true;
     this.applyVisibility();
     this.refs.panel?.focus();
-    this.updateScrollProgress();
   }
 
   hide() {
@@ -178,7 +161,6 @@ export class WorkshopBagManager {
     this.unsubscribe?.();
     this.unsubscribe = null;
     document.removeEventListener('keydown', this.handleKeydown);
-    this.refs.rows?.removeEventListener('scroll', this.handleRowsScroll);
     this.root?.removeEventListener('click', this.handleRootClick);
     this.root?.remove();
     this.root = null;
@@ -210,7 +192,6 @@ export class WorkshopBagManager {
 
     const signature = this.createRenderSignature(this.lastSnapshot);
     if (signature === this.renderedSignature) {
-      this.updateScrollProgress();
       return;
     }
 
@@ -218,12 +199,10 @@ export class WorkshopBagManager {
 
     if (this.selectedTabId === 'currencies') {
       this.renderCurrencyRows(this.lastSnapshot);
-      this.updateScrollProgress();
       return;
     }
 
     this.renderItemRows(this.lastSnapshot, this.selectedTabId.slice(0, -1));
-    this.updateScrollProgress();
   }
 
   updateTabs() {
@@ -536,16 +515,6 @@ export class WorkshopBagManager {
     }
 
     return [...ids].sort().join(',');
-  }
-
-  updateScrollProgress() {
-    updateScrollCueState({
-      scrollElement: this.refs.rows,
-      cueElement: this.refs.frame,
-      progressFill: this.refs.progressFill,
-      progressElement: this.refs.progress,
-      inlineCue: false,
-    });
   }
 
   applyVisibility() {

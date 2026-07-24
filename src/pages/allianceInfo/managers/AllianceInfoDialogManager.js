@@ -107,7 +107,8 @@ export class AllianceInfoDialogManager {
     this.refs.closeButton.textContent = 'close';
     this.refs.closeButton.addEventListener('click', () => this.hide());
     this.refs.content = document.createElement('div');
-    this.refs.content.className = 'room-alliance-info-content';
+    this.refs.content.className =
+      'room-alliance-info-content style-page-scroll';
     this.refs.actions = document.createElement('div');
     this.refs.actions.className = 'room-alliance-info-actions';
     this.refs.status = document.createElement('div');

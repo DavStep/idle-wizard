@@ -1,6 +1,6 @@
 ---
 name: ecc-browser-qa
-description: Use for Idle Wizard browser QA after UI, layout, tutorial, interaction, popup, page, release-candidate, or bug-fix changes that need live verification. Adapts ECC browser-qa with project-specific runtime checks, console/network smoke, desktop and authored 1080x2170 screenshots, interaction checks, accessibility sanity checks, and an INCONCLUSIVE verdict when no visual baseline or screenshot evidence exists.
+description: Use for Idle Wizard browser QA after UI, layout, tutorial, interaction, popup, page, release-candidate, or bug-fix changes that need live verification. Adapts ECC browser-qa with project-specific runtime checks, console/network smoke, desktop and authored 390x844 screenshots, interaction checks, accessibility sanity checks, and an INCONCLUSIVE verdict when no visual baseline or screenshot evidence exists.
 ---
 
 # ECC Browser QA
@@ -28,7 +28,7 @@ Before claiming live browser QA:
    - Treat app crash, blank stage, persistent online gate, or unexpected 4xx/5xx as blocking.
 
 2. Screenshot:
-   - Capture authored mobile surface `1080x2170`.
+   - Capture authored mobile surface `390x844`.
    - Capture a fitted desktop viewport.
    - Verify no text overlap, clipping, off-stage popup, incorrect source scale, or room chrome collision.
    - For a changed surface, also capture a native-pixel close crop and inspect it at `100%`; a downscaled full-screen screenshot can hide baseline, optical-center, and one-source-pixel errors.

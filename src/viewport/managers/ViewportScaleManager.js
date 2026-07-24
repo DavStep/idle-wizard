@@ -1,5 +1,5 @@
 export class ViewportScaleManager {
-  constructor({ viewport, sourceUiScale = 3 }) {
+  constructor({ viewport, sourceUiScale = viewport.sourceScale ?? 3 }) {
     this.viewport = viewport;
     this.sourceUiScale = sourceUiScale;
     this.stage = null;
@@ -94,7 +94,6 @@ export class ViewportScaleManager {
 
     const viewportSize = this.getLayoutViewportSize();
     const scale = Math.min(
-      1,
       viewportSize.width / this.viewport.width,
       viewportSize.height / this.viewport.height,
     );

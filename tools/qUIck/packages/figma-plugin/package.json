@@ -1,0 +1,22 @@
+{
+  "name": "@figma-pixi/figma-plugin",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -b tsconfig.json",
+    "clean": "powershell -Command \"if (Test-Path dist) { Remove-Item -Recurse -Force dist }\""
+  },
+  "dependencies": {
+    "@figma-pixi/shared": "0.0.1"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.117.0"
+  }
+}

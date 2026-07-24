@@ -25,7 +25,6 @@ function finishCurrentTaskLevel(gameplayFacade) {
     finishTaskRequirement(gameplayFacade, task);
   }
 
-  gameplayFacade.coinFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costCoin);
   gameplayFacade.completeTaskLevel();
 }
 

@@ -1,178 +1,657 @@
-const SCROLL_CUE_SELECTOR = [
-  '.style-page-scroll',
-  '.style-dialog-scroll',
-  '.brewing-page__herb-rows',
-  '.brewing-page__guide-sequence',
-  '.workshop-page__leaderboard-rows',
-  '.workshop-page__discoveries-rows',
-  '.workshop-page__personal-tasks-frame',
-  '.workshop-page__world-notice-frame',
-  '.workshop-page__world-chat-messages',
-  '.workshop-page__trade-alliance-content',
-  '.shop-page__market-panel',
-  '.garden-page__herb-rows',
-  '.garden-page__plot-rows',
-  '.garden-page__seed-rows',
-  '.brewing-page__recipe-list',
-  '.brewing-page__potion-list',
-  '.shop-page__market-rows',
-  '.shop-page__trade-history-rows',
-  '.shop-page__demand-rows',
-  '.shop-page__sell-item-list',
-  '.shop-page__ledger-rows',
-  '.shop-page__stock-rows',
-  '.shop-page__sell-item-list',
-  '.guild-page__popup-content',
-  '.guild-page__card-details',
-  '.room-alliance-info-content',
-  '.room-top-panel__settings-pane',
+import {
+  ROOT_RUN_STATION_BOTTOM_MAX_OVERSCROLL,
+  ROOT_RUN_STATION_TOP_MAX_OVERSCROLL,
+  ROOT_RUN_TO_IDLE_WIZARD_SCROLL_SCALE,
+  StationScrollPhysics,
+} from './StationScrollPhysics.js';
+
+const SCROLL_CUE_SELECTOR = '.style-page-scroll';
+
+const SOURCE_LAYER_SELECTOR = [
+  '.workshop-page__ui-layer',
+  '.brewing-page__ui-layer',
+  '.garden-page__ui-layer',
+  '.shop-page__ui-layer',
+  '.research-page__ui-layer',
+  '.guild-page__ui-layer',
+  '.prestige-page__ui-layer',
+  '.room-page__popup-layer',
+  '.room-top-panel-layer',
+  '.room-world-chat-layer',
+  '.room-player-info-popup',
+  '.room-alliance-info-popup',
 ].join(',');
 
-const SCROLL_PROGRESS_PROPERTY = '--style-scroll-progress';
-const INLINE_PROGRESS_MODE = 'inline';
+const SCROLLBAR_HOST_SELECTOR = [
+  '.style-dialog',
+  SOURCE_LAYER_SELECTOR,
+].join(',');
 
-function setClassState(element, className, enabled) {
-  if (element.classList.contains(className) === enabled) {
-    return;
-  }
+const SCROLL_DRAG_THRESHOLD = 10;
+const WHEEL_SCROLL_FACTOR = 0.65;
+const SCROLLBAR_TRACK_GAP = 5;
+const SCROLLBAR_TRACK_Y = 12;
+const SCROLLBAR_TRACK_WIDTH = 18;
+const SCROLLBAR_MIN_THUMB_HEIGHT = 82;
+const SCROLLBAR_OVERSCROLL_COMPRESSION = 0.45;
+const SCROLL_SPRING_STIFFNESS = 520;
+const SCROLL_SPRING_DAMPING = 26;
+const CLICK_SUPPRESSION_MS = 450;
 
-  element.classList.toggle(className, enabled);
-}
-
-export function updateScrollCueState({
-  scrollElement,
-  cueElement = scrollElement,
-  progressFill = null,
-  progressElement = null,
-  inlineCue = true,
-} = {}) {
-  if (!scrollElement || !cueElement) {
-    return null;
-  }
-
-  const maxScroll = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight);
-  const progress =
-    maxScroll > 0 ? Math.min(Math.max(scrollElement.scrollTop / maxScroll, 0), 1) : 1;
-  const percent = Math.round(progress * 100);
-  const percentText = `${percent}%`;
-  const hasScrollOverflow = maxScroll > 1;
-  const hasBottomOverflow = maxScroll > scrollElement.scrollTop + 1;
-
-  if (inlineCue) {
-    if (scrollElement.style.getPropertyValue(SCROLL_PROGRESS_PROPERTY) !== percentText) {
-      scrollElement.style.setProperty(SCROLL_PROGRESS_PROPERTY, percentText);
-    }
-
-    setClassState(cueElement, 'has-scroll-overflow', hasScrollOverflow);
-  }
-
-  if (progressFill && progressFill.style.width !== percentText) {
-    progressFill.style.width = percentText;
-  }
-
-  if (progressElement) {
-    const hidden = !hasScrollOverflow;
-    if (progressElement.hidden !== hidden) {
-      progressElement.hidden = hidden;
-    }
-  }
-
-  setClassState(cueElement, 'has-bottom-overflow', hasBottomOverflow);
-
-  return {
-    maxScroll,
-    percent,
-    hasScrollOverflow,
-    hasBottomOverflow,
-  };
-}
-
-class ManagedScrollCue {
-  constructor(element) {
+export class ManagedStationScrollPane {
+  constructor(element, { window: windowRef = null } = {}) {
     this.element = element;
-    this.inlineProgress =
-      element.dataset.scrollCueProgress === INLINE_PROGRESS_MODE;
-    this.progress = null;
-    this.progressFill = null;
-    this.frame = 0;
-    this.handleScroll = () => this.scheduleUpdate();
+    this.window = windowRef ?? element.ownerDocument?.defaultView ?? globalThis;
+    this.document = element.ownerDocument;
+    this.physics = new StationScrollPhysics({
+      topEdgeSpringStiffness: SCROLL_SPRING_STIFFNESS,
+      topEdgeSpringDamping: SCROLL_SPRING_DAMPING,
+      bottomEdgeSpringStiffness: SCROLL_SPRING_STIFFNESS,
+      bottomEdgeSpringDamping: SCROLL_SPRING_DAMPING,
+      progressiveEdgeResistance: true,
+    });
+    this.maxScrollCss = 0;
+    this.activePointerId = null;
+    this.activePointerType = '';
+    this.draggedPastThreshold = false;
+    this.suppressClickUntilMs = 0;
+    this.managedScrollTop = null;
+    this.animationFrame = 0;
+    this.geometryFrame = 0;
+    this.lastFrameTimeMs = null;
+    this.topSpacer = null;
+    this.topSpacerExtent = 0;
+    this.bottomSpacer = null;
+    this.bottomSpacerExtent = 0;
+    this.overlay = null;
+    this.overlayTrack = null;
+    this.overlayThumb = null;
+    this.overlayHost = null;
+    this.resizeObserver = null;
+    this.handleWheel = (event) => this.onWheel(event);
+    this.handlePointerDown = (event) => this.onPointerDown(event);
+    this.handlePointerMove = (event) => this.onPointerMove(event);
+    this.handlePointerUp = (event) => this.onPointerUp(event);
+    this.handlePointerCancel = (event) => this.onPointerCancel(event);
+    this.handleClick = (event) => this.onClick(event);
+    this.handleScroll = () => this.onNativeScroll();
+    this.handleResize = () => this.scheduleGeometryRefresh();
+    this.handleAnimationFrame = (timestamp) => this.tickAnimation(timestamp);
+    this.handleGeometryFrame = () => {
+      this.geometryFrame = 0;
+      this.refreshGeometry();
+    };
   }
 
   mount() {
     this.element.classList.add('style-scroll-cue');
-    this.createProgress();
+    this.element.addEventListener('wheel', this.handleWheel, { passive: false });
+    this.element.addEventListener('pointerdown', this.handlePointerDown);
+    this.element.addEventListener('click', this.handleClick, true);
     this.element.addEventListener('scroll', this.handleScroll, { passive: true });
-    this.scheduleUpdate();
+    this.document?.addEventListener('pointermove', this.handlePointerMove);
+    this.document?.addEventListener('pointerup', this.handlePointerUp);
+    this.document?.addEventListener('pointercancel', this.handlePointerCancel);
+    this.window?.addEventListener?.('resize', this.handleResize);
+
+    const ResizeObserverCtor = this.window?.ResizeObserver;
+    if (typeof ResizeObserverCtor === 'function') {
+      this.resizeObserver = new ResizeObserverCtor(this.handleResize);
+      this.resizeObserver.observe(this.element);
+    }
+
+    this.mountScrollbar();
+    this.refreshGeometry({ useNativeOffset: true });
   }
 
   destroy() {
-    this.cancelScheduledUpdate();
+    this.cancelAnimationFrame();
+    this.cancelGeometryRefresh();
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
+    this.element.removeEventListener('wheel', this.handleWheel);
+    this.element.removeEventListener('pointerdown', this.handlePointerDown);
+    this.element.removeEventListener('click', this.handleClick, true);
     this.element.removeEventListener('scroll', this.handleScroll);
+    this.document?.removeEventListener('pointermove', this.handlePointerMove);
+    this.document?.removeEventListener('pointerup', this.handlePointerUp);
+    this.document?.removeEventListener('pointercancel', this.handlePointerCancel);
+    this.window?.removeEventListener?.('resize', this.handleResize);
+    this.clearElasticSpacers();
+    this.overlay?.remove();
+    this.overlay = null;
+    this.overlayTrack = null;
+    this.overlayThumb = null;
+    this.overlayHost = null;
+    this.managedScrollTop = null;
+    this.element.classList.remove('style-scroll-cue');
     this.element.classList.remove(
-      'style-scroll-cue',
       'has-scroll-overflow',
-      'has-bottom-overflow',
+      'is-scroll-grabbing',
+      'is-scroll-dragging',
     );
-    this.element.style.removeProperty(SCROLL_PROGRESS_PROPERTY);
-    this.progress?.remove();
-    this.progress = null;
-    this.progressFill = null;
   }
 
-  createProgress() {
-    if (this.inlineProgress || this.progress || !this.element.parentNode) {
+  scheduleGeometryRefresh() {
+    if (this.geometryFrame) {
       return;
     }
 
-    const document = this.element.ownerDocument;
-    const progress = document.createElement('div');
-    progress.className = 'style-progress style-scroll-cue-progress';
-    progress.setAttribute('aria-hidden', 'true');
-    progress.hidden = true;
-
-    const fill = document.createElement('div');
-    fill.className = 'style-progress__fill style-scroll-cue-progress-fill';
-    progress.append(fill);
-
-    this.element.after(progress);
-    this.progress = progress;
-    this.progressFill = fill;
+    this.geometryFrame = this.requestFrame(this.handleGeometryFrame);
   }
 
-  scheduleUpdate() {
-    if (this.frame) {
+  cancelGeometryRefresh() {
+    if (!this.geometryFrame) {
       return;
     }
 
-    if (typeof requestAnimationFrame === 'function') {
-      this.frame = requestAnimationFrame(() => {
-        this.frame = 0;
-        this.update();
-      });
+    this.cancelFrame(this.geometryFrame);
+    this.geometryFrame = 0;
+  }
+
+  refreshGeometry({ useNativeOffset = false } = {}) {
+    const clientHeight = Math.max(0, Number(this.element.clientHeight) || 0);
+    const spacerExtent = this.topSpacerExtent + this.bottomSpacerExtent;
+    const contentScrollHeight = Math.max(
+      clientHeight,
+      (Number(this.element.scrollHeight) || 0) - spacerExtent,
+    );
+    this.maxScrollCss = Math.max(0, contentScrollHeight - clientHeight);
+    this.physics.setMaxOffset(this.toRootRunUnits(this.maxScrollCss));
+
+    if (useNativeOffset && this.maxScrollCss > 0) {
+      this.physics.snapTo(
+        this.toRootRunUnits(
+          Math.max(0, Math.min(this.maxScrollCss, Number(this.element.scrollTop) || 0)),
+        ),
+      );
+    }
+
+    const hasOverflow = clientHeight > 0 && this.maxScrollCss > 0;
+    this.element.classList.toggle('has-scroll-overflow', hasOverflow);
+    if (!hasOverflow) {
+      this.physics.snapTo(0);
+      this.clearElasticSpacers();
+      this.setManagedScrollTop(0);
+    } else {
+      this.applyScroll();
+    }
+    this.updateScrollbar();
+  }
+
+  onWheel(event) {
+    if (this.maxScrollCss <= 0) {
       return;
     }
 
-    this.update();
+    event.preventDefault();
+    event.stopPropagation();
+    const localDelta = this.toLocalWheelDelta(event);
+    this.physics.scrollByElastic(
+      this.toRootRunUnits(localDelta) * WHEEL_SCROLL_FACTOR,
+    );
+    this.applyScroll();
+    this.startAnimation();
   }
 
-  cancelScheduledUpdate() {
-    if (!this.frame || typeof cancelAnimationFrame !== 'function') {
-      this.frame = 0;
+  onPointerDown(event) {
+    if (
+      this.maxScrollCss <= 0 ||
+      event.isPrimary === false ||
+      (Number.isFinite(event.button) && event.button > 0)
+    ) {
       return;
     }
 
-    cancelAnimationFrame(this.frame);
-    this.frame = 0;
+    this.suppressClickUntilMs = 0;
+    this.activePointerId = event.pointerId ?? 1;
+    this.activePointerType = event.pointerType ?? '';
+    this.draggedPastThreshold = false;
+    this.physics.beginDrag(
+      this.toRootRunUnits(this.toLocalPointerY(event.clientY)),
+      this.now(),
+    );
+    this.element.classList.add('is-scroll-grabbing');
   }
 
-  update() {
-    updateScrollCueState({
-      scrollElement: this.element,
-      cueElement: this.element,
-      progressFill: this.progressFill,
-      progressElement: this.progress,
-      inlineCue: this.inlineProgress,
-    });
+  onPointerMove(event) {
+    if (!this.isMatchingPointer(event)) {
+      return;
+    }
+
+    this.physics.dragTo(
+      this.toRootRunUnits(this.toLocalPointerY(event.clientY)),
+      this.now(),
+    );
+    this.draggedPastThreshold =
+      this.physics.dragDistance > SCROLL_DRAG_THRESHOLD;
+    this.element.classList.toggle(
+      'is-scroll-dragging',
+      this.draggedPastThreshold,
+    );
+    if (this.draggedPastThreshold && event.cancelable) {
+      event.preventDefault();
+    }
+    this.applyScroll();
+  }
+
+  onPointerUp(event) {
+    if (!this.isMatchingPointer(event)) {
+      return;
+    }
+
+    const draggedPastThreshold = this.draggedPastThreshold;
+    this.physics.endDrag();
+    this.activePointerId = null;
+    this.activePointerType = '';
+    this.draggedPastThreshold = false;
+    this.element.classList.remove('is-scroll-grabbing', 'is-scroll-dragging');
+    if (draggedPastThreshold) {
+      this.suppressClickUntilMs = this.now() + CLICK_SUPPRESSION_MS;
+    }
+    if (this.prefersReducedMotion()) {
+      this.snapInsideBounds();
+      return;
+    }
+    this.startAnimation();
+  }
+
+  onPointerCancel(event) {
+    if (!this.isMatchingPointer(event)) {
+      return;
+    }
+
+    this.physics.endDrag();
+    this.activePointerId = null;
+    this.activePointerType = '';
+    this.draggedPastThreshold = false;
+    this.element.classList.remove('is-scroll-grabbing', 'is-scroll-dragging');
+    this.snapInsideBounds();
+  }
+
+  onClick(event) {
+    if (this.now() > this.suppressClickUntilMs) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation?.();
+    this.suppressClickUntilMs = 0;
+  }
+
+  onNativeScroll() {
+    if (this.topSpacer || this.bottomSpacer || this.physics.isDragging) {
+      return;
+    }
+
+    const nativeOffset = Math.max(
+      0,
+      Math.min(this.maxScrollCss, Number(this.element.scrollTop) || 0),
+    );
+    if (
+      this.managedScrollTop !== null &&
+      Math.abs(nativeOffset - this.managedScrollTop) <= 0.5
+    ) {
+      this.updateScrollbar();
+      return;
+    }
+
+    this.managedScrollTop = null;
+    this.physics.snapTo(this.toRootRunUnits(nativeOffset));
+    this.updateScrollbar();
+  }
+
+  tickAnimation(timestamp) {
+    this.animationFrame = 0;
+    const deltaSeconds =
+      this.lastFrameTimeMs === null
+        ? 1 / 60
+        : Math.max(0, (timestamp - this.lastFrameTimeMs) / 1000);
+    this.lastFrameTimeMs = timestamp;
+    const moved = this.physics.update(deltaSeconds);
+    if (moved) {
+      this.applyScroll();
+    }
+
+    if (moved || this.isOutsideBounds()) {
+      this.animationFrame = this.requestFrame(this.handleAnimationFrame);
+      return;
+    }
+
+    this.lastFrameTimeMs = null;
+    this.clearElasticSpacersIfSettled();
+    this.updateScrollbar();
+  }
+
+  startAnimation() {
+    if (this.animationFrame || this.physics.isDragging) {
+      return;
+    }
+
+    this.lastFrameTimeMs = null;
+    this.animationFrame = this.requestFrame(this.handleAnimationFrame);
+  }
+
+  cancelAnimationFrame() {
+    if (!this.animationFrame) {
+      return;
+    }
+
+    this.cancelFrame(this.animationFrame);
+    this.animationFrame = 0;
+    this.lastFrameTimeMs = null;
+  }
+
+  applyScroll() {
+    const rawOffset = this.toIdleWizardUnits(this.physics.offset);
+    const clampedOffset = Math.max(0, Math.min(this.maxScrollCss, rawOffset));
+
+    if (rawOffset < 0) {
+      this.removeBottomSpacer();
+      this.ensureTopSpacer();
+      this.setManagedScrollTop(Math.max(
+        0,
+        this.topSpacerExtent + rawOffset,
+      ));
+    } else if (rawOffset > this.maxScrollCss) {
+      this.removeTopSpacer();
+      this.ensureBottomSpacer();
+      this.setManagedScrollTop(rawOffset);
+    } else {
+      this.clearElasticSpacers();
+      this.setManagedScrollTop(clampedOffset);
+    }
+
+    this.updateScrollbar();
+  }
+
+  snapInsideBounds() {
+    this.physics.snapTo(
+      Math.max(
+        0,
+        Math.min(
+          this.toRootRunUnits(this.maxScrollCss),
+          this.physics.offset,
+        ),
+      ),
+    );
+    this.cancelAnimationFrame();
+    this.applyScroll();
+  }
+
+  ensureTopSpacer() {
+    if (this.topSpacer?.isConnected) {
+      return;
+    }
+
+    const beforeHeight = Number(this.element.scrollHeight) || 0;
+    this.topSpacer = this.createSpacer(
+      'top',
+      this.toIdleWizardUnits(ROOT_RUN_STATION_TOP_MAX_OVERSCROLL),
+    );
+    this.element.prepend(this.topSpacer);
+    const afterHeight = Number(this.element.scrollHeight) || 0;
+    this.topSpacerExtent = Math.max(
+      Number.parseFloat(this.topSpacer.style.height) || 0,
+      afterHeight - beforeHeight,
+    );
+  }
+
+  ensureBottomSpacer() {
+    if (this.bottomSpacer?.isConnected) {
+      return;
+    }
+
+    const beforeHeight = Number(this.element.scrollHeight) || 0;
+    this.bottomSpacer = this.createSpacer(
+      'bottom',
+      this.toIdleWizardUnits(ROOT_RUN_STATION_BOTTOM_MAX_OVERSCROLL),
+    );
+    this.element.append(this.bottomSpacer);
+    const afterHeight = Number(this.element.scrollHeight) || 0;
+    this.bottomSpacerExtent = Math.max(
+      Number.parseFloat(this.bottomSpacer.style.height) || 0,
+      afterHeight - beforeHeight,
+    );
+  }
+
+  createSpacer(edge, height) {
+    const spacer = this.document.createElement('div');
+    spacer.className = 'style-station-scrollbar__elastic-spacer';
+    spacer.dataset.scrollElasticEdge = edge;
+    spacer.setAttribute('aria-hidden', 'true');
+    spacer.style.height = `${height}px`;
+    spacer.style.flexBasis = `${height}px`;
+    return spacer;
+  }
+
+  removeTopSpacer() {
+    this.topSpacer?.remove();
+    this.topSpacer = null;
+    this.topSpacerExtent = 0;
+  }
+
+  removeBottomSpacer() {
+    this.bottomSpacer?.remove();
+    this.bottomSpacer = null;
+    this.bottomSpacerExtent = 0;
+  }
+
+  clearElasticSpacers() {
+    this.removeTopSpacer();
+    this.removeBottomSpacer();
+  }
+
+  clearElasticSpacersIfSettled() {
+    if (!this.isOutsideBounds()) {
+      this.clearElasticSpacers();
+      this.setManagedScrollTop(Math.max(
+        0,
+        Math.min(this.maxScrollCss, this.toIdleWizardUnits(this.physics.offset)),
+      ));
+    }
+  }
+
+  setManagedScrollTop(offset) {
+    const nextOffset = Math.max(0, Number(offset) || 0);
+    this.managedScrollTop = nextOffset;
+    this.element.scrollTop = nextOffset;
+    this.managedScrollTop = Math.max(
+      0,
+      Number(this.element.scrollTop) || 0,
+    );
+  }
+
+  mountScrollbar() {
+    const overlay = this.document.createElement('div');
+    const track = this.document.createElement('div');
+    const thumb = this.document.createElement('div');
+    overlay.className = 'style-station-scrollbar';
+    track.className = 'style-station-scrollbar__track';
+    thumb.className = 'style-station-scrollbar__thumb';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.hidden = true;
+    overlay.append(track, thumb);
+
+    this.overlayHost =
+      this.element.closest(SCROLLBAR_HOST_SELECTOR) ?? this.document.body;
+    if (this.overlayHost === this.document.body) {
+      overlay.classList.add('style-station-scrollbar--viewport');
+    }
+    this.overlayHost.append(overlay);
+    this.overlay = overlay;
+    this.overlayTrack = track;
+    this.overlayThumb = thumb;
+  }
+
+  updateScrollbar() {
+    if (!this.overlay || !this.overlayThumb) {
+      return;
+    }
+
+    const clientHeight = Math.max(0, Number(this.element.clientHeight) || 0);
+    const elementRect = this.element.getBoundingClientRect?.();
+    const visible =
+      this.maxScrollCss > 0 &&
+      clientHeight > 0 &&
+      elementRect &&
+      elementRect.width > 0 &&
+      elementRect.height > 0 &&
+      this.element.getClientRects?.().length !== 0;
+    this.overlay.hidden = !visible;
+    if (!visible) {
+      return;
+    }
+
+    this.positionScrollbar(elementRect);
+    const trackY = this.toIdleWizardUnits(SCROLLBAR_TRACK_Y);
+    const trackWidth = this.toIdleWizardUnits(SCROLLBAR_TRACK_WIDTH);
+    const trackHeight = clientHeight - trackY * 2;
+    const contentHeight = clientHeight + this.maxScrollCss;
+    const baseThumbHeight = Math.max(
+      this.toIdleWizardUnits(SCROLLBAR_MIN_THUMB_HEIGHT),
+      (trackHeight * clientHeight) / contentHeight,
+    );
+    const rawOffset = this.toIdleWizardUnits(this.physics.offset);
+    const overscrollTop = Math.max(0, -rawOffset);
+    const overscrollBottom = Math.max(0, rawOffset - this.maxScrollCss);
+    const compression = Math.min(
+      baseThumbHeight - trackWidth * 2,
+      Math.max(overscrollTop, overscrollBottom) *
+        SCROLLBAR_OVERSCROLL_COMPRESSION,
+    );
+    const thumbHeight = baseThumbHeight - compression;
+    const thumbTravel = trackHeight - baseThumbHeight;
+    const clampedOffset = Math.max(
+      0,
+      Math.min(this.maxScrollCss, rawOffset),
+    );
+    let thumbY =
+      trackY + (thumbTravel * clampedOffset) / this.maxScrollCss;
+    if (overscrollBottom > 0) {
+      thumbY = trackY + trackHeight - thumbHeight;
+    }
+    this.overlayThumb.style.top = `${thumbY}px`;
+    this.overlayThumb.style.height = `${thumbHeight}px`;
+  }
+
+  positionScrollbar(elementRect) {
+    const hostRect = this.overlayHost?.getBoundingClientRect?.();
+    const hostWidth =
+      Number(this.overlayHost?.offsetWidth) ||
+      Number(this.overlayHost?.clientWidth) ||
+      0;
+    const hostHeight =
+      Number(this.overlayHost?.offsetHeight) ||
+      Number(this.overlayHost?.clientHeight) ||
+      0;
+    const trackGap = this.toIdleWizardUnits(SCROLLBAR_TRACK_GAP);
+
+    if (
+      this.overlayHost !== this.document.body &&
+      hostRect?.width > 0 &&
+      hostRect?.height > 0 &&
+      hostWidth > 0 &&
+      hostHeight > 0
+    ) {
+      const scaleX = hostRect.width / hostWidth;
+      const scaleY = hostRect.height / hostHeight;
+      const hostOriginX =
+        hostRect.left + (Number(this.overlayHost?.clientLeft) || 0) * scaleX;
+      const hostOriginY =
+        hostRect.top + (Number(this.overlayHost?.clientTop) || 0) * scaleY;
+      this.overlay.classList.remove('style-station-scrollbar--viewport');
+      this.overlay.style.left = `${
+        (elementRect.right - hostOriginX) / scaleX + trackGap
+      }px`;
+      this.overlay.style.top = `${(elementRect.top - hostOriginY) / scaleY}px`;
+      this.overlay.style.height = `${elementRect.height / scaleY}px`;
+      this.overlay.style.transform = '';
+      return;
+    }
+
+    const elementScale = this.getVisualScale();
+    this.overlay.classList.add('style-station-scrollbar--viewport');
+    this.overlay.style.left = `${elementRect.right + trackGap * elementScale}px`;
+    this.overlay.style.top = `${elementRect.top}px`;
+    this.overlay.style.height = `${elementRect.height / elementScale}px`;
+    this.overlay.style.transform = `scale(${elementScale})`;
+  }
+
+  toLocalWheelDelta(event) {
+    let delta = Number(event.deltaY) || 0;
+    if (event.deltaMode === 1) {
+      delta *= 16;
+    } else if (event.deltaMode === 2) {
+      delta *= Math.max(1, Number(this.element.clientHeight) || 1);
+    }
+    return delta / this.getVisualScale();
+  }
+
+  toLocalPointerY(clientY) {
+    const rect = this.element.getBoundingClientRect();
+    return (clientY - rect.top) / this.getVisualScale();
+  }
+
+  getVisualScale() {
+    const rect = this.element.getBoundingClientRect?.();
+    const clientHeight = Number(this.element.clientHeight) || 0;
+    if (rect?.height > 0 && clientHeight > 0) {
+      return rect.height / clientHeight;
+    }
+    return 1;
+  }
+
+  isMatchingPointer(event) {
+    return (
+      this.activePointerId !== null &&
+      (event.pointerId ?? 1) === this.activePointerId
+    );
+  }
+
+  isOutsideBounds() {
+    return (
+      this.physics.offset < 0 ||
+      this.physics.offset > this.toRootRunUnits(this.maxScrollCss)
+    );
+  }
+
+  prefersReducedMotion() {
+    return Boolean(
+      this.window?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,
+    );
+  }
+
+  now() {
+    return this.window?.performance?.now?.() ?? Date.now();
+  }
+
+  requestFrame(callback) {
+    const request =
+      this.window?.requestAnimationFrame ?? globalThis.requestAnimationFrame;
+    if (typeof request === 'function') {
+      return request.call(this.window, callback);
+    }
+    return this.window?.setTimeout?.(() => callback(this.now()), 16) ?? 0;
+  }
+
+  cancelFrame(frame) {
+    const cancel =
+      this.window?.cancelAnimationFrame ?? globalThis.cancelAnimationFrame;
+    if (typeof cancel === 'function') {
+      cancel.call(this.window, frame);
+      return;
+    }
+    this.window?.clearTimeout?.(frame);
+  }
+
+  toRootRunUnits(value) {
+    return value / ROOT_RUN_TO_IDLE_WIZARD_SCROLL_SCALE;
+  }
+
+  toIdleWizardUnits(value) {
+    return value * ROOT_RUN_TO_IDLE_WIZARD_SCROLL_SCALE;
   }
 }
 
@@ -185,7 +664,6 @@ export class ScrollCueManager {
     this.cues = new Map();
     this.scanFrame = 0;
     this.handleMutation = (mutations) => this.handleMutations(mutations);
-    this.handleResize = () => this.scheduleUpdates();
   }
 
   mount(root) {
@@ -202,13 +680,12 @@ export class ScrollCueManager {
       this.observer = new MutationObserverCtor(this.handleMutation);
       this.observer.observe(root, {
         attributes: true,
-        attributeFilter: ['class', 'hidden', 'style', 'aria-hidden'],
+        attributeFilter: ['class'],
         childList: true,
         subtree: true,
       });
     }
 
-    this.window?.addEventListener?.('resize', this.handleResize);
     this.scan();
   }
 
@@ -216,7 +693,6 @@ export class ScrollCueManager {
     this.cancelScheduledScan();
     this.observer?.disconnect();
     this.observer = null;
-    this.window?.removeEventListener?.('resize', this.handleResize);
     this.window = null;
 
     for (const cue of this.cues.values()) {
@@ -255,35 +731,28 @@ export class ScrollCueManager {
 
   handleMutations(mutations = []) {
     let shouldScan = false;
-    let shouldUpdate = false;
 
     for (const mutation of mutations) {
-      if (this.mutationMayChangeCueRegistration(mutation)) {
-        shouldScan = true;
-        break;
+      if (
+        mutation.type === 'childList' &&
+        !this.mutationOnlyChangesElasticSpacers(mutation)
+      ) {
+        this.findContainingCue(mutation.target)?.scheduleGeometryRefresh();
       }
 
-      if (this.mutationMayChangeCueLayout(mutation)) {
-        shouldUpdate = true;
+      if (this.mutationMayChangeCueRegistration(mutation)) {
+        shouldScan = true;
       }
     }
 
     if (shouldScan) {
       this.scheduleScan();
-      return;
-    }
-
-    if (shouldUpdate) {
-      this.scheduleUpdates();
     }
   }
 
   mutationMayChangeCueRegistration(mutation) {
     if (mutation.type === 'attributes') {
-      return (
-        mutation.attributeName === 'class' &&
-        this.elementMatchesOrContainsCue(mutation.target)
-      );
+      return mutation.attributeName === 'class';
     }
 
     if (mutation.type !== 'childList') {
@@ -295,21 +764,28 @@ export class ScrollCueManager {
     );
   }
 
-  mutationMayChangeCueLayout(mutation) {
-    if (mutation.type === 'attributes') {
-      return this.elementRelatesToManagedCue(mutation.target);
-    }
-
-    if (mutation.type !== 'childList') {
-      return false;
-    }
-
+  mutationOnlyChangesElasticSpacers(mutation) {
+    const changedNodes = [...mutation.addedNodes, ...mutation.removedNodes];
     return (
-      this.elementRelatesToManagedCue(mutation.target) ||
-      [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
-        this.elementRelatesToManagedCue(node),
+      changedNodes.length > 0 &&
+      changedNodes.every((node) =>
+        node?.classList?.contains('style-station-scrollbar__elastic-spacer'),
       )
     );
+  }
+
+  findContainingCue(node) {
+    let element = this.isElement(node) ? node : node?.parentElement;
+
+    while (element && element !== this.root) {
+      const cue = this.cues.get(element);
+      if (cue) {
+        return cue;
+      }
+      element = element.parentElement;
+    }
+
+    return this.cues.get(this.root) ?? null;
   }
 
   elementMatchesOrContainsCue(node) {
@@ -318,20 +794,6 @@ export class ScrollCueManager {
     }
 
     return node.matches?.(this.selector) || Boolean(node.querySelector?.(this.selector));
-  }
-
-  elementRelatesToManagedCue(node) {
-    if (!this.isElement(node)) {
-      return false;
-    }
-
-    for (const element of this.cues.keys()) {
-      if (element === node || element.contains(node) || node.contains(element)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   isElement(node) {
@@ -348,8 +810,6 @@ export class ScrollCueManager {
     for (const element of this.root.querySelectorAll(this.selector)) {
       this.ensureCue(element);
     }
-
-    this.scheduleUpdates();
   }
 
   ensureCue(element) {
@@ -357,25 +817,21 @@ export class ScrollCueManager {
       return;
     }
 
-    const cue = new ManagedScrollCue(element);
+    const cue = new ManagedStationScrollPane(element, {
+      window: this.window,
+    });
     this.cues.set(element, cue);
     cue.mount();
   }
 
   removeDetachedCues() {
     for (const [element, cue] of this.cues) {
-      if (this.root.contains(element)) {
+      if (this.root.contains(element) && element.matches(this.selector)) {
         continue;
       }
 
       cue.destroy();
       this.cues.delete(element);
-    }
-  }
-
-  scheduleUpdates() {
-    for (const cue of this.cues.values()) {
-      cue.scheduleUpdate();
     }
   }
 }

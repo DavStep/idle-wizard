@@ -13,6 +13,11 @@ import {
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  classifyExistingPreview,
+  getPreviewRunPlan,
+  waitForPreviewRelease,
+} from './preview-level20-state.js';
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outputDir = join(rootDir, 'tmp', 'level20-dist');
@@ -29,22 +34,31 @@ const viteCommand = join(
   '.bin',
   process.platform === 'win32' ? 'vite.cmd' : 'vite',
 );
+const url = `http://${host}:${frontendPort}/?devLevel=20`;
 
 if (process.argv.includes('--stop')) {
-  stopFrontend();
-  process.exit(0);
+  const stopped = await stopFrontend();
+  process.exit(stopped ? 0 : 1);
 }
 
-await ensureBackend();
+const existingPreviewState = await getExistingPreviewState();
+const previewRunPlan = getPreviewRunPlan(existingPreviewState);
 
-if (await isPortListening(frontendPort)) {
+if (!previewRunPlan.rebuildAssets) {
   console.error(`Port ${frontendPort} is already in use. Run npm run preview:level20:stop first.`);
   process.exit(1);
 }
 
+await ensureBackend();
 buildIsolatedDevAssets();
 
-const url = `http://${host}:${frontendPort}/?devLevel=20`;
+if (!previewRunPlan.startFrontend) {
+  console.log(`level 20 preview rebuilt: ${url}`);
+  console.log(`isolated assets: ${outputDir}`);
+  console.log(`preview log: ${frontendLogPath}`);
+  process.exit(0);
+}
+
 console.log(`level 20 preview: ${url}`);
 console.log(`isolated assets: ${outputDir}`);
 
@@ -178,28 +192,76 @@ function delay(ms) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, ms));
 }
 
-function stopFrontend() {
-  let pid;
+async function getExistingPreviewState() {
+  const portListening = await isPortListening(frontendPort);
+  const pid = readFrontendPid();
+  return classifyExistingPreview({
+    portListening,
+    recordedProcessRunning: isProcessRunning(pid),
+  });
+}
 
+function readFrontendPid() {
   try {
-    pid = Number(readFileSync(frontendPidPath, 'utf8').trim());
+    const pid = Number(readFileSync(frontendPidPath, 'utf8').trim());
+    return Number.isInteger(pid) && pid > 0 ? pid : null;
   } catch {
-    console.log('level 20 preview is not running');
-    return;
+    return null;
+  }
+}
+
+function isProcessRunning(pid) {
+  if (pid === null) {
+    return false;
   }
 
-  if (!Number.isInteger(pid) || pid < 1) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === 'EPERM';
+  }
+}
+
+async function stopFrontend() {
+  const pid = readFrontendPid();
+
+  if (pid === null) {
     rmSync(frontendPidPath, { force: true });
+    if (await isPortListening(frontendPort)) {
+      console.error(`Port ${frontendPort} is in use by an unrecorded process.`);
+      return false;
+    }
+
     console.log('level 20 preview is not running');
-    return;
+    return true;
   }
 
   try {
     process.kill(pid, 'SIGTERM');
-    console.log(`level 20 preview stopped: pid=${pid}`);
   } catch {
+    rmSync(frontendPidPath, { force: true });
+    if (await isPortListening(frontendPort)) {
+      console.error(`Port ${frontendPort} is still in use after the recorded preview exited.`);
+      return false;
+    }
+
     console.log('level 20 preview is not running');
+    return true;
+  }
+
+  const released = await waitForPreviewRelease({
+    isListening: () => isPortListening(frontendPort),
+    wait: () => delay(100),
+    maxAttempts: 50,
+  });
+
+  if (!released) {
+    console.error(`Preview process ${pid} did not release port ${frontendPort}.`);
+    return false;
   }
 
   rmSync(frontendPidPath, { force: true });
+  console.log(`level 20 preview stopped: pid=${pid}`);
+  return true;
 }

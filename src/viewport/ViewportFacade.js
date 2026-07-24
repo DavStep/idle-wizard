@@ -4,7 +4,7 @@ import { gameViewport } from './gameViewport.js';
 
 export class ViewportFacade {
   static explain =
-    'Treats the game as a tall 1080x2170 board, then fits that board onto any phone screen.';
+    'Uses Root Run’s 390x844 game surface, then contain-fits that surface to each device.';
 
   constructor({ viewport = gameViewport } = {}) {
     this.viewport = viewport;

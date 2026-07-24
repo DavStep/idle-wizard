@@ -1,0 +1,178 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="midnight"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+  data-style-color="resources"
+  data-style-progress="regular"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard research tabs and cost buttons recipe</title>
+    <link rel="stylesheet" href="/src/styles/base.css">
+    <style>
+      body {
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+
+      .recipe-viewport {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .game-stage {
+        --design-width: 390;
+        --design-height: 844;
+        --source-ui-scale: 1;
+        --style-ui-scale: 1;
+        --app-stage-width: 390px;
+        --app-stage-height: 844px;
+        --app-source-ui-screen-width: 390px;
+
+        width: 390px;
+        height: 844px;
+        max-width: none;
+        max-height: none;
+        transform-origin: top left;
+      }
+
+      .recipe-status {
+        position: absolute;
+        right: 16px;
+        bottom: 16px;
+        left: 16px;
+        z-index: 4;
+        font-size: 13px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="recipe-viewport">
+      <main class="game-stage" aria-label="Research cost button visual recipe">
+        <article class="research-page" aria-label="Research room">
+          <div class="research-page__wall" aria-hidden="true"></div>
+          <div class="research-page__floor" aria-hidden="true"></div>
+          <div class="research-page__ui-layer"></div>
+        </article>
+        <div class="recipe-status" role="status" aria-live="polite">ready</div>
+      </main>
+    </div>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { PressFeedbackManager } from '/src/pages/managers/PressFeedbackManager.js';
+      import { ResearchBoxListManager } from '/src/pages/research/managers/ResearchBoxListManager.js';
+      import { ResearchCardSkinManager } from '/src/pages/research/managers/ResearchCardSkinManager.js';
+
+      const recipeViewport = document.querySelector('.recipe-viewport');
+      const gameStage = document.querySelector('.game-stage');
+      const fitRecipe = () => {
+        const scale = Math.min(window.innerWidth / 390, window.innerHeight / 844);
+        recipeViewport.style.width = `${390 * scale}px`;
+        recipeViewport.style.height = `${844 * scale}px`;
+        gameStage.style.transform = `scale(${scale})`;
+      };
+      fitRecipe();
+      window.addEventListener('resize', fitRecipe);
+
+      const costButtonsBox = {
+        id: 'researchCost',
+        label: 'cost button states',
+        researches: [
+          {
+            id: 'recipe:coin',
+            label: 'affordable research',
+            value: '25 coin',
+            completed: false,
+            canResearch: true,
+            description: 'reduces future research time by 5%.',
+            requiredResearchIds: [],
+          },
+          {
+            id: 'recipe:free',
+            label: 'free research',
+            value: 'free',
+            completed: false,
+            canResearch: true,
+            description: 'unlocks a first study without a currency cost.',
+            requiredResearchIds: [],
+          },
+          {
+            id: 'recipe:crystal',
+            label: 'unaffordable level up',
+            value: '2 crystal',
+            actionType: 'levelUp',
+            completed: false,
+            canResearch: false,
+            description: 'levels a cauldron to bottle two potions at once.',
+            requiredResearchIds: [],
+          },
+          {
+            id: 'recipe:complete',
+            label: 'completed research',
+            value: 'researched',
+            completed: true,
+            canResearch: false,
+            description: 'this study is complete and its effect is active.',
+            requiredResearchIds: [],
+          },
+          {
+            id: 'recipe:locked',
+            label: 'locked research',
+            value: 'locked',
+            completed: false,
+            canResearch: false,
+            locked: true,
+            description: 'complete the previous study to unlock this one.',
+            requiredPlayerLevel: 10,
+            requiredResearchIds: [],
+          },
+        ],
+      };
+      const snapshot = {
+        playerLevel: { currentLevel: 8 },
+        prestige: { completedLevels: [] },
+        research: {
+          tabs: [
+            {
+              id: 'regular',
+              label: 'regular research',
+              boxes: [costButtonsBox],
+            },
+            { id: 'automation', label: 'automation', boxes: [] },
+            { id: 'advanced', label: 'advanced research', boxes: [] },
+            { id: 'crystal', label: 'crystal research', boxes: [] },
+          ],
+          completedResearchIds: [],
+        },
+      };
+      const status = document.querySelector('.recipe-status');
+      const gameplayFacade = {
+        getSnapshot: () => snapshot,
+        subscribe: (callback) => {
+          callback(snapshot);
+          return () => {};
+        },
+        buyResearch: (researchId) => {
+          status.textContent = `pressed ${researchId}`;
+          return { ok: true, researchId };
+        },
+      };
+      const manager = new ResearchBoxListManager({ gameplayFacade });
+      const uiLayer = document.querySelector('.research-page__ui-layer');
+      manager.mount(uiLayer);
+      const pressFeedbackManager = new PressFeedbackManager();
+      pressFeedbackManager.mount(gameStage);
+      window.__pressFeedbackManager = pressFeedbackManager;
+      const skinManager = new ResearchCardSkinManager();
+      skinManager.mount(uiLayer);
+      await skinManager.whenReady();
+      window.__researchCardSkinManager = skinManager;
+    </script>
+  </body>
+</html>

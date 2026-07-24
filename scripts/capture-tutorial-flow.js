@@ -13,7 +13,7 @@ import { TUTORIAL_STEP_IDS } from '../src/pages/tutorial/managers/TutorialStepMa
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const APP_URL = 'http://127.0.0.1:55173/';
-const VIEWPORT = { width: 1080, height: 2170 };
+const VIEWPORT = { width: 390, height: 844 };
 const OUT_DIR = path.join(ROOT, 'docs/tutorial-flow/screenshots');
 const CONTACT_SHEET_PATH = path.join(ROOT, 'docs/tutorial-flow/contact-sheet.png');
 const CONTACT_SHEET_URL = 'http://127.0.0.1:55173/docs/tutorial-flow/contact-sheet.html';
@@ -319,7 +319,7 @@ async function captureFirstRunFlow(page) {
     `window.tutorialCapture.getState().freshStartVisible === true`,
     { timeoutMs: 20_000 },
   );
-  await page.captureScreenshot(path.join(FIRST_RUN_OUT_DIR, 'account-choice-1080x2170.png'));
+  await page.captureScreenshot(path.join(FIRST_RUN_OUT_DIR, 'account-choice-390x844.png'));
 
   await page.setViewport(1800, 1200);
   await sleep(250);
@@ -333,7 +333,7 @@ async function captureFirstRunFlow(page) {
   );
   await page.waitForImages();
   await sleep(2_500);
-  await page.captureScreenshot(path.join(FIRST_RUN_OUT_DIR, 'intro-castle-1080x2170.png'));
+  await page.captureScreenshot(path.join(FIRST_RUN_OUT_DIR, 'intro-castle-390x844.png'));
 
   await page.setViewport(1800, 1200);
   await sleep(250);

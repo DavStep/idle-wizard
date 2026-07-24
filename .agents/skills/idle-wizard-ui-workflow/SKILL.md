@@ -38,18 +38,43 @@ Read these before project decisions:
 
 When the request includes a screenshot, mockup, or explicit visual-parity target, also read and follow `docs/visual-reference-qa.md`.
 
-Before making new UI, inspect existing similar rows, boxes, tabs, dialogs, labels, progress rails, overlays, or room chrome and reuse the closest pattern.
+Before making new UI, inspect the reusable widget library in `docs/ui-patterns.md` plus existing similar rows, boxes, tabs, dialogs, labels, progress rails, overlays, or room chrome and reuse the closest pattern.
+
+## Widget Admission Gate
+
+Run this gate before editing product UI code:
+
+1. Inventory every visible or interactive building block needed by the request.
+2. Classify each as:
+   - `reuse`: use a documented widget without changing its contract;
+   - `extension`: add feature data, copy, or layout composition while preserving the widget's visuals, states, behavior, and accessibility contract;
+   - `new widget`: add a primitive, compound component, scroll behavior, box/dialog type, control pattern, or meaningfully different visual/interaction variant.
+3. If every item is `reuse` or `extension`, continue and record `New widgets: none`.
+4. If any item is a `new widget`, pause before product code, generated asset, or runtime binding changes. Ask the user to approve one batched proposal containing:
+   - exact widget name;
+   - purpose and likely consumers;
+   - closest library widget and why it cannot cover the need;
+   - required default, selected/active, disabled, loading, error, empty, overflow, and reduced-motion states when applicable;
+   - intended reusable API or styling contract;
+   - a labeled visual preview at the authored `390x844` surface, with side-by-side variants when there is more than one option.
+5. Deliver the preview as a visible image or rendered artifact, not only a prose description or ASCII wireframe. Include a native-pixel component crop when the full surface is too small to judge. A labeled contact sheet may cover the whole batch.
+6. Build proposal previews as disposable design artifacts outside product runtime code. Do not count a temporary preview as implementation.
+7. Wait for explicit approval of each named widget. Approval of the overall screen does not approve unlisted widget dependencies; if implementation discovers another new widget, pause and amend the proposal.
+8. Implement only the widgets the user approves. Reuse approved names and contracts, add each widget to the library in `docs/ui-patterns.md`, and replace proposal-only evidence with a real-app screenshot during QA.
+
+Batch all proposed widgets for the current task into one approval request. Do not drip-feed predictable dependencies in separate requests.
 
 ## Workflow
 
 1. Classify the surface: room view, ordinary box, row/list, bottom tab, popup/dialog, tutorial, settings/personalization, top chrome, animation, or haptic feedback.
-2. Identify the nearest existing pattern in code and docs. Do not invent a near-duplicate component when an existing pattern can be extended.
-3. For reference-driven work, write the visual contract first: target state/viewport/crop plus optical centers, baselines, edge anchors, proportions, and component-specific geometry that must match.
-4. Run the `idle-wizard-ui-consistency` gates before editing. Decide which parts must stay monochrome/default and which are allowed exceptions.
-5. Implement narrowly inside the owning facade/manager/component. Keep gameplay, economy, progression, and transport rules out of rendering code.
-6. Open a deterministic real-app state. Add a checked-in dev UI recipe or focused harness when the surface cannot be reopened directly; do not use temporary source branches as final evidence.
-7. Verify with `npm run check:ui`, focused tests, full-view screenshots, a native-pixel close crop, and `npm run ui:compare` when a visual reference exists. Iterate until every contract item has a parity verdict.
-8. Report the most important consistency decision, files changed, validation, comparison evidence, and any known drift left for a later pass.
+2. Run the Widget Admission Gate and receive approval for every proposed new widget before implementation.
+3. Identify the nearest existing pattern in code and docs. Do not invent a near-duplicate component when an existing pattern can be extended.
+4. For reference-driven work, write the visual contract first: target state/viewport/crop plus optical centers, baselines, edge anchors, proportions, and component-specific geometry that must match.
+5. Run the `idle-wizard-ui-consistency` gates before editing. Decide which parts must stay monochrome/default and which are allowed exceptions.
+6. Implement narrowly inside the owning facade/manager/component. Keep gameplay, economy, progression, and transport rules out of rendering code.
+7. Open a deterministic real-app state. Add a checked-in dev UI recipe or focused harness when the surface cannot be reopened directly; do not use temporary source branches as final evidence.
+8. Verify with `npm run check:ui`, focused tests, full-view screenshots, a native-pixel close crop, and `npm run ui:compare` when a visual reference exists. Iterate until every contract item has a parity verdict.
+9. Report the most important consistency decision, `New widgets: none` or the approved widgets introduced, files changed, validation, comparison evidence, and any known drift left for a later pass.
 
 ## Hard Stops
 
@@ -60,6 +85,7 @@ Before making new UI, inspect existing similar rows, boxes, tabs, dialogs, label
 - Do not claim browser/manual QA unless the shared Vite server and required backend are actually up and the checked viewport is named.
 - Do not claim a reference match from a full-screen thumbnail or green tests alone. Missing native-pixel crop/overlay evidence is `INCONCLUSIVE`; any named anchor mismatch is `FIX REQUIRED`.
 - Do not use temporary source edits, DOM mutation, or undocumented local state as the final visual-QA setup.
+- Do not implement or integrate an unapproved new widget. A mockup used only to request approval is not permission to add it to product code.
 
 ## Verification Menu
 
@@ -69,5 +95,5 @@ Use the smallest set that matches risk:
 - Full app safety: `npm run check`
 - Focused tests: `npm test -- <path-or-pattern>`
 - Runtime status: `npm run dev:status` and `lsof -nP -sTCP:LISTEN -iTCP:3000`
-- Screenshot QA: `ecc-browser-qa` with authored `1080x2170` plus fitted desktop viewport for changed visible UI
+- Screenshot QA: `ecc-browser-qa` with authored `390x844` plus fitted desktop viewport for changed visible UI
 - Reference fidelity: native-pixel close crop plus `npm run ui:compare -- --reference ... --actual ...`

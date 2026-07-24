@@ -1,0 +1,3082 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 12px;
+        font: 12px Inter, system-ui, sans-serif;
+        color: #1f2328;
+      }
+
+      label {
+        display: block;
+        margin: 8px 0 4px;
+        font-weight: 600;
+      }
+
+      input,
+      button,
+      textarea {
+        box-sizing: border-box;
+        width: 100%;
+        font: inherit;
+      }
+
+      input {
+        height: 30px;
+        border: 1px solid #d0d7de;
+        border-radius: 6px;
+        padding: 0 8px;
+      }
+
+      input[type="checkbox"] {
+        width: auto;
+        height: auto;
+        margin: 0;
+      }
+
+      button {
+        height: 32px;
+        border: 0;
+        border-radius: 6px;
+        background: #0969da;
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      textarea {
+        height: 180px;
+        margin-top: 10px;
+        border: 1px solid #d0d7de;
+        border-radius: 6px;
+        padding: 8px;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 11px;
+      }
+
+      .status {
+        min-height: 18px;
+        margin-top: 8px;
+        color: #57606a;
+      }
+
+      .panel {
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #d0d7de;
+        border-radius: 8px;
+      }
+
+      .subtle {
+        color: #57606a;
+      }
+
+      .error {
+        color: #b42318;
+      }
+
+      .ok {
+        color: #1f883d;
+      }
+
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+
+      .row button {
+        margin-top: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 74px 1fr;
+        gap: 6px 8px;
+        align-items: center;
+        margin-top: 8px;
+      }
+
+      .inline-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        font-weight: 600;
+      }
+
+      #previewWrap {
+        margin-top: 8px;
+        border: 1px solid #d0d7de;
+        border-radius: 6px;
+        padding: 8px;
+        background: #f6f8fa;
+      }
+
+      #slicePreview {
+        display: block;
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 480px;
+        height: auto;
+        aspect-ratio: 12 / 7;
+        border: 1px solid #d0d7de;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="selectionInfo" class="subtle">Select one layer.</div>
+
+    <label for="assetBasePath">Asset base path</label>
+    <input id="assetBasePath" value="assets/ui" />
+
+    <label for="assetScale">Asset scale</label>
+    <input id="assetScale" value="1" type="number" min="0.25" max="4" step="0.25" />
+
+    <label class="inline-check" for="optimizeNinepatchAssets">
+      <input id="optimizeNinepatchAssets" type="checkbox" checked />
+      Optimize ninepatch assets
+    </label>
+
+    <label for="stretchSamplePixels">Stretch sample pixels</label>
+    <input id="stretchSamplePixels" value="1" type="number" min="1" max="256" step="1" />
+
+    <div id="ninePanel" class="panel" style="display:none;">
+      <div style="font-weight:700;">Ninepatch Settings</div>
+      <div id="nineMeta" class="subtle" style="margin-top:4px;"></div>
+
+      <div id="previewWrap">
+        <canvas id="slicePreview" width="480" height="280"></canvas>
+      </div>
+      <div id="previewStatus" class="status"></div>
+
+      <div class="grid">
+        <label for="sliceLeft">left</label>
+        <input id="sliceLeft" type="number" min="0" step="1" />
+        <label for="sliceTop">top</label>
+        <input id="sliceTop" type="number" min="0" step="1" />
+        <label for="sliceRight">right</label>
+        <input id="sliceRight" type="number" min="0" step="1" />
+        <label for="sliceBottom">bottom</label>
+        <input id="sliceBottom" type="number" min="0" step="1" />
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="autoSuggestButton" style="background:#6e7781;">Recalculate</button>
+        <button id="saveNinepatchButton">Save Override</button>
+        <button id="clearNinepatchButton" style="background:#8250df;">Use Auto</button>
+      </div>
+      <div id="nineStatus" class="status"></div>
+    </div>
+
+    <button id="exportButton" style="margin-top:10px;">Export Selection</button>
+    <button id="downloadZipButton" style="margin-top:8px; background:#1f883d;" disabled>
+      Download Export ZIP
+    </button>
+    <div id="status" class="status"></div>
+    <textarea id="output" readonly placeholder="Exported ui.json appears here"></textarea>
+
+    <script>
+      const exportButton = document.getElementById("exportButton");
+      const downloadZipButton = document.getElementById("downloadZipButton");
+      const autoSuggestButton = document.getElementById("autoSuggestButton");
+      const saveNinepatchButton = document.getElementById("saveNinepatchButton");
+      const clearNinepatchButton = document.getElementById("clearNinepatchButton");
+      const status = document.getElementById("status");
+      const nineStatus = document.getElementById("nineStatus");
+      const output = document.getElementById("output");
+      const ninePanel = document.getElementById("ninePanel");
+      const selectionInfo = document.getElementById("selectionInfo");
+      const nineMeta = document.getElementById("nineMeta");
+      const previewStatus = document.getElementById("previewStatus");
+      const sliceLeft = document.getElementById("sliceLeft");
+      const sliceTop = document.getElementById("sliceTop");
+      const sliceRight = document.getElementById("sliceRight");
+      const sliceBottom = document.getElementById("sliceBottom");
+      const assetScaleInput = document.getElementById("assetScale");
+      const optimizeNinepatchAssets = document.getElementById("optimizeNinepatchAssets");
+      const stretchSamplePixels = document.getElementById("stretchSamplePixels");
+      const canvas = document.getElementById("slicePreview");
+      const ctx = canvas.getContext("2d");
+
+      let selectedNodeInfo = null;
+      let currentSlice = { left: 0, top: 0, right: 0, bottom: 0 };
+      let resolvedMetadata = null;
+      let lastDetectedAutoMetadata = null;
+      let currentPreviewAssetHash = "";
+      let sliceDirtySinceSelection = false;
+      let dragState = null;
+      const GUIDE_SNAP_PX = 3;
+      let lastExport = null;
+      let previewImage = null;
+      let previewObjectUrl = null;
+      let previewNodeId = null;
+      let requestSelectionTimer = null;
+      let lastNineSliceDebugLogKey = "";
+      const AUTO_NINE_SLICE_ALGORITHM_VERSION = "first-safe-zone-v5";
+      const NINE_SLICE_VISUAL_ALPHA_THRESHOLD = 4;
+      const NINE_SLICE_SOLID_ALPHA_THRESHOLD = 64;
+      const NINE_SLICE_DETAIL_ALPHA_THRESHOLD = 12;
+      const NINE_SLICE_MIN_CONFIDENCE = 0.58;
+      const NINE_SLICE_DEBUG_STORAGE_KEY = "quickNineSliceDebug";
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function createSafeDefaultSlice(width, height) {
+        const widthBase = clamp(Math.round(width * 0.08), 24, 96);
+        const heightBase = clamp(Math.round(height * 0.08), 24, 96);
+        const sideMax = width < 200 ? width * 0.25 : 96;
+        const verticalMax = height < 100 ? height * 0.25 : 96;
+        let left = Math.floor(clamp(widthBase, 0, sideMax));
+        let right = Math.floor(clamp(widthBase, 0, sideMax));
+        let top = Math.floor(clamp(heightBase, 0, verticalMax));
+        let bottom = Math.floor(clamp(heightBase, 0, verticalMax));
+        const maxHorizontal = Math.max(0, Math.floor(width - 1));
+        const maxVertical = Math.max(0, Math.floor(height - 1));
+        if (left + right > maxHorizontal) {
+          const half = Math.floor(maxHorizontal / 2);
+          left = half;
+          right = maxHorizontal - half;
+        }
+        if (top + bottom > maxVertical) {
+          const half = Math.floor(maxVertical / 2);
+          top = half;
+          bottom = maxVertical - half;
+        }
+        return { left, top, right, bottom };
+      }
+
+      function metadataLabel(metadata) {
+        if (!metadata) return "none";
+        if (metadata.source === "manual") return "manual override";
+        if (metadata.source === "auto") return "auto-detected";
+        return "safe default";
+      }
+
+      function setNineStatus(message, type) {
+        nineStatus.textContent = message;
+        nineStatus.classList.remove("error", "ok");
+        if (type === "error") nineStatus.classList.add("error");
+        if (type === "ok") nineStatus.classList.add("ok");
+      }
+
+      function firstMetadataWarning(metadata) {
+        return metadata && Array.isArray(metadata.warnings) && metadata.warnings.length ? metadata.warnings[0] : "";
+      }
+
+      function isNineSliceDebugEnabled() {
+        try {
+          return Boolean(
+            window.quickNineSliceDebug === true ||
+              (window.location && /[?&]nineDebug=1\b/.test(window.location.search || "")) ||
+              (window.localStorage && window.localStorage.getItem(NINE_SLICE_DEBUG_STORAGE_KEY) === "1")
+          );
+        } catch {
+          return false;
+        }
+      }
+
+      function logNineSliceDebug(metadata, nodeName) {
+        if (!isNineSliceDebugEnabled() || !metadata || !metadata.debug) return;
+        const key = [
+          nodeName || "",
+          metadata.assetHash || "",
+          metadata.algorithmVersion || "",
+          metadata.mode || "",
+          JSON.stringify(metadata.insets || {})
+        ].join("|");
+        if (lastNineSliceDebugLogKey === key) return;
+        lastNineSliceDebugLogKey = key;
+        console.debug("[qUIck nine-slice auto]", {
+          node: nodeName,
+          mode: metadata.mode,
+          confidence: metadata.confidence,
+          warnings: metadata.warnings || [],
+          debug: metadata.debug
+        });
+      }
+
+      function readInputSlice() {
+        return {
+          left: Number(sliceLeft.value),
+          top: Number(sliceTop.value),
+          right: Number(sliceRight.value),
+          bottom: Number(sliceBottom.value)
+        };
+      }
+
+      function applySliceToInputs(slice) {
+        sliceLeft.value = String(Math.round(slice.left));
+        sliceTop.value = String(Math.round(slice.top));
+        sliceRight.value = String(Math.round(slice.right));
+        sliceBottom.value = String(Math.round(slice.bottom));
+      }
+
+      function sanitizeSlice(slice, width, height) {
+        let left = Number.isFinite(slice.left) ? slice.left : 0;
+        let top = Number.isFinite(slice.top) ? slice.top : 0;
+        let right = Number.isFinite(slice.right) ? slice.right : 0;
+        let bottom = Number.isFinite(slice.bottom) ? slice.bottom : 0;
+        left = Math.max(0, Math.round(left));
+        top = Math.max(0, Math.round(top));
+        right = Math.max(0, Math.round(right));
+        bottom = Math.max(0, Math.round(bottom));
+        const maxHorizontal = Math.max(0, Math.floor(width - 1));
+        const maxVertical = Math.max(0, Math.floor(height - 1));
+        if (left + right > maxHorizontal) {
+          const scale = maxHorizontal / Math.max(1, left + right);
+          left = Math.floor(left * scale);
+          right = Math.floor(right * scale);
+          if (left + right > maxHorizontal) {
+            right = Math.max(0, maxHorizontal - left);
+          }
+        }
+        if (top + bottom > maxVertical) {
+          const scale = maxVertical / Math.max(1, top + bottom);
+          top = Math.floor(top * scale);
+          bottom = Math.floor(bottom * scale);
+          if (top + bottom > maxVertical) {
+            bottom = Math.max(0, maxVertical - top);
+          }
+        }
+        return { left, top, right, bottom };
+      }
+
+      function snapMarginToEdge(value) {
+        const margin = Math.max(0, Math.round(value));
+        return margin <= GUIDE_SNAP_PX ? 0 : margin;
+      }
+
+      function validateSlice(slice) {
+        if (!selectedNodeInfo || !selectedNodeInfo.hasSelection || !selectedNodeInfo.isNine) {
+          return "Select one @nine layer first.";
+        }
+        const width = selectedNodeInfo.width;
+        const height = selectedNodeInfo.height;
+        if (![slice.left, slice.top, slice.right, slice.bottom].every((n) => Number.isFinite(n))) {
+          return "Slice values must be valid numbers.";
+        }
+        if ([slice.left, slice.top, slice.right, slice.bottom].some((n) => n < 0)) {
+          return "Slice values must be >= 0.";
+        }
+        if (slice.left + slice.right > width - 1) {
+          return "Invalid values: left + right must be smaller than width.";
+        }
+        if (slice.top + slice.bottom > height - 1) {
+          return "Invalid values: top + bottom must be smaller than height.";
+        }
+        return null;
+      }
+
+      function slicesEqual(a, b) {
+        return Boolean(
+          a &&
+          b &&
+          a.left === b.left &&
+          a.top === b.top &&
+          a.right === b.right &&
+          a.bottom === b.bottom
+        );
+      }
+
+      function currentResolvedSlice() {
+        return resolvedMetadata && resolvedMetadata.insets ? resolvedMetadata.insets : null;
+      }
+
+      function sliceChangedFromResolved() {
+        if (!selectedNodeInfo || !selectedNodeInfo.hasSelection || !selectedNodeInfo.isNine) return false;
+        const resolvedSlice = currentResolvedSlice();
+        if (!resolvedSlice) return true;
+        return !slicesEqual(currentSlice, resolvedSlice);
+      }
+
+      function updateNineMeta() {
+        if (!selectedNodeInfo || !selectedNodeInfo.hasSelection || !selectedNodeInfo.isNine) {
+          nineMeta.textContent = "";
+          return;
+        }
+
+        const parts = [];
+        if (resolvedMetadata) {
+          parts.push("Using: " + metadataLabel(resolvedMetadata));
+          if (resolvedMetadata.mode) {
+            parts.push("mode " + resolvedMetadata.mode);
+          }
+          if (typeof resolvedMetadata.confidence === "number") {
+            parts.push("confidence " + Math.round(resolvedMetadata.confidence * 100) + "%");
+          }
+          if (resolvedMetadata.algorithmVersion) {
+            parts.push("algo " + resolvedMetadata.algorithmVersion);
+          }
+          const warning = firstMetadataWarning(resolvedMetadata);
+          if (warning) {
+            parts.push("warning: " + warning);
+          }
+        }
+        if (selectedNodeInfo.layerNameMetadata) {
+          parts.push("layer tag override present");
+        }
+        if (currentPreviewAssetHash) {
+          parts.push("hash " + currentPreviewAssetHash.slice(0, 8));
+        }
+        nineMeta.textContent = parts.join(" | ");
+      }
+
+      function updateStatusFromState() {
+        const error = validateSlice(currentSlice);
+        if (error) {
+          setNineStatus(error, "error");
+          saveNinepatchButton.disabled = true;
+          return;
+        }
+        saveNinepatchButton.disabled = false;
+        if (sliceChangedFromResolved()) {
+          if (resolvedMetadata && resolvedMetadata.source === "manual") {
+            setNineStatus("Unsaved changes to manual override.", "");
+          } else {
+            setNineStatus("Unsaved slice changes.", "");
+          }
+        } else if (resolvedMetadata) {
+          if (resolvedMetadata.source === "manual") {
+            setNineStatus("Manual override is active.", "ok");
+          } else if (resolvedMetadata.source === "auto") {
+            const warning = firstMetadataWarning(resolvedMetadata);
+            setNineStatus(warning ? "Auto-detected slice is active. " + warning : "Auto-detected slice is active for export.", warning ? "" : "ok");
+          } else {
+            const warning = firstMetadataWarning(resolvedMetadata);
+            setNineStatus(warning ? "Safe default slice is active. " + warning : "Safe default slice is active for export.", "");
+          }
+        } else {
+          setNineStatus("Nine-slice ready.", "");
+        }
+        updateNineMeta();
+      }
+
+      function computePreviewRect(width, height) {
+        const maxW = 460;
+        const maxH = 260;
+        const bitmapWidth = previewImage && previewImage.width ? previewImage.naturalWidth || previewImage.width : width;
+        const bitmapHeight = previewImage && previewImage.height ? previewImage.naturalHeight || previewImage.height : height;
+        const bitmapScale = Math.min(maxW / Math.max(1, bitmapWidth), maxH / Math.max(1, bitmapHeight));
+        const drawW = bitmapWidth * bitmapScale;
+        const drawH = bitmapHeight * bitmapScale;
+        return {
+          x: (canvas.width - drawW) / 2,
+          y: (canvas.height - drawH) / 2,
+          width: drawW,
+          height: drawH,
+          scaleX: drawW / Math.max(1, width),
+          scaleY: drawH / Math.max(1, height)
+        };
+      }
+
+      function drawCheckerboard(x, y, width, height) {
+        const size = 10;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, width, height);
+        ctx.clip();
+        for (let yy = y; yy < y + height; yy += size) {
+          for (let xx = x; xx < x + width; xx += size) {
+            const odd = (Math.floor((xx - x) / size) + Math.floor((yy - y) / size)) % 2 === 1;
+            ctx.fillStyle = odd ? "#eef1f4" : "#ffffff";
+            ctx.fillRect(xx, yy, size, size);
+          }
+        }
+        ctx.restore();
+      }
+
+      function drawPreviewPlaceholder(message) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawCheckerboard(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "rgba(246,248,250,0.92)";
+        ctx.fillRect(28, 78, canvas.width - 56, 96);
+        ctx.strokeStyle = "#d0d7de";
+        ctx.strokeRect(28, 78, canvas.width - 56, 96);
+        ctx.fillStyle = "#57606a";
+        ctx.font = "12px Inter, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+      }
+
+      function drawPreview() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!selectedNodeInfo || !selectedNodeInfo.hasSelection || !selectedNodeInfo.isNine) {
+          drawPreviewPlaceholder("Select one @nine layer to preview.");
+          return;
+        }
+        const width = selectedNodeInfo.width;
+        const height = selectedNodeInfo.height;
+        const r = computePreviewRect(width, height);
+        const leftX = r.x + currentSlice.left * r.scaleX;
+        const rightX = r.x + (width - currentSlice.right) * r.scaleX;
+        const topY = r.y + currentSlice.top * r.scaleY;
+        const bottomY = r.y + (height - currentSlice.bottom) * r.scaleY;
+
+        drawCheckerboard(r.x, r.y, r.width, r.height);
+        if (previewImage && previewNodeId === selectedNodeInfo.nodeId) {
+          ctx.drawImage(previewImage, r.x, r.y, r.width, r.height);
+        } else {
+          ctx.fillStyle = "rgba(246,248,250,0.78)";
+          ctx.fillRect(r.x, r.y, r.width, r.height);
+          ctx.fillStyle = "#57606a";
+          ctx.font = "12px Inter, system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("Loading preview...", r.x + r.width / 2, r.y + r.height / 2);
+        }
+        ctx.strokeStyle = "#8c959f";
+        ctx.strokeRect(r.x, r.y, r.width, r.height);
+
+        ctx.fillStyle = "rgba(9,105,218,0.14)";
+        ctx.fillRect(leftX, topY, Math.max(1, rightX - leftX), Math.max(1, bottomY - topY));
+
+        ctx.fillStyle = "rgba(130,80,223,0.08)";
+        ctx.fillRect(r.x, r.y, leftX - r.x, topY - r.y);
+        ctx.fillRect(rightX, r.y, r.x + r.width - rightX, topY - r.y);
+        ctx.fillRect(r.x, bottomY, leftX - r.x, r.y + r.height - bottomY);
+        ctx.fillRect(rightX, bottomY, r.x + r.width - rightX, r.y + r.height - bottomY);
+
+        ctx.strokeStyle = "#8250df";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(leftX, r.y); ctx.lineTo(leftX, r.y + r.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(rightX, r.y); ctx.lineTo(rightX, r.y + r.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(r.x, topY); ctx.lineTo(r.x + r.width, topY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(r.x, bottomY); ctx.lineTo(r.x + r.width, bottomY); ctx.stroke();
+
+        ctx.fillStyle = "#8250df";
+        const handles = [
+          { x: leftX, y: r.y + r.height / 2 },
+          { x: rightX, y: r.y + r.height / 2 },
+          { x: r.x + r.width / 2, y: topY },
+          { x: r.x + r.width / 2, y: bottomY }
+        ];
+        for (const h of handles) {
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        drawNineSliceDebugOverlay(r, width, height);
+      }
+
+      function drawNineSliceDebugOverlay(previewRect, nodeWidth, nodeHeight) {
+        if (!isNineSliceDebugEnabled() || !resolvedMetadata || !resolvedMetadata.debug) return;
+        const debug = resolvedMetadata.debug;
+        const sourceSize = debug.sourceSize || { width: nodeWidth, height: nodeHeight };
+        const bounds = debug.visualBounds;
+        if (!bounds || !sourceSize.width || !sourceSize.height) return;
+
+        const left = previewRect.x + (bounds.left / sourceSize.width) * previewRect.width;
+        const top = previewRect.y + (bounds.top / sourceSize.height) * previewRect.height;
+        const right = previewRect.x + ((bounds.right + 1) / sourceSize.width) * previewRect.width;
+        const bottom = previewRect.y + ((bounds.bottom + 1) / sourceSize.height) * previewRect.height;
+
+        ctx.save();
+        ctx.setLineDash([5, 3]);
+        ctx.strokeStyle = "rgba(251,133,0,0.92)";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(left, top, Math.max(1, right - left), Math.max(1, bottom - top));
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(251,133,0,0.92)";
+        ctx.font = "11px Inter, system-ui, sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        const confidence =
+          typeof resolvedMetadata.confidence === "number" ? `${Math.round(resolvedMetadata.confidence * 100)}%` : "";
+        ctx.fillText(`${resolvedMetadata.mode || "nineSlice"} ${confidence}`, previewRect.x + 6, previewRect.y + 6);
+        ctx.restore();
+      }
+
+      function bytesToUint8Array(bytes) {
+        if (bytes instanceof Uint8Array) return bytes;
+        if (bytes instanceof ArrayBuffer) return new Uint8Array(bytes);
+        if (Array.isArray(bytes)) return Uint8Array.from(bytes);
+        return new Uint8Array(bytes || []);
+      }
+
+      function setPreviewStatus(message, type) {
+        previewStatus.textContent = message || "";
+        previewStatus.classList.remove("error", "ok");
+        if (type === "error") previewStatus.classList.add("error");
+        if (type === "ok") previewStatus.classList.add("ok");
+      }
+
+      function clearPreviewImage() {
+        previewImage = null;
+        previewNodeId = null;
+        currentPreviewAssetHash = "";
+        if (previewObjectUrl) {
+          URL.revokeObjectURL(previewObjectUrl);
+          previewObjectUrl = null;
+        }
+      }
+
+      function smoothScores(scores, radius = 1) {
+        return Array.from(scores, (_value, index) => {
+          let total = 0;
+          let count = 0;
+          for (let offset = -radius; offset <= radius; offset += 1) {
+            const sampleIndex = clamp(index + offset, 0, scores.length - 1);
+            total += scores[sampleIndex];
+            count += 1;
+          }
+          return count ? total / count : 0;
+        });
+      }
+
+      function averageScoreRange(scores, start, end) {
+        if (end < start) return 0;
+        let total = 0;
+        let count = 0;
+        for (let index = Math.max(0, start); index <= Math.min(scores.length - 1, end); index += 1) {
+          total += scores[index];
+          count += 1;
+        }
+        return count ? total / count : 0;
+      }
+
+      function percentile(values, amount) {
+        const filtered = values.filter((value) => Number.isFinite(value)).sort((a, b) => a - b);
+        if (!filtered.length) return 0;
+        const index = clamp((filtered.length - 1) * amount, 0, filtered.length - 1);
+        const lower = Math.floor(index);
+        const upper = Math.ceil(index);
+        const mix = index - lower;
+        return filtered[lower] * (1 - mix) + filtered[upper] * mix;
+      }
+
+      function median(values) {
+        return percentile(values, 0.5);
+      }
+
+      function collectRangeValues(values, start, end) {
+        const result = [];
+        for (let index = Math.max(0, start); index <= Math.min(values.length - 1, end); index += 1) {
+          if (Number.isFinite(values[index])) {
+            result.push(values[index]);
+          }
+        }
+        return result;
+      }
+
+      function alphaAwareDistance(data, indexA, indexB) {
+        const alphaA = data[indexA + 3] / 255;
+        const alphaB = data[indexB + 3] / 255;
+        const rA = data[indexA] * alphaA;
+        const gA = data[indexA + 1] * alphaA;
+        const bA = data[indexA + 2] * alphaA;
+        const rB = data[indexB] * alphaB;
+        const gB = data[indexB + 1] * alphaB;
+        const bB = data[indexB + 2] * alphaB;
+        const luminanceA = (0.2126 * data[indexA] + 0.7152 * data[indexA + 1] + 0.0722 * data[indexA + 2]) * alphaA;
+        const luminanceB = (0.2126 * data[indexB] + 0.7152 * data[indexB + 1] + 0.0722 * data[indexB + 2]) * alphaB;
+        return (
+          (Math.abs(rA - rB) + Math.abs(gA - gB) + Math.abs(bA - bB) + Math.abs(data[indexA + 3] - data[indexB + 3])) /
+            4 +
+          Math.abs(luminanceA - luminanceB) * 0.12
+        );
+      }
+
+      function alphaAwareDistanceToSample(data, index, sample) {
+        const alpha = data[index + 3] / 255;
+        const r = data[index] * alpha;
+        const g = data[index + 1] * alpha;
+        const b = data[index + 2] * alpha;
+        const luminance = (0.2126 * data[index] + 0.7152 * data[index + 1] + 0.0722 * data[index + 2]) * alpha;
+        return (
+          (Math.abs(r - sample.r) + Math.abs(g - sample.g) + Math.abs(b - sample.b) + Math.abs(data[index + 3] - sample.a)) /
+            4 +
+          Math.abs(luminance - sample.luminance) * 0.12
+        );
+      }
+
+      function buildPixelFeatures(data, width, height) {
+        const pixelCount = width * height;
+        const alpha = new Uint8Array(pixelCount);
+        const luminance = new Float32Array(pixelCount);
+        const gradient = new Float32Array(pixelCount);
+        const bounds = {
+          left: width,
+          top: height,
+          right: -1,
+          bottom: -1
+        };
+
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            const pixelIndex = y * width + x;
+            const dataIndex = pixelIndex * 4;
+            const pixelAlpha = data[dataIndex + 3];
+            alpha[pixelIndex] = pixelAlpha;
+            luminance[pixelIndex] =
+              (0.2126 * data[dataIndex] + 0.7152 * data[dataIndex + 1] + 0.0722 * data[dataIndex + 2]) *
+              (pixelAlpha / 255);
+
+            if (pixelAlpha > NINE_SLICE_VISUAL_ALPHA_THRESHOLD) {
+              bounds.left = Math.min(bounds.left, x);
+              bounds.top = Math.min(bounds.top, y);
+              bounds.right = Math.max(bounds.right, x);
+              bounds.bottom = Math.max(bounds.bottom, y);
+            }
+          }
+        }
+
+        if (bounds.right < bounds.left || bounds.bottom < bounds.top) {
+          bounds.left = 0;
+          bounds.top = 0;
+          bounds.right = Math.max(0, width - 1);
+          bounds.bottom = Math.max(0, height - 1);
+        }
+
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            const pixelIndex = y * width + x;
+            const dataIndex = pixelIndex * 4;
+            let localGradient = 0;
+            let samples = 0;
+            if (x + 1 < width) {
+              localGradient += alphaAwareDistance(data, dataIndex, (y * width + x + 1) * 4);
+              samples += 1;
+            }
+            if (y + 1 < height) {
+              localGradient += alphaAwareDistance(data, dataIndex, ((y + 1) * width + x) * 4);
+              samples += 1;
+            }
+            gradient[pixelIndex] = samples ? localGradient / samples : 0;
+          }
+        }
+
+        return {
+          data,
+          width,
+          height,
+          alpha,
+          luminance,
+          gradient,
+          bounds
+        };
+      }
+
+      function spanOrFallback(axis, index) {
+        if (axis.spanStart[index] <= axis.spanEnd[index]) {
+          return {
+            start: axis.spanStart[index],
+            end: axis.spanEnd[index],
+            size: axis.spanEnd[index] - axis.spanStart[index] + 1
+          };
+        }
+        return {
+          start: axis.crossLength,
+          end: -1,
+          size: 0
+        };
+      }
+
+      function buildAxisSafety(features, direction) {
+        const isX = direction === "x";
+        const length = isX ? features.width : features.height;
+        const crossLength = isX ? features.height : features.width;
+        const crossStart = isX ? features.bounds.top : features.bounds.left;
+        const crossEnd = isX ? features.bounds.bottom : features.bounds.right;
+        const contentStart = isX ? features.bounds.left : features.bounds.top;
+        const contentEnd = isX ? features.bounds.right : features.bounds.bottom;
+        const spanStart = new Int16Array(length);
+        const spanEnd = new Int16Array(length);
+        const solidSpanStart = new Int16Array(length);
+        const solidSpanEnd = new Int16Array(length);
+        const mass = new Float32Array(length);
+        const detail = new Float32Array(length);
+        const transition = new Float32Array(Math.max(0, length - 1));
+        const lineScores = new Float32Array(length + 1);
+        const repeatScores = new Float32Array(length + 1);
+
+        for (let index = 0; index < length; index += 1) {
+          spanStart[index] = crossLength;
+          spanEnd[index] = -1;
+          solidSpanStart[index] = crossLength;
+          solidSpanEnd[index] = -1;
+        }
+
+        for (let position = 0; position < length; position += 1) {
+          let visibleMass = 0;
+          let detailTotal = 0;
+          let detailCount = 0;
+          for (let cross = 0; cross < crossLength; cross += 1) {
+            const x = isX ? position : cross;
+            const y = isX ? cross : position;
+            const pixelIndex = y * features.width + x;
+            const pixelAlpha = features.alpha[pixelIndex];
+            if (pixelAlpha > NINE_SLICE_VISUAL_ALPHA_THRESHOLD) {
+              spanStart[position] = Math.min(spanStart[position], cross);
+              spanEnd[position] = Math.max(spanEnd[position], cross);
+            }
+            if (pixelAlpha > NINE_SLICE_SOLID_ALPHA_THRESHOLD) {
+              solidSpanStart[position] = Math.min(solidSpanStart[position], cross);
+              solidSpanEnd[position] = Math.max(solidSpanEnd[position], cross);
+            }
+            visibleMass += pixelAlpha / 255;
+            detailTotal += features.gradient[pixelIndex];
+            detailCount += 1;
+          }
+          mass[position] = visibleMass;
+          detail[position] = detailCount ? detailTotal / detailCount : 0;
+        }
+
+        for (let line = 1; line < length; line += 1) {
+          let total = 0;
+          let weight = 0;
+          const profileDistances = [];
+          for (let cross = crossStart; cross <= crossEnd; cross += 1) {
+            const xA = isX ? line - 1 : cross;
+            const yA = isX ? cross : line - 1;
+            const xB = isX ? line : cross;
+            const yB = isX ? cross : line;
+            const indexA = (yA * features.width + xA) * 4;
+            const indexB = (yB * features.width + xB) * 4;
+            const pixelWeight =
+              0.35 + Math.max(features.alpha[yA * features.width + xA], features.alpha[yB * features.width + xB]) / 255;
+            const distance = alphaAwareDistance(features.data, indexA, indexB);
+            total += distance * pixelWeight;
+            weight += pixelWeight;
+            profileDistances.push(distance);
+          }
+
+          const previousSpan = spanOrFallback({ spanStart, spanEnd, crossLength }, line - 1);
+          const nextSpan = spanOrFallback({ spanStart, spanEnd, crossLength }, line);
+          const spanDelta =
+            Math.abs(previousSpan.start - nextSpan.start) +
+            Math.abs(previousSpan.end - nextSpan.end) +
+            Math.abs(previousSpan.size - nextSpan.size) * 0.5;
+          const massDelta = Math.abs(mass[line] - mass[line - 1]);
+          const localDetail = (detail[line] + detail[line - 1]) / 2;
+          transition[line - 1] = weight ? total / weight : 0;
+          lineScores[line] = transition[line - 1] + spanDelta * 2.2 + massDelta * 0.8 + localDetail * 0.08;
+          // Corner ornaments often affect only a handful of pixels in an
+          // otherwise flat row/column. Give the worst few percent enough
+          // weight that those pixels cannot be averaged into a false safe
+          // stretch line.
+          const profileP80 = percentile(profileDistances, 0.8);
+          const profileP90 = percentile(profileDistances, 0.9);
+          const profileP99 = percentile(profileDistances, 0.99);
+          repeatScores[line] =
+            transition[line - 1] * 0.1 +
+            profileP80 * 0.15 +
+            profileP90 * 0.35 +
+            profileP99 * 0.4 +
+            spanDelta * 2.8 +
+            massDelta * 0.9;
+        }
+
+        lineScores[0] = 255;
+        lineScores[length] = 255;
+        repeatScores[0] = 255;
+        repeatScores[length] = 255;
+        const smoothed = smoothScores(lineScores, 2);
+        const smoothedRepeatScores = smoothScores(repeatScores, 1);
+        smoothed[0] = lineScores[0];
+        smoothed[length] = lineScores[length];
+        smoothedRepeatScores[0] = repeatScores[0];
+        smoothedRepeatScores[length] = repeatScores[length];
+
+        return {
+          direction,
+          length,
+          crossLength,
+          crossStart,
+          crossEnd,
+          contentStart,
+          contentEnd,
+          spanStart,
+          spanEnd,
+          solidSpanStart,
+          solidSpanEnd,
+          mass,
+          detail,
+          transition,
+          lineScores: smoothed,
+          repeatScores: smoothedRepeatScores
+        };
+      }
+
+      function computeScoreThresholds(axis, scores = axis.lineScores) {
+        const values = collectRangeValues(scores, Math.max(1, axis.contentStart), Math.min(axis.length - 1, axis.contentEnd + 1));
+        const mid = median(values);
+        const deviations = values.map((value) => Math.abs(value - mid));
+        const mad = median(deviations);
+        const p35 = percentile(values, 0.35);
+        const p75 = percentile(values, 0.75);
+        const p90 = percentile(values, 0.9);
+        const safe = Math.min(Math.max(2.5, p35 * 1.55 + 1.5, mid + mad * 1.3 + 1.25), Math.max(3, p90 * 0.82));
+        const unsafe = Math.max(6, safe * 2.05, p75, mid + mad * 4.5 + 2.5);
+        return {
+          safe,
+          unsafe,
+          median: mid,
+          p75,
+          p90
+        };
+      }
+
+      function centralSpan(axis) {
+        const center = Math.floor(axis.length / 2);
+        const radius = Math.max(2, Math.round(axis.length * 0.04));
+        const visibleStarts = [];
+        const visibleEnds = [];
+        const solidStarts = [];
+        const solidEnds = [];
+        for (let index = Math.max(axis.contentStart, center - radius); index <= Math.min(axis.contentEnd, center + radius); index += 1) {
+          if (axis.spanStart[index] <= axis.spanEnd[index]) {
+            visibleStarts.push(axis.spanStart[index]);
+            visibleEnds.push(axis.spanEnd[index]);
+          }
+          if (axis.solidSpanStart[index] <= axis.solidSpanEnd[index]) {
+            solidStarts.push(axis.solidSpanStart[index]);
+            solidEnds.push(axis.solidSpanEnd[index]);
+          }
+        }
+        const fallbackStart = axis.crossStart;
+        const fallbackEnd = axis.crossEnd;
+        const useSolid = solidStarts.length >= Math.max(1, Math.floor(visibleStarts.length * 0.5));
+        return {
+          start: useSolid ? median(solidStarts) : visibleStarts.length ? median(visibleStarts) : fallbackStart,
+          end: useSolid ? median(solidEnds) : visibleEnds.length ? median(visibleEnds) : fallbackEnd,
+          useSolid
+        };
+      }
+
+      function estimateShapeProtection(axis) {
+        const center = Math.floor(axis.length / 2);
+        const centerSpan = centralSpan(axis);
+        const spanStart = centerSpan.useSolid ? axis.solidSpanStart : axis.spanStart;
+        const spanEnd = centerSpan.useSolid ? axis.solidSpanEnd : axis.spanEnd;
+        const centerSize = Math.max(0, centerSpan.end - centerSpan.start + 1);
+        // A guide is only outside a rounded corner when its alpha silhouette
+        // matches the straight center nearly exactly. A loose percentage here
+        // lets guides cut through large-radius corners on wide assets.
+        const tolerance = Math.max(1, Math.round(axis.crossLength * 0.008));
+        const runLength = Math.max(2, Math.round(axis.length * 0.012));
+
+        const isStableAt = (position) => {
+          if (position < 0 || position >= axis.length) return false;
+          if (spanStart[position] > spanEnd[position]) return false;
+          const size = spanEnd[position] - spanStart[position] + 1;
+          return (
+            spanStart[position] <= centerSpan.start + tolerance &&
+            spanEnd[position] >= centerSpan.end - tolerance &&
+            size >= centerSize - tolerance * 2
+          );
+        };
+
+        const hasStableRunForward = (start) => {
+          for (let offset = 0; offset < runLength; offset += 1) {
+            if (!isStableAt(start + offset)) return false;
+          }
+          return true;
+        };
+
+        const hasStableRunBackward = (end) => {
+          for (let offset = 0; offset < runLength; offset += 1) {
+            if (!isStableAt(end - offset)) return false;
+          }
+          return true;
+        };
+
+        let left = axis.contentStart;
+        for (let position = axis.contentStart; position <= center; position += 1) {
+          if (hasStableRunForward(position)) {
+            left = position;
+            break;
+          }
+        }
+
+        let right = axis.contentEnd + 1;
+        for (let position = axis.contentEnd; position >= center; position -= 1) {
+          if (hasStableRunBackward(position)) {
+            right = position + 1;
+            break;
+          }
+        }
+
+        return {
+          left,
+          right,
+          centerSpan,
+          tolerance
+        };
+      }
+
+      function findLastUnsafeLine(axis, thresholds, start, end) {
+        let last = -1;
+        const unsafe = thresholds.unsafe;
+        const scores = axis.repeatScores || axis.lineScores;
+        for (let line = Math.max(1, start); line <= Math.min(axis.length - 1, end); line += 1) {
+          if (scores[line] >= unsafe) {
+            last = line;
+          }
+        }
+        return last;
+      }
+
+      function findFirstUnsafeLine(axis, thresholds, start, end) {
+        const unsafe = thresholds.unsafe;
+        const scores = axis.repeatScores || axis.lineScores;
+        for (let line = Math.max(1, start); line <= Math.min(axis.length - 1, end); line += 1) {
+          if (scores[line] >= unsafe) {
+            return line;
+          }
+        }
+        return -1;
+      }
+
+      function seekSafeLineForward(axis, thresholds, line, stop) {
+        const limit = thresholds.safe * 1.35;
+        const scores = axis.repeatScores || axis.lineScores;
+        for (let candidate = Math.max(1, line); candidate <= Math.min(axis.length - 1, stop); candidate += 1) {
+          if (scores[candidate] <= limit) {
+            return candidate;
+          }
+        }
+        return line;
+      }
+
+      function seekSafeLineBackward(axis, thresholds, line, stop) {
+        const limit = thresholds.safe * 1.35;
+        const scores = axis.repeatScores || axis.lineScores;
+        for (let candidate = Math.min(axis.length - 1, line); candidate >= Math.max(1, stop); candidate -= 1) {
+          if (scores[candidate] <= limit) {
+            return candidate;
+          }
+        }
+        return line;
+      }
+
+      function estimateAxisSymmetry(features, direction, sampleSize) {
+        const isX = direction === "x";
+        const length = isX ? features.width : features.height;
+        const crossLength = isX ? features.height : features.width;
+        const samples = Math.max(1, Math.min(sampleSize, Math.floor(length / 3)));
+        const crossStep = Math.max(1, Math.floor(crossLength / 24));
+        let total = 0;
+        let count = 0;
+
+        for (let offset = 0; offset < samples; offset += 1) {
+          const a = offset;
+          const b = length - 1 - offset;
+          for (let cross = 0; cross < crossLength; cross += crossStep) {
+            const xA = isX ? a : cross;
+            const yA = isX ? cross : a;
+            const xB = isX ? b : cross;
+            const yB = isX ? cross : b;
+            total += alphaAwareDistance(features.data, (yA * features.width + xA) * 4, (yB * features.width + xB) * 4);
+            count += 1;
+          }
+        }
+
+        return count ? total / count : 255;
+      }
+
+      function applySymmetryPreference(features, axis, band) {
+        const leading = band.start;
+        const trailing = axis.length - band.end;
+        const maxInset = Math.max(leading, trailing);
+        if (maxInset <= 0 || maxInset * 2 >= axis.length - 1) {
+          return band;
+        }
+
+        const symmetryDistance = estimateAxisSymmetry(features, axis.direction, Math.max(4, Math.round(axis.length * 0.18)));
+        const scores = axis.repeatScores || axis.lineScores;
+        const nearlySymmetric =
+          symmetryDistance < 10 &&
+          Math.abs(leading - trailing) <= Math.max(3, axis.length * 0.08) &&
+          Math.abs(scores[band.start] - scores[band.end]) <= Math.max(4, band.thresholds.safe);
+
+        if (!nearlySymmetric) {
+          return band;
+        }
+
+        return {
+          ...band,
+          start: maxInset,
+          end: axis.length - maxInset,
+          bandSize: axis.length - maxInset * 2,
+          symmetryDistance,
+          symmetryAdjusted: true
+        };
+      }
+
+      function measureProfileDistance(features, direction, positionA, positionB) {
+        const isX = direction === "x";
+        const length = isX ? features.width : features.height;
+        const crossStart = isX ? features.bounds.top : features.bounds.left;
+        const crossEnd = isX ? features.bounds.bottom : features.bounds.right;
+        const a = clamp(Math.round(positionA), 0, Math.max(0, length - 1));
+        const b = clamp(Math.round(positionB), 0, Math.max(0, length - 1));
+        const distances = [];
+        let total = 0;
+        for (let cross = crossStart; cross <= crossEnd; cross += 1) {
+          const xA = isX ? a : cross;
+          const yA = isX ? cross : a;
+          const xB = isX ? b : cross;
+          const yB = isX ? cross : b;
+          const distance = alphaAwareDistance(
+            features.data,
+            (yA * features.width + xA) * 4,
+            (yB * features.width + xB) * 4
+          );
+          distances.push(distance);
+          total += distance;
+        }
+        const average = distances.length ? total / distances.length : 255;
+        return (
+          average * 0.1 +
+          percentile(distances, 0.8) * 0.15 +
+          percentile(distances, 0.9) * 0.35 +
+          percentile(distances, 0.99) * 0.4
+        );
+      }
+
+      function findRepeatableRuns(features, axis, shape, thresholds) {
+        const scores = axis.repeatScores || axis.lineScores;
+        // Android's Draw 9-patch guidance calls for spare pixels around the
+        // replicated area. Keep a proportional cushion after the silhouette
+        // becomes straight so interpolation cannot pull corner pixels in.
+        const shapePadding = clamp(Math.round(Math.min(axis.length, axis.crossLength) * 0.035), 2, 12);
+        const searchStart = clamp(Math.max(1, shape.left + shapePadding), 1, Math.max(1, axis.length - 1));
+        const searchEnd = clamp(
+          Math.min(axis.length - 1, shape.right - shapePadding),
+          searchStart,
+          Math.max(searchStart, axis.length - 1)
+        );
+        const safeLimit = Math.min(thresholds.safe * 1.22, thresholds.unsafe * 0.68);
+        const hardLimit = Math.min(thresholds.unsafe * 0.9, Math.max(safeLimit * 1.9, safeLimit + 2));
+        const profileLimit = clamp(Math.min(thresholds.safe * 1.45, thresholds.unsafe * 0.38), 3, 4);
+        const center = axis.length / 2;
+        const rawRuns = [];
+        let runStart = -1;
+
+        const finishRun = (runEnd) => {
+          if (runStart < 0 || runEnd <= runStart) {
+            runStart = -1;
+            return;
+          }
+          rawRuns.push({ start: runStart, end: runEnd });
+          runStart = -1;
+        };
+
+        for (let line = searchStart; line <= searchEnd; line += 1) {
+          const score = scores[line];
+          if (score <= safeLimit) {
+            if (runStart < 0) runStart = line;
+            continue;
+          }
+          finishRun(line - 1);
+        }
+        finishRun(searchEnd);
+
+        const runs = [];
+        const addStableRun = (stableStart, stableEnd, profileDrift) => {
+          if (stableEnd <= stableStart || profileDrift > profileLimit) return;
+          const values = collectRangeValues(scores, stableStart, stableEnd);
+          const average = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 255;
+          const peak = values.length ? Math.max(...values) : 255;
+          const size = stableEnd - stableStart;
+          const runCenter = (stableStart + stableEnd) / 2;
+          const centerDistance = Math.abs(runCenter - center) / Math.max(1, axis.length / 2);
+          const localQuality = 1 - clamp((average * 0.65 + peak * 0.35) / Math.max(1, hardLimit), 0, 1);
+          const profileQuality = 1 - clamp(profileDrift / Math.max(1, profileLimit), 0, 1);
+          const quality = localQuality * 0.58 + profileQuality * 0.42;
+          runs.push({
+            start: stableStart,
+            end: stableEnd,
+            size,
+            average,
+            peak,
+            profileDrift,
+            profileQuality,
+            centerDistance,
+            quality,
+            rank: size * (0.72 + quality * 0.28) - centerDistance * axis.length * 0.035
+          });
+        };
+
+        for (const rawRun of rawRuns) {
+          let stableStart = rawRun.start;
+          let maxDrift = 0;
+          for (let line = rawRun.start + 1; line <= rawRun.end; line += 1) {
+            const drift = measureProfileDistance(features, axis.direction, stableStart, line);
+            if (drift <= profileLimit) {
+              maxDrift = Math.max(maxDrift, drift);
+              continue;
+            }
+            const stableEnd = Math.max(stableStart + 1, line - 1);
+            addStableRun(stableStart, stableEnd, maxDrift);
+            stableStart = stableEnd;
+            maxDrift = measureProfileDistance(features, axis.direction, stableStart, line);
+          }
+          addStableRun(stableStart, rawRun.end, maxDrift);
+        }
+
+        // Preserve spatial order. Auto slicing must lock onto the first
+        // sufficiently long safe occurrence when scanning inward from the
+        // rendered edge, instead of preferring the widest or most central
+        // background run.
+        runs.sort((a, b) => a.start - b.start || a.end - b.end);
+        return {
+          runs,
+          safeLimit,
+          hardLimit,
+          profileLimit,
+          shapePadding,
+          searchStart,
+          searchEnd
+        };
+      }
+
+      function detectAxisBand(features, axis) {
+        const thresholds = computeScoreThresholds(axis, axis.repeatScores || axis.lineScores);
+        const shape = estimateShapeProtection(axis);
+        const center = Math.floor(axis.length / 2);
+        const lastUnsafe = findLastUnsafeLine(axis, thresholds, axis.contentStart, center);
+        const firstUnsafe = findFirstUnsafeLine(axis, thresholds, center, axis.contentEnd + 1);
+        const repeatable = findRepeatableRuns(features, axis, shape, thresholds);
+        const minUsefulSize = Math.max(2, Math.round(axis.length * 0.06));
+        const usefulRuns = repeatable.runs.filter((run) => run.size >= minUsefulSize);
+        const referenceRun = usefulRuns.reduce(
+          (best, run) => (!best || run.rank > best.rank ? run : best),
+          null
+        );
+        const referencePosition = referenceRun ? Math.round((referenceRun.start + referenceRun.end) / 2) : center;
+        const materialLimit = clamp(repeatable.profileLimit * 1.25, 4, 6);
+        const selectedRun = usefulRuns.find((run) => {
+          const position = Math.round((run.start + run.end) / 2);
+          return measureProfileDistance(features, axis.direction, position, referencePosition) <= materialLimit;
+        });
+        const hasProtectedShape =
+          shape.left > axis.contentStart + 1 ||
+          shape.right < axis.contentEnd ||
+          lastUnsafe >= axis.contentStart + 1 ||
+          firstUnsafe > 0;
+
+        let start = selectedRun ? selectedRun.start : Math.max(0, center - 1);
+        let end = selectedRun ? selectedRun.end : Math.min(axis.length, center + 1);
+        start = clamp(Math.round(start), 0, Math.max(0, axis.length - 1));
+        end = clamp(Math.round(end), start + 1, axis.length);
+
+        const bandSize = end - start;
+        const scores = axis.repeatScores || axis.lineScores;
+        const startScore = scores[clamp(start, 0, axis.length)] || 0;
+        const endScore = scores[clamp(end, 0, axis.length)] || 0;
+        const insideValues = collectRangeValues(scores, start, end);
+        const insideAverage = insideValues.length
+          ? insideValues.reduce((sum, value) => sum + value, 0) / insideValues.length
+          : 255;
+        const interiorPeak = insideValues.length ? Math.max(...insideValues) : 255;
+        const outsideAverage =
+          (averageScoreRange(scores, Math.max(1, axis.contentStart), start - 1) +
+            averageScoreRange(scores, end + 1, Math.min(axis.length - 1, axis.contentEnd + 1))) /
+          2;
+        const lineQuality = 1 - clamp((startScore + endScore) / Math.max(1, thresholds.unsafe * 2), 0, 1);
+        const repeatability = 1 - clamp(
+          (insideAverage * 0.65 + interiorPeak * 0.35) / Math.max(1, repeatable.hardLimit),
+          0,
+          1
+        );
+        const edgeContrast = clamp((outsideAverage - insideAverage) / Math.max(1, thresholds.unsafe), 0, 1);
+        const usefulness = clamp(bandSize / Math.max(minUsefulSize, axis.length * 0.22), 0, 1);
+        const sizePenalty = bandSize < minUsefulSize ? 0.45 : 1;
+        const centerPreference = selectedRun ? 1 - selectedRun.centerDistance * 0.18 : 0.25;
+        const confidence = clamp(
+          (0.08 + lineQuality * 0.22 + repeatability * 0.38 + edgeContrast * 0.12 + usefulness * 0.2) *
+            sizePenalty *
+            centerPreference *
+            (selectedRun ? 1 : 0.2),
+          0.05,
+          0.99
+        );
+
+        return {
+          start,
+          end,
+          bandSize,
+          minUsefulSize,
+          thresholds,
+          shape,
+          lastUnsafe,
+          firstUnsafe,
+          hasProtectedShape,
+          foundRepeatableRun: Boolean(selectedRun),
+          selectionStrategy: "firstSafeOccurrence",
+          referenceRun,
+          materialLimit,
+          repeatableRunCount: repeatable.runs.length,
+          repeatableSafeLimit: repeatable.safeLimit,
+          repeatableHardLimit: repeatable.hardLimit,
+          repeatableProfileLimit: repeatable.profileLimit,
+          profileDrift: selectedRun ? selectedRun.profileDrift : 255,
+          confidence,
+          scores: {
+            start: startScore,
+            end: endScore,
+            insideAverage,
+            interiorPeak,
+            outsideAverage,
+            lineQuality,
+            repeatability,
+            edgeContrast,
+            usefulness
+          }
+        };
+      }
+
+      function computeDetailThreshold(features) {
+        const gradients = [];
+        for (let y = features.bounds.top; y <= features.bounds.bottom; y += 1) {
+          for (let x = features.bounds.left; x <= features.bounds.right; x += 1) {
+            const pixelIndex = y * features.width + x;
+            if (features.alpha[pixelIndex] > NINE_SLICE_DETAIL_ALPHA_THRESHOLD) {
+              gradients.push(features.gradient[pixelIndex]);
+            }
+          }
+        }
+
+        const p82 = percentile(gradients, 0.82);
+        const p92 = percentile(gradients, 0.92);
+        return Math.max(7, Math.min(Math.max(p82 * 1.25, 7), Math.max(9, p92 * 0.9)));
+      }
+
+      function computeCenterSample(features) {
+        const x0 = Math.max(features.bounds.left, Math.floor(features.width * 0.42));
+        const x1 = Math.min(features.bounds.right, Math.ceil(features.width * 0.58));
+        const y0 = Math.max(features.bounds.top, Math.floor(features.height * 0.42));
+        const y1 = Math.min(features.bounds.bottom, Math.ceil(features.height * 0.58));
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let a = 0;
+        let luminance = 0;
+        let count = 0;
+
+        for (let y = y0; y <= y1; y += 1) {
+          for (let x = x0; x <= x1; x += 1) {
+            const index = (y * features.width + x) * 4;
+            const alpha = features.data[index + 3] / 255;
+            r += features.data[index] * alpha;
+            g += features.data[index + 1] * alpha;
+            b += features.data[index + 2] * alpha;
+            a += features.data[index + 3];
+            luminance +=
+              (0.2126 * features.data[index] + 0.7152 * features.data[index + 1] + 0.0722 * features.data[index + 2]) *
+              alpha;
+            count += 1;
+          }
+        }
+
+        return count
+          ? {
+              r: r / count,
+              g: g / count,
+              b: b / count,
+              a: a / count,
+              luminance: luminance / count
+            }
+          : { r: 0, g: 0, b: 0, a: 0, luminance: 0 };
+      }
+
+      function computeLocalizedDetailGuard(features) {
+        const width = features.width;
+        const height = features.height;
+        const pixelCount = width * height;
+        const visited = new Uint8Array(pixelCount);
+        const threshold = computeDetailThreshold(features);
+        const centerSample = computeCenterSample(features);
+        const padding = clamp(Math.round(Math.min(width, height) * 0.075), 6, 18);
+        const guard = {
+          left: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          edgeLeft: 0,
+          edgeTop: 0,
+          edgeRight: 0,
+          edgeBottom: 0,
+          padding,
+          threshold,
+          components: []
+        };
+
+        const isDetail = (index) => {
+          if (features.alpha[index] <= NINE_SLICE_DETAIL_ALPHA_THRESHOLD) {
+            return false;
+          }
+
+          const dataIndex = index * 4;
+          const colorDistance = alphaAwareDistanceToSample(features.data, dataIndex, centerSample);
+          return features.gradient[index] >= threshold || (colorDistance >= 24 && features.gradient[index] >= threshold * 0.24);
+        };
+
+        const pushComponentGuard = (component) => {
+          const boxWidth = component.maxX - component.minX + 1;
+          const boxHeight = component.maxY - component.minY + 1;
+          if (component.count < 2) return;
+
+          const centerX = (component.minX + component.maxX) / 2;
+          const centerY = (component.minY + component.maxY) / 2;
+          const spansVerticalEdge = boxHeight > height * 0.55 && boxWidth < width * 0.12;
+          const spansHorizontalEdge = boxWidth > width * 0.55 && boxHeight < height * 0.12;
+          const hugeOutline = boxWidth > width * 0.62 && boxHeight > height * 0.62;
+          const localized = boxWidth <= width * 0.48 && boxHeight <= height * 0.48;
+          const touchesLeft = component.minX <= features.bounds.left + 2;
+          const touchesRight = component.maxX >= features.bounds.right - 2;
+          const touchesTop = component.minY <= features.bounds.top + 2;
+          const touchesBottom = component.maxY >= features.bounds.bottom - 2;
+
+          if (hugeOutline) return;
+
+          if (spansVerticalEdge) {
+            if (centerX < width * 0.5) {
+              guard.left = Math.max(guard.left, component.maxX + 1 + padding);
+              guard.edgeLeft = Math.max(guard.edgeLeft, component.maxX + 1 + padding);
+            } else {
+              guard.right = Math.max(guard.right, width - component.minX + padding);
+              guard.edgeRight = Math.max(guard.edgeRight, width - component.minX + padding);
+            }
+            return;
+          }
+          if (touchesLeft && boxHeight > height * 0.42) {
+            guard.left = Math.max(guard.left, component.maxX + 1 + padding);
+            guard.edgeLeft = Math.max(guard.edgeLeft, component.maxX + 1 + padding);
+            return;
+          }
+          if (touchesRight && boxHeight > height * 0.42) {
+            guard.right = Math.max(guard.right, width - component.minX + padding);
+            guard.edgeRight = Math.max(guard.edgeRight, width - component.minX + padding);
+            return;
+          }
+          if (spansHorizontalEdge) {
+            if (centerY < height * 0.5) {
+              guard.top = Math.max(guard.top, component.maxY + 1 + padding);
+              guard.edgeTop = Math.max(guard.edgeTop, component.maxY + 1 + padding);
+            } else {
+              guard.bottom = Math.max(guard.bottom, height - component.minY + padding);
+              guard.edgeBottom = Math.max(guard.edgeBottom, height - component.minY + padding);
+            }
+            return;
+          }
+          if (touchesTop && boxWidth > width * 0.42) {
+            guard.top = Math.max(guard.top, component.maxY + 1 + padding);
+            guard.edgeTop = Math.max(guard.edgeTop, component.maxY + 1 + padding);
+            return;
+          }
+          if (touchesBottom && boxWidth > width * 0.42) {
+            guard.bottom = Math.max(guard.bottom, height - component.minY + padding);
+            guard.edgeBottom = Math.max(guard.edgeBottom, height - component.minY + padding);
+            return;
+          }
+
+          if (!localized) return;
+
+          if (centerX < width * 0.5) {
+            guard.left = Math.max(guard.left, component.maxX + 1 + padding);
+          } else {
+            guard.right = Math.max(guard.right, width - component.minX + padding);
+          }
+
+          if (centerY < height * 0.5) {
+            guard.top = Math.max(guard.top, component.maxY + 1 + padding);
+          } else {
+            guard.bottom = Math.max(guard.bottom, height - component.minY + padding);
+          }
+
+          if (guard.components.length < 16) {
+            guard.components.push({
+              minX: component.minX,
+              minY: component.minY,
+              maxX: component.maxX,
+              maxY: component.maxY,
+              count: component.count
+            });
+          }
+        };
+
+        const stack = [];
+        const visitNeighbor = (x, y) => {
+          if (x < features.bounds.left || x > features.bounds.right || y < features.bounds.top || y > features.bounds.bottom) {
+            return;
+          }
+          const index = y * width + x;
+          if (visited[index] || !isDetail(index)) return;
+          visited[index] = 1;
+          stack.push(index);
+        };
+
+        for (let y = features.bounds.top; y <= features.bounds.bottom; y += 1) {
+          for (let x = features.bounds.left; x <= features.bounds.right; x += 1) {
+            const startIndex = y * width + x;
+            if (visited[startIndex] || !isDetail(startIndex)) {
+              continue;
+            }
+
+            visited[startIndex] = 1;
+            stack.length = 0;
+            stack.push(startIndex);
+            const component = {
+              minX: x,
+              minY: y,
+              maxX: x,
+              maxY: y,
+              count: 0
+            };
+
+            while (stack.length) {
+              const index = stack.pop();
+              const px = index % width;
+              const py = Math.floor(index / width);
+              component.minX = Math.min(component.minX, px);
+              component.minY = Math.min(component.minY, py);
+              component.maxX = Math.max(component.maxX, px);
+              component.maxY = Math.max(component.maxY, py);
+              component.count += 1;
+
+              visitNeighbor(px - 1, py - 1);
+              visitNeighbor(px, py - 1);
+              visitNeighbor(px + 1, py - 1);
+              visitNeighbor(px - 1, py);
+              visitNeighbor(px + 1, py);
+              visitNeighbor(px - 1, py + 1);
+              visitNeighbor(px, py + 1);
+              visitNeighbor(px + 1, py + 1);
+            }
+
+            pushComponentGuard(component);
+          }
+        }
+
+        const maxHorizontal = Math.max(0, Math.floor(width - 2));
+        const maxVertical = Math.max(0, Math.floor(height - 2));
+        if (guard.left + guard.right > maxHorizontal) {
+          const scale = maxHorizontal / Math.max(1, guard.left + guard.right);
+          guard.left = Math.floor(guard.left * scale);
+          guard.right = Math.floor(guard.right * scale);
+        }
+        if (guard.edgeLeft + guard.edgeRight > maxHorizontal) {
+          const scale = maxHorizontal / Math.max(1, guard.edgeLeft + guard.edgeRight);
+          guard.edgeLeft = Math.floor(guard.edgeLeft * scale);
+          guard.edgeRight = Math.floor(guard.edgeRight * scale);
+        }
+        if (guard.top + guard.bottom > maxVertical) {
+          const scale = maxVertical / Math.max(1, guard.top + guard.bottom);
+          guard.top = Math.floor(guard.top * scale);
+          guard.bottom = Math.floor(guard.bottom * scale);
+        }
+        if (guard.edgeTop + guard.edgeBottom > maxVertical) {
+          const scale = maxVertical / Math.max(1, guard.edgeTop + guard.edgeBottom);
+          guard.edgeTop = Math.floor(guard.edgeTop * scale);
+          guard.edgeBottom = Math.floor(guard.edgeBottom * scale);
+        }
+
+        return guard;
+      }
+
+      function expandBandForDetailGuard(axis, band, leadingGuard, trailingGuard) {
+        let start = band.start;
+        let end = band.end;
+        if (leadingGuard > start) {
+          start = seekSafeLineForward(axis, band.thresholds, leadingGuard, Math.min(axis.length - 1, leadingGuard + 16));
+        }
+        if (trailingGuard > axis.length - end) {
+          const target = axis.length - trailingGuard;
+          end = seekSafeLineBackward(axis, band.thresholds, target, Math.max(1, target - 16));
+        }
+        start = clamp(Math.round(start), 0, axis.length - 1);
+        end = clamp(Math.round(end), start + 1, axis.length);
+        return withBandEdges(band, start, end);
+      }
+
+      function excludeLocalizedDetailFromBand(axis, band, components, direction, padding) {
+        let result = band;
+        for (const component of components || []) {
+          const detailStart = direction === "x" ? component.minX : component.minY;
+          const detailEnd = (direction === "x" ? component.maxX : component.maxY) + 1;
+          const protectedStart = Math.max(0, detailStart - padding);
+          const protectedEnd = Math.min(axis.length, detailEnd + padding);
+          if (result.end <= protectedStart || result.start >= protectedEnd) {
+            continue;
+          }
+
+          const beforeEnd = seekSafeLineBackward(
+            axis,
+            result.thresholds,
+            Math.min(result.end, protectedStart),
+            Math.max(result.start + 1, protectedStart - 16)
+          );
+          const afterStart = seekSafeLineForward(
+            axis,
+            result.thresholds,
+            Math.max(result.start, protectedEnd),
+            Math.min(result.end - 1, protectedEnd + 16)
+          );
+          const beforeSize = Math.max(0, beforeEnd - result.start);
+          const afterSize = Math.max(0, result.end - afterStart);
+          result =
+            beforeSize >= afterSize
+              ? withBandEdges(result, result.start, Math.max(result.start + 1, beforeEnd))
+              : withBandEdges(result, Math.min(result.end - 1, afterStart), result.end);
+        }
+        return result;
+      }
+
+      function applyLocalizedDetailGuard(features, xAxis, yAxis, xBand, yBand, mode, detailGuard) {
+        const guard = detailGuard || computeLocalizedDetailGuard(features);
+        const edgeGuardedX = expandBandForDetailGuard(xAxis, xBand, guard.edgeLeft, guard.edgeRight);
+        const guardedX = excludeLocalizedDetailFromBand(
+          xAxis,
+          edgeGuardedX,
+          guard.components,
+          "x",
+          guard.padding
+        );
+        const edgeGuardedY =
+          mode === "horizontalThreeSlice"
+            ? yBand
+            : expandBandForDetailGuard(yAxis, yBand, guard.edgeTop, guard.edgeBottom);
+        const guardedY =
+          mode === "horizontalThreeSlice"
+            ? edgeGuardedY
+            : excludeLocalizedDetailFromBand(
+                yAxis,
+                edgeGuardedY,
+                guard.components,
+                "y",
+                guard.padding
+              );
+
+        return {
+          xBand: guardedX,
+          yBand: guardedY,
+          guard
+        };
+      }
+
+      function createFallbackAutoMetadata(width, height, assetHash, confidence, reason, warnings, debug) {
+        const allWarnings = [reason, ...(warnings || [])].filter(Boolean);
+        return {
+          source: "default",
+          approved: false,
+          confidence: clamp(confidence, 0.05, 0.45),
+          insets: createSafeDefaultSlice(width, height),
+          assetHash,
+          algorithmVersion: AUTO_NINE_SLICE_ALGORITHM_VERSION,
+          mode: "fallback",
+          warnings: allWarnings,
+          debug: {
+            ...(debug || {}),
+            fallbackReason: reason
+          },
+          generatedAt: Date.now()
+        };
+      }
+
+      function mapBandToSlice(xBand, yBand, sourceWidth, sourceHeight, width, height, mode) {
+        const scaleX = width / Math.max(1, sourceWidth);
+        const scaleY = height / Math.max(1, sourceHeight);
+        return sanitizeSlice(
+          {
+            left: Math.round(xBand.start * scaleX),
+            top: mode === "horizontalThreeSlice" ? 0 : Math.round(yBand.start * scaleY),
+            right: Math.round((sourceWidth - xBand.end) * scaleX),
+            bottom: mode === "horizontalThreeSlice" ? 0 : Math.round((sourceHeight - yBand.end) * scaleY)
+          },
+          width,
+          height
+        );
+      }
+
+      function selectedLineIsHigh(axis, band) {
+        const scores = axis.repeatScores || axis.lineScores;
+        return (
+          scores[clamp(band.start, 0, axis.length)] > band.repeatableHardLimit ||
+          scores[clamp(band.end, 0, axis.length)] > band.repeatableHardLimit
+        );
+      }
+
+      function validateDetectedSlice(slice, mode, width, height, xAxis, yAxis, xBand, yBand) {
+        const warnings = [];
+        const values = [slice.left, slice.top, slice.right, slice.bottom];
+        if (!values.every((value) => Number.isFinite(value))) {
+          return { ok: false, reason: "Detected slice values were not finite.", warnings };
+        }
+        if (values.some((value) => value < 0)) {
+          return { ok: false, reason: "Detected slice values were negative.", warnings };
+        }
+        if (slice.left + slice.right >= width) {
+          return { ok: false, reason: "Detected horizontal fixed borders consume the whole image.", warnings };
+        }
+        if (mode !== "horizontalThreeSlice" && slice.top + slice.bottom >= height) {
+          return { ok: false, reason: "Detected vertical fixed borders consume the whole image.", warnings };
+        }
+        if (
+          !xBand.foundRepeatableRun ||
+          xBand.scores.interiorPeak > xBand.repeatableHardLimit ||
+          xBand.profileDrift > xBand.repeatableProfileLimit
+        ) {
+          return { ok: false, reason: "No genuinely repeatable horizontal pixel band was found.", warnings };
+        }
+        if (
+          mode !== "horizontalThreeSlice" &&
+          (!yBand.foundRepeatableRun ||
+            yBand.scores.interiorPeak > yBand.repeatableHardLimit ||
+            yBand.profileDrift > yBand.repeatableProfileLimit)
+        ) {
+          return { ok: false, reason: "No genuinely repeatable vertical pixel band was found.", warnings };
+        }
+        if (slice.left + slice.right > width * 0.84) {
+          warnings.push("Detected horizontal stretch region is very small; check this slice manually.");
+        }
+        if (mode !== "horizontalThreeSlice" && slice.top + slice.bottom > height * 0.84) {
+          warnings.push("Detected vertical stretch region is very small; check this slice manually.");
+        }
+        if (xBand.bandSize < xBand.minUsefulSize) {
+          if (xBand.bandSize <= 1) {
+            return { ok: false, reason: "No horizontally stretchable safe band was found.", warnings };
+          }
+          warnings.push("Horizontal stretch band is narrow because fixed artwork needed protection.");
+        }
+        if (mode !== "horizontalThreeSlice" && yBand.bandSize < yBand.minUsefulSize) {
+          if (yBand.bandSize <= 1) {
+            return { ok: false, reason: "No vertically stretchable safe band was found.", warnings };
+          }
+          warnings.push("Vertical stretch band is narrow because fixed artwork needed protection.");
+        }
+        if (selectedLineIsHigh(xAxis, xBand)) {
+          return { ok: false, reason: "Horizontal slice guides would cross high-detail pixels.", warnings };
+        }
+        if (mode !== "horizontalThreeSlice" && selectedLineIsHigh(yAxis, yBand)) {
+          return { ok: false, reason: "Vertical slice guides would cross high-detail pixels.", warnings };
+        }
+        if (mode !== "horizontalThreeSlice" && yBand.confidence < 0.5) {
+          warnings.push("Vertical slice confidence is modest; check top and bottom guides manually.");
+        }
+        if (xBand.confidence < 0.5) {
+          warnings.push("Horizontal slice confidence is modest; check left and right guides manually.");
+        }
+        return { ok: true, reason: "", warnings };
+      }
+
+      function shouldUseHorizontalThreeSlice(sourceWidth, sourceHeight, xBand, yBand) {
+        const aspect = sourceWidth / Math.max(1, sourceHeight);
+        const yCenterRatio = yBand.bandSize / Math.max(1, sourceHeight);
+        const leftShapeInset = Math.max(0, xBand.shape.left);
+        const rightShapeInset = Math.max(0, sourceWidth - xBand.shape.right);
+        const pillSilhouette =
+          Math.min(leftShapeInset, rightShapeInset) >= sourceHeight * 0.28;
+        return (
+          aspect >= 2.75 &&
+          pillSilhouette &&
+          xBand.confidence >= 0.58 &&
+          (yBand.confidence < 0.54 || yCenterRatio < 0.24)
+        );
+      }
+
+      function shouldWarnVerticalOnlyCandidate(sourceWidth, sourceHeight, xBand, yBand) {
+        const aspect = sourceHeight / Math.max(1, sourceWidth);
+        const topCap = yBand.start;
+        const bottomCap = sourceHeight - yBand.end;
+        const capSize = Math.min(topCap, bottomCap);
+        const verticalCaps =
+          aspect >= 1.75 &&
+          capSize >= sourceWidth * 0.38 &&
+          Math.max(topCap, bottomCap) <= sourceWidth * 0.82 &&
+          yBand.confidence >= 0.54;
+        const roundedCapHorizontalVariation =
+          xBand.shape.left > sourceWidth * 0.1 || sourceWidth - xBand.shape.right > sourceWidth * 0.1;
+        return (
+          (verticalCaps && roundedCapHorizontalVariation) ||
+          (aspect >= 1.75 && yBand.confidence >= 0.58 && (xBand.confidence < 0.48 || xBand.bandSize < sourceWidth * 0.25))
+        );
+      }
+
+      function withBandEdges(band, start, end) {
+        return {
+          ...band,
+          start,
+          end,
+          bandSize: end - start
+        };
+      }
+
+      function applyReplicationBuffer(band) {
+        if (band.end - band.start <= Math.max(6, band.minUsefulSize + 4)) {
+          return band;
+        }
+        return withBandEdges(band, band.start + 2, band.end - 2);
+      }
+
+      function applyRoundedCornerGuard(sourceWidth, sourceHeight, xBand, yBand) {
+        if (!xBand.symmetryAdjusted || !yBand.symmetryAdjusted || !xBand.hasProtectedShape || !yBand.hasProtectedShape) {
+          return { xBand, yBand };
+        }
+
+        const xInset = Math.min(xBand.start, sourceWidth - xBand.end);
+        const yInset = Math.min(yBand.start, sourceHeight - yBand.end);
+        const maxGuard = Math.max(0, Math.floor(Math.min(sourceWidth, sourceHeight) / 2) - 1);
+        const guard = clamp(Math.round(Math.max(xInset, yInset)), 0, maxGuard);
+        if (guard <= yInset || guard < Math.min(sourceWidth, sourceHeight) * 0.12) {
+          return { xBand, yBand };
+        }
+
+        return {
+          xBand,
+          yBand: withBandEdges(yBand, guard, sourceHeight - guard)
+        };
+      }
+
+      function buildDebugSummary(features, xAxis, yAxis, xBand, yBand, mode, confidence, detailGuard) {
+        return {
+          algorithmVersion: AUTO_NINE_SLICE_ALGORITHM_VERSION,
+          sourceSize: {
+            width: features.width,
+            height: features.height
+          },
+          visualBounds: features.bounds,
+          mode,
+          confidence,
+          selectedPixels: {
+            left: xBand.start,
+            right: features.width - xBand.end,
+            top: mode === "horizontalThreeSlice" ? 0 : yBand.start,
+            bottom: mode === "horizontalThreeSlice" ? 0 : features.height - yBand.end
+          },
+          detailGuard,
+          x: {
+            start: xBand.start,
+            end: xBand.end,
+            confidence: xBand.confidence,
+            thresholds: xBand.thresholds,
+            shape: {
+              left: xBand.shape.left,
+              right: xBand.shape.right
+            },
+            scores: xBand.scores,
+            repeatability: {
+              runCount: xBand.repeatableRunCount,
+              safeLimit: xBand.repeatableSafeLimit,
+              hardLimit: xBand.repeatableHardLimit,
+              profileLimit: xBand.repeatableProfileLimit,
+              profileDrift: xBand.profileDrift
+            },
+            selectionStrategy: xBand.selectionStrategy,
+            symmetryAdjusted: Boolean(xBand.symmetryAdjusted)
+          },
+          y: {
+            start: yBand.start,
+            end: yBand.end,
+            confidence: yBand.confidence,
+            thresholds: yBand.thresholds,
+            shape: {
+              left: yBand.shape.left,
+              right: yBand.shape.right
+            },
+            scores: yBand.scores,
+            repeatability: {
+              runCount: yBand.repeatableRunCount,
+              safeLimit: yBand.repeatableSafeLimit,
+              hardLimit: yBand.repeatableHardLimit,
+              profileLimit: yBand.repeatableProfileLimit,
+              profileDrift: yBand.profileDrift
+            },
+            selectionStrategy: yBand.selectionStrategy,
+            symmetryAdjusted: Boolean(yBand.symmetryAdjusted)
+          }
+        };
+      }
+
+      function buildAutoMetadataFromRgba(data, sourceWidth, sourceHeight, width, height, assetHash, nodeName) {
+        const warnings = [];
+        if (sourceWidth < 12 || sourceHeight < 12 || width < 4 || height < 4) {
+          return createFallbackAutoMetadata(
+            width,
+            height,
+            assetHash,
+            0.2,
+            "Image is too small for reliable nine-slice auto-detection.",
+            warnings,
+            {
+              sourceSize: { width: sourceWidth, height: sourceHeight },
+              mode: "fallback"
+            }
+          );
+        }
+
+        const features = buildPixelFeatures(data, sourceWidth, sourceHeight);
+        const xAxis = buildAxisSafety(features, "x");
+        const yAxis = buildAxisSafety(features, "y");
+        let xBand = detectAxisBand(features, xAxis);
+        let yBand = detectAxisBand(features, yAxis);
+        const detailGuard = computeLocalizedDetailGuard(features);
+        let mode = shouldUseHorizontalThreeSlice(sourceWidth, sourceHeight, xBand, yBand)
+          ? "horizontalThreeSlice"
+          : "nineSlice";
+        if (mode !== "horizontalThreeSlice") {
+          const guarded = applyRoundedCornerGuard(sourceWidth, sourceHeight, xBand, yBand);
+          xBand = guarded.xBand;
+          yBand = guarded.yBand;
+        }
+
+        if (mode !== "horizontalThreeSlice" && shouldWarnVerticalOnlyCandidate(sourceWidth, sourceHeight, xBand, yBand)) {
+          const debug = buildDebugSummary(features, xAxis, yAxis, xBand, yBand, "verticalThreeSliceCandidate", 0.3, null);
+          return createFallbackAutoMetadata(
+            width,
+            height,
+            assetHash,
+            0.3,
+            "Vertical-only stretch was detected, but the runtime only supports nine-slice or horizontal three-slice.",
+            warnings,
+            debug
+          );
+        }
+
+        const combinedConfidence =
+          mode === "horizontalThreeSlice"
+            ? clamp(xBand.confidence * 0.96 + 0.03, 0.05, 0.98)
+            : clamp(xBand.confidence * 0.52 + yBand.confidence * 0.48, 0.05, 0.98);
+        const detailGuardResult = applyLocalizedDetailGuard(features, xAxis, yAxis, xBand, yBand, mode, detailGuard);
+        xBand = applyReplicationBuffer(detailGuardResult.xBand);
+        yBand = mode === "horizontalThreeSlice" ? detailGuardResult.yBand : applyReplicationBuffer(detailGuardResult.yBand);
+
+        const slice = mapBandToSlice(xBand, yBand, sourceWidth, sourceHeight, width, height, mode);
+        const debug = buildDebugSummary(
+          features,
+          xAxis,
+          yAxis,
+          xBand,
+          yBand,
+          mode,
+          combinedConfidence,
+          detailGuardResult.guard
+        );
+        const validation = validateDetectedSlice(slice, mode, width, height, xAxis, yAxis, xBand, yBand);
+        if (!validation.ok) {
+          return createFallbackAutoMetadata(width, height, assetHash, combinedConfidence * 0.55, validation.reason, warnings, debug);
+        }
+
+        warnings.push(...validation.warnings);
+        if (combinedConfidence < NINE_SLICE_MIN_CONFIDENCE) {
+          warnings.push(
+            `Low confidence nine-slice auto-detection${nodeName ? ` for ${nodeName}` : ""}. Please check manually.`
+          );
+          return createFallbackAutoMetadata(
+            width,
+            height,
+            assetHash,
+            combinedConfidence,
+            "Low confidence safe-zone detection; using safe default slices.",
+            warnings,
+            debug
+          );
+        }
+
+        if (mode === "horizontalThreeSlice") {
+          warnings.push("Detected horizontal-only stretch; top and bottom slices were intentionally set to 0.");
+        }
+
+        return {
+          source: "auto",
+          approved: false,
+          confidence: combinedConfidence,
+          insets: slice,
+          assetHash,
+          algorithmVersion: AUTO_NINE_SLICE_ALGORITHM_VERSION,
+          mode,
+          warnings: warnings.length ? warnings : undefined,
+          debug,
+          generatedAt: Date.now()
+        };
+      }
+
+      function buildAutoMetadataFromImage(image, width, height, assetHash, nodeName) {
+        const work = document.createElement("canvas");
+        work.width = image.naturalWidth || image.width;
+        work.height = image.naturalHeight || image.height;
+        const workCtx = work.getContext("2d", { willReadFrequently: true });
+        workCtx.drawImage(image, 0, 0);
+        const { data } = workCtx.getImageData(0, 0, work.width, work.height);
+        return buildAutoMetadataFromRgba(data, work.width, work.height, width, height, assetHash, nodeName);
+      }
+
+      function maybeApplyDetectedAutoMetadata(metadata, forceApply) {
+        lastDetectedAutoMetadata = metadata;
+        if (!selectedNodeInfo || !selectedNodeInfo.hasSelection || !selectedNodeInfo.isNine) {
+          return;
+        }
+        if (!forceApply && sliceDirtySinceSelection) {
+          updateNineMeta();
+          return;
+        }
+        if (resolvedMetadata && resolvedMetadata.source === "manual" && !forceApply) {
+          updateNineMeta();
+          return;
+        }
+
+        resolvedMetadata = metadata;
+        currentSlice = sanitizeSlice(metadata.insets, selectedNodeInfo.width, selectedNodeInfo.height);
+        applySliceToInputs(currentSlice);
+        logNineSliceDebug(metadata, selectedNodeInfo.cleanName || selectedNodeInfo.name);
+        updateStatusFromState();
+        drawPreview();
+      }
+
+      function sendAutoMetadata(nodeId, metadata, type) {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type,
+              nodeId,
+              metadata
+            }
+          },
+          "*"
+        );
+      }
+
+      function loadPreviewImage(payload) {
+        if (!payload || !payload.nodeId) return;
+        clearPreviewImage();
+        const bytes = bytesToUint8Array(payload.bytes);
+        const blob = new Blob([bytes], { type: "image/png" });
+        const url = URL.createObjectURL(blob);
+        const image = new Image();
+        previewObjectUrl = url;
+        previewNodeId = payload.nodeId;
+        image.onload = () => {
+          if (previewNodeId !== payload.nodeId || previewObjectUrl !== url) return;
+          previewImage = image;
+          currentPreviewAssetHash = payload.assetHash || "";
+          setPreviewStatus(`Preview ${image.naturalWidth} x ${image.naturalHeight}`, "ok");
+          if (selectedNodeInfo && selectedNodeInfo.nodeId === payload.nodeId && selectedNodeInfo.isNine) {
+            const detected = buildAutoMetadataFromImage(
+              image,
+              selectedNodeInfo.width,
+              selectedNodeInfo.height,
+              currentPreviewAssetHash,
+              selectedNodeInfo.cleanName || selectedNodeInfo.name
+            );
+            if (!selectedNodeInfo.hasManualOverride) {
+              sendAutoMetadata(payload.nodeId, detected, "cacheAutoNineSlice");
+            }
+            maybeApplyDetectedAutoMetadata(detected, false);
+          }
+          updateNineMeta();
+          drawPreview();
+        };
+        image.onerror = () => {
+          if (previewNodeId !== payload.nodeId || previewObjectUrl !== url) return;
+          clearPreviewImage();
+          setPreviewStatus("Preview image could not be decoded.", "error");
+          drawPreview();
+        };
+        image.src = url;
+      }
+
+      function lineHitTest(x, y) {
+        if (!selectedNodeInfo || !selectedNodeInfo.hasSelection || !selectedNodeInfo.isNine) return null;
+        const r = computePreviewRect(selectedNodeInfo.width, selectedNodeInfo.height);
+        const leftX = r.x + currentSlice.left * r.scaleX;
+        const rightX = r.x + (selectedNodeInfo.width - currentSlice.right) * r.scaleX;
+        const topY = r.y + currentSlice.top * r.scaleY;
+        const bottomY = r.y + (selectedNodeInfo.height - currentSlice.bottom) * r.scaleY;
+        const tolerance = 8;
+        if (Math.abs(x - leftX) <= tolerance && y >= r.y && y <= r.y + r.height) return "left";
+        if (Math.abs(x - rightX) <= tolerance && y >= r.y && y <= r.y + r.height) return "right";
+        if (Math.abs(y - topY) <= tolerance && x >= r.x && x <= r.x + r.width) return "top";
+        if (Math.abs(y - bottomY) <= tolerance && x >= r.x && x <= r.x + r.width) return "bottom";
+        return null;
+      }
+
+      function updateSliceFromDrag(kind, x, y) {
+        if (!selectedNodeInfo || !selectedNodeInfo.hasSelection || !selectedNodeInfo.isNine) return;
+        const width = selectedNodeInfo.width;
+        const height = selectedNodeInfo.height;
+        const r = computePreviewRect(width, height);
+        if (kind === "left") {
+          const px = clamp(Math.round((x - r.x) / r.scaleX), 0, width - currentSlice.right - 1);
+          currentSlice.left = snapMarginToEdge(px);
+        } else if (kind === "right") {
+          const pos = clamp(Math.round((x - r.x) / r.scaleX), currentSlice.left + 1, width);
+          currentSlice.right = snapMarginToEdge(width - pos);
+        } else if (kind === "top") {
+          const py = clamp(Math.round((y - r.y) / r.scaleY), 0, height - currentSlice.bottom - 1);
+          currentSlice.top = snapMarginToEdge(py);
+        } else if (kind === "bottom") {
+          const pos = clamp(Math.round((y - r.y) / r.scaleY), currentSlice.top + 1, height);
+          currentSlice.bottom = snapMarginToEdge(height - pos);
+        }
+        sliceDirtySinceSelection = true;
+        currentSlice = sanitizeSlice(currentSlice, width, height);
+        applySliceToInputs(currentSlice);
+        updateStatusFromState();
+        drawPreview();
+      }
+
+      function setSliceFromInputs() {
+        if (!selectedNodeInfo || !selectedNodeInfo.hasSelection || !selectedNodeInfo.isNine) return;
+        sliceDirtySinceSelection = true;
+        currentSlice = sanitizeSlice(readInputSlice(), selectedNodeInfo.width, selectedNodeInfo.height);
+        applySliceToInputs(currentSlice);
+        updateStatusFromState();
+        drawPreview();
+      }
+
+      canvas.addEventListener("mousedown", (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * canvas.width;
+        const y = ((event.clientY - rect.top) / rect.height) * canvas.height;
+        const hit = lineHitTest(x, y);
+        if (hit) {
+          dragState = { kind: hit };
+          updateSliceFromDrag(hit, x, y);
+        }
+      });
+
+      window.addEventListener("mousemove", (event) => {
+        if (!dragState) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * canvas.width;
+        const y = ((event.clientY - rect.top) / rect.height) * canvas.height;
+        updateSliceFromDrag(dragState.kind, x, y);
+      });
+
+      window.addEventListener("mouseup", () => {
+        dragState = null;
+      });
+
+      [sliceLeft, sliceTop, sliceRight, sliceBottom].forEach((input) => {
+        input.addEventListener("input", () => {
+          setSliceFromInputs();
+        });
+      });
+
+      function requestSelectionInfoSoon() {
+        if (requestSelectionTimer) {
+          clearTimeout(requestSelectionTimer);
+        }
+        requestSelectionTimer = setTimeout(() => {
+          parent.postMessage({ pluginMessage: { type: "requestSelectionInfo" } }, "*");
+        }, 160);
+      }
+
+      assetScaleInput.addEventListener("input", () => {
+        requestSelectionInfoSoon();
+      });
+
+      exportButton.onclick = () => {
+        status.textContent = "Exporting...";
+        status.classList.remove("error");
+        downloadZipButton.disabled = true;
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "exportSelection",
+              assetBasePath: document.getElementById("assetBasePath").value,
+              assetScale: assetScaleInput.value
+            }
+          },
+          "*"
+        );
+      };
+
+      function sanitizeFileName(value) {
+        const cleaned = String(value || "ui")
+          .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+          .trim();
+        return cleaned.length ? cleaned : "ui";
+      }
+
+      function cloneJson(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+
+      function walkNodes(nodes, callback) {
+        for (const node of nodes || []) {
+          callback(node);
+          if (Array.isArray(node.children)) {
+            walkNodes(node.children, callback);
+          }
+        }
+      }
+
+      function appendExportWarning(doc, message) {
+        console.warn(message);
+        if (!doc.meta) doc.meta = {};
+        if (!doc.meta.validation) doc.meta.validation = { warnings: [], errors: [] };
+        if (!Array.isArray(doc.meta.validation.warnings)) doc.meta.validation.warnings = [];
+        doc.meta.validation.warnings.push(message);
+      }
+
+      function hashBytes(bytes) {
+        let hash = 0x811c9dc5;
+        for (const byte of bytes) {
+          hash ^= byte;
+          hash = Math.imul(hash, 0x01000193);
+        }
+        return (hash >>> 0).toString(16).padStart(8, "0");
+      }
+
+      const GENERIC_ASSET_NAMES = new Set([
+        "rectangle",
+        "group",
+        "frame",
+        "vector",
+        "instance",
+        "layer",
+        "image",
+        "ellipse",
+        "star",
+        "polygon",
+        "union",
+        "booleanoperation",
+        "boolean_operation"
+      ]);
+
+      function sanitizeAssetBaseName(value) {
+        return String(value || "")
+          .normalize("NFKD")
+          .toLowerCase()
+          .replace(/@[a-zA-Z]+(?:\([^)]*\))?/g, " ")
+          .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+          .replace(/[^a-z0-9_.-]+/g, "_")
+          .replace(/_+/g, "_")
+          .replace(/^[_.-]+|[_.-]+$/g, "");
+      }
+
+      function isGenericAssetBaseName(value) {
+        const sanitized = sanitizeAssetBaseName(value);
+        if (!sanitized) return true;
+        if (/^asset[-_]?[a-f0-9]{6,}(?:[-_]\d+)?$/i.test(sanitized) || /^ui[-_]?asset$/i.test(sanitized)) {
+          return true;
+        }
+        const compact = sanitized.replace(/[_.-]+/g, "");
+        const withoutTrailingDigits = compact.replace(/\d+$/g, "");
+        return GENERIC_ASSET_NAMES.has(compact) || GENERIC_ASSET_NAMES.has(withoutTrailingDigits);
+      }
+
+      function shortHash(value, length = 6) {
+        return sanitizeAssetBaseName(value).replace(/[^a-z0-9]/g, "").slice(0, length) || "000000";
+      }
+
+      function fallbackAssetBaseName(hashOrId) {
+        return `asset_${shortHash(hashOrId, 8)}`;
+      }
+
+      function assetBaseNameFromPath(path) {
+        const clean = String(path || "").split(/[?#]/, 1)[0] || "";
+        const slashIndex = Math.max(clean.lastIndexOf("/"), clean.lastIndexOf("\\"));
+        const fileName = slashIndex >= 0 ? clean.slice(slashIndex + 1) : clean;
+        const dotIndex = fileName.lastIndexOf(".");
+        return sanitizeAssetBaseName(dotIndex > 0 ? fileName.slice(0, dotIndex) : fileName);
+      }
+
+      function scoreAssetNameCandidate(candidate) {
+        const generic = isGenericAssetBaseName(candidate.name);
+        const sourceScore =
+          candidate.source === "explicit"
+            ? 10000
+            : candidate.source === "component"
+              ? 8000
+              : candidate.source === "context"
+                ? 6000
+                : candidate.source === "layer"
+                  ? 5000
+                  : 1000;
+        return sourceScore + (generic ? 0 : 1000) + Math.max(0, 240 - candidate.name.length) - Math.max(0, candidate.order || 0);
+      }
+
+      function chooseBestAssetName(candidates, fallbackHash) {
+        const resolved = candidates
+          .map((candidate) => ({
+            ...candidate,
+            name: sanitizeAssetBaseName(candidate.name)
+          }))
+          .filter((candidate) => candidate.name)
+          .map((candidate) => ({
+            ...candidate,
+            generic: isGenericAssetBaseName(candidate.name),
+            score: scoreAssetNameCandidate(candidate)
+          }))
+          .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            if (a.name.length !== b.name.length) return a.name.length - b.name.length;
+            return (a.order || 0) - (b.order || 0);
+          });
+
+        if (resolved.length === 0) {
+          return {
+            name: fallbackAssetBaseName(fallbackHash),
+            source: "fallback",
+            generic: true,
+            score: 0
+          };
+        }
+
+        const best = resolved[0];
+        if (!best.generic || best.source === "explicit") {
+          return best;
+        }
+        return {
+          ...best,
+          name: `${best.name}_${shortHash(fallbackHash, 6)}`
+        };
+      }
+
+      function joinZipPath(...parts) {
+        return parts
+          .map((part) => String(part || "").replace(/^\/+|\/+$/g, ""))
+          .filter(Boolean)
+          .join("/");
+      }
+
+      function uniqueSorted(values) {
+        return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
+      }
+
+      function makeUniqueRootFolders(documents) {
+        const seen = new Map();
+        return documents.map((doc, index) => {
+          const base = sanitizeFileName(doc.name || `Export${index + 1}`);
+          const count = seen.get(base) || 0;
+          seen.set(base, count + 1);
+          return count === 0 ? base : `${base}__${count + 1}`;
+        });
+      }
+
+      function makeUniqueJsonNames(documents) {
+        const seen = new Map();
+        return documents.map((doc, index) => {
+          const base = sanitizeFileName(doc.name || `Export${index + 1}`);
+          const count = seen.get(base) || 0;
+          seen.set(base, count + 1);
+          if (count > 0) {
+            appendExportWarning(doc, `Duplicate export root name "${base}" found; writing JSON as "${base}__${count + 1}.json".`);
+          }
+          return count === 0 ? base : `${base}__${count + 1}`;
+        });
+      }
+
+      function collectAssetNameCandidates(asset, order) {
+        const candidates = [];
+        const push = (name, source, offset) => {
+          const sanitized = sanitizeAssetBaseName(name);
+          if (sanitized) candidates.push({ name: sanitized, source, order: order * 10 + offset });
+        };
+        push(asset.name, asset.nameSource || "layer", 0);
+        push(assetBaseNameFromPath(asset.src), "layer", 1);
+        return candidates;
+      }
+
+      function finalizeExportedAssetsForZip({ documents, assetBytesByDocument, assetBasePath, sharedMode = "reused-only" }) {
+        const rootFolders = makeUniqueRootFolders(documents);
+        const canonicalBySignature = new Map();
+        let order = 0;
+
+        documents.forEach((doc, documentIndex) => {
+          const bytesByAssetId = assetBytesByDocument[documentIndex] || new Map();
+          for (const asset of doc.assets || []) {
+            const bytes = bytesByAssetId.get(asset.id);
+            if (!bytes) continue;
+            const hash = hashBytes(bytes);
+            const signature = `png:${hash}:${bytes.length}`;
+            let canonical = canonicalBySignature.get(signature);
+            if (!canonical) {
+              canonical = {
+                signature,
+                hash,
+                id: `asset-${hash}-${bytes.length}`,
+                bytes,
+                refs: [],
+                candidates: [],
+                baseName: fallbackAssetBaseName(hash),
+                fileName: "",
+                src: "",
+                shared: false,
+                usedBy: [],
+                manifestAsset: null
+              };
+              canonicalBySignature.set(signature, canonical);
+            }
+            canonical.refs.push({
+              documentIndex,
+              rootName: doc.name,
+              rootFolder: rootFolders[documentIndex],
+              previousAssetId: asset.id,
+              asset,
+              order
+            });
+            canonical.candidates.push(...collectAssetNameCandidates(asset, order));
+            order += 1;
+          }
+        });
+
+        const canonicalAssets = Array.from(canonicalBySignature.values()).sort((a, b) => a.refs[0].order - b.refs[0].order);
+        for (const canonical of canonicalAssets) {
+          canonical.baseName = chooseBestAssetName(canonical.candidates, canonical.hash).name;
+        }
+
+        const byBaseName = new Map();
+        for (const canonical of canonicalAssets) {
+          const group = byBaseName.get(canonical.baseName) || [];
+          group.push(canonical);
+          byBaseName.set(canonical.baseName, group);
+        }
+
+        const usedPaths = new Set();
+        for (const group of byBaseName.values()) {
+          group.sort((a, b) => {
+            const aBest = chooseBestAssetName(a.candidates, a.hash);
+            const bBest = chooseBestAssetName(b.candidates, b.hash);
+            if (bBest.score !== aBest.score) return bBest.score - aBest.score;
+            return a.hash.localeCompare(b.hash);
+          });
+
+          if (group.length > 1) {
+            const fileNames = group.map((canonical, index) =>
+              index === 0 ? `${canonical.baseName}.png` : `${canonical.baseName}__${shortHash(canonical.hash, 6)}.png`
+            );
+            const warning = `Duplicate asset name "${group[0].baseName}" produced multiple different PNGs: ${fileNames.join(", ")}`;
+            for (const canonical of group) {
+              for (const documentIndex of new Set(canonical.refs.map((ref) => ref.documentIndex))) {
+                appendExportWarning(documents[documentIndex], warning);
+              }
+            }
+          }
+
+          group.forEach((canonical, index) => {
+            const rootFolderNames = uniqueSorted(canonical.refs.map((ref) => ref.rootFolder));
+            canonical.usedBy = uniqueSorted(canonical.refs.map((ref) => ref.rootName));
+            canonical.shared =
+              sharedMode === "all-shared"
+                ? true
+                : sharedMode === "none"
+                  ? false
+                  : rootFolderNames.length > 1;
+            const folder = canonical.shared ? "shared" : rootFolderNames[0];
+            const suffix = index === 0 ? "" : `__${shortHash(canonical.hash, 6)}`;
+            let fileName = `${canonical.baseName}${suffix}.png`;
+            let src = joinZipPath(assetBasePath, folder, fileName);
+            let conflictIndex = 2;
+            while (usedPaths.has(src)) {
+              fileName = `${canonical.baseName}${suffix}__${conflictIndex}.png`;
+              src = joinZipPath(assetBasePath, folder, fileName);
+              conflictIndex += 1;
+            }
+            usedPaths.add(src);
+            canonical.fileName = fileName;
+            canonical.src = src;
+
+            const sourceAsset = canonical.refs[0].asset;
+            const aliases = uniqueSorted(
+              canonical.candidates
+                .map((candidate) => sanitizeAssetBaseName(candidate.name))
+                .filter((name) => name && name !== canonical.baseName && !isGenericAssetBaseName(name))
+            );
+            canonical.manifestAsset = {
+              ...sourceAsset,
+              id: canonical.id,
+              name: canonical.baseName,
+              src,
+              width: sourceAsset.width,
+              height: sourceAsset.height,
+              scale: sourceAsset.scale,
+              mimeType: sourceAsset.mimeType || "image/png",
+              shared: canonical.shared,
+              usedBy: canonical.usedBy
+            };
+            if (aliases.length) {
+              canonical.manifestAsset.aliases = aliases;
+              const warning = `Identical PNG bytes were referenced by multiple names: "${aliases.join(
+                '", "'
+              )}"; using "${canonical.fileName}"`;
+              for (const documentIndex of new Set(canonical.refs.map((ref) => ref.documentIndex))) {
+                appendExportWarning(documents[documentIndex], warning);
+              }
+            }
+          });
+        }
+
+        documents.forEach((doc, documentIndex) => {
+          const canonicalForDoc = canonicalAssets.filter((canonical) =>
+            canonical.refs.some((ref) => ref.documentIndex === documentIndex)
+          );
+          const nextAssetByPreviousId = new Map();
+          for (const canonical of canonicalForDoc) {
+            for (const ref of canonical.refs) {
+              if (ref.documentIndex === documentIndex) {
+                nextAssetByPreviousId.set(ref.previousAssetId, canonical.manifestAsset);
+              }
+            }
+          }
+          doc.assets = canonicalForDoc.map((canonical) => canonical.manifestAsset);
+          walkNodes(doc.children, (node) => {
+            if (!node.assetId) return;
+            const nextAsset = nextAssetByPreviousId.get(node.assetId);
+            if (!nextAsset) return;
+            node.assetId = nextAsset.id;
+            if ("asset" in node) {
+              node.asset = nextAsset.src;
+            }
+          });
+          if (!doc.meta) doc.meta = {};
+          doc.meta.assetStats = {
+            totalReferencedAssets: (assetBytesByDocument[documentIndex] && assetBytesByDocument[documentIndex].size) || 0,
+            uniqueAssets: canonicalForDoc.length,
+            sharedAssets: canonicalForDoc.filter((canonical) => canonical.shared).length,
+            localAssets: canonicalForDoc.filter((canonical) => !canonical.shared).length
+          };
+        });
+
+        return {
+          files: canonicalAssets.map((canonical) => ({
+            assetId: canonical.id,
+            src: canonical.src,
+            fileName: canonical.fileName,
+            bytes: canonical.bytes
+          })),
+          manifest: {
+            version: 1,
+            assetBasePath,
+            assets: canonicalAssets.map((canonical) => canonical.manifestAsset)
+          }
+        };
+      }
+
+      function drawRegion(ctx2d, image, sx, sy, sw, sh, dx, dy, dw, dh) {
+        if (sw <= 0 || sh <= 0 || dw <= 0 || dh <= 0) {
+          return;
+        }
+        ctx2d.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
+      }
+
+      async function decodePng(bytes) {
+        const blob = new Blob([bytes], { type: "image/png" });
+        if ("createImageBitmap" in window) {
+          return createImageBitmap(blob);
+        }
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(blob);
+          const image = new Image();
+          image.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(image);
+          };
+          image.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("PNG decode failed."));
+          };
+          image.src = url;
+        });
+      }
+
+      function canvasToPngBytes(sourceCanvas) {
+        return new Promise((resolve, reject) => {
+          sourceCanvas.toBlob(async (blob) => {
+            if (!blob) {
+              reject(new Error("Canvas PNG encoding failed."));
+              return;
+            }
+            resolve(new Uint8Array(await blob.arrayBuffer()));
+          }, "image/png");
+        });
+      }
+
+      function validateNineSliceForCompaction(node, asset, sourceWidth, sourceHeight, samplePixels) {
+        const slice = node && node.slice;
+        if (!slice) return "Missing slice data.";
+        const values = [slice.left, slice.top, slice.right, slice.bottom];
+        if (!values.every((n) => Number.isFinite(n))) return "Slice values must be finite numbers.";
+        if (values.some((n) => n < 0)) return "Slice values must be >= 0.";
+        if (slice.left + slice.right >= node.width) return "left + right must be less than node width.";
+        if (slice.top + slice.bottom >= node.height) return "top + bottom must be less than node height.";
+        const assetScale = Number.isFinite(asset.scale) && asset.scale > 0 ? asset.scale : 1;
+        const leftPx = Math.round(slice.left * assetScale);
+        const topPx = Math.round(slice.top * assetScale);
+        const rightPx = Math.round(slice.right * assetScale);
+        const bottomPx = Math.round(slice.bottom * assetScale);
+        if ([leftPx, topPx, rightPx, bottomPx].some((n) => n < 0)) return "Scaled fixed regions must be >= 0 px.";
+        if (leftPx + rightPx >= sourceWidth) return "left + right is too large for the source PNG width.";
+        if (topPx + bottomPx >= sourceHeight) return "top + bottom is too large for the source PNG height.";
+        if (!Number.isFinite(samplePixels) || samplePixels < 1) return "Stretch sample pixels must be at least 1.";
+        return null;
+      }
+
+      async function compactNineSlicePng({ bytes, node, asset, samplePixels }) {
+        const image = await decodePng(bytes);
+        const sourceWidth = image.width;
+        const sourceHeight = image.height;
+        const validationError = validateNineSliceForCompaction(node, asset, sourceWidth, sourceHeight, samplePixels);
+        if (validationError) {
+          throw new Error(validationError);
+        }
+
+        const assetScale = Number.isFinite(asset.scale) && asset.scale > 0 ? asset.scale : 1;
+        const leftPx = Math.round(node.slice.left * assetScale);
+        const topPx = Math.round(node.slice.top * assetScale);
+        const rightPx = Math.round(node.slice.right * assetScale);
+        const bottomPx = Math.round(node.slice.bottom * assetScale);
+        const isHorizontalOnly = topPx === 0 && bottomPx === 0;
+        const compactCenterWidthPx = Math.max(1, Math.round(samplePixels));
+        const compactCenterHeightPx = isHorizontalOnly ? sourceHeight : Math.max(1, Math.round(samplePixels));
+
+        const outputWidth = leftPx + compactCenterWidthPx + rightPx;
+        const outputHeight = isHorizontalOnly ? sourceHeight : topPx + compactCenterHeightPx + bottomPx;
+        if (outputWidth <= 0 || outputHeight <= 0) {
+          throw new Error(`Compacted size would be invalid (${outputWidth} x ${outputHeight}).`);
+        }
+
+        const x1 = leftPx;
+        const x2 = sourceWidth - rightPx;
+        const y1 = topPx;
+        const y2 = sourceHeight - bottomPx;
+        const dx1 = leftPx;
+        const dx2 = leftPx + compactCenterWidthPx;
+        const dy1 = topPx;
+        const dy2 = topPx + compactCenterHeightPx;
+
+        const out = document.createElement("canvas");
+        out.width = outputWidth;
+        out.height = outputHeight;
+        const outCtx = out.getContext("2d");
+        outCtx.imageSmoothingEnabled = true;
+        outCtx.clearRect(0, 0, outputWidth, outputHeight);
+
+        if (isHorizontalOnly) {
+          drawRegion(outCtx, image, 0, 0, leftPx, sourceHeight, 0, 0, leftPx, sourceHeight);
+          drawRegion(outCtx, image, x1, 0, x2 - x1, sourceHeight, dx1, 0, compactCenterWidthPx, sourceHeight);
+          drawRegion(outCtx, image, x2, 0, rightPx, sourceHeight, dx2, 0, rightPx, sourceHeight);
+        } else {
+          drawRegion(outCtx, image, 0, 0, leftPx, topPx, 0, 0, leftPx, topPx);
+          drawRegion(outCtx, image, x1, 0, x2 - x1, topPx, dx1, 0, compactCenterWidthPx, topPx);
+          drawRegion(outCtx, image, x2, 0, rightPx, topPx, dx2, 0, rightPx, topPx);
+
+          drawRegion(outCtx, image, 0, y1, leftPx, y2 - y1, 0, dy1, leftPx, compactCenterHeightPx);
+          drawRegion(outCtx, image, x1, y1, x2 - x1, y2 - y1, dx1, dy1, compactCenterWidthPx, compactCenterHeightPx);
+          drawRegion(outCtx, image, x2, y1, rightPx, y2 - y1, dx2, dy1, rightPx, compactCenterHeightPx);
+
+          drawRegion(outCtx, image, 0, y2, leftPx, bottomPx, 0, dy2, leftPx, bottomPx);
+          drawRegion(outCtx, image, x1, y2, x2 - x1, bottomPx, dx1, dy2, compactCenterWidthPx, bottomPx);
+          drawRegion(outCtx, image, x2, y2, rightPx, bottomPx, dx2, dy2, rightPx, bottomPx);
+        }
+
+        const compactBytes = await canvasToPngBytes(out);
+        const originalPixels = sourceWidth * sourceHeight;
+        const compactPixels = outputWidth * outputHeight;
+        const savings = originalPixels > 0 ? Math.round((1 - compactPixels / originalPixels) * 100) : 0;
+
+        return {
+          bytes: compactBytes,
+          sourceWidth,
+          sourceHeight,
+          textureWidth: outputWidth,
+          textureHeight: outputHeight,
+          textureSlice: {
+            left: leftPx,
+            top: topPx,
+            right: rightPx,
+            bottom: bottomPx
+          },
+          compactCenterWidth: compactCenterWidthPx,
+          compactCenterHeight: compactCenterHeightPx,
+          assetScale,
+          savings
+        };
+      }
+
+      async function optimizeNineSliceAssetsForZip(doc, bytesByAssetId) {
+        if (!optimizeNinepatchAssets.checked) {
+          return bytesByAssetId;
+        }
+
+        const samplePixels = Math.max(1, Math.round(Number(stretchSamplePixels.value) || 1));
+        stretchSamplePixels.value = String(samplePixels);
+        const nodesByAssetId = new Map();
+        walkNodes(doc.children, (node) => {
+          if (node.type === "nineSlice" && node.assetId) {
+            nodesByAssetId.set(node.assetId, node);
+          }
+        });
+
+        const optimizedBytesByAssetId = new Map(bytesByAssetId);
+        for (const asset of doc.assets || []) {
+          const node = nodesByAssetId.get(asset.id);
+          if (!node) continue;
+          const bytes = bytesByAssetId.get(asset.id);
+          if (!bytes) continue;
+          try {
+            const optimized = await compactNineSlicePng({ bytes, node, asset, samplePixels });
+            optimizedBytesByAssetId.set(asset.id, optimized.bytes);
+            asset.width = optimized.textureWidth;
+            asset.height = optimized.textureHeight;
+            node.textureSlice = optimized.textureSlice;
+            node.assetOptimization = {
+              type: "nineSliceCompact",
+              enabled: true,
+              sourceWidth: optimized.sourceWidth,
+              sourceHeight: optimized.sourceHeight,
+              textureWidth: optimized.textureWidth,
+              textureHeight: optimized.textureHeight,
+              compactCenterWidth: optimized.compactCenterWidth,
+              compactCenterHeight: optimized.compactCenterHeight,
+              assetScale: optimized.assetScale
+            };
+            console.log(
+              `[Ninepatch] Compacted "${node.name}" ${optimized.sourceWidth}x${optimized.sourceHeight} -> ${optimized.textureWidth}x${optimized.textureHeight} (${optimized.savings}% fewer pixels).`
+            );
+            if (samplePixels <= 1) {
+              appendExportWarning(
+                doc,
+                `Ninepatch "${node.name}" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations.`
+              );
+            }
+          } catch (error) {
+            appendExportWarning(
+              doc,
+              `Ninepatch "${node.name}" failed to compact and fell back to full-size PNG: ${
+                error && error.message ? error.message : String(error)
+              }`
+            );
+          }
+        }
+        return optimizedBytesByAssetId;
+      }
+
+      async function downloadZipExport() {
+        if (!lastExport || !Array.isArray(lastExport.documents) || !Array.isArray(lastExport.assets)) {
+          status.textContent = "Run Export Selection first.";
+          status.classList.add("error");
+          return;
+        }
+        if (!window.JSZip) {
+          status.textContent = "ZIP library failed to load. Check network and retry.";
+          status.classList.add("error");
+          return;
+        }
+
+        try {
+          const zip = new window.JSZip();
+          const docs = lastExport.documents.map((doc) => cloneJson(doc));
+          const jsonNames = makeUniqueJsonNames(docs);
+          const assetBasePath = document.getElementById("assetBasePath").value || "assets/ui";
+
+          const sourceBytesByAssetId = new Map();
+          for (const item of lastExport.assets) {
+            const bytes = Array.isArray(item.bytes) ? Uint8Array.from(item.bytes) : new Uint8Array(item.bytes || []);
+            sourceBytesByAssetId.set(item.assetId, bytes);
+          }
+
+          const assetBytesByDocument = [];
+          for (const doc of docs) {
+            const docBytesByAssetId = new Map();
+            for (const asset of doc.assets || []) {
+              const bytes = sourceBytesByAssetId.get(asset.id);
+              if (bytes) {
+                docBytesByAssetId.set(asset.id, bytes);
+              }
+            }
+            assetBytesByDocument.push(await optimizeNineSliceAssetsForZip(doc, docBytesByAssetId));
+          }
+
+          const finalized = finalizeExportedAssetsForZip({
+            documents: docs,
+            assetBytesByDocument,
+            assetBasePath,
+            sharedMode: "reused-only"
+          });
+
+          docs.forEach((doc, index) => {
+            zip.file(`generated-ui/${jsonNames[index]}.json`, JSON.stringify(doc, null, 2));
+          });
+
+          for (const file of finalized.files) {
+            zip.file(file.src, file.bytes);
+          }
+          zip.file(joinZipPath(assetBasePath, "manifest.json"), JSON.stringify(finalized.manifest, null, 2));
+
+          const blob = await zip.generateAsync({ type: "blob" });
+          const fileStem = docs.length === 1 ? jsonNames[0] : `${jsonNames[0]}-bundle`;
+          const fileName = `${fileStem}-ui-export.zip`;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+
+          status.textContent = `ZIP downloaded: ${fileName}`;
+          status.classList.remove("error");
+          output.value =
+            docs.length === 1
+              ? JSON.stringify(docs[0], null, 2)
+              : JSON.stringify({ documents: docs, manifest: finalized.manifest }, null, 2);
+          lastExport.optimizedDocuments = docs;
+          lastExport.manifest = finalized.manifest;
+        } catch (error) {
+          status.textContent = `ZIP export failed: ${error && error.message ? error.message : String(error)}`;
+          status.classList.add("error");
+        }
+      }
+
+      downloadZipButton.onclick = () => {
+        void downloadZipExport();
+      };
+
+      function recalculateAutoSlice() {
+        if (!selectedNodeInfo || !selectedNodeInfo.hasSelection || !selectedNodeInfo.isNine) {
+          setNineStatus("Select one @nine layer first.", "error");
+          return false;
+        }
+        if (!previewImage || previewNodeId !== selectedNodeInfo.nodeId) {
+          setNineStatus("Preview is still loading. Try again in a moment.", "error");
+          return false;
+        }
+        const detected = buildAutoMetadataFromImage(
+          previewImage,
+          selectedNodeInfo.width,
+          selectedNodeInfo.height,
+          currentPreviewAssetHash,
+          selectedNodeInfo.cleanName || selectedNodeInfo.name
+        );
+        sliceDirtySinceSelection = false;
+        maybeApplyDetectedAutoMetadata(detected, true);
+        sendAutoMetadata(selectedNodeInfo.nodeId, detected, "applyAutoNineSlice");
+        const warning = firstMetadataWarning(detected);
+        setNineStatus(
+          warning ||
+            (detected.source === "auto" ? "Auto-detected slice recalculated." : "Switched to safe default slice."),
+          detected.source === "auto" && !warning ? "ok" : ""
+        );
+        return true;
+      }
+
+      autoSuggestButton.onclick = () => {
+        recalculateAutoSlice();
+      };
+
+      saveNinepatchButton.onclick = () => {
+        const error = validateSlice(currentSlice);
+        if (error) {
+          setNineStatus(error, "error");
+          return;
+        }
+        setNineStatus("Saving...", "");
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "saveNineSlice",
+              left: currentSlice.left,
+              top: currentSlice.top,
+              right: currentSlice.right,
+              bottom: currentSlice.bottom,
+              assetHash: currentPreviewAssetHash,
+              confidence: resolvedMetadata && typeof resolvedMetadata.confidence === "number" ? resolvedMetadata.confidence : 1
+            }
+          },
+          "*"
+        );
+      };
+
+      clearNinepatchButton.onclick = () => {
+        recalculateAutoSlice();
+      };
+
+      onmessage = (event) => {
+        const message = event.data.pluginMessage;
+        if (!message) return;
+
+        if (message.type === "prepare-auto-nine-slice") {
+          const items = Array.isArray(message.payload && message.payload.items) ? message.payload.items : [];
+          Promise.all(
+            items.map(async (item) => {
+              try {
+                const image = await decodePng(bytesToUint8Array(item.bytes));
+                return {
+                  nodeId: item.nodeId,
+                  metadata: buildAutoMetadataFromImage(image, item.width, item.height, item.assetHash, item.name)
+                };
+              } catch {
+                return {
+                  nodeId: item.nodeId,
+                  metadata: {
+                    source: "default",
+                    approved: false,
+                    confidence: 0.15,
+                    insets: createSafeDefaultSlice(item.width, item.height),
+                    assetHash: item.assetHash,
+                    algorithmVersion: AUTO_NINE_SLICE_ALGORITHM_VERSION,
+                    mode: "fallback",
+                    warnings: ["PNG decode failed during nine-slice auto-detection; using safe default slices."],
+                    generatedAt: Date.now()
+                  }
+                };
+              }
+            })
+          ).then((results) => {
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: "prepare-auto-nine-slice-result",
+                  requestId: message.payload && message.payload.requestId,
+                  results
+                }
+              },
+              "*"
+            );
+          });
+          return;
+        }
+
+        if (message.type === "selection-info") {
+          selectedNodeInfo = message.payload;
+          if (!selectedNodeInfo.hasSelection) {
+            selectionInfo.textContent = message.payload.message;
+            ninePanel.style.display = "none";
+            resolvedMetadata = null;
+            lastDetectedAutoMetadata = null;
+            sliceDirtySinceSelection = false;
+            clearPreviewImage();
+            setPreviewStatus("", "");
+            drawPreview();
+            return;
+          }
+          selectionInfo.textContent = "Selected: " + (selectedNodeInfo.cleanName || selectedNodeInfo.name);
+          if (!selectedNodeInfo.isNine) {
+            ninePanel.style.display = "none";
+            resolvedMetadata = null;
+            lastDetectedAutoMetadata = null;
+            sliceDirtySinceSelection = false;
+            clearPreviewImage();
+            setPreviewStatus("", "");
+            drawPreview();
+            return;
+          }
+          if (selectedNodeInfo.renderBoundsError) {
+            selectionInfo.textContent = selectedNodeInfo.message;
+            ninePanel.style.display = "none";
+            resolvedMetadata = null;
+            lastDetectedAutoMetadata = null;
+            sliceDirtySinceSelection = false;
+            clearPreviewImage();
+            setPreviewStatus(selectedNodeInfo.message, "error");
+            drawPreview();
+            return;
+          }
+          ninePanel.style.display = "block";
+          if (previewNodeId !== selectedNodeInfo.nodeId) {
+            clearPreviewImage();
+            setPreviewStatus("Loading preview...", "");
+          }
+          nineMeta.textContent =
+            "Layer: " +
+            (selectedNodeInfo.cleanName || selectedNodeInfo.name) +
+            " (" +
+            Math.round(selectedNodeInfo.width) +
+            " x " +
+            Math.round(selectedNodeInfo.height) +
+            ")";
+
+          sliceDirtySinceSelection = false;
+          resolvedMetadata = selectedNodeInfo.resolvedMetadata || {
+            source: "default",
+            approved: false,
+            insets: createSafeDefaultSlice(selectedNodeInfo.width, selectedNodeInfo.height)
+          };
+          lastDetectedAutoMetadata =
+            resolvedMetadata && resolvedMetadata.source !== "manual"
+              ? resolvedMetadata
+              : lastDetectedAutoMetadata && lastDetectedAutoMetadata.assetHash === currentPreviewAssetHash
+                ? lastDetectedAutoMetadata
+                : null;
+          currentSlice = sanitizeSlice(selectedNodeInfo.slice, selectedNodeInfo.width, selectedNodeInfo.height);
+          applySliceToInputs(currentSlice);
+          drawPreview();
+          updateStatusFromState();
+          return;
+        }
+
+        if (message.type === "nine-slice-preview") {
+          loadPreviewImage(message.payload);
+          return;
+        }
+
+        if (message.type === "nine-slice-preview-cleared") {
+          clearPreviewImage();
+          setPreviewStatus("", "");
+          drawPreview();
+          return;
+        }
+
+        if (message.type === "nine-slice-preview-error") {
+          clearPreviewImage();
+          setPreviewStatus(message.payload && message.payload.message ? message.payload.message : "Preview export failed.", "error");
+          drawPreview();
+          return;
+        }
+
+        if (message.type === "nine-slice-saved") {
+          sliceDirtySinceSelection = false;
+          setNineStatus("Manual override saved.", "ok");
+          parent.postMessage({ pluginMessage: { type: "requestSelectionInfo" } }, "*");
+          return;
+        }
+
+        if (message.type === "nine-slice-auto-applied") {
+          sliceDirtySinceSelection = false;
+          setNineStatus(message.message || "Auto-detected slice applied.", "ok");
+          parent.postMessage({ pluginMessage: { type: "requestSelectionInfo" } }, "*");
+          return;
+        }
+
+        if (message.type === "nine-slice-error") {
+          setNineStatus(message.message, "error");
+          return;
+        }
+
+        if (message.type === "export-complete") {
+          const documents = Array.isArray(message.documents) ? message.documents : [message.document].filter(Boolean);
+          const rootCount = documents.length;
+          status.textContent =
+            rootCount > 1
+              ? `Exported ${rootCount} roots and ${message.assets.length} unique asset(s).`
+              : "Exported " + message.assets.length + " asset(s).";
+          status.classList.remove("error");
+          output.value =
+            rootCount > 1
+              ? JSON.stringify({ documents, manifest: message.manifest }, null, 2)
+              : JSON.stringify(message.document, null, 2);
+          lastExport = {
+            document: message.document,
+            documents,
+            bundle: Boolean(message.bundle),
+            manifest: message.manifest,
+            assets: message.assets
+          };
+          downloadZipButton.disabled = false;
+          return;
+        }
+
+        if (message.type === "export-error") {
+          status.textContent = message.message;
+          status.classList.add("error");
+          downloadZipButton.disabled = true;
+        }
+      };
+
+      parent.postMessage({ pluginMessage: { type: "requestSelectionInfo" } }, "*");
+    </script>
+  </body>
+</html>

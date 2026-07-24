@@ -2,7 +2,7 @@
   "levels": [
     {
       "level": 1,
-      "completionCostCoin": 0,
+      "coinBudget": 0,
       "tasks": [
         {
           "id": "level1-summon-sage-seed",
@@ -19,7 +19,7 @@
     },
     {
       "level": 2,
-      "completionCostCoin": 4,
+      "coinBudget": 4,
       "tasks": [
         {
           "id": "level2-summon-sage-seed",
@@ -42,7 +42,7 @@
     },
     {
       "level": 3,
-      "completionCostCoin": 8,
+      "coinBudget": 8,
       "tasks": [
         {
           "id": "level3-research-mint-seed",
@@ -66,7 +66,7 @@
     },
     {
       "level": 4,
-      "completionCostCoin": 16,
+      "coinBudget": 16,
       "tasks": [
         {
           "id": "level4-grow-sage-herb",
@@ -94,7 +94,7 @@
     },
     {
       "level": 5,
-      "completionCostCoin": 30,
+      "coinBudget": 30,
       "tasks": [
         {
           "id": "level5-research-mana-tonic",
@@ -118,7 +118,7 @@
     },
     {
       "level": 6,
-      "completionCostCoin": 50,
+      "coinBudget": 50,
       "tasks": [
         {
           "id": "level6-research-nettle-seed",
@@ -154,7 +154,7 @@
     },
     {
       "level": 7,
-      "completionCostCoin": 80,
+      "coinBudget": 80,
       "tasks": [
         {
           "id": "level7-summon-nettle-seed",
@@ -188,7 +188,7 @@
     },
     {
       "level": 8,
-      "completionCostCoin": 120,
+      "coinBudget": 120,
       "tasks": [
         {
           "id": "level8-research-minor-healing-potion",
@@ -224,7 +224,7 @@
     },
     {
       "level": 9,
-      "completionCostCoin": 170,
+      "coinBudget": 170,
       "tasks": [
         {
           "id": "level9-brew-minor-healing-potion",
@@ -259,7 +259,7 @@
     },
     {
       "level": 10,
-      "completionCostCoin": 230,
+      "coinBudget": 230,
       "tasks": [
         {
           "id": "level10-research-lavender-seed",
@@ -295,7 +295,7 @@
     },
     {
       "level": 11,
-      "completionCostCoin": 1210,
+      "coinBudget": 1210,
       "tasks": [
         {
           "id": "level11-summon-lavender-seed",
@@ -329,7 +329,7 @@
     },
     {
       "level": 12,
-      "completionCostCoin": 1440,
+      "coinBudget": 1440,
       "tasks": [
         {
           "id": "level12-research-briar-seed",
@@ -365,7 +365,7 @@
     },
     {
       "level": 13,
-      "completionCostCoin": 1690,
+      "coinBudget": 1690,
       "tasks": [
         {
           "id": "level13-summon-briar-seed",
@@ -399,7 +399,7 @@
     },
     {
       "level": 14,
-      "completionCostCoin": 1960,
+      "coinBudget": 1960,
       "tasks": [
         {
           "id": "level14-research-nettle-vigor",
@@ -435,7 +435,7 @@
     },
     {
       "level": 15,
-      "completionCostCoin": 2250,
+      "coinBudget": 2250,
       "tasks": [
         {
           "id": "level15-brew-nettle-vigor",
@@ -470,7 +470,7 @@
     },
     {
       "level": 16,
-      "completionCostCoin": 2560,
+      "coinBudget": 2560,
       "tasks": [
         {
           "id": "level16-research-calming-draught",
@@ -506,7 +506,7 @@
     },
     {
       "level": 17,
-      "completionCostCoin": 2890,
+      "coinBudget": 2890,
       "tasks": [
         {
           "id": "level17-brew-calming-draught",
@@ -541,7 +541,7 @@
     },
     {
       "level": 18,
-      "completionCostCoin": 3240,
+      "coinBudget": 3240,
       "tasks": [
         {
           "id": "level18-research-glowcap-seed",
@@ -577,7 +577,7 @@
     },
     {
       "level": 19,
-      "completionCostCoin": 3610,
+      "coinBudget": 3610,
       "tasks": [
         {
           "id": "level19-summon-glowcap-seed",
@@ -611,7 +611,7 @@
     },
     {
       "level": 20,
-      "completionCostCoin": 4000,
+      "coinBudget": 4000,
       "tasks": [
         {
           "id": "level20-research-briar-ward",
@@ -647,7 +647,7 @@
     },
     {
       "level": 21,
-      "completionCostCoin": 4410,
+      "coinBudget": 4410,
       "tasks": [
         {
           "id": "level21-brew-briar-ward",
@@ -681,7 +681,7 @@
     },
     {
       "level": 22,
-      "completionCostCoin": 4840,
+      "coinBudget": 4840,
       "tasks": [
         {
           "id": "level22-research-mandrake-seed",
@@ -717,7 +717,7 @@
     },
     {
       "level": 23,
-      "completionCostCoin": 5290,
+      "coinBudget": 5290,
       "tasks": [
         {
           "id": "level23-summon-mandrake-seed",
@@ -753,7 +753,7 @@
     },
     {
       "level": 24,
-      "completionCostCoin": 5760,
+      "coinBudget": 5760,
       "tasks": [
         {
           "id": "level24-brew-lantern-tonic",
@@ -787,7 +787,7 @@
     },
     {
       "level": 25,
-      "completionCostCoin": 6250,
+      "coinBudget": 6250,
       "tasks": [
         {
           "id": "level25-research-sunroot-seed",
@@ -823,7 +823,7 @@
     },
     {
       "level": 26,
-      "completionCostCoin": 6760,
+      "coinBudget": 6760,
       "tasks": [
         {
           "id": "level26-summon-sunroot-seed",
@@ -857,7 +857,7 @@
     },
     {
       "level": 27,
-      "completionCostCoin": 7290,
+      "coinBudget": 7290,
       "tasks": [
         {
           "id": "level27-research-simple-antidote",
@@ -893,7 +893,7 @@
     },
     {
       "level": 28,
-      "completionCostCoin": 7840,
+      "coinBudget": 7840,
       "tasks": [
         {
           "id": "level28-brew-simple-antidote",
@@ -927,7 +927,7 @@
     },
     {
       "level": 29,
-      "completionCostCoin": 8410,
+      "coinBudget": 8410,
       "tasks": [
         {
           "id": "level29-research-moonflower-seed",
@@ -963,7 +963,7 @@
     },
     {
       "level": 30,
-      "completionCostCoin": 9000,
+      "coinBudget": 9000,
       "tasks": [
         {
           "id": "level30-summon-moonflower-seed",
@@ -997,7 +997,7 @@
     },
     {
       "level": 31,
-      "completionCostCoin": 9610,
+      "coinBudget": 9610,
       "tasks": [
         {
           "id": "level31-research-venom-draught",
@@ -1033,7 +1033,7 @@
     },
     {
       "level": 32,
-      "completionCostCoin": 10240,
+      "coinBudget": 10240,
       "tasks": [
         {
           "id": "level32-brew-venom-draught",
@@ -1067,7 +1067,7 @@
     },
     {
       "level": 33,
-      "completionCostCoin": 10890,
+      "coinBudget": 10890,
       "tasks": [
         {
           "id": "level33-research-healing-potion",
@@ -1103,7 +1103,7 @@
     },
     {
       "level": 34,
-      "completionCostCoin": 11560,
+      "coinBudget": 11560,
       "tasks": [
         {
           "id": "level34-brew-healing-potion",
@@ -1137,7 +1137,7 @@
     },
     {
       "level": 35,
-      "completionCostCoin": 12250,
+      "coinBudget": 12250,
       "tasks": [
         {
           "id": "level35-research-frostmoss-seed",
@@ -1173,7 +1173,7 @@
     },
     {
       "level": 36,
-      "completionCostCoin": 12960,
+      "coinBudget": 12960,
       "tasks": [
         {
           "id": "level36-summon-frostmoss-seed",
@@ -1207,7 +1207,7 @@
     },
     {
       "level": 37,
-      "completionCostCoin": 13690,
+      "coinBudget": 13690,
       "tasks": [
         {
           "id": "level37-research-sunroot-stamina",
@@ -1243,7 +1243,7 @@
     },
     {
       "level": 38,
-      "completionCostCoin": 14440,
+      "coinBudget": 14440,
       "tasks": [
         {
           "id": "level38-brew-sunroot-stamina",
@@ -1277,7 +1277,7 @@
     },
     {
       "level": 39,
-      "completionCostCoin": 15210,
+      "coinBudget": 15210,
       "tasks": [
         {
           "id": "level39-research-dreambell-seed",
@@ -1313,7 +1313,7 @@
     },
     {
       "level": 40,
-      "completionCostCoin": 16000,
+      "coinBudget": 16000,
       "tasks": [
         {
           "id": "level40-summon-dreambell-seed",
@@ -1347,7 +1347,7 @@
     },
     {
       "level": 41,
-      "completionCostCoin": 16810,
+      "coinBudget": 16810,
       "tasks": [
         {
           "id": "level41-research-moonlit-focus",
@@ -1383,7 +1383,7 @@
     },
     {
       "level": 42,
-      "completionCostCoin": 17640,
+      "coinBudget": 17640,
       "tasks": [
         {
           "id": "level42-brew-moonlit-focus",
@@ -1417,7 +1417,7 @@
     },
     {
       "level": 43,
-      "completionCostCoin": 18490,
+      "coinBudget": 18490,
       "tasks": [
         {
           "id": "level43-research-star-anise-seed",
@@ -1453,7 +1453,7 @@
     },
     {
       "level": 44,
-      "completionCostCoin": 19360,
+      "coinBudget": 19360,
       "tasks": [
         {
           "id": "level44-summon-star-anise-seed",
@@ -1487,7 +1487,7 @@
     },
     {
       "level": 45,
-      "completionCostCoin": 20250,
+      "coinBudget": 20250,
       "tasks": [
         {
           "id": "level45-research-frostmoss-cleanse",
@@ -1523,7 +1523,7 @@
     },
     {
       "level": 46,
-      "completionCostCoin": 21160,
+      "coinBudget": 21160,
       "tasks": [
         {
           "id": "level46-brew-frostmoss-cleanse",
@@ -1557,7 +1557,7 @@
     },
     {
       "level": 47,
-      "completionCostCoin": 22090,
+      "coinBudget": 22090,
       "tasks": [
         {
           "id": "level47-research-bloodrose-seed",
@@ -1593,7 +1593,7 @@
     },
     {
       "level": 48,
-      "completionCostCoin": 23040,
+      "coinBudget": 23040,
       "tasks": [
         {
           "id": "level48-summon-bloodrose-seed",
@@ -1627,7 +1627,7 @@
     },
     {
       "level": 49,
-      "completionCostCoin": 24010,
+      "coinBudget": 24010,
       "tasks": [
         {
           "id": "level49-research-sleep-draught",
@@ -1663,7 +1663,7 @@
     },
     {
       "level": 50,
-      "completionCostCoin": 25000,
+      "coinBudget": 25000,
       "tasks": [
         {
           "id": "level50-brew-sleep-draught",
@@ -1697,7 +1697,7 @@
     },
     {
       "level": 51,
-      "completionCostCoin": 26010,
+      "coinBudget": 26010,
       "tasks": [
         {
           "id": "level51-research-dragonpepper-seed",
@@ -1733,7 +1733,7 @@
     },
     {
       "level": 52,
-      "completionCostCoin": 27040,
+      "coinBudget": 27040,
       "tasks": [
         {
           "id": "level52-summon-dragonpepper-seed",
@@ -1767,7 +1767,7 @@
     },
     {
       "level": 53,
-      "completionCostCoin": 28090,
+      "coinBudget": 28090,
       "tasks": [
         {
           "id": "level53-research-elixir-of-life",
@@ -1803,7 +1803,7 @@
     },
     {
       "level": 54,
-      "completionCostCoin": 29160,
+      "coinBudget": 29160,
       "tasks": [
         {
           "id": "level54-brew-elixir-of-life",
@@ -1838,7 +1838,7 @@
     },
     {
       "level": 55,
-      "completionCostCoin": 30250,
+      "coinBudget": 30250,
       "tasks": [
         {
           "id": "level55-summon-silverleaf-seed",
@@ -1872,7 +1872,7 @@
     },
     {
       "level": 56,
-      "completionCostCoin": 31360,
+      "coinBudget": 31360,
       "tasks": [
         {
           "id": "level56-research-star-luck-philtre",
@@ -1908,7 +1908,7 @@
     },
     {
       "level": 57,
-      "completionCostCoin": 32490,
+      "coinBudget": 32490,
       "tasks": [
         {
           "id": "level57-brew-star-luck-philtre",
@@ -1943,7 +1943,7 @@
     },
     {
       "level": 58,
-      "completionCostCoin": 33640,
+      "coinBudget": 33640,
       "tasks": [
         {
           "id": "level58-research-yarrow-seed",
@@ -1979,7 +1979,7 @@
     },
     {
       "level": 59,
-      "completionCostCoin": 34810,
+      "coinBudget": 34810,
       "tasks": [
         {
           "id": "level59-summon-yarrow-seed",
@@ -2013,7 +2013,7 @@
     },
     {
       "level": 60,
-      "completionCostCoin": 36000,
+      "coinBudget": 36000,
       "tasks": [
         {
           "id": "level60-research-deep-dream-vision",
@@ -2049,7 +2049,7 @@
     },
     {
       "level": 61,
-      "completionCostCoin": 37210,
+      "coinBudget": 37210,
       "tasks": [
         {
           "id": "level61-brew-deep-dream-vision",
@@ -2084,7 +2084,7 @@
     },
     {
       "level": 62,
-      "completionCostCoin": 38440,
+      "coinBudget": 38440,
       "tasks": [
         {
           "id": "level62-research-hyssop-seed",
@@ -2120,7 +2120,7 @@
     },
     {
       "level": 63,
-      "completionCostCoin": 39690,
+      "coinBudget": 39690,
       "tasks": [
         {
           "id": "level63-summon-hyssop-seed",
@@ -2154,7 +2154,7 @@
     },
     {
       "level": 64,
-      "completionCostCoin": 40960,
+      "coinBudget": 40960,
       "tasks": [
         {
           "id": "level64-research-pact-ward",
@@ -2190,7 +2190,7 @@
     },
     {
       "level": 65,
-      "completionCostCoin": 42250,
+      "coinBudget": 42250,
       "tasks": [
         {
           "id": "level65-brew-pact-ward",
@@ -2225,7 +2225,7 @@
     },
     {
       "level": 66,
-      "completionCostCoin": 43560,
+      "coinBudget": 43560,
       "tasks": [
         {
           "id": "level66-research-valerian-seed",
@@ -2261,7 +2261,7 @@
     },
     {
       "level": 67,
-      "completionCostCoin": 44890,
+      "coinBudget": 44890,
       "tasks": [
         {
           "id": "level67-summon-valerian-seed",
@@ -2295,7 +2295,7 @@
     },
     {
       "level": 68,
-      "completionCostCoin": 46240,
+      "coinBudget": 46240,
       "tasks": [
         {
           "id": "level68-research-dragon-courage",
@@ -2331,7 +2331,7 @@
     },
     {
       "level": 69,
-      "completionCostCoin": 47610,
+      "coinBudget": 47610,
       "tasks": [
         {
           "id": "level69-brew-dragon-courage",
@@ -2366,7 +2366,7 @@
     },
     {
       "level": 70,
-      "completionCostCoin": 49000,
+      "coinBudget": 49000,
       "tasks": [
         {
           "id": "level70-research-comfrey-seed",
@@ -2402,7 +2402,7 @@
     },
     {
       "level": 71,
-      "completionCostCoin": 50410,
+      "coinBudget": 50410,
       "tasks": [
         {
           "id": "level71-summon-comfrey-seed",
@@ -2436,7 +2436,7 @@
     },
     {
       "level": 72,
-      "completionCostCoin": 51840,
+      "coinBudget": 51840,
       "tasks": [
         {
           "id": "level72-research-silverleaf-salve",
@@ -2472,7 +2472,7 @@
     },
     {
       "level": 73,
-      "completionCostCoin": 53290,
+      "coinBudget": 53290,
       "tasks": [
         {
           "id": "level73-brew-silverleaf-salve",
@@ -2507,7 +2507,7 @@
     },
     {
       "level": 74,
-      "completionCostCoin": 54760,
+      "coinBudget": 54760,
       "tasks": [
         {
           "id": "level74-research-nightshade-seed",
@@ -2543,7 +2543,7 @@
     },
     {
       "level": 75,
-      "completionCostCoin": 56250,
+      "coinBudget": 56250,
       "tasks": [
         {
           "id": "level75-summon-nightshade-seed",
@@ -2577,7 +2577,7 @@
     },
     {
       "level": 76,
-      "completionCostCoin": 57760,
+      "coinBudget": 57760,
       "tasks": [
         {
           "id": "level76-research-yarrow-poultice",
@@ -2613,7 +2613,7 @@
     },
     {
       "level": 77,
-      "completionCostCoin": 59290,
+      "coinBudget": 59290,
       "tasks": [
         {
           "id": "level77-brew-yarrow-poultice",
@@ -2648,7 +2648,7 @@
     },
     {
       "level": 78,
-      "completionCostCoin": 60840,
+      "coinBudget": 60840,
       "tasks": [
         {
           "id": "level78-research-belladonna-seed",
@@ -2684,7 +2684,7 @@
     },
     {
       "level": 79,
-      "completionCostCoin": 62410,
+      "coinBudget": 62410,
       "tasks": [
         {
           "id": "level79-summon-belladonna-seed",
@@ -2718,7 +2718,7 @@
     },
     {
       "level": 80,
-      "completionCostCoin": 64000,
+      "coinBudget": 64000,
       "tasks": [
         {
           "id": "level80-research-hyssop-clarity",
@@ -2754,7 +2754,7 @@
     },
     {
       "level": 81,
-      "completionCostCoin": 65610,
+      "coinBudget": 65610,
       "tasks": [
         {
           "id": "level81-brew-hyssop-clarity",
@@ -2789,7 +2789,7 @@
     },
     {
       "level": 82,
-      "completionCostCoin": 67240,
+      "coinBudget": 67240,
       "tasks": [
         {
           "id": "level82-research-wormwood-seed",
@@ -2825,7 +2825,7 @@
     },
     {
       "level": 83,
-      "completionCostCoin": 68890,
+      "coinBudget": 68890,
       "tasks": [
         {
           "id": "level83-summon-wormwood-seed",
@@ -2859,7 +2859,7 @@
     },
     {
       "level": 84,
-      "completionCostCoin": 70560,
+      "coinBudget": 70560,
       "tasks": [
         {
           "id": "level84-research-valerian-rest",
@@ -2895,7 +2895,7 @@
     },
     {
       "level": 85,
-      "completionCostCoin": 72250,
+      "coinBudget": 72250,
       "tasks": [
         {
           "id": "level85-brew-valerian-rest",
@@ -2931,7 +2931,7 @@
     },
     {
       "level": 86,
-      "completionCostCoin": 73960,
+      "coinBudget": 73960,
       "tasks": [
         {
           "id": "level86-summon-snowdrop-seed",
@@ -2965,7 +2965,7 @@
     },
     {
       "level": 87,
-      "completionCostCoin": 75690,
+      "coinBudget": 75690,
       "tasks": [
         {
           "id": "level87-research-comfrey-balm",
@@ -3001,7 +3001,7 @@
     },
     {
       "level": 88,
-      "completionCostCoin": 77440,
+      "coinBudget": 77440,
       "tasks": [
         {
           "id": "level88-brew-comfrey-balm",
@@ -3035,7 +3035,7 @@
     },
     {
       "level": 89,
-      "completionCostCoin": 79210,
+      "coinBudget": 79210,
       "tasks": [
         {
           "id": "level89-research-pearlroot-seed",
@@ -3071,7 +3071,7 @@
     },
     {
       "level": 90,
-      "completionCostCoin": 81000,
+      "coinBudget": 81000,
       "tasks": [
         {
           "id": "level90-summon-pearlroot-seed",
@@ -3105,7 +3105,7 @@
     },
     {
       "level": 91,
-      "completionCostCoin": 82810,
+      "coinBudget": 82810,
       "tasks": [
         {
           "id": "level91-research-nightshade-veil",
@@ -3141,7 +3141,7 @@
     },
     {
       "level": 92,
-      "completionCostCoin": 84640,
+      "coinBudget": 84640,
       "tasks": [
         {
           "id": "level92-brew-nightshade-veil",
@@ -3175,7 +3175,7 @@
     },
     {
       "level": 93,
-      "completionCostCoin": 86490,
+      "coinBudget": 86490,
       "tasks": [
         {
           "id": "level93-research-belladonna-sight",
@@ -3211,7 +3211,7 @@
     },
     {
       "level": 94,
-      "completionCostCoin": 88360,
+      "coinBudget": 88360,
       "tasks": [
         {
           "id": "level94-brew-belladonna-sight",
@@ -3245,7 +3245,7 @@
     },
     {
       "level": 95,
-      "completionCostCoin": 90250,
+      "coinBudget": 90250,
       "tasks": [
         {
           "id": "level95-research-wormwood-purge",
@@ -3281,7 +3281,7 @@
     },
     {
       "level": 96,
-      "completionCostCoin": 92160,
+      "coinBudget": 92160,
       "tasks": [
         {
           "id": "level96-brew-wormwood-purge",
@@ -3315,7 +3315,7 @@
     },
     {
       "level": 97,
-      "completionCostCoin": 94090,
+      "coinBudget": 94090,
       "tasks": [
         {
           "id": "level97-research-snowdrop-breath",
@@ -3351,7 +3351,7 @@
     },
     {
       "level": 98,
-      "completionCostCoin": 96040,
+      "coinBudget": 96040,
       "tasks": [
         {
           "id": "level98-brew-snowdrop-breath",
@@ -3385,7 +3385,7 @@
     },
     {
       "level": 99,
-      "completionCostCoin": 98010,
+      "coinBudget": 98010,
       "tasks": [
         {
           "id": "level99-research-pearlroot-draught",
@@ -3421,7 +3421,7 @@
     },
     {
       "level": 100,
-      "completionCostCoin": 100000,
+      "coinBudget": 100000,
       "tasks": [
         {
           "id": "level100-brew-pearlroot-draught",

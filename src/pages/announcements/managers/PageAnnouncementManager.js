@@ -443,8 +443,7 @@ export class PageAnnouncementManager {
     return String(researchId ?? 'research')
       .split(':')
       .at(-1)
-      .replace(/([a-z])([A-Z])/g, '$1 $2')
-      .toLowerCase();
+      .replace(/([a-z])([A-Z])/g, '$1 $2');
   }
 
   showNext() {

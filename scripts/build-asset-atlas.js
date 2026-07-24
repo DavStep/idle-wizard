@@ -11,9 +11,14 @@ import { ingredientCatalog } from '../src/gameplay/items/ingredientCatalog.js';
 const { PNG } = pngjs;
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUTPUT_DIR = path.join(ROOT, 'src/assets/generated');
-const OUTPUT_IMAGE = path.join(OUTPUT_DIR, 'game-asset-atlas.png');
-const OUTPUT_MODULE = path.join(OUTPUT_DIR, 'game-asset-atlas.generated.js');
+const ATLAS_OUTPUT_DIR = path.join(ROOT, 'assets/game/atlas');
+const MODULE_OUTPUT_DIR = path.join(ROOT, 'src/assets/generated');
+const OUTPUT_IMAGE = path.join(ATLAS_OUTPUT_DIR, 'game-asset-atlas.png');
+const OUTPUT_JSON = path.join(ATLAS_OUTPUT_DIR, 'game-asset-atlas.json');
+const OUTPUT_MODULE = path.join(
+  MODULE_OUTPUT_DIR,
+  'game-asset-atlas.generated.js',
+);
 const MAX_ATLAS_WIDTH = 2048;
 // Inline SVG crops minify 128px frames down to text size; keep enough gutter for filtering.
 const PADDING = 32;
@@ -22,145 +27,145 @@ const TRIM_ALPHA_THRESHOLD = 0;
 const TRIM_SOURCE_PADDING = 4;
 
 const HERB_ASSETS = [
-  ['herb:belladonnaHerb', 'src/assets/items/herbs/herb-belladonna.png'],
-  ['herb:bloodroseHerb', 'src/assets/items/herbs/herb-bloodrose.png'],
-  ['herb:briarHerb', 'src/assets/items/herbs/herb-briar.png'],
-  ['herb:comfreyHerb', 'src/assets/items/herbs/herb-comfrey.png'],
-  ['herb:dragonpepperHerb', 'src/assets/items/herbs/herb-dragonpepper.png'],
-  ['herb:dreambellHerb', 'src/assets/items/herbs/herb-dreambell.png'],
-  ['herb:frostmossHerb', 'src/assets/items/herbs/herb-frostmoss.png'],
-  ['herb:glowcapHerb', 'src/assets/items/herbs/herb-glowcap.png'],
-  ['herb:hyssopHerb', 'src/assets/items/herbs/herb-hyssop.png'],
-  ['herb:lavenderHerb', 'src/assets/items/herbs/herb-lavender.png'],
-  ['herb:mandrakeHerb', 'src/assets/items/herbs/herb-mandrake.png'],
-  ['herb:mintHerb', 'src/assets/items/herbs/herb-mint.png'],
-  ['herb:moonflowerHerb', 'src/assets/items/herbs/herb-moonflower.png'],
-  ['herb:nettleHerb', 'src/assets/items/herbs/herb-nettle.png'],
-  ['herb:nightshadeHerb', 'src/assets/items/herbs/herb-nightshade.png'],
-  ['herb:pearlrootHerb', 'src/assets/items/herbs/herb-pearlroot.png'],
-  ['herb:sageHerb', 'src/assets/items/herbs/herb-sage.png'],
-  ['herb:silverleafHerb', 'src/assets/items/herbs/herb-silverleaf.png'],
-  ['herb:snowdropHerb', 'src/assets/items/herbs/herb-snowdrop.png'],
-  ['herb:starAniseHerb', 'src/assets/items/herbs/herb-star-anise.png'],
-  ['herb:sunrootHerb', 'src/assets/items/herbs/herb-sunroot.png'],
-  ['herb:valerianHerb', 'src/assets/items/herbs/herb-valerian.png'],
-  ['herb:wormwoodHerb', 'src/assets/items/herbs/herb-wormwood.png'],
-  ['herb:yarrowHerb', 'src/assets/items/herbs/herb-yarrow.png'],
+  ['herb:belladonnaHerb', 'assets/game/source/items/herbs/herb-belladonna.png'],
+  ['herb:bloodroseHerb', 'assets/game/source/items/herbs/herb-bloodrose.png'],
+  ['herb:briarHerb', 'assets/game/source/items/herbs/herb-briar.png'],
+  ['herb:comfreyHerb', 'assets/game/source/items/herbs/herb-comfrey.png'],
+  ['herb:dragonpepperHerb', 'assets/game/source/items/herbs/herb-dragonpepper.png'],
+  ['herb:dreambellHerb', 'assets/game/source/items/herbs/herb-dreambell.png'],
+  ['herb:frostmossHerb', 'assets/game/source/items/herbs/herb-frostmoss.png'],
+  ['herb:glowcapHerb', 'assets/game/source/items/herbs/herb-glowcap.png'],
+  ['herb:hyssopHerb', 'assets/game/source/items/herbs/herb-hyssop.png'],
+  ['herb:lavenderHerb', 'assets/game/source/items/herbs/herb-lavender.png'],
+  ['herb:mandrakeHerb', 'assets/game/source/items/herbs/herb-mandrake.png'],
+  ['herb:mintHerb', 'assets/game/source/items/herbs/herb-mint.png'],
+  ['herb:moonflowerHerb', 'assets/game/source/items/herbs/herb-moonflower.png'],
+  ['herb:nettleHerb', 'assets/game/source/items/herbs/herb-nettle.png'],
+  ['herb:nightshadeHerb', 'assets/game/source/items/herbs/herb-nightshade.png'],
+  ['herb:pearlrootHerb', 'assets/game/source/items/herbs/herb-pearlroot.png'],
+  ['herb:sageHerb', 'assets/game/source/items/herbs/herb-sage.png'],
+  ['herb:silverleafHerb', 'assets/game/source/items/herbs/herb-silverleaf.png'],
+  ['herb:snowdropHerb', 'assets/game/source/items/herbs/herb-snowdrop.png'],
+  ['herb:starAniseHerb', 'assets/game/source/items/herbs/herb-star-anise.png'],
+  ['herb:sunrootHerb', 'assets/game/source/items/herbs/herb-sunroot.png'],
+  ['herb:valerianHerb', 'assets/game/source/items/herbs/herb-valerian.png'],
+  ['herb:wormwoodHerb', 'assets/game/source/items/herbs/herb-wormwood.png'],
+  ['herb:yarrowHerb', 'assets/game/source/items/herbs/herb-yarrow.png'],
 ];
 
 const POTION_ASSETS = [
-  ['potion:manaTonic', 'src/assets/items/potions/potion-mana-tonic.png'],
-  ['potion:minorHealingPotion', 'src/assets/items/potions/potion-minor-healing.png'],
-  ['potion:nettleVigor', 'src/assets/items/potions/potion-nettle-vigor.png'],
-  ['potion:calmingDraught', 'src/assets/items/potions/potion-calming-draught.png'],
-  ['potion:simpleAntidote', 'src/assets/items/potions/potion-antidote.png'],
-  ['potion:venomDraught', 'src/assets/items/potions/potion-venom-draught.png'],
-  ['potion:briarWard', 'src/assets/items/potions/potion-briar-ward.png'],
-  ['potion:lanternTonic', 'src/assets/items/potions/potion-lantern-tonic.png'],
-  ['potion:healingPotion', 'src/assets/items/potions/potion-healing.png'],
-  ['potion:moonlitFocus', 'src/assets/items/potions/potion-moon-focus.png'],
-  ['potion:sunrootStamina', 'src/assets/items/potions/potion-stamina.png'],
-  ['potion:frostmossCleanse', 'src/assets/items/potions/potion-frost-cleanse.png'],
-  ['potion:sleepDraught', 'src/assets/items/potions/potion-sleep-draught.png'],
-  ['potion:elixirOfLife', 'src/assets/items/potions/potion-elixir.png'],
-  ['potion:starLuckPhiltre', 'src/assets/items/potions/potion-star-luck.png'],
-  ['potion:dragonCourage', 'src/assets/items/potions/potion-dragon-courage.png'],
-  ['potion:deepDreamVision', 'src/assets/items/potions/potion-deep-dream-vision.png'],
-  ['potion:pactWard', 'src/assets/items/potions/potion-pact-ward.png'],
-  ['potion:ashenMemory', 'src/assets/items/potions/potion-ashen-memory.png'],
-  ['potion:silverleafQuiet', 'src/assets/items/potions/potion-silverleaf-quiet.png'],
-  ['potion:emberSight', 'src/assets/items/potions/potion-ember-sight.png'],
-  ['potion:thornSleep', 'src/assets/items/potions/potion-thorn-sleep.png'],
-  ['potion:glassMoonElixir', 'src/assets/items/potions/potion-glass-moon-elixir.png'],
-  ['potion:rootboundResolve', 'src/assets/items/potions/potion-rootbound-resolve.png'],
-  ['potion:nightOrchardTonic', 'src/assets/items/potions/potion-night-orchard-tonic.png'],
-  ['potion:starlessCourage', 'src/assets/items/potions/potion-starless-courage.png'],
-  ['potion:frostveinDraught', 'src/assets/items/potions/potion-frostvein-draught.png'],
-  ['potion:bloodlightWard', 'src/assets/items/potions/potion-bloodlight-ward.png'],
-  ['potion:silverleafSalve', 'src/assets/items/potions/potion-silverleaf-salve.png'],
-  ['potion:yarrowPoultice', 'src/assets/items/potions/potion-yarrow-poultice.png'],
-  ['potion:hyssopClarity', 'src/assets/items/potions/potion-hyssop-clarity.png'],
-  ['potion:valerianRest', 'src/assets/items/potions/potion-valerian-rest.png'],
-  ['potion:comfreyBalm', 'src/assets/items/potions/potion-comfrey-balm.png'],
-  ['potion:nightshadeVeil', 'src/assets/items/potions/potion-nightshade-veil.png'],
-  ['potion:belladonnaSight', 'src/assets/items/potions/potion-belladonna-sight.png'],
-  ['potion:wormwoodPurge', 'src/assets/items/potions/potion-wormwood-purge.png'],
-  ['potion:snowdropBreath', 'src/assets/items/potions/potion-snowdrop-breath.png'],
-  ['potion:pearlrootDraught', 'src/assets/items/potions/potion-pearlroot-draught.png'],
-  ['potion:wastedPotion', 'src/assets/items/potions/potion-wasted.png'],
-  ['potion:unknownPotion', 'src/assets/items/potions/potion-unknown.png'],
-  ['potion:generic', 'src/assets/items/potions/potion-generic.png'],
+  ['potion:manaTonic', 'assets/game/source/items/potions/potion-mana-tonic.png'],
+  ['potion:minorHealingPotion', 'assets/game/source/items/potions/potion-minor-healing.png'],
+  ['potion:nettleVigor', 'assets/game/source/items/potions/potion-nettle-vigor.png'],
+  ['potion:calmingDraught', 'assets/game/source/items/potions/potion-calming-draught.png'],
+  ['potion:simpleAntidote', 'assets/game/source/items/potions/potion-antidote.png'],
+  ['potion:venomDraught', 'assets/game/source/items/potions/potion-venom-draught.png'],
+  ['potion:briarWard', 'assets/game/source/items/potions/potion-briar-ward.png'],
+  ['potion:lanternTonic', 'assets/game/source/items/potions/potion-lantern-tonic.png'],
+  ['potion:healingPotion', 'assets/game/source/items/potions/potion-healing.png'],
+  ['potion:moonlitFocus', 'assets/game/source/items/potions/potion-moon-focus.png'],
+  ['potion:sunrootStamina', 'assets/game/source/items/potions/potion-stamina.png'],
+  ['potion:frostmossCleanse', 'assets/game/source/items/potions/potion-frost-cleanse.png'],
+  ['potion:sleepDraught', 'assets/game/source/items/potions/potion-sleep-draught.png'],
+  ['potion:elixirOfLife', 'assets/game/source/items/potions/potion-elixir.png'],
+  ['potion:starLuckPhiltre', 'assets/game/source/items/potions/potion-star-luck.png'],
+  ['potion:dragonCourage', 'assets/game/source/items/potions/potion-dragon-courage.png'],
+  ['potion:deepDreamVision', 'assets/game/source/items/potions/potion-deep-dream-vision.png'],
+  ['potion:pactWard', 'assets/game/source/items/potions/potion-pact-ward.png'],
+  ['potion:ashenMemory', 'assets/game/source/items/potions/potion-ashen-memory.png'],
+  ['potion:silverleafQuiet', 'assets/game/source/items/potions/potion-silverleaf-quiet.png'],
+  ['potion:emberSight', 'assets/game/source/items/potions/potion-ember-sight.png'],
+  ['potion:thornSleep', 'assets/game/source/items/potions/potion-thorn-sleep.png'],
+  ['potion:glassMoonElixir', 'assets/game/source/items/potions/potion-glass-moon-elixir.png'],
+  ['potion:rootboundResolve', 'assets/game/source/items/potions/potion-rootbound-resolve.png'],
+  ['potion:nightOrchardTonic', 'assets/game/source/items/potions/potion-night-orchard-tonic.png'],
+  ['potion:starlessCourage', 'assets/game/source/items/potions/potion-starless-courage.png'],
+  ['potion:frostveinDraught', 'assets/game/source/items/potions/potion-frostvein-draught.png'],
+  ['potion:bloodlightWard', 'assets/game/source/items/potions/potion-bloodlight-ward.png'],
+  ['potion:silverleafSalve', 'assets/game/source/items/potions/potion-silverleaf-salve.png'],
+  ['potion:yarrowPoultice', 'assets/game/source/items/potions/potion-yarrow-poultice.png'],
+  ['potion:hyssopClarity', 'assets/game/source/items/potions/potion-hyssop-clarity.png'],
+  ['potion:valerianRest', 'assets/game/source/items/potions/potion-valerian-rest.png'],
+  ['potion:comfreyBalm', 'assets/game/source/items/potions/potion-comfrey-balm.png'],
+  ['potion:nightshadeVeil', 'assets/game/source/items/potions/potion-nightshade-veil.png'],
+  ['potion:belladonnaSight', 'assets/game/source/items/potions/potion-belladonna-sight.png'],
+  ['potion:wormwoodPurge', 'assets/game/source/items/potions/potion-wormwood-purge.png'],
+  ['potion:snowdropBreath', 'assets/game/source/items/potions/potion-snowdrop-breath.png'],
+  ['potion:pearlrootDraught', 'assets/game/source/items/potions/potion-pearlroot-draught.png'],
+  ['potion:wastedPotion', 'assets/game/source/items/potions/potion-wasted.png'],
+  ['potion:unknownPotion', 'assets/game/source/items/potions/potion-unknown.png'],
+  ['potion:generic', 'assets/game/source/items/potions/potion-generic.png'],
 ];
 
 const INGREDIENT_ASSETS = ingredientCatalog.map((ingredient) => [
   `ingredient:${ingredient.key}`,
-  `src/assets/items/ingredients/ingredient-${ingredient.assetSlug}.png`,
+  `assets/game/source/items/ingredients/ingredient-${ingredient.assetSlug}.png`,
 ]);
 
 const TOOL_ASSETS = [
   [
     'tool:herbCuttingScissorsClosed',
-    'src/assets/icons/tools/herb-cutting-scissors-closed.png',
+    'assets/game/source/icons/tools/herb-cutting-scissors-closed.png',
   ],
   [
     'tool:herbCuttingScissorsOpen',
-    'src/assets/icons/tools/herb-cutting-scissors-open.png',
+    'assets/game/source/icons/tools/herb-cutting-scissors-open.png',
   ],
 ];
 
 const STATUS_ASSETS = [
-  ['status:checkDefault', 'src/assets/icons/status/check-01.png'],
-  ['status:lockDefault', 'src/assets/icons/status/lock-01.png'],
+  ['status:checkDefault', 'assets/game/source/ui/prop_checkmark.png'],
+  ['status:lockDefault', 'assets/game/source/ui/prop_lock.png'],
 ];
 
 const RESEARCH_ASSETS = [
-  ['research:autoBottle', 'src/assets/icons/research/icon-research-auto-bottle.png'],
-  ['research:autoBrew', 'src/assets/icons/research/icon-research-auto-brew.png'],
-  ['research:autoHarvest', 'src/assets/icons/research/icon-research-auto-harvest.png'],
-  ['research:autoPlant', 'src/assets/icons/research/icon-research-auto-plant.png'],
+  ['research:autoBottle', 'assets/game/source/icons/research/icon-research-auto-bottle.png'],
+  ['research:autoBrew', 'assets/game/source/icons/research/icon-research-auto-brew.png'],
+  ['research:autoHarvest', 'assets/game/source/icons/research/icon-research-auto-harvest.png'],
+  ['research:autoPlant', 'assets/game/source/icons/research/icon-research-auto-plant.png'],
   [
     'research:autoSeedSpawn',
-    'src/assets/icons/research/icon-research-auto-seed-spawn.png',
+    'assets/game/source/icons/research/icon-research-auto-seed-spawn.png',
   ],
   [
     'research:automationReserve',
-    'src/assets/icons/research/icon-research-automation-reserve.png',
+    'assets/game/source/icons/research/icon-research-automation-reserve.png',
   ],
   [
     'research:cauldronBrewing',
-    'src/assets/icons/research/icon-research-cauldron-brewing.png',
+    'assets/game/source/icons/research/icon-research-cauldron-brewing.png',
   ],
   [
     'research:cauldronCapacity',
-    'src/assets/icons/research/icon-research-cauldron-capacity.png',
+    'assets/game/source/icons/research/icon-research-cauldron-capacity.png',
   ],
-  ['research:cauldronLevel', 'src/assets/icons/research/icon-research-cauldron-level.png'],
-  ['research:fastSell', 'src/assets/icons/research/icon-research-fast-sell.png'],
-  ['research:plotCapacity', 'src/assets/icons/research/icon-research-plot-capacity.png'],
-  ['research:plotGrowth', 'src/assets/icons/research/icon-research-plot-growth.png'],
-  ['research:plotLevel', 'src/assets/icons/research/icon-research-plot-level.png'],
+  ['research:cauldronLevel', 'assets/game/source/icons/research/icon-research-cauldron-level.png'],
+  ['research:fastSell', 'assets/game/source/icons/research/icon-research-fast-sell.png'],
+  ['research:plotCapacity', 'assets/game/source/icons/research/icon-research-plot-capacity.png'],
+  ['research:plotGrowth', 'assets/game/source/icons/research/icon-research-plot-growth.png'],
+  ['research:plotLevel', 'assets/game/source/icons/research/icon-research-plot-level.png'],
   [
     'research:researchCost',
-    'src/assets/icons/research/icon-research-cost.png',
+    'assets/game/source/icons/research/icon-research-cost.png',
   ],
   [
     'research:researchTime',
-    'src/assets/icons/research/icon-research-time.png',
+    'assets/game/source/icons/research/icon-research-time.png',
   ],
   [
     'research:summonMultiplier',
-    'src/assets/icons/research/icon-research-summon-multiplier.png',
+    'assets/game/source/icons/research/icon-research-summon-multiplier.png',
   ],
 ];
 
 const ASSETS = [
-  ['resource:coin', 'src/assets/icons/icon-coin.png', 96],
-  ['resource:crystal', 'src/assets/icons/icon-crystal.png', 96],
-  ['resource:emerald', 'src/assets/icons/icon-emerald.png', 96],
-  ['resource:mana', 'src/assets/icons/icon-mana-drop.png', 96],
-  ['resource:research', 'src/assets/icons/icon-research.png', 96],
-  ['resource:ruby', 'src/assets/icons/icon-ruby.png', 96],
-  ['seed:pack', 'src/assets/items/seeds/seed-pack.png', 128, { trimTransparent: true }],
+  ['resource:coin', 'assets/game/source/icons/icon-coin.png', 96],
+  ['resource:crystal', 'assets/game/source/icons/icon-crystal.png', 96],
+  ['resource:emerald', 'assets/game/source/icons/icon-emerald.png', 96],
+  ['resource:mana', 'assets/game/source/icons/icon-mana-drop.png', 96],
+  ['resource:research', 'assets/game/source/icons/icon-research.png', 96],
+  ['resource:ruby', 'assets/game/source/icons/icon-ruby.png', 96],
+  ['seed:pack', 'assets/game/source/items/seeds/seed-pack.png', 128, { trimTransparent: true }],
   ...HERB_ASSETS.map(([frameName, filePath]) => [
     frameName,
     filePath,
@@ -192,7 +197,7 @@ const ASSETS = [
     128,
     { trimTransparent: true },
   ]),
-  ['ui:summonCircle', 'src/assets/ui/summon-circle.png', 768],
+  ['ui:summonCircle', 'assets/game/source/ui/summon-circle.png', 768],
 ];
 
 function readAsset([frameName, relativePath, maxDimension, options = {}]) {
@@ -375,9 +380,14 @@ function writeAtlas({ width, height, packed }) {
     extrudeImageEdges(asset.image, atlas, asset.x, asset.y, EDGE_EXTRUDE);
   }
 
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  fs.mkdirSync(ATLAS_OUTPUT_DIR, { recursive: true });
+  fs.mkdirSync(MODULE_OUTPUT_DIR, { recursive: true });
   fs.writeFileSync(OUTPUT_IMAGE, PNG.sync.write(atlas));
-  fs.writeFileSync(OUTPUT_MODULE, createModule({ width, height, packed }));
+  fs.writeFileSync(
+    OUTPUT_JSON,
+    `${JSON.stringify(createAtlasJson({ width, height, packed }), null, 2)}\n`,
+  );
+  fs.writeFileSync(OUTPUT_MODULE, createModule());
 }
 
 function copyImage(source, target, targetX, targetY) {
@@ -488,9 +498,9 @@ function copyPixel(source, sourceX, sourceY, target, targetX, targetY) {
   target.data[targetOffset + 3] = source.data[sourceOffset + 3];
 }
 
-function createModule({ width, height, packed }) {
-  const frames = Object.fromEntries(
-    packed
+function createFrames(packed) {
+  return Object.fromEntries(
+    [...packed]
       .sort((first, second) => first.frameName.localeCompare(second.frameName))
       .map((asset) => [
         asset.frameName,
@@ -505,49 +515,86 @@ function createModule({ width, height, packed }) {
         },
       ]),
   );
+}
 
-  return `import atlasImageUrl from './game-asset-atlas.png';
+function createAtlasJson({ width, height, packed }) {
+  const frames = createFrames(packed);
 
-export const gameAssetAtlasImageUrl = atlasImageUrl;
-export const gameAssetAtlasSize = Object.freeze(${JSON.stringify({ width, height }, null, 2)});
-export const gameAssetAtlasFrames = Object.freeze(${JSON.stringify(frames, null, 2)});
-
-export const gameAssetAtlasPixiData = Object.freeze({
-  frames: Object.freeze(
-    Object.fromEntries(
-      Object.entries(gameAssetAtlasFrames).map(([name, frame]) => [
+  return {
+    frames: Object.fromEntries(
+      Object.entries(frames).map(([name, frame]) => [
         name,
-        Object.freeze({
-          frame: Object.freeze({
+        {
+          frame: {
             x: frame.x,
             y: frame.y,
             w: frame.width,
             h: frame.height,
-          }),
+          },
           rotated: false,
           trimmed: false,
-          spriteSourceSize: Object.freeze({
+          spriteSourceSize: {
             x: 0,
             y: 0,
             w: frame.width,
             h: frame.height,
-          }),
-          sourceSize: Object.freeze({
+          },
+          sourceSize: {
             w: frame.width,
             h: frame.height,
-          }),
-        }),
+          },
+          originalSourceSize: {
+            w: frame.originalWidth,
+            h: frame.originalHeight,
+          },
+          source: frame.source,
+        },
       ]),
     ),
+    meta: {
+      app: 'Idle Wizard asset pipeline',
+      image: 'game-asset-atlas.png',
+      format: 'RGBA8888',
+      scale: '1',
+      size: {
+        w: width,
+        h: height,
+      },
+    },
+  };
+}
+
+function createModule() {
+  return `import atlasImageUrl from '../../../assets/game/atlas/game-asset-atlas.png';
+import atlasData from '../../../assets/game/atlas/game-asset-atlas.json';
+
+export const gameAssetAtlasImageUrl = atlasImageUrl;
+export const gameAssetAtlasSize = Object.freeze({
+  width: atlasData.meta.size.w,
+  height: atlasData.meta.size.h,
+});
+export const gameAssetAtlasFrames = Object.freeze(
+  Object.fromEntries(
+    Object.entries(atlasData.frames).map(([name, data]) => [
+      name,
+      Object.freeze({
+        x: data.frame.x,
+        y: data.frame.y,
+        width: data.frame.w,
+        height: data.frame.h,
+        originalWidth: data.originalSourceSize.w,
+        originalHeight: data.originalSourceSize.h,
+        source: data.source,
+      }),
+    ]),
   ),
+);
+
+export const gameAssetAtlasPixiData = Object.freeze({
+  frames: Object.freeze(atlasData.frames),
   meta: Object.freeze({
+    ...atlasData.meta,
     image: atlasImageUrl,
-    format: 'RGBA8888',
-    scale: '1',
-    size: Object.freeze({
-      w: gameAssetAtlasSize.width,
-      h: gameAssetAtlasSize.height,
-    }),
   }),
 });
 `;

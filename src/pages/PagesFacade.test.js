@@ -110,13 +110,13 @@ function createGameplayFacadeFake() {
     visualSettings: {
       costsCrystal: {
         theme: { black: 0, midnight: 0, witchcraft: 0 },
-        font: { lexend: 0, 'comic-sans-mono': 0 },
+        font: { 'lilita-one': 0, 'comic-sans-mono': 0 },
         progressBar: { regular: 0, gradient: 0 },
       },
       researched: {
         theme: { black: false, midnight: true, witchcraft: false },
         font: {
-          lexend: true,
+          'lilita-one': true,
           'comic-sans-mono': false,
         },
         progressBar: { regular: true, gradient: false },
@@ -1569,15 +1569,6 @@ function createGameplayFacadeFake() {
         };
       }
 
-      if (snapshot.coin.current < completion.costCoin) {
-        return {
-          ok: false,
-          reason: 'not_enough_coin',
-          costCoin: completion.costCoin,
-        };
-      }
-
-      snapshot.coin.current -= completion.costCoin;
       snapshot.tasks.currentLevel += 1;
       snapshot.tasks.level.level = snapshot.tasks.currentLevel;
       snapshot.tasks.level.completion = {
@@ -1591,7 +1582,6 @@ function createGameplayFacadeFake() {
       return {
         ok: true,
         currentLevel: snapshot.tasks.currentLevel,
-        costCoin: completion.costCoin,
       };
     },
     completePrestigeMilestone: (level) => {
@@ -2876,7 +2866,7 @@ function createPlayerFacadeFake(
     shouldPromptForUsername = false,
     hasExplicitUsername = true,
     initialColorMode = 'resources',
-    initialFont = 'lexend',
+    initialFont = 'lilita-one',
     initialCharacter = 'elara',
     initialIconMode = 'icons',
     initialProgressBar = 'regular',
@@ -2960,9 +2950,16 @@ function createPlayerFacadeFake(
       const normalizedFont =
         ['comic-sans-mono', 'comic sans mono', 'comic-mono'].includes(font)
           ? 'comic-sans-mono'
-          : ['lexend', 'google-lexend'].includes(font)
-            ? 'lexend'
-            : 'lexend';
+          : [
+                'lilita-one',
+                'lilita one',
+                'root-run',
+                'root run',
+                'lexend',
+                'google-lexend',
+              ].includes(font)
+            ? 'lilita-one'
+            : 'lilita-one';
       snapshot = {
         ...snapshot,
         font: normalizedFont,
@@ -3711,6 +3708,23 @@ function dispatchTouchTap(target, { clientX = 160, clientY = 220, identifier = 2
 }
 
 describe('PagesFacade', () => {
+  it('routes the shared Spine runtime into the tutorial facade', () => {
+    const spineRuntimeFacade = {
+      loadSkeleton: vi.fn(),
+      createSkeleton: vi.fn(),
+    };
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake(),
+      spineRuntimeFacade,
+    });
+
+    expect(
+      pagesFacade.tutorialFacade.hintManager.pointerSpineManager
+        .spineRuntimeFacade,
+    ).toBe(spineRuntimeFacade);
+  });
+
   it('mounts Workshop as the default room page', () => {
     const stage = document.createElement('section');
     const pagesFacade = new PagesFacade({
@@ -3738,6 +3752,10 @@ describe('PagesFacade', () => {
       'summon seed, costs 10 mana',
     );
     expect(stage.querySelector('.workshop-page__bag-button')?.textContent).toBe('bag');
+    expect(stage.querySelector('.workshop-page__bag')?.dataset.panelSide).toBe('left');
+    expect(
+      stage.querySelector('.workshop-page__bag-button-icon')?.getAttribute('src'),
+    ).toContain('icon-bag.png');
     expect(stage.querySelector('.workshop-page__prestige-button')).toBeNull();
     expect(stage.querySelector('.room-bottom-panel__prestige-button')).toBeNull();
     expect(stage.querySelector('.workshop-page__leaderboard-button')?.textContent).toBe(
@@ -3806,7 +3824,7 @@ describe('PagesFacade', () => {
       avatarButton
         .querySelector('.room-top-panel__username-avatar')
         ?.getAttribute('src'),
-    ).toContain('/assets/characters/elara.png');
+    ).toContain('/assets/game/source/characters/elara.png');
     expect(topPanel.children[0]?.className).toBe('room-top-panel__avatar-button');
     expect(topPanel.children[1]?.className).toBe('room-top-panel__identity-row');
     expect(topPanel.children[2]?.classList.contains('room-top-panel__resources')).toBe(true);
@@ -4046,6 +4064,11 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.room-bottom-panel__prestige-button')?.dataset.pageId).toBe(
       'prestige',
     );
+    expect(
+      [...stage.querySelectorAll('.room-bottom-panel__tab')].map(
+        (button) => button.dataset.pageId,
+      ),
+    ).toEqual(['prestige', 'brewing', 'garden', 'workshop', 'research', 'shop']);
 
     clickRoomTab(stage, 'research');
     expect(pagesFacade.getCurrentPageId()).toBe('research');
@@ -4059,6 +4082,11 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.prestige-page__description.style-box')).not.toBeNull();
     expect(stage.querySelector('.prestige-page__body.style-page-scroll')).not.toBeNull();
     expect(stage.querySelector('.prestige-page .style-dialog')).toBeNull();
+
+    clickRoomTab(stage, 'brewing');
+    pagesFacade.swipeNavigationManager.lastNavigationAtMs = -Infinity;
+    dispatchTouchSwipe(stage, { startX: 120, endX: 320 });
+    expect(pagesFacade.getCurrentPageId()).toBe('prestige');
   });
 
   it('shows ruby, emerald, or crystal in the top panel on matching research tabs', () => {
@@ -4223,14 +4251,14 @@ describe('PagesFacade', () => {
 
     expect(usernameButton?.textContent).toBe('Merlin');
     expect(avatarButton).not.toBeNull();
-    expect(usernameAvatar?.getAttribute('src')).toContain('/assets/characters/mira.png');
+    expect(usernameAvatar?.getAttribute('src')).toContain('/assets/game/source/characters/mira.png');
     expect(avatarButton?.hidden).toBe(false);
     expect(usernameAvatar?.hidden).toBe(false);
     expect(topPanel?.classList.contains('has-avatar')).toBe(true);
 
     playerFacade.setCharacter('rowan');
 
-    expect(usernameAvatar?.getAttribute('src')).toContain('/assets/characters/rowan.png');
+    expect(usernameAvatar?.getAttribute('src')).toContain('/assets/game/source/characters/rowan.png');
 
     playerFacade.setIconMode('none');
 
@@ -4942,11 +4970,11 @@ describe('PagesFacade', () => {
     }
   });
 
-  it('keeps a paid level completion separate from elara requests', () => {
+  it('levels up after requests without showing or spending a coin price', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
-    snapshot.coin.current = 4;
+    snapshot.coin.current = 2;
     snapshot.tasks.level.completedTasks = 1;
     snapshot.tasks.level.totalTasks = 1;
     snapshot.tasks.level.completion = {
@@ -5001,13 +5029,14 @@ describe('PagesFacade', () => {
     expect(questSegments[0]?.classList.contains('is-complete')).toBe(true);
     expect(stage.querySelector('.workshop-page__quest-reward')).toBeNull();
     expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
-    expect(button?.textContent).toBe('reach level 24 coin');
+    expect(button?.textContent).toBe('reach level 2');
+    expect(button?.textContent).not.toContain('coin');
     expect(button?.disabled).toBe(false);
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(2);
     expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
     expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('rewards');
     expect(stage.querySelector('.room-announcement__level-flow')).toBeNull();
@@ -5182,7 +5211,7 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__font-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['lexend', 'comic sans mono']);
+    ).toEqual(['Lilita One', 'comic sans mono']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__color-button')].map(
         (button) => button.textContent,
@@ -5250,12 +5279,12 @@ describe('PagesFacade', () => {
         .querySelector('.room-top-panel__avatar-button')
         .querySelector('.room-top-panel__username-avatar')
         ?.getAttribute('src'),
-    ).toContain('/assets/characters/rowan.png');
+    ).toContain('/assets/game/source/characters/rowan.png');
     expect(
       [...settings.querySelectorAll('.room-top-panel__progress-bar-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['regular', 'gradient', 'bronze']);
+    ).toEqual(['Root Rush', 'gradient', 'bronze']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__icon-button')].map(
         (button) => button.textContent,
@@ -5669,24 +5698,26 @@ describe('PagesFacade', () => {
     const comicButton = stage.querySelector(
       '.room-top-panel__font-button[data-font="comic-sans-mono"]',
     );
-    const lexendButton = stage.querySelector('.room-top-panel__font-button[data-font="lexend"]');
+    const lilitaButton = stage.querySelector(
+      '.room-top-panel__font-button[data-font="lilita-one"]',
+    );
     const comicResearchButton = comicButton
       ?.closest('.room-top-panel__visual-option')
       ?.querySelector('.room-top-panel__visual-option-price');
 
-    expect(lexendButton.getAttribute('aria-checked')).toBe('true');
+    expect(lilitaButton.getAttribute('aria-checked')).toBe('true');
     expect(comicButton.disabled).toBe(false);
 
     comicButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(playerFacade.getSnapshot().font).toBe('lexend');
+    expect(playerFacade.getSnapshot().font).toBe('lilita-one');
     expect(gameplayFacade.getSnapshot().visualSettings.researched.font['comic-sans-mono']).toBe(
       false,
     );
 
     comicResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(playerFacade.getSnapshot().font).toBe('lexend');
+    expect(playerFacade.getSnapshot().font).toBe('lilita-one');
     expect(gameplayFacade.getSnapshot().visualSettings.researched.font['comic-sans-mono']).toBe(
       true,
     );
@@ -5697,12 +5728,12 @@ describe('PagesFacade', () => {
 
     expect(playerFacade.getSnapshot().font).toBe('comic-sans-mono');
     expect(comicButton.getAttribute('aria-checked')).toBe('true');
-    expect(lexendButton.getAttribute('aria-checked')).toBe('false');
+    expect(lilitaButton.getAttribute('aria-checked')).toBe('false');
 
-    lexendButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    lilitaButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(playerFacade.getSnapshot().font).toBe('lexend');
-    expect(lexendButton.getAttribute('aria-checked')).toBe('true');
+    expect(playerFacade.getSnapshot().font).toBe('lilita-one');
+    expect(lilitaButton.getAttribute('aria-checked')).toBe('true');
     expect(comicButton.getAttribute('aria-checked')).toBe('false');
   });
 
@@ -6373,7 +6404,11 @@ describe('PagesFacade', () => {
       stateLabels[3]?.querySelector('.workshop-page__prestige-state-icon')?.dataset
         .assetAtlasFrame,
     ).toBe('status:lockDefault');
-    expect(milestoneRows[1]?.querySelector('.workshop-page__prestige-action')).not.toBeNull();
+    const prestigeAction = milestoneRows[1]?.querySelector(
+      '.workshop-page__prestige-action',
+    );
+    expect(prestigeAction).not.toBeNull();
+    expect(prestigeAction?.classList.contains('style-button--brown-dark')).toBe(true);
     expect(
       milestoneRows[2]?.querySelector('.workshop-page__prestige-status'),
     ).toBeNull();
@@ -6519,7 +6554,7 @@ describe('PagesFacade', () => {
         (row) => row.textContent,
       ),
     ).toEqual([
-      '- City Bazaar?',
+      '- City Bazaar',
       '- run focus',
       '- current-run research focus selector',
     ]);
@@ -9563,7 +9598,9 @@ describe('PagesFacade', () => {
       'your stalls',
     );
     expect(stage.querySelector('.shop-page__direct-sell-controls')).toBeNull();
-    expect(stage.querySelector('.shop-page__shelf-help')?.textContent).toContain('[i]');
+    expect(
+      stage.querySelector('.shop-page__shelf-help .style-info-button__icon'),
+    ).not.toBeNull();
     expect(stage.querySelector('.shop-page__ledger-controls')).not.toBeNull();
     expect(stage.querySelector('.shop-page__ledger-controls')?.textContent).toContain(
       'market ledger',
@@ -9833,14 +9870,19 @@ describe('PagesFacade', () => {
     expect(cauldrons[1].classList.contains('is-buyable')).toBe(false);
     expect(cauldrons[1].querySelector('.brewing-page__cauldron-bubble')?.hidden).toBe(true);
     expect(cauldrons[1].querySelector('.brewing-page__cauldron-items')?.hidden).toBe(true);
-    expect(cauldrons[1].querySelector('.brewing-page__action-button')?.textContent).toContain(
-      'buy 1 coin',
+    expect(cauldrons[1].querySelector('.brewing-page__buy-button')?.textContent).toContain(
+      '1 coin',
     );
-    expect(cauldrons[1].querySelector('.brewing-page__action-button')?.disabled).toBe(true);
+    expect(
+      cauldrons[1]
+        .querySelector('.brewing-page__buy-button')
+        ?.classList.contains('style-cost-button'),
+    ).toBe(true);
+    expect(cauldrons[1].querySelector('.brewing-page__buy-button')?.disabled).toBe(true);
 
     gameplayFacade.setCoin(1);
     expect(cauldrons[1].classList.contains('is-buyable')).toBe(true);
-    expect(cauldrons[1].querySelector('.brewing-page__action-button')?.disabled).toBe(false);
+    expect(cauldrons[1].querySelector('.brewing-page__buy-button')?.disabled).toBe(false);
     cauldrons[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     cauldrons = [...stage.querySelectorAll('.brewing-page__cauldron')];
@@ -11378,9 +11420,7 @@ describe('PagesFacade', () => {
     expect(progressBar?.classList.contains('style-progress--timer')).toBe(true);
     expect(progressBar?.getAttribute('aria-valuenow')).toBe('0');
     expect(stage.querySelector('.brewing-page__active-progress-text')?.textContent).toBe('');
-    expect(stage.querySelector('.brewing-page__active-progress-fill')?.style.transform).toBe(
-      'scaleX(0)',
-    );
+    expect(stage.querySelector('.brewing-page__active-progress-fill')?.style.width).toBe('0%');
     expect(stage.querySelector('.brewing-page__action-button')?.textContent).not.toBe('collect');
     expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(true);
 
@@ -11767,8 +11807,8 @@ describe('PagesFacade', () => {
     expect(progressBar?.getAttribute('role')).toBe('progressbar');
     expect(progressBar?.getAttribute('aria-valuenow')).toBe('25');
     expect(
-      progressBar?.querySelector('.research-page__research-progress-fill')?.style.transform,
-    ).toBe('scaleX(0.25)');
+      progressBar?.querySelector('.research-page__research-progress-fill')?.style.width,
+    ).toBe('25%');
 
     research.remainingMs = 2_000;
     research.progress = 0.8;
@@ -11779,8 +11819,8 @@ describe('PagesFacade', () => {
     );
     expect(progressBar?.getAttribute('aria-valuenow')).toBe('80');
     expect(
-      progressBar?.querySelector('.research-page__research-progress-fill')?.style.transform,
-    ).toBe('scaleX(0.8)');
+      progressBar?.querySelector('.research-page__research-progress-fill')?.style.width,
+    ).toBe('80%');
   });
 
   it('marks unaffordable and locked research rows unavailable', () => {
@@ -12451,6 +12491,24 @@ describe('PagesFacade', () => {
 
     expect(stage.hasAttribute('data-dev-top-panel-preview')).toBe(false);
     expect(setQuestProgressPreview).toHaveBeenLastCalledWith(null);
+  });
+
+  it('reveals bottom room tabs for non-persistent visual QA', () => {
+    const stage = document.createElement('main');
+    const pagesFacade = Object.create(PagesFacade.prototype);
+    pagesFacade.stage = stage;
+
+    expect(pagesFacade.setBottomRoomTabsPreview(true)).toEqual({
+      ok: true,
+      active: true,
+    });
+    expect(stage.hasAttribute('data-dev-bottom-tabs-preview')).toBe(true);
+
+    expect(pagesFacade.setBottomRoomTabsPreview(false)).toEqual({
+      ok: true,
+      active: false,
+    });
+    expect(stage.hasAttribute('data-dev-bottom-tabs-preview')).toBe(false);
   });
 
 });

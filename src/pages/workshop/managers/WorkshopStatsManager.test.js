@@ -132,7 +132,7 @@ describe('WorkshopStatsManager', () => {
     ]);
   });
 
-  it('renders a compact tabbed stats popup with colored item icons and coin values', () => {
+  it('renders a compact tabbed stats popup with item icons and coin values', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new WorkshopStatsManager({ gameplayFacade });
     const parent = document.createElement('div');

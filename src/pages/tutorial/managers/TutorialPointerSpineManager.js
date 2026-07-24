@@ -1,32 +1,36 @@
-import { SpineAssetManager } from '../../../rendering/spine/managers/SpineAssetManager.js';
-
 const POINTER_SPINE_KEY = 'tutorial:pointer';
-const POINTER_SPINE_SKELETON_PATH = 'tutorial/pointer/pointer.skel';
-const POINTER_SPINE_ATLAS_PATH = 'tutorial/pointer/pointer.atlas';
+const POINTER_SPINE_SKELETON_PATH = 'spine/tutorial-pointer/pointer.skel';
+const POINTER_SPINE_ATLAS_PATH = 'spine/tutorial-pointer/pointer.atlas';
 const POINTER_SPINE_ANIMATION = 'click1';
 const POINTER_SPINE_WIDTH = 76;
 const POINTER_SPINE_HEIGHT = 90;
 const POINTER_SPINE_VISUAL_WIDTH = 44;
 const POINTER_SPINE_VISUAL_HEIGHT = 64;
 const POINTER_SPINE_PADDING = 2;
-const POINTER_SPINE_MAX_RESOLUTION = 8;
-
-function defaultPixiImporter() {
-  return import('pixi.js');
-}
+const LOGICAL_VIEWPORT_WIDTH = 390;
+const LOGICAL_VIEWPORT_HEIGHT = 844;
+const POINTER_POSES = Object.freeze({
+  'top-left': Object.freeze({ nudgeX: 6, nudgeY: 6, rotationDegrees: 135 }),
+  'top-right': Object.freeze({ nudgeX: -6, nudgeY: 6, rotationDegrees: -135 }),
+  'bottom-left': Object.freeze({ nudgeX: 6, nudgeY: -6, rotationDegrees: 45 }),
+  'bottom-right': Object.freeze({ nudgeX: -6, nudgeY: -6, rotationDegrees: -45 }),
+});
+const DEFAULT_POINTER_POSE = Object.freeze({
+  nudgeX: 0,
+  nudgeY: 0,
+  rotationDegrees: 0,
+});
 
 export class TutorialPointerSpineManager {
   constructor({
-    assetManager = new SpineAssetManager(),
-    importPixi = defaultPixiImporter,
+    spineRuntimeFacade = null,
     width = POINTER_SPINE_WIDTH,
     height = POINTER_SPINE_HEIGHT,
     animationName = POINTER_SPINE_ANIMATION,
     assetBaseUrl = import.meta.env?.BASE_URL ?? '/',
     enabled = null,
   } = {}) {
-    this.assetManager = assetManager;
-    this.importPixi = importPixi;
+    this.spineRuntimeFacade = spineRuntimeFacade;
     this.width = width;
     this.height = height;
     this.animationName = animationName;
@@ -38,14 +42,14 @@ export class TutorialPointerSpineManager {
     this.enabled = enabled;
     this.pointer = null;
     this.shell = null;
-    this.canvas = null;
-    this.app = null;
     this.spine = null;
     this.readyPromise = null;
     this.destroyed = false;
     this.visible = false;
     this.motionEnabled = true;
     this.failed = false;
+    this.placement = null;
+    this.baseFit = null;
   }
 
   mount(pointer) {
@@ -53,7 +57,7 @@ export class TutorialPointerSpineManager {
     this.destroyed = false;
 
     if (!this.shell) {
-      this.createCanvas(pointer.ownerDocument);
+      this.createShell(pointer.ownerDocument);
     }
 
     if (this.shell && this.shell.parentElement !== pointer) {
@@ -68,13 +72,14 @@ export class TutorialPointerSpineManager {
   unmount() {
     this.destroyed = true;
     this.clearReadyState();
-    this.destroyApp();
+    this.destroySpine();
     this.shell?.remove();
     this.pointer = null;
     this.shell = null;
-    this.canvas = null;
     this.readyPromise = null;
     this.visible = false;
+    this.placement = null;
+    this.baseFit = null;
   }
 
   setVisible(visible) {
@@ -87,25 +92,39 @@ export class TutorialPointerSpineManager {
     this.applyPlaybackState();
   }
 
+  setPlacement({ x, y, placement } = {}) {
+    const normalizedX = Number(x);
+    const normalizedY = Number(y);
+
+    if (!Number.isFinite(normalizedX) || !Number.isFinite(normalizedY)) {
+      return;
+    }
+
+    this.placement = {
+      x: normalizedX,
+      y: normalizedY,
+      placement: String(placement ?? ''),
+    };
+    this.applyPlacement();
+  }
+
   whenReady() {
     return this.readyPromise ?? Promise.resolve(this.spine);
   }
 
   canUseRuntime() {
-    if (this.enabled !== null) {
-      return Boolean(this.enabled);
+    if (this.enabled === false) {
+      return false;
     }
 
-    const view = this.pointer?.ownerDocument?.defaultView ?? globalThis.window;
-
     return Boolean(
-      typeof view?.WebGLRenderingContext === 'function' ||
-        typeof view?.WebGL2RenderingContext === 'function' ||
-        view?.navigator?.gpu,
+      this.spineRuntimeFacade &&
+        typeof this.spineRuntimeFacade.loadSkeleton === 'function' &&
+        typeof this.spineRuntimeFacade.createSkeleton === 'function',
     );
   }
 
-  createCanvas(doc) {
+  createShell(doc) {
     if (!doc) {
       return;
     }
@@ -114,15 +133,6 @@ export class TutorialPointerSpineManager {
     this.shell.className = 'tutorial-layer__pointer-spine-shell';
     this.shell.hidden = true;
     this.shell.setAttribute('aria-hidden', 'true');
-
-    this.canvas = doc.createElement('canvas');
-    this.canvas.className = 'tutorial-layer__pointer-spine';
-    this.canvas.width = this.width;
-    this.canvas.height = this.height;
-    this.canvas.setAttribute('aria-hidden', 'true');
-    this.syncCanvasCssSize();
-
-    this.shell.append(this.canvas);
   }
 
   async ensureReady() {
@@ -142,82 +152,42 @@ export class TutorialPointerSpineManager {
   }
 
   async initSpine() {
-    if (!this.canvas || this.destroyed) {
+    if (!this.canUseRuntime() || this.destroyed) {
       return null;
     }
 
-    const { Application } = await this.importPixi();
-    await this.assetManager.loadSkeleton({
+    await this.spineRuntimeFacade.loadSkeleton({
       key: POINTER_SPINE_KEY,
       skeletonSrc: this.skeletonSrc,
       atlasSrc: this.atlasSrc,
     });
 
-    if (!this.canvas || this.destroyed) {
+    if (this.destroyed) {
       return null;
     }
 
-    const app = new Application();
-    await app.init({
-      canvas: this.canvas,
-      width: this.width,
-      height: this.height,
-      backgroundAlpha: 0,
-      antialias: true,
-      autoDensity: true,
-      resolution: this.getCanvasResolution(),
-      preference: 'webgl',
-      powerPreference: 'low-power',
-      preserveDrawingBuffer: true,
-    });
-    this.syncCanvasCssSize();
-
-    if (!this.canvas || this.destroyed) {
-      app.destroy({ removeView: false }, { children: true });
-      return null;
-    }
-
-    const spine = await this.assetManager.createSkeleton({
+    const spine = await this.spineRuntimeFacade.createSkeleton({
       key: POINTER_SPINE_KEY,
+      layer: 'overlay',
       autoUpdate: true,
-      ticker: app.ticker,
     });
 
     if (this.destroyed) {
-      app.destroy({ removeView: false }, { children: true });
+      spine?.destroy?.({ children: true });
       return null;
     }
 
-    this.app = app;
     this.spine = spine;
+    this.spineRuntimeFacade.attachToElement?.(this.pointer, spine, {
+      zIndex: 0,
+    });
     this.fitSpine(spine);
-    app.stage.addChild(spine);
     this.playAnimation(spine);
     this.markReady();
+    this.applyPlacement();
     this.applyPlaybackState();
 
     return spine;
-  }
-
-  syncCanvasCssSize() {
-    if (!this.canvas) {
-      return;
-    }
-
-    this.canvas.style.width = '100%';
-    this.canvas.style.height = '100%';
-  }
-
-  getCanvasResolution() {
-    const view = this.pointer?.ownerDocument?.defaultView ?? globalThis.window;
-    const devicePixelRatio = Number(view?.devicePixelRatio || globalThis.devicePixelRatio || 1);
-    const uiScale = Number.parseFloat(
-      view?.getComputedStyle?.(this.pointer)?.getPropertyValue('--style-ui-scale'),
-    );
-    const effectiveScale = Number.isFinite(uiScale) && uiScale > 0 ? uiScale : 1;
-    const resolution = devicePixelRatio * effectiveScale;
-
-    return clampResolution(resolution);
   }
 
   fitSpine(spine) {
@@ -225,22 +195,99 @@ export class TutorialPointerSpineManager {
     const bounds = readBounds(spine);
 
     if (!bounds.width || !bounds.height) {
-      spine.position?.set?.(this.width / 2, this.height / 2);
+      this.baseFit = {
+        scale: 1,
+        x: this.width / 2,
+        y: this.height / 2,
+      };
       return;
     }
 
-    const availableWidth = Math.max(1, POINTER_SPINE_VISUAL_WIDTH - POINTER_SPINE_PADDING * 2);
-    const availableHeight = Math.max(1, POINTER_SPINE_VISUAL_HEIGHT - POINTER_SPINE_PADDING * 2);
+    const availableWidth = Math.max(
+      1,
+      POINTER_SPINE_VISUAL_WIDTH - POINTER_SPINE_PADDING * 2,
+    );
+    const availableHeight = Math.max(
+      1,
+      POINTER_SPINE_VISUAL_HEIGHT - POINTER_SPINE_PADDING * 2,
+    );
     const scale = Math.min(
       availableWidth / bounds.width,
       availableHeight / bounds.height,
     );
 
-    spine.scale?.set?.(scale);
-    spine.position?.set?.(
-      (this.width - bounds.width * scale) / 2 - bounds.x * scale,
-      (this.height - bounds.height * scale) / 2 - bounds.y * scale,
-    );
+    this.baseFit = {
+      scale,
+      x: (this.width - bounds.width * scale) / 2 - bounds.x * scale,
+      y: (this.height - bounds.height * scale) / 2 - bounds.y * scale,
+    };
+  }
+
+  applyPlacement() {
+    if (!this.spine || !this.baseFit || !this.placement) {
+      return;
+    }
+
+    const transform = resolvePointerTransform({
+      placement: this.placement,
+      pose: resolvePointerPose(this.placement.placement),
+      baseFit: this.baseFit,
+      shellWidth: this.width,
+      shellHeight: this.height,
+      uiScale: this.getUiScale(),
+      canvasRect: this.getCanvasRect(),
+      rootRect: this.getRootRect(),
+    });
+
+    this.spine.scale?.set?.(transform.scale);
+    this.spine.position?.set?.(transform.x, transform.y);
+    this.spine.rotation = transform.rotation;
+  }
+
+  getUiScale() {
+    const elements = [
+      this.pointer,
+      this.pointer?.closest?.('.tutorial-layer'),
+      this.pointer?.closest?.('.game-stage'),
+    ];
+    const view = this.pointer?.ownerDocument?.defaultView ?? globalThis.window;
+
+    for (const element of elements) {
+      if (!element) {
+        continue;
+      }
+
+      const inlineValue = element?.style?.getPropertyValue?.('--style-ui-scale');
+      const computedValue = view
+        ?.getComputedStyle?.(element)
+        ?.getPropertyValue?.('--style-ui-scale');
+      const scale = Number.parseFloat(inlineValue || computedValue);
+
+      if (Number.isFinite(scale) && scale > 0) {
+        return scale;
+      }
+    }
+
+    return 1;
+  }
+
+  getCanvasRect() {
+    const canvas = this.pointer
+      ?.closest?.('.game-stage')
+      ?.querySelector?.('.game-canvas');
+    const rect = canvas?.getBoundingClientRect?.();
+
+    return hasArea(rect) ? rect : null;
+  }
+
+  getRootRect() {
+    const rect = this.pointer
+      ?.closest?.('.tutorial-layer')
+      ?.getBoundingClientRect?.();
+
+    return rect && Number.isFinite(rect.left) && Number.isFinite(rect.top)
+      ? rect
+      : null;
   }
 
   playAnimation(spine) {
@@ -279,18 +326,21 @@ export class TutorialPointerSpineManager {
       this.spine.state.timeScale = playing ? 1 : 0;
     }
 
-    if (playing) {
-      this.app?.ticker?.start?.();
-    } else {
-      this.app?.ticker?.stop?.();
+    if (this.spine) {
+      this.spine.visible = this.visible;
     }
   }
 
-  destroyApp() {
-    this.app?.destroy({ removeView: false }, { children: true });
-    this.app = null;
+  destroySpine() {
+    this.spineRuntimeFacade?.detachFromElement?.(this.pointer, this.spine);
+    this.spine?.removeFromParent?.();
+    this.spine?.destroy?.({ children: true });
     this.spine = null;
   }
+}
+
+function hasArea(rect) {
+  return Boolean(rect?.width > 0 && rect?.height > 0);
 }
 
 function readBounds(spine) {
@@ -326,12 +376,50 @@ function findAnimationName(spine, preferredName = null) {
   return animations.find((animation) => animation?.name)?.name ?? null;
 }
 
-function clampResolution(value) {
-  if (!Number.isFinite(value) || value <= 0) {
-    return 1;
-  }
+export function resolvePointerPose(placement) {
+  return POINTER_POSES[placement] ?? DEFAULT_POINTER_POSE;
+}
 
-  return Math.min(Math.max(1, value), POINTER_SPINE_MAX_RESOLUTION);
+export function resolvePointerTransform({
+  placement,
+  pose,
+  baseFit,
+  shellWidth,
+  shellHeight,
+  uiScale,
+  canvasRect = null,
+  rootRect = null,
+}) {
+  const logicalScaleX = canvasRect?.width > 0
+    ? LOGICAL_VIEWPORT_WIDTH / canvasRect.width
+    : 1;
+  const logicalScaleY = canvasRect?.height > 0
+    ? LOGICAL_VIEWPORT_HEIGHT / canvasRect.height
+    : logicalScaleX;
+  const rootLeft = rootRect?.left ?? canvasRect?.left ?? 0;
+  const rootTop = rootRect?.top ?? canvasRect?.top ?? 0;
+  const canvasLeft = canvasRect?.left ?? 0;
+  const canvasTop = canvasRect?.top ?? 0;
+  const visualScaleX = uiScale * logicalScaleX;
+  const visualScaleY = uiScale * logicalScaleY;
+  const rotation = (pose.rotationDegrees * Math.PI) / 180;
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const localX = (baseFit.x - shellWidth / 2) * visualScaleX;
+  const localY = (baseFit.y - shellHeight / 2) * visualScaleY;
+  const centerX =
+    (rootLeft - canvasLeft) * logicalScaleX +
+    (placement.x + pose.nudgeX) * visualScaleX;
+  const centerY =
+    (rootTop - canvasTop) * logicalScaleY +
+    (placement.y + pose.nudgeY) * visualScaleY;
+
+  return {
+    x: centerX + localX * cos - localY * sin,
+    y: centerY + localX * sin + localY * cos,
+    scale: baseFit.scale * Math.min(visualScaleX, visualScaleY),
+    rotation,
+  };
 }
 
 export function resolvePublicAssetUrl(assetPath, baseUrl = '/') {

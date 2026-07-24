@@ -4,9 +4,7 @@ import {
 } from '../../shared/levelRequirementsLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { createPageIcon } from '../../shared/pageIcons.js';
-import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
-import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import {
   getTaskRequirementVerb,
   taskRequirementTypes,
@@ -33,7 +31,6 @@ export class WorkshopTaskManager {
     this.currentTasksById = new Map();
     this.currentDisplayTasks = [];
     this.currentLevelCompletion = null;
-    this.currentCoin = 0;
     this.currentSnapshot = null;
     this.currentFirstCompletedTaskId = null;
     this.currentRequirementsLabel = ELARA_REQUEST_LABEL;
@@ -298,7 +295,6 @@ export class WorkshopTaskManager {
     this.currentTasksById.clear();
     this.currentDisplayTasks = [];
     this.currentLevelCompletion = null;
-    this.currentCoin = 0;
     this.currentSnapshot = null;
     this.currentFirstCompletedTaskId = null;
     this.currentRequirementsLabel = ELARA_REQUEST_LABEL;
@@ -536,7 +532,6 @@ export class WorkshopTaskManager {
     this.currentTasksById = new Map(tasks.map((task) => [task.taskId, task]));
     this.currentDisplayTasks = displayTasks;
     this.currentLevelCompletion = taskSnapshot.level.completion ?? null;
-    this.currentCoin = Number(snapshot?.coin?.current) || 0;
     this.currentFirstCompletedTaskId = null;
     const rowMovement = this.ensureRows(listTasks);
     this.setCanToggleTasks(listTasks.length > 0);
@@ -629,7 +624,7 @@ export class WorkshopTaskManager {
     setNotificationBadge(
       this.refs.toggleButton,
       !this.expanded &&
-        (this.canAffordLevelCompletion() ||
+        (this.shouldShowLevelComplete() ||
           [...this.rowsByTaskId.keys()].some((taskId) => {
             const task = this.currentTasksById.get(taskId);
             return task?.canFill;
@@ -681,17 +676,7 @@ export class WorkshopTaskManager {
     }
 
     if (this.shouldShowLevelComplete()) {
-      if (this.canAffordLevelCompletion()) {
-        return 'level up';
-      }
-
-      const missingCoin = Math.max(
-        0,
-        Math.ceil((this.currentLevelCompletion?.costCoin ?? 0) - this.currentCoin),
-      );
-      return missingCoin > 0
-        ? `earn ${formatCoinPriceText(missingCoin)}`
-        : 'level up';
+      return 'level up';
     }
 
     return '';
@@ -858,14 +843,10 @@ export class WorkshopTaskManager {
     label.className = 'workshop-page__level-complete-label';
     label.textContent = 'level up';
 
-    const cost = document.createElement('span');
-    cost.className = 'workshop-page__level-complete-cost';
-    setResourceColor(cost, 'coin');
-
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__level-complete-button';
     button.type = 'button';
-    button.append(label, cost);
+    button.append(label);
     button.addEventListener('click', () => this.onLevelCompleteButton());
 
     action.append(button);
@@ -875,7 +856,6 @@ export class WorkshopTaskManager {
       root,
       action,
       label,
-      cost,
       button,
     };
   }
@@ -972,20 +952,16 @@ export class WorkshopTaskManager {
     this.setAttribute(this.refs.title, 'aria-label', `show ${requirementsLabel} info`);
     this.setAttribute(this.refs.infoDialog, 'aria-label', `${requirementsLabel} information`);
     this.setText(this.refs.infoTitle, requirementsLabel);
-    this.setText(this.refs.infoBody, this.getTasksHelperText(taskSnapshot));
+    this.setText(this.refs.infoBody, this.getTasksHelperText());
   }
 
-  getTasksHelperText(taskSnapshot = this.currentSnapshot?.tasks) {
+  getTasksHelperText() {
     if (this.currentRequirementsLabel === LEVEL_UP_LABEL) {
-      const costCoin = Math.max(
-        0,
-        Math.floor(Number(taskSnapshot?.level?.completion?.costCoin) || 0),
-      );
       const target = Number.isInteger(this.currentRequirementTargetLevel)
         ? `level ${this.currentRequirementTargetLevel}`
         : 'the next level';
 
-      return `spend ${formatCoinPriceText(costCoin)} to reach ${target}.`;
+      return `all elara's requests are complete. reach ${target}.`;
     }
 
     if (Number.isInteger(this.currentRequirementTargetLevel)) {
@@ -1140,38 +1116,28 @@ export class WorkshopTaskManager {
       return;
     }
 
-    const costText = formatLevelCompletionCostText(this.currentLevelCompletion.costCoin);
-    const disabled = !this.canAffordLevelCompletion();
     const nextLevel = this.currentLevelCompletion.level + 1;
     const payoffRows = this.getLevelPayoffRows(this.currentLevelCompletion.level, nextLevel);
     const payoffPreview = this.getLevelPayoffPreview(nextLevel, payoffRows);
 
     this.setText(row.label, `reach level ${nextLevel}`);
-    setResourceIconText(row.cost, costText);
-    this.setDisabled(row.button, disabled);
-    this.setAttribute(row.button, 'aria-disabled', disabled ? 'true' : 'false');
+    this.setDisabled(row.button, false);
+    this.setAttribute(row.button, 'aria-disabled', 'false');
     this.setAttribute(
       row.button,
       'aria-label',
-      `level up to ${nextLevel} for ${costText}. ${payoffPreview}`,
+      `level up to ${nextLevel}. ${payoffPreview}`,
     );
     this.setAttribute(
       row.root,
       'aria-label',
-      `level up to ${nextLevel} for ${costText}. ${payoffPreview}`,
+      `level up to ${nextLevel}. ${payoffPreview}`,
     );
-    setNotificationBadge(row.button, !disabled);
+    setNotificationBadge(row.button, true);
   }
 
   shouldShowLevelComplete() {
     return Boolean(this.currentLevelCompletion?.canComplete);
-  }
-
-  canAffordLevelCompletion() {
-    return (
-      this.shouldShowLevelComplete() &&
-      this.currentCoin >= (this.currentLevelCompletion?.costCoin ?? Infinity)
-    );
   }
 
   getLevelPayoffRows(currentLevel, nextLevel) {
@@ -2502,10 +2468,6 @@ export class WorkshopTaskManager {
 
     return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
   }
-}
-
-function formatLevelCompletionCostText(costCoin) {
-  return Number(costCoin) <= 0 ? 'free' : formatCoinPriceText(costCoin);
 }
 
 function formatRequirementQuantity(quantity, label) {

@@ -20,17 +20,23 @@ experience_type: architecture
 - SpacetimeDB reducers should use primary keys and existing indexes for identity/alliance lookups; maintenance reducers that touch many players should sweep each table once from an identity set, not call per-player cleanup that rescans tables.
 - `PressFeedbackManager` can route the `.is-pressing` class to a child selector via `data-press-feedback-target`; use it when a control's art should press without moving its label/sign container.
 - UI click sounds live in `src/audio/uiClicks`; trigger them through `PressFeedbackManager` so individual button managers do not duplicate sound hooks.
-- Idle Witch Craft's button tap cue uses `idlefarmer-mouth-pop.wav` plus a short triangle tone; Idle Wizard mirrors that in `src/audio/uiClicks/assets/ui-click-pop.wav`.
-- During Pixi migration, hidden DOM managers can still receive gameplay reward events; route feedback through one visible renderer per event or duplicate notices appear.
-- Pixi migration should not replace page facades with duplicated page logic before parity; keep existing DOM managers as the source of truth and mirror/render their state until visuals and interactions match.
-- Pixi DOM mirroring should be opt-in/debug only; hiding live DOM and repainting a canvas snapshot caps visible motion and burns mobile frame budget.
-- Pixi DOM mirror must render `.style-dialog::after`; popup border and shadow live there while the real dialog border is transparent.
-- Pixi `autoDensity` can write inline canvas pixel sizes; reassert `width/height: 100%` after init so the authored 1080x2170 canvas fits the scaled stage.
-- Pixi text rasterizes before parent scale; wait for web fonts and render text textures at source-scale resolution or the UI looks like wrong/blurry fonts.
+- Idle Witch Craft's button tap cue uses `idlefarmer-mouth-pop.wav` plus a short triangle tone; Idle Wizard mirrors that in `assets/game/source/audio/ui-click-pop.wav`.
+- Root Run-style presentation uses one retained Pixi application with a fixed `390x844` logical stage for every room, popup, gate, tutorial overlay, and Spine visual; do not add page-local Pixi applications or extra WebGL canvases.
+- Keep the existing DOM managers as the source of layout, state, taps, tutorial targets, and accessibility while the central renderer owns visible output. Reveal a whole direct stage root only while one of its native text inputs is focused or when rendering fails open.
+- Restore the Pixi scene after `focusout` only when native text-input fallback is actually active; ordinary button focus changes must not flash the DOM or force a full scene refresh.
+- The central UI renderer must be invalidation-driven and retain display objects across refreshes. Do not restore interval polling or rebuild the scene graph on every tick.
+- Pool central renderer widget records with a bounded LIFO pool: detach every stale nested record before releasing any of them, clear retained graphics geometry, reset masks/external slots, discard DOM-backed image and image-shadow roles, cap retained roles per record, and key text roles by stable child slots so page replacements can reuse the full display-object bundle.
+- Renderer image readiness must traverse only displayed ancestor branches. Hidden `loading="lazy"` images may never emit load/error, so waiting on every descendant can leave a stale ready canvas over newly mounted UI.
+- CSS `url(#fragment)` values are document-local SVG references, not textures; filter them before Pixi asset loading or animated SVG masks can create an endless stream of failed asset requests.
+- Scope asynchronous shared-canvas initialization to a mount generation; a rapid unmount/remount must not let stale imports or `Application.init()` attach to the new canvas or clear its active readiness promise.
+- Render pseudo-element chrome such as `.style-dialog::after` in the central stage; CSS border-image/image rules remain the startup and WebGL-failure fallback.
+- Pixi `autoDensity` writes canvas CSS dimensions during init and resize. Reassert the centered contain-fit size, and set renderer resolution to `devicePixelRatio * containScale`, so the authored `390x844` stage stays sharp without changing logical layout.
+- Pixi text rasterizes before parent scale; wait for web fonts and derive text geometry from the live logical DOM rects so text does not use a fallback face or double-apply viewport scale.
 - Spine Pixi runtime major/minor must match the Spine Editor major/minor used to export skeletons; current `@esotericsoftware/spine-pixi-v8` needs Pixi `>=8.16`.
+- Register Spine/Pixi render-pipe plugins before the shared `Application.init()` call; keep skeleton and atlas asset loading lazy.
 - Idle Outpost `farming-tile.skel` is Spine `4.0.64`; in Idle Wizard prefer cropped atlas PNGs or a re-export before loading it through the Spine 4.3 runtime.
-- Pixi DOM mirror must schedule renders on pointerdown/up/cancel; interval-only rendering can miss short `:active` button press states.
-- Atlas sprites in DOM should use inline SVG `viewBox` crops instead of CSS background positioning; they scale like images and keep Pixi mirror frame lookup simple.
+- The central renderer must invalidate on pointerdown/up/cancel, input/change, scroll, ResizeObserver, MutationObserver, and active CSS animation frames so short press states and moving overlays stay current.
+- Atlas sprites in semantic DOM should use inline SVG `viewBox` crops or `data-asset-atlas-frame`; both scale like images and give the central Pixi renderer a stable frame lookup.
 - Generated atlases need transparent-pixel alpha bleed and edge extrusion; raw RGB garbage or blank padding can show as seams when Pixi/SVG scales sprites.
 - Inline SVG atlas crops used as text-size item icons need wide gutters; 2px padding lets adjacent herb frames bleed into minified sprites.
 - `herbIcons` label entries need matching atlas frames; missing herb frames can render stray `null` text in rich item labels.
@@ -58,7 +64,7 @@ experience_type: architecture
 - When the shared single-account gate blocks local UI QA, mount the affected facade in a temporary localhost HTML harness instead of clearing browser storage or touching the live player save.
 - The in-app browser blocks `data:` QA harnesses; serve temporary module harnesses through Vite on `127.0.0.1:55173` so source imports stay same-origin.
 - Temporary Vite UI harnesses must define `--design-width` and `--design-height`; app bootstrap normally supplies them, and `.game-stage` can collapse without them.
-- Temporary Vite UI harnesses must set `--style-ui-scale` to `3 * min(width/1080, height/2170, 1)`; leaving the default `3` compresses source UI in desktop screenshots.
+- Temporary Vite UI harnesses must set `--style-ui-scale` to `min(width/390, height/844)` with no `1` cap; the app now uses Root Run's logical pixels and desktop contain-fit upscaling.
 - Put temporary Vite UI harness HTML at the repo root when it imports source modules or bare deps; `public/` serves raw HTML and bare imports fail.
 - Transient Playwright `page.setContent` UI harnesses must first `goto` the Vite origin before importing `/src/...`; `about:blank` gets blocked by CORS.
 - FTUE placement harnesses should use memory-backed Elara storage and matching `data-tutorial-reveal` tokens; persisted drag placement or entry animations can mask auto-placement logic.
@@ -135,13 +141,13 @@ experience_type: architecture
 - Automation player settings save under `automation`; update client persistence and the SpacetimeDB save sanitizer together or settings reset after backend save.
 - Server save sanitation must merge previous completed research into non-prestige saves; stale clients can omit newer research ids and otherwise get stuck behind the anti-downgrade guard.
 - Incorrect completed research ids can survive through that anti-downgrade merge; live support fixes should remove the bad raw id and kick the player session so stale clients re-save against the corrected row.
-- Server task-save sanitation must treat `tasks.currentLevel` as the paid player level, and preserve active requirement rows from `currentLevel + 1`; completed task rows only mean level-ready and must not infer a level-up.
+- Server task-save sanitation must treat `tasks.currentLevel` as the confirmed player level, and preserve active requirement rows from `currentLevel + 1`; completed task rows only mean level-ready and must not infer a level-up.
 - Task retunes should keep existing task ids stable when only changing required items; task ids are persisted progress keys.
 - SpacetimeDB gameplay-save sanitizer must preserve `shop.playerRequests`; otherwise player request rows reload as empty after restart.
 - SpacetimeDB brewing save sanitizer must preserve `brewing.cauldrons`; keeping only legacy `cauldronItemKeys` drops cauldron 2+ after restart.
 - Every field in a numbered cauldron save record must be mirrored by the server sanitizer and tested through the shared per-cauldron normalizer; top-level cauldron-1 aliases do not protect later slots.
 - Prestige reset saves intentionally lower run level, coin, and research; server anti-downgrade guards must allow that only when `prestige.completedLevels` grows, and must reject prestige regression afterward.
-- Prestige reset level is half the completed prestige milestone level; level 10 still resets to paid player level 5, and new prestige runs should not go back to level 1.
+- Prestige reset level is half the completed prestige milestone level; level 10 still resets to confirmed player level 5, and new prestige runs should not go back to level 1.
 - Prestige completion world-chat notices are separate from task level-up notices; announce the claimed prestige milestone before resetting the run.
 - After prestige, leaderboard and alliance income must advance from accepted save run-coin deltas; comparing new run `coin.totalGenerated` directly against all-time leaderboard total stalls score growth.
 - SpacetimeDB research save sanitizer must preserve `research.inProgress`; keeping only `completedIds` makes active research vanish after reload.
@@ -163,6 +169,9 @@ experience_type: architecture
 - Timer-driven personal task progress must request an immediate gameplay save; otherwise a completed daily quest can be lost before autosave and make weekly quest points short after the next daily reset.
 - SpacetimeDB subscription cleanup must be locally idempotent; `isEnded()` can still be false after `unsubscribe()` was requested, and a second call throws.
 - Automatic frame snapshots must be deduped before publishing; unchanged snapshots make every page subscriber rerender and can burn 120Hz mobile frame budget.
+- Room navigation should retain each mounted page tree, detach inactive roots, and reattach them at the stable page slot; run a lightweight deactivate hook for transient dialogs/data, and keep the detached page's Pixi records instead of rebuilding both DOM and display objects.
+- Cached room activity must be scoped with the room: suppress page-owned subscription callbacks while detached, remember only the latest payload, and deliver it once on resume so hidden DOM does not keep rendering.
+- Follow the Post-Apo UI ownership model for repeated surfaces: one page/dialog manager instance owns stable roots and receives new data, while variable list rows use bounded typed widget pools with complete reset before reuse.
 - Snapshot getters must stay read-only: synchronize subscription selectors on hydration, prestige, or facade attachment, and coalesce backend quote bursts into one gameplay publish.
 - Mana/resource frame ticks should use a cheap top-panel resource stream; full gameplay snapshots are for actions, cap/timer boundaries, and other state changes.
 - For Pixel/WebView perf checks, keep the phone awake and profile CPU: Android adaptive refresh can make raw rAF look capped when static, while full gameplay snapshot construction can still be the actual hot path.
@@ -175,7 +184,7 @@ experience_type: architecture
 - World chat sends must wait for backend player-level sync before calling `send_world_chat_message`; the reducer gates on server `player.playerLevel`, not just local Workshop unlock state.
 - Explicit pre-chat player-level flushes must requeue the current gameplay snapshot level even if observers already saw that value; otherwise stale server `playerLevel` can reject unlocked chat sends.
 - `send_world_chat_message` should also heal `player.playerLevel` from the accepted `player_gameplay_save` before the level gate; old clients or stale `set_player_level` calls can otherwise leave level-3+ saves unable to chat.
-- All `.style-progress` bars share one source height; do not add per-use rail height overrides for chat, scroll cues, timers, or task bars.
+- All `.style-progress` bars share the compact 10px Root Rush source height; do not add per-use rail height overrides for chat, scroll cues, timers, task bars, or allocation controls. Apply semantic colors through page-scoped fill/edge tokens. The top-panel quest rail owns the one explicit 14px thickness token.
 - Shared `.style-progress` rails need `flex: 0 0 auto`; flex dialogs can otherwise shrink the rail below the shared height.
 - Tabbed popup panel widths must equal dialog content width plus `20px` side padding and `2px` border on both sides; otherwise bottom tabs misalign with the dialog frame.
 - When adding period leaderboard counters, seed blank legacy periods from existing all-time totals before normal period refresh resets them.

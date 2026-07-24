@@ -2,6 +2,10 @@ import {
   DEFAULT_PLAYER_THEME,
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
+import {
+  DEFAULT_PLAYER_FONT,
+  normalizePlayerFont,
+} from '../../../player/playerFonts.js';
 
 export class PlayerBackendSyncManager {
   constructor() {
@@ -172,7 +176,7 @@ export class PlayerBackendSyncManager {
     return {
       username: snapshot?.username,
       theme: normalizePlayerTheme(snapshot?.theme ?? DEFAULT_PLAYER_THEME),
-      font: snapshot?.font ?? 'lexend',
+      font: normalizePlayerFont(snapshot?.font ?? DEFAULT_PLAYER_FONT),
       colorMode: snapshot?.colorMode ?? 'resources',
       character: snapshot?.character ?? 'elara',
       usernamePromptSeen: Boolean(snapshot?.usernamePromptSeen),
@@ -183,7 +187,7 @@ export class PlayerBackendSyncManager {
     return {
       username: profile?.username,
       theme: normalizePlayerTheme(profile?.theme ?? DEFAULT_PLAYER_THEME),
-      font: profile?.font ?? 'lexend',
+      font: normalizePlayerFont(profile?.font ?? DEFAULT_PLAYER_FONT),
       colorMode: profile?.colorMode ?? 'resources',
       character: profile?.character ?? 'elara',
       usernamePromptSeen: Boolean(profile?.usernamePromptSeen),

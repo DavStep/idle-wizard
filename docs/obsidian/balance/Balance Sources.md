@@ -11,7 +11,7 @@ world: balance
 
 ## Primary Files
 
-- `src/gameplay/tasks/tasks.json` - level requirements and completion coin costs.
+- `src/gameplay/tasks/tasks.json` - level requirements and level-scaled coin budgets for daily/world content. Coin budgets are not level-up prices.
 - `src/gameplay/playerLevel/managers/PlayerLevelBalanceManager.js` - mana,
   crystal, and capacity milestone defaults.
 - `src/gameplay/research/README.md` - research cost families, gates, and reset

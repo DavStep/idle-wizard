@@ -100,21 +100,17 @@ describe('WorkshopPageFacade requirement feedback', () => {
       '\\.style-panel\\.room-bottom-panel',
       'bottom',
     );
-    const bottomTabHeight =
-      getRootPixelValue(baseCss, '--style-box-border-label-line-height') * 2;
-    const bottomTabPaddingY = getRulePixelValue(
+    const bottomTabHeight = getRootPixelValue(
       baseCss,
-      '\\.room-bottom-panel__tab',
-      'padding',
+      '--style-room-tab-active-height',
     );
     const bottomTabRowGap = Number(
       getRuleBody(baseCss, '\\.room-bottom-panel__tabs')
-        ?.match(/\bgap:\s*([\d.]+)px\s+[\d.]+px;/)
+        ?.match(/\bgap:\s*([\d.]+)px\s+[\d.]+(?:px)?;/)
         ?.at(1),
     );
 
-    const bottomTabOuterHeight = bottomTabHeight + bottomTabPaddingY * 2 + borderWidth * 2;
-    const bottomTabsTop = bottomPanelBottom + bottomTabOuterHeight * 2 + bottomTabRowGap;
+    const bottomTabsTop = bottomPanelBottom + bottomTabHeight * 2 + bottomTabRowGap;
     const gap = chatBottom + borderWidth - bottomTabsTop;
     expect(gap).toBeGreaterThanOrEqual(9);
     expect(gap).toBeLessThanOrEqual(11);

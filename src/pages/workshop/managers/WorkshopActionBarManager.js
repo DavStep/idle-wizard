@@ -1,6 +1,7 @@
 import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
+import { setInfoButtonIcon } from '../../shared/infoButton.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { getSeedSummonNotification } from '../../notifications/managers/PageNotificationStateManager.js';
 import {
@@ -9,7 +10,11 @@ import {
 } from './WorkshopSecondaryActionGateManager.js';
 
 const MAIL_ICON_URL = new URL(
-  '../../../assets/icons/icon-mail-envelope.webp',
+  '../../../../assets/game/source/icons/icon-inbox-envelope-bag-style.png',
+  import.meta.url,
+).href;
+const BAG_ICON_URL = new URL(
+  '../../../../assets/game/source/icons/icon-bag.png',
   import.meta.url,
 ).href;
 
@@ -78,17 +83,16 @@ export class WorkshopActionBarManager {
 
     this.refs.summonButton = this.createSummonButton();
     this.refs.summonInfoButton = this.createSummonInfoButton();
+    this.refs.bagPanel = this.createBagPanel();
     this.refs.mailPanel = this.createMailPanel();
-    this.refs.bagButton = this.createBagButton();
     this.refs.statsButton = this.createStatsButton();
 
     this.root.append(
       this.refs.summonButton,
       this.refs.summonInfoButton,
-      this.refs.bagButton,
       this.refs.statsButton,
     );
-    parent.append(this.root, this.refs.mailPanel);
+    parent.append(this.root, this.refs.bagPanel, this.refs.mailPanel);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
     this.render(this.gameplayFacade.getSnapshot());
@@ -112,6 +116,7 @@ export class WorkshopActionBarManager {
     this.inboxUnsubscribe?.();
     this.inboxUnsubscribe = null;
     this.root?.remove();
+    this.refs.bagPanel?.remove();
     this.refs.mailPanel?.remove();
     this.root = null;
     this.refs = {};
@@ -150,25 +155,53 @@ export class WorkshopActionBarManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__summon-info-button';
     button.type = 'button';
-    button.textContent = '?';
+    setInfoButtonIcon(button);
     button.setAttribute('aria-label', 'show seed drop chances');
     button.addEventListener('click', () => this.onSummonInfoClick?.());
     return button;
   }
 
-  createBagButton() {
+  createBagPanel() {
+    const root = document.createElement('section');
+    root.className = 'workshop-page__panel-button workshop-page__bag';
+    root.dataset.panelSide = 'left';
+    root.setAttribute('aria-label', 'bag');
+
     const button = document.createElement('button');
-    button.className = 'style-button workshop-page__bag-button';
+    button.className = 'workshop-page__panel-button-open workshop-page__bag-button';
     button.type = 'button';
-    button.textContent = 'bag';
+    button.setAttribute('aria-haspopup', 'dialog');
     button.setAttribute('aria-label', 'open bag');
+
+    const iconFrame = document.createElement('span');
+    iconFrame.className = 'workshop-page__bag-button-icon-frame';
+    iconFrame.setAttribute('aria-hidden', 'true');
+
+    const icon = document.createElement('img');
+    icon.className = 'workshop-page__bag-button-icon';
+    icon.src = BAG_ICON_URL;
+    icon.alt = '';
+    icon.loading = 'lazy';
+    icon.decoding = 'async';
+    icon.setAttribute('aria-hidden', 'true');
+
+    const label = document.createElement('span');
+    label.className =
+      'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__bag-button-label';
+    label.textContent = 'bag';
+
+    iconFrame.append(icon);
+    button.append(iconFrame, label);
     button.addEventListener('click', () => this.onBagClick?.());
-    return button;
+    root.append(button);
+    this.refs.bagButton = button;
+    return root;
   }
 
   createStatsButton() {
     const button = document.createElement('button');
-    button.className = 'style-button workshop-page__stats-button';
+    button.className =
+      'style-button style-button--yellow workshop-page__stats-button';
     button.type = 'button';
     button.textContent = 'stats';
     button.setAttribute('aria-label', 'open stats');

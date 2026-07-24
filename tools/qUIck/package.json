@@ -1,0 +1,29 @@
+{
+  "name": "quick-ui-toolkit",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Portable qUIck Figma-to-Pixi UI editor, exporter, and runtime toolkit.",
+  "workspaces": [
+    "packages/*",
+    "example-pixi-project"
+  ],
+  "scripts": {
+    "build": "npm run build:legacy && npm run build:packages && npm run build:figma-plugin",
+    "build:legacy": "tsc -p tsconfig.legacy.json",
+    "build:packages": "tsc -b",
+    "build:figma-plugin": "npm run build --prefix figma-plugin",
+    "dev": "npm run dev -w example-pixi-project",
+    "dev:background": "node scripts/start-example-dev.mjs",
+    "ship": "node scripts/ship-to-game.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.legacy.json && tsc -b",
+    "clean": "npm run --workspaces clean"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

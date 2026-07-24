@@ -5,6 +5,9 @@ const SYNTHETIC_CLICK_SUPPRESSION_MS = 450;
 const SYNTHETIC_CLICK_RETARGET_SUPPRESSION_PX = 32;
 const PRESS_MOVE_CANCEL_PX = 12;
 const TOUCH_PRESS_MOVE_CANCEL_PX = 22;
+const PRESS_RELEASE_FEEDBACK_CLASS = 'is-press-releasing';
+export const PRESS_RELEASE_FEEDBACK_MS = 180;
+const PRESS_RELEASE_FEEDBACK_CLEANUP_MS = PRESS_RELEASE_FEEDBACK_MS + 40;
 export const HELD_RELEASE_FEEDBACK_MS = 350;
 
 const PRESS_FEEDBACK_TARGET_SELECTOR = [
@@ -46,6 +49,12 @@ function isPressFeedbackTargetDisabled(element) {
   );
 }
 
+function isInsideActiveScrollDrag(element) {
+  return Boolean(
+    element?.closest?.('.style-scroll-cue.is-scroll-dragging'),
+  );
+}
+
 export class PressFeedbackManager {
   constructor({ hapticsFacade = null, uiClickSoundFacade = null, now = () => Date.now() } = {}) {
     this.root = null;
@@ -61,6 +70,8 @@ export class PressFeedbackManager {
     this.pressStartedAtMs = 0;
     this.pressStartClickElement = null;
     this.pressMoved = false;
+    this.releaseFeedbackElement = null;
+    this.releaseFeedbackTimeoutId = null;
     this.pointerSoundElement = null;
     this.suppressedClickElement = null;
     this.suppressedClickUntilMs = 0;
@@ -97,6 +108,7 @@ export class PressFeedbackManager {
 
   unmount() {
     this.clearPressedElement();
+    this.clearReleaseFeedback();
 
     if (!this.root) {
       return;
@@ -131,6 +143,7 @@ export class PressFeedbackManager {
     }
 
     this.clearPressedElement();
+    this.clearReleaseFeedback();
     this.pointerSoundElement = null;
 
     if (!nextElement) {
@@ -180,20 +193,28 @@ export class PressFeedbackManager {
     }
 
     const pressedElement = this.pressedElement;
+    const pressedFeedbackElement = this.pressedFeedbackElement;
     const didClickOnPressStart = pressedElement && this.pressStartClickElement === pressedElement;
     const movedPastCancelThreshold = this.hasMovedPastCancelThreshold(event);
+    const canceledByScrollDrag = isInsideActiveScrollDrag(pressedElement);
     const shouldSuppressCanceledTouchClick =
       pressedElement && this.pressPointerType !== 'mouse';
-    const shouldActivate =
+    const shouldPlayReleaseFeedback =
       pressedElement &&
       !this.pressMoved &&
       !movedPastCancelThreshold &&
-      this.pressPointerType !== 'mouse' &&
+      !canceledByScrollDrag &&
       (didClickOnPressStart ||
         this.isReleaseOnPressedElement(pressedElement, event)) &&
       !isPressFeedbackTargetDisabled(pressedElement);
+    const shouldActivate =
+      shouldPlayReleaseFeedback && this.pressPointerType !== 'mouse';
 
     this.clearPressedElement();
+
+    if (shouldPlayReleaseFeedback) {
+      this.playReleaseFeedback(pressedFeedbackElement);
+    }
 
     if (!shouldActivate) {
       if (shouldSuppressCanceledTouchClick) {
@@ -451,6 +472,38 @@ export class PressFeedbackManager {
     return this.pressPointerType === 'mouse'
       ? PRESS_MOVE_CANCEL_PX
       : TOUCH_PRESS_MOVE_CANCEL_PX;
+  }
+
+  playReleaseFeedback(element) {
+    if (!element?.isConnected) {
+      return;
+    }
+
+    this.clearReleaseFeedback();
+    this.releaseFeedbackElement = element;
+    element.classList.add(PRESS_RELEASE_FEEDBACK_CLASS);
+
+    const window = element.ownerDocument?.defaultView;
+    this.releaseFeedbackTimeoutId =
+      window?.setTimeout?.(
+        () => this.clearReleaseFeedback(),
+        PRESS_RELEASE_FEEDBACK_CLEANUP_MS,
+      ) ?? null;
+  }
+
+  clearReleaseFeedback() {
+    const element = this.releaseFeedbackElement;
+    const window =
+      element?.ownerDocument?.defaultView ??
+      this.root?.ownerDocument?.defaultView;
+
+    if (this.releaseFeedbackTimeoutId !== null) {
+      window?.clearTimeout?.(this.releaseFeedbackTimeoutId);
+    }
+
+    element?.classList.remove(PRESS_RELEASE_FEEDBACK_CLASS);
+    this.releaseFeedbackElement = null;
+    this.releaseFeedbackTimeoutId = null;
   }
 
   clearPressedElement() {

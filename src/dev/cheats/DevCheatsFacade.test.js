@@ -441,6 +441,7 @@ describe('DevCheatsFacade', () => {
     };
     const pagesFacade = {
       openDialog: vi.fn((dialogId, options) => ({ ok: true, dialogId, options })),
+      setBottomRoomTabsPreview: vi.fn((active) => ({ ok: true, active })),
       setTopPanelQuestProgressPreview: vi.fn((progress) => ({ ok: true, progress })),
       setDevNotifications: vi.fn((snapshot) => ({ ok: true, snapshot })),
       syncPageUnlocks: vi.fn(),
@@ -518,6 +519,10 @@ describe('DevCheatsFacade', () => {
           command: 'cheats.openUi("topPanelQuestProgress")',
         }),
         expect.objectContaining({
+          id: 'bottomRoomTabs',
+          command: 'cheats.openUi("bottomRoomTabs")',
+        }),
+        expect.objectContaining({
           id: 'traderStallLoader',
           command: 'cheats.openUi("traderStallLoader")',
         }),
@@ -548,6 +553,15 @@ describe('DevCheatsFacade', () => {
     expect(pagesFacade.setTopPanelQuestProgressPreview).toHaveBeenCalledWith(
       expect.objectContaining({ completedQuests: 1, totalQuests: 4 }),
     );
+    expect(publishAndSaveSpy).not.toHaveBeenCalled();
+
+    expect(target.cheats.openUi('bottomRoomTabs')).toMatchObject({
+      ok: true,
+      surfaceId: 'bottomRoomTabs',
+      surfaceKind: 'preview',
+      active: true,
+    });
+    expect(pagesFacade.setBottomRoomTabsPreview).toHaveBeenCalledWith(true);
     expect(publishAndSaveSpy).not.toHaveBeenCalled();
 
     expect(target.cheats.openUi('guildQuestPosting')).toMatchObject({

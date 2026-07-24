@@ -61,7 +61,8 @@ export class AppDeployRefreshManager {
     root.setAttribute('aria-live', 'assertive');
 
     const dialog = document.createElement('div');
-    dialog.className = 'app-deploy-refresh__dialog style-dialog';
+    dialog.className =
+      'app-deploy-refresh__dialog style-dialog style-dialog--system';
     dialog.setAttribute('role', 'status');
 
     const title = document.createElement('div');

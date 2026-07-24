@@ -1,0 +1,15 @@
+{
+  "name": "figma-pixi-ui-exporter-plugin",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Build setup for local Figma plugin code.ts -> code.js",
+  "scripts": {
+    "build": "esbuild code.ts --bundle --outfile=code.js --platform=browser --target=es2017 --format=iife --sourcemap",
+    "watch": "esbuild code.ts --bundle --outfile=code.js --platform=browser --target=es2017 --format=iife --sourcemap --watch"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.117.0",
+    "esbuild": "^0.25.5",
+    "typescript": "^5.8.3"
+  }
+}

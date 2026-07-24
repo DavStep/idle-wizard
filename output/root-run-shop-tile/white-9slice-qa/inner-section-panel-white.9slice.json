@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "inner-section-panel-white.png",
+  "workingAsset": null,
+  "scaleWorkflow": {
+    "workScale": 1,
+    "downscaleResample": "lanczos",
+    "alphaCrop": {
+      "enabled": false
+    }
+  },
+  "source": {
+    "path": "/Users/davitstepanyan/Documents/idle-wizard/public/ui/inner-section-panel-white-9slice.png",
+    "width": 157,
+    "height": 182,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 157,
+      "height": 182
+    }
+  },
+  "sourceCropSize": {
+    "width": 157,
+    "height": 182
+  },
+  "slice": {
+    "left": 83,
+    "top": 91,
+    "right": 73,
+    "bottom": 90
+  },
+  "mode": "source",
+  "distill": null,
+  "cleanup": {
+    "symmetrizeCorners": false,
+    "symmetrizeEdges": false,
+    "transparentChamfer": 0,
+    "transparentChamferAaScale": 4,
+    "transparentInset": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "brownBackgroundKey": null,
+    "sideGutterTrim": {
+      "transparentThroughPx": 0,
+      "fadePx": 2
+    },
+    "allowTransparentGutters": false,
+    "geometricMask": false
+  },
+  "rendering": {
+    "stretch": "edges-and-center",
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "validation": {
+    "rasterOnly": true,
+    "pngSignatureChecked": true,
+    "naturalRoundTripExact": true,
+    "cornerRoundTripExact": true,
+    "alpha": {
+      "transparent": 1996,
+      "translucent": 316,
+      "opaque": 26262
+    },
+    "alphaBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 157,
+      "height": 182
+    },
+    "transparentGutters": {
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "bottom": 0
+    },
+    "passesNoGutterGate": true,
+    "uniqueColors": {
+      "all": 124,
+      "corners": 124,
+      "edges": 3
+    },
+    "workAsset": {
+      "size": {
+        "width": 157,
+        "height": 182
+      },
+      "slice": {
+        "left": 83,
+        "top": 91,
+        "right": 73,
+        "bottom": 90
+      },
+      "naturalRoundTripExact": true,
+      "cornerRoundTripExact": true,
+      "alpha": {
+        "transparent": 1996,
+        "translucent": 316,
+        "opaque": 26262
+      },
+      "alphaBounds": {
+        "x": 0,
+        "y": 0,
+        "width": 157,
+        "height": 182
+      },
+      "transparentGutters": {
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "bottom": 0
+      },
+      "uniqueColors": {
+        "all": 124,
+        "corners": 124,
+        "edges": 3
+      }
+    }
+  },
+  "qa": {
+    "sheet": "inner-section-panel-white-qa-sheet.png",
+    "examples": [
+      {
+        "label": "original: 157x182",
+        "width": 157,
+        "height": 182
+      },
+      {
+        "label": "height stretched: 157x342",
+        "width": 157,
+        "height": 342
+      },
+      {
+        "label": "width stretched: 397x182",
+        "width": 397,
+        "height": 182
+      },
+      {
+        "label": "both stretched: 397x342",
+        "width": 397,
+        "height": 342
+      }
+    ]
+  }
+}

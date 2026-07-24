@@ -81,6 +81,16 @@ export class GardenPageFacade {
     this.roomViewManager.unmount();
   }
 
+  deactivate() {
+    this.activeInventoryTab = null;
+    this.herbInventoryManager.setVisible(false);
+    this.seedInventoryManager.setVisible(false);
+    this.inventoryButtonManager.setActiveTab(null);
+    this.plotManager.hideSeedPopup();
+    this.plotManager.cancelDialogManager.hide({ restoreFocus: false });
+    this.plotManager.swapDialogManager.hide({ restoreFocus: false });
+  }
+
   mountInventoryPanelLayer(uiLayer) {
     if (this.inventoryPanelLayer || !uiLayer) {
       return;

@@ -25,6 +25,7 @@ export class TutorialFacade {
     now,
     onNotificationVisibilityPolicyChange,
     onShowPage,
+    spineRuntimeFacade = null,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.onShowPage = typeof onShowPage === 'function' ? onShowPage : null;
@@ -41,7 +42,10 @@ export class TutorialFacade {
       now: this.getNow,
     });
     this.stepManager = this.logicManager.stepManager;
-    this.hintManager = new TutorialHintManager({ storage });
+    this.hintManager = new TutorialHintManager({
+      storage,
+      spineRuntimeFacade,
+    });
     this.revealManager = new TutorialRevealManager();
     this.reminderManager = this.logicManager.reminderManager;
     this.saleManager = new TutorialSaleManager();

@@ -64,6 +64,7 @@ export class AppFacade {
       soundSettingsFacade: this.soundSettingsFacade,
       uiClickSoundFacade: this.uiClickSoundFacade,
       pixiProgressOverlayManager: this.renderFacade.getPixiProgressOverlayManager(),
+      spineRuntimeFacade: this.renderFacade.getSpineRuntime(),
     });
 
     this.lifecycleManager = new AppLifecycleManager({

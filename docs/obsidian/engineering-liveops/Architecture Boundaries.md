@@ -16,7 +16,7 @@ non-programmer terms.
 ## Layers
 
 - App starts and stops the shell, gates, refresh, and lifecycle flushes.
-- Viewport scales the authored `1080x2170` stage.
+- Viewport contain-fits the Root Run-compatible `390x844` logical stage.
 - Pages own room-view DOM.
 - Gameplay owns ECS-backed rules and snapshots.
 - Backend hides SpacetimeDB transport and reducers.

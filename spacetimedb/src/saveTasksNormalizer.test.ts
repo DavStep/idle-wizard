@@ -61,7 +61,7 @@ describe('normalizeSaveTasks', () => {
     });
   });
 
-  it('keeps paid level 43 active level 44 star anise progress after backend save normalization', () => {
+  it('keeps confirmed level 43 active level 44 star anise progress after backend save normalization', () => {
     const taskCatalog: SaveTaskCatalog = {
       levels: [43, 44],
       tasks: [
@@ -162,7 +162,7 @@ describe('normalizeSaveTasks', () => {
     });
   });
 
-  it('keeps active next-level sell progress for paid level 17 players', () => {
+  it('keeps active next-level sell progress for confirmed level 17 players', () => {
     const taskCatalog = createTaskCatalog();
 
     expect(
@@ -192,7 +192,7 @@ describe('normalizeSaveTasks', () => {
     });
   });
 
-  it('keeps completed unpaid active requirement rows without advancing the paid level', () => {
+  it('keeps completed ready requirement rows without advancing the confirmed level', () => {
     const taskCatalog = createTaskCatalog();
 
     expect(

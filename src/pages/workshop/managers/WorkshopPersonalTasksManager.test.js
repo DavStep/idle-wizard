@@ -129,8 +129,10 @@ describe('WorkshopPersonalTasksManager', () => {
     )?.groups?.body;
 
     expect(frameRule).not.toMatch(/\b90px\b/);
-    expect(frameRule).toMatch(/var\(--style-tabbed-dialog-content-height\)/);
-    expect(frameRule).toMatch(/var\(--style-scroll-progress-block-size\)/);
+    expect(frameRule).toMatch(
+      /\bheight:\s*var\(--style-tabbed-dialog-content-height\);/,
+    );
+    expect(frameRule).not.toMatch(/var\(--style-scroll-progress-block-size\)/);
     expect(frameRule).not.toMatch(/var\(--style-box-border-label-line-height\)/);
   });
 

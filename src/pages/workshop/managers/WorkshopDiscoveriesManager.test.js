@@ -148,7 +148,9 @@ describe('WorkshopDiscoveriesManager', () => {
     expect(button?.classList.contains('workshop-page__panel-button-open')).toBe(true);
     expect(button?.getAttribute('aria-label')).toBe('open discoveries');
     expect(button?.getAttribute('aria-haspopup')).toBe('dialog');
-    expect(icon?.getAttribute('src')).toContain('icon-discoveries-journal.webp');
+    expect(icon?.getAttribute('src')).toContain(
+      'icon-discoveries-journal-bag-style.png',
+    );
     expect(icon?.getAttribute('alt')).toBe('');
     expect(label?.textContent).toBe('discoveries');
 

@@ -375,7 +375,7 @@ export class WorldNoticeFacade {
     this.state.current = this.catalogManager.createNoticeState({
       ...currentPeriod,
       anchorLevel: this.getCurrentLevel(),
-      completionCostCoin: this.getCompletionCostCoin(),
+      levelCoinBudget: this.getLevelCoinBudget(),
     });
 
     return this.state.current;
@@ -606,11 +606,11 @@ export class WorldNoticeFacade {
     return 1;
   }
 
-  getCompletionCostCoin() {
-    const cost = this.tasksFacade?.getLevelCompletionCostCoin?.(this.getCurrentLevel());
+  getLevelCoinBudget() {
+    const budget = this.tasksFacade?.getLevelCoinBudget?.(this.getCurrentLevel());
 
-    if (Number.isFinite(cost) && cost >= 0) {
-      return Math.floor(cost);
+    if (Number.isFinite(budget) && budget >= 0) {
+      return Math.floor(budget);
     }
 
     const level = this.getCurrentLevel();

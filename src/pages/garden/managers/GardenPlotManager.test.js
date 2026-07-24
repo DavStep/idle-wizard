@@ -792,7 +792,7 @@ describe('GardenPlotManager', () => {
     expect(pressedFrameRule).toContain('translate: 0 1px;');
     expect(tooltipRule).toContain('display: block;');
     expect(tooltipRule).toContain('animation: garden-page-plot-buy-tooltip-in');
-    expect(baseCss).toMatch(
+    expect(baseCss).not.toMatch(
       /\.garden-page__plot-row\.is-unaffordable[\s\S]*\.garden-page__plot-buy-tooltip[\s\S]*\[data-resource-color="coin"\][\s\S]*color:\s*var\(--style-resource-coin\);/,
     );
     expect(boughtFrameRule).toContain(
@@ -1061,15 +1061,15 @@ describe('GardenPlotManager', () => {
 
     expect(baseCss).toContain('--garden-page-plot-number-color: #3b2416;');
     expect(baseCss).toContain(
-      '--garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground.png");',
+      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground.png");',
     );
     expect(baseCss).toContain(
-      '--garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground-level-5.png");',
+      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-5.png");',
     );
     expect(baseCss).toContain('--garden-page-plot-progress-width: 80px;');
     expect(frameRule).toContain('width: var(--garden-page-plot-visual-width);');
     expect(frameRule).toContain(
-      '--garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground.png");',
+      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground.png");',
     );
     expect(frameRule).toContain(
       '--garden-page-plot-level-color: var(--style-muted);',
@@ -1183,8 +1183,8 @@ describe('GardenPlotManager', () => {
     }
 
     expect(progressFill?.classList.contains('is-progress-running')).toBe(true);
-    expect(progressFill?.style.transition).toBe('transform 6000ms linear');
-    expect(progressFill?.style.transform).toBe('scaleX(1)');
+    expect(progressFill?.style.transition).toBe('width 6000ms linear');
+    expect(progressFill?.style.width).toBe('100%');
   });
 
   it('marks boxes ready to harvest', () => {
@@ -1780,10 +1780,13 @@ describe('GardenPlotManager', () => {
   });
 
   it('plants a seed dragged from inventory onto an empty plot', () => {
+    const stage = document.createElement('main');
+    stage.className = 'game-stage';
     const parent = document.createElement('section');
     const source = document.createElement('div');
     source.className = 'garden-page__seed-inventory-row';
-    document.body.append(parent, source);
+    stage.append(parent, source);
+    document.body.append(stage);
     const gameplayFacade = createGameplayFacadeFake();
     const plantGardenSeed = vi.spyOn(gameplayFacade, 'plantGardenSeed');
     const manager = new GardenPlotManager({ gameplayFacade });
@@ -1817,6 +1820,7 @@ describe('GardenPlotManager', () => {
     expect(ghost?.classList.contains('garden-page__seed-drag-ghost')).toBe(true);
     expect(ghost?.dataset.itemKind).toBe('seed');
     expect(ghost?.dataset.itemKey).toBe('mintSeed');
+    expect(ghost?.parentElement).toBe(stage);
     expect(ghost?.style.left).toBe('44px');
     expect(ghost?.style.top).toBe('46px');
     expect(
@@ -1843,8 +1847,7 @@ describe('GardenPlotManager', () => {
       delete document.elementFromPoint;
     }
     manager.unmount();
-    parent.remove();
-    source.remove();
+    stage.remove();
   });
 
   it('opens the existing swap confirm when a seed is dropped on a growing plot', () => {
@@ -2284,22 +2287,14 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('no seeds');
   });
 
-  it('keeps selected empty plot herb labels in resource color', () => {
+  it('keeps selected empty plot herb labels on the inherited row color', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const suppressionIndex = baseCss.indexOf(
-      '[data-resource-color] {\n  color: inherit;',
-    );
-    const overrideIndex = baseCss.indexOf(
-      '.garden-page__plot-row.is-empty\n  .garden-page__plot-label[data-resource-color="herb"]',
-    );
     const rule = baseCss.match(
       /\.garden-page__plot-row\.is-empty\s+\.garden-page__plot-label\[data-resource-color="herb"\]\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(suppressionIndex).toBeGreaterThan(-1);
-    expect(overrideIndex).toBeGreaterThan(suppressionIndex);
-    expect(rule).toBeDefined();
-    expect(rule).toMatch(/\bcolor:\s*var\(--style-resource-herb\);/);
+    expect(rule).toBeUndefined();
+    expect(baseCss).not.toContain('--style-resource-herb');
   });
 
   it('keeps plot notification dots on the text row instead of progress rails', () => {
@@ -2941,9 +2936,7 @@ describe('GardenPlotManager', () => {
     expect(boxFrame?.classList.contains('is-ready')).toBe(true);
     expect(boxFrame?.style.getPropertyValue('--garden-page-plot-ready-delay')).toBe('0ms');
     expect(plotRow.querySelector('.garden-page__plot-progress')?.hidden).toBe(false);
-    expect(plotRow.querySelector('.garden-page__plot-progress-fill')?.style.transform).toBe(
-      'scaleX(1)',
-    );
+    expect(plotRow.querySelector('.garden-page__plot-progress-fill')?.style.width).toBe('100%');
     expect(plotRow.querySelector('.garden-page__plot-progress-text')?.textContent).toBe('');
   });
 });

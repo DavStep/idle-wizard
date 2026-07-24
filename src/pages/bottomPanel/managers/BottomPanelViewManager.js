@@ -358,7 +358,12 @@ export class BottomPanelViewManager {
         continue;
       }
 
-      this.tabs.push(tab);
+      const isLeadingTab = tab.id === 'prestige';
+      if (isLeadingTab) {
+        this.tabs.unshift(tab);
+      } else {
+        this.tabs.push(tab);
+      }
       if (!this.hasCustomVisiblePageIds) {
         this.visiblePageIds.add(pageId);
       }
@@ -367,7 +372,12 @@ export class BottomPanelViewManager {
         unlocked: state.unlocked !== false,
         visible: true,
       });
-      this.refs.tabList?.append(this.createTab(tab));
+      const button = this.createTab(tab);
+      if (isLeadingTab) {
+        this.refs.tabList?.prepend(button);
+      } else {
+        this.refs.tabList?.append(button);
+      }
     }
   }
 
@@ -664,7 +674,9 @@ export class BottomPanelViewManager {
     flyout.style.width = `${targetRect.width}px`;
     flyout.style.height = `${targetRect.height}px`;
     flyout.style.removeProperty('animation');
-    iconFrame.ownerDocument.body?.append(flyout);
+    const flyoutHost =
+      iconFrame.closest?.('.game-stage') ?? iconFrame.ownerDocument.body;
+    flyoutHost?.append(flyout);
 
     if (typeof flyout.animate !== 'function') {
       flyout.remove();

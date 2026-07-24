@@ -111,7 +111,7 @@ export class ShopDemandManager {
     title.textContent = 'trader demand';
 
     this.refs.rows = document.createElement('div');
-    this.refs.rows.className = 'shop-page__demand-rows';
+    this.refs.rows.className = 'shop-page__demand-rows style-page-scroll';
     this.refs.summary = document.createElement('div');
     this.refs.summary.className = 'shop-page__demand-summary';
     this.refs.tabs = this.createTabs();

@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
 
 const deployVersion = createDeployVersion();
@@ -13,9 +14,23 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [deployVersionPlugin(), uiEditorSavePlugin({ enabled: uiEditorEnabled })],
+    publicDir: 'assets/runtime',
     define: {
       'import.meta.env.VITE_DEPLOY_VERSION': JSON.stringify(deployVersion),
       'import.meta.env.VITE_CLIENT_RELEASE_VERSION': JSON.stringify(clientReleaseVersion),
+    },
+    resolve: {
+      alias: {
+        '@figma-pixi/shared': fileURLToPath(
+          new URL('./tools/qUIck/packages/shared/src/index.ts', import.meta.url),
+        ),
+        '@figma-pixi/pixi-runtime': fileURLToPath(
+          new URL(
+            './tools/qUIck/packages/pixi-runtime/src/index.ts',
+            import.meta.url,
+          ),
+        ),
+      },
     },
     server: {
       host: '0.0.0.0',

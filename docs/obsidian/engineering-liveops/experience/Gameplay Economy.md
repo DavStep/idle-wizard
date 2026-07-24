@@ -14,7 +14,7 @@ experience_type: gameplay-economy
 - Mana has generation and a cap; both progress through player-level rewards. The old mana research rows are removed.
 - Cookie Clicker-like balance needs a compounding production spine; current Idle Wizard has prestige but still lacks random boost events, achievement multipliers, and producer-tier buy scaling.
 - Summoning seeds consumes mana.
-- Canonical seed display names are lowercase: sage, mint, nettle, lavender, briar, glowcap, mandrake, sunroot, moonflower, frostmoss, dreambell, star anise, bloodrose, dragonpepper, silverleaf, yarrow, hyssop, valerian, comfrey, nightshade, belladonna, wormwood, snowdrop, pearlroot.
+- Canonical seed display names use title case: Sage, Mint, Nettle, Lavender, Briar, Glowcap, Mandrake, Sunroot, Moonflower, Frostmoss, Dreambell, Star Anise, Bloodrose, Dragonpepper, Silverleaf, Yarrow, Hyssop, Valerian, Comfrey, Nightshade, Belladonna, Wormwood, Snowdrop, Pearlroot.
 - Seed drop preferences multiply base seed `dropWeight` at roll time (`none` 0, `low` 1, `medium` 2, `high` 3); keep config `dropWeight` unchanged and use effective weight for odds.
 - Prestige keeps seed drop preferences while ordinary seed unlock research resets; repair inactive restored drops by forcing unlocked `sageSeed` to `medium`.
 - Seeds produce herbs, and herbs have growth duration.
@@ -64,7 +64,7 @@ experience_type: gameplay-economy
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
 - Early task levels must not require items gated far beyond the current research tier; use larger quantities of near-tier seeds, herbs, and potions instead.
 - Task persistence stores progress rows for all configured task ids, even on level 1; the visible task list must come from the current-level snapshot, not the raw save array.
-- Main tasks are an ordered Elara request chain and only the first incomplete request collects progress. The coin-paid level-up is a separate transaction after the chain; never expose it as an Elara request or count it as a request-rail segment.
+- Main tasks are an ordered Elara request chain and only the first incomplete request collects progress. Completing the chain unlocks a separate manual level-up action with no currency cost; never expose that action as an Elara request or count it as a request-rail segment.
 - Task balance should not skip research order; first task use of seed/herb or recipe tiers must walk the configured research chain.
 - Level 10 is the first big progression milestone; level 9 can be a stronger gate before that unlock.
 - Milestone levels should not dip easier than the gate before them; when raising level 9, raise level 10+ to preserve curve.
@@ -77,7 +77,7 @@ experience_type: gameplay-economy
 - Auto brew enable UI must set `autoBrewRecipeKey` from the selected recipe before enabling; `BrewingFacade` rejects enabled auto-brew without a recipe key.
 - Auto/manual cauldron UI only enables or disables future automation; auto brew stays unarmed until a successful manual brew, then repeats future cycles.
 - Manual fast sell is removed; trader stands always use the full marginal NPC quote.
-- Fresh games start with 0 coin. Level 1 costs 0 coin, has no coin-request segment, and should never depend on tutorial-only grants; level 2 is the first systemic coin gate.
+- Fresh games start with 0 coin. No player level may require or spend coin. Task `coinBudget` values scale daily/world content only; legacy `completionCostCoin` and `completionCostGold` inputs must normalize into that budget and stay out of level-completion snapshots.
 - Research unlock gates for task requirements must be no higher than `target task level - 1`; e.g. nettle seed must unlock at level 5 because it is a level 6 requirement shown while the player is level 5.
 - Market licence rank grants one through five NPC and player stands.
 - NPC market stands hold one item type, sell one item per independent five-second cycle, and can be staffed by advanced research to sell two per cycle.

@@ -104,6 +104,25 @@ export class ShopPageFacade {
     this.roomViewManager.unmount();
   }
 
+  activate() {
+    this.syncPlayerShopPublicDataRetention();
+    this.renderActiveMarketTab();
+  }
+
+  deactivate() {
+    this.releasePlayerShopPublicData?.();
+    this.releasePlayerShopPublicData = null;
+    this.crystalOfferManager.hideSupportPopup();
+    this.tradeHistoryManager.hide();
+    this.playerShelfManager.hideListingPopup();
+    this.playerShelfManager.hideMarketPopup();
+    this.playerRequestManager.hidePopup();
+    this.marketLedgerManager.hide();
+    this.marketLedgerManager.hideHelp();
+    this.marketLedgerManager.closeBuy();
+    this.shelfManager.hideSellPopup();
+  }
+
   onActiveMarketTabChange() {
     this.syncPlayerShopPublicDataRetention();
     this.renderActiveMarketTab();

@@ -18,11 +18,11 @@ Sparse, quiet, readable. The game should feel like a restrained text adventure: 
 
 ## Anti-references
 
-Do not make it look like a decorated fantasy RPG, card battler, casino idle game, colorful dashboard, or modern rounded mobile app. Avoid gradients, icon-heavy controls, textures, illustrations, oversized type, rounded cards, and decorative shadows.
+Do not make it look like a decorated fantasy RPG, card battler, casino idle game, colorful dashboard, or modern rounded mobile app. Avoid gradients, icon-heavy controls, textures, illustrations, oversized type, rounded cards, and decorative shadows outside explicitly approved shared chrome such as the Root Run dialog shell.
 
 ## Design Principles
 
-- Preserve the authored 1080x2170 room surface and scale it to device size.
+- Preserve the Root Run-compatible `390x844` room surface and contain-fit it to device size.
 - Let typography stay source-small and readable through viewport scaling.
 - Keep room UI sparse: one clear current action area, stable navigation, compact status.
 - Use motion only to explain state changes, page shifts, dialogs, and button feedback.

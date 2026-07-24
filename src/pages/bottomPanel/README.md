@@ -1,3 +1,5 @@
 # Bottom Panel
 
-The bottom panel is shared room chrome. It shows the five default room tabs in fixed order, bolds the current room, and appends optional room tabs only when unlock state makes them visible. Page facades keep rendering only their room content.
+The bottom panel is shared room chrome. It shows the five default room icons in fixed order and reveals optional room tabs only when unlock state makes them visible. Prestige is inserted before the default room list; other optional rooms append after it. Tabs use Root Run's active and inactive station-tab nine-slice assets, share one bottom baseline, and overscan below the authored screen edge. The current room rises above the row, enlarges its icon, and reveals its label while inactive tabs remain smaller, dimmer, and visually icon-only. Page facades keep rendering only their room content.
+
+Open the non-persistent visual-QA state with `/?devUi=bottomRoomTabs` or `cheats.openUi('bottomRoomTabs')`. The preview reveals the real bottom chrome without changing tutorial progress or gameplay state. If the app server gate is unavailable, open `/src/dev/uiRecipes/bottom-room-tabs.html?tabs=5` for the same real manager and assets; use `tabs=7` to verify that unlocked optional rooms remain on the shared baseline.

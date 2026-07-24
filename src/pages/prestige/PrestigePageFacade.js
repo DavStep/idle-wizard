@@ -19,4 +19,9 @@ export class PrestigePageFacade {
     this.panelManager.unmount();
     this.roomViewManager.unmount();
   }
+
+  deactivate() {
+    this.panelManager.cancelConfirm();
+    this.panelManager.hideMarketLicenceTooltip();
+  }
 }

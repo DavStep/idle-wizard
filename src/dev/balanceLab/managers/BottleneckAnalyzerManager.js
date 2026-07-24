@@ -2,16 +2,6 @@ const SOFT_WALL_SECONDS = 30 * 60;
 
 export class BottleneckAnalyzerManager {
   getCurrentBottleneck(snapshot) {
-    const completion = snapshot.tasks.level.completion;
-
-    if (completion.canComplete && snapshot.coin.current < completion.costCoin) {
-      return {
-        type: 'coin',
-        severity: 'soft',
-        detail: `needs ${completion.costCoin - snapshot.coin.current} coin to level`,
-      };
-    }
-
     for (const task of snapshot.tasks.level.tasks) {
       if (task.completed) {
         continue;

@@ -2,7 +2,6 @@ import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { createStatusIcon, STATUS_ICON_CHECK } from '../../shared/statusIcon.js';
-import { updateScrollCueState } from '../../managers/ScrollCueManager.js';
 
 const DEFAULT_MAX_MANA_RESERVE = 5_000;
 const seedDropPreferenceOptions = ['none', 'low', 'medium', 'high'];
@@ -21,7 +20,6 @@ export class WorkshopSummonInfoManager {
     this.selectionAnimationSeedKey = null;
     this.preferenceStatus = '';
     this.previousFocus = null;
-    this.handleRowsScroll = () => this.updateScrollProgress();
     this.handleRootClick = (event) => {
       if (event.target === this.root) {
         this.hide();
@@ -63,9 +61,8 @@ export class WorkshopSummonInfoManager {
     this.refs.selectedEditor = this.createSelectedEditor();
     this.refs.rowsHeader = this.createRowsHeader();
     this.refs.rows = document.createElement('div');
-    this.refs.rows.className = 'workshop-page__summon-info-rows';
-    this.refs.rows.addEventListener('scroll', this.handleRowsScroll, { passive: true });
-    this.refs.progress = this.createScrollProgress();
+    this.refs.rows.className =
+      'workshop-page__summon-info-rows style-page-scroll';
 
     this.refs.dialog.append(
       this.refs.title,
@@ -74,7 +71,6 @@ export class WorkshopSummonInfoManager {
       this.refs.selectedEditor,
       this.refs.rowsHeader,
       this.refs.rows,
-      this.refs.progress,
     );
     this.root.append(this.refs.dialog);
     parent.append(this.root);
@@ -224,7 +220,6 @@ export class WorkshopSummonInfoManager {
     this.unsubscribe = null;
     document.removeEventListener('keydown', this.handleKeydown);
     this.root?.removeEventListener('click', this.handleRootClick);
-    this.refs.rows?.removeEventListener('scroll', this.handleRowsScroll);
     this.root?.remove();
     this.root = null;
     this.refs = {};
@@ -259,7 +254,6 @@ export class WorkshopSummonInfoManager {
 
     if (renderSignature === this.renderedSignature) {
       this.selectionAnimationSeedKey = null;
-      this.updateScrollProgress();
       return;
     }
 
@@ -271,7 +265,6 @@ export class WorkshopSummonInfoManager {
         : [this.createEmptyRow()]),
     );
     this.selectionAnimationSeedKey = null;
-    this.updateScrollProgress();
   }
 
   getRows(snapshot) {
@@ -341,7 +334,6 @@ export class WorkshopSummonInfoManager {
       option.className = 'workshop-page__summon-info-weight-choice';
       option.type = 'button';
       option.dataset.preference = optionValue;
-      option.dataset.dropWeightColor = optionValue;
       const check = document.createElement('span');
       check.className = 'workshop-page__summon-info-weight-check';
       check.setAttribute('aria-hidden', 'true');
@@ -392,20 +384,6 @@ export class WorkshopSummonInfoManager {
     return { row, value };
   }
 
-  createScrollProgress() {
-    const progress = document.createElement('div');
-    progress.className =
-      'style-progress style-scroll-cue-progress workshop-page__summon-info-progress';
-    progress.setAttribute('aria-hidden', 'true');
-    progress.hidden = true;
-
-    this.refs.progressFill = document.createElement('div');
-    this.refs.progressFill.className =
-      'style-progress__fill style-scroll-cue-progress-fill workshop-page__summon-info-progress-fill';
-    progress.append(this.refs.progressFill);
-    return progress;
-  }
-
   createRow(seed, animateSelection = false) {
     const row = document.createElement('button');
     row.className =
@@ -429,10 +407,8 @@ export class WorkshopSummonInfoManager {
     const weight = document.createElement('span');
     weight.className = 'workshop-page__summon-info-weight-value';
     weight.textContent = this.normalizeDropPreference(seed.dropPreference);
-    weight.dataset.dropWeightColor = this.normalizeDropPreference(seed.dropPreference);
     const chance = document.createElement('span');
     chance.className = 'workshop-page__summon-info-chance';
-    chance.dataset.dropRateColor = this.getDropRateColor(seed.dropChance);
     setResourceIconText(chance, this.formatDropChance(seed.dropChance));
 
     value.append(weight, chance);
@@ -552,9 +528,6 @@ export class WorkshopSummonInfoManager {
     this.refs.selectedSeedName.textContent = selectedSeed.label;
     setItemIconLabel(this.refs.selectedSeedName, 'seed', selectedSeed.key);
     setResourceColor(this.refs.selectedSeedName, 'seed');
-    this.refs.selectedChance.dataset.dropRateColor = this.getDropRateColor(
-      selectedSeed.dropChance,
-    );
     setResourceIconText(this.refs.selectedChance, this.formatDropChance(selectedSeed.dropChance));
     const selectedPreference = this.normalizeDropPreference(selectedSeed.dropPreference);
 
@@ -595,40 +568,12 @@ export class WorkshopSummonInfoManager {
     return seedDropPreferenceOptions.indexOf(this.normalizeDropPreference(preference));
   }
 
-  getDropRateColor(dropChance) {
-    const rate = Number(dropChance);
-
-    if (!Number.isFinite(rate) || rate <= 0) {
-      return 'none';
-    }
-
-    if (rate < 1 / 3) {
-      return 'low';
-    }
-
-    if (rate < 2 / 3) {
-      return 'medium';
-    }
-
-    return 'high';
-  }
-
   getDropPreferenceErrorText(reason) {
     if (reason === 'last_active_seed') {
       return 'one seed must stay active';
     }
 
     return '';
-  }
-
-  updateScrollProgress() {
-    updateScrollCueState({
-      scrollElement: this.refs.rows,
-      cueElement: this.refs.rows,
-      progressFill: this.refs.progressFill,
-      progressElement: this.refs.progress,
-      inlineCue: false,
-    });
   }
 
   normalizeDropPreference(preference) {
@@ -666,6 +611,5 @@ export class WorkshopSummonInfoManager {
 
     this.root.hidden = !this.visible;
     this.root.setAttribute('aria-hidden', this.visible ? 'false' : 'true');
-    this.updateScrollProgress();
   }
 }

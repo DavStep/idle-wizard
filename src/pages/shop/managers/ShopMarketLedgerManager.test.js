@@ -151,7 +151,8 @@ describe('ShopMarketLedgerManager', () => {
     manager.mount({ buttonParent, popupParent });
 
     const helpButton = buttonParent.querySelector('.shop-page__ledger-help-button');
-    expect(helpButton?.textContent).toBe('[i]');
+    expect(helpButton?.textContent).toBe('');
+    expect(helpButton?.querySelector('.style-info-button__icon')).not.toBeNull();
     helpButton.click();
     expect(buttonParent.querySelector('.shop-page__ledger-help')?.textContent).toBe(
       'compare trader prices, stock, buyers, and recent changes.',
@@ -161,7 +162,7 @@ describe('ShopMarketLedgerManager', () => {
     const popup = popupParent.querySelector('.shop-page__ledger-popup');
     expect(popup?.hidden).toBe(false);
     expect(popup?.querySelector('.style-box__title')?.textContent).toBe(
-      'small town market ledger',
+      'Small Town Market ledger',
     );
     expect(
       [...popup.querySelectorAll('.shop-page__ledger-tab')].map((button) => button.textContent),
@@ -171,7 +172,7 @@ describe('ShopMarketLedgerManager', () => {
     expect(rows[0].textContent).toContain('sage seed');
     expect(rows[0].textContent).toContain('↑ +2 coin / 3h');
     expect(rows[1].textContent).toContain('not traded');
-    expect(rows[1].textContent).toContain('arcane exchange ★★★★★');
+    expect(rows[1].textContent).toContain('Arcane Exchange ★★★★★');
 
     rows[0].click();
     expect(popup.querySelector('.shop-page__ledger-facts')?.textContent).toContain(

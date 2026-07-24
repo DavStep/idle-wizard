@@ -20,6 +20,11 @@ describe('AppFreshStartChoiceManager', () => {
 
     const dialog = stage.querySelector('.app-fresh-start-choice');
     expect(dialog.hidden).toBe(false);
+    expect(
+      dialog
+        .querySelector('.app-fresh-start-choice__dialog')
+        .classList.contains('style-dialog--system'),
+    ).toBe(true);
     expect(dialog.querySelector('.style-box__title')?.textContent).toBe(
       'Elara Starbrew',
     );

@@ -7,13 +7,16 @@ Every feature has a facade and dedicated managers. Facades explain the feature i
 ## Current Layers
 
 - App: starts/stops the game shell, online gate, account-link gates, deploy refresh, and lifecycle flushes.
-- Viewport: keeps the authored `1080x2170` stage proportional on real devices.
+- Viewport: keeps the Root Run-compatible `390x844` logical stage proportional on real devices.
 - Pages: owns room-view DOM for `Brewing`, `Garden`, `Workshop`, `Research`, `Market`, and gated `Prestige`.
 - Gameplay: owns ECS-backed rules and snapshots for mana, coin, inventory, garden, brewing, research, tasks, market, prestige, automation, visual settings, and persistence.
 - Backend: owns SpacetimeDB connection, auth/session, save sync, leaderboard, NPC/player market, potion discoveries, world chat, feedback, maintenance, and trade alliance transport.
 - ECS: owns world data, entities, components, and system execution. It must not depend on DOM/canvas or SpacetimeDB.
-- Rendering: owns the frame loop and render shell. It observes game/page state; it does not own gameplay rules.
-- Assets/styles: owns static icons/images/fonts and shared A Dark Room-style CSS.
+- Rendering: owns one retained Pixi application on a fixed `390x844` logical stage for room UI, popups, overlays, and Spine visuals. DOM page managers remain the semantic/layout/input source; rendering observes them and does not own gameplay rules.
+- Assets/styles: `assets/` owns runtime art, fonts, generated atlases, and
+  verbatim static bundles under `assets/runtime/`; `src/styles/` owns shared
+  A Dark Room-style CSS, while runtime asset helper code stays under
+  `src/assets/`.
 
 ## Room Pages
 

@@ -13,6 +13,7 @@ npm run build:prod
 npm run lint
 npm run test
 npm run check
+npm run import:quick-ui
 npm run release
 npm run android:assembleDebug
 npm run android:assembleProdDebug
@@ -21,6 +22,8 @@ npm run android:postDebugDiscord
 ```
 
 `npm run check` is the default verification gate for code changes. It runs lint, tests, and a production web build.
+
+qUIck/Figma exports use the same guarded pipeline as Root Run: put the exported ZIP in `qUIck-inbox/`, run `npm run import:quick-ui`, then preview it at `/?quick_ui=<ExportName>&quick_debug=1`. See `docs/quick-ui-workflow.md`.
 
 `npm run dev`, `npm run build:dev`, and `npm run android:assembleDebug` load development env and enable console cheats. Production builds use `VITE_ENABLE_CHEATS=false`.
 
@@ -130,10 +133,11 @@ If top-level docs conflict with source or tests, inspect source/tests and update
 ## Architecture
 
 - `src/app`: application bootstrap and lifecycle.
-- `src/viewport`: fixed `1080x2170` design surface scaling.
+- `src/viewport`: Root Run-compatible `390x844` logical surface with contain-fit scaling.
 - `src/pages`: room-view UI pages. The default page is `Workshop`.
 - `src/gameplay`: ECS-backed gameplay facades/managers.
 - `src/rendering`: render shell and frame loop.
+- `tools/qUIck`: bundled Root Run Figma exporter and Pixi UI runtime.
 - `src/ecs`: ECS world, entity, component, and system managers.
 - `src/backend`: SpacetimeDB and auth integration boundaries.
 - `spacetimedb`: server module project.

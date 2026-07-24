@@ -1,0 +1,11 @@
+{
+  "assets": {},
+  "atlas": {
+    "maxSize": 4096,
+    "padding": 2,
+    "pages": []
+  },
+  "outputRoot": ".",
+  "sourceRoot": "../source",
+  "version": 2
+}

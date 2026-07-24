@@ -8,13 +8,11 @@ The guide covers the sequential main requests for a free level 1 seed task with 
 
 The first Market sequence opens stand 1, points at `shop:sell:sageSeed`, moves the percentage rail to `25%` so one of the five lesson seeds is selected, then points at `shop:sell:mark`. Once matching stock is loaded, the objective becomes a passive wait for the five-second sale.
 
-Later coin guidance first reuses a loaded matching stall. Otherwise it reads `shop.shelf.sellItems`, opens an empty stall, selects the required category tab, and points to the item. If no available item exists, guide back to its source instead of a disabled loader row.
-
 The target cue keeps the same diagonal placement math and uses the Spine pointer on a pointer-local Pixi canvas. Rotate the Spine shell by placement so the authored upward tap points at the target anchor.
 
 Lesson 4 follows the active level 4 request, then sends players to Garden for the first sage grow using the live sage-herb target, so they see why the summon/plant loop matters. The lesson panel opens immediately, but target pointer help waits for the 2-second gardening idle window or an explicit `show me` press. Later herb objectives use the same delayed target pointer behavior, then point only when the player appears stuck.
 
-Tutorial market steps use normal timed stands and `shop:stand:*` / `shop:sell:*` targets. Do not add FTUE-only coin grants, tutorial price overrides, or tutorial-owned inventory mutation; level 1 is free, and level 2 teaches systemic selling.
+Tutorial market steps use normal timed stands and `shop:stand:*` / `shop:sell:*` targets. Do not add FTUE-only coin grants, tutorial price overrides, or tutorial-owned inventory mutation. Level 2 teaches systemic selling as a task, while every level-up remains coin-free.
 
 Players already past level 5 auto-complete the tutorial. Earlier snapshots that already show later progress skip stale lessons.
 

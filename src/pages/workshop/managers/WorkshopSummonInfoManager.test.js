@@ -148,12 +148,11 @@ describe('WorkshopSummonInfoManager', () => {
       'true',
       'false',
     ]);
-    expect(weightChoices.map((choice) => choice.getAttribute('data-drop-weight-color'))).toEqual([
-      'none',
-      'low',
-      'medium',
-      'high',
-    ]);
+    expect(
+      weightChoices.every(
+        (choice) => choice.getAttribute('data-drop-weight-color') === null,
+      ),
+    ).toBe(true);
     expect(
       parent
         .querySelector(
@@ -178,19 +177,21 @@ describe('WorkshopSummonInfoManager', () => {
       ),
     ).toEqual(['sage seed:medium:25%', 'mint seed:medium:75%']);
     expect(
-      rows.map((row) =>
-        row
-          .querySelector('.workshop-page__summon-info-weight-value')
-          ?.getAttribute('data-drop-weight-color'),
+      rows.every(
+        (row) =>
+          row
+            .querySelector('.workshop-page__summon-info-weight-value')
+            ?.getAttribute('data-drop-weight-color') === null,
       ),
-    ).toEqual(['medium', 'medium']);
+    ).toBe(true);
     expect(
-      rows.map((row) =>
-        row
-          .querySelector('.workshop-page__summon-info-chance')
-          ?.getAttribute('data-drop-rate-color'),
+      rows.every(
+        (row) =>
+          row
+            .querySelector('.workshop-page__summon-info-chance')
+            ?.getAttribute('data-drop-rate-color') === null,
       ),
-    ).toEqual(['low', 'high']);
+    ).toBe(true);
 
     parent
       .querySelector('.workshop-page__summon-info-close')
@@ -258,12 +259,9 @@ describe('WorkshopSummonInfoManager', () => {
       '50%',
       '75%',
     ]);
-    expect(chances.map((chance) => chance.getAttribute('data-drop-rate-color'))).toEqual([
-      'none',
-      'low',
-      'medium',
-      'high',
-    ]);
+    expect(
+      chances.every((chance) => chance.getAttribute('data-drop-rate-color') === null),
+    ).toBe(true);
 
     manager.unmount();
   });
@@ -391,7 +389,7 @@ describe('WorkshopSummonInfoManager', () => {
     manager.unmount();
   });
 
-  it('defines fixed editor and scroll rail styles', async () => {
+  it('defines fixed editor and scroll viewport styles', async () => {
     const css = await readFile(path.join(cwd(), 'src/styles/base.css'), 'utf8');
 
     expect(css).toContain('--workshop-summon-info-row-height');
@@ -403,10 +401,10 @@ describe('WorkshopSummonInfoManager', () => {
     expect(css).toContain('min-height: 18px;');
     expect(css).toContain('border: 0;');
     expect(css).toContain('.workshop-page__summon-info-weight-check-icon');
-    expect(css).toContain('.workshop-page__summon-info-progress');
+    expect(css).not.toContain('.workshop-page__summon-info-progress');
     expect(css).toContain('workshop-summon-info-selected-surface');
-    expect(css).toContain('[data-drop-weight-color="none"]');
-    expect(css).toContain('[data-drop-rate-color="high"]');
+    expect(css).not.toContain('data-drop-weight-color');
+    expect(css).not.toContain('data-drop-rate-color');
     expect(css).toContain('height: 400px;');
     expect(css).toContain('overflow: hidden auto;');
     expect(css).not.toContain('workshop-page__summon-info-weight-dropdown');

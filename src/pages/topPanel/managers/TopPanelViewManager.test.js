@@ -21,7 +21,7 @@ describe('TopPanelViewManager', () => {
       avatarButton
         ?.querySelector('.room-top-panel__username-avatar')
         ?.getAttribute('src'),
-    ).toContain('/assets/characters/elara.png');
+    ).toContain('/assets/game/source/characters/elara.png');
     expect(usernameButton?.querySelector('.room-top-panel__username-label')?.textContent).toBe(
       'wizard',
     );
@@ -29,7 +29,7 @@ describe('TopPanelViewManager', () => {
       stage.querySelector('.room-top-panel__quest-progress')?.hasAttribute('hidden'),
     ).toBe(true);
     expect(stage.querySelector('.room-top-panel__level-star')?.getAttribute('src')).toContain(
-      '/ui/level-star.webp',
+      '/assets/game/source/ui/level-star.webp',
     );
     expect(stage.querySelector('.room-top-panel__quest-progress-fill')).not.toBeNull();
     expect(
@@ -96,16 +96,22 @@ describe('TopPanelViewManager', () => {
     ).toEqual(['haptics', 'music', 'sfx']);
 
     expect(
-      [...stage.querySelectorAll('.room-top-panel__theme-preview')].map(
-        (preview) => preview.dataset.previewTheme,
-      ),
-    ).toEqual(['black', 'midnight', 'witchcraft']);
-
-    expect(
-      [...stage.querySelectorAll('.room-top-panel__theme-preview-box')].map(
-        (box) => box.querySelector('.room-top-panel__theme-preview-title')?.textContent,
-      ),
-    ).toEqual(['sample', 'sample', 'sample']);
+      [...stage.querySelectorAll('.room-top-panel__theme-button')].map((button) => ({
+        theme: button.dataset.theme,
+        label: button.textContent,
+        checkFrame: button.querySelector('.room-top-panel__theme-button-check-icon')
+          ?.dataset.assetAtlasFrame,
+      })),
+    ).toEqual([
+      { theme: 'black', label: 'black', checkFrame: 'status:checkDefault' },
+      { theme: 'midnight', label: 'midnight', checkFrame: 'status:checkDefault' },
+      {
+        theme: 'witchcraft',
+        label: 'witchcraft',
+        checkFrame: 'status:checkDefault',
+      },
+    ]);
+    expect(stage.querySelector('.room-top-panel__theme-preview')).toBeNull();
 
     expect(
       [...stage.querySelectorAll('.room-top-panel__progress-preview')].map(
@@ -255,6 +261,35 @@ describe('TopPanelViewManager', () => {
     expect(checkedIconRule).toMatch(/\bdisplay:\s*flex;/);
   });
 
+  it('styles theme choices as rounded color swatches with a top-left shine', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const buttonsRule = baseCss.match(
+      /\.room-top-panel__theme-buttons\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const swatchRule = baseCss.match(
+      /\.room-top-panel__visual-option-name\.room-top-panel__theme-button\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const shineRule = baseCss.match(
+      /\.room-top-panel__visual-option-name\.room-top-panel__theme-button::before\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const selectedRule = baseCss.match(
+      /\.room-top-panel__theme-button\[aria-checked="true"\]\s+\.room-top-panel__theme-button-check\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(buttonsRule).toMatch(
+      /\bgrid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);/,
+    );
+    expect(swatchRule).toMatch(/\bwidth:\s*58px;/);
+    expect(swatchRule).toMatch(/\bheight:\s*58px;/);
+    expect(swatchRule).toMatch(/\bborder:\s*4px solid/);
+    expect(swatchRule).toMatch(/\bborder-radius:\s*13px;/);
+    expect(shineRule).toMatch(/\btop:\s*6px;/);
+    expect(shineRule).toMatch(/\bleft:\s*7px;/);
+    expect(shineRule).toMatch(/\bbackground:\s*rgb\(255 255 255 \/ 65%\);/);
+    expect(shineRule).toMatch(/\brotate:\s*38deg;/);
+    expect(selectedRule).toMatch(/\bdisplay:\s*block;/);
+  });
+
   it('reserves compact spacing for the composed player card', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const topPanelRule = baseCss.match(
@@ -269,7 +304,7 @@ describe('TopPanelViewManager', () => {
     expect(topPanelRule).toMatch(/\bpadding-left:\s*3px;/);
   });
 
-  it('uses one continuous quest fill, divider ticks, and compact caption copy', () => {
+  it('uses the Root Rush quest rail, divider ticks, and compact caption copy', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
     const fillRule = baseCss.match(
@@ -294,21 +329,34 @@ describe('TopPanelViewManager', () => {
       /\.room-top-panel__quest-progress-text\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(rootRule).toMatch(/--style-resource-mana:\s*#2da9ff;/);
-    expect(fillRule).toMatch(
-      /\bclip-path:\s*inset\(0 var\(--room-top-panel-quest-fill-clip-right, 100%\) 0 0\);/,
+    expect(rootRule).not.toMatch(
+      /--style-resource-(?:mana|coin|crystal|emerald|ruby|seed|herb)\s*:/,
     );
+    expect(rootRule).toMatch(/--style-progress-root-fill:\s*#8740df;/);
+    expect(rootRule).toMatch(/--style-progress-root-edge:\s*#bd72f3;/);
     expect(fillRule).not.toMatch(/scaleX/);
+    expect(fillRule).not.toMatch(/clip-path/);
     expect(baseCss).not.toMatch(/--room-top-panel-quest-track-frame/);
     expect(baseCss).not.toMatch(/\.room-top-panel__quest-progress-rail::before/);
-    expect(railRule).toMatch(/\bbackground:\s*#0d1118;/);
-    expect(railRule).toMatch(/\bborder:\s*1px solid #41434d;/);
-    expect(railRule).toMatch(/\bborder-radius:\s*5px;/);
-    expect(fillRule).toMatch(/\binset:\s*2px;/);
+    expect(railRule).toMatch(
+      /\bheight:\s*var\(--style-progress-top-panel-total-height\);/,
+    );
+    expect(railRule).toMatch(/\bbackground:\s*var\(--style-progress-rail-background\);/);
+    expect(railRule).toMatch(/\bborder:\s*var\(--style-progress-rail-border\);/);
+    expect(railRule).toMatch(/\bborder-radius:\s*999px;/);
+    expect(railRule).toMatch(/\bbox-shadow:\s*var\(--style-progress-rail-shadow\);/);
+    expect(fillRule).toMatch(/\btop:\s*1px;/);
+    expect(fillRule).toMatch(
+      /\bright:\s*max\(1px, var\(--room-top-panel-quest-fill-clip-right, 100%\)\);/,
+    );
+    expect(fillRule).toMatch(/\bbottom:\s*1px;/);
+    expect(fillRule).toMatch(/\bleft:\s*1px;/);
     expect(segmentsRule).toMatch(/\binset:\s*2px;/);
-    expect(fillRule).toMatch(/\bbackground:\s*#8740df;/);
-    expect(fillRule).toMatch(/\bborder-radius:\s*2\.5px 0 0 2\.5px;/);
-    expect(fillRule).toMatch(/\bbox-shadow:\s*none;/);
+    expect(fillRule).toMatch(/\bbackground:\s*var\(--style-progress-root-fill\);/);
+    expect(fillRule).toMatch(/\bborder-radius:\s*999px;/);
+    expect(fillRule).toMatch(
+      /\bbox-shadow:\s*inset 0 0 0 1px var\(--style-progress-root-edge\);/,
+    );
     expect(fillRule).not.toMatch(/linear-gradient/);
     expect(segmentRule).toMatch(/\bbackground:\s*transparent;/);
     expect(dividerRule).toMatch(/\bposition:\s*relative;/);

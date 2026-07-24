@@ -119,7 +119,8 @@ export class WorkshopPersonalTasksManager {
     title.textContent = 'quests';
 
     this.refs.frame = document.createElement('div');
-    this.refs.frame.className = 'workshop-page__personal-tasks-frame';
+    this.refs.frame.className =
+      'workshop-page__personal-tasks-frame style-page-scroll';
 
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'workshop-page__personal-tasks-rows';

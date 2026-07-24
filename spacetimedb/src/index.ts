@@ -232,11 +232,15 @@ const PLAYER_THEME_ALIASES = new Map([
   ['idle-whitch-craft', 'witchcraft'],
   ['idle whitch craft', 'witchcraft'],
 ]);
-const PLAYER_FONTS = new Set(['lexend', 'comic-sans-mono']);
+const PLAYER_FONTS = new Set(['lilita-one', 'comic-sans-mono']);
 const PLAYER_FONT_ALIASES = new Map([
   ['comic sans mono', 'comic-sans-mono'],
   ['comic-mono', 'comic-sans-mono'],
-  ['google-lexend', 'lexend'],
+  ['root-run', 'lilita-one'],
+  ['root run', 'lilita-one'],
+  ['lilita one', 'lilita-one'],
+  ['lexend', 'lilita-one'],
+  ['google-lexend', 'lilita-one'],
 ]);
 const PLAYER_COLOR_MODES = new Set(['resources']);
 const PLAYER_CHARACTERS = new Set([
@@ -329,7 +333,7 @@ const DEFAULT_TASKS_CONFIG = {
   "levels": [
     {
       "level": 1,
-      "completionCostCoin": 0,
+      "coinBudget": 0,
       "tasks": [
         {
           "id": "level1-summon-sage-seed",
@@ -346,7 +350,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 2,
-      "completionCostCoin": 4,
+      "coinBudget": 4,
       "tasks": [
         {
           "id": "level2-summon-sage-seed",
@@ -369,7 +373,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 3,
-      "completionCostCoin": 8,
+      "coinBudget": 8,
       "tasks": [
         {
           "id": "level3-research-mint-seed",
@@ -393,7 +397,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 4,
-      "completionCostCoin": 16,
+      "coinBudget": 16,
       "tasks": [
         {
           "id": "level4-grow-sage-herb",
@@ -421,7 +425,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 5,
-      "completionCostCoin": 30,
+      "coinBudget": 30,
       "tasks": [
         {
           "id": "level5-research-mana-tonic",
@@ -445,7 +449,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 6,
-      "completionCostCoin": 50,
+      "coinBudget": 50,
       "tasks": [
         {
           "id": "level6-research-nettle-seed",
@@ -481,7 +485,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 7,
-      "completionCostCoin": 80,
+      "coinBudget": 80,
       "tasks": [
         {
           "id": "level7-summon-nettle-seed",
@@ -515,7 +519,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 8,
-      "completionCostCoin": 120,
+      "coinBudget": 120,
       "tasks": [
         {
           "id": "level8-research-minor-healing-potion",
@@ -551,7 +555,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 9,
-      "completionCostCoin": 170,
+      "coinBudget": 170,
       "tasks": [
         {
           "id": "level9-brew-minor-healing-potion",
@@ -586,7 +590,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 10,
-      "completionCostCoin": 230,
+      "coinBudget": 230,
       "tasks": [
         {
           "id": "level10-research-lavender-seed",
@@ -622,7 +626,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 11,
-      "completionCostCoin": 1210,
+      "coinBudget": 1210,
       "tasks": [
         {
           "id": "level11-summon-lavender-seed",
@@ -656,7 +660,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 12,
-      "completionCostCoin": 1440,
+      "coinBudget": 1440,
       "tasks": [
         {
           "id": "level12-research-briar-seed",
@@ -692,7 +696,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 13,
-      "completionCostCoin": 1690,
+      "coinBudget": 1690,
       "tasks": [
         {
           "id": "level13-summon-briar-seed",
@@ -726,7 +730,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 14,
-      "completionCostCoin": 1960,
+      "coinBudget": 1960,
       "tasks": [
         {
           "id": "level14-research-nettle-vigor",
@@ -762,7 +766,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 15,
-      "completionCostCoin": 2250,
+      "coinBudget": 2250,
       "tasks": [
         {
           "id": "level15-brew-nettle-vigor",
@@ -797,7 +801,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 16,
-      "completionCostCoin": 2560,
+      "coinBudget": 2560,
       "tasks": [
         {
           "id": "level16-research-calming-draught",
@@ -833,7 +837,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 17,
-      "completionCostCoin": 2890,
+      "coinBudget": 2890,
       "tasks": [
         {
           "id": "level17-brew-calming-draught",
@@ -868,7 +872,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 18,
-      "completionCostCoin": 3240,
+      "coinBudget": 3240,
       "tasks": [
         {
           "id": "level18-research-glowcap-seed",
@@ -904,7 +908,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 19,
-      "completionCostCoin": 3610,
+      "coinBudget": 3610,
       "tasks": [
         {
           "id": "level19-summon-glowcap-seed",
@@ -938,7 +942,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 20,
-      "completionCostCoin": 4000,
+      "coinBudget": 4000,
       "tasks": [
         {
           "id": "level20-research-briar-ward",
@@ -974,7 +978,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 21,
-      "completionCostCoin": 4410,
+      "coinBudget": 4410,
       "tasks": [
         {
           "id": "level21-brew-briar-ward",
@@ -1008,7 +1012,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 22,
-      "completionCostCoin": 4840,
+      "coinBudget": 4840,
       "tasks": [
         {
           "id": "level22-research-mandrake-seed",
@@ -1044,7 +1048,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 23,
-      "completionCostCoin": 5290,
+      "coinBudget": 5290,
       "tasks": [
         {
           "id": "level23-summon-mandrake-seed",
@@ -1080,7 +1084,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 24,
-      "completionCostCoin": 5760,
+      "coinBudget": 5760,
       "tasks": [
         {
           "id": "level24-brew-lantern-tonic",
@@ -1114,7 +1118,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 25,
-      "completionCostCoin": 6250,
+      "coinBudget": 6250,
       "tasks": [
         {
           "id": "level25-research-sunroot-seed",
@@ -1150,7 +1154,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 26,
-      "completionCostCoin": 6760,
+      "coinBudget": 6760,
       "tasks": [
         {
           "id": "level26-summon-sunroot-seed",
@@ -1184,7 +1188,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 27,
-      "completionCostCoin": 7290,
+      "coinBudget": 7290,
       "tasks": [
         {
           "id": "level27-research-simple-antidote",
@@ -1220,7 +1224,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 28,
-      "completionCostCoin": 7840,
+      "coinBudget": 7840,
       "tasks": [
         {
           "id": "level28-brew-simple-antidote",
@@ -1254,7 +1258,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 29,
-      "completionCostCoin": 8410,
+      "coinBudget": 8410,
       "tasks": [
         {
           "id": "level29-research-moonflower-seed",
@@ -1290,7 +1294,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 30,
-      "completionCostCoin": 9000,
+      "coinBudget": 9000,
       "tasks": [
         {
           "id": "level30-summon-moonflower-seed",
@@ -1324,7 +1328,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 31,
-      "completionCostCoin": 9610,
+      "coinBudget": 9610,
       "tasks": [
         {
           "id": "level31-research-venom-draught",
@@ -1360,7 +1364,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 32,
-      "completionCostCoin": 10240,
+      "coinBudget": 10240,
       "tasks": [
         {
           "id": "level32-brew-venom-draught",
@@ -1394,7 +1398,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 33,
-      "completionCostCoin": 10890,
+      "coinBudget": 10890,
       "tasks": [
         {
           "id": "level33-research-healing-potion",
@@ -1430,7 +1434,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 34,
-      "completionCostCoin": 11560,
+      "coinBudget": 11560,
       "tasks": [
         {
           "id": "level34-brew-healing-potion",
@@ -1464,7 +1468,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 35,
-      "completionCostCoin": 12250,
+      "coinBudget": 12250,
       "tasks": [
         {
           "id": "level35-research-frostmoss-seed",
@@ -1500,7 +1504,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 36,
-      "completionCostCoin": 12960,
+      "coinBudget": 12960,
       "tasks": [
         {
           "id": "level36-summon-frostmoss-seed",
@@ -1534,7 +1538,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 37,
-      "completionCostCoin": 13690,
+      "coinBudget": 13690,
       "tasks": [
         {
           "id": "level37-research-sunroot-stamina",
@@ -1570,7 +1574,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 38,
-      "completionCostCoin": 14440,
+      "coinBudget": 14440,
       "tasks": [
         {
           "id": "level38-brew-sunroot-stamina",
@@ -1604,7 +1608,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 39,
-      "completionCostCoin": 15210,
+      "coinBudget": 15210,
       "tasks": [
         {
           "id": "level39-research-dreambell-seed",
@@ -1640,7 +1644,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 40,
-      "completionCostCoin": 16000,
+      "coinBudget": 16000,
       "tasks": [
         {
           "id": "level40-summon-dreambell-seed",
@@ -1674,7 +1678,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 41,
-      "completionCostCoin": 16810,
+      "coinBudget": 16810,
       "tasks": [
         {
           "id": "level41-research-moonlit-focus",
@@ -1710,7 +1714,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 42,
-      "completionCostCoin": 17640,
+      "coinBudget": 17640,
       "tasks": [
         {
           "id": "level42-brew-moonlit-focus",
@@ -1744,7 +1748,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 43,
-      "completionCostCoin": 18490,
+      "coinBudget": 18490,
       "tasks": [
         {
           "id": "level43-research-star-anise-seed",
@@ -1780,7 +1784,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 44,
-      "completionCostCoin": 19360,
+      "coinBudget": 19360,
       "tasks": [
         {
           "id": "level44-summon-star-anise-seed",
@@ -1814,7 +1818,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 45,
-      "completionCostCoin": 20250,
+      "coinBudget": 20250,
       "tasks": [
         {
           "id": "level45-research-frostmoss-cleanse",
@@ -1850,7 +1854,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 46,
-      "completionCostCoin": 21160,
+      "coinBudget": 21160,
       "tasks": [
         {
           "id": "level46-brew-frostmoss-cleanse",
@@ -1884,7 +1888,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 47,
-      "completionCostCoin": 22090,
+      "coinBudget": 22090,
       "tasks": [
         {
           "id": "level47-research-bloodrose-seed",
@@ -1920,7 +1924,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 48,
-      "completionCostCoin": 23040,
+      "coinBudget": 23040,
       "tasks": [
         {
           "id": "level48-summon-bloodrose-seed",
@@ -1954,7 +1958,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 49,
-      "completionCostCoin": 24010,
+      "coinBudget": 24010,
       "tasks": [
         {
           "id": "level49-research-sleep-draught",
@@ -1990,7 +1994,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 50,
-      "completionCostCoin": 25000,
+      "coinBudget": 25000,
       "tasks": [
         {
           "id": "level50-brew-sleep-draught",
@@ -2024,7 +2028,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 51,
-      "completionCostCoin": 26010,
+      "coinBudget": 26010,
       "tasks": [
         {
           "id": "level51-research-dragonpepper-seed",
@@ -2060,7 +2064,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 52,
-      "completionCostCoin": 27040,
+      "coinBudget": 27040,
       "tasks": [
         {
           "id": "level52-summon-dragonpepper-seed",
@@ -2094,7 +2098,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 53,
-      "completionCostCoin": 28090,
+      "coinBudget": 28090,
       "tasks": [
         {
           "id": "level53-research-elixir-of-life",
@@ -2130,7 +2134,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 54,
-      "completionCostCoin": 29160,
+      "coinBudget": 29160,
       "tasks": [
         {
           "id": "level54-brew-elixir-of-life",
@@ -2165,7 +2169,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 55,
-      "completionCostCoin": 30250,
+      "coinBudget": 30250,
       "tasks": [
         {
           "id": "level55-summon-silverleaf-seed",
@@ -2199,7 +2203,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 56,
-      "completionCostCoin": 31360,
+      "coinBudget": 31360,
       "tasks": [
         {
           "id": "level56-research-star-luck-philtre",
@@ -2235,7 +2239,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 57,
-      "completionCostCoin": 32490,
+      "coinBudget": 32490,
       "tasks": [
         {
           "id": "level57-brew-star-luck-philtre",
@@ -2270,7 +2274,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 58,
-      "completionCostCoin": 33640,
+      "coinBudget": 33640,
       "tasks": [
         {
           "id": "level58-research-yarrow-seed",
@@ -2306,7 +2310,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 59,
-      "completionCostCoin": 34810,
+      "coinBudget": 34810,
       "tasks": [
         {
           "id": "level59-summon-yarrow-seed",
@@ -2340,7 +2344,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 60,
-      "completionCostCoin": 36000,
+      "coinBudget": 36000,
       "tasks": [
         {
           "id": "level60-research-deep-dream-vision",
@@ -2376,7 +2380,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 61,
-      "completionCostCoin": 37210,
+      "coinBudget": 37210,
       "tasks": [
         {
           "id": "level61-brew-deep-dream-vision",
@@ -2411,7 +2415,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 62,
-      "completionCostCoin": 38440,
+      "coinBudget": 38440,
       "tasks": [
         {
           "id": "level62-research-hyssop-seed",
@@ -2447,7 +2451,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 63,
-      "completionCostCoin": 39690,
+      "coinBudget": 39690,
       "tasks": [
         {
           "id": "level63-summon-hyssop-seed",
@@ -2481,7 +2485,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 64,
-      "completionCostCoin": 40960,
+      "coinBudget": 40960,
       "tasks": [
         {
           "id": "level64-research-pact-ward",
@@ -2517,7 +2521,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 65,
-      "completionCostCoin": 42250,
+      "coinBudget": 42250,
       "tasks": [
         {
           "id": "level65-brew-pact-ward",
@@ -2552,7 +2556,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 66,
-      "completionCostCoin": 43560,
+      "coinBudget": 43560,
       "tasks": [
         {
           "id": "level66-research-valerian-seed",
@@ -2588,7 +2592,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 67,
-      "completionCostCoin": 44890,
+      "coinBudget": 44890,
       "tasks": [
         {
           "id": "level67-summon-valerian-seed",
@@ -2622,7 +2626,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 68,
-      "completionCostCoin": 46240,
+      "coinBudget": 46240,
       "tasks": [
         {
           "id": "level68-research-dragon-courage",
@@ -2658,7 +2662,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 69,
-      "completionCostCoin": 47610,
+      "coinBudget": 47610,
       "tasks": [
         {
           "id": "level69-brew-dragon-courage",
@@ -2693,7 +2697,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 70,
-      "completionCostCoin": 49000,
+      "coinBudget": 49000,
       "tasks": [
         {
           "id": "level70-research-comfrey-seed",
@@ -2729,7 +2733,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 71,
-      "completionCostCoin": 50410,
+      "coinBudget": 50410,
       "tasks": [
         {
           "id": "level71-summon-comfrey-seed",
@@ -2763,7 +2767,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 72,
-      "completionCostCoin": 51840,
+      "coinBudget": 51840,
       "tasks": [
         {
           "id": "level72-research-silverleaf-salve",
@@ -2799,7 +2803,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 73,
-      "completionCostCoin": 53290,
+      "coinBudget": 53290,
       "tasks": [
         {
           "id": "level73-brew-silverleaf-salve",
@@ -2834,7 +2838,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 74,
-      "completionCostCoin": 54760,
+      "coinBudget": 54760,
       "tasks": [
         {
           "id": "level74-research-nightshade-seed",
@@ -2870,7 +2874,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 75,
-      "completionCostCoin": 56250,
+      "coinBudget": 56250,
       "tasks": [
         {
           "id": "level75-summon-nightshade-seed",
@@ -2904,7 +2908,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 76,
-      "completionCostCoin": 57760,
+      "coinBudget": 57760,
       "tasks": [
         {
           "id": "level76-research-yarrow-poultice",
@@ -2940,7 +2944,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 77,
-      "completionCostCoin": 59290,
+      "coinBudget": 59290,
       "tasks": [
         {
           "id": "level77-brew-yarrow-poultice",
@@ -2975,7 +2979,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 78,
-      "completionCostCoin": 60840,
+      "coinBudget": 60840,
       "tasks": [
         {
           "id": "level78-research-belladonna-seed",
@@ -3011,7 +3015,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 79,
-      "completionCostCoin": 62410,
+      "coinBudget": 62410,
       "tasks": [
         {
           "id": "level79-summon-belladonna-seed",
@@ -3045,7 +3049,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 80,
-      "completionCostCoin": 64000,
+      "coinBudget": 64000,
       "tasks": [
         {
           "id": "level80-research-hyssop-clarity",
@@ -3081,7 +3085,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 81,
-      "completionCostCoin": 65610,
+      "coinBudget": 65610,
       "tasks": [
         {
           "id": "level81-brew-hyssop-clarity",
@@ -3116,7 +3120,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 82,
-      "completionCostCoin": 67240,
+      "coinBudget": 67240,
       "tasks": [
         {
           "id": "level82-research-wormwood-seed",
@@ -3152,7 +3156,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 83,
-      "completionCostCoin": 68890,
+      "coinBudget": 68890,
       "tasks": [
         {
           "id": "level83-summon-wormwood-seed",
@@ -3186,7 +3190,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 84,
-      "completionCostCoin": 70560,
+      "coinBudget": 70560,
       "tasks": [
         {
           "id": "level84-research-valerian-rest",
@@ -3222,7 +3226,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 85,
-      "completionCostCoin": 72250,
+      "coinBudget": 72250,
       "tasks": [
         {
           "id": "level85-brew-valerian-rest",
@@ -3258,7 +3262,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 86,
-      "completionCostCoin": 73960,
+      "coinBudget": 73960,
       "tasks": [
         {
           "id": "level86-summon-snowdrop-seed",
@@ -3292,7 +3296,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 87,
-      "completionCostCoin": 75690,
+      "coinBudget": 75690,
       "tasks": [
         {
           "id": "level87-research-comfrey-balm",
@@ -3328,7 +3332,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 88,
-      "completionCostCoin": 77440,
+      "coinBudget": 77440,
       "tasks": [
         {
           "id": "level88-brew-comfrey-balm",
@@ -3362,7 +3366,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 89,
-      "completionCostCoin": 79210,
+      "coinBudget": 79210,
       "tasks": [
         {
           "id": "level89-research-pearlroot-seed",
@@ -3398,7 +3402,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 90,
-      "completionCostCoin": 81000,
+      "coinBudget": 81000,
       "tasks": [
         {
           "id": "level90-summon-pearlroot-seed",
@@ -3432,7 +3436,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 91,
-      "completionCostCoin": 82810,
+      "coinBudget": 82810,
       "tasks": [
         {
           "id": "level91-research-nightshade-veil",
@@ -3468,7 +3472,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 92,
-      "completionCostCoin": 84640,
+      "coinBudget": 84640,
       "tasks": [
         {
           "id": "level92-brew-nightshade-veil",
@@ -3502,7 +3506,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 93,
-      "completionCostCoin": 86490,
+      "coinBudget": 86490,
       "tasks": [
         {
           "id": "level93-research-belladonna-sight",
@@ -3538,7 +3542,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 94,
-      "completionCostCoin": 88360,
+      "coinBudget": 88360,
       "tasks": [
         {
           "id": "level94-brew-belladonna-sight",
@@ -3572,7 +3576,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 95,
-      "completionCostCoin": 90250,
+      "coinBudget": 90250,
       "tasks": [
         {
           "id": "level95-research-wormwood-purge",
@@ -3608,7 +3612,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 96,
-      "completionCostCoin": 92160,
+      "coinBudget": 92160,
       "tasks": [
         {
           "id": "level96-brew-wormwood-purge",
@@ -3642,7 +3646,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 97,
-      "completionCostCoin": 94090,
+      "coinBudget": 94090,
       "tasks": [
         {
           "id": "level97-research-snowdrop-breath",
@@ -3678,7 +3682,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 98,
-      "completionCostCoin": 96040,
+      "coinBudget": 96040,
       "tasks": [
         {
           "id": "level98-brew-snowdrop-breath",
@@ -3712,7 +3716,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 99,
-      "completionCostCoin": 98010,
+      "coinBudget": 98010,
       "tasks": [
         {
           "id": "level99-research-pearlroot-draught",
@@ -3748,7 +3752,7 @@ const DEFAULT_TASKS_CONFIG = {
     },
     {
       "level": 100,
-      "completionCostCoin": 100000,
+      "coinBudget": 100000,
       "tasks": [
         {
           "id": "level100-brew-pearlroot-draught",
@@ -5351,7 +5355,7 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
       witchcraft: 0,
     },
     font: {
-      lexend: 0,
+      'lilita-one': 0,
       'comic-sans-mono': 0,
     },
     character: {
@@ -8810,7 +8814,7 @@ function normalizeTasksGameConfigJson(
     return DEFAULT_TASKS_CONFIG_JSON;
   }
 
-  const normalizedLevels = normalizeLegacyLevelOneCompletionCost(
+  const normalizedLevels = normalizeLegacyTaskCoinBudgets(
     normalizeLegacyLevel5Tasks(levels),
   );
 
@@ -8824,33 +8828,32 @@ function normalizeTasksGameConfigJson(
   });
 }
 
-function normalizeLegacyLevelOneCompletionCost(levels: unknown[]): unknown[] {
-  const levelOneIndex = levels.findIndex(
-    (levelConfig) => isRecord(levelConfig) && Number(levelConfig.level) === 1,
-  );
+function normalizeLegacyTaskCoinBudgets(levels: unknown[]): unknown[] {
+  let changed = false;
+  const normalizedLevels = levels.map((levelConfig) => {
+    if (
+      !isRecord(levelConfig) ||
+      (levelConfig.completionCostCoin === undefined &&
+        levelConfig.completionCostGold === undefined)
+    ) {
+      return levelConfig;
+    }
 
-  if (levelOneIndex < 0) {
-    return levels;
-  }
+    changed = true;
+    const normalizedLevel = { ...levelConfig };
+    const legacyCoinBudget =
+      normalizedLevel.completionCostCoin ?? normalizedLevel.completionCostGold;
+    delete normalizedLevel.completionCostCoin;
+    delete normalizedLevel.completionCostGold;
 
-  const levelOne = levels[levelOneIndex];
+    if (normalizedLevel.coinBudget === undefined) {
+      normalizedLevel.coinBudget = legacyCoinBudget;
+    }
 
-  if (
-    !isRecord(levelOne) ||
-    Number(levelOne.completionCostCoin ?? levelOne.completionCostGold) !== 10
-  ) {
-    return levels;
-  }
+    return normalizedLevel;
+  });
 
-  return levels.map((levelConfig, index) =>
-    index === levelOneIndex && isRecord(levelConfig)
-      ? {
-          ...levelConfig,
-          completionCostCoin: 0,
-          completionCostGold: undefined,
-        }
-      : levelConfig,
-  );
+  return changed ? normalizedLevels : levels;
 }
 
 function shouldResetTasksGameConfigToDefault(levels: unknown[]): boolean {
@@ -12947,6 +12950,8 @@ function validateTasksGameConfig(value: unknown) {
 
   levels.forEach((levelConfig, levelIndex) => {
     const level = levelConfig as {
+      coinBudget?: unknown;
+      completionCostCoin?: unknown;
       completionCostGold?: unknown;
       level?: unknown;
       tasks?: unknown;
@@ -12963,20 +12968,17 @@ function validateTasksGameConfig(value: unknown) {
       throw new Error('Invalid tasks config task count.');
     }
 
-    if (
-      level.completionCostGold !== undefined &&
-      (!Number.isInteger(Number(level.completionCostGold)) ||
-        Number(level.completionCostGold) < 0)
-    ) {
-      throw new Error('Invalid tasks config completion cost.');
-    }
-
-    if (
-      (level as { completionCostCoin?: unknown }).completionCostCoin !== undefined &&
-      (!Number.isInteger(Number((level as { completionCostCoin?: unknown }).completionCostCoin)) ||
-        Number((level as { completionCostCoin?: unknown }).completionCostCoin) < 0)
-    ) {
-      throw new Error('Invalid tasks config completion cost.');
+    for (const coinBudget of [
+      level.coinBudget,
+      level.completionCostCoin,
+      level.completionCostGold,
+    ]) {
+      if (
+        coinBudget !== undefined &&
+        (!Number.isInteger(Number(coinBudget)) || Number(coinBudget) < 0)
+      ) {
+        throw new Error('Invalid tasks config coin budget.');
+      }
     }
 
     for (const taskConfig of level.tasks) {

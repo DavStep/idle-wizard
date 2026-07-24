@@ -2,7 +2,7 @@ export const FRESH_START_CHOICE_CONNECT_ACCOUNT = 'connect_account';
 export const FRESH_START_CHOICE_START_FRESH = 'start_fresh';
 
 const ELARA_IMAGE_URL = new URL(
-  '../../assets/characters/elara.png',
+  '../../../assets/game/source/characters/elara.png',
   import.meta.url,
 ).href;
 const GUIDE_NAME = 'Elara Starbrew';
@@ -40,7 +40,8 @@ export class AppFreshStartChoiceManager {
     panel.tabIndex = -1;
 
     const dialog = document.createElement('div');
-    dialog.className = 'app-fresh-start-choice__dialog style-dialog';
+    dialog.className =
+      'app-fresh-start-choice__dialog style-dialog style-dialog--system';
 
     const title = document.createElement('div');
     title.className = 'style-box__title';

@@ -89,6 +89,7 @@ export class AppLifecycleManager {
     this.appThemeManager?.mount(this.playerFacade);
     const stage = this.viewportFacade.mount(shell);
     this.stage = stage;
+    this.renderFacade.mount(stage);
     this.textClipboardGuardManager.mount(stage);
     this.interactionLockManager.mount(stage);
     this.interactionLockManager.lock('connecting');
@@ -561,7 +562,6 @@ export class AppLifecycleManager {
     }
 
     this.pagesFacade.mount(this.stage);
-    this.renderFacade.mount(this.stage);
     this.gameSurfacesMounted = true;
   }
 
@@ -570,7 +570,6 @@ export class AppLifecycleManager {
       return;
     }
 
-    this.renderFacade.unmount();
     this.pagesFacade.unmount();
     this.gameSurfacesMounted = false;
   }
@@ -949,6 +948,7 @@ export class AppLifecycleManager {
     this.textClipboardGuardManager.unmount();
     this.appThemeManager?.unmount();
     this.unmountGameSurfaces();
+    this.renderFacade.unmount();
     this.viewportFacade.unmount();
     this.ecsFacade.destroyWorld();
     this.shellManager.unmount();

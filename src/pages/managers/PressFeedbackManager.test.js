@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   HELD_RELEASE_FEEDBACK_MS,
+  PRESS_RELEASE_FEEDBACK_MS,
   PressFeedbackManager,
 } from './PressFeedbackManager.js';
 
@@ -28,6 +29,7 @@ describe('PressFeedbackManager', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     document.elementFromPoint = originalElementFromPoint;
     document.body.replaceChildren();
   });
@@ -112,6 +114,74 @@ describe('PressFeedbackManager', () => {
     );
 
     expect(clicks).toEqual(['synthetic']);
+
+    manager.unmount();
+  });
+
+  it('plays the Root Run release overshoot after a confirmed press', () => {
+    vi.useFakeTimers();
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    button.className = 'style-button';
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown');
+    dispatchPointer(document, 'pointerup');
+
+    expect(button.classList.contains('is-press-releasing')).toBe(true);
+
+    vi.advanceTimersByTime(PRESS_RELEASE_FEEDBACK_MS + 40);
+
+    expect(button.classList.contains('is-press-releasing')).toBe(false);
+
+    manager.unmount();
+  });
+
+  it('plays release feedback for mouse clicks without synthesizing activation', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    let clicks = 0;
+    button.className = 'style-button';
+    button.addEventListener('click', () => {
+      clicks += 1;
+    });
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown', { pointerType: 'mouse' });
+    dispatchPointer(document, 'pointerup', { pointerType: 'mouse' });
+
+    expect(button.classList.contains('is-press-releasing')).toBe(true);
+    expect(clicks).toBe(0);
+
+    manager.unmount();
+  });
+
+  it('does not play release feedback after a canceled drag', () => {
+    const root = document.createElement('div');
+    const button = document.createElement('button');
+    button.className = 'style-button';
+    root.append(button);
+    document.body.append(root);
+    document.elementFromPoint = () => button;
+
+    const manager = new PressFeedbackManager();
+    manager.mount(root);
+
+    dispatchPointer(button, 'pointerdown', { clientX: 10, clientY: 10 });
+    dispatchPointer(document, 'pointermove', { clientX: 50, clientY: 10 });
+    dispatchPointer(document, 'pointerup', { clientX: 50, clientY: 10 });
+
+    expect(button.classList.contains('is-press-releasing')).toBe(false);
 
     manager.unmount();
   });

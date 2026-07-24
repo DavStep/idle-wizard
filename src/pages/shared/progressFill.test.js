@@ -9,14 +9,14 @@ describe('progressFill', () => {
     vi.restoreAllMocks();
   });
 
-  it('sets progress through transform without requiring animation support', () => {
+  it('sets progress through width without requiring animation support', () => {
     const fill = document.createElement('span');
 
     setProgressFill(fill, 0.25);
 
     expect(fill.classList.contains('is-smooth-progress-fill')).toBe(true);
-    expect(fill.style.width).toBe('100%');
-    expect(fill.style.transform).toBe('scaleX(0.25)');
+    expect(fill.style.width).toBe('25%');
+    expect(fill.style.transform).toBe('');
     expect(fill.style.transition).toBe('none');
   });
 
@@ -36,17 +36,17 @@ describe('progressFill', () => {
 
     setProgressFill(fill, 0.25, { smooth: true, remainingMs: 1_500 });
 
-    expect(fill.style.transform).toBe('scaleX(0.25)');
+    expect(fill.style.width).toBe('25%');
     expect(requestAnimationFrame).toHaveBeenCalledTimes(1);
 
     frameCallback();
 
     expect(getComputedStyle).toHaveBeenCalledWith(fill);
     expect(fill.classList.contains('is-progress-running')).toBe(true);
-    expect(fill.style.transition).toBe('transform 1500ms linear');
-    expect(fill.style.transform).toBe('scaleX(1)');
+    expect(fill.style.transition).toBe('width 1500ms linear');
+    expect(fill.style.width).toBe('100%');
 
-    fill.dispatchEvent(new window.TransitionEvent('transitionend', { propertyName: 'transform' }));
+    fill.dispatchEvent(new window.TransitionEvent('transitionend', { propertyName: 'width' }));
 
     expect(fill.classList.contains('is-progress-running')).toBe(false);
   });
@@ -66,14 +66,14 @@ describe('progressFill', () => {
 
     setProgressFill(fill, 0, { smooth: true, remainingMs: 1_500 });
 
-    expect(fill.style.transform).toBe('scaleX(0)');
+    expect(fill.style.width).toBe('0%');
     expect(requestAnimationFrame).toHaveBeenCalledTimes(1);
 
     frameCallback();
 
     expect(fill.classList.contains('is-progress-running')).toBe(true);
-    expect(fill.style.transition).toBe('transform 1500ms linear');
-    expect(fill.style.transform).toBe('scaleX(1)');
+    expect(fill.style.transition).toBe('width 1500ms linear');
+    expect(fill.style.width).toBe('100%');
   });
 
   it('softens stepped progress without running a full timer transition', () => {
@@ -94,8 +94,8 @@ describe('progressFill', () => {
     expect(requestAnimationFrame).not.toHaveBeenCalled();
     expect(fill.classList.contains('is-smooth-progress-fill')).toBe(true);
     expect(fill.classList.contains('is-progress-running')).toBe(false);
-    expect(fill.style.transition).toBe('transform 120ms linear');
-    expect(fill.style.transform).toBe('scaleX(0.5)');
+    expect(fill.style.transition).toBe('width 120ms linear');
+    expect(fill.style.width).toBe('50%');
   });
 
   it('keeps stepped progress smoothing when remaining time is not supplied', () => {
@@ -106,8 +106,8 @@ describe('progressFill', () => {
       stepMs: 120,
     });
 
-    expect(fill.style.transition).toBe('transform 120ms linear');
-    expect(fill.style.transform).toBe('scaleX(0.5)');
+    expect(fill.style.transition).toBe('width 120ms linear');
+    expect(fill.style.width).toBe('50%');
   });
 
   it('caps stepped progress smoothing by remaining time', () => {
@@ -119,8 +119,8 @@ describe('progressFill', () => {
       stepMs: 480,
     });
 
-    expect(fill.style.transition).toBe('transform 80ms linear');
-    expect(fill.style.transform).toBe('scaleX(0.98)');
+    expect(fill.style.transition).toBe('width 80ms linear');
+    expect(fill.style.width).toBe('98%');
   });
 
   it('snaps stepped progress back to zero without a reverse transition', () => {
@@ -138,7 +138,7 @@ describe('progressFill', () => {
     });
 
     expect(fill.style.transition).toBe('none');
-    expect(fill.style.transform).toBe('scaleX(0)');
+    expect(fill.style.width).toBe('0%');
     expect(fill.classList.contains('is-progress-running')).toBe(false);
   });
 
@@ -155,7 +155,7 @@ describe('progressFill', () => {
 
     expect(requestAnimationFrame).not.toHaveBeenCalled();
     expect(fill.style.transition).toBe('none');
-    expect(fill.style.transform).toBe('scaleX(0)');
+    expect(fill.style.width).toBe('0%');
     expect(fill.classList.contains('is-progress-running')).toBe(false);
   });
 
@@ -164,8 +164,8 @@ describe('progressFill', () => {
 
     stopProgressFill(fill, 0);
 
-    expect(fill.style.width).toBe('100%');
-    expect(fill.style.transform).toBe('scaleX(0)');
+    expect(fill.style.width).toBe('0%');
+    expect(fill.style.transform).toBe('');
     expect(fill.classList.contains('is-progress-running')).toBe(false);
   });
 });

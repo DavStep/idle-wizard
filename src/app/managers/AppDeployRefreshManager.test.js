@@ -52,6 +52,11 @@ describe('AppDeployRefreshManager', () => {
 
     const gate = stage.querySelector('.app-deploy-refresh');
     expect(gate.hidden).toBe(false);
+    expect(
+      gate
+        .querySelector('.app-deploy-refresh__dialog')
+        .classList.contains('style-dialog--system'),
+    ).toBe(true);
     expect(gate.textContent).toContain('new version');
     expect(gate.textContent).toContain('refreshing...');
     expect(windowRef.location.reload).toHaveBeenCalledTimes(1);

@@ -83,10 +83,6 @@ export class PlayerPolicyManager {
       return null;
     }
 
-    if (snapshot.coin.current < snapshot.tasks.level.completion.costCoin) {
-      return null;
-    }
-
     const result = gameplayFacade.completeTaskLevel();
     return result.ok ? this.action('level_up', `level ${result.currentLevel}`, result) : null;
   }

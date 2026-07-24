@@ -4,6 +4,7 @@ import childProcess from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { argv } from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import pngjs from 'pngjs';
@@ -11,24 +12,24 @@ import pngjs from 'pngjs';
 const { PNG } = pngjs;
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUTPUT_DIR = path.join(ROOT, 'src/assets/icons/research');
+const OUTPUT_DIR = path.join(ROOT, 'assets/game/source/icons/research');
 const SIZE = 256;
 const TEMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'idle-wizard-research-icons-'));
 
 const sourcePaths = Object.freeze({
-  cauldron: 'src/assets/icons/icon-brewing-cauldron-tab.webp',
-  check: 'src/assets/icons/status/check-01.png',
-  coin: 'src/assets/icons/icon-coin.png',
-  crystal: 'src/assets/icons/icon-crystal.png',
-  emerald: 'src/assets/icons/icon-emerald.png',
-  mana: 'src/assets/icons/icon-mana-drop.png',
-  market: 'src/assets/icons/icon-shop-market-stall-tab.webp',
-  plot: 'src/assets/icons/icon-garden-plot-tab.webp',
-  potionBox: 'src/assets/icons/icon-potion-box.png',
-  research: 'src/assets/icons/icon-research-telescope-tab.webp',
-  ruby: 'src/assets/icons/icon-ruby.png',
-  seedBox: 'src/assets/icons/icon-seed-box.png',
-  seedPack: 'src/assets/items/seeds/seed-pack.png',
+  cauldron: 'assets/game/source/icons/icon-brewing-cauldron-tab.webp',
+  check: 'assets/game/source/ui/prop_checkmark.png',
+  coin: 'assets/game/source/icons/icon-coin.png',
+  crystal: 'assets/game/source/icons/icon-crystal.png',
+  emerald: 'assets/game/source/icons/icon-emerald.png',
+  mana: 'assets/game/source/icons/icon-mana-drop.png',
+  market: 'assets/game/source/icons/icon-shop-market-stall-tab.webp',
+  plot: 'assets/game/source/icons/icon-garden-plot-tab.webp',
+  potionBox: 'assets/game/source/icons/icon-potion-box.png',
+  research: 'assets/game/source/icons/icon-research-telescope-tab.webp',
+  ruby: 'assets/game/source/icons/icon-ruby.png',
+  seedBox: 'assets/game/source/icons/icon-seed-box.png',
+  seedPack: 'assets/game/source/items/seeds/seed-pack.png',
 });
 
 const recipes = Object.freeze([
@@ -154,11 +155,25 @@ const recipes = Object.freeze([
   ],
 ]);
 
+const requestedRecipeNames = new Set(argv.slice(2));
+const unknownRecipeNames = [...requestedRecipeNames].filter(
+  (requestedName) => !recipes.some(([fileName]) => fileName === requestedName),
+);
+
+if (unknownRecipeNames.length > 0) {
+  throw new Error(`Unknown research icon recipe: ${unknownRecipeNames.join(', ')}`);
+}
+
+const selectedRecipes =
+  requestedRecipeNames.size > 0
+    ? recipes.filter(([fileName]) => requestedRecipeNames.has(fileName))
+    : recipes;
+
 try {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   const sources = loadSources(sourcePaths);
 
-  for (const [fileName, layers] of recipes) {
+  for (const [fileName, layers] of selectedRecipes) {
     const canvas = new PNG({ width: SIZE, height: SIZE });
 
     for (const nextLayer of layers) {
@@ -168,7 +183,7 @@ try {
     fs.writeFileSync(path.join(OUTPUT_DIR, fileName), PNG.sync.write(canvas));
   }
 
-  console.log(`generated ${recipes.length} research icons from game assets`);
+  console.log(`generated ${selectedRecipes.length} research icons from game assets`);
 } finally {
   fs.rmSync(TEMP_DIR, { recursive: true, force: true });
 }

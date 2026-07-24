@@ -17,15 +17,23 @@ describe('ResearchInfoDialogManager', () => {
     });
 
     const popup = stage.querySelector('.research-page__info-popup');
+    const closeButton = popup?.querySelector('.research-page__info-close');
 
     expect(popup?.hidden).toBe(false);
     expect(popup?.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(closeButton?.getAttribute('aria-label')).toBe(
+      'close research information',
+    );
     expect(popup?.textContent).toContain(
       'allows valid cauldron ingredients to brew minor healing potion.',
     );
     expect(popup?.textContent).toContain(
       'requires mana tonic research and level 5.',
     );
+
+    closeButton?.click();
+
+    expect(popup?.hidden).toBe(true);
   });
 
   it('labels emerald upgrade information as level up information', () => {
@@ -72,5 +80,28 @@ describe('ResearchInfoDialogManager', () => {
     expect(title?.textContent).toBe('cauldron 1 ★');
     expect(star?.dataset.starCount).toBe('1');
     expect(dialog?.textContent).not.toContain('lvl');
+  });
+
+  it('keeps one dialog instance and only replaces its data', () => {
+    const manager = new ResearchInfoDialogManager();
+    const stage = document.createElement('section');
+
+    const popup = manager.mount(stage);
+    manager.show({
+      id: 'researchCost:1',
+      label: 'research cost',
+      description: 'reduces research costs.',
+    });
+    manager.hide();
+    manager.show({
+      id: 'researchTime:1',
+      label: 'research time',
+      description: 'reduces research duration.',
+    });
+
+    expect(stage.querySelectorAll('.research-page__info-popup')).toHaveLength(1);
+    expect(stage.querySelector('.research-page__info-popup')).toBe(popup);
+    expect(popup.textContent).toContain('research time');
+    expect(popup.textContent).not.toContain('research cost');
   });
 });

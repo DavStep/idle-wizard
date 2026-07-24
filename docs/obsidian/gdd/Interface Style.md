@@ -18,10 +18,10 @@ decoration.
 
 ## Rules To Preserve
 
-- Use lowercase for player-facing UI labels.
+- Use title case for UI labels and sentence case for instructions or narrative copy.
 - Keep ordinary room boxes compact and shadowless.
 - Put box titles over the top border, not as headings inside panels.
-- Use fixed authored game dimensions at `1080x2170`, scaled to the device.
+- Use Root Run's fixed `390x844` logical game resolution, contain-fitted to the device.
 - Reuse documented row, popup, tab, border-label, and expandable-box patterns.
 - Avoid decorative textures, illustrations, rounded cards, and hover-only UI.
 

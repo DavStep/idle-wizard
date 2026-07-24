@@ -11,6 +11,7 @@ export class ResearchInfoDialogManager {
         this.hide();
       }
     };
+    this.handleCloseClick = () => this.hide();
     this.handleKeydown = (event) => {
       if (!this.visible || event.key !== 'Escape') {
         return;
@@ -38,6 +39,7 @@ export class ResearchInfoDialogManager {
   unmount() {
     document.removeEventListener('keydown', this.handleKeydown);
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
+    this.refs.closeButton?.removeEventListener('click', this.handleCloseClick);
     this.refs.popup?.remove();
     this.refs = {};
     this.currentResearch = null;
@@ -64,11 +66,19 @@ export class ResearchInfoDialogManager {
     const body = document.createElement('p');
     body.className = 'research-page__info-copy';
 
-    dialog.append(title, body);
+    const closeButton = document.createElement('button');
+    closeButton.className = 'style-button research-page__info-close';
+    closeButton.type = 'button';
+    closeButton.textContent = 'close';
+    closeButton.setAttribute('aria-label', 'close research information');
+    closeButton.addEventListener('click', this.handleCloseClick);
+
+    dialog.append(title, body, closeButton);
     popup.append(dialog);
     this.refs.dialog = dialog;
     this.refs.title = title;
     this.refs.body = body;
+    this.refs.closeButton = closeButton;
 
     return popup;
   }

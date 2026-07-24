@@ -27,7 +27,36 @@ const CONTENT_TABS = [
 ];
 
 const GUILD_SECRETARY_ICON_KEY = 'guild_secretary';
-const GUILD_QUEST_ASSET_PATH = '/ui/guild-quest/';
+const GUILD_QUEST_ASSET_URLS = Object.freeze({
+  'icon-difficulty.png': new URL(
+    '../../../../assets/game/source/ui/guild-quest/icon-difficulty.png',
+    import.meta.url,
+  ).href,
+  'icon-expires.png': new URL(
+    '../../../../assets/game/source/ui/guild-quest/icon-expires.png',
+    import.meta.url,
+  ).href,
+  'icon-reward.png': new URL(
+    '../../../../assets/game/source/ui/guild-quest/icon-reward.png',
+    import.meta.url,
+  ).href,
+  'icon-stats.png': new URL(
+    '../../../../assets/game/source/ui/guild-quest/icon-stats.png',
+    import.meta.url,
+  ).href,
+  'paperclip.png': new URL(
+    '../../../../assets/game/source/ui/guild-quest/paperclip.png',
+    import.meta.url,
+  ).href,
+  'quest-photo-smuggler-tunnel.png': new URL(
+    '../../../../assets/game/source/ui/guild-quest/quest-photo-smuggler-tunnel.png',
+    import.meta.url,
+  ).href,
+  'wax-seal.png': new URL(
+    '../../../../assets/game/source/ui/guild-quest/wax-seal.png',
+    import.meta.url,
+  ).href,
+});
 const GUILD_REQUEST_PAGE_TURN_MS = 205;
 
 export class GuildPanelManager {
@@ -273,7 +302,6 @@ export class GuildPanelManager {
   createContentPanel(tab, sections) {
     const panel = document.createElement('section');
     panel.className = 'guild-page__tabpanel style-page-scroll';
-    panel.dataset.scrollCueProgress = 'inline';
     panel.dataset.guildTabPanel = tab.id;
     panel.setAttribute('role', 'tabpanel');
     panel.setAttribute('aria-label', tab.label);
@@ -684,7 +712,7 @@ export class GuildPanelManager {
 
   getAdventurerInitial(displayName) {
     const trimmed = String(displayName ?? '').trim();
-    return trimmed ? trimmed.slice(0, 1).toLowerCase() : '?';
+    return trimmed ? trimmed.slice(0, 1).toUpperCase() : '?';
   }
 
   createAdventurerCard(
@@ -729,8 +757,7 @@ export class GuildPanelManager {
 
   createOrUpdateCardDetails(secondaryRows, detailsElement = null) {
     const details = detailsElement ?? document.createElement('div');
-    details.className = 'guild-page__card-details';
-    details.dataset.scrollCueProgress = 'inline';
+    details.className = 'guild-page__card-details style-page-scroll';
 
     let rows = [...details.children].find((child) =>
       child.classList?.contains('guild-page__card-rows'),
@@ -905,7 +932,8 @@ export class GuildPanelManager {
     this.refs.closeButton.setAttribute('aria-label', 'close');
     this.refs.closeButton.addEventListener('click', () => this.hidePopup());
     this.refs.popupContent = document.createElement('div');
-    this.refs.popupContent.className = 'guild-page__popup-content';
+    this.refs.popupContent.className =
+      'guild-page__popup-content style-page-scroll';
     this.refs.popupActions = document.createElement('div');
     this.refs.popupActions.className = 'guild-page__popup-actions';
     this.refs.popupTabs = document.createElement('div');
@@ -1470,9 +1498,15 @@ export class GuildPanelManager {
   }
 
   createQuestAssetImage(fileName, className) {
+    const assetUrl = GUILD_QUEST_ASSET_URLS[fileName];
+
+    if (!assetUrl) {
+      throw new Error(`Unknown guild quest asset: ${fileName}`);
+    }
+
     const image = document.createElement('img');
     image.className = className;
-    image.src = `${GUILD_QUEST_ASSET_PATH}${fileName}`;
+    image.src = assetUrl;
     image.alt = '';
     image.setAttribute('aria-hidden', 'true');
     image.draggable = false;

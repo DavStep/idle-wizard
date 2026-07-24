@@ -273,7 +273,7 @@ export class ShopPlayerShelfManager {
     choiceDivider.className = 'shop-page__player-listing-choice-divider';
 
     const itemList = document.createElement('div');
-    itemList.className = 'shop-page__sell-item-list';
+    itemList.className = 'shop-page__sell-item-list style-page-scroll';
 
     const emptyRow = document.createElement('div');
     emptyRow.className = 'shop-page__player-listing-item-row';
@@ -389,7 +389,7 @@ export class ShopPlayerShelfManager {
     title.textContent = 'player market';
 
     const rows = document.createElement('div');
-    rows.className = 'shop-page__market-rows';
+    rows.className = 'shop-page__market-rows style-page-scroll';
 
     const message = document.createElement('div');
     message.className = 'shop-page__market-message';

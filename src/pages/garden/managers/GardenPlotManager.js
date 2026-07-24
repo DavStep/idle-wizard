@@ -274,7 +274,7 @@ export class GardenPlotManager {
     dialog.setAttribute('aria-labelledby', title.id);
 
     this.refs.seedRows = document.createElement('div');
-    this.refs.seedRows.className = 'garden-page__seed-rows';
+    this.refs.seedRows.className = 'garden-page__seed-rows style-page-scroll';
     dialog.append(title, this.refs.seedRows);
     popup.append(dialog);
     this.refs.dialog = dialog;
@@ -1428,11 +1428,12 @@ export class GardenPlotManager {
 
     const ghost = this.createSeedDragGhost(this.seedDrag);
     const document = this.getDocument();
-    if (!document?.body) {
+    const ghostHost = this.root?.closest?.('.game-stage') ?? document?.body;
+    if (!ghostHost) {
       return;
     }
 
-    document.body.append(ghost);
+    ghostHost.append(ghost);
     this.seedDrag.ghost = ghost;
   }
 

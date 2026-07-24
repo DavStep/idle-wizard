@@ -10,8 +10,8 @@ world: balance
 
 # Level Curve
 
-Tasks turn regular gameplay actions into level progress. A level advances only
-after all requirements are complete and the player pays the completion coin cost.
+Tasks turn regular gameplay actions into level progress. Once every requirement
+is complete, the player can advance the level without a currency payment.
 
 ## Early Hand-Authored Beats
 

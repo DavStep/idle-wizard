@@ -464,17 +464,6 @@ export class GameplayFacade {
       };
     }
 
-    if (!this.coinFacade.canSpend(completion.costCoin)) {
-      this.publishAndSaveSnapshot();
-      return {
-        ok: false,
-        reason: 'not_enough_coin',
-        ...completion,
-        currentCoin: this.coinFacade.getSnapshot().current,
-      };
-    }
-
-    this.coinFacade.spend(completion.costCoin);
     const result = this.tasksFacade.completeCurrentLevel();
     this.applyTaskLevelCompletion(result);
 

@@ -11,6 +11,11 @@ experience_type: development-operations
 
 # Experience: Development Operations
 
+- Keep runtime binary assets under the root `assets/` tree. Authored game art
+  belongs in `assets/game/source/`; game and qUIck atlas outputs belong in
+  their adjacent `atlas/` folders and must be regenerated through
+  `npm run assets:atlas`, not edited by hand.
+
 - Use the shared Vite dev server at `http://127.0.0.1:55173/` with `strictPort` by default. If parallel agents interfere, give each isolated runtime explicit ports and a clear owner; never rely on auto-increment, and stop every alternate listener when that agent finishes.
 - Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.
 - Shared live local QA belongs to one primary branch/worktree; helper branches/worktrees can prep code or run static checks, but runtime verification is invalid unless that checkout owns the running Vite and SpacetimeDB processes.
@@ -50,3 +55,6 @@ experience_type: development-operations
 - The sibling dashboard repo is `../idle-wizard-dashboard`; it runs on Vite port `55183` and syncs generated SpacetimeDB bindings from this repo.
 - Plain Node dev scripts that import `GameplayFacade` need the repo JSON module loader/register path because `TaskBalanceManager` imports `tasks.json` without Node import attributes; Vitest/Vite handle it without that loader.
 - Local-runtime watchdog PID probes must treat sandbox `EPERM` as unknown, not dead; deleting `monitor.pid` on an uninspectable live process creates duplicate monitors and competing service restarts.
+- Detached preview commands must reuse a listening process recorded by their PID file; treating their own listener as a port collision makes the documented start command fail on every rerun.
+- Reusing a detached static preview must rebuild its isolated output first; reloading an unchanged preview directory silently serves stale source assets.
+- Detached preview stop commands must wait for their listener to release before deleting the PID file; immediate restart otherwise sees an unrecorded occupied port.

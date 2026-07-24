@@ -7,11 +7,11 @@ const EMPTY_STAR_TONE = 'empty';
 const STARS_PER_TONE = 3;
 const MAX_STAR_LEVEL = STAR_TONES.length * STARS_PER_TONE;
 const STAR_IMAGE_URLS = Object.freeze({
-  empty: new URL('../../assets/ui/stars/star-empty.png', import.meta.url).href,
-  yellow: new URL('../../assets/ui/stars/star-yellow.png', import.meta.url).href,
-  orange: new URL('../../assets/ui/stars/star-orange.png', import.meta.url).href,
-  red: new URL('../../assets/ui/stars/star-red.png', import.meta.url).href,
-  purple: new URL('../../assets/ui/stars/star-purple.png', import.meta.url).href,
+  empty: new URL('../../../assets/game/source/ui/stars/star-empty.png', import.meta.url).href,
+  yellow: new URL('../../../assets/game/source/ui/stars/star-yellow.png', import.meta.url).href,
+  orange: new URL('../../../assets/game/source/ui/stars/star-orange.png', import.meta.url).href,
+  red: new URL('../../../assets/game/source/ui/stars/star-red.png', import.meta.url).href,
+  purple: new URL('../../../assets/game/source/ui/stars/star-purple.png', import.meta.url).href,
 });
 
 export function formatStarLevel(level) {

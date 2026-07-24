@@ -7,6 +7,7 @@ import {
   STATUS_ICON_LOCK,
 } from '../../shared/statusIcon.js';
 import { createStarLevelLabel } from '../../shared/starLevelLabel.js';
+import { setInfoButtonIcon } from '../../shared/infoButton.js';
 import { marketLicences } from '../../../shared/marketLicence.js';
 import { getPrestigeUnlocksSnapshot } from '../../../gameplay/prestige/prestigeUnlocks.js';
 
@@ -59,7 +60,6 @@ export class PrestigePanelManager {
     this.refs.description = this.createDescription();
     this.refs.body = document.createElement('div');
     this.refs.body.className = 'prestige-page__body style-page-scroll';
-    this.refs.body.dataset.scrollCueProgress = 'inline';
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'workshop-page__prestige-rows';
     this.refs.confirm = this.createConfirmPanel();
@@ -477,7 +477,7 @@ export class PrestigePanelManager {
     const help = document.createElement('button');
     help.className = 'style-button workshop-page__prestige-market-help';
     help.type = 'button';
-    help.textContent = '?';
+    setInfoButtonIcon(help);
     help.setAttribute('aria-controls', MARKET_LICENCE_TOOLTIP_ID);
     help.setAttribute('aria-expanded', 'false');
     help.setAttribute('aria-label', `what does ${licence.name} unlock?`);
@@ -572,7 +572,8 @@ export class PrestigePanelManager {
   createMilestoneAction(milestone) {
     if (milestone.canComplete && !milestone.lowerThanHighestAvailable) {
       const button = document.createElement('button');
-      button.className = 'style-button workshop-page__prestige-action';
+      button.className =
+        'style-button style-button--brown-dark workshop-page__prestige-action';
       button.type = 'button';
       button.textContent = 'prestige';
       button.addEventListener('click', () => this.onPrestigeClick(milestone));

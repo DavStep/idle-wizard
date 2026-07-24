@@ -22,4 +22,8 @@ export class GuildPageFacade {
     this.panelManager.unmount();
     this.roomViewManager.unmount();
   }
+
+  deactivate() {
+    this.panelManager.hidePopup();
+  }
 }

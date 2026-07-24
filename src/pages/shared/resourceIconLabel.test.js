@@ -57,7 +57,7 @@ describe('resource icon labels', () => {
     );
   });
 
-  it('keeps reward ranges inside colored resource labels', () => {
+  it('keeps reward ranges inside grouped resource labels', () => {
     const element = document.createElement('span');
 
     setResourceIconText(element, 'reward: 220-300 coin, 34-50 seeds, or 65-100 herbs');

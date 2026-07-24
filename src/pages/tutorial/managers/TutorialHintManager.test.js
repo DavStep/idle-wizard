@@ -98,7 +98,7 @@ describe('TutorialHintManager', () => {
     window.localStorage?.clear?.();
   });
 
-  it('uses the Spine pointer shell without drawing a target rectangle or hand sprite', () => {
+  it('uses a shared-renderer Spine anchor without creating another canvas', () => {
     const stage = document.createElement('section');
     const target = document.createElement('button');
     const manager = new TutorialHintManager();
@@ -123,10 +123,13 @@ describe('TutorialHintManager', () => {
     });
 
     const pointer = stage.querySelector('.tutorial-layer__pointer');
-    const pointerCanvas = pointer?.querySelector('.tutorial-layer__pointer-spine');
+    const pointerShell = pointer?.querySelector(
+      '.tutorial-layer__pointer-spine-shell',
+    );
 
     expect(pointer?.hidden).toBe(false);
-    expect(pointerCanvas).not.toBeNull();
+    expect(pointerShell).not.toBeNull();
+    expect(pointer?.querySelector('canvas')).toBeNull();
     expect(pointer?.querySelector('img')).toBeNull();
   });
 
@@ -411,6 +414,7 @@ describe('TutorialHintManager', () => {
       mount: vi.fn(),
       unmount: vi.fn(),
       setMotionEnabled: vi.fn(),
+      setPlacement: vi.fn(),
       setVisible: vi.fn(),
     };
     const manager = new TutorialHintManager({ pointerSpineManager });
@@ -438,6 +442,13 @@ describe('TutorialHintManager', () => {
       expect.objectContaining({ className: 'tutorial-layer__pointer' }),
     );
     expect(pointerSpineManager.setMotionEnabled).toHaveBeenCalledWith(true);
+    expect(pointerSpineManager.setPlacement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        placement: expect.any(String),
+        x: expect.any(Number),
+        y: expect.any(Number),
+      }),
+    );
     expect(pointerSpineManager.setVisible).toHaveBeenCalledWith(true);
     expect(pointerSpineManager.setVisible).toHaveBeenCalledWith(false);
     expect(pointerSpineManager.unmount).toHaveBeenCalled();
@@ -1226,7 +1237,7 @@ describe('TutorialHintManager', () => {
       manager.showLesson({
         id: 'long-copy',
         title: 'lesson 2: market',
-        text: 'summon seeds and sell them for level-up coin',
+        text: 'Summon seeds and sell one for the market task',
         stepLabel: '11/25',
         progress: { value: 0, max: 4 },
         progressLabel: '0/4 coin',
@@ -1240,7 +1251,7 @@ describe('TutorialHintManager', () => {
 
       expect(text?.textContent).toBe('');
       expect(text?.getAttribute('aria-label')).toBe(
-        'summon seeds and sell them for level-up coin',
+        'Summon seeds and sell one for the market task',
       );
       expect(shortSize.width).toBe(190);
       expect(longSize.width).toBe(shortSize.width);

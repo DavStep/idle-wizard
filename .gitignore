@@ -23,3 +23,5 @@ tmp/ui-consistency-after/
 *.apk
 *.iml
 .idea/
+# qUIck exports are transient; keep the documented inbox itself.
+qUIck-inbox/*.zip

@@ -14,6 +14,11 @@ describe('AppOnlineGateManager', () => {
 
     const gate = stage.querySelector('.app-online-gate');
     expect(gate.hidden).toBe(false);
+    expect(
+      gate
+        .querySelector('.app-online-gate__dialog')
+        .classList.contains('style-dialog--system'),
+    ).toBe(true);
     expect(gate.textContent).toContain('server required');
     expect(gate.textContent).toContain('connecting to server...');
     const progress = gate.querySelector('.app-online-gate__progress');

@@ -1,3 +1,4 @@
+import { CostButtonManager } from '../../shared/CostButtonManager.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import {
@@ -9,16 +10,93 @@ import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { setTimerProgressFill, stopTimerProgressFill } from '../../shared/timerProgress.js';
 import { formatRemainingTime } from '../../shared/timerDisplay.js';
 import { createStarLevelLabel, formatStarLevel } from '../../shared/starLevelLabel.js';
+import { UiWidgetPoolManager } from '../../../rendering/managers/UiWidgetPoolManager.js';
 
 const maxLockedResearchesPerBox = 3;
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
 const TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX = 10;
+const RESEARCH_ARTWORK_BY_BOX_ID = Object.freeze({
+  autoBrewCauldrons: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-auto-brew.png',
+    import.meta.url,
+  ).href,
+  autoPlantTiles: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-auto-plant.png',
+    import.meta.url,
+  ).href,
+  autoSeedSpawn: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-auto-seed-spawn.png',
+    import.meta.url,
+  ).href,
+  automationReserve: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-automation-reserve.png',
+    import.meta.url,
+  ).href,
+  cauldronBrewing: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-cauldron-brewing.png',
+    import.meta.url,
+  ).href,
+  cauldronCapacity: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-cauldron-capacity.png',
+    import.meta.url,
+  ).href,
+  plotCapacity: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-plot-capacity.png',
+    import.meta.url,
+  ).href,
+  plotGrowth: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-plot-growth.png',
+    import.meta.url,
+  ).href,
+  plotPlanting: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-plot-level.png',
+    import.meta.url,
+  ).href,
+  recipeUnlocks: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-cauldron-brewing.png',
+    import.meta.url,
+  ).href,
+  researchCost: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-cost.png',
+    import.meta.url,
+  ).href,
+  researchTime: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-time.png',
+    import.meta.url,
+  ).href,
+  seedUnlocks: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-auto-seed-spawn.png',
+    import.meta.url,
+  ).href,
+  stallStaffing: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-fast-sell.png',
+    import.meta.url,
+  ).href,
+  summonSeeds: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-summon-multiplier.png',
+    import.meta.url,
+  ).href,
+});
+const RESEARCH_CAULDRON_LEVEL_ARTWORK = new URL(
+  '../../../../assets/game/source/icons/research/icon-research-cauldron-level.png',
+  import.meta.url,
+).href;
+const RESEARCH_FALLBACK_ARTWORK = new URL(
+  '../../../../assets/game/source/icons/icon-research.png',
+  import.meta.url,
+).href;
 
 export class ResearchBoxListManager {
-  constructor({ gameplayFacade, onSelectedTabChange, onShowResearchInfo } = {}) {
+  constructor({
+    gameplayFacade,
+    onSelectedTabChange,
+    onShowResearchInfo,
+    onRowsChanged,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.onSelectedTabChange = onSelectedTabChange;
     this.onShowResearchInfo = onShowResearchInfo;
+    this.onRowsChanged = onRowsChanged;
     this.root = null;
     this.tabsRoot = null;
     this.boxesRoot = null;
@@ -26,7 +104,23 @@ export class ResearchBoxListManager {
     this.signature = '';
     this.selectedTabId = 'regular';
     this.tabButtons = new Map();
+    this.boxRefs = new Map();
     this.rowRefs = new Map();
+    this.nextBoxIds = new Set();
+    this.nextRowIds = new Set();
+    this.boxPool = new UiWidgetPoolManager({
+      maxSize: 24,
+      create: () => this.createBoxWidget(),
+      reset: (ref) => this.resetBoxWidget(ref),
+      destroy: (ref) => this.destroyBoxWidget(ref),
+    });
+    this.rowPool = new UiWidgetPoolManager({
+      maxSize: 128,
+      create: () => this.createRowWidget(),
+      prepare: (ref, context) => this.syncRowWidget(ref, context),
+      reset: (ref) => this.resetRowWidget(ref),
+      destroy: (ref) => this.destroyRowWidget(ref),
+    });
     this.handledLockedRowPressStartResearchId = null;
     this.pendingLockedRowPress = null;
     this.handlePendingLockedRowPressMove = (event) =>
@@ -56,7 +150,6 @@ export class ResearchBoxListManager {
     this.tabsRoot.setAttribute('role', 'tablist');
     this.boxesRoot = document.createElement('div');
     this.boxesRoot.className = 'research-page__box-list style-page-scroll';
-    this.boxesRoot.dataset.scrollCueProgress = 'inline';
     this.root.append(this.boxesRoot, this.tabsRoot);
     parent.append(this.root);
 
@@ -80,7 +173,18 @@ export class ResearchBoxListManager {
     this.signature = '';
     this.selectedTabId = 'regular';
     this.tabButtons.clear();
+    for (const ref of this.boxRefs.values()) {
+      this.boxPool.release(ref);
+    }
+    for (const ref of this.rowRefs.values()) {
+      this.rowPool.release(ref);
+    }
+    this.boxRefs.clear();
     this.rowRefs.clear();
+    this.boxPool.clear();
+    this.rowPool.clear();
+    this.nextBoxIds.clear();
+    this.nextRowIds.clear();
     this.handledLockedRowPressStartResearchId = null;
     this.lastTouchLikePressStart = {
       key: null,
@@ -125,12 +229,22 @@ export class ResearchBoxListManager {
     this.signature = signature;
     this.syncTabs(tabs);
     this.syncTabState(tabs, selectedTab);
-    this.rowRefs.clear();
+    this.nextBoxIds.clear();
+    this.nextRowIds.clear();
+    for (const box of boxes) {
+      this.nextBoxIds.add(box.id);
+      for (const research of this.getDisplayedResearches(box.researches)) {
+        this.nextRowIds.add(research.id);
+      }
+    }
+    this.releaseUnusedBoxWidgets();
+    this.releaseUnusedRowWidgets();
     this.boxesRoot.replaceChildren(
       ...this.createStatusRows({ runFocus }),
       ...boxes.map((box) => this.createBox(box)),
     );
     this.syncResearchProgress(boxes);
+    this.onRowsChanged?.();
   }
 
   getTabs(snapshot) {
@@ -451,22 +565,58 @@ export class ResearchBoxListManager {
   }
 
   createBox(box) {
-    const section = document.createElement('section');
-    section.className = `research-page__box research-page__box--${box.id} style-box`;
+    this.nextBoxIds.add(box.id);
+    let ref = this.boxRefs.get(box.id);
+
+    if (!ref) {
+      ref = this.boxPool.acquire();
+      this.boxRefs.set(box.id, ref);
+    }
+
+    const { section, title } = ref;
+    section.className = `research-page__box research-page__box--${box.id}`;
     section.setAttribute('aria-label', box.label);
-
-    const title = document.createElement('div');
-    title.className = 'style-box__title';
     title.textContent = box.label;
-
-    section.append(
+    section.replaceChildren(
       title,
       ...this.getDisplayedResearches(box.researches).map((research) =>
-        this.createRow(research),
+        this.createRow(research, box.id),
       ),
     );
 
     return section;
+  }
+
+  createBoxWidget() {
+    const section = document.createElement('section');
+    const title = document.createElement('div');
+    title.className = 'research-page__box-title';
+    section.append(title);
+    return { section, title };
+  }
+
+  resetBoxWidget(ref) {
+    ref.section.remove();
+    ref.section.className = 'research-page__box';
+    ref.section.removeAttribute('aria-label');
+    ref.section.replaceChildren(ref.title);
+    ref.title.textContent = '';
+  }
+
+  destroyBoxWidget(ref) {
+    ref.section.remove();
+    ref.section.replaceChildren();
+  }
+
+  releaseUnusedBoxWidgets() {
+    for (const [boxId, ref] of this.boxRefs) {
+      if (this.nextBoxIds.has(boxId)) {
+        continue;
+      }
+
+      this.boxRefs.delete(boxId);
+      this.boxPool.release(ref);
+    }
   }
 
   getDisplayedResearches(researches = []) {
@@ -482,8 +632,91 @@ export class ResearchBoxListManager {
     });
   }
 
-  createRow(research) {
+  createRow(research, boxId = '') {
+    this.nextRowIds.add(research.id);
+    const existing = this.rowRefs.get(research.id);
+    if (existing) {
+      this.syncRowWidget(existing, { research, boxId });
+      return existing.row;
+    }
+
+    const ref = this.rowPool.acquire({ research, boxId });
+    this.rowRefs.set(research.id, ref);
+    return ref.row;
+  }
+
+  createRowWidget() {
     const row = document.createElement('div');
+    const artwork = document.createElement('span');
+    artwork.className = 'research-page__research-art';
+    artwork.setAttribute('aria-hidden', 'true');
+    const artworkImage = document.createElement('img');
+    artworkImage.className = 'research-page__research-art-image';
+    artworkImage.alt = '';
+    artworkImage.draggable = false;
+    artwork.append(artworkImage);
+
+    const key = document.createElement('button');
+    key.className =
+      'row_key research-page__research-label research-page__research-label-button';
+    key.type = 'button';
+    key.setAttribute('aria-haspopup', 'dialog');
+
+    const rank = document.createElement('span');
+    rank.className = 'research-page__research-rank';
+    rank.setAttribute('aria-hidden', 'true');
+
+    const ref = {
+      row,
+      artwork,
+      artworkImage,
+      key,
+      rank,
+      research: null,
+      boxId: '',
+      signature: '',
+      value: null,
+      valueLabel: null,
+      valueGap: null,
+      valueTimer: null,
+      progress: null,
+      progressFill: null,
+      progressText: null,
+    };
+    row.addEventListener('pointerdown', (event) =>
+      this.onPooledLockedRowPressStart(event, ref),
+    );
+    row.addEventListener(
+      'touchstart',
+      (event) => this.onPooledLockedRowPressStart(event, ref),
+      { passive: true },
+    );
+    row.addEventListener('click', (event) => {
+      if (ref.research?.locked) {
+        this.onLockedRowClick(event, ref.research);
+      }
+    });
+    key.addEventListener('click', () => {
+      if (ref.research) {
+        this.onShowResearchInfo?.(ref.research);
+      }
+    });
+    row.append(artwork, key, rank);
+    return ref;
+  }
+
+  syncRowWidget(ref, { research, boxId = '' }) {
+    const signature = this.getRowWidgetSignature(research, boxId);
+    ref.research = research;
+    ref.boxId = boxId;
+
+    if (signature === ref.signature) {
+      return;
+    }
+
+    stopTimerProgressFill(ref.progressFill, 0);
+    ref.signature = signature;
+    const { row, artwork, artworkImage, key, rank } = ref;
     row.className = 'research-page__row';
     row.classList.toggle('is-completed', Boolean(research.completed));
     row.classList.toggle(
@@ -499,22 +732,14 @@ export class ResearchBoxListManager {
     );
     row.classList.toggle('is-locked', Boolean(research.locked));
     row.classList.toggle('is-in-progress', Boolean(research.inProgress));
-
-    if (research.locked) {
-      this.bindTouchLikeValidatedPress(row, `locked-research:${research.id}`, (event) =>
-        this.onLockedRowPressStart(event, research),
-      );
-      row.addEventListener('click', (event) => this.onLockedRowClick(event, research));
-    }
-
-    const key = document.createElement('button');
-    key.className = 'row_key research-page__research-label research-page__research-label-button';
-    key.type = 'button';
-    key.setAttribute('aria-haspopup', 'dialog');
-    key.setAttribute('aria-label', `show information for ${this.formatResearchName(research)}`);
-    key.addEventListener('click', () => this.onShowResearchInfo?.(research));
-    key.append(...this.createResearchLabelParts(research));
-
+    key.setAttribute(
+      'aria-label',
+      `show information for ${this.formatResearchName(research)}`,
+    );
+    key.replaceChildren(...this.createResearchLabelParts(research));
+    artworkImage.src = this.getResearchArtworkUrl(boxId, research.id);
+    const currentRank = research.completed ? 1 : 0;
+    rank.textContent = `Lv. ${String(currentRank).padStart(2, '0')}/01`;
     const val =
       research.locked
         ? this.createLockedValue(research)
@@ -522,9 +747,14 @@ export class ResearchBoxListManager {
         ? this.createReadonlyValue(research)
         : this.createBuyButton(research);
 
-    row.append(key, val);
-
-    const ref = { row, value: val };
+    row.append(artwork, key, rank, val);
+    ref.value = val;
+    ref.valueLabel = null;
+    ref.valueGap = null;
+    ref.valueTimer = null;
+    ref.progress = null;
+    ref.progressFill = null;
+    ref.progressText = null;
 
     if (research.inProgress) {
       ref.valueLabel = val.querySelector('.research-page__research-value-label');
@@ -536,9 +766,103 @@ export class ResearchBoxListManager {
       ref.progressText = progress.text;
       row.append(progress.root);
     }
+  }
 
-    this.rowRefs.set(research.id, ref);
-    return row;
+  getRowWidgetSignature(research, boxId) {
+    return [
+      boxId,
+      research.id,
+      research.label,
+      research.starLevel ?? '',
+      research.value,
+      research.effect,
+      research.showEffect,
+      research.actionType ?? '',
+      research.description,
+      research.costCurrency ?? '',
+      research.completed,
+      research.inProgress,
+      research.locked,
+      research.canResearch,
+      research.lockReason ?? '',
+    ].join('|');
+  }
+
+  resetRowWidget(ref) {
+    stopTimerProgressFill(ref.progressFill, 0);
+    ref.row.remove();
+    ref.research = null;
+    ref.boxId = '';
+    ref.signature = '';
+    ref.value = null;
+    ref.valueLabel = null;
+    ref.valueGap = null;
+    ref.valueTimer = null;
+    ref.progress = null;
+    ref.progressFill = null;
+    ref.progressText = null;
+  }
+
+  destroyRowWidget(ref) {
+    stopTimerProgressFill(ref.progressFill, 0);
+    ref.row.remove();
+    ref.row.replaceChildren();
+    ref.research = null;
+  }
+
+  releaseUnusedRowWidgets() {
+    for (const [researchId, ref] of this.rowRefs) {
+      if (this.nextRowIds.has(researchId)) {
+        continue;
+      }
+
+      this.rowRefs.delete(researchId);
+      this.rowPool.release(ref);
+    }
+  }
+
+  onPooledLockedRowPressStart(event, ref) {
+    const research = ref.research;
+    if (!research?.locked) {
+      return;
+    }
+
+    this.onTouchLikeValidatedPressStart(
+      event,
+      `locked-research:${research.id}`,
+      (pressEvent) => this.onLockedRowPressStart(pressEvent, ref.research),
+    );
+  }
+
+  createResearchRank(research) {
+    const rank = document.createElement('span');
+    rank.className = 'research-page__research-rank';
+    const currentRank = research.completed ? 1 : 0;
+    rank.textContent = `Lv. ${String(currentRank).padStart(2, '0')}/01`;
+    rank.setAttribute('aria-hidden', 'true');
+    return rank;
+  }
+
+  createResearchArtwork(boxId, research) {
+    const root = document.createElement('span');
+    root.className = 'research-page__research-art';
+    root.setAttribute('aria-hidden', 'true');
+
+    const image = document.createElement('img');
+    image.className = 'research-page__research-art-image';
+    image.src = this.getResearchArtworkUrl(boxId, research?.id);
+    image.alt = '';
+    image.draggable = false;
+    root.append(image);
+    return root;
+  }
+
+  getResearchArtworkUrl(boxId, researchId) {
+    if (String(researchId ?? '').startsWith('emerald:cauldronBrewing:')) {
+      return RESEARCH_CAULDRON_LEVEL_ARTWORK;
+    }
+
+    return RESEARCH_ARTWORK_BY_BOX_ID[boxId] ?? RESEARCH_FALLBACK_ARTWORK;
   }
 
   getResearchState(research) {
@@ -799,22 +1123,24 @@ export class ResearchBoxListManager {
 
   createResearchLabelParts(research) {
     const itemKind = this.getResearchItemKind(research);
+    const parts = [];
     const name = document.createElement('span');
     name.className = 'research-page__research-name';
     name.textContent = research.label;
     setItemIconLabel(name, itemKind, this.getResearchItemKey(research));
     setResourceColor(name, this.getResearchNameResourceColor(research, itemKind));
     this.appendResearchStarLabel(name, research);
+    parts.push(name);
 
-    if (!research.showEffect) {
-      return [name];
+    const descriptionText = research.description || research.effect;
+    if (descriptionText) {
+      const description = document.createElement('span');
+      description.className = 'research-page__research-description';
+      description.textContent = descriptionText;
+      parts.push(description);
     }
 
-    const effect = document.createElement('span');
-    effect.className = 'research-page__research-effect';
-    setResourceIconText(effect, research.effect);
-    setResourceColorFromText(effect, research.effect);
-    return [name, effect];
+    return parts;
   }
 
   getResearchNameResourceColor(research, itemKind) {
@@ -905,11 +1231,42 @@ export class ResearchBoxListManager {
   }
 
   createLockedValue(research) {
-    const val = document.createElement('span');
-    val.className = 'row_val research-page__research-value';
-    setResourceIconText(val, research.value);
-    this.setResearchValueResourceColor(val, research);
-    return val;
+    const button = this.createBuyButton(research, {
+      amountLabel: 'Locked',
+      state: 'locked',
+    });
+    const label = button.querySelector('.style-cost-button__plain-label');
+
+    if (!label) {
+      return button;
+    }
+
+    label.classList.add('research-page__research-lock-label');
+    const title = document.createElement('span');
+    title.className = 'research-page__research-lock-title';
+    title.textContent = 'Locked';
+    const reason = document.createElement('span');
+    reason.className = 'research-page__research-lock-reason';
+    reason.textContent = this.formatResearchLockPrompt(research);
+    label.replaceChildren(title, reason);
+    return button;
+  }
+
+  formatResearchLockPrompt(research) {
+    const reason = String(research?.lockReason ?? '')
+      .trim()
+      .replace(/\.$/, '');
+    const levelMatch = reason.match(/^requires level (\d+)$/i);
+
+    if (levelMatch) {
+      return `Reach level ${levelMatch[1]}`;
+    }
+
+    if (!reason || reason.toLowerCase() === 'this research is still locked') {
+      return 'Complete prior research';
+    }
+
+    return `${reason.charAt(0).toUpperCase()}${reason.slice(1)}`;
   }
 
   setResearchValueResourceColor(element, research) {
@@ -987,21 +1344,29 @@ export class ResearchBoxListManager {
     return formatRemainingTime(remainingMs);
   }
 
-  createBuyButton(research) {
+  createBuyButton(
+    research,
+    {
+      amountLabel = research.value,
+      state = research.canResearch ? 'available' : 'unaffordable',
+    } = {},
+  ) {
     const button = document.createElement('button');
     button.className = 'style-button research-page__research-button';
+    button.classList.toggle('is-unaffordable', state === 'unaffordable');
+    button.classList.toggle('is-locked', state === 'locked');
     button.type = 'button';
     button.dataset.tutorialId = `research:${research.id}`;
-    setResourceIconText(button, research.value);
-    setResourceColorFromText(button, research.value);
-    button.disabled = !research.canResearch;
-    button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
-    button.setAttribute('aria-label', this.formatResearchButtonLabel(research));
-    if (!research.canResearch && research.lockReason) {
-      button.title = research.lockReason;
-    }
-    setNotificationBadge(button, research.canResearch);
-    button.addEventListener('click', () => this.gameplayFacade.buyResearch(research.id));
+    const costButton = new CostButtonManager({
+      button,
+      onPress: () => this.gameplayFacade.buyResearch(research.id),
+    });
+    costButton.setData({
+      amountLabel,
+      enabled: research.canResearch,
+      ariaLabel: this.formatResearchButtonLabel(research),
+      title: !research.canResearch ? research.lockReason : '',
+    });
     return button;
   }
 
@@ -1022,7 +1387,9 @@ export class ResearchBoxListManager {
 
   formatResearchButtonLabel(research) {
     if (research.locked) {
-      return `${this.formatResearchName(research)} is locked`;
+      return `${this.formatResearchName(research)} is locked, ${this.formatResearchLockPrompt(
+        research,
+      )}`;
     }
 
     if (research.inProgress) {

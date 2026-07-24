@@ -83,6 +83,10 @@ describe('TopPanelQuestProgressManager', () => {
     request.className = 'workshop-page__tasks';
     setRect(request, { left: 80, top: 210, width: 120, height: 20 });
     document.body.append(request);
+    const stage = document.createElement('main');
+    stage.className = 'game-stage';
+    stage.append(refs.panel, refs.questRow);
+    document.body.append(stage);
 
     manager.mount(refs);
     const firstSegment = refs.questSegments.children[0];
@@ -96,6 +100,11 @@ describe('TopPanelQuestProgressManager', () => {
     vi.advanceTimersByTime(190);
 
     expect(document.querySelectorAll('.room-top-panel__quest-flight')).toHaveLength(3);
+    expect(
+      [...document.querySelectorAll('.room-top-panel__quest-flight')].every(
+        (flight) => flight.parentElement === stage,
+      ),
+    ).toBe(true);
     expect(manager.animateElement).toHaveBeenCalledTimes(3);
     expect(firstSegment.classList.contains('is-complete')).toBe(false);
 
@@ -108,6 +117,24 @@ describe('TopPanelQuestProgressManager', () => {
     manager.unmount();
     expect(document.querySelector('.room-top-panel__quest-flight')).toBeNull();
     vi.useRealTimers();
+  });
+
+  it('falls back to the owner document body when no game stage contains the quest row', () => {
+    const { gameplayFacade, refs } = createFixture();
+    const manager = new TopPanelQuestProgressManager({ gameplayFacade });
+    const pendingAnimation = new Promise(() => {});
+    vi.spyOn(manager, 'animateElement').mockReturnValue({ finished: pendingAnimation });
+    setRect(refs.levelButton, { left: 280, top: 18, width: 34, height: 34 });
+    setRect(refs.panel, { left: 20, top: 12, width: 350, height: 64 });
+
+    manager.mount(refs);
+    manager.showQuestFlight({ source: refs.panel });
+
+    const flights = [...document.querySelectorAll('.room-top-panel__quest-flight')];
+    expect(flights).toHaveLength(3);
+    expect(flights.every((flight) => flight.parentElement === document.body)).toBe(true);
+
+    manager.unmount();
   });
 
   it('fills the old rail before jumping the badge and changing the level', () => {
@@ -288,7 +315,7 @@ function createFixture({ completedQuests = 1, currentLevel = 2, progress = null 
     questRemainingValue: document.createElement('strong'),
     questProgressTail: document.createTextNode(''),
   };
-  refs.levelStar.src = '/ui/level-star.webp';
+  refs.levelStar.src = '/assets/game/source/ui/level-star.webp';
   refs.questProgressText.append(
     refs.questProgressLead,
     refs.questRemainingValue,

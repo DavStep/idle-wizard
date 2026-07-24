@@ -1,4 +1,5 @@
 export const DEFAULT_PAGE_SWIPE_ORDER = [
+  'prestige',
   'brewing',
   'garden',
   'workshop',
@@ -7,7 +8,6 @@ export const DEFAULT_PAGE_SWIPE_ORDER = [
   'advancedBrewing',
   'advancedGarden',
   'guild',
-  'prestige',
   'advancedMarket',
 ];
 

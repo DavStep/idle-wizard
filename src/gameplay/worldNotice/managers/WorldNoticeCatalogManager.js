@@ -58,15 +58,15 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     tags: ['medical', 'herbal', 'alchemy', 'supply'],
     headline: 'fever in the lower quarter',
     body: [
-      'lanterns stay lit past midnight.',
-      'elara says the lower quarter has begun boiling water in every pot it owns.',
+      'Lanterns stay lit past midnight.',
+      'Elara says the lower quarter has begun boiling water in every pot it owns.',
     ],
     requests: [
       eventQuest({
         requestKey: 'coolTheFever',
         title: 'cool the fever',
-        situation: 'families are sleeping beside buckets because the lower quarter cannot keep water cool.',
-        description: 'donate tonics that steady breath and bring fever down before the sick lose another night.',
+        situation: 'Families are sleeping beside buckets because the lower quarter cannot keep water cool.',
+        description: 'Donate tonics that steady breath and bring fever down before the sick lose another night.',
         donationOptions: [
           itemDonation('manaTonic', 'mana tonic', 80),
           itemDonation('minorHealingPotion', 'minor healing potion', 150),
@@ -75,8 +75,8 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'cleanTheHands',
         title: 'clean hands, clean cups',
-        situation: 'the first helpers are running out of safe washes and every cup now passes through too many hands.',
-        description: 'donate cleansing brews so the healers stop carrying the fever from bed to bed.',
+        situation: 'The first helpers are running out of safe washes and every cup now passes through too many hands.',
+        description: 'Donate cleansing brews so the healers stop carrying the fever from bed to bed.',
         donationOptions: [
           itemDonation('simpleAntidote', 'simple antidote', 160),
           itemDonation('frostmossCleanse', 'frostmoss cleanse', 260),
@@ -85,18 +85,18 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'rentQuietRooms',
         title: 'quiet rooms for the sick',
-        situation: 'crowded houses keep the fever moving after sunset.',
-        description: 'donate coin so families can rent spare rooms until the quarter is clean again.',
+        situation: 'Crowded houses keep the fever moving after sunset.',
+        description: 'Donate coin so families can rent spare rooms until the quarter is clean again.',
         donationOptions: [coinDonation()],
         requiredPoints: 900,
       }),
     ],
     outcomes: {
-      small: 'the fever breaks slowly. the quarter remembers who answered.',
-      steady: 'most doors reopen before the next market bell.',
-      strong: 'the lower quarter names your tonic in every doorway.',
+      small: 'The fever breaks slowly. The quarter remembers who answered.',
+      steady: 'Most doors reopen before the next market bell.',
+      strong: 'The lower quarter names your tonic in every doorway.',
     },
-    archive: 'the lower quarter kept its lanterns lit and endured.',
+    archive: 'The lower quarter kept its lanterns lit and endured.',
   },
   {
     eventId: 'siege-stonebridge',
@@ -104,15 +104,15 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     tags: ['military', 'supply', 'alchemy'],
     headline: 'siege at stonebridge',
     body: [
-      'messengers arrive with mud on their boots.',
-      'stonebridge asks every alchemist for field bottles, spare stores, and useful notes.',
+      'Messengers arrive with mud on their boots.',
+      'Stonebridge asks every alchemist for field bottles, spare stores, and useful notes.',
     ],
     requests: [
       eventQuest({
         requestKey: 'holdTheGate',
         title: 'hold the gate',
-        situation: 'stonebridge runners say the west gate shakes every hour.',
-        description: 'donate courage and warding bottles so the watch can stay at the stones through the next push.',
+        situation: 'Stonebridge runners say the west gate shakes every hour.',
+        description: 'Donate courage and warding bottles so the watch can stay at the stones through the next push.',
         donationOptions: [
           itemDonation('briarWard', 'briar ward', 180),
           itemDonation('dragonCourage', 'dragon courage', 320),
@@ -121,8 +121,8 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'patchTheWounded',
         title: 'patch the wounded',
-        situation: 'the road back from the bridge is lined with carts that should have carried grain.',
-        description: 'donate healing potions so the wounded can return to the walls or at least return home.',
+        situation: 'The road back from the bridge is lined with carts that should have carried grain.',
+        description: 'Donate healing potions so the wounded can return to the walls or at least return home.',
         donationOptions: [
           itemDonation('minorHealingPotion', 'minor healing potion', 150),
           itemDonation('healingPotion', 'healing potion', 300),
@@ -131,18 +131,18 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'payTheRunners',
         title: 'pay the runners',
-        situation: 'messengers are wearing through boots faster than the quartermaster can count them.',
-        description: 'donate coin for fresh boots, horse feed, and bridge tolls before reports stop moving.',
+        situation: 'Messengers are wearing through boots faster than the quartermaster can count them.',
+        description: 'Donate coin for fresh boots, horse feed, and bridge tolls before reports stop moving.',
         donationOptions: [coinDonation()],
         requiredPoints: 900,
       }),
     ],
     outcomes: {
-      small: 'stonebridge holds, though the gates stay scarred.',
-      steady: 'the watch keeps the west gate supplied.',
-      strong: 'stonebridge sends back a blackened banner in thanks.',
+      small: 'Stonebridge holds, though the gates stay scarred.',
+      steady: 'The watch keeps the west gate supplied.',
+      strong: 'Stonebridge sends back a blackened banner in thanks.',
     },
-    archive: 'stonebridge held through the week.',
+    archive: 'Stonebridge held through the week.',
   },
   {
     eventId: 'king-dethroned',
@@ -150,15 +150,15 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     tags: ['political', 'trade', 'supply'],
     headline: 'king dethroned',
     body: [
-      'the royal seal changes before the ink dries.',
-      'trade guilds ask for calm shelves, steady trade, and a review of old road charters.',
+      'The royal seal changes before the ink dries.',
+      'Trade guilds ask for calm shelves, steady trade, and a review of old road charters.',
     ],
     requests: [
       eventQuest({
         requestKey: 'steadyTheClerks',
         title: 'steady the clerks',
-        situation: 'the royal seal changed before the tax clerks learned which door was theirs.',
-        description: 'donate focus brews so the clerks can copy road papers without starting three new arguments.',
+        situation: 'The royal seal changed before the tax clerks learned which door was theirs.',
+        description: 'Donate focus brews so the clerks can copy road papers without starting three new arguments.',
         donationOptions: [
           itemDonation('calmingDraught', 'calming draught', 120),
           itemDonation('moonlitFocus', 'moonlit focus', 240),
@@ -167,8 +167,8 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'guardTheLedgers',
         title: 'guard the ledgers',
-        situation: 'guild ledgers are being carried through crowds that want a new king and old prices.',
-        description: 'donate warding potions so the ledgers reach the hall without losing pages or clerks.',
+        situation: 'Guild ledgers are being carried through crowds that want a new king and old prices.',
+        description: 'Donate warding potions so the ledgers reach the hall without losing pages or clerks.',
         donationOptions: [
           itemDonation('briarWard', 'briar ward', 180),
           itemDonation('pactWard', 'pact ward', 340),
@@ -177,18 +177,18 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'keepTheRoadsOpen',
         title: 'keep the roads open',
-        situation: 'merchants will close their stalls if the first crown week starts with unpaid road guards.',
-        description: 'donate coin to keep the road watches fed until the new crown signs the ledgers.',
+        situation: 'Merchants will close their stalls if the first crown week starts with unpaid road guards.',
+        description: 'Donate coin to keep the road watches fed until the new crown signs the ledgers.',
         donationOptions: [coinDonation()],
         requiredPoints: 900,
       }),
     ],
     outcomes: {
-      small: 'the crown changes. the roads stay nervous.',
-      steady: 'guild ledgers settle by the end of the week.',
-      strong: 'messengers carry your mark beside the new seal.',
+      small: 'The crown changes. The roads stay nervous.',
+      steady: 'Guild ledgers settle by the end of the week.',
+      strong: 'Messengers carry your mark beside the new seal.',
     },
-    archive: 'the crown changed hands without closing the roads.',
+    archive: 'The crown changed hands without closing the roads.',
   },
   {
     eventId: 'dungeon-under-old-road',
@@ -196,15 +196,15 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     tags: ['exploration', 'research', 'alchemy'],
     headline: 'dungeon under the old road',
     body: [
-      'a cart wheel breaks through stone that was not on any map.',
-      'expedition clerks need potions, notes, and packed herbs.',
+      'A cart wheel breaks through stone that was not on any map.',
+      'Expedition clerks need potions, notes, and packed herbs.',
     ],
     requests: [
       eventQuest({
         requestKey: 'lightTheStair',
         title: 'light the stair',
-        situation: 'the first lantern lowered into the old road went out before it touched the floor.',
-        description: 'donate lantern tonics so the expedition can see what waits below the broken stones.',
+        situation: 'The first lantern lowered into the old road went out before it touched the floor.',
+        description: 'Donate lantern tonics so the expedition can see what waits below the broken stones.',
         donationOptions: [
           itemDonation('lanternTonic', 'lantern tonic', 200),
           itemDonation('emberSight', 'ember sight', 300),
@@ -213,8 +213,8 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'markTheAir',
         title: 'mark the air',
-        situation: 'the stair breathes cold dust that makes scouts forget which way is up.',
-        description: 'donate focus and breath draughts so the map-makers return with more than rumors.',
+        situation: 'The stair breathes cold dust that makes scouts forget which way is up.',
+        description: 'Donate focus and breath draughts so the map-makers return with more than rumors.',
         donationOptions: [
           itemDonation('moonlitFocus', 'moonlit focus', 240),
           itemDonation('snowdropBreath', 'snowdrop breath', 360),
@@ -223,18 +223,18 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'hireTheRopeCrew',
         title: 'hire the rope crew',
-        situation: 'no one is stepping under the old road without paid rope hands above them.',
-        description: 'donate coin for ropes, chalk, and the workers brave enough to hold the line.',
+        situation: 'No one is stepping under the old road without paid rope hands above them.',
+        description: 'Donate coin for ropes, chalk, and the workers brave enough to hold the line.',
         donationOptions: [coinDonation()],
         requiredPoints: 900,
       }),
     ],
     outcomes: {
-      small: 'the stair is marked and watched.',
-      steady: 'the first chamber is mapped without loss.',
-      strong: 'your notes become the expedition key.',
+      small: 'The stair is marked and watched.',
+      steady: 'The first chamber is mapped without loss.',
+      strong: 'Your notes become the expedition key.',
     },
-    archive: 'the old road kept its new stair.',
+    archive: 'The old road kept its new stair.',
   },
   {
     eventId: 'blight-south-fields',
@@ -242,15 +242,15 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     tags: ['herbal', 'medical', 'research'],
     headline: 'blight in the south fields',
     body: [
-      'farmers bring leaves folded in cloth.',
-      'the spots spread faster than rumor, and every clean cutting matters.',
+      'Farmers bring leaves folded in cloth.',
+      'The spots spread faster than rumor, and every clean cutting matters.',
     ],
     requests: [
       eventQuest({
         requestKey: 'cutTheRot',
         title: 'cut the rot',
-        situation: 'farmers are burning leaves faster than new hands can cut them.',
-        description: 'donate cleansing brews so clean cuttings can survive before the south fields go black.',
+        situation: 'Farmers are burning leaves faster than new hands can cut them.',
+        description: 'Donate cleansing brews so clean cuttings can survive before the south fields go black.',
         donationOptions: [
           itemDonation('simpleAntidote', 'simple antidote', 160),
           itemDonation('frostmossCleanse', 'frostmoss cleanse', 260),
@@ -259,8 +259,8 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'braceThePlanters',
         title: 'brace the planters',
-        situation: 'the planters work in smoke and sour soil until their hands shake.',
-        description: 'donate stamina and vigor potions so the field crews can finish the clean rows.',
+        situation: 'The planters work in smoke and sour soil until their hands shake.',
+        description: 'Donate stamina and vigor potions so the field crews can finish the clean rows.',
         donationOptions: [
           itemDonation('nettleVigor', 'nettle vigor', 140),
           itemDonation('sunrootStamina', 'sunroot stamina', 260),
@@ -269,18 +269,18 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'replaceBurnedRows',
         title: 'replace burned rows',
-        situation: 'whole furrows have been cut away to keep the blight from crossing the road.',
-        description: 'donate coin for seed, carts, and wages while the fields are replanted.',
+        situation: 'Whole furrows have been cut away to keep the blight from crossing the road.',
+        description: 'Donate coin for seed, carts, and wages while the fields are replanted.',
         donationOptions: [coinDonation()],
         requiredPoints: 900,
       }),
     ],
     outcomes: {
-      small: 'the south fields cut away the worst rows.',
-      steady: 'new growth survives around the old scarecrows.',
-      strong: 'the blight line stops at the treated furrows.',
+      small: 'The south fields cut away the worst rows.',
+      steady: 'New growth survives around the old scarecrows.',
+      strong: 'The blight line stops at the treated furrows.',
     },
-    archive: 'the south fields were cut back and watched.',
+    archive: 'The south fields were cut back and watched.',
   },
   {
     eventId: 'caravan-lost-black-pine',
@@ -288,15 +288,15 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     tags: ['trade', 'supply', 'exploration'],
     headline: 'caravan lost near black pine',
     body: [
-      'three wagons miss the morning bell.',
-      'the market asks for replacements while scouts search the wet road.',
+      'Three wagons miss the morning bell.',
+      'The market asks for replacements while scouts search the wet road.',
     ],
     requests: [
       eventQuest({
         requestKey: 'wakeTheScouts',
         title: 'wake the scouts',
-        situation: 'black pine fog turns every hoofprint into three possible roads.',
-        description: 'donate focus draughts so scouts can follow the real trail before rain erases it.',
+        situation: 'Black pine fog turns every hoofprint into three possible roads.',
+        description: 'Donate focus draughts so scouts can follow the real trail before rain erases it.',
         donationOptions: [
           itemDonation('calmingDraught', 'calming draught', 120),
           itemDonation('moonlitFocus', 'moonlit focus', 240),
@@ -305,8 +305,8 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'packTheSearch',
         title: 'pack the search',
-        situation: 'the search crews left before breakfast and will not return before dark.',
-        description: 'donate tonics and salves so the searchers keep moving through the pine cuts.',
+        situation: 'The search crews left before breakfast and will not return before dark.',
+        description: 'Donate tonics and salves so the searchers keep moving through the pine cuts.',
         donationOptions: [
           itemDonation('manaTonic', 'mana tonic', 80),
           itemDonation('silverleafSalve', 'silverleaf salve', 360),
@@ -315,18 +315,18 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'coverMissingCargo',
         title: 'cover the missing cargo',
-        situation: 'market stalls are empty where the lost wagons should have stood.',
-        description: 'donate coin so sellers can replace bread, lamp oil, and mule feed until the carts return.',
+        situation: 'Market stalls are empty where the lost wagons should have stood.',
+        description: 'Donate coin so sellers can replace bread, lamp oil, and mule feed until the carts return.',
         donationOptions: [coinDonation()],
         requiredPoints: 900,
       }),
     ],
     outcomes: {
-      small: 'one wagon returns. the others remain rumor.',
-      steady: 'the market opens thin but orderly.',
-      strong: 'the last wagon finds the road by your marked route.',
+      small: 'One wagon returns. The others remain rumor.',
+      steady: 'The market opens thin but orderly.',
+      strong: 'The last wagon finds the road by your marked route.',
     },
-    archive: 'black pine kept its mud, but trade resumed.',
+    archive: 'Black pine kept its mud, but trade resumed.',
   },
   {
     eventId: 'tainted-well',
@@ -334,15 +334,15 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     tags: ['medical', 'research', 'herbal'],
     headline: 'tainted well by the mill',
     body: [
-      'the miller lowers a bucket and raises a smell like old iron.',
-      'clean water now depends on herbs, study, and patience.',
+      'The miller lowers a bucket and raises a smell like old iron.',
+      'Clean water now depends on herbs, study, and patience.',
     ],
     requests: [
       eventQuest({
         requestKey: 'cleanTheBuckets',
         title: 'clean the buckets',
-        situation: 'every bucket from the mill smells like old iron and wet stone.',
-        description: 'donate cleansing potions so the mill can test water without poisoning the testers.',
+        situation: 'Every bucket from the mill smells like old iron and wet stone.',
+        description: 'Donate cleansing potions so the mill can test water without poisoning the testers.',
         donationOptions: [
           itemDonation('simpleAntidote', 'simple antidote', 160),
           itemDonation('frostmossCleanse', 'frostmoss cleanse', 260),
@@ -351,8 +351,8 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'treatTheMillHands',
         title: 'treat the mill hands',
-        situation: 'the first mill hands drank before anyone noticed the stain.',
-        description: 'donate healing potions so the sick workers recover while the well stays roped shut.',
+        situation: 'The first mill hands drank before anyone noticed the stain.',
+        description: 'Donate healing potions so the sick workers recover while the well stays roped shut.',
         donationOptions: [
           itemDonation('minorHealingPotion', 'minor healing potion', 150),
           itemDonation('healingPotion', 'healing potion', 300),
@@ -361,18 +361,18 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'buyCleanWater',
         title: 'buy clean water',
-        situation: 'children are carrying empty cups because the mill well cannot be trusted.',
-        description: 'donate coin for clean barrels from the north spring until the well clears.',
+        situation: 'Children are carrying empty cups because the mill well cannot be trusted.',
+        description: 'Donate coin for clean barrels from the north spring until the well clears.',
         donationOptions: [coinDonation()],
         requiredPoints: 900,
       }),
     ],
     outcomes: {
-      small: 'the mill well is roped shut.',
-      steady: 'the first clean bucket draws by candlelight.',
-      strong: 'the miller paints your mark beside the wellstone.',
+      small: 'The mill well is roped shut.',
+      steady: 'The first clean bucket draws by candlelight.',
+      strong: 'The miller paints your mark beside the wellstone.',
     },
-    archive: 'the mill well was watched until the water cleared.',
+    archive: 'The mill well was watched until the water cleared.',
   },
   {
     eventId: 'new-king-crowned',
@@ -380,15 +380,15 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     tags: ['political', 'trade', 'supply'],
     headline: 'new king crowned',
     body: [
-      'bells ring from towers that disagreed yesterday.',
-      'new clerks ask every workshop to prove the town still moves and read the new edicts.',
+      'Bells ring from towers that disagreed yesterday.',
+      'New clerks ask every workshop to prove the town still moves and read the new edicts.',
     ],
     requests: [
       eventQuest({
         requestKey: 'quietTheCrowd',
         title: 'quiet the crowd',
-        situation: 'the coronation bells have people cheering, arguing, and fainting in the same street.',
-        description: 'donate calming draughts so the crowd stays upright long enough for the heralds to finish.',
+        situation: 'The coronation bells have people cheering, arguing, and fainting in the same street.',
+        description: 'Donate calming draughts so the crowd stays upright long enough for the heralds to finish.',
         donationOptions: [
           itemDonation('calmingDraught', 'calming draught', 120),
           itemDonation('valerianRest', 'valerian rest', 320),
@@ -397,8 +397,8 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'protectTheSeal',
         title: 'protect the seal',
-        situation: 'the new seal is crossing town in a box that everyone wants to touch.',
-        description: 'donate warding potions so the seal reaches the hall without a new scandal.',
+        situation: 'The new seal is crossing town in a box that everyone wants to touch.',
+        description: 'Donate warding potions so the seal reaches the hall without a new scandal.',
         donationOptions: [
           itemDonation('briarWard', 'briar ward', 180),
           itemDonation('pactWard', 'pact ward', 340),
@@ -407,18 +407,18 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'feedTheBellRingers',
         title: 'feed the bell ringers',
-        situation: 'the bell ringers were promised lunch three proclamations ago.',
-        description: 'donate coin so the bells keep ringing until the last oath is read.',
+        situation: 'The bell ringers were promised lunch three proclamations ago.',
+        description: 'Donate coin so the bells keep ringing until the last oath is read.',
         donationOptions: [coinDonation()],
         requiredPoints: 900,
       }),
     ],
     outcomes: {
-      small: 'the bells stop. the ledgers stay open.',
-      steady: 'the new clerks leave with filled lines.',
-      strong: 'your workshop is copied into the first crown ledger.',
+      small: 'The bells stop. The ledgers stay open.',
+      steady: 'The new clerks leave with filled lines.',
+      strong: 'Your workshop is copied into the first crown ledger.',
     },
-    archive: 'the new crown counted the town and moved on.',
+    archive: 'The new crown counted the town and moved on.',
   },
   {
     eventId: 'comet-over-west-field',
@@ -426,15 +426,15 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     tags: ['exploration', 'research', 'alchemy'],
     headline: 'comet over the west field',
     body: [
-      'the sky scratches itself with a white line.',
-      'elara says omens are cheaper to study before they land.',
+      'The sky scratches itself with a white line.',
+      'Elara says omens are cheaper to study before they land.',
     ],
     requests: [
       eventQuest({
         requestKey: 'steadyTheWatchers',
         title: 'steady the watchers',
-        situation: 'half the west field has stared at the sky long enough to miss meals and fences.',
-        description: 'donate calming and focus draughts so the watchers write clear notes instead of prophecies.',
+        situation: 'Half the west field has stared at the sky long enough to miss meals and fences.',
+        description: 'Donate calming and focus draughts so the watchers write clear notes instead of prophecies.',
         donationOptions: [
           itemDonation('calmingDraught', 'calming draught', 120),
           itemDonation('moonlitFocus', 'moonlit focus', 240),
@@ -443,8 +443,8 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'keepNightLanternsLit',
         title: 'keep night lanterns lit',
-        situation: 'the comet is brightest after midnight, when the lantern oil runs lowest.',
-        description: 'donate lantern tonics and sight brews so the field crews can chart the whole pass.',
+        situation: 'The comet is brightest after midnight, when the lantern oil runs lowest.',
+        description: 'Donate lantern tonics and sight brews so the field crews can chart the whole pass.',
         donationOptions: [
           itemDonation('lanternTonic', 'lantern tonic', 200),
           itemDonation('emberSight', 'ember sight', 300),
@@ -453,18 +453,18 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'rentFieldTents',
         title: 'rent field tents',
-        situation: 'the scholars refuse to leave the field until the comet does.',
-        description: 'donate coin for tents, ink, and hot food while the sky keeps scratching itself open.',
+        situation: 'The scholars refuse to leave the field until the comet does.',
+        description: 'Donate coin for tents, ink, and hot food while the sky keeps scratching itself open.',
         donationOptions: [coinDonation()],
         requiredPoints: 900,
       }),
     ],
     outcomes: {
-      small: 'the comet fades. the field stays quiet.',
-      steady: 'your notes outlast the panic.',
-      strong: 'elara keeps your comet chart under glass.',
+      small: 'The comet fades. The field stays quiet.',
+      steady: 'Your notes outlast the panic.',
+      strong: 'Elara keeps your comet chart under glass.',
     },
-    archive: 'the west field watched the comet pass.',
+    archive: 'The west field watched the comet pass.',
   },
   {
     eventId: 'bandits-on-north-road',
@@ -472,15 +472,15 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
     tags: ['military', 'trade', 'supply'],
     headline: 'bandits on the north road',
     body: [
-      'north road merchants arrive in pairs now.',
-      'the watch needs supplies, bottle courage, and road poultices.',
+      'North road merchants arrive in pairs now.',
+      'The watch needs supplies, bottle courage, and road poultices.',
     ],
     requests: [
       eventQuest({
         requestKey: 'armTheWatch',
         title: 'arm the watch',
-        situation: 'north road patrols are chasing shadows with tired hands.',
-        description: 'donate courage and warding potions so the watch can face bandits without breaking ranks.',
+        situation: 'North road patrols are chasing shadows with tired hands.',
+        description: 'Donate courage and warding potions so the watch can face bandits without breaking ranks.',
         donationOptions: [
           itemDonation('briarWard', 'briar ward', 180),
           itemDonation('dragonCourage', 'dragon courage', 320),
@@ -489,8 +489,8 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'mendTheMerchants',
         title: 'mend the merchants',
-        situation: 'merchants who escaped the road arrived with split packs and worse cuts.',
-        description: 'donate salves and healing potions so trade can move before fear closes the gates.',
+        situation: 'Merchants who escaped the road arrived with split packs and worse cuts.',
+        description: 'Donate salves and healing potions so trade can move before fear closes the gates.',
         donationOptions: [
           itemDonation('minorHealingPotion', 'minor healing potion', 150),
           itemDonation('healingPotion', 'healing potion', 300),
@@ -499,18 +499,18 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
       eventQuest({
         requestKey: 'postRoadBounties',
         title: 'post road bounties',
-        situation: 'the watch has names, but no coin for riders willing to chase them.',
-        description: 'donate coin for road bounties, spare tack, and lantern oil on the north mile.',
+        situation: 'The watch has names, but no coin for riders willing to chase them.',
+        description: 'Donate coin for road bounties, spare tack, and lantern oil on the north mile.',
         donationOptions: [coinDonation()],
         requiredPoints: 900,
       }),
     ],
     outcomes: {
-      small: 'the north road moves by daylight only.',
-      steady: 'patrols push the raids past the mile stones.',
-      strong: 'the north road opens before first bell.',
+      small: 'The north road moves by daylight only.',
+      steady: 'Patrols push the raids past the mile stones.',
+      strong: 'The north road opens before first bell.',
     },
-    archive: 'the north road grew safer by the week end.',
+    archive: 'The north road grew safer by the week end.',
   },
 ]);
 
@@ -520,10 +520,10 @@ export class WorldNoticeCatalogManager {
     return WORLD_NOTICE_EVENTS[index % WORLD_NOTICE_EVENTS.length];
   }
 
-  createNoticeState({ periodKey, weekIndex, resetAtMs, anchorLevel, completionCostCoin }) {
+  createNoticeState({ periodKey, weekIndex, resetAtMs, anchorLevel, levelCoinBudget }) {
     const event = this.getEventForWeek(weekIndex);
     const level = Math.max(WORLD_NOTICE_UNLOCK_LEVEL, Math.floor(Number(anchorLevel) || 0));
-    const baseCoin = Math.max(0, Math.floor(Number(completionCostCoin) || level * level * 10));
+    const baseCoin = Math.max(0, Math.floor(Number(levelCoinBudget) || level * level * 10));
 
     return {
       version: WORLD_NOTICE_STATE_VERSION,
@@ -545,13 +545,13 @@ export class WorldNoticeCatalogManager {
           periodKey,
           request,
           anchorLevel: level,
-          completionCostCoin: baseCoin,
+          levelCoinBudget: baseCoin,
         }),
       ),
     };
   }
 
-  createRequestState({ eventId, periodKey, request, anchorLevel, completionCostCoin }) {
+  createRequestState({ eventId, periodKey, request, anchorLevel, levelCoinBudget }) {
     const actionType = request.actionType ?? WORLD_NOTICE_ACTIONS.DONATE_RESOURCES;
     return {
       requestId: `${periodKey}:${eventId}:${request.requestKey}`,
@@ -564,7 +564,7 @@ export class WorldNoticeCatalogManager {
       requiredQuantity: this.getRequiredQuantity({
         actionType,
         anchorLevel,
-        completionCostCoin,
+        levelCoinBudget,
         requiredQuantity: request.requiredQuantity,
       }),
       progressQuantity: 0,
@@ -576,7 +576,7 @@ export class WorldNoticeCatalogManager {
     };
   }
 
-  getRequiredQuantity({ actionType, anchorLevel, completionCostCoin, requiredQuantity = null }) {
+  getRequiredQuantity({ actionType, anchorLevel, levelCoinBudget, requiredQuantity = null }) {
     const explicitQuantity = Math.floor(Number(requiredQuantity));
 
     if (Number.isInteger(explicitQuantity) && explicitQuantity > 0) {
@@ -584,7 +584,7 @@ export class WorldNoticeCatalogManager {
     }
 
     const level = Math.max(WORLD_NOTICE_UNLOCK_LEVEL, Math.floor(Number(anchorLevel) || 0));
-    const completionCost = Math.max(0, Math.floor(Number(completionCostCoin) || 0));
+    const coinBudget = Math.max(0, Math.floor(Number(levelCoinBudget) || 0));
 
     switch (actionType) {
       case WORLD_NOTICE_ACTIONS.BREW_POTIONS:
@@ -592,11 +592,11 @@ export class WorldNoticeCatalogManager {
       case WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH:
         return 1;
       case WORLD_NOTICE_ACTIONS.DONATE_COIN:
-        return this.roundToFive(Math.max(15, completionCost * 0.08));
+        return this.roundToFive(Math.max(15, coinBudget * 0.08));
       case WORLD_NOTICE_ACTIONS.DONATE_RESOURCES:
-        return this.roundToFive(Math.max(600, completionCost * 1.5));
+        return this.roundToFive(Math.max(600, coinBudget * 1.5));
       case WORLD_NOTICE_ACTIONS.EARN_COIN:
-        return this.roundToFive(Math.max(50, completionCost * 0.5));
+        return this.roundToFive(Math.max(50, coinBudget * 0.5));
       case WORLD_NOTICE_ACTIONS.HARVEST_HERBS:
         return this.roundToFive(15 + level * 3);
       case WORLD_NOTICE_ACTIONS.SELL_ITEMS:
@@ -608,11 +608,11 @@ export class WorldNoticeCatalogManager {
     }
   }
 
-  getRewardCoin(anchorLevel, completionCostCoin) {
+  getRewardCoin(anchorLevel, levelCoinBudget) {
     const level = Math.max(WORLD_NOTICE_UNLOCK_LEVEL, Math.floor(Number(anchorLevel) || 0));
-    const completionCost = Math.max(0, Math.floor(Number(completionCostCoin) || 0));
+    const coinBudget = Math.max(0, Math.floor(Number(levelCoinBudget) || 0));
 
-    return this.roundToFive(Math.max(10, completionCost * 0.08 + level));
+    return this.roundToFive(Math.max(10, coinBudget * 0.08 + level));
   }
 
   sanitizeNotice(notice) {
@@ -746,7 +746,7 @@ export class WorldNoticeCatalogManager {
   sanitizeDonationOption(option = {}) {
     const resourceType = String(option.resourceType ?? '').trim();
     const optionKey = String(option.optionKey ?? option.itemKey ?? resourceType).trim();
-    const label = String(option.label ?? option.itemKey ?? resourceType).trim().toLowerCase();
+    const label = String(option.label ?? option.itemKey ?? resourceType).trim();
     const pointsPerUnit = Math.max(0, Math.floor(Number(option.pointsPerUnit) || 0));
 
     if (!optionKey || !label || pointsPerUnit <= 0) {

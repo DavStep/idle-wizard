@@ -265,11 +265,34 @@ export class PixiProgressOverlayManager {
 
     const graphic = this.ensureGraphic(bar);
     const fill = this.readFillColor(bar);
-    const fillWidth = Math.max(0, rect.width * bar.progress);
+    const edge = this.readFillEdgeColor(bar);
+    const sourceScale = this.readSourceScale();
+    const inset = Math.min(sourceScale, rect.width / 2, rect.height / 2);
+    const fillX = rect.x + inset;
+    const fillY = rect.y + inset;
+    const availableWidth = Math.max(0, rect.width - inset * 2);
+    const fillHeight = Math.max(0, rect.height - inset * 2);
+    const fillWidth = Math.max(0, Math.min(availableWidth, rect.width * bar.progress));
+    const fillRadius = Math.min(fillWidth / 2, fillHeight / 2);
+    const edgeInset = Math.min(sourceScale, fillWidth / 2, fillHeight / 2);
+    const innerWidth = Math.max(0, fillWidth - edgeInset * 2);
+    const innerHeight = Math.max(0, fillHeight - edgeInset * 2);
 
     graphic.clear();
-    graphic.rect(rect.x, rect.y, fillWidth, rect.height);
-    graphic.fill(fill);
+    graphic.roundRect(fillX, fillY, fillWidth, fillHeight, fillRadius);
+    graphic.fill(edge);
+
+    if (innerWidth > 0 && innerHeight > 0) {
+      graphic.roundRect(
+        fillX + edgeInset,
+        fillY + edgeInset,
+        innerWidth,
+        innerHeight,
+        Math.min(innerWidth / 2, innerHeight / 2),
+      );
+      graphic.fill(fill);
+    }
+
     graphic.visible = bar.progress > 0 && fillWidth > 0;
     bar.active = graphic.visible;
 
@@ -384,6 +407,19 @@ export class PixiProgressOverlayManager {
       parseCssColor(stageStyle?.getPropertyValue?.('--style-progress-fill-background')) ??
       parseCssColor(stageStyle?.getPropertyValue?.('--style-text')) ?? {
         color: 0x1a1a1a,
+        alpha: 1,
+      }
+    );
+  }
+
+  readFillEdgeColor(bar) {
+    const fillStyle = bar.fillElement ? this.getComputedStyle(bar.fillElement) : null;
+    const stageStyle = this.stage ? this.getComputedStyle(this.stage) : null;
+
+    return (
+      parseCssColor(fillStyle?.getPropertyValue?.('--style-progress-fill-edge')) ??
+      parseCssColor(stageStyle?.getPropertyValue?.('--style-progress-fill-edge')) ?? {
+        color: 0xbd72f3,
         alpha: 1,
       }
     );

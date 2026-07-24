@@ -128,6 +128,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     setup: 'topPanelQuestProgress',
     aliases: ['questProgress', 'topPanelProgress'],
   },
+  {
+    id: 'bottomRoomTabs',
+    kind: 'preview',
+    setup: 'bottomRoomTabs',
+    aliases: ['roomTabs', 'bottomTabs'],
+  },
   { id: 'workshop', kind: 'page', pageId: 'workshop' },
   { id: 'brewing', kind: 'page', pageId: 'brewing' },
   { id: 'garden', kind: 'page', pageId: 'garden' },
@@ -1733,6 +1739,10 @@ export class DevCheatCommandManager {
       return this.openTopPanelQuestProgressSurface(surface, options);
     }
 
+    if (surface.setup === 'bottomRoomTabs') {
+      return this.openBottomRoomTabsSurface(surface);
+    }
+
     const resolvedOptions = { ...(surface.options ?? {}), ...(options ?? {}) };
     const result =
       surface.kind === 'page'
@@ -1768,6 +1778,22 @@ export class DevCheatCommandManager {
       ...this.decorateUiResult(surface.id, result, surface),
       progress,
     };
+  }
+
+  openBottomRoomTabsSurface(surface) {
+    if (typeof this.pagesFacade?.setBottomRoomTabsPreview !== 'function') {
+      return this.decorateUiResult(
+        surface.id,
+        { ok: false, reason: 'pages_missing' },
+        surface,
+      );
+    }
+
+    return this.decorateUiResult(
+      surface.id,
+      this.pagesFacade.setBottomRoomTabsPreview(true),
+      surface,
+    );
   }
 
   openGuildQuestPostingSurface(surface, options = {}) {

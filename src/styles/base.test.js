@@ -6,6 +6,11 @@ import { describe, expect, it } from 'vitest';
 
 const { PNG } = pngjs;
 const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+const mainJs = readFileSync(`${cwd()}/src/main.js`, 'utf8');
+const rootRunUiRendererSource = readFileSync(
+  `${cwd()}/src/rendering/pixi/RootRunUiRendererManager.js`,
+  'utf8',
+);
 
 function getRuleBody(pattern) {
   return baseCss.match(pattern)?.groups?.body ?? '';
@@ -20,6 +25,138 @@ function findRuleBody(pattern, predicate) {
 }
 
 describe('base styles', () => {
+  it('matches Root Run station-upgrade button press and release motion', () => {
+    const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
+    const releaseRule = getRuleBody(
+      /\.is-press-releasing\s*\{(?<body>[^}]*)\}/,
+    );
+    const releaseKeyframes = baseCss.match(
+      /@keyframes style-button-release-bounce\s*\{[\s\S]*?\n\}/,
+    )?.[0] ?? '';
+    const reducedMotionRule = findRuleBody(
+      /\.is-press-releasing\s*\{(?<body>[^}]*)\}/g,
+      (body) => body.includes('animation: none;'),
+    );
+
+    expect(rootRule).toContain('--style-motion-button-press-in: 55ms;');
+    expect(rootRule).toContain('--style-motion-button-release: 180ms;');
+    expect(rootRule).toContain('--style-press-scale: 0.94;');
+    expect(rootRule).toContain('--style-press-release-peak-scale: 1.055;');
+    expect(releaseRule).toContain(
+      'animation: style-button-release-bounce var(--style-motion-button-release) both;',
+    );
+    expect(releaseKeyframes).toContain('36%');
+    expect(releaseKeyframes).toContain(
+      'scale: var(--style-press-release-peak-scale);',
+    );
+    expect(reducedMotionRule).toContain('animation: none;');
+    expect(reducedMotionRule).toContain('scale: 1;');
+  });
+
+  it('uses matching red and orange notification-circle assets', () => {
+    const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
+    const assetDir = `${cwd()}/assets/game/source/ui`;
+    const red = PNG.sync.read(
+      readFileSync(`${assetDir}/notification-circle-red.png`),
+    );
+    const orange = PNG.sync.read(
+      readFileSync(`${assetDir}/notification-circle-orange.png`),
+    );
+    const centerIndex =
+      (Math.floor(red.height / 2) * red.width + Math.floor(red.width / 2)) * 4;
+
+    expect(baseCss).toContain(
+      '--style-notification-image-red: url("../../assets/game/source/ui/notification-circle-red.png");',
+    );
+    expect(baseCss).toContain(
+      '--style-notification-image-orange: url("../../assets/game/source/ui/notification-circle-orange.png");',
+    );
+    expect(baseCss).toContain(
+      '--style-notification-image-current: var(--style-notification-image-orange);',
+    );
+    expect(
+      [
+        ...baseCss.matchAll(
+          /background:\s*var\(\s*--style-notification-image-current,\s*var\(--style-notification-image\)\s*\)\s*center \/ 100% 100% no-repeat;/g,
+        ),
+      ],
+    ).toHaveLength(5);
+    expect(baseCss).not.toMatch(
+      /background:\s*var\(\s*--style-notification-current(?:,\s*var\(--style-notification\))?\s*\);/,
+    );
+    expect(rootRunUiRendererSource).toContain(
+      'extractCssUrls(style.backgroundImage)',
+    );
+    expect(rootRunUiRendererSource).toContain(
+      'new this.runtime.Sprite(texture)',
+    );
+    expect(rootRunUiRendererSource).not.toMatch(
+      /drawNotification(?:Dot|Badge)[\s\S]*?\.circle\(/,
+    );
+    const notificationSize = Number(
+      rootRule.match(/--style-notification-size:\s*([\d.]+)px;/)?.[1],
+    );
+    expect(notificationSize).toBeCloseTo(9.569444, 6);
+    expect(rootRule).toContain(
+      '--style-notification-offset: calc(var(--style-notification-size) / 2);',
+    );
+    expect([red.width, red.height]).toEqual([61, 65]);
+    expect([orange.width, orange.height]).toEqual([red.width, red.height]);
+    expect([...red.data.slice(centerIndex, centerIndex + 4)]).toEqual([
+      232, 27, 27, 255,
+    ]);
+    expect([...orange.data.slice(centerIndex, centerIndex + 4)]).toEqual([
+      214, 106, 0, 255,
+    ]);
+
+    for (let index = 0; index < red.data.length; index += 4) {
+      expect(orange.data[index + 3]).toBe(red.data[index + 3]);
+
+      const redChannels = [
+        red.data[index],
+        red.data[index + 1],
+        red.data[index + 2],
+      ];
+      const isNeutralPixel =
+        Math.max(...redChannels) - Math.min(...redChannels) <= 2;
+
+      if (isNeutralPixel) {
+        expect([...orange.data.slice(index, index + 3)]).toEqual(redChannels);
+      }
+    }
+  });
+
+  it('keeps resource and currency text on normal component colors', () => {
+    expect(baseCss).not.toMatch(/--style-resource-(?:mana|coin|crystal|emerald|ruby|seed|herb)\s*:/);
+    expect(baseCss).not.toMatch(
+      /\bcolor:\s*var\(--(?:style-resource-(?:mana|coin|crystal|emerald|ruby|seed|herb)|guild-page-paper-(?:coin|seed|herb)|color-preview-(?:mana|coin|seed|herb))\);/,
+    );
+    expect(baseCss).not.toMatch(/data-drop-(?:weight|rate)-color/);
+  });
+
+  it('bundles and applies the Root Run Lilita One font', () => {
+    const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
+    const lilitaRule = getRuleBody(
+      /:root\[data-style-font="lilita-one"\]\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(mainJs).toContain("import '@fontsource/lilita-one/latin-400.css';");
+    expect(rootRule).toContain(
+      '--style-font:\n    "Lilita One", "Arial Black", Arial,',
+    );
+    expect(lilitaRule).toContain(
+      '"Lilita One", "Arial Black", Arial,',
+    );
+  });
+
+  it('uses a 4px black outline on shared cost-button text', () => {
+    const costButtonRule = getRuleBody(
+      /\.style-button\.style-cost-button\.style-cost-button\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(costButtonRule).toContain('-webkit-text-stroke: 4px #0a0a0a;');
+  });
+
   it('opens the Garden in its settled state without a page-entry animation', () => {
     const gardenPageRule = getRuleBody(/\.garden-page\s*\{(?<body>[^}]*)\}/);
 
@@ -27,7 +164,7 @@ describe('base styles', () => {
     expect(gardenPageRule).not.toContain('animation:');
   });
 
-  it('uses stroked box and dialog titles only in the root fallback', () => {
+  it('uses stroked box and dialog titles without a background', () => {
     const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
     const nonWhiteThemeRule = getRuleBody(
       /:root\[data-style-theme="black"\],\s*:root\[data-style-theme="midnight"\],\s*:root\[data-style-theme="witchcraft"\]\s*\{(?<body>[^}]*)\}/,
@@ -47,8 +184,8 @@ describe('base styles', () => {
     expect(rootRule).toContain(
       '0 1px 0 var(--style-title-text-stroke-color),',
     );
-    expect(nonWhiteThemeRule).toContain('--style-title-text-stroke-width: 0px;');
-    expect(nonWhiteThemeRule).toContain('--style-title-text-stroke-shadow: none;');
+    expect(nonWhiteThemeRule).not.toContain('--style-title-text-stroke-width: 0px;');
+    expect(nonWhiteThemeRule).not.toContain('--style-title-text-stroke-shadow: none;');
     expect(titleRule).toContain(
       '-webkit-text-stroke: var(--style-title-text-stroke-width)',
     );
@@ -60,9 +197,139 @@ describe('base styles', () => {
     expect(titleRule).toContain(
       'text-shadow: var(--style-title-text-stroke-shadow);',
     );
-    expect(titleRule).toContain('background: var(--style-surface);');
+    expect(titleRule).toContain('background: transparent;');
     expect(dialogTitleRule).toContain(
       'font-size: var(--style-dialog-title-font-size);',
+    );
+  });
+
+  it('uses the shared Root Run Expedition shell, blue title plaque, paper panel, and detached close asset', () => {
+    const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
+    const dialogRule = getRuleBody(
+      /:root\s+\.style-dialog:not\(\.first-run-intro__panel\):not\(\.style-dialog--system\)\s*\{(?<body>[^}]*)\}/,
+    );
+    const backRule = getRuleBody(
+      /:root\s+\.style-dialog:not\(\.first-run-intro__panel\):not\(\.style-dialog--system\)::before\s*\{(?<body>[^}]*)\}/,
+    );
+    const paperRule = getRuleBody(
+      /:root\s+\.style-dialog:not\(\.first-run-intro__panel\):not\(\.style-dialog--system\)::after\s*\{(?<body>[^}]*)\}/,
+    );
+    const titleRule = getRuleBody(
+      /:root\s+\.style-dialog:not\(\.first-run-intro__panel\):not\(\.style-dialog--system\)\s+> \.style-box__title\s*\{(?<body>[^}]*)\}/,
+    );
+    const closeRule = getRuleBody(
+      /\.game-stage[\s\S]*?button:is\(\[class\*="__close"\], \[class\*="-close"\]\):not\([\s\S]*?\.guild-page__close\s*\{(?<body>[^}]*)\}/,
+    );
+    const researchDialogRule = getRuleBody(
+      /\.style-dialog\.research-page__info-dialog\s*\{(?<body>[^}]*)\}/,
+    );
+    const assetDir = `${cwd()}/assets/game/source/ui/root-run-dialog`;
+    const back = PNG.sync.read(
+      readFileSync(`${assetDir}/expedition-dialog-back.png`),
+    );
+    const title = PNG.sync.read(
+      readFileSync(`${assetDir}/expedition-dialog-title-blue.png`),
+    );
+    const paper = PNG.sync.read(
+      readFileSync(`${assetDir}/expedition-dialog-front.png`),
+    );
+    const close = PNG.sync.read(
+      readFileSync(`${assetDir}/expedition-dialog-close.png`),
+    );
+
+    expect(rootRule).toContain(
+      '--style-dialog-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-back.png");',
+    );
+    expect(rootRule).toContain('--style-dialog-frame-slice: 139 163 83 83 fill;');
+    expect(rootRule).toContain(
+      '--style-dialog-paper-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-front.png");',
+    );
+    expect(rootRule).toContain('--style-dialog-paper-frame-slice: 99 53 72 84 fill;');
+    expect(rootRule).toContain(
+      '--style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-blue.png");',
+    );
+    expect(rootRule).toContain('--style-dialog-title-frame-slice: 0 132 0 85 fill;');
+    expect(rootRule).toContain('--style-dialog-title-fill: #2783d9;');
+    expect(rootRule).toContain(
+      '--style-dialog-title-overhang: calc(61px * 390 / 1080);',
+    );
+    expect(rootRule).toContain(
+      '--style-dialog-paper-inset-top: calc(85px * 390 / 1080);',
+    );
+    expect(rootRule).toContain(
+      '--style-dialog-paper-inset-bottom: calc(57px * 390 / 1080);',
+    );
+    expect(rootRule).toContain(
+      '--style-dialog-title-text-size: calc(64px * 390 / 1080);',
+    );
+    expect(rootRule).toContain(
+      '--style-dialog-title-text-stroke: calc(8px * 390 / 1080);',
+    );
+    expect(rootRule).toContain(
+      '--style-dialog-close-image: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-close.png");',
+    );
+    expect(dialogRule).toContain('color: var(--style-dialog-ink);');
+    expect(dialogRule).toContain('background: transparent;');
+    expect(backRule).toContain('border-image-source: var(--style-dialog-frame);');
+    expect(backRule).toContain('background: transparent;');
+    expect(paperRule).toContain('var(--style-dialog-paper-inset-top)');
+    expect(paperRule).toContain('var(--style-dialog-paper-inset-x)');
+    expect(paperRule).toContain('var(--style-dialog-paper-inset-bottom)');
+    expect(paperRule).toContain(
+      'border-image-source: var(--style-dialog-paper-frame);',
+    );
+    expect(paperRule).toContain('background: transparent;');
+    expect(titleRule).toContain(
+      'border-image-source: var(--style-dialog-title-frame);',
+    );
+    expect(titleRule).toContain('color: #fff;');
+    expect(titleRule).toContain(
+      'var(--style-dialog-title-overhang)',
+    );
+    expect(titleRule).toContain(
+      'font-size: var(--style-dialog-title-text-size);',
+    );
+    expect(titleRule).toContain(
+      'line-height: var(--style-dialog-title-text-height);',
+    );
+    expect(titleRule).toContain(
+      '-webkit-text-stroke: var(--style-dialog-title-text-stroke) #0a0a0a;',
+    );
+    expect(titleRule).toContain('font-weight: 400;');
+    expect(titleRule).toContain('place-items: start center;');
+    expect(titleRule).toContain('background: transparent;');
+    expect(researchDialogRule).toContain('width: 304px;');
+    expect(researchDialogRule).toContain('min-height: 53px;');
+    expect(researchDialogRule).toContain(
+      'padding-top: calc(var(--style-dialog-padding) + 5px);',
+    );
+    expect(researchDialogRule).toContain(
+      'padding-bottom: calc(var(--style-dialog-padding) - 5px);',
+    );
+    expect(researchDialogRule).toContain('align-content: center;');
+    expect(closeRule).toContain(
+      'background: transparent var(--style-dialog-close-image) center / contain no-repeat;',
+    );
+    expect(closeRule).toContain(
+      'top: calc(100% + var(--style-dialog-frame-outset) + var(--style-dialog-close-gap));',
+    );
+    expect(closeRule).toContain('left: 50%;');
+    expect(closeRule).toContain('transform: translateX(-50%);');
+    expect([back.width, back.height]).toEqual([247, 223]);
+    expect([paper.width, paper.height]).toEqual([138, 172]);
+    expect([title.width, title.height]).toEqual([218, 121]);
+    expect([close.width, close.height]).toEqual([122, 122]);
+    expect(rootRunUiRendererSource).toMatch(
+      /this\.syncPseudo\(\s*element,\s*'before'/,
+    );
+    expect(rootRunUiRendererSource).toMatch(
+      /this\.syncPseudo\(\s*element,\s*'after'/,
+    );
+    expect(rootRunUiRendererSource).toContain(
+      'parseBorderImageSlice(',
+    );
+    expect(rootRunUiRendererSource).toContain(
+      'new this.runtime.NineSliceSprite({',
     );
   });
 
@@ -87,10 +354,10 @@ describe('base styles', () => {
     );
 
     expect(rootRule).toContain(
-      '--style-midnight-panel-frame: url("/ui/player-card-panel-9slice.png");',
+      '--style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel-9slice.png");',
     );
     expect(rootRule).toContain(
-      '--style-midnight-panel-selected-frame: url("/ui/player-card-panel-selected-9slice.png");',
+      '--style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected-9slice.png");',
     );
     expect(sharedFrameRule).toContain(
       'border-image-source: var(--style-midnight-panel-frame);',
@@ -105,15 +372,255 @@ describe('base styles', () => {
     expect(globalButtonFrameRule).toBeUndefined();
   });
 
+  it('uses dark and light Root Run button skins for shared tab states', () => {
+    const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
+    const deselectedTabRule = getRuleBody(
+      /\.style-button\[role="tab"\]\s*\{(?<body>[^}]*)\}/,
+    );
+    const selectedTabRule = getRuleBody(
+      /\.style-button\[role="tab"\]\[aria-selected="true"\]\s*\{(?<body>[^}]*)\}/,
+    );
+    const midnightDeselectedTabRule = getRuleBody(
+      /:root\[data-style-theme="midnight"\]\s+\.style-button\[role="tab"\]\s*\{(?<body>[^}]*)\}/,
+    );
+    const midnightSelectedTabRule = getRuleBody(
+      /:root\[data-style-theme="midnight"\]\s+\.style-button\[role="tab"\]\[aria-selected="true"\]\s*\{(?<body>[^}]*)\}/,
+    );
+    const assetDir = `${cwd()}/assets/game/source/ui/root-run-cost-button`;
+    const source = PNG.sync.read(
+      readFileSync(`${assetDir}/yellow-button-9slice.png`),
+    );
+    const light = PNG.sync.read(
+      readFileSync(`${assetDir}/brown-button-light-9slice.png`),
+    );
+    const dark = PNG.sync.read(
+      readFileSync(`${assetDir}/brown-button-dark-9slice.png`),
+    );
+
+    expect(rootRule).toContain(
+      '--style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-dark-9slice.png");',
+    );
+    expect(rootRule).toContain(
+      '--style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-light-9slice.png");',
+    );
+    expect(rootRule).toContain(
+      '--style-tab-frame-slice: var(--style-yellow-button-frame-slice);',
+    );
+    expect(rootRule).toContain(
+      '--style-tab-frame-width: var(--style-yellow-button-frame-width);',
+    );
+    expect(deselectedTabRule).toContain(
+      'border-image-source: var(--style-tab-frame);',
+    );
+    expect(deselectedTabRule).toContain(
+      'border-image-slice: var(--style-tab-frame-slice);',
+    );
+    expect(deselectedTabRule).toContain(
+      'border-image-width: var(--style-tab-frame-width);',
+    );
+    expect(selectedTabRule).toContain(
+      'border-image-source: var(--style-tab-selected-frame);',
+    );
+    expect(midnightDeselectedTabRule).toContain(
+      'border-image-source: var(--style-tab-frame);',
+    );
+    expect(midnightSelectedTabRule).toContain(
+      'border-image-source: var(--style-tab-selected-frame);',
+    );
+    expect([dark.width, dark.height]).toEqual([source.width, source.height]);
+    expect([light.width, light.height]).toEqual([source.width, source.height]);
+
+    for (const button of [dark, light]) {
+      let alphaMatches = true;
+      for (let index = 3; index < source.data.length; index += 4) {
+        if (button.data[index] !== source.data[index]) {
+          alphaMatches = false;
+          break;
+        }
+      }
+      expect(alphaMatches).toBe(true);
+    }
+  });
+
+  it('uses the yellow Root Run configuration for regular buttons', () => {
+    const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
+    const yellowButtonRule = getRuleBody(
+      /:root\s+\.style-button\.style-button--yellow\s*\{(?<body>[^}]*)\}/,
+    );
+    const brownDarkButtonRule = getRuleBody(
+      /:root\s+\.style-button\.style-button--brown-dark\s*\{(?<body>[^}]*)\}/,
+    );
+    const brownButtonRule = getRuleBody(
+      /:root\s+\.style-button\.style-button--brown-dark,\s*:root\s+\.style-button\.style-button--brown-light\s*\{(?<body>[^}]*)\}/,
+    );
+    const disabledRegularButtonRule = getRuleBody(
+      /:root\s+\.style-button:is\(\s*\.style-button--yellow,[\s\S]*?\):is\(\s*\[aria-disabled="true"\],[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
+    );
+    const assetDir = `${cwd()}/assets/game/source/ui/root-run-cost-button`;
+    const green = PNG.sync.read(
+      readFileSync(`${assetDir}/green-button-9slice.png`),
+    );
+    const yellow = PNG.sync.read(
+      readFileSync(`${assetDir}/yellow-button-9slice.png`),
+    );
+
+    expect(rootRule).toContain(
+      '--style-yellow-button-frame: url("../../assets/game/source/ui/root-run-cost-button/yellow-button-9slice.png");',
+    );
+    expect(rootRule).toContain(
+      '--style-yellow-button-frame-slice: 100 43 68 115 fill;',
+    );
+    expect(yellowButtonRule).toContain(
+      'border-image-source: var(--style-yellow-button-frame);',
+    );
+    expect(yellowButtonRule).toContain(
+      'border-image-slice: var(--style-yellow-button-frame-slice);',
+    );
+    expect(yellowButtonRule).toContain(
+      'border-image-width: var(--style-yellow-button-frame-width);',
+    );
+    expect(yellowButtonRule).toContain(
+      '-webkit-text-stroke: 4px var(--style-yellow-button-text-stroke);',
+    );
+    expect(brownDarkButtonRule).toContain(
+      'border-image-source: var(--style-tab-frame);',
+    );
+    expect(brownButtonRule).toContain(
+      'border-image-slice: var(--style-tab-frame-slice);',
+    );
+    expect(disabledRegularButtonRule).toContain('filter: grayscale(1);');
+    expect([yellow.width, yellow.height]).toEqual([green.width, green.height]);
+
+    let alphaMatches = true;
+    for (let index = 3; index < green.data.length; index += 4) {
+      if (green.data[index] !== yellow.data[index]) {
+        alphaMatches = false;
+        break;
+      }
+    }
+    expect(alphaMatches).toBe(true);
+    const yellowColors = new Set();
+    for (let index = 0; index < yellow.data.length; index += 4) {
+      yellowColors.add(
+        `${yellow.data[index]},${yellow.data[index + 1]},${yellow.data[index + 2]},${yellow.data[index + 3]}`,
+      );
+    }
+    expect(yellowColors.has('222,164,85,255')).toBe(true);
+    expect(yellowColors.has('236,222,98,255')).toBe(true);
+  });
+
+  it('uses the Root Run shop tile as the shared inner-section frame', () => {
+    const selectableThemeRule = getRuleBody(
+      /:root\[data-style-theme="black"\],\s*:root\[data-style-theme="midnight"\],\s*:root\[data-style-theme="witchcraft"\]\s*\{(?<body>[^}]*)\}/,
+    );
+    const innerSectionRule = findRuleBody(
+      /:root\[data-style-theme="black"\]\s+\.style-box:not\(\.tutorial-layer__hint\):not\(\.tutorial-layer__lesson\),[\s\S]*?:root\[data-style-theme="witchcraft"\]\s+\.style-panel\.room-top-panel\s*\{(?<body>[^}]*)\}/g,
+      (body) =>
+        body.includes(
+          'border-image-source: var(--style-inner-section-frame);',
+        ),
+    );
+    const themeAssets = ['black', 'midnight', 'witchcraft'].map((theme) =>
+      PNG.sync.read(
+        readFileSync(
+          `${cwd()}/assets/game/source/ui/inner-section-panel-${theme}-9slice.png`,
+        ),
+      ),
+    );
+
+    expect(baseCss).toContain(
+      '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-black-9slice.png");',
+    );
+    expect(baseCss).toContain('--style-inner-section-fill: #4b4b4b;');
+    expect(baseCss).toContain(
+      '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-midnight-9slice.png");',
+    );
+    expect(baseCss).toContain('--style-inner-section-fill: #242938;');
+    expect(baseCss).toContain(
+      '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-witchcraft-9slice.png");',
+    );
+    expect(baseCss).toContain('--style-inner-section-fill: #4c335a;');
+    expect(selectableThemeRule).toContain(
+      '--style-inner-section-frame-slice: 91 73 90 83 fill;',
+    );
+    expect(selectableThemeRule).toContain(
+      '--style-inner-section-frame-width:\n' +
+        '    calc(91px * 390 / 1080) calc(73px * 390 / 1080)\n' +
+        '    calc(90px * 390 / 1080) calc(83px * 390 / 1080);',
+    );
+    expect(innerSectionRule).toContain(
+      'background: var(--style-inner-section-fill);',
+    );
+    expect(innerSectionRule).toContain(
+      'border-image-source: var(--style-inner-section-frame);',
+    );
+    expect(innerSectionRule).toContain(
+      'border-image-slice: var(--style-inner-section-frame-slice);',
+    );
+    expect(innerSectionRule).toContain(
+      'border-image-width: var(--style-inner-section-frame-width);',
+    );
+    expect(innerSectionRule).toContain('border-radius: 16px;');
+    expect(baseCss).toContain(
+      ':root[data-style-theme="black"] .style-panel.room-top-panel,',
+    );
+    expect(baseCss).toContain(
+      ':root[data-style-theme="midnight"] .style-panel.room-top-panel,',
+    );
+    expect(baseCss).toContain(
+      ':root[data-style-theme="witchcraft"] .style-panel.room-top-panel {',
+    );
+
+    const alphaMasks = themeAssets.map((png) => {
+      expect(png.width).toBe(157);
+      expect(png.height).toBe(182);
+      expect(png.data[3]).toBe(0);
+      expect(png.data[((91 * png.width + 83) * 4) + 3]).toBe(255);
+
+      return Array.from(png.data).filter((_, index) => index % 4 === 3);
+    });
+
+    expect(alphaMasks[1]).toEqual(alphaMasks[0]);
+    expect(alphaMasks[2]).toEqual(alphaMasks[0]);
+
+    const midnightCenterOffset = ((91 * themeAssets[1].width + 83) * 4);
+    expect(
+      Array.from(
+        themeAssets[1].data.subarray(
+          midnightCenterOffset,
+          midnightCenterOffset + 4,
+        ),
+      ),
+    ).toEqual([36, 41, 56, 255]);
+    const midnightFillPixelCount = Array.from(
+      { length: themeAssets[1].data.length / 4 },
+      (_, pixelIndex) => pixelIndex * 4,
+    ).filter(
+      (offset) =>
+        themeAssets[1].data[offset] === 36 &&
+        themeAssets[1].data[offset + 1] === 41 &&
+        themeAssets[1].data[offset + 2] === 56 &&
+        themeAssets[1].data[offset + 3] === 255,
+    ).length;
+    expect(midnightFillPixelCount).toBe(17_873);
+
+    const witchcraftCenterOffset = ((91 * themeAssets[2].width + 83) * 4);
+    expect(
+      Array.from(
+        themeAssets[2].data.subarray(
+          witchcraftCenterOffset,
+          witchcraftCenterOffset + 4,
+        ),
+      ),
+    ).toEqual([76, 51, 90, 255]);
+  });
+
   it('keeps midnight 9-slice transparent corners clear of rectangular backing fills', () => {
     const sharedFrameRule = getRuleBody(
       /:root\[data-style-theme="midnight"\]\s*:where\(\s*\.style-panel,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
     );
     const controlFrameRule = getRuleBody(
       /:root\[data-style-theme="midnight"\]\s*:where\(\s*\.style-button,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
-    );
-    const progressFrameRule = getRuleBody(
-      /:root\[data-style-theme="midnight"\]\s*:is\(\.style-progress\)\s*\{(?<body>[^}]*)\}/,
     );
     const activeControlRule = getRuleBody(
       /:root\[data-style-theme="midnight"\]\s*\.style-button:is\(:active, \.is-pressing\)[\s\S]*?\.workshop-page__summon-button-text\s*\{(?<body>[^}]*)\}/,
@@ -126,9 +633,76 @@ describe('base styles', () => {
     expect(sharedFrameRule).toContain('background-clip: padding-box;');
     expect(sharedFrameRule).not.toContain('background: var(--style-surface);');
     expect(controlFrameRule).toContain('background: transparent;');
-    expect(progressFrameRule).toContain('background: transparent;');
     expect(activeControlRule).toContain('background: transparent;');
     expect(dialogBackingRule).toContain('background: transparent;');
+  });
+
+  it('uses the shared purple Root Rush capsule for progress rails', () => {
+    const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
+    const progressRule = getRuleBody(/\.style-progress\s*\{(?<body>[^}]*)\}/);
+    const fillRule = getRuleBody(/\.style-progress__fill\s*\{(?<body>[^}]*)\}/);
+
+    expect(rootRule).toContain('--style-progress-rail-border-width: 1px;');
+    expect(rootRule).toContain('--style-progress-height: 8px;');
+    expect(rootRule).toContain('--style-progress-top-panel-height: 12px;');
+    expect(rootRule).toContain('--style-progress-knob-size: 14px;');
+    expect(rootRule).toContain('--style-progress-knob-fill: #fee5c3;');
+    expect(rootRule).toContain('--style-progress-knob-border: #ceac82;');
+    expect(rootRule).toContain('--style-progress-knob-ring: #241b14;');
+    expect(rootRule).toContain('--style-progress-root-fill: #8740df;');
+    expect(rootRule).toContain('--style-progress-root-edge: #bd72f3;');
+    expect(rootRule).toContain('--style-progress-blue-fill: #2d8fe6;');
+    expect(rootRule).toContain('--style-progress-blue-edge: #72c8ff;');
+    expect(rootRule).toContain('--style-progress-green-fill: #4aa83f;');
+    expect(rootRule).toContain('--style-progress-green-edge: #8bdc69;');
+    expect(rootRule).toContain('--style-progress-yellow-fill: #d8ad32;');
+    expect(rootRule).toContain('--style-progress-yellow-edge: #f6d86a;');
+    expect(progressRule).toContain('background: var(--style-progress-rail-background);');
+    expect(progressRule).toContain('border: var(--style-progress-rail-border);');
+    expect(progressRule).toContain('border-radius: 999px;');
+    expect(progressRule).toContain('border-image: none;');
+    expect(fillRule).toContain('top: 1px;');
+    expect(fillRule).toContain('bottom: 1px;');
+    expect(fillRule).toContain('left: 1px;');
+    expect(fillRule).toContain('max-width: calc(100% - 2px);');
+    expect(fillRule).toContain('border-radius: 999px;');
+    expect(fillRule).not.toContain('scaleX');
+  });
+
+  it('colors progress by room while preserving purple shared chrome', () => {
+    const brewingRule = findRuleBody(
+      /\.brewing-page,\s*\.brewing-page__popup-layer\s*\{(?<body>[^}]*)\}/g,
+      (body) => body.includes('--style-progress-root-fill'),
+    );
+    const gardenRule = findRuleBody(
+      /\.garden-page,\s*\.garden-page__popup-layer\s*\{(?<body>[^}]*)\}/g,
+      (body) => body.includes('--style-progress-root-fill'),
+    );
+    const yellowRoomRule = getRuleBody(
+      /\.research-page,\s*\.research-page__popup-layer,\s*\.shop-page,\s*\.shop-page__popup-layer\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(brewingRule).toContain(
+      '--style-progress-root-fill: var(--style-progress-blue-fill);',
+    );
+    expect(brewingRule).toContain(
+      '--style-progress-root-edge: var(--style-progress-blue-edge);',
+    );
+    expect(gardenRule).toContain(
+      '--style-progress-root-fill: var(--style-progress-green-fill);',
+    );
+    expect(gardenRule).toContain(
+      '--style-progress-root-edge: var(--style-progress-green-edge);',
+    );
+    expect(yellowRoomRule).toContain(
+      '--style-progress-root-fill: var(--style-progress-yellow-fill);',
+    );
+    expect(yellowRoomRule).toContain(
+      '--style-progress-root-edge: var(--style-progress-yellow-edge);',
+    );
+    expect(baseCss).toMatch(
+      /:root\[data-style-progress="regular"\][\s\S]*?:is\([\s\S]*?\.brewing-page__popup-layer,[\s\S]*?\.shop-page__popup-layer[\s\S]*?\)\s*\{[\s\S]*?--style-progress-fill-background:\s*var\(--style-progress-root-fill\);[\s\S]*?--style-progress-fill-edge:\s*var\(--style-progress-root-edge\);/,
+    );
   });
 
   it('keeps first-run cutscene art fixed to the authored source width', () => {
@@ -234,13 +808,13 @@ describe('base styles', () => {
     );
 
     expect(introSkinRule).toContain(
-      '--intro-dialog-panel-frame: url("/ui/intro-dialog-panel-9slice.png");',
+      '--intro-dialog-panel-frame: url("../../assets/game/source/ui/intro-dialog-panel-9slice.png");',
     );
     expect(introSkinRule).toContain(
-      '--intro-dialog-tab-frame: url("/ui/intro-dialog-header-tab-9slice-v2.png");',
+      '--intro-dialog-tab-frame: url("../../assets/game/source/ui/intro-dialog-header-tab-9slice-v2.png");',
     );
     expect(introSkinRule).toContain(
-      '--intro-dialog-button-frame: url("/ui/intro-dialog-button-9slice.png");',
+      '--intro-dialog-button-frame: url("../../assets/game/source/ui/intro-dialog-button-9slice.png");',
     );
     expect(introSkinRule).toContain(
       '--intro-dialog-panel-slice: 31 29 31 29 fill;',
@@ -331,7 +905,7 @@ describe('base styles', () => {
 
   it('keeps the intro header top stretch band free of line artifacts', () => {
     const header = PNG.sync.read(
-      readFileSync(`${cwd()}/public/ui/intro-dialog-header-tab-9slice-v2.png`),
+      readFileSync(`${cwd()}/assets/game/source/ui/intro-dialog-header-tab-9slice-v2.png`),
     );
     const xStart = 29;
     const xEnd = header.width - 29;
@@ -405,7 +979,7 @@ describe('base styles', () => {
   });
 
   it('keeps guild quest PNG assets free of green-screen matte edges', () => {
-    const assetDir = `${cwd()}/public/ui/guild-quest`;
+    const assetDir = `${cwd()}/assets/game/source/ui/guild-quest`;
     const assetNames = readdirSync(assetDir).filter((name) => name.endsWith('.png'));
     const failures = [];
 
@@ -542,6 +1116,12 @@ describe('base styles', () => {
     const progressRule = getRuleBody(
       /\.shop-page__sell-allocation-progress\s*\{(?<body>[^}]*)\}/,
     );
+    const webkitThumbRule = getRuleBody(
+      /\.shop-page__sell-allocation-range::\s*-webkit-slider-thumb\s*\{(?<body>[^}]*)\}/,
+    );
+    const mozThumbRule = getRuleBody(
+      /\.shop-page__sell-allocation-range::\s*-moz-range-thumb\s*\{(?<body>[^}]*)\}/,
+    );
     const midnightRowFrameRule = getRuleBody(
       /:root\[data-style-theme="midnight"\]\s*\.shop-page__sell-current,[\s\S]*?\.shop-page__sell-item-button\s*\{(?<body>[^}]*)\}/,
     );
@@ -552,12 +1132,42 @@ describe('base styles', () => {
     expect(controlRule).toContain('position: relative;');
     expect(progressRule).toContain('position: absolute;');
     expect(progressRule).toContain('pointer-events: none;');
+    expect(progressRule).toContain(
+      'right: calc(var(--style-progress-knob-size) / 2);',
+    );
+    for (const thumbRule of [webkitThumbRule, mozThumbRule]) {
+      expect(thumbRule).toContain('width: var(--style-progress-knob-size);');
+      expect(thumbRule).toContain('height: var(--style-progress-knob-size);');
+      expect(thumbRule).toContain(
+        'background: var(--style-progress-knob-fill);',
+      );
+      expect(thumbRule).toContain(
+        'border: 1px solid var(--style-progress-knob-border);',
+      );
+      expect(thumbRule).toContain('border-radius: 50%;');
+      expect(thumbRule).toContain(
+        'box-shadow: 0 0 0 1px var(--style-progress-knob-ring);',
+      );
+    }
     expect(midnightRowFrameRule).toContain('background: transparent;');
     expect(midnightRowFrameRule).toContain(
       'border-image-source: var(--style-midnight-panel-frame);',
     );
     expect(midnightSelectedRowRule).toContain(
       'border-image-source: var(--style-midnight-panel-selected-frame);',
+    );
+  });
+
+  it('plays room entry motion only for the first cached page activation', () => {
+    const cachedPageRule = getRuleBody(
+      /\[data-page-cache-activation="reused"\]\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(cachedPageRule).toContain('--room-page-entry-animation-name: none;');
+    expect(cachedPageRule).toContain('--room-section-entry-animation-name: none;');
+    expect(baseCss.match(/--room-page-entry-animation-name, room-page-enter/g)).toHaveLength(6);
+    expect(baseCss).toContain(
+      '--room-section-entry-animation-name, room-section-enter',
     );
   });
 });

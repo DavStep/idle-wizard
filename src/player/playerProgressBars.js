@@ -3,7 +3,7 @@ export const DEFAULT_PLAYER_PROGRESS_BAR = 'regular';
 export const PLAYER_PROGRESS_BAR_OPTIONS = Object.freeze([
   Object.freeze({
     key: 'regular',
-    label: 'regular',
+    label: 'Root Rush',
   }),
   Object.freeze({
     key: 'gradient',

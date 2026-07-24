@@ -428,7 +428,7 @@ describe('TutorialStepManager', () => {
       }),
     ).toMatchObject({
       id: 'intro-level-requirements',
-      text: "i'll give you one request at a time. complete it to earn xp toward your next level.",
+      text: "I'll give you one request at a time. Complete it to earn xp toward your next level.",
       advanceLabel: 'show request',
       advanceAction: TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS,
     });
@@ -901,7 +901,7 @@ describe('TutorialStepManager', () => {
       }),
     ).toMatchObject({
       id: 'first-sale-complete',
-      text: 'that was coin. coin pays for level-ups. now summon 4 sage seeds to turn in.',
+      text: 'That was a sale. Now summon 4 sage seeds to turn in.',
     });
 
     expect(
@@ -918,7 +918,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('uses seed-source guidance for level 2 coin shortfall after requirements are done', () => {
+  it('ignores stale level 2 coin costs after requirements are done', () => {
     expect(
       getStep({
         snapshot: createLevelTwoSnapshot({
@@ -962,13 +962,13 @@ describe('TutorialStepManager', () => {
       }),
     ).toMatchObject({
       id: 'level-up-two',
-      targetId: 'workshop:summonSeed',
-      hintText: 'summon seed',
-      progressLabel: '0.8/4 coin',
+      targetId: 'workshop:tasks',
+      hintText: "open elara's level 2 request",
+      progressLabel: '1/1 ready',
     });
   });
 
-  it('returns level 2 players to level up after normal market coin is earned', () => {
+  it('targets the level-up control when level 2 requirements are expanded', () => {
     expect(
       getStep({
         snapshot: createLevelTwoSnapshot({
@@ -1106,7 +1106,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('uses seed-only market guidance for the level 3 coin gate', () => {
+  it('ignores stale level 3 coin costs and points back to level-up', () => {
     expect(
       getStep({
         snapshot: createLevelThreeSnapshot({
@@ -1146,8 +1146,8 @@ describe('TutorialStepManager', () => {
       }),
     ).toMatchObject({
       id: 'level-up-three',
-      targetId: 'page:shop',
-      progressLabel: '6.4/8 coin',
+      targetId: 'workshop:tasks',
+      progressLabel: '1/1 ready',
       stepLabel: '23/34',
     });
   });
@@ -1246,7 +1246,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('uses seeds and herbs for the level 4 coin gate', () => {
+  it('ignores stale level 4 coin costs and points back to level-up', () => {
     expect(
       getStep({
         snapshot: createLevelFourSnapshot({
@@ -1286,8 +1286,8 @@ describe('TutorialStepManager', () => {
       }),
     ).toMatchObject({
       id: 'level-up-four',
-      targetId: 'page:shop',
-      progressLabel: '10/16 coin',
+      targetId: 'workshop:tasks',
+      progressLabel: '1/1 ready',
       stepLabel: '29/34',
     });
   });

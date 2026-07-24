@@ -2,7 +2,7 @@
 <html
   lang="en"
   data-style-theme="midnight"
-  data-style-font="lexend"
+  data-style-font="lilita-one"
   data-style-icons="icons"
   data-style-color="resources"
   data-style-progress="regular"
@@ -25,15 +25,16 @@
       }
 
       .game-stage {
-        --design-width: 1080;
-        --design-height: 2170;
-        --source-ui-scale: 3;
-        --app-stage-width: 1080px;
-        --app-stage-height: 2170px;
-        --app-source-ui-screen-width: 1080px;
+        --design-width: 390;
+        --design-height: 844;
+        --source-ui-scale: 1;
+        --style-ui-scale: 1;
+        --app-stage-width: 390px;
+        --app-stage-height: 844px;
+        --app-source-ui-screen-width: 390px;
 
-        width: 1080px;
-        height: 2170px;
+        width: 390px;
+        height: 844px;
         max-width: none;
         max-height: none;
         transform-origin: top left;
@@ -55,7 +56,7 @@
               <span class="shop-page__market-rank"> ★★</span>
             </div>
             <section
-              class="shop-page__market-panel shop-page__market-panel--npm"
+              class="shop-page__market-panel style-page-scroll shop-page__market-panel--npm"
               aria-label="traders"
             ></section>
           </div>
@@ -65,17 +66,17 @@
     </div>
 
     <script type="module">
-      import '@fontsource/lexend/400.css';
-      import '@fontsource/lexend/700.css';
+      import '@fontsource/lilita-one/400.css';
       import { ShopShelfManager } from '/src/pages/shop/managers/ShopShelfManager.js';
+      import { setInfoButtonIcon } from '/src/pages/shared/infoButton.js';
       import { stopTimerProgressFill } from '/src/pages/shared/timerProgress.js';
 
       const recipeViewport = document.querySelector('.recipe-viewport');
       const gameStage = document.querySelector('.game-stage');
       const fitRecipe = () => {
-        const scale = Math.min(window.innerWidth / 1080, window.innerHeight / 2170, 1);
-        recipeViewport.style.width = `${1080 * scale}px`;
-        recipeViewport.style.height = `${2170 * scale}px`;
+        const scale = Math.min(window.innerWidth / 390, window.innerHeight / 844);
+        recipeViewport.style.width = `${390 * scale}px`;
+        recipeViewport.style.height = `${844 * scale}px`;
         gameStage.style.transform = `scale(${scale})`;
       };
       fitRecipe();
@@ -86,10 +87,10 @@
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
         shop: {
           shelf: {
-            maxSlots: 2,
+            maxSlots: 3,
             selectedSlotNumber: 1,
             autoSellSeconds: 5,
-            slotCosts: [0, 0],
+            slotCosts: [0, 0, 0],
             sellKinds: [{ kind: 'seed', label: 'seeds' }],
             sellItems: [
               {
@@ -142,6 +143,11 @@
                 tradedHere: true,
                 sellProgressSeconds: 2.5,
               },
+              {
+                slotNumber: 3,
+                unlocked: true,
+                batchSize: 1,
+              },
             ],
           },
         },
@@ -162,7 +168,10 @@
       const shelfManager = new ShopShelfManager({ gameplayFacade });
       const shelf = shelfManager.mount(panel, popupLayer);
       for (const refs of shelfManager.refs.rows) {
-        if (refs.progressRow.classList.contains('is-paused')) continue;
+        if (
+          refs.progress.hidden ||
+          refs.progressRow.classList.contains('is-paused')
+        ) continue;
         stopTimerProgressFill(refs.progressFill, 0.5);
         refs.progress.setAttribute('aria-valuenow', '50');
         refs.timerValue.textContent = '2s';
@@ -176,9 +185,12 @@
           class="style-button shop-page__ledger-help-button"
           type="button"
           aria-label="how the market ledger works"
-        >[i]</button>
+        ></button>
       `;
       shelf.append(ledgerControls);
+      setInfoButtonIcon(
+        ledgerControls.querySelector('.shop-page__ledger-help-button'),
+      );
     </script>
   </body>
 </html>

@@ -281,7 +281,7 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(instructionRule).toMatch(/\bwhite-space:\s*normal;/);
   });
 
-  it('lets world event use the shared scroll progress flow', () => {
+  it('does not reserve a bottom scroll progress rail for world events', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const progressRule = baseCss.match(
       /\.workshop-page__world-notice-frame\s*\+\s*\.style-scroll-cue-progress\s*\{(?<body>[^}]*)\}/,
@@ -587,7 +587,7 @@ describe('WorkshopWorldNoticeManager', () => {
     parent.querySelector('.workshop-page__world-notice-open').click();
 
     const frame = popupParent.querySelector('.workshop-page__world-notice-frame');
-    expect(frame.classList.contains('style-dialog-scroll')).toBe(true);
+    expect(frame.classList.contains('style-page-scroll')).toBe(true);
     frame.scrollTop = 96;
 
     const nextSnapshot = JSON.parse(JSON.stringify(snapshot));
@@ -628,7 +628,7 @@ describe('WorkshopWorldNoticeManager', () => {
       '.workshop-page__world-notice-leaderboard-rows',
     );
 
-    expect(frame.classList.contains('style-dialog-scroll')).toBe(true);
+    expect(frame.classList.contains('style-page-scroll')).toBe(true);
     expect(rows.classList.contains('workshop-page__leaderboard-rows')).toBe(false);
 
     frame.scrollTop = 118;

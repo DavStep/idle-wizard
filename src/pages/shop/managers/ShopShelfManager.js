@@ -11,6 +11,7 @@ import {
   setTimerProgressFill,
   stopTimerProgressFill,
 } from '../../shared/timerProgress.js';
+import { setInfoButtonIcon } from '../../shared/infoButton.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import {
   getNextNpcDemandWaveInfo,
@@ -93,7 +94,7 @@ export class ShopShelfManager {
     const button = document.createElement('button');
     button.className = 'style-button shop-page__shelf-help-button';
     button.type = 'button';
-    button.textContent = '[i]';
+    setInfoButtonIcon(button);
     button.setAttribute('aria-label', 'how stalls work');
     button.setAttribute('aria-expanded', 'false');
     const tooltip = document.createElement('div');
@@ -294,7 +295,7 @@ export class ShopShelfManager {
     const divider = document.createElement('div');
     divider.className = 'shop-page__sell-divider';
     const itemList = document.createElement('div');
-    itemList.className = 'shop-page__sell-item-list';
+    itemList.className = 'shop-page__sell-item-list style-page-scroll';
     const tabs = document.createElement('div');
     tabs.className = 'shop-page__sell-tabs';
     tabs.setAttribute('role', 'tablist');
@@ -628,8 +629,8 @@ export class ShopShelfManager {
 
   getStallPauseText(slot) {
     if (slot?.tradedHere === false) {
-      const marketName = String(slot.requiredMarket?.name ?? '').trim().toLowerCase();
-      return marketName ? `prestige for ${marketName}` : 'prestige for higher market';
+      const marketName = String(slot.requiredMarket?.name ?? '').trim();
+      return marketName ? `Prestige for ${marketName}` : 'Prestige for higher market';
     }
 
     const sellNeed = normalizeCount(slot?.sellNeed);
@@ -727,10 +728,7 @@ export class ShopShelfManager {
 
     this.refs.allocationRange.disabled = !hasSelection;
     this.refs.allocationRange.value = String(this.draftSellPercentage);
-    this.refs.allocationProgressFill.style.setProperty(
-      '--style-progress-fill-scale',
-      String(this.draftSellPercentage / 100),
-    );
+    this.refs.allocationProgressFill.style.width = `${this.draftSellPercentage}%`;
     this.refs.allocationRange.setAttribute(
       'aria-valuetext',
       hasSelection

@@ -114,7 +114,7 @@ describe('PlayerProfileSubscriptionManager', () => {
     expect(profiles.at(-1)).toEqual({
       username: 'Hex Mage',
       theme: 'midnight',
-      font: 'lexend',
+      font: 'lilita-one',
       colorMode: 'resources',
       character: 'elara',
       usernamePromptSeen: false,

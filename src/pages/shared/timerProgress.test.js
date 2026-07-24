@@ -66,13 +66,13 @@ describe('timerProgress', () => {
       progress: expect.closeTo(0.0667, 4),
       remainingMs: 28_000,
     });
-    expect(fill.style.transform).toBe('scaleX(0.0667)');
+    expect(fill.style.width).toBe('6.6667%');
 
     frameCallback();
 
     expect(fill.classList.contains('is-progress-running')).toBe(true);
-    expect(fill.style.transition).toBe('transform 28000ms linear');
-    expect(fill.style.transform).toBe('scaleX(1)');
+    expect(fill.style.transition).toBe('width 28000ms linear');
+    expect(fill.style.width).toBe('100%');
 
     stopTimerProgressFill(fill, 0);
   });

@@ -1,7 +1,7 @@
-const CASTLE_RUINS_URL = new URL('../assets/castle-ruins.webp', import.meta.url).href;
-const DEMON_DEFEATED_URL = new URL('../assets/demon-defeated.webp', import.meta.url).href;
-const PEACEFUL_WORLD_URL = new URL('../assets/peaceful-world.webp', import.meta.url).href;
-const WORKSHOP_FOR_SALE_URL = new URL('../assets/workshop-for-sale.webp', import.meta.url).href;
+const CASTLE_RUINS_URL = new URL('../../../../assets/game/source/rooms/intro/castle-ruins.webp', import.meta.url).href;
+const DEMON_DEFEATED_URL = new URL('../../../../assets/game/source/rooms/intro/demon-defeated.webp', import.meta.url).href;
+const PEACEFUL_WORLD_URL = new URL('../../../../assets/game/source/rooms/intro/peaceful-world.webp', import.meta.url).href;
+const WORKSHOP_FOR_SALE_URL = new URL('../../../../assets/game/source/rooms/intro/workshop-for-sale.webp', import.meta.url).href;
 
 const INTRO_STEP_EXIT_MS = 180;
 const INTRO_IMAGE_URLS = Object.freeze([
@@ -15,25 +15,25 @@ const INTRO_STEPS = Object.freeze([
   Object.freeze({
     id: 'castle',
     scene: 'castle',
-    text: 'one last battle at the demon lord\'s keep.',
+    text: 'One last battle at the demon lord\'s keep.',
     action: 'next',
   }),
   Object.freeze({
     id: 'defeated',
     scene: 'defeated',
-    text: 'the demon lord has been defeated.',
+    text: 'The demon lord has been defeated.',
     action: 'next',
   }),
   Object.freeze({
     id: 'disbanded',
     scene: 'peace',
-    text: 'peace returned. the wizard army disbanded.',
+    text: 'Peace returned. The wizard army disbanded.',
     action: 'next',
   }),
   Object.freeze({
     id: 'workshop',
     scene: 'workshop',
-    text: 'not every legend ends on a battlefield. some begin with an old workshop.',
+    text: 'Not every legend ends on a battlefield. Some begin with an old workshop.',
     action: 'enter workshop',
   }),
 ]);

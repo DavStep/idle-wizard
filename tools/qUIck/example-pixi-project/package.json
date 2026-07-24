@@ -1,0 +1,22 @@
+{
+  "name": "example-pixi-project",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5181",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -b tsconfig.json",
+    "clean": "powershell -Command \"if (Test-Path dist) { Remove-Item -Recurse -Force dist }\""
+  },
+  "dependencies": {
+    "@figma-pixi/pixi-runtime": "0.0.1",
+    "@figma-pixi/shared": "0.0.1",
+    "pixi.js": "^8.14.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.19"
+  }
+}

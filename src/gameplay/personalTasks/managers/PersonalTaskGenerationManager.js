@@ -88,7 +88,7 @@ export class PersonalTaskGenerationManager {
 
   createPeriodState({ periodType, periodKey, resetAtMs, anchorLevel }) {
     const level = Math.max(PERSONAL_TASK_UNLOCK_LEVEL, Math.floor(Number(anchorLevel) || 0));
-    const completionCostCoin = this.getCompletionCostCoin(level);
+    const levelCoinBudget = this.getLevelCoinBudget(level);
 
     if (periodType === 'weekly') {
       return {
@@ -101,7 +101,7 @@ export class PersonalTaskGenerationManager {
         maxPoints: PERSONAL_TASK_WEEKLY_MAX_POINTS,
         rewards: this.createWeeklyMilestoneRewards({
           anchorLevel: level,
-          completionCostCoin,
+          levelCoinBudget,
         }),
       };
     }
@@ -114,13 +114,13 @@ export class PersonalTaskGenerationManager {
       anchorLevel: level,
       currentPoints: 0,
       maxPoints: PERSONAL_TASK_DAILY_MAX_POINTS,
-      rewards: this.createDailyMilestoneRewards({ completionCostCoin }),
-      tasks: this.createDailyTasks({ periodKey, anchorLevel: level, completionCostCoin }),
+      rewards: this.createDailyMilestoneRewards({ levelCoinBudget }),
+      tasks: this.createDailyTasks({ periodKey, anchorLevel: level, levelCoinBudget }),
     };
   }
 
-  createDailyTasks({ periodKey, anchorLevel, completionCostCoin }) {
-    const targets = this.getTargets(anchorLevel, completionCostCoin);
+  createDailyTasks({ periodKey, anchorLevel, levelCoinBudget }) {
+    const targets = this.getTargets(anchorLevel, levelCoinBudget);
 
     return DAILY_TASK_DEFINITIONS.map((definition) =>
       this.createTask({
@@ -131,21 +131,21 @@ export class PersonalTaskGenerationManager {
     );
   }
 
-  createDailyMilestoneRewards({ completionCostCoin }) {
+  createDailyMilestoneRewards({ levelCoinBudget }) {
     return DAILY_REWARD_MILESTONES.map((milestone) =>
       this.createRewardMilestone({
         threshold: milestone.threshold,
-        coin: this.roundCoin(completionCostCoin * milestone.coinMultiplier),
+        coin: this.roundCoin(levelCoinBudget * milestone.coinMultiplier),
         crystal: milestone.crystal,
       }),
     );
   }
 
-  createWeeklyMilestoneRewards({ anchorLevel, completionCostCoin }) {
+  createWeeklyMilestoneRewards({ anchorLevel, levelCoinBudget }) {
     return WEEKLY_REWARD_MILESTONES.map((milestone) =>
       this.createRewardMilestone({
         threshold: milestone.threshold,
-        coin: this.roundCoin(completionCostCoin * milestone.coinMultiplier),
+        coin: this.roundCoin(levelCoinBudget * milestone.coinMultiplier),
         crystal:
           milestone.crystal === 'weeklyFullClear'
             ? this.getWeeklyFullClearCrystal(anchorLevel)
@@ -178,14 +178,14 @@ export class PersonalTaskGenerationManager {
     };
   }
 
-  getTargets(anchorLevel, completionCostCoin) {
+  getTargets(anchorLevel, levelCoinBudget) {
     const dailySummonSeeds = this.roundToFive(20 + 8 * anchorLevel);
     const dailySpendMana = dailySummonSeeds * 10;
     const dailyPlantSeeds = this.clamp(Math.round(4 + 1.1 * anchorLevel), 6, 45);
     const dailyHarvestHerbs = this.clamp(Math.round(6 + 1.4 * anchorLevel), 8, 60);
     const dailyBrewPotions = this.clamp(Math.round(2 + anchorLevel / 5), 3, 12);
     const dailySellItems = this.roundToFive(15 + 4 * anchorLevel);
-    const dailyEarnCoin = this.roundToFive(0.35 * completionCostCoin);
+    const dailyEarnCoin = this.roundToFive(0.35 * levelCoinBudget);
 
     return {
       dailySummonSeeds,
@@ -198,11 +198,11 @@ export class PersonalTaskGenerationManager {
     };
   }
 
-  getCompletionCostCoin(level) {
-    const cost = this.tasksFacade?.getLevelCompletionCostCoin?.(level);
+  getLevelCoinBudget(level) {
+    const budget = this.tasksFacade?.getLevelCoinBudget?.(level);
 
-    if (Number.isFinite(cost) && cost >= 0) {
-      return Math.floor(cost);
+    if (Number.isFinite(budget) && budget >= 0) {
+      return Math.floor(budget);
     }
 
     return Math.max(0, Math.floor(level * level * 10));

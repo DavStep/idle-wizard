@@ -159,14 +159,24 @@ describe('BottomPanelViewManager', () => {
     );
   });
 
-  it('keeps bottom tab icons from changing bottom-tab height', () => {
+  it('uses raised selected tabs without changing the shared tab-row height', () => {
     const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
     const tabRuleIndex = baseCss.indexOf('.room-bottom-panel__tab {');
     const tabRule = baseCss.slice(tabRuleIndex, baseCss.indexOf('}', tabRuleIndex) + 1);
+    const tabFrameRuleIndex = baseCss.indexOf('.room-bottom-panel__tab::after {');
+    const tabFrameRule = baseCss.slice(
+      tabFrameRuleIndex,
+      baseCss.indexOf('}', tabFrameRuleIndex) + 1,
+    );
     const iconFrameRuleIndex = baseCss.indexOf('.room-bottom-panel__tab-icon-frame {');
     const iconFrameRule = baseCss.slice(
       iconFrameRuleIndex,
       baseCss.indexOf('}', iconFrameRuleIndex) + 1,
+    );
+    const panelRuleIndex = baseCss.indexOf('.style-panel.room-bottom-panel {');
+    const panelRule = baseCss.slice(
+      panelRuleIndex,
+      baseCss.indexOf('}', panelRuleIndex) + 1,
     );
     const labelRuleIndex = baseCss.indexOf('.room-bottom-panel__tab-label {');
     const labelRule = baseCss.slice(
@@ -180,24 +190,44 @@ describe('BottomPanelViewManager', () => {
       selectedRuleIndex,
       baseCss.indexOf('}', selectedRuleIndex) + 1,
     );
+    const selectedFrameRuleIndex = baseCss.indexOf(
+      '.room-bottom-panel__tab.is-selected::after {',
+    );
+    const selectedFrameRule = baseCss.slice(
+      selectedFrameRuleIndex,
+      baseCss.indexOf('}', selectedFrameRuleIndex) + 1,
+    );
     const tabScrollClearance = baseCss.match(
       /--style-page-tab-scroll-clearance:\s*calc\(([\s\S]*?)\);/,
     )?.[1];
 
-    expect(tabRule).toContain('min-height: var(--style-page-tab-button-height);');
-    expect(tabRule).toContain('padding: 1px 2px;');
+    expect(baseCss).toContain('--style-room-tab-active-height: 48px;');
+    expect(baseCss).toContain('--style-room-tab-inactive-height: 38px;');
+    expect(baseCss).toContain('--style-room-tab-bottom-bleed: 18px;');
+    expect(panelRule).toContain('bottom: 5px;');
+    expect(tabRule).toContain('height: var(--style-room-tab-active-height);');
+    expect(tabRule).toContain('min-height: var(--style-room-tab-active-height);');
+    expect(tabRule).toContain('padding: 0 2px;');
     expect(tabRule).toContain('box-sizing: border-box;');
-    expect(tabRule).toContain('flex: 0 0 var(--room-bottom-panel-tab-width);');
-    expect(baseCss).toContain('--style-page-tab-icon-size: calc(38px * 1.3);');
-    expect(baseCss).toContain('--style-page-tab-selected-icon-scale: 1.2;');
-    expect(baseCss).toContain('--style-page-tab-icon-y-offset: 10px;');
-    expect(baseCss).toContain('--style-page-tab-label-y-offset: 7px;');
+    expect(tabRule).toContain('flex: 1 1 0;');
+    expect(tabRule).toContain('margin-left: 0;');
+    expect(tabFrameRule).toContain(
+      'var(--style-room-tab-inactive-height) +',
+    );
+    expect(tabFrameRule).toContain('var(--style-room-tab-bottom-bleed)');
+    expect(tabFrameRule).toContain('border: solid transparent;');
+    expect(tabFrameRule).toContain(
+      'border-image-source: var(--style-room-tab-inactive-frame);',
+    );
+    expect(baseCss).toContain('--style-room-tab-icon-size: 46px;');
+    expect(baseCss).toContain('--style-page-tab-selected-icon-scale: 1.22;');
     expect(baseCss).toContain('--style-page-tab-label-text-stroke-width: 1px;');
     expect(baseCss).toContain(
       '--style-page-tab-label-text-stroke-color: var(--style-surface);',
     );
     expect(tabScrollClearance).not.toContain('style-page-tab-icon');
-    expect(labelRule).toContain('translate: 0 var(--style-page-tab-label-y-offset);');
+    expect(labelRule).toContain('opacity: 0;');
+    expect(labelRule).toContain('visibility: hidden;');
     expect(labelRule).toContain(
       '-webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)',
     );
@@ -206,37 +236,58 @@ describe('BottomPanelViewManager', () => {
       'text-shadow: var(--style-page-tab-label-text-stroke-shadow);',
     );
     expect(iconFrameRule).toContain(
-      'bottom: calc(50% - var(--style-page-tab-icon-center-offset));',
+      'top: calc(var(--style-room-tab-rise) + 5px);',
     );
-    expect(iconFrameRule).toContain(
-      'translate: -50% calc(10% + var(--style-page-tab-icon-y-offset));',
-    );
-    expect(iconFrameRule).toContain('scale: var(--style-page-tab-current-icon-scale, 1);');
-    expect(iconFrameRule).not.toContain('top:');
+    expect(iconFrameRule).toContain('scale: 0.94;');
+    expect(iconFrameRule).toContain('opacity: 0.72;');
     expect(iconRule).toContain('scale: var(--style-page-tab-icon-art-scale, 1);');
-    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 0.68;');
-    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 1.09;');
-    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 1.16;');
-    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 0.76;');
+    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 0.72;');
+    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 1;');
+    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 1.04;');
+    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 0.84;');
+    expect(baseCss).toContain('--style-room-tab-selected-scale: 1;');
+    expect(selectedRule).toContain('scale: var(--style-room-tab-selected-scale);');
     expect(selectedRule).toContain(
-      '--style-page-tab-current-icon-scale: var(--style-page-tab-selected-icon-scale);',
+      'animation: room-bottom-tab-select var(--style-motion-normal)',
+    );
+    expect(selectedFrameRule).toContain('var(--style-room-tab-active-height) +');
+    expect(selectedFrameRule).toContain(
+      'border-image-source: var(--style-room-tab-active-frame);',
+    );
+    expect(baseCss).toContain(
+      '.room-bottom-panel__tab.is-selected .room-bottom-panel__tab-label {',
+    );
+    expect(baseCss).toContain(
+      '.room-bottom-panel__tab.is-selected .room-bottom-panel__tab-icon-frame {',
+    );
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__tab\.is-selected \.room-bottom-panel__tab-icon-frame\s*\{[\s\S]*?top:\s*5px;/,
     );
     expect(selectedRule).toContain('font-weight: 400;');
     expect(selectedRule).not.toContain('font-weight: 700;');
   });
 
-  it('centers unlocked optional room tabs on wrapped bottom-tab rows', () => {
+  it('keeps unlocked optional room tabs on the single bottom baseline', () => {
     const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
     const tabsRuleIndex = baseCss.indexOf('.room-bottom-panel__tabs {');
     const tabsRule = baseCss.slice(
       tabsRuleIndex,
       baseCss.indexOf('}', tabsRuleIndex) + 1,
     );
+    const tabRuleIndex = baseCss.indexOf('.room-bottom-panel__tab {');
+    const tabRule = baseCss.slice(
+      tabRuleIndex,
+      baseCss.indexOf('}', tabRuleIndex) + 1,
+    );
 
-    expect(tabsRule).toContain('--room-bottom-panel-tab-width: calc((100% - 24px) / 5);');
     expect(tabsRule).toContain('display: flex;');
-    expect(tabsRule).toContain('flex-wrap: wrap;');
+    expect(tabsRule).toContain('flex-wrap: nowrap;');
+    expect(tabsRule).toContain('gap: 0;');
     expect(tabsRule).toContain('justify-content: center;');
+    expect(tabRule).toContain('flex: 1 1 0;');
+    expect(baseCss).toContain(
+      '.room-bottom-panel__tab:not([hidden]) ~ .room-bottom-panel__tab:not([hidden]) {',
+    );
   });
 
   it('stacks bottom chrome above normal chrome and below modal layers', () => {
@@ -350,6 +401,7 @@ describe('BottomPanelViewManager', () => {
 
     try {
       const stage = document.createElement('section');
+      stage.className = 'game-stage';
       const manager = new BottomPanelViewManager({
         getCurrentPageId: () => 'workshop',
       });
@@ -374,10 +426,13 @@ describe('BottomPanelViewManager', () => {
 
       expect(gardenTab?.classList.contains('is-locked')).toBe(false);
       expect(gardenTab?.classList.contains('is-receiving-unlock-icon')).toBe(true);
-      expect(document.querySelectorAll('.room-feature-unlock-flyout')).toHaveLength(1);
+      expect(stage.querySelectorAll('.room-feature-unlock-flyout')).toHaveLength(1);
       expect(
-        document.querySelector('.room-feature-unlock-flyout img')?.getAttribute('src'),
+        stage.querySelector('.room-feature-unlock-flyout img')?.getAttribute('src'),
       ).toContain('icon-garden-plot-tab.webp');
+      expect(
+        stage.querySelector('.room-feature-unlock-flyout')?.parentElement,
+      ).toBe(stage);
       expect(animationMock.animate).toHaveBeenCalledTimes(1);
       const [keyframes, options] = animationMock.animate.mock.calls[0];
       expect(keyframes).toHaveLength(11);
@@ -385,7 +440,7 @@ describe('BottomPanelViewManager', () => {
       expect(options).toMatchObject({ duration: 520, easing: 'linear', fill: 'both' });
 
       vi.runOnlyPendingTimers();
-      expect(document.querySelector('.room-feature-unlock-flyout')).toBeNull();
+      expect(stage.querySelector('.room-feature-unlock-flyout')).toBeNull();
       expect(gardenTab?.classList.contains('is-receiving-unlock-icon')).toBe(false);
     } finally {
       vi.runOnlyPendingTimers();
@@ -545,6 +600,9 @@ describe('BottomPanelViewManager', () => {
       expect(
         document.querySelector('.room-feature-unlock-flyout img')?.getAttribute('src'),
       ).toContain('feature-leaderboard.webp');
+      expect(
+        document.querySelector('.room-feature-unlock-flyout')?.parentElement,
+      ).toBe(document.body);
       expect(featureButton.classList.contains('is-receiving-unlock-icon')).toBe(true);
       expect(animationMock.animate).toHaveBeenCalledTimes(1);
     } finally {
@@ -568,7 +626,7 @@ describe('BottomPanelViewManager', () => {
     );
   });
 
-  it('keeps bottom chrome transparent while tabs keep button surfaces', () => {
+  it('keeps bottom chrome transparent while tabs render the Root Run frames', () => {
     const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
     const panelResetIndex = baseCss.lastIndexOf('.style-panel.room-bottom-panel');
     const themedPanelFrameIndex = baseCss.lastIndexOf(
@@ -580,57 +638,104 @@ describe('BottomPanelViewManager', () => {
     );
     const tabBlockIndex = baseCss.indexOf('.room-bottom-panel__tab {');
     const tabBlock = baseCss.slice(tabBlockIndex, baseCss.indexOf('}', tabBlockIndex) + 1);
+    const tabFrameBlockIndex = baseCss.indexOf('.room-bottom-panel__tab::after {');
+    const tabFrameBlock = baseCss.slice(
+      tabFrameBlockIndex,
+      baseCss.indexOf('}', tabFrameBlockIndex) + 1,
+    );
+    const tabSurfaceResetIndex = baseCss.lastIndexOf(
+      '.style-panel.room-bottom-panel .room-bottom-panel__tab,',
+    );
+    const tabSurfaceResetBlock = baseCss.slice(
+      tabSurfaceResetIndex,
+      baseCss.indexOf('}', tabSurfaceResetIndex) + 1,
+    );
 
     expect(panelResetIndex).toBeGreaterThan(themedPanelFrameIndex);
     expect(panelResetBlock).toContain('background: transparent;');
     expect(panelResetBlock).toContain('border-image: none;');
-    expect(tabBlock).toContain('background: var(--style-surface);');
-  });
-
-  it('lets midnight bottom tabs use the box 9-slice without an extra panel fill', () => {
-    const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
-    const tabFrameIndex = baseCss.indexOf(
-      ':root[data-style-theme="midnight"] .room-bottom-panel__tab,',
-    );
-    const tabFrameBlock = baseCss.slice(
-      tabFrameIndex,
-      baseCss.indexOf('}', tabFrameIndex) + 1,
-    );
-    const lockedFrameIndex = baseCss.indexOf(
-      ':root[data-style-theme="midnight"] .room-bottom-panel__tab.is-locked,',
-    );
-    const lockedFrameBlock = baseCss.slice(
-      lockedFrameIndex,
-      baseCss.indexOf('}', lockedFrameIndex) + 1,
-    );
-    const selectedFrameIndex = baseCss.indexOf(
-      ':root[data-style-theme="midnight"] .room-bottom-panel__tab.is-selected {',
-    );
-    const selectedFrameBlock = baseCss.slice(
-      selectedFrameIndex,
-      baseCss.indexOf('}', selectedFrameIndex) + 1,
-    );
-
-    expect(fs.existsSync('public/ui/player-card-panel-selected-9slice.png')).toBe(true);
+    expect(tabSurfaceResetIndex).toBeGreaterThan(themedPanelFrameIndex);
+    expect(tabSurfaceResetBlock).toContain('.is-selected,');
+    expect(tabSurfaceResetBlock).toContain('.is-locked,');
+    expect(tabSurfaceResetBlock).toContain('background: transparent;');
+    expect(tabSurfaceResetBlock).toContain('border: 0;');
+    expect(tabSurfaceResetBlock).toContain('border-image: none;');
+    expect(tabSurfaceResetBlock).toContain('box-shadow: none;');
+    expect(tabBlock).toContain('background: transparent;');
+    expect(tabBlock).toContain('border-image: none;');
+    expect(fs.existsSync('assets/game/source/ui/root-run-room-tab-active.png')).toBe(true);
+    expect(fs.existsSync('assets/game/source/ui/root-run-room-tab-inactive.png')).toBe(true);
     expect(baseCss).toContain(
-      '--style-midnight-panel-selected-frame: url("/ui/player-card-panel-selected-9slice.png");',
+      '--style-room-tab-active-frame: url("../../assets/game/source/ui/root-run-room-tab-active.png");',
     );
-    expect(tabFrameBlock).toContain('background: transparent;');
+    expect(baseCss).toContain(
+      '--style-room-tab-inactive-frame: url("../../assets/game/source/ui/root-run-room-tab-inactive.png");',
+    );
     expect(tabFrameBlock).toContain(
-      'border-image-source: var(--style-midnight-panel-frame);',
+      'border-image-source: var(--style-room-tab-inactive-frame);',
+    );
+    expect(tabFrameBlock).toContain('border-image-slice: 56 61 19 60 fill;');
+    expect(tabFrameBlock).toContain(
+      'border-width: var(--style-room-tab-inactive-border-width);',
     );
     expect(tabFrameBlock).toContain(
-      'border-image-slice: var(--style-midnight-frame-slice);',
+      'border-image-width: var(--style-room-tab-inactive-border-width);',
     );
-    expect(lockedFrameBlock).toContain(
-      'border-image-source: var(--style-midnight-panel-frame);',
+    expect(tabFrameBlock).toContain(
+      'background: var(--style-room-tab-inactive-fill);',
     );
-    expect(selectedFrameBlock).toContain(
-      'border-image-source: var(--style-midnight-panel-selected-frame);',
+    expect(tabFrameBlock).toContain(
+      'border-radius: var(--style-room-tab-inactive-radius)',
+    );
+    expect(tabFrameBlock).toContain(
+      'bottom: calc(-1 * var(--style-room-tab-bottom-bleed));',
     );
   });
 
-  it('appends the gated prestige page only when visible', () => {
+  it('keeps every themed bottom-tab state on the raised Root Run asset skin', () => {
+    const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
+    const tabSurfaceResetIndex = baseCss.lastIndexOf(
+      '.style-panel.room-bottom-panel .room-bottom-panel__tab,',
+    );
+    const tabSurfaceResetBlock = baseCss.slice(
+      tabSurfaceResetIndex,
+      baseCss.indexOf('}', tabSurfaceResetIndex) + 1,
+    );
+
+    expect(tabSurfaceResetBlock).toContain(':active,');
+    expect(tabSurfaceResetBlock).toContain('.is-pressing,');
+    expect(tabSurfaceResetBlock).toContain('.is-selected,');
+    expect(tabSurfaceResetBlock).toContain('.is-locked,');
+    expect(tabSurfaceResetBlock).toContain('.is-swipe-target,');
+    expect(tabSurfaceResetBlock).toContain('.is-swipe-target-locked');
+    expect(tabSurfaceResetBlock).toContain('background: transparent;');
+    expect(tabSurfaceResetBlock).toContain('border: 0;');
+    expect(tabSurfaceResetBlock).toContain('border-image: none;');
+    expect(tabSurfaceResetBlock).toContain('box-shadow: none;');
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__tab\.is-selected::after\s*\{[\s\S]*?border-image-source:\s*var\(--style-room-tab-active-frame\);/,
+    );
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__tab\.is-selected::after\s*\{[\s\S]*?border-image-slice:\s*57 62 21 61 fill;/,
+    );
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__tab\.is-selected::after\s*\{[\s\S]*?border-width:\s*var\(--style-room-tab-active-border-width\);/,
+    );
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__tab\.is-selected::after\s*\{[\s\S]*?background:\s*var\(--style-room-tab-active-fill\);/,
+    );
+    expect(baseCss).toContain('--style-room-tab-active-fill: #6e4627;');
+    expect(baseCss).toContain('--style-room-tab-inactive-fill: #3c2f25;');
+    expect(baseCss).toContain(
+      '--style-room-tab-inactive-border-width:',
+    );
+    expect(baseCss).toContain(
+      '--style-room-tab-active-border-width:',
+    );
+    expect(baseCss).toContain('--style-room-tab-bottom-bleed: 18px;');
+  });
+
+  it('prepends the gated prestige page only when visible', () => {
     const stage = document.createElement('section');
     const onShowPage = vi.fn();
     const manager = new BottomPanelViewManager({
@@ -657,7 +762,18 @@ describe('BottomPanelViewManager', () => {
     manager.setPageStates([{ id: 'prestige', unlocked: true, visible: true }]);
 
     const prestigeButton = stage.querySelector('.room-bottom-panel__prestige-button');
+    const visibleLabels = [...stage.querySelectorAll('.room-bottom-panel__tab')].map(
+      (button) => button.textContent,
+    );
 
+    expect(visibleLabels).toEqual([
+      'prestige',
+      'brewing',
+      'garden',
+      'workshop',
+      'research',
+      'market',
+    ]);
     expect(prestigeButton?.dataset.pageId).toBe('prestige');
     expect(prestigeButton?.dataset.actionId).toBeUndefined();
     expect(

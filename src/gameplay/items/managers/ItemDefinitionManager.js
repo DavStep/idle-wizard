@@ -321,7 +321,7 @@ export class ItemDefinitionManager {
   }
 
   readDisplayLabel(value) {
-    return this.readNonEmptyString(value).toLowerCase();
+    return this.readNonEmptyString(value);
   }
 
   readPositiveInteger(value) {

@@ -1,7 +1,7 @@
 const INVENTORY_ICON_URLS = Object.freeze({
-  herbs: new URL('../../assets/icons/icon-herb-box.png', import.meta.url).href,
-  potions: new URL('../../assets/icons/icon-potion-box.png', import.meta.url).href,
-  seeds: new URL('../../assets/icons/icon-seed-box.png', import.meta.url).href,
+  herbs: new URL('../../../assets/game/source/icons/icon-herb-box.png', import.meta.url).href,
+  potions: new URL('../../../assets/game/source/icons/icon-potion-box.png', import.meta.url).href,
+  seeds: new URL('../../../assets/game/source/icons/icon-seed-box.png', import.meta.url).href,
 });
 
 export class RoomInventoryButtonManager {

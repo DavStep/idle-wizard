@@ -1,4 +1,4 @@
-const CLICK_SAMPLE_URL = new URL('../assets/ui-click-pop.wav', import.meta.url)
+const CLICK_SAMPLE_URL = new URL('../../../../assets/game/source/audio/ui-click-pop.wav', import.meta.url)
   .href;
 const CLICK_MASTER_GAIN = 0.58;
 const CLICK_MIN_INTERVAL_MS = 42;

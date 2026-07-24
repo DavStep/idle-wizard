@@ -9,7 +9,7 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class TasksFacade {
   static explain =
-    'Elara gives the wizard one main request at a time. Each completed request fills one level segment; the separate level-up action pays any required coin.';
+    'Elara gives the wizard one main request at a time. Completing every request makes the next level available.';
 
   constructor({ itemsFacade }) {
     this.taskBalanceManager = new TaskBalanceManager({ itemsFacade });
@@ -83,8 +83,8 @@ export class TasksFacade {
     return this.taskLevelCompletionManager.getCurrentLevelCompletionSnapshot();
   }
 
-  getLevelCompletionCostCoin(levelNumber) {
-    return this.taskBalanceManager.getLevelCompletionCostCoin(levelNumber);
+  getLevelCoinBudget(levelNumber) {
+    return this.taskBalanceManager.getLevelCoinBudget(levelNumber);
   }
 
   completeCurrentLevel() {

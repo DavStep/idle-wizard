@@ -24,21 +24,21 @@ class FakeGraphics {
   constructor() {
     this.visible = true;
     this.destroyed = false;
-    this.rectArgs = null;
-    this.fillArgs = null;
+    this.roundRectCalls = [];
+    this.fillCalls = [];
   }
 
   clear() {
-    this.rectArgs = null;
-    this.fillArgs = null;
+    this.roundRectCalls = [];
+    this.fillCalls = [];
   }
 
-  rect(x, y, width, height) {
-    this.rectArgs = { x, y, width, height };
+  roundRect(x, y, width, height, radius) {
+    this.roundRectCalls.push({ x, y, width, height, radius });
   }
 
   fill(fill) {
-    this.fillArgs = fill;
+    this.fillCalls.push(fill);
   }
 
   destroy() {
@@ -88,12 +88,20 @@ function createManager({ enabled = true } = {}) {
 
       if (element === fill) {
         return {
-          backgroundColor: 'rgb(26, 26, 26)',
+          backgroundColor: 'rgb(135, 64, 223)',
+          getPropertyValue: (name) =>
+            name === '--style-progress-fill-edge' ? '#bd72f3' : '',
         };
       }
 
       return {
-        getPropertyValue: (name) => (name === '--style-text' ? '#1a1a1a' : ''),
+        getPropertyValue: (name) => {
+          if (name === '--style-progress-fill-edge') {
+            return '#bd72f3';
+          }
+
+          return name === '--style-text' ? '#1a1a1a' : '';
+        },
       };
     },
   });
@@ -138,13 +146,26 @@ describe('PixiProgressOverlayManager', () => {
     const overlayRoot = rootLayer.children[0];
     const graphic = overlayRoot.children[0];
 
-    expect(graphic.rectArgs).toEqual({
-      x: 23,
-      y: 43,
-      width: 97,
-      height: 14,
-    });
-    expect(graphic.fillArgs).toEqual({ color: 0x1a1a1a, alpha: 1 });
+    expect(graphic.roundRectCalls).toEqual([
+      {
+        x: 26,
+        y: 46,
+        width: 97,
+        height: 8,
+        radius: 4,
+      },
+      {
+        x: 29,
+        y: 49,
+        width: 91,
+        height: 2,
+        radius: 1,
+      },
+    ]);
+    expect(graphic.fillCalls).toEqual([
+      { color: 0xbd72f3, alpha: 1 },
+      { color: 0x8740df, alpha: 1 },
+    ]);
     expect(graphic.visible).toBe(true);
     expect(fill.style.visibility).toBe('hidden');
     expect(controller.isActive()).toBe(true);

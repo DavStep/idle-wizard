@@ -83,7 +83,7 @@ export class WorkshopStatsManager {
     this.refs.closeButton.addEventListener('click', () => this.hide());
 
     this.refs.frame = document.createElement('div');
-    this.refs.frame.className = 'style-dialog-scroll workshop-page__stats-frame';
+    this.refs.frame.className = 'style-page-scroll workshop-page__stats-frame';
 
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'workshop-page__stats-rows';

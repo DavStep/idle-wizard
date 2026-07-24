@@ -181,7 +181,7 @@ describe('ShopShelfManager', () => {
       ),
     ).toEqual(['traders', 'players', 'crystals']);
     expect(stage.querySelector('.shop-page__market-identity')?.textContent)
-      .toBe('small town market ★');
+      .toBe('Small Town Market ★');
     const playerTab = [...stage.querySelectorAll('.shop-page__market-tab-button')].find(
       (button) => button.textContent === 'players',
     );
@@ -674,7 +674,7 @@ describe('ShopShelfManager', () => {
     expect(progress?.classList.contains('style-progress--timer')).toBe(true);
     expect(progress?.getAttribute('role')).toBe('progressbar');
     expect(progress?.getAttribute('aria-valuenow')).toBe('40');
-    expect(fill?.style.transform).toBe('scaleX(0.4)');
+    expect(fill?.style.width).toBe('40%');
     expect(itemColumn?.firstElementChild).toBe(
       stage.querySelector('.shop-page__slot-item-value'),
     );
@@ -744,6 +744,13 @@ describe('ShopShelfManager', () => {
       now: () => 6 * 60 * 60 * 1_000 - 61 * 60 * 1_000,
     });
 
+    expect(
+      manager.getStallPauseText({
+        tradedHere: false,
+        requiredMarket: { name: 'Arcane Exchange' },
+      }),
+    ).toBe('Prestige for Arcane Exchange');
+
     manager.mount(stage, popupLayer);
 
     const progressRow = stage.querySelector('.shop-page__slot-progress-row');
@@ -783,6 +790,24 @@ describe('ShopShelfManager', () => {
     expect(progressRowRule).toMatch(
       /grid-template-columns:\s*minmax\(0, 1fr\) max-content;/,
     );
+  });
+
+  it('keeps an empty icon frame visible when a trader stand has no item', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const emptyIconFrameRule = baseCss.match(
+      /\.shop-page__shelf\s*>\s*\.shop-page__slot-row\.is-empty::before\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(emptyIconFrameRule).toBeDefined();
+    expect(emptyIconFrameRule).toMatch(/\bcontent:\s*["']["'];/);
+    expect(emptyIconFrameRule).toMatch(/\bgrid-area:\s*visual;/);
+    expect(emptyIconFrameRule).toMatch(
+      /\bwidth:\s*var\(--shop-page-stall-visual-size\);/,
+    );
+    expect(emptyIconFrameRule).toMatch(
+      /\bheight:\s*var\(--shop-page-stall-visual-size\);/,
+    );
+    expect(emptyIconFrameRule).toMatch(/\bborder:\s*var\(--style-border\);/);
   });
 
   it('opens NPC market sell picker from the stand row', () => {
@@ -940,7 +965,7 @@ describe('ShopShelfManager', () => {
     });
   });
 
-  it('keeps NPC market sell picker weight stable with the shared scroll rail gap', () => {
+  it('keeps NPC market sell picker weight stable without reserved bottom rail space', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const unselectedRule = baseCss.match(
       /\.shop-page__sell-popup\s+\.shop-page__sell-item-button:not\(\[aria-pressed="true"\]\)\s+\.row_key\s*\{(?<body>[^}]*)\}/,
@@ -955,8 +980,9 @@ describe('ShopShelfManager', () => {
     expect(unselectedRule).toMatch(/\bfont-weight:\s*normal;/);
     expect(selectedRule).toBeUndefined();
     expect(listRule).toMatch(
-      /\bvar\(--style-scroll-progress-block-size\)/,
+      /\bheight:\s*calc\(var\(--style-tabbed-dialog-content-height\) - 112px\);/,
     );
+    expect(baseCss).not.toMatch(/--style-scroll-progress-block-size:/);
     expect(baseCss).not.toMatch(/--shop-page-sell-scroll-progress-gap:/);
     expect(baseCss).toMatch(
       /\.shop-page__sell-dialog\s*>\s*\.shop-page__sell-item-list\s*\{(?<body>[^}]*)\}/,

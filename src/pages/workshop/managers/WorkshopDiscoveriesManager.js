@@ -12,7 +12,7 @@ import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcon
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
 const DISCOVERIES_ICON_URL = new URL(
-  '../../../assets/icons/icon-discoveries-journal.webp',
+  '../../../../assets/game/source/icons/icon-discoveries-journal-bag-style.png',
   import.meta.url,
 ).href;
 
@@ -151,7 +151,7 @@ export class WorkshopDiscoveriesManager {
     this.refs.dialog = panel;
     this.refs.title = this.createTitle();
     this.refs.rows = document.createElement('div');
-    this.refs.rows.className = 'workshop-page__discoveries-rows';
+    this.refs.rows.className = 'workshop-page__discoveries-rows style-page-scroll';
     this.refs.detail = document.createElement('div');
     this.refs.detail.className = 'workshop-page__discovery-detail';
     const book = this.createPotionBook();

@@ -20,6 +20,7 @@ import { WorkshopPageFacade } from './workshop/WorkshopPageFacade.js';
 import { WorkshopBagManager } from './workshop/managers/WorkshopBagManager.js';
 import { WorkshopWorldChatManager } from './workshop/managers/WorkshopWorldChatManager.js';
 import { CurrentPageManager } from './managers/CurrentPageManager.js';
+import { PageActivityScopeManager } from './managers/PageActivityScopeManager.js';
 import { PageUnlockManager } from './managers/PageUnlockManager.js';
 import { PageRegistryManager } from './managers/PageRegistryManager.js';
 import { setNotificationVisibilityPolicy } from './shared/notificationBadge.js';
@@ -31,7 +32,7 @@ import { PressFeedbackManager } from './managers/PressFeedbackManager.js';
 import { ScrollCueManager } from './managers/ScrollCueManager.js';
 
 const FTUE_ENABLED = true;
-const SWIPE_PAGE_IDS = ['brewing', 'garden', 'workshop', 'research', 'shop', 'prestige'];
+const SWIPE_PAGE_IDS = ['prestige', 'brewing', 'garden', 'workshop', 'research', 'shop'];
 
 export class PagesFacade {
   static explain =
@@ -54,6 +55,7 @@ export class PagesFacade {
     soundSettingsFacade,
     uiClickSoundFacade,
     pixiProgressOverlayManager = null,
+    spineRuntimeFacade = null,
     tutorialStorage,
     firstRunIntroStorage,
     defaultPageId = 'workshop',
@@ -69,6 +71,8 @@ export class PagesFacade {
     this.releaseNpcMarketPrices = null;
     this.npcMarketPricesRetained = false;
     this.registryManager = new PageRegistryManager();
+    this.pageActivityScopes = new Map();
+    this.pageGameplayFacades = new Map();
     this.pageUnlockManager = new PageUnlockManager({
       pageOrder: DEFAULT_PAGE_SWIPE_ORDER,
     });
@@ -80,6 +84,10 @@ export class PagesFacade {
     this.currentPageManager = new CurrentPageManager({
       pageRegistryManager: this.registryManager,
       defaultPageId,
+      onPageActivate: (pageId) =>
+        this.pageActivityScopes.get(pageId)?.resume(),
+      onPageDeactivate: (pageId) =>
+        this.pageActivityScopes.get(pageId)?.suspend(),
     });
     this.researchTabId = 'regular';
     this.swipeNavigationManager = new PageSwipeNavigationManager({
@@ -146,6 +154,7 @@ export class PagesFacade {
           getCurrentPageId: () => this.getCurrentPageId(),
           onShowPage: (pageId) => this.show(pageId),
           storage: tutorialStorage,
+          spineRuntimeFacade,
           onNotificationVisibilityPolicyChange: (policy) =>
             this.applyTutorialNotificationVisibilityPolicy(policy),
         })
@@ -154,7 +163,7 @@ export class PagesFacade {
     this.registryManager.register(
       'workshop',
       new WorkshopPageFacade({
-        gameplayFacade,
+        gameplayFacade: this.getPageGameplayFacade('workshop'),
         playerFacade,
         hapticsFacade,
         leaderboardFacade,
@@ -172,34 +181,34 @@ export class PagesFacade {
     this.registryManager.register(
       'brewing',
       new BrewingPageFacade({
-        gameplayFacade,
+        gameplayFacade: this.getPageGameplayFacade('brewing'),
         onOpenPlayerInfo: (player) => this.openPlayerInfoDialog(player),
       }),
     );
     this.registryManager.register(
       'garden',
       new GardenPageFacade({
-        gameplayFacade,
+        gameplayFacade: this.getPageGameplayFacade('garden'),
         pixiProgressOverlayManager,
       }),
     );
     this.registryManager.register(
       'research',
       new ResearchPageFacade({
-        gameplayFacade,
+        gameplayFacade: this.getPageGameplayFacade('research'),
         onSelectedTabChange: (tabId) => this.setResearchTabId(tabId),
       }),
     );
     this.registryManager.register(
       'guild',
       new GuildPageFacade({
-        gameplayFacade,
+        gameplayFacade: this.getPageGameplayFacade('guild'),
       }),
     );
     this.registryManager.register(
       'shop',
       new ShopPageFacade({
-        gameplayFacade,
+        gameplayFacade: this.getPageGameplayFacade('shop'),
         playerShopFacade,
         onOpenPlayerInfo: (player) => this.openPlayerInfoDialog(player),
         onRequirePlayerSurfaceAccess: (open, meta) =>
@@ -213,7 +222,7 @@ export class PagesFacade {
     this.registryManager.register(
       'prestige',
       new PrestigePageFacade({
-        gameplayFacade,
+        gameplayFacade: this.getPageGameplayFacade('prestige'),
       }),
     );
   }
@@ -270,6 +279,9 @@ export class PagesFacade {
     this.bottomPanelFacade.unmount();
     this.swipeNavigationManager.unmount();
     this.currentPageManager.unmount();
+    for (const scope of this.pageActivityScopes.values()) {
+      scope.clear();
+    }
     this.pressFeedbackManager.unmount();
     this.stage?.removeEventListener(
       TOP_PANEL_USERNAME_SAVED_EVENT,
@@ -547,6 +559,18 @@ export class PagesFacade {
     return this.gameplayFacade?.getSnapshot?.() ?? {};
   }
 
+  getPageGameplayFacade(pageId) {
+    if (this.pageGameplayFacades.has(pageId)) {
+      return this.pageGameplayFacades.get(pageId);
+    }
+
+    const scope = new PageActivityScopeManager();
+    const facade = scope.scope(this.gameplayFacade);
+    this.pageActivityScopes.set(pageId, scope);
+    this.pageGameplayFacades.set(pageId, facade);
+    return facade;
+  }
+
   withGameplaySnapshotCache(callback) {
     if (typeof this.gameplayFacade?.withSnapshotCache !== 'function') {
       return callback();
@@ -566,6 +590,15 @@ export class PagesFacade {
 
     this.stage.toggleAttribute('data-dev-top-panel-preview', Boolean(progress));
     return this.topPanelFacade.setQuestProgressPreview(progress);
+  }
+
+  setBottomRoomTabsPreview(active = false) {
+    if (!this.stage) {
+      return { ok: false, reason: 'pages_not_mounted' };
+    }
+
+    this.stage.toggleAttribute('data-dev-bottom-tabs-preview', active === true);
+    return { ok: true, active: active === true };
   }
 
   applyTutorialNotificationVisibilityPolicy(policy) {

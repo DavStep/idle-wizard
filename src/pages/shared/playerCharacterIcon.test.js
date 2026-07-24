@@ -10,7 +10,7 @@ import {
 describe('playerCharacterIcon', () => {
   it('maps every selectable player character to an image URL', () => {
     for (const { key } of getPlayerCharacterOptions()) {
-      expect(getPlayerCharacterImageUrl(key), key).toContain(`/assets/characters/${key}.png`);
+      expect(getPlayerCharacterImageUrl(key), key).toContain(`/assets/game/source/characters/${key}.png`);
     }
   });
 

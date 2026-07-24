@@ -502,7 +502,7 @@ export class WorkshopWorldNoticeManager {
 
   createContentFrame(nodes = []) {
     const frame = document.createElement('div');
-    frame.className = 'style-dialog-scroll workshop-page__world-notice-frame';
+    frame.className = 'style-page-scroll workshop-page__world-notice-frame';
     frame.replaceChildren(...nodes.filter(Boolean));
     return frame;
   }

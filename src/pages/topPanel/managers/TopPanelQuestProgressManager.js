@@ -326,6 +326,8 @@ export class TopPanelQuestProgressManager {
     }
 
     const documentRef = this.refs.questRow.ownerDocument;
+    const flightHost =
+      this.refs.questRow.closest?.('.game-stage') ?? documentRef.body;
     const iconSize = Math.max(12, Math.min(18, target.height || 14));
 
     for (let index = 0; index < QUEST_FLIGHT_COUNT; index += 1) {
@@ -349,7 +351,7 @@ export class TopPanelQuestProgressManager {
       flight.style.top = `${startY}px`;
       flight.style.width = `${iconSize}px`;
       flight.style.height = `${iconSize}px`;
-      documentRef.body.append(flight);
+      flightHost?.append(flight);
       this.activeFlights.push(flight);
 
       const animation = this.animateElement(

@@ -42,7 +42,7 @@ describe('ViewportScaleManager', () => {
       expectedViewportScale,
     );
     expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBeCloseTo(
-      expectedViewportScale * 3,
+      expectedViewportScale * gameViewport.sourceScale,
     );
     expect(
       document.documentElement.style.getPropertyValue('--app-viewport-height'),
@@ -56,7 +56,7 @@ describe('ViewportScaleManager', () => {
     expect(
       document.documentElement.style.getPropertyValue('--app-source-ui-screen-width'),
     ).toBe(`${gameViewport.width * expectedViewportScale}px`);
-    expect(stage.style.getPropertyValue('--source-ui-scale')).toBe('3');
+    expect(stage.style.getPropertyValue('--source-ui-scale')).toBe('1');
     expect(stage.dataset.viewportMode).toBe('web-wide');
     expect(
       document.documentElement.style.getPropertyValue('--app-visible-stage-height'),
@@ -76,24 +76,24 @@ describe('ViewportScaleManager', () => {
     const stage = document.createElement('section');
     const manager = new ViewportScaleManager({ viewport: gameViewport });
     manager.stage = stage;
-    setWindowSize({ width: 1080, height: 2170 });
+    setWindowSize({ width: gameViewport.width, height: gameViewport.height });
 
     manager.updateScale();
 
     expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
-    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(1);
     expect(stage.dataset.viewportMode).toBeUndefined();
   });
 
-  it('keeps a narrow mobile viewport on the authored portrait stage width', () => {
+  it('contain-fits a narrower mobile viewport on the authored portrait stage width', () => {
     const stage = document.createElement('section');
     const manager = new ViewportScaleManager({ viewport: gameViewport });
     manager.stage = stage;
-    setWindowSize({ width: 390, height: 844 });
+    setWindowSize({ width: 360, height: 780 });
 
     manager.updateScale();
 
-    const expectedViewportScale = 390 / gameViewport.width;
+    const expectedViewportScale = 360 / gameViewport.width;
     expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBeCloseTo(
       expectedViewportScale,
     );
@@ -115,27 +115,27 @@ describe('ViewportScaleManager', () => {
     const manager = new ViewportScaleManager({ viewport: gameViewport });
     manager.stage = stage;
     document.body.append(input);
-    setWindowSize({ width: 1080, height: 2170 });
+    setWindowSize({ width: 390, height: 844 });
     manager.updateScale();
 
     input.focus();
-    setWindowSize({ width: 1080, height: 1450 });
+    setWindowSize({ width: 390, height: 560 });
     manager.updateScale();
 
     expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
-    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(1);
     expect(
       document.documentElement.style.getPropertyValue('--app-viewport-height'),
-    ).toBe('2170px');
+    ).toBe('844px');
     expect(
       document.documentElement.style.getPropertyValue('--app-visible-stage-height'),
-    ).toBe('1450px');
+    ).toBe('560px');
     expect(document.documentElement.style.getPropertyValue('--app-keyboard-inset')).toBe(
-      '720px',
+      '284px',
     );
     expect(
       document.documentElement.style.getPropertyValue('--app-keyboard-dialog-shift'),
-    ).toBe('-120px');
+    ).toBe('-142px');
     expect(
       document.documentElement.style.getPropertyValue('--app-keyboard-top-dialog-shift'),
     ).toBe('-56px');
@@ -149,24 +149,24 @@ describe('ViewportScaleManager', () => {
     const manager = new ViewportScaleManager({ viewport: gameViewport });
     manager.stage = stage;
     document.body.append(input);
-    setWindowSize({ width: 1080, height: 2170 });
+    setWindowSize({ width: 390, height: 844 });
     manager.updateScale();
 
     manager.handleTextEntryPressStart({ target: input });
-    setWindowSize({ width: 1080, height: 1450 });
+    setWindowSize({ width: 390, height: 560 });
     manager.updateScale();
 
     expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
-    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(1);
     expect(
       document.documentElement.style.getPropertyValue('--app-viewport-height'),
-    ).toBe('2170px');
+    ).toBe('844px');
     expect(
       document.documentElement.style.getPropertyValue('--app-visible-stage-height'),
-    ).toBe('1450px');
+    ).toBe('560px');
     expect(
       document.documentElement.style.getPropertyValue('--app-keyboard-dialog-shift'),
-    ).toBe('-120px');
+    ).toBe('-142px');
 
     input.remove();
   });
@@ -178,26 +178,26 @@ describe('ViewportScaleManager', () => {
     const manager = new ViewportScaleManager({ viewport: gameViewport });
     manager.stage = stage;
     document.body.append(input);
-    setWindowSize({ width: 1080, height: 2170 });
+    setWindowSize({ width: 390, height: 844 });
 
     try {
-      setVisualViewport({ height: 2170 });
+      setVisualViewport({ height: 844 });
       manager.updateScale();
 
       input.focus();
-      setVisualViewport({ height: 1450 });
+      setVisualViewport({ height: 560 });
       manager.updateScale();
 
       expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
-      expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+      expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(1);
       expect(
         document.documentElement.style.getPropertyValue('--app-viewport-height'),
-      ).toBe('2170px');
+      ).toBe('844px');
       expect(
         document.documentElement.style.getPropertyValue('--app-visible-stage-height'),
-      ).toBe('1450px');
+      ).toBe('560px');
       expect(document.documentElement.style.getPropertyValue('--app-keyboard-inset')).toBe(
-        '720px',
+        '284px',
       );
     } finally {
       Object.defineProperty(window, 'visualViewport', {
@@ -214,26 +214,26 @@ describe('ViewportScaleManager', () => {
     const manager = new ViewportScaleManager({ viewport: gameViewport });
     manager.stage = stage;
     document.body.append(input);
-    setWindowSize({ width: 1080, height: 2170 });
+    setWindowSize({ width: 390, height: 844 });
     manager.updateScale();
     input.focus();
-    setWindowSize({ width: 1080, height: 1450 });
+    setWindowSize({ width: 390, height: 560 });
     manager.updateScale();
 
     input.blur();
     manager.updateScale();
 
     expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
-    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(1);
     expect(
       document.documentElement.style.getPropertyValue('--app-viewport-height'),
-    ).toBe('2170px');
+    ).toBe('844px');
 
-    setWindowSize({ width: 1080, height: 2170 });
+    setWindowSize({ width: 390, height: 844 });
     manager.updateScale();
 
     expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
-    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(1);
 
     input.remove();
   });
@@ -244,20 +244,20 @@ describe('ViewportScaleManager', () => {
     const manager = new ViewportScaleManager({ viewport: gameViewport });
     manager.stage = stage;
     document.body.append(input);
-    setWindowSize({ width: 1080, height: 2170 });
+    setWindowSize({ width: 390, height: 844 });
     manager.updateScale();
 
     input.focus();
     input.blur();
     manager.handleTextEntryFocusOut({ target: input });
-    setWindowSize({ width: 1080, height: 1450 });
+    setWindowSize({ width: 390, height: 560 });
     manager.updateScale();
 
     expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
-    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(1);
     expect(
       document.documentElement.style.getPropertyValue('--app-viewport-height'),
-    ).toBe('2170px');
+    ).toBe('844px');
 
     input.remove();
   });
@@ -268,7 +268,7 @@ describe('ViewportScaleManager', () => {
     const manager = new ViewportScaleManager({ viewport: gameViewport });
     manager.stage = stage;
     document.body.append(input);
-    setWindowSize({ width: 1080, height: 2170 });
+    setWindowSize({ width: 390, height: 844 });
     manager.updateScale();
 
     manager.handleTextEntryFocusIn({ target: input });
@@ -279,7 +279,7 @@ describe('ViewportScaleManager', () => {
     expect(document.documentElement.scrollTop).toBe(0);
     expect(document.body.scrollTop).toBe(0);
 
-    setWindowSize({ width: 1080, height: 1450 });
+    setWindowSize({ width: 390, height: 560 });
     document.documentElement.scrollTop = 180;
     document.body.scrollTop = 180;
     manager.handleViewportChange();
@@ -288,15 +288,15 @@ describe('ViewportScaleManager', () => {
     expect(document.body.scrollTop).toBe(0);
     expect(
       document.documentElement.style.getPropertyValue('--app-viewport-height'),
-    ).toBe('2170px');
+    ).toBe('844px');
     expect(
       document.documentElement.style.getPropertyValue('--app-visible-stage-height'),
-    ).toBe('1450px');
+    ).toBe('560px');
 
     input.remove();
   });
 
-  it('does not scale source UI beyond the authored viewport on large desktop', () => {
+  it('scales source UI up with Root Run contain-fit behavior on large desktop', () => {
     const stage = document.createElement('section');
     const manager = new ViewportScaleManager({ viewport: gameViewport });
     manager.stage = stage;
@@ -304,17 +304,22 @@ describe('ViewportScaleManager', () => {
 
     manager.updateScale();
 
-    expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBe(1);
-    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBe(3);
+    const expectedViewportScale = 3200 / gameViewport.height;
+    expect(Number(stage.style.getPropertyValue('--viewport-scale'))).toBeCloseTo(
+      expectedViewportScale,
+    );
+    expect(Number(stage.style.getPropertyValue('--style-ui-scale'))).toBeCloseTo(
+      expectedViewportScale,
+    );
     expect(document.documentElement.style.getPropertyValue('--app-stage-width')).toBe(
       '2560px',
     );
     expect(document.documentElement.style.getPropertyValue('--app-stage-height')).toBe(
-      '2170px',
+      '3200px',
     );
     expect(
       document.documentElement.style.getPropertyValue('--app-source-ui-screen-width'),
-    ).toBe('1080px');
+    ).toBe(`${gameViewport.width * expectedViewportScale}px`);
     expect(stage.dataset.viewportMode).toBe('web-wide');
   });
 });

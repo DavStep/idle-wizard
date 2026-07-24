@@ -6,7 +6,7 @@ import {
 } from '../taskRequirementTypes.js';
 
 const MAX_TASKS_PER_LEVEL = 5;
-const LEVEL_COMPLETION_COIN_COST_PER_LEVEL = 20;
+const LEVEL_COIN_BUDGET_PER_LEVEL = 20;
 const INITIAL_PLAYER_LEVEL = 0;
 const SEED_RESEARCH_PREFIX = 'unlockSeed:';
 const RECIPE_RESEARCH_PREFIX = 'unlockRecipe:';
@@ -73,15 +73,15 @@ export class TaskBalanceManager {
     return this.getLevelTasks(this.getRequirementTargetLevel(currentLevel));
   }
 
-  getLevelCompletionCostCoin(levelNumber) {
+  getLevelCoinBudget(levelNumber) {
     const targetLevel = this.getRequirementTargetLevel(levelNumber);
-    const configuredCost = this.levels.find((level) => level.level === targetLevel)?.completionCostCoin;
+    const configuredBudget = this.levels.find((level) => level.level === targetLevel)?.coinBudget;
 
-    if (Number.isInteger(configuredCost) && configuredCost >= 0) {
-      return configuredCost;
+    if (Number.isInteger(configuredBudget) && configuredBudget >= 0) {
+      return configuredBudget;
     }
 
-    return targetLevel * LEVEL_COMPLETION_COIN_COST_PER_LEVEL;
+    return targetLevel * LEVEL_COIN_BUDGET_PER_LEVEL;
   }
 
   getInitialLevel() {
@@ -139,15 +139,16 @@ export class TaskBalanceManager {
         throw new Error('game_config.tasks requires 1 to 5 tasks per level.');
       }
 
-      const completionCostValue = level.completionCostCoin ?? level.completionCostGold;
-      const completionCostCoin =
-        completionCostValue === undefined
+      const coinBudgetValue =
+        level.coinBudget ?? level.completionCostCoin ?? level.completionCostGold;
+      const coinBudget =
+        coinBudgetValue === undefined
           ? undefined
-          : Math.max(0, Math.floor(Number(completionCostValue)));
+          : Math.max(0, Math.floor(Number(coinBudgetValue)));
 
       return {
         level: levelNumber,
-        ...(Number.isInteger(completionCostCoin) ? { completionCostCoin } : {}),
+        ...(Number.isInteger(coinBudget) ? { coinBudget } : {}),
         tasks: level.tasks.map((task) => {
           if (!task || typeof task.id !== 'string' || task.id.length <= 0) {
             throw new Error('game_config.tasks task id must be a non-empty string.');

@@ -13,7 +13,9 @@
   color: var(--dev-console-text);
   font-family: var(
     --style-font,
-    Lexend,
+    "Lilita One",
+    "Arial Black",
+    Arial,
     ui-sans-serif,
     system-ui,
     sans-serif

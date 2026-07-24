@@ -97,7 +97,7 @@
     "breakpoints": [
       {
         "name": "authored-room",
-        "value": "1080x2170"
+        "value": "390x844"
       }
     ]
   },
@@ -145,7 +145,7 @@
   ],
   "narrative": {
     "northStar": "The Plain Room Ledger",
-    "overview": "Idle Wizard uses sparse room UI that behaves like a readable ledger inside a fixed mobile game surface. The authored design size is 1080x2170; room UI is built at source scale, then fitted to the viewport. Do not make source text larger to solve mobile readability.\n\nThe system rejects decorated fantasy RPG UI, colorful idle dashboards, modern rounded mobile cards, gradients, icon-heavy controls, textures, illustration, and decorative shadows. Interface choices should feel like A Dark Room-style text-game controls without copying that game's desktop dimensions.",
+    "overview": "Idle Wizard uses sparse room UI that behaves like a readable ledger inside a fixed mobile game surface. The logical game resolution matches Root Run at 390x844; room UI is built in those logical pixels, then contain-fitted to the viewport. Do not make source text larger to solve mobile readability.\n\nThe system rejects decorated fantasy RPG UI, colorful idle dashboards, modern rounded mobile cards, gradients, icon-heavy controls, textures, illustration, and decorative shadows. Interface choices should feel like A Dark Room-style text-game controls without copying that game's desktop dimensions.",
     "keyCharacteristics": [
       "Fixed authored portrait room surface with scaled source UI.",
       "Black or near-black text on plain light surfaces by default.",

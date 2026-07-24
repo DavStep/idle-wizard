@@ -136,6 +136,17 @@ export class WorkshopPageFacade {
     this.roomViewManager.unmount();
   }
 
+  deactivate() {
+    this.summonInfoManager.hide();
+    this.discoveriesManager.hide();
+    this.tradeAllianceManager.hide();
+    this.leaderboardManager.hide();
+    this.worldNoticeManager.hide();
+    this.statsManager.hide();
+    this.personalTasksManager.hide();
+    this.taskManager.hideInfo();
+  }
+
   showRequirementConnection(event) {
     const target = this.taskManager.getCurrentRequirementRowForItemTypeIds(
       this.getRewardItemTypeIds(event),

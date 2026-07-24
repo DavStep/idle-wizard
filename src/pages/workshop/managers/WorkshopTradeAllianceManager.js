@@ -20,12 +20,12 @@ import {
 } from './tradeAllianceQuestStatus.js';
 
 const ALLIANCE_BANNER_BASE_URL = new URL(
-  '../../../assets/icons/icon-alliance-banner-base.webp',
+  '../../../../assets/game/source/icons/icon-alliance-banner-base.webp',
   import.meta.url,
 ).href;
 
 const ALLIANCE_BANNER_CLOTH_MASK_URL = new URL(
-  '../../../assets/icons/icon-alliance-banner-cloth-mask.webp',
+  '../../../../assets/game/source/icons/icon-alliance-banner-cloth-mask.webp',
   import.meta.url,
 ).href;
 
@@ -214,7 +214,8 @@ export class WorkshopTradeAllianceManager {
     this.refs.title = this.createTitle();
     this.refs.closeButton = this.createCloseButton();
     this.refs.content = document.createElement('div');
-    this.refs.content.className = 'workshop-page__trade-alliance-content';
+    this.refs.content.className =
+      'workshop-page__trade-alliance-content style-page-scroll';
     this.refs.status = document.createElement('div');
     this.refs.status.className = 'workshop-page__trade-alliance-status';
     this.refs.tabs = document.createElement('div');

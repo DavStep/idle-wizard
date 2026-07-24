@@ -1,0 +1,961 @@
+{
+  "version": "1.0.0",
+  "name": "main-game",
+  "kind": "hud",
+  "designSize": {
+    "width": 1080,
+    "height": 2122
+  },
+  "scaleMode": "fit",
+  "safeArea": {
+    "x": 0,
+    "y": 0,
+    "width": 1080,
+    "height": 2122
+  },
+  "modal": false,
+  "children": [
+    {
+      "id": "bottom__105_317",
+      "name": "bottom",
+      "x": 112,
+      "y": 1894,
+      "width": 855,
+      "height": 156,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "align": "center",
+      "debug": {
+        "figmaAbsolute": {
+          "x": 5407,
+          "y": 1894
+        },
+        "figmaRelative": {
+          "x": 112,
+          "y": 1894
+        },
+        "figmaSize": {
+          "width": 855,
+          "height": 156
+        },
+        "exportedSize": {
+          "width": 855,
+          "height": 156
+        }
+      },
+      "type": "container",
+      "children": [
+        {
+          "id": "btn_booster_speedup__105_205",
+          "name": "btn_booster_speedup",
+          "x": 681,
+          "y": 0,
+          "width": 174,
+          "height": 156,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 6088,
+              "y": 1894
+            },
+            "figmaRelative": {
+              "x": 681,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 174,
+              "height": 156
+            },
+            "exportedSize": {
+              "width": 174,
+              "height": 156
+            }
+          },
+          "type": "button",
+          "hitArea": {
+            "x": 0,
+            "y": 0,
+            "width": 174,
+            "height": 156
+          },
+          "children": [
+            {
+              "id": "btn-skill4__105_206",
+              "name": "btn-skill4",
+              "x": 0,
+              "y": 0,
+              "width": 174,
+              "height": 156,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 6088,
+                  "y": 1894
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 174,
+                  "height": 156
+                },
+                "exportedSize": {
+                  "width": 174,
+                  "height": 156
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-5af42711-3268",
+              "asset": "assets/ui/main-game/asset-5af42711.png"
+            },
+            {
+              "id": "skill-icons4__105_210",
+              "name": "skill-icons4",
+              "x": 14,
+              "y": 33,
+              "width": 132,
+              "height": 89,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 6102,
+                  "y": 1927
+                },
+                "figmaRelative": {
+                  "x": 14,
+                  "y": 33
+                },
+                "figmaSize": {
+                  "width": 132,
+                  "height": 89
+                },
+                "exportedSize": {
+                  "width": 132,
+                  "height": 89
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-f51bd507-15718",
+              "asset": "assets/ui/main-game/asset-f51bd507.png"
+            }
+          ]
+        },
+        {
+          "id": "btn_booster_scarecrow__105_212",
+          "name": "btn_booster_scarecrow",
+          "x": 454,
+          "y": 0,
+          "width": 174,
+          "height": 156,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 5861,
+              "y": 1894
+            },
+            "figmaRelative": {
+              "x": 454,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 174,
+              "height": 156
+            },
+            "exportedSize": {
+              "width": 174,
+              "height": 156
+            }
+          },
+          "type": "button",
+          "hitArea": {
+            "x": 0,
+            "y": 0,
+            "width": 174,
+            "height": 156
+          },
+          "children": [
+            {
+              "id": "btn-skill3__105_213",
+              "name": "btn-skill3",
+              "x": 0,
+              "y": 0,
+              "width": 174,
+              "height": 156,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5861,
+                  "y": 1894
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 174,
+                  "height": 156
+                },
+                "exportedSize": {
+                  "width": 174,
+                  "height": 156
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-5af42711-3268",
+              "asset": "assets/ui/main-game/asset-5af42711.png"
+            },
+            {
+              "id": "skill-icons3__105_217",
+              "name": "skill-icons3",
+              "x": 22,
+              "y": 10,
+              "width": 129,
+              "height": 136,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5883,
+                  "y": 1904
+                },
+                "figmaRelative": {
+                  "x": 22,
+                  "y": 10
+                },
+                "figmaSize": {
+                  "width": 129,
+                  "height": 136
+                },
+                "exportedSize": {
+                  "width": 129,
+                  "height": 136
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-5b778e79-26505",
+              "asset": "assets/ui/main-game/asset-5b778e79.png"
+            }
+          ]
+        },
+        {
+          "id": "btn_booster_compass__105_219",
+          "name": "btn_booster_compass",
+          "x": 227,
+          "y": 0,
+          "width": 174,
+          "height": 156,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 5634,
+              "y": 1894
+            },
+            "figmaRelative": {
+              "x": 227,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 174,
+              "height": 156
+            },
+            "exportedSize": {
+              "width": 174,
+              "height": 156
+            }
+          },
+          "type": "button",
+          "hitArea": {
+            "x": 0,
+            "y": 0,
+            "width": 174,
+            "height": 156
+          },
+          "children": [
+            {
+              "id": "btn-skill2__105_220",
+              "name": "btn-skill2",
+              "x": 0,
+              "y": 0,
+              "width": 174,
+              "height": 156,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5634,
+                  "y": 1894
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 174,
+                  "height": 156
+                },
+                "exportedSize": {
+                  "width": 174,
+                  "height": 156
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-5af42711-3268",
+              "asset": "assets/ui/main-game/asset-5af42711.png"
+            },
+            {
+              "id": "skill-icons2__105_224",
+              "name": "skill-icons2",
+              "x": 32,
+              "y": 19,
+              "width": 109,
+              "height": 118,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5666,
+                  "y": 1913
+                },
+                "figmaRelative": {
+                  "x": 32,
+                  "y": 19
+                },
+                "figmaSize": {
+                  "width": 109,
+                  "height": 118
+                },
+                "exportedSize": {
+                  "width": 109,
+                  "height": 118
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-1237a4a1-20862",
+              "asset": "assets/ui/main-game/asset-1237a4a1.png"
+            }
+          ]
+        },
+        {
+          "id": "btn_booster_freeze__105_226",
+          "name": "btn_booster_freeze",
+          "x": 0,
+          "y": 0,
+          "width": 174,
+          "height": 156,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 5407,
+              "y": 1894
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 174,
+              "height": 156
+            },
+            "exportedSize": {
+              "width": 174,
+              "height": 156
+            }
+          },
+          "type": "button",
+          "hitArea": {
+            "x": 0,
+            "y": 0,
+            "width": 174,
+            "height": 156
+          },
+          "children": [
+            {
+              "id": "btn-skill1__105_227",
+              "name": "btn-skill1",
+              "x": 0,
+              "y": 0,
+              "width": 174,
+              "height": 156,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5407,
+                  "y": 1894
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 174,
+                  "height": 156
+                },
+                "exportedSize": {
+                  "width": 174,
+                  "height": 156
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-5af42711-3268",
+              "asset": "assets/ui/main-game/asset-5af42711.png"
+            },
+            {
+              "id": "skill-icons__105_231",
+              "name": "skill-icons",
+              "x": 23,
+              "y": 15,
+              "width": 127,
+              "height": 125,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5430,
+                  "y": 1909
+                },
+                "figmaRelative": {
+                  "x": 23,
+                  "y": 15
+                },
+                "figmaSize": {
+                  "width": 127,
+                  "height": 125
+                },
+                "exportedSize": {
+                  "width": 127,
+                  "height": 125
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-1de29ddc-28074",
+              "asset": "assets/ui/main-game/asset-1de29ddc.png"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pausee__105_316",
+      "name": "pausee",
+      "x": 873,
+      "y": 117,
+      "width": 120,
+      "height": 116,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "align": "top-right",
+      "debug": {
+        "figmaAbsolute": {
+          "x": 6168,
+          "y": 117
+        },
+        "figmaRelative": {
+          "x": 873,
+          "y": 117
+        },
+        "figmaSize": {
+          "width": 120,
+          "height": 116
+        },
+        "exportedSize": {
+          "width": 120,
+          "height": 116
+        }
+      },
+      "type": "container",
+      "children": [
+        {
+          "id": "-pause__105_265",
+          "name": "-pause",
+          "x": 0,
+          "y": 0,
+          "width": 120,
+          "height": 116,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 6168,
+              "y": 117
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 120,
+              "height": 116
+            },
+            "exportedSize": {
+              "width": 120,
+              "height": 116
+            }
+          },
+          "type": "raster",
+          "assetId": "asset-1741ad29-9167",
+          "asset": "assets/ui/main-game/asset-1741ad29.png"
+        }
+      ]
+    },
+    {
+      "id": "tasks__105_266",
+      "name": "tasks",
+      "x": 59,
+      "y": 275,
+      "width": 908,
+      "height": 480,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "align": "top-left",
+      "debug": {
+        "figmaAbsolute": {
+          "x": 5354,
+          "y": 275
+        },
+        "figmaRelative": {
+          "x": 59,
+          "y": 275
+        },
+        "figmaSize": {
+          "width": 908,
+          "height": 480
+        },
+        "exportedSize": {
+          "width": 908,
+          "height": 480
+        }
+      },
+      "type": "container",
+      "children": [
+        {
+          "id": "carrotSlot_01__105_267",
+          "name": "carrotSlot_01",
+          "x": 0,
+          "y": 0,
+          "width": 206,
+          "height": 226,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 5354,
+              "y": 275
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 206,
+              "height": 226
+            },
+            "exportedSize": {
+              "width": 206,
+              "height": 226
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "itembg__105_268",
+              "name": "itembg",
+              "x": 0,
+              "y": 0,
+              "width": 206,
+              "height": 226,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5354,
+                  "y": 275
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 206,
+                  "height": 226
+                },
+                "exportedSize": {
+                  "width": 206,
+                  "height": 226
+                }
+              },
+              "type": "nineSlice",
+              "assetId": "asset-399d0e55-9662",
+              "asset": "assets/ui/main-game/asset-399d0e55.png",
+              "slice": {
+                "left": 87,
+                "top": 74,
+                "right": 90,
+                "bottom": 105
+              }
+            },
+            {
+              "id": "item-carrot__105_271",
+              "name": "item-carrot",
+              "x": 63,
+              "y": 20,
+              "width": 80,
+              "height": 153,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5417,
+                  "y": 295
+                },
+                "figmaRelative": {
+                  "x": 63,
+                  "y": 20
+                },
+                "figmaSize": {
+                  "width": 80,
+                  "height": 153
+                },
+                "exportedSize": {
+                  "width": 80,
+                  "height": 153
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-bfbc635d-17157",
+              "asset": "assets/ui/main-game/asset-bfbc635d.png"
+            },
+            {
+              "id": "2_4__105_272",
+              "name": "2/4",
+              "x": 68,
+              "y": 181,
+              "width": 69.674,
+              "height": 40,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5422,
+                  "y": 456
+                },
+                "figmaRelative": {
+                  "x": 68,
+                  "y": 181
+                },
+                "figmaSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "exportedSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "text": {
+                  "figmaWidth": 69.674,
+                  "figmaHeight": 40,
+                  "exportedWidth": 69.674,
+                  "exportedHeight": 40,
+                  "fontSize": 38,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "2/4",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 38,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#000000",
+                "strokeWidth": 4,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 69.674
+              }
+            }
+          ]
+        },
+        {
+          "id": "carrotSlot_02__105_273",
+          "name": "carrotSlot_02",
+          "x": 234,
+          "y": 0,
+          "width": 206,
+          "height": 226,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 5588,
+              "y": 275
+            },
+            "figmaRelative": {
+              "x": 234,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 206,
+              "height": 226
+            },
+            "exportedSize": {
+              "width": 206,
+              "height": 226
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "itembg__105_274",
+              "name": "itembg",
+              "x": 0,
+              "y": 0,
+              "width": 206,
+              "height": 226,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5588,
+                  "y": 275
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 206,
+                  "height": 226
+                },
+                "exportedSize": {
+                  "width": 206,
+                  "height": 226
+                }
+              },
+              "type": "nineSlice",
+              "assetId": "asset-399d0e55-9662",
+              "asset": "assets/ui/main-game/asset-399d0e55.png",
+              "slice": {
+                "left": 87,
+                "top": 74,
+                "right": 90,
+                "bottom": 105
+              },
+              "textureSlice": {
+                "left": 87,
+                "top": 74,
+                "right": 90,
+                "bottom": 105
+              },
+              "assetOptimization": {
+                "type": "nineSliceCompact",
+                "enabled": true,
+                "sourceWidth": 206,
+                "sourceHeight": 226,
+                "textureWidth": 178,
+                "textureHeight": 180,
+                "compactCenterWidth": 1,
+                "compactCenterHeight": 1,
+                "assetScale": 1
+              }
+            },
+            {
+              "id": "item-carrot__105_277",
+              "name": "item-carrot",
+              "x": 63,
+              "y": 20,
+              "width": 80,
+              "height": 153,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5651,
+                  "y": 295
+                },
+                "figmaRelative": {
+                  "x": 63,
+                  "y": 20
+                },
+                "figmaSize": {
+                  "width": 80,
+                  "height": 153
+                },
+                "exportedSize": {
+                  "width": 80,
+                  "height": 153
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-bfbc635d-17157",
+              "asset": "assets/ui/main-game/asset-bfbc635d.png"
+            },
+            {
+              "id": "2_4__105_278",
+              "name": "2/4",
+              "x": 68,
+              "y": 181,
+              "width": 69.674,
+              "height": 40,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 5656,
+                  "y": 456
+                },
+                "figmaRelative": {
+                  "x": 68,
+                  "y": 181
+                },
+                "figmaSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "exportedSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "text": {
+                  "figmaWidth": 69.674,
+                  "figmaHeight": 40,
+                  "exportedWidth": 69.674,
+                  "exportedHeight": 40,
+                  "fontSize": 38,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "2/4",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 38,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#000000",
+                "strokeWidth": 4,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 69.674
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "asset-5af42711-3268",
+      "src": "assets/ui/main-game/asset-5af42711.png",
+      "width": 174,
+      "height": 156,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-f51bd507-15718",
+      "src": "assets/ui/main-game/asset-f51bd507.png",
+      "width": 132,
+      "height": 89,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-5b778e79-26505",
+      "src": "assets/ui/main-game/asset-5b778e79.png",
+      "width": 129,
+      "height": 136,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-1237a4a1-20862",
+      "src": "assets/ui/main-game/asset-1237a4a1.png",
+      "width": 109,
+      "height": 118,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-1de29ddc-28074",
+      "src": "assets/ui/main-game/asset-1de29ddc.png",
+      "width": 127,
+      "height": 125,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-1741ad29-9167",
+      "src": "assets/ui/main-game/asset-1741ad29.png",
+      "width": 120,
+      "height": 116,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-399d0e55-9662",
+      "src": "assets/ui/main-game/asset-399d0e55.png",
+      "width": 178,
+      "height": 180,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-bfbc635d-17157",
+      "src": "assets/ui/main-game/asset-bfbc635d.png",
+      "width": 80,
+      "height": 153,
+      "scale": 1,
+      "mimeType": "image/png"
+    }
+  ],
+  "meta": {
+    "source": "figma",
+    "exportedRootId": "105:89",
+    "validation": {
+      "warnings": [
+        "Ninepatch \"itembg\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations."
+      ],
+      "errors": []
+    }
+  }
+}

@@ -165,7 +165,6 @@ export class ShopMarketTabsManager {
   createPanel(tab) {
     const panel = document.createElement('section');
     panel.className = `shop-page__market-panel style-page-scroll shop-page__market-panel--${tab.id}`;
-    panel.dataset.scrollCueProgress = 'inline';
     panel.setAttribute('role', 'tabpanel');
     panel.setAttribute('aria-label', tab.label);
     return panel;
@@ -194,7 +193,7 @@ export class ShopMarketTabsManager {
 
     if (this.refs.marketIdentity) {
       const rank = Math.max(1, Math.min(5, Math.floor(Number(market?.rank) || 1)));
-      this.refs.marketName.textContent = name.toLowerCase();
+      this.refs.marketName.textContent = name;
       this.refs.marketRank.textContent = ` ${'★'.repeat(rank)}`;
       this.refs.marketIdentity.setAttribute(
         'aria-label',

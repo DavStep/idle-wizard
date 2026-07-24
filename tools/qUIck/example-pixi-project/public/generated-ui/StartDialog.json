@@ -1,0 +1,651 @@
+{
+  "version": "1.0.0",
+  "name": "StartDialog",
+  "kind": "dialog",
+  "designSize": {
+    "width": 1080,
+    "height": 2122
+  },
+  "scaleMode": "fit",
+  "safeArea": {
+    "x": 0,
+    "y": 0,
+    "width": 1080,
+    "height": 2122
+  },
+  "modal": false,
+  "children": [
+    {
+      "id": "dialog_bg__67_293",
+      "name": "dialog_bg",
+      "x": 55.816,
+      "y": 529,
+      "width": 968.281,
+      "height": 1143.385,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 9049.816,
+          "y": 529
+        },
+        "figmaRelative": {
+          "x": 55.816,
+          "y": 529
+        },
+        "figmaSize": {
+          "width": 968.281,
+          "height": 1143.385
+        },
+        "exportedSize": {
+          "width": 968.281,
+          "height": 1143.385
+        }
+      },
+      "type": "nineSlice",
+      "assetId": "asset-4827cb46-10007",
+      "asset": "assets/ui/StartDialog/asset-4827cb46.png",
+      "slice": {
+        "left": 77,
+        "top": 170,
+        "right": 77,
+        "bottom": 91
+      },
+      "textureSlice": {
+        "left": 77,
+        "top": 170,
+        "right": 77,
+        "bottom": 91
+      },
+      "assetOptimization": {
+        "type": "nineSliceCompact",
+        "enabled": true,
+        "sourceWidth": 977,
+        "sourceHeight": 1152,
+        "textureWidth": 155,
+        "textureHeight": 262,
+        "compactCenterWidth": 1,
+        "compactCenterHeight": 1,
+        "assetScale": 1
+      }
+    },
+    {
+      "id": "content_panel__67_300",
+      "name": "content_panel",
+      "x": 80.001,
+      "y": 669.267,
+      "width": 920.358,
+      "height": 700.998,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 9074.001,
+          "y": 669.267
+        },
+        "figmaRelative": {
+          "x": 80.001,
+          "y": 669.267
+        },
+        "figmaSize": {
+          "width": 920.358,
+          "height": 700.998
+        },
+        "exportedSize": {
+          "width": 920.358,
+          "height": 700.998
+        }
+      },
+      "type": "nineSlice",
+      "assetId": "asset-ce117ea5-7221",
+      "asset": "assets/ui/StartDialog/asset-ce117ea5.png",
+      "slice": {
+        "left": 74,
+        "top": 134,
+        "right": 74,
+        "bottom": 56
+      },
+      "textureSlice": {
+        "left": 74,
+        "top": 134,
+        "right": 74,
+        "bottom": 56
+      },
+      "assetOptimization": {
+        "type": "nineSliceCompact",
+        "enabled": true,
+        "sourceWidth": 929,
+        "sourceHeight": 709,
+        "textureWidth": 149,
+        "textureHeight": 191,
+        "compactCenterWidth": 1,
+        "compactCenterHeight": 1,
+        "assetScale": 1
+      }
+    },
+    {
+      "id": "title_level__67_307",
+      "name": "title_level",
+      "x": 400,
+      "y": 546,
+      "width": 280,
+      "height": 110,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 9394,
+          "y": 546
+        },
+        "figmaRelative": {
+          "x": 400,
+          "y": 546
+        },
+        "figmaSize": {
+          "width": 280,
+          "height": 110
+        },
+        "exportedSize": {
+          "width": 280,
+          "height": 110
+        },
+        "text": {
+          "figmaWidth": 280,
+          "figmaHeight": 110,
+          "exportedWidth": 280,
+          "exportedHeight": 110,
+          "fontSize": 96,
+          "scaleX": 1,
+          "scaleY": 1
+        }
+      },
+      "type": "text",
+      "text": "Level 2",
+      "style": {
+        "fontFamily": "Lilita One",
+        "fontSize": 96,
+        "fontWeight": "Regular",
+        "color": "#ffffff",
+        "fill": "#ffffff",
+        "stroke": "#0a0a0a",
+        "strokeWidth": 8,
+        "alpha": 1,
+        "align": "center",
+        "wrap": true,
+        "wordWrapWidth": 280
+      }
+    },
+    {
+      "id": "txt_section_title__67_308",
+      "name": "txt_section_title",
+      "x": 320,
+      "y": 720,
+      "width": 440,
+      "height": 66,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 9314,
+          "y": 720
+        },
+        "figmaRelative": {
+          "x": 320,
+          "y": 720
+        },
+        "figmaSize": {
+          "width": 440,
+          "height": 66
+        },
+        "exportedSize": {
+          "width": 440,
+          "height": 66
+        },
+        "text": {
+          "figmaWidth": 440,
+          "figmaHeight": 66,
+          "exportedWidth": 440,
+          "exportedHeight": 66,
+          "fontSize": 58,
+          "scaleX": 1,
+          "scaleY": 1
+        }
+      },
+      "type": "text",
+      "text": "Activate Boosters",
+      "style": {
+        "fontFamily": "Lilita One",
+        "fontSize": 58,
+        "fontWeight": "Regular",
+        "color": "#634934",
+        "fill": "#634934",
+        "alpha": 1,
+        "align": "center",
+        "wrap": true,
+        "wordWrapWidth": 440
+      }
+    },
+    {
+      "id": "btn_close__71_8",
+      "name": "btn_close",
+      "x": 473,
+      "y": 1736,
+      "width": 151,
+      "height": 153,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 9467,
+          "y": 1736
+        },
+        "figmaRelative": {
+          "x": 473,
+          "y": 1736
+        },
+        "figmaSize": {
+          "width": 151,
+          "height": 153
+        },
+        "exportedSize": {
+          "width": 151,
+          "height": 153
+        }
+      },
+      "type": "button",
+      "hitArea": {
+        "x": 0,
+        "y": 0,
+        "width": 151,
+        "height": 153
+      },
+      "children": [
+        {
+          "id": "icon_close__67_310",
+          "name": "icon_close",
+          "x": 0,
+          "y": 0,
+          "width": 151,
+          "height": 153,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 9467,
+              "y": 1736
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 151,
+              "height": 153
+            },
+            "exportedSize": {
+              "width": 151,
+              "height": 153
+            }
+          },
+          "type": "raster",
+          "assetId": "asset-1a8960b7-15268",
+          "asset": "assets/ui/StartDialog/asset-1a8960b7.png"
+        }
+      ]
+    },
+    {
+      "id": "btn_start__67_311",
+      "name": "btn_start",
+      "x": 308,
+      "y": 1415,
+      "width": 464,
+      "height": 217,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 9302,
+          "y": 1415
+        },
+        "figmaRelative": {
+          "x": 308,
+          "y": 1415
+        },
+        "figmaSize": {
+          "width": 464,
+          "height": 217
+        },
+        "exportedSize": {
+          "width": 464,
+          "height": 217
+        }
+      },
+      "type": "button",
+      "hitArea": {
+        "x": 0,
+        "y": 0,
+        "width": 464,
+        "height": 217
+      },
+      "children": [
+        {
+          "id": "btn_start_bg__67_312",
+          "name": "btn_start_bg",
+          "x": 0,
+          "y": 0,
+          "width": 464,
+          "height": 217,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 9302,
+              "y": 1415
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 464,
+              "height": 217
+            },
+            "exportedSize": {
+              "width": 464,
+              "height": 217
+            }
+          },
+          "type": "nineSlice",
+          "assetId": "asset-4147f899-5894",
+          "asset": "assets/ui/StartDialog/asset-4147f899.png",
+          "slice": {
+            "left": 104,
+            "top": 97,
+            "right": 47,
+            "bottom": 82
+          },
+          "textureSlice": {
+            "left": 104,
+            "top": 97,
+            "right": 47,
+            "bottom": 82
+          },
+          "assetOptimization": {
+            "type": "nineSliceCompact",
+            "enabled": true,
+            "sourceWidth": 473,
+            "sourceHeight": 234,
+            "textureWidth": 152,
+            "textureHeight": 180,
+            "compactCenterWidth": 1,
+            "compactCenterHeight": 1,
+            "assetScale": 1
+          }
+        },
+        {
+          "id": "txt_start__67_313",
+          "name": "txt_start",
+          "x": 138,
+          "y": 58,
+          "width": 188,
+          "height": 98,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 9440,
+              "y": 1473
+            },
+            "figmaRelative": {
+              "x": 138,
+              "y": 58
+            },
+            "figmaSize": {
+              "width": 188,
+              "height": 98
+            },
+            "exportedSize": {
+              "width": 188,
+              "height": 98
+            },
+            "text": {
+              "figmaWidth": 188,
+              "figmaHeight": 98,
+              "exportedWidth": 188,
+              "exportedHeight": 98,
+              "fontSize": 86,
+              "scaleX": 1,
+              "scaleY": 1
+            }
+          },
+          "type": "text",
+          "text": "Start",
+          "style": {
+            "fontFamily": "Lilita One",
+            "fontSize": 86,
+            "fontWeight": "Regular",
+            "color": "#ffffff",
+            "fill": "#ffffff",
+            "stroke": "#0a0a0a",
+            "strokeWidth": 8,
+            "alpha": 1,
+            "align": "center",
+            "wrap": true,
+            "wordWrapWidth": 188
+          }
+        }
+      ]
+    },
+    {
+      "id": "btn_booster_gate__67_360",
+      "name": "btn_booster_gate",
+      "x": 323,
+      "y": 868,
+      "width": 174,
+      "height": 156,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 9317,
+          "y": 868
+        },
+        "figmaRelative": {
+          "x": 323,
+          "y": 868
+        },
+        "figmaSize": {
+          "width": 174,
+          "height": 156
+        },
+        "exportedSize": {
+          "width": 174,
+          "height": 156
+        }
+      },
+      "type": "button",
+      "hitArea": {
+        "x": 0,
+        "y": 0,
+        "width": 174,
+        "height": 156
+      },
+      "children": [
+        {
+          "id": "icon_booster_gate__67_361",
+          "name": "icon_booster_gate",
+          "x": 0,
+          "y": 0,
+          "width": 174,
+          "height": 156,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 9317,
+              "y": 868
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 174,
+              "height": 156
+            },
+            "exportedSize": {
+              "width": 174,
+              "height": 156
+            }
+          },
+          "type": "raster",
+          "assetId": "asset-2a206fc1-22482",
+          "asset": "assets/ui/StartDialog/asset-2a206fc1.png"
+        }
+      ]
+    },
+    {
+      "id": "btn_booster_bag__67_372",
+      "name": "btn_booster_bag",
+      "x": 561,
+      "y": 868,
+      "width": 174,
+      "height": 156,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 9555,
+          "y": 868
+        },
+        "figmaRelative": {
+          "x": 561,
+          "y": 868
+        },
+        "figmaSize": {
+          "width": 174,
+          "height": 156
+        },
+        "exportedSize": {
+          "width": 174,
+          "height": 156
+        }
+      },
+      "type": "button",
+      "hitArea": {
+        "x": 0,
+        "y": 0,
+        "width": 174,
+        "height": 156
+      },
+      "children": [
+        {
+          "id": "icon_booster_bag__67_373",
+          "name": "icon_booster_bag",
+          "x": 0,
+          "y": 0,
+          "width": 174,
+          "height": 156,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 9555,
+              "y": 868
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 174,
+              "height": 156
+            },
+            "exportedSize": {
+              "width": 174,
+              "height": 156
+            }
+          },
+          "type": "raster",
+          "assetId": "asset-fe394369-19505",
+          "asset": "assets/ui/StartDialog/asset-fe394369.png"
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "asset-4827cb46-10007",
+      "src": "assets/ui/StartDialog/asset-4827cb46.png",
+      "width": 155,
+      "height": 262,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-ce117ea5-7221",
+      "src": "assets/ui/StartDialog/asset-ce117ea5.png",
+      "width": 149,
+      "height": 191,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-1a8960b7-15268",
+      "src": "assets/ui/StartDialog/asset-1a8960b7.png",
+      "width": 151,
+      "height": 153,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-4147f899-5894",
+      "src": "assets/ui/StartDialog/asset-4147f899.png",
+      "width": 152,
+      "height": 180,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-2a206fc1-22482",
+      "src": "assets/ui/StartDialog/asset-2a206fc1.png",
+      "width": 174,
+      "height": 156,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-fe394369-19505",
+      "src": "assets/ui/StartDialog/asset-fe394369.png",
+      "width": 174,
+      "height": 156,
+      "scale": 1,
+      "mimeType": "image/png"
+    }
+  ],
+  "meta": {
+    "source": "figma",
+    "exportedRootId": "67:287",
+    "validation": {
+      "warnings": [
+        "Ninepatch \"dialog_bg\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations.",
+        "Ninepatch \"content_panel\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations.",
+        "Ninepatch \"btn_start_bg\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations."
+      ],
+      "errors": []
+    }
+  }
+}

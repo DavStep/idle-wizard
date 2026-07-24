@@ -14,7 +14,7 @@ describe('PlayerFacade', () => {
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
       theme: 'midnight',
-      font: 'lexend',
+      font: 'lilita-one',
       colorMode: 'resources',
       character: 'elara',
       iconMode: 'icons',
@@ -34,7 +34,7 @@ describe('PlayerFacade', () => {
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
       theme: 'midnight',
-      font: 'lexend',
+      font: 'lilita-one',
       colorMode: 'resources',
       character: 'elara',
       iconMode: 'icons',
@@ -205,10 +205,10 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getSnapshot().font).toBe('comic-sans-mono');
 
     playerFacade.setFont('lexend');
-    expect(playerFacade.getSnapshot().font).toBe('lexend');
+    expect(playerFacade.getSnapshot().font).toBe('lilita-one');
 
     playerFacade.setFont('unknown');
-    expect(playerFacade.getSnapshot().font).toBe('lexend');
+    expect(playerFacade.getSnapshot().font).toBe('lilita-one');
   });
 
   it('applies server profile preferences', () => {

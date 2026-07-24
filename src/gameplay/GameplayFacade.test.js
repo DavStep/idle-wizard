@@ -158,7 +158,6 @@ function finishCurrentTaskLevel(gameplayFacade) {
     finishTaskRequirement(gameplayFacade, task);
   }
 
-  gameplayFacade.coinFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costCoin);
   gameplayFacade.completeTaskLevel();
 }
 
@@ -712,8 +711,9 @@ describe('GameplayFacade', () => {
     expect(brewing.nextCauldronNumber).toBe(3);
   });
 
-  it('fills tasks from inventory and advances player level after coin payment', () => {
+  it('advances player level after tasks without requiring or spending coin', () => {
     const { gameplayFacade } = createGameplay();
+    gameplayFacade.coinFacade.add(2);
     const tasks = gameplayFacade.getSnapshot().tasks.level.tasks;
     const task = tasks.find((candidate) => candidate.type === taskRequirementTypes.TURN_IN);
     for (const earlierTask of tasks.slice(0, tasks.indexOf(task))) {
@@ -773,25 +773,17 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(1);
     expect(gameplayFacade.getSnapshot().tasks.level.completion).toMatchObject({
       level: 1,
-      costCoin: 4,
       canComplete: true,
     });
-    expect(gameplayFacade.completeTaskLevel()).toMatchObject({
-      ok: false,
-      reason: 'not_enough_coin',
-      costCoin: 4,
-    });
-
-    gameplayFacade.coinFacade.add(4);
+    expect(gameplayFacade.getSnapshot().tasks.level.completion).not.toHaveProperty('costCoin');
     expect(gameplayFacade.completeTaskLevel()).toMatchObject({
       ok: true,
       currentLevel: 2,
       advanced: true,
-      costCoin: 4,
     });
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(3);
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(2);
   });
 
   it('collects progress for only the active elara request', () => {
@@ -850,7 +842,7 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('keeps a completed task level unpaid across reload', () => {
+  it('keeps a completed task level ready across reload', () => {
     const persistenceStorage = createMemoryStorage();
     const first = createGameplay({ persistenceStorage });
     const tasks = first.gameplayFacade.getSnapshot().tasks.level.tasks;
@@ -859,8 +851,6 @@ describe('GameplayFacade', () => {
       finishTaskRequirement(first.gameplayFacade, task);
     }
 
-    const costCoin = first.gameplayFacade.getSnapshot().tasks.level.completion.costCoin;
-    first.gameplayFacade.coinFacade.add(costCoin);
     first.gameplayFacade.shutdown();
     first.ecsFacade.destroyWorld();
 
@@ -870,10 +860,10 @@ describe('GameplayFacade', () => {
     expect(snapshot.tasks.currentLevel).toBe(1);
     expect(snapshot.tasks.level.completion).toMatchObject({
       level: 1,
-      costCoin,
       canComplete: true,
     });
-    expect(snapshot.coin.current).toBe(costCoin);
+    expect(snapshot.tasks.level.completion).not.toHaveProperty('costCoin');
+    expect(snapshot.coin.current).toBe(0);
   });
 
   it('keeps task requirements out of market sell reservations', () => {
@@ -1675,7 +1665,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(2);
   });
 
-  it('uses legacy SpacetimeDB task completion costs without falling back', () => {
+  it('keeps legacy task completion costs out of level-up state', () => {
     const { gameplayFacade } = createGameplay();
 
     gameplayFacade.applyRuntimeConfig({
@@ -1695,7 +1685,8 @@ describe('GameplayFacade', () => {
       ],
     });
 
-    expect(gameplayFacade.getSnapshot().tasks.level.completion.costCoin).toBe(7);
+    expect(gameplayFacade.tasksFacade.getLevelCoinBudget(0)).toBe(7);
+    expect(gameplayFacade.getSnapshot().tasks.level.completion).not.toHaveProperty('costCoin');
   });
 
   it('uses SpacetimeDB runtime config for balance and catalog data', () => {
@@ -2179,7 +2170,7 @@ describe('GameplayFacade', () => {
           configJson: JSON.stringify({
             costsCrystal: {
               theme: { black: 2, midnight: 0, witchcraft: 0 },
-              font: { lexend: 0, 'comic-sans-mono': 0 },
+              font: { 'lilita-one': 0, 'comic-sans-mono': 0 },
               progressBar: { regular: 0, gradient: 0 },
             },
           }),
@@ -2191,7 +2182,7 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().visualSettings.researched).toMatchObject({
       theme: { black: false, midnight: true, witchcraft: false },
       font: {
-        lexend: true,
+        'lilita-one': true,
         'comic-sans-mono': false,
       },
       progressBar: { regular: true, gradient: false },
@@ -3694,7 +3685,6 @@ describe('GameplayFacade', () => {
 
     while (gameplayFacade.getSnapshot().tasks.currentLevel < 5) {
       finishCurrentTasksWithoutCoin();
-      gameplayFacade.coinFacade.add(gameplayFacade.getSnapshot().tasks.level.completion.costCoin);
       expect(gameplayFacade.completeTaskLevel()).toMatchObject({ ok: true });
     }
 

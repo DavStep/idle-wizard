@@ -33,7 +33,7 @@ describe('identity-only player reset', () => {
       theme: 'midnight',
       colorMode: 'resources',
       usernamePromptSeen: false,
-      font: 'lexend',
+      font: 'lilita-one',
       character: 'elara',
     });
   });

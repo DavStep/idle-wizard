@@ -231,7 +231,8 @@ export class ShopPlayerRequestManager {
     divider.className = 'shop-page__request-choice-divider';
 
     const list = document.createElement('div');
-    list.className = 'shop-page__sell-item-list shop-page__request-item-list';
+    list.className =
+      'shop-page__sell-item-list shop-page__request-item-list style-page-scroll';
 
     const empty = document.createElement('div');
     empty.className = 'shop-page__request-empty';

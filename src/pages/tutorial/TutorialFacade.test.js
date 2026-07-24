@@ -221,6 +221,20 @@ describe('TutorialFacade', () => {
     document.body.textContent = '';
   });
 
+  it('routes the shared Spine runtime to the tutorial pointer', () => {
+    const spineRuntimeFacade = {
+      loadSkeleton: vi.fn(),
+      createSkeleton: vi.fn(),
+    };
+    const facade = new TutorialFacade({
+      spineRuntimeFacade,
+    });
+
+    expect(
+      facade.hintManager.pointerSpineManager.spineRuntimeFacade,
+    ).toBe(spineRuntimeFacade);
+  });
+
   it('primes the intro reveal gate before the first animation-frame refresh', () => {
     const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
     const originalCancelAnimationFrame = globalThis.cancelAnimationFrame;

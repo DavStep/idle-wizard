@@ -201,7 +201,6 @@ describe('GuildPanelManager', () => {
     const initialPanel = parent.querySelector('.guild-page__tabpanel');
     expect(initialPanel?.dataset.guildTabPanel).toBe('hall');
     expect(initialPanel?.classList.contains('style-page-scroll')).toBe(true);
-    expect(initialPanel?.dataset.scrollCueProgress).toBe('inline');
     expect(getBoxTitles()).toEqual(['guild hall', 'secretary']);
 
     getTabButtons()
@@ -988,7 +987,6 @@ describe('GuildPanelManager', () => {
       ['level', '3'],
       ['status', 'idle'],
     ]);
-    expect(details?.dataset.scrollCueProgress).toBe('inline');
     expect(detailRows).toEqual([
       ['xp', '7/10'],
       ['personality', 'steady'],
@@ -1159,7 +1157,7 @@ describe('GuildPanelManager', () => {
     const icon = parent.querySelector('.guild-page__adventurer-icon');
 
     expect(icon?.tagName).toBe('SPAN');
-    expect(icon?.dataset.initial).toBe('m');
+    expect(icon?.dataset.initial).toBe('M');
   });
 
   it('styles guild identity cards with large unboxed icons', () => {
@@ -1395,21 +1393,13 @@ describe('GuildPanelManager', () => {
     expect(baseCss).not.toMatch(/\.guild-page__board-separator\b/);
   });
 
-  it('keeps guild request reward resources on resource colors', () => {
+  it('keeps guild request reward resources on the paper text hierarchy', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const coinRule = baseCss.match(
-      /\.guild-page__request-reward\s+\[data-resource-color="coin"\],\s*\.guild-page__request-paper-content\s+\[data-resource-color="coin"\]\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const seedRule = baseCss.match(
-      /\.guild-page__request-reward\s+\[data-resource-color="seed"\],\s*\.guild-page__request-paper-content\s+\[data-resource-color="seed"\]\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const herbRule = baseCss.match(
-      /\.guild-page__request-reward\s+\[data-resource-color="herb"\],\s*\.guild-page__request-paper-content\s+\[data-resource-color="herb"\]\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
 
-    expect(coinRule).toMatch(/\bcolor:\s*var\(--guild-page-paper-coin\);/);
-    expect(seedRule).toMatch(/\bcolor:\s*var\(--guild-page-paper-seed\);/);
-    expect(herbRule).toMatch(/\bcolor:\s*var\(--guild-page-paper-herb\);/);
+    expect(baseCss).not.toMatch(/--guild-page-paper-(?:coin|seed|herb)\s*:/);
+    expect(baseCss).not.toMatch(
+      /\.guild-page__request-(?:reward|paper-content)\s+\[data-resource-color=/,
+    );
   });
 
   it('populates guild settings fields and keeps in-progress edits through refreshes', () => {
@@ -1716,8 +1706,9 @@ describe('GuildPanelManager', () => {
     expect(stackWrapRule).toMatch(/\bflex:\s*1 1 auto;/);
     expect(stackWrapRule).toMatch(/\bwidth:\s*100%;/);
     expect(stackProgressRule).toMatch(/\bflex:\s*0 0 var\(--style-progress-total-height\);/);
-    expect(stackProgressRule).toMatch(/\bborder-image:\s*none;/);
-    expect(stackProgressFillRule).toMatch(/\bbackground:\s*#a89678;/);
+    expect(stackProgressRule).not.toMatch(/\bborder-image\s*:/);
+    expect(stackProgressFillRule).toBeUndefined();
+    expect(baseCss).toContain('--style-progress-root-fill: #8740df;');
     expect(stackListItemRule).toMatch(/\bgrid-template-columns:\s*16px minmax\(0, 1fr\);/);
     expect(stackListItemRule).toMatch(/\bcolumn-gap:\s*4px;/);
     expect(stackListNumberRule).toMatch(

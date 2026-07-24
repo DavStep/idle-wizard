@@ -1,0 +1,1964 @@
+{
+  "version": "1.0.0",
+  "name": "backpack-dialog",
+  "kind": "dialog",
+  "designSize": {
+    "width": 1080,
+    "height": 2122
+  },
+  "scaleMode": "fit",
+  "safeArea": {
+    "x": 0,
+    "y": 0,
+    "width": 1080,
+    "height": 2122
+  },
+  "modal": false,
+  "children": [
+    {
+      "id": "dialog-back__97_261",
+      "name": "dialog-back",
+      "x": 40,
+      "y": 477,
+      "width": 1000,
+      "height": 1278,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 6724,
+          "y": 477
+        },
+        "figmaRelative": {
+          "x": 40,
+          "y": 477
+        },
+        "figmaSize": {
+          "width": 1000,
+          "height": 1278
+        },
+        "exportedSize": {
+          "width": 1000,
+          "height": 1278
+        }
+      },
+      "type": "nineSlice",
+      "assetId": "asset-d4754635-11548",
+      "asset": "assets/ui/backpack-dialog/asset-d4754635.png",
+      "slice": {
+        "left": 218,
+        "top": 156,
+        "right": 261,
+        "bottom": 96
+      },
+      "textureSlice": {
+        "left": 218,
+        "top": 156,
+        "right": 261,
+        "bottom": 96
+      },
+      "assetOptimization": {
+        "type": "nineSliceCompact",
+        "enabled": true,
+        "sourceWidth": 1000,
+        "sourceHeight": 1288,
+        "textureWidth": 480,
+        "textureHeight": 253,
+        "compactCenterWidth": 1,
+        "compactCenterHeight": 1,
+        "assetScale": 1
+      }
+    },
+    {
+      "id": "dialog-front__97_474",
+      "name": "dialog-front",
+      "x": 54,
+      "y": 1215,
+      "width": 972,
+      "height": 255,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 6738,
+          "y": 1215
+        },
+        "figmaRelative": {
+          "x": 54,
+          "y": 1215
+        },
+        "figmaSize": {
+          "width": 972,
+          "height": 255
+        },
+        "exportedSize": {
+          "width": 972,
+          "height": 255
+        }
+      },
+      "type": "container",
+      "children": [
+        {
+          "id": "bp_info__97_487",
+          "name": "bp_info",
+          "x": 0,
+          "y": 0,
+          "width": 972,
+          "height": 255,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 6738,
+              "y": 1215
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 972,
+              "height": 255
+            },
+            "exportedSize": {
+              "width": 972,
+              "height": 255
+            }
+          },
+          "type": "nineSlice",
+          "assetId": "asset-e6e98d48-5365",
+          "asset": "assets/ui/backpack-dialog/asset-e6e98d48.png",
+          "slice": {
+            "left": 83,
+            "top": 82,
+            "right": 87,
+            "bottom": 93
+          },
+          "textureSlice": {
+            "left": 83,
+            "top": 82,
+            "right": 87,
+            "bottom": 93
+          },
+          "assetOptimization": {
+            "type": "nineSliceCompact",
+            "enabled": true,
+            "sourceWidth": 972,
+            "sourceHeight": 257,
+            "textureWidth": 171,
+            "textureHeight": 176,
+            "compactCenterWidth": 1,
+            "compactCenterHeight": 1,
+            "assetScale": 1
+          }
+        },
+        {
+          "id": "Price___97_263",
+          "name": "Price:",
+          "x": 29,
+          "y": 33,
+          "width": 141,
+          "height": 66,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 6767,
+              "y": 1248
+            },
+            "figmaRelative": {
+              "x": 29,
+              "y": 33
+            },
+            "figmaSize": {
+              "width": 141,
+              "height": 66
+            },
+            "exportedSize": {
+              "width": 141,
+              "height": 66
+            },
+            "text": {
+              "figmaWidth": 141,
+              "figmaHeight": 66,
+              "exportedWidth": 141,
+              "exportedHeight": 66,
+              "fontSize": 58,
+              "scaleX": 1,
+              "scaleY": 1
+            }
+          },
+          "type": "text",
+          "text": "Price:",
+          "style": {
+            "fontFamily": "Lilita One",
+            "fontSize": 58,
+            "fontWeight": "Regular",
+            "color": "#634934",
+            "fill": "#634934",
+            "alpha": 1,
+            "align": "center",
+            "wrap": true,
+            "wordWrapWidth": 141
+          }
+        },
+        {
+          "id": "Weight___97_265",
+          "name": "Weight:",
+          "x": 32,
+          "y": 156,
+          "width": 195,
+          "height": 66,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 6770,
+              "y": 1371
+            },
+            "figmaRelative": {
+              "x": 32,
+              "y": 156
+            },
+            "figmaSize": {
+              "width": 195,
+              "height": 66
+            },
+            "exportedSize": {
+              "width": 195,
+              "height": 66
+            },
+            "text": {
+              "figmaWidth": 195,
+              "figmaHeight": 66,
+              "exportedWidth": 195,
+              "exportedHeight": 66,
+              "fontSize": 58,
+              "scaleX": 1,
+              "scaleY": 1
+            }
+          },
+          "type": "text",
+          "text": "Weight:",
+          "style": {
+            "fontFamily": "Lilita One",
+            "fontSize": 58,
+            "fontWeight": "Regular",
+            "color": "#634934",
+            "fill": "#634934",
+            "alpha": 1,
+            "align": "left",
+            "wrap": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "title__97_488",
+      "name": "title",
+      "x": 273,
+      "y": 509,
+      "width": 534.888,
+      "height": 83,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 6957,
+          "y": 509
+        },
+        "figmaRelative": {
+          "x": 273,
+          "y": 509
+        },
+        "figmaSize": {
+          "width": 534.888,
+          "height": 83
+        },
+        "exportedSize": {
+          "width": 534.888,
+          "height": 83
+        }
+      },
+      "type": "container",
+      "children": [
+        {
+          "id": "header__97_521",
+          "name": "header",
+          "x": -5.34,
+          "y": 0,
+          "width": 530.68,
+          "height": 83,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 6951.66,
+              "y": 509
+            },
+            "figmaRelative": {
+              "x": -5.34,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 530.68,
+              "height": 83
+            },
+            "exportedSize": {
+              "width": 530.68,
+              "height": 83
+            }
+          },
+          "type": "nineSlice",
+          "assetId": "asset-bf7f905c-5907",
+          "asset": "assets/ui/backpack-dialog/asset-bf7f905c.png",
+          "slice": {
+            "left": 126,
+            "top": 39,
+            "right": 127,
+            "bottom": 43
+          },
+          "textureSlice": {
+            "left": 126,
+            "top": 39,
+            "right": 127,
+            "bottom": 43
+          },
+          "assetOptimization": {
+            "type": "nineSliceCompact",
+            "enabled": true,
+            "sourceWidth": 539,
+            "sourceHeight": 95,
+            "textureWidth": 254,
+            "textureHeight": 83,
+            "compactCenterWidth": 1,
+            "compactCenterHeight": 1,
+            "assetScale": 1
+          }
+        },
+        {
+          "id": "Backpack__97_268",
+          "name": "Backpack",
+          "x": 129,
+          "y": 5,
+          "width": 262,
+          "height": 64.544,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 7086,
+              "y": 514
+            },
+            "figmaRelative": {
+              "x": 129,
+              "y": 5
+            },
+            "figmaSize": {
+              "width": 262,
+              "height": 64.544
+            },
+            "exportedSize": {
+              "width": 262,
+              "height": 64.544
+            },
+            "text": {
+              "figmaWidth": 262,
+              "figmaHeight": 64.544,
+              "exportedWidth": 262,
+              "exportedHeight": 64.544,
+              "fontSize": 64,
+              "scaleX": 1,
+              "scaleY": 1
+            }
+          },
+          "type": "text",
+          "text": "Backpack",
+          "style": {
+            "fontFamily": "Lilita One",
+            "fontSize": 64,
+            "fontWeight": "Regular",
+            "color": "#ffffff",
+            "fill": "#ffffff",
+            "stroke": "#0a0a0a",
+            "strokeWidth": 8,
+            "alpha": 1,
+            "align": "center",
+            "wrap": true,
+            "wordWrapWidth": 262
+          }
+        }
+      ]
+    },
+    {
+      "id": "Lvl_2__97_269",
+      "name": "Lvl.2",
+      "x": 91,
+      "y": 610,
+      "width": 110,
+      "height": 64.544,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 6775,
+          "y": 610
+        },
+        "figmaRelative": {
+          "x": 91,
+          "y": 610
+        },
+        "figmaSize": {
+          "width": 110,
+          "height": 64.544
+        },
+        "exportedSize": {
+          "width": 110,
+          "height": 64.544
+        },
+        "text": {
+          "figmaWidth": 110,
+          "figmaHeight": 64.544,
+          "exportedWidth": 110,
+          "exportedHeight": 64.544,
+          "fontSize": 64,
+          "scaleX": 1,
+          "scaleY": 1
+        }
+      },
+      "type": "text",
+      "text": "Lv.2",
+      "style": {
+        "fontFamily": "Lilita One",
+        "fontSize": 64,
+        "fontWeight": "Regular",
+        "color": "#ffc750",
+        "fill": "#ffc750",
+        "stroke": "#0a0a0a",
+        "strokeWidth": 8,
+        "alpha": 1,
+        "align": "center",
+        "wrap": true,
+        "wordWrapWidth": 110
+      }
+    },
+    {
+      "id": "startButton__101_88",
+      "name": "startButton",
+      "x": 320,
+      "y": 1498,
+      "width": 456.091,
+      "height": 205.164,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 7004,
+          "y": 1498
+        },
+        "figmaRelative": {
+          "x": 320,
+          "y": 1498
+        },
+        "figmaSize": {
+          "width": 456.091,
+          "height": 205.164
+        },
+        "exportedSize": {
+          "width": 456.091,
+          "height": 205.164
+        }
+      },
+      "type": "button",
+      "hitArea": {
+        "x": 0,
+        "y": 0,
+        "width": 456.091,
+        "height": 205.164
+      },
+      "children": [
+        {
+          "id": "startButtonBg__101_89",
+          "name": "startButtonBg",
+          "x": 0,
+          "y": 0,
+          "width": 456.091,
+          "height": 205.164,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 7004,
+              "y": 1498
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 456.091,
+              "height": 205.164
+            },
+            "exportedSize": {
+              "width": 456.091,
+              "height": 205.164
+            }
+          },
+          "type": "nineSlice",
+          "assetId": "asset-4147f899-5894",
+          "asset": "assets/ui/backpack-dialog/asset-4147f899.png",
+          "slice": {
+            "left": 111,
+            "top": 92,
+            "right": 96,
+            "bottom": 68
+          },
+          "textureSlice": {
+            "left": 111,
+            "top": 92,
+            "right": 96,
+            "bottom": 68
+          },
+          "assetOptimization": {
+            "type": "nineSliceCompact",
+            "enabled": true,
+            "sourceWidth": 473,
+            "sourceHeight": 234,
+            "textureWidth": 208,
+            "textureHeight": 161,
+            "compactCenterWidth": 1,
+            "compactCenterHeight": 1,
+            "assetScale": 1
+          }
+        },
+        {
+          "id": "text-currency__101_95",
+          "name": "text-currency",
+          "x": 133.955,
+          "y": 24,
+          "width": 188,
+          "height": 167,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 7137.955,
+              "y": 1522
+            },
+            "figmaRelative": {
+              "x": 133.955,
+              "y": 24
+            },
+            "figmaSize": {
+              "width": 188,
+              "height": 167
+            },
+            "exportedSize": {
+              "width": 188,
+              "height": 167
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "tartButtonLabel__101_96",
+              "name": "tartButtonLabel",
+              "x": 0,
+              "y": 0,
+              "width": 188,
+              "height": 98,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7137.955,
+                  "y": 1522
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 188,
+                  "height": 98
+                },
+                "exportedSize": {
+                  "width": 188,
+                  "height": 98
+                },
+                "text": {
+                  "figmaWidth": 188,
+                  "figmaHeight": 98,
+                  "exportedWidth": 188,
+                  "exportedHeight": 98,
+                  "fontSize": 86,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "Start",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 86,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#0a0a0a",
+                "strokeWidth": 8,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 188
+              }
+            },
+            {
+              "id": "entryTicketCount__101_97",
+              "name": "entryTicketCount",
+              "x": 103.045,
+              "y": 105,
+              "width": 65,
+              "height": 55,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7241,
+                  "y": 1627
+                },
+                "figmaRelative": {
+                  "x": 103.045,
+                  "y": 105
+                },
+                "figmaSize": {
+                  "width": 65,
+                  "height": 55
+                },
+                "exportedSize": {
+                  "width": 65,
+                  "height": 55
+                },
+                "text": {
+                  "figmaWidth": 65,
+                  "figmaHeight": 55,
+                  "exportedWidth": 65,
+                  "exportedHeight": 55,
+                  "fontSize": 48,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "x1",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 48,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#0a0a0a",
+                "strokeWidth": 4,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 65
+              }
+            },
+            {
+              "id": "entryTicketIcon__101_98",
+              "name": "entryTicketIcon",
+              "x": 4,
+              "y": 98,
+              "width": 99,
+              "height": 69,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7141.955,
+                  "y": 1620
+                },
+                "figmaRelative": {
+                  "x": 4,
+                  "y": 98
+                },
+                "figmaSize": {
+                  "width": 99,
+                  "height": 69
+                },
+                "exportedSize": {
+                  "width": 99,
+                  "height": 69
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-e65167b0-6815",
+              "asset": "assets/ui/backpack-dialog/asset-e65167b0.png"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "close__97_271",
+      "name": "close",
+      "x": 483,
+      "y": 1830,
+      "width": 114,
+      "height": 114,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 7167,
+          "y": 1830
+        },
+        "figmaRelative": {
+          "x": 483,
+          "y": 1830
+        },
+        "figmaSize": {
+          "width": 114,
+          "height": 114
+        },
+        "exportedSize": {
+          "width": 114,
+          "height": 114
+        }
+      },
+      "type": "raster",
+      "assetId": "asset-bdcfaf6d-5954",
+      "asset": "assets/ui/backpack-dialog/asset-bdcfaf6d.png"
+    },
+    {
+      "id": "itemss__97_272",
+      "name": "itemss",
+      "x": 86,
+      "y": 705,
+      "width": 908,
+      "height": 480,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 6770,
+          "y": 705
+        },
+        "figmaRelative": {
+          "x": 86,
+          "y": 705
+        },
+        "figmaSize": {
+          "width": 908,
+          "height": 480
+        },
+        "exportedSize": {
+          "width": 908,
+          "height": 480
+        }
+      },
+      "type": "container",
+      "children": [
+        {
+          "id": "carrotSlot_01__97_522",
+          "name": "carrotSlot_01",
+          "x": 0,
+          "y": 0,
+          "width": 206,
+          "height": 226,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 6770,
+              "y": 705
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 206,
+              "height": 226
+            },
+            "exportedSize": {
+              "width": 206,
+              "height": 226
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "itembg__97_528",
+              "name": "itembg",
+              "x": 0,
+              "y": 0,
+              "width": 206,
+              "height": 226,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 6770,
+                  "y": 705
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 206,
+                  "height": 226
+                },
+                "exportedSize": {
+                  "width": 206,
+                  "height": 226
+                }
+              },
+              "type": "nineSlice",
+              "assetId": "asset-399d0e55-9662",
+              "asset": "assets/ui/backpack-dialog/asset-399d0e55.png",
+              "slice": {
+                "left": 87,
+                "top": 74,
+                "right": 90,
+                "bottom": 105
+              }
+            },
+            {
+              "id": "item-carrot__97_525",
+              "name": "item-carrot",
+              "x": 63,
+              "y": 20,
+              "width": 80,
+              "height": 153,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 6833,
+                  "y": 725
+                },
+                "figmaRelative": {
+                  "x": 63,
+                  "y": 20
+                },
+                "figmaSize": {
+                  "width": 80,
+                  "height": 153
+                },
+                "exportedSize": {
+                  "width": 80,
+                  "height": 153
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-bfbc635d-17157",
+              "asset": "assets/ui/backpack-dialog/asset-bfbc635d.png"
+            },
+            {
+              "id": "2_4__97_526",
+              "name": "2/4",
+              "x": 68,
+              "y": 181,
+              "width": 69.674,
+              "height": 40,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 6838,
+                  "y": 886
+                },
+                "figmaRelative": {
+                  "x": 68,
+                  "y": 181
+                },
+                "figmaSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "exportedSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "text": {
+                  "figmaWidth": 69.674,
+                  "figmaHeight": 40,
+                  "exportedWidth": 69.674,
+                  "exportedHeight": 40,
+                  "fontSize": 38,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "2/4",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 38,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#000000",
+                "strokeWidth": 4,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 69.674
+              }
+            }
+          ]
+        },
+        {
+          "id": "carrotSlot_02__97_529",
+          "name": "carrotSlot_02",
+          "x": 234,
+          "y": 0,
+          "width": 206,
+          "height": 226,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 7004,
+              "y": 705
+            },
+            "figmaRelative": {
+              "x": 234,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 206,
+              "height": 226
+            },
+            "exportedSize": {
+              "width": 206,
+              "height": 226
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "itembg__97_530",
+              "name": "itembg",
+              "x": 0,
+              "y": 0,
+              "width": 206,
+              "height": 226,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7004,
+                  "y": 705
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 206,
+                  "height": 226
+                },
+                "exportedSize": {
+                  "width": 206,
+                  "height": 226
+                }
+              },
+              "type": "nineSlice",
+              "assetId": "asset-399d0e55-9662",
+              "asset": "assets/ui/backpack-dialog/asset-399d0e55.png",
+              "slice": {
+                "left": 87,
+                "top": 74,
+                "right": 90,
+                "bottom": 105
+              }
+            },
+            {
+              "id": "item-carrot__97_533",
+              "name": "item-carrot",
+              "x": 63,
+              "y": 20,
+              "width": 80,
+              "height": 153,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7067,
+                  "y": 725
+                },
+                "figmaRelative": {
+                  "x": 63,
+                  "y": 20
+                },
+                "figmaSize": {
+                  "width": 80,
+                  "height": 153
+                },
+                "exportedSize": {
+                  "width": 80,
+                  "height": 153
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-bfbc635d-17157",
+              "asset": "assets/ui/backpack-dialog/asset-bfbc635d.png"
+            },
+            {
+              "id": "2_4__97_534",
+              "name": "2/4",
+              "x": 68,
+              "y": 181,
+              "width": 69.674,
+              "height": 40,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7072,
+                  "y": 886
+                },
+                "figmaRelative": {
+                  "x": 68,
+                  "y": 181
+                },
+                "figmaSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "exportedSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "text": {
+                  "figmaWidth": 69.674,
+                  "figmaHeight": 40,
+                  "exportedWidth": 69.674,
+                  "exportedHeight": 40,
+                  "fontSize": 38,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "2/4",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 38,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#000000",
+                "strokeWidth": 4,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 69.674
+              }
+            }
+          ]
+        },
+        {
+          "id": "carrotSlot_03__97_536",
+          "name": "carrotSlot_03",
+          "x": 468,
+          "y": 0,
+          "width": 206,
+          "height": 226,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 7238,
+              "y": 705
+            },
+            "figmaRelative": {
+              "x": 468,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 206,
+              "height": 226
+            },
+            "exportedSize": {
+              "width": 206,
+              "height": 226
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "itembg__97_537",
+              "name": "itembg",
+              "x": 0,
+              "y": 0,
+              "width": 206,
+              "height": 226,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7238,
+                  "y": 705
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 206,
+                  "height": 226
+                },
+                "exportedSize": {
+                  "width": 206,
+                  "height": 226
+                }
+              },
+              "type": "nineSlice",
+              "assetId": "asset-399d0e55-9662",
+              "asset": "assets/ui/backpack-dialog/asset-399d0e55.png",
+              "slice": {
+                "left": 87,
+                "top": 74,
+                "right": 90,
+                "bottom": 105
+              }
+            },
+            {
+              "id": "item-carrot__97_540",
+              "name": "item-carrot",
+              "x": 63,
+              "y": 20,
+              "width": 80,
+              "height": 153,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7301,
+                  "y": 725
+                },
+                "figmaRelative": {
+                  "x": 63,
+                  "y": 20
+                },
+                "figmaSize": {
+                  "width": 80,
+                  "height": 153
+                },
+                "exportedSize": {
+                  "width": 80,
+                  "height": 153
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-bfbc635d-17157",
+              "asset": "assets/ui/backpack-dialog/asset-bfbc635d.png"
+            },
+            {
+              "id": "2_4__97_541",
+              "name": "2/4",
+              "x": 68,
+              "y": 181,
+              "width": 69.674,
+              "height": 40,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7306,
+                  "y": 886
+                },
+                "figmaRelative": {
+                  "x": 68,
+                  "y": 181
+                },
+                "figmaSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "exportedSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "text": {
+                  "figmaWidth": 69.674,
+                  "figmaHeight": 40,
+                  "exportedWidth": 69.674,
+                  "exportedHeight": 40,
+                  "fontSize": 38,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "2/4",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 38,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#000000",
+                "strokeWidth": 4,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 69.674
+              }
+            }
+          ]
+        },
+        {
+          "id": "carrotSlot_04__97_543",
+          "name": "carrotSlot_04",
+          "x": 702,
+          "y": 0,
+          "width": 206,
+          "height": 226,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 7472,
+              "y": 705
+            },
+            "figmaRelative": {
+              "x": 702,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 206,
+              "height": 226
+            },
+            "exportedSize": {
+              "width": 206,
+              "height": 226
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "itembg__97_544",
+              "name": "itembg",
+              "x": 0,
+              "y": 0,
+              "width": 206,
+              "height": 226,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7472,
+                  "y": 705
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 206,
+                  "height": 226
+                },
+                "exportedSize": {
+                  "width": 206,
+                  "height": 226
+                }
+              },
+              "type": "nineSlice",
+              "assetId": "asset-399d0e55-9662",
+              "asset": "assets/ui/backpack-dialog/asset-399d0e55.png",
+              "slice": {
+                "left": 87,
+                "top": 74,
+                "right": 90,
+                "bottom": 105
+              }
+            },
+            {
+              "id": "item-carrot__97_547",
+              "name": "item-carrot",
+              "x": 63,
+              "y": 20,
+              "width": 80,
+              "height": 153,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7535,
+                  "y": 725
+                },
+                "figmaRelative": {
+                  "x": 63,
+                  "y": 20
+                },
+                "figmaSize": {
+                  "width": 80,
+                  "height": 153
+                },
+                "exportedSize": {
+                  "width": 80,
+                  "height": 153
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-bfbc635d-17157",
+              "asset": "assets/ui/backpack-dialog/asset-bfbc635d.png"
+            },
+            {
+              "id": "2_4__97_548",
+              "name": "2/4",
+              "x": 68,
+              "y": 181,
+              "width": 69.674,
+              "height": 40,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7540,
+                  "y": 886
+                },
+                "figmaRelative": {
+                  "x": 68,
+                  "y": 181
+                },
+                "figmaSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "exportedSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "text": {
+                  "figmaWidth": 69.674,
+                  "figmaHeight": 40,
+                  "exportedWidth": 69.674,
+                  "exportedHeight": 40,
+                  "fontSize": 38,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "2/4",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 38,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#000000",
+                "strokeWidth": 4,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 69.674
+              }
+            }
+          ]
+        },
+        {
+          "id": "carrotSlot_05__97_550",
+          "name": "carrotSlot_05",
+          "x": 0,
+          "y": 254,
+          "width": 206,
+          "height": 226,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 6770,
+              "y": 959
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 254
+            },
+            "figmaSize": {
+              "width": 206,
+              "height": 226
+            },
+            "exportedSize": {
+              "width": 206,
+              "height": 226
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "itembg__97_551",
+              "name": "itembg",
+              "x": 0,
+              "y": 0,
+              "width": 206,
+              "height": 226,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 6770,
+                  "y": 959
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 206,
+                  "height": 226
+                },
+                "exportedSize": {
+                  "width": 206,
+                  "height": 226
+                }
+              },
+              "type": "nineSlice",
+              "assetId": "asset-399d0e55-9662",
+              "asset": "assets/ui/backpack-dialog/asset-399d0e55.png",
+              "slice": {
+                "left": 87,
+                "top": 74,
+                "right": 90,
+                "bottom": 105
+              }
+            },
+            {
+              "id": "item-carrot__97_554",
+              "name": "item-carrot",
+              "x": 63,
+              "y": 20,
+              "width": 80,
+              "height": 153,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 6833,
+                  "y": 979
+                },
+                "figmaRelative": {
+                  "x": 63,
+                  "y": 20
+                },
+                "figmaSize": {
+                  "width": 80,
+                  "height": 153
+                },
+                "exportedSize": {
+                  "width": 80,
+                  "height": 153
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-bfbc635d-17157",
+              "asset": "assets/ui/backpack-dialog/asset-bfbc635d.png"
+            },
+            {
+              "id": "2_4__97_555",
+              "name": "2/4",
+              "x": 68,
+              "y": 181,
+              "width": 69.674,
+              "height": 40,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 6838,
+                  "y": 1140
+                },
+                "figmaRelative": {
+                  "x": 68,
+                  "y": 181
+                },
+                "figmaSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "exportedSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "text": {
+                  "figmaWidth": 69.674,
+                  "figmaHeight": 40,
+                  "exportedWidth": 69.674,
+                  "exportedHeight": 40,
+                  "fontSize": 38,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "2/4",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 38,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#000000",
+                "strokeWidth": 4,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 69.674
+              }
+            }
+          ]
+        },
+        {
+          "id": "carrotSlot_06__97_557",
+          "name": "carrotSlot_06",
+          "x": 234,
+          "y": 254,
+          "width": 206,
+          "height": 226,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 7004,
+              "y": 959
+            },
+            "figmaRelative": {
+              "x": 234,
+              "y": 254
+            },
+            "figmaSize": {
+              "width": 206,
+              "height": 226
+            },
+            "exportedSize": {
+              "width": 206,
+              "height": 226
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "itembg__97_558",
+              "name": "itembg",
+              "x": 0,
+              "y": 0,
+              "width": 206,
+              "height": 226,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7004,
+                  "y": 959
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 206,
+                  "height": 226
+                },
+                "exportedSize": {
+                  "width": 206,
+                  "height": 226
+                }
+              },
+              "type": "nineSlice",
+              "assetId": "asset-399d0e55-9662",
+              "asset": "assets/ui/backpack-dialog/asset-399d0e55.png",
+              "slice": {
+                "left": 87,
+                "top": 74,
+                "right": 90,
+                "bottom": 105
+              }
+            },
+            {
+              "id": "item-carrot__97_561",
+              "name": "item-carrot",
+              "x": 63,
+              "y": 20,
+              "width": 80,
+              "height": 153,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7067,
+                  "y": 979
+                },
+                "figmaRelative": {
+                  "x": 63,
+                  "y": 20
+                },
+                "figmaSize": {
+                  "width": 80,
+                  "height": 153
+                },
+                "exportedSize": {
+                  "width": 80,
+                  "height": 153
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-bfbc635d-17157",
+              "asset": "assets/ui/backpack-dialog/asset-bfbc635d.png"
+            },
+            {
+              "id": "2_4__97_562",
+              "name": "2/4",
+              "x": 68,
+              "y": 181,
+              "width": 69.674,
+              "height": 40,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7072,
+                  "y": 1140
+                },
+                "figmaRelative": {
+                  "x": 68,
+                  "y": 181
+                },
+                "figmaSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "exportedSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "text": {
+                  "figmaWidth": 69.674,
+                  "figmaHeight": 40,
+                  "exportedWidth": 69.674,
+                  "exportedHeight": 40,
+                  "fontSize": 38,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "2/4",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 38,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#000000",
+                "strokeWidth": 4,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 69.674
+              }
+            }
+          ]
+        },
+        {
+          "id": "carrotSlot_07__97_564",
+          "name": "carrotSlot_07",
+          "x": 468,
+          "y": 254,
+          "width": 206,
+          "height": 226,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 7238,
+              "y": 959
+            },
+            "figmaRelative": {
+              "x": 468,
+              "y": 254
+            },
+            "figmaSize": {
+              "width": 206,
+              "height": 226
+            },
+            "exportedSize": {
+              "width": 206,
+              "height": 226
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "itembg__97_565",
+              "name": "itembg",
+              "x": 0,
+              "y": 0,
+              "width": 206,
+              "height": 226,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7238,
+                  "y": 959
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 206,
+                  "height": 226
+                },
+                "exportedSize": {
+                  "width": 206,
+                  "height": 226
+                }
+              },
+              "type": "nineSlice",
+              "assetId": "asset-399d0e55-9662",
+              "asset": "assets/ui/backpack-dialog/asset-399d0e55.png",
+              "slice": {
+                "left": 87,
+                "top": 74,
+                "right": 90,
+                "bottom": 105
+              },
+              "textureSlice": {
+                "left": 87,
+                "top": 74,
+                "right": 90,
+                "bottom": 105
+              },
+              "assetOptimization": {
+                "type": "nineSliceCompact",
+                "enabled": true,
+                "sourceWidth": 206,
+                "sourceHeight": 226,
+                "textureWidth": 178,
+                "textureHeight": 180,
+                "compactCenterWidth": 1,
+                "compactCenterHeight": 1,
+                "assetScale": 1
+              }
+            },
+            {
+              "id": "item-carrot__97_568",
+              "name": "item-carrot",
+              "x": 63,
+              "y": 20,
+              "width": 80,
+              "height": 153,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7301,
+                  "y": 979
+                },
+                "figmaRelative": {
+                  "x": 63,
+                  "y": 20
+                },
+                "figmaSize": {
+                  "width": 80,
+                  "height": 153
+                },
+                "exportedSize": {
+                  "width": 80,
+                  "height": 153
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-bfbc635d-17157",
+              "asset": "assets/ui/backpack-dialog/asset-bfbc635d.png"
+            },
+            {
+              "id": "2_4__97_569",
+              "name": "2/4",
+              "x": 68,
+              "y": 181,
+              "width": 69.674,
+              "height": 40,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7306,
+                  "y": 1140
+                },
+                "figmaRelative": {
+                  "x": 68,
+                  "y": 181
+                },
+                "figmaSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "exportedSize": {
+                  "width": 69.674,
+                  "height": 40
+                },
+                "text": {
+                  "figmaWidth": 69.674,
+                  "figmaHeight": 40,
+                  "exportedWidth": 69.674,
+                  "exportedHeight": 40,
+                  "fontSize": 38,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "2/4",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 38,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#000000",
+                "strokeWidth": 4,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 69.674
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "asset-d4754635-11548",
+      "src": "assets/ui/backpack-dialog/asset-d4754635.png",
+      "width": 480,
+      "height": 253,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-e6e98d48-5365",
+      "src": "assets/ui/backpack-dialog/asset-e6e98d48.png",
+      "width": 171,
+      "height": 176,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-bf7f905c-5907",
+      "src": "assets/ui/backpack-dialog/asset-bf7f905c.png",
+      "width": 254,
+      "height": 83,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-4147f899-5894",
+      "src": "assets/ui/backpack-dialog/asset-4147f899.png",
+      "width": 208,
+      "height": 161,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-e65167b0-6815",
+      "src": "assets/ui/backpack-dialog/asset-e65167b0.png",
+      "width": 99,
+      "height": 69,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-bdcfaf6d-5954",
+      "src": "assets/ui/backpack-dialog/asset-bdcfaf6d.png",
+      "width": 114,
+      "height": 114,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-399d0e55-9662",
+      "src": "assets/ui/backpack-dialog/asset-399d0e55.png",
+      "width": 178,
+      "height": 180,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-bfbc635d-17157",
+      "src": "assets/ui/backpack-dialog/asset-bfbc635d.png",
+      "width": 80,
+      "height": 153,
+      "scale": 1,
+      "mimeType": "image/png"
+    }
+  ],
+  "meta": {
+    "source": "figma",
+    "exportedRootId": "97:252",
+    "validation": {
+      "warnings": [
+        "Ninepatch \"dialog-back\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations.",
+        "Ninepatch \"bp_info\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations.",
+        "Ninepatch \"header\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations.",
+        "Ninepatch \"startButtonBg\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations.",
+        "Ninepatch \"itembg\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations."
+      ],
+      "errors": []
+    }
+  }
+}

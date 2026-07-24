@@ -3,6 +3,7 @@ import {
   isItemResearched,
   shouldShowItemInActionList,
 } from '../../shared/itemResearchStatus.js';
+import { CostButtonManager } from '../../shared/CostButtonManager.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
@@ -25,11 +26,11 @@ import { automationResearchIds } from '../../../gameplay/automation/automationRe
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
 const cauldronEmptyImageUrl = new URL(
-  '../assets/cauldron/cauldron-empty.png',
+  '../../../../assets/game/source/rooms/brewing/cauldron/cauldron-empty.png',
   import.meta.url,
 ).href;
 const cauldronLiquidMaskImageUrl = new URL(
-  '../assets/cauldron/cauldron-liquid-mask.png',
+  '../../../../assets/game/source/rooms/brewing/cauldron/cauldron-liquid-mask.png',
   import.meta.url,
 ).href;
 
@@ -155,6 +156,7 @@ export class BrewingCauldronManager {
     this.unsubscribe = null;
     for (const refs of this.cauldronRefs.values()) {
       stopTimerProgressFill(refs.activeProgressFill, 0);
+      refs.actions.buyButtonManager.destroy();
     }
     this.clearBoughtCauldronAnimations();
     this.root?.remove();
@@ -435,7 +437,8 @@ export class BrewingCauldronManager {
     root.setAttribute('aria-live', 'polite');
 
     const selectRecipeButton = document.createElement('button');
-    selectRecipeButton.className = 'style-button brewing-page__cauldron-select-recipe-text';
+    selectRecipeButton.className =
+      'style-button style-button--yellow brewing-page__cauldron-select-recipe-text';
     selectRecipeButton.type = 'button';
     selectRecipeButton.textContent = 'recipes';
     selectRecipeButton.setAttribute('aria-haspopup', 'dialog');
@@ -447,7 +450,8 @@ export class BrewingCauldronManager {
     });
 
     const actionButton = document.createElement('button');
-    actionButton.className = 'style-button brewing-page__action-button';
+    actionButton.className =
+      'style-button style-button--yellow brewing-page__action-button';
     actionButton.type = 'button';
     actionButton.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -462,6 +466,18 @@ export class BrewingCauldronManager {
     actionButtonCost.className = 'brewing-page__action-button-cost';
     setResourceColor(actionButtonCost, 'mana');
 
+    const buyButton = document.createElement('button');
+    buyButton.className = 'style-button brewing-page__buy-button';
+    buyButton.type = 'button';
+    buyButton.hidden = true;
+    const buyButtonManager = new CostButtonManager({
+      button: buyButton,
+      onPress: () => {
+        this.suppressWorldClick();
+        this.onBuyCauldron(cauldronIndex);
+      },
+    });
+
     const actionRow = document.createElement('div');
     actionRow.className = 'brewing-page__action-row';
 
@@ -470,7 +486,8 @@ export class BrewingCauldronManager {
     quantityOptions.hidden = true;
 
     const autoButton = document.createElement('button');
-    autoButton.className = 'style-button brewing-page__auto-button';
+    autoButton.className =
+      'style-button style-button--yellow brewing-page__auto-button';
     autoButton.type = 'button';
     autoButton.hidden = true;
     autoButton.addEventListener('click', (event) => {
@@ -479,7 +496,13 @@ export class BrewingCauldronManager {
     });
 
     actionButton.append(actionButtonLabel, actionButtonCost);
-    actionRow.append(selectRecipeButton, actionButton, quantityOptions, autoButton);
+    actionRow.append(
+      selectRecipeButton,
+      actionButton,
+      quantityOptions,
+      autoButton,
+      buyButton,
+    );
 
     const message = document.createElement('div');
     message.className = 'brewing-page__message';
@@ -492,6 +515,8 @@ export class BrewingCauldronManager {
       actionButton,
       actionButtonLabel,
       actionButtonCost,
+      buyButton,
+      buyButtonManager,
       quantityOptions,
       autoButton,
       message,
@@ -609,6 +634,7 @@ export class BrewingCauldronManager {
         continue;
       }
 
+      refs.actions.buyButtonManager.destroy();
       refs.root.remove();
       this.cauldronRefs.delete(cauldronIndex);
     }
@@ -1520,7 +1546,7 @@ export class BrewingCauldronManager {
         this.herbDrag.itemLabel ??
         'herb',
     });
-    document.body.append(ghost);
+    (this.root?.closest?.('.game-stage') ?? document.body).append(ghost);
     this.herbDrag.ghost = ghost;
   }
 
@@ -2785,6 +2811,9 @@ export class BrewingCauldronManager {
       return;
     }
 
+    this.setHidden(refs.actions.buyButton, true);
+    this.setHidden(refs.actions.actionButton, false);
+
     if (!action) {
       const messageText = this.getActionMessageText(refs);
       this.setHidden(refs.actions.root, messageText === '');
@@ -2849,6 +2878,8 @@ export class BrewingCauldronManager {
     this.renderAutoBrewButton(refs, brewing, null);
 
     if (!action) {
+      this.setHidden(refs.actions.buyButton, true);
+      this.setHidden(refs.actions.actionButton, true);
       this.setText(refs.actions.actionButtonLabel, '');
       this.setHidden(refs.actions.actionButtonCost, true);
       this.setResourceText(refs.actions.actionButtonCost, '');
@@ -2863,6 +2894,24 @@ export class BrewingCauldronManager {
       return;
     }
 
+    if (action.id === 'buy' && action.hasCost) {
+      this.setHidden(refs.actions.actionButton, true);
+      this.setHidden(refs.actions.buyButton, false);
+      this.setDisabled(refs.actions.actionButton, action.disabled);
+      this.setAttribute(refs.actions.actionButton, 'data-action', action.id);
+      refs.actions.buyButtonManager.setData({
+        amountLabel: action.costText,
+        enabled: !action.disabled,
+        ariaLabel: action.ariaLabel,
+      });
+      this.setAttribute(refs.actions.buyButton, 'data-action', action.id);
+      setNotificationBadge(refs.actions.buyButton, false);
+      this.renderActionMessage(refs);
+      return;
+    }
+
+    this.setHidden(refs.actions.buyButton, true);
+    this.setHidden(refs.actions.actionButton, false);
     refs.actions.actionButton.classList.toggle('is-locked', action.locked === true);
     this.setText(
       refs.actions.actionButtonLabel,
@@ -2942,7 +2991,7 @@ export class BrewingCauldronManager {
 
   createBrewQuantityButton(cauldronIndex = 0) {
     const button = document.createElement('button');
-    button.className = 'style-button brewing-page__quantity-button';
+    button.className = 'style-button style-button--yellow brewing-page__quantity-button';
     button.type = 'button';
     button.dataset.cauldronIndex = String(this.normalizeCauldronIndex(cauldronIndex));
     button.addEventListener('click', (event) => {
@@ -3347,7 +3396,7 @@ export class BrewingCauldronManager {
       fallbackLabel: ingredient.label ?? 'herb',
     });
 
-    document.body.append(ghost);
+    (this.root?.closest?.('.game-stage') ?? document.body).append(ghost);
     this.prepareFloatingGhostForAnimation(ghost, sourceRect);
     this.animateItemDragGhostToElement(ghost, target, {
       type: 'return',
@@ -3434,7 +3483,7 @@ export class BrewingCauldronManager {
           fallbackLabel: source.itemLabel ?? 'herb',
         });
 
-        document.body.append(ghost);
+        (this.root?.closest?.('.game-stage') ?? document.body).append(ghost);
         this.animateItemDragGhostToElement(ghost, target, {
           type: 'brew',
           duration: ITEM_BREW_DROP_MS,

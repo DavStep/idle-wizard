@@ -2,7 +2,7 @@
 
 Source: `src/pages/tutorial/managers/TutorialStepManager.js`.
 
-Screenshots are captured from the real Vite game surface at the authored `1080x2170` viewport. Run `npm run tutorial:capture` to start the shared dev server when needed, pass the live tutorial, and refresh the PNGs/contact sheet.
+Screenshots are captured from the real Vite game surface at the authored `390x844` viewport. Run `npm run tutorial:capture` to start the shared dev server when needed, pass the live tutorial, and refresh the PNGs/contact sheet.
 
 The automation uses the real `TutorialFacade`, CSS, Elara assets, and `data-tutorial-id` targets. Dev capture hooks only skip waits/background resource tasks and hide the local offline gate so the screenshots show the actual game UI, not a harness.
 
@@ -126,38 +126,6 @@ flowchart TD
   S32 --> S33
   S33 --> S34
   S34 --> Done
-```
-
-## Coin Shortfall Branch
-
-Level-up steps can route through this branch when the player is short on coin.
-
-```mermaid
-flowchart TD
-  G00["coin shortfall"]
-  G01{"available stall item quantity?"}
-  G02["no: obtain source<br/>sage or mint"]
-  G03{"on Market page?"}
-  G04["no: open Market"]
-  G05{"stall loader open?"}
-  G06["no: open empty stall"]
-  G07{"matching item loaded?"}
-  G08["yes: wait for timed sale"]
-  G09{"matching tab open?"}
-  G10["no: open seeds/herbs/potions tab"]
-  G11["yes: choose first item<br/>with quantity > 0"]
-
-  G00 --> G01
-  G01 -->|"no"| G02
-  G01 -->|"yes"| G03
-  G03 -->|"no"| G04
-  G03 -->|"yes"| G05
-  G05 -->|"no"| G06
-  G05 -->|"yes"| G07
-  G07 -->|"yes"| G08
-  G07 -->|"no"| G09
-  G09 -->|"no"| G10
-  G09 -->|"yes"| G11
 ```
 
 ## Screenshots

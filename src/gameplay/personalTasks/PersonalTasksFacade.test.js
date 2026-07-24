@@ -30,7 +30,7 @@ function createFacade({ level = 4, now = () => START_MS } = {}) {
     }),
   };
   const tasksFacade = {
-    getLevelCompletionCostCoin: (levelNumber) => levelNumber * levelNumber * 10,
+    getLevelCoinBudget: (levelNumber) => levelNumber * levelNumber * 10,
     getSnapshot: () => ({
       currentLevel: level,
     }),

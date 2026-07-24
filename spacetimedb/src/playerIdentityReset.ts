@@ -1,7 +1,7 @@
 export const DEFAULT_USERNAME = 'wizard';
 export const DEFAULT_PLAYER_LEVEL = 1;
 export const DEFAULT_PLAYER_THEME = 'midnight';
-export const DEFAULT_PLAYER_FONT = 'lexend';
+export const DEFAULT_PLAYER_FONT = 'lilita-one';
 export const DEFAULT_PLAYER_COLOR_MODE = 'resources';
 export const DEFAULT_PLAYER_CHARACTER = 'elara';
 

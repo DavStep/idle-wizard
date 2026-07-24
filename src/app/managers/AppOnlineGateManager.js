@@ -20,7 +20,8 @@ export class AppOnlineGateManager {
     root.setAttribute('aria-live', 'polite');
 
     const dialog = document.createElement('div');
-    dialog.className = 'app-online-gate__dialog style-dialog';
+    dialog.className =
+      'app-online-gate__dialog style-dialog style-dialog--system';
     dialog.setAttribute('role', 'status');
 
     const title = document.createElement('div');

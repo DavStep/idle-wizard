@@ -1,0 +1,14 @@
+{
+  "frames": {},
+  "animations": {},
+  "meta": {
+    "app": "idle-wizard build-quick-ui-assets",
+    "image": "atlas.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 1,
+      "h": 1
+    },
+    "scale": "1"
+  }
+}

@@ -8,7 +8,7 @@ import {
 } from './WorkshopLeaderboardRowRenderer.js';
 
 const LEADERBOARD_ICON_URL = new URL(
-  '../../../assets/icons/icon-leaderboard-trophy.webp',
+  '../../../../assets/game/source/icons/icon-leaderboard-trophy-bag-style.png',
   import.meta.url,
 ).href;
 
@@ -219,7 +219,7 @@ export class WorkshopLeaderboardManager {
       onSelect: (tabId) => this.onSelectPeriod(tabId),
     });
     this.refs.rows = document.createElement('div');
-    this.refs.rows.className = 'workshop-page__leaderboard-rows';
+    this.refs.rows.className = 'workshop-page__leaderboard-rows style-page-scroll';
     dialog.append(this.refs.title, this.refs.rows);
     panel.append(dialog, this.refs.scopeTabs, this.refs.periodTabs);
     popup.append(panel);

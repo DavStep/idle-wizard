@@ -28,7 +28,7 @@ Do not use temporary source edits, hidden query branches, one-off DOM mutation, 
 
 ## 3. Capture at two altitudes
 
-Capture the full authored `1080x2170` surface and a fitted desktop viewport for collision/reflow checks. Also capture a native-pixel close crop of the changed surface. Inspect the close crop at `100%`; do not approve it from a scaled chat thumbnail.
+Capture the full authored `390x844` surface and a fitted desktop viewport for collision/reflow checks. Also capture a native-pixel close crop of the changed surface. Inspect the close crop at `100%`; do not approve it from a scaled chat thumbnail.
 
 Use the same content/state as the reference when state changes geometry. Freeze animations before comparing a resting layout.
 

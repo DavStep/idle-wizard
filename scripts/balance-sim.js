@@ -20,7 +20,6 @@ const DEFAULT_STEP_SECONDS = 5;
 const QUICK_RESEARCH_DURATION_SECONDS = 3;
 const DEFAULT_RESEARCH_DURATION_SECONDS = 10 * 60;
 const RNG_SEED = 0x1d1e12d;
-const LEVEL_COMPLETION_COIN_COST_PER_LEVEL = 20;
 const DEFAULT_COMPLETED_RESEARCH_IDS = ['unlockSeed:sageSeed'];
 const PRESTIGE_STEP = 10;
 const SEED_RESEARCH_LEVELS = {
@@ -520,16 +519,11 @@ class BalanceSimulator {
       this.getCurrentTasks().every((task) => this.state.completedTasks.has(task.id)) &&
       this.state.level < tasksBalance.levels.length
     ) {
-      const cost = this.getCurrentLevelCompletionCoinCost();
-
-      if (this.state.coin.current >= cost) {
-        this.state.coin.current -= cost;
-        this.state.level += 1;
-        this.state.crystal += playerLevelBalance.crystal.perLevel;
-        this.syncLevelEffects();
-        this.addEvent(`level ${this.state.level}`);
-        changed = true;
-      }
+      this.state.level += 1;
+      this.state.crystal += playerLevelBalance.crystal.perLevel;
+      this.syncLevelEffects();
+      this.addEvent(`level ${this.state.level}`);
+      changed = true;
     }
 
     return changed;
@@ -1011,12 +1005,6 @@ class BalanceSimulator {
 
   getCurrentTasks() {
     return tasksBalance.levels[this.state.level - 1]?.tasks ?? [];
-  }
-
-  getCurrentLevelCompletionCoinCost() {
-    const level = tasksBalance.levels[this.state.level - 1];
-
-    return level?.completionCostCoin ?? this.state.level * LEVEL_COMPLETION_COIN_COST_PER_LEVEL;
   }
 
   syncLevelEffects() {

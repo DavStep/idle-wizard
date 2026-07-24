@@ -1,5 +1,4 @@
-import '@fontsource/lexend/latin-400.css';
-import '@fontsource/lexend/latin-700.css';
+import '@fontsource/lilita-one/latin-400.css';
 import './styles/base.css';
 
 import { AppFacade } from './app/AppFacade.js';
@@ -27,9 +26,27 @@ if (!redirectMobileOidcCallbackToApp()) {
   let devCheatsFacade = null;
   let tutorialCaptureFacade = null;
   let uiEditorFacade = null;
+  let quickUiPreviewFacade = null;
   let disposed = false;
 
   app.start();
+
+  const quickUiSearch = new URLSearchParams(window.location.search);
+  if (
+    import.meta.env.DEV &&
+    (quickUiSearch.has('quick_ui') || quickUiSearch.has('ui'))
+  ) {
+    void import('./dev/quickUi/QuickUiPreviewFacade.js').then(
+      ({ QuickUiPreviewFacade }) => {
+        if (disposed) {
+          return;
+        }
+
+        quickUiPreviewFacade = new QuickUiPreviewFacade({ app });
+        quickUiPreviewFacade.mount();
+      },
+    );
+  }
 
   if (import.meta.env.VITE_ENABLE_CHEATS === 'true') {
     void import('./dev/cheats/DevCheatsFacade.js').then(({ DevCheatsFacade }) => {
@@ -75,6 +92,7 @@ if (!redirectMobileOidcCallbackToApp()) {
       devCheatsFacade?.unmount();
       tutorialCaptureFacade?.unmount();
       uiEditorFacade?.unmount();
+      quickUiPreviewFacade?.unmount();
       app.stop();
     });
   }

@@ -14,7 +14,10 @@ import {
   STATUS_ICON_LOCK,
 } from '../../shared/statusIcon.js';
 
-const QUEST_STARS_ICON_URL = `${import.meta.env.BASE_URL ?? '/'}ui/level-star.webp`;
+const QUEST_STARS_ICON_URL = new URL(
+  '../../../../assets/game/source/ui/level-star.webp',
+  import.meta.url,
+).href;
 
 export class TopPanelViewManager {
   constructor() {
@@ -249,7 +252,7 @@ export class TopPanelViewManager {
     this.refs.accountPane = document.createElement('div');
     this.refs.accountPane.id = 'room-top-panel-settings-account';
     this.refs.accountPane.className =
-      'room-top-panel__settings-pane room-top-panel__account-pane';
+      'room-top-panel__settings-pane room-top-panel__account-pane style-page-scroll';
     this.refs.accountPane.setAttribute('role', 'tabpanel');
 
     const usernameSection = document.createElement('div');
@@ -293,7 +296,7 @@ export class TopPanelViewManager {
     this.refs.avatarPane = document.createElement('div');
     this.refs.avatarPane.id = 'room-top-panel-settings-avatar';
     this.refs.avatarPane.className =
-      'room-top-panel__settings-pane room-top-panel__avatar-pane';
+      'room-top-panel__settings-pane room-top-panel__avatar-pane style-page-scroll';
     this.refs.avatarPane.setAttribute('aria-label', 'avatar');
     const characterSection = this.createVisualSettingSection('character', {
       boxed: false,
@@ -304,7 +307,7 @@ export class TopPanelViewManager {
     this.refs.themePane = document.createElement('div');
     this.refs.themePane.id = 'room-top-panel-settings-theme';
     this.refs.themePane.className =
-      'room-top-panel__settings-pane room-top-panel__theme-pane';
+      'room-top-panel__settings-pane room-top-panel__theme-pane style-page-scroll';
     this.refs.themePane.setAttribute('role', 'tabpanel');
 
     const deviceSection = this.createDevicePreferenceSection();
@@ -327,7 +330,7 @@ export class TopPanelViewManager {
     this.refs.reportPane = document.createElement('div');
     this.refs.reportPane.id = 'room-top-panel-settings-report';
     this.refs.reportPane.className =
-      'room-top-panel__settings-pane room-top-panel__report-pane';
+      'room-top-panel__settings-pane room-top-panel__report-pane style-page-scroll';
     this.refs.reportPane.setAttribute('role', 'tabpanel');
 
     const feedbackSection = document.createElement('div');
@@ -598,6 +601,9 @@ export class TopPanelViewManager {
     for (const option of category.options) {
       const row = document.createElement('div');
       row.className = 'room-top-panel__visual-option';
+      if (categoryKey === 'theme') {
+        row.classList.add('room-top-panel__theme-option');
+      }
 
       const name = document.createElement('button');
       name.className = 'room-top-panel__visual-option-name';
@@ -611,6 +617,24 @@ export class TopPanelViewManager {
       if (categoryKey === 'theme') {
         name.classList.add('room-top-panel__theme-button');
         name.dataset.theme = option.key;
+
+        const label = document.createElement('span');
+        label.className = 'room-top-panel__theme-button-label';
+        label.textContent = option.label;
+
+        const check = document.createElement('span');
+        check.className = 'room-top-panel__theme-button-check';
+        check.setAttribute('aria-hidden', 'true');
+
+        const checkIcon = createStatusIcon(
+          'room-top-panel__theme-button-check-icon',
+          STATUS_ICON_CHECK,
+        );
+        if (checkIcon) {
+          check.append(checkIcon);
+        }
+
+        name.replaceChildren(label, check);
         this.refs.themeButtons.push(name);
       } else if (categoryKey === 'font') {
         name.classList.add('room-top-panel__font-button');
@@ -710,16 +734,8 @@ export class TopPanelViewManager {
   }
 
   createVisualSettingPreview(categoryKey, option) {
-    if (categoryKey === 'theme') {
-      return this.createThemePreview(option.key);
-    }
-
     if (categoryKey === 'progressBar') {
       return this.createProgressBarPreview(option.key);
-    }
-
-    if (categoryKey === 'color') {
-      return this.createColorModePreview(option.key);
     }
 
     if (categoryKey === 'icons') {
@@ -727,32 +743,6 @@ export class TopPanelViewManager {
     }
 
     return null;
-  }
-
-  createThemePreview(themeKey) {
-    const preview = document.createElement('div');
-    preview.className = 'room-top-panel__visual-preview room-top-panel__theme-preview';
-    preview.dataset.previewTheme = themeKey;
-    preview.setAttribute('aria-hidden', 'true');
-
-    const box = document.createElement('div');
-    box.className = 'room-top-panel__theme-preview-box';
-
-    const title = document.createElement('div');
-    title.className = 'room-top-panel__theme-preview-title';
-    title.textContent = 'sample';
-
-    const row = document.createElement('div');
-    row.className = 'room-top-panel__theme-preview-row';
-    row.textContent = '34.4k coin';
-
-    box.append(
-      title,
-      row,
-      this.createProgressPreviewRail(themeKey === 'witchcraft' ? 0.72 : 0.64),
-    );
-    preview.append(box);
-    return preview;
   }
 
   createProgressBarPreview(progressBarKey) {
@@ -774,31 +764,6 @@ export class TopPanelViewManager {
 
     progress.append(fill);
     return progress;
-  }
-
-  createColorModePreview(colorModeKey) {
-    const preview = document.createElement('div');
-    preview.className = 'room-top-panel__visual-preview room-top-panel__color-preview';
-    preview.dataset.previewColor = colorModeKey;
-    preview.setAttribute('aria-hidden', 'true');
-
-    preview.append(
-      this.createColorPreviewItem('mana 100/100', 'mana'),
-      this.createColorPreviewItem('34.4k coin', 'coin'),
-      this.createColorPreviewItem('sage seed', 'seed'),
-      this.createColorPreviewItem('sage', 'herb'),
-      this.createColorPreviewItem('mana tonic', 'potion'),
-    );
-
-    return preview;
-  }
-
-  createColorPreviewItem(label, resource) {
-    const item = document.createElement('span');
-    item.className = 'room-top-panel__color-preview-item';
-    item.textContent = label;
-    setResourceColor(item, resource);
-    return item;
   }
 
   createIconModePreview(iconModeKey) {
@@ -942,7 +907,8 @@ export class TopPanelViewManager {
     this.refs.inboxCloseButton.textContent = 'close';
 
     this.refs.inboxFrame = document.createElement('div');
-    this.refs.inboxFrame.className = 'style-dialog-scroll room-top-panel__inbox-frame';
+    this.refs.inboxFrame.className =
+      'style-page-scroll room-top-panel__inbox-frame';
 
     this.refs.inboxRows = document.createElement('div');
     this.refs.inboxRows.className = 'room-top-panel__inbox-rows';

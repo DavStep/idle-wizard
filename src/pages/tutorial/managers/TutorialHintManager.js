@@ -3,7 +3,7 @@ import { TutorialGuideDragManager } from './TutorialGuideDragManager.js';
 import { TutorialPointerSpineManager } from './TutorialPointerSpineManager.js';
 
 const WITCH_GUIDE_URL = new URL(
-  '../../../assets/characters/elara.png',
+  '../../../../assets/game/source/characters/elara.png',
   import.meta.url,
 ).href;
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -135,7 +135,13 @@ const OBJECTIVE_PLACEMENTS = [
 let highlightMaskIdCounter = 0;
 
 export class TutorialHintManager {
-  constructor({ storage, pointerSpineManager = new TutorialPointerSpineManager() } = {}) {
+  constructor({
+    storage,
+    spineRuntimeFacade = null,
+    pointerSpineManager = new TutorialPointerSpineManager({
+      spineRuntimeFacade,
+    }),
+  } = {}) {
     this.stage = null;
     this.root = null;
     this.backdrop = null;
@@ -1010,6 +1016,7 @@ export class TutorialHintManager {
     }
 
     this.blockingDialogSuspended = true;
+    this.pointerSpineManager.setVisible(false);
     this.root.hidden = true;
   }
 
@@ -1519,7 +1526,6 @@ export class TutorialHintManager {
     this.clearPointerHideTimeout();
     this.pointer.classList.remove('is-hiding');
     this.pointerSpineManager.setMotionEnabled(!this.prefersReducedMotion());
-    this.pointerSpineManager.setVisible(true);
 
     if (pointerStateChanged) {
       this.pointer.dataset.placement = placement.id;
@@ -1527,6 +1533,9 @@ export class TutorialHintManager {
       this.pointer.style.top = `${placement.y}px`;
       this.pointerState = nextPointerState;
     }
+
+    this.pointerSpineManager.setPlacement?.(nextPointerState);
+    this.pointerSpineManager.setVisible(true);
 
     if (shouldRevealPointer) {
       this.showPointerWithAnimation();

@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Lilita One";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../assets/fonts/LilitaOne-Regular.ttf") format("truetype");
+}
+
 :root {
   --style-bg: #d6d6d6;
   --style-surface: #d6d6d6;
@@ -11,14 +19,12 @@
   --style-notification-red: #c1121f;
   --style-notification-orange: #d66a00;
   --style-notification: var(--style-notification-red);
-  --style-notification-size: 6px;
-  --style-notification-offset: 3px;
+  --style-notification-image-red: url("../../assets/game/source/ui/notification-circle-red.png");
+  --style-notification-image-orange: url("../../assets/game/source/ui/notification-circle-orange.png");
+  --style-notification-image: var(--style-notification-image-red);
+  --style-notification-size: 9.569444px;
+  --style-notification-offset: calc(var(--style-notification-size) / 2);
   --style-notification-bleed: calc(var(--style-notification-offset) + 1px);
-  --style-resource-mana: #2da9ff;
-  --style-resource-coin: var(--style-text);
-  --style-resource-crystal: var(--style-text);
-  --style-resource-emerald: var(--style-text);
-  --style-resource-ruby: var(--style-text);
   --style-resource-icon-size: 1.032em;
   --style-icon-label-gap: 0.14em;
   --style-star-yellow: oklch(45% 0.13 96);
@@ -28,8 +34,6 @@
   --style-star-slot-size: 12px;
   --style-star-slot-gap: 1px;
   --style-coin-particle-size: clamp(19.2px, 5.28vw, 28.8px);
-  --style-resource-seed: var(--style-text);
-  --style-resource-herb: var(--style-text);
   --style-alliance-tag-ink: var(--style-text);
   --style-alliance-tag-red: oklch(42% 0.15 25);
   --style-alliance-tag-amber: oklch(43% 0.12 75);
@@ -42,26 +46,47 @@
   --style-alliance-tag-slate: oklch(40% 0.03 250);
   --style-backdrop-rgb: 214 214 214;
   --style-log-fade-rgb: 214 214 214;
-  --style-scroll-fade-rgb: var(--style-log-fade-rgb);
-  --style-scroll-fade-opacity: 72%;
-  --style-scroll-cue-height: 64px;
-  --style-scroll-progress-gap: 10px;
+  --style-scrollbar-width: 6.5px;
+  --style-scrollbar-track-gap: 1.805556px;
+  --style-scrollbar-track-inset-block: 4.333333px;
+  --style-scrollbar-track-border-width: 1.083333px;
+  --style-scrollbar-track-background: rgb(23 16 12 / 62%);
+  --style-scrollbar-track-border: rgb(0 0 0 / 72%);
+  --style-scrollbar-thumb-gap: 1.083333px;
+  --style-scrollbar-thumb-border-width: 0.722222px;
+  --style-scrollbar-thumb-min-height: 29.611111px;
+  --style-scrollbar-thumb-background: #f2ae54;
+  --style-scrollbar-thumb-border: #5e321b;
   --style-border-width: 1px;
   --style-border-strong-width: 2px;
-  --style-progress-rail-border-width: var(--style-border-width);
+  --style-progress-rail-border-width: 1px;
   --style-progress-total-height: calc(
     var(--style-progress-height) + (var(--style-progress-rail-border-width) * 2)
   );
-  --style-scroll-progress-height: var(--style-progress-total-height);
-  --style-scroll-progress-block-size: calc(
-    var(--style-scroll-progress-gap) + var(--style-scroll-progress-height)
+  --style-progress-top-panel-total-height: calc(
+    var(--style-progress-top-panel-height) +
+      (var(--style-progress-rail-border-width) * 2)
   );
+  --style-scroll-progress-height: var(--style-progress-total-height);
   --style-page-scroll-cut: 6px;
   --style-page-scroll-padding-top: var(--style-page-scroll-cut);
   --style-page-scroll-padding-bottom: var(--style-page-scroll-cut);
   --style-border: var(--style-border-width) solid var(--style-stroke);
   --style-separator-border: var(--style-border);
   --style-tab-border: var(--style-border-strong);
+  --style-yellow-button-frame: url("../../assets/game/source/ui/root-run-cost-button/yellow-button-9slice.png");
+  --style-yellow-button-frame-slice: 100 43 68 115 fill;
+  --style-yellow-button-frame-width: 17px 7px 12px 20px;
+  --style-yellow-button-text: #fff;
+  --style-yellow-button-text-stroke: #0a0a0a;
+  --style-green-button-frame: url("../../assets/game/source/ui/root-run-cost-button/green-button-9slice.png");
+  --style-green-button-disabled-frame: url("../../assets/game/source/ui/root-run-cost-button/gray-button-9slice.png");
+  --style-green-button-frame-slice: var(--style-yellow-button-frame-slice);
+  --style-green-button-frame-width: var(--style-yellow-button-frame-width);
+  --style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-dark-9slice.png");
+  --style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-light-9slice.png");
+  --style-tab-frame-slice: var(--style-yellow-button-frame-slice);
+  --style-tab-frame-width: var(--style-yellow-button-frame-width);
   --style-border-strong: var(--style-border-strong-width) solid
     var(--style-stroke);
   --style-font-size: 13px;
@@ -69,6 +94,43 @@
   --style-panel-padding: 5px 10px;
   --style-dialog-padding: 20px;
   --style-dialog-tab-gap: 8px;
+  --style-dialog-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-back.png");
+  --style-dialog-frame-slice: 139 163 83 83 fill;
+  --style-dialog-frame-width: calc(139px * 390 / 1080)
+    calc(163px * 390 / 1080) calc(83px * 390 / 1080)
+    calc(83px * 390 / 1080);
+  --style-dialog-frame-outset: 10px;
+  --style-dialog-frame-fill: #634934;
+  --style-dialog-paper-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-front.png");
+  --style-dialog-paper-frame-slice: 99 53 72 84 fill;
+  --style-dialog-paper-frame-width: calc(99px * 390 / 1080)
+    calc(53px * 390 / 1080) calc(72px * 390 / 1080)
+    calc(84px * 390 / 1080);
+  --style-dialog-paper-fill: #ffe7c8;
+  --style-dialog-paper-inset-x: calc(16px * 390 / 1080);
+  --style-dialog-paper-inset-top: calc(85px * 390 / 1080);
+  --style-dialog-paper-inset-bottom: calc(57px * 390 / 1080);
+  --style-dialog-paper-radius: calc(50px * 390 / 1080);
+  --style-dialog-ink: #634934;
+  --style-dialog-muted-ink: #8d6d50;
+  --style-dialog-disabled-ink: #ac9278;
+  --style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-blue.png");
+  --style-dialog-title-frame-slice: 0 132 0 85 fill;
+  --style-dialog-title-frame-width: 0 calc(132px * 390 / 1080) 0
+    calc(85px * 390 / 1080);
+  --style-dialog-title-fill: #2783d9;
+  --style-dialog-title-height: calc(121px * 390 / 1080);
+  --style-dialog-title-min-width: calc(614px * 390 / 1080);
+  --style-dialog-title-overhang: calc(61px * 390 / 1080);
+  --style-dialog-title-text-top: calc(22px * 390 / 1080);
+  --style-dialog-title-text-height: calc(73px * 390 / 1080);
+  --style-dialog-title-text-padding-x: calc(89px * 390 / 1080);
+  --style-dialog-title-text-bottom: calc(26px * 390 / 1080);
+  --style-dialog-title-text-size: calc(64px * 390 / 1080);
+  --style-dialog-title-text-stroke: calc(8px * 390 / 1080);
+  --style-dialog-close-image: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-close.png");
+  --style-dialog-close-size: calc(114px * 390 / 1080);
+  --style-dialog-close-gap: calc(64px * 390 / 1080);
   --style-tabbed-dialog-width: calc(
     260px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
   );
@@ -98,7 +160,7 @@
   );
   --style-page-tab-icon-size: calc(38px * 1.3);
   --style-page-tab-icon-center-offset: 4px;
-  --style-page-tab-selected-icon-scale: 1.2;
+  --style-page-tab-selected-icon-scale: 1.22;
   --style-page-tab-icon-y-offset: 10px;
   --style-page-tab-label-y-offset: 7px;
   --style-page-tab-label-text-stroke-width: 1px;
@@ -108,6 +170,26 @@
     1px 0 0 var(--style-page-tab-label-text-stroke-color),
     0 -1px 0 var(--style-page-tab-label-text-stroke-color),
     -1px 0 0 var(--style-page-tab-label-text-stroke-color);
+  --style-room-tab-active-height: 48px;
+  --style-room-tab-inactive-height: 38px;
+  --style-room-tab-rise: calc(
+    var(--style-room-tab-active-height) -
+      var(--style-room-tab-inactive-height)
+  );
+  --style-room-tab-overlap: 2.888889px;
+  --style-room-tab-bottom-bleed: 18px;
+  --style-room-tab-icon-size: 46px;
+  --style-room-tab-selected-scale: 1;
+  --style-room-tab-active-frame: url("../../assets/game/source/ui/root-run-room-tab-active.png");
+  --style-room-tab-inactive-frame: url("../../assets/game/source/ui/root-run-room-tab-inactive.png");
+  --style-room-tab-active-fill: #6e4627;
+  --style-room-tab-inactive-fill: #3c2f25;
+  --style-room-tab-active-border-width: 20.583333px 22.388889px 7.583333px
+    22.027778px;
+  --style-room-tab-inactive-border-width: 20.222222px 22.027778px 6.861111px
+    21.666667px;
+  --style-room-tab-active-radius: 20.583333px;
+  --style-room-tab-inactive-radius: 20.222222px;
   --style-page-tab-scroll-clearance: calc(
     var(--style-page-tab-button-height) + (var(--style-page-scroll-cut) * 2)
   );
@@ -115,14 +197,28 @@
   --style-box-border-label-padding-x: 2px;
   --style-tiny-font-size: 10px;
   --style-tiny-line-height: 12px;
-  --style-progress-height: 3px;
+  --style-progress-height: 8px;
+  --style-progress-top-panel-height: 12px;
+  --style-progress-knob-size: 14px;
+  --style-progress-knob-fill: #fee5c3;
+  --style-progress-knob-border: #ceac82;
+  --style-progress-knob-ring: #241b14;
   --style-progress-timer-height: var(--style-progress-total-height);
-  --style-progress-rail-background: var(--style-surface);
-  --style-progress-rail-border: var(--style-progress-rail-border-width) solid
-    var(--style-stroke);
-  --style-progress-rail-shadow: none;
-  --style-progress-fill-background: var(--style-text);
-  --style-progress-fill-shadow: none;
+  --style-progress-rail-background: rgb(0 0 0 / 60%);
+  --style-progress-rail-border: var(--style-progress-rail-border-width) solid #000;
+  --style-progress-rail-shadow: inset 0 0 0 1px rgb(9 7 5 / 64%);
+  --style-progress-root-fill: #8740df;
+  --style-progress-root-edge: #bd72f3;
+  --style-progress-blue-fill: #2d8fe6;
+  --style-progress-blue-edge: #72c8ff;
+  --style-progress-green-fill: #4aa83f;
+  --style-progress-green-edge: #8bdc69;
+  --style-progress-yellow-fill: #d8ad32;
+  --style-progress-yellow-edge: #f6d86a;
+  --style-progress-fill-background: var(--style-progress-root-fill);
+  --style-progress-fill-edge: var(--style-progress-root-edge);
+  --style-progress-fill-shadow: inset 0 0 0 1px
+    var(--style-progress-fill-edge);
   --style-progress-notched-fill: #b79a6b;
   --style-progress-notched-stroke-light: rgb(255 238 197 / 48%);
   --style-progress-notched-stroke-dark: rgb(74 57 41 / 72%);
@@ -144,13 +240,21 @@
   --style-world-chat-dialog-top: calc(var(--style-room-content-top) + 154px);
   --style-world-chat-popup-font-size: 11px;
   --style-world-chat-popup-line-height: 18px;
-  --style-world-chat-progress-gap: 6px;
   --style-trade-alliance-dialog-padding: 10px;
   --style-log-font-size: var(--style-world-chat-popup-font-size);
   --style-log-line-height: var(--style-world-chat-popup-line-height);
-  --style-research-row-height: calc(var(--style-row-min-height) + 2px);
-  --style-research-value-width: 84px;
-  --style-research-column-gap: 8px;
+  --style-research-card-width: calc(1000px * 390 / 1080);
+  --style-research-row-height: 90px;
+  --style-research-value-width: calc(281px * 390 / 1080);
+  --style-research-card-art-width: 58px;
+  --style-research-card-art-height: 58px;
+  --style-research-card-art-left: calc(30px * 390 / 1080);
+  --style-research-card-art-top: 16px;
+  --style-research-card-action-right: calc(30px * 390 / 1080);
+  --style-research-card-action-top: 10px;
+  --style-research-card-info-left: calc(252px * 390 / 1080);
+  --style-research-card-info-width: calc(422px * 390 / 1080);
+  --style-research-card-rank-right: calc(63px * 390 / 1080);
   --style-button-width: 100px;
   --style-room-edge: 27px;
   --style-room-chrome-edge: 16px;
@@ -172,7 +276,7 @@
     calc(var(--app-source-ui-screen-width, 100vw) * 0.078),
     84px
   );
-  --style-room-chat-bottom: 101px;
+  --style-room-chat-bottom: 114px;
   --style-room-chat-source-height: calc(
     (
         var(--style-world-chat-row-height) *
@@ -215,6 +319,10 @@
   );
   --workshop-panel-button-row-3-label-y: calc(
     260px + var(--workshop-panel-button-label-offset-y) +
+      var(--workshop-panel-button-row-shift-y)
+  );
+  --workshop-panel-button-row-4-label-y: calc(
+    312.25px + var(--workshop-panel-button-label-offset-y) +
       var(--workshop-panel-button-row-shift-y)
   );
   --style-main-box-width: 280px;
@@ -260,13 +368,6 @@
   --brewing-page-cauldron-action-button-height: var(
     --brewing-page-cauldron-action-height
   );
-  --brewing-page-cauldron-action-button-frame: url("/ui/player-card-button-brown-fill-9slice.png");
-  --brewing-page-cauldron-action-button-disabled-frame: url("/ui/player-card-button-brown-dark-fill-9slice.png");
-  --brewing-page-cauldron-action-button-slice: 31 29 31 29 fill;
-  --brewing-page-cauldron-action-button-border-image-width: 5px 6px;
-  --brewing-page-cauldron-action-button-text: #f3e1d2;
-  --brewing-page-cauldron-action-button-muted-text: #d8bba5;
-  --brewing-page-cauldron-action-button-disabled-text: #c9aa95;
   --brewing-page-cauldron-recipe-box-width: 216px;
   --brewing-page-cauldron-art-width: 178px;
   --brewing-page-cauldron-art-scale: 0.9;
@@ -292,8 +393,7 @@
   --brewing-page-herbs-box-clearance: 0px;
   --brewing-page-herb-rows-height: 132px;
   --brewing-page-herbs-box-reserved-height: calc(
-    var(--brewing-page-herb-rows-height) +
-      var(--style-scroll-progress-block-size) + 12px
+    var(--brewing-page-herb-rows-height) + 12px
   );
   --brewing-page-box-gap: 8px;
   --garden-page-box-gap: 24px;
@@ -317,7 +417,11 @@
   --style-motion-fast: 140ms;
   --style-motion-press: 165ms;
   --style-motion-press-return: 120ms;
-  --style-press-scale: 0.97;
+  --style-motion-button-press-in: 55ms;
+  --style-motion-button-release: 180ms;
+  --style-motion-button-ease: cubic-bezier(0.33, 1, 0.68, 1);
+  --style-press-scale: 0.94;
+  --style-press-release-peak-scale: 1.055;
   --style-motion-normal: 205ms;
   --style-motion-expand: 225ms;
   --style-motion-dialog: 225ms;
@@ -327,29 +431,26 @@
   --style-motion-ease-soft: cubic-bezier(0.39, 0.575, 0.565, 1);
   --style-motion-ease-rubber: cubic-bezier(0.39, 0.575, 0.565, 1);
   --style-motion-ease-expand-rubber: cubic-bezier(0.22, 1, 0.36, 1);
-  --guild-page-paper-frame: url("/ui/guild-quest/paper-9slice.png");
+  --guild-page-paper-frame: url("../../assets/game/source/ui/guild-quest/paper-9slice.png");
   --guild-page-paper-frame-slice: 41 42 42 41 fill;
   --guild-page-paper-frame-width: 5px;
   --guild-page-paper-surface: #f6f3ec;
   --guild-page-paper-text: #221d17;
   --guild-page-paper-muted: #665e54;
   --guild-page-quest-index-color: #5b3d26;
-  --guild-page-paper-coin: oklch(45% 0.13 96);
-  --guild-page-paper-seed: oklch(45% 0.08 58);
-  --guild-page-paper-herb: oklch(42% 0.12 145);
-  --guild-page-quest-dialog-frame: url("/ui/guild-quest/dialog-panel-9slice.png");
+  --guild-page-quest-dialog-frame: url("../../assets/game/source/ui/guild-quest/dialog-panel-9slice.png");
   --guild-page-quest-dialog-frame-slice: 43 44 43 43 fill;
-  --guild-page-quest-paper-frame: url("/ui/guild-quest/paper-9slice.png");
+  --guild-page-quest-paper-frame: url("../../assets/game/source/ui/guild-quest/paper-9slice.png");
   --guild-page-quest-paper-frame-slice: 41 42 42 41 fill;
-  --guild-page-quest-list-row-frame: url("/ui/guild-quest/list-row-9slice.png");
+  --guild-page-quest-list-row-frame: url("../../assets/game/source/ui/guild-quest/list-row-9slice.png");
   --guild-page-quest-list-row-frame-slice: 24 32 23 31 fill;
-  --guild-page-quest-button-green-frame: url("/ui/guild-quest/button-green-9slice.png");
-  --guild-page-quest-button-brown-frame: url("/ui/guild-quest/button-brown-9slice.png");
+  --guild-page-quest-button-green-frame: url("../../assets/game/source/ui/guild-quest/button-green-9slice.png");
+  --guild-page-quest-button-brown-frame: url("../../assets/game/source/ui/guild-quest/button-brown-9slice.png");
   --guild-page-quest-button-frame-slice: 27 43 28 43 fill;
-  --guild-page-quest-close-frame: url("/ui/guild-quest/close-panel-9slice.png");
+  --guild-page-quest-close-frame: url("../../assets/game/source/ui/guild-quest/close-panel-9slice.png");
   --guild-page-quest-close-frame-slice: 28 28 27 27 fill;
-  --guild-page-quest-banner: url("/ui/guild-quest/banner.png");
-  --guild-page-quest-close-x: url("/ui/guild-quest/close-x.png");
+  --guild-page-quest-banner: url("../../assets/game/source/ui/guild-quest/banner.png");
+  --guild-page-quest-close-x: url("../../assets/game/source/ui/guild-quest/close-x.png");
   --style-block-shadow: 5px 5px 5px var(--style-muted);
   --style-dialog-shadow: var(--style-block-shadow);
   --style-overlay-shadow: 5px 5px 5px var(--style-muted);
@@ -365,8 +466,7 @@
   --app-keyboard-dialog-shift: 0px;
   --app-keyboard-top-dialog-shift: 0px;
   --style-font:
-    Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+    "Lilita One", "Arial Black", Arial, ui-sans-serif, system-ui, sans-serif;
   color-scheme: light;
   background: var(--style-bg);
   color: var(--style-text);
@@ -417,6 +517,7 @@
 
 .style-button.shop-page__shelf-help-button,
 .style-button.shop-page__ledger-help-button {
+  --style-info-button-icon-height: var(--style-box-border-label-line-height);
   width: auto;
   min-width: var(--style-box-border-label-line-height);
   padding: 0 1px;
@@ -519,7 +620,8 @@
   display: none;
 }
 
-.style-button.shop-page__ledger-close {
+.style-button.shop-page__ledger-close,
+.style-button.shop-page__ledger-back {
   position: absolute;
   top: var(--style-box-border-label-offset);
   right: var(--style-box-title-left);
@@ -668,10 +770,9 @@
     Menlo, monospace;
 }
 
-:root[data-style-font="lexend"] {
+:root[data-style-font="lilita-one"] {
   --style-font:
-    Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+    "Lilita One", "Arial Black", Arial, ui-sans-serif, system-ui, sans-serif;
 }
 
 :root[data-style-theme="black"] {
@@ -682,6 +783,8 @@
   --style-muted: #a6a6a6;
   --style-disabled: #7a7a7a;
   --style-active-surface: var(--style-surface);
+  --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-black-9slice.png");
+  --style-inner-section-fill: #4b4b4b;
   --style-announcement-coin: oklch(82% 0.14 88);
   --style-backdrop-rgb: 26 26 26;
   --style-log-fade-rgb: 32 32 32;
@@ -700,10 +803,12 @@
   --style-muted: #a6a6a6;
   --style-disabled: #6a6a6a;
   --style-active-surface: var(--style-surface);
-  --style-midnight-panel-frame: url("/ui/player-card-panel-9slice.png");
-  --style-midnight-panel-selected-frame: url("/ui/player-card-panel-selected-9slice.png");
-  --style-midnight-button-frame: url("/ui/player-card-button-brown-fill-9slice.png");
-  --style-midnight-button-disabled-frame: url("/ui/player-card-button-brown-dark-fill-9slice.png");
+  --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-midnight-9slice.png");
+  --style-inner-section-fill: #242938;
+  --style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel-9slice.png");
+  --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected-9slice.png");
+  --style-midnight-button-frame: url("../../assets/game/source/ui/player-card-button-brown-fill-9slice.png");
+  --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/player-card-button-brown-dark-fill-9slice.png");
   --style-midnight-frame-slice: 31 29 31 29 fill;
   --style-midnight-frame-outline-slice: 31 29 31 29;
   --style-midnight-frame-width: 8px 10px;
@@ -727,6 +832,8 @@
   --style-muted: #d1bd86;
   --style-disabled: #8f805c;
   --style-active-surface: var(--style-surface);
+  --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-witchcraft-9slice.png");
+  --style-inner-section-fill: #4c335a;
   --style-system-text: #ffd76a;
   --style-announcement-coin: #ffd76a;
   --style-backdrop-rgb: 7 4 14;
@@ -742,8 +849,10 @@
 :root[data-style-theme="midnight"],
 :root[data-style-theme="witchcraft"] {
   --style-border-width: 2px;
-  --style-title-text-stroke-width: 0px;
-  --style-title-text-stroke-shadow: none;
+  --style-inner-section-frame-slice: 91 73 90 83 fill;
+  --style-inner-section-frame-width:
+    calc(91px * 390 / 1080) calc(73px * 390 / 1080)
+    calc(90px * 390 / 1080) calc(83px * 390 / 1080);
   --style-star-yellow: oklch(83% 0.14 96);
   --style-star-orange: oklch(78% 0.15 55);
   --style-star-red: oklch(76% 0.14 25);
@@ -774,78 +883,6 @@
   --style-progress-fill-shadow: inset 0 1px 0
       var(--style-progress-notched-stroke-light),
     inset 0 -1px 0 var(--style-progress-notched-stroke-dark);
-}
-
-:root[data-style-color="resources"] {
-  --style-system-text: oklch(44% 0.12 25);
-  --style-resource-mana: #2da9ff;
-  --style-resource-coin: oklch(45% 0.13 96);
-  --style-resource-crystal: oklch(44% 0.1 305);
-  --style-resource-emerald: oklch(42% 0.12 150);
-  --style-resource-ruby: oklch(42% 0.16 25);
-  --style-resource-seed: oklch(45% 0.08 58);
-  --style-resource-herb: oklch(42% 0.12 145);
-}
-
-:root[data-style-theme="black"][data-style-color="resources"] {
-  --style-system-text: oklch(74% 0.11 25);
-  --style-resource-mana: #2da9ff;
-  --style-resource-coin: oklch(83% 0.14 96);
-  --style-resource-crystal: oklch(78% 0.1 305);
-  --style-resource-emerald: oklch(76% 0.12 150);
-  --style-resource-ruby: oklch(76% 0.14 25);
-  --style-resource-seed: oklch(78% 0.08 58);
-  --style-resource-herb: oklch(75% 0.11 145);
-}
-
-:root[data-style-theme="midnight"][data-style-color="resources"] {
-  --style-system-text: oklch(75% 0.11 25);
-  --style-resource-mana: #2da9ff;
-  --style-resource-coin: oklch(84% 0.14 96);
-  --style-resource-crystal: oklch(80% 0.1 305);
-  --style-resource-emerald: oklch(78% 0.12 150);
-  --style-resource-ruby: oklch(78% 0.14 25);
-  --style-resource-seed: oklch(79% 0.08 58);
-  --style-resource-herb: oklch(77% 0.11 145);
-}
-
-:root[data-style-theme="witchcraft"][data-style-color="resources"] {
-  --style-system-text: #ffd76a;
-  --style-resource-mana: #2da9ff;
-  --style-resource-coin: #ffd76a;
-  --style-resource-crystal: #a96af0;
-  --style-resource-emerald: #4da977;
-  --style-resource-ruby: #df7653;
-  --style-resource-seed: #e8c878;
-  --style-resource-herb: #8fce48;
-}
-
-:root [data-resource-color="mana"] {
-  color: var(--style-resource-mana);
-}
-
-:root [data-resource-color="coin"] {
-  color: var(--style-resource-coin);
-}
-
-:root [data-resource-color="crystal"] {
-  color: var(--style-resource-crystal);
-}
-
-:root [data-resource-color="emerald"] {
-  color: var(--style-resource-emerald);
-}
-
-:root [data-resource-color="ruby"] {
-  color: var(--style-resource-ruby);
-}
-
-:root [data-resource-color="seed"] {
-  color: var(--style-resource-seed);
-}
-
-:root [data-resource-color="herb"] {
-  color: var(--style-resource-herb);
 }
 
 .style-star-level {
@@ -958,6 +995,121 @@
   object-fit: contain;
   object-position: center;
   vertical-align: -0.24em;
+}
+
+.style-button.style-cost-button.style-cost-button {
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(281px / 3);
+  min-width: calc(281px / 3);
+  height: calc(169px / 3);
+  min-height: calc(169px / 3);
+  padding: 0;
+  overflow: visible;
+  color: #fff;
+  font-family: "Lilita One", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: calc(55px / 3);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-text-stroke: 4px #0a0a0a;
+  paint-order: stroke fill;
+  scale: 1;
+  --style-press-scale: 0.94;
+}
+
+.style-button.style-cost-button.style-cost-button::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+  background: url("../../assets/game/source/ui/root-run-cost-button/green-button-short.png") center / 100%
+    100% no-repeat;
+}
+
+.style-button.style-cost-button.style-cost-button:is(
+    [aria-disabled="true"],
+    :disabled,
+    .is-disabled
+  ) {
+  color: #fff;
+  border-color: transparent;
+  opacity: 1;
+}
+
+.style-button.style-cost-button.style-cost-button:is(
+    [aria-disabled="true"],
+    :disabled,
+    .is-disabled
+  )::after {
+  background-image: url("../../assets/game/source/ui/root-run-cost-button/gray-button-short.png");
+}
+
+.style-button.style-cost-button.style-cost-button:is(
+    :active,
+    .is-pressing
+  ):not(:disabled):not([aria-disabled="true"]) {
+  background: transparent;
+}
+
+.style-cost-button > .style-resource-label {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(21.243px / 3);
+  color: inherit;
+  transform: translateY(calc(-7px / 3));
+}
+
+.style-cost-button__plain-label {
+  position: relative;
+  z-index: 1;
+  color: inherit;
+  transform: translateY(calc(-7px / 3));
+}
+
+.style-cost-button > .style-resource-label .style-resource-label__amount {
+  order: 2;
+}
+
+.style-cost-button > .style-resource-label .style-resource-label__icon {
+  display: inline-block;
+  order: 1;
+  width: 23px;
+  height: 23px;
+  margin: 0;
+}
+
+:root[data-style-icons]
+  .style-button.style-cost-button
+  > .style-resource-label
+  .style-resource-label__icon {
+  margin: 0;
+}
+
+.style-cost-button > .style-resource-label .style-resource-label__spacer,
+.style-cost-button > .style-resource-label .style-resource-label__text {
+  display: none;
+}
+
+.style-cost-button
+  :where(
+    .style-resource-label__amount,
+    .style-resource-label__spacer,
+    .style-resource-label__icon,
+    .style-resource-label__text
+  ) {
+  pointer-events: none;
+  -webkit-user-drag: none;
 }
 
 .style-seed-label__icon,
@@ -1095,7 +1247,7 @@ body {
   position: fixed;
   top: 40px;
   left: calc(env(safe-area-inset-left) + 50px);
-  z-index: 130;
+  z-index: 1300;
   color: var(--style-text);
   font-family: var(--style-font);
   font-size: 11px;
@@ -1167,6 +1319,7 @@ body {
     .brewing-page__ui-layer,
     .garden-page__ui-layer,
     .shop-page__ui-layer,
+    .research-page__skin-layer,
     .research-page__ui-layer,
     .guild-page__ui-layer,
     .prestige-page__ui-layer,
@@ -1919,29 +2072,21 @@ body {
 .game-canvas {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 1200;
   display: block;
   width: 100%;
   height: 100%;
+  opacity: 0;
   pointer-events: none;
 }
 
-.game-stage[data-pixi-mirror="true"]
-  :where(
-    .workshop-page,
-    .brewing-page,
-    .garden-page,
-    .research-page,
-    .shop-page,
-    .prestige-page,
-    .room-page__popup-layer,
-    .room-top-panel-layer,
-    .room-bottom-panel-layer,
-    .room-world-chat-layer,
-    .room-player-info-popup,
-    .room-alliance-info-popup
-  ) {
-  filter: opacity(0);
+.game-stage[data-root-run-ui-renderer="ready"] > .game-canvas {
+  opacity: 1;
+}
+
+[data-page-cache-activation="reused"] {
+  --room-page-entry-animation-name: none;
+  --room-section-entry-animation-name: none;
 }
 
 .workshop-page {
@@ -1950,7 +2095,8 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
-  animation: room-page-enter var(--style-motion-normal)
+  animation: var(--room-page-entry-animation-name, room-page-enter)
+    var(--style-motion-normal)
     var(--style-motion-ease-rubber) both;
 }
 
@@ -1960,7 +2106,8 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
-  animation: room-page-enter var(--style-motion-normal)
+  animation: var(--room-page-entry-animation-name, room-page-enter)
+    var(--style-motion-normal)
     var(--style-motion-ease-rubber) both;
 }
 
@@ -1978,8 +2125,57 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
-  animation: room-page-enter var(--style-motion-normal)
+  animation: var(--room-page-entry-animation-name, room-page-enter)
+    var(--style-motion-normal)
     var(--style-motion-ease-rubber) both;
+}
+
+.brewing-page,
+.brewing-page__popup-layer {
+  --style-progress-root-fill: var(--style-progress-blue-fill);
+  --style-progress-root-edge: var(--style-progress-blue-edge);
+}
+
+.garden-page,
+.garden-page__popup-layer {
+  --style-progress-root-fill: var(--style-progress-green-fill);
+  --style-progress-root-edge: var(--style-progress-green-edge);
+}
+
+.research-page,
+.research-page__popup-layer,
+.shop-page,
+.shop-page__popup-layer {
+  --style-progress-root-fill: var(--style-progress-yellow-fill);
+  --style-progress-root-edge: var(--style-progress-yellow-edge);
+}
+
+:root:not([data-style-progress])
+  :is(
+    .brewing-page,
+    .brewing-page__popup-layer,
+    .garden-page,
+    .garden-page__popup-layer,
+    .research-page,
+    .research-page__popup-layer,
+    .shop-page,
+    .shop-page__popup-layer
+  ),
+:root[data-style-progress="regular"]
+  :is(
+    .brewing-page,
+    .brewing-page__popup-layer,
+    .garden-page,
+    .garden-page__popup-layer,
+    .research-page,
+    .research-page__popup-layer,
+    .shop-page,
+    .shop-page__popup-layer
+  ) {
+  --style-progress-fill-background: var(--style-progress-root-fill);
+  --style-progress-fill-edge: var(--style-progress-root-edge);
+  --style-progress-fill-shadow: inset 0 0 0 1px
+    var(--style-progress-fill-edge);
 }
 
 .research-page {
@@ -1988,7 +2184,8 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
-  animation: room-page-enter var(--style-motion-normal)
+  animation: var(--room-page-entry-animation-name, room-page-enter)
+    var(--style-motion-normal)
     var(--style-motion-ease-rubber) both;
 }
 
@@ -1998,7 +2195,8 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
-  animation: room-page-enter var(--style-motion-normal)
+  animation: var(--room-page-entry-animation-name, room-page-enter)
+    var(--style-motion-normal)
     var(--style-motion-ease-rubber) both;
 }
 
@@ -2008,7 +2206,8 @@ body {
   z-index: 1;
   overflow: hidden;
   background: var(--style-surface);
-  animation: room-page-enter var(--style-motion-normal)
+  animation: var(--room-page-entry-animation-name, room-page-enter)
+    var(--style-motion-normal)
     var(--style-motion-ease-rubber) both;
 }
 
@@ -2291,6 +2490,29 @@ body {
   height: calc(100% / var(--style-ui-scale));
   transform: scale(var(--style-ui-scale));
   transform-origin: top left;
+}
+
+.research-page__skin-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: calc(100% / var(--style-ui-scale));
+  height: calc(100% / var(--style-ui-scale));
+  overflow: hidden;
+  pointer-events: none;
+  transform: scale(var(--style-ui-scale));
+  transform-origin: top left;
+}
+
+.research-page__skin-layer[hidden] {
+  display: none;
+}
+
+.research-page__skin-canvas {
+  display: block;
+  width: 390px;
+  height: 844px;
+  pointer-events: none;
 }
 
 .research-page__ui-layer {
@@ -2710,7 +2932,7 @@ body {
     .workshop-page__world-notice,
     .workshop-page__leaderboard,
     .workshop-page__summon-button,
-    .workshop-page__bag-button,
+    .workshop-page__bag,
     .workshop-page__stats-button,
     .workshop-page__mail,
     .workshop-page__trade-alliance,
@@ -2731,7 +2953,8 @@ body {
     .shop-page__market-panel > .style-panel
   ):not([hidden]) {
   transform-origin: center top;
-  animation: room-section-enter var(--style-motion-section)
+  animation: var(--room-section-entry-animation-name, room-section-enter)
+    var(--style-motion-section)
     var(--style-motion-ease-rubber) both;
   animation-delay: calc(
     var(--room-section-index, 0) * var(--style-motion-section-step)
@@ -2757,7 +2980,6 @@ body {
   --room-section-index: 1;
 }
 
-.workshop-page__bag-button,
 .workshop-page__stats-button,
 .workshop-page__mail,
 .brewing-page__cauldrons > .style-box:nth-child(2),
@@ -2765,6 +2987,10 @@ body {
 .research-page__box-list > .style-box:nth-child(2),
 .shop-page__market-panel > :where(.style-box, .style-panel):nth-child(2) {
   --room-section-index: 2;
+}
+
+.workshop-page__bag {
+  --room-section-index: 4;
 }
 
 .workshop-page__leaderboard,
@@ -3090,12 +3316,28 @@ body {
   display: none;
 }
 
+.game-stage[data-dev-bottom-tabs-preview] .tutorial-layer {
+  display: none;
+}
+
+.game-stage[data-dev-bottom-tabs-preview] .room-bottom-panel-layer {
+  opacity: 1;
+  translate: 0;
+}
+
+.game-stage[data-dev-bottom-tabs-preview][data-tutorial-reveal]
+  .room-bottom-panel-layer
+  :where(button, [role="button"]) {
+  pointer-events: auto;
+}
+
 .game-stage[data-tutorial-reveal]
   :where(
     .room-top-panel-layer,
     .room-bottom-panel-layer,
     .room-world-chat-layer,
     .workshop-page__action-bar > .style-button,
+    .workshop-page__bag,
     .workshop-page__tasks,
     .workshop-page__personal-tasks,
     .workshop-page__world-notice
@@ -3132,6 +3374,7 @@ body {
     .room-bottom-panel-layer,
     .room-world-chat-layer,
     .workshop-page__action-bar > .style-button,
+    .workshop-page__bag,
     .workshop-page__tasks,
     .workshop-page__personal-tasks,
     .workshop-page__world-notice
@@ -3148,6 +3391,12 @@ body {
 }
 
 .game-stage[data-tutorial-reveal] .workshop-page__action-bar > .style-button {
+  pointer-events: none;
+}
+
+.game-stage[data-tutorial-reveal]
+  .workshop-page__bag
+  > .workshop-page__bag-button {
   pointer-events: none;
 }
 
@@ -3258,15 +3507,6 @@ body {
 
 .tutorial-layer__pointer-spine-shell[hidden] {
   display: none;
-}
-
-.tutorial-layer__pointer-spine {
-  display: block;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  filter: drop-shadow(0 1px 0 var(--style-surface))
-    drop-shadow(0 2px 1px rgb(0 0 0 / 30%));
 }
 
 .tutorial-layer__pointer[data-spine-ready="true"]
@@ -3888,6 +4128,7 @@ body {
       .room-world-chat-layer,
       .room-top-panel__resource[aria-label="mana"],
       .workshop-page__action-bar > .style-button,
+      .workshop-page__bag,
       .workshop-page__tasks
     ) {
     transition: none;
@@ -4070,18 +4311,6 @@ body {
   pointer-events: auto;
 }
 
-.workshop-page__action-bar > .style-button.workshop-page__bag-button {
-  position: absolute;
-  top: calc(
-    var(--style-room-content-top) +
-      var(--workshop-secondary-button-top-offset) +
-      var(--workshop-secondary-button-row-gap)
-  );
-  left: 0;
-  box-sizing: content-box;
-  width: var(--workshop-secondary-button-width);
-}
-
 .workshop-page__action-bar > .style-button.workshop-page__stats-button {
   position: absolute;
   top: calc(
@@ -4092,6 +4321,7 @@ body {
   right: 0;
   box-sizing: content-box;
   width: var(--workshop-secondary-button-width);
+  text-transform: lowercase;
 }
 
 .room-reward-flyouts,
@@ -4266,7 +4496,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   left: 0;
   z-index: 91;
   padding: 0;
-  color: var(--style-resource-coin);
+  color: var(--style-text);
   font: 700 var(--style-font-size) / 1 var(--style-font);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
@@ -4295,25 +4525,29 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .research-page__row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(
-      var(--style-research-value-width),
-      max-content
-    );
-  align-items: start;
+  position: relative;
+  box-sizing: border-box;
+  display: block;
+  flex: 0 0 var(--style-research-row-height);
+  width: var(--style-research-card-width);
+  height: var(--style-research-row-height);
   min-height: var(--style-research-row-height);
+  padding: 0;
+  margin-left: -2px;
   clear: both;
-  column-gap: var(--style-research-column-gap);
   overflow: visible;
+  color: #634934;
   line-height: normal;
-}
-
-.research-page__row.is-unavailable {
-  color: var(--style-disabled);
+  background: transparent url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png") center / 100% 100% no-repeat;
+  border: 0;
+  border-image: none;
+  border-radius: 0;
 }
 
 .research-page__row.is-locked {
+  color: #fff;
   cursor: pointer;
+  background-image: url("../../assets/game/source/ui/root-run-research/research-card-locked-1000x304.png");
 }
 
 .shop-page__slot-row {
@@ -4367,6 +4601,17 @@ span.room-seed-pack-composite .room-seed-pack-item {
   letter-spacing: 2px;
   line-height: var(--style-row-min-height);
   white-space: nowrap;
+}
+
+.shop-page__shelf > .shop-page__slot-row.is-empty::before {
+  box-sizing: border-box;
+  content: "";
+  grid-area: visual;
+  align-self: center;
+  justify-self: stretch;
+  width: var(--shop-page-stall-visual-size);
+  height: var(--shop-page-stall-visual-size);
+  border: var(--style-border);
 }
 
 .shop-page__shelf > .shop-page__slot-row > .shop-page__slot-value,
@@ -4745,10 +4990,12 @@ span.room-seed-pack-composite .room-seed-pack-item {
   position: relative;
   overflow: visible;
   --style-notification-current: var(--style-notification);
+  --style-notification-image-current: var(--style-notification-image);
 }
 
 :where(button, [role="button"])[data-notification-tone="orange"] {
   --style-notification-current: var(--style-notification-orange);
+  --style-notification-image-current: var(--style-notification-image-orange);
 }
 
 :where(button, [role="button"])[data-notification="true"]::before {
@@ -4760,9 +5007,11 @@ span.room-seed-pack-composite .room-seed-pack-item {
   height: var(--style-notification-size);
   pointer-events: none;
   content: "";
-  background: var(--style-notification-current);
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px var(--style-surface);
+  background: var(
+      --style-notification-image-current,
+      var(--style-notification-image)
+    )
+    center / 100% 100% no-repeat;
   transform: none;
 }
 
@@ -4782,10 +5031,12 @@ span.room-seed-pack-composite .room-seed-pack-item {
   position: relative;
   overflow: visible;
   --style-notification-current: var(--style-notification);
+  --style-notification-image-current: var(--style-notification-image);
 }
 
 .brewing-page__herb-label[data-notification-tone="orange"] {
   --style-notification-current: var(--style-notification-orange);
+  --style-notification-image-current: var(--style-notification-image-orange);
 }
 
 .brewing-page__herb-label[data-notification="true"]::before {
@@ -4797,9 +5048,11 @@ span.room-seed-pack-composite .room-seed-pack-item {
   height: var(--style-notification-size);
   pointer-events: none;
   content: "";
-  background: var(--style-notification-current);
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px var(--style-surface);
+  background: var(
+      --style-notification-image-current,
+      var(--style-notification-image)
+    )
+    center / 100% 100% no-repeat;
   transform: none;
 }
 
@@ -5235,6 +5488,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .style-button.workshop-page__prestige-market-help {
+  --style-info-button-icon-height: var(--style-box-border-label-line-height);
   width: auto;
   min-width: var(--style-box-border-label-line-height);
   padding: 0 1px;
@@ -5569,7 +5823,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__ui-layer > .workshop-page__mail,
 .workshop-page__ui-layer > .workshop-page__leaderboard,
 .workshop-page__ui-layer > .workshop-page__discoveries,
-.workshop-page__ui-layer > .workshop-page__trade-alliance {
+.workshop-page__ui-layer > .workshop-page__trade-alliance,
+.workshop-page__ui-layer > .workshop-page__bag {
   --workshop-panel-button-label-row-y: var(
     --workshop-panel-button-row-1-label-y
   );
@@ -5609,12 +5864,20 @@ span.room-seed-pack-composite .room-seed-pack-item {
   left: var(--style-room-chrome-edge);
 }
 
+.workshop-page__ui-layer > .workshop-page__bag {
+  --workshop-panel-button-label-row-y: var(
+    --workshop-panel-button-row-4-label-y
+  );
+  left: var(--style-room-chrome-edge);
+}
+
 .workshop-page__ui-layer > .workshop-page__personal-tasks[hidden],
 .workshop-page__ui-layer > .workshop-page__world-notice[hidden],
 .workshop-page__ui-layer > .workshop-page__mail[hidden],
 .workshop-page__ui-layer > .workshop-page__leaderboard[hidden],
 .workshop-page__ui-layer > .workshop-page__discoveries[hidden],
-.workshop-page__ui-layer > .workshop-page__trade-alliance[hidden] {
+.workshop-page__ui-layer > .workshop-page__trade-alliance[hidden],
+.workshop-page__ui-layer > .workshop-page__bag[hidden] {
   display: none;
 }
 
@@ -5645,6 +5908,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__personal-tasks-open,
 .workshop-page__world-notice-open,
+.workshop-page__bag-button,
 .workshop-page__mail-button,
 .workshop-page__leaderboard-button,
 .workshop-page__discoveries-button,
@@ -5687,6 +5951,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__panel-button[data-panel-side="left"]
   .workshop-page__feature-character,
 .workshop-page__panel-button[data-panel-side="left"]
+  .workshop-page__bag-button-icon-frame,
+.workshop-page__panel-button[data-panel-side="left"]
   .workshop-page__mail-button-icon-frame,
 .workshop-page__panel-button[data-panel-side="left"]
   .workshop-page__leaderboard-button-icon-frame,
@@ -5706,6 +5972,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__panel-button[data-panel-side="right"]
   .workshop-page__feature-character,
 .workshop-page__panel-button[data-panel-side="right"]
+  .workshop-page__bag-button-icon-frame,
+.workshop-page__panel-button[data-panel-side="right"]
   .workshop-page__mail-button-icon-frame,
 .workshop-page__panel-button[data-panel-side="right"]
   .workshop-page__leaderboard-button-icon-frame,
@@ -5722,6 +5990,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__personal-tasks-open:focus,
 .workshop-page__world-notice-open:focus,
+.workshop-page__bag-button:focus,
 .workshop-page__mail-button:focus,
 .workshop-page__leaderboard-button:focus,
 .workshop-page__discoveries-button:focus,
@@ -5731,6 +6000,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__personal-tasks-open:focus-visible,
 .workshop-page__world-notice-open:focus-visible,
+.workshop-page__bag-button:focus-visible,
 .workshop-page__mail-button:focus-visible,
 .workshop-page__leaderboard-button:focus-visible,
 .workshop-page__discoveries-button:focus-visible,
@@ -5827,6 +6097,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__personal-tasks-open:active
   .workshop-page__personal-tasks-character,
 .workshop-page__world-notice-open:active .workshop-page__world-notice-character,
+.workshop-page__bag-button:active .workshop-page__bag-button-icon-frame,
 .workshop-page__mail-button:active .workshop-page__mail-button-icon-frame,
 .workshop-page__leaderboard-button:active
   .workshop-page__leaderboard-button-icon-frame,
@@ -5842,6 +6113,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   .workshop-page__feature-character-label,
 .workshop-page__world-notice-open:active
   .workshop-page__feature-character-label,
+.workshop-page__bag-button:active .workshop-page__feature-character-label,
 .workshop-page__mail-button:active .workshop-page__feature-character-label,
 .workshop-page__leaderboard-button:active
   .workshop-page__feature-character-label,
@@ -5875,9 +6147,11 @@ span.room-seed-pack-composite .room-seed-pack-item {
   height: var(--style-notification-size);
   pointer-events: none;
   content: "";
-  background: var(--style-notification-current, var(--style-notification));
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px var(--style-surface);
+  background: var(
+      --style-notification-image-current,
+      var(--style-notification-image)
+    )
+    center / 100% 100% no-repeat;
 }
 
 .workshop-page__level-rewards-toggle {
@@ -6081,8 +6355,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   min-height: 32px;
 }
 
-.workshop-page__level-complete-label,
-.workshop-page__level-complete-cost {
+.workshop-page__level-complete-label {
   display: block;
   min-width: 0;
   overflow: hidden;
@@ -6093,18 +6366,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__level-complete-label {
   font-weight: bold;
   line-height: var(--style-box-border-label-line-height);
-}
-
-.workshop-page__level-complete-cost {
-  display: inline-flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 2px;
-  width: 100%;
-  font-size: var(--style-tiny-font-size);
-  font-variant-numeric: tabular-nums lining-nums;
-  line-height: var(--style-tiny-line-height);
-  text-align: center;
 }
 
 .workshop-page__task-label,
@@ -6895,16 +7156,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
   margin: 0;
   font-size: var(--style-font-size);
   line-height: normal;
-  color: var(--brewing-page-cauldron-action-button-text);
-  background: transparent;
-  border: var(--style-border);
-  border-color: transparent;
-  border-image-source: var(--brewing-page-cauldron-action-button-frame);
-  border-image-slice: var(--brewing-page-cauldron-action-button-slice);
-  border-image-width: var(
-    --brewing-page-cauldron-action-button-border-image-width
-  );
-  border-image-repeat: stretch;
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -6915,6 +7166,48 @@ span.room-seed-pack-composite .room-seed-pack-item {
   max-width: var(--brewing-page-cauldron-action-button-width);
 }
 
+.style-button.style-cost-button.brewing-page__buy-button {
+  width: var(--brewing-page-cauldron-action-button-width);
+  max-width: var(--brewing-page-cauldron-action-button-width);
+  min-width: var(--brewing-page-cauldron-action-button-width);
+  height: var(--brewing-page-cauldron-action-button-height);
+  min-height: var(--brewing-page-cauldron-action-button-height);
+  padding: 5px 8px;
+  font-size: var(--style-font-size);
+  line-height: normal;
+  border: var(--style-border);
+  border-color: transparent;
+  border-image-source: var(--style-green-button-frame);
+  border-image-slice: var(--style-green-button-frame-slice);
+  border-image-width: var(--style-green-button-frame-width);
+  border-image-repeat: stretch;
+}
+
+.style-button.style-cost-button.brewing-page__buy-button::after {
+  display: none;
+}
+
+.style-button.style-cost-button.brewing-page__buy-button
+  > .style-resource-label {
+  gap: var(--style-icon-label-gap);
+  transform: none;
+}
+
+.style-button.style-cost-button.brewing-page__buy-button
+  > .style-resource-label
+  .style-resource-label__icon {
+  width: var(--style-resource-icon-size);
+  height: var(--style-resource-icon-size);
+}
+
+.style-button.style-cost-button.brewing-page__buy-button:is(
+    [aria-disabled="true"],
+    :disabled,
+    .is-disabled
+  ) {
+  border-image-source: var(--style-green-button-disabled-frame);
+}
+
 .brewing-page__action-button-label {
   line-height: inherit;
 }
@@ -6922,7 +7215,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .brewing-page__action-button-cost {
   margin-left: 3px;
   margin-top: 0;
-  color: var(--brewing-page-cauldron-action-button-muted-text);
+  color: inherit;
   font-size: inherit;
   font-variant-numeric: tabular-nums lining-nums;
   line-height: inherit;
@@ -6938,48 +7231,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
     .is-pressing
   ):not(:disabled):not([aria-disabled="true"]) {
   background: transparent;
-}
-
-.style-button.brewing-page__action-button[aria-disabled="true"],
-.style-button.brewing-page__action-button:disabled {
-  color: var(--brewing-page-cauldron-action-button-disabled-text);
-  background: transparent;
-  border-color: transparent;
-  border-image-source: var(--brewing-page-cauldron-action-button-disabled-frame);
-}
-
-.style-button.brewing-page__action-button[aria-disabled="true"]
-  .brewing-page__action-button-cost,
-.style-button.brewing-page__action-button:disabled
-  .brewing-page__action-button-cost {
-  color: inherit;
-}
-
-.brewing-page__actions
-  .style-button.brewing-page__action-button
-  .brewing-page__action-button-cost[data-resource-color="coin"],
-.brewing-page__actions
-  .style-button.brewing-page__action-button
-  .brewing-page__action-button-cost[data-resource-color="coin"]
-  .style-resource-label--coin {
-  color: var(--style-resource-coin);
-}
-
-.brewing-page__action-button-cost[data-resource-color="coin"]
-  .style-resource-label__icon {
-  display: inline-block;
-}
-
-.brewing-page__action-button-cost[data-resource-color="coin"]
-  .style-resource-label__amount
-  + .style-resource-label__spacer
-  + .style-resource-label__icon {
-  margin-left: var(--style-icon-label-gap);
-}
-
-.brewing-page__action-button-cost[data-resource-color="coin"]
-  :where(.style-resource-label__text, .style-resource-label__spacer) {
-  display: none;
 }
 
 .brewing-page__item-drag-ghost,
@@ -7045,6 +7296,8 @@ span.room-seed-pack-composite .room-seed-pack-item {
   }
 }
 
+.style-button.brewing-page__action-button[hidden],
+.style-button.brewing-page__buy-button[hidden],
 .style-button.brewing-page__cauldron-select-recipe-text[hidden],
 .style-button.brewing-page__quantity-button[hidden],
 .style-button.brewing-page__auto-button[hidden] {
@@ -7053,10 +7306,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .style-button.brewing-page__cauldron-select-recipe-text:disabled,
 .style-button.brewing-page__cauldron-select-recipe-text[aria-disabled="true"] {
-  color: var(--brewing-page-cauldron-action-button-disabled-text);
-  background: transparent;
-  border-color: transparent;
-  border-image-source: var(--brewing-page-cauldron-action-button-disabled-frame);
   cursor: default;
 }
 
@@ -7247,6 +7496,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   pointer-events: auto;
 }
 
+.workshop-page__bag > .workshop-page__bag-button,
 .workshop-page__mail > .workshop-page__mail-button,
 .workshop-page__leaderboard > .workshop-page__leaderboard-button,
 .workshop-page__discoveries > .workshop-page__discoveries-button,
@@ -7254,6 +7504,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   overflow: visible;
 }
 
+.workshop-page__bag-button-icon-frame,
 .workshop-page__mail-button-icon-frame,
 .workshop-page__leaderboard-button-icon-frame,
 .workshop-page__discoveries-button-icon-frame,
@@ -7272,6 +7523,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
     translate var(--style-motion-fast) var(--style-motion-ease-rubber);
 }
 
+.workshop-page__bag-button-icon,
 .workshop-page__mail-button-icon,
 .workshop-page__leaderboard-button-icon,
 .workshop-page__discoveries-button-icon,
@@ -7282,6 +7534,10 @@ span.room-seed-pack-composite .room-seed-pack-item {
   user-select: none;
   object-fit: contain;
   -webkit-user-drag: none;
+}
+
+.workshop-page__leaderboard-button-icon {
+  scale: 1.35;
 }
 
 .workshop-page__trade-alliance-button-icon-frame {
@@ -7304,6 +7560,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
     no-repeat;
 }
 
+.workshop-page__bag-button-label,
 .workshop-page__mail-button-label,
 .workshop-page__leaderboard-button-label,
 .workshop-page__discoveries-button-label,
@@ -7504,10 +7761,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__personal-tasks-frame {
-  height: calc(
-    var(--style-tabbed-dialog-content-height) -
-      var(--style-scroll-progress-block-size)
-  );
+  height: var(--style-tabbed-dialog-content-height);
   overflow: hidden auto;
   scrollbar-width: none;
 }
@@ -7685,10 +7939,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__stats-frame {
-  height: calc(
-    var(--style-tabbed-dialog-content-height) -
-      var(--style-scroll-progress-block-size)
-  );
+  height: var(--style-tabbed-dialog-content-height);
   overflow: hidden auto;
   scrollbar-width: none;
 }
@@ -8206,7 +8457,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   height: 400px;
   --workshop-summon-info-selected-surface: color-mix(
     in srgb,
-    var(--style-resource-seed) 12%,
+    var(--style-text) 12%,
     var(--style-surface)
   );
 }
@@ -8432,26 +8683,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
   touch-action: manipulation;
 }
 
-.workshop-page__summon-info-weight-choice[data-drop-weight-color="none"],
-.workshop-page__summon-info-weight-value[data-drop-weight-color="none"] {
-  color: var(--style-resource-ruby);
-}
-
-.workshop-page__summon-info-weight-choice[data-drop-weight-color="low"],
-.workshop-page__summon-info-weight-value[data-drop-weight-color="low"] {
-  color: var(--style-resource-seed);
-}
-
-.workshop-page__summon-info-weight-choice[data-drop-weight-color="medium"],
-.workshop-page__summon-info-weight-value[data-drop-weight-color="medium"] {
-  color: var(--style-resource-coin);
-}
-
-.workshop-page__summon-info-weight-choice[data-drop-weight-color="high"],
-.workshop-page__summon-info-weight-value[data-drop-weight-color="high"] {
-  color: var(--style-resource-herb);
-}
-
 .workshop-page__summon-info-weight-check {
   display: inline-flex;
   align-items: center;
@@ -8495,22 +8726,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
   text-align: right;
 }
 
-.workshop-page__summon-info-chance[data-drop-rate-color="none"] {
-  color: var(--style-resource-ruby);
-}
-
-.workshop-page__summon-info-chance[data-drop-rate-color="low"] {
-  color: var(--style-resource-seed);
-}
-
-.workshop-page__summon-info-chance[data-drop-rate-color="medium"] {
-  color: var(--style-resource-coin);
-}
-
-.workshop-page__summon-info-chance[data-drop-rate-color="high"] {
-  color: var(--style-resource-herb);
-}
-
 .workshop-page__summon-info-row.is-selection-updated
   .workshop-page__summon-info-weight-value,
 .workshop-page__summon-info-row.is-selection-updated
@@ -8534,10 +8749,6 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__summon-info-status[hidden] {
   display: none;
-}
-
-.workshop-page__summon-info-progress {
-  flex: 0 0 auto;
 }
 
 @keyframes workshop-summon-drop-selection-change {
@@ -8615,10 +8826,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__prestige-rows {
-  height: calc(
-    var(--style-tabbed-dialog-content-height) - 26px -
-      var(--style-scroll-progress-height) - 6px
-  );
+  height: calc(var(--style-tabbed-dialog-content-height) - 26px);
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -8629,7 +8837,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__leaderboard-rows {
-  height: calc(240px - var(--style-scroll-progress-block-size));
+  height: 240px;
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -8641,10 +8849,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__discoveries-rows {
   padding-top: 19px;
-  height: calc(
-    var(--style-tabbed-dialog-content-height) -
-      var(--style-scroll-progress-block-size)
-  );
+  height: var(--style-tabbed-dialog-content-height);
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -8658,10 +8863,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__bag-rows {
   padding-top: 4px;
-  height: calc(
-    var(--style-tabbed-dialog-content-height) - 4px -
-      var(--style-scroll-progress-block-size)
-  );
+  height: calc(var(--style-tabbed-dialog-content-height) - 4px);
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -8777,38 +8979,12 @@ div.workshop-page__discovery-row {
   scrollbar-width: none;
 }
 
-.workshop-page__world-chat-messages + .style-scroll-cue-progress {
-  margin-top: var(--style-world-chat-progress-gap);
-  margin-bottom: var(--style-world-chat-progress-gap);
-}
-
 .workshop-page__world-chat-messages::-webkit-scrollbar {
   display: none;
 }
 
 .workshop-page__bag-frame {
   position: relative;
-}
-
-.workshop-page__bag-frame::after {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 64px;
-  pointer-events: none;
-  content: "";
-  background: linear-gradient(
-    to bottom,
-    rgb(var(--style-log-fade-rgb) / 0%),
-    rgb(var(--style-log-fade-rgb) / var(--style-scroll-fade-opacity))
-  );
-  opacity: 0;
-  transition: opacity var(--style-motion-fast) var(--style-motion-ease);
-}
-
-.workshop-page__bag-frame.has-bottom-overflow::after {
-  opacity: 1;
 }
 
 .workshop-page__world-chat-message,
@@ -8926,10 +9102,6 @@ div.workshop-page__discovery-row {
   );
   text-align: center;
   place-items: center;
-}
-
-.workshop-page__bag-progress-fill {
-  width: 100%;
 }
 
 .workshop-page__world-chat-name {
@@ -9665,16 +9837,6 @@ div.workshop-page__discovery-row {
   cursor: pointer;
 }
 
-.garden-page__plot-row.is-empty
-  .garden-page__plot-label[data-resource-color="seed"] {
-  color: var(--style-resource-seed);
-}
-
-.garden-page__plot-row.is-empty
-  .garden-page__plot-label[data-resource-color="herb"] {
-  color: var(--style-resource-herb);
-}
-
 .garden-page__plot-row.is-empty.is-selected-without-seeds
   .garden-page__plot-action {
   cursor: default;
@@ -9854,7 +10016,7 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot .garden-page__plot-box-frame {
-  --garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground.png");
+  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground.png");
   --garden-page-plot-level-color: var(--style-muted);
   position: relative;
   box-sizing: border-box;
@@ -9896,19 +10058,19 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="2"] {
-  --garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground-level-2.png");
+  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-2.png");
 }
 
 .garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="3"] {
-  --garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground-level-3.png");
+  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-3.png");
 }
 
 .garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="4"] {
-  --garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground-level-4.png");
+  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-4.png");
 }
 
 .garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="5"] {
-  --garden-page-plot-soil-image: url("../pages/garden/assets/plots/outpost-plot-ground-level-5.png");
+  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-5.png");
 }
 
 .garden-page__plot .garden-page__plot-box-frame::before {
@@ -9993,12 +10155,6 @@ div.workshop-page__discovery-row {
 .garden-page__plot-buy-tooltip .style-resource-label__text,
 .garden-page__plot-buy-tooltip .style-resource-label__spacer {
   display: none;
-}
-
-.garden-page__plot-row.is-unaffordable
-  .garden-page__plot-buy-tooltip
-  [data-resource-color="coin"] {
-  color: var(--style-resource-coin);
 }
 
 .garden-page__plot
@@ -10087,10 +10243,6 @@ div.workshop-page__discovery-row {
   max-width: calc(100% + 10px);
   text-align: center;
   transform: translateX(-50%);
-}
-
-.garden-page__plot-box-label[data-resource-color="seed"] {
-  color: var(--style-resource-seed);
 }
 
 .garden-page__plot-plant {
@@ -10682,7 +10834,7 @@ div.workshop-page__discovery-row {
   left: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
   padding-top: var(--style-page-scroll-padding-top);
   padding-bottom: var(--style-page-scroll-padding-bottom);
   overflow: hidden auto;
@@ -10690,6 +10842,25 @@ div.workshop-page__discovery-row {
 
 .research-page__box-list::-webkit-scrollbar {
   display: none;
+}
+
+.research-page__box {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0;
+  color: var(--style-text);
+  font-family: var(--style-font);
+  font-size: var(--style-font-size);
+}
+
+.research-page__box-title {
+  min-height: var(--style-row-min-height);
+  padding: 0 10px;
+  font-weight: 700;
+  line-height: var(--style-row-min-height);
 }
 
 .research-page__run-focus {
@@ -10736,15 +10907,14 @@ div.workshop-page__discovery-row {
 }
 
 .research-page__research-label {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  position: absolute;
+  inset: 0 var(--style-research-value-width) 0 0;
+  display: block;
   min-width: 0;
-  min-height: var(--style-research-row-height);
+  min-height: 0;
   max-width: none;
-  align-items: start;
-  column-gap: 6px;
-  overflow: visible;
-  line-height: var(--style-research-row-height);
+  overflow: hidden;
+  line-height: normal;
   white-space: normal;
 }
 
@@ -10755,26 +10925,39 @@ div.workshop-page__discovery-row {
 }
 
 .research-page__research-name {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  max-width: 225px;
   min-width: 0;
   overflow: visible;
   overflow-wrap: break-word;
+  font-size: 14px;
   text-overflow: clip;
   white-space: normal;
 }
 
-.research-page__research-effect {
-  color: var(--style-muted);
-  white-space: nowrap;
+.research-page__research-description {
+  position: absolute;
+  top: 29px;
+  left: var(--style-research-card-info-left);
+  box-sizing: border-box;
+  width: var(--style-research-card-info-width);
+  min-height: 32px;
+  overflow: hidden;
+  color: #634934;
+  font-size: 13px;
+  line-height: 15px;
+  text-align: center;
+  text-wrap: pretty;
 }
 
 .research-page__research-label-button {
   padding: 0;
   appearance: none;
-  color: var(--style-text);
+  color: #634934;
   font-family: var(--style-font);
   font-size: var(--style-font-size);
-  min-height: var(--style-research-row-height);
-  line-height: var(--style-research-row-height);
   text-align: left;
   cursor: pointer;
   background: transparent;
@@ -10782,9 +10965,10 @@ div.workshop-page__discovery-row {
   border-radius: 0;
 }
 
-.research-page__row.is-unavailable .research-page__research-label-button,
-.research-page__row.is-unavailable .research-page__research-effect,
-.research-page__row.is-unavailable .research-page__research-value {
+.research-page__row.is-locked .research-page__research-label-button,
+.research-page__row.is-locked .research-page__research-description,
+.research-page__row.is-locked .research-page__research-rank,
+.research-page__row.is-locked .research-page__research-value {
   color: inherit;
 }
 
@@ -10793,7 +10977,7 @@ div.workshop-page__discovery-row {
 }
 
 .research-page__research-label-button:active {
-  background: var(--style-active-surface);
+  background: transparent;
 }
 
 .research-page__research-label-button:focus {
@@ -10801,37 +10985,70 @@ div.workshop-page__discovery-row {
 }
 
 .research-page__research-value {
-  display: block;
-  width: max-content;
+  position: absolute;
+  top: var(--style-research-card-action-top);
+  right: var(--style-research-card-action-right);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--style-research-value-width);
   min-width: var(--style-research-value-width);
-  height: var(--style-research-row-height);
-  min-height: var(--style-research-row-height);
-  color: var(--style-muted);
-  line-height: var(--style-research-row-height);
-  text-align: right;
+  height: 70px;
+  min-height: 70px;
+  padding: 4px;
+  color: #725737;
+  line-height: normal;
+  text-align: center;
   white-space: nowrap;
 }
 
-.research-page__row.is-completed
-  .research-page__research-value[data-resource-color="crystal"] {
-  color: var(--style-resource-crystal);
-}
-
-.research-page__row.is-completed
-  .research-page__research-value[data-resource-color="ruby"] {
-  color: var(--style-resource-ruby);
-}
-
-.research-page__row.is-completed
-  .research-page__research-value[data-resource-color="emerald"] {
-  color: var(--style-resource-emerald);
+.research-page__row.is-completed .research-page__research-value {
+  color: var(--style-text);
 }
 
 .research-page__row.is-in-progress .research-page__research-value {
-  color: var(--style-muted);
+  color: #725737;
   font-size: var(--style-box-border-label-font-size);
   line-height: normal;
-  transform: translateY(2px);
+}
+
+.research-page__row.is-in-progress .research-page__research-label {
+  inset: 0 var(--style-research-value-width) 0 0;
+}
+
+.research-page__research-rank {
+  position: absolute;
+  top: 0;
+  right: var(--style-research-card-rank-right);
+  z-index: 2;
+  box-sizing: border-box;
+  width: 217px;
+  min-width: 217px;
+  height: 62px;
+  padding: 8px 25px;
+  color: #ffeecf;
+  font-size: 40px;
+  line-height: 46px;
+  text-align: center;
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  transform: scale(0.3);
+  transform-origin: top right;
+  -webkit-text-stroke: 4px #0a0a0a;
+  paint-order: stroke fill;
+}
+
+.research-page__research-rank::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  background: transparent url("../../assets/game/source/ui/root-run-research/research-rank-badge-217x62.png") center / 100% 100% no-repeat;
+  border: 0;
+  border-image: none;
 }
 
 .research-page__research-value-label,
@@ -10846,8 +11063,15 @@ div.workshop-page__discovery-row {
 }
 
 .research-page__research-progress {
-  grid-column: 1 / -1;
-  margin: 1px 0 2px;
+  position: absolute;
+  right: calc(
+    var(--style-research-card-width) - var(--style-research-card-info-left) -
+      var(--style-research-card-info-width)
+  );
+  bottom: 8px;
+  left: var(--style-research-card-info-left);
+  width: auto;
+  margin: 0;
 }
 
 .research-page__research-progress-text {
@@ -10855,25 +11079,138 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.research-page__research-button {
-  justify-self: end;
+  position: absolute;
+  top: var(--style-research-card-action-top);
+  right: var(--style-research-card-action-right);
   float: none;
-  width: max-content;
-  min-width: var(--style-research-value-width);
-  height: var(--style-research-row-height);
-  min-height: var(--style-research-row-height);
   padding: 0;
   margin-bottom: 0;
-  line-height: var(--style-research-row-height);
   text-align: center;
-  background: transparent;
-  border: 0;
   font-variant-numeric: tabular-nums lining-nums;
+}
+
+.style-button.style-cost-button.research-page__research-button {
+  position: absolute;
+  top: calc(
+    var(--style-research-card-action-top) + (70px - 48px) / 2
+  );
+  right: calc(
+    var(--style-research-card-action-right) +
+      (var(--style-research-value-width) - 80px) / 2
+  );
+  width: 80px;
+  min-width: 80px;
+  height: 48px;
+  min-height: 48px;
+  font-size: 17px;
+  line-height: normal;
+}
+
+.style-button.style-cost-button.research-page__research-button.is-unaffordable::after {
+  background-image: url("../../assets/game/source/ui/root-run-cost-button/green-button-short.png");
+}
+
+.style-button.style-cost-button.research-page__research-button.is-unaffordable
+  .style-resource-label__amount {
+  color: #c1121f;
+}
+
+.style-button.style-cost-button.research-page__research-button
+  > .style-resource-label,
+.style-button.style-cost-button.research-page__research-button
+  > .style-cost-button__plain-label {
+  transform: translateY(-2px);
+}
+
+.style-button.style-cost-button.research-page__research-button
+  > .research-page__research-lock-label {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 12px);
+  line-height: normal;
+  white-space: normal;
+}
+
+.research-page__research-lock-title {
+  color: #fff;
+  font-size: 17px;
+  line-height: 18px;
+}
+
+.research-page__research-lock-reason {
+  display: -webkit-box;
+  max-width: 84px;
+  overflow: hidden;
+  color: #fff;
+  font-size: 10px;
+  line-height: 10px;
+  text-align: center;
+  text-wrap: balance;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  -webkit-text-stroke: 2px #0a0a0a;
 }
 
 .style-button.research-page__research-button:active:not(:disabled):not(
     [aria-disabled="true"]
   ) {
-  background: var(--style-active-surface);
+  background: transparent;
+}
+
+.research-page__research-art {
+  position: absolute;
+  top: var(--style-research-card-art-top);
+  left: var(--style-research-card-art-left);
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: var(--style-research-card-art-width);
+  height: var(--style-research-card-art-height);
+  overflow: hidden;
+  background: transparent url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.png") center / 100% 100% no-repeat;
+  border: 0;
+  border-image: none;
+  border-radius: 0;
+}
+
+.research-page__row.is-locked .research-page__research-art {
+  background-image: url("../../assets/game/source/ui/root-run-research/research-art-well-locked-204x194.png");
+}
+
+.research-page__ui-layer[data-research-skin-renderer="pixi"]
+  .research-page__row,
+.research-page__ui-layer[data-research-skin-renderer="pixi"]
+  .research-page__research-art,
+.research-page__ui-layer[data-research-skin-renderer="pixi"]
+  .research-page__research-rank::before {
+  background-image: none;
+}
+
+.research-page__research-art-image {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.research-page__row.is-locked .research-page__research-art-image {
+  filter: grayscale(1) brightness(1.4);
+  opacity: 1;
+}
+
+:root[data-style-icons="icons"]
+  .research-page__research-name
+  :where(
+    .style-seed-label__icon,
+    .style-herb-label__icon,
+    .style-potion-label__icon,
+    .style-ingredient-label__icon
+  ) {
+  display: none;
 }
 
 .style-button.research-page__tab-button {
@@ -10908,12 +11245,17 @@ div.workshop-page__discovery-row {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 260px;
+  display: grid;
+  width: 304px;
+  min-height: 53px;
+  padding-top: calc(var(--style-dialog-padding) + 5px);
+  padding-bottom: calc(var(--style-dialog-padding) - 5px);
+  align-content: center;
   transform: translate(-50%, calc(-50% + var(--app-dialog-y-shift, 0px)));
 }
 
 .research-page__info-copy {
-  max-width: 260px;
+  max-width: 304px;
   margin: 0;
 }
 
@@ -11289,22 +11631,11 @@ div.workshop-page__discovery-row {
   padding: 5px 8px;
   margin: 0;
   appearance: none;
-  color: var(--brewing-page-cauldron-action-button-text);
   font-family: var(--style-font);
   font-size: var(--style-font-size);
   font-weight: normal;
   line-height: normal;
   text-align: center;
-  background: transparent;
-  border: var(--style-border);
-  border-color: transparent;
-  border-image-source: var(--brewing-page-cauldron-action-button-frame);
-  border-image-slice: var(--brewing-page-cauldron-action-button-slice);
-  border-image-width: var(
-    --brewing-page-cauldron-action-button-border-image-width
-  );
-  border-image-repeat: stretch;
-  border-radius: 0;
   vertical-align: middle;
 }
 
@@ -11328,16 +11659,6 @@ div.workshop-page__discovery-row {
     :disabled
   ):not([aria-disabled="true"]) {
   background: transparent;
-}
-
-.style-button.brewing-page__quantity-button[aria-disabled="true"],
-.style-button.brewing-page__quantity-button:disabled,
-.style-button.brewing-page__auto-button[aria-disabled="true"],
-.style-button.brewing-page__auto-button:disabled {
-  color: var(--brewing-page-cauldron-action-button-disabled-text);
-  background: transparent;
-  border-color: transparent;
-  border-image-source: var(--brewing-page-cauldron-action-button-disabled-frame);
 }
 
 .style-button.brewing-page__quantity-button:focus,
@@ -11864,10 +12185,7 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__trade-history-rows {
-  height: calc(
-    var(--style-tabbed-dialog-content-height) -
-      var(--style-scroll-progress-block-size)
-  );
+  height: var(--style-tabbed-dialog-content-height);
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -12241,8 +12559,8 @@ div.workshop-page__discovery-row {
 .shop-page__sell-allocation-progress {
   position: absolute;
   top: 50%;
-  right: 3.5px;
-  left: 3.5px;
+  right: calc(var(--style-progress-knob-size) / 2);
+  left: calc(var(--style-progress-knob-size) / 2);
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -12275,21 +12593,27 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__sell-allocation-range::-webkit-slider-thumb {
-  width: 7px;
-  height: 13px;
-  margin-top: -4px;
+  box-sizing: border-box;
+  width: var(--style-progress-knob-size);
+  height: var(--style-progress-knob-size);
+  margin-top: calc(
+    (var(--style-progress-total-height) - var(--style-progress-knob-size)) / 2
+  );
   appearance: none;
-  background: var(--style-text);
-  border: 0;
-  border-radius: 0;
+  background: var(--style-progress-knob-fill);
+  border: 1px solid var(--style-progress-knob-border);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--style-progress-knob-ring);
 }
 
 .shop-page__sell-allocation-range::-moz-range-thumb {
-  width: 7px;
-  height: 13px;
-  background: var(--style-text);
-  border: 0;
-  border-radius: 0;
+  box-sizing: border-box;
+  width: var(--style-progress-knob-size);
+  height: var(--style-progress-knob-size);
+  background: var(--style-progress-knob-fill);
+  border: 1px solid var(--style-progress-knob-border);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--style-progress-knob-ring);
 }
 
 .shop-page__sell-allocation-range:focus-visible {
@@ -12517,10 +12841,7 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__sell-item-list {
-  height: calc(
-    var(--style-tabbed-dialog-content-height) -
-      var(--style-scroll-progress-block-size)
-  );
+  height: var(--style-tabbed-dialog-content-height);
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -12537,10 +12858,7 @@ div.workshop-page__discovery-row {
 
 .shop-page__sell-controls:not(.shop-page__player-listing-controls)
   .shop-page__sell-item-list {
-  height: calc(
-    var(--style-tabbed-dialog-content-height) - 112px -
-      var(--style-scroll-progress-block-size)
-  );
+  height: calc(var(--style-tabbed-dialog-content-height) - 112px);
 }
 
 .shop-page__sell-item-list::-webkit-scrollbar {
@@ -12548,11 +12866,11 @@ div.workshop-page__discovery-row {
 }
 
 .shop-page__player-listing-controls .shop-page__sell-item-list {
-  height: calc(180px - var(--style-scroll-progress-block-size));
+  height: 180px;
 }
 
 .shop-page__request-item-list {
-  height: calc(170px - var(--style-scroll-progress-block-size));
+  height: 170px;
 }
 
 .style-panel,
@@ -12612,15 +12930,6 @@ div.workshop-page__discovery-row {
   border-image-source: var(--style-midnight-panel-frame);
   border-image-slice: var(--style-midnight-frame-slice);
   border-image-width: var(--style-midnight-frame-control-width);
-  border-image-repeat: stretch;
-}
-
-:root[data-style-theme="midnight"] :is(.style-progress) {
-  background: transparent;
-  border-color: transparent;
-  border-image-source: var(--style-midnight-panel-frame);
-  border-image-slice: var(--style-midnight-frame-slice);
-  border-image-width: var(--style-midnight-frame-compact-width);
   border-image-repeat: stretch;
 }
 
@@ -12698,14 +13007,14 @@ div.workshop-page__discovery-row {
   top: var(--style-box-title-top);
   left: var(--style-box-title-left);
   display: inline-block;
+  padding: 0 var(--style-box-border-label-padding-x);
   font-size: var(--style-font-size);
   font-weight: bold;
+  background: transparent;
   -webkit-text-stroke: var(--style-title-text-stroke-width)
     var(--style-title-text-stroke-color);
-  padding: 0 var(--style-box-border-label-padding-x);
   paint-order: stroke fill;
   text-shadow: var(--style-title-text-stroke-shadow);
-  background: var(--style-surface);
 }
 
 .style-dialog > .style-box__title {
@@ -12746,7 +13055,7 @@ div.workshop-page__discovery-row {
 .style-panel.room-bottom-panel {
   position: absolute;
   right: var(--style-room-chrome-edge);
-  bottom: 23px;
+  bottom: 5px;
   left: var(--style-room-chrome-edge);
   min-height: var(--style-row-min-height);
   padding: 0;
@@ -12758,11 +13067,10 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__tabs {
-  --room-bottom-panel-tab-width: calc((100% - 24px) / 5);
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 6px;
-  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0;
+  align-items: flex-end;
   justify-content: center;
 }
 
@@ -12770,12 +13078,15 @@ div.workshop-page__discovery-row {
   position: relative;
   box-sizing: border-box;
   display: flex;
-  flex: 0 0 var(--room-bottom-panel-tab-width);
+  flex: 1 1 0;
   align-items: center;
   justify-content: center;
+  z-index: 1;
   min-width: 0;
-  min-height: var(--style-page-tab-button-height);
-  padding: 1px 2px;
+  height: var(--style-room-tab-active-height);
+  min-height: var(--style-room-tab-active-height);
+  padding: 0 2px;
+  margin-left: 0;
   overflow: visible;
   appearance: none;
   color: var(--style-text);
@@ -12787,38 +13098,80 @@ div.workshop-page__discovery-row {
   white-space: normal;
   touch-action: manipulation;
   cursor: pointer;
-  background: var(--style-surface);
-  border: var(--style-border);
+  background: transparent;
+  border: 0;
+  border-image: none;
   border-radius: 0;
   -webkit-user-drag: none;
 }
 
+.room-bottom-panel__tab:not([hidden]) ~ .room-bottom-panel__tab:not([hidden]) {
+  margin-left: calc(-1 * var(--style-room-tab-overlap));
+}
+
+.room-bottom-panel__tab::after {
+  position: absolute;
+  right: 0;
+  bottom: calc(-1 * var(--style-room-tab-bottom-bleed));
+  left: 0;
+  z-index: 0;
+  box-sizing: border-box;
+  height: calc(
+    var(--style-room-tab-inactive-height) +
+      var(--style-room-tab-bottom-bleed)
+  );
+  pointer-events: none;
+  content: "";
+  background: var(--style-room-tab-inactive-fill);
+  border: solid transparent;
+  border-width: var(--style-room-tab-inactive-border-width);
+  border-radius: var(--style-room-tab-inactive-radius)
+    var(--style-room-tab-inactive-radius) 0 0;
+  border-image-source: var(--style-room-tab-inactive-frame);
+  border-image-slice: 56 61 19 60 fill;
+  border-image-width: var(--style-room-tab-inactive-border-width);
+  border-image-repeat: stretch;
+}
+
 .room-bottom-panel__tab-label {
-  position: relative;
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  left: 2px;
   z-index: 3;
   display: block;
   min-width: 0;
   overflow: hidden;
+  opacity: 0;
   text-overflow: clip;
-  translate: 0 var(--style-page-tab-label-y-offset);
+  translate: 0 2px;
+  visibility: hidden;
   -webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)
     var(--style-page-tab-label-text-stroke-color);
   paint-order: stroke fill;
   text-shadow: var(--style-page-tab-label-text-stroke-shadow);
+  transition:
+    opacity var(--style-motion-fast) linear,
+    translate var(--style-motion-fast) var(--style-motion-ease-soft);
   white-space: normal;
 }
 
 .room-bottom-panel__tab-icon-frame {
   position: absolute;
-  bottom: calc(50% - var(--style-page-tab-icon-center-offset));
+  top: calc(var(--style-room-tab-rise) + 5px);
   left: 50%;
   z-index: 1;
   display: block;
-  width: var(--style-page-tab-icon-size);
-  height: var(--style-page-tab-icon-size);
+  width: var(--style-room-tab-icon-size);
+  height: var(--style-room-tab-icon-size);
   pointer-events: none;
-  scale: var(--style-page-tab-current-icon-scale, 1);
-  translate: -50% calc(10% + var(--style-page-tab-icon-y-offset));
+  opacity: 0.72;
+  scale: 0.94;
+  translate: -50% 0;
+  transition:
+    opacity var(--style-motion-fast) linear,
+    scale var(--style-motion-normal) var(--style-motion-ease-rubber),
+    top var(--style-motion-normal) var(--style-motion-ease-rubber);
 }
 
 .room-bottom-panel__tab-icon {
@@ -12851,15 +13204,15 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__brewing-button {
-  --style-page-tab-icon-art-scale: 0.68;
+  --style-page-tab-icon-art-scale: 0.72;
 }
 
 .room-bottom-panel__garden-button {
-  --style-page-tab-icon-art-scale: 1.09;
+  --style-page-tab-icon-art-scale: 1;
 }
 
 .room-bottom-panel__research-button {
-  --style-page-tab-icon-art-scale: 1.16;
+  --style-page-tab-icon-art-scale: 1.04;
 }
 
 .room-bottom-panel__prestige-button {
@@ -12867,7 +13220,7 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__workshop-button {
-  --style-page-tab-icon-art-scale: 0.76;
+  --style-page-tab-icon-art-scale: 0.84;
 }
 
 .room-bottom-panel__tab.is-locked .room-bottom-panel__tab-icon {
@@ -12918,8 +13271,9 @@ div.workshop-page__discovery-row {
   opacity: 1;
 }
 
-.room-bottom-panel__tab:focus-visible {
-  border-color: var(--style-stroke);
+.room-bottom-panel__tab:focus-visible::after {
+  box-shadow: inset 0 0 0 1px var(--style-text);
+  filter: brightness(1.12);
 }
 
 .room-bottom-panel__tab:focus {
@@ -12928,30 +13282,82 @@ div.workshop-page__discovery-row {
 
 .room-bottom-panel__tab:active,
 .room-bottom-panel__tab.is-pressing {
-  background: var(--style-active-surface);
+  background: transparent;
 }
 
 .room-bottom-panel__tab.is-selected {
-  --style-page-tab-current-icon-scale: var(--style-page-tab-selected-icon-scale);
-  background: var(--style-active-surface);
-  border-color: var(--style-stroke);
+  z-index: 3;
+  background: transparent;
   font-weight: 400;
   cursor: default;
+  scale: var(--style-room-tab-selected-scale);
+  transform-origin: center bottom;
+  animation: room-bottom-tab-select var(--style-motion-normal)
+    var(--style-motion-ease-rubber) both;
+}
+
+.room-bottom-panel__tab.is-selected::after {
+  height: calc(
+    var(--style-room-tab-active-height) +
+      var(--style-room-tab-bottom-bleed)
+  );
+  background: var(--style-room-tab-active-fill);
+  border-width: var(--style-room-tab-active-border-width);
+  border-radius: var(--style-room-tab-active-radius)
+    var(--style-room-tab-active-radius) 0 0;
+  border-image-source: var(--style-room-tab-active-frame);
+  border-image-slice: 57 62 21 61 fill;
+  border-image-width: var(--style-room-tab-active-border-width);
+}
+
+.room-bottom-panel__tab.is-selected .room-bottom-panel__tab-label {
+  opacity: 1;
+  translate: 0 0;
+  visibility: visible;
+}
+
+.room-bottom-panel__tab.is-selected .room-bottom-panel__tab-icon-frame {
+  top: 5px;
+  opacity: 1;
+  scale: var(--style-page-tab-selected-icon-scale);
 }
 
 .room-bottom-panel__tab.is-swipe-target:not(.is-selected) {
-  background: var(--style-active-surface);
-  border-color: var(--style-stroke);
+  background: transparent;
+}
+
+.room-bottom-panel__tab:is(
+    :active,
+    .is-pressing,
+    .is-swipe-target
+  ):not(.is-selected)::after {
+  background: var(--style-room-tab-active-fill);
+  border-width: var(--style-room-tab-active-border-width);
+  border-radius: var(--style-room-tab-active-radius)
+    var(--style-room-tab-active-radius) 0 0;
+  border-image-source: var(--style-room-tab-active-frame);
+  border-image-slice: 57 62 21 61 fill;
+  border-image-width: var(--style-room-tab-active-border-width);
 }
 
 .room-bottom-panel__tab.is-locked {
   color: var(--style-disabled);
-  border-color: var(--style-disabled);
 }
 
 .room-bottom-panel__tab.is-swipe-target-locked:not(.is-selected) {
-  background: var(--style-surface);
-  border-color: var(--style-disabled);
+  background: transparent;
+}
+
+.room-bottom-panel__tab.is-locked::after,
+.room-bottom-panel__tab.is-swipe-target-locked:not(.is-selected)::after {
+  background: var(--style-room-tab-inactive-fill);
+  border-width: var(--style-room-tab-inactive-border-width);
+  border-radius: var(--style-room-tab-inactive-radius)
+    var(--style-room-tab-inactive-radius) 0 0;
+  border-image-source: var(--style-room-tab-inactive-frame);
+  border-image-slice: 56 61 19 60 fill;
+  border-image-width: var(--style-room-tab-inactive-border-width);
+  filter: grayscale(0.6) brightness(0.72);
 }
 
 .room-bottom-panel__tab.is-swipe-bumped {
@@ -12960,8 +13366,15 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__tab.is-locked:focus-visible {
-  border-color: var(--style-disabled);
   font-weight: normal;
+}
+
+.room-bottom-panel__tab.is-locked:focus-visible::after {
+  filter: grayscale(0.6) brightness(0.88);
+}
+
+.room-bottom-panel__tab:not(.is-selected)[data-notification="true"]::before {
+  top: calc(var(--style-room-tab-rise) - var(--style-notification-offset));
 }
 
 .guild-page__content {
@@ -13252,21 +13665,6 @@ div.workshop-page__discovery-row {
   color: var(--guild-page-paper-muted);
 }
 
-.guild-page__request-reward [data-resource-color="coin"],
-.guild-page__request-paper-content [data-resource-color="coin"] {
-  color: var(--guild-page-paper-coin);
-}
-
-.guild-page__request-reward [data-resource-color="seed"],
-.guild-page__request-paper-content [data-resource-color="seed"] {
-  color: var(--guild-page-paper-seed);
-}
-
-.guild-page__request-reward [data-resource-color="herb"],
-.guild-page__request-paper-content [data-resource-color="herb"] {
-  color: var(--guild-page-paper-herb);
-}
-
 .guild-page__request-paper-content {
   display: flex;
   flex-direction: column;
@@ -13405,10 +13803,12 @@ div.workshop-page__discovery-row {
   position: relative;
   overflow: visible;
   --style-notification-current: var(--style-notification);
+  --style-notification-image-current: var(--style-notification-image);
 }
 
 .guild-page__adventurer-row[data-notification-tone="orange"] {
   --style-notification-current: var(--style-notification-orange);
+  --style-notification-image-current: var(--style-notification-image-orange);
 }
 
 .guild-page__adventurer-row[data-notification="true"]::before {
@@ -13420,9 +13820,11 @@ div.workshop-page__discovery-row {
   height: var(--style-notification-size);
   pointer-events: none;
   content: "";
-  background: var(--style-notification-current);
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px var(--style-surface);
+  background: var(
+      --style-notification-image-current,
+      var(--style-notification-image)
+    )
+    center / 100% 100% no-repeat;
 }
 
 .guild-page__section-label {
@@ -13681,10 +14083,12 @@ div.workshop-page__discovery-row {
 }
 
 .guild-page__popup-panel[data-popup-kind="requestStack"]
-  .guild-page__popup-content.style-scroll-cue::after,
+  .guild-page__popup-content.style-scroll-cue {
+  scrollbar-width: none;
+}
+
 .guild-page__popup-panel[data-popup-kind="requestStack"]
-  .style-dialog.guild-page__dialog
-  > .style-scroll-cue-progress {
+  .guild-page__popup-content.style-scroll-cue::-webkit-scrollbar {
   display: none;
 }
 
@@ -13725,15 +14129,6 @@ div.workshop-page__discovery-row {
 .guild-page__request-stack-progress {
   flex: 0 0 var(--style-progress-total-height);
   margin: 0 33px 0 17px;
-  background: #211912;
-  border: 1px solid #4a3929;
-  border-image: none;
-  box-shadow: inset 0 0 0 1px rgb(255 238 197 / 14%);
-}
-
-.guild-page__request-stack-progress-fill {
-  background: #a89678;
-  box-shadow: none;
 }
 
 .guild-page__request-stack-controls {
@@ -14517,29 +14912,32 @@ div.workshop-page__discovery-row {
 .room-top-panel__quest-progress-rail {
   position: relative;
   box-sizing: border-box;
-  height: 14px;
+  height: var(--style-progress-top-panel-total-height);
   min-width: 0;
   padding: 0;
   overflow: hidden;
-  background: #0d1118;
-  border: 1px solid #41434d;
-  border-radius: 5px;
+  background: var(--style-progress-rail-background);
+  border: var(--style-progress-rail-border);
+  border-radius: 999px;
+  box-shadow: var(--style-progress-rail-shadow);
 }
 
 .room-top-panel__quest-progress-fill {
   position: absolute;
-  inset: 2px;
+  top: 1px;
+  right: max(1px, var(--room-top-panel-quest-fill-clip-right, 100%));
+  bottom: 1px;
+  left: 1px;
   z-index: 1;
-  background: #8740df;
-  border-radius: 2.5px 0 0 2.5px;
-  box-shadow: none;
-  clip-path: inset(0 var(--room-top-panel-quest-fill-clip-right, 100%) 0 0);
-  transition: clip-path var(--style-motion-normal) var(--style-motion-ease-soft);
+  background: var(--style-progress-root-fill);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--style-progress-root-edge);
+  transition: right var(--style-motion-normal) var(--style-motion-ease-soft);
 }
 
 .room-top-panel__quest-progress-rail.is-complete
   .room-top-panel__quest-progress-fill {
-  border-radius: 2.5px;
+  border-radius: 999px;
 }
 
 .room-top-panel__quest-segments {
@@ -14610,7 +15008,7 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__quest-remaining {
-  color: #bd72f3;
+  color: var(--style-progress-root-edge);
   font-weight: bold;
   font-variant-numeric: tabular-nums lining-nums;
 }
@@ -15083,10 +15481,7 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__settings:not(.is-username-prompt)
   .room-top-panel__settings-pane {
-  height: calc(
-    var(--room-top-panel-settings-content-height) -
-      var(--style-scroll-progress-block-size)
-  );
+  height: var(--room-top-panel-settings-content-height);
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -15322,6 +15717,113 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
+.room-top-panel__theme-buttons {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  justify-items: center;
+}
+
+.room-top-panel__theme-buttons .room-top-panel__theme-option {
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.room-top-panel__theme-buttons
+  .room-top-panel__theme-option
+  + .room-top-panel__theme-option {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.room-top-panel__visual-option-name.room-top-panel__theme-button {
+  --room-top-panel-theme-swatch-color: #2a2a2a;
+  --room-top-panel-theme-swatch-outline: #17100c;
+  position: relative;
+  box-sizing: border-box;
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  padding: 0;
+  overflow: visible;
+  color: transparent;
+  background: var(--room-top-panel-theme-swatch-color);
+  border: 4px solid var(--room-top-panel-theme-swatch-outline);
+  border-radius: 13px;
+}
+
+.room-top-panel__theme-button[data-theme="midnight"] {
+  --room-top-panel-theme-swatch-color: #46578f;
+}
+
+.room-top-panel__theme-button[data-theme="witchcraft"] {
+  --room-top-panel-theme-swatch-color: #8554aa;
+}
+
+.room-top-panel__visual-option-name.room-top-panel__theme-button::before {
+  position: absolute;
+  top: 6px;
+  left: 7px;
+  width: 8px;
+  height: 13px;
+  content: "";
+  background: rgb(255 255 255 / 65%);
+  border-radius: 999px;
+  rotate: 38deg;
+  pointer-events: none;
+}
+
+.room-top-panel__theme-button-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.room-top-panel__theme-button-check {
+  position: absolute;
+  right: -10px;
+  bottom: -9px;
+  display: none;
+  width: 25px;
+  height: 25px;
+  pointer-events: none;
+}
+
+.room-top-panel__theme-button[aria-checked="true"]
+  .room-top-panel__theme-button-check {
+  display: block;
+}
+
+.room-top-panel__theme-button-check-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.room-top-panel__theme-buttons .room-top-panel__visual-option-price {
+  justify-self: center;
+  margin-top: 5px;
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
+  text-align: center;
+}
+
+.room-top-panel__visual-option-name.room-top-panel__theme-button:focus-visible {
+  outline: 2px solid var(--style-text);
+  outline-offset: 2px;
+}
+
 .room-top-panel__font-button[data-font="comic-sans-mono"] {
   font-family:
     "Comic Sans Mono", "Comic Mono", "Comic Code", "Comic Sans MS",
@@ -15329,15 +15831,9 @@ div.workshop-page__discovery-row {
     Menlo, monospace;
 }
 
-.room-top-panel__font-button[data-font="lexend"] {
+.room-top-panel__font-button[data-font="lilita-one"] {
   font-family:
-    Lexend,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+    "Lilita One", "Arial Black", Arial, ui-sans-serif, system-ui, sans-serif;
 }
 
 .room-top-panel__character-buttons {
@@ -15470,103 +15966,14 @@ div.workshop-page__discovery-row {
   pointer-events: none;
 }
 
-.room-top-panel__theme-preview {
-  --theme-preview-bg: var(--style-bg);
-  --theme-preview-surface: var(--style-surface);
-  --theme-preview-text: var(--style-text);
-  --theme-preview-stroke: var(--style-stroke);
-  --theme-preview-border-width: 1px;
-  --theme-preview-muted: var(--style-muted);
-  padding: 5px;
-  margin: 1px 0 2px;
-  color: var(--theme-preview-text);
-  background: var(--theme-preview-bg);
-}
-
-.room-top-panel__theme-preview[data-preview-theme="black"] {
-  --theme-preview-bg: #1a1a1a;
-  --theme-preview-surface: #202020;
-  --theme-preview-text: #e8e8e8;
-  --theme-preview-stroke: #6a6a6a;
-  --theme-preview-muted: #a6a6a6;
-}
-
-.room-top-panel__theme-preview[data-preview-theme="midnight"] {
-  --theme-preview-bg: #1c1e26;
-  --theme-preview-surface: #17191f;
-  --theme-preview-text: #d4d4d4;
-  --theme-preview-stroke: #3f465c;
-  --theme-preview-muted: #a6a6a6;
-}
-
-.room-top-panel__theme-preview[data-preview-theme="witchcraft"] {
-  --theme-preview-bg: #07040e;
-  --theme-preview-surface: #1a1028;
-  --theme-preview-text: #f2e4bc;
-  --theme-preview-stroke: #674579;
-  --theme-preview-muted: #d1bd86;
-}
-
-.room-top-panel__theme-preview-box {
-  position: relative;
-  min-height: calc(
-    var(--style-row-min-height) + var(--style-scroll-progress-height) + 8px
-  );
-  padding: 5px 10px;
-  color: var(--theme-preview-text);
-  background: var(--theme-preview-surface);
-  border: var(--theme-preview-border-width) solid var(--theme-preview-stroke);
-}
-
-.room-top-panel__theme-preview[data-preview-theme="midnight"]
-  .room-top-panel__theme-preview-box {
-  border-color: transparent;
-  border-image-source: var(--style-midnight-panel-frame);
-  border-image-slice: var(--style-midnight-frame-slice);
-  border-image-width: var(--style-midnight-frame-compact-width);
-  border-image-repeat: stretch;
-}
-
-.room-top-panel__theme-preview-title {
-  position: absolute;
-  top: var(--style-box-border-label-offset);
-  left: var(--style-box-title-left);
-  padding: 0 var(--style-box-border-label-padding-x);
-  font-size: var(--style-box-border-label-font-size);
-  font-weight: normal;
-  line-height: var(--style-box-border-label-line-height);
-  background: transparent;
-}
-
-.room-top-panel__theme-preview-row {
-  min-height: var(--style-row-min-height);
-  overflow: hidden;
-  font-variant-numeric: tabular-nums lining-nums;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.room-top-panel__visual-preview .room-top-panel__preview-progress {
-  --style-progress-rail-border-width: var(--theme-preview-border-width, 1px);
-  --style-progress-rail-background: var(
-    --theme-preview-surface,
-    var(--style-surface)
-  );
-  --style-progress-rail-border: var(--style-progress-rail-border-width) solid
-    var(--theme-preview-stroke, var(--style-stroke));
-}
-
-.room-top-panel__visual-preview .room-top-panel__preview-progress-fill {
-  background: var(--theme-preview-text, var(--style-text));
-}
-
 .room-top-panel__progress-preview {
   margin: 1px 0 2px;
 }
 
 .room-top-panel__progress-preview[data-preview-progress="regular"]
   .room-top-panel__preview-progress-fill {
-  background: var(--style-text);
+  background: var(--style-progress-root-fill);
+  box-shadow: inset 0 0 0 1px var(--style-progress-root-edge);
 }
 
 .room-top-panel__progress-preview[data-preview-progress="gradient"]
@@ -15585,68 +15992,6 @@ div.workshop-page__discovery-row {
   background: var(--style-progress-notched-fill);
   box-shadow: inset 0 1px 0 var(--style-progress-notched-stroke-light),
     inset 0 -1px 0 var(--style-progress-notched-stroke-dark);
-}
-
-.room-top-panel__color-preview {
-  --color-preview-mana: oklch(43% 0.14 250);
-  --color-preview-coin: oklch(45% 0.13 96);
-  --color-preview-seed: oklch(45% 0.08 58);
-  --color-preview-herb: oklch(42% 0.12 145);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 9px;
-  min-height: var(--style-row-min-height);
-  margin: 1px 0 2px;
-  color: var(--style-text);
-}
-
-:root[data-style-theme="black"] .room-top-panel__color-preview,
-:root[data-style-theme="midnight"] .room-top-panel__color-preview {
-  --color-preview-mana: oklch(76% 0.12 251);
-  --color-preview-coin: oklch(83% 0.14 96);
-  --color-preview-seed: oklch(78% 0.08 58);
-  --color-preview-herb: oklch(76% 0.11 145);
-}
-
-:root[data-style-theme="witchcraft"] .room-top-panel__color-preview {
-  --color-preview-mana: #64caff;
-  --color-preview-coin: #ffd76a;
-  --color-preview-seed: #e8c878;
-  --color-preview-herb: #8fce48;
-}
-
-.room-top-panel__color-preview-item {
-  white-space: nowrap;
-}
-
-:root
-  .room-top-panel__color-preview[data-preview-color="monochrome"]
-  [data-resource-color] {
-  color: var(--style-text);
-}
-
-:root
-  .room-top-panel__color-preview[data-preview-color="resources"]
-  [data-resource-color="mana"] {
-  color: var(--color-preview-mana);
-}
-
-:root
-  .room-top-panel__color-preview[data-preview-color="resources"]
-  [data-resource-color="coin"] {
-  color: var(--color-preview-coin);
-}
-
-:root
-  .room-top-panel__color-preview[data-preview-color="resources"]
-  [data-resource-color="seed"] {
-  color: var(--color-preview-seed);
-}
-
-:root
-  .room-top-panel__color-preview[data-preview-color="resources"]
-  [data-resource-color="herb"] {
-  color: var(--color-preview-herb);
 }
 
 .room-top-panel__icon-preview {
@@ -16160,6 +16505,98 @@ div.workshop-page__discovery-row {
   user-select: none;
 }
 
+.game-stage
+  :where(
+    .style-button,
+    .style-box__title,
+    [role="tab"],
+    .room-bottom-panel__tab-label,
+    .research-page__research-name,
+    .style-seed-label,
+    .style-herb-label,
+    .style-potion-label,
+    .style-ingredient-label,
+    [class*="__title"],
+    [class*="__heading"],
+    .tutorial-layer__advance,
+    .tutorial-layer__lesson-show,
+    .tutorial-layer__lesson-advance,
+    .tutorial-layer__step-label,
+    .tutorial-layer__objective-button-label
+  ) {
+  text-transform: capitalize;
+}
+
+.game-stage
+  :where(
+    [class*="__description"],
+    [class*="__situation"],
+    [class*="__body"],
+    [class*="__copy"],
+    [class*="__message"]
+  )::first-letter {
+  text-transform: uppercase;
+}
+
+.game-stage
+  .workshop-page__trade-alliance-member-dialog
+  > .style-box__title {
+  text-transform: none;
+}
+
+.style-info-button__icon {
+  display: block;
+  width: auto;
+  height: var(--style-info-button-icon-height, 18px);
+  max-width: none;
+  object-fit: contain;
+  image-rendering: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+:root .style-button.style-button--yellow {
+  color: var(--style-yellow-button-text);
+  background: transparent;
+  border-color: transparent;
+  border-image-source: var(--style-yellow-button-frame);
+  border-image-slice: var(--style-yellow-button-frame-slice);
+  border-image-width: var(--style-yellow-button-frame-width);
+  border-image-repeat: stretch;
+  -webkit-text-stroke: 4px var(--style-yellow-button-text-stroke);
+  paint-order: stroke fill;
+}
+
+:root .style-button.style-button--brown-dark,
+:root .style-button.style-button--brown-light {
+  color: var(--style-yellow-button-text);
+  background: transparent;
+  border-color: transparent;
+  border-image-slice: var(--style-tab-frame-slice);
+  border-image-width: var(--style-tab-frame-width);
+  border-image-repeat: stretch;
+  -webkit-text-stroke: 4px var(--style-yellow-button-text-stroke);
+  paint-order: stroke fill;
+}
+
+:root .style-button.style-button--brown-dark {
+  border-image-source: var(--style-tab-frame);
+}
+
+:root .style-button.style-button--brown-light {
+  border-image-source: var(--style-tab-selected-frame);
+}
+
+:root
+  .style-button:is(
+    .style-button--yellow,
+    .style-button--brown-dark,
+    .style-button--brown-light
+  ):is([aria-disabled="true"], :disabled, .is-disabled) {
+  filter: grayscale(1);
+  opacity: 1;
+}
+
 .style-button.workshop-page__summon-button {
   position: absolute;
   top: 59.5%;
@@ -16201,6 +16638,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.workshop-page__summon-info-button {
+  --style-info-button-icon-height: var(--style-box-border-label-line-height);
   position: absolute;
   top: calc(59.5% - 50px);
   left: calc(50% + 60px);
@@ -16262,12 +16700,12 @@ div.workshop-page__discovery-row {
   border: var(--style-border);
   box-sizing: border-box;
   text-shadow: none;
+  text-transform: lowercase;
   transform: none;
   transform-origin: center;
   transition:
     background-color var(--style-motion-fast) linear,
     scale var(--style-motion-press) var(--style-motion-ease-rubber);
-  text-transform: lowercase;
   white-space: nowrap;
 }
 
@@ -16291,9 +16729,11 @@ div.workshop-page__discovery-row {
   height: var(--style-notification-size);
   pointer-events: none;
   content: "";
-  background: var(--style-notification-current, var(--style-notification));
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px var(--style-surface);
+  background: var(
+      --style-notification-image-current,
+      var(--style-notification-image)
+    )
+    center / 100% 100% no-repeat;
 }
 
 .style-button.workshop-page__summon-button:disabled
@@ -16758,12 +17198,18 @@ div.workshop-page__discovery-row {
 }
 
 .style-button[role="tab"] {
-  background: var(--style-surface);
+  background: transparent;
+  border-color: transparent;
+  border-image-source: var(--style-tab-frame);
+  border-image-slice: var(--style-tab-frame-slice);
+  border-image-width: var(--style-tab-frame-width);
+  border-image-repeat: stretch;
 }
 
 .style-button[role="tab"][aria-selected="true"] {
-  background: var(--style-active-surface);
-  border-color: var(--style-stroke);
+  background: transparent;
+  border-color: transparent;
+  border-image-source: var(--style-tab-selected-frame);
   cursor: default;
 }
 
@@ -16840,8 +17286,8 @@ div.workshop-page__discovery-row {
   transform-origin: center;
   transition:
     background-color var(--style-motion-fast) linear,
-    scale var(--style-motion-press) var(--style-motion-ease-rubber),
-    translate var(--style-motion-press) var(--style-motion-ease-rubber);
+    scale var(--style-motion-button-press-in) var(--style-motion-button-ease),
+    translate var(--style-motion-button-press-in) var(--style-motion-button-ease);
 }
 
 :where(
@@ -16872,8 +17318,8 @@ div.workshop-page__discovery-row {
   scale: var(--style-press-scale);
   transition:
     background-color var(--style-motion-fast) linear,
-    scale var(--style-motion-press-return) var(--style-motion-ease-rubber),
-    translate var(--style-motion-press-return) var(--style-motion-ease-rubber);
+    scale var(--style-motion-button-press-in) var(--style-motion-button-ease),
+    translate var(--style-motion-button-press-in) var(--style-motion-button-ease);
 }
 
 .style-button:is(:active, .is-pressing):not(:disabled):not(
@@ -16885,8 +17331,13 @@ div.workshop-page__discovery-row {
     color var(--style-motion-fast) linear,
     border-color var(--style-motion-fast) linear,
     background-color var(--style-motion-fast) linear,
-    scale var(--style-motion-press-return) var(--style-motion-ease-rubber),
-    translate var(--style-motion-press-return) var(--style-motion-ease-rubber);
+    scale var(--style-motion-button-press-in) var(--style-motion-button-ease),
+    translate var(--style-motion-button-press-in) var(--style-motion-button-ease);
+}
+
+.is-press-releasing {
+  animation: style-button-release-bounce var(--style-motion-button-release) both;
+  transform-origin: center;
 }
 
 .style-button.workshop-page__summon-button:is(:active, .is-pressing):not(
@@ -16958,12 +17409,16 @@ div.workshop-page__discovery-row {
   contain: paint;
   background: var(--style-progress-rail-background);
   border: var(--style-progress-rail-border);
+  border-image: none;
+  border-radius: 999px;
   box-shadow: var(--style-progress-rail-shadow);
 }
 
 .style-page-scroll {
   --style-scroll-padding-top: var(--style-page-scroll-padding-top);
   --style-scroll-padding-bottom: var(--style-page-scroll-padding-bottom);
+  min-height: 0;
+  overflow: hidden auto;
   scroll-padding-top: var(--style-scroll-padding-top);
   scroll-padding-bottom: var(--style-scroll-padding-bottom);
   overscroll-behavior: contain;
@@ -16982,72 +17437,101 @@ div.workshop-page__discovery-row {
   );
 }
 
-.style-dialog-scroll {
-  min-height: 0;
-  overflow: hidden auto;
+.style-scroll-cue {
+  overflow-anchor: none;
   overscroll-behavior: contain;
   scrollbar-width: none;
-  touch-action: pan-y;
+  touch-action: none;
 }
 
-.style-dialog-scroll::-webkit-scrollbar {
+.style-scroll-cue::-webkit-scrollbar {
   display: none;
 }
 
-.style-scroll-cue {
-  --style-scroll-progress: 100%;
+.style-scroll-cue.has-scroll-overflow {
+  cursor: grab;
 }
 
-.style-scroll-cue::after {
-  position: sticky;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 1;
+.style-scroll-cue.is-scroll-grabbing {
+  cursor: grabbing;
+}
+
+.style-station-scrollbar {
+  position: absolute;
+  z-index: 21;
   display: block;
-  height: var(--style-scroll-cue-height);
-  margin-top: calc(-1 * var(--style-scroll-cue-height));
+  width: var(--style-scrollbar-width);
   pointer-events: none;
-  content: "";
-  background: linear-gradient(
-    to bottom,
-    rgb(var(--style-scroll-fade-rgb) / 0%),
-    rgb(var(--style-scroll-fade-rgb) / var(--style-scroll-fade-opacity))
-  );
-  opacity: 0;
-  transition: opacity var(--style-motion-fast) var(--style-motion-ease);
+  transform-origin: top left;
 }
 
-.style-scroll-cue.has-bottom-overflow::after {
-  opacity: 1;
-}
-
-.style-scroll-cue-progress {
-  margin-top: var(--style-scroll-progress-gap);
-}
-
-.style-scroll-cue-progress[hidden] {
+.style-station-scrollbar[hidden] {
   display: none;
+}
+
+.style-station-scrollbar--viewport {
+  position: fixed;
+}
+
+.style-station-scrollbar__track {
+  position: absolute;
+  top: var(--style-scrollbar-track-inset-block);
+  right: 0;
+  bottom: var(--style-scrollbar-track-inset-block);
+  left: 0;
+  box-sizing: border-box;
+  background: var(--style-scrollbar-track-background);
+  border: var(--style-scrollbar-track-border-width) solid
+    var(--style-scrollbar-track-border);
+  border-radius: 999px;
+}
+
+.style-station-scrollbar__thumb {
+  position: absolute;
+  right: var(--style-scrollbar-thumb-gap);
+  left: var(--style-scrollbar-thumb-gap);
+  box-sizing: border-box;
+  background: var(--style-scrollbar-thumb-background);
+  border: var(--style-scrollbar-thumb-border-width) solid
+    var(--style-scrollbar-thumb-border);
+  border-radius: 999px;
+}
+
+.style-station-scrollbar__elastic-spacer {
+  box-sizing: border-box;
+  display: block;
+  flex-grow: 0;
+  flex-shrink: 0;
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  visibility: hidden;
+  border: 0;
+  pointer-events: none;
 }
 
 .style-progress__fill {
   position: absolute;
-  inset: 0 auto 0 0;
+  top: 1px;
+  bottom: 1px;
+  left: 1px;
   display: block;
   width: 0%;
-  height: 100%;
+  max-width: calc(100% - 2px);
+  height: auto;
   background: var(--style-progress-fill-background);
+  border-radius: 999px;
   box-shadow: var(--style-progress-fill-shadow);
-  transform-origin: left center;
 }
 
 .style-progress__fill.is-smooth-progress-fill {
-  width: 100%;
-  transform: scaleX(var(--style-progress-fill-scale, 0));
+  transform: none;
 }
 
 .style-progress__fill.is-progress-running {
-  will-change: transform;
+  will-change: width;
 }
 
 .style-progress--timer {
@@ -17168,6 +17652,25 @@ div.workshop-page__discovery-row {
   background: transparent;
 }
 
+:root[data-style-theme="black"]
+  .style-box:not(.tutorial-layer__hint):not(.tutorial-layer__lesson),
+:root[data-style-theme="midnight"]
+  .style-box:not(.tutorial-layer__hint):not(.tutorial-layer__lesson),
+:root[data-style-theme="witchcraft"]
+  .style-box:not(.tutorial-layer__hint):not(.tutorial-layer__lesson),
+:root[data-style-theme="black"] .style-panel.room-top-panel,
+:root[data-style-theme="midnight"] .style-panel.room-top-panel,
+:root[data-style-theme="witchcraft"] .style-panel.room-top-panel {
+  background: var(--style-inner-section-fill);
+  background-clip: padding-box;
+  border-color: transparent;
+  border-image-source: var(--style-inner-section-frame);
+  border-image-slice: var(--style-inner-section-frame-slice);
+  border-image-width: var(--style-inner-section-frame-width);
+  border-image-repeat: stretch;
+  border-radius: 16px;
+}
+
 :root[data-style-theme="midnight"]
   .style-button:is(:active, .is-pressing):not(:disabled):not(
     [aria-disabled="true"]
@@ -17183,83 +17686,6 @@ div.workshop-page__discovery-row {
   ):not([aria-disabled="true"])
   .workshop-page__summon-button-text {
   background: transparent;
-}
-
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__action-button,
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__cauldron-select-recipe-text,
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__quantity-button,
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__auto-button {
-  color: var(--brewing-page-cauldron-action-button-text);
-  background: transparent;
-  border-color: transparent;
-  border-image-source: var(--brewing-page-cauldron-action-button-frame);
-  border-image-slice: var(--brewing-page-cauldron-action-button-slice);
-  border-image-width: var(
-    --brewing-page-cauldron-action-button-border-image-width
-  );
-  border-image-repeat: stretch;
-}
-
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__action-button:is(:active, .is-pressing):not(
-    :disabled
-  ):not([aria-disabled="true"]),
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__cauldron-select-recipe-text:is(
-    :active,
-    .is-pressing
-  ):not(:disabled):not([aria-disabled="true"]),
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__quantity-button:is(:active, .is-pressing):not(
-    :disabled
-  ):not([aria-disabled="true"]),
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__auto-button:is(:active, .is-pressing):not(
-    :disabled
-  ):not([aria-disabled="true"]) {
-  background: transparent;
-}
-
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__action-button[aria-disabled="true"],
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__action-button:disabled,
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__cauldron-select-recipe-text[aria-disabled="true"],
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__cauldron-select-recipe-text:disabled,
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__quantity-button[aria-disabled="true"],
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__quantity-button:disabled,
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__auto-button[aria-disabled="true"],
-:root[data-style-theme="midnight"]
-  .brewing-page__actions
-  .style-button.brewing-page__auto-button:disabled {
-  color: var(--brewing-page-cauldron-action-button-disabled-text);
-  background: transparent;
-  border-color: transparent;
-  border-image-source: var(--brewing-page-cauldron-action-button-disabled-frame);
 }
 
 :root[data-style-theme="midnight"]
@@ -17383,40 +17809,20 @@ div.workshop-page__discovery-row {
   border-image-repeat: stretch;
 }
 
-:root[data-style-theme="midnight"] .room-bottom-panel__tab,
-:root[data-style-theme="midnight"]
-  .room-bottom-panel__tab:is(
-    :active,
-    .is-pressing,
-    .is-selected,
-    .is-swipe-target,
-    .is-swipe-target-locked
-  ) {
-  background: transparent;
-  border-image-source: var(--style-midnight-panel-frame);
-  border-image-slice: var(--style-midnight-frame-slice);
-}
-
-:root[data-style-theme="midnight"] .room-bottom-panel__tab.is-locked,
-:root[data-style-theme="midnight"]
-  .room-bottom-panel__tab.is-swipe-target-locked:not(.is-selected) {
-  border-image-source: var(--style-midnight-panel-frame);
-}
-
-:root[data-style-theme="midnight"] .room-bottom-panel__tab.is-selected {
-  border-image-source: var(--style-midnight-panel-selected-frame);
-}
-
 :root[data-style-theme="midnight"] .style-button[role="tab"] {
   background: transparent;
-  border-image-source: var(--style-midnight-panel-frame);
-  border-image-slice: var(--style-midnight-frame-slice);
+  border-color: transparent;
+  border-image-source: var(--style-tab-frame);
+  border-image-slice: var(--style-tab-frame-slice);
+  border-image-width: var(--style-tab-frame-width);
+  border-image-repeat: stretch;
 }
 
 :root[data-style-theme="midnight"]
   .style-button[role="tab"][aria-selected="true"] {
   background: transparent;
-  border-image-source: var(--style-midnight-panel-selected-frame);
+  border-color: transparent;
+  border-image-source: var(--style-tab-selected-frame);
 }
 
 :root[data-style-theme="midnight"]
@@ -17452,6 +17858,22 @@ div.workshop-page__discovery-row {
   box-shadow: none;
 }
 
+.style-panel.room-bottom-panel .room-bottom-panel__tab,
+.style-panel.room-bottom-panel
+  .room-bottom-panel__tab:is(
+    :active,
+    .is-pressing,
+    .is-selected,
+    .is-locked,
+    .is-swipe-target,
+    .is-swipe-target-locked
+  ) {
+  background: transparent;
+  border: 0;
+  border-image: none;
+  box-shadow: none;
+}
+
 :root[data-style-theme="midnight"] .style-box .style-button.shop-page__stock-buy-button,
 :root[data-style-theme="midnight"]
   .style-box
@@ -17465,9 +17887,9 @@ div.workshop-page__discovery-row {
 
 .first-run-intro .style-dialog.first-run-intro__panel,
 .style-box.tutorial-layer__lesson.is-intro-dialog {
-  --intro-dialog-panel-frame: url("/ui/intro-dialog-panel-9slice.png");
-  --intro-dialog-tab-frame: url("/ui/intro-dialog-header-tab-9slice-v2.png");
-  --intro-dialog-button-frame: url("/ui/intro-dialog-button-9slice.png");
+  --intro-dialog-panel-frame: url("../../assets/game/source/ui/intro-dialog-panel-9slice.png");
+  --intro-dialog-tab-frame: url("../../assets/game/source/ui/intro-dialog-header-tab-9slice-v2.png");
+  --intro-dialog-button-frame: url("../../assets/game/source/ui/intro-dialog-button-9slice.png");
   --intro-dialog-panel-slice: 31 29 31 29 fill;
   --intro-dialog-tab-slice: 31 29 31 29 fill;
   --intro-dialog-button-slice: 31 29 31 29 fill;
@@ -17821,6 +18243,47 @@ div.workshop-page__discovery-row {
 
   100% {
     translate: 0 0;
+  }
+}
+
+@keyframes room-bottom-tab-select {
+  0% {
+    scale: 1;
+  }
+
+  68% {
+    scale: 1.065;
+  }
+
+  100% {
+    scale: var(--style-room-tab-selected-scale);
+  }
+}
+
+@keyframes style-button-release-bounce {
+  0% {
+    scale: var(--style-press-scale);
+    animation-timing-function: var(--style-motion-button-ease);
+  }
+
+  36% {
+    scale: var(--style-press-release-peak-scale);
+    animation-timing-function: var(--style-motion-button-ease);
+  }
+
+  100% {
+    scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-bottom-panel__tab.is-selected {
+    animation: none;
+  }
+
+  .room-bottom-panel__tab-label,
+  .room-bottom-panel__tab-icon-frame {
+    transition: none;
   }
 }
 
@@ -19125,6 +19588,147 @@ div.workshop-page__discovery-row {
   }
 }
 
+/* Root Run Expedition dialog composition: brown shell, paper content, and blue title plaque. */
+:root
+  .style-dialog:not(.first-run-intro__panel):not(.style-dialog--system) {
+  --style-text: var(--style-dialog-ink);
+  --style-muted: var(--style-dialog-muted-ink);
+  --style-disabled: var(--style-dialog-disabled-ink);
+  --style-surface: var(--style-dialog-paper-fill);
+  --style-active-surface: var(--style-dialog-paper-fill);
+  --style-stroke: var(--style-dialog-ink);
+  isolation: isolate;
+  color: var(--style-dialog-ink);
+  text-shadow: none;
+  background: transparent;
+  border: 0;
+  border-image: none;
+  border-radius: var(--style-dialog-paper-radius);
+  box-shadow: none;
+}
+
+:root
+  .style-dialog:not(.first-run-intro__panel):not(.style-dialog--system)::before {
+  position: absolute;
+  inset: calc(-1 * var(--style-dialog-frame-outset));
+  z-index: -2;
+  width: auto;
+  height: auto;
+  background: transparent;
+  border: solid transparent;
+  border-width: var(--style-dialog-frame-width);
+  border-image-source: var(--style-dialog-frame);
+  border-image-slice: var(--style-dialog-frame-slice);
+  border-image-width: var(--style-dialog-frame-width);
+  border-image-repeat: stretch;
+  box-shadow: 3px 4px 4px rgb(0 0 0 / 0.42);
+  pointer-events: none;
+  opacity: 1;
+  content: " ";
+}
+
+:root
+  .style-dialog:not(.first-run-intro__panel):not(.style-dialog--system)::after {
+  position: absolute;
+  inset:
+    calc(
+      var(--style-dialog-paper-inset-top) -
+        var(--style-dialog-frame-outset)
+    )
+    calc(
+      var(--style-dialog-paper-inset-x) -
+        var(--style-dialog-frame-outset)
+    )
+    calc(
+      var(--style-dialog-paper-inset-bottom) -
+        var(--style-dialog-frame-outset)
+    );
+  z-index: -1;
+  width: auto;
+  height: auto;
+  background: transparent;
+  border: solid transparent;
+  border-width: var(--style-dialog-paper-frame-width);
+  border-image-source: var(--style-dialog-paper-frame);
+  border-image-slice: var(--style-dialog-paper-frame-slice);
+  border-image-width: var(--style-dialog-paper-frame-width);
+  border-image-repeat: stretch;
+  box-shadow: none;
+  pointer-events: none;
+  content: " ";
+}
+
+:root
+  .style-dialog:not(.first-run-intro__panel):not(.style-dialog--system)
+  > .style-box__title {
+  top: calc(
+    -1 * var(--style-dialog-frame-outset) -
+      var(--style-dialog-title-overhang)
+  );
+  left: 50%;
+  z-index: 3;
+  display: grid;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: var(--style-dialog-title-min-width);
+  max-width: calc(100% - 16px);
+  height: var(--style-dialog-title-height);
+  padding:
+    var(--style-dialog-title-text-top)
+    var(--style-dialog-title-text-padding-x)
+    var(--style-dialog-title-text-bottom);
+  place-items: start center;
+  overflow: visible;
+  color: #fff;
+  font-size: var(--style-dialog-title-text-size);
+  font-weight: 400;
+  line-height: var(--style-dialog-title-text-height);
+  text-overflow: clip;
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid transparent;
+  border-image-source: var(--style-dialog-title-frame);
+  border-image-slice: var(--style-dialog-title-frame-slice);
+  border-image-width: var(--style-dialog-title-frame-width);
+  border-image-repeat: stretch;
+  transform: translateX(-50%);
+  -webkit-text-stroke: var(--style-dialog-title-text-stroke) #0a0a0a;
+  paint-order: stroke fill;
+  text-shadow: none;
+}
+
+.game-stage
+  button:is([class*="__close"], [class*="-close"]):not(
+    .dev-console__close
+  ):not(.guild-page__close),
+.game-stage
+  .guild-page__popup-panel:not([data-popup-kind="requestStack"])
+  > .guild-page__close {
+  position: absolute;
+  top: calc(100% + var(--style-dialog-frame-outset) + var(--style-dialog-close-gap));
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  z-index: 40;
+  box-sizing: border-box;
+  width: var(--style-dialog-close-size);
+  min-width: var(--style-dialog-close-size);
+  height: var(--style-dialog-close-size);
+  min-height: var(--style-dialog-close-size);
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  text-indent: -999px;
+  background: transparent var(--style-dialog-close-image) center / contain no-repeat;
+  border: 0;
+  border-image: none;
+  box-shadow: none;
+  transform: translateX(-50%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -19133,6 +19737,11 @@ div.workshop-page__discovery-row {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
+  }
+
+  .is-press-releasing {
+    animation: none;
+    scale: 1;
   }
 
   .workshop-page,
@@ -19163,7 +19772,7 @@ div.workshop-page__discovery-row {
       .workshop-page__personal-tasks,
       .workshop-page__world-notice,
       .workshop-page__summon-button,
-      .workshop-page__bag-button,
+      .workshop-page__bag,
       .workshop-page__stats-button,
       .workshop-page__leaderboard,
       .workshop-page__mail,

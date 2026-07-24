@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "name": "MainMenu",
+  "width": 1280,
+  "height": 720,
+  "assets": [
+    {
+      "id": "asset-dialog-panel",
+      "src": "assets/ui/dialog-panel.png",
+      "width": 640,
+      "height": 360,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-start-button",
+      "src": "assets/ui/start-button.png",
+      "width": 260,
+      "height": 76,
+      "scale": 1,
+      "mimeType": "image/png"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "dialog",
+      "name": "DialogPanel",
+      "type": "nineSlice",
+      "x": 320,
+      "y": 160,
+      "width": 640,
+      "height": 360,
+      "assetId": "asset-dialog-panel",
+      "insets": {
+        "left": 40,
+        "top": 40,
+        "right": 40,
+        "bottom": 40
+      },
+      "role": "dialog"
+    },
+    {
+      "id": "title",
+      "name": "TitleLabel",
+      "type": "text",
+      "x": 420,
+      "y": 210,
+      "width": 440,
+      "height": 64,
+      "text": {
+        "text": "Crystal Caverns",
+        "fontFamily": "Inter",
+        "fontSize": 42,
+        "fontWeight": "700",
+        "color": "#ffffff",
+        "align": "center",
+        "verticalAlign": "middle",
+        "wrap": false
+      }
+    },
+    {
+      "id": "start",
+      "name": "StartButton",
+      "type": "sprite",
+      "x": 510,
+      "y": 420,
+      "width": 260,
+      "height": 76,
+      "assetId": "asset-start-button",
+      "role": "button"
+    }
+  ]
+}

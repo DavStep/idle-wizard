@@ -1,0 +1,1542 @@
+{
+  "version": "1.0.0",
+  "name": "streak-dialog",
+  "kind": "dialog",
+  "designSize": {
+    "width": 1080,
+    "height": 2122
+  },
+  "scaleMode": "fit",
+  "safeArea": {
+    "x": 0,
+    "y": 0,
+    "width": 1080,
+    "height": 2122
+  },
+  "contentBounds": {
+    "x": 40,
+    "y": 547,
+    "width": 1000,
+    "height": 1283
+  },
+  "padding": {
+    "left": 40,
+    "top": 547,
+    "right": 40,
+    "bottom": 292
+  },
+  "modal": false,
+  "children": [
+    {
+      "id": "dialog-back__92_157",
+      "name": "dialog-back",
+      "x": 0,
+      "y": 3,
+      "width": 1000,
+      "height": 1209,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 7879,
+          "y": 550
+        },
+        "figmaRelative": {
+          "x": 40,
+          "y": 550
+        },
+        "figmaSize": {
+          "width": 1000,
+          "height": 1209
+        },
+        "exportedSize": {
+          "width": 1000,
+          "height": 1209
+        }
+      },
+      "type": "nineSlice",
+      "assetId": "asset-295c1cc0-11123",
+      "asset": "assets/ui/streak-dialog/asset-295c1cc0.png",
+      "slice": {
+        "left": 120,
+        "top": 91,
+        "right": 148,
+        "bottom": 91
+      },
+      "textureSlice": {
+        "left": 120,
+        "top": 91,
+        "right": 148,
+        "bottom": 91
+      },
+      "assetOptimization": {
+        "type": "nineSliceCompact",
+        "enabled": true,
+        "sourceWidth": 1000,
+        "sourceHeight": 1219,
+        "textureWidth": 269,
+        "textureHeight": 183,
+        "compactCenterWidth": 1,
+        "compactCenterHeight": 1,
+        "assetScale": 1
+      }
+    },
+    {
+      "id": "dialog-front__92_158",
+      "name": "dialog-front",
+      "x": 14,
+      "y": 167,
+      "width": 972,
+      "height": 756,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 7893,
+          "y": 714
+        },
+        "figmaRelative": {
+          "x": 54,
+          "y": 714
+        },
+        "figmaSize": {
+          "width": 972,
+          "height": 756
+        },
+        "exportedSize": {
+          "width": 972,
+          "height": 756
+        }
+      },
+      "type": "nineSlice",
+      "assetId": "asset-b18a9b2f-8381",
+      "asset": "assets/ui/streak-dialog/asset-b18a9b2f.png",
+      "slice": {
+        "left": 108,
+        "top": 60,
+        "right": 109,
+        "bottom": 60
+      },
+      "textureSlice": {
+        "left": 108,
+        "top": 60,
+        "right": 109,
+        "bottom": 60
+      },
+      "assetOptimization": {
+        "type": "nineSliceCompact",
+        "enabled": true,
+        "sourceWidth": 972,
+        "sourceHeight": 758,
+        "textureWidth": 218,
+        "textureHeight": 121,
+        "compactCenterWidth": 1,
+        "compactCenterHeight": 1,
+        "assetScale": 1
+      }
+    },
+    {
+      "id": "inner-panel__92_159",
+      "name": "inner-panel",
+      "x": 35,
+      "y": 187,
+      "width": 925,
+      "height": 386,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 7914,
+          "y": 734
+        },
+        "figmaRelative": {
+          "x": 75,
+          "y": 734
+        },
+        "figmaSize": {
+          "width": 925,
+          "height": 386
+        },
+        "exportedSize": {
+          "width": 925,
+          "height": 386
+        }
+      },
+      "type": "nineSlice",
+      "assetId": "asset-dc2ffa24-2732",
+      "asset": "assets/ui/streak-dialog/asset-dc2ffa24.png",
+      "slice": {
+        "left": 74,
+        "top": 31,
+        "right": 74,
+        "bottom": 31
+      },
+      "textureSlice": {
+        "left": 74,
+        "top": 31,
+        "right": 74,
+        "bottom": 31
+      },
+      "assetOptimization": {
+        "type": "nineSliceCompact",
+        "enabled": true,
+        "sourceWidth": 925,
+        "sourceHeight": 386,
+        "textureWidth": 149,
+        "textureHeight": 63,
+        "compactCenterWidth": 1,
+        "compactCenterHeight": 1,
+        "assetScale": 1
+      }
+    },
+    {
+      "id": "btn-primary__92_160",
+      "name": "btn-primary",
+      "x": 233,
+      "y": -139,
+      "width": 534.888,
+      "height": 83,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 8112,
+          "y": 408
+        },
+        "figmaRelative": {
+          "x": 273,
+          "y": 408
+        },
+        "figmaSize": {
+          "width": 534.888,
+          "height": 83
+        },
+        "exportedSize": {
+          "width": 534.888,
+          "height": 83
+        }
+      },
+      "type": "raster",
+      "assetId": "asset-b7b34473-5942",
+      "asset": "assets/ui/streak-dialog/asset-b7b34473.png"
+    },
+    {
+      "id": "1-2__92_161",
+      "name": "1-2",
+      "x": 446,
+      "y": -129,
+      "width": 94,
+      "height": 64.544,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 8325,
+          "y": 418
+        },
+        "figmaRelative": {
+          "x": 486,
+          "y": 418
+        },
+        "figmaSize": {
+          "width": 94,
+          "height": 64.544
+        },
+        "exportedSize": {
+          "width": 94,
+          "height": 64.544
+        },
+        "text": {
+          "figmaWidth": 94,
+          "figmaHeight": 64.544,
+          "exportedWidth": 94,
+          "exportedHeight": 64.544,
+          "fontSize": 64,
+          "scaleX": 1,
+          "scaleY": 1
+        }
+      },
+      "type": "text",
+      "text": "1-2 ",
+      "style": {
+        "fontFamily": "Lilita One",
+        "fontSize": 64,
+        "fontWeight": "Regular",
+        "color": "#ffffff",
+        "fill": "#ffffff",
+        "stroke": "#0a0a0a",
+        "strokeWidth": 8,
+        "alpha": 1,
+        "align": "center",
+        "wrap": true,
+        "wordWrapWidth": 94
+      }
+    },
+    {
+      "id": "btn-primary2__102_106",
+      "name": "btn-primary2",
+      "x": 280,
+      "y": 951,
+      "width": 456.091,
+      "height": 205.164,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 8159,
+          "y": 1498
+        },
+        "figmaRelative": {
+          "x": 320,
+          "y": 1498
+        },
+        "figmaSize": {
+          "width": 456.091,
+          "height": 205.164
+        },
+        "exportedSize": {
+          "width": 456.091,
+          "height": 205.164
+        }
+      },
+      "type": "button",
+      "hitArea": {
+        "x": 0,
+        "y": 0,
+        "width": 456.091,
+        "height": 205.164
+      },
+      "children": [
+        {
+          "id": "btn__103_70",
+          "name": "btn",
+          "x": -8,
+          "y": -8,
+          "width": 473,
+          "height": 233,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 8151,
+              "y": 1490
+            },
+            "figmaRelative": {
+              "x": -8,
+              "y": -8
+            },
+            "figmaSize": {
+              "width": 473,
+              "height": 233
+            },
+            "exportedSize": {
+              "width": 473,
+              "height": 233
+            }
+          },
+          "type": "nineSlice",
+          "assetId": "asset-4147f899-5894",
+          "asset": "assets/ui/streak-dialog/asset-4147f899.png",
+          "slice": {
+            "left": 122,
+            "top": 102,
+            "right": 100,
+            "bottom": 76
+          },
+          "textureSlice": {
+            "left": 122,
+            "top": 102,
+            "right": 100,
+            "bottom": 76
+          },
+          "assetOptimization": {
+            "type": "nineSliceCompact",
+            "enabled": true,
+            "sourceWidth": 473,
+            "sourceHeight": 234,
+            "textureWidth": 223,
+            "textureHeight": 179,
+            "compactCenterWidth": 1,
+            "compactCenterHeight": 1,
+            "assetScale": 1
+          }
+        },
+        {
+          "id": "text-currency__102_113",
+          "name": "text-currency",
+          "x": 133.955,
+          "y": 24,
+          "width": 188,
+          "height": 167,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 8292.955,
+              "y": 1522
+            },
+            "figmaRelative": {
+              "x": 133.955,
+              "y": 24
+            },
+            "figmaSize": {
+              "width": 188,
+              "height": 167
+            },
+            "exportedSize": {
+              "width": 188,
+              "height": 167
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "Start__102_114",
+              "name": "Start",
+              "x": 0,
+              "y": 0,
+              "width": 188,
+              "height": 98,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8292.955,
+                  "y": 1522
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 188,
+                  "height": 98
+                },
+                "exportedSize": {
+                  "width": 188,
+                  "height": 98
+                },
+                "text": {
+                  "figmaWidth": 188,
+                  "figmaHeight": 98,
+                  "exportedWidth": 188,
+                  "exportedHeight": 98,
+                  "fontSize": 86,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "Start",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 86,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#0a0a0a",
+                "strokeWidth": 8,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 188
+              }
+            },
+            {
+              "id": "txt_section_number__102_115",
+              "name": "txt_section_number",
+              "x": 112.045,
+              "y": 105,
+              "width": 57,
+              "height": 55,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8405,
+                  "y": 1627
+                },
+                "figmaRelative": {
+                  "x": 112.045,
+                  "y": 105
+                },
+                "figmaSize": {
+                  "width": 57,
+                  "height": 55
+                },
+                "exportedSize": {
+                  "width": 57,
+                  "height": 55
+                },
+                "text": {
+                  "figmaWidth": 57,
+                  "figmaHeight": 55,
+                  "exportedWidth": 57,
+                  "exportedHeight": 55,
+                  "fontSize": 48,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "x1",
+              "style": {
+                "fontFamily": "Lilita One",
+                "fontSize": 48,
+                "fontWeight": "Regular",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#0a0a0a",
+                "strokeWidth": 4,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 57
+              }
+            },
+            {
+              "id": "icon-currency__102_116",
+              "name": "icon-currency",
+              "x": 4,
+              "y": 98,
+              "width": 99,
+              "height": 69,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8296.955,
+                  "y": 1620
+                },
+                "figmaRelative": {
+                  "x": 4,
+                  "y": 98
+                },
+                "figmaSize": {
+                  "width": 99,
+                  "height": 69
+                },
+                "exportedSize": {
+                  "width": 99,
+                  "height": 69
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-e65167b0-6815",
+              "asset": "assets/ui/streak-dialog/asset-e65167b0.png"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "btn_close__92_163",
+      "name": "btn_close",
+      "x": 443,
+      "y": 1283,
+      "width": 114,
+      "height": 114,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 8322,
+          "y": 1830
+        },
+        "figmaRelative": {
+          "x": 483,
+          "y": 1830
+        },
+        "figmaSize": {
+          "width": 114,
+          "height": 114
+        },
+        "exportedSize": {
+          "width": 114,
+          "height": 114
+        }
+      },
+      "type": "button",
+      "hitArea": {
+        "x": 0,
+        "y": 0,
+        "width": 114,
+        "height": 114
+      },
+      "children": [
+        {
+          "id": "closebtn__92_278",
+          "name": "closebtn",
+          "x": 0,
+          "y": 0,
+          "width": 114,
+          "height": 114,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 8322,
+              "y": 1830
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 114,
+              "height": 114
+            },
+            "exportedSize": {
+              "width": 114,
+              "height": 114
+            }
+          },
+          "type": "raster",
+          "assetId": "asset-bdcfaf6d-5954",
+          "asset": "assets/ui/streak-dialog/asset-bdcfaf6d.png"
+        }
+      ]
+    },
+    {
+      "id": "Tools__92_186",
+      "name": "Tools",
+      "x": 436,
+      "y": 596,
+      "width": 129,
+      "height": 66,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 8315,
+          "y": 1143
+        },
+        "figmaRelative": {
+          "x": 476,
+          "y": 1143
+        },
+        "figmaSize": {
+          "width": 129,
+          "height": 66
+        },
+        "exportedSize": {
+          "width": 129,
+          "height": 66
+        },
+        "text": {
+          "figmaWidth": 129,
+          "figmaHeight": 66,
+          "exportedWidth": 129,
+          "exportedHeight": 66,
+          "fontSize": 58,
+          "scaleX": 1,
+          "scaleY": 1
+        }
+      },
+      "type": "text",
+      "text": "Tools",
+      "style": {
+        "fontFamily": "Lilita One",
+        "fontSize": 58,
+        "fontWeight": "Regular",
+        "color": "#634934",
+        "fill": "#634934",
+        "alpha": 1,
+        "align": "center",
+        "wrap": true,
+        "wordWrapWidth": 129
+      }
+    },
+    {
+      "id": "Streak__92_187",
+      "name": "Streak",
+      "x": 418,
+      "y": 194,
+      "width": 165,
+      "height": 66,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 8297,
+          "y": 741
+        },
+        "figmaRelative": {
+          "x": 458,
+          "y": 741
+        },
+        "figmaSize": {
+          "width": 165,
+          "height": 66
+        },
+        "exportedSize": {
+          "width": 165,
+          "height": 66
+        },
+        "text": {
+          "figmaWidth": 165,
+          "figmaHeight": 66,
+          "exportedWidth": 165,
+          "exportedHeight": 66,
+          "fontSize": 58,
+          "scaleX": 1,
+          "scaleY": 1
+        }
+      },
+      "type": "text",
+      "text": "Streak",
+      "style": {
+        "fontFamily": "Lilita One",
+        "fontSize": 58,
+        "fontWeight": "Regular",
+        "color": "#634934",
+        "fill": "#634934",
+        "alpha": 1,
+        "align": "center",
+        "wrap": true,
+        "wordWrapWidth": 165
+      }
+    },
+    {
+      "id": "skills__92_279",
+      "name": "skills",
+      "x": 61,
+      "y": 694,
+      "width": 855,
+      "height": 184,
+      "rotation": 0,
+      "alpha": 1,
+      "visible": true,
+      "debug": {
+        "figmaAbsolute": {
+          "x": 7940,
+          "y": 1241
+        },
+        "figmaRelative": {
+          "x": 101,
+          "y": 1241
+        },
+        "figmaSize": {
+          "width": 855,
+          "height": 184
+        },
+        "exportedSize": {
+          "width": 855,
+          "height": 184
+        }
+      },
+      "type": "container",
+      "children": [
+        {
+          "id": "btn_booster_speedup__92_280",
+          "name": "btn_booster_speedup",
+          "x": 681,
+          "y": 0,
+          "width": 174,
+          "height": 156,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 8621,
+              "y": 1241
+            },
+            "figmaRelative": {
+              "x": 681,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 174,
+              "height": 156
+            },
+            "exportedSize": {
+              "width": 174,
+              "height": 156
+            }
+          },
+          "type": "button",
+          "hitArea": {
+            "x": 0,
+            "y": 0,
+            "width": 174,
+            "height": 156
+          },
+          "children": [
+            {
+              "id": "btn-skill4__92_347",
+              "name": "btn-skill4",
+              "x": 0,
+              "y": 0,
+              "width": 174,
+              "height": 156,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8621,
+                  "y": 1241
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 174,
+                  "height": 156
+                },
+                "exportedSize": {
+                  "width": 174,
+                  "height": 156
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-5af42711-3268",
+              "asset": "assets/ui/streak-dialog/asset-5af42711.png"
+            },
+            {
+              "id": "skill-icons4__92_345",
+              "name": "skill-icons4",
+              "x": 14,
+              "y": 33,
+              "width": 132,
+              "height": 89,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8635,
+                  "y": 1274
+                },
+                "figmaRelative": {
+                  "x": 14,
+                  "y": 33
+                },
+                "figmaSize": {
+                  "width": 132,
+                  "height": 89
+                },
+                "exportedSize": {
+                  "width": 132,
+                  "height": 89
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-f51bd507-15718",
+              "asset": "assets/ui/streak-dialog/asset-f51bd507.png"
+            }
+          ]
+        },
+        {
+          "id": "btn_booster_scarecrow__92_283",
+          "name": "btn_booster_scarecrow",
+          "x": 454,
+          "y": 0,
+          "width": 174,
+          "height": 156,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 8394,
+              "y": 1241
+            },
+            "figmaRelative": {
+              "x": 454,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 174,
+              "height": 156
+            },
+            "exportedSize": {
+              "width": 174,
+              "height": 156
+            }
+          },
+          "type": "button",
+          "hitArea": {
+            "x": 0,
+            "y": 0,
+            "width": 174,
+            "height": 156
+          },
+          "children": [
+            {
+              "id": "btn-skill3__92_353",
+              "name": "btn-skill3",
+              "x": 0,
+              "y": 0,
+              "width": 174,
+              "height": 156,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8394,
+                  "y": 1241
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 174,
+                  "height": 156
+                },
+                "exportedSize": {
+                  "width": 174,
+                  "height": 156
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-5af42711-3268",
+              "asset": "assets/ui/streak-dialog/asset-5af42711.png"
+            },
+            {
+              "id": "skill-icons3__92_351",
+              "name": "skill-icons3",
+              "x": 22,
+              "y": 10,
+              "width": 129,
+              "height": 136,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8416,
+                  "y": 1251
+                },
+                "figmaRelative": {
+                  "x": 22,
+                  "y": 10
+                },
+                "figmaSize": {
+                  "width": 129,
+                  "height": 136
+                },
+                "exportedSize": {
+                  "width": 129,
+                  "height": 136
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-5b778e79-26505",
+              "asset": "assets/ui/streak-dialog/asset-5b778e79.png"
+            }
+          ]
+        },
+        {
+          "id": "btn_booster_compass__92_286",
+          "name": "btn_booster_compass",
+          "x": 227,
+          "y": 0,
+          "width": 174,
+          "height": 156,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 8167,
+              "y": 1241
+            },
+            "figmaRelative": {
+              "x": 227,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 174,
+              "height": 156
+            },
+            "exportedSize": {
+              "width": 174,
+              "height": 156
+            }
+          },
+          "type": "button",
+          "hitArea": {
+            "x": 0,
+            "y": 0,
+            "width": 174,
+            "height": 156
+          },
+          "children": [
+            {
+              "id": "btn-skill2__92_357",
+              "name": "btn-skill2",
+              "x": 0,
+              "y": 0,
+              "width": 174,
+              "height": 156,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8167,
+                  "y": 1241
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 174,
+                  "height": 156
+                },
+                "exportedSize": {
+                  "width": 174,
+                  "height": 156
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-5af42711-3268",
+              "asset": "assets/ui/streak-dialog/asset-5af42711.png"
+            },
+            {
+              "id": "skill-icons2__92_361",
+              "name": "skill-icons2",
+              "x": 32,
+              "y": 19,
+              "width": 109,
+              "height": 118,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8199,
+                  "y": 1260
+                },
+                "figmaRelative": {
+                  "x": 32,
+                  "y": 19
+                },
+                "figmaSize": {
+                  "width": 109,
+                  "height": 118
+                },
+                "exportedSize": {
+                  "width": 109,
+                  "height": 118
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-1237a4a1-20862",
+              "asset": "assets/ui/streak-dialog/asset-1237a4a1.png"
+            }
+          ]
+        },
+        {
+          "id": "btn_booster_freeze__92_289",
+          "name": "btn_booster_freeze",
+          "x": 0,
+          "y": 0,
+          "width": 174,
+          "height": 156,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 7940,
+              "y": 1241
+            },
+            "figmaRelative": {
+              "x": 0,
+              "y": 0
+            },
+            "figmaSize": {
+              "width": 174,
+              "height": 156
+            },
+            "exportedSize": {
+              "width": 174,
+              "height": 156
+            }
+          },
+          "type": "button",
+          "hitArea": {
+            "x": 0,
+            "y": 0,
+            "width": 174,
+            "height": 156
+          },
+          "children": [
+            {
+              "id": "btn-skill1__92_363",
+              "name": "btn-skill1",
+              "x": 0,
+              "y": 0,
+              "width": 174,
+              "height": 156,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7940,
+                  "y": 1241
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 174,
+                  "height": 156
+                },
+                "exportedSize": {
+                  "width": 174,
+                  "height": 156
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-5af42711-3268",
+              "asset": "assets/ui/streak-dialog/asset-5af42711.png"
+            },
+            {
+              "id": "skill-icons__92_367",
+              "name": "skill-icons",
+              "x": 23,
+              "y": 15,
+              "width": 127,
+              "height": 125,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 7963,
+                  "y": 1256
+                },
+                "figmaRelative": {
+                  "x": 23,
+                  "y": 15
+                },
+                "figmaSize": {
+                  "width": 127,
+                  "height": 125
+                },
+                "exportedSize": {
+                  "width": 127,
+                  "height": 125
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-1de29ddc-28074",
+              "asset": "assets/ui/streak-dialog/asset-1de29ddc.png"
+            }
+          ]
+        },
+        {
+          "id": "2__92_325",
+          "name": "2",
+          "x": 121,
+          "y": 120,
+          "width": 53,
+          "height": 57.327,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 8061,
+              "y": 1361
+            },
+            "figmaRelative": {
+              "x": 121,
+              "y": 120
+            },
+            "figmaSize": {
+              "width": 53,
+              "height": 57.327
+            },
+            "exportedSize": {
+              "width": 53,
+              "height": 57.327
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "red_dot__92_329",
+              "name": "red_dot",
+              "x": 0,
+              "y": 3.163,
+              "width": 53,
+              "height": 53,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8061,
+                  "y": 1364.163
+                },
+                "figmaRelative": {
+                  "x": 0,
+                  "y": 3.163
+                },
+                "figmaSize": {
+                  "width": 53,
+                  "height": 53
+                },
+                "exportedSize": {
+                  "width": 53,
+                  "height": 53
+                }
+              },
+              "type": "raster",
+              "assetId": "asset-c17fc0c7-2107",
+              "asset": "assets/ui/streak-dialog/asset-c17fc0c7.png"
+            },
+            {
+              "id": "txt_2__92_328",
+              "name": "txt_2",
+              "x": 10.816,
+              "y": 0,
+              "width": 31.367,
+              "height": 57.327,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8071.816,
+                  "y": 1361
+                },
+                "figmaRelative": {
+                  "x": 10.816,
+                  "y": 0
+                },
+                "figmaSize": {
+                  "width": 31.367,
+                  "height": 57.327
+                },
+                "exportedSize": {
+                  "width": 31.367,
+                  "height": 57.327
+                },
+                "text": {
+                  "figmaWidth": 31.367,
+                  "figmaHeight": 57.327,
+                  "exportedWidth": 31.367,
+                  "exportedHeight": 57.327,
+                  "fontSize": 44,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "2",
+              "style": {
+                "fontFamily": "Inter",
+                "fontSize": 44,
+                "fontWeight": "Black",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#000000",
+                "strokeWidth": 2,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 31.367
+              }
+            }
+          ]
+        },
+        {
+          "id": "badge__92_338",
+          "name": "badge",
+          "x": 259,
+          "y": 118,
+          "width": 150,
+          "height": 66,
+          "rotation": 0,
+          "alpha": 1,
+          "visible": true,
+          "debug": {
+            "figmaAbsolute": {
+              "x": 8199,
+              "y": 1359
+            },
+            "figmaRelative": {
+              "x": 259,
+              "y": 118
+            },
+            "figmaSize": {
+              "width": 150,
+              "height": 66
+            },
+            "exportedSize": {
+              "width": 150,
+              "height": 66
+            }
+          },
+          "type": "container",
+          "children": [
+            {
+              "id": "freeanel__92_342",
+              "name": "freeanel",
+              "x": 4,
+              "y": 4.496,
+              "width": 141.623,
+              "height": 53.692,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8203,
+                  "y": 1363.496
+                },
+                "figmaRelative": {
+                  "x": 4,
+                  "y": 4.496
+                },
+                "figmaSize": {
+                  "width": 141.623,
+                  "height": 53.692
+                },
+                "exportedSize": {
+                  "width": 141.623,
+                  "height": 53.692
+                }
+              },
+              "type": "nineSlice",
+              "assetId": "asset-113e4eae-2366",
+              "asset": "assets/ui/streak-dialog/asset-113e4eae.png",
+              "slice": {
+                "left": 46,
+                "top": 0,
+                "right": 41,
+                "bottom": 0
+              },
+              "textureSlice": {
+                "left": 46,
+                "top": 0,
+                "right": 41,
+                "bottom": 0
+              },
+              "assetOptimization": {
+                "type": "nineSliceCompact",
+                "enabled": true,
+                "sourceWidth": 150,
+                "sourceHeight": 66,
+                "textureWidth": 88,
+                "textureHeight": 66,
+                "compactCenterWidth": 1,
+                "compactCenterHeight": 66,
+                "assetScale": 1
+              }
+            },
+            {
+              "id": "txt_free__92_341",
+              "name": "txt_free",
+              "x": 24.816,
+              "y": 4.821,
+              "width": 97,
+              "height": 53,
+              "rotation": 0,
+              "alpha": 1,
+              "visible": true,
+              "debug": {
+                "figmaAbsolute": {
+                  "x": 8223.816,
+                  "y": 1363.821
+                },
+                "figmaRelative": {
+                  "x": 24.816,
+                  "y": 4.821
+                },
+                "figmaSize": {
+                  "width": 97,
+                  "height": 53
+                },
+                "exportedSize": {
+                  "width": 97,
+                  "height": 53
+                },
+                "text": {
+                  "figmaWidth": 97,
+                  "figmaHeight": 53,
+                  "exportedWidth": 97,
+                  "exportedHeight": 53,
+                  "fontSize": 44,
+                  "scaleX": 1,
+                  "scaleY": 1
+                }
+              },
+              "type": "text",
+              "text": "Free",
+              "style": {
+                "fontFamily": "Inter",
+                "fontSize": 44,
+                "fontWeight": "Black",
+                "color": "#ffffff",
+                "fill": "#ffffff",
+                "stroke": "#000000",
+                "strokeWidth": 2,
+                "alpha": 1,
+                "align": "center",
+                "wrap": true,
+                "wordWrapWidth": 97
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "asset-295c1cc0-11123",
+      "src": "assets/ui/streak-dialog/asset-295c1cc0.png",
+      "width": 269,
+      "height": 183,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-b18a9b2f-8381",
+      "src": "assets/ui/streak-dialog/asset-b18a9b2f.png",
+      "width": 218,
+      "height": 121,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-dc2ffa24-2732",
+      "src": "assets/ui/streak-dialog/asset-dc2ffa24.png",
+      "width": 149,
+      "height": 63,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-b7b34473-5942",
+      "src": "assets/ui/streak-dialog/asset-b7b34473.png",
+      "width": 534.888,
+      "height": 83,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-4147f899-5894",
+      "src": "assets/ui/streak-dialog/asset-4147f899.png",
+      "width": 223,
+      "height": 179,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-e65167b0-6815",
+      "src": "assets/ui/streak-dialog/asset-e65167b0.png",
+      "width": 99,
+      "height": 69,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-bdcfaf6d-5954",
+      "src": "assets/ui/streak-dialog/asset-bdcfaf6d.png",
+      "width": 114,
+      "height": 114,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-5af42711-3268",
+      "src": "assets/ui/streak-dialog/asset-5af42711.png",
+      "width": 174,
+      "height": 156,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-f51bd507-15718",
+      "src": "assets/ui/streak-dialog/asset-f51bd507.png",
+      "width": 132,
+      "height": 89,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-5b778e79-26505",
+      "src": "assets/ui/streak-dialog/asset-5b778e79.png",
+      "width": 129,
+      "height": 136,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-1237a4a1-20862",
+      "src": "assets/ui/streak-dialog/asset-1237a4a1.png",
+      "width": 109,
+      "height": 118,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-1de29ddc-28074",
+      "src": "assets/ui/streak-dialog/asset-1de29ddc.png",
+      "width": 127,
+      "height": 125,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-c17fc0c7-2107",
+      "src": "assets/ui/streak-dialog/asset-c17fc0c7.png",
+      "width": 53,
+      "height": 53,
+      "scale": 1,
+      "mimeType": "image/png"
+    },
+    {
+      "id": "asset-113e4eae-2366",
+      "src": "assets/ui/streak-dialog/asset-113e4eae.png",
+      "width": 88,
+      "height": 66,
+      "scale": 1,
+      "mimeType": "image/png"
+    }
+  ],
+  "meta": {
+    "source": "figma",
+    "exportedRootId": "92:148",
+    "validation": {
+      "warnings": [
+        "Hidden layer skipped: \"@text curency-text\"",
+        "Ninepatch \"dialog-back\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations.",
+        "Ninepatch \"dialog-front\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations.",
+        "Ninepatch \"inner-panel\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations.",
+        "Ninepatch \"btn\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations.",
+        "Ninepatch \"freeanel\" was compacted with a 1 px stretch sample; increase Stretch sample pixels if the stretch area contains unique gradients, patterns, text, icons, or decorations."
+      ],
+      "errors": []
+    }
+  }
+}
