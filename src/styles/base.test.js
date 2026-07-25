@@ -268,6 +268,14 @@ describe('base styles', () => {
     expect(rootRule).toContain(
       '--style-dialog-close-image: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-close.png");',
     );
+    expect(rootRule).toContain('--style-dialog-content-width: 304px;');
+    expect(rootRule).toContain('--style-dialog-min-content-height: 53px;');
+    expect(dialogRule).toContain(
+      'width: var(--style-dialog-content-width);',
+    );
+    expect(dialogRule).toContain(
+      'min-height: var(--style-dialog-min-content-height);',
+    );
     expect(dialogRule).toContain('color: var(--style-dialog-ink);');
     expect(dialogRule).toContain('background: transparent;');
     expect(backRule).toContain('border-image-source: var(--style-dialog-frame);');

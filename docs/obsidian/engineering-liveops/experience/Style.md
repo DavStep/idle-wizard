@@ -29,7 +29,7 @@ experience_type: style
 - Body-level reward visual nodes must size from fitted stage CSS variables, not `vw`; otherwise mobile item drops ignore the scaled room UI and look tiny.
 - Reward particles anchored to room controls must measure and animate in `.game-stage` coordinates, not raw `document.body` viewport coords; the fitted stage can drift or double body-fixed positions on web/mobile.
 - Icon-mode reward text should hide only after visual nodes actually spawn; reduced-motion/mobile fallbacks need visible text.
-- Resource icons are fixed on. Resource and currency text stays monochrome, including Workshop summon weights and potion item names; do not assign category colors to seed, herb, potion, mana, coin, crystal, emerald, or ruby text.
+- Resource icons are fixed on. Resource and currency labels use their shared semantic color family, including mana blue and coin gold, while disabled/locked states consistently reduce contrast. Do not invent feature-local colors for the same resource.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Standalone info/help buttons use `assets/game/source/ui/prop_info.png` through `setInfoButtonIcon`; never fall back to `[i]`, `?`, or a font glyph.
@@ -41,7 +41,7 @@ experience_type: style
 - Room UI animation should use sine-ish interpolation; keep rubber from tiny keyframe overshoot, not y>1 easing curves.
 - Shared press/release motion should use individual `scale`/`translate`, not `transform`, so centered or positioned controls keep their existing transforms.
 - Root Run station-upgrade buttons compress to `0.94` in `55ms`, then release over `180ms` through a single `1.055` peak; preserve that centered full-button timing for shared press feedback and disable the overshoot under reduced motion.
-- Use high-contrast text, quiet midnight-default surfaces, readable text, compact panels, and minimal decoration.
+- Use high-contrast outlined text, layered midnight surfaces, readable compact panels, one dominant illustrated room landmark, and purposeful fantasy decoration.
 - Player-facing copy uses intentional capitalization: title case for titles, tabs, named items, research, events, and task labels; sentence case for instructions and narrative copy. Preserve user-entered names exactly as typed.
 - Project typography uses Root Run's `Lilita One` at `13px` source size with tabular lining numerals for values.
 - Every visible button label is stroked in every state; reuse the shared button style's skin-appropriate stroke instead of introducing feature-local outline values.
@@ -58,7 +58,7 @@ experience_type: style
 - Text-entry dialogs should sit high enough that the mobile keyboard does not cover save/cancel actions.
 - Text-entry dialog save buttons should save on `pointerdown` so keyboard blur cannot move the scaled layout before click submit.
 - For Android safe areas, let chrome backgrounds visually extend behind status/gesture areas and inset only interactive content; avoid black gutter padding.
-- Non-dialog boxes stay simple: `1px` border, compact padding, no shadow.
+- Non-dialog panels use approved shared image-backed chrome with compact padding and shallow skin-owned depth; do not invent feature-local radius, bevel, or shadow values.
 - Every player-facing popup/dialog uses the exact Root Run Expedition composition: brown outer nine-slice, Expedition paper inner nine-slice, purple title plaque, round X control centered below when dismissal is allowed, and one compact bottom-right shadow. At the `390px` logical width preserve the `364px` shell; `352px` paper with `6px` horizontal, `31px` top, and `21px` compact bottom insets; `222x44px` title; and `41px` close with `23px` shell gap. Plaque text scales the exported `64px` type, `73px` line box, `22px` top offset, and `8px` stroke to `23.1px`, `26.4px`, `7.9px`, and `2.9px`; do not reuse the generic `14px` dialog-title token. App-level blockers use the same shell with the close action hidden when the flow must retain control; feature-specific artwork stays inside the paper content area. The first-run cutscene is not a dialog: keep its narrative in an ordinary border-labeled box with the shared yellow action button.
 - Progress, research-complete, and feature-unlock announcements are full-screen screens, not dialogs: keep their centered composition unframed and reserve dialog chrome for report-style announcements.
 - Transparent nine-slice corners reveal any CSS fill drawn underneath. Let the Root Run shell, paper, title, and close PNGs own their centers; keep their backing layers transparent and preserve the source inset plus minimum slice dimensions instead of hiding geometry mistakes with solid rectangles.
@@ -69,7 +69,7 @@ experience_type: style
 - Reference-driven UI QA needs a native-pixel close crop and overlay review of explicit anchors. Full-screen thumbnails and CSS-value tests miss icon/text optical centers, visible-alpha grounding, badge centering, and detailed rail geometry.
 - Workshop no longer has a separate `seeds` block; `summon` stays centered above world chat and `bag` occupies the fourth left-side HUD panel row.
 - Workshop `bag` opens a tabbed popup for currencies, seeds, herbs, and potions.
-- Do not add decorative visuals unless the user explicitly asks.
+- Illustrated room landmarks, item/resource art, and tactile chrome are part of the default visual language. Add decoration only when it reinforces room identity, state, or action hierarchy.
 - Cutscene overlays should settle visible while their text step is active; do not fade story-critical art to `opacity: 0` before the player advances.
 - Cutscene sprite overlays should align by visible alpha bounds, not the full PNG box; transparent padding can make grounded characters appear to float.
 - Cutscene scene swaps should render under a near-opaque transition shade; partial fades can reveal image source swaps or decode flicker.
@@ -95,7 +95,7 @@ experience_type: style
 - Research blocks should render no more than 3 locked rows each; keep deeper locked research hidden until earlier items unlock.
 - Completed research rows display `researched` and keep the same fixed value-slot height as price controls.
 - Locked research rows use dark monochrome card and art-well skins, keep all player-facing copy white, and render artwork as an opaque bright monochrome image; do not communicate locked state by fading the whole row.
-- Research rows are the explicit station-upgrade-card exception to the normal text-first row: keep the Root Run card width but compress the row to `90px`, use a `58x58px` left art well with `64px` artwork, a fixed middle description, a `0.3` source-scale one-step level badge, and an `80x48px` cost/status button. Render the art-well squircle with its source `49 49 50 50` margins through a dynamically sized Pixi nine-slice; stretching the source PNG as a normal background turns it into an oval. Intentionally omit the bottom `current ▶ next` capsule.
+- Research rows use the shared station-upgrade-card family: keep the Root Run card width but compress the row to `90px`, use a `58x58px` left art well with `64px` artwork, a fixed middle description, a `0.3` source-scale one-step level badge, and an `80x48px` cost/status button. Render the art-well squircle with its source `49 49 50 50` margins through a dynamically sized Pixi nine-slice; stretching the source PNG as a normal background turns it into an oval. Intentionally omit the bottom `current ▶ next` capsule.
 - Shared image-backed cost buttons must wrap plain labels such as `free` or `locked` in a positioned label above the skin pseudo-element; resource-cost labels already own that foreground layer.
 - Research name clicks open a `style-dialog` info popup; keep explanation text on the research definition snapshot.
 - Brewing recipe popup hides locked recipes; recipe names are bold, ingredient rows align flush with names, and `time:` details stay muted.
@@ -181,7 +181,7 @@ experience_type: style
 - Visual setting prices live in SpacetimeDB `game_config.visualSettings.costsCrystal`; midnight, Lilita One, and regular progress bars start researched, while other selectable visual options show their price/free research action until researched.
 - Zero-cost visual setting names should not unlock or select directly; tap `free` to research first, then tap the option name to select.
 - Mixed resource strings need separate marked spans when each semantic part needs its own icon; the spans still inherit surrounding text color.
-- Resource metadata may support icons and disabled-state handling, but must never override component text color. Disabled and locked resource labels inherit the normal muted state color.
+- Resource metadata owns the shared icon and semantic resource color, but disabled and locked component states override it with the normal muted treatment.
 - Shared top room chrome uses the `16px` source side inset from Research content. Bottom room tabs are the deliberate exception: their equal-width row fills the source width.
 - Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
 - NPC market reset must clear shared `npcStock` to `0` plus restore `npcNeed` to target; stock is server state and can survive player-data resets.
@@ -206,6 +206,7 @@ experience_type: style
 - Bottom-tab qUIck textures need their compact `textureSlice` margins scaled by `390 / 1080` plus the exact center-sample color behind `border-image`; transparent backing exposes the slice cuts as dark lines. Keep optional tabs in the same non-wrapping flex row so their frames cannot leak below the main baseline.
 - Fixed-size qUIck skins that remain visibly seamed under fractional contain scaling may keep precomposed whole-PNG fallbacks, but production Root Run parity should use one Pixi `NineSliceSprite` per skin and hide the fallback only after the Pixi layer renders successfully. Research fallback skins are generated by `npm run assets:research-skins`.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.
+- Retained Pixi world chat belongs in the global `chrome.chat` surface, not `WorkshopPixiPage`; page-owned rendering disappears when another room activates even if the DOM fallback is global.
 - Page-level content tabs should sit fixed just above world chat, like Research/Market; make the active tab panel scroll above them instead of putting tabs in normal top content flow.
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
 - Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
@@ -220,14 +221,14 @@ experience_type: style
 - If notification dots grow beyond page-level flags, move to a provider tree with centralized child aggregation and graph validation instead of ad hoc booleans.
 - Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
 - Gameplay state `subscribe` is passive; managers that diff state must seed their baseline from `gameplayFacade.getSnapshot()` on mount.
-- World chat compact chrome is a normal A Dark Room-style box: `world chat` is the embedded top-left border title/opener, while empty preview text is centered and not clickable.
+- World chat compact chrome uses the shared room-panel skin: `world chat` is the clear title/opener, while empty preview text is centered and not clickable.
 - World chat system sender labels use the normal chat text hierarchy; do not derive their text color from resource categories.
 - Successful world/alliance chat sends should render a local sent row until the matching subscription row arrives; reducer success can precede the table/view echo.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
 - Compact world chat preview rows should stay one line with ellipsis; wrapping belongs in the full popup only.
 - World chat popup rows need normal block flow plus at least `--style-row-min-height` line-height; fixed 16px chat line-height can overlap wrapped rows.
 - Room page content must reserve `--style-room-chat-clearance`, including the chat border-title overhang; otherwise lower page blocks render under shared world chat.
-- Raising `--style-room-chat-bottom` also raises every `--style-room-chat-clearance` consumer, including Workshop bag/prestige; manually keep fixed Workshop secondary rows in the same lower stack.
+- Workshop side controls belong in a fixed top stack directly below `elara's request`: `stats` owns the top-right slot, both icon columns share one first-row baseline beneath it, and `bag` remains the fourth left row. Do not derive their placement from world-chat clearance.
 - Workshop task/event character openers need about `20px` source vertical gap; Android touch targeting can pick the lower event when the gap is only about `12px`.
 - Main room page content panels should also use the Research-width `16px` source side inset.
 - Workshop tasks sit below the top panel and stay collapsed until the bottom-border expand action is pressed.
@@ -261,3 +262,10 @@ experience_type: style
 - Garden plot `.is-empty` means the plot has no active plant, not that its selected seed label is unavailable; selected seed labels still follow the row's normal state color.
 - Research item-name spans may keep resource metadata for icons, but their text inherits the row's normal, completed, or unavailable state color.
 - Treat every new UI primitive, compound component, scroll behavior, box/dialog type, control pattern, or meaningfully different widget variant as an approval gate: show the user one named list with `390x844` previews before product-code integration, then catalog only approved widgets in `docs/ui-patterns.md`.
+
+## Runtime art sources
+
+- Keep high-resolution generation masters outside `assets/game/source`; the production asset manifest includes every PNG and WebP below that tree. Put only runtime-sized finals there, or intermediate art will inflate web and APK builds.
+- Build research icon families from shared plot, cauldron, seed-pack, hourglass, and action-overlay masters. Do not independently generate each final icon or identical gameplay concepts will drift; keep currencies out of research artwork.
+- Pixi `ColorMatrixFilter.grayscale(1)` sums RGB channels and clips bright art; locked artwork should use the Idle Outpost luminance weights `0.2125/0.7154/0.0721` and neutralize sprite tint RGB.
+- Grayscale and monochrome shaders are icon-only. Disabled buttons must swap to the shared gray button asset instead of filtering colored button chrome.

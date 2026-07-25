@@ -969,6 +969,18 @@ export class GameplayFacade {
     return result;
   }
 
+  setBrewingAutoCollectEnabled(enabled, cauldronIndex = 0) {
+    const result = this.brewingFacade.setAutoCollectEnabled(enabled, cauldronIndex);
+    this.publishAndFlushSnapshot();
+    return result;
+  }
+
+  toggleBrewingAutoCollectEnabled(cauldronIndex = 0) {
+    const result = this.brewingFacade.toggleAutoCollectEnabled(cauldronIndex);
+    this.publishAndFlushSnapshot();
+    return result;
+  }
+
   setBrewingBrewQuantity(quantity, cauldronIndex = 0) {
     const result = this.brewingFacade.setBrewQuantity(quantity, cauldronIndex);
     this.publishAndFlushSnapshot();
@@ -1018,6 +1030,18 @@ export class GameplayFacade {
   startBrewingBottling(cauldronIndex = 0) {
     const result = this.brewingFacade.startBottling(cauldronIndex);
     this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  cancelBrewing(cauldronIndex = 0) {
+    const result = this.brewingFacade.cancel(cauldronIndex);
+    this.publishAndFlushSnapshot();
+    return result;
+  }
+
+  collectBrewing(cauldronIndex = 0) {
+    const result = this.brewingFacade.collect(cauldronIndex);
+    this.publishAndFlushSnapshot();
     return result;
   }
 

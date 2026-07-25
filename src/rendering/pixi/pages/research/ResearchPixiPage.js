@@ -23,6 +23,7 @@ import {
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
   RetainedButton,
+  RetainedPanel,
   RetainedProgressBar,
   RetainedScrollArea,
   applyTextTheme,
@@ -85,7 +86,7 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   artHeight: 58,
   artworkSize: 64,
   nameX: 10,
-  nameY: 8,
+  nameY: 0,
   nameMaxWidth: 225,
   infoX: 252 / 3,
   infoWidth: 422 / 3,
@@ -137,7 +138,15 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     this.runFocusLabel = createText('run focus', RETAINED_TEXT_STYLES.bold);
     this.runFocusHelper = createText('', RETAINED_TEXT_STYLES.border);
     this.runFocusLayer.addChild(this.runFocusLabel, this.runFocusHelper);
-    this.content.addChild(this.scroll.root, this.tabsLayer);
+    this.lockTooltip = new ResearchLockTooltip({
+      assetManager: this.assetManager,
+    });
+    this.lockTooltipResearchId = null;
+    this.content.addChild(
+      this.scroll.root,
+      this.tabsLayer,
+      this.lockTooltip.root,
+    );
 
     this.boxPool = new WidgetPool({
       name: 'research box pool',
@@ -324,10 +333,15 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
 
   getRowActions() {
     return {
-      buy: (research) =>
-        research.onBuy?.(research.id) ??
-        this.currentActions?.buyResearch?.(research.id),
+      buy: (research) => {
+        this.hideLockTooltip();
+        return (
+          research.onBuy?.(research.id) ??
+          this.currentActions?.buyResearch?.(research.id)
+        );
+      },
       info: (research) => {
+        this.hideLockTooltip();
         if (research.onInfo) {
           return research.onInfo(research);
         }
@@ -341,10 +355,67 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
         }
         return false;
       },
-      locked: (research) =>
-        research.onLocked?.(research) ??
-        this.currentActions?.showLockedReason?.(research),
+      locked: (research, target) => {
+        const shown = this.showLockTooltip(research, target);
+        const action =
+          research.onLocked ??
+          this.currentActions?.showLockedReason;
+        action?.(research);
+        return shown;
+      },
     };
+  }
+
+  showLockTooltip(research, target) {
+    const copy =
+      research?.cost?.lockPrompt ??
+      formatResearchLockPrompt(research?.lockReason);
+    if (!copy || !target) {
+      this.hideLockTooltip();
+      return false;
+    }
+
+    this.lockTooltipResearchId = research.id;
+    this.lockTooltip.bind(copy);
+    this.positionLockTooltip(target);
+    return true;
+  }
+
+  positionLockTooltip(target) {
+    if (!target) {
+      return;
+    }
+
+    const targetBounds = target.getBounds();
+    const targetRight = Number.isFinite(targetBounds.maxX)
+      ? targetBounds.maxX
+      : targetBounds.x + targetBounds.width;
+    const targetTop = Number.isFinite(targetBounds.minY)
+      ? targetBounds.minY
+      : targetBounds.y;
+    const targetBottom = Number.isFinite(targetBounds.maxY)
+      ? targetBounds.maxY
+      : targetBounds.y + targetBounds.height;
+    const topRight = this.content.toLocal({
+      x: targetRight,
+      y: targetTop,
+    });
+    const bottomRight = this.content.toLocal({
+      x: targetRight,
+      y: targetBottom,
+    });
+    const x = Math.min(
+      this.sourceWidth - this.lockTooltip.width - 8,
+      Math.max(8, topRight.x - this.lockTooltip.width),
+    );
+    const aboveY = topRight.y - this.lockTooltip.height - 6;
+    const y = aboveY >= 8 ? aboveY : bottomRight.y + 6;
+    this.lockTooltip.show({ x, y });
+  }
+
+  hideLockTooltip() {
+    this.lockTooltipResearchId = null;
+    this.lockTooltip?.hide();
   }
 
   bindTab(button, tab) {
@@ -447,6 +518,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     for (const button of this.runFocusButtons?.getWidgets?.() ?? []) {
       button.applyTheme(theme);
     }
+    this.lockTooltip?.applyTheme(theme);
   }
 
   layoutPage(sourceWidth, sourceHeight) {
@@ -541,6 +613,15 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       );
       x += buttonWidth + gap;
     }
+
+    if (this.lockTooltipResearchId) {
+      const row = this.rows.get(this.lockTooltipResearchId);
+      if (row?.research?.locked === true) {
+        this.positionLockTooltip(row.costButton);
+      } else {
+        this.hideLockTooltip();
+      }
+    }
   }
 
   activate() {
@@ -558,6 +639,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     }
     this.ticker?.remove?.(this.tickHandler);
     this.dialogRegistry?.close?.(RESEARCH_DIALOG_ID);
+    this.hideLockTooltip();
     this.active = false;
     super.deactivate();
   }
@@ -573,6 +655,8 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     this.ticker?.remove?.(this.tickHandler);
     this.active = false;
     this.dialogRegistry?.close?.(RESEARCH_DIALOG_ID);
+    this.lockTooltip?.destroy();
+    this.lockTooltip = null;
     this.rows?.destroy();
     this.rowPool?.destroy();
     this.boxes?.destroy();
@@ -582,6 +666,57 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     this.runFocusButtons?.destroy();
     this.runFocusPool?.destroy();
     this.scroll?.destroy();
+  }
+}
+
+class ResearchLockTooltip {
+  constructor({ assetManager }) {
+    this.width = 180;
+    this.height = 0;
+    this.panel = new RetainedPanel({
+      assetManager,
+      panelLabel: 'research-lock-tooltip',
+      strong: true,
+      shadowKind: 'tooltip',
+    });
+    this.root = this.panel.root;
+    this.copy = createText('', {
+      ...RETAINED_TEXT_STYLES.border,
+      wordWrapWidth: this.width - 20,
+    });
+    this.panel.body.addChild(this.copy);
+    this.root.visible = false;
+    this.root.renderable = false;
+  }
+
+  bind(copy) {
+    setText(this.copy, copy);
+    this.copy.position.set(10, 8);
+    this.height = Math.ceil(this.copy.height + 16);
+    this.panel.setBounds(0, 0, this.width, this.height);
+  }
+
+  show({ x, y }) {
+    this.root.position.set(x, y);
+    this.root.visible = true;
+    this.root.renderable = true;
+  }
+
+  hide() {
+    this.root.visible = false;
+    this.root.renderable = false;
+  }
+
+  applyTheme(theme) {
+    this.panel.applyTheme(theme);
+    applyTextTheme(this.copy, theme, {
+      ...RETAINED_TEXT_STYLES.border,
+      wordWrapWidth: this.width - 20,
+    });
+  }
+
+  destroy() {
+    this.panel.destroy();
   }
 }
 
@@ -866,6 +1001,12 @@ class ResearchRowWidget {
     });
     this.valueButton = this.costButton;
     this.valueButton.text = this.costButton.amountLabel.textObject;
+    this.researchedButton = new RetainedButton({
+      assetManager,
+      label: 'Researched',
+      buttonLabel: 'research-row-researched',
+      variant: 'yellow',
+    });
     this.readonlyValue = new ResearchReadonlyValue({
       assetManager,
       label: 'research-row-readonly-value',
@@ -894,12 +1035,16 @@ class ResearchRowWidget {
       this.rank,
       this.rankLabel,
       this.costButton,
+      this.researchedButton.root,
       this.readonlyValue,
       this.readonlyStars,
       this.progress.root,
       this.labelHit,
     );
-    this.handleInfo = () => this.actions?.info?.(this.research);
+    this.handleInfo = () =>
+      this.research?.locked
+        ? this.actions?.locked?.(this.research, this.costButton)
+        : this.actions?.info?.(this.research);
     this.handleInfoPress = (pressed) => {
       if (this.research?.locked) {
         this.infoVisual.scale.set(1);
@@ -937,19 +1082,24 @@ class ResearchRowWidget {
     this.targetId = research.semanticId ?? `research.${research.id}`;
     this.tutorialId = research.tutorialId ?? `research:${research.id}`;
     const state = normalizeResearchState(research);
+    const locked = state === 'locked';
     const starLevel =
       research.star?.level ?? finiteOr(research.starLevel, 0);
     setText(
       this.name,
-      research.displayName ?? research.label ?? research.id,
+      formatResearchTitle(
+        research.displayName ?? research.label ?? research.id,
+      ),
     );
     this.nameStars.setLevel(starLevel);
     this.nameStars.visible = starLevel > 0;
     this.nameStars.renderable = this.nameStars.visible;
     setText(
       this.description,
-      research.description ??
-        (research.showEffect === false ? '' : research.effect ?? ''),
+      formatResearchDescription(
+        research.description ??
+          (research.showEffect === false ? '' : research.effect ?? ''),
+      ),
     );
     setText(
       this.rankLabel,
@@ -963,20 +1113,38 @@ class ResearchRowWidget {
     this.rank.texture = this.resolveTexture(
       PIXI_ROOT_RUN_ASSETS.researchRank,
     );
+    this.rank.visible = !locked;
+    this.rank.renderable = !locked;
+    this.rankLabel.visible = !locked;
+    this.rankLabel.renderable = !locked;
 
     const interactive =
       state === 'available' || state === 'unavailable' || state === 'locked';
+    const readonlyResearchValue =
+      research.displayValue ?? research.value ?? research.status ?? '';
+    const researched =
+      state === 'completed' &&
+      String(readonlyResearchValue).trim().toLowerCase() === 'researched';
     this.costButton.visible = interactive;
     this.costButton.renderable = interactive;
-    this.readonlyValue.visible = !interactive && starLevel <= 0;
+    this.researchedButton.root.visible = researched;
+    this.researchedButton.root.renderable = researched;
+    this.researchedButton.setModel({
+      label: 'Researched',
+      enabled: true,
+      selected: true,
+      action: null,
+    });
+    this.researchedButton.root.eventMode = 'none';
+    this.researchedButton.root.cursor = 'default';
+    this.readonlyValue.visible =
+      !interactive && !researched && starLevel <= 0;
     this.readonlyValue.renderable = this.readonlyValue.visible;
     this.readonlyStars.visible =
       !interactive && research.completed === true && starLevel > 0;
     this.readonlyStars.renderable = this.readonlyStars.visible;
     this.readonlyStars.setLevel(starLevel);
     const timer = research.timer ?? {};
-    const readonlyResearchValue =
-      research.displayValue ?? research.value ?? research.status ?? '';
     this.readonlyValue.setValue(
       timer.active
         ? timer.displayValue ?? readonlyResearchValue
@@ -999,8 +1167,7 @@ class ResearchRowWidget {
             : state === 'locked'
               ? 'locked'
               : 'available',
-        lockReason:
-          cost.lockPrompt ?? formatResearchLockPrompt(research.lockReason),
+        lockReason: '',
         enabled: state === 'available' && research.canResearch === true,
         action: () => this.actions?.buy?.(research),
       });
@@ -1043,6 +1210,9 @@ class ResearchRowWidget {
       activate: () => {
         if (state === 'available') {
           return this.actions?.buy?.(research);
+        }
+        if (state === 'locked') {
+          return this.actions?.locked?.(research, this.costButton);
         }
         return this.actions?.info?.(research);
       },
@@ -1105,6 +1275,13 @@ class ResearchRowWidget {
       geometry.actionRight +
       (geometry.valueWidth - geometry.costWidth) / 2;
     this.costButton.setBounds(
+      geometry.cardWidth - costRight - geometry.costWidth,
+      geometry.actionTop +
+        (geometry.actionHeight - geometry.costHeight) / 2,
+      geometry.costWidth,
+      geometry.costHeight,
+    );
+    this.researchedButton.setBounds(
       geometry.cardWidth - costRight - geometry.costWidth,
       geometry.actionTop +
         (geometry.actionHeight - geometry.costHeight) / 2,
@@ -1181,6 +1358,9 @@ class ResearchRowWidget {
     );
     this.art.filters =
       locked && this.lockedArtFilter ? [this.lockedArtFilter] : null;
+    if (locked) {
+      this.art.tint = 0xffffff;
+    }
     applyTextTheme(this.name, theme, {
       fontSize: 14,
       lineHeight: 16,
@@ -1225,6 +1405,7 @@ class ResearchRowWidget {
             theme.text,
     });
     this.costButton.applyTheme(theme);
+    this.researchedButton.applyTheme(theme);
     this.progress.applyTheme(theme);
   }
 
@@ -1238,6 +1419,8 @@ class ResearchRowWidget {
     this.boxId = null;
     this.infoVisual.scale.set(1);
     this.costButton.reset();
+    this.researchedButton.root.visible = false;
+    this.researchedButton.root.renderable = false;
     this.progress.root.visible = false;
     this.root.visible = false;
     this.root.renderable = false;
@@ -1262,6 +1445,7 @@ class ResearchRowWidget {
     this.lockedArtFilter?.destroy?.();
     this.lockedArtFilter = null;
     this.costButton.destroy({ children: true });
+    this.researchedButton.destroy();
     this.progress.destroy();
     this.root.destroy({ children: true });
   }
@@ -1297,6 +1481,20 @@ function normalizeResearchState(research = {}) {
   if (research.locked === true) return 'locked';
   if (research.canResearch === true) return 'available';
   return 'unavailable';
+}
+
+function formatResearchTitle(value) {
+  return String(value ?? '').replace(
+    /(^|[\s/:(-])([a-z])/g,
+    (_match, prefix, letter) => `${prefix}${letter.toUpperCase()}`,
+  );
+}
+
+function formatResearchDescription(value) {
+  return String(value ?? '').replace(
+    /[A-Za-z]/,
+    (letter) => letter.toUpperCase(),
+  );
 }
 
 function formatResearchLockPrompt(lockReason = '') {
@@ -1362,8 +1560,12 @@ function normalizeResearchResource(resource) {
 function createLockedArtFilter() {
   try {
     const filter = new ColorMatrixFilter();
-    filter.grayscale(1, false);
-    filter.brightness(1.4, true);
+    filter.matrix = [
+      0.2125, 0.7154, 0.0721, 0, 0,
+      0.2125, 0.7154, 0.0721, 0, 0,
+      0.2125, 0.7154, 0.0721, 0, 0,
+      0, 0, 0, 1, 0,
+    ];
     return filter;
   } catch {
     return null;

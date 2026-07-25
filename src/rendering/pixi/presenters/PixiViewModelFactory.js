@@ -216,7 +216,7 @@ export class PixiViewModelFactory {
           notifications: notifications.children ?? {},
           tradeAlliance,
         }),
-        worldChat: createWorldChatPreview(worldChat),
+        worldChat: this.createWorldChatPreview(worldChat),
         flyouts: [],
         dialogs: {
           summonInfo: this.createSummonInfoDialog(gameplay),
@@ -797,6 +797,17 @@ export class PixiViewModelFactory {
       onSubmit: canSend
         ? (body) => actions.sendWorldChat(body)
         : null,
+    };
+  }
+
+  createWorldChatPreview(
+    worldChat = {},
+    { visible = true, onActivate = null } = {},
+  ) {
+    return {
+      ...createWorldChatPreview(worldChat),
+      visible,
+      onActivate,
     };
   }
 }

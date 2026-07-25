@@ -11,6 +11,7 @@ export class BrewingSnapshotManager {
     getAutoBrewEnabled,
     getAutoBrewArmed,
     getAutoBrewRecipeKey,
+    getAutoCollectEnabled,
     getBrewQuantity,
   }) {
     this.brewingBalanceManager = brewingBalanceManager;
@@ -24,6 +25,7 @@ export class BrewingSnapshotManager {
     this.getAutoBrewEnabled = getAutoBrewEnabled;
     this.getAutoBrewArmed = getAutoBrewArmed;
     this.getAutoBrewRecipeKey = getAutoBrewRecipeKey;
+    this.getAutoCollectEnabled = getAutoCollectEnabled;
     this.getBrewQuantityCallback = getBrewQuantity;
   }
 
@@ -83,6 +85,7 @@ export class BrewingSnapshotManager {
       autoBrewEnabled: this.getAutoBrewEnabled?.(0) === true,
       autoBrewArmed: this.getAutoBrewArmed?.(0) === true,
       autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(0) ?? null,
+      autoCollectEnabled: this.getAutoCollectEnabled?.(0) === true,
     };
   }
 
@@ -116,6 +119,8 @@ export class BrewingSnapshotManager {
         autoBrewEnabled: this.getAutoBrewEnabled?.(safeCauldronIndex) === true,
         autoBrewArmed: this.getAutoBrewArmed?.(safeCauldronIndex) === true,
         autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(safeCauldronIndex) ?? null,
+        autoCollectEnabled:
+          this.getAutoCollectEnabled?.(safeCauldronIndex) === true,
         herbs,
       };
     }
@@ -149,6 +154,8 @@ export class BrewingSnapshotManager {
         autoBrewEnabled: this.getAutoBrewEnabled?.(safeCauldronIndex) === true,
         autoBrewArmed: this.getAutoBrewArmed?.(safeCauldronIndex) === true,
         autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(safeCauldronIndex) ?? null,
+        autoCollectEnabled:
+          this.getAutoCollectEnabled?.(safeCauldronIndex) === true,
         herbs,
       };
     }
@@ -214,6 +221,8 @@ export class BrewingSnapshotManager {
       autoBrewEnabled: this.getAutoBrewEnabled?.(safeCauldronIndex) === true,
       autoBrewArmed: this.getAutoBrewArmed?.(safeCauldronIndex) === true,
       autoBrewRecipeKey: this.getAutoBrewRecipeKey?.(safeCauldronIndex) ?? null,
+      autoCollectEnabled:
+        this.getAutoCollectEnabled?.(safeCauldronIndex) === true,
       herbs,
     };
   }

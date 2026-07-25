@@ -3,6 +3,13 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.2.104
+
+- Reworked Brewing into a compact cauldron HUD with clearer recipe, batch, action, and automation controls.
+- Added brew cancellation and optional automatic collection for auto-brewing cauldrons.
+- Refreshed Research artwork and states, including clearer completed purchases and locked-requirement hints.
+- Kept the world-chat preview available across rooms and polished the opening story transitions.
+
 ## 0.2.103
 
 - Paused loaded Market stalls when traders have no demand and added a countdown showing when the next merchants arrive.

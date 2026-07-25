@@ -1,15 +1,16 @@
 # STYLE
 
-Canonical reference: A Dark Room by Doublespeak Games, `https://adarkroom.doublespeakgames.com/`.
+Canonical direction: the approved illustrated Brewing-page reference, using the shared Root Run-inspired asset and nine-slice pipeline already present in the project.
 
-This project should use the same kind of minimal text-game language, without copying its implementation.
+The game should look like a polished fantasy workshop HUD: dark layered rooms, rendered props and item art, tactile image-backed controls, compact outlined labels, and clear resource/action colors.
 
 ## Core Feel
 
-- Plain high-contrast text on a midnight page by default.
-- Use browser-simple layout, not decorative game art.
-- The interface should feel like a sparse text game with small bordered panels.
-- Prefer empty space, direct labels, and restrained hierarchy.
+- High-contrast outlined text over dark midnight/navy panels.
+- Give each room one dominant illustrated landmark that makes its production loop recognizable.
+- Use shared rendered item/resource art and image-backed panel/button skins as functional UI.
+- Prefer clear grouping, direct labels, and a strong landmark → status → action hierarchy.
+- Decoration must reinforce room identity, state, or action role; unrelated ornament is still noise.
 - Use intentional capitalization. Titles, tabs, named items, research, events, and task labels use title case; instructions and narrative copy use sentence case. Keep user-entered names exactly as typed.
 
 ## Typography
@@ -30,21 +31,18 @@ This project should use the same kind of minimal text-game language, without cop
 - Midnight-theme strokes: muted blue-gray, currently `#3f465c`.
 - Page and surface: dark midnight tones, currently `#1c1e26` and `#17191f`.
 - Disabled/secondary text and borders: medium gray.
-- Resource and currency text inherits the surrounding theme or state color. Currency displays still keep the icon, amount, and currency word together; potion, seed, herb, mana, coin, crystal, emerald, and ruby text do not receive category colors.
-- The page background may use the explicit mild bottom-to-top room identity gradient; boxes, buttons, and labels stay on the normal surface. Default dialogs use the dedicated Root Run composition below.
+- Resource and currency displays use their shared icon and approved semantic color while still inheriting disabled/locked treatment. Keep each amount, icon, and resource word together.
+- The page background and image-backed panels may use authored shading, texture, bevels, and mild gradients from their shared skins. Do not add arbitrary feature-local gradients. Default dialogs use the dedicated Root Run composition below.
 
 ## Boxes
 
-- Selectable themes use `2px` ordinary borders.
-- Standard inner sections (`style-box`) and the persistent top player panel use the shared Root Run shop-tile nine-slice, recolored per selectable theme. Preserve its qUIck slice margins at the Root Run `390 / 1080` design scale and keep the theme's exact center-sample color as the rounded underlay; the underlay only closes fractional raster gaps and must not replace or square off the transparent frame corners. Keep other outer panels, dialogs, controls, tutorial surfaces, and feature-owned paper art on their dedicated chrome.
-- Do not add standalone CSS rounding to ordinary boxes; the shared qUIck frame's radius exists only to clip its seam-closing underlay to the raster silhouette.
-- Ordinary box padding follows A Dark Room's stores spacing: `5px 10px` in source UI units.
-- Box titles sit transparently over the top border, without a surface-colored backplate.
-- Box titles use the shared surface-colored text stroke so the border can remain visible behind the glyphs without adding a title background.
-- Do not put a separate heading inside a box when the label belongs in the border.
-- Non-title labels that sit on a box border, such as counts, current controls, bottom-edge actions, and tabs, should use smaller text with the line box centered on the border line.
+- Standard inner sections (`style-box`) and the persistent top player panel use the shared Root Run shop-tile nine-slice, recolored per selectable theme. Preserve its qUIck slice margins at the Root Run `390 / 1080` design scale and keep the theme's exact center-sample color as the rounded underlay; the underlay only closes fractional raster gaps and must not replace or square off the transparent frame corners. Keep outer room landmarks, dialogs, controls, tutorial surfaces, and feature-owned art on their dedicated approved chrome.
+- Do not add standalone CSS rounding to image-backed panels; the shared skin owns its silhouette, bevel, inset, and corners.
+- Ordinary panel padding stays compact in source UI units and must respect the visible artwork and frame insets.
+- New illustrated panels place strong titles inside the approved composition, normally top-left. Existing border-labeled boxes may keep transparent embedded titles until that surface is intentionally redesigned.
+- Counts, pagination, state chips, and secondary labels use the shared compact label treatment and must remain optically aligned to their frame.
 - Every player-facing popup/dialog panel uses the Root Run Expedition composition: `expedition-dialog-back.png` as the brown outer nine-slice, `expedition-dialog-front.png` as the paper content nine-slice, `expedition-dialog-title-purple.png` as the centered purple title plaque, and `expedition-dialog-close.png` as the round dismiss control centered below the shell. Render the assets through `PixiDialogFrame` in mirrored room UI, with CSS border-image/image fallbacks for non-mirrored dialogs.
-- Keep `20px` source content padding inside the paper. The brown frame and its compact bottom-right shadow sit outside that content box; do not add a second themed border or rectangular dialog fill.
+- Keep the base dialog at a fixed `304px` content width with a `53px` minimum content height and `20px` source content padding inside the paper. Named wider or fixed-height variants may override the base geometry. The brown frame and its compact bottom-right shadow sit outside that content box; do not add a second themed border or rectangular dialog fill.
 - Dialog text uses the paper palette (`#634934` ink on `#ffe7c8`), independent of the selected room theme. Dialog titles use white text with the shared dark outline on the purple title plaque.
 - Boot, connection, account, deploy, Shop, Guild, and page-owned dialogs all use the same shell. Flows that must retain control hide the close action instead of switching to different chrome; feature-specific artwork stays inside the shared paper content area. The first-run cutscene narrative uses an ordinary border-labeled box with the shared yellow action button. Full-screen progress and feature-unlock announcement screens stay unframed; report-style announcements remain dialogs.
 - Tabbed dialogs use a fixed panel height. If tab content is taller than that height, keep the bottom tabs fixed and scroll only the content viewport.
@@ -55,17 +53,18 @@ This project should use the same kind of minimal text-game language, without cop
 
 ## Buttons
 
-- Buttons are small bordered text boxes.
+- Buttons are tactile image-backed controls with visible labels and optional meaningful icons.
 - Center label text.
 - Every visible button label uses a text stroke chosen by the shared button style for contrast; keep the stroke in normal, selected, pressed, and disabled states instead of adding feature-local outline values.
-- Native buttons must be reset to look like text boxes, not platform controls.
+- Native buttons must be reset so only the shared game skin is visible, not platform chrome.
 - Workshop HUD control labels stay lowercase, including `summon seed`, `bag`, and `stats`, matching the side-panel button labels.
 - Standalone info/help buttons use the shared Root Run `prop_info.png` asset through `setInfoButtonIcon`; never render `[i]`, `?`, or a letter glyph as the visible icon.
 - Visible lock iconography uses the shared `prop_lock.png` asset through `createStatusIcon(..., STATUS_ICON_LOCK)`; never draw a lock in CSS or substitute another image, Unicode symbol, or font glyph.
 - Visible checkmark iconography uses the shared `prop_checkmark.png` asset through `createStatusIcon(..., STATUS_ICON_CHECK)`; never draw a checkmark in CSS or substitute another image, Unicode symbol, native checkbox mark, or font glyph.
 - Do not define mouse-hover states or hover-only behavior.
-- Press/active state must not change the background color.
-- Disabled state changes text and border to gray and keeps normal weight.
+- Press/active state uses the shared compact compression/release motion and skin state; keep label/icon centering stable.
+- Disabled buttons use the shared gray button asset and keep normal weight. Never apply grayscale or monochrome shaders to button chrome; those shaders are reserved for icons.
+- Brown/gold is the default action family, green is positive/claim/collect/confirm, and red is cancellation or loss. Cost and tab skins keep their documented roles.
 - Shared progress rails use the compact Root Rush capsule: a 10px source-height black track with a 1px border and inset rim. Purple is the default fill, Brewing uses blue, Garden uses green, and Market/Research use yellow. The top-panel quest rail alone keeps the original 14px height.
 
 ## Motion
@@ -94,9 +93,9 @@ This project should use the same kind of minimal text-game language, without cop
 - Use fixed authored game dimensions, scaled by the viewport layer.
 - Keep the authored layout mobile-first at Root Run's `390x844` logical resolution.
 - Scale source UI directly by the Root Run-style contain-fit viewport scale, including desktop upscaling, so both web and mobile views fit.
-- Do not copy A Dark Room's desktop `700px` layout dimensions.
-- Keep future page UI as sparse panels positioned inside the room view.
+- Do not copy reference-image pixel dimensions; author at the fixed Root Run `390x844` logical surface.
+- Keep future page UI organized around one dominant illustrated landmark with compact supporting panels and actions.
 - Show all five room page icons in the bottom panel. Use the copied Root Run station-tab active/inactive nine-slice assets across the full source width, with an `8px` source safe gap below the complete frames. Keep every tab at the same font weight; the selected tab rises `12px`, enlarges its icon, and shows its page name while inactive tabs remain icon-only.
-- Keep bottom-border category tabs and paired actions edge-weighted: first left, middle centered, last right, with the border line visible between labels.
+- Keep category tabs and paired actions balanced within their approved image-backed strip or panel.
 - Reuse documented UI motifs from `docs/ui-patterns.md` before creating a new row, box, popup, tab, or border label treatment.
-- Avoid gradients, textures, illustrations, decorative icons, rounded cards, and decorative shadows outside the explicitly approved Root Run dialog and feature skins.
+- Use illustrations, icons, textures, gradients, rounded silhouettes, and shadows only through approved shared skins or purposeful room/item art. Avoid generic cards, arbitrary glow, and decoration without a gameplay role.

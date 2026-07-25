@@ -12,6 +12,7 @@ import {
   installPixiPageTestCanvas,
 } from '../pages/workshop/PixiPageTestHarness.js';
 import {
+  PIXI_DIALOG_BASE_GEOMETRY,
   PIXI_DIALOG_PALETTE,
   PixiDialogFrame,
 } from './PixiDialogFrame.js';
@@ -60,6 +61,26 @@ function createHarness(options = {}) {
 }
 
 describe('PixiDialogFrame', () => {
+  it('uses the fixed base width and minimum height contract', () => {
+    const frame = new PixiDialogFrame();
+
+    expect(frame).toMatchObject({
+      contentBoxWidth: PIXI_DIALOG_BASE_GEOMETRY.coreWidth,
+      contentBoxHeight: PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
+      outerWidth: PIXI_DIALOG_BASE_GEOMETRY.coreWidth,
+      outerHeight: PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
+    });
+
+    frame.setContentBoxSize(304, 20, 20);
+
+    expect(frame).toMatchObject({
+      contentBoxWidth: PIXI_DIALOG_BASE_GEOMETRY.contentWidth,
+      contentBoxHeight: PIXI_DIALOG_BASE_GEOMETRY.minContentHeight,
+      outerWidth: PIXI_DIALOG_BASE_GEOMETRY.coreWidth,
+      outerHeight: PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
+    });
+  });
+
   it('matches the 360-source Root Run shell, paper, title, and close geometry', () => {
     const closeAction = vi.fn();
     const { assetManager, frame } = createHarness({ closeAction });
@@ -142,9 +163,9 @@ describe('PixiDialogFrame', () => {
       contentBoxWidth: 304,
       contentBoxHeight: 53,
       coreWidth: 344,
-      coreHeight: 93,
+      coreHeight: PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
       outerWidth: 344,
-      outerHeight: 93,
+      outerHeight: PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
       paddingX: 20,
       paddingY: 25,
     });

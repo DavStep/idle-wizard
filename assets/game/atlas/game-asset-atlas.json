@@ -2,7 +2,7 @@
   "frames": {
     "herb:belladonnaHerb": {
       "frame": {
-        "x": 1661,
+        "x": 1799,
         "y": 1035,
         "w": 95,
         "h": 128
@@ -27,8 +27,8 @@
     },
     "herb:bloodroseHerb": {
       "frame": {
-        "x": 1915,
-        "y": 1035,
+        "x": 285,
+        "y": 1195,
         "w": 92,
         "h": 128
       },
@@ -77,7 +77,7 @@
     },
     "herb:comfreyHerb": {
       "frame": {
-        "x": 151,
+        "x": 528,
         "y": 1195,
         "w": 128,
         "h": 127
@@ -127,7 +127,7 @@
     },
     "herb:dreambellHerb": {
       "frame": {
-        "x": 1820,
+        "x": 1077,
         "y": 1195,
         "w": 128,
         "h": 121
@@ -152,7 +152,7 @@
     },
     "herb:frostmossHerb": {
       "frame": {
-        "x": 1098,
+        "x": 433,
         "y": 1355,
         "w": 128,
         "h": 113
@@ -177,7 +177,7 @@
     },
     "herb:glowcapHerb": {
       "frame": {
-        "x": 697,
+        "x": 32,
         "y": 1355,
         "w": 128,
         "h": 115
@@ -202,7 +202,7 @@
     },
     "herb:hyssopHerb": {
       "frame": {
-        "x": 1404,
+        "x": 1542,
         "y": 1035,
         "w": 97,
         "h": 128
@@ -227,8 +227,8 @@
     },
     "herb:lavenderHerb": {
       "frame": {
-        "x": 1788,
-        "y": 1035,
+        "x": 32,
+        "y": 1195,
         "w": 95,
         "h": 128
       },
@@ -252,7 +252,7 @@
     },
     "herb:mandrakeHerb": {
       "frame": {
-        "x": 1271,
+        "x": 1409,
         "y": 1035,
         "w": 101,
         "h": 128
@@ -352,7 +352,7 @@
     },
     "herb:nightshadeHerb": {
       "frame": {
-        "x": 1834,
+        "x": 1829,
         "y": 875,
         "w": 109,
         "h": 128
@@ -377,7 +377,7 @@
     },
     "herb:pearlrootHerb": {
       "frame": {
-        "x": 1137,
+        "x": 1275,
         "y": 1035,
         "w": 102,
         "h": 128
@@ -502,7 +502,7 @@
     },
     "herb:sunrootHerb": {
       "frame": {
-        "x": 1533,
+        "x": 1671,
         "y": 1035,
         "w": 96,
         "h": 128
@@ -527,7 +527,7 @@
     },
     "herb:valerianHerb": {
       "frame": {
-        "x": 866,
+        "x": 1004,
         "y": 1035,
         "w": 104,
         "h": 128
@@ -552,7 +552,7 @@
     },
     "herb:wormwoodHerb": {
       "frame": {
-        "x": 344,
+        "x": 497,
         "y": 875,
         "w": 119,
         "h": 128
@@ -577,7 +577,7 @@
     },
     "herb:yarrowHerb": {
       "frame": {
-        "x": 1002,
+        "x": 1140,
         "y": 1035,
         "w": 103,
         "h": 128
@@ -602,8 +602,8 @@
     },
     "ingredient:ancientLichPhylactery": {
       "frame": {
-        "x": 604,
-        "y": 1355,
+        "x": 1809,
+        "y": 1195,
         "w": 61,
         "h": 116
       },
@@ -627,8 +627,8 @@
     },
     "ingredient:archdemonHorn": {
       "frame": {
-        "x": 377,
-        "y": 1508,
+        "x": 537,
+        "y": 1502,
         "w": 89,
         "h": 109
       },
@@ -652,8 +652,8 @@
     },
     "ingredient:bansheeVeil": {
       "frame": {
-        "x": 493,
-        "y": 1784,
+        "x": 749,
+        "y": 1778,
         "w": 88,
         "h": 95
       },
@@ -677,8 +677,8 @@
     },
     "ingredient:basiliskScale": {
       "frame": {
-        "x": 1788,
-        "y": 1508,
+        "x": 32,
+        "y": 1644,
         "w": 91,
         "h": 102
       },
@@ -702,8 +702,8 @@
     },
     "ingredient:batHeart": {
       "frame": {
-        "x": 1364,
-        "y": 1650,
+        "x": 1603,
+        "y": 1644,
         "w": 106,
         "h": 97
       },
@@ -727,8 +727,8 @@
     },
     "ingredient:beetleShell": {
       "frame": {
-        "x": 1863,
-        "y": 1650,
+        "x": 146,
+        "y": 1778,
         "w": 110,
         "h": 96
       },
@@ -752,7 +752,7 @@
     },
     "ingredient:celestialStagAntler": {
       "frame": {
-        "x": 1258,
+        "x": 913,
         "y": 1355,
         "w": 97,
         "h": 113
@@ -777,8 +777,8 @@
     },
     "ingredient:chaosBeastCore": {
       "frame": {
-        "x": 717,
-        "y": 1508,
+        "x": 877,
+        "y": 1502,
         "w": 100,
         "h": 107
       },
@@ -802,8 +802,8 @@
     },
     "ingredient:chimeraMane": {
       "frame": {
-        "x": 981,
-        "y": 1508,
+        "x": 1141,
+        "y": 1502,
         "w": 78,
         "h": 106
       },
@@ -827,8 +827,8 @@
     },
     "ingredient:cockatriceBeak": {
       "frame": {
-        "x": 1046,
-        "y": 1650,
+        "x": 1285,
+        "y": 1644,
         "w": 83,
         "h": 99
       },
@@ -852,8 +852,8 @@
     },
     "ingredient:cosmicPhoenixAsh": {
       "frame": {
-        "x": 148,
-        "y": 1650,
+        "x": 387,
+        "y": 1644,
         "w": 102,
         "h": 101
       },
@@ -877,8 +877,8 @@
     },
     "ingredient:crowFeather": {
       "frame": {
-        "x": 677,
-        "y": 1650,
+        "x": 916,
+        "y": 1644,
         "w": 91,
         "h": 100
       },
@@ -902,8 +902,8 @@
     },
     "ingredient:cyclopsEye": {
       "frame": {
-        "x": 1502,
-        "y": 1650,
+        "x": 1741,
+        "y": 1644,
         "w": 94,
         "h": 97
       },
@@ -927,8 +927,8 @@
     },
     "ingredient:devilWing": {
       "frame": {
-        "x": 1196,
-        "y": 1508,
+        "x": 1356,
+        "y": 1502,
         "w": 91,
         "h": 104
       },
@@ -952,8 +952,8 @@
     },
     "ingredient:dragonFang": {
       "frame": {
-        "x": 1911,
-        "y": 1508,
+        "x": 155,
+        "y": 1644,
         "w": 84,
         "h": 102
       },
@@ -977,8 +977,8 @@
     },
     "ingredient:dryadBark": {
       "frame": {
-        "x": 1749,
-        "y": 1650,
+        "x": 32,
+        "y": 1778,
         "w": 82,
         "h": 97
       },
@@ -1002,8 +1002,8 @@
     },
     "ingredient:fallenAngelFeather": {
       "frame": {
-        "x": 255,
-        "y": 1355,
+        "x": 1460,
+        "y": 1195,
         "w": 93,
         "h": 117
       },
@@ -1027,8 +1027,8 @@
     },
     "ingredient:featherOfEternity": {
       "frame": {
-        "x": 1857,
-        "y": 1784,
+        "x": 145,
+        "y": 1907,
         "w": 127,
         "h": 73
       },
@@ -1052,8 +1052,8 @@
     },
     "ingredient:firstFlameFragment": {
       "frame": {
-        "x": 151,
-        "y": 1355,
+        "x": 1356,
+        "y": 1195,
         "w": 72,
         "h": 121
       },
@@ -1077,8 +1077,8 @@
     },
     "ingredient:frogLeg": {
       "frame": {
-        "x": 1161,
-        "y": 1650,
+        "x": 1400,
+        "y": 1644,
         "w": 63,
         "h": 99
       },
@@ -1102,8 +1102,8 @@
     },
     "ingredient:frostGiantBlood": {
       "frame": {
-        "x": 380,
-        "y": 1355,
+        "x": 1585,
+        "y": 1195,
         "w": 83,
         "h": 116
       },
@@ -1127,8 +1127,8 @@
     },
     "ingredient:gargoyleHeart": {
       "frame": {
-        "x": 282,
-        "y": 1650,
+        "x": 521,
+        "y": 1644,
         "w": 104,
         "h": 100
       },
@@ -1152,7 +1152,7 @@
     },
     "ingredient:goblinEar": {
       "frame": {
-        "x": 1753,
+        "x": 1568,
         "y": 1355,
         "w": 90,
         "h": 111
@@ -1177,8 +1177,8 @@
     },
     "ingredient:golemPebble": {
       "frame": {
-        "x": 865,
-        "y": 1784,
+        "x": 1121,
+        "y": 1778,
         "w": 100,
         "h": 92
       },
@@ -1202,8 +1202,8 @@
     },
     "ingredient:griffinTalon": {
       "frame": {
-        "x": 32,
-        "y": 1650,
+        "x": 271,
+        "y": 1644,
         "w": 84,
         "h": 102
       },
@@ -1227,8 +1227,8 @@
     },
     "ingredient:harpyFeather": {
       "frame": {
-        "x": 1421,
-        "y": 1508,
+        "x": 1581,
+        "y": 1502,
         "w": 96,
         "h": 103
       },
@@ -1252,7 +1252,7 @@
     },
     "ingredient:hydraHeart": {
       "frame": {
-        "x": 1387,
+        "x": 1042,
         "y": 1355,
         "w": 94,
         "h": 113
@@ -1277,8 +1277,8 @@
     },
     "ingredient:impHorn": {
       "frame": {
-        "x": 264,
-        "y": 1784,
+        "x": 520,
+        "y": 1778,
         "w": 70,
         "h": 96
       },
@@ -1302,8 +1302,8 @@
     },
     "ingredient:krakenInk": {
       "frame": {
-        "x": 495,
-        "y": 1355,
+        "x": 1700,
+        "y": 1195,
         "w": 77,
         "h": 116
       },
@@ -1327,8 +1327,8 @@
     },
     "ingredient:leviathanScale": {
       "frame": {
-        "x": 550,
-        "y": 1650,
+        "x": 789,
+        "y": 1644,
         "w": 95,
         "h": 100
       },
@@ -1352,7 +1352,7 @@
     },
     "ingredient:manticoreBarb": {
       "frame": {
-        "x": 857,
+        "x": 192,
         "y": 1355,
         "w": 92,
         "h": 115
@@ -1377,8 +1377,8 @@
     },
     "ingredient:mermaidTear": {
       "frame": {
-        "x": 158,
-        "y": 1508,
+        "x": 318,
+        "y": 1502,
         "w": 80,
         "h": 110
       },
@@ -1402,8 +1402,8 @@
     },
     "ingredient:mimicTongue": {
       "frame": {
-        "x": 160,
-        "y": 1784,
+        "x": 416,
+        "y": 1778,
         "w": 72,
         "h": 96
       },
@@ -1427,7 +1427,7 @@
     },
     "ingredient:moonGoddessHair": {
       "frame": {
-        "x": 981,
+        "x": 316,
         "y": 1355,
         "w": 85,
         "h": 114
@@ -1452,8 +1452,8 @@
     },
     "ingredient:moonMothWing": {
       "frame": {
-        "x": 1549,
-        "y": 1508,
+        "x": 1709,
+        "y": 1502,
         "w": 91,
         "h": 103
       },
@@ -1477,8 +1477,8 @@
     },
     "ingredient:nightmareHoof": {
       "frame": {
-        "x": 1091,
-        "y": 1508,
+        "x": 1251,
+        "y": 1502,
         "w": 73,
         "h": 106
       },
@@ -1502,8 +1502,8 @@
     },
     "ingredient:ogreKnuckle": {
       "frame": {
-        "x": 1628,
-        "y": 1650,
+        "x": 1867,
+        "y": 1644,
         "w": 89,
         "h": 97
       },
@@ -1527,7 +1527,7 @@
     },
     "ingredient:phoenixFeather": {
       "frame": {
-        "x": 1707,
+        "x": 964,
         "y": 1195,
         "w": 81,
         "h": 122
@@ -1552,7 +1552,7 @@
     },
     "ingredient:primordialDragonHeart": {
       "frame": {
-        "x": 1513,
+        "x": 1328,
         "y": 1355,
         "w": 97,
         "h": 112
@@ -1577,8 +1577,8 @@
     },
     "ingredient:ratTail": {
       "frame": {
-        "x": 1744,
-        "y": 1784,
+        "x": 32,
+        "y": 1907,
         "w": 81,
         "h": 90
       },
@@ -1602,8 +1602,8 @@
     },
     "ingredient:slimeCore": {
       "frame": {
-        "x": 366,
-        "y": 1784,
+        "x": 622,
+        "y": 1778,
         "w": 95,
         "h": 95
       },
@@ -1627,8 +1627,8 @@
     },
     "ingredient:snakeFang": {
       "frame": {
-        "x": 800,
-        "y": 1650,
+        "x": 1039,
+        "y": 1644,
         "w": 85,
         "h": 100
       },
@@ -1652,8 +1652,8 @@
     },
     "ingredient:sphinxWhisker": {
       "frame": {
-        "x": 613,
-        "y": 1784,
+        "x": 869,
+        "y": 1778,
         "w": 100,
         "h": 94
       },
@@ -1677,8 +1677,8 @@
     },
     "ingredient:spiderSilk": {
       "frame": {
-        "x": 1672,
-        "y": 1508,
+        "x": 1832,
+        "y": 1502,
         "w": 84,
         "h": 103
       },
@@ -1702,8 +1702,8 @@
     },
     "ingredient:starEaterTooth": {
       "frame": {
-        "x": 32,
-        "y": 1355,
+        "x": 1237,
+        "y": 1195,
         "w": 87,
         "h": 121
       },
@@ -1727,7 +1727,7 @@
     },
     "ingredient:sunbirdHeart": {
       "frame": {
-        "x": 1875,
+        "x": 1690,
         "y": 1355,
         "w": 82,
         "h": 111
@@ -1752,7 +1752,7 @@
     },
     "ingredient:tearOfAForgottenGod": {
       "frame": {
-        "x": 1642,
+        "x": 1457,
         "y": 1355,
         "w": 79,
         "h": 112
@@ -1777,8 +1777,8 @@
     },
     "ingredient:thunderbirdPlume": {
       "frame": {
-        "x": 270,
-        "y": 1508,
+        "x": 430,
+        "y": 1502,
         "w": 75,
         "h": 110
       },
@@ -1802,8 +1802,8 @@
     },
     "ingredient:timeWyrmScale": {
       "frame": {
-        "x": 32,
-        "y": 1508,
+        "x": 192,
+        "y": 1502,
         "w": 94,
         "h": 110
       },
@@ -1827,8 +1827,8 @@
     },
     "ingredient:titansEmber": {
       "frame": {
-        "x": 917,
-        "y": 1650,
+        "x": 1156,
+        "y": 1644,
         "w": 97,
         "h": 99
       },
@@ -1852,8 +1852,8 @@
     },
     "ingredient:toadEye": {
       "frame": {
-        "x": 745,
-        "y": 1784,
+        "x": 1001,
+        "y": 1778,
         "w": 88,
         "h": 94
       },
@@ -1877,8 +1877,8 @@
     },
     "ingredient:trollTooth": {
       "frame": {
-        "x": 1256,
-        "y": 1650,
+        "x": 1495,
+        "y": 1644,
         "w": 76,
         "h": 98
       },
@@ -1902,8 +1902,8 @@
     },
     "ingredient:unicornHornShard": {
       "frame": {
-        "x": 498,
-        "y": 1508,
+        "x": 658,
+        "y": 1502,
         "w": 79,
         "h": 109
       },
@@ -1927,8 +1927,8 @@
     },
     "ingredient:vampireLordFang": {
       "frame": {
-        "x": 609,
-        "y": 1508,
+        "x": 769,
+        "y": 1502,
         "w": 76,
         "h": 109
       },
@@ -1952,8 +1952,8 @@
     },
     "ingredient:voidKrakenPearl": {
       "frame": {
-        "x": 418,
-        "y": 1650,
+        "x": 657,
+        "y": 1644,
         "w": 100,
         "h": 100
       },
@@ -1977,8 +1977,8 @@
     },
     "ingredient:werewolfClaw": {
       "frame": {
-        "x": 1319,
-        "y": 1508,
+        "x": 1479,
+        "y": 1502,
         "w": 70,
         "h": 104
       },
@@ -2002,7 +2002,7 @@
     },
     "ingredient:worldSerpentVenom": {
       "frame": {
-        "x": 1591,
+        "x": 848,
         "y": 1195,
         "w": 84,
         "h": 122
@@ -2027,8 +2027,8 @@
     },
     "ingredient:wraithDust": {
       "frame": {
-        "x": 849,
-        "y": 1508,
+        "x": 1009,
+        "y": 1502,
         "w": 100,
         "h": 106
       },
@@ -2052,8 +2052,8 @@
     },
     "ingredient:wyvernStinger": {
       "frame": {
-        "x": 1617,
-        "y": 1784,
+        "x": 1873,
+        "y": 1778,
         "w": 95,
         "h": 91
       },
@@ -3102,10 +3102,10 @@
     },
     "research:autoBottle": {
       "frame": {
-        "x": 311,
-        "y": 1195,
+        "x": 593,
+        "y": 1355,
         "w": 128,
-        "h": 127
+        "h": 113
       },
       "rotated": false,
       "trimmed": false,
@@ -3113,11 +3113,11 @@
         "x": 0,
         "y": 0,
         "w": 128,
-        "h": 127
+        "h": 113
       },
       "sourceSize": {
         "w": 128,
-        "h": 127
+        "h": 113
       },
       "originalSourceSize": {
         "w": 256,
@@ -3127,10 +3127,10 @@
     },
     "research:autoBrew": {
       "frame": {
-        "x": 471,
-        "y": 1195,
+        "x": 1168,
+        "y": 1355,
         "w": 128,
-        "h": 127
+        "h": 112
       },
       "rotated": false,
       "trimmed": false,
@@ -3138,11 +3138,11 @@
         "x": 0,
         "y": 0,
         "w": 128,
-        "h": 127
+        "h": 112
       },
       "sourceSize": {
         "w": 128,
-        "h": 127
+        "h": 112
       },
       "originalSourceSize": {
         "w": 256,
@@ -3152,9 +3152,9 @@
     },
     "research:autoHarvest": {
       "frame": {
-        "x": 495,
+        "x": 1397,
         "y": 875,
-        "w": 119,
+        "w": 113,
         "h": 128
       },
       "rotated": false,
@@ -3162,11 +3162,11 @@
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 119,
+        "w": 113,
         "h": 128
       },
       "sourceSize": {
-        "w": 119,
+        "w": 113,
         "h": 128
       },
       "originalSourceSize": {
@@ -3177,22 +3177,22 @@
     },
     "research:automationReserve": {
       "frame": {
-        "x": 1691,
-        "y": 875,
-        "w": 111,
-        "h": 128
+        "x": 688,
+        "y": 1195,
+        "w": 128,
+        "h": 126
       },
       "rotated": false,
       "trimmed": false,
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 111,
-        "h": 128
+        "w": 128,
+        "h": 126
       },
       "sourceSize": {
-        "w": 111,
-        "h": 128
+        "w": 128,
+        "h": 126
       },
       "originalSourceSize": {
         "w": 256,
@@ -3202,9 +3202,9 @@
     },
     "research:autoPlant": {
       "frame": {
-        "x": 646,
+        "x": 1542,
         "y": 875,
-        "w": 119,
+        "w": 113,
         "h": 128
       },
       "rotated": false,
@@ -3212,11 +3212,11 @@
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 119,
+        "w": 113,
         "h": 128
       },
       "sourceSize": {
-        "w": 119,
+        "w": 113,
         "h": 128
       },
       "originalSourceSize": {
@@ -3227,9 +3227,9 @@
     },
     "research:autoSeedSpawn": {
       "frame": {
-        "x": 1248,
+        "x": 648,
         "y": 875,
-        "w": 116,
+        "w": 119,
         "h": 128
       },
       "rotated": false,
@@ -3237,11 +3237,11 @@
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 116,
+        "w": 119,
         "h": 128
       },
       "sourceSize": {
-        "w": 116,
+        "w": 119,
         "h": 128
       },
       "originalSourceSize": {
@@ -3252,10 +3252,10 @@
     },
     "research:cauldronBrewing": {
       "frame": {
-        "x": 631,
-        "y": 1195,
+        "x": 1804,
+        "y": 1355,
         "w": 128,
-        "h": 127
+        "h": 110
       },
       "rotated": false,
       "trimmed": false,
@@ -3263,11 +3263,11 @@
         "x": 0,
         "y": 0,
         "w": 128,
-        "h": 127
+        "h": 110
       },
       "sourceSize": {
         "w": 128,
-        "h": 127
+        "h": 110
       },
       "originalSourceSize": {
         "w": 256,
@@ -3277,10 +3277,10 @@
     },
     "research:cauldronCapacity": {
       "frame": {
-        "x": 791,
-        "y": 1195,
+        "x": 753,
+        "y": 1355,
         "w": 128,
-        "h": 127
+        "h": 113
       },
       "rotated": false,
       "trimmed": false,
@@ -3288,11 +3288,11 @@
         "x": 0,
         "y": 0,
         "w": 128,
-        "h": 127
+        "h": 113
       },
       "sourceSize": {
         "w": 128,
-        "h": 127
+        "h": 113
       },
       "originalSourceSize": {
         "w": 256,
@@ -3302,10 +3302,10 @@
     },
     "research:cauldronLevel": {
       "frame": {
-        "x": 951,
-        "y": 1195,
+        "x": 32,
+        "y": 1502,
         "w": 128,
-        "h": 127
+        "h": 110
       },
       "rotated": false,
       "trimmed": false,
@@ -3313,11 +3313,11 @@
         "x": 0,
         "y": 0,
         "w": 128,
-        "h": 127
+        "h": 110
       },
       "sourceSize": {
         "w": 128,
-        "h": 127
+        "h": 110
       },
       "originalSourceSize": {
         "w": 256,
@@ -3326,6 +3326,156 @@
       "source": "assets/game/source/icons/research/icon-research-cauldron-level.png"
     },
     "research:fastSell": {
+      "frame": {
+        "x": 799,
+        "y": 875,
+        "w": 119,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 119,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 119,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "source": "assets/game/source/icons/research/icon-research-fast-sell.png"
+    },
+    "research:plotCapacity": {
+      "frame": {
+        "x": 1251,
+        "y": 875,
+        "w": 114,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 114,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 114,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "source": "assets/game/source/icons/research/icon-research-plot-capacity.png"
+    },
+    "research:plotGrowth": {
+      "frame": {
+        "x": 866,
+        "y": 1035,
+        "w": 106,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 106,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 106,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "source": "assets/game/source/icons/research/icon-research-plot-growth.png"
+    },
+    "research:plotLevel": {
+      "frame": {
+        "x": 1687,
+        "y": 875,
+        "w": 110,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 110,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 110,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "source": "assets/game/source/icons/research/icon-research-plot-level.png"
+    },
+    "research:researchCost": {
+      "frame": {
+        "x": 344,
+        "y": 875,
+        "w": 121,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 121,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 121,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "source": "assets/game/source/icons/research/icon-research-cost.png"
+    },
+    "research:researchTime": {
+      "frame": {
+        "x": 159,
+        "y": 1195,
+        "w": 94,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 94,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 94,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "source": "assets/game/source/icons/research/icon-research-time.png"
+    },
+    "research:summonMultiplier": {
       "frame": {
         "x": 188,
         "y": 875,
@@ -3348,162 +3498,12 @@
         "w": 256,
         "h": 256
       },
-      "source": "assets/game/source/icons/research/icon-research-fast-sell.png"
-    },
-    "research:plotCapacity": {
-      "frame": {
-        "x": 948,
-        "y": 875,
-        "w": 118,
-        "h": 128
-      },
-      "rotated": false,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 118,
-        "h": 128
-      },
-      "sourceSize": {
-        "w": 118,
-        "h": 128
-      },
-      "originalSourceSize": {
-        "w": 256,
-        "h": 256
-      },
-      "source": "assets/game/source/icons/research/icon-research-plot-capacity.png"
-    },
-    "research:plotGrowth": {
-      "frame": {
-        "x": 1544,
-        "y": 875,
-        "w": 115,
-        "h": 128
-      },
-      "rotated": false,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 115,
-        "h": 128
-      },
-      "sourceSize": {
-        "w": 115,
-        "h": 128
-      },
-      "originalSourceSize": {
-        "w": 256,
-        "h": 256
-      },
-      "source": "assets/game/source/icons/research/icon-research-plot-growth.png"
-    },
-    "research:plotLevel": {
-      "frame": {
-        "x": 1396,
-        "y": 875,
-        "w": 116,
-        "h": 128
-      },
-      "rotated": false,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 116,
-        "h": 128
-      },
-      "sourceSize": {
-        "w": 116,
-        "h": 128
-      },
-      "originalSourceSize": {
-        "w": 256,
-        "h": 256
-      },
-      "source": "assets/game/source/icons/research/icon-research-plot-level.png"
-    },
-    "research:researchCost": {
-      "frame": {
-        "x": 1111,
-        "y": 1195,
-        "w": 128,
-        "h": 124
-      },
-      "rotated": false,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 128,
-        "h": 124
-      },
-      "sourceSize": {
-        "w": 128,
-        "h": 124
-      },
-      "originalSourceSize": {
-        "w": 256,
-        "h": 256
-      },
-      "source": "assets/game/source/icons/research/icon-research-cost.png"
-    },
-    "research:researchTime": {
-      "frame": {
-        "x": 1271,
-        "y": 1195,
-        "w": 128,
-        "h": 124
-      },
-      "rotated": false,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 128,
-        "h": 124
-      },
-      "sourceSize": {
-        "w": 128,
-        "h": 124
-      },
-      "originalSourceSize": {
-        "w": 256,
-        "h": 256
-      },
-      "source": "assets/game/source/icons/research/icon-research-time.png"
-    },
-    "research:summonMultiplier": {
-      "frame": {
-        "x": 1431,
-        "y": 1195,
-        "w": 128,
-        "h": 124
-      },
-      "rotated": false,
-      "trimmed": false,
-      "spriteSourceSize": {
-        "x": 0,
-        "y": 0,
-        "w": 128,
-        "h": 124
-      },
-      "sourceSize": {
-        "w": 128,
-        "h": 124
-      },
-      "originalSourceSize": {
-        "w": 256,
-        "h": 256
-      },
       "source": "assets/game/source/icons/research/icon-research-summon-multiplier.png"
     },
     "resource:coin": {
       "frame": {
-        "x": 997,
-        "y": 1784,
+        "x": 1253,
+        "y": 1778,
         "w": 92,
         "h": 92
       },
@@ -3527,8 +3527,8 @@
     },
     "resource:crystal": {
       "frame": {
-        "x": 1121,
-        "y": 1784,
+        "x": 1377,
+        "y": 1778,
         "w": 92,
         "h": 92
       },
@@ -3552,8 +3552,8 @@
     },
     "resource:emerald": {
       "frame": {
-        "x": 1245,
-        "y": 1784,
+        "x": 1501,
+        "y": 1778,
         "w": 92,
         "h": 92
       },
@@ -3577,8 +3577,8 @@
     },
     "resource:mana": {
       "frame": {
-        "x": 1369,
-        "y": 1784,
+        "x": 1625,
+        "y": 1778,
         "w": 92,
         "h": 92
       },
@@ -3602,8 +3602,8 @@
     },
     "resource:research": {
       "frame": {
-        "x": 32,
-        "y": 1784,
+        "x": 288,
+        "y": 1778,
         "w": 96,
         "h": 96
       },
@@ -3627,8 +3627,8 @@
     },
     "resource:ruby": {
       "frame": {
-        "x": 1493,
-        "y": 1784,
+        "x": 1749,
+        "y": 1778,
         "w": 92,
         "h": 92
       },
@@ -3652,7 +3652,7 @@
     },
     "seed:pack": {
       "frame": {
-        "x": 797,
+        "x": 950,
         "y": 875,
         "w": 119,
         "h": 128
@@ -3677,8 +3677,8 @@
     },
     "status:checkDefault": {
       "frame": {
-        "x": 117,
-        "y": 1912,
+        "x": 389,
+        "y": 1907,
         "w": 61,
         "h": 57
       },
@@ -3702,8 +3702,8 @@
     },
     "status:lockDefault": {
       "frame": {
-        "x": 32,
-        "y": 1912,
+        "x": 304,
+        "y": 1907,
         "w": 53,
         "h": 60
       },
@@ -3727,7 +3727,7 @@
     },
     "tool:herbCuttingScissorsClosed": {
       "frame": {
-        "x": 32,
+        "x": 409,
         "y": 1195,
         "w": 87,
         "h": 128
@@ -3752,7 +3752,7 @@
     },
     "tool:herbCuttingScissorsOpen": {
       "frame": {
-        "x": 1098,
+        "x": 1101,
         "y": 875,
         "w": 118,
         "h": 128

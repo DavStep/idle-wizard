@@ -27,9 +27,10 @@ when the objective asks for target guidance.
 
 ## Style
 
-Tutorial boxes follow the project sparse text-game style: compact source text,
-embedded border labels, no rounded cards, no gradients, no decorative target
-frames, and pointer-only target cues.
+Tutorial boxes follow the project illustrated fantasy HUD style: compact
+outlined source text, shared image-backed tutorial chrome, purposeful Elara
+art, no unrelated ornament, no decorative target frames, and pointer-only
+target cues.
 
 ## Related
 

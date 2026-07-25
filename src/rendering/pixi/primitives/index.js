@@ -5,6 +5,7 @@ export {
   PixiCostButton,
 } from './PixiCostButton.js';
 export {
+  PIXI_DIALOG_BASE_GEOMETRY,
   PIXI_DIALOG_PALETTE,
   PixiDialogFrame,
 } from './PixiDialogFrame.js';

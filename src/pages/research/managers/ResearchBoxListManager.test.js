@@ -113,7 +113,7 @@ describe('ResearchBoxListManager', () => {
 
     const rows = [...stage.querySelectorAll('.research-page__row')];
     const researchedNames = rows
-      .filter((row) => row.textContent?.includes('researched'))
+      .filter((row) => row.textContent?.includes('Researched'))
       .map((row) => row.querySelector('.research-page__research-name'));
     const lockedRow = rows.find((row) => row.textContent?.includes('nettle seed'));
 
@@ -195,6 +195,12 @@ describe('ResearchBoxListManager', () => {
       'research-page__row is-available',
       'research-page__row is-unavailable is-locked',
     ]);
+    const researchedButton = rows[0]?.querySelector(
+      '.research-page__research-button--completed',
+    );
+    expect(researchedButton?.textContent).toBe('Researched');
+    expect(researchedButton?.disabled).toBe(true);
+    expect(researchedButton?.classList.contains('style-button--yellow')).toBe(true);
     expect(
       rows[1]?.querySelector('.research-page__research-description')?.textContent,
     ).toBe('Allows mint seed to drop from summon seed.');
@@ -420,8 +426,10 @@ describe('ResearchBoxListManager', () => {
       completedRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
     ).toBe('emerald');
     expect(
-      completedRow?.querySelector('.research-page__research-value')?.dataset.resourceColor,
-    ).toBe('emerald');
+      completedRow
+        ?.querySelector('.research-page__research-button--completed')
+        ?.classList.contains('style-button--yellow'),
+    ).toBe(true);
     expect(
       availableRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
     ).toBeUndefined();

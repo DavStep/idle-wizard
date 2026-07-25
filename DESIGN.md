@@ -1,6 +1,6 @@
 ---
 name: Idle Wizard
-description: Minimal text-first mobile idle game with sparse bordered room panels.
+description: Illustrated fantasy mobile idle game with tactile room landmarks and image-backed HUD chrome.
 colors:
   room-bg: "#1c1e26"
   room-surface: "#17191f"
@@ -11,6 +11,12 @@ colors:
   active-surface: "{colors.room-surface}"
   notification-red: "#c1121f"
   notification-orange: "#d66a00"
+  mana-blue: "#2fa8ff"
+  quest-purple: "#8740df"
+  coin-gold: "#f5c542"
+  action-brown: "#9b6a2f"
+  action-green: "#79b93f"
+  action-red: "#b54c40"
   black-theme-bg: "#1a1a1a"
   black-theme-surface: "#202020"
   black-theme-ink: "#e8e8e8"
@@ -43,7 +49,7 @@ typography:
     lineHeight: "14px"
     letterSpacing: "normal"
 rounded:
-  none: "0"
+  skin-owned: "image-backed"
 spacing:
   panel-padding: "5px 10px"
   dialog-padding: "20px"
@@ -53,30 +59,30 @@ spacing:
   room-edge: "16px"
 components:
   button:
-    backgroundColor: "{colors.room-surface}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{colors.action-brown}"
+    textColor: "#f7efe4"
     typography: "{typography.body}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.skin-owned}"
     padding: "5px 10px"
     width: "100px"
   button-disabled:
     backgroundColor: "{colors.room-surface}"
     textColor: "{colors.disabled}"
     typography: "{typography.body}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.skin-owned}"
     padding: "5px 10px"
     width: "100px"
   room-box:
     backgroundColor: "{colors.room-surface}"
     textColor: "{colors.ink}"
     typography: "{typography.body}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.skin-owned}"
     padding: "{spacing.panel-padding}"
   dialog:
     backgroundColor: "#ffe7c8"
     textColor: "#634934"
     typography: "{typography.body}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.skin-owned}"
     padding: "{spacing.dialog-padding}"
     frame: "Root Run Expedition brown dialog-back nine-slice"
     titleFrame: "Root Run Expedition purple title plaque"
@@ -87,44 +93,50 @@ components:
 
 ## 1. Overview
 
-**Creative North Star: "The Plain Room Ledger"**
+**Creative North Star: "The Wizard's Living Workbench"**
 
-Idle Wizard uses sparse room UI that behaves like a readable ledger inside a fixed mobile game surface. The logical game resolution matches Root Run at 390x844; room UI is built in those logical pixels, then contain-fitted to the viewport. Do not make source text larger to solve mobile readability.
+Idle Wizard uses an illustrated fantasy HUD inside a fixed mobile game surface. Every room is organized around one large, recognizable production landmark, supported by compact status panels and tactile controls. The logical game resolution matches Root Run at 390x844; room UI is built in those logical pixels, then contain-fitted to the viewport. Do not make source text larger to solve mobile readability.
 
-The system rejects decorated fantasy RPG UI, colorful idle dashboards, modern rounded mobile cards, gradients, decorative or icon-heavy controls, textures, illustration, and decorative shadows. The shared Root Run dialog shell is the deliberate bounded exception: it gives modal hierarchy without spreading decorated chrome into ordinary room UI.
+The approved Brewing reference defines the default visual lane: dark navy layered surfaces, rendered fantasy props, rounded image-backed panel frames, warm brown/gold controls, colored resource and state cues, compact outlined Lilita One labels, and controlled shadows. The system rejects only decoration without a gameplay job: casino clutter, arbitrary glow, unrelated ornaments, inconsistent art families, and generic flat cards.
 
 **Key Characteristics:**
 - Fixed authored portrait room surface with scaled source UI.
-- Light text on plain midnight surfaces by default.
-- Compact bordered boxes, embedded box titles, Root Run-framed dialogs, and tab labels below modal shells.
-- Lowercase player-facing labels.
-- Motion only for room entry, popup entry, overlay fade, and compact state feedback.
+- Dark layered room surfaces with bright, high-contrast status text.
+- One dominant illustrated room landmark, image-backed panels, Root Run-framed dialogs, and tactile station tabs.
+- Colorful resource/item art and role-colored actions.
+- Motion that explains room entry, selection, production state, rewards, popup entry, and compact press feedback.
 
 ## 2. Colors
 
-Palette is functional, mostly monochrome, and intentionally low-ornament.
+Palette is functional and full enough to support fantasy materials, resources, actions, and production state without turning the room into a rainbow dashboard.
 
 ### Primary
-- **Ledger Ink:** Primary text. It carries labels, rows, buttons, and strong values.
+- **HUD Ink:** Primary text. It carries labels, rows, buttons, and strong values.
 
-- **Ledger Stroke:** Primary theme strokes. It frames the ledger without competing with text.
+- **Midnight Frame:** Blue-gray panel strokes and shadowed navy surfaces.
 
 ### Secondary
 - **Notification Red:** Normal-priority notification dots only.
 - **Notification Orange:** Lower-priority notification dots only.
+- **Mana Blue:** Mana values and Brewing progress.
+- **Quest Purple:** Player-level and quest progress.
+- **Coin Gold:** Coin values and premium warm highlights.
+- **Action Brown:** Default actionable controls.
+- **Action Green:** Claim, collect, confirm, and positive completion actions.
+- **Action Red:** Cancel, destructive, and loss-bearing actions.
 
 ### Neutral
 - **Room Background:** App shell background behind the fixed game stage.
-- **Room Surface:** Room pages, panels, boxes, and buttons. Box-border titles stay transparent; dialogs use their fixed paper palette.
+- **Room Surface:** Room pages and the dark underlay beneath image-backed panels. Dialogs use their fixed paper palette.
 - **Muted Text:** Secondary status, helper rows, dividers, and inactive system copy.
 - **Disabled Text:** Locked, empty, unavailable, disabled, and unrevealed rows.
-- **Active Surface:** Same as room surface, so press states never tint backgrounds.
+- **Active Surface:** The skin-owned pressed state; preserve legibility and role color.
 
 ### Named Rules
 
-**The Quiet Surface Rule.** Use high-contrast text, gray state colors, and quiet midnight surfaces for chrome and layout surfaces. Currency labels keep their icon, amount, and currency word together, while all resource and currency text inherits the surrounding theme or state color.
+**The Layered Midnight Rule.** Use dark navy room surfaces so colorful props, potion ingredients, resources, and actions read clearly. Panels may use authored texture, bevel, inset, and shadow when those details belong to the shared skin.
 
-**The Color Has a Job Rule.** Red and orange mean notification priority. Resource icons identify resource types; seed, herb, potion, mana, coin, crystal, emerald, and ruby text stays monochrome and follows normal disabled, locked, and unavailable state colors.
+**The Color Has a Job Rule.** Color identifies resource type, progress family, action role, selection, or notification priority. Disabled and locked states still reduce contrast consistently; do not recolor controls merely for variety.
 
 ## 3. Typography
 
@@ -132,7 +144,7 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 **Body Font:** Lilita One with Arial/system sans fallbacks, matching Root Run
 **Label/Mono Font:** tabular lining numerals through font-variant, not a separate mono face
 
-**Character:** Text is calm, readable, and compact. Hierarchy comes from position, borders, selected frames, and occasional bold labels, not from large type. Interaction states never change font weight.
+**Character:** Text is friendly, readable, compact, and strongly outlined over illustrated chrome. Hierarchy comes from position, art scale, panel grouping, selected frames, role color, and occasional bold labels. Interaction states never change font weight.
 
 ### Hierarchy
 - **Title** (bold, 13px, normal line-height): Embedded box titles and important row names.
@@ -148,39 +160,41 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 
 ## 4. Elevation
 
-Ordinary room UI is flat. Available themes use 2px ordinary borders for clear themed strokes. Depth is communicated by borders, title placement, and popup layering. Default dialogs use their brown outer frame plus one compact shadow; overlays and tooltips may use structural shadows.
+Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry bevels, inset shading, and compact cast shadows; the room landmark may have stronger grounded depth. Dialogs remain the heaviest layer and use their brown outer frame plus one compact shadow.
 
 ### Shadow Vocabulary
 - **Dialog Shadow** (`3px 4px 4px rgb(0 0 0 / 42%)`): Attached to the brown Root Run dialog shell only.
+- **Room Panel Shadow:** Authored inside the approved nine-slice or a compact hard shadow that matches the shared room-panel skin.
 - **Overlay Shadow** (`5px 5px 5px var(--style-muted)`): Rare overlay panels.
 - **Tooltip Shadow** (`-1px 3px 2px var(--style-muted)`): Small tooltips only.
 
 ### Named Rules
 
-**The Flat Room Rule.** Non-dialog room boxes never get shadows.
+**The Grounded Room Rule.** Ordinary panels may use the shared shallow depth, but must stay subordinate to the room landmark and dialogs.
 
-**The Dialog Weight Rule.** Popup panels use the brown Root Run Expedition outer nine-slice, its paper inner nine-slice, separate purple title plaque, round X control centered below the shell, 20px padding, and one bottom-right shadow. Ordinary boxes do not borrow this treatment.
+**The Dialog Weight Rule.** Popup panels use the brown Root Run Expedition outer nine-slice, its paper inner nine-slice, separate purple title plaque, round X control centered below the shell, 20px padding, and one bottom-right shadow. Ordinary room panels use their own shared midnight skin and do not borrow the paper dialog treatment.
 
 ## 5. Components
 
 ### Buttons
-- **Shape:** Sharp text boxes with no radius (0).
-- **Default:** Room surface background, ink text, theme ordinary border, 5px 10px padding.
-- **Focus:** Use the existing border state; do not change font weight or add a below-text line, glow, icon, scale, or color flourish. Do not define mouse-hover states.
-- **Active:** No background tint; keep labels stable and use existing text/border state only.
-- **Disabled:** Disabled gray text and border, normal weight.
+- **Shape:** Image-backed rounded/chamfered controls with skin-owned corners, outlines, and shallow depth.
+- **Default:** Brown/gold for general actions, green for positive claim/collect/confirm, red for cancellation or loss, and specialized shared skins for cost and tabs.
+- **Content:** A meaningful icon may lead the label when it improves recognition; labels stay visible and accessible.
+- **Focus:** Use the shared focus treatment; do not change font weight or add hover-only behavior.
+- **Active:** Use the shared compressed press state while keeping the label and icon optically centered.
+- **Disabled:** Swap to the shared gray button asset and keep normal text weight. Grayscale and monochrome shaders are icon-only and must not be applied to button chrome.
 
 ### Cards / Containers
-- **Corner Style:** Square corners (0).
-- **Background:** Room surface.
-- **Shadow Strategy:** No shadow for ordinary panels.
-- **Border:** 2px ordinary border in selectable themes.
-- **Internal Padding:** Compact source padding (5px 10px).
-- **Title:** Embedded transparently on the top border, bold 13px.
+- **Corner Style:** Owned by the shared panel nine-slice, typically softly rounded with a dark outline.
+- **Background:** Layered midnight/navy surface with authored inset shading.
+- **Shadow Strategy:** Compact, directional, and shared; stronger only for the dominant landmark or modal layer.
+- **Border:** Image-backed frame or approved generated nine-slice, never an arbitrary feature-local radius and shadow.
+- **Internal Padding:** Compact source padding sized to the panel's artwork and content.
+- **Title:** Strong top-left title within the panel composition; legacy border-labeled boxes may keep embedded border titles until redesigned.
 
 ### Inputs / Fields
-- **Style:** Same surface, same source typography, theme ordinary border, no radius.
-- **Focus:** No decorative focus glow; preserve clear text entry and mobile keyboard behavior.
+- **Style:** Shared dark or dialog-paper field skin, compact outlined typography, and skin-owned corners.
+- **Focus:** Clear shared focus ring or frame change; preserve mobile keyboard behavior.
 - **Error / Disabled:** Error copy stays compact, disabled fields use disabled gray.
 
 ### Navigation
@@ -205,20 +219,22 @@ Ordinary room UI is flat. Available themes use 2px ordinary borders for clear th
 
 ### Signature Component
 
-**Border-Labeled Box:** A compact box with its title embedded over the top border and optional count/action labels centered on the border line. Use this before inventing another heading, row, popup, tab, or action style.
+**Illustrated Room Workbench:** One dominant room-specific landmark inside a shared framed panel, with nearby status, pagination, and role-colored actions. Use shared buttons, rails, item art, and panel skins around it. Legacy border-labeled boxes remain supported for existing compact lists until those surfaces are intentionally redesigned.
 
 ## 6. Do's and Don'ts
 
 ### Do:
 - **Do** reuse `docs/ui-patterns.md` before creating any new row, box, popup, tab, or border-label treatment.
 - **Do** keep source typography at 13px body, 14px dialog title, and 11px border label.
-- **Do** use 2px ordinary borders in selectable themes, the shared Root Run shell for default dialogs, and shared Root Run button skins for popup tabs.
+- **Do** use shared image-backed room panels, the shared Root Run shell for dialogs, and shared Root Run button/tab skins.
+- **Do** use room landmarks and item/resource art as functional content.
+- **Do** keep action colors consistent: brown/gold general, green positive, red cancellation/loss.
 - **Do** keep row actions inline and right-aligned with tabular numerals.
 - **Do** support reduced motion by removing nonessential transitions and animations.
 
 ### Don't:
-- **Don't** make the UI look like a decorated fantasy RPG, card battler, casino idle game, colorful dashboard, or modern rounded mobile app.
-- **Don't** spread the approved dialog textures, illustrations, decorative icons, rounded cards, or decorative shadows into ordinary room UI.
-- **Don't** add color except notification/resource state or an explicit user request.
-- **Don't** put headings inside boxes when the label belongs embedded over the border.
+- **Don't** turn the fantasy treatment into casino clutter, arbitrary glow, or unrelated ornament.
+- **Don't** invent feature-local panel, button, or icon families when the shared fantasy HUD library can cover the role.
+- **Don't** use color without a resource, action, selection, progress, or notification role.
+- **Don't** place several equally dominant illustrated panels on one room surface.
 - **Don't** inflate source font size to make mobile text readable.

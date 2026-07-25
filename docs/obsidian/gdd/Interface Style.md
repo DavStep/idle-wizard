@@ -12,18 +12,20 @@ world: gdd
 
 ## Canon
 
-The project style is a sparse text-game interface inspired by A Dark Room:
-high-contrast text, compact surfaces, small bordered panels, and little
-decoration.
+The project style is an illustrated fantasy HUD inspired by the approved
+Brewing-page reference and Root Run: layered midnight panels, rendered room and
+item art, warm action skins, semantic color, compact outlined text, and
+controlled depth.
 
 ## Rules To Preserve
 
 - Use title case for UI labels and sentence case for instructions or narrative copy.
-- Keep ordinary room boxes compact and shadowless.
-- Put box titles over the top border, not as headings inside panels.
+- Give each room one dominant illustrated landmark and keep supporting panels compact.
+- Use shared image-backed panel, button, tab, and dialog skins; do not invent feature-local chrome.
+- Use color for resources, progress families, action roles, selection, and notifications.
 - Use Root Run's fixed `390x844` logical game resolution, contain-fitted to the device.
 - Reuse documented row, popup, tab, border-label, and expandable-box patterns.
-- Avoid decorative textures, illustrations, rounded cards, and hover-only UI.
+- Avoid casino clutter, arbitrary glow, unrelated ornament, inconsistent icon families, and hover-only UI.
 
 ## Related
 

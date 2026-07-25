@@ -99,6 +99,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
         semanticRegistry,
         semanticId: `shop.tab.${tab.id}`,
         text: tab.label,
+        variant: 'tab',
         label: `shop:tab:${tab.id}`,
         action: () => this.selectTab(tab.id),
       });

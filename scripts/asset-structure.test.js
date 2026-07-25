@@ -41,6 +41,37 @@ describe('asset structure', () => {
     );
     expect(quickUiAtlas.meta.image).toBe('atlas.png');
   });
+
+  it('builds research icons from shared currency-free object masters', () => {
+    const generatorSource = fs.readFileSync(
+      path.join(ROOT, 'scripts/generate-research-icons.js'),
+      'utf8',
+    );
+    const primitiveDir = path.join(ROOT, 'art-source/research-icons/primitives');
+    const primitiveNames = [
+      'cauldron.png',
+      'hourglass.png',
+      'market-stall.png',
+      'plot.png',
+      'potion-bottle.png',
+      'research-lens.png',
+      'seed-pack.png',
+      'upgrade-arrow.png',
+    ];
+
+    expect(
+      primitiveNames.every((fileName) =>
+        fs.existsSync(path.join(primitiveDir, fileName)),
+      ),
+    ).toBe(true);
+    expect(generatorSource).toContain("capacityLayers('plot')");
+    expect(generatorSource).toContain("capacityLayers('cauldron')");
+    expect(generatorSource).toContain("layer('hourglass'");
+    expect(generatorSource).toContain("layer('pack'");
+    expect(generatorSource).not.toMatch(
+      /icon-(?:coin|crystal|emerald|ruby|mana-drop)/,
+    );
+  });
 });
 
 function collectFiles(rootDir) {

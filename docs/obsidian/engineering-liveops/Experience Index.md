@@ -20,7 +20,7 @@ They are readable in Obsidian and authoritative for project memory.
 | --- | --- |
 | [[engineering-liveops/experience/Communication|Communication]] | Starting work, clarifying ambiguous requests, touching player data, or adding durable lessons. |
 | [[engineering-liveops/experience/Product Shape|Product Shape]] | Changing UI behavior, page flow, room shells, mobile/WebView interactions, timers, popups, chat UI, or feature shape. |
-| [[engineering-liveops/experience/Style|Style]] | Changing visual style, typography, borders, labels, icons, scroll cues, themed surfaces, or A Dark Room-style patterns. |
+| [[engineering-liveops/experience/Style|Style]] | Changing visual style, typography, fantasy HUD chrome, labels, icons, scroll cues, themed surfaces, or illustrated room patterns. |
 | [[engineering-liveops/experience/Architecture|Architecture]] | Placing code, changing facades/managers, ECS boundaries, rendering boundaries, or cross-feature ownership. |
 | [[engineering-liveops/experience/Gameplay Economy|Gameplay Economy]] | Changing tasks, levels, loops, currencies, items, progression, prestige, markets, world events, alliances, or rewards. |
 | [[engineering-liveops/experience/Backend And Android|Backend And Android]] | Changing SpacetimeDB, reducers, generated bindings, subscriptions, save/profile sync, account behavior, backend authority, Android, or mobile packaging. |

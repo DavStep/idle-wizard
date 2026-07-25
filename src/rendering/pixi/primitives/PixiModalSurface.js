@@ -6,7 +6,10 @@ import {
 } from '../theme/PixiThemeTokens.js';
 import { isDisplayObjectDescendant } from '../input/InputGeometry.js';
 import { BasePixiRetainedView } from './BasePixiRetainedView.js';
-import { PixiDialogFrame } from './PixiDialogFrame.js';
+import {
+  PIXI_DIALOG_BASE_GEOMETRY,
+  PixiDialogFrame,
+} from './PixiDialogFrame.js';
 
 export const PIXI_MODAL_OPEN_MOTION = Object.freeze({
   durationMs: 225,
@@ -25,8 +28,8 @@ export class PixiModalSurface extends BasePixiRetainedView {
   constructor({
     assetManager = null,
     title = '',
-    contentWidth = 260,
-    contentHeight = 40,
+    contentWidth = PIXI_DIALOG_BASE_GEOMETRY.contentWidth,
+    contentHeight = PIXI_DIALOG_BASE_GEOMETRY.minContentHeight,
     backdropAlpha = 0.78,
     opaqueBackdrop = false,
     inputRouter = null,

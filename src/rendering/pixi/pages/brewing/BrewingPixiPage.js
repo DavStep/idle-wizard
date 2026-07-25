@@ -38,6 +38,10 @@ import {
   setText,
 } from '../workshop/RetainedPageKit.js';
 import {
+  BrewingAutomationSettingsDialogPixi,
+  BrewingHudPixi,
+} from './BrewingHudPixi.js';
+import {
   BrewingRecipeBookDialogPixi,
   BrewingRecipeChoiceDialogPixi,
 } from './BrewingDialogsPixi.js';
@@ -91,6 +95,7 @@ const BREWING_ITEM_GHOST_POOL_SIZE = 12;
 const BREWING_DIALOG_IDS = Object.freeze({
   recipes: 'brewing.recipes',
   choice: 'brewing.recipe-choice',
+  settings: 'brewing.automation-settings',
 });
 const BREWING_ASSET_IDS = Object.freeze({
   cauldron:
@@ -141,6 +146,8 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     this.activeGhostMotions = new Set();
     this.currentHerbDrag = null;
     this.motionGhostSequence = 0;
+    this.selectedCauldronIndex = 0;
+    this.toastHideAt = 0;
 
     this.worldViewport = new Container({
       label: 'brewing-world-viewport',
@@ -232,6 +239,24 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       this.potionsButton.root,
     );
     this.content.addChild(this.inventoryLayer);
+    this.hud = new BrewingHudPixi({
+      assetManager: this.assetManager,
+      inputRouter: this.inputRouter,
+      semanticTargets: this.semanticTargets,
+      page: this,
+      theme,
+    });
+    this.content.addChild(this.hud.root);
+    this.toast = new Container({ label: 'brewing-transient-toast' });
+    this.toastFrame = new Graphics({ label: 'brewing-transient-toast-frame' });
+    this.toastText = createText('', {
+      ...RETAINED_TEXT_STYLES.bold,
+      align: 'center',
+    });
+    this.toastText.anchor.set(0.5);
+    this.toast.addChild(this.toastFrame, this.toastText);
+    this.toast.visible = false;
+    this.content.addChild(this.toast);
     this.motionLayer = new Container({
       label: 'brewing-page-motion-layer',
     });
@@ -312,6 +337,19 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
           }),
       );
     }
+    if (!this.dialogRegistry.has(BREWING_DIALOG_IDS.settings)) {
+      this.dialogRegistry.register(
+        BREWING_DIALOG_IDS.settings,
+        () =>
+          new BrewingAutomationSettingsDialogPixi({
+            parent: this.dialogLayer,
+            inputRouter: this.inputRouter,
+            assetManager: this.assetManager,
+            onClose: () => this.closeDialog('settings'),
+            theme: this.theme,
+          }),
+      );
+    }
   }
 
   renderViewModel(viewModel) {
@@ -332,10 +370,29 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       brewing.cauldrons ??
         (brewing.cauldron ? [brewing.cauldron] : []),
     );
+    this.selectedCauldronIndex = clamp(
+      Number.isInteger(brewing.selectedCauldronIndex)
+        ? brewing.selectedCauldronIndex
+        : this.selectedCauldronIndex,
+      0,
+      Math.max(0, cauldrons.length - 1),
+    );
     this.cauldrons.reconcile(cauldrons);
     this.syncCauldronPurchaseMotion(cauldrons);
     this.bindInventory(brewing.inventory ?? brewing.inventories ?? brewing);
     this.syncDialogs(brewing.dialogs ?? {});
+    this.hud.bind(
+      {
+        ...brewing,
+        cauldrons,
+        selectedCauldronIndex: this.selectedCauldronIndex,
+      },
+      this.currentActions,
+    );
+    this.worldViewport.visible = false;
+    this.worldViewport.renderable = false;
+    this.inventoryLayer.visible = false;
+    this.inventoryLayer.renderable = false;
     this.layoutBrewing();
     if (!this.worldViewportTouched) {
       this.fitWorldViewportToCauldrons();
@@ -460,6 +517,60 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     );
   }
 
+  selectCauldron(cauldronIndex) {
+    const cauldrons = normalizeRows(
+      this.viewModel?.brewing?.cauldrons ??
+        this.viewModel?.cauldrons,
+    );
+    const nextIndex = clamp(
+      Math.floor(Number(cauldronIndex) || 0),
+      0,
+      Math.max(0, cauldrons.length - 1),
+    );
+    if (nextIndex === this.selectedCauldronIndex) {
+      return false;
+    }
+    this.selectedCauldronIndex = nextIndex;
+    this.currentActions?.selectCauldron?.(nextIndex);
+    this.hud.bind(
+      {
+        ...(this.viewModel?.brewing ?? this.viewModel ?? {}),
+        cauldrons,
+        selectedCauldronIndex: nextIndex,
+      },
+      this.currentActions,
+    );
+    this.hud.layout(this.sourceWidth, this.sourceHeight);
+    return true;
+  }
+
+  openAutomationSettings() {
+    const cauldron = this.hud.getSelectedCauldron();
+    if (!cauldron || cauldron.unlocked === false) {
+      return false;
+    }
+    return this.openDialog('settings', {
+      title: `cauldron ${cauldron.cauldronNumber ?? this.selectedCauldronIndex + 1} settings`,
+      cauldronIndex: this.selectedCauldronIndex,
+      cauldronNumber:
+        cauldron.cauldronNumber ?? this.selectedCauldronIndex + 1,
+      autoBrewEnabled: cauldron.autoBrewEnabled === true,
+      autoCollectEnabled: cauldron.autoCollectEnabled === true,
+      actions: {
+        toggleAutoCollect: (cauldronIndex) =>
+          this.currentActions?.toggleAutoCollect?.(cauldronIndex),
+      },
+    });
+  }
+
+  showToast(message) {
+    setText(this.toastText, message ?? '');
+    this.toast.visible = Boolean(this.toastText.text);
+    this.toast.alpha = 1;
+    this.toastHideAt = this.timeSource() + 1_600;
+    return true;
+  }
+
   activate() {
     if (this.active) {
       return;
@@ -488,6 +599,9 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       row.updateMotion(now);
     }
     this.updateGhostMotions(now);
+    if (this.toast.visible && now >= this.toastHideAt) {
+      this.toast.visible = false;
+    }
   }
 
   syncCauldronPurchaseMotion(cauldrons) {
@@ -993,6 +1107,15 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     this.potionInventory?.applyTheme(theme);
     this.herbsButton?.applyTheme(theme);
     this.potionsButton?.applyTheme(theme);
+    this.hud?.applyTheme(theme);
+    if (this.toastText) {
+      applyTextTheme(this.toastText, theme, RETAINED_TEXT_STYLES.bold);
+      this.toastFrame
+        .clear()
+        .roundRect(-58, -17, 116, 34, 10)
+        .fill({ color: 0x111722, alpha: 0.96 })
+        .stroke({ color: theme.stroke, width: 2 });
+    }
     for (const cauldron of this.cauldrons?.getWidgets?.() ?? []) {
       cauldron.applyTheme(theme);
     }
@@ -1036,6 +1159,8 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       buttonY,
     );
     this.layoutBrewing();
+    this.hud?.layout(sourceWidth, sourceHeight);
+    this.toast?.position.set(sourceWidth / 2, 470);
   }
 
   layoutBrewing() {
@@ -1076,6 +1201,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     this.potionInventory?.destroy();
     this.herbsButton?.destroy();
     this.potionsButton?.destroy();
+    this.hud?.destroy();
     this.motionGhostPool?.destroy();
   }
 }

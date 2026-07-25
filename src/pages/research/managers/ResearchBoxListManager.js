@@ -715,6 +715,8 @@ export class ResearchBoxListManager {
     }
 
     stopTimerProgressFill(ref.progressFill, 0);
+    ref.value?.remove();
+    ref.progress?.remove();
     ref.signature = signature;
     const { row, artwork, artworkImage, key, rank } = ref;
     row.className = 'research-page__row';
@@ -743,6 +745,8 @@ export class ResearchBoxListManager {
     const val =
       research.locked
         ? this.createLockedValue(research)
+        : this.isResearchedStatus(research)
+        ? this.createResearchedStatusButton(research)
         : research.completed || research.inProgress
         ? this.createReadonlyValue(research)
         : this.createBuyButton(research);
@@ -790,6 +794,8 @@ export class ResearchBoxListManager {
 
   resetRowWidget(ref) {
     stopTimerProgressFill(ref.progressFill, 0);
+    ref.value?.remove();
+    ref.progress?.remove();
     ref.row.remove();
     ref.research = null;
     ref.boxId = '';
@@ -1228,6 +1234,27 @@ export class ResearchBoxListManager {
       research,
     );
     return val;
+  }
+
+  isResearchedStatus(research) {
+    return (
+      research?.completed === true &&
+      String(research.value ?? '').trim().toLowerCase() === 'researched'
+    );
+  }
+
+  createResearchedStatusButton(research) {
+    const button = document.createElement('button');
+    button.className =
+      'style-button style-button--yellow research-page__research-button research-page__research-button--completed';
+    button.type = 'button';
+    button.disabled = true;
+    button.textContent = 'Researched';
+    button.setAttribute(
+      'aria-label',
+      `${this.formatResearchName(research)} is researched`,
+    );
+    return button;
   }
 
   createLockedValue(research) {

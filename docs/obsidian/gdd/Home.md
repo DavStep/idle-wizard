@@ -9,10 +9,11 @@ world: gdd
 
 # GDD Home
 
-Idle Wizard is a sparse text-game about turning mana into seeds, seeds into
-herbs, herbs into potions, and those repeated actions into level progress. The
-first room is [[Room Map|Workshop]], and the game should read as plain, compact,
-high-contrast systems rather than an illustrated fantasy interface.
+Idle Wizard is an illustrated fantasy idle game about turning mana into seeds,
+seeds into herbs, herbs into potions, and those repeated actions into level
+progress. The first room is [[Room Map|Workshop]], and every room should make
+its production loop readable through a dominant landmark, compact status, and
+tactile image-backed controls.
 
 ## Core Notes
 

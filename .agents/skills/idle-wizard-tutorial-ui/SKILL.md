@@ -28,12 +28,12 @@ description: Use for Idle Wizard tutorial and FTUE UI work, including Elara guid
 
 ## Style Rules
 
-- Follow the project style: black text, white surfaces, compact source UI, no decoration.
+- Follow the project fantasy HUD style: dark layered surfaces, shared image-backed chrome, compact outlined text, and purposeful Elara/pointer art.
 - Keep source typography at the project scale: body text `13px`, dialog title `14px`, border label `11px`.
 - Use lowercase player-facing labels.
-- Use embedded border labels with a white surface mask over the border.
-- Ordinary tutorial hints use the simple room-box feel. Reserve `2px` border, `20px` padding, and bottom-right shadow for real popup/dialog panels.
-- Do not add gradients, rounded cards, icons, textures, colorful panels, oversized text, or decorative shadows.
+- Use the approved tutorial title/action treatment and keep labels clear against the frame.
+- Ordinary tutorial hints use the shared tutorial panel skin. Dialogs remain visually heavier and keep their dedicated Root Run shell.
+- Reuse shared gradients, rounded silhouettes, icons, textures, color roles, and shadows when they clarify the lesson. Do not invent tutorial-only ornament or compete with the current target.
 - Keep intro dialog sizing separate from target hint and objective sizing. Do not apply long-copy dialog dimensions to all tutorial boxes.
 
 ## Target Placement
@@ -52,7 +52,7 @@ description: Use for Idle Wizard tutorial and FTUE UI work, including Elara guid
 - Verify at mobile portrait and desktop fitted views when the tutorial UI changed.
 - Screenshot the tutorial state and inspect overlap: target visible, CTA tappable, relevant resource text readable, top/bottom chrome coherent, no cropped box.
 - Click through at least the edited tutorial step and the next step.
-- Check CSS for forbidden treatment: large font bumps, rounded cards, decorative color, ordinary-box shadows, or dialog styles leaking onto non-dialog hints.
+- Check for style drift: large font bumps, unapproved panel skins, arbitrary color/glow, competing artwork, or dialog treatment leaking onto non-dialog hints.
 - If screenshot or click QA is not possible, say exactly what remains unverified.
 
 ## Boundaries

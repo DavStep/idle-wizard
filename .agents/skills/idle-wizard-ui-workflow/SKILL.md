@@ -70,7 +70,7 @@ Batch all proposed widgets for the current task into one approval request. Do no
 2. Run the Widget Admission Gate and receive approval for every proposed new widget before implementation.
 3. Identify the nearest existing pattern in code and docs. Do not invent a near-duplicate component when an existing pattern can be extended.
 4. For reference-driven work, write the visual contract first: target state/viewport/crop plus optical centers, baselines, edge anchors, proportions, and component-specific geometry that must match.
-5. Run the `idle-wizard-ui-consistency` gates before editing. Decide which parts must stay monochrome/default and which are allowed exceptions.
+5. Run the `idle-wizard-ui-consistency` gates before editing. Decide the room landmark, panel hierarchy, resource/action color roles, and which shared fantasy HUD skins own each surface.
 6. Implement narrowly inside the owning facade/manager/component. Keep gameplay, economy, progression, and transport rules out of rendering code.
 7. Open a deterministic real-app state. Add a checked-in dev UI recipe or focused harness when the surface cannot be reopened directly; do not use temporary source branches as final evidence.
 8. Verify with `npm run check:ui`, focused tests, full-view screenshots, a native-pixel close crop, and `npm run ui:compare` when a visual reference exists. Iterate until every contract item has a parity verdict.
@@ -81,7 +81,7 @@ Batch all proposed widgets for the current task into one approval request. Do no
 - Do not add seed, herb, potion, selling, economy, inventory, progression, or other gameplay code unless the user explicitly asks for that feature.
 - Do not inflate source UI font sizes for mobile readability; fix scale/layout instead.
 - Do not show advanced/future room tabs in default navigation without an explicit unlock or design decision.
-- Do not apply dialog shadows, portrait art, gradients, resource color systems, or icon-heavy composition to ordinary default boxes.
+- Do not add arbitrary glow, unrelated ornament, feature-local panel skins, or competing illustrated focal points. Use portrait art, gradients, resource colors, icons, and shadows only when they follow the shared fantasy HUD roles and approved widget contracts.
 - Do not claim browser/manual QA unless the shared Vite server and required backend are actually up and the checked viewport is named.
 - Do not claim a reference match from a full-screen thumbnail or green tests alone. Missing native-pixel crop/overlay evidence is `INCONCLUSIVE`; any named anchor mismatch is `FIX REQUIRED`.
 - Do not use temporary source edits, DOM mutation, or undocumented local state as the final visual-QA setup.

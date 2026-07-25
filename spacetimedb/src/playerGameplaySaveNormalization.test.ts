@@ -9,6 +9,7 @@ describe('player gameplay save brewing normalization', () => {
       autoBrewEnabled: true,
       autoBrewArmed: index % 2 === 0,
       autoBrewRecipeKey: 'manaTonic',
+      autoCollectEnabled: index % 2 === 0,
     }));
     const normalizedCauldrons = sourceCauldrons.map((cauldron) => ({
       cauldronNumber: cauldron.cauldronNumber,
@@ -23,6 +24,7 @@ describe('player gameplay save brewing normalization', () => {
         autoBrewEnabled: source.autoBrewEnabled,
         autoBrewArmed: source.autoBrewArmed,
         autoBrewRecipeKey: source.autoBrewRecipeKey,
+        autoCollectEnabled: source.autoCollectEnabled,
       });
     }
   });
@@ -33,11 +35,13 @@ describe('player gameplay save brewing normalization', () => {
         autoBrewEnabled: true,
         autoBrewArmed: undefined,
         autoBrewRecipeKey: 'manaTonic',
+        autoCollectEnabled: false,
       }),
     ).toEqual({
       autoBrewEnabled: true,
       autoBrewArmed: true,
       autoBrewRecipeKey: 'manaTonic',
+      autoCollectEnabled: false,
     });
   });
 });

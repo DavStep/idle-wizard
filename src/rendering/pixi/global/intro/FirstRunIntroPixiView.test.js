@@ -80,6 +80,50 @@ describe('FirstRunIntroPixiView', () => {
     view.deactivate();
     expect(ticker.handlers.size).toBe(0);
   });
+
+  it('keeps the story panel opaque and completes the demon drop promptly', () => {
+    const ticker = createTicker();
+    const view = new FirstRunIntroPixiView({
+      assets: createAssets(),
+      application: { ticker },
+    });
+    const presenter = new FirstRunIntroPixiPresenter({ view });
+
+    view.activate();
+    presenter.show();
+
+    expect(view.panel.alpha).toBe(1);
+    expect(view.copy.alpha).toBe(1);
+
+    presenter.advance();
+    ticker.tick(90);
+
+    expect(view.panel.alpha).toBe(1);
+    expect(view.copy.alpha).toBe(1);
+
+    ticker.tick(90);
+    expect(view.copy.text).toBe(
+      'the demon lord has been defeated.',
+    );
+    expect(view.panel.alpha).toBe(1);
+    expect(view.copy.alpha).toBe(1);
+    expect(view.transitionShade.alpha).toBe(0);
+
+    ticker.tick(160);
+
+    expect(view.defeated.position.y).toBeGreaterThan(300);
+    expect(view.defeated.scale.x).toBeGreaterThan(
+      view.defeated.scale.y,
+    );
+
+    ticker.tick(140);
+
+    expect(view.defeated.position.y).toBe(
+      370,
+    );
+    expect(view.panel.alpha).toBe(1);
+    expect(view.copy.alpha).toBe(1);
+  });
 });
 
 function createAssets() {

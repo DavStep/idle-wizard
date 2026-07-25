@@ -17,141 +17,107 @@ const SIZE = 256;
 const TEMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'idle-wizard-research-icons-'));
 
 const sourcePaths = Object.freeze({
-  cauldron: 'assets/game/source/icons/icon-brewing-cauldron-tab.webp',
+  arrow: 'art-source/research-icons/primitives/upgrade-arrow.png',
+  bottle: 'art-source/research-icons/primitives/potion-bottle.png',
+  cauldron: 'art-source/research-icons/primitives/cauldron.png',
   check: 'assets/game/source/ui/prop_checkmark.png',
-  coin: 'assets/game/source/icons/icon-coin.png',
-  crystal: 'assets/game/source/icons/icon-crystal.png',
-  emerald: 'assets/game/source/icons/icon-emerald.png',
-  mana: 'assets/game/source/icons/icon-mana-drop.png',
-  market: 'assets/game/source/icons/icon-shop-market-stall-tab.webp',
-  plot: 'assets/game/source/icons/icon-garden-plot-tab.webp',
-  potionBox: 'assets/game/source/icons/icon-potion-box.png',
-  research: 'assets/game/source/icons/icon-research-telescope-tab.webp',
-  ruby: 'assets/game/source/icons/icon-ruby.png',
-  seedBox: 'assets/game/source/icons/icon-seed-box.png',
-  seedPack: 'assets/game/source/items/seeds/seed-pack.png',
+  hourglass: 'art-source/research-icons/primitives/hourglass.png',
+  lens: 'art-source/research-icons/primitives/research-lens.png',
+  pack: 'art-source/research-icons/primitives/seed-pack.png',
+  plot: 'art-source/research-icons/primitives/plot.png',
+  scissors: 'assets/game/source/icons/tools/herb-cutting-scissors-open.png',
+  stall: 'art-source/research-icons/primitives/market-stall.png',
 });
 
 const recipes = Object.freeze([
   [
     'icon-research-summon-multiplier.png',
     [
-      layer('seedPack', 50, 44, 83, 122, { shadow: true }),
-      layer('seedPack', 93, 32, 83, 122, { shadow: true }),
-      layer('seedPack', 134, 50, 83, 122, { shadow: true }),
-      layer('mana', 159, 152, 38, 56, { shadow: true }),
+      layer('pack', 84, 22, 104, 122, { shadow: true }),
+      layer('pack', 30, 92, 112, 132, { shadow: true }),
+      layer('pack', 114, 92, 112, 132, { shadow: true }),
     ],
   ],
   [
     'icon-research-auto-seed-spawn.png',
-    [
-      layer('seedPack', 66, 50, 104, 146, { shadow: true }),
-      layer('mana', 140, 142, 48, 70, { shadow: true }),
-      layer('check', 154, 34, 62, 62, { shadow: true }),
-    ],
+    [layer('pack', 38, 34, 180, 190, { shadow: true }), checkLayer()],
   ],
   [
     'icon-research-auto-plant.png',
-    [
-      layer('plot', 25, 44, 188, 188, { shadow: true }),
-      layer('seedPack', 135, 119, 55, 78, { shadow: true }),
-      layer('check', 156, 38, 58, 58, { shadow: true }),
-    ],
+    [mainLayer('plot'), checkLayer()],
   ],
   [
     'icon-research-auto-harvest.png',
     [
-      layer('plot', 25, 44, 188, 188, { shadow: true }),
-      layer('seedBox', 142, 126, 54, 54, { shadow: true }),
-      layer('check', 156, 38, 58, 58, { shadow: true }),
+      mainLayer('plot'),
+      layer('scissors', 136, 138, 76, 76, { shadow: true }),
+      checkLayer(),
     ],
   ],
   [
     'icon-research-auto-brew.png',
-    [
-      layer('cauldron', 19, 35, 196, 196, { shadow: true }),
-      layer('mana', 153, 140, 44, 64, { shadow: true }),
-      layer('check', 157, 34, 58, 58, { shadow: true }),
-    ],
+    [mainLayer('cauldron'), checkLayer()],
   ],
   [
     'icon-research-auto-bottle.png',
     [
-      layer('cauldron', 18, 35, 196, 196, { shadow: true }),
-      layer('potionBox', 143, 132, 58, 58, { shadow: true }),
-      layer('check', 157, 34, 58, 58, { shadow: true }),
+      layer('cauldron', 12, 24, 222, 208, { shadow: true }),
+      layer('bottle', 148, 128, 72, 88, { shadow: true }),
+      checkLayer(),
     ],
   ],
   [
     'icon-research-fast-sell.png',
     [
-      layer('market', 24, 45, 184, 184, { shadow: true }),
-      layer('coin', 145, 132, 62, 62, { shadow: true }),
+      layer('stall', 12, 28, 232, 204, { shadow: true }),
+      upgradeArrowLayer(),
     ],
   ],
   [
     'icon-research-cost.png',
     [
-      layer('research', 24, 34, 185, 185, { shadow: true }),
-      layer('coin', 143, 138, 62, 62, { shadow: true }),
+      layer('lens', 22, 30, 190, 190, { shadow: true }),
+      reductionArrowLayer(),
     ],
   ],
   [
     'icon-research-time.png',
     [
-      layer('research', 26, 33, 184, 184, { shadow: true }),
-      layer('ruby', 145, 136, 62, 62, { shadow: true }),
+      layer('hourglass', 42, 18, 172, 214, { shadow: true }),
+      reductionArrowLayer(),
     ],
   ],
   [
     'icon-research-automation-reserve.png',
     [
-      layer('mana', 75, 35, 92, 134, { shadow: true }),
-      layer('seedPack', 129, 108, 68, 96, { shadow: true }),
-      layer('check', 155, 34, 58, 58, { shadow: true }),
+      layer('pack', 36, 68, 140, 156, { shadow: true }),
+      layer('pack', 102, 40, 140, 156, { shadow: true }),
+      checkLayer(),
     ],
   ],
   [
     'icon-research-plot-capacity.png',
-    [
-      layer('plot', 25, 44, 188, 188, { shadow: true }),
-      layer('ruby', 145, 135, 62, 62, { shadow: true }),
-    ],
+    capacityLayers('plot'),
   ],
   [
     'icon-research-cauldron-capacity.png',
-    [
-      layer('cauldron', 20, 35, 196, 196, { shadow: true }),
-      layer('ruby', 147, 136, 62, 62, { shadow: true }),
-    ],
+    capacityLayers('cauldron'),
   ],
   [
     'icon-research-plot-growth.png',
-    [
-      layer('plot', 25, 44, 188, 188, { shadow: true }),
-      layer('research', 128, 120, 74, 74, { shadow: true }),
-    ],
+    [mainLayer('plot'), timeOverlayLayer()],
   ],
   [
     'icon-research-cauldron-brewing.png',
-    [
-      layer('cauldron', 20, 35, 196, 196, { shadow: true }),
-      layer('research', 132, 120, 74, 74, { shadow: true }),
-    ],
+    [mainLayer('cauldron'), timeOverlayLayer()],
   ],
   [
     'icon-research-plot-level.png',
-    [
-      layer('plot', 25, 44, 188, 188, { shadow: true }),
-      layer('emerald', 147, 133, 58, 78, { shadow: true }),
-    ],
+    [mainLayer('plot'), upgradeArrowLayer()],
   ],
   [
     'icon-research-cauldron-level.png',
-    [
-      layer('cauldron', 20, 35, 196, 196, { shadow: true }),
-      layer('emerald', 150, 133, 58, 78, { shadow: true }),
-    ],
+    [mainLayer('cauldron'), upgradeArrowLayer()],
   ],
 ]);
 
@@ -195,7 +161,38 @@ function layer(source, x, y, width, height, options = {}) {
     y,
     width,
     height,
+    rotate180: options.rotate180 === true,
     shadow: options.shadow === true,
+  });
+}
+
+function mainLayer(source) {
+  return layer(source, 14, 20, 228, 216, { shadow: true });
+}
+
+function checkLayer() {
+  return layer('check', 172, 26, 58, 58, { shadow: true });
+}
+
+function capacityLayers(source) {
+  return [
+    layer(source, 94, 34, 140, 140, { shadow: true }),
+    layer(source, 18, 82, 164, 164, { shadow: true }),
+  ];
+}
+
+function timeOverlayLayer() {
+  return layer('hourglass', 154, 126, 72, 94, { shadow: true });
+}
+
+function upgradeArrowLayer() {
+  return layer('arrow', 168, 144, 56, 66, { shadow: true });
+}
+
+function reductionArrowLayer() {
+  return layer('arrow', 168, 144, 56, 66, {
+    rotate180: true,
+    shadow: true,
   });
 }
 
@@ -267,7 +264,8 @@ function trimTransparent(source) {
 }
 
 function compositeLayer(target, source, nextLayer) {
-  const scaled = resizeContain(source, nextLayer.width, nextLayer.height);
+  const contained = resizeContain(source, nextLayer.width, nextLayer.height);
+  const scaled = nextLayer.rotate180 ? rotate180(contained) : contained;
   const x = Math.round(nextLayer.x + (nextLayer.width - scaled.width) / 2);
   const y = Math.round(nextLayer.y + (nextLayer.height - scaled.height) / 2);
 
@@ -276,6 +274,21 @@ function compositeLayer(target, source, nextLayer) {
   }
 
   compositeImage(target, scaled, x, y);
+}
+
+function rotate180(source) {
+  const target = new PNG({ width: source.width, height: source.height });
+
+  for (let y = 0; y < source.height; y += 1) {
+    for (let x = 0; x < source.width; x += 1) {
+      const sourceOffset = (y * source.width + x) * 4;
+      const targetOffset =
+        ((source.height - y - 1) * source.width + (source.width - x - 1)) * 4;
+      target.data.set(source.data.subarray(sourceOffset, sourceOffset + 4), targetOffset);
+    }
+  }
+
+  return target;
 }
 
 function resizeContain(source, maxWidth, maxHeight) {

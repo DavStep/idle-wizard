@@ -11,12 +11,16 @@ The preferred renderer-neutral view model is:
 {
   brewing: {
     now,
-    world: { controlled, reset, touched, panX, panY, zoom },
+    selectedCauldronIndex,
     cauldrons: [{
       id, cauldronIndex, cauldronNumber, title, level,
       unlocked, disabled, canBuyCauldron, lockedLabel,
       countText, statusText, bubbleText, message,
       ingredients: [{ id, slotIndex, quantity, label, valueText, removable }],
+      selectedRecipe: {
+        key, label, ingredients: [{ itemKey, quantity, owned }]
+      },
+      autoCollectEnabled,
       guideRows: [{ id, quantity, label, valueText, fulfilled }],
       activeBrew: {
         key, label, text, durationMs, remainingMs, endTimeMs, progress
@@ -46,17 +50,19 @@ The preferred renderer-neutral view model is:
           iconKey, costText, durationText, ingredients
         }]
       },
-      choice: { open, title, cauldronIndex, onClearRecipe, onChooseAnother }
+      choice: { open, title, cauldronIndex, onClearRecipe, onChooseAnother },
+      settings: { open, cauldronIndex, autoBrewEnabled, autoCollectEnabled }
     }
   },
   actions: {
     selectCauldron, openRecipes, selectRecipe,
     performCauldronAction, primaryAction,
-    selectBrewQuantity, toggleAutoBrew,
+    selectBrewQuantity, toggleAutoBrew, toggleAutoCollect,
+    cancelBrew, collectBrew,
     addHerb, dropHerb, addIngredient, removeIngredient,
     toggleInventory, toggleInventoryExpanded, inspectPotion,
     previewHerbDrag, endHerbDrag, cancelHerbDrag,
-    closeDialog, setWorldViewport
+    closeDialog
   }
 }
 ```
@@ -66,12 +72,21 @@ quantities, timer endpoints, and result messages must come from the presenter.
 The small raw-snapshot fallbacks exist only to ease atomic cutover and do not
 perform writes or own game rules.
 
-Cauldrons, ingredient/guide rows, inventory rows, visible recipe cards, and
-recipe ingredients use keyed pools. Both Brewing dialogs are constructed on
-first open and retained. World pan/pinch, nested action presses, herb
-press/drag/drop, dialog swipe, modal back, and semantic tutorial targets use
-the shared input and semantic registries. The implementation has no DOM
-surface, DOM event listener, selector, or computed-style dependency.
+The production composition is a single selected-cauldron carousel with arrows
+and horizontal swipe. Its dots contain every unlocked cauldron plus exactly one
+next locked slot, stopping at five. The batch panel always renders six visual
+ingredient cells in a 3x2 grid; gameplay still accepts at most five ingredients,
+so the sixth cell is a deliberate decorative empty state.
+
+Recipe and automation settings dialogs are constructed on first open and
+retained. The fast-forward affordance is nonfunctional for now and emits the
+page-local `coming soon` transient toast. The implementation has no DOM surface,
+DOM event listener, selector, or computed-style dependency.
+
+The carousel action row keeps its existing retained button semantics while
+adding leading illustrated cues: the approved brown-and-purple spellbook for
+recipes, potion for autobrew, three potions for brew quantity, gear for
+settings, and the shared X artwork for cancel.
 
 Brewing-owned motion also remains retained: herb pickup/count/return nudges
 reuse the row transform, ingredient drag, return, and brew flyouts use one

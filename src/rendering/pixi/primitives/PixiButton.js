@@ -1,5 +1,4 @@
 import {
-  ColorMatrixFilter,
   Container,
   Graphics,
   Rectangle,
@@ -18,6 +17,8 @@ import { PixiTextLabel } from './PixiTextLabel.js';
 
 const ROOT_RUN_VARIANTS = new Set([
   'yellow',
+  'green',
+  'gray',
   'brown-dark',
   'brown-light',
 ]);
@@ -97,7 +98,6 @@ export class PixiButton extends Container {
     );
     this.addChild(this.visual);
 
-    this.disabledFilter = createDisabledFilter();
     this.registration =
       this.inputRouter?.registerPressTarget?.(this, {
         enabled: () => this.enabled && this.visible && this.renderable,
@@ -256,8 +256,9 @@ export class PixiButton extends Container {
       .fill({ color: this.theme.surface });
 
     if (rootRunVariant) {
+      const visualVariant = this.enabled ? rootRunVariant : 'gray';
       this.rootRunFrame.setTexture(
-        this.assetManager.getTexture(getRootRunTextureId(rootRunVariant)),
+        this.assetManager.getTexture(getRootRunTextureId(visualVariant)),
         PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
       );
       this.rootRunFrame.setSize(
@@ -265,8 +266,7 @@ export class PixiButton extends Container {
         this.buttonHeight,
         PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
       );
-      this.rootRunFrame.filters =
-        !this.enabled && this.disabledFilter ? [this.disabledFilter] : null;
+      this.rootRunFrame.filters = null;
       this.textLabel.setFontFamily('"Lilita One", "Arial Black", Arial, sans-serif');
       this.textLabel.setStroke({ color: '#0a0a0a', width: 4 });
       this.textLabel.setColor('#ffffff');
@@ -358,26 +358,16 @@ export class PixiButton extends Container {
       this.semanticRegistry.unregister(this.semanticId, { displayObject: this });
       this.semanticDefinition = null;
     }
-    this.disabledFilter?.destroy?.();
-    this.disabledFilter = null;
     super.destroy(options);
   }
 }
 
 function getRootRunTextureId(variant) {
   if (variant === 'yellow') return PIXI_ROOT_RUN_ASSETS.buttonYellow;
+  if (variant === 'green') return PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice;
+  if (variant === 'gray') return PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice;
   if (variant === 'brown-light') return PIXI_ROOT_RUN_ASSETS.buttonBrownLight;
   return PIXI_ROOT_RUN_ASSETS.buttonBrownDark;
-}
-
-function createDisabledFilter() {
-  try {
-    const filter = new ColorMatrixFilter();
-    filter.grayscale(1, false);
-    return filter;
-  } catch {
-    return null;
-  }
 }
 
 function releaseScale(progress) {

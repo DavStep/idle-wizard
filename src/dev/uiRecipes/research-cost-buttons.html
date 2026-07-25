@@ -134,6 +134,21 @@
           },
         ],
       };
+      const completedSeedBox = {
+        id: 'seedUnlocks',
+        label: 'completed seed research',
+        researches: [
+          {
+            id: 'unlockSeed:sageSeed',
+            label: 'sage seed',
+            value: 'researched',
+            completed: true,
+            canResearch: false,
+            description: 'allows sage seed to drop from summon seed.',
+            requiredResearchIds: [],
+          },
+        ],
+      };
       const snapshot = {
         playerLevel: { currentLevel: 8 },
         prestige: { completedLevels: [] },
@@ -142,7 +157,7 @@
             {
               id: 'regular',
               label: 'regular research',
-              boxes: [costButtonsBox],
+              boxes: [completedSeedBox, costButtonsBox],
             },
             { id: 'automation', label: 'automation', boxes: [] },
             { id: 'advanced', label: 'advanced research', boxes: [] },

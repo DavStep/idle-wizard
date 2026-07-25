@@ -35,6 +35,7 @@ export const DIALOG_IDS_BY_PAGE = Object.freeze({
   brewing: Object.freeze([
     'brewing.recipes',
     'brewing.recipe-choice',
+    'brewing.automation-settings',
   ]),
   shop: Object.freeze(Object.values(SHOP_DIALOG_IDS)),
   guild: Object.freeze(Object.values(GUILD_DIALOG_IDS)),
@@ -145,6 +146,18 @@ export function createDialogViewModel(
       cauldronIndex: key === 'a' ? 0 : 1,
       onClearRecipe: accept,
       onChooseAnother: accept,
+    };
+  }
+
+  if (dialogId === 'brewing.automation-settings') {
+    return {
+      cauldronIndex: key === 'a' ? 0 : 1,
+      cauldronNumber: key === 'a' ? 1 : 2,
+      autoBrewEnabled: true,
+      autoCollectEnabled: key === 'b',
+      actions: {
+        toggleAutoCollect: accept,
+      },
     };
   }
 

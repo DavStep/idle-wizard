@@ -11,11 +11,11 @@ aliases:
 
 # Design Pillars
 
-## Sparse Text-Game Clarity
+## Illustrated Production Clarity
 
-The interface should feel close to A Dark Room in spirit: small bordered boxes,
-plain labels, restrained hierarchy, and readable text. It should not depend on
-decorative fantasy art to explain the game.
+Each room uses a strong fantasy landmark, rendered item/resource art, compact
+outlined labels, and tactile shared chrome. Art must make the production loop
+easier to recognize; it must not compete with the current action or status.
 
 ## Room-Based Play
 
@@ -33,10 +33,11 @@ advance levels.
 When a seed, recipe, room, or capacity unlock appears, the surrounding tasks
 should quickly ask the player to use it. Unlocks should not feel like dead text.
 
-## Progression Without Visual Noise
+## Progression Without Visual Clutter
 
-The game can grow in systems, but the surface should remain compact: rows,
-border labels, tabbed popups, and small text panels.
+The game can grow in systems and visual richness, but each room keeps one clear
+focal landmark, one primary action area, stable navigation, and compact
+supporting panels. New decoration must own a gameplay role.
 
 ## Related
 

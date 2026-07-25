@@ -6,25 +6,25 @@ product
 
 ## Users
 
-Mobile idle-game players using a portrait Android-first game surface. They are checking a sparse room view, reading compact resource/status text, and making small repeated actions without visual noise.
+Mobile idle-game players using a portrait Android-first game surface. They are checking visually distinct fantasy rooms, reading compact resource/status information, and making small repeated actions through large, recognizable landmarks and controls.
 
 ## Product Purpose
 
-Idle Wizard is a minimal text-first mobile idle game. It gives the player a set of room pages, starting with Workshop, where resources and actions are presented as clear bordered text panels.
+Idle Wizard is an illustrated fantasy mobile idle game. It gives the player a set of room pages, starting with Workshop, where each production loop is anchored by a memorable room landmark, clear status panels, and tactile image-backed controls.
 
 ## Brand Personality
 
-Sparse, quiet, readable. The game should feel like a restrained text adventure: direct labels, small panels, high-contrast text, midnight surfaces by default, and almost no decoration.
+Whimsical, tactile, readable. The game should feel like a polished wizard workshop: dark midnight-blue rooms, richly rendered props and item icons, warm brown/gold controls, compact high-contrast labels, and decoration tied to gameplay meaning.
 
 ## Anti-references
 
-Do not make it look like a decorated fantasy RPG, card battler, casino idle game, colorful dashboard, or modern rounded mobile app. Avoid gradients, icon-heavy controls, textures, illustrations, oversized type, rounded cards, and decorative shadows outside explicitly approved shared chrome such as the Root Run dialog shell.
+Do not let the fantasy treatment turn into casino clutter, a generic card battler, or a flat modern dashboard. Avoid unrelated ornaments, competing focal points, arbitrary gradients, inconsistent icon families, excessive glow, oversized copy, and feature-local panel skins that bypass the shared widget system.
 
 ## Design Principles
 
 - Preserve the Root Run-compatible `390x844` room surface and contain-fit it to device size.
 - Let typography stay source-small and readable through viewport scaling.
-- Keep room UI sparse: one clear current action area, stable navigation, compact status.
+- Give each room one dominant illustrated landmark, one clear current action area, stable navigation, and compact supporting status.
 - Use motion only to explain state changes, page shifts, dialogs, and button feedback.
 - Keep gameplay rules outside page rendering.
 

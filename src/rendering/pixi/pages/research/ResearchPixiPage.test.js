@@ -39,7 +39,7 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
-  it('routes cost-only buys and retained info actions for locked rows', () => {
+  it('routes locked rows to a requirement tooltip without button copy', () => {
     const buyResearch = vi.fn();
     const showLockedReason = vi.fn();
     const harness = createHarness();
@@ -64,6 +64,7 @@ describe('ResearchPixiPage', () => {
     row.labelHit.emit('pointertap', {});
     expect(harness.dialogs.get('research.info')).toBe(infoDialog);
     expect(harness.dialogs.getStats().constructed).toBe(1);
+    harness.dialogs.close('research.info');
 
     harness.page.bind(
       createResearchViewModel({
@@ -72,9 +73,50 @@ describe('ResearchPixiPage', () => {
         showLockedReason,
       }),
     );
+    const lockedRow = harness.page.boxes.get('herbs').rows.get('mint');
+
+    expect(lockedRow.rank.visible).toBe(false);
+    expect(lockedRow.rankLabel.visible).toBe(false);
+    expect(lockedRow.costButton.lockReason).toBe('');
+    expect(lockedRow.costButton.lockReasonLabel.visible).toBe(false);
     expect(harness.semanticTargets.activate('research.mint')).toBe(true);
-    expect(showLockedReason).not.toHaveBeenCalled();
-    expect(harness.dialogs.get('research.info')).toBe(infoDialog);
+    expect(showLockedReason).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'mint', locked: true }),
+    );
+    expect(harness.page.lockTooltip.root.visible).toBe(true);
+    expect(harness.page.lockTooltip.copy.text).toBe(
+      'Complete prior research',
+    );
+    expect(harness.dialogs.isOpen('research.info')).toBe(false);
+    harness.page.hideLockTooltip();
+    lockedRow.labelHit.emit('pointertap', {});
+    expect(showLockedReason).toHaveBeenCalledTimes(2);
+    expect(harness.page.lockTooltip.root.visible).toBe(true);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('uses Idle Outpost luminance weights for locked artwork', () => {
+    const harness = createHarness();
+    harness.page.bind(
+      createResearchViewModel({
+        canResearch: false,
+        locked: true,
+      }),
+    );
+
+    const row = harness.page.boxes.get('herbs').rows.get('mint');
+    row.art.tint = 0xff0000;
+    row.applyTheme(harness.page.theme);
+    expect(row.art.filters).toEqual([row.lockedArtFilter]);
+    expect(row.art.tint).toBe(0xffffff);
+    expect(row.lockedArtFilter.matrix).toEqual([
+      0.2125, 0.7154, 0.0721, 0, 0,
+      0.2125, 0.7154, 0.0721, 0, 0,
+      0.2125, 0.7154, 0.0721, 0, 0,
+      0, 0, 0, 1, 0,
+    ]);
 
     harness.page.destroy();
     harness.dispose();
@@ -194,6 +236,43 @@ describe('ResearchPixiPage', () => {
     expect(harness.page.rows.get('mint')).toBe(row);
     expect(harness.page.boxes.get('automation').rows.get('mint')).toBe(row);
     expect(harness.page.rowPool.getStats().allocated).toBe(1);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('presents completed research with corrected copy and yellow status chrome', () => {
+    const harness = createHarness();
+    const model = createResearchViewModel({
+      value: 'researched',
+      canResearch: false,
+    });
+    Object.assign(
+      model.research.tabs[0].boxes[0].researches[0],
+      {
+        completed: true,
+        displayName: 'sage seed',
+        description: 'allows sage seed to drop from summon seed.',
+      },
+    );
+
+    harness.page.bind(model);
+
+    const row = harness.page.rows.get('mint');
+    expect(row.name.text).toBe('Sage Seed');
+    expect(row.description.text).toBe(
+      'Allows sage seed to drop from summon seed.',
+    );
+    expect(row.name.style.fill).toEqual(row.description.style.fill);
+    expect(row.name.position.y).toBe(0);
+    expect(row.researchedButton.root.visible).toBe(true);
+    expect(row.researchedButton.control.variant).toBe('yellow');
+    expect(row.researchedButton.text.text).toBe('Researched');
+    expect(row.researchedButton).toMatchObject({
+      width: 80,
+      height: 48,
+    });
+    expect(row.readonlyValue.visible).toBe(false);
 
     harness.page.destroy();
     harness.dispose();

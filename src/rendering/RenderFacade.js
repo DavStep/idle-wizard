@@ -8,6 +8,7 @@ import { PixiOnlineGateController } from './pixi/global/gates/PixiOnlineGateCont
 import { PixiOnlineGateView } from './pixi/global/gates/PixiOnlineGateView.js';
 import { PixiBottomPanelView } from './pixi/global/chrome/PixiBottomPanelView.js';
 import { PixiTopPanelView } from './pixi/global/chrome/PixiTopPanelView.js';
+import { PixiWorldChatView } from './pixi/global/chrome/PixiWorldChatView.js';
 import { PixiInputRouter } from './pixi/input/PixiInputRouter.js';
 import { PixiApplicationManager } from './pixi/runtime/PixiApplicationManager.js';
 import { PixiUiRuntimeFacade } from './pixi/runtime/PixiUiRuntimeFacade.js';
@@ -159,6 +160,12 @@ export class RenderFacade {
             context
               .dialogRegistry()
               ?.isOpen?.('global.announcement') === true,
+        }),
+      )
+      .registerGlobalSurface('chrome.chat', (context) =>
+        new PixiWorldChatView({
+          assets: context.assets,
+          inputRouter: context.inputRouter,
         }),
       );
   }

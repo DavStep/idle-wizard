@@ -11139,6 +11139,7 @@ function normalizeSaveBrewing(
           autoBrewEnabled: brewing.autoBrewEnabled,
           autoBrewArmed: brewing.autoBrewArmed,
           autoBrewRecipeKey: brewing.autoBrewRecipeKey,
+          autoCollectEnabled: brewing.autoCollectEnabled,
           brewQuantity: brewing.brewQuantity,
         },
       ];
@@ -11151,6 +11152,7 @@ function normalizeSaveBrewing(
       autoBrewEnabled: boolean;
       autoBrewArmed: boolean;
       autoBrewRecipeKey: string | null;
+      autoCollectEnabled: boolean;
       brewQuantity: number | null;
     }
   >();
@@ -11186,6 +11188,9 @@ function normalizeSaveBrewing(
       autoBrewEnabled,
       autoBrewArmed,
       autoBrewRecipeKey: safeAutoBrewRecipeKey,
+      autoCollectEnabled:
+        sourceCauldron.autoCollectEnabled ??
+        (cauldronNumber === 1 ? brewing.autoCollectEnabled : false),
     });
     const brewQuantity = normalizeSaveSelectedNumber(
       sourceCauldron.brewQuantity ?? (cauldronNumber === 1 ? brewing.brewQuantity : null),
@@ -11222,6 +11227,7 @@ function normalizeSaveBrewing(
       autoBrewEnabled: false,
       autoBrewArmed: false,
       autoBrewRecipeKey: null,
+      autoCollectEnabled: false,
       brewQuantity: null,
     };
 
@@ -11229,6 +11235,7 @@ function normalizeSaveBrewing(
     autoBrewEnabled: primaryCauldron.autoBrewEnabled,
     autoBrewArmed: primaryCauldron.autoBrewArmed,
     autoBrewRecipeKey: primaryCauldron.autoBrewRecipeKey,
+    autoCollectEnabled: primaryCauldron.autoCollectEnabled,
     brewQuantity: primaryCauldron.brewQuantity,
     unlockedCauldrons,
     cauldrons,
@@ -11247,6 +11254,7 @@ function getLegacyUnlockedCauldronCount(
       autoBrewEnabled: boolean;
       autoBrewArmed: boolean;
       autoBrewRecipeKey: string | null;
+      autoCollectEnabled: boolean;
       brewQuantity: number | null;
     }
   >,

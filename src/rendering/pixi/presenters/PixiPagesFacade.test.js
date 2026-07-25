@@ -25,11 +25,30 @@ describe('PixiPagesFacade', () => {
       'chrome.top',
       expect.objectContaining({ username: 'elara' }),
     );
+    expect(harness.runtime.bindGlobalSurface).toHaveBeenCalledWith(
+      'chrome.chat',
+      expect.objectContaining({
+        label: 'world chat',
+        visible: true,
+      }),
+    );
 
     expect(pages.show('research')).toBe(true);
     expect(pages.getCurrentPageId()).toBe('research');
     expect(harness.runtime.activatePage).toHaveBeenLastCalledWith('research');
     expect(harness.runtime.bindPage).toHaveBeenCalledTimes(2);
+    expect(harness.getBoundGlobal('chrome.chat')).toEqual(
+      expect.objectContaining({
+        label: 'world chat',
+        visible: true,
+      }),
+    );
+    expect(harness.getBoundGlobal('chrome.chat').onActivate()).toBe(true);
+    expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
+      'worldChat',
+      expect.objectContaining({ title: 'world chat' }),
+    );
+    expect(pages.getCurrentPageId()).toBe('research');
 
     pages.unmount();
     expect(harness.runtime.deactivatePage).toHaveBeenCalledTimes(1);
@@ -78,6 +97,24 @@ describe('PixiPagesFacade', () => {
       expect.objectContaining({ unlocked: false }),
     );
     expect(pages.getCurrentPageId()).toBe('workshop');
+  });
+
+  it('keeps global world chat hidden until its existing level-three gate', () => {
+    const harness = createHarness({
+      gameplaySnapshot: createGameplaySnapshot({ level: 1 }),
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+
+    pages.mount();
+
+    expect(harness.getBoundGlobal('chrome.chat')).toEqual(
+      expect.objectContaining({
+        label: 'world chat',
+        visible: false,
+      }),
+    );
+    expect(harness.getBoundGlobal('chrome.chat').onActivate()).toBe(false);
+    expect(harness.pageSurface.openDialog).not.toHaveBeenCalled();
   });
 
   it('prehighlights the adjacent retained tab while a page swipe is owned', () => {

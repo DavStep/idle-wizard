@@ -39,7 +39,7 @@ experience_type: product-shape
 - When smooth timer bars are desired, derive fill, remaining label, and ARIA percent from one inferred end time; do not let snapshot `progress` disagree with `remainingMs`.
 - Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
 - Research completion announcements should resolve labels/details through `ResearchFacade`; visible research tabs can hide completed series entries before the popup renders.
-- Research completion announcement icons belong in `PageAnnouncementManager` atlas-frame ID-family mapping; keep Research list rows text-first unless explicitly redesigning rows.
+- Research completion announcement icons belong in `PageAnnouncementManager` atlas-frame ID-family mapping; Research list rows use the approved station-upgrade-card art and layout family.
 - Page announcement baselines must reset on gameplay persistence load; restored backend saves should not replay old level/research popups.
 - Page announcement level baselines must accept pre-level `0`; the first playable `0 -> 1` level-up should queue the level 1/market unlock notice, not treat level 1 as the initial baseline.
 - Feature unlocks should remain separate queued room announcements after the level-up card; the level-up reward row and Elara lesson copy do not replace the unlock card.
@@ -72,7 +72,7 @@ experience_type: product-shape
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
 - Even with Android `adjustNothing`, WebView text focus can pan the document; keep the app shell fixed and reset document scroll while text entry is locked.
 - World chat dialog should use a fixed upper source-coordinate anchor; focus-within keyboard recentering makes it jump down when the keyboard closes.
-- A Dark Room is style guidance only; do not copy its desktop resolution/layout.
+- The approved illustrated fantasy HUD and Root Run asset pipeline are the visual guidance; keep the fixed `390x844` logical resolution and contain-fit behavior.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
 - FTUE reveal-gated action loops need an active step while waiting for repeated actions; a null step clears `data-tutorial-reveal` and shows unrevealed room UI.
 - FTUE reveal `pointer-events` enables must match or exceed the hidden action selector specificity; visible controls can otherwise remain untappable after reveal animations end.
@@ -116,7 +116,7 @@ experience_type: product-shape
 - Weekly event request completion caps visible progress/response only; matching actions keep adding contribution points after completion.
 - Weekly event tasks have no contribution limit; show accumulated contribution like `earned 175 coin`, never `25/50`, remaining, or capped target copy.
 - Weekly event task labels should start with the literal counted action (`earn coin`, `sell items`, `complete research`) before event flavor; flavor-only labels read like hidden mechanics.
-- Weekly event task titles stay monochrome; color/icon only the resource words or amount phrases inside instructions/progress.
+- Weekly event task titles use the normal HUD title treatment; reserve semantic color/icons for resources, progress, action roles, selection, and notifications.
 - World event popup rows are tasks, not progression requests: show points earned per task and points collected from that task; use a leaderboard tab instead of an archive tab.
 - World event leaderboard rows should keep the main leaderboard row treatment: 260px source row width, centered in the wider world-event dialog, with bare numeric values under a `points` header.
 - World event leaderboard data should come from `world_event_leaderboard_summary`; local current-point fallback is only for offline/missing backend rows.
@@ -207,7 +207,7 @@ experience_type: product-shape
 - FTUE text-shaped spotlight holes must remeasure for a few RAFs during reveal transitions; web-wide SVG backdrops need explicit `100% + gutters` width because `width:auto` can stop short.
 - Icon-mode top-panel resource FTUE spotlights should target the resource label wrapper with an element hole; SVG text holes can ghost the amount and leave the icon dimmed.
 - HTML screenshot harnesses that load `/src/styles/base.css` must set `html[data-style-theme="midnight"]`; missing or `white` themes fall back to the removed light base.
-- Resource-label screenshot harnesses must set `html[data-style-icons="icons"]`; resource and currency text stays monochrome, while icon mode must still match the live app.
+- Resource-label screenshot harnesses must set `html[data-style-icons="icons"]`; resource and currency labels must retain their shared semantic colors and still match the live app.
 - FTUE should also hide behind ordinary room popups unless the active step targets that popup or explicitly uses popup-only copy guidance.
 - Room announcement overlays are FTUE blockers; add them through `TutorialTargetManager` blocking selectors so hidden toggles pause/resume Elara.
 - Bottom-tab unlock motion can be hidden by the level announcement overlay; delay or replay the lock break/icon reveal when an announcement is visible.

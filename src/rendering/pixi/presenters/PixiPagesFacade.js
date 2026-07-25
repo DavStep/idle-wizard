@@ -1,6 +1,9 @@
 import { DEFAULT_PAGE_SWIPE_ORDER } from '../../../pages/managers/pageOrder.js';
 import { PageUnlockManager } from '../../../pages/managers/PageUnlockManager.js';
 import {
+  WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL,
+} from '../../../pages/workshop/managers/WorkshopSecondaryActionGateManager.js';
+import {
   PageNotificationStateManager,
   getGardenNotificationContext,
   hasGardenTileNotification,
@@ -171,6 +174,7 @@ export class PixiPagesFacade {
     this.expandedInventoryKindsByPage = new Map();
     this.prestigeConfirm = null;
     this.selectedRecipeByCauldron = new Map();
+    this.selectedBrewingCauldronIndex = 0;
     this.worldViewportByPage = new Map();
     this.dirtyPageIds = new Set(PAGE_IDS);
     this.registerViews();
@@ -320,7 +324,8 @@ export class PixiPagesFacade {
     this.trackSubscription(
       this.worldChatFacade?.subscribe?.((snapshot) => {
         this.worldChatSnapshot = snapshot ?? {};
-        this.refreshPage('workshop');
+        this.refreshChrome();
+        this.refreshOpenWorldChatDialog();
       }),
     );
     this.trackSubscription(
@@ -493,6 +498,60 @@ export class PixiPagesFacade {
         },
       }),
     );
+    runtime.bindGlobalSurface(
+      'chrome.chat',
+      this.viewModelFactory.createWorldChatPreview(
+        this.worldChatSnapshot,
+        {
+          visible: this.isWorldChatUnlocked(),
+          onActivate: () => this.openWorldChat(),
+        },
+      ),
+    );
+  }
+
+  isWorldChatUnlocked() {
+    const level = Math.max(
+      1,
+      Math.floor(
+        Number(
+          this.gameplaySnapshot.tasks?.currentLevel ??
+            this.gameplaySnapshot.playerLevel?.currentLevel,
+        ) || 1,
+      ),
+    );
+    return level >= WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL;
+  }
+
+  openWorldChat() {
+    if (!this.mounted || !this.isWorldChatUnlocked()) {
+      return false;
+    }
+
+    return (
+      this.requireRuntime()
+        .getPage('workshop')
+        ?.openDialog?.(
+          'worldChat',
+          this.viewModelFactory.createWorldChatDialog(
+            this.worldChatSnapshot,
+            this.createActions().workshop,
+          ),
+        ) ?? false
+    );
+  }
+
+  refreshOpenWorldChatDialog() {
+    if (
+      !this.mounted ||
+      !this.requireRuntime()
+        .getOpenDialogIds?.()
+        ?.includes('workshop.worldChat')
+    ) {
+      return;
+    }
+
+    this.openWorldChat();
   }
 
   refreshPage(pageId, { force = false } = {}) {
@@ -925,6 +984,10 @@ export class PixiPagesFacade {
         ...brewing,
         now: Date.now(),
         cauldrons,
+        selectedCauldronIndex: Math.min(
+          this.selectedBrewingCauldronIndex,
+          Math.max(0, cauldrons.length - 1),
+        ),
         world: this.worldViewportByPage.get('brewing') ?? {},
         inventory: {
           activeTab: this.brewingInventoryTabId,
@@ -950,11 +1013,37 @@ export class PixiPagesFacade {
       Math.floor(Number(cauldron?.cauldronIndex) || 0),
     );
     const selectedRecipe = this.selectedRecipeByCauldron.get(index) ?? null;
+    const herbsByKey = new Map(
+      (brewing.herbs ?? []).map((herb) => [herb.key, herb]),
+    );
+    const decoratedRecipe = selectedRecipe
+      ? {
+          ...selectedRecipe,
+          ingredients: (selectedRecipe.ingredients ?? []).map((ingredient) => ({
+            ...ingredient,
+            owned:
+              herbsByKey.get(ingredient.itemKey ?? ingredient.key)?.quantity ??
+              0,
+          })),
+        }
+      : null;
+    const primaryAction = cauldron.activeBrew?.canStartBottling
+      ? {
+          id: 'bottle',
+          label: 'bottle',
+          enabled: true,
+        }
+      : {
+          id: 'brew',
+          label: `brew x${cauldron.brewQuantity ?? 1}`,
+          enabled: cauldron.canBrew === true,
+        };
     return {
       ...cauldron,
       id: cauldron.id ?? index,
       unlocked: true,
-      selectedRecipe,
+      selectedRecipe: decoratedRecipe,
+      primaryAction,
       recipesDialog: {
         title: 'recipes',
         cauldronIndex: index,
@@ -967,7 +1056,14 @@ export class PixiPagesFacade {
   createBrewingActions() {
     const gameplay = this.gameplayFacade;
     return {
-      selectCauldron: () => true,
+      selectCauldron: (cauldronIndex) => {
+        this.selectedBrewingCauldronIndex = Math.max(
+          0,
+          Math.floor(Number(cauldronIndex) || 0),
+        );
+        this.refreshPage('brewing');
+        return true;
+      },
       openRecipes: (cauldronIndex) =>
         this.requireRuntime()
           .getPage('brewing')
@@ -1006,6 +1102,12 @@ export class PixiPagesFacade {
         gameplay?.setBrewingBrewQuantity?.(quantity, cauldronIndex),
       toggleAutoBrew: (cauldronIndex) =>
         gameplay?.toggleBrewingAutoBrewEnabled?.(cauldronIndex),
+      toggleAutoCollect: (cauldronIndex) =>
+        gameplay?.toggleBrewingAutoCollectEnabled?.(cauldronIndex),
+      cancelBrew: (cauldronIndex) =>
+        gameplay?.cancelBrewing?.(cauldronIndex),
+      collectBrew: (cauldronIndex) =>
+        gameplay?.collectBrewing?.(cauldronIndex),
       addHerb: (herb, cauldron) =>
         gameplay?.addBrewingIngredient?.(
           herb?.itemTypeId,

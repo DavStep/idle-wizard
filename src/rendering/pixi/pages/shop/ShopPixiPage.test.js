@@ -199,6 +199,24 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it('uses the shared brown tab skins for Market navigation', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+
+    expect(
+      [...harness.page.tabButtons.values()].map((button) => button.variant),
+    ).toEqual(['tab', 'tab', 'tab']);
+    expect(
+      harness.page.tabButtons.get('traders').resolveRootRunVariant(),
+    ).toBe('brown-light');
+    expect(
+      harness.page.tabButtons.get('players').resolveRootRunVariant(),
+    ).toBe('brown-dark');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('blocks page input while a retained dialog owns the modal stack', () => {
     const inputRouter = new PixiInputRouter();
     const harness = createHarness({ inputRouter });

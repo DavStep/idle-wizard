@@ -229,16 +229,16 @@ describe('WorkshopPixiPage', () => {
     });
     expect(harness.page.bagButton.root.position).toMatchObject({
       x: 16,
-      y: 476.25,
+      y: 346.75,
     });
     expect(harness.page.statsButton.root.position).toMatchObject({
       x: 244,
-      y: 532,
+      y: 165,
     });
     const alliance = harness.page.features.get('alliance');
     const inbox = harness.page.inboxButton;
-    expect(alliance.root.position).toMatchObject({ x: 16, y: 319.5 });
-    expect(inbox.root.position).toMatchObject({ x: 298.5, y: 319.5 });
+    expect(alliance.root.position).toMatchObject({ x: 16, y: 190 });
+    expect(inbox.root.position).toMatchObject({ x: 298.5, y: 190 });
     expect(alliance.panel).toBeUndefined();
     expect(alliance.root.hitArea).toMatchObject({
       x: 0,

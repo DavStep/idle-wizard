@@ -73,6 +73,7 @@ const INTRO_ENTER_DURATIONS = Object.freeze({
   workshop: 1700,
 });
 const INTRO_EXIT_MS = 180;
+const DEMON_DROP_MS = 280;
 
 /**
  * @typedef {object} FirstRunIntroPixiViewModel
@@ -272,6 +273,7 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
 
   onBind(viewModel) {
     const model = normalizeIntroModel(viewModel);
+    const previousModel = this.model;
     this.model = model;
     this.actions = model?.actions ?? {};
     this.reducedMotion = Boolean(
@@ -281,7 +283,12 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
     this.previousStepId = model?.id ?? null;
     this.renderModel(model);
     if (changed && model.visible !== false) {
-      this.playEnter(model.scene);
+      const backdropChanging =
+        previousModel?.visible === false ||
+        !previousModel?.scene ||
+        getBackdropAssetForScene(previousModel.scene) !==
+          getBackdropAssetForScene(model.scene);
+      this.playEnter(model.scene, { backdropChanging });
     }
   }
 
@@ -406,11 +413,11 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
     this.renderModel(this.model);
   }
 
-  playEnter(scene) {
+  playEnter(scene, { backdropChanging = true } = {}) {
     this.cancelMotion();
     this.resetSceneVisuals();
     if (this.reducedMotion) {
-      this.applyEnterProgress(scene, 1);
+      this.applyEnterProgress(scene, 1, backdropChanging);
       return;
     }
     this.motion = {
@@ -418,8 +425,9 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
       scene,
       elapsedMs: 0,
       durationMs: INTRO_ENTER_DURATIONS[scene] ?? 720,
+      backdropChanging: Boolean(backdropChanging),
     };
-    this.applyEnterProgress(scene, 0);
+    this.applyEnterProgress(scene, 0, backdropChanging);
     this.syncTicker();
   }
 
@@ -454,7 +462,11 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
       this.motion.elapsedMs / Math.max(1, this.motion.durationMs),
     );
     if (this.motion.kind === 'enter') {
-      this.applyEnterProgress(this.motion.scene, progress);
+      this.applyEnterProgress(
+        this.motion.scene,
+        progress,
+        this.motion.backdropChanging,
+      );
     } else {
       this.applyExitProgress(progress, this.motion.backdropChanging);
     }
@@ -480,30 +492,24 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
     }
   }
 
-  applyEnterProgress(scene, progress) {
-    const eased = easeOutCubic(progress);
-    this.panel.alpha = progress < 0.72 ? progress / 0.72 : 1;
-    const panelScale =
-      progress < 0.72
-        ? lerp(0.982, 1.006, progress / 0.72)
-        : lerp(1.006, 1, (progress - 0.72) / 0.28);
-    this.panel.scale.set(panelScale);
-    this.panel.__motionY = lerp(8, 0, eased);
-    this.panel.position.y =
-      (this.panel.__layoutY ?? this.panel.position.y) +
-      this.panel.__motionY;
-
-    this.copy.alpha = clamp01((progress - 0.04) / 0.12);
-    this.advanceButton.alpha = clamp01((progress - 0.05) / 0.1);
+  applyEnterProgress(scene, progress, backdropChanging = true) {
+    this.keepPanelStable();
     this.transitionShade.alpha =
-      progress <= 0.12 ? lerp(0.92, 0, progress / 0.12) : 0;
+      backdropChanging && progress <= 0.12
+        ? lerp(0.92, 0, progress / 0.12)
+        : 0;
 
     const backdrop = this.getVisibleBackdrop();
     if (backdrop) {
       applyBackdropEnter(backdrop, scene, progress);
     }
     if (scene === 'defeated') {
-      applyDefeatedEnter(this.defeated, progress);
+      const elapsedMs =
+        progress * (INTRO_ENTER_DURATIONS.defeated ?? DEMON_DROP_MS);
+      applyDefeatedEnter(
+        this.defeated,
+        clamp01(elapsedMs / DEMON_DROP_MS),
+      );
     }
     if (scene === 'peace') {
       const rainbowProgress = clamp01(
@@ -529,12 +535,7 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
 
   applyExitProgress(progress, backdropChanging) {
     const eased = easeOutCubic(progress);
-    this.panel.alpha = 1 - progress;
-    this.panel.scale.set(lerp(1, 0.992, eased));
-    this.panel.__motionY = lerp(0, 4, eased);
-    this.panel.position.y =
-      (this.panel.__layoutY ?? this.panel.position.y) +
-      this.panel.__motionY;
+    this.keepPanelStable();
     this.transitionShade.alpha = backdropChanging
       ? lerp(0, 0.92, eased)
       : 0;
@@ -545,9 +546,7 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
     this.sale.alpha = lerp(1, 0, eased);
   }
 
-  resetSceneVisuals() {
-    this.backdropLayer.alpha = 1;
-    this.transitionShade.alpha = 0;
+  keepPanelStable() {
     this.panel.alpha = 1;
     this.panel.scale.set(1);
     this.panel.__motionY = 0;
@@ -555,6 +554,12 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
       this.panel.__layoutY ?? this.panel.position.y;
     this.copy.alpha = 1;
     this.advanceButton.alpha = 1;
+  }
+
+  resetSceneVisuals() {
+    this.backdropLayer.alpha = 1;
+    this.transitionShade.alpha = 0;
+    this.keepPanelStable();
     this.rainbow.alpha = this.model?.scene === 'peace' ? 0.62 : 0;
     this.rainbow.scale.set(1);
     this.rainbow.position.y = FIRST_RUN_INTRO_PIXI_GEOMETRY.rainbow.y;
@@ -836,29 +841,33 @@ function applyDefeatedEnter(sprite, progress) {
   const baseScale =
     FIRST_RUN_INTRO_PIXI_GEOMETRY.defeated.width /
     Math.max(1, sprite.texture.width);
-  sprite.alpha = clamp01(progress / 0.16);
-  if (progress <= 0.54) {
-    const local = progress / 0.54;
+  sprite.alpha = clamp01(progress / 0.12);
+  if (progress <= 0.58) {
+    const local = progress / 0.58;
     sprite.position.y =
       FIRST_RUN_INTRO_PIXI_GEOMETRY.defeated.y +
-      lerp(-350, 0, easeOutCubic(local));
+      lerp(-350, 0, easeInQuart(local));
     sprite.scale.set(
-      baseScale * lerp(0.86 / 0.9, 0.925 / 0.9, local),
-      baseScale * lerp(0.96 / 0.9, 0.875 / 0.9, local),
+      baseScale * lerp(0.92, 1.1, local),
+      baseScale * lerp(1.06, 0.82, local),
     );
-  } else if (progress <= 0.72) {
-    const local = (progress - 0.54) / 0.18;
+  } else if (progress <= 0.78) {
+    const local = easeOutCubic((progress - 0.58) / 0.2);
     sprite.position.y =
-      FIRST_RUN_INTRO_PIXI_GEOMETRY.defeated.y + lerp(0, -6, local);
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.defeated.y + lerp(0, -10, local);
     sprite.scale.set(
-      baseScale * lerp(0.925 / 0.9, 0.887 / 0.9, local),
-      baseScale * lerp(0.875 / 0.9, 0.914 / 0.9, local),
+      baseScale * lerp(1.1, 0.96, local),
+      baseScale * lerp(0.82, 1.06, local),
     );
   } else {
+    const local = easeOutCubic((progress - 0.78) / 0.22);
     sprite.position.y =
       FIRST_RUN_INTRO_PIXI_GEOMETRY.defeated.y +
-      lerp(-6, 0, (progress - 0.72) / 0.28);
-    sprite.scale.set(baseScale);
+      lerp(-10, 0, local);
+    sprite.scale.set(
+      baseScale * lerp(0.96, 1, local),
+      baseScale * lerp(1.06, 1, local),
+    );
   }
 }
 
@@ -872,4 +881,8 @@ function clamp01(value) {
 
 function easeOutCubic(value) {
   return 1 - Math.pow(1 - clamp01(value), 3);
+}
+
+function easeInQuart(value) {
+  return Math.pow(clamp01(value), 4);
 }

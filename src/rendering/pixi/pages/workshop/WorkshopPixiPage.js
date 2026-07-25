@@ -95,6 +95,9 @@ const ALLIANCE_BANNER_TINTS = Object.freeze({
 });
 
 const SUMMON_EFFECT_DURATION_MS = 520;
+const SIDE_CONTROLS_TASK_GAP = 8;
+const SIDE_PANEL_FIRST_ROW_GAP = 25;
+const SIDE_PANEL_ROW_GAP = 52.25;
 const SUMMON_EFFECT_FRAMES = Object.freeze([
   Object.freeze({ progress: 0, alpha: 0.84, scale: 1 }),
   Object.freeze({ progress: 0.32, alpha: 1, scale: 1.045 }),
@@ -168,18 +171,6 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       variant: 'yellow',
     });
     this.featureLayer = new Container({ label: 'workshop-feature-buttons' });
-    this.chatPreview = new WorkshopChatPreview({
-      assetManager: this.assetManager,
-      inputRouter: this.inputRouter,
-      onActivate: () => {
-        if (typeof this.currentActions?.openWorldChat === 'function') {
-          this.currentActions.openWorldChat();
-          return true;
-        }
-
-        return this.openDialog('worldChat');
-      },
-    });
     this.content.addChild(
       this.tasks.root,
       this.summon.root,
@@ -187,7 +178,6 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       this.inboxButton.root,
       this.statsButton.root,
       this.featureLayer,
-      this.chatPreview.root,
     );
 
     this.featurePool = new WidgetPool({
@@ -309,7 +299,6 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       ...(providedFeatures.get(defaults.id) ?? {}),
     }));
     this.features.reconcile(features);
-    this.chatPreview.bind(workshop.worldChat ?? {});
     this.flyouts.reconcile(normalizeRows(workshop.flyouts));
     this.layoutWorkshop();
   }
@@ -382,8 +371,6 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.bagButton?.applyTheme(theme);
     this.inboxButton?.applyTheme(theme);
     this.statsButton?.applyTheme(theme);
-    this.chatPreview?.applyTheme(theme);
-
     for (const feature of this.features?.getWidgets?.() ?? []) {
       feature.applyTheme(theme);
     }
@@ -419,13 +406,30 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       width,
     );
     this.summon.setBounds(this.sourceWidth / 2, this.sourceHeight * 0.595);
-    const secondaryY = RETAINED_PAGE_GEOMETRY.contentTop + 388 + 40;
-    this.bagButton.setBounds(16, 319.5 + 3 * 52.25);
-    this.inboxButton.setBounds(this.sourceWidth - 16 - 45.5, 319.5);
-    this.statsButton.setBounds(this.sourceWidth - 116, secondaryY, 100, 22);
+    const sideControlsTop =
+      RETAINED_PAGE_GEOMETRY.contentTop +
+      this.tasks.height +
+      SIDE_CONTROLS_TASK_GAP;
+    const sidePanelTop = sideControlsTop + SIDE_PANEL_FIRST_ROW_GAP;
+    this.bagButton.setBounds(
+      16,
+      sidePanelTop + 3 * SIDE_PANEL_ROW_GAP,
+    );
+    this.inboxButton.setBounds(
+      this.sourceWidth - 16 - 45.5,
+      sidePanelTop,
+    );
+    this.statsButton.setBounds(
+      this.sourceWidth - 116,
+      sideControlsTop,
+      100,
+      22,
+    );
 
     for (const feature of this.features.getWidgets()) {
-      const top = 319.5 + (Math.max(1, feature.model.row) - 1) * 52.25;
+      const top =
+        sidePanelTop +
+        (Math.max(1, feature.model.row) - 1) * SIDE_PANEL_ROW_GAP;
       const left =
         feature.model.side === 'right'
           ? this.sourceWidth - 16 - 45.5
@@ -433,12 +437,6 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       feature.setBounds(left, top, 45.5, 80.25);
     }
 
-    this.chatPreview.setBounds(
-      16,
-      this.sourceHeight - 101 - 41,
-      this.sourceWidth - 32,
-      41,
-    );
     this.flyoutLayer.position.set(0, RETAINED_PAGE_GEOMETRY.contentTop + 182);
     this.registerStaticTargets();
   }
@@ -475,7 +473,6 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.bagButton?.destroy();
     this.inboxButton?.destroy();
     this.statsButton?.destroy();
-    this.chatPreview?.destroy();
     this.features?.destroy();
     this.featurePool?.destroy();
     this.flyouts?.destroy();
@@ -1542,76 +1539,6 @@ class WorkshopFeatureButton {
 
     this.notification.destroy();
     this.root.destroy({ children: true });
-  }
-}
-
-class WorkshopChatPreview {
-  constructor({ assetManager, inputRouter, onActivate }) {
-    this.panel = new RetainedPanel({
-      assetManager,
-      label: 'world chat',
-      panelLabel: 'workshop-world-chat-preview',
-    });
-    this.root = this.panel.root;
-    this.preview = createText('', {
-      ...RETAINED_TEXT_STYLES.border,
-      wordWrapWidth: 308,
-    });
-    this.panel.body.addChild(this.preview);
-    this.root.eventMode = 'static';
-    this.root.cursor = 'pointer';
-    this.handleTap = () => onActivate?.() ?? true;
-    this.inputRegistration = inputRouter?.registerPressTarget?.({
-      id: createRetainedInputId('workshop-world-chat'),
-      displayObject: this.root,
-      enabled: () => this.root.visible,
-      excludePageSwipe: true,
-      onActivate: this.handleTap,
-    }) ?? null;
-    this.usesDirectInput = !this.inputRegistration;
-
-    if (this.usesDirectInput) {
-      this.root.on('pointertap', this.handleTap);
-    }
-  }
-
-  bind(model) {
-    this.model = model;
-    this.panel.setTitle(model.label ?? model.channelLabel ?? 'world chat');
-    setText(
-      this.preview,
-      model.preview ??
-        normalizeRows(model.messages)
-          .slice(-2)
-          .map((message) => message.text ?? message.body ?? '')
-          .join('\n'),
-    );
-    this.root.visible = model.visible !== false;
-  }
-
-  setBounds(x, y, width, height) {
-    this.panel.setBounds(x, y, width, height);
-    this.preview.position.set(5, 4);
-    this.root.hitArea = new Rectangle(0, 0, width, height);
-  }
-
-  applyTheme(theme) {
-    this.panel.applyTheme(theme);
-    applyTextTheme(this.preview, theme, {
-      ...RETAINED_TEXT_STYLES.border,
-      wordWrapWidth: 308,
-    });
-  }
-
-  destroy() {
-    this.inputRegistration?.unregister?.();
-    this.inputRegistration = null;
-
-    if (this.usesDirectInput) {
-      this.root.off('pointertap', this.handleTap);
-    }
-
-    this.panel.destroy();
   }
 }
 

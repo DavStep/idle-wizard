@@ -479,11 +479,11 @@ describe('WorkshopActionBarManager', () => {
     expect(revealInteractionRule).toMatch(/\bpointer-events:\s*auto;/);
   });
 
-  it('places the secondary actions and compact panel openers near chat', () => {
+  it('places the secondary actions and compact panel openers at the top', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
     const bagRule = baseCss.match(
-      /\.workshop-page__ui-layer > \.workshop-page__bag\s*\{(?<body>[^}]*--workshop-panel-button-row-4-label-y[^}]*)\}/,
+      /\.workshop-page__ui-layer > \.workshop-page__bag\s*\{(?<body>[^}]*--workshop-panel-button-row-4-top[^}]*)\}/,
     )?.groups?.body;
     const statsRule = baseCss.match(
       /\.workshop-page__action-bar > \.style-button\.workshop-page__stats-button\s*\{(?<body>[^}]*)\}/,
@@ -548,18 +548,22 @@ describe('WorkshopActionBarManager', () => {
       /--workshop-panel-button-open-height:\s*68\.25px;/,
     );
     expect(rootRule).toMatch(/--workshop-panel-button-label-bottom:\s*3\.9px;/);
-    expect(rootRule).toMatch(/--workshop-panel-button-row-shift-y:\s*60px;/);
-    expect(rootRule).toContain('--workshop-panel-button-row-4-label-y');
+    expect(rootRule).toMatch(
+      /--workshop-side-controls-top-offset:\s*61px;/,
+    );
+    expect(rootRule).toMatch(
+      /--workshop-panel-button-first-row-offset-y:\s*25px;/,
+    );
+    expect(rootRule).toMatch(/--workshop-panel-button-row-gap:\s*52\.25px;/);
+    expect(rootRule).toContain('--workshop-panel-button-row-4-top');
 
     expect(bagRule).toBeDefined();
-    expect(bagRule).toContain(
-      '--workshop-panel-button-row-4-label-y',
-    );
+    expect(bagRule).toContain('--workshop-panel-button-row-4-top');
     expect(bagRule).toMatch(/\bleft:\s*var\(--style-room-chrome-edge\);/);
 
     expect(statsRule).toBeDefined();
     expect(statsRule).toMatch(
-      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-secondary-button-top-offset\) \+\s*var\(--workshop-secondary-button-row-gap\)\s*\);/,
+      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-side-controls-top-offset\)\s*\);/,
     );
     expect(statsRule).toMatch(/\bright:\s*0;/);
     expect(statsRule).toMatch(/\bbox-sizing:\s*content-box;/);
@@ -573,17 +577,12 @@ describe('WorkshopActionBarManager', () => {
     expect(mailRootRule).toMatch(/\bright:\s*var\(--style-room-chrome-edge\);/);
 
     expect(sidePanelRootRule).toBeDefined();
-    expect(sidePanelRootRule).toContain(
-      '--workshop-panel-button-row-1-label-y',
-    );
-    expect(sidePanelRootRule).toContain(
-      'var(--workshop-panel-button-label-offset-y)',
-    );
+    expect(sidePanelRootRule).toContain('--workshop-panel-button-row-1-top');
     expect(sidePanelRootRule).toMatch(
-      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-panel-button-label-row-y\) -\s*var\(--workshop-panel-button-label-offset-y\)\s*\);/,
+      /\btop:\s*var\(--workshop-panel-button-row-top\);/,
     );
     expect(baseCss).toMatch(
-      /\.workshop-page__ui-layer > \.workshop-page__leaderboard,\s*\.workshop-page__ui-layer > \.workshop-page__discoveries\s*\{[^}]*--workshop-panel-button-row-2-label-y/s,
+      /\.workshop-page__ui-layer > \.workshop-page__leaderboard,\s*\.workshop-page__ui-layer > \.workshop-page__discoveries\s*\{[^}]*--workshop-panel-button-row-2-top/s,
     );
     expect(sidePanelRootRule).toMatch(
       /\bwidth:\s*var\(--workshop-panel-button-width\);/,

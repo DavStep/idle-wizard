@@ -555,6 +555,75 @@ describe('BrewingPixiPage', () => {
     harness.page.destroy();
     harness.dispose();
   });
+
+  it('renders the approved carousel HUD with six visual ingredient slots and retained feedback', () => {
+    let now = 0;
+    const harness = createHarness({ timeSource: () => now });
+    const model = createBrewingViewModel();
+    model.brewing.cauldrons[0].autoBrewEnabled = true;
+    model.brewing.cauldrons[0].autoCollectEnabled = false;
+    model.brewing.cauldrons.push({
+      id: 'buy:2',
+      cauldronIndex: 1,
+      cauldronNumber: 2,
+      unlocked: false,
+      canBuyCauldron: true,
+      nextCauldronCost: 25,
+    });
+    model.brewing.configuredMaxCauldrons = 5;
+    harness.page.bind(model);
+
+    expect(harness.page.hud.root.visible).toBe(true);
+    expect(harness.page.worldViewport.visible).toBe(false);
+    expect(harness.page.hud.ingredientSlots).toHaveLength(6);
+    expect(harness.page.hud.ingredientSlots[5].decorative).toBe(true);
+    expect(Object.keys(harness.page.hud.actionIcons)).toEqual([
+      'recipes',
+      'autoBrew',
+      'brew',
+      'settings',
+      'cancel',
+    ]);
+    expect(harness.page.hud.actionIcons.recipes.parent).toBe(
+      harness.page.hud.recipes.control.visual,
+    );
+    expect(harness.page.hud.actionIcons.brew.iconSprites).toHaveLength(3);
+    expect(harness.page.hud.actionIcons.settings.label).toBe(
+      'brewing-settings-action-icon',
+    );
+    expect(harness.page.hud.actionIcons.cancel.parent).toBe(
+      harness.page.hud.cancel.control.visual,
+    );
+    expect(harness.page.hud.cancel.text.text).toBe('cancel');
+    expect(harness.page.hud.recipes.control.textLabel.x).toBeGreaterThan(
+      harness.page.hud.recipes.width / 2,
+    );
+    expect(harness.page.hud.actionIcons.cancel.alpha).toBe(0.5);
+    expect(harness.page.hud.getCauldrons()).toHaveLength(2);
+    const carouselSwipe = harness.inputRouter.store
+      .getRegistrations('swipe')
+      .find((registration) => registration.id === 'brewing.cauldron.carousel.swipe');
+    expect(carouselSwipe.priority).toBe(10);
+    expect(carouselSwipe.onSwipe({ direction: 'next' })).toBe(true);
+    expect(harness.page.hud.selectedIndex).toBe(1);
+
+    expect(harness.page.hud.lockArt.visible).toBe(true);
+    expect(harness.page.selectCauldron(0)).toBe(true);
+
+    expect(harness.page.hud.fastForward.handleTap()).toBe(true);
+    expect(harness.page.toastText.text).toBe('coming soon');
+    expect(harness.page.toast.visible).toBe(true);
+    now = 1_601;
+    harness.page.tick(now);
+    expect(harness.page.toast.visible).toBe(false);
+
+    expect(harness.page.openAutomationSettings()).toBe(true);
+    const settings = harness.dialogs.get('brewing.automation-settings');
+    expect(settings.toggle.text.text).toBe('auto collect off');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
 });
 
 function createHarness({ ticker = null, timeSource = () => 0 } = {}) {

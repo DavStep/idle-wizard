@@ -1,7 +1,9 @@
 # Retained Pixi Workshop Page
 
 `WorkshopPixiPage` builds the request panel, summon control, side feature
-openers, bag/stats actions, chat preview, and reward-flyout layer once.
+openers, bag/stats actions, and reward-flyout layer once. The compact world
+chat preview belongs to retained global chrome so it stays visible across room
+changes.
 Requirement rows, feature openers, dialog rows, tabs, and flyouts are keyed and
 pooled.
 

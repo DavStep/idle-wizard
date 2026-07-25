@@ -116,7 +116,7 @@ describe('WorkshopPageFacade requirement feedback', () => {
     expect(gap).toBeLessThanOrEqual(63);
   });
 
-  it('keeps task and notice characters in bottom-aligned side slots', () => {
+  it('keeps task and notice characters in top-aligned side slots', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = getRuleBody(baseCss, ':root');
     const characterRule = getWorkshopCharacterRuleBody(baseCss);
@@ -130,12 +130,11 @@ describe('WorkshopPageFacade requirement feedback', () => {
       'right:',
     );
 
-    expect(rootRule).toMatch(/--workshop-panel-button-row-shift-y:\s*60px;/);
-    expect(characterRule).toContain(
-      '--workshop-panel-button-row-3-label-y',
+    expect(rootRule).toMatch(
+      /--workshop-side-controls-top-offset:\s*61px;/,
     );
     expect(characterRule).toContain(
-      'var(--workshop-panel-button-label-offset-y)',
+      '--workshop-panel-button-row-3-top',
     );
     expect(characterRule).toMatch(
       /\bheight:\s*var\(--workshop-panel-button-height\);/,

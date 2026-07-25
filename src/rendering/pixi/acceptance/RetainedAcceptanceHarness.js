@@ -159,6 +159,8 @@ export function createRetainedAcceptanceHarness() {
         const kind =
           dialogId === 'brewing.recipe-choice'
             ? 'choice'
+            : dialogId === 'brewing.automation-settings'
+              ? 'settings'
             : 'recipes';
         return page.openDialog(kind, viewModel);
       }

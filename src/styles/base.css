@@ -93,6 +93,8 @@
   --style-dialog-title-font-size: 14px;
   --style-panel-padding: 5px 10px;
   --style-dialog-padding: 20px;
+  --style-dialog-content-width: 304px;
+  --style-dialog-min-content-height: 53px;
   --style-dialog-tab-gap: 8px;
   --style-dialog-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-back.png");
   --style-dialog-frame-slice: 139 163 83 83 fill;
@@ -296,10 +298,9 @@
     var(--style-room-chat-bottom) + var(--style-room-chat-source-height) +
       var(--style-room-chat-title-overhang) + var(--style-room-chat-gap)
   );
-  --workshop-secondary-button-top-offset: 388px;
-  --workshop-secondary-button-row-gap: 40px;
   --workshop-secondary-button-width: 100px;
   --workshop-secondary-button-half-width: 50px;
+  --workshop-side-controls-top-offset: 61px;
   --workshop-panel-button-width: 45.5px;
   --workshop-panel-button-height: 80.25px;
   --workshop-panel-button-open-height: 68.25px;
@@ -312,22 +313,24 @@
       var(--workshop-panel-button-label-bottom) -
       var(--workshop-panel-button-label-line-height)
   );
-  --workshop-panel-button-row-shift-y: 60px;
-  --workshop-panel-button-row-1-label-y: calc(
-    155.5px + var(--workshop-panel-button-label-offset-y) +
-      var(--workshop-panel-button-row-shift-y)
+  --workshop-panel-button-first-row-offset-y: 25px;
+  --workshop-panel-button-row-gap: 52.25px;
+  --workshop-panel-button-row-1-top: calc(
+    var(--style-room-content-top) +
+      var(--workshop-side-controls-top-offset) +
+      var(--workshop-panel-button-first-row-offset-y)
   );
-  --workshop-panel-button-row-2-label-y: calc(
-    207.75px + var(--workshop-panel-button-label-offset-y) +
-      var(--workshop-panel-button-row-shift-y)
+  --workshop-panel-button-row-2-top: calc(
+    var(--workshop-panel-button-row-1-top) +
+      var(--workshop-panel-button-row-gap)
   );
-  --workshop-panel-button-row-3-label-y: calc(
-    260px + var(--workshop-panel-button-label-offset-y) +
-      var(--workshop-panel-button-row-shift-y)
+  --workshop-panel-button-row-3-top: calc(
+    var(--workshop-panel-button-row-2-top) +
+      var(--workshop-panel-button-row-gap)
   );
-  --workshop-panel-button-row-4-label-y: calc(
-    312.25px + var(--workshop-panel-button-label-offset-y) +
-      var(--workshop-panel-button-row-shift-y)
+  --workshop-panel-button-row-4-top: calc(
+    var(--workshop-panel-button-row-3-top) +
+      var(--workshop-panel-button-row-gap)
   );
   --style-main-box-width: 280px;
   --style-room-nav-button-width: 100px;
@@ -4319,8 +4322,7 @@ body {
   position: absolute;
   top: calc(
     var(--style-room-content-top) +
-      var(--workshop-secondary-button-top-offset) +
-      var(--workshop-secondary-button-row-gap)
+      var(--workshop-side-controls-top-offset)
   );
   right: 0;
   box-sizing: content-box;
@@ -5800,16 +5802,10 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks,
 .workshop-page__ui-layer > .workshop-page__world-notice {
-  --workshop-panel-button-label-row-y: var(
-    --workshop-panel-button-row-3-label-y
-  );
+  --workshop-panel-button-row-top: var(--workshop-panel-button-row-3-top);
   position: absolute;
   z-index: 1;
-  top: calc(
-    var(--style-room-content-top) +
-      var(--workshop-panel-button-label-row-y) -
-      var(--workshop-panel-button-label-offset-y)
-  );
+  top: var(--workshop-panel-button-row-top);
   width: var(--workshop-panel-button-width);
   height: var(--workshop-panel-button-height);
   margin: 0;
@@ -5829,16 +5825,10 @@ span.room-seed-pack-composite .room-seed-pack-item {
 .workshop-page__ui-layer > .workshop-page__discoveries,
 .workshop-page__ui-layer > .workshop-page__trade-alliance,
 .workshop-page__ui-layer > .workshop-page__bag {
-  --workshop-panel-button-label-row-y: var(
-    --workshop-panel-button-row-1-label-y
-  );
+  --workshop-panel-button-row-top: var(--workshop-panel-button-row-1-top);
   position: absolute;
   z-index: 1;
-  top: calc(
-    var(--style-room-content-top) +
-      var(--workshop-panel-button-label-row-y) -
-      var(--workshop-panel-button-label-offset-y)
-  );
+  top: var(--workshop-panel-button-row-top);
   width: var(--workshop-panel-button-width);
   height: var(--workshop-panel-button-height);
   margin: 0;
@@ -5851,9 +5841,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 
 .workshop-page__ui-layer > .workshop-page__leaderboard,
 .workshop-page__ui-layer > .workshop-page__discoveries {
-  --workshop-panel-button-label-row-y: var(
-    --workshop-panel-button-row-2-label-y
-  );
+  --workshop-panel-button-row-top: var(--workshop-panel-button-row-2-top);
 }
 
 .workshop-page__ui-layer > .workshop-page__leaderboard {
@@ -5869,9 +5857,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .workshop-page__ui-layer > .workshop-page__bag {
-  --workshop-panel-button-label-row-y: var(
-    --workshop-panel-button-row-4-label-y
-  );
+  --workshop-panel-button-row-top: var(--workshop-panel-button-row-4-top);
   left: var(--style-room-chrome-edge);
 }
 
@@ -10930,12 +10916,13 @@ div.workshop-page__discovery-row {
 
 .research-page__research-name {
   position: absolute;
-  top: 8px;
+  top: 0;
   left: 10px;
   max-width: 225px;
   min-width: 0;
   overflow: visible;
   overflow-wrap: break-word;
+  color: #634934;
   font-size: 14px;
   text-overflow: clip;
   white-space: normal;
@@ -11091,6 +11078,29 @@ div.workshop-page__discovery-row {
   margin-bottom: 0;
   text-align: center;
   font-variant-numeric: tabular-nums lining-nums;
+}
+
+.style-button.research-page__research-button--completed {
+  top: calc(
+    var(--style-research-card-action-top) + (70px - 48px) / 2
+  );
+  right: calc(
+    var(--style-research-card-action-right) +
+      (var(--style-research-value-width) - 80px) / 2
+  );
+  width: 80px;
+  min-width: 80px;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  font-size: 17px;
+  line-height: normal;
+}
+
+:root
+  .research-page__row.is-completed
+  .style-button.style-button--yellow.research-page__research-button--completed {
+  filter: none;
 }
 
 .style-button.style-cost-button.research-page__research-button {
@@ -19579,6 +19589,8 @@ div.workshop-page__discovery-row {
   --style-active-surface: var(--style-dialog-paper-fill);
   --style-stroke: var(--style-dialog-ink);
   isolation: isolate;
+  width: var(--style-dialog-content-width);
+  min-height: var(--style-dialog-min-content-height);
   color: var(--style-dialog-ink);
   text-shadow: none;
   background: transparent;

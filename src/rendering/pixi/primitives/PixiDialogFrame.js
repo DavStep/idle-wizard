@@ -25,6 +25,13 @@ export const PIXI_DIALOG_PALETTE = Object.freeze({
   shadow: '#000000',
 });
 
+export const PIXI_DIALOG_BASE_GEOMETRY = Object.freeze({
+  contentWidth: 304,
+  minContentHeight: 53,
+  coreWidth: 344,
+  minCoreHeight: 93,
+});
+
 const TITLE_TEXT_PADDING_X = 89 / 3;
 const TITLE_MAX_INSET_X = 8;
 const SHADOW_OFFSET_X = 3;
@@ -49,8 +56,8 @@ export class PixiDialogFrame extends Container {
     closeSemanticId = null,
     closeTutorialId = null,
     title = '',
-    coreWidth = 304,
-    coreHeight = 100,
+    coreWidth = PIXI_DIALOG_BASE_GEOMETRY.coreWidth,
+    coreHeight = PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
     closeAction = null,
     label = 'dialogFrame',
   } = {}) {
@@ -61,7 +68,10 @@ export class PixiDialogFrame extends Container {
     this.closeSemanticId = closeSemanticId;
     this.closeAction = typeof closeAction === 'function' ? closeAction : null;
     this.coreWidth = Math.max(0, Number(coreWidth) || 0);
-    this.coreHeight = Math.max(0, Number(coreHeight) || 0);
+    this.coreHeight = Math.max(
+      PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
+      Number(coreHeight) || 0,
+    );
     this.contentBoxWidth = this.coreWidth;
     this.contentBoxHeight = this.coreHeight;
     this.contentInsets = createContentInsets();
@@ -184,7 +194,10 @@ export class PixiDialogFrame extends Container {
 
   setCoreSize(width, height) {
     this.contentBoxWidth = Math.max(0, Number(width) || 0);
-    this.contentBoxHeight = Math.max(0, Number(height) || 0);
+    this.contentBoxHeight = Math.max(
+      PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
+      Number(height) || 0,
+    );
     this.contentInsets = createContentInsets();
     this.coreWidth = this.contentBoxWidth;
     this.coreHeight = this.contentBoxHeight;
@@ -203,7 +216,10 @@ export class PixiDialogFrame extends Container {
    */
   setContentBoxSize(width, height, insets = 0) {
     this.contentBoxWidth = Math.max(0, Number(width) || 0);
-    this.contentBoxHeight = Math.max(0, Number(height) || 0);
+    this.contentBoxHeight = Math.max(
+      PIXI_DIALOG_BASE_GEOMETRY.minContentHeight,
+      Number(height) || 0,
+    );
     this.contentInsets = createContentInsets(insets);
     this.coreWidth =
       this.contentBoxWidth +

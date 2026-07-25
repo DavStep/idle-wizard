@@ -10,7 +10,7 @@ The target game viewport matches Root Run at `390x844`. Treat that as the logica
 
 Do not add seed, herb, potion, selling, economy, inventory, progression, or other gameplay code until the user explicitly requests that feature.
 
-The project `STYLE` is defined in `docs/style.md`. It is inspired by A Dark Room: black text, white surfaces, readable serif text with some character, thin game-gray borders, compact text panels, and almost no decoration.
+The project `STYLE` is defined in `docs/style.md`. The default is an illustrated fantasy-game HUD inspired by the approved Brewing reference and Root Run: dark layered panels, image-backed rounded chrome, large room landmarks, warm brown/gold action skins, colorful item/resource art, compact outlined Lilita One text, and controlled depth. Decoration must communicate room identity, state, or action hierarchy rather than become ambient clutter.
 
 Before making new UI, check `docs/style.md` and the reusable widget library in `docs/ui-patterns.md` for an existing similar concept, then reuse that row, box, popup, tab, scroll pane, control, and border-label pattern instead of inventing a near-duplicate.
 
@@ -36,13 +36,13 @@ The bugfixing agent must establish reproduction steps, isolate the exact root ca
 
 Selected ECC-derived skills live under `.agents/skills/ecc-*` as advisory QA additions. Use them when their descriptions match, but Idle Wizard project rules, the `experience.md` router and routed `docs/obsidian/engineering-liveops/experience/` files, and local `idle-wizard-*` skills override ECC guidance on conflicts. Do not install full ECC profiles, global hooks, global MCP config, memory, or worktree orchestration unless the user explicitly asks for that scoped change.
 
-A Dark Room-style blocks use transparent titles embedded over the top border, not separate headings inside bordered panels.
+Legacy border-labeled blocks may keep transparent titles embedded over the top border. New illustrated panels use their approved image-backed title treatment and must not invent feature-local chrome without passing the widget-admission gate.
 
-Use A Dark Room's source UI proportions, including `16px` source text, inside the room UI scale layer. Do not inflate the font directly to make mobile text readable.
+Use Root Run's compact source UI proportions inside the room UI scale layer. Do not inflate the font directly to make mobile text readable.
 
 Source UI scale must follow Root Run's fitted viewport scale from the `390x844` logical surface, including desktop upscaling, so both web and mobile views fit.
 
-Ordinary non-dialog boxes stay simple: white theme uses `1px` borders; non-white themes use `2px` borders; all keep compact padding and no shadow. Reserve the thicker border and bottom-right shadow for popup/dialog panels. The Workshop resource/action block is called `mana sphere`; the summon seed button sits outside it. Clicking `seeds` in it opens the seed inventory breakdown. Page names sit at the bottom center of the room view.
+Ordinary room panels use approved image-backed fantasy chrome with compact padding and controlled depth. Popup/dialog panels remain visually heavier than ordinary panels. The Workshop resource/action block is called `mana sphere`; the summon seed button sits outside it. Clicking `seeds` in it opens the seed inventory breakdown. Page names sit in the raised active bottom tab.
 
 ## Experience Rules
 
@@ -66,7 +66,7 @@ Ordinary non-dialog boxes stay simple: white theme uses `1px` borders; non-white
 - Rendering can observe ECS output later, but game rules must not depend on DOM or canvas APIs.
 - SpacetimeDB calls should stay behind backend facades/managers.
 - Page facades can render room-view DOM, but must not contain gameplay economy or progression rules.
-- Page views should follow `docs/style.md`: black and white, text-game simple, no decorative textures or illustration.
+- Page views should follow `docs/style.md`: illustrated fantasy room identity, readable compact HUD hierarchy, approved image-backed chrome, and no unowned decorative clutter.
 
 ## Folder Pattern
 

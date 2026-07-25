@@ -1825,6 +1825,7 @@ describe('GameplayFacade', () => {
     ecsFacade.update({ deltaSeconds: 6 });
     gameplayFacade.startBrewingBottling();
     ecsFacade.update({ deltaSeconds: 2 });
+    gameplayFacade.collectBrewing();
 
     gameplayFacade.itemsFacade.addItem(1, 1);
     gameplayFacade.plantGardenSeed(1, 1);
@@ -2049,6 +2050,14 @@ describe('GameplayFacade', () => {
     });
 
     second.ecsFacade.update({ deltaSeconds: 2 });
+    expect(second.gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
+      phase: 'ready',
+      canCollect: true,
+    });
+    expect(second.gameplayFacade.collectBrewing()).toMatchObject({
+      ok: true,
+      quantity: 1,
+    });
 
     expect(second.gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
     expect(second.gameplayFacade.getSnapshot().inventory).toContainEqual({
@@ -3174,6 +3183,7 @@ describe('GameplayFacade', () => {
       durationMs: 2_000,
     });
     ecsFacade.update({ deltaSeconds: 2 });
+    gameplayFacade.collectBrewing();
 
     expect(gameplayFacade.itemsFacade.getItemQuantity(2001)).toBe(2);
   });
@@ -3229,6 +3239,7 @@ describe('GameplayFacade', () => {
       durationMs: 2_000,
     });
     ecsFacade.update({ deltaSeconds: 2 });
+    gameplayFacade.collectBrewing();
 
     expect(gameplayFacade.itemsFacade.getItemQuantity(2001)).toBe(1);
   });
@@ -3827,6 +3838,11 @@ describe('GameplayFacade', () => {
     });
 
     ecsFacade.update({ deltaSeconds: 2 });
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
+      phase: 'ready',
+      canCollect: true,
+    });
+    gameplayFacade.collectBrewing();
 
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 2001,
@@ -4161,6 +4177,10 @@ describe('GameplayFacade', () => {
       autoBrewEnabled: true,
       autoBrewArmed: false,
     });
+    expect(gameplayFacade.setBrewingAutoCollectEnabled(true)).toMatchObject({
+      ok: true,
+      autoCollectEnabled: true,
+    });
     gameplayFacade.itemsFacade.addItem(1001, 6);
     ecsFacade.update({ deltaSeconds: 12 });
     gameplayFacade.addBrewingIngredient(1001);
@@ -4206,6 +4226,44 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message)).toContain(
       'brewed mana tonic',
     );
+  });
+
+  it('waits for manual collection and cancels unfinished output without refund', () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    gameplayFacade.itemsFacade.addItem(1001, 3);
+    gameplayFacade.coinFacade.add(80);
+    unlockRecipeResearch(gameplayFacade);
+    ecsFacade.update({ deltaSeconds: 12 });
+    gameplayFacade.prepareBrewingRecipe('manaTonic');
+    expect(gameplayFacade.brewCauldron()).toMatchObject({ ok: true });
+    const manaAfterStart = gameplayFacade.getSnapshot().mana.current;
+
+    expect(gameplayFacade.cancelBrewing()).toMatchObject({
+      ok: true,
+      destroyedQuantity: 1,
+    });
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(manaAfterStart);
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
+
+    gameplayFacade.itemsFacade.addItem(1001, 3);
+    gameplayFacade.prepareBrewingRecipe('manaTonic');
+    gameplayFacade.brewCauldron();
+    ecsFacade.update({ deltaSeconds: 30 });
+    gameplayFacade.startBrewingBottling();
+    ecsFacade.update({ deltaSeconds: 2 });
+
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
+      phase: 'ready',
+      canCollect: true,
+    });
+    expect(gameplayFacade.getSnapshot().inventory).not.toContainEqual(
+      expect.objectContaining({ itemTypeId: 2001 }),
+    );
+    expect(gameplayFacade.collectBrewing()).toMatchObject({
+      ok: true,
+      quantity: 1,
+    });
   });
 
   it('keeps matching recipe ingredients when recipe research is locked', () => {
@@ -4282,6 +4340,11 @@ describe('GameplayFacade', () => {
     });
 
     ecsFacade.update({ deltaSeconds: 2 });
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
+      phase: 'ready',
+      canCollect: true,
+    });
+    gameplayFacade.collectBrewing();
 
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
     expect(gameplayFacade.getSnapshot().inventory).toEqual([

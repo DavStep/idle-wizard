@@ -26,13 +26,13 @@ If the task is an audit or visual cleanup, also read the latest relevant file un
 
 - Every visible or interactive building block must map to a documented entry in the reusable widget library in `docs/ui-patterns.md`, preserve an existing widget contract as a feature-local extension, or have explicit user approval from the `idle-wizard-ui-workflow` Widget Admission Gate. Treat a new scroll behavior, box/dialog type, control pattern, compound component, or meaningfully different state/variant as a new widget.
 - Default room navigation is five bottom tabs: `brewing`, `garden`, `workshop`, `research`, and `market`. Advanced, guild, prestige, and future tabs need an explicit unlock or redesign surface before they appear in default chrome.
-- Ordinary non-dialog panels use `style-box`: white theme gets `1px` borders, non-white themes get `2px` borders, compact padding, no shadow.
+- Ordinary non-dialog panels use the approved shared room-panel skin with compact padding and shallow skin-owned depth. Do not invent feature-local radius, bevel, or shadow values.
 - Popup and modal panels use `style-dialog`: strong border, `20px` dialog padding, and the bottom-right dialog shadow. Do not copy dialog weight into ordinary boxes.
 - Typography stays source-scale: `13px` body text, `14px` dialog titles, `11px` border labels, and no direct font inflation for mobile readability.
-- A Dark Room-style block titles are embedded transparently over the top border. Do not add a title background or separate headings inside bordered panels when the border-label pattern fits.
+- New illustrated panels use their approved title placement, normally strong and top-left within the frame. Legacy border-labeled boxes may keep transparent embedded titles until that surface is intentionally redesigned.
 - Rows keep the project rhythm: left number or marker, middle text/content, fixed right action or status. Avoid row layouts that introduce icon-first scanning unless the feature explicitly owns iconography.
-- Default visual language is monochrome: black text, white surfaces, serif text, thin black borders, almost no decoration. Gradients, resource colors, large icons, portrait art, glow, and character-heavy treatment are exceptions for explicit customization/profile/tutorial contexts, not the default state.
-- Top chrome is text-first and quiet. Avatar, coin, and icon affordances must not dominate the default room surface.
+- Default visual language is an illustrated fantasy HUD: layered midnight panels, rendered room/item art, compact outlined Lilita One text, warm action skins, and semantic resource/state colors. Decoration must identify a room, item, resource, state, or action.
+- Top chrome is a compact player card. Avatar, mana, level progress, and currency may be illustrated, but the room's dominant landmark remains the main focal point.
 - Resource icons align to the visible numeral/text ink, not merely the flex line box. Verify their optical vertical centers and the intended value-to-icon gap in a close crop.
 - Text over illustrated badges centers against the asset's visible alpha bounds. Transparent padding is not a valid centering box; document any optical nudge with screenshot evidence.
 - When character art is intended to ground on a panel, its visible alpha edge must meet the specified panel edge. Centering the image canvas inside the grid is not equivalent.

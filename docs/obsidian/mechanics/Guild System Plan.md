@@ -478,10 +478,10 @@ The Hall should always expose the next useful action, for example:
 - `Rowan can train`
 - `latest: escort the town healer completed`
 
-Use the project's ordinary border-labeled boxes, numbered rows, inline right
-actions, shared progress rails, and standard dialogs. Do not extend the current
-decorated fantasy request-card treatment into staff searches, research,
-leaderboards, or profiles.
+Use the project's shared fantasy HUD panels, numbered rows, inline right
+actions, progress rails, and standard dialogs. Keep staff searches, research,
+leaderboards, and profiles in the same approved panel and icon families instead
+of inventing guild-only chrome.
 
 ## Server Authority
 
@@ -709,8 +709,8 @@ adventurer competitive loop is stable.
   departure.
 - [ ] Tab, dialog, profile, and leaderboard navigation preserve scroll and
   selection state.
-- [ ] Room UI follows the existing sparse border-box language and does not use
-  casino or decorated fantasy presentation for staff searches.
+- [ ] Room UI follows the shared illustrated fantasy HUD language without
+  casino clutter or guild-only panel/icon families.
 
 ## Decisions To Lock
 

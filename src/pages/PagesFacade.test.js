@@ -11760,7 +11760,7 @@ describe('PagesFacade', () => {
 
     expect(gameplayFacade.getSnapshot().coin.current).toBe(5);
     expect(stage.querySelector('.room-top-panel')?.textContent).toContain('5 coin');
-    expect(stage.querySelector('.research-page__content')?.textContent).toContain('researched');
+    expect(stage.querySelector('.research-page__content')?.textContent).toContain('Researched');
   });
 
   it('shows active research as researching with a progress bar', () => {

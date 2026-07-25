@@ -15,7 +15,7 @@ Every feature has a facade and dedicated managers. Facades explain the feature i
 - Rendering: owns one retained Pixi application on a fixed `390x844` logical stage for room UI, popups, overlays, and Spine visuals. DOM page managers remain the semantic/layout/input source; rendering observes them and does not own gameplay rules.
 - Assets/styles: `assets/` owns runtime art, fonts, generated atlases, and
   verbatim static bundles under `assets/runtime/`; `src/styles/` owns shared
-  A Dark Room-style CSS, while runtime asset helper code stays under
+  fantasy HUD layout/fallback CSS, while runtime asset helper code stays under
   `src/assets/`.
 
 ## Room Pages
