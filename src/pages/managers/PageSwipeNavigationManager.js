@@ -1,15 +1,5 @@
-export const DEFAULT_PAGE_SWIPE_ORDER = [
-  'prestige',
-  'brewing',
-  'garden',
-  'workshop',
-  'research',
-  'shop',
-  'advancedBrewing',
-  'advancedGarden',
-  'guild',
-  'advancedMarket',
-];
+export { DEFAULT_PAGE_SWIPE_ORDER } from './pageOrder.js';
+import { DEFAULT_PAGE_SWIPE_ORDER } from './pageOrder.js';
 
 const BLOCKED_TARGET_SELECTOR = [
   'input',

@@ -26,6 +26,7 @@ experience_type: development-operations
 - Fresh-start browser QA resets FTUE progress; after choosing `start fresh`, write completed `idle-wizard.tutorial.v4` storage and reload before normal room-click automation.
 - Keep top-level docs current with implemented systems; agents trust README/architecture docs early, so stale future-scope text causes wrong plans.
 - When a feature needs faster or safer repeat work, add the smallest reusable dev tool and document its command/env in `docs/ai-workflow.md` or the feature README.
+- Canvas-only production guards must inspect Vite's emitted production module graph, not scan the whole source tree; this rejects reachable DOM UI without blocking retained legacy/dev files that are absent from release chunks.
 - Isolated Vite previews must build into their own ignored output directory; using shared `dist` lets unrelated builds replace the assets under a running QA preview.
 - Full player-save backup must use SpacetimeDB SQL/export or a dedicated admin reducer; `admin_player_gameplay_save` currently exposes only summary fields, not raw `saveJson`.
 - High-level QA saves must flush one level at a time because backend save normalization allows only `previousLevel + 1`; deep-clone every intermediate save because gameplay hydration mutates nested branches.
@@ -34,6 +35,7 @@ experience_type: development-operations
 - Tutorial placement tests that create default `TutorialHintManager` instances must clear shared `localStorage`; saved Elara drag placement leaks across full-file CI runs.
 - If local shows `server unavailable`, check both Vite `55173` and SpacetimeDB `3000`; this workspace may target `.env.local` database `idle-wizard-codex-run`, so publish that DB directly when `npm run stdb:publish` is unauthorized for `idle-wizard`.
 - If Browser stays on `server required` while local SpacetimeDB is listening and console logs a `spacetimedb.js` binary `RangeError`, local DB schema likely mismatches generated bindings; fix schema/publish before relying on room-click QA.
+- A listening SpacetimeDB port does not prove the target database or schema exists; isolated launchers must publish the current module and embed the same dedicated database name before starting the client.
 - GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.
 - If `build` delegates to `build:prod`, keep `build` as `npm run build:prod --` so Pages' `--base=/idle-wizard/` reaches Vite.
 - `DavStep/idle-wizard` is public and GitHub Pages deploys at `https://davstep.github.io/idle-wizard/`.

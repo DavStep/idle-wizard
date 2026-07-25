@@ -3,39 +3,21 @@ import {
   gameAssetAtlasImageUrl,
   gameAssetAtlasSize,
 } from '../../generated/game-asset-atlas.generated.js';
-import { getHerbIconFrameName, getHerbIconKeyByLabel } from '../herbs/herbIcons.js';
+import {
+  getSeedPackBaseFrameName,
+  getSeedPackItemFrameName,
+} from './seedIconFrames.js';
+
+export {
+  getHerbKeyForSeed,
+  getSeedIconFrameName,
+  getSeedPackBaseFrameName,
+  getSeedPackItemFrameName,
+} from './seedIconFrames.js';
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 const SEED_PACK_ITEM_SCALE = 0.44;
 const SEED_PACK_ITEM_CENTER_Y_RATIO = 0.63;
-const SEED_PACK_FRAME_NAME = 'seed:pack';
-
-export function getSeedIconFrameName(seed = null) {
-  return getSeedPackBaseFrameName(seed);
-}
-
-export function getSeedPackBaseFrameName() {
-  return SEED_PACK_FRAME_NAME;
-}
-
-export function getHerbKeyForSeed(seed = null) {
-  const key = String(seed?.key ?? seed?.itemKey ?? '').trim();
-
-  if (key.endsWith('Seed')) {
-    return `${key.slice(0, -'Seed'.length)}Herb`;
-  }
-
-  const label = String(seed?.label ?? seed?.itemLabel ?? '')
-    .trim()
-    .replace(/\s*\([^)]*\)\s*$/, '')
-    .replace(/\s+x[\d,]+\s*$/i, '')
-    .replace(/\s+seed$/i, '');
-  return getHerbIconKeyByLabel(label);
-}
-
-export function getSeedPackItemFrameName(seed = null) {
-  return getHerbIconFrameName(getHerbKeyForSeed(seed));
-}
 
 export function createSeedPackIcon(
   className,

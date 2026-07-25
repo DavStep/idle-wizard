@@ -106,14 +106,14 @@ describe('WorkshopPageFacade requirement feedback', () => {
     );
     const bottomTabRowGap = Number(
       getRuleBody(baseCss, '\\.room-bottom-panel__tabs')
-        ?.match(/\bgap:\s*([\d.]+)px\s+[\d.]+(?:px)?;/)
+        ?.match(/\bgap:\s*([\d.]+)(?:px)?(?:\s+[\d.]+(?:px)?)?;/)
         ?.at(1),
     );
 
-    const bottomTabsTop = bottomPanelBottom + bottomTabHeight * 2 + bottomTabRowGap;
+    const bottomTabsTop = bottomPanelBottom + bottomTabHeight + bottomTabRowGap;
     const gap = chatBottom + borderWidth - bottomTabsTop;
-    expect(gap).toBeGreaterThanOrEqual(9);
-    expect(gap).toBeLessThanOrEqual(11);
+    expect(gap).toBeGreaterThanOrEqual(61);
+    expect(gap).toBeLessThanOrEqual(63);
   });
 
   it('keeps task and notice characters in bottom-aligned side slots', () => {

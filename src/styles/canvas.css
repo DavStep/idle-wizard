@@ -1,0 +1,53 @@
+@font-face {
+  font-family: "Lilita One";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../../assets/fonts/LilitaOne-Regular.ttf") format("truetype");
+}
+
+:root {
+  color-scheme: dark;
+  background: #1c1e26;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #1c1e26;
+}
+
+body {
+  min-width: 320px;
+}
+
+#game-canvas {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  left: env(safe-area-inset-left, 0px);
+  display: block;
+  width: calc(
+    100vw - env(safe-area-inset-left, 0px) -
+      env(safe-area-inset-right, 0px)
+  );
+  height: calc(
+    100dvh - env(safe-area-inset-top, 0px) -
+      env(safe-area-inset-bottom, 0px)
+  );
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: #1c1e26;
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}

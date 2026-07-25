@@ -143,6 +143,65 @@ describe('DevCheatsFacade', () => {
     );
   });
 
+  it('retries a requested dev level until gameplay and online surfaces are ready', () => {
+    const timers = [];
+    const ecsFacade = new EcsFacade();
+    const gameplayFacade = new GameplayFacade({
+      persistenceStorage: createMemoryStorage(),
+      persistenceNow: () => 0,
+    });
+    const lifecycleManager = {
+      backendOnline: false,
+      gameSurfacesMounted: false,
+    };
+    const target = {
+      location: {
+        search: '?devLevel=20',
+        hash: '',
+      },
+      document: {
+        querySelector: vi.fn(() => null),
+      },
+      setTimeout: vi.fn((callback) => {
+        timers.push(callback);
+        return timers.length;
+      }),
+      clearTimeout: vi.fn(),
+    };
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const facade = new DevCheatsFacade({
+      app: { gameplayFacade, lifecycleManager },
+      target,
+      logger,
+    });
+
+    facade.mount();
+
+    expect(() => timers.shift()?.()).not.toThrow();
+    expect(logger.info).not.toHaveBeenCalledWith(
+      'Dev level request complete.',
+      expect.anything(),
+    );
+    expect(timers).toHaveLength(1);
+
+    ecsFacade.createWorld();
+    gameplayFacade.initialize(ecsFacade);
+    timers.shift()?.();
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).not.toBe(20);
+    expect(timers).toHaveLength(1);
+
+    lifecycleManager.backendOnline = true;
+    lifecycleManager.gameSurfacesMounted = true;
+    timers.shift()?.();
+
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(20);
+    expect(logger.info).toHaveBeenCalledWith(
+      'Dev level request complete.',
+      expect.objectContaining({ ok: true, level: 20 }),
+    );
+  });
+
   it('mutates gameplay through explicit cheat commands', () => {
     const { app } = createApp();
     const target = {};

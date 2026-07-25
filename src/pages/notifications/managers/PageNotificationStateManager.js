@@ -7,7 +7,7 @@ import {
   isNotificationActive,
   NOTIFICATION_TONE_ORANGE,
   NOTIFICATION_TONE_RED,
-} from '../../shared/notificationBadge.js';
+} from '../../shared/notificationTone.js';
 import { WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL } from '../../workshop/managers/WorkshopSecondaryActionGateManager.js';
 import { hasClaimableTradeAllianceQuest } from '../../workshop/managers/tradeAllianceQuestStatus.js';
 

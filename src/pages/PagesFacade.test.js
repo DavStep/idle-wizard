@@ -3779,7 +3779,7 @@ describe('PagesFacade', () => {
     );
     expect(
       stage.querySelector('.workshop-page__discoveries-button-icon')?.getAttribute('src'),
-    ).toContain('icon-discoveries-journal.webp');
+    ).toContain('icon-discoveries-journal-bag-style.png');
     expect(stage.querySelector('.workshop-page__discoveries-button-label')?.textContent).toBe(
       'discoveries',
     );

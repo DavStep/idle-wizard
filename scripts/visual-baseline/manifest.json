@@ -1,0 +1,1570 @@
+{
+  "$schema": "./manifest.schema.json",
+  "schemaVersion": 1,
+  "description": "Inventory and reproducibility contract for the DOM reference renderer used by the retained PixiJS migration. This file does not claim that goldens have been captured.",
+  "source": {
+    "renderer": "dom",
+    "captureStatus": "inventory-only",
+    "artifactRoot": "tmp/visual-baselines/dom",
+    "freeze": {
+      "randomSeed": 20260724,
+      "clock": "freeze-after-state-ready",
+      "animations": "pause-after-settle",
+      "data": "checked-in recipe or documented gap"
+    }
+  },
+  "viewports": [
+    {
+      "id": "authored-1080x2170",
+      "adapter": "chromium",
+      "width": 1080,
+      "height": 2170,
+      "deviceScaleFactor": 1,
+      "notes": "Full authored portrait game surface."
+    },
+    {
+      "id": "desktop-fitted-1440x900",
+      "adapter": "chromium",
+      "width": 1440,
+      "height": 900,
+      "deviceScaleFactor": 1,
+      "notes": "Fitted desktop collision and reflow reference."
+    },
+    {
+      "id": "android-reference",
+      "adapter": "android-placeholder",
+      "status": "placeholder",
+      "width": null,
+      "height": null,
+      "deviceScaleFactor": null,
+      "device": {
+        "model": null,
+        "androidVersion": null,
+        "webViewVersion": null,
+        "orientation": "portrait",
+        "notes": "Record the agreed physical Android device, native screenshot dimensions, OS build, WebView version, and safe-area insets before approving Android goldens."
+      }
+    }
+  ],
+  "settings": {
+    "axes": {
+      "theme": {
+        "values": ["black", "midnight", "witchcraft"],
+        "default": "midnight"
+      },
+      "font": {
+        "values": ["lilita-one", "comic-sans-mono"],
+        "default": "lilita-one"
+      },
+      "colorMode": {
+        "values": ["resources"],
+        "default": "resources"
+      },
+      "iconMode": {
+        "values": ["icons"],
+        "default": "icons"
+      },
+      "progressBar": {
+        "values": ["regular", "gradient", "notched"],
+        "default": "regular"
+      },
+      "plotView": {
+        "values": ["boxes"],
+        "default": "boxes"
+      }
+    }
+  },
+  "surfaceDefaults": {
+    "viewports": [
+      "authored-1080x2170",
+      "desktop-fitted-1440x900",
+      "android-reference"
+    ],
+    "settingsCoverage": {
+      "mode": "cartesian",
+      "axes": ["theme", "font"]
+    }
+  },
+  "comparisonDefaults": {
+    "maxChannelDelta": 0,
+    "maxDifferentPixels": 0,
+    "anchorTolerancePx": 1,
+    "glyphEdgeMaxChannelDelta": 40,
+    "requireAnchorMetadata": true
+  },
+  "surfaces": [
+    {
+      "id": "app.online-gate",
+      "label": "server and maintenance gate",
+      "kind": "app-gate",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["onlineGateManager"],
+        "domSelectors": [".app-online-gate__dialog"]
+      },
+      "recipe": {
+        "kind": "manual",
+        "gap": "No checked-in command currently selects each online, account-in-use, and maintenance reason without changing connection state."
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".app-online-gate__dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "glyphEdgeMasks": [
+        {
+          "id": "copy",
+          "selector": ".app-online-gate__dialog > .style-box__title, .app-online-gate__message, .app-online-gate__progress-text, .app-online-gate__action",
+          "padding": 1,
+          "maxChannelDelta": 40
+        }
+      ],
+      "states": [
+        { "id": "connecting" },
+        { "id": "offline" },
+        { "id": "server-paused" },
+        { "id": "server-no-energy" },
+        { "id": "account-in-use" },
+        { "id": "maintenance-drain" },
+        { "id": "maintenance-saving" },
+        { "id": "maintenance-locked" }
+      ]
+    },
+    {
+      "id": "app.fresh-start",
+      "label": "fresh start account choice",
+      "kind": "app-gate",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["freshStartChoiceManager"],
+        "domSelectors": [".app-fresh-start-choice__dialog"]
+      },
+      "recipe": {
+        "kind": "external",
+        "command": "npm run tutorial:capture -- --first-run-only"
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".app-fresh-start-choice__dialog",
+          "tolerancePx": 1
+        },
+        {
+          "id": "portrait",
+          "selector": ".app-fresh-start-choice__portrait",
+          "tolerancePx": 1
+        }
+      ],
+      "glyphEdgeMasks": [
+        {
+          "id": "copy",
+          "selector": ".app-fresh-start-choice__copy",
+          "padding": 1,
+          "maxChannelDelta": 40
+        }
+      ],
+      "states": [
+        { "id": "default" },
+        {
+          "id": "connect-disabled",
+          "recipe": {
+            "kind": "manual",
+            "gap": "The existing first-run capture does not select the disabled account-provider branch."
+          }
+        },
+        {
+          "id": "connecting",
+          "recipe": {
+            "kind": "manual",
+            "gap": "The existing first-run capture does not freeze the asynchronous account-connection state."
+          }
+        },
+        {
+          "id": "error",
+          "recipe": {
+            "kind": "manual",
+            "gap": "The existing first-run capture does not inject a deterministic authentication error."
+          }
+        }
+      ]
+    },
+    {
+      "id": "app.account-link-choice",
+      "label": "account save conflict choice",
+      "kind": "app-gate",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["accountLinkChoiceManager"],
+        "domSelectors": [".app-account-link-choice__dialog"]
+      },
+      "recipe": {
+        "kind": "manual",
+        "gap": "No checked-in fixture currently creates both a device save and an authenticated account save at the link boundary."
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".app-account-link-choice__dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "default" },
+        { "id": "long-username-and-values" }
+      ]
+    },
+    {
+      "id": "app.deploy-refresh",
+      "label": "new deployment refresh gate",
+      "kind": "app-gate",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["deployRefreshManager"],
+        "domSelectors": [".app-deploy-refresh__dialog"]
+      },
+      "recipe": {
+        "kind": "manual",
+        "gap": "No checked-in capture command currently injects a newer deploy-version response without initiating reload."
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".app-deploy-refresh__dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "refreshing" }
+      ]
+    },
+    {
+      "id": "intro.first-run",
+      "label": "first-run cutscene",
+      "kind": "intro",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["firstRunIntroFacade"],
+        "domSelectors": [".first-run-intro__panel"]
+      },
+      "recipe": {
+        "kind": "external",
+        "command": "npm run tutorial:capture -- --first-run-only"
+      },
+      "anchors": [
+        {
+          "id": "scene",
+          "selector": ".first-run-intro__scene",
+          "tolerancePx": 1
+        },
+        {
+          "id": "panel",
+          "selector": ".first-run-intro__panel",
+          "tolerancePx": 1
+        }
+      ],
+      "glyphEdgeMasks": [
+        {
+          "id": "dialog-copy",
+          "selector": ".first-run-intro__panel > .style-box__title, .first-run-intro__text, .first-run-intro__advance",
+          "padding": 1,
+          "maxChannelDelta": 40
+        }
+      ],
+      "states": [
+        { "id": "castle" },
+        { "id": "defeated" },
+        { "id": "disbanded" },
+        { "id": "workshop" }
+      ]
+    },
+    {
+      "id": "chrome.top-panel",
+      "label": "global top panel",
+      "kind": "chrome",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["topPanelFacade"],
+        "devUi": ["topPanelQuestProgress"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "workshop"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "panel",
+          "selector": ".room-top-panel",
+          "tolerancePx": 1
+        },
+        {
+          "id": "resource-row",
+          "selector": ".room-top-panel__resources",
+          "tolerancePx": 1
+        }
+      ],
+      "glyphEdgeMasks": [
+        {
+          "id": "labels",
+          "selector": ".room-top-panel__username, .room-top-panel__level, .room-top-panel__resources, .room-top-panel__quest-progress-text, .room-top-panel__quest-remaining",
+          "padding": 1,
+          "maxChannelDelta": 40
+        }
+      ],
+      "states": [
+        { "id": "default" },
+        {
+          "id": "quest-progress",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "topPanelQuestProgress"
+          }
+        },
+        { "id": "research-ruby-context" },
+        { "id": "research-emerald-context" },
+        { "id": "research-crystal-context" },
+        {
+          "id": "username-required",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No dev UI recipe currently clears only the explicit-username flag and opens the prompt."
+          }
+        }
+      ]
+    },
+    {
+      "id": "chrome.bottom-panel",
+      "label": "global bottom navigation",
+      "kind": "chrome",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["bottomPanelFacade"],
+        "devUi": ["bottomRoomTabs"],
+        "domSelectors": [".room-bottom-panel__lock-dialog"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "workshop"
+      },
+      "anchors": [
+        {
+          "id": "panel",
+          "selector": ".room-bottom-panel",
+          "tolerancePx": 1
+        },
+        {
+          "id": "tabs",
+          "selector": ".room-bottom-panel__tabs",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "workshop-selected" },
+        { "id": "room-selected" },
+        {
+          "id": "pressed-tab",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No capture recipe currently holds a named bottom tab in its pointer-down visual state."
+          }
+        },
+        { "id": "locked-tabs" },
+        { "id": "notification-badges" },
+        {
+          "id": "lock-dialog",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No dev UI recipe currently presses a named locked room tab and freezes its explanatory dialog."
+          }
+        },
+        {
+          "id": "unlock-flyout",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No deterministic recipe currently freezes a bottom-tab unlock flyout after its announcement."
+          }
+        }
+      ]
+    },
+    {
+      "id": "global.announcements",
+      "label": "feature unlock and while-away announcements",
+      "kind": "preview",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["announcementFacade"],
+        "devUi": ["featureUnlockAnnouncement"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "featureUnlockAnnouncement"
+      },
+      "anchors": [
+        {
+          "id": "panel",
+          "selector": ".room-announcement",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "feature-unlock" },
+        {
+          "id": "while-away",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No checked-in state recipe currently injects a deterministic offline catch-up report."
+          }
+        },
+        {
+          "id": "queued-stack",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No checked-in state recipe currently queues multiple announcement kinds at a frozen boundary."
+          }
+        }
+      ]
+    },
+    {
+      "id": "global.notifications",
+      "label": "page and surface notification indicators",
+      "kind": "effect",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["notificationFacade"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "workshop",
+        "setup": [
+          {
+            "name": "setNotifications",
+            "args": [{ "garden": true, "market": true }]
+          }
+        ]
+      },
+      "anchors": [
+        {
+          "id": "bottom-panel",
+          "selector": ".room-bottom-panel",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "normal-priority" },
+        { "id": "low-priority" },
+        { "id": "multiple-pages" }
+      ]
+    },
+    {
+      "id": "global.reward-flyouts",
+      "label": "reward and item flyouts",
+      "kind": "effect",
+      "production": true,
+      "recipe": {
+        "kind": "manual",
+        "gap": "No deterministic visual recipe currently pauses each transient reward effect on its approved frame."
+      },
+      "states": [
+        { "id": "seed-summon" },
+        { "id": "coin" },
+        { "id": "herb-harvest" },
+        { "id": "potion-collect" },
+        { "id": "reduced-motion-fallback" }
+      ]
+    },
+    {
+      "id": "page.workshop",
+      "label": "Workshop page",
+      "kind": "page",
+      "production": true,
+      "coverage": {
+        "pages": ["workshop"],
+        "devUi": ["workshop"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "workshop"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "page",
+          "selector": ".workshop-page",
+          "tolerancePx": 1
+        },
+        {
+          "id": "action",
+          "selector": ".workshop-page__action-bar",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        { "id": "default" },
+        { "id": "tasks-expanded" },
+        { "id": "task-ready" },
+        { "id": "summon-disabled" },
+        { "id": "selected-sale" },
+        { "id": "stress-copy" },
+        { "id": "scrolling" }
+      ]
+    },
+    {
+      "id": "page.brewing",
+      "label": "Brewing page",
+      "kind": "page",
+      "production": true,
+      "coverage": {
+        "pages": ["brewing"],
+        "devUi": ["brewing"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "brewing"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "page",
+          "selector": ".brewing-page",
+          "tolerancePx": 1
+        },
+        {
+          "id": "cauldron",
+          "selector": ".brewing-page__cauldron",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        { "id": "empty" },
+        { "id": "staged" },
+        { "id": "brewing-timer" },
+        { "id": "brewed" },
+        { "id": "bottling-timer" },
+        { "id": "collect-ready" },
+        { "id": "locked-cauldron" },
+        { "id": "scrolling" }
+      ]
+    },
+    {
+      "id": "page.garden",
+      "label": "Garden page",
+      "kind": "page",
+      "production": true,
+      "coverage": {
+        "pages": ["garden"],
+        "devUi": ["garden"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "garden"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar", "plotView"]
+      },
+      "anchors": [
+        {
+          "id": "page",
+          "selector": ".garden-page",
+          "tolerancePx": 1
+        },
+        {
+          "id": "plot",
+          "selector": ".garden-page__plot",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        { "id": "empty" },
+        { "id": "planted" },
+        { "id": "growing-timer" },
+        { "id": "ready" },
+        { "id": "locked-plot" },
+        { "id": "panned" },
+        { "id": "pinched" }
+      ]
+    },
+    {
+      "id": "page.research",
+      "label": "Research page",
+      "kind": "page",
+      "production": true,
+      "coverage": {
+        "pages": ["research"],
+        "devUi": ["research"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "research"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "page",
+          "selector": ".research-page",
+          "tolerancePx": 1
+        },
+        {
+          "id": "catalog",
+          "selector": ".research-page__content",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        { "id": "regular" },
+        { "id": "automation" },
+        { "id": "advanced" },
+        { "id": "locked" },
+        { "id": "in-progress" },
+        { "id": "completed" },
+        { "id": "scrolling" }
+      ]
+    },
+    {
+      "id": "page.market",
+      "label": "Market page",
+      "kind": "page",
+      "production": true,
+      "coverage": {
+        "pages": ["shop"],
+        "devUi": ["marketPage"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "marketPage"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "page",
+          "selector": ".shop-page",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "npc-market" },
+        { "id": "player-market" },
+        { "id": "crystals" },
+        { "id": "loading" },
+        { "id": "empty" },
+        { "id": "error" },
+        { "id": "scrolling" }
+      ]
+    },
+    {
+      "id": "page.guild",
+      "label": "Guild page",
+      "kind": "page",
+      "production": true,
+      "coverage": {
+        "pages": ["guild"],
+        "devUi": ["guild"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "guild"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "page",
+          "selector": ".guild-page",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "unjoined" },
+        { "id": "joined" },
+        { "id": "full" },
+        { "id": "loading" },
+        { "id": "empty" },
+        { "id": "error" },
+        { "id": "scrolling" }
+      ]
+    },
+    {
+      "id": "page.prestige",
+      "label": "Prestige page",
+      "kind": "page",
+      "production": true,
+      "coverage": {
+        "pages": ["prestige"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "prestige"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "page",
+          "selector": ".prestige-page",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "locked" },
+        { "id": "ready" },
+        { "id": "milestones" },
+        { "id": "points" },
+        { "id": "rewards" },
+        { "id": "confirmation" }
+      ]
+    },
+    {
+      "id": "dialog.inventory",
+      "label": "Bag and inventory tabs",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["inventoryDialogManager"],
+        "devUi": ["bag", "seeds", "herbs", "potions"],
+        "domSelectors": [".workshop-page__bag-dialog"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "bag"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".workshop-page__bag-dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "glyphEdgeMasks": [
+        {
+          "id": "copy",
+          "selector": ".workshop-page__bag-dialog > .style-box__title, .workshop-page__bag-dialog button, .workshop-page__bag-dialog [class*=\"-row\"]",
+          "padding": 1,
+          "maxChannelDelta": 40
+        }
+      ],
+      "states": [
+        { "id": "bag" },
+        {
+          "id": "seeds",
+          "recipe": { "kind": "devUi", "surfaceId": "seeds" }
+        },
+        {
+          "id": "herbs",
+          "recipe": { "kind": "devUi", "surfaceId": "herbs" }
+        },
+        {
+          "id": "potions",
+          "recipe": { "kind": "devUi", "surfaceId": "potions" }
+        },
+        { "id": "empty" },
+        { "id": "overflow" },
+        { "id": "scrolling" }
+      ]
+    },
+    {
+      "id": "dialog.summon-info",
+      "label": "Summon information",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": ["summonInfo"],
+        "domSelectors": [".workshop-page__summon-info-dialog"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "summonInfo"
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".workshop-page__summon-info-dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "default" },
+        { "id": "locked-weights" },
+        { "id": "all-weights" }
+      ]
+    },
+    {
+      "id": "dialog.leaderboard",
+      "label": "Leaderboards",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": ["leaderboard"],
+        "domSelectors": [".workshop-page__leaderboard-dialog"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "leaderboard"
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".workshop-page__leaderboard-dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "loaded" },
+        { "id": "loading" },
+        { "id": "empty" },
+        { "id": "error" },
+        { "id": "scrolling" }
+      ]
+    },
+    {
+      "id": "dialog.trade-alliance",
+      "label": "Alliance creation, membership, and member detail",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": ["alliance"],
+        "domSelectors": [
+          ".workshop-page__trade-alliance-dialog",
+          ".workshop-page__trade-alliance-member-dialog"
+        ]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "alliance"
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".workshop-page__trade-alliance-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        { "id": "create" },
+        { "id": "joined" },
+        { "id": "requests" },
+        { "id": "chat" },
+        {
+          "id": "member-detail",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No openUi option currently chooses a deterministic alliance member row."
+          }
+        },
+        { "id": "loading" },
+        { "id": "error" }
+      ]
+    },
+    {
+      "id": "dialog.discoveries",
+      "label": "Discoveries books",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": ["discoveries"],
+        "domSelectors": [".workshop-page__discoveries-dialog"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "discoveries"
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".workshop-page__discoveries-dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "items" },
+        { "id": "recipes" },
+        { "id": "locked" },
+        { "id": "empty" },
+        { "id": "page-turn" }
+      ]
+    },
+    {
+      "id": "dialog.personal-tasks",
+      "label": "Personal tasks",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": ["personalTasks"],
+        "domSelectors": [".workshop-page__personal-tasks-dialog"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "personalTasks"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".workshop-page__personal-tasks-dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "daily" },
+        { "id": "weekly" },
+        { "id": "ready" },
+        { "id": "claimed" },
+        { "id": "empty" }
+      ]
+    },
+    {
+      "id": "dialog.world-event",
+      "label": "World event and donation confirmation",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": ["worldEvent"],
+        "domSelectors": [
+          ".workshop-page__world-notice-dialog",
+          ".workshop-page__world-notice-donate-dialog"
+        ]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "worldEvent"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".workshop-page__world-notice-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        { "id": "situation" },
+        { "id": "contribute" },
+        { "id": "leaderboard" },
+        { "id": "complete" },
+        {
+          "id": "donation-confirmation",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No openUi option currently selects a deterministic event donation row."
+          }
+        },
+        { "id": "loading" },
+        { "id": "error" }
+      ]
+    },
+    {
+      "id": "dialog.world-chat",
+      "label": "World and alliance chat",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["worldChatManager"],
+        "devUi": ["worldChat"],
+        "domSelectors": [".workshop-page__world-chat-dialog"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "worldChat"
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".workshop-page__world-chat-dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "world" },
+        { "id": "alliance" },
+        { "id": "pending-send" },
+        { "id": "rate-limited" },
+        { "id": "offline" },
+        { "id": "empty" },
+        { "id": "scrolling" }
+      ]
+    },
+    {
+      "id": "dialog.workshop-auxiliary",
+      "label": "Workshop stats and task information",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "domSelectors": [
+          ".workshop-page__stats-dialog",
+          ".workshop-page__tasks-info-dialog"
+        ]
+      },
+      "recipe": {
+        "kind": "manual",
+        "gap": "Workshop stats and task-info dialogs do not yet have named openUi recipes."
+      },
+      "anchors": [
+        {
+          "id": "stats",
+          "selector": ".workshop-page__stats-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        },
+        {
+          "id": "tasks",
+          "selector": ".workshop-page__tasks-info-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        { "id": "stats" },
+        { "id": "stats-scrolling" },
+        { "id": "task-info" }
+      ]
+    },
+    {
+      "id": "dialog.brewing",
+      "label": "Brewing recipes and recipe choice",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "domSelectors": [
+          ".brewing-page__recipes-dialog",
+          ".brewing-page__recipe-choice-dialog"
+        ]
+      },
+      "recipe": {
+        "kind": "manual",
+        "gap": "Brewing recipe dialogs currently require page-local button interaction and do not have named openUi recipes."
+      },
+      "anchors": [
+        {
+          "id": "recipes",
+          "selector": ".brewing-page__recipes-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        },
+        {
+          "id": "choice",
+          "selector": ".brewing-page__recipe-choice-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        { "id": "recipes" },
+        { "id": "recipe-selected" },
+        { "id": "recipe-choice" },
+        { "id": "locked" },
+        { "id": "empty" },
+        { "id": "page-turn" }
+      ]
+    },
+    {
+      "id": "dialog.garden",
+      "label": "Garden seed selection and confirmation dialogs",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "domSelectors": [
+          ".garden-page__seed-dialog",
+          ".garden-page__swap-dialog",
+          ".garden-page__cancel-dialog"
+        ]
+      },
+      "recipe": {
+        "kind": "manual",
+        "gap": "Garden plot dialogs currently require plot-local interactions and do not have named openUi recipes."
+      },
+      "anchors": [
+        {
+          "id": "seed",
+          "selector": ".garden-page__seed-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        },
+        {
+          "id": "swap",
+          "selector": ".garden-page__swap-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        },
+        {
+          "id": "cancel",
+          "selector": ".garden-page__cancel-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        { "id": "seed-selection" },
+        { "id": "seed-locked" },
+        { "id": "swap-confirmation" },
+        { "id": "cancel-confirmation" }
+      ]
+    },
+    {
+      "id": "dialog.research-info",
+      "label": "Research information",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "domSelectors": [".research-page__info-dialog"]
+      },
+      "recipe": {
+        "kind": "manual",
+        "gap": "Research info requires choosing a catalog row and does not have a named openUi recipe."
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".research-page__info-dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "locked" },
+        { "id": "available" },
+        { "id": "in-progress" },
+        { "id": "completed" }
+      ]
+    },
+    {
+      "id": "dialog.market",
+      "label": "Market transaction dialogs",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": ["market", "traderStallLoader"],
+        "domSelectors": [
+          ".shop-page__crystal-support-dialog",
+          ".shop-page__demand-dialog",
+          ".shop-page__ledger-book",
+          ".shop-page__ledger-buy-dialog",
+          ".shop-page__market-dialog",
+          ".shop-page__request-dialog",
+          ".shop-page__sell-dialog",
+          ".shop-page__stock-buy-dialog",
+          ".shop-page__trade-history-dialog"
+        ]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "market"
+      },
+      "anchors": [
+        {
+          "id": "sell",
+          "selector": ".shop-page__sell-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        },
+        {
+          "id": "market",
+          "selector": ".shop-page__market-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        },
+        {
+          "id": "request",
+          "selector": ".shop-page__request-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        {
+          "id": "trader-stall-loader",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "traderStallLoader"
+          }
+        },
+        {
+          "id": "player-listing",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "market",
+            "options": { "tab": "player", "popup": "listing" }
+          }
+        },
+        {
+          "id": "player-request",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "market",
+            "options": { "tab": "player", "popup": "request" }
+          }
+        },
+        {
+          "id": "trade-history",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "market",
+            "options": { "tab": "player", "popup": "history" }
+          }
+        },
+        {
+          "id": "market-ledger",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "market",
+            "options": { "tab": "npm", "popup": "marketLedger" }
+          }
+        },
+        {
+          "id": "demand",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No openUi option currently selects a deterministic demand row."
+          }
+        },
+        {
+          "id": "stock-buy",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No openUi option currently selects a deterministic NPC stock row."
+          }
+        },
+        {
+          "id": "player-buy",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No openUi option currently selects a deterministic player listing."
+          }
+        },
+        {
+          "id": "ledger-buy",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No openUi option currently selects a deterministic ledger row."
+          }
+        },
+        {
+          "id": "crystal-support",
+          "recipe": {
+            "kind": "manual",
+            "gap": "No openUi option currently opens the crystal support confirmation."
+          }
+        },
+        { "id": "loading" },
+        { "id": "empty" },
+        { "id": "error" }
+      ]
+    },
+    {
+      "id": "dialog.guild",
+      "label": "Guild dialogs",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": [
+          "guildAdventurer",
+          "guildCharter",
+          "guildQuestPosting",
+          "guildRequest",
+          "guildSettings"
+        ],
+        "domSelectors": [".guild-page__dialog"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "guildCharter"
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".guild-page__dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "charter" },
+        {
+          "id": "settings",
+          "recipe": { "kind": "devUi", "surfaceId": "guildSettings" }
+        },
+        {
+          "id": "request",
+          "recipe": { "kind": "devUi", "surfaceId": "guildRequest" }
+        },
+        {
+          "id": "quest-posting",
+          "recipe": { "kind": "devUi", "surfaceId": "guildQuestPosting" }
+        },
+        {
+          "id": "adventurer",
+          "recipe": { "kind": "devUi", "surfaceId": "guildAdventurer" }
+        },
+        { "id": "loading" },
+        { "id": "empty" },
+        { "id": "error" }
+      ]
+    },
+    {
+      "id": "dialog.settings-and-account",
+      "label": "Settings, account, feedback, level, and inbox dialogs",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": ["settings", "feedback", "bug", "feature", "level", "inbox"],
+        "domSelectors": [
+          ".room-top-panel__settings-dialog",
+          ".room-top-panel__level-dialog",
+          ".room-top-panel__inbox-dialog"
+        ]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "settings"
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "settings",
+          "selector": ".room-top-panel__settings-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        },
+        {
+          "id": "level",
+          "selector": ".room-top-panel__level-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        },
+        {
+          "id": "inbox",
+          "selector": ".room-top-panel__inbox-dialog",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        { "id": "account" },
+        { "id": "appearance" },
+        { "id": "sound-and-haptics" },
+        {
+          "id": "feedback",
+          "recipe": { "kind": "devUi", "surfaceId": "feedback" }
+        },
+        {
+          "id": "bug",
+          "recipe": { "kind": "devUi", "surfaceId": "bug" }
+        },
+        {
+          "id": "feature",
+          "recipe": { "kind": "devUi", "surfaceId": "feature" }
+        },
+        {
+          "id": "level",
+          "recipe": { "kind": "devUi", "surfaceId": "level" }
+        },
+        {
+          "id": "inbox",
+          "recipe": { "kind": "devUi", "surfaceId": "inbox" }
+        },
+        { "id": "inbox-empty" },
+        { "id": "inbox-scrolling" },
+        { "id": "input-focused" },
+        { "id": "validation-error" },
+        { "id": "submitting" }
+      ]
+    },
+    {
+      "id": "dialog.player-info",
+      "label": "Player information",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["playerInfoDialogFacade"],
+        "domSelectors": [".room-player-info-dialog"]
+      },
+      "recipe": {
+        "kind": "manual",
+        "gap": "No named recipe currently supplies a deterministic player identity summary."
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".room-player-info-dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "loaded" },
+        { "id": "loading" },
+        { "id": "offline" },
+        { "id": "error" }
+      ]
+    },
+    {
+      "id": "dialog.alliance-info",
+      "label": "Alliance information",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["allianceInfoDialogFacade"],
+        "domSelectors": [".room-alliance-info-dialog"]
+      },
+      "recipe": {
+        "kind": "manual",
+        "gap": "No named recipe currently supplies a deterministic alliance identity and member list."
+      },
+      "anchors": [
+        {
+          "id": "dialog",
+          "selector": ".room-alliance-info-dialog",
+          "tolerancePx": 1
+        }
+      ],
+      "states": [
+        { "id": "loaded" },
+        { "id": "loading" },
+        { "id": "offline" },
+        { "id": "empty" },
+        { "id": "error" },
+        { "id": "scrolling" }
+      ]
+    },
+    {
+      "id": "tutorial.ftue",
+      "label": "FTUE tutorial flow",
+      "kind": "tutorial",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["tutorialFacade"]
+      },
+      "recipe": {
+        "kind": "tutorial",
+        "stepIdFromState": true
+      },
+      "settingsCoverage": {
+        "mode": "cartesian",
+        "axes": ["theme", "font", "progressBar"]
+      },
+      "anchors": [
+        {
+          "id": "layer",
+          "selector": ".tutorial-layer",
+          "tolerancePx": 1
+        },
+        {
+          "id": "guide",
+          "selector": ".tutorial-layer__hint, .tutorial-layer__lesson:not([hidden])",
+          "tolerancePx": 1
+        }
+      ],
+      "glyphEdgeMasks": [
+        {
+          "id": "guide-copy",
+          "selector": ".tutorial-layer__text, .tutorial-layer__step-label, .tutorial-layer__lesson-text, .tutorial-layer__lesson-step-label, .tutorial-layer__lesson-progress-label, .tutorial-layer__advance",
+          "padding": 1,
+          "maxChannelDelta": 40
+        }
+      ],
+      "states": [
+        { "id": "purchase-house" },
+        { "id": "intro-welcome" },
+        { "id": "intro-mana-sphere" },
+        { "id": "first-summon-seed" },
+        { "id": "summon-five-seeds" },
+        { "id": "intro-level-requirements" },
+        { "id": "first-fill-seed-task" },
+        { "id": "finish-seed-task" },
+        { "id": "intro-market" },
+        { "id": "prepare-seed-sale" },
+        { "id": "open-market" },
+        { "id": "select-market-stand" },
+        { "id": "select-sage-seed-sale" },
+        { "id": "earn-tutorial-coin" },
+        { "id": "first-sale-complete" },
+        { "id": "unselect-sage-seed-sale" },
+        { "id": "level-up-two" },
+        { "id": "intro-research" },
+        { "id": "research-mint-seed" },
+        { "id": "first-research-complete" },
+        { "id": "fill-mint-seed-task" },
+        { "id": "fill-sage-seed-task" },
+        { "id": "level-up-three" },
+        { "id": "intro-garden" },
+        { "id": "grow-sage" },
+        { "id": "first-harvest-complete" },
+        { "id": "fill-sage-herb-task" },
+        { "id": "fill-mint-herb-task" },
+        { "id": "level-up-four" },
+        { "id": "research-mana-tonic" },
+        { "id": "intro-brewing" },
+        { "id": "brew-mana-tonic" },
+        { "id": "first-brew-complete" },
+        { "id": "refill-mana-tonic-cauldron" }
+      ]
+    },
+    {
+      "id": "tool.dev-console",
+      "label": "Development console",
+      "kind": "tool",
+      "production": false,
+      "coverage": {
+        "devUi": ["devConsole"]
+      },
+      "viewports": [
+        "authored-1080x2170",
+        "desktop-fitted-1440x900"
+      ],
+      "settingsCoverage": {
+        "mode": "defaults",
+        "axes": []
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "devConsole"
+      },
+      "anchors": [
+        {
+          "id": "console",
+          "selector": ".dev-console",
+          "tolerancePx": 1,
+          "optional": true
+        }
+      ],
+      "states": [
+        { "id": "open" }
+      ]
+    }
+  ]
+}

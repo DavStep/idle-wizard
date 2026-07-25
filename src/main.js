@@ -1,5 +1,5 @@
 import '@fontsource/lilita-one/latin-400.css';
-import './styles/base.css';
+import './styles/canvas.css';
 
 import { AppFacade } from './app/AppFacade.js';
 import { AuthMobileRedirectBridgeManager } from './backend/auth/managers/AuthMobileRedirectBridgeManager.js';
@@ -21,15 +21,20 @@ function redirectMobileOidcCallbackToApp() {
 }
 
 if (!redirectMobileOidcCallbackToApp()) {
-  const root = document.querySelector('#app');
-  const app = new AppFacade({ root });
+  const canvas = document.querySelector('#game-canvas');
+  if (!canvas) {
+    throw new Error('The production Pixi canvas is missing.');
+  }
+  const app = new AppFacade({ canvas });
   let devCheatsFacade = null;
   let tutorialCaptureFacade = null;
   let uiEditorFacade = null;
   let quickUiPreviewFacade = null;
   let disposed = false;
 
-  app.start();
+  void app.start().catch((error) => {
+    globalThis.console?.error?.('Idle Wizard failed to start.', error);
+  });
 
   const quickUiSearch = new URLSearchParams(window.location.search);
   if (
@@ -93,7 +98,7 @@ if (!redirectMobileOidcCallbackToApp()) {
       tutorialCaptureFacade?.unmount();
       uiEditorFacade?.unmount();
       quickUiPreviewFacade?.unmount();
-      app.stop();
+      void app.stop();
     });
   }
 }

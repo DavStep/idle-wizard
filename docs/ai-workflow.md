@@ -46,11 +46,19 @@ When a feature change would be meaningfully faster or safer with a repo-local he
 - Keep tools deterministic and scoped to the current repo; prefer shared Vite and SpacetimeDB processes. If parallel agents interfere, isolated runtimes may use explicit alternate ports, with one clear owner responsible for stopping every alternate listener when finished.
 - Reuse documented tools before creating a near-duplicate helper.
 - For Figma-authored qUIck screens, dialogs, HUDs, components, or nine-slices, export the ZIP to `qUIck-inbox/`, run `npm run import:quick-ui`, and use `docs/quick-ui-workflow.md`; never manually extract the ZIP.
-- For an isolated live level-20 state, run `npm run preview:level20` and open
-  the printed `?devLevel=20` URL. The command checks or starts local
-  SpacetimeDB, builds into ignored `tmp/level20-dist`, and leaves the preview
-  detached. Rerunning the command rebuilds those assets and reuses the preview
-  process. Stop its recorded process with `npm run preview:level20:stop`.
+- At the atomic retained-Pixi cutover, run `npm run check:production-ui`.
+  It follows Vite's emitted production module graph, requires the single
+  authored canvas, and rejects production DOM construction/query/style APIs.
+  Keep the allowlist limited to the documented canvas-bootstrap and auth/dev
+  exceptions; do not allowlist legacy pages to make a pre-cutover graph pass.
+- For an isolated live level-20 state, run `npm run preview:level20 -- --port 55175`
+  and open the printed `?devLevel=20` URL. The command checks or starts local
+  SpacetimeDB, resets a dedicated `idle-wizard-level20-<port>` database with
+  this checkout's module, embeds that exact target in ignored
+  `tmp/level20-dist`, and leaves the preview detached. Stop its recorded process
+  with `npm run preview:level20:stop`. Rerunning the same port republishes the
+  disposable database, rebuilds those assets, and reuses the managed preview
+  process.
 
 ## Shared Local Runtime
 

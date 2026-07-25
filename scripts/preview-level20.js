@@ -19,6 +19,13 @@ import {
   waitForPreviewRelease,
 } from './preview-level20-state.js';
 
+import {
+  createPreviewBackendTarget,
+  createPreviewBuildEnvironment,
+  createPreviewPublishPlan,
+  prepareLevel20Preview,
+} from './preview-level20-runtime.js';
+
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outputDir = join(rootDir, 'tmp', 'level20-dist');
 const backendLogPath = join(rootDir, 'tmp', 'level20-spacetimedb.log');
@@ -27,6 +34,10 @@ const frontendPidPath = join(rootDir, 'tmp', 'level20-preview.pid');
 const frontendPort = readPortArgument(process.argv.slice(2), 55175);
 const backendPort = 3000;
 const host = '127.0.0.1';
+const backendTarget = createPreviewBackendTarget(frontendPort, {
+  host,
+  backendPort,
+});
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const viteCommand = join(
   rootDir,
@@ -49,8 +60,17 @@ if (!previewRunPlan.rebuildAssets) {
   process.exit(1);
 }
 
-await ensureBackend();
-buildIsolatedDevAssets();
+try {
+  await prepareLevel20Preview({
+    isBackendListening: checkBackendListening,
+    startBackend,
+    publishBackend: publishPreviewBackend,
+    buildAssets: buildIsolatedDevAssets,
+  });
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
 
 if (!previewRunPlan.startFrontend) {
   console.log(`level 20 preview rebuilt: ${url}`);
@@ -61,6 +81,7 @@ if (!previewRunPlan.startFrontend) {
 
 console.log(`level 20 preview: ${url}`);
 console.log(`isolated assets: ${outputDir}`);
+console.log(`isolated database: ${backendTarget.databaseName}`);
 
 mkdirSync(dirname(frontendLogPath), { recursive: true });
 const frontendLogFd = openSync(frontendLogPath, 'a');
@@ -117,12 +138,17 @@ function readPortArgument(args, fallback) {
   return port;
 }
 
-async function ensureBackend() {
-  if (await isPortListening(backendPort)) {
+async function checkBackendListening() {
+  const listening = await isPortListening(backendPort);
+
+  if (listening) {
     console.log(`SpacetimeDB ready: http://${host}:${backendPort}`);
-    return;
   }
 
+  return listening;
+}
+
+async function startBackend() {
   mkdirSync(dirname(backendLogPath), { recursive: true });
   const logFd = openSync(backendLogPath, 'a');
   const backend = spawn(npmCommand, ['run', 'stdb:start'], {
@@ -143,8 +169,18 @@ async function ensureBackend() {
     }
   }
 
-  console.error(`SpacetimeDB did not start; inspect ${backendLogPath}`);
-  process.exit(1);
+  throw new Error(`SpacetimeDB did not start; inspect ${backendLogPath}`);
+}
+
+function publishPreviewBackend() {
+  const publishPlan = createPreviewPublishPlan(backendTarget);
+  console.log(`Publishing isolated database: ${backendTarget.databaseName}`);
+  const result = spawnSync(publishPlan.command, publishPlan.args, {
+    cwd: rootDir,
+    stdio: 'inherit',
+  });
+
+  assertSuccessfulCommand(result, 'SpacetimeDB publish failed');
 }
 
 function buildIsolatedDevAssets() {
@@ -160,16 +196,21 @@ function buildIsolatedDevAssets() {
     ],
     {
       cwd: rootDir,
+      env: createPreviewBuildEnvironment(process.env, backendTarget),
       stdio: 'inherit',
     },
   );
 
+  assertSuccessfulCommand(result, 'Level 20 asset build failed');
+}
+
+function assertSuccessfulCommand(result, failureMessage) {
   if (result.error) {
     throw result.error;
   }
 
   if (result.status !== 0) {
-    process.exit(result.status ?? 1);
+    throw new Error(`${failureMessage} (exit ${result.status ?? 1})`);
   }
 }
 

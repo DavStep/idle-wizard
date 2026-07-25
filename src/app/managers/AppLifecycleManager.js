@@ -1,15 +1,13 @@
 import { AppConnectionRetryManager } from './AppConnectionRetryManager.js';
 import {
   ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT,
-  AppAccountLinkChoiceManager,
-} from './AppAccountLinkChoiceManager.js';
+  PixiAccountLinkChoiceController,
+} from '../../rendering/pixi/global/gates/PixiAccountLinkChoiceController.js';
 import {
   FRESH_START_CHOICE_CONNECT_ACCOUNT,
-  AppFreshStartChoiceManager,
-} from './AppFreshStartChoiceManager.js';
+  PixiFreshStartChoiceController,
+} from '../../rendering/pixi/global/gates/PixiFreshStartChoiceController.js';
 import { AppGameplayTickManager } from './AppGameplayTickManager.js';
-import { AppInteractionLockManager } from './AppInteractionLockManager.js';
-import { AppTextClipboardGuardManager } from './AppTextClipboardGuardManager.js';
 import { AppVisibilityManager } from './AppVisibilityManager.js';
 
 export class AppLifecycleManager {
@@ -24,10 +22,10 @@ export class AppLifecycleManager {
     playerFacade,
     maintenanceFacade,
     onlineGateManager,
-    accountLinkChoiceManager = new AppAccountLinkChoiceManager(),
-    freshStartChoiceManager = new AppFreshStartChoiceManager(),
-    interactionLockManager = new AppInteractionLockManager(),
-    textClipboardGuardManager = new AppTextClipboardGuardManager(),
+    accountLinkChoiceManager = new PixiAccountLinkChoiceController(),
+    freshStartChoiceManager = new PixiFreshStartChoiceController(),
+    interactionLockManager = new NoopInteractionLockManager(),
+    textClipboardGuardManager = new NoopLifecycleBoundary(),
     connectionRetryManager = new AppConnectionRetryManager(),
     gameplayTickManager = new AppGameplayTickManager(),
     appVisibilityManager = new AppVisibilityManager(),
@@ -955,5 +953,33 @@ export class AppLifecycleManager {
     this.stage = null;
     this.started = false;
     this.stopping = false;
+  }
+}
+
+class NoopLifecycleBoundary {
+  mount() {}
+
+  unmount() {}
+}
+
+class NoopInteractionLockManager extends NoopLifecycleBoundary {
+  constructor() {
+    super();
+    this.locked = false;
+    this.reason = '';
+  }
+
+  lock(reason = 'locked') {
+    this.locked = true;
+    this.reason = String(reason || 'locked');
+  }
+
+  unlock() {
+    this.locked = false;
+    this.reason = '';
+  }
+
+  isLocked() {
+    return this.locked;
   }
 }

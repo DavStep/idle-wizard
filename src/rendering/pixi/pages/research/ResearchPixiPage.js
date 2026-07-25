@@ -1,0 +1,1371 @@
+import {
+  ColorMatrixFilter,
+  Container,
+  Rectangle,
+  Sprite,
+  Texture,
+} from 'pixi.js';
+
+import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
+import { PixiCostButton } from '../../primitives/PixiCostButton.js';
+import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
+import { PixiResourceLabel } from '../../primitives/PixiResourceLabel.js';
+import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
+import { PooledCollection } from '../../retained/PooledCollection.js';
+import { WidgetPool } from '../../retained/WidgetPool.js';
+import {
+  DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
+import {
+  BaseRetainedPixiPage,
+  RETAINED_PAGE_GEOMETRY,
+  RETAINED_TEXT_STYLES,
+  RetainedButton,
+  RetainedProgressBar,
+  RetainedScrollArea,
+  applyTextTheme,
+  createRetainedInputId,
+  createText,
+  finiteOr,
+  normalizeRows,
+  setText,
+} from '../workshop/RetainedPageKit.js';
+import { ResearchInfoDialogPixi } from './ResearchInfoDialogPixi.js';
+
+const RESEARCH_DIALOG_ID = 'research.info';
+const MAX_LOCKED_ROWS_PER_BOX = 3;
+const RESEARCH_PAPER_INK = '#634934';
+const RESEARCH_PROGRESS_INK = '#725737';
+const RESEARCH_RANK_INK = '#ffeecf';
+const RESEARCH_RANK_FONT =
+  '"Lilita One", "Arial Black", Arial, sans-serif';
+const RESOURCE_WORD_MATCH_PATTERN =
+  /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/i;
+const RESOURCE_AMOUNT_PREFIX_PATTERN =
+  /([+-]?(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?(?:\s*-\s*\d[\d,]*(?:\.\d+)?(?:[a-z])?)?)|(?:\d[\d,]*(?:\/\d[\d,]*)+)|\?)(?:\s*\/\s*(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?)|\?))?\s+)$/i;
+const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+(?:sphere|tonic)\b/i;
+
+const CARD_SOURCE_INSETS = Object.freeze({
+  top: 55,
+  right: 77,
+  bottom: 88,
+  left: 64,
+});
+const CARD_BORDER_INSETS = Object.freeze({
+  top: 55 / 3,
+  right: 77 / 3,
+  bottom: 88 / 3,
+  left: 64 / 3,
+});
+const ART_SOURCE_INSETS = Object.freeze({
+  top: 49,
+  right: 50,
+  bottom: 50,
+  left: 49,
+});
+const ART_BORDER_INSETS = Object.freeze({
+  top: 49 / 3,
+  right: 50 / 3,
+  bottom: 50 / 3,
+  left: 49 / 3,
+});
+
+export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
+  cardWidth: 1000 / 3,
+  rowHeight: 90,
+  rowGap: 5,
+  categoryGap: 18,
+  categoryTitleHeight: 20,
+  cardOffsetX: -2,
+  artX: 30 / 3,
+  artY: 16,
+  artWidth: 58,
+  artHeight: 58,
+  artworkSize: 64,
+  nameX: 10,
+  nameY: 8,
+  nameMaxWidth: 225,
+  infoX: 252 / 3,
+  infoWidth: 422 / 3,
+  descriptionY: 29,
+  valueWidth: 281 / 3,
+  actionRight: 30 / 3,
+  actionTop: 10,
+  actionHeight: 70,
+  costWidth: 80,
+  costHeight: 48,
+  rankWidth: 217 * 0.3,
+  rankHeight: 62 * 0.3,
+  rankRight: 63 / 3,
+  progressBottom: 8,
+  progressHeight: PIXI_UI_GEOMETRY.progressTotalHeight,
+});
+
+export class ResearchPixiPage extends BaseRetainedPixiPage {
+  constructor({
+    assetManager = null,
+    semanticTargets = null,
+    dialogRegistry = null,
+    dialogLayer = null,
+    inputRouter = null,
+    ticker = null,
+    timeSource = () => Date.now(),
+    actions = {},
+    counters = null,
+    theme = DEFAULT_PIXI_THEME_SNAPSHOT,
+  } = {}) {
+    super({ pageId: 'research', semanticTargets, theme });
+    this.assetManager = assetManager;
+    this.inputRouter = inputRouter;
+    this.dialogRegistry = dialogRegistry;
+    this.dialogLayer = dialogLayer;
+    this.ticker = ticker;
+    this.timeSource = timeSource;
+    this.actions = actions;
+    this.selectedTabId = 'regular';
+    this.active = false;
+    this.tickHandler = () => this.tick();
+
+    this.scroll = new RetainedScrollArea({
+      label: 'research-page-scroll',
+      inputRouter: this.inputRouter,
+    });
+    this.tabsLayer = new Container({ label: 'research-page-tabs' });
+    this.runFocusLayer = new Container({ label: 'research-run-focus' });
+    this.runFocusLabel = createText('run focus', RETAINED_TEXT_STYLES.bold);
+    this.runFocusHelper = createText('', RETAINED_TEXT_STYLES.border);
+    this.runFocusLayer.addChild(this.runFocusLabel, this.runFocusHelper);
+    this.content.addChild(this.scroll.root, this.tabsLayer);
+
+    this.boxPool = new WidgetPool({
+      name: 'research box pool',
+      counters,
+      create: () => new ResearchBoxWidget({ page: this }),
+      reset: (box) => box.reset(),
+      dispose: (box) => box.destroy(),
+      maxSize: 24,
+    });
+    this.boxes = new PooledCollection({
+      name: 'research boxes',
+      pool: this.boxPool,
+      counters,
+      keyOf: (box) => box.id,
+      bind: (widget, box) => widget.bind(box),
+      afterReconcile: (widgets) => this.orderBoxWidgets(widgets),
+    });
+
+    this.rowPool = new WidgetPool({
+      name: 'research row pool',
+      counters,
+      create: () =>
+        new ResearchRowWidget({
+          page: this,
+          assetManager: this.assetManager,
+          timeSource: this.timeSource,
+        }),
+      reset: (row) => row.reset(),
+      dispose: (row) => row.destroy(),
+      maxSize: 128,
+    });
+    this.rows = new PooledCollection({
+      name: 'research rows',
+      pool: this.rowPool,
+      counters,
+      keyOf: (entry) => entry.research.id,
+      bind: (widget, entry) =>
+        widget.bind(entry.research, this.getRowActions(), entry.boxId),
+    });
+
+    this.tabPool = new WidgetPool({
+      name: 'research tab pool',
+      counters,
+      create: () => {
+        const button = new RetainedButton({
+          assetManager: this.assetManager,
+          buttonLabel: 'research-tab',
+          inputRouter: this.inputRouter,
+          variant: 'tab',
+        });
+        button.control.textLabel
+          .setFontSize(10)
+          .setLineHeight(12)
+          .setAlign('center');
+        return button;
+      },
+      reset: (button) => button.setModel({ label: '', enabled: false }),
+      dispose: (button) => button.destroy(),
+      maxSize: 4,
+    });
+    this.tabs = new PooledCollection({
+      name: 'research tabs',
+      pool: this.tabPool,
+      counters,
+      keyOf: (tab) => tab.id,
+      bind: (button, tab) => this.bindTab(button, tab),
+      afterReconcile: (buttons) => this.orderTabButtons(buttons),
+    });
+
+    this.runFocusPool = new WidgetPool({
+      name: 'research run focus pool',
+      counters,
+      create: () =>
+        new RetainedButton({
+          assetManager: this.assetManager,
+          buttonLabel: 'research-run-focus-button',
+          inputRouter: this.inputRouter,
+        }),
+      reset: (button) => button.setModel({ label: '', enabled: false }),
+      dispose: (button) => button.destroy(),
+      maxSize: 4,
+    });
+    this.runFocusButtons = new PooledCollection({
+      name: 'research run focus buttons',
+      pool: this.runFocusPool,
+      counters,
+      keyOf: (option) => option.id,
+      bind: (button, option) => this.bindRunFocusButton(button, option),
+      afterReconcile: (buttons) => this.orderRunFocusButtons(buttons),
+    });
+
+    if (
+      this.dialogRegistry &&
+      this.dialogLayer &&
+      !this.dialogRegistry.has(RESEARCH_DIALOG_ID)
+    ) {
+      this.dialogRegistry.register(
+        RESEARCH_DIALOG_ID,
+        () =>
+          new ResearchInfoDialogPixi({
+            parent: this.dialogLayer,
+            assetManager: this.assetManager,
+            inputRouter: this.inputRouter,
+            semanticTargets: this.semanticTargets,
+            onClose: () => this.dialogRegistry.close(RESEARCH_DIALOG_ID),
+            theme: this.theme,
+          }),
+      );
+    }
+
+    this.applyTheme(theme);
+    this.layoutPage(this.sourceWidth, this.sourceHeight);
+  }
+
+  renderViewModel(viewModel) {
+    const research = viewModel.research ?? viewModel;
+    const tabs =
+      Array.isArray(research.tabs) && research.tabs.length > 0
+        ? research.tabs
+        : [
+            {
+              id: 'regular',
+              label: 'regular research',
+              boxes: research.boxes ?? [],
+            },
+          ];
+    this.selectedTabId =
+      research.selectedTabId ??
+      tabs.find((tab) => tab.selected)?.id ??
+      this.selectedTabId;
+    const selectedTab =
+      research.selectedTab ??
+      tabs.find((tab) => tab.id === this.selectedTabId) ??
+      tabs[0];
+    this.selectedTabId = selectedTab?.id ?? 'regular';
+    this.currentActions =
+      viewModel.actions ?? research.actions ?? this.actions;
+    const visibleTabTargetIds = new Set(
+      tabs.map((tab) => `research.tab.${tab.id}`),
+    );
+
+    for (const semanticId of [...this.registeredTargetIds]) {
+      if (
+        semanticId.startsWith('research.tab.') &&
+        !visibleTabTargetIds.has(semanticId)
+      ) {
+        this.unregisterSemanticTarget(semanticId);
+      }
+    }
+
+    this.tabs.reconcile(tabs);
+    this.tabsLayer.visible = tabs.length > 1;
+
+    const runFocus = research.runFocus ?? {};
+    this.runFocusLayer.visible = runFocus.unlocked === true;
+    setText(
+      this.runFocusHelper,
+      runFocus.helper ??
+        (runFocus.selected && runFocus.selected !== 'none'
+          ? `${runFocus.selected} boxes first`
+          : 'standard order'),
+    );
+    this.currentRunFocus = runFocus;
+    this.runFocusButtons.reconcile(
+      runFocus.unlocked === true ? normalizeRows(runFocus.options) : [],
+    );
+
+    const boxes = normalizeRows(selectedTab?.boxes);
+    this.boxes.reconcile(boxes);
+    const rows = boxes.flatMap((box) =>
+      getDisplayedResearches(box).map((item) => ({
+        boxId: box.id,
+        research: {
+          ...item,
+          artAssetId:
+            item.artAssetId ?? item.artKey ?? box.artAssetId ?? box.artKey,
+        },
+      })),
+    );
+    this.rows.reconcile(rows);
+    this.attachRowsToBoxes(boxes);
+    this.layoutResearchContent();
+  }
+
+  getRowActions() {
+    return {
+      buy: (research) =>
+        research.onBuy?.(research.id) ??
+        this.currentActions?.buyResearch?.(research.id),
+      info: (research) => {
+        if (research.onInfo) {
+          return research.onInfo(research);
+        }
+        if (this.dialogRegistry?.has(RESEARCH_DIALOG_ID)) {
+          return Boolean(
+            this.dialogRegistry.open(
+              RESEARCH_DIALOG_ID,
+              research.info ?? research,
+            ),
+          );
+        }
+        return false;
+      },
+      locked: (research) =>
+        research.onLocked?.(research) ??
+        this.currentActions?.showLockedReason?.(research),
+    };
+  }
+
+  bindTab(button, tab) {
+    button.applyTheme(this.theme);
+    button.setModel({
+      label: tab.label ?? tab.id,
+      selected: tab.id === this.selectedTabId,
+      notification:
+        tab.notification === true ||
+        (tab.boxes ?? []).some((box) =>
+          (box.allResearches ?? box.researches ?? []).some(
+            (item) => item.canResearch === true,
+          ),
+        ),
+      action: () => {
+        if (tab.id === this.selectedTabId) {
+          return false;
+        }
+        this.selectedTabId = tab.id;
+        return this.currentActions?.selectTab?.(tab.id) ?? true;
+      },
+    });
+    this.registerSemanticTarget({
+      semanticId: `research.tab.${tab.id}`,
+      tutorialId: tab.tutorialId ?? null,
+      displayObject: button.root,
+      activate: () => button.handleTap(),
+    });
+  }
+
+  bindRunFocusButton(button, option) {
+    button.applyTheme(this.theme);
+    button.setModel({
+      label: option.label ?? option.id,
+      selected: option.id === this.currentRunFocus?.selected,
+      action: () => this.currentActions?.setRunFocus?.(option.id),
+    });
+  }
+
+  orderTabButtons(buttons) {
+    this.tabsLayer.removeChildren();
+    for (const button of buttons) {
+      this.tabsLayer.addChild(button.root);
+    }
+  }
+
+  orderRunFocusButtons(buttons) {
+    this.runFocusLayer.removeChildren();
+    this.runFocusLayer.addChild(this.runFocusLabel, this.runFocusHelper);
+    for (const button of buttons) {
+      this.runFocusLayer.addChild(button.root);
+    }
+  }
+
+  orderBoxWidgets(widgets) {
+    this.scroll.content.removeChildren();
+    if (this.runFocusLayer.visible) {
+      this.scroll.content.addChild(this.runFocusLayer);
+    }
+    for (const widget of widgets) {
+      this.scroll.content.addChild(widget.root);
+    }
+  }
+
+  attachRowsToBoxes(boxes) {
+    for (const box of boxes) {
+      const boxWidget = this.boxes.get(box.id);
+      if (!boxWidget) {
+        continue;
+      }
+      const rowWidgets = getDisplayedResearches(box)
+        .map((item) => this.rows.get(item.id))
+        .filter(Boolean);
+      boxWidget.setRows(rowWidgets);
+    }
+  }
+
+  applyThemeToChildren(theme) {
+    if (this.runFocusLabel) {
+      applyTextTheme(
+        this.runFocusLabel,
+        theme,
+        RETAINED_TEXT_STYLES.bold,
+      );
+      applyTextTheme(
+        this.runFocusHelper,
+        theme,
+        RETAINED_TEXT_STYLES.border,
+      );
+    }
+    for (const widget of this.boxes?.getWidgets?.() ?? []) {
+      widget.applyTheme(theme);
+    }
+    for (const row of this.rows?.getWidgets?.() ?? []) {
+      row.applyTheme(theme);
+    }
+    for (const button of this.tabs?.getWidgets?.() ?? []) {
+      button.applyTheme(theme);
+    }
+    for (const button of this.runFocusButtons?.getWidgets?.() ?? []) {
+      button.applyTheme(theme);
+    }
+  }
+
+  layoutPage(sourceWidth, sourceHeight) {
+    if (!this.scroll) {
+      return;
+    }
+    const edge = RETAINED_PAGE_GEOMETRY.contentEdge;
+    const contentHeight =
+      sourceHeight -
+      RETAINED_PAGE_GEOMETRY.contentTop -
+      RETAINED_PAGE_GEOMETRY.chatClearance;
+    const width = sourceWidth - edge * 2;
+    const tabClearance =
+      RETAINED_PAGE_GEOMETRY.tabHeight +
+      RETAINED_PAGE_GEOMETRY.scrollCut * 2;
+    this.contentHeight = contentHeight;
+    this.contentWidth = width;
+    this.scroll.setBounds(
+      edge,
+      RETAINED_PAGE_GEOMETRY.contentTop,
+      width,
+      contentHeight - tabClearance,
+    );
+    this.tabsLayer.position.set(
+      edge,
+      RETAINED_PAGE_GEOMETRY.contentTop +
+        contentHeight -
+        6 -
+        RETAINED_PAGE_GEOMETRY.tabHeight,
+    );
+    this.layoutResearchContent();
+  }
+
+  layoutResearchContent() {
+    if (!this.boxes || !this.scroll) {
+      return;
+    }
+    let y = RETAINED_PAGE_GEOMETRY.scrollCut;
+
+    if (this.runFocusLayer.visible) {
+      this.runFocusLayer.position.set(0, y);
+      this.runFocusLabel.position.set(0, 1);
+      let buttonX = 76;
+      const focusButtons = this.runFocusButtons.getWidgets();
+      const availableWidth = Math.max(0, this.contentWidth - buttonX);
+      const buttonWidth =
+        focusButtons.length > 0
+          ? (availableWidth - (focusButtons.length - 1) * 3) /
+            focusButtons.length
+          : 0;
+      for (const button of focusButtons) {
+        button.setBounds(buttonX, 0, buttonWidth, 20);
+        buttonX += buttonWidth + 3;
+      }
+      this.runFocusHelper.position.set(
+        this.contentWidth - this.runFocusHelper.width,
+        22,
+      );
+      y += 38;
+    }
+
+    for (const box of this.boxes.getWidgets()) {
+      box.setBounds(0, y, this.contentWidth);
+      y += box.getPreferredHeight() + RESEARCH_PIXI_GEOMETRY.categoryGap;
+    }
+    this.scroll.setContentHeight(
+      Math.max(
+        0,
+        y -
+          RESEARCH_PIXI_GEOMETRY.categoryGap +
+          RETAINED_PAGE_GEOMETRY.scrollCut,
+      ),
+    );
+
+    const tabButtons = this.tabs.getWidgets();
+    const gap = 3;
+    const buttonWidth =
+      tabButtons.length > 0
+        ? (this.contentWidth - gap * (tabButtons.length - 1)) /
+          tabButtons.length
+        : 0;
+    let x = 0;
+    for (const button of tabButtons) {
+      button.setBounds(
+        x,
+        0,
+        buttonWidth,
+        RETAINED_PAGE_GEOMETRY.tabHeight,
+      );
+      button.control.textLabel.setWrapWidth(
+        Math.max(0, buttonWidth - 6),
+      );
+      x += buttonWidth + gap;
+    }
+  }
+
+  activate() {
+    if (this.active) {
+      return;
+    }
+    super.activate();
+    this.active = true;
+    this.ticker?.add?.(this.tickHandler);
+  }
+
+  deactivate() {
+    if (!this.active) {
+      return;
+    }
+    this.ticker?.remove?.(this.tickHandler);
+    this.dialogRegistry?.close?.(RESEARCH_DIALOG_ID);
+    this.active = false;
+    super.deactivate();
+  }
+
+  tick() {
+    const now = this.timeSource();
+    for (const row of this.rows?.getWidgets?.() ?? []) {
+      row.updateTime(now);
+    }
+  }
+
+  destroyPage() {
+    this.ticker?.remove?.(this.tickHandler);
+    this.active = false;
+    this.dialogRegistry?.close?.(RESEARCH_DIALOG_ID);
+    this.rows?.destroy();
+    this.rowPool?.destroy();
+    this.boxes?.destroy();
+    this.boxPool?.destroy();
+    this.tabs?.destroy();
+    this.tabPool?.destroy();
+    this.runFocusButtons?.destroy();
+    this.runFocusPool?.destroy();
+    this.scroll?.destroy();
+  }
+}
+
+class ResearchBoxWidget {
+  constructor({ page }) {
+    this.page = page;
+    this.theme = page.theme;
+    this.root = new Container({ label: 'research-box' });
+    this.title = createText('', RETAINED_TEXT_STYLES.bold);
+    this.rowsLayer = new Container({ label: 'research-box-rows' });
+    this.root.addChild(this.title, this.rowsLayer);
+    this.rowWidgets = [];
+    this.preferredHeight = RESEARCH_PIXI_GEOMETRY.categoryTitleHeight;
+    this.rows = {
+      get: (researchId) => {
+        const row = this.page.rows?.get(researchId);
+        return row?.boxId === this.box?.id ? row : null;
+      },
+    };
+    this.rowsPool = this.page.rowPool;
+  }
+
+  bind(box) {
+    this.box = box;
+    setText(this.title, box.label ?? '');
+    this.applyTheme(this.page.theme);
+  }
+
+  setRows(rows) {
+    this.rowWidgets = rows;
+    this.rowsLayer.removeChildren();
+    let y = 0;
+    for (const row of rows) {
+      this.rowsLayer.addChild(row.root);
+      row.setBounds(0, y);
+      y +=
+        RESEARCH_PIXI_GEOMETRY.rowHeight +
+        RESEARCH_PIXI_GEOMETRY.rowGap;
+    }
+    this.preferredHeight =
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
+      (rows.length > 0 ? RESEARCH_PIXI_GEOMETRY.rowGap + y -
+        RESEARCH_PIXI_GEOMETRY.rowGap : 0);
+  }
+
+  setBounds(x, y, width) {
+    this.root.position.set(x, y);
+    this.width = width;
+    this.title.position.set(10, 0);
+    this.rowsLayer.position.set(0, RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
+      RESEARCH_PIXI_GEOMETRY.rowGap);
+  }
+
+  getPreferredHeight() {
+    return this.preferredHeight;
+  }
+
+  applyTheme(theme) {
+    this.theme = theme;
+    applyTextTheme(this.title, theme, RETAINED_TEXT_STYLES.bold);
+    for (const row of this.rowWidgets) {
+      row.applyTheme(theme);
+    }
+  }
+
+  reset() {
+    this.rowsLayer.removeChildren();
+    this.rowWidgets = [];
+    this.box = null;
+    setText(this.title, '');
+    this.preferredHeight = RESEARCH_PIXI_GEOMETRY.categoryTitleHeight;
+  }
+
+  destroy() {
+    this.root.destroy({ children: true });
+  }
+}
+
+/**
+ * Retained equivalent of main's `setResourceIconText` value cell. The value,
+ * icon, and timer objects are constructed once with the row and only rebound.
+ */
+class ResearchReadonlyValue extends Container {
+  constructor({ assetManager, label = 'research-readonly-value' } = {}) {
+    super({ label });
+    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.value = '';
+    this.timer = '';
+    this.fontSize = 13;
+    this.valueStyle = {
+      fontSize: 13,
+      lineHeight: 15,
+      fill: DEFAULT_PIXI_THEME_SNAPSHOT.text,
+    };
+    this.plain = createText('', this.valueStyle);
+    this.prefix = createText('', this.valueStyle);
+    this.suffix = createText('', this.valueStyle);
+    this.timerLabel = createText('', RETAINED_TEXT_STYLES.tiny);
+    for (const text of [
+      this.plain,
+      this.prefix,
+      this.suffix,
+      this.timerLabel,
+    ]) {
+      text.anchor.set(0, 0.5);
+    }
+    this.resourceLabel = new PixiResourceLabel({
+      assetManager,
+      resource: 'coin',
+      amount: '',
+      fontSize: this.fontSize,
+      includeResourceName: false,
+      label: `${label}:resource`,
+    });
+    this.addChild(
+      this.plain,
+      this.prefix,
+      this.resourceLabel,
+      this.suffix,
+      this.timerLabel,
+    );
+    this.applyTheme(this.theme, this.valueStyle);
+  }
+
+  setValue(value, timer = '') {
+    this.value = String(value ?? '');
+    this.timer = String(timer ?? '');
+    this.relayout();
+    return this;
+  }
+
+  applyTheme(theme, style = this.valueStyle) {
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.valueStyle = { ...this.valueStyle, ...style };
+    this.fontSize = Number(this.valueStyle.fontSize) || 13;
+    for (const text of [this.plain, this.prefix, this.suffix]) {
+      applyTextTheme(text, this.theme, this.valueStyle);
+    }
+    applyTextTheme(this.timerLabel, this.theme, {
+      ...RETAINED_TEXT_STYLES.tiny,
+      fill: this.theme.text,
+    });
+    this.resourceLabel.fontSize = this.fontSize;
+    this.resourceLabel.amountLabel
+      .setFontSize(this.fontSize)
+      .setLineHeight(this.valueStyle.lineHeight ?? this.fontSize)
+      .setFontWeight(this.valueStyle.fontWeight ?? '400');
+    this.resourceLabel.applyTheme(this.theme);
+    this.relayout();
+  }
+
+  relayout() {
+    const parsed = parseResearchResourceValue(this.value);
+    const useResourceIcon =
+      this.theme.iconMode === 'icons' && parsed !== null;
+    let x = 0;
+
+    this.plain.visible = !useResourceIcon;
+    this.plain.renderable = this.plain.visible;
+    this.prefix.visible = useResourceIcon;
+    this.prefix.renderable = useResourceIcon;
+    this.resourceLabel.visible = useResourceIcon;
+    this.resourceLabel.renderable = useResourceIcon;
+    this.suffix.visible = useResourceIcon;
+    this.suffix.renderable = useResourceIcon;
+
+    if (!useResourceIcon) {
+      setText(this.plain, this.value);
+      this.plain.position.set(0, 0);
+      x = this.plain.width;
+    } else {
+      setText(this.prefix, parsed.prefix);
+      setText(this.suffix, parsed.suffix);
+      this.prefix.position.set(x, 0);
+      x += this.prefix.width;
+
+      this.resourceLabel
+        .setResource(parsed.resource)
+        .setAmount(parsed.amount);
+      const amountWidth = this.resourceLabel.amountLabel.measuredWidth;
+      const iconGap = amountWidth > 0 ? this.fontSize * 0.14 : 0;
+      this.resourceLabel.amountLabel.position.set(0, this.fontSize * 0.5);
+      this.resourceLabel.icon.position.set(
+        amountWidth + iconGap,
+        this.fontSize * 0.5,
+      );
+      this.resourceLabel.position.set(x, -this.fontSize * 0.5);
+      x +=
+        amountWidth +
+        iconGap +
+        this.resourceLabel.icon.width;
+
+      this.suffix.position.set(x, 0);
+      x += this.suffix.width;
+    }
+
+    setText(this.timerLabel, this.timer);
+    this.timerLabel.visible = this.timer.length > 0;
+    this.timerLabel.renderable = this.timerLabel.visible;
+    if (this.timerLabel.visible) {
+      x += this.fontSize * 0.25;
+      this.timerLabel.position.set(x, 0);
+      x += this.timerLabel.width;
+    }
+
+    this.pivot.set(x / 2, 0);
+  }
+
+  get text() {
+    return [this.value, this.timer].filter(Boolean).join(' ');
+  }
+}
+
+class ResearchRowWidget {
+  constructor({ page, assetManager, timeSource }) {
+    this.page = page;
+    this.assetManager = assetManager;
+    this.timeSource = timeSource;
+    this.theme = page.theme;
+    this.boxId = null;
+    this.root = new Container({ label: 'research-row' });
+    this.card = new PixiNineSliceFrame({
+      texture: Texture.EMPTY,
+      sourceInsets: CARD_SOURCE_INSETS,
+      borderInsets: CARD_BORDER_INSETS,
+      width: RESEARCH_PIXI_GEOMETRY.cardWidth,
+      height: RESEARCH_PIXI_GEOMETRY.rowHeight,
+      label: 'research-row-card',
+    });
+    this.infoVisual = new Container({ label: 'research-row-info-visual' });
+    this.artWell = new PixiNineSliceFrame({
+      texture: Texture.EMPTY,
+      sourceInsets: ART_SOURCE_INSETS,
+      borderInsets: ART_BORDER_INSETS,
+      width: RESEARCH_PIXI_GEOMETRY.artWidth,
+      height: RESEARCH_PIXI_GEOMETRY.artHeight,
+      label: 'research-row-art-well',
+    });
+    this.art = new Sprite({
+      texture: Texture.EMPTY,
+      label: 'research-row-art',
+      roundPixels: true,
+    });
+    this.name = createText('', {
+      fontSize: 14,
+      lineHeight: 16,
+      wordWrapWidth: RESEARCH_PIXI_GEOMETRY.nameMaxWidth,
+    });
+    this.name.label = 'research-row-name';
+    this.nameStars = new PixiStarLevelLabel({
+      assetManager,
+      label: 'research-row-name-stars',
+    });
+    this.description = createText('', {
+      fontSize: 13,
+      lineHeight: 15,
+      align: 'center',
+      wordWrapWidth: RESEARCH_PIXI_GEOMETRY.infoWidth,
+    });
+    this.description.label = 'research-row-description';
+    this.rank = new Sprite({
+      texture: Texture.EMPTY,
+      label: 'research-row-rank',
+      roundPixels: true,
+    });
+    this.rankLabel = createText('', {
+      fontFamily: RESEARCH_RANK_FONT,
+      fontSize: 12,
+      lineHeight: 13.8,
+      align: 'center',
+      fill: RESEARCH_RANK_INK,
+    });
+    this.rankLabel.anchor.set(0.5);
+    this.rankLabel.label = 'research-row-rank-label';
+    this.costButton = new PixiCostButton({
+      assetManager,
+      inputRouter: this.page.inputRouter,
+      research: true,
+      width: RESEARCH_PIXI_GEOMETRY.costWidth,
+      height: RESEARCH_PIXI_GEOMETRY.costHeight,
+      label: 'research-row-cost',
+    });
+    this.valueButton = this.costButton;
+    this.valueButton.text = this.costButton.amountLabel.textObject;
+    this.readonlyValue = new ResearchReadonlyValue({
+      assetManager,
+      label: 'research-row-readonly-value',
+    });
+    this.readonlyStars = new PixiStarLevelLabel({
+      assetManager,
+      label: 'research-row-value-stars',
+    });
+    this.progress = new RetainedProgressBar({
+      label: 'research-row-progress',
+      tone: 'yellow',
+    });
+    this.labelHit = new Container({ label: 'research-row-label-hit' });
+    this.labelHit.eventMode = 'static';
+    this.labelHit.cursor = 'pointer';
+    this.infoVisual.addChild(
+      this.artWell,
+      this.art,
+      this.name,
+      this.nameStars,
+      this.description,
+    );
+    this.root.addChild(
+      this.card,
+      this.infoVisual,
+      this.rank,
+      this.rankLabel,
+      this.costButton,
+      this.readonlyValue,
+      this.readonlyStars,
+      this.progress.root,
+      this.labelHit,
+    );
+    this.handleInfo = () => this.actions?.info?.(this.research);
+    this.handleInfoPress = (pressed) => {
+      if (this.research?.locked) {
+        this.infoVisual.scale.set(1);
+        return;
+      }
+      this.infoVisual.scale.set(pressed ? 0.94 : 1);
+    };
+    this.inputRegistration =
+      this.page.inputRouter?.registerPressTarget?.(this.labelHit, {
+        id: createRetainedInputId('research-row-label'),
+        enabled: () => Boolean(this.research),
+        excludePageSwipe: true,
+        onActivate: this.handleInfo,
+        onPressChange: this.handleInfoPress,
+      }) ?? null;
+    this.usesDirectInput = !this.inputRegistration;
+    this.directPressStart = () => this.handleInfoPress(true);
+    this.directPressEnd = () => this.handleInfoPress(false);
+    if (this.usesDirectInput) {
+      this.labelHit.on('pointertap', this.handleInfo);
+      this.labelHit.on('pointerdown', this.directPressStart);
+      this.labelHit.on('pointerup', this.directPressEnd);
+      this.labelHit.on('pointerupoutside', this.directPressEnd);
+    }
+    this.lockedArtFilter = createLockedArtFilter();
+    this.layout();
+  }
+
+  bind(research, actions, boxId) {
+    this.root.visible = true;
+    this.root.renderable = true;
+    this.research = research;
+    this.actions = actions;
+    this.boxId = boxId;
+    this.targetId = research.semanticId ?? `research.${research.id}`;
+    this.tutorialId = research.tutorialId ?? `research:${research.id}`;
+    const state = normalizeResearchState(research);
+    const starLevel =
+      research.star?.level ?? finiteOr(research.starLevel, 0);
+    setText(
+      this.name,
+      research.displayName ?? research.label ?? research.id,
+    );
+    this.nameStars.setLevel(starLevel);
+    this.nameStars.visible = starLevel > 0;
+    this.nameStars.renderable = this.nameStars.visible;
+    setText(
+      this.description,
+      research.description ??
+        (research.showEffect === false ? '' : research.effect ?? ''),
+    );
+    setText(
+      this.rankLabel,
+      research.rank?.label ??
+        research.rankLabel ??
+        `Lv. ${research.completed ? '01' : '00'}/01`,
+    );
+    this.art.texture = this.resolveTexture(
+      research.artAssetId ?? research.artKey,
+    );
+    this.rank.texture = this.resolveTexture(
+      PIXI_ROOT_RUN_ASSETS.researchRank,
+    );
+
+    const interactive =
+      state === 'available' || state === 'unavailable' || state === 'locked';
+    this.costButton.visible = interactive;
+    this.costButton.renderable = interactive;
+    this.readonlyValue.visible = !interactive && starLevel <= 0;
+    this.readonlyValue.renderable = this.readonlyValue.visible;
+    this.readonlyStars.visible =
+      !interactive && research.completed === true && starLevel > 0;
+    this.readonlyStars.renderable = this.readonlyStars.visible;
+    this.readonlyStars.setLevel(starLevel);
+    const timer = research.timer ?? {};
+    const readonlyResearchValue =
+      research.displayValue ?? research.value ?? research.status ?? '';
+    this.readonlyValue.setValue(
+      timer.active
+        ? timer.displayValue ?? readonlyResearchValue
+        : readonlyResearchValue,
+      timer.active ? timer.remainingLabel ?? '' : '',
+    );
+
+    if (interactive) {
+      const cost = research.cost ?? {};
+      this.costButton.setModel({
+        amountLabel:
+          cost.amountLabel ??
+          research.displayValue ??
+          research.value ??
+          (state === 'locked' ? 'Locked' : 'Free'),
+        resource: cost.resource ?? cost.currency ?? research.costCurrency,
+        state:
+          state === 'unavailable'
+            ? 'unaffordable'
+            : state === 'locked'
+              ? 'locked'
+              : 'available',
+        lockReason:
+          cost.lockPrompt ?? formatResearchLockPrompt(research.lockReason),
+        enabled: state === 'available' && research.canResearch === true,
+        action: () => this.actions?.buy?.(research),
+      });
+    }
+
+    this.progress.root.visible = timer.active === true ||
+      research.inProgress === true;
+    this.progress.root.renderable = this.progress.root.visible;
+    this.timerBoundAt = this.timeSource();
+    this.timerStartRemaining = finiteOr(
+      timer.remainingMs,
+      finiteOr(research.remainingMs, 0),
+    );
+    this.timerTotal = finiteOr(
+      timer.totalMs,
+      finiteOr(research.totalMs, 0),
+    );
+    this.progress.setProgress(
+      finiteOr(
+        timer.progress,
+        finiteOr(research.progress, finiteOr(research.percent, 0) / 100),
+      ),
+    );
+    this.labelHit.cursor = 'pointer';
+    this.applyTheme(this.page.theme);
+    this.layout();
+
+    this.page.registerSemanticTarget({
+      semanticId: this.targetId,
+      tutorialId: this.tutorialId,
+      displayObject: this.costButton,
+      state: () => ({
+        enabled:
+          state === 'available'
+            ? research.canResearch === true
+            : true,
+        interactive: true,
+        selected: false,
+      }),
+      activate: () => {
+        if (state === 'available') {
+          return this.actions?.buy?.(research);
+        }
+        return this.actions?.info?.(research);
+      },
+    });
+  }
+
+  setBounds(x, y) {
+    this.root.position.set(x, y);
+    this.layout();
+  }
+
+  layout() {
+    const geometry = RESEARCH_PIXI_GEOMETRY;
+    this.card.position.set(geometry.cardOffsetX, 0);
+    this.card.setSize(
+      geometry.cardWidth,
+      geometry.rowHeight,
+      CARD_BORDER_INSETS,
+    );
+    this.infoVisual.pivot.set(
+      (geometry.cardWidth - geometry.valueWidth) / 2,
+      geometry.rowHeight / 2,
+    );
+    this.infoVisual.position.set(
+      (geometry.cardWidth - geometry.valueWidth) / 2,
+      geometry.rowHeight / 2,
+    );
+    this.artWell.position.set(geometry.artX, geometry.artY);
+    this.artWell.setSize(
+      geometry.artWidth,
+      geometry.artHeight,
+      ART_BORDER_INSETS,
+    );
+    this.art.position.set(
+      geometry.artX + (geometry.artWidth - geometry.artworkSize) / 2,
+      geometry.artY + (geometry.artHeight - geometry.artworkSize) / 2,
+    );
+    this.art.width = geometry.artworkSize;
+    this.art.height = geometry.artworkSize;
+    this.name.position.set(geometry.nameX, geometry.nameY);
+    this.nameStars.position.set(
+      Math.min(
+        geometry.nameMaxWidth - this.nameStars.measuredWidth,
+        geometry.nameX + this.name.width + 4,
+      ),
+      geometry.nameY + 1,
+    );
+    this.description.position.set(geometry.infoX, geometry.descriptionY);
+    this.rank.position.set(
+      geometry.cardWidth - geometry.rankRight - geometry.rankWidth,
+      0,
+    );
+    this.rank.width = geometry.rankWidth;
+    this.rank.height = geometry.rankHeight;
+    this.rankLabel.position.set(
+      this.rank.x + geometry.rankWidth / 2,
+      geometry.rankHeight / 2 + 0.5,
+    );
+    const costRight =
+      geometry.actionRight +
+      (geometry.valueWidth - geometry.costWidth) / 2;
+    this.costButton.setBounds(
+      geometry.cardWidth - costRight - geometry.costWidth,
+      geometry.actionTop +
+        (geometry.actionHeight - geometry.costHeight) / 2,
+      geometry.costWidth,
+      geometry.costHeight,
+    );
+    const valueCenterX =
+      geometry.cardWidth -
+      geometry.actionRight -
+      geometry.valueWidth / 2;
+    const valueCenterY = geometry.actionTop + geometry.actionHeight / 2;
+    this.readonlyValue.position.set(valueCenterX, valueCenterY);
+    this.readonlyStars.position.set(
+      valueCenterX - this.readonlyStars.measuredWidth / 2,
+      valueCenterY - 6,
+    );
+    this.progress.setBounds(
+      geometry.infoX,
+      geometry.rowHeight -
+        geometry.progressBottom -
+        geometry.progressHeight,
+      geometry.infoWidth,
+      geometry.progressHeight,
+    );
+    const infoWidth = this.research?.locked
+      ? geometry.cardWidth
+      : geometry.cardWidth - geometry.valueWidth;
+    this.labelHit.hitArea = new Rectangle(
+      geometry.cardOffsetX,
+      0,
+      infoWidth,
+      geometry.rowHeight,
+    );
+    this.root.hitArea = new Rectangle(
+      geometry.cardOffsetX,
+      0,
+      geometry.cardWidth,
+      geometry.rowHeight,
+    );
+  }
+
+  updateTime(now) {
+    if (!this.progress.root.visible || !this.research) {
+      return;
+    }
+    const elapsed = Math.max(0, finiteOr(now, this.timeSource()) -
+      this.timerBoundAt);
+    const remaining = Math.max(0, this.timerStartRemaining - elapsed);
+    if (this.timerTotal > 0) {
+      this.progress.setProgress(1 - remaining / this.timerTotal);
+    }
+    const value = this.research.displayValue ?? this.research.value ?? '';
+    this.readonlyValue.setValue(value, formatRemainingTime(remaining));
+  }
+
+  applyTheme(theme) {
+    this.theme = theme;
+    const locked = normalizeResearchState(this.research) === 'locked';
+    this.card.setTexture(
+      this.resolveTexture(
+        locked
+          ? PIXI_ROOT_RUN_ASSETS.researchCardLocked
+          : PIXI_ROOT_RUN_ASSETS.researchCard,
+      ),
+      CARD_SOURCE_INSETS,
+    );
+    this.artWell.setTexture(
+      this.resolveTexture(
+        locked
+          ? PIXI_ROOT_RUN_ASSETS.researchArtLocked
+          : PIXI_ROOT_RUN_ASSETS.researchArt,
+      ),
+      ART_SOURCE_INSETS,
+    );
+    this.art.filters =
+      locked && this.lockedArtFilter ? [this.lockedArtFilter] : null;
+    applyTextTheme(this.name, theme, {
+      fontSize: 14,
+      lineHeight: 16,
+      wordWrapWidth: RESEARCH_PIXI_GEOMETRY.nameMaxWidth,
+      fill: locked
+        ? '#ffffff'
+        : theme.resourceColors?.[this.research?.resourceKey] ??
+          RESEARCH_PAPER_INK,
+    });
+    applyTextTheme(this.description, theme, {
+      fontSize: 13,
+      lineHeight: 15,
+      align: 'center',
+      wordWrapWidth: RESEARCH_PIXI_GEOMETRY.infoWidth,
+      fill: locked ? '#ffffff' : RESEARCH_PAPER_INK,
+    });
+    applyTextTheme(this.rankLabel, theme, {
+      fontFamily: RESEARCH_RANK_FONT,
+      fontSize: 12,
+      lineHeight: 13.8,
+      align: 'center',
+      fill: locked ? '#ffffff' : RESEARCH_RANK_INK,
+    });
+    this.rankLabel.style.stroke = {
+      color: '#0a0a0a',
+      width: 1.2,
+      join: 'round',
+    };
+    const inProgress =
+      this.research?.timer?.active === true ||
+      this.research?.inProgress === true;
+    this.readonlyValue.applyTheme(theme, {
+      fontSize: inProgress ? 11 : 13,
+      lineHeight: 15,
+      align: 'center',
+      wordWrapWidth: RESEARCH_PIXI_GEOMETRY.valueWidth - 8,
+      fill: locked
+        ? '#ffffff'
+        : inProgress
+          ? RESEARCH_PROGRESS_INK
+          : theme.resourceColors?.[this.research?.valueResourceKey] ??
+            theme.text,
+    });
+    this.costButton.applyTheme(theme);
+    this.progress.applyTheme(theme);
+  }
+
+  reset() {
+    if (this.targetId) {
+      this.page.unregisterSemanticTarget(this.targetId);
+    }
+    this.targetId = null;
+    this.research = null;
+    this.actions = null;
+    this.boxId = null;
+    this.infoVisual.scale.set(1);
+    this.costButton.reset();
+    this.progress.root.visible = false;
+    this.root.visible = false;
+    this.root.renderable = false;
+  }
+
+  destroy() {
+    if (this.targetId) {
+      this.page.unregisterSemanticTarget(this.targetId);
+    }
+    if (typeof this.inputRegistration === 'function') {
+      this.inputRegistration();
+    } else {
+      this.inputRegistration?.unregister?.();
+    }
+    this.inputRegistration = null;
+    if (this.usesDirectInput) {
+      this.labelHit.off('pointertap', this.handleInfo);
+      this.labelHit.off('pointerdown', this.directPressStart);
+      this.labelHit.off('pointerup', this.directPressEnd);
+      this.labelHit.off('pointerupoutside', this.directPressEnd);
+    }
+    this.lockedArtFilter?.destroy?.();
+    this.lockedArtFilter = null;
+    this.costButton.destroy({ children: true });
+    this.progress.destroy();
+    this.root.destroy({ children: true });
+  }
+
+  resolveTexture(assetId) {
+    if (!assetId) {
+      return Texture.EMPTY;
+    }
+    return this.assetManager?.has?.(assetId)
+      ? this.assetManager.getTexture(assetId)
+      : Texture.EMPTY;
+  }
+}
+
+function getDisplayedResearches(box = {}) {
+  const source = normalizeRows(box.researches ?? box.rows ?? box.allResearches);
+  let lockedCount = 0;
+  return source.filter((research) => {
+    if (research.locked !== true) {
+      return true;
+    }
+    lockedCount += 1;
+    return lockedCount <= MAX_LOCKED_ROWS_PER_BOX;
+  });
+}
+
+function normalizeResearchState(research = {}) {
+  if (research.state) {
+    return research.state;
+  }
+  if (research.completed === true) return 'completed';
+  if (research.inProgress === true) return 'in-progress';
+  if (research.locked === true) return 'locked';
+  if (research.canResearch === true) return 'available';
+  return 'unavailable';
+}
+
+function formatResearchLockPrompt(lockReason = '') {
+  const reason = String(lockReason ?? '').trim().replace(/\.$/, '');
+  const levelMatch = reason.match(/^requires level (\d+)$/i);
+  if (levelMatch) {
+    return `Reach level ${levelMatch[1]}`;
+  }
+  if (!reason || reason.toLowerCase() === 'this research is still locked') {
+    return 'Complete prior research';
+  }
+  return `${reason.charAt(0).toUpperCase()}${reason.slice(1)}`;
+}
+
+function parseResearchResourceValue(value) {
+  const normalizedValue = String(value ?? '');
+  const match = normalizedValue.match(RESOURCE_WORD_MATCH_PATTERN);
+  if (!match || !Number.isInteger(match.index)) {
+    return null;
+  }
+
+  const label = match[0];
+  const index = match.index;
+  if (
+    label.toLowerCase() === 'mana' &&
+    MANA_NON_RESOURCE_PHRASE_PATTERN.test(
+      normalizedValue.slice(index + label.length),
+    )
+  ) {
+    return null;
+  }
+
+  const before = normalizedValue.slice(0, index);
+  const amountMatch = before.match(RESOURCE_AMOUNT_PREFIX_PATTERN);
+  let amountPrefix = amountMatch?.[1] ?? '';
+  if (amountPrefix) {
+    const amountStart = before.length - amountPrefix.length;
+    if (/\w/.test(before[amountStart - 1] ?? '')) {
+      amountPrefix = '';
+    }
+  }
+
+  return {
+    prefix: amountPrefix
+      ? before.slice(0, before.length - amountPrefix.length)
+      : before,
+    amount: amountPrefix.trimEnd(),
+    resource: normalizeResearchResource(label),
+    suffix: normalizedValue.slice(index + label.length),
+  };
+}
+
+function normalizeResearchResource(resource) {
+  const normalized = String(resource ?? '').trim().toLowerCase();
+  if (normalized === 'crystals') return 'crystal';
+  if (normalized === 'emeralds') return 'emerald';
+  if (normalized === 'rubies') return 'ruby';
+  if (normalized === 'seeds') return 'seed';
+  if (normalized === 'herbs') return 'herb';
+  return normalized;
+}
+
+function createLockedArtFilter() {
+  try {
+    const filter = new ColorMatrixFilter();
+    filter.grayscale(1, false);
+    filter.brightness(1.4, true);
+    return filter;
+  } catch {
+    return null;
+  }
+}

@@ -19,6 +19,7 @@ experience_type: architecture
 - Renamed save branches need server normalizer aliases and client load fallbacks; otherwise server-normalized restarts can silently reset cooldowns.
 - SpacetimeDB reducers should use primary keys and existing indexes for identity/alliance lookups; maintenance reducers that touch many players should sweep each table once from an identity set, not call per-player cleanup that rescans tables.
 - `PressFeedbackManager` can route the `.is-pressing` class to a child selector via `data-press-feedback-target`; use it when a control's art should press without moving its label/sign container.
+- Porting the unified button system must preserve control roles: price-bearing buys use cost buttons, skin variants stay scoped to their source actions, and compact icon panel actions must not be converted into regular buttons.
 - UI click sounds live in `src/audio/uiClicks`; trigger them through `PressFeedbackManager` so individual button managers do not duplicate sound hooks.
 - Idle Witch Craft's button tap cue uses `idlefarmer-mouth-pop.wav` plus a short triangle tone; Idle Wizard mirrors that in `assets/game/source/audio/ui-click-pop.wav`.
 - Root Run-style presentation uses one retained Pixi application with a fixed `390x844` logical stage for every room, popup, gate, tutorial overlay, and Spine visual; do not add page-local Pixi applications or extra WebGL canvases.
@@ -36,6 +37,7 @@ experience_type: architecture
 - Register Spine/Pixi render-pipe plugins before the shared `Application.init()` call; keep skeleton and atlas asset loading lazy.
 - Idle Outpost `farming-tile.skel` is Spine `4.0.64`; in Idle Wizard prefer cropped atlas PNGs or a re-export before loading it through the Spine 4.3 runtime.
 - The central renderer must invalidate on pointerdown/up/cancel, input/change, scroll, ResizeObserver, MutationObserver, and active CSS animation frames so short press states and moving overlays stay current.
+- Retained Pixi modals must capture semantic focus on push and restore it on pop; hiding the retained tree after popping can otherwise leave keyboard focus on a closed dialog control.
 - Atlas sprites in semantic DOM should use inline SVG `viewBox` crops or `data-asset-atlas-frame`; both scale like images and give the central Pixi renderer a stable frame lookup.
 - Generated atlases need transparent-pixel alpha bleed and edge extrusion; raw RGB garbage or blank padding can show as seams when Pixi/SVG scales sprites.
 - Inline SVG atlas crops used as text-size item icons need wide gutters; 2px padding lets adjacent herb frames bleed into minified sprites.

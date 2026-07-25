@@ -1,0 +1,211 @@
+/**
+ * Creates the renderer-neutral Guild view model from the current
+ * GameplayFacade/GuildFacade snapshot.
+ *
+ * The Guild facade remains authoritative for unlocks, affordability,
+ * generation, simulation, hiring, firing, posting, rewards, and persistence.
+ * This adapter only copies display fields and routes callbacks to existing
+ * facade method names.
+ *
+ * @param {{
+ *   gameplaySnapshot?: object,
+ *   selectedTabId?: 'hall' | 'board' | 'adventurers' | 'log' | 'roster',
+ *   actions?: object,
+ *   gameplayActions?: object,
+ *   dialogs?: object,
+ *   tabNotifications?: object | null,
+ *   subscribe?: ((listener: (snapshot: object) => void) => (() => void) | void) | null,
+ * }} [options]
+ * @returns {object}
+ */
+export function createGuild(options = {}) {
+  const gameplaySnapshot = options.gameplaySnapshot ?? {};
+  const guild = gameplaySnapshot.guild ?? gameplaySnapshot;
+  const actions = options.actions ?? {};
+  const gameplayActions =
+    options.gameplayActions ?? actions.gameplay ?? actions;
+  const uiActions = actions.ui ?? actions;
+  const model = {
+    guild: {
+      ...guild,
+      unlocked: guild.unlocked === true,
+      created: guild.created === true,
+      profile: guild.profile ? { ...guild.profile } : {},
+      secretary: createSecretary(guild.secretary),
+      board: mapRequests(guild.board),
+      normalBoard: mapRequests(guild.normalBoard),
+      eventBoard: mapRequests(guild.eventBoard),
+      availableRequests: mapRequests(guild.availableRequests),
+      adventurers: mapPeople(guild.adventurers),
+      applicants: mapPeople(guild.applicants),
+      logs: safeArray(guild.logs).map((log, index) => ({
+        ...(typeof log === 'object' ? log : {}),
+        id:
+          (typeof log === 'object' ? log.id : null) ??
+          index,
+        text:
+          typeof log === 'object'
+            ? log.text ?? ''
+            : String(log),
+      })),
+    },
+    selectedTabId: normalizeTabId(
+      options.selectedTabId ?? guild.selectedTabId,
+    ),
+    dialogs: { ...(options.dialogs ?? {}) },
+    actions: createGuildActionMap({
+      gameplayActions,
+      uiActions,
+    }),
+    tabNotifications:
+      options.tabNotifications ??
+      guild.tabNotifications ??
+      null,
+  };
+
+  if (typeof options.subscribe === 'function') {
+    model.subscribe = (listener) =>
+      options.subscribe((update) => {
+        const nextSnapshot =
+          update?.gameplaySnapshot ?? update;
+        listener(
+          createGuild({
+            ...options,
+            gameplaySnapshot: nextSnapshot,
+            subscribe: null,
+          }),
+        );
+      });
+  }
+
+  return model;
+}
+
+export const createGuildPixiViewModel = createGuild;
+
+function createGuildActionMap({ gameplayActions, uiActions }) {
+  const result = {};
+  assignAction(result, 'selectTab', uiActions, ['selectTab']);
+  assignAction(result, 'createGuild', gameplayActions, [
+    'createGuild',
+  ]);
+  assignAction(result, 'updateGuildProfile', gameplayActions, [
+    'updateGuildProfile',
+  ]);
+  assignAction(result, 'upgradeSecretary', gameplayActions, [
+    'upgradeGuildSecretary',
+    'upgradeSecretary',
+  ]);
+  assignAction(result, 'postRequest', gameplayActions, [
+    'postGuildRequest',
+    'postRequest',
+  ]);
+  assignAction(result, 'removeRequest', gameplayActions, [
+    'removeGuildRequest',
+    'removeRequest',
+  ]);
+  assignAction(result, 'hireApplicant', gameplayActions, [
+    'hireGuildApplicant',
+    'hireApplicant',
+  ]);
+  assignAction(result, 'fireAdventurer', gameplayActions, [
+    'fireGuildAdventurer',
+    'fireAdventurer',
+  ]);
+  assignAction(result, 'onActivate', uiActions, ['onActivate']);
+  assignAction(result, 'onDeactivate', uiActions, [
+    'onDeactivate',
+  ]);
+  return result;
+}
+
+function assignAction(output, key, target, methodNames) {
+  const methodName = methodNames.find(
+    (candidate) => typeof target?.[candidate] === 'function',
+  );
+  if (!methodName) {
+    return;
+  }
+  output[key] = (...arguments_) =>
+    target[methodName](...arguments_);
+}
+
+function createSecretary(secretary = {}) {
+  return {
+    ...(secretary ?? {}),
+    next: secretary?.next
+      ? { ...secretary.next }
+      : null,
+  };
+}
+
+function mapRequests(requests) {
+  return safeArray(requests).map((request, index) => ({
+    ...request,
+    id: request?.id ?? index,
+    title: request?.title ?? 'request',
+    lore: request?.lore ?? '',
+    difficulty: request?.difficulty ?? 'medium',
+    statLabel:
+      request?.statLabel ??
+      safeArray(request?.stats).join(' / '),
+    rewardText: request?.rewardText ?? '',
+    expiresLabel: request?.expiresLabel ?? '',
+    eventLabel:
+      request?.eventLabel ??
+      request?.event?.headline ??
+      '',
+  }));
+}
+
+function mapPeople(people) {
+  return safeArray(people).map((person, index) => {
+    const displayName =
+      person?.displayName ??
+      [person?.name, person?.epithet]
+        .filter(Boolean)
+        .join(' ');
+    return {
+      ...person,
+      id: person?.id ?? index,
+      displayName: displayName || 'nameless',
+      level: Math.max(1, Math.floor(Number(person?.level) || 1)),
+      status: person?.status ?? 'idle',
+      statusLabel:
+        person?.statusLabel ??
+        person?.currentQuest?.title ??
+        person?.status ??
+        'idle',
+      personalityLabel: person?.personalityLabel ?? '',
+      stats:
+        person?.stats && typeof person.stats === 'object'
+          ? { ...person.stats }
+          : {},
+      history: safeArray(person?.history).map(
+        (entry, entryIndex) => ({
+          ...(typeof entry === 'object' ? entry : {}),
+          id:
+            (typeof entry === 'object' ? entry.id : null) ??
+            entryIndex,
+          text:
+            typeof entry === 'object'
+              ? entry.text ?? ''
+              : String(entry),
+        }),
+      ),
+    };
+  });
+}
+
+function normalizeTabId(tabId) {
+  if (tabId === 'roster') {
+    return 'adventurers';
+  }
+  return ['hall', 'board', 'adventurers', 'log'].includes(tabId)
+    ? tabId
+    : 'hall';
+}
+
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}

@@ -24,6 +24,8 @@ export class DevCheatsFacade {
   constructor({ app, target = globalThis, logger = globalThis.console } = {}) {
     this.target = target;
     this.logger = logger;
+    this.gameplayFacade = app?.gameplayFacade;
+    this.lifecycleManager = app?.lifecycleManager;
     this.qaDataFacade = new QaDataFacade({
       gameplayFacade: app?.gameplayFacade,
     });
@@ -128,7 +130,7 @@ export class DevCheatsFacade {
 
     this.devLevelRequest.attempts += 1;
 
-    if (this.hasBlockingLevelGate()) {
+    if (this.hasBlockingLevelGate() || !this.isRequestedLevelReady()) {
       this.retryRequestedLevelApply();
       return;
     }
@@ -156,6 +158,21 @@ export class DevCheatsFacade {
     const document = this.target?.document ?? globalThis.document;
 
     return Boolean(document?.querySelector?.(DEV_LEVEL_BLOCKING_SELECTOR));
+  }
+
+  isRequestedLevelReady() {
+    if (this.gameplayFacade?.initialized !== true) {
+      return false;
+    }
+
+    if (!this.lifecycleManager) {
+      return true;
+    }
+
+    return (
+      this.lifecycleManager.backendOnline === true
+      && this.lifecycleManager.gameSurfacesMounted === true
+    );
   }
 
   clearDevLevelTimer() {

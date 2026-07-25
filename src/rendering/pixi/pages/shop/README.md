@@ -1,0 +1,101 @@
+# Retained Pixi Shop
+
+`ShopPixiPage` is the canvas-only production view for the current Shop surface.
+It constructs the three page panels once, reconciles repeated rows through
+keyed widget pools, and registers every Shop dialog as a lazy-once
+`DialogRegistry` factory.
+
+The view is renderer-only. It does not calculate prices, affordability,
+inventory changes, offers, or backend results. A presenter binds this shape:
+
+```js
+{
+  shop: {
+    selectedTabId: 'traders' | 'players' | 'crystals',
+    market: { name, rank },
+    traders: {
+      stalls: [{
+        id, slotNumber, itemLabel, quantityLabel, batchLabel,
+        priceLabel, resourceKey, progress, locked, notification,
+        dialog
+      }],
+      timerLabel,
+      ledger
+    },
+    players: {
+      requests: {
+        slots: [{ id, slotNumber, itemLabel, value, enabled, dialog }],
+        countLabel, canClear
+      },
+      market: {
+        slots: [{ id, slotNumber, itemLabel, value, enabled, dialog }],
+        countLabel, proceedsLabel, canClaimProceeds,
+        browseNotification
+      }
+    },
+    crystals: {
+      coinOffer: {
+        rewardLabel, actionLabel, timerLabel, canCollect, notification
+      },
+      offers: [{
+        id, crystalCount, bundleLabel, priceLabel, enabled, dialog
+      }]
+    },
+    dialogs: {
+      stall, ledger, request, listing, market, tradeHistory, support
+    }
+  },
+  actions: {
+    selectTab,
+    clearPlayerRequest,
+    claimPlayerMarketProceeds,
+    collectCoinOffer,
+    onActivate,
+    onDeactivate
+  },
+  subscribe(callback)
+}
+```
+
+Dialog payloads are display-ready. Common fields are `title`, `summaryRows`,
+`rows`, `actions`, `tabs`, and optional `fields`/`amount`/`range` models.
+Rows in long market/history dialogs are viewport-windowed and keyed by `id`.
+Actions are invoked directly and are expected to call the authoritative
+gameplay/backend facade.
+
+The compatibility adapter also accepts the current raw `shelf`,
+`playerShelf`, `coinOffer`, and `crystalOffers` snapshot names during cutover.
+It only renames display fields; it does not derive game rules.
+
+## Snapshot adapter
+
+`createShop(options)` is the integration boundary for the current facades:
+
+```js
+createShop({
+  gameplaySnapshot,       // GameplayFacade.getSnapshot()
+  playerShopSnapshot,     // PlayerShopBackendFacade.getSnapshot()
+  notificationSnapshot,  // PageNotificationStateManager snapshot
+  selectedTabId,
+  uiState: {
+    selectedRequestSlotNumber,
+    stallItemTypeIdBySlot,
+    stallAllocationPercentBySlot,
+    requestDraftBySlot,
+    listingDraftBySlot,
+    ledgerKind,
+    marketBrowseTab
+  },
+  gameplayActions,        // existing GameplayFacade
+  playerShopActions,      // existing PlayerShopBackendFacade
+  actions: { ui: uiDraftAndNavigationActions },
+  dialogs,                // optional display-ready overrides
+  subscribe               // emits a gameplay snapshot or the three snapshots above
+})
+```
+
+It returns the exact page contract shown above. Backend-first request,
+listing, clear, and proceeds callbacks forward to the current backend and
+gameplay APIs; success/failure remains authoritative in those APIs. Optional
+UI draft callbacks only retain canvas-local selection/input state and must
+recreate/rebind this view model after changing it.

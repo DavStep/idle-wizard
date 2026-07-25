@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_SWIPE_ORDER } from './PageSwipeNavigationManager.js';
+import { DEFAULT_PAGE_SWIPE_ORDER } from './pageOrder.js';
 import { WORKSHOP_PRESTIGE_ACTION_UNLOCK_LEVEL } from '../workshop/managers/WorkshopSecondaryActionGateManager.js';
 
 export const PAGE_UNLOCK_REQUIREMENTS = {
