@@ -73,6 +73,11 @@ This performs:
 8. git commit and push from `main`
 9. Discord changelog, optional feature spotlight, and APK upload
 
+The production Android sync converts emitted PNG assets to quality-90 WebP
+after the web build and before Capacitor copies `dist`. This optimization is
+Android-only; GitHub Pages continues to serve the original production assets.
+Full alpha quality keeps transparent HUD edges unchanged.
+
 The release preflight also requires the semantic version to increase Android's
 `versionCode`, and it verifies the built APK manifest before upload. The Android
 mapping reserves three digits each for minor and patch versions, so transitions
