@@ -777,7 +777,7 @@ export class PixiExperienceFacade {
 
   showFirstRunIntroPreview({ reducedMotion = false } = {}) {
     if (!this.mounted || !this.introPresenter || !this.introView) {
-      return { ok: false, reason: 'intro_missing' };
+      return { ok: false, reason: 'pages_not_mounted' };
     }
 
     this.introPresenter.hide?.();
