@@ -8,10 +8,7 @@ import { Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
-import {
-  PixiDialogFrame,
-  PixiPanel,
-} from '../../primitives/index.js';
+import { PixiDialogFrame } from '../../primitives/index.js';
 import {
   DialogRegistry,
   SemanticTargetRegistry,
@@ -209,7 +206,7 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('uses the retained Root Run shell for player dialogs and preserves system exceptions', () => {
+  it('uses the Root Run shell for dialogs and keeps announcement screens unframed', () => {
     const harness = createHarness();
     const settings = harness.registry.open(
       GLOBAL_DIALOG_IDS.SETTINGS,
@@ -242,12 +239,45 @@ describe('retained global Pixi dialogs', () => {
     const announcement = harness.registry.open(
       GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
       {
+        kind: 'unlock',
         title: 'rewards',
         dismissible: true,
+        showClose: false,
       },
     );
-    expect(announcement.panel).toBeInstanceOf(PixiPanel);
-    expect(announcement.panel).not.toBeInstanceOf(PixiDialogFrame);
+    expect(announcement.panel).toBeInstanceOf(PixiDialogFrame);
+    expect(announcement.heading.text).toBe('rewards');
+    expect(announcement.panel).toMatchObject({
+      shadow: { visible: false, renderable: false },
+      outerFrame: { visible: false, renderable: false },
+      paperFrame: { visible: false, renderable: false },
+      titleFrame: { visible: false, renderable: false },
+      closeControl: { visible: false, renderable: false },
+    });
+    expect(announcement.heading.theme).toMatchObject({
+      surface: '#202020',
+      text: '#e8e8e8',
+    });
+
+    announcement.bind({
+      kind: 'whileAway',
+      title: 'while away',
+      rows: [],
+      dismissible: true,
+      showClose: true,
+    });
+    expect(announcement.heading.text).toBe('');
+    expect(announcement.panel).toMatchObject({
+      shadow: { visible: true, renderable: true },
+      outerFrame: { visible: true, renderable: true },
+      paperFrame: { visible: true, renderable: true },
+      titleFrame: { visible: true, renderable: true },
+      closeControl: { visible: true, renderable: true },
+    });
+    expect(announcement.rows.theme).toMatchObject({
+      surface: '#ffe7c8',
+      text: '#634934',
+    });
 
     harness.dispose();
   });

@@ -10,7 +10,7 @@ import {
 
 import {
   BasePixiRetainedView,
-  PixiPanel,
+  PixiDialogFrame,
   PixiTextLabel,
 } from '../../primitives/index.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
@@ -83,12 +83,15 @@ const DEFAULT_TAB_IDS = new Set([
   'research',
   'shop',
 ]);
-const PANEL_X = 16;
-const PANEL_WIDTH = 328;
-const PANEL_BOTTOM = 5;
-const TAB_HEIGHT = 48;
+const PANEL_X = 0;
+const PANEL_WIDTH = PIXI_UI_GEOMETRY.sourceWidth;
+const PANEL_BOTTOM = 8;
+const TAB_ACTIVE_HEIGHT = 56;
+const TAB_INACTIVE_HEIGHT = 44;
+const TAB_RISE = TAB_ACTIVE_HEIGHT - TAB_INACTIVE_HEIGHT;
 const TAB_OVERLAP = 2.888889;
 const TAB_BOTTOM_BLEED = 18;
+const TAB_HEIGHT = TAB_ACTIVE_HEIGHT + TAB_BOTTOM_BLEED;
 const TAB_ICON_SIZE = 46;
 const TAB_ICON_SELECTED_SCALE = 1.22;
 const TAB_ICON_INACTIVE_SCALE = 0.94;
@@ -198,30 +201,29 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     this.lockBackdrop = new Graphics();
     this.lockBackdrop.label = 'bottomPanel:lockBackdrop';
     this.lockBackdrop.eventMode = 'static';
-    this.lockPanel = new PixiPanel({
+    this.lockPanel = new PixiDialogFrame({
       assetManager: assets,
+      inputRouter,
+      semanticRegistry,
+      closeSemanticId: 'bottomPanel.lock.close',
       title: 'locked',
-      contentWidth: 190,
-      contentHeight: 38,
-      dialog: true,
+      coreWidth: 230,
+      coreHeight: 78,
+      closeAction: () => this.hideLockedPage(),
       label: 'bottomPanel:lockPanel',
     });
+    this.lockPanel.setContentBoxSize(
+      190,
+      38,
+      PIXI_UI_GEOMETRY.dialogPadding,
+    );
     this.lockMessage = new PixiTextLabel({
       text: '',
       wrapWidth: 190,
       wordWrap: true,
       label: 'bottomPanel:lockMessage',
     });
-    this.lockClose = new BorderAction({
-      id: 'bottomPanel.lock.close',
-      text: 'close',
-      inputRouter,
-      semanticRegistry,
-      action: () => this.hideLockedPage(),
-      label: 'bottomPanel:lockClose',
-    });
     this.lockPanel.content.addChild(this.lockMessage);
-    this.lockPanel.addChild(this.lockClose.root);
     this.lockLayer = new Container();
     this.lockLayer.label = 'bottomPanel:lockLayer';
     this.lockLayer.visible = false;
@@ -327,8 +329,9 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
       tab.applyTheme(theme);
     }
     this.lockPanel.applyTheme(theme);
-    this.lockMessage.applyTheme(theme);
-    this.lockClose.applyTheme(theme);
+    this.lockMessage.applyTheme(
+      this.lockPanel.getContentTheme?.() ?? theme,
+    );
     this.redrawBackdrop();
   }
 
@@ -340,12 +343,6 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     this.lockPanel.position.set(
       (PIXI_UI_GEOMETRY.sourceWidth - this.lockPanel.outerWidth) / 2,
       sourceHeight - 46 - this.lockPanel.outerHeight,
-    );
-    this.lockClose.root.position.set(
-      this.lockPanel.outerWidth -
-        8 -
-        this.lockClose.measuredWidth,
-      -7,
     );
   }
 
@@ -372,7 +369,6 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     for (const tab of this.tabs) {
       tab.destroy();
     }
-    this.lockClose.destroy();
   }
 
   activateTab(tab) {
@@ -911,14 +907,14 @@ class PixiBottomTab {
     this.iconFrame.position.x = this.width / 2;
     this.lock.position.set(
       this.width / 2,
-      TAB_HEIGHT / 2 - 22 * 0.04,
+      TAB_ACTIVE_HEIGHT / 2 - 22 * 0.04,
     );
     this.labelRoot.position.x = this.width / 2;
     for (const label of [...this.labelShadows, this.text]) {
       label.setWrapWidth(Math.max(0, this.width - 4));
     }
     this.labelRoot.position.y =
-      TAB_HEIGHT - 2 - this.text.measuredHeight / 2;
+      TAB_ACTIVE_HEIGHT - 2 - this.text.measuredHeight / 2;
     this.notification.position.x = this.width;
     this.motionRoot.pivot.set(this.width / 2, TAB_HEIGHT);
     this.applyMotionTransform();
@@ -1071,7 +1067,7 @@ class PixiBottomTab {
     this.labelRoot.renderable = selected;
     this.labelRoot.alpha = locked ? 0.34 : 1;
     this.iconFrame.position.y =
-      (selected ? 5 : 15) + TAB_ICON_SIZE / 2;
+      (selected ? 5 : TAB_RISE + 5) + TAB_ICON_SIZE / 2;
     this.iconFrame.alpha = selected ? 1 : 0.72;
     this.iconFrame.scale.set(
       selected
@@ -1087,7 +1083,7 @@ class PixiBottomTab {
           ? [this.lockedIconFilter]
           : null;
     }
-    this.notification.position.y = selected ? 0 : 10;
+    this.notification.position.y = selected ? 0 : TAB_RISE;
   }
 
   drawNotification(state) {
@@ -1122,7 +1118,7 @@ class PixiBottomTab {
     }
     this.notification.position.set(
       this.width,
-      this.state.selected === true ? 0 : 10,
+      this.state.selected === true ? 0 : TAB_RISE,
     );
   }
 
@@ -1202,9 +1198,13 @@ class PixiRoomTabFrame extends Container {
   redraw() {
     const appearance = ROOM_TAB_FRAME_STATES[this.mode];
     const elevated = this.selected && !this.locked;
-    const frameY = elevated ? 0 : 10;
+    const frameY = elevated ? 0 : TAB_RISE;
     const frameHeight =
-      (elevated ? 48 : 38) + TAB_BOTTOM_BLEED;
+      (
+        elevated
+          ? TAB_ACTIVE_HEIGHT
+          : TAB_INACTIVE_HEIGHT
+      ) + TAB_BOTTOM_BLEED;
     const radius = Math.min(
       appearance.radius,
       this.frameWidth / 2,
@@ -1516,75 +1516,4 @@ function defaultCancelFrame(frameId) {
 
 function defaultTimeSource() {
   return globalThis.performance?.now?.() ?? Date.now();
-}
-
-class BorderAction {
-  constructor({
-    id,
-    text,
-    inputRouter,
-    semanticRegistry,
-    action,
-    label,
-  }) {
-    this.root = new Container();
-    this.root.label = label;
-    this.root.eventMode = 'static';
-    this.text = new PixiTextLabel({
-      text,
-      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
-      label: `${label}:text`,
-    });
-    this.backing = new Graphics();
-    this.root.addChild(this.backing, this.text);
-    this.root.hitArea = new Rectangle(
-      0,
-      0,
-      this.text.measuredWidth + 4,
-      PIXI_UI_GEOMETRY.borderLabelLineHeight,
-    );
-    this.action = action;
-    this.inputRegistration =
-      inputRouter?.registerPressTarget?.({
-        id,
-        displayObject: this.root,
-        enabled: () => this.root.visible && this.root.renderable,
-        onActivate: () => this.action?.(),
-        haptic: 'light',
-      }) ?? null;
-    this.semanticRegistry = semanticRegistry;
-    this.semanticId = id;
-    if (!semanticRegistry?.has?.(id)) {
-      semanticRegistry?.register?.({
-        semanticId: id,
-        displayObject: this.root,
-        activate: () => this.action?.(),
-      });
-    }
-  }
-
-  applyTheme(theme) {
-    this.theme = theme;
-    this.text.applyTheme(theme);
-    this.backing
-      .clear()
-      .rect(
-        -2,
-        0,
-        this.text.measuredWidth + 4,
-        PIXI_UI_GEOMETRY.borderLabelLineHeight,
-      )
-      .fill(theme.surface);
-  }
-
-  get measuredWidth() {
-    return this.text.measuredWidth + 4;
-  }
-
-  destroy() {
-    this.inputRegistration?.unregister?.();
-    this.semanticRegistry?.unregister?.(this.semanticId, {
-      displayObject: this.root,
-    });
-  }
 }

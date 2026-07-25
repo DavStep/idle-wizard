@@ -86,6 +86,8 @@ export class PixiFreshStartChoiceView extends PixiModalSurface {
 
   onApplyTheme(theme) {
     super.onApplyTheme(theme);
+    const contentTheme =
+      this.panel.getContentTheme?.() ?? theme;
     for (const item of [
       this.heading,
       this.message,
@@ -93,7 +95,7 @@ export class PixiFreshStartChoiceView extends PixiModalSurface {
       this.connectButton,
       this.freshButton,
     ]) {
-      item.applyTheme(theme);
+      item.applyTheme(contentTheme);
     }
   }
 

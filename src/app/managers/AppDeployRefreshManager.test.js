@@ -56,7 +56,7 @@ describe('AppDeployRefreshManager', () => {
       gate
         .querySelector('.app-deploy-refresh__dialog')
         .classList.contains('style-dialog--system'),
-    ).toBe(true);
+    ).toBe(false);
     expect(gate.textContent).toContain('new version');
     expect(gate.textContent).toContain('refreshing...');
     expect(windowRef.location.reload).toHaveBeenCalledTimes(1);

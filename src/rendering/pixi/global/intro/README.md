@@ -27,3 +27,6 @@ The view-model contract is:
 
 All four image IDs in `FIRST_RUN_INTRO_PIXI_ASSETS` are required preloaded
 assets. Missing art is a construction error rather than a visual fallback.
+
+For visual QA, open `/?devUi=firstRunIntro`. The preview uses this retained
+surface without changing first-run progress.

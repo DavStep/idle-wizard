@@ -52,7 +52,6 @@ export class RetainedGlobalDialog extends PixiModalSurface {
     includeClose = true,
     backdropAlpha = 0.68,
     opaqueBackdrop = false,
-    chromeRole = 'player',
     label = dialogId,
   }) {
     const normalizedContext = normalizeRuntimeContext(context);
@@ -66,7 +65,6 @@ export class RetainedGlobalDialog extends PixiModalSurface {
       inputRouter: normalizedContext.inputRouter,
       semanticRegistry: normalizedContext.semanticRegistry,
       modalId: dialogId,
-      chromeRole,
       openMotion: placement === 'top' ? 'top' : 'center',
       label,
     });
@@ -80,22 +78,11 @@ export class RetainedGlobalDialog extends PixiModalSurface {
     this.model = {};
     this.actions = {};
     this.closeControl = includeClose
-      ? chromeRole === 'player'
-        ? new PlayerDialogCloseAdapter({
-            panel: this.panel,
-            action: () => this.requestClose('close'),
-          })
-        : new BorderLabelButton({
-            assetManager: normalizedContext.assets,
-            inputRouter: normalizedContext.inputRouter,
-            text: 'close',
-            action: () => this.requestClose('close'),
-            label: `${dialogId}:close`,
-          })
+      ? new PlayerDialogCloseAdapter({
+          panel: this.panel,
+          action: () => this.requestClose('close'),
+        })
       : null;
-    if (this.closeControl && chromeRole !== 'player') {
-      this.panel.addChild(this.closeControl.root);
-    }
     this.dismissOnOutside = () => this.requestClose('outside');
     this.modalBackHandler = () => this.requestClose('back');
     this.modalEscapeHandler = () => this.requestClose('escape');
@@ -119,18 +106,11 @@ export class RetainedGlobalDialog extends PixiModalSurface {
   setPanelContentSize(width, height) {
     this.contentWidth = Math.max(0, Number(width) || 0);
     this.contentHeight = Math.max(0, Number(height) || 0);
-    if (
-      this.chromeRole === 'player' &&
-      typeof this.panel.setContentBoxSize === 'function'
-    ) {
-      this.panel.setContentBoxSize(
-        this.contentWidth,
-        this.contentHeight,
-        GLOBAL_DIALOG_GEOMETRY.dialogPadding,
-      );
-    } else {
-      this.panel.setContentSize(this.contentWidth, this.contentHeight);
-    }
+    this.panel.setContentBoxSize(
+      this.contentWidth,
+      this.contentHeight,
+      GLOBAL_DIALOG_GEOMETRY.dialogPadding,
+    );
     this.positionPanel();
     this.layoutCloseControl();
     return this;

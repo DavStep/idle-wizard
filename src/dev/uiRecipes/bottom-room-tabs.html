@@ -69,15 +69,16 @@
       fitRecipe();
       window.addEventListener('resize', fitRecipe);
 
-      const requestedTabCount = Number(
-        new URLSearchParams(location.search).get('tabs') ?? 5,
-      );
+      const searchParams = new URLSearchParams(location.search);
+      const requestedTabCount = Number(searchParams.get('tabs') ?? 5);
+      const requestedCurrentPageId =
+        searchParams.get('current') ?? 'workshop';
       const optionalStates = [
         { id: 'guild', unlocked: true, visible: true },
         { id: 'prestige', unlocked: true, visible: true },
       ].slice(0, Math.max(0, Math.min(2, requestedTabCount - 5)));
       const manager = new BottomPanelViewManager({
-        getCurrentPageId: () => 'workshop',
+        getCurrentPageId: () => requestedCurrentPageId,
       });
 
       manager.mount(gameStage);

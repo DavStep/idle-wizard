@@ -42,7 +42,6 @@ export class PixiOwnedDialogSurface extends PixiModalSurface {
       inputRouter,
       semanticRegistry,
       modalId: id,
-      chromeRole: 'player',
       dismissOnOutside: () => close?.({ source: 'outside', dialogId: id }) ?? true,
       onBack: () => close?.({ source: 'back', dialogId: id }) ?? true,
       onEscape: () => close?.({ source: 'escape', dialogId: id }) ?? true,

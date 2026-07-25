@@ -102,7 +102,7 @@ experience_type: product-shape
 - Weekly events should be framed as `weekly world event` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
 - Personal tasks have only daily quest rows; completed daily quests add points to both daily and weekly reward tracks, separate from weekly world events and alliance quests.
 - Prestige resets the run but preserves personal task daily/weekly progress until the normal period rollover.
-- Tabbed dialog close controls use the shared round X asset at the top-right corner; reserve the bottom edge for the tab strip and keep back/previous/next as text navigation.
+- Tabbed dialog close controls use the shared round X asset centered below the shell at the authored gap; keep the tab strip attached below the content panel and back/previous/next as text navigation.
 - Nested dialogs inside an existing popup need their own full-layer backdrop; otherwise the parent popup text bleeds through during dialog enter/fade.
 - Personal tasks is a standard tabbed popup: `--style-tabbed-dialog-width` panel with `260px` dialog content. Do not pair that panel with a `286px` dialog or the border becomes wider than the tabs.
 - Personal task badges should count only visible milestone rewards; task rows give points and should not carry reward claim buttons.

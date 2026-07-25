@@ -2,7 +2,7 @@ import { PixiAllianceInfoDialog } from './PixiAllianceInfoDialog.js';
 import { PixiInboxDialog } from './PixiInboxDialog.js';
 import { PixiLevelDialog } from './PixiLevelDialog.js';
 import {
-  PixiAnnouncementDialog,
+  PixiAnnouncementSurface,
   PixiConfirmationDialog,
 } from './PixiMessageDialogs.js';
 import { PixiPlayerInfoDialog } from './PixiPlayerInfoDialog.js';
@@ -77,7 +77,7 @@ const GLOBAL_DIALOG_DEFINITIONS = Object.freeze([
   Object.freeze([
     GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
     (context) =>
-      new PixiAnnouncementDialog({
+      new PixiAnnouncementSurface({
         context,
         dialogId: GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
       }),

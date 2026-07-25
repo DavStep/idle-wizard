@@ -7,7 +7,6 @@ import {
 import { isDisplayObjectDescendant } from '../input/InputGeometry.js';
 import { BasePixiRetainedView } from './BasePixiRetainedView.js';
 import { PixiDialogFrame } from './PixiDialogFrame.js';
-import { PixiPanel } from './PixiPanel.js';
 
 export const PIXI_MODAL_OPEN_MOTION = Object.freeze({
   durationMs: 225,
@@ -33,7 +32,6 @@ export class PixiModalSurface extends BasePixiRetainedView {
     inputRouter = null,
     semanticRegistry = null,
     modalId = null,
-    chromeRole = 'system',
     dismissOnOutside = null,
     onBack = null,
     onEscape = null,
@@ -46,7 +44,6 @@ export class PixiModalSurface extends BasePixiRetainedView {
     this.opaqueBackdrop = opaqueBackdrop;
     this.inputRouter = inputRouter;
     this.modalId = modalId ?? label;
-    this.chromeRole = chromeRole;
     this.dismissOnOutside = dismissOnOutside;
     this.modalBackHandler = onBack;
     this.modalEscapeHandler = onEscape;
@@ -70,26 +67,21 @@ export class PixiModalSurface extends BasePixiRetainedView {
     this.backdrop = new Graphics();
     this.backdrop.label = `${label}:backdrop`;
     this.backdrop.eventMode = 'static';
-    this.panel =
-      chromeRole === 'player'
-        ? new PixiDialogFrame({
-            assetManager,
-            inputRouter,
-            semanticRegistry,
-            closeSemanticId: `${this.modalId}.close`,
-            title,
-            coreWidth: contentWidth,
-            coreHeight: contentHeight,
-            label: `${label}:panel`,
-          })
-        : new PixiPanel({
-            assetManager,
-            title,
-            contentWidth,
-            contentHeight,
-            dialog: true,
-            label: `${label}:panel`,
-          });
+    this.panel = new PixiDialogFrame({
+      assetManager,
+      inputRouter,
+      semanticRegistry,
+      closeSemanticId: `${this.modalId}.close`,
+      title,
+      coreWidth: contentWidth,
+      coreHeight: contentHeight,
+      label: `${label}:panel`,
+    });
+    this.panel.setContentBoxSize(
+      contentWidth,
+      contentHeight,
+      PIXI_UI_GEOMETRY.dialogPadding,
+    );
     this.panel.pivot.set(this.panel.outerWidth / 2, this.panel.outerHeight / 2);
     this.root.addChild(this.backdrop, this.panel);
     this.captureOpenMotionBasePosition();

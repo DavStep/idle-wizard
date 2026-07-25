@@ -24,7 +24,7 @@ describe('AppFreshStartChoiceManager', () => {
       dialog
         .querySelector('.app-fresh-start-choice__dialog')
         .classList.contains('style-dialog--system'),
-    ).toBe(true);
+    ).toBe(false);
     expect(dialog.querySelector('.style-box__title')?.textContent).toBe(
       'Elara Starbrew',
     );

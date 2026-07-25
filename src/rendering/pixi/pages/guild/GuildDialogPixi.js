@@ -14,8 +14,8 @@ import {
 } from '../../../../shared/tradeAllianceTagColors.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
+import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
-import { PixiPanel } from '../../primitives/PixiPanel.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
 import { PixiScrollView } from '../../primitives/PixiScrollView.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
@@ -124,26 +124,23 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       }) ?? null;
 
     const size = getDialogSize(dialogId);
-    this.panel = new PixiPanel({
+    this.panel = new PixiDialogFrame({
       assetManager,
-      title: getDialogTitle(dialogId),
-      dialog: true,
-      label: `${dialogId}:panel`,
-    });
-    if (dialogId === GUILD_DIALOG_IDS.CHARTER) {
-      this.panel.paddingX = 10;
-      this.panel.paddingY = 10;
-    }
-    this.panel.setOuterSize(size.width, size.height);
-    this.closeButton = new GuildInlineButton({
       inputRouter,
       semanticRegistry,
-      semanticId: `${dialogId}.close`,
-      text: 'close',
-      action: () => this.onClose?.(),
-      label: `${dialogId}:close`,
+      closeSemanticId: `${dialogId}.close`,
+      title: getDialogTitle(dialogId),
+      coreWidth: size.width,
+      coreHeight: size.height,
+      closeAction: () => this.onClose?.(),
+      label: `${dialogId}:panel`,
     });
-    this.root.addChild(this.backdrop, this.panel, this.closeButton.root);
+    this.panel.setContentBoxSize(
+      size.width - PIXI_UI_GEOMETRY.dialogPadding * 2,
+      size.height - PIXI_UI_GEOMETRY.dialogPadding * 2,
+      PIXI_UI_GEOMETRY.dialogPadding,
+    );
+    this.root.addChild(this.backdrop, this.panel);
 
     if (isProfileDialog(dialogId)) {
       this.buildProfileDialog();
@@ -452,28 +449,29 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.redrawBackdrop();
     this.panel?.applyTheme(this.theme);
-    this.closeButton?.applyTheme(this.theme);
+    const contentTheme =
+      this.panel?.getContentTheme?.() ?? this.theme;
     if (isProfileDialog(this.dialogId)) {
-      this.nameField?.applyTheme(this.theme);
-      this.tagField?.applyTheme(this.theme);
-      this.colorLabel?.applyTheme(this.theme);
-      this.statusLabel?.applyTheme(this.theme);
-      this.submitButton?.applyTheme(this.theme);
+      this.nameField?.applyTheme(contentTheme);
+      this.tagField?.applyTheme(contentTheme);
+      this.colorLabel?.applyTheme(contentTheme);
+      this.statusLabel?.applyTheme(contentTheme);
+      this.submitButton?.applyTheme(contentTheme);
       for (const swatch of this.swatches ?? []) {
-        swatch.applyTheme(this.theme);
+        swatch.applyTheme(contentTheme);
       }
     } else if (this.dialogId === GUILD_DIALOG_IDS.REQUEST) {
-      this.requestPaper?.applyTheme(this.theme);
+      this.requestPaper?.applyTheme(contentTheme);
     } else {
-      this.cardIconFrame?.applyTheme(this.theme);
-      this.cardInitial?.applyTheme(this.theme);
-      this.cardName?.applyTheme(this.theme);
-      this.cardLevel?.applyTheme(this.theme);
-      this.cardStatus?.applyTheme(this.theme);
-      this.detailScroll?.applyTheme(this.theme);
-      this.cardAction?.applyTheme(this.theme);
+      this.cardIconFrame?.applyTheme(contentTheme);
+      this.cardInitial?.applyTheme(contentTheme);
+      this.cardName?.applyTheme(contentTheme);
+      this.cardLevel?.applyTheme(contentTheme);
+      this.cardStatus?.applyTheme(contentTheme);
+      this.detailScroll?.applyTheme(contentTheme);
+      this.cardAction?.applyTheme(contentTheme);
       for (const row of this.detailRows?.getWidgets?.() ?? []) {
-        row.applyTheme(this.theme);
+        row.applyTheme(contentTheme);
       }
       for (const tab of this.cardTabs ?? []) {
         tab.applyTheme(this.theme);
@@ -527,12 +525,6 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     const x = Math.round((this.sourceWidth - size.width) / 2);
     const y = Math.round(centerY - size.height / 2 + shift);
     this.panel.position.set(x, y);
-    this.closeButton.setBounds(
-      x + size.width - 52,
-      y - 7,
-      42,
-      PIXI_UI_GEOMETRY.borderLabelLineHeight,
-    );
     this.backdrop.hitArea = new Rectangle(
       0,
       0,
@@ -635,7 +627,6 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     this.modalHandle = null;
     this.backdropRegistration?.();
     this.backdropRegistration = null;
-    this.closeButton.destroy();
     if (isProfileDialog(this.dialogId)) {
       this.nameField.destroy();
       this.tagField.destroy();
@@ -692,36 +683,22 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
         haptic: false,
         sound: false,
       }) ?? null;
-    this.dialogFrame = new GuildAssetNineSlice({
-      assetManager,
-      textureId: 'public:ui/guild-quest/dialog-panel-9slice.png',
-      sourceInsets: { left: 43, top: 43, right: 44, bottom: 43 },
-      outputInsets: { left: 17, top: 17, right: 17, bottom: 17 },
-      label: 'guild:requestStack:frame',
-    });
-    this.banner = createAssetSprite(
-      assetManager,
-      'public:ui/guild-quest/banner.png',
-      'guild:requestStack:banner',
-    );
-    this.title = new PixiTextLabel({
-      text: 'Incoming Quests',
-      fontSize: PIXI_UI_GEOMETRY.dialogTitleFontSize,
-      fontWeight: 'bold',
-      anchor: { x: 0.5, y: 0 },
-      color: '#f1e7d5',
-      label: 'guild:requestStack:title',
-    });
-    this.closeButton = new GuildImageButton({
+    this.panel = new PixiDialogFrame({
       assetManager,
       inputRouter,
       semanticRegistry,
-      semanticId: 'guild.requestStack.close',
-      frameTextureId: 'public:ui/guild-quest/close-panel-9slice.png',
-      iconTextureId: 'public:ui/guild-quest/close-x.png',
-      action: () => this.onClose?.(),
-      label: 'guild:requestStack:close',
+      closeSemanticId: 'guild.requestStack.close',
+      title: 'incoming quests',
+      coreWidth: STACK_DIALOG_WIDTH,
+      coreHeight: STACK_DIALOG_HEIGHT,
+      closeAction: () => this.onClose?.(),
+      label: 'guild:requestStack:panel',
     });
+    this.panel.setContentBoxSize(
+      STACK_DIALOG_WIDTH - PIXI_UI_GEOMETRY.dialogPadding * 2,
+      STACK_DIALOG_HEIGHT - PIXI_UI_GEOMETRY.dialogPadding * 2,
+      PIXI_UI_GEOMETRY.dialogPadding,
+    );
     this.listLayer = new Container();
     this.listLayer.label = 'guild:requestStack:list';
     this.detail = new GuildQuestDetail({
@@ -783,19 +760,15 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
         }),
       afterReconcile: (widgets) => orderChildren(this.listLayer, widgets),
     });
-    this.root.addChild(
-      this.backdrop,
-      this.dialogFrame.root,
-      this.banner,
-      this.title,
+    this.panel.content.addChild(
       this.listLayer,
       this.detail.root,
       this.progress,
       this.postButton.root,
       this.nextButton.root,
       this.note,
-      this.closeButton.root,
     );
+    this.root.addChild(this.backdrop, this.panel);
     parent?.addChild?.(this.root);
     this.onApplyTheme(theme);
     this.relayout();
@@ -845,6 +818,11 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     this.nextButton
       .setText(this.requests.length > 1 ? 'Next Page' : 'Only Page')
       .setEnabled(this.requests.length > 1);
+    const contentTheme =
+      this.panel?.getContentTheme?.() ?? this.theme;
+    for (const row of this.requestRows.getWidgets()) {
+      row.applyTheme(contentTheme);
+    }
     this.relayoutList();
   }
 
@@ -887,15 +865,16 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
   onApplyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.redrawBackdrop();
-    this.title?.applyTheme(this.theme);
-    this.note?.applyTheme(this.theme);
-    this.progress?.applyTheme(this.theme);
-    this.detail?.applyTheme(this.theme);
-    this.postButton?.applyTheme(this.theme);
-    this.nextButton?.applyTheme(this.theme);
-    this.closeButton?.applyTheme(this.theme);
+    this.panel?.applyTheme(this.theme);
+    const contentTheme =
+      this.panel?.getContentTheme?.() ?? this.theme;
+    this.note?.applyTheme(contentTheme);
+    this.progress?.applyTheme(contentTheme);
+    this.detail?.applyTheme(contentTheme);
+    this.postButton?.applyTheme(contentTheme);
+    this.nextButton?.applyTheme(contentTheme);
     for (const row of this.requestRows?.getWidgets?.() ?? []) {
-      row.applyTheme(this.theme);
+      row.applyTheme(contentTheme);
     }
   }
 
@@ -934,7 +913,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
   }
 
   relayout() {
-    if (!this.dialogFrame) {
+    if (!this.panel) {
       return;
     }
     const centerY = getDialogCenterY(this.sourceHeight) - 52;
@@ -943,38 +922,28 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     const y = Math.round(
       centerY - STACK_DIALOG_HEIGHT / 2 + shift,
     );
-    this.dialogFrame.setBounds(
-      x,
-      y,
-      STACK_DIALOG_WIDTH,
-      STACK_DIALOG_HEIGHT,
-    );
-    this.banner.position.set(x + 49, y - 52);
-    this.banner.width = 252;
-    this.banner.height = 57;
-    this.title.position.set(x + STACK_DIALOG_WIDTH / 2, y - 43);
-    this.listLayer.position.set(x + 19, y + 25);
+    this.panel.position.set(x, y);
+    this.listLayer.position.set(-1, 5);
     this.detail.root.position.set(
-      x + 19 + STACK_LIST_WIDTH + STACK_GAP,
-      y + 25,
+      -1 + STACK_LIST_WIDTH + STACK_GAP,
+      5,
     );
     this.detail.setSize(
       STACK_DIALOG_WIDTH - 38 - STACK_LIST_WIDTH - STACK_GAP,
       272,
     );
-    this.progress.position.set(x + 36, y + 302);
+    this.progress.position.set(16, 282);
     this.progress.setSize(
       STACK_DIALOG_WIDTH - 86,
       PIXI_UI_GEOMETRY.progressTotalHeight,
     );
-    const controlY = y + 319;
-    this.postButton.setBounds(x + 24, controlY, 189, 31);
-    this.nextButton.setBounds(x + 226, controlY, 102, 31);
+    const controlY = 299;
+    this.postButton.setBounds(4, controlY, 189, 31);
+    this.nextButton.setBounds(206, controlY, 102, 31);
     this.note.position.set(
-      x + STACK_DIALOG_WIDTH / 2,
-      y + 356,
+      this.panel.contentBoxWidth / 2,
+      336,
     );
-    this.closeButton.setBounds(x + 294, y + 352, 32, 32);
     this.backdrop.hitArea = new Rectangle(
       0,
       0,
@@ -1014,8 +983,6 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     this.detail.destroy();
     this.postButton.destroy();
     this.nextButton.destroy();
-    this.closeButton.destroy();
-    this.dialogFrame.destroy();
   }
 }
 
@@ -1730,78 +1697,6 @@ class GuildQuestDetailLine {
   }
 }
 
-class GuildInlineButton {
-  constructor({
-    inputRouter,
-    semanticRegistry,
-    semanticId,
-    text,
-    action,
-    label,
-  }) {
-    this.root = new Container();
-    this.root.label = label;
-    this.backing = new Graphics();
-    this.label = new PixiTextLabel({
-      text,
-      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
-      label: `${label}:text`,
-    });
-    this.root.addChild(this.backing, this.label);
-    this.action = action;
-    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.registration =
-      inputRouter?.registerPressTarget?.(this.root, {
-        enabled: () => this.root.visible && this.root.renderable,
-        onActivate: () => this.action?.(),
-        haptic: 'light',
-      }) ?? null;
-    this.semanticRegistry = semanticRegistry;
-    this.semanticId = semanticId;
-    this.semanticDefinition =
-      semanticRegistry?.register?.({
-        semanticId,
-        displayObject: this.root,
-        state: () => ({
-          enabled: true,
-          interactive: true,
-          visible: this.root.visible && this.root.renderable,
-        }),
-        activate: () => this.action?.(),
-      }) ?? null;
-  }
-
-  setBounds(x, y, width, height) {
-    this.root.position.set(x, y);
-    this.root.hitArea = new Rectangle(0, 0, width, height);
-    this.backing
-      .clear()
-      .rect(0, 0, width, height)
-      .fill(this.theme.surface);
-    this.label.position.set(
-      Math.max(0, (width - this.label.measuredWidth) / 2),
-      0,
-    );
-  }
-
-  applyTheme(theme) {
-    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.label.applyTheme(this.theme);
-  }
-
-  destroy() {
-    this.registration?.();
-    this.registration = null;
-    if (this.semanticDefinition) {
-      this.semanticRegistry?.unregister?.(this.semanticId, {
-        displayObject: this.root,
-      });
-      this.semanticDefinition = null;
-    }
-    this.root.destroy({ children: true });
-  }
-}
-
 class GuildAssetNineSlice {
   constructor({
     assetManager,
@@ -1863,79 +1758,6 @@ class GuildAssetNineSlice {
   }
 
   destroy() {
-    this.root.destroy({ children: true });
-  }
-}
-
-class GuildImageButton {
-  constructor({
-    assetManager,
-    inputRouter,
-    semanticRegistry,
-    semanticId,
-    frameTextureId,
-    iconTextureId,
-    action,
-    label,
-  }) {
-    this.root = new Container();
-    this.root.label = label;
-    this.frame = new GuildAssetNineSlice({
-      assetManager,
-      textureId: frameTextureId,
-      sourceInsets: { left: 28, top: 28, right: 28, bottom: 27 },
-      outputInsets: { left: 7, top: 7, right: 7, bottom: 7 },
-      label: `${label}:frame`,
-    });
-    this.icon = createAssetSprite(
-      assetManager,
-      iconTextureId,
-      `${label}:icon`,
-    );
-    this.root.addChild(this.frame.root, this.icon);
-    this.action = action;
-    this.registration =
-      inputRouter?.registerPressTarget?.(this.root, {
-        enabled: () => this.root.visible && this.root.renderable,
-        onActivate: () => this.action?.(),
-        haptic: 'light',
-      }) ?? null;
-    this.semanticRegistry = semanticRegistry;
-    this.semanticId = semanticId;
-    this.semanticDefinition =
-      semanticRegistry?.register?.({
-        semanticId,
-        displayObject: this.root,
-        state: () => ({
-          enabled: true,
-          interactive: true,
-          visible: this.root.visible && this.root.renderable,
-        }),
-        activate: () => this.action?.(),
-      }) ?? null;
-  }
-
-  setBounds(x, y, width, height) {
-    this.root.position.set(x, y);
-    this.root.hitArea = new Rectangle(0, 0, width, height);
-    this.frame.setBounds(0, 0, width, height);
-    this.icon.position.set(7, 7);
-    this.icon.width = width - 14;
-    this.icon.height = height - 14;
-  }
-
-  applyTheme() {}
-
-  destroy() {
-    this.registration?.();
-    this.registration = null;
-    if (this.semanticDefinition) {
-      this.semanticRegistry?.unregister?.(this.semanticId, {
-        displayObject: this.root,
-      });
-      this.semanticDefinition = null;
-    }
-    this.frame.destroy();
     this.root.destroy({ children: true });
   }
 }

@@ -500,6 +500,7 @@ describe('DevCheatsFacade', () => {
     };
     const pagesFacade = {
       openDialog: vi.fn((dialogId, options) => ({ ok: true, dialogId, options })),
+      showFirstRunIntroPreview: vi.fn(() => ({ ok: true })),
       setBottomRoomTabsPreview: vi.fn((active) => ({ ok: true, active })),
       setTopPanelQuestProgressPreview: vi.fn((progress) => ({ ok: true, progress })),
       setDevNotifications: vi.fn((snapshot) => ({ ok: true, snapshot })),
@@ -566,6 +567,10 @@ describe('DevCheatsFacade', () => {
           kind: 'tool',
         }),
         expect.objectContaining({
+          id: 'firstRunIntro',
+          command: 'cheats.openUi("firstRunIntro")',
+        }),
+        expect.objectContaining({
           id: 'guildQuestPosting',
           command: 'cheats.openUi("guildQuestPosting")',
         }),
@@ -597,6 +602,14 @@ describe('DevCheatsFacade', () => {
       'featureUnlockAnnouncement',
       {},
     );
+    expect(publishAndSaveSpy).not.toHaveBeenCalled();
+
+    expect(target.cheats.openUi('firstRunIntro')).toMatchObject({
+      ok: true,
+      surfaceId: 'firstRunIntro',
+      surfaceKind: 'preview',
+    });
+    expect(pagesFacade.showFirstRunIntroPreview).toHaveBeenCalledWith({});
     expect(publishAndSaveSpy).not.toHaveBeenCalled();
 
     expect(target.cheats.openUi('topPanelQuestProgress')).toMatchObject({

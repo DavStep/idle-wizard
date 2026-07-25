@@ -103,7 +103,7 @@ export class FirstRunIntroViewManager {
     );
 
     this.refs.panel = document.createElement('section');
-    this.refs.panel.className = 'first-run-intro__panel style-dialog';
+    this.refs.panel.className = 'first-run-intro__panel style-box';
     this.refs.panel.tabIndex = -1;
 
     this.refs.title = document.createElement('div');
@@ -114,7 +114,8 @@ export class FirstRunIntroViewManager {
     this.refs.text.className = 'first-run-intro__text';
 
     this.refs.advance = document.createElement('button');
-    this.refs.advance.className = 'style-button first-run-intro__advance';
+    this.refs.advance.className =
+      'style-button style-button--yellow first-run-intro__advance';
     this.refs.advance.type = 'button';
     this.refs.advance.addEventListener('click', this.handleAdvance);
 

@@ -106,7 +106,7 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   dialogBack: 'source:assets/ui/root-run-dialog/expedition-dialog-back.png',
   dialogPaper: 'source:assets/ui/root-run-dialog/expedition-dialog-front.png',
   dialogTitle:
-    'source:assets/ui/root-run-dialog/expedition-dialog-title-blue.png',
+    'source:assets/ui/root-run-dialog/expedition-dialog-title-purple.png',
   dialogClose: 'source:assets/ui/root-run-dialog/expedition-dialog-close.png',
   researchCard:
     'source:assets/ui/root-run-research/research-card-1000x304.png',

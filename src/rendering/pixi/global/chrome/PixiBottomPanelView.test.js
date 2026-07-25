@@ -10,6 +10,7 @@ import {
   PIXI_BOTTOM_PANEL_TABS,
   PixiBottomPanelView,
 } from './PixiBottomPanelView.js';
+import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 
 installPixiPageTestCanvas();
 
@@ -93,14 +94,14 @@ describe('PixiBottomPanelView', () => {
 
       const visibleTabs = view.tabs.filter((tab) => tab.root.visible);
       const expectedWidth =
-        (328 + 2.888889 * (visibleIds.length - 1)) /
+        (360 + 2.888889 * (visibleIds.length - 1)) /
         visibleIds.length;
       expect(visibleTabs.map(({ definition }) => definition.id)).toEqual(
         visibleIds,
       );
-      expect(view.tabsRoot.position.x).toBe(16);
+      expect(view.tabsRoot.position.x).toBe(0);
       expect(view.tabsRoot.position.y).toBeCloseTo(
-        723.333333 - 5 - 48,
+        723.333333 - 8 - 74,
         6,
       );
       for (const [index, tab] of visibleTabs.entries()) {
@@ -113,7 +114,7 @@ describe('PixiBottomPanelView', () => {
         );
       }
       const last = visibleTabs.at(-1);
-      expect(last.root.position.x + last.width).toBeCloseTo(328, 6);
+      expect(last.root.position.x + last.width).toBeCloseTo(360, 6);
     }
   });
 
@@ -138,7 +139,7 @@ describe('PixiBottomPanelView', () => {
       'source:assets/ui/root-run-room-tab-active.png',
     );
     expect(workshop.frame.frameY).toBe(0);
-    expect(workshop.frame.frameHeight).toBe(66);
+    expect(workshop.frame.frameHeight).toBe(74);
     expect(workshop.frame.sourceInsets).toEqual({
       top: 57,
       right: 62,
@@ -148,7 +149,7 @@ describe('PixiBottomPanelView', () => {
     expect(workshop.frame.nineSlice.scale.x).toBeCloseTo(13 / 36, 8);
     expect(workshop.labelRoot.visible).toBe(true);
     expect(workshop.labelRoot.position.y + workshop.text.measuredHeight / 2)
-      .toBeCloseTo(46, 6);
+      .toBeCloseTo(54, 6);
     expect(workshop.iconFrame.position.y).toBe(28);
     expect(workshop.iconFrame.scale.x).toBe(1.22);
     expect(workshop.icon.width).toBeCloseTo(46 * 0.84, 6);
@@ -157,8 +158,8 @@ describe('PixiBottomPanelView', () => {
     expect(brewing.frame.textureId).toBe(
       'source:assets/ui/root-run-room-tab-inactive.png',
     );
-    expect(brewing.frame.frameY).toBe(10);
-    expect(brewing.frame.frameHeight).toBe(56);
+    expect(brewing.frame.frameY).toBe(12);
+    expect(brewing.frame.frameHeight).toBe(62);
     expect(brewing.frame.sourceInsets).toEqual({
       top: 56,
       right: 61,
@@ -166,7 +167,7 @@ describe('PixiBottomPanelView', () => {
       left: 60,
     });
     expect(brewing.labelRoot.visible).toBe(false);
-    expect(brewing.iconFrame.position.y).toBe(38);
+    expect(brewing.iconFrame.position.y).toBe(40);
     expect(brewing.iconFrame.scale.x).toBe(0.94);
     expect(brewing.iconFrame.alpha).toBe(0.72);
     expect(brewing.icon.width).toBeCloseTo(46 * 0.72, 6);
@@ -213,7 +214,7 @@ describe('PixiBottomPanelView', () => {
       research.width / 2,
       6,
     );
-    expect(research.motionRoot.pivot.y).toBe(48);
+    expect(research.motionRoot.pivot.y).toBe(74);
     motion.step(205 * 0.68);
     expect(research.motionRoot.scale.x).toBeCloseTo(1.065, 5);
     motion.step(205);
@@ -247,8 +248,8 @@ describe('PixiBottomPanelView', () => {
 
     expect(view.setSwipeTargetPageId('research')).toBe(true);
     expect(research.frame.mode).toBe('active');
-    expect(research.frame.frameY).toBe(10);
-    expect(research.frame.frameHeight).toBe(56);
+    expect(research.frame.frameY).toBe(12);
+    expect(research.frame.frameHeight).toBe(62);
     expect(research.iconFrame.scale.x).toBe(0.94);
     expect(research.labelRoot.visible).toBe(false);
 
@@ -288,9 +289,9 @@ describe('PixiBottomPanelView', () => {
 
     expect(view.showLockedPage('garden')).toBe(true);
     motion.step(140 * 0.55);
-    expect(garden.motionRoot.position.y).toBeCloseTo(47, 5);
+    expect(garden.motionRoot.position.y).toBeCloseTo(73, 5);
     motion.step(140);
-    expect(garden.motionRoot.position.y).toBe(48);
+    expect(garden.motionRoot.position.y).toBe(74);
     expect(view.lockLayer.visible).toBe(true);
 
     view.destroy();
@@ -469,7 +470,7 @@ describe('PixiBottomPanelView', () => {
       visible: true,
       unlocked: false,
     });
-    expect(garden.motionRoot.position.y).toBe(48);
+    expect(garden.motionRoot.position.y).toBe(74);
     expect(motion.requestFrame).not.toHaveBeenCalled();
     view.destroy();
   });
@@ -520,7 +521,7 @@ describe('PixiBottomPanelView', () => {
       brewing.width,
       6,
     );
-    expect(brewing.notification.position.y).toBe(10);
+    expect(brewing.notification.position.y).toBe(12);
     expect(garden.notification.visible).toBe(false);
   });
 
@@ -561,8 +562,8 @@ describe('PixiBottomPanelView', () => {
 
     brewingPress.onPressChange(true);
     expect(brewing.frame.mode).toBe('active');
-    expect(brewing.frame.frameY).toBe(10);
-    expect(brewing.frame.frameHeight).toBe(56);
+    expect(brewing.frame.frameY).toBe(12);
+    expect(brewing.frame.frameHeight).toBe(62);
     brewingPress.onPressChange(false);
     expect(brewing.frame.mode).toBe('inactive');
 
@@ -591,6 +592,7 @@ describe('PixiBottomPanelView', () => {
     });
 
     expect(view.showLockedPage('garden')).toBe(true);
+    expect(view.lockPanel).toBeInstanceOf(PixiDialogFrame);
     expect(view.lockLayer.visible).toBe(true);
     expect(view.lockMessage.text).toBe('garden unlocks at level 2');
     view.hideLockedPage();

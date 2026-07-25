@@ -1,15 +1,41 @@
+// @vitest-environment jsdom
+
+import { Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
+import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
+import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import {
   ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT,
   FRESH_START_CHOICE_CONNECT_ACCOUNT,
+  PixiAccountLinkChoiceView,
   PixiAccountLinkChoiceController,
+  PixiDeployRefreshView,
   PixiDeployRefreshController,
+  PixiFreshStartChoiceView,
   PixiFreshStartChoiceController,
+  PixiOnlineGateView,
   PixiOnlineGateController,
 } from './index.js';
 
+installPixiPageTestCanvas();
+
 describe('retained Pixi gate controllers', () => {
+  it('uses the shared player-dialog shell for every gate', () => {
+    const assets = createAssets();
+    const views = [
+      new PixiOnlineGateView({ assets }),
+      new PixiDeployRefreshView({ assets }),
+      new PixiFreshStartChoiceView({ assets }),
+      new PixiAccountLinkChoiceView({ assets }),
+    ];
+
+    for (const view of views) {
+      expect(view.panel).toBeInstanceOf(PixiDialogFrame);
+      view.destroy();
+    }
+  });
+
   it('projects online states into one retained gate view', () => {
     const view = createView();
     const controller = new PixiOnlineGateController();
@@ -123,4 +149,11 @@ async function flushAsyncWork() {
   for (let index = 0; index < 4; index += 1) {
     await Promise.resolve();
   }
+}
+
+function createAssets() {
+  return {
+    loaded: true,
+    getTexture: () => Texture.EMPTY,
+  };
 }

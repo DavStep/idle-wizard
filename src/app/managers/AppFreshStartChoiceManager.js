@@ -40,8 +40,7 @@ export class AppFreshStartChoiceManager {
     panel.tabIndex = -1;
 
     const dialog = document.createElement('div');
-    dialog.className =
-      'app-fresh-start-choice__dialog style-dialog style-dialog--system';
+    dialog.className = 'app-fresh-start-choice__dialog style-dialog';
 
     const title = document.createElement('div');
     title.className = 'style-box__title';

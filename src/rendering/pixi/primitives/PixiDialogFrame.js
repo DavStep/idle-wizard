@@ -19,7 +19,7 @@ export const PIXI_DIALOG_PALETTE = Object.freeze({
   ink: '#634934',
   muted: '#8d6d50',
   disabled: '#ac9278',
-  title: '#2783d9',
+  title: '#9d25db',
   titleText: '#ffffff',
   titleStroke: '#0a0a0a',
   shadow: '#000000',
@@ -38,8 +38,8 @@ const CLOSE_PRESS_SCALE = 0.94;
  * The core rectangle matches the authored dialog box. Root Run's brown shell,
  * paper and title art extend around that core exactly as their CSS
  * border-image composition did. Consumers add their display tree to
- * `content`; system gates and first-run dialogs intentionally use other
- * primitives.
+ * `content`; blocker gates use the same shell with dismissal disabled when
+ * the flow must keep control.
  */
 export class PixiDialogFrame extends Container {
   constructor({

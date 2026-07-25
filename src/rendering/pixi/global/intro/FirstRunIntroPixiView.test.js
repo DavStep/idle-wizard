@@ -8,6 +8,7 @@ import {
   FirstRunIntroPixiPresenter,
   FirstRunIntroPixiView,
 } from './FirstRunIntroPixiView.js';
+import { PixiFrame } from '../../primitives/PixiFrame.js';
 
 installPixiPageTestCanvas();
 
@@ -26,6 +27,11 @@ describe('FirstRunIntroPixiView', () => {
       onComplete: complete,
     });
 
+    expect(view.panel).toBeInstanceOf(PixiFrame);
+    expect(view.panel.shadowEnabled).toBe(false);
+    expect(view.title.text).toBe('after the war');
+    expect(view.advanceButton.variant).toBe('yellow');
+    expect(view.advanceButton.rootRunFrame.visible).toBe(true);
     expect(view.copy.text).toBe(
       "one last battle at the demon lord's keep.",
     );

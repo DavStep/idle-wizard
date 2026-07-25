@@ -1351,6 +1351,15 @@ export class PixiPagesFacade {
     );
   }
 
+  showFirstRunIntroPreview(options = {}) {
+    return (
+      this.experienceFacade?.showFirstRunIntroPreview?.(options) ?? {
+        ok: false,
+        reason: 'intro_missing',
+      }
+    );
+  }
+
   listTutorialStages() {
     return (
       this.experienceFacade?.listTutorialStages?.() ?? {

@@ -40,6 +40,13 @@ describe('PixiExperienceFacade', () => {
     expect(complete).toHaveBeenCalledWith({ shown: true });
     expect(facade.firstRunProgressManager.isPending()).toBe(false);
     expect(harness.introModal.unregister).toHaveBeenCalledTimes(1);
+
+    expect(facade.showFirstRunIntroPreview()).toEqual({ ok: true });
+    expect(harness.introPresenter.show).toHaveBeenCalledTimes(2);
+    harness.introCompletion();
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(facade.firstRunProgressManager.isPending()).toBe(false);
+    expect(harness.introModal.unregister).toHaveBeenCalledTimes(2);
   });
 
   it('routes semantic tutorial actions, stage APIs, reveal groups, and notification policy', () => {

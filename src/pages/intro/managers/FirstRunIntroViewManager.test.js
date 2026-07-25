@@ -22,6 +22,12 @@ describe('FirstRunIntroViewManager', () => {
     manager.mount(stage);
     manager.show();
 
+    expect(manager.refs.panel.classList.contains('style-box')).toBe(true);
+    expect(manager.refs.panel.classList.contains('style-dialog')).toBe(false);
+    expect(
+      manager.refs.advance.classList.contains('style-button--yellow'),
+    ).toBe(true);
+
     manager.advance();
 
     expect(manager.refs.backdropLayer.style.transform).not.toBe('');

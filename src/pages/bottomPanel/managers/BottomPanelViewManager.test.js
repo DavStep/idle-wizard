@@ -201,12 +201,15 @@ describe('BottomPanelViewManager', () => {
       /--style-page-tab-scroll-clearance:\s*calc\(([\s\S]*?)\);/,
     )?.[1];
 
-    expect(baseCss).toContain('--style-room-tab-active-height: 48px;');
-    expect(baseCss).toContain('--style-room-tab-inactive-height: 38px;');
+    expect(baseCss).toContain('--style-room-tab-active-height: 56px;');
+    expect(baseCss).toContain('--style-room-tab-inactive-height: 44px;');
     expect(baseCss).toContain('--style-room-tab-bottom-bleed: 18px;');
-    expect(panelRule).toContain('bottom: 5px;');
-    expect(tabRule).toContain('height: var(--style-room-tab-active-height);');
-    expect(tabRule).toContain('min-height: var(--style-room-tab-active-height);');
+    expect(baseCss).toContain('--style-room-tab-total-height: calc(');
+    expect(panelRule).toContain('right: 0;');
+    expect(panelRule).toContain('bottom: 8px;');
+    expect(panelRule).toContain('left: 0;');
+    expect(tabRule).toContain('height: var(--style-room-tab-total-height);');
+    expect(tabRule).toContain('min-height: var(--style-room-tab-total-height);');
     expect(tabRule).toContain('padding: 0 2px;');
     expect(tabRule).toContain('box-sizing: border-box;');
     expect(tabRule).toContain('flex: 1 1 0;');
@@ -687,9 +690,7 @@ describe('BottomPanelViewManager', () => {
     expect(tabFrameBlock).toContain(
       'border-radius: var(--style-room-tab-inactive-radius)',
     );
-    expect(tabFrameBlock).toContain(
-      'bottom: calc(-1 * var(--style-room-tab-bottom-bleed));',
-    );
+    expect(tabFrameBlock).toContain('bottom: 0;');
   });
 
   it('keeps every themed bottom-tab state on the raised Root Run asset skin', () => {

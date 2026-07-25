@@ -114,11 +114,11 @@
   --style-dialog-ink: #634934;
   --style-dialog-muted-ink: #8d6d50;
   --style-dialog-disabled-ink: #ac9278;
-  --style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-blue.png");
+  --style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-purple.png");
   --style-dialog-title-frame-slice: 0 132 0 85 fill;
   --style-dialog-title-frame-width: 0 calc(132px * 390 / 1080) 0
     calc(85px * 390 / 1080);
-  --style-dialog-title-fill: #2783d9;
+  --style-dialog-title-fill: #9d25db;
   --style-dialog-title-height: calc(121px * 390 / 1080);
   --style-dialog-title-min-width: calc(614px * 390 / 1080);
   --style-dialog-title-overhang: calc(61px * 390 / 1080);
@@ -170,14 +170,18 @@
     1px 0 0 var(--style-page-tab-label-text-stroke-color),
     0 -1px 0 var(--style-page-tab-label-text-stroke-color),
     -1px 0 0 var(--style-page-tab-label-text-stroke-color);
-  --style-room-tab-active-height: 48px;
-  --style-room-tab-inactive-height: 38px;
+  --style-room-tab-active-height: 56px;
+  --style-room-tab-inactive-height: 44px;
   --style-room-tab-rise: calc(
     var(--style-room-tab-active-height) -
       var(--style-room-tab-inactive-height)
   );
   --style-room-tab-overlap: 2.888889px;
   --style-room-tab-bottom-bleed: 18px;
+  --style-room-tab-total-height: calc(
+    var(--style-room-tab-active-height) +
+      var(--style-room-tab-bottom-bleed)
+  );
   --style-room-tab-icon-size: 46px;
   --style-room-tab-selected-scale: 1;
   --style-room-tab-active-frame: url("../../assets/game/source/ui/root-run-room-tab-active.png");
@@ -276,7 +280,7 @@
     calc(var(--app-source-ui-screen-width, 100vw) * 0.078),
     84px
   );
-  --style-room-chat-bottom: 114px;
+  --style-room-chat-bottom: 125px;
   --style-room-chat-source-height: calc(
     (
         var(--style-world-chat-row-height) *
@@ -1960,7 +1964,7 @@ body {
   font-weight: 700;
 }
 
-.style-dialog.first-run-intro__panel {
+.style-box.first-run-intro__panel {
   position: absolute;
   right: calc(var(--style-source-ui-gutter-x) + 20px);
   bottom: 26px;
@@ -1972,12 +1976,12 @@ body {
   z-index: 3;
 }
 
-.first-run-intro--step-enter .style-dialog.first-run-intro__panel {
+.first-run-intro--step-enter .style-box.first-run-intro__panel {
   animation: first-run-intro-panel-enter var(--style-motion-dialog)
     var(--style-motion-ease-rubber) both;
 }
 
-.first-run-intro--step-exit .style-dialog.first-run-intro__panel {
+.first-run-intro--step-exit .style-box.first-run-intro__panel {
   animation: first-run-intro-panel-exit 180ms var(--style-motion-ease-soft)
     both;
 }
@@ -4158,8 +4162,8 @@ body {
   .first-run-intro--step-exit .first-run-intro__transition-shade,
   .first-run-intro--step-enter .first-run-intro__backdrop-layer,
   .first-run-intro--step-exit .first-run-intro__backdrop-layer,
-  .first-run-intro--step-enter .style-dialog.first-run-intro__panel,
-  .first-run-intro--step-exit .style-dialog.first-run-intro__panel,
+  .first-run-intro--step-enter .style-box.first-run-intro__panel,
+  .first-run-intro--step-exit .style-box.first-run-intro__panel,
   .first-run-intro--step-enter .first-run-intro__text,
   .first-run-intro--step-enter .style-button.first-run-intro__advance,
   .first-run-intro--step-enter .first-run-intro__workshop-sale,
@@ -13054,9 +13058,9 @@ div.workshop-page__discovery-row {
 
 .style-panel.room-bottom-panel {
   position: absolute;
-  right: var(--style-room-chrome-edge);
-  bottom: 5px;
-  left: var(--style-room-chrome-edge);
+  right: 0;
+  bottom: 8px;
+  left: 0;
   min-height: var(--style-row-min-height);
   padding: 0;
   background: transparent;
@@ -13083,8 +13087,8 @@ div.workshop-page__discovery-row {
   justify-content: center;
   z-index: 1;
   min-width: 0;
-  height: var(--style-room-tab-active-height);
-  min-height: var(--style-room-tab-active-height);
+  height: var(--style-room-tab-total-height);
+  min-height: var(--style-room-tab-total-height);
   padding: 0 2px;
   margin-left: 0;
   overflow: visible;
@@ -13112,7 +13116,7 @@ div.workshop-page__discovery-row {
 .room-bottom-panel__tab::after {
   position: absolute;
   right: 0;
-  bottom: calc(-1 * var(--style-room-tab-bottom-bleed));
+  bottom: 0;
   left: 0;
   z-index: 0;
   box-sizing: border-box;
@@ -13136,7 +13140,7 @@ div.workshop-page__discovery-row {
 .room-bottom-panel__tab-label {
   position: absolute;
   right: 2px;
-  bottom: 2px;
+  bottom: calc(var(--style-room-tab-bottom-bleed) + 2px);
   left: 2px;
   z-index: 3;
   display: block;
@@ -13230,7 +13234,7 @@ div.workshop-page__discovery-row {
 
 .room-bottom-panel__tab-lock {
   position: absolute;
-  top: 50%;
+  top: calc(var(--style-room-tab-active-height) / 2);
   left: 50%;
   z-index: 4;
   display: block;
@@ -17885,14 +17889,11 @@ div.workshop-page__discovery-row {
   border-image: none;
 }
 
-.first-run-intro .style-dialog.first-run-intro__panel,
 .style-box.tutorial-layer__lesson.is-intro-dialog {
   --intro-dialog-panel-frame: url("../../assets/game/source/ui/intro-dialog-panel-9slice.png");
   --intro-dialog-tab-frame: url("../../assets/game/source/ui/intro-dialog-header-tab-9slice-v2.png");
-  --intro-dialog-button-frame: url("../../assets/game/source/ui/intro-dialog-button-9slice.png");
   --intro-dialog-panel-slice: 31 29 31 29 fill;
   --intro-dialog-tab-slice: 31 29 31 29 fill;
-  --intro-dialog-button-slice: 31 29 31 29 fill;
   --intro-dialog-text: #eee8dc;
   --intro-dialog-shadow: 3px 4px 4px rgb(0 0 0 / 0.62);
   --intro-dialog-shadow-filter: drop-shadow(var(--intro-dialog-shadow));
@@ -17900,14 +17901,6 @@ div.workshop-page__discovery-row {
   color: var(--intro-dialog-text);
   text-shadow: 0 0.5px 0.5px rgb(0 0 0 / 0.55);
   background: transparent;
-  border-image-source: var(--intro-dialog-panel-frame);
-  border-image-slice: var(--intro-dialog-panel-slice);
-}
-
-.first-run-intro .style-dialog.first-run-intro__panel::after {
-  z-index: -1;
-  box-shadow: none;
-  filter: var(--intro-dialog-shadow-filter);
   border-image-source: var(--intro-dialog-panel-frame);
   border-image-slice: var(--intro-dialog-panel-slice);
 }
@@ -17931,7 +17924,7 @@ div.workshop-page__discovery-row {
   content: " ";
 }
 
-.first-run-intro .style-dialog.first-run-intro__panel > .first-run-intro__text,
+.first-run-intro .style-box.first-run-intro__panel > .first-run-intro__text,
 .style-box.tutorial-layer__lesson.is-intro-dialog
   > :is(
     .tutorial-layer__lesson-text,
@@ -17942,7 +17935,7 @@ div.workshop-page__discovery-row {
   z-index: 1;
 }
 
-.first-run-intro .style-dialog.first-run-intro__panel > .first-run-intro__advance,
+.first-run-intro .style-box.first-run-intro__panel > .first-run-intro__advance,
 .style-box.tutorial-layer__lesson.is-intro-dialog
   > :is(
     .tutorial-layer__lesson-step-label,
@@ -17952,7 +17945,6 @@ div.workshop-page__discovery-row {
   z-index: 1;
 }
 
-.first-run-intro .style-dialog.first-run-intro__panel > .style-box__title,
 .style-box.tutorial-layer__lesson.is-intro-dialog > .style-box__title {
   top: -16px;
   left: 14px;
@@ -17970,16 +17962,6 @@ div.workshop-page__discovery-row {
   border-image-width: var(--style-midnight-frame-control-width);
   border-image-repeat: stretch;
   -webkit-text-stroke: 0;
-}
-
-.first-run-intro .style-button.first-run-intro__advance {
-  color: var(--intro-dialog-text);
-  text-shadow: 0 0.5px 0.5px rgb(0 0 0 / 0.52);
-  background: transparent;
-  box-shadow: none;
-  border-image-source: var(--intro-dialog-button-frame);
-  border-image-slice: var(--intro-dialog-button-slice);
-  border-image-width: var(--style-midnight-frame-control-width);
 }
 
 ::selection {
@@ -19588,9 +19570,8 @@ div.workshop-page__discovery-row {
   }
 }
 
-/* Root Run Expedition dialog composition: brown shell, paper content, and blue title plaque. */
-:root
-  .style-dialog:not(.first-run-intro__panel):not(.style-dialog--system) {
+/* Root Run Expedition dialog composition: brown shell, paper content, and purple title plaque. */
+:root .style-dialog {
   --style-text: var(--style-dialog-ink);
   --style-muted: var(--style-dialog-muted-ink);
   --style-disabled: var(--style-dialog-disabled-ink);
@@ -19607,8 +19588,7 @@ div.workshop-page__discovery-row {
   box-shadow: none;
 }
 
-:root
-  .style-dialog:not(.first-run-intro__panel):not(.style-dialog--system)::before {
+:root .style-dialog::before {
   position: absolute;
   inset: calc(-1 * var(--style-dialog-frame-outset));
   z-index: -2;
@@ -19627,8 +19607,7 @@ div.workshop-page__discovery-row {
   content: " ";
 }
 
-:root
-  .style-dialog:not(.first-run-intro__panel):not(.style-dialog--system)::after {
+:root .style-dialog::after {
   position: absolute;
   inset:
     calc(
@@ -19658,9 +19637,7 @@ div.workshop-page__discovery-row {
   content: " ";
 }
 
-:root
-  .style-dialog:not(.first-run-intro__panel):not(.style-dialog--system)
-  > .style-box__title {
+:root .style-dialog > .style-box__title {
   top: calc(
     -1 * var(--style-dialog-frame-outset) -
       var(--style-dialog-title-overhang)

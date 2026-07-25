@@ -19,7 +19,7 @@ export { PixiAllianceInfoDialog } from './PixiAllianceInfoDialog.js';
 export { PixiInboxDialog } from './PixiInboxDialog.js';
 export { PixiLevelDialog } from './PixiLevelDialog.js';
 export {
-  PixiAnnouncementDialog,
+  PixiAnnouncementSurface,
   PixiConfirmationDialog,
 } from './PixiMessageDialogs.js';
 export { PixiPlayerInfoDialog } from './PixiPlayerInfoDialog.js';

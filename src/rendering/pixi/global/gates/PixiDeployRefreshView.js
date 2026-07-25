@@ -31,6 +31,8 @@ export class PixiDeployRefreshView extends PixiModalSurface {
 
   onApplyTheme(theme) {
     super.onApplyTheme(theme);
-    this.message.applyTheme(theme);
+    this.message.applyTheme(
+      this.panel.getContentTheme?.() ?? theme,
+    );
   }
 }

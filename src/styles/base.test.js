@@ -203,19 +203,19 @@ describe('base styles', () => {
     );
   });
 
-  it('uses the shared Root Run Expedition shell, blue title plaque, paper panel, and detached close asset', () => {
+  it('uses the shared Root Run Expedition shell, purple title plaque, paper panel, and detached close asset', () => {
     const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
     const dialogRule = getRuleBody(
-      /:root\s+\.style-dialog:not\(\.first-run-intro__panel\):not\(\.style-dialog--system\)\s*\{(?<body>[^}]*)\}/,
+      /:root\s+\.style-dialog\s*\{(?<body>[^}]*)\}/,
     );
     const backRule = getRuleBody(
-      /:root\s+\.style-dialog:not\(\.first-run-intro__panel\):not\(\.style-dialog--system\)::before\s*\{(?<body>[^}]*)\}/,
+      /:root\s+\.style-dialog::before\s*\{(?<body>[^}]*)\}/,
     );
     const paperRule = getRuleBody(
-      /:root\s+\.style-dialog:not\(\.first-run-intro__panel\):not\(\.style-dialog--system\)::after\s*\{(?<body>[^}]*)\}/,
+      /:root\s+\.style-dialog::after\s*\{(?<body>[^}]*)\}/,
     );
     const titleRule = getRuleBody(
-      /:root\s+\.style-dialog:not\(\.first-run-intro__panel\):not\(\.style-dialog--system\)\s+> \.style-box__title\s*\{(?<body>[^}]*)\}/,
+      /:root\s+\.style-dialog\s+> \.style-box__title\s*\{(?<body>[^}]*)\}/,
     );
     const closeRule = getRuleBody(
       /\.game-stage[\s\S]*?button:is\(\[class\*="__close"\], \[class\*="-close"\]\):not\([\s\S]*?\.guild-page__close\s*\{(?<body>[^}]*)\}/,
@@ -228,7 +228,7 @@ describe('base styles', () => {
       readFileSync(`${assetDir}/expedition-dialog-back.png`),
     );
     const title = PNG.sync.read(
-      readFileSync(`${assetDir}/expedition-dialog-title-blue.png`),
+      readFileSync(`${assetDir}/expedition-dialog-title-purple.png`),
     );
     const paper = PNG.sync.read(
       readFileSync(`${assetDir}/expedition-dialog-front.png`),
@@ -246,10 +246,10 @@ describe('base styles', () => {
     );
     expect(rootRule).toContain('--style-dialog-paper-frame-slice: 99 53 72 84 fill;');
     expect(rootRule).toContain(
-      '--style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-blue.png");',
+      '--style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-purple.png");',
     );
     expect(rootRule).toContain('--style-dialog-title-frame-slice: 0 132 0 85 fill;');
-    expect(rootRule).toContain('--style-dialog-title-fill: #2783d9;');
+    expect(rootRule).toContain('--style-dialog-title-fill: #9d25db;');
     expect(rootRule).toContain(
       '--style-dialog-title-overhang: calc(61px * 390 / 1080);',
     );
@@ -719,7 +719,7 @@ describe('base styles', () => {
     );
     const rainbowRule = getRuleBody(/\.first-run-intro__rainbow\s*\{(?<body>[^}]*)\}/);
     const panelRule = getRuleBody(
-      /\.style-dialog\.first-run-intro__panel\s*\{(?<body>[^}]*)\}/,
+      /\.style-box\.first-run-intro__panel\s*\{(?<body>[^}]*)\}/,
     );
 
     expect(rootRule).toContain('width: calc(100% / var(--style-ui-scale));');
@@ -786,18 +786,13 @@ describe('base styles', () => {
     expect(baseCss).toContain('@keyframes first-run-intro-workshop-sale-exit');
   });
 
-  it('keeps the first-run intro dialog on the dedicated filled 9-slices', () => {
-    const introSkinRule = getRuleBody(
-      /\.first-run-intro \.style-dialog\.first-run-intro__panel,\s*\.style-box\.tutorial-layer__lesson\.is-intro-dialog\s*\{(?<body>[^}]*)\}/,
+  it('keeps tutorial lessons on their dedicated skin without overriding the first-run box', () => {
+    const introSkinRule = findRuleBody(
+      /\.style-box\.tutorial-layer__lesson\.is-intro-dialog\s*\{(?<body>[^}]*)\}/g,
+      (body) => body.includes('--intro-dialog-panel-frame:'),
     );
     const introTitleRule = getRuleBody(
-      /\.first-run-intro \.style-dialog\.first-run-intro__panel > \.style-box__title,\s*\.style-box\.tutorial-layer__lesson\.is-intro-dialog > \.style-box__title\s*\{(?<body>[^}]*)\}/,
-    );
-    const introButtonRule = getRuleBody(
-      /\.first-run-intro \.style-button\.first-run-intro__advance\s*\{(?<body>[^}]*)\}/,
-    );
-    const introPanelShadowRule = getRuleBody(
-      /\.first-run-intro \.style-dialog\.first-run-intro__panel::after\s*\{(?<body>[^}]*)\}/,
+      /\.style-box\.tutorial-layer__lesson\.is-intro-dialog > \.style-box__title\s*\{(?<body>[^}]*)\}/,
     );
     const introLessonRule = findRuleBody(
       /\.style-box\.tutorial-layer__lesson\.is-intro-dialog\s*\{(?<body>[^}]*)\}/g,
@@ -814,16 +809,10 @@ describe('base styles', () => {
       '--intro-dialog-tab-frame: url("../../assets/game/source/ui/intro-dialog-header-tab-9slice-v2.png");',
     );
     expect(introSkinRule).toContain(
-      '--intro-dialog-button-frame: url("../../assets/game/source/ui/intro-dialog-button-9slice.png");',
-    );
-    expect(introSkinRule).toContain(
       '--intro-dialog-panel-slice: 31 29 31 29 fill;',
     );
     expect(introSkinRule).toContain(
       '--intro-dialog-tab-slice: 31 29 31 29 fill;',
-    );
-    expect(introSkinRule).toContain(
-      '--intro-dialog-button-slice: 31 29 31 29 fill;',
     );
     expect(introSkinRule).toContain(
       '--intro-dialog-shadow-filter: drop-shadow(var(--intro-dialog-shadow));',
@@ -846,17 +835,6 @@ describe('base styles', () => {
     expect(introTitleRule).toContain('padding: 2px 18px 3px;');
     expect(introTitleRule).toContain('line-height: 16px;');
     expect(introTitleRule).not.toContain('linear-gradient(');
-    expect(introButtonRule).toContain(
-      'border-image-source: var(--intro-dialog-button-frame);',
-    );
-    expect(introButtonRule).toContain(
-      'border-image-slice: var(--intro-dialog-button-slice);',
-    );
-    expect(introButtonRule).not.toContain('linear-gradient(');
-    expect(introPanelShadowRule).toContain('box-shadow: none;');
-    expect(introPanelShadowRule).toContain(
-      'filter: var(--intro-dialog-shadow-filter);',
-    );
     expect(introLessonRule).toContain('box-shadow: none;');
     expect(introLessonShadowRule).toContain(
       'border-image-source: var(--intro-dialog-panel-frame);',
@@ -868,8 +846,10 @@ describe('base styles', () => {
       'filter: var(--intro-dialog-shadow-filter);',
     );
     expect(baseCss).not.toMatch(
-      /\.first-run-intro \.style-dialog\.first-run-intro__panel::before,\s*\.style-box\.tutorial-layer__lesson\.is-intro-dialog::before\s*\{/,
+      /\.first-run-intro \.style-box\.first-run-intro__panel(?:::before|::after)\s*\{/,
     );
+    expect(baseCss).not.toContain('--intro-dialog-button-frame:');
+    expect(baseCss).not.toContain('--intro-dialog-button-slice:');
   });
 
   it('snaps the initial tutorial reveal gate hidden before Elara paints', () => {

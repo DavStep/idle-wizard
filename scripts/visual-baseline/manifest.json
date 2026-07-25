@@ -246,7 +246,7 @@
       "production": true,
       "coverage": {
         "globalOwners": ["firstRunIntroFacade"],
-        "domSelectors": [".first-run-intro__panel"]
+        "devUi": ["firstRunIntro"]
       },
       "recipe": {
         "kind": "external",

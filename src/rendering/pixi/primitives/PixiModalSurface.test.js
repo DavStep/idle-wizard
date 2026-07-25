@@ -9,6 +9,7 @@ import {
   PIXI_MODAL_OPEN_MOTION,
   PixiModalSurface,
 } from './PixiModalSurface.js';
+import { PixiDialogFrame } from './PixiDialogFrame.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
 } from '../theme/PixiThemeTokens.js';
@@ -25,6 +26,14 @@ const PROJECTION = Object.freeze({
 });
 
 describe('PixiModalSurface open motion', () => {
+  it('uses the shared player-dialog shell by default', () => {
+    const surface = createSurface();
+
+    expect(surface.panel).toBeInstanceOf(PixiDialogFrame);
+
+    surface.destroy();
+  });
+
   it('matches the retained center dialog and overlay keyframes', () => {
     const runtime = createMotionRuntime();
     const surface = createSurface({

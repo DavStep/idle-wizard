@@ -47,7 +47,7 @@ experience_type: style
 - Every visible button label is stroked in every state; reuse the shared button style's skin-appropriate stroke instead of introducing feature-local outline values.
 - Keep popup/dialog titles at `14px`; ordinary block titles and body text share the source size.
 - Box titles use bold weight.
-- Box titles stay transparent over the top border and use the shared surface-colored text stroke; default dialog titles instead use the separate Root Run cream title plate.
+- Box titles stay transparent over the top border and use the shared surface-colored text stroke; dialog titles instead use the separate Root Run purple title plaque.
 - Non-title labels that sit on a box border (counts, current controls, bottom-edge actions/tabs) use smaller text and a fixed line box centered on the border line.
 - Mobile readability comes from the room UI scale layer, not from changing the source font size upward.
 - Source UI scale must follow the fitted viewport scale, not stay fixed at `3`, so web and mobile views both fit.
@@ -59,7 +59,8 @@ experience_type: style
 - Text-entry dialog save buttons should save on `pointerdown` so keyboard blur cannot move the scaled layout before click submit.
 - For Android safe areas, let chrome backgrounds visually extend behind status/gesture areas and inset only interactive content; avoid black gutter padding.
 - Non-dialog boxes stay simple: `1px` border, compact padding, no shadow.
-- Default player-facing popup/dialog panels use the exact Root Run Expedition composition: brown outer nine-slice, Expedition paper inner nine-slice, blue title plaque, round X control centered below, and one compact bottom-right shadow. At the `390px` logical width preserve the `364px` shell; `352px` paper with `6px` horizontal, `31px` top, and `21px` compact bottom insets; `222x44px` title; and `41px` close with `23px` shell gap. Plaque text scales the exported `64px` type, `73px` line box, `22px` top offset, and `8px` stroke to `23.1px`, `26.4px`, `7.9px`, and `2.9px`; do not reuse the generic `14px` dialog-title token. App-level boot, connection, account, and deploy blockers must carry `style-dialog--system` so shared player-dialog selectors cannot stretch or decorate them. Keep first-run and explicitly feature-skinned panels excluded too.
+- Every player-facing popup/dialog uses the exact Root Run Expedition composition: brown outer nine-slice, Expedition paper inner nine-slice, purple title plaque, round X control centered below when dismissal is allowed, and one compact bottom-right shadow. At the `390px` logical width preserve the `364px` shell; `352px` paper with `6px` horizontal, `31px` top, and `21px` compact bottom insets; `222x44px` title; and `41px` close with `23px` shell gap. Plaque text scales the exported `64px` type, `73px` line box, `22px` top offset, and `8px` stroke to `23.1px`, `26.4px`, `7.9px`, and `2.9px`; do not reuse the generic `14px` dialog-title token. App-level blockers use the same shell with the close action hidden when the flow must retain control; feature-specific artwork stays inside the paper content area. The first-run cutscene is not a dialog: keep its narrative in an ordinary border-labeled box with the shared yellow action button.
+- Progress, research-complete, and feature-unlock announcements are full-screen screens, not dialogs: keep their centered composition unframed and reserve dialog chrome for report-style announcements.
 - Transparent nine-slice corners reveal any CSS fill drawn underneath. Let the Root Run shell, paper, title, and close PNGs own their centers; keep their backing layers transparent and preserve the source inset plus minimum slice dimensions instead of hiding geometry mistakes with solid rectangles.
 - Shared chrome overlays with the same z-index paint by DOM order; visible bottom-panel lock notices must raise the bottom panel layer above the passive chat preview.
 - Dialog paper owns its fixed brown-on-cream palette; do not recolor it from the active room theme.
@@ -181,7 +182,7 @@ experience_type: style
 - Zero-cost visual setting names should not unlock or select directly; tap `free` to research first, then tap the option name to select.
 - Mixed resource strings need separate marked spans when each semantic part needs its own icon; the spans still inherit surrounding text color.
 - Resource metadata may support icons and disabled-state handling, but must never override component text color. Disabled and locked resource labels inherit the normal muted state color.
-- Shared top and bottom room chrome should use the same `16px` source side inset as Research content.
+- Shared top room chrome uses the `16px` source side inset from Research content. Bottom room tabs are the deliberate exception: their equal-width row fills the source width.
 - Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
 - NPC market reset must clear shared `npcStock` to `0` plus restore `npcNeed` to target; stock is server state and can survive player-data resets.
 - Global NPC market resets need a one-time server maintenance marker; do not tie shared market wipes to per-player progress reset hooks.
@@ -201,7 +202,7 @@ experience_type: style
 - World event dialog content should stay a flex column: fixed header, scroll frame, then normal shared scroll rail. Do not use grid `:has()` spacer rows or rail margin overrides there.
 - Scrollable popup content that opens from `hidden` needs one deferred frame before pinning to bottom; hidden flex layouts can report stale scroll geometry.
 - Player market `browse market` and `trade history` controls sit as left/right bottom-border labels, not as an inner row; keep the border line visible between them.
-- Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); when gated `prestige` becomes visible, prepend it to the left of that default list. Use the copied Root Run station-tab nine-slice assets, stretch their lower region past the screen edge, keep one baseline, and only raise/enlarge/label the active tab.
+- Bottom room chrome is a shared five-tab panel (`brewing`, `garden`, `workshop`, `research`, `shop`); when gated `prestige` becomes visible, prepend it to the left of that default list. Use the copied Root Run station-tab nine-slice assets, fill the source width, keep one baseline with an `8px` bottom safe gap, and only raise/enlarge/label the active tab.
 - Bottom-tab qUIck textures need their compact `textureSlice` margins scaled by `390 / 1080` plus the exact center-sample color behind `border-image`; transparent backing exposes the slice cuts as dark lines. Keep optional tabs in the same non-wrapping flex row so their frames cannot leak below the main baseline.
 - Fixed-size qUIck skins that remain visibly seamed under fractional contain scaling may keep precomposed whole-PNG fallbacks, but production Root Run parity should use one Pixi `NineSliceSprite` per skin and hide the fallback only after the Pixi layer renders successfully. Research fallback skins are generated by `npm run assets:research-skins`.
 - World chat belongs in shared room chrome directly above the bottom panel, not inside page scroll/content, and its compact display shows only the latest two messages.

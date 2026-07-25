@@ -6,7 +6,7 @@ import {
 
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
-import { PixiPanel } from '../../primitives/PixiPanel.js';
+import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
 import { PixiScrollView } from '../../primitives/PixiScrollView.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
@@ -51,7 +51,7 @@ const DIALOG_CONFIG = Object.freeze({
     title: 'market ledger',
     width: LEDGER_DIALOG_WIDTH,
     height: LEDGER_DIALOG_HEIGHT,
-    rowHeight: 20,
+    rowHeight: 34,
   }),
   [SHOP_DIALOG_IDS.REQUEST]: Object.freeze({
     title: 'request',
@@ -140,21 +140,22 @@ export class ShopDialogPixi extends BasePixiRetainedView {
         sound: false,
       }) ?? null;
 
-    this.panel = new PixiPanel({
+    this.panel = new PixiDialogFrame({
       assetManager,
-      title: config.title,
-      dialog: true,
-      label: `${dialogId}:panel`,
-    });
-    this.panel.setOuterSize(config.width, config.height);
-    this.closeButton = new DialogInlineButton({
       inputRouter,
       semanticRegistry,
-      semanticId: `${dialogId}.close`,
-      text: 'close',
-      action: () => this.onClose?.(),
-      label: `${dialogId}:close`,
+      closeSemanticId: `${dialogId}.close`,
+      title: config.title,
+      coreWidth: config.width,
+      coreHeight: config.height,
+      closeAction: () => this.onClose?.(),
+      label: `${dialogId}:panel`,
     });
+    this.panel.setContentBoxSize(
+      config.width - PIXI_UI_GEOMETRY.dialogPadding * 2,
+      config.height - PIXI_UI_GEOMETRY.dialogPadding * 2,
+      PIXI_UI_GEOMETRY.dialogPadding,
+    );
     this.body = this.panel.content;
     this.summaryLayer = new Container();
     this.summaryLayer.label = `${dialogId}:summary`;
@@ -259,7 +260,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       keyOf: (action, index) => action.id ?? index,
       bind: (button, action, key) => {
         button.bind(key, action, action.action ?? action.onActivate);
-        button.applyTheme(this.theme);
+        button.applyTheme(this.contentTheme ?? this.theme);
       },
       afterReconcile: (buttons) => orderChildren(this.actionLayer, buttons),
     });
@@ -302,7 +303,6 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.root.addChild(
       this.backdrop,
       this.panel,
-      this.closeButton.root,
       this.tabLayer,
     );
     parent?.addChild?.(this.root);
@@ -326,12 +326,16 @@ export class ShopDialogPixi extends BasePixiRetainedView {
 
     this.fields.forEach((field, index) => {
       field.bind(this.model.fields[index] ?? null);
-      field.applyTheme(this.theme);
+      field.applyTheme(this.contentTheme ?? this.theme);
     });
 
     for (const row of this.summaryRows.getWidgets()) {
-      row.applyTheme(this.theme);
+      row.applyTheme(this.contentTheme ?? this.theme);
     }
+    for (const button of this.actions.getWidgets()) {
+      button.applyTheme(this.contentTheme ?? this.theme);
+    }
+    this.list.applyTheme(this.contentTheme ?? this.theme);
 
     this.relayout();
   }
@@ -340,21 +344,23 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.redrawBackdrop();
     this.panel?.applyTheme(this.theme);
-    this.closeButton?.applyTheme(this.theme);
-    this.messageLabel?.applyTheme(this.theme);
-    this.statusLabel?.applyTheme(this.theme);
-    this.amountSelector?.applyTheme(this.theme);
-    this.rangeControl?.applyTheme(this.theme);
-    this.list?.applyTheme(this.theme);
+    const contentTheme =
+      this.panel?.getContentTheme?.() ?? this.theme;
+    this.contentTheme = contentTheme;
+    this.messageLabel?.applyTheme(contentTheme);
+    this.statusLabel?.applyTheme(contentTheme);
+    this.amountSelector?.applyTheme(contentTheme);
+    this.rangeControl?.applyTheme(contentTheme);
+    this.list?.applyTheme(contentTheme);
 
     for (const field of this.fields ?? []) {
-      field.applyTheme(this.theme);
+      field.applyTheme(contentTheme);
     }
     for (const row of this.summaryRows?.getWidgets?.() ?? []) {
-      row.applyTheme(this.theme);
+      row.applyTheme(contentTheme);
     }
     for (const button of this.actions?.getWidgets?.() ?? []) {
-      button.applyTheme(this.theme);
+      button.applyTheme(contentTheme);
     }
     for (const button of this.tabs?.getWidgets?.() ?? []) {
       button.applyTheme(this.theme);
@@ -420,23 +426,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     const panelX = Math.round((this.sourceWidth - panelWidth) / 2);
     const panelY = Math.round(centerY - panelHeight / 2 + shift);
     this.panel.position.set(panelX, panelY);
-    this.closeButton.setBounds(
-      panelX + panelWidth - 52,
-      panelY - 7,
-      42,
-      PIXI_UI_GEOMETRY.borderLabelLineHeight,
-    );
 
-    const bodyWidth =
-      panelWidth -
-      (PIXI_UI_GEOMETRY.dialogPadding +
-        PIXI_UI_GEOMETRY.strongBorderWidth) *
-        2;
-    const bodyHeight =
-      panelHeight -
-      (PIXI_UI_GEOMETRY.dialogPadding +
-        PIXI_UI_GEOMETRY.strongBorderWidth) *
-        2;
+    const bodyWidth = this.panel.contentBoxWidth;
+    const bodyHeight = this.panel.contentBoxHeight;
     let y = 0;
 
     for (const row of this.summaryRows?.getWidgets?.() ?? []) {
@@ -538,84 +530,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.list.destroy();
     this.amountSelector.destroy();
     this.rangeControl.destroy();
-    this.closeButton.destroy();
     for (const field of this.fields) {
       field.destroy();
     }
-  }
-}
-
-class DialogInlineButton {
-  constructor({
-    inputRouter,
-    semanticRegistry,
-    semanticId,
-    text,
-    action,
-    label,
-  }) {
-    this.root = new Container();
-    this.root.label = label;
-    this.root.eventMode = 'static';
-    this.label = new PixiTextLabel({
-      text,
-      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
-      label: `${label}:text`,
-    });
-    this.backing = new Graphics();
-    this.backing.label = `${label}:backing`;
-    this.root.addChild(this.backing, this.label);
-    this.action = action;
-    this.enabled = true;
-    this.registration =
-      inputRouter?.registerPressTarget?.(this.root, {
-        enabled: () =>
-          this.enabled && this.root.visible && this.root.renderable,
-        onActivate: (payload) => this.action?.(payload),
-        haptic: 'light',
-      }) ?? null;
-    this.semanticRegistry = semanticRegistry;
-    this.semanticId = semanticId;
-    this.semanticDefinition =
-      semanticRegistry?.register?.({
-        semanticId,
-        displayObject: this.root,
-        state: () => ({
-          active: !this.root.destroyed,
-          enabled: this.enabled,
-          interactive: this.root.eventMode !== 'none',
-          visible: this.root.visible && this.root.renderable,
-        }),
-        activate: (payload) => this.action?.(payload),
-      }) ?? null;
-    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-  }
-
-  setBounds(x, y, width, height) {
-    this.root.position.set(x, y);
-    this.root.hitArea = new Rectangle(0, 0, width, height);
-    this.backing
-      .clear()
-      .rect(0, 0, width, height)
-      .fill(this.theme.surface);
-    this.label.position.set(Math.max(0, (width - this.label.measuredWidth) / 2), 0);
-  }
-
-  applyTheme(theme) {
-    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.label.applyTheme(this.theme);
-  }
-
-  destroy() {
-    this.registration?.();
-    this.registration = null;
-    if (this.semanticDefinition) {
-      this.semanticRegistry?.unregister?.(this.semanticId, {
-        displayObject: this.root,
-      });
-      this.semanticDefinition = null;
-    }
-    this.root.destroy({ children: true });
   }
 }
 

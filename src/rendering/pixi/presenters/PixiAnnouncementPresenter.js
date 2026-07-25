@@ -817,7 +817,7 @@ export function createPixiAnnouncementPresentation(
   }
 
   if (announcement.kind === 'unlock') {
-    return createFeatureUnlockDialogPresentation(
+    return createFeatureUnlockScreenPresentation(
       announcement,
       shared,
     );
@@ -967,7 +967,7 @@ export function getResearchIconPresentation(
   };
 }
 
-function createFeatureUnlockDialogPresentation(
+function createFeatureUnlockScreenPresentation(
   announcement,
   shared,
 ) {

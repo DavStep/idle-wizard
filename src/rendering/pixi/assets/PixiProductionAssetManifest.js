@@ -44,7 +44,6 @@ const PUBLIC_ASSET_PATHS = Object.freeze([
   '/ui/guild-quest/quest-photo-smuggler-tunnel.png',
   '/ui/guild-quest/selected-frame-9slice.png',
   '/ui/guild-quest/wax-seal.png',
-  '/ui/intro-dialog-button-9slice.png',
   '/ui/intro-dialog-header-tab-9slice-v2.9slice.json',
   '/ui/intro-dialog-header-tab-9slice-v2.png',
   '/ui/intro-dialog-header-tab-9slice.png',

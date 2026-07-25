@@ -191,16 +191,16 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
       variant: 'panel',
       width: panelWidth,
       height: FIRST_RUN_INTRO_PIXI_GEOMETRY.panelHeight,
-      borderWidth: PIXI_UI_GEOMETRY.strongBorderWidth,
-      shadow: true,
       label: 'firstRunIntro:panel',
     });
-    this.titleBacking = new Graphics();
-    this.titleBacking.label = 'firstRunIntro:titleBacking';
     this.title = new PixiTextLabel({
       text: 'after the war',
-      fontSize: PIXI_UI_GEOMETRY.dialogTitleFontSize,
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
       fontWeight: 'bold',
+      stroke: {
+        color: DEFAULT_PIXI_THEME_SNAPSHOT.surface,
+        width: 2,
+      },
       label: 'firstRunIntro:title',
     });
     this.copy = new PixiTextLabel({
@@ -219,11 +219,11 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
       text: 'next',
       width: panelWidth - FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingX * 2,
       height: 26,
+      variant: 'yellow',
       action: () => this.actions.advance?.(),
       label: 'firstRunIntro:advance',
     });
     this.panel.addChild(
-      this.titleBacking,
       this.title,
       this.copy,
       this.advanceButton,
@@ -289,9 +289,9 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
     const nextTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.panel.applyTheme(nextTheme);
     this.title.applyTheme(nextTheme);
+    this.title.setStroke({ color: nextTheme.surface, width: 2 });
     this.copy.applyTheme(nextTheme);
     this.advanceButton.applyTheme(nextTheme);
-    this.redrawTitleBacking(nextTheme);
     applySaleTheme(this.sale, nextTheme);
   }
 
@@ -354,7 +354,6 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
         FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingBottom -
         26,
     );
-    this.redrawTitleBacking(this.theme ?? DEFAULT_PIXI_THEME_SNAPSHOT);
   }
 
   onActivate() {
@@ -601,12 +600,6 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
     this.stopTicker();
   }
 
-  redrawTitleBacking(theme) {
-    this.titleBacking
-      .clear()
-      .rect(6, -11, this.title.measuredWidth + 5, 15)
-      .fill(theme.surface);
-  }
 }
 
 /**

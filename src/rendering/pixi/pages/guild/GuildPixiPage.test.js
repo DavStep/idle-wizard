@@ -10,8 +10,15 @@ import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
+import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import { GUILD_DIALOG_IDS } from './GuildDialogPixi.js';
 import { GuildPixiPage } from './GuildPixiPage.js';
+
+globalThis.CanvasRenderingContext2D.prototype.createLinearGradient =
+  () => ({
+    addColorStop() {},
+  });
+globalThis.CanvasRenderingContext2D.prototype.fillRect = () => {};
 
 describe('GuildPixiPage', () => {
   it('constructs all page sections once and retains keyed pooled widgets', () => {
@@ -78,6 +85,9 @@ describe('GuildPixiPage', () => {
         createGuildDialogPayload(dialogId),
       );
       retainedDialogs.set(dialogId, harness.dialogs.get(dialogId));
+      expect(harness.dialogs.get(dialogId).panel).toBeInstanceOf(
+        PixiDialogFrame,
+      );
       if (dialogId === GUILD_DIALOG_IDS.CHARTER) {
         expect(harness.dialogs.get(dialogId).panel.outerWidth).toBe(
           324,
@@ -210,10 +220,22 @@ describe('GuildPixiPage', () => {
       GUILD_DIALOG_IDS.REQUEST_STACK,
       createGuildDialogPayload(GUILD_DIALOG_IDS.REQUEST_STACK),
     );
+    const requestStack = harness.dialogs.get(
+      GUILD_DIALOG_IDS.REQUEST_STACK,
+    );
+    const requestRow = requestStack.requestRows.getWidgets()[0];
 
     expect(inputRouter.getTopModal()?.id).toBe(
       GUILD_DIALOG_IDS.REQUEST_STACK,
     );
+    expect(requestStack.panel).toBeInstanceOf(PixiDialogFrame);
+    expect(requestRow.title.text).toBe('Smuggler Tunnel');
+    expect(requestStack.detail.lore.text).toBe(
+      'a narrow road under the hill.',
+    );
+    expect(requestStack.detail.rows[0].value.text).toBe('Easy');
+    expect(requestStack.postButton.text.text).toBe('Post');
+    expect(requestStack.nextButton.text.text).toBe('Only Page');
     expect(inputRouter.handleBack({ source: 'native' })).toBe(true);
     expect(
       harness.dialogs.isOpen(GUILD_DIALOG_IDS.REQUEST_STACK),

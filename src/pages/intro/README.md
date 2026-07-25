@@ -7,3 +7,7 @@ It is not gameplay or economy. Story reward and free workshop entry beats are vi
 Intro progress uses its own local storage key so existing accounts do not see the prelude just because tutorial storage is missing. Fresh-start flows explicitly mark it pending before mounting pages.
 
 Run `node scripts/capture-tutorial-flow.js --first-run-only` with the shared QA-enabled dev server and local backend running to capture the account choice, intro artwork, and first `next` transition under `tmp/first-run-qa/`.
+
+Open `/?devUi=firstRunIntro` or run
+`cheats.openUi('firstRunIntro')` for a non-persistent preview of the real
+retained cutscene. The preview does not reset or save player progress.

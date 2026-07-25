@@ -103,10 +103,11 @@ const ANNOUNCEMENT_FALLBACK_FRAMES = freezeMotionFrames([
 const DISPLAY_MOTION_BASES = new WeakMap();
 
 /**
- * Retained announcement surface. Normal announcements preserve the unframed,
- * centered DOM composition; report-style announcements opt into dialog chrome.
+ * Retained announcement surface. Progress and feature-unlock announcements
+ * are full-screen compositions; report-style announcements opt into dialog
+ * chrome.
  */
-export class PixiAnnouncementDialog extends RetainedGlobalDialog {
+export class PixiAnnouncementSurface extends RetainedGlobalDialog {
   constructor({
     context,
     dialogId = 'global.announcement',
@@ -124,8 +125,7 @@ export class PixiAnnouncementDialog extends RetainedGlobalDialog {
       placement: 'center',
       includeClose: true,
       backdropAlpha: 0.68,
-      chromeRole: 'system',
-      label: `${dialogId}:announcementDialog`,
+      label: `${dialogId}:announcementSurface`,
     });
     // Announcements use their own shorter panel motion and staged content
     // choreography from main, not the general 225ms dialog scale.
@@ -243,11 +243,16 @@ export class PixiAnnouncementDialog extends RetainedGlobalDialog {
       this.rows.reconcile(model.rows);
     }
     if (this.closeControl) {
-      this.closeControl.root.visible = model.dismissible;
-      this.closeControl.root.renderable = model.dismissible;
-      this.closeControl.setEnabled(model.dismissible);
+      const showClose =
+        model.framed &&
+        model.dismissible &&
+        model.showClose !== false;
+      this.closeControl.root.visible = showClose;
+      this.closeControl.root.renderable = showClose;
+      this.closeControl.setEnabled(showClose);
     }
-    this.applyAnnouncementFrameMode();
+    this.applyAnnouncementPresentationMode();
+    this.applyAnnouncementContentTheme();
     this.layoutDialog();
     if (this.active && this.shown) {
       this.startAnnouncementMotion();
@@ -286,17 +291,36 @@ export class PixiAnnouncementDialog extends RetainedGlobalDialog {
       : -28;
   }
 
-  applyAnnouncementFrameMode() {
+  applyAnnouncementPresentationMode() {
     if (!this.announcementModel) {
       return;
     }
     const framed = this.announcementModel.framed;
-    this.panel.frame.visible = framed;
-    this.panel.frame.renderable = framed;
-    this.panel.titleBacking.visible =
-      framed && Boolean(this.announcementModel.title);
-    this.panel.titleBacking.renderable =
-      this.panel.titleBacking.visible;
+    setDisplayObjectVisible(this.panel.shadow, framed);
+    setDisplayObjectVisible(this.panel.outerFrame, framed);
+    setDisplayObjectVisible(this.panel.paperFrame, framed);
+    setDisplayObjectVisible(
+      this.panel.titleFrame,
+      framed && Boolean(this.announcementModel.title),
+    );
+    setDisplayObjectVisible(
+      this.panel.titleLabel,
+      framed && Boolean(this.announcementModel.title),
+    );
+    if (!framed) {
+      setDisplayObjectVisible(this.panel.closeControl, false);
+    }
+  }
+
+  applyAnnouncementContentTheme() {
+    const contentTheme = this.announcementModel?.framed
+      ? this.panel.getContentTheme()
+      : this.theme;
+    this.heading?.applyTheme(contentTheme);
+    this.copy?.applyTheme(contentTheme);
+    this.rows?.applyTheme(contentTheme);
+    this.unlockItems?.applyTheme(contentTheme);
+    this.researchItem?.applyTheme(contentTheme);
   }
 
   layoutDialog() {
@@ -370,17 +394,13 @@ export class PixiAnnouncementDialog extends RetainedGlobalDialog {
       rowsPosition.y,
     );
     this.setPanelContentSize(width, height);
-    this.applyAnnouncementFrameMode();
+    this.applyAnnouncementPresentationMode();
     this.positionPanel();
   }
 
   applyDialogTheme(theme) {
-    this.heading?.applyTheme(theme);
-    this.copy?.applyTheme(theme);
-    this.rows?.applyTheme(theme);
-    this.unlockItems?.applyTheme(theme);
-    this.researchItem?.applyTheme(theme);
-    this.applyAnnouncementFrameMode();
+    this.applyAnnouncementContentTheme(theme);
+    this.applyAnnouncementPresentationMode();
   }
 
   activateDialog() {
@@ -1569,6 +1589,14 @@ function normalizeAnnouncementModel(model = {}) {
       Number(model.contentHeight) || 0,
     ),
   };
+}
+
+function setDisplayObjectVisible(displayObject, visible) {
+  if (!displayObject) {
+    return;
+  }
+  displayObject.visible = Boolean(visible);
+  displayObject.renderable = Boolean(visible);
 }
 
 function normalizeConfirmationModel(model = {}) {

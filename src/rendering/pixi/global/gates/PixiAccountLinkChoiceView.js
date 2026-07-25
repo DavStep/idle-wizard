@@ -65,6 +65,8 @@ export class PixiAccountLinkChoiceView extends PixiModalSurface {
 
   onApplyTheme(theme) {
     super.onApplyTheme(theme);
+    const contentTheme =
+      this.panel.getContentTheme?.() ?? theme;
     for (const item of [
       this.message,
       this.deviceRow.label,
@@ -75,7 +77,7 @@ export class PixiAccountLinkChoiceView extends PixiModalSurface {
       this.accountRow.button,
       this.warning,
     ]) {
-      item.applyTheme(theme);
+      item.applyTheme(contentTheme);
     }
   }
 

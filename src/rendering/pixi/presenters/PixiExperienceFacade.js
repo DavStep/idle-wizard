@@ -775,6 +775,33 @@ export class PixiExperienceFacade {
     return true;
   }
 
+  showFirstRunIntroPreview({ reducedMotion = false } = {}) {
+    if (!this.mounted || !this.introPresenter || !this.introView) {
+      return { ok: false, reason: 'intro_missing' };
+    }
+
+    this.introPresenter.hide?.();
+    this.releaseIntroModal();
+    this.introAttempted = true;
+    this.introInProgress = true;
+    this.installIntroModal();
+    this.introPresenter.show({
+      reducedMotion: Boolean(reducedMotion),
+      onComplete: () => this.completeFirstRunIntroPreview(),
+    });
+    return { ok: true };
+  }
+
+  completeFirstRunIntroPreview() {
+    if (!this.introInProgress) {
+      return false;
+    }
+    this.introInProgress = false;
+    this.releaseIntroModal();
+    this.refresh();
+    return true;
+  }
+
   resetTutorialProgress() {
     this.tutorialLogicManager.resetProgress();
     this.tutorialStepManager.activeStepId = null;

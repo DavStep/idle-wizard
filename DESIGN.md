@@ -79,7 +79,7 @@ components:
     rounded: "{rounded.none}"
     padding: "{spacing.dialog-padding}"
     frame: "Root Run Expedition brown dialog-back nine-slice"
-    titleFrame: "Root Run Expedition blue title plaque"
+    titleFrame: "Root Run Expedition purple title plaque"
     closeControl: "Root Run Expedition round X below the shell"
 ---
 
@@ -136,7 +136,7 @@ Palette is functional, mostly monochrome, and intentionally low-ornament.
 
 ### Hierarchy
 - **Title** (bold, 13px, normal line-height): Embedded box titles and important row names.
-- **Dialog Title** (bold, 14px, normal line-height): White outlined text centered in the Root Run blue title plaque.
+- **Dialog Title** (bold, 14px, normal line-height): White outlined text centered in the Root Run purple title plaque.
 - **Body** (regular, 13px, normal line-height): Room rows, button labels, resource values, and status text.
 - **Border Label** (regular, 11px, 14px line-height): Counts, popup tabs, bottom-border actions, and compact category controls.
 
@@ -159,7 +159,7 @@ Ordinary room UI is flat. Available themes use 2px ordinary borders for clear th
 
 **The Flat Room Rule.** Non-dialog room boxes never get shadows.
 
-**The Dialog Weight Rule.** Popup panels use the brown Root Run Expedition outer nine-slice, its paper inner nine-slice, separate blue title plaque, round X control centered below the shell, 20px padding, and one bottom-right shadow. Ordinary boxes do not borrow this treatment.
+**The Dialog Weight Rule.** Popup panels use the brown Root Run Expedition outer nine-slice, its paper inner nine-slice, separate purple title plaque, round X control centered below the shell, 20px padding, and one bottom-right shadow. Ordinary boxes do not borrow this treatment.
 
 ## 5. Components
 
@@ -184,19 +184,19 @@ Ordinary room UI is flat. Available themes use 2px ordinary borders for clear th
 - **Error / Disabled:** Error copy stays compact, disabled fields use disabled gray.
 
 ### Navigation
-- **Bottom Room Tabs:** Five equal icon tabs use Root Run's active/inactive station-tab nine-slice assets and share one bottom baseline. Their lower stretch region overscans past the authored screen edge. The active tab rises 10 source pixels, enlarges its icon, and reveals its source-11px page name; inactive tabs sit lower with dimmer icons and hidden visual labels.
+- **Bottom Room Tabs:** Five equal icon tabs use Root Run's active/inactive station-tab nine-slice assets, fill the source width, and share one bottom baseline with an `8px` source safe gap below the complete frame. Active/inactive caps are `56px`/`44px` tall before the shared `18px` lower stretch region. The active tab rises `12px`, enlarges its icon, and reveals its source-11px page name; inactive tabs sit lower with dimmer icons and hidden visual labels.
 - **Popup Tabs:** Sit below and outside the bordered dialog, keep an 8px source gap, and reuse the shared very-dark deselected and lighter-brown selected Root Run button skins.
 - **Page Names:** The current room name appears inside the raised active tab; inactive room names remain available through accessible labels.
 
 ### Dialogs
 - **Outer Shell:** Brown Root Run Expedition `expedition-dialog-back.png` nine-slice, rendered outside the content box.
 - **Content:** Root Run Expedition `expedition-dialog-front.png` paper nine-slice with brown ink.
-- **Title:** Separate centered blue `expedition-dialog-title-blue.png` plaque with white outlined text.
+- **Title:** Separate centered purple `expedition-dialog-title-purple.png` plaque with white outlined text.
 - **Close:** Round `expedition-dialog-close.png` X control centered below the brown shell at the Expedition source gap; keep the accessible close label.
 - **Authored Geometry:** Preserve Expedition's `1080px` source relationships at the `390px` logical width: `1008px` shell becomes `364px`; `976px` paper becomes `352px` with a `6px` horizontal inset, `31px` top inset, and `21px` compact-dialog bottom inset; `614x121px` title becomes `222x44px`; and the `114px` close becomes `41px` with a `23px` shell gap.
 - **Title Type:** Match the exported title node, not the generic dialog label: `64px` Lilita One Regular with an `8px` black stroke on the `1080px` source canvas, scaled to `23.1px` type and a `2.9px` stroke at `390px`. Its `73px` source line box starts `22px` below the plaque top.
 - **Transparency:** The PNG nine-slices own their centers and transparent corners. Do not paint rectangular fallback fills behind the shell, paper, title, or close artwork.
-- **Exceptions:** First-run intro and explicitly feature-skinned panels keep their dedicated chrome.
+- **Coverage:** All game dialogs use this shell, including Shop, Guild, and app-level blocker gates. Non-dismissible flows hide the close action; feature-specific artwork belongs inside the paper content area. The first-run cutscene keeps its narrative inside an ordinary border-labeled box with a yellow action button. Full-screen progress and feature-unlock announcement screens remain centered, unframed compositions; only report-style announcements use dialog chrome.
 
 ### Progress
 - **Rail:** Shared in-game rails use the compact Root Rush geometry at 10px source height. The top-panel quest rail intentionally keeps the original 14px source height. Both use a black capsule track, 1px outer stroke, dark inset rim, and 1px inner gap.

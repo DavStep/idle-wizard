@@ -103,6 +103,7 @@ const CHEAT_HELP = Object.freeze([
   'cheats.setBackendState("offline")',
   'cheats.openDialog("worldEvent", { tab: "leaderboard" })',
   'cheats.listUiSurfaces()',
+  'cheats.openUi("firstRunIntro")',
   'cheats.openUi("guildQuestPosting")',
   'cheats.setTimers("allReady")',
   'cheats.setStressText()',
@@ -122,6 +123,12 @@ const CHEAT_HELP = Object.freeze([
 
 const UI_SURFACE_DEFINITIONS = Object.freeze([
   { id: 'devConsole', kind: 'tool' },
+  {
+    id: 'firstRunIntro',
+    kind: 'preview',
+    setup: 'firstRunIntro',
+    aliases: ['intro', 'openingStory'],
+  },
   {
     id: 'topPanelQuestProgress',
     kind: 'preview',
@@ -1735,6 +1742,10 @@ export class DevCheatCommandManager {
       return this.openGuildQuestPostingSurface(surface, options);
     }
 
+    if (surface.setup === 'firstRunIntro') {
+      return this.openFirstRunIntroSurface(surface, options);
+    }
+
     if (surface.setup === 'topPanelQuestProgress') {
       return this.openTopPanelQuestProgressSurface(surface, options);
     }
@@ -1750,6 +1761,22 @@ export class DevCheatCommandManager {
         : this.openDialog(surface.dialogId, resolvedOptions);
 
     return this.decorateUiResult(surface.id, result, surface);
+  }
+
+  openFirstRunIntroSurface(surface, options = {}) {
+    if (typeof this.pagesFacade?.showFirstRunIntroPreview !== 'function') {
+      return this.decorateUiResult(
+        surface.id,
+        { ok: false, reason: 'pages_missing' },
+        surface,
+      );
+    }
+
+    return this.decorateUiResult(
+      surface.id,
+      this.pagesFacade.showFirstRunIntroPreview(options),
+      surface,
+    );
   }
 
   openTopPanelQuestProgressSurface(surface, options = {}) {

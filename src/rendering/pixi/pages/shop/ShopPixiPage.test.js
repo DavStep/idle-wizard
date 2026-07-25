@@ -10,6 +10,7 @@ import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
+import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import { SHOP_DIALOG_IDS } from './ShopDialogPixi.js';
 import { ShopPixiPage } from './ShopPixiPage.js';
 
@@ -103,6 +104,9 @@ describe('ShopPixiPage', () => {
         });
       }
       retainedDialogs.set(dialogId, harness.dialogs.get(dialogId));
+      expect(harness.dialogs.get(dialogId).panel).toBeInstanceOf(
+        PixiDialogFrame,
+      );
       if (dialogId === SHOP_DIALOG_IDS.STALL) {
         expect(harness.dialogs.get(dialogId).panel.outerHeight).toBe(
           364,
@@ -133,6 +137,41 @@ describe('ShopPixiPage', () => {
       harness.page.requestsSection.actions.get('clear');
     expect(clearButton.activate()).toBe(true);
     expect(clearPlayerRequest).toHaveBeenCalledTimes(1);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps market ledger detail lines inside their retained rows', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+
+    harness.page.openDialog(SHOP_DIALOG_IDS.LEDGER, {
+      title: 'market ledger',
+      items: [
+        {
+          id: 'sage',
+          label: 'sage',
+          detail: 'stock 4 · buyers 6',
+          value: '3 coin',
+        },
+        {
+          id: 'mint',
+          label: 'mint',
+          detail: 'stock 2 · buyers 5',
+          value: '4 coin',
+        },
+      ],
+    });
+
+    const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.LEDGER);
+    const [firstRow, secondRow] = dialog.list.rows.getWidgets();
+    const firstDetailBottom =
+      firstRow.detail.y + Math.ceil(firstRow.detail.measuredHeight);
+
+    expect(firstRow.detail.visible).toBe(true);
+    expect(secondRow.root.y).toBeGreaterThanOrEqual(firstDetailBottom);
 
     harness.page.destroy();
     harness.dispose();

@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   createPixiThemeSnapshot,
+  PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
 import {
@@ -61,9 +62,15 @@ function createHarness(options = {}) {
 describe('PixiDialogFrame', () => {
   it('matches the 360-source Root Run shell, paper, title, and close geometry', () => {
     const closeAction = vi.fn();
-    const { frame } = createHarness({ closeAction });
+    const { assetManager, frame } = createHarness({ closeAction });
     const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
 
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.dialogTitle,
+    );
+    expect(PIXI_ROOT_RUN_ASSETS.dialogTitle).toContain(
+      'expedition-dialog-title-purple.png',
+    );
     expect(frame.outerFrame.position).toMatchObject({ x: -10, y: -10 });
     expect(frame.outerFrame.frameWidth).toBe(324);
     expect(frame.outerFrame.frameHeight).toBe(120);

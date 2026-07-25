@@ -62,9 +62,11 @@ export class PixiOnlineGateView extends PixiModalSurface {
 
   onApplyTheme(theme) {
     super.onApplyTheme(theme);
-    this.message.applyTheme(theme);
-    this.progress.applyTheme(theme);
-    this.action.applyTheme(theme);
+    const contentTheme =
+      this.panel.getContentTheme?.() ?? theme;
+    this.message.applyTheme(contentTheme);
+    this.progress.applyTheme(contentTheme);
+    this.action.applyTheme(contentTheme);
   }
 
   onActivate() {
