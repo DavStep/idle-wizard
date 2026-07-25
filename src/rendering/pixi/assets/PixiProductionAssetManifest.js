@@ -91,7 +91,7 @@ const publicAssets = PUBLIC_ASSET_PATHS.map((publicPath) => {
       ? sourceRasterModules[legacyUiPath] ??
         sourceDataModules[legacyUiPath]
       : null) ??
-    publicPath;
+    resolvePixiPublicAssetUrl(publicPath);
   return Object.freeze({
     id: `public:${publicPath.slice(1)}`,
     src,
@@ -120,4 +120,15 @@ export function getPixiSourceAssetId(relativePath) {
 
 export function getPixiPublicAssetId(path) {
   return `public:${String(path ?? '').replace(/^\/+/, '')}`;
+}
+
+export function resolvePixiPublicAssetUrl(
+  assetPath,
+  baseUrl = import.meta.env?.BASE_URL ?? '/',
+) {
+  const normalizedBaseUrl = String(baseUrl || '/');
+  const normalizedAssetPath = String(assetPath ?? '').replace(/^\/+/, '');
+  const separator = normalizedBaseUrl.endsWith('/') ? '' : '/';
+
+  return `${normalizedBaseUrl}${separator}${normalizedAssetPath}`;
 }

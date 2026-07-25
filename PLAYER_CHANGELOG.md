@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.3.0
+
+- Fixed the hosted web game failing to start when tutorial-pointer assets were loaded from GitHub Pages.
+
 ## 0.2.104
 
 - Reworked Brewing into a compact cauldron HUD with clearer recipe, batch, action, and automation controls.
