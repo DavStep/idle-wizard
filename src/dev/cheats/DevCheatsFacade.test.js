@@ -20,6 +20,7 @@ function createApp({
   pagesFacade,
   persistenceStorage = createMemoryStorage(),
   playerFacade,
+  renderFacade,
 } = {}) {
   const ecsFacade = new EcsFacade();
   const gameplayFacade = new GameplayFacade({ persistenceStorage, persistenceNow: () => 0 });
@@ -33,6 +34,7 @@ function createApp({
       onlineGateManager,
       pagesFacade,
       playerFacade,
+      renderFacade,
     },
     persistenceStorage,
   };
@@ -233,6 +235,11 @@ describe('DevCheatsFacade', () => {
       },
       addedQuantity: 3,
     });
+    expect(target.cheats.loadLevel(4)).toMatchObject({
+      ok: true,
+      level: 4,
+      requestedLevel: 4,
+    });
     expect(target.cheats.unlockSeed('sage')).toMatchObject({
       ok: true,
       researchId: 'unlockSeed:sageSeed',
@@ -249,6 +256,78 @@ describe('DevCheatsFacade', () => {
     expect(snapshot.emerald.current).toBe(2);
     expect(snapshot.research.completedResearchIds).toContain('unlockSeed:sageSeed');
     expect(snapshot.research.completedResearchIds).toContain('unlockRecipe:manaTonic');
+  });
+
+  it('lists and opens real dialogs, widgets, and button variants', () => {
+    const runtime = {
+      initialized: true,
+      getDialogIds: vi.fn(() => ['global.settings', 'shop.ledger']),
+      closeAllDialogs: vi.fn(),
+      openDialog: vi.fn(),
+    };
+    const pagesFacade = {
+      openDialog: vi.fn((dialogId) =>
+        dialogId === 'settings'
+          ? { ok: true, dialogId }
+          : { ok: false, reason: 'unknown_dialog', dialogId },
+      ),
+      show: vi.fn(),
+    };
+    const renderFacade = {
+      getUiRuntime: vi.fn(() => runtime),
+    };
+    const { app } = createApp({ pagesFacade, renderFacade });
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+    const publishAndSaveSpy = vi.spyOn(
+      app.gameplayFacade,
+      'publishAndSaveSnapshot',
+    );
+
+    facade.mount();
+
+    expect(target.cheats.listDialogs()).toMatchObject({
+      ok: true,
+      dialogs: [
+        {
+          id: 'global.settings',
+          command: 'cheats.openDialog("global.settings")',
+        },
+        {
+          id: 'shop.ledger',
+          command: 'cheats.openDialog("shop.ledger")',
+        },
+      ],
+    });
+    expect(target.cheats.openDialog('shop.ledger')).toMatchObject({
+      ok: true,
+      dialogId: 'shop.ledger',
+      isolated: true,
+    });
+    expect(pagesFacade.show).toHaveBeenCalledWith('shop');
+    expect(runtime.closeAllDialogs).toHaveBeenCalledOnce();
+    expect(runtime.openDialog).toHaveBeenCalledWith('shop.ledger', {});
+    expect(publishAndSaveSpy).not.toHaveBeenCalled();
+
+    expect(target.cheats.listWidgets()).toMatchObject({
+      ok: true,
+      widgets: expect.arrayContaining([
+        expect.objectContaining({ id: 'PixiDialogFrame' }),
+      ]),
+    });
+    expect(target.cheats.openWidget('PixiDialogFrame')).toMatchObject({
+      ok: true,
+      widgetId: 'PixiDialogFrame',
+      previewSurface: 'settings',
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('settings', {});
+    expect(target.cheats.listButtons()).toMatchObject({
+      ok: true,
+      buttons: expect.arrayContaining([
+        expect.objectContaining({ id: 'yellow' }),
+        expect.objectContaining({ id: 'cost' }),
+      ]),
+    });
   });
 
   it('sets permanent Prestige stars and flushes the active market licence', async () => {
@@ -609,7 +688,9 @@ describe('DevCheatsFacade', () => {
       surfaceId: 'firstRunIntro',
       surfaceKind: 'preview',
     });
-    expect(pagesFacade.showFirstRunIntroPreview).toHaveBeenCalledWith({});
+    expect(pagesFacade.showFirstRunIntroPreview).toHaveBeenCalledWith({
+      reducedMotion: true,
+    });
     expect(publishAndSaveSpy).not.toHaveBeenCalled();
 
     expect(target.cheats.openUi('topPanelQuestProgress')).toMatchObject({

@@ -5,6 +5,9 @@ stage. It is available only when `VITE_ENABLE_CHEATS=true`.
 
 - Press backtick (`` ` ``) to toggle it and Escape to close it.
 - Run approved helpers with calls such as `cheats.addCoin(1000)`.
+- Use `cheats.loadLevel(12)`, `cheats.listDialogs()`,
+  `cheats.listWidgets()`, and `cheats.listButtons()` to inspect and open
+  reproducible UI states.
 - Tab accepts the highlighted suggestion, Enter runs, and Up/Down recalls history.
 - Quick actions call the same explicit cheat command bridge as the browser console.
 - Open it directly with `cheats.openUi('devConsole')`,

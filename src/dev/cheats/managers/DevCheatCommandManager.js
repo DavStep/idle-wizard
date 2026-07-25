@@ -80,6 +80,7 @@ const CHEAT_HELP = Object.freeze([
   'cheats.setNotifications({ garden: true, market: true })',
   'cheats.clearNotifications()',
   'cheats.setLevel(level)',
+  'cheats.loadLevel(level)',
   'await cheats.setPrestigeStars(stars)',
   'cheats.getMarketLicence()',
   'cheats.showPage("garden")',
@@ -101,7 +102,11 @@ const CHEAT_HELP = Object.freeze([
   'cheats.setWorldEventState("complete")',
   'cheats.setGuildState("full")',
   'cheats.setBackendState("offline")',
+  'cheats.listDialogs()',
   'cheats.openDialog("worldEvent", { tab: "leaderboard" })',
+  'cheats.listWidgets()',
+  'cheats.openWidget("PixiProgressBar")',
+  'cheats.listButtons()',
   'cheats.listUiSurfaces()',
   'cheats.openUi("firstRunIntro")',
   'cheats.openUi("guildQuestPosting")',
@@ -127,6 +132,7 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     id: 'firstRunIntro',
     kind: 'preview',
     setup: 'firstRunIntro',
+    options: { reducedMotion: true },
     aliases: ['intro', 'openingStory'],
   },
   {
@@ -211,6 +217,8 @@ export class DevCheatCommandManager {
     pagesFacade,
     playerFacade,
     qaDataFacade,
+    renderFacade,
+    uiCatalogManager,
   } = {}) {
     this.backendFacade = backendFacade;
     this.gameplayFacade = gameplayFacade;
@@ -218,6 +226,8 @@ export class DevCheatCommandManager {
     this.pagesFacade = pagesFacade;
     this.playerFacade = playerFacade;
     this.qaDataFacade = qaDataFacade;
+    this.renderFacade = renderFacade;
+    this.uiCatalogManager = uiCatalogManager;
     this.devConsoleFacade = null;
   }
 
@@ -265,6 +275,8 @@ export class DevCheatCommandManager {
       case 'setlevel':
       case 'level':
         return this.setLevel(commandArgs[0]);
+      case 'loadlevel':
+        return this.loadLevel(commandArgs[0], commandArgs[1]);
       case 'setprestigestars':
       case 'setprestige':
       case 'prestigestars':
@@ -332,6 +344,9 @@ export class DevCheatCommandManager {
       case 'opendialog':
       case 'showdialog':
         return this.openDialog(commandArgs[0], commandArgs[1]);
+      case 'listdialogs':
+      case 'dialogs':
+        return this.listDialogs();
       case 'listuisurfaces':
       case 'listsurfaces':
       case 'ui':
@@ -341,6 +356,15 @@ export class DevCheatCommandManager {
       case 'opensurface':
       case 'showsurface':
         return this.openUi(commandArgs[0], commandArgs[1]);
+      case 'listwidgets':
+      case 'widgets':
+        return this.listWidgets();
+      case 'openwidget':
+      case 'showwidget':
+        return this.openWidget(commandArgs[0], commandArgs[1]);
+      case 'listbuttons':
+      case 'buttons':
+        return this.listButtons();
       case 'settimers':
       case 'timers':
         return this.setTimers(commandArgs[0], commandArgs[1]);
@@ -663,6 +687,19 @@ export class DevCheatCommandManager {
       levelBefore: currentLevel,
       capped: nextLevel !== safeLevel.value,
       playerLevel: this.gameplayFacade.getSnapshot().playerLevel,
+    };
+  }
+
+  loadLevel(level, options = {}) {
+    const result = this.setLevel(level);
+
+    if (result.ok === false || !options?.page) {
+      return result;
+    }
+
+    return {
+      ...result,
+      page: this.showPage(options.page, options),
     };
   }
 
@@ -1654,6 +1691,15 @@ export class DevCheatCommandManager {
       return { ok: false, reason: 'invalid_dialog_id', dialogId };
     }
 
+    if (
+      this.uiCatalogManager?.resolveDialogId?.(
+        this.getUiRuntime(),
+        dialogId,
+      )
+    ) {
+      return this.openRegisteredDialog(dialogId, options);
+    }
+
     if (NON_PERSISTENT_DEV_DIALOGS.has(normalizedDialogId)) {
       if (!this.pagesFacade || typeof this.pagesFacade.openDialog !== 'function') {
         return { ok: false, reason: 'pages_missing' };
@@ -1666,10 +1712,55 @@ export class DevCheatCommandManager {
     this.publishAndSave();
 
     if (!this.pagesFacade || typeof this.pagesFacade.openDialog !== 'function') {
-      return { ok: false, reason: 'pages_missing' };
+      return this.openRegisteredDialog(dialogId, options);
     }
 
-    return this.pagesFacade.openDialog(dialogId, options);
+    const result = this.pagesFacade.openDialog(dialogId, options);
+
+    if (result?.ok === false && result.reason === 'unknown_dialog') {
+      return this.openRegisteredDialog(dialogId, options);
+    }
+
+    return result;
+  }
+
+  listDialogs() {
+    return (
+      this.uiCatalogManager?.listDialogs?.(this.getUiRuntime()) ?? {
+        ok: false,
+        reason: 'ui_catalog_missing',
+      }
+    );
+  }
+
+  openRegisteredDialog(dialogId, options = {}) {
+    const runtime = this.getUiRuntime();
+    const owner = String(dialogId ?? '').split('.')[0];
+    const {
+      closeConsole = true,
+      ...dialogOptions
+    } = options ?? {};
+
+    if (owner && owner !== 'global') {
+      this.pagesFacade?.show?.(owner);
+    }
+
+    const result = (
+      this.uiCatalogManager?.openRegisteredDialog?.(
+        runtime,
+        dialogId,
+        dialogOptions,
+      ) ?? {
+        ok: false,
+        reason: 'ui_catalog_missing',
+      }
+    );
+
+    if (result.ok !== false && closeConsole) {
+      this.devConsoleFacade?.close?.();
+    }
+
+    return result;
   }
 
   listUiSurfaces() {
@@ -1684,6 +1775,57 @@ export class DevCheatCommandManager {
         command: `cheats.openUi("${surface.id}")`,
       })),
     };
+  }
+
+  listWidgets() {
+    return (
+      this.uiCatalogManager?.listWidgets?.() ?? {
+        ok: false,
+        reason: 'ui_catalog_missing',
+      }
+    );
+  }
+
+  openWidget(widgetId, options = {}) {
+    const widget = this.uiCatalogManager?.resolveWidget?.(widgetId);
+
+    if (!widget) {
+      return {
+        ok: false,
+        reason: 'unknown_widget',
+        widgetId,
+        knownWidgets: this.listWidgets().widgets?.map((entry) => entry.id) ?? [],
+      };
+    }
+
+    const {
+      closeConsole = true,
+      ...surfaceOptions
+    } = options ?? {};
+    const result = this.openUi(widget.previewSurface, surfaceOptions);
+
+    if (result.ok !== false && closeConsole) {
+      this.devConsoleFacade?.close?.();
+    }
+
+    return {
+      ...result,
+      widgetId: widget.id,
+      previewSurface: widget.previewSurface,
+    };
+  }
+
+  listButtons() {
+    return (
+      this.uiCatalogManager?.listButtons?.() ?? {
+        ok: false,
+        reason: 'ui_catalog_missing',
+      }
+    );
+  }
+
+  getUiRuntime() {
+    return this.renderFacade?.getUiRuntime?.() ?? null;
   }
 
   openUi(surfaceId, options = {}) {
@@ -1774,7 +1916,10 @@ export class DevCheatCommandManager {
 
     return this.decorateUiResult(
       surface.id,
-      this.pagesFacade.showFirstRunIntroPreview(options),
+      this.pagesFacade.showFirstRunIntroPreview({
+        ...(surface.options ?? {}),
+        ...(options ?? {}),
+      }),
       surface,
     );
   }

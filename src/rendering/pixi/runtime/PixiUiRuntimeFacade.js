@@ -286,6 +286,14 @@ export class PixiUiRuntimeFacade {
     return this.dialogRegistry.getOpenDialogIds();
   }
 
+  getDialogIds() {
+    if (this.dialogRegistry) {
+      return this.dialogRegistry.getDialogIds();
+    }
+
+    return Object.freeze([...this.dialogFactories.keys()]);
+  }
+
   applyTheme(theme) {
     this.applicationManager.applyTheme(theme);
     this.pageRegistry?.applyTheme(theme);

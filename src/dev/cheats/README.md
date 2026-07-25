@@ -18,6 +18,7 @@ cheats.setInventoryPreset('full')
 cheats.setNotifications({ garden: 'red', market: true })
 cheats.clearNotifications()
 cheats.setLevel(10)
+cheats.loadLevel(10)
 cheats.showPage('garden')
 cheats.unlockFeature('garden')
 cheats.unlockAllFeatures()
@@ -34,7 +35,12 @@ cheats.setMarketState('full')
 cheats.setWorldEventState('complete')
 cheats.setGuildState('claimable')
 cheats.setBackendState('offline')
+cheats.listDialogs()
 cheats.openDialog('worldEvent', { tab: 'leaderboard' })
+cheats.openDialog('shop.ledger')
+cheats.listWidgets()
+cheats.openWidget('PixiProgressBar')
+cheats.listButtons()
 cheats.listUiSurfaces()
 cheats.openUi('guildQuestPosting')
 cheats.openUi('traderStallLoader')
@@ -78,6 +84,9 @@ persists the selected save through the normal current-identity save path.
 Useful view setup commands:
 
 - `setLevel(level)` moves task/player level and refreshes level-gated caps.
+- `loadLevel(level, options)` is the discoverable level-loader alias. It accepts
+  any configured positive level and can also open a room, for example
+  `cheats.loadLevel(12, { page: 'garden' })`.
 - `unlockFeature(feature)` accepts page ids like `garden`, `research`, `brewing`,
   `prestige`, `guild`, plus utility gates like `leaderboard`, `worldChat`, and
   research ids.
@@ -104,6 +113,20 @@ Useful view setup commands:
   account-in-use, and save-failed online gate views.
 - `openDialog(dialog, options)` opens mounted UI surfaces such as leaderboard,
   worldEvent, market, guild request/adventurer, settings, and level popups.
+- `listDialogs()` reads the live retained dialog registry, including page-owned
+  dialog ids such as `shop.ledger`, `garden.seed`, and `brewing.recipes`.
+  Passing one of those ids to `openDialog` closes other dialogs by default and
+  opens the real retained dialog as an isolated preview. The developer console
+  closes so the preview is immediately visible. Pass `{ isolated: false }` to
+  keep the current dialog stack or `{ closeConsole: false }` to keep the drawer
+  open.
+- `listWidgets()` lists the reusable retained Pixi widgets and the real app
+  surface used to preview each one. `openWidget(widget)` opens that surface so
+  its actual visuals and interactions can be tested, then closes the developer
+  console unless `{ closeConsole: false }` is supplied.
+- `listButtons()` lists `PixiButton` variants plus the specialized cost and info
+  buttons. Every row includes its matching `openWidget("button.<type>")`
+  preview command.
 - `listUiSurfaces()` lists named page/dialog surfaces available to UI QA.
 - `openUi(surface, options)` opens a named page/dialog surface. It delegates to
   `showPage`/`openDialog` for simple surfaces and includes setup recipes for

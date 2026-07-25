@@ -109,6 +109,7 @@ describe('PixiUiRuntimeFacade', () => {
     expect(pageFactory).toHaveBeenCalledTimes(1);
     expect(globalFactory).toHaveBeenCalledTimes(1);
     expect(dialogFactory).not.toHaveBeenCalled();
+    expect(runtime.getDialogIds()).toEqual(['settings']);
 
     runtime.activatePage('workshop');
     runtime.openDialog('settings', { page: 1 });

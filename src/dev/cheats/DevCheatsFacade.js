@@ -1,5 +1,6 @@
 import { DevCheatCommandManager } from './managers/DevCheatCommandManager.js';
 import { DevCheatConsoleManager } from './managers/DevCheatConsoleManager.js';
+import { DevUiCatalogManager } from './managers/DevUiCatalogManager.js';
 import { QaDataFacade } from '../qaData/QaDataFacade.js';
 import { DevConsoleFacade } from '../console/DevConsoleFacade.js';
 
@@ -36,6 +37,8 @@ export class DevCheatsFacade {
       pagesFacade: app?.pagesFacade,
       playerFacade: app?.playerFacade,
       qaDataFacade: this.qaDataFacade,
+      renderFacade: app?.renderFacade,
+      uiCatalogManager: new DevUiCatalogManager(),
     });
     this.devConsoleFacade = new DevConsoleFacade({
       commandManager: this.commandManager,
