@@ -196,7 +196,7 @@ experience_type: product-shape
 - Username-gated social/player surfaces should check `PlayerFacade.getSnapshot().hasExplicitUsername`, not the visible username string, because generated defaults can exist.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
 - FTUE blocking-dialog hides should suspend the current lesson; closing settings must not restart typed Elara text from zero.
-- FTUE blocking dialogs should preserve the current reveal gate; clearing `data-tutorial-reveal` makes unrevealed room chrome appear behind the dialog.
+- Retained FTUE blocking surfaces own their own occlusion; restore the Pixi reveal projection when Elara hides for `blocked`, or a stale/invisible blocker can strand the room with only ungated controls visible.
 - FTUE guide should also hide behind app-level account gates such as fresh-start/account-link choice dialogs, not only page popups.
 - Fresh-start/account gates are pre-game surfaces: keep their backdrops opaque and do not mount room chrome behind them before the player chooses.
 - Screenshot QA must dismiss app-level account/server gates before trusting target-dialog DOM checks; the target can exist behind a blocking gate.

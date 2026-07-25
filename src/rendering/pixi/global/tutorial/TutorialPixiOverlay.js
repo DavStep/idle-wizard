@@ -202,9 +202,11 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     );
     this.stepId = next.lesson?.id ?? next.step?.id ?? null;
 
-    if (next.kind === 'hidden') {
+    // A blocking surface owns its own occlusion. Keeping the tutorial mask
+    // after hiding Elara can otherwise strand the room in an unusable state.
+    if (next.kind === 'hidden' || next.kind === 'blocked') {
       this.revealController?.restore?.();
-    } else if (next.kind !== 'blocked') {
+    } else {
       this.revealController?.apply?.(next.revealTokens, {
         reducedMotion: this.reducedMotion,
       });
