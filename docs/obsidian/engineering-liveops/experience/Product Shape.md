@@ -75,6 +75,7 @@ experience_type: product-shape
 - The approved illustrated fantasy HUD and Root Run asset pipeline are the visual guidance; keep the fixed `390x844` logical resolution and contain-fit behavior.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
 - FTUE reveal-gated action loops need an active step while waiting for repeated actions; a null step clears `data-tutorial-reveal` and shows unrevealed room UI.
+- Collapsing Elara must restore normal room visibility; reopening her reapplies the active step's reveal gate.
 - FTUE reveal `pointer-events` enables must match or exceed the hidden action selector specificity; visible controls can otherwise remain untappable after reveal animations end.
 - FTUE level-one sage guidance must resolve the turn-in task by item/action too; live configs may still use legacy `level1-sage-seeds` while defaults use `level1-turn-in-sage-seed`.
 - The final level-0 request must advance to level 1 before publishing; never expose an intermediate `all quests complete` rail or clickable `reach level 1` row, and migrate completed legacy level-0 saves on load.

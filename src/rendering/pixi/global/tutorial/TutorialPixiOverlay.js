@@ -202,19 +202,6 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     );
     this.stepId = next.lesson?.id ?? next.step?.id ?? null;
 
-    // A blocking surface owns its own occlusion. Keeping the tutorial mask
-    // after hiding Elara can otherwise strand the room in an unusable state.
-    if (
-      next.kind === 'hidden' ||
-      next.kind === 'blocked' ||
-      next.revealTokens === null
-    ) {
-      this.revealController?.restore?.();
-    } else {
-      this.revealController?.apply?.(next.revealTokens, {
-        reducedMotion: this.reducedMotion,
-      });
-    }
     this.actions.applyNotificationPolicy?.(
       next.notificationPolicy ?? null,
     );
@@ -235,6 +222,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
       this.restoreTargetEmphasis();
     }
 
+    this.syncRevealProjection();
     this.render();
     if (next.kind === 'lesson' && this.panelOpen) {
       this.startTypewriterIfNeeded();
@@ -556,13 +544,32 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.panelOpen = !this.panelOpen;
     if (!this.panelOpen) {
       this.cancelTypewriter();
+      this.syncRevealProjection();
       this.actions.lessonPanelClose?.();
     } else {
+      this.syncRevealProjection();
       this.startTypewriterIfNeeded();
     }
     this.render();
     this.syncTicker();
     return true;
+  }
+
+  syncRevealProjection() {
+    // Blocking surfaces own their occlusion, and a collapsed Elara panel must
+    // leave the room usable. Reapply the current lesson gate when help opens.
+    if (
+      this.model.kind === 'hidden' ||
+      this.model.kind === 'blocked' ||
+      this.model.revealTokens === null ||
+      (this.model.kind === 'lesson' && !this.panelOpen)
+    ) {
+      this.revealController?.restore?.();
+      return;
+    }
+    this.revealController?.apply?.(this.model.revealTokens, {
+      reducedMotion: this.reducedMotion,
+    });
   }
 
   setGuidePressed(pressed) {

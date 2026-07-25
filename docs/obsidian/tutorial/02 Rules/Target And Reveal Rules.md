@@ -31,7 +31,8 @@ Important target families:
 
 Reveal tokens keep hidden room UI out of the way until the lesson needs it.
 Active tutorial steps should preserve the current reveal gate when hidden behind
-blocking dialogs.
+blocking dialogs. Collapsing Elara restores the room's normal visibility;
+reopening her reapplies the active step's reveal tokens.
 
 ## Placement
 

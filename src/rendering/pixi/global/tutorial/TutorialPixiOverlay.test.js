@@ -170,6 +170,45 @@ describe('TutorialPixiOverlay', () => {
     expect(revealController.restore).toHaveBeenCalledTimes(1);
   });
 
+  it('restores room reveal groups while Elara is collapsed and reapplies them when reopened', () => {
+    const revealController = {
+      apply: vi.fn(),
+      restore: vi.fn(),
+    };
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      revealController,
+      reducedMotion: true,
+    });
+    const model = {
+      kind: 'lesson',
+      revealTokens: [],
+      step: { id: 'intro', highlightTargetIds: [] },
+      lesson: {
+        id: 'intro',
+        text: 'Let’s get the workshop running.',
+        autoOpen: true,
+      },
+      cue: { kind: 'none' },
+    };
+
+    overlay.activate();
+    overlay.bind(model);
+    expect(revealController.apply).toHaveBeenCalledTimes(1);
+
+    overlay.togglePanel();
+    expect(overlay.isLessonPanelOpen()).toBe(false);
+    expect(revealController.restore).toHaveBeenCalledTimes(1);
+
+    overlay.bind(model);
+    expect(revealController.apply).toHaveBeenCalledTimes(1);
+    expect(revealController.restore).toHaveBeenCalledTimes(2);
+
+    overlay.togglePanel();
+    expect(overlay.isLessonPanelOpen()).toBe(true);
+    expect(revealController.apply).toHaveBeenCalledTimes(2);
+  });
+
   it('restores room reveal groups when a quest has no reveal contract', () => {
     const revealController = {
       apply: vi.fn(),
