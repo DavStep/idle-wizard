@@ -197,6 +197,7 @@ experience_type: product-shape
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
 - FTUE blocking-dialog hides should suspend the current lesson; closing settings must not restart typed Elara text from zero.
 - Retained FTUE blocking surfaces own their own occlusion; restore the Pixi reveal projection when Elara hides for `blocked`, or a stale/invisible blocker can strand the room with only ungated controls visible.
+- Retained FTUE reveal state must preserve `null` versus `[]`: `null` means no reveal mask/full room, while `[]` intentionally hides every gated group for intro-only steps.
 - FTUE guide should also hide behind app-level account gates such as fresh-start/account-link choice dialogs, not only page popups.
 - Fresh-start/account gates are pre-game surfaces: keep their backdrops opaque and do not mount room chrome behind them before the player chooses.
 - Screenshot QA must dismiss app-level account/server gates before trusting target-dialog DOM checks; the target can exist behind a blocking gate.

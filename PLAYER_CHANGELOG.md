@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.3.5
+
+- Fixed resumed Elara objectives hiding most of the room while no guide was visible.
+
 ## 0.3.4
 
 - Fixed temporary hosted image errors preventing the game from starting.

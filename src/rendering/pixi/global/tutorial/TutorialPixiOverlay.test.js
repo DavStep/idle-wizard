@@ -169,6 +169,42 @@ describe('TutorialPixiOverlay', () => {
     expect(overlay.root.visible).toBe(false);
     expect(revealController.restore).toHaveBeenCalledTimes(1);
   });
+
+  it('restores room reveal groups when a quest has no reveal contract', () => {
+    const revealController = {
+      apply: vi.fn(),
+      restore: vi.fn(),
+    };
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      revealController,
+      reducedMotion: true,
+    });
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      revealTokens: [],
+      step: { id: 'intro', highlightTargetIds: [] },
+      lesson: {
+        id: 'intro',
+        text: 'Let’s get the workshop running.',
+        autoOpen: true,
+      },
+      cue: { kind: 'none' },
+    });
+
+    overlay.bind({
+      kind: 'quest',
+      revealTokens: null,
+      step: { id: 'grow-sage', highlightTargetIds: [] },
+      lesson: null,
+      cue: { kind: 'none' },
+    });
+
+    expect(overlay.root.visible).toBe(false);
+    expect(overlay.model.revealTokens).toBeNull();
+    expect(revealController.restore).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('TutorialRevealController', () => {

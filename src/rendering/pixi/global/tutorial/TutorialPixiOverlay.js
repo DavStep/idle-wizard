@@ -39,7 +39,7 @@ const DRAG_YELLS = Object.freeze([
  *
  * @typedef {object} TutorialPixiViewModel
  * @property {'hidden'|'blocked'|'quest'|'lesson'} kind
- * @property {string[]} revealTokens
+ * @property {string[]|null} revealTokens
  * @property {{id?: string, targetId?: string, highlightTargetIds?: string[]}} step
  * @property {object|null} lesson
  * @property {object|null} cue
@@ -204,7 +204,11 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
 
     // A blocking surface owns its own occlusion. Keeping the tutorial mask
     // after hiding Elara can otherwise strand the room in an unusable state.
-    if (next.kind === 'hidden' || next.kind === 'blocked') {
+    if (
+      next.kind === 'hidden' ||
+      next.kind === 'blocked' ||
+      next.revealTokens === null
+    ) {
       this.revealController?.restore?.();
     } else {
       this.revealController?.apply?.(next.revealTokens, {
@@ -1348,7 +1352,7 @@ export function normalizeTutorialPixiViewModel(model) {
   }
   return {
     kind,
-    revealTokens: normalizeIds(model?.revealTokens),
+    revealTokens: normalizeRevealTokens(model?.revealTokens),
     step,
     lesson,
     cue,
@@ -1432,6 +1436,10 @@ function normalizeIds(values) {
         .map(normalizeOptionalId)
         .filter(Boolean)
     : [];
+}
+
+function normalizeRevealTokens(values) {
+  return Array.isArray(values) ? normalizeIds(values) : null;
 }
 
 function normalizeOptionalId(value) {
