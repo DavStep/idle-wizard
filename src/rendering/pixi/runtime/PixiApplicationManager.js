@@ -16,6 +16,10 @@ const PIXI_AUTHORED_VIEWPORT = Object.freeze({
   height: PIXI_UI_GEOMETRY.authoredHeight,
 });
 
+function defaultSpineRuntimeImporter() {
+  return import('@esotericsoftware/spine-pixi-v8');
+}
+
 const SOURCE_LAYER_NAMES = Object.freeze([
   'globalChrome',
   'tooltips',
@@ -33,6 +37,7 @@ export class PixiApplicationManager {
     viewport = PIXI_AUTHORED_VIEWPORT,
     projectionManager = new ViewportProjectionManager({ viewport }),
     createApplication = () => new Application(),
+    prepareSpineRuntime = defaultSpineRuntimeImporter,
     windowTarget = globalThis.window ?? null,
     devicePixelRatio = () => globalThis.devicePixelRatio || 1,
   } = {}) {
@@ -43,6 +48,7 @@ export class PixiApplicationManager {
     this.viewport = viewport;
     this.projectionManager = projectionManager;
     this.createApplication = createApplication;
+    this.prepareSpineRuntime = prepareSpineRuntime;
     this.windowTarget = windowTarget;
     this.devicePixelRatio = devicePixelRatio;
     this.app = null;
@@ -78,6 +84,10 @@ export class PixiApplicationManager {
       throw new Error('Cannot initialize a destroyed Pixi application manager.');
     }
     const projection = this.measureProjection();
+    await this.prepareSpineRuntime();
+    if (this.destroyed) {
+      return null;
+    }
     const app = this.createApplication();
     const resolution = this.getNativeResolution(projection.fitScale);
     await app.init({

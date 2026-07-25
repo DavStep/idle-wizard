@@ -73,6 +73,11 @@ This performs:
 8. git commit and push from `main`
 9. Discord changelog, optional feature spotlight, and APK upload
 
+The release preflight also requires the semantic version to increase Android's
+`versionCode`, and it verifies the built APK manifest before upload. The Android
+mapping reserves three digits each for minor and patch versions, so transitions
+such as `0.2.104` to `0.3.0` remain installable upgrades.
+
 If a Pixel 8 Pro is available for device QA, confirm it is connected before the
 device build:
 

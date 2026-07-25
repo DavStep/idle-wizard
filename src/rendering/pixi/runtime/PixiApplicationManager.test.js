@@ -24,6 +24,25 @@ function createFakeApplication() {
 }
 
 describe('PixiApplicationManager', () => {
+  it('registers Spine render pipes before initializing Pixi', async () => {
+    const order = [];
+    const app = createFakeApplication();
+    app.init.mockImplementation(async () => {
+      order.push('pixi');
+    });
+    const manager = new PixiApplicationManager({
+      canvas: createCanvas(),
+      createApplication: () => app,
+      prepareSpineRuntime: vi.fn(async () => {
+        order.push('spine');
+      }),
+    });
+
+    await manager.initialize();
+
+    expect(order).toEqual(['spine', 'pixi']);
+  });
+
   it('creates one ordered layer tree and centers authored/source layers on wide web', async () => {
     const app = createFakeApplication();
     const manager = new PixiApplicationManager({

@@ -18,6 +18,10 @@ import {
   isDebugApkAllowed,
   resolveReleaseApkMode,
 } from './release-apk-policy.js';
+import {
+  assertAndroidVersionUpgrade,
+  assertApkVersionMatches,
+} from './android-version-code-policy.js';
 import { shouldPublishBackend } from './release-backend-policy.js';
 
 const rootDir = process.cwd();
@@ -61,6 +65,12 @@ if (versionBump) {
 }
 
 const packageInfo = await readPackageInfo();
+const headVersion = readHeadPackageVersion();
+try {
+  assertAndroidVersionUpgrade(headVersion, packageInfo.version);
+} catch (error) {
+  fail(error.message);
+}
 const commitMessage = options.message || process.env.RELEASE_COMMIT_MESSAGE || `release: ${packageInfo.version}`;
 const apkPlan = resolveApkPlan(apkMode, packageInfo.version);
 
@@ -88,6 +98,7 @@ try {
   assertReleaseApkIsUploadable(apkPath, {
     allowDebugApk: allowDebugApk || apkPlan.allowDebugApk,
   });
+  await assertBuiltApkVersion(apkPath, packageInfo.version);
 } catch (error) {
   fail(error.message);
 }
@@ -248,6 +259,24 @@ async function findAndroidBuildTool(toolName) {
   }
 
   fail(`Could not find Android build tool: ${toolName}. Install Android SDK build-tools first.`);
+}
+
+async function assertBuiltApkVersion(apkPath, expectedVersion) {
+  const aaptPath = await findAndroidBuildTool('aapt');
+  const badging = capture(aaptPath, ['dump', 'badging', apkPath]);
+  const packageLine = badging.split(/\r?\n/u).find((line) => line.startsWith('package:'));
+  const versionCode = packageLine?.match(/versionCode='([^']+)'/u)?.[1];
+  const versionName = packageLine?.match(/versionName='([^']+)'/u)?.[1];
+
+  if (!versionCode || !versionName) {
+    throw new Error(`Could not read Android version metadata from APK: ${apkPath}`);
+  }
+
+  assertApkVersionMatches({
+    apkVersionCode: versionCode,
+    apkVersionName: versionName,
+    expectedVersion,
+  });
 }
 
 function compareAndroidBuildToolVersions(left, right) {
