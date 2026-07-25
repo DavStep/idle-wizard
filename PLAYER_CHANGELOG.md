@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.3.4
+
+- Fixed temporary hosted image errors preventing the game from starting.
+
 ## 0.3.3
 
 - Fixed the Workshop becoming mostly blank when Elara was paused by an invisible blocking surface.

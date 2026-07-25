@@ -53,6 +53,7 @@ describe('PixiAssetManager', () => {
       RectangleClass: FakeRectangle,
       manifest: [{ id: 'atlas:game', src: '/missing.png', kind: 'texture' }],
       atlasFrames: {},
+      retryDelaysMs: [],
       fontFaceSet: {
         load: vi.fn(async () => [{}]),
         ready: Promise.resolve(),
@@ -60,6 +61,36 @@ describe('PixiAssetManager', () => {
     });
 
     await expect(manager.loadAll()).rejects.toThrow('atlas:game');
+  });
+
+  it('recovers when a production asset load fails transiently', async () => {
+    const atlasTexture = { source: { label: 'atlas-source' } };
+    const assets = {
+      load: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('503 Service Unavailable'))
+        .mockResolvedValueOnce(atlasTexture),
+    };
+    const waitForRetry = vi.fn(async () => {});
+    const manager = new PixiAssetManager({
+      assets,
+      TextureClass: FakeTexture,
+      RectangleClass: FakeRectangle,
+      manifest: [{ id: 'atlas:game', src: '/flaky.png', kind: 'texture' }],
+      atlasFrames: {},
+      retryDelaysMs: [250],
+      waitForRetry,
+      fontFaceSet: {
+        load: vi.fn(async () => [{}]),
+        ready: Promise.resolve(),
+      },
+    });
+
+    await manager.loadAll();
+
+    expect(assets.load).toHaveBeenCalledTimes(2);
+    expect(waitForRetry).toHaveBeenCalledWith(250);
+    expect(manager.getTexture('atlas:game')).toBe(atlasTexture);
   });
 
   it('registers Spine parsers before preloading retained pointer assets', async () => {

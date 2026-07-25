@@ -10,9 +10,16 @@ import {
 const REQUIRED_FONT_FACES = Object.freeze([
   Object.freeze({ family: 'Lilita One', weight: 400 }),
 ]);
+const ASSET_RETRY_DELAYS_MS = Object.freeze([250, 750, 1500]);
 
 function prepareSpineAssetLoaders() {
   return import('@esotericsoftware/spine-pixi-v8');
+}
+
+function waitForRetry(delayMs) {
+  return new Promise((resolve) => {
+    globalThis.setTimeout(resolve, delayMs);
+  });
 }
 
 export class PixiAssetManager {
@@ -27,6 +34,8 @@ export class PixiAssetManager {
     atlasFrames = gameAssetAtlasFrames,
     fontFaceSet = globalThis.document?.fonts ?? null,
     prepareSpineLoaders = prepareSpineAssetLoaders,
+    retryDelaysMs = ASSET_RETRY_DELAYS_MS,
+    waitForRetry: waitForRetryFn = waitForRetry,
   } = {}) {
     this.assets = assets;
     this.TextureClass = TextureClass;
@@ -35,6 +44,8 @@ export class PixiAssetManager {
     this.atlasFrames = atlasFrames;
     this.fontFaceSet = fontFaceSet;
     this.prepareSpineLoaders = prepareSpineLoaders;
+    this.retryDelaysMs = [...retryDelaysMs];
+    this.waitForRetry = waitForRetryFn;
     this.textures = new Map();
     this.values = new Map();
     this.atlasTextures = new Map();
@@ -69,10 +80,7 @@ export class PixiAssetManager {
     await Promise.all(
       this.manifest.map(async (asset) => {
         try {
-          const value = await this.assets.load(asset.src);
-          if (!value) {
-            throw new Error('loader returned no value');
-          }
+          const value = await this.loadAssetWithRetry(asset);
           this.values.set(asset.id, value);
           if (asset.kind === 'texture') {
             this.textures.set(asset.id, value);
@@ -90,6 +98,30 @@ export class PixiAssetManager {
     this.buildAtlasTextures();
     this.loaded = true;
     return this;
+  }
+
+  async loadAssetWithRetry(asset) {
+    for (
+      let attempt = 0;
+      attempt <= this.retryDelaysMs.length;
+      attempt += 1
+    ) {
+      try {
+        const value = await this.assets.load(asset.src);
+        if (!value) {
+          throw new Error('loader returned no value');
+        }
+        return value;
+      } catch (error) {
+        if (attempt >= this.retryDelaysMs.length) {
+          throw error;
+        }
+        await this.waitForRetry(
+          this.retryDelaysMs[attempt],
+        );
+      }
+    }
+    throw new Error(`Failed to load Pixi asset: ${asset.id}`);
   }
 
   async loadFonts() {

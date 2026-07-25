@@ -40,6 +40,7 @@ experience_type: development-operations
 - A listening SpacetimeDB port does not prove the target database or schema exists; isolated launchers must publish the current module and embed the same dedicated database name before starting the client.
 - GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.
 - Pixi production-manifest assets copied from `public/` must resolve through `import.meta.env.BASE_URL`; root-absolute Spine URLs make the GitHub Pages build fail closed on startup.
+- Pixi production preloads must retry transient asset fetch failures; GitHub Pages can briefly return `503` for a valid hashed image, and one response must not permanently fail startup.
 - If `build` delegates to `build:prod`, keep `build` as `npm run build:prod --` so Pages' `--base=/idle-wizard/` reaches Vite.
 - `DavStep/idle-wizard` is public and GitHub Pages deploys at `https://davstep.github.io/idle-wizard/`.
 - Web deploy freshness uses `/deploy-version.json`; Vite emits it per build and the app polls it with `no-store`, then reloads on version change.
