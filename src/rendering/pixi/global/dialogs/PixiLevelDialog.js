@@ -10,9 +10,11 @@ import {
   RetainedGlobalDialog,
 } from './GlobalDialogKit.js';
 
-const LEVEL_CONTENT_WIDTH = 286;
+const LEVEL_CONTENT_WIDTH =
+  GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
 const LEVEL_CONTENT_HEIGHT = 360;
-const LEVEL_WRAPPER_WIDTH = 330;
+const LEVEL_WRAPPER_WIDTH =
+  GLOBAL_DIALOG_GEOMETRY.maxShellWidth;
 const LEVEL_PAGER_GAP = 3;
 
 /**

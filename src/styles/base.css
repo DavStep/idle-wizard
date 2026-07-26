@@ -250,14 +250,14 @@
   --style-log-font-size: var(--style-world-chat-popup-font-size);
   --style-log-line-height: var(--style-world-chat-popup-line-height);
   --style-research-card-width: calc(1000px * 390 / 1080);
-  --style-research-row-height: 90px;
+  --style-research-row-height: 80px;
   --style-research-value-width: calc(281px * 390 / 1080);
-  --style-research-card-art-width: 58px;
-  --style-research-card-art-height: 58px;
-  --style-research-card-art-left: calc(30px * 390 / 1080);
-  --style-research-card-art-top: 16px;
+  --style-research-card-art-width: 52px;
+  --style-research-card-art-height: 52px;
+  --style-research-card-art-left: 13px;
+  --style-research-card-art-top: 14px;
   --style-research-card-action-right: calc(30px * 390 / 1080);
-  --style-research-card-action-top: 10px;
+  --style-research-card-action-top: 8px;
   --style-research-card-info-left: calc(252px * 390 / 1080);
   --style-research-card-info-width: calc(422px * 390 / 1080);
   --style-research-card-rank-right: calc(63px * 390 / 1080);
@@ -10923,22 +10923,23 @@ div.workshop-page__discovery-row {
   overflow: visible;
   overflow-wrap: break-word;
   color: #634934;
-  font-size: 14px;
+  font-size: 12px;
+  line-height: 14px;
   text-overflow: clip;
   white-space: normal;
 }
 
 .research-page__research-description {
   position: absolute;
-  top: 29px;
+  top: 26px;
   left: var(--style-research-card-info-left);
   box-sizing: border-box;
   width: var(--style-research-card-info-width);
-  min-height: 32px;
+  min-height: 26px;
   overflow: hidden;
   color: #634934;
-  font-size: 13px;
-  line-height: 15px;
+  font-size: 11px;
+  line-height: 13px;
   text-align: center;
   text-wrap: pretty;
 }
@@ -10985,9 +10986,9 @@ div.workshop-page__discovery-row {
   box-sizing: border-box;
   width: var(--style-research-value-width);
   min-width: var(--style-research-value-width);
-  height: 70px;
-  min-height: 70px;
-  padding: 4px;
+  height: 64px;
+  min-height: 64px;
+  padding: 3px;
   color: #725737;
   line-height: normal;
   text-align: center;
@@ -11025,7 +11026,7 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
   background: transparent;
   border: 0;
-  transform: scale(0.3);
+  transform: scale(0.267);
   transform-origin: top right;
   -webkit-text-stroke: 4px #0a0a0a;
   paint-order: stroke fill;
@@ -11059,7 +11060,7 @@ div.workshop-page__discovery-row {
     var(--style-research-card-width) - var(--style-research-card-info-left) -
       var(--style-research-card-info-width)
   );
-  bottom: 8px;
+  bottom: 7px;
   left: var(--style-research-card-info-left);
   width: auto;
   margin: 0;
@@ -11082,18 +11083,18 @@ div.workshop-page__discovery-row {
 
 .style-button.research-page__research-button--completed {
   top: calc(
-    var(--style-research-card-action-top) + (70px - 48px) / 2
+    var(--style-research-card-action-top) + (64px - 42px) / 2
   );
   right: calc(
     var(--style-research-card-action-right) +
-      (var(--style-research-value-width) - 80px) / 2
+      (var(--style-research-value-width) - 72px) / 2
   );
-  width: 80px;
-  min-width: 80px;
-  height: 48px;
-  min-height: 48px;
+  width: 72px;
+  min-width: 72px;
+  height: 42px;
+  min-height: 42px;
   margin: 0;
-  font-size: 17px;
+  font-size: 15px;
   line-height: normal;
 }
 
@@ -11106,17 +11107,17 @@ div.workshop-page__discovery-row {
 .style-button.style-cost-button.research-page__research-button {
   position: absolute;
   top: calc(
-    var(--style-research-card-action-top) + (70px - 48px) / 2
+    var(--style-research-card-action-top) + (64px - 42px) / 2
   );
   right: calc(
     var(--style-research-card-action-right) +
-      (var(--style-research-value-width) - 80px) / 2
+      (var(--style-research-value-width) - 72px) / 2
   );
-  width: 80px;
-  min-width: 80px;
-  height: 48px;
-  min-height: 48px;
-  font-size: 17px;
+  width: 72px;
+  min-width: 72px;
+  height: 42px;
+  min-height: 42px;
+  font-size: 15px;
   line-height: normal;
 }
 
@@ -11150,8 +11151,8 @@ div.workshop-page__discovery-row {
 
 .research-page__research-lock-title {
   color: #fff;
-  font-size: 17px;
-  line-height: 18px;
+  font-size: 15px;
+  line-height: 16px;
 }
 
 .research-page__research-lock-reason {
@@ -11159,8 +11160,8 @@ div.workshop-page__discovery-row {
   max-width: 84px;
   overflow: hidden;
   color: #fff;
-  font-size: 10px;
-  line-height: 10px;
+  font-size: 9px;
+  line-height: 9px;
   text-align: center;
   text-wrap: balance;
   -webkit-box-orient: vertical;
@@ -11205,8 +11206,8 @@ div.workshop-page__discovery-row {
 
 .research-page__research-art-image {
   display: block;
-  width: 64px;
-  height: 64px;
+  width: 57px;
+  height: 57px;
   object-fit: contain;
   object-position: center;
 }

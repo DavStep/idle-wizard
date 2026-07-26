@@ -13,6 +13,12 @@ top-panel (`1.006`) overshoot and settles at `1`. Reduced-motion mode displays
 the settled state immediately; close and shutdown cancel and restore all motion
 state.
 
+The shared retained-global base caps the visible Root Run shell at `324px`,
+leaving a `5%` inset on both sides of the `360px` source screen. After the
+shell outsets and dialog padding, retained global dialog content is at most
+`264px` wide. Feature dialogs reflow their content inside that cap rather than
+scaling or stretching the display tree.
+
 Register the suite before the Pixi runtime is initialized:
 
 ```js

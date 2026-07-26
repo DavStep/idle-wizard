@@ -7,11 +7,13 @@ import {
 } from '../../primitives/index.js';
 import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
 import {
+  GLOBAL_DIALOG_GEOMETRY,
   PooledDialogRows,
   RetainedGlobalDialog,
 } from './GlobalDialogKit.js';
 
-const ALLIANCE_CONTENT_WIDTH = 300;
+const ALLIANCE_CONTENT_WIDTH =
+  GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
 const ALLIANCE_CONTENT_HEIGHT = 360;
 const ROLE_ORDER = Object.freeze([
   'tradeMaster',

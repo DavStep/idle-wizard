@@ -30,6 +30,25 @@ export const RETAINED_PAGE_GEOMETRY = Object.freeze({
   scrollCut: 6,
 });
 
+export const RETAINED_SCROLLBAR_GEOMETRY = Object.freeze({
+  width: 6.5,
+  gap: 1.805556,
+  trackInset: 4.333333,
+  trackBorderWidth: 1.083333,
+  thumbGap: 1.083333,
+  thumbBorderWidth: 0.722222,
+  thumbMinHeight: 29.611111,
+});
+
+export const RETAINED_SCROLLBAR_VISUALS = Object.freeze({
+  trackBackground: 0x17100c,
+  trackBackgroundAlpha: 0.62,
+  trackBorder: 0x000000,
+  trackBorderAlpha: 0.72,
+  thumbBackground: 0xf2ae54,
+  thumbBorder: 0x5e321b,
+});
+
 export const RETAINED_TEXT_STYLES = Object.freeze({
   body: Object.freeze({ fontSize: 13, lineHeight: 16 }),
   bold: Object.freeze({ fontSize: 13, lineHeight: 16, fontWeight: '700' }),
@@ -494,7 +513,20 @@ export class RetainedScrollArea {
     this.root = new Container({ label });
     this.content = new Container({ label: `${label}-content` });
     this.maskShape = new Graphics({ label: `${label}-mask` });
-    this.root.addChild(this.content, this.maskShape);
+    this.scrollbarTrack = new Graphics({
+      label: `${label}-scrollbar-track`,
+    });
+    this.scrollbarThumb = new Graphics({
+      label: `${label}-scrollbar-thumb`,
+    });
+    this.scrollbarTrack.eventMode = 'none';
+    this.scrollbarThumb.eventMode = 'none';
+    this.root.addChild(
+      this.content,
+      this.maskShape,
+      this.scrollbarTrack,
+      this.scrollbarThumb,
+    );
     this.content.mask = this.maskShape;
     this.root.eventMode = 'static';
     this.offsetY = 0;
@@ -565,14 +597,106 @@ export class RetainedScrollArea {
   scrollTo(offsetY) {
     const maximum = Math.max(0, this.contentHeight - this.height);
     const nextOffset = Math.min(maximum, Math.max(0, finiteOr(offsetY, 0)));
+    const changed =
+      nextOffset !== this.offsetY || this.content.y !== -nextOffset;
 
-    if (nextOffset === this.offsetY && this.content.y === -nextOffset) {
-      return false;
+    if (changed) {
+      this.offsetY = nextOffset;
+      this.content.y = -nextOffset;
     }
 
-    this.offsetY = nextOffset;
-    this.content.y = -nextOffset;
-    return true;
+    this.updateScrollbar();
+    return changed;
+  }
+
+  updateScrollbar() {
+    const maximum = Math.max(0, this.contentHeight - this.height);
+    const geometry = RETAINED_SCROLLBAR_GEOMETRY;
+    const trackHeight = Math.max(
+      0,
+      this.height - geometry.trackInset * 2,
+    );
+    const visible =
+      maximum > 0 &&
+      this.width > 0 &&
+      this.height > 0 &&
+      trackHeight > 0;
+    this.scrollbarTrack.visible = visible;
+    this.scrollbarThumb.visible = visible;
+
+    if (!visible) {
+      this.scrollbarTrack.clear();
+      this.scrollbarThumb.clear();
+      return;
+    }
+
+    const trackX = this.width + geometry.gap;
+    const trackRadius = Math.min(geometry.width / 2, trackHeight / 2);
+    this.scrollbarTrack
+      .clear()
+      .roundRect(
+        trackX,
+        geometry.trackInset,
+        geometry.width,
+        trackHeight,
+        trackRadius,
+      )
+      .fill({
+        color: RETAINED_SCROLLBAR_VISUALS.trackBackground,
+        alpha: RETAINED_SCROLLBAR_VISUALS.trackBackgroundAlpha,
+      })
+      .roundRect(
+        trackX,
+        geometry.trackInset,
+        geometry.width,
+        trackHeight,
+        trackRadius,
+      )
+      .stroke({
+        color: RETAINED_SCROLLBAR_VISUALS.trackBorder,
+        alpha: RETAINED_SCROLLBAR_VISUALS.trackBorderAlpha,
+        width: geometry.trackBorderWidth,
+        alignment: 1,
+      });
+
+    const thumbHeight = Math.min(
+      trackHeight,
+      Math.max(
+        geometry.thumbMinHeight,
+        (trackHeight * this.height) / this.contentHeight,
+      ),
+    );
+    const thumbTravel = Math.max(0, trackHeight - thumbHeight);
+    const thumbY =
+      geometry.trackInset + thumbTravel * (this.offsetY / maximum);
+    const thumbX = trackX + geometry.thumbGap;
+    const thumbWidth = Math.max(
+      0,
+      geometry.width - geometry.thumbGap * 2,
+    );
+    const thumbRadius = Math.min(thumbWidth / 2, thumbHeight / 2);
+    this.scrollbarThumb
+      .clear()
+      .roundRect(
+        thumbX,
+        thumbY,
+        thumbWidth,
+        thumbHeight,
+        thumbRadius,
+      )
+      .fill(RETAINED_SCROLLBAR_VISUALS.thumbBackground)
+      .roundRect(
+        thumbX,
+        thumbY,
+        thumbWidth,
+        thumbHeight,
+        thumbRadius,
+      )
+      .stroke({
+        color: RETAINED_SCROLLBAR_VISUALS.thumbBorder,
+        width: geometry.thumbBorderWidth,
+        alignment: 1,
+      });
   }
 
   scrollRectIntoView(

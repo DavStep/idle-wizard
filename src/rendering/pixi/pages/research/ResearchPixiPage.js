@@ -75,33 +75,48 @@ const ART_BORDER_INSETS = Object.freeze({
 
 export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   cardWidth: 1000 / 3,
-  rowHeight: 90,
+  rowHeight: 80,
   rowGap: 5,
   categoryGap: 18,
   categoryTitleHeight: 20,
   cardOffsetX: -2,
-  artX: 30 / 3,
-  artY: 16,
-  artWidth: 58,
-  artHeight: 58,
-  artworkSize: 64,
+  artX: 13,
+  artY: 14,
+  artWidth: 52,
+  artHeight: 52,
+  artworkSize: 57,
   nameX: 10,
   nameY: 0,
   nameMaxWidth: 225,
   infoX: 252 / 3,
   infoWidth: 422 / 3,
-  descriptionY: 29,
+  descriptionY: 26,
   valueWidth: 281 / 3,
   actionRight: 30 / 3,
-  actionTop: 10,
-  actionHeight: 70,
-  costWidth: 80,
-  costHeight: 48,
-  rankWidth: 217 * 0.3,
-  rankHeight: 62 * 0.3,
+  actionTop: 8,
+  actionHeight: 64,
+  costWidth: 72,
+  costHeight: 42,
+  rankWidth: 217 * 0.267,
+  rankHeight: 62 * 0.267,
   rankRight: 63 / 3,
-  progressBottom: 8,
+  progressBottom: 7,
   progressHeight: PIXI_UI_GEOMETRY.progressTotalHeight,
+});
+
+const RESEARCH_ROW_TEXT = Object.freeze({
+  nameFontSize: 12,
+  nameLineHeight: 14,
+  descriptionFontSize: 11,
+  descriptionLineHeight: 13,
+  rankFontSize: 11,
+  rankLineHeight: 12.6,
+  valueFontSize: 12,
+  timedValueFontSize: 10,
+  valueLineHeight: 14,
+  buttonFontSize: 12,
+  buttonStrokeWidth: 3.5,
+  costContentScale: 0.88,
 });
 
 export class ResearchPixiPage extends BaseRetainedPixiPage {
@@ -961,8 +976,8 @@ class ResearchRowWidget {
       roundPixels: true,
     });
     this.name = createText('', {
-      fontSize: 14,
-      lineHeight: 16,
+      fontSize: RESEARCH_ROW_TEXT.nameFontSize,
+      lineHeight: RESEARCH_ROW_TEXT.nameLineHeight,
       wordWrapWidth: RESEARCH_PIXI_GEOMETRY.nameMaxWidth,
     });
     this.name.label = 'research-row-name';
@@ -971,8 +986,8 @@ class ResearchRowWidget {
       label: 'research-row-name-stars',
     });
     this.description = createText('', {
-      fontSize: 13,
-      lineHeight: 15,
+      fontSize: RESEARCH_ROW_TEXT.descriptionFontSize,
+      lineHeight: RESEARCH_ROW_TEXT.descriptionLineHeight,
       align: 'center',
       wordWrapWidth: RESEARCH_PIXI_GEOMETRY.infoWidth,
     });
@@ -984,8 +999,8 @@ class ResearchRowWidget {
     });
     this.rankLabel = createText('', {
       fontFamily: RESEARCH_RANK_FONT,
-      fontSize: 12,
-      lineHeight: 13.8,
+      fontSize: RESEARCH_ROW_TEXT.rankFontSize,
+      lineHeight: RESEARCH_ROW_TEXT.rankLineHeight,
       align: 'center',
       fill: RESEARCH_RANK_INK,
     });
@@ -997,6 +1012,7 @@ class ResearchRowWidget {
       research: true,
       width: RESEARCH_PIXI_GEOMETRY.costWidth,
       height: RESEARCH_PIXI_GEOMETRY.costHeight,
+      contentScale: RESEARCH_ROW_TEXT.costContentScale,
       label: 'research-row-cost',
     });
     this.valueButton = this.costButton;
@@ -1007,6 +1023,9 @@ class ResearchRowWidget {
       buttonLabel: 'research-row-researched',
       variant: 'yellow',
     });
+    this.researchedButton.control.textLabel
+      .setFontSize(RESEARCH_ROW_TEXT.buttonFontSize)
+      .setLineHeight(RESEARCH_ROW_TEXT.nameLineHeight);
     this.readonlyValue = new ResearchReadonlyValue({
       assetManager,
       label: 'research-row-readonly-value',
@@ -1362,25 +1381,22 @@ class ResearchRowWidget {
       this.art.tint = 0xffffff;
     }
     applyTextTheme(this.name, theme, {
-      fontSize: 14,
-      lineHeight: 16,
+      fontSize: RESEARCH_ROW_TEXT.nameFontSize,
+      lineHeight: RESEARCH_ROW_TEXT.nameLineHeight,
       wordWrapWidth: RESEARCH_PIXI_GEOMETRY.nameMaxWidth,
-      fill: locked
-        ? '#ffffff'
-        : theme.resourceColors?.[this.research?.resourceKey] ??
-          RESEARCH_PAPER_INK,
+      fill: locked ? '#ffffff' : RESEARCH_PAPER_INK,
     });
     applyTextTheme(this.description, theme, {
-      fontSize: 13,
-      lineHeight: 15,
+      fontSize: RESEARCH_ROW_TEXT.descriptionFontSize,
+      lineHeight: RESEARCH_ROW_TEXT.descriptionLineHeight,
       align: 'center',
       wordWrapWidth: RESEARCH_PIXI_GEOMETRY.infoWidth,
       fill: locked ? '#ffffff' : RESEARCH_PAPER_INK,
     });
     applyTextTheme(this.rankLabel, theme, {
       fontFamily: RESEARCH_RANK_FONT,
-      fontSize: 12,
-      lineHeight: 13.8,
+      fontSize: RESEARCH_ROW_TEXT.rankFontSize,
+      lineHeight: RESEARCH_ROW_TEXT.rankLineHeight,
       align: 'center',
       fill: locked ? '#ffffff' : RESEARCH_RANK_INK,
     });
@@ -1393,8 +1409,10 @@ class ResearchRowWidget {
       this.research?.timer?.active === true ||
       this.research?.inProgress === true;
     this.readonlyValue.applyTheme(theme, {
-      fontSize: inProgress ? 11 : 13,
-      lineHeight: 15,
+      fontSize: inProgress
+        ? RESEARCH_ROW_TEXT.timedValueFontSize
+        : RESEARCH_ROW_TEXT.valueFontSize,
+      lineHeight: RESEARCH_ROW_TEXT.valueLineHeight,
       align: 'center',
       wordWrapWidth: RESEARCH_PIXI_GEOMETRY.valueWidth - 8,
       fill: locked
@@ -1406,6 +1424,13 @@ class ResearchRowWidget {
     });
     this.costButton.applyTheme(theme);
     this.researchedButton.applyTheme(theme);
+    this.researchedButton.control.textLabel
+      .setFontSize(RESEARCH_ROW_TEXT.buttonFontSize)
+      .setLineHeight(RESEARCH_ROW_TEXT.nameLineHeight)
+      .setStroke({
+        color: '#0a0a0a',
+        width: RESEARCH_ROW_TEXT.buttonStrokeWidth,
+      });
     this.progress.applyTheme(theme);
   }
 

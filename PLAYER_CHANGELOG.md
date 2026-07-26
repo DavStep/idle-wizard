@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.3.7
+
+- Improved Research with a more compact study list, clearer status controls, and visible scrolling.
+- Polished dialogs, tabs, and information buttons for more consistent sizing and feedback.
+
 ## 0.3.6
 
 - Fixed hiding Elara leaving most of the Workshop invisible.

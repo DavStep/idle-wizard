@@ -95,7 +95,7 @@ experience_type: style
 - Research blocks should render no more than 3 locked rows each; keep deeper locked research hidden until earlier items unlock.
 - Completed research rows display `researched` and keep the same fixed value-slot height as price controls.
 - Locked research rows use dark monochrome card and art-well skins, keep all player-facing copy white, and render artwork as an opaque bright monochrome image; do not communicate locked state by fading the whole row.
-- Research rows use the shared station-upgrade-card family: keep the Root Run card width but compress the row to `90px`, use a `58x58px` left art well with `64px` artwork, a fixed middle description, a `0.3` source-scale one-step level badge, and an `80x48px` cost/status button. Render the art-well squircle with its source `49 49 50 50` margins through a dynamically sized Pixi nine-slice; stretching the source PNG as a normal background turns it into an oval. Intentionally omit the bottom `current ▶ next` capsule.
+- Research rows use the shared station-upgrade-card family: keep the Root Run card width but compress the row to `80px`, use a `52x52px` left art well with `57px` artwork, a fixed smaller middle description, a `0.267` source-scale one-step level badge, and a `72x42px` cost/status button. The title and description share the row ink color. Render the art-well squircle with its source `49 49 50 50` margins through a dynamically sized Pixi nine-slice; stretching the source PNG as a normal background turns it into an oval. Intentionally omit the bottom `current ▶ next` capsule.
 - Shared image-backed cost buttons must wrap plain labels such as `free` or `locked` in a positioned label above the skin pseudo-element; resource-cost labels already own that foreground layer.
 - Research name clicks open a `style-dialog` info popup; keep explanation text on the research definition snapshot.
 - Brewing recipe popup hides locked recipes; recipe names are bold, ingredient rows align flush with names, and `time:` details stay muted.
@@ -262,6 +262,7 @@ experience_type: style
 - Garden plot `.is-empty` means the plot has no active plant, not that its selected seed label is unavailable; selected seed labels still follow the row's normal state color.
 - Research item-name spans may keep resource metadata for icons, but their text inherits the row's normal, completed, or unavailable state color.
 - Treat every new UI primitive, compound component, scroll behavior, box/dialog type, control pattern, or meaningfully different widget variant as an approval gate: show the user one named list with `390x844` previews before product-code integration, then catalog only approved widgets in `docs/ui-patterns.md`.
+- Retained global dialogs must count the Root Run frame outsets when enforcing width: cap the complete shell at `90%` of the `360px` source screen, then reflow content inside the resulting `264px` content box.
 
 ## Runtime art sources
 

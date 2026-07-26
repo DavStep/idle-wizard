@@ -10,6 +10,7 @@ import {
   PixiTextLabel,
 } from '../../primitives/index.js';
 import {
+  GLOBAL_DIALOG_GEOMETRY,
   PooledDialogRows,
   RetainedGlobalDialog,
 } from './GlobalDialogKit.js';
@@ -18,7 +19,8 @@ import {
   WidgetPool,
 } from '../../retained/index.js';
 
-const ANNOUNCEMENT_WIDTH = 300;
+const ANNOUNCEMENT_WIDTH =
+  GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
 const CONFIRMATION_WIDTH = 260;
 const UNLOCK_ITEM_WIDTH = 72;
 const UNLOCK_ITEM_GAP_X = 4;

@@ -119,8 +119,8 @@ describe('ResearchBoxListManager', () => {
 
     expect(researchedNames).toHaveLength(2);
     expect(researchedNames.map((name) => name?.dataset.resourceColor)).toEqual([
-      'seed',
-      'seed',
+      undefined,
+      undefined,
     ]);
     expect(lockedRow?.classList.contains('is-unavailable')).toBe(true);
   });
@@ -424,7 +424,7 @@ describe('ResearchBoxListManager', () => {
 
     expect(
       completedRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
-    ).toBe('emerald');
+    ).toBeUndefined();
     expect(
       completedRow
         ?.querySelector('.research-page__research-button--completed')
@@ -459,7 +459,7 @@ describe('ResearchBoxListManager', () => {
     expect(
       completedEmeraldName?.querySelector('.style-star-level')?.dataset.starCount,
     ).toBe('1');
-    expect(completedEmeraldName?.dataset.resourceColor).toBe('crystal');
+    expect(completedEmeraldName?.dataset.resourceColor).toBeUndefined();
     expect(completedEmeraldValue?.textContent).toBe('★');
     expect(
       completedEmeraldValue?.querySelector('.style-star-level')?.dataset.starCount,
@@ -525,13 +525,13 @@ describe('ResearchBoxListManager', () => {
     expect(costContentRule).toContain('align-items: center;');
     expect(costContentRule).toContain('justify-content: center;');
     expect(costContentRule).toContain('gap: calc(21.243px / 3);');
-    expect(researchCostButtonRule).toContain('width: 80px;');
-    expect(researchCostButtonRule).toContain('height: 48px;');
+    expect(researchCostButtonRule).toContain('width: 72px;');
+    expect(researchCostButtonRule).toContain('height: 42px;');
     expect(researchCostButtonRule).toMatch(
-      /top:\s*calc\(\s*var\(--style-research-card-action-top\)\s*\+\s*\(70px\s*-\s*48px\)\s*\/\s*2\s*\);/,
+      /top:\s*calc\(\s*var\(--style-research-card-action-top\)\s*\+\s*\(64px\s*-\s*42px\)\s*\/\s*2\s*\);/,
     );
     expect(researchCostButtonRule).toMatch(
-      /right:\s*calc\(\s*var\(--style-research-card-action-right\)\s*\+\s*\(var\(--style-research-value-width\)\s*-\s*80px\)\s*\/\s*2\s*\);/,
+      /right:\s*calc\(\s*var\(--style-research-card-action-right\)\s*\+\s*\(var\(--style-research-value-width\)\s*-\s*72px\)\s*\/\s*2\s*\);/,
     );
   });
 
@@ -760,14 +760,14 @@ describe('ResearchBoxListManager', () => {
     expect(rootRule).toContain(
       '--style-research-card-width: calc(1000px * 390 / 1080);',
     );
-    expect(rootRule).toContain('--style-research-row-height: 90px;');
+    expect(rootRule).toContain('--style-research-row-height: 80px;');
     expect(rootRule).toContain(
       '--style-research-value-width: calc(281px * 390 / 1080);',
     );
-    expect(rootRule).toContain('--style-research-card-art-width: 58px;');
-    expect(rootRule).toContain('--style-research-card-art-height: 58px;');
-    expect(rootRule).toContain('--style-research-card-art-top: 16px;');
-    expect(rootRule).toContain('--style-research-card-action-top: 10px;');
+    expect(rootRule).toContain('--style-research-card-art-width: 52px;');
+    expect(rootRule).toContain('--style-research-card-art-height: 52px;');
+    expect(rootRule).toContain('--style-research-card-art-top: 14px;');
+    expect(rootRule).toContain('--style-research-card-action-top: 8px;');
     expect(boxRule).toContain('gap: 5px;');
     expect(rowRule).toContain('height: var(--style-research-row-height);');
     expect(rowRule).toContain('width: var(--style-research-card-width);');
@@ -782,16 +782,16 @@ describe('ResearchBoxListManager', () => {
       'background: transparent url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.png") center / 100% 100% no-repeat;',
     );
     expect(artRule).toContain('border-image: none;');
-    expect(artImageRule).toContain('width: 64px;');
-    expect(artImageRule).toContain('height: 64px;');
-    expect(costButtonRule).toContain('width: 80px;');
-    expect(costButtonRule).toContain('height: 48px;');
+    expect(artImageRule).toContain('width: 57px;');
+    expect(artImageRule).toContain('height: 57px;');
+    expect(costButtonRule).toContain('width: 72px;');
+    expect(costButtonRule).toContain('height: 42px;');
     expect(rankRule).toContain('width: 217px;');
     expect(rankRule).toContain('height: 62px;');
     expect(rankRule).toContain('padding: 8px 25px;');
     expect(rankRule).toContain('font-size: 40px;');
     expect(rankRule).toContain('line-height: 46px;');
-    expect(rankRule).toContain('transform: scale(0.3);');
+    expect(rankRule).toContain('transform: scale(0.267);');
     expect(rankRule).toContain('transform-origin: top right;');
     expect(rankRule).toContain('-webkit-text-stroke: 4px #0a0a0a;');
     expect(rankRule).not.toContain('border-image');

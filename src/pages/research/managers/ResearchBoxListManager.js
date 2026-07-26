@@ -1134,7 +1134,7 @@ export class ResearchBoxListManager {
     name.className = 'research-page__research-name';
     name.textContent = research.label;
     setItemIconLabel(name, itemKind, this.getResearchItemKey(research));
-    setResourceColor(name, this.getResearchNameResourceColor(research, itemKind));
+    setResourceColor(name, null);
     this.appendResearchStarLabel(name, research);
     parts.push(name);
 
@@ -1147,16 +1147,6 @@ export class ResearchBoxListManager {
     }
 
     return parts;
-  }
-
-  getResearchNameResourceColor(research, itemKind) {
-    const currency = this.getCompletedResearchCurrency(research);
-
-    if (currency) {
-      return currency;
-    }
-
-    return itemKind;
   }
 
   getResearchItemKind(research) {

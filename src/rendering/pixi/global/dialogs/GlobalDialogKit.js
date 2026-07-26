@@ -11,12 +11,28 @@ import {
 } from '../../retained/index.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+
+const DIALOG_SCREEN_SIDE_INSET_RATIO = 0.05;
+const MAX_DIALOG_SHELL_WIDTH =
+  PIXI_UI_GEOMETRY.sourceWidth *
+  (1 - DIALOG_SCREEN_SIDE_INSET_RATIO * 2);
+const MAX_DIALOG_CORE_WIDTH =
+  MAX_DIALOG_SHELL_WIDTH -
+  PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset * 2;
+const MAX_DIALOG_CONTENT_WIDTH =
+  MAX_DIALOG_CORE_WIDTH -
+  PIXI_UI_GEOMETRY.dialogPadding * 2;
 
 export const GLOBAL_DIALOG_GEOMETRY = Object.freeze({
   sourceWidth: PIXI_UI_GEOMETRY.sourceWidth,
   sourceHeight: PIXI_UI_GEOMETRY.sourceHeight,
+  screenSideInsetRatio: DIALOG_SCREEN_SIDE_INSET_RATIO,
+  maxShellWidth: MAX_DIALOG_SHELL_WIDTH,
+  maxCoreWidth: MAX_DIALOG_CORE_WIDTH,
+  maxContentWidth: MAX_DIALOG_CONTENT_WIDTH,
   top: 72,
   dialogPadding: PIXI_UI_GEOMETRY.dialogPadding,
   border: PIXI_UI_GEOMETRY.strongBorderWidth,
@@ -55,10 +71,11 @@ export class RetainedGlobalDialog extends PixiModalSurface {
     label = dialogId,
   }) {
     const normalizedContext = normalizeRuntimeContext(context);
+    const safeContentWidth = clampDialogContentWidth(contentWidth);
     super({
       assetManager: normalizedContext.assets,
       title,
-      contentWidth,
+      contentWidth: safeContentWidth,
       contentHeight,
       backdropAlpha,
       opaqueBackdrop,
@@ -71,7 +88,7 @@ export class RetainedGlobalDialog extends PixiModalSurface {
     this.context = normalizedContext;
     this.dialogId = dialogId;
     this.defaultTitle = title;
-    this.contentWidth = contentWidth;
+    this.contentWidth = safeContentWidth;
     this.contentHeight = contentHeight;
     this.placement = placement;
     this.top = top;
@@ -86,7 +103,7 @@ export class RetainedGlobalDialog extends PixiModalSurface {
     this.dismissOnOutside = () => this.requestClose('outside');
     this.modalBackHandler = () => this.requestClose('back');
     this.modalEscapeHandler = () => this.requestClose('escape');
-    this.setPanelContentSize(contentWidth, contentHeight);
+    this.setPanelContentSize(safeContentWidth, contentHeight);
     // Do not dispatch subclass lifecycle hooks while concrete display trees
     // are still under construction. Concrete dialogs finish with their own
     // applyTheme/bind/layout pass after creating every retained child.
@@ -104,7 +121,7 @@ export class RetainedGlobalDialog extends PixiModalSurface {
   }
 
   setPanelContentSize(width, height) {
-    this.contentWidth = Math.max(0, Number(width) || 0);
+    this.contentWidth = clampDialogContentWidth(width);
     this.contentHeight = Math.max(0, Number(height) || 0);
     this.panel.setContentBoxSize(
       this.contentWidth,
@@ -241,6 +258,13 @@ export class RetainedGlobalDialog extends PixiModalSurface {
   deactivateDialog() {}
 
   destroyDialog() {}
+}
+
+function clampDialogContentWidth(width) {
+  return Math.min(
+    GLOBAL_DIALOG_GEOMETRY.maxContentWidth,
+    Math.max(0, Number(width) || 0),
+  );
 }
 
 class PlayerDialogCloseAdapter {

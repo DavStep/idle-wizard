@@ -28,10 +28,14 @@ import {
   orderDisplayObjects,
 } from './GlobalDialogKit.js';
 
-const SETTINGS_CONTENT_WIDTH = 310;
+const SETTINGS_CONTENT_WIDTH =
+  GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
 const SETTINGS_CONTENT_HEIGHT = 410;
 const SETTINGS_SCROLL_HEIGHT = 390;
-const SETTINGS_WRAPPER_WIDTH = 354;
+const SETTINGS_WRAPPER_WIDTH =
+  GLOBAL_DIALOG_GEOMETRY.maxShellWidth;
+const SETTINGS_SECTION_CONTENT_WIDTH =
+  SETTINGS_CONTENT_WIDTH - 24;
 const SETTINGS_TAB_KEYS = Object.freeze([
   Object.freeze({ key: 'account', label: 'account' }),
   Object.freeze({ key: 'report', label: 'report' }),
@@ -67,9 +71,10 @@ const CONFIGURATION_KEYS = Object.freeze([
   'icons',
   'progressBar',
 ]);
-const AVATAR_CELL_WIDTH = 98;
 const AVATAR_CELL_HEIGHT = 94;
 const AVATAR_GAP = 8;
+const AVATAR_CELL_WIDTH =
+  (SETTINGS_CONTENT_WIDTH - AVATAR_GAP * 2) / 3;
 
 /**
  * Retained settings surface used by both global.settings and global.feedback.
@@ -147,6 +152,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
         semanticId: `${this.dialogId}.tab.${key}`,
         text: label,
         height: GLOBAL_DIALOG_GEOMETRY.tabHeight,
+        variant: 'tab',
         action: () => this.selectTab(key),
         label: `${this.dialogId}:tab:${key}`,
       });
@@ -291,7 +297,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.devicePanel = new PixiPanel({
       assetManager: this.context.assets,
       title: 'device',
-      contentWidth: 286,
+      contentWidth: SETTINGS_SECTION_CONTENT_WIDTH,
       contentHeight: 68,
       label: `${this.dialogId}:devicePanel`,
     });
@@ -322,7 +328,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       const panel = new PixiPanel({
         assetManager: this.context.assets,
         title: formatCategoryLabel(key),
-        contentWidth: 286,
+        contentWidth: SETTINGS_SECTION_CONTENT_WIDTH,
         contentHeight: 20,
         label: `${this.dialogId}:configuration:${key}`,
       });
@@ -511,11 +517,20 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   layoutAccountPane() {
+    const usernameSaveWidth = 58;
+    const usernameGap = 8;
+    const usernameFieldWidth =
+      SETTINGS_CONTENT_WIDTH -
+      usernameSaveWidth -
+      usernameGap;
     this.usernameLabel.position.set(0, 0);
     this.usernameField.position.set(0, 22);
-    this.usernameField.setSize(244, 30);
-    this.usernameSave.position.set(252, 22);
-    this.usernameSave.setSize(58, 30);
+    this.usernameField.setSize(usernameFieldWidth, 30);
+    this.usernameSave.position.set(
+      usernameFieldWidth + usernameGap,
+      22,
+    );
+    this.usernameSave.setSize(usernameSaveWidth, 30);
     this.usernameStatus.position.set(0, 58);
     this.accountLabel.position.set(0, 92);
     this.accountStatus.position.set(0, 114);
@@ -545,11 +560,17 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   layoutConfigurationsPane() {
     let y = 7;
     this.devicePanel.position.set(0, y);
-    this.devicePanel.setContentSize(286, 68);
+    this.devicePanel.setContentSize(
+      SETTINGS_SECTION_CONTENT_WIDTH,
+      68,
+    );
     this.preferenceRows.forEach(({ label, button }, index) => {
       const rowY = index * 22;
       label.position.set(0, rowY + 3);
-      button.position.set(228, rowY);
+      button.position.set(
+        SETTINGS_SECTION_CONTENT_WIDTH - 58,
+        rowY,
+      );
       button.setSize(58, 20);
     });
     y += this.devicePanel.outerHeight + GLOBAL_DIALOG_GEOMETRY.sectionGap;
@@ -563,11 +584,19 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
           continue;
         }
         const height = option.getPreferredHeight();
-        option.setBounds(0, optionY, 286, height);
+        option.setBounds(
+          0,
+          optionY,
+          SETTINGS_SECTION_CONTENT_WIDTH,
+          height,
+        );
         optionY += height + 6;
       }
       optionY = Math.max(20, optionY - 6);
-      panel.setContentSize(286, optionY);
+      panel.setContentSize(
+        SETTINGS_SECTION_CONTENT_WIDTH,
+        optionY,
+      );
       panel.position.set(0, y);
       layer.position.set(0, 0);
       y += panel.outerHeight + GLOBAL_DIALOG_GEOMETRY.sectionGap;
@@ -1144,12 +1173,27 @@ class SettingsAvatarWidget {
     this.root.position.set(x, y);
     this.root.hitArea = new Rectangle(0, 0, width, height);
     const portraitSize = 72;
-    const portraitX = (width - portraitSize) / 2;
-    this.sprite.position.set(portraitX, 0);
-    this.sprite.width = portraitSize;
-    this.sprite.height = portraitSize;
+    const textureWidth = Math.max(
+      1,
+      Number(this.sprite.texture?.width) || 1,
+    );
+    const textureHeight = Math.max(
+      1,
+      Number(this.sprite.texture?.height) || 1,
+    );
+    const portraitScale = Math.min(
+      portraitSize / textureWidth,
+      portraitSize / textureHeight,
+    );
+    const portraitWidth = textureWidth * portraitScale;
+    const portraitHeight = textureHeight * portraitScale;
+    const portraitX = (width - portraitWidth) / 2;
+    const portraitY = (portraitSize - portraitHeight) / 2;
+    this.sprite.position.set(portraitX, portraitY);
+    this.sprite.width = portraitWidth;
+    this.sprite.height = portraitHeight;
     this.status.position.set(
-      portraitX + portraitSize - 21,
+      (width + portraitSize) / 2 - 21,
       3,
     );
     this.status.width = 18;

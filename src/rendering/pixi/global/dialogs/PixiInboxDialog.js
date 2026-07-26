@@ -20,11 +20,13 @@ import {
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
+  GLOBAL_DIALOG_GEOMETRY,
   RetainedGlobalDialog,
   orderDisplayObjects,
 } from './GlobalDialogKit.js';
 
-const INBOX_CONTENT_WIDTH = 300;
+const INBOX_CONTENT_WIDTH =
+  GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
 const INBOX_CONTENT_HEIGHT = 360;
 const MAIL_GAP = 8;
 const MAIL_PADDING_X = 10;

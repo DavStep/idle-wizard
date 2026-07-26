@@ -13,6 +13,10 @@ import {
   RESEARCH_PIXI_GEOMETRY,
   ResearchPixiPage,
 } from './ResearchPixiPage.js';
+import {
+  RETAINED_SCROLLBAR_GEOMETRY,
+  RETAINED_SCROLLBAR_VISUALS,
+} from '../workshop/RetainedPageKit.js';
 
 describe('ResearchPixiPage', () => {
   it('builds once and keeps keyed boxes and research rows across updates', () => {
@@ -171,6 +175,59 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
+  it('shows the shared right-edge station scrollbar only for overflowing research', () => {
+    const harness = createHarness();
+    const model = createResearchViewModel();
+    const regularTab = model.research.tabs[0];
+    regularTab.boxes = Array.from({ length: 5 }, (_, index) => ({
+      id: `research-box-${index}`,
+      label: `research box ${index + 1}`,
+      researches: [
+        {
+          id: `research-${index}`,
+          displayName: `research ${index + 1}`,
+          effect: `effect ${index + 1}`,
+          displayValue: '100 mana',
+          canResearch: true,
+          locked: false,
+        },
+      ],
+    }));
+    harness.page.bind(model);
+
+    const scroll = harness.page.scroll;
+    expect(scroll.contentHeight).toBeGreaterThan(scroll.height);
+    expect(scroll.scrollbarTrack.visible).toBe(true);
+    expect(scroll.scrollbarThumb.visible).toBe(true);
+    expect(scroll.scrollbarTrack.getLocalBounds()).toMatchObject({
+      x: scroll.width + RETAINED_SCROLLBAR_GEOMETRY.gap,
+      y: RETAINED_SCROLLBAR_GEOMETRY.trackInset,
+      width: RETAINED_SCROLLBAR_GEOMETRY.width,
+      height:
+        scroll.height - RETAINED_SCROLLBAR_GEOMETRY.trackInset * 2,
+    });
+    expect(RETAINED_SCROLLBAR_VISUALS).toMatchObject({
+      trackBackground: 0x17100c,
+      trackBorder: 0x000000,
+      thumbBackground: 0xf2ae54,
+      thumbBorder: 0x5e321b,
+    });
+
+    const topThumbY = scroll.scrollbarThumb.getLocalBounds().y;
+    expect(scroll.scrollTo(scroll.contentHeight - scroll.height)).toBe(true);
+    expect(scroll.scrollbarThumb.getLocalBounds().y).toBeGreaterThan(
+      topThumbY,
+    );
+
+    harness.page.bind(createResearchViewModel());
+    expect(scroll.contentHeight).toBeLessThan(scroll.height);
+    expect(scroll.scrollbarTrack.visible).toBe(false);
+    expect(scroll.scrollbarThumb.visible).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('can suppress a research notification without disabling its action', () => {
     const buyResearch = vi.fn();
     const harness = createHarness();
@@ -201,10 +258,11 @@ describe('ResearchPixiPage', () => {
     expect(row.card.position).toMatchObject({ x: -2, y: 0 });
     expect(row.card).toMatchObject({
       frameWidth: 1000 / 3,
-      frameHeight: 90,
+      frameHeight: 80,
     });
-    expect(row.artWell.position).toMatchObject({ x: 10, y: 16 });
-    expect(row.artWell).toMatchObject({ frameWidth: 58, frameHeight: 58 });
+    expect(row.artWell.position).toMatchObject({ x: 13, y: 14 });
+    expect(row.artWell).toMatchObject({ frameWidth: 52, frameHeight: 52 });
+    expect(row.art).toMatchObject({ width: 57, height: 57 });
     expect(row.description.position.x).toBe(252 / 3);
     expect(row.progress.root.position.x).toBe(252 / 3);
     expect(row.progress.width).toBe(422 / 3);
@@ -213,9 +271,12 @@ describe('ResearchPixiPage', () => {
       height: 10,
     });
     expect(row.costButton).toMatchObject({
-      buttonWidth: 80,
-      buttonHeight: 48,
+      buttonWidth: 72,
+      buttonHeight: 42,
     });
+    expect(row.costButton.amountLabel.fontSize).toBeCloseTo(17 * 0.88);
+    expect(row.costButton.resourceIcon.width).toBeCloseTo(23 * 0.88);
+    expect(row.researchedButton.control.textLabel.fontSize).toBe(12);
     expect(box.getPreferredHeight()).toBe(
       RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
         RESEARCH_PIXI_GEOMETRY.rowGap +
@@ -253,6 +314,7 @@ describe('ResearchPixiPage', () => {
         completed: true,
         displayName: 'sage seed',
         description: 'allows sage seed to drop from summon seed.',
+        resourceKey: 'seed',
       },
     );
 
@@ -269,8 +331,8 @@ describe('ResearchPixiPage', () => {
     expect(row.researchedButton.control.variant).toBe('yellow');
     expect(row.researchedButton.text.text).toBe('Researched');
     expect(row.researchedButton).toMatchObject({
-      width: 80,
-      height: 48,
+      width: 72,
+      height: 42,
     });
     expect(row.readonlyValue.visible).toBe(false);
 

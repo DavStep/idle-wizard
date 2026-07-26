@@ -2,6 +2,8 @@ import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
 import { PIXI_ROOT_RUN_ASSETS } from '../theme/PixiThemeTokens.js';
 
+const RELEASE_DURATION_MS = 180;
+
 /**
  * Retained image-only information control shared by room and dialog views.
  *
@@ -21,14 +23,20 @@ export class PixiInfoButton extends Container {
     this.inputRouter = inputRouter;
     this.action = typeof action === 'function' ? action : null;
     this.enabled = true;
+    this.pressed = false;
     this.buttonSize = Math.max(0, Number(size) || 0);
+    this.releaseFrame = 0;
+    this.releaseStartedAt = 0;
+    this.visual = new Container({ label: `${label}:visual` });
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.label = `${label}:icon`;
     this.icon.anchor.set(0.5);
-    this.addChild(this.icon);
+    this.visual.addChild(this.icon);
+    this.addChild(this.visual);
 
     this.handleTap = (payload) => this.activate(payload);
-    this.handlePressChange = (pressed) => this.setPressed(pressed);
+    this.handlePressChange = (pressed, context) =>
+      this.setPressed(pressed, context);
     this.registration =
       this.inputRouter?.registerPressTarget?.(this, {
         enabled: () =>
@@ -42,7 +50,9 @@ export class PixiInfoButton extends Container {
     if (this.usesDirectInput) {
       this.on('pointertap', this.handleTap);
       this.on('pointerdown', () => this.setPressed(true));
-      this.on('pointerup', () => this.setPressed(false));
+      this.on('pointerup', () =>
+        this.setPressed(false, { confirmed: true }),
+      );
       this.on('pointerupoutside', () => this.setPressed(false));
       this.on('pointercancel', () => this.setPressed(false));
     }
@@ -64,6 +74,9 @@ export class PixiInfoButton extends Container {
 
   setEnabled(enabled) {
     this.enabled = enabled !== false;
+    if (!this.enabled) {
+      this.setPressed(false);
+    }
     this.syncInteraction();
     return this;
   }
@@ -87,13 +100,29 @@ export class PixiInfoButton extends Container {
     this.icon.height = this.buttonSize;
     this.icon.width = this.buttonSize * (textureWidth / textureHeight);
     this.icon.position.set(this.buttonSize / 2, this.buttonSize / 2);
+    this.visual.pivot.set(this.buttonSize / 2, this.buttonSize / 2);
+    this.visual.position.set(this.buttonSize / 2, this.buttonSize / 2);
     this.hitArea = new Rectangle(0, 0, this.buttonSize, this.buttonSize);
     return this;
   }
 
-  setPressed(pressed) {
-    const active = Boolean(pressed) && this.enabled;
-    this.icon.scale.set(active ? 0.94 : 1);
+  setPressed(pressed, context = null) {
+    const nextPressed = Boolean(pressed) && this.enabled;
+    if (nextPressed) {
+      this.cancelReleaseAnimation();
+      this.pressed = true;
+      this.visual.scale.set(0.94);
+      return this;
+    }
+
+    const wasPressed = this.pressed;
+    this.pressed = false;
+    if (wasPressed && context?.confirmed === true && !prefersReducedMotion()) {
+      this.startReleaseAnimation();
+    } else {
+      this.cancelReleaseAnimation();
+      this.visual.scale.set(1);
+    }
     return this;
   }
 
@@ -120,7 +149,32 @@ export class PixiInfoButton extends Container {
       this.assetManager.getTexture(PIXI_ROOT_RUN_ASSETS.info) ?? Texture.EMPTY;
   }
 
+  startReleaseAnimation() {
+    this.cancelReleaseAnimation();
+    this.releaseStartedAt = now();
+    const tick = () => {
+      const elapsed = now() - this.releaseStartedAt;
+      const progress = Math.min(1, Math.max(0, elapsed / RELEASE_DURATION_MS));
+      this.visual.scale.set(releaseScale(progress));
+      if (progress >= 1) {
+        this.releaseFrame = 0;
+        this.visual.scale.set(1);
+        return;
+      }
+      this.releaseFrame = requestFrame(tick);
+    };
+    this.releaseFrame = requestFrame(tick);
+  }
+
+  cancelReleaseAnimation() {
+    if (this.releaseFrame) {
+      cancelFrame(this.releaseFrame);
+      this.releaseFrame = 0;
+    }
+  }
+
   destroy(options) {
+    this.cancelReleaseAnimation();
     if (typeof this.registration === 'function') {
       this.registration();
     } else {
@@ -129,4 +183,40 @@ export class PixiInfoButton extends Container {
     this.registration = null;
     super.destroy(options);
   }
+}
+
+function releaseScale(progress) {
+  if (progress <= 0.36) {
+    return 0.94 + (1.055 - 0.94) * easeOutCubic(progress / 0.36);
+  }
+  return 1.055 + (1 - 1.055) * easeOutCubic((progress - 0.36) / 0.64);
+}
+
+function easeOutCubic(value) {
+  return 1 - (1 - value) ** 3;
+}
+
+function prefersReducedMotion() {
+  return Boolean(
+    globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,
+  );
+}
+
+function requestFrame(callback) {
+  if (typeof globalThis.requestAnimationFrame === 'function') {
+    return globalThis.requestAnimationFrame(callback);
+  }
+  return globalThis.setTimeout?.(callback, 16) ?? 0;
+}
+
+function cancelFrame(frameId) {
+  if (typeof globalThis.cancelAnimationFrame === 'function') {
+    globalThis.cancelAnimationFrame(frameId);
+  } else {
+    globalThis.clearTimeout?.(frameId);
+  }
+}
+
+function now() {
+  return globalThis.performance?.now?.() ?? Date.now();
 }

@@ -4,7 +4,7 @@ import {
   createPixiAssetManagerFake,
   installPixiPageTestCanvas,
 } from '../../pages/workshop/PixiPageTestHarness.js';
-import { Texture } from 'pixi.js';
+import { Texture, TextureSource } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
@@ -216,7 +216,9 @@ describe('retained global Pixi dialogs', () => {
     );
 
     expect(settings.panel).toBeInstanceOf(PixiDialogFrame);
-    expect(settings.panel.outerWidth).toBe(350);
+    expect(settings.panel.outerWidth).toBe(
+      GLOBAL_DIALOG_GEOMETRY.maxCoreWidth,
+    );
     expect(settings.panel.content.position).toMatchObject({
       x: 20,
       y: 20,
@@ -290,19 +292,26 @@ describe('retained global Pixi dialogs', () => {
         account: { username: 'mira' },
       },
     );
-    const settingsTabWidth = settings.tabButtons[0].button.width;
+    const settingsTabWidth =
+      settings.tabButtons[0].button.buttonWidth;
 
     expect(settings.panel).toMatchObject({
-      contentBoxWidth: 310,
+      contentBoxWidth: 264,
       contentBoxHeight: 410,
-      outerWidth: 350,
+      outerWidth: 304,
       outerHeight: 450,
     });
-    expect(settings.tabsLayer.x).toBe(3);
+    expect(settings.panel.outerFrame.frameWidth).toBe(
+      GLOBAL_DIALOG_GEOMETRY.maxShellWidth,
+    );
+    expect(settings.tabsLayer.x).toBe(18);
     expect(
       settingsTabWidth * settings.tabButtons.length +
         3 * (settings.tabButtons.length - 1),
-    ).toBeCloseTo(354);
+    ).toBeCloseTo(GLOBAL_DIALOG_GEOMETRY.maxShellWidth);
+    expect(
+      settings.tabButtons.map(({ button }) => button.variant),
+    ).toEqual(['tab', 'tab', 'tab']);
     harness.registry.close(GLOBAL_DIALOG_IDS.SETTINGS);
 
     const level = harness.registry.open(
@@ -314,17 +323,17 @@ describe('retained global Pixi dialogs', () => {
     );
 
     expect(level.panel).toMatchObject({
-      contentBoxWidth: 286,
+      contentBoxWidth: 264,
       contentBoxHeight: 360,
-      outerWidth: 326,
+      outerWidth: 304,
       outerHeight: 400,
     });
-    expect(level.pager.x).toBe(15);
+    expect(level.pager.x).toBe(18);
     expect(
       level.previousButton.width +
         level.nextButton.width +
         3,
-    ).toBeCloseTo(330);
+    ).toBeCloseTo(GLOBAL_DIALOG_GEOMETRY.maxShellWidth);
     harness.registry.close(GLOBAL_DIALOG_IDS.LEVEL);
 
     const inbox = harness.registry.open(
@@ -333,21 +342,74 @@ describe('retained global Pixi dialogs', () => {
     );
 
     expect(inbox.panel).toMatchObject({
-      contentBoxWidth: 300,
+      contentBoxWidth: 264,
       contentBoxHeight: 360,
-      outerWidth: 340,
+      outerWidth: 304,
       outerHeight: 400,
     });
-    const inboxWrapperLeft = (360 - 344) / 2;
+    const inboxWrapperLeft =
+      (360 - GLOBAL_DIALOG_GEOMETRY.maxShellWidth) / 2;
     const inboxCoreLeft =
       inbox.panel.x - inbox.panel.pivot.x;
-    expect(inboxCoreLeft - inboxWrapperLeft).toBe(2);
+    expect(inboxCoreLeft - inboxWrapperLeft).toBe(10);
     expect(
       360 -
         inboxWrapperLeft -
         (inboxCoreLeft + inbox.panel.outerWidth),
-    ).toBe(2);
+    ).toBe(10);
     harness.dispose();
+  });
+
+  it('keeps every retained global dialog inside the shared five-percent side insets', () => {
+    const harness = createHarness();
+    const payloads = createPayloads();
+
+    for (const [dialogId] of createGlobalDialogFactories()) {
+      const dialog = harness.registry.open(dialogId, payloads[dialogId]);
+      expect(dialog.panel.outerFrame.frameWidth).toBeLessThanOrEqual(
+        GLOBAL_DIALOG_GEOMETRY.maxShellWidth,
+      );
+      harness.registry.close(dialogId);
+    }
+
+    harness.dispose();
+  });
+
+  it('contain-fits avatar art without changing the texture aspect ratio', () => {
+    const characterTexture = new Texture({
+      source: new TextureSource({
+        resource: { width: 87, height: 108 },
+        width: 87,
+        height: 108,
+      }),
+    });
+    const harness = createHarness({ characterTexture });
+    const settings = harness.registry.open(
+      GLOBAL_DIALOG_IDS.SETTINGS,
+      {
+        tabId: 'avatar',
+        selections: { character: 'elara' },
+        categories: [
+          {
+            key: 'character',
+            options: [{ key: 'elara', label: 'elara' }],
+          },
+        ],
+      },
+    );
+    const avatar = settings.avatars.getWidgets()[0];
+
+    expect(avatar.sprite.height).toBe(72);
+    expect(avatar.sprite.width).toBeCloseTo(58);
+    expect(avatar.sprite.width / avatar.sprite.height).toBeCloseTo(
+      87 / 108,
+    );
+    expect(avatar.sprite.x).toBeCloseTo(
+      (avatar.root.hitArea.width - avatar.sprite.width) / 2,
+    );
+
+    harness.dispose();
+    characterTexture.destroy();
   });
 
   it('reuses warmed mail and member widgets without new allocations', () => {
@@ -641,12 +703,23 @@ describe('retained global Pixi dialogs', () => {
   });
 });
 
-function createHarness({ announcementMotionRuntime = null } = {}) {
+function createHarness({
+  announcementMotionRuntime = null,
+  characterTexture = null,
+} = {}) {
   const registry = new DialogRegistry();
   const inputRouter = new PixiInputRouter();
   const semanticRegistry = new SemanticTargetRegistry();
+  const assets = createPixiAssetManagerFake(Texture);
+  if (characterTexture) {
+    assets.getTexture = vi.fn((assetId) =>
+      String(assetId).includes('/characters/')
+        ? characterTexture
+        : Texture.EMPTY,
+    );
+  }
   const context = {
-    assets: createPixiAssetManagerFake(Texture),
+    assets,
     inputRouter,
     semanticRegistry,
     counters: null,

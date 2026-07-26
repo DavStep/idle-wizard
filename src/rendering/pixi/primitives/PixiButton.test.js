@@ -4,7 +4,10 @@ import { Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { installPixiPageTestCanvas } from '../pages/workshop/PixiPageTestHarness.js';
-import { PIXI_ROOT_RUN_ASSETS } from '../theme/PixiThemeTokens.js';
+import {
+  createPixiThemeSnapshot,
+  PIXI_ROOT_RUN_ASSETS,
+} from '../theme/PixiThemeTokens.js';
 import { PixiButton } from './PixiButton.js';
 
 installPixiPageTestCanvas();
@@ -29,4 +32,26 @@ describe('PixiButton', () => {
       button.destroy({ children: true });
     },
   );
+
+  it('uses the current Root Run brown skins for popup tabs in every player theme', () => {
+    const getTexture = vi.fn(() => Texture.EMPTY);
+    const button = new PixiButton({
+      assetManager: { getTexture },
+      variant: 'tab',
+    });
+
+    button.applyTheme(createPixiThemeSnapshot({ theme: 'black' }));
+    expect(button.resolveRootRunVariant()).toBe('brown-dark');
+    expect(getTexture).toHaveBeenLastCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
+    );
+
+    button.setSelected(true);
+    expect(button.resolveRootRunVariant()).toBe('brown-light');
+    expect(getTexture).toHaveBeenLastCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
+    );
+
+    button.destroy({ children: true });
+  });
 });

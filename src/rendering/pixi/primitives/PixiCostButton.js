@@ -61,6 +61,7 @@ export class PixiCostButton extends PixiButton {
     height = PIXI_COST_BUTTON_GEOMETRY.height,
     research = false,
     compact = false,
+    contentScale = 1,
     action = null,
     label = 'costButton',
   } = {}) {
@@ -78,6 +79,7 @@ export class PixiCostButton extends PixiButton {
     });
     this.research = Boolean(research);
     this.compact = Boolean(compact);
+    this.contentScale = Math.max(0.1, Number(contentScale) || 1);
     this.costState = 'available';
     this.resource = 'coin';
     this.amount = '';
@@ -279,18 +281,34 @@ export class PixiCostButton extends PixiButton {
   }
 
   applyFixedTextStyle() {
+    const contentScale = this.contentScale;
+    const fontSize = (
+      this.research
+        ? PIXI_COST_BUTTON_GEOMETRY.researchFontSize
+        : PIXI_COST_BUTTON_GEOMETRY.fontSize
+    ) * contentScale;
     for (const label of [this.amountLabel, this.lockedLabel]) {
       label
         .setFontFamily(COST_FONT_FAMILY)
-        .setStroke(COST_STROKE)
+        .setFontSize(fontSize)
+        .setStroke(scaleStroke(COST_STROKE, contentScale))
         .setColor('#ffffff');
     }
     this.lockReasonLabel
       .setFontFamily(COST_FONT_FAMILY)
+      .setFontSize(
+        PIXI_COST_BUTTON_GEOMETRY.lockReasonFontSize * contentScale,
+      )
+      .setLineHeight(
+        PIXI_COST_BUTTON_GEOMETRY.lockReasonLineHeight * contentScale,
+      )
       .setStroke(
-        this.research
-          ? RESEARCH_LOCK_REASON_STROKE
-          : COST_STROKE,
+        scaleStroke(
+          this.research
+            ? RESEARCH_LOCK_REASON_STROKE
+            : COST_STROKE,
+          contentScale,
+        ),
       )
       .setColor('#ffffff');
   }
@@ -307,15 +325,15 @@ export class PixiCostButton extends PixiButton {
       this.buttonHeight,
       PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
     );
-    const iconSize = this.compact
+    const iconSize = (this.compact
       ? PIXI_COST_BUTTON_GEOMETRY.compactIconSize
-      : PIXI_COST_BUTTON_GEOMETRY.iconSize;
-    const contentGap = this.compact
+      : PIXI_COST_BUTTON_GEOMETRY.iconSize) * this.contentScale;
+    const contentGap = (this.compact
       ? PIXI_COST_BUTTON_GEOMETRY.compactContentGap
-      : PIXI_COST_BUTTON_GEOMETRY.contentGap;
-    const contentOffsetY = this.compact
+      : PIXI_COST_BUTTON_GEOMETRY.contentGap) * this.contentScale;
+    const contentOffsetY = (this.compact
       ? PIXI_COST_BUTTON_GEOMETRY.compactContentOffsetY
-      : PIXI_COST_BUTTON_GEOMETRY.contentOffsetY;
+      : PIXI_COST_BUTTON_GEOMETRY.contentOffsetY) * this.contentScale;
     this.resourceIcon.width = iconSize;
     this.resourceIcon.height = iconSize;
     const centerY =
@@ -372,7 +390,7 @@ export class PixiCostButton extends PixiButton {
     const inset = this.research
       ? PIXI_COST_BUTTON_GEOMETRY.researchLockReasonInset
       : 8;
-    return Math.max(0, width - inset);
+    return Math.max(0, width - inset * this.contentScale);
   }
 
   resolveTexture(assetId) {
@@ -395,6 +413,13 @@ export class PixiCostButton extends PixiButton {
       return Texture.EMPTY;
     }
   }
+}
+
+function scaleStroke(stroke, scale) {
+  return {
+    ...stroke,
+    width: stroke.width * scale,
+  };
 }
 
 function parseCostLabel(value, explicitResource) {

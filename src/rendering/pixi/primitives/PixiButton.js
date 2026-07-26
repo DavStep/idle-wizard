@@ -290,7 +290,7 @@ export class PixiButton extends Container {
     if (ROOT_RUN_VARIANTS.has(this.variant)) {
       return this.variant;
     }
-    if (this.variant === 'tab' && this.theme.themeKey === 'midnight') {
+    if (this.variant === 'tab') {
       return this.selected ? 'brown-light' : 'brown-dark';
     }
     return null;
