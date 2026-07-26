@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.3.8
+
+- Improved Brewing with clearer cauldron navigation, station ranks, settings artwork, and locked-cauldron purchasing.
+- Polished Research with color-coded category plaques, clearer station ranks, and more readable study descriptions.
+
 ## 0.3.7
 
 - Improved Research with a more compact study list, clearer status controls, and visible scrolling.

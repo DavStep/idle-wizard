@@ -8,6 +8,11 @@ Expected view-model fields are `tabs`, `selectedTabId`, optional `runFocus`, and
 decorated `boxes[].researches[]`. Actions are supplied as `selectTab`,
 `setRunFocus`, `buyResearch`, and `showLockedReason`.
 
+Category title plaques use the selected tab as their visual variant: Regular
+is yellow, Automation is red, Advanced is emerald green, and the `emerald`
+Crystal Research tab is purple. The visible category title remains the primary
+identifier.
+
 Rows and boxes are keyed and pooled. Selecting an unlocked label opens the
 lazy-once `research.info` dialog through the injected `DialogRegistry`.
 Selecting a locked row keeps the requirement off the cost button and opens the

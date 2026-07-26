@@ -263,7 +263,9 @@ describe('ResearchPixiPage', () => {
     expect(row.artWell.position).toMatchObject({ x: 13, y: 14 });
     expect(row.artWell).toMatchObject({ frameWidth: 52, frameHeight: 52 });
     expect(row.art).toMatchObject({ width: 57, height: 57 });
-    expect(row.description.position.x).toBe(252 / 3);
+    expect(row.description.position.x).toBe(
+      RESEARCH_PIXI_GEOMETRY.descriptionX,
+    );
     expect(row.progress.root.position.x).toBe(252 / 3);
     expect(row.progress.width).toBe(422 / 3);
     expect(row.progress).toMatchObject({
@@ -277,6 +279,24 @@ describe('ResearchPixiPage', () => {
     expect(row.costButton.amountLabel.fontSize).toBeCloseTo(17 * 0.88);
     expect(row.costButton.resourceIcon.width).toBeCloseTo(23 * 0.88);
     expect(row.researchedButton.control.textLabel.fontSize).toBe(12);
+    expect(box.title.text).toBe('Herbs');
+    expect(box.title.style).toMatchObject({
+      fontFamily: '"Lilita One", "Arial Black", Arial, sans-serif',
+      fontSize: 18,
+      fill: '#ffffff',
+      lineHeight: 21,
+    });
+    expect(box.titlePlaque.frame).toMatchObject({
+      frameHeight: 42,
+      frameWidth: Math.ceil(box.title.width + 60),
+    });
+    expect(box.titlePlaque).toMatchObject({
+      variant: 'regular',
+      assetId:
+        'source:assets/ui/root-run-research/research-station-title-yellow.png',
+    });
+    expect(box.title.position).toMatchObject({ x: 12, y: 21 });
+    expect(box.titlePlaque.root.position).toMatchObject({ x: 0, y: 0 });
     expect(box.getPreferredHeight()).toBe(
       RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
         RESEARCH_PIXI_GEOMETRY.rowGap +
@@ -297,6 +317,93 @@ describe('ResearchPixiPage', () => {
     expect(harness.page.rows.get('mint')).toBe(row);
     expect(harness.page.boxes.get('automation').rows.get('mint')).toBe(row);
     expect(harness.page.rowPool.getStats().allocated).toBe(1);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('colors station title plaques from the selected research tab', () => {
+    const harness = createHarness();
+    const variants = [
+      {
+        tabId: 'regular',
+        variant: 'regular',
+        asset: 'research-station-title-yellow.png',
+      },
+      {
+        tabId: 'automation',
+        variant: 'automation',
+        asset: 'research-station-title-red.png',
+      },
+      {
+        tabId: 'advanced',
+        variant: 'advanced',
+        asset: 'research-station-title-green.png',
+      },
+      {
+        tabId: 'emerald',
+        variant: 'crystal',
+        asset: 'research-station-title-purple.png',
+      },
+    ];
+
+    for (const { tabId, variant, asset } of variants) {
+      const model = createResearchViewModel();
+      model.research.selectedTabId = tabId;
+      model.research.tabs[0].id = tabId;
+      harness.page.bind(model);
+
+      expect(harness.page.boxes.get('herbs').titlePlaque).toMatchObject({
+        variant,
+        assetId: `source:assets/ui/root-run-research/${asset}`,
+      });
+    }
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('shows plot upgrade stars in the title and fits long descriptions inside the row', () => {
+    const harness = createHarness();
+    const model = createResearchViewModel();
+    Object.assign(
+      model.research.tabs[0].boxes[0].researches[0],
+      {
+        displayName: 'plot 1',
+        starLevel: 1,
+        description:
+          'levels plot 1 to lvl 2: it uses 2 seeds and harvests 2 herbs in one growth timer.',
+      },
+    );
+
+    harness.page.bind(model);
+
+    const row = harness.page.rows.get('mint');
+    const descriptionBottom =
+      row.description.position.y + row.description.height;
+    expect(row.name.text).toBe('Plot 1');
+    expect(row.nameStars).toMatchObject({
+      visible: true,
+      level: 1,
+      starCount: 1,
+    });
+    expect(row.description.style.fontSize).toBeLessThan(11);
+    expect(row.description.style.fontSize).toBeGreaterThanOrEqual(8);
+    expect(row.description.width).toBeLessThanOrEqual(
+      RESEARCH_PIXI_GEOMETRY.descriptionWidth + 0.5,
+    );
+    expect(row.description.position.y).toBeGreaterThanOrEqual(
+      RESEARCH_PIXI_GEOMETRY.descriptionY +
+        RESEARCH_PIXI_GEOMETRY.descriptionOpticalOffsetY,
+    );
+    expect(row.description.position.y).toBeLessThan(
+      RESEARCH_PIXI_GEOMETRY.descriptionY,
+    );
+    expect(descriptionBottom).toBeLessThanOrEqual(
+      RESEARCH_PIXI_GEOMETRY.rowHeight -
+        RESEARCH_PIXI_GEOMETRY.descriptionBottom +
+        0.5,
+    );
 
     harness.page.destroy();
     harness.dispose();
@@ -325,6 +432,7 @@ describe('ResearchPixiPage', () => {
     expect(row.description.text).toBe(
       'Allows sage seed to drop from summon seed.',
     );
+    expect(row.description.style.fontSize).toBe(11);
     expect(row.name.style.fill).toEqual(row.description.style.fill);
     expect(row.name.position.y).toBe(0);
     expect(row.researchedButton.root.visible).toBe(true);

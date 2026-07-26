@@ -29,6 +29,7 @@ function createHarness(options = {}) {
     inputRouter,
     research: options.research,
     compact: options.compact,
+    stacked: options.stacked,
     width: options.width,
     height: options.height,
   });
@@ -139,11 +140,72 @@ describe('PixiCostButton', () => {
     );
   });
 
+  it('uses the approved compact stacked action and cost composition', () => {
+    const { assetManager, button, registrations } = createHarness({
+      stacked: true,
+      width: 92,
+      height: 52,
+    });
+    const action = vi.fn();
+
+    button.setModel({
+      actionLabel: 'Unlock',
+      amountLabel: '25 coin',
+      action,
+    });
+
+    expect(button.stacked).toBe(true);
+    expect(button.actionTextLabel.text).toBe('Unlock');
+    expect(button.actionTextLabel.position).toMatchObject({
+      x: 46,
+      y: 17.68,
+    });
+    expect(button.resourceIcon).toMatchObject({
+      width: 15,
+      height: 15,
+      y: 35.36,
+    });
+    expect(button.amountLabel).toMatchObject({
+      text: '25',
+      y: 35.36,
+    });
+    expect(button.amountLabel.stroke.width).toBe(3);
+    expect(button.actionTextLabel.stroke.width).toBe(3);
+    expect(button.compactBackground.visible).toBe(false);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonGreenStacked,
+    );
+    expect(registrations[0].descriptor.enabled()).toBe(true);
+    expect(button.activate()).toBe(true);
+    expect(action).toHaveBeenCalledOnce();
+
+    button.setModel({
+      actionLabel: 'Unlock',
+      amountLabel: '25 coin',
+      state: 'unaffordable',
+      enabled: false,
+    });
+
+    expect(button.amountLabel.colorToken).toBe('#c1121f');
+    expect(button.enabled).toBe(false);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonGreenStacked,
+    );
+  });
+
   it('rejects empty actionable costs instead of silently rendering fallback copy', () => {
     const { button } = createHarness();
 
     expect(() => button.setModel({ amountLabel: '' })).toThrow(
       'non-empty amount label',
+    );
+  });
+
+  it('rejects a stacked cost without its visible action label', () => {
+    const { button } = createHarness({ stacked: true });
+
+    expect(() => button.setModel({ amountLabel: '25 coin' })).toThrow(
+      'non-empty action label',
     );
   });
 });

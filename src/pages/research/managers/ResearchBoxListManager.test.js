@@ -2,6 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import { cwd } from 'node:process';
+import { createHash } from 'node:crypto';
 
 import pngjs from 'pngjs';
 import { describe, expect, it, vi } from 'vitest';
@@ -187,7 +188,7 @@ describe('ResearchBoxListManager', () => {
     expect(box?.getAttribute('aria-label')).toBe('seed unlock researches');
     expect(box?.classList.contains('style-box')).toBe(false);
     expect(box?.querySelector('.research-page__box-title')?.textContent).toBe(
-      'seed unlock researches',
+      'Seed Unlock Researches',
     );
     expect(rows).toHaveLength(3);
     expect(rows.map((row) => row.className)).toEqual([
@@ -436,6 +437,11 @@ describe('ResearchBoxListManager', () => {
     expect(
       availableRow?.querySelector('.research-page__research-button')?.dataset.resourceColor,
     ).toBe('emerald');
+    expect(
+      stage
+        .querySelector('.research-page__box-title')
+        ?.classList.contains('research-page__box-title--advanced'),
+    ).toBe(true);
 
     manager.onSelectTab('emerald');
 
@@ -475,6 +481,11 @@ describe('ResearchBoxListManager', () => {
         ?.querySelector('.research-page__research-button')
         ?.getAttribute('aria-label'),
     ).toBe('level up cauldron 1 ★★ x3 potions for 2 crystal');
+    expect(
+      stage
+        .querySelector('.research-page__box-title')
+        ?.classList.contains('research-page__box-title--crystal'),
+    ).toBe(true);
   });
 
   it('keeps completed research values on the normal text color', () => {
@@ -494,6 +505,60 @@ describe('ResearchBoxListManager', () => {
     expect(css).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
     expect(css).toContain('line-height: var(--style-tiny-line-height);');
     expect(css).toContain('white-space: normal;');
+  });
+
+  it('uses the approved Root Run station title plaque with dynamic width and spacing', () => {
+    const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const expectedAssets = {
+      yellow: '2946564020e76e29e311bb7b1ca02652ba519068c8c9dd7195cf69f35baff688',
+      red: 'beb8b3085544c1548b45039840ab8dd7f631b1fe200720155b78e6de9ef42821',
+      green: 'ce91d604fa828bf351f619278a569783af95173a152fd55732501186de1e06b1',
+      purple: 'd7fbe4cff8854460c7defb9eda82b3508ff45f1ecc766e434ac65e0d693d9b7d',
+    };
+    const titleRule = css.match(
+      /\.research-page__box-title\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const titleSkinRule = css.match(
+      /\.research-page__box-title::before\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    for (const [color, expectedHash] of Object.entries(expectedAssets)) {
+      const asset = readFileSync(
+        `${cwd()}/assets/game/source/ui/root-run-research/research-station-title-${color}.png`,
+      );
+      expect(PNG.sync.read(asset)).toMatchObject({ width: 171, height: 121 });
+      expect(createHash('sha256').update(asset).digest('hex')).toBe(
+        expectedHash,
+      );
+    }
+    expect(titleRule).toContain('width: max-content;');
+    expect(titleRule).toContain('height: 42px;');
+    expect(titleRule).toContain('padding: 0 48px 0 12px;');
+    expect(titleRule).toContain('font-size: 18px;');
+    expect(titleRule).toContain('white-space: nowrap;');
+    expect(titleSkinRule).toContain('height: 117px;');
+    expect(titleSkinRule).toContain('border-width: 0 165px 0 5px;');
+    expect(titleSkinRule).toContain(
+      'border-image: var(--research-station-title-image)',
+    );
+    expect(css).toMatch(
+      /\.research-page__box-title--regular\s*\{[^}]*research-station-title-yellow\.png/,
+    );
+    expect(css).toMatch(
+      /\.research-page__box-title--automation\s*\{[^}]*research-station-title-red\.png/,
+    );
+    expect(css).toMatch(
+      /\.research-page__box-title--advanced\s*\{[^}]*research-station-title-green\.png/,
+    );
+    expect(css).toMatch(
+      /\.research-page__box-title--crystal\s*\{[^}]*research-station-title-purple\.png/,
+    );
+    expect(css).toMatch(
+      /\.research-page__box-list\s*\{[^}]*gap:\s*18px;/,
+    );
+    expect(css).toMatch(
+      /\.research-page__box\s*\{[^}]*gap:\s*5px;/,
+    );
   });
 
   it('centers research prices inside their action buttons', () => {

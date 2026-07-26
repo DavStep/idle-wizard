@@ -560,8 +560,10 @@ describe('BrewingPixiPage', () => {
     let now = 0;
     const harness = createHarness({ timeSource: () => now });
     const model = createBrewingViewModel();
+    model.brewing.cauldrons[0].level = 1;
     model.brewing.cauldrons[0].autoBrewEnabled = true;
     model.brewing.cauldrons[0].autoCollectEnabled = false;
+    model.brewing.cauldrons[0].primaryAction.label = 'brew x1';
     model.brewing.cauldrons.push({
       id: 'buy:2',
       cauldronIndex: 1,
@@ -570,11 +572,29 @@ describe('BrewingPixiPage', () => {
       canBuyCauldron: true,
       nextCauldronCost: 25,
     });
+    model.actions.performCauldronAction = vi.fn(() => true);
     model.brewing.configuredMaxCauldrons = 5;
     harness.page.bind(model);
 
     expect(harness.page.hud.root.visible).toBe(true);
     expect(harness.page.worldViewport.visible).toBe(false);
+    expect(harness.page.hud.carouselPanel.title.visible).toBe(false);
+    expect(harness.page.hud.cauldronTitle.parent).toBe(
+      harness.page.hud.carouselPanel.body,
+    );
+    expect(harness.page.hud.cauldronTitle.text).toBe('cauldron 1');
+    expect(harness.page.hud.cauldronTitle.position).toMatchObject({
+      x: 10,
+      y: 8,
+    });
+    expect(harness.page.hud.cauldronStars.parent).toBe(
+      harness.page.hud.carouselPanel.body,
+    );
+    expect(harness.page.hud.cauldronStars.level).toBe(1);
+    expect(harness.page.hud.cauldronStars.tone).toBe('yellow');
+    expect(harness.page.hud.cauldronStars.starCount).toBe(1);
+    expect(harness.page.hud.cauldronStars.slots).toHaveLength(3);
+    expect(harness.page.hud.cauldronStars.visible).toBe(true);
     expect(harness.page.hud.ingredientSlots).toHaveLength(6);
     expect(harness.page.hud.ingredientSlots[5].decorative).toBe(true);
     expect(Object.keys(harness.page.hud.actionIcons)).toEqual([
@@ -591,10 +611,50 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.actionIcons.settings.label).toBe(
       'brewing-settings-action-icon',
     );
+    expect(harness.page.hud.actionIcons.settings.iconSprites[0].label).toBe(
+      'brewing-settings-action-icon:sprite',
+    );
     expect(harness.page.hud.actionIcons.cancel.parent).toBe(
       harness.page.hud.cancel.control.visual,
     );
+    expect(Object.keys(harness.page.hud.navigationIcons)).toEqual([
+      'previous',
+      'next',
+    ]);
+    expect(harness.page.hud.navigationIcons.previous.parent).toBe(
+      harness.page.hud.previous.control.visual,
+    );
+    expect(harness.page.hud.navigationIcons.next.parent).toBe(
+      harness.page.hud.next.control.visual,
+    );
+    expect(harness.page.hud.previous.text.text).toBe('');
+    expect(harness.page.hud.next.text.text).toBe('');
+    expect(harness.page.hud.navigationIcons.previous.alpha).toBe(1);
+    expect(harness.page.hud.navigationIcons.next.alpha).toBe(1);
+    expect(
+      harness.page.hud.navigationIcons.previous.iconSprites[0],
+    ).toMatchObject({
+      width: 22,
+      height: 22,
+    });
+    expect(harness.page.hud.navigationIcons.next.iconSprites[0]).toMatchObject({
+      width: 22,
+      height: 22,
+    });
     expect(harness.page.hud.cancel.text.text).toBe('cancel');
+    expect(harness.page.hud.recipes.text.text).toBe('Recipes');
+    expect(harness.page.hud.autoBrew.text.text).toBe('AutoBrew\nOn');
+    expect(harness.page.hud.brew.text.text).toBe('Brew x1');
+    expect(harness.page.hud.settings.text.text).toBe('Settings');
+    for (const button of [
+      harness.page.hud.recipes,
+      harness.page.hud.autoBrew,
+      harness.page.hud.brew,
+      harness.page.hud.settings,
+    ]) {
+      expect(button.control.textLabel.fontSize).toBe(10);
+      expect(button.control.textLabel.lineHeight).toBe(12);
+    }
     expect(harness.page.hud.recipes.control.textLabel.x).toBeGreaterThan(
       harness.page.hud.recipes.width / 2,
     );
@@ -608,7 +668,46 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.selectedIndex).toBe(1);
 
     expect(harness.page.hud.lockArt.visible).toBe(true);
+    expect(harness.page.hud.cauldronArt.visible).toBe(true);
+    expect(harness.page.hud.cauldronArt.filters).toHaveLength(1);
+    expect(harness.page.hud.cauldronArt.filters[0].matrix).toEqual([
+      0.2125, 0.7154, 0.0721, 0, 0,
+      0.2125, 0.7154, 0.0721, 0, 0,
+      0.2125, 0.7154, 0.0721, 0, 0,
+      0, 0, 0, 1, 0,
+    ]);
+    expect(harness.page.hud.lockLabel.visible).toBe(false);
+    expect(harness.page.hud.lockLabel.text).toBe('');
+    expect(harness.page.hud.cauldronTitle.text).toBe('locked cauldron');
+    expect(harness.page.hud.cauldronStars.visible).toBe(false);
+    for (const button of [
+      harness.page.hud.recipes,
+      harness.page.hud.autoBrew,
+      harness.page.hud.brew,
+      harness.page.hud.settings,
+    ]) {
+      expect(button.root.visible).toBe(false);
+      expect(button.root.renderable).toBe(false);
+    }
+    expect(harness.page.hud.unlockCostButton.visible).toBe(true);
+    expect(harness.page.hud.unlockCostButton.renderable).toBe(true);
+    expect(harness.page.hud.unlockCostButton.actionTextLabel.text).toBe('Unlock');
+    expect(harness.page.hud.unlockCostButton.amountLabel.text).toBe('25');
+    expect(harness.page.hud.unlockCostButton.resource).toBe('coin');
+    expect(harness.page.hud.unlockCostButton.position).toMatchObject({
+      x: 134,
+      y: 258,
+    });
+    expect(harness.page.hud.unlockCostButton.activate()).toBe(true);
+    expect(model.actions.performCauldronAction).toHaveBeenCalledWith(
+      model.brewing.cauldrons[1],
+      { id: 'buy' },
+    );
     expect(harness.page.selectCauldron(0)).toBe(true);
+    expect(harness.page.hud.cauldronArt.filters).toBeNull();
+    expect(harness.page.hud.lockArt.visible).toBe(false);
+    expect(harness.page.hud.unlockCostButton.visible).toBe(false);
+    expect(harness.page.hud.recipes.root.visible).toBe(true);
 
     expect(harness.page.hud.fastForward.handleTap()).toBe(true);
     expect(harness.page.toastText.text).toBe('coming soon');
@@ -620,6 +719,38 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.openAutomationSettings()).toBe(true);
     const settings = harness.dialogs.get('brewing.automation-settings');
     expect(settings.toggle.text.text).toBe('auto collect off');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('shows no cauldron action button while the locked slot is progression-gated', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    model.brewing.cauldrons.push({
+      id: 'buy:2',
+      cauldronIndex: 1,
+      cauldronNumber: 2,
+      unlocked: false,
+      canBuyCauldron: false,
+      nextCauldronCost: 25,
+      nextCauldronLockedByResearch: true,
+    });
+    model.brewing.selectedCauldronIndex = 1;
+
+    harness.page.bind(model);
+
+    expect(harness.page.hud.cauldronArt.visible).toBe(true);
+    expect(harness.page.hud.lockArt.visible).toBe(true);
+    expect(harness.page.hud.unlockCostButton.visible).toBe(false);
+    for (const button of [
+      harness.page.hud.recipes,
+      harness.page.hud.autoBrew,
+      harness.page.hud.brew,
+      harness.page.hud.settings,
+    ]) {
+      expect(button.root.visible).toBe(false);
+    }
 
     harness.page.destroy();
     harness.dispose();

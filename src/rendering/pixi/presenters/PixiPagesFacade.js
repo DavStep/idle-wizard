@@ -957,14 +957,20 @@ export class PixiPagesFacade {
       Number.isInteger(brewing.nextCauldronNumber) &&
       brewing.nextCauldronNumber > cauldrons.length
     ) {
+      const nextCauldronCost = Number(brewing.nextCauldronCost);
+      const cauldronGateOpen =
+        !brewing.nextCauldronLockedByLevel &&
+        !brewing.nextCauldronLockedByResearch;
+      const canAffordCauldron =
+        Number.isFinite(nextCauldronCost) &&
+        Number(this.gameplaySnapshot.coin?.current ?? 0) >= nextCauldronCost;
       cauldrons.push({
         id: `buy:${brewing.nextCauldronNumber}`,
         cauldronIndex: brewing.nextCauldronNumber - 1,
         cauldronNumber: brewing.nextCauldronNumber,
         unlocked: false,
-        canBuyCauldron:
-          !brewing.nextCauldronLockedByLevel &&
-          !brewing.nextCauldronLockedByResearch,
+        canBuyCauldron: cauldronGateOpen && canAffordCauldron,
+        canAffordCauldron,
         nextCauldronCost: brewing.nextCauldronCost,
         nextCauldronLockedByLevel: brewing.nextCauldronLockedByLevel,
         nextCauldronLockedByResearch:

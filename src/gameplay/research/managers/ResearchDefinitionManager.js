@@ -471,7 +471,9 @@ export class ResearchDefinitionManager {
           getId: emeraldResearchIds.plotPlanting,
           seriesId: (plotNumber) => `emerald:plotPlanting:${plotNumber}`,
           label: (plotNumber, multiplier) => `plot ${plotNumber} lvl ${multiplier}`,
+          displayName: (plotNumber) => `plot ${plotNumber}`,
           effect: (multiplier) => `x${multiplier} herbs`,
+          starLevel: (multiplier) => getEmeraldResearchStarLevel(multiplier),
           description: (plotNumber, multiplier) =>
             `levels plot ${plotNumber} to lvl ${multiplier}: it uses ${multiplier} seeds and harvests ${multiplier} herbs in one growth timer.`,
         }),
@@ -663,6 +665,7 @@ export class ResearchDefinitionManager {
     getId,
     seriesId,
     label,
+    displayName,
     effect,
     starLevel,
     description,
@@ -678,6 +681,9 @@ export class ResearchDefinitionManager {
         researches.push({
           id: getId(targetNumber, multiplier),
           label: label(targetNumber, multiplier),
+          ...(displayName
+            ? { displayName: displayName(targetNumber, multiplier) }
+            : {}),
           value: effect(multiplier),
           showEffect: true,
           actionType: 'levelUp',

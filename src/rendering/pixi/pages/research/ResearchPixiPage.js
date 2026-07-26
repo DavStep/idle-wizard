@@ -1,4 +1,5 @@
 import {
+  CanvasTextMetrics,
   ColorMatrixFilter,
   Container,
   Rectangle,
@@ -72,13 +73,69 @@ const ART_BORDER_INSETS = Object.freeze({
   bottom: 50 / 3,
   left: 49 / 3,
 });
+const STATION_TITLE_SOURCE_HEIGHT = 117;
+const STATION_TITLE_SOURCE_INSETS = Object.freeze({
+  top: 0,
+  right: 165,
+  bottom: 0,
+  left: 5,
+});
+const STATION_TITLE_HEIGHT = 42;
+const STATION_TITLE_SCALE =
+  STATION_TITLE_HEIGHT / STATION_TITLE_SOURCE_HEIGHT;
+const STATION_TITLE_BORDER_INSETS = Object.freeze({
+  top: 0,
+  right: STATION_TITLE_SOURCE_INSETS.right * STATION_TITLE_SCALE,
+  bottom: 0,
+  left: STATION_TITLE_SOURCE_INSETS.left * STATION_TITLE_SCALE,
+});
+const STATION_TITLE_TEXT_INSET_X = 12;
+const STATION_TITLE_WIDTH_ALLOWANCE = 60;
+const STATION_TITLE_MIN_FONT_SIZE = 13;
+const STATION_TITLE_FONT_SIZE = 18;
+const STATION_TITLE_TEXT_STYLE = Object.freeze({
+  fontFamily: RESEARCH_RANK_FONT,
+  fontSize: STATION_TITLE_FONT_SIZE,
+  fontWeight: '400',
+  fill: '#ffffff',
+  lineHeight: 21,
+  stroke: Object.freeze({
+    color: '#0a0a0a',
+    width: 2,
+  }),
+  padding: 2,
+});
+const STATION_TITLE_VARIANTS = Object.freeze({
+  regular: Object.freeze({
+    assetId: PIXI_ROOT_RUN_ASSETS.researchStationTitleRegular,
+  }),
+  automation: Object.freeze({
+    assetId: PIXI_ROOT_RUN_ASSETS.researchStationTitleAutomation,
+  }),
+  advanced: Object.freeze({
+    assetId: PIXI_ROOT_RUN_ASSETS.researchStationTitleAdvanced,
+  }),
+  crystal: Object.freeze({
+    assetId: PIXI_ROOT_RUN_ASSETS.researchStationTitleCrystal,
+  }),
+});
+
+function normalizeStationTitleVariant(tabId) {
+  if (tabId === 'automation' || tabId === 'advanced') {
+    return tabId;
+  }
+  if (tabId === 'emerald' || tabId === 'crystal') {
+    return 'crystal';
+  }
+  return 'regular';
+}
 
 export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   cardWidth: 1000 / 3,
   rowHeight: 80,
   rowGap: 5,
   categoryGap: 18,
-  categoryTitleHeight: 20,
+  categoryTitleHeight: STATION_TITLE_HEIGHT,
   cardOffsetX: -2,
   artX: 13,
   artY: 14,
@@ -90,7 +147,11 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   nameMaxWidth: 225,
   infoX: 252 / 3,
   infoWidth: 422 / 3,
-  descriptionY: 26,
+  descriptionX: 74,
+  descriptionY: 24,
+  descriptionWidth: 160,
+  descriptionBottom: 7,
+  descriptionOpticalOffsetY: -10,
   valueWidth: 281 / 3,
   actionRight: 30 / 3,
   actionTop: 8,
@@ -109,6 +170,7 @@ const RESEARCH_ROW_TEXT = Object.freeze({
   nameLineHeight: 14,
   descriptionFontSize: 11,
   descriptionLineHeight: 13,
+  descriptionMinFontSize: 8,
   rankFontSize: 11,
   rankLineHeight: 12.6,
   valueFontSize: 12,
@@ -118,6 +180,48 @@ const RESEARCH_ROW_TEXT = Object.freeze({
   buttonStrokeWidth: 3.5,
   costContentScale: 0.88,
 });
+
+function fitResearchDescription(description, geometry) {
+  const maxHeight =
+    geometry.rowHeight - geometry.descriptionY - geometry.descriptionBottom;
+  const lineHeightRatio =
+    RESEARCH_ROW_TEXT.descriptionLineHeight /
+    RESEARCH_ROW_TEXT.descriptionFontSize;
+  let metrics = null;
+
+  for (
+    let fontSize = RESEARCH_ROW_TEXT.descriptionFontSize;
+    fontSize >= RESEARCH_ROW_TEXT.descriptionMinFontSize;
+    fontSize -= 0.25
+  ) {
+    description.style.fontSize = fontSize;
+    description.style.lineHeight =
+      Math.round(fontSize * lineHeightRatio * 4) / 4;
+    metrics = CanvasTextMetrics.measureText(
+      description.text,
+      description.style,
+    );
+
+    if (
+      metrics.width <= geometry.descriptionWidth + 0.5 &&
+      metrics.height <= maxHeight + 0.5
+    ) {
+      break;
+    }
+  }
+
+  const measuredHeight = Math.min(metrics?.height ?? 0, maxHeight);
+  description.position.set(
+    geometry.descriptionX,
+    Math.round(
+      (
+        geometry.descriptionY +
+        (maxHeight - measuredHeight) / 2 +
+        geometry.descriptionOpticalOffsetY
+      ) * 2,
+    ) / 2,
+  );
+}
 
 export class ResearchPixiPage extends BaseRetainedPixiPage {
   constructor({
@@ -740,9 +844,12 @@ class ResearchBoxWidget {
     this.page = page;
     this.theme = page.theme;
     this.root = new Container({ label: 'research-box' });
-    this.title = createText('', RETAINED_TEXT_STYLES.bold);
+    this.titlePlaque = new ResearchStationTitlePlaque({
+      assetManager: page.assetManager,
+    });
+    this.title = this.titlePlaque.title;
     this.rowsLayer = new Container({ label: 'research-box-rows' });
-    this.root.addChild(this.title, this.rowsLayer);
+    this.root.addChild(this.titlePlaque.root, this.rowsLayer);
     this.rowWidgets = [];
     this.preferredHeight = RESEARCH_PIXI_GEOMETRY.categoryTitleHeight;
     this.rows = {
@@ -756,7 +863,7 @@ class ResearchBoxWidget {
 
   bind(box) {
     this.box = box;
-    setText(this.title, box.label ?? '');
+    this.titlePlaque.bind(box.label ?? '', this.page.selectedTabId);
     this.applyTheme(this.page.theme);
   }
 
@@ -780,7 +887,7 @@ class ResearchBoxWidget {
   setBounds(x, y, width) {
     this.root.position.set(x, y);
     this.width = width;
-    this.title.position.set(10, 0);
+    this.titlePlaque.setMaxWidth(width);
     this.rowsLayer.position.set(0, RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
       RESEARCH_PIXI_GEOMETRY.rowGap);
   }
@@ -791,7 +898,6 @@ class ResearchBoxWidget {
 
   applyTheme(theme) {
     this.theme = theme;
-    applyTextTheme(this.title, theme, RETAINED_TEXT_STYLES.bold);
     for (const row of this.rowWidgets) {
       row.applyTheme(theme);
     }
@@ -801,12 +907,103 @@ class ResearchBoxWidget {
     this.rowsLayer.removeChildren();
     this.rowWidgets = [];
     this.box = null;
-    setText(this.title, '');
+    this.titlePlaque.bind('', 'regular');
     this.preferredHeight = RESEARCH_PIXI_GEOMETRY.categoryTitleHeight;
   }
 
   destroy() {
     this.root.destroy({ children: true });
+  }
+}
+
+class ResearchStationTitlePlaque {
+  constructor({ assetManager }) {
+    this.assetManager = assetManager;
+    this.label = '';
+    this.variant = 'regular';
+    this.assetId = STATION_TITLE_VARIANTS.regular.assetId;
+    this.maxWidth = Infinity;
+    this.width = 0;
+    this.root = new Container({ label: 'research-station-title-plaque' });
+    this.frame = new PixiNineSliceFrame({
+      texture: this.resolveTexture(this.assetId),
+      sourceInsets: STATION_TITLE_SOURCE_INSETS,
+      borderInsets: STATION_TITLE_BORDER_INSETS,
+      width: STATION_TITLE_WIDTH_ALLOWANCE,
+      height: STATION_TITLE_HEIGHT,
+      label: 'research-station-title-plaque-frame',
+    });
+    this.title = createText('', STATION_TITLE_TEXT_STYLE);
+    this.title.anchor.set(0, 0.5);
+    this.applyTitleStyle(STATION_TITLE_FONT_SIZE);
+    this.root.addChild(this.frame, this.title);
+    this.layout();
+  }
+
+  bind(label, tabId = 'regular') {
+    this.label = formatResearchTitle(label);
+    this.setVariant(normalizeStationTitleVariant(tabId));
+    setText(this.title, this.label);
+    this.layout();
+  }
+
+  setVariant(variant) {
+    this.variant = variant;
+    this.assetId =
+      STATION_TITLE_VARIANTS[variant]?.assetId ??
+      STATION_TITLE_VARIANTS.regular.assetId;
+    this.frame.setTexture(
+      this.resolveTexture(this.assetId),
+      STATION_TITLE_SOURCE_INSETS,
+    );
+  }
+
+  setMaxWidth(maxWidth) {
+    this.maxWidth = Math.max(
+      STATION_TITLE_WIDTH_ALLOWANCE,
+      finiteOr(maxWidth, STATION_TITLE_WIDTH_ALLOWANCE),
+    );
+    this.layout();
+  }
+
+  layout() {
+    let fontSize = STATION_TITLE_FONT_SIZE;
+    this.applyTitleStyle(fontSize);
+    while (
+      this.title.width + STATION_TITLE_WIDTH_ALLOWANCE > this.maxWidth &&
+      fontSize > STATION_TITLE_MIN_FONT_SIZE
+    ) {
+      fontSize -= 1;
+      this.applyTitleStyle(fontSize);
+    }
+
+    this.width = Math.min(
+      this.maxWidth,
+      Math.ceil(this.title.width + STATION_TITLE_WIDTH_ALLOWANCE),
+    );
+    this.frame.setSize(
+      this.width,
+      STATION_TITLE_HEIGHT,
+      STATION_TITLE_BORDER_INSETS,
+    );
+    this.title.position.set(
+      STATION_TITLE_TEXT_INSET_X,
+      STATION_TITLE_HEIGHT / 2,
+    );
+  }
+
+  applyTitleStyle(fontSize) {
+    this.title.style = {
+      ...STATION_TITLE_TEXT_STYLE,
+      fontSize,
+      lineHeight: Math.round((fontSize * 21) / 18),
+    };
+  }
+
+  resolveTexture(assetId) {
+    return this.assetManager?.has?.(assetId)
+      ? this.assetManager.getTexture(assetId)
+      : Texture.EMPTY;
   }
 }
 
@@ -1279,7 +1476,7 @@ class ResearchRowWidget {
       ),
       geometry.nameY + 1,
     );
-    this.description.position.set(geometry.infoX, geometry.descriptionY);
+    fitResearchDescription(this.description, geometry);
     this.rank.position.set(
       geometry.cardWidth - geometry.rankRight - geometry.rankWidth,
       0,
@@ -1390,9 +1587,10 @@ class ResearchRowWidget {
       fontSize: RESEARCH_ROW_TEXT.descriptionFontSize,
       lineHeight: RESEARCH_ROW_TEXT.descriptionLineHeight,
       align: 'center',
-      wordWrapWidth: RESEARCH_PIXI_GEOMETRY.infoWidth,
+      wordWrapWidth: RESEARCH_PIXI_GEOMETRY.descriptionWidth,
       fill: locked ? '#ffffff' : RESEARCH_PAPER_INK,
     });
+    fitResearchDescription(this.description, RESEARCH_PIXI_GEOMETRY);
     applyTextTheme(this.rankLabel, theme, {
       fontFamily: RESEARCH_RANK_FONT,
       fontSize: RESEARCH_ROW_TEXT.rankFontSize,

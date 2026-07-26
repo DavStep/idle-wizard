@@ -9552,7 +9552,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.research-page')).not.toBeNull();
     expect(stage.querySelector('.research-page__content')).not.toBeNull();
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'seed unlock researches',
+      'Seed Unlock Researches',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
       'mana production rate',
@@ -10042,14 +10042,14 @@ describe('PagesFacade', () => {
     expect(advancedTab).not.toBeNull();
     expect(emeraldTab).not.toBeNull();
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'seed unlock researches',
+      'Seed Unlock Researches',
     );
 
     automationTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(automationTab.getAttribute('aria-selected')).toBe('true');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'plot automation research',
+      'Plot Automation Research',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
       'automate plot 1',
@@ -10058,28 +10058,28 @@ describe('PagesFacade', () => {
       '1 crystal',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
-      'seed unlock researches',
+      'Seed Unlock Researches',
     );
 
     advancedTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(advancedTab.getAttribute('aria-selected')).toBe('true');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'cauldron brewing research',
+      'Cauldron Brewing Research',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
       'cauldron 1 brewing ★',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('1 ruby');
     expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
-      'plot automation research',
+      'Plot Automation Research',
     );
 
     emeraldTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(emeraldTab.getAttribute('aria-selected')).toBe('true');
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
-      'plot level up',
+      'Plot Level Up',
     );
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
       'plot 1 lvl 2',

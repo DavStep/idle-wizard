@@ -323,9 +323,11 @@ describe('ResearchDefinitionManager', () => {
     expect(plotBox?.researches[0]).toMatchObject({
       id: 'emerald:plotPlanting:1:2',
       label: 'plot 1 lvl 2',
+      displayName: 'plot 1',
       value: 'x2 herbs',
       actionType: 'levelUp',
       level: 2,
+      starLevel: 1,
       description:
         'levels plot 1 to lvl 2: it uses 2 seeds and harvests 2 herbs in one growth timer.',
     });

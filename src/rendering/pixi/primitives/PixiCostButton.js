@@ -38,6 +38,14 @@ export const PIXI_COST_BUTTON_GEOMETRY = Object.freeze({
   compactIconSize: 16.512,
   compactContentGap: 2.24,
   compactContentOffsetY: 0,
+  stackedWidth: 92,
+  stackedHeight: 52,
+  stackedIconSize: 15,
+  stackedContentGap: 4,
+  stackedActionFontSize: 14,
+  stackedAmountFontSize: 13,
+  stackedActionY: 0.34,
+  stackedCostY: 0.68,
   fontSize: 16,
   researchFontSize: 17,
   lockReasonFontSize: 10,
@@ -61,6 +69,7 @@ export class PixiCostButton extends PixiButton {
     height = PIXI_COST_BUTTON_GEOMETRY.height,
     research = false,
     compact = false,
+    stacked = false,
     contentScale = 1,
     action = null,
     label = 'costButton',
@@ -79,10 +88,12 @@ export class PixiCostButton extends PixiButton {
     });
     this.research = Boolean(research);
     this.compact = Boolean(compact);
+    this.stacked = Boolean(stacked);
     this.contentScale = Math.max(0.1, Number(contentScale) || 1);
     this.costState = 'available';
     this.resource = 'coin';
     this.amount = '';
+    this.actionLabel = '';
     this.lockReason = '';
     this.modelEnabled = true;
 
@@ -115,6 +126,14 @@ export class PixiCostButton extends PixiButton {
       anchor: { x: 0.5, y: 0.5 },
       label: `${label}:amount`,
     });
+    this.actionTextLabel = new PixiTextLabel({
+      fontFamily: COST_FONT_FAMILY,
+      fontSize: PIXI_COST_BUTTON_GEOMETRY.stackedActionFontSize,
+      color: '#ffffff',
+      stroke: COST_STROKE,
+      anchor: { x: 0.5, y: 0.5 },
+      label: `${label}:action`,
+    });
     this.lockedLabel = new PixiTextLabel({
       fontFamily: COST_FONT_FAMILY,
       fontSize: this.research
@@ -143,6 +162,7 @@ export class PixiCostButton extends PixiButton {
     this.visual.addChildAt(this.compactBackground, 1);
     this.visual.addChild(
       this.resourceIcon,
+      this.actionTextLabel,
       this.amountLabel,
       this.lockedLabel,
       this.lockReasonLabel,
@@ -166,6 +186,7 @@ export class PixiCostButton extends PixiButton {
   setModel({
     amount,
     amountLabel,
+    actionLabel = '',
     label,
     resource,
     state = 'available',
@@ -178,8 +199,12 @@ export class PixiCostButton extends PixiButton {
     if (nextState !== 'locked' && !parsed.amount) {
       throw new Error('PixiCostButton requires a non-empty amount label.');
     }
+    if (this.stacked && nextState !== 'locked' && !String(actionLabel).trim()) {
+      throw new Error('Stacked PixiCostButton requires a non-empty action label.');
+    }
 
     this.amount = parsed.amount;
+    this.actionLabel = String(actionLabel ?? '');
     this.resource = parsed.resource;
     this.costState = nextState;
     this.lockReason = String(lockReason ?? '');
@@ -222,6 +247,7 @@ export class PixiCostButton extends PixiButton {
 
   reset() {
     this.amount = '';
+    this.actionLabel = '';
     this.lockReason = '';
     this.costState = 'available';
     this.resource = 'coin';
@@ -244,9 +270,13 @@ export class PixiCostButton extends PixiButton {
         ? skinDisabled
           ? PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice
           : PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice
-        : skinDisabled
-          ? PIXI_ROOT_RUN_ASSETS.buttonGray
-          : PIXI_ROOT_RUN_ASSETS.buttonGreen,
+        : this.stacked
+          ? skinDisabled
+            ? PIXI_ROOT_RUN_ASSETS.buttonGrayStacked
+            : PIXI_ROOT_RUN_ASSETS.buttonGreenStacked
+          : skinDisabled
+            ? PIXI_ROOT_RUN_ASSETS.buttonGray
+            : PIXI_ROOT_RUN_ASSETS.buttonGreen,
     );
     this.background.texture = backgroundTexture;
     this.background.visible = !this.compact;
@@ -268,11 +298,14 @@ export class PixiCostButton extends PixiButton {
     this.amountLabel
       .setText(this.amount)
       .setColor(unaffordable ? '#c1121f' : '#ffffff');
+    this.actionTextLabel.setText(this.actionLabel);
     this.lockedLabel.setText('Locked');
     this.resourceIcon.visible = !locked && this.resource !== 'none';
     this.resourceIcon.renderable = this.resourceIcon.visible;
     this.amountLabel.visible = !locked;
     this.amountLabel.renderable = !locked;
+    this.actionTextLabel.visible = this.stacked && !locked;
+    this.actionTextLabel.renderable = this.actionTextLabel.visible;
     this.lockedLabel.visible = locked;
     this.lockedLabel.renderable = locked;
     this.lockReasonLabel.visible = locked && Boolean(this.lockReason);
@@ -283,17 +316,29 @@ export class PixiCostButton extends PixiButton {
   applyFixedTextStyle() {
     const contentScale = this.contentScale;
     const fontSize = (
-      this.research
-        ? PIXI_COST_BUTTON_GEOMETRY.researchFontSize
-        : PIXI_COST_BUTTON_GEOMETRY.fontSize
+      this.stacked
+        ? PIXI_COST_BUTTON_GEOMETRY.stackedAmountFontSize
+        : this.research
+          ? PIXI_COST_BUTTON_GEOMETRY.researchFontSize
+          : PIXI_COST_BUTTON_GEOMETRY.fontSize
     ) * contentScale;
+    const contentStrokeScale = this.stacked
+      ? contentScale * 0.75
+      : contentScale;
     for (const label of [this.amountLabel, this.lockedLabel]) {
       label
         .setFontFamily(COST_FONT_FAMILY)
         .setFontSize(fontSize)
-        .setStroke(scaleStroke(COST_STROKE, contentScale))
+        .setStroke(scaleStroke(COST_STROKE, contentStrokeScale))
         .setColor('#ffffff');
     }
+    this.actionTextLabel
+      .setFontFamily(COST_FONT_FAMILY)
+      .setFontSize(
+        PIXI_COST_BUTTON_GEOMETRY.stackedActionFontSize * contentScale,
+      )
+      .setStroke(scaleStroke(COST_STROKE, contentStrokeScale))
+      .setColor('#ffffff');
     this.lockReasonLabel
       .setFontFamily(COST_FONT_FAMILY)
       .setFontSize(
@@ -327,17 +372,22 @@ export class PixiCostButton extends PixiButton {
     );
     const iconSize = (this.compact
       ? PIXI_COST_BUTTON_GEOMETRY.compactIconSize
+      : this.stacked
+        ? PIXI_COST_BUTTON_GEOMETRY.stackedIconSize
       : PIXI_COST_BUTTON_GEOMETRY.iconSize) * this.contentScale;
     const contentGap = (this.compact
       ? PIXI_COST_BUTTON_GEOMETRY.compactContentGap
+      : this.stacked
+        ? PIXI_COST_BUTTON_GEOMETRY.stackedContentGap
       : PIXI_COST_BUTTON_GEOMETRY.contentGap) * this.contentScale;
     const contentOffsetY = (this.compact
       ? PIXI_COST_BUTTON_GEOMETRY.compactContentOffsetY
       : PIXI_COST_BUTTON_GEOMETRY.contentOffsetY) * this.contentScale;
     this.resourceIcon.width = iconSize;
     this.resourceIcon.height = iconSize;
-    const centerY =
-      this.buttonHeight / 2 + contentOffsetY;
+    const centerY = this.stacked
+      ? this.buttonHeight * PIXI_COST_BUTTON_GEOMETRY.stackedCostY
+      : this.buttonHeight / 2 + contentOffsetY;
     const iconVisible = this.resourceIcon.visible;
     const contentWidth =
       this.amountLabel.measuredWidth +
@@ -357,6 +407,10 @@ export class PixiCostButton extends PixiButton {
             this.amountLabel.measuredWidth / 2
         : this.buttonWidth / 2,
       centerY,
+    );
+    this.actionTextLabel.position.set(
+      this.buttonWidth / 2,
+      this.buttonHeight * PIXI_COST_BUTTON_GEOMETRY.stackedActionY,
     );
     const hasReason = Boolean(this.lockReason);
     this.lockedLabel.position.set(

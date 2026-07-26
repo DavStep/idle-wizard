@@ -94,6 +94,10 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   buttonYellow: 'source:assets/ui/root-run-cost-button/yellow-button-9slice.png',
   buttonGreen: 'source:assets/ui/root-run-cost-button/green-button-short.png',
   buttonGray: 'source:assets/ui/root-run-cost-button/gray-button-short.png',
+  buttonGreenStacked:
+    'source:assets/ui/root-run-cost-button/green-button.png',
+  buttonGrayStacked:
+    'source:assets/ui/root-run-cost-button/gray-button.png',
   buttonGreenNineSlice:
     'source:assets/ui/root-run-cost-button/green-button-9slice.png',
   buttonGrayNineSlice:
@@ -118,6 +122,16 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/root-run-research/research-art-well-locked-204x194.png',
   researchRank:
     'source:assets/ui/root-run-research/research-rank-badge-217x62.png',
+  researchStationTitle:
+    'source:assets/ui/root-run-research/research-station-title-red.png',
+  researchStationTitleRegular:
+    'source:assets/ui/root-run-research/research-station-title-yellow.png',
+  researchStationTitleAutomation:
+    'source:assets/ui/root-run-research/research-station-title-red.png',
+  researchStationTitleAdvanced:
+    'source:assets/ui/root-run-research/research-station-title-green.png',
+  researchStationTitleCrystal:
+    'source:assets/ui/root-run-research/research-station-title-purple.png',
   roomTabActive: 'source:assets/ui/root-run-room-tab-active.png',
   roomTabInactive: 'source:assets/ui/root-run-room-tab-inactive.png',
   info: 'source:assets/ui/prop_info.png',

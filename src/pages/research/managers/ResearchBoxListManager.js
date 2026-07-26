@@ -86,6 +86,23 @@ const RESEARCH_FALLBACK_ARTWORK = new URL(
   import.meta.url,
 ).href;
 
+function formatResearchSectionTitle(value) {
+  return String(value ?? '').replace(
+    /(^|[\s/:(-])([a-z])/g,
+    (_match, prefix, letter) => `${prefix}${letter.toUpperCase()}`,
+  );
+}
+
+function getResearchStationTitleVariant(tabId) {
+  if (tabId === 'automation' || tabId === 'advanced') {
+    return tabId;
+  }
+  if (tabId === 'emerald' || tabId === 'crystal') {
+    return 'crystal';
+  }
+  return 'regular';
+}
+
 export class ResearchBoxListManager {
   constructor({
     gameplayFacade,
@@ -576,7 +593,11 @@ export class ResearchBoxListManager {
     const { section, title } = ref;
     section.className = `research-page__box research-page__box--${box.id}`;
     section.setAttribute('aria-label', box.label);
-    title.textContent = box.label;
+    title.className =
+      `research-page__box-title research-page__box-title--${
+        getResearchStationTitleVariant(this.selectedTabId)
+      }`;
+    title.textContent = formatResearchSectionTitle(box.label);
     section.replaceChildren(
       title,
       ...this.getDisplayedResearches(box.researches).map((research) =>
@@ -600,6 +621,8 @@ export class ResearchBoxListManager {
     ref.section.className = 'research-page__box';
     ref.section.removeAttribute('aria-label');
     ref.section.replaceChildren(ref.title);
+    ref.title.className =
+      'research-page__box-title research-page__box-title--regular';
     ref.title.textContent = '';
   }
 
@@ -777,6 +800,7 @@ export class ResearchBoxListManager {
       boxId,
       research.id,
       research.label,
+      research.displayName ?? '',
       research.starLevel ?? '',
       research.value,
       research.effect,
@@ -1132,7 +1156,7 @@ export class ResearchBoxListManager {
     const parts = [];
     const name = document.createElement('span');
     name.className = 'research-page__research-name';
-    name.textContent = research.label;
+    name.textContent = research.displayName ?? research.label;
     setItemIconLabel(name, itemKind, this.getResearchItemKey(research));
     setResourceColor(name, null);
     this.appendResearchStarLabel(name, research);
