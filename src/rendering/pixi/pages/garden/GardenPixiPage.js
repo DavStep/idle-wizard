@@ -11,6 +11,7 @@ import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.j
 import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
 import { formatCoinPriceText } from '../../../../shared/coinPrice.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
+import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
 import {
   bindPixiSeedPackIcon,
   layoutPixiSeedPackIcon,
@@ -806,9 +807,10 @@ class GardenPlotWidget {
       label: `garden-plot-${instanceId}-progress`,
       tone: 'green',
     });
-    this.notification = new Graphics({
-      label: `garden-plot-${instanceId}-notification`,
-    });
+    this.notificationBadge = new PixiNotificationBadge({ assetManager });
+    this.notificationBadge.root.label =
+      `garden-plot-${instanceId}-notification`;
+    this.notification = this.notificationBadge.root;
     this.frame.addChild(
       this.soil,
       this.buyFrame,
@@ -883,7 +885,9 @@ class GardenPlotWidget {
     this.scissorsMotion.visible = this.model.phase === 'harvesting';
     this.scissors.visible = this.scissorsMotion.visible;
     this.scissorsOpen.visible = this.scissorsMotion.visible;
-    this.notification.visible = this.model.notification === true;
+    this.notificationBadge
+      .setTone(this.model.notificationTone)
+      .setActive(this.model.notification === true);
     this.registerSemanticTargets(tileNumber);
     this.applyTheme(this.theme);
     this.updateTime(this.page.timeSource());
@@ -1008,6 +1012,12 @@ class GardenPlotWidget {
     this.scissorsOpen.width = 30;
     this.scissorsOpen.height = 30;
     this.scissorsMotion.pivot.set(14.4, 17.4);
+    this.notificationBadge.placeAtTopRight({
+      x: (width - GARDEN_PIXI_GEOMETRY.plotWidth) / 2,
+      y: 0,
+      width: GARDEN_PIXI_GEOMETRY.plotWidth,
+      height: GARDEN_PIXI_GEOMETRY.plotHeight,
+    });
     this.progress.setBounds(
       (width - GARDEN_PIXI_GEOMETRY.progressWidth) / 2,
       GARDEN_PIXI_GEOMETRY.plotHeight + 3,
@@ -1265,17 +1275,9 @@ class GardenPlotWidget {
         );
       }
     }
-    this.notification
-      .clear()
-      .circle(
-        (this.width ?? GARDEN_PIXI_GEOMETRY.plotWidth) / 2 +
-          GARDEN_PIXI_GEOMETRY.plotWidth / 2 -
-          2,
-        2,
-        3,
-      )
-      .fill({ color: this.theme.notificationRed })
-      .stroke({ color: this.theme.surface, width: 1 });
+    this.notificationBadge
+      .setTone(this.model.notificationTone)
+      .setActive(this.model.notification === true);
   }
 
   reset() {
@@ -1315,7 +1317,7 @@ class GardenPlotWidget {
     this.scissorsOpen.visible = false;
     this.scissorsMotion.visible = false;
     this.resetScissorsMotion();
-    this.notification.visible = false;
+    this.notificationBadge.setActive(false);
   }
 
   unregisterSemanticTargets() {

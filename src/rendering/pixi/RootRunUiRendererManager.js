@@ -1888,6 +1888,7 @@ export class RootRunUiRendererManager {
       y: packRect.y,
       width: packRect.width,
       height: packRect.height,
+      aspectRatio: null,
     });
     const itemRect = {
       x: layout.item.centerX - layout.item.size / 2,

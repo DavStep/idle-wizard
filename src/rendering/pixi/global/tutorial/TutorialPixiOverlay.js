@@ -18,6 +18,7 @@ import {
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import { PixiNotificationBadge } from '../transient/PixiNotificationBadges.js';
 import {
   normalizeSourceRect,
   padSourceRect,
@@ -153,8 +154,11 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
       label: 'tutorial:dragYell',
     });
     this.dragYell.alpha = 0;
-    this.attentionDot = new Graphics();
-    this.attentionDot.label = 'tutorial:attentionDot';
+    this.attentionBadge = new PixiNotificationBadge({
+      assetManager: assets,
+    });
+    this.attentionBadge.root.label = 'tutorial:attentionDot';
+    this.attentionDot = this.attentionBadge.root;
     this.guideButton.addChild(
       this.guideImage,
       this.guideLabelButton,
@@ -977,27 +981,17 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
   }
 
   redrawAttention(theme) {
-    this.attentionDot.clear();
     const active =
       Boolean(this.model.lesson?.attention) && !this.panelOpen;
-    if (!active) {
-      this.attentionDot.visible = false;
-      return;
-    }
-    const size = PIXI_UI_GEOMETRY.notificationSize;
-    this.attentionDot
-      .circle(
-        TUTORIAL_PIXI_GEOMETRY.guideWidth - 2,
-        this.panelOpen ? 15 : 64,
-        size / 2,
-      )
-      .fill(theme.notificationRed)
-      .stroke({
-        color: theme.surface,
-        width: 1,
-        alignment: 0,
-      });
-    this.attentionDot.visible = true;
+    this.attentionBadge
+      .placeAtTopRight({
+        x: 0,
+        y: 0,
+        width: TUTORIAL_PIXI_GEOMETRY.guideWidth,
+        height: TUTORIAL_PIXI_GEOMETRY.guideHeight,
+      })
+      .setTone('red')
+      .setActive(active);
   }
 }
 

@@ -56,19 +56,21 @@ export function getSeedPackIconLayout({
   anchorY = 0,
   fitPositionX = 0.5,
   fitPositionY = 0.5,
+  aspectRatio = SEED_PACK_ASPECT_RATIO,
 } = {}) {
   const boxWidth = Math.max(0, Number(width) || 0);
   const boxHeight = Math.max(0, Number(height) || 0);
   const boxLeft = (Number(x) || 0) - boxWidth * (Number(anchorX) || 0);
   const boxTop = (Number(y) || 0) - boxHeight * (Number(anchorY) || 0);
-  const fittedWidth = Math.min(
-    boxWidth,
-    boxHeight * SEED_PACK_ASPECT_RATIO,
-  );
-  const fittedHeight =
-    SEED_PACK_ASPECT_RATIO > 0
-      ? Math.min(boxHeight, boxWidth / SEED_PACK_ASPECT_RATIO)
-      : 0;
+  const normalizedAspectRatio = Number(aspectRatio);
+  const shouldFitAspectRatio =
+    Number.isFinite(normalizedAspectRatio) && normalizedAspectRatio > 0;
+  const fittedWidth = shouldFitAspectRatio
+    ? Math.min(boxWidth, boxHeight * normalizedAspectRatio)
+    : boxWidth;
+  const fittedHeight = shouldFitAspectRatio
+    ? Math.min(boxHeight, boxWidth / normalizedAspectRatio)
+    : boxHeight;
   const base = {
     x:
       boxLeft +
