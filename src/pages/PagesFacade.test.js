@@ -6043,6 +6043,25 @@ describe('PagesFacade', () => {
     }
   });
 
+  it('opens Workshop stats directly for reproducible dialog QA', () => {
+    const stage = document.createElement('section');
+    const pagesFacade = new PagesFacade({
+      gameplayFacade: createGameplayFacadeFake(),
+      playerFacade: createPlayerFacadeFake('wizard'),
+    });
+
+    pagesFacade.mount(stage);
+
+    expect(pagesFacade.openDialog('stats')).toEqual({
+      ok: true,
+      dialogId: 'stats',
+      pageId: 'workshop',
+    });
+    expect(stage.querySelector('.workshop-page__stats-popup')?.hidden).toBe(false);
+
+    pagesFacade.unmount();
+  });
+
   it('shows seed inventory in the bag when the seeds tab is selected', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();

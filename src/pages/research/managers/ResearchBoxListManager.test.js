@@ -201,7 +201,10 @@ describe('ResearchBoxListManager', () => {
     );
     expect(researchedButton?.textContent).toBe('Researched');
     expect(researchedButton?.disabled).toBe(true);
-    expect(researchedButton?.classList.contains('style-button--yellow')).toBe(true);
+    expect(researchedButton?.classList.contains('style-cost-button')).toBe(true);
+    expect(
+      researchedButton?.classList.contains('style-cost-button--yellow'),
+    ).toBe(true);
     expect(
       rows[1]?.querySelector('.research-page__research-description')?.textContent,
     ).toBe('Allows mint seed to drop from summon seed.');
@@ -429,7 +432,7 @@ describe('ResearchBoxListManager', () => {
     expect(
       completedRow
         ?.querySelector('.research-page__research-button--completed')
-        ?.classList.contains('style-button--yellow'),
+        ?.classList.contains('style-cost-button--yellow'),
     ).toBe(true);
     expect(
       availableRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
@@ -536,6 +539,18 @@ describe('ResearchBoxListManager', () => {
     expect(titleRule).toContain('padding: 0 48px 0 12px;');
     expect(titleRule).toContain('font-size: 18px;');
     expect(titleRule).toContain('white-space: nowrap;');
+    expect(css).toMatch(
+      /\.research-page__content\s*\{[^}]*left:\s*0;/,
+    );
+    expect(css).toMatch(
+      /\.research-page__tabs\s*\{[^}]*left:\s*var\(--style-room-content-edge\);/,
+    );
+    expect(css).toMatch(
+      /\.research-page__row\s*\{[^}]*margin-left:\s*calc\(var\(--style-room-content-edge\) - 2px\);/,
+    );
+    expect(css).toMatch(
+      /\.style-button\.style-cost-button\.style-cost-button--yellow\.research-page__research-button--completed:disabled::after\s*\{[^}]*yellow-button-short\.png/,
+    );
     expect(titleSkinRule).toContain('height: 117px;');
     expect(titleSkinRule).toContain('border-width: 0 165px 0 5px;');
     expect(titleSkinRule).toContain(
@@ -642,7 +657,7 @@ describe('ResearchBoxListManager', () => {
     expect(buyResearch).toHaveBeenCalledWith('unlockSeed:mintSeed');
   });
 
-  it('keeps unaffordable research normal and gives locked research its dark monochrome state', () => {
+  it('keeps unaffordable research normal and dims locked research with an overlay', () => {
     const snapshot = {
       playerLevel: { currentLevel: 5 },
       research: {
@@ -748,16 +763,19 @@ describe('ResearchBoxListManager', () => {
       expect(grayChannelsMatch).toBe(true);
     }
     expect(css).toMatch(
-      /\.research-page__row\.is-locked\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-locked-1000x304\.png"\);/,
+      /\.research-page__row\.is-locked\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-1000x304\.png"\);/,
     );
     expect(css).toMatch(
-      /\.research-page__row\.is-locked\s*\{[^}]*color:\s*#fff;/,
+      /\.research-page__row\.is-locked\s*\{[^}]*color:\s*#634934;/,
     );
     expect(css).toMatch(
-      /\.research-page__row\.is-locked\s+\.research-page__research-art\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-art-well-locked-204x194\.png"\);/,
+      /\.research-page__row\.is-locked::after\s*\{[^}]*background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-1000x304\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;[^}]*filter:\s*brightness\(0\);[^}]*opacity:\s*0\.3;/,
     );
     expect(css).toMatch(
-      /\.research-page__row\.is-locked\s+\.research-page__research-art-image\s*\{[^}]*filter:\s*grayscale\(1\) brightness\(1\.4\);[^}]*opacity:\s*1;/,
+      /\.research-page__row\.is-locked\s+\.research-page__research-art\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-art-well-204x194\.png"\);/,
+    );
+    expect(css).toMatch(
+      /\.research-page__row\.is-locked\s+\.research-page__research-art-image\s*\{[^}]*filter:\s*none;[^}]*opacity:\s*1;/,
     );
     expect(css).toMatch(
       /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable::after\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-cost-button\/green-button-short\.png"\);/,
@@ -779,7 +797,7 @@ describe('ResearchBoxListManager', () => {
     expect(contentRule).toContain('top: var(--style-room-content-top);');
     expect(contentRule).toContain('right: 16px;');
     expect(contentRule).toContain('bottom: var(--style-room-chat-clearance);');
-    expect(contentRule).toContain('left: 16px;');
+    expect(contentRule).toContain('left: 0;');
     expect(listRule).toContain('bottom: var(--style-page-tab-scroll-clearance);');
     expect(listRule).toContain('display: flex;');
     expect(listRule).toContain('flex-direction: column;');
@@ -836,7 +854,9 @@ describe('ResearchBoxListManager', () => {
     expect(boxRule).toContain('gap: 5px;');
     expect(rowRule).toContain('height: var(--style-research-row-height);');
     expect(rowRule).toContain('width: var(--style-research-card-width);');
-    expect(rowRule).toContain('margin-left: -2px;');
+    expect(rowRule).toContain(
+      'margin-left: calc(var(--style-room-content-edge) - 2px);',
+    );
     expect(rowRule).toContain(
       'background: transparent url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png") center / 100% 100% no-repeat;',
     );

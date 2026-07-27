@@ -1658,6 +1658,8 @@ function createStatsRows(stats = {}, tabId) {
           Number(item.total ?? item.quantity ?? item.value) || 0,
         ),
       ),
+      itemKind: tabId.slice(0, -1),
+      itemKey: item.key ?? null,
       resourceKey: tabId.slice(0, -1),
     })),
   ];

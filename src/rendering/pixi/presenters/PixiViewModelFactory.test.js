@@ -231,6 +231,43 @@ describe('PixiViewModelFactory', () => {
     expect(offline.onSubmit).toBeNull();
   });
 
+  it('keeps item identity on stats rows so retained counts can show their icons', () => {
+    const factory = new PixiViewModelFactory();
+    const dialog = factory.createStatsDialog(
+      {
+        stats: {
+          seeds: {
+            total: 4,
+            items: [
+              {
+                key: 'briarSeed',
+                label: 'briar seed',
+                quantity: 4,
+              },
+            ],
+          },
+        },
+      },
+      'seeds',
+    );
+
+    expect(dialog.rows).toEqual([
+      {
+        id: 'seeds:total',
+        label: 'total',
+        value: '4',
+      },
+      {
+        id: 'briarSeed',
+        label: 'briar seed',
+        value: '4',
+        itemKind: 'seed',
+        itemKey: 'briarSeed',
+        resourceKey: 'seed',
+      },
+    ]);
+  });
+
   it('preserves research values and prestige reset previews from snapshots', () => {
     const factory = new PixiViewModelFactory();
     const research = factory.createResearch({

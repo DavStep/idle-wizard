@@ -55,6 +55,7 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
       assetManager: this.context.assets,
       width: INBOX_CONTENT_WIDTH,
       height: INBOX_CONTENT_HEIGHT,
+      contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
       showProgress: true,
       label: `${dialogId}:scroll`,
     });
@@ -161,10 +162,7 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
       widget.setBounds(0, y, INBOX_CONTENT_WIDTH, height);
       y += height + MAIL_GAP;
     }
-    const contentHeight = Math.max(
-      INBOX_CONTENT_HEIGHT,
-      Math.max(0, y - MAIL_GAP),
-    );
+    const contentHeight = Math.max(0, y - MAIL_GAP);
     this.emptyLabel.position.set(0, 0);
     this.scroll.setContentHeight(contentHeight);
   }

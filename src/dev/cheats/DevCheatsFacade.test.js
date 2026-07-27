@@ -669,6 +669,10 @@ describe('DevCheatsFacade', () => {
           id: 'traderStallLoader',
           command: 'cheats.openUi("traderStallLoader")',
         }),
+        expect.objectContaining({
+          id: 'stats',
+          command: 'cheats.openUi("stats")',
+        }),
       ]),
     });
     const publishAndSaveSpy = vi.spyOn(app.gameplayFacade, 'publishAndSaveSnapshot');

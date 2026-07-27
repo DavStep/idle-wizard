@@ -30,6 +30,7 @@ function createHarness(options = {}) {
     research: options.research,
     compact: options.compact,
     stacked: options.stacked,
+    tone: options.tone,
     width: options.width,
     height: options.height,
   });
@@ -68,6 +69,24 @@ describe('PixiCostButton', () => {
     expect(button.amountLabel.colorToken).toBe('#c1121f');
     expect(button.lockedLabel.visible).toBe(false);
     expect(registrations[0].descriptor.enabled()).toBe(false);
+  });
+
+  it('can reuse the whole cost-button silhouette with a yellow status skin', () => {
+    const { assetManager, button } = createHarness({ tone: 'yellow' });
+
+    button.setModel({
+      amountLabel: 'Researched',
+      resource: 'none',
+      enabled: false,
+    });
+
+    expect(button.tone).toBe('yellow');
+    expect(button.enabled).toBe(false);
+    expect(button.resourceIcon.visible).toBe(false);
+    expect(button.amountLabel.text).toBe('Researched');
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonYellowShort,
+    );
   });
 
   it('uses the retained Research lock treatment and clamps its reason to two lines', () => {

@@ -228,6 +228,7 @@ describe('retained global Pixi dialogs', () => {
       text: '#634934',
     });
     expect(settings.scroll.maxScrollY).toBe(0);
+    expect(settings.scroll.content.y).toBe(12);
     expect(settings.scroll.progressBar.visible).toBe(false);
     expect(settings.panel.closeSprite.width).toBe(38);
     expect(settings.backdropAlpha).toBe(0.68);
@@ -630,6 +631,30 @@ describe('retained global Pixi dialogs', () => {
     expect(reducedAnnouncement.backdrop.alpha).toBe(1);
     expect(reducedAnnouncement.panel.alpha).toBe(1);
     reducedHarness.dispose();
+  });
+
+  it('uses a darker backdrop only for level reward announcements', () => {
+    const harness = createHarness();
+    const announcement = harness.registry.open(
+      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
+      {
+        kind: 'level',
+        title: 'rewards',
+        animation: { kind: 'level-rewards' },
+        rows: [{ id: 'coin', label: 'coin', value: '+10' }],
+      },
+    );
+
+    expect(announcement.backdropAlpha).toBe(0.82);
+
+    announcement.bind({
+      kind: 'unlock',
+      title: 'garden unlocked',
+      items: [],
+    });
+    expect(announcement.backdropAlpha).toBe(0.68);
+
+    harness.dispose();
   });
 
   it('wraps long level reward values inside the main two-column row contract', () => {

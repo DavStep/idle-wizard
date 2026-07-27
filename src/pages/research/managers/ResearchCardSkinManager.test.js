@@ -256,9 +256,9 @@ describe('ResearchCardSkinManager', () => {
     expect(uiLayer.dataset.researchSkinRenderer).toBe('pixi');
     expect(uiLayer.parentElement.querySelector('.research-page__skin-canvas')).not.toBeNull();
     expect(loadedUrls.map((url) => new URL(url, 'http://localhost').pathname)).toEqual([
-      '/assets/game/source/ui/root-run-research/research-upgrade-bg-locked.png',
       '/assets/game/source/ui/root-run-research/research-upgrade-bg.png',
-      '/assets/game/source/ui/root-run-research/squirqle-40-locked.png',
+      '/assets/game/source/ui/root-run-research/research-upgrade-bg.png',
+      '/assets/game/source/ui/root-run-research/squirqle-40-cream.png',
       '/assets/game/source/ui/root-run-research/squirqle-40-cream.png',
       '/assets/game/source/ui/root-run-research/upgrade-lvl-bg.png',
     ]);
@@ -343,7 +343,7 @@ describe('ResearchCardSkinManager', () => {
     expect(applications[0].destroyed).toBe(true);
   });
 
-  it('uses the dark monochrome card and art textures for locked rows', async () => {
+  it('uses the normal card and art textures for locked rows', async () => {
     const { runtime, sprites } = createFakePixiRuntime();
     const { art, row, uiLayer } = createResearchSurface({ locked: true });
     const manager = new ResearchCardSkinManager({
@@ -360,17 +360,17 @@ describe('ResearchCardSkinManager', () => {
       new URL(
         sprites.find((sprite) => sprite.sourceElement === row)?.texture?.url,
         'http://localhost',
-      ).pathname,
+    ).pathname,
     ).toBe(
-      '/assets/game/source/ui/root-run-research/research-upgrade-bg-locked.png',
+      '/assets/game/source/ui/root-run-research/research-upgrade-bg.png',
     );
     expect(
       new URL(
         sprites.find((sprite) => sprite.sourceElement === art)?.texture?.url,
         'http://localhost',
-      ).pathname,
+    ).pathname,
     ).toBe(
-      '/assets/game/source/ui/root-run-research/squirqle-40-locked.png',
+      '/assets/game/source/ui/root-run-research/squirqle-40-cream.png',
     );
 
     manager.unmount();

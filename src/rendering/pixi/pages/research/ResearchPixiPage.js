@@ -1,6 +1,5 @@
 import {
   CanvasTextMetrics,
-  ColorMatrixFilter,
   Container,
   Rectangle,
   Sprite,
@@ -41,6 +40,7 @@ const MAX_LOCKED_ROWS_PER_BOX = 3;
 const RESEARCH_PAPER_INK = '#634934';
 const RESEARCH_PROGRESS_INK = '#725737';
 const RESEARCH_RANK_INK = '#ffeecf';
+const RESEARCH_LOCKED_OVERLAY_ALPHA = 0.3;
 const RESEARCH_RANK_FONT =
   '"Lilita One", "Arial Black", Arial, sans-serif';
 const RESOURCE_WORD_MATCH_PATTERN =
@@ -650,15 +650,18 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       RETAINED_PAGE_GEOMETRY.contentTop -
       RETAINED_PAGE_GEOMETRY.chatClearance;
     const width = sourceWidth - edge * 2;
+    const scrollWidth = sourceWidth - edge;
     const tabClearance =
       RETAINED_PAGE_GEOMETRY.tabHeight +
       RETAINED_PAGE_GEOMETRY.scrollCut * 2;
     this.contentHeight = contentHeight;
     this.contentWidth = width;
+    this.contentEdge = edge;
+    this.scrollWidth = scrollWidth;
     this.scroll.setBounds(
-      edge,
+      0,
       RETAINED_PAGE_GEOMETRY.contentTop,
-      width,
+      scrollWidth,
       contentHeight - tabClearance,
     );
     this.tabsLayer.position.set(
@@ -678,7 +681,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     let y = RETAINED_PAGE_GEOMETRY.scrollCut;
 
     if (this.runFocusLayer.visible) {
-      this.runFocusLayer.position.set(0, y);
+      this.runFocusLayer.position.set(this.contentEdge, y);
       this.runFocusLabel.position.set(0, 1);
       let buttonX = 76;
       const focusButtons = this.runFocusButtons.getWidgets();
@@ -700,7 +703,12 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     }
 
     for (const box of this.boxes.getWidgets()) {
-      box.setBounds(0, y, this.contentWidth);
+      box.setBounds(
+        0,
+        y,
+        this.scrollWidth,
+        this.contentEdge,
+      );
       y += box.getPreferredHeight() + RESEARCH_PIXI_GEOMETRY.categoryGap;
     }
     this.scroll.setContentHeight(
@@ -884,12 +892,15 @@ class ResearchBoxWidget {
         RESEARCH_PIXI_GEOMETRY.rowGap : 0);
   }
 
-  setBounds(x, y, width) {
+  setBounds(x, y, width, rowInsetX = 0) {
     this.root.position.set(x, y);
     this.width = width;
     this.titlePlaque.setMaxWidth(width);
-    this.rowsLayer.position.set(0, RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
-      RESEARCH_PIXI_GEOMETRY.rowGap);
+    this.rowsLayer.position.set(
+      rowInsetX,
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
+        RESEARCH_PIXI_GEOMETRY.rowGap,
+    );
   }
 
   getPreferredHeight() {
@@ -1214,15 +1225,15 @@ class ResearchRowWidget {
     });
     this.valueButton = this.costButton;
     this.valueButton.text = this.costButton.amountLabel.textObject;
-    this.researchedButton = new RetainedButton({
+    this.researchedButton = new PixiCostButton({
       assetManager,
-      label: 'Researched',
-      buttonLabel: 'research-row-researched',
-      variant: 'yellow',
+      research: true,
+      tone: 'yellow',
+      width: RESEARCH_PIXI_GEOMETRY.costWidth,
+      height: RESEARCH_PIXI_GEOMETRY.costHeight,
+      contentScale: RESEARCH_ROW_TEXT.costContentScale,
+      label: 'research-row-researched',
     });
-    this.researchedButton.control.textLabel
-      .setFontSize(RESEARCH_ROW_TEXT.buttonFontSize)
-      .setLineHeight(RESEARCH_ROW_TEXT.nameLineHeight);
     this.readonlyValue = new ResearchReadonlyValue({
       assetManager,
       label: 'research-row-readonly-value',
@@ -1235,6 +1246,19 @@ class ResearchRowWidget {
       label: 'research-row-progress',
       tone: 'yellow',
     });
+    this.lockedOverlay = new PixiNineSliceFrame({
+      texture: Texture.EMPTY,
+      sourceInsets: CARD_SOURCE_INSETS,
+      borderInsets: CARD_BORDER_INSETS,
+      width: RESEARCH_PIXI_GEOMETRY.cardWidth,
+      height: RESEARCH_PIXI_GEOMETRY.rowHeight,
+      label: 'research-row-locked-overlay',
+    });
+    this.lockedOverlay.eventMode = 'none';
+    this.lockedOverlay.tint = 0x000000;
+    this.lockedOverlay.alpha = RESEARCH_LOCKED_OVERLAY_ALPHA;
+    this.lockedOverlay.visible = false;
+    this.lockedOverlay.renderable = false;
     this.labelHit = new Container({ label: 'research-row-label-hit' });
     this.labelHit.eventMode = 'static';
     this.labelHit.cursor = 'pointer';
@@ -1251,10 +1275,11 @@ class ResearchRowWidget {
       this.rank,
       this.rankLabel,
       this.costButton,
-      this.researchedButton.root,
+      this.researchedButton,
       this.readonlyValue,
       this.readonlyStars,
       this.progress.root,
+      this.lockedOverlay,
       this.labelHit,
     );
     this.handleInfo = () =>
@@ -1285,7 +1310,6 @@ class ResearchRowWidget {
       this.labelHit.on('pointerup', this.directPressEnd);
       this.labelHit.on('pointerupoutside', this.directPressEnd);
     }
-    this.lockedArtFilter = createLockedArtFilter();
     this.layout();
   }
 
@@ -1299,6 +1323,8 @@ class ResearchRowWidget {
     this.tutorialId = research.tutorialId ?? `research:${research.id}`;
     const state = normalizeResearchState(research);
     const locked = state === 'locked';
+    this.lockedOverlay.visible = locked;
+    this.lockedOverlay.renderable = locked;
     const starLevel =
       research.star?.level ?? finiteOr(research.starLevel, 0);
     setText(
@@ -1343,16 +1369,16 @@ class ResearchRowWidget {
       String(readonlyResearchValue).trim().toLowerCase() === 'researched';
     this.costButton.visible = interactive;
     this.costButton.renderable = interactive;
-    this.researchedButton.root.visible = researched;
-    this.researchedButton.root.renderable = researched;
+    this.researchedButton.visible = researched;
+    this.researchedButton.renderable = researched;
     this.researchedButton.setModel({
-      label: 'Researched',
-      enabled: true,
-      selected: true,
+      amountLabel: 'Researched',
+      resource: 'none',
+      enabled: false,
       action: null,
     });
-    this.researchedButton.root.eventMode = 'none';
-    this.researchedButton.root.cursor = 'default';
+    this.researchedButton.eventMode = 'none';
+    this.researchedButton.cursor = 'default';
     this.readonlyValue.visible =
       !interactive && !researched && starLevel <= 0;
     this.readonlyValue.renderable = this.readonlyValue.visible;
@@ -1444,6 +1470,12 @@ class ResearchRowWidget {
     const geometry = RESEARCH_PIXI_GEOMETRY;
     this.card.position.set(geometry.cardOffsetX, 0);
     this.card.setSize(
+      geometry.cardWidth,
+      geometry.rowHeight,
+      CARD_BORDER_INSETS,
+    );
+    this.lockedOverlay.position.set(geometry.cardOffsetX, 0);
+    this.lockedOverlay.setSize(
       geometry.cardWidth,
       geometry.rowHeight,
       CARD_BORDER_INSETS,
@@ -1557,38 +1589,33 @@ class ResearchRowWidget {
     this.theme = theme;
     const locked = normalizeResearchState(this.research) === 'locked';
     this.card.setTexture(
-      this.resolveTexture(
-        locked
-          ? PIXI_ROOT_RUN_ASSETS.researchCardLocked
-          : PIXI_ROOT_RUN_ASSETS.researchCard,
-      ),
+      this.resolveTexture(PIXI_ROOT_RUN_ASSETS.researchCard),
       CARD_SOURCE_INSETS,
     );
     this.artWell.setTexture(
-      this.resolveTexture(
-        locked
-          ? PIXI_ROOT_RUN_ASSETS.researchArtLocked
-          : PIXI_ROOT_RUN_ASSETS.researchArt,
-      ),
+      this.resolveTexture(PIXI_ROOT_RUN_ASSETS.researchArt),
       ART_SOURCE_INSETS,
     );
-    this.art.filters =
-      locked && this.lockedArtFilter ? [this.lockedArtFilter] : null;
-    if (locked) {
-      this.art.tint = 0xffffff;
-    }
+    this.art.filters = null;
+    this.art.tint = 0xffffff;
+    this.lockedOverlay.setTexture(
+      this.resolveTexture(PIXI_ROOT_RUN_ASSETS.researchCard),
+      CARD_SOURCE_INSETS,
+    );
+    this.lockedOverlay.visible = locked;
+    this.lockedOverlay.renderable = locked;
     applyTextTheme(this.name, theme, {
       fontSize: RESEARCH_ROW_TEXT.nameFontSize,
       lineHeight: RESEARCH_ROW_TEXT.nameLineHeight,
       wordWrapWidth: RESEARCH_PIXI_GEOMETRY.nameMaxWidth,
-      fill: locked ? '#ffffff' : RESEARCH_PAPER_INK,
+      fill: RESEARCH_PAPER_INK,
     });
     applyTextTheme(this.description, theme, {
       fontSize: RESEARCH_ROW_TEXT.descriptionFontSize,
       lineHeight: RESEARCH_ROW_TEXT.descriptionLineHeight,
       align: 'center',
       wordWrapWidth: RESEARCH_PIXI_GEOMETRY.descriptionWidth,
-      fill: locked ? '#ffffff' : RESEARCH_PAPER_INK,
+      fill: RESEARCH_PAPER_INK,
     });
     fitResearchDescription(this.description, RESEARCH_PIXI_GEOMETRY);
     applyTextTheme(this.rankLabel, theme, {
@@ -1596,7 +1623,7 @@ class ResearchRowWidget {
       fontSize: RESEARCH_ROW_TEXT.rankFontSize,
       lineHeight: RESEARCH_ROW_TEXT.rankLineHeight,
       align: 'center',
-      fill: locked ? '#ffffff' : RESEARCH_RANK_INK,
+      fill: RESEARCH_RANK_INK,
     });
     this.rankLabel.style.stroke = {
       color: '#0a0a0a',
@@ -1613,16 +1640,14 @@ class ResearchRowWidget {
       lineHeight: RESEARCH_ROW_TEXT.valueLineHeight,
       align: 'center',
       wordWrapWidth: RESEARCH_PIXI_GEOMETRY.valueWidth - 8,
-      fill: locked
-        ? '#ffffff'
-        : inProgress
-          ? RESEARCH_PROGRESS_INK
-          : theme.resourceColors?.[this.research?.valueResourceKey] ??
-            theme.text,
+      fill: inProgress
+        ? RESEARCH_PROGRESS_INK
+        : theme.resourceColors?.[this.research?.valueResourceKey] ??
+          theme.text,
     });
     this.costButton.applyTheme(theme);
     this.researchedButton.applyTheme(theme);
-    this.researchedButton.control.textLabel
+    this.researchedButton.amountLabel
       .setFontSize(RESEARCH_ROW_TEXT.buttonFontSize)
       .setLineHeight(RESEARCH_ROW_TEXT.nameLineHeight)
       .setStroke({
@@ -1642,8 +1667,10 @@ class ResearchRowWidget {
     this.boxId = null;
     this.infoVisual.scale.set(1);
     this.costButton.reset();
-    this.researchedButton.root.visible = false;
-    this.researchedButton.root.renderable = false;
+    this.researchedButton.visible = false;
+    this.researchedButton.renderable = false;
+    this.lockedOverlay.visible = false;
+    this.lockedOverlay.renderable = false;
     this.progress.root.visible = false;
     this.root.visible = false;
     this.root.renderable = false;
@@ -1665,8 +1692,6 @@ class ResearchRowWidget {
       this.labelHit.off('pointerup', this.directPressEnd);
       this.labelHit.off('pointerupoutside', this.directPressEnd);
     }
-    this.lockedArtFilter?.destroy?.();
-    this.lockedArtFilter = null;
     this.costButton.destroy({ children: true });
     this.researchedButton.destroy();
     this.progress.destroy();
@@ -1778,19 +1803,4 @@ function normalizeResearchResource(resource) {
   if (normalized === 'seeds') return 'seed';
   if (normalized === 'herbs') return 'herb';
   return normalized;
-}
-
-function createLockedArtFilter() {
-  try {
-    const filter = new ColorMatrixFilter();
-    filter.matrix = [
-      0.2125, 0.7154, 0.0721, 0, 0,
-      0.2125, 0.7154, 0.0721, 0, 0,
-      0.2125, 0.7154, 0.0721, 0, 0,
-      0, 0, 0, 1, 0,
-    ];
-    return filter;
-  } catch {
-    return null;
-  }
 }

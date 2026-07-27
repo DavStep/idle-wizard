@@ -1260,10 +1260,14 @@ export class ResearchBoxListManager {
   createResearchedStatusButton(research) {
     const button = document.createElement('button');
     button.className =
-      'style-button style-button--yellow research-page__research-button research-page__research-button--completed';
+      'style-button style-cost-button style-cost-button--yellow research-page__research-button research-page__research-button--completed';
     button.type = 'button';
     button.disabled = true;
-    button.textContent = 'Researched';
+
+    const label = document.createElement('span');
+    label.className = 'style-cost-button__plain-label';
+    label.textContent = 'Researched';
+    button.append(label);
     button.setAttribute(
       'aria-label',
       `${this.formatResearchName(research)} is researched`,

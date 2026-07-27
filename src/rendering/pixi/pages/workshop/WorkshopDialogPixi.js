@@ -1,10 +1,19 @@
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
+import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
+import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
+import {
+  getSeedIconFrameName,
+  getSeedPackItemFrameName,
+} from '../../../../assets/items/seeds/seedIconFrames.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
-import { DEFAULT_PIXI_THEME_SNAPSHOT } from '../../theme/PixiThemeTokens.js';
+import {
+  DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 import {
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
@@ -15,6 +24,10 @@ import {
   normalizeRows,
   setText,
 } from './RetainedPageKit.js';
+
+const WORKSHOP_DIALOG_CONTENT_WIDTH = 264;
+const STATS_SCROLL_VIEWPORT_TOP_INSET = 6;
+const STATS_SCROLLBAR_SHIFT_RIGHT = 4;
 
 /**
  * Shared retained shell for Workshop-owned list/dialog surfaces.
@@ -50,6 +63,14 @@ export class WorkshopDialogPixi {
     this.viewModel = {};
     this.sourceWidth = RETAINED_PAGE_GEOMETRY.width;
     this.sourceHeight = RETAINED_PAGE_GEOMETRY.height;
+    const isStatsDialog = this.dialogId === 'workshop.stats';
+    this.scrollContentPaddingTop = PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
+    this.scrollViewportTopInset = isStatsDialog
+      ? STATS_SCROLL_VIEWPORT_TOP_INSET
+      : 0;
+    this.scrollViewportWidth =
+      WORKSHOP_DIALOG_CONTENT_WIDTH +
+      (isStatsDialog ? STATS_SCROLLBAR_SHIFT_RIGHT : 0);
 
     this.modalId = `dialog:${this.dialogId}`;
     this.modal = new PixiOwnedDialogSurface({
@@ -198,15 +219,25 @@ export class WorkshopDialogPixi {
 
   orderRows(widgets) {
     this.scroll.content.removeChildren();
-    let y = 0;
+    let y = this.scrollContentPaddingTop;
 
     for (const widget of widgets) {
       this.scroll.content.addChild(widget.root);
-      widget.setBounds(0, y, 264, widget.getPreferredHeight());
+      widget.setBounds(
+        0,
+        y,
+        WORKSHOP_DIALOG_CONTENT_WIDTH,
+        widget.getPreferredHeight(),
+      );
       y += widget.getPreferredHeight() + 4;
     }
 
-    this.scroll.setContentHeight(Math.max(0, y - 4));
+    this.scroll.setContentHeight(
+      Math.max(
+        this.scrollContentPaddingTop,
+        y - (widgets.length > 0 ? 4 : 0),
+      ),
+    );
   }
 
   orderTabs(buttons) {
@@ -267,9 +298,14 @@ export class WorkshopDialogPixi {
     const statusHeight = this.status.text ? 18 : 0;
     this.scroll.setBounds(
       20,
-      18 + copyHeight,
-      264,
-      height - 48 - copyHeight - statusHeight - composerHeight,
+      18 + copyHeight + this.scrollViewportTopInset,
+      this.scrollViewportWidth,
+      height -
+        48 -
+        copyHeight -
+        statusHeight -
+        composerHeight -
+        this.scrollViewportTopInset,
     );
     this.tabsLayer.position.set(20, height - 2);
     this.tabsLayer.visible = tabs.length > 0;
@@ -451,12 +487,26 @@ class WorkshopDialogRow {
     this.label = createText('', RETAINED_TEXT_STYLES.body);
     this.value = createText('', RETAINED_TEXT_STYLES.body);
     this.value.anchor.set(1, 0);
+    this.valueIcon = new Sprite(Texture.EMPTY);
+    this.valueIcon.label = `${dialog.dialogId}-row:value-icon`;
+    this.valueIcon.anchor.set(0.5);
+    this.valueIcon.visible = false;
+    this.valueIconOverlay = new Sprite(Texture.EMPTY);
+    this.valueIconOverlay.label = `${dialog.dialogId}-row:value-icon-overlay`;
+    this.valueIconOverlay.anchor.set(0.5);
+    this.valueIconOverlay.visible = false;
     this.action = new RetainedButton({
       assetManager: dialog.assetManager,
       buttonLabel: `${dialog.dialogId}-row-action`,
       inputRouter: dialog.inputRouter,
     });
-    this.root.addChild(this.label, this.value, this.action.root);
+    this.root.addChild(
+      this.label,
+      this.valueIcon,
+      this.valueIconOverlay,
+      this.value,
+      this.action.root,
+    );
   }
 
   bind(model) {
@@ -464,6 +514,18 @@ class WorkshopDialogRow {
     this.root.visible = true;
     setText(this.label, model.label ?? model.text ?? '');
     setText(this.value, model.value ?? '');
+    const iconFrames = resolveValueIconFrames(model);
+    this.valueIcon.texture = resolveAtlasTexture(
+      this.dialog.assetManager,
+      iconFrames.base,
+    );
+    this.valueIconOverlay.texture = resolveAtlasTexture(
+      this.dialog.assetManager,
+      iconFrames.overlay,
+    );
+    this.valueIcon.visible = this.valueIcon.texture !== Texture.EMPTY;
+    this.valueIconOverlay.visible =
+      this.valueIcon.visible && this.valueIconOverlay.texture !== Texture.EMPTY;
     const hasAction = Boolean(model.actionLabel || model.onActivate);
     this.action.root.visible = hasAction;
     this.action.setModel({
@@ -498,6 +560,15 @@ class WorkshopDialogRow {
       width - (this.action.root.visible ? actionWidth + 6 : 0),
       2,
     );
+    const iconSize = 16;
+    const iconCenterX = this.value.x - this.value.width - 3 - iconSize / 2;
+    this.valueIcon.position.set(iconCenterX, 9);
+    this.valueIcon.width = iconSize;
+    this.valueIcon.height = iconSize;
+    this.valueIconOverlay.position.set(iconCenterX, 9 - iconSize * 0.035);
+    this.valueIconOverlay.width = iconSize * 0.44;
+    this.valueIconOverlay.height = iconSize * 0.44;
+    this.valueIconOverlay.rotation = (6 * Math.PI) / 180;
     this.root.hitArea = new Rectangle(0, 0, width, height);
   }
 
@@ -534,6 +605,11 @@ class WorkshopDialogRow {
 
     this.targetId = null;
     this.model = null;
+    this.valueIcon.texture = Texture.EMPTY;
+    this.valueIcon.visible = false;
+    this.valueIconOverlay.texture = Texture.EMPTY;
+    this.valueIconOverlay.visible = false;
+    this.valueIconOverlay.rotation = 0;
     this.root.visible = false;
   }
 
@@ -545,6 +621,39 @@ class WorkshopDialogRow {
     this.action.destroy();
     this.root.destroy({ children: true });
   }
+}
+
+function resolveValueIconFrames(model = {}) {
+  const kind = String(model.itemKind ?? '').trim().toLowerCase();
+  const key = model.itemKey ?? null;
+
+  if (kind === 'seed') {
+    return {
+      base: getSeedIconFrameName(key),
+      overlay: getSeedPackItemFrameName({
+        key,
+        label: model.label,
+      }),
+    };
+  }
+
+  if (kind === 'herb') {
+    return { base: getHerbIconFrameName(key), overlay: null };
+  }
+
+  if (kind === 'potion') {
+    return { base: getPotionIconFrameName(key), overlay: null };
+  }
+
+  return { base: null, overlay: null };
+}
+
+function resolveAtlasTexture(assetManager, frameName) {
+  if (!frameName || !assetManager?.getAtlasTexture) {
+    return Texture.EMPTY;
+  }
+
+  return assetManager.getAtlasTexture(frameName) ?? Texture.EMPTY;
 }
 
 function formatComposerFailure(reason) {

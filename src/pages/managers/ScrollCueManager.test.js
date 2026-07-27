@@ -281,6 +281,12 @@ describe('ScrollCueManager', () => {
     const pageScrollRule = baseCss.match(
       /\.style-page-scroll\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const dialogRule = baseCss.match(
+      /\.style-dialog\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const dialogScrollRule = baseCss.match(
+      /:where\(\.style-dialog\.style-page-scroll,\s*\.style-dialog \.style-page-scroll\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const researchRule = baseCss.match(
       /\.research-page__box-list\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -295,6 +301,10 @@ describe('ScrollCueManager', () => {
     expect(rootRule).toMatch(
       /--style-page-scroll-padding-bottom:\s*var\(--style-page-scroll-cut\);/,
     );
+    expect(rootRule).toMatch(/--style-dialog-scroll-padding-top:\s*12px;/);
+    expect(dialogRule).toMatch(
+      /--style-scroll-context-padding-top:\s*var\(\s*--style-dialog-scroll-padding-top\s*\);/,
+    );
     expect(pageScrollRule).toMatch(
       /scroll-padding-top:\s*var\(--style-scroll-padding-top\);/,
     );
@@ -304,6 +314,10 @@ describe('ScrollCueManager', () => {
     expect(pageScrollRule).toMatch(/\bmin-height:\s*0;/);
     expect(pageScrollRule).toMatch(/\boverflow:\s*hidden auto;/);
     expect(pageScrollRule).toMatch(/\btouch-action:\s*pan-y;/);
+    expect(dialogScrollRule).toMatch(/\bbox-sizing:\s*border-box;/);
+    expect(dialogScrollRule).toMatch(
+      /padding-top:\s*var\(--style-dialog-scroll-padding-top\);/,
+    );
     expect(baseCss).not.toMatch(/\.style-dialog-scroll(?:\s|:|\{)/);
     expect(researchRule).toMatch(
       /padding-top:\s*var\(--style-page-scroll-padding-top\);/,

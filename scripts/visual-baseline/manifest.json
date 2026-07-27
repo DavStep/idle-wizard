@@ -1025,14 +1025,15 @@
       "kind": "dialog",
       "production": true,
       "coverage": {
+        "devUi": ["stats"],
         "domSelectors": [
           ".workshop-page__stats-dialog",
           ".workshop-page__tasks-info-dialog"
         ]
       },
       "recipe": {
-        "kind": "manual",
-        "gap": "Workshop stats and task-info dialogs do not yet have named openUi recipes."
+        "kind": "devUi",
+        "surfaceId": "stats"
       },
       "anchors": [
         {
@@ -1050,8 +1051,20 @@
       ],
       "states": [
         { "id": "stats" },
-        { "id": "stats-scrolling" },
-        { "id": "task-info" }
+        {
+          "id": "stats-scrolling",
+          "recipe": {
+            "kind": "manual",
+            "gap": "The stats dialog opens deterministically, but no checked-in recipe scrolls it to a stable offset yet."
+          }
+        },
+        {
+          "id": "task-info",
+          "recipe": {
+            "kind": "manual",
+            "gap": "The task-info dialog still requires page-local interaction and has no named openUi recipe."
+          }
+        }
       ]
     },
     {

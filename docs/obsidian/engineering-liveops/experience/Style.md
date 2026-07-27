@@ -17,7 +17,7 @@ experience_type: style
 - Herb label atlas frames should trim transparent padding at build time so 256x256 source art fills text-size icon labels.
 - Smooth currency icons must retain partial-alpha edge pixels; normalize contours with supersampled antialiasing and Lanczos downsampling, never nearest-neighbor plus a binary alpha mask. Keep `assets/game/source/icons/currencyIcons.test.js` green.
 - Idle Witch Craft seed pack icons live in sibling `../idle-whitch-craft/core/assets/misc/seedpacks`; `../idle-witch-craft 2/raws/misc/seedpacks` has matching raw copies.
-- Seed packs use the shared transparent blank `assets/game/source/items/seeds/seed-pack.png` base; render each as one SVG atlas composite through `createSeedPackIcon` so the herb mark stays code-overlaid, never baked into the bag art.
+- Seed packs use the shared transparent blank `assets/game/source/items/seeds/seed-pack.png` base; keep the herb mark code-overlaid, never baked into the bag art. DOM and retained Pixi composites both size the herb to `44%` of the pack, shift it upward by `7%` of its own height, and rotate it `6deg`.
 - Idle Witch Craft item drop and coin flyout parity lives in `../idle-whitch-craft/core/MobilePreview.ts` plus `../idle-whitch-craft/core/mobile.css` keyframes around `mobile-workshop-item-drop`, `mobile-seed-burst`, and `mobile-coin-amt-pop`.
 - Idle Witch Craft launcher icon source lives at `../idle-whitch-craft/core/assets/ui/icons/game-icon.png`; generated Android launcher PNGs live under `../idle-whitch-craft/core/android/app/src/main/res/mipmap-*`.
 - Idle Witch Craft splash loading gradient progress bar CSS lives at `../idle-whitch-craft/core/splash.css`.
@@ -93,8 +93,8 @@ experience_type: style
 - Research page uses `snapshot.research.tabs` for full-page regular/automation/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
 - Automation research is target-specific (`automation:autoPlantTile:1`, `automation:autoBrewCauldron:1`): one plot study combines plant + harvest, and one cauldron study combines brew + bottle.
 - Research blocks should render no more than 3 locked rows each; keep deeper locked research hidden until earlier items unlock.
-- Completed research rows display `researched` and keep the same fixed value-slot height as price controls.
-- Locked research rows use dark monochrome card and art-well skins, keep all player-facing copy white, and render artwork as an opaque bright monochrome image; do not communicate locked state by fading the whole row.
+- Completed research rows display `researched` in a yellow recolor of the exact green cost-button silhouette and keep the same fixed value-slot height as price controls.
+- Locked research rows reuse the normal card, art-well, artwork, and copy colors under one `30%` black overlay; keep the gray locked action as the explicit state cue instead of swapping the whole row to dark monochrome assets.
 - Research rows use the shared station-upgrade-card family: keep the Root Run card width but compress the row to `80px`, use a `52x52px` left art well with `57px` artwork, a fixed smaller middle description, a `0.267` source-scale one-step level badge, and a `72x42px` cost/status button. The title and description share the row ink color. Render the art-well squircle with its source `49 49 50 50` margins through a dynamically sized Pixi nine-slice; stretching the source PNG as a normal background turns it into an oval. Intentionally omit the bottom `current ▶ next` capsule.
 - Shared image-backed cost buttons must wrap plain labels such as `free` or `locked` in a positioned label above the skin pseudo-element; resource-cost labels already own that foreground layer.
 - Research name clicks open a `style-dialog` info popup; keep explanation text on the research definition snapshot.
@@ -183,6 +183,7 @@ experience_type: style
 - Mixed resource strings need separate marked spans when each semantic part needs its own icon; the spans still inherit surrounding text color.
 - Resource metadata owns the shared icon and semantic resource color, but disabled and locked component states override it with the normal muted treatment.
 - Shared top room chrome uses the `16px` source side inset from Research content. Bottom room tabs are the deliberate exception: their equal-width row fills the source width.
+- Research station title plaques connect to the screen's left edge while their cards, fixed tabs, and run-focus controls keep the shared `16px` content inset.
 - Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
 - NPC market reset must clear shared `npcStock` to `0` plus restore `npcNeed` to target; stock is server state and can survive player-data resets.
 - Global NPC market resets need a one-time server maintenance marker; do not tie shared market wipes to per-player progress reset hooks.
@@ -198,6 +199,7 @@ experience_type: style
 - Scrollbars belong to the actual scrolling element. Do not append horizontal progress rails, bottom fades, or reserved bottom-rail gaps.
 - Shared scrollbar styling must not override positioned room containers; absolute content panels must keep their authored top/right/bottom/left insets.
 - Dialog scroll panes keep normal dialog padding and their full content height; fixed tabs and actions remain outside the viewport.
+- Dialog scroll top-inset changes must update both the DOM scroll viewport and retained Pixi row origin; CSS padding alone does not move the production retained render.
 - Custom non-scroll popups that reuse `.guild-page__popup-content` must suppress the inherited scrollbar and reserve explicit slots only for their real progress rails or action buttons.
 - World event dialog content should stay a flex column: fixed header, scroll frame, then normal shared scroll rail. Do not use grid `:has()` spacer rows or rail margin overrides there.
 - Scrollable popup content that opens from `hidden` needs one deferred frame before pinning to bottom; hidden flex layouts can report stale scroll geometry.
@@ -263,10 +265,12 @@ experience_type: style
 - Research item-name spans may keep resource metadata for icons, but their text inherits the row's normal, completed, or unavailable state color.
 - Treat every new UI primitive, compound component, scroll behavior, box/dialog type, control pattern, or meaningfully different widget variant as an approval gate: show the user one named list with `390x844` previews before product-code integration, then catalog only approved widgets in `docs/ui-patterns.md`.
 - Retained global dialogs must count the Root Run frame outsets when enforcing width: cap the complete shell at `90%` of the `360px` source screen, then reflow content inside the resulting `264px` content box.
+- Retained dialog tabs must reuse the Workshop Bag dialog's `RetainedButton` tab pool, selected-state binding, and frame-attached geometry; do not build feature-local `PixiButton` tab rows. When a dialog intentionally uses multiple paper sections, hide the generic full paper frame so those sections sit directly on the brown shell instead of nesting paper inside paper; render every split section with the shared Expedition paper nine-slice and derive its top/right/bottom/left outsets from the default dialog content-inset geometry.
+- Stall allocation rows and their slider knob reuse the exact Root Run Settings qUIck assets and `/3` source geometry: 50px row pitch, 8px content insets, and a 23px knob. Do not redraw either surface with `Graphics`.
 
 ## Runtime art sources
 
 - Keep high-resolution generation masters outside `assets/game/source`; the production asset manifest includes every PNG and WebP below that tree. Put only runtime-sized finals there, or intermediate art will inflate web and APK builds.
 - Build research icon families from shared plot, cauldron, seed-pack, hourglass, and action-overlay masters. Do not independently generate each final icon or identical gameplay concepts will drift; keep currencies out of research artwork.
-- Pixi `ColorMatrixFilter.grayscale(1)` sums RGB channels and clips bright art; locked artwork should use the Idle Outpost luminance weights `0.2125/0.7154/0.0721` and neutralize sprite tint RGB.
+- Pixi `ColorMatrixFilter.grayscale(1)` sums RGB channels and clips bright art; locked cauldron artwork that intentionally stays monochrome should use the Idle Outpost luminance weights `0.2125/0.7154/0.0721` and neutralize sprite tint RGB.
 - Grayscale and monochrome shaders are icon-only. Disabled buttons must swap to the shared gray button asset instead of filtering colored button chrome.

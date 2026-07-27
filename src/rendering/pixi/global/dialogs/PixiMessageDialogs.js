@@ -21,6 +21,8 @@ import {
 
 const ANNOUNCEMENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
+const ANNOUNCEMENT_BACKDROP_ALPHA = 0.68;
+const LEVEL_REWARDS_BACKDROP_ALPHA = 0.82;
 const CONFIRMATION_WIDTH = 260;
 const UNLOCK_ITEM_WIDTH = 72;
 const UNLOCK_ITEM_GAP_X = 4;
@@ -126,7 +128,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       contentHeight: 176,
       placement: 'center',
       includeClose: true,
-      backdropAlpha: 0.68,
+      backdropAlpha: ANNOUNCEMENT_BACKDROP_ALPHA,
       label: `${dialogId}:announcementSurface`,
     });
     // Announcements use their own shorter panel motion and staged content
@@ -212,6 +214,11 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
   bindDialog(viewModel) {
     this.announcementModel = normalizeAnnouncementModel(viewModel);
     const model = this.announcementModel;
+    this.backdropAlpha =
+      model.animation?.kind === 'level-rewards'
+        ? LEVEL_REWARDS_BACKDROP_ALPHA
+        : ANNOUNCEMENT_BACKDROP_ALPHA;
+    this.redrawBackdrop(this.theme);
     this.panel.setTitle(model.framed ? model.title : '');
     this.heading.setText(model.framed ? '' : model.title);
     this.copy.setText(model.copy);

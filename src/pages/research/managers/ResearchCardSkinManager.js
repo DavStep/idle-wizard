@@ -7,7 +7,7 @@ const RESEARCH_SKINS = Object.freeze([
     id: 'cardLocked',
     selector: '.research-page__row.is-locked',
     url: new URL(
-      '../../../../assets/game/source/ui/root-run-research/research-upgrade-bg-locked.png',
+      '../../../../assets/game/source/ui/root-run-research/research-upgrade-bg.png',
       import.meta.url,
     ).href,
     width: 1000,
@@ -36,7 +36,7 @@ const RESEARCH_SKINS = Object.freeze([
     selector:
       '.research-page__row.is-locked .research-page__research-art',
     url: new URL(
-      '../../../../assets/game/source/ui/root-run-research/squirqle-40-locked.png',
+      '../../../../assets/game/source/ui/root-run-research/squirqle-40-cream.png',
       import.meta.url,
     ).href,
     width: 204,

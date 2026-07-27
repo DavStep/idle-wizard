@@ -110,6 +110,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       assetManager: this.context.assets,
       width: SETTINGS_CONTENT_WIDTH,
       height: SETTINGS_SCROLL_HEIGHT,
+      contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
       showProgress: true,
       label: `${dialogId}:scroll`,
     });

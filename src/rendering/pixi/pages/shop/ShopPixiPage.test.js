@@ -3,7 +3,7 @@
 import {
   createPixiAssetManagerFake,
 } from '../workshop/PixiPageTestHarness.js';
-import { Container, Texture } from 'pixi.js';
+import { Container, Sprite, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DialogRegistry } from '../../retained/DialogRegistry.js';
@@ -11,6 +11,10 @@ import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
+import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
+import {
+  PIXI_ROOT_RUN_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 import { SHOP_DIALOG_IDS } from './ShopDialogPixi.js';
 import { ShopPixiPage } from './ShopPixiPage.js';
 
@@ -172,6 +176,136 @@ describe('ShopPixiPage', () => {
 
     expect(firstRow.detail.visible).toBe(true);
     expect(secondRow.root.y).toBeGreaterThanOrEqual(firstDetailBottom);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps stall controls in a separate white section above icon-backed item rows', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+
+    harness.page.openDialog(SHOP_DIALOG_IDS.STALL, {
+      title: 'load stall',
+      summaryRows: [
+        {
+          id: 'current',
+          label: 'current',
+          value: 'sage seed',
+          quantityLabel: 'x2',
+          itemKind: 'seed',
+          itemKey: 'sageSeed',
+        },
+      ],
+      range: {
+        enabled: true,
+        value: 25,
+      },
+      items: [
+        {
+          id: 'sageSeed',
+          label: 'sage seed',
+          detail: '8 available',
+          itemKind: 'seed',
+          itemKey: 'sageSeed',
+          selected: true,
+        },
+      ],
+      actions: [
+        { id: 'mark', label: 'mark x2', enabled: true },
+        { id: 'clear', label: 'clear', enabled: true },
+        { id: 'future', label: 'mark future', enabled: true },
+      ],
+      tabs: [
+        { id: 'seed', label: 'seeds', selected: true },
+        { id: 'herb', label: 'herbs' },
+        { id: 'potion', label: 'potions' },
+      ],
+    });
+
+    const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.STALL);
+    const [row] = dialog.list.rows.getWidgets();
+    const [mark] = dialog.actions.getWidgets();
+    const [seedsTab, herbsTab] = dialog.tabs.getWidgets();
+
+    expect(dialog.selectionSection.visible).toBe(true);
+    expect(dialog.itemSection.visible).toBe(true);
+    expect(dialog.panel.paperFrame.visible).toBe(false);
+    expect(dialog.selectionSection.texture).toBe(
+      dialog.panel.paperFrame.texture,
+    );
+    expect(dialog.itemSection.texture).toBe(
+      dialog.panel.paperFrame.texture,
+    );
+    expect(dialog.selectionSection.sourceInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.dialog.paperSourceInsets,
+    );
+    expect(dialog.rangeControl.knob).toBeInstanceOf(Sprite);
+    expect(dialog.rangeControl.knob.width).toBeCloseTo(23);
+    expect(dialog.selectionSectionBounds.height).toBeGreaterThan(0);
+    expect(dialog.itemSectionBounds.y).toBeGreaterThan(
+      dialog.selectionSectionBounds.y +
+        dialog.selectionSectionBounds.height,
+    );
+    expect(dialog.selectionSection.x).toBeLessThan(
+      dialog.selectionSectionBounds.x,
+    );
+    expect(
+      dialog.selectionSection.x +
+        dialog.selectionSection.frameWidth,
+    ).toBeGreaterThan(
+      dialog.selectionSectionBounds.x +
+        dialog.selectionSectionBounds.width,
+    );
+    expect(
+      dialog.itemSection.y -
+        (dialog.selectionSection.y +
+          dialog.selectionSection.frameHeight),
+    ).toBeCloseTo(8);
+    expect(mark.root.y).toBeLessThan(dialog.list.root.y);
+    expect(mark.control.variant).toBe('yellow');
+    expect(dialog.tabLayer.parent).toBe(dialog.panel);
+    expect(dialog.tabLayer.y).toBe(dialog.config.height - 2);
+    expect(seedsTab.control.variant).toBe('tab');
+    expect(seedsTab.control.resolveRootRunVariant()).toBe(
+      'brown-light',
+    );
+    expect(herbsTab.control.resolveRootRunVariant()).toBe(
+      'brown-dark',
+    );
+    expect(row.itemIcon.visible).toBe(true);
+    expect(row.itemIconOverlay.visible).toBe(true);
+    expect(
+      row.itemIconOverlay.width / row.itemIcon.width,
+    ).toBeCloseTo(0.44);
+    expect(row.itemIconOverlay.y).toBeLessThan(row.itemIcon.y);
+    expect(row.itemIconOverlay.rotation).toBeCloseTo(
+      (6 * Math.PI) / 180,
+    );
+    expect(row.background).toBeInstanceOf(PixiNineSliceFrame);
+    expect(row.background.sourceInsets).toEqual({
+      top: 17,
+      right: 25,
+      bottom: 19,
+      left: 13,
+    });
+    expect(row.height).toBe(50);
+    expect(
+      row.itemIcon.x -
+        row.itemIcon.width / 2 -
+        row.background.x,
+    ).toBeCloseTo(8);
+    expect(row.selectedIndicator.visible).toBe(true);
+    expect(row.selectedIndicator.x).toBeGreaterThan(row.label.x);
+    expect(
+      row.background.x +
+        row.background.frameWidth -
+        (row.selectedIndicator.x +
+          row.selectedIndicator.width / 2),
+    ).toBeCloseTo(8);
+    expect(row.label.fontWeight).toBe('normal');
+    expect(dialog.list.scroll.progressBar).toBeNull();
 
     harness.page.destroy();
     harness.dispose();

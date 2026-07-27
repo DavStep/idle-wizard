@@ -279,6 +279,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       showProgress: true,
       width: 1,
       height: 1,
+      contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
       label: `${this.dialogId}:details`,
     });
     this.detailPool = new WidgetPool({

@@ -139,6 +139,28 @@ describe('createShop', () => {
       progress: 0.25,
       timerLabel: '45s',
     });
+    expect(model.shop.traders.stalls[0].dialog).toMatchObject({
+      range: {
+        enabled: true,
+        value: 20,
+      },
+      summaryRows: [
+        {
+          itemKey: 'sageSeed',
+          itemKind: 'seed',
+          quantityLabel: 'x2',
+          value: 'sage seed',
+        },
+      ],
+    });
+    expect(model.shop.traders.stalls[0].dialog.items[0]).toMatchObject({
+      itemKey: 'sageSeed',
+      itemKind: 'seed',
+    });
+    expect(model.shop.traders.stalls[0].dialog.actions[0]).toMatchObject({
+      label: 'mark x2',
+      enabled: false,
+    });
     expect(model.shop.players.requests.slots[0]).toMatchObject({
       itemLabel: 'sage seed (2)',
       value: '5 coin',

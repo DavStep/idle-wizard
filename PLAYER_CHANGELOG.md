@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.3.9
+
+- Reworked trader stall loading with clearer item categories, selection rows, allocation controls, and future-stock actions.
+- Polished Research with edge-aligned category plaques, clearer locked studies, and a distinct completed-study button.
+- Improved dialog spacing and readability, including item icons in Workshop statistics.
+
 ## 0.3.8
 
 - Improved Brewing with clearer cauldron navigation, station ranks, settings artwork, and locked-cauldron purchasing.

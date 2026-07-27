@@ -264,6 +264,14 @@ function createStallModel({
     slot.sellItemTypeId ??
     slot.futureItemTypeId ??
     null;
+  const selectedItem = safeArray(shelf.sellItems).find(
+    (item) => item.itemTypeId === selectedItemTypeId,
+  );
+  const selectedKind =
+    uiState.stallItemKindBySlot?.[slotNumber] ??
+    selectedItem?.kind ??
+    safeArray(shelf.sellKinds)[0]?.kind ??
+    null;
   const draftAllocation = finiteNumber(
     uiState.stallAllocationPercentBySlot?.[slotNumber],
     Number.NaN,
@@ -324,6 +332,7 @@ function createStallModel({
       allocationPercent,
       gameplayActions,
       selectedItemTypeId,
+      selectedKind,
       shelf,
       slot,
       slotNumber,
@@ -336,6 +345,7 @@ function createStallDialog({
   allocationPercent,
   gameplayActions,
   selectedItemTypeId,
+  selectedKind,
   shelf,
   slot,
   slotNumber,
@@ -344,6 +354,18 @@ function createStallDialog({
   const selectedItem = safeArray(shelf.sellItems).find(
     (item) => item.itemTypeId === selectedItemTypeId,
   );
+  const loadedQuantity =
+    selectedItem &&
+    slot.sellItemTypeId === selectedItem.itemTypeId
+      ? nonNegativeInteger(slot.loadedQuantity)
+      : 0;
+  const targetQuantity = selectedItem
+    ? Math.floor(
+        ((loadedQuantity + nonNegativeInteger(selectedItem.quantity)) *
+          allocationPercent) /
+          100,
+      )
+    : 0;
   const selectSlot = () =>
     callFirst(
       gameplayActions,
@@ -364,44 +386,64 @@ function createStallDialog({
         id: 'current',
         label: 'current',
         value:
+          selectedItem?.label ??
           slot.sellLabel ??
           slot.futureItemLabel ??
           'empty',
         valueResourceKey:
-          slot.sellKind ?? slot.futureItemKind ?? null,
+          selectedItem?.kind ??
+          slot.sellKind ??
+          slot.futureItemKind ??
+          null,
+        itemKey:
+          selectedItem?.key ??
+          slot.sellKey ??
+          slot.futureItemKey ??
+          null,
+        itemKind:
+          selectedItem?.kind ??
+          slot.sellKind ??
+          slot.futureItemKind ??
+          null,
+        quantityLabel: selectedItem ? `x${targetQuantity}` : '',
       },
     ],
-    range: selectedItem
-      ? {
-          value: allocationPercent,
-          onChange: (percentage) =>
-            callFirst(
-              uiActions,
-              ['setStallAllocationDraft'],
-              [slotNumber, percentage, selectedItem],
-            ),
-        }
-      : null,
-    items: safeArray(shelf.sellItems).map((item) => ({
-      id: item.itemTypeId ?? item.key,
-      label: item.label,
-      detail: `${nonNegativeInteger(item.quantity)} available`,
-      value: item.itemTypeId === selectedItemTypeId ? 'selected' : '',
-      resourceKey: item.kind,
-      selected: item.itemTypeId === selectedItemTypeId,
-      semanticId: `shop.stall.${slotNumber}.item.${item.key ?? item.itemTypeId}`,
-      action: () =>
+    range: {
+      enabled: Boolean(selectedItem),
+      value: allocationPercent,
+      onChange: (percentage) =>
         callFirst(
           uiActions,
-          ['selectStallItem'],
-          [slotNumber, item],
+          ['setStallAllocationDraft'],
+          [slotNumber, percentage, selectedItem],
         ),
-    })),
+    },
+    items: safeArray(shelf.sellItems)
+      .filter((item) => !selectedKind || item.kind === selectedKind)
+      .map((item) => ({
+        id: item.itemTypeId ?? item.key,
+        label: item.label,
+        detail: `${nonNegativeInteger(item.quantity)} available`,
+        value: '',
+        itemKey: item.key,
+        itemKind: item.kind,
+        resourceKey: item.kind,
+        selected: item.itemTypeId === selectedItemTypeId,
+        semanticId: `shop.stall.${slotNumber}.item.${item.key ?? item.itemTypeId}`,
+        action: () =>
+          callFirst(
+            uiActions,
+            ['selectStallItem'],
+            [slotNumber, item],
+          ),
+      })),
     actions: [
       {
         id: 'mark',
-        label: 'mark',
-        enabled: Boolean(selectedItem),
+        label: `mark x${targetQuantity}`,
+        enabled:
+          Boolean(selectedItem) &&
+          targetQuantity !== loadedQuantity,
         action: () =>
           callFirstOr(
             uiActions,
@@ -470,7 +512,7 @@ function createStallDialog({
     tabs: safeArray(shelf.sellKinds).map((kind) => ({
       id: kind.kind,
       label: kind.label,
-      selected: kind.kind === selectedItem?.kind,
+      selected: kind.kind === selectedKind,
       action: () =>
         callFirst(uiActions, ['selectStallItemKind'], [
           slotNumber,

@@ -36,6 +36,7 @@ export const PIXI_UI_GEOMETRY = Object.freeze({
   panelPaddingX: 10,
   panelPaddingY: 5,
   dialogPadding: 20,
+  dialogScrollPaddingTop: 12,
   dialogTabGap: 8,
   rowMinHeight: 20,
   rowColumnGap: 6,
@@ -92,6 +93,8 @@ export const PIXI_PROGRESS_VISUALS = Object.freeze({
 
 export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   buttonYellow: 'source:assets/ui/root-run-cost-button/yellow-button-9slice.png',
+  buttonYellowShort:
+    'source:assets/ui/root-run-cost-button/yellow-button-short.png',
   buttonGreen: 'source:assets/ui/root-run-cost-button/green-button-short.png',
   buttonGray: 'source:assets/ui/root-run-cost-button/gray-button-short.png',
   buttonGreenStacked:
@@ -107,6 +110,10 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   buttonBrownLight:
     'source:assets/ui/root-run-cost-button/brown-button-light-9slice.png',
   coin: 'source:assets/ui/root-run-cost-button/coin.png',
+  settingsKnob:
+    'source:assets/ui/root-run-settings/settings-knob.png',
+  settingsRow:
+    'source:assets/ui/root-run-settings/settings-row-bg-9slice.png',
   dialogBack: 'source:assets/ui/root-run-dialog/expedition-dialog-back.png',
   dialogPaper: 'source:assets/ui/root-run-dialog/expedition-dialog-front.png',
   dialogTitle:
@@ -162,6 +169,24 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
 
 export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
   designWidth: 1080,
+  settings: Object.freeze({
+    knobSize: 69 / 3,
+    rowPitch: 150 / 3,
+    rowPadding: 24 / 3,
+    rowGap: 18 / 3,
+    rowSourceInsets: Object.freeze({
+      top: 17,
+      right: 25,
+      bottom: 19,
+      left: 13,
+    }),
+    rowBorderInsets: Object.freeze({
+      top: 17 / 3,
+      right: 25 / 3,
+      bottom: 19 / 3,
+      left: 13 / 3,
+    }),
+  }),
   button: Object.freeze({
     sourceInsets: Object.freeze({ top: 100, right: 43, bottom: 68, left: 115 }),
     borderInsets: Object.freeze({ top: 17, right: 7, bottom: 12, left: 20 }),

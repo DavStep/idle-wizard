@@ -17,6 +17,7 @@ import {
   RETAINED_SCROLLBAR_GEOMETRY,
   RETAINED_SCROLLBAR_VISUALS,
 } from '../workshop/RetainedPageKit.js';
+import { PIXI_ROOT_RUN_ASSETS } from '../../theme/PixiThemeTokens.js';
 
 describe('ResearchPixiPage', () => {
   it('builds once and keeps keyed boxes and research rows across updates', () => {
@@ -101,8 +102,27 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
-  it('uses Idle Outpost luminance weights for locked artwork', () => {
-    const harness = createHarness();
+  it('reuses the normal row visuals beneath a translucent locked overlay', () => {
+    const normalTexture = Texture.WHITE;
+    const lockedTexture = Texture.EMPTY;
+    const assetManager = {
+      getAtlasTexture() {
+        return Texture.EMPTY;
+      },
+      getTexture(assetId) {
+        if (
+          assetId === PIXI_ROOT_RUN_ASSETS.researchCardLocked ||
+          assetId === PIXI_ROOT_RUN_ASSETS.researchArtLocked
+        ) {
+          return lockedTexture;
+        }
+        return normalTexture;
+      },
+      has() {
+        return true;
+      },
+    };
+    const harness = createHarness({ assetManager });
     harness.page.bind(
       createResearchViewModel({
         canResearch: false,
@@ -111,16 +131,18 @@ describe('ResearchPixiPage', () => {
     );
 
     const row = harness.page.boxes.get('herbs').rows.get('mint');
-    row.art.tint = 0xff0000;
-    row.applyTheme(harness.page.theme);
-    expect(row.art.filters).toEqual([row.lockedArtFilter]);
-    expect(row.art.tint).toBe(0xffffff);
-    expect(row.lockedArtFilter.matrix).toEqual([
-      0.2125, 0.7154, 0.0721, 0, 0,
-      0.2125, 0.7154, 0.0721, 0, 0,
-      0.2125, 0.7154, 0.0721, 0, 0,
-      0, 0, 0, 1, 0,
-    ]);
+    expect(row.card.texture).toBe(normalTexture);
+    expect(row.artWell.texture).toBe(normalTexture);
+    expect(row.art.filters).toBeNull();
+    expect(row.name.style.fill).toBe('#634934');
+    expect(row.description.style.fill).toBe('#634934');
+    expect(row.lockedOverlay).toMatchObject({
+      visible: true,
+      renderable: true,
+      alpha: 0.3,
+      tint: 0x000000,
+      texture: normalTexture,
+    });
 
     harness.page.destroy();
     harness.dispose();
@@ -148,11 +170,17 @@ describe('ResearchPixiPage', () => {
     );
     harness.page.bind(model);
 
-    expect(harness.page.scroll.root.position).toMatchObject({ x: 16, y: 104 });
+    expect(harness.page.scroll.root.position).toMatchObject({ x: 0, y: 104 });
     expect(harness.page.scroll).toMatchObject({
-      width: 328,
+      width: 344,
       height: 417.33333333333337,
     });
+    const box = harness.page.boxes.get('herbs');
+    expect(box.root.position.x).toBe(0);
+    expect(box.titlePlaque.root.position.x).toBe(0);
+    expect(box.rowsLayer.position.x).toBe(16);
+    expect(box.rows.get('mint').root.position.x).toBe(0);
+    expect(box.rows.get('mint').card.position.x).toBe(-2);
     expect(harness.page.tabsLayer.position).toMatchObject({
       x: 16,
       y: 527.3333333333334,
@@ -278,7 +306,7 @@ describe('ResearchPixiPage', () => {
     });
     expect(row.costButton.amountLabel.fontSize).toBeCloseTo(17 * 0.88);
     expect(row.costButton.resourceIcon.width).toBeCloseTo(23 * 0.88);
-    expect(row.researchedButton.control.textLabel.fontSize).toBe(12);
+    expect(row.researchedButton.amountLabel.fontSize).toBe(12);
     expect(box.title.text).toBe('Herbs');
     expect(box.title.style).toMatchObject({
       fontFamily: '"Lilita One", "Arial Black", Arial, sans-serif',
@@ -435,12 +463,12 @@ describe('ResearchPixiPage', () => {
     expect(row.description.style.fontSize).toBe(11);
     expect(row.name.style.fill).toEqual(row.description.style.fill);
     expect(row.name.position.y).toBe(0);
-    expect(row.researchedButton.root.visible).toBe(true);
-    expect(row.researchedButton.control.variant).toBe('yellow');
-    expect(row.researchedButton.text.text).toBe('Researched');
+    expect(row.researchedButton.visible).toBe(true);
+    expect(row.researchedButton.tone).toBe('yellow');
+    expect(row.researchedButton.amountLabel.text).toBe('Researched');
     expect(row.researchedButton).toMatchObject({
-      width: 72,
-      height: 42,
+      buttonWidth: 72,
+      buttonHeight: 42,
     });
     expect(row.readonlyValue.visible).toBe(false);
 
@@ -570,12 +598,16 @@ describe('ResearchPixiPage', () => {
   });
 });
 
-function createHarness({ ticker = null, timeSource = undefined } = {}) {
+function createHarness({
+  ticker = null,
+  timeSource = undefined,
+  assetManager = createPixiAssetManagerFake(Texture),
+} = {}) {
   const dialogLayer = new Container();
   const dialogs = new DialogRegistry();
   const semanticTargets = new SemanticTargetRegistry();
   const page = new ResearchPixiPage({
-    assetManager: createPixiAssetManagerFake(Texture),
+    assetManager,
     dialogLayer,
     dialogRegistry: dialogs,
     semanticTargets,

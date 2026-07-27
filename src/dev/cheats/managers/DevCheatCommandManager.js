@@ -157,6 +157,7 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
   { id: 'seeds', kind: 'dialog', dialogId: 'seeds' },
   { id: 'herbs', kind: 'dialog', dialogId: 'herbs' },
   { id: 'potions', kind: 'dialog', dialogId: 'potions' },
+  { id: 'stats', kind: 'dialog', dialogId: 'stats', aliases: ['workshopStats'] },
   { id: 'summonInfo', kind: 'dialog', dialogId: 'summonInfo', aliases: ['summon'] },
   { id: 'leaderboard', kind: 'dialog', dialogId: 'leaderboard', aliases: ['leaderboards'] },
   { id: 'alliance', kind: 'dialog', dialogId: 'alliance', aliases: ['alliances'] },

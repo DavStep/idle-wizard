@@ -387,6 +387,8 @@ export class PagesFacade {
         return this.openInventoryDialog({ ...options, tab: options.tab ?? 'herbs' });
       case 'potions':
         return this.openInventoryDialog({ ...options, tab: options.tab ?? 'potions' });
+      case 'stats':
+        return this.openWorkshopDialog('stats', options);
       case 'summoninfo':
       case 'summon':
         return this.openWorkshopDialog('summonInfo', options);
@@ -656,6 +658,11 @@ export class PagesFacade {
 
     if (managerId === 'summonInfo') {
       page.summonInfoManager?.show?.();
+      return { ok: true, dialogId: managerId, pageId: 'workshop' };
+    }
+
+    if (managerId === 'stats') {
+      page.statsManager?.show?.();
       return { ok: true, dialogId: managerId, pageId: 'workshop' };
     }
 

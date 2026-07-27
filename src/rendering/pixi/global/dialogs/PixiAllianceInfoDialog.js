@@ -59,6 +59,7 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
       assetManager: this.context.assets,
       width: ALLIANCE_CONTENT_WIDTH,
       height: ALLIANCE_CONTENT_HEIGHT - 20,
+      contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
       showProgress: false,
       label: `${dialogId}:scroll`,
     });
@@ -318,9 +319,7 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
       ALLIANCE_CONTENT_WIDTH,
       { gap: 5 },
     );
-    this.scroll.setContentHeight(
-      Math.max(viewportHeight, rowsHeight),
-    );
+    this.scroll.setContentHeight(rowsHeight);
     this.primaryAction.position.set(
       0,
       viewportHeight + 6,

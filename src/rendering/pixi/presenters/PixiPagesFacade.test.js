@@ -84,6 +84,102 @@ describe('PixiPagesFacade', () => {
     });
   });
 
+  it('keeps retained stall picker drafts interactive until an allocation is marked', () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.shop = {
+      shelf: {
+        sellKinds: [
+          { kind: 'seed', label: 'seeds' },
+          { kind: 'herb', label: 'herbs' },
+        ],
+        sellItems: [
+          {
+            itemTypeId: 1,
+            key: 'sageSeed',
+            kind: 'seed',
+            label: 'sage seed',
+            quantity: 8,
+          },
+          {
+            itemTypeId: 2,
+            key: 'sageHerb',
+            kind: 'herb',
+            label: 'sage',
+            quantity: 3,
+          },
+        ],
+        slots: [
+          {
+            slotNumber: 1,
+            sellItemTypeId: null,
+            futureItemTypeId: null,
+            loadedQuantity: 0,
+          },
+        ],
+      },
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.runtime.getOpenDialogIds.mockReturnValue([
+      'shop.stall',
+    ]);
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show('shop');
+
+    let dialog =
+      harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
+    expect(dialog.items.map((item) => item.itemKey)).toEqual([
+      'sageSeed',
+    ]);
+
+    dialog.items[0].action();
+    expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
+      'shop.stall',
+      expect.objectContaining({
+        summaryRows: [
+          expect.objectContaining({ value: 'sage seed' }),
+        ],
+      }),
+    );
+    dialog =
+      harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
+    expect(dialog.summaryRows[0]).toMatchObject({
+      value: 'sage seed',
+      quantityLabel: 'x8',
+    });
+    expect(dialog.actions[0]).toMatchObject({
+      label: 'mark x8',
+      enabled: true,
+    });
+
+    dialog.range.onChange(25);
+    dialog =
+      harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
+    expect(dialog.actions[0].label).toBe('mark x2');
+
+    dialog.tabs.find((tab) => tab.id === 'herb').action();
+    dialog =
+      harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
+    expect(dialog.items.map((item) => item.itemKey)).toEqual([
+      'sageHerb',
+    ]);
+
+    dialog.tabs.find((tab) => tab.id === 'seed').action();
+    dialog =
+      harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
+    dialog.actions[0].action();
+
+    expect(
+      harness.gameplayFacade.selectShopShelfSlot,
+    ).toHaveBeenCalledWith(1);
+    expect(
+      harness.gameplayFacade.setSelectedShopShelfSlotAllocation,
+    ).toHaveBeenCalledWith(1, 25);
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
+      'shop.stall',
+    );
+  });
+
   it('rejects locked navigation and delegates the lock surface to retained chrome', () => {
     const harness = createHarness({
       gameplaySnapshot: createGameplaySnapshot({ level: 1 }),
@@ -614,6 +710,12 @@ function createHarness({
     fireGuildAdventurer: vi.fn(),
     buyGardenTile: vi.fn(),
     selectGardenSeed: vi.fn(),
+    selectShopShelfSlot: vi.fn(() => ({ ok: true })),
+    setSelectedShopShelfSlotAllocation: vi.fn(() => ({
+      ok: true,
+    })),
+    clearSelectedShopShelfSlot: vi.fn(() => ({ ok: true })),
+    setSelectedShopShelfFutureItem: vi.fn(() => ({ ok: true })),
   };
   const playerFacade = {
     getSnapshot: vi.fn(() => ({

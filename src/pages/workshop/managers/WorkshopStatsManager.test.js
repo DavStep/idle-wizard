@@ -159,17 +159,18 @@ describe('WorkshopStatsManager', () => {
     expect(rows[1].querySelector('.workshop-page__stats-name')?.textContent).toBe('sage seed');
     expect(
       rows[1].querySelector('.workshop-page__stats-name')?.classList.contains('style-seed-label'),
-    ).toBe(true);
+    ).toBe(false);
     expect(
-      rows[1].querySelector('.workshop-page__stats-name .style-seed-label__icon'),
+      rows[1].querySelector('.workshop-page__stats-status .style-seed-label__icon'),
     ).not.toBeNull();
+    expect(rows[1].querySelector('.workshop-page__stats-status')?.textContent).toBe('2');
 
     tabs[1].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const herbRows = [...parent.querySelectorAll('.workshop-page__stats-row')];
     expect(herbRows[1].getAttribute('data-resource-color')).toBe('herb');
     expect(
-      herbRows[1].querySelector('.workshop-page__stats-name .style-herb-label__icon')?.dataset
+      herbRows[1].querySelector('.workshop-page__stats-status .style-herb-label__icon')?.dataset
         .assetAtlasFrame,
     ).toBe('herb:sageHerb');
 
@@ -177,7 +178,7 @@ describe('WorkshopStatsManager', () => {
 
     const potionRows = [...parent.querySelectorAll('.workshop-page__stats-row')];
     expect(
-      potionRows[1].querySelector('.workshop-page__stats-name .style-potion-label__icon')?.dataset
+      potionRows[1].querySelector('.workshop-page__stats-status .style-potion-label__icon')?.dataset
         .assetAtlasFrame,
     ).toBe('potion:manaTonic');
 

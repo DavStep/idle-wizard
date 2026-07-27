@@ -223,12 +223,13 @@ export class WorkshopStatsManager {
     const name = document.createElement('span');
     name.className = 'workshop-page__stats-name';
     name.textContent = row.label;
-    setItemIconLabel(name, row.itemKind, row.itemKey);
 
     const status = document.createElement('span');
     status.className = 'workshop-page__stats-status';
     status.textContent = row.status;
-    if (row.resource === 'coin') {
+    if (row.itemKind) {
+      setItemIconLabel(status, row.itemKind, row.itemKey);
+    } else if (row.resource === 'coin') {
       setResourceIconText(status, row.status);
     }
 

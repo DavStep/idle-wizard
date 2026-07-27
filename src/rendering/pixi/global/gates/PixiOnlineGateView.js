@@ -4,6 +4,9 @@ import {
   PixiProgressBar,
   PixiTextLabel,
 } from '../../primitives/index.js';
+import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
+
+const ONLINE_GATE_CONTENT_WIDTH = 260;
 
 export class PixiOnlineGateView extends PixiModalSurface {
   constructor({
@@ -15,7 +18,7 @@ export class PixiOnlineGateView extends PixiModalSurface {
     super({
       assetManager: assets,
       title: '',
-      contentWidth: 260,
+      contentWidth: ONLINE_GATE_CONTENT_WIDTH,
       contentHeight: 16,
       opaqueBackdrop: true,
       inputRouter,
@@ -27,16 +30,22 @@ export class PixiOnlineGateView extends PixiModalSurface {
     this.preferredLayer = 'interactionLocks';
     this.model = null;
     this.elapsedMs = 0;
-    this.message = new PixiTextLabel({ label: 'onlineGate:message' });
+    this.message = new PixiTextLabel({
+      label: 'onlineGate:message',
+      wordWrap: true,
+      wrapWidth: ONLINE_GATE_CONTENT_WIDTH,
+    });
     this.progress = new PixiProgressBar({
       assetManager: assets,
-      width: 260,
+      width: ONLINE_GATE_CONTENT_WIDTH,
       label: 'onlineGate:progress',
     });
     this.action = new PixiButton({
       assetManager: assets,
       inputRouter,
       text: '',
+      width: ONLINE_GATE_CONTENT_WIDTH,
+      variant: 'yellow',
       label: 'onlineGate:action',
     });
     this.panel.content.addChild(this.message, this.progress, this.action);
@@ -98,7 +107,11 @@ export class PixiOnlineGateView extends PixiModalSurface {
       this.action.position.set(0, y);
       y += this.action.buttonHeight;
     }
-    this.panel.setContentSize(260, y);
+    this.panel.setContentBoxSize(
+      ONLINE_GATE_CONTENT_WIDTH,
+      y,
+      PIXI_UI_GEOMETRY.dialogPadding,
+    );
     this.panel.pivot.set(this.panel.outerWidth / 2, this.panel.outerHeight / 2);
     this.onLayout(this.viewportProjection);
   }

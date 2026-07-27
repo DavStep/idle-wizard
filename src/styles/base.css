@@ -71,6 +71,7 @@
   --style-page-scroll-cut: 6px;
   --style-page-scroll-padding-top: var(--style-page-scroll-cut);
   --style-page-scroll-padding-bottom: var(--style-page-scroll-cut);
+  --style-dialog-scroll-padding-top: 12px;
   --style-border: var(--style-border-width) solid var(--style-stroke);
   --style-separator-border: var(--style-border);
   --style-tab-border: var(--style-border-strong);
@@ -409,6 +410,7 @@
   --garden-page-plot-progress-slot-height: var(--style-scroll-progress-height);
   --garden-page-plot-visual-width: 88px;
   --garden-page-plot-progress-width: 80px;
+  --garden-page-plot-progress-height: 6px;
   --garden-page-plot-box-frame-height: 84px;
   --garden-page-plot-row-gap: 20px;
   --garden-page-plot-number-color: #3b2416;
@@ -2642,6 +2644,10 @@ body {
   display: none;
 }
 
+.room-announcement-layer[data-announcement-kind="level"] {
+  background: rgb(var(--style-backdrop-rgb) / 82%);
+}
+
 .game-stage[data-viewport-mode="web-wide"] {
   --style-web-wide-source-gutter: max(
     0px,
@@ -4539,7 +4545,7 @@ span.room-seed-pack-composite .room-seed-pack-item {
   height: var(--style-research-row-height);
   min-height: var(--style-research-row-height);
   padding: 0;
-  margin-left: -2px;
+  margin-left: calc(var(--style-room-content-edge) - 2px);
   clear: both;
   overflow: visible;
   color: #634934;
@@ -4551,9 +4557,20 @@ span.room-seed-pack-composite .room-seed-pack-item {
 }
 
 .research-page__row.is-locked {
-  color: #fff;
+  color: #634934;
   cursor: pointer;
-  background-image: url("../../assets/game/source/ui/root-run-research/research-card-locked-1000x304.png");
+  background-image: url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png");
+}
+
+.research-page__row.is-locked::after {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  content: "";
+  background: transparent url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png") center / 100% 100% no-repeat;
+  filter: brightness(0);
+  opacity: 0.3;
 }
 
 .shop-page__slot-row {
@@ -10390,8 +10407,10 @@ div.workshop-page__discovery-row {
 .garden-page__plot .garden-page__plot-progress {
   grid-column: 1;
   grid-row: 2;
+  align-self: center;
   justify-self: center;
   width: var(--garden-page-plot-progress-width);
+  height: var(--garden-page-plot-progress-height);
 }
 
 .garden-page__plot .garden-page__plot-box-timer {
@@ -10798,14 +10817,14 @@ div.workshop-page__discovery-row {
   top: var(--style-room-content-top);
   right: 16px;
   bottom: var(--style-room-chat-clearance);
-  left: 16px;
+  left: 0;
 }
 
 .research-page__tabs {
   position: absolute;
   right: 0;
   bottom: 6px;
-  left: 0;
+  left: var(--style-room-content-edge);
   z-index: 20;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -10907,6 +10926,7 @@ div.workshop-page__discovery-row {
 
 .research-page__run-focus {
   flex: 0 0 auto;
+  margin-left: var(--style-room-content-edge);
   min-height: var(--style-row-min-height);
   color: var(--style-muted);
   font-size: var(--style-box-border-label-font-size);
@@ -11150,10 +11170,8 @@ div.workshop-page__discovery-row {
   line-height: normal;
 }
 
-:root
-  .research-page__row.is-completed
-  .style-button.style-button--yellow.research-page__research-button--completed {
-  filter: none;
+.style-button.style-cost-button.style-cost-button--yellow.research-page__research-button--completed:disabled::after {
+  background-image: url("../../assets/game/source/ui/root-run-cost-button/yellow-button-short.png");
 }
 
 .style-button.style-cost-button.research-page__research-button {
@@ -11244,7 +11262,7 @@ div.workshop-page__discovery-row {
 }
 
 .research-page__row.is-locked .research-page__research-art {
-  background-image: url("../../assets/game/source/ui/root-run-research/research-art-well-locked-204x194.png");
+  background-image: url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.png");
 }
 
 .research-page__ui-layer[data-research-skin-renderer="pixi"]
@@ -11265,7 +11283,7 @@ div.workshop-page__discovery-row {
 }
 
 .research-page__row.is-locked .research-page__research-art-image {
-  filter: grayscale(1) brightness(1.4);
+  filter: none;
   opacity: 1;
 }
 
@@ -16209,6 +16227,9 @@ div.workshop-page__discovery-row {
 }
 
 .style-dialog {
+  --style-scroll-context-padding-top: var(
+    --style-dialog-scroll-padding-top
+  );
   position: relative;
   z-index: 20;
   padding: var(--style-dialog-padding);
@@ -17482,7 +17503,10 @@ div.workshop-page__discovery-row {
 }
 
 .style-page-scroll {
-  --style-scroll-padding-top: var(--style-page-scroll-padding-top);
+  --style-scroll-padding-top: var(
+    --style-scroll-context-padding-top,
+    var(--style-page-scroll-padding-top)
+  );
   --style-scroll-padding-bottom: var(--style-page-scroll-padding-bottom);
   min-height: 0;
   overflow: hidden auto;
@@ -17491,6 +17515,11 @@ div.workshop-page__discovery-row {
   overscroll-behavior: contain;
   scrollbar-width: none;
   touch-action: pan-y;
+}
+
+:where(.style-dialog.style-page-scroll, .style-dialog .style-page-scroll) {
+  box-sizing: border-box;
+  padding-top: var(--style-dialog-scroll-padding-top);
 }
 
 .style-page-scroll::-webkit-scrollbar {

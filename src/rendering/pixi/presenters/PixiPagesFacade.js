@@ -167,6 +167,9 @@ export class PixiPagesFacade {
     this.workshopLeaderboardTabId = 'singlePlayer';
     this.researchTabId = 'regular';
     this.shopTabId = 'traders';
+    this.shopStallItemTypeIdBySlot = new Map();
+    this.shopStallAllocationPercentBySlot = new Map();
+    this.shopStallItemKindBySlot = new Map();
     this.guildTabId = 'hall';
     this.prestigeTabId = 'main';
     this.gardenInventoryTabId = null;
@@ -620,6 +623,17 @@ export class PixiPagesFacade {
           gameplayActions: this.gameplayFacade,
           playerShopActions: this.playerShopFacade,
           actions: { ui: actions.shop },
+          uiState: {
+            stallItemTypeIdBySlot: Object.fromEntries(
+              this.shopStallItemTypeIdBySlot,
+            ),
+            stallAllocationPercentBySlot: Object.fromEntries(
+              this.shopStallAllocationPercentBySlot,
+            ),
+            stallItemKindBySlot: Object.fromEntries(
+              this.shopStallItemKindBySlot,
+            ),
+          },
         });
         break;
       case 'guild':
@@ -635,16 +649,38 @@ export class PixiPagesFacade {
         return;
     }
 
-    runtime.bindPage(
+    const projectedViewModel = projectPageViewModelNotifications(
       pageId,
-      projectPageViewModelNotifications(
-        pageId,
-        viewModel,
-        this.tutorialNotificationPolicy,
-        { pageNotification },
-      ),
+      viewModel,
+      this.tutorialNotificationPolicy,
+      { pageNotification },
     );
+    runtime.bindPage(pageId, projectedViewModel);
     this.dirtyPageIds.delete(pageId);
+    return projectedViewModel;
+  }
+
+  refreshShopStallDialog(slotNumber) {
+    const viewModel = this.refreshPage('shop');
+    const runtime = this.requireRuntime();
+    if (
+      !viewModel ||
+      !runtime.getOpenDialogIds?.().includes(SHOP_DIALOG_IDS.STALL)
+    ) {
+      return viewModel;
+    }
+    const stall = viewModel.shop?.traders?.stalls?.find(
+      (candidate) => candidate.slotNumber === slotNumber,
+    );
+    if (stall) {
+      runtime
+        .getPage('shop')
+        ?.openDialog?.(
+          SHOP_DIALOG_IDS.STALL,
+          stall.dialog ?? stall,
+        );
+    }
+    return viewModel;
   }
 
   createActions() {
@@ -751,6 +787,137 @@ export class PixiPagesFacade {
           return result;
         },
         clearPlayerRequest: () => false,
+        selectStallItem: (slotNumber, item) => {
+          const safeSlotNumber = Math.max(
+            1,
+            Math.floor(Number(slotNumber) || 1),
+          );
+          this.shopStallItemTypeIdBySlot.set(
+            safeSlotNumber,
+            item?.itemTypeId ?? null,
+          );
+          this.shopStallAllocationPercentBySlot.set(
+            safeSlotNumber,
+            100,
+          );
+          if (item?.kind) {
+            this.shopStallItemKindBySlot.set(
+              safeSlotNumber,
+              item.kind,
+            );
+          }
+          this.refreshShopStallDialog(safeSlotNumber);
+          return {
+            ok: true,
+            slotNumber: safeSlotNumber,
+            itemTypeId: item?.itemTypeId ?? null,
+          };
+        },
+        setStallAllocationDraft: (
+          slotNumber,
+          percentage,
+          item,
+        ) => {
+          const safeSlotNumber = Math.max(
+            1,
+            Math.floor(Number(slotNumber) || 1),
+          );
+          const safePercentage = Math.max(
+            0,
+            Math.min(
+              100,
+              Math.round((Number(percentage) || 0) / 5) * 5,
+            ),
+          );
+          if (item?.itemTypeId !== undefined) {
+            this.shopStallItemTypeIdBySlot.set(
+              safeSlotNumber,
+              item.itemTypeId,
+            );
+          }
+          this.shopStallAllocationPercentBySlot.set(
+            safeSlotNumber,
+            safePercentage,
+          );
+          this.refreshShopStallDialog(safeSlotNumber);
+          return {
+            ok: true,
+            slotNumber: safeSlotNumber,
+            percentage: safePercentage,
+          };
+        },
+        selectStallItemKind: (slotNumber, kind) => {
+          const safeSlotNumber = Math.max(
+            1,
+            Math.floor(Number(slotNumber) || 1),
+          );
+          this.shopStallItemKindBySlot.set(
+            safeSlotNumber,
+            String(kind ?? ''),
+          );
+          this.refreshShopStallDialog(safeSlotNumber);
+          return true;
+        },
+        markStall: (slotNumber, item, percentage) => {
+          const selected = gameplay?.selectShopShelfSlot?.(
+            slotNumber,
+          );
+          if (selected === false || selected?.ok === false) {
+            return selected;
+          }
+          const result =
+            gameplay?.setSelectedShopShelfSlotAllocation?.(
+              item?.itemTypeId,
+              percentage,
+            );
+          if (result?.ok) {
+            this.requireRuntime().closeDialog(
+              SHOP_DIALOG_IDS.STALL,
+            );
+          }
+          return result;
+        },
+        clearStall: (slotNumber) => {
+          const selected = gameplay?.selectShopShelfSlot?.(
+            slotNumber,
+          );
+          if (selected === false || selected?.ok === false) {
+            return selected;
+          }
+          const result =
+            gameplay?.clearSelectedShopShelfSlot?.();
+          if (result?.ok) {
+            this.shopStallItemTypeIdBySlot.delete(slotNumber);
+            this.shopStallAllocationPercentBySlot.delete(slotNumber);
+            this.requireRuntime().closeDialog(
+              SHOP_DIALOG_IDS.STALL,
+            );
+          }
+          return result;
+        },
+        toggleStallFuture: (
+          slotNumber,
+          item,
+          enabled,
+        ) => {
+          const selected = gameplay?.selectShopShelfSlot?.(
+            slotNumber,
+          );
+          if (selected === false || selected?.ok === false) {
+            return selected;
+          }
+          const result =
+            gameplay?.setSelectedShopShelfFutureItem?.(
+              item?.itemTypeId,
+              enabled,
+            );
+          if (result?.ok) {
+            this.requireRuntime().closeDialog(
+              SHOP_DIALOG_IDS.STALL,
+            );
+          }
+          return result;
+        },
       },
       guild: {
         selectTab: (tabId) => {

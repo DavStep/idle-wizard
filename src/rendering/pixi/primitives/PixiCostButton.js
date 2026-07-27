@@ -70,6 +70,7 @@ export class PixiCostButton extends PixiButton {
     research = false,
     compact = false,
     stacked = false,
+    tone = 'green',
     contentScale = 1,
     action = null,
     label = 'costButton',
@@ -89,6 +90,7 @@ export class PixiCostButton extends PixiButton {
     this.research = Boolean(research);
     this.compact = Boolean(compact);
     this.stacked = Boolean(stacked);
+    this.tone = tone === 'yellow' ? 'yellow' : 'green';
     this.contentScale = Math.max(0.1, Number(contentScale) || 1);
     this.costState = 'available';
     this.resource = 'coin';
@@ -266,17 +268,7 @@ export class PixiCostButton extends PixiButton {
     const compactDisabled = this.compact && !this.modelEnabled;
     const skinDisabled = locked || compactDisabled;
     const backgroundTexture = this.resolveTexture(
-      this.compact
-        ? skinDisabled
-          ? PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice
-          : PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice
-        : this.stacked
-          ? skinDisabled
-            ? PIXI_ROOT_RUN_ASSETS.buttonGrayStacked
-            : PIXI_ROOT_RUN_ASSETS.buttonGreenStacked
-          : skinDisabled
-            ? PIXI_ROOT_RUN_ASSETS.buttonGray
-            : PIXI_ROOT_RUN_ASSETS.buttonGreen,
+      this.resolveBackgroundAsset({ skinDisabled }),
     );
     this.background.texture = backgroundTexture;
     this.background.visible = !this.compact;
@@ -311,6 +303,25 @@ export class PixiCostButton extends PixiButton {
     this.lockReasonLabel.visible = locked && Boolean(this.lockReason);
     this.lockReasonLabel.renderable = this.lockReasonLabel.visible;
     this.layoutCostContent();
+  }
+
+  resolveBackgroundAsset({ skinDisabled }) {
+    if (this.compact) {
+      return skinDisabled
+        ? PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice
+        : PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice;
+    }
+    if (this.stacked) {
+      return skinDisabled
+        ? PIXI_ROOT_RUN_ASSETS.buttonGrayStacked
+        : PIXI_ROOT_RUN_ASSETS.buttonGreenStacked;
+    }
+    if (skinDisabled) {
+      return PIXI_ROOT_RUN_ASSETS.buttonGray;
+    }
+    return this.tone === 'yellow'
+      ? PIXI_ROOT_RUN_ASSETS.buttonYellowShort
+      : PIXI_ROOT_RUN_ASSETS.buttonGreen;
   }
 
   applyFixedTextStyle() {

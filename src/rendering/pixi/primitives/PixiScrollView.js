@@ -17,6 +17,7 @@ export class PixiScrollView extends Container {
     assetManager = null,
     width = 280,
     height = 200,
+    contentPaddingTop = 0,
     showProgress = false,
     progressTone = 'root',
     virtualize = null,
@@ -26,7 +27,11 @@ export class PixiScrollView extends Container {
     this.label = label;
     this.viewportWidth = width;
     this.viewportHeight = height;
-    this.contentHeight = height;
+    this.contentHeight = 0;
+    this.contentPaddingTop = Math.max(
+      0,
+      Number(contentPaddingTop) || 0,
+    );
     this.scrollY = 0;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.virtualize = virtualize;
@@ -34,6 +39,7 @@ export class PixiScrollView extends Container {
     this.viewport.label = `${label}:viewport`;
     this.content = new Container();
     this.content.label = `${label}:content`;
+    this.content.y = this.contentPaddingTop;
     this.maskGraphic = new Graphics();
     this.maskGraphic.label = `${label}:mask`;
     this.fadeGraphic = new Graphics();
@@ -78,7 +84,7 @@ export class PixiScrollView extends Container {
   }
 
   setContentHeight(height) {
-    this.contentHeight = Math.max(this.viewportHeight, Number(height) || 0);
+    this.contentHeight = Math.max(0, Number(height) || 0);
     const changed = this.scrollTo(this.scrollY);
     this.updateProgress();
     this.redrawFade();
@@ -87,11 +93,12 @@ export class PixiScrollView extends Container {
 
   scrollTo(y) {
     const next = Math.max(0, Math.min(this.maxScrollY, Number(y) || 0));
-    if (next === this.scrollY) {
+    const contentY = this.contentPaddingTop - next;
+    if (next === this.scrollY && this.content.y === contentY) {
       return false;
     }
     this.scrollY = next;
-    this.content.y = -next;
+    this.content.y = contentY;
     this.virtualize?.({
       scrollY: this.scrollY,
       viewportHeight: this.viewportHeight,
@@ -139,7 +146,10 @@ export class PixiScrollView extends Container {
 
   redrawFade() {
     this.fadeGraphic.clear();
-    if (this.scrollY >= this.maxScrollY || this.maxScrollY <= 0) {
+    if (
+      this.scrollY >= this.maxScrollY ||
+      this.maxScrollY <= this.contentPaddingTop
+    ) {
       return;
     }
     const height = Math.min(64, this.viewportHeight);
@@ -153,12 +163,18 @@ export class PixiScrollView extends Container {
       return;
     }
     const ratio = this.maxScrollY <= 0 ? 1 : this.scrollY / this.maxScrollY;
-    this.progressBar.visible = this.maxScrollY > 0;
+    this.progressBar.visible =
+      this.maxScrollY > this.contentPaddingTop;
     this.progressBar.setProgress(ratio);
   }
 
   get maxScrollY() {
-    return Math.max(0, this.contentHeight - this.viewportHeight);
+    return Math.max(
+      0,
+      this.contentPaddingTop +
+        this.contentHeight -
+        this.viewportHeight,
+    );
   }
 
   destroy(options) {

@@ -158,6 +158,75 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('renders each stats item icon immediately before its retained count', () => {
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getAtlasTexture = vi.fn(() => new Texture());
+    const harness = createHarness({ assetManager });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.stats = {
+      title: 'stats',
+      rows: [
+        {
+          id: 'briarSeed',
+          label: 'briar seed',
+          value: '12',
+          itemKind: 'seed',
+          itemKey: 'briarSeed',
+        },
+      ],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('stats');
+
+    const row = harness.dialogs.get('workshop.stats').rows.get('briarSeed');
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('seed:pack');
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('herb:briarHerb');
+    expect(row.valueIcon.visible).toBe(true);
+    expect(row.valueIconOverlay.visible).toBe(true);
+    expect(row.valueIcon.x).toBeLessThan(row.value.x);
+    expect(row.valueIcon.x + row.valueIcon.width / 2 + 3).toBe(
+      row.value.x - row.value.width,
+    );
+    expect(row.valueIcon.y).toBe(9);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('insets the stats scroll crop and moves its scrollbar toward the paper edge', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.stats = {
+      title: 'stats',
+      rows: Array.from({ length: 20 }, (_, index) => ({
+        id: `row-${index}`,
+        label: `row ${index}`,
+        value: String(index),
+      })),
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('stats');
+
+    const dialog = harness.dialogs.get('workshop.stats');
+    const firstRow = dialog.rows.get('row-0');
+    const secondRow = dialog.rows.get('row-1');
+    expect(dialog.scroll.root.y).toBe(24);
+    expect(firstRow.root.y).toBe(12);
+    expect(secondRow.root.y).toBe(
+      12 + firstRow.getPreferredHeight() + 4,
+    );
+    expect(dialog.scroll.width).toBe(268);
+    expect(dialog.scroll.scrollbarTrack.visible).toBe(true);
+    expect(dialog.scroll.scrollbarTrack.getLocalBounds().x).toBeGreaterThan(
+      268,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('keeps failed chat drafts and clears them only after confirmed success', async () => {
     const send = vi
       .fn()

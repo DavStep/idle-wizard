@@ -236,7 +236,7 @@ describe('GardenPixiPage', () => {
     expect(plot.progress.progress).toBeCloseTo(0.5);
     expect(plot.progress).toMatchObject({
       tone: 'green',
-      height: 10,
+      height: 6,
     });
 
     harness.page.activate();

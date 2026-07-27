@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
+import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
 import {
   ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT,
   FRESH_START_CHOICE_CONNECT_ACCOUNT,
@@ -54,6 +55,46 @@ describe('retained Pixi gate controllers', () => {
       message: 'back soon',
       progress: false,
     });
+  });
+
+  it('keeps account-in-use copy and the current action skin inside the padded dialog', () => {
+    const onAction = vi.fn();
+    const view = new PixiOnlineGateView({
+      assets: createAssets(),
+    });
+
+    view.bind({
+      title: 'server required',
+      message: 'account opened on another device. close this one to continue there.',
+      actionLabel: 'play here',
+      onAction,
+    });
+
+    expect(view.message.wordWrap).toBe(true);
+    expect(view.message.wrapWidth).toBe(260);
+    expect(view.message.measuredWidth).toBeLessThanOrEqual(260);
+    expect(view.action.variant).toBe('yellow');
+    expect(view.action.buttonWidth).toBe(260);
+    expect(view.panel.contentBoxWidth).toBe(260);
+    expect(view.panel.contentInsets).toEqual({
+      top: PIXI_UI_GEOMETRY.dialogPadding,
+      right: PIXI_UI_GEOMETRY.dialogPadding,
+      bottom: PIXI_UI_GEOMETRY.dialogPadding,
+      left: PIXI_UI_GEOMETRY.dialogPadding,
+    });
+    expect(view.panel.coreWidth).toBe(
+      260 + PIXI_UI_GEOMETRY.dialogPadding * 2,
+    );
+    expect(view.panel.content.x).toBe(PIXI_UI_GEOMETRY.dialogPadding);
+    expect(view.panel.content.y).toBe(PIXI_UI_GEOMETRY.dialogPadding);
+    expect(view.action.y).toBeGreaterThanOrEqual(
+      view.message.measuredHeight + 12,
+    );
+
+    view.action.activate();
+    expect(onAction).toHaveBeenCalledOnce();
+
+    view.destroy();
   });
 
   it('resolves account and fresh-start choices through retained callbacks', async () => {

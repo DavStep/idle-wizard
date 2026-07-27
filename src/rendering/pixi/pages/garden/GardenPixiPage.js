@@ -17,7 +17,6 @@ import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
-  PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
   BaseRetainedPixiPage,
@@ -51,7 +50,7 @@ export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   plotWidth: 88,
   plotHeight: 84,
   progressWidth: 80,
-  progressHeight: PIXI_UI_GEOMETRY.progressTotalHeight,
+  progressHeight: 6,
   inventoryButtonWidth: 45.5,
   inventoryButtonHeight: 80.25,
   inventoryOpenHeight: 68.25,
