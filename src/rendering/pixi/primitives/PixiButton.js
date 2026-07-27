@@ -42,6 +42,7 @@ export class PixiButton extends Container {
     width = PIXI_UI_GEOMETRY.buttonWidth + 24,
     height = 30,
     action = null,
+    fallbackHitTest = false,
     haptic = 'light',
     variant = 'regular',
     label = 'button',
@@ -108,6 +109,7 @@ export class PixiButton extends Container {
         onPressChange: (pressed, context) => this.setPressed(pressed, context),
         onActivate: (event) => this.activate(event),
         haptic: () => this.haptic,
+        fallbackHitTest: fallbackHitTest === true,
         excludePageSwipe: true,
       }) ?? null;
     this.semanticDefinition =

@@ -303,6 +303,44 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('routes a retargeted tutorial-overlay press to the request action', () => {
+    const inputRouter = new PixiInputRouter();
+    const turnIn = vi.fn(() => ({ ok: true }));
+    const harness = createHarness({ inputRouter });
+    const model = createWorkshopViewModel();
+    model.workshop.tasks.rows[0].actionLabel = 'turn in';
+    model.workshop.tasks.rows[0].enabled = true;
+    model.workshop.tasks.rows[0].onActivate = turnIn;
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const action = harness.page.tasks.rows.get('request-1').action;
+    const registration = inputRouter.store
+      .getRegistrations('press')
+      .find((candidate) => candidate.displayObject === action.root);
+    const actionBounds = action.root.getBounds();
+    const actionPoint = {
+      x: actionBounds.x + actionBounds.width / 2,
+      y: actionBounds.y + actionBounds.height / 2,
+    };
+    const overlayTarget = new Container({ label: 'tutorial-overlay-hit' });
+
+    expect(registration?.fallbackHitTest).toBe(true);
+
+    inputRouter.onPointerDown(
+      createPointerEvent(overlayTarget, 'pointerdown', actionPoint),
+    );
+    inputRouter.onPointerUp(
+      createPointerEvent(overlayTarget, 'pointerup', actionPoint),
+    );
+
+    expect(turnIn).toHaveBeenCalledWith(model.workshop.tasks.rows[0]);
+
+    overlayTarget.destroy();
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('retains its page tree and keyed repeated widgets across snapshot updates', () => {
     const harness = createHarness();
     const registry = new PageRegistry({

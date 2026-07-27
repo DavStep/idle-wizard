@@ -1045,6 +1045,7 @@ class WorkshopTaskRow {
     this.action = new RetainedButton({
       assetManager,
       buttonLabel: 'workshop-task-action',
+      fallbackHitTest: true,
       inputRouter: this.page.inputRouter,
       variant: 'yellow',
     });

@@ -13,6 +13,14 @@ export function installPixiPageTestCanvas() {
   }
 
   class PixiPageTestCanvasContext {
+    createLinearGradient() {
+      return {
+        addColorStop() {},
+      };
+    }
+
+    fillRect() {}
+
     measureText(value) {
       const width = [...String(value ?? '')].length * 7;
 

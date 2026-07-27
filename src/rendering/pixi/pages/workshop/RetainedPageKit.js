@@ -386,6 +386,7 @@ export class RetainedButton {
     assetManager = null,
     label = '',
     buttonLabel = 'button',
+    fallbackHitTest = false,
     onActivate = null,
     inputRouter = null,
     variant = 'button',
@@ -403,6 +404,7 @@ export class RetainedButton {
       inputRouter,
       text: label,
       action: onActivate,
+      fallbackHitTest,
       variant: normalizeRetainedButtonVariant(variant),
       label: buttonLabel,
     });

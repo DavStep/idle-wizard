@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.3.11
+
+- Fixed Elara request Turn In taps sometimes doing nothing on touch devices.
+
 ## 0.3.10
 
 - Refreshed Workshop, Market, and navigation artwork with clearer room actions, tabs, notifications, and item visuals.
