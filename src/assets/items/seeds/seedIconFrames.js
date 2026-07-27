@@ -4,7 +4,7 @@ import {
 } from '../herbs/herbIcons.js';
 
 const SEED_PACK_FRAME_NAME = 'seed:pack';
-export const SEED_PACK_ASPECT_RATIO = 119 / 128;
+export const SEED_PACK_ASPECT_RATIO = 121 / 128;
 export const SEED_PACK_ITEM_SCALE = 0.44;
 export const SEED_PACK_ITEM_CENTER_Y_RATIO = 0.63;
 export const SEED_PACK_ITEM_ROTATION_DEGREES = 6;
