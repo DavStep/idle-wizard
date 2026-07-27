@@ -23,7 +23,7 @@
   --style-notification-image-orange: url("../../assets/game/source/ui/notification-circle-orange.png");
   --style-notification-image: var(--style-notification-image-red);
   --style-notification-size: 9.569444px;
-  --style-notification-offset: calc(var(--style-notification-size) / 2);
+  --style-notification-offset: 2px;
   --style-notification-bleed: calc(var(--style-notification-offset) + 1px);
   --style-resource-icon-size: 1.032em;
   --style-icon-label-gap: 0.14em;
@@ -3810,24 +3810,12 @@ body {
     95ms both;
 }
 
-.tutorial-layer__objective-button[data-notification="true"]::before {
-  top: 12px;
-  right: 5px;
-  z-index: 3;
-}
-
+.tutorial-layer__objective-button[data-notification="true"]::before,
 .tutorial-layer__objective-button[aria-expanded="false"][data-notification="true"]::before {
-  top: auto;
-  right: calc(
-    var(--tutorial-objective-label-right) - var(--style-notification-offset)
-  );
-  bottom: calc(
-    var(--tutorial-objective-label-bottom) +
-      var(--style-box-border-label-line-height) +
-      var(--tutorial-objective-label-border-width) +
-      var(--tutorial-objective-label-border-width) -
-      var(--style-notification-offset)
-  );
+  top: calc(-1 * var(--style-notification-offset));
+  right: calc(-1 * var(--style-notification-offset));
+  bottom: auto;
+  z-index: 3;
 }
 
 .style-box.tutorial-layer__hint {
@@ -5029,15 +5017,16 @@ body {
 }
 
 .garden-page__plot-row[data-notification="true"]::before {
-  top: calc(
-    (var(--style-row-min-height) - var(--style-notification-size)) / 2
-  );
+  top: calc(-1 * var(--style-notification-offset));
 }
 
 .garden-page__plot
   .garden-page__plot-row[data-notification="true"]::before {
-  top: 2px;
-  right: calc(((100% - var(--garden-page-plot-visual-width)) / 2) + 2px);
+  top: calc(-1 * var(--style-notification-offset));
+  right: calc(
+    ((100% - var(--garden-page-plot-visual-width)) / 2) -
+      var(--style-notification-offset)
+  );
 }
 
 .brewing-page__herb-label[data-notification="true"] {
@@ -5055,7 +5044,7 @@ body {
 .brewing-page__herb-label[data-notification="true"]::before {
   position: absolute;
   top: calc(-1 * var(--style-notification-offset));
-  right: calc(-1 * var(--style-notification-size));
+  right: calc(-1 * var(--style-notification-offset));
   z-index: 2;
   width: var(--style-notification-size);
   height: var(--style-notification-size);
@@ -5072,6 +5061,10 @@ body {
 .room-bottom-panel__tab[data-notification="true"],
 .style-button[class*="tab-button"][data-notification="true"] {
   overflow: visible;
+}
+
+.room-bottom-panel__tab[data-notification="true"] {
+  z-index: 4;
 }
 
 .garden-page__seed-rows:has([data-notification="true"]),
@@ -13841,8 +13834,8 @@ div.workshop-page__discovery-row {
 
 .guild-page__adventurer-row[data-notification="true"]::before {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: calc(-1 * var(--style-notification-offset));
+  right: calc(-1 * var(--style-notification-offset));
   z-index: 2;
   width: var(--style-notification-size);
   height: var(--style-notification-size);
