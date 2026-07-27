@@ -19,9 +19,8 @@ import {
   PooledCollection,
   WidgetPool,
 } from '../../retained/index.js';
-import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
 import {
-  RETAINED_SCROLLBAR_GEOMETRY,
+  RETAINED_DIALOG_SCROLL_GEOMETRY,
   RetainedScrollArea,
 } from '../../pages/workshop/RetainedPageKit.js';
 
@@ -29,12 +28,7 @@ const ANNOUNCEMENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
 const WHILE_AWAY_CONTENT_MAX_HEIGHT = 128;
 const WHILE_AWAY_CONTENT_PADDING_TOP =
-  PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
-const WHILE_AWAY_CONTENT_PADDING_BOTTOM =
-  PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
-const WHILE_AWAY_SCROLLBAR_RESERVE =
-  RETAINED_SCROLLBAR_GEOMETRY.gap +
-  RETAINED_SCROLLBAR_GEOMETRY.width;
+  RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
 const ANNOUNCEMENT_BACKDROP_ALPHA = 0.68;
 const LEVEL_REWARDS_BACKDROP_ALPHA = 0.82;
 const CONFIRMATION_WIDTH = 260;
@@ -387,10 +381,6 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     const featureUnlock = model.kind === 'unlock';
     const research = model.kind === 'research';
     const whileAway = model.kind === 'whileAway';
-    const whileAwayRowsWidth = Math.max(
-      0,
-      rowsWidth - WHILE_AWAY_SCROLLBAR_RESERVE,
-    );
     const rowsHeight = featureUnlock
       ? this.unlockItems.layout(rowsWidth)
       : research
@@ -401,7 +391,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
             false,
           ).preferredHeight
         : this.rows.layout(
-            whileAway ? whileAwayRowsWidth : rowsWidth,
+            rowsWidth,
             {
               gap: whileAway
                 ? GLOBAL_DIALOG_GEOMETRY.rowGap
@@ -419,8 +409,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       copyHeight > 0 && rowsHeight > 0 ? 10 : 0;
     const whileAwayContentHeight =
       WHILE_AWAY_CONTENT_PADDING_TOP +
-      rowsHeight +
-      WHILE_AWAY_CONTENT_PADDING_BOTTOM;
+      rowsHeight;
     const whileAwayViewportHeight = Math.min(
       WHILE_AWAY_CONTENT_MAX_HEIGHT,
       whileAwayContentHeight,
@@ -458,7 +447,8 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       this.reportScroll.setBounds(
         rowsPosition.x,
         bodyContentY,
-        whileAwayRowsWidth,
+        rowsWidth +
+          RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight,
         whileAwayViewportHeight,
       );
       this.reportScroll.setContentHeight(

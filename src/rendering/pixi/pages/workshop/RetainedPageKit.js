@@ -47,6 +47,11 @@ export const RETAINED_SCROLLBAR_GEOMETRY = Object.freeze({
   thumbMinHeight: 29.611111,
 });
 
+export const RETAINED_DIALOG_SCROLL_GEOMETRY = Object.freeze({
+  contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
+  scrollbarShiftRight: 4,
+});
+
 export const RETAINED_SCROLLBAR_VISUALS = Object.freeze({
   trackBackground: 0x17100c,
   trackBackgroundAlpha: 0.62,
