@@ -1019,7 +1019,7 @@ describe('GameplayFacade', () => {
     ).toMatchObject({ claimed: true, claimable: false });
   }, 30_000);
 
-  it('restores sage seed medium priority after prestige when other seed preferences reset away', () => {
+  it('preserves sage seed none priority after prestige until the player re-enables it', () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     advanceToLevel(gameplayFacade, 3);
@@ -1039,14 +1039,24 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.getSnapshot().seedSummoning.dropChances).toMatchObject([
       {
         key: 'sageSeed',
-        dropPreference: 'medium',
-        preferenceWeight: 2,
-        effectiveDropWeight: 2,
-        dropChance: 1,
+        dropPreference: 'none',
+        preferenceWeight: 0,
+        effectiveDropWeight: 0,
+        dropChance: 0,
       },
     ]);
 
     ecsFacade.update({ deltaSeconds: 2 });
+    expect(gameplayFacade.getSnapshot().seedSummoning.canSummon).toBe(false);
+    expect(gameplayFacade.summonSeed()).toMatchObject({
+      ok: false,
+      reason: 'no_active_seed_weights',
+    });
+
+    expect(gameplayFacade.setSeedDropPreference('sageSeed', 'medium')).toMatchObject({
+      ok: true,
+      preference: 'medium',
+    });
     expect(gameplayFacade.getSnapshot().seedSummoning.canSummon).toBe(true);
     expect(gameplayFacade.summonSeed()).toMatchObject({
       ok: true,

@@ -2,7 +2,7 @@
   "frames": {
     "herb:belladonnaHerb": {
       "frame": {
-        "x": 1794,
+        "x": 1921,
         "y": 1035,
         "w": 95,
         "h": 128
@@ -27,7 +27,7 @@
     },
     "herb:bloodroseHerb": {
       "frame": {
-        "x": 157,
+        "x": 158,
         "y": 1195,
         "w": 92,
         "h": 128
@@ -77,7 +77,7 @@
     },
     "herb:comfreyHerb": {
       "frame": {
-        "x": 400,
+        "x": 401,
         "y": 1195,
         "w": 128,
         "h": 127
@@ -127,7 +127,7 @@
     },
     "herb:dreambellHerb": {
       "frame": {
-        "x": 949,
+        "x": 950,
         "y": 1195,
         "w": 128,
         "h": 121
@@ -177,7 +177,7 @@
     },
     "herb:glowcapHerb": {
       "frame": {
-        "x": 1774,
+        "x": 1775,
         "y": 1195,
         "w": 128,
         "h": 115
@@ -202,7 +202,7 @@
     },
     "herb:hyssopHerb": {
       "frame": {
-        "x": 1537,
+        "x": 1664,
         "y": 1035,
         "w": 97,
         "h": 128
@@ -227,9 +227,9 @@
     },
     "herb:lavenderHerb": {
       "frame": {
-        "x": 32,
-        "y": 1195,
-        "w": 93,
+        "x": 1534,
+        "y": 1035,
+        "w": 98,
         "h": 128
       },
       "rotated": false,
@@ -237,11 +237,11 @@
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 93,
+        "w": 98,
         "h": 128
       },
       "sourceSize": {
-        "w": 93,
+        "w": 98,
         "h": 128
       },
       "originalSourceSize": {
@@ -252,7 +252,7 @@
     },
     "herb:mandrakeHerb": {
       "frame": {
-        "x": 1404,
+        "x": 1269,
         "y": 1035,
         "w": 101,
         "h": 128
@@ -377,7 +377,7 @@
     },
     "herb:pearlrootHerb": {
       "frame": {
-        "x": 1270,
+        "x": 1135,
         "y": 1035,
         "w": 102,
         "h": 128
@@ -402,9 +402,9 @@
     },
     "herb:sageHerb": {
       "frame": {
-        "x": 1000,
+        "x": 1402,
         "y": 1035,
-        "w": 103,
+        "w": 100,
         "h": 128
       },
       "rotated": false,
@@ -412,11 +412,11 @@
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 103,
+        "w": 100,
         "h": 128
       },
       "sourceSize": {
-        "w": 103,
+        "w": 100,
         "h": 128
       },
       "originalSourceSize": {
@@ -502,7 +502,7 @@
     },
     "herb:sunrootHerb": {
       "frame": {
-        "x": 1666,
+        "x": 1793,
         "y": 1035,
         "w": 96,
         "h": 128
@@ -577,7 +577,7 @@
     },
     "herb:yarrowHerb": {
       "frame": {
-        "x": 1135,
+        "x": 1000,
         "y": 1035,
         "w": 103,
         "h": 128
@@ -602,7 +602,7 @@
     },
     "ingredient:ancientLichPhylactery": {
       "frame": {
-        "x": 1681,
+        "x": 1682,
         "y": 1195,
         "w": 61,
         "h": 116
@@ -1002,7 +1002,7 @@
     },
     "ingredient:fallenAngelFeather": {
       "frame": {
-        "x": 1332,
+        "x": 1333,
         "y": 1195,
         "w": 93,
         "h": 117
@@ -1052,7 +1052,7 @@
     },
     "ingredient:firstFlameFragment": {
       "frame": {
-        "x": 1228,
+        "x": 1229,
         "y": 1195,
         "w": 72,
         "h": 121
@@ -1102,7 +1102,7 @@
     },
     "ingredient:frostGiantBlood": {
       "frame": {
-        "x": 1457,
+        "x": 1458,
         "y": 1195,
         "w": 83,
         "h": 116
@@ -1302,7 +1302,7 @@
     },
     "ingredient:krakenInk": {
       "frame": {
-        "x": 1572,
+        "x": 1573,
         "y": 1195,
         "w": 77,
         "h": 116
@@ -1527,7 +1527,7 @@
     },
     "ingredient:phoenixFeather": {
       "frame": {
-        "x": 836,
+        "x": 837,
         "y": 1195,
         "w": 81,
         "h": 122
@@ -1702,7 +1702,7 @@
     },
     "ingredient:starEaterTooth": {
       "frame": {
-        "x": 1109,
+        "x": 1110,
         "y": 1195,
         "w": 87,
         "h": 121
@@ -2002,7 +2002,7 @@
     },
     "ingredient:worldSerpentVenom": {
       "frame": {
-        "x": 720,
+        "x": 721,
         "y": 1195,
         "w": 84,
         "h": 122
@@ -3177,7 +3177,7 @@
     },
     "research:automationReserve": {
       "frame": {
-        "x": 560,
+        "x": 561,
         "y": 1195,
         "w": 128,
         "h": 126
@@ -3452,8 +3452,8 @@
     },
     "research:researchTime": {
       "frame": {
-        "x": 1921,
-        "y": 1035,
+        "x": 32,
+        "y": 1195,
         "w": 94,
         "h": 128
       },
@@ -3727,7 +3727,7 @@
     },
     "tool:herbCuttingScissorsClosed": {
       "frame": {
-        "x": 281,
+        "x": 282,
         "y": 1195,
         "w": 87,
         "h": 128
