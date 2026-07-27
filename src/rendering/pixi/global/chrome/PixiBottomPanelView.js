@@ -12,6 +12,7 @@ import {
   PixiDialogFrame,
   PixiTextLabel,
 } from '../../primitives/index.js';
+import { PixiNotificationBadge } from '../transient/PixiNotificationBadges.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
@@ -97,7 +98,6 @@ const TAB_ICON_INACTIVE_SCALE = 1.5;
 const TAB_LOCK_WIDTH = 26;
 const TAB_LOCK_HEIGHT = 29.5;
 const TAB_LOCK_CENTER_Y = 34;
-const TAB_NOTIFICATION_SIZE = 9.569444;
 const TAB_SELECTED_MOTION_MS = 205;
 const TAB_SELECTED_PEAK_AT = 0.68;
 const TAB_SELECTED_PEAK_SCALE = 1.065;
@@ -113,10 +113,6 @@ const ROOM_TAB_FRAME_STATES = Object.freeze({
   inactive: Object.freeze({
     textureId: 'source:assets/ui/root-run-room-tab-inactive.png',
   }),
-});
-const NOTIFICATION_TEXTURE_IDS = Object.freeze({
-  red: 'source:assets/ui/notification-circle-red.png',
-  orange: 'source:assets/ui/notification-circle-orange.png',
 });
 const LABEL_SHADOW_OFFSETS = Object.freeze([
   Object.freeze({ x: 0, y: 1 }),
@@ -171,6 +167,10 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     this.tabsRoot = new Container();
     this.tabsRoot.label = 'bottomPanel:tabs';
     this.tabsRoot.sortableChildren = true;
+    this.notificationsRoot = new Container();
+    this.notificationsRoot.label = 'bottomPanel:notifications';
+    this.notificationsRoot.eventMode = 'none';
+    this.notificationsRoot.zIndex = 10;
     this.tabs = PIXI_BOTTOM_PANEL_TABS.map(
       (definition) =>
         new PixiBottomTab({
@@ -178,10 +178,14 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
           assets,
           inputRouter,
           semanticRegistry,
+          notificationLayer: this.notificationsRoot,
           onActivate: (tab) => this.activateTab(tab),
         }),
     );
-    this.tabsRoot.addChild(...this.tabs.map((tab) => tab.root));
+    this.tabsRoot.addChild(
+      ...this.tabs.map((tab) => tab.root),
+      this.notificationsRoot,
+    );
 
     this.lockBackdrop = new Graphics();
     this.lockBackdrop.label = 'bottomPanel:lockBackdrop';
@@ -686,10 +690,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
         : PANEL_WIDTH;
     visibleTabs.forEach((tab, index) => {
       tab.setWidth(tabWidth);
-      tab.root.position.set(
-        index * (tabWidth - TAB_OVERLAP),
-        0,
-      );
+      tab.setLayoutX(index * (tabWidth - TAB_OVERLAP));
     });
   }
 
@@ -721,6 +722,7 @@ class PixiBottomTab {
     assets,
     inputRouter,
     semanticRegistry,
+    notificationLayer,
     onActivate,
   }) {
     this.definition = definition;
@@ -738,6 +740,7 @@ class PixiBottomTab {
     this.selectedScale = 1;
     this.selectedIconProgress = 1;
     this.swipeBumpY = 0;
+    this.layoutX = 0;
     this.root = new Container();
     this.root.label = `bottomPanel:tab:${definition.id}`;
     this.root.eventMode = 'static';
@@ -803,20 +806,14 @@ class PixiBottomTab {
     this.lock.anchor.set(0.5);
     this.lock.width = TAB_LOCK_WIDTH;
     this.lock.height = TAB_LOCK_HEIGHT;
-    this.notification = new Sprite({
-      texture: assets.getTexture(NOTIFICATION_TEXTURE_IDS.red),
-      label: `${this.root.label}:notification`,
-      roundPixels: true,
+    this.notification = new PixiNotificationBadge({
+      assetManager: assets,
     });
-    this.notification.label = `${this.root.label}:notification`;
-    this.notification.zIndex = 2;
-    this.notification.anchor.set(0.5);
-    this.notification.width = TAB_NOTIFICATION_SIZE;
-    this.notification.height = TAB_NOTIFICATION_SIZE;
+    this.notification.root.label = `${this.root.label}:notification`;
+    notificationLayer?.addChild?.(this.notification.root);
     this.motionRoot.addChild(
       this.frame,
       this.iconFrame,
-      this.notification,
       this.labelRoot,
       this.lock,
     );
@@ -900,10 +897,15 @@ class PixiBottomTab {
     }
     this.labelRoot.position.y =
       TAB_ACTIVE_HEIGHT - 2 - this.text.measuredHeight / 2;
-    this.notification.position.x = this.width;
     this.motionRoot.pivot.set(this.width / 2, TAB_HEIGHT);
     this.applyMotionTransform();
     return this;
+  }
+
+  setLayoutX(x) {
+    this.layoutX = Number(x) || 0;
+    this.root.position.set(this.layoutX, 0);
+    this.layoutNotification();
   }
 
   layoutIcon() {
@@ -1043,6 +1045,7 @@ class PixiBottomTab {
       TAB_HEIGHT + this.swipeBumpY,
     );
     this.motionRoot.scale.set(this.selectedScale);
+    this.layoutNotification();
   }
 
   applyIconLayout() {
@@ -1087,7 +1090,7 @@ class PixiBottomTab {
     this.applyIconLayout();
     this.iconFrame.visible = !this.receivingUnlock && !locked;
     this.iconFrame.renderable = this.iconFrame.visible;
-    this.notification.position.y = selected ? 0 : TAB_RISE;
+    this.layoutNotification();
   }
 
   drawNotification(state) {
@@ -1101,8 +1104,7 @@ class PixiBottomTab {
       notificationActive &&
       state.unlocked !== false &&
       state.visible === true;
-    this.notification.visible = visible;
-    this.notification.renderable = visible;
+    this.notification.setActive(visible);
     if (!visible) {
       return;
     }
@@ -1110,20 +1112,30 @@ class PixiBottomTab {
       typeof state.notification === 'object'
         ? state.notification.tone
         : null;
-    const textureId =
-      tone === 'orange'
-        ? NOTIFICATION_TEXTURE_IDS.orange
-        : NOTIFICATION_TEXTURE_IDS.red;
-    const texture = this.assets.getTexture(textureId);
-    if (this.notification.texture !== texture) {
-      this.notification.texture = texture;
-      this.notification.width = TAB_NOTIFICATION_SIZE;
-      this.notification.height = TAB_NOTIFICATION_SIZE;
+    this.notification.setTone(tone);
+    this.layoutNotification();
+  }
+
+  layoutNotification() {
+    if (!this.notification) {
+      return;
     }
-    this.notification.position.set(
-      this.width,
-      this.state.selected === true ? 0 : TAB_RISE,
-    );
+    const frameY =
+      this.state.selected === true ? 0 : TAB_RISE;
+    const scale = this.selectedScale;
+    const frameTopRight = {
+      x: this.layoutX + this.width / 2 + (this.width / 2) * scale,
+      y:
+        TAB_HEIGHT +
+        this.swipeBumpY +
+        (frameY - TAB_HEIGHT) * scale,
+    };
+    this.notification.placeAtTopRight({
+      x: frameTopRight.x,
+      y: frameTopRight.y,
+      width: 0,
+      height: 0,
+    });
   }
 
   destroy() {
@@ -1132,6 +1144,7 @@ class PixiBottomTab {
       displayObject: this.root,
     });
     this.settleMotion();
+    this.notification.destroy();
     this.root.destroy({ children: true });
   }
 }
