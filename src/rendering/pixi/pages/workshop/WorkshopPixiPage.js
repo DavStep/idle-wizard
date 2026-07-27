@@ -901,7 +901,7 @@ class WorkshopSummonControl {
       inputRouter: this.page.inputRouter,
       action: () => this.actions?.info?.(),
     });
-    this.notification = new PixiNotificationBadge();
+    this.notification = new PixiNotificationBadge({ assetManager });
     this.notification.root.label = 'workshop-summon-notification';
     this.root.addChild(this.circle, this.button, this.info);
     this.pointerId = null;
@@ -1202,7 +1202,7 @@ class WorkshopIconPanelAction {
       lineHeight: 11.2,
     });
     this.label.anchor.set(this.side === 'right' ? 1 : 0, 0);
-    this.notification = new PixiNotificationBadge();
+    this.notification = new PixiNotificationBadge({ assetManager });
     this.notification.root.label =
       `workshop-${id}-icon-panel-action:notification`;
     this.iconFrame.addChild(this.icon);
@@ -1379,7 +1379,7 @@ class WorkshopFeatureButton {
       fontSize: 7.15,
       lineHeight: 9.1,
     });
-    this.notification = new PixiNotificationBadge();
+    this.notification = new PixiNotificationBadge({ assetManager });
     this.notification.root.label = 'workshop-feature-button:notification';
     // The DOM reference paints the alliance-color cloth mask over the
     // illustrated banner base. Keep that order here or the opaque base hides

@@ -1,9 +1,10 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Sprite, Texture } from 'pixi.js';
 
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 
@@ -13,21 +14,32 @@ export const PIXI_NOTIFICATION_TONES = Object.freeze({
 });
 
 /**
- * Poolable 6px notification dot. Its parent and top-right anchor are data, so
- * repeated rows can reuse the same display object without rebuilding.
+ * Shared notification badge sprite. Its parent and top-right bounds are data,
+ * so repeated rows can reuse the same display object without rebuilding.
  */
 export class PixiNotificationBadge {
-  constructor() {
+  constructor({ assetManager = null } = {}) {
+    this.assetManager = assetManager;
     this.root = new Container();
     this.root.label = 'notificationBadge';
     this.root.eventMode = 'none';
-    this.dot = new Graphics();
-    this.dot.label = 'notificationBadge:dot';
-    this.root.addChild(this.dot);
+    this.sprite = new Sprite({
+      texture: Texture.EMPTY,
+      label: 'notificationBadge:sprite',
+      roundPixels: true,
+    });
+    this.sprite.anchor.set(0.5);
+    this.sprite.width = PIXI_UI_GEOMETRY.notificationSize;
+    this.sprite.height = PIXI_UI_GEOMETRY.notificationSize;
+    this.root.addChild(this.sprite);
+    this.dot = this.sprite;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.key = null;
     this.model = {};
     this.parent = null;
+    this.tone = null;
+    this.root.visible = false;
+    this.root.renderable = false;
   }
 
   bind(key, model = {}, policy = null) {
@@ -42,30 +54,55 @@ export class PixiNotificationBadge {
     this.root.visible = allowed;
     this.root.renderable = allowed;
     const bounds = resolveBadgeBounds(model);
-    this.root.position.set(bounds.x + bounds.width, bounds.y);
-    this.redraw();
+    this.placeAtTopRight(bounds);
+    this.setTone(model.tone);
+    return this;
   }
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.redraw();
+    return this;
   }
 
-  redraw() {
+  setActive(active) {
+    const visible = active === true;
+    this.root.visible = visible;
+    this.root.renderable = visible;
+    return this;
+  }
+
+  setTone(tone) {
+    const nextTone =
+      tone === PIXI_NOTIFICATION_TONES.orange
+        ? PIXI_NOTIFICATION_TONES.orange
+        : PIXI_NOTIFICATION_TONES.red;
+    if (nextTone === this.tone && this.sprite.texture !== Texture.EMPTY) {
+      return this;
+    }
+    this.tone = nextTone;
+    const textureId =
+      nextTone === PIXI_NOTIFICATION_TONES.orange
+        ? PIXI_ROOT_RUN_ASSETS.notificationOrange
+        : PIXI_ROOT_RUN_ASSETS.notificationRed;
+    this.sprite.texture =
+      this.assetManager?.getTexture?.(textureId) ?? Texture.EMPTY;
     const size = PIXI_UI_GEOMETRY.notificationSize;
-    const color =
-      this.model.tone === PIXI_NOTIFICATION_TONES.orange
-        ? this.theme.notificationOrange
-        : this.theme.notificationRed;
-    this.dot
-      .clear()
-      .circle(0, 0, size / 2)
-      .fill(color)
-      .stroke({
-        color: this.theme.surface,
-        width: 1,
-        alignment: 0,
-      });
+    this.sprite.width = size;
+    this.sprite.height = size;
+    return this;
+  }
+
+  placeAtTopRight(bounds = {}) {
+    const size = PIXI_UI_GEOMETRY.notificationSize;
+    const outset = PIXI_UI_GEOMETRY.notificationOutset;
+    const x = Number(bounds.x) || 0;
+    const y = Number(bounds.y) || 0;
+    const width = Math.max(0, Number(bounds.width) || 0);
+    this.root.position.set(
+      x + width + outset - size / 2,
+      y - outset + size / 2,
+    );
+    return this;
   }
 
   reset() {
@@ -76,6 +113,7 @@ export class PixiNotificationBadge {
     this.key = null;
     this.model = {};
     this.parent = null;
+    this.tone = null;
   }
 
   destroy() {
@@ -89,6 +127,7 @@ export class PixiNotificationBadge {
  */
 export class PooledPixiNotificationBadges {
   constructor({
+    assetManager = null,
     theme = DEFAULT_PIXI_THEME_SNAPSHOT,
     counters = null,
     maxIdle = 48,
@@ -101,7 +140,7 @@ export class PooledPixiNotificationBadges {
       counters,
       maxSize: maxIdle,
       create: () => {
-        const badge = new PixiNotificationBadge();
+        const badge = new PixiNotificationBadge({ assetManager });
         badge.applyTheme(this.theme);
         return badge;
       },

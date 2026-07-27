@@ -5,6 +5,7 @@ import {
   Texture,
 } from 'pixi.js';
 
+import { PixiNotificationBadge } from '../global/transient/PixiNotificationBadges.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
@@ -54,6 +55,7 @@ export class PixiButton extends Container {
     this.pressed = false;
     this.selected = false;
     this.notification = false;
+    this.notificationTone = 'red';
     this.action = action;
     this.haptic = haptic;
     this.variant = variant;
@@ -87,14 +89,15 @@ export class PixiButton extends Container {
       anchor: { x: 0.5, y: 0.5 },
       label: `${label}:label`,
     });
-    this.notificationDot = new Graphics({ label: `${label}:notification` });
-    this.notificationDot.visible = false;
+    this.notificationBadge = new PixiNotificationBadge({ assetManager });
+    this.notificationBadge.root.label = `${label}:notification`;
+    this.notificationDot = this.notificationBadge.root;
     this.visual.addChild(
       this.frame,
       this.rootRunFrame,
       this.inlineBacking,
       this.textLabel,
-      this.notificationDot,
+      this.notificationBadge.root,
     );
     this.addChild(this.visual);
 
@@ -131,7 +134,7 @@ export class PixiButton extends Container {
     this.setText(data.label ?? data.text ?? '');
     this.setEnabled(data.enabled !== false && data.disabled !== true);
     this.setSelected(Boolean(data.selected));
-    this.setNotification(Boolean(data.notification));
+    this.setNotification(Boolean(data.notification), data.notificationTone);
     if (data.variant) {
       this.setVariant(data.variant);
     }
@@ -178,8 +181,9 @@ export class PixiButton extends Container {
     return this;
   }
 
-  setNotification(notification) {
+  setNotification(notification, tone = 'red') {
     this.notification = Boolean(notification);
+    this.notificationTone = tone === 'orange' ? 'orange' : 'red';
     this.syncNotification();
     return this;
   }
@@ -297,15 +301,18 @@ export class PixiButton extends Container {
   }
 
   syncNotification() {
-    if (!this.notificationDot || !this.theme) {
+    if (!this.notificationBadge) {
       return;
     }
-    this.notificationDot
-      .clear()
-      .circle(this.buttonWidth - 1, -1, PIXI_UI_GEOMETRY.notificationSize / 2)
-      .fill({ color: this.theme.notificationRed });
-    this.notificationDot.visible =
-      this.notification && this.enabled && !this.selected;
+    this.notificationBadge
+      .placeAtTopRight({
+        x: 0,
+        y: 0,
+        width: this.buttonWidth,
+        height: this.buttonHeight,
+      })
+      .setTone(this.notificationTone)
+      .setActive(this.notification && this.enabled && !this.selected);
   }
 
   relayout() {

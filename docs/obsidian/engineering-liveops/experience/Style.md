@@ -14,6 +14,7 @@ experience_type: style
 - The project style is based on `https://adarkroom.doublespeakgames.com/`.
 - Idle Witch Craft source herb icons live in sibling `../idle-whitch-craft/core/assets/items/herbs`; `../idle-witch-craft 2/raws/items/herbs` has matching raw copies.
 - Idle Wizard herb icon fixes should preserve the local 256x256 source silhouette/style; sibling Idle Witch Craft herb PNGs are old-size art and mismatch if copied directly.
+- Use `assets/game/source/icons/icon-bag.png` as the rendering reference for herb icons: thick near-black contours, broad shadow masses, one restrained highlight, and minimal material colors.
 - Herb label atlas frames should trim transparent padding at build time so 256x256 source art fills text-size icon labels.
 - Smooth currency icons must retain partial-alpha edge pixels; normalize contours with supersampled antialiasing and Lanczos downsampling, never nearest-neighbor plus a binary alpha mask. Keep `assets/game/source/icons/currencyIcons.test.js` green.
 - Idle Witch Craft seed pack icons live in sibling `../idle-whitch-craft/core/assets/misc/seedpacks`; `../idle-witch-craft 2/raws/misc/seedpacks` has matching raw copies.

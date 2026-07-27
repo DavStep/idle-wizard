@@ -2248,7 +2248,7 @@ class BrewingCauldronButton {
       this.label,
       this.cost,
     );
-    this.notification = new PixiNotificationBadge();
+    this.notification = new PixiNotificationBadge({ assetManager });
     this.notification.root.label = `${id}.notification`;
   }
 
@@ -2630,7 +2630,7 @@ class BrewingInventoryRow {
     });
     this.quantity.anchor.set(1, 0);
     this.root.addChild(this.icon, this.label, this.quantity);
-    this.notification = new PixiNotificationBadge();
+    this.notification = new PixiNotificationBadge({ assetManager });
     this.notification.root.label = `${id}.notification`;
     this.pressRegistration =
       this.inputRouter?.registerPressTarget?.({
