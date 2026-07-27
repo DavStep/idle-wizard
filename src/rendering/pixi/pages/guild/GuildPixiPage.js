@@ -110,13 +110,8 @@ export class GuildPixiPage extends BasePixiRetainedView {
         label: `guild:tab:${tab.id}`,
         action: () => this.selectTab(tab.id),
       });
-      const notification = new Graphics();
-      notification.label = `guild:tab:${tab.id}:notification`;
-      notification.visible = false;
-      notification.renderable = false;
-      button.addChild(notification);
       this.tabButtons.set(tab.id, button);
-      this.tabNotifications.set(tab.id, notification);
+      this.tabNotifications.set(tab.id, button.notificationBadge);
       this.tabLayer.addChild(button);
 
       const scroll = new PixiScrollView({
@@ -888,19 +883,9 @@ export class GuildPixiPage extends BasePixiRetainedView {
         this.model,
         tab.id,
       );
-      notification.clear();
-      notification.visible = state.active;
-      notification.renderable = state.active;
-      if (state.active) {
-        notification
-          .circle(0, 0, PIXI_UI_GEOMETRY.notificationSize / 2)
-          .fill(
-            state.tone === 'orange'
-              ? this.theme.notificationOrange
-              : this.theme.notificationRed,
-          )
-          .stroke({ color: this.theme.surface, width: 1 });
-      }
+      notification
+        .setTone(state.tone)
+        .setActive(state.active);
     }
   }
 

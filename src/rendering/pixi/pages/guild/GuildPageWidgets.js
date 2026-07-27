@@ -11,6 +11,7 @@ import { PixiButton } from '../../primitives/PixiButton.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
 import { PixiPanel } from '../../primitives/PixiPanel.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
+import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
@@ -695,7 +696,9 @@ class GuildSectionRow {
       color: resolveThemeColor('coin'),
       label: `${label}:buttonValue`,
     });
-    this.notification = new Graphics();
+    this.notificationBadge = new PixiNotificationBadge({ assetManager });
+    this.notificationBadge.root.label = `${label}:notification`;
+    this.notification = this.notificationBadge.root;
     this.root.addChild(
       this.background,
       this.keyLabel,
@@ -846,7 +849,12 @@ class GuildSectionRow {
       this.buttonValue.visible ? height / 2 - 6 : height / 2,
     );
     this.buttonValue.position.set(width / 2, height / 2 + 8);
-    this.notification.position.set(width - 2, 2);
+    this.notificationBadge.placeAtTopRight({
+      x: 0,
+      y: 0,
+      width,
+      height,
+    });
     this.redraw();
   }
 
@@ -891,17 +899,9 @@ class GuildSectionRow {
         .rect(0, 0, this.width ?? 0, this.height ?? 0)
         .fill({ color: this.theme.stroke, alpha: 0.2 });
     }
-    this.notification.clear();
-    if (this.model.notification) {
-      this.notification
-        .circle(0, 0, PIXI_UI_GEOMETRY.notificationSize / 2)
-        .fill(
-          this.model.notificationTone === 'orange'
-            ? this.theme.notificationOrange
-            : this.theme.notificationRed,
-        )
-        .stroke({ color: this.theme.surface, width: 1 });
-    }
+    this.notificationBadge
+      .setTone(this.model.notificationTone)
+      .setActive(Boolean(this.model.notification));
   }
 
   reset() {
@@ -1189,7 +1189,9 @@ class GuildPersonRow {
       color: 'muted',
       label: `${label}:status`,
     });
-    this.notification = new Graphics();
+    this.notificationBadge = new PixiNotificationBadge({ assetManager });
+    this.notificationBadge.root.label = `${label}:notification`;
+    this.notification = this.notificationBadge.root;
     this.root.addChild(
       this.iconFrame,
       this.icon,
@@ -1286,7 +1288,12 @@ class GuildPersonRow {
     );
     this.levelLabel.position.set(nameX, 29);
     this.statusLabel.position.set(width, 19);
-    this.notification.position.set(width - 2, 2);
+    this.notificationBadge.placeAtTopRight({
+      x: 0,
+      y: 0,
+      width,
+      height,
+    });
     this.redrawNotification();
   }
 
@@ -1301,7 +1308,6 @@ class GuildPersonRow {
   }
 
   redrawNotification() {
-    this.notification.clear();
     const active =
       this.person?.notificationVisible !== false &&
       (
@@ -1309,21 +1315,9 @@ class GuildPersonRow {
       this.person?.status === 'hospital' ||
       this.person?.status === 'dead'
       );
-    this.notification.visible = active;
-    this.notification.renderable = active;
-    if (active) {
-      this.notification
-        .circle(0, 0, PIXI_UI_GEOMETRY.notificationSize / 2)
-        .fill(
-          this.person?.notificationTone === 'orange'
-            ? this.theme?.notificationOrange
-            : this.theme?.notificationRed,
-        )
-        .stroke({
-          color: this.theme?.surface,
-          width: 1,
-        });
-    }
+    this.notificationBadge
+      .setTone(this.person?.notificationTone)
+      .setActive(active);
   }
 
   reset() {

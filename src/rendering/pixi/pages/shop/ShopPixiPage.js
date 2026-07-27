@@ -16,6 +16,7 @@ import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
 import { PixiScrollView } from '../../primitives/PixiScrollView.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
+import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
@@ -147,13 +148,8 @@ export class ShopPixiPage extends BasePixiRetainedView {
         label: `shop:tab:${tab.id}`,
         action: () => this.selectTab(tab.id),
       });
-      const notification = new Graphics();
-      notification.label = `shop:tab:${tab.id}:notification`;
-      notification.visible = false;
-      notification.renderable = false;
-      button.addChild(notification);
       this.tabButtons.set(tab.id, button);
-      this.tabNotifications.set(tab.id, notification);
+      this.tabNotifications.set(tab.id, button.notificationBadge);
       this.tabLayer.addChild(button);
     }
 
@@ -692,19 +688,9 @@ export class ShopPixiPage extends BasePixiRetainedView {
     for (const tab of SHOP_TABS) {
       const notification = this.tabNotifications.get(tab.id);
       const state = getShopTabNotification(this.model, tab.id);
-      notification.clear();
-      notification.visible = state.active;
-      notification.renderable = state.active;
-      if (state.active) {
-        notification
-          .circle(0, 0, PIXI_UI_GEOMETRY.notificationSize / 2)
-          .fill(
-            state.tone === 'orange'
-              ? this.theme.notificationOrange
-              : this.theme.notificationRed,
-          )
-          .stroke({ color: this.theme.surface, width: 1 });
-      }
+      notification
+        .setTone(state.tone)
+        .setActive(state.active);
     }
   }
 
@@ -1176,8 +1162,9 @@ class ShopStallWidget {
       color: STALL_TEXT_INK,
       label: 'shop:stall:timer',
     });
-    this.notification = new Graphics();
-    this.notification.label = 'shop:stall:notification';
+    this.notificationBadge = new PixiNotificationBadge({ assetManager });
+    this.notificationBadge.root.label = 'shop:stall:notification';
+    this.notification = this.notificationBadge.root;
     this.root.addChild(
       this.frame,
       this.title,
@@ -1311,7 +1298,12 @@ class ShopStallWidget {
       PIXI_UI_GEOMETRY.progressTotalHeight,
     );
     this.timer.position.set(width - 10, 61);
-    this.notification.position.set(width - 6, -3);
+    this.notificationBadge.placeAtTopRight({
+      x: 0,
+      y: 0,
+      width,
+      height,
+    });
   }
 
   applyTheme(theme) {
@@ -1343,17 +1335,9 @@ class ShopStallWidget {
     this.quantity.setColor(STALL_TEXT_INK);
     this.price.setColor(STALL_TEXT_INK);
     this.timer.setColor(STALL_TEXT_INK);
-    this.notification.clear();
-    if (this.model?.notification) {
-      this.notification
-        .circle(0, 0, PIXI_UI_GEOMETRY.notificationSize / 2)
-        .fill(
-          this.model.notificationTone === 'orange'
-            ? this.theme.notificationOrange
-            : this.theme.notificationRed,
-        )
-        .stroke({ color: this.theme.surface, width: 1 });
-    }
+    this.notificationBadge
+      .setTone(this.model?.notificationTone)
+      .setActive(Boolean(this.model?.notification));
   }
 
   reset() {
@@ -1387,7 +1371,7 @@ class ShopStallWidget {
 }
 
 class ShopCompactRow {
-  constructor({ inputRouter, semanticRegistry, label }) {
+  constructor({ assetManager, inputRouter, semanticRegistry, label }) {
     this.root = new Container();
     this.root.label = label;
     this.background = new Graphics();
@@ -1402,7 +1386,9 @@ class ShopCompactRow {
       anchor: { x: 1, y: 0 },
       label: `${label}:value`,
     });
-    this.notification = new Graphics();
+    this.notificationBadge = new PixiNotificationBadge({ assetManager });
+    this.notificationBadge.root.label = `${label}:notification`;
+    this.notification = this.notificationBadge.root;
     this.root.addChild(
       this.background,
       this.indexLabel,
@@ -1513,7 +1499,12 @@ class ShopCompactRow {
           PIXI_UI_GEOMETRY.rowColumnGap,
       ),
     );
-    this.notification.position.set(width - 2, 2);
+    this.notificationBadge.placeAtTopRight({
+      x: 0,
+      y: 0,
+      width,
+      height,
+    });
     this.redraw();
   }
 
@@ -1532,17 +1523,9 @@ class ShopCompactRow {
         .rect(0, 0, this.width ?? 0, this.height ?? 0)
         .fill({ color: this.theme.stroke, alpha: 0.22 });
     }
-    this.notification.clear();
-    if (this.model?.notification) {
-      this.notification
-        .circle(0, 0, PIXI_UI_GEOMETRY.notificationSize / 2)
-        .fill(
-          this.model.notificationTone === 'orange'
-            ? this.theme.notificationOrange
-            : this.theme.notificationRed,
-        )
-        .stroke({ color: this.theme.surface, width: 1 });
-    }
+    this.notificationBadge
+      .setTone(this.model?.notificationTone)
+      .setActive(Boolean(this.model?.notification));
   }
 
   reset() {
