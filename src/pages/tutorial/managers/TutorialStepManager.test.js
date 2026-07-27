@@ -16,6 +16,7 @@ function createProgressFake(completedStepIds = []) {
     hasCompleted: (stepId) => completed.has(stepId),
     complete: (stepId) => completed.add(stepId),
     completeMany: (stepIds) => stepIds.forEach((stepId) => completed.add(stepId)),
+    reopen: (stepId) => completed.delete(stepId),
   };
 }
 
@@ -296,18 +297,16 @@ function createLevelFourSnapshot(overrides = {}) {
             itemKey: 'sageHerb',
             type: 'grow',
             requiredQuantity: 2,
-            progressQuantity: 2,
-            remainingQuantity: 0,
-            completed: true,
+            progressQuantity: 0,
+            remainingQuantity: 2,
           }),
           createTask({
             taskId: 'level4-grow-mint-herb',
             itemKey: 'mintHerb',
             type: 'grow',
             requiredQuantity: 1,
-            progressQuantity: 1,
-            remainingQuantity: 0,
-            completed: true,
+            progressQuantity: 0,
+            remainingQuantity: 1,
           }),
           createTask({
             taskId: 'level4-turn-in-sage-herb',
@@ -1037,6 +1036,93 @@ describe('TutorialStepManager', () => {
     });
   });
 
+  it('keeps level 4 on the active sage grow quest after the first harvest', () => {
+    const activeGrowTask = {
+      ...createTask({
+        taskId: 'level4-grow-sage-herb',
+        itemKey: 'sageHerb',
+        type: 'grow',
+        requiredQuantity: 4,
+        progressQuantity: 1,
+        remainingQuantity: 3,
+      }),
+      isActiveQuest: true,
+    };
+    const laterTurnInTask = {
+      ...createTask({
+        taskId: 'level4-turn-in-sage-herb',
+        itemKey: 'sageHerb',
+        requiredQuantity: 4,
+        progressQuantity: 0,
+        remainingQuantity: 4,
+        ownedQuantity: 1,
+      }),
+      isActiveQuest: false,
+    };
+    const snapshot = createLevelFourSnapshot({
+      inventory: [{ key: 'sageHerb', quantity: 1 }],
+      seedInventory: [{ key: 'sageSeed', quantity: 0 }],
+      seedSummoning: { canSummon: true, cost: 10 },
+      garden: {
+        seeds: [{ key: 'sageSeed', quantity: 0 }],
+        herbs: [{ key: 'sageHerb', quantity: 1 }],
+        plot: {
+          tiles: [
+            {
+              tileNumber: 1,
+              unlocked: true,
+              phase: 'empty',
+              selectedSeedKey: 'sageSeed',
+              seedKey: null,
+            },
+          ],
+        },
+      },
+      tasks: {
+        currentLevel: 3,
+        level: {
+          completion: { canComplete: false, costCoin: 16 },
+          questProgress: {
+            activeQuest: {
+              kind: 'task',
+              taskId: activeGrowTask.taskId,
+              progress: 0.25,
+            },
+          },
+          tasks: [
+            activeGrowTask,
+            createTask({
+              taskId: 'level4-grow-mint-herb',
+              itemKey: 'mintHerb',
+              type: 'grow',
+              requiredQuantity: 2,
+            }),
+            laterTurnInTask,
+            createTask({
+              taskId: 'level4-turn-in-mint-herb',
+              itemKey: 'mintHerb',
+              requiredQuantity: 2,
+            }),
+          ],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'garden',
+        snapshot,
+        completed: completedThrough('first-harvest-complete'),
+      }),
+    ).toMatchObject({
+      id: 'grow-sage',
+      targetId: 'page:workshop',
+      objectiveText: 'open workshop and summon a sage seed.',
+      progressLabel: '1/4 sage',
+      stepLabel: '23/31',
+    });
+  });
+
   it('guides level 4 sage herb turn-in after harvest', () => {
     expect(
       getStep({
@@ -1067,6 +1153,75 @@ describe('TutorialStepManager', () => {
       targetId: 'task:level4-turn-in-sage-herb',
       hintText: 'turn in sage',
       stepLabel: '25/31',
+    });
+  });
+
+  it('follows the active mint grow quest before the later sage turn-in', () => {
+    const snapshot = createLevelFourSnapshot({
+      inventory: [{ key: 'sageHerb', quantity: 4 }],
+      tasks: {
+        currentLevel: 3,
+        level: {
+          completion: { canComplete: false, costCoin: 16 },
+          questProgress: {
+            activeQuest: {
+              kind: 'task',
+              taskId: 'level4-grow-mint-herb',
+              progress: 0,
+            },
+          },
+          tasks: [
+            {
+              ...createTask({
+                taskId: 'level4-grow-sage-herb',
+                itemKey: 'sageHerb',
+                type: 'grow',
+                requiredQuantity: 4,
+                progressQuantity: 4,
+                remainingQuantity: 0,
+                completed: true,
+              }),
+              isActiveQuest: false,
+            },
+            {
+              ...createTask({
+                taskId: 'level4-grow-mint-herb',
+                itemKey: 'mintHerb',
+                type: 'grow',
+                requiredQuantity: 2,
+              }),
+              isActiveQuest: true,
+            },
+            {
+              ...createTask({
+                taskId: 'level4-turn-in-sage-herb',
+                itemKey: 'sageHerb',
+                requiredQuantity: 4,
+                ownedQuantity: 4,
+              }),
+              isActiveQuest: false,
+            },
+            createTask({
+              taskId: 'level4-turn-in-mint-herb',
+              itemKey: 'mintHerb',
+              requiredQuantity: 2,
+            }),
+          ],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        snapshot,
+        completed: completedThrough('first-harvest-complete'),
+      }),
+    ).toMatchObject({
+      id: 'fill-mint-herb-task',
+      targetId: 'page:garden',
+      objectiveText: 'grow mint for the next level',
+      progressLabel: '0/2 mint',
+      stepLabel: '26/31',
     });
   });
 

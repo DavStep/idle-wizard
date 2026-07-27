@@ -8,7 +8,10 @@ import { Texture, TextureSource } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
-import { PixiDialogFrame } from '../../primitives/index.js';
+import {
+  PixiDialogFrame,
+  RootRunSettingsTogglePixi,
+} from '../../primitives/index.js';
 import {
   DialogRegistry,
   SemanticTargetRegistry,
@@ -180,29 +183,69 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('keeps settings tabs inside the modal input boundary', () => {
+  it('keeps the settings panel inside the modal input boundary', () => {
     const harness = createHarness();
     const settings = harness.registry.open(
       GLOBAL_DIALOG_IDS.SETTINGS,
       {
-        account: { username: 'mira' },
+        preferences: {
+          haptics: true,
+          music: true,
+          sfx: true,
+        },
       },
     );
-    const reportTab = settings.tabButtons.find(
-      ({ key }) => key === 'report',
-    ).button;
     const modal = harness.inputRouter.getTopModal();
 
     expect(
-      harness.inputRouter.getEligibleCandidates(reportTab, 'press'),
-    ).toHaveLength(1);
-    expect(
       harness.inputRouter.isDisplayObjectInsideModal(
-        reportTab,
+        settings.devicePanel,
         modal,
       ),
     ).toBe(true);
+    expect(settings.tabsLayer).toBeUndefined();
 
+    harness.dispose();
+  });
+
+  it('opens settings on only the three Root Run device toggles', () => {
+    const harness = createHarness();
+    const togglePreference = vi.fn(() => true);
+    const settings = harness.registry.open(
+      GLOBAL_DIALOG_IDS.SETTINGS,
+      {
+        preferences: {
+          haptics: true,
+          music: true,
+          sfx: true,
+        },
+        actions: { togglePreference },
+      },
+    );
+
+    expect(settings.selectedTab).toBe('configurations');
+    expect(
+      settings.preferenceRows.map(({ key }) => key),
+    ).toEqual(['sfx', 'music', 'haptics']);
+    expect(
+      settings.preferenceRows.every(
+        ({ toggle }) =>
+          toggle instanceof RootRunSettingsTogglePixi,
+      ),
+    ).toBe(true);
+    expect(settings.devicePanel.titleLabel.text).toBe('');
+    expect(settings.preferenceRows[0].label.theme.text).toBe(
+      '#e8e8e8',
+    );
+    expect(settings.configurationsLayer.children).toEqual([
+      settings.devicePanel,
+    ]);
+    expect(settings.scroll.maxScrollY).toBe(0);
+
+    expect(settings.preferenceRows[0].toggle.activate()).toBe(
+      true,
+    );
+    expect(togglePreference).toHaveBeenCalledWith('sfx', false);
     harness.dispose();
   });
 
@@ -285,7 +328,7 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('preserves authored content boxes, padding, and external control spans', () => {
+  it('preserves authored content boxes and padding', () => {
     const harness = createHarness();
     const settings = harness.registry.open(
       GLOBAL_DIALOG_IDS.SETTINGS,
@@ -293,26 +336,15 @@ describe('retained global Pixi dialogs', () => {
         account: { username: 'mira' },
       },
     );
-    const settingsTabWidth =
-      settings.tabButtons[0].button.buttonWidth;
-
     expect(settings.panel).toMatchObject({
       contentBoxWidth: 264,
-      contentBoxHeight: 410,
+      contentBoxHeight: 190,
       outerWidth: 304,
-      outerHeight: 450,
+      outerHeight: 230,
     });
     expect(settings.panel.outerFrame.frameWidth).toBe(
       GLOBAL_DIALOG_GEOMETRY.maxShellWidth,
     );
-    expect(settings.tabsLayer.x).toBe(18);
-    expect(
-      settingsTabWidth * settings.tabButtons.length +
-        3 * (settings.tabButtons.length - 1),
-    ).toBeCloseTo(GLOBAL_DIALOG_GEOMETRY.maxShellWidth);
-    expect(
-      settings.tabButtons.map(({ button }) => button.variant),
-    ).toEqual(['tab', 'tab', 'tab']);
     harness.registry.close(GLOBAL_DIALOG_IDS.SETTINGS);
 
     const level = harness.registry.open(
@@ -705,6 +737,149 @@ describe('retained global Pixi dialogs', () => {
     expect(row.valueLabel.measuredWidth).toBeLessThanOrEqual(
       row.valueLabel.wrapWidth,
     );
+    harness.dispose();
+  });
+
+  it('keeps while-away values inside the paper with regular ink and right-side icons', () => {
+    const harness = createHarness();
+    const announcement = harness.registry.open(
+      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
+      {
+        kind: 'whileAway',
+        title: 'While Away',
+        framed: true,
+        dismissible: true,
+        showClose: true,
+        rows: [
+          {
+            id: 'whileAway:auto_seed_summoned:0',
+            kind: 'row',
+            label: 'Seeds Summoned',
+            value: '8',
+            valueColor: 'text',
+            mutedLabel: false,
+            icon: {
+              frameName: 'seed:pack',
+              kind: 'seed',
+            },
+          },
+          {
+            id: 'whileAway:garden_harvested:0',
+            kind: 'row',
+            label: 'Herbs Harvested',
+            value: '12',
+            valueColor: 'text',
+            mutedLabel: false,
+            icon: {
+              frameName: 'herb:bloodroseHerb',
+              kind: 'herb',
+            },
+          },
+          {
+            id: 'whileAway:brewing_complete:0',
+            kind: 'row',
+            label: 'Potions Brewed',
+            value: '2',
+            valueColor: 'text',
+            mutedLabel: false,
+            icon: {
+              frameName: 'potion:manaTonic',
+              kind: 'potion',
+            },
+          },
+          {
+            id: 'whileAway:npc_market_sold:0',
+            kind: 'row',
+            label: 'Traders Bought',
+            value: '40',
+            valueColor: 'text',
+            mutedLabel: false,
+            icon: {
+              frameName: 'resource:coin',
+              kind: 'resource',
+            },
+          },
+        ],
+      },
+    );
+    const rows = announcement.rows.collection.getWidgets();
+    const lastRow = rows.at(-1);
+    const rowsBottom =
+      announcement.rowsLayer.y + lastRow.root.y + lastRow.rowHeight;
+
+    expect(announcement.rowsLayer.parent).toBe(
+      announcement.reportScroll.content,
+    );
+    expect(announcement.reportScroll.width).toBe(264);
+    expect(announcement.rowsLayer.y).toBe(12);
+    expect(rows.every((row) => row.rowWidth === 260)).toBe(true);
+    expect(rowsBottom).toBeLessThanOrEqual(
+      announcement.reportScroll.contentHeight,
+    );
+    expect(announcement.reportScroll.scrollbarTrack.visible).toBe(false);
+    expect(rows.map((row) => row.valueIconFrameName)).toEqual([
+      'seed:pack',
+      'herb:bloodroseHerb',
+      'potion:manaTonic',
+      'resource:coin',
+    ]);
+    rows.forEach((row) => {
+      expect(row.valueIcon.visible).toBe(true);
+      expect(row.keyLabel.textObject.style.fill).toBe(
+        announcement.panel.getContentTheme().text,
+      );
+      expect(row.valueLabel.textObject.style.fill).toBe(
+        announcement.panel.getContentTheme().text,
+      );
+    });
+    harness.dispose();
+  });
+
+  it('caps an overflowing while-away report and shows the shared scrollbar', () => {
+    const harness = createHarness();
+    const rows = Array.from({ length: 8 }, (_, index) => ({
+      id: `whileAway:garden_harvested:${index}`,
+      kind: 'row',
+      label: 'Herbs Harvested',
+      value: `${index + 1}`,
+      valueColor: 'text',
+      mutedLabel: false,
+      icon: {
+        frameName: 'herb:bloodroseHerb',
+        kind: 'herb',
+      },
+    }));
+    const announcement = harness.registry.open(
+      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
+      {
+        kind: 'whileAway',
+        title: 'While Away',
+        framed: true,
+        dismissible: true,
+        showClose: true,
+        rows,
+      },
+    );
+
+    expect(announcement.panel.contentBoxHeight).toBe(128);
+    expect(announcement.reportScroll.width).toBe(264);
+    expect(announcement.reportScroll.height).toBe(128);
+    expect(announcement.reportScroll.contentHeight).toBeGreaterThan(128);
+    expect(announcement.reportScroll.scrollbarTrack.visible).toBe(true);
+    expect(announcement.reportScroll.scrollbarThumb.visible).toBe(true);
+    expect(
+      announcement.reportScroll.scrollbarTrack.getLocalBounds().x,
+    ).toBeGreaterThan(264);
+    expect(
+      announcement.rows.collection
+        .getWidgets()
+        .every((row) => row.rowWidth === 260),
+    ).toBe(true);
+
+    announcement.reportScroll.scrollTo(
+      announcement.reportScroll.contentHeight,
+    );
+    expect(announcement.reportScroll.offsetY).toBeGreaterThan(0);
     harness.dispose();
   });
 

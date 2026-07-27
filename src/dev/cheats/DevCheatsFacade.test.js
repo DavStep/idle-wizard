@@ -682,6 +682,10 @@ describe('DevCheatsFacade', () => {
           command: 'cheats.openUi("featureUnlockAnnouncement")',
         }),
         expect.objectContaining({
+          id: 'whileAwayAnnouncement',
+          command: 'cheats.openUi("whileAwayAnnouncement")',
+        }),
+        expect.objectContaining({
           id: 'topPanelQuestProgress',
           command: 'cheats.openUi("topPanelQuestProgress")',
         }),
@@ -711,6 +715,15 @@ describe('DevCheatsFacade', () => {
     });
     expect(pagesFacade.openDialog).toHaveBeenLastCalledWith(
       'featureUnlockAnnouncement',
+      {},
+    );
+    expect(publishAndSaveSpy).not.toHaveBeenCalled();
+    expect(target.cheats.openUi('whileAwayAnnouncement')).toMatchObject({
+      ok: true,
+      surfaceId: 'whileAwayAnnouncement',
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith(
+      'whileAwayAnnouncement',
       {},
     );
     expect(publishAndSaveSpy).not.toHaveBeenCalled();

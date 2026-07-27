@@ -68,7 +68,7 @@ The game should look like a polished fantasy workshop HUD: dark layered rooms, r
 - Press/active state uses the shared compact compression/release motion and skin state; keep label/icon centering stable.
 - Disabled buttons use the shared gray button asset and keep normal weight. Never apply grayscale or monochrome shaders to button chrome; those shaders are reserved for icons.
 - Brown/gold is the default action family, green is positive/claim/collect/confirm, and red is cancellation or loss. Cost and tab skins keep their documented roles.
-- Shared passive progress rails use the compact Root Rush capsule: a 10px source-height black track with a 1px border and inset rim. Purple is the default fill, Brewing uses blue, Garden uses green, and Market/Research use yellow. Interactive sliders and the top-panel quest rail use the thicker 14px height.
+- Shared passive progress rails use the compact Root Rush capsule: a 10px source-height black track with a 1px border and inset rim. Purple is the default fill, Brewing uses blue, Garden uses green, and Market/Research use yellow. Trader-stall sale progress is the Market exception: keep it purple and do not inherit the gradient player style. The gradient player style remains available on the top-panel level-up rail and app-level connection/loading rails. Interactive sliders and the top-panel quest rail use the thicker 14px height.
 
 ## Motion
 

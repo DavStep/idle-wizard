@@ -17,7 +17,7 @@ const EMPTY_ALLIANCE_SNAPSHOT = {
 };
 
 const CHAT_CHANNELS = [
-  { id: 'world', label: 'world chat' },
+  { id: 'world', label: 'World Chat' },
   { id: 'alliance', label: 'alliance chat' },
 ];
 
@@ -159,7 +159,7 @@ export class WorkshopWorldChatManager {
     const button = document.createElement('button');
     button.className = 'workshop-page__world-chat-button workshop-page__world-chat-title style-box__title';
     button.type = 'button';
-    button.textContent = 'world chat';
+    button.textContent = 'World Chat';
     button.addEventListener('click', () => this.show());
     return button;
   }
@@ -206,7 +206,7 @@ export class WorkshopWorldChatManager {
   createTitle() {
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'world chat';
+    title.textContent = 'World Chat';
     return title;
   }
 

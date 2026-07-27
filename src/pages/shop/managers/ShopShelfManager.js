@@ -275,12 +275,14 @@ export class ShopShelfManager {
     const actions = document.createElement('div');
     actions.className = 'shop-page__sell-action-row';
     const mark = document.createElement('button');
-    mark.className = 'style-button shop-page__sell-mark-button';
+    mark.className =
+      'style-button style-button--green shop-page__sell-mark-button';
     mark.type = 'button';
     mark.dataset.tutorialId = 'shop:sell:mark';
     mark.addEventListener('click', () => this.markDraft());
     const clear = document.createElement('button');
-    clear.className = 'style-button shop-page__sell-clear-button';
+    clear.className =
+      'style-button style-button--red shop-page__sell-clear-button';
     clear.type = 'button';
     clear.textContent = 'clear';
     clear.addEventListener('click', () => this.clearDraft());

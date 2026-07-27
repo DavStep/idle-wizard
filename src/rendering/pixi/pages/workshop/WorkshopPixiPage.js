@@ -56,7 +56,7 @@ const WORKSHOP_DIALOGS = Object.freeze([
   Object.freeze({ id: 'discoveries', title: 'discoveries' }),
   Object.freeze({ id: 'personalTasks', title: 'quests' }),
   Object.freeze({ id: 'worldEvent', title: 'world event' }),
-  Object.freeze({ id: 'worldChat', title: 'world chat' }),
+  Object.freeze({ id: 'worldChat', title: 'World Chat' }),
 ]);
 
 const DEFAULT_FEATURES = Object.freeze([
@@ -137,6 +137,7 @@ const SIDE_PANEL_ENTER_SCALE = 0.96;
 const SIDE_PANEL_STAGGER_MS = 16;
 const WORKSHOP_REQUEST_TEXT_FILL = '#ffffff';
 const WORKSHOP_REQUEST_TEXT_STROKE_WIDTH = 2;
+const WORKSHOP_REQUEST_TITLE_STROKE = '#0a0a0a';
 const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
 const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
 const WORKSHOP_SIDE_LABEL_STROKE_WIDTH = 2;
@@ -966,6 +967,7 @@ class WorkshopTaskPanel {
 
     this.height = Math.max(34, Math.ceil(contentY + 9));
     this.panel.setBounds(x, y, width, this.height);
+    this.applyTitleStroke();
     this.pinButton.setBounds(8, this.height - 7, 42, 14);
     this.expandButton.setBounds(width / 2 - 30, this.height - 7, 60, 14);
     this.page.registerSemanticTarget({
@@ -989,6 +991,7 @@ class WorkshopTaskPanel {
       theme,
       RETAINED_TEXT_STYLES.bold,
     );
+    this.applyTitleStroke();
     applyWorkshopRequestTextTheme(this.next, theme, {
       ...RETAINED_TEXT_STYLES.body,
       wordWrapWidth: 308,
@@ -1008,6 +1011,14 @@ class WorkshopTaskPanel {
     for (const row of this.rows.getWidgets()) {
       row.applyTheme(theme);
     }
+  }
+
+  applyTitleStroke() {
+    this.panel.title.style.stroke = {
+      color: WORKSHOP_REQUEST_TITLE_STROKE,
+      width: WORKSHOP_REQUEST_TEXT_STROKE_WIDTH,
+      join: 'round',
+    };
   }
 
   destroy() {

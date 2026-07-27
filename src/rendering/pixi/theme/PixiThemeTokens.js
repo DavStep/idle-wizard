@@ -112,6 +112,8 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/root-run-cost-button/gray-button.png',
   buttonGreenNineSlice:
     'source:assets/ui/root-run-cost-button/green-button-9slice.png',
+  buttonRedNineSlice:
+    'source:assets/ui/root-run-cost-button/red-button-9slice.png',
   buttonGrayNineSlice:
     'source:assets/ui/root-run-cost-button/gray-button-9slice.png',
   buttonBrownDark:

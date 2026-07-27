@@ -6,13 +6,13 @@ import {
   Texture,
 } from 'pixi.js';
 
-import { getPlayerVisualSettingCategories } from '../../../../player/playerVisualSettings.js';
 import {
   PixiButton,
   PixiPanel,
   PixiScrollView,
   PixiTextField,
   PixiTextLabel,
+  RootRunSettingsTogglePixi,
 } from '../../primitives/index.js';
 import {
   PooledCollection,
@@ -20,6 +20,7 @@ import {
 } from '../../retained/index.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -30,16 +31,16 @@ import {
 
 const SETTINGS_CONTENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
-const SETTINGS_CONTENT_HEIGHT = 410;
-const SETTINGS_SCROLL_HEIGHT = 390;
-const SETTINGS_WRAPPER_WIDTH =
-  GLOBAL_DIALOG_GEOMETRY.maxShellWidth;
+const SETTINGS_STANDARD_CONTENT_HEIGHT = 410;
+const SETTINGS_STANDARD_SCROLL_HEIGHT = 390;
+const SETTINGS_DEVICE_CONTENT_HEIGHT = 190;
+const SETTINGS_DEVICE_SCROLL_HEIGHT = 170;
 const SETTINGS_SECTION_CONTENT_WIDTH =
   SETTINGS_CONTENT_WIDTH - 24;
-const SETTINGS_TAB_KEYS = Object.freeze([
-  Object.freeze({ key: 'account', label: 'account' }),
-  Object.freeze({ key: 'report', label: 'report' }),
-  Object.freeze({ key: 'configurations', label: 'configurations' }),
+const SETTINGS_TABS = new Set([
+  'account',
+  'report',
+  'configurations',
 ]);
 const FEEDBACK_KINDS = Object.freeze([
   Object.freeze({
@@ -64,22 +65,27 @@ const FEEDBACK_KINDS = Object.freeze([
     emptyMessage: 'describe the feature',
   }),
 ]);
-const CONFIGURATION_KEYS = Object.freeze([
-  'theme',
-  'font',
-  'color',
-  'icons',
-  'progressBar',
+const DEVICE_PREFERENCE_KEYS = Object.freeze([
+  'sfx',
+  'music',
+  'haptics',
 ]);
+const DEVICE_PREFERENCE_ROW_HEIGHT = 24;
+const DEVICE_PREFERENCE_ROW_PITCH =
+  PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
+const DEVICE_PANEL_CONTENT_HEIGHT =
+  DEVICE_PREFERENCE_ROW_PITCH *
+    (DEVICE_PREFERENCE_KEYS.length - 1) +
+  DEVICE_PREFERENCE_ROW_HEIGHT;
 const AVATAR_CELL_HEIGHT = 94;
 const AVATAR_GAP = 8;
 const AVATAR_CELL_WIDTH =
   (SETTINGS_CONTENT_WIDTH - AVATAR_GAP * 2) / 3;
 
 /**
- * Retained settings surface used by both global.settings and global.feedback.
- * The feedback factory starts on the report pane but shares the same exact
- * three-tab dialog vocabulary as the DOM reference.
+ * Retained single-pane surface used by settings, feedback, username, and
+ * avatar entry points. Normal settings open directly on the three device
+ * preferences, matching Root Run without exposing visual-option tabs.
  */
 export class PixiSettingsDialog extends RetainedGlobalDialog {
   constructor({
@@ -88,12 +94,16 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     initialTab = 'account',
     initialFeedbackKind = 'feedback',
   }) {
+    const startsOnDevicePreferences =
+      normalizeSettingsTab(initialTab) === 'configurations';
     super({
       context,
       dialogId,
       title: 'settings',
       contentWidth: SETTINGS_CONTENT_WIDTH,
-      contentHeight: SETTINGS_CONTENT_HEIGHT,
+      contentHeight: startsOnDevicePreferences
+        ? SETTINGS_DEVICE_CONTENT_HEIGHT
+        : SETTINGS_STANDARD_CONTENT_HEIGHT,
       placement: 'top',
       label: `${dialogId}:settingsDialog`,
     });
@@ -109,7 +119,9 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       inputRouter: this.context.inputRouter,
       assetManager: this.context.assets,
       width: SETTINGS_CONTENT_WIDTH,
-      height: SETTINGS_SCROLL_HEIGHT,
+      height: startsOnDevicePreferences
+        ? SETTINGS_DEVICE_SCROLL_HEIGHT
+        : SETTINGS_STANDARD_SCROLL_HEIGHT,
       contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
       showProgress: true,
       label: `${dialogId}:scroll`,
@@ -131,7 +143,6 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       this.avatarLayer,
     );
 
-    this.buildTabs();
     this.buildAccountPane();
     this.buildReportPane();
     this.buildConfigurationsPane();
@@ -139,27 +150,6 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.applyTheme(this.context.theme);
     this.bind({});
     this.layout(this.context.projection);
-  }
-
-  buildTabs() {
-    this.tabsLayer = new Container();
-    this.tabsLayer.label = `${this.dialogId}:tabs`;
-    this.root.addChild(this.tabsLayer);
-    this.tabButtons = SETTINGS_TAB_KEYS.map(({ key, label }) => {
-      const button = new PixiButton({
-        assetManager: this.context.assets,
-        inputRouter: this.context.inputRouter,
-        semanticRegistry: this.context.semanticRegistry,
-        semanticId: `${this.dialogId}.tab.${key}`,
-        text: label,
-        height: GLOBAL_DIALOG_GEOMETRY.tabHeight,
-        variant: 'tab',
-        action: () => this.selectTab(key),
-        label: `${this.dialogId}:tab:${key}`,
-      });
-      this.tabsLayer.addChild(button);
-      return { key, button };
-    });
   }
 
   buildAccountPane() {
@@ -297,77 +287,26 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   buildConfigurationsPane() {
     this.devicePanel = new PixiPanel({
       assetManager: this.context.assets,
-      title: 'device',
+      title: '',
       contentWidth: SETTINGS_SECTION_CONTENT_WIDTH,
-      contentHeight: 68,
+      contentHeight: DEVICE_PANEL_CONTENT_HEIGHT,
       label: `${this.dialogId}:devicePanel`,
     });
     this.configurationsLayer.addChild(this.devicePanel);
-    this.preferenceRows = ['haptics', 'music', 'sfx'].map((key) => {
+    this.preferenceRows = DEVICE_PREFERENCE_KEYS.map((key) => {
       const label = new PixiTextLabel({
         text: key,
         label: `${this.dialogId}:preference:${key}:label`,
       });
-      const button = new PixiButton({
+      const toggle = new RootRunSettingsTogglePixi({
         assetManager: this.context.assets,
         inputRouter: this.context.inputRouter,
         semanticRegistry: this.context.semanticRegistry,
         semanticId: `${this.dialogId}.preference.${key}`,
-        text: 'on',
-        width: 58,
-        height: 24,
-        action: () => this.togglePreference(key),
-        label: `${this.dialogId}:preference:${key}:button`,
+        label: `${this.dialogId}:preference:${key}:toggle`,
       });
-      this.devicePanel.content.addChild(label, button);
-      return { key, label, button, enabled: true };
-    });
-
-    this.categoryPanels = new Map();
-    this.categoryLayers = new Map();
-    for (const key of CONFIGURATION_KEYS) {
-      const panel = new PixiPanel({
-        assetManager: this.context.assets,
-        title: formatCategoryLabel(key),
-        contentWidth: SETTINGS_SECTION_CONTENT_WIDTH,
-        contentHeight: 20,
-        label: `${this.dialogId}:configuration:${key}`,
-      });
-      const layer = new Container();
-      layer.label = `${this.dialogId}:configuration:${key}:options`;
-      panel.content.addChild(layer);
-      this.categoryPanels.set(key, panel);
-      this.categoryLayers.set(key, layer);
-      this.configurationsLayer.addChild(panel);
-    }
-
-    this.optionPool = new WidgetPool({
-      name: `${this.dialogId} visual option pool`,
-      counters: this.context.counters,
-      maxSize: 24,
-      create: () => {
-        const option = new SettingsOptionWidget({
-          assetManager: this.context.assets,
-          inputRouter: this.context.inputRouter,
-          label: `${this.dialogId}:visualOption`,
-        });
-        option.applyTheme(this.theme ?? this.context.theme);
-        return option;
-      },
-      reset: (option) => option.reset(),
-      dispose: (option) => option.destroy(),
-    });
-    this.options = new PooledCollection({
-      name: `${this.dialogId} visual options`,
-      pool: this.optionPool,
-      counters: this.context.counters,
-      keyOf: (option) => `${option.category}:${option.key}`,
-      bind: (widget, option, key) =>
-        widget.bind(key, option, {
-          select: (data) => this.selectVisualOption(data),
-          research: (data) => this.researchVisualOption(data),
-        }),
-      afterReconcile: (widgets) => this.orderConfigurationOptions(widgets),
+      this.devicePanel.content.addChild(label, toggle);
+      return { key, label, toggle, enabled: true };
     });
   }
 
@@ -440,12 +379,13 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     for (const preference of this.preferenceRows) {
       preference.enabled =
         model.preferences[preference.key] !== false;
-      preference.button
-        .setText(preference.enabled ? 'on' : 'off')
-        .setSelected(preference.enabled);
+      preference.toggle.bind({
+        value: preference.enabled,
+        onChange: (enabled) =>
+          this.setPreference(preference.key, enabled),
+      });
     }
 
-    this.options.reconcile(model.options);
     this.avatars.reconcile(model.avatars);
     this.renderSelectedPane();
   }
@@ -490,13 +430,21 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       layer.renderable = visible;
       layer.eventMode = visible ? 'passive' : 'none';
     }
-    for (const { key, button } of this.tabButtons) {
-      button.setSelected(
-        key === this.selectedTab ||
-          (this.selectedTab === 'avatar' && key === 'account'),
-      );
-    }
     this.layoutActivePane();
+    const devicePreferences =
+      this.selectedTab === 'configurations';
+    this.setPanelContentSize(
+      SETTINGS_CONTENT_WIDTH,
+      devicePreferences
+        ? SETTINGS_DEVICE_CONTENT_HEIGHT
+        : SETTINGS_STANDARD_CONTENT_HEIGHT,
+    );
+    this.scroll.setViewportSize(
+      SETTINGS_CONTENT_WIDTH,
+      devicePreferences
+        ? SETTINGS_DEVICE_SCROLL_HEIGHT
+        : SETTINGS_STANDARD_SCROLL_HEIGHT,
+    );
     this.scroll.setContentHeight(this.activePaneHeight);
     this.scroll.scrollTo(this.scrollOffsets.get(this.selectedTab) ?? 0);
   }
@@ -563,46 +511,23 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.devicePanel.position.set(0, y);
     this.devicePanel.setContentSize(
       SETTINGS_SECTION_CONTENT_WIDTH,
-      68,
+      DEVICE_PANEL_CONTENT_HEIGHT,
     );
-    this.preferenceRows.forEach(({ label, button }, index) => {
-      const rowY = index * 22;
-      label.position.set(0, rowY + 3);
-      button.position.set(
-        SETTINGS_SECTION_CONTENT_WIDTH - 58,
+    this.preferenceRows.forEach(({ label, toggle }, index) => {
+      const rowY = index * DEVICE_PREFERENCE_ROW_PITCH;
+      label.position.set(
+        0,
+        rowY +
+          (DEVICE_PREFERENCE_ROW_HEIGHT - label.measuredHeight) /
+            2,
+      );
+      toggle.setBounds(
+        SETTINGS_SECTION_CONTENT_WIDTH - toggle.controlWidth,
         rowY,
       );
-      button.setSize(58, 20);
     });
     y += this.devicePanel.outerHeight + GLOBAL_DIALOG_GEOMETRY.sectionGap;
-
-    for (const key of CONFIGURATION_KEYS) {
-      const panel = this.categoryPanels.get(key);
-      const layer = this.categoryLayers.get(key);
-      let optionY = 0;
-      for (const option of this.options.getWidgets()) {
-        if (option.data.category !== key) {
-          continue;
-        }
-        const height = option.getPreferredHeight();
-        option.setBounds(
-          0,
-          optionY,
-          SETTINGS_SECTION_CONTENT_WIDTH,
-          height,
-        );
-        optionY += height + 6;
-      }
-      optionY = Math.max(20, optionY - 6);
-      panel.setContentSize(
-        SETTINGS_SECTION_CONTENT_WIDTH,
-        optionY,
-      );
-      panel.position.set(0, y);
-      layer.position.set(0, 0);
-      y += panel.outerHeight + GLOBAL_DIALOG_GEOMETRY.sectionGap;
-    }
-    return Math.max(SETTINGS_SCROLL_HEIGHT, y);
+    return y;
   }
 
   layoutAvatarPane() {
@@ -617,21 +542,10 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       );
     });
     return Math.max(
-      SETTINGS_SCROLL_HEIGHT,
+      SETTINGS_STANDARD_SCROLL_HEIGHT,
       Math.ceil(this.avatars.getWidgets().length / 3) *
         (AVATAR_CELL_HEIGHT + AVATAR_GAP),
     );
-  }
-
-  orderConfigurationOptions(widgets) {
-    for (const layer of this.categoryLayers.values()) {
-      layer.removeChildren();
-    }
-    for (const widget of widgets) {
-      this.categoryLayers
-        .get(widget.data.category)
-        ?.addChild(widget.root);
-    }
   }
 
   selectFeedbackKind(kind) {
@@ -747,57 +661,26 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.usernameStatus.setText(status ?? '');
   }
 
-  togglePreference(key) {
+  setPreference(key, enabled) {
     const row = this.preferenceRows.find(
       (candidate) => candidate.key === key,
     );
     if (!row) {
       return false;
     }
-    const next = !row.enabled;
     const result =
-      this.actions.togglePreference?.(key, next) ??
-      this.actions[`toggle${capitalize(key)}`]?.(next);
+      this.actions.togglePreference?.(key, enabled) ??
+      this.actions[`toggle${capitalize(key)}`]?.(enabled);
     if (result === false) {
+      row.toggle.bind({
+        value: row.enabled,
+        onChange: (nextEnabled) =>
+          this.setPreference(key, nextEnabled),
+      });
       return false;
     }
-    row.enabled = next;
-    row.button.setText(next ? 'on' : 'off').setSelected(next);
+    row.enabled = enabled;
     return result ?? true;
-  }
-
-  selectVisualOption(option) {
-    if (option.researched === false) {
-      return false;
-    }
-    return (
-      this.actions.selectVisualOption?.(
-        option.category,
-        option.key,
-      ) ??
-      this.actions.selectSetting?.(
-        option.category,
-        option.key,
-      ) ??
-      false
-    );
-  }
-
-  researchVisualOption(option) {
-    if (option.researched !== false) {
-      return false;
-    }
-    return (
-      this.actions.researchVisualOption?.(
-        option.category,
-        option.key,
-      ) ??
-      this.actions.researchSetting?.(
-        option.category,
-        option.key,
-      ) ??
-      false
-    );
   }
 
   runAction(name, ...args) {
@@ -827,18 +710,15 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       this.usernameSave,
       this.connectAccount,
       this.feedbackSend,
-      ...this.tabButtons?.map(({ button }) => button) ?? [],
       ...this.feedbackKindButtons?.map(({ button }) => button) ?? [],
-      ...this.preferenceRows?.map(({ button }) => button) ?? [],
     ]) {
       button?.applyTheme(theme);
     }
-    this.devicePanel?.applyTheme(theme);
-    for (const panel of this.categoryPanels?.values?.() ?? []) {
-      panel.applyTheme(theme);
-    }
-    for (const option of this.options?.getWidgets?.() ?? []) {
-      option.applyTheme(theme);
+    const deviceTheme = this.theme ?? this.context.theme;
+    this.devicePanel?.applyTheme(deviceTheme);
+    for (const { label, toggle } of this.preferenceRows ?? []) {
+      label.applyTheme(deviceTheme);
+      toggle.applyTheme(theme);
     }
     for (const avatar of this.avatars?.getWidgets?.() ?? []) {
       avatar.applyTheme(theme);
@@ -849,34 +729,16 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.scroll.position.set(0, 0);
     this.scroll.setViewportSize(
       SETTINGS_CONTENT_WIDTH,
-      SETTINGS_SCROLL_HEIGHT,
+      this.selectedTab === 'configurations'
+        ? SETTINGS_DEVICE_SCROLL_HEIGHT
+        : SETTINGS_STANDARD_SCROLL_HEIGHT,
     );
-    const outerHeight = this.panel.outerHeight;
-    const x =
-      (GLOBAL_DIALOG_GEOMETRY.sourceWidth -
-        SETTINGS_WRAPPER_WIDTH) /
-      2;
-    const y =
-      this.top +
-      (this.viewportProjection?.dialogShift ?? 0) +
-      outerHeight +
-      GLOBAL_DIALOG_GEOMETRY.tabGap;
-    this.tabsLayer.position.set(x, y);
-    const gap = 3;
-    const tabWidth =
-      (SETTINGS_WRAPPER_WIDTH -
-        gap * (this.tabButtons.length - 1)) /
-      this.tabButtons.length;
-    this.tabButtons.forEach(({ button }, index) => {
-      button.position.set(index * (tabWidth + gap), 0);
-      button.setSize(tabWidth, GLOBAL_DIALOG_GEOMETRY.tabHeight);
-    });
     this.layoutActivePane();
     this.scroll.setContentHeight(this.activePaneHeight);
   }
 
   getModalContentRoots() {
-    return [this.panel, this.tabsLayer];
+    return [this.panel];
   }
 
   activateDialog() {
@@ -894,200 +756,14 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   destroyDialog() {
-    this.options?.destroy();
-    this.optionPool?.destroy();
     this.avatars?.destroy();
     this.avatarPool?.destroy();
   }
 
   getPoolStats() {
     return Object.freeze({
-      options: this.optionPool.getStats(),
       avatars: this.avatarPool.getStats(),
     });
-  }
-}
-
-class SettingsOptionWidget {
-  constructor({
-    assetManager,
-    inputRouter,
-    label,
-  }) {
-    this.root = new Container();
-    this.root.label = label;
-    this.name = new PixiButton({
-      assetManager,
-      inputRouter,
-      text: '',
-      action: () => this.select(),
-      label: `${label}:name`,
-    });
-    this.price = new PixiButton({
-      assetManager,
-      inputRouter,
-      text: '',
-      action: () => this.research(),
-      label: `${label}:price`,
-    });
-    this.name.frame.visible = false;
-    this.name.frame.renderable = false;
-    this.price.frame.visible = false;
-    this.price.frame.renderable = false;
-    this.name.textLabel.setAnchor(0, 0.5);
-    this.price.textLabel.setAnchor(1, 0.5);
-    this.selectedLine = new Graphics();
-    this.preview = new Graphics();
-    this.root.addChild(
-      this.name,
-      this.price,
-      this.selectedLine,
-      this.preview,
-    );
-    this.data = {};
-    this.actions = {};
-    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.root.visible = false;
-  }
-
-  bind(_key, data, actions) {
-    this.data = data;
-    this.actions = actions ?? {};
-    this.root.visible = true;
-    this.root.renderable = true;
-    this.name
-      .setText(data.label)
-      .setEnabled(data.enabled !== false && data.researched !== false);
-    this.price
-      .setText(data.priceLabel)
-      .setEnabled(
-        data.enabled !== false &&
-          data.researched === false &&
-          data.priceHidden !== true,
-      );
-    this.price.visible =
-      data.researched === false &&
-      data.priceHidden !== true;
-    this.price.renderable = this.price.visible;
-    this.redraw();
-  }
-
-  reset() {
-    this.data = {};
-    this.actions = {};
-    this.root.visible = false;
-    this.root.renderable = false;
-    this.name.setEnabled(false);
-    this.price.setEnabled(false);
-    this.preview.clear();
-    this.selectedLine.clear();
-  }
-
-  select() {
-    return this.actions.select?.(this.data) ?? false;
-  }
-
-  research() {
-    return this.actions.research?.(this.data) ?? false;
-  }
-
-  getPreferredHeight() {
-    if (this.data.category === 'theme') {
-      return 62;
-    }
-    if (this.data.category === 'progressBar') {
-      return 34;
-    }
-    return 24;
-  }
-
-  setBounds(x, y, width, height) {
-    this.root.position.set(x, y);
-    this.root.hitArea = new Rectangle(0, 0, width, height);
-    const priceWidth = Math.max(
-      44,
-      this.price.textLabel.measuredWidth + 8,
-    );
-    this.name.position.set(0, 0);
-    this.name.setSize(
-      Math.max(0, width - priceWidth - 12),
-      20,
-    );
-    this.name.textLabel.position.set(0, 10);
-    this.price.position.set(width - priceWidth, 0);
-    this.price.setSize(priceWidth, 20);
-    this.price.textLabel.position.set(priceWidth, 10);
-    this.preview.position.set(0, 24);
-    this.redraw(width, height);
-  }
-
-  applyTheme(theme) {
-    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.name.applyTheme(this.theme);
-    this.price.applyTheme(this.theme);
-    this.redraw();
-  }
-
-  redraw(width = this.root.hitArea?.width ?? 286) {
-    this.selectedLine.clear();
-    if (this.data.selected) {
-      this.selectedLine
-        .moveTo(0, 19)
-        .lineTo(
-          Math.min(width, this.name.textLabel.measuredWidth),
-          19,
-        )
-        .stroke({ color: this.theme.text, width: 1 });
-    }
-    this.preview.clear();
-    if (this.data.category === 'theme') {
-      const previewTheme =
-        THEME_PREVIEW_TOKENS[this.data.key] ??
-        THEME_PREVIEW_TOKENS.midnight;
-      this.preview
-        .rect(0, 0, width, 34)
-        .fill(previewTheme.background)
-        .rect(5, 5, width - 10, 24)
-        .fill(previewTheme.surface)
-        .stroke({
-          color: previewTheme.stroke,
-          width: 1,
-          alignment: 1,
-        })
-        .rect(10, 21, (width - 20) * 0.64, 3)
-        .fill(previewTheme.text);
-    } else if (this.data.category === 'progressBar') {
-      const y = 4;
-      this.preview
-        .rect(0, y, width, 7)
-        .fill(this.theme.surface)
-        .stroke({
-          color: this.theme.stroke,
-          width: 2,
-          alignment: 1,
-        });
-      if (this.data.key === 'gradient') {
-        const colors = ['#7f3cff', '#d868ff', '#64caff', '#ffd76a'];
-        const segment = (width * 0.68) / colors.length;
-        colors.forEach((color, index) => {
-          this.preview
-            .rect(2 + segment * index, y + 2, segment, 3)
-            .fill(color);
-        });
-      } else {
-        this.preview
-          .rect(2, y + 2, (width - 4) * 0.68, 3)
-          .fill(
-            this.data.key === 'notched'
-              ? '#b79a6b'
-              : this.theme.text,
-          );
-      }
-    }
-  }
-
-  destroy() {
-    this.root.destroy({ children: true });
   }
 }
 
@@ -1238,27 +914,6 @@ class SettingsAvatarWidget {
   }
 }
 
-const THEME_PREVIEW_TOKENS = Object.freeze({
-  black: Object.freeze({
-    background: '#1a1a1a',
-    surface: '#202020',
-    text: '#e8e8e8',
-    stroke: '#6a6a6a',
-  }),
-  midnight: Object.freeze({
-    background: '#1c1e26',
-    surface: '#17191f',
-    text: '#d4d4d4',
-    stroke: '#3f465c',
-  }),
-  witchcraft: Object.freeze({
-    background: '#07040e',
-    surface: '#1a1028',
-    text: '#f2e4bc',
-    stroke: '#674579',
-  }),
-});
-
 function normalizeSettingsModel(
   source = {},
   {
@@ -1269,37 +924,18 @@ function normalizeSettingsModel(
   const settings = source.settings ?? source;
   const account = settings.account ?? {};
   const feedback = settings.feedback ?? {};
-  const selections = settings.selections ?? {};
   const costs = settings.costsCrystal ?? {};
   const researched = settings.researched ?? {};
   const suppliedCategories = Array.isArray(settings.categories)
     ? settings.categories
-    : getPlayerVisualSettingCategories();
+    : [];
   const categories = suppliedCategories.map((category) => ({
     ...category,
     options: Array.isArray(category.options)
       ? category.options
       : [],
   }));
-  const options = categories
-    .filter((category) =>
-      CONFIGURATION_KEYS.includes(category.key),
-    )
-    .flatMap((category) =>
-      category.options.map((option) =>
-        normalizeVisualOption({
-          category: category.key,
-          option,
-          selection:
-            selections[category.key] ??
-            settings[category.key],
-          researched:
-            researched[category.key]?.[option.key],
-          cost:
-            costs[category.key]?.[option.key],
-        }),
-      ),
-    );
+  const selections = settings.selections ?? {};
   const avatarCategory = categories.find(
     (category) => category.key === 'character',
   );
@@ -1373,7 +1009,6 @@ function normalizeSettingsModel(
         settings.sfxEnabled ??
         true,
     },
-    options,
     avatars,
   };
 }
@@ -1418,9 +1053,7 @@ function normalizeSettingsTab(tabId) {
   if (normalized === 'avatar') {
     return 'avatar';
   }
-  return SETTINGS_TAB_KEYS.some(({ key }) => key === normalized)
-    ? normalized
-    : 'account';
+  return SETTINGS_TABS.has(normalized) ? normalized : 'account';
 }
 
 function normalizeFeedbackKind(kind) {
@@ -1436,19 +1069,6 @@ function getFeedbackKind(kind) {
       (candidate) => candidate.key === kind,
     ) ?? FEEDBACK_KINDS[0]
   );
-}
-
-function formatCategoryLabel(key) {
-  if (key === 'progressBar') {
-    return 'progress bar';
-  }
-  if (key === 'color') {
-    return 'resource colors';
-  }
-  if (key === 'icons') {
-    return 'resource icons';
-  }
-  return key;
 }
 
 function formatFeedbackFailure(reason) {

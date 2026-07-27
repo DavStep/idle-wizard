@@ -1,4 +1,10 @@
-import { Container, Graphics, Rectangle } from 'pixi.js';
+import {
+  Container,
+  Graphics,
+  Rectangle,
+  Sprite,
+  Texture,
+} from 'pixi.js';
 
 import {
   PixiButton,
@@ -403,10 +409,12 @@ export class BorderLabelButton {
  */
 export class PooledDialogRow {
   constructor({
+    assetManager = null,
     inputRouter = null,
     label = 'dialogRow',
     theme = DEFAULT_PIXI_THEME_SNAPSHOT,
   } = {}) {
+    this.assetManager = assetManager;
     this.root = new Container();
     this.root.label = label;
     this.root.visible = false;
@@ -422,7 +430,22 @@ export class PooledDialogRow {
       align: 'right',
       label: `${label}:value`,
     });
-    this.root.addChild(this.divider, this.keyLabel, this.valueLabel);
+    this.valueIcon = new Sprite({
+      texture: Texture.EMPTY,
+      anchor: 0.5,
+      roundPixels: true,
+      label: `${label}:valueIcon`,
+    });
+    this.valueIcon.visible = false;
+    this.valueIcon.renderable = false;
+    this.valueIcon.eventMode = 'none';
+    this.valueIconFrameName = null;
+    this.root.addChild(
+      this.divider,
+      this.keyLabel,
+      this.valueIcon,
+      this.valueLabel,
+    );
     this.action = null;
     this.data = {};
     this.rowWidth = 0;
@@ -462,6 +485,7 @@ export class PooledDialogRow {
         this.data.valueText ??
         '',
     );
+    this.setValueIcon(this.data.icon);
     this.keyLabel
       .setFontWeight(this.data.boldLabel ? 'bold' : 'normal')
       .setColor(this.data.mutedLabel ? 'muted' : this.resolveBaseColor());
@@ -476,6 +500,7 @@ export class PooledDialogRow {
     this.action = null;
     this.keyLabel.setText('');
     this.valueLabel.setText('');
+    this.setValueIcon(null);
     this.divider.clear();
     this.root.visible = false;
     this.root.renderable = false;
@@ -583,6 +608,15 @@ export class PooledDialogRow {
         );
     this.keyLabel.position.set(0, keyY);
     this.valueLabel.position.set(this.rowWidth, valueY);
+    if (this.valueIcon.visible) {
+      this.valueIcon.position.set(
+        this.rowWidth -
+          this.valueLabel.measuredWidth -
+          PIXI_UI_GEOMETRY.rowColumnGap / 2 -
+          this.valueIcon.width / 2,
+        this.rowHeight / 2,
+      );
+    }
     const baseColor = disabled
       ? 'disabled'
       : this.data.mutedLabel
@@ -611,8 +645,43 @@ export class PooledDialogRow {
     );
     this.keyLabel.setWrapWidth(keyWidth);
     this.valueLabel.setWrapWidth(
-      Math.max(0, availableWidth - keyWidth),
+      Math.max(
+        0,
+        availableWidth -
+          keyWidth -
+          (this.valueIcon.visible
+            ? this.valueIcon.width +
+              PIXI_UI_GEOMETRY.rowColumnGap / 2
+            : 0),
+      ),
     );
+  }
+
+  setValueIcon(icon = null) {
+    const frameName = String(icon?.frameName ?? '').trim();
+    this.valueIconFrameName = frameName || null;
+    this.valueIcon.texture = frameName
+      ? this.assetManager?.getAtlasTexture?.(frameName) ??
+        Texture.EMPTY
+      : Texture.EMPTY;
+    this.valueIcon.visible = Boolean(frameName);
+    this.valueIcon.renderable = this.valueIcon.visible;
+    if (!this.valueIcon.visible) {
+      this.valueIcon.width = 0;
+      this.valueIcon.height = 0;
+      return;
+    }
+
+    const iconHeight = PIXI_UI_GEOMETRY.bodyFontSize * 1.032;
+    const source =
+      this.valueIcon.texture?.orig ??
+      this.valueIcon.texture?.frame;
+    const aspect =
+      source?.width > 0 && source?.height > 0
+        ? source.width / source.height
+        : 1;
+    this.valueIcon.width = iconHeight * aspect;
+    this.valueIcon.height = iconHeight;
   }
 
   resolveBaseColor() {
@@ -643,6 +712,7 @@ export class PooledDialogRow {
 
 export class PooledDialogRows {
   constructor({
+    assetManager = null,
     parent,
     inputRouter = null,
     counters = null,
@@ -658,6 +728,7 @@ export class PooledDialogRows {
       maxSize,
       create: () => {
         const row = new PooledDialogRow({
+          assetManager,
           inputRouter,
           label: `${name}:row`,
           theme: this.theme,

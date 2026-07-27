@@ -426,9 +426,10 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       bind: (button, action) => {
         button.applyTheme(this.contentTheme ?? this.theme);
         button.variant =
-          action.selected === true && this.config.selectedActionVariant
+          action.variant ??
+          (action.selected === true && this.config.selectedActionVariant
             ? this.config.selectedActionVariant
-            : this.config.actionVariant ?? 'yellow';
+            : this.config.actionVariant ?? 'yellow');
         button.setModel({
           label: action.label ?? action.text ?? '',
           selected: action.selected === true,

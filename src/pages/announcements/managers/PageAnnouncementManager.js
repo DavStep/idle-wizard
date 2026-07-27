@@ -2,10 +2,16 @@ import {
   createAssetAtlasMaskedSprite,
   createAssetAtlasSprite,
 } from '../../../assets/atlas/atlasSprite.js';
-import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
+import {
+  getHerbIconFrameName,
+  getHerbIconKeyByLabel,
+} from '../../../assets/items/herbs/herbIcons.js';
+import {
+  getPotionIconFrameName,
+  getPotionIconKeyByLabel,
+} from '../../../assets/items/potions/potionIcons.js';
 import { createSeedPackIcon, getSeedIconFrameName } from '../../../assets/items/seeds/seedIcons.js';
-import { formatCoinPriceText, normalizeCoinPrice } from '../../../shared/coinPrice.js';
-import { appendTextWithItemIcons } from '../../shared/itemIconLabel.js';
+import { normalizeCoinPrice } from '../../../shared/coinPrice.js';
 import { createPageIcon } from '../../shared/pageIcons.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { getLevelPayoffRows } from '../../workshop/managers/levelPayoffSummary.js';
@@ -756,10 +762,11 @@ export class PageAnnouncementManager {
 
   renderWhileAwayReport(report = {}) {
     this.panel.classList.add('style-dialog', 'room-announcement--report');
-    this.panel.setAttribute('aria-label', 'while away report');
+    this.panel.setAttribute('aria-label', 'While Away report');
     this.title.className = 'style-box__title room-announcement__report-title';
-    this.setText(this.title, 'while away');
-    this.body.className = 'room-announcement__body room-announcement__body--report';
+    this.setText(this.title, 'While Away');
+    this.body.className =
+      'room-announcement__body room-announcement__body--report style-page-scroll';
 
     const closeButton = this.ensureCloseButton();
     if (!closeButton.isConnected) {
@@ -827,7 +834,25 @@ export class PageAnnouncementManager {
       return;
     }
 
-    appendTextWithItemIcons(value, parts.value);
+    const amount = document.createElement('span');
+    amount.className = 'room-announcement__report-value-amount';
+    amount.textContent = parts.value;
+    const icon =
+      parts.icon?.kind === 'seed'
+        ? createSeedPackIcon(
+            'room-announcement__report-value-icon',
+            { label: parts.accessibleValue },
+          )
+        : createAssetAtlasSprite(
+            'room-announcement__report-value-icon',
+            parts.icon?.frameName,
+          );
+    icon?.setAttribute?.('aria-hidden', 'true');
+    value.setAttribute(
+      'aria-label',
+      parts.accessibleValue ?? parts.value,
+    );
+    value.replaceChildren(...(icon ? [icon, amount] : [amount]));
   }
 
   getWhileAwayReportRowType(row = {}) {
@@ -839,35 +864,63 @@ export class PageAnnouncementManager {
 
   getWhileAwayReportLineParts(row = {}) {
     switch (row.type) {
-      case 'garden_harvested':
+      case 'garden_harvested': {
+        const itemLabel = this.getReportLabel(
+          row.label,
+          'herbs',
+        );
         return {
-          label: 'garden harvested',
-          value: `${this.getPositiveCount(row.quantity)} ${this.getReportLabel(
-            row.label,
-            'herbs',
-          )}`,
+          label: 'Herbs Harvested',
+          value: String(this.getPositiveCount(row.quantity)),
+          accessibleValue: `${this.getPositiveCount(row.quantity)} ${itemLabel}`,
+          icon: {
+            frameName: getHerbIconFrameName(
+              getHerbIconKeyByLabel(itemLabel),
+            ),
+            kind: 'herb',
+          },
         };
-      case 'brewing_complete':
+      }
+      case 'brewing_complete': {
+        const itemLabel = this.getReportLabel(
+          row.label,
+          'potions',
+        );
         return {
-          label: 'brewing complete',
-          value: `${this.getPositiveCount(row.quantity)} ${this.getReportLabel(
-            row.label,
-            'potions',
-          )}`,
+          label: 'Potions Brewed',
+          value: String(this.getPositiveCount(row.quantity)),
+          accessibleValue: `${this.getPositiveCount(row.quantity)} ${itemLabel}`,
+          icon: {
+            frameName: getPotionIconFrameName(
+              getPotionIconKeyByLabel(itemLabel),
+            ),
+            kind: 'potion',
+          },
         };
+      }
       case 'market_sold':
       case 'npc_market_sold':
         return {
-          label: 'traders bought',
-          value: formatCoinPriceText(this.getPositiveCoin(row.coin)),
+          label: 'Traders Bought',
+          value: String(this.getPositiveCoin(row.coin)),
+          accessibleValue: `${this.getPositiveCoin(row.coin)} coin`,
+          icon: {
+            frameName: RESOURCE_ICON_FRAMES.coin,
+            kind: 'resource',
+          },
         };
       case 'auto_seed_summoned':
         return {
-          label: 'auto seed summoned',
-          value: `${this.getPositiveCount(row.quantity)} ${this.pluralize(
+          label: 'Seeds Summoned',
+          value: String(this.getPositiveCount(row.quantity)),
+          accessibleValue: `${this.getPositiveCount(row.quantity)} ${this.pluralize(
             'seed',
             row.quantity,
           )}`,
+          icon: {
+            frameName: 'seed:pack',
+            kind: 'seed',
+          },
         };
       default:
         return {

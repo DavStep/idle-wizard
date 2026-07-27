@@ -313,6 +313,16 @@ function createStallModel({
       : future
         ? `waiting for ${slot.futureItemLabel ?? 'item'}`
         : 'empty stand',
+    itemKey: loaded
+      ? slot.sellKey
+      : future
+        ? slot.futureItemKey
+        : null,
+    itemKind: loaded
+      ? slot.sellKind
+      : future
+        ? slot.futureItemKind
+        : null,
     quantityLabel: loaded ? String(loadedQuantity) : '',
     resourceKey: loaded
       ? slot.sellKind
@@ -427,6 +437,7 @@ function createStallDialog({
     ],
     range: {
       enabled: Boolean(selectedItem),
+      tone: 'root',
       value: allocationPercent,
       onChange: (percentage) =>
         callFirst(
@@ -463,6 +474,7 @@ function createStallDialog({
       {
         id: 'mark',
         label: `Mark x${targetQuantity}`,
+        variant: 'green',
         semanticId: `shop.stall.${slotNumber}.mark`,
         tutorialId: 'shop:sell:mark',
         enabled:
@@ -486,6 +498,7 @@ function createStallDialog({
       {
         id: 'clear',
         label: 'Clear',
+        variant: 'red',
         enabled: Boolean(
           slot.sellItemTypeId ?? slot.futureItemTypeId,
         ),

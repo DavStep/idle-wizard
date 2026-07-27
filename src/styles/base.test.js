@@ -476,6 +476,19 @@ describe('base styles', () => {
     const brownButtonRule = getRuleBody(
       /:root\s+\.style-button\.style-button--brown-dark,\s*:root\s+\.style-button\.style-button--brown-light\s*\{(?<body>[^}]*)\}/,
     );
+    const greenButtonRule = getRuleBody(
+      /:root\s+\.style-button\.style-button--green\s*\{(?<body>[^}]*)\}/,
+    );
+    const redButtonRule = findRuleBody(
+      /:root\s+\.style-button\.style-button--red\s*\{(?<body>[^}]*)\}/g,
+      (body) =>
+        body.includes(
+          'border-image-source: var(--style-red-button-frame);',
+        ),
+    );
+    const disabledRoleButtonRule = getRuleBody(
+      /:root\s+\.style-button:is\(\.style-button--green,\s*\.style-button--red\):is\([\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
+    );
     const disabledRegularButtonRule = getRuleBody(
       /:root\s+\.style-button:is\(\s*\.style-button--yellow,[\s\S]*?\):is\(\s*\[aria-disabled="true"\],[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
     );
@@ -485,6 +498,9 @@ describe('base styles', () => {
     );
     const yellow = PNG.sync.read(
       readFileSync(`${assetDir}/yellow-button-9slice.png`),
+    );
+    const red = PNG.sync.read(
+      readFileSync(`${assetDir}/red-button-9slice.png`),
     );
 
     expect(rootRule).toContain(
@@ -511,12 +527,26 @@ describe('base styles', () => {
     expect(brownButtonRule).toContain(
       'border-image-slice: var(--style-tab-frame-slice);',
     );
+    expect(greenButtonRule).toContain(
+      'border-image-source: var(--style-green-button-frame);',
+    );
+    expect(redButtonRule).toContain(
+      'border-image-source: var(--style-red-button-frame);',
+    );
+    expect(disabledRoleButtonRule).toContain(
+      'border-image-source: var(--style-green-button-disabled-frame);',
+    );
+    expect(disabledRoleButtonRule).not.toContain('filter:');
     expect(disabledRegularButtonRule).toContain('filter: grayscale(1);');
     expect([yellow.width, yellow.height]).toEqual([green.width, green.height]);
+    expect([red.width, red.height]).toEqual([green.width, green.height]);
 
     let alphaMatches = true;
     for (let index = 3; index < green.data.length; index += 4) {
-      if (green.data[index] !== yellow.data[index]) {
+      if (
+        green.data[index] !== yellow.data[index] ||
+        green.data[index] !== red.data[index]
+      ) {
         alphaMatches = false;
         break;
       }
@@ -1114,6 +1144,10 @@ describe('base styles', () => {
     expect(controlRule).toContain('position: relative;');
     expect(progressRule).toContain('position: absolute;');
     expect(progressRule).toContain('pointer-events: none;');
+    expect(progressRule).toContain(
+      '--style-progress-fill-background: #8740df;',
+    );
+    expect(progressRule).toContain('--style-progress-fill-edge: #bd72f3;');
     expect(progressRule).toContain(
       'height: var(--style-slider-progress-total-height);',
     );

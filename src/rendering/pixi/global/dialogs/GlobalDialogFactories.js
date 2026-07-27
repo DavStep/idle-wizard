@@ -29,7 +29,7 @@ const GLOBAL_DIALOG_DEFINITIONS = Object.freeze([
       new PixiSettingsDialog({
         context,
         dialogId: GLOBAL_DIALOG_IDS.SETTINGS,
-        initialTab: 'account',
+        initialTab: 'configurations',
       }),
   ]),
   Object.freeze([

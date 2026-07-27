@@ -80,7 +80,11 @@ export class PixiOnlineGateView extends PixiModalSurface {
     const contentTheme =
       this.panel.getContentTheme?.() ?? theme;
     this.message.applyTheme(contentTheme);
-    this.progress.applyTheme(contentTheme);
+    this.progress.applyTheme({
+      ...contentTheme,
+      progressKey: theme?.progressKey ?? contentTheme.progressKey,
+      progress: theme?.progress ?? contentTheme.progress,
+    });
     this.action.applyTheme(contentTheme);
   }
 

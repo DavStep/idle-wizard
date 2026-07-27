@@ -755,9 +755,7 @@ export const TUTORIAL_STEPS = [
       !hasTaskActionForItem(snapshot, SAGE_HERB_KEY),
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 3 &&
-      (hasTaskActionForItem(snapshot, SAGE_HERB_KEY) ||
-        getItemQuantity(snapshot, SAGE_HERB_KEY) > 0 ||
-        hasTaskProgressForItem(snapshot, SAGE_HERB_KEY)),
+      hasActiveTurnInTaskForItem(snapshot, SAGE_HERB_KEY),
     isComplete: ({ snapshot }) =>
       getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY),
   },
@@ -867,7 +865,10 @@ export const TUTORIAL_STEPS = [
     id: 'fill-mint-herb-task',
     kind: 'objective',
     cueMode: 'passive',
-    objectiveText: 'turn in mint for the next level',
+    getObjectiveText: ({ snapshot }) =>
+      getTaskType(getActiveTaskForItem(snapshot, MINT_HERB_KEY)) === 'grow'
+        ? 'grow mint for the next level'
+        : 'turn in mint for the next level',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       const taskAction = getTaskActionForItem(snapshot, MINT_HERB_KEY);
 
@@ -917,7 +918,7 @@ export const TUTORIAL_STEPS = [
       !hasTaskActionForItem(snapshot, MINT_HERB_KEY),
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 3 &&
-      Boolean(getCurrentTaskForItem(snapshot, MINT_HERB_KEY)) &&
+      Boolean(getActiveTaskForItem(snapshot, MINT_HERB_KEY)) &&
       !hasCompletedTaskForItem(snapshot, MINT_HERB_KEY),
     isComplete: ({ snapshot }) =>
       getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, MINT_HERB_KEY),
@@ -1364,6 +1365,10 @@ export class TutorialStepManager {
     }
 
     const currentLevel = getCurrentLevel(snapshot);
+
+    if (shouldReopenActiveSageGrowStep(snapshot)) {
+      this.progressManager.reopen?.('grow-sage');
+    }
 
     if (hasCompletedPrestige(snapshot)) {
       this.completeSteps(TUTORIAL_STEP_IDS);
@@ -2052,11 +2057,16 @@ function getGrowTile(snapshot, seedKey = null) {
 }
 
 function getTaskActionForItem(snapshot, itemKey) {
-  return getTaskAction(snapshot, getCurrentTaskForItem(snapshot, itemKey));
+  return getTaskAction(snapshot, getActiveTaskForItem(snapshot, itemKey));
 }
 
 function getTaskAction(snapshot, task) {
-  if (!task || task.completed) {
+  if (
+    !task ||
+    task.completed ||
+    !isTurnInTask(task) ||
+    !isTaskActive(snapshot, task)
+  ) {
     return null;
   }
 
@@ -2326,10 +2336,41 @@ function getCurrentTasks(snapshot) {
   return snapshot?.tasks?.level?.tasks ?? [];
 }
 
-function getCurrentTaskForItem(snapshot, itemKey) {
-  const tasks = getCurrentTasks(snapshot).filter((task) => task.itemKey === itemKey);
+function getActiveTask(snapshot) {
+  const tasks = getCurrentTasks(snapshot);
+  const activeTaskId = snapshot?.tasks?.level?.questProgress?.activeQuest?.taskId;
+
+  if (activeTaskId) {
+    return tasks.find((task) => task?.taskId === activeTaskId) ?? null;
+  }
 
   return (
+    tasks.find((task) => task?.isActiveQuest === true) ??
+    tasks.find((task) => !task?.completed) ??
+    null
+  );
+}
+
+function getActiveTaskForItem(snapshot, itemKey) {
+  const task = getActiveTask(snapshot);
+  return task?.itemKey === itemKey ? task : null;
+}
+
+function isTaskActive(snapshot, task) {
+  return Boolean(task?.taskId && getActiveTask(snapshot)?.taskId === task.taskId);
+}
+
+function hasActiveTurnInTaskForItem(snapshot, itemKey) {
+  const task = getActiveTaskForItem(snapshot, itemKey);
+  return Boolean(task && isTurnInTask(task) && !task.completed);
+}
+
+function getCurrentTaskForItem(snapshot, itemKey) {
+  const tasks = getCurrentTasks(snapshot).filter((task) => task.itemKey === itemKey);
+  const activeTask = getActiveTaskForItem(snapshot, itemKey);
+
+  return (
+    activeTask ??
     tasks.find((task) => !task.completed && isTurnInTask(task)) ??
     tasks.find((task) => !task.completed) ??
     tasks.find((task) => isTurnInTask(task)) ??
@@ -2613,6 +2654,16 @@ function formatRequirementQuantity(task, labels) {
 
 function getLessonSageGrowCount(snapshot) {
   const growTarget = getLessonSageGrowTarget(snapshot);
+  const growTask = getCurrentTaskForItemByType(snapshot, SAGE_HERB_KEY, 'grow');
+
+  if (growTask) {
+    const progressQuantity = growTask.completed
+      ? Number(growTask.requiredQuantity) || growTarget
+      : Number(growTask.progressQuantity) || 0;
+
+    return Math.min(growTarget, Math.max(0, Math.floor(progressQuantity)));
+  }
+
   const task = getCurrentTaskForItem(snapshot, SAGE_HERB_KEY);
   const taskCount = task?.completed
     ? Number(task.requiredQuantity) || growTarget
@@ -2625,7 +2676,10 @@ function getLessonSageGrowCount(snapshot) {
 }
 
 function getLessonSageGrowTarget(snapshot) {
-  const requiredQuantity = Number(getCurrentTaskForItem(snapshot, SAGE_HERB_KEY)?.requiredQuantity);
+  const task =
+    getCurrentTaskForItemByType(snapshot, SAGE_HERB_KEY, 'grow') ??
+    getCurrentTaskForItem(snapshot, SAGE_HERB_KEY);
+  const requiredQuantity = Number(task?.requiredQuantity);
 
   if (Number.isFinite(requiredQuantity) && requiredQuantity > 0) {
     return Math.max(1, Math.floor(requiredQuantity));
@@ -2636,6 +2690,17 @@ function getLessonSageGrowTarget(snapshot) {
 
 function hasGrownEnoughSageForLesson(snapshot) {
   return getLessonSageGrowCount(snapshot) >= getLessonSageGrowTarget(snapshot);
+}
+
+function shouldReopenActiveSageGrowStep(snapshot) {
+  const growTask = getCurrentTaskForItemByType(snapshot, SAGE_HERB_KEY, 'grow');
+
+  return (
+    getCurrentLevel(snapshot) === 3 &&
+    Boolean(growTask) &&
+    !growTask.completed &&
+    isTaskActive(snapshot, growTask)
+  );
 }
 
 function isGrowSageWaitState(snapshot) {

@@ -39,6 +39,8 @@ const LEVEL_FIVE_BREW_MANA_TONIC_TASK_ID = 'level5-brew-mana-tonic';
 const NON_PERSISTENT_DEV_DIALOGS = new Set([
   'featureunlockannouncement',
   'featureunlocks',
+  'whileawayannouncement',
+  'whileaway',
 ]);
 
 const FEATURE_LEVELS = Object.freeze({
@@ -203,6 +205,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     kind: 'dialog',
     dialogId: 'featureUnlockAnnouncement',
     aliases: ['featureUnlocks'],
+  },
+  {
+    id: 'whileAwayAnnouncement',
+    kind: 'dialog',
+    dialogId: 'whileAwayAnnouncement',
+    aliases: ['whileAway'],
   },
   { id: 'inbox', kind: 'dialog', dialogId: 'inbox', aliases: ['mail'] },
 ]);
@@ -2392,9 +2400,19 @@ export class DevCheatCommandManager {
         preset.research.push(MINT_SEED_RESEARCH_ID);
         break;
       case 'first-harvest-complete':
+        this.applyGardenIntroPreset(preset);
+        preset.inventory[SAGE_HERB_KEY] = 4;
+        preset.tasks = [
+          this.createTutorialTaskState(LEVEL_FOUR_GROW_SAGE_HERB_TASK_ID, 4, true),
+        ];
+        break;
       case 'fill-sage-herb-task':
         this.applyGardenIntroPreset(preset);
         preset.inventory[SAGE_HERB_KEY] = 4;
+        preset.tasks = [
+          this.createTutorialTaskState(LEVEL_FOUR_GROW_SAGE_HERB_TASK_ID, 4, true),
+          this.createTutorialTaskState(LEVEL_FOUR_GROW_MINT_HERB_TASK_ID, 2, true),
+        ];
         break;
       case 'fill-mint-herb-task':
         this.applySageHerbCompletePreset(preset);

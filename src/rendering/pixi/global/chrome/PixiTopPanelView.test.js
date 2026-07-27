@@ -162,6 +162,22 @@ describe('PixiTopPanelView', () => {
     view.destroy();
   });
 
+  it('keeps the gradient player style on the top-panel level rail', () => {
+    const view = new PixiTopPanelView({
+      assets: createAssets(),
+    });
+
+    view.applyTheme(createPixiThemeSnapshot({
+      theme: 'midnight',
+      progressBar: 'gradient',
+    }));
+
+    expect(view.questGradient).not.toBeNull();
+    expect(view.getQuestFillPaint()).toBe(view.questGradient);
+
+    view.destroy();
+  });
+
   it('keeps level-owned chrome hidden while the fresh snapshot has no level', () => {
     const view = new PixiTopPanelView({
       assets: createAssets(),

@@ -675,6 +675,16 @@ describe('ShopShelfManager', () => {
     expect(progress?.getAttribute('role')).toBe('progressbar');
     expect(progress?.getAttribute('aria-valuenow')).toBe('40');
     expect(fill?.style.width).toBe('40%');
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const stallProgressRule = baseCss.match(
+      /\.shop-page__slot-progress\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    expect(stallProgressRule).toMatch(
+      /--style-progress-fill-background:\s*#8740df;/,
+    );
+    expect(stallProgressRule).toMatch(
+      /--style-progress-fill-edge:\s*#bd72f3;/,
+    );
     expect(itemColumn?.firstElementChild).toBe(
       stage.querySelector('.shop-page__slot-item-value'),
     );

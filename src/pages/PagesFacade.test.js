@@ -3738,7 +3738,7 @@ describe('PagesFacade', () => {
     );
     expect(stage.querySelector('.workshop-page__leaderboard')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__world-chat-button')?.textContent).toBe(
-      'world chat',
+      'World Chat',
     );
     expect(stage.querySelector('.workshop-page__world-chat')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__world-chat-button')?.disabled).toBe(true);

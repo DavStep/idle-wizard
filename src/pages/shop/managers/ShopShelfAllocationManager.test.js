@@ -154,6 +154,16 @@ describe('ShopShelfManager percentage allocation', () => {
     });
     expect(popup.querySelector('.shop-page__sell-allocation-progress')).not.toBeNull();
     expect(popup.querySelectorAll('.shop-page__sell-allocation-tick')).toHaveLength(0);
+    expect(
+      popup
+        .querySelector('.shop-page__sell-mark-button')
+        .classList.contains('style-button--green'),
+    ).toBe(true);
+    expect(
+      popup
+        .querySelector('.shop-page__sell-clear-button')
+        .classList.contains('style-button--red'),
+    ).toBe(true);
     expect(popup.textContent).not.toContain('hold');
   });
 

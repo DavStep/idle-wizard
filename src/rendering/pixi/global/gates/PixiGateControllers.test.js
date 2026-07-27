@@ -5,7 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
-import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
+import {
+  createPixiThemeSnapshot,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 import {
   ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT,
   FRESH_START_CHOICE_CONNECT_ACCOUNT,
@@ -109,6 +112,24 @@ describe('retained Pixi gate controllers', () => {
     expect(view.progress.y + view.progress.barHeight).toBe(
       view.panel.contentBoxHeight,
     );
+
+    view.destroy();
+  });
+
+  it('keeps the selected gradient on the connection and loading rail', () => {
+    const view = new PixiOnlineGateView({
+      assets: createAssets(),
+    });
+
+    view.applyTheme(
+      createPixiThemeSnapshot({
+        theme: 'midnight',
+        progressBar: 'gradient',
+      }),
+    );
+
+    expect(view.progress.theme.progress.key).toBe('gradient');
+    expect(view.progress.gradient).not.toBeNull();
 
     view.destroy();
   });

@@ -81,6 +81,7 @@
   --style-yellow-button-text: #fff;
   --style-yellow-button-text-stroke: #0a0a0a;
   --style-green-button-frame: url("../../assets/game/source/ui/root-run-cost-button/green-button-9slice.png");
+  --style-red-button-frame: url("../../assets/game/source/ui/root-run-cost-button/red-button-9slice.png");
   --style-green-button-disabled-frame: url("../../assets/game/source/ui/root-run-cost-button/gray-button-9slice.png");
   --style-green-button-frame-slice: var(--style-yellow-button-frame-slice);
   --style-green-button-frame-width: var(--style-yellow-button-frame-width);
@@ -2891,6 +2892,7 @@ body {
 
 .room-announcement__body.room-announcement__body--report {
   width: 100%;
+  max-height: 128px;
   min-height: 0;
   align-items: stretch;
   justify-content: flex-start;
@@ -2919,11 +2921,26 @@ body {
 }
 
 .room-announcement__report-value {
+  display: inline-flex;
   min-width: 0;
+  align-items: center;
+  gap: 2px;
   justify-self: end;
   overflow-wrap: break-word;
   text-align: right;
   font-weight: 700;
+}
+
+.room-announcement__report-value-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  object-fit: contain;
+}
+
+.room-announcement__report-value-icon.style-seed-pack-composite {
+  width: 14px;
+  height: 14px;
 }
 
 .room-announcement__report-value:where(:empty, [hidden]) {
@@ -2937,6 +2954,7 @@ body {
     .style-herb-label,
     .style-potion-label
   ) {
+  color: inherit;
   white-space: nowrap;
 }
 
@@ -4836,6 +4854,11 @@ body {
 }
 
 .shop-page__slot-progress {
+  --style-progress-fill-background: #8740df;
+  --style-progress-fill-edge: #bd72f3;
+  --style-progress-fill-shadow: inset 0 0 0 1px
+    var(--style-progress-fill-edge);
+
   width: 100%;
 }
 
@@ -5724,6 +5747,8 @@ body {
 }
 
 .workshop-page__tasks-title {
+  --style-title-text-stroke-color: #0a0a0a;
+
   padding: 0;
   appearance: none;
   color: var(--style-text);
@@ -7540,6 +7565,8 @@ body {
 }
 
 .workshop-page__world-chat-title {
+  --style-title-text-stroke-color: #0a0a0a;
+
   padding: 0 2px;
   appearance: none;
   color: var(--style-text);
@@ -12612,6 +12639,10 @@ div.workshop-page__discovery-row {
 }
 
 .style-progress.shop-page__sell-allocation-progress {
+  --style-progress-fill-background: #8740df;
+  --style-progress-fill-edge: #bd72f3;
+  --style-progress-fill-shadow: inset 0 0 0 1px
+    var(--style-progress-fill-edge);
   position: absolute;
   top: 50%;
   right: calc(var(--style-progress-knob-size) / 2);
@@ -16644,6 +16675,26 @@ div.workshop-page__discovery-row {
   paint-order: stroke fill;
 }
 
+:root .style-button.style-button--green,
+:root .style-button.style-button--red {
+  color: var(--style-yellow-button-text);
+  background: transparent;
+  border-color: transparent;
+  border-image-slice: var(--style-green-button-frame-slice);
+  border-image-width: var(--style-green-button-frame-width);
+  border-image-repeat: stretch;
+  -webkit-text-stroke: 4px var(--style-yellow-button-text-stroke);
+  paint-order: stroke fill;
+}
+
+:root .style-button.style-button--green {
+  border-image-source: var(--style-green-button-frame);
+}
+
+:root .style-button.style-button--red {
+  border-image-source: var(--style-red-button-frame);
+}
+
 :root .style-button.style-button--brown-dark,
 :root .style-button.style-button--brown-light {
   color: var(--style-yellow-button-text);
@@ -16662,6 +16713,16 @@ div.workshop-page__discovery-row {
 
 :root .style-button.style-button--brown-light {
   border-image-source: var(--style-tab-selected-frame);
+}
+
+:root
+  .style-button:is(.style-button--green, .style-button--red):is(
+    [aria-disabled="true"],
+    :disabled,
+    .is-disabled
+  ) {
+  border-image-source: var(--style-green-button-disabled-frame);
+  opacity: 1;
 }
 
 :root

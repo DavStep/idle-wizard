@@ -1,0 +1,154 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="midnight"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard retained Market stalls recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="Retained Market stall visual recipe"></canvas>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
+      import { SHOP_DIALOG_IDS } from '/src/rendering/pixi/pages/shop/ShopDialogPixi.js';
+      import { ShopPixiPage } from '/src/rendering/pixi/pages/shop/ShopPixiPage.js';
+      import { createShop } from '/src/rendering/pixi/pages/shop/createShop.js';
+      import { DialogRegistry } from '/src/rendering/pixi/retained/DialogRegistry.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+
+      const gameplaySnapshot = {
+        coin: { current: 5770 },
+        research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+        shop: {
+          market: {
+            name: 'Crossroads Market',
+            rank: 2,
+          },
+          shelf: {
+            autoSellSeconds: 5,
+            sellKinds: [{ kind: 'seed', label: 'seeds' }],
+            sellItems: [
+              {
+                itemTypeId: 1,
+                key: 'sageSeed',
+                label: 'sage seed',
+                kind: 'seed',
+                quantity: 0,
+                sellCoin: 1,
+                sellNeed: 10,
+              },
+              {
+                itemTypeId: 3,
+                key: 'briarSeed',
+                label: 'briar seed',
+                kind: 'seed',
+                quantity: 0,
+                sellCoin: 5,
+                sellNeed: 0,
+                targetNeed: 1000,
+                maxNeed: 1500,
+              },
+            ],
+            slots: [
+              {
+                slotNumber: 1,
+                unlocked: true,
+                sellItemTypeId: 1,
+                sellKind: 'seed',
+                sellKey: 'sageSeed',
+                sellLabel: 'sage seed',
+                loadedQuantity: 462,
+                batchSize: 3,
+                sellCoin: 1,
+                sellProgressSeconds: 2.5,
+              },
+              {
+                slotNumber: 2,
+                unlocked: true,
+                sellItemTypeId: 3,
+                sellKind: 'seed',
+                sellKey: 'briarSeed',
+                sellLabel: 'briar seed',
+                loadedQuantity: 144,
+                batchSize: 3,
+                sellCoin: 5,
+                sellNeed: 0,
+                targetNeed: 1000,
+                maxNeed: 1500,
+                tradedHere: true,
+                pauseLabel: 'no demand · merchants in 3h 32m',
+                sellProgressSeconds: 2.5,
+              },
+              {
+                slotNumber: 3,
+                unlocked: true,
+                batchSize: 1,
+              },
+            ],
+          },
+        },
+      };
+
+      const canvas = document.querySelector('canvas');
+      const showStallDialog =
+        new URLSearchParams(window.location.search).get('dialog') === 'stall';
+      if (showStallDialog) {
+        gameplaySnapshot.shop.shelf.sellItems[0].quantity = 119;
+        gameplaySnapshot.shop.shelf.slots[0].loadedQuantity = 10;
+      }
+      const applicationManager = new PixiApplicationManager({ canvas });
+      const assetManager = new PixiAssetManager();
+
+      await Promise.all([
+        applicationManager.initialize(),
+        assetManager.loadAll(),
+      ]);
+
+      const dialogRegistry = new DialogRegistry();
+      const page = new ShopPixiPage({
+        assetManager,
+        dialogLayer: applicationManager.layers.dialogsSource,
+        dialogRegistry,
+      });
+      const viewModel = createShop({
+        gameplaySnapshot,
+        uiState: showStallDialog
+          ? { stallAllocationPercentBySlot: { 1: 25 } }
+          : undefined,
+      });
+      page.bind(viewModel);
+      page.activate();
+      applicationManager.layers.pageUi.addChild(page.root);
+      window.__marketRecipePage = page;
+      window.__marketRecipeDialogs = dialogRegistry;
+      if (showStallDialog) {
+        page.openDialog(
+          SHOP_DIALOG_IDS.STALL,
+          viewModel.shop.traders.stalls[0].dialog,
+        );
+      }
+    </script>
+  </body>
+</html>

@@ -19,6 +19,7 @@ import { PixiTextLabel } from './PixiTextLabel.js';
 const ROOT_RUN_VARIANTS = new Set([
   'yellow',
   'green',
+  'red',
   'gray',
   'brown-dark',
   'brown-light',
@@ -374,6 +375,7 @@ export class PixiButton extends Container {
 function getRootRunTextureId(variant) {
   if (variant === 'yellow') return PIXI_ROOT_RUN_ASSETS.buttonYellow;
   if (variant === 'green') return PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice;
+  if (variant === 'red') return PIXI_ROOT_RUN_ASSETS.buttonRedNineSlice;
   if (variant === 'gray') return PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice;
   if (variant === 'brown-light') return PIXI_ROOT_RUN_ASSETS.buttonBrownLight;
   return PIXI_ROOT_RUN_ASSETS.buttonBrownDark;

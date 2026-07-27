@@ -386,6 +386,67 @@ describe('GardenPixiPage', () => {
     harness.dispose();
   });
 
+  it('does not move plot progress backward when the same timer snapshot is rebound', () => {
+    let now = 1_000;
+    const harness = createHarness({
+      timeSource: () => now,
+    });
+    const viewModel = createGardenViewModel();
+    viewModel.garden.now = now;
+    viewModel.garden.plots[0].process = {
+      totalMs: 10_000,
+      remainingMs: 6_000,
+      progress: 0.4,
+    };
+
+    harness.page.bind(viewModel);
+    const plot = harness.page.plots.get('plot-1');
+
+    now = 1_500;
+    harness.page.tick(now);
+    expect(plot.progress.progress).toBeCloseTo(0.45);
+
+    viewModel.garden.now = now;
+    harness.page.bind(viewModel);
+
+    expect(plot.progress.progress).toBeCloseTo(0.45);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('resets plot progress when the authoritative timer restarts', () => {
+    let now = 1_000;
+    const harness = createHarness({
+      timeSource: () => now,
+    });
+    const growing = createGardenViewModel();
+    growing.garden.now = now;
+    growing.garden.plots[0].process = {
+      totalMs: 10_000,
+      remainingMs: 6_000,
+      progress: 0.4,
+    };
+
+    harness.page.bind(growing);
+    now = 1_500;
+    harness.page.tick(now);
+
+    const restarted = createGardenViewModel();
+    restarted.garden.now = now;
+    restarted.garden.plots[0].process = {
+      totalMs: 10_000,
+      remainingMs: 10_000,
+      progress: 0,
+    };
+    harness.page.bind(restarted);
+
+    expect(harness.page.plots.get('plot-1').progress.progress).toBe(0);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('matches the retained growing, ready-lift, and harvesting motion cycles', () => {
     let now = 0;
     const harness = createHarness({

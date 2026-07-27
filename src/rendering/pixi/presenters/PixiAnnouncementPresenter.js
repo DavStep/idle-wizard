@@ -6,10 +6,7 @@ import {
   getPotionIconFrameName,
   getPotionIconKeyByLabel,
 } from '../../../assets/items/potions/potionIcons.js';
-import {
-  formatCoinPriceText,
-  normalizeCoinPrice,
-} from '../../../shared/coinPrice.js';
+import { normalizeCoinPrice } from '../../../shared/coinPrice.js';
 import { getLevelPayoffRows } from '../../../pages/workshop/managers/levelPayoffSummary.js';
 
 export const PIXI_ANNOUNCEMENT_DIALOG_ID =
@@ -338,6 +335,51 @@ export class PixiAnnouncementPresenter {
     return {
       ok: true,
       dialogId: 'featureUnlockAnnouncement',
+      pixiDialogId: PIXI_ANNOUNCEMENT_DIALOG_ID,
+      presentation,
+    };
+  }
+
+  showWhileAwayPreview({
+    source = 'dev_preview',
+    offlineSeconds = 3600,
+    rows = [
+      { type: 'auto_seed_summoned', quantity: 8 },
+      { type: 'garden_harvested', label: 'bloodrose', quantity: 12 },
+      { type: 'garden_harvested', label: 'sage', quantity: 18 },
+      { type: 'garden_harvested', label: 'mint', quantity: 9 },
+      { type: 'brewing_complete', label: 'mana tonic', quantity: 2 },
+      { type: 'brewing_complete', label: 'lantern tonic', quantity: 3 },
+      { type: 'npc_market_sold', coin: 40 },
+    ],
+  } = {}) {
+    const visibleRows = getVisibleWhileAwayRows(rows);
+    if (!this.mounted || visibleRows.length === 0) {
+      return {
+        ok: false,
+        reason: this.mounted
+          ? 'report_rows_missing'
+          : 'announcements_not_mounted',
+      };
+    }
+
+    this.deferredRevision += 1;
+    this.clearHideTimeout();
+    this.clearAnnouncementState();
+    this.current = {
+      key: `preview:${++this.sequence}`,
+      kind: 'whileAway',
+      preview: true,
+      source,
+      offlineSeconds,
+      rows: visibleRows,
+    };
+    this.queuedKeys.add(this.current.key);
+    const presentation = this.presentCurrent();
+
+    return {
+      ok: true,
+      dialogId: 'whileAwayAnnouncement',
       pixiDialogId: PIXI_ANNOUNCEMENT_DIALOG_ID,
       presentation,
     };
@@ -797,8 +839,8 @@ export function createPixiAnnouncementPresentation(
   if (announcement.kind === 'whileAway') {
     return {
       ...shared,
-      title: 'while away',
-      ariaLabel: 'while away report',
+      title: 'While Away',
+      ariaLabel: 'While Away report',
       variant: 'report',
       framed: true,
       dismissible: true,
@@ -1131,9 +1173,9 @@ function createWhileAwayPresentationRows(rows) {
       reportRowType: getWhileAwayReportRowType(row),
       label: parts.label,
       value: parts.value,
-      mutedLabel: true,
+      mutedLabel: false,
       boldValue: true,
-      resource: parts.resource ?? inferResource(parts.value),
+      valueColor: 'text',
       icon: parts.icon ?? null,
       valueRuns: createResourceRuns(
         parts.value,
@@ -1366,8 +1408,8 @@ function getWhileAwayReportLineParts(row = {}) {
     case 'garden_harvested': {
       const label = getReportLabel(row.label, 'herbs');
       return {
-        label: 'garden harvested',
-        value: `${getPositiveCount(row.quantity)} ${label}`,
+        label: 'Herbs Harvested',
+        value: String(getPositiveCount(row.quantity)),
         icon: {
           frameName: getHerbIconFrameName(
             getHerbIconKeyByLabel(label),
@@ -1382,8 +1424,8 @@ function getWhileAwayReportLineParts(row = {}) {
         'potions',
       );
       return {
-        label: 'brewing complete',
-        value: `${getPositiveCount(row.quantity)} ${label}`,
+        label: 'Potions Brewed',
+        value: String(getPositiveCount(row.quantity)),
         icon: {
           frameName: getPotionIconFrameName(
             getPotionIconKeyByLabel(label),
@@ -1395,10 +1437,8 @@ function getWhileAwayReportLineParts(row = {}) {
     case 'market_sold':
     case 'npc_market_sold':
       return {
-        label: 'traders bought',
-        value: formatCoinPriceText(
-          getPositiveCoin(row.coin),
-        ),
+        label: 'Traders Bought',
+        value: String(getPositiveCoin(row.coin)),
         resource: 'coin',
         icon: {
           frameName: RESOURCE_ICON_FRAMES.coin,
@@ -1407,12 +1447,8 @@ function getWhileAwayReportLineParts(row = {}) {
       };
     case 'auto_seed_summoned':
       return {
-        label: 'auto seed summoned',
-        value: `${getPositiveCount(row.quantity)} ${
-          getPositiveCount(row.quantity) === 1
-            ? 'seed'
-            : 'seeds'
-        }`,
+        label: 'Seeds Summoned',
+        value: String(getPositiveCount(row.quantity)),
         resource: 'seed',
         icon: {
           frameName: 'seed:pack',

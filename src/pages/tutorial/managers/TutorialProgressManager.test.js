@@ -62,4 +62,17 @@ describe('TutorialProgressManager', () => {
       completedStepIds: ['earn-tutorial-coin', 'finish-seed-task'],
     });
   });
+
+  it('persists a reopened step for snapshot repair', () => {
+    const storage = createMemoryStorage();
+    const manager = new TutorialProgressManager({ storage });
+
+    manager.complete('grow-sage');
+    manager.reopen('grow-sage');
+
+    expect(manager.hasCompleted('grow-sage')).toBe(false);
+    expect(JSON.parse(storage.getItem(TUTORIAL_STORAGE_KEY))).toEqual({
+      completedStepIds: [],
+    });
+  });
 });

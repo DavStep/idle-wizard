@@ -439,24 +439,29 @@ describe('PageAnnouncementManager', () => {
     expect(panel?.classList.contains('style-dialog')).toBe(true);
     expect(panel?.classList.contains('room-announcement--report')).toBe(true);
     expect(stage.querySelector('.room-announcement__report-title')?.textContent).toBe(
-      'while away',
+      'While Away',
     );
+    expect(
+      stage
+        .querySelector('.room-announcement__body--report')
+        ?.classList.contains('style-page-scroll'),
+    ).toBe(true);
     expect(stage.querySelector('.room-announcement__report-intro')).toBeNull();
     expect(getReportLineParts(stage)).toEqual([
-      ['auto_seed_summoned', 'auto seed summoned', '8 seeds'],
-      ['garden_harvested', 'garden harvested', '12 bloodrose'],
-      ['brewing_complete', 'brewing complete', '2 mana tonic'],
-      ['npc_market_sold', 'traders bought', '40 coin'],
+      ['auto_seed_summoned', 'Seeds Summoned', '8'],
+      ['garden_harvested', 'Herbs Harvested', '12'],
+      ['brewing_complete', 'Potions Brewed', '2'],
+      ['npc_market_sold', 'Traders Bought', '40'],
     ]);
     expect(
       stage.querySelector(
-        '.room-announcement__report-line[data-report-row-type="npc_market_sold"] .room-announcement__report-value .style-resource-label--coin .style-resource-label__amount',
+        '.room-announcement__report-line[data-report-row-type="npc_market_sold"] .room-announcement__report-value-amount',
       )?.textContent,
     ).toBe('40');
     expect(
       stage
         .querySelector(
-          '.room-announcement__report-line[data-report-row-type="npc_market_sold"] .room-announcement__report-value .style-resource-label--coin .style-resource-label__icon',
+          '.room-announcement__report-line[data-report-row-type="npc_market_sold"] .room-announcement__report-value-icon',
         )
         ?.getAttribute('data-asset-atlas-frame'),
     ).toBe('resource:coin');
@@ -489,10 +494,10 @@ describe('PageAnnouncementManager', () => {
     );
 
     expect(getReportLineParts(stage)).toEqual([
-      ['auto_seed_summoned', 'auto seed summoned', '8 seeds'],
-      ['garden_harvested', 'garden harvested', '12 bloodrose'],
-      ['brewing_complete', 'brewing complete', '2 mana tonic'],
-      ['npc_market_sold', 'traders bought', '40 coin'],
+      ['auto_seed_summoned', 'Seeds Summoned', '8'],
+      ['garden_harvested', 'Herbs Harvested', '12'],
+      ['brewing_complete', 'Potions Brewed', '2'],
+      ['npc_market_sold', 'Traders Bought', '40'],
     ]);
     expect(
       stage.querySelector('.room-announcement__report-icon'),
@@ -511,59 +516,37 @@ describe('PageAnnouncementManager', () => {
     ).toBe(true);
     expect(
       lineByType.npc_market_sold?.querySelector(
-        '.room-announcement__report-value > .style-resource-label--coin',
-      ),
-    ).not.toBeNull();
-    expect(
-      lineByType.npc_market_sold?.querySelector('.style-resource-label--coin')?.textContent,
-    ).toBe('40 coin');
-    expect(
-      lineByType.npc_market_sold?.querySelector('.style-resource-label__amount')?.textContent,
+        '.room-announcement__report-value-amount',
+      )?.textContent,
     ).toBe('40');
     expect(
       lineByType.npc_market_sold
-        ?.querySelector('.style-resource-label__icon')
+        ?.querySelector('.room-announcement__report-value-icon')
         ?.getAttribute('data-asset-atlas-frame'),
     ).toBe('resource:coin');
     expect(
-      lineByType.npc_market_sold?.querySelectorAll('.style-resource-label').length,
-    ).toBe(1);
-    expect(
-      lineByType.npc_market_sold?.querySelector('.style-resource-label--seed'),
-    ).toBeNull();
-    expect(
-      lineByType.npc_market_sold?.querySelector('.style-resource-label--herb'),
-    ).toBeNull();
-    expect(
-      lineByType.npc_market_sold?.querySelector('.style-resource-label--mana'),
-    ).toBeNull();
-    expect(
-      lineByType.npc_market_sold?.querySelector('.style-resource-label--crystal'),
-    ).toBeNull();
-    expect(
-      lineByType.npc_market_sold?.querySelector('.style-resource-label--ruby'),
-    ).toBeNull();
-    expect(
-      lineByType.npc_market_sold?.querySelector('.style-resource-label--emerald'),
-    ).toBeNull();
+      lineByType.npc_market_sold
+        ?.querySelector('.room-announcement__report-value')
+        ?.getAttribute('aria-label'),
+    ).toBe('40 coin');
     expect(
       lineByType.garden_harvested
-        ?.querySelector('.room-announcement__report-value .style-herb-label__icon')
+        ?.querySelector('.room-announcement__report-value-icon')
         ?.getAttribute('data-asset-atlas-frame'),
     ).toBe('herb:bloodroseHerb');
     expect(
       lineByType.brewing_complete
-        ?.querySelector('.room-announcement__report-value .style-potion-label__icon')
+        ?.querySelector('.room-announcement__report-value-icon')
         ?.getAttribute('data-asset-atlas-frame'),
     ).toBe('potion:manaTonic');
     expect(
       lineByType.auto_seed_summoned
-        ?.querySelector('.room-announcement__report-value .style-resource-label--seed .style-resource-label__icon')
+        ?.querySelector('.room-announcement__report-value-icon')
         ?.getAttribute('data-asset-atlas-frame'),
     ).toBe('seed:pack');
     expect(
       lineByType.npc_market_sold
-        ?.querySelector('.room-announcement__report-value .style-resource-label__icon')
+        ?.querySelector('.room-announcement__report-value-icon')
         ?.getAttribute('data-asset-atlas-frame'),
     ).toBe('resource:coin');
   });
@@ -615,8 +598,8 @@ describe('PageAnnouncementManager', () => {
     expect(playerShopFacade.retainTradeHistory).not.toHaveBeenCalled();
     expect(playerShopFacade.subscribe).not.toHaveBeenCalled();
     expect(getReportLineParts(stage)).toEqual([
-      ['garden_harvested', 'garden harvested', '12 bloodrose'],
-      ['npc_market_sold', 'traders bought', '4 coin'],
+      ['garden_harvested', 'Herbs Harvested', '12'],
+      ['npc_market_sold', 'Traders Bought', '4'],
     ]);
     expect(
       [...stage.querySelectorAll('.room-announcement__report-line')].map(
@@ -739,10 +722,10 @@ describe('PageAnnouncementManager', () => {
 
     expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
     expect(stage.querySelector('.room-announcement__report-title')?.textContent).toBe(
-      'while away',
+      'While Away',
     );
     expect(getReportLineParts(stage)).toEqual([
-      ['brewing_complete', 'brewing complete', '1 mana tonic'],
+      ['brewing_complete', 'Potions Brewed', '1'],
     ]);
 
     stage.querySelector('.room-announcement__close')?.click();

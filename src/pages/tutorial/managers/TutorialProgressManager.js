@@ -46,6 +46,16 @@ export class TutorialProgressManager {
     this.save();
   }
 
+  reopen(stepId) {
+    const normalizedStepId = normalizeTutorialStepId(stepId);
+
+    if (!normalizedStepId || !this.completedStepIds.delete(normalizedStepId)) {
+      return;
+    }
+
+    this.save();
+  }
+
   setCompletedStepIds(stepIds = []) {
     this.completedStepIds = new Set(
       stepIds

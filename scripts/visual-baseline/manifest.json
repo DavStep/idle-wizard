@@ -402,7 +402,7 @@
       "production": true,
       "coverage": {
         "globalOwners": ["announcementFacade"],
-        "devUi": ["featureUnlockAnnouncement"]
+        "devUi": ["featureUnlockAnnouncement", "whileAwayAnnouncement"]
       },
       "recipe": {
         "kind": "devUi",
@@ -420,8 +420,8 @@
         {
           "id": "while-away",
           "recipe": {
-            "kind": "manual",
-            "gap": "No checked-in state recipe currently injects a deterministic offline catch-up report."
+            "kind": "devUi",
+            "surfaceId": "whileAwayAnnouncement"
           }
         },
         {

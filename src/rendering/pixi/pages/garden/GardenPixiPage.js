@@ -843,10 +843,16 @@ class GardenPlotWidget {
 
   bind(model, actions) {
     this.unregisterSemanticTargets();
+    const previousModel = this.model;
+    const previousTimedProgress = this.timedProgress;
     this.model = model ?? {};
+    const process = this.model.process ?? this.model.progress;
     this.timedProgress = bindTimedProgress(
-      this.model.process ?? this.model.progress,
+      process,
       this.page.timeSource(),
+      shouldContinueTimedProgress(previousModel, this.model)
+        ? previousTimedProgress
+        : null,
     );
     this.actions = actions ?? {};
     const tileNumber = this.model.tileNumber ?? this.model.number ?? this.model.id;
@@ -2119,7 +2125,7 @@ function resolveTimedProgress(progress, now) {
   };
 }
 
-function bindTimedProgress(progress, now) {
+function bindTimedProgress(progress, now, previousProgress = null) {
   if (!progress || typeof progress !== 'object') {
     return progress;
   }
@@ -2134,10 +2140,86 @@ function bindTimedProgress(progress, now) {
     return progress;
   }
 
+  const inferredEndTimeMs =
+    finiteOr(now, Date.now()) + Math.max(0, remainingMs);
+  const previousEndTimeMs = finiteOr(
+    previousProgress?.endTimeMs,
+    finiteOr(previousProgress?.endsAt, Number.NaN),
+  );
+
   return {
     ...progress,
-    endTimeMs: finiteOr(now, Date.now()) + Math.max(0, remainingMs),
+    endTimeMs: Number.isFinite(previousEndTimeMs)
+      ? Math.min(previousEndTimeMs, inferredEndTimeMs)
+      : inferredEndTimeMs,
   };
+}
+
+function shouldContinueTimedProgress(previousModel, nextModel) {
+  const previousProcess = previousModel?.process ?? previousModel?.progress;
+  const nextProcess = nextModel?.process ?? nextModel?.progress;
+
+  if (
+    !previousProcess ||
+    typeof previousProcess !== 'object' ||
+    !nextProcess ||
+    typeof nextProcess !== 'object' ||
+    previousModel?.phase !== nextModel?.phase
+  ) {
+    return false;
+  }
+
+  for (const key of [
+    'seedItemTypeId',
+    'herbItemTypeId',
+    'herbKey',
+    'plantFrame',
+  ]) {
+    if ((previousModel?.[key] ?? null) !== (nextModel?.[key] ?? null)) {
+      return false;
+    }
+  }
+
+  const previousDurationMs = resolveTimerDurationMs(previousProcess);
+  const nextDurationMs = resolveTimerDurationMs(nextProcess);
+  if (
+    Number.isFinite(previousDurationMs) &&
+    Number.isFinite(nextDurationMs) &&
+    previousDurationMs !== nextDurationMs
+  ) {
+    return false;
+  }
+
+  const previousSnapshotProgress = resolveTimerSnapshotProgress(previousProcess);
+  const nextSnapshotProgress = resolveTimerSnapshotProgress(nextProcess);
+
+  return (
+    Number.isFinite(previousSnapshotProgress) &&
+    Number.isFinite(nextSnapshotProgress) &&
+    nextSnapshotProgress + Number.EPSILON >= previousSnapshotProgress
+  );
+}
+
+function resolveTimerDurationMs(progress) {
+  return finiteOr(
+    progress?.durationMs,
+    finiteOr(progress?.totalMs, Number.NaN),
+  );
+}
+
+function resolveTimerSnapshotProgress(progress) {
+  const durationMs = resolveTimerDurationMs(progress);
+  const remainingMs = finiteOr(progress?.remainingMs, Number.NaN);
+
+  if (
+    Number.isFinite(durationMs) &&
+    durationMs > 0 &&
+    Number.isFinite(remainingMs)
+  ) {
+    return clamp(1 - remainingMs / durationMs, 0, 1);
+  }
+
+  return finiteOr(progress?.progress, Number.NaN);
 }
 
 function applyReadyPlantMotion(motion, progress, growthScale) {

@@ -134,6 +134,8 @@ describe('createShop', () => {
       rank: 2,
     });
     expect(model.shop.traders.stalls[0]).toMatchObject({
+      itemKey: 'sageSeed',
+      itemKind: 'seed',
       itemLabel: 'sage seed',
       priceLabel: '2 coin',
       progress: 0.25,
@@ -143,6 +145,7 @@ describe('createShop', () => {
       title: 'Load Stall',
       range: {
         enabled: true,
+        tone: 'root',
         value: 20,
       },
       summaryRows: [
@@ -170,8 +173,8 @@ describe('createShop', () => {
       tutorialId: 'shop:sell:mark',
     });
     expect(model.shop.traders.stalls[0].dialog.actions).toMatchObject([
-      { label: 'Mark x2' },
-      { label: 'Clear' },
+      { label: 'Mark x2', variant: 'green' },
+      { label: 'Clear', variant: 'red' },
       { label: 'Mark Future' },
     ]);
     expect(model.shop.traders.stalls[0].dialog.tabs[0]).toMatchObject({

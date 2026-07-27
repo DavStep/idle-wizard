@@ -13,7 +13,7 @@ import { PixiButton } from './PixiButton.js';
 installPixiPageTestCanvas();
 
 describe('PixiButton', () => {
-  it.each(['yellow', 'green', 'gray', 'brown-dark', 'brown-light'])(
+  it.each(['yellow', 'green', 'red', 'gray', 'brown-dark', 'brown-light'])(
     'uses the gray asset without a shader for disabled %s buttons',
     (variant) => {
       const getTexture = vi.fn(() => Texture.EMPTY);
@@ -33,6 +33,20 @@ describe('PixiButton', () => {
       button.destroy({ children: true });
     },
   );
+
+  it('uses the red Root Run skin for enabled danger buttons', () => {
+    const getTexture = vi.fn(() => Texture.EMPTY);
+    const button = new PixiButton({
+      assetManager: { getTexture },
+      variant: 'red',
+    });
+
+    expect(getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonRedNineSlice,
+    );
+
+    button.destroy({ children: true });
+  });
 
   it('uses the current Root Run brown skins for popup tabs in every player theme', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);

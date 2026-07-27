@@ -828,7 +828,7 @@ export class PixiViewModelFactory {
       worldChat.connected !== false &&
       typeof actions.sendWorldChat === 'function';
     return {
-      title: 'world chat',
+      title: 'World Chat',
       status: worldChat.connected === false ? 'connecting...' : '',
       composer: {
         placeholder: 'message',
@@ -1013,7 +1013,7 @@ function createWorldChatPreview(worldChat = {}) {
   const messages = worldChat.messages ?? [];
   return {
     visible: true,
-    label: 'world chat',
+    label: 'World Chat',
     messages,
     preview: messages
       .slice(-2)

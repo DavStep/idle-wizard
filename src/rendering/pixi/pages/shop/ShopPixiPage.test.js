@@ -13,8 +13,10 @@ import { PixiInputRouter } from '../../input/PixiInputRouter.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import {
+  PIXI_PROGRESS_VISUALS,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  createPixiThemeSnapshot,
 } from '../../theme/PixiThemeTokens.js';
 import { SHOP_DIALOG_IDS } from './ShopDialogPixi.js';
 import { ShopPixiPage } from './ShopPixiPage.js';
@@ -71,9 +73,17 @@ describe('ShopPixiPage', () => {
     ).toBe(requestAllocations);
     expect(stall.price.text).toBe('12 Coin');
     expect(stall.progress).toMatchObject({
-      tone: 'yellow',
+      tone: 'root',
       barHeight: 10,
+      fillColor: PIXI_PROGRESS_VISUALS.tones.root.fill,
     });
+    stall.applyTheme(
+      createPixiThemeSnapshot({ progressBar: 'gradient' }),
+    );
+    expect(stall.progress.gradient).toBeNull();
+    expect(stall.progress.fillColor).toBe(
+      PIXI_PROGRESS_VISUALS.tones.root.fill,
+    );
     expect(request.valueLabel.text).toBe('3 herb');
 
     pages.deactivate();
@@ -182,6 +192,67 @@ describe('ShopPixiPage', () => {
       stall.title.x + stall.title.measuredWidth + 4,
     );
     expect(stall.stars.position.y).toBe(stall.title.y + 1);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders loaded seeds inside the Research row art well', () => {
+    const getAtlasTexture = vi.fn(() => Texture.EMPTY);
+    const getTexture = vi.fn(() => Texture.EMPTY);
+    const harness = createHarness({
+      assetManager: {
+        ...createPixiAssetManagerFake(Texture),
+        loaded: true,
+        getAtlasTexture,
+        getTexture,
+      },
+    });
+    const model = createShopViewModel();
+    Object.assign(model.shop.traders.stalls[0], {
+      itemKey: 'sageSeed',
+      itemKind: 'seed',
+    });
+
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const stall = harness.page.stallsSection.stalls.get('stall-1');
+    expect(stall.iconFrame).toBeInstanceOf(PixiNineSliceFrame);
+    expect(stall.iconFrame).toMatchObject({
+      frameWidth: 52,
+      frameHeight: 52,
+      sourceInsets: {
+        top: 49,
+        right: 50,
+        bottom: 50,
+        left: 49,
+      },
+      borderInsets: {
+        top: 49 / 3,
+        right: 50 / 3,
+        bottom: 50 / 3,
+        left: 49 / 3,
+      },
+    });
+    expect(stall.icon.width).toBeCloseTo(44 * (121 / 128), 6);
+    expect(stall.icon.height).toBe(44);
+    expect(stall.icon.height).toBeLessThan(
+      stall.iconFrame.frameHeight,
+    );
+    expect(stall.iconOverlay.visible).toBe(true);
+    expect(stall.quantityFrame).toBeUndefined();
+    expect(stall.quantity.textObject.style.fill).toBe('#ffffff');
+    expect(stall.quantity.textObject.style.stroke).toMatchObject({
+      color: '#2a160d',
+      width: 2,
+      join: 'round',
+    });
+    expect(getAtlasTexture).toHaveBeenCalledWith('seed:pack');
+    expect(getAtlasTexture).toHaveBeenCalledWith('herb:sageHerb');
+    expect(getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.researchArt,
+    );
 
     harness.page.destroy();
     harness.dispose();
@@ -429,6 +500,7 @@ describe('ShopPixiPage', () => {
       ],
       range: {
         enabled: true,
+        tone: 'root',
         value: 25,
       },
       items: [
@@ -442,8 +514,18 @@ describe('ShopPixiPage', () => {
         },
       ],
       actions: [
-        { id: 'mark', label: 'mark x2', enabled: true },
-        { id: 'clear', label: 'clear', enabled: true },
+        {
+          id: 'mark',
+          label: 'mark x2',
+          variant: 'green',
+          enabled: true,
+        },
+        {
+          id: 'clear',
+          label: 'clear',
+          variant: 'red',
+          enabled: true,
+        },
         { id: 'future', label: 'mark future', enabled: true },
       ],
       tabs: [
@@ -455,7 +537,7 @@ describe('ShopPixiPage', () => {
 
     const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.STALL);
     const [row] = dialog.list.rows.getWidgets();
-    const [mark] = dialog.actions.getWidgets();
+    const [mark, clear, future] = dialog.actions.getWidgets();
     const [seedsTab, herbsTab] = dialog.tabs.getWidgets();
 
     expect(dialog.selectionSection.visible).toBe(true);
@@ -500,7 +582,11 @@ describe('ShopPixiPage', () => {
           dialog.selectionSection.frameHeight),
     ).toBeCloseTo(8);
     expect(mark.root.y).toBeLessThan(dialog.list.root.y);
-    expect(mark.control.variant).toBe('yellow');
+    expect(dialog.rangeControl.progress.tone).toBe('root');
+    expect(dialog.rangeControl.progress.fillColor).toBe('#8740df');
+    expect(mark.control.variant).toBe('green');
+    expect(clear.control.variant).toBe('red');
+    expect(future.control.variant).toBe('yellow');
     expect(dialog.tabLayer.parent).toBe(dialog.panel);
     expect(dialog.tabLayer.y).toBe(dialog.config.height - 2);
     expect(seedsTab.control.variant).toBe('tab');

@@ -15,6 +15,9 @@ import {
   setText,
 } from '../../pages/workshop/RetainedPageKit.js';
 
+const WORLD_CHAT_TITLE = 'World Chat';
+const WORLD_CHAT_TITLE_STROKE = '#0a0a0a';
+
 /**
  * Shared room chrome for the compact world-chat preview.
  *
@@ -30,7 +33,7 @@ export class PixiWorldChatView extends BasePixiRetainedView {
     this.model = { visible: false };
     this.panel = new RetainedPanel({
       assetManager: assets,
-      label: 'world chat',
+      label: WORLD_CHAT_TITLE,
       panelLabel: 'global-world-chat-preview',
     });
     this.preview = createText('', {
@@ -40,6 +43,7 @@ export class PixiWorldChatView extends BasePixiRetainedView {
         PIXI_UI_GEOMETRY.roomChromeEdge * 2 -
         10,
     });
+    this.preview.style.whiteSpace = 'pre-line';
     this.panel.body.addChild(this.preview);
     this.root.addChild(this.panel.root);
     this.panel.root.eventMode = 'static';
@@ -68,7 +72,10 @@ export class PixiWorldChatView extends BasePixiRetainedView {
 
   onBind(model = {}) {
     this.model = model;
-    this.panel.setTitle(model.label ?? model.channelLabel ?? 'world chat');
+    this.panel.setTitle(
+      model.label ?? model.channelLabel ?? WORLD_CHAT_TITLE,
+    );
+    this.applyTitleStroke();
     setText(
       this.preview,
       model.preview ??
@@ -85,6 +92,7 @@ export class PixiWorldChatView extends BasePixiRetainedView {
   onApplyTheme(theme) {
     const resolvedTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.panel.applyTheme(resolvedTheme);
+    this.applyTitleStroke();
     applyTextTheme(this.preview, resolvedTheme, {
       ...RETAINED_TEXT_STYLES.border,
       wordWrapWidth:
@@ -92,6 +100,15 @@ export class PixiWorldChatView extends BasePixiRetainedView {
         PIXI_UI_GEOMETRY.roomChromeEdge * 2 -
         10,
     });
+    this.preview.style.whiteSpace = 'pre-line';
+  }
+
+  applyTitleStroke() {
+    this.panel.title.style.stroke = {
+      color: WORLD_CHAT_TITLE_STROKE,
+      width: 2,
+      join: 'round',
+    };
   }
 
   onLayout() {
@@ -127,6 +144,7 @@ export class PixiWorldChatView extends BasePixiRetainedView {
       width,
       height,
     );
+    this.applyTitleStroke();
     this.preview.position.set(5, 4);
     this.panel.root.hitArea = new Rectangle(0, 0, width, height);
   }

@@ -28,7 +28,7 @@ describe('PixiPagesFacade', () => {
     expect(harness.runtime.bindGlobalSurface).toHaveBeenCalledWith(
       'chrome.chat',
       expect.objectContaining({
-        label: 'world chat',
+        label: 'World Chat',
         visible: true,
       }),
     );
@@ -39,14 +39,14 @@ describe('PixiPagesFacade', () => {
     expect(harness.runtime.bindPage).toHaveBeenCalledTimes(2);
     expect(harness.getBoundGlobal('chrome.chat')).toEqual(
       expect.objectContaining({
-        label: 'world chat',
+        label: 'World Chat',
         visible: true,
       }),
     );
     expect(harness.getBoundGlobal('chrome.chat').onActivate()).toBe(true);
     expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
       'worldChat',
-      expect.objectContaining({ title: 'world chat' }),
+      expect.objectContaining({ title: 'World Chat' }),
     );
     expect(pages.getCurrentPageId()).toBe('research');
 
@@ -340,7 +340,7 @@ describe('PixiPagesFacade', () => {
 
     expect(harness.getBoundGlobal('chrome.chat')).toEqual(
       expect.objectContaining({
-        label: 'world chat',
+        label: 'World Chat',
         visible: false,
       }),
     );

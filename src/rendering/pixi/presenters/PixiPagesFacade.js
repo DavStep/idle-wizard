@@ -1660,6 +1660,19 @@ export class PixiPagesFacade {
         }
       );
     }
+    if (
+      normalized === 'whileawayannouncement' ||
+      normalized === 'whileaway'
+    ) {
+      return (
+        this.announcementPresenter?.showWhileAwayPreview?.(
+          options,
+        ) ?? {
+          ok: false,
+          reason: 'announcements_missing',
+        }
+      );
+    }
     const target = DEV_DIALOG_TARGETS[normalized];
     if (!target) {
       return { ok: false, reason: 'unknown_dialog', dialogId };

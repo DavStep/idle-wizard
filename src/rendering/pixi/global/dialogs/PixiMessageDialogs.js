@@ -19,9 +19,22 @@ import {
   PooledCollection,
   WidgetPool,
 } from '../../retained/index.js';
+import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
+import {
+  RETAINED_SCROLLBAR_GEOMETRY,
+  RetainedScrollArea,
+} from '../../pages/workshop/RetainedPageKit.js';
 
 const ANNOUNCEMENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
+const WHILE_AWAY_CONTENT_MAX_HEIGHT = 128;
+const WHILE_AWAY_CONTENT_PADDING_TOP =
+  PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
+const WHILE_AWAY_CONTENT_PADDING_BOTTOM =
+  PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
+const WHILE_AWAY_SCROLLBAR_RESERVE =
+  RETAINED_SCROLLBAR_GEOMETRY.gap +
+  RETAINED_SCROLLBAR_GEOMETRY.width;
 const ANNOUNCEMENT_BACKDROP_ALPHA = 0.68;
 const LEVEL_REWARDS_BACKDROP_ALPHA = 0.82;
 const CONFIRMATION_WIDTH = 260;
@@ -175,6 +188,12 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     });
     this.rowsLayer = new Container();
     this.rowsLayer.label = `${dialogId}:rows`;
+    this.reportScroll = new RetainedScrollArea({
+      inputRouter: this.context.inputRouter,
+      label: `${dialogId}:reportScroll`,
+    });
+    this.reportScroll.root.visible = false;
+    this.reportScroll.root.renderable = false;
     this.unlockItemsLayer = new Container();
     this.unlockItemsLayer.label = `${dialogId}:unlockItems`;
     this.researchItemLayer = new Container();
@@ -183,10 +202,12 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       this.heading,
       this.copy,
       this.rowsLayer,
+      this.reportScroll.root,
       this.unlockItemsLayer,
       this.researchItemLayer,
     );
     this.rows = new PooledDialogRows({
+      assetManager: this.context.assets,
       parent: this.rowsLayer,
       inputRouter: this.context.inputRouter,
       counters: this.context.counters,
@@ -225,6 +246,8 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.copy.setText(model.copy);
     const featureUnlock = model.kind === 'unlock';
     const research = model.kind === 'research';
+    const whileAway = model.kind === 'whileAway';
+    this.setRowsScrollMode(whileAway);
     this.copy.visible = !research;
     this.copy.renderable = !research;
     this.rowsLayer.visible = !featureUnlock && !research;
@@ -251,6 +274,9 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       this.unlockItems.clear();
       this.researchItem.reset();
       this.rows.reconcile(model.rows);
+      if (whileAway) {
+        this.reportScroll.scrollTo(0);
+      }
     }
     if (this.closeControl) {
       const showClose =
@@ -333,6 +359,22 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.researchItem?.applyTheme(contentTheme);
   }
 
+  setRowsScrollMode(enabled) {
+    const scrollEnabled = Boolean(enabled);
+    const targetParent = scrollEnabled
+      ? this.reportScroll.content
+      : this.panel.content;
+    if (this.rowsLayer.parent !== targetParent) {
+      targetParent.addChild(this.rowsLayer);
+    }
+    this.reportScroll.root.visible = scrollEnabled;
+    this.reportScroll.root.renderable = scrollEnabled;
+    if (!scrollEnabled) {
+      this.reportScroll.setContentHeight(0);
+      this.reportScroll.scrollTo(0);
+    }
+  }
+
   layoutDialog() {
     if (!this.rows || !this.announcementModel) {
       return;
@@ -344,6 +386,11 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       : Math.min(260, width);
     const featureUnlock = model.kind === 'unlock';
     const research = model.kind === 'research';
+    const whileAway = model.kind === 'whileAway';
+    const whileAwayRowsWidth = Math.max(
+      0,
+      rowsWidth - WHILE_AWAY_SCROLLBAR_RESERVE,
+    );
     const rowsHeight = featureUnlock
       ? this.unlockItems.layout(rowsWidth)
       : research
@@ -353,7 +400,14 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
             rowsWidth,
             false,
           ).preferredHeight
-        : this.rows.layout(rowsWidth, { gap: 2 });
+        : this.rows.layout(
+            whileAway ? whileAwayRowsWidth : rowsWidth,
+            {
+              gap: whileAway
+                ? GLOBAL_DIALOG_GEOMETRY.rowGap
+                : 2,
+            },
+          );
     this.copy.setWrapWidth(width);
     const headingHeight = this.heading.text
       ? Math.max(24, Math.ceil(this.heading.measuredHeight))
@@ -363,8 +417,17 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       : 0;
     const bodyGap =
       copyHeight > 0 && rowsHeight > 0 ? 10 : 0;
-    const bodyContentHeight =
-      copyHeight + bodyGap + rowsHeight;
+    const whileAwayContentHeight =
+      WHILE_AWAY_CONTENT_PADDING_TOP +
+      rowsHeight +
+      WHILE_AWAY_CONTENT_PADDING_BOTTOM;
+    const whileAwayViewportHeight = Math.min(
+      WHILE_AWAY_CONTENT_MAX_HEIGHT,
+      whileAwayContentHeight,
+    );
+    const bodyContentHeight = whileAway
+      ? whileAwayViewportHeight
+      : copyHeight + bodyGap + rowsHeight;
     const bodyHeight = model.framed
       ? bodyContentHeight
       : Math.max(128, bodyContentHeight);
@@ -391,10 +454,26 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       x: (width - rowsWidth) / 2,
       y: bodyContentY + copyHeight + bodyGap,
     };
-    this.rowsLayer.position.set(
-      rowsPosition.x,
-      rowsPosition.y,
-    );
+    if (whileAway) {
+      this.reportScroll.setBounds(
+        rowsPosition.x,
+        bodyContentY,
+        whileAwayRowsWidth,
+        whileAwayViewportHeight,
+      );
+      this.reportScroll.setContentHeight(
+        whileAwayContentHeight,
+      );
+      this.rowsLayer.position.set(
+        0,
+        WHILE_AWAY_CONTENT_PADDING_TOP,
+      );
+    } else {
+      this.rowsLayer.position.set(
+        rowsPosition.x,
+        rowsPosition.y,
+      );
+    }
     this.unlockItemsLayer.position.set(
       rowsPosition.x,
       rowsPosition.y,
@@ -427,6 +506,8 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.stopAnnouncementMotion();
     this.rows?.destroy();
     this.rows = null;
+    this.reportScroll?.destroy();
+    this.reportScroll = null;
     this.unlockItems?.destroy();
     this.unlockItems = null;
     this.researchItem?.destroy();

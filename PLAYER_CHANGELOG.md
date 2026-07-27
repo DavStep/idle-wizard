@@ -3,6 +3,11 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.3.12
+
+- Polished settings, message, while-away, Market, and World Chat surfaces with clearer actions and item/resource visuals.
+- Fixed Garden timers jumping backward and improved Elara guidance so it follows the active request.
+
 ## 0.3.11
 
 - Fixed Elara request Turn In taps sometimes doing nothing on touch devices.

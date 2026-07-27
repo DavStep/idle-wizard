@@ -73,8 +73,16 @@ height. The licence name and three rank-star slots are centered as one group
 on the ribbon front, with a small upward optical correction because the folds
 and tails extend below the raised front panel.
 
+Loaded stall rows reuse the Research art-well frame, but contain item artwork
+inside that well. The loaded quantity sits over the artwork as white,
+dark-stroked text without a badge background.
+
 Open `/src/dev/uiRecipes/market-title-ribbon.html` for the deterministic
-component-level visual QA state without gameplay, account, or tutorial gates.
+component-level ribbon state. Open
+`/src/dev/uiRecipes/market-stalls-retained.html` for the production retained
+stall renderer with loaded Sage and Briar Seed rows, without gameplay,
+account, or tutorial gates. Add `?dialog=stall` to open the loader with enabled
+mark and clear actions.
 
 ## Snapshot adapter
 

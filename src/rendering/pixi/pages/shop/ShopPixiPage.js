@@ -6,6 +6,16 @@ import {
   Texture,
 } from 'pixi.js';
 
+import {
+  getHerbIconFrameName,
+} from '../../../../assets/items/herbs/herbIcons.js';
+import {
+  getPotionIconFrameName,
+} from '../../../../assets/items/potions/potionIcons.js';
+import {
+  getSeedPackBaseFrameName,
+  getSeedPackItemFrameName,
+} from '../../../../assets/items/seeds/seedIconFrames.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
@@ -13,6 +23,7 @@ import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiPanel } from '../../primitives/PixiPanel.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
 import { PixiScrollView } from '../../primitives/PixiScrollView.js';
+import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
 import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
@@ -43,6 +54,25 @@ const STALL_CARD_HEIGHT = 84;
 const COMPACT_ROW_HEIGHT = 27;
 const STALL_TEXT_INK = '#634934';
 const STALL_STAR_GAP = 4;
+const STALL_ART_WELL_SIZE = 52;
+const STALL_ARTWORK_SIZE = 44;
+const STALL_QUANTITY_COLOR = '#ffffff';
+const STALL_QUANTITY_STROKE = Object.freeze({
+  color: '#2a160d',
+  width: 2,
+});
+const STALL_ART_SOURCE_INSETS = Object.freeze({
+  top: 49,
+  right: 50,
+  bottom: 50,
+  left: 49,
+});
+const STALL_ART_BORDER_INSETS = Object.freeze({
+  top: 49 / 3,
+  right: 50 / 3,
+  bottom: 50 / 3,
+  left: 49 / 3,
+});
 const STATION_TITLE_HEIGHT = 42;
 const STATION_TITLE_ROW_GAP = 5;
 const MARKET_TITLE_HEIGHT =
@@ -1035,29 +1065,31 @@ class ShopStallWidget {
       color: STALL_TEXT_INK,
       label: 'shop:stall:batch',
     });
-    this.iconFrame = new PixiFrame({
-      assetManager,
-      width: 50,
-      height: 50,
+    this.iconFrame = new PixiNineSliceFrame({
+      texture: Texture.EMPTY,
+      sourceInsets: STALL_ART_SOURCE_INSETS,
+      borderInsets: STALL_ART_BORDER_INSETS,
+      width: STALL_ART_WELL_SIZE,
+      height: STALL_ART_WELL_SIZE,
       label: 'shop:stall:iconFrame',
     });
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.label = 'shop:stall:icon';
+    this.icon.anchor.set(0.5);
     this.icon.visible = false;
+    this.iconOverlay = new Sprite(Texture.EMPTY);
+    this.iconOverlay.label = 'shop:stall:iconOverlay';
+    this.iconOverlay.anchor.set(0.5);
+    this.iconOverlay.visible = false;
     this.item = new PixiTextLabel({
       color: STALL_TEXT_INK,
       label: 'shop:stall:item',
     });
-    this.quantityFrame = new PixiFrame({
-      assetManager,
-      width: 30,
-      height: 14,
-      label: 'shop:stall:quantityFrame',
-    });
     this.quantity = new PixiTextLabel({
       fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
-      anchor: { x: 0.5, y: 0 },
-      color: STALL_TEXT_INK,
+      anchor: { x: 0.5, y: 1 },
+      color: STALL_QUANTITY_COLOR,
+      stroke: STALL_QUANTITY_STROKE,
       label: 'shop:stall:quantity',
     });
     this.price = new PixiTextLabel({
@@ -1067,7 +1099,7 @@ class ShopStallWidget {
     });
     this.progress = new PixiProgressBar({
       assetManager,
-      tone: 'yellow',
+      tone: 'root',
       label: 'shop:stall:progress',
     });
     this.timer = new PixiTextLabel({
@@ -1086,8 +1118,8 @@ class ShopStallWidget {
       this.batch,
       this.iconFrame,
       this.icon,
+      this.iconOverlay,
       this.item,
-      this.quantityFrame,
       this.quantity,
       this.price,
       this.progress,
@@ -1140,7 +1172,6 @@ class ShopStallWidget {
     ));
     this.quantity.setText(stall.quantityLabel ?? '');
     this.quantity.visible = Boolean(stall.quantityLabel);
-    this.quantityFrame.visible = this.quantity.visible;
     this.price.setText(formatTitleCase(
       stall.priceLabel ?? stall.price ?? '',
     ));
@@ -1153,12 +1184,12 @@ class ShopStallWidget {
       stall.paused !== true;
     this.timer.setText(stall.timerLabel ?? stall.pauseLabel ?? '');
     this.timer.setColor(stall.paused ? 'muted' : 'text');
-    this.icon.visible = false;
-    const texture = resolveTexture(this.assetManager, stall);
-    if (texture) {
-      this.icon.texture = texture;
-      this.icon.visible = true;
-    }
+    bindStallItemIcon({
+      assetManager: this.assetManager,
+      base: this.icon,
+      overlay: this.iconOverlay,
+      model: stall,
+    });
     this.semanticId =
       stall.semanticId ??
       `shop.stall.${stall.slotNumber ?? key}`;
@@ -1197,13 +1228,34 @@ class ShopStallWidget {
     );
     this.batch.position.set(width - 10, 10);
     this.iconFrame.position.set(10, 27);
-    this.icon.position.set(15, 32);
-    this.icon.width = 40;
-    this.icon.height = 40;
+    this.iconFrame.setSize(
+      STALL_ART_WELL_SIZE,
+      STALL_ART_WELL_SIZE,
+      STALL_ART_BORDER_INSETS,
+    );
+    const iconCenterX = this.iconFrame.x + STALL_ART_WELL_SIZE / 2;
+    const iconCenterY = this.iconFrame.y + STALL_ART_WELL_SIZE / 2;
+    if (this.iconOverlay.visible) {
+      layoutPixiSeedPackIcon({
+        base: this.icon,
+        item: this.iconOverlay,
+        x: iconCenterX,
+        y: iconCenterY,
+        width: STALL_ARTWORK_SIZE,
+        height: STALL_ARTWORK_SIZE,
+      });
+    } else {
+      this.icon.position.set(iconCenterX, iconCenterY);
+      this.icon.width = STALL_ARTWORK_SIZE;
+      this.icon.height = STALL_ARTWORK_SIZE;
+      this.iconOverlay.rotation = 0;
+    }
     this.item.position.set(70, 35);
     this.item.setWrapWidth(Math.max(0, width - 160));
-    this.quantityFrame.position.set(20, 67);
-    this.quantity.position.set(35, 68);
+    this.quantity.position.set(
+      iconCenterX,
+      this.iconFrame.y + STALL_ART_WELL_SIZE - 2,
+    );
     this.price.position.set(width - 10, 35);
     const timerWidth = Math.max(18, this.timer.measuredWidth);
     this.progress.position.set(70, 65);
@@ -1228,14 +1280,21 @@ class ShopStallWidget {
       }),
       PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
     );
-    this.iconFrame.applyTheme(this.theme);
-    this.quantityFrame.applyTheme(this.theme);
+    this.iconFrame.setTexture(
+      resolveTexture(this.assetManager, {
+        textureId: PIXI_ROOT_RUN_ASSETS.researchArt,
+      }),
+      STALL_ART_SOURCE_INSETS,
+    );
     this.title.applyTheme(this.theme);
     this.batch.applyTheme(this.theme);
     this.item.applyTheme(this.theme);
     this.quantity.applyTheme(this.theme);
     this.price.applyTheme(this.theme);
-    this.progress.applyTheme(this.theme);
+    this.progress.applyTheme({
+      ...this.theme,
+      progress: { key: 'classic' },
+    });
     this.timer.applyTheme(this.theme);
     this.redrawState();
   }
@@ -1246,7 +1305,7 @@ class ShopStallWidget {
     this.title.setColor(STALL_TEXT_INK);
     this.batch.setColor(STALL_TEXT_INK);
     this.item.setColor(STALL_TEXT_INK);
-    this.quantity.setColor(STALL_TEXT_INK);
+    this.quantity.setColor(STALL_QUANTITY_COLOR);
     this.price.setColor(STALL_TEXT_INK);
     this.timer.setColor(STALL_TEXT_INK);
     this.notificationBadge
@@ -1264,6 +1323,13 @@ class ShopStallWidget {
     this.root.eventMode = 'none';
     this.root.visible = false;
     this.root.renderable = false;
+    this.icon.texture = Texture.EMPTY;
+    this.icon.visible = false;
+    this.icon.renderable = false;
+    this.iconOverlay.texture = Texture.EMPTY;
+    this.iconOverlay.visible = false;
+    this.iconOverlay.renderable = false;
+    this.iconOverlay.rotation = 0;
   }
 
   unregisterSemantic() {
@@ -1664,6 +1730,17 @@ function normalizeStall(stall = {}, index) {
       stall.display?.label ??
       stall.label ??
       (stall.itemTypeId ? 'item' : 'empty'),
+    itemKey:
+      stall.itemKey ??
+      stall.sellKey ??
+      stall.futureItemKey ??
+      null,
+    itemKind:
+      stall.itemKind ??
+      stall.sellKind ??
+      stall.futureItemKind ??
+      stall.resourceKey ??
+      null,
     quantityLabel:
       stall.quantityLabel ??
       (stall.quantity != null ? ` ${stall.quantity}` : ''),
@@ -1789,6 +1866,70 @@ function resolveTexture(assetManager, model = {}) {
     return assetManager.getTexture(model.textureId);
   }
   return null;
+}
+
+function bindStallItemIcon({
+  assetManager,
+  base,
+  overlay,
+  model = {},
+}) {
+  base.texture = Texture.EMPTY;
+  base.visible = false;
+  base.renderable = false;
+  overlay.texture = Texture.EMPTY;
+  overlay.visible = false;
+  overlay.renderable = false;
+  overlay.rotation = 0;
+
+  const itemKind = String(
+    model.itemKind ?? model.resourceKey ?? '',
+  ).toLowerCase();
+  const itemKey =
+    model.itemKey ??
+    model.sellKey ??
+    model.futureItemKey ??
+    null;
+
+  if (itemKind === 'seed' && itemKey) {
+    const baseFrameName = getSeedPackBaseFrameName(model);
+    const itemFrameName = getSeedPackItemFrameName({
+      key: itemKey,
+      label: model.itemLabel ?? model.label,
+    });
+    base.texture =
+      assetManager?.getAtlasTexture?.(baseFrameName) ??
+      Texture.EMPTY;
+    overlay.texture =
+      assetManager?.getAtlasTexture?.(itemFrameName) ??
+      Texture.EMPTY;
+    base.visible = Boolean(baseFrameName);
+    base.renderable = base.visible;
+    overlay.visible = base.visible && Boolean(itemFrameName);
+    overlay.renderable = overlay.visible;
+    return;
+  }
+
+  const frameName =
+    itemKind === 'herb'
+      ? getHerbIconFrameName(itemKey)
+      : itemKind === 'potion'
+        ? getPotionIconFrameName(itemKey)
+        : null;
+  const fallbackTexture = resolveTexture(assetManager, model);
+  if (frameName) {
+    base.texture =
+      assetManager?.getAtlasTexture?.(frameName) ??
+      Texture.EMPTY;
+    base.visible = true;
+    base.renderable = true;
+    return;
+  }
+  if (fallbackTexture) {
+    base.texture = fallbackTexture;
+    base.visible = true;
+    base.renderable = true;
+  }
 }
 
 function orderChildren(container, widgets) {

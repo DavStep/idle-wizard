@@ -184,7 +184,8 @@ export class PixiGlobalDialogPresenter {
         request.tabId ??
         (dialogId === GLOBAL_DIALOG_IDS.FEEDBACK
           ? 'report'
-          : this.settingsTabById.get(dialogId)),
+          : this.settingsTabById.get(dialogId) ??
+            'configurations'),
     );
     const feedbackKind = normalizeFeedbackKind(
       request.kind ??

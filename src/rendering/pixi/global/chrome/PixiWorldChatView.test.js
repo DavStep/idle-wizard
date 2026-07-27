@@ -22,7 +22,7 @@ describe('PixiWorldChatView', () => {
     view.layout({ sourceWidth: 360, sourceHeight: 723.333333 });
     view.activate();
     view.bind({
-      label: 'world chat',
+      label: 'World Chat',
       visible: true,
       messages: [
         { body: 'first' },
@@ -33,11 +33,18 @@ describe('PixiWorldChatView', () => {
     });
 
     expect(view.root.visible).toBe(true);
+    expect(view.panel.title.text).toBe('World Chat');
+    expect(view.panel.title.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: 2,
+      join: 'round',
+    });
     expect(view.panel.root.position).toMatchObject({
       x: 16,
       y: expect.closeTo(581.333333, 5),
     });
     expect(view.preview.text).toBe('second\nthird');
+    expect(view.preview.style.whiteSpace).toBe('pre-line');
 
     input.registration.onActivate();
     expect(onActivate).toHaveBeenCalledTimes(1);

@@ -45,6 +45,7 @@ cheats.listUiSurfaces()
 cheats.openUi('guildQuestPosting')
 cheats.openUi('traderStallLoader')
 cheats.openUi('featureUnlockAnnouncement')
+cheats.openUi('whileAwayAnnouncement')
 cheats.openUi('devConsole')
 cheats.setTimers('allReady')
 cheats.setStressText()
@@ -143,6 +144,8 @@ Useful view setup commands:
 - `/?devUi=featureUnlockAnnouncement` opens a non-persistent eight-feature unlock
   preview; tapping its backdrop closes it and runs the icon handoff without
   changing gameplay state.
+- `/?devUi=whileAwayAnnouncement` opens a non-persistent while-away report with
+  seed, herb, potion, and coin rows.
 - `/?devUi=bottomRoomTabs` reveals the real five-tab bottom room chrome for
   screenshot and interaction QA without changing tutorial progress or gameplay
   state.

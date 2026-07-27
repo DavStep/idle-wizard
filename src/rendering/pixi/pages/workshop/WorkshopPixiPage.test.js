@@ -30,8 +30,12 @@ describe('WorkshopPixiPage', () => {
     harness.page.bind(model);
 
     const row = harness.page.tasks.rows.get('request-1');
+    expect(harness.page.tasks.panel.title.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: 2,
+      join: 'round',
+    });
     for (const text of [
-      harness.page.tasks.panel.title,
       harness.page.tasks.next,
       harness.page.tasks.rewardsTitle,
       harness.page.tasks.rewards,
@@ -1288,7 +1292,7 @@ describe('WorkshopPixiPage', () => {
     const harness = createHarness();
     const model = createWorkshopViewModel();
     model.workshop.dialogs.worldChat = {
-      title: 'world chat',
+      title: 'World Chat',
       composer: {
         placeholder: 'message',
         maxLength: 160,

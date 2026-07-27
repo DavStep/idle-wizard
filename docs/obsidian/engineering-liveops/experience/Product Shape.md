@@ -45,6 +45,7 @@ experience_type: product-shape
 - Feature unlocks should remain separate queued room announcements after the level-up card; the level-up reward row and Elara lesson copy do not replace the unlock card.
 - Feature unlock announcements should clone each destination icon and measure each icon's own source rect; one shared origin makes multi-unlock flyouts detach from the icons players just saw.
 - While-away report rows should keep the row label left and the reward/status right; attach item/resource icons to the right-side value instead of adding a separate leading icon slot.
+- While-away reports cap paper content at `128px`, use the shared station scrollbar on overflow with a `12px` top inset, keep title and row labels in Title Case, and show only the numeric quantity beside each identifying icon.
 - While-away reports should list produced items and market outcomes only; skip status-only rows like mana full, plots ready, research complete, and paused automation.
 - Cauldron brew/bottle success state belongs in the active brew text and progress rail; reserve cauldron messages for blocked/error feedback so stale success text does not fight the timer state.
 - Reward flyouts on Android WebView should avoid per-event dynamic `@keyframes`; use transform/opacity Web Animations API paths and cap active particles.
@@ -263,6 +264,7 @@ experience_type: product-shape
 - FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
 - FTUE should not own special market economy. Teach the normal timed-stall sale as a level-2 request, never as a currency prerequisite for level-up.
 - FTUE level-2 Market guidance must follow the live task order: summon enough sage seeds, sell one, then turn in the remainder. Do not wait until `completion.canComplete` before showing the summon/sell guidance.
+- FTUE task guidance must follow `questProgress.activeQuest` before matching by item key; level 4 reuses herb keys across grow and turn-in tasks, so owned herbs must not skip the active grow quest or target an inactive request row.
 - FTUE terminal hides must clear inner lesson/button/pointer state; hiding only the layer lets later click-driven hides re-show stale tutorial UI for one frame.
 - FTUE uses one left Elara lesson button and one lesson panel; do not add separate dialog, hint, prompt, or objective boxes.
 - FTUE advance prompts treat any stage click as `next` and consume the click so underlying controls do not fire.

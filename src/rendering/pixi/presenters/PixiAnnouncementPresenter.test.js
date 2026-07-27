@@ -71,7 +71,7 @@ describe('PixiAnnouncementPresenter', () => {
     const model = harness.getLastModel();
     expect(model).toMatchObject({
       kind: 'whileAway',
-      title: 'while away',
+      title: 'While Away',
       variant: 'report',
       framed: true,
       dismissible: true,
@@ -95,20 +95,20 @@ describe('PixiAnnouncementPresenter', () => {
     ).toEqual([
       [
         'auto_seed_summoned',
-        'auto seed summoned',
-        '8 seeds',
+        'Seeds Summoned',
+        '8',
       ],
       [
         'garden_harvested',
-        'garden harvested',
-        '12 bloodrose',
+        'Herbs Harvested',
+        '12',
       ],
       [
         'brewing_complete',
-        'brewing complete',
-        '2 mana tonic',
+        'Potions Brewed',
+        '2',
       ],
-      ['npc_market_sold', 'traders bought', '40 coin'],
+      ['npc_market_sold', 'Traders Bought', '40'],
     ]);
 
     expect(presenter.unmount()).toBe(true);
@@ -265,12 +265,12 @@ describe('PixiAnnouncementPresenter', () => {
 
     expect(harness.getLastModel()).toMatchObject({
       kind: 'whileAway',
-      title: 'while away',
+      title: 'While Away',
       rows: [
         {
           reportRowType: 'brewing_complete',
-          label: 'brewing complete',
-          value: '1 mana tonic',
+          label: 'Potions Brewed',
+          value: '1',
         },
       ],
     });
@@ -380,6 +380,85 @@ describe('PixiAnnouncementPresenter', () => {
     expect(harness.runtime.openDialog).toHaveBeenCalledTimes(2);
     expect(harness.getLastModel().kind).toBe('level');
     expect(presenter.isOpen()).toBe(true);
+  });
+
+  it('opens a reproducible while-away report preview without gameplay writes', () => {
+    const harness = createHarness({
+      snapshot: createSnapshot(),
+    });
+    const presenter = harness.createPresenter();
+    presenter.mount();
+
+    expect(presenter.showWhileAwayPreview()).toMatchObject({
+      ok: true,
+      dialogId: 'whileAwayAnnouncement',
+      pixiDialogId: PIXI_ANNOUNCEMENT_DIALOG_ID,
+    });
+    expect(harness.getLastModel()).toMatchObject({
+      kind: 'whileAway',
+      title: 'While Away',
+      framed: true,
+      dismissible: true,
+      rows: [
+        {
+          reportRowType: 'auto_seed_summoned',
+          label: 'Seeds Summoned',
+          value: '8',
+          icon: {
+            frameName: 'seed:pack',
+          },
+        },
+        {
+          reportRowType: 'garden_harvested',
+          label: 'Herbs Harvested',
+          value: '12',
+          icon: {
+            frameName: 'herb:bloodroseHerb',
+          },
+        },
+        {
+          reportRowType: 'garden_harvested',
+          label: 'Herbs Harvested',
+          value: '18',
+          icon: {
+            frameName: 'herb:sageHerb',
+          },
+        },
+        {
+          reportRowType: 'garden_harvested',
+          label: 'Herbs Harvested',
+          value: '9',
+          icon: {
+            frameName: 'herb:mintHerb',
+          },
+        },
+        {
+          reportRowType: 'brewing_complete',
+          label: 'Potions Brewed',
+          value: '2',
+          icon: {
+            frameName: 'potion:manaTonic',
+          },
+        },
+        {
+          reportRowType: 'brewing_complete',
+          label: 'Potions Brewed',
+          value: '3',
+          icon: {
+            frameName: 'potion:lanternTonic',
+          },
+        },
+        {
+          reportRowType: 'npc_market_sold',
+          label: 'Traders Bought',
+          value: '40',
+          icon: {
+            frameName: 'resource:coin',
+          },
+        },
+      ],
+    });
+    expect(harness.timers).toHaveLength(0);
   });
 });
 
