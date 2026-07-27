@@ -58,7 +58,7 @@ experience_type: product-shape
 - Level-up announcement rows can contain long multi-level unlock lists; keep a stable label column and let the value column wrap so labels do not collapse to one character per line.
 - Workshop requirement rewards and level-up announcements share `levelPayoffSummary`, but the top-panel level popup parses player-level effects separately in `TopPanelLevelManager`; update both paths for reward wording or capacity-display rules.
 - Prestige reset crystal should use the cumulative player-level reward through the reset level; level 1 grants crystal too, so a reset to level 10 starts with 10 crystals under the default curve.
-- Garden plot notification dots need row-specific vertical placement; the generic negative top offset can land the next row's dot on the previous row's progress rail.
+- Garden plot notification dots anchor to the centered plot frame's top-right corner, not the full grid cell or progress rail.
 - Brewing herb notification dots must stay row-local; parent `:has([data-notification])` bleed padding makes the herbs box taller.
 - Brewing herb notification dots belong on the herb label, not the full row/button, or they cover right-aligned counts.
 - Brewing herbs box uses the shared room chrome inset like the top panel and world chat; do not size it with `--style-main-box-width`.
@@ -154,7 +154,7 @@ experience_type: product-shape
 - Garden plot plant icons must use full atlas sprites; masked atlas sprites flatten herbs into one solid color.
 - Alliance quest notifications need quest/progress/contribution rows retained outside the popup; the full public alliance list can stay popup-retained.
 - Alliance income deltas currently skip if the player has same-week quest contribution or reward rows in another alliance; new alliances can show 0 until weekly reset.
-- Guild adventurer row notification dots need row-local placement; the generic button badge lands between the name and status columns.
+- Guild adventurer notification dots anchor to the row's top-right corner and stay row-local so they cannot land between the name and status columns.
 - Guild room boxes should use the full room inset width, not `--style-main-box-width`; otherwise the right side of the room looks unused beside world chat.
 - Guild content tabs should use compact labels like `hall`, `board`, `roster`, and `log`; `adventurers` crowds fitted desktop tab widths.
 - Guild tab panels are rebuilt on snapshot refresh; preserve `.guild-page__tabpanel.scrollTop` per tab or mobile scrolling snaps back to the top.
@@ -295,6 +295,7 @@ experience_type: product-shape
 - Tutorial guide is Elara Starbrew; only lesson body copy typewrites, while lesson titles, step labels, and action labels appear immediately.
 - FTUE lesson body copy typewrites only until the player has seen that exact step/copy once; reopening an already revealed guide shows full text immediately.
 - FTUE lesson panels should measure final copy/progress first and set box size before typewriter text appears; do not let panels resize as copy reveals.
+- Retained FTUE panels must reject null/undefined progress before numeric coercion; `Number(null)` otherwise creates an empty rail and false height. Tween measured block-height changes with the shared reduced-motion snap.
 - FTUE target cues should be pointer-only while the lesson panel is open or the player asks with `show me`; never stack a target hint box with a lesson box.
 - FTUE pointer rendering must not rewrite unchanged placement/style on every render; repeated DOM writes restart the cue animation before it can move.
 - Open FTUE lesson refreshes should let `applyCue` own target-cue visibility; hiding the cue during `showLesson` and showing it again resets pointer motion every refresh.
@@ -350,6 +351,7 @@ experience_type: product-shape
 - Pixel/WebView taps need forgiving touch slop in `PressFeedbackManager`; a 12px move threshold can treat normal finger drift as a drag and suppress the valid click.
 - Workshop summon's custom hold-to-repeat pointerdown can suppress native quick-tap clicks; keep a validated touch release fallback in the summon manager and dedupe it against global synthetic clicks.
 - Retained Pixi tutorial overlays can report the stage root for a revealed room press even when the pointer is inside the control bounds; opt only the affected registration into geometric fallback hit-testing and gate that fallback on the revealed control's visibility.
+- Retained Pixi info buttons need geometric fallback hit-testing within their existing hit area; an adjacent disabled control can retarget the event path to an overlay/root while the info action must remain available.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
 - Reward text flyouts should all spawn from the same base anchor; do not stack older notices upward or derive one flyout position from another.

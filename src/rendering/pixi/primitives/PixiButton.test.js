@@ -22,9 +22,10 @@ describe('PixiButton', () => {
         variant,
       });
 
+      getTexture.mockClear();
       button.setEnabled(false);
 
-      expect(getTexture).toHaveBeenLastCalledWith(
+      expect(getTexture).toHaveBeenCalledWith(
         PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice,
       );
       expect(button.rootRunFrame.filters).toBeNull();
@@ -40,15 +41,17 @@ describe('PixiButton', () => {
       variant: 'tab',
     });
 
+    getTexture.mockClear();
     button.applyTheme(createPixiThemeSnapshot({ theme: 'black' }));
     expect(button.resolveRootRunVariant()).toBe('brown-dark');
-    expect(getTexture).toHaveBeenLastCalledWith(
+    expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
     );
 
+    getTexture.mockClear();
     button.setSelected(true);
     expect(button.resolveRootRunVariant()).toBe('brown-light');
-    expect(getTexture).toHaveBeenLastCalledWith(
+    expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
     );
 

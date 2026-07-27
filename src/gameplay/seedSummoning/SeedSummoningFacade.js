@@ -50,15 +50,26 @@ export class SeedSummoningFacade {
   }
 
   canSummonSeed({ reservedMana = 0 } = {}) {
+    return this.getSummonUnavailableReason({ reservedMana }) === null;
+  }
+
+  getSummonUnavailableReason({ reservedMana = 0 } = {}) {
     const cost = this.seedSummonCostManager.getVisibleSummonCost();
     const currentMana = this.manaFacade.getSnapshot().current;
     const reserved = Number.isFinite(reservedMana) ? Math.max(0, reservedMana) : 0;
     const availableMana = Math.max(0, currentMana - reserved);
-    const hasSummonableSeed = this.getSummonableSeeds().some(
-      (seed) => seed.effectiveDropWeight > 0,
-    );
+    const summonableSeeds = this.getSummonableSeeds();
 
-    return hasSummonableSeed && availableMana >= cost;
+    if (summonableSeeds.length === 0) {
+      return 'no_summonable_seeds';
+    }
+    if (summonableSeeds.every((seed) => seed.effectiveDropWeight <= 0)) {
+      return 'no_active_seed_weights';
+    }
+    if (availableMana < cost) {
+      return 'not_enough_mana';
+    }
+    return null;
   }
 
   setSeedDropPreference(seedKey, preference) {
@@ -68,11 +79,13 @@ export class SeedSummoningFacade {
   getSnapshot() {
     const cost = this.seedSummonCostManager.getVisibleSummonCost();
     const quantity = this.seedSummonMultiplierManager.getSummonQuantity();
+    const unavailableReason = this.getSummonUnavailableReason();
 
     return {
       cost,
       quantity,
-      canSummon: this.canSummonSeed(),
+      canSummon: unavailableReason === null,
+      unavailableReason,
       dropChances: this.getDropChances(),
     };
   }

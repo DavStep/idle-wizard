@@ -176,7 +176,7 @@ describe('GuildPixiPage', () => {
       harness.page.adventurersSection.people.get('adventurer-1');
     expect(person.notification.visible).toBe(false);
     expect(person.notification.renderable).toBe(false);
-    expect(person.notification.context.instructions).toHaveLength(0);
+    expect(person.notificationBadge.sprite.width).toBeCloseTo(9.569444, 6);
     expect(person.root.eventMode).toBe('static');
     expect(
       harness.semanticRegistry.activate(
@@ -202,9 +202,7 @@ describe('GuildPixiPage', () => {
     ).toBe(person);
     expect(person.notification.visible).toBe(true);
     expect(person.notification.renderable).toBe(true);
-    expect(
-      person.notification.context.instructions.length,
-    ).toBeGreaterThan(0);
+    expect(person.notificationBadge.sprite.width).toBeCloseTo(9.569444, 6);
     expect(person.root.eventMode).toBe('static');
 
     harness.page.destroy();

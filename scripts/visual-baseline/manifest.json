@@ -100,6 +100,7 @@
       "production": true,
       "coverage": {
         "globalOwners": ["onlineGateManager"],
+        "devUi": ["serverRequired"],
         "domSelectors": [".app-online-gate__dialog"]
       },
       "recipe": {
@@ -122,7 +123,10 @@
         }
       ],
       "states": [
-        { "id": "connecting" },
+        {
+          "id": "connecting",
+          "recipe": { "kind": "devUi", "surfaceId": "serverRequired" }
+        },
         { "id": "offline" },
         { "id": "server-paused" },
         { "id": "server-no-energy" },
@@ -1527,19 +1531,16 @@
         { "id": "earn-tutorial-coin" },
         { "id": "first-sale-complete" },
         { "id": "unselect-sage-seed-sale" },
-        { "id": "level-up-two" },
         { "id": "intro-research" },
         { "id": "research-mint-seed" },
         { "id": "first-research-complete" },
         { "id": "fill-mint-seed-task" },
         { "id": "fill-sage-seed-task" },
-        { "id": "level-up-three" },
         { "id": "intro-garden" },
         { "id": "grow-sage" },
         { "id": "first-harvest-complete" },
         { "id": "fill-sage-herb-task" },
         { "id": "fill-mint-herb-task" },
-        { "id": "level-up-four" },
         { "id": "research-mana-tonic" },
         { "id": "intro-brewing" },
         { "id": "brew-mana-tonic" },

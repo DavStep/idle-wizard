@@ -3,6 +3,12 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.3.10
+
+- Refreshed Workshop, Market, and navigation artwork with clearer room actions, tabs, notifications, and item visuals.
+- Improved the Market dialog, tutorial guidance, and Workshop layout for more readable controls and progression.
+- Polished herb, garden, research, and summon presentation across the game.
+
 ## 0.3.9
 
 - Reworked trader stall loading with clearer item categories, selection rows, allocation controls, and future-stock actions.

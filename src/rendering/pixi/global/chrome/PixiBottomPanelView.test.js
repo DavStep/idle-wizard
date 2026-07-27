@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
-import { Texture } from 'pixi.js';
+import { NineSliceSprite, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_PAGE_SWIPE_ORDER } from '../../../../pages/managers/pageOrder.js';
@@ -29,6 +29,11 @@ describe('PixiBottomPanelView', () => {
       'research',
       'shop',
     ]);
+    expect(PIXI_BOTTOM_PANEL_TABS[0]).toMatchObject({
+      id: 'prestige',
+      icon: 'icon-prestige-star.png',
+      artScale: 0.9,
+    });
   });
 
   it('retains all tabs and changes page state in place', () => {
@@ -58,7 +63,7 @@ describe('PixiBottomPanelView', () => {
     expect(showPage).toHaveBeenCalledWith('guild');
   });
 
-  it('lays out five, six, and seven visible rooms in one equal overlapping row', () => {
+  it('lays out fixed five, six, and seven-tab rows with a wider selection', () => {
     const view = new PixiBottomPanelView({ assets: createAssets() });
     view.layout({
       sourceHeight: 723.333333,
@@ -93,29 +98,63 @@ describe('PixiBottomPanelView', () => {
       });
 
       const visibleTabs = view.tabs.filter((tab) => tab.root.visible);
-      const expectedWidth =
-        (360 + 2.888889 * (visibleIds.length - 1)) /
+      const expectedBaseWidth =
+        (360 + 2.888889 * (visibleIds.length - 1) - 6) /
         visibleIds.length;
       expect(visibleTabs.map(({ definition }) => definition.id)).toEqual(
         visibleIds,
       );
       expect(view.tabsRoot.position.x).toBe(0);
       expect(view.tabsRoot.position.y).toBeCloseTo(
-        723.333333 - 8 - 74,
+        723.333333 - 82,
         6,
       );
-      for (const [index, tab] of visibleTabs.entries()) {
+      let expectedX = 0;
+      for (const tab of visibleTabs) {
+        const expectedWidth =
+          tab.definition.id === 'workshop'
+            ? expectedBaseWidth + 6
+            : expectedBaseWidth;
         expect(tab.root.position.y).toBe(0);
         expect(tab.width).toBeCloseTo(expectedWidth, 6);
         expect(tab.root.hitArea.width).toBeCloseTo(expectedWidth, 6);
-        expect(tab.root.position.x).toBeCloseTo(
-          index * (expectedWidth - 2.888889),
-          6,
-        );
+        expect(tab.root.hitArea.height).toBe(82);
+        expect(tab.root.position.x).toBeCloseTo(expectedX, 6);
+        expectedX += expectedWidth - 2.888889;
+        expect(tab.compactIcons).toBe(visibleIds.length >= 7);
       }
       const last = visibleTabs.at(-1);
       expect(last.root.position.x + last.width).toBeCloseTo(360, 6);
     }
+  });
+
+  it('reduces every room icon when seven tabs share the row', () => {
+    const view = new PixiBottomPanelView({ assets: createAssets() });
+    view.bind({
+      currentPageId: 'workshop',
+      pages: pageStates([
+        'prestige',
+        'brewing',
+        'garden',
+        'workshop',
+        'research',
+        'shop',
+        'guild',
+      ]),
+    });
+
+    const visibleTabs = view.tabs.filter((tab) => tab.root.visible);
+    const workshop = getTab(view, 'workshop');
+    const garden = getTab(view, 'garden');
+
+    expect(visibleTabs).toHaveLength(7);
+    expect(visibleTabs.every((tab) => tab.compactIcons)).toBe(true);
+    expect(workshop.iconFrame.scale.x).toBe(1);
+    expect(garden.iconFrame.scale.x).toBe(1.05);
+    expect(workshop.root.hitArea.height).toBe(82);
+    expect(garden.lock.width).toBe(26);
+
+    view.destroy();
   });
 
   it('matches active and inactive frame, icon, and selected-label geometry', () => {
@@ -138,31 +177,46 @@ describe('PixiBottomPanelView', () => {
 
     expect(workshop.frame.mode).toBe('active');
     expect(workshop.frame.textureId).toBe(
-      'source:assets/ui/root-run-room-tab-active.png',
+      'source:assets/ui/midnight-room-tab-top-cap-selected-9slice.png',
     );
+    expect(workshop.frame.sprite).toBeInstanceOf(NineSliceSprite);
+    expect(workshop.frame.sprite.leftWidth).toBe(83);
+    expect(workshop.frame.sprite.topHeight).toBe(91);
+    expect(workshop.frame.sprite.rightWidth).toBe(73);
+    expect(workshop.frame.sprite.bottomHeight).toBe(1);
+    expect(workshop.frame.sprite.scale.x).toBe(0.5);
+    expect(workshop.frame.sprite.scale.y).toBe(0.5);
     expect(workshop.frame.frameY).toBe(0);
-    expect(workshop.frame.frameHeight).toBe(74);
-    expect(workshop.frame.sprite.width).toBeCloseTo(workshop.width, 6);
-    expect(workshop.frame.sprite.height).toBe(74);
+    expect(workshop.frame.frameHeight).toBe(82);
+    expect(
+      workshop.frame.sprite.width * workshop.frame.sprite.scale.x,
+    ).toBeCloseTo(workshop.width, 6);
+    expect(
+      workshop.frame.sprite.height * workshop.frame.sprite.scale.y,
+    ).toBe(82);
     expect(workshop.labelRoot.visible).toBe(true);
     expect(workshop.text.text).toBe('Workshop');
     expect(workshop.text.textObject.style.fill).toBe('#ffffff');
     expect(workshop.labelRoot.position.y + workshop.text.measuredHeight / 2)
       .toBeCloseTo(54, 6);
-    expect(workshop.iconFrame.position.y).toBe(30);
+    expect(workshop.iconFrame.position.y).toBe(28);
     expect(workshop.iconFrame.scale.x).toBe(1.5);
     expect(workshop.icon.width).toBeCloseTo(50 * 0.84, 6);
 
     expect(brewing.frame.mode).toBe('inactive');
     expect(brewing.frame.textureId).toBe(
-      'source:assets/ui/root-run-room-tab-inactive.png',
+      'source:assets/ui/midnight-room-tab-top-cap-9slice.png',
     );
     expect(brewing.frame.frameY).toBe(12);
-    expect(brewing.frame.frameHeight).toBe(62);
-    expect(brewing.frame.sprite.width).toBeCloseTo(brewing.width, 6);
-    expect(brewing.frame.sprite.height).toBe(62);
+    expect(brewing.frame.frameHeight).toBe(70);
+    expect(
+      brewing.frame.sprite.width * brewing.frame.sprite.scale.x,
+    ).toBeCloseTo(brewing.width, 6);
+    expect(
+      brewing.frame.sprite.height * brewing.frame.sprite.scale.y,
+    ).toBe(70);
     expect(brewing.labelRoot.visible).toBe(false);
-    expect(brewing.iconFrame.position.y).toBe(42);
+    expect(brewing.iconFrame.position.y).toBe(40);
     expect(brewing.iconFrame.scale.x).toBe(1.5);
     expect(brewing.iconFrame.alpha).toBe(1);
     expect(brewing.icon.width).toBeCloseTo(50 * 0.72, 6);
@@ -211,18 +265,18 @@ describe('PixiBottomPanelView', () => {
       research.width / 2,
       6,
     );
-    expect(research.motionRoot.pivot.y).toBe(74);
-    expect(research.iconFrame.position.y).toBe(42);
+    expect(research.motionRoot.pivot.y).toBe(82);
+    expect(research.iconFrame.position.y).toBe(40);
     expect(research.iconFrame.scale.x).toBe(1.5);
     motion.step(205 * 0.25);
-    expect(research.iconFrame.position.y).toBeGreaterThan(30);
-    expect(research.iconFrame.position.y).toBeLessThan(42);
+    expect(research.iconFrame.position.y).toBeGreaterThan(28);
+    expect(research.iconFrame.position.y).toBeLessThan(40);
     expect(research.iconFrame.scale.x).toBe(1.5);
     motion.step(205 * 0.68);
     expect(research.motionRoot.scale.x).toBeCloseTo(1.065, 5);
     motion.step(205);
     expect(research.motionRoot.scale.x).toBe(1);
-    expect(research.iconFrame.position.y).toBe(30);
+    expect(research.iconFrame.position.y).toBe(28);
     expect(research.iconFrame.scale.x).toBe(1.5);
     expect(view.getMotionStats().frameScheduled).toBe(false);
 
@@ -254,7 +308,7 @@ describe('PixiBottomPanelView', () => {
     expect(view.setSwipeTargetPageId('research')).toBe(true);
     expect(research.frame.mode).toBe('active');
     expect(research.frame.frameY).toBe(12);
-    expect(research.frame.frameHeight).toBe(62);
+    expect(research.frame.frameHeight).toBe(70);
     expect(research.iconFrame.scale.x).toBe(1.5);
     expect(research.labelRoot.visible).toBe(false);
 
@@ -291,7 +345,7 @@ describe('PixiBottomPanelView', () => {
     expect(garden.lock.renderable).toBe(true);
     expect(garden.lock.width).toBe(26);
     expect(garden.lock.height).toBe(29.5);
-    expect(garden.lock.position.y).toBe(34);
+    expect(garden.lock.position.y).toBe(32);
 
     view.bind({
       currentPageId: 'workshop',
@@ -330,9 +384,9 @@ describe('PixiBottomPanelView', () => {
 
     expect(view.showLockedPage('garden')).toBe(true);
     motion.step(140 * 0.55);
-    expect(garden.motionRoot.position.y).toBeCloseTo(73, 5);
+    expect(garden.motionRoot.position.y).toBeCloseTo(81, 5);
     motion.step(140);
-    expect(garden.motionRoot.position.y).toBe(74);
+    expect(garden.motionRoot.position.y).toBe(82);
     expect(view.lockLayer.visible).toBe(true);
 
     view.destroy();
@@ -511,7 +565,7 @@ describe('PixiBottomPanelView', () => {
       visible: true,
       unlocked: false,
     });
-    expect(garden.motionRoot.position.y).toBe(74);
+    expect(garden.motionRoot.position.y).toBe(82);
     expect(motion.requestFrame).not.toHaveBeenCalled();
     view.destroy();
   });
@@ -546,24 +600,29 @@ describe('PixiBottomPanelView', () => {
     const brewing = getTab(view, 'brewing');
     const garden = getTab(view, 'garden');
 
-    expect(workshop.notification.visible).toBe(true);
-    expect(workshop.notification.texture).toBe(assets.textures.red);
-    expect(workshop.notification.position.x).toBeCloseTo(
-      workshop.width,
-      6,
-    );
-    expect(workshop.notification.position.y).toBe(0);
-    expect(workshop.notification.width).toBeCloseTo(9.569444, 6);
-    expect(workshop.notification.height).toBeCloseTo(9.569444, 6);
+    expect(workshop.notification.root.visible).toBe(true);
+    expect(workshop.notification.sprite.texture).toBe(assets.textures.red);
+    expect(workshop.notification.root.parent).toBe(view.notificationsRoot);
+    expect(view.notificationsRoot.zIndex).toBeGreaterThan(workshop.root.zIndex);
+    expect(
+      workshop.notification.root.x +
+        workshop.notification.sprite.width / 2 -
+        (workshop.layoutX + workshop.width),
+    ).toBeCloseTo(2, 6);
+    expect(
+      workshop.notification.root.y -
+        workshop.notification.sprite.height / 2,
+    ).toBeCloseTo(-2, 6);
+    expect(workshop.notification.sprite.width).toBeCloseTo(9.569444, 6);
+    expect(workshop.notification.sprite.height).toBeCloseTo(9.569444, 6);
 
-    expect(brewing.notification.visible).toBe(true);
-    expect(brewing.notification.texture).toBe(assets.textures.orange);
-    expect(brewing.notification.position.x).toBeCloseTo(
-      brewing.width,
-      6,
-    );
-    expect(brewing.notification.position.y).toBe(12);
-    expect(garden.notification.visible).toBe(false);
+    expect(brewing.notification.root.visible).toBe(true);
+    expect(brewing.notification.sprite.texture).toBe(assets.textures.orange);
+    expect(
+      brewing.notification.root.y -
+        brewing.notification.sprite.height / 2,
+    ).toBeCloseTo(10, 6);
+    expect(garden.notification.root.visible).toBe(false);
   });
 
   it('marks selected presses silent and keeps locked presses tappable but inactive', () => {
@@ -606,7 +665,7 @@ describe('PixiBottomPanelView', () => {
     brewingPress.onPressChange(true);
     expect(brewing.frame.mode).toBe('active');
     expect(brewing.frame.frameY).toBe(12);
-    expect(brewing.frame.frameHeight).toBe(62);
+    expect(brewing.frame.frameHeight).toBe(70);
     brewingPress.onPressChange(false);
     expect(brewing.frame.mode).toBe('inactive');
 
@@ -654,10 +713,10 @@ function createAssets() {
     loaded: true,
     textures,
     getTexture: vi.fn((assetId) => {
-      if (assetId.endsWith('root-run-room-tab-active.png')) {
+      if (assetId.endsWith('midnight-room-tab-top-cap-selected-9slice.png')) {
         return textures.active;
       }
-      if (assetId.endsWith('root-run-room-tab-inactive.png')) {
+      if (assetId.endsWith('midnight-room-tab-top-cap-9slice.png')) {
         return textures.inactive;
       }
       if (assetId.endsWith('notification-circle-red.png')) {

@@ -163,7 +163,6 @@ export class PixiPagesFacade {
     this.devNotifications = null;
     this.questProgressPreview = null;
     this.workshopBagTabId = 'currencies';
-    this.workshopSummonSeedKey = null;
     this.workshopStatsTabId = 'seeds';
     this.workshopLeaderboardTabId = 'singlePlayer';
     this.researchTabId = 'regular';
@@ -597,7 +596,6 @@ export class PixiPagesFacade {
           pageStates: this.pageStates,
           dialogState: {
             bagTabId: this.workshopBagTabId,
-            summonSeedKey: this.workshopSummonSeedKey,
             statsTabId: this.workshopStatsTabId,
             leaderboardTabId: this.workshopLeaderboardTabId,
           },
@@ -697,11 +695,15 @@ export class PixiPagesFacade {
     const gameplay = this.gameplayFacade;
     return {
       workshop: {
-        summonSeed: () => gameplay?.summonSeed?.(),
-        selectSummonSeed: (seedKey) => {
-          this.workshopSummonSeedKey = seedKey ?? null;
-          this.refreshPage('workshop');
-          return true;
+        summonSeed: () => {
+          const result = gameplay?.summonSeed?.();
+          if (result?.reason === 'no_active_seed_weights') {
+            this.experienceFacade?.transientEffects?.emitReward?.({
+              message: 'Select a seed to drop',
+              flyoutKey: 'workshop-summon-seed-selection',
+            });
+          }
+          return result;
         },
         setSummonDropPreference: (seedKey, preference) => {
           const result = gameplay?.setSeedDropPreference?.(

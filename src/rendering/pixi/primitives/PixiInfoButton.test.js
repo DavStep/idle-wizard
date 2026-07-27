@@ -42,6 +42,7 @@ describe('PixiInfoButton', () => {
     expect(secondAction).toHaveBeenCalledOnce();
 
     const pressTarget = registerPressTarget.mock.calls[0][1];
+    expect(pressTarget.fallbackHitTest).toBe(true);
     pressTarget.onPressChange(true);
     expect(button.visual.scale.x).toBe(0.94);
     expect(button.icon.width).toBe(18);

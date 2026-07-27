@@ -233,6 +233,14 @@ describe('ResearchPixiPage', () => {
     expect(scroll.contentHeight).toBeGreaterThan(scroll.height);
     expect(scroll.scrollbarTrack.visible).toBe(true);
     expect(scroll.scrollbarThumb.visible).toBe(true);
+    const firstBox = harness.page.boxes.get('research-box-0');
+    const firstRow = firstBox.rows.get('research-0');
+    const cardRight =
+      firstBox.rowsLayer.position.x +
+      firstRow.root.position.x +
+      firstRow.card.position.x +
+      RESEARCH_PIXI_GEOMETRY.cardWidth;
+    expect(cardRight).toBeLessThanOrEqual(scroll.width);
     expect(scroll.scrollbarTrack.getLocalBounds()).toMatchObject({
       x: scroll.width + RETAINED_SCROLLBAR_GEOMETRY.gap,
       y: RETAINED_SCROLLBAR_GEOMETRY.trackInset,
@@ -291,7 +299,7 @@ describe('ResearchPixiPage', () => {
 
     expect(row.card.position).toMatchObject({ x: -2, y: 0 });
     expect(row.card).toMatchObject({
-      frameWidth: 1000 / 3,
+      frameWidth: RESEARCH_PIXI_GEOMETRY.cardWidth,
       frameHeight: 80,
     });
     expect(RESEARCH_PIXI_GEOMETRY.contentOffsetY).toBe(3);

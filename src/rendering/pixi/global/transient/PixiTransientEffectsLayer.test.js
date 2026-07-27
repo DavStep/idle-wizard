@@ -337,7 +337,10 @@ describe('PixiTransientEffectsLayer', () => {
 describe('PooledPixiNotificationBadges', () => {
   it('reconciles explicit parents and tutorial visibility policy', () => {
     const parent = new Container();
-    const badges = new PooledPixiNotificationBadges();
+    const assets = createAssets();
+    const badges = new PooledPixiNotificationBadges({
+      assetManager: assets,
+    });
     const [badge] = badges.reconcile([
       {
         key: 'summon',
@@ -348,7 +351,12 @@ describe('PooledPixiNotificationBadges', () => {
         tutorialId: 'workshop:summon',
       },
     ]);
-    expect(badge.root.x).toBe(100);
+    expect(badge.root.x).toBeCloseTo(97.215278, 6);
+    expect(badge.root.y).toBeCloseTo(2.784722, 6);
+    expect(badge.sprite.width).toBeCloseTo(9.569444, 6);
+    expect(badge.sprite.texture).toBe(
+      assets.getTexture('source:assets/ui/notification-circle-orange.png'),
+    );
     expect(badge.root.visible).toBe(true);
 
     badges.setVisibilityPolicy({

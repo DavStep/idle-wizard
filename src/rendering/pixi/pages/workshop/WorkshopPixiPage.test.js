@@ -13,7 +13,10 @@ import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
-import { PIXI_ROOT_RUN_ASSETS } from '../../theme/PixiThemeTokens.js';
+import {
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 import { ShopDialogPixi } from '../shop/ShopDialogPixi.js';
 import { WorkshopPixiPage } from './WorkshopPixiPage.js';
 
@@ -53,6 +56,7 @@ describe('WorkshopPixiPage', () => {
 
     const sideControls = [
       harness.page.bagButton,
+      harness.page.statsButton,
       harness.page.inboxButton,
       harness.page.features.get('alliance'),
       harness.page.features.get('leaderboard'),
@@ -63,6 +67,7 @@ describe('WorkshopPixiPage', () => {
 
     expect(sideControls.map((control) => control.label.text)).toEqual([
       'Bag',
+      'Stats',
       'Inbox',
       'Alliance',
       'Leaderboard',
@@ -78,11 +83,195 @@ describe('WorkshopPixiPage', () => {
         join: 'round',
       });
     }
-    expect(harness.page.statsButton.text.text).toBe('Stats');
+    expect(harness.page.statsButton.textureId).toBe(
+      PIXI_ROOT_RUN_ASSETS.workshopStats,
+    );
     expect(harness.page.inboxButton.iconScale).toBe(1.3);
     expect(
       harness.page.features.get('leaderboard').presentation.scale,
     ).toBe(1.2);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('packs visible side controls from the top by side and weight', () => {
+    const harness = createHarness({ reducedMotion: true });
+    const model = createWorkshopViewModel();
+    model.workshop.stats = {
+      side: 'right',
+      weight: 0,
+    };
+    model.workshop.inbox = {
+      side: 'left',
+      weight: 5,
+    };
+    model.workshop.bag = {
+      side: 'right',
+      weight: 25,
+    };
+    model.workshop.features = [
+      {
+        id: 'alliance',
+        side: 'left',
+        weight: 20,
+        visible: true,
+      },
+      {
+        id: 'leaderboard',
+        side: 'left',
+        weight: 10,
+        visible: true,
+      },
+      {
+        id: 'discoveries',
+        side: 'right',
+        weight: 30,
+        visible: true,
+      },
+      {
+        id: 'personalTasks',
+        visible: false,
+      },
+      {
+        id: 'worldEvent',
+        visible: false,
+      },
+    ];
+
+    harness.page.bind(model);
+
+    expect(harness.page.inboxButton.root.position).toMatchObject({
+      x: 16,
+      y: 165,
+    });
+    expect(
+      harness.page.features.get('leaderboard').root.position,
+    ).toMatchObject({ x: 16, y: 217.25 });
+    expect(
+      harness.page.features.get('alliance').root.position,
+    ).toMatchObject({ x: 16, y: 269.5 });
+    expect(harness.page.statsButton.root.position).toMatchObject({
+      x: 298.5,
+      y: 165,
+    });
+    expect(harness.page.bagButton.root.position).toMatchObject({
+      x: 298.5,
+      y: 217.25,
+    });
+    expect(
+      harness.page.features.get('discoveries').root.position,
+    ).toMatchObject({ x: 298.5, y: 269.5 });
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('animates side-control appearance and removal without reserving a hidden slot', () => {
+    const frames = [];
+    let frameId = 0;
+    const requestFrame = vi.fn((callback) => {
+      frames.push(callback);
+      frameId += 1;
+      return frameId;
+    });
+    const harness = createHarness({
+      requestFrame,
+      cancelFrame: vi.fn(),
+      reducedMotion: false,
+    });
+    const model = createWorkshopViewModel();
+    model.workshop.stats = { visible: false };
+    model.workshop.inbox = { visible: false };
+    model.workshop.bag = { visible: false };
+    model.workshop.features = [
+      { id: 'alliance', visible: false },
+      { id: 'leaderboard', visible: false },
+      { id: 'discoveries', visible: false },
+      { id: 'personalTasks', visible: false },
+      { id: 'worldEvent', visible: false },
+    ];
+    harness.page.bind(model);
+
+    const alliance = harness.page.features.get('alliance');
+    expect(alliance.root.visible).toBe(false);
+
+    model.workshop.features[0] = {
+      id: 'alliance',
+      side: 'left',
+      weight: 10,
+      visible: true,
+    };
+    harness.page.bind(model);
+
+    expect(alliance.root.visible).toBe(true);
+    expect(alliance.root.position).toMatchObject({ x: 6, y: 168 });
+    expect(alliance.root.alpha).toBe(0);
+    expect(alliance.root.scale.x).toBe(0.96);
+
+    frames.shift()(0);
+    frames.shift()(100);
+    expect(alliance.root.position.x).toBeGreaterThan(6);
+    expect(alliance.root.position.x).toBeLessThan(16);
+    expect(alliance.root.alpha).toBeGreaterThan(0);
+    expect(alliance.root.alpha).toBeLessThan(1);
+
+    frames.shift()(200);
+    expect(alliance.root.position).toMatchObject({ x: 16, y: 165 });
+    expect(alliance.root.alpha).toBe(1);
+    expect(alliance.root.scale.x).toBe(1);
+
+    model.workshop.features[0] = {
+      ...model.workshop.features[0],
+      visible: false,
+    };
+    harness.page.bind(model);
+    expect(alliance.root.visible).toBe(true);
+    expect(alliance.root.eventMode).toBe('none');
+
+    frames.shift()(0);
+    frames.shift()(75);
+    expect(alliance.root.alpha).toBeGreaterThan(0);
+    expect(alliance.root.alpha).toBeLessThan(1);
+
+    frames.shift()(150);
+    expect(alliance.root.visible).toBe(false);
+    expect(alliance.root.renderable).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('snaps side-control visibility changes when reduced motion is requested', () => {
+    const requestFrame = vi.fn();
+    const harness = createHarness({
+      requestFrame,
+      reducedMotion: true,
+    });
+    const model = createWorkshopViewModel();
+    model.workshop.features = [
+      { id: 'alliance', visible: false },
+      { id: 'leaderboard', visible: false },
+      { id: 'discoveries', visible: false },
+      { id: 'personalTasks', visible: false },
+      { id: 'worldEvent', visible: false },
+    ];
+    harness.page.bind(model);
+
+    model.workshop.features[0] = {
+      id: 'alliance',
+      side: 'left',
+      weight: 10,
+      visible: true,
+    };
+    harness.page.bind(model);
+
+    const alliance = harness.page.features.get('alliance');
+    expect(requestFrame).not.toHaveBeenCalled();
+    expect(alliance.root.visible).toBe(true);
+    expect(alliance.root.position).toMatchObject({ x: 16, y: 165 });
+    expect(alliance.root.alpha).toBe(1);
+    expect(alliance.root.scale.x).toBe(1);
 
     harness.page.destroy();
     harness.dispose();
@@ -291,7 +480,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps the Bag scroll viewport equally inset from the paper top and bottom', () => {
+  it('keeps the Bag scroll viewport inset and moves its scrollbar toward the paper edge', () => {
     const harness = createHarness();
     const model = createWorkshopViewModel();
     model.workshop.dialogs.bag = {
@@ -319,6 +508,11 @@ describe('WorkshopPixiPage', () => {
     const viewportTop = dialog.scroll.root.position.y;
     const viewportBottom = viewportTop + dialog.scroll.height;
 
+    expect(dialog.scroll.width).toBe(268);
+    expect(dialog.scroll.scrollbarTrack.visible).toBe(true);
+    expect(dialog.scroll.scrollbarTrack.getLocalBounds().x).toBeGreaterThan(
+      268,
+    );
     expect(viewportTop - paperTop).toBeGreaterThan(0);
     expect(viewportTop - paperTop).toBeCloseTo(
       paperBottom - viewportBottom,
@@ -328,11 +522,12 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('uses the shared split-settings composition for summoning seeds', () => {
-    const harness = createHarness();
+  it('reveals the shared drop slider inside the tapped seed row without selection styling', () => {
+    const harness = createHarness({ reducedMotion: true });
     const model = createWorkshopViewModel();
     model.workshop.dialogs.summonInfo = {
       title: 'Summoning Seeds',
+      autoSummonUnlocked: true,
       summaryRows: [
         { id: 'auto', label: 'Auto Summon', value: 'Locked' },
         {
@@ -340,15 +535,6 @@ describe('WorkshopPixiPage', () => {
           label: 'Keep Mana Above',
           value: '0',
           valueIconResourceKey: 'mana',
-        },
-        {
-          id: 'selected',
-          label: 'Sage Seed',
-          value: 'Medium · 100%',
-          valueTone: 'yellow',
-          itemKind: 'seed',
-          itemKey: 'sageSeed',
-          iconLeading: true,
         },
       ],
       settingsToggle: null,
@@ -361,16 +547,6 @@ describe('WorkshopPixiPage', () => {
         tone: 'blue',
         enabled: false,
       },
-      dropSlider: {
-        mode: 'milestones',
-        value: 'medium',
-        options: [
-          { value: 'none', tone: 'root' },
-          { value: 'low', tone: 'red' },
-          { value: 'medium', tone: 'yellow' },
-          { value: 'high', tone: 'green' },
-        ],
-      },
       actions: [],
       items: [
         {
@@ -381,8 +557,16 @@ describe('WorkshopPixiPage', () => {
           valueTone: 'yellow',
           itemKind: 'seed',
           itemKey: 'sageSeed',
-          selected: true,
-          action: vi.fn(),
+          dropSlider: {
+            mode: 'milestones',
+            value: 'medium',
+            options: [
+              { value: 'none', tone: 'root' },
+              { value: 'low', tone: 'red' },
+              { value: 'medium', tone: 'yellow' },
+              { value: 'high', tone: 'green' },
+            ],
+          },
         },
         {
           id: 'mintSeed',
@@ -392,8 +576,16 @@ describe('WorkshopPixiPage', () => {
           valueTone: 'text',
           itemKind: 'seed',
           itemKey: 'mintSeed',
-          selected: false,
-          action: vi.fn(),
+          dropSlider: {
+            mode: 'milestones',
+            value: 'none',
+            options: [
+              { value: 'none', tone: 'root' },
+              { value: 'low', tone: 'red' },
+              { value: 'medium', tone: 'yellow' },
+              { value: 'high', tone: 'green' },
+            ],
+          },
         },
         {
           id: 'briarSeed',
@@ -403,8 +595,16 @@ describe('WorkshopPixiPage', () => {
           valueTone: 'red',
           itemKind: 'seed',
           itemKey: 'briarSeed',
-          selected: false,
-          action: vi.fn(),
+          dropSlider: {
+            mode: 'milestones',
+            value: 'low',
+            options: [
+              { value: 'none', tone: 'root' },
+              { value: 'low', tone: 'red' },
+              { value: 'medium', tone: 'yellow' },
+              { value: 'high', tone: 'green' },
+            ],
+          },
         },
         {
           id: 'lavenderSeed',
@@ -414,8 +614,16 @@ describe('WorkshopPixiPage', () => {
           valueTone: 'green',
           itemKind: 'seed',
           itemKey: 'lavenderSeed',
-          selected: false,
-          action: vi.fn(),
+          dropSlider: {
+            mode: 'milestones',
+            value: 'high',
+            options: [
+              { value: 'none', tone: 'root' },
+              { value: 'low', tone: 'red' },
+              { value: 'medium', tone: 'yellow' },
+              { value: 'high', tone: 'green' },
+            ],
+          },
         },
       ],
     };
@@ -434,19 +642,11 @@ describe('WorkshopPixiPage', () => {
       enabled: false,
       value: 0,
     });
-    expect(dialog.dropSettingsSlider).toMatchObject({
-      visible: true,
-      enabled: true,
-      value: 'medium',
-      tone: 'yellow',
-    });
+    expect(dialog.dropSettingsSlider.visible).toBe(false);
     const reserveRow = dialog.summaryRows
       .getWidgets()
       .find((row) => row.key === 'reserve');
-    const selectedRow = dialog.summaryRows
-      .getWidgets()
-      .find((row) => row.key === 'selected');
-    const seedRows = dialog.list.rows.getWidgets();
+    let seedRows = dialog.list.rows.getWidgets();
     expect(reserveRow.valueLabel.visible).toBe(false);
     expect(reserveRow.valueResource).toMatchObject({
       visible: true,
@@ -460,7 +660,6 @@ describe('WorkshopPixiPage', () => {
     expect(reserveRow.valueResource.amountLabel.x).toBeGreaterThan(
       reserveRow.valueResource.icon.x,
     );
-    expect(selectedRow.valueLabel.textObject.style.fill).toBe('#795909');
     expect(
       seedRows.map((row) => row.value.textObject.style.fill),
     ).toEqual([
@@ -469,14 +668,435 @@ describe('WorkshopPixiPage', () => {
       '#912f2b',
       '#256b25',
     ]);
-    expect(dialog.actions.getWidgets()).toHaveLength(0);
-    expect(dialog.list.items[0]).toMatchObject({
-      id: 'sageSeed',
-      selected: true,
+    expect(
+      seedRows.every((row) => row.selectedIndicator.visible === false),
+    ).toBe(true);
+    expect(dialog.list.root.position.x).toBe(-8);
+    expect(dialog.list.width).toBe(
+      dialog.panel.contentBoxWidth + 16,
+    );
+
+    const collapsedHeight = seedRows[0].height;
+    const secondRowY = seedRows[1].root.position.y;
+    seedRows[0].action();
+    seedRows = dialog.list.rows.getWidgets();
+
+    expect(seedRows[0].height).toBeGreaterThan(collapsedHeight);
+    expect(seedRows[1].root.position.y).toBeGreaterThan(secondRowY);
+    expect(dialog.dropSettingsSlider).toMatchObject({
+      visible: true,
+      enabled: true,
+      value: 'medium',
+      tone: 'yellow',
     });
+    expect(
+      dialog.dropSettingsSlider.position.y -
+        dialog.dropSettingsSlider.pivot.y -
+        seedRows[0].root.position.y,
+    ).toBe(dialog.list.rowHeight + 1);
+    expect(
+      seedRows.every((row) => row.selectedIndicator.visible === false),
+    ).toBe(true);
+    seedRows[0].action();
+    seedRows = dialog.list.rows.getWidgets();
+    expect(seedRows[0].height).toBe(collapsedHeight);
+    expect(dialog.dropSettingsSlider.visible).toBe(false);
+    expect(dialog.list.expandedKey).toBeNull();
+    expect(dialog.actions.getWidgets()).toHaveLength(0);
+    expect(dialog.list.items[0]).not.toHaveProperty('selected');
     expect(dialog.itemSectionBounds.y).toBeGreaterThan(
       dialog.selectionSectionBounds.height,
     );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('uses full-alpha light-haptic row presses with the shared rubber release snap', () => {
+    const frames = [];
+    let now = 0;
+    let frameId = 0;
+    const requestFrame = vi.fn((callback) => {
+      frames.push(callback);
+      frameId += 1;
+      return frameId;
+    });
+    const inputRouter = new PixiInputRouter();
+    const harness = createHarness({
+      inputRouter,
+      requestFrame,
+      cancelFrame: vi.fn(),
+      timeSource: () => now,
+      reducedMotion: false,
+    });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.summonInfo =
+      createSummonInfoDialogModel({ unlocked: true });
+
+    harness.page.bind(model);
+    harness.page.openDialog('summonInfo');
+
+    const dialog = harness.dialogs.get('workshop.summonInfo');
+    const row = dialog.list.rows.getWidgets()[0];
+    const registration = inputRouter.store
+      .getRegistrations('press')
+      .find((candidate) => candidate.displayObject === row.root);
+
+    expect(registration?.haptic).toBe('light');
+    registration.onPressChange(true, { confirmed: false });
+    expect(row.visual.scale.x).toBeCloseTo(0.97);
+    expect(row.background.alpha).toBe(1);
+
+    registration.onPressChange(false, { confirmed: true });
+    expect(frames).toHaveLength(1);
+    now = 65;
+    frames.shift()();
+    expect(row.visual.scale.x).toBeGreaterThan(1);
+    expect(row.visual.scale.x).toBeLessThanOrEqual(1.035);
+    expect(row.background.alpha).toBe(1);
+
+    now = 180;
+    frames.shift()();
+    expect(row.visual.scale.x).toBe(1);
+    expect(row.background.alpha).toBe(1);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('fills the dialog with the seed section while Auto Summon is locked', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.summonInfo =
+      createSummonInfoDialogModel({ unlocked: false });
+
+    harness.page.bind(model);
+    harness.page.openDialog('summonInfo');
+
+    const dialog = harness.dialogs.get('workshop.summonInfo');
+    expect(dialog.selectionSection).toMatchObject({
+      visible: false,
+      renderable: false,
+    });
+    expect(dialog.summaryLayer).toMatchObject({
+      visible: false,
+      renderable: false,
+    });
+    expect(dialog.settingsToggle.visible).toBe(false);
+    expect(dialog.manaSettingsSlider.visible).toBe(false);
+    expect(dialog.selectionSectionBounds.height).toBe(0);
+    expect(dialog.itemSectionBounds).toMatchObject({
+      y: 0,
+      height: dialog.panel.contentBoxHeight,
+    });
+    expect(dialog.list.root.position.y).toBe(0);
+    expect(dialog.list.height).toBe(dialog.panel.contentBoxHeight);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('shrinks the seed section and pops in Auto Summon on its first post-unlock open without alpha motion', () => {
+    const frames = [];
+    let frameId = 0;
+    const requestFrame = vi.fn((callback) => {
+      frames.push(callback);
+      frameId += 1;
+      return frameId;
+    });
+    const harness = createHarness({
+      requestFrame,
+      cancelFrame: vi.fn(),
+      reducedMotion: false,
+    });
+    const lockedModel = createWorkshopViewModel();
+    lockedModel.workshop.dialogs.summonInfo =
+      createSummonInfoDialogModel({ unlocked: false });
+    harness.page.bind(lockedModel);
+
+    const unlockedModel = createWorkshopViewModel();
+    unlockedModel.workshop.dialogs.summonInfo =
+      createSummonInfoDialogModel({ unlocked: true });
+    harness.page.bind(unlockedModel);
+    harness.page.openDialog('summonInfo');
+
+    const dialog = harness.dialogs.get('workshop.summonInfo');
+    expect(dialog.autoSummonRevealProgress).toBe(0);
+    expect(dialog.itemSectionBounds).toMatchObject({
+      y: 0,
+      height: dialog.panel.contentBoxHeight,
+    });
+    expect(dialog.selectionSection.scale.x).toBeCloseTo(0.8);
+    for (const target of [
+      dialog.selectionSection,
+      dialog.summaryLayer,
+      dialog.settingsToggle,
+      dialog.manaSettingsSlider,
+    ]) {
+      expect(target.alpha).toBe(1);
+    }
+
+    frames.shift()(0);
+    frames.shift()(120);
+
+    expect(dialog.itemSectionBounds.y).toBeGreaterThan(0);
+    expect(dialog.itemSectionBounds.y).toBeLessThan(
+      dialog.selectionSectionBounds.height + 40,
+    );
+    expect(dialog.itemSectionBounds.height).toBeLessThan(
+      dialog.panel.contentBoxHeight,
+    );
+    expect(dialog.selectionSection.scale.x).toBeGreaterThan(0.8);
+    expect(dialog.selectionSection.scale.x).toBeLessThanOrEqual(1.02);
+    for (const target of [
+      dialog.selectionSection,
+      dialog.summaryLayer,
+      dialog.settingsToggle,
+      dialog.manaSettingsSlider,
+    ]) {
+      expect(target.alpha).toBe(1);
+    }
+
+    frames.shift()(240);
+
+    expect(dialog.autoSummonRevealProgress).toBeNull();
+    expect(dialog.itemSectionBounds.y).toBeGreaterThan(
+      dialog.selectionSectionBounds.height,
+    );
+    expect(dialog.selectionSection.scale.x).toBe(1);
+
+    harness.dialogs.close('workshop.summonInfo');
+    harness.page.openDialog('summonInfo');
+    expect(dialog.autoSummonRevealProgress).toBeNull();
+    expect(dialog.selectionSection.scale.x).toBe(1);
+    expect(frames).toHaveLength(0);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('snaps the first post-unlock dialog open to its final layout for reduced motion', () => {
+    const requestFrame = vi.fn();
+    const harness = createHarness({
+      requestFrame,
+      reducedMotion: true,
+    });
+    const lockedModel = createWorkshopViewModel();
+    lockedModel.workshop.dialogs.summonInfo =
+      createSummonInfoDialogModel({ unlocked: false });
+    harness.page.bind(lockedModel);
+
+    const unlockedModel = createWorkshopViewModel();
+    unlockedModel.workshop.dialogs.summonInfo =
+      createSummonInfoDialogModel({ unlocked: true });
+    harness.page.bind(unlockedModel);
+    harness.page.openDialog('summonInfo');
+
+    const dialog = harness.dialogs.get('workshop.summonInfo');
+    expect(requestFrame).not.toHaveBeenCalled();
+    expect(dialog.autoSummonRevealProgress).toBeNull();
+    expect(dialog.selectionSection.scale.x).toBe(1);
+    expect(dialog.itemSectionBounds.y).toBeGreaterThan(
+      dialog.selectionSectionBounds.height,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps Auto Summon and Keep Mana Above on one text-size contract', () => {
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getTexture = vi.fn(() => Texture.EMPTY);
+    const harness = createHarness({
+      assetManager,
+      reducedMotion: true,
+    });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.summonInfo = {
+      title: 'Summoning Seeds',
+      autoSummonUnlocked: true,
+      summaryRows: [
+        {
+          id: 'auto',
+          label: 'Auto Summon',
+          value: '',
+          icon: { kind: 'automation' },
+          iconLeading: true,
+        },
+        {
+          id: 'reserve',
+          label: 'Keep Mana Above',
+          value: '0',
+          valueIconResourceKey: 'mana',
+        },
+      ],
+      settingsToggle: {
+        value: false,
+        enabled: true,
+        onChange: vi.fn(),
+      },
+      manaSlider: {
+        mode: 'range',
+        min: 0,
+        max: 5_000,
+        step: 1,
+        value: 0,
+        tone: 'blue',
+        enabled: true,
+        onChange: vi.fn(),
+      },
+      actions: [],
+      items: [],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('summonInfo');
+
+    const dialog = harness.dialogs.get('workshop.summonInfo');
+    const rows = dialog.summaryRows.getWidgets();
+    const autoRow = rows.find((row) => row.key === 'auto');
+    const reserveRow = rows.find((row) => row.key === 'reserve');
+    const autoStyle = autoRow.keyLabel.textObject.style;
+    const reserveStyle = reserveRow.keyLabel.textObject.style;
+
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      'source:assets/icons/icon-settings-cog.png',
+    );
+    expect(autoRow.itemIcon.visible).toBe(true);
+    expect(autoRow.itemIcon.x).toBeLessThan(autoRow.keyLabel.x);
+    expect(autoRow.itemIcon.width).toBe(26);
+    expect(autoRow.itemIcon.height).toBe(26);
+    expect(
+      autoRow.root.position.y +
+        autoRow.itemIcon.position.y -
+        autoRow.itemIcon.height / 2,
+    ).toBeGreaterThanOrEqual(7);
+    expect(dialog.settingsToggle.controlWidth).toBe(60);
+    expect(reserveRow.root.position.x).toBe(
+      dialog.manaSettingsSlider.position.x,
+    );
+    expect(
+      reserveRow.root.position.x + reserveRow.root.hitArea.width,
+    ).toBe(dialog.panel.contentBoxWidth);
+    expect(
+      dialog.settingsToggle.position.x +
+        dialog.settingsToggle.controlWidth,
+    ).toBe(dialog.panel.contentBoxWidth);
+    expect(
+      dialog.manaSettingsSlider.position.x +
+        dialog.manaSettingsSlider.controlWidth -
+        PIXI_ROOT_RUN_GEOMETRY.settings.knobSize / 2,
+    ).toBe(
+      reserveRow.root.position.x + reserveRow.root.hitArea.width,
+    );
+    expect(
+      autoRow.root.position.y + autoRow.itemIcon.position.y,
+    ).toBe(
+      dialog.settingsToggle.position.y +
+        dialog.settingsToggle.controlHeight / 2,
+    );
+    expect(
+      dialog.manaSettingsSlider.position.y -
+        (reserveRow.root.position.y +
+          reserveRow.keyLabel.position.y +
+          reserveStyle.fontSize),
+    ).toBeGreaterThanOrEqual(2);
+    expect(reserveRow.root.position.y).toBe(43);
+    expect(autoStyle).toMatchObject({
+      fontSize: 15,
+      fontWeight: 'normal',
+      lineHeight: 15,
+    });
+    expect(reserveStyle).toMatchObject({
+      fontSize: 15,
+      fontWeight: 'normal',
+      lineHeight: 15,
+    });
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('animates seed-row disclosure with full-alpha rubber scale over 240ms', () => {
+    const frames = [];
+    let frameId = 0;
+    const requestFrame = vi.fn((callback) => {
+      frames.push(callback);
+      frameId += 1;
+      return frameId;
+    });
+    const harness = createHarness({
+      requestFrame,
+      cancelFrame: vi.fn(),
+      reducedMotion: false,
+    });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.summonInfo = {
+      title: 'Summoning Seeds',
+      autoSummonUnlocked: true,
+      summaryRows: [
+        { id: 'auto', label: 'Auto Summon', value: 'Locked' },
+        {
+          id: 'reserve',
+          label: 'Keep Mana Above',
+          value: '0',
+          valueIconResourceKey: 'mana',
+        },
+      ],
+      manaSlider: {
+        mode: 'range',
+        min: 0,
+        max: 5_000,
+        step: 1,
+        value: 0,
+        tone: 'blue',
+        enabled: false,
+      },
+      items: [
+        {
+          id: 'sageSeed',
+          label: 'Sage Seed',
+          detail: '100% Chance',
+          value: 'Medium',
+          valueTone: 'yellow',
+          itemKind: 'seed',
+          itemKey: 'sageSeed',
+          dropSlider: {
+            mode: 'milestones',
+            value: 'medium',
+            options: [
+              { value: 'none', tone: 'root' },
+              { value: 'low', tone: 'red' },
+              { value: 'medium', tone: 'yellow' },
+              { value: 'high', tone: 'green' },
+            ],
+          },
+        },
+      ],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('summonInfo');
+    const dialog = harness.dialogs.get('workshop.summonInfo');
+    const collapsedHeight = dialog.list.rows.getWidgets()[0].height;
+
+    dialog.list.rows.getWidgets()[0].action();
+    frames.shift()(0);
+    frames.shift()(120);
+
+    const midHeight = dialog.list.rows.getWidgets()[0].height;
+    expect(midHeight).toBeGreaterThan(collapsedHeight);
+    expect(midHeight).toBeLessThan(collapsedHeight + 31);
+    expect(dialog.dropSettingsSlider.alpha).toBe(1);
+    expect(dialog.dropSettingsSlider.scale.x).toBeGreaterThan(1);
+    expect(dialog.dropSettingsSlider.scale.x).toBeLessThanOrEqual(1.035);
+
+    frames.shift()(240);
+    expect(dialog.list.rows.getWidgets()[0].height).toBe(
+      collapsedHeight + 31,
+    );
+    expect(dialog.dropSettingsSlider.alpha).toBe(1);
+    expect(dialog.dropSettingsSlider.scale.x).toBe(1);
 
     harness.page.destroy();
     harness.dispose();
@@ -583,6 +1203,7 @@ describe('WorkshopPixiPage', () => {
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('ingredient:cyclopsEye');
     expect(rows.every((row) => row.valueIcon.visible)).toBe(true);
     expect(rows.every((row) => row.value.style.fill === dialog.contentTheme.text)).toBe(true);
+    expect(rows.every((row) => row.value.x === 262)).toBe(true);
 
     harness.page.destroy();
     harness.dispose();
@@ -692,16 +1313,16 @@ describe('WorkshopPixiPage', () => {
     });
     expect(harness.page.bagButton.root.position).toMatchObject({
       x: 16,
-      y: 346.75,
+      y: 321.75,
     });
     expect(harness.page.statsButton.root.position).toMatchObject({
-      x: 244,
+      x: 298.5,
       y: 165,
     });
     const alliance = harness.page.features.get('alliance');
     const inbox = harness.page.inboxButton;
-    expect(alliance.root.position).toMatchObject({ x: 16, y: 190 });
-    expect(inbox.root.position).toMatchObject({ x: 298.5, y: 190 });
+    expect(alliance.root.position).toMatchObject({ x: 16, y: 165 });
+    expect(inbox.root.position).toMatchObject({ x: 298.5, y: 217.25 });
     expect(alliance.panel).toBeUndefined();
     expect(alliance.root.hitArea).toMatchObject({
       x: 0,
@@ -716,7 +1337,14 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.features.has('inbox')).toBe(false);
     expect(harness.page.bagButton.button).toBeUndefined();
     expect(harness.page.inboxButton.button).toBeUndefined();
+    expect(harness.page.statsButton.button).toBeUndefined();
     expect(harness.page.bagButton.root.hitArea).toMatchObject({
+      x: 0,
+      y: 12,
+      width: 45.5,
+      height: 68.25,
+    });
+    expect(harness.page.statsButton.root.hitArea).toMatchObject({
       x: 0,
       y: 12,
       width: 45.5,
@@ -856,11 +1484,12 @@ describe('WorkshopPixiPage', () => {
     const badge = harness.page.summon.notification;
     const retainedRoot = badge.root;
     expect(badge.root.parent).toBe(harness.page.summon.button);
-    expect(badge.root.position).toMatchObject({ x: 92, y: 0 });
+    expect(badge.root.position.x).toBeCloseTo(89.215278, 6);
+    expect(badge.root.position.y).toBeCloseTo(2.784722, 6);
     expect(badge.root.visible).toBe(true);
     expect(badge.root.renderable).toBe(true);
     expect(badge.model.tone).toBe('orange');
-    expect(badge.dot.context.instructions.length).toBeGreaterThan(0);
+    expect(badge.sprite.width).toBeCloseTo(9.569444, 6);
 
     const suppressedModel = createWorkshopViewModel();
     suppressedModel.workshop.summon.notification = false;
@@ -1002,7 +1631,7 @@ describe('WorkshopPixiPage', () => {
     expect(inputRouter.isRegistrationAllowed(summonRegistration)).toBe(true);
 
     const overlayTarget = new Container({ label: 'tutorial-overlay-hit' });
-    const summonBounds = harness.page.summon.root.getBounds();
+    const summonBounds = harness.page.summon.button.getBounds();
     const summonPoint = {
       x: summonBounds.x + summonBounds.width / 2,
       y: summonBounds.y + summonBounds.height / 2,
@@ -1023,11 +1652,13 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps the adjacent summon info icon outside the summon press target', () => {
+  it('opens adjacent summon info after a retargeted tap while summoning is unavailable', () => {
     const inputRouter = new PixiInputRouter();
     const summonSeed = vi.fn(() => ({ ok: true }));
     const harness = createHarness({ inputRouter });
     const model = createWorkshopViewModel({ summonSeed });
+    model.workshop.summon.enabled = false;
+    model.workshop.summon.canSummon = false;
     model.workshop.dialogs.summonInfo = {
       title: 'Summoning Seeds',
       summaryRows: [],
@@ -1051,22 +1682,69 @@ describe('WorkshopPixiPage', () => {
       width: 92,
       height: 52,
     });
+    expect(harness.page.summon.button.eventMode).toBe('none');
+    expect(harness.page.summon.info.eventMode).toBe('static');
 
     const infoBounds = harness.page.summon.info.getBounds();
     const infoPoint = {
       x: infoBounds.x + infoBounds.width / 2,
       y: infoBounds.y + infoBounds.height / 2,
     };
+    const overlayTarget = new Container({ label: 'retargeted-overlay-hit' });
     inputRouter.onPointerDown(
-      createPointerEvent(harness.page.summon.info, 'pointerdown', infoPoint),
+      createPointerEvent(overlayTarget, 'pointerdown', infoPoint),
     );
     inputRouter.onPointerUp(
-      createPointerEvent(harness.page.summon.info, 'pointerup', infoPoint),
+      createPointerEvent(overlayTarget, 'pointerup', infoPoint),
     );
 
     expect(harness.dialogs.isOpen('workshop.summonInfo')).toBe(true);
     expect(summonSeed).not.toHaveBeenCalled();
 
+    overlayTarget.destroy();
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('routes a press on the gray summon button when seed drop weights need attention', () => {
+    const inputRouter = new PixiInputRouter();
+    const summonSeed = vi.fn(() => ({
+      ok: false,
+      reason: 'no_active_seed_weights',
+    }));
+    const harness = createHarness({ inputRouter });
+    const model = createWorkshopViewModel({ summonSeed });
+    model.workshop.summon.enabled = false;
+    model.workshop.summon.canSummon = false;
+    model.workshop.summon.pressEnabled = true;
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const summonRegistration = inputRouter.store
+      .getRegistrations('press')
+      .find((registration) =>
+        registration.id.startsWith('retained:workshop-summon:'),
+      );
+    const summonBounds = harness.page.summon.button.getBounds();
+    const summonPoint = {
+      x: summonBounds.x + summonBounds.width / 2,
+      y: summonBounds.y + summonBounds.height / 2,
+    };
+    const overlayTarget = new Container({ label: 'summon-disabled-hit' });
+
+    expect(summonRegistration.enabled()).toBe(true);
+    expect(harness.page.summon.button.enabled).toBe(false);
+
+    inputRouter.onPointerDown(
+      createPointerEvent(overlayTarget, 'pointerdown', summonPoint),
+    );
+    inputRouter.onPointerUp(
+      createPointerEvent(overlayTarget, 'pointerup', summonPoint),
+    );
+
+    expect(summonSeed).toHaveBeenCalledTimes(1);
+
+    overlayTarget.destroy();
     harness.page.destroy();
     harness.dispose();
   });
@@ -1153,5 +1831,70 @@ function createWorkshopViewModel({
     actions: {
       summonSeed,
     },
+  };
+}
+
+function createSummonInfoDialogModel({ unlocked }) {
+  return {
+    title: 'Summoning Seeds',
+    autoSummonUnlocked: unlocked,
+    summaryRows: unlocked
+      ? [
+          {
+            id: 'auto',
+            label: 'Auto Summon',
+            value: '',
+            icon: { kind: 'automation' },
+            iconLeading: true,
+          },
+          {
+            id: 'reserve',
+            label: 'Keep Mana Above',
+            value: '0',
+            valueIconResourceKey: 'mana',
+          },
+        ]
+      : [],
+    settingsToggle: unlocked
+      ? {
+          value: false,
+          enabled: true,
+          onChange: vi.fn(),
+        }
+      : null,
+    manaSlider: unlocked
+      ? {
+          mode: 'range',
+          min: 0,
+          max: 5_000,
+          step: 1,
+          value: 0,
+          tone: 'blue',
+          enabled: true,
+          onChange: vi.fn(),
+        }
+      : null,
+    actions: [],
+    items: [
+      {
+        id: 'sageSeed',
+        label: 'Sage Seed',
+        detail: '100% Chance',
+        value: 'Medium',
+        valueTone: 'yellow',
+        itemKind: 'seed',
+        itemKey: 'sageSeed',
+        dropSlider: {
+          mode: 'milestones',
+          value: 'medium',
+          options: [
+            { value: 'none', tone: 'root' },
+            { value: 'low', tone: 'red' },
+            { value: 'medium', tone: 'yellow' },
+            { value: 'high', tone: 'green' },
+          ],
+        },
+      },
+    ],
   };
 }

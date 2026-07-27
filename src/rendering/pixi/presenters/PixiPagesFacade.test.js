@@ -115,6 +115,27 @@ describe('PixiPagesFacade', () => {
     });
   });
 
+  it('shows a centered transient prompt when summon has no active seed weights', () => {
+    const harness = createHarness();
+    harness.gameplayFacade.summonSeed.mockReturnValue({
+      ok: false,
+      reason: 'no_active_seed_weights',
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    const result = harness.getBoundPage('workshop').actions.summonSeed();
+
+    expect(result).toEqual({
+      ok: false,
+      reason: 'no_active_seed_weights',
+    });
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: 'Select a seed to drop',
+      flyoutKey: 'workshop-summon-seed-selection',
+    });
+  });
+
   it('projects recipe research availability and routes enabled research actions', () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.brewing = {
@@ -770,6 +791,9 @@ function createHarness({
   const pageSurface = {
     openDialog: vi.fn(() => true),
   };
+  const transientEffects = {
+    emitReward: vi.fn(),
+  };
   const runtime = {
     initialized: true,
     bindPage: vi.fn((pageId, model) => {
@@ -839,6 +863,7 @@ function createHarness({
   };
   const dependencies = {
     renderFacade,
+    experienceFacade: { transientEffects },
     gameplayFacade,
     playerFacade,
     worldChatFacade: createSnapshotFacade({ connected: true, messages: [] }),
@@ -851,6 +876,7 @@ function createHarness({
     factories,
     runtime,
     gameplayFacade,
+    transientEffects,
     bottomSurface,
     pageSurface,
     getPageSwipeRegistration: () => pageSwipeRegistration,

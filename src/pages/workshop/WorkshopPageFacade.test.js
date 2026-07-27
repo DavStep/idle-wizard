@@ -85,7 +85,7 @@ function getRuleBodyContaining(baseCss, selector, text) {
 function getRulePixelValue(baseCss, selector, propertyName) {
   return Number(
     getRuleBody(baseCss, selector)
-      ?.match(new RegExp(`\\b${propertyName}:\\s*([\\d.]+)px(?:[\\s;]|$)`))
+      ?.match(new RegExp(`\\b${propertyName}:\\s*([\\d.]+)(?:px)?(?:[\\s;]|$)`))
       ?.at(1),
   );
 }
@@ -104,16 +104,24 @@ describe('WorkshopPageFacade requirement feedback', () => {
       baseCss,
       '--style-room-tab-active-height',
     );
+    const bottomTabBleed = getRootPixelValue(
+      baseCss,
+      '--style-room-tab-bottom-bleed',
+    );
     const bottomTabRowGap = Number(
       getRuleBody(baseCss, '\\.room-bottom-panel__tabs')
         ?.match(/\bgap:\s*([\d.]+)(?:px)?(?:\s+[\d.]+(?:px)?)?;/)
         ?.at(1),
     );
 
-    const bottomTabsTop = bottomPanelBottom + bottomTabHeight + bottomTabRowGap;
+    const bottomTabsTop =
+      bottomPanelBottom +
+      bottomTabHeight +
+      bottomTabBleed +
+      bottomTabRowGap;
     const gap = chatBottom + borderWidth - bottomTabsTop;
-    expect(gap).toBeGreaterThanOrEqual(61);
-    expect(gap).toBeLessThanOrEqual(63);
+    expect(gap).toBeGreaterThanOrEqual(43);
+    expect(gap).toBeLessThanOrEqual(45);
   });
 
   it('keeps task and notice characters in top-aligned side slots', () => {

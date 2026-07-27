@@ -13,6 +13,11 @@ preview, flyouts, and dialog models. It invokes supplied actions without
 calculating costs, rewards, unlock levels, inventory, alliance state, or event
 progress.
 
+Every side-control model supplies `side` and `weight`. `WorkshopPixiPage`
+independently sorts the visible left and right controls, packs each side from
+the shared top anchor into fixed slots, and owns the short enter, exit, and
+slot-shift transitions. Hidden controls never reserve a row.
+
 Workshop-owned dialogs are registered lazily as `workshop.<feature>` in the
 injected `DialogRegistry` and retain their display trees after close.
 

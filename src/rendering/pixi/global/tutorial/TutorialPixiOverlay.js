@@ -8,6 +8,7 @@ import {
 import {
   BasePixiRetainedView,
   PixiButton,
+  PixiDialogFrame,
   PixiNineSliceFrame,
   PixiProgressBar,
   PixiTextLabel,
@@ -272,8 +273,8 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.guideLabelButton.applyTheme(nextTheme);
     this.dragYell.applyTheme(nextTheme);
     this.surface.applyTheme(nextTheme);
-    this.redrawGuideLabel(nextTheme);
-    this.redrawAttention(nextTheme);
+    this.redrawGuideLabel();
+    this.redrawAttention();
     this.redrawSpotlight();
   }
 
@@ -375,9 +376,10 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
       text: this.typewriter?.visibleText ?? this.model.lesson?.text ?? '',
       layoutText: this.model.lesson?.text ?? '',
       variant: this.model.lesson?.variant,
+      reducedMotion: this.reducedMotion,
     });
-    this.redrawGuideLabel(this.theme ?? DEFAULT_PIXI_THEME_SNAPSHOT);
-    this.redrawAttention(this.theme ?? DEFAULT_PIXI_THEME_SNAPSHOT);
+    this.redrawGuideLabel();
+    this.redrawAttention();
     this.renderPositions();
     this.renderTargetCue();
     this.redrawSpotlight();
@@ -873,6 +875,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     const delta = Math.max(0, Number(deltaMs) || 0);
     this.updateTypewriter(delta);
     this.updateTargetEmphasis(delta);
+    this.surface.updateResize(delta);
     this.pointer.update(delta);
     this.updateGuideMotion(delta);
     this.renderPositions();
@@ -928,6 +931,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
       this.active &&
       (this.typewriter ||
         this.emphasis ||
+        this.surface.hasActiveResize() ||
         cueNeedsFollow ||
         spotlightNeedsFollow ||
         guideMotion);
@@ -966,7 +970,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     );
   }
 
-  redrawGuideLabel(theme) {
+  redrawGuideLabel() {
     const width = Math.max(
       36,
       Math.ceil(this.guideLabel.measuredWidth) + 14,
@@ -980,7 +984,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.guideLabelButton.position.set(x, y);
   }
 
-  redrawAttention(theme) {
+  redrawAttention() {
     const active =
       Boolean(this.model.lesson?.attention) && !this.panelOpen;
     this.attentionBadge
@@ -1062,8 +1066,12 @@ class TutorialLessonSurface {
     this.root = new Container();
     this.root.label = 'tutorial:lesson';
     this.root.eventMode = 'static';
-    this.shadow = new Graphics();
-    this.shadow.label = 'tutorial:lessonShadow';
+    this.introDialog = new PixiDialogFrame({
+      assetManager: assets,
+      inputRouter,
+      title: '',
+      label: 'tutorial:introDialog',
+    });
     this.frame = new PixiNineSliceFrame({
       texture: this.assets.getTexture(
         PIXI_ROOT_RUN_ASSETS.researchCard,
@@ -1077,9 +1085,6 @@ class TutorialLessonSurface {
       label: 'tutorial:lessonFrame',
     });
     this.frame.label = 'tutorial:lessonFrame';
-    this.introFrame = new Graphics();
-    this.introFrame.label = 'tutorial:introLessonFrame';
-    this.titleBacking = new Graphics();
     this.title = new PixiTextLabel({
       text: 'lesson',
       fontSize: PIXI_UI_GEOMETRY.dialogTitleFontSize,
@@ -1132,10 +1137,8 @@ class TutorialLessonSurface {
       label: 'tutorial.lesson.advance',
     });
     this.root.addChild(
-      this.shadow,
-      this.introFrame,
+      this.introDialog,
       this.frame,
-      this.titleBacking,
       this.title,
       this.stepLabel,
       this.copy,
@@ -1161,9 +1164,16 @@ class TutorialLessonSurface {
     this.outerWidth = TUTORIAL_PIXI_GEOMETRY.panelOuterWidth;
     this.outerHeight =
       TUTORIAL_PIXI_GEOMETRY.panelDefaultOuterHeight;
+    this.targetContentHeight = this.contentHeight;
+    this.targetOuterHeight = this.outerHeight;
+    this.layoutCopyHeight = 20;
+    this.resizeAnimation = null;
   }
 
   bind(model = {}) {
+    const previousId = this.model.id;
+    const previousOuterHeight = this.outerHeight;
+    const previousResize = this.resizeAnimation;
     this.model = model;
     const intro = model.variant === 'intro-dialog';
     const layoutModel = {
@@ -1174,15 +1184,6 @@ class TutorialLessonSurface {
     this.contentWidth = intro
       ? TUTORIAL_PIXI_GEOMETRY.introContentWidth
       : estimateLessonContentWidth(layoutModel);
-    this.contentHeight = estimateLessonContentHeight(
-      layoutModel,
-      intro,
-      this.contentWidth,
-    );
-    const chrome = intro ? 44 : 21;
-    this.outerWidth =
-      this.contentWidth + (intro ? 44 : 24);
-    this.outerHeight = this.contentHeight + chrome;
     this.title.setText(model.title ?? 'lesson');
     this.stepLabel.setText('');
     this.stepLabel.visible = false;
@@ -1191,8 +1192,12 @@ class TutorialLessonSurface {
       .setFontSize(
         intro ? PIXI_UI_GEOMETRY.bodyFontSize : 12,
       )
-      .setWrapWidth(this.contentWidth);
-    this.setCopy(model.text ?? '');
+      .setWrapWidth(this.contentWidth)
+      .setText(layoutModel.text ?? '');
+    this.layoutCopyHeight = Math.max(
+      20,
+      Math.ceil(this.copy.measuredHeight),
+    );
     const progress = normalizeProgress(model.progress);
     const progressVisible = progress !== null;
     this.progress.visible = progressVisible;
@@ -1214,6 +1219,54 @@ class TutorialLessonSurface {
     this.advanceControl.visible = Boolean(model.advanceOnClick);
     this.advanceControl.renderable = this.advanceControl.visible;
     this.advanceControl.syncInteraction();
+    this.targetContentHeight = estimateLessonContentHeight(
+      layoutModel,
+      intro,
+      this.contentWidth,
+      {
+        measuredCopyHeight: this.layoutCopyHeight,
+        advanceVisible: this.advanceControl.visible,
+        progressVisible,
+        progressLabelVisible: this.progressLabel.visible,
+      },
+    );
+    this.targetOuterHeight =
+      this.targetContentHeight + (intro ? 40 : 21);
+    this.outerWidth = intro
+      ? this.contentWidth + 40
+      : this.contentWidth + 24;
+    this.introDialog.setTitle(
+      intro ? model.title ?? 'lesson' : '',
+    );
+
+    const hasPreviousLesson = Boolean(previousId);
+    const hasNextLesson = Boolean(model.id);
+    const shouldKeepResize =
+      previousResize &&
+      Math.abs(previousResize.to - this.targetOuterHeight) < 0.01 &&
+      model.reducedMotion !== true;
+    const shouldAnimateResize =
+      !shouldKeepResize &&
+      hasPreviousLesson &&
+      hasNextLesson &&
+      model.reducedMotion !== true &&
+      Math.abs(previousOuterHeight - this.targetOuterHeight) >= 1;
+    if (shouldKeepResize) {
+      this.resizeAnimation = previousResize;
+      this.applyOuterHeight(previousOuterHeight);
+    } else if (shouldAnimateResize) {
+      this.resizeAnimation = {
+        from: previousOuterHeight,
+        to: this.targetOuterHeight,
+        elapsedMs: 0,
+      };
+      this.applyOuterHeight(previousOuterHeight);
+    } else {
+      this.resizeAnimation = null;
+      this.applyOuterHeight(this.targetOuterHeight);
+    }
+
+    this.setCopy(model.text ?? '');
     this.layout();
     this.redraw();
   }
@@ -1228,6 +1281,53 @@ class TutorialLessonSurface {
     this.root.eventMode = visible ? 'static' : 'none';
   }
 
+  hasActiveResize() {
+    return Boolean(this.resizeAnimation);
+  }
+
+  updateResize(deltaMs) {
+    const animation = this.resizeAnimation;
+    if (!animation) {
+      return false;
+    }
+    animation.elapsedMs += Math.max(0, Number(deltaMs) || 0);
+    const progress = Math.min(
+      1,
+      animation.elapsedMs /
+        TUTORIAL_PIXI_GEOMETRY.panelResizeMs,
+    );
+    this.applyOuterHeight(
+      lerp(animation.from, animation.to, easeOutQuint(progress)),
+    );
+    if (progress >= 1) {
+      this.resizeAnimation = null;
+      this.applyOuterHeight(this.targetOuterHeight);
+    }
+    return true;
+  }
+
+  applyOuterHeight(outerHeight) {
+    const intro = this.model.variant === 'intro-dialog';
+    this.outerHeight = Math.max(0, Number(outerHeight) || 0);
+    this.contentHeight = Math.max(
+      0,
+      this.outerHeight - (intro ? 40 : 21),
+    );
+    if (intro) {
+      this.introDialog.setContentBoxSize(
+        this.contentWidth,
+        this.contentHeight,
+        PIXI_UI_GEOMETRY.dialogPadding,
+      );
+      this.outerWidth = this.introDialog.outerWidth;
+      this.outerHeight = this.introDialog.outerHeight;
+      this.contentHeight =
+        this.outerHeight - PIXI_UI_GEOMETRY.dialogPadding * 2;
+    }
+    this.layout();
+    this.redraw();
+  }
+
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.applyResolvedTheme();
@@ -1236,8 +1336,9 @@ class TutorialLessonSurface {
 
   applyResolvedTheme() {
     const intro = this.model.variant === 'intro-dialog';
+    this.introDialog.applyTheme(this.theme);
     this.visualTheme = intro
-      ? this.theme
+      ? this.introDialog.getContentTheme()
       : {
           ...this.theme,
           ...TUTORIAL_RESEARCH_CARD_PALETTE,
@@ -1285,12 +1386,40 @@ class TutorialLessonSurface {
     );
     this.title.position.set(intro ? 8 : 12, intro ? -12 : 9);
     this.copy.position.set(paddingX, paddingTop);
-    let y =
-      paddingTop +
-      Math.max(20, Math.min(this.copy.measuredHeight, this.contentHeight));
+    let y = paddingTop + this.layoutCopyHeight;
+    if (intro) {
+      const rowHeight = Math.max(
+        this.progress.visible
+          ? PIXI_UI_GEOMETRY.progressTotalHeight
+          : 0,
+        this.advanceControl.visible
+          ? TUTORIAL_ADVANCE_BUTTON.height
+          : 0,
+      );
+      if (rowHeight > 0) {
+        y += 5;
+        if (this.advanceControl.visible) {
+          this.advanceControl.y =
+            y +
+            (rowHeight - TUTORIAL_ADVANCE_BUTTON.height) / 2;
+        }
+        if (this.progress.visible) {
+          this.progress.position.set(
+            paddingX,
+            y +
+              (rowHeight -
+                PIXI_UI_GEOMETRY.progressTotalHeight) /
+                2,
+          );
+        }
+        y += rowHeight;
+      }
+    }
     if (this.progress.visible) {
-      y += 5;
-      this.progress.position.set(paddingX, y);
+      if (!intro) {
+        y += 5;
+        this.progress.position.set(paddingX, y);
+      }
       const progressWidth = this.advanceControl.visible
         ? Math.max(
             0,
@@ -1303,9 +1432,24 @@ class TutorialLessonSurface {
         progressWidth,
         PIXI_UI_GEOMETRY.progressTotalHeight,
       );
-      y += PIXI_UI_GEOMETRY.progressTotalHeight;
+      if (this.advanceControl.visible && !intro) {
+        this.advanceControl.y =
+          this.progress.y +
+          (PIXI_UI_GEOMETRY.progressTotalHeight -
+            TUTORIAL_ADVANCE_BUTTON.height) /
+            2;
+      }
+      if (!intro) {
+        y += PIXI_UI_GEOMETRY.progressTotalHeight;
+      }
     }
-    if (this.progressLabel.visible) {
+    if (this.progressLabel.visible && intro) {
+      this.progressLabel.position.set(
+        this.progress.x + this.progress.barWidth,
+        y + 2,
+      );
+    }
+    if (this.progressLabel.visible && !intro) {
       this.progressLabel.position.set(
         this.progress.x + this.progress.barWidth,
         y + 2,
@@ -1325,41 +1469,14 @@ class TutorialLessonSurface {
 
   redraw() {
     const intro = this.model.variant === 'intro-dialog';
-    const visualTheme = this.visualTheme ?? this.theme;
-    this.shadow.clear();
-    this.shadow.visible = intro;
+    this.introDialog.visible = intro;
+    this.introDialog.renderable = intro;
+    this.introDialog.eventMode = 'none';
     this.frame.visible = !intro;
     this.frame.renderable = !intro;
-    this.introFrame.visible = intro;
-    this.introFrame.renderable = intro;
-    this.titleBacking.visible = intro;
-    this.titleBacking.renderable = intro;
-    if (intro) {
-      this.shadow
-        .rect(
-          PIXI_UI_GEOMETRY.dialogShadowX,
-          PIXI_UI_GEOMETRY.dialogShadowY,
-          this.outerWidth,
-          this.outerHeight,
-        )
-        .fill({
-          color: visualTheme.dialogShadow,
-          alpha: 0.72,
-        });
-      this.introFrame
-        .clear()
-        .rect(0, 0, this.outerWidth, this.outerHeight)
-        .fill(visualTheme.surface)
-        .stroke({
-          color: visualTheme.stroke,
-          width: PIXI_UI_GEOMETRY.strongBorderWidth,
-          alignment: 1,
-        });
-      this.titleBacking
-        .clear()
-        .rect(6, -11, this.title.measuredWidth + 5, 15)
-        .fill(visualTheme.surface);
-    } else {
+    this.title.visible = !intro;
+    this.title.renderable = !intro;
+    if (!intro) {
       this.frame.setSize(
         this.outerWidth,
         this.outerHeight,
@@ -1370,6 +1487,7 @@ class TutorialLessonSurface {
 
   destroy() {
     releaseRegistration(this.surfaceRegistration);
+    this.introDialog.destroy({ children: true });
     this.frame.destroy();
     this.progress.destroy({ children: true });
     this.showControl.destroy();
@@ -1576,7 +1694,42 @@ function estimateLessonContentWidth(model) {
   );
 }
 
-function estimateLessonContentHeight(model, intro, contentWidth) {
+function estimateLessonContentHeight(
+  model,
+  intro,
+  contentWidth,
+  {
+    measuredCopyHeight = null,
+    advanceVisible = false,
+    progressVisible = false,
+    progressLabelVisible = false,
+  } = {},
+) {
+  if (intro) {
+    let height = Math.max(
+      20,
+      Number(measuredCopyHeight) || 0,
+    );
+    const rowHeight = Math.max(
+      progressVisible ? PIXI_UI_GEOMETRY.progressTotalHeight : 0,
+      advanceVisible ? TUTORIAL_ADVANCE_BUTTON.height : 0,
+    );
+    if (rowHeight > 0) {
+      height += 5 + rowHeight;
+    }
+    if (progressLabelVisible) {
+      height += 2 + PIXI_UI_GEOMETRY.borderLabelLineHeight;
+    }
+    return Math.ceil(
+      Math.max(
+        TUTORIAL_PIXI_GEOMETRY.introMinContentHeight,
+        Math.min(
+          TUTORIAL_PIXI_GEOMETRY.introMaxContentHeight,
+          height,
+        ),
+      ),
+    );
+  }
   const width = intro
     ? TUTORIAL_PIXI_GEOMETRY.introContentWidth
     : contentWidth;
@@ -1589,31 +1742,22 @@ function estimateLessonContentHeight(model, intro, contentWidth) {
       0,
     );
   let height = Math.max(
-    intro ? 34 : TUTORIAL_PIXI_GEOMETRY.panelDefaultContentHeight,
+    TUTORIAL_PIXI_GEOMETRY.panelDefaultContentHeight,
+    Number(measuredCopyHeight) || 0,
     lines * 16,
     model.text ? 20 : 0,
   );
-  if (normalizeProgress(model.progress) !== null) {
+  if (progressVisible) {
     height += 5 + PIXI_UI_GEOMETRY.progressTotalHeight;
   }
-  if (
-    normalizeProgress(model.progress) !== null ||
-    model.progressLabel
-  ) {
+  if (progressLabelVisible) {
     height += 16;
-  }
-  if (intro) {
-    height += 18;
   }
   return Math.ceil(
     Math.max(
-      intro
-        ? TUTORIAL_PIXI_GEOMETRY.introMinContentHeight
-        : TUTORIAL_PIXI_GEOMETRY.panelMinContentHeight,
+      TUTORIAL_PIXI_GEOMETRY.panelMinContentHeight,
       Math.min(
-        intro
-          ? TUTORIAL_PIXI_GEOMETRY.introMaxContentHeight
-          : TUTORIAL_PIXI_GEOMETRY.panelMaxContentHeight,
+        TUTORIAL_PIXI_GEOMETRY.panelMaxContentHeight,
         height,
       ),
     ),
@@ -1621,6 +1765,13 @@ function estimateLessonContentHeight(model, intro, contentWidth) {
 }
 
 function normalizeProgress(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
+    return null;
+  }
   const number = Number(value);
   return Number.isFinite(number)
     ? Math.max(0, Math.min(1, number))
@@ -1668,4 +1819,9 @@ function releaseRegistration(registration) {
 
 function lerp(from, to, progress) {
   return from + (to - from) * Math.max(0, Math.min(1, progress));
+}
+
+function easeOutQuint(progress) {
+  const value = Math.max(0, Math.min(1, Number(progress) || 0));
+  return 1 - (1 - value) ** 5;
 }

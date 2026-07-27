@@ -813,14 +813,14 @@ describe('DevCheatsFacade', () => {
     expect(target.cheats.setTutorialStage('intro-garden')).toMatchObject({
       ok: true,
       requestedStepId: 'intro-garden',
-      code: 't24',
+      code: 't22',
       progress: {
         ok: true,
         stage: 'intro-garden',
         completedStepIds: ['purchase-house'],
       },
       snapshot: {
-        level: 3,
+        level: 2,
         coin: { current: 0, totalGenerated: 0 },
         inventory: [expect.objectContaining({ key: 'sageSeed', quantity: 1 })],
       },

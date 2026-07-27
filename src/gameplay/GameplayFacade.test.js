@@ -2264,6 +2264,7 @@ describe('GameplayFacade', () => {
       cost: 20,
       quantity: 2,
       canSummon: true,
+      unavailableReason: null,
       autoSummoning: {
         unlocked: false,
         enabled: true,

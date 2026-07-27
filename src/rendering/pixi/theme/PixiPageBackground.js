@@ -27,6 +27,10 @@ export function getPixiPageBackgroundColors(
 
 export function createPixiPageBackgroundGradient(pageId, theme) {
   const colors = getPixiPageBackgroundColors(pageId, theme);
+  // Repeated stops are a solid-fill contract, not a zero-contrast gradient.
+  if (colors.every((color) => color === colors[0])) {
+    return colors[0];
+  }
   return new FillGradient({
     type: 'linear',
     start: { x: 0, y: 1 },

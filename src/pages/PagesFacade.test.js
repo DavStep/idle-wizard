@@ -3726,7 +3726,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__summon-button')?.getAttribute('aria-label')).toBe(
       'Summon Seed, costs 10 mana',
     );
-    expect(stage.querySelector('.workshop-page__bag-button')?.textContent).toBe('bag');
+    expect(stage.querySelector('.workshop-page__bag-button')?.textContent).toBe('Bag');
     expect(stage.querySelector('.workshop-page__bag')?.dataset.panelSide).toBe('left');
     expect(
       stage.querySelector('.workshop-page__bag-button-icon')?.getAttribute('src'),
@@ -3734,7 +3734,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__prestige-button')).toBeNull();
     expect(stage.querySelector('.room-bottom-panel__prestige-button')).toBeNull();
     expect(stage.querySelector('.workshop-page__leaderboard-button')?.textContent).toBe(
-      'leaderboard',
+      'Leaderboard',
     );
     expect(stage.querySelector('.workshop-page__leaderboard')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__world-chat-button')?.textContent).toBe(
@@ -3756,7 +3756,7 @@ describe('PagesFacade', () => {
       stage.querySelector('.workshop-page__discoveries-button-icon')?.getAttribute('src'),
     ).toContain('icon-discoveries-journal-bag-style.png');
     expect(stage.querySelector('.workshop-page__discoveries-button-label')?.textContent).toBe(
-      'discoveries',
+      'Discoveries',
     );
     expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__bag-popup')).not.toBeNull();
@@ -3766,11 +3766,11 @@ describe('PagesFacade', () => {
     expect(
       [...stage.querySelectorAll('.room-bottom-panel__tab')].map((button) => button.textContent),
     ).toEqual([
-      'brewing',
-      'garden',
-      'workshop',
-      'research',
-      'market',
+      'Brewing',
+      'Garden',
+      'Workshop',
+      'Research',
+      'Market',
     ]);
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'workshop',
@@ -3787,7 +3787,7 @@ describe('PagesFacade', () => {
     ).toBeNull();
     expect(
       stage.querySelector('.room-bottom-panel__tab[aria-current="page"]')?.textContent,
-    ).toBe('workshop');
+    ).toBe('Workshop');
     expect(stage.querySelector('.workshop-page__name')).toBeNull();
     expect(stage.querySelector('.room-page__nav')).toBeNull();
     const topPanel = stage.querySelector('.room-top-panel');
@@ -4389,7 +4389,7 @@ describe('PagesFacade', () => {
     expect(saleBoard?.textContent).toContain('free');
     expect(saleBoard?.querySelector('.first-run-intro__workshop-sale-icon')).toBeNull();
     expect(stage.querySelector('.first-run-intro__advance')?.textContent).toBe(
-      'enter workshop',
+      'Enter workshop',
     );
 
     await advance({ completes: true, backdropTransition: 'changing' });
@@ -4565,7 +4565,7 @@ describe('PagesFacade', () => {
 
     expect(pagesFacade.getCurrentPageId()).toBe('workshop');
     expect(gardenTab?.dataset.notification).toBe('true');
-    expect(gardenTab?.getAttribute('aria-label')).toBe('show garden, action available');
+    expect(gardenTab?.getAttribute('aria-label')).toBe('show Garden, action available');
 
     clickRoomTab(stage, 'garden');
 

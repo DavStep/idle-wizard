@@ -328,6 +328,12 @@ describe('TopPanelViewManager', () => {
     const captionRule = baseCss.match(
       /\.room-top-panel__quest-progress-text\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const progressRule = baseCss.match(
+      /^\.room-top-panel__quest-progress\s*\{(?<body>[^}]*)\}/m,
+    )?.groups?.body;
+    const progressBodyRule = baseCss.match(
+      /^\.room-top-panel__quest-progress-body\s*\{(?<body>[^}]*)\}/m,
+    )?.groups?.body;
 
     expect(rootRule).not.toMatch(
       /--style-resource-(?:mana|coin|crystal|emerald|ruby|seed|herb)\s*:/,
@@ -363,6 +369,14 @@ describe('TopPanelViewManager', () => {
     expect(completedDividerRule).toMatch(/\bbackground:\s*rgb\(32 19 49 \/ 82%\);/);
     expect(captionRule).toMatch(/\bfont-size:\s*7px;/);
     expect(captionRule).toMatch(/\btext-align:\s*left;/);
+    expect(captionRule).toMatch(/\btop:\s*calc\(100% \+ 2px\);/);
+    expect(captionRule).toMatch(
+      /\bleft:\s*calc\(var\(--room-top-panel-level-size\) \/ 2 \+ 5px\);/,
+    );
+    expect(progressRule).toMatch(/\bgap:\s*0;/);
+    expect(progressBodyRule).toMatch(
+      /\bwidth:\s*calc\(100% \+ var\(--room-top-panel-level-size\) \/ 2\);/,
+    );
 
   });
 

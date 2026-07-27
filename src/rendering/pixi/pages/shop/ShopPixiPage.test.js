@@ -86,7 +86,7 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
-  it('reuses the research row skin, paper ink, title case, and stars', () => {
+  it('uses the Market ribbon with a centered title-and-stars group', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);
     const harness = createHarness({
       assetManager: {
@@ -99,51 +99,52 @@ describe('ShopPixiPage', () => {
     harness.page.activate();
 
     const stall = harness.page.stallsSection.stalls.get('stall-1');
-    expect(harness.page.marketTitlePlaque.title.text).toBe(
+    const ribbon = harness.page.marketTitleRibbon;
+    expect(ribbon.title.text).toBe(
       'Small Town Market',
     );
-    expect(harness.page.marketRankStars.level).toBe(1);
-    expect(harness.page.marketTitlePlaque.assetId).toBe(
-      PIXI_ROOT_RUN_ASSETS.dialogTitle,
+    expect(ribbon.stars.level).toBe(1);
+    expect(ribbon.assetId).toBe(
+      PIXI_ROOT_RUN_ASSETS.marketTitleRibbon,
     );
-    expect(harness.page.marketTitlePlaque.frame.sourceInsets).toEqual(
-      PIXI_ROOT_RUN_GEOMETRY.dialog.titleSourceInsets,
+    expect(ribbon.jewel).toBeUndefined();
+    expect(ribbon.frame.sourceInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.sourceInsets,
     );
-    expect(harness.page.marketTitlePlaque.frame.borderInsets).toEqual(
-      PIXI_ROOT_RUN_GEOMETRY.dialog.titleBorderInsets,
+    expect(ribbon.frame.borderInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.borderInsets,
     );
-    expect(
-      harness.page.marketTitlePlaque.frame.borderInsets.left,
-    ).toBeGreaterThan(0);
-    expect(
-      harness.page.marketTitlePlaque.frame.borderInsets.right,
-    ).toBeGreaterThan(0);
-    expect(harness.page.marketTitlePlaque.width).toBeLessThan(
+    expect(ribbon.width).toBeLessThan(
       harness.page.sourceWidth,
     );
-    expect(harness.page.marketTitlePlaque.root.x).toBe(
+    expect(ribbon.root.x).toBe(
       (harness.page.sourceWidth -
-        harness.page.marketTitlePlaque.width) /
+        ribbon.width) /
         2,
     );
-    expect(
-      harness.page.marketTitlePlaque.title.textObject.anchor.x,
-    ).toBe(0.5);
-    expect(harness.page.marketTitlePlaque.title.x).toBe(
-      harness.page.marketTitlePlaque.width / 2 - 8,
-    );
-    expect(harness.page.marketRankStars.parent).toBe(
-      harness.page.marketTitlePlaque.root,
-    );
-    expect(harness.page.marketRankStars.x).toBeGreaterThan(
-      harness.page.marketTitlePlaque.width / 2,
+    expect(ribbon.title.textObject.anchor.x).toBe(0.5);
+    expect(ribbon.stars.parent).toBe(ribbon.root);
+    expect(ribbon.contentGroupCenterX).toBeCloseTo(
+      ribbon.width / 2,
+      6,
     );
     expect(
-      harness.page.marketRankStars.x +
-        harness.page.marketRankStars.measuredWidth,
-    ).toBeLessThanOrEqual(
-      harness.page.marketTitlePlaque.width -
-        harness.page.marketTitlePlaque.frame.borderInsets.right,
+      ribbon.title.x - ribbon.title.measuredWidth / 2,
+    ).toBeCloseTo(ribbon.contentGroupLeft, 6);
+    expect(
+      ribbon.stars.x + ribbon.stars.measuredWidth,
+    ).toBeCloseTo(ribbon.contentGroupRight, 6);
+    const expectedContentCenterY =
+      ribbon.height / 2 - 6 * (360 / 390);
+    expect(ribbon.title.y).toBeCloseTo(
+      expectedContentCenterY,
+      6,
+    );
+    expect(
+      ribbon.stars.y + ribbon.stars.starSize / 2,
+    ).toBeCloseTo(
+      expectedContentCenterY,
+      6,
     );
     expect(harness.page.stallsSection.titlePlaque.variant).toBe(
       'automation',

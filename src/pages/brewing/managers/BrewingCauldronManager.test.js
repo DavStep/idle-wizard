@@ -1953,7 +1953,9 @@ describe('BrewingCauldronManager', () => {
       '.brewing-page__herb-rows:has([data-notification="true"])',
     );
     expect(herbLabelRule).toContain('position: relative;');
-    expect(herbDotRule).toContain('right: calc(-1 * var(--style-notification-size));');
+    expect(herbDotRule).toContain(
+      'right: calc(-1 * var(--style-notification-offset));',
+    );
     expect(herbDotRule).not.toContain('--brewing-page-notification-row-min-height');
   });
 

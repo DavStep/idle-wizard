@@ -10,7 +10,7 @@ import {
 } from './PixiPageBackground.js';
 
 describe('Pixi page background tokens', () => {
-  it('freezes all seven legacy room gradients for every production theme', () => {
+  it('freezes all seven room background color sets for every production theme', () => {
     const pageIds = [
       'workshop',
       'brewing',
@@ -30,6 +30,13 @@ describe('Pixi page background tokens', () => {
           PIXI_PAGE_BACKGROUND_COLORS[themeKey][pageId],
         );
         expect(colors[1]).toBe(theme.surface);
+        if (pageId === 'workshop') {
+          expect(colors).toEqual([
+            theme.surface,
+            theme.surface,
+            theme.surface,
+          ]);
+        }
       }
     }
   });
@@ -37,7 +44,7 @@ describe('Pixi page background tokens', () => {
   it('builds the reference bottom-to-top 0/48/100 gradient', () => {
     const theme = createPixiThemeSnapshot({ theme: 'black' });
     const gradient = createPixiPageBackgroundGradient(
-      'workshop',
+      'brewing',
       theme,
     );
 
@@ -45,11 +52,19 @@ describe('Pixi page background tokens', () => {
     expect(gradient.end).toMatchObject({ x: 0, y: 0 });
     expect(gradient.textureSpace).toBe('local');
     expect(gradient.colorStops).toEqual([
-      { offset: 0, color: '#2e2b37ff' },
+      { offset: 0, color: '#253037ff' },
       { offset: 0.48, color: '#202020ff' },
-      { offset: 1, color: '#2a2a2eff' },
+      { offset: 1, color: '#282c2dff' },
     ]);
 
     gradient.destroy();
+  });
+
+  it('returns a solid Workshop fill instead of a gradient', () => {
+    const theme = createPixiThemeSnapshot({ theme: 'midnight' });
+
+    expect(
+      createPixiPageBackgroundGradient('workshop', theme),
+    ).toBe(theme.surface);
   });
 });

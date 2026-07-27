@@ -196,6 +196,7 @@ describe('Root Run settings controls', () => {
     expect(harness.assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.settingsKnob,
     );
+    expect(toggle.controlWidth).toBe(60);
     expect(toggle.knob.x).toBeGreaterThan(toggle.controlWidth / 2);
 
     harness.presses[0].onActivate();

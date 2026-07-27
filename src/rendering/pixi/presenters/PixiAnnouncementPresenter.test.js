@@ -403,6 +403,14 @@ describe('Pixi announcement presentation helpers', () => {
         'source:assets/icons/icon-leaderboard-trophy.webp',
     });
     expect(
+      getFeatureUnlockIconPresentation({
+        value: 'prestige',
+      }),
+    ).toEqual({
+      assetId:
+        'source:assets/icons/icon-prestige-star.png',
+    });
+    expect(
       getResearchIconPresentation({
         id: 'unlockSeed:mintSeed',
         label: 'mint seed',

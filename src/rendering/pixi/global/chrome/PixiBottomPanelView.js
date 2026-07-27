@@ -2,6 +2,7 @@ import {
   ColorMatrixFilter,
   Container,
   Graphics,
+  NineSliceSprite,
   Rectangle,
   Sprite,
   Texture,
@@ -24,8 +25,8 @@ const TAB_DEFINITIONS = Object.freeze({
   prestige: Object.freeze({
     id: 'prestige',
     label: 'Prestige',
-    icon: 'icon-crystal.png',
-    artScale: 0.8,
+    icon: 'icon-prestige-star.png',
+    artScale: 0.9,
   }),
   brewing: Object.freeze({
     id: 'brewing',
@@ -85,19 +86,24 @@ const DEFAULT_TAB_IDS = new Set([
 ]);
 const PANEL_X = 0;
 const PANEL_WIDTH = PIXI_UI_GEOMETRY.sourceWidth;
-const PANEL_BOTTOM = 8;
+const PANEL_BOTTOM = 0;
 const TAB_ACTIVE_HEIGHT = 56;
 const TAB_INACTIVE_HEIGHT = 44;
 const TAB_RISE = TAB_ACTIVE_HEIGHT - TAB_INACTIVE_HEIGHT;
 const TAB_OVERLAP = 2.888889;
-const TAB_BOTTOM_BLEED = 18;
+const TAB_BOTTOM_BLEED = 26;
 const TAB_HEIGHT = TAB_ACTIVE_HEIGHT + TAB_BOTTOM_BLEED;
+const TAB_SELECTED_WIDTH_EXTRA = 6;
 const TAB_ICON_SIZE = 50;
+const TAB_ICON_TOP = 3;
 const TAB_ICON_SELECTED_SCALE = 1.5;
 const TAB_ICON_INACTIVE_SCALE = 1.5;
+const TAB_COMPACT_ICON_THRESHOLD = 7;
+const TAB_ICON_COMPACT_SELECTED_SCALE = 1;
+const TAB_ICON_COMPACT_INACTIVE_SCALE = 1.05;
 const TAB_LOCK_WIDTH = 26;
 const TAB_LOCK_HEIGHT = 29.5;
-const TAB_LOCK_CENTER_Y = 34;
+const TAB_LOCK_CENTER_Y = 32;
 const TAB_SELECTED_MOTION_MS = 205;
 const TAB_SELECTED_PEAK_AT = 0.68;
 const TAB_SELECTED_PEAK_SCALE = 1.065;
@@ -108,12 +114,21 @@ const FEATURE_UNLOCK_FLYOUT_MS = 520;
 const FEATURE_UNLOCK_POOL_SIZE = 5;
 const ROOM_TAB_FRAME_STATES = Object.freeze({
   active: Object.freeze({
-    textureId: 'source:assets/ui/root-run-room-tab-active.png',
+    textureId:
+      'source:assets/ui/midnight-room-tab-top-cap-selected-9slice.png',
   }),
   inactive: Object.freeze({
-    textureId: 'source:assets/ui/root-run-room-tab-inactive.png',
+    textureId:
+      'source:assets/ui/midnight-room-tab-top-cap-9slice.png',
   }),
 });
+const ROOM_TAB_FRAME_SLICE = Object.freeze({
+  leftWidth: 83,
+  topHeight: 91,
+  rightWidth: 73,
+  bottomHeight: 1,
+});
+const ROOM_TAB_FRAME_SCALE = 0.5;
 const LABEL_SHADOW_OFFSETS = Object.freeze([
   Object.freeze({ x: 0, y: 1 }),
   Object.freeze({ x: 1, y: 0 }),
@@ -681,16 +696,31 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
       sourceHeight - PANEL_BOTTOM - TAB_HEIGHT,
     );
 
+    const selectedTab = visibleTabs.find(
+      (tab) => tab.state.selected === true,
+    );
+    const selectedWidthExtra =
+      selectedTab ? TAB_SELECTED_WIDTH_EXTRA : 0;
     const tabWidth =
       visibleTabs.length > 0
         ? (
             PANEL_WIDTH +
-            TAB_OVERLAP * Math.max(0, visibleTabs.length - 1)
+            TAB_OVERLAP * Math.max(0, visibleTabs.length - 1) -
+            selectedWidthExtra
           ) / visibleTabs.length
         : PANEL_WIDTH;
-    visibleTabs.forEach((tab, index) => {
-      tab.setWidth(tabWidth);
-      tab.setLayoutX(index * (tabWidth - TAB_OVERLAP));
+    let tabX = 0;
+    visibleTabs.forEach((tab) => {
+      tab.setCompactIcons(
+        visibleTabs.length >= TAB_COMPACT_ICON_THRESHOLD,
+      );
+      const width =
+        tab === selectedTab
+          ? tabWidth + selectedWidthExtra
+          : tabWidth;
+      tab.setWidth(width);
+      tab.setLayoutX(tabX);
+      tabX += width - TAB_OVERLAP;
     });
   }
 
@@ -741,6 +771,7 @@ class PixiBottomTab {
     this.selectedIconProgress = 1;
     this.swipeBumpY = 0;
     this.layoutX = 0;
+    this.compactIcons = false;
     this.root = new Container();
     this.root.label = `bottomPanel:tab:${definition.id}`;
     this.root.eventMode = 'static';
@@ -908,6 +939,15 @@ class PixiBottomTab {
     this.layoutNotification();
   }
 
+  setCompactIcons(compact) {
+    const next = compact === true;
+    if (this.compactIcons === next) {
+      return;
+    }
+    this.compactIcons = next;
+    this.applyIconLayout();
+  }
+
   layoutIcon() {
     if (!this.icon) {
       return;
@@ -1057,8 +1097,8 @@ class PixiBottomTab {
           ? 1
           : 0;
     const inactiveCenterY =
-      TAB_RISE + 5 + TAB_ICON_SIZE / 2;
-    const selectedCenterY = 5 + TAB_ICON_SIZE / 2;
+      TAB_RISE + TAB_ICON_TOP + TAB_ICON_SIZE / 2;
+    const selectedCenterY = TAB_ICON_TOP + TAB_ICON_SIZE / 2;
     this.iconFrame.position.y = interpolate(
       inactiveCenterY,
       selectedCenterY,
@@ -1066,8 +1106,12 @@ class PixiBottomTab {
     );
     this.iconFrame.scale.set(
       interpolate(
-        TAB_ICON_INACTIVE_SCALE,
-        TAB_ICON_SELECTED_SCALE,
+        this.compactIcons
+          ? TAB_ICON_COMPACT_INACTIVE_SCALE
+          : TAB_ICON_INACTIVE_SCALE,
+        this.compactIcons
+          ? TAB_ICON_COMPACT_SELECTED_SCALE
+          : TAB_ICON_SELECTED_SCALE,
         selectionProgress,
       ),
     );
@@ -1163,8 +1207,9 @@ class PixiRoomTabFrame extends Container {
     this.selected = false;
     this.locked = false;
     const initial = ROOM_TAB_FRAME_STATES.inactive;
-    this.sprite = new Sprite({
+    this.sprite = new NineSliceSprite({
       texture: assets.getTexture(initial.textureId),
+      ...ROOM_TAB_FRAME_SLICE,
       label: `${label}:sprite`,
       roundPixels: true,
     });
@@ -1217,8 +1262,11 @@ class PixiRoomTabFrame extends Container {
       this.sprite.texture = texture;
     }
     this.sprite.position.set(0, frameY);
-    this.sprite.width = this.frameWidth;
-    this.sprite.height = frameHeight;
+    this.sprite.scale.set(ROOM_TAB_FRAME_SCALE);
+    this.sprite.setSize(
+      this.frameWidth / ROOM_TAB_FRAME_SCALE,
+      frameHeight / ROOM_TAB_FRAME_SCALE,
+    );
     this.frameY = frameY;
     this.frameHeight = frameHeight;
     this.textureId = appearance.textureId;

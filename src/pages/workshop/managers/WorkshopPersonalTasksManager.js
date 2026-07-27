@@ -6,7 +6,11 @@ import {
 } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
-import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
+
+const QUEST_ICON_URL = new URL(
+  '../../../../assets/game/source/icons/icon-quests-scroll-bag-style.png',
+  import.meta.url,
+).href;
 
 const PERSONAL_TASK_RESOURCE_BY_ACTION = new Map([
   ['summon_seeds', 'seed'],
@@ -77,13 +81,20 @@ export class WorkshopPersonalTasksManager {
       'workshop-page__panel-button-label workshop-page__feature-character-label';
     this.refs.openLabel.textContent = 'Tasks';
 
-    this.refs.openButton.append(
-      createWorkshopCharacterPortrait(
-        'personalTasks',
-        'workshop-page__personal-tasks-character',
-      ),
-      this.refs.openLabel,
-    );
+    const iconFrame = document.createElement('span');
+    iconFrame.className = 'workshop-page__personal-tasks-icon-frame';
+    iconFrame.setAttribute('aria-hidden', 'true');
+
+    const icon = document.createElement('img');
+    icon.className = 'workshop-page__personal-tasks-icon';
+    icon.src = QUEST_ICON_URL;
+    icon.alt = '';
+    icon.loading = 'lazy';
+    icon.decoding = 'async';
+    icon.setAttribute('aria-hidden', 'true');
+
+    iconFrame.append(icon);
+    this.refs.openButton.append(iconFrame, this.refs.openLabel);
 
     this.root.append(this.refs.openButton);
     parent.append(this.root);

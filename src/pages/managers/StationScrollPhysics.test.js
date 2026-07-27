@@ -56,6 +56,25 @@ describe('StationScrollPhysics', () => {
     expect(scroll.velocity).toBe(0);
   });
 
+  it('cushions edge return instead of snapping the content back', () => {
+    const scroll = new StationScrollPhysics();
+    scroll.setMaxOffset(1000);
+    scroll.scrollByElastic(-180);
+
+    for (let frame = 0; frame < 8; frame += 1) {
+      scroll.update(1 / 60);
+    }
+
+    expect(scroll.offset).toBeLessThan(-20);
+
+    for (let frame = 8; frame < 18; frame += 1) {
+      scroll.update(1 / 60);
+    }
+
+    expect(scroll.offset).toBe(0);
+    expect(scroll.velocity).toBe(0);
+  });
+
   it('allows elastic wheel input and springs it back', () => {
     const scroll = new StationScrollPhysics();
     scroll.setMaxOffset(1000);

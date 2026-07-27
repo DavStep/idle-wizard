@@ -95,27 +95,27 @@ describe('PixiTopPanelView', () => {
       },
     );
     expect(railRects).toHaveLength(5);
-    expect(readPath(railRects[0])).toEqual([0, 0, 208, 14, 7]);
+    expect(readPath(railRects[0])).toEqual([0, 0, 227, 14, 7]);
     expect(railRects[0].data.style).toMatchObject({
       color: 0x000000,
       alpha: 0.6,
     });
-    expect(readPath(railRects[1])).toEqual([0, 0, 208, 14, 7]);
+    expect(readPath(railRects[1])).toEqual([0, 0, 227, 14, 7]);
     expect(railRects[1].data.style).toMatchObject({
       color: 0x000000,
       width: 1,
       alignment: 1,
     });
-    expect(readPath(railRects[2])).toEqual([1, 1, 206, 12, 6]);
+    expect(readPath(railRects[2])).toEqual([1, 1, 225, 12, 6]);
     expect(railRects[2].data.style).toMatchObject({
       color: 0x090705,
       alpha: 0.64,
       width: 1,
       alignment: 1,
     });
-    expect(readPath(railRects[3])).toEqual([1, 1, 77, 12, 6]);
+    expect(readPath(railRects[3])).toEqual([1, 1, 84.125, 12, 6]);
     expect(railRects[3].data.style.color).toBe(0x8740df);
-    expect(readPath(railRects[4])).toEqual([1, 1, 77, 12, 6]);
+    expect(readPath(railRects[4])).toEqual([1, 1, 84.125, 12, 6]);
     expect(railRects[4].data.style).toMatchObject({
       color: 0xbd72f3,
       width: 1,
@@ -129,15 +129,15 @@ describe('PixiTopPanelView', () => {
       },
     );
     expect(dividerRects.map(readPath)).toEqual([
-      [51, 3, 1, 8, 1],
-      [53, 3, 1, 8, 1],
-      [52, 3, 1, 8, 1],
-      [102, 3, 1, 8, 1],
-      [104, 3, 1, 8, 1],
-      [103, 3, 1, 8, 1],
-      [153, 3, 1, 8, 1],
-      [155, 3, 1, 8, 1],
-      [154, 3, 1, 8, 1],
+      [55.75, 3, 1, 8, 1],
+      [57.75, 3, 1, 8, 1],
+      [56.75, 3, 1, 8, 1],
+      [111.5, 3, 1, 8, 1],
+      [113.5, 3, 1, 8, 1],
+      [112.5, 3, 1, 8, 1],
+      [167.25, 3, 1, 8, 1],
+      [169.25, 3, 1, 8, 1],
+      [168.25, 3, 1, 8, 1],
     ]);
     expect(dividerRects.map(readColorAndAlpha)).toEqual([
       [0xffffff, 0.12],
@@ -150,6 +150,14 @@ describe('PixiTopPanelView', () => {
       [0xffffff, 0.08],
       [0xffffff, 0.68],
     ]);
+    expect(view.questRail.x - view.questRail.pivot.x).toBe(
+      view.levelControl.x + 14,
+    );
+    expect(view.questCaption.x).toBe(view.levelControl.x + 33);
+    expect(view.questCaption.y).toBe(74);
+    expect(view.questRemaining.x).toBe(
+      view.questCaption.x + view.questCaption.measuredWidth,
+    );
 
     view.destroy();
   });

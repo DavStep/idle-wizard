@@ -210,11 +210,19 @@ export class PixiViewModelFactory {
           quantity: gameplay.seedSummoning?.quantity ?? 1,
           canSummon: gameplay.seedSummoning?.canSummon === true,
           enabled: gameplay.seedSummoning?.canSummon === true,
+          pressEnabled:
+            gameplay.seedSummoning?.canSummon === true ||
+            gameplay.seedSummoning?.unavailableReason ===
+              'no_active_seed_weights',
         },
         bag: {
+          side: 'left',
+          weight: 40,
           enabled: true,
         },
         inbox: {
+          side: 'right',
+          weight: 10,
           enabled: true,
           visible: true,
           notification:
@@ -223,6 +231,8 @@ export class PixiViewModelFactory {
             Number(playerInbox.claimableCount) > 0,
         },
         stats: {
+          side: 'right',
+          weight: 0,
           enabled: true,
         },
         features: createWorkshopFeatures({
@@ -236,7 +246,6 @@ export class PixiViewModelFactory {
         dialogs: {
           summonInfo: this.createSummonInfoDialog(
             gameplay,
-            dialogState.summonSeedKey,
             actions,
           ),
           tasksInfo: {
@@ -522,71 +531,68 @@ export class PixiViewModelFactory {
 
   createSummonInfoDialog(
     gameplay = {},
-    selectedSeedKey = null,
     actions = {},
   ) {
     const auto = gameplay.seedSummoning?.autoSummoning ?? {};
+    const autoSummonUnlocked = auto.unlocked === true;
     const seeds = gameplay.seedSummoning?.dropChances ?? [];
-    const selectedSeed =
-      seeds.find((seed) => seed.key === selectedSeedKey) ??
-      seeds[0] ??
-      null;
-    const selectedPreference = normalizeSeedDropPreference(
-      selectedSeed?.dropPreference,
-    );
     return {
       title: 'Summoning Seeds',
-      summaryRows: [
-        {
-          id: 'auto',
-          label: 'Auto Summon',
-          value: auto.unlocked ? '' : 'Locked',
-        },
-        {
-          id: 'reserve',
-          label: 'Keep Mana Above',
-          value: String(auto.manaReserve ?? 0),
-          valueIconResourceKey: 'mana',
-        },
-        ...(selectedSeed
-          ? [
-              {
-                id: 'selected',
-                label: toTitleCase(
-                  splitCamelCase(selectedSeed.label ?? selectedSeed.key),
-                ),
-                value: `${toTitleCase(selectedPreference)} · ${formatPercent(
-                  selectedSeed.dropChance,
-                )}`,
-                valueTone: SEED_DROP_VALUE_TONES[selectedPreference],
-                itemKind: 'seed',
-                itemKey: selectedSeed.key,
-                iconLeading: true,
-              },
-            ]
-          : []),
-      ],
-      settingsToggle: auto.unlocked
+      autoSummonUnlocked,
+      summaryRows: autoSummonUnlocked
+        ? [
+            {
+              id: 'auto',
+              label: 'Auto Summon',
+              value: '',
+              icon: { kind: 'automation' },
+              iconLeading: true,
+            },
+            {
+              id: 'reserve',
+              label: 'Keep Mana Above',
+              value: String(auto.manaReserve ?? 0),
+              valueIconResourceKey: 'mana',
+            },
+          ]
+        : [],
+      settingsToggle: autoSummonUnlocked
         ? {
             value: auto.enabled !== false,
             enabled: true,
             onChange: () => actions.toggleSummonAutomation?.(),
           }
         : null,
-      manaSlider: {
-        mode: 'range',
-        min: 0,
-        max: Math.max(0, Number(auto.maxManaReserve) || 5_000),
-        step: Math.max(1, Number(auto.reserveStep) || 1),
-        value: Math.max(0, Number(auto.manaReserve) || 0),
-        tone: 'blue',
-        enabled: auto.unlocked === true,
-        onChange: (value) => actions.setSummonManaReserve?.(value),
-      },
-      dropSlider: selectedSeed
+      manaSlider: autoSummonUnlocked
         ? {
+            mode: 'range',
+            min: 0,
+            max: Math.max(0, Number(auto.maxManaReserve) || 5_000),
+            step: Math.max(1, Number(auto.reserveStep) || 1),
+            value: Math.max(0, Number(auto.manaReserve) || 0),
+            tone: 'blue',
+            enabled: true,
+            onChange: (value) => actions.setSummonManaReserve?.(value),
+          }
+        : null,
+      actions: [],
+      items: seeds.map((seed) => {
+        const preference = normalizeSeedDropPreference(
+          seed.dropPreference,
+        );
+        return {
+          id: seed.key ?? seed.itemTypeId,
+          label: toTitleCase(splitCamelCase(seed.label ?? seed.key)),
+          detail: `${formatPercent(seed.dropChance)} Chance`,
+          value: toTitleCase(preference),
+          valueTone: SEED_DROP_VALUE_TONES[preference],
+          itemKind: 'seed',
+          itemKey: seed.key,
+          resourceKey: 'seed',
+          semanticId: `workshop.summonInfo.seed.${seed.key ?? seed.itemTypeId}`,
+          dropSlider: {
             mode: 'milestones',
-            value: selectedPreference,
+            value: preference,
             enabled: true,
             options: SEED_DROP_SLIDER_OPTIONS.map((option) => ({
               ...option,
@@ -594,30 +600,12 @@ export class PixiViewModelFactory {
             })),
             onChange: (preference) =>
               actions.setSummonDropPreference?.(
-                selectedSeed.key,
+                seed.key,
                 preference,
               ),
-          }
-        : null,
-      actions: [],
-      items: seeds.map((seed) => ({
-        id: seed.key ?? seed.itemTypeId,
-        label: toTitleCase(splitCamelCase(seed.label ?? seed.key)),
-        detail: `${formatPercent(seed.dropChance)} Chance`,
-        value: toTitleCase(
-          normalizeSeedDropPreference(seed.dropPreference),
-        ),
-        valueTone:
-          SEED_DROP_VALUE_TONES[
-            normalizeSeedDropPreference(seed.dropPreference)
-          ],
-        itemKind: 'seed',
-        itemKey: seed.key,
-        resourceKey: 'seed',
-        selected: seed === selectedSeed,
-        semanticId: `workshop.summonInfo.seed.${seed.key ?? seed.itemTypeId}`,
-        action: () => actions.selectSummonSeed?.(seed.key),
-      })),
+          },
+        };
+      }),
     };
   }
 
@@ -968,38 +956,38 @@ function createWorkshopFeatures({
       id: 'alliance',
       label: 'alliance',
       side: 'left',
-      row: 1,
+      weight: 10,
       visible: level >= 4,
       notification: Boolean(notifications.alliance),
       allianceTagColor:
-        alliance?.tagColor ?? alliance?.allianceTagColor ?? 'ink',
+        alliance?.tagColor ?? alliance?.allianceTagColor ?? 'red',
     },
     {
       id: 'inbox',
       label: 'inbox',
       side: 'right',
-      row: 1,
+      weight: 10,
       visible: level >= 4,
     },
     {
       id: 'leaderboard',
       label: 'leaderboard',
       side: 'left',
-      row: 2,
+      weight: 20,
       visible: level >= 3,
     },
     {
       id: 'discoveries',
       label: 'discoveries',
       side: 'right',
-      row: 2,
+      weight: 20,
       visible: level >= 4,
     },
     {
       id: 'personalTasks',
       label: 'tasks',
       side: 'left',
-      row: 3,
+      weight: 30,
       visible: gameplay.personalTasks?.unlocked === true,
       notification: Boolean(notifications.personalTasks),
     },
@@ -1007,7 +995,7 @@ function createWorkshopFeatures({
       id: 'worldEvent',
       label: 'event',
       side: 'right',
-      row: 3,
+      weight: 30,
       visible: gameplay.worldNotice?.unlocked === true,
       timer: String(notice?.resetLabel ?? '')
         .trim()

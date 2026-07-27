@@ -2300,7 +2300,7 @@ describe('GardenPlotManager', () => {
     expect(baseCss).not.toContain('--style-resource-herb');
   });
 
-  it('keeps plot notification dots on the text row instead of progress rails', () => {
+  it('keeps plot notification dots slightly outside the plot top-right corner', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const genericRuleIndex = baseCss.indexOf(
       ':where(button, [role="button"])[data-notification="true"]::before',
@@ -2315,9 +2315,9 @@ describe('GardenPlotManager', () => {
     expect(genericRuleIndex).toBeGreaterThan(-1);
     expect(plotRuleIndex).toBeGreaterThan(genericRuleIndex);
     expect(rule).toBeDefined();
-    expect(rule).toContain('top: calc(');
-    expect(rule).toContain('var(--style-row-min-height)');
-    expect(rule).toContain('var(--style-notification-size)');
+    expect(rule).toContain(
+      'top: calc(-1 * var(--style-notification-offset));',
+    );
   });
 
   it('keeps choose-seed rows compact without emphasized row labels', () => {

@@ -404,17 +404,35 @@ describe('WorkshopActionBarManager', () => {
       summonButton?.dataset.pressFeedbackTarget,
     ).toBeUndefined();
     expect(summonCircle?.getAttribute('aria-hidden')).toBe('true');
-    expect(summonButtonRule).toMatch(/\btop:\s*59\.5%;/);
+    expect(summonButtonRule).toMatch(
+      /\btop:\s*calc\(59\.5% \+ 26px\);/,
+    );
     expect(summonButtonRule).toMatch(/\bwidth:\s*auto;/);
     expect(summonButtonRule).not.toMatch(/\bwidth:\s*196px;/);
     expect(actionBarButtonRule).toMatch(/\bwidth:\s*auto;/);
     expect(circleRule).toMatch(/\bposition:\s*absolute;/);
+    expect(circleRule).toMatch(/\btop:\s*calc\(50% - 44px\);/);
     expect(circleRule).toMatch(/\bwidth:\s*196px;/);
     expect(circleRule).toMatch(/\bpointer-events:\s*none;/);
     expect(textRule).not.toMatch(/\btext-transform:\s*lowercase;/);
     expect(textRule).toMatch(/\btransform:\s*none;/);
 
     manager.unmount();
+  });
+
+  it('moves the retained summon cost button down by half its height', () => {
+    const pixiSource = readFileSync(
+      `${cwd()}/src/rendering/pixi/pages/workshop/WorkshopPixiPage.js`,
+      'utf8',
+    );
+
+    expect(pixiSource).toContain('const SUMMON_BUTTON_HEIGHT = 52;');
+    expect(pixiSource).toContain(
+      'const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;',
+    );
+    expect(pixiSource).toMatch(
+      /this\.button\.setBounds\(\s*-SUMMON_BUTTON_WIDTH \/ 2,\s*-SUMMON_BUTTON_HEIGHT \/ 2 \+ SUMMON_BUTTON_DOWN_OFFSET,/,
+    );
   });
 
   it('keeps the summon effect on the circle art and disables it for reduced motion', () => {
@@ -516,7 +534,7 @@ describe('WorkshopActionBarManager', () => {
       /\.workshop-page__feature-character\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const leftPanelIconOffsetRule = baseCss.match(
-      /\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__feature-character,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__bag-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__mail-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__leaderboard-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__discoveries-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,
+      /\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__feature-character,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__personal-tasks-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__bag-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__mail-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__leaderboard-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__discoveries-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const rightPanelIconOffsetRule = baseCss.match(
       /\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__feature-character,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__bag-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__mail-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__leaderboard-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__discoveries-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,

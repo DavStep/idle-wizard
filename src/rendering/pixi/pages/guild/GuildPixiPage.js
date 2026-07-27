@@ -793,9 +793,6 @@ export class GuildPixiPage extends BasePixiRetainedView {
       const button = this.tabButtons.get(tab.id);
       button.position.set(tabX, 0);
       button.setSize(tabWidth, PIXI_UI_GEOMETRY.tabHeight);
-      this.tabNotifications
-        .get(tab.id)
-        ?.position.set(tabWidth, 0);
       tabX += tabWidth + TAB_GAP;
     }
     this.relayoutSections(contentWidth, scrollHeight);

@@ -82,8 +82,8 @@
     },
     "passesNoGutterGate": true,
     "uniqueColors": {
-      "all": 69,
-      "corners": 69,
+      "all": 43,
+      "corners": 43,
       "edges": 3
     },
     "workAsset": {
@@ -117,8 +117,8 @@
         "bottom": 0
       },
       "uniqueColors": {
-        "all": 69,
-        "corners": 69,
+        "all": 43,
+        "corners": 43,
         "edges": 3
       }
     }

@@ -46,7 +46,7 @@ const PAGE_ICON_ART_SCALE = Object.freeze({
   workshop: 0.84,
   research: 1.04,
   shop: 1,
-  prestige: 0.8,
+  prestige: 0.9,
 });
 const ANNOUNCEMENT_EASE = Object.freeze([
   0.37, 0, 0.63, 1,

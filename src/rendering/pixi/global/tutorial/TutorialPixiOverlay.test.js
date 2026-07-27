@@ -6,9 +6,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import {
-  DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
 } from '../../theme/PixiThemeTokens.js';
+import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import {
   createTutorialPixiViewModel,
   TutorialPixiOverlay,
@@ -210,6 +210,13 @@ describe('TutorialPixiOverlay', () => {
         (overlay.surface.progress.x +
           overlay.surface.progress.barWidth),
     ).toBe(6);
+    expect(
+      overlay.surface.advanceControl.y +
+        overlay.surface.advanceControl.buttonHeight / 2,
+    ).toBe(
+      overlay.surface.progress.y +
+        overlay.surface.progress.barHeight / 2,
+    );
     expect(overlay.guideLabelButton.variant).toBe('brown-light');
     expect(overlay.guideLabel.text).toBe('hide');
     expect(overlay.guideLabel.textObject.style.fill).toBe('#ffffff');
@@ -261,6 +268,7 @@ describe('TutorialPixiOverlay', () => {
     for (const [advanceLabel, expected] of [
       ['next', 'Next'],
       ['continue', 'Continue'],
+      ['show', 'Show'],
       ['enter workshop', 'Enter workshop'],
     ]) {
       overlay.bind({
@@ -283,7 +291,7 @@ describe('TutorialPixiOverlay', () => {
     }
   });
 
-  it('keeps the intro dialog on its dedicated themed surface', () => {
+  it('renders the intro with the shared blocking dialog shell', () => {
     const overlay = new TutorialPixiOverlay({
       assets: createAssets(),
       reducedMotion: true,
@@ -302,13 +310,117 @@ describe('TutorialPixiOverlay', () => {
     });
 
     expect(overlay.surface.visualTheme.surface).toBe(
-      DEFAULT_PIXI_THEME_SNAPSHOT.surface,
+      '#ffe7c8',
     );
     expect(overlay.surface.copy.textObject.style.fill).toBe(
-      DEFAULT_PIXI_THEME_SNAPSHOT.text,
+      '#634934',
     );
+    expect(overlay.surface.introDialog).toBeInstanceOf(
+      PixiDialogFrame,
+    );
+    expect(overlay.surface.introDialog.titleLabel.text).toBe(
+      'lesson',
+    );
+    expect(
+      overlay.surface.introDialog.closeControl.visible,
+    ).toBe(false);
     expect(overlay.surface.frame.visible).toBe(false);
-    expect(overlay.surface.introFrame.visible).toBe(true);
+    expect(overlay.surface.introDialog.visible).toBe(true);
+    expect(overlay.surface.title.visible).toBe(false);
+    expect(
+      overlay.surface.outerHeight -
+        (overlay.surface.advanceControl.y +
+          overlay.surface.advanceControl.buttonHeight),
+    ).toBe(20);
+  });
+
+  it('sizes intro dialogs from visible content and omits null progress', () => {
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      step: { id: 'intro-market', highlightTargetIds: [] },
+      lesson: {
+        id: 'intro-market',
+        title: 'Market Opened',
+        text:
+          'The front room is cleared out.\n\nFirst, summon sage seeds again. Then sell one in market.',
+        progress: null,
+        variant: 'intro-dialog',
+        autoOpen: true,
+        advanceOnClick: true,
+        advanceLabel: 'continue',
+      },
+      cue: { kind: 'none' },
+    });
+
+    expect(overlay.surface.progress.visible).toBe(false);
+    expect(overlay.surface.progressLabel.visible).toBe(false);
+    expect(overlay.surface.outerHeight).toBeLessThan(136);
+    expect(
+      overlay.surface.outerHeight -
+        (overlay.surface.advanceControl.y +
+          overlay.surface.advanceControl.buttonHeight),
+    ).toBe(20);
+  });
+
+  it('animates lesson height changes in both directions and snaps for reduced motion', () => {
+    const ticker = createTicker();
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      application: { ticker },
+    });
+    overlay.activate();
+    overlay.bind(createIntroLesson('short', 'A short lesson.'));
+    const shortHeight = overlay.surface.outerHeight;
+
+    overlay.bind(
+      createIntroLesson(
+        'long',
+        'A much longer lesson that wraps across several lines so the shared dialog needs more room before the player can continue.',
+      ),
+    );
+    const growingStartHeight = overlay.surface.outerHeight;
+    expect(growingStartHeight).toBe(shortHeight);
+    expect(overlay.surface.hasActiveResize()).toBe(true);
+
+    ticker.tick(TUTORIAL_PIXI_GEOMETRY.panelResizeMs / 2);
+    const growingMidHeight = overlay.surface.outerHeight;
+    expect(growingMidHeight).toBeGreaterThan(growingStartHeight);
+
+    ticker.tick(TUTORIAL_PIXI_GEOMETRY.panelResizeMs);
+    const longHeight = overlay.surface.outerHeight;
+    expect(longHeight).toBeGreaterThan(growingMidHeight);
+    expect(overlay.surface.hasActiveResize()).toBe(false);
+
+    overlay.bind(createIntroLesson('short-again', 'Short again.'));
+    expect(overlay.surface.outerHeight).toBe(longHeight);
+    ticker.tick(TUTORIAL_PIXI_GEOMETRY.panelResizeMs / 2);
+    expect(overlay.surface.outerHeight).toBeLessThan(longHeight);
+    ticker.tick(TUTORIAL_PIXI_GEOMETRY.panelResizeMs);
+    expect(overlay.surface.outerHeight).toBeLessThan(longHeight);
+
+    const reduced = new TutorialPixiOverlay({
+      assets: createAssets(),
+      application: { ticker: createTicker() },
+      reducedMotion: true,
+    });
+    reduced.activate();
+    reduced.bind(createIntroLesson('reduced-short', 'Short.'));
+    const reducedShortHeight = reduced.surface.outerHeight;
+    reduced.bind(
+      createIntroLesson(
+        'reduced-long',
+        'A longer reduced-motion lesson that needs another wrapped line.',
+      ),
+    );
+    expect(reduced.surface.outerHeight).toBeGreaterThan(
+      reducedShortHeight,
+    );
+    expect(reduced.surface.hasActiveResize()).toBe(false);
   });
 
   it('typewrites each exact step/copy pair once and stops idle ticker work', () => {
@@ -690,6 +802,24 @@ function createAssets() {
   return {
     loaded: true,
     getTexture: vi.fn(() => Texture.EMPTY),
+  };
+}
+
+function createIntroLesson(id, text) {
+  return {
+    kind: 'lesson',
+    step: { id, highlightTargetIds: [] },
+    lesson: {
+      id,
+      title: 'Lesson',
+      text,
+      progress: null,
+      variant: 'intro-dialog',
+      autoOpen: true,
+      advanceOnClick: true,
+      advanceLabel: 'continue',
+    },
+    cue: { kind: 'none' },
   };
 }
 

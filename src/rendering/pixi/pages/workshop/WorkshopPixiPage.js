@@ -60,11 +60,31 @@ const WORKSHOP_DIALOGS = Object.freeze([
 ]);
 
 const DEFAULT_FEATURES = Object.freeze([
-  Object.freeze({ id: 'alliance', label: 'Alliance', side: 'left', row: 1 }),
-  Object.freeze({ id: 'leaderboard', label: 'Leaderboard', side: 'left', row: 2 }),
-  Object.freeze({ id: 'discoveries', label: 'Discoveries', side: 'right', row: 2 }),
-  Object.freeze({ id: 'personalTasks', label: 'Tasks', side: 'left', row: 3 }),
-  Object.freeze({ id: 'worldEvent', label: 'Event', side: 'right', row: 3 }),
+  Object.freeze({ id: 'alliance', label: 'Alliance', side: 'left', weight: 10 }),
+  Object.freeze({
+    id: 'leaderboard',
+    label: 'Leaderboard',
+    side: 'left',
+    weight: 20,
+  }),
+  Object.freeze({
+    id: 'discoveries',
+    label: 'Discoveries',
+    side: 'right',
+    weight: 20,
+  }),
+  Object.freeze({
+    id: 'personalTasks',
+    label: 'Tasks',
+    side: 'left',
+    weight: 30,
+  }),
+  Object.freeze({
+    id: 'worldEvent',
+    label: 'Event',
+    side: 'right',
+    weight: 30,
+  }),
 ]);
 
 const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
@@ -101,9 +121,20 @@ const ALLIANCE_BANNER_TINTS = Object.freeze({
 });
 
 const SUMMON_EFFECT_DURATION_MS = 520;
+const SUMMON_BUTTON_WIDTH = 92;
+const SUMMON_BUTTON_HEIGHT = 52;
+const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;
 const SIDE_CONTROLS_TASK_GAP = 8;
-const SIDE_PANEL_FIRST_ROW_GAP = 25;
 const SIDE_PANEL_ROW_GAP = 52.25;
+const SIDE_PANEL_EDGE = 16;
+const SIDE_PANEL_ICON_WIDTH = 45.5;
+const SIDE_PANEL_ICON_HEIGHT = 80.25;
+const SIDE_PANEL_ENTER_DURATION_MS = 200;
+const SIDE_PANEL_EXIT_DURATION_MS = 150;
+const SIDE_PANEL_MOVE_DURATION_MS = 180;
+const SIDE_PANEL_ENTER_OFFSET = 10;
+const SIDE_PANEL_ENTER_SCALE = 0.96;
+const SIDE_PANEL_STAGGER_MS = 16;
 const WORKSHOP_REQUEST_TEXT_FILL = '#ffffff';
 const WORKSHOP_REQUEST_TEXT_STROKE_WIDTH = 2;
 const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
@@ -141,6 +172,18 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.actions = actions;
     this.currentActions = actions;
     this.dialogModels = {};
+    this.hasObservedAutoSummonUnlock = false;
+    this.wasAutoSummonUnlocked = false;
+    this.pendingAutoSummonUnlockReveal = false;
+    this.hasBoundSideControls = false;
+    this.sideControlMotionStates = new Map();
+    this.requestFrame = requestFrame;
+    this.cancelFrame = cancelFrame;
+    this.timeSource = timeSource;
+    this.reducedMotion =
+      typeof reducedMotion === 'function'
+        ? reducedMotion
+        : () => Boolean(reducedMotion);
 
     this.tasks = new WorkshopTaskPanel({
       page: this,
@@ -161,6 +204,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       id: 'bag',
       label: 'Bag',
       side: 'left',
+      weight: 40,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopBag,
       onActivate: () => this.openDialog('bag'),
     });
@@ -170,17 +214,20 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       id: 'inbox',
       label: 'Inbox',
       side: 'right',
+      weight: 10,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopInbox,
       scale: 1.3,
       onActivate: () => this.openDialog('inbox'),
     });
-    this.statsButton = new RetainedButton({
+    this.statsButton = new WorkshopIconPanelAction({
+      page: this,
       assetManager: this.assetManager,
+      id: 'stats',
       label: 'Stats',
-      buttonLabel: 'workshop-stats',
-      inputRouter: this.inputRouter,
+      side: 'right',
+      weight: 0,
+      textureId: PIXI_ROOT_RUN_ASSETS.workshopStats,
       onActivate: () => this.openDialog('stats'),
-      variant: 'yellow',
     });
     this.featureLayer = new Container({ label: 'workshop-feature-buttons' });
     this.content.addChild(
@@ -264,6 +311,10 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
                 counters,
                 onClose: () => this.dialogRegistry.close(dialogId),
                 theme: this.theme,
+                requestFrame: this.requestFrame,
+                cancelFrame: this.cancelFrame,
+                timeSource: this.timeSource,
+                reducedMotion: this.reducedMotion,
               })
             : new WorkshopDialogPixi({
                 dialogId,
@@ -283,6 +334,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
   renderViewModel(viewModel) {
     const workshop = viewModel.workshop ?? viewModel;
     this.currentActions = viewModel.actions ?? workshop.actions ?? this.actions;
+    this.observeAutoSummonUnlock(workshop.dialogs?.summonInfo);
     this.dialogModels = workshop.dialogs ?? {};
     this.rebindOpenDialogs();
     this.tasks.bind(workshop.tasks ?? {});
@@ -294,6 +346,8 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     });
     this.bagButton.setModel({
       label: 'Bag',
+      side: workshop.bag?.side ?? 'left',
+      weight: workshop.bag?.weight ?? 40,
       enabled: workshop.bag?.enabled !== false,
       visible: workshop.bag?.visible !== false,
       notification: workshop.bag?.notification === true,
@@ -305,6 +359,8 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     const inbox = workshop.inbox ?? providedFeatures.get('inbox') ?? {};
     this.inboxButton.setModel({
       label: inbox.label ?? 'Inbox',
+      side: inbox.side ?? 'right',
+      weight: inbox.weight ?? 10,
       enabled: inbox.enabled !== false,
       visible: inbox.visible !== false,
       notification: inbox.notification === true,
@@ -313,7 +369,10 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     });
     this.statsButton.setModel({
       label: 'Stats',
+      side: workshop.stats?.side ?? 'right',
+      weight: workshop.stats?.weight ?? 0,
       enabled: workshop.stats?.enabled !== false,
+      visible: workshop.stats?.visible !== false,
       notification: workshop.stats?.notification === true,
       action: () => workshop.stats?.onActivate?.() ?? this.openDialog('stats'),
     });
@@ -324,23 +383,28 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     }));
     this.features.reconcile(features);
     this.flyouts.reconcile(normalizeRows(workshop.flyouts));
-    this.layoutWorkshop();
+    this.layoutWorkshop({
+      animateSideControls: this.hasBoundSideControls,
+    });
+    this.hasBoundSideControls = true;
   }
 
   openDialog(id, explicitModel = null) {
     const dialogId = id.startsWith('workshop.') ? id : `workshop.${id}`;
     const shortId = dialogId.slice('workshop.'.length);
     const definition = WORKSHOP_DIALOGS.find((entry) => entry.id === shortId);
-    const model = explicitModel ?? this.dialogModels[shortId] ?? {
+    const baseModel = explicitModel ?? this.dialogModels[shortId] ?? {
       title: definition?.title ?? shortId,
       rows: [],
     };
+    const model = this.prepareDialogModel(shortId, baseModel);
     const action = this.currentActions?.openDialog;
 
     if (action) {
       const handled = action(shortId, model);
 
       if (handled === true) {
+        this.consumeAutoSummonUnlockReveal(shortId, model);
         return true;
       }
     }
@@ -350,6 +414,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     }
 
     this.dialogRegistry.open(dialogId, model);
+    this.consumeAutoSummonUnlockReveal(shortId, model);
     return true;
   }
 
@@ -360,10 +425,56 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       }
 
       const shortId = dialogId.slice('workshop.'.length);
-      const model = this.dialogModels[shortId];
+      const model = this.prepareDialogModel(
+        shortId,
+        this.dialogModels[shortId],
+      );
       if (model) {
         this.dialogRegistry.open(dialogId, model);
+        this.consumeAutoSummonUnlockReveal(shortId, model);
       }
+    }
+  }
+
+  observeAutoSummonUnlock(model = null) {
+    const unlocked = model?.autoSummonUnlocked === true;
+
+    if (!this.hasObservedAutoSummonUnlock) {
+      this.hasObservedAutoSummonUnlock = true;
+      this.wasAutoSummonUnlocked = unlocked;
+      return;
+    }
+
+    if (!this.wasAutoSummonUnlocked && unlocked) {
+      this.pendingAutoSummonUnlockReveal = true;
+    } else if (!unlocked) {
+      this.pendingAutoSummonUnlockReveal = false;
+    }
+
+    this.wasAutoSummonUnlocked = unlocked;
+  }
+
+  prepareDialogModel(shortId, model) {
+    if (
+      shortId !== 'summonInfo' ||
+      !model ||
+      !this.pendingAutoSummonUnlockReveal
+    ) {
+      return model;
+    }
+
+    return {
+      ...model,
+      revealAutoSummonUnlock: true,
+    };
+  }
+
+  consumeAutoSummonUnlockReveal(shortId, model) {
+    if (
+      shortId === 'summonInfo' &&
+      model?.revealAutoSummonUnlock === true
+    ) {
+      this.pendingAutoSummonUnlockReveal = false;
     }
   }
 
@@ -405,7 +516,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
   }
 
   layoutPage() {
-    this.layoutWorkshop();
+    this.layoutWorkshop({ animateSideControls: false });
   }
 
   activate() {
@@ -418,7 +529,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     super.deactivate();
   }
 
-  layoutWorkshop() {
+  layoutWorkshop({ animateSideControls = false } = {}) {
     if (!this.tasks) {
       return;
     }
@@ -434,35 +545,242 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       RETAINED_PAGE_GEOMETRY.contentTop +
       this.tasks.height +
       SIDE_CONTROLS_TASK_GAP;
-    const sidePanelTop = sideControlsTop + SIDE_PANEL_FIRST_ROW_GAP;
-    this.bagButton.setBounds(
-      16,
-      sidePanelTop + 3 * SIDE_PANEL_ROW_GAP,
-    );
-    this.inboxButton.setBounds(
-      this.sourceWidth - 16 - 45.5,
-      sidePanelTop,
-    );
-    this.statsButton.setBounds(
-      this.sourceWidth - 116,
-      sideControlsTop,
-      100,
-      22,
-    );
-
-    for (const feature of this.features.getWidgets()) {
-      const top =
-        sidePanelTop +
-        (Math.max(1, feature.model.row) - 1) * SIDE_PANEL_ROW_GAP;
-      const left =
-        feature.model.side === 'right'
-          ? this.sourceWidth - 16 - 45.5
-          : 16;
-      feature.setBounds(left, top, 45.5, 80.25);
-    }
+    this.layoutSideControls(sideControlsTop, {
+      animate: animateSideControls,
+    });
 
     this.flyoutLayer.position.set(0, RETAINED_PAGE_GEOMETRY.contentTop + 182);
     this.registerStaticTargets();
+  }
+
+  layoutSideControls(top, { animate = false } = {}) {
+    const entries = this.getSideControlEntries();
+    const destinations = new Map();
+
+    for (const side of ['left', 'right']) {
+      entries
+        .filter((entry) => entry.visible && entry.side === side)
+        .sort(compareSideControlEntries)
+        .forEach((entry, slot) => {
+          destinations.set(entry.id, {
+            x:
+              side === 'right'
+                ? this.sourceWidth - SIDE_PANEL_EDGE - entry.width
+                : SIDE_PANEL_EDGE,
+            y: top + slot * SIDE_PANEL_ROW_GAP,
+            slot,
+          });
+        });
+    }
+
+    for (const entry of entries) {
+      const state = this.sideControlMotionStates.get(entry.id) ?? null;
+      const destination =
+        destinations.get(entry.id) ??
+        state?.destination ?? {
+          x:
+            entry.side === 'right'
+              ? this.sourceWidth - SIDE_PANEL_EDGE - entry.width
+              : SIDE_PANEL_EDGE,
+          y: top,
+          slot: 0,
+        };
+      this.layoutSideControl(entry, destination, {
+        animate:
+          animate &&
+          this.hasBoundSideControls &&
+          !this.reducedMotion(),
+      });
+    }
+  }
+
+  getSideControlEntries() {
+    return [
+      {
+        id: 'stats',
+        control: this.statsButton,
+        root: this.statsButton.root,
+        side: this.statsButton.side,
+        weight: this.statsButton.weight,
+        visible: this.statsButton.visible,
+        width: SIDE_PANEL_ICON_WIDTH,
+        height: SIDE_PANEL_ICON_HEIGHT,
+        setBounds: (x, y) => this.statsButton.setBounds(x, y),
+      },
+      {
+        id: 'bag',
+        control: this.bagButton,
+        root: this.bagButton.root,
+        side: this.bagButton.side,
+        weight: this.bagButton.weight,
+        visible: this.bagButton.visible,
+        width: SIDE_PANEL_ICON_WIDTH,
+        height: SIDE_PANEL_ICON_HEIGHT,
+        setBounds: (x, y) => this.bagButton.setBounds(x, y),
+      },
+      {
+        id: 'inbox',
+        control: this.inboxButton,
+        root: this.inboxButton.root,
+        side: this.inboxButton.side,
+        weight: this.inboxButton.weight,
+        visible: this.inboxButton.visible,
+        width: SIDE_PANEL_ICON_WIDTH,
+        height: SIDE_PANEL_ICON_HEIGHT,
+        setBounds: (x, y) => this.inboxButton.setBounds(x, y),
+      },
+      ...this.features.getWidgets().map((feature) => ({
+        id: `feature:${feature.model.id}`,
+        control: feature,
+        root: feature.root,
+        side: feature.side,
+        weight: feature.weight,
+        visible: feature.visible,
+        width: SIDE_PANEL_ICON_WIDTH,
+        height: SIDE_PANEL_ICON_HEIGHT,
+        setBounds: (x, y, width, height) =>
+          feature.setBounds(x, y, width, height),
+      })),
+    ];
+  }
+
+  layoutSideControl(entry, destination, { animate }) {
+    const previous = this.sideControlMotionStates.get(entry.id) ?? null;
+    const current = {
+      x: entry.root.position.x,
+      y: entry.root.position.y,
+      alpha: entry.root.alpha,
+      scale: entry.root.scale.x,
+    };
+
+    entry.setBounds(
+      destination.x,
+      destination.y,
+      entry.width,
+      entry.height,
+    );
+    entry.root.position.set(current.x, current.y);
+
+    const unchanged =
+      previous &&
+      previous.visible === entry.visible &&
+      previous.side === entry.side &&
+      previous.destination.x === destination.x &&
+      previous.destination.y === destination.y;
+
+    if (unchanged) {
+      previous.destination = destination;
+      previous.side = entry.side;
+      if (!previous.frame) {
+        this.finishSideControlTransition(entry, previous);
+      }
+      return;
+    }
+
+    if (previous?.frame) {
+      this.cancelFrame(previous.frame);
+    }
+
+    const wasVisible = previous?.visible;
+    const state = previous ?? {
+      frame: 0,
+      visible: entry.visible,
+      side: entry.side,
+      destination,
+    };
+    state.frame = 0;
+    state.visible = entry.visible;
+    state.side = entry.side;
+    state.destination = destination;
+    this.sideControlMotionStates.set(entry.id, state);
+
+    if (!animate || !previous) {
+      this.finishSideControlTransition(entry, state);
+      return;
+    }
+
+    const appearing = wasVisible === false && entry.visible;
+    const disappearing = wasVisible === true && !entry.visible;
+    const offset =
+      entry.side === 'right'
+        ? SIDE_PANEL_ENTER_OFFSET
+        : -SIDE_PANEL_ENTER_OFFSET;
+    const from = {
+      x: appearing ? destination.x + offset : current.x,
+      y: appearing ? destination.y + 3 : current.y,
+      alpha: appearing ? 0 : current.alpha,
+      scale: appearing ? SIDE_PANEL_ENTER_SCALE : current.scale,
+    };
+    const to = {
+      x: disappearing ? current.x + offset : destination.x,
+      y: disappearing ? current.y + 2 : destination.y,
+      alpha: disappearing ? 0 : 1,
+      scale: disappearing ? SIDE_PANEL_ENTER_SCALE : 1,
+    };
+    const duration = disappearing
+      ? SIDE_PANEL_EXIT_DURATION_MS
+      : appearing
+        ? SIDE_PANEL_ENTER_DURATION_MS
+        : SIDE_PANEL_MOVE_DURATION_MS;
+    const delay =
+      appearing
+        ? Math.min(destination.slot, 2) * SIDE_PANEL_STAGGER_MS
+        : 0;
+
+    entry.root.visible = true;
+    entry.root.renderable = true;
+    entry.root.position.set(from.x, from.y);
+    entry.root.alpha = from.alpha;
+    entry.root.scale.set(from.scale);
+
+    let startedAt = null;
+    const tick = (timestamp) => {
+      if (startedAt === null) {
+        startedAt = timestamp;
+      }
+      const elapsed = Math.max(0, timestamp - startedAt - delay);
+      const linearProgress = Math.min(1, elapsed / duration);
+      const progress = easeOutQuart(linearProgress);
+      entry.root.position.set(
+        interpolate(from.x, to.x, progress),
+        interpolate(from.y, to.y, progress),
+      );
+      entry.root.alpha = interpolate(from.alpha, to.alpha, progress);
+      entry.root.scale.set(
+        interpolate(from.scale, to.scale, progress),
+      );
+
+      if (linearProgress >= 1) {
+        state.frame = 0;
+        this.finishSideControlTransition(entry, state);
+        return;
+      }
+
+      state.frame = this.requestFrame(tick);
+    };
+
+    state.frame = this.requestFrame(tick);
+  }
+
+  finishSideControlTransition(entry, state) {
+    entry.root.position.set(
+      state.destination.x,
+      state.destination.y,
+    );
+    entry.root.alpha = 1;
+    entry.root.scale.set(1);
+    entry.root.visible = state.visible;
+    entry.root.renderable = state.visible;
+  }
+
+  cancelSideControlAnimations() {
+    for (const state of this.sideControlMotionStates.values()) {
+      if (state.frame) {
+        this.cancelFrame(state.frame);
+        state.frame = 0;
+      }
+    }
+    this.sideControlMotionStates.clear();
   }
 
   registerStaticTargets() {
@@ -492,6 +810,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
   }
 
   destroyPage() {
+    this.cancelSideControlAnimations();
     this.tasks?.destroy();
     this.summon?.destroy();
     this.bagButton?.destroy();
@@ -889,8 +1208,8 @@ class WorkshopSummonControl {
     this.circle.anchor.set(0.5);
     this.button = new PixiCostButton({
       assetManager,
-      width: 92,
-      height: 52,
+      width: SUMMON_BUTTON_WIDTH,
+      height: SUMMON_BUTTON_HEIGHT,
       stacked: true,
       tone: 'blue',
       label: 'workshop-summon-button',
@@ -915,6 +1234,8 @@ class WorkshopSummonControl {
         ? reducedMotion
         : () => Boolean(reducedMotion);
     this.active = false;
+    this.enabled = false;
+    this.pressEnabled = false;
     this.effectFrame = 0;
     this.effectStart = 0;
     this.effectTick = (time) => this.tickSummonEffect(time);
@@ -948,7 +1269,7 @@ class WorkshopSummonControl {
       }
     };
     this.handleTap = () => {
-      if (this.enabled && !this.holdTriggered) {
+      if (this.pressEnabled && !this.holdTriggered) {
         return this.activateSummon();
       }
 
@@ -957,7 +1278,7 @@ class WorkshopSummonControl {
     this.inputRegistration = this.page.inputRouter?.registerPressTarget?.({
       id: createRetainedInputId('workshop-summon'),
       displayObject: this.button,
-      enabled: () => this.enabled,
+      enabled: () => this.pressEnabled,
       visible: () => this.button.visible && this.button.renderable,
       fallbackHitTest: true,
       excludePageSwipe: true,
@@ -979,6 +1300,7 @@ class WorkshopSummonControl {
     this.model = model;
     this.actions = actions;
     this.enabled = model.enabled ?? model.canSummon ?? true;
+    this.pressEnabled = model.pressEnabled ?? this.enabled;
     const actionLabel =
       model.label ??
       (finiteOr(model.quantity, 1) > 1
@@ -990,6 +1312,8 @@ class WorkshopSummonControl {
       resource: 'mana',
       enabled: this.enabled,
     });
+    this.button.eventMode = this.pressEnabled ? 'static' : 'none';
+    this.button.cursor = this.pressEnabled ? 'pointer' : 'default';
     this.info.setModel({
       enabled: model.infoEnabled !== false,
       action: () => this.actions?.info?.(),
@@ -1017,14 +1341,19 @@ class WorkshopSummonControl {
     this.circleBaseHeight = 196 * (592 / 1374);
     this.circle.position.set(0, -60 + this.circleBaseHeight / 2);
     this.setCircleEffectFrame({ alpha: this.enabled ? 1 : 0.38, scale: 1 });
-    this.button.setBounds(-46, -26, 92, 52);
+    this.button.setBounds(
+      -SUMMON_BUTTON_WIDTH / 2,
+      -SUMMON_BUTTON_HEIGHT / 2 + SUMMON_BUTTON_DOWN_OFFSET,
+      SUMMON_BUTTON_WIDTH,
+      SUMMON_BUTTON_HEIGHT,
+    );
     this.info.setBounds(60, -50, 18, 18);
     this.page.registerSemanticTarget({
       semanticId: 'workshop.summon',
       tutorialId: this.model?.tutorialId ?? 'workshop:summonSeed',
       displayObject: this.button,
       state: () => ({
-        enabled: this.enabled,
+        enabled: this.pressEnabled,
         interactive: true,
       }),
       activate: () => this.activateSummon(),
@@ -1096,6 +1425,9 @@ class WorkshopSummonControl {
   }
 
   activateSummon() {
+    if (!this.pressEnabled) {
+      return false;
+    }
     const result = this.actions?.summon?.();
     const succeeded = result !== false && result?.ok !== false;
     if (succeeded) {
@@ -1177,6 +1509,7 @@ class WorkshopIconPanelAction {
     id,
     label,
     side,
+    weight = 0,
     textureId,
     scale = 1,
     onActivate,
@@ -1185,6 +1518,7 @@ class WorkshopIconPanelAction {
     this.assetManager = assetManager;
     this.id = id;
     this.side = side === 'right' ? 'right' : 'left';
+    this.weight = finiteOr(weight, 0);
     this.textureId = textureId;
     this.iconScale = finiteOr(scale, 1);
     this.activation = onActivate;
@@ -1241,6 +1575,8 @@ class WorkshopIconPanelAction {
 
   setModel({
     label = this.id,
+    side = this.side,
+    weight = this.weight,
     enabled = true,
     visible = true,
     notification = false,
@@ -1248,12 +1584,13 @@ class WorkshopIconPanelAction {
     action = null,
   } = {}) {
     this.activation = typeof action === 'function' ? action : null;
+    this.side = side === 'right' ? 'right' : 'left';
+    this.weight = finiteOr(weight, this.weight);
     this.enabled = enabled !== false;
     this.visible = visible !== false;
-    this.root.visible = this.visible;
-    this.root.renderable = this.visible;
     this.root.eventMode = this.enabled && this.visible ? 'static' : 'none';
     this.root.cursor = this.enabled && this.visible ? 'pointer' : 'default';
+    this.label.anchor.set(this.side === 'right' ? 1 : 0, 0);
     setText(this.label, capitalizeInitial(label));
     this.icon.alpha = this.enabled ? 1 : 0.55;
     this.label.alpha = this.enabled ? 1 : 0.55;
@@ -1421,11 +1758,16 @@ class WorkshopFeatureButton {
 
   bind(model) {
     this.model = model;
-    this.root.visible = model.visible !== false;
-    this.root.renderable = this.root.visible;
-    this.root.eventMode = model.enabled === false ? 'none' : 'static';
-    this.root.cursor = model.enabled === false ? 'default' : 'pointer';
+    this.visible = model.visible !== false;
+    this.root.eventMode =
+      this.visible && model.enabled !== false ? 'static' : 'none';
+    this.root.cursor =
+      this.visible && model.enabled !== false ? 'pointer' : 'default';
     this.side = model.side === 'right' ? 'right' : 'left';
+    this.weight = finiteOr(
+      model.weight,
+      Math.max(0, finiteOr(model.row, 0)) * 10,
+    );
     this.label.anchor.set(this.side === 'right' ? 1 : 0, 0);
     this.timer.anchor.set(this.side === 'right' ? 1 : 0, 0);
     setText(this.label, capitalizeInitial(model.label ?? model.id));
@@ -1558,6 +1900,8 @@ class WorkshopFeatureButton {
     this.targetId = null;
     this.model = null;
     this.presentation = null;
+    this.visible = false;
+    this.weight = 0;
     this.setPressed(false);
     this.icon.texture = Texture.EMPTY;
     this.cloth.texture = Texture.EMPTY;
@@ -1673,6 +2017,22 @@ function interpolateSummonEffect(progress) {
     };
   }
   return SUMMON_EFFECT_FRAMES.at(-1);
+}
+
+function compareSideControlEntries(left, right) {
+  return (
+    finiteOr(left.weight, 0) - finiteOr(right.weight, 0) ||
+    left.id.localeCompare(right.id)
+  );
+}
+
+function interpolate(from, to, progress) {
+  return from + (to - from) * progress;
+}
+
+function easeOutQuart(progress) {
+  const clamped = Math.max(0, Math.min(1, progress));
+  return 1 - (1 - clamped) ** 4;
 }
 
 function prefersReducedMotion() {

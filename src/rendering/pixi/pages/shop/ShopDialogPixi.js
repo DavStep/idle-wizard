@@ -22,6 +22,7 @@ import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import {
+  ROOT_RUN_SETTINGS_TOGGLE_WIDTH,
   RootRunSettingsSliderPixi,
   RootRunSettingsTogglePixi,
 } from '../../primitives/PixiSettingsControls.js';
@@ -80,6 +81,22 @@ const STALL_SELECTION_HEIGHT =
   STALL_SELECTION_BOTTOM_PADDING;
 const STALL_ITEM_ICON_SIZE = 28;
 const STALL_SELECTED_CHECK_SIZE = 18;
+const AUTOMATION_COG_TEXTURE_ID =
+  'source:assets/icons/icon-settings-cog.png';
+const SETTINGS_ROW_EXPANSION_HEIGHT =
+  PIXI_ROOT_RUN_GEOMETRY.settings.knobSize + 8;
+const SETTINGS_ROW_EXPANDED_CONTROL_RAISE = 3;
+const SETTINGS_ROW_EXPANSION_DURATION_MS = 240;
+const SETTINGS_ROW_PRESS_SCALE = 0.97;
+const SETTINGS_ROW_RELEASE_PEAK_SCALE = 1.035;
+const SETTINGS_ROW_RELEASE_DURATION_MS = 180;
+const SETTINGS_ROW_DISCLOSURE_START_SCALE = 0.92;
+const SETTINGS_ROW_DISCLOSURE_PEAK_SCALE = 1.035;
+const SETTINGS_ROW_DISCLOSURE_PEAK_PROGRESS = 0.62;
+const AUTO_SUMMON_REVEAL_DURATION_MS = 240;
+const AUTO_SUMMON_REVEAL_START_SCALE = 0.8;
+const AUTO_SUMMON_REVEAL_OVERSHOOT_SCALE = 1.02;
+const AUTO_SUMMON_REVEAL_OVERSHOOT_PROGRESS = 0.72;
 
 const DIALOG_CONFIG = Object.freeze({
   [SHOP_DIALOG_IDS.STALL]: Object.freeze({
@@ -144,17 +161,22 @@ const DIALOG_CONFIG = Object.freeze({
     actionVariant: 'brown-dark',
     selectedActionVariant: 'brown-light',
     splitPaper: Object.freeze({
-      selectionHeight: 126,
-      selectionStatusHeight: 142,
-      summaryY: 4,
-      summaryPitch: 20,
-      summaryYs: Object.freeze([4, 31, 70]),
-      toggleY: 2,
-      manaSliderY: 48,
-      dropSliderY: 91,
+      selectionHeight: 96,
+      selectionStatusHeight: 112,
+      summaryFontSize: 15,
+      leadingIconSize: 26,
+      summaryY: 8,
+      summaryPitch: 24,
+      summaryXs: Object.freeze([0, 0]),
+      summaryYs: Object.freeze([8, 43]),
+      toggleY: 8,
+      manaSliderY: 64,
+      manaSliderRightOutset:
+        PIXI_ROOT_RUN_GEOMETRY.settings.knobSize / 2,
+      listHorizontalOutset: 8,
       actionsY: 0,
       actionHeight: 26,
-      statusY: 119,
+      statusY: 89,
     }),
   }),
 });
@@ -177,6 +199,10 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     counters = null,
     onClose = null,
     theme = DEFAULT_PIXI_THEME_SNAPSHOT,
+    requestFrame = defaultRequestFrame,
+    cancelFrame = defaultCancelFrame,
+    timeSource = defaultTimeSource,
+    reducedMotion = prefersReducedMotion,
   } = {}) {
     const config = DIALOG_CONFIG[dialogId];
     if (!config) {
@@ -192,11 +218,22 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.textEntryService = textEntryService;
     this.onClose = onClose;
     this.theme = theme;
+    this.requestFrame = requestFrame;
+    this.cancelFrame = cancelFrame;
+    this.timeSource = timeSource;
+    this.reducedMotion =
+      typeof reducedMotion === 'function'
+        ? reducedMotion
+        : () => Boolean(reducedMotion);
     this.sourceWidth = PIXI_UI_GEOMETRY.sourceWidth;
     this.sourceHeight = PIXI_UI_GEOMETRY.sourceHeight;
     this.model = normalizeDialogModel(dialogId, {});
     this.modalHandle = null;
     this.buttonSemanticTargets = new Map();
+    this.pendingAutoSummonReveal = false;
+    this.autoSummonRevealProgress = null;
+    this.autoSummonRevealFrame = null;
+    this.autoSummonRevealStartedAt = null;
 
     this.backdrop = new Graphics();
     this.backdrop.label = `${dialogId}:backdrop`;
@@ -325,6 +362,16 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       counters,
       rowHeight: config.rowHeight,
       useSettingsRows: usesSplitPaperSections,
+      rubberPress:
+        dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID,
+      expandedControl:
+        dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID
+          ? this.dropSettingsSlider
+          : null,
+      requestFrame: this.requestFrame,
+      cancelFrame: this.cancelFrame,
+      timeSource: this.timeSource,
+      reducedMotion: this.reducedMotion,
       label: `${dialogId}:list`,
     });
 
@@ -336,6 +383,11 @@ export class ShopDialogPixi extends BasePixiRetainedView {
           assetManager,
           inputRouter,
           semanticRegistry,
+          fontSize:
+            config.splitPaper?.summaryFontSize ??
+            PIXI_UI_GEOMETRY.bodyFontSize,
+          leadingIconSize:
+            config.splitPaper?.leadingIconSize ?? 22,
           label: `${dialogId}:summaryRow`,
         }),
       reset: (row) => row.reset(),
@@ -427,7 +479,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       afterReconcile: (buttons) => orderChildren(this.tabLayer, buttons),
     });
 
-    this.body.addChild(
+    const bodyChildren = [
       this.selectionSection,
       this.itemSection,
       this.summaryLayer,
@@ -435,13 +487,24 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       this.rangeControl,
       this.settingsToggle,
       this.manaSettingsSlider,
-      this.dropSettingsSlider,
       this.amountSelector.root,
       this.fieldLayer,
       this.list.root,
       this.actionLayer,
       this.statusLabel,
-    );
+    ];
+    if (dialogId !== WORKSHOP_SUMMON_INFO_DIALOG_ID) {
+      bodyChildren.splice(7, 0, this.dropSettingsSlider);
+    }
+    this.body.addChild(...bodyChildren);
+    if (dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID) {
+      this.body.addChild(
+        this.selectionSection,
+        this.summaryLayer,
+        this.settingsToggle,
+        this.manaSettingsSlider,
+      );
+    }
     this.panel.addChild(this.tabLayer);
     this.root.addChild(
       this.backdrop,
@@ -454,6 +517,19 @@ export class ShopDialogPixi extends BasePixiRetainedView {
 
   onBind(viewModel) {
     this.model = normalizeDialogModel(this.dialogId, viewModel);
+    const shouldRevealAutoSummon =
+      this.dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID &&
+      this.model.autoSummonUnlocked === true &&
+      this.model.revealAutoSummonUnlock === true;
+    if (shouldRevealAutoSummon) {
+      this.pendingAutoSummonReveal = true;
+    } else if (
+      this.dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID &&
+      this.model.autoSummonUnlocked !== true
+    ) {
+      this.pendingAutoSummonReveal = false;
+      this.stopAutoSummonReveal();
+    }
     this.panel.setTitle(this.model.title ?? this.config.title);
     this.messageLabel.setText(this.model.message ?? '');
     this.messageLabel.visible = Boolean(this.model.message);
@@ -467,7 +543,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.rangeControl.bind(this.model.range);
     this.settingsToggle.bind(this.model.settingsToggle);
     this.manaSettingsSlider.bind(this.model.manaSlider);
-    this.dropSettingsSlider.bind(this.model.dropSlider);
+    if (this.dialogId !== WORKSHOP_SUMMON_INFO_DIALOG_ID) {
+      this.dropSettingsSlider.bind(this.model.dropSlider);
+    }
     this.amountSelector.bind(this.model.amount);
 
     this.fields.forEach((field, index) => {
@@ -484,6 +562,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.list.applyTheme(this.contentTheme ?? this.theme);
 
     this.relayout();
+    if (shouldRevealAutoSummon && this.active) {
+      this.startAutoSummonReveal();
+    }
   }
 
   onApplyTheme(theme) {
@@ -549,15 +630,86 @@ export class ShopDialogPixi extends BasePixiRetainedView {
         this.addActiveCleanup(unsubscribe);
       }
     }
+    if (this.pendingAutoSummonReveal) {
+      this.startAutoSummonReveal();
+    }
   }
 
   onDeactivate() {
+    this.stopAutoSummonReveal();
     this.modalHandle?.unregister?.();
     this.modalHandle = null;
     for (const field of this.fields) {
       field.blur();
     }
     this.amountSelector.blur();
+    this.list.collapseExpanded({ immediate: true });
+  }
+
+  startAutoSummonReveal() {
+    if (
+      this.dialogId !== WORKSHOP_SUMMON_INFO_DIALOG_ID ||
+      this.model.autoSummonUnlocked !== true
+    ) {
+      return false;
+    }
+
+    this.stopAutoSummonReveal();
+    this.pendingAutoSummonReveal = false;
+    if (this.reducedMotion()) {
+      this.relayout();
+      return false;
+    }
+
+    this.autoSummonRevealProgress = 0;
+    this.autoSummonRevealStartedAt = null;
+    this.relayout();
+    this.autoSummonRevealFrame = this.requestFrame((timestamp) =>
+      this.tickAutoSummonReveal(timestamp),
+    );
+    return true;
+  }
+
+  tickAutoSummonReveal(timestamp) {
+    this.autoSummonRevealFrame = null;
+    const now = Number.isFinite(timestamp)
+      ? timestamp
+      : this.timeSource();
+    if (this.autoSummonRevealStartedAt === null) {
+      this.autoSummonRevealStartedAt = now;
+    }
+    const progress = Math.min(
+      1,
+      Math.max(
+        0,
+        (now - this.autoSummonRevealStartedAt) /
+          AUTO_SUMMON_REVEAL_DURATION_MS,
+      ),
+    );
+    this.autoSummonRevealProgress = progress;
+    this.relayout();
+
+    if (progress >= 1) {
+      this.stopAutoSummonReveal();
+      return;
+    }
+
+    this.autoSummonRevealFrame = this.requestFrame((nextTimestamp) =>
+      this.tickAutoSummonReveal(nextTimestamp),
+    );
+  }
+
+  stopAutoSummonReveal() {
+    if (this.autoSummonRevealFrame !== null) {
+      this.cancelFrame(this.autoSummonRevealFrame);
+    }
+    const wasAnimating = this.autoSummonRevealProgress !== null;
+    this.autoSummonRevealFrame = null;
+    this.autoSummonRevealStartedAt = null;
+    this.autoSummonRevealProgress = null;
+    if (wasAnimating) {
+      this.relayout();
+    }
   }
 
   relayout() {
@@ -668,6 +820,10 @@ export class ShopDialogPixi extends BasePixiRetainedView {
 
   relayoutSplitSettings(bodyWidth, bodyHeight) {
     const splitPaper = this.config.splitPaper;
+    this.resetAutoSummonRevealTransform();
+    const showsSelectionSection =
+      this.dialogId !== WORKSHOP_SUMMON_INFO_DIALOG_ID ||
+      this.model.autoSummonUnlocked === true;
     const statusHeight = this.statusLabel.visible
       ? PIXI_UI_GEOMETRY.rowMinHeight
       : 0;
@@ -677,11 +833,18 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     const paperOutsets = resolveDialogPaperOutsets(
       this.panel.contentInsets,
     );
-    const itemY =
+    const settledItemY =
       selectionHeight +
       paperOutsets.bottom +
       SETTINGS_SECTION_GAP +
       paperOutsets.top;
+    const layoutProgress =
+      this.autoSummonRevealProgress === null
+        ? 1
+        : easeOutQuart(this.autoSummonRevealProgress);
+    const itemY = showsSelectionSection
+      ? settledItemY * layoutProgress
+      : 0;
     const itemHeight = Math.max(0, bodyHeight - itemY);
     const contentX = 0;
     const contentWidth = bodyWidth;
@@ -690,7 +853,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       x: 0,
       y: 0,
       width: bodyWidth,
-      height: selectionHeight,
+      height: showsSelectionSection ? selectionHeight : 0,
     };
     this.itemSectionBounds = {
       x: 0,
@@ -698,15 +861,19 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       width: bodyWidth,
       height: itemHeight,
     };
-    this.selectionSection.visible = true;
-    this.selectionSection.renderable = true;
+    this.selectionSection.visible = showsSelectionSection;
+    this.selectionSection.renderable = showsSelectionSection;
+    this.summaryLayer.visible = showsSelectionSection;
+    this.summaryLayer.renderable = showsSelectionSection;
     this.itemSection.visible = true;
     this.itemSection.renderable = true;
-    setDialogPaperSectionBounds(
-      this.selectionSection,
-      this.selectionSectionBounds,
-      paperOutsets,
-    );
+    if (showsSelectionSection) {
+      setDialogPaperSectionBounds(
+        this.selectionSection,
+        this.selectionSectionBounds,
+        paperOutsets,
+      );
+    }
     setDialogPaperSectionBounds(
       this.itemSection,
       this.itemSectionBounds,
@@ -715,13 +882,17 @@ export class ShopDialogPixi extends BasePixiRetainedView {
 
     const summaryRows = this.summaryRows?.getWidgets?.() ?? [];
     summaryRows.forEach((row, index) => {
+      const requestedRowX = splitPaper.summaryXs?.[index];
+      const rowX = Number.isFinite(requestedRowX)
+        ? Math.max(0, requestedRowX)
+        : 0;
       const rowY = splitPaper.summaryYs?.[index];
       row.setBounds(
-        contentX,
+        contentX + rowX,
         Number.isFinite(rowY)
           ? rowY
           : splitPaper.summaryY + index * splitPaper.summaryPitch,
-        contentWidth,
+        Math.max(0, contentWidth - rowX),
         splitPaper.summaryPitch,
       );
     });
@@ -746,7 +917,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       this.settingsToggle.visible &&
       Number.isFinite(splitPaper.toggleY)
     ) {
-      const toggleWidth = 79;
+      const toggleWidth = ROOT_RUN_SETTINGS_TOGGLE_WIDTH;
       this.settingsToggle.setBounds(
         contentX + contentWidth - toggleWidth,
         splitPaper.toggleY,
@@ -758,10 +929,14 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       this.manaSettingsSlider.visible &&
       Number.isFinite(splitPaper.manaSliderY)
     ) {
+      const rightOutset = Math.max(
+        0,
+        finiteOr(splitPaper.manaSliderRightOutset, 0),
+      );
       this.manaSettingsSlider.setBounds(
         contentX,
         splitPaper.manaSliderY,
-        contentWidth,
+        contentWidth + rightOutset,
         PIXI_ROOT_RUN_GEOMETRY.settings.knobSize,
       );
     }
@@ -797,14 +972,70 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       );
     }
 
-    this.list.setBounds(
+    const listHorizontalOutset = Math.max(
       0,
+      finiteOr(splitPaper.listHorizontalOutset, 0),
+    );
+    this.list.setBounds(
+      -listHorizontalOutset,
       itemY,
-      bodyWidth,
+      bodyWidth + listHorizontalOutset * 2,
       itemHeight,
     );
     this.list.root.visible = this.model.items.length > 0;
     this.list.root.renderable = this.list.root.visible;
+    if (showsSelectionSection) {
+      this.applyAutoSummonRevealTransform(
+        bodyWidth,
+        selectionHeight,
+      );
+    }
+  }
+
+  resetAutoSummonRevealTransform() {
+    if (this.dialogId !== WORKSHOP_SUMMON_INFO_DIALOG_ID) {
+      return;
+    }
+    this.summaryLayer.position.set(0, 0);
+    for (const target of [
+      this.selectionSection,
+      this.summaryLayer,
+      this.settingsToggle,
+      this.manaSettingsSlider,
+    ]) {
+      target.scale.set(1);
+      target.alpha = 1;
+    }
+  }
+
+  applyAutoSummonRevealTransform(bodyWidth, selectionHeight) {
+    if (
+      this.dialogId !== WORKSHOP_SUMMON_INFO_DIALOG_ID ||
+      this.autoSummonRevealProgress === null
+    ) {
+      return;
+    }
+    const scale = sampleAutoSummonRevealScale(
+      this.autoSummonRevealProgress,
+    );
+    const centerX = bodyWidth / 2;
+    const centerY = selectionHeight / 2;
+
+    for (const target of [
+      this.selectionSection,
+      this.summaryLayer,
+      this.settingsToggle,
+      this.manaSettingsSlider,
+    ]) {
+      const baseX = target.position.x;
+      const baseY = target.position.y;
+      target.scale.set(scale);
+      target.position.set(
+        centerX + (baseX - centerX) * scale,
+        centerY + (baseY - centerY) * scale,
+      );
+      target.alpha = 1;
+    }
   }
 
   relayoutTabs(panelHeight) {
@@ -919,6 +1150,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
   }
 
   onDestroy() {
+    this.stopAutoSummonReveal();
     this.modalHandle?.unregister?.();
     this.modalHandle = null;
     this.backdropRegistration?.();
@@ -947,25 +1179,38 @@ class DialogSummaryRow {
     assetManager,
     inputRouter,
     semanticRegistry,
+    fontSize = PIXI_UI_GEOMETRY.bodyFontSize,
+    leadingIconSize = 22,
     label,
   }) {
     this.root = new Container();
     this.root.label = label;
     this.assetManager = assetManager;
-    this.keyLabel = new PixiTextLabel({ label: `${label}:key` });
+    this.fontSize = fontSize;
+    this.leadingIconSize = leadingIconSize;
+    this.keyLabel = new PixiTextLabel({
+      fontSize,
+      lineHeight: fontSize,
+      label: `${label}:key`,
+    });
     this.valueLabel = new PixiTextLabel({
+      fontSize,
+      lineHeight: fontSize,
       anchor: { x: 1, y: 0 },
       label: `${label}:value`,
     });
     this.valueResource = new PixiResourceLabel({
       assetManager,
       resource: 'mana',
+      fontSize,
       includeResourceName: false,
       label: `${label}:valueResource`,
     });
     this.valueResource.visible = false;
     this.valueResource.renderable = false;
     this.quantityLabel = new PixiTextLabel({
+      fontSize,
+      lineHeight: fontSize,
       anchor: { x: 1, y: 0 },
       label: `${label}:quantity`,
     });
@@ -1024,6 +1269,7 @@ class DialogSummaryRow {
       this.itemIcon,
       this.assetManager,
       iconFrames.base,
+      iconFrames.texture,
     );
     bindItemSprite(
       this.itemIconOverlay,
@@ -1073,7 +1319,7 @@ class DialogSummaryRow {
   setBounds(x, y, width, height) {
     this.root.position.set(x, y);
     this.root.hitArea = new Rectangle(0, 0, width, height);
-    const textY = Math.max(0, (height - PIXI_UI_GEOMETRY.bodyFontSize) / 2 - 1);
+    const textY = Math.max(0, (height - this.fontSize) / 2 - 1);
     this.keyLabel.position.set(0, textY);
     this.quantityLabel.position.set(width, textY);
     const quantityWidth = this.quantityLabel.measuredWidth;
@@ -1084,7 +1330,7 @@ class DialogSummaryRow {
       this.valueResource.position.set(width - valueWidth, textY);
     }
     if (this.itemIcon.visible) {
-      const iconSize = 18;
+      const iconSize = this.iconLeading ? this.leadingIconSize : 18;
       const iconCenterX = this.iconLeading ? iconSize / 2 : 55;
       const iconCenterY = height / 2;
       setSeedPackCompositeBounds(
@@ -1396,15 +1642,34 @@ class VirtualShopDialogList {
     counters,
     rowHeight,
     useSettingsRows = false,
+    rubberPress = false,
+    expandedControl = null,
+    requestFrame = defaultRequestFrame,
+    cancelFrame = defaultCancelFrame,
+    timeSource = defaultTimeSource,
+    reducedMotion = prefersReducedMotion,
     label,
   }) {
     this.rowHeight = rowHeight;
     this.useSettingsRows = useSettingsRows;
+    this.rubberPress = rubberPress;
+    this.expandedControl = expandedControl;
+    this.requestFrame = requestFrame;
+    this.cancelFrame = cancelFrame;
+    this.timeSource = timeSource;
+    this.reducedMotion = reducedMotion;
     this.width = 0;
     this.height = 0;
     this.items = [];
     this.visibleStart = 0;
     this.visibleEnd = 0;
+    this.expandedKey = null;
+    this.outgoingKey = null;
+    this.incomingStartFraction = 0;
+    this.outgoingStartFraction = 0;
+    this.expansionProgress = 1;
+    this.expansionFrame = null;
+    this.expansionStartedAt = null;
     this.contentPaddingTop = PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
     this.scroll = new RetainedScrollArea({
       inputRouter,
@@ -1422,6 +1687,11 @@ class VirtualShopDialogList {
           inputRouter,
           semanticRegistry,
           useSettingsStyle: this.useSettingsRows,
+          rubberPress: this.rubberPress,
+          requestFrame: this.requestFrame,
+          cancelFrame: this.cancelFrame,
+          timeSource: this.timeSource,
+          reducedMotion: this.reducedMotion,
           label: `${label}:row`,
         }),
       reset: (row) => row.reset(),
@@ -1437,13 +1707,21 @@ class VirtualShopDialogList {
         widget.bind(entry.item.__virtualKey, entry.item);
         widget.setBounds(
           0,
-          this.contentPaddingTop + entry.index * this.rowHeight,
+          entry.top,
           this.width,
+          entry.height,
           this.rowHeight,
         );
       },
-      afterReconcile: (widgets) => orderChildren(this.scroll.content, widgets),
+      afterReconcile: (widgets) =>
+        orderChildren(
+          this.scroll.content,
+          this.expandedControl
+            ? [...widgets, this.expandedControl]
+            : widgets,
+        ),
     });
+    this.expandedControl?.bind(null);
   }
 
   setItems(items) {
@@ -1451,9 +1729,20 @@ class VirtualShopDialogList {
       ...item,
       __virtualKey: item.id ?? item.key ?? item.semanticId ?? index,
     }));
-    this.scroll.setContentHeight(
-      this.contentPaddingTop + this.items.length * this.rowHeight,
-    );
+    if (
+      this.expandedKey !== null &&
+      !this.items.some((item) => item.__virtualKey === this.expandedKey)
+    ) {
+      this.collapseExpanded({ immediate: true });
+    }
+    if (
+      this.outgoingKey !== null &&
+      !this.items.some((item) => item.__virtualKey === this.outgoingKey)
+    ) {
+      this.outgoingKey = null;
+    }
+    this.syncExpandedControl();
+    this.refreshContentHeight();
     this.renderWindow(true);
   }
 
@@ -1465,26 +1754,260 @@ class VirtualShopDialogList {
   }
 
   renderWindow(force = false) {
-    const start = Math.max(
-      0,
-      Math.floor(
-        Math.max(0, this.scroll.offsetY - this.contentPaddingTop) /
-          this.rowHeight,
-      ) - LIST_OVERSCAN,
+    const layout = this.createLayout();
+    const viewportTop = Math.max(0, this.scroll.offsetY);
+    const viewportBottom = viewportTop + this.height;
+    let firstVisible = layout.findIndex(
+      (entry) => entry.top + entry.height >= viewportTop,
     );
-    const visibleCount =
-      Math.ceil(this.height / Math.max(1, this.rowHeight)) + LIST_OVERSCAN * 2;
-    const end = Math.min(this.items.length, start + visibleCount);
+    if (firstVisible < 0) {
+      firstVisible = Math.max(0, layout.length - 1);
+    }
+    let lastVisible = firstVisible;
+    while (
+      lastVisible < layout.length &&
+      layout[lastVisible].top <= viewportBottom
+    ) {
+      lastVisible += 1;
+    }
+    const start = Math.max(0, firstVisible - LIST_OVERSCAN);
+    const end = Math.min(layout.length, lastVisible + LIST_OVERSCAN);
     if (!force && start === this.visibleStart && end === this.visibleEnd) {
       return;
     }
     this.visibleStart = start;
     this.visibleEnd = end;
-    const window = this.items.slice(start, end).map((item, offset) => ({
-      item,
-      index: start + offset,
-    }));
-    this.rows.reconcile(window);
+    this.rows.reconcile(layout.slice(start, end));
+    this.layoutExpandedControl(layout);
+  }
+
+  toggleExpanded(key) {
+    const nextKey = this.expandedKey === key ? null : key;
+    this.startExpansion(nextKey);
+    return true;
+  }
+
+  collapseExpanded({ immediate = false } = {}) {
+    if (this.expandedKey === null && this.outgoingKey === null) {
+      return false;
+    }
+    if (immediate) {
+      this.cancelExpansion();
+      this.expandedKey = null;
+      this.outgoingKey = null;
+      this.incomingStartFraction = 0;
+      this.outgoingStartFraction = 0;
+      this.expansionProgress = 1;
+      this.expandedControl?.bind(null);
+      this.refreshContentHeight();
+      this.renderWindow(true);
+      return true;
+    }
+    this.startExpansion(null);
+    return true;
+  }
+
+  startExpansion(nextKey) {
+    const previousKey = this.expandedKey;
+    if (previousKey === nextKey && this.outgoingKey === null) {
+      return;
+    }
+    const previousFraction =
+      previousKey === null
+        ? 0
+        : this.expansionFractionFor(previousKey);
+    const nextFraction =
+      nextKey === null ? 0 : this.expansionFractionFor(nextKey);
+    this.cancelExpansion();
+    this.outgoingKey =
+      previousKey !== nextKey ? previousKey : null;
+    this.outgoingStartFraction = previousFraction;
+    this.expandedKey = nextKey;
+    this.incomingStartFraction = nextFraction;
+    this.expansionProgress = 0;
+    this.expansionStartedAt = null;
+    this.syncExpandedControl();
+
+    if (this.reducedMotion?.()) {
+      this.finishExpansion();
+      return;
+    }
+
+    this.refreshContentHeight();
+    this.renderWindow(true);
+    this.expansionFrame = this.requestFrame((timestamp) =>
+      this.tickExpansion(timestamp),
+    );
+  }
+
+  tickExpansion(timestamp) {
+    this.expansionFrame = null;
+    const now = Number.isFinite(timestamp)
+      ? timestamp
+      : this.timeSource();
+    if (this.expansionStartedAt === null) {
+      this.expansionStartedAt = now;
+    }
+    const linearProgress = Math.min(
+      1,
+      Math.max(
+        0,
+        (now - this.expansionStartedAt) /
+          SETTINGS_ROW_EXPANSION_DURATION_MS,
+      ),
+    );
+    this.expansionProgress = easeOutQuart(linearProgress);
+    this.refreshContentHeight();
+    this.renderWindow(true);
+
+    if (linearProgress >= 1) {
+      this.finishExpansion();
+      return;
+    }
+    this.expansionFrame = this.requestFrame((nextTimestamp) =>
+      this.tickExpansion(nextTimestamp),
+    );
+  }
+
+  finishExpansion() {
+    this.cancelExpansion();
+    this.outgoingKey = null;
+    this.outgoingStartFraction = 0;
+    this.incomingStartFraction =
+      this.expandedKey === null ? 0 : 1;
+    this.expansionProgress = 1;
+    this.syncExpandedControl();
+    this.refreshContentHeight();
+    this.renderWindow(true);
+  }
+
+  cancelExpansion() {
+    if (this.expansionFrame !== null) {
+      this.cancelFrame(this.expansionFrame);
+    }
+    this.expansionFrame = null;
+    this.expansionStartedAt = null;
+  }
+
+  createLayout() {
+    let top = this.contentPaddingTop;
+    return this.items.map((item, index) => {
+      const height = this.rowHeight + this.expansionHeightFor(
+        item.__virtualKey,
+      );
+      const entry = {
+        item: {
+          ...item,
+          action: item.dropSlider
+            ? () => this.toggleExpanded(item.__virtualKey)
+            : item.action,
+          expanded: item.__virtualKey === this.expandedKey,
+        },
+        index,
+        top,
+        height,
+      };
+      top += height;
+      return entry;
+    });
+  }
+
+  expansionHeightFor(key) {
+    return (
+      SETTINGS_ROW_EXPANSION_HEIGHT *
+      this.expansionFractionFor(key)
+    );
+  }
+
+  expansionFractionFor(key) {
+    let fraction = 0;
+    if (key === this.expandedKey) {
+      fraction +=
+        this.incomingStartFraction +
+        (1 - this.incomingStartFraction) *
+          this.expansionProgress;
+    }
+    if (key === this.outgoingKey) {
+      fraction +=
+        this.outgoingStartFraction *
+        (1 - this.expansionProgress);
+    }
+    return fraction;
+  }
+
+  refreshContentHeight() {
+    const contentHeight = this.items.reduce(
+      (height, item) =>
+        height +
+        this.rowHeight +
+        this.expansionHeightFor(item.__virtualKey),
+      this.contentPaddingTop,
+    );
+    this.scroll.setContentHeight(contentHeight);
+  }
+
+  syncExpandedControl() {
+    if (!this.expandedControl) {
+      return;
+    }
+    const controlKey = this.expandedKey ?? this.outgoingKey;
+    const item = this.items.find(
+      (candidate) => candidate.__virtualKey === controlKey,
+    );
+    this.expandedControl.bind(item?.dropSlider ?? null);
+  }
+
+  layoutExpandedControl(layout) {
+    if (!this.expandedControl) {
+      return;
+    }
+    const controlKey = this.expandedKey ?? this.outgoingKey;
+    const entry = layout.find(
+      (candidate) => candidate.item.__virtualKey === controlKey,
+    );
+    if (!entry) {
+      this.expandedControl.bind(null);
+      return;
+    }
+    const visibility = this.expansionFractionFor(controlKey);
+    const controlHeight = PIXI_ROOT_RUN_GEOMETRY.settings.knobSize;
+    this.expandedControl.setBounds(
+      8,
+      entry.top +
+        this.rowHeight +
+        Math.max(
+          0,
+          (SETTINGS_ROW_EXPANSION_HEIGHT - controlHeight) / 2 -
+            SETTINGS_ROW_EXPANDED_CONTROL_RAISE,
+        ),
+      Math.max(0, this.width - 22),
+      controlHeight,
+    );
+    const controlWidth = Math.max(0, this.width - 22);
+    const controlX = this.expandedControl.position.x;
+    const controlY = this.expandedControl.position.y;
+    const disclosureScale =
+      controlKey === this.expandedKey
+        ? sampleSettingsRowDisclosureScale(
+            this.incomingStartFraction +
+              (1 - this.incomingStartFraction) *
+                this.expansionProgress,
+          )
+        : 1 -
+          (1 - SETTINGS_ROW_DISCLOSURE_START_SCALE) *
+            easeOutQuart(this.expansionProgress);
+    this.expandedControl.pivot.set(
+      controlWidth / 2,
+      controlHeight / 2,
+    );
+    this.expandedControl.position.set(
+      controlX + controlWidth / 2,
+      controlY + controlHeight / 2,
+    );
+    this.expandedControl.scale.set(disclosureScale);
+    this.expandedControl.alpha = 1;
+    this.expandedControl.visible = visibility > 0;
+    this.expandedControl.renderable = this.expandedControl.visible;
   }
 
   applyTheme(theme) {
@@ -1494,6 +2017,9 @@ class VirtualShopDialogList {
   }
 
   destroy() {
+    this.cancelExpansion();
+    this.expandedControl?.removeFromParent?.();
+    this.expandedControl?.bind(null);
     this.rows.destroy();
     this.rowPool.destroy();
     this.scroll.destroy();
@@ -1506,12 +2032,27 @@ class VirtualShopDialogRow {
     inputRouter,
     semanticRegistry,
     useSettingsStyle = false,
+    rubberPress = false,
+    requestFrame = defaultRequestFrame,
+    cancelFrame = defaultCancelFrame,
+    timeSource = defaultTimeSource,
+    reducedMotion = prefersReducedMotion,
     label,
   }) {
     this.root = new Container();
     this.root.label = label;
+    this.visual = new Container({
+      label: `${label}:visual`,
+    });
     this.assetManager = assetManager;
     this.useSettingsStyle = useSettingsStyle;
+    this.rubberPress = rubberPress;
+    this.requestFrame = requestFrame;
+    this.cancelFrame = cancelFrame;
+    this.timeSource = timeSource;
+    this.reducedMotion = reducedMotion;
+    this.releaseFrame = null;
+    this.releaseStartedAt = null;
     this.background = useSettingsStyle
       ? new PixiNineSliceFrame({
           texture:
@@ -1548,7 +2089,7 @@ class VirtualShopDialogRow {
       anchor: { x: 1, y: 0 },
       label: `${label}:value`,
     });
-    this.root.addChild(
+    this.visual.addChild(
       this.background,
       this.itemIcon,
       this.itemIconOverlay,
@@ -1557,12 +2098,14 @@ class VirtualShopDialogRow {
       this.value,
       this.selectedIndicator,
     );
+    this.root.addChild(this.visual);
     this.semanticRegistry = semanticRegistry;
     this.semanticId = null;
     this.semanticDefinition = null;
     this.action = null;
     this.enabled = false;
     this.selected = false;
+    this.expanded = false;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.registration =
       inputRouter?.registerPressTarget?.(this.root, {
@@ -1571,10 +2114,8 @@ class VirtualShopDialogRow {
           Boolean(this.action) &&
           this.root.visible &&
           this.root.renderable,
-        onPressChange: (pressed) => {
-          this.pressed = pressed;
-          this.redraw();
-        },
+        onPressChange: (pressed, context) =>
+          this.setPressed(pressed, context),
         onActivate: (payload) => this.action?.(payload),
         haptic: 'light',
       }) ?? null;
@@ -1601,6 +2142,7 @@ class VirtualShopDialogRow {
     this.value.setText(item.value ?? item.actionLabel ?? '');
     this.enabled = item.enabled !== false && item.disabled !== true;
     this.selected = item.selected === true;
+    this.expanded = item.expanded === true;
     this.action = item.action ?? item.onActivate ?? null;
     const iconFrames = resolveItemIconFrames(item);
     bindItemSprite(
@@ -1646,6 +2188,7 @@ class VirtualShopDialogRow {
         state: () => ({
           enabled: this.enabled,
           interactive: Boolean(this.action),
+          expanded: this.expanded,
           visible: this.root.visible && this.root.renderable,
         }),
         activate: (payload) => this.action?.(payload),
@@ -1654,16 +2197,19 @@ class VirtualShopDialogRow {
     this.redraw();
   }
 
-  setBounds(x, y, width, height) {
+  setBounds(x, y, width, height, summaryHeight = height) {
     this.root.position.set(x, y);
     this.width = width;
     this.height = height;
-    this.root.hitArea = new Rectangle(0, 0, width, height);
+    this.summaryHeight = summaryHeight;
+    this.visual.pivot.set(width / 2, summaryHeight / 2);
+    this.visual.position.set(width / 2, summaryHeight / 2);
+    this.root.hitArea = new Rectangle(0, 0, width, summaryHeight);
     const hasDetail = this.detail.visible;
     if (!this.useSettingsStyle) {
       this.label.position.set(
         0,
-        hasDetail ? 2 : Math.max(1, (height - 16) / 2),
+        hasDetail ? 2 : Math.max(1, (summaryHeight - 16) / 2),
       );
       this.label.setWrapWidth(
         Math.max(0, width - this.value.measuredWidth - 8),
@@ -1672,7 +2218,7 @@ class VirtualShopDialogRow {
       this.detail.setWrapWidth(width);
       this.value.position.set(
         width,
-        hasDetail ? 2 : Math.max(1, (height - 16) / 2),
+        hasDetail ? 2 : Math.max(1, (summaryHeight - 16) / 2),
       );
       this.redraw();
       return;
@@ -1711,7 +2257,7 @@ class VirtualShopDialogRow {
         this.itemIcon,
         this.itemIconOverlay,
         iconCenterX,
-        height / 2,
+        summaryHeight / 2,
         STALL_ITEM_ICON_SIZE,
         0,
       );
@@ -1720,13 +2266,13 @@ class VirtualShopDialogRow {
       setItemSpriteBounds(
         this.selectedIndicator,
         contentRight - STALL_SELECTED_CHECK_SIZE / 2,
-        height / 2,
+        summaryHeight / 2,
         STALL_SELECTED_CHECK_SIZE,
       );
     }
     this.label.position.set(
       contentLeft,
-      hasDetail ? 7 : Math.max(1, (height - 16) / 2),
+      hasDetail ? 7 : Math.max(1, (summaryHeight - 16) / 2),
     );
     this.label.setWrapWidth(
       Math.max(
@@ -1743,7 +2289,7 @@ class VirtualShopDialogRow {
     );
     this.value.position.set(
       valueRight,
-      hasDetail ? 4 : Math.max(1, (height - 16) / 2),
+      hasDetail ? 4 : Math.max(1, (summaryHeight - 16) / 2),
     );
     this.redraw();
   }
@@ -1754,6 +2300,69 @@ class VirtualShopDialogRow {
     this.detail.applyTheme(this.theme);
     this.value.applyTheme(this.theme);
     this.redraw();
+  }
+
+  setPressed(pressed, context = null) {
+    const nextPressed = Boolean(pressed) && this.enabled;
+    if (!this.rubberPress) {
+      this.pressed = nextPressed;
+      this.redraw();
+      return;
+    }
+
+    if (nextPressed) {
+      this.cancelReleaseAnimation();
+      this.pressed = true;
+      this.visual.scale.set(SETTINGS_ROW_PRESS_SCALE);
+      this.redraw();
+      return;
+    }
+
+    const wasPressed = this.pressed;
+    this.pressed = false;
+    this.redraw();
+    if (
+      wasPressed &&
+      context?.confirmed === true &&
+      !this.reducedMotion?.()
+    ) {
+      this.startReleaseAnimation();
+    } else {
+      this.cancelReleaseAnimation();
+      this.visual.scale.set(1);
+    }
+  }
+
+  startReleaseAnimation() {
+    this.cancelReleaseAnimation();
+    this.releaseStartedAt = this.timeSource();
+    const tick = () => {
+      const progress = Math.min(
+        1,
+        Math.max(
+          0,
+          (this.timeSource() - this.releaseStartedAt) /
+            SETTINGS_ROW_RELEASE_DURATION_MS,
+        ),
+      );
+      this.visual.scale.set(sampleSettingsRowReleaseScale(progress));
+      if (progress >= 1) {
+        this.releaseFrame = null;
+        this.releaseStartedAt = null;
+        this.visual.scale.set(1);
+        return;
+      }
+      this.releaseFrame = this.requestFrame(tick);
+    };
+    this.releaseFrame = this.requestFrame(tick);
+  }
+
+  cancelReleaseAnimation() {
+    if (this.releaseFrame !== null) {
+      this.cancelFrame(this.releaseFrame);
+    }
+    this.releaseFrame = null;
+    this.releaseStartedAt = null;
   }
 
   redraw() {
@@ -1770,10 +2379,12 @@ class VirtualShopDialogRow {
         });
       return;
     }
-    this.background.alpha = this.pressed ? 0.82 : 1;
+    this.background.alpha =
+      this.rubberPress || !this.pressed ? 1 : 0.82;
   }
 
   reset() {
+    this.cancelReleaseAnimation();
     this.unregisterSemantic();
     this.registration?.update?.({ fallbackHitTest: false });
     this.item = null;
@@ -1781,6 +2392,7 @@ class VirtualShopDialogRow {
     this.action = null;
     this.enabled = false;
     this.selected = false;
+    this.expanded = false;
     this.pressed = false;
     this.itemIcon.texture = Texture.EMPTY;
     this.itemIcon.visible = false;
@@ -1791,6 +2403,7 @@ class VirtualShopDialogRow {
     this.root.eventMode = 'none';
     this.root.visible = false;
     this.root.renderable = false;
+    this.visual.scale.set(1);
     if (this.useSettingsStyle) {
       this.background.alpha = 1;
     } else {
@@ -1809,6 +2422,7 @@ class VirtualShopDialogRow {
   }
 
   destroy() {
+    this.cancelReleaseAnimation();
     this.unregisterSemantic();
     this.registration?.();
     this.registration = null;
@@ -1903,11 +2517,18 @@ function createItemSprite(label) {
   return sprite;
 }
 
-function bindItemSprite(sprite, assetManager, frameName) {
-  sprite.texture = frameName
-    ? assetManager?.getAtlasTexture?.(frameName) ?? Texture.EMPTY
-    : Texture.EMPTY;
-  sprite.visible = Boolean(frameName);
+function bindItemSprite(
+  sprite,
+  assetManager,
+  frameName,
+  textureId = null,
+) {
+  sprite.texture = textureId
+    ? assetManager?.getTexture?.(textureId) ?? Texture.EMPTY
+    : frameName
+      ? assetManager?.getAtlasTexture?.(frameName) ?? Texture.EMPTY
+      : Texture.EMPTY;
+  sprite.visible = Boolean(textureId || frameName);
   sprite.renderable = sprite.visible;
 }
 
@@ -1967,7 +2588,14 @@ function resolveItemIconFrames(model = {}) {
       overlay: null,
     };
   }
-  return { base: null, overlay: null };
+  if (itemKind === 'automation') {
+    return {
+      base: null,
+      overlay: null,
+      texture: AUTOMATION_COG_TEXTURE_ID,
+    };
+  }
+  return { base: null, overlay: null, texture: null };
 }
 
 function orderChildren(container, widgets) {
@@ -1975,6 +2603,105 @@ function orderChildren(container, widgets) {
   for (const widget of widgets) {
     container.addChild(widget.root ?? widget);
   }
+}
+
+function easeOutQuart(progress) {
+  return 1 - (1 - progress) ** 4;
+}
+
+function sampleAutoSummonRevealScale(progress) {
+  const safeProgress = Math.min(1, Math.max(0, progress));
+  if (safeProgress <= AUTO_SUMMON_REVEAL_OVERSHOOT_PROGRESS) {
+    const localProgress = easeOutCubic(
+      safeProgress / AUTO_SUMMON_REVEAL_OVERSHOOT_PROGRESS,
+    );
+    return (
+      AUTO_SUMMON_REVEAL_START_SCALE +
+      (AUTO_SUMMON_REVEAL_OVERSHOOT_SCALE -
+        AUTO_SUMMON_REVEAL_START_SCALE) *
+        localProgress
+    );
+  }
+
+  const localProgress = easeOutCubic(
+    (safeProgress - AUTO_SUMMON_REVEAL_OVERSHOOT_PROGRESS) /
+      (1 - AUTO_SUMMON_REVEAL_OVERSHOOT_PROGRESS),
+  );
+  return (
+    AUTO_SUMMON_REVEAL_OVERSHOOT_SCALE +
+    (1 - AUTO_SUMMON_REVEAL_OVERSHOOT_SCALE) *
+      localProgress
+  );
+}
+
+function sampleSettingsRowReleaseScale(progress) {
+  const safeProgress = Math.min(1, Math.max(0, progress));
+  if (safeProgress <= 0.36) {
+    return (
+      SETTINGS_ROW_PRESS_SCALE +
+      (SETTINGS_ROW_RELEASE_PEAK_SCALE - SETTINGS_ROW_PRESS_SCALE) *
+        easeOutCubic(safeProgress / 0.36)
+    );
+  }
+  return (
+    SETTINGS_ROW_RELEASE_PEAK_SCALE +
+    (1 - SETTINGS_ROW_RELEASE_PEAK_SCALE) *
+      easeOutCubic((safeProgress - 0.36) / 0.64)
+  );
+}
+
+function sampleSettingsRowDisclosureScale(progress) {
+  const safeProgress = Math.min(1, Math.max(0, progress));
+  if (safeProgress <= SETTINGS_ROW_DISCLOSURE_PEAK_PROGRESS) {
+    return (
+      SETTINGS_ROW_DISCLOSURE_START_SCALE +
+      (SETTINGS_ROW_DISCLOSURE_PEAK_SCALE -
+        SETTINGS_ROW_DISCLOSURE_START_SCALE) *
+        easeOutCubic(
+          safeProgress / SETTINGS_ROW_DISCLOSURE_PEAK_PROGRESS,
+        )
+    );
+  }
+  return (
+    SETTINGS_ROW_DISCLOSURE_PEAK_SCALE +
+    (1 - SETTINGS_ROW_DISCLOSURE_PEAK_SCALE) *
+      easeOutCubic(
+        (safeProgress - SETTINGS_ROW_DISCLOSURE_PEAK_PROGRESS) /
+          (1 - SETTINGS_ROW_DISCLOSURE_PEAK_PROGRESS),
+      )
+  );
+}
+
+function easeOutCubic(progress) {
+  return 1 - (1 - progress) ** 3;
+}
+
+function prefersReducedMotion() {
+  return Boolean(
+    globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,
+  );
+}
+
+function defaultRequestFrame(callback) {
+  if (typeof globalThis.requestAnimationFrame === 'function') {
+    return globalThis.requestAnimationFrame(callback);
+  }
+  return globalThis.setTimeout(
+    () => callback(defaultTimeSource()),
+    16,
+  );
+}
+
+function defaultCancelFrame(frame) {
+  if (typeof globalThis.cancelAnimationFrame === 'function') {
+    globalThis.cancelAnimationFrame(frame);
+    return;
+  }
+  globalThis.clearTimeout(frame);
+}
+
+function defaultTimeSource() {
+  return globalThis.performance?.now?.() ?? Date.now();
 }
 
 function layoutButtons(buttons, x, y, width, height, gap) {

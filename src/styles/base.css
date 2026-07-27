@@ -180,16 +180,22 @@
       var(--style-room-tab-inactive-height)
   );
   --style-room-tab-overlap: 2.888889px;
-  --style-room-tab-bottom-bleed: 18px;
+  --style-room-tab-bottom-bleed: 26px;
   --style-room-tab-total-height: calc(
     var(--style-room-tab-active-height) +
       var(--style-room-tab-bottom-bleed)
   );
+  --style-room-tab-selected-width-extra: 6px;
   --style-room-tab-icon-size: 50px;
+  --style-room-tab-icon-top: 3px;
   --style-room-tab-inactive-icon-scale: 1.5;
   --style-room-tab-selected-scale: 1;
-  --style-room-tab-active-frame: url("../../assets/game/source/ui/root-run-room-tab-active.png");
-  --style-room-tab-inactive-frame: url("../../assets/game/source/ui/root-run-room-tab-inactive.png");
+  --style-room-tab-compact-inactive-icon-scale: 1.05;
+  --style-room-tab-compact-selected-icon-scale: 1;
+  --style-room-tab-active-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap-selected-9slice.png");
+  --style-room-tab-inactive-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap-9slice.png");
+  --style-room-tab-frame-slice: 91 73 1 83 fill;
+  --style-room-tab-frame-width: 45.5px 36.5px 0.5px 41.5px;
   --style-page-tab-scroll-clearance: calc(
     var(--style-page-tab-button-height) + (var(--style-page-scroll-cut) * 2)
   );
@@ -244,7 +250,9 @@
   --style-trade-alliance-dialog-padding: 10px;
   --style-log-font-size: var(--style-world-chat-popup-font-size);
   --style-log-line-height: var(--style-world-chat-popup-line-height);
-  --style-research-card-width: calc(1000px * 390 / 1080);
+  --style-research-card-width: calc(
+    390px - 2 * var(--style-room-content-edge)
+  );
   --style-research-row-height: 80px;
   --style-research-value-width: calc(281px * 390 / 1080);
   --style-research-card-art-width: 52px;
@@ -2236,8 +2244,7 @@ body {
 }
 
 .workshop-page {
-  --style-page-tint-bottom: oklch(58% 0.13 294);
-  --style-page-tint-top: oklch(72% 0.08 286);
+  --style-page-background: var(--style-surface);
 }
 
 .brewing-page {
@@ -5941,6 +5948,8 @@ body {
 .workshop-page__panel-button[data-panel-side="left"]
   .workshop-page__feature-character,
 .workshop-page__panel-button[data-panel-side="left"]
+  .workshop-page__personal-tasks-icon-frame,
+.workshop-page__panel-button[data-panel-side="left"]
   .workshop-page__bag-button-icon-frame,
 .workshop-page__panel-button[data-panel-side="left"]
   .workshop-page__mail-button-icon-frame,
@@ -6090,6 +6099,8 @@ body {
 
 .workshop-page__personal-tasks-open:active
   .workshop-page__personal-tasks-character,
+.workshop-page__personal-tasks-open:active
+  .workshop-page__personal-tasks-icon-frame,
 .workshop-page__world-notice-open:active .workshop-page__world-notice-character,
 .workshop-page__bag-button:active .workshop-page__bag-button-icon-frame,
 .workshop-page__mail-button:active .workshop-page__mail-button-icon-frame,
@@ -7445,6 +7456,7 @@ body {
   overflow: visible;
 }
 
+.workshop-page__personal-tasks-icon-frame,
 .workshop-page__bag-button-icon-frame,
 .workshop-page__mail-button-icon-frame,
 .workshop-page__leaderboard-button-icon-frame,
@@ -7464,6 +7476,7 @@ body {
     translate var(--style-motion-fast) var(--style-motion-ease-rubber);
 }
 
+.workshop-page__personal-tasks-icon,
 .workshop-page__bag-button-icon,
 .workshop-page__mail-button-icon,
 .workshop-page__leaderboard-button-icon,
@@ -8496,6 +8509,8 @@ body {
 }
 
 .workshop-page__summon-info-seed-row {
+  --style-press-scale: 0.97;
+  --style-press-release-peak-scale: 1.035;
   width: 100%;
   padding: 0;
   margin: 0;
@@ -8508,6 +8523,10 @@ body {
   border: 0;
   border-radius: 0;
   touch-action: manipulation;
+  transform-origin: center;
+  transition:
+    scale var(--style-motion-button-press-in) var(--style-motion-button-ease),
+    translate var(--style-motion-button-press-in) var(--style-motion-button-ease);
 }
 
 .workshop-page__summon-info-seed-row.is-selected {
@@ -8522,7 +8541,7 @@ body {
     :disabled
   ):not([aria-disabled="true"]) {
   background: var(--style-active-surface);
-  scale: 1;
+  scale: var(--style-press-scale);
   translate: 0 0;
 }
 
@@ -13093,7 +13112,7 @@ div.workshop-page__discovery-row {
 .style-panel.room-bottom-panel {
   position: absolute;
   right: 0;
-  bottom: 8px;
+  bottom: 0;
   left: 0;
   min-height: var(--style-row-min-height);
   padding: 0;
@@ -13105,6 +13124,7 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__tabs {
+  --style-room-tab-width: calc((100% + 5.555556px) / 5);
   display: flex;
   flex-wrap: nowrap;
   gap: 0;
@@ -13112,15 +13132,31 @@ div.workshop-page__discovery-row {
   justify-content: center;
 }
 
+.room-bottom-panel__tabs[data-visible-tab-count="6"] {
+  --style-room-tab-width: calc((100% + 8.444445px) / 6);
+}
+
+.room-bottom-panel__tabs[data-visible-tab-count="7"] {
+  --style-room-tab-width: calc((100% + 11.333334px) / 7);
+}
+
+.room-bottom-panel__tabs.is-compact-icons {
+  --style-room-tab-inactive-icon-scale:
+    var(--style-room-tab-compact-inactive-icon-scale);
+  --style-page-tab-selected-icon-scale:
+    var(--style-room-tab-compact-selected-icon-scale);
+}
+
 .room-bottom-panel__tab {
   position: relative;
   box-sizing: border-box;
   display: flex;
-  flex: 1 1 0;
+  flex: 0 0 var(--style-room-tab-width);
   align-items: center;
   justify-content: center;
   z-index: 1;
   min-width: 0;
+  width: var(--style-room-tab-width);
   height: var(--style-room-tab-total-height);
   min-height: var(--style-room-tab-total-height);
   padding: 0 2px;
@@ -13161,11 +13197,11 @@ div.workshop-page__discovery-row {
   pointer-events: none;
   content: "";
   background-color: transparent;
-  background-image: var(--style-room-tab-inactive-frame);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  border: 0;
+  background-image: none;
+  border: solid transparent;
+  border-image-source: var(--style-room-tab-inactive-frame);
+  border-image-slice: var(--style-room-tab-frame-slice);
+  border-image-width: var(--style-room-tab-frame-width);
 }
 
 .room-bottom-panel__tab-label {
@@ -13194,7 +13230,7 @@ div.workshop-page__discovery-row {
 
 .room-bottom-panel__tab-icon-frame {
   position: absolute;
-  top: calc(var(--style-room-tab-rise) + 5px);
+  top: calc(var(--style-room-tab-rise) + var(--style-room-tab-icon-top));
   left: 50%;
   z-index: 1;
   display: block;
@@ -13256,7 +13292,7 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__prestige-button {
-  --style-page-tab-icon-art-scale: 0.8;
+  --style-page-tab-icon-art-scale: 0.9;
 }
 
 .room-bottom-panel__workshop-button {
@@ -13269,7 +13305,7 @@ div.workshop-page__discovery-row {
 
 .room-bottom-panel__tab-lock {
   position: absolute;
-  top: 34px;
+  top: 32px;
   left: 50%;
   z-index: 4;
   display: block;
@@ -13328,6 +13364,14 @@ div.workshop-page__discovery-row {
   z-index: 3;
   background: transparent;
   font-weight: 400;
+  flex-basis: calc(
+    var(--style-room-tab-width) +
+      var(--style-room-tab-selected-width-extra)
+  );
+  width: calc(
+    var(--style-room-tab-width) +
+      var(--style-room-tab-selected-width-extra)
+  );
   cursor: default;
   scale: var(--style-room-tab-selected-scale);
   transform-origin: center bottom;
@@ -13340,7 +13384,7 @@ div.workshop-page__discovery-row {
     var(--style-room-tab-active-height) +
       var(--style-room-tab-bottom-bleed)
   );
-  background-image: var(--style-room-tab-active-frame);
+  border-image-source: var(--style-room-tab-active-frame);
 }
 
 .room-bottom-panel__tab.is-selected .room-bottom-panel__tab-label {
@@ -13350,7 +13394,7 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__tab.is-selected .room-bottom-panel__tab-icon-frame {
-  top: 5px;
+  top: var(--style-room-tab-icon-top);
   opacity: 1;
   scale: var(--style-page-tab-selected-icon-scale);
 }
@@ -13364,7 +13408,7 @@ div.workshop-page__discovery-row {
     .is-pressing,
     .is-swipe-target
   ):not(.is-selected)::after {
-  background-image: var(--style-room-tab-active-frame);
+  border-image-source: var(--style-room-tab-active-frame);
 }
 
 .room-bottom-panel__tab.is-locked {
@@ -13377,7 +13421,7 @@ div.workshop-page__discovery-row {
 
 .room-bottom-panel__tab.is-locked::after,
 .room-bottom-panel__tab.is-swipe-target-locked:not(.is-selected)::after {
-  background-image: var(--style-room-tab-inactive-frame);
+  border-image-source: var(--style-room-tab-inactive-frame);
   filter: grayscale(0.6) brightness(0.72);
 }
 
@@ -14910,7 +14954,7 @@ div.workshop-page__discovery-row {
   grid-column: 2 / 4;
   grid-row: 3;
   grid-template-columns: var(--room-top-panel-level-size) minmax(0, 1fr);
-  gap: 5px;
+  gap: 0;
   align-items: center;
   min-height: var(--room-top-panel-level-size);
 }
@@ -14926,8 +14970,12 @@ div.workshop-page__discovery-row {
 .room-top-panel__quest-progress-body {
   position: relative;
   align-self: center;
+  width: calc(100% + var(--room-top-panel-level-size) / 2);
   min-width: 0;
-  transform: translateY(-2px);
+  transform: translate(
+    calc(var(--room-top-panel-level-size) / -2),
+    -2px
+  );
 }
 
 .room-top-panel__quest-progress-rail {
@@ -15014,10 +15062,10 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__quest-progress-text {
   position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
+  top: calc(100% + 2px);
+  left: calc(var(--room-top-panel-level-size) / 2 + 5px);
   display: block;
-  width: 100%;
+  width: calc(100% - var(--room-top-panel-level-size) / 2 - 5px);
   min-width: 0;
   overflow: hidden;
   color: var(--style-muted);
@@ -16628,7 +16676,7 @@ div.workshop-page__discovery-row {
 
 .style-button.workshop-page__summon-button {
   position: absolute;
-  top: 59.5%;
+  top: calc(59.5% + 26px);
   left: 50%;
   display: inline-grid;
   place-items: center;
@@ -16694,7 +16742,7 @@ div.workshop-page__discovery-row {
 
 .workshop-page__summon-circle {
   position: absolute;
-  top: calc(50% - 18px);
+  top: calc(50% - 44px);
   left: 50%;
   z-index: 0;
   display: block;

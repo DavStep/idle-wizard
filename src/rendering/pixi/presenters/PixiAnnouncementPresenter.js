@@ -116,7 +116,7 @@ const FEATURE_ICON_PRESENTATIONS = Object.freeze({
       'source:assets/icons/icon-shop-market-stall-tab.webp',
   }),
   prestige: Object.freeze({
-    assetId: 'source:assets/icons/icon-crystal.png',
+    assetId: 'source:assets/icons/icon-prestige-star.png',
   }),
   research: Object.freeze({
     assetId:

@@ -67,6 +67,15 @@ The compatibility adapter also accepts the current raw `shelf`,
 `playerShelf`, `coinOffer`, and `crystalOffers` snapshot names during cutover.
 It only renames display fields; it does not derive game rules.
 
+`MarketTitleRibbon` owns the Market licence identity above the page panels. It
+renders the approved purple folded-ribbon horizontal nine-slice at a fixed
+height. The licence name and three rank-star slots are centered as one group
+on the ribbon front, with a small upward optical correction because the folds
+and tails extend below the raised front panel.
+
+Open `/src/dev/uiRecipes/market-title-ribbon.html` for the deterministic
+component-level visual QA state without gameplay, account, or tutorial gates.
+
 ## Snapshot adapter
 
 `createShop(options)` is the integration boundary for the current facades:

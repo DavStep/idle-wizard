@@ -41,6 +41,7 @@ export class PixiInfoButton extends Container {
       this.inputRouter?.registerPressTarget?.(this, {
         enabled: () =>
           this.enabled && this.visible && this.renderable && !this.destroyed,
+        fallbackHitTest: true,
         excludePageSwipe: true,
         onActivate: this.handleTap,
         onPressChange: this.handlePressChange,

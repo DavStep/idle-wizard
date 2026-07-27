@@ -8,7 +8,6 @@ import {
 
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
-import { PIXI_DIALOG_PALETTE } from '../../primitives/PixiDialogFrame.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiPanel } from '../../primitives/PixiPanel.js';
@@ -27,6 +26,7 @@ import {
 } from '../../theme/PixiThemeTokens.js';
 import { createPixiPageBackgroundGradient } from '../../theme/PixiPageBackground.js';
 import { ResearchStationTitlePlaque } from '../research/ResearchPixiPage.js';
+import { MarketTitleRibbon } from './MarketTitleRibbon.js';
 import { SHOP_DIALOG_IDS, ShopDialogPixi } from './ShopDialogPixi.js';
 
 const SHOP_TABS = Object.freeze([
@@ -45,9 +45,10 @@ const STALL_TEXT_INK = '#634934';
 const STALL_STAR_GAP = 4;
 const STATION_TITLE_HEIGHT = 42;
 const STATION_TITLE_ROW_GAP = 5;
-const MARKET_TITLE_TEXT_GAP = 4;
-const MARKET_TITLE_OPTICAL_OFFSET_X = -8;
-const MARKET_TITLE_MIN_FONT_SIZE = 13;
+const MARKET_TITLE_HEIGHT =
+  PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height;
+const MARKET_TITLE_TOP_OVERHANG =
+  MARKET_TITLE_HEIGHT - STATION_TITLE_HEIGHT;
 
 /**
  * Renderer-neutral retained Shop page.
@@ -89,49 +90,10 @@ export class ShopPixiPage extends BasePixiRetainedView {
     this.uiLayer.label = 'shop:ui';
     this.identityLayer = new Container();
     this.identityLayer.label = 'shop:marketIdentity';
-    const marketTitleAssetId = PIXI_ROOT_RUN_ASSETS.dialogTitle;
-    const marketTitleRoot = new Container({
-      label: 'shop:marketTitlePlaque',
-    });
-    const marketTitleFrame = new PixiNineSliceFrame({
-      texture:
-        assetManager?.getTexture?.(marketTitleAssetId) ??
-        Texture.EMPTY,
-      sourceInsets:
-        PIXI_ROOT_RUN_GEOMETRY.dialog.titleSourceInsets,
-      borderInsets:
-        PIXI_ROOT_RUN_GEOMETRY.dialog.titleBorderInsets,
-      label: 'shop:marketTitlePlaque:frame',
-    });
-    const marketTitle = new PixiTextLabel({
-      fontSize: PIXI_ROOT_RUN_GEOMETRY.dialog.titleTextSize,
-      fontWeight: 'normal',
-      lineHeight: 73 / 3,
-      color: PIXI_DIALOG_PALETTE.titleText,
-      stroke: {
-        color: PIXI_DIALOG_PALETTE.titleStroke,
-        width: PIXI_ROOT_RUN_GEOMETRY.dialog.titleTextStroke,
-      },
-      anchor: { x: 0.5, y: 0.5 },
-      label: 'shop:marketTitlePlaque:title',
-    });
-    this.marketTitlePlaque = {
-      assetId: marketTitleAssetId,
-      root: marketTitleRoot,
-      frame: marketTitleFrame,
-      title: marketTitle,
-      width: 0,
-    };
-    this.marketRankStars = new PixiStarLevelLabel({
+    this.marketTitleRibbon = new MarketTitleRibbon({
       assetManager,
-      label: 'shop:marketRankStars',
     });
-    marketTitleRoot.addChild(
-      marketTitleFrame,
-      marketTitle,
-      this.marketRankStars,
-    );
-    this.identityLayer.addChild(marketTitleRoot);
+    this.identityLayer.addChild(this.marketTitleRibbon.root);
 
     this.tabLayer = new Container();
     this.tabLayer.label = 'shop:tabs';
@@ -272,14 +234,12 @@ export class ShopPixiPage extends BasePixiRetainedView {
       this.model.selectedTabId ?? this.selectedTabId,
     );
     const rank = clampInteger(this.model.market.rank, 1, 5);
-    this.marketTitlePlaque.title
-      .setFontSize(PIXI_ROOT_RUN_GEOMETRY.dialog.titleTextSize)
-      .setText(
-        formatTitleCase(
-          this.model.market.name ?? 'Small Town Market',
-        ),
-      );
-    this.marketRankStars.setLevel(rank);
+    this.marketTitleRibbon.bind(
+      formatTitleCase(
+        this.model.market.name ?? 'Small Town Market',
+      ),
+      rank,
+    );
     this.layoutMarketIdentity();
     this.updateTabNotifications();
 
@@ -511,9 +471,13 @@ export class ShopPixiPage extends BasePixiRetainedView {
     }
     const edge = PIXI_UI_GEOMETRY.roomContentEdge;
     const contentWidth = this.sourceWidth - edge * 2;
-    const identityY = PIXI_UI_GEOMETRY.roomContentTop;
+    const identityY =
+      PIXI_UI_GEOMETRY.roomContentTop -
+      MARKET_TITLE_TOP_OVERHANG;
     const panelTop =
-      identityY + STATION_TITLE_HEIGHT + STATION_TITLE_ROW_GAP;
+      PIXI_UI_GEOMETRY.roomContentTop +
+      STATION_TITLE_HEIGHT +
+      STATION_TITLE_ROW_GAP;
     const tabY =
       this.sourceHeight -
       (PIXI_UI_GEOMETRY.roomChatBottom +
@@ -549,9 +513,6 @@ export class ShopPixiPage extends BasePixiRetainedView {
       const button = this.tabButtons.get(tab.id);
       button.position.set(x, 0);
       button.setSize(tabWidth, PIXI_UI_GEOMETRY.tabHeight);
-      this.tabNotifications
-        .get(tab.id)
-        ?.position.set(tabWidth, 0);
       x += tabWidth + TAB_GAP;
     }
     this.relayoutSections();
@@ -559,58 +520,10 @@ export class ShopPixiPage extends BasePixiRetainedView {
   }
 
   layoutMarketIdentity() {
-    const title = this.marketTitlePlaque.title;
-    const frame = this.marketTitlePlaque.frame;
-    const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
-    const maxWidth =
-      this.sourceWidth - PIXI_UI_GEOMETRY.roomContentEdge * 2;
-    const protectedEndWidth = Math.max(
-      frame.borderInsets.left,
-      frame.borderInsets.right,
-    );
-    const reservedSideWidth =
-      protectedEndWidth +
-      MARKET_TITLE_TEXT_GAP +
-      this.marketRankStars.measuredWidth;
-    let fontSize = title.fontSize;
-    while (
-      title.measuredWidth + reservedSideWidth * 2 > maxWidth &&
-      fontSize > MARKET_TITLE_MIN_FONT_SIZE
-    ) {
-      fontSize -= 1;
-      title.setFontSize(fontSize);
-    }
-    const plaqueWidth = Math.min(
-      maxWidth,
-      Math.max(
-        geometry.titleMinWidth,
-        Math.ceil(
-          title.measuredWidth + reservedSideWidth * 2,
-        ),
-      ),
-    );
-    const frameY =
-      (STATION_TITLE_HEIGHT - geometry.titleHeight) / 2;
-    this.marketTitlePlaque.width = plaqueWidth;
-    this.marketTitlePlaque.root.position.set(
-      (this.sourceWidth - plaqueWidth) / 2,
+    this.marketTitleRibbon.setMaxWidth(this.sourceWidth);
+    this.marketTitleRibbon.root.position.set(
+      (this.sourceWidth - this.marketTitleRibbon.width) / 2,
       0,
-    );
-    frame.position.set(0, frameY);
-    frame.setSize(
-      plaqueWidth,
-      geometry.titleHeight,
-      geometry.titleBorderInsets,
-    );
-    title.position.set(
-      plaqueWidth / 2 + MARKET_TITLE_OPTICAL_OFFSET_X,
-      frameY + geometry.titleHeight / 2,
-    );
-    this.marketRankStars.position.set(
-      plaqueWidth / 2 +
-        title.measuredWidth / 2 +
-        MARKET_TITLE_TEXT_GAP,
-      (STATION_TITLE_HEIGHT - this.marketRankStars.starSize) / 2,
     );
   }
 

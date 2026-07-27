@@ -204,6 +204,7 @@ describe('SeedSummoningFacade', () => {
     });
     expect(facade.getSnapshot()).toMatchObject({
       canSummon: false,
+      unavailableReason: 'no_active_seed_weights',
       dropChances: [
         {
           key: 'sageSeed',

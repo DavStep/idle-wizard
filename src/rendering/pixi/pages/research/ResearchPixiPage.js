@@ -112,6 +112,11 @@ const STATION_TITLE_VARIANTS = Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.researchStationTitleCrystal,
   }),
 });
+const RESEARCH_CARD_OFFSET_X = -2;
+const RESEARCH_CARD_WIDTH =
+  RETAINED_PAGE_GEOMETRY.width -
+  RETAINED_PAGE_GEOMETRY.contentEdge * 2 -
+  RESEARCH_CARD_OFFSET_X;
 
 function normalizeStationTitleVariant(tabId) {
   if (tabId === 'automation' || tabId === 'advanced') {
@@ -124,13 +129,13 @@ function normalizeStationTitleVariant(tabId) {
 }
 
 export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
-  cardWidth: 1000 / 3,
+  cardWidth: RESEARCH_CARD_WIDTH,
   rowHeight: 80,
   contentOffsetY: 3,
   rowGap: 5,
   categoryGap: 18,
   categoryTitleHeight: STATION_TITLE_HEIGHT,
-  cardOffsetX: -2,
+  cardOffsetX: RESEARCH_CARD_OFFSET_X,
   artX: 13,
   artY: 14,
   artWidth: 52,

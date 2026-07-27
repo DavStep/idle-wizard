@@ -437,7 +437,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'intro-level-requirements',
       text: "I'll give you one request at a time. Complete it to earn xp toward your next level.",
-      advanceLabel: 'show request',
+      advanceLabel: 'show',
       advanceAction: TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS,
     });
   });

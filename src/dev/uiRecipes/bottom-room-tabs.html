@@ -96,6 +96,24 @@
         })),
         ...optionalStates,
       ]);
+
+      const requestedNotificationIds = (
+        searchParams.get('notifications') ?? ''
+      )
+        .split(',')
+        .map((pageId) => pageId.trim())
+        .filter(Boolean);
+      manager.setNotifications(
+        Object.fromEntries(
+          requestedNotificationIds.map((pageId) => [
+            pageId,
+            {
+              active: true,
+              tone: pageId === 'shop' ? 'orange' : 'red',
+            },
+          ]),
+        ),
+      );
     </script>
   </body>
 </html>

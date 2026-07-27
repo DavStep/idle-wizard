@@ -66,6 +66,7 @@
     <script type="module">
       import '@fontsource/lilita-one/400.css';
       import { PressFeedbackManager } from '/src/pages/managers/PressFeedbackManager.js';
+      import { ScrollCueManager } from '/src/pages/managers/ScrollCueManager.js';
       import { ResearchBoxListManager } from '/src/pages/research/managers/ResearchBoxListManager.js';
       import { ResearchCardSkinManager } from '/src/pages/research/managers/ResearchCardSkinManager.js';
 
@@ -184,6 +185,9 @@
       const pressFeedbackManager = new PressFeedbackManager();
       pressFeedbackManager.mount(gameStage);
       window.__pressFeedbackManager = pressFeedbackManager;
+      const scrollCueManager = new ScrollCueManager();
+      scrollCueManager.mount(gameStage);
+      window.__scrollCueManager = scrollCueManager;
       const skinManager = new ResearchCardSkinManager();
       skinManager.mount(uiLayer);
       await skinManager.whenReady();

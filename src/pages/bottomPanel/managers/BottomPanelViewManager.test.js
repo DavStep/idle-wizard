@@ -6,7 +6,10 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 
 import { FEATURE_UNLOCK_FLYOUT_EVENT } from '../../announcements/featureUnlockEvents.js';
-import { BottomPanelViewManager } from './BottomPanelViewManager.js';
+import {
+  BOTTOM_PANEL_TABS,
+  BottomPanelViewManager,
+} from './BottomPanelViewManager.js';
 
 function assetSha256(path) {
   return createHash('sha256').update(fs.readFileSync(path)).digest('hex');
@@ -164,6 +167,17 @@ describe('BottomPanelViewManager', () => {
     );
   });
 
+  it('uses the Prestige star asset at its calibrated tab scale', () => {
+    const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
+
+    expect(
+      fs.existsSync('assets/game/source/icons/icon-prestige-star.png'),
+    ).toBe(true);
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__prestige-button\s*\{\s*--style-page-tab-icon-art-scale:\s*0\.9;/,
+    );
+  });
+
   it('uses raised selected tabs without changing the shared tab-row height', () => {
     const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
     const tabRuleIndex = baseCss.indexOf('.room-bottom-panel__tab {');
@@ -208,26 +222,36 @@ describe('BottomPanelViewManager', () => {
 
     expect(baseCss).toContain('--style-room-tab-active-height: 56px;');
     expect(baseCss).toContain('--style-room-tab-inactive-height: 44px;');
-    expect(baseCss).toContain('--style-room-tab-bottom-bleed: 18px;');
+    expect(baseCss).toContain('--style-room-tab-bottom-bleed: 26px;');
     expect(baseCss).toContain('--style-room-tab-total-height: calc(');
     expect(panelRule).toContain('right: 0;');
-    expect(panelRule).toContain('bottom: 8px;');
+    expect(panelRule).toContain('bottom: 0;');
     expect(panelRule).toContain('left: 0;');
     expect(tabRule).toContain('height: var(--style-room-tab-total-height);');
     expect(tabRule).toContain('min-height: var(--style-room-tab-total-height);');
     expect(tabRule).toContain('padding: 0 2px;');
     expect(tabRule).toContain('box-sizing: border-box;');
-    expect(tabRule).toContain('flex: 1 1 0;');
+    expect(tabRule).toContain(
+      'flex: 0 0 var(--style-room-tab-width);',
+    );
+    expect(tabRule).toContain('width: var(--style-room-tab-width);');
     expect(tabRule).toContain('margin-left: 0;');
     expect(tabFrameRule).toContain(
       'var(--style-room-tab-inactive-height) +',
     );
     expect(tabFrameRule).toContain('var(--style-room-tab-bottom-bleed)');
-    expect(tabFrameRule).toContain('border: 0;');
+    expect(tabFrameRule).toContain('border: solid transparent;');
     expect(tabFrameRule).toContain(
-      'background-image: var(--style-room-tab-inactive-frame);',
+      'border-image-source: var(--style-room-tab-inactive-frame);',
+    );
+    expect(tabFrameRule).toContain(
+      'border-image-slice: var(--style-room-tab-frame-slice);',
+    );
+    expect(tabFrameRule).toContain(
+      'border-image-width: var(--style-room-tab-frame-width);',
     );
     expect(baseCss).toContain('--style-room-tab-icon-size: 50px;');
+    expect(baseCss).toContain('--style-room-tab-icon-top: 3px;');
     expect(baseCss).toContain('--style-room-tab-inactive-icon-scale: 1.5;');
     expect(baseCss).toContain('--style-page-tab-selected-icon-scale: 1.22;');
     expect(baseCss).toContain('--style-page-tab-label-text-stroke-width: 1px;');
@@ -246,7 +270,7 @@ describe('BottomPanelViewManager', () => {
       'text-shadow: var(--style-page-tab-label-text-stroke-shadow);',
     );
     expect(iconFrameRule).toContain(
-      'top: calc(var(--style-room-tab-rise) + 5px);',
+      'top: calc(var(--style-room-tab-rise) + var(--style-room-tab-icon-top));',
     );
     expect(iconFrameRule).toContain(
       'scale: var(--style-room-tab-inactive-icon-scale);',
@@ -269,7 +293,7 @@ describe('BottomPanelViewManager', () => {
     );
     expect(selectedFrameRule).toContain('var(--style-room-tab-active-height) +');
     expect(selectedFrameRule).toContain(
-      'background-image: var(--style-room-tab-active-frame);',
+      'border-image-source: var(--style-room-tab-active-frame);',
     );
     expect(baseCss).toContain(
       '.room-bottom-panel__tab.is-selected .room-bottom-panel__tab-label {',
@@ -278,7 +302,7 @@ describe('BottomPanelViewManager', () => {
       '.room-bottom-panel__tab.is-selected .room-bottom-panel__tab-icon-frame {',
     );
     expect(baseCss).toMatch(
-      /\.room-bottom-panel__tab\.is-selected \.room-bottom-panel__tab-icon-frame\s*\{[\s\S]*?top:\s*5px;/,
+      /\.room-bottom-panel__tab\.is-selected \.room-bottom-panel__tab-icon-frame\s*\{[\s\S]*?top:\s*var\(--style-room-tab-icon-top\);/,
     );
     expect(selectedRule).toContain('font-weight: 400;');
     expect(selectedRule).not.toContain('font-weight: 700;');
@@ -301,10 +325,76 @@ describe('BottomPanelViewManager', () => {
     expect(tabsRule).toContain('flex-wrap: nowrap;');
     expect(tabsRule).toContain('gap: 0;');
     expect(tabsRule).toContain('justify-content: center;');
-    expect(tabRule).toContain('flex: 1 1 0;');
+    expect(tabRule).toContain(
+      'flex: 0 0 var(--style-room-tab-width);',
+    );
+    expect(baseCss).toContain(
+      '--style-room-tab-selected-width-extra: 6px;',
+    );
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__tab\.is-selected\s*\{[\s\S]*?flex-basis:\s*calc\([\s\S]*?--style-room-tab-selected-width-extra[\s\S]*?width:\s*calc\([\s\S]*?--style-room-tab-selected-width-extra/,
+    );
     expect(baseCss).toContain(
       '.room-bottom-panel__tab:not([hidden]) ~ .room-bottom-panel__tab:not([hidden]) {',
     );
+    expect(baseCss).toContain(
+      '--style-room-tab-compact-inactive-icon-scale: 1.05;',
+    );
+    expect(baseCss).toContain(
+      '--style-room-tab-compact-selected-icon-scale: 1;',
+    );
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__tabs\.is-compact-icons\s*\{[\s\S]*?--style-room-tab-inactive-icon-scale:[\s\S]*?--style-room-tab-compact-inactive-icon-scale[\s\S]*?--style-page-tab-selected-icon-scale:[\s\S]*?--style-room-tab-compact-selected-icon-scale/,
+    );
+  });
+
+  it('enables compact icons only when seven tabs are visible', () => {
+    const stage = document.createElement('section');
+    const manager = new BottomPanelViewManager({
+      getCurrentPageId: () => 'workshop',
+    });
+
+    manager.mount(stage);
+    manager.setPageStates([
+      ...BOTTOM_PANEL_TABS.map(({ id }) => ({
+        id,
+        unlocked: true,
+        visible: true,
+      })),
+      { id: 'prestige', unlocked: true, visible: true },
+    ]);
+
+    const tabList = stage.querySelector('.room-bottom-panel__tabs');
+    expect(tabList?.classList.contains('is-compact-icons')).toBe(false);
+    expect(tabList?.dataset.visibleTabCount).toBe('6');
+
+    manager.setPageStates([
+      ...BOTTOM_PANEL_TABS.map(({ id }) => ({
+        id,
+        unlocked: true,
+        visible: true,
+      })),
+      { id: 'prestige', unlocked: true, visible: true },
+      { id: 'guild', unlocked: true, visible: true },
+    ]);
+
+    expect(tabList?.classList.contains('is-compact-icons')).toBe(true);
+    expect(tabList?.dataset.visibleTabCount).toBe('7');
+    expect(
+      stage.querySelectorAll('.room-bottom-panel__tab:not([hidden])'),
+    ).toHaveLength(7);
+
+    manager.setVisiblePageIds([
+      'prestige',
+      'brewing',
+      'garden',
+      'workshop',
+      'research',
+      'shop',
+    ]);
+
+    expect(tabList?.classList.contains('is-compact-icons')).toBe(false);
+    expect(tabList?.dataset.visibleTabCount).toBe('6');
   });
 
   it('stacks bottom chrome above normal chrome and below modal layers', () => {
@@ -395,7 +485,7 @@ describe('BottomPanelViewManager', () => {
       /\.room-bottom-panel__tab\.is-locked \.room-bottom-panel__tab-icon-frame\s*\{[\s\S]*?visibility:\s*hidden;/,
     );
     expect(baseCss).toMatch(
-      /\.room-bottom-panel__tab-lock\s*\{[\s\S]*?top:\s*34px;[\s\S]*?width:\s*26px;[\s\S]*?height:\s*29\.5px;/,
+      /\.room-bottom-panel__tab-lock\s*\{[\s\S]*?top:\s*32px;[\s\S]*?width:\s*26px;[\s\S]*?height:\s*29\.5px;/,
     );
 
     brewingTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -650,7 +740,7 @@ describe('BottomPanelViewManager', () => {
     );
   });
 
-  it('keeps bottom chrome transparent while tabs render the Root Run frames', () => {
+  it('keeps bottom chrome transparent while tabs render the midnight cap nine-slices', () => {
     const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
     const panelResetIndex = baseCss.lastIndexOf('.style-panel.room-bottom-panel');
     const themedPanelFrameIndex = baseCss.lastIndexOf(
@@ -687,35 +777,44 @@ describe('BottomPanelViewManager', () => {
     expect(tabSurfaceResetBlock).toContain('box-shadow: none;');
     expect(tabBlock).toContain('background: transparent;');
     expect(tabBlock).toContain('border-image: none;');
-    expect(fs.existsSync('assets/game/source/ui/root-run-room-tab-active.png')).toBe(true);
-    expect(fs.existsSync('assets/game/source/ui/root-run-room-tab-inactive.png')).toBe(true);
+    expect(
+      fs.existsSync(
+        'assets/game/source/ui/midnight-room-tab-top-cap-selected-9slice.png',
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync('assets/game/source/ui/midnight-room-tab-top-cap-9slice.png'),
+    ).toBe(true);
     expect(baseCss).toContain(
-      '--style-room-tab-active-frame: url("../../assets/game/source/ui/root-run-room-tab-active.png");',
+      '--style-room-tab-active-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap-selected-9slice.png");',
     );
     expect(baseCss).toContain(
-      '--style-room-tab-inactive-frame: url("../../assets/game/source/ui/root-run-room-tab-inactive.png");',
+      '--style-room-tab-inactive-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap-9slice.png");',
     );
     expect(tabFrameBlock).toContain(
-      'background-image: var(--style-room-tab-inactive-frame);',
+      'border-image-source: var(--style-room-tab-inactive-frame);',
     );
-    expect(tabFrameBlock).toContain('background-position: center;');
-    expect(tabFrameBlock).toContain('background-repeat: no-repeat;');
-    expect(tabFrameBlock).toContain('background-size: 100% 100%;');
-    expect(tabFrameBlock).toContain('border: 0;');
+    expect(tabFrameBlock).toContain(
+      'border-image-slice: var(--style-room-tab-frame-slice);',
+    );
+    expect(tabFrameBlock).toContain(
+      'border-image-width: var(--style-room-tab-frame-width);',
+    );
+    expect(tabFrameBlock).toContain('border: solid transparent;');
     expect(assetSha256(
-      'assets/game/source/ui/root-run-room-tab-active.png',
+      'assets/game/source/ui/midnight-room-tab-top-cap-selected-9slice.png',
     )).toBe(
-      'c26676722b9f573cf68f43c5057fffdafb62821d170fe846c6f436099ff84475',
+      'e89dcf2121dd1f4cfe92f65cf73ea4184fdb06f7dd44966a6c28dfb16c7f08f7',
     );
     expect(assetSha256(
-      'assets/game/source/ui/root-run-room-tab-inactive.png',
+      'assets/game/source/ui/midnight-room-tab-top-cap-9slice.png',
     )).toBe(
-      '77dd873c0e0a02074bc462b9809c656100fc7bda7d0857767bb1f4ee35ee8eac',
+      '5d19200218a320cac688c24266df486269d1e488bc3caa7868f295ef3cd3fd86',
     );
     expect(tabFrameBlock).toContain('bottom: 0;');
   });
 
-  it('keeps every themed bottom-tab state on the raised Root Run asset skin', () => {
+  it('keeps every themed bottom-tab state on the midnight cap asset skin', () => {
     const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
     const tabSurfaceResetIndex = baseCss.lastIndexOf(
       '.style-panel.room-bottom-panel .room-bottom-panel__tab,',
@@ -736,12 +835,12 @@ describe('BottomPanelViewManager', () => {
     expect(tabSurfaceResetBlock).toContain('border-image: none;');
     expect(tabSurfaceResetBlock).toContain('box-shadow: none;');
     expect(baseCss).toMatch(
-      /\.room-bottom-panel__tab\.is-selected::after\s*\{[\s\S]*?background-image:\s*var\(--style-room-tab-active-frame\);/,
+      /\.room-bottom-panel__tab\.is-selected::after\s*\{[\s\S]*?border-image-source:\s*var\(--style-room-tab-active-frame\);/,
     );
     expect(baseCss).toMatch(
-      /\.room-bottom-panel__tab\.is-locked::after,[\s\S]*?background-image:\s*var\(--style-room-tab-inactive-frame\);/,
+      /\.room-bottom-panel__tab\.is-locked::after,[\s\S]*?border-image-source:\s*var\(--style-room-tab-inactive-frame\);/,
     );
-    expect(baseCss).toContain('--style-room-tab-bottom-bleed: 18px;');
+    expect(baseCss).toContain('--style-room-tab-bottom-bleed: 26px;');
   });
 
   it('prepends the gated prestige page only when visible', () => {
@@ -787,7 +886,7 @@ describe('BottomPanelViewManager', () => {
     expect(prestigeButton?.dataset.actionId).toBeUndefined();
     expect(
       prestigeButton?.querySelector('.room-bottom-panel__tab-icon')?.getAttribute('src'),
-    ).toContain('icon-crystal.png');
+    ).toContain('icon-prestige-star.png');
     expect(prestigeButton?.style.visibility).toBe('');
     expect(prestigeButton?.tabIndex).toBe(0);
     prestigeButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));

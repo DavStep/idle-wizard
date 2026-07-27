@@ -357,10 +357,11 @@ describe('BrewingPixiPage', () => {
     expect(primaryBadge.root.parent).toBe(
       cauldron.buttons.primary.root,
     );
-    expect(primaryBadge.root.position).toMatchObject({
-      x: BREWING_PIXI_GEOMETRY.actionWidth,
-      y: 0,
-    });
+    expect(primaryBadge.root.position.x).toBeCloseTo(
+      BREWING_PIXI_GEOMETRY.actionWidth - 2.784722,
+      6,
+    );
+    expect(primaryBadge.root.position.y).toBeCloseTo(2.784722, 6);
     expect(primaryBadge.root.visible).toBe(true);
     expect(primaryBadge.model.tone).toBe('orange');
     expect(herbBadge.root.parent).toBe(herb.root);
@@ -368,7 +369,10 @@ describe('BrewingPixiPage', () => {
     expect(herbBadge.root.x).toBeGreaterThan(
       herb.label.x + herb.label.width,
     );
-    expect(herbBadge.root.y).toBe(herb.label.y);
+    expect(herbBadge.root.y).toBeCloseTo(
+      herb.label.y + 2.784722,
+      6,
+    );
 
     const suppressedModel = createBrewingViewModel();
     suppressedModel.brewing.cauldrons[0].notification = false;

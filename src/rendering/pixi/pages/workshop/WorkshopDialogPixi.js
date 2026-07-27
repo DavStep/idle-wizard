@@ -43,6 +43,8 @@ const BAG_SCROLL_VIEWPORT_TOP_INSET =
   DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET -
   DIALOG_PAPER_BOTTOM_INSET -
   (DIALOG_SCROLL_VIEWPORT_TOP - DIALOG_PAPER_TOP);
+const BAG_SCROLLBAR_SHIFT_RIGHT = 4;
+const BAG_ROW_VALUE_INSET_RIGHT = 2;
 const STATS_SCROLL_VIEWPORT_TOP_INSET = 6;
 const STATS_SCROLLBAR_SHIFT_RIGHT = 4;
 const RESOURCE_ICON_FRAMES = Object.freeze({
@@ -97,7 +99,11 @@ export class WorkshopDialogPixi {
         : 0;
     this.scrollViewportWidth =
       WORKSHOP_DIALOG_CONTENT_WIDTH +
-      (isStatsDialog ? STATS_SCROLLBAR_SHIFT_RIGHT : 0);
+      (this.isBagDialog
+        ? BAG_SCROLLBAR_SHIFT_RIGHT
+        : isStatsDialog
+          ? STATS_SCROLLBAR_SHIFT_RIGHT
+          : 0);
 
     this.modalId = `dialog:${this.dialogId}`;
     this.modal = new PixiOwnedDialogSurface({
@@ -597,7 +603,9 @@ class WorkshopDialogRow {
     const actionWidth = this.action.root.visible ? 74 : 0;
     this.action.setBounds(width - actionWidth, 0, actionWidth, 20);
     this.value.position.set(
-      width - (this.action.root.visible ? actionWidth + 6 : 0),
+      width -
+        (this.action.root.visible ? actionWidth + 6 : 0) -
+        (this.dialog.isBagDialog ? BAG_ROW_VALUE_INSET_RIGHT : 0),
       2,
     );
     const iconSize = 16;

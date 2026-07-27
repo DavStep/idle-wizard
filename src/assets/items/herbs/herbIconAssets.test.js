@@ -34,8 +34,17 @@ function inspectAlpha(filename) {
   };
 }
 
+const herbIconFilenames = fs
+  .readdirSync(sourceHerbDirectory)
+  .filter((filename) => /^herb-[a-z-]+\.png$/.test(filename))
+  .sort();
+
 describe('herb icon source assets', () => {
-  it.each(['herb-sage.png', 'herb-lavender.png'])(
+  it('keeps the complete herb icon family in the source atlas directory', () => {
+    expect(herbIconFilenames).toHaveLength(24);
+  });
+
+  it.each(herbIconFilenames)(
     'keeps %s crisp and atlas-ready',
     (filename) => {
       const asset = inspectAlpha(filename);

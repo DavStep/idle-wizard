@@ -11,6 +11,10 @@ const rootRunUiRendererSource = readFileSync(
   `${cwd()}/src/rendering/pixi/RootRunUiRendererManager.js`,
   'utf8',
 );
+const pixiNotificationBadgeSource = readFileSync(
+  `${cwd()}/src/rendering/pixi/global/transient/PixiNotificationBadges.js`,
+  'utf8',
+);
 
 function getRuleBody(pattern) {
   return baseCss.match(pattern)?.groups?.body ?? '';
@@ -93,12 +97,23 @@ describe('base styles', () => {
     expect(rootRunUiRendererSource).not.toMatch(
       /drawNotification(?:Dot|Badge)[\s\S]*?\.circle\(/,
     );
+    expect(pixiNotificationBadgeSource).toContain('new Sprite({');
+    expect(pixiNotificationBadgeSource).not.toContain('.circle(');
+    const retainedNotificationSources = readSourceFiles(
+      `${cwd()}/src/rendering/pixi`,
+    ).join('\n');
+    expect(retainedNotificationSources).not.toMatch(
+      /(?:notification|attentionDot|notificationDot)[^\n]*=\s*new Graphics/,
+    );
+    expect(retainedNotificationSources).not.toMatch(
+      /\.circle\([\s\S]{0,160}PIXI_UI_GEOMETRY\.notificationSize/,
+    );
     const notificationSize = Number(
       rootRule.match(/--style-notification-size:\s*([\d.]+)px;/)?.[1],
     );
     expect(notificationSize).toBeCloseTo(9.569444, 6);
     expect(rootRule).toContain(
-      '--style-notification-offset: calc(var(--style-notification-size) / 2);',
+      '--style-notification-offset: 2px;',
     );
     expect([red.width, red.height]).toEqual([61, 65]);
     expect([orange.width, orange.height]).toEqual([red.width, red.height]);
@@ -610,7 +625,7 @@ describe('base styles', () => {
         themeAssets[1].data[offset + 2] === 56 &&
         themeAssets[1].data[offset + 3] === 255,
     ).length;
-    expect(midnightFillPixelCount).toBe(17_873);
+    expect(midnightFillPixelCount).toBe(18_262);
 
     const witchcraftCenterOffset = ((91 * themeAssets[2].width + 83) * 4);
     expect(
@@ -712,6 +727,18 @@ describe('base styles', () => {
     expect(baseCss).toMatch(
       /:root\[data-style-progress="regular"\][\s\S]*?:is\([\s\S]*?\.brewing-page__popup-layer,[\s\S]*?\.shop-page__popup-layer[\s\S]*?\)\s*\{[\s\S]*?--style-progress-fill-background:\s*var\(--style-progress-root-fill\);[\s\S]*?--style-progress-fill-edge:\s*var\(--style-progress-root-edge\);/,
     );
+  });
+
+  it('keeps the Workshop room background solid', () => {
+    const workshopRule = findRuleBody(
+      /\.workshop-page\s*\{(?<body>[^}]*)\}/g,
+      (body) => body.includes('--style-page-background'),
+    );
+
+    expect(workshopRule).toContain(
+      '--style-page-background: var(--style-surface);',
+    );
+    expect(workshopRule).not.toContain('gradient(');
   });
 
   it('keeps first-run cutscene art fixed to the authored source width', () => {
@@ -1135,6 +1162,18 @@ describe('base styles', () => {
     );
   });
 });
+
+function readSourceFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = `${directory}/${entry.name}`;
+    if (entry.isDirectory()) {
+      return readSourceFiles(path);
+    }
+    return entry.isFile() && entry.name.endsWith('.js')
+      ? [readFileSync(path, 'utf8')]
+      : [];
+  });
+}
 
 describe('interaction typography', () => {
   it('keeps font weight stable across interaction states', () => {

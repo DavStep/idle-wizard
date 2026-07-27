@@ -17,7 +17,7 @@ const SETTINGS_SLIDER_HEIGHT =
   PIXI_ROOT_RUN_GEOMETRY.settings.knobSize;
 const SETTINGS_SLIDER_RAIL_HEIGHT =
   PIXI_ROOT_RUN_GEOMETRY.settings.sliderRailHeight;
-const SETTINGS_TOGGLE_WIDTH = 79;
+export const ROOT_RUN_SETTINGS_TOGGLE_WIDTH = 60;
 const SETTINGS_TOGGLE_HEIGHT = 24;
 const SETTINGS_TOGGLE_TRACK = '#82735d';
 const SETTINGS_TOGGLE_TRACK_INSET = '#574536';
@@ -447,7 +447,7 @@ export class RootRunSettingsTogglePixi extends Container {
   } = {}) {
     super();
     this.label = label;
-    this.controlWidth = SETTINGS_TOGGLE_WIDTH;
+    this.controlWidth = ROOT_RUN_SETTINGS_TOGGLE_WIDTH;
     this.controlHeight = SETTINGS_TOGGLE_HEIGHT;
     this.value = false;
     this.enabled = false;
@@ -519,13 +519,13 @@ export class RootRunSettingsTogglePixi extends Container {
   setBounds(
     x,
     y,
-    width = SETTINGS_TOGGLE_WIDTH,
+    width = ROOT_RUN_SETTINGS_TOGGLE_WIDTH,
     height = SETTINGS_TOGGLE_HEIGHT,
   ) {
     this.position.set(x, y);
     this.controlWidth = Math.max(
-      SETTINGS_TOGGLE_WIDTH,
-      finiteOr(width, SETTINGS_TOGGLE_WIDTH),
+      ROOT_RUN_SETTINGS_TOGGLE_WIDTH,
+      finiteOr(width, ROOT_RUN_SETTINGS_TOGGLE_WIDTH),
     );
     this.controlHeight = Math.max(
       SETTINGS_TOGGLE_HEIGHT,

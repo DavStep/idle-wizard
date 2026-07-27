@@ -874,8 +874,8 @@ describe('ResearchBoxListManager', () => {
       /\.research-page__research-rank::before\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(rootRule).toContain(
-      '--style-research-card-width: calc(1000px * 390 / 1080);',
+    expect(rootRule).toMatch(
+      /--style-research-card-width:\s*calc\(\s*390px\s*-\s*2\s*\*\s*var\(--style-room-content-edge\)\s*\);/,
     );
     expect(rootRule).toContain('--style-research-row-height: 80px;');
     expect(rootRule).toContain(

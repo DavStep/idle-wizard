@@ -230,8 +230,8 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       this.contextCurrency,
       this.mana,
       this.manaRate,
-      this.levelControl,
       this.questRail,
+      this.levelControl,
       this.questCaption,
       this.questRemaining,
       this.questTail,
@@ -605,7 +605,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       return;
     }
     const levelX = this.avatarViewport.visible ? 78 : 21;
-    const railX = levelX + LEVEL_SIZE + 5;
+    const railX = levelX + LEVEL_SIZE / 2;
     const railY = 58;
     const railWidth = 319 - railX;
     const railHeight = QUEST_RAIL_HEIGHT;
@@ -703,10 +703,11 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.questCaption.setText(lead);
     this.questRemaining.setText(String(remaining));
     this.questTail.setText(tail);
-    const captionY = railY + railHeight + 6;
-    this.questCaption.position.set(railX, captionY);
+    const captionX = levelX + LEVEL_SIZE + 5;
+    const captionY = railY + railHeight + 2;
+    this.questCaption.position.set(captionX, captionY);
     this.questRemaining.position.set(
-      railX + this.questCaption.measuredWidth,
+      captionX + this.questCaption.measuredWidth,
       captionY,
     );
     this.questTail.position.set(

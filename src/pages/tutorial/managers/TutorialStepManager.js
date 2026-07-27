@@ -246,7 +246,7 @@ export const TUTORIAL_STEPS = [
     pageId: 'workshop',
     revealTokens: REVEAL_MANA_SUMMON,
     text: "I'll give you one request at a time. Complete it to earn xp toward your next level.",
-    advanceLabel: 'show request',
+    advanceLabel: 'show',
     advanceOnClick: true,
     advanceAction: TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS,
     showPointer: false,

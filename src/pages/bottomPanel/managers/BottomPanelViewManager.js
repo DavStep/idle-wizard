@@ -34,6 +34,7 @@ const OPTIONAL_BOTTOM_PANEL_TAB_BY_ID = new Map(
 
 const FEATURE_UNLOCK_FLYOUT_MS = 520;
 const FEATURE_UNLOCK_FLYOUT_CLEANUP_BUFFER_MS = 120;
+const COMPACT_ICON_TAB_THRESHOLD = 7;
 export class BottomPanelViewManager {
   constructor({ getCurrentPageId, onShowPage, onAction, tabs = BOTTOM_PANEL_TABS } = {}) {
     this.getCurrentPageId = getCurrentPageId;
@@ -187,6 +188,7 @@ export class BottomPanelViewManager {
         button.hidden = !this.visiblePageIds.has(tab.id);
       }
     }
+    this.syncIconDensity();
   }
 
   setPageStates(pageStates = []) {
@@ -257,6 +259,7 @@ export class BottomPanelViewManager {
         this.syncTabNotification(tab);
       }
     }
+    this.syncIconDensity();
   }
 
   setNotifications(notifications = {}) {
@@ -346,6 +349,7 @@ export class BottomPanelViewManager {
       list.append(this.createTab(tab));
     }
 
+    this.syncIconDensity();
     panel.append(list);
     return panel;
   }
@@ -379,6 +383,20 @@ export class BottomPanelViewManager {
         this.refs.tabList?.append(button);
       }
     }
+  }
+
+  syncIconDensity() {
+    const visibleTabCount = [...this.tabButtons.values()].filter(
+      (button) => !button.hidden,
+    ).length;
+    this.refs.tabList?.setAttribute(
+      'data-visible-tab-count',
+      String(visibleTabCount),
+    );
+    this.refs.tabList?.classList.toggle(
+      'is-compact-icons',
+      visibleTabCount >= COMPACT_ICON_TAB_THRESHOLD,
+    );
   }
 
   createTab(tab) {

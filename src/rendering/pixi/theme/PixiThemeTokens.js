@@ -128,6 +128,8 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   dialogTitle:
     'source:assets/ui/root-run-dialog/expedition-dialog-title-purple.png',
   dialogClose: 'source:assets/ui/root-run-dialog/expedition-dialog-close.png',
+  marketTitleRibbon:
+    'source:assets/ui/root-run-market/market-title-ribbon-9slice.png',
   researchCard:
     'source:assets/ui/root-run-research/research-card-1000x304.png',
   researchCardLocked:
@@ -148,10 +150,14 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/root-run-research/research-station-title-green.png',
   researchStationTitleCrystal:
     'source:assets/ui/root-run-research/research-station-title-purple.png',
-  roomTabActive: 'source:assets/ui/root-run-room-tab-active.png',
-  roomTabInactive: 'source:assets/ui/root-run-room-tab-inactive.png',
+  roomTabActive:
+    'source:assets/ui/midnight-room-tab-top-cap-selected-9slice.png',
+  roomTabInactive:
+    'source:assets/ui/midnight-room-tab-top-cap-9slice.png',
   info: 'source:assets/ui/prop_info.png',
   workshopBag: 'source:assets/icons/icon-bag.png',
+  workshopStats:
+    'source:assets/icons/icon-stats-ledger-bag-style.png',
   workshopInbox: 'source:assets/icons/icon-inbox-envelope-bag-style.png',
   workshopAlliance:
     'source:assets/icons/icon-alliance-banner-base.webp',
@@ -162,7 +168,7 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   workshopDiscoveries:
     'source:assets/icons/icon-discoveries-journal.webp',
   workshopPersonalTasks:
-    'source:assets/rooms/workshop/characters/miso.webp',
+    'source:assets/icons/icon-quests-scroll-bag-style.png',
   workshopWorldEvent:
     'source:assets/rooms/workshop/characters/guild-secretary.webp',
   lock: 'source:assets/ui/prop_lock.png',
@@ -178,6 +184,31 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
 
 export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
   designWidth: 1080,
+  marketTitleRibbon: Object.freeze({
+    sourceInsets: Object.freeze({
+      top: 27,
+      right: 73,
+      bottom: 27,
+      left: 73,
+    }),
+    borderInsets: Object.freeze({
+      top: 27 * (360 / 390),
+      right: 73 * (360 / 390),
+      bottom: 27 * (360 / 390),
+      left: 73 * (360 / 390),
+    }),
+    width: 370 * (360 / 390),
+    height: 55 * (360 / 390),
+    contentInsetX: 66 * (360 / 390),
+    contentGap: 5 * (360 / 390),
+    contentOffsetY: -6 * (360 / 390),
+    titleFontSize: 20 * (360 / 390),
+    titleLineHeight: 24 * (360 / 390),
+    titleStroke: 3 * (360 / 390),
+    titleMinFontSize: 13,
+    starSize: 15 * (360 / 390),
+    starGap: 2 * (360 / 390),
+  }),
   settings: Object.freeze({
     knobSize: 69 / 3,
     sliderRailHeight: 14,
@@ -263,12 +294,14 @@ const SHARED_RESOURCE_COLORS = Object.freeze({
  * Precomputed sRGB equivalents of the legacy OKLCH page mixes in base.css.
  *
  * The endpoint colors are frozen here so production Pixi rendering never
- * reads CSS, computed styles, or DOM geometry. Stops remain at 0%, 48%, and
- * 100%, matching the legacy `linear-gradient(0deg, ...)` declaration.
+ * reads CSS, computed styles, or DOM geometry. Gradient stops remain at 0%,
+ * 48%, and 100%, matching the legacy `linear-gradient(0deg, ...)`
+ * declaration. Workshop intentionally repeats the surface color so its
+ * production fill stays solid.
  */
 export const PIXI_PAGE_BACKGROUND_COLORS = Object.freeze({
   black: Object.freeze({
-    workshop: Object.freeze(['#2e2b37', '#202020', '#2a2a2e']),
+    workshop: Object.freeze(['#202020', '#202020', '#202020']),
     brewing: Object.freeze(['#253037', '#202020', '#282c2d']),
     garden: Object.freeze(['#283028', '#202020', '#292c29']),
     research: Object.freeze(['#312d26', '#202020', '#2c2b29']),
@@ -277,7 +310,7 @@ export const PIXI_PAGE_BACKGROUND_COLORS = Object.freeze({
     prestige: Object.freeze(['#372b32', '#202020', '#2d2a2d']),
   }),
   midnight: Object.freeze({
-    workshop: Object.freeze(['#222636', '#17191f', '#21232d']),
+    workshop: Object.freeze(['#17191f', '#17191f', '#17191f']),
     brewing: Object.freeze(['#212837', '#17191f', '#20242d']),
     garden: Object.freeze(['#1d2834', '#17191f', '#20252c']),
     research: Object.freeze(['#292531', '#17191f', '#20252c']),
@@ -286,7 +319,7 @@ export const PIXI_PAGE_BACKGROUND_COLORS = Object.freeze({
     prestige: Object.freeze(['#262738', '#17191f', '#22242d']),
   }),
   witchcraft: Object.freeze({
-    workshop: Object.freeze(['#291c3d', '#1a1028', '#251b35']),
+    workshop: Object.freeze(['#1a1028', '#1a1028', '#1a1028']),
     brewing: Object.freeze(['#261f3f', '#1a1028', '#231c37']),
     garden: Object.freeze(['#1d2140', '#1a1028', '#201d37']),
     research: Object.freeze(['#311b33', '#1a1028', '#2a1a31']),

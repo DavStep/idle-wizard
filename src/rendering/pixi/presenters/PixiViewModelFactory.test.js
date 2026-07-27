@@ -110,8 +110,27 @@ describe('PixiViewModelFactory', () => {
     expect(model.workshop.dialogs.tasksInfo.title).toBe("Elara's Request");
   });
 
-  it('projects the summon settings as a selected seed editor above the seed list', () => {
-    const selectSummonSeed = vi.fn();
+  it('keeps the disabled summon control pressable when seed drop weights need attention', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createWorkshop({
+      gameplay: {
+        seedSummoning: {
+          cost: 10,
+          quantity: 1,
+          canSummon: false,
+          unavailableReason: 'no_active_seed_weights',
+        },
+      },
+    });
+
+    expect(model.workshop.summon).toMatchObject({
+      canSummon: false,
+      enabled: false,
+      pressEnabled: true,
+    });
+  });
+
+  it('projects each seed drop slider inside its seed row', () => {
     const setSummonDropPreference = vi.fn();
     const toggleSummonAutomation = vi.fn();
     const setSummonManaReserve = vi.fn();
@@ -143,23 +162,22 @@ describe('PixiViewModelFactory', () => {
         },
       },
       actions: {
-        selectSummonSeed,
         setSummonDropPreference,
         toggleSummonAutomation,
         setSummonManaReserve,
-      },
-      dialogState: {
-        summonSeedKey: 'mintSeed',
       },
     });
 
     const dialog = model.workshop.dialogs.summonInfo;
     expect(dialog.title).toBe('Summoning Seeds');
+    expect(dialog.autoSummonUnlocked).toBe(true);
     expect(dialog.summaryRows).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: 'auto',
           label: 'Auto Summon',
+          icon: { kind: 'automation' },
+          iconLeading: true,
         }),
         expect.objectContaining({
           id: 'reserve',
@@ -167,31 +185,31 @@ describe('PixiViewModelFactory', () => {
           value: '20',
           valueIconResourceKey: 'mana',
         }),
-        expect.objectContaining({
-          id: 'selected',
-          label: 'Mint Seed',
-          value: 'High · 75%',
-          valueTone: 'green',
-          iconLeading: true,
-        }),
       ]),
     );
+    expect(dialog.summaryRows).toHaveLength(2);
     expect(dialog.items).toEqual([
       expect.objectContaining({
         id: 'sageSeed',
         label: 'Sage Seed',
-        selected: false,
         detail: '25% Chance',
         value: 'Low',
         valueTone: 'red',
+        dropSlider: expect.objectContaining({
+          mode: 'milestones',
+          value: 'low',
+        }),
       }),
       expect.objectContaining({
         id: 'mintSeed',
         label: 'Mint Seed',
-        selected: true,
         detail: '75% Chance',
         value: 'High',
         valueTone: 'green',
+        dropSlider: expect.objectContaining({
+          mode: 'milestones',
+          value: 'high',
+        }),
       }),
     ]);
     expect(dialog.settingsToggle).toMatchObject({
@@ -204,11 +222,8 @@ describe('PixiViewModelFactory', () => {
       max: 5_000,
       value: 20,
     });
-    expect(dialog.dropSlider).toMatchObject({
-      mode: 'milestones',
-      value: 'high',
-    });
-    expect(dialog.dropSlider.options).toEqual([
+    expect(dialog.dropSlider).toBeUndefined();
+    expect(dialog.items[1].dropSlider.options).toEqual([
       { value: 'none', tone: 'root', enabled: true },
       { value: 'low', tone: 'red', enabled: true },
       { value: 'medium', tone: 'yellow', enabled: true },
@@ -216,9 +231,7 @@ describe('PixiViewModelFactory', () => {
     ]);
     expect(dialog.actions).toEqual([]);
 
-    dialog.items[0].action();
-    expect(selectSummonSeed).toHaveBeenCalledWith('sageSeed');
-    dialog.dropSlider.onChange('medium');
+    dialog.items[1].dropSlider.onChange('medium');
     expect(setSummonDropPreference).toHaveBeenCalledWith(
       'mintSeed',
       'medium',
@@ -227,6 +240,35 @@ describe('PixiViewModelFactory', () => {
     expect(toggleSummonAutomation).toHaveBeenCalledTimes(1);
     dialog.manaSlider.onChange(2_500);
     expect(setSummonManaReserve).toHaveBeenCalledWith(2_500);
+  });
+
+  it('omits Auto Summon controls until its research is unlocked', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createWorkshop({
+      gameplay: {
+        seedSummoning: {
+          autoSummoning: {
+            unlocked: false,
+            manaReserve: 20,
+          },
+          dropChances: [
+            {
+              key: 'sageSeed',
+              label: 'sage seed',
+              dropChance: 1,
+              dropPreference: 'medium',
+            },
+          ],
+        },
+      },
+    });
+
+    const dialog = model.workshop.dialogs.summonInfo;
+    expect(dialog.autoSummonUnlocked).toBe(false);
+    expect(dialog.summaryRows).toEqual([]);
+    expect(dialog.settingsToggle).toBeNull();
+    expect(dialog.manaSlider).toBeNull();
+    expect(dialog.items).toHaveLength(1);
   });
 
   it('keeps none enabled when the selected seed is the only researched seed', () => {
@@ -249,7 +291,7 @@ describe('PixiViewModelFactory', () => {
     });
 
     expect(
-      model.workshop.dialogs.summonInfo.dropSlider.options,
+      model.workshop.dialogs.summonInfo.items[0].dropSlider.options,
     ).toEqual([
       { value: 'none', tone: 'root', enabled: true },
       { value: 'low', tone: 'red', enabled: true },
@@ -295,6 +337,8 @@ describe('PixiViewModelFactory', () => {
     expect(
       model.workshop.features.find((feature) => feature.id === 'alliance'),
     ).toMatchObject({
+      side: 'left',
+      weight: 10,
       visible: true,
       notification: true,
       allianceTagColor: 'green',
@@ -302,9 +346,23 @@ describe('PixiViewModelFactory', () => {
     expect(
       model.workshop.features.find((feature) => feature.id === 'worldEvent'),
     ).toMatchObject({
+      side: 'right',
+      weight: 30,
       visible: true,
       timer: '2d 4h',
       notification: true,
+    });
+    expect(model.workshop.stats).toMatchObject({
+      side: 'right',
+      weight: 0,
+    });
+    expect(model.workshop.inbox).toMatchObject({
+      side: 'right',
+      weight: 10,
+    });
+    expect(model.workshop.bag).toMatchObject({
+      side: 'left',
+      weight: 40,
     });
   });
 
