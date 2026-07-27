@@ -5,6 +5,7 @@ import {
 } from '../../generated/game-asset-atlas.generated.js';
 import {
   getSeedPackBaseFrameName,
+  getSeedPackIconLayout,
   getSeedPackItemFrameName,
 } from './seedIconFrames.js';
 
@@ -16,9 +17,6 @@ export {
 } from './seedIconFrames.js';
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
-const SEED_PACK_ITEM_SCALE = 0.44;
-const SEED_PACK_ITEM_CENTER_Y_RATIO = 0.63;
-
 export function createSeedPackIcon(
   className,
   seed = null,
@@ -61,15 +59,19 @@ export function createSeedPackIcon(
     x: 0,
     y: 0,
   });
-  const itemSize = Math.min(packFrame.width, packFrame.height) * SEED_PACK_ITEM_SCALE;
-  const itemX = packFrame.width / 2 - itemSize / 2;
-  const itemY = packFrame.height * SEED_PACK_ITEM_CENTER_Y_RATIO - itemSize / 2;
+  const layout = getSeedPackIconLayout({
+    width: packFrame.width,
+    height: packFrame.height,
+  });
+  const itemSize = layout.item.size;
+  const itemX = layout.item.centerX - itemSize / 2;
+  const itemY = layout.item.centerY - itemSize / 2;
   const item = createAtlasFrameSprite(itemClassName, itemFrameName, {
     height: itemSize,
     width: itemSize,
     x: itemX,
     y: itemY,
-    transform: `rotate(6 ${itemX + itemSize / 2} ${itemY + itemSize / 2})`,
+    transform: `rotate(${layout.item.rotationDegrees} ${layout.item.centerX} ${layout.item.centerY})`,
   });
 
   root.append(pack, item);

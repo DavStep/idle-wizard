@@ -411,7 +411,7 @@ describe('WorkshopActionBarManager', () => {
     expect(circleRule).toMatch(/\bposition:\s*absolute;/);
     expect(circleRule).toMatch(/\bwidth:\s*196px;/);
     expect(circleRule).toMatch(/\bpointer-events:\s*none;/);
-    expect(textRule).toMatch(/\btext-transform:\s*lowercase;/);
+    expect(textRule).not.toMatch(/\btext-transform:\s*lowercase;/);
     expect(textRule).toMatch(/\btransform:\s*none;/);
 
     manager.unmount();
@@ -533,6 +533,9 @@ describe('WorkshopActionBarManager', () => {
     const sidePanelIconFrameRule = baseCss.match(
       /\.workshop-page__bag-button-icon-frame,\s*\.workshop-page__mail-button-icon-frame,\s*\.workshop-page__leaderboard-button-icon-frame,\s*\.workshop-page__discoveries-button-icon-frame,\s*\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const mailIconRule = baseCss.match(
+      /\.workshop-page__mail-button-icon\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const leaderboardIconRule = baseCss.match(
       /\.workshop-page__leaderboard-button-icon\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -570,7 +573,7 @@ describe('WorkshopActionBarManager', () => {
     expect(statsRule).toMatch(
       /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
     );
-    expect(statsRule).toMatch(/\btext-transform:\s*lowercase;/);
+    expect(statsRule).not.toMatch(/\btext-transform:\s*lowercase;/);
     expect(statsRule).not.toMatch(/\bbottom:/);
 
     expect(mailRootRule).toBeDefined();
@@ -620,11 +623,14 @@ describe('WorkshopActionBarManager', () => {
       '-webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)',
     );
     expect(featureCharacterLabelRule).toContain(
-      'var(--style-page-tab-label-text-stroke-color);',
+      'var(--style-yellow-button-text-stroke);',
+    );
+    expect(featureCharacterLabelRule).toMatch(
+      /\bcolor:\s*var\(--style-yellow-button-text\);/,
     );
     expect(featureCharacterLabelRule).toMatch(/\bpaint-order:\s*stroke fill;/);
-    expect(featureCharacterLabelRule).toMatch(
-      /\btext-shadow:\s*var\(--style-page-tab-label-text-stroke-shadow\);/,
+    expect(featureCharacterLabelRule).toContain(
+      '0 1px 0 var(--style-yellow-button-text-stroke)',
     );
     expect(rightFeatureCharacterLabelRule).toMatch(/\bright:\s*0;/);
     expect(rightFeatureCharacterLabelRule).toMatch(/\bleft:\s*auto;/);
@@ -636,7 +642,8 @@ describe('WorkshopActionBarManager', () => {
       'line-height: var(--workshop-panel-button-label-line-height);',
     );
     expect(sidePanelLabelRule).toMatch(/\btransform:\s*none;/);
-    expect(leaderboardIconRule).toMatch(/\bscale:\s*1\.35;/);
+    expect(mailIconRule).toMatch(/\bscale:\s*1\.3;/);
+    expect(leaderboardIconRule).toMatch(/\bscale:\s*1\.2;/);
 
     expect(allianceRule).toMatch(/\bleft:\s*var\(--style-room-chrome-edge\);/);
   });
@@ -660,7 +667,7 @@ describe('WorkshopActionBarManager', () => {
     const bagIcon = parent.querySelector('.workshop-page__bag-button-icon');
     const bagLabel = parent.querySelector('.workshop-page__bag-button-label');
 
-    expect(button?.textContent).toBe('stats');
+    expect(button?.textContent).toBe('Stats');
     expect(button?.getAttribute('aria-label')).toBe('open stats');
     expect(button?.querySelector('img, svg')).toBeNull();
     expect(button?.classList.contains('style-button--yellow')).toBe(true);
@@ -676,7 +683,7 @@ describe('WorkshopActionBarManager', () => {
     expect(bagIcon?.tagName).toBe('IMG');
     expect(bagIcon?.getAttribute('src')).toContain('icon-bag.png');
     expect(bagIcon?.getAttribute('aria-hidden')).toBe('true');
-    expect(bagLabel?.textContent).toBe('bag');
+    expect(bagLabel?.textContent).toBe('Bag');
 
     bagButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -722,7 +729,7 @@ describe('WorkshopActionBarManager', () => {
       'icon-inbox-envelope-bag-style.png',
     );
     expect(mailIcon?.getAttribute('aria-hidden')).toBe('true');
-    expect(mailLabel?.textContent).toBe('inbox');
+    expect(mailLabel?.textContent).toBe('Inbox');
     expect(mailButton?.dataset.notification).toBe('true');
     expect(mailButton?.getAttribute('aria-label')).toBe('open inbox, new mail');
 

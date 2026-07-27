@@ -89,7 +89,7 @@ export class TopPanelViewManager {
 
     this.refs.usernameLabel = document.createElement('span');
     this.refs.usernameLabel.className = 'room-top-panel__username-label';
-    this.refs.usernameLabel.textContent = 'wizard';
+    this.refs.usernameLabel.textContent = 'Wizard';
 
     this.refs.usernameButton.append(this.refs.usernameLabel);
 
@@ -899,7 +899,7 @@ export class TopPanelViewManager {
 
     this.refs.inboxTitle = document.createElement('div');
     this.refs.inboxTitle.className = 'style-box__title room-top-panel__inbox-title';
-    this.refs.inboxTitle.textContent = 'inbox';
+    this.refs.inboxTitle.textContent = 'Inbox';
 
     this.refs.inboxCloseButton = document.createElement('button');
     this.refs.inboxCloseButton.className = 'room-top-panel__inbox-close';

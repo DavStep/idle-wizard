@@ -43,6 +43,11 @@ describe('PixiTopPanelView', () => {
 
     expect(view.root.children).toEqual(children);
     expect(view.username.text).toBe('mira');
+    expect(view.username.textObject.style.fill).toBe('#ffffff');
+    expect(view.username.textObject.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: 2,
+    });
     expect(view.mana.amount).toBe('41/80');
     expect(view.manaRate.text).toBe('+2.25/s');
     expect(view.coin.amount).toBe('1.2k');

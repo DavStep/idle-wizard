@@ -7,11 +7,15 @@ import {
 
 import {
   BasePixiRetainedView,
+  PixiButton,
+  PixiNineSliceFrame,
   PixiProgressBar,
   PixiTextLabel,
 } from '../../primitives/index.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -26,6 +30,21 @@ import {
 import { TutorialPointerSpine } from './TutorialPointerSpine.js';
 
 const GUIDE_ASSET_ID = 'source:assets/characters/elara.png';
+const TUTORIAL_RESEARCH_CARD_PALETTE = Object.freeze({
+  surface: '#ffe7c8',
+  activeSurface: '#f3d4ad',
+  text: '#634934',
+  muted: '#725737',
+});
+const TUTORIAL_ADVANCE_BUTTON = Object.freeze({
+  minWidth: 58,
+  maxWidth: 116,
+  height: 26,
+  labelPadding: 24,
+  rightInset: 10,
+  bottomInset: 6,
+  contentGap: 6,
+});
 const DRAG_YELLS = Object.freeze([
   'AAAAAA!!!',
   'Put me down!',
@@ -78,6 +97,8 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.stepId = null;
     this.manualPlacement = null;
     this.dragState = null;
+    this.targetPressRegistration = null;
+    this.targetPressSemanticId = null;
     this.dragYellIndex = 0;
     this.typewriter = null;
     this.seenCopyKeys = new Set();
@@ -112,15 +133,18 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     });
     this.guideImage.label = 'tutorial:guideImage';
     this.guideImage.anchor.set(0.5, 1);
-    this.guideLabelFrame = new Graphics();
-    this.guideLabelFrame.label = 'tutorial:guideLabelFrame';
-    this.guideLabel = new PixiTextLabel({
+    this.guideLabelButton = new PixiButton({
+      assetManager: assets,
       text: 'help',
-      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
-      lineHeight: PIXI_UI_GEOMETRY.borderLabelLineHeight,
-      anchor: { x: 0.5, y: 0.5 },
-      label: 'tutorial:guideLabel',
+      width: 36,
+      height: 24,
+      variant: 'brown-light',
+      label: 'tutorial:guideLabelButton',
     });
+    this.guideLabelButton.eventMode = 'none';
+    this.guideLabelButton.cursor = 'default';
+    this.guideLabel = this.guideLabelButton.textLabel;
+    this.guideLabelFrame = this.guideLabelButton.rootRunFrame;
     this.dragYell = new PixiTextLabel({
       text: DRAG_YELLS[0],
       fontSize: 10,
@@ -133,13 +157,13 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.attentionDot.label = 'tutorial:attentionDot';
     this.guideButton.addChild(
       this.guideImage,
-      this.guideLabelFrame,
-      this.guideLabel,
+      this.guideLabelButton,
       this.dragYell,
       this.attentionDot,
     );
 
     this.surface = new TutorialLessonSurface({
+      assets,
       inputRouter,
       onSurfacePress: () =>
         this.actions.objectivePress?.({ source: 'lesson-panel' }),
@@ -241,7 +265,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
 
   onApplyTheme(theme) {
     const nextTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.guideLabel.applyTheme(nextTheme);
+    this.guideLabelButton.applyTheme(nextTheme);
     this.dragYell.applyTheme(nextTheme);
     this.surface.applyTheme(nextTheme);
     this.redrawGuideLabel(nextTheme);
@@ -295,6 +319,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
   onDeactivate() {
     this.stopTicker();
     this.revealController?.deactivate?.();
+    this.clearTargetPressProxy();
     this.pointer.setVisible(false);
     this.cancelTypewriter();
     this.restoreTargetEmphasis();
@@ -302,6 +327,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
 
   onDestroy() {
     this.stopTicker();
+    this.clearTargetPressProxy();
     for (const registration of this.registrations) {
       releaseRegistration(registration);
     }
@@ -343,6 +369,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.surface.bind({
       ...this.model.lesson,
       text: this.typewriter?.visibleText ?? this.model.lesson?.text ?? '',
+      layoutText: this.model.lesson?.text ?? '',
       variant: this.model.lesson?.variant,
     });
     this.redrawGuideLabel(this.theme ?? DEFAULT_PIXI_THEME_SNAPSHOT);
@@ -392,13 +419,23 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
       cue?.kind !== 'target-cue' ||
       !cue.showPointer
     ) {
+      this.clearTargetPressProxy();
       this.pointer.setVisible(false);
       return;
     }
+    const targetId = cue.targetId ?? this.model.step?.targetId;
+    this.syncTargetPressProxy(targetId);
+    const targetSnapshot = resolveSemanticTutorialTarget(
+      this.semanticRegistry,
+      targetId,
+    );
     const targetRect = this.resolveTargetRect(
-      cue.targetId ?? this.model.step?.targetId,
+      targetId,
+      targetSnapshot,
     );
     if (!targetRect) {
+      this.clearTargetPressProxy();
+      this.pointer.setGesture(null);
       this.pointer.setVisible(false);
       return;
     }
@@ -425,9 +462,67 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
       bounds: this.sourceBounds,
       protectedRects,
     });
+    this.pointer.setGesture(
+      targetSnapshot?.state?.tutorialPointerGesture ?? null,
+    );
     this.pointer.setPlacement(placement);
     this.pointer.setMotionEnabled(!this.reducedMotion);
     this.pointer.setVisible(Boolean(placement));
+  }
+
+  syncTargetPressProxy(targetId) {
+    const snapshot = resolveSemanticTutorialTarget(
+      this.semanticRegistry,
+      targetId,
+    );
+    if (
+      !snapshot?.semanticId ||
+      !snapshot.displayObject ||
+      typeof snapshot.activate !== 'function'
+    ) {
+      this.clearTargetPressProxy();
+      return;
+    }
+    if (
+      this.targetPressSemanticId === snapshot.semanticId &&
+      this.targetPressRegistration
+    ) {
+      return;
+    }
+
+    this.clearTargetPressProxy();
+    const semanticId = snapshot.semanticId;
+    this.targetPressSemanticId = semanticId;
+    this.targetPressRegistration =
+      this.inputRouter?.registerPressTarget?.({
+        id: 'tutorial.target.proxy',
+        displayObject: snapshot.displayObject,
+        fallbackHitTest: true,
+        priority: 1000,
+        enabled: () => {
+          const current = resolveSemanticTutorialTarget(
+            this.semanticRegistry,
+            targetId,
+          );
+          return Boolean(
+            this.active &&
+              this.pointer.root.visible &&
+              current?.semanticId === semanticId &&
+              current.state?.enabled !== false &&
+              current.state?.interactive !== false &&
+              current.state?.visible !== false,
+          );
+        },
+        onActivate: (payload) =>
+          this.semanticRegistry?.activate?.(semanticId, payload),
+        haptic: 'light',
+      }) ?? null;
+  }
+
+  clearTargetPressProxy() {
+    releaseRegistration(this.targetPressRegistration);
+    this.targetPressRegistration = null;
+    this.targetPressSemanticId = null;
   }
 
   redrawSpotlight() {
@@ -512,7 +607,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.renderPositions();
   }
 
-  resolveTargetRect(targetId) {
+  resolveTargetRect(targetId, resolvedSnapshot = null) {
     if (!targetId) {
       return null;
     }
@@ -520,10 +615,12 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     if (explicit) {
       return normalizeSourceRect(explicit);
     }
-    const snapshot = resolveSemanticTutorialTarget(
-      this.semanticRegistry,
-      targetId,
-    );
+    const snapshot =
+      resolvedSnapshot ??
+      resolveSemanticTutorialTarget(
+        this.semanticRegistry,
+        targetId,
+      );
     if (
       !snapshot ||
       snapshot.state?.visible === false ||
@@ -582,8 +679,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     );
     this.guideImage.position.y =
       TUTORIAL_PIXI_GEOMETRY.guideHeight + (pressed ? 1 : 0);
-    this.guideLabel.position.y =
-      this.guideLabel.__layoutY + (pressed ? 1 : 0);
+    this.guideLabelButton.setPressed(pressed);
   }
 
   startGuideDrag() {
@@ -867,26 +963,17 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
   }
 
   redrawGuideLabel(theme) {
-    const width = Math.ceil(this.guideLabel.measuredWidth) + 6;
-    const height = PIXI_UI_GEOMETRY.borderLabelLineHeight + 2;
+    const width = Math.max(
+      36,
+      Math.ceil(this.guideLabel.measuredWidth) + 14,
+    );
+    const height = 24;
     const x =
       TUTORIAL_PIXI_GEOMETRY.guideWidth - 4 - width;
     const y =
-      TUTORIAL_PIXI_GEOMETRY.guideHeight - 6 - height;
-    this.guideLabelFrame
-      .clear()
-      .rect(x, y, width, height)
-      .fill(theme.surface)
-      .stroke({
-        color: theme.stroke,
-        width: 1,
-        alignment: 1,
-      });
-    this.guideLabel.position.set(
-      x + width / 2,
-      y + height / 2,
-    );
-    this.guideLabel.__layoutY = this.guideLabel.y;
+      TUTORIAL_PIXI_GEOMETRY.guideHeight - 4 - height;
+    this.guideLabelButton.setSize(width, height);
+    this.guideLabelButton.position.set(x, y);
   }
 
   redrawAttention(theme) {
@@ -971,18 +1058,33 @@ export function createTutorialPixiViewModel(
 
 class TutorialLessonSurface {
   constructor({
+    assets,
     inputRouter,
     onSurfacePress,
     onShowTarget,
     onAdvance,
   }) {
+    this.assets = assets;
     this.root = new Container();
     this.root.label = 'tutorial:lesson';
     this.root.eventMode = 'static';
     this.shadow = new Graphics();
     this.shadow.label = 'tutorial:lessonShadow';
-    this.frame = new Graphics();
+    this.frame = new PixiNineSliceFrame({
+      texture: this.assets.getTexture(
+        PIXI_ROOT_RUN_ASSETS.researchCard,
+      ),
+      sourceInsets:
+        PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+      borderInsets:
+        PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+      width: TUTORIAL_PIXI_GEOMETRY.panelOuterWidth,
+      height: TUTORIAL_PIXI_GEOMETRY.panelDefaultOuterHeight,
+      label: 'tutorial:lessonFrame',
+    });
     this.frame.label = 'tutorial:lessonFrame';
+    this.introFrame = new Graphics();
+    this.introFrame.label = 'tutorial:introLessonFrame';
     this.titleBacking = new Graphics();
     this.title = new PixiTextLabel({
       text: 'lesson',
@@ -1025,14 +1127,19 @@ class TutorialLessonSurface {
       text: 'show me',
       action: onShowTarget,
     });
-    this.advanceControl = new TutorialTextControl({
-      id: 'tutorial.lesson.advance',
+    this.advanceControl = new PixiButton({
+      assetManager: assets,
       inputRouter,
       text: 'next',
+      width: TUTORIAL_ADVANCE_BUTTON.minWidth,
+      height: TUTORIAL_ADVANCE_BUTTON.height,
+      variant: 'yellow',
       action: onAdvance,
+      label: 'tutorial.lesson.advance',
     });
     this.root.addChild(
       this.shadow,
+      this.introFrame,
       this.frame,
       this.titleBacking,
       this.title,
@@ -1041,7 +1148,7 @@ class TutorialLessonSurface {
       this.progress,
       this.progressLabel,
       this.showControl.root,
-      this.advanceControl.root,
+      this.advanceControl,
     );
     this.surfaceRegistration =
       inputRouter?.registerPressTarget?.({
@@ -1065,16 +1172,27 @@ class TutorialLessonSurface {
   bind(model = {}) {
     this.model = model;
     const intro = model.variant === 'intro-dialog';
+    const layoutModel = {
+      ...model,
+      text: model.layoutText ?? model.text,
+    };
+    this.applyResolvedTheme();
     this.contentWidth = intro
       ? TUTORIAL_PIXI_GEOMETRY.introContentWidth
-      : TUTORIAL_PIXI_GEOMETRY.panelContentWidth;
-    this.contentHeight = estimateLessonContentHeight(model, intro);
+      : estimateLessonContentWidth(layoutModel);
+    this.contentHeight = estimateLessonContentHeight(
+      layoutModel,
+      intro,
+      this.contentWidth,
+    );
     const chrome = intro ? 44 : 21;
     this.outerWidth =
       this.contentWidth + (intro ? 44 : 24);
     this.outerHeight = this.contentHeight + chrome;
     this.title.setText(model.title ?? 'lesson');
-    this.stepLabel.setText(model.stepLabel ?? '');
+    this.stepLabel.setText('');
+    this.stepLabel.visible = false;
+    this.stepLabel.renderable = false;
     this.copy
       .setFontSize(
         intro ? PIXI_UI_GEOMETRY.bodyFontSize : 12,
@@ -1098,7 +1216,10 @@ class TutorialLessonSurface {
       );
     this.advanceControl
       .setText(normalizeActionLabel(model.advanceLabel))
-      .setVisible(Boolean(model.advanceOnClick));
+      .setEnabled(true);
+    this.advanceControl.visible = Boolean(model.advanceOnClick);
+    this.advanceControl.renderable = this.advanceControl.visible;
+    this.advanceControl.syncInteraction();
     this.layout();
     this.redraw();
   }
@@ -1115,26 +1236,60 @@ class TutorialLessonSurface {
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.applyResolvedTheme();
+    this.redraw();
+  }
+
+  applyResolvedTheme() {
+    const intro = this.model.variant === 'intro-dialog';
+    this.visualTheme = intro
+      ? this.theme
+      : {
+          ...this.theme,
+          ...TUTORIAL_RESEARCH_CARD_PALETTE,
+        };
     for (const label of [
       this.title,
       this.stepLabel,
       this.copy,
       this.progressLabel,
     ]) {
-      label.applyTheme(this.theme);
+      label.applyTheme(this.visualTheme);
     }
-    this.showControl.applyTheme(this.theme);
-    this.advanceControl.applyTheme(this.theme);
-    this.progress.applyTheme(this.theme);
-    this.redraw();
+    this.showControl.applyTheme(this.visualTheme);
+    this.advanceControl.applyTheme(this.visualTheme);
+    this.progress.applyTheme(this.visualTheme);
   }
 
   layout() {
     const intro = this.model.variant === 'intro-dialog';
     const paddingX = intro ? 20 : 12;
-    const paddingTop = intro ? 20 : 9;
-    this.title.position.set(8, -12);
-    this.stepLabel.position.set(this.outerWidth - 8, -7);
+    const paddingTop = intro ? 20 : 31;
+    const advanceWidth = Math.max(
+      TUTORIAL_ADVANCE_BUTTON.minWidth,
+      Math.min(
+        TUTORIAL_ADVANCE_BUTTON.maxWidth,
+        Math.ceil(this.advanceControl.textLabel.measuredWidth) +
+          TUTORIAL_ADVANCE_BUTTON.labelPadding,
+      ),
+    );
+    const advanceRightInset = intro
+      ? paddingX
+      : TUTORIAL_ADVANCE_BUTTON.rightInset;
+    const advanceBottomInset = intro
+      ? paddingX
+      : TUTORIAL_ADVANCE_BUTTON.bottomInset;
+    this.advanceControl.setSize(
+      advanceWidth,
+      TUTORIAL_ADVANCE_BUTTON.height,
+    );
+    this.advanceControl.position.set(
+      this.outerWidth - advanceRightInset - advanceWidth,
+      this.outerHeight -
+        advanceBottomInset -
+        TUTORIAL_ADVANCE_BUTTON.height,
+    );
+    this.title.position.set(intro ? 8 : 12, intro ? -12 : 9);
     this.copy.position.set(paddingX, paddingTop);
     let y =
       paddingTop +
@@ -1142,24 +1297,28 @@ class TutorialLessonSurface {
     if (this.progress.visible) {
       y += 5;
       this.progress.position.set(paddingX, y);
+      const progressWidth = this.advanceControl.visible
+        ? Math.max(
+            0,
+            this.advanceControl.x -
+              TUTORIAL_ADVANCE_BUTTON.contentGap -
+              paddingX,
+          )
+        : this.contentWidth;
       this.progress.setSize(
-        this.contentWidth,
+        progressWidth,
         PIXI_UI_GEOMETRY.progressTotalHeight,
       );
       y += PIXI_UI_GEOMETRY.progressTotalHeight;
     }
     if (this.progressLabel.visible) {
       this.progressLabel.position.set(
-        this.outerWidth - paddingX,
+        this.progress.x + this.progress.barWidth,
         y + 2,
       );
     }
     this.showControl.root.position.set(
       this.outerWidth / 2,
-      this.outerHeight - 7,
-    );
-    this.advanceControl.root.position.set(
-      this.outerWidth - (intro ? 20 : 8),
       this.outerHeight - 7,
     );
     this.root.hitArea = new Rectangle(
@@ -1172,8 +1331,15 @@ class TutorialLessonSurface {
 
   redraw() {
     const intro = this.model.variant === 'intro-dialog';
+    const visualTheme = this.visualTheme ?? this.theme;
     this.shadow.clear();
     this.shadow.visible = intro;
+    this.frame.visible = !intro;
+    this.frame.renderable = !intro;
+    this.introFrame.visible = intro;
+    this.introFrame.renderable = intro;
+    this.titleBacking.visible = intro;
+    this.titleBacking.renderable = intro;
     if (intro) {
       this.shadow
         .rect(
@@ -1183,30 +1349,37 @@ class TutorialLessonSurface {
           this.outerHeight,
         )
         .fill({
-          color: this.theme.dialogShadow,
+          color: visualTheme.dialogShadow,
           alpha: 0.72,
         });
+      this.introFrame
+        .clear()
+        .rect(0, 0, this.outerWidth, this.outerHeight)
+        .fill(visualTheme.surface)
+        .stroke({
+          color: visualTheme.stroke,
+          width: PIXI_UI_GEOMETRY.strongBorderWidth,
+          alignment: 1,
+        });
+      this.titleBacking
+        .clear()
+        .rect(6, -11, this.title.measuredWidth + 5, 15)
+        .fill(visualTheme.surface);
+    } else {
+      this.frame.setSize(
+        this.outerWidth,
+        this.outerHeight,
+        PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+      );
     }
-    this.frame
-      .clear()
-      .rect(0, 0, this.outerWidth, this.outerHeight)
-      .fill(this.theme.surface)
-      .stroke({
-        color: this.theme.stroke,
-        width: PIXI_UI_GEOMETRY.strongBorderWidth,
-        alignment: 1,
-      });
-    this.titleBacking
-      .clear()
-      .rect(6, -11, this.title.measuredWidth + 5, 15)
-      .fill(this.theme.surface);
   }
 
   destroy() {
     releaseRegistration(this.surfaceRegistration);
+    this.frame.destroy();
     this.progress.destroy({ children: true });
     this.showControl.destroy();
-    this.advanceControl.destroy();
+    this.advanceControl.destroy({ children: true });
   }
 }
 
@@ -1385,10 +1558,34 @@ function createHiddenTutorialModel() {
   return normalizeTutorialPixiViewModel({ kind: 'hidden' });
 }
 
-function estimateLessonContentHeight(model, intro) {
+function estimateLessonContentWidth(model) {
+  const longestLine = [
+    model.title,
+    model.text,
+    model.progressLabel,
+  ]
+    .flatMap((value) => String(value ?? '').split('\n'))
+    .reduce(
+      (longest, line) =>
+        Math.max(longest, line.length * 6.4),
+      0,
+    );
+
+  return Math.ceil(
+    Math.max(
+      TUTORIAL_PIXI_GEOMETRY.panelContentWidth,
+      Math.min(
+        TUTORIAL_PIXI_GEOMETRY.panelMaxContentWidth,
+        longestLine,
+      ),
+    ),
+  );
+}
+
+function estimateLessonContentHeight(model, intro, contentWidth) {
   const width = intro
     ? TUTORIAL_PIXI_GEOMETRY.introContentWidth
-    : TUTORIAL_PIXI_GEOMETRY.panelContentWidth;
+    : contentWidth;
   const charsPerLine = Math.max(1, Math.floor(width / 6.4));
   const lines = String(model.text ?? '')
     .split('\n')
@@ -1397,7 +1594,11 @@ function estimateLessonContentHeight(model, intro) {
         total + Math.max(1, Math.ceil(line.length / charsPerLine)),
       0,
     );
-  let height = Math.max(34, lines * 16, model.text ? 20 : 0);
+  let height = Math.max(
+    intro ? 34 : TUTORIAL_PIXI_GEOMETRY.panelDefaultContentHeight,
+    lines * 16,
+    model.text ? 20 : 0,
+  );
   if (normalizeProgress(model.progress) !== null) {
     height += 5 + PIXI_UI_GEOMETRY.progressTotalHeight;
   }
@@ -1434,7 +1635,8 @@ function normalizeProgress(value) {
 
 function normalizeActionLabel(value) {
   const text = String(value ?? 'next').trim();
-  return text || 'next';
+  const normalized = text || 'next';
+  return normalized[0].toUpperCase() + normalized.slice(1);
 }
 
 function normalizeIds(values) {

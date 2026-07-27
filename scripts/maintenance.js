@@ -417,7 +417,7 @@ function verifyPlayerGameplaySave() {
 
 function verifyPlayerProgressionReset() {
   runSql('SELECT COUNT(*) AS player_count FROM player');
-  runSql("SELECT COUNT(*) AS non_default_username FROM player WHERE username <> 'wizard'");
+  runSql("SELECT COUNT(*) AS non_default_username FROM player WHERE LOWER(username) <> 'wizard'");
   runSql("SELECT COUNT(*) AS non_default_theme FROM player WHERE theme <> 'midnight'");
   runSql("SELECT COUNT(*) AS non_default_font FROM player WHERE font <> 'lexend'");
   runSql("SELECT COUNT(*) AS non_default_color_mode FROM player WHERE color_mode <> 'resources'");

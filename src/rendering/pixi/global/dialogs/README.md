@@ -40,6 +40,9 @@ Canonical IDs:
 - `global.announcement`
 - `global.confirmation`
 
+Open `/src/dev/uiRecipes/inbox-dialog.html` to inspect the real retained empty
+inbox without gameplay setup, backend state, or save publication.
+
 The views accept renderer-neutral view models. Common fields are:
 
 ```text

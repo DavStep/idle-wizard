@@ -278,18 +278,17 @@ export class WorkshopBagManager {
       return;
     }
 
-    const { unlocked, locked } = this.getGroupedItemRows(snapshot, kind);
-    const rows = [
-      ...unlocked.map((item) => this.createItemRow(snapshot, item)),
-      ...(unlocked.length > 0 && locked.length > 0 ? [this.createDivider()] : []),
-      ...locked.map((item) => this.createItemRow(snapshot, item)),
-    ];
+    const rows = this.getVisibleItemRows(snapshot, kind).map((item) =>
+      this.createItemRow(snapshot, item),
+    );
 
     this.refs.rows.replaceChildren(...(rows.length ? rows : [this.createEmptyRow(kind)]));
   }
 
   renderIngredientRows(snapshot) {
-    const ingredients = this.getIngredientRows(snapshot);
+    const ingredients = this.getIngredientRows(snapshot).filter(
+      (ingredient) => ingredient.quantity > 0,
+    );
     const rows = ingredientRarities.flatMap((rarity) => {
       const rarityItems = ingredients.filter((ingredient) => ingredient.rarity === rarity);
 
@@ -306,16 +305,10 @@ export class WorkshopBagManager {
     this.refs.rows.replaceChildren(...(rows.length ? rows : [this.createEmptyRow('ingredient')]));
   }
 
-  getGroupedItemRows(snapshot, kind) {
-    const rows = this.getItemRows(snapshot, kind).map((item) => ({
-      ...item,
-      display: getItemDisplay(snapshot, item, item.quantity),
-    }));
-
-    return {
-      unlocked: rows.filter((item) => !item.display.locked),
-      locked: rows.filter((item) => item.display.locked),
-    };
+  getVisibleItemRows(snapshot, kind) {
+    return this.getItemRows(snapshot, kind).filter(
+      (item) => getItemDisplay(snapshot, item, item.quantity).unlocked,
+    );
   }
 
   getItemRows(snapshot, kind) {
@@ -417,13 +410,6 @@ export class WorkshopBagManager {
     divider.dataset.rarity = rarity;
     divider.setAttribute('role', 'separator');
     divider.textContent = rarity;
-    return divider;
-  }
-
-  createDivider() {
-    const divider = document.createElement('div');
-    divider.className = 'workshop-page__bag-divider';
-    divider.setAttribute('role', 'separator');
     return divider;
   }
 

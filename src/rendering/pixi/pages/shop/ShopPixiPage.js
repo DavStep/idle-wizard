@@ -8,24 +8,30 @@ import {
 
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
+import { PIXI_DIALOG_PALETTE } from '../../primitives/PixiDialogFrame.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
+import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiPanel } from '../../primitives/PixiPanel.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
 import { PixiScrollView } from '../../primitives/PixiScrollView.js';
+import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import { createPixiPageBackgroundGradient } from '../../theme/PixiPageBackground.js';
+import { ResearchStationTitlePlaque } from '../research/ResearchPixiPage.js';
 import { SHOP_DIALOG_IDS, ShopDialogPixi } from './ShopDialogPixi.js';
 
 const SHOP_TABS = Object.freeze([
-  Object.freeze({ id: 'traders', legacyId: 'npm', label: 'traders' }),
-  Object.freeze({ id: 'players', legacyId: 'player', label: 'players' }),
-  Object.freeze({ id: 'crystals', legacyId: 'crystals', label: 'crystals' }),
+  Object.freeze({ id: 'traders', legacyId: 'npm', label: 'Traders' }),
+  Object.freeze({ id: 'players', legacyId: 'player', label: 'Players' }),
+  Object.freeze({ id: 'crystals', legacyId: 'crystals', label: 'Crystals' }),
 ]);
 
 const PAGE_SCROLL_CUT = 6;
@@ -34,6 +40,13 @@ const TAB_GAP = 3;
 const CARD_GAP = 10;
 const STALL_CARD_HEIGHT = 84;
 const COMPACT_ROW_HEIGHT = 27;
+const STALL_TEXT_INK = '#634934';
+const STALL_STAR_GAP = 4;
+const STATION_TITLE_HEIGHT = 42;
+const STATION_TITLE_ROW_GAP = 5;
+const MARKET_TITLE_TEXT_GAP = 4;
+const MARKET_TITLE_OPTICAL_OFFSET_X = -8;
+const MARKET_TITLE_MIN_FONT_SIZE = 13;
 
 /**
  * Renderer-neutral retained Shop page.
@@ -75,18 +88,49 @@ export class ShopPixiPage extends BasePixiRetainedView {
     this.uiLayer.label = 'shop:ui';
     this.identityLayer = new Container();
     this.identityLayer.label = 'shop:marketIdentity';
-    this.marketNameLabel = new PixiTextLabel({
-      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
-      color: 'muted',
-      anchor: { x: 0.5, y: 0 },
-      label: 'shop:marketName',
+    const marketTitleAssetId = PIXI_ROOT_RUN_ASSETS.dialogTitle;
+    const marketTitleRoot = new Container({
+      label: 'shop:marketTitlePlaque',
     });
-    this.marketRankLabel = new PixiTextLabel({
-      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
-      anchor: { x: 0, y: 0 },
-      label: 'shop:marketRank',
+    const marketTitleFrame = new PixiNineSliceFrame({
+      texture:
+        assetManager?.getTexture?.(marketTitleAssetId) ??
+        Texture.EMPTY,
+      sourceInsets:
+        PIXI_ROOT_RUN_GEOMETRY.dialog.titleSourceInsets,
+      borderInsets:
+        PIXI_ROOT_RUN_GEOMETRY.dialog.titleBorderInsets,
+      label: 'shop:marketTitlePlaque:frame',
     });
-    this.identityLayer.addChild(this.marketNameLabel, this.marketRankLabel);
+    const marketTitle = new PixiTextLabel({
+      fontSize: PIXI_ROOT_RUN_GEOMETRY.dialog.titleTextSize,
+      fontWeight: 'normal',
+      lineHeight: 73 / 3,
+      color: PIXI_DIALOG_PALETTE.titleText,
+      stroke: {
+        color: PIXI_DIALOG_PALETTE.titleStroke,
+        width: PIXI_ROOT_RUN_GEOMETRY.dialog.titleTextStroke,
+      },
+      anchor: { x: 0.5, y: 0.5 },
+      label: 'shop:marketTitlePlaque:title',
+    });
+    this.marketTitlePlaque = {
+      assetId: marketTitleAssetId,
+      root: marketTitleRoot,
+      frame: marketTitleFrame,
+      title: marketTitle,
+      width: 0,
+    };
+    this.marketRankStars = new PixiStarLevelLabel({
+      assetManager,
+      label: 'shop:marketRankStars',
+    });
+    marketTitleRoot.addChild(
+      marketTitleFrame,
+      marketTitle,
+      this.marketRankStars,
+    );
+    this.identityLayer.addChild(marketTitleRoot);
 
     this.tabLayer = new Container();
     this.tabLayer.label = 'shop:tabs';
@@ -232,10 +276,15 @@ export class ShopPixiPage extends BasePixiRetainedView {
       this.model.selectedTabId ?? this.selectedTabId,
     );
     const rank = clampInteger(this.model.market.rank, 1, 5);
-    this.marketNameLabel.setText(
-      `${String(this.model.market.name ?? 'Small Town Market').toLowerCase()} `,
-    );
-    this.marketRankLabel.setText('★'.repeat(rank));
+    this.marketTitlePlaque.title
+      .setFontSize(PIXI_ROOT_RUN_GEOMETRY.dialog.titleTextSize)
+      .setText(
+        formatTitleCase(
+          this.model.market.name ?? 'Small Town Market',
+        ),
+      );
+    this.marketRankStars.setLevel(rank);
+    this.layoutMarketIdentity();
     this.updateTabNotifications();
 
     this.stallsSection.bind(this.model.traders, {
@@ -421,8 +470,6 @@ export class ShopPixiPage extends BasePixiRetainedView {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.rebuildBackgroundGradient();
     this.redrawBackground();
-    this.marketNameLabel?.applyTheme(this.theme);
-    this.marketRankLabel?.applyTheme(this.theme);
     for (const button of this.tabButtons?.values?.() ?? []) {
       button.applyTheme(this.theme);
     }
@@ -470,7 +517,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
     const contentWidth = this.sourceWidth - edge * 2;
     const identityY = PIXI_UI_GEOMETRY.roomContentTop;
     const panelTop =
-      identityY + PIXI_UI_GEOMETRY.rowMinHeight + 4;
+      identityY + STATION_TITLE_HEIGHT + STATION_TITLE_ROW_GAP;
     const tabY =
       this.sourceHeight -
       (PIXI_UI_GEOMETRY.roomChatBottom +
@@ -482,19 +529,20 @@ export class ShopPixiPage extends BasePixiRetainedView {
     const panelBottom = tabY - PAGE_SCROLL_CUT;
     const panelHeight = Math.max(0, panelBottom - panelTop);
 
-    this.identityLayer.position.set(this.sourceWidth / 2, identityY);
-    this.marketNameLabel.position.set(
-      -this.marketRankLabel.measuredWidth / 2,
-      2,
-    );
-    this.marketRankLabel.position.set(
-      this.marketNameLabel.measuredWidth / 2 -
-        this.marketRankLabel.measuredWidth / 2,
-      2,
-    );
-    for (const scroll of this.panelScrolls.values()) {
-      scroll.position.set(edge, panelTop);
-      scroll.setViewportSize(contentWidth, panelHeight);
+    this.identityLayer.position.set(0, identityY);
+    this.layoutMarketIdentity();
+    for (const [tabId, scroll] of this.panelScrolls.entries()) {
+      const connectsTitlePlaqueToLeftEdge = tabId === 'traders';
+      scroll.position.set(
+        connectsTitlePlaqueToLeftEdge ? 0 : edge,
+        panelTop,
+      );
+      scroll.setViewportSize(
+        connectsTitlePlaqueToLeftEdge
+          ? this.sourceWidth - edge
+          : contentWidth,
+        panelHeight,
+      );
     }
     this.tabLayer.position.set(edge, tabY);
     const tabWidth =
@@ -514,22 +562,81 @@ export class ShopPixiPage extends BasePixiRetainedView {
     this.redrawBackground();
   }
 
+  layoutMarketIdentity() {
+    const title = this.marketTitlePlaque.title;
+    const frame = this.marketTitlePlaque.frame;
+    const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
+    const maxWidth =
+      this.sourceWidth - PIXI_UI_GEOMETRY.roomContentEdge * 2;
+    const protectedEndWidth = Math.max(
+      frame.borderInsets.left,
+      frame.borderInsets.right,
+    );
+    const reservedSideWidth =
+      protectedEndWidth +
+      MARKET_TITLE_TEXT_GAP +
+      this.marketRankStars.measuredWidth;
+    let fontSize = title.fontSize;
+    while (
+      title.measuredWidth + reservedSideWidth * 2 > maxWidth &&
+      fontSize > MARKET_TITLE_MIN_FONT_SIZE
+    ) {
+      fontSize -= 1;
+      title.setFontSize(fontSize);
+    }
+    const plaqueWidth = Math.min(
+      maxWidth,
+      Math.max(
+        geometry.titleMinWidth,
+        Math.ceil(
+          title.measuredWidth + reservedSideWidth * 2,
+        ),
+      ),
+    );
+    const frameY =
+      (STATION_TITLE_HEIGHT - geometry.titleHeight) / 2;
+    this.marketTitlePlaque.width = plaqueWidth;
+    this.marketTitlePlaque.root.position.set(
+      (this.sourceWidth - plaqueWidth) / 2,
+      0,
+    );
+    frame.position.set(0, frameY);
+    frame.setSize(
+      plaqueWidth,
+      geometry.titleHeight,
+      geometry.titleBorderInsets,
+    );
+    title.position.set(
+      plaqueWidth / 2 + MARKET_TITLE_OPTICAL_OFFSET_X,
+      frameY + geometry.titleHeight / 2,
+    );
+    this.marketRankStars.position.set(
+      plaqueWidth / 2 +
+        title.measuredWidth / 2 +
+        MARKET_TITLE_TEXT_GAP,
+      (STATION_TITLE_HEIGHT - this.marketRankStars.starSize) / 2,
+    );
+  }
+
   relayoutSections() {
     if (!this.stallsSection) {
       return;
     }
     const width =
       this.sourceWidth - PIXI_UI_GEOMETRY.roomContentEdge * 2;
+    const stallsWidth =
+      this.sourceWidth - PIXI_UI_GEOMETRY.roomContentEdge;
     this.stallsSection.setBounds(
       0,
       PAGE_SCROLL_CUT,
-      width,
-      this.stallsSection.getPreferredHeight(width),
+      stallsWidth,
+      this.stallsSection.getPreferredHeight(stallsWidth),
     );
     this.panelScrolls
       .get('traders')
       .setContentHeight(
-        PAGE_SCROLL_CUT * 2 + this.stallsSection.getPreferredHeight(width),
+        PAGE_SCROLL_CUT * 2 +
+          this.stallsSection.getPreferredHeight(stallsWidth),
       );
 
     let playerY = PAGE_SCROLL_CUT;
@@ -640,15 +747,17 @@ class ShopStallsSection {
     this.page = page;
     this.assetManager = assetManager;
     this.theme = page.theme;
-    this.panel = new PixiPanel({
-      assetManager,
-      title: 'your stalls',
-      label: 'shop:stalls:panel',
+    this.root = new Container({
+      label: 'shop:stalls:section',
     });
-    this.root = this.panel;
+    this.titlePlaque = new ResearchStationTitlePlaque({
+      assetManager,
+    });
+    this.titlePlaque.root.label = 'shop:stalls:titlePlaque';
+    this.titlePlaque.bind('Your Stalls', 'automation');
     this.rowsLayer = new Container();
     this.rowsLayer.label = 'shop:stalls:rows';
-    this.panel.content.addChild(this.rowsLayer);
+    this.root.addChild(this.titlePlaque.root, this.rowsLayer);
     this.helpButton = new ShopInlineButton({
       inputRouter,
       semanticRegistry,
@@ -667,7 +776,7 @@ class ShopStallsSection {
       inputRouter,
       semanticRegistry,
       semanticId: 'shop.ledger.open',
-      text: 'market ledger',
+      text: 'Market Ledger',
       label: 'shop:ledger:open',
       action: () => this.openLedger?.(),
     });
@@ -766,28 +875,38 @@ class ShopStallsSection {
       count > 0
         ? count * STALL_CARD_HEIGHT + (count - 1) * CARD_GAP
         : PIXI_UI_GEOMETRY.rowMinHeight;
-    return 20 + rowsHeight + 24;
+    return (
+      STATION_TITLE_HEIGHT +
+      STATION_TITLE_ROW_GAP +
+      rowsHeight +
+      24
+    );
   }
 
   setBounds(x, y, width, height) {
     this.root.position.set(x, y);
     this.width = width;
-    this.panel.setOuterSize(width, height);
-    this.rowsLayer.position.set(0, 20);
+    const edge = PIXI_UI_GEOMETRY.roomContentEdge;
+    const contentWidth = width - edge;
+    this.titlePlaque.setMaxWidth(width);
+    this.rowsLayer.position.set(
+      edge,
+      STATION_TITLE_HEIGHT + STATION_TITLE_ROW_GAP,
+    );
     let rowY = 0;
     for (const stall of this.stalls.getWidgets()) {
-      stall.setBounds(0, rowY, this.panel.contentWidth, STALL_CARD_HEIGHT);
+      stall.setBounds(0, rowY, contentWidth, STALL_CARD_HEIGHT);
       rowY += STALL_CARD_HEIGHT + CARD_GAP;
     }
     this.helpButton.setBounds(
-      width - 35,
-      -7,
+      width - 19,
+      14,
       17,
       PIXI_UI_GEOMETRY.borderLabelLineHeight,
     );
     this.helpTooltip.setBounds(
       width - 170,
-      10,
+      STATION_TITLE_HEIGHT,
       158,
     );
     const ledgerWidth = 86;
@@ -816,7 +935,6 @@ class ShopStallsSection {
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel.applyTheme(this.theme);
     this.helpButton.applyTheme(this.theme);
     this.helpTooltip.applyTheme(this.theme);
     this.ledgerButton.applyTheme(this.theme);
@@ -996,22 +1114,25 @@ class ShopStallWidget {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.root = new Container();
     this.root.label = 'shop:stall';
-    this.frame = new PixiFrame({
-      assetManager,
+    this.frame = new PixiNineSliceFrame({
+      texture: Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
       label: 'shop:stall:frame',
     });
     this.title = new PixiTextLabel({
       fontWeight: 'bold',
+      color: STALL_TEXT_INK,
       label: 'shop:stall:title',
     });
-    this.capacity = new PixiTextLabel({
-      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
-      color: 'muted',
-      label: 'shop:stall:capacity',
+    this.stars = new PixiStarLevelLabel({
+      assetManager,
+      label: 'shop:stall:stars',
     });
     this.batch = new PixiTextLabel({
       fontWeight: 'bold',
       anchor: { x: 1, y: 0 },
+      color: STALL_TEXT_INK,
       label: 'shop:stall:batch',
     });
     this.iconFrame = new PixiFrame({
@@ -1024,6 +1145,7 @@ class ShopStallWidget {
     this.icon.label = 'shop:stall:icon';
     this.icon.visible = false;
     this.item = new PixiTextLabel({
+      color: STALL_TEXT_INK,
       label: 'shop:stall:item',
     });
     this.quantityFrame = new PixiFrame({
@@ -1035,10 +1157,12 @@ class ShopStallWidget {
     this.quantity = new PixiTextLabel({
       fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
       anchor: { x: 0.5, y: 0 },
+      color: STALL_TEXT_INK,
       label: 'shop:stall:quantity',
     });
     this.price = new PixiTextLabel({
       anchor: { x: 1, y: 0 },
+      color: STALL_TEXT_INK,
       label: 'shop:stall:price',
     });
     this.progress = new PixiProgressBar({
@@ -1049,6 +1173,7 @@ class ShopStallWidget {
     this.timer = new PixiTextLabel({
       fontSize: PIXI_UI_GEOMETRY.tinyFontSize,
       anchor: { x: 1, y: 0 },
+      color: STALL_TEXT_INK,
       label: 'shop:stall:timer',
     });
     this.notification = new Graphics();
@@ -1056,7 +1181,7 @@ class ShopStallWidget {
     this.root.addChild(
       this.frame,
       this.title,
-      this.capacity,
+      this.stars,
       this.batch,
       this.iconFrame,
       this.icon,
@@ -1074,6 +1199,7 @@ class ShopStallWidget {
     this.semanticDefinition = null;
     this.registration =
       inputRouter?.registerPressTarget?.(this.root, {
+        fallbackHitTest: true,
         enabled: () =>
           this.enabled &&
           this.root.visible &&
@@ -1096,20 +1222,27 @@ class ShopStallWidget {
     this.root.visible = stall.hidden !== true;
     this.root.renderable = this.root.visible;
     this.root.eventMode = this.enabled ? 'static' : 'none';
-    this.title.setText(
+    this.title.setText(formatTitleCase(
       stall.title ?? `stall ${stall.slotNumber ?? key}`,
+    ));
+    this.stars.setLevel(
+      stall.starLevel ??
+        countCapacityStars(stall.capacityLabel ?? stall.capacity),
     );
-    this.capacity.setText(stall.capacityLabel ?? stall.capacity ?? '');
+    this.stars.visible = this.stars.level > 0;
+    this.stars.renderable = this.stars.visible;
     this.batch.setText(stall.batchLabel ?? stall.batch ?? '');
-    this.item.setText(
+    this.item.setText(formatTitleCase(
       stall.itemLabel ??
         stall.label ??
         (stall.locked ? 'locked' : 'empty'),
-    );
+    ));
     this.quantity.setText(stall.quantityLabel ?? '');
     this.quantity.visible = Boolean(stall.quantityLabel);
     this.quantityFrame.visible = this.quantity.visible;
-    this.price.setText(stall.priceLabel ?? stall.price ?? '');
+    this.price.setText(formatTitleCase(
+      stall.priceLabel ?? stall.price ?? '',
+    ));
     this.progress.setProgress(
       normalizeProgress(stall.progress ?? stall.progressPercent),
     );
@@ -1151,9 +1284,16 @@ class ShopStallWidget {
     this.width = width;
     this.height = height;
     this.root.hitArea = new Rectangle(0, 0, width, height);
-    this.frame.setSize(width, height);
+    this.frame.setSize(
+      width,
+      height,
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+    );
     this.title.position.set(10, 10);
-    this.capacity.position.set(78, 12);
+    this.stars.position.set(
+      this.title.x + this.title.measuredWidth + STALL_STAR_GAP,
+      this.title.y + 1,
+    );
     this.batch.position.set(width - 10, 10);
     this.iconFrame.position.set(10, 27);
     this.icon.position.set(15, 32);
@@ -1176,11 +1316,15 @@ class ShopStallWidget {
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.frame.applyTheme(this.theme);
+    this.frame.setTexture(
+      resolveTexture(this.assetManager, {
+        textureId: PIXI_ROOT_RUN_ASSETS.researchCard,
+      }),
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+    );
     this.iconFrame.applyTheme(this.theme);
     this.quantityFrame.applyTheme(this.theme);
     this.title.applyTheme(this.theme);
-    this.capacity.applyTheme(this.theme);
     this.batch.applyTheme(this.theme);
     this.item.applyTheme(this.theme);
     this.quantity.applyTheme(this.theme);
@@ -1191,25 +1335,14 @@ class ShopStallWidget {
   }
 
   redrawState() {
-    this.frame.setVariant(
-      this.model?.selected || this.pressed ? 'selected' : 'panel',
-    );
-    const disabled = !this.enabled;
-    this.title.setColor(disabled ? 'disabled' : 'text');
-    this.item.setColor(
-      resolveThemeColor(
-        disabled
-          ? 'disabled'
-          : this.model?.resourceKey ?? 'text',
-      ),
-    );
-    this.price.setColor(
-      resolveThemeColor(
-        disabled
-          ? 'disabled'
-          : this.model?.priceResourceKey ?? 'text',
-      ),
-    );
+    this.frame.alpha =
+      this.model?.selected || this.pressed ? 0.86 : 1;
+    this.title.setColor(STALL_TEXT_INK);
+    this.batch.setColor(STALL_TEXT_INK);
+    this.item.setColor(STALL_TEXT_INK);
+    this.quantity.setColor(STALL_TEXT_INK);
+    this.price.setColor(STALL_TEXT_INK);
+    this.timer.setColor(STALL_TEXT_INK);
     this.notification.clear();
     if (this.model?.notification) {
       this.notification
@@ -1798,6 +1931,21 @@ function resolveThemeColor(token) {
     theme?.resourceColors?.[token] ??
     token ??
     theme?.text;
+}
+
+function countCapacityStars(value) {
+  const match = String(value ?? '').match(/★/g);
+  if (match) {
+    return match.length;
+  }
+  return Math.max(0, Math.floor(Number(value) || 0));
+}
+
+function formatTitleCase(value) {
+  return String(value ?? '').replace(
+    /\b([a-z])/g,
+    (character) => character.toUpperCase(),
+  );
 }
 
 function normalizeProgress(value) {

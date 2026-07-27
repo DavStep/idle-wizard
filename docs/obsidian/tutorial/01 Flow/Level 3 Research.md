@@ -15,12 +15,11 @@ are passive: Elara stays quiet unless the player needs attention after idle time
 
 | Code | Step | Kind | Page | Target | Cue |
 |---|---|---|---|---|---|
-| `t21` | `intro-research` | dialog |  | `page:research` |  |
-| `t22` | `research-mint-seed` | objective | `research` | `research:unlockSeed:mintSeed` | passive |
-| `t23` | `first-research-complete` | prompt |  |  |  |
-| `t24` | `fill-mint-seed-task` | objective |  |  | passive |
-| `t25` | `fill-sage-seed-task` | objective |  |  | passive |
-| `t26` | `level-up-three` | objective |  |  | passive |
+| `t17` | `intro-research` | dialog |  | `page:research` |  |
+| `t18` | `research-mint-seed` | objective | `research` | `research:unlockSeed:mintSeed` | passive |
+| `t19` | `first-research-complete` | prompt |  |  |  |
+| `t20` | `fill-mint-seed-task` | objective |  |  | passive |
+| `t21` | `fill-sage-seed-task` | objective |  |  | passive |
 
 ## Note
 

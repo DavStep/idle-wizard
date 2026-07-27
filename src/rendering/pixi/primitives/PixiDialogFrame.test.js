@@ -144,6 +144,10 @@ describe('PixiDialogFrame', () => {
       text: PIXI_DIALOG_PALETTE.ink,
       muted: PIXI_DIALOG_PALETTE.muted,
       disabled: PIXI_DIALOG_PALETTE.disabled,
+      resourceColors: {
+        mana: PIXI_DIALOG_PALETTE.mana,
+        herb: PIXI_DIALOG_PALETTE.herb,
+      },
     });
   });
 

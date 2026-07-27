@@ -1031,52 +1031,6 @@ describe('TutorialHintManager', () => {
     expect(overlaps(pointerRect, activeRow)).toBe(true);
   });
 
-  it('aims the level-up cue at the button inside the full completion row', () => {
-    const stage = document.createElement('section');
-    const row = document.createElement('div');
-    const button = document.createElement('button');
-    const manager = new TutorialHintManager();
-
-    row.className = 'workshop-page__level-complete';
-    row.dataset.tutorialId = 'workshop:levelUp';
-    button.className = 'style-button workshop-page__level-complete-button';
-    row.append(button);
-    stage.append(row);
-    stage.style.setProperty('--style-ui-scale', String(UI_SCALE));
-    setClientRect(stage, { left: 0, top: 0, width: 1080, height: 2160 });
-    setClientRect(
-      row,
-      toClientRect({
-        left: 30,
-        top: 190,
-        width: 300,
-        height: 52,
-      }),
-    );
-    setClientRect(
-      button,
-      toClientRect({
-        left: 250,
-        top: 210,
-        width: 70,
-        height: 24,
-      }),
-    );
-    document.body.append(stage);
-
-    manager.mount(stage);
-    manager.showTargetCue({
-      target: row,
-    });
-
-    const pointer = stage.querySelector('.tutorial-layer__pointer');
-
-    expect(pointer?.hidden).toBe(false);
-    expect(pointer?.dataset.placement).toBe('bottom-left');
-    expect(pointer?.style.left).toBe('269px');
-    expect(pointer?.style.top).toBe('238px');
-  });
-
   it('types lesson text while border actions appear immediately', () => {
     vi.useFakeTimers();
 
@@ -1105,17 +1059,17 @@ describe('TutorialHintManager', () => {
       expect(text?.textContent).toBe('');
       expect(text?.getAttribute('aria-label')).toBe('abc');
       expect(advance?.hidden).toBe(false);
-      expect(advance?.textContent).toBe('next');
+      expect(advance?.textContent).toBe('Next');
       expect(showMe?.hidden).toBe(true);
       expect(button?.hasAttribute('data-speaking')).toBe(true);
 
       vi.advanceTimersByTime(12);
       expect(text?.textContent).toBe('ab');
-      expect(advance?.textContent).toBe('next');
+      expect(advance?.textContent).toBe('Next');
 
       vi.advanceTimersByTime(12);
       expect(text?.textContent).toBe('abc');
-      expect(advance?.textContent).toBe('next');
+      expect(advance?.textContent).toBe('Next');
       expect(button?.hasAttribute('data-speaking')).toBe(false);
     } finally {
       vi.useRealTimers();
@@ -1205,7 +1159,7 @@ describe('TutorialHintManager', () => {
     }
   });
 
-  it('keeps the lesson width fixed while sizing height for final copy', () => {
+  it('widens for final copy before growing the stable lesson height', () => {
     vi.useFakeTimers();
 
     try {
@@ -1235,16 +1189,14 @@ describe('TutorialHintManager', () => {
       expect(text?.getAttribute('aria-label')).toBe('wait');
 
       manager.showLesson({
-        id: 'long-copy',
+        id: 'wide-copy',
         title: 'lesson 2: market',
         text: 'Summon seeds and sell one for the market task',
         stepLabel: '11/25',
-        progress: { value: 0, max: 4 },
-        progressLabel: '0/4 coin',
         canShowTarget: true,
       });
 
-      const longSize = {
+      const wideSize = {
         width: Number.parseFloat(lesson?.style.width ?? '0'),
         height: Number.parseFloat(lesson?.style.height ?? '0'),
       };
@@ -1254,8 +1206,28 @@ describe('TutorialHintManager', () => {
         'Summon seeds and sell one for the market task',
       );
       expect(shortSize.width).toBe(190);
-      expect(longSize.width).toBe(shortSize.width);
-      expect(longSize.height).toBeGreaterThan(shortSize.height);
+      expect(wideSize.width).toBeGreaterThan(shortSize.width);
+      expect(wideSize.width).toBeLessThanOrEqual(254);
+      expect(shortSize.height).toBe(82);
+      expect(wideSize.height).toBe(shortSize.height);
+
+      manager.showLesson({
+        id: 'wrapped-copy',
+        title: 'lesson 2: market',
+        text: 'Keep summoning seeds until the lesson has enough text to reach the maximum panel width, then wrap onto additional lines below without clipping any of the player guidance. '.repeat(
+          2,
+        ),
+        stepLabel: '11/25',
+        canShowTarget: true,
+      });
+
+      const wrappedSize = {
+        width: Number.parseFloat(lesson?.style.width ?? '0'),
+        height: Number.parseFloat(lesson?.style.height ?? '0'),
+      };
+
+      expect(wrappedSize.width).toBe(254);
+      expect(wrappedSize.height).toBeGreaterThan(wideSize.height);
     } finally {
       vi.useRealTimers();
     }
@@ -1296,7 +1268,7 @@ describe('TutorialHintManager', () => {
       expect(lesson?.style.top).toBe('202px');
       expect(button?.hidden).toBe(true);
       expect(advance?.hidden).toBe(false);
-      expect(advance?.textContent).toBe('enter workshop');
+      expect(advance?.textContent).toBe('Enter workshop');
       expect(showMe?.hidden).toBe(true);
     } finally {
       vi.useRealTimers();
@@ -2522,9 +2494,12 @@ describe('TutorialHintManager', () => {
       const lesson = stage.querySelector('.tutorial-layer__lesson');
 
       expect(lesson?.querySelector('.tutorial-layer__lesson-close')).toBeNull();
-      expect(button?.querySelector('.tutorial-layer__objective-button-label')?.textContent).toBe(
-        'hide',
+      const label = button?.querySelector(
+        '.tutorial-layer__objective-button-label',
       );
+      expect(label?.textContent).toBe('hide');
+      expect(label?.classList.contains('style-button')).toBe(true);
+      expect(label?.classList.contains('style-button--brown-light')).toBe(true);
 
       button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -2600,6 +2575,33 @@ describe('TutorialHintManager', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
 
     expect(baseCss).not.toMatch(/data-style-icons="none"/);
+  });
+
+  it('uses the research row card skin and hides the lesson step counter', () => {
+    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const lessonPaletteRule = baseCss.match(
+      /\.style-box\.tutorial-layer__objective,\s*\.style-box\.tutorial-layer__lesson:not\(\.is-intro-dialog\)\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const lessonFrameRule = baseCss.match(
+      /\.style-box\.tutorial-layer__objective,\s*\.style-box\.tutorial-layer__lesson\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const lessonTitleRule = baseCss.match(
+      /\.style-box\.tutorial-layer__objective > \.style-box__title,\s*\.style-box\.tutorial-layer__lesson:not\(\.is-intro-dialog\)\s+> \.style-box__title\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    const lessonStepRule = baseCss.match(
+      /\.tutorial-layer__objective-step-label,\s*\.tutorial-layer__lesson-step-label\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+
+    expect(lessonPaletteRule).toBeDefined();
+    expect(lessonPaletteRule).toMatch(/--style-surface:\s*#ffe7c8;/);
+    expect(lessonPaletteRule).toMatch(/--style-text:\s*#634934;/);
+    expect(lessonFrameRule).toContain(
+      'root-run-research/research-card-1000x304.png',
+    );
+    expect(lessonFrameRule).toMatch(/\bborder:\s*0;/);
+    expect(lessonTitleRule).toMatch(/\bposition:\s*relative;/);
+    expect(lessonTitleRule).toMatch(/\btop:\s*auto;/);
+    expect(lessonStepRule).toMatch(/\bdisplay:\s*none;/);
   });
 
   it('marks Elara as pressing until a tap releases', () => {

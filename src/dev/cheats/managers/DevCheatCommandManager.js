@@ -27,7 +27,6 @@ const MANA_TONIC_RESEARCH_ID = 'unlockRecipe:manaTonic';
 const LEVEL_ONE_SUMMON_SAGE_SEED_TASK_ID = 'level1-summon-sage-seed';
 const LEVEL_TWO_SUMMON_SAGE_SEED_TASK_ID = 'level2-summon-sage-seed';
 const LEVEL_TWO_SELL_SAGE_SEED_TASK_ID = 'level2-sell-sage-seed';
-const LEVEL_TWO_TURN_IN_SAGE_SEED_TASK_ID = 'level2-turn-in-sage-seed';
 const LEVEL_THREE_RESEARCH_MINT_SEED_TASK_ID = 'level3-research-mint-seed';
 const LEVEL_THREE_SUMMON_MINT_SEED_TASK_ID = 'level3-summon-mint-seed';
 const LEVEL_THREE_TURN_IN_MINT_SEED_TASK_ID = 'level3-turn-in-mint-seed';
@@ -35,7 +34,6 @@ const LEVEL_THREE_TURN_IN_SAGE_SEED_TASK_ID = 'level3-turn-in-sage-seed';
 const LEVEL_FOUR_GROW_SAGE_HERB_TASK_ID = 'level4-grow-sage-herb';
 const LEVEL_FOUR_GROW_MINT_HERB_TASK_ID = 'level4-grow-mint-herb';
 const LEVEL_FOUR_TURN_IN_SAGE_HERB_TASK_ID = 'level4-turn-in-sage-herb';
-const LEVEL_FOUR_TURN_IN_MINT_HERB_TASK_ID = 'level4-turn-in-mint-herb';
 const LEVEL_FIVE_RESEARCH_MANA_TONIC_TASK_ID = 'level5-research-mana-tonic';
 const LEVEL_FIVE_BREW_MANA_TONIC_TASK_ID = 'level5-brew-mana-tonic';
 const NON_PERSISTENT_DEV_DIALOGS = new Set([
@@ -146,6 +144,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     kind: 'preview',
     setup: 'bottomRoomTabs',
     aliases: ['roomTabs', 'bottomTabs'],
+  },
+  {
+    id: 'serverRequired',
+    kind: 'preview',
+    setup: 'onlineConnecting',
+    aliases: ['connectingGate', 'onlineGate'],
   },
   { id: 'workshop', kind: 'page', pageId: 'workshop' },
   { id: 'brewing', kind: 'page', pageId: 'brewing' },
@@ -1897,6 +1901,10 @@ export class DevCheatCommandManager {
       return this.openBottomRoomTabsSurface(surface);
     }
 
+    if (surface.setup === 'onlineConnecting') {
+      return this.openOnlineConnectingSurface(surface);
+    }
+
     const resolvedOptions = { ...(surface.options ?? {}), ...(options ?? {}) };
     const result =
       surface.kind === 'page'
@@ -1965,6 +1973,23 @@ export class DevCheatCommandManager {
     return this.decorateUiResult(
       surface.id,
       this.pagesFacade.setBottomRoomTabsPreview(true),
+      surface,
+    );
+  }
+
+  openOnlineConnectingSurface(surface) {
+    if (typeof this.onlineGateManager?.showConnecting !== 'function') {
+      return this.decorateUiResult(
+        surface.id,
+        { ok: false, reason: 'online_gate_missing' },
+        surface,
+      );
+    }
+
+    this.onlineGateManager.showConnecting({ preview: true });
+    return this.decorateUiResult(
+      surface.id,
+      { ok: true },
       surface,
     );
   }
@@ -2352,9 +2377,6 @@ export class DevCheatCommandManager {
       case 'unselect-sage-seed-sale':
         this.applyLevelTwoSoldPreset(preset);
         break;
-      case 'level-up-two':
-        this.applyCompletedLevelTwoPreset(preset);
-        break;
       case 'first-research-complete':
       case 'fill-mint-seed-task':
         this.applyMintResearchPreset(preset);
@@ -2363,9 +2385,6 @@ export class DevCheatCommandManager {
       case 'fill-sage-seed-task':
         this.applyMintSeedTurnInCompletePreset(preset);
         preset.inventory[SAGE_SEED_KEY] = 6;
-        break;
-      case 'level-up-three':
-        this.applyCompletedLevelThreePreset(preset);
         break;
       case 'intro-garden':
       case 'grow-sage':
@@ -2380,9 +2399,6 @@ export class DevCheatCommandManager {
       case 'fill-mint-herb-task':
         this.applySageHerbCompletePreset(preset);
         preset.inventory[MINT_HERB_KEY] = 2;
-        break;
-      case 'level-up-four':
-        this.applyCompletedLevelFourPreset(preset);
         break;
       case 'intro-brewing':
       case 'brew-mana-tonic':
@@ -2418,15 +2434,6 @@ export class DevCheatCommandManager {
     ];
   }
 
-  applyCompletedLevelTwoPreset(preset) {
-    preset.coin = 4;
-    preset.tasks = [
-      this.createTutorialTaskState(LEVEL_TWO_SUMMON_SAGE_SEED_TASK_ID, 5, true),
-      this.createTutorialTaskState(LEVEL_TWO_SELL_SAGE_SEED_TASK_ID, 1, true),
-      this.createTutorialTaskState(LEVEL_TWO_TURN_IN_SAGE_SEED_TASK_ID, 4, true),
-    ];
-  }
-
   applyMintResearchPreset(preset) {
     preset.research.push(MINT_SEED_RESEARCH_ID);
     preset.tasks = [
@@ -2442,17 +2449,6 @@ export class DevCheatCommandManager {
       this.createTutorialTaskState(LEVEL_THREE_SUMMON_MINT_SEED_TASK_ID, 3, true),
       this.createTutorialTaskState(LEVEL_THREE_TURN_IN_MINT_SEED_TASK_ID, 3, true),
       this.createTutorialTaskState(LEVEL_THREE_TURN_IN_SAGE_SEED_TASK_ID, 6, false),
-    ];
-  }
-
-  applyCompletedLevelThreePreset(preset) {
-    preset.coin = 8;
-    preset.research.push(MINT_SEED_RESEARCH_ID);
-    preset.tasks = [
-      this.createTutorialTaskState(LEVEL_THREE_RESEARCH_MINT_SEED_TASK_ID, 1, true),
-      this.createTutorialTaskState(LEVEL_THREE_SUMMON_MINT_SEED_TASK_ID, 3, true),
-      this.createTutorialTaskState(LEVEL_THREE_TURN_IN_MINT_SEED_TASK_ID, 3, true),
-      this.createTutorialTaskState(LEVEL_THREE_TURN_IN_SAGE_SEED_TASK_ID, 6, true),
     ];
   }
 
@@ -2482,17 +2478,6 @@ export class DevCheatCommandManager {
       this.createTutorialTaskState(LEVEL_FOUR_GROW_SAGE_HERB_TASK_ID, 4, true),
       this.createTutorialTaskState(LEVEL_FOUR_TURN_IN_SAGE_HERB_TASK_ID, 4, true),
       this.createTutorialTaskState(LEVEL_FOUR_GROW_MINT_HERB_TASK_ID, 2, true),
-    ];
-  }
-
-  applyCompletedLevelFourPreset(preset) {
-    preset.coin = 16;
-    preset.research.push(MINT_SEED_RESEARCH_ID);
-    preset.tasks = [
-      this.createTutorialTaskState(LEVEL_FOUR_GROW_SAGE_HERB_TASK_ID, 4, true),
-      this.createTutorialTaskState(LEVEL_FOUR_GROW_MINT_HERB_TASK_ID, 2, true),
-      this.createTutorialTaskState(LEVEL_FOUR_TURN_IN_SAGE_HERB_TASK_ID, 4, true),
-      this.createTutorialTaskState(LEVEL_FOUR_TURN_IN_MINT_HERB_TASK_ID, 2, true),
     ];
   }
 

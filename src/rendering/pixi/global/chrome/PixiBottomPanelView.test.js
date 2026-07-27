@@ -133,6 +133,8 @@ describe('PixiBottomPanelView', () => {
 
     const workshop = getTab(view, 'workshop');
     const brewing = getTab(view, 'brewing');
+    const research = getTab(view, 'research');
+    const shop = getTab(view, 'shop');
 
     expect(workshop.frame.mode).toBe('active');
     expect(workshop.frame.textureId).toBe(
@@ -140,19 +142,16 @@ describe('PixiBottomPanelView', () => {
     );
     expect(workshop.frame.frameY).toBe(0);
     expect(workshop.frame.frameHeight).toBe(74);
-    expect(workshop.frame.sourceInsets).toEqual({
-      top: 57,
-      right: 62,
-      bottom: 21,
-      left: 61,
-    });
-    expect(workshop.frame.nineSlice.scale.x).toBeCloseTo(13 / 36, 8);
+    expect(workshop.frame.sprite.width).toBeCloseTo(workshop.width, 6);
+    expect(workshop.frame.sprite.height).toBe(74);
     expect(workshop.labelRoot.visible).toBe(true);
+    expect(workshop.text.text).toBe('Workshop');
+    expect(workshop.text.textObject.style.fill).toBe('#ffffff');
     expect(workshop.labelRoot.position.y + workshop.text.measuredHeight / 2)
       .toBeCloseTo(54, 6);
-    expect(workshop.iconFrame.position.y).toBe(28);
-    expect(workshop.iconFrame.scale.x).toBe(1.22);
-    expect(workshop.icon.width).toBeCloseTo(46 * 0.84, 6);
+    expect(workshop.iconFrame.position.y).toBe(30);
+    expect(workshop.iconFrame.scale.x).toBe(1.5);
+    expect(workshop.icon.width).toBeCloseTo(50 * 0.84, 6);
 
     expect(brewing.frame.mode).toBe('inactive');
     expect(brewing.frame.textureId).toBe(
@@ -160,20 +159,18 @@ describe('PixiBottomPanelView', () => {
     );
     expect(brewing.frame.frameY).toBe(12);
     expect(brewing.frame.frameHeight).toBe(62);
-    expect(brewing.frame.sourceInsets).toEqual({
-      top: 56,
-      right: 61,
-      bottom: 19,
-      left: 60,
-    });
+    expect(brewing.frame.sprite.width).toBeCloseTo(brewing.width, 6);
+    expect(brewing.frame.sprite.height).toBe(62);
     expect(brewing.labelRoot.visible).toBe(false);
-    expect(brewing.iconFrame.position.y).toBe(40);
-    expect(brewing.iconFrame.scale.x).toBe(0.94);
-    expect(brewing.iconFrame.alpha).toBe(0.72);
-    expect(brewing.icon.width).toBeCloseTo(46 * 0.72, 6);
+    expect(brewing.iconFrame.position.y).toBe(42);
+    expect(brewing.iconFrame.scale.x).toBe(1.5);
+    expect(brewing.iconFrame.alpha).toBe(1);
+    expect(brewing.icon.width).toBeCloseTo(50 * 0.72, 6);
+    expect(research.icon.width).toBeCloseTo(50 * 0.84, 6);
+    expect(shop.icon.width).toBeCloseTo(50 * 0.9, 6);
   });
 
-  it('plays the retained selected-tab overshoot from the bottom center', () => {
+  it('lifts the selected icon during the retained tab motion', () => {
     const motion = createMotionClock();
     const view = new PixiBottomPanelView({
       assets: createAssets(),
@@ -215,10 +212,18 @@ describe('PixiBottomPanelView', () => {
       6,
     );
     expect(research.motionRoot.pivot.y).toBe(74);
+    expect(research.iconFrame.position.y).toBe(42);
+    expect(research.iconFrame.scale.x).toBe(1.5);
+    motion.step(205 * 0.25);
+    expect(research.iconFrame.position.y).toBeGreaterThan(30);
+    expect(research.iconFrame.position.y).toBeLessThan(42);
+    expect(research.iconFrame.scale.x).toBe(1.5);
     motion.step(205 * 0.68);
     expect(research.motionRoot.scale.x).toBeCloseTo(1.065, 5);
     motion.step(205);
     expect(research.motionRoot.scale.x).toBe(1);
+    expect(research.iconFrame.position.y).toBe(30);
+    expect(research.iconFrame.scale.x).toBe(1.5);
     expect(view.getMotionStats().frameScheduled).toBe(false);
 
     view.destroy();
@@ -250,7 +255,7 @@ describe('PixiBottomPanelView', () => {
     expect(research.frame.mode).toBe('active');
     expect(research.frame.frameY).toBe(12);
     expect(research.frame.frameHeight).toBe(62);
-    expect(research.iconFrame.scale.x).toBe(0.94);
+    expect(research.iconFrame.scale.x).toBe(1.5);
     expect(research.labelRoot.visible).toBe(false);
 
     expect(view.setSwipeTargetPageId('garden')).toBe(true);
@@ -261,6 +266,42 @@ describe('PixiBottomPanelView', () => {
 
     expect(view.setSwipeTargetPageId(null)).toBe(true);
     expect(garden.state.swipeTarget).toBe(false);
+    view.destroy();
+  });
+
+  it('shows only the lock artwork on locked room tabs', () => {
+    const view = new PixiBottomPanelView({ assets: createAssets() });
+    view.bind({
+      currentPageId: 'workshop',
+      pages: [
+        ...pageStates(['workshop']),
+        {
+          id: 'garden',
+          visible: true,
+          unlocked: false,
+        },
+      ],
+    });
+
+    const garden = getTab(view, 'garden');
+
+    expect(garden.iconFrame.visible).toBe(false);
+    expect(garden.iconFrame.renderable).toBe(false);
+    expect(garden.lock.visible).toBe(true);
+    expect(garden.lock.renderable).toBe(true);
+    expect(garden.lock.width).toBe(26);
+    expect(garden.lock.height).toBe(29.5);
+    expect(garden.lock.position.y).toBe(34);
+
+    view.bind({
+      currentPageId: 'workshop',
+      pages: pageStates(['workshop', 'garden']),
+    });
+
+    expect(garden.iconFrame.visible).toBe(true);
+    expect(garden.iconFrame.renderable).toBe(true);
+    expect(garden.lock.visible).toBe(false);
+    expect(garden.lock.renderable).toBe(false);
     view.destroy();
   });
 
@@ -555,10 +596,12 @@ describe('PixiBottomPanelView', () => {
     const workshopPress = inputRouter.registrations.get('page.workshop');
     const brewingPress = inputRouter.registrations.get('page.brewing');
     const gardenPress = inputRouter.registrations.get('page.garden');
+    const marketPress = inputRouter.registrations.get('page.shop');
     const garden = getTab(view, 'garden');
     const brewing = getTab(view, 'brewing');
 
     expect(workshopPress.selected()).toBe(true);
+    expect(marketPress.fallbackHitTest).toBe(true);
 
     brewingPress.onPressChange(true);
     expect(brewing.frame.mode).toBe('active');
@@ -594,7 +637,7 @@ describe('PixiBottomPanelView', () => {
     expect(view.showLockedPage('garden')).toBe(true);
     expect(view.lockPanel).toBeInstanceOf(PixiDialogFrame);
     expect(view.lockLayer.visible).toBe(true);
-    expect(view.lockMessage.text).toBe('garden unlocks at level 2');
+    expect(view.lockMessage.text).toBe('Garden unlocks at level 2');
     view.hideLockedPage();
     expect(view.lockLayer.visible).toBe(false);
   });

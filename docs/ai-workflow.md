@@ -45,6 +45,10 @@ When a feature change would be meaningfully faster or safer with a repo-local he
 - Document the command, required env flags, and intended use in this file when it is broad, or in the feature-local `README.md` when it is feature-specific.
 - Keep tools deterministic and scoped to the current repo; prefer shared Vite and SpacetimeDB processes. If parallel agents interfere, isolated runtimes may use explicit alternate ports, with one clear owner responsible for stopping every alternate listener when finished.
 - Reuse documented tools before creating a near-duplicate helper.
+- For the retained server-connection blocker, open
+  `http://127.0.0.1:55173/?devUi=serverRequired` or run
+  `cheats.openUi("serverRequired")`. The preview holds the connecting state so
+  live backend events cannot replace it during screenshot QA.
 - For Figma-authored qUIck screens, dialogs, HUDs, components, or nine-slices, export the ZIP to `qUIck-inbox/`, run `npm run import:quick-ui`, and use `docs/quick-ui-workflow.md`; never manually extract the ZIP.
 - At the atomic retained-Pixi cutover, run `npm run check:production-ui`.
   It follows Vite's emitted production module graph, requires the single

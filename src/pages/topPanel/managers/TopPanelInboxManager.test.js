@@ -122,4 +122,31 @@ describe('TopPanelInboxManager', () => {
     manager.unmount();
     viewManager.unmount();
   });
+
+  it('uses Title Case for the dialog title and empty state', () => {
+    const stage = document.createElement('section');
+    const viewManager = new TopPanelViewManager();
+    viewManager.mount(stage);
+    const manager = new TopPanelInboxManager({
+      playerInboxFacade: createInboxFacade({
+        connected: true,
+        unreadCount: 0,
+        claimableCount: 0,
+        mail: [],
+      }),
+    });
+
+    manager.mount(viewManager.getRefs());
+    manager.show();
+
+    expect(stage.querySelector('.room-top-panel__inbox-title')?.textContent).toBe(
+      'Inbox',
+    );
+    expect(stage.querySelector('.room-top-panel__inbox-empty')?.textContent).toBe(
+      'No Mail',
+    );
+
+    manager.unmount();
+    viewManager.unmount();
+  });
 });

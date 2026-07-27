@@ -100,7 +100,7 @@ export class WorkshopWorldNoticeManager {
     this.refs.openLabel = document.createElement('span');
     this.refs.openLabel.className =
       'workshop-page__panel-button-label workshop-page__feature-character-label';
-    this.refs.openLabel.textContent = 'event';
+    this.refs.openLabel.textContent = 'Event';
 
     this.refs.openTimer = document.createElement('span');
     this.refs.openTimer.className =
@@ -1589,7 +1589,7 @@ export class WorkshopWorldNoticeManager {
   }
 
   normalizeFallbackPlayerName(username) {
-    return String(username ?? '').trim() || 'wizard';
+    return String(username ?? '').trim() || 'Wizard';
   }
 
   shouldShowCurrentLeaderboardRow(normalized = {}) {

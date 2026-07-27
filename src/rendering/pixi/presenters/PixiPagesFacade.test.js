@@ -54,6 +54,37 @@ describe('PixiPagesFacade', () => {
     expect(harness.runtime.deactivatePage).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps level progress visible across partial frame resource snapshots', () => {
+    const harness = createHarness({
+      gameplaySnapshot: createGameplaySnapshot({ level: 1 }),
+    });
+    let publishFrameResources = null;
+    harness.gameplayFacade.subscribeFrameResources.mockImplementation((listener) => {
+      publishFrameResources = listener;
+      return vi.fn();
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+
+    pages.mount();
+
+    expect(harness.getBoundGlobal('chrome.top').quest).toMatchObject({
+      visible: true,
+      completed: 0,
+      total: 4,
+    });
+
+    publishFrameResources({
+      mana: { current: 11, cap: 20, perSecond: 1 },
+      tasks: { currentLevel: 1 },
+    });
+
+    expect(harness.getBoundGlobal('chrome.top').quest).toMatchObject({
+      visible: true,
+      completed: 0,
+      total: 4,
+    });
+  });
+
   it('routes view actions to authoritative gameplay facades', () => {
     const harness = createHarness();
     const pages = new PixiPagesFacade(harness.dependencies);
@@ -84,8 +115,91 @@ describe('PixiPagesFacade', () => {
     });
   });
 
+  it('projects recipe research availability and routes enabled research actions', () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.brewing = {
+      cauldrons: [],
+      herbs: [],
+      recipes: [
+        {
+          key: 'manaTonic',
+          label: 'mana tonic',
+          unlocked: false,
+        },
+        {
+          key: 'minorHealingPotion',
+          label: 'minor healing potion',
+          unlocked: false,
+        },
+      ],
+    };
+    gameplaySnapshot.research = {
+      tabs: [
+        {
+          id: 'regular',
+          boxes: [
+            {
+              id: 'recipes',
+              researches: [
+                {
+                  id: 'unlockRecipe:manaTonic',
+                  canResearch: true,
+                },
+                {
+                  id: 'unlockRecipe:minorHealingPotion',
+                  canResearch: false,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.buyResearch.mockReturnValue({ ok: true });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    expect(pages.show('brewing')).toBe(true);
+    const brewingModel = harness.getBoundPage('brewing');
+    expect(brewingModel.brewing.recipes).toEqual([
+      expect.objectContaining({
+        key: 'manaTonic',
+        researchId: 'unlockRecipe:manaTonic',
+        canResearch: true,
+      }),
+      expect.objectContaining({
+        key: 'minorHealingPotion',
+        researchId: 'unlockRecipe:minorHealingPotion',
+        canResearch: false,
+      }),
+    ]);
+
+    expect(
+      brewingModel.actions.researchRecipe(
+        brewingModel.brewing.recipes[0],
+        1,
+      ),
+    ).toEqual({ ok: true });
+    expect(harness.gameplayFacade.buyResearch).toHaveBeenCalledWith(
+      'unlockRecipe:manaTonic',
+    );
+    expect(harness.pageSurface.openDialog).toHaveBeenLastCalledWith(
+      'recipes',
+      expect.objectContaining({ cauldronIndex: 1 }),
+    );
+    expect(
+      brewingModel.actions.researchRecipe(
+        brewingModel.brewing.recipes[1],
+        1,
+      ),
+    ).toBe(false);
+    expect(harness.gameplayFacade.buyResearch).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps retained stall picker drafts interactive until an allocation is marked', () => {
     const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.research.completedResearchIds = ['unlockSeed:sageSeed'];
     gameplaySnapshot.shop = {
       shelf: {
         sellKinds: [
@@ -137,25 +251,25 @@ describe('PixiPagesFacade', () => {
       'shop.stall',
       expect.objectContaining({
         summaryRows: [
-          expect.objectContaining({ value: 'sage seed' }),
+          expect.objectContaining({ value: 'Sage Seed' }),
         ],
       }),
     );
     dialog =
       harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
     expect(dialog.summaryRows[0]).toMatchObject({
-      value: 'sage seed',
+      value: 'Sage Seed',
       quantityLabel: 'x8',
     });
     expect(dialog.actions[0]).toMatchObject({
-      label: 'mark x8',
+      label: 'Mark x8',
       enabled: true,
     });
 
     dialog.range.onChange(25);
     dialog =
       harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
-    expect(dialog.actions[0].label).toBe('mark x2');
+    expect(dialog.actions[0].label).toBe('Mark x2');
 
     dialog.tabs.find((tab) => tab.id === 'herb').action();
     dialog =
@@ -697,7 +811,6 @@ function createHarness({
     subscribeFrameResources: vi.fn(() => vi.fn()),
     summonSeed: vi.fn(),
     fillTask: vi.fn(),
-    completeTaskLevel: vi.fn(),
     buyResearch: vi.fn(),
     setPrestigeRunFocus: vi.fn(),
     completePrestigeMilestone: vi.fn(),

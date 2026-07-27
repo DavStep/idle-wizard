@@ -27,13 +27,16 @@ export class DevCheatsFacade {
     this.logger = logger;
     this.gameplayFacade = app?.gameplayFacade;
     this.lifecycleManager = app?.lifecycleManager;
+    const onlineGateManager =
+      app?.onlineGateManager ??
+      app?.renderFacade?.getOnlineGateManager?.();
     this.qaDataFacade = new QaDataFacade({
       gameplayFacade: app?.gameplayFacade,
     });
     this.commandManager = new DevCheatCommandManager({
       backendFacade: app?.backendFacade,
       gameplayFacade: app?.gameplayFacade,
-      onlineGateManager: app?.onlineGateManager,
+      onlineGateManager,
       pagesFacade: app?.pagesFacade,
       playerFacade: app?.playerFacade,
       qaDataFacade: this.qaDataFacade,

@@ -16,25 +16,25 @@ const INTRO_STEPS = Object.freeze([
     id: 'castle',
     scene: 'castle',
     text: 'One last battle at the demon lord\'s keep.',
-    action: 'next',
+    action: 'Next',
   }),
   Object.freeze({
     id: 'defeated',
     scene: 'defeated',
     text: 'The demon lord has been defeated.',
-    action: 'next',
+    action: 'Next',
   }),
   Object.freeze({
     id: 'disbanded',
     scene: 'peace',
     text: 'Peace returned. The wizard army disbanded.',
-    action: 'next',
+    action: 'Next',
   }),
   Object.freeze({
     id: 'workshop',
     scene: 'workshop',
     text: 'Not every legend ends on a battlefield. Some begin with an old workshop.',
-    action: 'enter workshop',
+    action: 'Enter workshop',
   }),
 ]);
 
@@ -108,7 +108,7 @@ export class FirstRunIntroViewManager {
 
     this.refs.title = document.createElement('div');
     this.refs.title.className = 'style-box__title';
-    this.refs.title.textContent = 'after the war';
+    this.refs.title.textContent = 'After the War';
 
     this.refs.text = document.createElement('p');
     this.refs.text.className = 'first-run-intro__text';

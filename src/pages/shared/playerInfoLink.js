@@ -2,19 +2,19 @@ export function createPlayerInfoLink(
   player,
   {
     onOpenPlayerInfo,
-    text = player?.username ?? player?.name ?? 'wizard',
+    text = player?.username ?? player?.name ?? 'Wizard',
     className = '',
     doc = document,
   } = {},
 ) {
   if (typeof onOpenPlayerInfo !== 'function') {
-    return doc.createTextNode(String(text ?? 'wizard'));
+    return doc.createTextNode(String(text ?? 'Wizard'));
   }
 
   const button = doc.createElement('button');
   button.className = ['room-player-info-link', className].filter(Boolean).join(' ');
   button.type = 'button';
-  button.textContent = String(text ?? 'wizard');
+  button.textContent = String(text ?? 'Wizard');
   button.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();

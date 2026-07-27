@@ -143,7 +143,7 @@ describe('TopPanelQuestProgressManager', () => {
       completedQuests: 3,
       totalQuests: 4,
       targetLevel: 3,
-      activeQuest: { kind: 'levelUp' },
+      activeQuest: { kind: 'task', taskId: 'final-request' },
     });
     const nextProgress = createProgress({
       completedQuests: 0,
@@ -187,7 +187,7 @@ describe('TopPanelQuestProgressManager', () => {
       completedQuests: 0,
       totalQuests: 1,
       targetLevel: 1,
-      activeQuest: { kind: 'levelUp' },
+      activeQuest: { kind: 'task', taskId: 'final-request' },
     });
     const nextProgress = createProgress({
       completedQuests: 0,
@@ -214,7 +214,7 @@ describe('TopPanelQuestProgressManager', () => {
     vi.useRealTimers();
   });
 
-  it('counts the final coin request as a completed segment before level rollover', () => {
+  it('counts the final request as a completed segment before automatic level rollover', () => {
     const manager = new TopPanelQuestProgressManager();
 
     expect(
@@ -223,7 +223,7 @@ describe('TopPanelQuestProgressManager', () => {
           completedQuests: 3,
           totalQuests: 4,
           targetLevel: 3,
-          activeQuest: { kind: 'levelUp' },
+          activeQuest: { kind: 'task', taskId: 'final-request' },
         }),
         createProgress({ completedQuests: 0, totalQuests: 5, targetLevel: 4 }),
       ),

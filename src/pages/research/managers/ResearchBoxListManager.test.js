@@ -68,6 +68,36 @@ function createGameplayFacade(snapshot, overrides = {}) {
 }
 
 describe('ResearchBoxListManager', () => {
+  it('renders research tab button labels in Title Case', () => {
+    const snapshot = {
+      research: {
+        tabs: [
+          { id: 'regular', label: 'regular research', boxes: [] },
+          { id: 'automation', label: 'automation', boxes: [] },
+          { id: 'advanced', label: 'advanced research', boxes: [] },
+          { id: 'crystal', label: 'crystal research', boxes: [] },
+        ],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+    });
+    const stage = document.createElement('section');
+
+    manager.mount(stage);
+
+    expect(
+      [...stage.querySelectorAll('.research-page__tab-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual([
+      'Regular Research',
+      'Automation',
+      'Advanced Research',
+      'Crystal Research',
+    ]);
+  });
+
   it('marks completed seed unlock research names with seed metadata', () => {
     const snapshot = {
       playerLevel: {
@@ -608,11 +638,15 @@ describe('ResearchBoxListManager', () => {
     expect(researchCostButtonRule).toContain('width: 72px;');
     expect(researchCostButtonRule).toContain('height: 42px;');
     expect(researchCostButtonRule).toMatch(
-      /top:\s*calc\(\s*var\(--style-research-card-action-top\)\s*\+\s*\(64px\s*-\s*42px\)\s*\/\s*2\s*\);/,
+      /top:\s*calc\(\s*var\(--style-research-card-action-top\)\s*\+\s*var\(--style-research-card-content-offset-y\)\s*\+\s*\(64px\s*-\s*42px\)\s*\/\s*2\s*\);/,
     );
     expect(researchCostButtonRule).toMatch(
       /right:\s*calc\(\s*var\(--style-research-card-action-right\)\s*\+\s*\(var\(--style-research-value-width\)\s*-\s*72px\)\s*\/\s*2\s*\);/,
     );
+    const researchedButtonRule = css.match(
+      /\.style-button\.style-cost-button\.research-page__research-button\.research-page__research-button--completed\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    expect(researchedButtonRule).toContain('font-size: 12px;');
   });
 
   it('routes available research purchases through the shared cost button', () => {
@@ -851,6 +885,15 @@ describe('ResearchBoxListManager', () => {
     expect(rootRule).toContain('--style-research-card-art-height: 52px;');
     expect(rootRule).toContain('--style-research-card-art-top: 14px;');
     expect(rootRule).toContain('--style-research-card-action-top: 8px;');
+    expect(rootRule).toContain(
+      '--style-research-card-content-offset-y: 3px;',
+    );
+    expect(artRule).toContain(
+      'var(--style-research-card-content-offset-y)',
+    );
+    expect(costButtonRule).toContain(
+      'var(--style-research-card-content-offset-y)',
+    );
     expect(boxRule).toContain('gap: 5px;');
     expect(rowRule).toContain('height: var(--style-research-row-height);');
     expect(rowRule).toContain('width: var(--style-research-card-width);');

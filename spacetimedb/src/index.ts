@@ -6974,7 +6974,10 @@ function normalizeUsername(username: string): string {
   const value = stripUnsafeTextControls(String(username ?? ''))
     .trim()
     .replace(/\s+/g, ' ');
-  const normalizedUsername = (value || DEFAULT_USERNAME).slice(0, MAX_USERNAME_LENGTH);
+  const normalizedUsername =
+    (
+      value.toLowerCase() === DEFAULT_USERNAME.toLowerCase() ? DEFAULT_USERNAME : value
+    ).slice(0, MAX_USERNAME_LENGTH) || DEFAULT_USERNAME;
 
   if (isReservedUsername(normalizedUsername)) {
     return DEFAULT_USERNAME;
@@ -7022,7 +7025,7 @@ function assertUsernameAvailableForIdentity(
 ) {
   const requestedUsername = username.toLowerCase();
 
-  if (requestedUsername === DEFAULT_USERNAME) {
+  if (requestedUsername === DEFAULT_USERNAME.toLowerCase()) {
     return;
   }
 

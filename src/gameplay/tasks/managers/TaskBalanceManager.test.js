@@ -76,7 +76,7 @@ describe('TaskBalanceManager', () => {
       researchId: null,
       itemKey: 'sageSeed',
       requiredQuantity: 4,
-      requirementLabel: 'turn in sage seed',
+      requirementLabel: 'Turn In Sage Seed',
     });
   });
 
@@ -110,7 +110,7 @@ describe('TaskBalanceManager', () => {
         researchId: 'unlockSeed:mintSeed',
         itemKey: 'mintSeed',
         requiredQuantity: 1,
-        requirementLabel: 'research mint seed',
+        requirementLabel: 'Research Mint Seed',
       },
       {
         id: 'summon-mint',
@@ -119,7 +119,7 @@ describe('TaskBalanceManager', () => {
         researchId: null,
         itemKey: 'mintSeed',
         requiredQuantity: 3,
-        requirementLabel: 'summon mint seed',
+        requirementLabel: 'Summon Mint Seed',
       },
       {
         id: 'grow-sage',
@@ -128,7 +128,7 @@ describe('TaskBalanceManager', () => {
         researchId: null,
         itemKey: 'sageHerb',
         requiredQuantity: 2,
-        requirementLabel: 'grow sage',
+        requirementLabel: 'Grow Sage',
       },
       {
         id: 'brew-tonic',
@@ -137,7 +137,7 @@ describe('TaskBalanceManager', () => {
         researchId: null,
         itemKey: 'manaTonic',
         requiredQuantity: 1,
-        requirementLabel: 'brew mana tonic',
+        requirementLabel: 'Brew Mana Tonic',
       },
       {
         id: 'sell-sage',
@@ -146,7 +146,7 @@ describe('TaskBalanceManager', () => {
         researchId: null,
         itemKey: 'sageSeed',
         requiredQuantity: 1,
-        requirementLabel: 'sell sage seed',
+        requirementLabel: 'Sell Sage Seed',
       },
     ]);
   });

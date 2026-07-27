@@ -18,7 +18,7 @@ describe('TutorialTargetManager', () => {
 
     usernameButton.remove();
 
-    expect(manager.getDomState().getUsername()).toBe('wizard');
+    expect(manager.getDomState().getUsername()).toBe('Wizard');
   });
 
   it('treats hidden one-task toggle as already expanded', () => {

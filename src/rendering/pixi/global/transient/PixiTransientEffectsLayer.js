@@ -22,6 +22,7 @@ import {
   BasePixiRetainedView,
   PixiTextLabel,
 } from '../../primitives/index.js';
+import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
@@ -1011,10 +1012,17 @@ class RewardFlyoutWidget {
             frameName: run.itemFrameName,
           });
           slot.iconOverlay.visible = true;
-          slot.iconOverlay.width = size * 0.44;
-          slot.iconOverlay.height = size * 0.44;
-          slot.iconOverlay.position.set(size * 0.28, -size * 0.035);
-          slot.iconOverlay.rotation = (6 * Math.PI) / 180;
+          layoutPixiSeedPackIcon({
+            base: slot.icon,
+            item: slot.iconOverlay,
+            x: 0,
+            y: 0,
+            width: size,
+            height: size,
+            anchorX: 0,
+            anchorY: 0.5,
+            fitPositionX: 0,
+          });
           slot.iconOverlay.__baseScaleX =
             slot.iconOverlay.scale.x;
           slot.iconOverlay.__baseScaleY =
@@ -1023,9 +1031,14 @@ class RewardFlyoutWidget {
         } else {
           slot.icon.texture = resolveTexture(this.assets, run);
           slot.iconOverlay.visible = false;
+          slot.icon.anchor.set(0, 0.5);
+          slot.icon.position.set(0, 0);
+          slot.icon.rotation = 0;
         }
-        slot.icon.width = size;
-        slot.icon.height = size;
+        if (!slot.iconOverlay.visible) {
+          slot.icon.width = size;
+          slot.icon.height = size;
+        }
         slot.icon.__baseScaleX = slot.icon.scale.x;
         slot.icon.__baseScaleY = slot.icon.scale.y;
         x += size + (Number(run.gap) || 2);
@@ -1195,12 +1208,14 @@ class ItemDropWidget {
       this.secondary.texture = resolveTexture(this.assets, {
         frameName: model.itemFrameName,
       });
-      this.primary.width = size;
-      this.primary.height = size * (128 / 119);
-      this.secondary.width = size * 0.44;
-      this.secondary.height = size * 0.44;
-      this.secondary.position.set(0, -size * 0.035);
-      this.secondary.rotation = (6 * Math.PI) / 180;
+      layoutPixiSeedPackIcon({
+        base: this.primary,
+        item: this.secondary,
+        x: 0,
+        y: 0,
+        width: size,
+        height: size * (128 / 119),
+      });
       this.secondary.visible = true;
     } else {
       this.primary.texture = resolveTexture(this.assets, model);

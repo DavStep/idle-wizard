@@ -179,6 +179,60 @@ describe('PixiInputRouter', () => {
     expect(harness.haptics.playUiTap).toHaveBeenCalledTimes(1);
   });
 
+  it('routes an opted-in modal control when a tutorial overlay owns the event path', () => {
+    const harness = createHarness();
+    const modalRoot = displayObject(harness.root, {
+      x: 40,
+      y: 40,
+      width: 120,
+      height: 120,
+    });
+    const modalButton = displayObject(modalRoot, {
+      x: 50,
+      y: 50,
+      width: 80,
+      height: 30,
+    });
+    const tutorialOverlay = displayObject(harness.root, {
+      x: 0,
+      y: 0,
+      width: 360,
+      height: 724,
+    });
+    const modalActivate = vi.fn();
+    const outsidePress = vi.fn();
+    harness.router.registerPressTarget({
+      id: 'modal-tutorial-target',
+      displayObject: modalButton,
+      fallbackHitTest: true,
+      onActivate: modalActivate,
+    });
+    harness.router.pushModal({
+      id: 'shop.stall',
+      root: modalRoot,
+      onOutsidePress: outsidePress,
+    });
+
+    expect(
+      harness.router.resolvePressTarget(
+        tutorialOverlay,
+        { x: 70, y: 70 },
+      )?.id,
+    ).toBe('modal-tutorial-target');
+
+    harness.emitRoot(
+      'pointerdown',
+      pointerEvent(tutorialOverlay, 1, 70, 70),
+    );
+    harness.emitRoot(
+      'pointerup',
+      pointerEvent(tutorialOverlay, 1, 70, 70),
+    );
+
+    expect(modalActivate).toHaveBeenCalledTimes(1);
+    expect(outsidePress).not.toHaveBeenCalled();
+  });
+
   it('keeps a higher-priority experience modal above a later connectivity gate', () => {
     const harness = createHarness();
     const introRoot = displayObject(harness.root);
@@ -320,6 +374,51 @@ describe('PixiInputRouter', () => {
     expect(onSwipe).toHaveBeenCalledWith(
       expect.objectContaining({ direction: 'next' }),
     );
+  });
+
+  it('lets a scroll pane suppress child activation only past its drag threshold', () => {
+    const harness = createHarness({
+      gestureLock: 10,
+      touchPressSlop: 22,
+    });
+    const scrollView = displayObject(harness.root);
+    const button = displayObject(scrollView);
+    const activate = vi.fn();
+    let startY = 0;
+    let maximumDragDistance = 0;
+
+    harness.router.registerPressTarget({
+      id: 'scroll-child',
+      displayObject: button,
+      onActivate: activate,
+    });
+    harness.router.registerScrollRegion({
+      id: 'station-scroll',
+      displayObject: scrollView,
+      getOffset: () => 50,
+      maxOffset: 200,
+      onScrollPointerDown: ({ point }) => {
+        startY = point.y;
+        maximumDragDistance = 0;
+      },
+      onScrollPointerMove: ({ point }) => {
+        maximumDragDistance = Math.max(
+          maximumDragDistance,
+          Math.abs(point.y - startY),
+        );
+      },
+      onScrollPointerUp: () => maximumDragDistance > 10,
+    });
+
+    harness.emitRoot('pointerdown', pointerEvent(button, 1, 100, 100));
+    harness.emitRoot('globalpointermove', pointerEvent(button, 1, 109, 109));
+    harness.emitRoot('pointerup', pointerEvent(button, 1, 109, 109));
+    expect(activate).toHaveBeenCalledTimes(1);
+
+    harness.emitRoot('pointerdown', pointerEvent(button, 2, 100, 100));
+    harness.emitRoot('globalpointermove', pointerEvent(button, 2, 111, 111));
+    harness.emitRoot('pointerup', pointerEvent(button, 2, 111, 111));
+    expect(activate).toHaveBeenCalledTimes(1);
   });
 
   it('honors page-swipe exclusions and lets an owned pan win', () => {

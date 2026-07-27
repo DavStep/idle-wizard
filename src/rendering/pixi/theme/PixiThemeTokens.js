@@ -80,13 +80,20 @@ export const PIXI_PROGRESS_VISUALS = Object.freeze({
       fill: '#2d8fe6',
       edge: '#72c8ff',
     }),
+    red: Object.freeze({
+      fill: '#be403b',
+      edge: '#e66a5d',
+      text: '#912f2b',
+    }),
     green: Object.freeze({
       fill: '#4aa83f',
       edge: '#8bdc69',
+      text: '#256b25',
     }),
     yellow: Object.freeze({
       fill: '#d8ad32',
       edge: '#f6d86a',
+      text: '#795909',
     }),
   }),
 });
@@ -99,6 +106,8 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   buttonGray: 'source:assets/ui/root-run-cost-button/gray-button-short.png',
   buttonGreenStacked:
     'source:assets/ui/root-run-cost-button/green-button.png',
+  buttonBlueShort:
+    'source:assets/ui/root-run-cost-button/blue-button-short.png',
   buttonGrayStacked:
     'source:assets/ui/root-run-cost-button/gray-button.png',
   buttonGreenNineSlice:
@@ -171,6 +180,7 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
   designWidth: 1080,
   settings: Object.freeze({
     knobSize: 69 / 3,
+    sliderRailHeight: 14,
     rowPitch: 150 / 3,
     rowPadding: 24 / 3,
     rowGap: 18 / 3,
@@ -190,6 +200,20 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
   button: Object.freeze({
     sourceInsets: Object.freeze({ top: 100, right: 43, bottom: 68, left: 115 }),
     borderInsets: Object.freeze({ top: 17, right: 7, bottom: 12, left: 20 }),
+  }),
+  researchCard: Object.freeze({
+    sourceInsets: Object.freeze({
+      top: 55,
+      right: 77,
+      bottom: 88,
+      left: 64,
+    }),
+    borderInsets: Object.freeze({
+      top: 55 / 3,
+      right: 77 / 3,
+      bottom: 88 / 3,
+      left: 64 / 3,
+    }),
   }),
   dialog: Object.freeze({
     frameOutset: 10,

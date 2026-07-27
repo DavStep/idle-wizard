@@ -212,9 +212,9 @@ export class PixiGlobalDialogPresenter {
       account: {
         username:
           request.usernamePrompt === true &&
-          player.username === 'wizard'
+          String(player.username ?? '').toLowerCase() === 'wizard'
             ? ''
-            : player.username ?? 'wizard',
+            : player.username ?? 'Wizard',
         usernameRequired: request.usernamePrompt === true,
         accountStatus:
           this.authStatusOverride || getAuthStatusText(auth),

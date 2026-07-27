@@ -6,11 +6,12 @@ import {
   Texture,
 } from 'pixi.js';
 
-import {
-  getSeedPackBaseFrameName,
-  getSeedPackItemFrameName,
-} from '../../../../assets/items/seeds/seedIconFrames.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
+import {
+  bindPixiSeedPackIcon,
+  layoutPixiSeedPackIcon,
+  resetPixiSeedPackIcon,
+} from '../../primitives/PixiSeedPackIcon.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import { DEFAULT_PIXI_THEME_SNAPSHOT } from '../../theme/PixiThemeTokens.js';
@@ -500,20 +501,19 @@ class GardenSeedChoiceRow {
     const showsSeedIcon =
       this.model.emptyOption !== true &&
       (this.model.itemKind === 'seed' || this.model.icon?.kind === 'seed');
-    const seedPackFrame = showsSeedIcon
-      ? getSeedPackBaseFrameName(this.model)
-      : null;
-    const seedItemFrame = showsSeedIcon
-      ? getSeedPackItemFrameName(this.model)
-      : null;
-    this.seedPack.texture = seedPackFrame
-      ? this.assetManager?.getAtlasTexture?.(seedPackFrame) ?? Texture.EMPTY
-      : Texture.EMPTY;
-    this.seedItem.texture = seedItemFrame
-      ? this.assetManager?.getAtlasTexture?.(seedItemFrame) ?? Texture.EMPTY
-      : Texture.EMPTY;
-    this.seedPack.visible = Boolean(seedPackFrame);
-    this.seedItem.visible = Boolean(seedItemFrame);
+    if (showsSeedIcon) {
+      bindPixiSeedPackIcon({
+        assetManager: this.assetManager,
+        base: this.seedPack,
+        item: this.seedItem,
+        seed: this.model,
+      });
+    } else {
+      resetPixiSeedPackIcon({
+        base: this.seedPack,
+        item: this.seedItem,
+      });
+    }
     this.root.visible = true;
     this.root.renderable = true;
     this.root.eventMode = this.enabled ? 'static' : 'none';
@@ -548,12 +548,14 @@ class GardenSeedChoiceRow {
     const iconVisible = this.seedPack.visible;
     const iconCenterX = width - 7;
     this.quantity.position.set(iconVisible ? width - 17 : width, 2);
-    this.seedPack.position.set(iconCenterX, SEED_ROW_HEIGHT / 2);
-    this.seedPack.width = 14;
-    this.seedPack.height = 14;
-    this.seedItem.position.copyFrom(this.seedPack.position);
-    this.seedItem.width = 14;
-    this.seedItem.height = 14;
+    layoutPixiSeedPackIcon({
+      base: this.seedPack,
+      item: this.seedItem,
+      x: iconCenterX,
+      y: SEED_ROW_HEIGHT / 2,
+      width: 14,
+      height: 14,
+    });
     this.redraw();
   }
 
@@ -594,10 +596,10 @@ class GardenSeedChoiceRow {
     this.root.visible = false;
     setText(this.label, '');
     setText(this.quantity, '');
-    this.seedPack.texture = Texture.EMPTY;
-    this.seedPack.visible = false;
-    this.seedItem.texture = Texture.EMPTY;
-    this.seedItem.visible = false;
+    resetPixiSeedPackIcon({
+      base: this.seedPack,
+      item: this.seedItem,
+    });
     this.redraw();
   }
 

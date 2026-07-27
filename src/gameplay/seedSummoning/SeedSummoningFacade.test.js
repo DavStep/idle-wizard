@@ -171,7 +171,7 @@ describe('SeedSummoningFacade', () => {
     ]);
   });
 
-  it('does not allow every unlocked seed to be set to none', () => {
+  it('allows every unlocked seed to be set to none and disables summoning', () => {
     const facade = createFacade({
       completedResearchIds: ['unlockSeed:sageSeed', 'unlockSeed:mintSeed'],
       seeds: [
@@ -197,14 +197,29 @@ describe('SeedSummoningFacade', () => {
     });
 
     expect(facade.setSeedDropPreference('mintSeed', 'none')).toEqual({
-      ok: false,
-      reason: 'last_active_seed',
+      ok: true,
       seedKey: 'mintSeed',
-      preference: 'medium',
+      preference: 'none',
+      weight: 0,
+    });
+    expect(facade.getSnapshot()).toMatchObject({
+      canSummon: false,
+      dropChances: [
+        {
+          key: 'sageSeed',
+          dropPreference: 'none',
+          dropChance: 0,
+        },
+        {
+          key: 'mintSeed',
+          dropPreference: 'none',
+          dropChance: 0,
+        },
+      ],
     });
   });
 
-  it('repairs restored preferences with sage seed at medium when all drops are disabled', () => {
+  it('preserves restored preferences when all drops are disabled', () => {
     const facade = createFacade({
       completedResearchIds: ['unlockSeed:sageSeed', 'unlockSeed:mintSeed'],
       seeds: [
@@ -233,14 +248,14 @@ describe('SeedSummoningFacade', () => {
     });
 
     expect(facade.getSnapshot()).toMatchObject({
-      canSummon: true,
+      canSummon: false,
       dropChances: [
         {
           key: 'sageSeed',
-          dropPreference: 'medium',
-          preferenceWeight: 2,
-          effectiveDropWeight: 2,
-          dropChance: 1,
+          dropPreference: 'none',
+          preferenceWeight: 0,
+          effectiveDropWeight: 0,
+          dropChance: 0,
         },
         {
           key: 'mintSeed',

@@ -1,4 +1,4 @@
-export const DEFAULT_USERNAME = 'wizard';
+export const DEFAULT_USERNAME = 'Wizard';
 export const DEFAULT_PLAYER_LEVEL = 1;
 export const DEFAULT_PLAYER_THEME = 'midnight';
 export const DEFAULT_PLAYER_FONT = 'lilita-one';

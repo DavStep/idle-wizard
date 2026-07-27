@@ -14,7 +14,7 @@ describe('TopPanelViewManager', () => {
     manager.mount(stage);
 
     const usernameButton = stage.querySelector('.room-top-panel__username');
-    expect(usernameButton?.textContent).toBe('wizard');
+    expect(usernameButton?.textContent).toBe('Wizard');
     const avatarButton = stage.querySelector('.room-top-panel__avatar-button');
     expect(avatarButton).not.toBeNull();
     expect(
@@ -23,7 +23,7 @@ describe('TopPanelViewManager', () => {
         ?.getAttribute('src'),
     ).toContain('/assets/game/source/characters/elara.png');
     expect(usernameButton?.querySelector('.room-top-panel__username-label')?.textContent).toBe(
-      'wizard',
+      'Wizard',
     );
     expect(
       stage.querySelector('.room-top-panel__quest-progress')?.hasAttribute('hidden'),

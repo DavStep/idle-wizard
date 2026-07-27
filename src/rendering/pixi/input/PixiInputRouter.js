@@ -617,7 +617,15 @@ export class PixiInputRouter {
     const modal = this.getTopModal();
     this.canvas?.focus?.({ preventScroll: true });
 
-    if (modal && !this.isDisplayObjectInsideModal(event?.target, modal)) {
+    const resolvedPress = this.resolvePressTarget(
+      event?.target,
+      point.global,
+    );
+    if (
+      modal &&
+      !this.isDisplayObjectInsideModal(event?.target, modal) &&
+      !this.isRegistrationInsideModal(resolvedPress, modal)
+    ) {
       const blockedPointer = this.createPointer({
         event,
         pointerId,
@@ -636,6 +644,7 @@ export class PixiInputRouter {
       pointerId,
       pointerType,
       point,
+      resolvedPress,
     });
     this.pointers.set(pointerId, pointer);
     this.capturePointer(pointerId);
@@ -652,6 +661,7 @@ export class PixiInputRouter {
       }
     }
 
+    this.beginPendingScrolls(pointer, event);
     this.tryBeginPinch(pointer, event);
   }
 
@@ -678,6 +688,8 @@ export class PixiInputRouter {
       return;
     }
 
+    pointer.previewedScrollIds.clear();
+    this.updatePendingScrolls(pointer, event);
     const movement = this.pointerMovement(pointer);
     const distance = pointDistance(pointer.start.screen, pointer.current.screen);
     if (distance > this.pressSlopFor(pointer)) {
@@ -741,6 +753,9 @@ export class PixiInputRouter {
       return;
     }
 
+    if (this.finishPendingScrolls(pointer, event, false)) {
+      pointer.moved = true;
+    }
     const shouldActivate =
       pointer.pressActive &&
       !pointer.moved &&
@@ -796,6 +811,18 @@ export class PixiInputRouter {
       screenPoint: point.screen,
       source: 'wheel',
     });
+    if (typeof registration.onWheelInput === 'function') {
+      const handled = registration.onWheelInput({
+        ...context,
+        deltaY: finiteNumber(event?.deltaY, 0),
+        deltaMode: finiteNumber(event?.deltaMode, 0),
+      });
+      if (handled !== false || registration.consumeAtBounds !== false) {
+        preventInputDefault(event);
+      }
+      return;
+    }
+
     const currentOffset = this.getScrollOffset(registration);
     const scale = this.getContentScale(registration, context);
     const nextOffset = this.clampScrollOffset(
@@ -905,16 +932,95 @@ export class PixiInputRouter {
     }
   }
 
+  beginPendingScrolls(pointer, event) {
+    for (const registration of pointer.candidates.scroll) {
+      if (
+        typeof registration.onScrollPointerDown !== 'function' ||
+        !this.isRegistrationAllowed(registration)
+      ) {
+        continue;
+      }
+
+      const context = this.gestureContext(
+        registration,
+        pointer,
+        event,
+        {
+          source: 'scroll',
+          phase: 'pointerdown',
+        },
+      );
+      if (registration.onScrollPointerDown(context) !== false) {
+        pointer.pendingScrollIds.add(registration.id);
+      }
+    }
+  }
+
+  updatePendingScrolls(pointer, event) {
+    for (const registrationId of [...pointer.pendingScrollIds]) {
+      const registration = this.store.get(registrationId);
+      if (
+        !registration ||
+        !this.isRegistrationAllowed(registration) ||
+        typeof registration.onScrollPointerMove !== 'function'
+      ) {
+        pointer.pendingScrollIds.delete(registrationId);
+        continue;
+      }
+
+      registration.onScrollPointerMove(
+        this.gestureContext(registration, pointer, event, {
+          movement: this.pointerMovement(pointer),
+          source: 'scroll',
+          phase: 'pointermove',
+        }),
+      );
+      pointer.previewedScrollIds.add(registrationId);
+    }
+  }
+
+  finishPendingScrolls(pointer, event, cancelled) {
+    let suppressActivation = false;
+
+    for (const registrationId of [...pointer.pendingScrollIds]) {
+      const registration = this.store.get(registrationId);
+      pointer.pendingScrollIds.delete(registrationId);
+      if (
+        !registration ||
+        typeof registration.onScrollPointerUp !== 'function'
+      ) {
+        continue;
+      }
+
+      const result = registration.onScrollPointerUp(
+        this.gestureContext(registration, pointer, event, {
+          cancelled,
+          source: 'scroll',
+          phase: cancelled ? 'pointercancel' : 'pointerup',
+        }),
+      );
+      suppressActivation =
+        suppressActivation ||
+        result === true ||
+        result?.suppressActivation === true;
+    }
+
+    pointer.previewedScrollIds.clear();
+    return suppressActivation;
+  }
+
   createPointer({
     event,
     pointerId,
     pointerType,
     point,
     blockedModal = null,
+    resolvedPress = undefined,
   }) {
     const press = blockedModal
       ? null
-      : this.getEligibleCandidates(event?.target, 'press')[0] ?? null;
+      : resolvedPress ??
+        this.resolvePressTarget(event?.target, point.global);
     const drag = blockedModal
       ? []
       : this.getEligibleCandidates(event?.target, 'drag');
@@ -949,6 +1055,8 @@ export class PixiInputRouter {
       consumed: false,
       blockedModal,
       candidates: { drag, scroll, pan, pinch, swipe },
+      pendingScrollIds: new Set(),
+      previewedScrollIds: new Set(),
       owner: null,
     };
   }
@@ -1024,6 +1132,7 @@ export class PixiInputRouter {
       }
 
       this.setPressState(pointer, false, event);
+      this.finishPendingScrolls(pointer, event, true);
       pointer.owner = {
         kind: 'drag',
         registration,
@@ -1086,6 +1195,7 @@ export class PixiInputRouter {
       }
 
       this.setPressState(pointer, false, event);
+      this.finishPendingScrolls(pointer, event, true);
       pointer.owner = { kind: 'pan', registration };
       return true;
     }
@@ -1110,6 +1220,7 @@ export class PixiInputRouter {
       }
 
       this.setPressState(pointer, false, event);
+      this.finishPendingScrolls(pointer, event, true);
       pointer.owner = { kind: 'swipe', registration };
       return true;
     }
@@ -1136,6 +1247,17 @@ export class PixiInputRouter {
         });
         break;
       case 'scroll': {
+        if (
+          typeof owner.registration.onScrollPointerMove === 'function'
+        ) {
+          if (
+            !pointer.previewedScrollIds.has(owner.registration.id)
+          ) {
+            owner.registration.onScrollPointerMove(context);
+          }
+          break;
+        }
+
         const scale = this.getContentScale(owner.registration, context);
         const offset = this.clampScrollOffset(
           owner.registration,
@@ -1177,10 +1299,20 @@ export class PixiInputRouter {
         this.finishDrag(owner, pointer, event, cancelled, context);
         break;
       case 'scroll':
-        owner.registration.onScrollEnd?.({
-          ...context,
-          offset: this.getScrollOffset(owner.registration),
-        });
+        if (
+          typeof owner.registration.onScrollPointerUp === 'function'
+        ) {
+          owner.registration.onScrollPointerUp({
+            ...context,
+            offset: this.getScrollOffset(owner.registration),
+          });
+          pointer.pendingScrollIds.delete(owner.registration.id);
+        } else {
+          owner.registration.onScrollEnd?.({
+            ...context,
+            offset: this.getScrollOffset(owner.registration),
+          });
+        }
         break;
       case 'pan':
         if (cancelled) {
@@ -1299,6 +1431,8 @@ export class PixiInputRouter {
       }
       this.setPressState(other, false, event);
       this.setPressState(pointer, false, event);
+      this.finishPendingScrolls(other, event, true);
+      this.finishPendingScrolls(pointer, event, true);
 
       const context = this.pinchContext(
         registration,
@@ -1564,6 +1698,33 @@ export class PixiInputRouter {
       );
   }
 
+  resolvePressTarget(target, point) {
+    const pathTarget = this.getEligibleCandidates(target, 'press')[0] ?? null;
+    if (pathTarget) {
+      return pathTarget;
+    }
+
+    return (
+      this.store
+        .getRegistrations('press')
+        .filter(
+          (registration) =>
+            registration.fallbackHitTest === true &&
+            this.isRegistrationAllowed(registration) &&
+            !resolveRegistrationBoolean(registration.selected, false),
+        )
+        .sort(compareRegistrationPriority)
+        .find((registration) =>
+          pointInDisplayObject(
+            registration.displayObject,
+            point,
+            0,
+            registration.hitTest,
+          ),
+        ) ?? null
+    );
+  }
+
   isRegistrationAllowed(registration) {
     if (
       this.store.get(registration?.id) !== registration ||
@@ -1820,6 +1981,8 @@ export class PixiInputRouter {
 
     if (pointer.owner && pointer.owner.kind !== 'pinch') {
       this.finishOwnedGesture(pointer, event, true);
+    } else {
+      this.finishPendingScrolls(pointer, event, true);
     }
 
     this.setPressState(pointer, false, event);

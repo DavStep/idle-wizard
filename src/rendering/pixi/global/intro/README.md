@@ -17,8 +17,8 @@ The view-model contract is:
   visible: true,
   id: 'castle',
   scene: 'castle', // castle | defeated | peace | workshop
-  text: "one last battle at the demon lord's keep.",
-  actionLabel: 'next',
+  text: "One last battle at the demon lord's keep.",
+  actionLabel: 'Next',
   actionEnabled: true,
   reducedMotion: false,
   actions: { advance() {} },

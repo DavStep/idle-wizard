@@ -21,33 +21,35 @@ export const FIRST_RUN_INTRO_PIXI_ASSETS = Object.freeze({
   defeated: 'source:assets/rooms/intro/demon-defeated.webp',
   peace: 'source:assets/rooms/intro/peaceful-world.webp',
   workshop: 'source:assets/rooms/intro/workshop-for-sale.webp',
+  panel:
+    'source:assets/ui/root-run-research/research-card-dark-1000x304.png',
 });
 
 export const FIRST_RUN_INTRO_PIXI_STEPS = Object.freeze([
   Object.freeze({
     id: 'castle',
     scene: 'castle',
-    text: "one last battle at the demon lord's keep.",
-    actionLabel: 'next',
+    text: "One last battle at the demon lord's keep.",
+    actionLabel: 'Next',
   }),
   Object.freeze({
     id: 'defeated',
     scene: 'defeated',
-    text: 'the demon lord has been defeated.',
-    actionLabel: 'next',
+    text: 'The demon lord has been defeated.',
+    actionLabel: 'Next',
   }),
   Object.freeze({
     id: 'disbanded',
     scene: 'peace',
-    text: 'peace returned. the wizard army disbanded.',
-    actionLabel: 'next',
+    text: 'Peace returned. The wizard army disbanded.',
+    actionLabel: 'Next',
   }),
   Object.freeze({
     id: 'workshop',
     scene: 'workshop',
     text:
-      'not every legend ends on a battlefield. some begin with an old workshop.',
-    actionLabel: 'enter workshop',
+      'Not every legend ends on a battlefield. Some begin with an old workshop.',
+    actionLabel: 'Enter workshop',
   }),
 ]);
 
@@ -59,8 +61,12 @@ export const FIRST_RUN_INTRO_PIXI_GEOMETRY = Object.freeze({
   panelBottom: 26,
   panelHeight: 125,
   panelPaddingX: 20,
-  panelPaddingTop: 27,
+  panelTitleY: 12,
+  panelCopyY: 38,
   panelPaddingBottom: 20,
+  nextButtonWidth: 84,
+  longActionButtonWidth: 116,
+  advanceButtonHeight: 26,
   rainbow: Object.freeze({ x: 58, y: 124, width: 248, height: 154 }),
   defeated: Object.freeze({ x: 68, y: 370, width: 225 }),
   sale: Object.freeze({ x: 248, y: 323, width: 86, height: 54 }),
@@ -74,6 +80,20 @@ const INTRO_ENTER_DURATIONS = Object.freeze({
 });
 const INTRO_EXIT_MS = 180;
 const DEMON_DROP_MS = 280;
+const INTRO_TEXT_COLOR = '#ffffff';
+const INTRO_TEXT_STROKE = '#2b160e';
+const INTRO_PANEL_SOURCE_INSETS = Object.freeze({
+  top: 55,
+  right: 77,
+  bottom: 88,
+  left: 64,
+});
+const INTRO_PANEL_BORDER_INSETS = Object.freeze({
+  top: 55 / 3,
+  right: 77 / 3,
+  bottom: 88 / 3,
+  left: 64 / 3,
+});
 
 /**
  * @typedef {object} FirstRunIntroPixiViewModel
@@ -195,12 +215,13 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
       label: 'firstRunIntro:panel',
     });
     this.title = new PixiTextLabel({
-      text: 'after the war',
+      text: 'After the War',
       fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
-      fontWeight: 'bold',
+      fontWeight: 'normal',
+      color: INTRO_TEXT_COLOR,
       stroke: {
-        color: DEFAULT_PIXI_THEME_SNAPSHOT.surface,
-        width: 2,
+        color: INTRO_TEXT_STROKE,
+        width: 1,
       },
       label: 'firstRunIntro:title',
     });
@@ -208,6 +229,7 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
       text: '',
       fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
       lineHeight: 16,
+      color: INTRO_TEXT_COLOR,
       wordWrap: true,
       wrapWidth:
         panelWidth - FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingX * 2,
@@ -218,8 +240,8 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
       inputRouter,
       semanticId: null,
       text: 'next',
-      width: panelWidth - FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingX * 2,
-      height: 26,
+      width: FIRST_RUN_INTRO_PIXI_GEOMETRY.nextButtonWidth,
+      height: FIRST_RUN_INTRO_PIXI_GEOMETRY.advanceButtonHeight,
       variant: 'yellow',
       action: () => this.actions.advance?.(),
       label: 'firstRunIntro:advance',
@@ -294,9 +316,9 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
 
   onApplyTheme(theme) {
     const nextTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel.applyTheme(nextTheme);
+    this.panel.applyTheme(createIntroPanelTheme(nextTheme));
     this.title.applyTheme(nextTheme);
-    this.title.setStroke({ color: nextTheme.surface, width: 2 });
+    this.title.setStroke({ color: INTRO_TEXT_STROKE, width: 1 });
     this.copy.applyTheme(nextTheme);
     this.advanceButton.applyTheme(nextTheme);
     applySaleTheme(this.sale, nextTheme);
@@ -350,16 +372,37 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
       panelWidth,
       FIRST_RUN_INTRO_PIXI_GEOMETRY.panelHeight,
     );
-    this.title.position.set(8, -12);
+    this.title.position.set(
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingX,
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.panelTitleY,
+    );
     this.copy.position.set(
       FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingX,
-      FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingTop,
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.panelCopyY,
+    );
+    this.layoutAdvanceButton(this.model?.actionLabel ?? 'Next');
+  }
+
+  layoutAdvanceButton(actionLabel) {
+    const panelWidth =
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.sourceWidth -
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.panelLeft -
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.panelRight;
+    const buttonWidth =
+      String(actionLabel ?? '').trim() === 'Next'
+        ? FIRST_RUN_INTRO_PIXI_GEOMETRY.nextButtonWidth
+        : FIRST_RUN_INTRO_PIXI_GEOMETRY.longActionButtonWidth;
+    this.advanceButton.setSize(
+      buttonWidth,
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.advanceButtonHeight,
     );
     this.advanceButton.position.set(
-      FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingX,
+      panelWidth -
+        FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingX -
+        buttonWidth,
       FIRST_RUN_INTRO_PIXI_GEOMETRY.panelHeight -
         FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingBottom -
-        26,
+        FIRST_RUN_INTRO_PIXI_GEOMETRY.advanceButtonHeight,
     );
   }
 
@@ -383,10 +426,12 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
     this.root.visible = this.active && visible;
     this.root.renderable = this.root.visible;
     this.root.eventMode = this.root.visible ? 'static' : 'none';
+    const actionLabel = model?.actionLabel ?? '';
     this.advanceButton
-      .setText(model?.actionLabel ?? '')
+      .setText(actionLabel)
       .setAction(() => this.actions.advance?.())
       .setEnabled(visible && model?.actionEnabled !== false);
+    this.layoutAdvanceButton(actionLabel);
     this.copy.setText(model?.text ?? '');
 
     for (const [scene, backdrop] of Object.entries(this.backdrops)) {
@@ -754,6 +799,18 @@ function coverSprite(sprite, width, height, objectPositionX = 0.5) {
 
 function fitSpriteWidth(sprite, width) {
   sprite.scale.set(width / Math.max(1, sprite.texture.width));
+}
+
+function createIntroPanelTheme(theme) {
+  return {
+    ...theme,
+    frames: {
+      ...theme.frames,
+      panel: FIRST_RUN_INTRO_PIXI_ASSETS.panel,
+      panelSourceInsets: INTRO_PANEL_SOURCE_INSETS,
+      panelBorder: INTRO_PANEL_BORDER_INSETS,
+    },
+  };
 }
 
 function createRainbow() {

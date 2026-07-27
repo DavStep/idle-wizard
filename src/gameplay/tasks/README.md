@@ -1,8 +1,8 @@
 # Tasks
 
-Main quests turn normal Workshop actions into player level progress. The Workshop shows one `elara's request` at a time. Every completed request fills one segment in the shared top-panel level rail, and the active request's partial progress fills its current segment proportionally.
+Main quests turn normal Workshop actions into player level progress. The Workshop shows one `Elara's Request` at a time. Every completed request fills one segment in the shared top-panel level rail, and the active request's partial progress fills its current segment proportionally.
 
-Each level gets its ordered request chain from SpacetimeDB `game_config.tasks`. Requests can be `research`, `summon`, `grow`, `brew`, `sell`, or `turnIn` (legacy rows with no `type` are `turnIn`). Only the current request collects progress. Action requests auto-complete when they hit their target. Turn-in requests consume submitted items until their required quantity is full, then auto-complete. Every configured request owns one level-rail segment. Completing every request makes the manual level-up action available; level-up never requires or spends coin.
+Each level gets its ordered request chain from SpacetimeDB `game_config.tasks`. Requests can be `research`, `summon`, `grow`, `brew`, `sell`, or `turnIn` (legacy rows with no `type` are `turnIn`). Only the current request collects progress. Action requests auto-complete when they hit their target. Turn-in requests consume submitted items until their required quantity is full, then auto-complete. Every configured request owns one level-rail segment. Completing the final request automatically advances the player level without requiring or spending coin.
 
 `coinBudget` is a balancing input for daily tasks and weekly world events. It is not a level-up price. Legacy runtime `completionCostCoin` and `completionCostGold` values normalize into that budget and never enter level-completion state.
 

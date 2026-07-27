@@ -127,9 +127,11 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.usernameControl.eventMode = 'static';
     this.usernameControl.hitArea = new Rectangle(0, 0, 142, 20);
     this.username = new PixiTextLabel({
-      text: 'wizard',
+      text: 'Wizard',
       fontSize: TOP_FONT_SIZE,
       fontWeight: 'bold',
+      color: '#ffffff',
+      stroke: { color: '#0a0a0a', width: 2 },
       label: 'topPanel:username',
     });
     this.usernameControl.addChild(this.username);
@@ -332,7 +334,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.manaRate.visible = this.mana.visible && reveal.manaRegen !== false;
     this.manaRate.renderable = this.manaRate.visible;
 
-    this.username.setText(model.username ?? 'wizard');
+    this.username.setText(model.username ?? 'Wizard');
     this.setCharacter(model.character ?? model.characterKey ?? 'elara');
     this.mana.setAmount(
       `${Math.floor(Number(mana.current) || 0)}/${Math.floor(Number(mana.cap) || 0)}`,

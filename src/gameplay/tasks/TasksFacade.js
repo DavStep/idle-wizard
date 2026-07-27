@@ -9,7 +9,7 @@ import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class TasksFacade {
   static explain =
-    'Elara gives the wizard one main request at a time. Completing every request makes the next level available.';
+    'Elara gives the wizard one main request at a time. Completing every request automatically advances the wizard to the next level.';
 
   constructor({ itemsFacade }) {
     this.taskBalanceManager = new TaskBalanceManager({ itemsFacade });

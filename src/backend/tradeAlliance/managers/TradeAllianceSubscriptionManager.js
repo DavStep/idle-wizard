@@ -433,7 +433,7 @@ export class TradeAllianceSubscriptionManager {
     const ownMember = {
       memberIdentity: this.toIdentityKey(row.memberIdentity ?? row.member_identity),
       allianceId: this.toId(row.allianceId ?? row.alliance_id),
-      username: String(row.username ?? 'wizard'),
+      username: String(row.username ?? 'Wizard'),
       playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
       role: String(row.role ?? 'trader'),
       roleRank: this.getRoleRank(String(row.role ?? 'trader')),
@@ -511,7 +511,7 @@ export class TradeAllianceSubscriptionManager {
     return {
       memberIdentity: this.toIdentityKey(row.memberIdentity ?? row.member_identity),
       allianceId: this.toId(row.allianceId ?? row.alliance_id),
-      username: String(row.username ?? 'wizard'),
+      username: String(row.username ?? 'Wizard'),
       playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
       role,
       roleRank: this.getRoleRank(role),
@@ -531,7 +531,7 @@ export class TradeAllianceSubscriptionManager {
       applicantIdentity: this.toIdentityKey(
         row.applicantIdentity ?? row.applicant_identity,
       ),
-      username: String(row.username ?? 'wizard'),
+      username: String(row.username ?? 'Wizard'),
       playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
       createdAtMs: this.toTimestampMs(row.createdAt ?? row.created_at),
     };
@@ -577,7 +577,7 @@ export class TradeAllianceSubscriptionManager {
       contributorIdentity: this.toIdentityKey(
         row.contributorIdentity ?? row.contributor_identity,
       ),
-      username: String(row.username ?? 'wizard'),
+      username: String(row.username ?? 'Wizard'),
       contribution: this.toNumber(row.contribution),
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
     };
@@ -592,7 +592,7 @@ export class TradeAllianceSubscriptionManager {
         row.allianceTagColor ?? row.alliance_tag_color,
       ),
       senderIdentity: this.toIdentityKey(row.senderIdentity ?? row.sender_identity),
-      username: String(row.username ?? 'wizard'),
+      username: String(row.username ?? 'Wizard'),
       character: normalizePlayerCharacter(
         row.character ?? row.playerCharacter ?? row.player_character,
       ),

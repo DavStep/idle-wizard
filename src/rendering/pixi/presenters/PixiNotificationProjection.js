@@ -11,7 +11,7 @@ const PAGE_IDS = Object.freeze([
 const CHILD_TARGETS = Object.freeze({
   workshop: {
     seeds: ['workshop:summonSeed'],
-    tasks: ['workshop:tasks', 'workshop:levelUp', 'task:*'],
+    tasks: ['workshop:tasks', 'task:*'],
     personalTasks: ['workshop:personalTasks*'],
     alliance: ['workshop:alliance*'],
   },

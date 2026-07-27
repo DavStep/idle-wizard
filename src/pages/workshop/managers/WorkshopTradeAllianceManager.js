@@ -186,7 +186,7 @@ export class WorkshopTradeAllianceManager {
     const label = document.createElement('span');
     label.className =
       'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__trade-alliance-button-label';
-    label.textContent = 'alliance';
+    label.textContent = 'Alliance';
 
     iconFrame.append(cloth, icon);
     button.append(iconFrame, label);
@@ -1275,7 +1275,7 @@ export class WorkshopTradeAllianceManager {
   }
 
   createPlayerLabel(player) {
-    const username = String(player?.username ?? 'wizard');
+    const username = String(player?.username ?? 'Wizard');
     const level = this.normalizePlayerLevel(player?.playerLevel);
     return [
       createPlayerInfoLink(

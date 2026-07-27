@@ -125,7 +125,7 @@ export class WorkshopDiscoveriesManager {
     const label = document.createElement('span');
     label.className =
       'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__discoveries-button-label';
-    label.textContent = 'discoveries';
+    label.textContent = 'Discoveries';
 
     iconFrame.append(icon);
     button.append(iconFrame, label);
@@ -569,7 +569,7 @@ export class WorkshopDiscoveriesManager {
     }
 
     const username = String(potion?.discoveredByUsername ?? '').trim();
-    return username || 'wizard';
+    return username || 'Wizard';
   }
 
   getPotionDiscovererIdentity(potion) {

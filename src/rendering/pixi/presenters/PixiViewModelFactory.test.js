@@ -56,7 +56,7 @@ describe('PixiViewModelFactory', () => {
             tasks: [
               {
                 taskId: 'turn-in-sage',
-                requirementLabel: 'turn in sage seed',
+                requirementLabel: 'Turn In Sage Seed',
                 itemKind: 'seed',
                 itemKey: 'sageSeed',
                 progressQuantity: 2,
@@ -77,16 +77,185 @@ describe('PixiViewModelFactory', () => {
     const [row] = model.workshop.tasks.rows;
     expect(row).toMatchObject({
       id: 'turn-in-sage',
-      label: 'turn in sage seed',
+      label: 'Turn In Sage Seed',
       current: 2,
       required: 5,
-      actionLabel: 'turn in',
+      actionLabel: 'Turn In',
       itemKind: 'seed',
       itemKey: 'sageSeed',
     });
 
     row.onActivate();
     expect(fillTask).toHaveBeenCalledWith('turn-in-sage');
+  });
+
+  it('does not project the obsolete manual level-up row', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createWorkshop({
+      gameplay: {
+        tasks: {
+          currentLevel: 1,
+          level: {
+            tasks: [{ taskId: 'done', completed: true }],
+            completion: { level: 1, canComplete: true },
+          },
+        },
+      },
+    });
+
+    expect(model.workshop.tasks).toMatchObject({
+      title: "Elara's Request",
+      rows: [],
+    });
+    expect(model.workshop.dialogs.tasksInfo.title).toBe("Elara's Request");
+  });
+
+  it('projects the summon settings as a selected seed editor above the seed list', () => {
+    const selectSummonSeed = vi.fn();
+    const setSummonDropPreference = vi.fn();
+    const toggleSummonAutomation = vi.fn();
+    const setSummonManaReserve = vi.fn();
+    const factory = new PixiViewModelFactory();
+    const model = factory.createWorkshop({
+      gameplay: {
+        seedSummoning: {
+          autoSummoning: {
+            unlocked: true,
+            enabled: false,
+            manaReserve: 20,
+            maxManaReserve: 5_000,
+            reserveStep: 1,
+          },
+          dropChances: [
+            {
+              key: 'sageSeed',
+              label: 'sage seed',
+              dropChance: 0.25,
+              dropPreference: 'low',
+            },
+            {
+              key: 'mintSeed',
+              label: 'mint seed',
+              dropChance: 0.75,
+              dropPreference: 'high',
+            },
+          ],
+        },
+      },
+      actions: {
+        selectSummonSeed,
+        setSummonDropPreference,
+        toggleSummonAutomation,
+        setSummonManaReserve,
+      },
+      dialogState: {
+        summonSeedKey: 'mintSeed',
+      },
+    });
+
+    const dialog = model.workshop.dialogs.summonInfo;
+    expect(dialog.title).toBe('Summoning Seeds');
+    expect(dialog.summaryRows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'auto',
+          label: 'Auto Summon',
+        }),
+        expect.objectContaining({
+          id: 'reserve',
+          label: 'Keep Mana Above',
+          value: '20',
+          valueIconResourceKey: 'mana',
+        }),
+        expect.objectContaining({
+          id: 'selected',
+          label: 'Mint Seed',
+          value: 'High · 75%',
+          valueTone: 'green',
+          iconLeading: true,
+        }),
+      ]),
+    );
+    expect(dialog.items).toEqual([
+      expect.objectContaining({
+        id: 'sageSeed',
+        label: 'Sage Seed',
+        selected: false,
+        detail: '25% Chance',
+        value: 'Low',
+        valueTone: 'red',
+      }),
+      expect.objectContaining({
+        id: 'mintSeed',
+        label: 'Mint Seed',
+        selected: true,
+        detail: '75% Chance',
+        value: 'High',
+        valueTone: 'green',
+      }),
+    ]);
+    expect(dialog.settingsToggle).toMatchObject({
+      value: false,
+      enabled: true,
+    });
+    expect(dialog.manaSlider).toMatchObject({
+      mode: 'range',
+      min: 0,
+      max: 5_000,
+      value: 20,
+    });
+    expect(dialog.dropSlider).toMatchObject({
+      mode: 'milestones',
+      value: 'high',
+    });
+    expect(dialog.dropSlider.options).toEqual([
+      { value: 'none', tone: 'root', enabled: true },
+      { value: 'low', tone: 'red', enabled: true },
+      { value: 'medium', tone: 'yellow', enabled: true },
+      { value: 'high', tone: 'green', enabled: true },
+    ]);
+    expect(dialog.actions).toEqual([]);
+
+    dialog.items[0].action();
+    expect(selectSummonSeed).toHaveBeenCalledWith('sageSeed');
+    dialog.dropSlider.onChange('medium');
+    expect(setSummonDropPreference).toHaveBeenCalledWith(
+      'mintSeed',
+      'medium',
+    );
+    dialog.settingsToggle.onChange(true);
+    expect(toggleSummonAutomation).toHaveBeenCalledTimes(1);
+    dialog.manaSlider.onChange(2_500);
+    expect(setSummonManaReserve).toHaveBeenCalledWith(2_500);
+  });
+
+  it('keeps none enabled when the selected seed is the only researched seed', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createWorkshop({
+      gameplay: {
+        seedSummoning: {
+          dropChances: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              label: 'sage seed',
+              kind: 'seed',
+              dropPreference: 'medium',
+              dropChance: 1,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(
+      model.workshop.dialogs.summonInfo.dropSlider.options,
+    ).toEqual([
+      { value: 'none', tone: 'root', enabled: true },
+      { value: 'low', tone: 'red', enabled: true },
+      { value: 'medium', tone: 'yellow', enabled: true },
+      { value: 'high', tone: 'green', enabled: true },
+    ]);
   });
 
   it('projects main HUD feature art state without view-owned gameplay logic', () => {
@@ -153,7 +322,16 @@ describe('PixiViewModelFactory', () => {
           { itemTypeId: 1, key: 'sageSeed', label: 'sage', quantity: 2 },
         ],
         stats: {
-          herbs: { total: 3 },
+          herbs: {
+            total: 3,
+            items: [
+              {
+                key: 'sageHerb',
+                label: 'sage herb',
+                quantity: 2,
+              },
+            ],
+          },
         },
       },
       playerInbox: {
@@ -174,6 +352,11 @@ describe('PixiViewModelFactory', () => {
         connected: true,
         messages: [],
       },
+      pageStates: [
+        { id: 'workshop', unlocked: true },
+        { id: 'garden', unlocked: true },
+        { id: 'brewing', unlocked: false },
+      ],
       dialogState: {
         bagTabId: 'seeds',
         statsTabId: 'herbs',
@@ -191,12 +374,22 @@ describe('PixiViewModelFactory', () => {
 
     expect(model.workshop.inbox.notification).toBe(true);
     expect(dialogs.bag).toMatchObject({
+      title: 'Bag',
       selectedTabId: 'seeds',
-      rows: [{ id: 'sageSeed', label: 'sage', value: '2' }],
+      tabs: [
+        { id: 'currencies', label: 'Currencies', selected: false },
+        { id: 'seeds', label: 'Seeds', selected: true },
+        { id: 'herbs', label: 'Herbs', selected: false },
+      ],
+      rows: [{ id: 'sageSeed', label: 'Sage', value: '2' }],
     });
     expect(dialogs.stats).toMatchObject({
+      title: 'Stats',
       selectedTabId: 'herbs',
-      rows: [{ id: 'herbs:total', label: 'total', value: '3' }],
+      rows: [
+        { id: 'herbs:total', label: 'Total', value: '3' },
+        { id: 'sageHerb', label: 'Sage Herb', value: '2' },
+      ],
     });
     expect(dialogs.leaderboard).toMatchObject({
       selectedTabId: 'alliance',
@@ -231,6 +424,101 @@ describe('PixiViewModelFactory', () => {
     expect(offline.onSubmit).toBeNull();
   });
 
+  it('falls back to Currencies when the selected Bag feature is still locked', () => {
+    const factory = new PixiViewModelFactory();
+    const dialog = factory.createBagDialog(
+      {
+        mana: { current: 4, cap: 10 },
+      },
+      'potions',
+      null,
+      [
+        { id: 'workshop', unlocked: true },
+        { id: 'garden', unlocked: false },
+        { id: 'brewing', unlocked: false },
+      ],
+    );
+
+    expect(dialog).toMatchObject({
+      title: 'Bag',
+      selectedTabId: 'currencies',
+      tabs: [
+        { id: 'currencies', label: 'Currencies', selected: true },
+        { id: 'seeds', label: 'Seeds', selected: false },
+      ],
+      rows: [{ id: 'mana', label: 'Mana', value: '4/10' }],
+    });
+  });
+
+  it('keeps icon identity on every Bag tab row', () => {
+    const factory = new PixiViewModelFactory();
+    const gameplay = {
+      mana: { current: 4, cap: 10 },
+      coin: { current: 3 },
+      seedInventory: [
+        { key: 'sageSeed', label: 'sage', quantity: 2 },
+      ],
+      inventory: [
+        { key: 'sageHerb', label: 'sage', kind: 'herb', quantity: 1 },
+        {
+          key: 'manaTonic',
+          label: 'mana tonic',
+          kind: 'potion',
+          quantity: 5,
+        },
+      ],
+      ingredientInventory: [
+        {
+          key: 'cyclopsEye',
+          label: 'cyclops eye',
+          kind: 'ingredient',
+          quantity: 6,
+        },
+      ],
+    };
+
+    expect(factory.createBagDialog(gameplay, 'currencies').rows).toEqual([
+      expect.objectContaining({
+        id: 'mana',
+        itemKind: 'resource',
+        itemKey: 'mana',
+      }),
+      expect.objectContaining({
+        id: 'coin',
+        itemKind: 'resource',
+        itemKey: 'coin',
+      }),
+    ]);
+    expect(factory.createBagDialog(gameplay, 'seeds').rows).toEqual([
+      expect.objectContaining({
+        id: 'sageSeed',
+        itemKind: 'seed',
+        itemKey: 'sageSeed',
+      }),
+    ]);
+    expect(factory.createBagDialog(gameplay, 'herbs').rows).toEqual([
+      expect.objectContaining({
+        id: 'sageHerb',
+        itemKind: 'herb',
+        itemKey: 'sageHerb',
+      }),
+    ]);
+    expect(factory.createBagDialog(gameplay, 'potions').rows).toEqual([
+      expect.objectContaining({
+        id: 'manaTonic',
+        itemKind: 'potion',
+        itemKey: 'manaTonic',
+      }),
+    ]);
+    expect(factory.createBagDialog(gameplay, 'ingredients').rows).toEqual([
+      expect.objectContaining({
+        id: 'cyclopsEye',
+        itemKind: 'ingredient',
+        itemKey: 'cyclopsEye',
+      }),
+    ]);
+  });
+
   it('keeps item identity on stats rows so retained counts can show their icons', () => {
     const factory = new PixiViewModelFactory();
     const dialog = factory.createStatsDialog(
@@ -254,12 +542,12 @@ describe('PixiViewModelFactory', () => {
     expect(dialog.rows).toEqual([
       {
         id: 'seeds:total',
-        label: 'total',
+        label: 'Total',
         value: '4',
       },
       {
         id: 'briarSeed',
-        label: 'briar seed',
+        label: 'Briar Seed',
         value: '4',
         itemKind: 'seed',
         itemKey: 'briarSeed',

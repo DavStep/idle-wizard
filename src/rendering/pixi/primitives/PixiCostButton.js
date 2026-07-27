@@ -22,6 +22,7 @@ const RESEARCH_LOCK_REASON_STROKE = Object.freeze({
   join: 'round',
 });
 const COST_RESOURCE_FRAMES = Object.freeze({
+  mana: 'resource:mana',
   crystal: 'resource:crystal',
   emerald: 'resource:emerald',
   ruby: 'resource:ruby',
@@ -42,10 +43,14 @@ export const PIXI_COST_BUTTON_GEOMETRY = Object.freeze({
   stackedHeight: 52,
   stackedIconSize: 15,
   stackedContentGap: 4,
+  stackedBlueContentGap: 2,
+  stackedBlueContentOffsetX: -3,
   stackedActionFontSize: 14,
+  stackedBlueActionFontSize: 11,
   stackedAmountFontSize: 13,
   stackedActionY: 0.34,
   stackedCostY: 0.68,
+  stackedBlueCostY: 0.64,
   fontSize: 16,
   researchFontSize: 17,
   lockReasonFontSize: 10,
@@ -90,7 +95,7 @@ export class PixiCostButton extends PixiButton {
     this.research = Boolean(research);
     this.compact = Boolean(compact);
     this.stacked = Boolean(stacked);
-    this.tone = tone === 'yellow' ? 'yellow' : 'green';
+    this.tone = ['blue', 'yellow'].includes(tone) ? tone : 'green';
     this.contentScale = Math.max(0.1, Number(contentScale) || 1);
     this.costState = 'available';
     this.resource = 'coin';
@@ -266,7 +271,8 @@ export class PixiCostButton extends PixiButton {
     const locked = this.costState === 'locked';
     const unaffordable = this.costState === 'unaffordable';
     const compactDisabled = this.compact && !this.modelEnabled;
-    const skinDisabled = locked || compactDisabled;
+    const blueDisabled = this.tone === 'blue' && !this.modelEnabled;
+    const skinDisabled = locked || compactDisabled || blueDisabled;
     const backgroundTexture = this.resolveTexture(
       this.resolveBackgroundAsset({ skinDisabled }),
     );
@@ -314,7 +320,9 @@ export class PixiCostButton extends PixiButton {
     if (this.stacked) {
       return skinDisabled
         ? PIXI_ROOT_RUN_ASSETS.buttonGrayStacked
-        : PIXI_ROOT_RUN_ASSETS.buttonGreenStacked;
+        : this.tone === 'blue'
+          ? PIXI_ROOT_RUN_ASSETS.buttonBlueShort
+          : PIXI_ROOT_RUN_ASSETS.buttonGreenStacked;
     }
     if (skinDisabled) {
       return PIXI_ROOT_RUN_ASSETS.buttonGray;
@@ -333,9 +341,10 @@ export class PixiCostButton extends PixiButton {
           ? PIXI_COST_BUTTON_GEOMETRY.researchFontSize
           : PIXI_COST_BUTTON_GEOMETRY.fontSize
     ) * contentScale;
-    const contentStrokeScale = this.stacked
-      ? contentScale * 0.75
-      : contentScale;
+    const contentStrokeScale =
+      this.stacked && this.tone !== 'blue'
+        ? contentScale * 0.75
+        : contentScale;
     for (const label of [this.amountLabel, this.lockedLabel]) {
       label
         .setFontFamily(COST_FONT_FAMILY)
@@ -346,7 +355,9 @@ export class PixiCostButton extends PixiButton {
     this.actionTextLabel
       .setFontFamily(COST_FONT_FAMILY)
       .setFontSize(
-        PIXI_COST_BUTTON_GEOMETRY.stackedActionFontSize * contentScale,
+        (this.stacked && this.tone === 'blue'
+          ? PIXI_COST_BUTTON_GEOMETRY.stackedBlueActionFontSize
+          : PIXI_COST_BUTTON_GEOMETRY.stackedActionFontSize) * contentScale,
       )
       .setStroke(scaleStroke(COST_STROKE, contentStrokeScale))
       .setColor('#ffffff');
@@ -389,15 +400,25 @@ export class PixiCostButton extends PixiButton {
     const contentGap = (this.compact
       ? PIXI_COST_BUTTON_GEOMETRY.compactContentGap
       : this.stacked
-        ? PIXI_COST_BUTTON_GEOMETRY.stackedContentGap
+        ? this.tone === 'blue'
+          ? PIXI_COST_BUTTON_GEOMETRY.stackedBlueContentGap
+          : PIXI_COST_BUTTON_GEOMETRY.stackedContentGap
       : PIXI_COST_BUTTON_GEOMETRY.contentGap) * this.contentScale;
+    const contentOffsetX =
+      this.stacked && this.tone === 'blue'
+        ? PIXI_COST_BUTTON_GEOMETRY.stackedBlueContentOffsetX *
+          this.contentScale
+        : 0;
     const contentOffsetY = (this.compact
       ? PIXI_COST_BUTTON_GEOMETRY.compactContentOffsetY
       : PIXI_COST_BUTTON_GEOMETRY.contentOffsetY) * this.contentScale;
     this.resourceIcon.width = iconSize;
     this.resourceIcon.height = iconSize;
     const centerY = this.stacked
-      ? this.buttonHeight * PIXI_COST_BUTTON_GEOMETRY.stackedCostY
+      ? this.buttonHeight *
+        (this.tone === 'blue'
+          ? PIXI_COST_BUTTON_GEOMETRY.stackedBlueCostY
+          : PIXI_COST_BUTTON_GEOMETRY.stackedCostY)
       : this.buttonHeight / 2 + contentOffsetY;
     const iconVisible = this.resourceIcon.visible;
     const contentWidth =
@@ -405,7 +426,8 @@ export class PixiCostButton extends PixiButton {
       (iconVisible
         ? iconSize + contentGap
         : 0);
-    const startX = (this.buttonWidth - contentWidth) / 2;
+    const startX =
+      (this.buttonWidth - contentWidth) / 2 + contentOffsetX;
     this.resourceIcon.position.set(
       startX + iconSize / 2,
       centerY,
@@ -505,7 +527,7 @@ function normalizeResource(value) {
     .trim()
     .toLowerCase()
     .replace(/s$/, '');
-  return ['coin', 'crystal', 'ruby', 'emerald'].includes(normalized)
+  return ['coin', 'mana', 'crystal', 'ruby', 'emerald'].includes(normalized)
     ? normalized
     : 'none';
 }

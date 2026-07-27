@@ -48,5 +48,12 @@ export function getTaskRequirementVerb(type) {
 export function formatTaskRequirementLabel(type, targetLabel) {
   const label = String(targetLabel ?? '').trim();
   const verb = getTaskRequirementVerb(type);
-  return label ? `${verb} ${label}` : verb;
+  return toTitleCase(label ? `${verb} ${label}` : verb);
+}
+
+function toTitleCase(value) {
+  return value.replace(
+    /(^|\s)([a-z])/g,
+    (_match, prefix, character) => `${prefix}${character.toUpperCase()}`,
+  );
 }

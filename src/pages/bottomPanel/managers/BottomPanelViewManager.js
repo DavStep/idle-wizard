@@ -13,19 +13,19 @@ import {
 } from '../../announcements/featureUnlockEvents.js';
 
 export const BOTTOM_PANEL_TABS = [
-  { id: 'brewing', label: 'brewing' },
-  { id: 'garden', label: 'garden' },
-  { id: 'workshop', label: 'workshop' },
-  { id: 'research', label: 'research' },
-  { id: 'shop', label: 'market' },
+  { id: 'brewing', label: 'Brewing' },
+  { id: 'garden', label: 'Garden' },
+  { id: 'workshop', label: 'Workshop' },
+  { id: 'research', label: 'Research' },
+  { id: 'shop', label: 'Market' },
 ];
 
 export const OPTIONAL_BOTTOM_PANEL_TABS = [
-  { id: 'advancedBrewing', label: 'adv brewing' },
-  { id: 'advancedGarden', label: 'adv garden' },
-  { id: 'guild', label: 'guild' },
-  { id: 'prestige', label: 'prestige' },
-  { id: 'advancedMarket', label: 'adv market' },
+  { id: 'advancedBrewing', label: 'Adv Brewing' },
+  { id: 'advancedGarden', label: 'Adv Garden' },
+  { id: 'guild', label: 'Guild' },
+  { id: 'prestige', label: 'Prestige' },
+  { id: 'advancedMarket', label: 'Adv Market' },
 ];
 
 const OPTIONAL_BOTTOM_PANEL_TAB_BY_ID = new Map(

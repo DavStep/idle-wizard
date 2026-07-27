@@ -1559,31 +1559,6 @@ function createGameplayFacadeFake() {
         cauldronNumber,
       };
     },
-    completeTaskLevel: () => {
-      const completion = snapshot.tasks.level.completion;
-
-      if (!completion?.canComplete) {
-        return {
-          ok: false,
-          reason: 'tasks_incomplete',
-        };
-      }
-
-      snapshot.tasks.currentLevel += 1;
-      snapshot.tasks.level.level = snapshot.tasks.currentLevel;
-      snapshot.tasks.level.completion = {
-        ...completion,
-        level: snapshot.tasks.currentLevel,
-        allTasksCompleted: false,
-        canComplete: false,
-      };
-      publish();
-
-      return {
-        ok: true,
-        currentLevel: snapshot.tasks.currentLevel,
-      };
-    },
     completePrestigeMilestone: (level) => {
       const milestone = snapshot.prestige.milestones.find((candidate) => candidate.level === level);
 
@@ -3744,12 +3719,12 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__action-bar')).not.toBeNull();
     expect(
       stage.querySelector('.workshop-page__summon-button-label')?.textContent,
-    ).toBe('summon seed');
+    ).toBe('Summon Seed');
     expect(
       stage.querySelector('.workshop-page__summon-button-cost')?.textContent,
     ).toBe('10 mana');
     expect(stage.querySelector('.workshop-page__summon-button')?.getAttribute('aria-label')).toBe(
-      'summon seed, costs 10 mana',
+      'Summon Seed, costs 10 mana',
     );
     expect(stage.querySelector('.workshop-page__bag-button')?.textContent).toBe('bag');
     expect(stage.querySelector('.workshop-page__bag')?.dataset.panelSide).toBe('left');
@@ -4112,7 +4087,7 @@ describe('PagesFacade', () => {
       button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     };
 
-    clickResearchTab('automation');
+    clickResearchTab('Automation');
 
     const ruby = stage.querySelector('.room-top-panel__resource[aria-label="ruby"]');
     const rubyValue = ruby?.querySelector('.room-top-panel__resource-val');
@@ -4127,7 +4102,7 @@ describe('PagesFacade', () => {
         ?.dataset.assetAtlasFrame,
     ).toBe('resource:ruby');
 
-    clickResearchTab('advanced research');
+    clickResearchTab('Advanced Research');
 
     const emerald = stage.querySelector('.room-top-panel__resource[aria-label="emerald"]');
     const emeraldValue = emerald?.querySelector('.room-top-panel__resource-val');
@@ -4142,7 +4117,7 @@ describe('PagesFacade', () => {
         ?.dataset.assetAtlasFrame,
     ).toBe('resource:emerald');
 
-    clickResearchTab('crystal research');
+    clickResearchTab('Crystal Research');
 
     const crystal = stage.querySelector('.room-top-panel__resource[aria-label="crystal"]');
     expect(crystal?.hidden).toBe(false);
@@ -4152,7 +4127,7 @@ describe('PagesFacade', () => {
         ?.dataset.assetAtlasFrame,
     ).toBe('resource:crystal');
 
-    clickResearchTab('regular research');
+    clickResearchTab('Regular Research');
     expect(resources?.classList.contains('has-special-currency')).toBe(false);
     expect(ruby?.hidden).toBe(true);
     expect(emerald?.hidden).toBe(true);
@@ -4809,8 +4784,8 @@ describe('PagesFacade', () => {
 
     expect(tasks).not.toBeNull();
     expect(tasks.parentElement?.classList.contains('workshop-page__tasks-slot')).toBe(true);
-    expect(title?.textContent).toBe("elara's request");
-    expect(summaryRow?.textContent).toBe('sage seed0/1turn in');
+    expect(title?.textContent).toBe("Elara's Request");
+    expect(summaryRow?.textContent).toBe('sage seed0/1Turn In');
     expect(rewards?.hidden).toBe(true);
     expect(rewardsToggle?.hidden).toBe(true);
     expect(rewardsToggle?.disabled).toBe(true);
@@ -4911,7 +4886,7 @@ describe('PagesFacade', () => {
       pagesFacade.mount(stage);
       pagesFacade.tutorialFacade.refresh();
 
-      expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
+      expect(stage.querySelector('.workshop-page__level-complete')).toBeNull();
 
       snapshot.tasks.currentLevel = 1;
       snapshot.tasks.level.level = 1;
@@ -4925,13 +4900,13 @@ describe('PagesFacade', () => {
       gameplayFacade.publishSnapshot();
       pagesFacade.tutorialFacade.refresh();
 
-      expect(stage.querySelector('.workshop-page__level-complete')?.hidden).toBe(true);
+      expect(stage.querySelector('.workshop-page__level-complete')).toBeNull();
       expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
       expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('rewards');
       expect(stage.querySelector('.room-announcement__level-flow')).toBeNull();
       expect(stage.querySelector('.room-announcement__row')?.textContent).toContain('market');
       expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
-      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('market opened');
+      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('Market Opened');
 
       pagesFacade.announcementFacade.manager.hideCurrent();
       pagesFacade.tutorialFacade.refresh();
@@ -4942,27 +4917,27 @@ describe('PagesFacade', () => {
         'market unlocked',
       );
       expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
-      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('market opened');
+      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('Market Opened');
 
       pagesFacade.announcementFacade.manager.hideCurrent();
       pagesFacade.tutorialFacade.refresh();
 
       expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(true);
       expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
-      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('market opened');
+      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('Market Opened');
 
       vi.advanceTimersByTime(999);
       pagesFacade.tutorialFacade.refresh();
 
       expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
-      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('market opened');
+      expect(stage.querySelector('.tutorial-layer')?.textContent).not.toContain('Market Opened');
 
       vi.advanceTimersByTime(1);
       pagesFacade.tutorialFacade.refresh();
 
       expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('intro-market');
       expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(false);
-      expect(stage.querySelector('.tutorial-layer')?.textContent).toContain('market opened');
+      expect(stage.querySelector('.tutorial-layer')?.textContent).toContain('Market Opened');
     } finally {
       pagesFacade.unmount();
       stage.remove();
@@ -4970,7 +4945,7 @@ describe('PagesFacade', () => {
     }
   });
 
-  it('levels up after requests without showing or spending a coin price', () => {
+  it('does not render a manual level-up state after requests are complete', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -5013,34 +4988,23 @@ describe('PagesFacade', () => {
     expect(toggle?.hidden).toBe(true);
     expect(toggle?.dataset.notification).toBeUndefined();
 
-    const completion = stage.querySelector('.workshop-page__level-complete');
-    const button = stage.querySelector('.workshop-page__level-complete-button');
     const rewards = stage.querySelector('.workshop-page__level-rewards');
     const questText = stage.querySelector('.room-top-panel__quest-progress-text');
     const questRail = stage.querySelector('.room-top-panel__quest-progress-rail');
     const questSegments = stage.querySelectorAll('.room-top-panel__quest-segment');
 
-    expect(completion?.hidden).toBe(false);
-    expect(stage.querySelector('.workshop-page__tasks-title')?.textContent).toBe('level up');
+    expect(stage.querySelector('.workshop-page__level-complete')).toBeNull();
+    expect(stage.querySelector('.workshop-page__level-complete-button')).toBeNull();
+    expect(stage.querySelector('.workshop-page__tasks-title')?.textContent).toBe(
+      "Elara's Request",
+    );
     expect(rewards?.hidden).toBe(true);
     expect(questText?.textContent).toBe('all quests complete');
     expect(questRail?.getAttribute('aria-valuenow')).toBe('1');
     expect(questSegments).toHaveLength(1);
     expect(questSegments[0]?.classList.contains('is-complete')).toBe(true);
     expect(stage.querySelector('.workshop-page__quest-reward')).toBeNull();
-    expect(completion?.dataset.tutorialId).toBe('workshop:levelUp');
-    expect(button?.textContent).toBe('reach level 2');
-    expect(button?.textContent).not.toContain('coin');
-    expect(button?.disabled).toBe(false);
-
-    button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().coin.current).toBe(2);
-    expect(stage.querySelector('.room-announcement-layer')?.hidden).toBe(false);
-    expect(stage.querySelector('.room-announcement__title')?.textContent).toBe('rewards');
-    expect(stage.querySelector('.room-announcement__level-flow')).toBeNull();
-    expect(stage.querySelector('.workshop-page__flyout')).toBeNull();
   });
 
   it('shows seed summon feedback as a flyout', () => {
@@ -5135,12 +5099,12 @@ describe('PagesFacade', () => {
 
     const button = stage.querySelector('.workshop-page__summon-button');
     expect(stage.querySelector('.workshop-page__summon-button-label')?.textContent).toBe(
-      'summon x2',
+      'Summon x2',
     );
     expect(stage.querySelector('.workshop-page__summon-button-cost')?.textContent).toBe(
       '20 mana',
     );
-    expect(button?.getAttribute('aria-label')).toBe('summon x2, costs 20 mana');
+    expect(button?.getAttribute('aria-label')).toBe('Summon x2, costs 20 mana');
 
     button.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -6600,7 +6564,7 @@ describe('PagesFacade', () => {
     expect(marketTooltip.hidden).toBe(true);
   });
 
-  it('separates researched seed inventory rows from unresearched rows', () => {
+  it('shows only researched or owned seed inventory rows', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -6699,22 +6663,9 @@ describe('PagesFacade', () => {
     const rows = [...bag.querySelectorAll('.workshop-page__bag-item-row--seed')];
     const labels = rows.map((row) => row.querySelector('.row_key')?.textContent);
     const values = rows.map((row) => row.querySelector('.row_val')?.textContent);
-    const mysteryLabel = labels[4];
-    const mysteryName = rows[4].querySelector('.row_key');
-    expect(labels.slice(0, 3)).toEqual(['sage seed', 'mint seed', 'lavender seed']);
-    expect(labels[3]).toBe('nettle seed');
-    expect(mysteryLabel).not.toBe('briar seed');
-    expect(mysteryLabel).toBe('??????');
-    expect(mysteryName?.classList.contains('mystery-text')).toBe(true);
-    expect(mysteryName?.getAttribute('aria-label')).toBe('unknown');
-    expect(values).toEqual(['0', '2', '4', 'locked', 'locked']);
-    expect(divider).not.toBeNull();
-    expect(divider.previousElementSibling.querySelector('.row_key')?.textContent).toBe(
-      'lavender seed',
-    );
-    expect(divider.nextElementSibling.querySelector('.row_key')?.textContent).toBe(
-      'nettle seed',
-    );
+    expect(labels).toEqual(['sage seed', 'mint seed', 'lavender seed']);
+    expect(values).toEqual(['0', '2', '4']);
+    expect(divider).toBeNull();
     expect(
       rows
         .find((row) => row.querySelector('.row_key')?.textContent === 'lavender seed')
@@ -6724,7 +6675,7 @@ describe('PagesFacade', () => {
       [...bag.querySelectorAll('.workshop-page__bag-item-row--seed.is-empty')].map(
         (row) => row.querySelector('.row_key')?.textContent,
       ),
-    ).toEqual(['sage seed', 'nettle seed', mysteryLabel]);
+    ).toEqual(['sage seed']);
   });
 
   it('shows currencies in the bag with zero balances muted', () => {
@@ -6761,7 +6712,7 @@ describe('PagesFacade', () => {
     expect(rows.every((row) => row.classList.contains('is-empty'))).toBe(true);
   });
 
-  it('shows herb and potion inventories in the bag with locked rows below unlocked rows', () => {
+  it('shows only researched, discovered, or owned herb and potion rows in the bag', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -6815,16 +6766,9 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     let rows = [...stage.querySelectorAll('.workshop-page__bag-item-row--herb')];
-    expect(rows.map((row) => row.querySelector('.row_key')?.textContent)).toEqual([
-      'sage',
-      'mint',
-    ]);
-    expect(rows.map((row) => row.querySelector('.row_val')?.textContent)).toEqual([
-      '0',
-      'locked',
-    ]);
+    expect(rows.map((row) => row.querySelector('.row_key')?.textContent)).toEqual(['sage']);
+    expect(rows.map((row) => row.querySelector('.row_val')?.textContent)).toEqual(['0']);
     expect(rows[0].classList.contains('is-locked')).toBe(false);
-    expect(rows[1].classList.contains('is-locked')).toBe(true);
 
     [...stage.querySelectorAll('.workshop-page__bag-tab-button')]
       .find((button) => button.textContent === 'potions')
@@ -6833,21 +6777,9 @@ describe('PagesFacade', () => {
     rows = [...stage.querySelectorAll('.workshop-page__bag-item-row--potion')];
     const labels = rows.map((row) => row.querySelector('.row_key')?.textContent);
     const values = rows.map((row) => row.querySelector('.row_val')?.textContent);
-    expect(labels.slice(0, 2)).toEqual(['mana tonic', 'silverleaf quiet']);
-    expect(values.slice(0, 2)).toEqual(['2', '0']);
-    expect(rows[0].classList.contains('is-locked')).toBe(false);
-    expect(rows[1].classList.contains('is-locked')).toBe(false);
-    const firstLockedPotionRowIndex = rows.findIndex((row) =>
-      row.classList.contains('is-locked'),
-    );
-    expect(firstLockedPotionRowIndex).toBeGreaterThan(1);
-    expect(
-      rows
-        .slice(0, firstLockedPotionRowIndex)
-        .every((row) => !row.classList.contains('is-locked')),
-    ).toBe(true);
-    expect(labels).toContain('??????');
-    expect(values).toContain('locked');
+    expect(labels).toEqual(['mana tonic', 'silverleaf quiet', 'wasted potion']);
+    expect(values).toEqual(['2', '0', '1']);
+    expect(rows.every((row) => !row.classList.contains('is-locked'))).toBe(true);
     expect(
       rows[0].querySelector('.row_val .style-potion-label__icon')?.dataset.assetAtlasFrame,
     ).toBe('potion:manaTonic');
@@ -6857,12 +6789,6 @@ describe('PagesFacade', () => {
     expect(
       wastedRow?.querySelector('.row_val .style-potion-label__icon')?.dataset.assetAtlasFrame,
     ).toBe('potion:wastedPotion');
-    const unknownRow = rows.find(
-      (row) => row.querySelector('.row_key')?.textContent === '??????',
-    );
-    expect(
-      unknownRow?.querySelector('.row_key .style-potion-label__icon')?.dataset.assetAtlasFrame,
-    ).toBe('potion:unknownPotion');
   });
 
   it('hides bag popup with Escape or outside click', () => {
@@ -9586,7 +9512,12 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.research-page__tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['regular research', 'automation', 'advanced research', 'crystal research']);
+    ).toEqual([
+      'Regular Research',
+      'Automation',
+      'Advanced Research',
+      'Crystal Research',
+    ]);
     expect(stage.querySelector('.research-page__box-list')?.nextElementSibling).toBe(
       stage.querySelector('.research-page__tabs'),
     );
@@ -10048,13 +9979,13 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'research');
 
     const automationTab = [...stage.querySelectorAll('.research-page__tab-button')].find(
-      (button) => button.textContent === 'automation',
+      (button) => button.textContent === 'Automation',
     );
     const advancedTab = [...stage.querySelectorAll('.research-page__tab-button')].find(
-      (button) => button.textContent === 'advanced research',
+      (button) => button.textContent === 'Advanced Research',
     );
     const emeraldTab = [...stage.querySelectorAll('.research-page__tab-button')].find(
-      (button) => button.textContent === 'crystal research',
+      (button) => button.textContent === 'Crystal Research',
     );
 
     expect(automationTab).not.toBeNull();
@@ -12060,9 +11991,11 @@ describe('PagesFacade', () => {
 
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(false);
     expect(stage.querySelector('.shop-page__shelf-message')).toBeNull();
-    expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain('seeds');
-    expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain('herbs');
-    expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain('potions');
+    expect(
+      [...stage.querySelectorAll('.shop-page__sell-tab-button')]
+        .filter((button) => !button.hidden)
+        .map((button) => button.textContent),
+    ).toEqual(['seeds']);
     expect(stage.querySelector('.shop-page__sell-popup')?.textContent).toContain(
       'sage seed (5)',
     );
@@ -12102,6 +12035,56 @@ describe('PagesFacade', () => {
       '1. sells sage seed',
     );
     expect(stage.querySelector('.shop-page__sell-popup').hidden).toBe(true);
+  });
+
+  it('shows only unlocked stall tabs and researched stall items', () => {
+    const stage = document.createElement('section');
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    markSeedResearchComplete(gameplayFacade, 'sageSeed');
+    snapshot.shop.shelf.sellItems.push({
+      itemTypeId: 2,
+      key: 'mintSeed',
+      label: 'mint seed',
+      kind: 'seed',
+      quantity: 4,
+      sellCoin: 1,
+      sellNeed: 900,
+    });
+    const pagesFacade = new PagesFacade({
+      gameplayFacade,
+    });
+
+    pagesFacade.mount(stage);
+    clickRoomTab(stage, 'shop');
+    clickNpcMarketStandLabel(stage);
+
+    expect(
+      [...stage.querySelectorAll('.shop-page__sell-tab-button')]
+        .filter((button) => !button.hidden)
+        .map((button) => button.textContent),
+    ).toEqual(['seeds']);
+    expect(
+      [...stage.querySelectorAll('.shop-page__sell-item-row')]
+        .filter((row) => !row.hidden)
+        .map((row) => row.textContent),
+    ).toEqual(['sage seed (0)1 coin']);
+
+    unlockWorkshopSecondaryActions(gameplayFacade, 2);
+    pagesFacade.registryManager.get('shop').shelfManager.render(snapshot);
+    expect(
+      [...stage.querySelectorAll('.shop-page__sell-tab-button')]
+        .filter((button) => !button.hidden)
+        .map((button) => button.textContent),
+    ).toEqual(['seeds', 'herbs']);
+
+    unlockWorkshopSecondaryActions(gameplayFacade, 4);
+    pagesFacade.registryManager.get('shop').shelfManager.render(snapshot);
+    expect(
+      [...stage.querySelectorAll('.shop-page__sell-tab-button')]
+        .filter((button) => !button.hidden)
+        .map((button) => button.textContent),
+    ).toEqual(['seeds', 'herbs', 'potions']);
   });
 
   it('colors NPC market item names and prices separately', () => {
@@ -12228,6 +12211,7 @@ describe('PagesFacade', () => {
   it('hides shop sell rows missing from the latest snapshot', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    markSeedResearchComplete(gameplayFacade, 'mintSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,
     });
@@ -12290,6 +12274,7 @@ describe('PagesFacade', () => {
   it('switches shop sell item tabs', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
+    unlockWorkshopSecondaryActions(gameplayFacade, 4);
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
     const pagesFacade = new PagesFacade({
       gameplayFacade,

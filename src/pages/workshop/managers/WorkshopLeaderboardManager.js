@@ -179,7 +179,7 @@ export class WorkshopLeaderboardManager {
     const label = document.createElement('span');
     label.className =
       'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__leaderboard-button-label';
-    label.textContent = 'leaderboard';
+    label.textContent = 'Leaderboard';
 
     iconFrame.append(icon);
     button.append(iconFrame, label);

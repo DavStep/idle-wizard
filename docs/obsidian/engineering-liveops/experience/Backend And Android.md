@@ -45,7 +45,7 @@ experience_type: backend-android
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.
 - When asked to run the project, also check whether SpacetimeDB backend is running; start it if port `3000` has no backend listener.
 - The client must block play until SpacetimeDB connects, and must stop the frame loop again when the backend disconnects.
-- Transient SpacetimeDB `connect_error`/`disconnect` states should keep the gate in `connecting to server...` and retry; reserve `server unavailable` for hard startup/schema failures.
+- Transient SpacetimeDB `connect_error`/`disconnect` states should keep the gate in `Connecting to server...` and retry; reserve `server unavailable` for hard startup/schema failures.
 - Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
 - Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields and gameplay save JSON, but not trusted public level/rank state.
@@ -71,7 +71,7 @@ experience_type: backend-android
 - Hydrate profile fields from the server `player` row before pushing local values; otherwise local defaults can overwrite saved DB profile data.
 - New client-only profile visual fields must not be sent to `set_player_profile` until the SpacetimeDB player schema and generated bindings support them.
 - Queue explicit profile edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's choices.
-- First-run username prompts should wait until player profile hydration marks default `wizard` as server-confirmed; local startup defaults are not enough.
+- First-run username prompts should wait until player profile hydration marks default `Wizard` as server-confirmed; legacy lowercase `wizard` rows normalize to that default, and local startup defaults are not enough.
 - SpacetimeDB table callbacks pass inserted/updated rows; use those callback rows for player profile sync because immediate table scans can still read stale usernames.
 - Local SpacetimeDB CLI target should be `local` (`http://127.0.0.1:3000`); anonymous publish cannot update an existing dev DB.
 - Use `spacetime --no-config` when CLI commands must target `.env.local`/Maincloud DB names directly; otherwise `spacetime.json` can force `idle-wizard`.

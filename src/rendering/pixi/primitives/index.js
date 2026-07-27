@@ -22,6 +22,11 @@ export { PixiProgressBar } from './PixiProgressBar.js';
 export { PixiResourceLabel } from './PixiResourceLabel.js';
 export { PixiRow } from './PixiRow.js';
 export { PixiScrollView } from './PixiScrollView.js';
+export {
+  ROOT_RUN_SETTINGS_SLIDER_MODES,
+  RootRunSettingsSliderPixi,
+  RootRunSettingsTogglePixi,
+} from './PixiSettingsControls.js';
 export { PixiStarLevelLabel } from './PixiStarLevelLabel.js';
 export { PixiTextField } from './PixiTextField.js';
 export { PixiTextLabel } from './PixiTextLabel.js';

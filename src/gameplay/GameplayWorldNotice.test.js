@@ -24,8 +24,6 @@ function finishCurrentTaskLevel(gameplayFacade) {
   for (const task of tasks) {
     finishTaskRequirement(gameplayFacade, task);
   }
-
-  gameplayFacade.completeTaskLevel();
 }
 
 function finishTaskRequirement(gameplayFacade, task) {
@@ -35,7 +33,7 @@ function finishTaskRequirement(gameplayFacade, task) {
     return;
   }
 
-  gameplayFacade.tasksFacade.recordAction({
+  gameplayFacade.recordTaskAction({
     type: task.type,
     itemKey: task.itemKey,
     researchId: task.researchId,

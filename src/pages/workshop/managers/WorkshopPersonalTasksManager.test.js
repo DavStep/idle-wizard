@@ -150,7 +150,7 @@ describe('WorkshopPersonalTasksManager', () => {
       'left',
     );
     const openButton = parent.querySelector('.workshop-page__personal-tasks-open');
-    expect(openButton?.textContent).toBe('tasks');
+    expect(openButton?.textContent).toBe('Tasks');
     expect(openButton?.getAttribute('aria-label')).toContain(
       'daily 1/7, today 42/100 points, week 260/700 points',
     );

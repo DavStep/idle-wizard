@@ -1086,7 +1086,7 @@ export class PixiTutorialRuntimeState {
         target?.displayObject?.text ??
           target?.displayObject?.label?.text ??
           '',
-      ).trim() || 'wizard'
+      ).trim() || 'Wizard'
     );
   }
 

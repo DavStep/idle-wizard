@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
+import { PixiButton } from '../../primitives/PixiButton.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
@@ -214,6 +215,76 @@ describe('BrewingPixiPage', () => {
     expect(
       harness.inputRouter.store.getRegistrations(),
     ).toHaveLength(0);
+  });
+
+  it('keeps the recipe book inside the retained dialog cap with readable paper styling', () => {
+    const harness = createHarness();
+    const researchRecipe = vi.fn(() => true);
+
+    harness.page.openDialog('recipes', {
+      recipes: [
+        {
+          id: 'mana-tonic',
+          key: 'manaTonic',
+          label: 'mana tonic',
+          unlocked: false,
+          canResearch: true,
+          manaCost: 12,
+          brewDurationMs: 30_000,
+          ingredients: [
+            {
+              id: 'sage',
+              label: 'sage',
+              quantity: 3,
+              owned: 0,
+            },
+          ],
+        },
+        {
+          id: 'minor-healing-potion',
+          key: 'minorHealingPotion',
+          label: 'minor healing potion',
+          unlocked: false,
+          canResearch: false,
+          manaCost: 14,
+          brewDurationMs: 35_000,
+          ingredients: [],
+        },
+      ],
+      actions: { researchRecipe },
+    });
+
+    const dialog = harness.dialogs.get('brewing.recipes');
+    const card = dialog.cards.getWidgets()[0];
+    const unavailableCard = dialog.cards.getWidgets()[1];
+    const ingredient = card.ingredients.getWidgets()[0];
+    const contentTheme = dialog.modal.getContentTheme();
+
+    expect(dialog.modal.panel.coreWidth).toBe(304);
+    expect(dialog.modal.panel.outerFrame.frameWidth).toBe(324);
+    expect(dialog.book.hitArea.width).toBe(260);
+    expect(card.icon.width).toBe(56);
+    expect(card.name.style.fill).toBe(contentTheme.text);
+    expect(card.cost.style.fill).toBe(contentTheme.resourceColors.mana);
+    expect(ingredient.required.style.fill).toBe(
+      contentTheme.resourceColors.herb,
+    );
+    expect(dialog.divider.getLocalBounds().width).toBeCloseTo(2);
+    expect(card.separator.getLocalBounds().height).toBeCloseTo(2);
+    expect(card.select).toBeInstanceOf(PixiButton);
+    expect(card.select.variant).toBe('yellow');
+    expect(card.select.textLabel.text).toBe('Research');
+    expect(card.select.enabled).toBe(true);
+    expect(card.select.activate()).toBe(true);
+    expect(researchRecipe.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ key: 'manaTonic' }),
+    );
+    expect(unavailableCard.select.variant).toBe('yellow');
+    expect(unavailableCard.select.textLabel.text).toBe('Research');
+    expect(unavailableCard.select.enabled).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
   });
 
   it('keeps frozen Brewing geometry, initial fit, and timer/ticker lifecycle', () => {

@@ -157,8 +157,6 @@ function finishCurrentTaskLevel(gameplayFacade) {
   for (const task of tasks) {
     finishTaskRequirement(gameplayFacade, task);
   }
-
-  gameplayFacade.completeTaskLevel();
 }
 
 function finishTaskRequirement(gameplayFacade, task) {
@@ -168,7 +166,7 @@ function finishTaskRequirement(gameplayFacade, task) {
     return;
   }
 
-  gameplayFacade.tasksFacade.recordAction({
+  gameplayFacade.recordTaskAction({
     type: task.type,
     itemKey: task.itemKey,
     researchId: task.researchId,
@@ -711,7 +709,7 @@ describe('GameplayFacade', () => {
     expect(brewing.nextCauldronNumber).toBe(3);
   });
 
-  it('advances player level after tasks without requiring or spending coin', () => {
+  it('automatically advances player level after the final request without spending coin', () => {
     const { gameplayFacade } = createGameplay();
     gameplayFacade.coinFacade.add(2);
     const tasks = gameplayFacade.getSnapshot().tasks.level.tasks;
@@ -748,40 +746,19 @@ describe('GameplayFacade', () => {
       maxed: true,
       completed: true,
     });
-    expect(
-      gameplayFacade.getSnapshot().tasks.level.tasks.find(
-        (candidate) => candidate.taskId === task.taskId,
-      ),
-    ).toMatchObject({
-      completed: true,
-      canComplete: false,
-    });
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.completeTask(task.taskId)).toMatchObject({
       ok: false,
-      reason: 'already_completed',
+      reason: 'not_current_level',
       taskId: task.taskId,
     });
 
-    const remainingTasks = gameplayFacade.getSnapshot().tasks.level.tasks.filter(
-      (candidate) => !candidate.completed,
-    );
-
-    for (const remainingTask of remainingTasks) {
-      finishTaskRequirement(gameplayFacade, remainingTask);
-    }
-
-    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(1);
+    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().tasks.level.completion).toMatchObject({
-      level: 1,
-      canComplete: true,
+      level: 2,
+      canComplete: false,
     });
     expect(gameplayFacade.getSnapshot().tasks.level.completion).not.toHaveProperty('costCoin');
-    expect(gameplayFacade.completeTaskLevel()).toMatchObject({
-      ok: true,
-      currentLevel: 2,
-      advanced: true,
-    });
-    expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
     expect(gameplayFacade.getSnapshot().tasks.level.totalTasks).toBe(3);
     expect(gameplayFacade.getSnapshot().coin.current).toBe(2);
   });
@@ -842,7 +819,7 @@ describe('GameplayFacade', () => {
     });
   });
 
-  it('keeps a completed task level ready across reload', () => {
+  it('persists an automatically advanced task level across reload', () => {
     const persistenceStorage = createMemoryStorage();
     const first = createGameplay({ persistenceStorage });
     const tasks = first.gameplayFacade.getSnapshot().tasks.level.tasks;
@@ -857,10 +834,10 @@ describe('GameplayFacade', () => {
     const second = createGameplay({ persistenceStorage });
     const snapshot = second.gameplayFacade.getSnapshot();
 
-    expect(snapshot.tasks.currentLevel).toBe(1);
+    expect(snapshot.tasks.currentLevel).toBe(2);
     expect(snapshot.tasks.level.completion).toMatchObject({
-      level: 1,
-      canComplete: true,
+      level: 2,
+      canComplete: false,
     });
     expect(snapshot.tasks.level.completion).not.toHaveProperty('costCoin');
     expect(snapshot.coin.current).toBe(0);
@@ -3696,7 +3673,6 @@ describe('GameplayFacade', () => {
 
     while (gameplayFacade.getSnapshot().tasks.currentLevel < 5) {
       finishCurrentTasksWithoutCoin();
-      expect(gameplayFacade.completeTaskLevel()).toMatchObject({ ok: true });
     }
 
     expect(getResearch('unlockSeed:nettleSeed')).toMatchObject({

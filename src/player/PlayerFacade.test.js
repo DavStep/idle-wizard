@@ -23,13 +23,13 @@ describe('PlayerFacade', () => {
     });
   });
 
-  it('falls back to wizard for blank username', () => {
+  it('falls back to Wizard for blank username', () => {
     const playerFacade = new PlayerFacade();
 
     playerFacade.setUsername('   ');
 
     expect(playerFacade.getSnapshot()).toEqual({
-      username: 'wizard',
+      username: 'Wizard',
       hasExplicitUsername: true,
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
@@ -48,10 +48,10 @@ describe('PlayerFacade', () => {
 
     expect(playerFacade.getSnapshot().shouldPromptForUsername).toBe(false);
 
-    playerFacade.applyServerUsername('wizard');
+    playerFacade.applyServerUsername('Wizard');
 
     expect(playerFacade.getSnapshot()).toMatchObject({
-      username: 'wizard',
+      username: 'Wizard',
       hasExplicitUsername: false,
       shouldPromptForUsername: true,
       usernamePromptSeen: false,
@@ -69,12 +69,12 @@ describe('PlayerFacade', () => {
     const playerFacade = new PlayerFacade();
 
     playerFacade.applyServerProfile({
-      username: 'wizard',
+      username: 'Wizard',
       usernamePromptSeen: true,
     });
 
     expect(playerFacade.getSnapshot()).toMatchObject({
-      username: 'wizard',
+      username: 'Wizard',
       hasExplicitUsername: false,
       usernamePromptSeen: true,
       shouldPromptForUsername: false,
@@ -85,19 +85,19 @@ describe('PlayerFacade', () => {
     const playerFacade = new PlayerFacade();
 
     playerFacade.applyServerProfile({
-      username: 'wizard',
+      username: 'Wizard',
       hasExplicitUsername: false,
       usernamePromptSeen: false,
     });
     playerFacade.markUsernamePromptSeen();
     playerFacade.applyServerProfile({
-      username: 'wizard',
+      username: 'Wizard',
       hasExplicitUsername: false,
       usernamePromptSeen: false,
     });
 
     expect(playerFacade.getSnapshot()).toMatchObject({
-      username: 'wizard',
+      username: 'Wizard',
       hasExplicitUsername: false,
       usernamePromptSeen: true,
       shouldPromptForUsername: false,
@@ -109,14 +109,26 @@ describe('PlayerFacade', () => {
 
     playerFacade.setUsername('Mira');
     playerFacade.applyServerProfile({
-      username: 'wizard',
+      username: 'Wizard',
       usernamePromptSeen: false,
     });
 
     expect(playerFacade.getSnapshot()).toMatchObject({
-      username: 'wizard',
+      username: 'Wizard',
       hasExplicitUsername: false,
       shouldPromptForUsername: false,
+    });
+  });
+
+  it('upgrades the legacy lowercase default username', () => {
+    const playerFacade = new PlayerFacade();
+
+    playerFacade.applyServerUsername('wizard');
+
+    expect(playerFacade.getSnapshot()).toMatchObject({
+      username: 'Wizard',
+      hasExplicitUsername: false,
+      shouldPromptForUsername: true,
     });
   });
 

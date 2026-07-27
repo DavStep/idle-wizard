@@ -83,7 +83,7 @@ export class PlayerInfoSubscriptionManager {
 
     return {
       identity: this.toIdentityKey(row.identity),
-      username: typeof username === 'string' ? username : 'wizard',
+      username: typeof username === 'string' ? username : 'Wizard',
       character: normalizePlayerCharacter(
         row.character ?? row.playerCharacter ?? row.player_character,
       ),

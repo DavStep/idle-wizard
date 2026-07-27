@@ -135,7 +135,7 @@ experience_type: architecture
 - Account-in-use gates must not rely on visible overlay DOM; keep a stage-level input lock active and discard pending save/level sync when a newer connection takes over.
 - Shared player-level sync must wait for gameplay-save hydration; server client-reported levels should be monotonic and can heal upward from validated gameplay saves.
 - Username prompt seen is monotonic; stale client/server profile echoes must not turn it false or the first-run name dialog can reopen after dismissal.
-- First-run account choice happens before `onOnline`; hide the server gate before awaiting that dialog or new players can look stuck at `connecting to server...`.
+- First-run account choice happens before `onOnline`; hide the server gate before awaiting that dialog or new players can look stuck at `Connecting to server...`.
 - Empty connected accounts should load a null gameplay save and create the baseline server data under that connected identity; do not show the account/start gate again.
 - Gameplay save version migrations should preserve recognized fields and default only missing new fields; do not use a version bump as a silent progress reset.
 - Gameplay save migrations must carry `visualSettings`; dropping it makes free theme/font/color unlocks vanish after refresh.
@@ -186,7 +186,7 @@ experience_type: architecture
 - World chat sends must wait for backend player-level sync before calling `send_world_chat_message`; the reducer gates on server `player.playerLevel`, not just local Workshop unlock state.
 - Explicit pre-chat player-level flushes must requeue the current gameplay snapshot level even if observers already saw that value; otherwise stale server `playerLevel` can reject unlocked chat sends.
 - `send_world_chat_message` should also heal `player.playerLevel` from the accepted `player_gameplay_save` before the level gate; old clients or stale `set_player_level` calls can otherwise leave level-3+ saves unable to chat.
-- All `.style-progress` bars share the compact 10px Root Rush source height; do not add per-use rail height overrides for chat, scroll cues, timers, task bars, or allocation controls. Apply semantic colors through page-scoped fill/edge tokens. The top-panel quest rail owns the one explicit 14px thickness token.
+- Passive `.style-progress` bars share the compact 10px Root Rush source height; do not add per-use rail height overrides for chat, scroll cues, timers, or task bars. Interactive sliders and the top-panel quest rail use the shared 14px thickness tokens. Apply semantic colors through page-scoped fill/edge tokens.
 - Shared `.style-progress` rails need `flex: 0 0 auto`; flex dialogs can otherwise shrink the rail below the shared height.
 - Tabbed popup panel widths must equal dialog content width plus `20px` side padding and `2px` border on both sides; otherwise bottom tabs misalign with the dialog frame.
 - When adding period leaderboard counters, seed blank legacy periods from existing all-time totals before normal period refresh resets them.

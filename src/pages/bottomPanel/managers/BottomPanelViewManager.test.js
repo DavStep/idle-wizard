@@ -1,11 +1,16 @@
 /* @vitest-environment jsdom */
 
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 
 import { describe, expect, it, vi } from 'vitest';
 
 import { FEATURE_UNLOCK_FLYOUT_EVENT } from '../../announcements/featureUnlockEvents.js';
 import { BottomPanelViewManager } from './BottomPanelViewManager.js';
+
+function assetSha256(path) {
+  return createHash('sha256').update(fs.readFileSync(path)).digest('hex');
+}
 
 async function waitForMutationObserver() {
   await Promise.resolve();
@@ -143,19 +148,19 @@ describe('BottomPanelViewManager', () => {
       'icon-shop-market-stall-tab.webp',
     );
     expect(brewingTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
-      'brewing',
+      'Brewing',
     );
     expect(workshopTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
-      'workshop',
+      'Workshop',
     );
     expect(gardenTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
-      'garden',
+      'Garden',
     );
     expect(researchTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
-      'research',
+      'Research',
     );
     expect(marketTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
-      'market',
+      'Market',
     );
   });
 
@@ -218,11 +223,12 @@ describe('BottomPanelViewManager', () => {
       'var(--style-room-tab-inactive-height) +',
     );
     expect(tabFrameRule).toContain('var(--style-room-tab-bottom-bleed)');
-    expect(tabFrameRule).toContain('border: solid transparent;');
+    expect(tabFrameRule).toContain('border: 0;');
     expect(tabFrameRule).toContain(
-      'border-image-source: var(--style-room-tab-inactive-frame);',
+      'background-image: var(--style-room-tab-inactive-frame);',
     );
-    expect(baseCss).toContain('--style-room-tab-icon-size: 46px;');
+    expect(baseCss).toContain('--style-room-tab-icon-size: 50px;');
+    expect(baseCss).toContain('--style-room-tab-inactive-icon-scale: 1.5;');
     expect(baseCss).toContain('--style-page-tab-selected-icon-scale: 1.22;');
     expect(baseCss).toContain('--style-page-tab-label-text-stroke-width: 1px;');
     expect(baseCss).toContain(
@@ -231,6 +237,7 @@ describe('BottomPanelViewManager', () => {
     expect(tabScrollClearance).not.toContain('style-page-tab-icon');
     expect(labelRule).toContain('opacity: 0;');
     expect(labelRule).toContain('visibility: hidden;');
+    expect(labelRule).toContain('color: #fff;');
     expect(labelRule).toContain(
       '-webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)',
     );
@@ -241,13 +248,20 @@ describe('BottomPanelViewManager', () => {
     expect(iconFrameRule).toContain(
       'top: calc(var(--style-room-tab-rise) + 5px);',
     );
-    expect(iconFrameRule).toContain('scale: 0.94;');
-    expect(iconFrameRule).toContain('opacity: 0.72;');
+    expect(iconFrameRule).toContain(
+      'scale: var(--style-room-tab-inactive-icon-scale);',
+    );
+    expect(iconFrameRule).toContain('opacity: 1;');
     expect(iconRule).toContain('scale: var(--style-page-tab-icon-art-scale, 1);');
     expect(baseCss).toContain('--style-page-tab-icon-art-scale: 0.72;');
     expect(baseCss).toContain('--style-page-tab-icon-art-scale: 1;');
-    expect(baseCss).toContain('--style-page-tab-icon-art-scale: 1.04;');
     expect(baseCss).toContain('--style-page-tab-icon-art-scale: 0.84;');
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__research-button\s*\{\s*--style-page-tab-icon-art-scale:\s*0\.84;/,
+    );
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__shop-button\s*\{\s*--style-page-tab-icon-art-scale:\s*0\.9;/,
+    );
     expect(baseCss).toContain('--style-room-tab-selected-scale: 1;');
     expect(selectedRule).toContain('scale: var(--style-room-tab-selected-scale);');
     expect(selectedRule).toContain(
@@ -255,7 +269,7 @@ describe('BottomPanelViewManager', () => {
     );
     expect(selectedFrameRule).toContain('var(--style-room-tab-active-height) +');
     expect(selectedFrameRule).toContain(
-      'border-image-source: var(--style-room-tab-active-frame);',
+      'background-image: var(--style-room-tab-active-frame);',
     );
     expect(baseCss).toContain(
       '.room-bottom-panel__tab.is-selected .room-bottom-panel__tab-label {',
@@ -376,6 +390,13 @@ describe('BottomPanelViewManager', () => {
       brewingTab?.querySelector('.room-bottom-panel__tab-lock-icon--whole')?.dataset
         .assetAtlasFrame,
     ).toBe('status:lockDefault');
+    const baseCss = fs.readFileSync('src/styles/base.css', 'utf8');
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__tab\.is-locked \.room-bottom-panel__tab-icon-frame\s*\{[\s\S]*?visibility:\s*hidden;/,
+    );
+    expect(baseCss).toMatch(
+      /\.room-bottom-panel__tab-lock\s*\{[\s\S]*?top:\s*34px;[\s\S]*?width:\s*26px;[\s\S]*?height:\s*29\.5px;/,
+    );
 
     brewingTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
@@ -675,20 +696,21 @@ describe('BottomPanelViewManager', () => {
       '--style-room-tab-inactive-frame: url("../../assets/game/source/ui/root-run-room-tab-inactive.png");',
     );
     expect(tabFrameBlock).toContain(
-      'border-image-source: var(--style-room-tab-inactive-frame);',
+      'background-image: var(--style-room-tab-inactive-frame);',
     );
-    expect(tabFrameBlock).toContain('border-image-slice: 56 61 19 60 fill;');
-    expect(tabFrameBlock).toContain(
-      'border-width: var(--style-room-tab-inactive-border-width);',
+    expect(tabFrameBlock).toContain('background-position: center;');
+    expect(tabFrameBlock).toContain('background-repeat: no-repeat;');
+    expect(tabFrameBlock).toContain('background-size: 100% 100%;');
+    expect(tabFrameBlock).toContain('border: 0;');
+    expect(assetSha256(
+      'assets/game/source/ui/root-run-room-tab-active.png',
+    )).toBe(
+      'c26676722b9f573cf68f43c5057fffdafb62821d170fe846c6f436099ff84475',
     );
-    expect(tabFrameBlock).toContain(
-      'border-image-width: var(--style-room-tab-inactive-border-width);',
-    );
-    expect(tabFrameBlock).toContain(
-      'background: var(--style-room-tab-inactive-fill);',
-    );
-    expect(tabFrameBlock).toContain(
-      'border-radius: var(--style-room-tab-inactive-radius)',
+    expect(assetSha256(
+      'assets/game/source/ui/root-run-room-tab-inactive.png',
+    )).toBe(
+      '77dd873c0e0a02074bc462b9809c656100fc7bda7d0857767bb1f4ee35ee8eac',
     );
     expect(tabFrameBlock).toContain('bottom: 0;');
   });
@@ -714,24 +736,10 @@ describe('BottomPanelViewManager', () => {
     expect(tabSurfaceResetBlock).toContain('border-image: none;');
     expect(tabSurfaceResetBlock).toContain('box-shadow: none;');
     expect(baseCss).toMatch(
-      /\.room-bottom-panel__tab\.is-selected::after\s*\{[\s\S]*?border-image-source:\s*var\(--style-room-tab-active-frame\);/,
+      /\.room-bottom-panel__tab\.is-selected::after\s*\{[\s\S]*?background-image:\s*var\(--style-room-tab-active-frame\);/,
     );
     expect(baseCss).toMatch(
-      /\.room-bottom-panel__tab\.is-selected::after\s*\{[\s\S]*?border-image-slice:\s*57 62 21 61 fill;/,
-    );
-    expect(baseCss).toMatch(
-      /\.room-bottom-panel__tab\.is-selected::after\s*\{[\s\S]*?border-width:\s*var\(--style-room-tab-active-border-width\);/,
-    );
-    expect(baseCss).toMatch(
-      /\.room-bottom-panel__tab\.is-selected::after\s*\{[\s\S]*?background:\s*var\(--style-room-tab-active-fill\);/,
-    );
-    expect(baseCss).toContain('--style-room-tab-active-fill: #6e4627;');
-    expect(baseCss).toContain('--style-room-tab-inactive-fill: #3c2f25;');
-    expect(baseCss).toContain(
-      '--style-room-tab-inactive-border-width:',
-    );
-    expect(baseCss).toContain(
-      '--style-room-tab-active-border-width:',
+      /\.room-bottom-panel__tab\.is-locked::after,[\s\S]*?background-image:\s*var\(--style-room-tab-inactive-frame\);/,
     );
     expect(baseCss).toContain('--style-room-tab-bottom-bleed: 18px;');
   });
@@ -752,11 +760,11 @@ describe('BottomPanelViewManager', () => {
     );
 
     expect(labels).toEqual([
-      'brewing',
-      'garden',
-      'workshop',
-      'research',
-      'market',
+      'Brewing',
+      'Garden',
+      'Workshop',
+      'Research',
+      'Market',
     ]);
     expect(stage.querySelector('.room-bottom-panel__prestige-button')).toBeNull();
 
@@ -768,12 +776,12 @@ describe('BottomPanelViewManager', () => {
     );
 
     expect(visibleLabels).toEqual([
-      'prestige',
-      'brewing',
-      'garden',
-      'workshop',
-      'research',
-      'market',
+      'Prestige',
+      'Brewing',
+      'Garden',
+      'Workshop',
+      'Research',
+      'Market',
     ]);
     expect(prestigeButton?.dataset.pageId).toBe('prestige');
     expect(prestigeButton?.dataset.actionId).toBeUndefined();

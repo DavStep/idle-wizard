@@ -8,15 +8,19 @@ import {
 } from 'pixi.js';
 
 import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
-import {
-  getSeedPackBaseFrameName,
-  getSeedPackItemFrameName,
-} from '../../../../assets/items/seeds/seedIconFrames.js';
 import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
+import { formatCoinPriceText } from '../../../../shared/coinPrice.js';
+import { PixiCostButton } from '../../primitives/PixiCostButton.js';
+import {
+  bindPixiSeedPackIcon,
+  layoutPixiSeedPackIcon,
+} from '../../primitives/PixiSeedPackIcon.js';
+import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
   BaseRetainedPixiPage,
@@ -49,8 +53,10 @@ export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   rowGap: 20,
   plotWidth: 88,
   plotHeight: 84,
+  buyButtonWidth: 80,
+  buyButtonHeight: 48,
   progressWidth: 80,
-  progressHeight: 6,
+  progressHeight: PIXI_UI_GEOMETRY.progressTotalHeight,
   inventoryButtonWidth: 45.5,
   inventoryButtonHeight: 80.25,
   inventoryOpenHeight: 68.25,
@@ -731,6 +737,7 @@ class GardenPlotWidget {
     this.semanticTargets = semanticTargets;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.model = {};
+    this.timedProgress = null;
     this.actions = {};
     this.enabled = false;
     this.pressed = false;
@@ -751,9 +758,11 @@ class GardenPlotWidget {
       ...RETAINED_TEXT_STYLES.bold,
       fill: '#3b2416',
     });
-    this.level = createText('', {
-      fontSize: 9,
-      lineHeight: 11,
+    this.level = new PixiStarLevelLabel({
+      assetManager,
+      size: 12,
+      gap: 1,
+      label: `garden-plot-${instanceId}-stars`,
     });
     this.label = createText('', RETAINED_TEXT_STYLES.border);
     this.label.anchor.set(1, 0);
@@ -771,6 +780,16 @@ class GardenPlotWidget {
       align: 'right',
     });
     this.action.anchor.set(1, 1);
+    this.buyCostButton = new PixiCostButton({
+      assetManager,
+      width: GARDEN_PIXI_GEOMETRY.buyButtonWidth,
+      height: GARDEN_PIXI_GEOMETRY.buyButtonHeight,
+      tone: 'yellow',
+      label: `garden-plot-${instanceId}-buy-cost`,
+    });
+    this.buyCostButton.eventMode = 'none';
+    this.buyCostButton.visible = false;
+    this.buyCostButton.renderable = false;
     this.scissorsMotion = new Container({
       label: `garden-plot-${instanceId}-scissors-motion`,
     });
@@ -798,6 +817,7 @@ class GardenPlotWidget {
       this.label,
       this.plantMotion,
       this.action,
+      this.buyCostButton,
       this.scissorsMotion,
     );
     this.root.addChild(this.frame, this.progress.root, this.notification);
@@ -822,6 +842,10 @@ class GardenPlotWidget {
   bind(model, actions) {
     this.unregisterSemanticTargets();
     this.model = model ?? {};
+    this.timedProgress = bindTimedProgress(
+      this.model.process ?? this.model.progress,
+      this.page.timeSource(),
+    );
     this.actions = actions ?? {};
     const tileNumber = this.model.tileNumber ?? this.model.number ?? this.model.id;
     const visible = this.model.hidden !== true && this.model.visible !== false;
@@ -833,9 +857,14 @@ class GardenPlotWidget {
     this.root.renderable = visible;
     this.root.eventMode = this.enabled ? 'static' : 'none';
     setText(this.number, this.model.showNumber === false ? '' : tileNumber);
-    setText(this.level, this.model.showLevel === false ? '' : resolveLevelLabel(this.model));
+    const plotLevel = Math.max(
+      1,
+      Math.floor(Number(this.model.level) || 1),
+    );
+    this.level.setLevel(plotLevel - 1);
     setText(this.label, resolvePlotLabel(this.model));
     setText(this.action, resolveActionText(this.model));
+    this.syncBuyCostButton();
     this.soil.texture = getTexture(
       this.assetManager,
       SOIL_ASSET_IDS[clamp(Math.floor(Number(this.model.soilLevel) || 1), 1, 5)],
@@ -964,6 +993,16 @@ class GardenPlotWidget {
       GARDEN_PIXI_GEOMETRY.plotWidth - 5,
       GARDEN_PIXI_GEOMETRY.plotHeight - 3,
     );
+    this.buyCostButton.setBounds(
+      (GARDEN_PIXI_GEOMETRY.plotWidth -
+        GARDEN_PIXI_GEOMETRY.buyButtonWidth) /
+        2,
+      (GARDEN_PIXI_GEOMETRY.plotHeight -
+        GARDEN_PIXI_GEOMETRY.buyButtonHeight) /
+        2,
+      GARDEN_PIXI_GEOMETRY.buyButtonWidth,
+      GARDEN_PIXI_GEOMETRY.buyButtonHeight,
+    );
     this.scissors.width = 30;
     this.scissors.height = 30;
     this.scissorsOpen.width = 30;
@@ -1004,10 +1043,7 @@ class GardenPlotWidget {
   }
 
   updateTime(now) {
-    const timed = resolveTimedProgress(
-      this.model.process ?? this.model.progress,
-      now,
-    );
+    const timed = resolveTimedProgress(this.timedProgress, now);
     const visible =
       this.model.phase === 'ready' ||
       Boolean(this.model.process) ||
@@ -1021,7 +1057,7 @@ class GardenPlotWidget {
     this.updateMotion(now, timed.progress);
   }
 
-  updateMotion(now, timedProgress = 0) {
+  updateMotion(now, timedProgress = Number.NaN) {
     const tileNumber = Math.max(
       1,
       Math.floor(Number(this.model.tileNumber ?? this.model.number) || 1),
@@ -1031,8 +1067,11 @@ class GardenPlotWidget {
       phase === 'growing'
         ? clamp(
             finiteOr(
-              this.model.process?.progress,
-              finiteOr(this.model.progress?.progress, timedProgress),
+              timedProgress,
+              finiteOr(
+                this.model.process?.progress,
+                finiteOr(this.model.progress?.progress, 0),
+              ),
             ),
             0,
             1,
@@ -1139,11 +1178,6 @@ class GardenPlotWidget {
       ...RETAINED_TEXT_STYLES.bold,
       fill: '#3b2416',
     });
-    applyTextTheme(this.level, this.theme, {
-      fontSize: 9,
-      lineHeight: 11,
-      fill: resolveStarColor(this.theme, this.model.starTone),
-    });
     applyTextTheme(this.label, this.theme, {
       ...RETAINED_TEXT_STYLES.border,
       fill: labelColor,
@@ -1161,12 +1195,39 @@ class GardenPlotWidget {
       fill: disabled ? this.theme.disabled : this.theme.text,
       align: 'right',
     });
+    this.buyCostButton.applyTheme(this.theme);
     this.progress.applyTheme(this.theme);
     this.redraw();
   }
 
+  syncBuyCostButton() {
+    const costCoin = Number(this.model.costCoin);
+    const visible =
+      (this.model.buySlot === true || this.model.isBuySlot === true) &&
+      !this.model.lockReason &&
+      Number.isFinite(costCoin);
+
+    this.buyCostButton.visible = visible;
+    this.buyCostButton.renderable = visible;
+    if (!visible) {
+      return;
+    }
+
+    this.buyCostButton.setModel({
+      amountLabel:
+        costCoin === 0 ? 'Free' : formatCoinPriceText(costCoin),
+      resource: costCoin === 0 ? 'none' : 'coin',
+      state:
+        this.model.affordable === false ? 'unaffordable' : 'available',
+      enabled: this.enabled,
+    });
+  }
+
   redraw() {
     this.buyFrame.clear();
+    const showBuyCostButton = this.buyCostButton.visible;
+    this.action.visible = !showBuyCostButton && Boolean(this.action.text);
+    this.action.renderable = this.action.visible;
     if (this.model.buySlot === true || this.model.isBuySlot === true) {
       drawDashedRect(
         this.buyFrame,
@@ -1220,6 +1281,7 @@ class GardenPlotWidget {
   reset() {
     this.unregisterSemanticTargets();
     this.model = {};
+    this.timedProgress = null;
     this.actions = {};
     this.enabled = false;
     this.pressed = false;
@@ -1239,9 +1301,10 @@ class GardenPlotWidget {
     this.receiveScaleY = 1;
     this.width = 0;
     setText(this.number, '');
-    setText(this.level, '');
+    this.level.setLevel(0);
     setText(this.label, '');
     setText(this.action, '');
+    this.buyCostButton.reset();
     this.progress.setProgress(0);
     this.progress.root.visible = false;
     this.plantMotion.position.set(0, 0);
@@ -1303,16 +1366,21 @@ class GardenSeedDragGhost {
   }
 
   layout() {
-    this.pack.position.set(0, 0);
-    this.pack.width = GARDEN_SEED_GHOST_SIZE;
-    this.pack.height = GARDEN_SEED_GHOST_SIZE;
-    const itemSize = GARDEN_SEED_GHOST_SIZE * 0.44;
-    this.item.position.set(
-      GARDEN_SEED_GHOST_SIZE / 2,
-      GARDEN_SEED_GHOST_SIZE * 0.63,
+    const layout = layoutPixiSeedPackIcon({
+      base: this.pack,
+      item: this.item,
+      x: 0,
+      y: 0,
+      width: GARDEN_SEED_GHOST_SIZE,
+      height: GARDEN_SEED_GHOST_SIZE,
+      anchorX: 0,
+      anchorY: 0,
+    });
+    this.itemBaseX = layout.item.centerX;
+    this.itemBaseY = layout.item.centerY;
+    this.itemBaseRotation = degreesToRadians(
+      layout.item.rotationDegrees,
     );
-    this.item.width = itemSize;
-    this.item.height = itemSize;
   }
 
   start({ seed, point }) {
@@ -1320,15 +1388,12 @@ class GardenSeedDragGhost {
       this.reset();
       return false;
     }
-    this.pack.texture = getAtlasTexture(
-      this.assetManager,
-      getSeedPackBaseFrameName(seed),
-    );
-    const itemFrame = getSeedPackItemFrameName(seed);
-    this.item.texture = itemFrame
-      ? getAtlasTexture(this.assetManager, itemFrame)
-      : Texture.EMPTY;
-    this.item.visible = Boolean(itemFrame);
+    bindPixiSeedPackIcon({
+      assetManager: this.assetManager,
+      base: this.pack,
+      item: this.item,
+      seed,
+    });
     this.motionType = 'drag';
     this.motionStartedAt = null;
     this.root.visible = true;
@@ -1350,9 +1415,10 @@ class GardenSeedDragGhost {
     }
     this.root.position.copyFrom(point);
     const horizontal = clamp(finiteOr(step?.x, 0), -8, 8);
-    this.item.rotation = degreesToRadians(6 + horizontal * 0.7);
+    this.item.rotation =
+      this.itemBaseRotation + degreesToRadians(horizontal * 0.7);
     this.item.x =
-      GARDEN_SEED_GHOST_SIZE / 2 + clamp(horizontal * 0.24, -2, 2);
+      this.itemBaseX + clamp(horizontal * 0.24, -2, 2);
     return true;
   }
 
@@ -1385,11 +1451,8 @@ class GardenSeedDragGhost {
       this.motionType === 'plot'
         ? GARDEN_SEED_DROP_MS
         : GARDEN_SEED_RETURN_MS;
-    this.item.position.set(
-      GARDEN_SEED_GHOST_SIZE / 2,
-      GARDEN_SEED_GHOST_SIZE * 0.63,
-    );
-    this.item.rotation = degreesToRadians(6);
+    this.item.position.set(this.itemBaseX, this.itemBaseY);
+    this.item.rotation = this.itemBaseRotation;
     this.updateMotion(this.motionStartedAt);
     return true;
   }
@@ -1450,11 +1513,8 @@ class GardenSeedDragGhost {
     this.root.pivot.set(0, 0);
     this.root.scale.set(1);
     this.root.rotation = 0;
-    this.item.position.set(
-      GARDEN_SEED_GHOST_SIZE / 2,
-      GARDEN_SEED_GHOST_SIZE * 0.63,
-    );
-    this.item.rotation = degreesToRadians(6);
+    this.item.position.set(this.itemBaseX, this.itemBaseY);
+    this.item.rotation = this.itemBaseRotation;
   }
 
   destroy() {
@@ -2027,14 +2087,6 @@ function resolveActionText(model) {
   return model.action?.label ?? '';
 }
 
-function resolveLevelLabel(model) {
-  if (model.levelLabel !== undefined) {
-    return String(model.levelLabel ?? '');
-  }
-  const level = Math.max(0, Math.floor(Number(model.level) || 0));
-  return level > 1 ? `★${level - 1}` : '';
-}
-
 function resolveTimedProgress(progress, now) {
   if (typeof progress === 'number') {
     return { progress: clamp(progress, 0, 1), timerText: '' };
@@ -2065,19 +2117,25 @@ function resolveTimedProgress(progress, now) {
   };
 }
 
-function resolveStarColor(theme, tone) {
-  switch (tone) {
-    case 'yellow':
-      return '#f4d35e';
-    case 'orange':
-      return '#ee964b';
-    case 'red':
-      return '#d1495b';
-    case 'purple':
-      return '#a06cd5';
-    default:
-      return theme.muted;
+function bindTimedProgress(progress, now) {
+  if (!progress || typeof progress !== 'object') {
+    return progress;
   }
+
+  const endTimeMs = finiteOr(
+    progress.endTimeMs,
+    finiteOr(progress.endsAt, Number.NaN),
+  );
+  const remainingMs = finiteOr(progress.remainingMs, Number.NaN);
+
+  if (Number.isFinite(endTimeMs) || !Number.isFinite(remainingMs)) {
+    return progress;
+  }
+
+  return {
+    ...progress,
+    endTimeMs: finiteOr(now, Date.now()) + Math.max(0, remainingMs),
+  };
 }
 
 function applyReadyPlantMotion(motion, progress, growthScale) {

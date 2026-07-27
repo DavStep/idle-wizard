@@ -33,6 +33,7 @@ const MAIL_PADDING_X = 10;
 const MAIL_PADDING_Y = 8;
 const MAIL_ACTION_WIDTH = 54;
 const MAIL_COLUMN_GAP = 8;
+const INBOX_EMPTY_FONT_SIZE = 18;
 
 /**
  * Retained, keyed inbox. Mail cards are pooled and keep one installed claim
@@ -43,7 +44,7 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
     super({
       context,
       dialogId,
-      title: 'inbox',
+      title: 'Inbox',
       contentWidth: INBOX_CONTENT_WIDTH,
       contentHeight: INBOX_CONTENT_HEIGHT,
       placement: 'top',
@@ -61,7 +62,9 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
     });
     this.panel.content.addChild(this.scroll);
     this.emptyLabel = new PixiTextLabel({
-      text: 'no mail',
+      text: 'No Mail',
+      fontSize: INBOX_EMPTY_FONT_SIZE,
+      anchor: { x: 0.5, y: 0.5 },
       color: 'muted',
       label: `${dialogId}:empty`,
     });
@@ -163,7 +166,10 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
       y += height + MAIL_GAP;
     }
     const contentHeight = Math.max(0, y - MAIL_GAP);
-    this.emptyLabel.position.set(0, 0);
+    this.emptyLabel.position.set(
+      INBOX_CONTENT_WIDTH / 2,
+      INBOX_CONTENT_HEIGHT / 2 - this.scroll.contentPaddingTop,
+    );
     this.scroll.setContentHeight(contentHeight);
   }
 

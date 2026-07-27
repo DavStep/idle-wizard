@@ -1,4 +1,4 @@
-const DEFAULT_USERNAME = 'wizard';
+const DEFAULT_USERNAME = 'Wizard';
 const MAX_USERNAME_LENGTH = 24;
 
 export class PlayerNameManager {
@@ -63,8 +63,10 @@ export class PlayerNameManager {
     const value = String(username ?? '')
       .trim()
       .replace(/\s+/g, ' ');
+    const normalizedValue =
+      value.toLowerCase() === DEFAULT_USERNAME.toLowerCase() ? DEFAULT_USERNAME : value;
 
-    return (value || DEFAULT_USERNAME).slice(0, MAX_USERNAME_LENGTH);
+    return (normalizedValue || DEFAULT_USERNAME).slice(0, MAX_USERNAME_LENGTH);
   }
 
   isExplicitUsername(username) {

@@ -96,7 +96,7 @@ export class TutorialTargetManager {
       getUsername: () =>
         this.stage
           ?.querySelector('[data-tutorial-id="top:username"]')
-          ?.textContent?.trim() || 'wizard',
+          ?.textContent?.trim() || 'Wizard',
       isTasksExpanded: () => {
         const toggle = this.stage?.querySelector('.workshop-page__tasks-toggle');
 

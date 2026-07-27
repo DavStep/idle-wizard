@@ -23,7 +23,7 @@ filled.
 ## Level Completion
 
 Completing every requirement makes the level ready. The player level advances
-when the player presses the level-up action. Level-up never requires or spends coin.
+when the player completes the final request. Level-up happens automatically and never requires or spends coin.
 
 ## Effects
 

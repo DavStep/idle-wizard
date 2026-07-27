@@ -407,7 +407,7 @@ describe('WorkshopWorldNoticeManager', () => {
     );
     expect(
       openButton?.querySelector('.workshop-page__panel-button-label')?.textContent,
-    ).toBe('event');
+    ).toBe('Event');
     expect(
       openButton?.querySelector('.workshop-page__panel-button-timer')?.textContent,
     ).toBe('3d');

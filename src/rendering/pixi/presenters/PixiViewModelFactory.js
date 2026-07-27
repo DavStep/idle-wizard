@@ -2,11 +2,15 @@ import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { formatRemainingTime } from '../../../pages/shared/timerDisplay.js';
 
 const BAG_TABS = Object.freeze([
-  Object.freeze({ id: 'currencies', label: 'currencies' }),
-  Object.freeze({ id: 'seeds', label: 'seeds' }),
-  Object.freeze({ id: 'herbs', label: 'herbs' }),
-  Object.freeze({ id: 'potions', label: 'potions' }),
-  Object.freeze({ id: 'ingredients', label: 'ingredients' }),
+  Object.freeze({ id: 'currencies', label: 'Currencies' }),
+  Object.freeze({ id: 'seeds', label: 'Seeds' }),
+  Object.freeze({ id: 'herbs', label: 'Herbs', requiredPageId: 'garden' }),
+  Object.freeze({ id: 'potions', label: 'Potions', requiredPageId: 'brewing' }),
+  Object.freeze({
+    id: 'ingredients',
+    label: 'Ingredients',
+    requiredPageId: 'brewing',
+  }),
 ]);
 
 const STATS_TABS = Object.freeze([
@@ -20,6 +24,24 @@ const LEADERBOARD_TABS = Object.freeze([
   Object.freeze({ id: 'singlePlayer', label: 'single player' }),
   Object.freeze({ id: 'alliance', label: 'alliance' }),
 ]);
+const SEED_DROP_PREFERENCES = Object.freeze([
+  'none',
+  'low',
+  'medium',
+  'high',
+]);
+const SEED_DROP_SLIDER_OPTIONS = Object.freeze([
+  Object.freeze({ value: 'none', tone: 'root' }),
+  Object.freeze({ value: 'low', tone: 'red' }),
+  Object.freeze({ value: 'medium', tone: 'yellow' }),
+  Object.freeze({ value: 'high', tone: 'green' }),
+]);
+const SEED_DROP_VALUE_TONES = Object.freeze({
+  none: 'text',
+  low: 'red',
+  medium: 'yellow',
+  high: 'green',
+});
 
 const MAX_LOCKED_RESEARCHES_PER_BOX = 3;
 const RESEARCH_ART_ASSET_BY_BOX_ID = Object.freeze({
@@ -77,7 +99,7 @@ export class PixiViewModelFactory {
     const contextResource = getPageContextResource(pageId, researchTabId);
 
     return {
-      username: player.username || 'wizard',
+      username: player.username || 'Wizard',
       character: player.character || 'elara',
       showAvatar: true,
       mana: gameplay.mana ?? {},
@@ -151,6 +173,7 @@ export class PixiViewModelFactory {
     notifications = {},
     actions = {},
     dialogState = {},
+    pageStates = null,
   } = {}) {
     const taskSnapshot = gameplay.tasks ?? {};
     const level = Math.max(
@@ -168,25 +191,17 @@ export class PixiViewModelFactory {
       allTasks.find((task) => !task.completed) ??
       null;
     const completion = taskSnapshot.level?.completion ?? {};
-    const taskRows = activeTask
-      ? [this.createTaskRow(activeTask, actions)]
-      : completion.canComplete
-        ? [this.createLevelCompletionRow(completion, gameplay, actions)]
-        : [];
+    const taskRows = activeTask ? [this.createTaskRow(activeTask, actions)] : [];
 
     return {
       workshop: {
         tasks: {
-          title: completion.canComplete && !activeTask
-            ? 'level up'
-            : "elara's request",
+          title: "Elara's Request",
           rows: taskRows,
           expanded: false,
           canToggle: false,
           info: {
-            title: completion.canComplete && !activeTask
-              ? 'level up'
-              : "elara's request",
+            title: "Elara's Request",
             copy: createTaskHelpCopy(taskSnapshot, completion),
           },
         },
@@ -219,17 +234,20 @@ export class PixiViewModelFactory {
         worldChat: this.createWorldChatPreview(worldChat),
         flyouts: [],
         dialogs: {
-          summonInfo: this.createSummonInfoDialog(gameplay),
+          summonInfo: this.createSummonInfoDialog(
+            gameplay,
+            dialogState.summonSeedKey,
+            actions,
+          ),
           tasksInfo: {
-            title: completion.canComplete && !activeTask
-              ? 'level up'
-              : "elara's request",
+            title: "Elara's Request",
             copy: createTaskHelpCopy(taskSnapshot, completion),
           },
           bag: this.createBagDialog(
             gameplay,
             dialogState.bagTabId,
             actions.selectBagTab,
+            pageStates,
           ),
           stats: this.createStatsDialog(
             gameplay,
@@ -277,40 +295,9 @@ export class PixiViewModelFactory {
       ...(automatic
         ? {}
         : {
-            actionLabel: task.completed ? 'done' : 'turn in',
+            actionLabel: task.completed ? 'done' : 'Turn In',
             onActivate: () => actions.fillTask?.(task.taskId),
           }),
-    };
-  }
-
-  createLevelCompletionRow(completion, gameplay, actions = {}) {
-    const nextLevel = Math.max(
-      1,
-      Math.floor(Number(completion.level) || 0) + 1,
-    );
-    const cost = Math.max(0, Math.floor(Number(completion.costCoin) || 0));
-    return {
-      id: `level-up-${nextLevel}`,
-      label: `reach level ${nextLevel}`,
-      value: formatCoinPriceText(cost),
-      current: Math.min(
-        cost,
-        Math.max(0, Math.floor(Number(gameplay.coin?.current) || 0)),
-      ),
-      required: cost,
-      progress:
-        cost <= 0
-          ? 1
-          : Math.min(
-              1,
-              Math.max(0, Number(gameplay.coin?.current) || 0) / cost,
-            ),
-      actionLabel: 'level up',
-      enabled: Number(gameplay.coin?.current) >= cost,
-      notification: Number(gameplay.coin?.current) >= cost,
-      semanticId: 'workshop.levelUp',
-      tutorialId: 'workshop:levelUp',
-      onActivate: () => actions.completeTaskLevel?.(),
     };
   }
 
@@ -485,19 +472,22 @@ export class PixiViewModelFactory {
     gameplay = {},
     selectedTabId = 'currencies',
     onSelectTab = null,
+    pageStates = null,
   ) {
-    const safeTabId = BAG_TABS.some((tab) => tab.id === selectedTabId)
+    const visibleTabs = getVisibleBagTabs(pageStates);
+    const safeTabId = visibleTabs.some((tab) => tab.id === selectedTabId)
       ? selectedTabId
       : 'currencies';
     return {
-      title: 'bag',
+      title: 'Bag',
       selectedTabId: safeTabId,
       onSelectTab:
         typeof onSelectTab === 'function'
           ? (tabId) => onSelectTab(tabId)
           : null,
-      tabs: BAG_TABS.map((tab) => ({
-        ...tab,
+      tabs: visibleTabs.map((tab) => ({
+        id: tab.id,
+        label: tab.label,
         selected: tab.id === safeTabId,
       })),
       rows:
@@ -516,7 +506,7 @@ export class PixiViewModelFactory {
       ? selectedTabId
       : 'seeds';
     return {
-      title: 'stats',
+      title: 'Stats',
       selectedTabId: safeTabId,
       onSelectTab:
         typeof onSelectTab === 'function'
@@ -530,32 +520,104 @@ export class PixiViewModelFactory {
     };
   }
 
-  createSummonInfoDialog(gameplay = {}) {
+  createSummonInfoDialog(
+    gameplay = {},
+    selectedSeedKey = null,
+    actions = {},
+  ) {
     const auto = gameplay.seedSummoning?.autoSummoning ?? {};
+    const seeds = gameplay.seedSummoning?.dropChances ?? [];
+    const selectedSeed =
+      seeds.find((seed) => seed.key === selectedSeedKey) ??
+      seeds[0] ??
+      null;
+    const selectedPreference = normalizeSeedDropPreference(
+      selectedSeed?.dropPreference,
+    );
     return {
-      title: 'summoning seeds',
-      rows: [
+      title: 'Summoning Seeds',
+      summaryRows: [
         {
           id: 'auto',
-          label: 'auto summon',
-          value: auto.unlocked
-            ? auto.enabled
-              ? 'on'
-              : 'off'
-            : 'locked',
+          label: 'Auto Summon',
+          value: auto.unlocked ? '' : 'Locked',
         },
         {
           id: 'reserve',
-          label: 'keep mana above',
+          label: 'Keep Mana Above',
           value: String(auto.manaReserve ?? 0),
+          valueIconResourceKey: 'mana',
         },
-        ...(gameplay.seedSummoning?.dropChances ?? []).map((seed) => ({
-          id: seed.key ?? seed.itemTypeId,
-          label: seed.label ?? seed.key,
-          value: `${formatPercent(seed.dropChance)} · ${seed.dropPreference ?? 'medium'}`,
-          resourceKey: 'seed',
-        })),
+        ...(selectedSeed
+          ? [
+              {
+                id: 'selected',
+                label: toTitleCase(
+                  splitCamelCase(selectedSeed.label ?? selectedSeed.key),
+                ),
+                value: `${toTitleCase(selectedPreference)} · ${formatPercent(
+                  selectedSeed.dropChance,
+                )}`,
+                valueTone: SEED_DROP_VALUE_TONES[selectedPreference],
+                itemKind: 'seed',
+                itemKey: selectedSeed.key,
+                iconLeading: true,
+              },
+            ]
+          : []),
       ],
+      settingsToggle: auto.unlocked
+        ? {
+            value: auto.enabled !== false,
+            enabled: true,
+            onChange: () => actions.toggleSummonAutomation?.(),
+          }
+        : null,
+      manaSlider: {
+        mode: 'range',
+        min: 0,
+        max: Math.max(0, Number(auto.maxManaReserve) || 5_000),
+        step: Math.max(1, Number(auto.reserveStep) || 1),
+        value: Math.max(0, Number(auto.manaReserve) || 0),
+        tone: 'blue',
+        enabled: auto.unlocked === true,
+        onChange: (value) => actions.setSummonManaReserve?.(value),
+      },
+      dropSlider: selectedSeed
+        ? {
+            mode: 'milestones',
+            value: selectedPreference,
+            enabled: true,
+            options: SEED_DROP_SLIDER_OPTIONS.map((option) => ({
+              ...option,
+              enabled: true,
+            })),
+            onChange: (preference) =>
+              actions.setSummonDropPreference?.(
+                selectedSeed.key,
+                preference,
+              ),
+          }
+        : null,
+      actions: [],
+      items: seeds.map((seed) => ({
+        id: seed.key ?? seed.itemTypeId,
+        label: toTitleCase(splitCamelCase(seed.label ?? seed.key)),
+        detail: `${formatPercent(seed.dropChance)} Chance`,
+        value: toTitleCase(
+          normalizeSeedDropPreference(seed.dropPreference),
+        ),
+        valueTone:
+          SEED_DROP_VALUE_TONES[
+            normalizeSeedDropPreference(seed.dropPreference)
+          ],
+        itemKind: 'seed',
+        itemKey: seed.key,
+        resourceKey: 'seed',
+        selected: seed === selectedSeed,
+        semanticId: `workshop.summonInfo.seed.${seed.key ?? seed.itemTypeId}`,
+        action: () => actions.selectSummonSeed?.(seed.key),
+      })),
     };
   }
 
@@ -577,12 +639,12 @@ export class PixiViewModelFactory {
   createInboxDialog(playerInbox = {}, actions = {}) {
     const mail = playerInbox.mail ?? [];
     return {
-      title: 'inbox',
+      title: 'Inbox',
       status:
         playerInbox.connected === false
           ? 'connecting...'
           : mail.length === 0
-            ? 'no mail'
+            ? 'No Mail'
             : '',
       rows: mail.map((message, index) => {
         const claimable =
@@ -643,7 +705,7 @@ export class PixiViewModelFactory {
           row.username ??
           row.name ??
           row.allianceName ??
-          'wizard',
+          'Wizard',
         value:
           row.roleLabel ??
           row.role ??
@@ -764,7 +826,7 @@ export class PixiViewModelFactory {
           (user, index) => ({
             id: `leaderboard:${user.identity ?? user.name ?? index}`,
             label: `${user.rank ?? index + 1}. ${
-              user.name ?? player.username ?? 'wizard'
+              user.name ?? player.username ?? 'Wizard'
             }`,
             value: String(user.points ?? 0),
           }),
@@ -789,7 +851,7 @@ export class PixiViewModelFactory {
         const body = message.body ?? message.message ?? '';
         return {
           id: message.id ?? message.messageId ?? index,
-          label: message.username ?? message.author ?? 'wizard',
+          label: message.username ?? message.author ?? 'Wizard',
           value: body,
           onActivate: () => actions.openPlayer?.(message),
         };
@@ -837,7 +899,7 @@ function formatLeaderboardUserLabel(user = {}, index = 0) {
   const allianceTag = String(
     user.allianceTag ?? user.alliance_tag ?? '',
   ).trim();
-  const name = user.name ?? user.username ?? 'wizard';
+  const name = user.name ?? user.username ?? 'Wizard';
   const level = Math.max(
     1,
     Math.floor(Number(user.playerLevel ?? user.player_level) || 1),
@@ -885,10 +947,7 @@ function getActiveQuestFraction(progress = {}) {
 function createTaskHelpCopy(tasks, completion) {
   const nextLevel =
     (completion.level ?? tasks.currentLevel ?? 0) + 1;
-  if (completion.canComplete) {
-    return `spend ${formatCoinPriceText(completion.costCoin ?? 0)} to reach level ${nextLevel}.`;
-  }
-  return `complete elara's requests one at a time to reach level ${nextLevel}. each request fills one level segment. turn-in requests consume items.`;
+  return `complete elara's requests one at a time to reach level ${nextLevel}. completing the final request advances the level automatically. turn-in requests consume items.`;
 }
 
 function createWorkshopFeatures({
@@ -971,7 +1030,7 @@ function createWorldChatPreview(worldChat = {}) {
     preview: messages
       .slice(-2)
       .map((message) => {
-        const name = message.username ?? message.author ?? 'wizard';
+        const name = message.username ?? message.author ?? 'Wizard';
         const body = message.body ?? message.message ?? '';
         return `${name}: ${body}`;
       })
@@ -1591,21 +1650,25 @@ function createCurrencyRows(gameplay) {
   return [
     {
       id: 'mana',
-      label: 'mana',
+      label: 'Mana',
       value: `${Math.floor(Number(gameplay.mana?.current) || 0)}/${Math.floor(
         Number(gameplay.mana?.cap) || 0,
       )}`,
       resourceKey: 'mana',
+      itemKind: 'resource',
+      itemKey: 'mana',
     },
     ...['coin', 'crystal', 'ruby', 'emerald']
       .filter((resource) => gameplay[resource])
       .map((resource) => ({
         id: resource,
-        label: resource,
+        label: toTitleCase(resource),
         value: String(
           Math.floor(Number(gameplay[resource]?.current) || 0),
         ),
         resourceKey: resource,
+        itemKind: 'resource',
+        itemKey: resource,
       })),
   ];
 }
@@ -1622,17 +1685,36 @@ function createBagItemRows(gameplay, tabId) {
           );
   return (items ?? []).map((item) => ({
     id: item.key ?? item.itemTypeId,
-    label: item.label ?? item.key,
+    label: toTitleCase(item.label ?? splitCamelCase(item.key)),
     value: String(Math.floor(Number(item.quantity) || 0)),
     resourceKey: singular,
+    itemKind: singular,
+    itemKey: item.key,
   }));
+}
+
+function getVisibleBagTabs(pageStates) {
+  if (!Array.isArray(pageStates)) {
+    return BAG_TABS;
+  }
+
+  const unlockedPageIds = new Set(
+    pageStates
+      .filter((page) => page?.unlocked === true)
+      .map((page) => page.id),
+  );
+
+  return BAG_TABS.filter(
+    (tab) =>
+      !tab.requiredPageId || unlockedPageIds.has(tab.requiredPageId),
+  );
 }
 
 function createStatsRows(stats = {}, tabId) {
   if (tabId === 'coin') {
     return Object.entries(stats.coin ?? {}).map(([key, value]) => ({
       id: key,
-      label: splitCamelCase(key),
+      label: toTitleCase(splitCamelCase(key)),
       value: formatCoinPriceText(value ?? 0),
       resourceKey: 'coin',
     }));
@@ -1647,12 +1729,14 @@ function createStatsRows(stats = {}, tabId) {
   return [
     {
       id: `${tabId}:total`,
-      label: 'total',
+      label: 'Total',
       value: String(Math.floor(Number(section.total) || 0)),
     },
     ...itemRows.map((item, index) => ({
       id: item.key ?? item.itemTypeId ?? index,
-      label: item.label ?? splitCamelCase(item.key) ?? 'unknown',
+      label: toTitleCase(
+        item.label ?? splitCamelCase(item.key) ?? 'unknown',
+      ),
       value: String(
         Math.floor(
           Number(item.total ?? item.quantity ?? item.value) || 0,
@@ -1671,9 +1755,23 @@ function splitCamelCase(value) {
     .toLowerCase();
 }
 
+function toTitleCase(value) {
+  return String(value ?? '')
+    .replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => (
+      `${prefix}${letter.toUpperCase()}`
+    ))
+    .replace(/\bNpc\b/g, 'NPC');
+}
+
 function formatPercent(value) {
   const percent = Math.max(0, Math.min(1, Number(value) || 0)) * 100;
   return `${Number(percent.toFixed(percent < 1 ? 2 : 1))}%`;
+}
+
+function normalizeSeedDropPreference(preference) {
+  return SEED_DROP_PREFERENCES.includes(preference)
+    ? preference
+    : 'medium';
 }
 
 function pluralize(count, word) {

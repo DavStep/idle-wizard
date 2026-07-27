@@ -215,7 +215,7 @@ export class TopPanelInboxManager {
   createEmptyRow() {
     const row = document.createElement('div');
     row.className = 'room-top-panel__inbox-empty';
-    row.textContent = 'no mail';
+    row.textContent = 'No Mail';
     return row;
   }
 

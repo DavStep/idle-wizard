@@ -509,7 +509,7 @@ export class ResearchBoxListManager {
         continue;
       }
 
-      button.textContent = tab.label;
+      button.textContent = formatResearchSectionTitle(tab.label);
       setSelectedTabState(button, selected, { tabIndex: true });
       setNotificationBadge(button, this.tabHasNotification(tab));
     }

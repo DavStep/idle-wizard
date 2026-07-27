@@ -16,6 +16,7 @@ import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -49,18 +50,10 @@ const RESOURCE_AMOUNT_PREFIX_PATTERN =
   /([+-]?(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?(?:\s*-\s*\d[\d,]*(?:\.\d+)?(?:[a-z])?)?)|(?:\d[\d,]*(?:\/\d[\d,]*)+)|\?)(?:\s*\/\s*(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?)|\?))?\s+)$/i;
 const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+(?:sphere|tonic)\b/i;
 
-const CARD_SOURCE_INSETS = Object.freeze({
-  top: 55,
-  right: 77,
-  bottom: 88,
-  left: 64,
-});
-const CARD_BORDER_INSETS = Object.freeze({
-  top: 55 / 3,
-  right: 77 / 3,
-  bottom: 88 / 3,
-  left: 64 / 3,
-});
+const CARD_SOURCE_INSETS =
+  PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets;
+const CARD_BORDER_INSETS =
+  PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets;
 const ART_SOURCE_INSETS = Object.freeze({
   top: 49,
   right: 50,
@@ -133,6 +126,7 @@ function normalizeStationTitleVariant(tabId) {
 export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   cardWidth: 1000 / 3,
   rowHeight: 80,
+  contentOffsetY: 3,
   rowGap: 5,
   categoryGap: 18,
   categoryTitleHeight: STATION_TITLE_HEIGHT,
@@ -176,7 +170,8 @@ const RESEARCH_ROW_TEXT = Object.freeze({
   valueFontSize: 12,
   timedValueFontSize: 10,
   valueLineHeight: 14,
-  buttonFontSize: 12,
+  researchedFontSize: 9,
+  researchedLineHeight: 11,
   buttonStrokeWidth: 3.5,
   costContentScale: 0.88,
 });
@@ -540,7 +535,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
   bindTab(button, tab) {
     button.applyTheme(this.theme);
     button.setModel({
-      label: tab.label ?? tab.id,
+      label: formatResearchTitle(tab.label ?? tab.id),
       selected: tab.id === this.selectedTabId,
       notification:
         tab.notification === true ||
@@ -927,7 +922,7 @@ class ResearchBoxWidget {
   }
 }
 
-class ResearchStationTitlePlaque {
+export class ResearchStationTitlePlaque {
   constructor({ assetManager }) {
     this.assetManager = assetManager;
     this.label = '';
@@ -1488,7 +1483,10 @@ class ResearchRowWidget {
       (geometry.cardWidth - geometry.valueWidth) / 2,
       geometry.rowHeight / 2,
     );
-    this.artWell.position.set(geometry.artX, geometry.artY);
+    this.artWell.position.set(
+      geometry.artX,
+      geometry.artY + geometry.contentOffsetY,
+    );
     this.artWell.setSize(
       geometry.artWidth,
       geometry.artHeight,
@@ -1496,19 +1494,25 @@ class ResearchRowWidget {
     );
     this.art.position.set(
       geometry.artX + (geometry.artWidth - geometry.artworkSize) / 2,
-      geometry.artY + (geometry.artHeight - geometry.artworkSize) / 2,
+      geometry.artY +
+        geometry.contentOffsetY +
+        (geometry.artHeight - geometry.artworkSize) / 2,
     );
     this.art.width = geometry.artworkSize;
     this.art.height = geometry.artworkSize;
-    this.name.position.set(geometry.nameX, geometry.nameY);
+    this.name.position.set(
+      geometry.nameX,
+      geometry.nameY + geometry.contentOffsetY,
+    );
     this.nameStars.position.set(
       Math.min(
         geometry.nameMaxWidth - this.nameStars.measuredWidth,
         geometry.nameX + this.name.width + 4,
       ),
-      geometry.nameY + 1,
+      geometry.nameY + geometry.contentOffsetY + 1,
     );
     fitResearchDescription(this.description, geometry);
+    this.description.y += geometry.contentOffsetY;
     this.rank.position.set(
       geometry.cardWidth - geometry.rankRight - geometry.rankWidth,
       0,
@@ -1525,6 +1529,7 @@ class ResearchRowWidget {
     this.costButton.setBounds(
       geometry.cardWidth - costRight - geometry.costWidth,
       geometry.actionTop +
+        geometry.contentOffsetY +
         (geometry.actionHeight - geometry.costHeight) / 2,
       geometry.costWidth,
       geometry.costHeight,
@@ -1532,6 +1537,7 @@ class ResearchRowWidget {
     this.researchedButton.setBounds(
       geometry.cardWidth - costRight - geometry.costWidth,
       geometry.actionTop +
+        geometry.contentOffsetY +
         (geometry.actionHeight - geometry.costHeight) / 2,
       geometry.costWidth,
       geometry.costHeight,
@@ -1540,7 +1546,10 @@ class ResearchRowWidget {
       geometry.cardWidth -
       geometry.actionRight -
       geometry.valueWidth / 2;
-    const valueCenterY = geometry.actionTop + geometry.actionHeight / 2;
+    const valueCenterY =
+      geometry.actionTop +
+      geometry.contentOffsetY +
+      geometry.actionHeight / 2;
     this.readonlyValue.position.set(valueCenterX, valueCenterY);
     this.readonlyStars.position.set(
       valueCenterX - this.readonlyStars.measuredWidth / 2,
@@ -1648,8 +1657,8 @@ class ResearchRowWidget {
     this.costButton.applyTheme(theme);
     this.researchedButton.applyTheme(theme);
     this.researchedButton.amountLabel
-      .setFontSize(RESEARCH_ROW_TEXT.buttonFontSize)
-      .setLineHeight(RESEARCH_ROW_TEXT.nameLineHeight)
+      .setFontSize(RESEARCH_ROW_TEXT.researchedFontSize)
+      .setLineHeight(RESEARCH_ROW_TEXT.researchedLineHeight)
       .setStroke({
         color: '#0a0a0a',
         width: RESEARCH_ROW_TEXT.buttonStrokeWidth,

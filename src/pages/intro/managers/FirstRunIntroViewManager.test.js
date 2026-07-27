@@ -27,6 +27,8 @@ describe('FirstRunIntroViewManager', () => {
     expect(
       manager.refs.advance.classList.contains('style-button--yellow'),
     ).toBe(true);
+    expect(manager.refs.title.textContent).toBe('After the War');
+    expect(manager.refs.advance.textContent).toBe('Next');
 
     manager.advance();
 

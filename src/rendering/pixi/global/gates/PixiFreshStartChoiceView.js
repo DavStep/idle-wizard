@@ -5,17 +5,23 @@ import {
   PixiModalSurface,
   PixiTextLabel,
 } from '../../primitives/index.js';
+import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
 
 const GUIDE_NAME = 'Elara Starbrew';
 const WELCOME_HEADING = 'Welcome to Idle Wizard';
+const FRESH_START_CONTENT_WIDTH = 240;
+const FRESH_START_CONTENT_HEIGHT = 192;
+const FRESH_START_COPY_X = 88;
+const FRESH_START_COPY_WIDTH =
+  FRESH_START_CONTENT_WIDTH - FRESH_START_COPY_X;
 
 export class PixiFreshStartChoiceView extends PixiModalSurface {
   constructor({ assets, inputRouter } = {}) {
     super({
       assetManager: assets,
       title: GUIDE_NAME,
-      contentWidth: 300,
-      contentHeight: 197,
+      contentWidth: FRESH_START_CONTENT_WIDTH,
+      contentHeight: FRESH_START_CONTENT_HEIGHT,
       opaqueBackdrop: true,
       inputRouter,
       modalId: 'gate.freshStartChoice',
@@ -27,38 +33,40 @@ export class PixiFreshStartChoiceView extends PixiModalSurface {
       roundPixels: true,
     });
     this.portrait.label = 'freshStartChoice:portrait';
-    fitSprite(this.portrait, 96, 125);
+    fitSprite(this.portrait, 84, 120);
     this.heading = new PixiTextLabel({
       text: WELCOME_HEADING,
       fontWeight: 'bold',
       wordWrap: true,
-      wrapWidth: 194,
+      wrapWidth: FRESH_START_COPY_WIDTH,
       label: 'freshStartChoice:heading',
     });
     this.message = new PixiTextLabel({
       text: 'do you already have an account?',
       wordWrap: true,
-      wrapWidth: 194,
+      wrapWidth: FRESH_START_COPY_WIDTH,
       label: 'freshStartChoice:message',
     });
     this.status = new PixiTextLabel({
       color: 'disabled',
       wordWrap: true,
-      wrapWidth: 194,
+      wrapWidth: FRESH_START_COPY_WIDTH,
       label: 'freshStartChoice:status',
     });
     this.connectButton = new PixiButton({
       assetManager: assets,
       inputRouter,
       text: 'connect account',
-      width: 300,
+      width: FRESH_START_CONTENT_WIDTH,
+      variant: 'yellow',
       label: 'freshStartChoice:connect',
     });
     this.freshButton = new PixiButton({
       assetManager: assets,
       inputRouter,
       text: 'start new',
-      width: 300,
+      width: FRESH_START_CONTENT_WIDTH,
+      variant: 'green',
       label: 'freshStartChoice:fresh',
     });
     this.panel.content.addChild(
@@ -100,13 +108,17 @@ export class PixiFreshStartChoiceView extends PixiModalSurface {
   }
 
   relayoutContent() {
-    this.portrait.position.set(48, 125);
-    this.heading.position.set(106, 45);
-    this.message.position.set(106, 68);
-    this.status.position.set(106, 98);
-    this.connectButton.position.set(0, 137);
-    this.freshButton.position.set(0, 171);
-    this.panel.setContentSize(300, 201);
+    this.portrait.position.set(42, 120);
+    this.heading.position.set(FRESH_START_COPY_X, 20);
+    this.message.position.set(FRESH_START_COPY_X, 47);
+    this.status.position.set(FRESH_START_COPY_X, 78);
+    this.connectButton.position.set(0, 128);
+    this.freshButton.position.set(0, 162);
+    this.panel.setContentBoxSize(
+      FRESH_START_CONTENT_WIDTH,
+      FRESH_START_CONTENT_HEIGHT,
+      PIXI_UI_GEOMETRY.dialogPadding,
+    );
     this.panel.pivot.set(this.panel.outerWidth / 2, this.panel.outerHeight / 2);
   }
 }

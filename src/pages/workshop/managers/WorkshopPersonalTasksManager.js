@@ -75,7 +75,7 @@ export class WorkshopPersonalTasksManager {
     this.refs.openLabel = document.createElement('span');
     this.refs.openLabel.className =
       'workshop-page__panel-button-label workshop-page__feature-character-label';
-    this.refs.openLabel.textContent = 'tasks';
+    this.refs.openLabel.textContent = 'Tasks';
 
     this.refs.openButton.append(
       createWorkshopCharacterPortrait(

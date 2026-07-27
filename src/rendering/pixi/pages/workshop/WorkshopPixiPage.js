@@ -15,7 +15,9 @@ import {
   isNotificationActive,
 } from '../../../../pages/shared/notificationTone.js';
 import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
+import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
+import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
@@ -23,6 +25,10 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import {
+  ShopDialogPixi,
+  WORKSHOP_SUMMON_INFO_DIALOG_ID,
+} from '../shop/ShopDialogPixi.js';
 import {
   BaseRetainedPixiPage,
   RETAINED_PAGE_GEOMETRY,
@@ -40,8 +46,8 @@ import {
 import { WorkshopDialogPixi } from './WorkshopDialogPixi.js';
 
 const WORKSHOP_DIALOGS = Object.freeze([
-  Object.freeze({ id: 'summonInfo', title: 'summoning seeds' }),
-  Object.freeze({ id: 'tasksInfo', title: "elara's request" }),
+  Object.freeze({ id: 'summonInfo', title: 'Summoning Seeds' }),
+  Object.freeze({ id: 'tasksInfo', title: "Elara's Request" }),
   Object.freeze({ id: 'bag', title: 'bag' }),
   Object.freeze({ id: 'stats', title: 'stats' }),
   Object.freeze({ id: 'inbox', title: 'inbox' }),
@@ -54,11 +60,11 @@ const WORKSHOP_DIALOGS = Object.freeze([
 ]);
 
 const DEFAULT_FEATURES = Object.freeze([
-  Object.freeze({ id: 'alliance', label: 'alliance', side: 'left', row: 1 }),
-  Object.freeze({ id: 'leaderboard', label: 'leaderboard', side: 'left', row: 2 }),
-  Object.freeze({ id: 'discoveries', label: 'discoveries', side: 'right', row: 2 }),
-  Object.freeze({ id: 'personalTasks', label: 'tasks', side: 'left', row: 3 }),
-  Object.freeze({ id: 'worldEvent', label: 'event', side: 'right', row: 3 }),
+  Object.freeze({ id: 'alliance', label: 'Alliance', side: 'left', row: 1 }),
+  Object.freeze({ id: 'leaderboard', label: 'Leaderboard', side: 'left', row: 2 }),
+  Object.freeze({ id: 'discoveries', label: 'Discoveries', side: 'right', row: 2 }),
+  Object.freeze({ id: 'personalTasks', label: 'Tasks', side: 'left', row: 3 }),
+  Object.freeze({ id: 'worldEvent', label: 'Event', side: 'right', row: 3 }),
 ]);
 
 const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
@@ -68,7 +74,7 @@ const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
   }),
   leaderboard: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopLeaderboard,
-    scale: 1.35,
+    scale: 1.2,
   }),
   discoveries: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopDiscoveries,
@@ -98,6 +104,11 @@ const SUMMON_EFFECT_DURATION_MS = 520;
 const SIDE_CONTROLS_TASK_GAP = 8;
 const SIDE_PANEL_FIRST_ROW_GAP = 25;
 const SIDE_PANEL_ROW_GAP = 52.25;
+const WORKSHOP_REQUEST_TEXT_FILL = '#ffffff';
+const WORKSHOP_REQUEST_TEXT_STROKE_WIDTH = 2;
+const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
+const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
+const WORKSHOP_SIDE_LABEL_STROKE_WIDTH = 2;
 const SUMMON_EFFECT_FRAMES = Object.freeze([
   Object.freeze({ progress: 0, alpha: 0.84, scale: 1 }),
   Object.freeze({ progress: 0.32, alpha: 1, scale: 1.045 }),
@@ -148,7 +159,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       page: this,
       assetManager: this.assetManager,
       id: 'bag',
-      label: 'bag',
+      label: 'Bag',
       side: 'left',
       textureId: PIXI_ROOT_RUN_ASSETS.workshopBag,
       onActivate: () => this.openDialog('bag'),
@@ -157,14 +168,15 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       page: this,
       assetManager: this.assetManager,
       id: 'inbox',
-      label: 'inbox',
+      label: 'Inbox',
       side: 'right',
       textureId: PIXI_ROOT_RUN_ASSETS.workshopInbox,
+      scale: 1.3,
       onActivate: () => this.openDialog('inbox'),
     });
     this.statsButton = new RetainedButton({
       assetManager: this.assetManager,
-      label: 'stats',
+      label: 'Stats',
       buttonLabel: 'workshop-stats',
       inputRouter: this.inputRouter,
       onActivate: () => this.openDialog('stats'),
@@ -241,17 +253,29 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       this.dialogRegistry.register(
         dialogId,
         () =>
-          new WorkshopDialogPixi({
-            dialogId,
-            parent: this.dialogLayer,
-            assetManager: this.assetManager,
-            semanticTargets: this.semanticTargets,
-            inputRouter: this.inputRouter,
-            textEntryService: this.textEntryService,
-            counters,
-            onClose: () => this.dialogRegistry.close(dialogId),
-            theme: this.theme,
-          }),
+          dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID
+            ? new ShopDialogPixi({
+                dialogId,
+                parent: this.dialogLayer,
+                assetManager: this.assetManager,
+                semanticRegistry: this.semanticTargets,
+                inputRouter: this.inputRouter,
+                textEntryService: this.textEntryService,
+                counters,
+                onClose: () => this.dialogRegistry.close(dialogId),
+                theme: this.theme,
+              })
+            : new WorkshopDialogPixi({
+                dialogId,
+                parent: this.dialogLayer,
+                assetManager: this.assetManager,
+                semanticTargets: this.semanticTargets,
+                inputRouter: this.inputRouter,
+                textEntryService: this.textEntryService,
+                counters,
+                onClose: () => this.dialogRegistry.close(dialogId),
+                theme: this.theme,
+              }),
       );
     }
   }
@@ -269,7 +293,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       info: () => this.openDialog('summonInfo'),
     });
     this.bagButton.setModel({
-      label: 'bag',
+      label: 'Bag',
       enabled: workshop.bag?.enabled !== false,
       visible: workshop.bag?.visible !== false,
       notification: workshop.bag?.notification === true,
@@ -280,7 +304,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     );
     const inbox = workshop.inbox ?? providedFeatures.get('inbox') ?? {};
     this.inboxButton.setModel({
-      label: inbox.label ?? 'inbox',
+      label: inbox.label ?? 'Inbox',
       enabled: inbox.enabled !== false,
       visible: inbox.visible !== false,
       notification: inbox.notification === true,
@@ -288,7 +312,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       action: () => inbox.onActivate?.() ?? this.openDialog('inbox'),
     });
     this.statsButton.setModel({
-      label: 'stats',
+      label: 'Stats',
       enabled: workshop.stats?.enabled !== false,
       notification: workshop.stats?.notification === true,
       action: () => workshop.stats?.onActivate?.() ?? this.openDialog('stats'),
@@ -485,7 +509,7 @@ class WorkshopTaskPanel {
     this.page = page;
     this.panel = new RetainedPanel({
       assetManager,
-      label: "elara's request",
+      label: "Elara's Request",
       panelLabel: 'workshop-tasks',
     });
     this.root = this.panel.root;
@@ -561,7 +585,7 @@ class WorkshopTaskPanel {
 
   bind(model) {
     this.model = model ?? {};
-    this.panel.setTitle(this.model.title ?? "elara's request");
+    this.panel.setTitle(this.model.title ?? "Elara's Request");
     setText(this.next, this.model.nextText ?? this.model.next ?? '');
     setText(
       this.rewards,
@@ -641,13 +665,21 @@ class WorkshopTaskPanel {
 
   applyTheme(theme) {
     this.panel.applyTheme(theme);
-    applyTextTheme(this.next, theme, {
+    applyWorkshopRequestTextTheme(
+      this.panel.title,
+      theme,
+      RETAINED_TEXT_STYLES.bold,
+    );
+    applyWorkshopRequestTextTheme(this.next, theme, {
       ...RETAINED_TEXT_STYLES.body,
-      fill: theme.muted,
       wordWrapWidth: 308,
     });
-    applyTextTheme(this.rewardsTitle, theme, RETAINED_TEXT_STYLES.bold);
-    applyTextTheme(this.rewards, theme, {
+    applyWorkshopRequestTextTheme(
+      this.rewardsTitle,
+      theme,
+      RETAINED_TEXT_STYLES.bold,
+    );
+    applyWorkshopRequestTextTheme(this.rewards, theme, {
       ...RETAINED_TEXT_STYLES.body,
       wordWrapWidth: 308,
     });
@@ -695,6 +727,7 @@ class WorkshopTaskRow {
       assetManager,
       buttonLabel: 'workshop-task-action',
       inputRouter: this.page.inputRouter,
+      variant: 'yellow',
     });
     this.progress = new RetainedProgressBar({
       label: 'workshop-task-progress',
@@ -765,13 +798,22 @@ class WorkshopTaskRow {
   setBounds(x, y, width) {
     this.root.position.set(x, y);
     const iconSize = 16;
-    this.icon.position.set(iconSize / 2, 9);
-    this.icon.width = iconSize;
-    this.icon.height = iconSize;
-    this.iconOverlay.position.set(iconSize / 2, 9 - iconSize * 0.035);
-    this.iconOverlay.width = iconSize * 0.44;
-    this.iconOverlay.height = iconSize * 0.44;
-    this.iconOverlay.rotation = (6 * Math.PI) / 180;
+    if (this.iconOverlay.visible) {
+      layoutPixiSeedPackIcon({
+        base: this.icon,
+        item: this.iconOverlay,
+        x: iconSize / 2,
+        y: 9,
+        width: iconSize,
+        height: iconSize,
+        fitPositionX: 0,
+      });
+    } else {
+      this.icon.position.set(iconSize / 2, 9);
+      this.icon.width = iconSize;
+      this.icon.height = iconSize;
+      this.iconOverlay.rotation = 0;
+    }
     this.label.position.set(this.icon.visible ? iconSize + 3 : 0, 1);
     this.value.position.set(width - (this.action.root.visible ? 64 : 0), 1);
     this.action.setBounds(width - 58, 0, 58, 20);
@@ -789,14 +831,14 @@ class WorkshopTaskRow {
 
   applyTheme(theme) {
     const color = this.model?.disabled ? theme.disabled : theme.text;
-    applyTextTheme(this.label, theme, {
+    applyWorkshopRequestTextTheme(this.label, theme, {
       ...RETAINED_TEXT_STYLES.body,
-      fill: color,
+      fill: this.model?.disabled ? color : WORKSHOP_REQUEST_TEXT_FILL,
       wordWrapWidth: 190,
     });
-    applyTextTheme(this.value, theme, {
+    applyWorkshopRequestTextTheme(this.value, theme, {
       ...RETAINED_TEXT_STYLES.body,
-      fill: color,
+      fill: this.model?.disabled ? color : WORKSHOP_REQUEST_TEXT_FILL,
     });
     this.action.applyTheme(theme);
     this.progress.applyTheme(theme);
@@ -841,19 +883,18 @@ class WorkshopSummonControl {
     this.assetManager = assetManager;
     this.theme = page.theme;
     this.root = new Container({ label: 'workshop-summon' });
-    this.root.eventMode = 'static';
-    this.root.cursor = 'pointer';
+    this.root.eventMode = 'passive';
     this.circle = new Sprite(Texture.EMPTY);
     this.circle.label = 'workshop-summon-circle';
     this.circle.anchor.set(0.5);
-    this.plate = new RetainedPanel({
+    this.button = new PixiCostButton({
       assetManager,
-      panelLabel: 'workshop-summon-label',
+      width: 92,
+      height: 52,
+      stacked: true,
+      tone: 'blue',
+      label: 'workshop-summon-button',
     });
-    this.label = createText('summon seed', RETAINED_TEXT_STYLES.bold);
-    this.label.anchor.set(0.5, 0);
-    this.cost = createText('', RETAINED_TEXT_STYLES.tiny);
-    this.cost.anchor.set(0.5, 0);
     this.info = new PixiInfoButton({
       assetManager,
       label: 'workshop-summon-info',
@@ -862,8 +903,7 @@ class WorkshopSummonControl {
     });
     this.notification = new PixiNotificationBadge();
     this.notification.root.label = 'workshop-summon-notification';
-    this.plate.body.addChild(this.label, this.cost);
-    this.root.addChild(this.circle, this.plate.root, this.info);
+    this.root.addChild(this.circle, this.button, this.info);
     this.pointerId = null;
     this.holdTriggered = false;
     this.holdTimer = null;
@@ -888,14 +928,19 @@ class WorkshopSummonControl {
       this.scheduleHold();
     };
     this.handlePointerDown = (event) => {
+      this.button.setPressed(true);
       this.beginHold(event.pointerId);
     };
     this.handlePointerEnd = (event) => {
+      this.button.setPressed(false, {
+        confirmed: event.type === 'pointerup',
+      });
       if (event.pointerId === this.pointerId) {
         this.stopHold();
       }
     };
-    this.handlePressChange = (pressed) => {
+    this.handlePressChange = (pressed, context) => {
+      this.button.setPressed(pressed, context);
       if (pressed) {
         this.beginHold('router');
       } else {
@@ -911,8 +956,10 @@ class WorkshopSummonControl {
     };
     this.inputRegistration = this.page.inputRouter?.registerPressTarget?.({
       id: createRetainedInputId('workshop-summon'),
-      displayObject: this.root,
+      displayObject: this.button,
       enabled: () => this.enabled,
+      visible: () => this.button.visible && this.button.renderable,
+      fallbackHitTest: true,
       excludePageSwipe: true,
       onActivate: this.handleTap,
       onPressChange: this.handlePressChange,
@@ -920,11 +967,11 @@ class WorkshopSummonControl {
     this.usesDirectInput = !this.inputRegistration;
 
     if (this.usesDirectInput) {
-      this.root.on('pointerdown', this.handlePointerDown);
-      this.root.on('pointerup', this.handlePointerEnd);
-      this.root.on('pointerupoutside', this.handlePointerEnd);
-      this.root.on('pointercancel', this.handlePointerEnd);
-      this.root.on('pointertap', this.handleTap);
+      this.button.on('pointerdown', this.handlePointerDown);
+      this.button.on('pointerup', this.handlePointerEnd);
+      this.button.on('pointerupoutside', this.handlePointerEnd);
+      this.button.on('pointercancel', this.handlePointerEnd);
+      this.button.on('pointertap', this.handleTap);
     }
   }
 
@@ -932,15 +979,17 @@ class WorkshopSummonControl {
     this.model = model;
     this.actions = actions;
     this.enabled = model.enabled ?? model.canSummon ?? true;
-    setText(
-      this.label,
+    const actionLabel =
       model.label ??
-        (finiteOr(model.quantity, 1) > 1
-          ? `summon x${finiteOr(model.quantity, 1)}`
-          : 'summon seed'),
-    );
-    setText(this.cost, model.costLabel ?? `${finiteOr(model.cost, 0)} mana`);
-    this.root.cursor = this.enabled ? 'pointer' : 'default';
+      (finiteOr(model.quantity, 1) > 1
+        ? `Summon x${finiteOr(model.quantity, 1)}`
+        : 'Summon Seed');
+    this.button.setModel({
+      actionLabel,
+      amount: finiteOr(model.cost, 0),
+      resource: 'mana',
+      enabled: this.enabled,
+    });
     this.info.setModel({
       enabled: model.infoEnabled !== false,
       action: () => this.actions?.info?.(),
@@ -951,12 +1000,12 @@ class WorkshopSummonControl {
         model.notification,
         model.notificationTone,
       ),
-      parent: this.plate.root,
+      parent: this.button,
       bounds: {
         x: 0,
         y: 0,
-        width: 96,
-        height: 36,
+        width: 92,
+        height: 52,
       },
     });
     this.applyTheme(this.page.theme);
@@ -964,20 +1013,16 @@ class WorkshopSummonControl {
 
   setBounds(centerX, centerY) {
     this.root.position.set(centerX, centerY);
-    this.root.hitArea = new Rectangle(-98, -60, 196, 100);
     this.circleBaseWidth = 196;
     this.circleBaseHeight = 196 * (592 / 1374);
     this.circle.position.set(0, -60 + this.circleBaseHeight / 2);
     this.setCircleEffectFrame({ alpha: this.enabled ? 1 : 0.38, scale: 1 });
-    this.plate.setBounds(-48, -17, 96, 36);
-    this.notification.root.position.set(96, 0);
-    this.label.position.set(48, 3);
-    this.cost.position.set(48, 18);
+    this.button.setBounds(-46, -26, 92, 52);
     this.info.setBounds(60, -50, 18, 18);
     this.page.registerSemanticTarget({
       semanticId: 'workshop.summon',
       tutorialId: this.model?.tutorialId ?? 'workshop:summonSeed',
-      displayObject: this.plate.root,
+      displayObject: this.button,
       state: () => ({
         enabled: this.enabled,
         interactive: true,
@@ -998,12 +1043,7 @@ class WorkshopSummonControl {
 
   applyTheme(theme) {
     this.theme = theme;
-    this.plate.applyTheme(theme);
-    applyTextTheme(this.label, theme, RETAINED_TEXT_STYLES.bold);
-    applyTextTheme(this.cost, theme, {
-      ...RETAINED_TEXT_STYLES.tiny,
-      fill: theme.resourceColors?.mana ?? theme.text,
-    });
+    this.button.applyTheme(theme);
     this.notification.applyTheme(theme);
 
     if (
@@ -1014,8 +1054,6 @@ class WorkshopSummonControl {
     }
 
     this.circle.alpha = this.enabled ? 1 : 0.38;
-    this.label.alpha = this.enabled ? 1 : 0.55;
-    this.cost.alpha = this.enabled ? 1 : 0.55;
   }
 
   scheduleHold() {
@@ -1118,16 +1156,16 @@ class WorkshopSummonControl {
     this.inputRegistration = null;
 
     if (this.usesDirectInput) {
-      this.root.off('pointerdown', this.handlePointerDown);
-      this.root.off('pointerup', this.handlePointerEnd);
-      this.root.off('pointerupoutside', this.handlePointerEnd);
-      this.root.off('pointercancel', this.handlePointerEnd);
-      this.root.off('pointertap', this.handleTap);
+      this.button.off('pointerdown', this.handlePointerDown);
+      this.button.off('pointerup', this.handlePointerEnd);
+      this.button.off('pointerupoutside', this.handlePointerEnd);
+      this.button.off('pointercancel', this.handlePointerEnd);
+      this.button.off('pointertap', this.handleTap);
     }
 
     this.notification.destroy();
     this.info.destroy();
-    this.plate.destroy();
+    this.button.destroy();
     this.root.destroy({ children: true });
   }
 }
@@ -1140,6 +1178,7 @@ class WorkshopIconPanelAction {
     label,
     side,
     textureId,
+    scale = 1,
     onActivate,
   }) {
     this.page = page;
@@ -1147,6 +1186,7 @@ class WorkshopIconPanelAction {
     this.id = id;
     this.side = side === 'right' ? 'right' : 'left';
     this.textureId = textureId;
+    this.iconScale = finiteOr(scale, 1);
     this.activation = onActivate;
     this.enabled = true;
     this.visible = true;
@@ -1214,7 +1254,7 @@ class WorkshopIconPanelAction {
     this.root.renderable = this.visible;
     this.root.eventMode = this.enabled && this.visible ? 'static' : 'none';
     this.root.cursor = this.enabled && this.visible ? 'pointer' : 'default';
-    setText(this.label, label);
+    setText(this.label, capitalizeInitial(label));
     this.icon.alpha = this.enabled ? 1 : 0.55;
     this.label.alpha = this.enabled ? 1 : 0.55;
     this.notification.bind(`workshop.${this.id}`, {
@@ -1266,7 +1306,9 @@ class WorkshopIconPanelAction {
       1,
       Number(this.icon.texture?.orig?.height ?? this.icon.texture?.height) || 1,
     );
-    const fit = Math.min(frameWidth / textureWidth, frameHeight / textureHeight);
+    const fit =
+      Math.min(frameWidth / textureWidth, frameHeight / textureHeight) *
+      this.iconScale;
     this.icon.width = textureWidth * fit;
     this.icon.height = textureHeight * fit;
     this.icon.position.set(frameWidth / 2, frameHeight / 2);
@@ -1287,11 +1329,12 @@ class WorkshopIconPanelAction {
     applyTextTheme(this.label, theme, {
       fontSize: 8.8,
       lineHeight: 11.2,
-      fill: this.enabled ? theme.text : theme.disabled,
+      fill: WORKSHOP_SIDE_LABEL_FILL,
     });
     this.label.style.stroke = {
-      color: theme.surface,
-      width: 2,
+      color: WORKSHOP_SIDE_LABEL_STROKE,
+      width: WORKSHOP_SIDE_LABEL_STROKE_WIDTH,
+      join: 'round',
     };
     this.notification.applyTheme(theme);
   }
@@ -1385,7 +1428,7 @@ class WorkshopFeatureButton {
     this.side = model.side === 'right' ? 'right' : 'left';
     this.label.anchor.set(this.side === 'right' ? 1 : 0, 0);
     this.timer.anchor.set(this.side === 'right' ? 1 : 0, 0);
-    setText(this.label, model.label ?? model.id);
+    setText(this.label, capitalizeInitial(model.label ?? model.id));
     setText(this.timer, model.timer ?? '');
     this.timer.visible = this.timer.text.length > 0;
     this.resolvePresentation();
@@ -1483,12 +1526,14 @@ class WorkshopFeatureButton {
     applyTextTheme(this.label, theme, {
       fontSize: 8.8,
       lineHeight: 11.2,
-      fill: this.model?.enabled === false ? theme.disabled : theme.text,
+      fill: WORKSHOP_SIDE_LABEL_FILL,
     });
     this.label.style.stroke = {
-      color: theme.surface,
-      width: 2,
+      color: WORKSHOP_SIDE_LABEL_STROKE,
+      width: WORKSHOP_SIDE_LABEL_STROKE_WIDTH,
+      join: 'round',
     };
+    this.label.alpha = this.model?.enabled === false ? 0.55 : 1;
     applyTextTheme(this.timer, theme, {
       fontSize: 7.15,
       lineHeight: 9.1,
@@ -1641,6 +1686,29 @@ function defaultRequestFrame(callback) {
     return globalThis.requestAnimationFrame(callback);
   }
   return globalThis.setTimeout(() => callback(defaultTimeSource()), 16);
+}
+
+function capitalizeInitial(value) {
+  const label = String(value ?? '');
+  return label.length > 0
+    ? `${label.charAt(0).toUpperCase()}${label.slice(1)}`
+    : label;
+}
+
+function applyWorkshopRequestTextTheme(
+  text,
+  theme,
+  style = RETAINED_TEXT_STYLES.body,
+) {
+  applyTextTheme(text, theme, {
+    ...style,
+    fill: style.fill ?? WORKSHOP_REQUEST_TEXT_FILL,
+  });
+  text.style.stroke = {
+    color: theme.surface,
+    width: WORKSHOP_REQUEST_TEXT_STROKE_WIDTH,
+    join: 'round',
+  };
 }
 
 function defaultCancelFrame(frame) {

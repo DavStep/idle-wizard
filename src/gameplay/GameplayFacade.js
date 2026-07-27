@@ -253,9 +253,10 @@ export class GameplayFacade {
     this.playerLevelFacade.applyRuntimeConfig(snapshot);
 
     if (this.initialized) {
+      const taskLevelCompletion = this.completeReadyTaskLevels({ announce: false });
       this.syncPlayerLevelManaEffects();
       const backfilledCrystal = this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
-      if (backfilledCrystal > 0) {
+      if (backfilledCrystal > 0 || taskLevelCompletion?.advanced) {
         this.persistenceFacade.save();
       }
     }
@@ -332,12 +333,12 @@ export class GameplayFacade {
     const backfilledCrystal = this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
     this.syncPlayerLevelManaEffects();
     this.tasksFacade.syncCurrentLevelStateRequirements();
-    const startingLevelCompletion = loaded
-      ? this.completeStartingLevelIfReady({ announce: false })
+    const taskLevelCompletion = loaded
+      ? this.completeReadyTaskLevels({ announce: false })
       : null;
     if (loaded) {
       this.applyOfflineTimerCatchup(ecsFacade);
-      if (backfilledCrystal > 0 || startingLevelCompletion?.advanced) {
+      if (backfilledCrystal > 0 || taskLevelCompletion?.advanced) {
         this.persistenceFacade.save();
       }
     }
@@ -420,7 +421,7 @@ export class GameplayFacade {
     const result = this.tasksFacade.fillTask(taskId);
     if (result.ok && result.completed) {
       this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS, 1);
-      this.completeStartingLevelIfReady();
+      this.completeReadyTaskLevels();
     }
     this.publishAndSaveSnapshot();
     return result;
@@ -430,45 +431,37 @@ export class GameplayFacade {
     const result = this.tasksFacade.completeTask(taskId);
     if (result.ok) {
       this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS, 1);
-      this.completeStartingLevelIfReady();
+      this.completeReadyTaskLevels();
     }
     this.publishAndSaveSnapshot();
     return result;
   }
 
-  completeStartingLevelIfReady({ announce = true } = {}) {
-    const completion = this.tasksFacade.getCurrentLevelCompletionSnapshot();
+  recordTaskAction(action, { announce = true } = {}) {
+    const result = this.tasksFacade.recordAction(action);
 
-    if (completion.level !== 0 || !completion.canComplete) {
-      return null;
+    if (result.updates?.some((update) => update.completed)) {
+      this.completeReadyTaskLevels({ announce });
     }
 
-    const result = this.tasksFacade.completeCurrentLevel();
-    this.applyTaskLevelCompletion(result, { announce });
     return result;
   }
 
-  completeTaskLevel() {
-    const completion = this.tasksFacade.getCurrentLevelCompletionSnapshot();
+  completeReadyTaskLevels({ announce = true } = {}) {
+    let latestCompletion = null;
 
-    if (!completion.canComplete) {
-      this.publishAndSaveSnapshot();
-      return {
-        ok: false,
-        reason: completion.completedAllLevels
-          ? 'all_levels_completed'
-          : completion.atMaxLevel
-            ? 'max_level'
-            : 'tasks_incomplete',
-        ...completion,
-      };
+    while (this.tasksFacade.getCurrentLevelCompletionSnapshot().canComplete) {
+      const result = this.tasksFacade.completeCurrentLevel();
+
+      if (!result.ok || !result.advanced) {
+        break;
+      }
+
+      this.applyTaskLevelCompletion(result, { announce });
+      latestCompletion = result;
     }
 
-    const result = this.tasksFacade.completeCurrentLevel();
-    this.applyTaskLevelCompletion(result);
-
-    this.publishAndSaveSnapshot();
-    return result;
+    return latestCompletion;
   }
 
   applyTaskLevelCompletion(result, { announce = true } = {}) {
@@ -671,7 +664,7 @@ export class GameplayFacade {
   }
 
   handleResearchComplete({ researchId, label, actionType = 'research' }) {
-    this.tasksFacade.recordAction({
+    this.recordTaskAction({
       type: 'research',
       researchId,
       quantity: 1,
@@ -689,12 +682,19 @@ export class GameplayFacade {
   }
 
   handleSeedSummoned(result) {
+    let completedRequest = false;
+
     for (const seedCount of result.seedCounts ?? []) {
-      this.tasksFacade.recordAction({
+      const taskResult = this.tasksFacade.recordAction({
         type: 'summon',
         itemKey: seedCount.seed?.key,
         quantity: seedCount.quantity,
       });
+      completedRequest ||= taskResult.updates?.some((update) => update.completed) === true;
+    }
+
+    if (completedRequest) {
+      this.completeReadyTaskLevels();
     }
     this.statsFacade.recordSeedsGenerated(result.seedCounts ?? []);
     this.whileAwayReportFacade.recordSeedSummoned(result);
@@ -718,7 +718,7 @@ export class GameplayFacade {
   }
 
   handleBrewComplete(event) {
-    this.tasksFacade.recordAction({
+    this.recordTaskAction({
       type: 'brew',
       itemKey: event.potion?.key,
       quantity: event.quantity,
@@ -740,7 +740,7 @@ export class GameplayFacade {
   }
 
   handleGardenHarvestComplete(event) {
-    this.tasksFacade.recordAction({
+    this.recordTaskAction({
       type: 'grow',
       itemKey: event.herb?.key,
       quantity: event.quantity,
@@ -770,7 +770,7 @@ export class GameplayFacade {
   }
 
   handleItemSold(event) {
-    this.tasksFacade.recordAction({
+    this.recordTaskAction({
       type: 'sell',
       itemKey: event.item?.key,
       quantity: event.quantity ?? 1,
@@ -1702,13 +1702,13 @@ export class GameplayFacade {
       : 0;
     this.syncPlayerLevelManaEffects();
     this.tasksFacade.syncCurrentLevelStateRequirements();
-    const startingLevelCompletion = loaded
-      ? this.completeStartingLevelIfReady({ announce: false })
+    const taskLevelCompletion = loaded
+      ? this.completeReadyTaskLevels({ announce: false })
       : null;
 
     if (loaded) {
       this.applyOfflineTimerCatchup(ecsFacade);
-      if (backfilledCrystal > 0 || startingLevelCompletion?.advanced) {
+      if (backfilledCrystal > 0 || taskLevelCompletion?.advanced) {
         this.persistenceFacade.save();
       }
     }

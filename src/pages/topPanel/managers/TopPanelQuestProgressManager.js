@@ -210,8 +210,8 @@ export class TopPanelQuestProgressManager {
     }
 
     if (
-      previous.activeQuest?.kind === 'levelUp' &&
-      current.targetLevel !== previous.targetLevel
+      previous.activeQuest?.kind === 'task' &&
+      current.targetLevel > previous.targetLevel
     ) {
       return 1;
     }

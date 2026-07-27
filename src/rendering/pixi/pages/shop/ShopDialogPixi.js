@@ -19,21 +19,27 @@ import {
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
-import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
-import { PixiScrollView } from '../../primitives/PixiScrollView.js';
+import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
+import {
+  RootRunSettingsSliderPixi,
+  RootRunSettingsTogglePixi,
+} from '../../primitives/PixiSettingsControls.js';
+import { PixiResourceLabel } from '../../primitives/PixiResourceLabel.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_PROGRESS_VISUALS,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
   RetainedButton,
+  RetainedScrollArea,
 } from '../workshop/RetainedPageKit.js';
 
 export const SHOP_DIALOG_IDS = Object.freeze({
@@ -46,6 +52,8 @@ export const SHOP_DIALOG_IDS = Object.freeze({
   SUPPORT: 'shop.support',
 });
 
+export const WORKSHOP_SUMMON_INFO_DIALOG_ID = 'workshop.summonInfo';
+
 const AMOUNT_DELTAS = Object.freeze([-100, -10, -1, 1, 10, 100]);
 const DEFAULT_DIALOG_WIDTH = 304;
 const WIDE_DIALOG_WIDTH = 344;
@@ -56,21 +64,41 @@ const TAB_HEIGHT = 28;
 const TAB_GAP = 3;
 const CONTENT_GAP = 6;
 const LIST_OVERSCAN = 2;
-const STALL_SECTION_GAP = 8;
-const STALL_SELECTION_HEIGHT = 84;
-const STALL_SELECTION_STATUS_HEIGHT = 100;
+const SETTINGS_SECTION_GAP = 8;
+const STALL_RANGE_HORIZONTAL_OUTSET = 8;
+const STALL_RANGE_Y = 31;
+const STALL_RANGE_ACTION_GAP = 8;
+const STALL_ACTION_HEIGHT = 26;
+const STALL_ACTIONS_Y =
+  STALL_RANGE_Y +
+  PIXI_ROOT_RUN_GEOMETRY.settings.knobSize +
+  STALL_RANGE_ACTION_GAP;
+const STALL_SELECTION_BOTTOM_PADDING = 6;
+const STALL_SELECTION_HEIGHT =
+  STALL_ACTIONS_Y +
+  STALL_ACTION_HEIGHT +
+  STALL_SELECTION_BOTTOM_PADDING;
 const STALL_ITEM_ICON_SIZE = 28;
 const STALL_SELECTED_CHECK_SIZE = 18;
-const SEED_PACK_ITEM_SCALE = 0.44;
-const SEED_PACK_ITEM_VERTICAL_SHIFT = 0.07;
-const SEED_PACK_ITEM_ROTATION = (6 * Math.PI) / 180;
 
 const DIALOG_CONFIG = Object.freeze({
   [SHOP_DIALOG_IDS.STALL]: Object.freeze({
-    title: 'load stall',
+    title: 'Load Stall',
     width: DEFAULT_DIALOG_WIDTH,
     height: DEFAULT_DIALOG_HEIGHT,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    splitPaper: Object.freeze({
+      selectionHeight: STALL_SELECTION_HEIGHT,
+      selectionStatusHeight:
+        STALL_SELECTION_HEIGHT + PIXI_UI_GEOMETRY.rowMinHeight,
+      summaryY: 5,
+      summaryPitch: 22,
+      rangeY: STALL_RANGE_Y,
+      rangeHorizontalOutset: STALL_RANGE_HORIZONTAL_OUTSET,
+      actionsY: STALL_ACTIONS_Y,
+      actionHeight: STALL_ACTION_HEIGHT,
+      statusY: STALL_ACTIONS_Y + STALL_ACTION_HEIGHT + 3,
+    }),
   }),
   [SHOP_DIALOG_IDS.LEDGER]: Object.freeze({
     title: 'market ledger',
@@ -107,6 +135,27 @@ const DIALOG_CONFIG = Object.freeze({
     width: DEFAULT_DIALOG_WIDTH,
     height: 126,
     rowHeight: 34,
+  }),
+  [WORKSHOP_SUMMON_INFO_DIALOG_ID]: Object.freeze({
+    title: 'Summoning Seeds',
+    width: DEFAULT_DIALOG_WIDTH,
+    height: 382,
+    rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    actionVariant: 'brown-dark',
+    selectedActionVariant: 'brown-light',
+    splitPaper: Object.freeze({
+      selectionHeight: 126,
+      selectionStatusHeight: 142,
+      summaryY: 4,
+      summaryPitch: 20,
+      summaryYs: Object.freeze([4, 31, 70]),
+      toggleY: 2,
+      manaSliderY: 48,
+      dropSliderY: 91,
+      actionsY: 0,
+      actionHeight: 26,
+      statusY: 119,
+    }),
   }),
 });
 
@@ -147,6 +196,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.sourceHeight = PIXI_UI_GEOMETRY.sourceHeight;
     this.model = normalizeDialogModel(dialogId, {});
     this.modalHandle = null;
+    this.buttonSemanticTargets = new Map();
 
     this.backdrop = new Graphics();
     this.backdrop.label = `${dialogId}:backdrop`;
@@ -160,7 +210,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.backdropRegistration =
       inputRouter?.registerPressTarget?.(this.backdrop, {
         enabled: () => this.active,
-        onActivate: () => this.onClose?.(),
+        onActivate: (payload) => this.activateBackdrop(payload),
         haptic: false,
         sound: false,
       }) ?? null;
@@ -181,8 +231,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       config.height - PIXI_UI_GEOMETRY.dialogPadding * 2,
       PIXI_UI_GEOMETRY.dialogPadding,
     );
-    const usesSplitPaperSections =
-      dialogId === SHOP_DIALOG_IDS.STALL;
+    const usesSplitPaperSections = Boolean(config.splitPaper);
     this.panel.paperFrame.visible = !usesSplitPaperSections;
     this.panel.paperFrame.renderable = !usesSplitPaperSections;
     this.body = this.panel.content;
@@ -219,7 +268,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       textEntryService,
       label: `${dialogId}:amount`,
     });
-    this.rangeControl = new ShopRangeControl({
+    this.rangeControl = new RootRunSettingsSliderPixi({
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -229,6 +278,27 @@ export class ShopDialogPixi extends BasePixiRetainedView {
           ? 'shop:sell:percentage'
           : null,
       label: `${dialogId}:range`,
+    });
+    this.settingsToggle = new RootRunSettingsTogglePixi({
+      assetManager,
+      inputRouter,
+      semanticRegistry,
+      semanticId: `${dialogId}.autoToggle`,
+      label: `${dialogId}:autoToggle`,
+    });
+    this.manaSettingsSlider = new RootRunSettingsSliderPixi({
+      assetManager,
+      inputRouter,
+      semanticRegistry,
+      semanticId: `${dialogId}.manaReserve`,
+      label: `${dialogId}:manaReserve`,
+    });
+    this.dropSettingsSlider = new RootRunSettingsSliderPixi({
+      assetManager,
+      inputRouter,
+      semanticRegistry,
+      semanticId: `${dialogId}.dropRate`,
+      label: `${dialogId}:dropRate`,
     });
     this.fields = [
       new DialogField({
@@ -254,7 +324,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       semanticRegistry,
       counters,
       rowHeight: config.rowHeight,
-      useSettingsRows: dialogId === SHOP_DIALOG_IDS.STALL,
+      useSettingsRows: usesSplitPaperSections,
       label: `${dialogId}:list`,
     });
 
@@ -289,7 +359,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
           assetManager,
           inputRouter,
           buttonLabel: `${dialogId}:action`,
-          variant: 'yellow',
+          variant: config.actionVariant ?? 'yellow',
         }),
       reset: (button) =>
         button.setModel({ label: '', enabled: false }),
@@ -303,13 +373,20 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       keyOf: (action, index) => action.id ?? index,
       bind: (button, action) => {
         button.applyTheme(this.contentTheme ?? this.theme);
+        button.variant =
+          action.selected === true && this.config.selectedActionVariant
+            ? this.config.selectedActionVariant
+            : this.config.actionVariant ?? 'yellow';
         button.setModel({
           label: action.label ?? action.text ?? '',
+          selected: action.selected === true,
           enabled:
             action.enabled !== false && action.disabled !== true,
           notification: action.notification === true,
           action: action.action ?? action.onActivate,
         });
+        button.redraw();
+        this.registerButtonSemanticTarget(button, action);
       },
       afterReconcile: (buttons) => orderChildren(this.actionLayer, buttons),
     });
@@ -345,6 +422,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
           enabled: tab.enabled !== false && tab.disabled !== true,
           action: tab.action ?? tab.onSelect,
         });
+        this.registerButtonSemanticTarget(button, tab);
       },
       afterReconcile: (buttons) => orderChildren(this.tabLayer, buttons),
     });
@@ -355,6 +433,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       this.summaryLayer,
       this.messageLabel,
       this.rangeControl,
+      this.settingsToggle,
+      this.manaSettingsSlider,
+      this.dropSettingsSlider,
       this.amountSelector.root,
       this.fieldLayer,
       this.list.root,
@@ -379,10 +460,14 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.statusLabel.setText(this.model.status ?? '');
     this.statusLabel.visible = Boolean(this.model.status);
     this.summaryRows.reconcile(this.model.summaryRows);
+    this.clearButtonSemanticTargets();
     this.actions.reconcile(this.model.actions);
     this.tabs.reconcile(this.model.tabs);
     this.list.setItems(this.model.items);
     this.rangeControl.bind(this.model.range);
+    this.settingsToggle.bind(this.model.settingsToggle);
+    this.manaSettingsSlider.bind(this.model.manaSlider);
+    this.dropSettingsSlider.bind(this.model.dropSlider);
     this.amountSelector.bind(this.model.amount);
 
     this.fields.forEach((field, index) => {
@@ -412,6 +497,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.statusLabel?.applyTheme(contentTheme);
     this.amountSelector?.applyTheme(contentTheme);
     this.rangeControl?.applyTheme(contentTheme);
+    this.settingsToggle?.applyTheme(contentTheme);
+    this.manaSettingsSlider?.applyTheme(contentTheme);
+    this.dropSettingsSlider?.applyTheme(contentTheme);
     this.list?.applyTheme(contentTheme);
 
     for (const field of this.fields ?? []) {
@@ -494,8 +582,8 @@ export class ShopDialogPixi extends BasePixiRetainedView {
 
     const bodyWidth = this.panel.contentBoxWidth;
     const bodyHeight = this.panel.contentBoxHeight;
-    if (this.dialogId === SHOP_DIALOG_IDS.STALL) {
-      this.relayoutStall(bodyWidth, bodyHeight);
+    if (this.config.splitPaper) {
+      this.relayoutSplitSettings(bodyWidth, bodyHeight);
       this.relayoutTabs(panelHeight);
       this.redrawBackdrop();
       return;
@@ -578,20 +666,21 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.redrawBackdrop();
   }
 
-  relayoutStall(bodyWidth, bodyHeight) {
+  relayoutSplitSettings(bodyWidth, bodyHeight) {
+    const splitPaper = this.config.splitPaper;
     const statusHeight = this.statusLabel.visible
       ? PIXI_UI_GEOMETRY.rowMinHeight
       : 0;
     const selectionHeight = statusHeight > 0
-      ? STALL_SELECTION_STATUS_HEIGHT
-      : STALL_SELECTION_HEIGHT;
+      ? splitPaper.selectionStatusHeight
+      : splitPaper.selectionHeight;
     const paperOutsets = resolveDialogPaperOutsets(
       this.panel.contentInsets,
     );
     const itemY =
       selectionHeight +
       paperOutsets.bottom +
-      STALL_SECTION_GAP +
+      SETTINGS_SECTION_GAP +
       paperOutsets.top;
     const itemHeight = Math.max(0, bodyHeight - itemY);
     const contentX = 0;
@@ -626,20 +715,65 @@ export class ShopDialogPixi extends BasePixiRetainedView {
 
     const summaryRows = this.summaryRows?.getWidgets?.() ?? [];
     summaryRows.forEach((row, index) => {
+      const rowY = splitPaper.summaryYs?.[index];
       row.setBounds(
         contentX,
-        5 + index * 22,
+        Number.isFinite(rowY)
+          ? rowY
+          : splitPaper.summaryY + index * splitPaper.summaryPitch,
         contentWidth,
-        22,
+        splitPaper.summaryPitch,
       );
     });
 
-    if (this.rangeControl.visible) {
+    if (
+      this.rangeControl.visible &&
+      Number.isFinite(splitPaper.rangeY)
+    ) {
+      const horizontalOutset = Math.max(
+        0,
+        finiteOr(splitPaper.rangeHorizontalOutset, 0),
+      );
       this.rangeControl.setBounds(
-        contentX,
-        31,
-        contentWidth,
+        contentX - horizontalOutset,
+        splitPaper.rangeY,
+        contentWidth + horizontalOutset * 2,
         16,
+      );
+    }
+
+    if (
+      this.settingsToggle.visible &&
+      Number.isFinite(splitPaper.toggleY)
+    ) {
+      const toggleWidth = 79;
+      this.settingsToggle.setBounds(
+        contentX + contentWidth - toggleWidth,
+        splitPaper.toggleY,
+        toggleWidth,
+        24,
+      );
+    }
+    if (
+      this.manaSettingsSlider.visible &&
+      Number.isFinite(splitPaper.manaSliderY)
+    ) {
+      this.manaSettingsSlider.setBounds(
+        contentX,
+        splitPaper.manaSliderY,
+        contentWidth,
+        PIXI_ROOT_RUN_GEOMETRY.settings.knobSize,
+      );
+    }
+    if (
+      this.dropSettingsSlider.visible &&
+      Number.isFinite(splitPaper.dropSliderY)
+    ) {
+      this.dropSettingsSlider.setBounds(
+        contentX,
+        splitPaper.dropSliderY,
+        contentWidth,
+        PIXI_ROOT_RUN_GEOMETRY.settings.knobSize,
       );
     }
 
@@ -647,9 +781,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     layoutButtons(
       actionButtons,
       contentX,
-      52,
+      splitPaper.actionsY,
       contentWidth,
-      26,
+      splitPaper.actionHeight,
       5,
     );
 
@@ -659,7 +793,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
           contentX,
           (bodyWidth - this.statusLabel.measuredWidth) / 2,
         ),
-        81,
+        splitPaper.statusY,
       );
     }
 
@@ -701,11 +835,95 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       .fill({ color: this.theme.backdrop, alpha: 0.78 });
   }
 
+  activateBackdrop(payload = {}) {
+    if (this.isPointInsidePanel(payload.point)) {
+      return false;
+    }
+    return this.onClose?.() ?? true;
+  }
+
+  isPointInsidePanel(point) {
+    if (
+      !this.panel?.toLocal ||
+      !Number.isFinite(point?.x) ||
+      !Number.isFinite(point?.y)
+    ) {
+      return false;
+    }
+
+    const localPoint = this.panel.toLocal(point);
+    const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
+    const shellLeft = -geometry.frameOutset;
+    const shellTop =
+      -geometry.frameOutset - geometry.titleOverhang;
+    const shellRight = this.panel.coreWidth + geometry.frameOutset;
+    const shellBottom =
+      this.panel.coreHeight + geometry.frameOutset;
+
+    return (
+      localPoint.x >= shellLeft &&
+      localPoint.x <= shellRight &&
+      localPoint.y >= shellTop &&
+      localPoint.y <= shellBottom
+    );
+  }
+
+  registerButtonSemanticTarget(button, model) {
+    button.control?.registration?.update?.({
+      fallbackHitTest: Boolean(model.tutorialId),
+    });
+
+    const semanticId = model.semanticId ?? null;
+    if (!semanticId || !this.semanticRegistry) {
+      return;
+    }
+
+    const displayObject = button.root;
+    const definition = this.semanticRegistry.register({
+      semanticId,
+      tutorialId: model.tutorialId ?? null,
+      displayObject,
+      state: () => ({
+        enabled: button.enabled,
+        interactive: Boolean(button.activation),
+        selected: button.selected,
+        visible:
+          this.active &&
+          displayObject.visible &&
+          displayObject.renderable,
+      }),
+      activate: (payload) => button.handleTap(payload),
+    });
+    this.buttonSemanticTargets.set(semanticId, {
+      definition,
+      displayObject,
+    });
+  }
+
+  clearButtonSemanticTargets() {
+    for (const [semanticId, target] of this.buttonSemanticTargets) {
+      this.semanticRegistry?.unregister?.(semanticId, {
+        displayObject: target.displayObject,
+      });
+    }
+    this.buttonSemanticTargets.clear();
+
+    for (const button of [
+      ...(this.actions?.getWidgets?.() ?? []),
+      ...(this.tabs?.getWidgets?.() ?? []),
+    ]) {
+      button.control?.registration?.update?.({
+        fallbackHitTest: false,
+      });
+    }
+  }
+
   onDestroy() {
     this.modalHandle?.unregister?.();
     this.modalHandle = null;
     this.backdropRegistration?.();
     this.backdropRegistration = null;
+    this.clearButtonSemanticTargets();
     this.summaryRows.destroy();
     this.summaryPool.destroy();
     this.actions.destroy();
@@ -715,6 +933,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.list.destroy();
     this.amountSelector.destroy();
     this.rangeControl.destroy();
+    this.settingsToggle.destroy();
+    this.manaSettingsSlider.destroy();
+    this.dropSettingsSlider.destroy();
     for (const field of this.fields) {
       field.destroy();
     }
@@ -736,6 +957,14 @@ class DialogSummaryRow {
       anchor: { x: 1, y: 0 },
       label: `${label}:value`,
     });
+    this.valueResource = new PixiResourceLabel({
+      assetManager,
+      resource: 'mana',
+      includeResourceName: false,
+      label: `${label}:valueResource`,
+    });
+    this.valueResource.visible = false;
+    this.valueResource.renderable = false;
     this.quantityLabel = new PixiTextLabel({
       anchor: { x: 1, y: 0 },
       label: `${label}:quantity`,
@@ -747,6 +976,7 @@ class DialogSummaryRow {
     this.root.addChild(
       this.keyLabel,
       this.valueLabel,
+      this.valueResource,
       this.quantityLabel,
       this.itemIcon,
       this.itemIconOverlay,
@@ -775,6 +1005,19 @@ class DialogSummaryRow {
     this.root.renderable = true;
     this.keyLabel.setText(row.label ?? row.keyText ?? '');
     this.valueLabel.setText(row.value ?? row.valueText ?? '');
+    const valueIconResourceKey = row.valueIconResourceKey ?? null;
+    const hasValueResource = Boolean(valueIconResourceKey);
+    this.valueLabel.visible = !hasValueResource;
+    this.valueLabel.renderable = !hasValueResource;
+    this.valueResource.visible = hasValueResource;
+    this.valueResource.renderable = hasValueResource;
+    if (hasValueResource) {
+      this.valueResource.bind(key, {
+        resource: valueIconResourceKey,
+        amount: row.value ?? row.valueText ?? '',
+        includeResourceName: false,
+      });
+    }
     this.quantityLabel.setText(row.quantityLabel ?? '');
     const iconFrames = resolveItemIconFrames(row);
     bindItemSprite(
@@ -796,6 +1039,8 @@ class DialogSummaryRow {
       resolveThemeColor(
         row.disabled
           ? 'disabled'
+          : row.valueTone
+            ? resolveProgressToneText(row.valueTone)
           : row.itemKind
             ? 'text'
             : row.valueResourceKey ?? 'text',
@@ -806,6 +1051,7 @@ class DialogSummaryRow {
     );
     this.action = row.action ?? row.onActivate ?? null;
     this.enabled = row.enabled !== false && row.disabled !== true;
+    this.iconLeading = row.iconLeading === true;
     this.root.eventMode = this.action && this.enabled ? 'static' : 'none';
     this.semanticId = row.semanticId ?? null;
     if (this.semanticId && this.semanticRegistry) {
@@ -831,9 +1077,15 @@ class DialogSummaryRow {
     this.keyLabel.position.set(0, textY);
     this.quantityLabel.position.set(width, textY);
     const quantityWidth = this.quantityLabel.measuredWidth;
+    const valueWidth = this.valueResource.visible
+      ? this.valueResource.measuredWidth
+      : this.valueLabel.measuredWidth;
+    if (this.valueResource.visible) {
+      this.valueResource.position.set(width - valueWidth, textY);
+    }
     if (this.itemIcon.visible) {
       const iconSize = 18;
-      const iconCenterX = 55;
+      const iconCenterX = this.iconLeading ? iconSize / 2 : 55;
       const iconCenterY = height / 2;
       setSeedPackCompositeBounds(
         this.itemIcon,
@@ -841,19 +1093,36 @@ class DialogSummaryRow {
         iconCenterX,
         iconCenterY,
         iconSize,
+        this.iconLeading ? 0 : 0.5,
       );
-      this.valueLabel.setAnchor(0, 0);
-      this.valueLabel.position.set(67, textY);
-      this.valueLabel.setWrapWidth(
-        Math.max(
-          0,
-          width -
-            67 -
-            quantityWidth -
-            PIXI_UI_GEOMETRY.rowColumnGap,
-        ),
-      );
-      this.keyLabel.setWrapWidth(46);
+      if (this.iconLeading) {
+        const labelX = iconSize + PIXI_UI_GEOMETRY.rowColumnGap;
+        this.keyLabel.position.set(labelX, textY);
+        this.keyLabel.setWrapWidth(
+          Math.max(
+            0,
+            width -
+              labelX -
+              valueWidth -
+              PIXI_UI_GEOMETRY.rowColumnGap,
+          ),
+        );
+        this.valueLabel.setAnchor(1, 0);
+        this.valueLabel.position.set(width, textY);
+      } else {
+        this.valueLabel.setAnchor(0, 0);
+        this.valueLabel.position.set(67, textY);
+        this.valueLabel.setWrapWidth(
+          Math.max(
+            0,
+            width -
+              67 -
+              quantityWidth -
+              PIXI_UI_GEOMETRY.rowColumnGap,
+          ),
+        );
+        this.keyLabel.setWrapWidth(46);
+      }
     } else {
       this.valueLabel.setAnchor(1, 0);
       this.valueLabel.position.set(
@@ -867,7 +1136,7 @@ class DialogSummaryRow {
         Math.max(
           0,
           width -
-            this.valueLabel.measuredWidth -
+            valueWidth -
             quantityWidth -
             PIXI_UI_GEOMETRY.rowColumnGap,
         ),
@@ -878,6 +1147,7 @@ class DialogSummaryRow {
   applyTheme(theme) {
     this.keyLabel.applyTheme(theme);
     this.valueLabel.applyTheme(theme);
+    this.valueResource.applyTheme(theme);
     this.quantityLabel.applyTheme(theme);
   }
 
@@ -885,7 +1155,10 @@ class DialogSummaryRow {
     this.unregisterSemantic();
     this.action = null;
     this.enabled = false;
+    this.iconLeading = false;
     this.key = null;
+    this.valueResource.visible = false;
+    this.valueResource.renderable = false;
     this.itemIcon.texture = Texture.EMPTY;
     this.itemIcon.visible = false;
     this.itemIconOverlay.texture = Texture.EMPTY;
@@ -1115,172 +1388,6 @@ class AmountSelectorPixi {
   }
 }
 
-class ShopRangeControl extends Container {
-  constructor({
-    assetManager,
-    inputRouter,
-    semanticRegistry,
-    semanticId,
-    tutorialId,
-    label,
-  }) {
-    super();
-    this.label = label;
-    this.controlWidth = 0;
-    this.controlHeight = 16;
-    this.value = 1;
-    this.enabled = true;
-    this.action = null;
-    this.progress = new PixiProgressBar({
-      assetManager,
-      tone: 'yellow',
-      label: `${label}:progress`,
-    });
-    this.knob = new Sprite({
-      texture:
-        assetManager?.getTexture?.(
-          PIXI_ROOT_RUN_ASSETS.settingsKnob,
-        ) ?? Texture.EMPTY,
-      anchor: 0.5,
-      roundPixels: true,
-      label: `${label}:knob`,
-    });
-    this.knob.width = PIXI_ROOT_RUN_GEOMETRY.settings.knobSize;
-    this.knob.height = PIXI_ROOT_RUN_GEOMETRY.settings.knobSize;
-    this.addChild(this.progress, this.knob);
-    this.inputRouter = inputRouter;
-    this.pressRegistration =
-      inputRouter?.registerPressTarget?.(this, {
-        enabled: () =>
-          this.enabled && this.visible && this.renderable,
-        onActivate: (payload) => this.setFromPayload(payload),
-        haptic: 'selection',
-      }) ?? null;
-    this.dragRegistration =
-      inputRouter?.registerGestureSurface?.(this, {
-        kind: 'drag',
-        axis: 'x',
-        enabled: () =>
-          this.enabled && this.visible && this.renderable,
-        onStart: (payload) => this.setFromPayload(payload),
-        onMove: (payload) => this.setFromPayload(payload),
-      }) ?? null;
-    this.semanticRegistry = semanticRegistry;
-    this.semanticId = semanticId;
-    this.semanticDefinition =
-      semanticRegistry?.register?.({
-        semanticId,
-        tutorialId,
-        displayObject: this,
-        state: () => ({
-          enabled: this.enabled,
-          interactive: true,
-          visible: this.visible && this.renderable,
-        }),
-        activate: (payload) => this.setFromPayload(payload),
-      }) ?? null;
-    this.bind(null);
-  }
-
-  bind(model) {
-    this.model = model;
-    this.visible = Boolean(model);
-    this.renderable = this.visible;
-    if (!model) {
-      this.enabled = false;
-      this.eventMode = 'none';
-      this.action = null;
-      return;
-    }
-    this.enabled = model.enabled !== false;
-    this.eventMode = this.enabled ? 'static' : 'none';
-    this.action = model.onChange ?? model.action ?? null;
-    const rawValue = Number(model.value ?? model.percent ?? 100);
-    this.value = clamp01(rawValue > 1 ? rawValue / 100 : rawValue);
-    this.redraw();
-  }
-
-  setBounds(x, y, width, height = 16) {
-    this.position.set(x, y);
-    this.controlWidth = width;
-    this.controlHeight = height;
-    const knobSize = PIXI_ROOT_RUN_GEOMETRY.settings.knobSize;
-    this.hitArea = new Rectangle(
-      0,
-      Math.min(0, (height - knobSize) / 2),
-      width,
-      Math.max(height, knobSize),
-    );
-    this.eventMode = this.enabled ? 'static' : 'none';
-    const railWidth = Math.max(0, width - knobSize);
-    this.progress.position.set(
-      knobSize / 2,
-      Math.round(
-        (height - PIXI_UI_GEOMETRY.progressTotalHeight) / 2,
-      ),
-    );
-    this.progress.setSize(
-      railWidth,
-      PIXI_UI_GEOMETRY.progressTotalHeight,
-    );
-    this.redraw();
-  }
-
-  setFromPayload(payload = {}) {
-    if (!this.enabled) {
-      return false;
-    }
-    let localX = finiteOr(payload.localX, Number.NaN);
-    if (!Number.isFinite(localX) && payload.global && this.toLocal) {
-      localX = this.toLocal(payload.global).x;
-    }
-    if (!Number.isFinite(localX)) {
-      localX = this.value * this.controlWidth;
-    }
-    const knobRadius =
-      PIXI_ROOT_RUN_GEOMETRY.settings.knobSize / 2;
-    const next = clamp01(
-      (localX - knobRadius) /
-        Math.max(1, this.controlWidth - knobRadius * 2),
-    );
-    this.value = Math.round(next * 20) / 20;
-    this.redraw();
-    return this.action?.(Math.round(this.value * 100)) ?? true;
-  }
-
-  applyTheme(theme) {
-    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.progress.applyTheme(this.theme);
-    this.redraw();
-  }
-
-  redraw() {
-    this.progress.setProgress(this.value);
-    const knobRadius =
-      PIXI_ROOT_RUN_GEOMETRY.settings.knobSize / 2;
-    const centerX =
-      knobRadius +
-      Math.max(0, this.controlWidth - knobRadius * 2) * this.value;
-    const centerY = this.controlHeight / 2;
-    this.knob.position.set(centerX, centerY);
-    this.knob.alpha = this.enabled ? 1 : 0.45;
-  }
-
-  destroy(options) {
-    this.pressRegistration?.();
-    this.dragRegistration?.();
-    this.pressRegistration = null;
-    this.dragRegistration = null;
-    if (this.semanticDefinition) {
-      this.semanticRegistry?.unregister?.(this.semanticId, {
-        displayObject: this,
-      });
-      this.semanticDefinition = null;
-    }
-    super.destroy(options);
-  }
-}
-
 class VirtualShopDialogList {
   constructor({
     assetManager,
@@ -1298,16 +1405,14 @@ class VirtualShopDialogList {
     this.items = [];
     this.visibleStart = 0;
     this.visibleEnd = 0;
-    this.scroll = new PixiScrollView({
-      assetManager,
+    this.contentPaddingTop = PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
+    this.scroll = new RetainedScrollArea({
       inputRouter,
-      width: 1,
-      height: 1,
-      contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
       label,
-      virtualize: () => this.renderWindow(),
+      onScroll: () => this.renderWindow(),
     });
-    this.root = this.scroll;
+    this.scroll.progressBar = null;
+    this.root = this.scroll.root;
     this.rowPool = new WidgetPool({
       name: `${label} viewport row pool`,
       counters,
@@ -1332,7 +1437,7 @@ class VirtualShopDialogList {
         widget.bind(entry.item.__virtualKey, entry.item);
         widget.setBounds(
           0,
-          entry.index * this.rowHeight,
+          this.contentPaddingTop + entry.index * this.rowHeight,
           this.width,
           this.rowHeight,
         );
@@ -1346,22 +1451,26 @@ class VirtualShopDialogList {
       ...item,
       __virtualKey: item.id ?? item.key ?? item.semanticId ?? index,
     }));
-    this.scroll.setContentHeight(this.items.length * this.rowHeight);
+    this.scroll.setContentHeight(
+      this.contentPaddingTop + this.items.length * this.rowHeight,
+    );
     this.renderWindow(true);
   }
 
   setBounds(x, y, width, height) {
-    this.root.position.set(x, y);
     this.width = Math.max(0, width);
     this.height = Math.max(0, height);
-    this.scroll.setViewportSize(this.width, this.height);
+    this.scroll.setBounds(x, y, this.width, this.height);
     this.renderWindow(true);
   }
 
   renderWindow(force = false) {
     const start = Math.max(
       0,
-      Math.floor(this.scroll.scrollY / this.rowHeight) - LIST_OVERSCAN,
+      Math.floor(
+        Math.max(0, this.scroll.offsetY - this.contentPaddingTop) /
+          this.rowHeight,
+      ) - LIST_OVERSCAN,
     );
     const visibleCount =
       Math.ceil(this.height / Math.max(1, this.rowHeight)) + LIST_OVERSCAN * 2;
@@ -1379,7 +1488,6 @@ class VirtualShopDialogList {
   }
 
   applyTheme(theme) {
-    this.scroll.applyTheme(theme);
     for (const row of this.rows.getWidgets()) {
       row.applyTheme(theme);
     }
@@ -1388,7 +1496,7 @@ class VirtualShopDialogList {
   destroy() {
     this.rows.destroy();
     this.rowPool.destroy();
-    this.scroll.destroy({ children: true });
+    this.scroll.destroy();
   }
 }
 
@@ -1474,6 +1582,9 @@ class VirtualShopDialogRow {
 
   bind(key, item) {
     this.unregisterSemantic();
+    this.registration?.update?.({
+      fallbackHitTest: Boolean(item.tutorialId),
+    });
     this.key = key;
     this.item = item;
     this.root.visible = true;
@@ -1521,6 +1632,8 @@ class VirtualShopDialogRow {
       resolveThemeColor(
         item.disabled
           ? 'disabled'
+          : item.valueTone
+            ? resolveProgressToneText(item.valueTone)
           : item.valueResourceKey ?? 'text',
       ),
     );
@@ -1600,6 +1713,7 @@ class VirtualShopDialogRow {
         iconCenterX,
         height / 2,
         STALL_ITEM_ICON_SIZE,
+        0,
       );
     }
     if (this.selectedIndicator.visible) {
@@ -1661,6 +1775,7 @@ class VirtualShopDialogRow {
 
   reset() {
     this.unregisterSemantic();
+    this.registration?.update?.({ fallbackHitTest: false });
     this.item = null;
     this.key = null;
     this.action = null;
@@ -1802,20 +1917,28 @@ function setItemSpriteBounds(sprite, x, y, size) {
   sprite.height = size;
 }
 
-function setSeedPackCompositeBounds(base, overlay, x, y, size) {
-  setItemSpriteBounds(base, x, y, size);
+function setSeedPackCompositeBounds(
+  base,
+  overlay,
+  x,
+  y,
+  size,
+  fitPositionX = 0.5,
+) {
   if (!overlay.visible) {
+    setItemSpriteBounds(base, x, y, size);
     overlay.rotation = 0;
     return;
   }
-  const overlaySize = size * SEED_PACK_ITEM_SCALE;
-  setItemSpriteBounds(
-    overlay,
+  layoutPixiSeedPackIcon({
+    base,
+    item: overlay,
     x,
-    y - overlaySize * SEED_PACK_ITEM_VERTICAL_SHIFT,
-    overlaySize,
-  );
-  overlay.rotation = SEED_PACK_ITEM_ROTATION;
+    y,
+    width: size,
+    height: size,
+    fitPositionX,
+  });
 }
 
 function resolveItemIconFrames(model = {}) {
@@ -1890,6 +2013,10 @@ function resolveThemeColor(token) {
     theme?.text;
 }
 
-function clamp01(value) {
-  return Math.max(0, Math.min(1, Number(value) || 0));
+function resolveProgressToneText(tone) {
+  return (
+    PIXI_PROGRESS_VISUALS.tones[tone]?.text ??
+    PIXI_PROGRESS_VISUALS.tones[tone]?.fill ??
+    tone
+  );
 }

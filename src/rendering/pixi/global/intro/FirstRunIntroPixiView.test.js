@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
 import {
+  FIRST_RUN_INTRO_PIXI_ASSETS,
+  FIRST_RUN_INTRO_PIXI_GEOMETRY,
   FirstRunIntroPixiPresenter,
   FirstRunIntroPixiView,
 } from './FirstRunIntroPixiView.js';
@@ -29,18 +31,37 @@ describe('FirstRunIntroPixiView', () => {
 
     expect(view.panel).toBeInstanceOf(PixiFrame);
     expect(view.panel.shadowEnabled).toBe(false);
-    expect(view.title.text).toBe('after the war');
+    expect(view.panel.assetManager.getTexture).toHaveBeenCalledWith(
+      FIRST_RUN_INTRO_PIXI_ASSETS.panel,
+    );
+    expect(view.title.text).toBe('After the War');
+    expect(view.title.textObject.style.fill).toBe('#ffffff');
+    expect(view.title.position).toMatchObject({
+      x: FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingX,
+      y: FIRST_RUN_INTRO_PIXI_GEOMETRY.panelTitleY,
+    });
+    expect(view.copy.textObject.style.fill).toBe('#ffffff');
     expect(view.advanceButton.variant).toBe('yellow');
+    expect(view.advanceButton.buttonWidth).toBe(
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.nextButtonWidth,
+    );
+    expect(view.advanceButton.x).toBe(
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.sourceWidth -
+        FIRST_RUN_INTRO_PIXI_GEOMETRY.panelLeft -
+        FIRST_RUN_INTRO_PIXI_GEOMETRY.panelRight -
+        FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingX -
+        FIRST_RUN_INTRO_PIXI_GEOMETRY.nextButtonWidth,
+    );
     expect(view.advanceButton.rootRunFrame.visible).toBe(true);
     expect(view.copy.text).toBe(
-      "one last battle at the demon lord's keep.",
+      "One last battle at the demon lord's keep.",
     );
-    expect(view.advanceButton.textLabel.text).toBe('next');
+    expect(view.advanceButton.textLabel.text).toBe('Next');
     expect(view.backdrops.castle.visible).toBe(true);
 
     presenter.advance();
     expect(view.copy.text).toBe(
-      'the demon lord has been defeated.',
+      'The demon lord has been defeated.',
     );
     expect(view.defeated.visible).toBe(true);
 
@@ -48,8 +69,11 @@ describe('FirstRunIntroPixiView', () => {
     presenter.advance();
     expect(view.copy.text).toContain('old workshop');
     expect(view.sale.visible).toBe(true);
+    expect(view.advanceButton.buttonWidth).toBe(
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.longActionButtonWidth,
+    );
     expect(view.advanceButton.textLabel.text).toBe(
-      'enter workshop',
+      'Enter workshop',
     );
     presenter.advance();
 
@@ -73,7 +97,7 @@ describe('FirstRunIntroPixiView', () => {
     presenter.advance();
     ticker.tick(180);
     expect(view.copy.text).toBe(
-      'the demon lord has been defeated.',
+      'The demon lord has been defeated.',
     );
     expect(ticker.handlers.size).toBe(1);
 
@@ -103,7 +127,7 @@ describe('FirstRunIntroPixiView', () => {
 
     ticker.tick(90);
     expect(view.copy.text).toBe(
-      'the demon lord has been defeated.',
+      'The demon lord has been defeated.',
     );
     expect(view.panel.alpha).toBe(1);
     expect(view.copy.alpha).toBe(1);
@@ -129,7 +153,7 @@ describe('FirstRunIntroPixiView', () => {
 function createAssets() {
   return {
     loaded: true,
-    getTexture: () => Texture.EMPTY,
+    getTexture: vi.fn(() => Texture.EMPTY),
   };
 }
 

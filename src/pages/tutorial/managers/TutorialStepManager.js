@@ -45,7 +45,6 @@ const LEVEL_TWO_STEP_IDS = [
   'earn-tutorial-coin',
   'first-sale-complete',
   'unselect-sage-seed-sale',
-  'level-up-two',
 ];
 
 const LEVEL_THREE_STEP_IDS = [
@@ -54,7 +53,6 @@ const LEVEL_THREE_STEP_IDS = [
   'first-research-complete',
   'fill-mint-seed-task',
   'fill-sage-seed-task',
-  'level-up-three',
 ];
 
 const LEVEL_FOUR_STEP_IDS = [
@@ -63,7 +61,6 @@ const LEVEL_FOUR_STEP_IDS = [
   'first-harvest-complete',
   'fill-sage-herb-task',
   'fill-mint-herb-task',
-  'level-up-four',
 ];
 
 const LEVEL_FIVE_STEP_IDS = [
@@ -90,16 +87,16 @@ const GARDENING_LESSON_STEP_IDS = LEVEL_FOUR_STEP_IDS;
 const BREWING_LESSON_STEP_IDS = LEVEL_FIVE_STEP_IDS;
 
 const LESSON_TITLE_BY_STEP_ID = new Map([
-  ...SEEDING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 1: introduction']),
-  ...MARKET_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 2: market']),
-  ...RESEARCH_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 3: research']),
-  ...GARDENING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 4: gardening']),
-  ...BREWING_LESSON_STEP_IDS.map((stepId) => [stepId, 'lesson 5: brewing']),
-  ['purchase-house', 'the story begins'],
-  ['intro-market', 'market opened'],
-  ['intro-research', 'research opened'],
-  ['intro-garden', 'garden opened'],
-  ['intro-brewing', 'brewing opened'],
+  ...SEEDING_LESSON_STEP_IDS.map((stepId) => [stepId, 'Lesson 1: Introduction']),
+  ...MARKET_LESSON_STEP_IDS.map((stepId) => [stepId, 'Lesson 2: Market']),
+  ...RESEARCH_LESSON_STEP_IDS.map((stepId) => [stepId, 'Lesson 3: Research']),
+  ...GARDENING_LESSON_STEP_IDS.map((stepId) => [stepId, 'Lesson 4: Gardening']),
+  ...BREWING_LESSON_STEP_IDS.map((stepId) => [stepId, 'Lesson 5: Brewing']),
+  ['purchase-house', 'The Story Begins'],
+  ['intro-market', 'Market Opened'],
+  ['intro-research', 'Research Opened'],
+  ['intro-garden', 'Garden Opened'],
+  ['intro-brewing', 'Brewing Opened'],
 ]);
 
 export const TUTORIAL_STEP_IDS = [
@@ -113,27 +110,27 @@ export const TUTORIAL_STEP_IDS = [
 const TUTORIAL_STEP_GROUPS = [
   {
     id: 'level-1',
-    label: 'level 1: introduction',
+    label: 'Level 1: Introduction',
     stepIds: LEVEL_ONE_STEP_IDS,
   },
   {
     id: 'level-2',
-    label: 'level 2: market',
+    label: 'Level 2: Market',
     stepIds: LEVEL_TWO_STEP_IDS,
   },
   {
     id: 'level-3',
-    label: 'level 3: research',
+    label: 'Level 3: Research',
     stepIds: LEVEL_THREE_STEP_IDS,
   },
   {
     id: 'level-4',
-    label: 'level 4: gardening',
+    label: 'Level 4: Gardening',
     stepIds: LEVEL_FOUR_STEP_IDS,
   },
   {
     id: 'level-5',
-    label: 'level 5: brewing',
+    label: 'Level 5: Brewing',
     stepIds: LEVEL_FIVE_STEP_IDS,
   },
 ];
@@ -534,36 +531,6 @@ export const TUTORIAL_STEPS = [
       getCurrentLevel(snapshot) >= 2 || hasLevelTwoSageTurnInTaskComplete(snapshot),
   },
   {
-    id: 'level-up-two',
-    kind: 'objective',
-    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
-    objectiveText: 'return to workshop and level up',
-    getTargetId: ({ currentPageId, dom }) => {
-      if (currentPageId !== 'workshop') {
-        return 'page:workshop';
-      }
-
-      return dom.isTasksExpanded() ? 'workshop:levelUp' : 'workshop:tasks';
-    },
-    getHintText: ({ currentPageId, dom, snapshot }) => {
-      if (currentPageId !== 'workshop') {
-        return 'open workshop';
-      }
-
-      return dom.isTasksExpanded() ? 'level up' : getOpenLevelRequirementsText(snapshot);
-    },
-    getProgress: ({ snapshot }) => ({
-      value: snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0,
-      max: 1,
-    }),
-    getProgressLabel: ({ snapshot }) =>
-      `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`,
-    isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 1 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 2,
-  },
-  {
     id: 'intro-garden',
     kind: 'dialog',
     targetId: 'page:garden',
@@ -954,66 +921,6 @@ export const TUTORIAL_STEPS = [
       !hasCompletedTaskForItem(snapshot, MINT_HERB_KEY),
     isComplete: ({ snapshot }) =>
       getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, MINT_HERB_KEY),
-  },
-  {
-    id: 'level-up-three',
-    kind: 'objective',
-    cueMode: 'passive',
-    objectiveText: 'level up again',
-    getTargetId: ({ currentPageId, dom }) => {
-      if (currentPageId !== 'workshop') {
-        return 'page:workshop';
-      }
-
-      return dom.isTasksExpanded() ? 'workshop:levelUp' : 'workshop:tasks';
-    },
-    getHintText: ({ currentPageId, dom, snapshot }) => {
-      if (currentPageId !== 'workshop') {
-        return 'open workshop';
-      }
-
-      return dom.isTasksExpanded() ? 'level up' : getOpenLevelRequirementsText(snapshot);
-    },
-    getProgress: ({ snapshot }) => ({
-      value: snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0,
-      max: 1,
-    }),
-    getProgressLabel: ({ snapshot }) =>
-      `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`,
-    isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 2 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 3,
-  },
-  {
-    id: 'level-up-four',
-    kind: 'objective',
-    cueMode: 'passive',
-    objectiveText: 'level up again',
-    getTargetId: ({ currentPageId, dom }) => {
-      if (currentPageId !== 'workshop') {
-        return 'page:workshop';
-      }
-
-      return dom.isTasksExpanded() ? 'workshop:levelUp' : 'workshop:tasks';
-    },
-    getHintText: ({ currentPageId, dom, snapshot }) => {
-      if (currentPageId !== 'workshop') {
-        return 'open workshop';
-      }
-
-      return dom.isTasksExpanded() ? 'level up' : getOpenLevelRequirementsText(snapshot);
-    },
-    getProgress: ({ snapshot }) => ({
-      value: snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0,
-      max: 1,
-    }),
-    getProgressLabel: ({ snapshot }) =>
-      `${snapshot?.tasks?.level?.completion?.canComplete ? 1 : 0}/1 ready`,
-    isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 3 &&
-      Boolean(snapshot?.tasks?.level?.completion?.canComplete),
-    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 4,
   },
   {
     id: 'research-mana-tonic',

@@ -1,5 +1,8 @@
 import { formatCoinPriceText } from '../../../../shared/coinPrice.js';
 import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
+import { ShopStallVisibilityManager } from '../../../../pages/shop/managers/ShopStallVisibilityManager.js';
+
+const stallVisibilityManager = new ShopStallVisibilityManager();
 
 const DEFAULT_CRYSTAL_OFFERS = Object.freeze([
   Object.freeze({
@@ -84,6 +87,7 @@ export function createShop(options = {}) {
 
   const stallModels = safeArray(shelf.slots).map((slot, index) =>
     createStallModel({
+      gameplaySnapshot,
       gameplayActions,
       index,
       shelf,
@@ -239,6 +243,7 @@ export function createShop(options = {}) {
 export const createShopPixiViewModel = createShop;
 
 function createStallModel({
+  gameplaySnapshot,
   gameplayActions,
   index,
   shelf,
@@ -267,11 +272,18 @@ function createStallModel({
   const selectedItem = safeArray(shelf.sellItems).find(
     (item) => item.itemTypeId === selectedItemTypeId,
   );
-  const selectedKind =
+  const visibleSellKinds = stallVisibilityManager.getVisibleSellKinds(
+    gameplaySnapshot,
+    safeArray(shelf.sellKinds),
+  );
+  const requestedKind =
     uiState.stallItemKindBySlot?.[slotNumber] ??
     selectedItem?.kind ??
-    safeArray(shelf.sellKinds)[0]?.kind ??
+    visibleSellKinds[0]?.kind ??
     null;
+  const selectedKind = visibleSellKinds.some((kind) => kind.kind === requestedKind)
+    ? requestedKind
+    : visibleSellKinds[0]?.kind ?? null;
   const draftAllocation = finiteNumber(
     uiState.stallAllocationPercentBySlot?.[slotNumber],
     Number.NaN,
@@ -330,6 +342,7 @@ function createStallModel({
     tutorialId: `shop:stand:${slotNumber}`,
     dialog: createStallDialog({
       allocationPercent,
+      gameplaySnapshot,
       gameplayActions,
       selectedItemTypeId,
       selectedKind,
@@ -337,12 +350,14 @@ function createStallModel({
       slot,
       slotNumber,
       uiActions,
+      visibleSellKinds,
     }),
   };
 }
 
 function createStallDialog({
   allocationPercent,
+  gameplaySnapshot,
   gameplayActions,
   selectedItemTypeId,
   selectedKind,
@@ -350,6 +365,7 @@ function createStallDialog({
   slot,
   slotNumber,
   uiActions,
+  visibleSellKinds,
 }) {
   const selectedItem = safeArray(shelf.sellItems).find(
     (item) => item.itemTypeId === selectedItemTypeId,
@@ -380,16 +396,17 @@ function createStallDialog({
     return callFirst(gameplayActions, methodNames, arguments_);
   };
   return {
-    title: 'load stall',
+    title: 'Load Stall',
     summaryRows: [
       {
         id: 'current',
-        label: 'current',
-        value:
+        label: 'Current',
+        value: toTitleCase(
           selectedItem?.label ??
-          slot.sellLabel ??
-          slot.futureItemLabel ??
-          'empty',
+            slot.sellLabel ??
+            slot.futureItemLabel ??
+            'empty',
+        ),
         valueResourceKey:
           selectedItem?.kind ??
           slot.sellKind ??
@@ -419,17 +436,22 @@ function createStallDialog({
         ),
     },
     items: safeArray(shelf.sellItems)
-      .filter((item) => !selectedKind || item.kind === selectedKind)
+      .filter(
+        (item) =>
+          (!selectedKind || item.kind === selectedKind) &&
+          stallVisibilityManager.isItemVisible(gameplaySnapshot, item),
+      )
       .map((item) => ({
         id: item.itemTypeId ?? item.key,
-        label: item.label,
-        detail: `${nonNegativeInteger(item.quantity)} available`,
+        label: toTitleCase(item.label),
+        detail: `${nonNegativeInteger(item.quantity)} Available`,
         value: '',
         itemKey: item.key,
         itemKind: item.kind,
         resourceKey: item.kind,
         selected: item.itemTypeId === selectedItemTypeId,
         semanticId: `shop.stall.${slotNumber}.item.${item.key ?? item.itemTypeId}`,
+        tutorialId: `shop:sell:${item.key ?? item.itemTypeId}`,
         action: () =>
           callFirst(
             uiActions,
@@ -440,7 +462,9 @@ function createStallDialog({
     actions: [
       {
         id: 'mark',
-        label: `mark x${targetQuantity}`,
+        label: `Mark x${targetQuantity}`,
+        semanticId: `shop.stall.${slotNumber}.mark`,
+        tutorialId: 'shop:sell:mark',
         enabled:
           Boolean(selectedItem) &&
           targetQuantity !== loadedQuantity,
@@ -461,7 +485,7 @@ function createStallDialog({
       },
       {
         id: 'clear',
-        label: 'clear',
+        label: 'Clear',
         enabled: Boolean(
           slot.sellItemTypeId ?? slot.futureItemTypeId,
         ),
@@ -483,8 +507,8 @@ function createStallDialog({
       {
         id: 'future',
         label: slot.futureItemTypeId
-          ? 'stop future'
-          : 'mark future',
+          ? 'Stop Future'
+          : 'Mark Future',
         enabled: Boolean(selectedItem),
         action: () =>
           callFirstOr(
@@ -509,9 +533,11 @@ function createStallDialog({
           ),
       },
     ],
-    tabs: safeArray(shelf.sellKinds).map((kind) => ({
+    tabs: visibleSellKinds.map((kind) => ({
       id: kind.kind,
-      label: kind.label,
+      label: toTitleCase(kind.label),
+      semanticId: `shop.stall.${slotNumber}.tab.${kind.kind}`,
+      tutorialId: `shop:sell:tab:${kind.kind}`,
       selected: kind.kind === selectedKind,
       action: () =>
         callFirst(uiActions, ['selectStallItemKind'], [
@@ -857,7 +883,7 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
         index;
       return {
         id: rowId,
-        label: `${row.username ?? 'wizard'} · ${
+        label: `${row.username ?? 'Wizard'} · ${
           row.itemLabel ?? 'item'
         }`,
         detail: `${nonNegativeInteger(row.quantity)} available`,
@@ -1301,4 +1327,11 @@ function clampInteger(value, min, max, fallback) {
 function displayCount(value) {
   const number = Number(value);
   return Number.isFinite(number) ? String(Math.max(0, number)) : '—';
+}
+
+function toTitleCase(value) {
+  return String(value ?? '').replace(
+    /\b([a-z])/g,
+    (character) => character.toUpperCase(),
+  );
 }

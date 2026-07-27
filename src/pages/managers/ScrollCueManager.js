@@ -1,6 +1,10 @@
 import {
+  ROOT_RUN_STATION_CLICK_DRAG_THRESHOLD,
   ROOT_RUN_STATION_BOTTOM_MAX_OVERSCROLL,
+  ROOT_RUN_STATION_SCROLLBAR_MIN_THUMB_HEIGHT,
+  ROOT_RUN_STATION_SCROLLBAR_OVERSCROLL_COMPRESSION,
   ROOT_RUN_STATION_TOP_MAX_OVERSCROLL,
+  ROOT_RUN_STATION_WHEEL_SCROLL_FACTOR,
   ROOT_RUN_TO_IDLE_WIZARD_SCROLL_SCALE,
   StationScrollPhysics,
 } from './StationScrollPhysics.js';
@@ -27,15 +31,9 @@ const SCROLLBAR_HOST_SELECTOR = [
   SOURCE_LAYER_SELECTOR,
 ].join(',');
 
-const SCROLL_DRAG_THRESHOLD = 10;
-const WHEEL_SCROLL_FACTOR = 0.65;
 const SCROLLBAR_TRACK_GAP = 5;
 const SCROLLBAR_TRACK_Y = 12;
 const SCROLLBAR_TRACK_WIDTH = 18;
-const SCROLLBAR_MIN_THUMB_HEIGHT = 82;
-const SCROLLBAR_OVERSCROLL_COMPRESSION = 0.45;
-const SCROLL_SPRING_STIFFNESS = 520;
-const SCROLL_SPRING_DAMPING = 26;
 const CLICK_SUPPRESSION_MS = 450;
 
 export class ManagedStationScrollPane {
@@ -43,13 +41,7 @@ export class ManagedStationScrollPane {
     this.element = element;
     this.window = windowRef ?? element.ownerDocument?.defaultView ?? globalThis;
     this.document = element.ownerDocument;
-    this.physics = new StationScrollPhysics({
-      topEdgeSpringStiffness: SCROLL_SPRING_STIFFNESS,
-      topEdgeSpringDamping: SCROLL_SPRING_DAMPING,
-      bottomEdgeSpringStiffness: SCROLL_SPRING_STIFFNESS,
-      bottomEdgeSpringDamping: SCROLL_SPRING_DAMPING,
-      progressiveEdgeResistance: true,
-    });
+    this.physics = new StationScrollPhysics();
     this.maxScrollCss = 0;
     this.activePointerId = null;
     this.activePointerType = '';
@@ -188,7 +180,8 @@ export class ManagedStationScrollPane {
     event.stopPropagation();
     const localDelta = this.toLocalWheelDelta(event);
     this.physics.scrollByElastic(
-      this.toRootRunUnits(localDelta) * WHEEL_SCROLL_FACTOR,
+      this.toRootRunUnits(localDelta) *
+        ROOT_RUN_STATION_WHEEL_SCROLL_FACTOR,
     );
     this.applyScroll();
     this.startAnimation();
@@ -224,7 +217,8 @@ export class ManagedStationScrollPane {
       this.now(),
     );
     this.draggedPastThreshold =
-      this.physics.dragDistance > SCROLL_DRAG_THRESHOLD;
+      this.physics.dragDistance >
+      ROOT_RUN_STATION_CLICK_DRAG_THRESHOLD;
     this.element.classList.toggle(
       'is-scroll-dragging',
       this.draggedPastThreshold,
@@ -248,10 +242,6 @@ export class ManagedStationScrollPane {
     this.element.classList.remove('is-scroll-grabbing', 'is-scroll-dragging');
     if (draggedPastThreshold) {
       this.suppressClickUntilMs = this.now() + CLICK_SUPPRESSION_MS;
-    }
-    if (this.prefersReducedMotion()) {
-      this.snapInsideBounds();
-      return;
     }
     this.startAnimation();
   }
@@ -314,7 +304,7 @@ export class ManagedStationScrollPane {
       this.applyScroll();
     }
 
-    if (moved || this.isOutsideBounds()) {
+    if (this.physics.isAnimating) {
       this.animationFrame = this.requestFrame(this.handleAnimationFrame);
       return;
     }
@@ -510,7 +500,9 @@ export class ManagedStationScrollPane {
     const trackHeight = clientHeight - trackY * 2;
     const contentHeight = clientHeight + this.maxScrollCss;
     const baseThumbHeight = Math.max(
-      this.toIdleWizardUnits(SCROLLBAR_MIN_THUMB_HEIGHT),
+      this.toIdleWizardUnits(
+        ROOT_RUN_STATION_SCROLLBAR_MIN_THUMB_HEIGHT,
+      ),
       (trackHeight * clientHeight) / contentHeight,
     );
     const rawOffset = this.toIdleWizardUnits(this.physics.offset);
@@ -519,7 +511,7 @@ export class ManagedStationScrollPane {
     const compression = Math.min(
       baseThumbHeight - trackWidth * 2,
       Math.max(overscrollTop, overscrollBottom) *
-        SCROLLBAR_OVERSCROLL_COMPRESSION,
+        ROOT_RUN_STATION_SCROLLBAR_OVERSCROLL_COMPRESSION,
     );
     const thumbHeight = baseThumbHeight - compression;
     const thumbTravel = trackHeight - baseThumbHeight;
@@ -614,12 +606,6 @@ export class ManagedStationScrollPane {
     return (
       this.physics.offset < 0 ||
       this.physics.offset > this.toRootRunUnits(this.maxScrollCss)
-    );
-  }
-
-  prefersReducedMotion() {
-    return Boolean(
-      this.window?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,
     );
   }
 

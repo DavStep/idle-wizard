@@ -653,6 +653,7 @@ describe('base styles', () => {
     expect(rootRule).toContain('--style-progress-rail-border-width: 1px;');
     expect(rootRule).toContain('--style-progress-height: 8px;');
     expect(rootRule).toContain('--style-progress-top-panel-height: 12px;');
+    expect(rootRule).toContain('--style-slider-progress-total-height: 14px;');
     expect(rootRule).toContain('--style-progress-knob-size: 14px;');
     expect(rootRule).toContain('--style-progress-knob-fill: #fee5c3;');
     expect(rootRule).toContain('--style-progress-knob-border: #ceac82;');
@@ -729,6 +730,13 @@ describe('base styles', () => {
     const panelRule = getRuleBody(
       /\.style-box\.first-run-intro__panel\s*\{(?<body>[^}]*)\}/,
     );
+    const titleRule = getRuleBody(
+      /\.style-box\.first-run-intro__panel > \.style-box__title\s*\{(?<body>[^}]*)\}/,
+    );
+    const advanceRule = findRuleBody(
+      /\.style-button\.first-run-intro__advance\s*\{(?<body>[^}]*)\}/g,
+      (body) => body.includes('box-sizing: border-box;'),
+    );
 
     expect(rootRule).toContain('width: calc(100% / var(--style-ui-scale));');
     expect(sceneRule).toContain('left: var(--style-source-ui-gutter-x);');
@@ -741,6 +749,17 @@ describe('base styles', () => {
     expect(panelRule).toContain(
       'left: calc(var(--style-source-ui-gutter-x) + 20px);',
     );
+    expect(panelRule).toContain(
+      '--first-run-intro-panel-frame: url("../../assets/game/source/ui/root-run-research/research-card-dark-1000x304.png");',
+    );
+    expect(panelRule).toContain('padding: 38px 20px 20px;');
+    expect(panelRule).toContain('color: #fff;');
+    expect(titleRule).toContain('top: 12px;');
+    expect(titleRule).toContain('left: 20px;');
+    expect(titleRule).toContain('color: #fff;');
+    expect(advanceRule).toContain('width: max-content;');
+    expect(advanceRule).toContain('min-width: 84px;');
+    expect(advanceRule).toContain('margin-left: auto;');
     expect(defeatedDemonRule).toContain('top: 370px;');
     expect(defeatedDemonEnterRule).toContain(
       'animation: first-run-intro-defeated-enter 360ms',
@@ -814,13 +833,7 @@ describe('base styles', () => {
       '--intro-dialog-panel-frame: url("../../assets/game/source/ui/intro-dialog-panel-9slice.png");',
     );
     expect(introSkinRule).toContain(
-      '--intro-dialog-tab-frame: url("../../assets/game/source/ui/intro-dialog-header-tab-9slice-v2.png");',
-    );
-    expect(introSkinRule).toContain(
       '--intro-dialog-panel-slice: 31 29 31 29 fill;',
-    );
-    expect(introSkinRule).toContain(
-      '--intro-dialog-tab-slice: 31 29 31 29 fill;',
     );
     expect(introSkinRule).toContain(
       '--intro-dialog-shadow-filter: drop-shadow(var(--intro-dialog-shadow));',
@@ -833,12 +846,9 @@ describe('base styles', () => {
       'border-image-slice: var(--intro-dialog-panel-slice);',
     );
     expect(introSkinRule).not.toContain('linear-gradient(');
-    expect(introTitleRule).toContain(
-      'border-image-source: var(--intro-dialog-tab-frame);',
-    );
-    expect(introTitleRule).toContain(
-      'border-image-slice: var(--intro-dialog-tab-slice);',
-    );
+    expect(introTitleRule).toContain('background: transparent;');
+    expect(introTitleRule).toContain('border: 0;');
+    expect(introTitleRule).toContain('border-image: none;');
     expect(introTitleRule).toContain('top: -16px;');
     expect(introTitleRule).toContain('padding: 2px 18px 3px;');
     expect(introTitleRule).toContain('line-height: 16px;');
@@ -889,49 +899,6 @@ describe('base styles', () => {
     expect(taskButtonRule).toContain('overflow: hidden;');
     expect(taskButtonRule).toContain('text-overflow: ellipsis;');
     expect(taskButtonRule).toContain('white-space: nowrap;');
-  });
-
-  it('keeps the intro header top stretch band free of line artifacts', () => {
-    const header = PNG.sync.read(
-      readFileSync(`${cwd()}/assets/game/source/ui/intro-dialog-header-tab-9slice-v2.png`),
-    );
-    const xStart = 29;
-    const xEnd = header.width - 29;
-    const yStart = 5;
-    const yEnd = 31;
-
-    function pixelLuminance(x, y) {
-      const offset = (y * header.width + x) * 4;
-      return (
-        header.data[offset] * 0.2126 +
-        header.data[offset + 1] * 0.7152 +
-        header.data[offset + 2] * 0.0722
-      );
-    }
-
-    function rowLuminance(y) {
-      let total = 0;
-      let count = 0;
-      for (let x = xStart; x < xEnd; x += 1) {
-        const offset = (y * header.width + x) * 4;
-        if (header.data[offset + 3] === 0) {
-          continue;
-        }
-
-        total += pixelLuminance(x, y);
-        count += 1;
-      }
-
-      return total / count;
-    }
-
-    const maxInternalRowJump = Array.from(
-      { length: yEnd - yStart },
-      (_, index) =>
-        Math.abs(rowLuminance(yStart + index + 1) - rowLuminance(yStart + index)),
-    ).reduce((max, jump) => Math.max(max, jump), 0);
-
-    expect(maxInternalRowJump).toBeLessThan(1);
   });
 
   it('uses the alpha-cropped guild quest slices in CSS top-right-bottom-left order', () => {
@@ -1102,7 +1069,7 @@ describe('base styles', () => {
       /\.shop-page__sell-allocation-control\s*\{(?<body>[^}]*)\}/,
     );
     const progressRule = getRuleBody(
-      /\.shop-page__sell-allocation-progress\s*\{(?<body>[^}]*)\}/,
+      /\.style-progress\.shop-page__sell-allocation-progress\s*\{(?<body>[^}]*)\}/,
     );
     const webkitThumbRule = getRuleBody(
       /\.shop-page__sell-allocation-range::\s*-webkit-slider-thumb\s*\{(?<body>[^}]*)\}/,
@@ -1121,7 +1088,16 @@ describe('base styles', () => {
     expect(progressRule).toContain('position: absolute;');
     expect(progressRule).toContain('pointer-events: none;');
     expect(progressRule).toContain(
+      'height: var(--style-slider-progress-total-height);',
+    );
+    expect(progressRule).toContain(
       'right: calc(var(--style-progress-knob-size) / 2);',
+    );
+    expect(baseCss).toMatch(
+      /\.shop-page__sell-allocation-range::\s*-webkit-slider-runnable-track\s*\{[^}]*height:\s*var\(--style-slider-progress-total-height\);/,
+    );
+    expect(baseCss).toMatch(
+      /\.shop-page__sell-allocation-range::\s*-moz-range-track\s*\{[^}]*height:\s*var\(--style-slider-progress-total-height\);/,
     );
     for (const thumbRule of [webkitThumbRule, mozThumbRule]) {
       expect(thumbRule).toContain('width: var(--style-progress-knob-size);');

@@ -1681,7 +1681,8 @@ describe('GuildPanelManager', () => {
     );
     expect(stackDialogRule).toMatch(/\bheight:\s*391px;/);
     expect(stackDialogRule).toMatch(/\bpadding:\s*13px 2px;/);
-    expect(stackTitleRule).toContain('background: var(--guild-page-quest-banner)');
+    expect(stackTitleRule).toContain('background: transparent;');
+    expect(baseCss).not.toContain('--guild-page-quest-banner:');
     expect(stackTitleRule).toMatch(/\btop:\s*-52px;/);
     expect(stackTitleRule).toMatch(/\bbox-sizing:\s*border-box;/);
     expect(stackTitleRule).toMatch(/\bpadding:\s*6px 54px 17px;/);

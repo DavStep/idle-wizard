@@ -17,8 +17,10 @@ export const PIXI_DIALOG_PALETTE = Object.freeze({
   frame: '#634934',
   paper: '#ffe7c8',
   ink: '#634934',
-  muted: '#8d6d50',
-  disabled: '#ac9278',
+  muted: '#76563f',
+  disabled: '#80654e',
+  mana: '#25658a',
+  herb: '#4a7146',
   title: '#9d25db',
   titleText: '#ffffff',
   titleStroke: '#0a0a0a',
@@ -440,6 +442,11 @@ function createContentTheme(theme) {
     stroke: PIXI_DIALOG_PALETTE.ink,
     muted: PIXI_DIALOG_PALETTE.muted,
     disabled: PIXI_DIALOG_PALETTE.disabled,
+    resourceColors: Object.freeze({
+      ...theme.resourceColors,
+      mana: PIXI_DIALOG_PALETTE.mana,
+      herb: PIXI_DIALOG_PALETTE.herb,
+    }),
   });
 }
 

@@ -150,6 +150,10 @@ describe('PixiTransientEffectsLayer', () => {
     const [entry] = layer.entries;
     expect(entry.kind).toBe('item');
     expect(entry.widget.model.anchor).toEqual({ x: 100, y: 130 });
+    expect(entry.widget.secondary.y).toBeCloseTo(
+      entry.widget.primary.height * (0.63 - 0.5),
+    );
+    expect(entry.widget.secondary.y).toBeGreaterThan(0);
 
     entry.widget.update(0.24, { delayed: false });
     expect(entry.widget.root.x).toBeCloseTo(

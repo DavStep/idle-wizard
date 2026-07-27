@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Idle Wizard UI reference review</title>
+    <style>
+      :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 24px; color: #ececf1; background: #17191f; }
+      h1 { margin: 0 0 16px; font-size: 18px; }
+      h2 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+      .comparison-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .panel { min-width: 0; padding: 12px; background: #20232d; border: 1px solid #555d76; }
+      .overlay-panel { margin-top: 16px; }
+      .visual-frame { position: relative; width: 100%; min-height: 120px; overflow: hidden; background: #0b0c10; }
+      .visual-frame img { position: absolute; max-width: none; user-select: none; pointer-events: none; }
+      .overlay-actual.difference { opacity: 1 !important; mix-blend-mode: difference; }
+      .controls { display: flex; gap: 18px; align-items: center; margin-top: 10px; font-size: 12px; }
+      .controls label { display: flex; gap: 8px; align-items: center; }
+      input[type="range"] { width: min(360px, 42vw); }
+      .note { margin: 14px 0 0; color: #b8bdca; font-size: 12px; line-height: 1.5; }
+      @media (max-width: 760px) { .comparison-grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <h1>UI reference fidelity review</h1>
+    <div class="comparison-grid">
+      <section class="panel">
+        <h2 id="reference-label"></h2>
+        <div class="visual-frame side-frame" data-frame-kind="reference">
+          <img data-image-kind="reference" alt="Reference crop">
+        </div>
+      </section>
+      <section class="panel">
+        <h2 id="actual-label"></h2>
+        <div class="visual-frame side-frame" data-frame-kind="actual">
+          <img data-image-kind="actual" alt="Actual crop">
+        </div>
+      </section>
+    </div>
+    <section class="panel overlay-panel">
+      <h2>overlay</h2>
+      <div class="visual-frame overlay-frame">
+        <img data-image-kind="reference" alt="Reference overlay">
+        <img class="overlay-actual" data-image-kind="actual" alt="Actual overlay">
+      </div>
+      <div class="controls">
+        <label>actual opacity <input id="opacity" type="range" min="0" max="1" step="0.01" value="0.5"></label>
+        <label><input id="difference" type="checkbox"> difference blend</label>
+      </div>
+    </section>
+    <p class="note">Compare visible bounds, optical centers, baselines, edge anchors, rail stroke/fill thickness, divider placement, and copy alignment. A full-screen thumbnail is not sufficient evidence.</p>
+    <script>
+      const config = {"reference":{"label":"reference","src":"data:image/png;base64,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","crop":{"x":6,"y":7,"width":83,"height":34}},"actual":{"label":"actual","src":"data:image/png;base64,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","crop":{"x":0,"y":0,"width":50,"height":22}}};
+      const images = [...document.querySelectorAll('[data-image-kind]')];
+      document.querySelector('#reference-label').textContent = config.reference.label;
+      document.querySelector('#actual-label').textContent = config.actual.label;
+
+      for (const image of images) image.src = config[image.dataset.imageKind].src;
+
+      Promise.all(images.map((image) => image.decode())).then(layout);
+      window.addEventListener('resize', layout);
+
+      const opacity = document.querySelector('#opacity');
+      const difference = document.querySelector('#difference');
+      const overlayActual = document.querySelector('.overlay-actual');
+      opacity.addEventListener('input', updateOverlay);
+      difference.addEventListener('change', updateOverlay);
+      updateOverlay();
+
+      function cropFor(image) {
+        return config[image.dataset.imageKind].crop ?? {
+          x: 0,
+          y: 0,
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+        };
+      }
+
+      function layout() {
+        for (const frame of document.querySelectorAll('.side-frame')) {
+          const image = frame.querySelector('img');
+          const crop = cropFor(image);
+          frame.style.aspectRatio = crop.width + ' / ' + crop.height;
+          placeImage(image, frame, crop);
+        }
+
+        const overlayFrame = document.querySelector('.overlay-frame');
+        const referenceImage = overlayFrame.querySelector('[data-image-kind="reference"]');
+        const referenceCrop = cropFor(referenceImage);
+        overlayFrame.style.aspectRatio = referenceCrop.width + ' / ' + referenceCrop.height;
+        for (const image of overlayFrame.querySelectorAll('img')) {
+          placeImage(image, overlayFrame, cropFor(image));
+        }
+      }
+
+      function placeImage(image, frame, crop) {
+        const scaleX = frame.clientWidth / crop.width;
+        const scaleY = frame.clientHeight / crop.height;
+        image.style.left = -crop.x * scaleX + 'px';
+        image.style.top = -crop.y * scaleY + 'px';
+        image.style.width = image.naturalWidth * scaleX + 'px';
+        image.style.height = image.naturalHeight * scaleY + 'px';
+      }
+
+      function updateOverlay() {
+        overlayActual.style.opacity = opacity.value;
+        overlayActual.classList.toggle('difference', difference.checked);
+      }
+    </script>
+  </body>
+</html>

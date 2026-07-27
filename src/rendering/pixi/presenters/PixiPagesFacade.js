@@ -163,6 +163,7 @@ export class PixiPagesFacade {
     this.devNotifications = null;
     this.questProgressPreview = null;
     this.workshopBagTabId = 'currencies';
+    this.workshopSummonSeedKey = null;
     this.workshopStatsTabId = 'seeds';
     this.workshopLeaderboardTabId = 'singlePlayer';
     this.researchTabId = 'regular';
@@ -311,9 +312,16 @@ export class PixiPagesFacade {
     );
     this.trackSubscription(
       this.gameplayFacade?.subscribeFrameResources?.((resources) => {
+        const frameResources = resources ?? {};
         this.gameplaySnapshot = {
           ...this.gameplaySnapshot,
-          ...(resources ?? {}),
+          ...frameResources,
+          tasks: frameResources.tasks
+            ? {
+                ...(this.gameplaySnapshot.tasks ?? {}),
+                ...frameResources.tasks,
+              }
+            : this.gameplaySnapshot.tasks,
         };
         this.refreshChrome();
       }),
@@ -586,8 +594,10 @@ export class PixiPagesFacade {
           playerInbox: this.playerInboxSnapshot,
           notifications: pageNotification,
           actions: actions.workshop,
+          pageStates: this.pageStates,
           dialogState: {
             bagTabId: this.workshopBagTabId,
+            summonSeedKey: this.workshopSummonSeedKey,
             statsTabId: this.workshopStatsTabId,
             leaderboardTabId: this.workshopLeaderboardTabId,
           },
@@ -688,8 +698,32 @@ export class PixiPagesFacade {
     return {
       workshop: {
         summonSeed: () => gameplay?.summonSeed?.(),
+        selectSummonSeed: (seedKey) => {
+          this.workshopSummonSeedKey = seedKey ?? null;
+          this.refreshPage('workshop');
+          return true;
+        },
+        setSummonDropPreference: (seedKey, preference) => {
+          const result = gameplay?.setSeedDropPreference?.(
+            seedKey,
+            preference,
+          );
+          this.refreshPage('workshop');
+          return result ?? false;
+        },
+        toggleSummonAutomation: () => {
+          const result = gameplay?.toggleSeedSummoningAutoEnabled?.();
+          this.refreshPage('workshop');
+          return result ?? false;
+        },
+        setSummonManaReserve: (manaReserve) => {
+          const result = gameplay?.setSeedSummoningManaReserve?.(
+            manaReserve,
+          );
+          this.refreshPage('workshop');
+          return result ?? false;
+        },
         fillTask: (taskId) => gameplay?.fillTask?.(taskId),
-        completeTaskLevel: () => gameplay?.completeTaskLevel?.(),
         sendWorldChat: (body) => this.worldChatFacade?.sendMessage?.(body),
         claimInboxReward: (mailKey) =>
           this.playerInboxFacade?.claimReward?.(mailKey),
@@ -1116,7 +1150,11 @@ export class PixiPagesFacade {
   }
 
   createBrewingViewModel(actions) {
-    const brewing = this.gameplaySnapshot.brewing ?? {};
+    const brewingSnapshot = this.gameplaySnapshot.brewing ?? {};
+    const brewing = {
+      ...brewingSnapshot,
+      recipes: this.decorateBrewingRecipes(brewingSnapshot.recipes),
+    };
     const cauldrons = [...(brewing.cauldrons ?? [])].map((cauldron) =>
       this.decorateCauldron(cauldron, brewing),
     );
@@ -1226,6 +1264,49 @@ export class PixiPagesFacade {
     };
   }
 
+  decorateBrewingRecipes(recipes) {
+    return (recipes ?? []).map((recipe) => {
+      if (
+        recipe?.unlocked === true ||
+        recipe?.unknown === true ||
+        recipe?.known === false ||
+        recipe?.discoveryType === 'unknown'
+      ) {
+        return {
+          ...recipe,
+          canResearch: false,
+        };
+      }
+      const researchId =
+        recipe.researchId ??
+        (recipe.key ? `unlockRecipe:${recipe.key}` : null);
+      const research = findResearchSnapshot(
+        this.gameplaySnapshot.research,
+        researchId,
+      );
+      return {
+        ...recipe,
+        researchId,
+        canResearch: research?.canResearch === true,
+      };
+    });
+  }
+
+  openBrewingRecipesDialog(cauldronIndex = 0) {
+    return (
+      this.requireRuntime()
+        .getPage('brewing')
+        .openDialog('recipes', {
+          open: true,
+          title: 'recipes',
+          cauldronIndex,
+          recipes: this.decorateBrewingRecipes(
+            this.gameplaySnapshot.brewing?.recipes,
+          ),
+        }) ?? false
+    );
+  }
+
   createBrewingActions() {
     const gameplay = this.gameplayFacade;
     return {
@@ -1238,14 +1319,17 @@ export class PixiPagesFacade {
         return true;
       },
       openRecipes: (cauldronIndex) =>
-        this.requireRuntime()
-          .getPage('brewing')
-          .openDialog('recipes', {
-            open: true,
-            title: 'recipes',
-            cauldronIndex,
-            recipes: this.gameplaySnapshot.brewing?.recipes ?? [],
-          }),
+        this.openBrewingRecipesDialog(cauldronIndex),
+      researchRecipe: (recipe, cauldronIndex = 0) => {
+        if (recipe?.canResearch !== true || !recipe?.researchId) {
+          return false;
+        }
+        const result = gameplay?.buyResearch?.(recipe.researchId);
+        if (result?.ok === true) {
+          this.openBrewingRecipesDialog(cauldronIndex);
+        }
+        return result ?? false;
+      },
       selectRecipe: (recipe, cauldronIndex = 0) => {
         const key = recipe?.key ?? recipe?.id ?? null;
         this.selectedRecipeByCauldron.set(cauldronIndex, recipe ?? null);
@@ -1324,13 +1408,7 @@ export class PixiPagesFacade {
         return gameplay?.clearBrewingCauldron?.(cauldronIndex);
       },
       chooseAnother: (cauldronIndex) =>
-        this.requireRuntime()
-          .getPage('brewing')
-          .openDialog('recipes', {
-            title: 'recipes',
-            cauldronIndex,
-            recipes: this.gameplaySnapshot.brewing?.recipes ?? [],
-          }),
+        this.openBrewingRecipesDialog(cauldronIndex),
     };
   }
 
@@ -1888,6 +1966,26 @@ function canUseGardenSeedOnPlot(seed, plot) {
 function stripSeedSuffix(label) {
   const value = String(label ?? '').trim();
   return value ? value.replace(/\s+seed$/i, '') : null;
+}
+
+function findResearchSnapshot(researchSnapshot, researchId) {
+  if (!researchId) {
+    return null;
+  }
+  const tabs = Array.isArray(researchSnapshot?.tabs)
+    ? researchSnapshot.tabs
+    : [{ boxes: researchSnapshot?.boxes ?? [] }];
+  for (const tab of tabs) {
+    for (const box of tab?.boxes ?? []) {
+      const research = (box?.researches ?? []).find(
+        (item) => item?.id === researchId,
+      );
+      if (research) {
+        return research;
+      }
+    }
+  }
+  return null;
 }
 
 const DEV_DIALOG_TARGETS = Object.freeze({

@@ -453,20 +453,13 @@ export class WorkshopSummonInfoManager {
   }
 
   commitSelectedDropPreference(preference) {
-    const rows = this.getRows(this.lastSnapshot);
-    const seed = this.getSelectedSeed(rows);
+    const seed = this.getSelectedSeed(this.getRows(this.lastSnapshot));
 
     if (!seed) {
       return;
     }
 
     const normalizedPreference = this.normalizeDropPreference(preference);
-
-    if (!this.isDropPreferenceAvailable(seed, normalizedPreference, rows)) {
-      this.preferenceStatus = 'one seed must stay active';
-      this.render(this.lastSnapshot);
-      return;
-    }
 
     this.selectionAnimationSeedKey = seed.key;
     const result = this.gameplayFacade?.setSeedDropPreference?.(
@@ -534,34 +527,15 @@ export class WorkshopSummonInfoManager {
     for (const optionValue of seedDropPreferenceOptions) {
       const button = this.refs.weightChoiceButtons.get(optionValue);
       const selected = optionValue === selectedPreference;
-      const disabled = !this.isDropPreferenceAvailable(selectedSeed, optionValue, rows);
 
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-pressed', selected ? 'true' : 'false');
-      button.disabled = disabled;
-      button.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+      button.disabled = false;
+      button.setAttribute('aria-disabled', 'false');
     }
 
     this.refs.preferenceStatus.hidden = !this.preferenceStatus;
     this.refs.preferenceStatus.textContent = this.preferenceStatus;
-  }
-
-  isDropPreferenceAvailable(seed, preference, rows) {
-    const normalizedPreference = this.normalizeDropPreference(preference);
-
-    if (normalizedPreference !== 'none') {
-      return true;
-    }
-
-    if (this.normalizeDropPreference(seed?.dropPreference) === 'none') {
-      return true;
-    }
-
-    return rows.some(
-      (row) =>
-        row.key !== seed.key &&
-        this.getDropPreferenceWeight(this.normalizeDropPreference(row.dropPreference)) > 0,
-    );
   }
 
   getDropPreferenceWeight(preference) {

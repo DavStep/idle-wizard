@@ -7,6 +7,10 @@ import {
 import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
 
 const ONLINE_GATE_CONTENT_WIDTH = 260;
+const ONLINE_GATE_CONTENT_HEIGHT = 80;
+const ONLINE_GATE_ACTION_CONTENT_HEIGHT = 96;
+const ONLINE_GATE_MIN_MESSAGE_TOP_OFFSET = 4;
+const ONLINE_GATE_MESSAGE_ACTION_GAP = 12;
 
 export class PixiOnlineGateView extends PixiModalSurface {
   constructor({
@@ -32,6 +36,8 @@ export class PixiOnlineGateView extends PixiModalSurface {
     this.elapsedMs = 0;
     this.message = new PixiTextLabel({
       label: 'onlineGate:message',
+      align: 'center',
+      anchor: { x: 0.5, y: 0 },
       wordWrap: true,
       wrapWidth: ONLINE_GATE_CONTENT_WIDTH,
     });
@@ -94,19 +100,41 @@ export class PixiOnlineGateView extends PixiModalSurface {
   }
 
   relayoutContent() {
-    let y = 0;
-    this.message.position.set(0, y);
-    y += Math.max(16, this.message.measuredHeight);
-    if (this.progress.visible) {
-      y += 12;
-      this.progress.position.set(0, y);
-      y += this.progress.barHeight;
-    }
+    const measuredMessageHeight = Math.max(0, this.message.measuredHeight);
+    const messageHeight = Math.max(16, measuredMessageHeight);
+    let messageY = Math.max(
+      0,
+      (ONLINE_GATE_CONTENT_HEIGHT - measuredMessageHeight) / 2,
+    );
+    let y = ONLINE_GATE_CONTENT_HEIGHT;
     if (this.action.visible) {
-      y += 12;
-      this.action.position.set(0, y);
-      y += this.action.buttonHeight;
+      messageY = ONLINE_GATE_MIN_MESSAGE_TOP_OFFSET;
+      y = messageY + messageHeight;
+      if (this.progress.visible) {
+        y += 12;
+        this.progress.position.set(0, y);
+        y += this.progress.barHeight;
+      }
+      const actionY = Math.max(
+        y + ONLINE_GATE_MESSAGE_ACTION_GAP,
+        ONLINE_GATE_ACTION_CONTENT_HEIGHT - this.action.buttonHeight,
+      );
+      const centeredMessageY = (actionY - messageHeight) / 2;
+      const maximumMessageY =
+        actionY - ONLINE_GATE_MESSAGE_ACTION_GAP - messageHeight;
+      messageY = Math.max(
+        ONLINE_GATE_MIN_MESSAGE_TOP_OFFSET,
+        Math.min(centeredMessageY, maximumMessageY),
+      );
+      this.action.position.set(0, actionY);
+      y = actionY + this.action.buttonHeight;
+    } else if (this.progress.visible) {
+      this.progress.position.set(
+        0,
+        ONLINE_GATE_CONTENT_HEIGHT - this.progress.barHeight,
+      );
     }
+    this.message.position.set(ONLINE_GATE_CONTENT_WIDTH / 2, messageY);
     this.panel.setContentBoxSize(
       ONLINE_GATE_CONTENT_WIDTH,
       y,

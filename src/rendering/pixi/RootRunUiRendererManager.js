@@ -16,6 +16,7 @@ import {
   gameAssetAtlasImageUrl,
   gameAssetAtlasPixiData,
 } from '../../assets/generated/game-asset-atlas.generated.js';
+import { getSeedPackIconLayout } from '../../assets/items/seeds/seedIconFrames.js';
 import { gameViewport } from '../../viewport/gameViewport.js';
 import { UiWidgetPoolManager } from '../managers/UiWidgetPoolManager.js';
 
@@ -1840,7 +1841,6 @@ export class RootRunUiRendererManager {
       element,
       style,
       packRect,
-      sourceSize,
       placement.rotation,
       record,
       output,
@@ -1859,7 +1859,6 @@ export class RootRunUiRendererManager {
     element,
     style,
     packRect,
-    packSourceSize,
     packRotation,
     record,
     output,
@@ -1884,19 +1883,17 @@ export class RootRunUiRendererManager {
     );
     itemSprite.texture = itemTexture;
     resetSpriteTransform(itemSprite);
-    const packScaleX = packRect.width / packSourceSize.width;
-    const packScaleY = packRect.height / packSourceSize.height;
-    const sourceItemSize =
-      Math.min(packSourceSize.width, packSourceSize.height) * 0.44;
+    const layout = getSeedPackIconLayout({
+      x: packRect.x,
+      y: packRect.y,
+      width: packRect.width,
+      height: packRect.height,
+    });
     const itemRect = {
-      x:
-        packRect.x +
-        (packSourceSize.width / 2 - sourceItemSize / 2) * packScaleX,
-      y:
-        packRect.y +
-        (packSourceSize.height * 0.63 - sourceItemSize / 2) * packScaleY,
-      width: sourceItemSize * packScaleX,
-      height: sourceItemSize * packScaleY,
+      x: layout.item.centerX - layout.item.size / 2,
+      y: layout.item.centerY - layout.item.size / 2,
+      width: layout.item.size,
+      height: layout.item.size,
     };
     const itemSourceSize = getTextureSize(itemTexture);
     placeObjectFitSprite({
@@ -1919,7 +1916,8 @@ export class RootRunUiRendererManager {
       );
       itemSprite.anchor.set(0.5);
       itemSprite.position.set(rotatedCenter.x, rotatedCenter.y);
-      itemSprite.rotation = packRotation + (6 * Math.PI) / 180;
+      itemSprite.rotation =
+        packRotation + (layout.item.rotationDegrees * Math.PI) / 180;
     }
     this.applyVisualFilter(itemSprite, style);
     this.syncSpriteDropShadow(

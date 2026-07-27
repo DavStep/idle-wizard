@@ -1,5 +1,9 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { cwd } from 'node:process';
+
+import pngjs from 'pngjs';
 import { Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -8,6 +12,8 @@ import {
   PIXI_ROOT_RUN_ASSETS,
 } from '../theme/PixiThemeTokens.js';
 import { PixiCostButton } from './PixiCostButton.js';
+
+const { PNG } = pngjs;
 
 installPixiPageTestCanvas();
 
@@ -212,6 +218,78 @@ describe('PixiCostButton', () => {
     );
   });
 
+  it('reuses the stacked cost-button contract with an info-blue mana skin', () => {
+    const { assetManager, button } = createHarness({
+      stacked: true,
+      tone: 'blue',
+      width: 92,
+      height: 52,
+    });
+
+    button.setModel({
+      actionLabel: 'Summon Seed',
+      amount: '10',
+      resource: 'mana',
+    });
+
+    expect(button.tone).toBe('blue');
+    expect(button.resource).toBe('mana');
+    expect(button.resourceIcon.visible).toBe(true);
+    expect(button.amountLabel.text).toBe('10');
+    expect(button.actionTextLabel.fontSize).toBe(11);
+    expect(button.amountLabel.fontSize).toBe(13);
+    expect(button.actionTextLabel.stroke.width).toBe(4);
+    expect(button.amountLabel.stroke.width).toBe(4);
+    expect(button.resourceIcon.y).toBeCloseTo(33.28);
+    expect(button.amountLabel.y).toBeCloseTo(33.28);
+    const iconRight = button.resourceIcon.x + button.resourceIcon.width / 2;
+    const amountLeft =
+      button.amountLabel.x - button.amountLabel.measuredWidth / 2;
+    expect(amountLeft - iconRight).toBeCloseTo(2);
+    const centeredIconX =
+      (92 - (15 + 2 + button.amountLabel.measuredWidth)) / 2 + 15 / 2;
+    expect(button.resourceIcon.x).toBeCloseTo(centeredIconX - 3);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonBlueShort,
+    );
+
+    button.setModel({
+      actionLabel: 'Summon Seed',
+      amount: '10',
+      resource: 'mana',
+      enabled: false,
+    });
+
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonGrayStacked,
+    );
+  });
+
+  it('keeps the green silhouette while using the exact info icon blues', () => {
+    const assetDir = `${cwd()}/assets/game/source/ui`;
+    const green = PNG.sync.read(
+      readFileSync(`${assetDir}/root-run-cost-button/green-button-short.png`),
+    );
+    const blue = PNG.sync.read(
+      readFileSync(`${assetDir}/root-run-cost-button/blue-button-short.png`),
+    );
+    const info = PNG.sync.read(readFileSync(`${assetDir}/prop_info.png`));
+
+    expect([blue.width, blue.height]).toEqual([green.width, green.height]);
+    let alphaMatches = true;
+    for (let index = 3; index < green.data.length; index += 4) {
+      if (blue.data[index] !== green.data[index]) {
+        alphaMatches = false;
+        break;
+      }
+    }
+    expect(alphaMatches).toBe(true);
+    expect(countOpaqueColor(blue, [39, 131, 217])).toBeGreaterThan(28_000);
+    expect(countOpaqueColor(blue, [105, 243, 243])).toBeGreaterThan(6_000);
+    expect(countOpaqueColor(info, [39, 131, 217])).toBeGreaterThan(900);
+    expect(countOpaqueColor(info, [105, 243, 243])).toBeGreaterThan(400);
+  });
+
   it('rejects empty actionable costs instead of silently rendering fallback copy', () => {
     const { button } = createHarness();
 
@@ -228,3 +306,18 @@ describe('PixiCostButton', () => {
     );
   });
 });
+
+function countOpaqueColor(image, [red, green, blue]) {
+  let count = 0;
+  for (let index = 0; index < image.data.length; index += 4) {
+    if (
+      image.data[index] === red &&
+      image.data[index + 1] === green &&
+      image.data[index + 2] === blue &&
+      image.data[index + 3] === 255
+    ) {
+      count += 1;
+    }
+  }
+  return count;
+}

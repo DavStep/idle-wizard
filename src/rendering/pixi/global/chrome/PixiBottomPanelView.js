@@ -2,7 +2,6 @@ import {
   ColorMatrixFilter,
   Container,
   Graphics,
-  NineSliceSprite,
   Rectangle,
   Sprite,
   Texture,
@@ -23,52 +22,52 @@ import { DEFAULT_PAGE_SWIPE_ORDER } from '../../../../pages/managers/pageOrder.j
 const TAB_DEFINITIONS = Object.freeze({
   prestige: Object.freeze({
     id: 'prestige',
-    label: 'prestige',
+    label: 'Prestige',
     icon: 'icon-crystal.png',
     artScale: 0.8,
   }),
   brewing: Object.freeze({
     id: 'brewing',
-    label: 'brewing',
+    label: 'Brewing',
     icon: 'icon-brewing-cauldron-tab.webp',
     artScale: 0.72,
   }),
   garden: Object.freeze({
     id: 'garden',
-    label: 'garden',
+    label: 'Garden',
     icon: 'icon-garden-plot-tab.webp',
     artScale: 1,
   }),
   workshop: Object.freeze({
     id: 'workshop',
-    label: 'workshop',
+    label: 'Workshop',
     icon: 'icon-workshop-house-tab.webp',
     artScale: 0.84,
   }),
   research: Object.freeze({
     id: 'research',
-    label: 'research',
+    label: 'Research',
     icon: 'icon-research-telescope-tab.webp',
-    artScale: 1.04,
+    artScale: 0.84,
   }),
   shop: Object.freeze({
     id: 'shop',
-    label: 'market',
+    label: 'Market',
     icon: 'icon-shop-market-stall-tab.webp',
-    artScale: 1,
+    artScale: 0.9,
   }),
   advancedBrewing: Object.freeze({
     id: 'advancedBrewing',
-    label: 'adv brewing',
+    label: 'Adv Brewing',
   }),
   advancedGarden: Object.freeze({
     id: 'advancedGarden',
-    label: 'adv garden',
+    label: 'Adv Garden',
   }),
-  guild: Object.freeze({ id: 'guild', label: 'guild' }),
+  guild: Object.freeze({ id: 'guild', label: 'Guild' }),
   advancedMarket: Object.freeze({
     id: 'advancedMarket',
-    label: 'adv market',
+    label: 'Adv Market',
   }),
 });
 
@@ -92,9 +91,12 @@ const TAB_RISE = TAB_ACTIVE_HEIGHT - TAB_INACTIVE_HEIGHT;
 const TAB_OVERLAP = 2.888889;
 const TAB_BOTTOM_BLEED = 18;
 const TAB_HEIGHT = TAB_ACTIVE_HEIGHT + TAB_BOTTOM_BLEED;
-const TAB_ICON_SIZE = 46;
-const TAB_ICON_SELECTED_SCALE = 1.22;
-const TAB_ICON_INACTIVE_SCALE = 0.94;
+const TAB_ICON_SIZE = 50;
+const TAB_ICON_SELECTED_SCALE = 1.5;
+const TAB_ICON_INACTIVE_SCALE = 1.5;
+const TAB_LOCK_WIDTH = 26;
+const TAB_LOCK_HEIGHT = 29.5;
+const TAB_LOCK_CENTER_Y = 34;
 const TAB_NOTIFICATION_SIZE = 9.569444;
 const TAB_SELECTED_MOTION_MS = 205;
 const TAB_SELECTED_PEAK_AT = 0.68;
@@ -104,29 +106,12 @@ const TAB_SWIPE_BUMP_PEAK_AT = 0.55;
 const TAB_SWIPE_BUMP_Y = -1;
 const FEATURE_UNLOCK_FLYOUT_MS = 520;
 const FEATURE_UNLOCK_POOL_SIZE = 5;
-const ROOM_TAB_FRAME_SCALE = 13 / 36;
 const ROOM_TAB_FRAME_STATES = Object.freeze({
   active: Object.freeze({
     textureId: 'source:assets/ui/root-run-room-tab-active.png',
-    fill: 0x6e4627,
-    radius: 20.583333,
-    sourceInsets: Object.freeze({
-      top: 57,
-      right: 62,
-      bottom: 21,
-      left: 61,
-    }),
   }),
   inactive: Object.freeze({
     textureId: 'source:assets/ui/root-run-room-tab-inactive.png',
-    fill: 0x3c2f25,
-    radius: 20.222222,
-    sourceInsets: Object.freeze({
-      top: 56,
-      right: 61,
-      bottom: 19,
-      left: 60,
-    }),
   }),
 });
 const NOTIFICATION_TEXTURE_IDS = Object.freeze({
@@ -751,6 +736,7 @@ class PixiBottomTab {
     this.selectedMotion = null;
     this.swipeBumpMotion = null;
     this.selectedScale = 1;
+    this.selectedIconProgress = 1;
     this.swipeBumpY = 0;
     this.root = new Container();
     this.root.label = `bottomPanel:tab:${definition.id}`;
@@ -783,9 +769,6 @@ class PixiBottomTab {
       this.icon.position.set(TAB_ICON_SIZE / 2, TAB_ICON_SIZE / 2);
       this.iconFrame.addChild(this.icon);
     }
-    this.lockedIconFilter = this.icon
-      ? createColorFilter({ grayscale: 1, brightness: 1 })
-      : null;
     this.labelRoot = new Container();
     this.labelRoot.label = `${this.root.label}:label`;
     this.labelRoot.zIndex = 3;
@@ -805,6 +788,7 @@ class PixiBottomTab {
       lineHeight: 12,
       align: 'center',
       anchor: { x: 0.5, y: 0.5 },
+      color: '#ffffff',
       wordWrap: true,
       wrapWidth: this.width - 4,
       label: `${this.root.label}:text`,
@@ -817,8 +801,8 @@ class PixiBottomTab {
     });
     this.lock.zIndex = 4;
     this.lock.anchor.set(0.5);
-    this.lock.width = 22;
-    this.lock.height = 22;
+    this.lock.width = TAB_LOCK_WIDTH;
+    this.lock.height = TAB_LOCK_HEIGHT;
     this.notification = new Sprite({
       texture: assets.getTexture(NOTIFICATION_TEXTURE_IDS.red),
       label: `${this.root.label}:notification`,
@@ -846,6 +830,7 @@ class PixiBottomTab {
           this.root.renderable &&
           this.root.eventMode !== 'none',
         selected: () => this.state.selected === true,
+        fallbackHitTest: true,
         excludePageSwipe: true,
         onPressChange: (pressed) => this.setPressed(pressed),
         onActivate: () => this.onActivate?.(this),
@@ -907,7 +892,7 @@ class PixiBottomTab {
     this.iconFrame.position.x = this.width / 2;
     this.lock.position.set(
       this.width / 2,
-      TAB_ACTIVE_HEIGHT / 2 - 22 * 0.04,
+      TAB_LOCK_CENTER_Y,
     );
     this.labelRoot.position.x = this.width / 2;
     for (const label of [...this.labelShadows, this.text]) {
@@ -977,12 +962,16 @@ class PixiBottomTab {
       startMs: Number(startMs) || 0,
     };
     this.selectedScale = 1;
+    this.selectedIconProgress = 0;
+    this.applyIconLayout();
     this.applyMotionTransform();
   }
 
   cancelSelectedMotion() {
     this.selectedMotion = null;
     this.selectedScale = 1;
+    this.selectedIconProgress = 1;
+    this.applyIconLayout();
     this.applyMotionTransform();
   }
 
@@ -1017,9 +1006,11 @@ class PixiBottomTab {
         ),
       );
       this.selectedScale = selectedMotionScale(progress);
+      this.selectedIconProgress = easeOutQuart(progress);
       if (progress >= 1) {
         this.selectedMotion = null;
         this.selectedScale = 1;
+        this.selectedIconProgress = 1;
       } else {
         active = true;
       }
@@ -1041,6 +1032,7 @@ class PixiBottomTab {
         active = true;
       }
     }
+    this.applyIconLayout();
     this.applyMotionTransform();
     return active;
   }
@@ -1051,6 +1043,31 @@ class PixiBottomTab {
       TAB_HEIGHT + this.swipeBumpY,
     );
     this.motionRoot.scale.set(this.selectedScale);
+  }
+
+  applyIconLayout() {
+    const selected = this.state.selected === true;
+    const selectionProgress =
+      selected && this.selectedMotion
+        ? this.selectedIconProgress
+        : selected
+          ? 1
+          : 0;
+    const inactiveCenterY =
+      TAB_RISE + 5 + TAB_ICON_SIZE / 2;
+    const selectedCenterY = 5 + TAB_ICON_SIZE / 2;
+    this.iconFrame.position.y = interpolate(
+      inactiveCenterY,
+      selectedCenterY,
+      selectionProgress,
+    );
+    this.iconFrame.scale.set(
+      interpolate(
+        TAB_ICON_INACTIVE_SCALE,
+        TAB_ICON_SELECTED_SCALE,
+        selectionProgress,
+      ),
+    );
   }
 
   updateVisualState() {
@@ -1066,23 +1083,10 @@ class PixiBottomTab {
     this.labelRoot.visible = selected;
     this.labelRoot.renderable = selected;
     this.labelRoot.alpha = locked ? 0.34 : 1;
-    this.iconFrame.position.y =
-      (selected ? 5 : TAB_RISE + 5) + TAB_ICON_SIZE / 2;
-    this.iconFrame.alpha = selected ? 1 : 0.72;
-    this.iconFrame.scale.set(
-      selected
-        ? TAB_ICON_SELECTED_SCALE
-        : TAB_ICON_INACTIVE_SCALE,
-    );
-    this.iconFrame.visible = !this.receivingUnlock;
+    this.iconFrame.alpha = 1;
+    this.applyIconLayout();
+    this.iconFrame.visible = !this.receivingUnlock && !locked;
     this.iconFrame.renderable = this.iconFrame.visible;
-    if (this.icon) {
-      this.icon.alpha = locked ? 0.5 : 1;
-      this.icon.filters =
-        locked && this.lockedIconFilter
-          ? [this.lockedIconFilter]
-          : null;
-    }
     this.notification.position.y = selected ? 0 : TAB_RISE;
   }
 
@@ -1127,11 +1131,6 @@ class PixiBottomTab {
     this.semanticRegistry?.unregister?.(this.semanticId, {
       displayObject: this.root,
     });
-    if (this.icon) {
-      this.icon.filters = null;
-    }
-    this.lockedIconFilter?.destroy?.();
-    this.lockedIconFilter = null;
     this.settleMotion();
     this.root.destroy({ children: true });
   }
@@ -1150,23 +1149,17 @@ class PixiRoomTabFrame extends Container {
     this.mode = 'inactive';
     this.selected = false;
     this.locked = false;
-    this.backing = new Graphics();
-    this.backing.label = `${label}:backing`;
     const initial = ROOM_TAB_FRAME_STATES.inactive;
-    this.nineSlice = new NineSliceSprite({
+    this.sprite = new Sprite({
       texture: assets.getTexture(initial.textureId),
-      leftWidth: initial.sourceInsets.left,
-      topHeight: initial.sourceInsets.top,
-      rightWidth: initial.sourceInsets.right,
-      bottomHeight: initial.sourceInsets.bottom,
+      label: `${label}:sprite`,
       roundPixels: true,
     });
-    this.nineSlice.label = `${label}:nineSlice`;
     this.lockedFilter = createColorFilter({
       grayscale: 0.6,
       brightness: 0.72,
     });
-    this.addChild(this.backing, this.nineSlice);
+    this.addChild(this.sprite);
     this.redraw();
   }
 
@@ -1205,46 +1198,17 @@ class PixiRoomTabFrame extends Container {
           ? TAB_ACTIVE_HEIGHT
           : TAB_INACTIVE_HEIGHT
       ) + TAB_BOTTOM_BLEED;
-    const radius = Math.min(
-      appearance.radius,
-      this.frameWidth / 2,
-      frameHeight,
-    );
-
-    this.backing
-      .clear()
-      .moveTo(0, frameY + frameHeight)
-      .lineTo(0, frameY + radius)
-      .quadraticCurveTo(0, frameY, radius, frameY)
-      .lineTo(this.frameWidth - radius, frameY)
-      .quadraticCurveTo(
-        this.frameWidth,
-        frameY,
-        this.frameWidth,
-        frameY + radius,
-      )
-      .lineTo(this.frameWidth, frameY + frameHeight)
-      .closePath()
-      .fill(appearance.fill);
 
     const texture = this.assets.getTexture(appearance.textureId);
-    if (this.nineSlice.texture !== texture) {
-      this.nineSlice.texture = texture;
+    if (this.sprite.texture !== texture) {
+      this.sprite.texture = texture;
     }
-    this.nineSlice.leftWidth = appearance.sourceInsets.left;
-    this.nineSlice.topHeight = appearance.sourceInsets.top;
-    this.nineSlice.rightWidth = appearance.sourceInsets.right;
-    this.nineSlice.bottomHeight = appearance.sourceInsets.bottom;
-    this.nineSlice.position.set(0, frameY);
-    this.nineSlice.scale.set(ROOM_TAB_FRAME_SCALE);
-    this.nineSlice.setSize(
-      this.frameWidth / ROOM_TAB_FRAME_SCALE,
-      frameHeight / ROOM_TAB_FRAME_SCALE,
-    );
+    this.sprite.position.set(0, frameY);
+    this.sprite.width = this.frameWidth;
+    this.sprite.height = frameHeight;
     this.frameY = frameY;
     this.frameHeight = frameHeight;
     this.textureId = appearance.textureId;
-    this.sourceInsets = appearance.sourceInsets;
   }
 
   destroy(options) {
@@ -1425,6 +1389,10 @@ function swipeBumpOffset(progress) {
 
 function easeSoft(progress) {
   return cubicBezier(progress, 0.39, 0.575, 0.565, 1);
+}
+
+function easeOutQuart(progress) {
+  return 1 - (1 - progress) ** 4;
 }
 
 function cubicBezier(progress, x1, y1, x2, y2) {

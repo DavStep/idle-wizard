@@ -290,8 +290,8 @@ export class ShopTradeHistoryManager {
     const coin = totalPriceCoin || priceCoin * quantity;
 
     return {
-      buyerUsername: trade.buyerUsername || 'wizard',
-      sellerUsername: trade.sellerUsername || 'wizard',
+      buyerUsername: trade.buyerUsername || 'Wizard',
+      sellerUsername: trade.sellerUsername || 'Wizard',
       itemText,
       coin,
     };

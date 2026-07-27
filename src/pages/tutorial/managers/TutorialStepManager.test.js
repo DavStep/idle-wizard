@@ -395,9 +395,17 @@ describe('TutorialStepManager', () => {
     expect(getStep()).toMatchObject({
       id: 'purchase-house',
       kind: 'dialog',
+      lessonTitle: 'The Story Begins',
       advanceLabel: 'enter workshop',
       variant: 'intro-dialog',
-      stepLabel: '1/34',
+      stepLabel: '1/31',
+    });
+  });
+
+  it('uses title case for lesson titles in retained and DOM renderers', () => {
+    expect(getStep({ completed: ['purchase-house'] })).toMatchObject({
+      id: 'intro-welcome',
+      lessonTitle: 'Lesson 1: Introduction',
     });
   });
 
@@ -548,8 +556,8 @@ describe('TutorialStepManager', () => {
       id: 'intro-market',
       kind: 'dialog',
       targetId: 'workshop:summonSeed',
-      lessonTitle: 'market opened',
-      stepLabel: '9/34',
+      lessonTitle: 'Market Opened',
+      stepLabel: '9/31',
     });
   });
 
@@ -622,13 +630,13 @@ describe('TutorialStepManager', () => {
       id: 'open-market',
       targetId: 'page:shop',
       objectiveText: 'sell sage seeds in market',
-      stepLabel: '11/34',
+      stepLabel: '11/31',
     });
     expect(getStep({ pageId: 'shop', snapshot, completed })).toMatchObject({
       id: 'select-market-stand',
       targetId: 'shop:stand:1',
       objectiveText: 'open the first stall',
-      stepLabel: '12/34',
+      stepLabel: '12/31',
     });
   });
 
@@ -696,7 +704,7 @@ describe('TutorialStepManager', () => {
       hintText: 'select sage seed',
       objectiveText: 'load sage seed into the stall',
       progressLabel: '0/1 seed',
-      stepLabel: '13/34',
+      stepLabel: '13/31',
     });
 
     expect(
@@ -755,7 +763,7 @@ describe('TutorialStepManager', () => {
       hintText: '',
       objectiveText: 'wait for the stall to sell',
       progressLabel: '0/1 sale',
-      stepLabel: '14/34',
+      stepLabel: '14/31',
     });
   });
 
@@ -918,107 +926,6 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('ignores stale level 2 coin costs after requirements are done', () => {
-    expect(
-      getStep({
-        snapshot: createLevelTwoSnapshot({
-          coin: { current: 0.8 },
-          tasks: {
-            currentLevel: 1,
-            level: {
-              completion: { canComplete: true, costCoin: 4 },
-              tasks: [
-                createTask({
-                  taskId: 'level2-summon-sage-seed',
-                  itemKey: 'sageSeed',
-                  type: 'summon',
-                  requiredQuantity: 5,
-                  progressQuantity: 5,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-                createTask({
-                  taskId: 'level2-sell-sage-seed',
-                  itemKey: 'sageSeed',
-                  type: 'sell',
-                  requiredQuantity: 1,
-                  progressQuantity: 1,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-                createTask({
-                  taskId: 'level2-turn-in-sage-seed',
-                  itemKey: 'sageSeed',
-                  requiredQuantity: 4,
-                  progressQuantity: 4,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-              ],
-            },
-          },
-        }),
-        completed: completedThrough('unselect-sage-seed-sale'),
-      }),
-    ).toMatchObject({
-      id: 'level-up-two',
-      targetId: 'workshop:tasks',
-      hintText: "open elara's level 2 request",
-      progressLabel: '1/1 ready',
-    });
-  });
-
-  it('targets the level-up control when level 2 requirements are expanded', () => {
-    expect(
-      getStep({
-        snapshot: createLevelTwoSnapshot({
-          coin: { current: 4 },
-          tasks: {
-            currentLevel: 1,
-            level: {
-              completion: { canComplete: true, costCoin: 4 },
-              tasks: [
-                createTask({
-                  taskId: 'level2-summon-sage-seed',
-                  itemKey: 'sageSeed',
-                  type: 'summon',
-                  requiredQuantity: 5,
-                  progressQuantity: 5,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-                createTask({
-                  taskId: 'level2-sell-sage-seed',
-                  itemKey: 'sageSeed',
-                  type: 'sell',
-                  requiredQuantity: 1,
-                  progressQuantity: 1,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-                createTask({
-                  taskId: 'level2-turn-in-sage-seed',
-                  itemKey: 'sageSeed',
-                  requiredQuantity: 4,
-                  progressQuantity: 4,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-              ],
-            },
-          },
-        }),
-        dom: createDomFake({ tasksExpanded: true }),
-        completed: completedThrough('unselect-sage-seed-sale'),
-      }),
-    ).toMatchObject({
-      id: 'level-up-two',
-      targetId: 'workshop:levelUp',
-      progressLabel: '1/1 ready',
-      stepLabel: '17/34',
-    });
-  });
-
   it('introduces mint seed research on level 3', () => {
     expect(
       getStep({
@@ -1048,7 +955,7 @@ describe('TutorialStepManager', () => {
       id: 'research-mint-seed',
       targetId: 'research:unlockSeed:mintSeed',
       objectiveText: 'research mint seed',
-      stepLabel: '19/34',
+      stepLabel: '18/31',
     });
   });
 
@@ -1063,7 +970,7 @@ describe('TutorialStepManager', () => {
       id: 'fill-mint-seed-task',
       targetId: 'task:level3-turn-in-mint-seed',
       hintText: 'turn in',
-      stepLabel: '21/34',
+      stepLabel: '20/31',
     });
   });
 
@@ -1102,53 +1009,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'fill-sage-seed-task',
       targetId: 'task:level3-turn-in-sage-seed',
-      stepLabel: '22/34',
-    });
-  });
-
-  it('ignores stale level 3 coin costs and points back to level-up', () => {
-    expect(
-      getStep({
-        snapshot: createLevelThreeSnapshot({
-          coin: { current: 6.4 },
-          seedInventory: [{ key: 'mintSeed', quantity: 2 }],
-          shop: {
-            shelf: {
-              slots: [],
-              sellItems: [{ key: 'mintSeed', kind: 'seed', quantity: 2, fastSellCoin: 0.8 }],
-            },
-          },
-          tasks: {
-            currentLevel: 2,
-            level: {
-              completion: { canComplete: true, costCoin: 8 },
-              tasks: [
-                createTask({
-                  taskId: 'level3-turn-in-mint-seed',
-                  itemKey: 'mintSeed',
-                  requiredQuantity: 3,
-                  progressQuantity: 3,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-                createTask({
-                  taskId: 'level3-turn-in-sage-seed',
-                  itemKey: 'sageSeed',
-                  requiredQuantity: 6,
-                  progressQuantity: 6,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-              ],
-            },
-          },
-        }),
-      }),
-    ).toMatchObject({
-      id: 'level-up-three',
-      targetId: 'workshop:tasks',
-      progressLabel: '1/1 ready',
-      stepLabel: '23/34',
+      stepLabel: '21/31',
     });
   });
 
@@ -1157,8 +1018,8 @@ describe('TutorialStepManager', () => {
       id: 'intro-garden',
       kind: 'dialog',
       targetId: 'page:garden',
-      lessonTitle: 'garden opened',
-      stepLabel: '24/34',
+      lessonTitle: 'Garden Opened',
+      stepLabel: '22/31',
     });
   });
 
@@ -1172,7 +1033,7 @@ describe('TutorialStepManager', () => {
       id: 'grow-sage',
       targetId: 'workshop:tasks',
       hintText: "open elara's level 4 request",
-      stepLabel: '25/34',
+      stepLabel: '23/31',
     });
   });
 
@@ -1205,7 +1066,7 @@ describe('TutorialStepManager', () => {
       id: 'fill-sage-herb-task',
       targetId: 'task:level4-turn-in-sage-herb',
       hintText: 'turn in sage',
-      stepLabel: '27/34',
+      stepLabel: '25/31',
     });
   });
 
@@ -1242,53 +1103,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'fill-mint-herb-task',
       targetId: 'page:garden',
-      stepLabel: '28/34',
-    });
-  });
-
-  it('ignores stale level 4 coin costs and points back to level-up', () => {
-    expect(
-      getStep({
-        snapshot: createLevelFourSnapshot({
-          coin: { current: 10 },
-          inventory: [{ key: 'sageHerb', quantity: 2 }],
-          shop: {
-            shelf: {
-              slots: [],
-              sellItems: [{ key: 'sageHerb', kind: 'herb', quantity: 2, fastSellCoin: 4.8 }],
-            },
-          },
-          tasks: {
-            currentLevel: 3,
-            level: {
-              completion: { canComplete: true, costCoin: 16 },
-              tasks: [
-                createTask({
-                  taskId: 'level4-turn-in-sage-herb',
-                  itemKey: 'sageHerb',
-                  requiredQuantity: 2,
-                  progressQuantity: 2,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-                createTask({
-                  taskId: 'level4-turn-in-mint-herb',
-                  itemKey: 'mintHerb',
-                  requiredQuantity: 1,
-                  progressQuantity: 1,
-                  remainingQuantity: 0,
-                  completed: true,
-                }),
-              ],
-            },
-          },
-        }),
-      }),
-    ).toMatchObject({
-      id: 'level-up-four',
-      targetId: 'workshop:tasks',
-      progressLabel: '1/1 ready',
-      stepLabel: '29/34',
+      stepLabel: '26/31',
     });
   });
 
@@ -1296,7 +1111,7 @@ describe('TutorialStepManager', () => {
     expect(getStep({ pageId: 'research', snapshot: createLevelFiveSnapshot() })).toMatchObject({
       id: 'research-mana-tonic',
       targetId: 'research:unlockRecipe:manaTonic',
-      stepLabel: '30/34',
+      stepLabel: '27/31',
     });
   });
 
@@ -1317,7 +1132,7 @@ describe('TutorialStepManager', () => {
       id: 'brew-mana-tonic',
       targetId: 'brewing:herb:sageHerb',
       hintText: 'tap sage to fill cauldron. recipes care about order',
-      stepLabel: '32/34',
+      stepLabel: '29/31',
     });
   });
 
@@ -1337,7 +1152,7 @@ describe('TutorialStepManager', () => {
       id: 'brew-mana-tonic',
       targetId: 'brewing:inventory:herbs',
       hintText: 'open herbs',
-      stepLabel: '32/34',
+      stepLabel: '29/31',
     });
   });
 
@@ -1384,7 +1199,7 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'intro-brewing',
       targetId: 'page:brewing',
-      stepLabel: '31/34',
+      stepLabel: '28/31',
     });
   });
 
@@ -1421,7 +1236,7 @@ describe('TutorialStepManager', () => {
       id: 'refill-mana-tonic-cauldron',
       targetId: 'task:level5-turn-in-mana-tonic',
       hintText: 'turn in mana tonic',
-      stepLabel: '34/34',
+      stepLabel: '31/31',
     });
   });
 

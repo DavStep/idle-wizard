@@ -6,28 +6,136 @@ import { describe, expect, it, vi } from 'vitest';
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import {
+  DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
+} from '../../theme/PixiThemeTokens.js';
+import {
   createTutorialPixiViewModel,
   TutorialPixiOverlay,
 } from './TutorialPixiOverlay.js';
 import {
   projectSemanticBoundsToSource,
   resolveTutorialPointerPlacement,
+  TUTORIAL_PIXI_GEOMETRY,
 } from './TutorialPixiGeometry.js';
 import { TutorialRevealController } from './TutorialRevealController.js';
-import { TutorialPointerSpine } from './TutorialPointerSpine.js';
+import {
+  TUTORIAL_POINTER_DRAG_TIMING,
+  TutorialPointerSpine,
+} from './TutorialPointerSpine.js';
 
 installPixiPageTestCanvas();
 
 describe('TutorialPixiOverlay', () => {
+  it('proxies pointer-guided taps to the current semantic target', () => {
+    const registry = new SemanticTargetRegistry();
+    const target = new Container();
+    target.visible = true;
+    target.renderable = true;
+    target.eventMode = 'static';
+    target.getBounds = () => ({
+      x: 60,
+      y: 300,
+      width: 90,
+      height: 60,
+    });
+    const activate = vi.fn(() => true);
+    registry.register({
+      semanticId: 'shop.stall.1',
+      tutorialId: 'shop:stand:1',
+      displayObject: target,
+      state: () => ({
+        enabled: true,
+        interactive: true,
+        visible: true,
+        tutorialPointerGesture: {
+          kind: 'horizontal-drag',
+          travelX: 30,
+        },
+      }),
+      activate,
+    });
+    const pressRegistrations = [];
+    const inputRouter = {
+      registerPressTarget: vi.fn((displayObjectOrDescriptor, descriptor) => {
+        const registration =
+          descriptor ??
+          displayObjectOrDescriptor;
+        const release = vi.fn();
+        release.unregister = release;
+        release.update = vi.fn();
+        pressRegistrations.push({ registration, release });
+        return release;
+      }),
+      registerDragSource: vi.fn(() => {
+        const release = vi.fn();
+        release.unregister = release;
+        return release;
+      }),
+    };
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      inputRouter,
+      semanticRegistry: registry,
+      reducedMotion: true,
+    });
+
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      step: {
+        id: 'select-market-stand',
+        targetId: 'shop:stand:1',
+      },
+      lesson: {
+        id: 'select-market-stand',
+        text: 'open the first stall',
+      },
+      cue: {
+        kind: 'target-cue',
+        targetId: 'shop:stand:1',
+        showPointer: true,
+      },
+    });
+
+    const proxy = pressRegistrations.find(
+      ({ registration }) =>
+        registration.id === 'tutorial.target.proxy',
+    );
+    expect(proxy?.registration).toMatchObject({
+      displayObject: target,
+      fallbackHitTest: true,
+      priority: 1000,
+    });
+    expect(proxy?.registration.enabled()).toBe(true);
+    expect(proxy?.registration.onActivate({ source: 'pointer' })).toBe(true);
+    expect(activate).toHaveBeenCalledTimes(1);
+    expect(overlay.pointer.gesture).toEqual({
+      kind: 'horizontal-drag',
+      travelX: 30,
+    });
+
+    overlay.bind({
+      kind: 'quest',
+      step: null,
+      lesson: null,
+      cue: { kind: 'none' },
+    });
+    expect(proxy?.release).toHaveBeenCalledTimes(1);
+
+    overlay.destroy();
+  });
+
   it('adapts facade state to semantic targets and retained guide visuals', () => {
     const registry = createRegistry();
+    const assets = createAssets();
     const actions = {
       advance: vi.fn(),
       objectivePress: vi.fn(),
       lessonPanelClose: vi.fn(),
     };
     const overlay = new TutorialPixiOverlay({
-      assets: createAssets(),
+      assets,
       semanticRegistry: registry,
       reducedMotion: true,
     });
@@ -68,6 +176,56 @@ describe('TutorialPixiOverlay', () => {
     expect(overlay.surface.copy.text).toBe(
       'mana refills over time.',
     );
+    expect(overlay.surface.visualTheme).toMatchObject({
+      surface: '#ffe7c8',
+      activeSurface: '#f3d4ad',
+      text: '#634934',
+      muted: '#725737',
+    });
+    expect(overlay.surface.copy.textObject.style.fill).toBe(
+      '#634934',
+    );
+    expect(
+      overlay.surface.advanceControl.variant,
+    ).toBe('yellow');
+    expect(
+      overlay.surface.advanceControl.textLabel.textObject.style.fill,
+    ).toBe('#ffffff');
+    expect(overlay.surface.advanceControl.textLabel.text).toBe('Next');
+    expect(overlay.surface.advanceControl.x).toBeGreaterThanOrEqual(0);
+    expect(overlay.surface.advanceControl.y).toBeGreaterThanOrEqual(0);
+    expect(
+      overlay.surface.advanceControl.x +
+        overlay.surface.advanceControl.buttonWidth,
+    ).toBeLessThanOrEqual(overlay.surface.outerWidth);
+    expect(
+      overlay.surface.advanceControl.y +
+        overlay.surface.advanceControl.buttonHeight,
+    ).toBeLessThanOrEqual(overlay.surface.outerHeight);
+    expect(
+      overlay.surface.progress.width,
+    ).toBeLessThan(overlay.surface.contentWidth);
+    expect(
+      overlay.surface.advanceControl.x -
+        (overlay.surface.progress.x +
+          overlay.surface.progress.barWidth),
+    ).toBe(6);
+    expect(overlay.guideLabelButton.variant).toBe('brown-light');
+    expect(overlay.guideLabel.text).toBe('hide');
+    expect(overlay.guideLabel.textObject.style.fill).toBe('#ffffff');
+    expect(overlay.guideLabel.textObject.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: 4,
+    });
+    expect(assets.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.researchCard,
+    );
+    expect(overlay.surface.frame.visible).toBe(true);
+    expect(overlay.surface.title.position).toMatchObject({
+      x: 12,
+      y: 9,
+    });
+    expect(overlay.surface.stepLabel.visible).toBe(false);
     expect(overlay.backdrop.visible).toBe(true);
     expect(overlay.pointer.root.visible).toBe(true);
     expect(overlay.root.children).toEqual(children);
@@ -78,6 +236,8 @@ describe('TutorialPixiOverlay', () => {
       barHeight: 10,
       end: 0.5,
     });
+    overlay.surface.advanceControl.activate();
+    expect(actions.advance).toHaveBeenCalledTimes(1);
 
     overlay.setGuidePlacement({ buttonLeft: 52, buttonTop: 204 });
     expect(overlay.manualPlacement).toEqual({
@@ -89,6 +249,66 @@ describe('TutorialPixiOverlay', () => {
     expect(overlay.surface.root.visible).toBe(false);
     expect(overlay.isLessonPanelOpen()).toBe(false);
     expect(actions.lessonPanelClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts every tutorial advance label with a capital letter', () => {
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+    overlay.activate();
+
+    for (const [advanceLabel, expected] of [
+      ['next', 'Next'],
+      ['continue', 'Continue'],
+      ['enter workshop', 'Enter workshop'],
+    ]) {
+      overlay.bind({
+        kind: 'lesson',
+        step: { id: advanceLabel, highlightTargetIds: [] },
+        lesson: {
+          id: advanceLabel,
+          text: 'Advance label check.',
+          autoOpen: true,
+          advanceOnClick: true,
+          advanceLabel,
+          progress: 0.5,
+        },
+        cue: { kind: 'none' },
+      });
+
+      expect(overlay.surface.advanceControl.textLabel.text).toBe(
+        expected,
+      );
+    }
+  });
+
+  it('keeps the intro dialog on its dedicated themed surface', () => {
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      step: { id: 'intro', highlightTargetIds: [] },
+      lesson: {
+        id: 'intro',
+        text: 'Welcome to the workshop.',
+        variant: 'intro-dialog',
+        autoOpen: true,
+      },
+      cue: { kind: 'none' },
+    });
+
+    expect(overlay.surface.visualTheme.surface).toBe(
+      DEFAULT_PIXI_THEME_SNAPSHOT.surface,
+    );
+    expect(overlay.surface.copy.textObject.style.fill).toBe(
+      DEFAULT_PIXI_THEME_SNAPSHOT.text,
+    );
+    expect(overlay.surface.frame.visible).toBe(false);
+    expect(overlay.surface.introFrame.visible).toBe(true);
   });
 
   it('typewrites each exact step/copy pair once and stops idle ticker work', () => {
@@ -129,6 +349,49 @@ describe('TutorialPixiOverlay', () => {
     });
     expect(overlay.surface.copy.text).toBe('abcd');
     expect(ticker.handlers.size).toBe(0);
+  });
+
+  it('sizes from final copy so typewriting widens without changing height', () => {
+    const ticker = createTicker();
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      application: { ticker },
+    });
+    const copy =
+      'Summon seeds and sell one for the market task';
+
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      step: { id: 'wide-copy', highlightTargetIds: [] },
+      lesson: {
+        id: 'wide-copy',
+        text: copy,
+        autoOpen: true,
+      },
+      cue: { kind: 'none' },
+    });
+
+    const initialSize = {
+      width: overlay.surface.outerWidth,
+      height: overlay.surface.outerHeight,
+    };
+
+    expect(overlay.surface.copy.text).toBe('');
+    expect(initialSize.width).toBeGreaterThan(
+      TUTORIAL_PIXI_GEOMETRY.panelOuterWidth,
+    );
+    expect(initialSize.width).toBeLessThanOrEqual(278);
+
+    ticker.tick(12);
+    expect(overlay.surface.copy.text).toBe('Su');
+    expect(overlay.surface.outerWidth).toBe(initialSize.width);
+    expect(overlay.surface.outerHeight).toBe(initialSize.height);
+
+    ticker.tick(copy.length * 12);
+    expect(overlay.surface.copy.text).toBe(copy);
+    expect(overlay.surface.outerWidth).toBe(initialSize.width);
+    expect(overlay.surface.outerHeight).toBe(initialSize.height);
   });
 
   it('restores room reveal groups when a blocker hides the tutorial surface', () => {
@@ -329,6 +592,78 @@ describe('TutorialPointerSpine', () => {
     expect(skeleton.update).toHaveBeenCalledTimes(2);
     expect(skeleton.state.timeScale).toBe(0);
   });
+
+  it('presses, holds, drags right, releases, hides, and repeats after two seconds', async () => {
+    const skeleton = new Container();
+    skeleton.state = {
+      timeScale: 1,
+      setAnimation: vi.fn(),
+    };
+    skeleton.update = vi.fn();
+    skeleton.getBounds = () => ({
+      x: 0,
+      y: 0,
+      width: 20,
+      height: 30,
+    });
+    const spineRuntime = {
+      loadSkeleton: vi.fn(async () => ({})),
+      createSkeleton: vi.fn(async () => skeleton),
+    };
+    const pointer = new TutorialPointerSpine({ spineRuntime });
+    const timing = TUTORIAL_POINTER_DRAG_TIMING;
+    const baseX = 94;
+
+    pointer.setPlacement({
+      id: 'bottom-right',
+      x: 100,
+      y: 100,
+    });
+    pointer.setGesture({
+      kind: 'horizontal-drag',
+      travelX: 40,
+    });
+    pointer.setVisible(true);
+    await pointer.whenReady();
+
+    pointer.update(timing.appearMs + timing.pressMs);
+    expect(pointer.root.visible).toBe(true);
+    expect(pointer.root.x).toBe(baseX);
+
+    pointer.update(timing.holdMs + timing.dragMs / 2);
+    expect(pointer.root.x).toBeGreaterThan(baseX);
+    expect(pointer.root.x).toBeLessThan(baseX + 40);
+    expect(skeleton.state.timeScale).toBe(0);
+
+    pointer.update(timing.dragMs / 2);
+    expect(pointer.root.x).toBe(baseX + 40);
+
+    pointer.update(timing.releaseMs / 2);
+    expect(skeleton.state.timeScale).toBe(1);
+    expect(pointer.root.visible).toBe(true);
+
+    pointer.update(timing.releaseMs / 2 + timing.hideMs);
+    expect(pointer.root.visible).toBe(false);
+
+    pointer.update(timing.repeatDelayMs - 1);
+    expect(pointer.root.visible).toBe(false);
+
+    pointer.update(2);
+    expect(pointer.root.visible).toBe(true);
+    expect(pointer.root.x).toBe(baseX);
+    expect(skeleton.state.setAnimation).toHaveBeenLastCalledWith(
+      0,
+      'click1',
+      false,
+    );
+
+    pointer.setGesture(null);
+    expect(skeleton.state.setAnimation).toHaveBeenLastCalledWith(
+      0,
+      'click1',
+      true,
+    );
+  });
 });
 
 function createRegistry() {
@@ -354,7 +689,7 @@ function createRegistry() {
 function createAssets() {
   return {
     loaded: true,
-    getTexture: () => Texture.EMPTY,
+    getTexture: vi.fn(() => Texture.EMPTY),
   };
 }
 

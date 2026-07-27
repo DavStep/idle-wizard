@@ -497,6 +497,16 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
               recipe,
               model.cauldronIndex,
             ),
+          researchRecipe: (recipe) =>
+            recipe.onResearch?.(recipe) ??
+            model.actions?.researchRecipe?.(
+              recipe,
+              model.cauldronIndex,
+            ) ??
+            this.currentActions?.researchRecipe?.(
+              recipe,
+              model.cauldronIndex,
+            ),
         },
       };
     }

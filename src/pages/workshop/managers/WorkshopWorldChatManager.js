@@ -600,7 +600,7 @@ export class WorkshopWorldChatManager {
       return false;
     }
 
-    if ((serverMessage?.username || 'wizard') !== (localMessage?.username || 'wizard')) {
+    if ((serverMessage?.username || 'Wizard') !== (localMessage?.username || 'Wizard')) {
       return false;
     }
 
@@ -731,7 +731,7 @@ export class WorkshopWorldChatManager {
   }
 
   formatSender(message) {
-    const username = message?.username || 'wizard';
+    const username = message?.username || 'Wizard';
     const fallbackLevel = this.isSystemMessage(message) ? null : 1;
     const playerLevel = this.normalizePlayerLevel(message?.playerLevel, fallbackLevel);
     const allianceTag = this.normalizeAllianceTag(message?.allianceTag);
@@ -749,7 +749,7 @@ export class WorkshopWorldChatManager {
   }
 
   createSenderContent(message, { interactiveSender = true } = {}) {
-    const username = message?.username || 'wizard';
+    const username = message?.username || 'Wizard';
     const fallbackLevel = this.isSystemMessage(message) ? null : 1;
     const playerLevel = this.normalizePlayerLevel(message?.playerLevel, fallbackLevel);
     const tag = createAllianceTagSpan(message?.allianceTag, message?.allianceTagColor);
@@ -884,7 +884,7 @@ export class WorkshopWorldChatManager {
   hasSameSenderBody(serverMessage, localMessage) {
     return (
       serverMessage?.body === localMessage?.body &&
-      (serverMessage?.username || 'wizard') === (localMessage?.username || 'wizard')
+      (serverMessage?.username || 'Wizard') === (localMessage?.username || 'Wizard')
     );
   }
 
@@ -894,7 +894,7 @@ export class WorkshopWorldChatManager {
     }
 
     return [
-      message?.username || 'wizard',
+      message?.username || 'Wizard',
       message?.body ?? '',
       Number(message?.sentAtMs) || 0,
     ].join('|');
@@ -912,7 +912,7 @@ export class WorkshopWorldChatManager {
     return {
       id: `local-${channelId}-${sentAtMs}-${this.localMessageSeq}`,
       senderIdentity: 'local',
-      username: player.username || 'wizard',
+      username: player.username || 'Wizard',
       character: player.character,
       playerLevel,
       body,

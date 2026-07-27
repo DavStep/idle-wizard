@@ -140,6 +140,7 @@ describe('createShop', () => {
       timerLabel: '45s',
     });
     expect(model.shop.traders.stalls[0].dialog).toMatchObject({
+      title: 'Load Stall',
       range: {
         enabled: true,
         value: 20,
@@ -149,17 +150,34 @@ describe('createShop', () => {
           itemKey: 'sageSeed',
           itemKind: 'seed',
           quantityLabel: 'x2',
-          value: 'sage seed',
+          label: 'Current',
+          value: 'Sage Seed',
         },
       ],
     });
     expect(model.shop.traders.stalls[0].dialog.items[0]).toMatchObject({
+      label: 'Sage Seed',
+      detail: '8 Available',
       itemKey: 'sageSeed',
       itemKind: 'seed',
+      semanticId: 'shop.stall.1.item.sageSeed',
+      tutorialId: 'shop:sell:sageSeed',
     });
     expect(model.shop.traders.stalls[0].dialog.actions[0]).toMatchObject({
-      label: 'mark x2',
+      label: 'Mark x2',
       enabled: false,
+      semanticId: 'shop.stall.1.mark',
+      tutorialId: 'shop:sell:mark',
+    });
+    expect(model.shop.traders.stalls[0].dialog.actions).toMatchObject([
+      { label: 'Mark x2' },
+      { label: 'Clear' },
+      { label: 'Mark Future' },
+    ]);
+    expect(model.shop.traders.stalls[0].dialog.tabs[0]).toMatchObject({
+      label: 'Seeds',
+      semanticId: 'shop.stall.1.tab.seed',
+      tutorialId: 'shop:sell:tab:seed',
     });
     expect(model.shop.players.requests.slots[0]).toMatchObject({
       itemLabel: 'sage seed (2)',
@@ -207,6 +225,78 @@ describe('createShop', () => {
     expect(gameplayActions.collectShopCoinOffer).toHaveBeenCalledTimes(
       1,
     );
+  });
+
+  it('shows only unlocked stall tabs and researched stall items', () => {
+    const gameplaySnapshot = {
+      playerLevel: { currentLevel: 1 },
+      research: {
+        completedResearchIds: ['unlockSeed:sageSeed'],
+      },
+      shop: {
+        shelf: {
+          sellKinds: [
+            { kind: 'seed', label: 'seeds' },
+            { kind: 'herb', label: 'herbs' },
+            { kind: 'potion', label: 'potions' },
+          ],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              kind: 'seed',
+              label: 'sage seed',
+              quantity: 0,
+            },
+            {
+              itemTypeId: 2,
+              key: 'mintSeed',
+              kind: 'seed',
+              label: 'mint seed',
+              quantity: 4,
+            },
+            {
+              itemTypeId: 1001,
+              key: 'sageHerb',
+              kind: 'herb',
+              label: 'sage',
+              quantity: 0,
+            },
+            {
+              itemTypeId: 2001,
+              key: 'manaTonic',
+              kind: 'potion',
+              label: 'mana tonic',
+              quantity: 0,
+            },
+          ],
+          slots: [
+            {
+              slotNumber: 1,
+              sellItemTypeId: null,
+              futureItemTypeId: null,
+              loadedQuantity: 0,
+            },
+          ],
+        },
+      },
+    };
+
+    const createDialog = () =>
+      createShop({ gameplaySnapshot }).shop.traders.stalls[0].dialog;
+
+    expect(createDialog().tabs.map((tab) => tab.id)).toEqual(['seed']);
+    expect(createDialog().items.map((item) => item.itemKey)).toEqual(['sageSeed']);
+
+    gameplaySnapshot.playerLevel.currentLevel = 2;
+    expect(createDialog().tabs.map((tab) => tab.id)).toEqual(['seed', 'herb']);
+
+    gameplaySnapshot.playerLevel.currentLevel = 4;
+    expect(createDialog().tabs.map((tab) => tab.id)).toEqual([
+      'seed',
+      'herb',
+      'potion',
+    ]);
   });
 
   it('adapts raw subscription emissions before binding them', () => {

@@ -8,14 +8,112 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
+import { TutorialRevealController } from '../../global/tutorial/TutorialRevealController.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import { PIXI_ROOT_RUN_ASSETS } from '../../theme/PixiThemeTokens.js';
+import { ShopDialogPixi } from '../shop/ShopDialogPixi.js';
 import { WorkshopPixiPage } from './WorkshopPixiPage.js';
 
 describe('WorkshopPixiPage', () => {
+  it('renders the request panel copy in white with the shared dark stroke', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.tasks.nextText = 'next request';
+    model.workshop.tasks.rewards = ['1 crystal'];
+
+    harness.page.bind(model);
+
+    const row = harness.page.tasks.rows.get('request-1');
+    for (const text of [
+      harness.page.tasks.panel.title,
+      harness.page.tasks.next,
+      harness.page.tasks.rewardsTitle,
+      harness.page.tasks.rewards,
+      row.label,
+      row.value,
+    ]) {
+      expect(text.style.fill).toBe('#ffffff');
+      expect(text.style.stroke).toMatchObject({
+        color: '#17191f',
+        width: 2,
+        join: 'round',
+      });
+    }
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders Workshop side controls with capitalized white stroked labels and enlarged art', () => {
+    const harness = createHarness();
+    harness.page.bind(createWorkshopViewModel());
+
+    const sideControls = [
+      harness.page.bagButton,
+      harness.page.inboxButton,
+      harness.page.features.get('alliance'),
+      harness.page.features.get('leaderboard'),
+      harness.page.features.get('discoveries'),
+      harness.page.features.get('personalTasks'),
+      harness.page.features.get('worldEvent'),
+    ];
+
+    expect(sideControls.map((control) => control.label.text)).toEqual([
+      'Bag',
+      'Inbox',
+      'Alliance',
+      'Leaderboard',
+      'Discoveries',
+      'Tasks',
+      'Event',
+    ]);
+    for (const control of sideControls) {
+      expect(control.label.style.fill).toBe('#ffffff');
+      expect(control.label.style.stroke).toMatchObject({
+        color: '#0a0a0a',
+        width: 2,
+        join: 'round',
+      });
+    }
+    expect(harness.page.statsButton.text.text).toBe('Stats');
+    expect(harness.page.inboxButton.iconScale).toBe(1.3);
+    expect(
+      harness.page.features.get('leaderboard').presentation.scale,
+    ).toBe(1.2);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('uses the compact shared yellow button for request actions', () => {
+    const harness = createHarness();
+    const turnIn = vi.fn(() => ({ ok: true }));
+    const model = createWorkshopViewModel();
+    model.workshop.tasks.rows[0].actionLabel = 'turn in';
+    model.workshop.tasks.rows[0].enabled = true;
+    model.workshop.tasks.rows[0].onActivate = turnIn;
+
+    harness.page.bind(model);
+
+    const action = harness.page.tasks.rows.get('request-1').action;
+    expect(action.variant).toBe('yellow');
+    expect(action.control.variant).toBe('yellow');
+    expect(action.nineSlice.visible).toBe(true);
+    expect(action.root.visible).toBe(true);
+    expect(action).toMatchObject({
+      width: 58,
+      height: 20,
+    });
+    expect(action.handleTap()).toEqual({ ok: true });
+    expect(turnIn).toHaveBeenCalledWith(model.workshop.tasks.rows[0]);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('retains its page tree and keyed repeated widgets across snapshot updates', () => {
     const harness = createHarness();
     const registry = new PageRegistry({
@@ -158,6 +256,232 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('uses compact text and a wider frame-attached strip for Bag tabs', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.bag = {
+      title: 'Bag',
+      selectedTabId: 'currencies',
+      tabs: [
+        { id: 'currencies', label: 'Currencies', selected: true },
+        { id: 'seeds', label: 'Seeds', selected: false },
+        { id: 'herbs', label: 'Herbs', selected: false },
+        { id: 'potions', label: 'Potions', selected: false },
+        { id: 'ingredients', label: 'Ingredients', selected: false },
+      ],
+      rows: [],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('bag');
+
+    const dialog = harness.dialogs.get('workshop.bag');
+    const tabs = dialog.tabs.getWidgets();
+    const expectedTabWidth = (286 - 3 * (tabs.length - 1)) / tabs.length;
+
+    expect(dialog.panel.titleLabel.textObject.text).toBe('Bag');
+    expect(dialog.tabsLayer.position.x).toBe(9);
+    expect(tabs).toHaveLength(5);
+    for (const tab of tabs) {
+      expect(tab.control.textLabel.fontSize).toBe(11);
+      expect(tab.width).toBeCloseTo(expectedTabWidth);
+    }
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps the Bag scroll viewport equally inset from the paper top and bottom', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.bag = {
+      title: 'Bag',
+      selectedTabId: 'seeds',
+      tabs: [
+        { id: 'currencies', label: 'Currencies', selected: false },
+        { id: 'seeds', label: 'Seeds', selected: true },
+        { id: 'herbs', label: 'Herbs', selected: false },
+      ],
+      rows: Array.from({ length: 20 }, (_, index) => ({
+        id: `seed-${index}`,
+        label: `Seed ${index + 1}`,
+        value: '0',
+      })),
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('bag');
+
+    const dialog = harness.dialogs.get('workshop.bag');
+    const paperTop = dialog.panel.paperFrame.position.y;
+    const paperBottom =
+      paperTop + dialog.panel.paperFrame.frameHeight;
+    const viewportTop = dialog.scroll.root.position.y;
+    const viewportBottom = viewportTop + dialog.scroll.height;
+
+    expect(viewportTop - paperTop).toBeGreaterThan(0);
+    expect(viewportTop - paperTop).toBeCloseTo(
+      paperBottom - viewportBottom,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('uses the shared split-settings composition for summoning seeds', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.summonInfo = {
+      title: 'Summoning Seeds',
+      summaryRows: [
+        { id: 'auto', label: 'Auto Summon', value: 'Locked' },
+        {
+          id: 'reserve',
+          label: 'Keep Mana Above',
+          value: '0',
+          valueIconResourceKey: 'mana',
+        },
+        {
+          id: 'selected',
+          label: 'Sage Seed',
+          value: 'Medium · 100%',
+          valueTone: 'yellow',
+          itemKind: 'seed',
+          itemKey: 'sageSeed',
+          iconLeading: true,
+        },
+      ],
+      settingsToggle: null,
+      manaSlider: {
+        mode: 'range',
+        min: 0,
+        max: 5_000,
+        step: 1,
+        value: 0,
+        tone: 'blue',
+        enabled: false,
+      },
+      dropSlider: {
+        mode: 'milestones',
+        value: 'medium',
+        options: [
+          { value: 'none', tone: 'root' },
+          { value: 'low', tone: 'red' },
+          { value: 'medium', tone: 'yellow' },
+          { value: 'high', tone: 'green' },
+        ],
+      },
+      actions: [],
+      items: [
+        {
+          id: 'sageSeed',
+          label: 'Sage Seed',
+          detail: '100% Chance',
+          value: 'Medium',
+          valueTone: 'yellow',
+          itemKind: 'seed',
+          itemKey: 'sageSeed',
+          selected: true,
+          action: vi.fn(),
+        },
+        {
+          id: 'mintSeed',
+          label: 'Mint Seed',
+          detail: '0% Chance',
+          value: 'None',
+          valueTone: 'text',
+          itemKind: 'seed',
+          itemKey: 'mintSeed',
+          selected: false,
+          action: vi.fn(),
+        },
+        {
+          id: 'briarSeed',
+          label: 'Briar Seed',
+          detail: '0% Chance',
+          value: 'Low',
+          valueTone: 'red',
+          itemKind: 'seed',
+          itemKey: 'briarSeed',
+          selected: false,
+          action: vi.fn(),
+        },
+        {
+          id: 'lavenderSeed',
+          label: 'Lavender Seed',
+          detail: '0% Chance',
+          value: 'High',
+          valueTone: 'green',
+          itemKind: 'seed',
+          itemKey: 'lavenderSeed',
+          selected: false,
+          action: vi.fn(),
+        },
+      ],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('summonInfo');
+
+    const dialog = harness.dialogs.get('workshop.summonInfo');
+    expect(dialog).toBeInstanceOf(ShopDialogPixi);
+    expect(dialog.selectionSection.visible).toBe(true);
+    expect(dialog.itemSection.visible).toBe(true);
+    expect(dialog.panel.paperFrame.visible).toBe(false);
+    expect(dialog.settingsToggle.visible).toBe(false);
+    expect(dialog.manaSettingsSlider).toMatchObject({
+      visible: true,
+      enabled: false,
+      value: 0,
+    });
+    expect(dialog.dropSettingsSlider).toMatchObject({
+      visible: true,
+      enabled: true,
+      value: 'medium',
+      tone: 'yellow',
+    });
+    const reserveRow = dialog.summaryRows
+      .getWidgets()
+      .find((row) => row.key === 'reserve');
+    const selectedRow = dialog.summaryRows
+      .getWidgets()
+      .find((row) => row.key === 'selected');
+    const seedRows = dialog.list.rows.getWidgets();
+    expect(reserveRow.valueLabel.visible).toBe(false);
+    expect(reserveRow.valueResource).toMatchObject({
+      visible: true,
+      resource: 'mana',
+      amount: '0',
+    });
+    expect(reserveRow.valueResource.icon.visible).toBe(true);
+    expect(
+      reserveRow.valueResource.x + reserveRow.valueResource.measuredWidth,
+    ).toBe(dialog.panel.contentBoxWidth);
+    expect(reserveRow.valueResource.amountLabel.x).toBeGreaterThan(
+      reserveRow.valueResource.icon.x,
+    );
+    expect(selectedRow.valueLabel.textObject.style.fill).toBe('#795909');
+    expect(
+      seedRows.map((row) => row.value.textObject.style.fill),
+    ).toEqual([
+      '#795909',
+      dialog.contentTheme.text,
+      '#912f2b',
+      '#256b25',
+    ]);
+    expect(dialog.actions.getWidgets()).toHaveLength(0);
+    expect(dialog.list.items[0]).toMatchObject({
+      id: 'sageSeed',
+      selected: true,
+    });
+    expect(dialog.itemSectionBounds.y).toBeGreaterThan(
+      dialog.selectionSectionBounds.height,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('renders each stats item icon immediately before its retained count', () => {
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getAtlasTexture = vi.fn(() => new Texture());
@@ -189,6 +513,76 @@ describe('WorkshopPixiPage', () => {
       row.value.x - row.value.width,
     );
     expect(row.valueIcon.y).toBe(9);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders icons and one normal amount color across every Bag row kind', () => {
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getAtlasTexture = vi.fn(() => new Texture());
+    const harness = createHarness({ assetManager });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.bag = {
+      title: 'Bag',
+      selectedTabId: 'currencies',
+      tabs: [{ id: 'currencies', label: 'Currencies', selected: true }],
+      rows: [
+        {
+          id: 'mana',
+          label: 'Mana',
+          value: '4/10',
+          resourceKey: 'mana',
+          itemKind: 'resource',
+          itemKey: 'mana',
+        },
+        {
+          id: 'sageSeed',
+          label: 'Sage',
+          value: '2',
+          resourceKey: 'seed',
+          itemKind: 'seed',
+          itemKey: 'sageSeed',
+        },
+        {
+          id: 'sageHerb',
+          label: 'Sage',
+          value: '1',
+          resourceKey: 'herb',
+          itemKind: 'herb',
+          itemKey: 'sageHerb',
+        },
+        {
+          id: 'manaTonic',
+          label: 'Mana Tonic',
+          value: '5',
+          resourceKey: 'potion',
+          itemKind: 'potion',
+          itemKey: 'manaTonic',
+        },
+        {
+          id: 'cyclopsEye',
+          label: 'Cyclops Eye',
+          value: '6',
+          resourceKey: 'ingredient',
+          itemKind: 'ingredient',
+          itemKey: 'cyclopsEye',
+        },
+      ],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('bag');
+
+    const dialog = harness.dialogs.get('workshop.bag');
+    const rows = dialog.rows.getWidgets();
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('resource:mana');
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('seed:pack');
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('herb:sageHerb');
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('potion:manaTonic');
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('ingredient:cyclopsEye');
+    expect(rows.every((row) => row.valueIcon.visible)).toBe(true);
+    expect(rows.every((row) => row.value.style.fill === dialog.contentTheme.text)).toBe(true);
 
     harness.page.destroy();
     harness.dispose();
@@ -453,7 +847,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('renders projected summon notifications on the retained text plate', () => {
+  it('renders projected summon notifications on the retained cost button', () => {
     const harness = createHarness();
     const activeModel = createWorkshopViewModel();
     activeModel.workshop.summon.notification = 'orange';
@@ -461,8 +855,8 @@ describe('WorkshopPixiPage', () => {
 
     const badge = harness.page.summon.notification;
     const retainedRoot = badge.root;
-    expect(badge.root.parent).toBe(harness.page.summon.plate.root);
-    expect(badge.root.position).toMatchObject({ x: 96, y: 0 });
+    expect(badge.root.parent).toBe(harness.page.summon.button);
+    expect(badge.root.position).toMatchObject({ x: 92, y: 0 });
     expect(badge.root.visible).toBe(true);
     expect(badge.root.renderable).toBe(true);
     expect(badge.model.tone).toBe('orange');
@@ -475,6 +869,62 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.summon.notification.root).toBe(retainedRoot);
     expect(badge.root.visible).toBe(false);
     expect(badge.root.renderable).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('uses the stacked info-blue cost button and mana icon for summon', () => {
+    const summonTexture = new Texture();
+    const disabledTexture = new Texture();
+    const manaTexture = new Texture();
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.has = vi.fn(
+      (assetId) =>
+        assetId === PIXI_ROOT_RUN_ASSETS.buttonBlueShort ||
+        assetId === PIXI_ROOT_RUN_ASSETS.buttonGrayStacked,
+    );
+    assetManager.getTexture = vi.fn(
+      (assetId) =>
+        assetId === PIXI_ROOT_RUN_ASSETS.buttonBlueShort
+          ? summonTexture
+          : assetId === PIXI_ROOT_RUN_ASSETS.buttonGrayStacked
+            ? disabledTexture
+            : Texture.EMPTY,
+    );
+    assetManager.getAtlasTexture = vi.fn(
+      (frameName) =>
+        frameName === 'resource:mana' ? manaTexture : Texture.EMPTY,
+    );
+    const harness = createHarness({ assetManager });
+    const activeModel = createWorkshopViewModel();
+    harness.page.bind(activeModel);
+
+    expect(harness.page.summon.button).toMatchObject({
+      stacked: true,
+      tone: 'blue',
+      buttonWidth: 92,
+      buttonHeight: 52,
+    });
+    expect(harness.page.summon.button.background.texture).toBe(summonTexture);
+    expect(harness.page.summon.button.actionTextLabel.text).toBe('Summon Seed');
+    expect(harness.page.summon.button.actionTextLabel.fontSize).toBe(11);
+    expect(harness.page.summon.button.amountLabel.fontSize).toBe(13);
+    expect(harness.page.summon.button.actionTextLabel.stroke.width).toBe(4);
+    expect(harness.page.summon.button.amountLabel.stroke.width).toBe(4);
+    expect(harness.page.summon.button.resource).toBe('mana');
+    expect(harness.page.summon.button.amountLabel.text).toBe('10');
+    expect(harness.page.summon.button.resourceIcon.texture).toBe(manaTexture);
+    expect(harness.page.summon.button.resourceIcon.visible).toBe(true);
+
+    const disabledModel = createWorkshopViewModel();
+    disabledModel.workshop.summon.enabled = false;
+    harness.page.bind(disabledModel);
+
+    expect(harness.page.summon.button.background.texture).toBe(
+      disabledTexture,
+    );
+    expect(harness.page.summon.button.enabled).toBe(false);
 
     harness.page.destroy();
     harness.dispose();
@@ -510,7 +960,133 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
     expect(inputRouter.store.getRegistrations()).toHaveLength(0);
   });
+
+  it('routes a tutorial-revealed summon press through the stable button target', () => {
+    const inputRouter = new PixiInputRouter();
+    const summonSeed = vi.fn(() => ({ ok: true }));
+    const harness = createHarness({ inputRouter });
+    harness.page.bind(createWorkshopViewModel({ summonSeed }));
+    harness.page.activate();
+
+    const summonRegistration = inputRouter.store
+      .getRegistrations('press')
+      .find((registration) =>
+        registration.id.startsWith('retained:workshop-summon:'),
+      );
+    const tutorialTarget =
+      harness.semanticTargets.getTutorialTarget('workshop:summonSeed');
+
+    expect(summonRegistration?.displayObject).toBe(harness.page.summon.button);
+    expect(summonRegistration?.fallbackHitTest).toBe(true);
+    expect(tutorialTarget?.displayObject).toBe(harness.page.summon.button);
+    expect(harness.page.summon.root.eventMode).toBe('passive');
+    expect(harness.page.summon.root.hitArea).toBeUndefined();
+    expect(harness.page.summon.button).toMatchObject({
+      eventMode: 'static',
+      hitArea: {
+        x: 0,
+        y: 0,
+        width: 92,
+        height: 52,
+      },
+    });
+
+    const revealController = new TutorialRevealController();
+    revealController.register('summon', {
+      objects: [tutorialTarget.displayObject],
+      interactiveObjects: [tutorialTarget.displayObject],
+    });
+    revealController.apply([], { reducedMotion: true });
+    expect(inputRouter.isRegistrationAllowed(summonRegistration)).toBe(false);
+    revealController.apply(['summon'], { reducedMotion: true });
+    expect(inputRouter.isRegistrationAllowed(summonRegistration)).toBe(true);
+
+    const overlayTarget = new Container({ label: 'tutorial-overlay-hit' });
+    const summonBounds = harness.page.summon.root.getBounds();
+    const summonPoint = {
+      x: summonBounds.x + summonBounds.width / 2,
+      y: summonBounds.y + summonBounds.height / 2,
+    };
+    inputRouter.onPointerDown(
+      createPointerEvent(overlayTarget, 'pointerdown', summonPoint),
+    );
+    expect(harness.page.summon.button.pressed).toBe(true);
+    inputRouter.onPointerUp(
+      createPointerEvent(overlayTarget, 'pointerup', summonPoint),
+    );
+    expect(harness.page.summon.button.pressed).toBe(false);
+    expect(summonSeed).toHaveBeenCalledTimes(1);
+
+    overlayTarget.destroy();
+    revealController.destroy();
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps the adjacent summon info icon outside the summon press target', () => {
+    const inputRouter = new PixiInputRouter();
+    const summonSeed = vi.fn(() => ({ ok: true }));
+    const harness = createHarness({ inputRouter });
+    const model = createWorkshopViewModel({ summonSeed });
+    model.workshop.dialogs.summonInfo = {
+      title: 'Summoning Seeds',
+      summaryRows: [],
+      actions: [],
+      items: [],
+    };
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const summonRegistration = inputRouter.store
+      .getRegistrations('press')
+      .find((registration) =>
+        registration.id.startsWith('retained:workshop-summon:'),
+      );
+
+    expect(summonRegistration?.displayObject).toBe(harness.page.summon.button);
+    expect(harness.page.summon.root.hitArea).toBeUndefined();
+    expect(harness.page.summon.button.hitArea).toMatchObject({
+      x: 0,
+      y: 0,
+      width: 92,
+      height: 52,
+    });
+
+    const infoBounds = harness.page.summon.info.getBounds();
+    const infoPoint = {
+      x: infoBounds.x + infoBounds.width / 2,
+      y: infoBounds.y + infoBounds.height / 2,
+    };
+    inputRouter.onPointerDown(
+      createPointerEvent(harness.page.summon.info, 'pointerdown', infoPoint),
+    );
+    inputRouter.onPointerUp(
+      createPointerEvent(harness.page.summon.info, 'pointerup', infoPoint),
+    );
+
+    expect(harness.dialogs.isOpen('workshop.summonInfo')).toBe(true);
+    expect(summonSeed).not.toHaveBeenCalled();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
 });
+
+function createPointerEvent(target, type, point = { x: 0, y: 0 }) {
+  return {
+    type,
+    target,
+    pointerId: 1,
+    pointerType: 'mouse',
+    button: 0,
+    global: point,
+    clientX: point.x,
+    clientY: point.y,
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
+    stopImmediatePropagation: vi.fn(),
+  };
+}
 
 function createHarness({
   inputRouter = null,

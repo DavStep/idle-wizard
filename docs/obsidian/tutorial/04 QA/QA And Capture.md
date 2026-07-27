@@ -17,8 +17,9 @@ the live tutorial, and refresh PNGs plus the contact sheet.
 
 Run `node scripts/capture-tutorial-flow.js --check` for a fast contract check
 that the capture step list still follows the source graph. Default capture
-records 36 current-balance steps and excludes the legacy balance-conditional
-`fill-sage-seed-task` branch.
+records 28 of the 31 current source steps. It excludes the optional
+`purchase-house`, `finish-seed-task`, and legacy balance-conditional
+`fill-sage-seed-task` branches.
 
 ## Source Assets
 

@@ -1,7 +1,4 @@
-import {
-  getItemDisplay,
-  shouldShowItemInActionList,
-} from '../../shared/itemResearchStatus.js';
+import { getItemDisplay } from '../../shared/itemResearchStatus.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor, setResourceColorFromText } from '../../shared/resourceColor.js';
@@ -17,14 +14,21 @@ import {
   getNextNpcDemandWaveInfo,
   normalizeCount,
 } from '../../../gameplay/shop/managers/npcMarketPricing.js';
+import { ShopStallVisibilityManager } from './ShopStallVisibilityManager.js';
 
 const STALL_ALLOCATION_STEP = 5;
 
 export class ShopShelfManager {
-  constructor({ gameplayFacade, getSellPriceOverride, now = () => Date.now() } = {}) {
+  constructor({
+    gameplayFacade,
+    getSellPriceOverride,
+    now = () => Date.now(),
+    stallVisibilityManager = new ShopStallVisibilityManager(),
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.getSellPriceOverride = getSellPriceOverride;
     this.now = typeof now === 'function' ? now : () => Date.now();
+    this.stallVisibilityManager = stallVisibilityManager;
     this.root = null;
     this.refs = {
       rows: [],
@@ -653,6 +657,13 @@ export class ShopShelfManager {
     for (const refs of this.refs.itemButtons.values()) {
       refs.row.hidden = true;
     }
+    const visibleSellKinds = this.stallVisibilityManager.getVisibleSellKinds(
+      snapshot,
+      shelf.sellKinds,
+    );
+    if (!visibleSellKinds.some((kind) => kind.kind === this.selectedSellTab)) {
+      this.selectedSellTab = visibleSellKinds[0]?.kind ?? 'seed';
+    }
     const selectedSlot = this.getSelectedSlot(shelf);
     const draftItem = shelf.sellItems.find(
       (item) => item.itemTypeId === this.draftSellItemTypeId,
@@ -660,8 +671,10 @@ export class ShopShelfManager {
     if (!draftItem && this.draftSellItemTypeId !== null) this.resetSellDraft();
 
     for (const kind of shelf.sellKinds) {
+      const button = this.refs.tabButtons.get(kind.kind);
+      button.hidden = !visibleSellKinds.includes(kind);
       setSelectedTabState(
-        this.refs.tabButtons.get(kind.kind),
+        button,
         this.selectedSellTab === kind.kind,
         { tabIndex: true },
       );
@@ -672,7 +685,7 @@ export class ShopShelfManager {
       const display = getItemDisplay(snapshot, item, item.quantity);
       const visible =
         item.kind === this.selectedSellTab &&
-        shouldShowItemInActionList(snapshot, item, item.quantity);
+        this.stallVisibilityManager.isItemVisible(snapshot, item);
       const differentItemLoaded =
         selectedSlot?.sellItemTypeId && selectedSlot.sellItemTypeId !== item.itemTypeId;
       const differentFutureItem =

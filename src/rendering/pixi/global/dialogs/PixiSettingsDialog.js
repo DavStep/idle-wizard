@@ -1325,7 +1325,7 @@ function normalizeSettingsModel(
       username: String(
         account.username ??
           settings.username ??
-          'wizard',
+          'Wizard',
       ),
       usernameRequired:
         account.usernameRequired === true ||

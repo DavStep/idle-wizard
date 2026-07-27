@@ -12,20 +12,11 @@ export class SeedDropPreferenceManager {
     this.preferencesBySeedKey = new Map();
   }
 
-  setPreference(seedKey, preference, { unlockedSeeds = [] } = {}) {
+  setPreference(seedKey, preference) {
     const normalizedSeedKey = this.normalizeSeedKey(seedKey);
     const normalizedPreference = this.normalizePreference(preference);
     const nextPreferences = new Map(this.preferencesBySeedKey);
     nextPreferences.set(normalizedSeedKey, normalizedPreference);
-
-    if (!this.hasActiveSeedPreference(unlockedSeeds, nextPreferences)) {
-      return {
-        ok: false,
-        reason: 'last_active_seed',
-        seedKey: normalizedSeedKey,
-        preference: this.getPreference(normalizedSeedKey),
-      };
-    }
 
     this.preferencesBySeedKey = nextPreferences;
 
@@ -68,13 +59,10 @@ export class SeedDropPreferenceManager {
     const hasExplicitFallbackPreference =
       this.preferencesBySeedKey.has(normalizedSeedKey);
 
-    if (
-      hasExplicitFallbackPreference &&
-      this.hasActiveSeedPreference(seeds)
-    ) {
+    if (hasExplicitFallbackPreference) {
       return {
         ok: false,
-        reason: 'active_seed_exists',
+        reason: 'fallback_preference_exists',
         seedKey: normalizedSeedKey,
       };
     }
@@ -144,20 +132,6 @@ export class SeedDropPreferenceManager {
         this.normalizePreference(preference),
       );
     }
-  }
-
-  hasActiveSeedPreference(seeds, preferencesBySeedKey = this.preferencesBySeedKey) {
-    if (!Array.isArray(seeds) || seeds.length <= 0) {
-      return true;
-    }
-
-    return seeds.some((seed) => {
-      const preference =
-        preferencesBySeedKey.get(this.normalizeSeedKey(seed.key)) ??
-        DEFAULT_SEED_DROP_PREFERENCE;
-
-      return this.getPreferenceWeight(preference) > 0;
-    });
   }
 
   normalizeSeedKey(seedKey) {

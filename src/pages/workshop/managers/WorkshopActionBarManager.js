@@ -138,7 +138,7 @@ export class WorkshopActionBarManager {
 
     this.refs.summonButtonLabel = document.createElement('span');
     this.refs.summonButtonLabel.className = 'workshop-page__summon-button-label';
-    this.refs.summonButtonLabel.textContent = 'summon seed';
+    this.refs.summonButtonLabel.textContent = 'Summon Seed';
 
     this.refs.summonButtonCost = document.createElement('span');
     this.refs.summonButtonCost.className = 'workshop-page__summon-button-cost';
@@ -188,7 +188,7 @@ export class WorkshopActionBarManager {
     const label = document.createElement('span');
     label.className =
       'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__bag-button-label';
-    label.textContent = 'bag';
+    label.textContent = 'Bag';
 
     iconFrame.append(icon);
     button.append(iconFrame, label);
@@ -203,7 +203,7 @@ export class WorkshopActionBarManager {
     button.className =
       'style-button style-button--yellow workshop-page__stats-button';
     button.type = 'button';
-    button.textContent = 'stats';
+    button.textContent = 'Stats';
     button.setAttribute('aria-label', 'open stats');
     button.addEventListener('click', () => this.onStatsClick?.());
     return button;
@@ -236,7 +236,7 @@ export class WorkshopActionBarManager {
     const label = document.createElement('span');
     label.className =
       'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__mail-button-label';
-    label.textContent = 'inbox';
+    label.textContent = 'Inbox';
 
     iconFrame.append(icon);
     button.append(iconFrame, label);
@@ -556,7 +556,7 @@ export class WorkshopActionBarManager {
 
   render(snapshot) {
     const quantity = snapshot.seedSummoning.quantity ?? 1;
-    const summonLabel = quantity > 1 ? `summon x${quantity}` : 'summon seed';
+    const summonLabel = quantity > 1 ? `Summon x${quantity}` : 'Summon Seed';
     const costLabel = `${snapshot.seedSummoning.cost} mana`;
     const ariaLabel = `${summonLabel}, costs ${snapshot.seedSummoning.cost} mana`;
     const ariaDisabled = snapshot.seedSummoning.canSummon ? 'false' : 'true';

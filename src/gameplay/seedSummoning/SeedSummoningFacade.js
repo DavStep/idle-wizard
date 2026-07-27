@@ -62,9 +62,7 @@ export class SeedSummoningFacade {
   }
 
   setSeedDropPreference(seedKey, preference) {
-    return this.seedDropPreferenceManager.setPreference(seedKey, preference, {
-      unlockedSeeds: this.seedSummonEligibilityManager.getSummonableSeeds(),
-    });
+    return this.seedDropPreferenceManager.setPreference(seedKey, preference);
   }
 
   getSnapshot() {

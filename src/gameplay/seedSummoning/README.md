@@ -11,4 +11,5 @@ Seed config owns the base `dropWeight`. Player drop preferences multiply that ba
 
 Keep `dropWeight` as config data. Use `effectiveDropWeight` for rolled odds and displayed chances.
 
-Do not allow the player to set every unlocked seed to `none`; at least one researched seed must stay active.
+The player may set every unlocked seed to `none`. Summoning stays unavailable
+until at least one researched seed has an active weight again.

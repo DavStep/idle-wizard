@@ -94,7 +94,7 @@ export class WorldChatSubscriptionManager {
     return {
       id: this.toId(row.messageId ?? row.message_id),
       senderIdentity: this.toId(row.senderIdentity ?? row.sender_identity),
-      username: typeof row.username === 'string' ? row.username : 'wizard',
+      username: typeof row.username === 'string' ? row.username : 'Wizard',
       character: normalizePlayerCharacter(
         row.character ?? row.playerCharacter ?? row.player_character,
       ),

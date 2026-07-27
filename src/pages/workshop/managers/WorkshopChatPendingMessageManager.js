@@ -110,7 +110,7 @@ export class WorkshopChatPendingMessageManager {
     return {
       id: String(message?.id ?? `local-${sentAtMs}`),
       senderIdentity: String(message?.senderIdentity ?? 'local'),
-      username: String(message?.username || 'wizard'),
+      username: String(message?.username || 'Wizard'),
       character: message?.character,
       playerLevel: this.normalizePlayerLevel(message?.playerLevel),
       body,

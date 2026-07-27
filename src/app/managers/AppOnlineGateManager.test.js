@@ -19,8 +19,8 @@ describe('AppOnlineGateManager', () => {
         .querySelector('.app-online-gate__dialog')
         .classList.contains('style-dialog--system'),
     ).toBe(false);
-    expect(gate.textContent).toContain('server required');
-    expect(gate.textContent).toContain('connecting to server...');
+    expect(gate.textContent).toContain('Server Required');
+    expect(gate.textContent).toContain('Connecting to server...');
     const progress = gate.querySelector('.app-online-gate__progress');
     expect(progress.hidden).toBe(false);
     expect(progress.getAttribute('role')).toBe('progressbar');
@@ -29,15 +29,15 @@ describe('AppOnlineGateManager', () => {
     expect(progress.querySelector('.app-online-gate__progress-fill')).not.toBeNull();
 
     manager.showOffline('connect_error');
-    expect(gate.textContent).toContain('connecting to server...');
+    expect(gate.textContent).toContain('Connecting to server...');
     expect(progress.hidden).toBe(false);
 
     manager.showOffline('connect_timeout');
-    expect(gate.textContent).toContain('connecting to server...');
+    expect(gate.textContent).toContain('Connecting to server...');
     expect(progress.hidden).toBe(false);
 
     manager.showOffline('gameplay_save_timeout');
-    expect(gate.textContent).toContain('connecting to server...');
+    expect(gate.textContent).toContain('Connecting to server...');
     expect(progress.hidden).toBe(false);
 
     manager.showOffline('server_paused');
@@ -54,7 +54,7 @@ describe('AppOnlineGateManager', () => {
     expect(progress.classList.contains('is-indeterminate')).toBe(false);
 
     manager.showOffline('account_in_use');
-    expect(gate.textContent).toContain('account opened on another device');
+    expect(gate.textContent).toContain('Account opened on another device');
     expect(progress.hidden).toBe(true);
 
     manager.showMaintenance({
@@ -77,7 +77,7 @@ describe('AppOnlineGateManager', () => {
     expect(gate.hidden).toBe(true);
   });
 
-  it('reloads the tab when play here is pressed from account-in-use gate', () => {
+  it('reloads the tab when Play Here is pressed from account-in-use gate', () => {
     const stage = document.createElement('section');
     const reload = vi.fn();
     const manager = new AppOnlineGateManager({ reload });
@@ -87,7 +87,7 @@ describe('AppOnlineGateManager', () => {
 
     const action = stage.querySelector('.app-online-gate__action');
     expect(action.hidden).toBe(false);
-    expect(action.textContent).toBe('play here');
+    expect(action.textContent).toBe('Play Here');
 
     action.click();
 

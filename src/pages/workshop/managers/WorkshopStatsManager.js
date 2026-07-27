@@ -74,7 +74,7 @@ export class WorkshopStatsManager {
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'stats';
+    title.textContent = 'Stats';
 
     this.refs.closeButton = document.createElement('button');
     this.refs.closeButton.className = 'style-button workshop-page__stats-close';
@@ -321,7 +321,7 @@ function createCountRow(
 ) {
   const quantity = normalizeCount(value);
   const row = {
-    label: normalizeLabel(label, 'unknown'),
+    label: toTitleCase(normalizeLabel(label, 'unknown')),
     status: String(quantity),
     state: total ? 'total' : quantity > 0 ? 'filled' : 'empty',
   };
@@ -332,7 +332,7 @@ function createCountRow(
 function createCoinRow(label, value, { itemKey = null, itemKind = null, total = false } = {}) {
   const coin = normalizeCoin(value);
   const row = {
-    label: normalizeLabel(label, 'coin'),
+    label: toTitleCase(normalizeLabel(label, 'coin')),
     status: formatCoinPriceText(coin),
     state: total ? 'total' : coin > 0 ? 'filled' : 'empty',
   };
@@ -372,4 +372,12 @@ function normalizeLabel(value, fallback) {
       .replace(/\s+/g, ' ')
       .trim() || fallback
   );
+}
+
+function toTitleCase(value) {
+  return String(value ?? '')
+    .replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => (
+      `${prefix}${letter.toUpperCase()}`
+    ))
+    .replace(/\bNpc\b/g, 'NPC');
 }

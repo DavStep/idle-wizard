@@ -562,6 +562,30 @@ describe('DevCheatsFacade', () => {
     expect(onlineGateManager.hide).toHaveBeenCalledTimes(1);
   });
 
+  it('resolves the retained online gate through the render facade', () => {
+    const onlineGateManager = {
+      hide: vi.fn(),
+      showConnecting: vi.fn(),
+      showOffline: vi.fn(),
+    };
+    const renderFacade = {
+      getOnlineGateManager: () => onlineGateManager,
+    };
+    const { app } = createApp({ renderFacade });
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+    expect(target.cheats.openUi('serverRequired')).toMatchObject({
+      ok: true,
+      surfaceId: 'serverRequired',
+    });
+
+    expect(onlineGateManager.showConnecting).toHaveBeenCalledWith({
+      preview: true,
+    });
+  });
+
   it('sets event, guild, timer, stress, and dialog states for UI QA', () => {
     const leaderboardFacade = {
       setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
@@ -664,6 +688,10 @@ describe('DevCheatsFacade', () => {
         expect.objectContaining({
           id: 'bottomRoomTabs',
           command: 'cheats.openUi("bottomRoomTabs")',
+        }),
+        expect.objectContaining({
+          id: 'serverRequired',
+          command: 'cheats.openUi("serverRequired")',
         }),
         expect.objectContaining({
           id: 'traderStallLoader',

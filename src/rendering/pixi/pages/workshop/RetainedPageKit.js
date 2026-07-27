@@ -12,6 +12,13 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import {
+  ROOT_RUN_STATION_CLICK_DRAG_THRESHOLD,
+  ROOT_RUN_STATION_SCROLLBAR_OVERSCROLL_COMPRESSION,
+  ROOT_RUN_STATION_WHEEL_SCROLL_FACTOR,
+  ROOT_RUN_TO_IDLE_WIZARD_SCROLL_SCALE,
+  StationScrollPhysics,
+} from '../../../../pages/managers/StationScrollPhysics.js';
 import { createPixiPageBackgroundGradient } from '../../theme/PixiPageBackground.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
@@ -507,8 +514,13 @@ export class RetainedProgressBar {
 }
 
 export class RetainedScrollArea {
-  constructor({ label = 'scroll-area', inputRouter = null } = {}) {
+  constructor({
+    label = 'scroll-area',
+    inputRouter = null,
+    onScroll = null,
+  } = {}) {
     this.inputRouter = inputRouter;
+    this.onScroll = onScroll;
     this.inputId = createRetainedInputId(label);
     this.root = new Container({ label });
     this.content = new Container({ label: `${label}-content` });
@@ -529,50 +541,91 @@ export class RetainedScrollArea {
     );
     this.content.mask = this.maskShape;
     this.root.eventMode = 'static';
+    this.root.cursor = 'default';
+    this.physics = new StationScrollPhysics();
     this.offsetY = 0;
     this.contentHeight = 0;
     this.width = 0;
     this.height = 0;
     this.dragPointerId = null;
-    this.lastPointerY = 0;
+    this.animationFrame = 0;
+    this.lastFrameTimeMs = null;
+    this.suppressNextActivation = false;
     this.handleWheel = (event) => {
-      this.scrollBy(finiteOr(event?.deltaY, 0));
+      this.onWheelInput({
+        event,
+        point: event?.global,
+      });
     };
     this.handlePointerDown = (event) => {
-      this.dragPointerId = event.pointerId;
-      this.lastPointerY = event.global?.y ?? 0;
-    };
-    this.handlePointerMove = (event) => {
-      if (event.pointerId !== this.dragPointerId) {
+      if (
+        event?.isPrimary === false ||
+        (Number.isFinite(event?.button) && event.button > 0)
+      ) {
         return;
       }
 
-      const nextY = event.global?.y ?? this.lastPointerY;
-      this.scrollBy(this.lastPointerY - nextY);
-      this.lastPointerY = nextY;
+      if (
+        this.beginDrag({
+          event,
+          point: event?.global,
+        })
+      ) {
+        this.dragPointerId = event.pointerId ?? 1;
+        captureNativePointer(event, this.dragPointerId);
+      }
+    };
+    this.handlePointerMove = (event) => {
+      if ((event.pointerId ?? 1) !== this.dragPointerId) {
+        return;
+      }
+
+      this.dragTo({
+        event,
+        point: event?.global,
+      });
     };
     this.handlePointerEnd = (event) => {
-      if (event.pointerId === this.dragPointerId) {
-        this.dragPointerId = null;
+      if ((event.pointerId ?? 1) !== this.dragPointerId) {
+        return;
       }
+
+      this.dragPointerId = null;
+      releaseNativePointer(event, event.pointerId ?? 1);
+      this.endDrag({ event });
+    };
+    this.handleActivationCapture = (event) => {
+      if (!this.suppressNextActivation) {
+        return;
+      }
+
+      this.suppressNextActivation = false;
+      preventPixiInput(event, true);
     };
     this.inputRegistration = this.inputRouter?.registerScrollRegion?.({
       id: this.inputId,
       displayObject: this.root,
       excludePageSwipe: false,
+      enabled: () => this.physics.maxOffset > 0,
       getOffset: () => this.offsetY,
       getMaxOffset: () => Math.max(0, this.contentHeight - this.height),
       onScroll: (offsetY) => this.scrollTo(offsetY),
+      onScrollPointerDown: (context) => this.beginDrag(context),
+      onScrollPointerMove: (context) => this.dragTo(context),
+      onScrollPointerUp: (context) => this.endDrag(context),
+      onWheelInput: (context) => this.onWheelInput(context),
     }) ?? null;
     this.usesDirectInput = !this.inputRegistration;
 
     if (this.usesDirectInput) {
       this.root.on('wheel', this.handleWheel);
       this.root.on('pointerdown', this.handlePointerDown);
-      this.root.on('pointermove', this.handlePointerMove);
+      this.root.on('globalpointermove', this.handlePointerMove);
       this.root.on('pointerup', this.handlePointerEnd);
       this.root.on('pointerupoutside', this.handlePointerEnd);
       this.root.on('pointercancel', this.handlePointerEnd);
+      this.root.on('clickcapture', this.handleActivationCapture);
+      this.root.on('pointertapcapture', this.handleActivationCapture);
     }
   }
 
@@ -582,12 +635,12 @@ export class RetainedScrollArea {
     this.height = Math.max(0, height);
     this.root.hitArea = new Rectangle(0, 0, this.width, this.height);
     this.maskShape.clear().rect(0, 0, this.width, this.height).fill({ color: 0xffffff });
-    this.scrollTo(this.offsetY);
+    this.refreshMaximumOffset();
   }
 
   setContentHeight(height) {
     this.contentHeight = Math.max(0, finiteOr(height, 0));
-    this.scrollTo(this.offsetY);
+    this.refreshMaximumOffset();
   }
 
   scrollBy(deltaY) {
@@ -595,18 +648,191 @@ export class RetainedScrollArea {
   }
 
   scrollTo(offsetY) {
-    const maximum = Math.max(0, this.contentHeight - this.height);
-    const nextOffset = Math.min(maximum, Math.max(0, finiteOr(offsetY, 0)));
+    this.cancelAnimation();
+    this.physics.snapTo(
+      this.toPhysicsUnits(finiteOr(offsetY, 0)),
+    );
+    return this.applyPhysicsOffset();
+  }
+
+  refreshMaximumOffset() {
+    this.physics.setMaxOffset(
+      this.toPhysicsUnits(
+        Math.max(0, this.contentHeight - this.height),
+      ),
+    );
+    this.root.cursor = this.physics.maxOffset > 0 ? 'grab' : 'default';
+    this.applyPhysicsOffset();
+  }
+
+  applyPhysicsOffset() {
+    const nextOffset = this.toDesignUnits(this.physics.offset);
     const changed =
       nextOffset !== this.offsetY || this.content.y !== -nextOffset;
 
     if (changed) {
       this.offsetY = nextOffset;
       this.content.y = -nextOffset;
+      this.onScroll?.(nextOffset);
     }
 
     this.updateScrollbar();
     return changed;
+  }
+
+  beginDrag(context = {}) {
+    if (this.physics.maxOffset === 0) {
+      return false;
+    }
+
+    this.cancelAnimation();
+    this.suppressNextActivation = false;
+    const began = this.physics.beginDrag(
+      this.toPhysicsUnits(this.localPointerY(context.point)),
+      eventTimeMs(context.event),
+    );
+    if (began) {
+      this.root.cursor = 'grabbing';
+    }
+    return began;
+  }
+
+  dragTo(context = {}) {
+    if (!this.physics.isDragging) {
+      return false;
+    }
+
+    this.physics.dragTo(
+      this.toPhysicsUnits(this.localPointerY(context.point)),
+      eventTimeMs(context.event),
+    );
+    this.applyPhysicsOffset();
+    return true;
+  }
+
+  endDrag() {
+    if (!this.physics.isDragging) {
+      return false;
+    }
+
+    const suppressActivation =
+      this.physics.dragDistance >
+      ROOT_RUN_STATION_CLICK_DRAG_THRESHOLD;
+    this.physics.endDrag();
+    this.root.cursor = this.physics.maxOffset > 0 ? 'grab' : 'default';
+    this.suppressNextActivation = suppressActivation;
+    this.startAnimation();
+    return suppressActivation;
+  }
+
+  onWheelInput(context = {}) {
+    if (this.physics.maxOffset === 0) {
+      return false;
+    }
+
+    preventPixiInput(context.event);
+    const localDelta = this.localWheelDelta(
+      context.event,
+      context.point,
+    );
+    this.physics.scrollByElastic(
+      this.toPhysicsUnits(localDelta) *
+        ROOT_RUN_STATION_WHEEL_SCROLL_FACTOR,
+    );
+    this.applyPhysicsOffset();
+    this.startAnimation();
+    return true;
+  }
+
+  update(deltaSeconds) {
+    const moved = this.physics.update(deltaSeconds);
+    if (moved) {
+      this.applyPhysicsOffset();
+    }
+    return moved;
+  }
+
+  startAnimation() {
+    if (
+      this.animationFrame ||
+      this.physics.isDragging ||
+      !this.physics.isAnimating
+    ) {
+      return;
+    }
+
+    const requestFrame = globalThis.requestAnimationFrame;
+    if (typeof requestFrame !== 'function') {
+      return;
+    }
+
+    this.lastFrameTimeMs = null;
+    this.animationFrame = requestFrame((timestamp) =>
+      this.tickAnimation(timestamp),
+    );
+  }
+
+  tickAnimation(timestamp) {
+    this.animationFrame = 0;
+    const deltaSeconds =
+      this.lastFrameTimeMs === null
+        ? 1 / 60
+        : Math.max(0, (timestamp - this.lastFrameTimeMs) / 1000);
+    this.lastFrameTimeMs = timestamp;
+    this.update(deltaSeconds);
+
+    if (this.physics.isAnimating) {
+      this.animationFrame = globalThis.requestAnimationFrame?.(
+        (nextTimestamp) => this.tickAnimation(nextTimestamp),
+      ) ?? 0;
+      return;
+    }
+
+    this.lastFrameTimeMs = null;
+  }
+
+  cancelAnimation() {
+    if (this.animationFrame) {
+      globalThis.cancelAnimationFrame?.(this.animationFrame);
+    }
+    this.animationFrame = 0;
+    this.lastFrameTimeMs = null;
+  }
+
+  localPointerY(point) {
+    const globalPoint = {
+      x: finiteOr(point?.x, 0),
+      y: finiteOr(point?.y, 0),
+    };
+    return finiteOr(this.root.toLocal(globalPoint)?.y, 0);
+  }
+
+  localWheelDelta(event, point) {
+    let delta = finiteOr(event?.deltaY, 0);
+    if (event?.deltaMode === 1) {
+      delta *= 16;
+    } else if (event?.deltaMode === 2) {
+      delta *= Math.max(1, this.height);
+    }
+
+    const globalPoint = {
+      x: finiteOr(point?.x, 0),
+      y: finiteOr(point?.y, 0),
+    };
+    const localStart = this.root.toLocal(globalPoint);
+    const localEnd = this.root.toLocal({
+      x: globalPoint.x,
+      y: globalPoint.y + delta,
+    });
+    return finiteOr(localEnd?.y, 0) - finiteOr(localStart?.y, 0);
+  }
+
+  toPhysicsUnits(value) {
+    return value / ROOT_RUN_TO_IDLE_WIZARD_SCROLL_SCALE;
+  }
+
+  toDesignUnits(value) {
+    return value * ROOT_RUN_TO_IDLE_WIZARD_SCROLL_SCALE;
   }
 
   updateScrollbar() {
@@ -659,16 +885,39 @@ export class RetainedScrollArea {
         alignment: 1,
       });
 
-    const thumbHeight = Math.min(
+    const baseThumbHeight = Math.min(
       trackHeight,
       Math.max(
         geometry.thumbMinHeight,
         (trackHeight * this.height) / this.contentHeight,
       ),
     );
-    const thumbTravel = Math.max(0, trackHeight - thumbHeight);
-    const thumbY =
-      geometry.trackInset + thumbTravel * (this.offsetY / maximum);
+    const topOverscroll = Math.max(0, -this.offsetY);
+    const bottomOverscroll = Math.max(
+      0,
+      this.offsetY - maximum,
+    );
+    const compression = Math.min(
+      Math.max(0, baseThumbHeight - geometry.width * 2),
+      Math.max(topOverscroll, bottomOverscroll) *
+        ROOT_RUN_STATION_SCROLLBAR_OVERSCROLL_COMPRESSION,
+    );
+    const thumbHeight = baseThumbHeight - compression;
+    const thumbTravel = Math.max(
+      0,
+      trackHeight - baseThumbHeight,
+    );
+    const clampedOffset = Math.max(
+      0,
+      Math.min(maximum, this.offsetY),
+    );
+    let thumbY =
+      geometry.trackInset +
+      thumbTravel * (clampedOffset / maximum);
+    if (bottomOverscroll > 0) {
+      thumbY =
+        geometry.trackInset + trackHeight - thumbHeight;
+    }
     const thumbX = trackX + geometry.thumbGap;
     const thumbWidth = Math.max(
       0,
@@ -722,16 +971,19 @@ export class RetainedScrollArea {
   }
 
   destroy() {
+    this.cancelAnimation();
     this.inputRegistration?.unregister?.();
     this.inputRegistration = null;
 
     if (this.usesDirectInput) {
       this.root.off('wheel', this.handleWheel);
       this.root.off('pointerdown', this.handlePointerDown);
-      this.root.off('pointermove', this.handlePointerMove);
+      this.root.off('globalpointermove', this.handlePointerMove);
       this.root.off('pointerup', this.handlePointerEnd);
       this.root.off('pointerupoutside', this.handlePointerEnd);
       this.root.off('pointercancel', this.handlePointerEnd);
+      this.root.off('clickcapture', this.handleActivationCapture);
+      this.root.off('pointertapcapture', this.handleActivationCapture);
     }
 
     this.root.destroy({ children: true });
@@ -793,6 +1045,47 @@ export function setText(text, value) {
 
 export function finiteOr(value, fallback) {
   return Number.isFinite(Number(value)) ? Number(value) : fallback;
+}
+
+function eventTimeMs(event) {
+  const timestamp = Number(
+    event?.timeStamp ??
+      event?.nativeEvent?.timeStamp ??
+      globalThis.performance?.now?.(),
+  );
+  return Number.isFinite(timestamp) ? timestamp : Date.now();
+}
+
+function preventPixiInput(event, immediate = false) {
+  if (event?.cancelable !== false) {
+    event?.preventDefault?.();
+  }
+  event?.stopPropagation?.();
+  if (immediate) {
+    event?.stopImmediatePropagation?.();
+  }
+}
+
+function captureNativePointer(event, pointerId) {
+  try {
+    const target =
+      event?.nativeEvent?.currentTarget ??
+      event?.nativeEvent?.target;
+    target?.setPointerCapture?.(pointerId);
+  } catch {
+    // WebView may reject capture for synthetic or already-ended pointers.
+  }
+}
+
+function releaseNativePointer(event, pointerId) {
+  try {
+    const target =
+      event?.nativeEvent?.currentTarget ??
+      event?.nativeEvent?.target;
+    target?.releasePointerCapture?.(pointerId);
+  } catch {
+    // Pointer capture is released automatically on some platforms.
+  }
 }
 
 export function normalizeRows(rows) {

@@ -588,7 +588,7 @@ export class BrewingRecipeBookManager {
     }
 
     const username = String(recipe?.discoveredByUsername ?? '').trim();
-    return username || 'wizard';
+    return username || 'Wizard';
   }
 
   getRecipeDiscovererIdentity(recipe) {

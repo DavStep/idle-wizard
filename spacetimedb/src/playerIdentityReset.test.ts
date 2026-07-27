@@ -25,7 +25,7 @@ describe('identity-only player reset', () => {
 
     expect(createIdentityOnlyPlayerReset(player, resetAt)).toEqual({
       identity,
-      username: 'wizard',
+      username: 'Wizard',
       connected: false,
       createdAt: resetAt,
       lastSeenAt: resetAt,

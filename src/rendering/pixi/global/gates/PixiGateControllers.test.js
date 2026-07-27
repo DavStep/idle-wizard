@@ -37,6 +37,40 @@ describe('retained Pixi gate controllers', () => {
     }
   });
 
+  it('keeps fresh-start actions inside a compact paper area with role colors', () => {
+    const view = new PixiFreshStartChoiceView({
+      assets: createAssets(),
+    });
+
+    expect(view.panel.contentBoxWidth).toBe(240);
+    expect(view.panel.contentInsets).toEqual({
+      top: PIXI_UI_GEOMETRY.dialogPadding,
+      right: PIXI_UI_GEOMETRY.dialogPadding,
+      bottom: PIXI_UI_GEOMETRY.dialogPadding,
+      left: PIXI_UI_GEOMETRY.dialogPadding,
+    });
+    expect(view.panel.coreWidth).toBe(
+      240 + PIXI_UI_GEOMETRY.dialogPadding * 2,
+    );
+    expect(view.connectButton.variant).toBe('yellow');
+    expect(view.freshButton.variant).toBe('green');
+    expect(view.connectButton.buttonWidth).toBe(240);
+    expect(view.freshButton.buttonWidth).toBe(240);
+    expect(view.connectButton.x).toBeGreaterThanOrEqual(0);
+    expect(view.connectButton.x + view.connectButton.buttonWidth).toBeLessThanOrEqual(
+      view.panel.contentBoxWidth,
+    );
+    expect(view.freshButton.x).toBeGreaterThanOrEqual(0);
+    expect(view.freshButton.x + view.freshButton.buttonWidth).toBeLessThanOrEqual(
+      view.panel.contentBoxWidth,
+    );
+    expect(view.freshButton.y + view.freshButton.buttonHeight).toBeLessThanOrEqual(
+      view.panel.contentBoxHeight,
+    );
+
+    view.destroy();
+  });
+
   it('projects online states into one retained gate view', () => {
     const view = createView();
     const controller = new PixiOnlineGateController();
@@ -44,8 +78,8 @@ describe('retained Pixi gate controllers', () => {
 
     controller.showConnecting();
     expect(view.bind).toHaveBeenLastCalledWith({
-      title: 'server required',
-      message: 'connecting to server...',
+      title: 'Server Required',
+      message: 'Connecting to server...',
       progress: true,
     });
 
@@ -57,6 +91,48 @@ describe('retained Pixi gate controllers', () => {
     });
   });
 
+  it('centers the connecting message inside a taller online gate', () => {
+    const view = new PixiOnlineGateView({
+      assets: createAssets(),
+    });
+
+    view.bind({
+      title: 'Server Required',
+      message: 'Connecting to server...',
+      progress: true,
+    });
+
+    expect(view.panel.contentBoxHeight).toBe(80);
+    expect(
+      view.message.y + view.message.measuredHeight / 2,
+    ).toBe(view.panel.contentBoxHeight / 2);
+    expect(view.progress.y + view.progress.barHeight).toBe(
+      view.panel.contentBoxHeight,
+    );
+
+    view.destroy();
+  });
+
+  it('holds the connecting state for deterministic visual previews', () => {
+    const view = createView();
+    const controller = new PixiOnlineGateController();
+    controller.attach(view);
+
+    controller.showConnecting({ preview: true });
+    controller.showOffline('server_paused');
+    controller.hide();
+
+    expect(view.bind).toHaveBeenLastCalledWith({
+      title: 'Server Required',
+      message: 'Connecting to server...',
+      progress: true,
+    });
+    expect(view.hide).not.toHaveBeenCalled();
+
+    controller.unmount();
+    expect(view.hide).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps account-in-use copy and the current action skin inside the padded dialog', () => {
     const onAction = vi.fn();
     const view = new PixiOnlineGateView({
@@ -64,18 +140,26 @@ describe('retained Pixi gate controllers', () => {
     });
 
     view.bind({
-      title: 'server required',
-      message: 'account opened on another device. close this one to continue there.',
-      actionLabel: 'play here',
+      title: 'Server Required',
+      message: 'Account opened on another device. Close this one to continue there.',
+      actionLabel: 'Play Here',
       onAction,
     });
 
     expect(view.message.wordWrap).toBe(true);
     expect(view.message.wrapWidth).toBe(260);
+    expect(view.message.align).toBe('center');
+    expect(view.message.textObject.anchor.x).toBe(0.5);
+    expect(view.message.x).toBe(view.panel.contentBoxWidth / 2);
+    expect(view.message.y).toBeGreaterThan(4);
+    expect(
+      view.message.y + view.message.measuredHeight / 2,
+    ).toBeCloseTo(view.action.y / 2, 5);
     expect(view.message.measuredWidth).toBeLessThanOrEqual(260);
     expect(view.action.variant).toBe('yellow');
     expect(view.action.buttonWidth).toBe(260);
     expect(view.panel.contentBoxWidth).toBe(260);
+    expect(view.panel.contentBoxHeight).toBe(96);
     expect(view.panel.contentInsets).toEqual({
       top: PIXI_UI_GEOMETRY.dialogPadding,
       right: PIXI_UI_GEOMETRY.dialogPadding,
@@ -88,7 +172,10 @@ describe('retained Pixi gate controllers', () => {
     expect(view.panel.content.x).toBe(PIXI_UI_GEOMETRY.dialogPadding);
     expect(view.panel.content.y).toBe(PIXI_UI_GEOMETRY.dialogPadding);
     expect(view.action.y).toBeGreaterThanOrEqual(
-      view.message.measuredHeight + 12,
+      view.message.y + view.message.measuredHeight + 12,
+    );
+    expect(view.action.y + view.action.buttonHeight).toBe(
+      view.panel.contentBoxHeight,
     );
 
     view.action.activate();

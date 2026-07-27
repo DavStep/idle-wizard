@@ -186,6 +186,12 @@ describe('ResearchPixiPage', () => {
       y: 527.3333333333334,
     });
     const tabs = harness.page.tabs.getWidgets();
+    expect(tabs.map((tab) => tab.control.textLabel.text)).toEqual([
+      'Regular Research',
+      'Automation',
+      'Advanced Research',
+      'Crystal Research',
+    ]);
     const expectedWrapWidth =
       (328 - 3 * (tabs.length - 1)) / tabs.length - 6;
     expect(expectedWrapWidth).toBe(73.75);
@@ -288,11 +294,23 @@ describe('ResearchPixiPage', () => {
       frameWidth: 1000 / 3,
       frameHeight: 80,
     });
-    expect(row.artWell.position).toMatchObject({ x: 13, y: 14 });
+    expect(RESEARCH_PIXI_GEOMETRY.contentOffsetY).toBe(3);
+    expect(row.artWell.position).toMatchObject({ x: 13, y: 17 });
     expect(row.artWell).toMatchObject({ frameWidth: 52, frameHeight: 52 });
     expect(row.art).toMatchObject({ width: 57, height: 57 });
+    expect(row.name.position.y).toBe(
+      RESEARCH_PIXI_GEOMETRY.nameY +
+        RESEARCH_PIXI_GEOMETRY.contentOffsetY,
+    );
     expect(row.description.position.x).toBe(
       RESEARCH_PIXI_GEOMETRY.descriptionX,
+    );
+    expect(row.costButton.position.y).toBe(
+      RESEARCH_PIXI_GEOMETRY.actionTop +
+        RESEARCH_PIXI_GEOMETRY.contentOffsetY +
+        (RESEARCH_PIXI_GEOMETRY.actionHeight -
+          RESEARCH_PIXI_GEOMETRY.costHeight) /
+          2,
     );
     expect(row.progress.root.position.x).toBe(252 / 3);
     expect(row.progress.width).toBe(422 / 3);
@@ -306,7 +324,8 @@ describe('ResearchPixiPage', () => {
     });
     expect(row.costButton.amountLabel.fontSize).toBeCloseTo(17 * 0.88);
     expect(row.costButton.resourceIcon.width).toBeCloseTo(23 * 0.88);
-    expect(row.researchedButton.amountLabel.fontSize).toBe(12);
+    expect(row.researchedButton.amountLabel.fontSize).toBe(9);
+    expect(row.researchedButton.amountLabel.textObject.style.fontSize).toBe(9);
     expect(box.title.text).toBe('Herbs');
     expect(box.title.style).toMatchObject({
       fontFamily: '"Lilita One", "Arial Black", Arial, sans-serif',
@@ -462,7 +481,9 @@ describe('ResearchPixiPage', () => {
     );
     expect(row.description.style.fontSize).toBe(11);
     expect(row.name.style.fill).toEqual(row.description.style.fill);
-    expect(row.name.position.y).toBe(0);
+    expect(row.name.position.y).toBe(
+      RESEARCH_PIXI_GEOMETRY.contentOffsetY,
+    );
     expect(row.researchedButton.visible).toBe(true);
     expect(row.researchedButton.tone).toBe('yellow');
     expect(row.researchedButton.amountLabel.text).toBe('Researched');

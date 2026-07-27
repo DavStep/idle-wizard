@@ -31,7 +31,7 @@ import {
 } from '../topPanelEvents.js';
 
 const DEFAULT_SETTINGS_TAB = 'account';
-const DEFAULT_USERNAME = 'wizard';
+const DEFAULT_USERNAME = 'Wizard';
 const SETTINGS_TABS = ['account', 'avatar', 'report', 'theme'];
 const DEFAULT_FEEDBACK_KIND = 'feedback';
 const FEEDBACK_KIND_CONFIG = {
@@ -57,6 +57,10 @@ const FEEDBACK_KIND_CONFIG = {
     prefix: 'feature request:',
   },
 };
+
+function isDefaultUsername(username) {
+  return String(username ?? '').toLowerCase() === DEFAULT_USERNAME.toLowerCase();
+}
 
 export class TopPanelSettingsManager {
   constructor({
@@ -253,7 +257,7 @@ export class TopPanelSettingsManager {
       this.renderPlayerSnapshot(this.playerFacade.getSnapshot());
     } else {
       this.renderPlayerSnapshot({
-        username: 'wizard',
+        username: DEFAULT_USERNAME,
         character: DEFAULT_PLAYER_CHARACTER,
         theme: DEFAULT_PLAYER_THEME,
         font: DEFAULT_PLAYER_FONT,
@@ -429,7 +433,7 @@ export class TopPanelSettingsManager {
     this.feedbackKind = this.normalizeFeedbackKind(feedbackKind);
     this.applyMode();
     this.refs.usernameInput.value =
-      usernamePromptMode && this.getVisibleUsername() === DEFAULT_USERNAME
+      usernamePromptMode && isDefaultUsername(this.getVisibleUsername())
         ? ''
         : this.getVisibleUsername();
     this.primeUsernameSelection = this.refs.usernameInput.value.length > 0;
@@ -578,7 +582,7 @@ export class TopPanelSettingsManager {
       !this.savingUsername &&
       this.usernamePromptMode &&
       !snapshot.shouldPromptForUsername &&
-      snapshot.username !== 'wizard'
+      !isDefaultUsername(snapshot.username)
     ) {
       this.hide();
     }

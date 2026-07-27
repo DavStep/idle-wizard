@@ -7,6 +7,7 @@ import {
 } from 'pixi.js';
 
 import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
+import { PixiButton } from '../../primitives/PixiButton.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
@@ -21,14 +22,17 @@ import {
 } from '../workshop/RetainedPageKit.js';
 
 const DIALOG_PADDING = 20;
-const RECIPE_DIALOG_CONTENT_WIDTH = 306;
+const RECIPE_DIALOG_CONTENT_WIDTH = 260;
 const RECIPE_DIALOG_CONTENT_HEIGHT = 360;
 const RECIPE_DIALOG_OUTER_WIDTH = RECIPE_DIALOG_CONTENT_WIDTH + 44;
 const RECIPE_DIALOG_OUTER_HEIGHT = RECIPE_DIALOG_CONTENT_HEIGHT + 44;
 const RECIPE_BOOK_CONTROL_HEIGHT = 25;
-const RECIPE_PAGE_GAP = 16;
+const RECIPE_PAGE_GAP = 12;
 const RECIPE_CARD_WIDTH =
   (RECIPE_DIALOG_CONTENT_WIDTH - RECIPE_PAGE_GAP) / 2;
+const RECIPE_ICON_SIZE = 56;
+const RECIPE_HEADER_GAP = 5;
+const RECIPE_RULE_WIDTH = 2;
 const RECIPE_CHOICE_CONTENT_WIDTH = 210;
 const RECIPE_CHOICE_OUTER_WIDTH = RECIPE_CHOICE_CONTENT_WIDTH + 44;
 
@@ -220,7 +224,6 @@ export class BrewingRecipeBookDialogPixi {
           assetManager: this.assetManager,
           inputRouter: this.inputRouter,
           semanticTargets: this.semanticTargets,
-          modalId: this.modal.id,
           counters,
         }),
       reset: (card) => card.reset(),
@@ -359,7 +362,10 @@ export class BrewingRecipeBookDialogPixi {
         RECIPE_DIALOG_CONTENT_WIDTH / 2,
         RECIPE_DIALOG_CONTENT_HEIGHT - RECIPE_BOOK_CONTROL_HEIGHT,
       )
-      .stroke({ color: contentTheme.stroke, width: 1 });
+      .stroke({
+        color: contentTheme.stroke,
+        width: RECIPE_RULE_WIDTH,
+      });
     for (const card of this.cards?.getWidgets?.() ?? []) {
       card.applyTheme(contentTheme);
     }
@@ -429,14 +435,12 @@ class BrewingRecipeCard {
     assetManager,
     inputRouter,
     semanticTargets,
-    modalId,
     counters,
   }) {
     this.instanceId = instanceId;
     this.assetManager = assetManager;
     this.inputRouter = inputRouter;
     this.semanticTargets = semanticTargets;
-    this.modalId = modalId;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.model = {};
     this.actions = {};
@@ -444,7 +448,11 @@ class BrewingRecipeCard {
     this.root = new Container({ label: `brewing-recipe-card-${instanceId}` });
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.label = `brewing-recipe-card-${instanceId}-icon`;
-    this.name = createText('', RETAINED_TEXT_STYLES.bold);
+    this.name = createText('', {
+      ...RETAINED_TEXT_STYLES.bold,
+      wordWrapWidth:
+        RECIPE_CARD_WIDTH - RECIPE_ICON_SIZE - RECIPE_HEADER_GAP,
+    });
     this.info = createText('', {
       ...RETAINED_TEXT_STYLES.border,
       wordWrapWidth: RECIPE_CARD_WIDTH,
@@ -454,12 +462,15 @@ class BrewingRecipeCard {
     });
     this.cost = createText('', RETAINED_TEXT_STYLES.border);
     this.duration = createText('', RETAINED_TEXT_STYLES.border);
-    this.select = new BrewingDialogButton({
-      id: `brewing.recipe.card.instance.${instanceId}.select`,
-      modalId,
+    this.select = new PixiButton({
+      assetManager,
       inputRouter,
-      label: 'select',
-      action: () => this.selectRecipe(),
+      text: 'select',
+      width: 112,
+      height: 30,
+      variant: 'yellow',
+      action: () => this.activateRecipeAction(),
+      label: `brewing.recipe.card.instance.${instanceId}.select`,
     });
     this.separator = new Graphics({
       label: `brewing-recipe-card-${instanceId}-separator`,
@@ -471,7 +482,7 @@ class BrewingRecipeCard {
       this.ingredientsLayer,
       this.cost,
       this.duration,
-      this.select.root,
+      this.select,
       this.separator,
     );
     this.ingredientSequence = 0;
@@ -541,16 +552,21 @@ class BrewingRecipeCard {
     this.icon.alpha = unknown ? 0.45 : 1;
     this.ingredients.reconcile(normalizeRows(this.model.ingredients));
     const selected = this.model.selected === true;
-    this.select.setLabel(
+    this.select.setText(
       selected
         ? 'selected'
         : unknown
           ? 'unknown'
           : locked
-            ? 'research'
+            ? 'Research'
             : this.model.actionLabel ?? 'select',
     );
-    this.select.setEnabled(!locked && !unknown);
+    const actionEnabled =
+      !unknown &&
+      (locked
+        ? this.model.canResearch === true
+        : true);
+    this.select.setEnabled(actionEnabled);
     this.select.setSelected(selected);
     this.root.visible = true;
     this.root.renderable = true;
@@ -566,15 +582,38 @@ class BrewingRecipeCard {
         displayObject: this.root,
         state: () => ({
           visible: this.root.visible && this.root.renderable,
-          interactive: !locked,
-          enabled: !locked,
+          interactive: actionEnabled,
+          enabled: actionEnabled,
           selected,
           active: !this.root.destroyed,
         }),
-        activate: () => this.selectRecipe(),
+        activate: () => this.activateRecipeAction(),
       });
     }
     this.applyTheme(this.theme);
+  }
+
+  activateRecipeAction() {
+    if (this.model.unlocked !== true) {
+      return this.researchRecipe();
+    }
+    return this.selectRecipe();
+  }
+
+  researchRecipe() {
+    if (this.model.canResearch !== true) {
+      return false;
+    }
+    const result =
+      this.model.onResearch?.(this.model) ??
+      this.actions.researchRecipe?.(this.model) ??
+      false;
+    const accepted = result === true || result?.ok === true;
+    if (accepted && this.model.unlocked !== true) {
+      this.model.canResearch = false;
+      this.select.setEnabled(false);
+    }
+    return result;
   }
 
   selectRecipe() {
@@ -598,12 +637,15 @@ class BrewingRecipeCard {
     this.width = width;
     this.height = height;
     this.icon.position.set(0, 0);
-    this.icon.width = 46;
-    this.icon.height = 46;
-    this.name.position.set(53, 2);
-    this.info.position.set(0, 52);
+    this.icon.width = RECIPE_ICON_SIZE;
+    this.icon.height = RECIPE_ICON_SIZE;
+    this.name.position.set(RECIPE_ICON_SIZE + RECIPE_HEADER_GAP, 2);
+    this.info.position.set(0, RECIPE_ICON_SIZE + 6);
     this.info.style.wordWrapWidth = width;
-    const ingredientsY = Math.max(112, 52 + Math.ceil(this.info.height) + 6);
+    const ingredientsY = Math.max(
+      118,
+      RECIPE_ICON_SIZE + 6 + Math.ceil(this.info.height) + 6,
+    );
     this.ingredientsLayer.position.set(0, ingredientsY);
     this.ingredients.getWidgets().forEach((row, index) =>
       row.setBounds(0, index * 32, width),
@@ -614,36 +656,44 @@ class BrewingRecipeCard {
     );
     this.cost.position.set(0, metaY);
     this.duration.position.set(0, metaY + 15);
-    this.select.setBounds((width - 112) / 2, height - 38, 112, 30);
+    this.select.position.set((width - 112) / 2, height - 38);
+    this.select.setSize(112, 30);
     this.separator
       .clear()
       .moveTo(0, height - 1)
       .lineTo(width, height - 1)
-      .stroke({ color: this.theme.stroke, width: 1 });
+      .stroke({
+        color: this.theme.stroke,
+        width: RECIPE_RULE_WIDTH,
+      });
+    this.applyTheme(this.theme);
   }
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    const disabled =
-      this.model.unlocked !== true ||
+    const masked =
       this.model.unknown === true ||
       this.model.known === false;
     applyTextTheme(this.name, this.theme, {
       ...RETAINED_TEXT_STYLES.bold,
-      fill: disabled ? this.theme.disabled : this.theme.text,
+      fill: masked ? this.theme.disabled : this.theme.text,
+      wordWrapWidth:
+        (this.width ?? RECIPE_CARD_WIDTH) -
+        RECIPE_ICON_SIZE -
+        RECIPE_HEADER_GAP,
     });
     applyTextTheme(this.info, this.theme, {
       ...RETAINED_TEXT_STYLES.border,
-      fill: disabled ? this.theme.disabled : this.theme.muted,
+      fill: masked ? this.theme.disabled : this.theme.muted,
       wordWrapWidth: this.width ?? RECIPE_CARD_WIDTH,
     });
     applyTextTheme(this.cost, this.theme, {
       ...RETAINED_TEXT_STYLES.border,
-      fill: disabled ? this.theme.disabled : this.theme.resourceColors.mana,
+      fill: masked ? this.theme.disabled : this.theme.resourceColors.mana,
     });
     applyTextTheme(this.duration, this.theme, {
       ...RETAINED_TEXT_STYLES.border,
-      fill: disabled ? this.theme.disabled : this.theme.muted,
+      fill: masked ? this.theme.disabled : this.theme.muted,
     });
     this.select.applyTheme(this.theme);
     for (const row of this.ingredients.getWidgets()) {
@@ -673,7 +723,7 @@ class BrewingRecipeCard {
     this.unregisterSemantic();
     this.ingredients.destroy();
     this.ingredientPool.destroy();
-    this.select.destroy();
+    this.select.destroy({ children: true });
     this.root.destroy({ children: true });
   }
 }
@@ -731,13 +781,11 @@ class BrewingRecipeIngredientRow {
     const masked =
       this.recipe.unknown === true ||
       this.recipe.known === false;
-    const color =
-      unavailable || masked
-        ? this.theme.disabled
-        : this.theme.resourceColors.herb;
     applyTextTheme(this.required, this.theme, {
       ...RETAINED_TEXT_STYLES.border,
-      fill: color,
+      fill: masked
+        ? this.theme.disabled
+        : this.theme.resourceColors.herb,
     });
     applyTextTheme(this.owned, this.theme, {
       ...RETAINED_TEXT_STYLES.border,

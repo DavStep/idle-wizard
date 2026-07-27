@@ -1624,7 +1624,7 @@ export class ShopPlayerShelfManager {
       if (!group) {
         group = {
           sellerKey: participantKey,
-          username: row.username || 'wizard',
+          username: row.username || 'Wizard',
           identity: row.sellerIdentity ?? row.requesterIdentity,
           rows: [],
         };

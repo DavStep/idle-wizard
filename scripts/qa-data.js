@@ -123,7 +123,7 @@ function readBackupRecords(inputPath) {
 
     profileByIdentity.set(identity, {
       identity,
-      username: unquote(row.username) || 'wizard',
+      username: unquote(row.username) || 'Wizard',
       level: readInteger(row.player_level ?? row.playerLevel, 1),
       theme: unquote(row.theme) || 'white',
       colorMode: unquote(row.color_mode ?? row.colorMode) || 'monochrome',
@@ -209,7 +209,7 @@ function writeTemplates(records, outDir) {
   for (const record of records) {
     const id = createTemplateId(record, ids, usernameCounts);
     const level = getRecordLevel(record);
-    const username = record.profile?.username ?? 'wizard';
+    const username = record.profile?.username ?? 'Wizard';
     const templateAliases = createTemplateAliases(record, id, usernameCounts);
     const templatePath = `/qa-data/templates/${id}.json`;
     const template = {
@@ -388,7 +388,7 @@ function parseSaveJson(rawSaveJson) {
 }
 
 function createTemplateId(record, ids, usernameCounts) {
-  const username = record.profile?.username ?? 'wizard';
+  const username = record.profile?.username ?? 'Wizard';
   const usernameSlug = slug(username);
   const level = getRecordLevel(record);
   const identityShort = record.identity.slice(0, 8);

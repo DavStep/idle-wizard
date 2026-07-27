@@ -75,25 +75,25 @@ describe('WorkshopStatsManager', () => {
 
     expect(stats.tabs.map((tab) => tab.id)).toEqual(['seeds', 'herbs', 'potions', 'coin']);
     expect(getTab(stats, 'seeds').rows.map((row) => [row.label, row.status])).toEqual([
-      ['total seeds generated', '3'],
-      ['sage seed', '2'],
-      ['mint seed', '1'],
+      ['Total Seeds Generated', '3'],
+      ['Sage Seed', '2'],
+      ['Mint Seed', '1'],
     ]);
     expect(getTab(stats, 'herbs').rows.map((row) => [row.label, row.status])).toEqual([
-      ['total herbs grown', '5'],
-      ['sage', '5'],
-      ['mint', '0'],
+      ['Total Herbs Grown', '5'],
+      ['Sage', '5'],
+      ['Mint', '0'],
     ]);
     expect(getTab(stats, 'potions').rows.map((row) => [row.label, row.status])).toEqual([
-      ['total potions brewed', '4'],
-      ['mana tonic', '4'],
-      ['wasted potion', '0'],
+      ['Total Potions Brewed', '4'],
+      ['Mana Tonic', '4'],
+      ['Wasted Potion', '0'],
     ]);
     expect(getTab(stats, 'coin').rows.map((row) => [row.label, row.status])).toEqual([
-      ['npc trade', '12 coin'],
-      ['player trade', '9 coin'],
-      ['royalties', '3 coin'],
-      ['mana tonic royalties', '3 coin'],
+      ['NPC Trade', '12 coin'],
+      ['Player Trade', '9 coin'],
+      ['Royalties', '3 coin'],
+      ['Mana Tonic Royalties', '3 coin'],
     ]);
     expect(getTab(stats, 'seeds').rows[1]).toMatchObject({
       itemKey: 'sageSeed',
@@ -120,7 +120,7 @@ describe('WorkshopStatsManager', () => {
 
     expect(getTab(stats, 'seeds').rows).toEqual([
       {
-        label: 'total seeds generated',
+        label: 'Total Seeds Generated',
         status: '0',
         state: 'total',
       },
@@ -147,16 +147,16 @@ describe('WorkshopStatsManager', () => {
 
     expect(popup?.hidden).toBe(false);
     expect(parent.querySelector('.workshop-page__stats-close')?.textContent).toBe('close');
-    expect(title?.textContent).toBe('stats');
+    expect(title?.textContent).toBe('Stats');
     expect(tabs.map((tab) => tab.textContent)).toEqual(['seeds', 'herbs', 'potions', 'coin']);
     expect(tabs[0].getAttribute('aria-selected')).toBe('true');
     expect(rows[0].querySelector('.workshop-page__stats-number')).toBeNull();
     expect(rows[0].querySelector('.workshop-page__stats-name')?.textContent).toBe(
-      'total seeds generated',
+      'Total Seeds Generated',
     );
     expect(rows[0].querySelector('.workshop-page__stats-status')?.textContent).toBe('3');
     expect(rows[1].getAttribute('data-resource-color')).toBe('seed');
-    expect(rows[1].querySelector('.workshop-page__stats-name')?.textContent).toBe('sage seed');
+    expect(rows[1].querySelector('.workshop-page__stats-name')?.textContent).toBe('Sage Seed');
     expect(
       rows[1].querySelector('.workshop-page__stats-name')?.classList.contains('style-seed-label'),
     ).toBe(false);
@@ -185,8 +185,8 @@ describe('WorkshopStatsManager', () => {
     tabs[3].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(tabs[3].getAttribute('aria-selected')).toBe('true');
-    expect(parent.textContent).toContain('player trade');
-    expect(parent.textContent).toContain('mana tonic royalties');
+    expect(parent.textContent).toContain('Player Trade');
+    expect(parent.textContent).toContain('Mana Tonic Royalties');
     expect(
       parent.querySelector('.workshop-page__stats-status .style-resource-label--coin'),
     ).not.toBeNull();

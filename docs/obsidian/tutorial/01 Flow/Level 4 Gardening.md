@@ -16,12 +16,11 @@ immediately, but target pointer help waits for the idle window or explicit
 
 | Code | Step | Kind | Page | Target | Cue |
 |---|---|---|---|---|---|
-| `t27` | `intro-garden` | dialog |  | `page:garden` |  |
-| `t28` | `grow-sage` | objective |  |  | delayed target |
-| `t29` | `first-harvest-complete` | prompt |  |  |  |
-| `t30` | `fill-sage-herb-task` | objective |  |  | delayed target |
-| `t31` | `fill-mint-herb-task` | objective |  |  | passive |
-| `t32` | `level-up-four` | objective |  |  | passive |
+| `t22` | `intro-garden` | dialog |  | `page:garden` |  |
+| `t23` | `grow-sage` | objective |  |  | delayed target |
+| `t24` | `first-harvest-complete` | prompt |  |  |  |
+| `t25` | `fill-sage-herb-task` | objective |  |  | delayed target |
+| `t26` | `fill-mint-herb-task` | objective |  |  | passive |
 
 ## Design Notes
 

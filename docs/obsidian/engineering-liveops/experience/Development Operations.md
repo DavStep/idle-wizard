@@ -26,6 +26,10 @@ experience_type: development-operations
 - Fresh-start browser QA resets FTUE progress; after choosing `start fresh`, write completed `idle-wizard.tutorial.v4` storage and reload before normal room-click automation.
 - Keep top-level docs current with implemented systems; agents trust README/architecture docs early, so stale future-scope text causes wrong plans.
 - When a feature needs faster or safer repeat work, add the smallest reusable dev tool and document its command/env in `docs/ai-workflow.md` or the feature README.
+- App-level retained preview commands must resolve managers through
+  `RenderFacade`; `AppFacade` does not expose the online gate as a direct
+  property. Use `?devUi=serverRequired` for a connection-gate state that live
+  backend events cannot overwrite during screenshot QA.
 - Raw retained-dialog and widget previews must bypass gameplay setup and save
   publication; visual inspection should not mutate or persist player state.
 - Canvas-only production guards must inspect Vite's emitted production module graph, not scan the whole source tree; this rejects reachable DOM UI without blocking retained legacy/dev files that are absent from release chunks.

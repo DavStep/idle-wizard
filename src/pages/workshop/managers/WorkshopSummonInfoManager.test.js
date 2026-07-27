@@ -492,7 +492,7 @@ describe('WorkshopSummonInfoManager', () => {
     manager.unmount();
   });
 
-  it('keeps the last active seed from being disabled', () => {
+  it('allows the last active seed to be set to none', () => {
     const gameplayFacade = createGameplayFacadeFake({
       seedSummoning: {
         dropChances: [
@@ -524,24 +524,24 @@ describe('WorkshopSummonInfoManager', () => {
     expect(
       parent.querySelector('.workshop-page__summon-info-weight-choice[data-preference="none"]')
         ?.disabled,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       parent
         .querySelector('.workshop-page__summon-info-weight-choice[data-preference="none"]')
         ?.getAttribute('aria-disabled'),
-    ).toBe('true');
+    ).toBe('false');
 
     parent
-      .querySelector('.workshop-page__summon-info-weight-choice[data-preference="low"]')
+      .querySelector('.workshop-page__summon-info-weight-choice[data-preference="none"]')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(
       parent.querySelector('.workshop-page__summon-info-weight-choice[data-preference="none"]')
         ?.disabled,
-    ).toBe(true);
+    ).toBe(false);
     expect(gameplayFacade.getSnapshot().seedSummoning.dropChances[0]).toMatchObject({
       key: 'sageSeed',
-      dropPreference: 'low',
+      dropPreference: 'none',
     });
 
     manager.unmount();

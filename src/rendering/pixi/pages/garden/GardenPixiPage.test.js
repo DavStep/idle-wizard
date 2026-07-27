@@ -7,6 +7,7 @@ import { Container, Point, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
+import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { DialogRegistry } from '../../retained/DialogRegistry.js';
@@ -236,7 +237,7 @@ describe('GardenPixiPage', () => {
     expect(plot.progress.progress).toBeCloseTo(0.5);
     expect(plot.progress).toMatchObject({
       tone: 'green',
-      height: 6,
+      height: 10,
     });
 
     harness.page.activate();
@@ -247,6 +248,139 @@ describe('GardenPixiPage', () => {
     expect(ticker.remove).toHaveBeenCalledWith(
       harness.page.tickHandler,
     );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('replaces buy-slot copy with the shared yellow cost button', () => {
+    const harness = createHarness();
+    const model = createGardenViewModel();
+    model.garden.plots.push({
+      id: 'plot-2',
+      tileNumber: 2,
+      phase: 'empty',
+      buySlot: true,
+      costCoin: 25,
+      affordable: false,
+      actionText: 'buy 25 coin',
+    });
+
+    harness.page.bind(model);
+    const plot = harness.page.plots.get('plot-2');
+
+    expect(plot.buyCostButton).toBeInstanceOf(PixiCostButton);
+    expect(plot.buyCostButton).toMatchObject({
+      tone: 'yellow',
+      visible: true,
+      renderable: true,
+      costState: 'unaffordable',
+      resource: 'coin',
+      buttonWidth: GARDEN_PIXI_GEOMETRY.buyButtonWidth,
+      buttonHeight: GARDEN_PIXI_GEOMETRY.buyButtonHeight,
+    });
+    expect(plot.buyCostButton.amountLabel.text).toBe('25');
+    expect(plot.buyCostButton.amountLabel.colorToken).toBe('#c1121f');
+    expect(plot.buyCostButton.position).toMatchObject({
+      x:
+        (GARDEN_PIXI_GEOMETRY.plotWidth -
+          GARDEN_PIXI_GEOMETRY.buyButtonWidth) /
+        2,
+      y:
+        (GARDEN_PIXI_GEOMETRY.plotHeight -
+          GARDEN_PIXI_GEOMETRY.buyButtonHeight) /
+        2,
+    });
+    expect(plot.action.visible).toBe(false);
+
+    model.garden.plots[1].affordable = true;
+    harness.page.bind(model);
+
+    expect(plot.buyCostButton.costState).toBe('available');
+    expect(plot.buyCostButton.enabled).toBe(true);
+    expect(plot.buyCostButton.amountLabel.colorToken).toBe('#ffffff');
+    expect(plot.action.visible).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders plot upgrades with the shared three-slot star tiers', () => {
+    const harness = createHarness();
+    const base = createGardenViewModel();
+    base.garden.plots[0].level = 1;
+    harness.page.bind(base);
+    const plot = harness.page.plots.get('plot-1');
+
+    expect(plot.level).toMatchObject({
+      level: 0,
+      tone: 'empty',
+      starCount: 0,
+    });
+    expect(plot.level.slots).toHaveLength(3);
+    expect(plot.level.slots.map((slot) => slot.fill.visible)).toEqual([
+      false,
+      false,
+      false,
+    ]);
+
+    const yellow = createGardenViewModel();
+    yellow.garden.plots[0].level = 3;
+    harness.page.bind(yellow);
+
+    expect(plot.level).toMatchObject({
+      level: 2,
+      tone: 'yellow',
+      starCount: 2,
+    });
+    expect(plot.level.slots.map((slot) => slot.fill.visible)).toEqual([
+      true,
+      true,
+      false,
+    ]);
+
+    const orange = createGardenViewModel();
+    orange.garden.plots[0].level = 5;
+    harness.page.bind(orange);
+
+    expect(plot.level).toMatchObject({
+      level: 4,
+      tone: 'orange',
+      starCount: 1,
+    });
+    expect(plot.level.slots.map((slot) => slot.fill.visible)).toEqual([
+      true,
+      false,
+      false,
+    ]);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('advances plot progress between gameplay snapshots', () => {
+    let now = 1_000;
+    const harness = createHarness({
+      timeSource: () => now,
+    });
+    const viewModel = createGardenViewModel();
+    viewModel.garden.now = now;
+    viewModel.garden.plots[0].process = {
+      totalMs: 10_000,
+      remainingMs: 6_000,
+      progress: 0.4,
+    };
+
+    harness.page.bind(viewModel);
+    const plot = harness.page.plots.get('plot-1');
+    expect(plot.progress.progress).toBeCloseTo(0.4);
+    expect(plot.plantMotion.scale.x).toBeCloseTo(0.42 + 0.4 * 0.58);
+
+    now = 1_500;
+    harness.page.tick(now);
+
+    expect(plot.progress.progress).toBeCloseTo(0.45);
+    expect(plot.plantMotion.scale.x).toBeCloseTo(0.42 + 0.45 * 0.58);
 
     harness.page.destroy();
     harness.dispose();

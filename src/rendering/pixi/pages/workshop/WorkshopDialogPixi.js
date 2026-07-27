@@ -1,17 +1,20 @@
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
 import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
+import { getIngredientIconFrameName } from '../../../../assets/items/ingredients/ingredientIcons.js';
 import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
 import {
   getSeedIconFrameName,
   getSeedPackItemFrameName,
 } from '../../../../assets/items/seeds/seedIconFrames.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
+import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -26,8 +29,29 @@ import {
 } from './RetainedPageKit.js';
 
 const WORKSHOP_DIALOG_CONTENT_WIDTH = 264;
+const BAG_DIALOG_TAB_ROW_WIDTH = 286;
+const BAG_DIALOG_TAB_FONT_SIZE = PIXI_UI_GEOMETRY.borderLabelFontSize;
+const DIALOG_SCROLL_VIEWPORT_TOP = 18;
+const DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET = 30;
+const DIALOG_PAPER_TOP =
+  PIXI_ROOT_RUN_GEOMETRY.dialog.paperInsetTop -
+  PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+const DIALOG_PAPER_BOTTOM_INSET =
+  PIXI_ROOT_RUN_GEOMETRY.dialog.paperInsetBottom -
+  PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+const BAG_SCROLL_VIEWPORT_TOP_INSET =
+  DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET -
+  DIALOG_PAPER_BOTTOM_INSET -
+  (DIALOG_SCROLL_VIEWPORT_TOP - DIALOG_PAPER_TOP);
 const STATS_SCROLL_VIEWPORT_TOP_INSET = 6;
 const STATS_SCROLLBAR_SHIFT_RIGHT = 4;
+const RESOURCE_ICON_FRAMES = Object.freeze({
+  coin: 'resource:coin',
+  crystal: 'resource:crystal',
+  emerald: 'resource:emerald',
+  mana: 'resource:mana',
+  ruby: 'resource:ruby',
+});
 
 /**
  * Shared retained shell for Workshop-owned list/dialog surfaces.
@@ -63,11 +87,14 @@ export class WorkshopDialogPixi {
     this.viewModel = {};
     this.sourceWidth = RETAINED_PAGE_GEOMETRY.width;
     this.sourceHeight = RETAINED_PAGE_GEOMETRY.height;
+    this.isBagDialog = this.dialogId === 'workshop.bag';
     const isStatsDialog = this.dialogId === 'workshop.stats';
     this.scrollContentPaddingTop = PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
-    this.scrollViewportTopInset = isStatsDialog
-      ? STATS_SCROLL_VIEWPORT_TOP_INSET
-      : 0;
+    this.scrollViewportTopInset = this.isBagDialog
+      ? BAG_SCROLL_VIEWPORT_TOP_INSET
+      : isStatsDialog
+        ? STATS_SCROLL_VIEWPORT_TOP_INSET
+        : 0;
     this.scrollViewportWidth =
       WORKSHOP_DIALOG_CONTENT_WIDTH +
       (isStatsDialog ? STATS_SCROLLBAR_SHIFT_RIGHT : 0);
@@ -215,6 +242,11 @@ export class WorkshopDialogPixi {
       enabled: tab.enabled !== false,
       action: () => tab.onSelect?.(tab.id) ?? this.viewModel.onSelectTab?.(tab.id),
     });
+    button.control.textLabel.setFontSize(
+      this.isBagDialog
+        ? BAG_DIALOG_TAB_FONT_SIZE
+        : PIXI_UI_GEOMETRY.bodyFontSize,
+    );
   }
 
   orderRows(widgets) {
@@ -298,20 +330,28 @@ export class WorkshopDialogPixi {
     const statusHeight = this.status.text ? 18 : 0;
     this.scroll.setBounds(
       20,
-      18 + copyHeight + this.scrollViewportTopInset,
+      DIALOG_SCROLL_VIEWPORT_TOP +
+        copyHeight +
+        this.scrollViewportTopInset,
       this.scrollViewportWidth,
       height -
-        48 -
+        DIALOG_SCROLL_VIEWPORT_TOP -
+        DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET -
         copyHeight -
         statusHeight -
         composerHeight -
         this.scrollViewportTopInset,
     );
-    this.tabsLayer.position.set(20, height - 2);
+    const tabRowWidth = this.isBagDialog
+      ? BAG_DIALOG_TAB_ROW_WIDTH
+      : WORKSHOP_DIALOG_CONTENT_WIDTH;
+    this.tabsLayer.position.set((width - tabRowWidth) / 2, height - 2);
     this.tabsLayer.visible = tabs.length > 0;
     const gap = 3;
     const tabWidth =
-      tabs.length > 0 ? (264 - gap * (tabs.length - 1)) / tabs.length : 0;
+      tabs.length > 0
+        ? (tabRowWidth - gap * (tabs.length - 1)) / tabs.length
+        : 0;
     let tabX = 0;
 
     for (const button of tabs) {
@@ -562,13 +602,22 @@ class WorkshopDialogRow {
     );
     const iconSize = 16;
     const iconCenterX = this.value.x - this.value.width - 3 - iconSize / 2;
-    this.valueIcon.position.set(iconCenterX, 9);
-    this.valueIcon.width = iconSize;
-    this.valueIcon.height = iconSize;
-    this.valueIconOverlay.position.set(iconCenterX, 9 - iconSize * 0.035);
-    this.valueIconOverlay.width = iconSize * 0.44;
-    this.valueIconOverlay.height = iconSize * 0.44;
-    this.valueIconOverlay.rotation = (6 * Math.PI) / 180;
+    if (this.valueIconOverlay.visible) {
+      layoutPixiSeedPackIcon({
+        base: this.valueIcon,
+        item: this.valueIconOverlay,
+        x: iconCenterX,
+        y: 9,
+        width: iconSize,
+        height: iconSize,
+        fitPositionX: 1,
+      });
+    } else {
+      this.valueIcon.position.set(iconCenterX, 9);
+      this.valueIcon.width = iconSize;
+      this.valueIcon.height = iconSize;
+      this.valueIconOverlay.rotation = 0;
+    }
     this.root.hitArea = new Rectangle(0, 0, width, height);
   }
 
@@ -589,7 +638,9 @@ class WorkshopDialogRow {
     });
     applyTextTheme(this.value, theme, {
       ...RETAINED_TEXT_STYLES.body,
-      fill: this.model?.resourceKey
+      fill: this.dialog.isBagDialog
+        ? theme.text
+        : this.model?.resourceKey
         ? theme.resourceColors?.[this.model.resourceKey] ?? theme.text
         : this.model?.muted
           ? theme.muted
@@ -627,6 +678,10 @@ function resolveValueIconFrames(model = {}) {
   const kind = String(model.itemKind ?? '').trim().toLowerCase();
   const key = model.itemKey ?? null;
 
+  if (kind === 'resource') {
+    return { base: RESOURCE_ICON_FRAMES[key] ?? null, overlay: null };
+  }
+
   if (kind === 'seed') {
     return {
       base: getSeedIconFrameName(key),
@@ -643,6 +698,10 @@ function resolveValueIconFrames(model = {}) {
 
   if (kind === 'potion') {
     return { base: getPotionIconFrameName(key), overlay: null };
+  }
+
+  if (kind === 'ingredient') {
+    return { base: getIngredientIconFrameName(key), overlay: null };
   }
 
   return { base: null, overlay: null };

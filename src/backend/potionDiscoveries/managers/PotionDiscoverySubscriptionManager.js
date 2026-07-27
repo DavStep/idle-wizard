@@ -97,7 +97,7 @@ export class PotionDiscoverySubscriptionManager {
       discoveredByIdentity: this.toIdentityKey(
         row.discoveredByIdentity ?? row.discovered_by_identity,
       ),
-      username: typeof row.username === 'string' ? row.username : 'wizard',
+      username: typeof row.username === 'string' ? row.username : 'Wizard',
       discoveredAtMs: this.toTimestampMs(row.discoveredAt ?? row.discovered_at),
       royaltyCoin: this.toCoinValue(
         row.royaltyCoin ?? row.royaltyGold ?? row.royalty_coin ?? row.royalty_gold,

@@ -51,7 +51,6 @@ export class PlayerPolicyManager {
 
     return (
       this.completeReadyTurnInTask(gameplayFacade, snapshot) ??
-      this.completeLevel(gameplayFacade, snapshot) ??
       this.completePrestige(gameplayFacade, snapshot, options) ??
       this.startReadyBottling(gameplayFacade, snapshot) ??
       this.buyRequiredResearch(gameplayFacade, snapshot) ??
@@ -76,15 +75,6 @@ export class PlayerPolicyManager {
     }
 
     return null;
-  }
-
-  completeLevel(gameplayFacade, snapshot) {
-    if (!snapshot.tasks.level.completion.canComplete) {
-      return null;
-    }
-
-    const result = gameplayFacade.completeTaskLevel();
-    return result.ok ? this.action('level_up', `level ${result.currentLevel}`, result) : null;
   }
 
   completePrestige(gameplayFacade, snapshot, options) {

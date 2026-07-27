@@ -156,7 +156,7 @@ Palette is functional and full enough to support fantasy materials, resources, a
 
 **The Source Scale Rule.** Keep source UI text at 13px and make mobile readable through the room UI scale layer.
 
-**The Lowercase Rule.** Player-facing labels stay lowercase unless they are user-entered names or external proper nouns.
+**The Authored Case Rule.** Player-facing text keeps the capitalization supplied by feature copy. Rendering must not force labels to lowercase.
 
 ## 4. Elevation
 
@@ -198,7 +198,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 - **Error / Disabled:** Error copy stays compact, disabled fields use disabled gray.
 
 ### Navigation
-- **Bottom Room Tabs:** Five equal icon tabs use Root Run's active/inactive station-tab nine-slice assets, fill the source width, and share one bottom baseline with an `8px` source safe gap below the complete frame. Active/inactive caps are `56px`/`44px` tall before the shared `18px` lower stretch region. The active tab rises `12px`, enlarges its icon, and reveals its source-11px page name; inactive tabs sit lower with dimmer icons and hidden visual labels.
+- **Bottom Room Tabs:** Five equal icon tabs use Root Run's full active/inactive room-tab background assets, fill the source width, and share one bottom baseline with an `8px` source safe gap below the complete frame. Active/inactive frames are `56px`/`44px` tall before the shared `18px` lower region. Icons stay at full color and opacity in every unlocked state. The active tab rises `12px`, enlarges its icon, and reveals its white source-11px Title Case page name; inactive tabs sit lower with hidden visual labels. Locked tabs replace the room icon with a larger lock centered lower in the inactive frame.
 - **Popup Tabs:** Sit below and outside the bordered dialog, keep an 8px source gap, and reuse the shared very-dark deselected and lighter-brown selected Root Run button skins.
 - **Page Names:** The current room name appears inside the raised active tab; inactive room names remain available through accessible labels.
 
@@ -213,7 +213,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 - **Coverage:** All game dialogs use this shell, including Shop, Guild, and app-level blocker gates. Non-dismissible flows hide the close action; feature-specific artwork belongs inside the paper content area. The first-run cutscene keeps its narrative inside an ordinary border-labeled box with a yellow action button. Full-screen progress and feature-unlock announcement screens remain centered, unframed compositions; only report-style announcements use dialog chrome.
 
 ### Progress
-- **Rail:** Shared in-game rails use the compact Root Rush geometry at 10px source height. The top-panel quest rail intentionally keeps the original 14px source height. Both use a black capsule track, 1px outer stroke, dark inset rim, and 1px inner gap.
+- **Rail:** Shared passive in-game rails use the compact Root Rush geometry at 10px source height. Interactive sliders and the top-panel quest rail use 14px source height. Both use a black capsule track, 1px outer stroke, dark inset rim, and 1px inner gap.
 - **Fill:** Purple `#8740df` with a lighter `#bd72f3` inset edge is the shared default. Brewing uses blue, Garden uses green, and Market/Research use yellow. Keep fully rounded caps and timer text outside the rail.
 - **Allocation Knob:** Use a 14px cream circle with a tan border and dark-brown outer ring, matching the layered round reference without any inner glyph.
 

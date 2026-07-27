@@ -80,6 +80,7 @@ experience_type: product-shape
 - FTUE level-one sage guidance must resolve the turn-in task by item/action too; live configs may still use legacy `level1-sage-seeds` while defaults use `level1-turn-in-sage-seed`.
 - The final level-0 request must advance to level 1 before publishing; never expose an intermediate `all quests complete` rail or clickable `reach level 1` row, and migrate completed legacy level-0 saves on load.
 - Resource-gated FTUE steps must refresh from `subscribeFrameResources`; top-panel mana can change without a full gameplay snapshot.
+- Frame-resource snapshots are partial; retained presenters must merge nested `tasks.currentLevel` into the full task snapshot instead of replacing `tasks`, or mana ticks erase `questProgress` and hide the level rail.
 - FTUE repeated action prompts should show once as brief non-dimming hints, then reappear only after idle time; do not keep alternating guidance through active loops.
 - Level-two FTUE trader-stand loading selects Sage Seed, targets the percentage rail until it reads `25%`, then targets `mark x1`; this sells one of five lesson seeds and preserves four for turn-in.
 - A page means a room view, not a web route.
@@ -165,6 +166,7 @@ experience_type: product-shape
 - Non-button text/row press targets should fire synthetic click on touch/pointer press-start with click dedupe; native buttons should activate on release/click. Use `data-press-start-click="false"` only when a non-button target needs validated release.
 - `.is-locked` is not a disabled signal for shared press handling; use native `disabled`, `aria-disabled="true"`, or `.is-disabled` so buyable locked rows and locked room tabs still synth-click on web.
 - Native dialog/open/submit buttons should activate on validated pointerup/click; do not add touchstart/pointerdown action handlers to buttons unless the interaction is a true hold/drag setup.
+- Retained Pixi room tabs need `fallbackHitTest` on their central-router press registrations; tutorial and other higher layers can make the native event path miss the real tab even when the release point is inside its live bounds.
 - NPC market stand rows and loader item rows use ordinary click/keyboard activation; the percentage-allocation flow has no pointerdown/hold transfer path.
 - NPC market demand recovery uses lazy capped UTC buyer waves, not a smooth 5-minute/half-life regen or hard daily reset; backend and `npcMarketPricing.js` must stay mirrored.
 - NPC market weekly reset must use the same anchored Monday UTC period as leaderboards/events; start recovery at `weekStart - 1` so the day-start buyer wave is added after the reset.
@@ -218,6 +220,7 @@ experience_type: product-shape
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - Trader loader rows are one action; make the whole visual row the button and put FTUE ids on that button (`shop:sell:<itemKey>`).
 - FTUE Market teaching is `open first stall -> select sage seed -> set 25% -> mark one seed -> wait for timed sale`; target `shop:sell:percentage` until `25%`, then `shop:sell:mark`.
+- FTUE slider demonstrations must anchor the tutorial target to the live knob, not the whole rail; the level-2 Market allocation cue presses, holds, drags right to `25%`, releases, hides, and repeats after a two-second pause.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE lesson border-action buttons need late `.style-box .tutorial-layer__...` overrides, because the global `.style-box :where(button, ...)` rule can re-inflate them to body size.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.
@@ -283,7 +286,7 @@ experience_type: product-shape
 - Elara objective placement must protect the whole stall-loader tab strip when targeting one tab; a single tab rect can leave the guide covering adjacent tab controls.
 - Draggable Elara placement must test portrait/button overlap with the lesson panel; side-only clamping can shove the panel under Elara near the right edge.
 - FTUE balance order is level 1 free Workshop sage seed, level 2 Market selling, level 3 Research/mint seed, level 4 Garden herbs, then level 5 Brewing/mana tonic.
-- FTUE lesson labels are `lesson 1: introduction`, `lesson 2: market`, `lesson 3: research`, `lesson 4: gardening`, and `lesson 5: brewing`.
+- FTUE lesson labels use title case: `Lesson 1: Introduction`, `Lesson 2: Market`, `Lesson 3: Research`, `Lesson 4: Gardening`, and `Lesson 5: Brewing`.
 - FTUE lesson 1 introduces Elara first, then unlocks the top panel for username setup, then greets the saved username before mana guidance.
 - FTUE username target needs the username button rect to fit the visible name text; a flex-filled button makes the pointer drift toward the level/coin side.
 - New focus-target FTUE steps after an open press-to-advance lesson must evaluate as collapsed; carrying the old open-panel state suppresses the first pointer until another refresh.
@@ -346,6 +349,7 @@ experience_type: product-shape
 - Generic `.style-button` active CSS must exclude `[aria-disabled="true"]`; aria-disabled real buttons can still get native `:active` and paint transparent art hitboxes.
 - Pixel/WebView taps need forgiving touch slop in `PressFeedbackManager`; a 12px move threshold can treat normal finger drift as a drag and suppress the valid click.
 - Workshop summon's custom hold-to-repeat pointerdown can suppress native quick-tap clicks; keep a validated touch release fallback in the summon manager and dedupe it against global synthetic clicks.
+- Retained Pixi tutorial overlays can report the stage root for a revealed room press even when the pointer is inside the control bounds; opt only the affected registration into geometric fallback hit-testing and gate that fallback on the revealed control's visibility.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
 - Reward text flyouts should all spawn from the same base anchor; do not stack older notices upward or derive one flyout position from another.

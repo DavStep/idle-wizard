@@ -11,9 +11,8 @@ import {
 } from '../../../gameplay/tasks/taskRequirementTypes.js';
 import { getLevelPayoffRows } from './levelPayoffSummary.js';
 
-const ELARA_REQUEST_LABEL = "elara's request";
-const LEVEL_UP_LABEL = 'level up';
-const TURN_IN_TEXT = 'turn in';
+const ELARA_REQUEST_LABEL = "Elara's Request";
+const TURN_IN_TEXT = 'Turn In';
 const EXPANDED_CONTENT_MOTION_MS = 225;
 const TASK_REORDER_MOTION_MS = 225;
 const TASK_REORDER_EARLY_THRESHOLD_RATIO = 0.2;
@@ -225,8 +224,6 @@ export class WorkshopTaskManager {
       this.handleLevelRewardsTogglePointerDown,
     );
     this.refs.levelRewardsToggle.addEventListener('click', this.handleLevelRewardsToggleClick);
-    this.refs.levelComplete = this.createLevelCompleteRow();
-
     this.refs.expandedContent = document.createElement('div');
     this.refs.expandedContent.className = 'workshop-page__tasks-expanded-content';
 
@@ -236,7 +233,6 @@ export class WorkshopTaskManager {
     this.refs.expandedContentBody.append(
       this.refs.list,
       this.refs.levelRewards.root,
-      this.refs.levelComplete.root,
     );
     this.refs.expandedContent.append(this.refs.expandedContentBody);
 
@@ -624,11 +620,10 @@ export class WorkshopTaskManager {
     setNotificationBadge(
       this.refs.toggleButton,
       !this.expanded &&
-        (this.shouldShowLevelComplete() ||
-          [...this.rowsByTaskId.keys()].some((taskId) => {
-            const task = this.currentTasksById.get(taskId);
-            return task?.canFill;
-          })),
+        [...this.rowsByTaskId.keys()].some((taskId) => {
+          const task = this.currentTasksById.get(taskId);
+          return task?.canFill;
+        }),
     );
   }
 
@@ -673,10 +668,6 @@ export class WorkshopTaskManager {
 
     if (taskSnapshot?.completedAllLevels) {
       return 'done';
-    }
-
-    if (this.shouldShowLevelComplete()) {
-      return 'level up';
     }
 
     return '';
@@ -830,36 +821,6 @@ export class WorkshopTaskManager {
     };
   }
 
-  createLevelCompleteRow() {
-    const root = document.createElement('div');
-    root.className = 'workshop-page__level-complete';
-    root.hidden = true;
-    root.dataset.tutorialId = 'workshop:levelUp';
-
-    const action = document.createElement('div');
-    action.className = 'workshop-page__level-complete-action';
-
-    const label = document.createElement('span');
-    label.className = 'workshop-page__level-complete-label';
-    label.textContent = 'level up';
-
-    const button = document.createElement('button');
-    button.className = 'style-button workshop-page__level-complete-button';
-    button.type = 'button';
-    button.append(label);
-    button.addEventListener('click', () => this.onLevelCompleteButton());
-
-    action.append(button);
-    root.append(action);
-
-    return {
-      root,
-      action,
-      label,
-      button,
-    };
-  }
-
   createInfoPopup() {
     const popup = document.createElement('section');
     popup.className = 'workshop-page__tasks-info-popup';
@@ -928,13 +889,7 @@ export class WorkshopTaskManager {
 
   setRequirementContext(taskSnapshot) {
     const requirementTargetLevel = getLevelRequirementTargetLevel(taskSnapshot);
-    const hasActiveRequest = (taskSnapshot?.level?.tasks ?? []).some(
-      (task) => !task.completed,
-    );
-    const requirementsLabel =
-      !hasActiveRequest && taskSnapshot?.level?.completion?.canComplete
-        ? LEVEL_UP_LABEL
-        : ELARA_REQUEST_LABEL;
+    const requirementsLabel = ELARA_REQUEST_LABEL;
 
     if (this.currentRequirementTargetLevel !== requirementTargetLevel) {
       this.rewardsHidden = false;
@@ -956,14 +911,6 @@ export class WorkshopTaskManager {
   }
 
   getTasksHelperText() {
-    if (this.currentRequirementsLabel === LEVEL_UP_LABEL) {
-      const target = Number.isInteger(this.currentRequirementTargetLevel)
-        ? `level ${this.currentRequirementTargetLevel}`
-        : 'the next level';
-
-      return `all elara's requests are complete. reach ${target}.`;
-    }
-
     if (Number.isInteger(this.currentRequirementTargetLevel)) {
       return `complete elara's requests one at a time to reach level ${this.currentRequirementTargetLevel}. each request fills one level segment. turn-in requests consume items.`;
     }
@@ -986,11 +933,6 @@ export class WorkshopTaskManager {
 
     this.gameplayFacade.fillTask(taskId);
 
-    this.render(this.gameplayFacade.getSnapshot());
-  }
-
-  onLevelCompleteButton() {
-    this.gameplayFacade.completeTaskLevel?.();
     this.render(this.gameplayFacade.getSnapshot());
   }
 
@@ -1088,56 +1030,12 @@ export class WorkshopTaskManager {
   }
 
   hasLevelRewardsLayout() {
-    return Boolean(
-      this.canToggleTasks
-        ? this.isExpandedContentVisible()
-        : this.shouldShowLevelComplete(),
-    );
+    return Boolean(this.canToggleTasks && this.isExpandedContentVisible());
   }
 
   canToggleLevelRewards() {
     const currentLevel = this.getLevelRewardsCurrentLevel();
     return Number.isInteger(currentLevel) ? currentLevel > 1 : true;
-  }
-
-  renderLevelComplete() {
-    const row = this.refs.levelComplete;
-
-    if (!row) {
-      return;
-    }
-
-    const show =
-      this.shouldShowLevelComplete() &&
-      (!this.canToggleTasks || this.isExpandedContentVisible());
-    this.setHidden(row.root, !show);
-
-    if (!show) {
-      return;
-    }
-
-    const nextLevel = this.currentLevelCompletion.level + 1;
-    const payoffRows = this.getLevelPayoffRows(this.currentLevelCompletion.level, nextLevel);
-    const payoffPreview = this.getLevelPayoffPreview(nextLevel, payoffRows);
-
-    this.setText(row.label, `reach level ${nextLevel}`);
-    this.setDisabled(row.button, false);
-    this.setAttribute(row.button, 'aria-disabled', 'false');
-    this.setAttribute(
-      row.button,
-      'aria-label',
-      `level up to ${nextLevel}. ${payoffPreview}`,
-    );
-    this.setAttribute(
-      row.root,
-      'aria-label',
-      `level up to ${nextLevel}. ${payoffPreview}`,
-    );
-    setNotificationBadge(row.button, true);
-  }
-
-  shouldShowLevelComplete() {
-    return Boolean(this.currentLevelCompletion?.canComplete);
   }
 
   getLevelPayoffRows(currentLevel, nextLevel) {
@@ -2061,9 +1959,7 @@ export class WorkshopTaskManager {
   syncExpansionState() {
     const listExpanded = this.isTaskListExpanded();
     const expandedContentVisible = this.isExpandedContentVisible();
-    const levelCompleteExpanded =
-      this.shouldShowLevelComplete() && (!this.canToggleTasks || listExpanded);
-    const hasExpandedContent = listExpanded || levelCompleteExpanded;
+    const hasExpandedContent = listExpanded;
 
     this.root?.classList.toggle('is-expanded', hasExpandedContent);
     this.root?.classList.toggle('is-collapsed', !hasExpandedContent);
@@ -2103,7 +1999,6 @@ export class WorkshopTaskManager {
 
     this.syncTaskDragState();
     this.renderLevelRewards();
-    this.renderLevelComplete();
     this.syncLevelRewardsToggle();
     this.updateToggleNotification();
   }

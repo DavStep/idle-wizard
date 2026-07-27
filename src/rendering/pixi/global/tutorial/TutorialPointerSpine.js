@@ -9,6 +9,20 @@ export const TUTORIAL_POINTER_SPINE_DEFINITION = Object.freeze({
   animationName: 'click1',
 });
 
+export const TUTORIAL_POINTER_GESTURE_KINDS = Object.freeze({
+  HORIZONTAL_DRAG: 'horizontal-drag',
+});
+
+export const TUTORIAL_POINTER_DRAG_TIMING = Object.freeze({
+  appearMs: 160,
+  pressMs: 360,
+  holdMs: 180,
+  dragMs: 700,
+  releaseMs: 360,
+  hideMs: 180,
+  repeatDelayMs: 2_000,
+});
+
 const PLACEMENT_ROTATIONS = Object.freeze({
   'top-left': Object.freeze({ degrees: 135, nudgeX: 6, nudgeY: 6 }),
   'top-right': Object.freeze({ degrees: -135, nudgeX: -6, nudgeY: 6 }),
@@ -47,6 +61,11 @@ export class TutorialPointerSpine {
     this.visible = false;
     this.motionEnabled = true;
     this.error = null;
+    this.placement = null;
+    this.gesture = null;
+    this.gestureKey = '';
+    this.gestureElapsedMs = 0;
+    this.gestureOffsetX = 0;
   }
 
   ensureReady() {
@@ -94,6 +113,9 @@ export class TutorialPointerSpine {
     this.spine = spine;
     this.fitSpine(spine);
     this.root.addChild(spine);
+    if (this.gesture) {
+      this.restartGestureAnimation();
+    }
     this.syncPlayback();
     return spine;
   }
@@ -103,20 +125,52 @@ export class TutorialPointerSpine {
       this.setVisible(false);
       return;
     }
+    this.placement = placement;
+    this.applyPlacement();
+  }
+
+  applyPlacement() {
+    if (!this.placement) {
+      return;
+    }
     const transform =
-      PLACEMENT_ROTATIONS[placement.id] ??
+      PLACEMENT_ROTATIONS[this.placement.id] ??
       PLACEMENT_ROTATIONS['bottom-right'];
     this.root.position.set(
-      placement.x + transform.nudgeX,
-      placement.y + transform.nudgeY,
+      this.placement.x + transform.nudgeX + this.gestureOffsetX,
+      this.placement.y + transform.nudgeY,
     );
     this.root.rotation = (transform.degrees * Math.PI) / 180;
   }
 
+  setGesture(gesture = null) {
+    const nextGesture = normalizeGesture(gesture);
+    const nextKey = nextGesture
+      ? `${nextGesture.kind}:${nextGesture.travelX}`
+      : '';
+    if (nextKey === this.gestureKey) {
+      return;
+    }
+    this.gesture = nextGesture;
+    this.gestureKey = nextKey;
+    if (this.gesture) {
+      this.resetGestureCycle();
+    } else {
+      this.gestureElapsedMs = 0;
+      this.gestureOffsetX = 0;
+      this.root.alpha = 1;
+      this.applyPlacement();
+      this.restartDefaultAnimation();
+    }
+    this.syncPlayback();
+  }
+
   setVisible(visible) {
-    this.visible = Boolean(visible);
-    this.root.visible = this.visible;
-    this.root.renderable = this.visible;
+    const nextVisible = Boolean(visible);
+    if (nextVisible && !this.visible && this.gesture) {
+      this.resetGestureCycle();
+    }
+    this.visible = nextVisible;
     if (this.visible) {
       void this.ensureReady().catch(() => {});
     }
@@ -132,6 +186,10 @@ export class TutorialPointerSpine {
     if (!this.visible || !this.motionEnabled || !this.spine) {
       return false;
     }
+    if (this.gesture?.kind === TUTORIAL_POINTER_GESTURE_KINDS.HORIZONTAL_DRAG) {
+      this.updateHorizontalDrag(deltaMs);
+      return true;
+    }
     this.spine.update?.(Math.max(0, Number(deltaMs) || 0) / 1000);
     return true;
   }
@@ -141,9 +199,83 @@ export class TutorialPointerSpine {
   }
 
   syncPlayback() {
+    const shouldShowStatic =
+      this.visible && (!this.gesture || !this.motionEnabled);
+    if (!this.gesture || !this.motionEnabled || !this.visible) {
+      this.root.visible = shouldShowStatic;
+      this.root.renderable = shouldShowStatic;
+      this.root.alpha = 1;
+      this.gestureOffsetX = 0;
+      this.applyPlacement();
+    }
     if (this.spine?.state) {
       this.spine.state.timeScale =
         this.visible && this.motionEnabled ? 1 : 0;
+    }
+  }
+
+  updateHorizontalDrag(deltaMs) {
+    const cycleMs = getDragCycleMs();
+    const previousElapsed = this.gestureElapsedMs;
+    this.gestureElapsedMs =
+      (this.gestureElapsedMs + Math.max(0, Number(deltaMs) || 0)) %
+      cycleMs;
+    if (this.gestureElapsedMs < previousElapsed) {
+      this.restartGestureAnimation();
+    }
+
+    const frame = resolveHorizontalDragFrame(
+      this.gestureElapsedMs,
+      this.gesture.travelX,
+    );
+    this.gestureOffsetX = frame.offsetX;
+    this.root.alpha = frame.alpha;
+    this.root.visible = frame.visible;
+    this.root.renderable = frame.visible;
+    this.applyPlacement();
+
+    if (this.spine?.state) {
+      this.spine.state.timeScale = frame.playbackRate;
+    }
+    if (frame.playbackRate > 0) {
+      this.spine.update?.(
+        (Math.max(0, Number(deltaMs) || 0) / 1000) *
+          frame.playbackRate,
+      );
+    }
+  }
+
+  resetGestureCycle() {
+    this.gestureElapsedMs = 0;
+    this.gestureOffsetX = 0;
+    this.root.alpha = 1;
+    this.applyPlacement();
+    this.restartGestureAnimation();
+  }
+
+  restartGestureAnimation() {
+    if (
+      this.spine?.state &&
+      typeof this.spine.state.setAnimation === 'function'
+    ) {
+      this.spine.state.setAnimation(
+        0,
+        this.definition.animationName,
+        false,
+      );
+    }
+  }
+
+  restartDefaultAnimation() {
+    if (
+      this.spine?.state &&
+      typeof this.spine.state.setAnimation === 'function'
+    ) {
+      this.spine.state.setAnimation(
+        0,
+        this.definition.animationName,
+        true,
+      );
     }
   }
 
@@ -189,6 +321,113 @@ export class TutorialPointerSpine {
     this.spine = null;
     this.root.destroy({ children: true });
   }
+}
+
+function normalizeGesture(gesture) {
+  if (
+    gesture?.kind !== TUTORIAL_POINTER_GESTURE_KINDS.HORIZONTAL_DRAG
+  ) {
+    return null;
+  }
+  const travelX = Math.max(0, Number(gesture.travelX) || 0);
+  return travelX > 0
+    ? Object.freeze({
+        kind: TUTORIAL_POINTER_GESTURE_KINDS.HORIZONTAL_DRAG,
+        travelX,
+      })
+    : null;
+}
+
+function getDragCycleMs() {
+  return Object.values(TUTORIAL_POINTER_DRAG_TIMING).reduce(
+    (total, duration) => total + duration,
+    0,
+  );
+}
+
+function resolveHorizontalDragFrame(elapsedMs, travelX) {
+  const timing = TUTORIAL_POINTER_DRAG_TIMING;
+  let cursor = Math.max(0, Number(elapsedMs) || 0);
+
+  if (cursor < timing.appearMs) {
+    return {
+      offsetX: 0,
+      alpha: easeOutQuart(cursor / timing.appearMs),
+      visible: true,
+      playbackRate: 0,
+    };
+  }
+  cursor -= timing.appearMs;
+
+  if (cursor < timing.pressMs) {
+    return {
+      offsetX: 0,
+      alpha: 1,
+      visible: true,
+      playbackRate: 1,
+    };
+  }
+  cursor -= timing.pressMs;
+
+  if (cursor < timing.holdMs) {
+    return {
+      offsetX: 0,
+      alpha: 1,
+      visible: true,
+      playbackRate: 0,
+    };
+  }
+  cursor -= timing.holdMs;
+
+  if (cursor < timing.dragMs) {
+    return {
+      offsetX: travelX * smoothStep(cursor / timing.dragMs),
+      alpha: 1,
+      visible: true,
+      playbackRate: 0,
+    };
+  }
+  cursor -= timing.dragMs;
+
+  if (cursor < timing.releaseMs) {
+    return {
+      offsetX: travelX,
+      alpha: 1,
+      visible: true,
+      playbackRate: 1,
+    };
+  }
+  cursor -= timing.releaseMs;
+
+  if (cursor < timing.hideMs) {
+    return {
+      offsetX: travelX,
+      alpha: 1 - easeOutQuart(cursor / timing.hideMs),
+      visible: true,
+      playbackRate: 0,
+    };
+  }
+
+  return {
+    offsetX: 0,
+    alpha: 0,
+    visible: false,
+    playbackRate: 0,
+  };
+}
+
+function easeOutQuart(value) {
+  const progress = clamp01(value);
+  return 1 - (1 - progress) ** 4;
+}
+
+function smoothStep(value) {
+  const progress = clamp01(value);
+  return progress * progress * (3 - 2 * progress);
+}
+
+function clamp01(value) {
+  return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
 function resolvePublicAssetUrl(path, baseUrl) {

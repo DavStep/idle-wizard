@@ -22,7 +22,9 @@ const OBJECTIVE_HEIGHT = DIALOG_HEIGHT;
 const OBJECTIVE_CONTENT_HEIGHT = 74;
 const OBJECTIVE_HORIZONTAL_CHROME = OBJECTIVE_PADDED_WIDTH - OBJECTIVE_WIDTH;
 const OBJECTIVE_VERTICAL_CHROME = OBJECTIVE_HEIGHT - OBJECTIVE_CONTENT_HEIGHT;
-const LESSON_WIDTH = OBJECTIVE_WIDTH;
+const LESSON_MIN_WIDTH = OBJECTIVE_WIDTH;
+const LESSON_MAX_WIDTH = 254;
+const LESSON_STABLE_HEIGHT = OBJECTIVE_CONTENT_HEIGHT + 8;
 const INTRO_DIALOG_WIDTH = 260;
 const LESSON_MIN_HEIGHT = 34;
 const LESSON_MAX_HEIGHT = 126;
@@ -110,7 +112,6 @@ const OBJECTIVE_TARGET_CONTAINER_SELECTORS = [
 const OBJECTIVE_TARGET_SURFACE_SELECTORS = ['.style-dialog'];
 const TARGET_CUE_ANCHOR_SELECTORS = new Map([
   ['top:username', '.room-top-panel__username-label'],
-  ['workshop:levelUp', '.workshop-page__level-complete-button'],
 ]);
 const OBJECTIVE_PLACEMENTS = [
   {
@@ -331,7 +332,8 @@ export class TutorialHintManager {
     this.objectiveButtonImage.setAttribute('aria-hidden', 'true');
 
     this.objectiveButtonLabel = document.createElement('span');
-    this.objectiveButtonLabel.className = 'tutorial-layer__objective-button-label';
+    this.objectiveButtonLabel.className =
+      'tutorial-layer__objective-button-label style-button style-button--brown-light';
     this.objectiveButtonLabel.textContent = OBJECTIVE_BUTTON_COLLAPSED_LABEL;
     this.objectiveButtonLabel.setAttribute('aria-hidden', 'true');
 
@@ -694,7 +696,9 @@ export class TutorialHintManager {
     variant,
   } = {}) {
     const introDialog = variant === 'intro-dialog';
-    const width = introDialog ? INTRO_DIALOG_WIDTH : LESSON_WIDTH;
+    const width = introDialog
+      ? INTRO_DIALOG_WIDTH
+      : this.estimateLessonWidth({ title, text, progressLabel });
     const estimatedHeight = this.estimateLessonHeight({
       text,
       width,
@@ -718,11 +722,33 @@ export class TutorialHintManager {
     return {
       width,
       height: clamp(
-        measuredHeight ?? estimatedHeight,
-        introDialog ? INTRO_DIALOG_MIN_HEIGHT : LESSON_MIN_HEIGHT,
+        introDialog
+          ? measuredHeight ?? estimatedHeight
+          : Math.max(
+              LESSON_STABLE_HEIGHT,
+              measuredHeight ?? estimatedHeight,
+            ),
+        introDialog
+          ? INTRO_DIALOG_MIN_HEIGHT
+          : LESSON_STABLE_HEIGHT,
         introDialog ? INTRO_DIALOG_MAX_HEIGHT : LESSON_MAX_HEIGHT,
       ),
     };
+  }
+
+  estimateLessonWidth({ title, text, progressLabel } = {}) {
+    const longestLine = [title, text, progressLabel]
+      .flatMap((value) => String(value ?? '').split('\n'))
+      .reduce(
+        (longest, line) => Math.max(longest, estimateInlineWidth(line)),
+        0,
+      );
+
+    return clamp(
+      longestLine,
+      LESSON_MIN_WIDTH,
+      LESSON_MAX_WIDTH,
+    );
   }
 
   measureLessonHeight({
@@ -814,7 +840,9 @@ export class TutorialHintManager {
         0,
       );
     let height = Math.max(
-      LESSON_MIN_HEIGHT,
+      variant === 'intro-dialog'
+        ? LESSON_MIN_HEIGHT
+        : LESSON_STABLE_HEIGHT,
       textLines * LESSON_ESTIMATED_LINE_HEIGHT,
       Number(Boolean(text)) * 20,
     );
@@ -3514,7 +3542,8 @@ function getDynamicTargetCueAnchorSelector(targetId) {
 
 function normalizeActionLabel(label) {
   const nextLabel = typeof label === 'string' ? label.trim() : '';
-  return nextLabel.length > 0 ? nextLabel : 'next';
+  const normalizedLabel = nextLabel.length > 0 ? nextLabel : 'next';
+  return normalizedLabel[0].toUpperCase() + normalizedLabel.slice(1);
 }
 
 function getOverflowAmount(rect, bounds) {

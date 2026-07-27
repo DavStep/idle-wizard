@@ -9,6 +9,7 @@ import {
   PixiButton,
   PixiTextLabel,
 } from '../../primitives/index.js';
+import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import {
   GLOBAL_DIALOG_GEOMETRY,
   PooledDialogRows,
@@ -1186,13 +1187,18 @@ class FeatureUnlockAnnouncementItem {
       geometry.iconHeight * artScale * 1.08,
     );
     this.silhouette.position.set(centerX, centerY);
-    this.iconOverlay.width = this.icon.width * 0.44;
-    this.iconOverlay.height = this.icon.height * 0.44;
-    this.iconOverlay.position.set(
-      centerX + this.icon.width * 0.02,
-      centerY - this.icon.height * 0.035,
-    );
-    this.iconOverlay.rotation = (6 * Math.PI) / 180;
+    if (this.iconOverlay.visible) {
+      layoutPixiSeedPackIcon({
+        base: this.icon,
+        item: this.iconOverlay,
+        x: centerX,
+        y: centerY,
+        width: this.icon.width,
+        height: this.icon.height,
+      });
+    } else {
+      this.iconOverlay.rotation = 0;
+    }
     this.fallbackIcon.position.set(centerX, centerY);
 
     const labelWidth = this.compact

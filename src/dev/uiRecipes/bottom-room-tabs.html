@@ -44,6 +44,10 @@
       .room-bottom-panel__tab {
         animation: none !important;
       }
+
+      .room-bottom-panel-layer {
+        transform: none;
+      }
     </style>
   </head>
   <body>
@@ -73,19 +77,21 @@
       const requestedTabCount = Number(searchParams.get('tabs') ?? 5);
       const requestedCurrentPageId =
         searchParams.get('current') ?? 'workshop';
+      const requestedLockedPageId = searchParams.get('locked');
       const optionalStates = [
         { id: 'guild', unlocked: true, visible: true },
         { id: 'prestige', unlocked: true, visible: true },
       ].slice(0, Math.max(0, Math.min(2, requestedTabCount - 5)));
       const manager = new BottomPanelViewManager({
         getCurrentPageId: () => requestedCurrentPageId,
+        onShowPage: (pageId) => manager.setCurrentPageId(pageId),
       });
 
       manager.mount(gameStage);
       manager.setPageStates([
         ...BOTTOM_PANEL_TABS.map(({ id }) => ({
           id,
-          unlocked: true,
+          unlocked: id !== requestedLockedPageId,
           visible: true,
         })),
         ...optionalStates,

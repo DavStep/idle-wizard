@@ -358,6 +358,15 @@ describe('retained global Pixi dialogs', () => {
         inboxWrapperLeft -
         (inboxCoreLeft + inbox.panel.outerWidth),
     ).toBe(10);
+    expect(inbox.panel.titleLabel.text).toBe('Inbox');
+    expect(inbox.emptyLabel.text).toBe('No Mail');
+    expect(inbox.emptyLabel.fontSize).toBe(18);
+    expect(inbox.emptyLabel.x).toBe(
+      inbox.panel.contentBoxWidth / 2,
+    );
+    expect(
+      inbox.emptyLabel.y + inbox.scroll.content.y,
+    ).toBe(inbox.panel.contentBoxHeight / 2);
     harness.dispose();
   });
 

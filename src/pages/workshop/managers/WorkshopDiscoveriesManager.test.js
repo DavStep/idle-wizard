@@ -152,7 +152,7 @@ describe('WorkshopDiscoveriesManager', () => {
       'icon-discoveries-journal-bag-style.png',
     );
     expect(icon?.getAttribute('alt')).toBe('');
-    expect(label?.textContent).toBe('discoveries');
+    expect(label?.textContent).toBe('Discoveries');
 
     manager.unmount();
   });
