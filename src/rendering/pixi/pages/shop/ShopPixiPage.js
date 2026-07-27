@@ -979,6 +979,7 @@ class ShopRowsSection {
       counters,
       create: () =>
         new ShopCompactRow({
+          assetManager,
           inputRouter,
           semanticRegistry,
           label: `${label}:row`,
