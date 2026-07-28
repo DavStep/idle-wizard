@@ -36,6 +36,9 @@ node -p "require('./package.json').version"
 - Add `## <next-version>` to `PLAYER_CHANGELOG.md`.
 - If the release has a large player-facing feature, add `## <next-version>` to
   `FEATURE_ANNOUNCEMENT.md`.
+- Write Discord notes from developers to players and describe Idle Wizard on its
+  own terms. Never mention other game names, source projects, ports, or where an
+  implementation came from; keep that provenance in developer-facing notes.
 - Make sure `.env.local` has `DISCORD_APK_WEBHOOK_URL`.
 - If a feature announcement exists, `.env.local` must also have
   `DISCORD_FEATURE_WEBHOOK_URL`.

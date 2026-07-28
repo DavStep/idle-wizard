@@ -1,6 +1,5 @@
 import {
   Container,
-  FillGradient,
   Graphics,
   Rectangle,
   Sprite,
@@ -8,50 +7,40 @@ import {
 
 import {
   BasePixiRetainedView,
-  PixiFrame,
-  PixiResourceLabel,
   PixiTextLabel,
 } from '../../primitives/index.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
 } from '../../theme/PixiThemeTokens.js';
+import {
+  RootRunHudAvatarButton,
+  RootRunHudCurrencyCapsule,
+  RootRunHudLevelRail,
+  RootRunHudSquareIconButton,
+} from './RootRunTopHudWidgets.js';
 
-const PANEL_BOUNDS = Object.freeze({
-  x: 16,
-  y: 9,
-  width: 328,
-  height: 82,
-});
-const LEVEL_SIZE = 28;
-const TOP_FONT_SIZE = 11;
-const QUEST_RAIL_HEIGHT = 14;
-const QUEST_RAIL_BORDER = 1;
-const QUEST_RAIL_TRACK = '#000000';
-const QUEST_RAIL_TRACK_ALPHA = 0.6;
-const QUEST_RAIL_INSET = '#090705';
-const QUEST_RAIL_INSET_ALPHA = 0.64;
-const QUEST_FILL = '#8740df';
-const QUEST_FILL_EDGE = '#bd72f3';
-const QUEST_DIVIDER_INCOMPLETE = '#ffffff';
-const QUEST_DIVIDER_COMPLETE = '#201331';
-const QUEST_REMAINING = QUEST_FILL_EDGE;
-const QUEST_RECEIVE_MOTION_MS = 140;
+const ROOT_RUN_UI_SCALE = 3;
+const TOP_HUD_X = 32 / ROOT_RUN_UI_SCALE;
+const TOP_HUD_Y = 140 / ROOT_RUN_UI_SCALE;
+const LEVEL_SIZE = 93;
+const QUEST_FLIGHT_TEXTURE_WIDTH = 93 / ROOT_RUN_UI_SCALE;
+const QUEST_FLIGHT_TEXTURE_HEIGHT = 94 / ROOT_RUN_UI_SCALE;
+const QUEST_FLIGHT_ICON_SIZE = 68 / ROOT_RUN_UI_SCALE;
+const QUEST_FLIGHT_SPEED = 900 / ROOT_RUN_UI_SCALE;
+const QUEST_FLIGHT_ARC_HEIGHT = 96 / ROOT_RUN_UI_SCALE;
+const QUEST_FLIGHT_MIN_MS = 420;
+const QUEST_FLIGHT_MAX_MS = 760;
+const QUEST_FLIGHT_ENTER_RATIO = 0.14;
+const QUEST_FLIGHT_ARRIVAL_MS = 320;
+const QUEST_FLIGHT_SPARK_COUNT = 8;
+const QUEST_LEVEL_IMPACT_MS = 400;
+const QUEST_ROLLOVER_FILL_MS = 205;
 const LEVEL_UP_MOTION_MS = 230;
-const QUEST_RECEIVE_FRAMES = Object.freeze([
-  Object.freeze({ progress: 0, scale: 1, y: 0 }),
-  Object.freeze({ progress: 0.52, scale: 1.06, y: -1 }),
-  Object.freeze({ progress: 1, scale: 1, y: 0 }),
-]);
 const LEVEL_UP_FRAMES = Object.freeze([
   Object.freeze({ progress: 0, scale: 1, y: 0 }),
-  Object.freeze({ progress: 0.46, scale: 1.035, y: -3 }),
-  Object.freeze({ progress: 0.74, scale: 0.994, y: 1 }),
+  Object.freeze({ progress: 0.46, scale: 1.035, y: -9 }),
+  Object.freeze({ progress: 0.74, scale: 0.994, y: 3 }),
   Object.freeze({ progress: 1, scale: 1, y: 0 }),
-]);
-const QUEST_RAIL_RECEIVE_FRAMES = Object.freeze([
-  Object.freeze({ progress: 0, scale: 1 }),
-  Object.freeze({ progress: 0.52, scale: 1.35 }),
-  Object.freeze({ progress: 1, scale: 1 }),
 ]);
 
 /**
@@ -67,6 +56,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     requestFrame = defaultRequestFrame,
     cancelFrame = defaultCancelFrame,
     timeSource = defaultTimeSource,
+    random = Math.random,
   } = {}) {
     super({ label: 'topPanel' });
     this.assets = assets;
@@ -79,13 +69,16 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.requestFrame = requestFrame;
     this.cancelFrame = cancelFrame;
     this.timeSource = timeSource;
+    this.random = random;
     this.actions = {};
     this.model = {};
     this.motionSnapshot = null;
     this.levelMotion = null;
-    this.questRailMotion = null;
+    this.questCompletionMotion = null;
+    this.questArrivalMotion = null;
+    this.questImpactMotion = null;
+    this.questRolloverMotion = null;
     this.levelMotionState = { scale: 1, y: 0 };
-    this.questRailMotionState = { scale: 1, y: 0 };
     this.motionFrame = null;
     this.handleMotionFrame = (timestamp) => {
       this.motionFrame = null;
@@ -94,147 +87,146 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       );
     };
 
-    this.frame = new PixiFrame({
-      assetManager: assets,
-      variant: 'panel',
-      width: PANEL_BOUNDS.width,
-      height: PANEL_BOUNDS.height,
-      label: 'topPanel:frame',
+    this.topHudRoot = new Container({
+      label: 'topPanel:rootRunHud',
     });
-    this.frame.position.set(PANEL_BOUNDS.x, PANEL_BOUNDS.y);
+    this.topHudRoot.position.set(TOP_HUD_X, TOP_HUD_Y);
+    this.topHudRoot.scale.set(1 / ROOT_RUN_UI_SCALE);
 
-    this.avatarViewport = new Container();
-    this.avatarViewport.label = 'topPanel:avatarViewport';
-    this.avatarViewport.position.set(21, 16);
-    this.avatarViewport.eventMode = 'static';
-    this.avatarMask = new Graphics()
-      .rect(0, 0, 64, 64)
-      .fill('#ffffff');
-    this.avatar = new Sprite({
+    this.avatarViewport = new RootRunHudAvatarButton({
+      assets,
       texture: this.getCharacterTexture('elara'),
-      label: 'topPanel:avatar',
-      roundPixels: true,
     });
-    this.avatar.width = 64;
-    this.avatar.height = 86;
-    this.avatar.position.set(0, -6);
-    this.avatar.mask = this.avatarMask;
-    this.avatarViewport.addChild(this.avatar, this.avatarMask);
-    this.avatarViewport.hitArea = new Rectangle(0, 0, 64, 64);
+    this.avatar = this.avatarViewport.portrait;
 
-    this.usernameControl = new Container();
-    this.usernameControl.label = 'topPanel:usernameControl';
-    this.usernameControl.eventMode = 'static';
-    this.usernameControl.hitArea = new Rectangle(0, 0, 142, 20);
+    this.usernameControl = new Container({
+      label: 'topPanel:usernameControl',
+      eventMode: 'static',
+    });
+    this.usernameControl.hitArea = new Rectangle(0, 0, 218, 40);
     this.username = new PixiTextLabel({
       text: 'Wizard',
-      fontSize: TOP_FONT_SIZE,
-      fontWeight: 'bold',
-      color: '#ffffff',
-      stroke: { color: '#0a0a0a', width: 2 },
+      fontSize: 33,
+      fontWeight: 'normal',
+      anchor: { x: 0.5, y: 0 },
+      color: '#fff4dc',
+      stroke: { color: '#17100c', width: 4 },
       label: 'topPanel:username',
     });
+    this.username.position.set(109, 0);
     this.usernameControl.addChild(this.username);
-    this.usernameControl.position.set(78, 16);
+    this.usernameControl.position.set(-16, 190);
 
-    this.coin = new PixiResourceLabel({
-      assetManager: assets,
+    this.coin = new RootRunHudCurrencyCapsule({
+      assets,
       resource: 'coin',
       amount: '0',
-      fontSize: TOP_FONT_SIZE,
-      fontWeight: 'bold',
       label: 'topPanel:coin',
     });
-    this.contextCurrency = new PixiResourceLabel({
-      assetManager: assets,
+    this.contextCurrency = new RootRunHudCurrencyCapsule({
+      assets,
       resource: 'crystal',
       amount: '0',
-      fontSize: TOP_FONT_SIZE,
-      fontWeight: 'bold',
       label: 'topPanel:contextCurrency',
     });
-    this.mana = new PixiResourceLabel({
-      assetManager: assets,
+    this.mana = new RootRunHudCurrencyCapsule({
+      assets,
       resource: 'mana',
       amount: '0/0',
-      fontSize: TOP_FONT_SIZE,
-      fontWeight: 'bold',
       label: 'topPanel:mana',
     });
     this.manaRate = new PixiTextLabel({
       text: '+0/s',
-      fontSize: 9,
-      color: 'muted',
+      fontSize: 27,
+      anchor: { x: 0.5, y: 0 },
+      color: '#72c8ff',
+      stroke: { color: '#0a0a0a', width: 3 },
       label: 'topPanel:manaRate',
     });
 
-    this.levelControl = new Container();
-    this.levelControl.label = 'topPanel:levelControl';
-    this.levelControl.eventMode = 'static';
-    this.levelControl.hitArea = new Rectangle(0, 0, LEVEL_SIZE, LEVEL_SIZE);
-    this.levelStar = new Sprite({
-      texture: assets.getTexture('public:ui/root-run-level-star.png'),
-      label: 'topPanel:levelStar',
-      roundPixels: true,
+    this.settingsControl = new RootRunHudSquareIconButton({
+      assets,
     });
-    this.levelStar.position.set(-2, -2);
-    this.levelStar.width = LEVEL_SIZE + 4;
-    this.levelStar.height = LEVEL_SIZE + 4;
-    this.levelValue = new PixiTextLabel({
-      text: '',
-      fontSize: TOP_FONT_SIZE,
-      fontWeight: 'bold',
-      anchor: { x: 0.5, y: 0.5 },
-      color: '#302044',
-      label: 'topPanel:levelValue',
-    });
-    this.levelValue.position.set(LEVEL_SIZE / 2, LEVEL_SIZE / 2 - 1);
-    this.levelMotionRoot = new Container();
-    this.levelMotionRoot.label = 'topPanel:levelMotion';
-    this.levelMotionRoot.pivot.set(LEVEL_SIZE / 2, LEVEL_SIZE / 2);
-    this.levelMotionRoot.position.set(LEVEL_SIZE / 2, LEVEL_SIZE / 2);
-    this.levelMotionRoot.addChild(this.levelStar, this.levelValue);
-    this.levelControl.addChild(this.levelMotionRoot);
+    this.levelRail = new RootRunHudLevelRail({ assets });
+    this.levelControl = this.levelRail.levelControl;
+    this.levelStar = this.levelRail.levelStar;
+    this.levelValue = this.levelRail.levelValue;
+    this.levelMotionRoot = this.levelRail.levelMotionRoot;
+    this.questRail = this.levelRail.questVisuals;
 
-    this.questRail = new Graphics();
-    this.questRail.label = 'topPanel:questRail';
-    this.questGradient = null;
-    this.questCaption = new PixiTextLabel({
-      text: '',
-      fontSize: 7,
-      lineHeight: 9,
-      color: 'muted',
-      label: 'topPanel:questCaption',
-    });
-    this.questRemaining = new PixiTextLabel({
-      text: '',
-      fontSize: 7,
-      lineHeight: 9,
-      fontWeight: 'bold',
-      color: QUEST_REMAINING,
-      label: 'topPanel:questRemaining',
-    });
-    this.questTail = new PixiTextLabel({
-      text: '',
-      fontSize: 7,
-      lineHeight: 9,
-      color: 'muted',
-      label: 'topPanel:questTail',
-    });
-
-    this.root.addChild(
-      this.frame,
-      this.avatarViewport,
-      this.usernameControl,
+    this.levelRail.position.set(203, 4);
+    this.coin.position.set(209, 108);
+    this.contextCurrency.position.set(433, 108);
+    this.mana.position.set(657, 108);
+    this.manaRate.position.set(761, 174);
+    this.settingsControl.position.set(886, 32);
+    this.topHudRoot.addChild(
+      this.levelRail,
       this.coin,
       this.contextCurrency,
       this.mana,
       this.manaRate,
-      this.questRail,
-      this.levelControl,
-      this.questCaption,
-      this.questRemaining,
-      this.questTail,
+      this.avatarViewport,
+      this.usernameControl,
+      this.settingsControl,
+    );
+
+    this.questFlightRoot = new Container();
+    this.questFlightRoot.label = 'topPanel:questFlight';
+    this.questFlightRoot.eventMode = 'none';
+    this.questFlightGlow = new Graphics()
+      .circle(0, 0, QUEST_FLIGHT_ICON_SIZE * 0.44)
+      .fill({ color: '#ffd447', alpha: 1 });
+    this.questFlightGlow.label = 'topPanel:questFlightGlow';
+    this.questFlightStar = new Sprite({
+      texture: assets.getTexture('public:ui/root-run-level-star.png'),
+      label: 'topPanel:questFlightStar',
+      roundPixels: true,
+    });
+    this.questFlightStar.anchor.set(0.5);
+    this.questFlightStar.width = QUEST_FLIGHT_TEXTURE_WIDTH;
+    this.questFlightStar.height = QUEST_FLIGHT_TEXTURE_HEIGHT;
+    this.questFlightRoot.addChild(
+      this.questFlightGlow,
+      this.questFlightStar,
+    );
+    this.questFlightRoot.visible = false;
+    this.questFlightRoot.renderable = false;
+
+    this.questArrivalRoot = new Container();
+    this.questArrivalRoot.label = 'topPanel:questArrival';
+    this.questArrivalRoot.eventMode = 'none';
+    this.questArrivalRing = new Graphics()
+      .circle(0, 0, 13 / ROOT_RUN_UI_SCALE)
+      .stroke({
+        color: '#ffd447',
+        alpha: 1,
+        width: 2 / ROOT_RUN_UI_SCALE,
+      });
+    this.questArrivalSparks = Array.from(
+      { length: QUEST_FLIGHT_SPARK_COUNT },
+      (_, index) => {
+        const spark = new Graphics()
+          .circle(0, 0, 1)
+          .fill({
+            color: index % 2 === 0 ? '#ffd447' : '#fff0a3',
+            alpha: 1,
+          });
+        spark.label = `topPanel:questArrivalSpark:${index}`;
+        return spark;
+      },
+    );
+    this.questArrivalRoot.addChild(
+      this.questArrivalRing,
+      ...this.questArrivalSparks,
+    );
+    this.questArrivalRoot.visible = false;
+    this.questArrivalRoot.renderable = false;
+
+    this.root.addChild(
+      this.topHudRoot,
+      this.questFlightRoot,
+      this.questArrivalRoot,
     );
 
     this.registrations = [
@@ -249,6 +241,13 @@ export class PixiTopPanelView extends BasePixiRetainedView {
         id: 'top.username',
         displayObject: this.usernameControl,
         enabled: () => this.isControlAvailable(this.usernameControl),
+        onActivate: () => this.actions.openSettings?.(),
+        haptic: 'light',
+      }),
+      inputRouter?.registerPressTarget?.({
+        id: 'top.settings',
+        displayObject: this.settingsControl,
+        enabled: () => this.isControlAvailable(this.settingsControl),
         onActivate: () => this.actions.openSettings?.(),
         haptic: 'light',
       }),
@@ -271,6 +270,11 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       semanticId: 'top.username',
       tutorialId: 'top:username',
       displayObject: this.usernameControl,
+      activate: () => this.actions.openSettings?.(),
+    });
+    this.registerSemanticTarget({
+      semanticId: 'top.settings',
+      displayObject: this.settingsControl,
       activate: () => this.actions.openSettings?.(),
     });
     this.registerSemanticTarget({
@@ -303,10 +307,46 @@ export class PixiTopPanelView extends BasePixiRetainedView {
 
   onBind(viewModel = {}) {
     const previousMotionSnapshot = this.motionSnapshot;
+    const nextMotionSnapshot = createMotionSnapshot(viewModel);
     this.model = viewModel;
     this.actions = viewModel.actions ?? {};
+
+    if (
+      this.questCompletionMotion &&
+      hasSameCompletionSnapshot(
+        this.questCompletionMotion.nextSnapshot,
+        nextMotionSnapshot,
+      )
+    ) {
+      this.questCompletionMotion.pendingModel = viewModel;
+      this.renderModel(
+        createHeldCompletionModel(
+          viewModel,
+          this.questCompletionMotion.previousModel,
+        ),
+      );
+      return;
+    }
+
+    if (
+      this.shouldStartQuestCompletion(
+        previousMotionSnapshot,
+        nextMotionSnapshot,
+      ) &&
+      this.startQuestCompletionMotion({
+        previousModel: this.renderedModel ?? viewModel,
+        pendingModel: viewModel,
+        previousSnapshot: previousMotionSnapshot,
+        nextSnapshot: nextMotionSnapshot,
+      })
+    ) {
+      this.motionSnapshot = nextMotionSnapshot;
+      return;
+    }
+
     this.renderModel(viewModel);
-    this.motionSnapshot = createMotionSnapshot(viewModel);
+    this.renderedModel = viewModel;
+    this.motionSnapshot = nextMotionSnapshot;
     this.applyStateFeedback(
       previousMotionSnapshot,
       this.motionSnapshot,
@@ -323,12 +363,14 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       model.showAvatar !== false && reveal.avatar !== false;
     const topVisible = reveal.top !== false;
 
-    this.frame.visible = topVisible;
-    this.frame.renderable = topVisible;
+    this.topHudRoot.visible = topVisible;
+    this.topHudRoot.renderable = topVisible;
     this.avatarViewport.visible = topVisible && avatarVisible;
     this.avatarViewport.renderable = this.avatarViewport.visible;
     this.usernameControl.visible = topVisible && reveal.username !== false;
     this.usernameControl.renderable = this.usernameControl.visible;
+    this.settingsControl.visible = topVisible;
+    this.settingsControl.renderable = topVisible;
     this.mana.visible = topVisible && reveal.mana !== false;
     this.mana.renderable = this.mana.visible;
     this.manaRate.visible = this.mana.visible && reveal.manaRegen !== false;
@@ -352,40 +394,33 @@ export class PixiTopPanelView extends BasePixiRetainedView {
 
     this.levelControl.visible = topVisible && level !== null;
     this.levelControl.renderable = this.levelControl.visible;
-    this.levelValue.setText(level === null ? '' : String(level));
+    this.levelRail.setLevel(level === null ? '' : String(level));
 
     const questVisible =
       topVisible &&
       level !== null &&
       quest.visible !== false &&
       reveal.quest !== false;
-    this.questRail.visible = questVisible;
-    this.questRail.renderable = questVisible;
-    this.questCaption.visible = questVisible;
-    this.questCaption.renderable = questVisible;
-    this.questRemaining.visible = questVisible;
-    this.questRemaining.renderable = questVisible;
-    this.questTail.visible = questVisible;
-    this.questTail.renderable = questVisible;
+    this.levelRail.setQuestVisible(questVisible);
 
-    this.layoutResources();
     this.renderQuest(quest, { visible: questVisible });
   }
 
   onApplyTheme(theme) {
-    this.frame.applyTheme(theme);
     this.username.applyTheme(theme);
     this.coin.applyTheme(theme);
     this.contextCurrency.applyTheme(theme);
     this.mana.applyTheme(theme);
     this.manaRate.applyTheme(theme);
-    this.levelValue.applyTheme(theme);
-    this.questCaption.applyTheme(theme);
-    this.questRemaining.applyTheme(theme);
-    this.questTail.applyTheme(theme);
-    this.rebuildQuestGradient();
+    this.levelRail.applyTheme(theme);
+    this.username
+      .setColor('#fff4dc')
+      .setStroke({ color: '#17100c', width: 4 });
+    this.manaRate
+      .setColor('#72c8ff')
+      .setStroke({ color: '#0a0a0a', width: 3 });
     this.renderQuest(this.model.quest ?? {}, {
-      visible: this.questRail.visible,
+      visible: this.levelRail.questVisuals.visible,
     });
   }
 
@@ -407,8 +442,127 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     }
     this.registrations.length = 0;
     this.semanticIds.length = 0;
-    this.questGradient?.destroy();
-    this.questGradient = null;
+  }
+
+  shouldStartQuestCompletion(previous, next) {
+    return Boolean(
+      previous &&
+      previous.loadRevision === next.loadRevision &&
+      previous.questVisible &&
+      next.questVisible &&
+      getQuestCompletionDelta(previous, next) > 0 &&
+      this.active &&
+      !this.reducedMotion(),
+    );
+  }
+
+  startQuestCompletionMotion({
+    previousModel,
+    pendingModel,
+    previousSnapshot,
+    nextSnapshot,
+  }) {
+    const source = this.resolveQuestFlightPoint('workshop.tasks');
+    const destination = this.resolveLevelFlightPoint();
+    if (!source || !destination) {
+      return false;
+    }
+
+    this.stopMotionFrame();
+    this.levelMotion = null;
+    this.applyLevelMotion(1, 0);
+    const distance = Math.max(
+      1,
+      Math.hypot(
+        destination.x - source.x,
+        destination.y - source.y,
+      ),
+    );
+    const durationMs = Math.min(
+      QUEST_FLIGHT_MAX_MS,
+      Math.max(
+        QUEST_FLIGHT_MIN_MS,
+        (distance / QUEST_FLIGHT_SPEED) * 1_000,
+      ),
+    );
+    const startMs = this.timeSource();
+    const verticalJitter =
+      randomBetween(
+        -QUEST_FLIGHT_ICON_SIZE * 0.08,
+        QUEST_FLIGHT_ICON_SIZE * 0.08,
+        this.random,
+      );
+    const start = {
+      x: source.x,
+      y: source.y + verticalJitter,
+    };
+    this.questCompletionMotion = {
+      startMs,
+      durationMs,
+      start,
+      destination,
+      spin: randomBetween(-1.1, 1.1, this.random),
+      previousModel,
+      pendingModel,
+      previousSnapshot,
+      nextSnapshot,
+    };
+    this.questArrivalMotion = null;
+    this.questImpactMotion = null;
+    this.questRolloverMotion = null;
+    const heldModel = createHeldCompletionModel(
+      pendingModel,
+      previousModel,
+    );
+    this.renderModel(heldModel);
+    this.renderedModel = heldModel;
+    this.questFlightRoot.position.set(start.x, start.y);
+    this.questFlightRoot.rotation = 0;
+    this.questFlightRoot.scale.set(0.58);
+    this.questFlightRoot.alpha = 0;
+    this.questFlightRoot.visible = true;
+    this.questFlightRoot.renderable = true;
+    this.questFlightGlow.alpha = 0.26;
+    this.questArrivalRoot.visible = false;
+    this.questArrivalRoot.renderable = false;
+    this.updateMotion(startMs);
+    return true;
+  }
+
+  resolveQuestFlightPoint(semanticId) {
+    try {
+      const snapshot = this.semanticRegistry?.resolve?.(semanticId);
+      const bounds = snapshot?.bounds;
+      if (
+        !bounds ||
+        snapshot?.state?.visible === false ||
+        bounds.width <= 0 ||
+        bounds.height <= 0
+      ) {
+        return null;
+      }
+      return this.root.toLocal({
+        x: bounds.x + bounds.width / 2,
+        y: bounds.y + bounds.height / 2,
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  resolveLevelFlightPoint() {
+    try {
+      const bounds = this.levelStar.getBounds();
+      if (!bounds || bounds.width <= 0 || bounds.height <= 0) {
+        return null;
+      }
+      return this.root.toLocal({
+        x: bounds.x + bounds.width / 2,
+        y: bounds.y + bounds.height / 2,
+      });
+    } catch {
+      return null;
+    }
   }
 
   applyStateFeedback(previous, next) {
@@ -420,7 +574,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       !this.active ||
       this.reducedMotion()
     ) {
-      this.settleMotion();
+      this.settleMotion({ completePending: false });
       return false;
     }
 
@@ -439,22 +593,10 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       previous.level === next.level &&
       next.completed > previous.completed
     ) {
-      this.startQuestReceiveMotion();
-      return true;
+      return false;
     }
 
     return false;
-  }
-
-  startQuestReceiveMotion() {
-    this.stopMotionFrame();
-    const startMs = this.timeSource();
-    this.levelMotion = {
-      kind: 'questReceive',
-      startMs,
-    };
-    this.questRailMotion = { startMs };
-    this.updateMotion(startMs);
   }
 
   startLevelUpMotion() {
@@ -464,8 +606,6 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       kind: 'levelUp',
       startMs,
     };
-    this.questRailMotion = null;
-    this.applyQuestRailMotion(1);
     this.updateMotion(startMs);
   }
 
@@ -476,19 +616,34 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     }
 
     let hasMotion = false;
+    if (this.questCompletionMotion) {
+      hasMotion =
+        this.updateQuestCompletionMotion(now) ||
+        hasMotion;
+    }
+    if (this.questArrivalMotion) {
+      hasMotion =
+        this.updateQuestArrivalMotion(now) ||
+        hasMotion;
+    }
+    if (this.questImpactMotion) {
+      hasMotion =
+        this.updateQuestImpactMotion(now) ||
+        hasMotion;
+    }
+    if (this.questRolloverMotion) {
+      hasMotion =
+        this.updateQuestRolloverMotion(now) ||
+        hasMotion;
+    }
     if (this.levelMotion) {
-      const duration =
-        this.levelMotion.kind === 'levelUp'
-          ? LEVEL_UP_MOTION_MS
-          : QUEST_RECEIVE_MOTION_MS;
+      const duration = LEVEL_UP_MOTION_MS;
       const progress = clampProgress(
         (now - this.levelMotion.startMs) / duration,
       );
       const frame = interpolateMotionFrames(
         progress,
-        this.levelMotion.kind === 'levelUp'
-          ? LEVEL_UP_FRAMES
-          : QUEST_RECEIVE_FRAMES,
+        LEVEL_UP_FRAMES,
         this.levelMotionState,
       );
       this.applyLevelMotion(frame.scale, frame.y);
@@ -498,29 +653,8 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       } else {
         hasMotion = true;
       }
-    } else {
+    } else if (!this.questImpactMotion) {
       this.applyLevelMotion(1, 0);
-    }
-
-    if (this.questRailMotion) {
-      const progress = clampProgress(
-        (now - this.questRailMotion.startMs) /
-          QUEST_RECEIVE_MOTION_MS,
-      );
-      const frame = interpolateMotionFrames(
-        progress,
-        QUEST_RAIL_RECEIVE_FRAMES,
-        this.questRailMotionState,
-      );
-      this.applyQuestRailMotion(frame.scale);
-      if (progress >= 1) {
-        this.questRailMotion = null;
-        this.applyQuestRailMotion(1);
-      } else {
-        hasMotion = true;
-      }
-    } else {
-      this.applyQuestRailMotion(1);
     }
 
     if (hasMotion) {
@@ -529,16 +663,198 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     return hasMotion;
   }
 
+  updateQuestCompletionMotion(now) {
+    const motion = this.questCompletionMotion;
+    if (!motion) {
+      return false;
+    }
+    const elapsedMs = Math.max(0, now - motion.startMs);
+    const progress = clampProgress(
+      elapsedMs / motion.durationMs,
+    );
+    const easedProgress = easeInOutCubic(progress);
+    const enterProgress = Math.min(
+      1,
+      progress / QUEST_FLIGHT_ENTER_RATIO,
+    );
+    const x = interpolate(
+      motion.start.x,
+      motion.destination.x,
+      easedProgress,
+    );
+    const y =
+      interpolate(
+        motion.start.y,
+        motion.destination.y,
+        easedProgress,
+      ) -
+      Math.sin(easedProgress * Math.PI) *
+        QUEST_FLIGHT_ARC_HEIGHT;
+    const startScale =
+      (QUEST_FLIGHT_ICON_SIZE * 1.12) /
+      QUEST_FLIGHT_TEXTURE_WIDTH;
+    const endScale =
+      (QUEST_FLIGHT_ICON_SIZE * 0.54) /
+      QUEST_FLIGHT_TEXTURE_WIDTH;
+    const scale =
+      interpolate(startScale, endScale, easedProgress) *
+      (0.58 + enterProgress * 0.42) *
+      (1 + Math.sin(progress * Math.PI) * 0.12);
+
+    this.questFlightRoot.position.set(x, y);
+    this.questFlightRoot.scale.set(scale);
+    this.questFlightRoot.rotation =
+      motion.spin * (elapsedMs / 1_000);
+    this.questFlightRoot.alpha =
+      enterProgress * (1 - progress * 0.08);
+    this.questFlightGlow.alpha =
+      0.26 + Math.sin(progress * Math.PI) * 0.24;
+
+    if (progress < 1) {
+      return true;
+    }
+
+    this.questFlightRoot.visible = false;
+    this.questFlightRoot.renderable = false;
+    this.questCompletionMotion = null;
+    this.startQuestArrivalMotion(motion, now);
+    this.applyQuestCompletionArrival(motion, now);
+    return true;
+  }
+
+  startQuestArrivalMotion(motion, now) {
+    const sparks = this.questArrivalSparks.map(
+      (_spark, index) => ({
+        angle:
+          (Math.PI * 2 * index) /
+            QUEST_FLIGHT_SPARK_COUNT +
+          randomBetween(-0.18, 0.18, this.random),
+        distance:
+          randomBetween(16, 31, this.random) /
+          ROOT_RUN_UI_SCALE,
+        diameter:
+          randomBetween(4.2, 7.4, this.random) /
+          ROOT_RUN_UI_SCALE,
+      }),
+    );
+    this.questArrivalMotion = {
+      startMs: now,
+      destination: motion.destination,
+      sparks,
+    };
+    this.questArrivalRoot.position.set(
+      motion.destination.x,
+      motion.destination.y,
+    );
+    this.questArrivalRoot.visible = true;
+    this.questArrivalRoot.renderable = true;
+    this.questArrivalRoot.alpha = 1;
+    this.questArrivalRing.scale.set(1);
+    this.questArrivalRing.alpha = 1;
+    for (const [index, spark] of this.questArrivalSparks.entries()) {
+      const diameter = sparks[index].diameter;
+      spark.scale.set(diameter / 2);
+      spark.position.set(0, 0);
+      spark.alpha = 1;
+    }
+  }
+
+  applyQuestCompletionArrival(motion, now) {
+    const levelChanged =
+      motion.nextSnapshot.level !==
+      motion.previousSnapshot.level;
+    if (levelChanged) {
+      const completedModel = createCompletedRolloverModel(
+        motion.pendingModel,
+        motion.previousModel,
+      );
+      this.renderModel(completedModel);
+      this.renderedModel = completedModel;
+      this.questRolloverMotion = {
+        startMs: now,
+        pendingModel: motion.pendingModel,
+      };
+    } else {
+      this.renderModel(motion.pendingModel);
+      this.renderedModel = motion.pendingModel;
+    }
+    this.questImpactMotion = { startMs: now };
+  }
+
+  updateQuestArrivalMotion(now) {
+    const motion = this.questArrivalMotion;
+    if (!motion) {
+      return false;
+    }
+    const progress = clampProgress(
+      (now - motion.startMs) /
+        QUEST_FLIGHT_ARRIVAL_MS,
+    );
+    const eased = easeOutCubic(progress);
+    this.questArrivalRing.scale.set(
+      interpolate(1, 2.15, eased),
+    );
+    this.questArrivalRing.alpha = 1 - progress;
+    for (const [index, spark] of this.questArrivalSparks.entries()) {
+      const model = motion.sparks[index];
+      const distance = model.distance * eased;
+      spark.position.set(
+        Math.cos(model.angle) * distance,
+        Math.sin(model.angle) * distance,
+      );
+      spark.alpha = 1 - progress;
+    }
+    if (progress < 1) {
+      return true;
+    }
+    this.questArrivalMotion = null;
+    this.questArrivalRoot.visible = false;
+    this.questArrivalRoot.renderable = false;
+    return false;
+  }
+
+  updateQuestImpactMotion(now) {
+    const motion = this.questImpactMotion;
+    if (!motion) {
+      return false;
+    }
+    const progress = clampProgress(
+      (now - motion.startMs) /
+        QUEST_LEVEL_IMPACT_MS,
+    );
+    this.applyLevelMotion(
+      1 + Math.sin(progress * Math.PI) * 0.1,
+      0,
+    );
+    if (progress < 1) {
+      return true;
+    }
+    this.questImpactMotion = null;
+    this.applyLevelMotion(1, 0);
+    return false;
+  }
+
+  updateQuestRolloverMotion(now) {
+    const motion = this.questRolloverMotion;
+    if (!motion) {
+      return false;
+    }
+    if (now - motion.startMs < QUEST_ROLLOVER_FILL_MS) {
+      return true;
+    }
+    this.questRolloverMotion = null;
+    this.renderModel(motion.pendingModel);
+    this.renderedModel = motion.pendingModel;
+    this.startLevelUpMotion();
+    return true;
+  }
+
   applyLevelMotion(scale, y) {
     this.levelMotionRoot.position.set(
       LEVEL_SIZE / 2,
       LEVEL_SIZE / 2 + y,
     );
     this.levelMotionRoot.scale.set(scale);
-  }
-
-  applyQuestRailMotion(scaleY) {
-    this.questRail.scale.set(1, scaleY);
   }
 
   scheduleMotionFrame() {
@@ -557,58 +873,35 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.motionFrame = null;
   }
 
-  settleMotion() {
+  settleMotion({ completePending = true } = {}) {
     this.stopMotionFrame();
+    const pendingModel = completePending
+      ? this.questCompletionMotion?.pendingModel ??
+        this.questRolloverMotion?.pendingModel ??
+        null
+      : null;
     this.levelMotion = null;
-    this.questRailMotion = null;
+    this.questCompletionMotion = null;
+    this.questArrivalMotion = null;
+    this.questImpactMotion = null;
+    this.questRolloverMotion = null;
+    this.questFlightRoot.visible = false;
+    this.questFlightRoot.renderable = false;
+    this.questArrivalRoot.visible = false;
+    this.questArrivalRoot.renderable = false;
     this.applyLevelMotion(1, 0);
-    this.applyQuestRailMotion(1);
-  }
-
-  layoutResources() {
-    const contentLeft = this.avatarViewport.visible ? 78 : 21;
-    const contentRight = 319;
-    const rightGap = 10;
-    this.usernameControl.position.x = contentLeft;
-    this.usernameControl.hitArea.width = Math.max(
-      40,
-      contentRight - contentLeft -
-        this.coin.measuredWidth -
-        (this.contextCurrency.visible
-          ? this.contextCurrency.measuredWidth + rightGap
-          : 0) -
-        rightGap,
-    );
-
-    this.contextCurrency.position.set(
-      contentRight - this.contextCurrency.measuredWidth,
-      20,
-    );
-    this.coin.position.set(
-      contentRight -
-        this.coin.measuredWidth -
-        (this.contextCurrency.visible
-          ? this.contextCurrency.measuredWidth + rightGap
-          : 0),
-      20,
-    );
-    this.mana.position.set(contentLeft, 41);
-    this.manaRate.position.set(
-      contentLeft + this.mana.measuredWidth + 10,
-      41,
-    );
+    this.questRail.scale.set(1);
+    if (pendingModel) {
+      this.renderModel(pendingModel);
+      this.renderedModel = pendingModel;
+    }
   }
 
   renderQuest(quest, { visible = true } = {}) {
-    this.questRail.clear();
     if (!visible) {
+      this.levelRail.setQuestVisible(false);
       return;
     }
-    const levelX = this.avatarViewport.visible ? 78 : 21;
-    const railX = levelX + LEVEL_SIZE / 2;
-    const railY = 58;
-    const railWidth = 319 - railX;
-    const railHeight = QUEST_RAIL_HEIGHT;
     const total = Math.max(1, Math.floor(Number(quest.total) || 1));
     const completed = Math.max(
       0,
@@ -620,184 +913,16 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     );
     const ratio = Math.min(1, (completed + activeFraction) / total);
 
-    this.levelControl.position.set(levelX, 51);
-    this.questRail.pivot.set(railWidth / 2, railHeight / 2);
-    this.questRail.position.set(
-      railX + railWidth / 2,
-      railY + railHeight / 2,
-    );
-    this.questRail
-      .roundRect(0, 0, railWidth, railHeight, railHeight / 2)
-      .fill({
-        color: QUEST_RAIL_TRACK,
-        alpha: QUEST_RAIL_TRACK_ALPHA,
-      })
-      .stroke({
-        color: QUEST_RAIL_TRACK,
-        width: QUEST_RAIL_BORDER,
-        alignment: 1,
-      });
-    this.questRail
-      .roundRect(
-        QUEST_RAIL_BORDER,
-        QUEST_RAIL_BORDER,
-        railWidth - QUEST_RAIL_BORDER * 2,
-        railHeight - QUEST_RAIL_BORDER * 2,
-        railHeight / 2 - QUEST_RAIL_BORDER,
-      )
-      .stroke({
-        color: QUEST_RAIL_INSET,
-        alpha: QUEST_RAIL_INSET_ALPHA,
-        width: 1,
-        alignment: 1,
-      });
-
-    const fillRight = Math.max(
-      QUEST_RAIL_BORDER,
-      railWidth * (1 - ratio),
-    );
-    const fillWidth = Math.max(
-      0,
-      railWidth - QUEST_RAIL_BORDER - fillRight,
-    );
-    if (fillWidth > 0) {
-      const fillHeight = railHeight - QUEST_RAIL_BORDER * 2;
-      const fillRadius = fillHeight / 2;
-      const fillPaint = this.getQuestFillPaint();
-      this.questRail
-        .roundRect(
-          QUEST_RAIL_BORDER,
-          QUEST_RAIL_BORDER,
-          fillWidth,
-          fillHeight,
-          fillRadius,
-        )
-        .fill(fillPaint);
-      this.drawQuestFillInset({
-        x: QUEST_RAIL_BORDER,
-        y: QUEST_RAIL_BORDER,
-        width: fillWidth,
-        height: fillHeight,
-        radius: fillRadius,
-      });
-    }
-
-    const segmentInset = 2;
-    const segmentWidth = railWidth - segmentInset * 2;
-    for (let index = 1; index < total; index += 1) {
-      const x = segmentInset + (segmentWidth * index) / total - 1;
-      this.drawQuestDivider({
-        x,
-        y: segmentInset + 1,
-        height: railHeight - segmentInset * 2 - 2,
-        completed: index <= completed,
-      });
-    }
-
-    const remaining = Math.max(
-      0,
-      Math.floor(Number(quest.remaining) || total - completed),
-    );
-    const lead = quest.lead ?? 'Complete ';
-    const tail = quest.tail ?? ' more quests to level up';
-    this.questCaption.setText(lead);
-    this.questRemaining.setText(String(remaining));
-    this.questTail.setText(tail);
-    const captionX = levelX + LEVEL_SIZE + 5;
-    const captionY = railY + railHeight + 2;
-    this.questCaption.position.set(captionX, captionY);
-    this.questRemaining.position.set(
-      captionX + this.questCaption.measuredWidth,
-      captionY,
-    );
-    this.questTail.position.set(
-      this.questRemaining.x + this.questRemaining.measuredWidth,
-      captionY,
-    );
-  }
-
-  rebuildQuestGradient() {
-    this.questGradient?.destroy();
-    this.questGradient = null;
-
-    if (this.theme?.progress?.key !== 'gradient') {
-      return;
-    }
-
-    this.questGradient = new FillGradient({
-      type: 'linear',
-      start: { x: 0, y: 0 },
-      end: { x: 1, y: 0 },
-      textureSpace: 'local',
-      colorStops: this.theme.progress.colors.map((color, index) => ({
-        color,
-        offset: this.theme.progress.stops[index],
-      })),
-    });
-  }
-
-  getQuestFillPaint() {
-    if (this.theme?.progress?.key === 'gradient') {
-      return this.questGradient ?? QUEST_FILL;
-    }
-    if (this.theme?.progress?.key === 'notched') {
-      return this.theme.progress.colors?.[0] ?? '#b79a6b';
-    }
-    return QUEST_FILL;
-  }
-
-  drawQuestFillInset({ x, y, width, height, radius }) {
-    if (this.theme?.progress?.key !== 'notched') {
-      return;
-    }
-
-    this.questRail
-      .moveTo(x + radius, y)
-      .lineTo(x + width - radius, y)
-      .stroke({
-        color: this.theme.progress.insetTop,
-        width: 1,
-        alignment: 1,
-      });
-    this.questRail
-      .moveTo(x + radius, y + height)
-      .lineTo(x + width - radius, y + height)
-      .stroke({
-        color: this.theme.progress.insetBottom,
-        width: 1,
-        alignment: 1,
-      });
-  }
-
-  drawQuestDivider({ x, y, height, completed }) {
-    const leftShadow = completed
-      ? { color: '#ffffff', alpha: 0.12 }
-      : { color: '#000000', alpha: 0.44 };
-    const rightShadow = completed
-      ? { color: '#000000', alpha: 0.42 }
-      : { color: '#ffffff', alpha: 0.08 };
-    const divider = completed
-      ? { color: QUEST_DIVIDER_COMPLETE, alpha: 0.82 }
-      : { color: QUEST_DIVIDER_INCOMPLETE, alpha: 0.68 };
-
-    this.drawQuestDividerPixel(x - 1, y, height, leftShadow);
-    this.drawQuestDividerPixel(x + 1, y, height, rightShadow);
-    this.drawQuestDividerPixel(x, y, height, divider);
-  }
-
-  drawQuestDividerPixel(x, y, height, style) {
-    this.questRail
-      .roundRect(x, y, 1, height, 1)
-      .fill(style);
+    this.levelRail
+      .setQuestVisible(true)
+      .renderProgress({ ratio, total, completed });
   }
 
   setCharacter(character) {
     const key = String(character || 'elara');
     const texture = this.getCharacterTexture(key);
     if (this.avatar.texture !== texture) {
-      this.avatar.texture = texture;
-      this.avatar.width = 64;
-      this.avatar.height = 86;
+      this.avatarViewport.setTexture(texture);
     }
   }
 
@@ -850,7 +975,7 @@ function normalizeContextCurrency(context) {
   return {
     resource,
     amount: context?.amount ?? context?.value ?? 0,
-    visible: context?.visible === true,
+    visible: context?.visible !== false,
   };
 }
 
@@ -873,6 +998,10 @@ function createMotionSnapshot(model = {}) {
       0,
       Math.floor(Number(quest.completed) || 0),
     ),
+    total: Math.max(
+      0,
+      Math.floor(Number(quest.total) || 0),
+    ),
     questVisible:
       reveal.top !== false &&
       reveal.quest !== false &&
@@ -883,6 +1012,79 @@ function createMotionSnapshot(model = {}) {
       Math.floor(Number(model.loadRevision) || 0),
     ),
   };
+}
+
+function createHeldCompletionModel(pendingModel, previousModel) {
+  return {
+    ...pendingModel,
+    level: previousModel?.level ?? pendingModel?.level,
+    quest: previousModel?.quest ?? pendingModel?.quest,
+  };
+}
+
+function createCompletedRolloverModel(
+  pendingModel,
+  previousModel,
+) {
+  const quest = previousModel?.quest ?? pendingModel?.quest ?? {};
+  const total = Math.max(
+    0,
+    Math.floor(Number(quest.total) || 0),
+  );
+  return {
+    ...pendingModel,
+    level: previousModel?.level ?? pendingModel?.level,
+    quest: {
+      ...quest,
+      completed: total,
+      activeFraction: 0,
+      remaining: 0,
+    },
+  };
+}
+
+function hasSameCompletionSnapshot(left, right) {
+  return Boolean(
+    left &&
+    right &&
+    left.level === right.level &&
+    left.completed === right.completed &&
+    left.total === right.total &&
+    left.loadRevision === right.loadRevision,
+  );
+}
+
+function getQuestCompletionDelta(previous, next) {
+  if (!previous || !next) {
+    return 0;
+  }
+  if (next.level === previous.level) {
+    return Math.max(0, next.completed - previous.completed);
+  }
+  if (next.level > previous.level) {
+    return Math.max(
+      0,
+      previous.total -
+        previous.completed +
+        next.completed,
+    );
+  }
+  return 0;
+}
+
+function easeInOutCubic(progress) {
+  const value = clampProgress(progress);
+  return value < 0.5
+    ? 4 * value * value * value
+    : 1 - Math.pow(-2 * value + 2, 3) / 2;
+}
+
+function easeOutCubic(progress) {
+  return 1 - Math.pow(1 - clampProgress(progress), 3);
+}
+
+function randomBetween(min, max, random = Math.random) {
+  return min + (max - min) * random();
 }
 
 function interpolateMotionFrames(progress, frames, output) {

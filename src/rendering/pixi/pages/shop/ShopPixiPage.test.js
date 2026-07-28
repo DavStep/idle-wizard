@@ -20,6 +20,7 @@ import {
 } from '../../theme/PixiThemeTokens.js';
 import { SHOP_DIALOG_IDS } from './ShopDialogPixi.js';
 import { ShopPixiPage } from './ShopPixiPage.js';
+import { RetainedScrollArea } from '../workshop/RetainedPageKit.js';
 
 globalThis.CanvasRenderingContext2D.prototype.createLinearGradient =
   () => ({
@@ -194,9 +195,27 @@ describe('ShopPixiPage', () => {
     expect(
       stall.priceResource.x + stall.priceResource.measuredWidth,
     ).toBe(stall.width - 10);
+    expect(
+      harness.semanticRegistry.get('shop.stall.1.price')?.displayObject,
+    ).toBe(stall.priceResource);
     expect(harness.page.stallsSection.ledgerButton.text.text).toBe(
       'Market Ledger',
     );
+    expect(
+      harness.page.stallsSection.ledgerButton.root.x +
+        harness.page.stallsSection.ledgerButton.root.hitArea.width,
+    ).toBe(harness.page.stallsSection.width - 12);
+    expect(
+      harness.semanticRegistry.get('shop.ledger.open'),
+    ).not.toBeNull();
+    expect(harness.page.stallsSection.helpButton).toBeUndefined();
+    expect(harness.page.stallsSection.ledgerHelpButton).toBeUndefined();
+    expect(
+      harness.semanticRegistry.get('shop.stalls.help'),
+    ).toBeNull();
+    expect(
+      harness.semanticRegistry.get('shop.ledger.help'),
+    ).toBeNull();
     expect(stall.title.textObject.style.fill).toBe('#634934');
     expect(stall.item.textObject.style.fill).toBe('#634934');
     expect(stall.price.textObject.style.fill).toBe('#634934');
@@ -208,7 +227,6 @@ describe('ShopPixiPage', () => {
     );
     expect(stall.stars.position.y).toBe(stall.title.y + 1);
     expect(stall.title.y).toBe(5);
-    expect(stall.batch.y).toBe(5);
     expect(stall.iconFrame.y).toBe(22);
     expect(stall.item.y).toBe(30);
     expect(stall.price.y).toBe(30);
@@ -277,6 +295,49 @@ describe('ShopPixiPage', () => {
     expect(getAtlasTexture).toHaveBeenCalledWith('herb:sageHerb');
     expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.researchArt,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders the sale batch in a compact red top-right badge', () => {
+    const getTexture = vi.fn(() => Texture.EMPTY);
+    const harness = createHarness({
+      assetManager: {
+        ...createPixiAssetManagerFake(Texture),
+        loaded: true,
+        getTexture,
+      },
+    });
+    const viewModel = createShopViewModel();
+    viewModel.shop.traders.stalls[0].batchLabel = 'x1';
+
+    harness.page.bind(viewModel);
+    harness.page.activate();
+
+    const stall = harness.page.stallsSection.stalls.get('stall-1');
+    expect(stall.batch.text).toBe('x1');
+    expect(stall.batch.textObject.style.fill).toBe('#ffffff');
+    expect(stall.batch.textObject.style.stroke).toMatchObject({
+      color: '#2a160d',
+      width: 2,
+      join: 'round',
+    });
+    expect(stall.batchBadge).toMatchObject({
+      visible: true,
+      renderable: true,
+      width: 30,
+      height: 27,
+      y: 1,
+    });
+    expect(stall.batch.x).toBe(stall.batchBadge.x);
+    expect(stall.batch.y).toBe(11);
+    expect(stall.batchBadge.x + stall.batchBadge.width / 2).toBe(
+      stall.width - 14,
+    );
+    expect(getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.stallBatchBadge,
     );
 
     harness.page.destroy();
@@ -687,9 +748,11 @@ describe('ShopPixiPage', () => {
   it('keeps the frozen source-space Shop anchors', () => {
     const harness = createHarness();
     harness.page.bind(createShopViewModel());
+    const tradersScroll =
+      harness.page.panelScrolls.get('traders');
 
     expect(
-      harness.page.panelScrolls.get('traders').position,
+      tradersScroll.root.position,
     ).toMatchObject({ x: 0, y: 151 });
     expect(harness.page.tabLayer.position).toMatchObject({
       x: 16,
@@ -699,8 +762,37 @@ describe('ShopPixiPage', () => {
       buttonHeight: 28,
     });
     expect(
-      harness.page.panelScrolls.get('traders').viewportHeight,
+      tradersScroll.height,
     ).toBeCloseTo(370.33333333333337, 10);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('uses the shared dialog scroll physics for Shop tab content', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    const scroll = harness.page.panelScrolls.get('traders');
+    scroll.setContentHeight(scroll.height + 400);
+
+    expect(scroll).toBeInstanceOf(RetainedScrollArea);
+    expect(
+      scroll.beginDrag({
+        event: { timeStamp: 0 },
+        point: { x: 20, y: 360 },
+      }),
+    ).toBe(true);
+    scroll.dragTo({
+      event: { timeStamp: 40 },
+      point: { x: 20, y: 300 },
+    });
+    const releasedOffset = scroll.offsetY;
+    scroll.endDrag();
+    scroll.cancelAnimation();
+    scroll.update(1 / 60);
+
+    expect(scroll.offsetY).toBeGreaterThan(releasedOffset);
+    expect(scroll.physics.velocity).toBeGreaterThan(0);
 
     harness.page.destroy();
     harness.dispose();
@@ -724,6 +816,95 @@ describe('ShopPixiPage', () => {
     expect(
       harness.page.tabButtons.get('players').resolveRootRunVariant(),
     ).toBe('brown-dark');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('uses Stalls section chrome and Research row backing for Crystal Market offers', () => {
+    const getTexture = vi.fn(() => Texture.EMPTY);
+    const getAtlasTexture = vi.fn(() => Texture.EMPTY);
+    const harness = createHarness({
+      assetManager: {
+        ...createPixiAssetManagerFake(Texture),
+        loaded: true,
+        getTexture,
+        getAtlasTexture,
+      },
+    });
+    const viewModel = createShopViewModel();
+    viewModel.shop.selectedTabId = 'crystals';
+
+    harness.page.bind(viewModel);
+    harness.page.activate();
+
+    expect(
+      harness.page.panelScrolls.get('crystals').root.position.x,
+    ).toBe(0);
+    expect(harness.page.coinOfferSection.titlePlaque.title.text).toBe(
+      'Coin Offer',
+    );
+    expect(
+      harness.page.crystalOffersSection.titlePlaque.title.text,
+    ).toBe('Crystals');
+    expect(harness.page.coinOfferSection.titlePlaque.variant).toBe(
+      'crystal',
+    );
+    expect(
+      harness.page.crystalOffersSection.titlePlaque.variant,
+    ).toBe('crystal');
+    expect(harness.page.coinOfferSection.panel).toBeUndefined();
+    expect(harness.page.coinOfferSection.card).toBeInstanceOf(
+      PixiNineSliceFrame,
+    );
+    expect(harness.page.coinOfferSection.card.sourceInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+    );
+    expect(
+      harness.page.crystalOffersSection.card.borderInsets,
+    ).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+    );
+
+    const coinOffer =
+      harness.page.coinOfferSection.rows.get('coinOffer');
+    expect(coinOffer.itemResource).toMatchObject({
+      amount: '100',
+      resource: 'coin',
+      visible: true,
+    });
+    expect(coinOffer.itemResource.icon.visible).toBe(true);
+    expect(coinOffer.itemLabel.visible).toBe(false);
+    expect(coinOffer.valueLabel.text).toBe('Collect');
+    expect(coinOffer.valueLabel.textObject.style.fill).toBe(
+      '#634934',
+    );
+
+    const crystalOffer =
+      harness.page.crystalOffersSection.rows.get('crystal-1');
+    expect(crystalOffer.itemResource).toMatchObject({
+      amount: '10',
+      resource: 'crystal',
+      visible: true,
+    });
+    expect(crystalOffer.itemResource.icon.visible).toBe(true);
+    expect(crystalOffer.itemLabel.visible).toBe(false);
+    expect(crystalOffer.valueLabel.text).toBe('$0.99');
+    expect(crystalOffer.valueLabel.textObject.style.fill).toBe(
+      '#634934',
+    );
+    expect(
+      crystalOffer.itemResource.amountLabel.textObject.style.fill,
+    ).toBe(
+      harness.page.theme.resourceColors.crystal,
+    );
+    expect(getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.researchCard,
+    );
+    expect(getAtlasTexture).toHaveBeenCalledWith('resource:coin');
+    expect(getAtlasTexture).toHaveBeenCalledWith(
+      'resource:crystal',
+    );
 
     harness.page.destroy();
     harness.dispose();

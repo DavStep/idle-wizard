@@ -30,29 +30,6 @@ function getOpaqueAverageLuminance(image) {
   return pixels > 0 ? luminance / pixels : 0;
 }
 
-function createTouchEvent(type, target, { clientX = 120, clientY = 180 } = {}) {
-  const touch = {
-    identifier: 1,
-    clientX,
-    clientY,
-    target,
-  };
-  const event = new window.Event(type, {
-    bubbles: true,
-    cancelable: true,
-  });
-  Object.defineProperty(event, 'touches', {
-    value: type === 'touchend' ? [] : [touch],
-  });
-  Object.defineProperty(event, 'targetTouches', {
-    value: type === 'touchend' ? [] : [touch],
-  });
-  Object.defineProperty(event, 'changedTouches', {
-    value: [touch],
-  });
-  return event;
-}
-
 function createGameplayFacade(snapshot, overrides = {}) {
   return {
     subscribe(callback) {
@@ -176,7 +153,7 @@ describe('ResearchBoxListManager', () => {
               {
                 id: 'unlockSeed:mintSeed',
                 label: 'mint seed',
-                value: 'free',
+                value: 'Free',
                 completed: false,
                 canResearch: true,
                 description: 'Allows mint seed to drop from summon seed.',
@@ -249,6 +226,9 @@ describe('ResearchBoxListManager', () => {
     expect(rows[1]?.querySelector('.research-page__research-rank')?.textContent).toBe(
       'Lv. 00/01',
     );
+    expect(
+      rows[1]?.querySelector('.style-cost-button__plain-label')?.textContent,
+    ).toBe('Free');
     expect(stage.querySelector('.research-page__research-summary')).toBeNull();
   });
 
@@ -1081,8 +1061,7 @@ describe('ResearchBoxListManager', () => {
     expect(fill?.style.width).toBe('100%');
   });
 
-  it('opens locked research info on row tap and explains missing requirements', () => {
-    const onShowResearchInfo = vi.fn();
+  it('keeps locked research rows passive in the DOM fallback', () => {
     const snapshot = {
       playerLevel: {
         currentLevel: 4,
@@ -1126,7 +1105,6 @@ describe('ResearchBoxListManager', () => {
     };
     const manager = new ResearchBoxListManager({
       gameplayFacade: createGameplayFacade(snapshot),
-      onShowResearchInfo,
     });
     const stage = document.createElement('section');
     document.body.append(stage);
@@ -1142,129 +1120,14 @@ describe('ResearchBoxListManager', () => {
       row?.querySelector('.research-page__research-art-image')?.dataset
         .assetAtlasFrame,
     ).toBe('potion:minorHealingPotion');
-
-    row.dispatchEvent(createTouchEvent('touchstart', row));
-    row.dispatchEvent(createTouchEvent('touchend', row));
-    row.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(onShowResearchInfo).toHaveBeenCalledTimes(1);
-    expect(onShowResearchInfo).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 'unlockRecipe:minorHealingPotion',
-        lockReason: 'requires mana tonic research and level 6.',
-      }),
+    expect(row?.querySelector('.research-page__research-label')?.tagName).toBe(
+      'SPAN',
     );
+    expect(row?.querySelector('[aria-haspopup="dialog"]')).toBeNull();
 
-    manager.unmount();
-    stage.remove();
-  });
+    row?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-  it('does not explain locked research when the row touch scrolls', () => {
-    const onShowResearchInfo = vi.fn();
-    const snapshot = {
-      playerLevel: {
-        currentLevel: 4,
-      },
-      research: {
-        boxes: [
-          {
-            id: 'recipeUnlocks',
-            label: 'recipe unlock researches',
-            researches: [
-              {
-                id: 'unlockRecipe:minorHealingPotion',
-                label: 'minor healing potion',
-                value: 'locked',
-                effect: 'brew',
-                description:
-                  'allows valid cauldron ingredients to brew minor healing potion.',
-                costCoin: 60,
-                completed: false,
-                locked: true,
-                canResearch: false,
-                requiredResearchIds: ['unlockRecipe:manaTonic'],
-                requiredPlayerLevel: 6,
-              },
-            ],
-          },
-        ],
-        completedResearchIds: [],
-      },
-    };
-    const manager = new ResearchBoxListManager({
-      gameplayFacade: createGameplayFacade(snapshot),
-      onShowResearchInfo,
-    });
-    const stage = document.createElement('section');
-    document.body.append(stage);
-
-    manager.mount(stage);
-
-    const row = stage.querySelector('.research-page__row');
-    row.dispatchEvent(createTouchEvent('touchstart', row, { clientX: 10, clientY: 10 }));
-    document.dispatchEvent(createTouchEvent('touchmove', row, { clientX: 10, clientY: 32 }));
-    row.dispatchEvent(createTouchEvent('touchend', row, { clientX: 10, clientY: 32 }));
-
-    expect(onShowResearchInfo).not.toHaveBeenCalled();
-
-    manager.unmount();
-    stage.remove();
-  });
-
-  it('explains prestige-locked research requirements', () => {
-    const onShowResearchInfo = vi.fn();
-    const snapshot = {
-      playerLevel: {
-        currentLevel: 17,
-      },
-      prestige: {
-        completedLevels: [],
-      },
-      research: {
-        boxes: [
-          {
-            id: 'cauldronCapacity',
-            label: 'cauldron capacity research',
-            researches: [
-              {
-                id: 'advanced:cauldronCapacity:3',
-                label: 'cauldron 3 capacity',
-                value: 'locked',
-                effect: '+1 cauldron',
-                description: 'raises cauldron capacity to 3.',
-                costRuby: 1,
-                costCurrency: 'ruby',
-                completed: false,
-                locked: true,
-                canResearch: false,
-                requiredPrestigeCount: 1,
-                requiredResearchIds: [],
-              },
-            ],
-          },
-        ],
-        completedResearchIds: [],
-      },
-    };
-    const manager = new ResearchBoxListManager({
-      gameplayFacade: createGameplayFacade(snapshot),
-      onShowResearchInfo,
-    });
-    const stage = document.createElement('section');
-    document.body.append(stage);
-
-    manager.mount(stage);
-
-    const row = stage.querySelector('.research-page__row');
-    row.dispatchEvent(createTouchEvent('touchstart', row));
-    row.dispatchEvent(createTouchEvent('touchend', row));
-
-    expect(onShowResearchInfo).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 'advanced:cauldronCapacity:3',
-        lockReason: 'requires 1 prestige.',
-      }),
-    );
+    expect(row?.isConnected).toBe(true);
 
     manager.unmount();
     stage.remove();

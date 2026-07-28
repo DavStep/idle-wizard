@@ -8,7 +8,6 @@ import {
   setTimerProgressFill,
   stopTimerProgressFill,
 } from '../../shared/timerProgress.js';
-import { setInfoButtonIcon } from '../../shared/infoButton.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import {
   getNextNpcDemandWaveInfo,
@@ -60,9 +59,8 @@ export class ShopShelfManager {
     const title = document.createElement('div');
     title.className = 'style-box__title';
     title.textContent = 'your stalls';
-    this.refs.help = this.createHelp();
     this.refs.popup = this.createSellPopup();
-    this.root.append(title, this.refs.help.root);
+    this.root.append(title);
     parent.append(this.root);
     popupParent.append(this.refs.popup);
     document.addEventListener('keydown', this.handleKeydown);
@@ -90,30 +88,6 @@ export class ShopShelfManager {
     this.unsubscribe = null;
     this.visible = false;
     this.resetSellDraft();
-  }
-
-  createHelp() {
-    const root = document.createElement('div');
-    root.className = 'shop-page__shelf-help';
-    const button = document.createElement('button');
-    button.className = 'style-button shop-page__shelf-help-button';
-    button.type = 'button';
-    setInfoButtonIcon(button);
-    button.setAttribute('aria-label', 'how stalls work');
-    button.setAttribute('aria-expanded', 'false');
-    const tooltip = document.createElement('div');
-    tooltip.className = 'style-tooltip shop-page__shelf-help-tooltip';
-    tooltip.textContent =
-      'tap a stall to choose an item and mark a share. future marking loads newly produced copies.';
-    tooltip.hidden = true;
-    tooltip.setAttribute('role', 'tooltip');
-    button.addEventListener('click', (event) => {
-      event.stopPropagation();
-      tooltip.hidden = !tooltip.hidden;
-      button.setAttribute('aria-expanded', tooltip.hidden ? 'false' : 'true');
-    });
-    root.append(button, tooltip);
-    return { root, button, tooltip };
   }
 
   createSlotRow(slotNumber) {

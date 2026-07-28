@@ -1154,32 +1154,6 @@
       ]
     },
     {
-      "id": "dialog.research-info",
-      "label": "Research information",
-      "kind": "dialog",
-      "production": true,
-      "coverage": {
-        "domSelectors": [".research-page__info-dialog"]
-      },
-      "recipe": {
-        "kind": "manual",
-        "gap": "Research info requires choosing a catalog row and does not have a named openUi recipe."
-      },
-      "anchors": [
-        {
-          "id": "dialog",
-          "selector": ".research-page__info-dialog",
-          "tolerancePx": 1
-        }
-      ],
-      "states": [
-        { "id": "locked" },
-        { "id": "available" },
-        { "id": "in-progress" },
-        { "id": "completed" }
-      ]
-    },
-    {
       "id": "dialog.market",
       "label": "Market transaction dialogs",
       "kind": "dialog",

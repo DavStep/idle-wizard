@@ -53,8 +53,9 @@ export const PIXI_UI_GEOMETRY = Object.freeze({
   progressTopPanelHeight: 12,
   progressTopPanelTotalHeight: 14,
   progressKnobSize: 14,
-  notificationSize: 9.569444,
-  notificationOutset: 2,
+  notificationSize: 12,
+  notificationOutset: 0,
+  notificationTabInset: 4,
   buttonWidth: 100,
   tabHeight: 28,
   dialogShadowX: 5,
@@ -125,6 +126,8 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   coin: 'source:assets/ui/root-run-cost-button/coin.png',
   settingsKnob:
     'source:assets/ui/root-run-settings/settings-knob.png',
+  settingsGear:
+    'source:assets/ui/root-run-settings/settings-icon-gear.png',
   settingsRow:
     'source:assets/ui/root-run-settings/settings-row-bg-9slice.png',
   settingsSound:
@@ -133,6 +136,28 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/root-run-settings/settings-icon-music.png',
   settingsVibration:
     'source:assets/ui/root-run-settings/settings-icon-vibration.png',
+  accountTitle:
+    'source:assets/ui/root-run-account/account-title.png',
+  accountUsername:
+    'source:assets/ui/root-run-account/username-bar.png',
+  accountEdit:
+    'source:assets/ui/root-run-account/edit-pencil.png',
+  accountChoice:
+    'source:assets/ui/root-run-account/choice-tile.png',
+  accountSelected:
+    'source:assets/ui/root-run-account/choice-selected.png',
+  topHudAvatarFrame:
+    'source:assets/ui/root-run-top-hud/avatar-frame-9slice.png',
+  topHudAvatarHead:
+    'source:assets/ui/root-run-top-hud/avatar-head-bg.png',
+  topHudCurrency:
+    'source:assets/ui/root-run-top-hud/currency-bg-9slice.png',
+  topHudSettings:
+    'source:assets/ui/root-run-top-hud/settings-bg-9slice.png',
+  topHudLevelPanel:
+    'source:assets/ui/root-run-top-hud/level-progress-panel.png',
+  topHudLevelTrack:
+    'source:assets/ui/root-run-top-hud/level-progress-track-9slice.png',
   dialogBack: 'source:assets/ui/root-run-dialog/expedition-dialog-back.png',
   dialogPaper: 'source:assets/ui/root-run-dialog/expedition-dialog-front.png',
   dialogTitle:
@@ -150,6 +175,8 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/root-run-research/research-art-well-locked-204x194.png',
   researchRank:
     'source:assets/ui/root-run-research/research-rank-badge-217x62.png',
+  stallBatchBadge:
+    'source:assets/ui/root-run-level-badge-down-red.png',
   researchStationTitle:
     'source:assets/ui/root-run-research/research-station-title-red.png',
   researchStationTitleRegular:
@@ -220,6 +247,7 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
     starGap: 2 * (360 / 390),
   }),
   settings: Object.freeze({
+    gearAspectRatio: 80 / 84,
     knobSize: 69 / 3,
     sliderRailHeight: 14,
     rowPitch: 150 / 3,

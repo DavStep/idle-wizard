@@ -3,32 +3,32 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 export const CRYSTAL_OFFERS = [
   {
     crystalCount: 1,
-    bundleLabel: '1 crystal',
+    bundleLabel: '1 Crystal',
     priceLabel: '$4.99',
   },
   {
     crystalCount: 2,
-    bundleLabel: '2 crystals',
+    bundleLabel: '2 Crystals',
     priceLabel: '$8.99',
   },
   {
     crystalCount: 5,
-    bundleLabel: '5 crystals',
+    bundleLabel: '5 Crystals',
     priceLabel: '$19.99',
   },
   {
     crystalCount: 10,
-    bundleLabel: '10 crystals',
+    bundleLabel: '10 Crystals',
     priceLabel: '$36.99',
   },
   {
     crystalCount: 20,
-    bundleLabel: '20 crystals',
+    bundleLabel: '20 Crystals',
     priceLabel: '$69.99',
   },
   {
     crystalCount: 50,
-    bundleLabel: '50 crystals',
+    bundleLabel: '50 Crystals',
     priceLabel: '$159.99',
   },
 ];
@@ -94,7 +94,7 @@ export class ShopCrystalOfferManager {
   createTitle() {
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'crystals';
+    title.textContent = 'Crystals';
     return title;
   }
 
@@ -103,10 +103,10 @@ export class ShopCrystalOfferManager {
     row.className = 'shop-page__crystal-row shop-page__crystal-row--header';
 
     const bundle = document.createElement('span');
-    bundle.textContent = 'bundle';
+    bundle.textContent = 'Bundle';
 
     const price = document.createElement('span');
-    price.textContent = 'price';
+    price.textContent = 'Price';
 
     row.append(bundle, price);
     return row;
@@ -166,12 +166,12 @@ export class ShopCrystalOfferManager {
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'support';
+    title.textContent = 'Support';
 
     const closeButton = document.createElement('button');
     closeButton.className = 'style-button shop-page__crystal-support-close';
     closeButton.type = 'button';
-    closeButton.textContent = 'close';
+    closeButton.textContent = 'Close';
     closeButton.addEventListener('click', () => this.hideSupportPopup());
 
     const message = document.createElement('p');

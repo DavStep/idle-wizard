@@ -1,5 +1,9 @@
 # Feature Announcements
 
+These are developer-to-player Discord posts. Describe features only in Idle
+Wizard terms; do not mention other game names, source projects, ports, or
+implementation provenance.
+
 ## 0.2.98
 
 Trader stalls now hold real stock and sell on their own five-second cycles. Tap a stall, then press or hold an item to load it from your inventory; hold the loaded item on the stall to take stock back. Every stall shows its remaining stock, next-sale countdown, batch size, and current trader value.

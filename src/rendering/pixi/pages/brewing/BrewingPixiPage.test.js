@@ -14,6 +14,10 @@ import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import {
+  PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
+import {
   BREWING_PIXI_GEOMETRY,
   BrewingPixiPage,
 } from './BrewingPixiPage.js';
@@ -359,19 +363,30 @@ describe('BrewingPixiPage', () => {
       cauldron.buttons.primary.root,
     );
     expect(primaryBadge.root.position.x).toBeCloseTo(
-      BREWING_PIXI_GEOMETRY.actionWidth - 2.784722,
+      BREWING_PIXI_GEOMETRY.actionWidth
+        + PIXI_UI_GEOMETRY.notificationOutset
+        - PIXI_UI_GEOMETRY.notificationSize / 2,
       6,
     );
-    expect(primaryBadge.root.position.y).toBeCloseTo(2.784722, 6);
+    expect(primaryBadge.root.position.y).toBeCloseTo(
+      -PIXI_UI_GEOMETRY.notificationOutset
+        + PIXI_UI_GEOMETRY.notificationSize / 2,
+      6,
+    );
     expect(primaryBadge.root.visible).toBe(true);
     expect(primaryBadge.model.tone).toBe('orange');
     expect(herbBadge.root.parent).toBe(herb.root);
     expect(herbBadge.root.visible).toBe(true);
-    expect(herbBadge.root.x).toBeGreaterThan(
-      herb.label.x + herb.label.width,
+    expect(herbBadge.root.x).toBeCloseTo(
+      herb.label.x
+        + herb.label.width
+        + PIXI_UI_GEOMETRY.notificationOutset,
+      6,
     );
     expect(herbBadge.root.y).toBeCloseTo(
-      herb.label.y + 2.784722,
+      herb.label.y
+        - PIXI_UI_GEOMETRY.notificationOutset
+        + PIXI_UI_GEOMETRY.notificationSize / 2,
       6,
     );
 
@@ -692,6 +707,12 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.actionIcons.autoBrew.iconSprites[0].label).toBe(
       'brewing-autobrew-action-icon:sprite',
     );
+    expect(
+      harness.page.hud.actionIcons.autoBrew.iconSprites[0].width,
+    ).toBe(25 * PIXI_ROOT_RUN_GEOMETRY.settings.gearAspectRatio);
+    expect(
+      harness.page.hud.actionIcons.autoBrew.iconSprites[0].height,
+    ).toBe(25);
     expect(harness.page.hud.actionIcons.cancel.parent).toBe(
       harness.page.hud.cancel.control.visual,
     );

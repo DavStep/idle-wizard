@@ -1,6 +1,5 @@
 import { ResearchBoxListManager } from './managers/ResearchBoxListManager.js';
 import { ResearchCardSkinManager } from './managers/ResearchCardSkinManager.js';
-import { ResearchInfoDialogManager } from './managers/ResearchInfoDialogManager.js';
 import { ResearchRoomViewManager } from './managers/ResearchRoomViewManager.js';
 
 export class ResearchPageFacade {
@@ -13,12 +12,10 @@ export class ResearchPageFacade {
     cardSkinManager = new ResearchCardSkinManager(),
   } = {}) {
     this.roomViewManager = new ResearchRoomViewManager();
-    this.infoDialogManager = new ResearchInfoDialogManager();
     this.cardSkinManager = cardSkinManager;
     this.boxListManager = new ResearchBoxListManager({
       gameplayFacade,
       onSelectedTabChange,
-      onShowResearchInfo: (research) => this.infoDialogManager.show(research),
       onRowsChanged: () => this.cardSkinManager.scheduleSync(),
     });
   }
@@ -26,20 +23,13 @@ export class ResearchPageFacade {
   mount(stage) {
     this.roomViewManager.mount(stage);
     const uiLayer = this.roomViewManager.getUiLayer();
-    const popupLayer = this.roomViewManager.getPopupLayer();
     this.boxListManager.mount(uiLayer);
     this.cardSkinManager.mount(uiLayer);
-    this.infoDialogManager.mount(popupLayer);
   }
 
   unmount() {
-    this.infoDialogManager.unmount();
     this.cardSkinManager.unmount();
     this.boxListManager.unmount();
     this.roomViewManager.unmount();
-  }
-
-  deactivate() {
-    this.infoDialogManager.hide();
   }
 }

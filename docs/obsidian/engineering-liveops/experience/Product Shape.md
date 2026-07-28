@@ -50,7 +50,7 @@ experience_type: product-shape
 - While-away reports should list produced items and market outcomes only; skip status-only rows like mana full, plots ready, research complete, and paused automation.
 - Cauldron brew/bottle success state belongs in the active brew text and progress rail; reserve cauldron messages for blocked/error feedback so stale success text does not fight the timer state.
 - Reward flyouts on Android WebView should avoid per-event dynamic `@keyframes`; use transform/opacity Web Animations API paths and cap active particles.
-- Recurring trader-stall sales should use the lightweight coin amount/pulse feedback; item tosses plus flying coin particles every cycle cause short Android WebView frame drops.
+- Recurring trader-stall sales use one capped three-to-four-coin trail, an amount pop, and the top-currency pulse. Do not add a simultaneous item toss or unbounded particles; that combination causes short Android WebView frame drops.
 - Potion collection reward drops should start from the visible cauldron liquid, not the potion preview/icon or whole cauldron box.
 - Cauldron potion preview labels need a fixed-width summary that can overflow the 86px potion box; `max-width: 100%` clamps labels and truncates names under world zoom.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.

@@ -22,8 +22,9 @@
   --style-notification-image-red: url("../../assets/game/source/ui/notification-circle-red.png");
   --style-notification-image-orange: url("../../assets/game/source/ui/notification-circle-orange.png");
   --style-notification-image: var(--style-notification-image-red);
-  --style-notification-size: 9.569444px;
-  --style-notification-offset: 2px;
+  --style-notification-size: 12px;
+  --style-notification-offset: 0px;
+  --style-notification-tab-inset: 4px;
   --style-notification-bleed: calc(var(--style-notification-offset) + 1px);
   --style-resource-icon-size: 1.032em;
   --style-icon-label-gap: 0.14em;
@@ -521,41 +522,6 @@
   position: static;
 }
 
-.shop-page__shelf-help {
-  position: absolute;
-  top: var(--style-box-border-label-offset);
-  right: var(--style-box-title-left);
-  z-index: 3;
-  background: var(--style-surface);
-}
-
-.style-button.shop-page__shelf-help-button,
-.style-button.shop-page__ledger-help-button {
-  --style-info-button-icon-height: var(--style-box-border-label-line-height);
-  width: auto;
-  min-width: var(--style-box-border-label-line-height);
-  padding: 0 1px;
-  margin: 0;
-  font-size: var(--style-box-border-label-font-size);
-  line-height: var(--style-box-border-label-line-height);
-  background: var(--style-surface);
-  border: 0;
-}
-
-.shop-page__shelf-help-tooltip {
-  position: absolute;
-  top: calc(100% + 3px);
-  right: 0;
-  width: 158px;
-  text-align: left;
-  white-space: normal;
-}
-
-.shop-page__shelf-help-button[aria-expanded='true'] + .shop-page__shelf-help-tooltip,
-.shop-page__ledger-help-button[aria-expanded='true'] + .shop-page__ledger-help {
-  display: block;
-}
-
 .shop-page__ledger-controls {
   position: absolute;
   right: var(--style-box-title-left);
@@ -575,15 +541,6 @@
   line-height: var(--style-box-border-label-line-height);
   background: var(--style-surface);
   border: 0;
-}
-
-.shop-page__ledger-help {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 3px);
-  width: 158px;
-  text-align: left;
-  white-space: normal;
 }
 
 .shop-page__ledger-popup {
@@ -2682,7 +2639,6 @@ body {
     .garden-page__seed-popup,
     .garden-page__cancel-popup,
     .garden-page__swap-popup,
-    .research-page__info-popup,
     .shop-page__sell-popup,
     .shop-page__market-popup,
     .shop-page__request-popup,
@@ -4526,7 +4482,15 @@ body {
   border-radius: 0;
   box-shadow: none;
   opacity: 0;
-  text-shadow: none;
+  -webkit-text-stroke:
+    var(--style-page-tab-label-text-stroke-width)
+    var(--style-yellow-button-text-stroke);
+  paint-order: stroke fill;
+  text-shadow:
+    0 1px 0 var(--style-yellow-button-text-stroke),
+    1px 0 0 var(--style-yellow-button-text-stroke),
+    0 -1px 0 var(--style-yellow-button-text-stroke),
+    -1px 0 0 var(--style-yellow-button-text-stroke);
   contain: layout paint style;
   transform: translate3d(-50%, -50%, 0) scale(0.5);
   animation: room-coin-amt-pop 820ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -5095,6 +5059,11 @@ body {
 .room-bottom-panel__tab[data-notification="true"],
 .style-button[class*="tab-button"][data-notification="true"] {
   overflow: visible;
+}
+
+.style-button[class*="tab-button"][data-notification="true"]::before {
+  top: var(--style-notification-tab-inset);
+  right: var(--style-notification-tab-inset);
 }
 
 .room-bottom-panel__tab[data-notification="true"] {
@@ -7571,7 +7540,22 @@ body {
   left: var(--style-room-chrome-edge);
   padding: var(--style-world-chat-box-padding-y)
     var(--style-world-chat-box-padding-x);
+  appearance: none;
+  color: var(--style-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   pointer-events: auto;
+  transform-origin: center;
+}
+
+.workshop-page__world-chat-box:focus {
+  outline: none;
+}
+
+.workshop-page__world-chat-box:focus-visible {
+  outline: var(--style-border);
+  outline-offset: 1px;
 }
 
 .workshop-page__world-chat-title {
@@ -7595,9 +7579,16 @@ body {
 
 .style-button[class*="workshop-page__"]:not(
     .workshop-page__summon-button
-  ):active:not(:disabled):not(.is-disabled),
-.workshop-page__world-chat-button:active:not(:disabled):not(.is-disabled) {
+  ):active:not(:disabled):not(.is-disabled) {
   transform: scale(var(--style-press-scale));
+}
+
+.workshop-page__world-chat-box:is(:active, .is-pressing):not(:disabled):not(
+    .is-disabled
+  ) {
+  scale: var(--style-press-scale);
+  transition: scale var(--style-motion-button-press-in)
+    var(--style-motion-button-ease);
 }
 
 .game-stage:has(.workshop-page__tasks.is-expanded:not(.is-pinned))
@@ -11024,36 +11015,11 @@ div.workshop-page__discovery-row {
   text-wrap: pretty;
 }
 
-.research-page__research-label-button {
-  padding: 0;
-  appearance: none;
-  color: #634934;
-  font-family: var(--style-font);
-  font-size: var(--style-font-size);
-  text-align: left;
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-}
-
-.research-page__row.is-locked .research-page__research-label-button,
+.research-page__row.is-locked .research-page__research-label,
 .research-page__row.is-locked .research-page__research-description,
 .research-page__row.is-locked .research-page__research-rank,
 .research-page__row.is-locked .research-page__research-value {
   color: inherit;
-}
-
-.research-page__research-label-button:focus {
-  font-weight: normal;
-}
-
-.research-page__research-label-button:active {
-  background: transparent;
-}
-
-.research-page__research-label-button:focus {
-  outline: none;
 }
 
 .research-page__research-value {
@@ -11377,34 +11343,6 @@ div.workshop-page__discovery-row {
   text-align: center;
   white-space: normal;
   border: var(--style-border);
-}
-
-.research-page__info-popup {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-}
-
-.research-page__info-popup[hidden] {
-  display: none;
-}
-
-.style-dialog.research-page__info-dialog {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  display: grid;
-  width: 304px;
-  min-height: 53px;
-  padding-top: calc(var(--style-dialog-padding) + 5px);
-  padding-bottom: calc(var(--style-dialog-padding) - 5px);
-  align-content: center;
-  transform: translate(-50%, calc(-50% + var(--app-dialog-y-shift, 0px)));
-}
-
-.research-page__info-copy {
-  max-width: 304px;
-  margin: 0;
 }
 
 .brewing-page__recipes-popup,
@@ -13113,7 +13051,6 @@ div.workshop-page__discovery-row {
 .garden-page__cancel-dialog,
 .garden-page__swap-dialog,
 .research-page__box,
-.research-page__info-dialog,
 .tutorial-layer__hint,
 .shop-page__sell-dialog,
 .shop-page__trade-history-dialog,
@@ -13536,7 +13473,15 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__tab:not(.is-selected)[data-notification="true"]::before {
-  top: calc(var(--style-room-tab-rise) - var(--style-notification-offset));
+  top: calc(
+    var(--style-room-tab-rise) + var(--style-notification-tab-inset)
+  );
+  right: var(--style-notification-tab-inset);
+}
+
+.room-bottom-panel__tab.is-selected[data-notification="true"]::before {
+  top: var(--style-notification-tab-inset);
+  right: var(--style-notification-tab-inset);
 }
 
 .guild-page__content {
@@ -15210,8 +15155,6 @@ div.workshop-page__discovery-row {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 59.84px;
-  height: 59.84px;
   border-radius: 50%;
   background:
     radial-gradient(
@@ -17597,8 +17540,7 @@ div.workshop-page__discovery-row {
   .shop-page__slot-unlock-button,
   .shop-page__sell-item-button,
   .garden-page__plot-row,
-  .garden-page__seed-button,
-  .research-page__research-label-button
+  .garden-page__seed-button
 ) {
   transform-origin: center;
   transition:
@@ -17627,8 +17569,7 @@ div.workshop-page__discovery-row {
     .shop-page__slot-unlock-button,
     .shop-page__sell-item-button,
     .garden-page__plot-row,
-    .garden-page__seed-button,
-    .research-page__research-label-button
+    .garden-page__seed-button
   ):is(:active, .is-pressing):not(:disabled):not(.is-disabled):not(.is-selected):not(
     .is-locked
   ) {
@@ -18301,7 +18242,6 @@ div.workshop-page__discovery-row {
 .garden-page__seed-popup:not([hidden]),
 .garden-page__cancel-popup:not([hidden]),
 .garden-page__swap-popup:not([hidden]),
-.research-page__info-popup:not([hidden]),
 .shop-page__sell-popup:not([hidden]),
 .shop-page__market-popup:not([hidden]),
 .shop-page__request-popup:not([hidden]),
@@ -18342,7 +18282,6 @@ div.workshop-page__discovery-row {
 .game-stage:has(.garden-page__seed-popup:not([hidden])) .garden-page,
 .game-stage:has(.garden-page__cancel-popup:not([hidden])) .garden-page,
 .game-stage:has(.garden-page__swap-popup:not([hidden])) .garden-page,
-.game-stage:has(.research-page__info-popup:not([hidden])) .research-page,
 .game-stage:has(.shop-page__sell-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__market-popup:not([hidden])) .shop-page,
 .game-stage:has(.shop-page__request-popup:not([hidden])) .shop-page,
@@ -18377,8 +18316,7 @@ div.workshop-page__discovery-row {
 .brewing-page__recipe-choice-popup:not([hidden]) .style-dialog,
 .brewing-page__potions-popup:not([hidden]) .style-dialog,
 .garden-page__seed-popup:not([hidden]) .style-dialog,
-.garden-page__cancel-popup:not([hidden]) .style-dialog,
-.research-page__info-popup:not([hidden]) .style-dialog {
+.garden-page__cancel-popup:not([hidden]) .style-dialog {
   animation: style-dialog-enter var(--style-motion-dialog)
     var(--style-motion-ease-rubber) both;
   transform-origin: center;

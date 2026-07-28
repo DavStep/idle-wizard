@@ -72,13 +72,16 @@ describe('TopPanelQuestProgressManager', () => {
     manager.unmount();
   });
 
-  it('snaps the request, flies three stars into the level badge, then fills progress', () => {
+  it('snaps the request, flies one Root Run star into the level badge, then fills progress', () => {
     vi.useFakeTimers();
     const { gameplayFacade, refs, emit } = createFixture({ completedQuests: 0 });
-    const manager = new TopPanelQuestProgressManager({ gameplayFacade });
+    const manager = new TopPanelQuestProgressManager({
+      gameplayFacade,
+      random: () => 0.5,
+    });
     const pendingAnimation = new Promise(() => {});
     vi.spyOn(manager, 'animateElement').mockReturnValue({ finished: pendingAnimation });
-    setRect(refs.levelButton, { left: 280, top: 18, width: 34, height: 34 });
+    setRect(refs.levelButton, { left: 280, top: 18, width: 28, height: 28 });
     const request = document.createElement('div');
     request.className = 'workshop-page__tasks';
     setRect(request, { left: 80, top: 210, width: 120, height: 20 });
@@ -97,25 +100,36 @@ describe('TopPanelQuestProgressManager', () => {
 
     expect(request.classList.contains('is-completing-request')).toBe(true);
     expect(firstSegment.classList.contains('is-complete')).toBe(false);
-    vi.advanceTimersByTime(190);
 
-    expect(document.querySelectorAll('.room-top-panel__quest-flight')).toHaveLength(3);
-    expect(
-      [...document.querySelectorAll('.room-top-panel__quest-flight')].every(
-        (flight) => flight.parentElement === stage,
-      ),
-    ).toBe(true);
-    expect(manager.animateElement).toHaveBeenCalledTimes(3);
+    const flight = document.querySelector('.room-top-panel__quest-flight');
+    expect(flight?.parentElement).toBe(stage);
+    expect(flight?.style.width).toBe('93px');
+    expect(flight?.style.height).toBe('94px');
+    expect(flight?.querySelector('.room-top-panel__quest-flight-icon')).not.toBeNull();
+    expect(flight?.querySelector('.room-top-panel__quest-flight-glow')).not.toBeNull();
+    expect(manager.animateElement).toHaveBeenCalledTimes(2);
     expect(firstSegment.classList.contains('is-complete')).toBe(false);
 
-    vi.advanceTimersByTime(600);
+    vi.advanceTimersByTime(419);
+    expect(firstSegment.classList.contains('is-complete')).toBe(false);
+
+    vi.advanceTimersByTime(1);
 
     expect(firstSegment.classList.contains('is-complete')).toBe(true);
     expect(refs.questProgressText.textContent).toBe('Complete 3 more quests to level up');
     expect(request.classList.contains('is-completing-request')).toBe(false);
+    expect(document.querySelector('.room-top-panel__quest-flight')).toBeNull();
+    expect(document.querySelectorAll('.room-top-panel__quest-arrival-ring')).toHaveLength(1);
+    expect(document.querySelectorAll('.room-top-panel__quest-arrival-spark')).toHaveLength(8);
+    vi.advanceTimersByTime(1);
+    const impactCall = manager.animateElement.mock.calls.find(
+      ([element]) => element === refs.levelStar,
+    );
+    expect(impactCall?.[1]?.[10]?.transform).toBe('scale(1.1)');
+    expect(impactCall?.[2]?.duration).toBe(400);
 
     manager.unmount();
-    expect(document.querySelector('.room-top-panel__quest-flight')).toBeNull();
+    expect(document.querySelector('.room-top-panel__quest-arrival-ring')).toBeNull();
     vi.useRealTimers();
   });
 
@@ -124,14 +138,14 @@ describe('TopPanelQuestProgressManager', () => {
     const manager = new TopPanelQuestProgressManager({ gameplayFacade });
     const pendingAnimation = new Promise(() => {});
     vi.spyOn(manager, 'animateElement').mockReturnValue({ finished: pendingAnimation });
-    setRect(refs.levelButton, { left: 280, top: 18, width: 34, height: 34 });
+    setRect(refs.levelButton, { left: 280, top: 18, width: 28, height: 28 });
     setRect(refs.panel, { left: 20, top: 12, width: 350, height: 64 });
 
     manager.mount(refs);
     manager.showQuestFlight({ source: refs.panel });
 
     const flights = [...document.querySelectorAll('.room-top-panel__quest-flight')];
-    expect(flights).toHaveLength(3);
+    expect(flights).toHaveLength(1);
     expect(flights.every((flight) => flight.parentElement === document.body)).toBe(true);
 
     manager.unmount();
@@ -152,7 +166,14 @@ describe('TopPanelQuestProgressManager', () => {
     });
     const { gameplayFacade, refs, emit } = createFixture({ progress: previousProgress });
     const manager = new TopPanelQuestProgressManager({ gameplayFacade });
-    vi.spyOn(manager, 'showQuestFlight').mockImplementation(() => {});
+    vi.spyOn(manager, 'showQuestFlight').mockReturnValue({
+      destination: { x: 294, y: 32 },
+      durationMs: 420,
+      element: null,
+      presentationScale: 1,
+    });
+    vi.spyOn(manager, 'playArrivalBurst').mockImplementation(() => {});
+    vi.spyOn(manager, 'pulseDestination').mockImplementation(() => {});
     refs.levelValue.textContent = '2';
 
     manager.mount(refs);
@@ -161,14 +182,23 @@ describe('TopPanelQuestProgressManager', () => {
     expect(refs.levelValue.textContent).toBe('2');
     expect(refs.questProgressRail.getAttribute('aria-valuenow')).toBe('3');
 
-    vi.advanceTimersByTime(745);
+    vi.advanceTimersByTime(419);
+
+    expect(refs.questProgressRail.getAttribute('aria-valuenow')).toBe('3');
+    expect(refs.levelValue.textContent).toBe('2');
+
+    vi.advanceTimersByTime(1);
 
     expect(refs.questProgressRail.getAttribute('aria-valuenow')).toBe('4');
     expect(refs.levelValue.textContent).toBe('2');
 
-    vi.advanceTimersByTime(297);
+    vi.advanceTimersByTime(205);
 
     expect(refs.levelButton.classList.contains('is-leveling-up')).toBe(true);
+    expect(refs.levelValue.textContent).toBe('2');
+
+    vi.advanceTimersByTime(92);
+
     expect(refs.levelValue.textContent).toBe('3');
 
     vi.advanceTimersByTime(138);
@@ -196,7 +226,14 @@ describe('TopPanelQuestProgressManager', () => {
     });
     const { gameplayFacade, refs, emit } = createFixture({ progress: previousProgress });
     const manager = new TopPanelQuestProgressManager({ gameplayFacade });
-    vi.spyOn(manager, 'showQuestFlight').mockImplementation(() => {});
+    vi.spyOn(manager, 'showQuestFlight').mockReturnValue({
+      destination: { x: 294, y: 32 },
+      durationMs: 420,
+      element: null,
+      presentationScale: 1,
+    });
+    vi.spyOn(manager, 'playArrivalBurst').mockImplementation(() => {});
+    vi.spyOn(manager, 'pulseDestination').mockImplementation(() => {});
     refs.levelButton.hidden = true;
 
     manager.mount(refs);
@@ -205,7 +242,11 @@ describe('TopPanelQuestProgressManager', () => {
     expect(refs.levelButton.hidden).toBe(true);
     expect(refs.levelValue.textContent).toBe('');
 
-    vi.advanceTimersByTime(1022);
+    vi.advanceTimersByTime(716);
+
+    expect(refs.levelButton.hidden).toBe(true);
+
+    vi.advanceTimersByTime(1);
 
     expect(refs.levelButton.hidden).toBe(false);
     expect(refs.levelValue.textContent).toBe('1');
@@ -228,6 +269,35 @@ describe('TopPanelQuestProgressManager', () => {
         createProgress({ completedQuests: 0, totalQuests: 5, targetLevel: 4 }),
       ),
     ).toBe(1);
+  });
+
+  it('uses Root Run direct-flight timing and 96px midpoint arc', () => {
+    const manager = new TopPanelQuestProgressManager();
+    const keyframes = manager.buildDirectFlightKeyframes({
+      travelX: 100,
+      travelY: -100,
+      durationMs: 420,
+      spin: 0,
+    });
+    const midpoint = keyframes[10];
+    const translation = midpoint.transform.match(
+      /translate3d\(([-\d.]+)px, ([-\d.]+)px/,
+    );
+
+    expect(keyframes).toHaveLength(21);
+    expect(translation?.slice(1).map(Number)).toEqual([50, -146]);
+    expect(midpoint.opacity).toBe(0.96);
+    expect(manager.getDistanceBasedFlightDuration({ x: 0, y: 0 }, { x: 378, y: 0 }))
+      .toBe(420);
+    expect(manager.getDistanceBasedFlightDuration({ x: 0, y: 0 }, { x: 900, y: 0 }))
+      .toBe(760);
+    expect(
+      manager.getDistanceBasedFlightDuration(
+        { x: 0, y: 0 },
+        { x: 756, y: 0 },
+        2,
+      ),
+    ).toBe(420);
   });
 
   it('resets its baseline without a completion flight after persistence hydration', () => {

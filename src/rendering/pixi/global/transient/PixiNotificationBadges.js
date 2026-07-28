@@ -105,6 +105,22 @@ export class PixiNotificationBadge {
     return this;
   }
 
+  placeInsideTopRight(
+    bounds = {},
+    inset = PIXI_UI_GEOMETRY.notificationTabInset,
+  ) {
+    const size = PIXI_UI_GEOMETRY.notificationSize;
+    const safeInset = Math.max(0, Number(inset) || 0);
+    const x = Number(bounds.x) || 0;
+    const y = Number(bounds.y) || 0;
+    const width = Math.max(0, Number(bounds.width) || 0);
+    this.root.position.set(
+      x + width - safeInset - size / 2,
+      y + safeInset + size / 2,
+    );
+    return this;
+  }
+
   reset() {
     this.root.removeFromParent?.();
     this.root.visible = false;

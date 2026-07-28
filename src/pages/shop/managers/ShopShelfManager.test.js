@@ -179,11 +179,11 @@ describe('ShopShelfManager', () => {
       [...stage.querySelectorAll('.shop-page__market-tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['traders', 'players', 'crystals']);
+    ).toEqual(['Traders', 'Players', 'Crystals']);
     expect(stage.querySelector('.shop-page__market-identity')?.textContent)
       .toBe('Small Town Market ★');
     const playerTab = [...stage.querySelectorAll('.shop-page__market-tab-button')].find(
-      (button) => button.textContent === 'players',
+      (button) => button.textContent === 'Players',
     );
 
     expect(npcPanel.hidden).toBe(false);
@@ -267,9 +267,9 @@ describe('ShopShelfManager', () => {
     manager.mount(stage);
 
     const buttons = [...stage.querySelectorAll('.shop-page__market-tab-button')];
-    const playerTab = buttons.find((button) => button.textContent === 'players');
-    const crystalsTab = buttons.find((button) => button.textContent === 'crystals');
-    const npcTab = buttons.find((button) => button.textContent === 'traders');
+    const playerTab = buttons.find((button) => button.textContent === 'Players');
+    const crystalsTab = buttons.find((button) => button.textContent === 'Crystals');
+    const npcTab = buttons.find((button) => button.textContent === 'Traders');
 
     expect(playerTab?.dataset.notification).toBeUndefined();
     expect(playerTab?.dataset.notificationTone).toBeUndefined();

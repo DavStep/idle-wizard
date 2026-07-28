@@ -29,6 +29,22 @@ describe('RetainedScrollArea', () => {
     expect(scroll.content.y).toBe(-scroll.offsetY);
   });
 
+  it('keeps release inertia through unchanged layout refreshes', () => {
+    scroll = overflowingScroll();
+    scroll.beginDrag(pointerContext(0, 120));
+    scroll.dragTo(pointerContext(40, 80));
+    scroll.endDrag();
+    scroll.update(1 / 60);
+    const offsetBeforeRefresh = scroll.offsetY;
+
+    scroll.setBounds(0, 0, 100, 120);
+    scroll.setContentHeight(420);
+    scroll.update(1 / 60);
+
+    expect(scroll.offsetY).toBeGreaterThan(offsetBeforeRefresh);
+    expect(scroll.physics.velocity).toBeGreaterThan(0);
+  });
+
   it('supports elastic wheel overscroll and settles exactly at the top', () => {
     scroll = overflowingScroll();
     const event = wheelEvent(-180);

@@ -1174,7 +1174,7 @@ class PixiBottomTab {
         this.swipeBumpY +
         (frameY - TAB_HEIGHT) * scale,
     };
-    this.notification.placeAtTopRight({
+    this.notification.placeInsideTopRight({
       x: frameTopRight.x,
       y: frameTopRight.y,
       width: 0,

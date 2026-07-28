@@ -61,7 +61,7 @@ const ASSETS = Object.freeze({
   previous: 'source:assets/ui/brewing-carousel/chevron-left.png',
   next: 'source:assets/ui/brewing-carousel/chevron-right.png',
   recipes: 'source:assets/icons/icon-brewing-recipes-preview.png',
-  settings: 'source:assets/icons/icon-settings-cog.png',
+  settings: PIXI_ROOT_RUN_ASSETS.settingsGear,
   cancel: 'source:assets/ui/guild-quest/close-x.png',
   herbs: 'source:assets/icons/icon-herb-box.png',
   potions: 'source:assets/icons/icon-potion-box.png',
@@ -612,7 +612,8 @@ export class BrewingHudPixi {
       labelShiftX: 10,
     });
     layoutActionIcon(this.autoBrew, this.actionIcons.autoBrew, {
-      iconWidth: 25,
+      iconWidth:
+        25 * PIXI_ROOT_RUN_GEOMETRY.settings.gearAspectRatio,
       iconHeight: 25,
       iconX: 17,
       labelShiftX: 10,

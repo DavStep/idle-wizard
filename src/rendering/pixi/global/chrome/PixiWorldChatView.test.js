@@ -40,14 +40,67 @@ describe('PixiWorldChatView', () => {
       join: 'round',
     });
     expect(view.panel.root.position).toMatchObject({
-      x: 16,
-      y: expect.closeTo(581.333333, 5),
+      x: 180,
+      y: expect.closeTo(601.333333, 5),
     });
+    expect(view.panel.root.pivot).toMatchObject({ x: 164, y: 20 });
     expect(view.preview.text).toBe('second\nthird');
     expect(view.preview.style.whiteSpace).toBe('pre-line');
 
+    expect(input.registration.haptic).toBe('light');
+    input.registration.onPressChange(true, { confirmed: false });
+    expect(view.panel.root.scale.x).toBe(0.94);
+    input.registration.onPressChange(false, { confirmed: false });
+    expect(view.panel.root.scale.x).toBe(1);
+
     input.registration.onActivate();
     expect(onActivate).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the shared confirmed release snap on the complete chat panel', () => {
+    const frames = [];
+    let nowMs = 0;
+    const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
+    const originalCancelAnimationFrame = globalThis.cancelAnimationFrame;
+    const dateNow = vi.spyOn(Date, 'now').mockImplementation(() => nowMs);
+    globalThis.requestAnimationFrame = vi.fn((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    globalThis.cancelAnimationFrame = vi.fn();
+
+    try {
+      const input = createInputRouter();
+      const view = new PixiWorldChatView({
+        assets: createAssets(),
+        inputRouter: input.router,
+      });
+
+      view.layout({ sourceWidth: 360, sourceHeight: 723.333333 });
+      view.activate();
+      view.bind({ visible: true, onActivate: () => true });
+
+      input.registration.onPressChange(true, { confirmed: false });
+      expect(view.panel.root.scale.x).toBe(0.94);
+
+      input.registration.onPressChange(false, { confirmed: true });
+      expect(frames).toHaveLength(1);
+
+      nowMs = 65;
+      frames.shift()();
+      expect(view.panel.root.scale.x).toBeGreaterThan(1);
+      expect(view.panel.root.scale.x).toBeLessThanOrEqual(1.055);
+
+      nowMs = 180;
+      frames.shift()();
+      expect(view.panel.root.scale.x).toBe(1);
+
+      view.destroy();
+    } finally {
+      dateNow.mockRestore();
+      globalThis.requestAnimationFrame = originalRequestAnimationFrame;
+      globalThis.cancelAnimationFrame = originalCancelAnimationFrame;
+    }
   });
 
   it('honors the existing level gate without constructing another widget state', () => {

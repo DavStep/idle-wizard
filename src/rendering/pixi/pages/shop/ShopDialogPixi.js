@@ -90,8 +90,7 @@ const STALL_SELECTION_HEIGHT =
   STALL_SELECTION_BOTTOM_PADDING;
 const STALL_ITEM_ICON_SIZE = 28;
 const STALL_SELECTED_CHECK_SIZE = 18;
-const AUTOMATION_COG_TEXTURE_ID =
-  'source:assets/icons/icon-settings-cog.png';
+const AUTOMATION_COG_TEXTURE_ID = PIXI_ROOT_RUN_ASSETS.settingsGear;
 const SETTINGS_ROW_EXPANSION_HEIGHT =
   PIXI_ROOT_RUN_GEOMETRY.settings.knobSize + 8;
 const SETTINGS_ROW_EXPANDED_CONTROL_RAISE = 3;
@@ -1297,6 +1296,7 @@ class DialogSummaryRow {
     }
     this.quantityLabel.setText(row.quantityLabel ?? '');
     const iconFrames = resolveItemIconFrames(row);
+    this.itemIconAspectRatio = iconFrames.aspectRatio ?? 1;
     bindItemSprite(
       this.itemIcon,
       this.assetManager,
@@ -1373,6 +1373,7 @@ class DialogSummaryRow {
         iconSize,
         this.iconLeading ? 0 : 0.5,
       );
+      this.itemIcon.width *= this.itemIconAspectRatio;
       if (this.iconLeading) {
         const labelX = iconSize + PIXI_UI_GEOMETRY.rowColumnGap;
         this.keyLabel.position.set(labelX, textY);
@@ -1434,6 +1435,7 @@ class DialogSummaryRow {
     this.action = null;
     this.enabled = false;
     this.iconLeading = false;
+    this.itemIconAspectRatio = 1;
     this.key = null;
     this.valueResource.visible = false;
     this.valueResource.renderable = false;
@@ -2605,6 +2607,8 @@ function resolveItemIconFrames(model = {}) {
       base: null,
       overlay: null,
       texture: AUTOMATION_COG_TEXTURE_ID,
+      aspectRatio:
+        PIXI_ROOT_RUN_GEOMETRY.settings.gearAspectRatio,
     };
   }
   return { base: null, overlay: null, texture: null };

@@ -2652,7 +2652,7 @@ describe('GameplayFacade', () => {
     expect(levelFourResearch.boxes[2].researches[0]).toEqual({
       id: 'unlockRecipe:manaTonic',
       label: 'mana tonic',
-      value: 'free',
+      value: 'Free',
       effect: 'brew',
       requiredPlayerLevel: 4,
       description: 'allows valid cauldron ingredients to brew mana tonic.',
@@ -2664,7 +2664,7 @@ describe('GameplayFacade', () => {
     advanceToLevel(gameplayFacade, 5);
     expect(gameplayFacade.getSnapshot().research.boxes[2].researches[0]).toMatchObject({
       id: 'unlockRecipe:manaTonic',
-      value: 'free',
+      value: 'Free',
       requiredPlayerLevel: 4,
       costCoin: 0,
       completed: false,
@@ -3563,7 +3563,7 @@ describe('GameplayFacade', () => {
     gameplayFacade.coinFacade.add(10000);
 
     expect(getResearch('unlockSeed:mintSeed')).toMatchObject({
-      value: 'free',
+      value: 'Free',
       canResearch: true,
     });
     expect(gameplayFacade.buyResearch('unlockSeed:mintSeed')).toEqual({
@@ -3703,7 +3703,7 @@ describe('GameplayFacade', () => {
     advanceToLevel(gameplayFacade, 2);
 
     expect(findResearchSnapshot(gameplayFacade, 'unlockSeed:mintSeed')).toMatchObject({
-      value: 'free',
+      value: 'Free',
       requiredPlayerLevel: 2,
       canResearch: true,
     });

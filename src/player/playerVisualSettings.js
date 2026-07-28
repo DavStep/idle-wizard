@@ -3,6 +3,7 @@ import {
   PLAYER_CHARACTER_OPTIONS,
 } from './playerCharacters.js';
 import { DEFAULT_PLAYER_FONT, PLAYER_FONT_OPTIONS } from './playerFonts.js';
+import { PLAYER_FRAME_OPTIONS } from './playerFrames.js';
 import {
   DEFAULT_PLAYER_PROGRESS_BAR,
   PLAYER_PROGRESS_BAR_OPTIONS,
@@ -24,6 +25,11 @@ export const PLAYER_VISUAL_SETTING_CATEGORIES = Object.freeze([
     key: 'character',
     label: 'avatar',
     options: PLAYER_CHARACTER_OPTIONS,
+  }),
+  Object.freeze({
+    key: 'frame',
+    label: 'frame',
+    options: PLAYER_FRAME_OPTIONS,
   }),
   Object.freeze({
     key: 'progressBar',
@@ -51,6 +57,9 @@ export const DEFAULT_PLAYER_VISUAL_SETTINGS_RESEARCHED = Object.freeze({
         DEFAULT_UNLOCKED_PLAYER_CHARACTER_KEYS.includes(option.key),
       ]),
     ),
+  ),
+  frame: Object.freeze(
+    Object.fromEntries(PLAYER_FRAME_OPTIONS.map((option) => [option.key, true])),
   ),
   progressBar: Object.freeze({ [DEFAULT_PLAYER_PROGRESS_BAR]: true }),
 });

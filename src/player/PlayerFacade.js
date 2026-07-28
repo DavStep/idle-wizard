@@ -1,6 +1,7 @@
 import { PlayerColorModeManager } from './managers/PlayerColorModeManager.js';
 import { PlayerCharacterManager } from './managers/PlayerCharacterManager.js';
 import { PlayerFontManager } from './managers/PlayerFontManager.js';
+import { PlayerFrameManager } from './managers/PlayerFrameManager.js';
 import { PlayerIconModeManager } from './managers/PlayerIconModeManager.js';
 import { PlayerNameManager } from './managers/PlayerNameManager.js';
 import { PlayerPlotViewManager } from './managers/PlayerPlotViewManager.js';
@@ -16,6 +17,7 @@ export class PlayerFacade {
     this.nameManager = new PlayerNameManager();
     this.themeManager = new PlayerThemeManager();
     this.fontManager = new PlayerFontManager();
+    this.frameManager = new PlayerFrameManager();
     this.colorModeManager = new PlayerColorModeManager();
     this.characterManager = new PlayerCharacterManager();
     this.iconModeManager = new PlayerIconModeManager();
@@ -42,6 +44,7 @@ export class PlayerFacade {
     this.fontManager.applyServerFont(profile?.font);
     this.colorModeManager.applyServerColorMode(profile?.colorMode);
     this.characterManager.applyServerCharacter(profile?.character);
+    this.frameManager.applyServerFrame(profile?.frame);
     if (Object.hasOwn(profile ?? {}, 'iconMode')) {
       this.iconModeManager.applyServerIconMode(profile.iconMode);
     }
@@ -103,6 +106,24 @@ export class PlayerFacade {
     return this.getSnapshot();
   }
 
+  setFrame(frame) {
+    this.frameManager.setFrame(frame);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
+  getFrameOptions() {
+    return this.frameManager.getFrameOptions();
+  }
+
+  setAccountProfile({ username, character, frame } = {}) {
+    this.nameManager.setUsername(username);
+    this.characterManager.setCharacter(character);
+    this.frameManager.setFrame(frame);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
   setIconMode(iconMode) {
     this.iconModeManager.setIconMode(iconMode);
     this.publishSnapshot();
@@ -143,6 +164,7 @@ export class PlayerFacade {
       font: this.fontManager.getFont(),
       colorMode: this.colorModeManager.getColorMode(),
       character: this.characterManager.getCharacter(),
+      frame: this.frameManager.getFrame(),
       iconMode: this.iconModeManager.getIconMode(),
       progressBar: this.progressBarManager.getProgressBar(),
       plotView: this.plotViewManager.getPlotView(),
@@ -158,6 +180,7 @@ export class PlayerFacade {
       font: snapshot.font,
       colorMode: snapshot.colorMode,
       character: snapshot.character,
+      frame: snapshot.frame,
       iconMode: snapshot.iconMode,
       progressBar: snapshot.progressBar,
       plotView: snapshot.plotView,

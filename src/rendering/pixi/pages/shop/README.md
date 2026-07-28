@@ -75,7 +75,9 @@ and tails extend below the raised front panel.
 
 Loaded stall rows reuse the Research art-well frame, but contain item artwork
 inside that well. The loaded quantity sits over the artwork as white,
-dark-stroked text without a badge background.
+dark-stroked text without a badge background. The sale batch size uses the
+shortened `30x27px` red downward badge at the card's top-right, inset `14px`
+from the right edge, with centered white, dark-stroked `xN` text.
 
 Open `/src/dev/uiRecipes/market-title-ribbon.html` for the deterministic
 component-level ribbon state. Open
@@ -84,6 +86,8 @@ stall renderer with loaded Sage and Briar Seed rows, without gameplay,
 account, or tutorial gates. Add `?dialog=stall` to open the loader with enabled
 mark and clear actions. Add `?dialog=ledger` to open the Bag-sized Market
 Ledger with overflow rows, item icons, and unlocked category tabs.
+Add `?tab=crystals` to open the Crystal Market tab with its deterministic
+cooling-down coin offer and six crystal bundles.
 
 ## Snapshot adapter
 

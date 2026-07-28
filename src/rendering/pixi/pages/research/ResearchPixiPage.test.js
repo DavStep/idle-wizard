@@ -44,7 +44,7 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
-  it('routes locked rows to a requirement tooltip without button copy', () => {
+  it('keeps unlocked labels passive and routes locked rows to a requirement tooltip', () => {
     const buyResearch = vi.fn();
     const showLockedReason = vi.fn();
     const harness = createHarness();
@@ -63,13 +63,8 @@ describe('ResearchPixiPage', () => {
     const row = harness.page.boxes.get('herbs').rows.get('mint');
     row.labelHit.emit('pointertap', {});
 
-    expect(harness.dialogs.hasInstance('research.info')).toBe(true);
-    const infoDialog = harness.dialogs.get('research.info');
-    harness.dialogs.close('research.info');
-    row.labelHit.emit('pointertap', {});
-    expect(harness.dialogs.get('research.info')).toBe(infoDialog);
-    expect(harness.dialogs.getStats().constructed).toBe(1);
-    harness.dialogs.close('research.info');
+    expect(row.labelHit.eventMode).toBe('none');
+    expect(harness.dialogs.getStats().constructed).toBe(0);
 
     harness.page.bind(
       createResearchViewModel({
@@ -92,7 +87,6 @@ describe('ResearchPixiPage', () => {
     expect(harness.page.lockTooltip.copy.text).toBe(
       'Complete prior research',
     );
-    expect(harness.dialogs.isOpen('research.info')).toBe(false);
     harness.page.hideLockTooltip();
     lockedRow.labelHit.emit('pointertap', {});
     expect(showLockedReason).toHaveBeenCalledTimes(2);
@@ -621,7 +615,7 @@ describe('ResearchPixiPage', () => {
     row.labelHit.emit('pointertap', {});
 
     expect(ticker.add).toHaveBeenCalledWith(harness.page.tickHandler);
-    expect(harness.dialogs.isOpen('research.info')).toBe(true);
+    expect(harness.dialogs.getStats().constructed).toBe(0);
 
     now = 3_000;
     harness.page.tick();
@@ -637,7 +631,6 @@ describe('ResearchPixiPage', () => {
 
     harness.page.deactivate();
     expect(ticker.remove).toHaveBeenCalledWith(harness.page.tickHandler);
-    expect(harness.dialogs.isOpen('research.info')).toBe(false);
 
     harness.page.destroy();
     harness.dispose();

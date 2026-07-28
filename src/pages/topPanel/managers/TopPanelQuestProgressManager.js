@@ -2,12 +2,12 @@ const REQUEST_SNAP_DURATION_MS = 230;
 const QUEST_FLIGHT_ICON_SIZE = 68;
 const QUEST_FLIGHT_TEXTURE_WIDTH = 93;
 const QUEST_FLIGHT_TEXTURE_HEIGHT = 94;
+const QUEST_LEVEL_TARGET_SIZE = 28;
 const QUEST_FLIGHT_SPEED_PX_PER_SECOND = 900;
 const QUEST_FLIGHT_ARC_HEIGHT_PX = 96;
 const QUEST_FLIGHT_MIN_DURATION_MS = 420;
 const QUEST_FLIGHT_MAX_DURATION_MS = 760;
 const QUEST_FLIGHT_SAMPLE_COUNT = 20;
-const QUEST_FLIGHT_GLOW_COLOR = '#ffd447';
 const QUEST_FLIGHT_ARRIVAL_DURATION_MS = 320;
 const QUEST_FLIGHT_ARRIVAL_SPARK_COUNT = 8;
 const QUEST_PROGRESS_FILL_MS = 205;
@@ -259,7 +259,10 @@ export class TopPanelQuestProgressManager {
     const flight = this.showQuestFlight({ source, destination });
     this.scheduleSequence(() => {
       this.removeFlight(flight?.element);
-      this.playArrivalBurst(flight?.destination ?? destination);
+      if (flight) {
+        this.playArrivalBurst(flight.destination, flight.presentationScale);
+      }
+      this.pulseDestination(this.refs.levelStar, 0);
 
       if (levelChanged) {
         this.renderProgress({
@@ -272,7 +275,6 @@ export class TopPanelQuestProgressManager {
       }
 
       this.renderProgress(next);
-      this.pulseDestination(this.refs.levelStar, 0);
     }, flight?.durationMs ?? 0);
   }
 
@@ -334,13 +336,20 @@ export class TopPanelQuestProgressManager {
     const documentRef = this.refs.questRow.ownerDocument;
     const flightHost =
       this.refs.questRow.closest?.('.game-stage') ?? documentRef.body;
+    const presentationScale = Math.max(
+      0.01,
+      target.width / QUEST_LEVEL_TARGET_SIZE,
+    );
+    const iconSize = QUEST_FLIGHT_ICON_SIZE * presentationScale;
+    const textureWidth = QUEST_FLIGHT_TEXTURE_WIDTH * presentationScale;
+    const textureHeight = QUEST_FLIGHT_TEXTURE_HEIGHT * presentationScale;
     const startX = origin.left + origin.width / 2;
     const startY =
       origin.top
       + origin.height / 2
       + this.randomBetween(
-        -QUEST_FLIGHT_ICON_SIZE * 0.08,
-        QUEST_FLIGHT_ICON_SIZE * 0.08,
+        -iconSize * 0.08,
+        iconSize * 0.08,
       );
     const endX = target.left + target.width / 2;
     const endY = target.top + target.height / 2;
@@ -349,6 +358,7 @@ export class TopPanelQuestProgressManager {
     const durationMs = this.getDistanceBasedFlightDuration(
       { x: startX, y: startY },
       { x: endX, y: endY },
+      presentationScale,
     );
     const spin = this.randomBetween(-1.1, 1.1);
     const flight = documentRef.createElement('span');
@@ -360,9 +370,11 @@ export class TopPanelQuestProgressManager {
     flight.setAttribute('aria-hidden', 'true');
     flight.style.left = `${startX}px`;
     flight.style.top = `${startY}px`;
-    flight.style.width = `${QUEST_FLIGHT_TEXTURE_WIDTH}px`;
-    flight.style.height = `${QUEST_FLIGHT_TEXTURE_HEIGHT}px`;
+    flight.style.width = `${textureWidth}px`;
+    flight.style.height = `${textureHeight}px`;
     glow.className = 'room-top-panel__quest-flight-glow';
+    glow.style.width = `${QUEST_FLIGHT_ICON_SIZE * 0.88 * presentationScale}px`;
+    glow.style.height = `${QUEST_FLIGHT_ICON_SIZE * 0.88 * presentationScale}px`;
     icon.className = 'room-top-panel__quest-flight-icon';
     icon.src = this.refs.levelStar.currentSrc || this.refs.levelStar.src;
     icon.alt = '';
@@ -377,6 +389,7 @@ export class TopPanelQuestProgressManager {
         travelY,
         durationMs,
         spin,
+        presentationScale,
       }),
       {
         duration: durationMs,
@@ -399,14 +412,27 @@ export class TopPanelQuestProgressManager {
       return null;
     }
 
+    if (animation.finished) {
+      Promise.resolve(animation.finished)
+        .catch(() => {})
+        .then(() => this.removeFlight(flight));
+    }
+
     return {
       destination: { x: endX, y: endY },
       durationMs,
       element: flight,
+      presentationScale,
     };
   }
 
-  buildDirectFlightKeyframes({ travelX, travelY, durationMs, spin }) {
+  buildDirectFlightKeyframes({
+    travelX,
+    travelY,
+    durationMs,
+    spin,
+    presentationScale = 1,
+  }) {
     const startScale = Math.max(
       0.18,
       (QUEST_FLIGHT_ICON_SIZE * 1.12) / QUEST_FLIGHT_TEXTURE_WIDTH,
@@ -423,7 +449,9 @@ export class TopPanelQuestProgressManager {
       const x = travelX * easedProgress;
       const y =
         travelY * easedProgress
-        - Math.sin(easedProgress * Math.PI) * QUEST_FLIGHT_ARC_HEIGHT_PX;
+        - Math.sin(easedProgress * Math.PI)
+          * QUEST_FLIGHT_ARC_HEIGHT_PX
+          * presentationScale;
       const scale =
         this.lerp(startScale, endScale, easedProgress)
         * (0.58 + enterProgress * 0.42)
@@ -453,19 +481,20 @@ export class TopPanelQuestProgressManager {
     });
   }
 
-  getDistanceBasedFlightDuration(start, end) {
+  getDistanceBasedFlightDuration(start, end, presentationScale = 1) {
     const distance = Math.max(1, Math.hypot(end.x - start.x, end.y - start.y));
+    const speed = QUEST_FLIGHT_SPEED_PX_PER_SECOND * presentationScale;
 
     return Math.min(
       QUEST_FLIGHT_MAX_DURATION_MS,
       Math.max(
         QUEST_FLIGHT_MIN_DURATION_MS,
-        (distance / QUEST_FLIGHT_SPEED_PX_PER_SECOND) * 1000,
+        (distance / speed) * 1000,
       ),
     );
   }
 
-  playArrivalBurst(destination) {
+  playArrivalBurst(destination, presentationScale = 1) {
     if (!destination || this.prefersReducedMotion() || !this.refs) {
       return;
     }
@@ -475,6 +504,9 @@ export class TopPanelQuestProgressManager {
       this.refs.questRow.closest?.('.game-stage') ?? documentRef.body;
     const ring = documentRef.createElement('span');
     ring.className = 'room-top-panel__quest-arrival-ring';
+    ring.style.width = `${26 * presentationScale}px`;
+    ring.style.height = `${26 * presentationScale}px`;
+    ring.style.borderWidth = `${2 * presentationScale}px`;
     this.positionArrivalEffect(ring, destination);
     effectHost?.append(ring);
     this.activeArrivalEffects.push(ring);
@@ -484,8 +516,8 @@ export class TopPanelQuestProgressManager {
       const angle =
         (Math.PI * 2 * index) / QUEST_FLIGHT_ARRIVAL_SPARK_COUNT
         + this.randomBetween(-0.18, 0.18);
-      const distance = this.randomBetween(16, 31);
-      const diameter = this.randomBetween(4.2, 7.4);
+      const distance = this.randomBetween(16, 31) * presentationScale;
+      const diameter = this.randomBetween(4.2, 7.4) * presentationScale;
       const spark = documentRef.createElement('span');
       spark.className = 'room-top-panel__quest-arrival-spark';
       spark.style.width = `${diameter}px`;

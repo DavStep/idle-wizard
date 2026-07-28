@@ -16,8 +16,6 @@ import { createSeedPackIcon } from '../../../assets/items/seeds/seedIcons.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 
 const maxLockedResearchesPerBox = 3;
-const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
-const TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX = 10;
 const RESEARCH_ARTWORK_BY_BOX_ID = Object.freeze({
   autoBrewCauldrons: new URL(
     '../../../../assets/game/source/icons/research/icon-research-auto-brew.png',
@@ -110,12 +108,10 @@ export class ResearchBoxListManager {
   constructor({
     gameplayFacade,
     onSelectedTabChange,
-    onShowResearchInfo,
     onRowsChanged,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.onSelectedTabChange = onSelectedTabChange;
-    this.onShowResearchInfo = onShowResearchInfo;
     this.onRowsChanged = onRowsChanged;
     this.root = null;
     this.tabsRoot = null;
@@ -141,16 +137,6 @@ export class ResearchBoxListManager {
       reset: (ref) => this.resetRowWidget(ref),
       destroy: (ref) => this.destroyRowWidget(ref),
     });
-    this.handledLockedRowPressStartResearchId = null;
-    this.pendingLockedRowPress = null;
-    this.handlePendingLockedRowPressMove = (event) =>
-      this.onPendingLockedRowPressMove(event);
-    this.handlePendingLockedRowPressEnd = (event) => this.onPendingLockedRowPressEnd(event);
-    this.handlePendingLockedRowPressCancel = () => this.clearPendingLockedRowPress();
-    this.lastTouchLikePressStart = {
-      key: null,
-      timeStamp: Number.NEGATIVE_INFINITY,
-    };
   }
 
   mount(parent) {
@@ -182,7 +168,6 @@ export class ResearchBoxListManager {
   unmount() {
     this.unsubscribe?.();
     this.unsubscribe = null;
-    this.clearPendingLockedRowPress();
     for (const ref of this.rowRefs.values()) {
       stopTimerProgressFill(ref.progressFill, 0);
     }
@@ -205,11 +190,6 @@ export class ResearchBoxListManager {
     this.rowPool.clear();
     this.nextBoxIds.clear();
     this.nextRowIds.clear();
-    this.handledLockedRowPressStartResearchId = null;
-    this.lastTouchLikePressStart = {
-      key: null,
-      timeStamp: Number.NEGATIVE_INFINITY,
-    };
   }
 
   render(snapshot) {
@@ -677,11 +657,8 @@ export class ResearchBoxListManager {
     artwork.className = 'research-page__research-art';
     artwork.setAttribute('aria-hidden', 'true');
 
-    const key = document.createElement('button');
-    key.className =
-      'row_key research-page__research-label research-page__research-label-button';
-    key.type = 'button';
-    key.setAttribute('aria-haspopup', 'dialog');
+    const key = document.createElement('span');
+    key.className = 'row_key research-page__research-label';
 
     const rank = document.createElement('span');
     rank.className = 'research-page__research-rank';
@@ -703,24 +680,6 @@ export class ResearchBoxListManager {
       progressFill: null,
       progressText: null,
     };
-    row.addEventListener('pointerdown', (event) =>
-      this.onPooledLockedRowPressStart(event, ref),
-    );
-    row.addEventListener(
-      'touchstart',
-      (event) => this.onPooledLockedRowPressStart(event, ref),
-      { passive: true },
-    );
-    row.addEventListener('click', (event) => {
-      if (ref.research?.locked) {
-        this.onLockedRowClick(event, ref.research);
-      }
-    });
-    key.addEventListener('click', () => {
-      if (ref.research) {
-        this.onShowResearchInfo?.(ref.research);
-      }
-    });
     row.append(artwork, key, rank);
     return ref;
   }
@@ -754,10 +713,6 @@ export class ResearchBoxListManager {
     );
     row.classList.toggle('is-locked', Boolean(research.locked));
     row.classList.toggle('is-in-progress', Boolean(research.inProgress));
-    key.setAttribute(
-      'aria-label',
-      `show information for ${this.formatResearchName(research)}`,
-    );
     key.replaceChildren(...this.createResearchLabelParts(research));
     artwork.replaceChildren(
       this.createResearchArtworkContent(boxId, research),
@@ -852,19 +807,6 @@ export class ResearchBoxListManager {
     }
   }
 
-  onPooledLockedRowPressStart(event, ref) {
-    const research = ref.research;
-    if (!research?.locked) {
-      return;
-    }
-
-    this.onTouchLikeValidatedPressStart(
-      event,
-      `locked-research:${research.id}`,
-      (pressEvent) => this.onLockedRowPressStart(pressEvent, ref.research),
-    );
-  }
-
   createResearchRank(research) {
     const rank = document.createElement('span');
     rank.className = 'research-page__research-rank';
@@ -947,242 +889,6 @@ export class ResearchBoxListManager {
     }
 
     return 'unavailable';
-  }
-
-  onLockedRowClick(event, research) {
-    if (
-      event.type === 'click' &&
-      this.handledLockedRowPressStartResearchId === research.id
-    ) {
-      this.handledLockedRowPressStartResearchId = null;
-      return;
-    }
-
-    if (event.target?.closest?.('button')) {
-      return;
-    }
-
-    this.onShowResearchInfo?.(research);
-  }
-
-  onLockedRowPressStart(event, research) {
-    if (this.isMousePressStart(event) || event.target?.closest?.('button')) {
-      return;
-    }
-
-    event.preventDefault();
-    this.handledLockedRowPressStartResearchId = research.id;
-    this.onShowResearchInfo?.(research);
-  }
-
-  bindTouchLikeValidatedPress(target, key, handler) {
-    target.addEventListener('pointerdown', (event) =>
-      this.onTouchLikeValidatedPressStart(event, key, handler),
-    );
-    target.addEventListener(
-      'touchstart',
-      (event) => this.onTouchLikeValidatedPressStart(event, key, handler),
-      { passive: true },
-    );
-  }
-
-  onTouchLikeValidatedPressStart(event, key, handler) {
-    if (
-      this.isMousePressStart(event) ||
-      this.isDuplicateTouchLikePressStart(event, key) ||
-      event.target?.closest?.('button')
-    ) {
-      return;
-    }
-
-    const point = this.getTouchLikePoint(event);
-    if (!point) {
-      return;
-    }
-
-    this.clearPendingLockedRowPress();
-    this.pendingLockedRowPress = {
-      key,
-      handler,
-      target: event.currentTarget,
-      pointerId: event.pointerId,
-      startX: point.clientX,
-      startY: point.clientY,
-      moved: false,
-      type: event.type === 'pointerdown' ? 'pointer' : 'touch',
-    };
-    this.addPendingLockedRowPressListeners(this.pendingLockedRowPress.type);
-  }
-
-  addPendingLockedRowPressListeners(type) {
-    const document = this.root?.ownerDocument ?? globalThis.document;
-    const target = this.pendingLockedRowPress?.target ?? null;
-
-    if (!document && !target) {
-      return;
-    }
-
-    if (type === 'pointer') {
-      this.addPendingLockedRowPointerListeners(document);
-      this.addPendingLockedRowPointerListeners(target);
-      return;
-    }
-
-    this.addPendingLockedRowTouchListeners(document);
-    this.addPendingLockedRowTouchListeners(target);
-  }
-
-  addPendingLockedRowPointerListeners(target) {
-    if (!target) {
-      return;
-    }
-
-    target.addEventListener('pointermove', this.handlePendingLockedRowPressMove, {
-      passive: true,
-    });
-    target.addEventListener('pointerup', this.handlePendingLockedRowPressEnd, true);
-    target.addEventListener('pointercancel', this.handlePendingLockedRowPressCancel, true);
-  }
-
-  addPendingLockedRowTouchListeners(target) {
-    if (!target) {
-      return;
-    }
-
-    target.addEventListener('touchmove', this.handlePendingLockedRowPressMove, {
-      passive: true,
-    });
-    target.addEventListener('touchend', this.handlePendingLockedRowPressEnd, true);
-    target.addEventListener('touchcancel', this.handlePendingLockedRowPressCancel, true);
-  }
-
-  removePendingLockedRowPressListeners(type, fallbackTarget = null) {
-    const document = this.root?.ownerDocument ?? globalThis.document;
-    if (!document && !fallbackTarget) {
-      return;
-    }
-
-    if (type === 'pointer') {
-      this.removePendingLockedRowPointerListeners(document);
-      this.removePendingLockedRowPointerListeners(fallbackTarget);
-      return;
-    }
-
-    this.removePendingLockedRowTouchListeners(document);
-    this.removePendingLockedRowTouchListeners(fallbackTarget);
-  }
-
-  removePendingLockedRowPointerListeners(target) {
-    if (!target) {
-      return;
-    }
-
-    target.removeEventListener('pointermove', this.handlePendingLockedRowPressMove);
-    target.removeEventListener('pointerup', this.handlePendingLockedRowPressEnd, true);
-    target.removeEventListener(
-      'pointercancel',
-      this.handlePendingLockedRowPressCancel,
-      true,
-    );
-  }
-
-  removePendingLockedRowTouchListeners(target) {
-    if (!target) {
-      return;
-    }
-
-    target.removeEventListener('touchmove', this.handlePendingLockedRowPressMove);
-    target.removeEventListener('touchend', this.handlePendingLockedRowPressEnd, true);
-    target.removeEventListener('touchcancel', this.handlePendingLockedRowPressCancel, true);
-  }
-
-  onPendingLockedRowPressMove(event) {
-    const pending = this.pendingLockedRowPress;
-    if (!pending || !this.eventMatchesPendingLockedRowPress(event, pending)) {
-      return;
-    }
-
-    const point = this.getTouchLikePoint(event);
-    if (!point) {
-      return;
-    }
-
-    if (
-      Math.hypot(point.clientX - pending.startX, point.clientY - pending.startY) >
-      TOUCH_LIKE_TAP_MOVE_TOLERANCE_PX
-    ) {
-      pending.moved = true;
-    }
-  }
-
-  onPendingLockedRowPressEnd(event) {
-    const pending = this.pendingLockedRowPress;
-    if (!pending || !this.eventMatchesPendingLockedRowPress(event, pending)) {
-      return;
-    }
-
-    this.clearPendingLockedRowPress();
-
-    if (pending.moved || !pending.target.contains(event.target)) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    pending.handler(event);
-  }
-
-  clearPendingLockedRowPress() {
-    if (!this.pendingLockedRowPress) {
-      return;
-    }
-
-    const { type, target } = this.pendingLockedRowPress;
-    this.pendingLockedRowPress = null;
-    this.removePendingLockedRowPressListeners(type, target);
-  }
-
-  eventMatchesPendingLockedRowPress(event, pending) {
-    return (
-      pending.type !== 'pointer' ||
-      event.pointerId === undefined ||
-      pending.pointerId === undefined ||
-      event.pointerId === pending.pointerId
-    );
-  }
-
-  getTouchLikePoint(event) {
-    const touch = event.changedTouches?.[0] ?? event.touches?.[0];
-    if (touch) {
-      return {
-        clientX: touch.clientX,
-        clientY: touch.clientY,
-      };
-    }
-
-    if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
-      return {
-        clientX: event.clientX,
-        clientY: event.clientY,
-      };
-    }
-
-    return null;
-  }
-
-  isDuplicateTouchLikePressStart(event, key) {
-    const timeStamp = Number.isFinite(event?.timeStamp) ? event.timeStamp : Date.now();
-    const isDuplicate =
-      this.lastTouchLikePressStart.key === key &&
-      Math.abs(timeStamp - this.lastTouchLikePressStart.timeStamp) <=
-        TOUCH_LIKE_PRESS_START_DEDUPE_MS;
-
-    this.lastTouchLikePressStart = { key, timeStamp };
-    return isDuplicate;
-  }
-
-  isMousePressStart(event) {
-    return event.type === 'pointerdown' && event.pointerType === 'mouse';
   }
 
   createResearchLabelParts(research) {

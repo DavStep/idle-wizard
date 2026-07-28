@@ -24,7 +24,6 @@ const PRESS_FEEDBACK_TARGET_SELECTOR = [
   '.shop-page__sell-item-button',
   '.garden-page__plot-row',
   '.garden-page__seed-button',
-  '.research-page__research-label-button',
 ].join(',');
 
 function getElementFromEventTarget(target) {

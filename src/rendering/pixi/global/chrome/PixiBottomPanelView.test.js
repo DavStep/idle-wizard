@@ -608,20 +608,20 @@ describe('PixiBottomPanelView', () => {
       workshop.notification.root.x +
         workshop.notification.sprite.width / 2 -
         (workshop.layoutX + workshop.width),
-    ).toBeCloseTo(2, 6);
+    ).toBeCloseTo(-4, 6);
     expect(
       workshop.notification.root.y -
         workshop.notification.sprite.height / 2,
-    ).toBeCloseTo(-2, 6);
-    expect(workshop.notification.sprite.width).toBeCloseTo(9.569444, 6);
-    expect(workshop.notification.sprite.height).toBeCloseTo(9.569444, 6);
+    ).toBeCloseTo(4, 6);
+    expect(workshop.notification.sprite.width).toBe(12);
+    expect(workshop.notification.sprite.height).toBe(12);
 
     expect(brewing.notification.root.visible).toBe(true);
     expect(brewing.notification.sprite.texture).toBe(assets.textures.orange);
     expect(
       brewing.notification.root.y -
         brewing.notification.sprite.height / 2,
-    ).toBeCloseTo(10, 6);
+    ).toBeCloseTo(16, 6);
     expect(garden.notification.root.visible).toBe(false);
   });
 

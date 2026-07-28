@@ -2,6 +2,14 @@
 
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
+Write these developer-to-player notes only in Idle Wizard terms. Do not mention
+other game names, source projects, ports, or implementation provenance.
+
+## 0.3.16
+
+- Refreshed the top panel with clearer quest progress, notification badges, and settings artwork.
+- Improved Market stalls with visible sale batches and coin flyouts that travel into the top balance.
+- Added clearer resource-spend feedback and polished several Workshop and chat interactions.
 
 ## 0.3.15
 

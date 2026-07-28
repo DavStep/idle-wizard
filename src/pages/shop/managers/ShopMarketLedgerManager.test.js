@@ -150,13 +150,10 @@ describe('ShopMarketLedgerManager', () => {
 
     manager.mount({ buttonParent, popupParent });
 
-    const helpButton = buttonParent.querySelector('.shop-page__ledger-help-button');
-    expect(helpButton?.textContent).toBe('');
-    expect(helpButton?.querySelector('.style-info-button__icon')).not.toBeNull();
-    helpButton.click();
-    expect(buttonParent.querySelector('.shop-page__ledger-help')?.textContent).toBe(
-      'compare trader prices, stock, buyers, and recent changes.',
-    );
+    expect(
+      buttonParent.querySelector('.shop-page__ledger-help-button'),
+    ).toBeNull();
+    expect(buttonParent.querySelector('.shop-page__ledger-help')).toBeNull();
 
     buttonParent.querySelector('.shop-page__ledger-open')?.click();
     const popup = popupParent.querySelector('.shop-page__ledger-popup');

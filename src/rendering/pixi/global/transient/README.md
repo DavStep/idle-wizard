@@ -1,7 +1,8 @@
 # Retained Pixi transient UI
 
-`createPixiTransientEffectsLayer()` builds one retained transient root and four
-bounded pools: reward text, item drops, coin particles, and coin amount pops.
+`createPixiTransientEffectsLayer()` builds one retained transient root and five
+bounded pools: reward text, item drops, coin particles, coin amount pops, and
+spend-burst particles.
 It installs one layer-level ticker callback only while an effect is active.
 After each pool reaches its high-water mark, repeated events reuse existing
 Pixi display objects.
@@ -38,6 +39,12 @@ Reward presentation model:
     showParticles: true,
     title: 'collected 20 coin',
   },
+  spendBursts: [
+    {
+      resource: 'mana',
+      anchorId: 'workshop.summon',
+    },
+  ],
 }
 ```
 
@@ -49,13 +56,15 @@ source in tests).
 `createRewardFlyoutPresentation(event)` preserves the legacy default copy,
 ports the existing seed/herb/potion/resource inline-icon parsing into Pixi run
 data, and maps summon, harvest, and brew reward events to bounded item-drop
-models with semantic origins. Shop sales use a lightweight amount pop from the
-retained stall, shop purchases drop the bought item from the matching ledger or
-market row, and collected/task coins travel from their retained action target
-to `top.coin`. Coin arrival reuses the existing top-coin display object for the
-main 340ms receive pulse and restores its position, scale, and pivot on finish,
-clear, or deactivation. Reduced motion keeps the matching text flyout without
-creating item, coin, or target-pulse motion.
+models with semantic origins. Shop sales send a capped three-to-four-coin trail
+and outlined amount pop from the retained stall price to `top.coin`, falling
+back to the stall root if the price target is unavailable; shop purchases drop
+the bought item from the matching ledger or market row. Coin arrival reuses the
+existing top-coin display object for the main 340ms receive pulse and restores
+its position, scale, and pivot on finish, clear, or deactivation. Successful
+foreground spends use the consumed resource icon and Root Run's seven-particle
+ballistic burst at the semantic action origin. Reduced motion keeps matching
+text flyouts without creating item, coin, spend-burst, or target-pulse motion.
 
 `createPooledPixiNotificationBadges()` reconciles `{ key, parent, bounds,
 active, tone, tutorialId }` records. Dots are the existing 6px red/orange

@@ -281,7 +281,7 @@ export class RewardFlyoutManager {
         coinAnchor,
         event.coin ?? 0,
         this.formatRewardMessage(event),
-        { showParticles: false },
+        { showParticles: true },
       );
     }
 

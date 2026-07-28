@@ -17,6 +17,9 @@ import {
 
 const WORLD_CHAT_TITLE = 'World Chat';
 const WORLD_CHAT_TITLE_STROKE = '#0a0a0a';
+const PRESS_SCALE = 0.94;
+const RELEASE_PEAK_SCALE = 1.055;
+const RELEASE_DURATION_MS = 180;
 
 /**
  * Shared room chrome for the compact world-chat preview.
@@ -31,6 +34,9 @@ export class PixiWorldChatView extends BasePixiRetainedView {
   } = {}) {
     super({ label: 'worldChat' });
     this.model = { visible: false };
+    this.pressed = false;
+    this.releaseFrame = 0;
+    this.releaseStartedAt = 0;
     this.panel = new RetainedPanel({
       assetManager: assets,
       label: WORLD_CHAT_TITLE,
@@ -58,6 +64,9 @@ export class PixiWorldChatView extends BasePixiRetainedView {
           this.model.visible !== false &&
           this.panel.root.visible,
         excludePageSwipe: true,
+        haptic: 'light',
+        onPressChange: (pressed, context) =>
+          this.setPressed(pressed, context),
         onActivate: this.handleTap,
       }) ?? null;
     this.usesDirectInput = !this.inputRegistration;
@@ -120,6 +129,7 @@ export class PixiWorldChatView extends BasePixiRetainedView {
   }
 
   onDestroy() {
+    this.cancelReleaseAnimation();
     this.inputRegistration?.unregister?.();
     this.inputRegistration = null;
 
@@ -139,13 +149,116 @@ export class PixiWorldChatView extends BasePixiRetainedView {
     const height = PIXI_UI_GEOMETRY.roomChatHeight;
 
     this.panel.setBounds(
-      PIXI_UI_GEOMETRY.roomChromeEdge,
-      sourceHeight - PIXI_UI_GEOMETRY.roomChatBottom - height,
+      PIXI_UI_GEOMETRY.roomChromeEdge + width / 2,
+      sourceHeight -
+        PIXI_UI_GEOMETRY.roomChatBottom -
+        height +
+        height / 2,
       width,
       height,
     );
+    this.panel.root.pivot.set(width / 2, height / 2);
     this.applyTitleStroke();
     this.preview.position.set(5, 4);
     this.panel.root.hitArea = new Rectangle(0, 0, width, height);
   }
+
+  setPressed(pressed, context = null) {
+    const nextPressed =
+      Boolean(pressed) &&
+      this.active &&
+      this.model.visible !== false &&
+      this.panel.root.visible;
+
+    if (nextPressed) {
+      this.cancelReleaseAnimation();
+      this.pressed = true;
+      this.panel.root.scale.set(PRESS_SCALE);
+      return;
+    }
+
+    const wasPressed = this.pressed;
+    this.pressed = false;
+    if (
+      wasPressed &&
+      context?.confirmed === true &&
+      !prefersReducedMotion()
+    ) {
+      this.startReleaseAnimation();
+      return;
+    }
+
+    this.cancelReleaseAnimation();
+    this.panel.root.scale.set(1);
+  }
+
+  startReleaseAnimation() {
+    this.cancelReleaseAnimation();
+    this.releaseStartedAt = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - this.releaseStartedAt;
+      const progress = Math.min(
+        1,
+        Math.max(0, elapsed / RELEASE_DURATION_MS),
+      );
+      this.panel.root.scale.set(releaseScale(progress));
+      if (progress >= 1) {
+        this.releaseFrame = 0;
+        this.panel.root.scale.set(1);
+        return;
+      }
+      this.releaseFrame = requestFrame(tick);
+    };
+    this.releaseFrame = requestFrame(tick);
+  }
+
+  cancelReleaseAnimation() {
+    if (this.releaseFrame) {
+      cancelFrame(this.releaseFrame);
+      this.releaseFrame = 0;
+    }
+  }
+}
+
+function releaseScale(progress) {
+  if (progress <= 0.36) {
+    return (
+      PRESS_SCALE +
+      (RELEASE_PEAK_SCALE - PRESS_SCALE) *
+        easeOutCubic(progress / 0.36)
+    );
+  }
+  return (
+    RELEASE_PEAK_SCALE +
+    (1 - RELEASE_PEAK_SCALE) *
+      easeOutCubic((progress - 0.36) / 0.64)
+  );
+}
+
+function easeOutCubic(value) {
+  return 1 - (1 - value) ** 3;
+}
+
+function prefersReducedMotion() {
+  return Boolean(
+    globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,
+  );
+}
+
+function requestFrame(callback) {
+  if (typeof globalThis.requestAnimationFrame === 'function') {
+    return globalThis.requestAnimationFrame(callback);
+  }
+  return globalThis.setTimeout?.(callback, 16) ?? 0;
+}
+
+function cancelFrame(frame) {
+  if (!frame) {
+    return;
+  }
+  if (typeof globalThis.cancelAnimationFrame === 'function') {
+    globalThis.cancelAnimationFrame(frame);
+    return;
+  }
+  globalThis.clearTimeout?.(frame);
 }

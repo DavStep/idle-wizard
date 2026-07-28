@@ -40,9 +40,6 @@ import {
   normalizeRows,
   setText,
 } from '../workshop/RetainedPageKit.js';
-import { ResearchInfoDialogPixi } from './ResearchInfoDialogPixi.js';
-
-const RESEARCH_DIALOG_ID = 'research.info';
 const MAX_LOCKED_ROWS_PER_BOX = 3;
 const RESEARCH_PAPER_INK = '#634934';
 const RESEARCH_PROGRESS_INK = '#725737';
@@ -239,8 +236,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
   constructor({
     assetManager = null,
     semanticTargets = null,
-    dialogRegistry = null,
-    dialogLayer = null,
     inputRouter = null,
     ticker = null,
     timeSource = () => Date.now(),
@@ -251,8 +246,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     super({ pageId: 'research', semanticTargets, theme });
     this.assetManager = assetManager;
     this.inputRouter = inputRouter;
-    this.dialogRegistry = dialogRegistry;
-    this.dialogLayer = dialogLayer;
     this.ticker = ticker;
     this.timeSource = timeSource;
     this.actions = actions;
@@ -369,25 +362,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       afterReconcile: (buttons) => this.orderRunFocusButtons(buttons),
     });
 
-    if (
-      this.dialogRegistry &&
-      this.dialogLayer &&
-      !this.dialogRegistry.has(RESEARCH_DIALOG_ID)
-    ) {
-      this.dialogRegistry.register(
-        RESEARCH_DIALOG_ID,
-        () =>
-          new ResearchInfoDialogPixi({
-            parent: this.dialogLayer,
-            assetManager: this.assetManager,
-            inputRouter: this.inputRouter,
-            semanticTargets: this.semanticTargets,
-            onClose: () => this.dialogRegistry.close(RESEARCH_DIALOG_ID),
-            theme: this.theme,
-          }),
-      );
-    }
-
     this.applyTheme(theme);
     this.layoutPage(this.sourceWidth, this.sourceHeight);
   }
@@ -470,21 +444,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
           research.onBuy?.(research.id) ??
           this.currentActions?.buyResearch?.(research.id)
         );
-      },
-      info: (research) => {
-        this.hideLockTooltip();
-        if (research.onInfo) {
-          return research.onInfo(research);
-        }
-        if (this.dialogRegistry?.has(RESEARCH_DIALOG_ID)) {
-          return Boolean(
-            this.dialogRegistry.open(
-              RESEARCH_DIALOG_ID,
-              research.info ?? research,
-            ),
-          );
-        }
-        return false;
       },
       locked: (research, target) => {
         const shown = this.showLockTooltip(research, target);
@@ -777,7 +736,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       return;
     }
     this.ticker?.remove?.(this.tickHandler);
-    this.dialogRegistry?.close?.(RESEARCH_DIALOG_ID);
     this.hideLockTooltip();
     this.active = false;
     super.deactivate();
@@ -793,7 +751,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
   destroyPage() {
     this.ticker?.remove?.(this.tickHandler);
     this.active = false;
-    this.dialogRegistry?.close?.(RESEARCH_DIALOG_ID);
     this.lockTooltip?.destroy();
     this.lockTooltip = null;
     this.rows?.destroy();
@@ -1294,7 +1251,7 @@ class ResearchRowWidget {
     this.lockedOverlay.renderable = false;
     this.labelHit = new Container({ label: 'research-row-label-hit' });
     this.labelHit.eventMode = 'static';
-    this.labelHit.cursor = 'pointer';
+    this.labelHit.cursor = 'default';
     this.infoVisual.addChild(
       this.artWell,
       this.art,
@@ -1316,33 +1273,20 @@ class ResearchRowWidget {
       this.lockedOverlay,
       this.labelHit,
     );
-    this.handleInfo = () =>
+    this.handleLocked = () =>
       this.research?.locked
         ? this.actions?.locked?.(this.research, this.costButton)
-        : this.actions?.info?.(this.research);
-    this.handleInfoPress = (pressed) => {
-      if (this.research?.locked) {
-        this.infoVisual.scale.set(1);
-        return;
-      }
-      this.infoVisual.scale.set(pressed ? 0.94 : 1);
-    };
+        : false;
     this.inputRegistration =
       this.page.inputRouter?.registerPressTarget?.(this.labelHit, {
         id: createRetainedInputId('research-row-label'),
-        enabled: () => Boolean(this.research),
+        enabled: () => this.research?.locked === true,
         excludePageSwipe: true,
-        onActivate: this.handleInfo,
-        onPressChange: this.handleInfoPress,
+        onActivate: this.handleLocked,
       }) ?? null;
     this.usesDirectInput = !this.inputRegistration;
-    this.directPressStart = () => this.handleInfoPress(true);
-    this.directPressEnd = () => this.handleInfoPress(false);
     if (this.usesDirectInput) {
-      this.labelHit.on('pointertap', this.handleInfo);
-      this.labelHit.on('pointerdown', this.directPressStart);
-      this.labelHit.on('pointerup', this.directPressEnd);
-      this.labelHit.on('pointerupoutside', this.directPressEnd);
+      this.labelHit.on('pointertap', this.handleLocked);
     }
     this.layout();
   }
@@ -1478,7 +1422,8 @@ class ResearchRowWidget {
         finiteOr(research.progress, finiteOr(research.percent, 0) / 100),
       ),
     );
-    this.labelHit.cursor = 'pointer';
+    this.labelHit.cursor = locked ? 'pointer' : 'default';
+    this.labelHit.eventMode = locked ? 'static' : 'none';
     this.applyTheme(this.page.theme);
     this.layout();
 
@@ -1488,10 +1433,9 @@ class ResearchRowWidget {
       displayObject: this.costButton,
       state: () => ({
         enabled:
-          state === 'available'
-            ? research.canResearch === true
-            : true,
-        interactive: true,
+          (state === 'available' && research.canResearch === true) ||
+          state === 'locked',
+        interactive: state === 'available' || state === 'locked',
         selected: false,
       }),
       activate: () => {
@@ -1501,7 +1445,7 @@ class ResearchRowWidget {
         if (state === 'locked') {
           return this.actions?.locked?.(research, this.costButton);
         }
-        return this.actions?.info?.(research);
+        return false;
       },
     });
   }
@@ -1630,9 +1574,7 @@ class ResearchRowWidget {
       geometry.infoWidth,
       geometry.progressHeight,
     );
-    const infoWidth = this.research?.locked
-      ? geometry.cardWidth
-      : geometry.cardWidth - geometry.valueWidth;
+    const infoWidth = geometry.cardWidth;
     this.labelHit.hitArea = new Rectangle(
       geometry.cardOffsetX,
       0,
@@ -1824,10 +1766,7 @@ class ResearchRowWidget {
     }
     this.inputRegistration = null;
     if (this.usesDirectInput) {
-      this.labelHit.off('pointertap', this.handleInfo);
-      this.labelHit.off('pointerdown', this.directPressStart);
-      this.labelHit.off('pointerup', this.directPressEnd);
-      this.labelHit.off('pointerupoutside', this.directPressEnd);
+      this.labelHit.off('pointertap', this.handleLocked);
     }
     this.costButton.destroy({ children: true });
     this.researchedButton.destroy();

@@ -307,13 +307,17 @@ export class PixiButton extends Container {
     if (!this.notificationBadge) {
       return;
     }
-    this.notificationBadge
-      .placeAtTopRight({
-        x: 0,
-        y: 0,
-        width: this.buttonWidth,
-        height: this.buttonHeight,
-      })
+    const bounds = {
+      x: 0,
+      y: 0,
+      width: this.buttonWidth,
+      height: this.buttonHeight,
+    };
+    const badge =
+      this.variant === 'tab'
+        ? this.notificationBadge.placeInsideTopRight(bounds)
+        : this.notificationBadge.placeAtTopRight(bounds);
+    badge
       .setTone(this.notificationTone)
       .setActive(this.notification && this.enabled && !this.selected);
   }

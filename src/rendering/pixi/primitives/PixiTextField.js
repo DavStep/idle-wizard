@@ -220,16 +220,19 @@ export class PixiTextField extends Container {
       PIXI_ROOT_RUN_GEOMETRY.textFieldBrownInset.borderInsets,
     );
     const brownInset = this.variant === 'brown-inset';
+    const textInsetX = border + paddingX;
+    const textInsetY =
+      border + paddingY - (brownInset ? 2 : 0);
     this.frame.visible = !brownInset;
     this.insetFrame.visible = brownInset;
-    this.textViewport.position.set(border + paddingX, border + paddingY);
+    this.textViewport.position.set(textInsetX, textInsetY);
     this.textMask
       .clear()
       .rect(
-        border + paddingX,
-        border + paddingY,
-        Math.max(0, this.fieldWidth - (border + paddingX) * 2),
-        Math.max(0, this.fieldHeight - (border + paddingY) * 2),
+        textInsetX,
+        textInsetY,
+        Math.max(0, this.fieldWidth - textInsetX * 2),
+        Math.max(0, this.fieldHeight - textInsetY * 2),
       )
       .fill('#ffffff');
     this.hitArea = new Rectangle(0, 0, this.fieldWidth, this.fieldHeight);
@@ -262,13 +265,18 @@ export class PixiTextField extends Container {
     if (brownInset) {
       this.focusGraphic
         .roundRect(
-          2,
-          2,
-          Math.max(0, this.fieldWidth - 4),
-          Math.max(0, this.fieldHeight - 4),
-          3,
+          -1,
+          -1,
+          Math.max(0, this.fieldWidth + 2),
+          Math.max(0, this.fieldHeight + 2),
+          5,
         )
-        .stroke({ color: BROWN_INSET_FOCUS, width: 1, alpha: 0.9 });
+        .stroke({
+          color: BROWN_INSET_FOCUS,
+          width: 2,
+          alpha: 1,
+          join: 'round',
+        });
     }
     const beforeStart = this.value.slice(0, this.selectionStart);
     const beforeEnd = this.value.slice(0, this.selectionEnd);

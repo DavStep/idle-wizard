@@ -111,6 +111,7 @@ experience_type: style
 - Brewing active brew timer text belongs next to the active brew label, not inside the progress rail.
 - Brewing completion flows brew timer -> manual start bottling action -> bottling timer -> collect-ready state; potion inventory is granted only by the collect action.
 - Reward flyouts that should show item icons need exact item labels/counts; generic text like `3 seeds found` cannot render item icons.
+- Foreground resource consumption uses the shared retained spend burst: the exact Root Run seven-icon ballistic profile, the consumed resource's icon, and the semantic action anchor. Trigger it only after a successful positive spend and suppress it for reduced motion.
 - Brewing cauldron count lives as a normal-weight border-corner label like `0/5`; empty cauldron status stays blank and `empty` is centered in the box.
 - Empty cauldron item containers are absolute only in the empty state; override their normal fixed scroll height or `empty` centers in the top strip instead of the full cauldron.
 - Brewing cauldron should not show a standalone `unknown mix` status row; no-match staged herbs already read through the wasted potion preview/action.
@@ -149,9 +150,9 @@ experience_type: style
 - Coin displays amount-first as `<compact amount> coin` everywhere, including top chrome; use `25 coin` and `123k coin`, never `25g` or `coin 25`.
 - Task level-up is manual after every task in the current level is done; the Workshop task list shows one `reach level N` action with no price or currency row.
 - Mana current/cap displays use tight fractions like `8/100`; spaces around `/` waste too much row width.
-- Top panel uses the compact player-card composition: large owned avatar left, username and currencies top, mana below, then the star level badge beside the request rail and remaining-quest copy. During FTUE, keep the entire request row hidden until Elara reveals requests. The badge replaces duplicate level text, and XP is not player-facing.
-- The top-panel quest rail follows the shared Root Rush black capsule and purple fill, with a `2px` total edge-to-fill inset at source scale. Drive the live right edge so both caps stay round, and preserve the quest dividers as a separate layer.
-- Main-request completion snaps Elara's request box while reusing Root Run's research-XP flyout exactly: one 68px star travels from the request surface to the level star on the distance-timed direct 96px arc, the rail advances only on arrival, eight sparks burst at the destination, and the star receives the 400ms impact scale. On rollover, complete the old rail before the badge jumps, changes level, and resets. Cap active particles, use Web Animations instead of dynamic keyframes, skip motion when reduced motion is requested, and reset the diff baseline on persistence load.
+- Top panel maps Root Run's qUIck main HUD through the shared `/3` source scale: avatar at left with username centered underneath, level star/rail above three equal coin/context/mana capsules, mana rate under mana, and the square settings gear at right. During FTUE, keep the entire request rail hidden until Elara reveals requests. The badge replaces duplicate level text, and XP is not player-facing.
+- The top-panel quest rail uses Root Run's image-backed rounded track and exact star/panel geometry with Idle Wizard's fixed purple-to-gold gradient fill. Drive the live right edge so both caps stay round, preserve quest dividers as a separate layer, and render no fraction or remaining-count copy.
+- Main-request completion snaps Elara's request box while reusing Root Run's research-XP flyout exactly: one 68px Root Run source star travels from the request surface to the level star on the distance-timed direct 96px source arc, the rail advances only on arrival, eight sparks burst at the destination, and the star receives the 400ms impact scale. Retained Pixi maps the Root Run measurements through the shared `/3` source scale; the legacy DOM path derives presentation scale from the level target. On rollover, complete the old rail before the badge jumps, changes level, and resets. Cap active particles, skip motion when reduced motion is requested, and reset the diff baseline on persistence load.
 - Hidden top-panel context currency needs an explicit `[hidden]` display rule because resource flex CSS can otherwise override the browser default.
 - Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
 - Top panel coin should keep amount and `coin` in the same fitted value span; a separate suffix can leave clipped values like `308... coin`.
@@ -221,17 +222,17 @@ experience_type: style
 - World chat popup must render the full available message snapshot; only the compact preview is limited to two latest messages.
 - Page popup roots belong in the stage-level `.room-page__popup-layer` (`z-index: 5`) so dialogs sit over top/bottom chrome while the chrome remains visible behind the translucent backdrop; world chat's full popup stays higher (`z-index: 6`).
 - Notification dots use `data-notification="true"` on existing controls; page tab dots roll up from `PageNotificationFacade` snapshot state.
-- Notification dots render the shared `notification-circle-red.png` / `notification-circle-orange.png` sprites in both DOM and Pixi mirror paths at `9.569444px` on the authored `390x844` surface; preserve the source 61x65 alpha canvas and black outer ring across tones.
+- Notification dots render the shared `notification-circle-red.png` / `notification-circle-orange.png` sprites in both DOM and Pixi mirror paths at `12px` on the authored `390x844` surface; preserve the source 61x65 alpha canvas and black outer ring across tones.
 - Market sub-tab notification dots should derive from `PageNotificationStateManager` shop children so `player market` mirrors the orange player-listing/proceeds/listing badges instead of only the bottom Market tab showing them.
 - FTUE notification suppression is a visible badge policy only; keep gameplay notification state intact and allow only the current tutorial target during non-passive blocking steps.
 - Notification tones use red for normal priority and orange for one tier lower; page tabs show red if any child notification is red, otherwise orange.
-- Notification dots anchor to each notified widget's top-right corner with only `2px` of the `9.569444px` badge box outside the top and right edges. Keep them in an overlay above neighboring widgets when a local stacking context could cover them.
+- Root Run notification geometry maps from its `1080px` station canvas by `/3`: render `12px` badges, keep regular-button dots fully inside and tangent to the top/right edges, and inset tab dots `4px` from both edges. Keep bottom-tab badges in an overlay above neighboring widgets.
 - Scroll containers that hold notification dots need invisible top/right bleed so offset dots do not get clipped without moving the controls.
 - Expand/collapse toggles may show a notification only in the collapsed `expand` state; the `collapse` state should never have a notification dot.
 - If notification dots grow beyond page-level flags, move to a provider tree with centralized child aggregation and graph validation instead of ad hoc booleans.
 - Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
 - Gameplay state `subscribe` is passive; managers that diff state must seed their baseline from `gameplayFacade.getSnapshot()` on mount.
-- World chat compact chrome uses the shared room-panel skin: `world chat` is the clear title/opener, while empty preview text is centered and not clickable.
+- World chat compact chrome uses the shared room-panel skin and one full-surface press target: the title, preview rows (including the centered empty state), padding, and frame all open the dialog through the shared confirmed press, haptic, and release-feedback path.
 - World chat system sender labels use the normal chat text hierarchy; do not derive their text color from resource categories.
 - Successful world/alliance chat sends should render a local sent row until the matching subscription row arrives; reducer success can precede the table/view echo.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
@@ -278,6 +279,7 @@ experience_type: style
 - Retained global dialogs must count the Root Run frame outsets when enforcing width: cap the complete shell at `90%` of the `360px` source screen, then reflow content inside the resulting `264px` content box.
 - Retained dialog tabs must reuse the Workshop Bag dialog's `RetainedButton` tab pool, selected-state binding, and frame-attached geometry; do not build feature-local `PixiButton` tab rows. When a dialog intentionally uses multiple paper sections, hide the generic full paper frame so those sections sit directly on the brown shell instead of nesting paper inside paper; render every split section with the shared Expedition paper nine-slice and derive its top/right/bottom/left outsets from the default dialog content-inset geometry.
 - Stall allocation rows and their slider knob reuse the exact Root Run Settings qUIck assets and `/3` source geometry: 50px row pitch, 8px content insets, and a 23px knob. Do not redraw either surface with `Graphics`.
+- Loaded trader stalls show batch size in the compact red downward badge at the card's top-right with a `14px` right inset and shortened `30x27px` proportions; center white, dark-stroked `xN` against the badge's visible face instead of leaving it as plain brown text.
 
 ## Runtime art sources
 

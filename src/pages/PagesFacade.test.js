@@ -3741,7 +3741,7 @@ describe('PagesFacade', () => {
       'World Chat',
     );
     expect(stage.querySelector('.workshop-page__world-chat')?.hidden).toBe(true);
-    expect(stage.querySelector('.workshop-page__world-chat-button')?.disabled).toBe(true);
+    expect(stage.querySelector('.workshop-page__world-chat-box')?.disabled).toBe(true);
     expect(
       stage.querySelector('.workshop-page__world-chat-box')?.parentElement?.classList.contains(
         'room-world-chat-layer',
@@ -3972,19 +3972,19 @@ describe('PagesFacade', () => {
     expect(playerShopFacade.retainMarketData).not.toHaveBeenCalled();
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
-      .find((button) => button.textContent === 'players')
+      .find((button) => button.textContent === 'Players')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerShopFacade.retainMarketData).toHaveBeenCalledTimes(1);
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
-      .find((button) => button.textContent === 'traders')
+      .find((button) => button.textContent === 'Traders')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(releaseMarketData).toHaveBeenCalledTimes(1);
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
-      .find((button) => button.textContent === 'players')
+      .find((button) => button.textContent === 'Players')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(playerShopFacade.retainMarketData).toHaveBeenCalledTimes(2);
@@ -9120,11 +9120,14 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
 
     const popup = stage.querySelector('.workshop-page__world-chat-popup');
+    const box = stage.querySelector('.workshop-page__world-chat-box');
     const preview = stage.querySelector('.workshop-page__world-chat-preview');
 
     expect(preview.textContent).toBe('no messages yet');
+    expect(box.tagName).toBe('BUTTON');
+    expect(box.getAttribute('aria-label')).toBe('World Chat, no messages yet');
 
-    preview.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    box.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(false);
   });
@@ -9556,7 +9559,7 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.shop-page__market-tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['traders', 'players', 'crystals']);
+    ).toEqual(['Traders', 'Players', 'Crystals']);
     expect(
       stage
         .querySelector('.shop-page__market-tab-button')
@@ -9569,7 +9572,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__direct-sell-controls')).toBeNull();
     expect(
       stage.querySelector('.shop-page__shelf-help .style-info-button__icon'),
-    ).not.toBeNull();
+    ).toBeNull();
     expect(stage.querySelector('.shop-page__ledger-controls')).not.toBeNull();
     expect(stage.querySelector('.shop-page__ledger-controls')?.textContent).toContain(
       'market ledger',
@@ -9577,7 +9580,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__market-panel--crystals')?.hidden).toBe(true);
 
     const crystalsTab = [...stage.querySelectorAll('.shop-page__market-tab-button')].find(
-      (button) => button.textContent === 'crystals',
+      (button) => button.textContent === 'Crystals',
     );
     expect(
       stage.querySelector('.room-bottom-panel__tab[data-page-id="shop"]')?.dataset.notification,
@@ -9592,7 +9595,7 @@ describe('PagesFacade', () => {
       '20 coin',
     );
     const coinCollectButton = coinOffer?.querySelector('.shop-page__coin-offer-action');
-    expect(coinCollectButton?.textContent).toBe('collect');
+    expect(coinCollectButton?.textContent).toBe('Collect');
     expect(coinCollectButton?.disabled).toBe(false);
     expect(coinCollectButton?.dataset.notification).toBe('true');
 
@@ -9605,7 +9608,7 @@ describe('PagesFacade', () => {
     expect(crystalsTab?.dataset.notification).toBeUndefined();
     expect(stage.querySelector('.shop-page__crystal-offers')).not.toBeNull();
     expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).toContain(
-      'crystals',
+      'Crystals',
     );
     expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).not.toContain('each');
     expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).not.toContain('note');
@@ -9614,18 +9617,18 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.shop-page__crystal-row:not(.shop-page__crystal-row--header)')]
         .map((row) => row.textContent),
     ).toEqual([
-      '1 crystal$4.99',
-      '2 crystals$8.99',
-      '5 crystals$19.99',
-      '10 crystals$36.99',
-      '20 crystals$69.99',
-      '50 crystals$159.99',
+      '1 Crystal$4.99',
+      '2 Crystals$8.99',
+      '5 Crystals$19.99',
+      '10 Crystals$36.99',
+      '20 Crystals$69.99',
+      '50 Crystals$159.99',
     ]);
     expect(
       stage.querySelector('.shop-page__crystal-row[data-crystal-count="50"]')?.getAttribute(
         'aria-label',
       ),
-    ).toBe('50 crystals, $159.99');
+    ).toBe('50 Crystals, $159.99');
     expect(
       stage
         .querySelector(
@@ -11234,7 +11237,7 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
     pagesFacade.show('research');
 
-    const researchLabel = stage.querySelector('.research-page__research-label-button');
+    const researchLabel = stage.querySelector('.research-page__research-label');
 
     dispatchTouchSwipe(researchLabel);
 
@@ -11915,7 +11918,7 @@ describe('PagesFacade', () => {
     ]);
   });
 
-  it('shows research info dialog when a research name is clicked', () => {
+  it('renders research names as passive content without an info dialog', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 3);
@@ -11927,29 +11930,21 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'research');
 
-    const popup = stage.querySelector('.research-page__info-popup');
-    const labelButton = stage.querySelector('.research-page__research-label-button');
+    const label = stage.querySelector('.research-page__research-label');
 
-    expect(popup).not.toBeNull();
-    expect(popup.hidden).toBe(true);
-    expect(labelButton.querySelector('.research-page__research-name')?.textContent).toBe(
+    expect(stage.querySelector('.research-page__info-popup')).toBeNull();
+    expect(label?.tagName).toBe('SPAN');
+    expect(label?.querySelector('.research-page__research-name')?.textContent).toBe(
       'sage seed',
     );
-    expect(labelButton.querySelector('.research-page__research-effect')).toBeNull();
+    expect(label?.querySelector('.research-page__research-effect')).toBeNull();
 
-    labelButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    label?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(popup.hidden).toBe(false);
-    expect(popup.querySelector('[role="dialog"]')).not.toBeNull();
-    expect(popup.textContent).toContain('sage seed');
-    expect(popup.textContent).toContain('allows sage seed to drop from summon seed');
-
-    document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
-
-    expect(popup.hidden).toBe(true);
+    expect(stage.querySelector('.research-page__info-popup')).toBeNull();
   });
 
-  it('explains missing requirements when a locked research row is tapped', () => {
+  it('does not open an info dialog when a locked research row is tapped', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 4);
@@ -11979,24 +11974,16 @@ describe('PagesFacade', () => {
     pagesFacade.mount(stage);
     clickRoomTab(stage, 'research');
 
-    const popup = stage.querySelector('.research-page__info-popup');
     const row = [...stage.querySelectorAll('.research-page__row')].find((candidate) =>
       candidate.textContent?.includes('minor healing potion'),
     );
 
-    expect(popup).not.toBeNull();
-    expect(popup.hidden).toBe(true);
+    expect(stage.querySelector('.research-page__info-popup')).toBeNull();
     expect(row?.classList.contains('is-locked')).toBe(true);
 
     dispatchTouchTap(row);
 
-    expect(popup.hidden).toBe(false);
-    expect(popup.textContent).toContain(
-      'allows valid cauldron ingredients to brew minor healing potion.',
-    );
-    expect(popup.textContent).toContain(
-      'requires mana tonic research and level 5.',
-    );
+    expect(stage.querySelector('.research-page__info-popup')).toBeNull();
   });
 
   it('sets selected NPC market stand item', () => {
@@ -12363,7 +12350,7 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'shop');
 
     [...stage.querySelectorAll('.shop-page__market-tab-button')]
-      .find((button) => button.textContent === 'players')
+      .find((button) => button.textContent === 'Players')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(

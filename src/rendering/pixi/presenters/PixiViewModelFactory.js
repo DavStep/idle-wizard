@@ -106,10 +106,9 @@ export class PixiViewModelFactory {
       coin: gameplay.coin?.current ?? 0,
       contextCurrency: {
         resource: contextResource ?? 'crystal',
-        amount: contextResource
-          ? gameplay[contextResource]?.current ?? 0
-          : 0,
-        visible: Boolean(contextResource),
+        amount:
+          gameplay[contextResource ?? 'crystal']?.current ?? 0,
+        visible: true,
       },
       level: visibleLevel,
       loadRevision: Math.max(

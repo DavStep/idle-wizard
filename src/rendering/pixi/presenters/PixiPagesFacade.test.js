@@ -115,6 +115,81 @@ describe('PixiPagesFacade', () => {
     });
   });
 
+  it('emits spend bursts only after successful foreground consumption', () => {
+    const harness = createHarness();
+    harness.gameplayFacade.summonSeed
+      .mockReturnValueOnce({ ok: true, cost: 10 })
+      .mockReturnValueOnce({
+        ok: false,
+        reason: 'not_enough_mana',
+        cost: 10,
+      });
+    harness.gameplayFacade.fillTask.mockReturnValue({
+      ok: true,
+      taskId: 'sage-turn-in',
+      item: {
+        key: 'sageSeed',
+        label: 'sage seed',
+        kind: 'seed',
+      },
+      quantity: 2,
+    });
+    harness.gameplayFacade.buyResearch.mockReturnValue({
+      ok: true,
+      researchId: 'manaProductionRate:1',
+      cost: 2,
+      costCurrency: 'crystal',
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    const workshop = harness.getBoundPage('workshop');
+    workshop.actions.summonSeed();
+    workshop.actions.summonSeed();
+    workshop.actions.fillTask('sage-turn-in');
+    pages.show('research');
+    harness
+      .getBoundPage('research')
+      .actions.buyResearch('manaProductionRate:1');
+
+    expect(
+      harness.transientEffects.emitReward,
+    ).toHaveBeenNthCalledWith(1, {
+      visualOnly: true,
+      spendBursts: [
+        {
+          anchorId: 'workshop.summon',
+          resource: 'mana',
+        },
+      ],
+    });
+    expect(
+      harness.transientEffects.emitReward,
+    ).toHaveBeenNthCalledWith(2, {
+      visualOnly: true,
+      spendBursts: [
+        {
+          anchorId: 'workshop.task.sage-turn-in',
+          frameName: 'seed:pack',
+        },
+      ],
+    });
+    expect(
+      harness.transientEffects.emitReward,
+    ).toHaveBeenNthCalledWith(3, {
+      visualOnly: true,
+      spendBursts: [
+        {
+          anchorId: 'research.manaProductionRate:1',
+          resource: 'crystal',
+        },
+      ],
+    });
+    expect(
+      harness.transientEffects.emitReward,
+    ).toHaveBeenCalledTimes(3);
+  });
+
   it('keeps an open Market Ledger interactive while switching unlocked tabs', () => {
     const gameplaySnapshot = createGameplaySnapshot({ level: 4 });
     gameplaySnapshot.shop = {

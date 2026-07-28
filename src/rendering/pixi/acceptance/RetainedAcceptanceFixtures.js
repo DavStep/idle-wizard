@@ -25,7 +25,7 @@ export const DIALOG_IDS_BY_PAGE = Object.freeze({
     'workshop.worldEvent',
     'workshop.worldChat',
   ]),
-  research: Object.freeze(['research.info']),
+  research: Object.freeze([]),
   prestige: Object.freeze([]),
   garden: Object.freeze([
     'garden.seed',
@@ -86,14 +86,6 @@ export function createDialogViewModel(
       title: dialogId,
       rows: createCompactRows(key, 'workshop'),
       tabs: createTabs(key, 'workshop'),
-    };
-  }
-
-  if (dialogId === 'research.info') {
-    return {
-      title: `research ${key}`,
-      copy: `retained research information ${key}`,
-      lines: [`line ${key} one`, `line ${key} two`],
     };
   }
 

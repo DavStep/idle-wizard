@@ -118,7 +118,6 @@ export class ShopPageFacade {
     this.playerShelfManager.hideMarketPopup();
     this.playerRequestManager.hidePopup();
     this.marketLedgerManager.hide();
-    this.marketLedgerManager.hideHelp();
     this.marketLedgerManager.closeBuy();
     this.shelfManager.hideSellPopup();
   }

@@ -37,4 +37,26 @@ describe('PixiTextField', () => {
 
     field.destroy({ children: true });
   });
+
+  it('keeps the brown inset focus frame outside the writing area', () => {
+    const field = new PixiTextField({
+      assetManager: { getTexture: () => Texture.EMPTY },
+      width: 195,
+      height: 27,
+    });
+
+    field.focused = true;
+    field.redrawTextState();
+
+    const focusBounds = field.focusGraphic.getLocalBounds();
+    const focusStroke = field.focusGraphic.context.instructions.at(-1);
+    expect(focusBounds.x).toBeLessThan(0);
+    expect(focusBounds.y).toBeLessThan(0);
+    expect(focusBounds.width).toBeGreaterThan(field.fieldWidth);
+    expect(focusBounds.height).toBeGreaterThan(field.fieldHeight);
+    expect(focusStroke?.data?.style?.width).toBe(2);
+    expect(field.textViewport.y).toBe(5);
+
+    field.destroy({ children: true });
+  });
 });

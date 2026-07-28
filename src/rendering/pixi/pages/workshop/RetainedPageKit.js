@@ -663,11 +663,12 @@ export class RetainedScrollArea {
   }
 
   refreshMaximumOffset() {
-    this.physics.setMaxOffset(
-      this.toPhysicsUnits(
-        Math.max(0, this.contentHeight - this.height),
-      ),
+    const maximumOffset = this.toPhysicsUnits(
+      Math.max(0, this.contentHeight - this.height),
     );
+    if (maximumOffset !== this.physics.maxOffset) {
+      this.physics.setMaxOffset(maximumOffset);
+    }
     this.root.cursor = this.physics.maxOffset > 0 ? 'grab' : 'default';
     this.applyPhysicsOffset();
   }

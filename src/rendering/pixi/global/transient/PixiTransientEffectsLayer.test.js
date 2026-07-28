@@ -265,6 +265,14 @@ describe('PixiTransientEffectsLayer', () => {
       amount: 1,
       coinTarget: 1,
     });
+    const amount = layer.entries.find(
+      (entry) => entry.kind === 'amount',
+    );
+    expect(amount.widget.label.textObject.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: 2,
+      join: 'round',
+    });
 
     pulse.widget.update(0.3, { delayed: false });
     expect(coinTarget.scale.x).not.toBe(original.scaleX);
@@ -332,6 +340,92 @@ describe('PixiTransientEffectsLayer', () => {
     expect(coinTarget.position).toMatchObject({ x: 120, y: 18 });
     expect(coinTarget.scale).toMatchObject({ x: 1, y: 1 });
   });
+
+  it('ports the Root Run seven-icon spend burst and reuses its bounded pool', () => {
+    const ticker = createTicker();
+    const layer = new PixiTransientEffectsLayer({
+      assets: createAssets(),
+      application: { ticker },
+      semanticRegistry: createSemanticRegistry({
+        'research.unlockSeed': {
+          bounds: { x: 250, y: 300, width: 72, height: 42 },
+        },
+      }),
+      random: () => 0.5,
+    });
+    layer.layout({
+      sourceScale: 1,
+      authoredOffsetX: 0,
+      sourceWidth: 360,
+      sourceHeight: 2170 / 3,
+    });
+    layer.applyTheme(
+      createPixiThemeSnapshot({ iconMode: 'icons' }),
+    );
+    layer.activate();
+
+    const result = layer.emitReward({
+      visualOnly: true,
+      spendBursts: [
+        {
+          anchorId: 'research.unlockSeed',
+          resource: 'coin',
+        },
+      ],
+    });
+
+    expect(result).toEqual({
+      visualCount: 7,
+      textShown: false,
+    });
+    expect(layer.getStats().active.spend).toBe(7);
+    expect(layer.getStats().pools.spend.allocated).toBe(7);
+    const first = layer.entries.find(
+      (entry) => entry.kind === 'spend',
+    );
+    expect(first.widget.root.position).toMatchObject({
+      x: 286,
+      y: 322,
+    });
+    expect(first.widget.sprite.width).toBeCloseTo(49.6);
+    expect(first.durationMs).toBeCloseTo(
+      (0.78 / 1.3) * 1_000,
+    );
+
+    first.widget.update(0.5, {
+      delayed: false,
+      elapsedMs: first.durationMs / 2,
+    });
+    expect(first.widget.root.position.y).toBeLessThan(322);
+    expect(first.widget.root.scale.y).toBeCloseTo(1.16);
+    expect(first.widget.root.alpha).toBe(1);
+
+    ticker.tick(1_000);
+    expect(layer.getStats().active.spend).toBe(0);
+    layer.emitReward({
+      visualOnly: true,
+      spendBursts: [
+        {
+          anchor: { x: 120, y: 220 },
+          resource: 'mana',
+        },
+      ],
+    });
+    expect(layer.getStats().pools.spend.allocated).toBe(7);
+
+    layer.clear();
+    layer.bind({ reducedMotion: true });
+    layer.emitReward({
+      visualOnly: true,
+      spendBursts: [
+        {
+          anchor: { x: 120, y: 220 },
+          resource: 'mana',
+        },
+      ],
+    });
+    expect(layer.getStats().active.spend).toBe(0);
+  });
 });
 
 describe('PooledPixiNotificationBadges', () => {
@@ -351,9 +445,9 @@ describe('PooledPixiNotificationBadges', () => {
         tutorialId: 'workshop:summon',
       },
     ]);
-    expect(badge.root.x).toBeCloseTo(97.215278, 6);
-    expect(badge.root.y).toBeCloseTo(2.784722, 6);
-    expect(badge.sprite.width).toBeCloseTo(9.569444, 6);
+    expect(badge.root.x).toBe(94);
+    expect(badge.root.y).toBe(6);
+    expect(badge.sprite.width).toBe(12);
     expect(badge.sprite.texture).toBe(
       assets.getTexture('source:assets/ui/notification-circle-orange.png'),
     );
@@ -519,9 +613,12 @@ describe('reward flyout presenter', () => {
     ).toEqual({
       coinTravel: {
         amount: 12,
-        fromId: 'shop.stall.2',
+        fromId: [
+          'shop.stall.2.price',
+          'shop.stall.2',
+        ],
         toId: 'top.coin',
-        showParticles: false,
+        showParticles: true,
         title: 'sold sage seed for 12 coin',
       },
     });
@@ -546,6 +643,16 @@ describe('reward flyout presenter', () => {
         'shop.tab.traders',
       ],
     });
+    expect(bought.spendBursts).toEqual([
+      {
+        anchorId: [
+          'shop.ledger.item.sageSeed',
+          'shop.ledger.open',
+          'shop.tab.traders',
+        ],
+        resource: 'coin',
+      },
+    ]);
 
     expect(
       createRewardVisualPresentation({

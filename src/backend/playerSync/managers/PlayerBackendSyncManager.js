@@ -6,6 +6,10 @@ import {
   DEFAULT_PLAYER_FONT,
   normalizePlayerFont,
 } from '../../../player/playerFonts.js';
+import {
+  DEFAULT_PLAYER_FRAME,
+  normalizePlayerFrame,
+} from '../../../player/playerFrames.js';
 
 export class PlayerBackendSyncManager {
   constructor() {
@@ -104,6 +108,7 @@ export class PlayerBackendSyncManager {
             font: profile.font,
             colorMode: profile.colorMode,
             character: profile.character,
+            frame: profile.frame,
             usernamePromptSeen: profile.usernamePromptSeen,
           })
         : setUsername({ username: profile.username });
@@ -179,6 +184,7 @@ export class PlayerBackendSyncManager {
       font: normalizePlayerFont(snapshot?.font ?? DEFAULT_PLAYER_FONT),
       colorMode: snapshot?.colorMode ?? 'resources',
       character: snapshot?.character ?? 'elara',
+      frame: normalizePlayerFrame(snapshot?.frame ?? DEFAULT_PLAYER_FRAME),
       usernamePromptSeen: Boolean(snapshot?.usernamePromptSeen),
     };
   }
@@ -190,6 +196,7 @@ export class PlayerBackendSyncManager {
       font: normalizePlayerFont(profile?.font ?? DEFAULT_PLAYER_FONT),
       colorMode: profile?.colorMode ?? 'resources',
       character: profile?.character ?? 'elara',
+      frame: normalizePlayerFrame(profile?.frame ?? DEFAULT_PLAYER_FRAME),
       usernamePromptSeen: Boolean(profile?.usernamePromptSeen),
     };
   }
@@ -213,6 +220,7 @@ export class PlayerBackendSyncManager {
       font: profile.font,
       colorMode: profile.colorMode,
       character: profile.character,
+      frame: profile.frame,
       usernamePromptSeen: Boolean(profile.usernamePromptSeen),
     });
   }
@@ -238,6 +246,7 @@ export class PlayerBackendSyncManager {
     this.playerFacade?.setFont?.(profile.font);
     this.playerFacade?.setColorMode?.(profile.colorMode);
     this.playerFacade?.setCharacter?.(profile.character);
+    this.playerFacade?.setFrame?.(profile.frame);
 
     if (profile.usernamePromptSeen) {
       this.playerFacade?.markUsernamePromptSeen?.();

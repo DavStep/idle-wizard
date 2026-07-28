@@ -7,7 +7,6 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setResourceColor, setResourceColorFromText } from '../../shared/resourceColor.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
-import { setInfoButtonIcon } from '../../shared/infoButton.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
 const LEDGER_TABS = [
@@ -26,7 +25,6 @@ export class ShopMarketLedgerManager {
     this.unsubscribe = null;
     this.lastSnapshot = null;
     this.visible = false;
-    this.helpVisible = false;
     this.buyMode = false;
     this.selectedTab = 'seed';
     this.selectedItemTypeId = null;
@@ -38,9 +36,6 @@ export class ShopMarketLedgerManager {
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) this.hide();
     };
-    this.handleDocumentClick = (event) => {
-      if (this.helpVisible && !this.root?.contains(event.target)) this.hideHelp();
-    };
     this.handleKeydown = (event) => {
       if (event.key !== 'Escape') return;
       if (this.buyMode) {
@@ -49,9 +44,6 @@ export class ShopMarketLedgerManager {
       } else if (this.visible) {
         event.preventDefault();
         this.hide();
-      } else if (this.helpVisible) {
-        event.preventDefault();
-        this.hideHelp();
       }
     };
   }
@@ -64,7 +56,6 @@ export class ShopMarketLedgerManager {
     this.refs.popup = this.createPopup();
     buttonParent.append(this.root);
     popupParent.append(this.refs.popup);
-    document.addEventListener('click', this.handleDocumentClick);
     document.addEventListener('keydown', this.handleKeydown);
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => {
       this.lastSnapshot = snapshot;
@@ -78,7 +69,6 @@ export class ShopMarketLedgerManager {
 
   unmount() {
     this.unsubscribe?.();
-    document.removeEventListener('click', this.handleDocumentClick);
     document.removeEventListener('keydown', this.handleKeydown);
     this.refs.popup?.removeEventListener('click', this.handlePopupClick);
     this.root?.remove();
@@ -87,7 +77,6 @@ export class ShopMarketLedgerManager {
     this.unsubscribe = null;
     this.lastSnapshot = null;
     this.visible = false;
-    this.helpVisible = false;
     this.buyMode = false;
     this.selectedItemTypeId = null;
     this.refs = { tabButtons: new Map(), rows: new Map(), history: [] };
@@ -103,24 +92,7 @@ export class ShopMarketLedgerManager {
     this.refs.openButton.textContent = 'market ledger';
     this.refs.openButton.addEventListener('click', () => this.show());
 
-    this.refs.helpButton = document.createElement('button');
-    this.refs.helpButton.className = 'style-button shop-page__ledger-help-button';
-    this.refs.helpButton.type = 'button';
-    setInfoButtonIcon(this.refs.helpButton);
-    this.refs.helpButton.setAttribute('aria-label', 'how the market ledger works');
-    this.refs.helpButton.setAttribute('aria-expanded', 'false');
-    this.refs.helpButton.addEventListener('click', (event) => {
-      event.stopPropagation();
-      this.helpVisible ? this.hideHelp() : this.showHelp();
-    });
-
-    this.refs.help = document.createElement('div');
-    this.refs.help.className = 'style-tooltip shop-page__ledger-help';
-    this.refs.help.textContent = 'compare trader prices, stock, buyers, and recent changes.';
-    this.refs.help.hidden = true;
-    this.refs.help.setAttribute('role', 'tooltip');
-
-    root.append(this.refs.openButton, this.refs.helpButton, this.refs.help);
+    root.append(this.refs.openButton);
     return root;
   }
 
@@ -294,7 +266,6 @@ export class ShopMarketLedgerManager {
   show() {
     this.previousFocus = document.activeElement;
     this.visible = true;
-    this.helpVisible = false;
     this.statusText = '';
     this.applyVisibility();
     this.render();
@@ -311,21 +282,10 @@ export class ShopMarketLedgerManager {
     this.previousFocus = null;
   }
 
-  showHelp() {
-    this.helpVisible = true;
-    this.applyHelpVisibility();
-  }
-
-  hideHelp() {
-    this.helpVisible = false;
-    this.applyHelpVisibility();
-  }
-
   render() {
     if (!this.lastSnapshot) return;
     const market = this.lastSnapshot.shop?.market;
     this.refs.title.textContent = `${String(market?.name ?? 'market')} ledger`;
-    this.applyHelpVisibility();
     if (!this.visible) return;
 
     for (const tab of LEDGER_TABS) {
@@ -626,13 +586,7 @@ export class ShopMarketLedgerManager {
 
   applyVisibility() {
     if (this.refs.popup) this.refs.popup.hidden = !this.visible;
-    this.applyHelpVisibility();
     this.applyBuyMode();
-  }
-
-  applyHelpVisibility() {
-    if (this.refs.help) this.refs.help.hidden = !this.helpVisible;
-    this.refs.helpButton?.setAttribute('aria-expanded', this.helpVisible ? 'true' : 'false');
   }
 
   applyBuyMode() {

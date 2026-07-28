@@ -33,7 +33,7 @@ describe('RewardFlyoutManager', () => {
     vi.unstubAllGlobals();
   });
 
-  it('keeps automatic sale feedback to one lightweight amount pop when icons are enabled', () => {
+  it('flies a capped coin trail from an automatic sale to the currency widget', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const host = document.createElement('section');
     const summonCircle = document.createElement('span');
@@ -87,7 +87,7 @@ describe('RewardFlyoutManager', () => {
     expect(document.querySelector('.room-reward-flyout')?.classList).toContain(
       'is-visual-only',
     );
-    expect(document.querySelectorAll('.room-coin-particle')).toHaveLength(0);
+    expect(document.querySelectorAll('.room-coin-particle')).toHaveLength(4);
     expect(document.querySelectorAll('.room-coin-amt-pop')).toHaveLength(1);
     expect(document.querySelector('.room-coin-amt-pop')?.textContent).toBe('+1000G');
     expect(document.querySelector('.room-coin-amt-pop')?.style.left).toBe('465px');

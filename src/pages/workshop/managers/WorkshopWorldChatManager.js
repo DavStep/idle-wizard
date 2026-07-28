@@ -139,29 +139,26 @@ export class WorkshopWorldChatManager {
   }
 
   createBox() {
-    const box = document.createElement('section');
+    const box = document.createElement('button');
     box.className = 'workshop-page__world-chat-box style-box';
+    box.type = 'button';
     box.setAttribute('aria-label', 'Chat preview');
+    box.addEventListener('click', () => this.show());
 
     this.refs.button = this.createButton();
-    this.refs.buttonPreview = document.createElement('div');
+    this.refs.buttonPreview = document.createElement('span');
     this.refs.buttonPreview.className = 'workshop-page__world-chat-preview';
-    this.refs.buttonPreview.dataset.pressStartClick = 'true';
-    this.refs.buttonPreview.setAttribute('role', 'button');
-    this.refs.buttonPreview.tabIndex = 0;
-    this.refs.buttonPreview.addEventListener('click', () => this.show());
 
     box.append(this.refs.button, this.refs.buttonPreview);
     return box;
   }
 
   createButton() {
-    const button = document.createElement('button');
-    button.className = 'workshop-page__world-chat-button workshop-page__world-chat-title style-box__title';
-    button.type = 'button';
-    button.textContent = 'World Chat';
-    button.addEventListener('click', () => this.show());
-    return button;
+    const label = document.createElement('span');
+    label.className =
+      'workshop-page__world-chat-button workshop-page__world-chat-title style-box__title';
+    label.textContent = 'World Chat';
+    return label;
   }
 
   createPopup() {
@@ -460,8 +457,11 @@ export class WorkshopWorldChatManager {
     }
   }
 
-  createMessage(message, { interactiveSender = true } = {}) {
-    const row = document.createElement('div');
+  createMessage(
+    message,
+    { interactiveSender = true, elementTag = 'div' } = {},
+  ) {
+    const row = document.createElement(elementTag);
     row.className = 'workshop-page__world-chat-message';
     const isSystemMessage = this.isSystemMessage(message);
     const isRecipeDiscoveryMessage = this.isRecipeDiscoveryMessage(message);
@@ -623,18 +623,23 @@ export class WorkshopWorldChatManager {
     }
 
     if (!messages.length) {
-      const empty = document.createElement('div');
+      const empty = document.createElement('span');
       empty.className = 'workshop-page__world-chat-empty';
       empty.textContent = this.getSelectedSnapshot().connected ? 'no messages yet' : 'offline';
       this.refs.buttonPreview.replaceChildren(empty);
-      this.refs.button.setAttribute('aria-label', `${channel.label}, ${empty.textContent}`);
+      this.refs.box.setAttribute('aria-label', `${channel.label}, ${empty.textContent}`);
       return;
     }
 
     this.refs.buttonPreview.replaceChildren(
-      ...messages.map((message) => this.createMessage(message, { interactiveSender: false })),
+      ...messages.map((message) =>
+        this.createMessage(message, {
+          interactiveSender: false,
+          elementTag: 'span',
+        }),
+      ),
     );
-    this.refs.button.setAttribute(
+    this.refs.box.setAttribute(
       'aria-label',
       `${channel.label}, latest messages: ${messages
         .map((message) => {

@@ -12,6 +12,7 @@ experience_type: communication
 # Experience: Communication
 
 - Use Ponytail-style engineering by default: read first, then make the smallest correct change; keep communication concise, technical, and no-filler.
+- Discord changelogs and feature announcements are developer-to-player communication: describe Idle Wizard changes on their own terms and never mention other game names, source projects, ports, or where an implementation came from. Technical provenance belongs only in developer-facing notes.
 - If a requested feature is ambiguous, ask first instead of guessing.
 - For new game design requests, ask about open questions or suggest better options before starting when useful.
 - The user wants only what was asked for; avoid adding gameplay, visuals, or extra systems early.

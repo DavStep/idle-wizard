@@ -7,6 +7,7 @@ import { installPixiPageTestCanvas } from '../pages/workshop/PixiPageTestHarness
 import {
   createPixiThemeSnapshot,
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
 import { PixiButton } from './PixiButton.js';
 
@@ -68,6 +69,37 @@ describe('PixiButton', () => {
     expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
     );
+
+    button.destroy({ children: true });
+  });
+
+  it('uses Root Run notification padding for regular buttons and tabs', () => {
+    const getTexture = vi.fn(() => Texture.EMPTY);
+    const button = new PixiButton({
+      assetManager: { getTexture },
+      width: 100,
+      height: 30,
+      variant: 'green',
+    });
+
+    button.setNotification(true);
+
+    expect(PIXI_UI_GEOMETRY).toMatchObject({
+      notificationSize: 12,
+      notificationOutset: 0,
+      notificationTabInset: 4,
+    });
+    expect(button.notificationBadge.root.position).toMatchObject({
+      x: 94,
+      y: 6,
+    });
+
+    button.setVariant('tab');
+
+    expect(button.notificationBadge.root.position).toMatchObject({
+      x: 90,
+      y: 10,
+    });
 
     button.destroy({ children: true });
   });

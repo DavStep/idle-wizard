@@ -3,9 +3,9 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 
 const MARKET_TABS = [
-  { id: 'npm', label: 'traders' },
-  { id: 'player', label: 'players' },
-  { id: 'crystals', label: 'crystals' },
+  { id: 'npm', label: 'Traders' },
+  { id: 'player', label: 'Players' },
+  { id: 'crystals', label: 'Crystals' },
 ];
 
 export class ShopMarketTabsManager {

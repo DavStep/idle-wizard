@@ -8,6 +8,6 @@ The `traders` tab contains `your stalls` and the Market Ledger. Tap a stall to o
 
 The ledger groups seeds, herbs, and potions while showing trader prices, stock, buyer need, and recent price history; it also owns trader purchases. Recent-history blocks keep visible separation, and an unchanged price reads `0 / Nh` without a direction or sign. The `players` tab contains local player requests and player-to-player listings. `browse market` uses `selling` and `buying` popup tabs; `selling` shows backend public listings, while `buying` shows backend public request rows. Buying rows can prefill a matching player listing from an empty stand when the local player owns the requested item. Direct request fulfillment is not implemented until escrow/delivery behavior is explicit.
 
-Keep shared info-icon help limited to timed stalls and the ledger. Explanations stay to one short sentence or two compact clauses.
+Keep the stalls and Market Ledger actions self-explanatory without separate info controls.
 
-For deterministic stall-layout QA without a backend account, open `/src/dev/uiRecipes/market-stalls.html` on the shared Vite server.
+For deterministic stall-layout QA without a backend account, open `/src/dev/uiRecipes/market-stalls.html` on the shared Vite server. Use `/src/dev/uiRecipes/market-stalls-retained.html?stalls=single` for the retained one-stall composition.

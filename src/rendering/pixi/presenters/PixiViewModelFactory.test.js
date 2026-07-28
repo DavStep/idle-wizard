@@ -45,6 +45,23 @@ describe('PixiViewModelFactory', () => {
     });
   });
 
+  it('keeps crystal visible as the default top-HUD context currency', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createTopPanel({
+      gameplay: {
+        crystal: { current: 7 },
+      },
+      player: { username: 'Mira', character: 'elara' },
+      pageId: 'workshop',
+    });
+
+    expect(model.contextCurrency).toEqual({
+      resource: 'crystal',
+      amount: 7,
+      visible: true,
+    });
+  });
+
   it('maps the active request without moving gameplay rules into the view', () => {
     const fillTask = vi.fn();
     const factory = new PixiViewModelFactory();

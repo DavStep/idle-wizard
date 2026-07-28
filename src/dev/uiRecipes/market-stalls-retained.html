@@ -48,6 +48,11 @@
             name: 'Crossroads Market',
             rank: 2,
           },
+          coinOffer: {
+            rewardCoin: 80,
+            canCollect: false,
+            cooldownRemainingSeconds: 7_020,
+          },
           shelf: {
             autoSellSeconds: 5,
             sellKinds: [{ kind: 'seed', label: 'seeds' }],
@@ -82,7 +87,7 @@
                 sellKey: 'sageSeed',
                 sellLabel: 'sage seed',
                 loadedQuantity: 462,
-                batchSize: 3,
+                batchSize: 1,
                 sellCoin: 1,
                 sellProgressSeconds: 2.5,
               },
@@ -139,10 +144,26 @@
       };
 
       const canvas = document.querySelector('canvas');
-      const dialogQuery =
-        new URLSearchParams(window.location.search).get('dialog');
+      const query = new URLSearchParams(window.location.search);
+      const dialogQuery = query.get('dialog');
+      const selectedTabId =
+        query.get('tab') === 'crystals' ? 'crystals' : 'traders';
       const showStallDialog = dialogQuery === 'stall';
       const showLedgerDialog = dialogQuery === 'ledger';
+      if (query.get('stalls') === 'full') {
+        const slotTemplates = gameplaySnapshot.shop.shelf.slots;
+        gameplaySnapshot.shop.shelf.slots = Array.from(
+          { length: 5 },
+          (_, index) => ({
+            ...slotTemplates[index % slotTemplates.length],
+            slotNumber: index + 1,
+          }),
+        );
+      }
+      if (query.get('stalls') === 'single') {
+        gameplaySnapshot.shop.shelf.slots =
+          gameplaySnapshot.shop.shelf.slots.slice(0, 1);
+      }
       if (showStallDialog) {
         gameplaySnapshot.shop.shelf.sellItems[0].quantity = 119;
         gameplaySnapshot.shop.shelf.slots[0].loadedQuantity = 10;
@@ -171,6 +192,7 @@
       const createViewModel = () =>
         createShop({
           gameplaySnapshot,
+          selectedTabId,
           uiState: {
             ledgerKind,
             ...(showStallDialog

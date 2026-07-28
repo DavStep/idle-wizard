@@ -39,6 +39,7 @@ export const PIXI_TRANSIENT_LIMITS = Object.freeze({
   itemDrops: 12,
   coinParticles: 8,
   coinAmounts: 4,
+  spendParticles: 28,
 });
 
 export const PIXI_TRANSIENT_TIMING = Object.freeze({
@@ -55,6 +56,22 @@ export const PIXI_TRANSIENT_TIMING = Object.freeze({
   coinTargetPulseLeadMs: 140,
 });
 
+const SPEND_BURST = Object.freeze({
+  count: 7,
+  gravity: 760,
+  sizeScale: 1.6,
+  timeScale: 1.3,
+  spreadScale: 1.5,
+});
+const SPEND_RESOURCE_FRAMES = Object.freeze({
+  coin: 'resource:coin',
+  crystal: 'resource:crystal',
+  emerald: 'resource:emerald',
+  herb: 'herb:sageHerb',
+  mana: 'resource:mana',
+  ruby: 'resource:ruby',
+  seed: 'seed:pack',
+});
 const ITEM_DROP_SIZES = Object.freeze({
   seed: 34,
   herb: 38,
@@ -161,6 +178,18 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
       reset: (widget) => widget.reset(),
       dispose: (widget) => widget.destroy(),
     });
+    this.spendPool = new WidgetPool({
+      name: 'Pixi spend burst particles',
+      counters,
+      maxSize: PIXI_TRANSIENT_LIMITS.spendParticles,
+      create: () =>
+        new SpendBurstParticleWidget({
+          assets: this.assets,
+          parent: this.visualRoot,
+        }),
+      reset: (widget) => widget.reset(),
+      dispose: (widget) => widget.destroy(),
+    });
     this.coinTargetPulse = new CoinTargetPulseWidget();
     this.applyTheme(theme);
     this.layout({
@@ -211,6 +240,7 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
     this.itemPool.destroy();
     this.coinPool.destroy();
     this.amountPool.destroy();
+    this.spendPool.destroy();
     this.coinTargetPulse.destroy();
   }
 
@@ -225,6 +255,7 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
    *   keepMessageVisible?: boolean,
    *   itemDrops?: Array<object>,
    *   coinTravel?: object,
+   *   spendBursts?: Array<object>,
    * }} model
    */
   emitReward(model = {}) {
@@ -233,6 +264,7 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
     if (!this.prefersReducedMotion() && this.theme?.iconMode === 'icons') {
       visualCount += this.emitItemDrops(normalized.itemDrops);
       visualCount += this.emitCoinTravel(normalized.coinTravel);
+      visualCount += this.emitSpendBursts(normalized.spendBursts);
     }
     const visualOnly =
       normalized.visualOnly ??
@@ -437,6 +469,45 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
       ),
     });
     return count + 1;
+  }
+
+  emitSpendBursts(bursts) {
+    let count = 0;
+    for (const burst of bursts ?? []) {
+      const anchor = this.resolveAnchor(
+        burst.anchor ?? burst.anchorId,
+      );
+      if (!anchor) {
+        continue;
+      }
+      const textureModel = normalizeSpendTextureModel(burst);
+      validateSpendTexture(this.assets, textureModel);
+      for (let index = 0; index < SPEND_BURST.count; index += 1) {
+        this.releaseOldestAtLimit(
+          'spend',
+          PIXI_TRANSIENT_LIMITS.spendParticles,
+        );
+        const widget = acquireBoundWidget(
+          this.spendPool,
+          (candidate) => {
+            candidate.bind(`spend-${++this.sequence}`, {
+              ...textureModel,
+              anchor,
+              random: this.random,
+            });
+          },
+        );
+        this.addEntry({
+          kind: 'spend',
+          widget,
+          pool: this.spendPool,
+          delayMs: 0,
+          durationMs: widget.durationMs,
+        });
+        count += 1;
+      }
+    }
+    return count;
   }
 
   startCoinTargetPulse({
@@ -650,12 +721,14 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
         coin: this.countEntries('coin'),
         amount: this.countEntries('amount'),
         coinTarget: this.countEntries('coinTarget'),
+        spend: this.countEntries('spend'),
       }),
       pools: Object.freeze({
         text: this.textPool.getStats(),
         item: this.itemPool.getStats(),
         coin: this.coinPool.getStats(),
         amount: this.amountPool.getStats(),
+        spend: this.spendPool.getStats(),
       }),
     });
   }
@@ -886,10 +959,13 @@ export function createRewardVisualPresentation(event) {
       coinTravel: {
         amount: event.coin,
         fromId: Number.isInteger(slotNumber)
-          ? `shop.stall.${slotNumber}`
+          ? [
+              `shop.stall.${slotNumber}.price`,
+              `shop.stall.${slotNumber}`,
+            ]
           : 'shop.tab.traders',
         toId: 'top.coin',
-        showParticles: false,
+        showParticles: true,
         title: formatRewardEventMessage(event),
       },
     };
@@ -900,22 +976,35 @@ export function createRewardVisualPresentation(event) {
       event.item,
       kind,
     );
-    return textureModel
-      ? {
-          itemDrops: Array.from(
-            {
-              length: getVisualDropQuantity(event.quantity),
-            },
-            (_, index) => ({
-              id: createRewardVisualId(event, kind, index),
-              kind,
-              ...textureModel,
-              anchorId: createBoughtItemAnchorIds(event),
-              anchorYRatio: 0.5,
-            }),
-          ),
-        }
-      : {};
+    const anchorId = createBoughtItemAnchorIds(event);
+    return {
+      ...(textureModel
+        ? {
+            itemDrops: Array.from(
+              {
+                length: getVisualDropQuantity(event.quantity),
+              },
+              (_, index) => ({
+                id: createRewardVisualId(event, kind, index),
+                kind,
+                ...textureModel,
+                anchorId,
+                anchorYRatio: 0.5,
+              }),
+            ),
+          }
+        : {}),
+      ...(Number(event.coin) > 0
+        ? {
+            spendBursts: [
+              {
+                anchorId,
+                resource: 'coin',
+              },
+            ],
+          }
+        : {}),
+    };
   }
   if (
     event.type === 'coin_collected' &&
@@ -1405,6 +1494,117 @@ class CoinParticleWidget {
   }
 }
 
+class SpendBurstParticleWidget {
+  constructor({ assets, parent }) {
+    this.assets = assets;
+    this.root = new Container();
+    this.root.label = 'spendBurstParticle';
+    this.root.eventMode = 'none';
+    this.sprite = new Sprite({
+      texture: Texture.EMPTY,
+      roundPixels: true,
+    });
+    this.sprite.anchor.set(0.5);
+    this.root.addChild(this.sprite);
+    parent.addChild(this.root);
+    this.durationMs = 1;
+    this.model = null;
+  }
+
+  bind(_key, model) {
+    const random = model.random;
+    const size =
+      randomBetween(26, 36, random) * SPEND_BURST.sizeScale;
+    const lifetimeSeconds = randomBetween(0.68, 0.88, random);
+    this.model = {
+      anchor: model.anchor,
+      startX:
+        model.anchor.x +
+        randomBetween(-16, 16, random) *
+          SPEND_BURST.spreadScale,
+      startY:
+        model.anchor.y + randomBetween(-6, 8, random),
+      startRotation: randomBetween(-0.3, 0.3, random),
+      velocityX:
+        randomBetween(-125, 125, random) *
+        SPEND_BURST.spreadScale,
+      velocityY: randomBetween(-270, -165, random),
+      spin: randomBetween(-6.5, 6.5, random),
+      lifetimeSeconds,
+    };
+    this.durationMs =
+      (lifetimeSeconds / SPEND_BURST.timeScale) * 1_000;
+    this.sprite.texture = resolveTexture(this.assets, model);
+    this.sprite.width = size;
+    this.sprite.height = size;
+    this.root.position.set(
+      this.model.startX,
+      this.model.startY,
+    );
+    this.root.rotation = this.model.startRotation;
+    this.root.scale.set(1);
+    this.root.alpha = 1;
+    this.root.visible = true;
+    this.root.renderable = true;
+  }
+
+  applyTheme() {}
+
+  update(progress, { delayed, elapsedMs = 0 }) {
+    if (delayed || !this.model) {
+      this.root.alpha = 0;
+      return;
+    }
+    const elapsedSeconds =
+      Math.max(0, elapsedMs) /
+      1_000 *
+      SPEND_BURST.timeScale;
+    const boundedProgress = Math.min(1, Math.max(0, progress));
+    this.root.position.set(
+      this.model.startX +
+        this.model.velocityX * elapsedSeconds,
+      this.model.startY +
+        this.model.velocityY * elapsedSeconds +
+        0.5 *
+          SPEND_BURST.gravity *
+          elapsedSeconds *
+          elapsedSeconds,
+    );
+    this.root.rotation =
+      this.model.startRotation +
+      this.model.spin * elapsedSeconds;
+    const pop =
+      1 + Math.sin(boundedProgress * Math.PI) * 0.16;
+    const flip =
+      0.32 +
+      Math.abs(
+        Math.cos(boundedProgress * Math.PI * 3.5),
+      ) *
+        0.68;
+    this.root.scale.set(pop * flip, pop);
+    this.root.alpha =
+      boundedProgress < 0.58
+        ? 1
+        : 1 -
+          (boundedProgress - 0.58) / 0.42;
+  }
+
+  reset() {
+    this.root.visible = false;
+    this.root.renderable = false;
+    this.root.alpha = 0;
+    this.root.scale.set(1);
+    this.root.rotation = 0;
+    this.sprite.texture = Texture.EMPTY;
+    this.model = null;
+    this.durationMs = 1;
+  }
+
+  destroy() {
+    this.root.destroy({ children: true });
+  }
+}
+
 class CoinAmountWidget {
   constructor({ parent }) {
     this.root = new Container();
@@ -1416,6 +1616,11 @@ class CoinAmountWidget {
       fontWeight: 'bold',
       anchor: { x: 0.5, y: 0.5 },
       color: (theme) => theme.resourceColors.coin,
+      stroke: {
+        color: '#0a0a0a',
+        width: 2,
+        join: 'round',
+      },
       label: 'coinAmount:label',
     });
     this.root.addChild(this.label);
@@ -1591,6 +1796,29 @@ function normalizeRewardModel(model) {
       ? model.itemDrops
       : [],
     coinTravel: model.coinTravel ?? null,
+    spendBursts: Array.isArray(model.spendBursts)
+      ? model.spendBursts
+      : [],
+  };
+}
+
+function normalizeSpendTextureModel(model) {
+  if (
+    model?.texture ||
+    model?.frameName ||
+    model?.textureId ||
+    model?.assetId
+  ) {
+    return model;
+  }
+  const resource = String(model?.resource ?? 'coin')
+    .trim()
+    .toLowerCase();
+  return {
+    ...model,
+    frameName:
+      SPEND_RESOURCE_FRAMES[resource] ??
+      SPEND_RESOURCE_FRAMES.coin,
   };
 }
 
@@ -1859,6 +2087,10 @@ function validateItemDropTexture(assets, model) {
   resolveTexture(assets, model);
 }
 
+function validateSpendTexture(assets, model) {
+  resolveTexture(assets, model);
+}
+
 function validateInlineIconTexture(assets, model) {
   if (model.baseFrameName && model.itemFrameName) {
     resolveTexture(assets, { frameName: model.baseFrameName });
@@ -1866,6 +2098,10 @@ function validateInlineIconTexture(assets, model) {
     return;
   }
   resolveTexture(assets, model);
+}
+
+function randomBetween(minimum, maximum, random = Math.random) {
+  return minimum + random() * (maximum - minimum);
 }
 
 function formatItemQuantity(

@@ -13,10 +13,9 @@ is yellow, Automation is red, Advanced is emerald green, and the `emerald`
 Crystal Research tab is purple. The visible category title remains the primary
 identifier.
 
-Rows and boxes are keyed and pooled. Selecting an unlocked label opens the
-lazy-once `research.info` dialog through the injected `DialogRegistry`.
-Selecting a locked row keeps the requirement off the cost button and opens the
-retained theme tooltip instead.
+Rows and boxes are keyed and pooled. Research labels are passive; the cost
+button owns available purchases. Selecting a locked row keeps the requirement
+off the cost button and opens the retained theme tooltip instead.
 
 Item-unlock rows consume `itemKind` and `itemKey`: seeds render the shared
 seed-pack plus matching herb mark, and potion recipes render the exact potion

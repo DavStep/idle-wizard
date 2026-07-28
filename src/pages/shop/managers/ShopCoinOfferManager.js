@@ -26,7 +26,7 @@ export class ShopCoinOfferManager {
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'coin offer';
+    title.textContent = 'Coin Offer';
 
     const row = document.createElement('div');
     row.className = 'shop-page__coin-offer-row';
@@ -77,7 +77,7 @@ export class ShopCoinOfferManager {
     this.setResourceText(this.refs.reward, rewardText);
     this.setText(
       this.refs.action,
-      offer.canCollect ? 'collect' : this.formatTimer(offer.cooldownRemainingSeconds),
+      offer.canCollect ? 'Collect' : this.formatTimer(offer.cooldownRemainingSeconds),
     );
     this.refs.action.disabled = !offer.canCollect;
     this.refs.action.setAttribute('aria-disabled', offer.canCollect ? 'false' : 'true');

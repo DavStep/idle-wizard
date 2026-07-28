@@ -111,9 +111,12 @@ describe('base styles', () => {
     const notificationSize = Number(
       rootRule.match(/--style-notification-size:\s*([\d.]+)px;/)?.[1],
     );
-    expect(notificationSize).toBeCloseTo(9.569444, 6);
+    expect(notificationSize).toBe(12);
     expect(rootRule).toContain(
-      '--style-notification-offset: 2px;',
+      '--style-notification-offset: 0px;',
+    );
+    expect(rootRule).toContain(
+      '--style-notification-tab-inset: 4px;',
     );
     expect([red.width, red.height]).toEqual([61, 65]);
     expect([orange.width, orange.height]).toEqual([red.width, red.height]);
@@ -170,6 +173,23 @@ describe('base styles', () => {
     );
 
     expect(costButtonRule).toContain('-webkit-text-stroke: 4px #0a0a0a;');
+  });
+
+  it('outlines the coin amount flyout with the shared HUD stroke', () => {
+    const rule = getRuleBody(
+      /\.room-coin-amt-pop\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(rule).toMatch(
+      /-webkit-text-stroke:\s+var\(--style-page-tab-label-text-stroke-width\)/,
+    );
+    expect(rule).toContain(
+      'var(--style-yellow-button-text-stroke);',
+    );
+    expect(rule).toContain('paint-order: stroke fill;');
+    expect(rule).toContain(
+      '0 1px 0 var(--style-yellow-button-text-stroke),',
+    );
   });
 
   it('opens the Garden in its settled state without a page-entry animation', () => {
@@ -234,9 +254,6 @@ describe('base styles', () => {
     );
     const closeRule = getRuleBody(
       /\.game-stage[\s\S]*?button:is\(\[class\*="__close"\], \[class\*="-close"\]\):not\([\s\S]*?\.guild-page__close\s*\{(?<body>[^}]*)\}/,
-    );
-    const researchDialogRule = getRuleBody(
-      /\.style-dialog\.research-page__info-dialog\s*\{(?<body>[^}]*)\}/,
     );
     const assetDir = `${cwd()}/assets/game/source/ui/root-run-dialog`;
     const back = PNG.sync.read(
@@ -321,15 +338,6 @@ describe('base styles', () => {
     expect(titleRule).toContain('font-weight: 400;');
     expect(titleRule).toContain('place-items: start center;');
     expect(titleRule).toContain('background: transparent;');
-    expect(researchDialogRule).toContain('width: 304px;');
-    expect(researchDialogRule).toContain('min-height: 53px;');
-    expect(researchDialogRule).toContain(
-      'padding-top: calc(var(--style-dialog-padding) + 5px);',
-    );
-    expect(researchDialogRule).toContain(
-      'padding-bottom: calc(var(--style-dialog-padding) - 5px);',
-    );
-    expect(researchDialogRule).toContain('align-content: center;');
     expect(closeRule).toContain(
       'background: transparent var(--style-dialog-close-image) center / contain no-repeat;',
     );

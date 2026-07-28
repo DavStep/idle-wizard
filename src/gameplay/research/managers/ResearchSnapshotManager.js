@@ -170,7 +170,7 @@ export class ResearchSnapshotManager {
 
   formatCost(cost) {
     if (cost.amount === 0) {
-      return 'free';
+      return 'Free';
     }
 
     return `${cost.amount} ${cost.currency}`;

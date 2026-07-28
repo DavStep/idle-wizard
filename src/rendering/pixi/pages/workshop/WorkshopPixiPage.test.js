@@ -1069,11 +1069,13 @@ describe('WorkshopPixiPage', () => {
     const reserveStyle = reserveRow.keyLabel.textObject.style;
 
     expect(assetManager.getTexture).toHaveBeenCalledWith(
-      'source:assets/icons/icon-settings-cog.png',
+      PIXI_ROOT_RUN_ASSETS.settingsGear,
     );
     expect(autoRow.itemIcon.visible).toBe(true);
     expect(autoRow.itemIcon.x).toBeLessThan(autoRow.keyLabel.x);
-    expect(autoRow.itemIcon.width).toBe(26);
+    expect(autoRow.itemIcon.width).toBe(
+      26 * PIXI_ROOT_RUN_GEOMETRY.settings.gearAspectRatio,
+    );
     expect(autoRow.itemIcon.height).toBe(26);
     expect(
       autoRow.root.position.y +
@@ -1372,19 +1374,56 @@ describe('WorkshopPixiPage', () => {
     harness.page.openDialog('worldChat');
     const dialog = harness.dialogs.get('workshop.worldChat');
 
+    expect(dialog.composerSubmit.enabled).toBe(true);
+    await expect(dialog.submitComposer()).resolves.toBe(false);
+    expect(send).not.toHaveBeenCalled();
+
     dialog.composerField.setValue('hello', { notify: true });
     await expect(dialog.submitComposer()).resolves.toBe(false);
     expect(dialog.composerField.value).toBe('hello');
-    expect(dialog.status.text).toBe('chat busy');
+    expect(dialog.status.text).toBe('');
 
     await expect(dialog.submitComposer()).resolves.toBe(true);
     expect(dialog.composerField.value).toBe('');
-    expect(dialog.status.text).toBe('sent');
+    expect(dialog.status.text).toBe('');
+    expect(dialog.composerSubmit.enabled).toBe(true);
     expect(send).toHaveBeenCalledTimes(2);
 
     harness.dialogs.close('workshop.worldChat');
     expect(dialog.composerField.focused).toBe(false);
     expect(dialog.status.text).toBe('');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('opens World Chat at the newest message', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.worldChat = {
+      title: 'World Chat',
+      composer: {
+        placeholder: 'Message',
+        maxLength: 160,
+        enabled: true,
+      },
+      rows: Array.from({ length: 20 }, (_, index) => ({
+        id: `system-${index}`,
+        type: 'system',
+        username: 'System',
+        body: `Message ${index}`,
+        ageLabel: `${20 - index}m ago`,
+      })),
+      onSubmit: vi.fn(),
+    };
+    harness.page.bind(model);
+    harness.page.openDialog('worldChat');
+    const dialog = harness.dialogs.get('workshop.worldChat');
+
+    expect(dialog.scroll.offsetY).toBeGreaterThan(0);
+    expect(dialog.scroll.offsetY).toBe(
+      dialog.scroll.contentHeight - dialog.scroll.height,
+    );
 
     harness.page.destroy();
     harness.dispose();
@@ -1443,6 +1482,8 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.composerField.placeholder).toBe('Message');
     expect(dialog.composerSubmit.control.variant).toBe('yellow');
     expect(dialog.composerSubmit.text.text).toBe('Send');
+    expect(dialog.composerSubmit.enabled).toBe(true);
+    expect(dialog.composerField.y).toBe(342);
     expect(
       dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight,
     ).toBeLessThan(dialog.composerField.y);
@@ -1468,6 +1509,7 @@ describe('WorkshopPixiPage', () => {
     expect(playerRow.avatar.eventMode).toBe('static');
     expect(playerRow.username.eventMode).toBe('static');
     expect(playerRow.action).toBeUndefined();
+    expect(playerRow.root.y).toBe(8);
     const avatarPress = pressRegistrations.find(
       ({ displayObject }) => displayObject === playerRow.avatar,
     );
@@ -1495,7 +1537,7 @@ describe('WorkshopPixiPage', () => {
     expect(systemRow.action).toBeUndefined();
     expect(systemRow.getPreferredHeight()).toBeLessThanOrEqual(28);
     expect(systemRow.root.y - playerRow.root.y).toBe(
-      playerRow.getPreferredHeight() + 2,
+      playerRow.getPreferredHeight() + 3,
     );
 
     harness.page.destroy();
@@ -1705,12 +1747,12 @@ describe('WorkshopPixiPage', () => {
     const badge = harness.page.summon.notification;
     const retainedRoot = badge.root;
     expect(badge.root.parent).toBe(harness.page.summon.button);
-    expect(badge.root.position.x).toBeCloseTo(89.215278, 6);
-    expect(badge.root.position.y).toBeCloseTo(2.784722, 6);
+    expect(badge.root.position.x).toBe(86);
+    expect(badge.root.position.y).toBe(6);
     expect(badge.root.visible).toBe(true);
     expect(badge.root.renderable).toBe(true);
     expect(badge.model.tone).toBe('orange');
-    expect(badge.sprite.width).toBeCloseTo(9.569444, 6);
+    expect(badge.sprite.width).toBe(12);
 
     const suppressedModel = createWorkshopViewModel();
     suppressedModel.workshop.summon.notification = false;

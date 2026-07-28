@@ -47,8 +47,8 @@ const BAG_SCROLL_VIEWPORT_TOP_INSET =
 const BAG_ROW_VALUE_INSET_RIGHT = 2;
 const STATS_SCROLL_VIEWPORT_TOP_INSET = 6;
 const STATS_SCROLLBAR_SHIFT_RIGHT = 4;
-const WORLD_CHAT_ROW_GAP = 2;
-const WORLD_CHAT_SCROLL_PADDING_TOP = 4;
+const WORLD_CHAT_ROW_GAP = 3;
+const WORLD_CHAT_SCROLL_PADDING_TOP = 8;
 const WORLD_CHAT_CONTENT_INSET_X = 8;
 const WORLD_CHAT_CONTENT_WIDTH = 288;
 const WORLD_CHAT_AVATAR_SIZE = 22;
@@ -416,14 +416,19 @@ export class WorkshopDialogPixi {
     );
 
     if (this.composerField) {
-      this.composerField.position.set(18, height - 43);
+      this.composerField.position.set(18, height - 40);
       this.composerField.setSize(195, 27);
-      this.composerSubmit.setBounds(219, height - 43, 67, 27);
+      this.composerSubmit.setBounds(219, height - 40, 67, 27);
     }
   }
 
   activate() {
     this.modal.activate();
+    if (this.isWorldChatDialog) {
+      this.scroll.scrollTo(
+        Math.max(0, this.scroll.contentHeight - this.scroll.height),
+      );
+    }
   }
 
   deactivate() {
@@ -486,14 +491,9 @@ export class WorkshopDialogPixi {
       return;
     }
 
-    const enabled =
-      Boolean(this.composerModel) &&
-      this.composerModel.enabled !== false &&
-      !this.composerSubmitting &&
-      Boolean(this.composerField?.value.trim());
     this.composerSubmit.setModel({
-      label: this.composerSubmitting ? 'Sending' : 'Send',
-      enabled,
+      label: 'Send',
+      enabled: Boolean(this.composerModel),
       action: () => this.submitComposer(),
     });
   }
@@ -512,8 +512,6 @@ export class WorkshopDialogPixi {
 
     const token = ++this.composerSubmissionToken;
     this.composerSubmitting = true;
-    this.composerStatus = 'sending';
-    this.updateStatus();
     this.updateComposerControl();
 
     let result;
@@ -530,9 +528,6 @@ export class WorkshopDialogPixi {
     this.composerSubmitting = false;
     if (result?.ok === true) {
       this.composerField.setValue('');
-      this.composerStatus = 'sent';
-    } else {
-      this.composerStatus = formatComposerFailure(result?.reason);
     }
     this.updateStatus();
     this.updateComposerControl();
@@ -540,7 +535,12 @@ export class WorkshopDialogPixi {
   }
 
   updateStatus() {
-    setText(this.status, this.composerStatus || this.boundStatus || '');
+    setText(
+      this.status,
+      this.isWorldChatDialog
+        ? ''
+        : this.composerStatus || this.boundStatus || '',
+    );
   }
 
   registerTarget(descriptor) {
@@ -1048,27 +1048,4 @@ function disposeInputRegistration(registration) {
     return;
   }
   registration?.unregister?.();
-}
-
-function formatComposerFailure(reason) {
-  switch (reason) {
-    case 'empty_message':
-      return 'write a message';
-    case 'rate_limited':
-      return 'wait before sending';
-    case 'global_rate_limited':
-      return 'chat busy';
-    case 'chat_locked':
-      return 'level syncing';
-    case 'no_alliance':
-      return 'join alliance first';
-    case 'account_in_use':
-      return 'open elsewhere';
-    case 'maintenance':
-      return 'maintenance';
-    case 'offline':
-      return 'offline';
-    default:
-      return 'send failed';
-  }
 }
