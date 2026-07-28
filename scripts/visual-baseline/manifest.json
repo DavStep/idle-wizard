@@ -143,11 +143,12 @@
       "production": true,
       "coverage": {
         "globalOwners": ["freshStartChoiceManager"],
+        "devUi": ["accountChoice"],
         "domSelectors": [".app-fresh-start-choice__dialog"]
       },
       "recipe": {
-        "kind": "external",
-        "command": "npm run tutorial:capture -- --first-run-only"
+        "kind": "devUi",
+        "surfaceId": "accountChoice"
       },
       "anchors": [
         {

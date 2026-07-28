@@ -91,20 +91,20 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.statsButton.textureId).toBe(
       PIXI_ROOT_RUN_ASSETS.workshopStats,
     );
-    expect(harness.page.statsButton.iconScale).toBe(1);
-    expect(harness.page.inboxButton.iconScale).toBe(1);
+    expect(harness.page.statsButton.iconScale).toBe(1.08);
+    expect(harness.page.inboxButton.iconScale).toBe(1.22);
     expect(
       harness.page.features.get('leaderboard').presentation.scale,
-    ).toBeUndefined();
+    ).toBe(1.2);
     expect(
       harness.page.features.get('discoveries').presentation.scale,
-    ).toBeUndefined();
+    ).toBe(1.18);
     expect(
       harness.page.features.get('personalTasks').presentation.scale,
-    ).toBeUndefined();
+    ).toBe(1.05);
     expect(
       harness.page.features.get('worldEvent').presentation.scale,
-    ).toBeUndefined();
+    ).toBe(1.08);
 
     harness.page.destroy();
     harness.dispose();

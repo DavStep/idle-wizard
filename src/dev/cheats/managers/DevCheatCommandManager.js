@@ -108,6 +108,7 @@ const CHEAT_HELP = Object.freeze([
   'cheats.openWidget("PixiProgressBar")',
   'cheats.listButtons()',
   'cheats.listUiSurfaces()',
+  'cheats.openUi("accountChoice")',
   'cheats.openUi("firstRunIntro")',
   'cheats.openUi("guildQuestPosting")',
   'cheats.setTimers("allReady")',
@@ -134,6 +135,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     setup: 'firstRunIntro',
     options: { reducedMotion: true },
     aliases: ['intro', 'openingStory'],
+  },
+  {
+    id: 'accountChoice',
+    kind: 'preview',
+    setup: 'freshStartChoice',
+    aliases: ['accountDialog', 'freshStart'],
   },
   {
     id: 'topPanelQuestProgress',
@@ -225,6 +232,7 @@ const UI_SURFACE_LOOKUP = new Map(
 export class DevCheatCommandManager {
   constructor({
     backendFacade,
+    freshStartChoiceManager,
     gameplayFacade,
     onlineGateManager,
     pagesFacade,
@@ -234,6 +242,7 @@ export class DevCheatCommandManager {
     uiCatalogManager,
   } = {}) {
     this.backendFacade = backendFacade;
+    this.freshStartChoiceManager = freshStartChoiceManager;
     this.gameplayFacade = gameplayFacade;
     this.onlineGateManager = onlineGateManager;
     this.pagesFacade = pagesFacade;
@@ -1901,6 +1910,10 @@ export class DevCheatCommandManager {
       return this.openFirstRunIntroSurface(surface, options);
     }
 
+    if (surface.setup === 'freshStartChoice') {
+      return this.openFreshStartChoiceSurface(surface);
+    }
+
     if (surface.setup === 'topPanelQuestProgress') {
       return this.openTopPanelQuestProgressSurface(surface, options);
     }
@@ -1937,6 +1950,26 @@ export class DevCheatCommandManager {
         ...(surface.options ?? {}),
         ...(options ?? {}),
       }),
+      surface,
+    );
+  }
+
+  openFreshStartChoiceSurface(surface) {
+    if (typeof this.freshStartChoiceManager?.choose !== 'function') {
+      return this.decorateUiResult(
+        surface.id,
+        { ok: false, reason: 'fresh_start_choice_missing' },
+        surface,
+      );
+    }
+
+    void this.freshStartChoiceManager.choose({
+      authSnapshot: { oidc: { enabled: true } },
+      preview: true,
+    });
+    return this.decorateUiResult(
+      surface.id,
+      { ok: true },
       surface,
     );
   }

@@ -56,6 +56,7 @@ export class RenderFacade {
     this.legacyCanvasManager = canvasManager;
     this.legacyProgressOverlayManager = pixiProgressOverlayManager;
     this.spineRuntimeFacade = spineRuntimeFacade;
+    this.uiClickSoundFacade = uiClickSoundFacade;
     this.initialized = false;
     this.destroyed = false;
     this.initializePromise = null;
@@ -132,6 +133,8 @@ export class RenderFacade {
           new PixiFreshStartChoiceView({
             assets: context.assets,
             inputRouter: context.inputRouter,
+            playOpenSound: () =>
+              this.uiClickSoundFacade?.playClick?.(),
           }),
         ),
       )

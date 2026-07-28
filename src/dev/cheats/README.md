@@ -46,6 +46,7 @@ cheats.openUi('guildQuestPosting')
 cheats.openUi('traderStallLoader')
 cheats.openUi('featureUnlockAnnouncement')
 cheats.openUi('whileAwayAnnouncement')
+cheats.openUi('accountChoice')
 cheats.openUi('devConsole')
 cheats.setTimers('allReady')
 cheats.setStressText()
@@ -146,6 +147,8 @@ Useful view setup commands:
   changing gameplay state.
 - `/?devUi=whileAwayAnnouncement` opens a non-persistent while-away report with
   seed, herb, potion, and coin rows.
+- `/?devUi=accountChoice` opens the real retained first-run account choice
+  without changing save or account state.
 - `/?devUi=bottomRoomTabs` reveals the real five-tab bottom room chrome for
   screenshot and interaction QA without changing tutorial progress or gameplay
   state.

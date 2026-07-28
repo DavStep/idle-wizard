@@ -11,6 +11,11 @@ export {
   FRESH_START_CHOICE_START_FRESH,
   PixiFreshStartChoiceController,
 } from './PixiFreshStartChoiceController.js';
-export { PixiFreshStartChoiceView } from './PixiFreshStartChoiceView.js';
+export {
+  PIXI_ACCOUNT_DIALOG_BACKDROP,
+  PIXI_ACCOUNT_DIALOG_OPEN_MOTION,
+  PixiFreshStartChoiceView,
+  sampleAccountDialogOpenScale,
+} from './PixiFreshStartChoiceView.js';
 export { PixiOnlineGateController } from './PixiOnlineGateController.js';
 export { PixiOnlineGateView } from './PixiOnlineGateView.js';

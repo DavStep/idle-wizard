@@ -1,19 +1,25 @@
-const QUEST_FLIGHT_COUNT = 3;
 const REQUEST_SNAP_DURATION_MS = 230;
-const QUEST_FLIGHT_START_MS = 190;
-const QUEST_FLIGHT_DURATION_MS = 520;
-const QUEST_FLIGHT_STAGGER_MS = 35;
-const QUEST_PROGRESS_SETTLE_MS =
-  QUEST_FLIGHT_START_MS + QUEST_FLIGHT_DURATION_MS + QUEST_FLIGHT_STAGGER_MS * 2 - 55;
+const QUEST_FLIGHT_ICON_SIZE = 68;
+const QUEST_FLIGHT_TEXTURE_WIDTH = 93;
+const QUEST_FLIGHT_TEXTURE_HEIGHT = 94;
+const QUEST_FLIGHT_SPEED_PX_PER_SECOND = 900;
+const QUEST_FLIGHT_ARC_HEIGHT_PX = 96;
+const QUEST_FLIGHT_MIN_DURATION_MS = 420;
+const QUEST_FLIGHT_MAX_DURATION_MS = 760;
+const QUEST_FLIGHT_SAMPLE_COUNT = 20;
+const QUEST_FLIGHT_GLOW_COLOR = '#ffd447';
+const QUEST_FLIGHT_ARRIVAL_DURATION_MS = 320;
+const QUEST_FLIGHT_ARRIVAL_SPARK_COUNT = 8;
 const QUEST_PROGRESS_FILL_MS = 205;
 const LEVEL_BADGE_JUMP_MS = 230;
 const LEVEL_VALUE_CHANGE_MS = 92;
-const QUEST_RECEIVE_PULSE_MS = 180;
+const QUEST_RECEIVE_PULSE_MS = 400;
 const MAX_ACTIVE_QUEST_FLIGHTS = 6;
 
 export class TopPanelQuestProgressManager {
-  constructor({ gameplayFacade } = {}) {
+  constructor({ gameplayFacade, random = Math.random } = {}) {
     this.gameplayFacade = gameplayFacade;
+    this.random = random;
     this.refs = null;
     this.unsubscribe = null;
     this.previousProgress = null;
@@ -22,6 +28,7 @@ export class TopPanelQuestProgressManager {
     this.receiveTimeoutId = null;
     this.receiveClearTimeoutId = null;
     this.activeFlights = [];
+    this.activeArrivalEffects = [];
     this.sequenceTimeoutIds = new Set();
     this.completionSource = null;
     this.previewProgress = null;
@@ -249,11 +256,11 @@ export class TopPanelQuestProgressManager {
     }
 
     this.renderProgress(previous);
-    this.scheduleSequence(
-      () => this.showQuestFlight({ source, destination }),
-      QUEST_FLIGHT_START_MS,
-    );
+    const flight = this.showQuestFlight({ source, destination });
     this.scheduleSequence(() => {
+      this.removeFlight(flight?.element);
+      this.playArrivalBurst(flight?.destination ?? destination);
+
       if (levelChanged) {
         this.renderProgress({
           ...previous,
@@ -265,8 +272,8 @@ export class TopPanelQuestProgressManager {
       }
 
       this.renderProgress(next);
-      this.pulseDestination(this.refs.levelButton, 0);
-    }, QUEST_PROGRESS_SETTLE_MS);
+      this.pulseDestination(this.refs.levelStar, 0);
+    }, flight?.durationMs ?? 0);
   }
 
   scheduleLevelRollover(next) {
@@ -313,7 +320,7 @@ export class TopPanelQuestProgressManager {
 
   showQuestFlight({ source, destination }) {
     if (!this.refs || this.prefersReducedMotion()) {
-      return;
+      return null;
     }
 
     const destinationElement = this.refs.levelButton;
@@ -321,67 +328,213 @@ export class TopPanelQuestProgressManager {
     const origin = this.getFlightOrigin(source, target);
 
     if (!target || !origin) {
-      this.pulseDestination(destinationElement, 0);
-      return;
+      return null;
     }
 
     const documentRef = this.refs.questRow.ownerDocument;
     const flightHost =
       this.refs.questRow.closest?.('.game-stage') ?? documentRef.body;
-    const iconSize = Math.max(12, Math.min(18, target.height || 14));
-
-    for (let index = 0; index < QUEST_FLIGHT_COUNT; index += 1) {
-      this.trimFlights();
-      const flight = documentRef.createElement('img');
-      const spread = (index - 1) * iconSize * 0.55;
-      const startX = origin.right - iconSize * 1.4 + spread;
-      const startY = origin.top + origin.height / 2 - iconSize / 2;
-      const endX = target.left + target.width / 2 - iconSize / 2;
-      const endY = target.top + target.height / 2 - iconSize / 2;
-      const travelX = endX - startX;
-      const travelY = endY - startY;
-      const arc = Math.min(32, Math.max(14, Math.abs(travelY) * 0.1));
-      const delay = index * QUEST_FLIGHT_STAGGER_MS;
-
-      flight.className = 'room-top-panel__quest-flight';
-      flight.src = this.refs.levelStar.currentSrc || this.refs.levelStar.src;
-      flight.alt = '';
-      flight.setAttribute('aria-hidden', 'true');
-      flight.style.left = `${startX}px`;
-      flight.style.top = `${startY}px`;
-      flight.style.width = `${iconSize}px`;
-      flight.style.height = `${iconSize}px`;
-      flightHost?.append(flight);
-      this.activeFlights.push(flight);
-
-      const animation = this.animateElement(
-        flight,
-        [
-          { opacity: 0, transform: 'translate3d(0, 3px, 0) scale(0.7) rotate(-7deg)' },
-          { opacity: 1, offset: 0.16, transform: 'translate3d(0, 0, 0) scale(1) rotate(0deg)' },
-          {
-            opacity: 0.95,
-            offset: 0.66,
-            transform: `translate3d(${travelX * 0.72}px, ${travelY * 0.72 - arc}px, 0) scale(0.8) rotate(6deg)`,
-          },
-          {
-            opacity: 0.08,
-            transform: `translate3d(${travelX}px, ${travelY}px, 0) scale(0.36) rotate(12deg)`,
-          },
-        ],
-        {
-          duration: QUEST_FLIGHT_DURATION_MS,
-          delay,
-          easing: 'cubic-bezier(0.33, 0, 0.25, 1)',
-          fill: 'both',
-        },
+    const startX = origin.left + origin.width / 2;
+    const startY =
+      origin.top
+      + origin.height / 2
+      + this.randomBetween(
+        -QUEST_FLIGHT_ICON_SIZE * 0.08,
+        QUEST_FLIGHT_ICON_SIZE * 0.08,
       );
+    const endX = target.left + target.width / 2;
+    const endY = target.top + target.height / 2;
+    const travelX = endX - startX;
+    const travelY = endY - startY;
+    const durationMs = this.getDistanceBasedFlightDuration(
+      { x: startX, y: startY },
+      { x: endX, y: endY },
+    );
+    const spin = this.randomBetween(-1.1, 1.1);
+    const flight = documentRef.createElement('span');
+    const glow = documentRef.createElement('span');
+    const icon = documentRef.createElement('img');
 
-      Promise.resolve(animation?.finished)
-        .catch(() => {})
-        .then(() => this.removeFlight(flight));
+    this.trimFlights();
+    flight.className = 'room-top-panel__quest-flight';
+    flight.setAttribute('aria-hidden', 'true');
+    flight.style.left = `${startX}px`;
+    flight.style.top = `${startY}px`;
+    flight.style.width = `${QUEST_FLIGHT_TEXTURE_WIDTH}px`;
+    flight.style.height = `${QUEST_FLIGHT_TEXTURE_HEIGHT}px`;
+    glow.className = 'room-top-panel__quest-flight-glow';
+    icon.className = 'room-top-panel__quest-flight-icon';
+    icon.src = this.refs.levelStar.currentSrc || this.refs.levelStar.src;
+    icon.alt = '';
+    flight.append(glow, icon);
+    flightHost?.append(flight);
+    this.activeFlights.push(flight);
+
+    const animation = this.animateElement(
+      flight,
+      this.buildDirectFlightKeyframes({
+        travelX,
+        travelY,
+        durationMs,
+        spin,
+      }),
+      {
+        duration: durationMs,
+        easing: 'linear',
+        fill: 'both',
+      },
+    );
+    this.animateElement(
+      glow,
+      this.buildFlightGlowKeyframes(),
+      {
+        duration: durationMs,
+        easing: 'linear',
+        fill: 'both',
+      },
+    );
+
+    if (!animation) {
+      this.removeFlight(flight);
+      return null;
     }
 
+    return {
+      destination: { x: endX, y: endY },
+      durationMs,
+      element: flight,
+    };
+  }
+
+  buildDirectFlightKeyframes({ travelX, travelY, durationMs, spin }) {
+    const startScale = Math.max(
+      0.18,
+      (QUEST_FLIGHT_ICON_SIZE * 1.12) / QUEST_FLIGHT_TEXTURE_WIDTH,
+    );
+    const endScale = Math.max(
+      0.1,
+      (QUEST_FLIGHT_ICON_SIZE * 0.54) / QUEST_FLIGHT_TEXTURE_WIDTH,
+    );
+
+    return Array.from({ length: QUEST_FLIGHT_SAMPLE_COUNT + 1 }, (_, index) => {
+      const progress = index / QUEST_FLIGHT_SAMPLE_COUNT;
+      const easedProgress = this.easeInOutCubic(progress);
+      const enterProgress = Math.min(progress / 0.14, 1);
+      const x = travelX * easedProgress;
+      const y =
+        travelY * easedProgress
+        - Math.sin(easedProgress * Math.PI) * QUEST_FLIGHT_ARC_HEIGHT_PX;
+      const scale =
+        this.lerp(startScale, endScale, easedProgress)
+        * (0.58 + enterProgress * 0.42)
+        * (1 + Math.sin(progress * Math.PI) * 0.12);
+      const opacity = enterProgress * (1 - progress * 0.08);
+      const rotation = spin * (durationMs / 1000) * progress;
+
+      return {
+        offset: progress,
+        opacity,
+        transform:
+          'translate(-50%, -50%) '
+          + `translate3d(${x}px, ${y}px, 0) `
+          + `scale(${scale}) rotate(${rotation}rad)`,
+      };
+    });
+  }
+
+  buildFlightGlowKeyframes() {
+    return Array.from({ length: QUEST_FLIGHT_SAMPLE_COUNT + 1 }, (_, index) => {
+      const progress = index / QUEST_FLIGHT_SAMPLE_COUNT;
+
+      return {
+        offset: progress,
+        opacity: 0.26 + Math.sin(progress * Math.PI) * 0.24,
+      };
+    });
+  }
+
+  getDistanceBasedFlightDuration(start, end) {
+    const distance = Math.max(1, Math.hypot(end.x - start.x, end.y - start.y));
+
+    return Math.min(
+      QUEST_FLIGHT_MAX_DURATION_MS,
+      Math.max(
+        QUEST_FLIGHT_MIN_DURATION_MS,
+        (distance / QUEST_FLIGHT_SPEED_PX_PER_SECOND) * 1000,
+      ),
+    );
+  }
+
+  playArrivalBurst(destination) {
+    if (!destination || this.prefersReducedMotion() || !this.refs) {
+      return;
+    }
+
+    const documentRef = this.refs.questRow.ownerDocument;
+    const effectHost =
+      this.refs.questRow.closest?.('.game-stage') ?? documentRef.body;
+    const ring = documentRef.createElement('span');
+    ring.className = 'room-top-panel__quest-arrival-ring';
+    this.positionArrivalEffect(ring, destination);
+    effectHost?.append(ring);
+    this.activeArrivalEffects.push(ring);
+    this.animateArrivalEffect(ring, { x: 0, y: 0 });
+
+    for (let index = 0; index < QUEST_FLIGHT_ARRIVAL_SPARK_COUNT; index += 1) {
+      const angle =
+        (Math.PI * 2 * index) / QUEST_FLIGHT_ARRIVAL_SPARK_COUNT
+        + this.randomBetween(-0.18, 0.18);
+      const distance = this.randomBetween(16, 31);
+      const diameter = this.randomBetween(4.2, 7.4);
+      const spark = documentRef.createElement('span');
+      spark.className = 'room-top-panel__quest-arrival-spark';
+      spark.style.width = `${diameter}px`;
+      spark.style.height = `${diameter}px`;
+      this.positionArrivalEffect(spark, destination);
+      effectHost?.append(spark);
+      this.activeArrivalEffects.push(spark);
+      this.animateArrivalEffect(spark, {
+        x: Math.cos(angle) * distance,
+        y: Math.sin(angle) * distance,
+      });
+    }
+  }
+
+  positionArrivalEffect(element, destination) {
+    element.style.left = `${destination.x}px`;
+    element.style.top = `${destination.y}px`;
+  }
+
+  animateArrivalEffect(element, travel) {
+    const animation = this.animateElement(
+      element,
+      [
+        {
+          opacity: 1,
+          transform: 'translate(-50%, -50%) translate3d(0, 0, 0) scale(1)',
+        },
+        {
+          opacity: 0,
+          transform:
+            'translate(-50%, -50%) '
+            + `translate3d(${travel.x}px, ${travel.y}px, 0) scale(2.15)`,
+        },
+      ],
+      {
+        duration: QUEST_FLIGHT_ARRIVAL_DURATION_MS,
+        easing: 'cubic-bezier(0.33, 1, 0.68, 1)',
+        fill: 'both',
+      },
+    );
+
+    if (!animation?.finished) {
+      this.removeArrivalEffect(element);
+      return;
+    }
+
+    Promise.resolve(animation.finished)
+      .catch(() => {})
+      .then(() => this.removeArrivalEffect(element));
   }
 
   getCompletionSource() {
@@ -422,11 +575,28 @@ export class TopPanelQuestProgressManager {
 
     this.receiveTimeoutId = windowRef.setTimeout(() => {
       this.receiveTimeoutId = null;
+      const animation = this.animateElement(
+        element,
+        Array.from({ length: QUEST_FLIGHT_SAMPLE_COUNT + 1 }, (_, index) => {
+          const progress = index / QUEST_FLIGHT_SAMPLE_COUNT;
+          return {
+            offset: progress,
+            transform: `scale(${1 + Math.sin(progress * Math.PI) * 0.1})`,
+          };
+        }),
+        {
+          duration: QUEST_RECEIVE_PULSE_MS,
+          easing: 'linear',
+        },
+      );
+
+      if (animation) {
+        return;
+      }
+
       element?.classList.add('is-receiving-quest');
-      this.refs?.questProgressRail?.classList.add('is-receiving-quest');
       this.receiveClearTimeoutId = windowRef.setTimeout(() => {
         element?.classList.remove('is-receiving-quest');
-        this.refs?.questProgressRail?.classList.remove('is-receiving-quest');
         this.receiveClearTimeoutId = null;
       }, QUEST_RECEIVE_PULSE_MS);
     }, delayMs);
@@ -480,7 +650,6 @@ export class TopPanelQuestProgressManager {
       this.receiveClearTimeoutId = null;
     }
 
-    this.refs?.questProgressRail?.classList.remove('is-receiving-quest');
     this.refs?.questRow?.querySelectorAll?.('.is-receiving-quest').forEach((element) => {
       element.classList.remove('is-receiving-quest');
     });
@@ -502,12 +671,28 @@ export class TopPanelQuestProgressManager {
     flight?.remove();
   }
 
+  removeArrivalEffect(effect) {
+    const index = this.activeArrivalEffects.indexOf(effect);
+
+    if (index >= 0) {
+      this.activeArrivalEffects.splice(index, 1);
+    }
+
+    effect?.remove();
+  }
+
   clearFlights() {
     for (const flight of this.activeFlights) {
       flight.remove();
     }
 
     this.activeFlights = [];
+
+    for (const effect of this.activeArrivalEffects) {
+      effect.remove();
+    }
+
+    this.activeArrivalEffects = [];
   }
 
   scheduleSequence(callback, delayMs) {
@@ -537,5 +722,21 @@ export class TopPanelQuestProgressManager {
     this.completionSource?.classList.remove('is-completing-request');
     this.completionSource = null;
     this.refs?.levelButton?.classList.remove('is-leveling-up');
+  }
+
+  randomBetween(minimum, maximum) {
+    return minimum + (maximum - minimum) * this.random();
+  }
+
+  lerp(start, end, progress) {
+    return start + (end - start) * progress;
+  }
+
+  easeInOutCubic(progress) {
+    const clamped = Math.max(0, Math.min(1, progress));
+
+    return clamped < 0.5
+      ? 4 * clamped * clamped * clamped
+      : 1 - (-2 * clamped + 2) ** 3 / 2;
   }
 }

@@ -12,6 +12,9 @@ import {
 import {
   ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT,
   FRESH_START_CHOICE_CONNECT_ACCOUNT,
+  FRESH_START_CHOICE_START_FRESH,
+  PIXI_ACCOUNT_DIALOG_BACKDROP,
+  PIXI_ACCOUNT_DIALOG_OPEN_MOTION,
   PixiAccountLinkChoiceView,
   PixiAccountLinkChoiceController,
   PixiDeployRefreshView,
@@ -20,6 +23,7 @@ import {
   PixiFreshStartChoiceController,
   PixiOnlineGateView,
   PixiOnlineGateController,
+  sampleAccountDialogOpenScale,
 } from './index.js';
 
 installPixiPageTestCanvas();
@@ -70,6 +74,162 @@ describe('retained Pixi gate controllers', () => {
     expect(view.freshButton.y + view.freshButton.buttonHeight).toBeLessThanOrEqual(
       view.panel.contentBoxHeight,
     );
+
+    view.destroy();
+  });
+
+  it('opens the full account panel with the exact rigid scale motion', () => {
+    const motionRuntime = createMotionRuntime();
+    const playOpenSound = vi.fn();
+    const view = new PixiFreshStartChoiceView({
+      assets: createAssets(),
+      motionRuntime,
+      playOpenSound,
+    });
+    view.applyTheme(createPixiThemeSnapshot({ theme: 'midnight' }));
+    view.layout({
+      sourceWidth: 360,
+      sourceHeight: 2170 / 3,
+      sourceScale: 3,
+      sourceOffsetX: 0,
+      stageLogicalWidth: 1080,
+      dialogShift: 0,
+    });
+    const basePosition = {
+      x: view.panel.position.x,
+      y: view.panel.position.y,
+    };
+
+    view.activate();
+    view.bind({
+      connectEnabled: true,
+      onConnect: vi.fn(),
+      onStartFresh: vi.fn(),
+    });
+
+    expect(view.backdropAlpha).toBe(
+      PIXI_ACCOUNT_DIALOG_BACKDROP.alpha,
+    );
+    expect(view.backdrop.alpha).toBe(1);
+    expect(view.panel.alpha).toBe(1);
+    expect(view.panel.pivot.x).toBe(view.panel.outerWidth / 2);
+    expect(view.panel.pivot.y).toBe(view.panel.outerHeight / 2);
+    expect(view.panel.scale.x).toBe(
+      PIXI_ACCOUNT_DIALOG_OPEN_MOTION.startScale,
+    );
+    expect(view.panel.position).toMatchObject(basePosition);
+    expect(playOpenSound).toHaveBeenCalledOnce();
+
+    motionRuntime.advance(
+      PIXI_ACCOUNT_DIALOG_OPEN_MOTION.durationMs *
+        PIXI_ACCOUNT_DIALOG_OPEN_MOTION.overshootProgress,
+    );
+
+    expect(view.backdrop.alpha).toBe(1);
+    expect(view.panel.alpha).toBe(1);
+    expect(view.panel.scale.x).toBeCloseTo(
+      PIXI_ACCOUNT_DIALOG_OPEN_MOTION.overshootScale,
+      8,
+    );
+    expect(view.panel.position).toMatchObject(basePosition);
+
+    motionRuntime.advance(
+      PIXI_ACCOUNT_DIALOG_OPEN_MOTION.durationMs *
+        (1 - PIXI_ACCOUNT_DIALOG_OPEN_MOTION.overshootProgress),
+    );
+
+    expect(view.panel.scale.x).toBe(1);
+    expect(view.panel.scale.y).toBe(1);
+    expect(view.panel.position).toMatchObject(basePosition);
+
+    view.destroy();
+  });
+
+  it('samples the requested cubic and back easing formulas exactly', () => {
+    const firstSegmentMidpoint =
+      PIXI_ACCOUNT_DIALOG_OPEN_MOTION.overshootProgress / 2;
+    const secondSegmentMidpoint =
+      PIXI_ACCOUNT_DIALOG_OPEN_MOTION.overshootProgress +
+      (1 - PIXI_ACCOUNT_DIALOG_OPEN_MOTION.overshootProgress) / 2;
+    const easeOutCubicAtHalf = 1 - (1 - 0.5) ** 3;
+    const shiftedHalf = 0.5 - 1;
+    const easeOutBackAtHalf =
+      1 +
+      2.36 * shiftedHalf ** 3 +
+      1.36 * shiftedHalf ** 2;
+
+    expect(
+      sampleAccountDialogOpenScale(firstSegmentMidpoint),
+    ).toBeCloseTo(
+      0.94 + (1.045 - 0.94) * easeOutCubicAtHalf,
+      12,
+    );
+    expect(
+      sampleAccountDialogOpenScale(secondSegmentMidpoint),
+    ).toBeCloseTo(
+      1.045 + (1 - 1.045) * easeOutBackAtHalf,
+      12,
+    );
+  });
+
+  it('restarts an active account open motion from 0.94 without animating close', () => {
+    const motionRuntime = createMotionRuntime();
+    const playOpenSound = vi.fn();
+    const view = new PixiFreshStartChoiceView({
+      assets: createAssets(),
+      motionRuntime,
+      playOpenSound,
+    });
+    view.applyTheme(createPixiThemeSnapshot({ theme: 'midnight' }));
+    view.layout({
+      sourceWidth: 360,
+      sourceHeight: 2170 / 3,
+      sourceScale: 3,
+      sourceOffsetX: 0,
+      stageLogicalWidth: 1080,
+      dialogShift: 0,
+    });
+    view.activate();
+    view.bind({ connectEnabled: true });
+    motionRuntime.advance(36);
+
+    view.hide();
+
+    expect(view.panel.scale.x).toBe(1);
+    expect(view.root.visible).toBe(false);
+
+    view.show();
+
+    expect(view.panel.scale.x).toBe(
+      PIXI_ACCOUNT_DIALOG_OPEN_MOTION.startScale,
+    );
+    expect(view.panel.alpha).toBe(1);
+    expect(view.backdrop.alpha).toBe(1);
+    expect(playOpenSound).toHaveBeenCalledTimes(2);
+
+    view.destroy();
+  });
+
+  it('settles the account dialog immediately under reduced motion', () => {
+    const motionRuntime = createMotionRuntime({
+      reducedMotion: true,
+    });
+    const playOpenSound = vi.fn();
+    const view = new PixiFreshStartChoiceView({
+      assets: createAssets(),
+      motionRuntime,
+      playOpenSound,
+    });
+
+    view.activate();
+    view.bind({ connectEnabled: true });
+
+    expect(motionRuntime.requestFrame).not.toHaveBeenCalled();
+    expect(playOpenSound).not.toHaveBeenCalled();
+    expect(view.backdrop.alpha).toBe(1);
+    expect(view.panel.alpha).toBe(1);
+    expect(view.panel.scale.x).toBe(1);
+    expect(view.panel.scale.y).toBe(1);
 
     view.destroy();
   });
@@ -235,6 +395,26 @@ describe('retained Pixi gate controllers', () => {
     );
   });
 
+  it('holds the dev account preview through startup hides until it is selected', async () => {
+    const view = createView();
+    const controller = new PixiFreshStartChoiceController();
+    controller.attach(view);
+    const choice = controller.choose({
+      authSnapshot: { oidc: { enabled: true } },
+      preview: true,
+    });
+
+    expect(controller.hide()).toBe(false);
+    expect(view.hide).not.toHaveBeenCalled();
+
+    view.bind.mock.calls.at(-1)[0].onStartFresh();
+
+    await expect(choice).resolves.toBe(
+      FRESH_START_CHOICE_START_FRESH,
+    );
+    expect(view.hide).toHaveBeenCalledOnce();
+  });
+
   it('shows the deploy lock only after a confirmed newer version and saves first', async () => {
     const events = [];
     const view = createView();
@@ -283,6 +463,32 @@ function createWindowRef() {
     clearTimeout: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
+  };
+}
+
+function createMotionRuntime({ reducedMotion = false } = {}) {
+  let currentTime = 0;
+  let nextFrameId = 0;
+  const callbacks = new Map();
+  return {
+    requestFrame: vi.fn((callback) => {
+      const frameId = ++nextFrameId;
+      callbacks.set(frameId, callback);
+      return frameId;
+    }),
+    cancelFrame: vi.fn((frameId) => {
+      callbacks.delete(frameId);
+    }),
+    now: () => currentTime,
+    prefersReducedMotion: () => reducedMotion,
+    advance(milliseconds) {
+      currentTime += milliseconds;
+      const scheduled = [...callbacks.values()];
+      callbacks.clear();
+      for (const callback of scheduled) {
+        callback(currentTime);
+      }
+    },
   };
 }
 

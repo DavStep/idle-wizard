@@ -16,6 +16,7 @@ function createMemoryStorage() {
 
 function createApp({
   backendFacade,
+  freshStartChoiceManager,
   onlineGateManager,
   pagesFacade,
   persistenceStorage = createMemoryStorage(),
@@ -30,6 +31,7 @@ function createApp({
     ecsFacade,
     app: {
       backendFacade,
+      freshStartChoiceManager,
       gameplayFacade,
       onlineGateManager,
       pagesFacade,
@@ -107,6 +109,33 @@ describe('DevCheatsFacade', () => {
         surfaceId: 'guildQuestPosting',
       }),
     );
+  });
+
+  it('opens the retained account choice through a non-persistent preview', () => {
+    const freshStartChoiceManager = {
+      choose: vi.fn(() => new Promise(() => {})),
+    };
+    const { app } = createApp({ freshStartChoiceManager });
+    const target = {};
+    const facade = new DevCheatsFacade({
+      app,
+      target,
+      logger: null,
+    });
+
+    facade.mount();
+
+    expect(target.cheats.openUi('accountChoice')).toMatchObject({
+      ok: true,
+      surfaceId: 'accountChoice',
+      surfaceKind: 'preview',
+    });
+    expect(freshStartChoiceManager.choose).toHaveBeenCalledWith({
+      authSnapshot: { oidc: { enabled: true } },
+      preview: true,
+    });
+
+    facade.unmount();
   });
 
   it('applies a requested dev level after the fresh-start gate clears', () => {
@@ -680,6 +709,10 @@ describe('DevCheatsFacade', () => {
         expect.objectContaining({
           id: 'devConsole',
           kind: 'tool',
+        }),
+        expect.objectContaining({
+          id: 'accountChoice',
+          command: 'cheats.openUi("accountChoice")',
         }),
         expect.objectContaining({
           id: 'firstRunIntro',

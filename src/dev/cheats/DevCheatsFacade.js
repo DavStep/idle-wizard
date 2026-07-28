@@ -30,11 +30,15 @@ export class DevCheatsFacade {
     const onlineGateManager =
       app?.onlineGateManager ??
       app?.renderFacade?.getOnlineGateManager?.();
+    const freshStartChoiceManager =
+      app?.freshStartChoiceManager ??
+      app?.renderFacade?.getFreshStartChoiceManager?.();
     this.qaDataFacade = new QaDataFacade({
       gameplayFacade: app?.gameplayFacade,
     });
     this.commandManager = new DevCheatCommandManager({
       backendFacade: app?.backendFacade,
+      freshStartChoiceManager,
       gameplayFacade: app?.gameplayFacade,
       onlineGateManager,
       pagesFacade: app?.pagesFacade,

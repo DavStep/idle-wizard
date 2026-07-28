@@ -6,6 +6,7 @@ export class PixiFreshStartChoiceController {
     this.view = null;
     this.resolveChoice = null;
     this.keepOpenOnConnect = false;
+    this.previewOpen = false;
     this.model = null;
   }
 
@@ -26,11 +27,13 @@ export class PixiFreshStartChoiceController {
     statusText,
     busy = false,
     keepOpenOnConnect = false,
+    preview = false,
   } = {}) {
     if (this.resolveChoice) {
       this.resolve(FRESH_START_CHOICE_START_FRESH);
     }
     this.keepOpenOnConnect = Boolean(keepOpenOnConnect);
+    this.previewOpen = Boolean(preview);
     this.render({ authSnapshot, statusText, busy });
     return new Promise((resolve) => {
       this.resolveChoice = resolve;
@@ -55,6 +58,7 @@ export class PixiFreshStartChoiceController {
     }
     const resolveChoice = this.resolveChoice;
     this.resolveChoice = null;
+    this.previewOpen = false;
     const keepOpen =
       choice === FRESH_START_CHOICE_CONNECT_ACCOUNT && this.keepOpenOnConnect;
     if (!keepOpen) {
@@ -64,15 +68,20 @@ export class PixiFreshStartChoiceController {
     return true;
   }
 
-  hide() {
+  hide({ force = false } = {}) {
+    if (this.previewOpen && !force) {
+      return false;
+    }
     this.keepOpenOnConnect = false;
     this.model = null;
     this.view?.hide();
+    return true;
   }
 
   unmount() {
     this.resolve(FRESH_START_CHOICE_START_FRESH);
-    this.hide();
+    this.previewOpen = false;
+    this.hide({ force: true });
     this.view = null;
   }
 

@@ -15178,10 +15178,9 @@ div.workshop-page__discovery-row {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-.room-top-panel__level.is-receiving-quest,
-.room-top-panel__quest-segment.is-receiving-quest {
-  animation: room-top-panel-quest-receive var(--style-motion-fast)
-    var(--style-motion-ease-soft) both;
+.room-top-panel__level-star.is-receiving-quest {
+  animation: room-top-panel-quest-receive 400ms linear both;
+  transform-origin: center;
 }
 
 .room-top-panel__level.is-leveling-up {
@@ -15190,18 +15189,57 @@ div.workshop-page__discovery-row {
   transform-origin: center;
 }
 
-.room-top-panel__quest-progress-rail.is-receiving-quest {
-  animation: room-top-panel-quest-rail-receive var(--style-motion-fast)
-    var(--style-motion-ease-soft) both;
-}
-
 .room-top-panel__quest-flight {
   position: fixed;
   z-index: 40;
   display: block;
-  object-fit: contain;
   pointer-events: none;
   will-change: transform, opacity;
+}
+
+.room-top-panel__quest-flight-icon {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.room-top-panel__quest-flight-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 59.84px;
+  height: 59.84px;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle,
+      rgb(255 255 255 / 16%) 0 56%,
+      rgb(255 212 71 / 16%) 57% 100%
+    );
+  translate: -50% -50%;
+}
+
+.room-top-panel__quest-arrival-ring,
+.room-top-panel__quest-arrival-spark {
+  position: fixed;
+  z-index: 41;
+  display: block;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.room-top-panel__quest-arrival-ring {
+  width: 26px;
+  height: 26px;
+  border: 2px solid rgb(255 212 71 / 90%);
+}
+
+.room-top-panel__quest-arrival-spark {
+  background: rgb(255 212 71 / 92%);
 }
 
 .room-top-panel__resource {
@@ -19717,8 +19755,8 @@ div.workshop-page__discovery-row {
     transform: scale(1);
   }
 
-  52% {
-    transform: translateY(-1px) scale(1.06);
+  50% {
+    transform: scale(1.1);
   }
 
   100% {
@@ -19777,20 +19815,6 @@ div.workshop-page__discovery-row {
 
   to {
     opacity: 1;
-  }
-}
-
-@keyframes room-top-panel-quest-rail-receive {
-  0% {
-    transform: scaleY(1);
-  }
-
-  52% {
-    transform: scaleY(1.35);
-  }
-
-  100% {
-    transform: scaleY(1);
   }
 }
 
