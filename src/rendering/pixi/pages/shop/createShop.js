@@ -863,7 +863,6 @@ function createLedgerDialog({
           : null,
         itemKey: item.key,
         itemKind: item.kind,
-        resourceKey: item.kind,
         enabled: item.tradedHere !== false,
         semanticId: `shop.ledger.item.${item.key ?? item.itemTypeId}`,
         action: () =>

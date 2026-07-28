@@ -306,7 +306,19 @@ describe('DevCheatsFacade', () => {
     });
     expect(pagesFacade.show).toHaveBeenCalledWith('shop');
     expect(runtime.closeAllDialogs).toHaveBeenCalledOnce();
-    expect(runtime.openDialog).toHaveBeenCalledWith('shop.ledger', {});
+    expect(runtime.openDialog).toHaveBeenCalledWith(
+      'shop.ledger',
+      expect.objectContaining({
+        title: 'Market Ledger',
+        selectedTabId: 'seed',
+        items: expect.arrayContaining([
+          expect.objectContaining({
+            itemKey: 'sageSeed',
+            itemKind: 'seed',
+          }),
+        ]),
+      }),
+    );
     expect(publishAndSaveSpy).not.toHaveBeenCalled();
 
     expect(target.cheats.listWidgets()).toMatchObject({

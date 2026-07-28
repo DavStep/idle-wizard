@@ -178,7 +178,7 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   workshopDiscoveries:
     'source:assets/icons/icon-discoveries-journal.webp',
   workshopPersonalTasks:
-    'source:assets/rooms/workshop/characters/miso-daily-tasks.webp',
+    'source:assets/icons/icon-personal-tasks-scroll-bag-style.png',
   workshopWorldEvent:
     'source:assets/icons/icon-quests-scroll-bag-style.png',
   lock: 'source:assets/ui/prop_lock.png',

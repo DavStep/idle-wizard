@@ -8,7 +8,7 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 
 const PERSONAL_TASKS_ICON_URL = new URL(
-  '../../../../assets/game/source/rooms/workshop/characters/miso-daily-tasks.webp',
+  '../../../../assets/game/source/icons/icon-personal-tasks-scroll-bag-style.png',
   import.meta.url,
 ).href;
 

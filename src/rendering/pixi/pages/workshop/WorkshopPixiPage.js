@@ -94,19 +94,15 @@ const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
   }),
   leaderboard: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopLeaderboard,
-    scale: 1.2,
   }),
   discoveries: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopDiscoveries,
-    scale: 1.18,
   }),
   personalTasks: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopPersonalTasks,
-    scale: 1.05,
   }),
   worldEvent: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopWorldEvent,
-    scale: 1.08,
     mirrorOnRight: false,
   }),
 });
@@ -237,7 +233,6 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       side: 'right',
       weight: 10,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopInbox,
-      scale: 1.22,
       onActivate: () => this.openDialog('inbox'),
     });
     this.statsButton = new WorkshopIconPanelAction({
@@ -248,7 +243,6 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       side: 'right',
       weight: 0,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopStats,
-      scale: 1.08,
       onActivate: () => this.openDialog('stats'),
     });
     this.featureLayer = new Container({ label: 'workshop-feature-buttons' });

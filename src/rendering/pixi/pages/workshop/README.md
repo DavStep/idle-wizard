@@ -19,8 +19,9 @@ the shared top anchor into fixed slots, and owns the short enter, exit, and
 slot-shift transitions. Hidden controls never reserve a row.
 Each label and optional timer centers on the shifted art frame rather than the
 unshifted panel edge. Notification dots attach to that same frame's top-right
-corner, and per-icon presentation scales normalize the current art against the
-Bag's optical weight without changing the underlying assets.
+corner. The seven illustrated feature icons use the same contain-fit sizing and
+the Bag's clean contour, upper-left light, broad lower-right shadow, saturated
+flat-color, and texture-free contract. The Bag asset itself remains unchanged.
 
 Workshop-owned dialogs are registered lazily as `workshop.<feature>` in the
 injected `DialogRegistry` and retain their display trees after close.

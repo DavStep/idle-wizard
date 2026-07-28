@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.3.13
+
+- Refreshed the Workshop side actions with clearer, more consistent fantasy icons and improved label alignment.
+
 ## 0.3.12
 
 - Polished settings, message, while-away, Market, and World Chat surfaces with clearer actions and item/resource visuals.
