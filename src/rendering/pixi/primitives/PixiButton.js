@@ -23,6 +23,9 @@ const ROOT_RUN_VARIANTS = new Set([
   'gray',
   'brown-dark',
   'brown-light',
+  'account-tab-active',
+  'account-tab-inactive',
+  'account-save',
 ]);
 const RELEASE_DURATION_MS = 180;
 
@@ -264,20 +267,33 @@ export class PixiButton extends Container {
 
     if (rootRunVariant) {
       const visualVariant = this.enabled ? rootRunVariant : 'gray';
+      const visualGeometry =
+        getRootRunVisualGeometry(visualVariant, this.buttonWidth, this.buttonHeight);
       this.rootRunFrame.setTexture(
         this.assetManager.getTexture(getRootRunTextureId(visualVariant)),
-        PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
+        visualGeometry.sourceInsets,
+      );
+      this.rootRunFrame.position.set(
+        visualGeometry.frame.x,
+        visualGeometry.frame.y,
       );
       this.rootRunFrame.setSize(
-        this.buttonWidth,
-        this.buttonHeight,
-        PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
+        visualGeometry.frame.width,
+        visualGeometry.frame.height,
+        visualGeometry.borderInsets,
       );
       this.rootRunFrame.filters = null;
       this.textLabel.setFontFamily('"Lilita One", "Arial Black", Arial, sans-serif');
-      this.textLabel.setStroke({ color: '#0a0a0a', width: 4 });
-      this.textLabel.setColor('#ffffff');
+      if (Number.isFinite(visualGeometry.fontSize)) {
+        this.textLabel.setFontSize(visualGeometry.fontSize);
+      }
+      this.textLabel.setStroke({
+        color: '#0a0a0a',
+        width: visualGeometry.textStroke,
+      });
+      this.textLabel.setColor(visualGeometry.textColor);
     } else {
+      this.rootRunFrame.position.set(0, 0);
       this.rootRunFrame.filters = null;
       this.textLabel.setFontFamily(null);
       this.textLabel.setStroke(null);
@@ -300,6 +316,11 @@ export class PixiButton extends Container {
     if (this.variant === 'tab') {
       return this.selected ? 'brown-light' : 'brown-dark';
     }
+    if (this.variant === 'account-tab') {
+      return this.selected
+        ? 'account-tab-active'
+        : 'account-tab-inactive';
+    }
     return null;
   }
 
@@ -319,7 +340,7 @@ export class PixiButton extends Container {
         : this.notificationBadge.placeAtTopRight(bounds);
     badge
       .setTone(this.notificationTone)
-      .setActive(this.notification && this.enabled && !this.selected);
+      .setActive(this.notification && this.enabled);
   }
 
   relayout() {
@@ -377,12 +398,57 @@ export class PixiButton extends Container {
 }
 
 function getRootRunTextureId(variant) {
+  if (variant === 'account-tab-active') {
+    return PIXI_ROOT_RUN_ASSETS.accountTabActive;
+  }
+  if (variant === 'account-tab-inactive') {
+    return PIXI_ROOT_RUN_ASSETS.accountTabInactive;
+  }
+  if (variant === 'account-save') {
+    return PIXI_ROOT_RUN_ASSETS.accountSave;
+  }
   if (variant === 'yellow') return PIXI_ROOT_RUN_ASSETS.buttonYellow;
   if (variant === 'green') return PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice;
   if (variant === 'red') return PIXI_ROOT_RUN_ASSETS.buttonRedNineSlice;
   if (variant === 'gray') return PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice;
   if (variant === 'brown-light') return PIXI_ROOT_RUN_ASSETS.buttonBrownLight;
   return PIXI_ROOT_RUN_ASSETS.buttonBrownDark;
+}
+
+function getRootRunVisualGeometry(variant, width, height) {
+  const account = PIXI_ROOT_RUN_GEOMETRY.account;
+  if (variant === 'account-tab-active') {
+    return {
+      ...account.tab.active,
+      fontSize: account.tab.fontSize,
+      textStroke: account.tab.textStroke,
+      textColor: '#ffffff',
+    };
+  }
+  if (variant === 'account-tab-inactive') {
+    return {
+      ...account.tab.inactive,
+      fontSize: account.tab.fontSize,
+      textStroke: account.tab.textStroke,
+      textColor: '#d3c6b4',
+    };
+  }
+  if (variant === 'account-save') {
+    return {
+      ...account.save,
+      fontSize: account.save.fontSize,
+      textStroke: account.save.textStroke,
+      textColor: '#ffffff',
+    };
+  }
+  return {
+    sourceInsets: PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
+    borderInsets: PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
+    frame: { x: 0, y: 0, width, height },
+    fontSize: null,
+    textStroke: 4,
+    textColor: '#ffffff',
+  };
 }
 
 function releaseScale(progress) {

@@ -120,7 +120,7 @@ describe('PixiGlobalDialogPresenter', () => {
       GLOBAL_DIALOG_IDS.SETTINGS,
     );
     expect(prompt).toMatchObject({
-      title: 'username',
+      title: 'Account',
       tabId: 'account',
       focusInput: true,
       account: {
@@ -334,6 +334,7 @@ describe('PixiGlobalDialogPresenter', () => {
       color: 'resources',
       icons: 'icons',
       character: 'mira',
+      frame: 'classic',
       progressBar: 'gradient',
     });
 
@@ -360,6 +361,7 @@ describe('PixiGlobalDialogPresenter', () => {
     model.actions.selectVisualOption('color', 'single');
     model.actions.selectVisualOption('icons', 'text');
     model.actions.selectVisualOption('character', 'rowan');
+    model.actions.selectVisualOption('frame', 'emerald');
     model.actions.selectVisualOption('progressBar', 'notched');
     expect(harness.playerFacade.setTheme).toHaveBeenCalledWith(
       'witchcraft',
@@ -375,6 +377,9 @@ describe('PixiGlobalDialogPresenter', () => {
     );
     expect(harness.playerFacade.setCharacter).toHaveBeenCalledWith(
       'rowan',
+    );
+    expect(harness.playerFacade.setFrame).toHaveBeenCalledWith(
+      'emerald',
     );
     expect(
       harness.playerFacade.setProgressBar,
@@ -619,6 +624,7 @@ function createHarness({
       colorMode: 'resources',
       iconMode: 'icons',
       character: 'mira',
+      frame: 'classic',
       progressBar: 'gradient',
       ...playerSnapshot,
     },
@@ -629,6 +635,7 @@ function createHarness({
       setColorMode: vi.fn(() => true),
       setIconMode: vi.fn(() => true),
       setCharacter: vi.fn(() => true),
+      setFrame: vi.fn(() => true),
       setProgressBar: vi.fn(() => true),
     },
   );

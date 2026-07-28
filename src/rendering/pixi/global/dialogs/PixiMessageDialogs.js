@@ -7,6 +7,7 @@ import {
 
 import {
   PixiButton,
+  PixiNineSliceFrame,
   PixiTextLabel,
 } from '../../primitives/index.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
@@ -23,6 +24,10 @@ import {
   RETAINED_DIALOG_SCROLL_GEOMETRY,
   RetainedScrollArea,
 } from '../../pages/workshop/RetainedPageKit.js';
+import {
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 
 const ANNOUNCEMENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
@@ -30,7 +35,25 @@ const WHILE_AWAY_CONTENT_MAX_HEIGHT = 128;
 const WHILE_AWAY_CONTENT_PADDING_TOP =
   RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
 const ANNOUNCEMENT_BACKDROP_ALPHA = 0.68;
-const LEVEL_REWARDS_BACKDROP_ALPHA = 0.82;
+const LEVEL_REWARDS_BACKDROP_ALPHA = 0.88;
+const LEVEL_REWARD_ROW_GAP = 6;
+const LEVEL_REWARD_ROW_INSET_X = 5;
+const LEVEL_REWARD_ROW_TEXT_STROKE = Object.freeze({
+  color: '#050505',
+  width: 2,
+});
+const LEVEL_REWARD_BANNER_WIDTH = 300;
+const LEVEL_REWARD_BANNER_HEIGHT =
+  PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height;
+const LEVEL_REWARD_BANNER_TITLE_OFFSET_Y =
+  PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.contentOffsetY;
+const LEVEL_REWARD_BANNER_TITLE_COLOR = '#ffffff';
+const LEVEL_REWARD_BANNER_TITLE_STROKE = '#160e19';
+const LEVEL_REWARD_CONTINUE_GAP = 26;
+const LEVEL_REWARD_CONTINUE_HEIGHT = 20;
+const LEVEL_REWARD_CONTINUE_DELAY_MS = 120;
+const LEVEL_REWARD_COUNT_DELAY_MS = 120;
+const LEVEL_REWARD_COUNT_DURATION_MS = 560;
 const CONFIRMATION_WIDTH = 260;
 const UNLOCK_ITEM_WIDTH = 72;
 const UNLOCK_ITEM_GAP_X = 4;
@@ -81,6 +104,15 @@ const ANNOUNCEMENT_MOTION_DEFAULTS = Object.freeze({
 });
 const ANNOUNCEMENT_PANEL_FRAMES = freezeMotionFrames([
   { offset: 0, alpha: 0, scale: 0.99, x: 0, y: 5 },
+  { offset: 1, alpha: 1, scale: 1, x: 0, y: 0 },
+]);
+const ANNOUNCEMENT_BANNER_FRAMES = freezeMotionFrames([
+  { offset: 0, alpha: 0, scale: 0.72, x: 0, y: 0 },
+  { offset: 0.72, alpha: 1, scale: 1.04, x: 0, y: 0 },
+  { offset: 1, alpha: 1, scale: 1, x: 0, y: 0 },
+]);
+const ANNOUNCEMENT_PROMPT_FRAMES = freezeMotionFrames([
+  { offset: 0, alpha: 0, scale: 0.99, x: 0, y: 3 },
   { offset: 1, alpha: 1, scale: 1, x: 0, y: 0 },
 ]);
 const ANNOUNCEMENT_RESEARCH_TITLE_FRAMES = freezeMotionFrames([
@@ -159,6 +191,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.announcementPanelBaseY = 0;
     this.announcementHeadingBaseX = 0;
     this.announcementHeadingBaseY = 0;
+    this.levelAdvanceReady = false;
     this.announcementMotionSample = {
       alpha: 1,
       scale: 1,
@@ -174,6 +207,50 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       anchor: { x: 0.5, y: 0 },
       label: `${dialogId}:heading`,
     });
+    this.levelBannerLayer = new Container();
+    this.levelBannerLayer.label = `${dialogId}:levelBanner`;
+    this.levelBannerLayer.pivot.set(
+      LEVEL_REWARD_BANNER_WIDTH / 2,
+      LEVEL_REWARD_BANNER_HEIGHT / 2,
+    );
+    this.levelBannerFrame = new PixiNineSliceFrame({
+      texture:
+        this.context.assets?.getTexture?.(
+          PIXI_ROOT_RUN_ASSETS.marketTitleRibbon,
+        ) ?? Texture.EMPTY,
+      sourceInsets:
+        PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.sourceInsets,
+      borderInsets:
+        PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.borderInsets,
+      width: LEVEL_REWARD_BANNER_WIDTH,
+      height: LEVEL_REWARD_BANNER_HEIGHT,
+      label: `${dialogId}:levelBannerFrame`,
+    });
+    this.levelBannerTitle = new PixiTextLabel({
+      fontSize:
+        PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.titleFontSize,
+      fontWeight: 'normal',
+      lineHeight:
+        PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.titleLineHeight,
+      color: LEVEL_REWARD_BANNER_TITLE_COLOR,
+      stroke: {
+        color: LEVEL_REWARD_BANNER_TITLE_STROKE,
+        width:
+          PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.titleStroke,
+      },
+      align: 'center',
+      anchor: { x: 0.5, y: 0.5 },
+      label: `${dialogId}:levelBannerTitle`,
+    });
+    this.levelBannerTitle.position.set(
+      LEVEL_REWARD_BANNER_WIDTH / 2,
+      LEVEL_REWARD_BANNER_HEIGHT / 2 +
+        LEVEL_REWARD_BANNER_TITLE_OFFSET_Y,
+    );
+    this.levelBannerLayer.addChild(
+      this.levelBannerFrame,
+      this.levelBannerTitle,
+    );
     this.copy = new PixiTextLabel({
       align: 'center',
       wordWrap: true,
@@ -182,6 +259,19 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     });
     this.rowsLayer = new Container();
     this.rowsLayer.label = `${dialogId}:rows`;
+    this.levelRewardRowsBackingLayer = new Container();
+    this.levelRewardRowsBackingLayer.label =
+      `${dialogId}:levelRewardRowBackings`;
+    this.levelRewardRowBackings = [];
+    this.continuePrompt = new PixiTextLabel({
+      text: 'Tap to continue',
+      fontWeight: 'bold',
+      align: 'center',
+      anchor: { x: 0.5, y: 0 },
+      color: 'muted',
+      stroke: LEVEL_REWARD_ROW_TEXT_STROKE,
+      label: `${dialogId}:continuePrompt`,
+    });
     this.reportScroll = new RetainedScrollArea({
       inputRouter: this.context.inputRouter,
       label: `${dialogId}:reportScroll`,
@@ -193,12 +283,15 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.researchItemLayer = new Container();
     this.researchItemLayer.label = `${dialogId}:researchItem`;
     this.panel.content.addChild(
+      this.levelBannerLayer,
       this.heading,
       this.copy,
+      this.levelRewardRowsBackingLayer,
       this.rowsLayer,
       this.reportScroll.root,
       this.unlockItemsLayer,
       this.researchItemLayer,
+      this.continuePrompt,
     );
     this.rows = new PooledDialogRows({
       assetManager: this.context.assets,
@@ -228,6 +321,9 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
   }
 
   bindDialog(viewModel) {
+    if (this.announcementMotionFrame !== null) {
+      this.stopAnnouncementMotion();
+    }
     this.announcementModel = normalizeAnnouncementModel(viewModel);
     const model = this.announcementModel;
     this.backdropAlpha =
@@ -236,11 +332,29 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
         : ANNOUNCEMENT_BACKDROP_ALPHA;
     this.redrawBackdrop(this.theme);
     this.panel.setTitle(model.framed ? model.title : '');
-    this.heading.setText(model.framed ? '' : model.title);
     this.copy.setText(model.copy);
     const featureUnlock = model.kind === 'unlock';
     const research = model.kind === 'research';
     const whileAway = model.kind === 'whileAway';
+    const levelRewards =
+      model.animation?.kind === 'level-rewards';
+    this.heading.setText(
+      model.framed || levelRewards ? '' : model.title,
+    );
+    this.levelBannerTitle.setText(
+      levelRewards ? model.title : '',
+    );
+    this.levelAdvanceReady = false;
+    this.backdrop.tint = levelRewards ? 0x000000 : 0xffffff;
+    setDisplayObjectVisible(this.levelBannerLayer, levelRewards);
+    setDisplayObjectVisible(
+      this.levelRewardRowsBackingLayer,
+      levelRewards,
+    );
+    setDisplayObjectVisible(this.continuePrompt, levelRewards);
+    this.continuePrompt.setText(
+      model.continueLabel || 'Tap to continue',
+    );
     this.setRowsScrollMode(whileAway);
     this.copy.visible = !research;
     this.copy.renderable = !research;
@@ -268,6 +382,12 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       this.unlockItems.clear();
       this.researchItem.reset();
       this.rows.reconcile(model.rows);
+      this.syncLevelRewardRowBackings(
+        levelRewards
+          ? this.rows.collection.getWidgets().length
+          : 0,
+      );
+      this.applyLevelRewardRowTypography(levelRewards);
       if (whileAway) {
         this.reportScroll.scrollTo(0);
       }
@@ -290,6 +410,13 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
   }
 
   requestClose(source = 'close') {
+    if (
+      this.announcementModel?.animation?.kind ===
+        'level-rewards' &&
+      !this.levelAdvanceReady
+    ) {
+      return false;
+    }
     if (
       !this.announcementModel?.dismissible &&
       source !== 'complete'
@@ -321,6 +448,16 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       : -28;
   }
 
+  getModalContentRoots() {
+    if (
+      this.announcementModel?.animation?.kind ===
+      'level-rewards'
+    ) {
+      return [];
+    }
+    return super.getModalContentRoots();
+  }
+
   applyAnnouncementPresentationMode() {
     if (!this.announcementModel) {
       return;
@@ -347,10 +484,18 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       ? this.panel.getContentTheme()
       : this.theme;
     this.heading?.applyTheme(contentTheme);
+    this.levelBannerTitle?.applyTheme(contentTheme);
     this.copy?.applyTheme(contentTheme);
+    this.continuePrompt?.applyTheme(contentTheme);
     this.rows?.applyTheme(contentTheme);
     this.unlockItems?.applyTheme(contentTheme);
     this.researchItem?.applyTheme(contentTheme);
+    if (
+      this.announcementModel?.animation?.kind ===
+      'level-rewards'
+    ) {
+      this.applyLevelRewardRowTypography(true);
+    }
   }
 
   setRowsScrollMode(enabled) {
@@ -381,6 +526,8 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     const featureUnlock = model.kind === 'unlock';
     const research = model.kind === 'research';
     const whileAway = model.kind === 'whileAway';
+    const levelRewards =
+      model.animation?.kind === 'level-rewards';
     const rowsHeight = featureUnlock
       ? this.unlockItems.layout(rowsWidth)
       : research
@@ -390,18 +537,22 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
             rowsWidth,
             false,
           ).preferredHeight
-        : this.rows.layout(
+          : this.rows.layout(
             rowsWidth,
             {
               gap: whileAway
                 ? GLOBAL_DIALOG_GEOMETRY.rowGap
-                : 2,
+                : levelRewards
+                  ? LEVEL_REWARD_ROW_GAP
+                  : 2,
             },
           );
     this.copy.setWrapWidth(width);
-    const headingHeight = this.heading.text
-      ? Math.max(24, Math.ceil(this.heading.measuredHeight))
-      : 0;
+    const headingHeight = levelRewards
+      ? LEVEL_REWARD_BANNER_HEIGHT
+      : this.heading.text
+        ? Math.max(24, Math.ceil(this.heading.measuredHeight))
+        : 0;
     const copyHeight = !research && this.copy.text
       ? Math.ceil(this.copy.measuredHeight)
       : 0;
@@ -414,9 +565,13 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       WHILE_AWAY_CONTENT_MAX_HEIGHT,
       whileAwayContentHeight,
     );
+    const continueHeight = levelRewards
+      ? LEVEL_REWARD_CONTINUE_GAP +
+        LEVEL_REWARD_CONTINUE_HEIGHT
+      : 0;
     const bodyContentHeight = whileAway
       ? whileAwayViewportHeight
-      : copyHeight + bodyGap + rowsHeight;
+      : copyHeight + bodyGap + rowsHeight + continueHeight;
     const bodyHeight = model.framed
       ? bodyContentHeight
       : Math.max(128, bodyContentHeight);
@@ -433,7 +588,14 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       0,
       (height - compositionHeight) / 2,
     );
-    this.heading.position.set(width / 2, compositionY);
+    this.heading.position.set(
+      width / 2,
+      compositionY,
+    );
+    this.levelBannerLayer.position.set(
+      width / 2,
+      compositionY + LEVEL_REWARD_BANNER_HEIGHT / 2,
+    );
     const bodyY =
       compositionY + headingHeight + headingGap;
     const bodyContentY =
@@ -460,9 +622,24 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       );
     } else {
       this.rowsLayer.position.set(
+        rowsPosition.x + (levelRewards ? LEVEL_REWARD_ROW_INSET_X : 0),
+        rowsPosition.y,
+      );
+      this.levelRewardRowsBackingLayer.position.set(
         rowsPosition.x,
         rowsPosition.y,
       );
+      if (levelRewards) {
+        this.layoutLevelRewardRowBackings(
+          rowsWidth,
+        );
+        this.continuePrompt.position.set(
+          width / 2,
+          rowsPosition.y +
+            rowsHeight +
+            LEVEL_REWARD_CONTINUE_GAP,
+        );
+      }
     }
     this.unlockItemsLayer.position.set(
       rowsPosition.x,
@@ -502,6 +679,10 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.unlockItems = null;
     this.researchItem?.destroy();
     this.researchItem = null;
+    for (const backing of this.levelRewardRowBackings) {
+      backing.destroy();
+    }
+    this.levelRewardRowBackings.length = 0;
   }
 
   onLayout(projection) {
@@ -519,7 +700,9 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
   }
 
   startAnnouncementMotion() {
-    this.stopAnnouncementMotion();
+    if (this.announcementMotionFrame !== null) {
+      this.stopAnnouncementMotion();
+    }
     if (!this.active || !this.shown || !this.announcementModel) {
       return false;
     }
@@ -528,6 +711,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       this.settleAnnouncementMotion();
       return false;
     }
+    this.levelAdvanceReady = false;
     this.announcementMotionStartedAt =
       this.announcementMotionNow();
     this.announcementMotionDuration =
@@ -579,8 +763,14 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.announcementHeadingBaseY = this.heading.position.y;
     captureDisplayMotionBase(this.panel);
     captureDisplayMotionBase(this.heading);
+    captureDisplayMotionBase(this.levelBannerLayer);
+    captureDisplayMotionBase(this.levelBannerTitle);
+    captureDisplayMotionBase(this.continuePrompt);
     for (const row of this.rows.collection.getWidgets()) {
       captureDisplayMotionBase(row.root);
+    }
+    for (const backing of this.levelRewardRowBackings) {
+      captureDisplayMotionBase(backing);
     }
     for (
       const item of
@@ -627,7 +817,12 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       ANNOUNCEMENT_EASE_RUBBER,
       this.announcementMotionSample,
     );
-    applyDisplayMotion(this.panel, panelState);
+    applyDisplayMotion(
+      this.panel,
+      levelRewards
+        ? { ...panelState, scale: 1, x: 0, y: 0 }
+        : panelState,
+    );
 
     if (kind === 'research-complete') {
       this.applyResearchAnnouncementMotion(
@@ -820,8 +1015,25 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
 
   applyLevelAnnouncementMotion(elapsed, animation) {
     const sample = this.announcementMotionSample;
+    const revealDelay = finiteDuration(
+      animation.revealDelayMs,
+    );
     applyDisplayMotion(
-      this.heading,
+      this.levelBannerLayer,
+      sampleMotionFrames(
+        elapsed,
+        revealDelay,
+        finiteDuration(
+          animation.panelDurationMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS.levelPanelDurationMs,
+        ),
+        ANNOUNCEMENT_BANNER_FRAMES,
+        ANNOUNCEMENT_EASE_RUBBER,
+        sample,
+      ),
+    );
+    applyDisplayMotion(
+      this.levelBannerTitle,
       sampleMotionFrames(
         elapsed,
         finiteDuration(
@@ -852,18 +1064,56 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.rows.collection
       .getWidgets()
       .forEach((row, index) => {
+        const rowState = sampleMotionFrames(
+          elapsed,
+          rowDelay + index * rowStagger,
+          rowDuration,
+          ANNOUNCEMENT_ROW_FRAMES,
+          ANNOUNCEMENT_EASE_RUBBER,
+          sample,
+        );
         applyDisplayMotion(
           row.root,
-          sampleMotionFrames(
-            elapsed,
-            rowDelay + index * rowStagger,
-            rowDuration,
-            ANNOUNCEMENT_ROW_FRAMES,
-            ANNOUNCEMENT_EASE_RUBBER,
-            sample,
-          ),
+          rowState,
+        );
+        applyDisplayMotion(
+          this.levelRewardRowBackings[index],
+          rowState,
+        );
+        this.applyLevelRewardCountUp(
+          row,
+          elapsed,
+          rowDelay +
+            index * rowStagger +
+            rowDuration +
+            LEVEL_REWARD_COUNT_DELAY_MS,
         );
       });
+    const countUpTail = this.hasLevelRewardCountUp()
+      ? LEVEL_REWARD_COUNT_DELAY_MS +
+        LEVEL_REWARD_COUNT_DURATION_MS
+      : 0;
+    const promptDelay =
+      rowDelay +
+      Math.max(
+        0,
+        this.rows.collection.getWidgets().length - 1,
+      ) *
+        rowStagger +
+      rowDuration +
+      countUpTail +
+      LEVEL_REWARD_CONTINUE_DELAY_MS;
+    applyDisplayMotion(
+      this.continuePrompt,
+      sampleMotionFrames(
+        elapsed,
+        promptDelay,
+        rowDuration,
+        ANNOUNCEMENT_PROMPT_FRAMES,
+        ANNOUNCEMENT_EASE,
+        sample,
+      ),
+    );
   }
 
   getAnnouncementMotionDuration() {
@@ -926,6 +1176,12 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
           ),
       );
     } else if (levelRewards) {
+      const rowCount =
+        this.rows.collection.getWidgets().length;
+      const countUpTail = this.hasLevelRewardCountUp()
+        ? LEVEL_REWARD_COUNT_DELAY_MS +
+          LEVEL_REWARD_COUNT_DURATION_MS
+        : 0;
       duration = Math.max(
         duration,
         finiteDuration(
@@ -934,13 +1190,33 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
         ) +
           Math.max(
             0,
-            this.rows.collection.getWidgets().length - 1,
+            rowCount - 1,
           ) *
             finiteDuration(
               animation.rowStaggerMs,
               ANNOUNCEMENT_MOTION_DEFAULTS
                 .levelRowStaggerMs,
             ) +
+          finiteDuration(
+            animation.rowDurationMs,
+            ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
+          ),
+        finiteDuration(
+          animation.rowDelayMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS.levelRowDelayMs,
+        ) +
+          Math.max(0, rowCount - 1) *
+            finiteDuration(
+              animation.rowStaggerMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS
+                .levelRowStaggerMs,
+            ) +
+          finiteDuration(
+            animation.rowDurationMs,
+            ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
+          ) +
+          countUpTail +
+          LEVEL_REWARD_CONTINUE_DELAY_MS +
           finiteDuration(
             animation.rowDurationMs,
             ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
@@ -956,9 +1232,15 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     }
     restoreDisplayMotion(this.panel);
     restoreDisplayMotion(this.heading);
+    restoreDisplayMotion(this.levelBannerLayer);
+    restoreDisplayMotion(this.levelBannerTitle);
+    restoreDisplayMotion(this.continuePrompt);
     this.backdrop.alpha = 1;
     for (const row of this.rows.collection.getWidgets()) {
       restoreDisplayMotion(row.root);
+    }
+    for (const backing of this.levelRewardRowBackings) {
+      restoreDisplayMotion(backing);
     }
     for (
       const item of
@@ -967,6 +1249,118 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       item.restoreMotion();
     }
     this.researchItem?.restoreMotion();
+    this.settleLevelRewardCountUps();
+    this.levelAdvanceReady =
+      this.announcementModel?.animation?.kind ===
+      'level-rewards';
+  }
+
+  syncLevelRewardRowBackings(count) {
+    while (this.levelRewardRowBackings.length < count) {
+      const index = this.levelRewardRowBackings.length;
+      const backing = new PixiNineSliceFrame({
+        texture:
+          this.context.assets?.getTexture?.(
+            PIXI_ROOT_RUN_ASSETS.settingsRow,
+          ) ?? Texture.EMPTY,
+        sourceInsets:
+          PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+        borderInsets:
+          PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+        label: `${this.dialogId}:levelRewardRowBacking:${index}`,
+      });
+      backing.tint = 0x24252c;
+      this.levelRewardRowBackings.push(backing);
+      this.levelRewardRowsBackingLayer.addChild(backing);
+    }
+    this.levelRewardRowBackings.forEach((backing, index) => {
+      setDisplayObjectVisible(backing, index < count);
+    });
+  }
+
+  layoutLevelRewardRowBackings(width) {
+    const rowWidth = Math.max(0, width);
+    const contentWidth = Math.max(
+      0,
+      rowWidth - LEVEL_REWARD_ROW_INSET_X * 2,
+    );
+    this.rows.collection
+      .getWidgets()
+      .forEach((row, index) => {
+        const backing = this.levelRewardRowBackings[index];
+        if (!backing) {
+          return;
+        }
+        backing.position.set(0, row.root.position.y);
+        backing.setSize(
+          rowWidth,
+          Math.max(
+            row.rowHeight,
+            GLOBAL_DIALOG_GEOMETRY.rowHeight,
+          ),
+        );
+        row.setBounds(
+          0,
+          row.root.position.y,
+          contentWidth,
+          row.rowHeight,
+        );
+      });
+  }
+
+  applyLevelRewardRowTypography(enabled) {
+    if (!enabled) {
+      return;
+    }
+    for (const row of this.rows.collection.getWidgets()) {
+      row.keyLabel
+        .setColor('#ffffff')
+        .setStroke(LEVEL_REWARD_ROW_TEXT_STROKE);
+      row.valueLabel.setStroke(
+        LEVEL_REWARD_ROW_TEXT_STROKE,
+      );
+    }
+  }
+
+  hasLevelRewardCountUp() {
+    return this.rows.collection
+      .getWidgets()
+      .some((row) => normalizeLevelRewardCountUp(row.data));
+  }
+
+  applyLevelRewardCountUp(row, elapsed, startMs) {
+    const countUp = normalizeLevelRewardCountUp(row?.data);
+    if (!countUp) {
+      return;
+    }
+    if (elapsed < startMs) {
+      row.valueLabel.setText(row.data.value ?? '');
+      row.layoutCurrent();
+      return;
+    }
+    const progress = sampleMotionProgress(
+      elapsed,
+      startMs,
+      LEVEL_REWARD_COUNT_DURATION_MS,
+      ANNOUNCEMENT_EASE,
+    );
+    row.valueLabel.setText(
+      formatLevelRewardCountUp(countUp, progress),
+    );
+    row.layoutCurrent();
+  }
+
+  settleLevelRewardCountUps() {
+    for (const row of this.rows.collection.getWidgets()) {
+      const countUp = normalizeLevelRewardCountUp(row.data);
+      if (!countUp) {
+        continue;
+      }
+      row.valueLabel.setText(
+        formatLevelRewardCountUp(countUp, 1),
+      );
+      row.layoutCurrent();
+    }
   }
 
   getPoolStats() {
@@ -1951,6 +2345,50 @@ function sampleBezierCoordinate(parameter, first, second) {
 
 function interpolate(from, to, progress) {
   return from + (to - from) * clampUnit(progress);
+}
+
+function normalizeLevelRewardCountUp(data = {}) {
+  const from = Number(data.countUp?.from);
+  const to = Number(data.countUp?.to);
+  if (
+    !Number.isFinite(from) ||
+    !Number.isFinite(to) ||
+    to <= from
+  ) {
+    return null;
+  }
+  return {
+    from,
+    to,
+    suffix: String(data.countUp?.suffix ?? ''),
+    precision: Math.max(
+      getDecimalPrecision(from),
+      getDecimalPrecision(to),
+    ),
+  };
+}
+
+function formatLevelRewardCountUp(countUp, progress) {
+  const value = interpolate(
+    countUp.from,
+    countUp.to,
+    progress,
+  );
+  const factor = 10 ** countUp.precision;
+  const rounded = Math.round(value * factor) / factor;
+  const fixed = rounded.toFixed(countUp.precision);
+  const formatted = fixed.includes('.')
+    ? fixed.replace(/\.?0+$/, '')
+    : fixed;
+  return `${formatted}${countUp.suffix}`;
+}
+
+function getDecimalPrecision(value) {
+  const text = String(Number(value));
+  const decimal = text.indexOf('.');
+  return decimal < 0
+    ? 0
+    : Math.min(4, text.length - decimal - 1);
 }
 
 function clampUnit(value) {

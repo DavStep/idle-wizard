@@ -28,7 +28,7 @@ let nextRetainedInputId = 1;
 export const RETAINED_PAGE_GEOMETRY = Object.freeze({
   width: 360,
   height: 2170 / 3,
-  contentTop: 104,
+  contentTop: PIXI_UI_GEOMETRY.roomContentTop,
   contentEdge: 16,
   chatClearance: 162,
   rowHeight: 20,
@@ -394,6 +394,8 @@ export class RetainedButton {
     fallbackHitTest = false,
     onActivate = null,
     inputRouter = null,
+    semanticRegistry = null,
+    semanticId = null,
     variant = 'button',
   } = {}) {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
@@ -407,6 +409,8 @@ export class RetainedButton {
     this.control = new PixiButton({
       assetManager,
       inputRouter,
+      semanticRegistry,
+      semanticId,
       text: label,
       action: onActivate,
       fallbackHitTest,

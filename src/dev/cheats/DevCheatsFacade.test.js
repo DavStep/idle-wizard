@@ -715,6 +715,10 @@ describe('DevCheatsFacade', () => {
           command: 'cheats.openUi("accountChoice")',
         }),
         expect.objectContaining({
+          id: 'accountProfile',
+          command: 'cheats.openUi("accountProfile")',
+        }),
+        expect.objectContaining({
           id: 'firstRunIntro',
           command: 'cheats.openUi("firstRunIntro")',
         }),
@@ -725,6 +729,10 @@ describe('DevCheatsFacade', () => {
         expect.objectContaining({
           id: 'featureUnlockAnnouncement',
           command: 'cheats.openUi("featureUnlockAnnouncement")',
+        }),
+        expect.objectContaining({
+          id: 'levelUpAnnouncement',
+          command: 'cheats.openUi("levelUpAnnouncement")',
         }),
         expect.objectContaining({
           id: 'whileAwayAnnouncement',
@@ -754,12 +762,30 @@ describe('DevCheatsFacade', () => {
     });
     const publishAndSaveSpy = vi.spyOn(app.gameplayFacade, 'publishAndSaveSnapshot');
     publishAndSaveSpy.mockClear();
+    expect(target.cheats.openUi('accountProfile')).toMatchObject({
+      ok: true,
+      surfaceId: 'accountProfile',
+      surfaceKind: 'dialog',
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('settings', {
+      tab: 'account',
+    });
+    publishAndSaveSpy.mockClear();
     expect(target.cheats.openUi('featureUnlockAnnouncement')).toMatchObject({
       ok: true,
       surfaceId: 'featureUnlockAnnouncement',
     });
     expect(pagesFacade.openDialog).toHaveBeenLastCalledWith(
       'featureUnlockAnnouncement',
+      {},
+    );
+    expect(publishAndSaveSpy).not.toHaveBeenCalled();
+    expect(target.cheats.openUi('levelUpAnnouncement')).toMatchObject({
+      ok: true,
+      surfaceId: 'levelUpAnnouncement',
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith(
+      'levelUpAnnouncement',
       {},
     );
     expect(publishAndSaveSpy).not.toHaveBeenCalled();

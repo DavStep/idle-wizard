@@ -1324,6 +1324,9 @@ class DialogSummaryRow {
             : row.valueResourceKey ?? 'text',
       ),
     );
+    this.valueLabel.setStroke(
+      row.disabled ? null : resolveProgressToneTextStroke(row.valueTone),
+    );
     this.quantityLabel.setColor(
       resolveThemeColor(row.disabled ? 'disabled' : 'text'),
     );
@@ -2215,6 +2218,9 @@ class VirtualShopDialogRow {
           : item.valueResourceKey ?? 'text',
       ),
     );
+    this.value.setStroke(
+      item.disabled ? null : resolveProgressToneTextStroke(item.valueTone),
+    );
     this.semanticId = item.semanticId ?? null;
     if (this.semanticId && this.semanticRegistry) {
       this.semanticDefinition = this.semanticRegistry.register({
@@ -2762,4 +2768,9 @@ function resolveProgressToneText(tone) {
     PIXI_PROGRESS_VISUALS.tones[tone]?.fill ??
     tone
   );
+}
+
+function resolveProgressToneTextStroke(tone) {
+  const color = PIXI_PROGRESS_VISUALS.tones[tone]?.textStroke;
+  return color ? { color, width: 1 } : null;
 }

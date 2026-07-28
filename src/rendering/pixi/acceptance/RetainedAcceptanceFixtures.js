@@ -14,7 +14,6 @@ export const RETAINED_PAGE_IDS = Object.freeze([
 export const DIALOG_IDS_BY_PAGE = Object.freeze({
   workshop: Object.freeze([
     'workshop.summonInfo',
-    'workshop.tasksInfo',
     'workshop.bag',
     'workshop.stats',
     'workshop.inbox',

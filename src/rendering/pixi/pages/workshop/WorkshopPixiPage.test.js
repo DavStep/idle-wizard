@@ -22,6 +22,22 @@ import { ShopDialogPixi } from '../shop/ShopDialogPixi.js';
 import { WorkshopPixiPage } from './WorkshopPixiPage.js';
 
 describe('WorkshopPixiPage', () => {
+  it("keeps the Elara's Request title passive and does not register an info dialog", () => {
+    const harness = createHarness();
+
+    harness.page.bind(createWorkshopViewModel());
+
+    expect(harness.dialogs.has('workshop.tasksInfo')).toBe(false);
+    expect(harness.page.tasks.panel.title.eventMode).toBe('none');
+
+    harness.page.tasks.panel.title.emit('pointertap');
+
+    expect(harness.dialogs.isOpen('workshop.tasksInfo')).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('renders the request panel copy in white with the shared dark stroke', () => {
     const harness = createHarness();
     const model = createWorkshopViewModel();
@@ -55,7 +71,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('renders Workshop side controls with capitalized white stroked labels and enlarged art', () => {
+  it('renders Workshop side controls with capitalized labels and optically normalized art', () => {
     const harness = createHarness();
     harness.page.bind(createWorkshopViewModel());
 
@@ -91,20 +107,24 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.statsButton.textureId).toBe(
       PIXI_ROOT_RUN_ASSETS.workshopStats,
     );
-    expect(harness.page.statsButton.iconScale).toBe(1.08);
-    expect(harness.page.inboxButton.iconScale).toBe(1.22);
+    expect(harness.page.bagButton.iconScale).toBe(0.9);
+    expect(harness.page.statsButton.iconScale).toBe(1.12);
+    expect(harness.page.inboxButton.iconScale).toBe(0.95);
+    expect(harness.page.features.get('alliance').presentation.scale).toBe(
+      0.94,
+    );
     expect(
       harness.page.features.get('leaderboard').presentation.scale,
-    ).toBe(1.2);
-    expect(
-      harness.page.features.get('discoveries').presentation.scale,
-    ).toBe(1.18);
-    expect(
-      harness.page.features.get('personalTasks').presentation.scale,
     ).toBe(1.05);
     expect(
+      harness.page.features.get('discoveries').presentation.scale,
+    ).toBe(0.96);
+    expect(
+      harness.page.features.get('personalTasks').presentation.scale,
+    ).toBe(0.93);
+    expect(
       harness.page.features.get('worldEvent').presentation.scale,
-    ).toBe(1.08);
+    ).toBe(0.87);
 
     harness.page.destroy();
     harness.dispose();
@@ -214,25 +234,25 @@ describe('WorkshopPixiPage', () => {
 
     expect(harness.page.inboxButton.root.position).toMatchObject({
       x: 16,
-      y: 165,
+      y: 197,
     });
     expect(
       harness.page.features.get('leaderboard').root.position,
-    ).toMatchObject({ x: 16, y: 217.25 });
+    ).toMatchObject({ x: 16, y: 249.25 });
     expect(
       harness.page.features.get('alliance').root.position,
-    ).toMatchObject({ x: 16, y: 269.5 });
+    ).toMatchObject({ x: 16, y: 301.5 });
     expect(harness.page.statsButton.root.position).toMatchObject({
       x: 298.5,
-      y: 165,
+      y: 197,
     });
     expect(harness.page.bagButton.root.position).toMatchObject({
       x: 298.5,
-      y: 217.25,
+      y: 249.25,
     });
     expect(
       harness.page.features.get('discoveries').root.position,
-    ).toMatchObject({ x: 298.5, y: 269.5 });
+    ).toMatchObject({ x: 298.5, y: 301.5 });
 
     harness.page.destroy();
     harness.dispose();
@@ -276,7 +296,7 @@ describe('WorkshopPixiPage', () => {
     harness.page.bind(model);
 
     expect(alliance.root.visible).toBe(true);
-    expect(alliance.root.position).toMatchObject({ x: 6, y: 168 });
+    expect(alliance.root.position).toMatchObject({ x: 6, y: 200 });
     expect(alliance.root.alpha).toBe(0);
     expect(alliance.root.scale.x).toBe(0.96);
 
@@ -288,7 +308,7 @@ describe('WorkshopPixiPage', () => {
     expect(alliance.root.alpha).toBeLessThan(1);
 
     frames.shift()(200);
-    expect(alliance.root.position).toMatchObject({ x: 16, y: 165 });
+    expect(alliance.root.position).toMatchObject({ x: 16, y: 197 });
     expect(alliance.root.alpha).toBe(1);
     expect(alliance.root.scale.x).toBe(1);
 
@@ -340,7 +360,7 @@ describe('WorkshopPixiPage', () => {
     const alliance = harness.page.features.get('alliance');
     expect(requestFrame).not.toHaveBeenCalled();
     expect(alliance.root.visible).toBe(true);
-    expect(alliance.root.position).toMatchObject({ x: 16, y: 165 });
+    expect(alliance.root.position).toMatchObject({ x: 16, y: 197 });
     expect(alliance.root.alpha).toBe(1);
     expect(alliance.root.scale.x).toBe(1);
 
@@ -772,10 +792,18 @@ describe('WorkshopPixiPage', () => {
     expect(
       seedRows.map((row) => row.value.textObject.style.fill),
     ).toEqual([
-      '#795909',
+      '#d8ad32',
       dialog.contentTheme.text,
-      '#912f2b',
-      '#256b25',
+      '#be403b',
+      '#4aa83f',
+    ]);
+    expect(
+      seedRows.map((row) => row.value.textObject.style.stroke),
+    ).toEqual([
+      expect.objectContaining({ color: '#6c5008', width: 1 }),
+      null,
+      expect.objectContaining({ color: '#762824', width: 1 }),
+      expect.objectContaining({ color: '#205c22', width: 1 }),
     ]);
     expect(
       seedRows.every((row) => row.selectedIndicator.visible === false),
@@ -1509,7 +1537,15 @@ describe('WorkshopPixiPage', () => {
     expect(playerRow.avatar.eventMode).toBe('static');
     expect(playerRow.username.eventMode).toBe('static');
     expect(playerRow.action).toBeUndefined();
-    expect(playerRow.root.y).toBe(8);
+    expect(
+      systemRow.root.y + systemRow.getPreferredHeight(),
+    ).toBe(dialog.scroll.height);
+    expect(playerRow.root.y).toBe(
+      dialog.scroll.height -
+        playerRow.getPreferredHeight() -
+        3 -
+        systemRow.getPreferredHeight(),
+    );
     const avatarPress = pressRegistrations.find(
       ({ displayObject }) => displayObject === playerRow.avatar,
     );
@@ -1576,16 +1612,16 @@ describe('WorkshopPixiPage', () => {
     });
     expect(harness.page.bagButton.root.position).toMatchObject({
       x: 16,
-      y: 321.75,
+      y: 353.75,
     });
     expect(harness.page.statsButton.root.position).toMatchObject({
       x: 298.5,
-      y: 165,
+      y: 197,
     });
     const alliance = harness.page.features.get('alliance');
     const inbox = harness.page.inboxButton;
-    expect(alliance.root.position).toMatchObject({ x: 16, y: 165 });
-    expect(inbox.root.position).toMatchObject({ x: 298.5, y: 217.25 });
+    expect(alliance.root.position).toMatchObject({ x: 16, y: 197 });
+    expect(inbox.root.position).toMatchObject({ x: 298.5, y: 249.25 });
     expect(alliance.panel).toBeUndefined();
     expect(alliance.root.hitArea).toMatchObject({
       x: 0,
@@ -1623,6 +1659,16 @@ describe('WorkshopPixiPage', () => {
   });
 
   it('uses the main HUD art, event timer, and pooled feature notifications', () => {
+    expect(PIXI_ROOT_RUN_ASSETS.workshopAlliance).toBe(
+      'source:assets/icons/icon-alliance-banner-base.webp',
+    );
+    expect(PIXI_ROOT_RUN_ASSETS.workshopPersonalTasks).toBe(
+      'source:assets/icons/icon-personal-tasks-scroll-bag-style.png',
+    );
+    expect(PIXI_ROOT_RUN_ASSETS.workshopWorldEvent).toBe(
+      'source:assets/icons/icon-quests-scroll-bag-style.png',
+    );
+
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getTexture = vi.fn(() => Texture.EMPTY);
     const harness = createHarness({ assetManager });
@@ -1663,6 +1709,8 @@ describe('WorkshopPixiPage', () => {
     expect(alliance.iconFrame.getChildIndex(alliance.icon)).toBeLessThan(
       alliance.iconFrame.getChildIndex(alliance.cloth),
     );
+    expect(alliance.icon.width).toBe(alliance.cloth.width);
+    expect(alliance.icon.height).toBe(alliance.cloth.height);
     const event = harness.page.features.get('worldEvent');
     expect(event.timer.text).toBe('2d 4h');
     expect(event.notification.root.visible).toBe(true);

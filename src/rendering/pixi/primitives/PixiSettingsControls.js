@@ -36,8 +36,8 @@ export const ROOT_RUN_SETTINGS_SLIDER_MODES = Object.freeze({
  * Shared Root Run settings slider.
  *
  * It uses the thicker shared slider rail and reuses the exact Settings dialog
- * knob. Milestone mode snaps to named stops; range mode maps an integer value
- * across an authoritative min/max range.
+ * knob. Milestone mode snaps to named stops and marks only interior stops;
+ * range mode maps an integer value across an authoritative min/max range.
  */
 export class RootRunSettingsSliderPixi extends Container {
   constructor({
@@ -376,7 +376,8 @@ export class RootRunSettingsSliderPixi extends Container {
     const railStart = knobSize / 2;
     const railWidth = Math.max(0, this.controlWidth - knobSize);
     const centerY = this.controlHeight / 2;
-    this.options.forEach((option, index) => {
+    for (let index = 1; index < this.options.length - 1; index += 1) {
+      const option = this.options[index];
       const x =
         railStart + railWidth * (index / (this.options.length - 1));
       this.milestoneGraphic
@@ -385,7 +386,7 @@ export class RootRunSettingsSliderPixi extends Container {
           color: SETTINGS_MILESTONE_COLOR,
           alpha: option.enabled === false ? 0.24 : 0.68,
         });
-    });
+    }
   }
 
   getTutorialPointerGesture() {

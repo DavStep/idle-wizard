@@ -8,11 +8,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
+import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
 import {
   PRESTIGE_DESCRIPTION_LINES,
   PrestigePixiPage,
 } from './PrestigePixiPage.js';
+import {
+  RESEARCH_PIXI_GEOMETRY,
+  RESEARCH_RANK_INK,
+} from '../research/ResearchPixiPage.js';
 import { RETAINED_PAGE_GEOMETRY } from '../workshop/RetainedPageKit.js';
 
 describe('PrestigePixiPage', () => {
@@ -37,9 +42,26 @@ describe('PrestigePixiPage', () => {
       highWaterMark: 1,
     });
     expect(page.description.description.text).toBe(
-      PRESTIGE_DESCRIPTION_LINES.map((line) => `- ${line}`).join('\n'),
+      PRESTIGE_DESCRIPTION_LINES.map((line) => `• ${line}`).join('\n'),
     );
     expect(row.reward.text).toBe('+12 crystal');
+    expect(page.titleRibbon.title.text).toBe('Prestige');
+    expect(page.titleRibbon.stars.level).toBe(0);
+    expect(page.descriptionTitle.title.text).toBe('Description');
+    expect(page.progressionTitle.title.text).toBe('Progression');
+    expect(page.tabs.get('main').control.textLabel.text).toBe('Main');
+    expect(page.tabs.get('points').control.textLabel.text).toBe('Points');
+    expect(row.title.position).toMatchObject({
+      x: RESEARCH_PIXI_GEOMETRY.nameX,
+      y:
+        RESEARCH_PIXI_GEOMETRY.nameY +
+        RESEARCH_PIXI_GEOMETRY.contentOffsetY,
+    });
+    expect(row.rankLabel.style.fill).toBe(RESEARCH_RANK_INK);
+    expect(row.rankLabel.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: 1.2,
+    });
 
     pages.destroy();
   });
@@ -80,7 +102,9 @@ describe('PrestigePixiPage', () => {
       level: 10,
     });
     const row = page.rows.get('level-10');
-    expect(row.action.control.variant).toBe('brown-dark');
+    expect(row.action).toBeInstanceOf(PixiCostButton);
+    expect(row.action.research).toBe(true);
+    expect(row.action.amount).toBe('Prestige');
     expect(row.help).toBeInstanceOf(PixiInfoButton);
     expect(row.help.textLabel).toBeUndefined();
     expect(page.confirm.cancel.control.variant).toBe('regular');
@@ -114,10 +138,10 @@ describe('PrestigePixiPage', () => {
     const page = createPage();
     page.bind(createPrestigeViewModel());
 
-    expect(page.scroll.root.position).toMatchObject({ x: 16, y: 104 });
+    expect(page.scroll.root.position).toMatchObject({ x: 0, y: 183 });
     expect(page.scroll).toMatchObject({
-      width: 328,
-      height: 417.33333333333337,
+      width: 344,
+      height: 338.33333333333337,
     });
     expect(page.tabsLayer.position).toMatchObject({
       x: 16,

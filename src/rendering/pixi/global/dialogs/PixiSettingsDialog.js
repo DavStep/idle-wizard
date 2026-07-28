@@ -9,6 +9,7 @@ import {
 import {
   DeviceIdentityFooter,
   PixiButton,
+  PixiNineSliceFrame,
   PixiScrollView,
   PixiTextField,
   PixiTextLabel,
@@ -22,19 +23,46 @@ import {
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 import { getClientReleaseVersion } from '../../../../shared/clientReleaseVersion.js';
 import {
   GLOBAL_DIALOG_GEOMETRY,
   RetainedGlobalDialog,
   orderDisplayObjects,
 } from './GlobalDialogKit.js';
+import {
+  RetainedButton,
+  RetainedScrollArea,
+} from '../../pages/workshop/RetainedPageKit.js';
 
 const SETTINGS_CONTENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
 const SETTINGS_STANDARD_CONTENT_HEIGHT = 410;
 const SETTINGS_STANDARD_SCROLL_HEIGHT = 390;
+const ACCOUNT_CONTENT_HEIGHT = 414;
+const ACCOUNT_HEADER_WIDTH = 298;
+const ACCOUNT_HEADER_HEIGHT = 281 / 3;
+const ACCOUNT_SCROLL_X =
+  (SETTINGS_CONTENT_WIDTH - ACCOUNT_HEADER_WIDTH) / 2;
+const ACCOUNT_HEADER_X = 0;
+const ACCOUNT_TILE_SIZE = 183 / 3;
+const ACCOUNT_TILE_GAP = 25 / 3;
+const ACCOUNT_GRID_COLUMNS = 4;
+const ACCOUNT_GRID_WIDTH =
+  ACCOUNT_GRID_COLUMNS * ACCOUNT_TILE_SIZE +
+  (ACCOUNT_GRID_COLUMNS - 1) * ACCOUNT_TILE_GAP;
+const ACCOUNT_HEADER_TILE_SIZE = 209 / 3;
+const ACCOUNT_HEADER_PORTRAIT_WIDTH = 170 / 3;
+const ACCOUNT_TAB_Y = 306 / 3;
+const ACCOUNT_CHOICES_Y = 454 / 3;
+const ACCOUNT_CHOICES_HEIGHT = 478 / 3;
+const ACCOUNT_CHOICES_SCROLL_INSET_X = 59 / 3;
+const ACCOUNT_CHOICES_SCROLL_INSET_Y = 24 / 3;
+const ACCOUNT_PAPER_BOTTOM = 978 / 3;
+const ACCOUNT_SAVE_Y = 999 / 3;
 const SETTINGS_DEVICE_CONTENT_HEIGHT = 264;
 const SETTINGS_DEVICE_SCROLL_HEIGHT = 244;
 const SETTINGS_TABS = new Set([
@@ -83,10 +111,6 @@ const DEVICE_PREFERENCES = Object.freeze([
   }),
 ]);
 const DEVICE_FOOTER_GAP = 12;
-const AVATAR_CELL_HEIGHT = 94;
-const AVATAR_GAP = 8;
-const AVATAR_CELL_WIDTH =
-  (SETTINGS_CONTENT_WIDTH - AVATAR_GAP * 2) / 3;
 
 /**
  * Retained single-pane surface used by settings, feedback, username, and
@@ -116,9 +140,11 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.initialTab = normalizeSettingsTab(initialTab);
     this.selectedTab = this.initialTab;
     this.feedbackKind = normalizeFeedbackKind(initialFeedbackKind);
-    this.usernameDraft = '';
     this.feedbackDraft = '';
     this.feedbackPending = false;
+    this.accountChoiceTab = 'avatar';
+    this.accountDraft = { username: '', character: 'elara', frame: 'classic' };
+    this.accountDraftDirty = false;
     this.scrollOffsets = new Map();
 
     this.scroll = new PixiScrollView({
@@ -140,13 +166,10 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.reportLayer.label = `${dialogId}:reportPane`;
     this.configurationsLayer = new Container();
     this.configurationsLayer.label = `${dialogId}:configurationsPane`;
-    this.avatarLayer = new Container();
-    this.avatarLayer.label = `${dialogId}:avatarPane`;
+    this.panel.content.addChild(this.accountLayer);
     this.scroll.content.addChild(
-      this.accountLayer,
       this.reportLayer,
       this.configurationsLayer,
-      this.avatarLayer,
     );
 
     this.buildAccountPane();
@@ -159,80 +182,125 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   buildAccountPane() {
-    this.usernameLabel = new PixiTextLabel({
-      text: 'username',
-      label: `${this.dialogId}:usernameLabel`,
+    this.accountHeader = new PixiNineSliceFrame({
+      texture: this.context.assets.getTexture(PIXI_ROOT_RUN_ASSETS.settingsRow),
+      sourceInsets: { top: 17, right: 25, bottom: 19, left: 13 },
+      borderInsets: { top: 17 / 3, right: 25 / 3, bottom: 19 / 3, left: 13 / 3 },
+      width: SETTINGS_CONTENT_WIDTH,
+      height: 92,
+      label: `${this.dialogId}:accountHeader`,
+    });
+    this.accountPreviewTile = new Sprite({
+      texture: this.context.assets.getTexture(PIXI_ROOT_RUN_ASSETS.accountChoice),
+      roundPixels: true,
+      label: `${this.dialogId}:accountPreviewFrame`,
+    });
+    this.accountPreviewPortrait = new Sprite({
+      texture: Texture.EMPTY,
+      roundPixels: true,
+      label: `${this.dialogId}:accountPreviewPortrait`,
+    });
+    this.usernameBacking = new Sprite({
+      texture: this.context.assets.getTexture(PIXI_ROOT_RUN_ASSETS.accountUsername),
+      roundPixels: true,
+      label: `${this.dialogId}:usernameBacking`,
     });
     this.usernameField = new PixiTextField({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       textEntryService: this.context.textEntryService,
-      width: 244,
-      height: 30,
+      width: 166,
+      height: 34,
+      variant: 'account-username',
       maxLength: 24,
       onChange: (value) => {
-        this.usernameDraft = value;
+        this.accountDraft.username = value;
+        this.accountDraftDirty = true;
         this.setUsernameStatus('');
       },
-      onSubmit: () => this.saveUsername(),
+      onSubmit: () => this.saveAccount(),
       onCancel: () => this.requestClose('text-cancel'),
       label: `${this.dialogId}:usernameField`,
     });
-    this.usernameSave = new PixiButton({
-      assetManager: this.context.assets,
-      inputRouter: this.context.inputRouter,
-      semanticRegistry: this.context.semanticRegistry,
-      semanticId: `${this.dialogId}.username.save`,
-      tutorialId: 'top:username-input',
-      text: 'save',
-      width: 58,
-      height: 30,
-      action: () => this.saveUsername(),
-      label: `${this.dialogId}:usernameSave`,
+    this.usernameEdit = new Sprite({
+      texture: this.context.assets.getTexture(PIXI_ROOT_RUN_ASSETS.accountEdit),
+      roundPixels: true,
+      label: `${this.dialogId}:usernameEdit`,
     });
+    this.usernameEditRegistration =
+      this.context.inputRouter?.registerPressTarget?.(this.usernameEdit, {
+        enabled: () =>
+          this.accountLayer.visible &&
+          this.accountLayer.renderable,
+        onActivate: () => this.usernameField.focus(),
+        haptic: 'selection',
+      }) ?? null;
     this.usernameStatus = new PixiTextLabel({
       color: 'disabled',
       label: `${this.dialogId}:usernameStatus`,
     });
-    this.accountLabel = new PixiTextLabel({
-      text: 'account',
-      label: `${this.dialogId}:accountLabel`,
-    });
-    this.accountStatus = new PixiTextLabel({
-      text: 'not connected',
-      color: 'muted',
-      label: `${this.dialogId}:accountStatus`,
-    });
-    this.connectAccount = new PixiButton({
+    this.avatarTab = new RetainedButton({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       semanticRegistry: this.context.semanticRegistry,
-      semanticId: `${this.dialogId}.account.connect`,
-      text: 'connect account',
-      width: 218,
-      height: 30,
-      action: () => this.runAction('connectAccount'),
-      label: `${this.dialogId}:connectAccount`,
+      semanticId: `${this.dialogId}.account.avatarTab`,
+      label: 'Avatar',
+      buttonLabel: `${this.dialogId}:avatarTab`,
+      variant: 'account-tab',
+      onActivate: () => this.selectAccountChoiceTab('avatar'),
     });
-    this.versionLabel = new PixiTextLabel({
-      text: 'version',
-      label: `${this.dialogId}:versionLabel`,
+    this.avatarTabButton = this.avatarTab.control;
+    this.frameTab = new RetainedButton({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${this.dialogId}.account.frameTab`,
+      label: 'Frame',
+      buttonLabel: `${this.dialogId}:frameTab`,
+      variant: 'account-tab',
+      onActivate: () => this.selectAccountChoiceTab('frame'),
     });
-    this.versionValue = new PixiTextLabel({
-      color: 'muted',
-      label: `${this.dialogId}:versionValue`,
+    this.frameTabButton = this.frameTab.control;
+    this.accountChoiceBoard = new PixiNineSliceFrame({
+      texture: this.context.assets.getTexture(PIXI_ROOT_RUN_ASSETS.settingsRow),
+      sourceInsets: { top: 17, right: 25, bottom: 19, left: 13 },
+      borderInsets: { top: 17 / 3, right: 25 / 3, bottom: 19 / 3, left: 13 / 3 },
+      width: SETTINGS_CONTENT_WIDTH,
+      height: 224,
+      label: `${this.dialogId}:accountChoicesBoard`,
     });
+    this.accountChoiceScroll = new RetainedScrollArea({
+      inputRouter: this.context.inputRouter,
+      label: `${this.dialogId}:accountChoices`,
+    });
+    this.accountSave = new PixiButton({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${this.dialogId}.account.save`,
+      text: 'Save',
+      variant: 'account-save',
+      width: PIXI_ROOT_RUN_GEOMETRY.account.save.width,
+      height: PIXI_ROOT_RUN_GEOMETRY.account.save.height,
+      action: () => this.saveAccount(),
+      label: `${this.dialogId}:accountSave`,
+    });
+    this.usernameSave = this.accountSave;
     this.accountLayer.addChild(
-      this.usernameLabel,
+      this.accountHeader,
+      this.accountPreviewTile,
+      this.accountPreviewPortrait,
+      this.usernameBacking,
       this.usernameField,
-      this.usernameSave,
+      this.usernameEdit,
       this.usernameStatus,
-      this.accountLabel,
-      this.accountStatus,
-      this.connectAccount,
-      this.versionLabel,
-      this.versionValue,
+      this.avatarTab.root,
+      this.frameTab.root,
+      this.accountChoiceBoard,
+      this.accountChoiceScroll.root,
+      this.accountSave,
     );
+    this.syncAccountChoiceTabs();
   }
 
   buildReportPane() {
@@ -356,11 +424,35 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       keyOf: (avatar) => avatar.key,
       bind: (widget, avatar, key) =>
         widget.bind(key, avatar, {
-          select: (data) => this.selectVisualOption(data),
+          select: (data) => this.selectAccountOption(data),
           research: (data) => this.researchVisualOption(data),
         }),
       afterReconcile: (widgets) =>
-        orderDisplayObjects(this.avatarLayer, widgets),
+        orderDisplayObjects(this.accountChoiceScroll.content, widgets),
+    });
+    this.framePool = new WidgetPool({
+      name: `${this.dialogId} frame option pool`,
+      counters: this.context.counters,
+      maxSize: 12,
+      create: () => new SettingsAvatarWidget({
+        assetManager: this.context.assets,
+        inputRouter: this.context.inputRouter,
+        label: `${this.dialogId}:frameOption`,
+      }),
+      reset: (widget) => widget.reset(),
+      dispose: (widget) => widget.destroy(),
+    });
+    this.frames = new PooledCollection({
+      name: `${this.dialogId} frame options`,
+      pool: this.framePool,
+      counters: this.context.counters,
+      keyOf: (frame) => frame.key,
+      bind: (widget, frame, key) =>
+        widget.bind(key, frame, {
+          select: (data) => this.selectAccountOption(data),
+        }),
+      afterReconcile: (widgets) =>
+        orderDisplayObjects(this.accountChoiceScroll.content, widgets),
     });
   }
 
@@ -376,20 +468,19 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       model.account.usernameRequired ? 'later' : 'close',
     );
 
-    if (!this.usernameField.focused) {
-      this.usernameDraft = model.account.username;
-      this.usernameField.setValue(this.usernameDraft);
+    if (!this.accountDraftDirty && !this.usernameField.focused) {
+      this.accountDraft = {
+        username: model.account.username,
+        character: model.selections.character,
+        frame: model.selections.frame,
+      };
+      this.usernameField.setValue(this.accountDraft.username);
     }
     if (!this.feedbackField.focused) {
       this.feedbackDraft = model.feedback.value;
       this.feedbackField.setValue(this.feedbackDraft);
     }
     this.usernameStatus.setText(model.account.status);
-    this.accountStatus.setText(model.account.accountStatus);
-    this.connectAccount
-      .setText(model.account.connectLabel)
-      .setEnabled(model.account.connectEnabled);
-    this.versionValue.setText(model.account.version);
     this.feedbackStatus.setText(model.feedback.status);
     this.feedbackPending = model.feedback.pending;
     this.feedbackSend
@@ -415,7 +506,8 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
         copyTextToClipboard,
     });
 
-    this.avatars.reconcile(model.avatars);
+    this.refreshAccountChoices();
+    this.refreshAccountPreview();
     this.renderSelectedPane();
   }
 
@@ -445,14 +537,11 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
         ? this.reportLayer
         : this.selectedTab === 'configurations'
           ? this.configurationsLayer
-          : this.selectedTab === 'avatar'
-            ? this.avatarLayer
-            : this.accountLayer;
+          : this.accountLayer;
     for (const layer of [
       this.accountLayer,
       this.reportLayer,
       this.configurationsLayer,
-      this.avatarLayer,
     ]) {
       const visible = layer === pane;
       layer.visible = visible;
@@ -460,22 +549,99 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       layer.eventMode = visible ? 'passive' : 'none';
     }
     this.layoutActivePane();
-    const devicePreferences =
-      this.selectedTab === 'configurations';
+    const devicePreferences = this.selectedTab === 'configurations';
+    const account = this.selectedTab === 'account';
+    this.accountLayer.position.set(
+      ACCOUNT_SCROLL_X,
+      PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
+    );
+    this.scroll.position.set(0, 0);
     this.setPanelContentSize(
       SETTINGS_CONTENT_WIDTH,
-      devicePreferences
-        ? SETTINGS_DEVICE_CONTENT_HEIGHT
-        : SETTINGS_STANDARD_CONTENT_HEIGHT,
+      account
+        ? ACCOUNT_CONTENT_HEIGHT
+        : devicePreferences
+          ? SETTINGS_DEVICE_CONTENT_HEIGHT
+          : SETTINGS_STANDARD_CONTENT_HEIGHT,
     );
     this.scroll.setViewportSize(
-      SETTINGS_CONTENT_WIDTH,
-      devicePreferences
-        ? SETTINGS_DEVICE_SCROLL_HEIGHT
-        : SETTINGS_STANDARD_SCROLL_HEIGHT,
+      account ? ACCOUNT_HEADER_WIDTH : SETTINGS_CONTENT_WIDTH,
+      account
+        ? ACCOUNT_CONTENT_HEIGHT
+        : devicePreferences
+          ? SETTINGS_DEVICE_SCROLL_HEIGHT
+          : SETTINGS_STANDARD_SCROLL_HEIGHT,
     );
     this.scroll.setContentHeight(this.activePaneHeight);
     this.scroll.scrollTo(this.scrollOffsets.get(this.selectedTab) ?? 0);
+    this.syncOuterScrollState(account);
+    this.syncAccountPaper(account);
+    this.syncTitleFrame(account);
+  }
+
+  syncOuterScrollState(account) {
+    const visible = !account;
+    this.scroll.visible = visible;
+    this.scroll.renderable = visible;
+    this.scroll.eventMode = visible ? 'static' : 'none';
+    if (account) {
+      this.scroll.scrollTo(0);
+      this.scroll.progressBar.visible = false;
+    }
+  }
+
+  syncAccountPaper(account) {
+    if (!account) {
+      return;
+    }
+    const paper = this.panel.paperFrame;
+    const paperBottom =
+      this.panel.content.y +
+      this.accountLayer.y +
+      ACCOUNT_PAPER_BOTTOM;
+    paper.setSize(
+      paper.frameWidth,
+      Math.max(0, paperBottom - paper.y),
+      PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
+    );
+  }
+
+  syncTitleFrame(account) {
+    this.panel.setTitle(
+      account
+        ? 'Account'
+        : this.model.title ?? this.defaultTitle,
+    );
+    const titleFrame = this.panel.titleFrame;
+    if (!titleFrame) {
+      return;
+    }
+    if (account) {
+      const sourceInsets = { top: 120, right: 133, bottom: 0, left: 95 };
+      const borderInsets = {
+        top: 40,
+        right: 133 / 3,
+        bottom: 0,
+        left: 95 / 3,
+      };
+      titleFrame
+        .setTexture(
+          this.context.assets.getTexture(PIXI_ROOT_RUN_ASSETS.accountTitle),
+          sourceInsets,
+        )
+        .setSize(titleFrame.frameWidth, titleFrame.frameHeight, borderInsets);
+      return;
+    }
+    titleFrame
+      .setTexture(
+        this.context.assets.getTexture(PIXI_ROOT_RUN_ASSETS.dialogTitle),
+        PIXI_ROOT_RUN_GEOMETRY.dialog.titleSourceInsets,
+      )
+      .setSize(
+        titleFrame.frameWidth,
+        titleFrame.frameHeight,
+        PIXI_ROOT_RUN_GEOMETRY.dialog.titleBorderInsets,
+      );
   }
 
   layoutActivePane() {
@@ -487,36 +653,92 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       this.activePaneHeight = this.layoutConfigurationsPane();
       return;
     }
-    if (this.selectedTab === 'avatar') {
-      this.activePaneHeight = this.layoutAvatarPane();
-      return;
-    }
     this.activePaneHeight = this.layoutAccountPane();
   }
 
   layoutAccountPane() {
-    const usernameSaveWidth = 58;
-    const usernameGap = 8;
-    const usernameFieldWidth =
-      SETTINGS_CONTENT_WIDTH -
-      usernameSaveWidth -
-      usernameGap;
-    this.usernameLabel.position.set(0, 0);
-    this.usernameField.position.set(0, 22);
-    this.usernameField.setSize(usernameFieldWidth, 30);
-    this.usernameSave.position.set(
-      usernameFieldWidth + usernameGap,
-      22,
+    const username = PIXI_ROOT_RUN_GEOMETRY.account.username;
+    const tab = PIXI_ROOT_RUN_GEOMETRY.account.tab;
+    this.accountHeader.position.set(ACCOUNT_HEADER_X, 0);
+    this.accountHeader.setSize(ACCOUNT_HEADER_WIDTH, ACCOUNT_HEADER_HEIGHT);
+    this.accountPreviewTile.position.set(
+      ACCOUNT_HEADER_X + 22 * (ACCOUNT_HEADER_WIDTH / 925),
+      35 / 3,
     );
-    this.usernameSave.setSize(usernameSaveWidth, 30);
-    this.usernameStatus.position.set(0, 58);
-    this.accountLabel.position.set(0, 92);
-    this.accountStatus.position.set(0, 114);
-    this.connectAccount.position.set(0, 139);
-    this.connectAccount.setSize(218, 30);
-    this.versionLabel.position.set(0, 191);
-    this.versionValue.position.set(0, 213);
-    return 237;
+    this.accountPreviewTile.width = ACCOUNT_HEADER_TILE_SIZE;
+    this.accountPreviewTile.height = ACCOUNT_HEADER_TILE_SIZE;
+    this.accountPreviewPortrait.position.set(
+      ACCOUNT_HEADER_X + 42 * (ACCOUNT_HEADER_WIDTH / 925),
+      54 / 3,
+    );
+    this.accountPreviewPortrait.width = ACCOUNT_HEADER_PORTRAIT_WIDTH;
+    this.accountPreviewPortrait.height =
+      ACCOUNT_HEADER_PORTRAIT_WIDTH * (108 / 87);
+    this.usernameBacking.position.set(
+      ACCOUNT_HEADER_X + 253 * (ACCOUNT_HEADER_WIDTH / 925),
+      96 / 3,
+    );
+    this.usernameBacking.width = username.width;
+    this.usernameBacking.height = username.height;
+    this.usernameField.position.set(
+      this.usernameBacking.x + username.textInsetX,
+      this.usernameBacking.y + username.textInsetY,
+    );
+    this.usernameField.setSize(535 / 3, username.editSize);
+    this.usernameEdit.position.set(
+      this.usernameBacking.x +
+        username.width -
+        username.editInsetRight -
+        username.editSize,
+      this.usernameBacking.y + username.editInsetY,
+    );
+    this.usernameEdit.width = username.editSize;
+    this.usernameEdit.height = username.editSize;
+    this.usernameStatus.position.set(
+      this.usernameField.x,
+      this.usernameBacking.y + username.height + 2,
+    );
+
+    const tabsWidth = tab.width * 2 + tab.gap;
+    const tabX = (ACCOUNT_HEADER_WIDTH - tabsWidth) / 2;
+    this.avatarTab.setBounds(
+      tabX,
+      ACCOUNT_TAB_Y,
+      tab.width,
+      tab.height,
+    );
+    this.frameTab.setBounds(
+      tabX + tab.width + tab.gap,
+      ACCOUNT_TAB_Y,
+      tab.width,
+      tab.height,
+    );
+
+    this.accountChoiceBoard.position.set(
+      ACCOUNT_HEADER_X + 1,
+      ACCOUNT_CHOICES_Y,
+    );
+    this.accountChoiceBoard.setSize(
+      ACCOUNT_HEADER_WIDTH,
+      ACCOUNT_CHOICES_HEIGHT,
+    );
+    this.accountChoiceScroll.setBounds(
+      this.accountChoiceBoard.x + ACCOUNT_CHOICES_SCROLL_INSET_X,
+      ACCOUNT_CHOICES_Y + ACCOUNT_CHOICES_SCROLL_INSET_Y,
+      ACCOUNT_GRID_WIDTH,
+      ACCOUNT_CHOICES_HEIGHT - ACCOUNT_CHOICES_SCROLL_INSET_Y * 2,
+    );
+    this.accountSave.position.set(
+      (ACCOUNT_HEADER_WIDTH -
+        PIXI_ROOT_RUN_GEOMETRY.account.save.width) / 2,
+      ACCOUNT_SAVE_Y,
+    );
+    this.accountSave.setSize(
+      PIXI_ROOT_RUN_GEOMETRY.account.save.width,
+      PIXI_ROOT_RUN_GEOMETRY.account.save.height,
+    );
+    this.layoutAvatarPane();
+    return ACCOUNT_CONTENT_HEIGHT;
   }
 
   layoutReportPane() {
@@ -547,20 +769,97 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   layoutAvatarPane() {
-    this.avatars.getWidgets().forEach((avatar, index) => {
-      const column = index % 3;
-      const row = Math.floor(index / 3);
-      avatar.setBounds(
-        column * (AVATAR_CELL_WIDTH + AVATAR_GAP),
-        row * (AVATAR_CELL_HEIGHT + AVATAR_GAP),
-        AVATAR_CELL_WIDTH,
-        AVATAR_CELL_HEIGHT,
+    const widgets = this.accountChoiceTab === 'frame'
+      ? this.frames.getWidgets()
+      : this.avatars.getWidgets();
+    widgets.forEach((widget, index) => {
+      const column = index % ACCOUNT_GRID_COLUMNS;
+      const row = Math.floor(index / ACCOUNT_GRID_COLUMNS);
+      widget.setBounds(
+        column * (ACCOUNT_TILE_SIZE + ACCOUNT_TILE_GAP),
+        row * (ACCOUNT_TILE_SIZE + ACCOUNT_TILE_GAP),
+        ACCOUNT_TILE_SIZE,
+        ACCOUNT_TILE_SIZE,
       );
     });
-    return Math.max(
-      SETTINGS_STANDARD_SCROLL_HEIGHT,
-      Math.ceil(this.avatars.getWidgets().length / 3) *
-        (AVATAR_CELL_HEIGHT + AVATAR_GAP),
+    const rows = Math.ceil(widgets.length / ACCOUNT_GRID_COLUMNS);
+    this.accountChoiceScroll.setContentHeight(
+      Math.max(
+        this.accountChoiceScroll.height,
+        rows * ACCOUNT_TILE_SIZE +
+          Math.max(0, rows - 1) * ACCOUNT_TILE_GAP,
+      ),
+    );
+    return ACCOUNT_CONTENT_HEIGHT;
+  }
+
+  selectAccountChoiceTab(tab) {
+    this.accountChoiceTab = tab === 'frame' ? 'frame' : 'avatar';
+    this.syncAccountChoiceTabs();
+    this.refreshAccountChoices();
+    return true;
+  }
+
+  syncAccountChoiceTabs() {
+    this.avatarTab.setModel({
+      label: 'Avatar',
+      selected: this.accountChoiceTab === 'avatar',
+      action: () => this.selectAccountChoiceTab('avatar'),
+    });
+    this.frameTab.setModel({
+      label: 'Frame',
+      selected: this.accountChoiceTab === 'frame',
+      action: () => this.selectAccountChoiceTab('frame'),
+    });
+  }
+
+  selectAccountOption(data) {
+    if (data.researched === false) {
+      return false;
+    }
+    if (data.category === 'frame') {
+      this.accountDraft.frame = data.key;
+    } else {
+      this.accountDraft.character = data.key;
+    }
+    this.accountDraftDirty = true;
+    this.refreshAccountChoices();
+    this.refreshAccountPreview();
+    return true;
+  }
+
+  refreshAccountChoices() {
+    const equipped = this.settingsModel?.selections ?? {};
+    const draft = this.accountDraft;
+    const avatars = (this.settingsModel?.avatars ?? []).map((option) => ({
+      ...option,
+      selected: draft.character === option.key,
+      equipped: equipped.character === option.key,
+      portraitKey: option.key,
+      frameTint: getPlayerFrameTint(draft.frame),
+    }));
+    const frames = (this.settingsModel?.frames ?? []).map((option) => ({
+      ...option,
+      selected: draft.frame === option.key,
+      equipped: equipped.frame === option.key,
+      portraitKey: draft.character,
+      frameTint: option.tint ?? getPlayerFrameTint(option.key),
+    }));
+    if (this.accountChoiceTab === 'frame') {
+      this.avatars.reconcile([]);
+      this.frames.reconcile(frames);
+    } else {
+      this.frames.reconcile([]);
+      this.avatars.reconcile(avatars);
+    }
+    this.layoutAvatarPane();
+  }
+
+  refreshAccountPreview() {
+    this.accountPreviewTile.tint = getPlayerFrameTint(this.accountDraft.frame);
+    this.accountPreviewPortrait.texture = getCharacterTexture(
+      this.context.assets,
+      this.accountDraft.character,
     );
   }
 
@@ -647,7 +946,11 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   saveUsername() {
-    const username = String(this.usernameDraft ?? '').trim();
+    return this.saveAccount();
+  }
+
+  saveAccount() {
+    const username = String(this.accountDraft.username ?? '').trim();
     if (
       this.settingsModel?.account?.usernameRequired &&
       !username
@@ -656,13 +959,20 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       return false;
     }
     const action =
+      this.actions.saveAccount ??
       this.model.onSaveUsername ??
       this.actions.saveUsername ??
       this.actions.setUsername;
     if (!action) {
       return false;
     }
-    const result = action(username);
+    const result = this.actions.saveAccount
+      ? action({
+          username,
+          character: this.accountDraft.character,
+          frame: this.accountDraft.frame,
+        })
+      : action(username);
     if (result?.ok === false || result === false) {
       this.setUsernameStatus(
         result?.message ?? 'not saved',
@@ -670,6 +980,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       return result;
     }
     this.setUsernameStatus('');
+    this.accountDraftDirty = false;
     return result ?? true;
   }
 
@@ -706,12 +1017,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   applyDialogTheme(theme) {
     this.scroll?.applyTheme(theme);
     for (const label of [
-      this.usernameLabel,
       this.usernameStatus,
-      this.accountLabel,
-      this.accountStatus,
-      this.versionLabel,
-      this.versionValue,
       this.feedbackStatus,
     ]) {
       label?.applyTheme(theme);
@@ -723,8 +1029,9 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       field?.applyTheme(theme);
     }
     for (const button of [
-      this.usernameSave,
-      this.connectAccount,
+      this.avatarTabButton,
+      this.frameTabButton,
+      this.accountSave,
       this.feedbackSend,
       ...this.feedbackKindButtons?.map(({ button }) => button) ?? [],
     ]) {
@@ -736,18 +1043,34 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     for (const avatar of this.avatars?.getWidgets?.() ?? []) {
       avatar.applyTheme(theme);
     }
+    for (const frame of this.frames?.getWidgets?.() ?? []) {
+      frame.applyTheme(theme);
+    }
+    if (this.usernameField) {
+      this.usernameField.frame.visible = false;
+      this.usernameField.insetFrame.visible = false;
+    }
   }
 
   layoutDialog() {
+    const account = this.selectedTab === 'account';
+    this.accountLayer.position.set(
+      ACCOUNT_SCROLL_X,
+      PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
+    );
     this.scroll.position.set(0, 0);
     this.scroll.setViewportSize(
       SETTINGS_CONTENT_WIDTH,
       this.selectedTab === 'configurations'
-        ? SETTINGS_DEVICE_SCROLL_HEIGHT
-        : SETTINGS_STANDARD_SCROLL_HEIGHT,
+          ? SETTINGS_DEVICE_SCROLL_HEIGHT
+          : SETTINGS_STANDARD_SCROLL_HEIGHT,
     );
     this.layoutActivePane();
     this.scroll.setContentHeight(this.activePaneHeight);
+    this.syncOuterScrollState(account);
+    if (this.selectedTab === 'account') {
+      this.syncAccountPaper(true);
+    }
   }
 
   getModalContentRoots() {
@@ -765,17 +1088,28 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.usernameField.blur();
     this.feedbackField.blur();
     this.feedbackPending = false;
+    this.accountDraftDirty = false;
     this.actions.deactivate?.();
   }
 
   destroyDialog() {
+    if (typeof this.usernameEditRegistration === 'function') {
+      this.usernameEditRegistration();
+    } else {
+      this.usernameEditRegistration?.unregister?.();
+    }
+    this.usernameEditRegistration = null;
     this.avatars?.destroy();
     this.avatarPool?.destroy();
+    this.frames?.destroy();
+    this.framePool?.destroy();
+    this.accountChoiceScroll?.destroy();
   }
 
   getPoolStats() {
     return Object.freeze({
       avatars: this.avatarPool.getStats(),
+      frames: this.framePool.getStats(),
     });
   }
 }
@@ -789,26 +1123,35 @@ class SettingsAvatarWidget {
     this.assetManager = assetManager;
     this.root = new Container();
     this.root.label = label;
-    this.frame = new Graphics();
+    this.frame = new Sprite({
+      texture: assetManager.getTexture(PIXI_ROOT_RUN_ASSETS.accountChoice),
+      roundPixels: true,
+      label: `${label}:frame`,
+    });
     this.sprite = new Sprite({
       texture: Texture.EMPTY,
       roundPixels: true,
       label: `${label}:portrait`,
+    });
+    this.lockOverlay = new Graphics({
+      label: `${label}:lockOverlay`,
+    });
+    this.selectionFrame = new Sprite({
+      texture: assetManager.getTexture(PIXI_ROOT_RUN_ASSETS.accountSelected),
+      roundPixels: true,
+      label: `${label}:selectedFrame`,
     });
     this.status = new Sprite({
       texture: Texture.EMPTY,
       roundPixels: true,
       label: `${label}:status`,
     });
-    this.text = new PixiTextLabel({
-      anchor: { x: 0.5, y: 0 },
-      label: `${label}:label`,
-    });
     this.root.addChild(
       this.frame,
       this.sprite,
+      this.lockOverlay,
+      this.selectionFrame,
       this.status,
-      this.text,
     );
     this.data = {};
     this.actions = {};
@@ -837,17 +1180,21 @@ class SettingsAvatarWidget {
       data.enabled === false ? 'none' : 'static';
     this.sprite.texture = getCharacterTexture(
       this.assetManager,
-      data.key,
+      data.portraitKey ?? data.key,
     );
+    this.frame.tint = data.frameTint ?? 0xffffff;
     this.status.texture = getStatusTexture(
       this.assetManager,
-      data.selected ? 'check' : 'lock',
+      data.equipped ? 'check' : 'lock',
     );
     this.status.visible =
-      data.selected || data.researched === false;
+      data.equipped || data.researched === false;
     this.status.renderable = this.status.visible;
-    this.sprite.alpha = data.researched === false ? 0.35 : 1;
-    this.text.setText(data.label);
+    this.selectionFrame.visible = data.selected === true;
+    this.selectionFrame.renderable = this.selectionFrame.visible;
+    this.lockOverlay.visible = data.researched === false;
+    this.lockOverlay.renderable = this.lockOverlay.visible;
+    this.sprite.alpha = 1;
     this.redraw();
   }
 
@@ -862,60 +1209,34 @@ class SettingsAvatarWidget {
   setBounds(x, y, width, height) {
     this.root.position.set(x, y);
     this.root.hitArea = new Rectangle(0, 0, width, height);
-    const portraitSize = 72;
-    const textureWidth = Math.max(
-      1,
-      Number(this.sprite.texture?.width) || 1,
-    );
-    const textureHeight = Math.max(
-      1,
-      Number(this.sprite.texture?.height) || 1,
-    );
-    const portraitScale = Math.min(
-      portraitSize / textureWidth,
-      portraitSize / textureHeight,
-    );
-    const portraitWidth = textureWidth * portraitScale;
-    const portraitHeight = textureHeight * portraitScale;
-    const portraitX = (width - portraitWidth) / 2;
-    const portraitY = (portraitSize - portraitHeight) / 2;
-    this.sprite.position.set(portraitX, portraitY);
-    this.sprite.width = portraitWidth;
-    this.sprite.height = portraitHeight;
+    this.frame.position.set(0, 0);
+    this.frame.width = width;
+    this.frame.height = height;
+    const inset = 4;
+    this.sprite.position.set(inset, inset - 3);
+    this.sprite.width = width - inset * 2;
+    this.sprite.height = (width - inset * 2) * (108 / 87);
+    this.lockOverlay
+      .clear()
+      .roundRect(1, 1, width - 2, height - 2, 7)
+      .fill({ color: '#090b12', alpha: 0.62 });
+    this.selectionFrame.position.set(-4, -4);
+    this.selectionFrame.width = width + 8;
+    this.selectionFrame.height = height + 8;
     this.status.position.set(
-      (width + portraitSize) / 2 - 21,
-      3,
+      width - 17,
+      this.data.equipped ? height - 17 : 1,
     );
-    this.status.width = 18;
-    this.status.height = 18;
-    this.text.position.set(width / 2, 76);
-    this.redraw(width);
+    this.status.width = 16;
+    this.status.height = 16;
   }
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.text.applyTheme(this.theme);
-    this.text.setColor(
-      this.data.researched === false ? 'disabled' : 'text',
-    );
-    this.redraw();
+    return this;
   }
 
-  redraw(width = this.root.hitArea?.width ?? AVATAR_CELL_WIDTH) {
-    const portraitSize = 72;
-    const portraitX = (width - portraitSize) / 2;
-    this.frame
-      .clear()
-      .rect(portraitX, 0, portraitSize, portraitSize)
-      .fill(this.theme.surface)
-      .stroke({
-        color: this.data.selected
-          ? this.theme.text
-          : this.theme.stroke,
-        width: PIXI_UI_GEOMETRY.strongBorderWidth,
-        alignment: 1,
-      });
-  }
+  redraw() {}
 
   destroy() {
     if (typeof this.registration === 'function') {
@@ -952,6 +1273,9 @@ function normalizeSettingsModel(
   const avatarCategory = categories.find(
     (category) => category.key === 'character',
   );
+  const frameCategory = categories.find(
+    (category) => category.key === 'frame',
+  );
   const avatars = (avatarCategory?.options ?? []).map((option) =>
     normalizeVisualOption({
       category: 'character',
@@ -963,6 +1287,16 @@ function normalizeSettingsModel(
       cost: costs.character?.[option.key],
     }),
   );
+  const frames = (frameCategory?.options ?? []).map((option) => ({
+    ...normalizeVisualOption({
+      category: 'frame',
+      option,
+      selection: selections.frame ?? settings.frame,
+      researched: researched.frame?.[option.key],
+      cost: costs.frame?.[option.key],
+    }),
+    tint: option.tint ?? getPlayerFrameTint(option.key),
+  }));
   const requestedTab =
     settings.tabId ??
     settings.selectedTab ??
@@ -1033,6 +1367,11 @@ function normalizeSettingsModel(
         true,
     },
     avatars,
+    frames,
+    selections: {
+      character: String(selections.character ?? settings.character ?? 'elara'),
+      frame: String(selections.frame ?? settings.frame ?? 'classic'),
+    },
   };
 }
 
@@ -1087,7 +1426,7 @@ function normalizeSettingsTab(tabId) {
     return 'configurations';
   }
   if (normalized === 'avatar') {
-    return 'avatar';
+    return 'account';
   }
   return SETTINGS_TABS.has(normalized) ? normalized : 'account';
 }

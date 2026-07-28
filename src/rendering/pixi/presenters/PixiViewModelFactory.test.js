@@ -62,6 +62,27 @@ describe('PixiViewModelFactory', () => {
     });
   });
 
+  it('uses the requested level in the non-persistent top-HUD progress preview', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createTopPanel({
+      gameplay: {
+        tasks: { currentLevel: 0 },
+      },
+      questPreview: {
+        completedQuests: 1,
+        totalQuests: 4,
+        targetLevel: 2,
+      },
+    });
+
+    expect(model.level).toBe(2);
+    expect(model.quest).toMatchObject({
+      visible: true,
+      completed: 1,
+      total: 4,
+    });
+  });
+
   it('maps the active request without moving gameplay rules into the view', () => {
     const fillTask = vi.fn();
     const factory = new PixiViewModelFactory();
@@ -124,7 +145,7 @@ describe('PixiViewModelFactory', () => {
       title: "Elara's Request",
       rows: [],
     });
-    expect(model.workshop.dialogs.tasksInfo.title).toBe("Elara's Request");
+    expect(model.workshop.dialogs.tasksInfo).toBeUndefined();
   });
 
   it('keeps the disabled summon control pressable when seed drop weights need attention', () => {
@@ -755,14 +776,28 @@ describe('PixiViewModelFactory', () => {
     });
 
     expect(prestige.prestige.summary.lines).toEqual([
-      'level 10 > level 5',
+      'Level 10 > Level 5',
       'on prestige: 12 crystal 1 ruby 0 emerald total',
     ]);
     expect(prestige.prestige.milestones[0]).toMatchObject({
       id: 'level-10',
+      title: 'Level 10',
       state: 'ready',
       reward: 'reward: 12 crystal 1 ruby',
+      rewardResources: [
+        { resource: 'crystal', amount: 12 },
+        { resource: 'ruby', amount: 1 },
+      ],
       canComplete: true,
+    });
+    expect(prestige.prestige.tabs.map((tab) => tab.label)).toEqual([
+      'Main',
+      'Points',
+    ]);
+    expect(prestige.prestige.pointRewards[0]).toMatchObject({
+      count: 1,
+      title: '1 Point',
+      rewardLines: ['Crossroads Market', 'Village Market'],
     });
   });
 

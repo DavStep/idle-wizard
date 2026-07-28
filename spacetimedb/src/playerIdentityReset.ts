@@ -4,6 +4,7 @@ export const DEFAULT_PLAYER_THEME = 'midnight';
 export const DEFAULT_PLAYER_FONT = 'lilita-one';
 export const DEFAULT_PLAYER_COLOR_MODE = 'resources';
 export const DEFAULT_PLAYER_CHARACTER = 'elara';
+export const DEFAULT_PLAYER_FRAME = 'classic';
 
 export function createIdentityOnlyPlayerReset<
   Player extends { identity: unknown },
@@ -21,6 +22,7 @@ export function createIdentityOnlyPlayerReset<
     usernamePromptSeen: false,
     font: DEFAULT_PLAYER_FONT,
     character: DEFAULT_PLAYER_CHARACTER,
+    frame: DEFAULT_PLAYER_FRAME,
   };
 }
 

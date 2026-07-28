@@ -8,6 +8,7 @@ import {
 } from 'pixi.js';
 
 import {
+  PixiButton,
   PixiResourceLabel,
   PixiTextLabel,
 } from '../../primitives/index.js';
@@ -51,15 +52,18 @@ const HUD_GRADIENT_STOPS = Object.freeze([
   Object.freeze({ color: '#ffd76a', offset: 1 }),
 ]);
 
-export class RootRunHudAvatarButton extends Container {
+export class RootRunHudAvatarButton extends PixiButton {
   constructor({ assets, texture } = {}) {
     super({
+      assetManager: assets,
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      text: '',
+      variant: 'inline',
       label: 'topPanel:avatarViewport',
-      eventMode: 'static',
     });
-    this.hitArea = new Rectangle(0, 0, AVATAR_SIZE, AVATAR_SIZE);
 
-    this.frame = createNineSlice({
+    this.avatarFrame = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.avatarFrame),
       insets: { left: 54, top: 54, right: 55, bottom: 55 },
       width: AVATAR_SIZE,
@@ -90,8 +94,8 @@ export class RootRunHudAvatarButton extends Container {
       roundPixels: true,
     });
     this.portrait.mask = this.portraitMask;
-    this.addChild(
-      this.frame,
+    this.visual.addChild(
+      this.avatarFrame,
       this.headBackground,
       this.portrait,
       this.portraitMask,
@@ -109,6 +113,11 @@ export class RootRunHudAvatarButton extends Container {
       AVATAR_INSET,
       AVATAR_INSET - 14,
     );
+    return this;
+  }
+
+  setFrameTint(tint = 0xffffff) {
+    this.avatarFrame.tint = Number(tint) || 0xffffff;
     return this;
   }
 }

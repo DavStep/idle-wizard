@@ -103,4 +103,20 @@ describe('PixiButton', () => {
 
     button.destroy({ children: true });
   });
+
+  it('keeps a tab notification visible while the tab is selected', () => {
+    const button = new PixiButton({
+      assetManager: { getTexture: vi.fn(() => Texture.EMPTY) },
+      variant: 'tab',
+    });
+
+    button.setNotification(true);
+    button.setSelected(true);
+
+    expect(button.notification).toBe(true);
+    expect(button.notificationBadge.root.visible).toBe(true);
+    expect(button.notificationBadge.root.renderable).toBe(true);
+
+    button.destroy({ children: true });
+  });
 });

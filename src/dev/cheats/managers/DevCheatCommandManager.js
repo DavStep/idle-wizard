@@ -39,6 +39,8 @@ const LEVEL_FIVE_BREW_MANA_TONIC_TASK_ID = 'level5-brew-mana-tonic';
 const NON_PERSISTENT_DEV_DIALOGS = new Set([
   'featureunlockannouncement',
   'featureunlocks',
+  'levelupannouncement',
+  'levelrewardsannouncement',
   'whileawayannouncement',
   'whileaway',
 ]);
@@ -203,6 +205,13 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
   },
   { id: 'guildAdventurer', kind: 'dialog', dialogId: 'guildAdventurer' },
   { id: 'settings', kind: 'dialog', dialogId: 'settings', aliases: ['configurations'] },
+  {
+    id: 'accountProfile',
+    kind: 'dialog',
+    dialogId: 'settings',
+    options: { tab: 'account' },
+    aliases: ['account'],
+  },
   { id: 'feedback', kind: 'dialog', dialogId: 'feedback' },
   { id: 'bug', kind: 'dialog', dialogId: 'bug' },
   { id: 'feature', kind: 'dialog', dialogId: 'feature' },
@@ -212,6 +221,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     kind: 'dialog',
     dialogId: 'featureUnlockAnnouncement',
     aliases: ['featureUnlocks'],
+  },
+  {
+    id: 'levelUpAnnouncement',
+    kind: 'dialog',
+    dialogId: 'levelUpAnnouncement',
+    aliases: ['levelRewardsAnnouncement'],
   },
   {
     id: 'whileAwayAnnouncement',

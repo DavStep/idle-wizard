@@ -1182,6 +1182,7 @@ export class ResearchBoxListManager {
       ariaLabel: this.formatResearchButtonLabel(research),
       title: !research.canResearch ? research.lockReason : '',
     });
+    setNotificationBadge(button, research.canResearch === true);
     return button;
   }
 

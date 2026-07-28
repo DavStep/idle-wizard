@@ -523,7 +523,9 @@ export class PixiPagesFacade {
         questPreview: this.questProgressPreview,
         actions: {
           openAvatar: () =>
-            this.openDialog('settings', { tab: 'avatar' }),
+            this.openDialog('settings', { tab: 'account' }),
+          openAccount: () =>
+            this.openDialog('settings', { tab: 'account' }),
           openSettings: () => this.openDialog('settings'),
           openLevel: () => this.openDialog('level'),
         },
@@ -1855,6 +1857,19 @@ export class PixiPagesFacade {
     ) {
       return (
         this.announcementPresenter?.showFeatureUnlockPreview?.(
+          options,
+        ) ?? {
+          ok: false,
+          reason: 'announcements_missing',
+        }
+      );
+    }
+    if (
+      normalized === 'levelupannouncement' ||
+      normalized === 'levelrewardsannouncement'
+    ) {
+      return (
+        this.announcementPresenter?.showLevelUpPreview?.(
           options,
         ) ?? {
           ok: false,

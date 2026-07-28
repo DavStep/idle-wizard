@@ -24,6 +24,7 @@ experience_type: style
 - Idle Witch Craft splash loading gradient progress bar CSS lives at `../idle-whitch-craft/core/splash.css`.
 - Progress bar style is a separate visual setting (`regular`/`gradient`/`notched`), not part of a theme; the `notched` key is player-facing `bronze` and uses a solid bronze fill with continuous light/dark inset strokes, never ticks or dashes.
 - Shared passive `.style-progress` rails use the compact 10px Root Rush black capsule geometry. Purple is the default; Brewing uses blue, Garden uses green, and Market/Research use yellow through page-scoped fill/edge tokens. Optional researched fills keep the same rail geometry. Interactive sliders and the top-panel quest rail use 14px rails; allocation keeps its 14px cream circular knob with a tan border, dark-brown outer ring, and no glyph.
+- Fixed-milestone sliders show dots only for interior stops; the rail ends already communicate the selectable minimum and maximum, so never draw redundant endpoint dots.
 - Shared `.style-progress` rails are border-box; fills sit inside the bordered rail, so callers normally use `width: 100%`.
 - Workshop `stats` is the regular yellow Root Run button. Workshop `bag` uses `assets/game/source/icons/icon-bag.png` and participates in the weighted left-side HUD stack. Keep authored capitalization for Workshop side-panel controls and the `Summon Seed` cost button; rendering must not force them to lowercase. The summon button uses the shorter green cost-button background configuration recolored info blue/cyan, black-stroked action and cost text, the shared gray disabled skin, and a mana-drop-plus-number cost row; other purchase cost buttons stay green and tab skins stay brown.
 - Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
@@ -40,7 +41,7 @@ experience_type: style
 - All checkmark graphics use `assets/game/source/ui/prop_checkmark.png` through `createStatusIcon(..., STATUS_ICON_CHECK)` or the research-icon generator for baked composites; keep meaningful state text, but do not introduce alternate checkmark artwork or glyphs.
 - The shared Root Run shop-tile skin is a compact 157x182 nine-slice with source margins left 83, top 91, right 73, bottom 90; CSS uses `91 73 90 83 fill` and scales rendered fixed widths by `390 / 1080`. CSS border-image regions can expose one-pixel gaps after fractional contain scaling, so keep each theme texture's exact center pixel as the rounded backing fill. Apply it to standard `style-box` sections and the persistent top player panel, preserving dedicated dialog, tutorial, other outer-panel, and feature-owned paper skins.
 - Room inventory entrypoints should follow Workshop `tasks`/`event`: icon/portrait over a small bordered label box, not icon-only buttons.
-- Workshop `Tasks` uses `assets/game/source/rooms/workshop/characters/miso-daily-tasks.webp`; Workshop `Event` reuses `assets/game/source/icons/icon-quests-scroll-bag-style.png` for its opener while the event dialog keeps the guild secretary portrait.
+- Workshop side actions use the approved bag-style banner, trophy, task scroll, backpack, purple hat, green envelope, discovery journal, and checked event scroll. Size them by visible silhouette weight, not equal image boxes. Keep them slightly inset from the shared art frame, and apply one shared scale to both Alliance banner layers so its tintable cloth stays aligned with the base.
 - Workshop task row reordering should use CSS-transition FLIP, not `Element.animate`; the in-app browser target can lack WAAPI.
 - Room UI animation should use sine-ish interpolation; keep rubber from tiny keyframe overshoot, not y>1 easing curves.
 - Shared press/release motion should use individual `scale`/`translate`, not `transform`, so centered or positioned controls keep their existing transforms.
@@ -156,9 +157,10 @@ experience_type: style
 - Hidden top-panel context currency needs an explicit `[hidden]` display rule because resource flex CSS can otherwise override the browser default.
 - Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
 - Top panel coin should keep amount and `coin` in the same fitted value span; a separate suffix can leave clipped values like `308... coin`.
-- Clicking the top-panel username opens settings; username editing and visual theme choices live there.
-- Settings use bottom tabs outside the popup border: `account`, `report`, and `configurations`; report kinds are inline `feedback`/`bug`/`feature` buttons sharing one form.
-- Settings account controls should stay visible: label the tab `account`, and keep `connect account` visible disabled with `login unavailable` when OIDC config is missing.
+- Clicking the top-panel avatar or username opens the Root Run Account dialog; the settings gear remains the device-preferences entry point.
+- Account keeps username, avatar, and frame as one draft until Save. The selection outline follows the draft while the shared checkmark stays on the equipped option; locked avatars use a dark tile overlay with the shared lock at top-right.
+- The Account choice board alone scrolls; keep the preview, Avatar/Frame tabs, Save action, shell, and detached close control fixed.
+- Account is the width exception inside the capped global dialog: map its `925px` qUIck board proportionally to the approved `298px` source width and center an Account-only viewport over the generic `264px` content box. Leaving the generic scroll mask in place clips the username pencil and right scrollbar.
 - Account data conflict dialogs should put row-local `select` actions next to `this device` and `account`; the account row should include the account username.
 - Clicking the top-panel level opens a one-level-at-a-time milestone dialog; navigate with previous/next level controls instead of a full level list.
 - Level milestone dialogs use the selected level as the title, omit current/open/max filler, show gained `+N` rows above a divider, then total limits with right-aligned numbers.

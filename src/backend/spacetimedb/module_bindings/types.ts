@@ -398,6 +398,7 @@ export const Player = __t.object("Player", {
   usernamePromptSeen: __t.bool(),
   font: __t.string(),
   character: __t.string(),
+  frame: __t.string(),
 });
 export type Player = __Infer<typeof Player>;
 
@@ -470,6 +471,7 @@ export const PlayerProfileResult = __t.object("PlayerProfileResult", {
   usernamePromptSeen: __t.bool(),
   font: __t.string(),
   character: __t.string(),
+  frame: __t.string(),
 });
 export type PlayerProfileResult = __Infer<typeof PlayerProfileResult>;
 

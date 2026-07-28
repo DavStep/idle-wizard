@@ -17,7 +17,6 @@ const PRESS_FEEDBACK_TARGET_SELECTOR = [
   '.room-top-panel__username',
   '.room-top-panel__level',
   '.workshop-page__row--interactive',
-  '.workshop-page__tasks-title',
   '.workshop-page__tasks-toggle',
   '.shop-page__slot-row--interactive',
   '.shop-page__slot-unlock-button',

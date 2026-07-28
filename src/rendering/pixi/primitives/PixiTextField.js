@@ -220,10 +220,11 @@ export class PixiTextField extends Container {
       PIXI_ROOT_RUN_GEOMETRY.textFieldBrownInset.borderInsets,
     );
     const brownInset = this.variant === 'brown-inset';
-    const textInsetX = border + paddingX;
+    const accountUsername = this.variant === 'account-username';
+    const textInsetX = accountUsername ? 0 : border + paddingX;
     const textInsetY =
-      border + paddingY - (brownInset ? 2 : 0);
-    this.frame.visible = !brownInset;
+      accountUsername ? 0 : border + paddingY - (brownInset ? 2 : 0);
+    this.frame.visible = !brownInset && !accountUsername;
     this.insetFrame.visible = brownInset;
     this.textViewport.position.set(textInsetX, textInsetY);
     this.textMask
@@ -243,10 +244,13 @@ export class PixiTextField extends Container {
   redrawTextState() {
     const showingPlaceholder = this.value.length === 0 && !this.focused;
     const brownInset = this.variant === 'brown-inset';
+    const accountUsername = this.variant === 'account-username';
     this.textLabel
       .setText(showingPlaceholder ? this.placeholder : this.value)
       .setColor(
-        brownInset
+        accountUsername
+          ? '#ffffff'
+          : brownInset
           ? showingPlaceholder
             ? BROWN_INSET_PLACEHOLDER
             : BROWN_INSET_TEXT
@@ -254,6 +258,20 @@ export class PixiTextField extends Container {
             ? 'muted'
             : 'text',
       );
+    if (accountUsername) {
+      this.textLabel
+        .setFontFamily('"Lilita One", "Arial Black", Arial, sans-serif')
+        .setFontSize(PIXI_ROOT_RUN_GEOMETRY.account.username.fontSize)
+        .setStroke({
+          color: '#0a0a0a',
+          width: PIXI_ROOT_RUN_GEOMETRY.account.username.textStroke,
+        });
+    } else {
+      this.textLabel
+        .setFontFamily(null)
+        .setFontSize(PIXI_UI_GEOMETRY.bodyFontSize)
+        .setStroke(null);
+    }
     this.textLabel.position.set(0, 0);
     this.selectionGraphic.clear();
     this.caretGraphic.clear();
@@ -290,13 +308,23 @@ export class PixiTextField extends Container {
       this.selectionGraphic
         .rect(startX, 0, endX - startX, textHeight)
         .fill({
-          color: brownInset ? BROWN_INSET_TEXT : this.theme.text,
+          color: accountUsername
+            ? '#ffffff'
+            : brownInset
+              ? BROWN_INSET_TEXT
+              : this.theme.text,
           alpha: 0.25,
         });
     }
     this.caretGraphic
       .rect(endX, 0, 1, textHeight)
-      .fill(brownInset ? BROWN_INSET_TEXT : this.theme.text);
+      .fill(
+        accountUsername
+          ? '#ffffff'
+          : brownInset
+            ? BROWN_INSET_TEXT
+            : this.theme.text,
+      );
   }
 
   destroy(options) {

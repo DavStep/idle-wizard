@@ -50,8 +50,6 @@ export class WorkshopTaskManager {
     this.levelRewardsTogglePressPointerType = '';
     this.suppressNextLevelRewardsOutsideClick = false;
     this.suppressNextTutorialLayerOutsidePress = false;
-    this.infoVisible = false;
-    this.previousFocus = null;
     this.suppressNextOutsideClick = false;
     this.tutorialLayerOutsidePressSuppressionTimeoutId = null;
     this.handleBackdropPress = (event) => {
@@ -92,7 +90,7 @@ export class WorkshopTaskManager {
         this.suppressNextOutsideClick = false;
       }
 
-      if (!this.isTaskListExpanded() || this.pinned || this.infoVisible) {
+      if (!this.isTaskListExpanded() || this.pinned) {
         return;
       }
 
@@ -113,24 +111,11 @@ export class WorkshopTaskManager {
         this.suppressNextOutsideClick = true;
       }
     };
-    this.handleInfoPopupClick = (event) => {
-      if (event.target === this.refs.infoPopup) {
-        this.hideInfo();
-      }
-    };
     this.handleLevelRewardsTogglePointerDown = (event) => {
       this.trackLevelRewardsTogglePress(event);
     };
     this.handleLevelRewardsToggleClick = () => {
       this.toggleLevelRewards();
-    };
-    this.handleKeydown = (event) => {
-      if (!this.infoVisible || event.key !== 'Escape') {
-        return;
-      }
-
-      event.preventDefault();
-      this.hideInfo();
     };
     this.handleTaskDragDocumentMove = (event) => {
       this.onTaskDragDocumentPointerMove(event);
@@ -151,7 +136,7 @@ export class WorkshopTaskManager {
     };
   }
 
-  mount(parent, popupParent = parent) {
+  mount(parent) {
     if (!this.gameplayFacade) {
       return null;
     }
@@ -180,14 +165,9 @@ export class WorkshopTaskManager {
     this.refs.backdrop.addEventListener('pointerdown', this.handleBackdropPress);
     this.refs.backdrop.addEventListener('click', this.handleBackdropPress);
 
-    this.refs.title = document.createElement('button');
+    this.refs.title = document.createElement('div');
     this.refs.title.className = 'style-box__title workshop-page__tasks-title';
-    this.refs.title.type = 'button';
     this.refs.title.textContent = this.currentRequirementsLabel;
-    this.refs.title.setAttribute('aria-label', `show ${this.currentRequirementsLabel} info`);
-    this.refs.title.setAttribute('aria-expanded', 'false');
-    this.refs.title.setAttribute('aria-haspopup', 'dialog');
-    this.refs.title.addEventListener('click', () => this.showInfo());
 
     this.refs.summary = document.createElement('div');
     this.refs.summary.className = 'workshop-page__tasks-summary';
@@ -246,11 +226,8 @@ export class WorkshopTaskManager {
     );
     this.refs.slot.append(this.root);
     parent.append(this.refs.backdrop, this.refs.slot);
-    this.refs.infoPopup = this.createInfoPopup();
-    popupParent.append(this.refs.infoPopup);
     document.addEventListener('pointerdown', this.handleOutsidePress, true);
     document.addEventListener('click', this.handleOutsidePress, true);
-    document.addEventListener('keydown', this.handleKeydown);
     this.setCanToggleTasks(false, { preservePinned: true });
     this.syncExpansionState();
 
@@ -265,8 +242,6 @@ export class WorkshopTaskManager {
     this.unsubscribe = null;
     document.removeEventListener('pointerdown', this.handleOutsidePress, true);
     document.removeEventListener('click', this.handleOutsidePress, true);
-    document.removeEventListener('keydown', this.handleKeydown);
-    this.refs.infoPopup?.removeEventListener('click', this.handleInfoPopupClick);
     this.refs.backdrop?.removeEventListener('pointerdown', this.handleBackdropPress);
     this.refs.backdrop?.removeEventListener('click', this.handleBackdropPress);
     this.refs.levelRewardsToggle?.removeEventListener(
@@ -280,7 +255,6 @@ export class WorkshopTaskManager {
     this.stopTaskDragListeners();
     this.clearTaskDragPreview(this.dragState);
     this.cancelRowAnimations();
-    this.refs.infoPopup?.remove();
     this.refs.backdrop?.remove();
     this.refs.slot?.remove();
     this.root?.remove();
@@ -301,8 +275,6 @@ export class WorkshopTaskManager {
     this.suppressNextLevelRewardsOutsideClick = false;
     this.suppressNextTutorialLayerOutsidePress = false;
     this.tutorialLayerOutsidePressSuppressionTimeoutId = null;
-    this.infoVisible = false;
-    this.previousFocus = null;
     this.dragState = null;
     this.skipNextRowAnimationTaskId = null;
     this.skipNextRowAnimationRoot = null;
@@ -821,72 +793,6 @@ export class WorkshopTaskManager {
     };
   }
 
-  createInfoPopup() {
-    const popup = document.createElement('section');
-    popup.className = 'workshop-page__tasks-info-popup';
-    popup.addEventListener('click', this.handleInfoPopupClick);
-
-    const dialog = document.createElement('section');
-    dialog.className = 'workshop-page__tasks-info-dialog style-dialog';
-    dialog.setAttribute('aria-label', `${this.currentRequirementsLabel} information`);
-    dialog.setAttribute('aria-modal', 'true');
-    dialog.setAttribute('role', 'dialog');
-    dialog.tabIndex = -1;
-
-    const title = document.createElement('div');
-    title.className = 'style-box__title';
-    title.textContent = this.currentRequirementsLabel;
-
-    const body = document.createElement('p');
-    body.className = 'workshop-page__tasks-info-copy';
-    body.textContent = this.getTasksHelperText();
-
-    const closeButton = document.createElement('button');
-    closeButton.className = 'style-button workshop-page__tasks-info-close';
-    closeButton.type = 'button';
-    closeButton.textContent = 'close';
-    closeButton.addEventListener('click', () => this.hideInfo());
-
-    dialog.append(title, closeButton, body);
-    popup.append(dialog);
-    popup.hidden = true;
-    popup.setAttribute('aria-hidden', 'true');
-
-    this.refs.infoDialog = dialog;
-    this.refs.infoTitle = title;
-    this.refs.infoBody = body;
-    return popup;
-  }
-
-  showInfo() {
-    this.previousFocus = document.activeElement;
-    this.infoVisible = true;
-    this.applyInfoVisibility();
-    this.refs.infoDialog?.focus();
-  }
-
-  hideInfo() {
-    const wasVisible = this.infoVisible;
-    this.infoVisible = false;
-    this.applyInfoVisibility();
-
-    if (wasVisible && this.previousFocus && document.contains(this.previousFocus)) {
-      this.previousFocus.focus();
-    }
-
-    this.previousFocus = null;
-  }
-
-  applyInfoVisibility() {
-    if (!this.refs.infoPopup) {
-      return;
-    }
-
-    this.refs.infoPopup.hidden = !this.infoVisible;
-    this.refs.infoPopup.setAttribute('aria-hidden', this.infoVisible ? 'false' : 'true');
-    this.refs.title?.setAttribute('aria-expanded', this.infoVisible ? 'true' : 'false');
-  }
-
   setRequirementContext(taskSnapshot) {
     const requirementTargetLevel = getLevelRequirementTargetLevel(taskSnapshot);
     const requirementsLabel = ELARA_REQUEST_LABEL;
@@ -904,18 +810,6 @@ export class WorkshopTaskManager {
     this.currentRequirementTargetLevel = requirementTargetLevel;
     this.setAttribute(this.root, 'aria-label', requirementsLabel);
     this.setText(this.refs.title, requirementsLabel);
-    this.setAttribute(this.refs.title, 'aria-label', `show ${requirementsLabel} info`);
-    this.setAttribute(this.refs.infoDialog, 'aria-label', `${requirementsLabel} information`);
-    this.setText(this.refs.infoTitle, requirementsLabel);
-    this.setText(this.refs.infoBody, this.getTasksHelperText());
-  }
-
-  getTasksHelperText() {
-    if (Number.isInteger(this.currentRequirementTargetLevel)) {
-      return `complete elara's requests one at a time to reach level ${this.currentRequirementTargetLevel}. each request fills one level segment. turn-in requests consume items.`;
-    }
-
-    return "complete elara's requests one at a time. each request fills one level segment. turn-in requests consume items.";
   }
 
   getRequirementTargetText() {

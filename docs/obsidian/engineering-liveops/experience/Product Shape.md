@@ -58,6 +58,7 @@ experience_type: product-shape
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
 - Progress rails should use the real `.style-progress` capsule with the fill inside its inset gap; drive the fill by width or a live right edge so rounded caps are never compressed.
 - Level-up announcement rows can contain long multi-level unlock lists; keep a stable label column and let the value column wrap so labels do not collapse to one character per line.
+- Level-up reward celebrations wait for explicit `Tap to continue` dismissal after their banner/title/row entrance sequence; do not auto-close before the player can read the icon-backed rewards.
 - Workshop requirement rewards and level-up announcements share `levelPayoffSummary`, but the top-panel level popup parses player-level effects separately in `TopPanelLevelManager`; update both paths for reward wording or capacity-display rules.
 - Prestige reset crystal should use the cumulative player-level reward through the reset level; level 1 grants crystal too, so a reset to level 10 starts with 10 crystals under the default curve.
 - Garden plot notification dots anchor to the centered plot frame's top-right corner, not the full grid cell or progress rail.

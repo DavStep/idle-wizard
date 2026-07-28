@@ -126,35 +126,55 @@ describe('PixiAnnouncementPresenter', () => {
 
     snapshot.tasks.currentLevel = 2;
     snapshot.playerLevel.currentLevel = 2;
+    snapshot.crystal.current = 2;
     harness.publishGameplay();
 
     expect(harness.runtime.openDialog).toHaveBeenCalledTimes(1);
     expect(harness.getLastModel()).toMatchObject({
       kind: 'level',
-      title: 'rewards',
-      ariaLabel: 'level 2 rewards',
+      title: 'Level Up!',
+      ariaLabel: 'Level 2 up. Tap to continue.',
+      dismissible: true,
+      continueLabel: 'Tap to continue',
       durationMs: 3280,
       pendingDelayMs: 5380,
       level: { from: 1, to: 2 },
     });
     expect(
-      harness.getLastModel().rows.map(({ label, value }) => [
-        label,
-        value,
-      ]),
+      harness
+        .getLastModel()
+        .rows.map(({ label, value, icon }) => [
+          label,
+          value,
+          icon?.frameName ?? null,
+        ]),
     ).toEqual([
-      ['unlocks', 'garden / research'],
-      ['mana capacity', '+50 mana'],
-      ['mana regeneration', '+1/sec mana'],
-      ['bonus', '+1 crystal'],
+      ['Unlocks', 'Garden / Research', null],
+      ['Mana Capacity', '+50', 'resource:mana'],
+      ['Mana Regeneration', '+1/sec', 'resource:mana'],
+      ['Bonus', '+1', 'resource:crystal'],
+    ]);
+    expect(
+      harness
+        .getLastModel()
+        .rows.slice(1)
+        .map(({ countUp }) => countUp),
+    ).toEqual([
+      { from: 50, to: 100, suffix: '' },
+      { from: 1, to: 2, suffix: '/sec' },
+      { from: 1, to: 2, suffix: '' },
     ]);
 
     harness.publishGameplay();
     expect(harness.runtime.openDialog).toHaveBeenCalledTimes(1);
-    expect(harness.timers.at(-1).delay).toBe(3280);
+    expect(harness.timers).toHaveLength(0);
 
-    harness.fireLastTimer();
+    expect(harness.closeLastDialog('outside')).toBe(true);
     expect(harness.runtime.closeDialog).toHaveBeenCalledTimes(1);
+    expect(harness.runtime.openDialog).toHaveBeenCalledTimes(1);
+    expect(harness.scheduledTasks).toHaveLength(1);
+
+    harness.flushScheduledTasks();
     expect(harness.runtime.openDialog).toHaveBeenCalledTimes(2);
     expect(harness.openedViews[0]).toBe(harness.openedViews[1]);
     expect(harness.getLastModel()).toMatchObject({
@@ -346,6 +366,38 @@ describe('PixiAnnouncementPresenter', () => {
       ok: false,
       reason: 'features_missing',
     });
+
+    expect(presenter.showLevelUpPreview()).toEqual({
+      ok: true,
+      dialogId: 'levelUpAnnouncement',
+      pixiDialogId: PIXI_ANNOUNCEMENT_DIALOG_ID,
+      presentation: presenter.getCurrentPresentation(),
+    });
+    expect(harness.getLastModel()).toMatchObject({
+      kind: 'level',
+      title: 'Level Up!',
+      preview: true,
+      dismissible: true,
+      continueLabel: 'Tap to continue',
+      level: { from: 19, to: 20 },
+    });
+    expect(harness.getLastModel().rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'Mana Capacity',
+          value: '+50',
+          countUp: { from: 950, to: 1000 },
+          icon: { frameName: 'resource:mana' },
+        }),
+        expect.objectContaining({
+          label: 'Bonus',
+          value: '+1',
+          countUp: { from: 2, to: 3 },
+          icon: { frameName: 'resource:crystal' },
+        }),
+      ]),
+    );
+    expect(harness.timers).toHaveLength(0);
   });
 
   it('defers the next queued notice until the dialog closes its retained instance', () => {
@@ -740,6 +792,9 @@ function createSnapshot() {
           effects: ['crystal reward 1'],
         },
       ],
+    },
+    crystal: {
+      current: 1,
     },
     research: {
       completedResearchIds: [],

@@ -2628,7 +2628,6 @@ body {
     .workshop-page__trade-alliance-member-popup,
     .workshop-page__world-chat-popup,
     .workshop-page__discoveries-popup,
-    .workshop-page__tasks-info-popup,
     .workshop-page__personal-tasks-popup,
     .workshop-page__world-notice-popup,
     .workshop-page__stats-popup,
@@ -5721,19 +5720,6 @@ body {
 
 .workshop-page__tasks-title {
   --style-title-text-stroke-color: #0a0a0a;
-
-  padding: 0;
-  appearance: none;
-  color: var(--style-text);
-  font-family: var(--style-font);
-  line-height: normal;
-  cursor: pointer;
-  border: 0;
-  border-radius: 0;
-}
-
-.workshop-page__tasks-title:focus {
-  outline: none;
 }
 
 .workshop-page__tasks-pin:focus,
@@ -7645,12 +7631,6 @@ body {
   z-index: 30;
 }
 
-.workshop-page__tasks-info-popup {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-}
-
 .workshop-page__personal-tasks-popup {
   position: absolute;
   inset: 0;
@@ -7701,7 +7681,6 @@ body {
 .workshop-page__world-chat-popup[hidden],
 .workshop-page__bag-popup[hidden],
 .workshop-page__discoveries-popup[hidden],
-.workshop-page__tasks-info-popup[hidden],
 .workshop-page__personal-tasks-popup[hidden],
 .workshop-page__world-notice-popup[hidden],
 .workshop-page__stats-popup[hidden],
@@ -7710,14 +7689,6 @@ body {
 .room-player-info-popup[hidden],
 .room-alliance-info-popup[hidden] {
   display: none;
-}
-
-.style-dialog.workshop-page__tasks-info-dialog {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 260px;
-  transform: translate(-50%, calc(-50% + var(--app-dialog-y-shift, 0px)));
 }
 
 .style-dialog.workshop-page__summon-info-dialog {
@@ -8408,12 +8379,6 @@ body {
   text-align: right;
 }
 
-.workshop-page__tasks-info-copy {
-  max-width: 260px;
-  margin: 0;
-}
-
-.style-button.workshop-page__tasks-info-close,
 .style-button.workshop-page__summon-info-close {
   position: absolute;
   right: var(--style-box-title-left);
@@ -9049,6 +9014,7 @@ div.workshop-page__discovery-row {
 .workshop-page__world-chat-preview {
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   gap: var(--style-world-chat-row-gap);
   height: calc(
     (
@@ -17527,7 +17493,6 @@ div.workshop-page__discovery-row {
   .room-top-panel__username,
   .room-top-panel__level,
   .workshop-page__row--interactive,
-  .workshop-page__tasks-title,
   .workshop-page__tasks-pin,
   .workshop-page__tasks-toggle,
   .workshop-page__level-rewards-toggle,
@@ -17556,7 +17521,6 @@ div.workshop-page__discovery-row {
     .room-top-panel__username,
     .room-top-panel__level,
     .workshop-page__row--interactive,
-    .workshop-page__tasks-title,
     .workshop-page__tasks-pin,
     .workshop-page__tasks-toggle,
     .workshop-page__level-rewards-toggle,
@@ -18231,7 +18195,6 @@ div.workshop-page__discovery-row {
 .workshop-page__trade-alliance-member-popup:not([hidden]),
 .workshop-page__world-chat-popup:not([hidden]),
 .workshop-page__discoveries-popup:not([hidden]),
-.workshop-page__tasks-info-popup:not([hidden]),
 .workshop-page__personal-tasks-popup:not([hidden]),
 .workshop-page__world-notice-popup:not([hidden]),
 .workshop-page__stats-popup:not([hidden]),
@@ -18269,7 +18232,6 @@ div.workshop-page__discovery-row {
   .workshop-page,
 .game-stage:has(.workshop-page__world-chat-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
-.game-stage:has(.workshop-page__tasks-info-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__personal-tasks-popup:not([hidden]))
   .workshop-page,
 .game-stage:has(.workshop-page__world-notice-popup:not([hidden])) .workshop-page,
@@ -18307,7 +18269,6 @@ div.workshop-page__discovery-row {
   z-index: 3;
 }
 
-.workshop-page__tasks-info-popup:not([hidden]) .style-dialog,
 .workshop-page__personal-tasks-popup:not([hidden]) .style-dialog,
 .workshop-page__world-notice-popup:not([hidden]) .style-dialog,
 .workshop-page__stats-popup:not([hidden]) .style-dialog,

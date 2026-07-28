@@ -60,7 +60,6 @@ const ASSETS = Object.freeze({
   cauldron: 'source:assets/rooms/brewing/cauldron/cauldron-empty.png',
   previous: 'source:assets/ui/brewing-carousel/chevron-left.png',
   next: 'source:assets/ui/brewing-carousel/chevron-right.png',
-  recipes: 'source:assets/icons/icon-brewing-recipes-preview.png',
   settings: PIXI_ROOT_RUN_ASSETS.settingsGear,
   cancel: 'source:assets/ui/guild-quest/close-x.png',
   herbs: 'source:assets/icons/icon-herb-box.png',
@@ -68,15 +67,7 @@ const ASSETS = Object.freeze({
   lock: PIXI_ROOT_RUN_ASSETS.lock,
 });
 
-const ACTION_ICON_FRAMES = Object.freeze({
-  brew: Object.freeze([
-    'potion:unknownPotion',
-    'potion:healingPotion',
-    'potion:manaTonic',
-  ]),
-});
-
-const CAULDRON_ACTION_LABEL_STYLE = Object.freeze({
+const COMPACT_CAULDRON_ACTION_LABEL_STYLE = Object.freeze({
   fontSize: 10,
   lineHeight: 12,
 });
@@ -191,25 +182,14 @@ export class BrewingHudPixi {
     this.unlockCostButton.visible = false;
     this.unlockCostButton.renderable = false;
     this.unlockCostButton.setEnabled(false);
-    for (const button of [
-      this.recipes,
-      this.autoBrew,
-      this.brew,
-    ]) {
-      button.control.textLabel
-        .setFontSize(CAULDRON_ACTION_LABEL_STYLE.fontSize)
-        .setLineHeight(CAULDRON_ACTION_LABEL_STYLE.lineHeight);
-    }
+    this.autoBrew.control.textLabel
+      .setFontSize(COMPACT_CAULDRON_ACTION_LABEL_STYLE.fontSize)
+      .setLineHeight(COMPACT_CAULDRON_ACTION_LABEL_STYLE.lineHeight);
     this.actionIcons = {
-      recipes: createSpriteActionIcon(
-        getTexture(assetManager, ASSETS.recipes),
-        'brewing-recipes-action-icon',
-      ),
       autoBrew: createSpriteActionIcon(
         getTexture(assetManager, ASSETS.settings),
         'brewing-autobrew-action-icon',
       ),
-      brew: createPotionClusterActionIcon(assetManager),
       cancel: createSpriteActionIcon(
         getTexture(assetManager, ASSETS.cancel),
         'brewing-cancel-action-icon',
@@ -228,9 +208,7 @@ export class BrewingHudPixi {
     };
     attachActionIcon(this.previous, this.navigationIcons.previous);
     attachActionIcon(this.next, this.navigationIcons.next);
-    attachActionIcon(this.recipes, this.actionIcons.recipes);
     attachActionIcon(this.autoBrew, this.actionIcons.autoBrew);
-    attachActionIcon(this.brew, this.actionIcons.brew);
     for (const button of [
       this.previous,
       this.next,
@@ -530,8 +508,13 @@ export class BrewingHudPixi {
   drawDots() {
     const cauldrons = this.getCauldrons();
     this.dots.clear();
+    this.dots.visible = cauldrons.length > 1;
+    this.dots.renderable = this.dots.visible;
+    if (!this.dots.visible) {
+      return;
+    }
     const gap = 17;
-    const start = -(Math.max(1, cauldrons.length) - 1) * gap * 0.5;
+    const start = -(cauldrons.length - 1) * gap * 0.5;
     cauldrons.forEach((cauldron, index) => {
       const selected = index === this.selectedIndex;
       this.dots
@@ -605,23 +588,11 @@ export class BrewingHudPixi {
         39,
       ),
     );
-    layoutActionIcon(this.recipes, this.actionIcons.recipes, {
-      iconWidth: 25,
-      iconHeight: 25,
-      iconX: 17,
-      labelShiftX: 10,
-    });
     layoutActionIcon(this.autoBrew, this.actionIcons.autoBrew, {
       iconWidth:
         25 * PIXI_ROOT_RUN_GEOMETRY.settings.gearAspectRatio,
       iconHeight: 25,
       iconX: 17,
-      labelShiftX: 10,
-    });
-    layoutActionIcon(this.brew, this.actionIcons.brew, {
-      iconWidth: 29,
-      iconHeight: 27,
-      iconX: 18,
       labelShiftX: 10,
     });
     this.detailBacking.position.set(0, 0);
@@ -1077,18 +1048,6 @@ function createSpriteActionIcon(
   return root;
 }
 
-function createPotionClusterActionIcon(assetManager) {
-  const root = new Container({ label: 'brewing-brew-action-icon' });
-  root.iconSprites = ACTION_ICON_FRAMES.brew.map((frameName, index) => {
-    const sprite = new Sprite(getAtlasTexture(assetManager, frameName));
-    sprite.anchor.set(0.5);
-    sprite.label = `brewing-brew-action-icon:potion-${index + 1}`;
-    root.addChild(sprite);
-    return sprite;
-  });
-  return root;
-}
-
 function attachActionIcon(button, icon) {
   const visual = button.control.visual;
   const labelIndex = visual.getChildIndex(button.control.textLabel);
@@ -1106,20 +1065,9 @@ function layoutActionIcon(
   },
 ) {
   icon.position.set(iconX, button.height / 2);
-  if (icon.label === 'brewing-brew-action-icon') {
-    const sprites = icon.iconSprites;
-    sprites[0].position.set(-5, 1);
-    sprites[1].position.set(5, 2);
-    sprites[2].position.set(0, -2);
-    sprites.forEach((sprite, index) => {
-      sprite.width = iconWidth * (index === 2 ? 0.72 : 0.68);
-      sprite.height = iconHeight * (index === 2 ? 0.72 : 0.68);
-    });
-  } else {
-    const [sprite] = icon.iconSprites;
-    sprite.width = iconWidth;
-    sprite.height = iconHeight;
-  }
+  const [sprite] = icon.iconSprites;
+  sprite.width = iconWidth;
+  sprite.height = iconHeight;
   button.control.textLabel.position.set(
     button.width / 2 + labelShiftX,
     button.height / 2,

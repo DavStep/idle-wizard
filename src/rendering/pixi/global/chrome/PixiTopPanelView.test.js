@@ -66,7 +66,7 @@ describe('PixiTopPanelView', () => {
       y: 140 / 3,
     });
     expect(view.topHudRoot.scale.x).toBe(1 / 3);
-    expect(view.avatarViewport.frame).toBeInstanceOf(NineSliceSprite);
+    expect(view.avatarViewport.avatarFrame).toBeInstanceOf(NineSliceSprite);
     expect(view.coin.background).toBeInstanceOf(NineSliceSprite);
     expect(view.settingsControl.background).toBeInstanceOf(NineSliceSprite);
     expect(assets.getTexture).toHaveBeenCalledWith(
@@ -112,6 +112,46 @@ describe('PixiTopPanelView', () => {
     expect(settingsPress?.displayObject).toBe(view.settingsControl);
     expect(settingsPress?.onActivate()).toBeUndefined();
     expect(openSettings).toHaveBeenCalledTimes(1);
+
+    view.destroy();
+  });
+
+  it('gives the avatar the shared button press animation and tap haptic', () => {
+    const registrations = [];
+    const openAvatar = vi.fn();
+    const view = new PixiTopPanelView({
+      assets: createAssets(),
+      inputRouter: {
+        registerPressTarget: vi.fn((descriptor) => {
+          registrations.push(descriptor);
+          return { unregister: vi.fn() };
+        }),
+      },
+    });
+    view.activate();
+    view.bind({
+      actions: { openAvatar },
+    });
+
+    const avatarPress = registrations.find(
+      ({ id }) => id === 'top.avatar',
+    );
+    expect(avatarPress).toMatchObject({
+      displayObject: view.avatarViewport,
+      excludePageSwipe: true,
+      haptic: 'light',
+      onPressChange: expect.any(Function),
+    });
+
+    avatarPress.onPressChange(true, { confirmed: false });
+    expect(view.avatarViewport.visual.scale.x).toBe(0.94);
+    expect(view.avatarViewport.visual.scale.y).toBe(0.94);
+
+    avatarPress.onPressChange(false, { confirmed: false });
+    expect(view.avatarViewport.visual.scale.x).toBe(1);
+    expect(view.avatarViewport.visual.scale.y).toBe(1);
+    expect(avatarPress.onActivate()).toBeUndefined();
+    expect(openAvatar).toHaveBeenCalledTimes(1);
 
     view.destroy();
   });

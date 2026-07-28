@@ -4809,7 +4809,7 @@ describe('PagesFacade', () => {
     expect(rewardsToggle?.hidden).toBe(true);
     expect(rewardsToggle?.disabled).toBe(true);
     expect(stage.querySelector('.workshop-page__tasks-helper')).toBeNull();
-    expect(infoPopup?.hidden).toBe(true);
+    expect(infoPopup).toBeNull();
     expect(backdrop?.hidden).toBe(true);
     expect(
       summary?.querySelector('.workshop-page__task-progress-fill')?.style.width,
@@ -4843,16 +4843,7 @@ describe('PagesFacade', () => {
 
     title.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(infoPopup.hidden).toBe(false);
-    expect(infoPopup.querySelector('.workshop-page__tasks-info-copy')?.textContent).toBe(
-      "complete elara's requests one at a time to reach level 2. each request fills one level segment. turn-in requests consume items.",
-    );
-
-    infoPopup
-      .querySelector('.workshop-page__tasks-info-close')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(infoPopup.hidden).toBe(true);
+    expect(stage.querySelector('.workshop-page__tasks-info-popup')).toBeNull();
   });
 
   it('shows the automatic level-1 announcement before the market tutorial resumes', () => {

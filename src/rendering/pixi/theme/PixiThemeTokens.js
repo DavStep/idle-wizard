@@ -19,6 +19,8 @@ import {
   normalizePlayerTheme,
 } from '../../../player/playerThemes.js';
 
+const ROOT_RUN_ACCOUNT_X_SCALE = 298 / 925;
+
 export const PIXI_UI_GEOMETRY = Object.freeze({
   authoredWidth: 1080,
   authoredHeight: 2170,
@@ -42,7 +44,7 @@ export const PIXI_UI_GEOMETRY = Object.freeze({
   rowColumnGap: 6,
   roomChromeEdge: 16,
   roomContentEdge: 16,
-  roomContentTop: 104,
+  roomContentTop: 136,
   roomChatBottom: 101,
   roomChatHeight: 41,
   roomChatTitleOverhang: 12,
@@ -84,17 +86,20 @@ export const PIXI_PROGRESS_VISUALS = Object.freeze({
     red: Object.freeze({
       fill: '#be403b',
       edge: '#e66a5d',
-      text: '#912f2b',
+      text: '#be403b',
+      textStroke: '#762824',
     }),
     green: Object.freeze({
       fill: '#4aa83f',
       edge: '#8bdc69',
-      text: '#256b25',
+      text: '#4aa83f',
+      textStroke: '#205c22',
     }),
     yellow: Object.freeze({
       fill: '#d8ad32',
       edge: '#f6d86a',
-      text: '#795909',
+      text: '#d8ad32',
+      textStroke: '#6c5008',
     }),
   }),
 });
@@ -142,6 +147,12 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/root-run-account/username-bar.png',
   accountEdit:
     'source:assets/ui/root-run-account/edit-pencil.png',
+  accountTabActive:
+    'source:assets/ui/root-run-account/tab-active-9slice.png',
+  accountTabInactive:
+    'source:assets/ui/root-run-account/tab-inactive-9slice.png',
+  accountSave:
+    'source:assets/ui/root-run-account/save-button-9slice.png',
   accountChoice:
     'source:assets/ui/root-run-account/choice-tile.png',
   accountSelected:
@@ -205,7 +216,7 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   workshopDiscoveries:
     'source:assets/icons/icon-discoveries-journal.webp',
   workshopPersonalTasks:
-    'source:assets/rooms/workshop/characters/miso-daily-tasks.webp',
+    'source:assets/icons/icon-personal-tasks-scroll-bag-style.png',
   workshopWorldEvent:
     'source:assets/icons/icon-quests-scroll-bag-style.png',
   lock: 'source:assets/ui/prop_lock.png',
@@ -264,6 +275,90 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
       right: 25 / 3,
       bottom: 19 / 3,
       left: 13 / 3,
+    }),
+  }),
+  account: Object.freeze({
+    username: Object.freeze({
+      width: 650 * ROOT_RUN_ACCOUNT_X_SCALE,
+      height: 88 / 3,
+      textInsetX: 25 * ROOT_RUN_ACCOUNT_X_SCALE,
+      textInsetY: 7 / 3,
+      editInsetRight: 10 * ROOT_RUN_ACCOUNT_X_SCALE,
+      editInsetY: 10 / 3,
+      editSize: 64 / 3,
+      fontSize: 64 / 3,
+      textStroke: 8 / 3,
+    }),
+    tab: Object.freeze({
+      width: 354 * ROOT_RUN_ACCOUNT_X_SCALE,
+      height: 120 / 3,
+      gap: 29 * ROOT_RUN_ACCOUNT_X_SCALE,
+      fontSize: 64 / 3,
+      textStroke: 8 / 3,
+      active: Object.freeze({
+        sourceInsets: Object.freeze({
+          top: 126,
+          right: 69,
+          bottom: 0,
+          left: 98,
+        }),
+        borderInsets: Object.freeze({
+          top: 126 / 3,
+          right: 69 * ROOT_RUN_ACCOUNT_X_SCALE,
+          bottom: 0,
+          left: 98 * ROOT_RUN_ACCOUNT_X_SCALE,
+        }),
+        frame: Object.freeze({
+          x: -2 * ROOT_RUN_ACCOUNT_X_SCALE,
+          y: -4 / 3,
+          width: 358 * ROOT_RUN_ACCOUNT_X_SCALE,
+          height: 127 / 3,
+        }),
+      }),
+      inactive: Object.freeze({
+        sourceInsets: Object.freeze({
+          top: 127,
+          right: 70,
+          bottom: 0,
+          left: 101,
+        }),
+        borderInsets: Object.freeze({
+          top: 127 / 3,
+          right: 70 * ROOT_RUN_ACCOUNT_X_SCALE,
+          bottom: 0,
+          left: 101 * ROOT_RUN_ACCOUNT_X_SCALE,
+        }),
+        frame: Object.freeze({
+          x: -2 * ROOT_RUN_ACCOUNT_X_SCALE,
+          y: -4 / 3,
+          width: 358 * ROOT_RUN_ACCOUNT_X_SCALE,
+          height: 128 / 3,
+        }),
+      }),
+    }),
+    save: Object.freeze({
+      width: 456 * ROOT_RUN_ACCOUNT_X_SCALE,
+      height: 205 / 3,
+      fontSize: 86 / 3,
+      textStroke: 8 / 3,
+      sourceInsets: Object.freeze({
+        top: 99,
+        right: 72,
+        bottom: 73,
+        left: 97,
+      }),
+      borderInsets: Object.freeze({
+        top: 99 / 3,
+        right: 72 * ROOT_RUN_ACCOUNT_X_SCALE,
+        bottom: 73 / 3,
+        left: 97 * ROOT_RUN_ACCOUNT_X_SCALE,
+      }),
+      frame: Object.freeze({
+        x: -8 * ROOT_RUN_ACCOUNT_X_SCALE,
+        y: -8 / 3,
+        width: 472 * ROOT_RUN_ACCOUNT_X_SCALE,
+        height: 233 / 3,
+      }),
     }),
   }),
   button: Object.freeze({

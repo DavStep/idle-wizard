@@ -1,4 +1,4 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Sprite, Texture } from 'pixi.js';
 
 import {
   createDialogPaperSection,
@@ -13,6 +13,10 @@ import {
   PooledDialogRows,
   RetainedGlobalDialog,
 } from './GlobalDialogKit.js';
+import {
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 
 const LEVEL_CONTENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
@@ -20,8 +24,25 @@ const LEVEL_CONTENT_HEIGHT = 320;
 const LEVEL_ROW_GAP = 2;
 const LEVEL_PAGER_HEIGHT = 28;
 const LEVEL_PAGER_WIDTH = 96;
+const LEVEL_PAGER_ICON_SIZE = 22;
+const LEVEL_PAGER_ICON_GAP = 1;
 const LEVEL_SECTION_TITLE_HEIGHT =
   GLOBAL_DIALOG_GEOMETRY.rowHeight;
+const LEVEL_PAGER_ICON_ASSETS = Object.freeze({
+  previous: 'source:assets/ui/brewing-carousel/chevron-left.png',
+  next: 'source:assets/ui/brewing-carousel/chevron-right.png',
+});
+const LEVEL_CURRENT_BADGE_HEIGHT = 27;
+const LEVEL_CURRENT_BADGE_MIN_WIDTH = 30;
+const LEVEL_CURRENT_BADGE_HORIZONTAL_PADDING = 10;
+const LEVEL_CURRENT_BADGE_RIGHT_INSET = 14;
+const LEVEL_CURRENT_BADGE_TOP = 1;
+const LEVEL_CURRENT_BADGE_TEXT_CENTER_Y = 10;
+const LEVEL_CURRENT_BADGE_TEXT_COLOR = '#ffffff';
+const LEVEL_CURRENT_BADGE_TEXT_STROKE = Object.freeze({
+  color: '#2a160d',
+  width: 2,
+});
 
 /**
  * Retained level detail dialog. Presenters may provide the already-formatted
@@ -43,11 +64,16 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
     this.currentLevel = 1;
     this.maxLevel = 1;
 
-    this.currentLabelBacking = new Graphics();
+    this.currentLabelBacking = new Sprite(Texture.EMPTY);
     this.currentLabelBacking.label = `${dialogId}:currentBacking`;
+    this.currentLabelBacking.anchor.set(0.5, 0);
     this.currentLabel = new PixiTextLabel({
       text: 'Current',
-      fontSize: 11,
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      fontWeight: 'bold',
+      anchor: { x: 0.5, y: 0.5 },
+      color: LEVEL_CURRENT_BADGE_TEXT_COLOR,
+      stroke: LEVEL_CURRENT_BADGE_TEXT_STROKE,
       label: `${dialogId}:current`,
     });
     this.currentBacking = new Container();
@@ -56,7 +82,6 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
       this.currentLabelBacking,
       this.currentLabel,
     );
-    this.panel.addChild(this.currentBacking);
     this.panel.setPaperVisible(false);
 
     this.addedSection = createDialogPaperSection(
@@ -104,6 +129,7 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
       this.totalSection,
       this.addedSectionLayer,
       this.totalSectionLayer,
+      this.currentBacking,
     );
     this.addedRows = new PooledDialogRows({
       assetManager: this.context.assets,
@@ -150,6 +176,18 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
       action: () => this.selectLevel(this.selectedLevel + 1),
       label: `${dialogId}:next`,
     });
+    this.previousIcon = createPagerIcon(
+      this.context.assets,
+      LEVEL_PAGER_ICON_ASSETS.previous,
+      `${dialogId}:previousIcon`,
+    );
+    this.nextIcon = createPagerIcon(
+      this.context.assets,
+      LEVEL_PAGER_ICON_ASSETS.next,
+      `${dialogId}:nextIcon`,
+    );
+    addPagerIcon(this.previousButton, this.previousIcon);
+    addPagerIcon(this.nextButton, this.nextIcon);
     this.pager.addChild(this.previousButton, this.nextButton);
     this.panel.content.addChild(this.pager);
     this.applyTheme(this.context.theme);
@@ -237,12 +275,12 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
     this.previousButton.visible = hasPrevious;
     this.previousButton.renderable = hasPrevious;
     this.previousButton
-      .setText(hasPrevious ? `‹ Level ${previous}` : '')
+      .setText(hasPrevious ? `Level ${previous}` : '')
       .setEnabled(hasPrevious);
     this.nextButton.visible = hasNext;
     this.nextButton.renderable = hasNext;
     this.nextButton
-      .setText(hasNext ? `Level ${next} ›` : '')
+      .setText(hasNext ? `Level ${next}` : '')
       .setEnabled(hasNext);
   }
 
@@ -254,7 +292,10 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
     this.nextButton?.applyTheme(theme);
     this.addedRows?.applyTheme(theme);
     this.totalRows?.applyTheme(theme);
-    this.redrawCurrentBacking();
+    this.currentLabelBacking.texture =
+      this.context.assets?.getTexture?.(
+        PIXI_ROOT_RUN_ASSETS.stallBatchBadge,
+      ) ?? Texture.EMPTY;
   }
 
   layoutDialog() {
@@ -333,13 +374,30 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
       );
     }
 
-    const labelWidth = Math.ceil(this.currentLabel.measuredWidth) + 8;
-    this.currentBacking.position.set(
-      (this.panel.outerWidth - labelWidth) / 2,
-      -7,
+    const currentSection = this.addedSection.visible
+      ? this.addedSection
+      : this.totalSection;
+    const labelWidth = Math.max(
+      LEVEL_CURRENT_BADGE_MIN_WIDTH,
+      Math.ceil(this.currentLabel.measuredWidth) +
+        LEVEL_CURRENT_BADGE_HORIZONTAL_PADDING,
     );
-    this.currentLabel.position.set(4, 0);
-    this.redrawCurrentBacking(labelWidth);
+    const currentBadgeCenterX =
+      currentSection.x +
+      currentSection.frameWidth -
+      LEVEL_CURRENT_BADGE_RIGHT_INSET -
+      labelWidth / 2;
+    this.currentBacking.position.set(
+      currentBadgeCenterX,
+      currentSection.y + LEVEL_CURRENT_BADGE_TOP,
+    );
+    this.currentLabelBacking.width = labelWidth;
+    this.currentLabelBacking.height =
+      LEVEL_CURRENT_BADGE_HEIGHT;
+    this.currentLabel.position.set(
+      0,
+      LEVEL_CURRENT_BADGE_TEXT_CENTER_Y,
+    );
 
     this.pager.position.set(
       0,
@@ -357,6 +415,16 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
     this.nextButton.position.set(
       LEVEL_CONTENT_WIDTH - LEVEL_PAGER_WIDTH,
       0,
+    );
+    layoutPagerContent(
+      this.previousButton,
+      this.previousIcon,
+      'leading',
+    );
+    layoutPagerContent(
+      this.nextButton,
+      this.nextIcon,
+      'trailing',
     );
   }
 
@@ -382,14 +450,52 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
     });
   }
 
-  redrawCurrentBacking(
-    width = Math.ceil(this.currentLabel?.measuredWidth ?? 0) + 8,
-  ) {
-    this.currentLabelBacking
-      ?.clear()
-      .rect(0, 0, width, 14)
-      .fill(this.theme?.surface ?? '#ffffff');
-  }
+}
+
+function createPagerIcon(assetManager, assetId, label) {
+  const icon = new Sprite(
+    assetManager?.getTexture?.(assetId) ?? Texture.EMPTY,
+  );
+  icon.anchor.set(0.5);
+  icon.label = label;
+  return icon;
+}
+
+function addPagerIcon(button, icon) {
+  const labelIndex = button.visual.getChildIndex(
+    button.textLabel,
+  );
+  button.visual.addChildAt(icon, Math.max(0, labelIndex));
+}
+
+function layoutPagerContent(button, icon, iconPosition) {
+  const labelWidth = button.textLabel.measuredWidth;
+  const contentWidth =
+    LEVEL_PAGER_ICON_SIZE +
+    LEVEL_PAGER_ICON_GAP +
+    labelWidth;
+  const contentLeft = (button.buttonWidth - contentWidth) / 2;
+  const iconLeading = iconPosition === 'leading';
+  icon.width = LEVEL_PAGER_ICON_SIZE;
+  icon.height = LEVEL_PAGER_ICON_SIZE;
+  icon.position.set(
+    iconLeading
+      ? contentLeft + LEVEL_PAGER_ICON_SIZE / 2
+      : contentLeft +
+          labelWidth +
+          LEVEL_PAGER_ICON_GAP +
+          LEVEL_PAGER_ICON_SIZE / 2,
+    button.buttonHeight / 2,
+  );
+  button.textLabel.position.set(
+    iconLeading
+      ? contentLeft +
+          LEVEL_PAGER_ICON_SIZE +
+          LEVEL_PAGER_ICON_GAP +
+          labelWidth / 2
+      : contentLeft + labelWidth / 2,
+    button.buttonHeight / 2,
+  );
 }
 
 function normalizeLevelModel(model = {}, previousSelected = 1) {

@@ -666,7 +666,7 @@ describe('ResearchBoxListManager', () => {
     expect(button?.classList.contains('style-cost-button')).toBe(true);
     expect(button?.querySelector('.style-resource-label__amount')?.textContent).toBe('25');
     expect(button?.querySelector('.style-resource-label__icon')?.tagName).toBe('IMG');
-    expect(button?.dataset.notification).toBeUndefined();
+    expect(button?.dataset.notification).toBe('true');
 
     button?.click();
 

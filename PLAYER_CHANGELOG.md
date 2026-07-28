@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.17
+
+- Added a dedicated Account screen for choosing your avatar and profile frame alongside your username.
+- Refreshed the Prestige room and level-up rewards with clearer progression, reward art, and celebrations.
+- Polished Workshop actions, World Chat layout, Brewing controls, and several dialogs for clearer interactions.
+
 ## 0.3.16
 
 - Refreshed the top panel with clearer quest progress, notification badges, and settings artwork.

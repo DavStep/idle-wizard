@@ -234,6 +234,9 @@ export class PixiTopPanelView extends BasePixiRetainedView {
         id: 'top.avatar',
         displayObject: this.avatarViewport,
         enabled: () => this.isControlAvailable(this.avatarViewport),
+        excludePageSwipe: true,
+        onPressChange: (pressed, context) =>
+          this.avatarViewport.setPressed(pressed, context),
         onActivate: () => this.actions.openAvatar?.(),
         haptic: 'light',
       }),
@@ -241,7 +244,8 @@ export class PixiTopPanelView extends BasePixiRetainedView {
         id: 'top.username',
         displayObject: this.usernameControl,
         enabled: () => this.isControlAvailable(this.usernameControl),
-        onActivate: () => this.actions.openSettings?.(),
+        onActivate: () =>
+          (this.actions.openAccount ?? this.actions.openSettings)?.(),
         haptic: 'light',
       }),
       inputRouter?.registerPressTarget?.({
@@ -270,7 +274,8 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       semanticId: 'top.username',
       tutorialId: 'top:username',
       displayObject: this.usernameControl,
-      activate: () => this.actions.openSettings?.(),
+      activate: () =>
+        (this.actions.openAccount ?? this.actions.openSettings)?.(),
     });
     this.registerSemanticTarget({
       semanticId: 'top.settings',
@@ -378,6 +383,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
 
     this.username.setText(model.username ?? 'Wizard');
     this.setCharacter(model.character ?? model.characterKey ?? 'elara');
+    this.avatarViewport.setFrameTint?.(model.frameTint);
     this.mana.setAmount(
       `${Math.floor(Number(mana.current) || 0)}/${Math.floor(Number(mana.cap) || 0)}`,
     );

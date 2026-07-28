@@ -49,6 +49,7 @@ export class PixiWorldChatView extends BasePixiRetainedView {
         PIXI_UI_GEOMETRY.roomChromeEdge * 2 -
         10,
     });
+    this.preview.anchor.set(0, 1);
     this.preview.style.whiteSpace = 'pre-line';
     this.panel.body.addChild(this.preview);
     this.root.addChild(this.panel.root);
@@ -159,7 +160,7 @@ export class PixiWorldChatView extends BasePixiRetainedView {
     );
     this.panel.root.pivot.set(width / 2, height / 2);
     this.applyTitleStroke();
-    this.preview.position.set(5, 4);
+    this.preview.position.set(5, height - 4);
     this.panel.root.hitArea = new Rectangle(0, 0, width, height);
   }
 

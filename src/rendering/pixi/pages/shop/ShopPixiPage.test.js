@@ -751,9 +751,8 @@ describe('ShopPixiPage', () => {
     const tradersScroll =
       harness.page.panelScrolls.get('traders');
 
-    expect(
-      tradersScroll.root.position,
-    ).toMatchObject({ x: 0, y: 151 });
+    expect(tradersScroll.root.x).toBe(0);
+    expect(tradersScroll.root.y).toBe(183);
     expect(harness.page.tabLayer.position).toMatchObject({
       x: 16,
       y: 527.3333333333334,
@@ -763,7 +762,7 @@ describe('ShopPixiPage', () => {
     });
     expect(
       tradersScroll.height,
-    ).toBeCloseTo(370.33333333333337, 10);
+    ).toBeCloseTo(338.33333333333337, 10);
 
     harness.page.destroy();
     harness.dispose();

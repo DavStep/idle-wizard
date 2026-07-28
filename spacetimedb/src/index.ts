@@ -30,6 +30,7 @@ import {
   DEFAULT_PLAYER_CHARACTER,
   DEFAULT_PLAYER_COLOR_MODE,
   DEFAULT_PLAYER_FONT,
+  DEFAULT_PLAYER_FRAME,
   DEFAULT_PLAYER_LEVEL,
   DEFAULT_PLAYER_THEME,
   DEFAULT_USERNAME,
@@ -280,6 +281,14 @@ const PLAYER_CHARACTERS = new Set([
   'adventurer_redspearman',
   'adventurer_silverhair_spear',
   'adventurer_treasurehunter',
+]);
+const PLAYER_FRAMES = new Set([
+  'classic',
+  'emerald',
+  'gnome',
+  'sun',
+  'violet',
+  'bronze',
 ]);
 const PLAYER_ICON_MODES = new Set(['icons']);
 const PLAYER_PROGRESS_BARS = new Set(['regular', 'gradient', 'notched']);
@@ -5396,6 +5405,14 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
       adventurer_silverhair_spear: 0,
       adventurer_treasurehunter: 0,
     },
+    frame: {
+      classic: 0,
+      emerald: 0,
+      gnome: 0,
+      sun: 0,
+      violet: 0,
+      bronze: 0,
+    },
     progressBar: {
       regular: 0,
       gradient: 0,
@@ -5457,6 +5474,7 @@ const spacetimedb = schema({
       usernamePromptSeen: t.bool().default(false),
       font: t.string().default(DEFAULT_PLAYER_FONT),
       character: t.string().default(DEFAULT_PLAYER_CHARACTER),
+      frame: t.string().default(DEFAULT_PLAYER_FRAME),
     },
   ),
   playerGameplaySave: table(
@@ -6108,6 +6126,7 @@ const playerProfileResult = t.option(
     usernamePromptSeen: t.bool(),
     font: t.string(),
     character: t.string(),
+    frame: t.string(),
   }),
 );
 const adminPlayerGameplaySaveResult = t.array(
@@ -6519,6 +6538,7 @@ export const own_player_profile = spacetimedb.view(
       usernamePromptSeen: Boolean(player.usernamePromptSeen),
       font: normalizePlayerFont(player.font),
       character: normalizePlayerCharacter(player.character),
+      frame: normalizePlayerFrame(player.frame),
     };
   },
 );
@@ -7006,6 +7026,11 @@ function normalizePlayerColorMode(colorMode: string): string {
 function normalizePlayerCharacter(character: unknown): string {
   const value = String(character ?? '').trim().toLowerCase();
   return PLAYER_CHARACTERS.has(value) ? value : DEFAULT_PLAYER_CHARACTER;
+}
+
+function normalizePlayerFrame(frame: unknown): string {
+  const value = String(frame ?? '').trim().toLowerCase();
+  return PLAYER_FRAMES.has(value) ? value : DEFAULT_PLAYER_FRAME;
 }
 
 function getPlayerCharacterForIdentity(ctx: { db: any }, identity: Identity): string {
@@ -10207,6 +10232,12 @@ function normalizeSaveVisualSettings(
         PLAYER_CHARACTERS,
         DEFAULT_PLAYER_CHARACTER,
         player ? normalizePlayerCharacter(player.character) : null,
+      ),
+      frame: normalizeSaveVisualSettingCategory(
+        researched.frame,
+        PLAYER_FRAMES,
+        DEFAULT_PLAYER_FRAME,
+        player ? normalizePlayerFrame(player.frame) : null,
       ),
       progressBar: normalizeSaveVisualSettingCategory(
         researched.progressBar,
@@ -15877,6 +15908,9 @@ function ensurePlayer(
   const character = normalizePlayerCharacter(
     existingPlayer?.character ?? DEFAULT_PLAYER_CHARACTER,
   );
+  const frame = normalizePlayerFrame(
+    existingPlayer?.frame ?? DEFAULT_PLAYER_FRAME,
+  );
   const usernamePromptSeen = Boolean(existingPlayer?.usernamePromptSeen);
 
   if (existingPlayer) {
@@ -15889,6 +15923,7 @@ function ensurePlayer(
       existingPlayer.font !== font ||
       existingPlayer.colorMode !== colorMode ||
       existingPlayer.character !== character ||
+      existingPlayer.frame !== frame ||
       Boolean(existingPlayer.usernamePromptSeen) !== usernamePromptSeen ||
       existingPlayer.connected !== true ||
       lastSeenAt.microsSinceUnixEpoch !== existingPlayer.lastSeenAt.microsSinceUnixEpoch;
@@ -15905,6 +15940,7 @@ function ensurePlayer(
       font,
       colorMode,
       character,
+      frame,
       usernamePromptSeen,
       connected: true,
       lastSeenAt,
@@ -15919,6 +15955,7 @@ function ensurePlayer(
     font: DEFAULT_PLAYER_FONT,
     colorMode: DEFAULT_PLAYER_COLOR_MODE,
     character: DEFAULT_PLAYER_CHARACTER,
+    frame: DEFAULT_PLAYER_FRAME,
     usernamePromptSeen: false,
     connected: true,
     createdAt: ctx.timestamp,
@@ -17829,6 +17866,7 @@ export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, 
       font: normalizePlayerFont(existingPlayer.font),
       colorMode: normalizePlayerColorMode(existingPlayer.colorMode),
       character: normalizePlayerCharacter(existingPlayer.character),
+      frame: normalizePlayerFrame(existingPlayer.frame),
       usernamePromptSeen:
         Boolean(existingPlayer.usernamePromptSeen) ||
         normalizedUsername !== DEFAULT_USERNAME,
@@ -17843,6 +17881,7 @@ export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, 
       font: DEFAULT_PLAYER_FONT,
       colorMode: DEFAULT_PLAYER_COLOR_MODE,
       character: DEFAULT_PLAYER_CHARACTER,
+      frame: DEFAULT_PLAYER_FRAME,
       usernamePromptSeen: normalizedUsername !== DEFAULT_USERNAME,
       connected: true,
       createdAt: ctx.timestamp,
@@ -17862,8 +17901,9 @@ export const set_player_profile = spacetimedb.reducer(
     usernamePromptSeen: t.bool(),
     font: t.string(),
     character: t.string(),
+    frame: t.string(),
   },
-  (ctx, { username, theme, colorMode, usernamePromptSeen, font, character }) => {
+  (ctx, { username, theme, colorMode, usernamePromptSeen, font, character, frame }) => {
     assertActivePlayerSession(ctx);
 
     const normalizedUsername = normalizeUsername(username);
@@ -17872,6 +17912,7 @@ export const set_player_profile = spacetimedb.reducer(
     const safeColorMode = normalizePlayerColorMode(colorMode);
     const existingPlayer = ctx.db.player.identity.find(ctx.sender);
     const safeCharacter = normalizePlayerCharacter(character);
+    const safeFrame = normalizePlayerFrame(frame);
     const incomingUsernamePromptSeen =
       Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
     const nextUsernamePromptSeen =
@@ -17884,6 +17925,7 @@ export const set_player_profile = spacetimedb.reducer(
       normalizePlayerFont(existingPlayer.font) === safeFont &&
       normalizePlayerColorMode(existingPlayer.colorMode) === safeColorMode &&
       normalizePlayerCharacter(existingPlayer.character) === safeCharacter &&
+      normalizePlayerFrame(existingPlayer.frame) === safeFrame &&
       Boolean(existingPlayer.usernamePromptSeen) === nextUsernamePromptSeen
     ) {
       return;
@@ -17902,6 +17944,7 @@ export const set_player_profile = spacetimedb.reducer(
         font: safeFont,
         colorMode: safeColorMode,
         character: safeCharacter,
+        frame: safeFrame,
         usernamePromptSeen: nextUsernamePromptSeen,
         lastSeenAt: ctx.timestamp,
       });
@@ -17914,6 +17957,7 @@ export const set_player_profile = spacetimedb.reducer(
         font: safeFont,
         colorMode: safeColorMode,
         character: safeCharacter,
+        frame: safeFrame,
         usernamePromptSeen: incomingUsernamePromptSeen,
         connected: true,
         createdAt: ctx.timestamp,

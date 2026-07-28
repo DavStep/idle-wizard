@@ -46,6 +46,11 @@ describe('Root Run settings controls', () => {
       ],
       onChange,
     });
+    const milestoneCircle = vi.spyOn(
+      slider.milestoneGraphic,
+      'circle',
+    );
+    milestoneCircle.mockClear();
     slider.setBounds(0, 0, 200);
 
     expect(harness.assetManager.getTexture).toHaveBeenCalledWith(
@@ -61,6 +66,13 @@ describe('Root Run settings controls', () => {
     expect(slider.progress.fillColor).toBe(
       PIXI_PROGRESS_VISUALS.tones.yellow.fill,
     );
+    const knobSize = PIXI_ROOT_RUN_GEOMETRY.settings.knobSize;
+    const railStart = knobSize / 2;
+    const milestoneGap = (200 - knobSize) / 3;
+    expect(milestoneCircle.mock.calls).toEqual([
+      [railStart + milestoneGap, slider.controlHeight / 2, 1.5],
+      [railStart + milestoneGap * 2, slider.controlHeight / 2, 1.5],
+    ]);
 
     harness.gestures[0].onMove({ point: { x: 200, y: 12 } });
 

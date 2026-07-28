@@ -41,12 +41,12 @@ import {
   setText,
 } from '../workshop/RetainedPageKit.js';
 const MAX_LOCKED_ROWS_PER_BOX = 3;
-const RESEARCH_PAPER_INK = '#634934';
-const RESEARCH_PROGRESS_INK = '#725737';
-const RESEARCH_RANK_INK = '#ffeecf';
+export const RESEARCH_PAPER_INK = '#634934';
+export const RESEARCH_PROGRESS_INK = '#725737';
+export const RESEARCH_RANK_INK = '#ffeecf';
 const RESEARCH_TIMER_INK = '#d4d4d4';
 const RESEARCH_LOCKED_OVERLAY_ALPHA = 0.3;
-const RESEARCH_RANK_FONT =
+export const RESEARCH_RANK_FONT =
   '"Lilita One", "Arial Black", Arial, sans-serif';
 const RESOURCE_WORD_MATCH_PATTERN =
   /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/i;
@@ -169,7 +169,7 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   progressHeight: PIXI_UI_GEOMETRY.progressTotalHeight,
 });
 
-const RESEARCH_ROW_TEXT = Object.freeze({
+export const RESEARCH_ROW_TEXT = Object.freeze({
   nameFontSize: 12,
   nameLineHeight: 14,
   descriptionFontSize: 11,
@@ -1402,6 +1402,7 @@ class ResearchRowWidget {
         enabled: state === 'available' && research.canResearch === true,
         action: () => this.actions?.buy?.(research),
       });
+      this.costButton.setNotification(research.notification === true);
     }
 
     this.progress.root.visible = timer.active === true ||

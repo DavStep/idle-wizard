@@ -96,7 +96,7 @@ export class WorkshopPageFacade {
     const uiLayer = this.roomViewManager.getUiLayer();
     const popupLayer = this.roomViewManager.getPopupLayer();
     this.requirementConnectionManager.mount(uiLayer);
-    this.taskManager.mount(uiLayer, popupLayer);
+    this.taskManager.mount(uiLayer);
     this.personalTasksManager.mount(uiLayer, popupLayer);
     this.worldNoticeManager.mount(uiLayer, popupLayer);
     this.statsManager.mount(popupLayer);
@@ -144,7 +144,6 @@ export class WorkshopPageFacade {
     this.worldNoticeManager.hide();
     this.statsManager.hide();
     this.personalTasksManager.hide();
-    this.taskManager.hideInfo();
   }
 
   showRequirementConnection(event) {

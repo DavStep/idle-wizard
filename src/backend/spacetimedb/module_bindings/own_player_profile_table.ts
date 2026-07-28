@@ -19,4 +19,5 @@ export default __t.row({
   usernamePromptSeen: __t.bool().name("username_prompt_seen"),
   font: __t.string(),
   character: __t.string(),
+  frame: __t.string(),
 });

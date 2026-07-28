@@ -340,6 +340,64 @@ export class PixiAnnouncementPresenter {
     };
   }
 
+  showLevelUpPreview({
+    fromLevel = 19,
+    toLevel = 20,
+    rows = [
+      {
+        label: 'mana capacity',
+        value: '+50 mana',
+        countUp: { from: 950, to: 1000 },
+      },
+      {
+        label: 'mana regeneration',
+        value: '+0.75/sec mana',
+        countUp: { from: 9.25, to: 10, suffix: '/sec' },
+      },
+      {
+        label: 'bonus',
+        value: '+1 crystal',
+        countUp: { from: 2, to: 3 },
+      },
+    ],
+  } = {}) {
+    if (!this.mounted) {
+      return {
+        ok: false,
+        reason: 'announcements_not_mounted',
+      };
+    }
+
+    const safeFromLevel = Math.max(
+      0,
+      Math.floor(Number(fromLevel) || 0),
+    );
+    const safeToLevel = Math.max(
+      safeFromLevel + 1,
+      Math.floor(Number(toLevel) || safeFromLevel + 1),
+    );
+    this.deferredRevision += 1;
+    this.clearHideTimeout();
+    this.clearAnnouncementState();
+    this.current = {
+      key: `preview:${++this.sequence}`,
+      kind: 'level',
+      preview: true,
+      fromLevel: safeFromLevel,
+      toLevel: safeToLevel,
+      rows: Array.isArray(rows) ? rows : [],
+    };
+    this.queuedKeys.add(this.current.key);
+    const presentation = this.presentCurrent();
+
+    return {
+      ok: true,
+      dialogId: 'levelUpAnnouncement',
+      pixiDialogId: PIXI_ANNOUNCEMENT_DIALOG_ID,
+      presentation,
+    };
+  }
+
   showWhileAwayPreview({
     source = 'dev_preview',
     offlineSeconds = 3600,
@@ -399,7 +457,8 @@ export class PixiAnnouncementPresenter {
   dismissCurrent(source = 'dismiss') {
     if (
       this.current?.preview !== true &&
-      this.current?.kind !== 'whileAway'
+      this.current?.kind !== 'whileAway' &&
+      this.current?.kind !== 'level'
     ) {
       return false;
     }
@@ -528,10 +587,14 @@ export class PixiAnnouncementPresenter {
     }
 
     const fromLevel = this.previousLevel;
-    const rows = getLevelPayoffRows(snapshot, {
-      fromLevel,
-      toLevel: nextLevel,
-    });
+    const rows = attachLevelCountUpTotals(
+      getLevelPayoffRows(snapshot, {
+        fromLevel,
+        toLevel: nextLevel,
+      }),
+      snapshot,
+      { fromLevel, toLevel: nextLevel },
+    );
     const levelKey = `level:${fromLevel}:${nextLevel}`;
 
     this.enqueue({
@@ -637,6 +700,7 @@ export class PixiAnnouncementPresenter {
     this.clearHideTimeout();
     if (
       this.current.kind !== 'whileAway' &&
+      this.current.kind !== 'level' &&
       !this.current.preview
     ) {
       this.hideTimeoutId = this.setTimeoutFn(
@@ -657,7 +721,8 @@ export class PixiAnnouncementPresenter {
   handleDialogAdvance({ source = 'dialog' } = {}) {
     if (
       this.current?.preview !== true &&
-      this.current?.kind !== 'whileAway'
+      this.current?.kind !== 'whileAway' &&
+      this.current?.kind !== 'level'
     ) {
       return false;
     }
@@ -802,6 +867,7 @@ export function createPixiAnnouncementPresentation(
     announcementId:
       announcement.key ?? announcement.id ?? null,
     kind: announcement.kind ?? 'research',
+    preview: announcement.preview === true,
     framed: false,
     dismissible: false,
     durationMs: Math.max(0, Number(durationMs) || 0),
@@ -816,8 +882,10 @@ export function createPixiAnnouncementPresentation(
   if (announcement.kind === 'level') {
     return {
       ...shared,
-      title: 'rewards',
-      ariaLabel: `level ${announcement.toLevel} rewards`,
+      title: 'Level Up!',
+      ariaLabel: `Level ${announcement.toLevel} up. Tap to continue.`,
+      dismissible: true,
+      continueLabel: 'Tap to continue',
       rows: createLevelPresentationRows(
         announcement.rows,
         announcement.toLevel,
@@ -1141,27 +1209,143 @@ function createLevelPresentationRows(rows, toLevel) {
   const displayRows =
     Array.isArray(rows) && rows.length > 0
       ? rows
-      : [{ label: 'rewards', value: 'none' }];
+      : [{ label: 'Rewards', value: 'None' }];
   return displayRows.slice(0, 5).map((row, index) => {
     const valueLines = Array.isArray(row.valueLines)
       ? row.valueLines
       : [];
-    const value =
+    const rawValue =
       valueLines.length > 0
         ? valueLines.join(' / ')
         : String(row.value ?? '');
+    const resource = inferResource(rawValue);
+    const iconFrameName = RESOURCE_ICON_FRAMES[resource];
+    const value = iconFrameName
+      ? stripResourceName(rawValue, resource)
+      : toTitleCase(rawValue);
     return {
       ...row,
       id: `level:${toLevel}:${index}`,
       kind: 'row',
-      label: String(row.label ?? ''),
+      label: toTitleCase(row.label),
       value,
-      mutedLabel: true,
+      height: 34,
+      keyWidthRatio: 0.58,
+      mutedLabel: false,
+      boldLabel: true,
       boldValue: true,
-      resource: inferResource(value),
-      valueRuns: createResourceRuns(value),
+      color: '#ffffff',
+      resource,
+      valueColor: '#ffffff',
+      icon: iconFrameName
+        ? { frameName: iconFrameName }
+        : null,
+      iconPosition: 'after',
     };
   });
+}
+
+const LEVEL_TOTAL_KEY_BY_LABEL = Object.freeze({
+  'garden plots': 'maxGardenTiles',
+  cauldrons: 'maxCauldrons',
+  'trader stands': 'maxNpcMarketStands',
+  'player stands': 'maxPlayerMarketStands',
+  'mana capacity': 'maxManaCap',
+  'mana regeneration': 'manaPerSecond',
+});
+
+function attachLevelCountUpTotals(
+  rows,
+  snapshot,
+  { fromLevel, toLevel } = {},
+) {
+  const levels = Array.isArray(snapshot?.playerLevel?.levels)
+    ? snapshot.playerLevel.levels
+    : [];
+  const beforeTotals =
+    levels.find((entry) => entry?.level === fromLevel)?.totals ??
+    {};
+  const afterTotals =
+    levels.find((entry) => entry?.level === toLevel)?.totals ??
+    {};
+
+  return (Array.isArray(rows) ? rows : []).map((row) => {
+    const label = String(row?.label ?? '').toLowerCase();
+    const totalKey = LEVEL_TOTAL_KEY_BY_LABEL[label];
+    if (totalKey) {
+      return withCountUp(row, {
+        from: beforeTotals[totalKey] ?? 0,
+        to: afterTotals[totalKey],
+        suffix:
+          label === 'mana regeneration' ? '/sec' : '',
+      });
+    }
+    if (label !== 'bonus') {
+      return row;
+    }
+    const crystalTotal = Number(snapshot?.crystal?.current);
+    const crystalDelta = parseLeadingNumber(row?.value);
+    if (
+      !Number.isFinite(crystalTotal) ||
+      !Number.isFinite(crystalDelta)
+    ) {
+      return row;
+    }
+    return withCountUp(row, {
+      from: Math.max(0, crystalTotal - crystalDelta),
+      to: crystalTotal,
+    });
+  });
+}
+
+function withCountUp(row, countUp) {
+  const from = Number(countUp?.from);
+  const to = Number(countUp?.to);
+  if (
+    !Number.isFinite(from) ||
+    !Number.isFinite(to) ||
+    to <= from
+  ) {
+    return row;
+  }
+  return {
+    ...row,
+    countUp: {
+      from,
+      to,
+      suffix: String(countUp?.suffix ?? ''),
+    },
+  };
+}
+
+function parseLeadingNumber(value) {
+  const match = /^[^\d.-]*([\d.]+)/.exec(
+    String(value ?? '').trim(),
+  );
+  return match ? Number(match[1]) : Number.NaN;
+}
+
+function stripResourceName(value, resource) {
+  if (!resource) {
+    return String(value ?? '').trim();
+  }
+  return String(value ?? '')
+    .replace(
+      new RegExp(`\\s*${escapeRegExp(resource)}\\s*$`, 'i'),
+      '',
+    )
+    .trim();
+}
+
+function toTitleCase(value) {
+  return String(value ?? '').replace(
+    /(^|[\s/])([a-z])/g,
+    (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`,
+  );
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function createWhileAwayPresentationRows(rows) {

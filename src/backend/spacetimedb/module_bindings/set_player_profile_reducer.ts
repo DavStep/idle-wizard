@@ -17,4 +17,5 @@ export default {
   usernamePromptSeen: __t.bool(),
   font: __t.string(),
   character: __t.string(),
+  frame: __t.string(),
 };

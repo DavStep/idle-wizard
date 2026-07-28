@@ -35,6 +35,7 @@ describe('identity-only player reset', () => {
       usernamePromptSeen: false,
       font: 'lilita-one',
       character: 'elara',
+      frame: 'classic',
     });
   });
 

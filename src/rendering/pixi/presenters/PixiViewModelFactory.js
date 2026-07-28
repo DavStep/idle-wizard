@@ -1,5 +1,7 @@
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { formatRemainingTime } from '../../../pages/shared/timerDisplay.js';
+import { getPlayerFrameTint } from '../../../player/playerFrames.js';
+import { marketLicences } from '../../../shared/marketLicence.js';
 
 const BAG_TABS = Object.freeze([
   Object.freeze({ id: 'currencies', label: 'Currencies' }),
@@ -94,13 +96,16 @@ export class PixiViewModelFactory {
     const progress =
       questPreview ?? gameplay.tasks?.level?.questProgress ?? null;
     const visibleLevel = normalizeVisibleLevel(
-      gameplay.tasks?.currentLevel ?? gameplay.playerLevel?.currentLevel,
+      questPreview?.targetLevel ??
+        gameplay.tasks?.currentLevel ??
+        gameplay.playerLevel?.currentLevel,
     );
     const contextResource = getPageContextResource(pageId, researchTabId);
 
     return {
       username: player.username || 'Wizard',
       character: player.character || 'elara',
+      frameTint: getPlayerFrameTint(player.frame),
       showAvatar: true,
       mana: gameplay.mana ?? {},
       coin: gameplay.coin?.current ?? 0,
@@ -189,7 +194,6 @@ export class PixiViewModelFactory {
       allTasks.find((task) => task.isActiveQuest) ??
       allTasks.find((task) => !task.completed) ??
       null;
-    const completion = taskSnapshot.level?.completion ?? {};
     const taskRows = activeTask ? [this.createTaskRow(activeTask, actions)] : [];
 
     return {
@@ -199,10 +203,6 @@ export class PixiViewModelFactory {
           rows: taskRows,
           expanded: false,
           canToggle: false,
-          info: {
-            title: "Elara's Request",
-            copy: createTaskHelpCopy(taskSnapshot, completion),
-          },
         },
         summon: {
           cost: gameplay.seedSummoning?.cost ?? 0,
@@ -247,10 +247,6 @@ export class PixiViewModelFactory {
             gameplay,
             actions,
           ),
-          tasksInfo: {
-            title: "Elara's Request",
-            copy: createTaskHelpCopy(taskSnapshot, completion),
-          },
           bag: this.createBagDialog(
             gameplay,
             dialogState.bagTabId,
@@ -417,18 +413,37 @@ export class PixiViewModelFactory {
       .map((unlock) => Math.floor(Number(unlock.count)))
       .filter((count) => count > completedPointCount)
       .sort((left, right) => left - right)[0] ?? null;
+    const summaryResources = createPrestigeResourceTotals(
+      summaryMilestone?.nextRun,
+    );
 
     return {
       prestige: {
         selectedTabId,
         tabs: [
-          { id: 'main', label: 'main', selected: selectedTabId === 'main' },
-          { id: 'points', label: 'points', selected: selectedTabId === 'points' },
+          { id: 'main', label: 'Main', selected: selectedTabId === 'main' },
+          { id: 'points', label: 'Points', selected: selectedTabId === 'points' },
         ],
+        starLevel: completedPointCount,
         summary:
           selectedTabId === 'points'
-            ? { lines: [`${completedPointCount} ${pluralize(completedPointCount, 'point')} earned`] }
+            ? {
+                starLevel: completedPointCount,
+                flow: `${completedPointCount} ${pluralize(completedPointCount, 'Prestige Point')} Earned`,
+                lines: [
+                  `${completedPointCount} ${pluralize(completedPointCount, 'Prestige Point')} Earned`,
+                ],
+              }
             : {
+                starLevel: completedPointCount,
+                flow: formatLevelFlow(
+                  currentLevel,
+                  getSummaryTargetLevel(summaryMilestone, currentLevel),
+                ),
+                resourceLead: summaryMilestone?.canComplete
+                  ? 'On Prestige'
+                  : 'Next Prestige',
+                resources: summaryResources,
                 lines: [
                   formatLevelFlow(
                     currentLevel,
@@ -447,28 +462,13 @@ export class PixiViewModelFactory {
                 (candidate) =>
                   !candidate.completed && !candidate.canComplete,
               ),
-          }),
+              }),
         ),
-        pointRewards: (prestige.unlocks ?? []).map((reward) => ({
-          id: `point-${reward.count}`,
-          kind: 'point',
-          count: reward.count,
-          title: `${reward.count} ${pluralize(reward.count, 'point')}`,
-          status:
-            completedPointCount >= reward.count
-              ? 'unlocked'
-              : reward.count === nextPointCount
-                ? 'next'
-                : 'locked',
-          completed: completedPointCount >= reward.count,
-          locked:
-            completedPointCount < reward.count &&
-            reward.count !== nextPointCount,
-          rewardLines: [
-            reward.label,
-            ...(Array.isArray(reward.rewards) ? reward.rewards : []),
-          ].filter(Boolean),
-        })),
+        pointRewards: createPrestigePointRewards({
+          unlocks: prestige.unlocks,
+          completedPointCount,
+          nextPointCount,
+        }),
         runFocus: prestige.runFocus ?? {},
         confirm,
       },
@@ -942,12 +942,6 @@ function getActiveQuestFraction(progress = {}) {
   return total > 0
     ? Math.max(0, Math.min(1, normalized * total - completed))
     : 0;
-}
-
-function createTaskHelpCopy(tasks, completion) {
-  const nextLevel =
-    (completion.level ?? tasks.currentLevel ?? 0) + 1;
-  return `complete elara's requests one at a time to reach level ${nextLevel}. completing the final request advances the level automatically. turn-in requests consume items.`;
 }
 
 function createWorkshopFeatures({
@@ -1619,7 +1613,7 @@ function createPrestigeMilestone(milestone = {}, { upcoming = false } = {}) {
   return {
     ...milestone,
     id: `level-${milestone.level}`,
-    title: `level ${milestone.level}`,
+    title: `Level ${milestone.level}`,
     state,
     status: state === 'completed' ? 'complete' : state,
     included: state === 'included',
@@ -1633,6 +1627,24 @@ function createPrestigeMilestone(milestone = {}, { upcoming = false } = {}) {
         Number(milestone.creditedRuby ?? milestone.rewardRuby) || 0,
       ),
     )} ruby`,
+    rewardResources: [
+      {
+        resource: 'crystal',
+        amount: Math.max(
+          0,
+          Math.floor(Number(milestone.nextRun?.crystal) || 0),
+        ),
+      },
+      {
+        resource: 'ruby',
+        amount: Math.max(
+          0,
+          Math.floor(
+            Number(milestone.creditedRuby ?? milestone.rewardRuby) || 0,
+          ),
+        ),
+      },
+    ],
     canComplete:
       milestone.canComplete === true &&
       milestone.lowerThanHighestAvailable !== true,
@@ -1656,6 +1668,91 @@ function createPrestigeMilestone(milestone = {}, { upcoming = false } = {}) {
   };
 }
 
+function createPrestigeResourceTotals(nextRun = {}) {
+  return ['crystal', 'ruby', 'emerald'].map((resource) => ({
+    resource,
+    amount: Math.max(0, Math.floor(Number(nextRun?.[resource]) || 0)),
+  }));
+}
+
+function createPrestigePointRewards({
+  unlocks = [],
+  completedPointCount = 0,
+  nextPointCount = null,
+} = {}) {
+  const rewardsByCount = new Map();
+
+  for (const unlock of Array.isArray(unlocks) ? unlocks : []) {
+    const count = Math.max(0, Math.floor(Number(unlock?.count) || 0));
+    if (count <= 0) {
+      continue;
+    }
+    rewardsByCount.set(count, {
+      count,
+      label: unlock.label ?? '',
+      rewards: Array.isArray(unlock.rewards) ? unlock.rewards : [],
+    });
+  }
+
+  for (const licence of marketLicences) {
+    if (licence.requiredStars <= 0) {
+      continue;
+    }
+    const reward = rewardsByCount.get(licence.requiredStars) ?? {
+      count: licence.requiredStars,
+      label: '',
+      rewards: [],
+    };
+    reward.marketLicence = licence;
+    rewardsByCount.set(licence.requiredStars, reward);
+  }
+
+  const resolvedNextCount =
+    [...rewardsByCount.keys()]
+      .sort((left, right) => left - right)
+      .find((count) => count > completedPointCount) ??
+    nextPointCount;
+
+  return [...rewardsByCount.values()]
+    .sort((left, right) => left.count - right.count)
+    .map((reward) => {
+      const completed = completedPointCount >= reward.count;
+      const next = reward.count === resolvedNextCount;
+      const rewardLines = [
+        reward.marketLicence?.name,
+        reward.label,
+        ...reward.rewards,
+      ].filter(Boolean);
+
+      return {
+        id: `point-${reward.count}`,
+        kind: 'point',
+        count: reward.count,
+        title: `${reward.count} ${pluralize(reward.count, 'Point')}`,
+        status: completed ? 'unlocked' : next ? 'next' : 'locked',
+        completed,
+        locked: !completed && !next,
+        rewardLines: [...new Set(rewardLines)],
+        tooltip: reward.marketLicence
+          ? {
+              text: formatMarketLicenceTooltip(reward.marketLicence),
+            }
+          : null,
+      };
+    });
+}
+
+function formatMarketLicenceTooltip(licence = {}) {
+  const requiredPoints = Math.max(
+    0,
+    Math.floor(Number(licence.requiredStars) || 0),
+  );
+  return `${licence.name} unlocks at ${requiredPoints} ${pluralize(
+    requiredPoints,
+    'Prestige Point',
+  )}. All trader and player-market trade permanently moves here. It has its own prices, demand, stock, listings, requests, and proceeds. Earlier goods remain available, but earlier markets do not.`;
+}
+
 function formatPrestigeTotals(nextRun = {}) {
   return [
     `${Math.floor(Number(nextRun.crystal) || 0)} crystal`,
@@ -1666,7 +1763,7 @@ function formatPrestigeTotals(nextRun = {}) {
 }
 
 function formatLevelFlow(current, target) {
-  return `level ${Math.max(1, Math.floor(Number(current) || 1))} > level ${Math.max(
+  return `Level ${Math.max(1, Math.floor(Number(current) || 1))} > Level ${Math.max(
     1,
     Math.floor(Number(target) || 1),
   )}`;

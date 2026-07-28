@@ -10,7 +10,6 @@ import {
 
 const SETTINGS_TABS = new Set([
   'account',
-  'avatar',
   'report',
   'configurations',
 ]);
@@ -210,12 +209,7 @@ export class PixiGlobalDialogPresenter {
     );
 
     return {
-      title:
-        request.usernamePrompt === true
-          ? 'username'
-          : requestedTab === 'avatar'
-            ? 'avatar'
-            : 'settings',
+      title: requestedTab === 'account' ? 'Account' : 'settings',
       tabId: requestedTab,
       focusInput:
         request.focusInput === true ||
@@ -262,6 +256,7 @@ export class PixiGlobalDialogPresenter {
         color: player.colorMode,
         icons: player.iconMode,
         character: player.character,
+        frame: player.frame,
         progressBar: player.progressBar,
       },
       costsCrystal: gameplay.visualSettings?.costsCrystal ?? {},
@@ -293,6 +288,8 @@ export class PixiGlobalDialogPresenter {
           this.submitFeedback(submission),
         saveUsername: (username) =>
           this.saveUsername(dialogId, username),
+        saveAccount: (profile) =>
+          this.saveAccount(dialogId, profile),
         ...(request.usernamePrompt === true
           ? {
               close: () => this.clearPendingPlayerSurfaceOpen(),
@@ -556,6 +553,24 @@ export class PixiGlobalDialogPresenter {
     return result ?? true;
   }
 
+  saveAccount(dialogId, profile) {
+    const result =
+      this.playerFacade?.setAccountProfile?.(profile) ??
+      this.playerFacade?.setUsername?.(profile?.username);
+    if (result === false || result?.ok === false) {
+      return result;
+    }
+    const pending =
+      dialogId === GLOBAL_DIALOG_IDS.SETTINGS
+        ? this.takePendingPlayerSurfaceOpen()
+        : null;
+    this.requireRuntime().closeDialog(dialogId);
+    if (pending && this.mounted) {
+      this.openCanonicalDialog(pending.dialogId, pending.request);
+    }
+    return result ?? true;
+  }
+
   requiresPlayerSurfaceUsername() {
     const snapshot = this.playerFacade?.getSnapshot?.();
     return Boolean(
@@ -710,6 +725,7 @@ export class PixiGlobalDialogPresenter {
       color: 'setColorMode',
       icons: 'setIconMode',
       character: 'setCharacter',
+      frame: 'setFrame',
       progressBar: 'setProgressBar',
     };
     const method = methods[category];
@@ -1124,6 +1140,9 @@ function getGlobalDialogAliasOptions(dialogId) {
 
 function normalizeSettingsTab(tabId) {
   const value = String(tabId ?? 'account').trim().toLowerCase();
+  if (value === 'avatar') {
+    return 'account';
+  }
   if (value === 'theme' || value === 'appearance') {
     return 'configurations';
   }

@@ -398,12 +398,16 @@
     },
     {
       "id": "global.announcements",
-      "label": "feature unlock and while-away announcements",
+      "label": "feature unlock, level-up, and while-away announcements",
       "kind": "preview",
       "production": true,
       "coverage": {
         "globalOwners": ["announcementFacade"],
-        "devUi": ["featureUnlockAnnouncement", "whileAwayAnnouncement"]
+        "devUi": [
+          "featureUnlockAnnouncement",
+          "levelUpAnnouncement",
+          "whileAwayAnnouncement"
+        ]
       },
       "recipe": {
         "kind": "devUi",
@@ -418,6 +422,13 @@
       ],
       "states": [
         { "id": "feature-unlock" },
+        {
+          "id": "level-up",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "levelUpAnnouncement"
+          }
+        },
         {
           "id": "while-away",
           "recipe": {
@@ -1026,15 +1037,12 @@
     },
     {
       "id": "dialog.workshop-auxiliary",
-      "label": "Workshop stats and task information",
+      "label": "Workshop stats",
       "kind": "dialog",
       "production": true,
       "coverage": {
         "devUi": ["stats"],
-        "domSelectors": [
-          ".workshop-page__stats-dialog",
-          ".workshop-page__tasks-info-dialog"
-        ]
+        "domSelectors": [".workshop-page__stats-dialog"]
       },
       "recipe": {
         "kind": "devUi",
@@ -1046,12 +1054,6 @@
           "selector": ".workshop-page__stats-dialog",
           "tolerancePx": 1,
           "optional": true
-        },
-        {
-          "id": "tasks",
-          "selector": ".workshop-page__tasks-info-dialog",
-          "tolerancePx": 1,
-          "optional": true
         }
       ],
       "states": [
@@ -1061,13 +1063,6 @@
           "recipe": {
             "kind": "manual",
             "gap": "The stats dialog opens deterministically, but no checked-in recipe scrolls it to a stable offset yet."
-          }
-        },
-        {
-          "id": "task-info",
-          "recipe": {
-            "kind": "manual",
-            "gap": "The task-info dialog still requires page-local interaction and has no named openUi recipe."
           }
         }
       ]
@@ -1331,7 +1326,15 @@
       "kind": "dialog",
       "production": true,
       "coverage": {
-        "devUi": ["settings", "feedback", "bug", "feature", "level", "inbox"],
+        "devUi": [
+          "settings",
+          "accountProfile",
+          "feedback",
+          "bug",
+          "feature",
+          "level",
+          "inbox"
+        ],
         "domSelectors": [
           ".room-top-panel__settings-dialog",
           ".room-top-panel__level-dialog",
@@ -1367,7 +1370,10 @@
         }
       ],
       "states": [
-        { "id": "account" },
+        {
+          "id": "account",
+          "recipe": { "kind": "devUi", "surfaceId": "accountProfile" }
+        },
         { "id": "appearance" },
         { "id": "sound-and-haptics" },
         {

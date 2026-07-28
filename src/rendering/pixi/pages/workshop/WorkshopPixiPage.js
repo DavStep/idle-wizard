@@ -47,7 +47,6 @@ import { WorkshopDialogPixi } from './WorkshopDialogPixi.js';
 
 const WORKSHOP_DIALOGS = Object.freeze([
   Object.freeze({ id: 'summonInfo', title: 'Summoning Seeds' }),
-  Object.freeze({ id: 'tasksInfo', title: "Elara's Request" }),
   Object.freeze({ id: 'bag', title: 'bag' }),
   Object.freeze({ id: 'stats', title: 'stats' }),
   Object.freeze({ id: 'inbox', title: 'inbox' }),
@@ -91,22 +90,23 @@ const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
   alliance: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopAlliance,
     clothAssetId: PIXI_ROOT_RUN_ASSETS.workshopAllianceCloth,
+    scale: 0.94,
   }),
   leaderboard: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopLeaderboard,
-    scale: 1.2,
+    scale: 1.05,
   }),
   discoveries: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopDiscoveries,
-    scale: 1.18,
+    scale: 0.96,
   }),
   personalTasks: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopPersonalTasks,
-    scale: 1.05,
+    scale: 0.93,
   }),
   worldEvent: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopWorldEvent,
-    scale: 1.08,
+    scale: 0.87,
     mirrorOnRight: false,
   }),
 });
@@ -227,6 +227,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       side: 'left',
       weight: 40,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopBag,
+      scale: 0.9,
       onActivate: () => this.openDialog('bag'),
     });
     this.inboxButton = new WorkshopIconPanelAction({
@@ -237,7 +238,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       side: 'right',
       weight: 10,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopInbox,
-      scale: 1.22,
+      scale: 0.95,
       onActivate: () => this.openDialog('inbox'),
     });
     this.statsButton = new WorkshopIconPanelAction({
@@ -248,7 +249,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       side: 'right',
       weight: 0,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopStats,
-      scale: 1.08,
+      scale: 1.12,
       onActivate: () => this.openDialog('stats'),
     });
     this.featureLayer = new Container({ label: 'workshop-feature-buttons' });
@@ -903,23 +904,8 @@ class WorkshopTaskPanel {
       bind: (row, task) => row.bind(task),
       afterReconcile: (rows) => this.orderRows(rows),
     });
-    this.handleTitleActivate = () =>
-      this.model?.onInfo?.(this.model) ??
-      this.page.openDialog('tasksInfo', this.model?.info ?? null);
-    this.panel.title.eventMode = 'static';
-    this.panel.title.cursor = 'pointer';
-    this.titleInputRegistration = this.page.inputRouter?.registerPressTarget?.({
-      id: createRetainedInputId('workshop-tasks-info'),
-      displayObject: this.panel.title,
-      enabled: () => Boolean(this.model),
-      excludePageSwipe: true,
-      onActivate: this.handleTitleActivate,
-    }) ?? null;
-    this.usesDirectTitleInput = !this.titleInputRegistration;
-
-    if (this.usesDirectTitleInput) {
-      this.panel.title.on('pointertap', this.handleTitleActivate);
-    }
+    this.panel.title.eventMode = 'none';
+    this.panel.title.cursor = 'default';
 
     this.height = 34;
   }
@@ -997,12 +983,6 @@ class WorkshopTaskPanel {
       displayObject: this.root,
       activate: () => this.model?.onToggleExpanded?.() ?? false,
     });
-    this.page.registerSemanticTarget({
-      semanticId: 'workshop.tasks.info',
-      tutorialId: null,
-      displayObject: this.panel.title,
-      activate: this.handleTitleActivate,
-    });
   }
 
   applyTheme(theme) {
@@ -1043,13 +1023,6 @@ class WorkshopTaskPanel {
   }
 
   destroy() {
-    this.titleInputRegistration?.unregister?.();
-    this.titleInputRegistration = null;
-
-    if (this.usesDirectTitleInput) {
-      this.panel.title.off('pointertap', this.handleTitleActivate);
-    }
-
     this.rows.destroy();
     this.rowPool.destroy();
     this.pinButton.destroy();
@@ -1865,7 +1838,9 @@ class WorkshopFeatureButton {
       mirrored:
         this.side === 'right' && this.presentation?.mirrorOnRight === true,
     });
-    layoutContainedSprite(this.cloth, frameWidth, frameHeight);
+    layoutContainedSprite(this.cloth, frameWidth, frameHeight, {
+      scale: this.presentation?.scale ?? 1,
+    });
     this.iconFrame.pivot.set(frameWidth / 2, frameHeight * 0.78);
     this.iconFrame.position.set(
       frameLeft + frameWidth / 2,

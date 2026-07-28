@@ -288,8 +288,16 @@ export class WorkshopDialogPixi {
   orderRows(widgets) {
     this.scroll.content.removeChildren();
     const rowGap = this.isWorldChatDialog ? WORLD_CHAT_ROW_GAP : 4;
+    const rowsHeight = widgets.reduce(
+      (height, widget, index) =>
+        height + widget.getPreferredHeight() + (index > 0 ? rowGap : 0),
+      0,
+    );
     let y = this.isWorldChatDialog
-      ? WORLD_CHAT_SCROLL_PADDING_TOP
+      ? Math.max(
+          WORLD_CHAT_SCROLL_PADDING_TOP,
+          this.scroll.height - rowsHeight,
+        )
       : this.scrollContentPaddingTop;
 
     for (const widget of widgets) {
@@ -393,6 +401,9 @@ export class WorkshopDialogPixi {
         composerHeight -
         this.scrollViewportTopInset,
     );
+    if (this.isWorldChatDialog) {
+      this.orderRows(this.rows.getWidgets());
+    }
     const tabRowWidth = this.isBagDialog
       ? BAG_DIALOG_TAB_ROW_WIDTH
       : WORKSHOP_DIALOG_CONTENT_WIDTH;

@@ -45,6 +45,8 @@ describe('PixiWorldChatView', () => {
     });
     expect(view.panel.root.pivot).toMatchObject({ x: 164, y: 20.5 });
     expect(view.preview.text).toBe('second\nthird');
+    expect(view.preview.anchor).toMatchObject({ x: 0, y: 1 });
+    expect(view.preview.position).toMatchObject({ x: 5, y: 37 });
     expect(view.preview.style.whiteSpace).toBe('pre-line');
 
     expect(input.registration.haptic).toBe('light');

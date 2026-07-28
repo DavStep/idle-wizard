@@ -100,12 +100,12 @@ yellow and Brew is green. The three controls use equal widths with an inset
 from the carousel frame. Before x2 batch research, the primary label is simply
 `Brew`, without an x1 suffix.
 
-The carousel action row keeps its existing retained button semantics while
-adding leading illustrated cues: the approved brown-and-purple spellbook for
-Recipes, the gray-steel cog for Auto Brew, three potions for Brew, and the
-shared X artwork for Cancel. Cancel and Collect All keep their role colors and
-remain pressable in empty states; rejected presses emit the shared transient
-feedback flyout without changing gameplay state.
+The carousel action row keeps its existing retained button semantics. Recipes
+and Brew use centered source-13px labels without icons. Auto Brew keeps its
+leading gray-steel cog and compact label, while Cancel keeps the shared X
+artwork. Cancel and Collect All keep their role colors and remain pressable in
+empty states; rejected presses emit the shared transient feedback flyout
+without changing gameplay state.
 
 Brewing-owned motion also remains retained: herb pickup/count/return nudges
 reuse the row transform, ingredient drag, return, and brew flyouts use one
