@@ -325,6 +325,7 @@ describe('PixiGlobalDialogPresenter', () => {
       'color',
       'icons',
       'character',
+      'frame',
       'progressBar',
     ]);
     expect(model.selections).toMatchObject({

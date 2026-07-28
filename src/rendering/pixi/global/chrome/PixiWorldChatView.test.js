@@ -41,9 +41,9 @@ describe('PixiWorldChatView', () => {
     });
     expect(view.panel.root.position).toMatchObject({
       x: 180,
-      y: expect.closeTo(601.333333, 5),
+      y: expect.closeTo(601.833333, 5),
     });
-    expect(view.panel.root.pivot).toMatchObject({ x: 164, y: 20 });
+    expect(view.panel.root.pivot).toMatchObject({ x: 164, y: 20.5 });
     expect(view.preview.text).toBe('second\nthird');
     expect(view.preview.style.whiteSpace).toBe('pre-line');
 
