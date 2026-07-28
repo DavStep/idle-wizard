@@ -162,6 +162,8 @@ describe('PixiDialogFrame', () => {
       muted: PIXI_DIALOG_PALETTE.muted,
       disabled: PIXI_DIALOG_PALETTE.disabled,
       resourceColors: {
+        coin: PIXI_DIALOG_PALETTE.coin,
+        crystal: PIXI_DIALOG_PALETTE.crystal,
         mana: PIXI_DIALOG_PALETTE.mana,
         herb: PIXI_DIALOG_PALETTE.herb,
       },

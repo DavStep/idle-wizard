@@ -101,16 +101,14 @@
   --style-dialog-tab-gap: 8px;
   --style-dialog-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-back.png");
   --style-dialog-frame-slice: 139 163 83 83 fill;
-  --style-dialog-frame-width: calc(139px * 390 / 1080)
-    calc(163px * 390 / 1080) calc(83px * 390 / 1080)
-    calc(83px * 390 / 1080);
+  --style-dialog-frame-width: calc(139px * 390 / 1080) calc(163px * 390 / 1080)
+    calc(83px * 390 / 1080) calc(83px * 390 / 1080);
   --style-dialog-frame-outset: 10px;
   --style-dialog-frame-fill: #634934;
   --style-dialog-paper-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-front.png");
   --style-dialog-paper-frame-slice: 99 53 72 84 fill;
   --style-dialog-paper-frame-width: calc(99px * 390 / 1080)
-    calc(53px * 390 / 1080) calc(72px * 390 / 1080)
-    calc(84px * 390 / 1080);
+    calc(53px * 390 / 1080) calc(72px * 390 / 1080) calc(84px * 390 / 1080);
   --style-dialog-paper-fill: #ffe7c8;
   --style-dialog-paper-inset-x: calc(16px * 390 / 1080);
   --style-dialog-paper-inset-top: calc(85px * 390 / 1080);
@@ -180,14 +178,12 @@
   --style-room-tab-active-height: 56px;
   --style-room-tab-inactive-height: 44px;
   --style-room-tab-rise: calc(
-    var(--style-room-tab-active-height) -
-      var(--style-room-tab-inactive-height)
+    var(--style-room-tab-active-height) - var(--style-room-tab-inactive-height)
   );
   --style-room-tab-overlap: 2.888889px;
   --style-room-tab-bottom-bleed: 26px;
   --style-room-tab-total-height: calc(
-    var(--style-room-tab-active-height) +
-      var(--style-room-tab-bottom-bleed)
+    var(--style-room-tab-active-height) + var(--style-room-tab-bottom-bleed)
   );
   --style-room-tab-selected-width-extra: 6px;
   --style-room-tab-icon-size: 50px;
@@ -216,7 +212,8 @@
   --style-progress-knob-ring: #241b14;
   --style-progress-timer-height: var(--style-progress-total-height);
   --style-progress-rail-background: rgb(0 0 0 / 60%);
-  --style-progress-rail-border: var(--style-progress-rail-border-width) solid #000;
+  --style-progress-rail-border: var(--style-progress-rail-border-width) solid
+    #000;
   --style-progress-rail-shadow: inset 0 0 0 1px rgb(9 7 5 / 64%);
   --style-progress-root-fill: #8740df;
   --style-progress-root-edge: #bd72f3;
@@ -228,8 +225,7 @@
   --style-progress-yellow-edge: #f6d86a;
   --style-progress-fill-background: var(--style-progress-root-fill);
   --style-progress-fill-edge: var(--style-progress-root-edge);
-  --style-progress-fill-shadow: inset 0 0 0 1px
-    var(--style-progress-fill-edge);
+  --style-progress-fill-shadow: inset 0 0 0 1px var(--style-progress-fill-edge);
   --style-progress-notched-fill: #b79a6b;
   --style-progress-notched-stroke-light: rgb(255 238 197 / 48%);
   --style-progress-notched-stroke-dark: rgb(74 57 41 / 72%);
@@ -254,9 +250,7 @@
   --style-trade-alliance-dialog-padding: 10px;
   --style-log-font-size: var(--style-world-chat-popup-font-size);
   --style-log-line-height: var(--style-world-chat-popup-line-height);
-  --style-research-card-width: calc(
-    390px - 2 * var(--style-room-content-edge)
-  );
+  --style-research-card-width: calc(390px - 2 * var(--style-room-content-edge));
   --style-research-row-height: 80px;
   --style-research-value-width: calc(281px * 390 / 1080);
   --style-research-card-art-width: 52px;
@@ -302,30 +296,37 @@
   );
   --style-room-chat-title-overhang: 12px;
   --style-room-chat-gap: 8px;
+  --style-top-panel-content-gap: 16px;
+  --style-top-panel-background-frame: url("../../assets/game/source/ui/midnight-top-panel-background-9slice.png");
   --style-room-chat-clearance: calc(
     var(--style-room-chat-bottom) + var(--style-room-chat-source-height) +
       var(--style-room-chat-title-overhang) + var(--style-room-chat-gap)
   );
   --workshop-secondary-button-width: 100px;
   --workshop-secondary-button-half-width: 50px;
-  --workshop-side-controls-top-offset: 61px;
-  --workshop-panel-button-width: 45.5px;
-  --workshop-panel-button-height: 80.25px;
-  --workshop-panel-button-open-height: 68.25px;
-  --workshop-panel-button-label-bottom: 3.9px;
-  --workshop-panel-button-label-line-height: calc(
-    var(--style-box-border-label-line-height) * 0.8
+  --workshop-summon-button-height: 52px;
+  --workshop-summon-button-half-height: 26px;
+  --workshop-summon-chat-gap: 32px;
+  --workshop-summon-anchor-top: calc(
+    100% - var(--style-room-chat-bottom) -
+      var(--style-room-chat-source-height) - var(--workshop-summon-chat-gap) -
+      var(--workshop-summon-button-height)
   );
+  --workshop-side-controls-top-offset: 71px;
+  --workshop-panel-button-width: 50px;
+  --workshop-panel-button-height: 72px;
+  --workshop-panel-button-open-height: 72px;
+  --workshop-panel-button-label-bottom: 10px;
+  --workshop-panel-button-label-line-height: 18px;
   --workshop-panel-button-label-offset-y: calc(
     var(--workshop-panel-button-height) -
       var(--workshop-panel-button-label-bottom) -
       var(--workshop-panel-button-label-line-height)
   );
   --workshop-panel-button-first-row-offset-y: 25px;
-  --workshop-panel-button-row-gap: 52.25px;
+  --workshop-panel-button-row-gap: 74px;
   --workshop-panel-button-row-1-top: calc(
-    var(--style-room-content-top) +
-      var(--workshop-side-controls-top-offset) +
+    var(--style-room-content-top) + var(--workshop-side-controls-top-offset) +
       var(--workshop-panel-button-first-row-offset-y)
   );
   --workshop-panel-button-row-2-top: calc(
@@ -391,9 +392,7 @@
     var(--brewing-page-cauldron-height) +
       var(--brewing-page-cauldron-art-extra-height)
   );
-  --brewing-page-cauldron-block-height: var(
-    --brewing-page-cauldron-art-height
-  );
+  --brewing-page-cauldron-block-height: var(--brewing-page-cauldron-art-height);
   --brewing-page-cauldron-box-gap: 14px;
   --brewing-page-cauldron-box-width: calc(
     var(--brewing-page-cauldron-art-width) +
@@ -653,7 +652,10 @@
 
 .shop-page__ledger-row {
   display: grid;
-  grid-template-columns: minmax(90px, 1.4fr) minmax(52px, 0.8fr) minmax(52px, 0.8fr) minmax(70px, 1fr);
+  grid-template-columns: minmax(90px, 1.4fr) minmax(52px, 0.8fr) minmax(
+      52px,
+      0.8fr
+    ) minmax(70px, 1fr);
   gap: 6px;
   align-items: baseline;
   min-height: var(--style-row-min-height);
@@ -821,9 +823,8 @@
 :root[data-style-theme="witchcraft"] {
   --style-border-width: 2px;
   --style-inner-section-frame-slice: 91 73 90 83 fill;
-  --style-inner-section-frame-width:
-    calc(91px * 390 / 1080) calc(73px * 390 / 1080)
-    calc(90px * 390 / 1080) calc(83px * 390 / 1080);
+  --style-inner-section-frame-width: calc(91px * 390 / 1080)
+    calc(73px * 390 / 1080) calc(90px * 390 / 1080) calc(83px * 390 / 1080);
   --style-star-yellow: oklch(83% 0.14 96);
   --style-star-orange: oklch(78% 0.15 55);
   --style-star-red: oklch(76% 0.14 25);
@@ -851,8 +852,8 @@
 
 :root[data-style-progress="notched"] {
   --style-progress-fill-background: var(--style-progress-notched-fill);
-  --style-progress-fill-shadow: inset 0 1px 0
-      var(--style-progress-notched-stroke-light),
+  --style-progress-fill-shadow:
+    inset 0 1px 0 var(--style-progress-notched-stroke-light),
     inset 0 -1px 0 var(--style-progress-notched-stroke-dark);
 }
 
@@ -1001,8 +1002,8 @@
   z-index: 0;
   pointer-events: none;
   content: "";
-  background: url("../../assets/game/source/ui/root-run-cost-button/green-button-short.png") center / 100%
-    100% no-repeat;
+  background: url("../../assets/game/source/ui/root-run-cost-button/green-button-short.png")
+    center / 100% 100% no-repeat;
 }
 
 .style-button.style-cost-button.style-cost-button:is(
@@ -1023,10 +1024,9 @@
   background-image: url("../../assets/game/source/ui/root-run-cost-button/gray-button-short.png");
 }
 
-.style-button.style-cost-button.style-cost-button:is(
-    :active,
-    .is-pressing
-  ):not(:disabled):not([aria-disabled="true"]) {
+.style-button.style-cost-button.style-cost-button:is(:active, .is-pressing):not(
+    :disabled
+  ):not([aria-disabled="true"]) {
   background: transparent;
 }
 
@@ -1226,9 +1226,11 @@ body {
                   --app-source-ui-screen-width,
                   var(--style-source-ui-screen-width)
                 )
-            ) / 2
+            ) /
+            2
         )
-      ) / var(--style-ui-scale)
+      ) /
+      var(--style-ui-scale)
   );
   position: relative;
   width: var(
@@ -1286,18 +1288,12 @@ body {
 }
 
 .game-stage[data-viewport-mode="web-wide"]
-  :where(
-    .brewing-page__world-view,
-    .garden-page__plot-world
-  ) {
+  :where(.brewing-page__world-view, .garden-page__plot-world) {
   overflow: visible;
 }
 
 .game-stage[data-viewport-mode="web-wide"]
-  :where(
-    .brewing-page__world-shell,
-    .garden-page__world-shell
-  ) {
+  :where(.brewing-page__world-shell, .garden-page__world-shell) {
   right: calc(var(--style-source-ui-gutter-x) * -1);
   left: calc(var(--style-source-ui-gutter-x) * -1);
 }
@@ -1692,8 +1688,7 @@ body {
 }
 
 .first-run-intro--step-exit .first-run-intro__transition-shade {
-  animation: first-run-intro-shade-exit 180ms var(--style-motion-ease-soft)
-    both;
+  animation: first-run-intro-shade-exit 180ms var(--style-motion-ease-soft) both;
 }
 
 .first-run-intro--stable-backdrop.first-run-intro--step-enter
@@ -1705,8 +1700,7 @@ body {
 }
 
 .first-run-intro--step-exit .first-run-intro__backdrop-layer {
-  animation: first-run-intro-scene-exit 180ms var(--style-motion-ease-soft)
-    both;
+  animation: first-run-intro-scene-exit 180ms var(--style-motion-ease-soft) both;
 }
 
 .first-run-intro--step-enter .first-run-intro__backdrop-layer {
@@ -1714,23 +1708,28 @@ body {
     both;
 }
 
-.first-run-intro--step-enter[data-scene="castle"] .first-run-intro__backdrop-layer,
-.first-run-intro--step-enter[data-scene="defeated"] .first-run-intro__backdrop-layer {
+.first-run-intro--step-enter[data-scene="castle"]
+  .first-run-intro__backdrop-layer,
+.first-run-intro--step-enter[data-scene="defeated"]
+  .first-run-intro__backdrop-layer {
   animation: first-run-intro-castle-push 2400ms var(--style-motion-ease-soft)
     both;
 }
 
-.first-run-intro--step-enter[data-scene="reward"] .first-run-intro__backdrop-layer {
+.first-run-intro--step-enter[data-scene="reward"]
+  .first-run-intro__backdrop-layer {
   animation: first-run-intro-reward-push 1500ms var(--style-motion-ease-soft)
     both;
 }
 
-.first-run-intro--step-enter[data-scene="peace"] .first-run-intro__backdrop-layer {
+.first-run-intro--step-enter[data-scene="peace"]
+  .first-run-intro__backdrop-layer {
   animation: first-run-intro-peace-push 1800ms var(--style-motion-ease-soft)
     both;
 }
 
-.first-run-intro--step-enter[data-scene="workshop"] .first-run-intro__backdrop-layer {
+.first-run-intro--step-enter[data-scene="workshop"]
+  .first-run-intro__backdrop-layer {
   animation: first-run-intro-workshop-push 1700ms var(--style-motion-ease-soft)
     both;
 }
@@ -1769,12 +1768,7 @@ body {
       #000 75%,
       transparent 100%
     ),
-    linear-gradient(
-      180deg,
-      #000 0%,
-      #000 82%,
-      transparent 100%
-    );
+    linear-gradient(180deg, #000 0%, #000 82%, transparent 100%);
   mask-image:
     linear-gradient(
       90deg,
@@ -1783,12 +1777,7 @@ body {
       #000 75%,
       transparent 100%
     ),
-    linear-gradient(
-      180deg,
-      #000 0%,
-      #000 82%,
-      transparent 100%
-    );
+    linear-gradient(180deg, #000 0%, #000 82%, transparent 100%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
   opacity: 0;
@@ -1842,8 +1831,7 @@ body {
 
 .first-run-intro--step-enter[data-scene="defeated"]
   .first-run-intro__demon--defeated {
-  animation: first-run-intro-defeated-enter 360ms var(--style-motion-ease)
-    both;
+  animation: first-run-intro-defeated-enter 360ms var(--style-motion-ease) both;
 }
 
 .first-run-intro__workshop-sale {
@@ -1880,8 +1868,8 @@ body {
 }
 
 .first-run-intro--step-exit .first-run-intro__workshop-sale {
-  animation: first-run-intro-workshop-sale-exit 180ms var(--style-motion-ease-soft)
-    both;
+  animation: first-run-intro-workshop-sale-exit 180ms
+    var(--style-motion-ease-soft) both;
 }
 
 .first-run-intro__workshop-sale-label {
@@ -1946,8 +1934,7 @@ body {
 }
 
 .first-run-intro--step-exit .style-box.first-run-intro__panel {
-  animation: first-run-intro-panel-exit 180ms var(--style-motion-ease-soft)
-    both;
+  animation: first-run-intro-panel-exit 180ms var(--style-motion-ease-soft) both;
 }
 
 .first-run-intro__text {
@@ -1958,8 +1945,8 @@ body {
 }
 
 .first-run-intro--step-enter .first-run-intro__text {
-  animation: first-run-intro-copy-enter 260ms 90ms
-    var(--style-motion-ease-soft) both;
+  animation: first-run-intro-copy-enter 260ms 90ms var(--style-motion-ease-soft)
+    both;
 }
 
 .first-run-intro--step-enter .style-button.first-run-intro__advance {
@@ -2068,8 +2055,7 @@ body {
   overflow: hidden;
   background: var(--style-surface);
   animation: var(--room-page-entry-animation-name, room-page-enter)
-    var(--style-motion-normal)
-    var(--style-motion-ease-rubber) both;
+    var(--style-motion-normal) var(--style-motion-ease-rubber) both;
 }
 
 .brewing-page {
@@ -2079,8 +2065,7 @@ body {
   overflow: hidden;
   background: var(--style-surface);
   animation: var(--room-page-entry-animation-name, room-page-enter)
-    var(--style-motion-normal)
-    var(--style-motion-ease-rubber) both;
+    var(--style-motion-normal) var(--style-motion-ease-rubber) both;
 }
 
 .garden-page {
@@ -2098,8 +2083,7 @@ body {
   overflow: hidden;
   background: var(--style-surface);
   animation: var(--room-page-entry-animation-name, room-page-enter)
-    var(--style-motion-normal)
-    var(--style-motion-ease-rubber) both;
+    var(--style-motion-normal) var(--style-motion-ease-rubber) both;
 }
 
 .brewing-page,
@@ -2146,8 +2130,7 @@ body {
   ) {
   --style-progress-fill-background: var(--style-progress-root-fill);
   --style-progress-fill-edge: var(--style-progress-root-edge);
-  --style-progress-fill-shadow: inset 0 0 0 1px
-    var(--style-progress-fill-edge);
+  --style-progress-fill-shadow: inset 0 0 0 1px var(--style-progress-fill-edge);
 }
 
 .research-page {
@@ -2157,8 +2140,7 @@ body {
   overflow: hidden;
   background: var(--style-surface);
   animation: var(--room-page-entry-animation-name, room-page-enter)
-    var(--style-motion-normal)
-    var(--style-motion-ease-rubber) both;
+    var(--style-motion-normal) var(--style-motion-ease-rubber) both;
 }
 
 .guild-page {
@@ -2168,8 +2150,7 @@ body {
   overflow: hidden;
   background: var(--style-surface);
   animation: var(--room-page-entry-animation-name, room-page-enter)
-    var(--style-motion-normal)
-    var(--style-motion-ease-rubber) both;
+    var(--style-motion-normal) var(--style-motion-ease-rubber) both;
 }
 
 .prestige-page {
@@ -2179,8 +2160,7 @@ body {
   overflow: hidden;
   background: var(--style-surface);
   animation: var(--room-page-entry-animation-name, room-page-enter)
-    var(--style-motion-normal)
-    var(--style-motion-ease-rubber) both;
+    var(--style-motion-normal) var(--style-motion-ease-rubber) both;
 }
 
 .workshop-page,
@@ -2551,10 +2531,10 @@ body {
 }
 
 .room-top-panel-layer:has(
-    .room-top-panel__settings:not([hidden]),
-    .room-top-panel__level-popup:not([hidden]),
-    .room-top-panel__inbox-popup:not([hidden])
-  ) {
+  .room-top-panel__settings:not([hidden]),
+  .room-top-panel__level-popup:not([hidden]),
+  .room-top-panel__inbox-popup:not([hidden])
+) {
   z-index: 6;
 }
 
@@ -2923,7 +2903,7 @@ body {
     .workshop-page__leaderboard,
     .workshop-page__summon-button,
     .workshop-page__bag,
-    .workshop-page__stats-button,
+    .workshop-page__stats,
     .workshop-page__mail,
     .workshop-page__trade-alliance,
     .workshop-page__discoveries,
@@ -2944,8 +2924,7 @@ body {
   ):not([hidden]) {
   transform-origin: center top;
   animation: var(--room-section-entry-animation-name, room-section-enter)
-    var(--style-motion-section)
-    var(--style-motion-ease-rubber) both;
+    var(--style-motion-section) var(--style-motion-ease-rubber) both;
   animation-delay: calc(
     var(--room-section-index, 0) * var(--style-motion-section-step)
   );
@@ -2970,7 +2949,7 @@ body {
   --room-section-index: 1;
 }
 
-.workshop-page__stats-button,
+.workshop-page__stats,
 .workshop-page__mail,
 .brewing-page__cauldrons > .style-box:nth-child(2),
 .garden-page__herbs,
@@ -3114,7 +3093,8 @@ body {
   paint-order: stroke fill;
   pointer-events: none;
   text-shadow: var(--style-page-tab-label-text-stroke-shadow);
-  transition: translate var(--style-motion-press) var(--style-motion-ease-rubber);
+  transition: translate var(--style-motion-press)
+    var(--style-motion-ease-rubber);
 }
 
 .room-inventory-panel-button[data-panel-side="right"]
@@ -3392,7 +3372,8 @@ body {
 
 .game-stage[data-tutorial-reveal~="top"] .room-top-panel-layer,
 .game-stage[data-tutorial-reveal~="rooms"] .room-bottom-panel-layer,
-.game-stage[data-tutorial-reveal~="mana"] .room-top-panel__resource[aria-label="mana"],
+.game-stage[data-tutorial-reveal~="mana"]
+  .room-top-panel__resource[aria-label="mana"],
 .game-stage[data-tutorial-reveal~="summon"] .workshop-page__summon-button,
 .game-stage[data-tutorial-reveal~="tasks"] .workshop-page__tasks {
   opacity: 1;
@@ -3405,7 +3386,8 @@ body {
 .game-stage[data-tutorial-reveal~="rooms"]
   .room-bottom-panel-layer
   :where(button, [role="button"]),
-.game-stage[data-tutorial-reveal~="mana"] .room-top-panel__resource[aria-label="mana"],
+.game-stage[data-tutorial-reveal~="mana"]
+  .room-top-panel__resource[aria-label="mana"],
 .game-stage[data-tutorial-reveal~="summon"]
   .workshop-page__action-bar
   > .style-button.workshop-page__summon-button,
@@ -3416,16 +3398,16 @@ body {
 .game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
   .workshop-page__action-bar
   > .workshop-page__summon-button {
-  animation: workshop-summon-button-reveal 640ms
-    var(--style-motion-ease-rubber) both;
+  animation: workshop-summon-button-reveal 640ms var(--style-motion-ease-rubber)
+    both;
   pointer-events: auto;
 }
 
 .game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
   .workshop-page__summon-button
   .workshop-page__summon-circle {
-  animation: workshop-summon-sign-reveal 640ms
-    var(--style-motion-ease-rubber) both;
+  animation: workshop-summon-sign-reveal 640ms var(--style-motion-ease-rubber)
+    both;
 }
 
 .game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
@@ -3652,7 +3634,8 @@ body {
   line-height: var(--style-box-border-label-line-height);
   white-space: nowrap;
   pointer-events: none;
-  transition: translate var(--style-motion-press) var(--style-motion-ease-rubber);
+  transition: translate var(--style-motion-press)
+    var(--style-motion-ease-rubber);
 }
 
 .tutorial-layer__objective-button-label[hidden] {
@@ -3782,16 +3765,16 @@ body {
   bottom: auto;
   width: 70px;
   height: 91px;
-  animation: tutorial-elara-objective-collapse 250ms var(--style-motion-ease-rubber)
-    both;
+  animation: tutorial-elara-objective-collapse 250ms
+    var(--style-motion-ease-rubber) both;
   will-change: transform;
 }
 
 .tutorial-layer__objective-button.is-collapsing
   .tutorial-layer__objective-button-label {
   transform-origin: center;
-  animation: tutorial-elara-help-label-snap 155ms var(--style-motion-ease-rubber)
-    95ms both;
+  animation: tutorial-elara-help-label-snap 155ms
+    var(--style-motion-ease-rubber) 95ms both;
 }
 
 .tutorial-layer__objective-button[data-notification="true"]::before,
@@ -3935,8 +3918,7 @@ body {
 }
 
 .style-box.tutorial-layer__objective > .style-box__title,
-.style-box.tutorial-layer__lesson:not(.is-intro-dialog)
-  > .style-box__title {
+.style-box.tutorial-layer__lesson:not(.is-intro-dialog) > .style-box__title {
   position: relative;
   top: auto;
   left: auto;
@@ -4310,17 +4292,6 @@ body {
   pointer-events: auto;
 }
 
-.workshop-page__action-bar > .style-button.workshop-page__stats-button {
-  position: absolute;
-  top: calc(
-    var(--style-room-content-top) +
-      var(--workshop-side-controls-top-offset)
-  );
-  right: 0;
-  box-sizing: content-box;
-  width: var(--workshop-secondary-button-width);
-}
-
 .room-reward-flyouts,
 .workshop-page__flyouts {
   position: absolute;
@@ -4481,8 +4452,7 @@ body {
   border-radius: 0;
   box-shadow: none;
   opacity: 0;
-  -webkit-text-stroke:
-    var(--style-page-tab-label-text-stroke-width)
+  -webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)
     var(--style-yellow-button-text-stroke);
   paint-order: stroke fill;
   text-shadow:
@@ -4520,7 +4490,9 @@ body {
   overflow: visible;
   color: #634934;
   line-height: normal;
-  background: transparent url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png") center / 100% 100% no-repeat;
+  background: transparent
+    url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png")
+    center / 100% 100% no-repeat;
   border: 0;
   border-image: none;
   border-radius: 0;
@@ -4538,7 +4510,9 @@ body {
   z-index: 3;
   pointer-events: none;
   content: "";
-  background: transparent url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png") center / 100% 100% no-repeat;
+  background: transparent
+    url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png")
+    center / 100% 100% no-repeat;
   filter: brightness(0);
   opacity: 0.3;
 }
@@ -4564,7 +4538,10 @@ body {
     "title capacity batch"
     "visual item price"
     "visual progress progress";
-  grid-template-columns: var(--shop-page-stall-visual-size) minmax(0, 1fr) max-content;
+  grid-template-columns: var(--shop-page-stall-visual-size) minmax(
+      0,
+      1fr
+    ) max-content;
   grid-template-rows: var(--style-row-min-height) 28px minmax(12px, auto);
   min-height: 84px;
   padding: 8px 10px 7px;
@@ -4610,7 +4587,8 @@ body {
 .shop-page__shelf > .shop-page__slot-row > .shop-page__slot-value,
 .shop-page__shelf .shop-page__slot-item-column,
 .shop-page__shelf .shop-page__slot-status-value,
-.shop-page__shelf .shop-page__slot-item-value:is(
+.shop-page__shelf
+  .shop-page__slot-item-value:is(
     .style-seed-label,
     .style-herb-label,
     .style-potion-label,
@@ -4823,8 +4801,7 @@ body {
 .shop-page__slot-progress {
   --style-progress-fill-background: #8740df;
   --style-progress-fill-edge: #bd72f3;
-  --style-progress-fill-shadow: inset 0 0 0 1px
-    var(--style-progress-fill-edge);
+  --style-progress-fill-shadow: inset 0 0 0 1px var(--style-progress-fill-edge);
 
   width: 100%;
 }
@@ -5017,8 +4994,7 @@ body {
   top: calc(-1 * var(--style-notification-offset));
 }
 
-.garden-page__plot
-  .garden-page__plot-row[data-notification="true"]::before {
+.garden-page__plot .garden-page__plot-row[data-notification="true"]::before {
   top: calc(-1 * var(--style-notification-offset));
   right: calc(
     ((100% - var(--garden-page-plot-visual-width)) / 2) -
@@ -5061,8 +5037,8 @@ body {
 }
 
 .style-button[class*="tab-button"][data-notification="true"]::before {
-  top: var(--style-notification-tab-inset);
-  right: var(--style-notification-tab-inset);
+  top: 0;
+  right: 0;
 }
 
 .room-bottom-panel__tab[data-notification="true"] {
@@ -5182,7 +5158,7 @@ body {
 .workshop-page__bag-rarity-divider::before,
 .workshop-page__bag-rarity-divider::after {
   flex: 1 1 auto;
-  content: '';
+  content: "";
   border-top: var(--style-separator-border);
 }
 
@@ -5404,7 +5380,8 @@ body {
   text-align: left;
 }
 
-.workshop-page__prestige-milestone-body > .workshop-page__prestige-reward:only-child {
+.workshop-page__prestige-milestone-body
+  > .workshop-page__prestige-reward:only-child {
   grid-column: 1 / -1;
 }
 
@@ -5714,7 +5691,8 @@ body {
 }
 
 .workshop-page__tasks.is-task-dragging .workshop-page__tasks-expanded-content,
-.workshop-page__tasks.is-task-dragging .workshop-page__tasks-expanded-content-body {
+.workshop-page__tasks.is-task-dragging
+  .workshop-page__tasks-expanded-content-body {
   overflow: visible;
 }
 
@@ -5792,26 +5770,9 @@ body {
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks,
-.workshop-page__ui-layer > .workshop-page__world-notice {
-  --workshop-panel-button-row-top: var(--workshop-panel-button-row-3-top);
-  position: absolute;
-  z-index: 1;
-  top: var(--workshop-panel-button-row-top);
-  width: var(--workshop-panel-button-width);
-  height: var(--workshop-panel-button-height);
-  margin: 0;
-  pointer-events: none;
-}
-
-.workshop-page__ui-layer > .workshop-page__personal-tasks {
-  left: var(--style-room-chrome-edge);
-}
-
-.workshop-page__ui-layer > .workshop-page__world-notice {
-  right: var(--style-room-chrome-edge);
-}
-
+.workshop-page__ui-layer > .workshop-page__world-notice,
 .workshop-page__ui-layer > .workshop-page__mail,
+.workshop-page__ui-layer > .workshop-page__stats,
 .workshop-page__ui-layer > .workshop-page__leaderboard,
 .workshop-page__ui-layer > .workshop-page__discoveries,
 .workshop-page__ui-layer > .workshop-page__trade-alliance,
@@ -5826,12 +5787,26 @@ body {
   pointer-events: none;
 }
 
-.workshop-page__ui-layer > .workshop-page__mail {
+.workshop-page__ui-layer > .workshop-page__personal-tasks {
+  --workshop-panel-button-row-top: var(--workshop-panel-button-row-3-top);
+  left: var(--style-room-chrome-edge);
+}
+
+.workshop-page__ui-layer > .workshop-page__world-notice {
+  --workshop-panel-button-row-top: var(--workshop-panel-button-row-4-top);
   right: var(--style-room-chrome-edge);
 }
 
-.workshop-page__ui-layer > .workshop-page__leaderboard,
-.workshop-page__ui-layer > .workshop-page__discoveries {
+.workshop-page__ui-layer > .workshop-page__mail {
+  --workshop-panel-button-row-top: var(--workshop-panel-button-row-2-top);
+  right: var(--style-room-chrome-edge);
+}
+
+.workshop-page__ui-layer > .workshop-page__stats {
+  right: var(--style-room-chrome-edge);
+}
+
+.workshop-page__ui-layer > .workshop-page__leaderboard {
   --workshop-panel-button-row-top: var(--workshop-panel-button-row-2-top);
 }
 
@@ -5840,6 +5815,7 @@ body {
 }
 
 .workshop-page__ui-layer > .workshop-page__discoveries {
+  --workshop-panel-button-row-top: var(--workshop-panel-button-row-3-top);
   right: var(--style-room-chrome-edge);
 }
 
@@ -5855,6 +5831,7 @@ body {
 .workshop-page__ui-layer > .workshop-page__personal-tasks[hidden],
 .workshop-page__ui-layer > .workshop-page__world-notice[hidden],
 .workshop-page__ui-layer > .workshop-page__mail[hidden],
+.workshop-page__ui-layer > .workshop-page__stats[hidden],
 .workshop-page__ui-layer > .workshop-page__leaderboard[hidden],
 .workshop-page__ui-layer > .workshop-page__discoveries[hidden],
 .workshop-page__ui-layer > .workshop-page__trade-alliance[hidden],
@@ -5890,6 +5867,7 @@ body {
 .workshop-page__personal-tasks-open,
 .workshop-page__world-notice-open,
 .workshop-page__bag-button,
+.workshop-page__stats-button,
 .workshop-page__mail-button,
 .workshop-page__leaderboard-button,
 .workshop-page__discoveries-button,
@@ -5936,6 +5914,8 @@ body {
 .workshop-page__panel-button[data-panel-side="left"]
   .workshop-page__bag-button-icon-frame,
 .workshop-page__panel-button[data-panel-side="left"]
+  .workshop-page__stats-button-icon-frame,
+.workshop-page__panel-button[data-panel-side="left"]
   .workshop-page__mail-button-icon-frame,
 .workshop-page__panel-button[data-panel-side="left"]
   .workshop-page__leaderboard-button-icon-frame,
@@ -5943,7 +5923,7 @@ body {
   .workshop-page__discoveries-button-icon-frame,
 .workshop-page__panel-button[data-panel-side="left"]
   .workshop-page__trade-alliance-button-icon-frame {
-  left: -10px;
+  left: -2px;
 }
 
 .workshop-page__panel-button[data-panel-side="right"]
@@ -5959,6 +5939,8 @@ body {
 .workshop-page__panel-button[data-panel-side="right"]
   .workshop-page__bag-button-icon-frame,
 .workshop-page__panel-button[data-panel-side="right"]
+  .workshop-page__stats-button-icon-frame,
+.workshop-page__panel-button[data-panel-side="right"]
   .workshop-page__mail-button-icon-frame,
 .workshop-page__panel-button[data-panel-side="right"]
   .workshop-page__leaderboard-button-icon-frame,
@@ -5966,7 +5948,7 @@ body {
   .workshop-page__discoveries-button-icon-frame,
 .workshop-page__panel-button[data-panel-side="right"]
   .workshop-page__trade-alliance-button-icon-frame {
-  right: -10px;
+  right: -2px;
 }
 
 .workshop-page__panel-button.has-timer > .workshop-page__panel-button-open {
@@ -5976,6 +5958,7 @@ body {
 .workshop-page__personal-tasks-open:focus,
 .workshop-page__world-notice-open:focus,
 .workshop-page__bag-button:focus,
+.workshop-page__stats-button:focus,
 .workshop-page__mail-button:focus,
 .workshop-page__leaderboard-button:focus,
 .workshop-page__discoveries-button:focus,
@@ -5986,6 +5969,7 @@ body {
 .workshop-page__personal-tasks-open:focus-visible,
 .workshop-page__world-notice-open:focus-visible,
 .workshop-page__bag-button:focus-visible,
+.workshop-page__stats-button:focus-visible,
 .workshop-page__mail-button:focus-visible,
 .workshop-page__leaderboard-button:focus-visible,
 .workshop-page__discoveries-button:focus-visible,
@@ -6014,23 +5998,24 @@ body {
 
 .workshop-page__feature-character-label {
   position: absolute;
-  left: 0;
+  left: -6px;
   right: auto;
   bottom: var(--workshop-panel-button-label-bottom);
   z-index: 2;
-  display: inline-block;
+  display: block;
+  width: 62px;
   min-height: var(--workshop-panel-button-label-line-height);
   padding: 0;
   color: var(--style-yellow-button-text);
   font-family: var(--style-font);
-  font-size: calc(var(--style-box-border-label-font-size) * 0.8);
+  font-size: 15px;
   font-weight: normal;
   line-height: var(--workshop-panel-button-label-line-height);
+  text-align: center;
   white-space: nowrap;
   background: transparent;
   border: 0;
-  -webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)
-    var(--style-yellow-button-text-stroke);
+  -webkit-text-stroke: 2.5px var(--style-yellow-button-text-stroke);
   paint-order: stroke fill;
   pointer-events: none;
   text-shadow:
@@ -6038,14 +6023,15 @@ body {
     1px 0 0 var(--style-yellow-button-text-stroke),
     0 -1px 0 var(--style-yellow-button-text-stroke),
     -1px 0 0 var(--style-yellow-button-text-stroke);
-  transition: translate var(--style-motion-press) var(--style-motion-ease-rubber);
+  transition: translate var(--style-motion-press)
+    var(--style-motion-ease-rubber);
 }
 
 .workshop-page__panel-button[data-panel-side="right"]
   .workshop-page__feature-character-label {
-  right: 0;
+  right: -6px;
   left: auto;
-  text-align: right;
+  text-align: center;
 }
 
 .workshop-page__feature-character-timer {
@@ -6059,10 +6045,10 @@ body {
   padding: 0;
   color: var(--style-muted);
   font-family: var(--style-font);
-  font-size: calc(var(--style-box-border-label-font-size) * 0.65);
+  font-size: calc(var(--style-box-border-label-font-size) * 0.54);
   font-variant-numeric: tabular-nums lining-nums;
   font-weight: normal;
-  line-height: calc(var(--style-box-border-label-line-height) * 0.65);
+  line-height: calc(var(--style-box-border-label-line-height) * 0.54);
   white-space: nowrap;
   background: transparent;
   -webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)
@@ -6091,6 +6077,7 @@ body {
 .workshop-page__world-notice-open:active
   .workshop-page__world-notice-icon-frame,
 .workshop-page__bag-button:active .workshop-page__bag-button-icon-frame,
+.workshop-page__stats-button:active .workshop-page__stats-button-icon-frame,
 .workshop-page__mail-button:active .workshop-page__mail-button-icon-frame,
 .workshop-page__leaderboard-button:active
   .workshop-page__leaderboard-button-icon-frame,
@@ -6107,6 +6094,7 @@ body {
 .workshop-page__world-notice-open:active
   .workshop-page__feature-character-label,
 .workshop-page__bag-button:active .workshop-page__feature-character-label,
+.workshop-page__stats-button:active .workshop-page__feature-character-label,
 .workshop-page__mail-button:active .workshop-page__feature-character-label,
 .workshop-page__leaderboard-button:active
   .workshop-page__feature-character-label,
@@ -6393,15 +6381,17 @@ body {
   height: 1960px;
   transform-origin: 0 0;
   transform: translate3d(
-    var(--brewing-page-world-pan-x, 0px),
-    var(--brewing-page-world-pan-y, 0px),
-    0
-  ) scale(var(--brewing-page-world-zoom, 1));
+      var(--brewing-page-world-pan-x, 0px),
+      var(--brewing-page-world-pan-y, 0px),
+      0
+    )
+    scale(var(--brewing-page-world-zoom, 1));
   will-change: transform;
 }
 
 .brewing-page__world.is-settling {
-  transition: transform var(--style-motion-normal) var(--style-motion-ease-rubber);
+  transition: transform var(--style-motion-normal)
+    var(--style-motion-ease-rubber);
 }
 
 .brewing-page__world-boundary {
@@ -6559,8 +6549,8 @@ body {
 
 .brewing-page__herb-row.is-picked .brewing-page__herb-button {
   transform-origin: 50% 50%;
-  animation: brewing-page-herb-picked-nudge 260ms
-    var(--style-motion-ease-soft) infinite;
+  animation: brewing-page-herb-picked-nudge 260ms var(--style-motion-ease-soft)
+    infinite;
 }
 
 .brewing-page__herb-row.is-returning .brewing-page__herb-button {
@@ -6609,9 +6599,7 @@ body {
     var(--brewing-page-cauldron-height) +
       var(--brewing-page-cauldron-art-extra-height)
   );
-  --brewing-page-cauldron-block-height: var(
-    --brewing-page-cauldron-art-height
-  );
+  --brewing-page-cauldron-block-height: var(--brewing-page-cauldron-art-height);
   position: absolute;
   box-sizing: border-box;
   display: flex;
@@ -6898,7 +6886,8 @@ body {
     var(--style-motion-ease-rubber) both;
 }
 
-.brewing-page__cauldron.is-receiving-ingredient .brewing-page__cauldron-recipe-box {
+.brewing-page__cauldron.is-receiving-ingredient
+  .brewing-page__cauldron-recipe-box {
   animation: brewing-page-cauldron-recipe-receive var(--style-motion-fast)
     var(--style-motion-ease-soft) both;
 }
@@ -7226,7 +7215,8 @@ body {
   .brewing-page__herb-row.is-returning .brewing-page__herb-button,
   .brewing-page__herb-quantity.is-previewing-pick,
   .brewing-page__cauldron.is-receiving-ingredient .brewing-page__cauldron-art,
-  .brewing-page__cauldron.is-receiving-ingredient .brewing-page__cauldron-recipe-box {
+  .brewing-page__cauldron.is-receiving-ingredient
+    .brewing-page__cauldron-recipe-box {
     animation: none;
   }
 
@@ -7437,6 +7427,7 @@ body {
 }
 
 .workshop-page__bag > .workshop-page__bag-button,
+.workshop-page__stats > .workshop-page__stats-button,
 .workshop-page__mail > .workshop-page__mail-button,
 .workshop-page__leaderboard > .workshop-page__leaderboard-button,
 .workshop-page__discoveries > .workshop-page__discoveries-button,
@@ -7447,16 +7438,17 @@ body {
 .workshop-page__personal-tasks-icon-frame,
 .workshop-page__world-notice-icon-frame,
 .workshop-page__bag-button-icon-frame,
+.workshop-page__stats-button-icon-frame,
 .workshop-page__mail-button-icon-frame,
 .workshop-page__leaderboard-button-icon-frame,
 .workshop-page__discoveries-button-icon-frame,
 .workshop-page__trade-alliance-button-icon-frame {
   position: relative;
-  top: 10px;
+  top: 0;
   z-index: 1;
   display: block;
-  width: 45.5px;
-  height: 59.15px;
+  width: 50px;
+  height: 50px;
   filter: drop-shadow(0 1px 0 var(--style-surface));
   pointer-events: none;
   transform-origin: 50% 78%;
@@ -7468,6 +7460,7 @@ body {
 .workshop-page__personal-tasks-icon,
 .workshop-page__world-notice-icon,
 .workshop-page__bag-button-icon,
+.workshop-page__stats-button-icon,
 .workshop-page__mail-button-icon,
 .workshop-page__leaderboard-button-icon,
 .workshop-page__discoveries-button-icon,
@@ -7475,48 +7468,27 @@ body {
   display: block;
   width: 100%;
   height: 100%;
+  scale: 0.72;
   user-select: none;
   object-fit: contain;
   -webkit-user-drag: none;
 }
 
-.workshop-page__mail-button-icon {
-  scale: 1.3;
-}
-
-.workshop-page__leaderboard-button-icon {
-  scale: 1.2;
-}
-
-.workshop-page__trade-alliance-button-icon-frame {
-  --workshop-trade-alliance-banner-color: var(--style-alliance-tag-ink);
-}
-
-.workshop-page__trade-alliance-button-icon,
-.workshop-page__trade-alliance-button-icon-cloth {
-  position: absolute;
-  inset: 0;
-}
-
-.workshop-page__trade-alliance-button-icon-cloth {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: var(--workshop-trade-alliance-banner-color);
-  mask: var(--workshop-trade-alliance-banner-mask) center / contain no-repeat;
-  -webkit-mask: var(--workshop-trade-alliance-banner-mask) center / contain
-    no-repeat;
-}
-
 .workshop-page__bag-button-label,
+.workshop-page__stats-button-label,
 .workshop-page__mail-button-label,
 .workshop-page__leaderboard-button-label,
 .workshop-page__discoveries-button-label,
 .workshop-page__trade-alliance-button-label {
   min-height: var(--workshop-panel-button-label-line-height);
-  font-size: calc(var(--style-box-border-label-font-size) * 0.8);
+  font-size: 15px;
   line-height: var(--workshop-panel-button-label-line-height);
   transform: none;
+}
+
+.workshop-page__leaderboard-button-label,
+.workshop-page__discoveries-button-label {
+  font-size: 10.75px;
 }
 
 .workshop-page__world-chat-box {
@@ -7696,9 +7668,7 @@ body {
   top: 50%;
   left: 50%;
   width: 260px;
-  --workshop-summon-info-row-height: calc(
-    var(--style-row-min-height) + 8px
-  );
+  --workshop-summon-info-row-height: calc(var(--style-row-min-height) + 8px);
   transform: translate(-50%, calc(-50% + var(--app-dialog-y-shift, 0px)));
 }
 
@@ -8519,7 +8489,8 @@ body {
   transform-origin: center;
   transition:
     scale var(--style-motion-button-press-in) var(--style-motion-button-ease),
-    translate var(--style-motion-button-press-in) var(--style-motion-button-ease);
+    translate var(--style-motion-button-press-in)
+      var(--style-motion-button-ease);
 }
 
 .workshop-page__summon-info-seed-row.is-selected {
@@ -9483,7 +9454,9 @@ div.workshop-page__discovery-row {
   position: absolute;
   top: calc(var(--style-room-content-top) + var(--style-row-min-height) + 4px);
   right: var(--style-room-content-edge);
-  bottom: calc(var(--style-room-chat-clearance) + var(--style-page-tab-scroll-clearance));
+  bottom: calc(
+    var(--style-room-chat-clearance) + var(--style-page-tab-scroll-clearance)
+  );
   left: var(--style-room-content-edge);
   padding-top: var(--style-page-scroll-padding-top);
   padding-bottom: var(--style-page-scroll-padding-bottom);
@@ -9522,7 +9495,9 @@ div.workshop-page__discovery-row {
 
 .garden-page__world-shell {
   position: absolute;
-  top: calc(var(--style-room-content-top) + var(--garden-page-world-top-safe-space));
+  top: calc(
+    var(--style-room-content-top) + var(--garden-page-world-top-safe-space)
+  );
   right: 0;
   bottom: 0;
   left: 0;
@@ -9543,15 +9518,17 @@ div.workshop-page__discovery-row {
   height: var(--garden-page-world-height, 560px);
   transform-origin: 0 0;
   transform: translate3d(
-    var(--garden-page-world-pan-x, 0px),
-    var(--garden-page-world-pan-y, 0px),
-    0
-  ) scale(var(--garden-page-world-zoom, 1));
+      var(--garden-page-world-pan-x, 0px),
+      var(--garden-page-world-pan-y, 0px),
+      0
+    )
+    scale(var(--garden-page-world-zoom, 1));
   will-change: transform;
 }
 
 .garden-page__world.is-settling {
-  transition: transform var(--style-motion-normal) var(--style-motion-ease-rubber);
+  transition: transform var(--style-motion-normal)
+    var(--style-motion-ease-rubber);
 }
 
 .garden-page__inventory-buttons {
@@ -9995,23 +9972,19 @@ div.workshop-page__discovery-row {
   background-size: 100% auto;
 }
 
-.garden-page__plot
-  .garden-page__plot-box-frame[data-plot-star-tone="yellow"] {
+.garden-page__plot .garden-page__plot-box-frame[data-plot-star-tone="yellow"] {
   --garden-page-plot-level-color: var(--style-star-yellow);
 }
 
-.garden-page__plot
-  .garden-page__plot-box-frame[data-plot-star-tone="orange"] {
+.garden-page__plot .garden-page__plot-box-frame[data-plot-star-tone="orange"] {
   --garden-page-plot-level-color: var(--style-star-orange);
 }
 
-.garden-page__plot
-  .garden-page__plot-box-frame[data-plot-star-tone="red"] {
+.garden-page__plot .garden-page__plot-box-frame[data-plot-star-tone="red"] {
   --garden-page-plot-level-color: var(--style-star-red);
 }
 
-.garden-page__plot
-  .garden-page__plot-box-frame[data-plot-star-tone="purple"] {
+.garden-page__plot .garden-page__plot-box-frame[data-plot-star-tone="purple"] {
   --garden-page-plot-level-color: var(--style-star-purple);
 }
 
@@ -10057,7 +10030,9 @@ div.workshop-page__discovery-row {
   outline-offset: 2px;
 }
 
-.garden-page__plot .garden-page__plot-row.is-buy-slot .garden-page__plot-box-frame {
+.garden-page__plot
+  .garden-page__plot-row.is-buy-slot
+  .garden-page__plot-box-frame {
   border: var(--style-border);
   border-style: dashed;
   border-color: color-mix(in srgb, var(--style-stroke) 45%, transparent);
@@ -10310,7 +10285,9 @@ div.workshop-page__discovery-row {
   transform: none;
 }
 
-.garden-page__plot .garden-page__plot-row.is-empty .garden-page__plot-box-action {
+.garden-page__plot
+  .garden-page__plot-row.is-empty
+  .garden-page__plot-box-action {
   top: 50%;
   right: auto;
   bottom: auto;
@@ -10322,7 +10299,9 @@ div.workshop-page__discovery-row {
   transform: translate(-50%, -50%);
 }
 
-.garden-page__plot .garden-page__plot-row.is-buy-slot .garden-page__plot-box-action {
+.garden-page__plot
+  .garden-page__plot-row.is-buy-slot
+  .garden-page__plot-box-action {
   top: 50%;
   right: auto;
   bottom: auto;
@@ -10400,13 +10379,12 @@ div.workshop-page__discovery-row {
   }
 
   42% {
-    transform: translateX(-50%)
-      scale(var(--garden-page-plot-growth-scale, 1));
+    transform: translateX(-50%) scale(var(--garden-page-plot-growth-scale, 1));
   }
 
   50% {
-    transform: translateX(-50%)
-      scale(var(--garden-page-plot-growth-scale, 1)) scale(1.1, 0.88);
+    transform: translateX(-50%) scale(var(--garden-page-plot-growth-scale, 1))
+      scale(1.1, 0.88);
   }
 
   58% {
@@ -10865,8 +10843,8 @@ div.workshop-page__discovery-row {
   background: transparent;
   border: solid;
   border-width: 0 165px 0 5px;
-  border-image: var(--research-station-title-image)
-    0 165 0 5 fill / 0 165px 0 5px;
+  border-image: var(--research-station-title-image) 0 165 0 5 fill / 0 165px 0
+    5px;
   transform: scale(var(--research-station-title-scale));
   transform-origin: top left;
 }
@@ -11053,7 +11031,9 @@ div.workshop-page__discovery-row {
   z-index: -1;
   pointer-events: none;
   content: "";
-  background: transparent url("../../assets/game/source/ui/root-run-research/research-rank-badge-217x62.png") center / 100% 100% no-repeat;
+  background: transparent
+    url("../../assets/game/source/ui/root-run-research/research-rank-badge-217x62.png")
+    center / 100% 100% no-repeat;
   border: 0;
   border-image: none;
 }
@@ -11245,7 +11225,9 @@ div.workshop-page__discovery-row {
   width: var(--style-research-card-art-width);
   height: var(--style-research-card-art-height);
   overflow: hidden;
-  background: transparent url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.png") center / 100% 100% no-repeat;
+  background: transparent
+    url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.png")
+    center / 100% 100% no-repeat;
   border: 0;
   border-image: none;
   border-radius: 0;
@@ -11410,9 +11392,9 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__stats-close:active:not(:disabled):not(
     [aria-disabled="true"]
   ),
-.style-button.workshop-page__world-notice-donate-close:active:not(:disabled):not(
-    [aria-disabled="true"]
-  ),
+.style-button.workshop-page__world-notice-donate-close:active:not(
+    :disabled
+  ):not([aria-disabled="true"]),
 .style-button.workshop-page__world-chat-close:active:not(:disabled):not(
     [aria-disabled="true"]
   ),
@@ -12611,8 +12593,7 @@ div.workshop-page__discovery-row {
 .style-progress.shop-page__sell-allocation-progress {
   --style-progress-fill-background: #8740df;
   --style-progress-fill-edge: #bd72f3;
-  --style-progress-fill-shadow: inset 0 0 0 1px
-    var(--style-progress-fill-edge);
+  --style-progress-fill-shadow: inset 0 0 0 1px var(--style-progress-fill-edge);
   position: absolute;
   top: 50%;
   right: calc(var(--style-progress-knob-size) / 2);
@@ -12654,7 +12635,10 @@ div.workshop-page__discovery-row {
   width: var(--style-progress-knob-size);
   height: var(--style-progress-knob-size);
   margin-top: calc(
-    (var(--style-slider-progress-total-height) - var(--style-progress-knob-size)) /
+    (
+        var(--style-slider-progress-total-height) -
+          var(--style-progress-knob-size)
+      ) /
       2
   );
   appearance: none;
@@ -12953,7 +12937,13 @@ div.workshop-page__discovery-row {
 }
 
 :root[data-style-theme="midnight"]
-  :where(.style-panel, .style-box, .style-dialog, .style-overlay, .style-tooltip) {
+  :where(
+    .style-panel,
+    .style-box,
+    .style-dialog,
+    .style-overlay,
+    .style-tooltip
+  ) {
   background: transparent;
   background-clip: padding-box;
   border-color: transparent;
@@ -12963,9 +12953,7 @@ div.workshop-page__discovery-row {
   border-image-repeat: stretch;
 }
 
-:root[data-style-theme="midnight"]
-  .shop-page__shelf
-  > .shop-page__slot-row {
+:root[data-style-theme="midnight"] .shop-page__shelf > .shop-page__slot-row {
   background: transparent;
   background-clip: padding-box;
   border-color: transparent;
@@ -13084,6 +13072,9 @@ div.workshop-page__discovery-row {
   --room-top-panel-avatar-size: 64px;
   --room-top-panel-level-size: 28px;
   --room-top-panel-font-size: 11px;
+  --room-top-panel-background-height: calc(
+    var(--style-room-content-top) - var(--style-top-panel-content-gap)
+  );
   position: absolute;
   top: 9px;
   right: var(--style-room-chrome-edge);
@@ -13102,6 +13093,7 @@ div.workshop-page__discovery-row {
   padding-bottom: 9px;
   padding-left: 3px;
   font-size: var(--room-top-panel-font-size);
+  isolation: isolate;
   pointer-events: auto;
 }
 
@@ -13141,10 +13133,12 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__tabs.is-compact-icons {
-  --style-room-tab-inactive-icon-scale:
-    var(--style-room-tab-compact-inactive-icon-scale);
-  --style-page-tab-selected-icon-scale:
-    var(--style-room-tab-compact-selected-icon-scale);
+  --style-room-tab-inactive-icon-scale: var(
+    --style-room-tab-compact-inactive-icon-scale
+  );
+  --style-page-tab-selected-icon-scale: var(
+    --style-room-tab-compact-selected-icon-scale
+  );
 }
 
 .room-bottom-panel__tab {
@@ -13191,8 +13185,7 @@ div.workshop-page__discovery-row {
   z-index: 0;
   box-sizing: border-box;
   height: calc(
-    var(--style-room-tab-inactive-height) +
-      var(--style-room-tab-bottom-bleed)
+    var(--style-room-tab-inactive-height) + var(--style-room-tab-bottom-bleed)
   );
   pointer-events: none;
   content: "";
@@ -13365,12 +13358,10 @@ div.workshop-page__discovery-row {
   background: transparent;
   font-weight: 400;
   flex-basis: calc(
-    var(--style-room-tab-width) +
-      var(--style-room-tab-selected-width-extra)
+    var(--style-room-tab-width) + var(--style-room-tab-selected-width-extra)
   );
   width: calc(
-    var(--style-room-tab-width) +
-      var(--style-room-tab-selected-width-extra)
+    var(--style-room-tab-width) + var(--style-room-tab-selected-width-extra)
   );
   cursor: default;
   scale: var(--style-room-tab-selected-scale);
@@ -13381,8 +13372,7 @@ div.workshop-page__discovery-row {
 
 .room-bottom-panel__tab.is-selected::after {
   height: calc(
-    var(--style-room-tab-active-height) +
-      var(--style-room-tab-bottom-bleed)
+    var(--style-room-tab-active-height) + var(--style-room-tab-bottom-bleed)
   );
   border-image-source: var(--style-room-tab-active-frame);
 }
@@ -13403,11 +13393,9 @@ div.workshop-page__discovery-row {
   background: transparent;
 }
 
-.room-bottom-panel__tab:is(
-    :active,
-    .is-pressing,
-    .is-swipe-target
-  ):not(.is-selected)::after {
+.room-bottom-panel__tab:is(:active, .is-pressing, .is-swipe-target):not(
+    .is-selected
+  )::after {
   border-image-source: var(--style-room-tab-active-frame);
 }
 
@@ -13439,9 +13427,7 @@ div.workshop-page__discovery-row {
 }
 
 .room-bottom-panel__tab:not(.is-selected)[data-notification="true"]::before {
-  top: calc(
-    var(--style-room-tab-rise) + var(--style-notification-tab-inset)
-  );
+  top: calc(var(--style-room-tab-rise) + var(--style-notification-tab-inset));
   right: var(--style-notification-tab-inset);
 }
 
@@ -13532,8 +13518,8 @@ div.workshop-page__discovery-row {
 
 .guild-page__box--secretary-upgraded
   :where(.guild-page__row-value, .guild-page__wide-button) {
-  animation: guild-secretary-upgrade-value 210ms
-    var(--style-motion-ease-rubber) both;
+  animation: guild-secretary-upgrade-value 210ms var(--style-motion-ease-rubber)
+    both;
 }
 
 .guild-page__box--charter {
@@ -13980,7 +13966,10 @@ div.workshop-page__discovery-row {
 
 .guild-page__popup {
   --guild-page-popup-center-y: calc(
-    (var(--style-room-content-top) + (100% - var(--style-room-chat-clearance))) /
+    (
+        var(--style-room-content-top) +
+          (100% - var(--style-room-chat-clearance))
+      ) /
       2
   );
   position: absolute;
@@ -14005,8 +13994,7 @@ div.workshop-page__discovery-row {
   width: var(--style-tabbed-dialog-width);
   max-width: calc(100% - (var(--style-room-content-edge) * 2));
   max-height: calc(
-    100% - var(--style-room-content-top) -
-      var(--style-room-chat-clearance)
+    100% - var(--style-room-content-top) - var(--style-room-chat-clearance)
   );
   outline: none;
   transform: translate(-50%, calc(-50% + var(--app-dialog-y-shift, 0px)));
@@ -14041,18 +14029,21 @@ div.workshop-page__discovery-row {
   height: var(--style-tabbed-dialog-content-height);
 }
 
-.guild-page__popup-panel[data-popup-kind="charter"] .style-dialog.guild-page__dialog {
+.guild-page__popup-panel[data-popup-kind="charter"]
+  .style-dialog.guild-page__dialog {
   width: 300px;
   padding: var(--style-trade-alliance-dialog-padding);
 }
 
-.guild-page__popup-panel[data-popup-kind="request"] .style-dialog.guild-page__dialog {
+.guild-page__popup-panel[data-popup-kind="request"]
+  .style-dialog.guild-page__dialog {
   animation: guild-request-paper-zoom var(--style-motion-dialog)
     var(--style-motion-ease-rubber) both;
   transform-origin: center;
 }
 
-.guild-page__popup-panel[data-popup-kind="requestStack"] .style-dialog.guild-page__dialog {
+.guild-page__popup-panel[data-popup-kind="requestStack"]
+  .style-dialog.guild-page__dialog {
   box-sizing: border-box;
   z-index: 2;
   width: 350px;
@@ -14121,7 +14112,8 @@ div.workshop-page__discovery-row {
   border-image-repeat: stretch;
 }
 
-.guild-page__popup-panel[data-popup-kind="requestStack"] .guild-page__close::after {
+.guild-page__popup-panel[data-popup-kind="requestStack"]
+  .guild-page__close::after {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -14149,7 +14141,8 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-.guild-page__popup-panel[data-popup-kind="requestStack"] .guild-page__popup-content {
+.guild-page__popup-panel[data-popup-kind="requestStack"]
+  .guild-page__popup-content {
   display: flex;
   min-height: 0;
   overflow: hidden;
@@ -14245,7 +14238,8 @@ div.workshop-page__discovery-row {
   opacity: 0.72;
 }
 
-.guild-page__popup-panel[data-popup-kind="requestStack"] .guild-page__popup-actions {
+.guild-page__popup-panel[data-popup-kind="requestStack"]
+  .guild-page__popup-actions {
   position: relative;
   right: auto;
   bottom: auto;
@@ -14949,7 +14943,10 @@ div.workshop-page__discovery-row {
   grid-column: 2 / 4;
   grid-row: 2;
   align-items: center;
-  font-size: var(--room-top-panel-resource-font-size, var(--room-top-panel-font-size));
+  font-size: var(
+    --room-top-panel-resource-font-size,
+    var(--room-top-panel-font-size)
+  );
   white-space: nowrap;
 }
 
@@ -14980,10 +14977,7 @@ div.workshop-page__discovery-row {
   align-self: center;
   width: calc(100% + var(--room-top-panel-level-size) / 2);
   min-width: 0;
-  transform: translate(
-    calc(var(--room-top-panel-level-size) / -2),
-    -2px
-  );
+  transform: translate(calc(var(--room-top-panel-level-size) / -2), -2px);
 }
 
 .room-top-panel__quest-progress-rail {
@@ -15046,7 +15040,7 @@ div.workshop-page__discovery-row {
   bottom: 1px;
   left: -1px;
   width: 1px;
-  content: '';
+  content: "";
   background: rgb(255 255 255 / 68%);
   border-radius: 1px;
   box-shadow:
@@ -15063,7 +15057,8 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__quest-progress.is-resetting .room-top-panel__quest-segment,
-.room-top-panel__quest-progress.is-resetting .room-top-panel__quest-progress-fill {
+.room-top-panel__quest-progress.is-resetting
+  .room-top-panel__quest-progress-fill {
   transition: none;
 }
 
@@ -15095,8 +15090,8 @@ div.workshop-page__discovery-row {
 }
 
 .room-top-panel__level.is-leveling-up {
-  animation: room-top-panel-level-up-jump 230ms
-    var(--style-motion-ease-rubber) both;
+  animation: room-top-panel-level-up-jump 230ms var(--style-motion-ease-rubber)
+    both;
   transform-origin: center;
 }
 
@@ -15122,12 +15117,11 @@ div.workshop-page__discovery-row {
   top: 50%;
   left: 50%;
   border-radius: 50%;
-  background:
-    radial-gradient(
-      circle,
-      rgb(255 255 255 / 16%) 0 56%,
-      rgb(255 212 71 / 16%) 57% 100%
-    );
+  background: radial-gradient(
+    circle,
+    rgb(255 255 255 / 16%) 0 56%,
+    rgb(255 212 71 / 16%) 57% 100%
+  );
   translate: -50% -50%;
 }
 
@@ -15190,11 +15184,15 @@ div.workshop-page__discovery-row {
   line-height: 1;
 }
 
-.room-top-panel__resource-val > .style-resource-label .style-resource-label__amount {
+.room-top-panel__resource-val
+  > .style-resource-label
+  .style-resource-label__amount {
   line-height: 1;
 }
 
-.room-top-panel__resource-val > .style-resource-label .style-resource-label__icon {
+.room-top-panel__resource-val
+  > .style-resource-label
+  .style-resource-label__icon {
   flex: 0 0 auto;
   vertical-align: 0;
 }
@@ -15545,8 +15543,7 @@ div.workshop-page__discovery-row {
 
 .room-top-panel__level-paper-section::before {
   position: absolute;
-  inset:
-    calc(-1 * var(--room-top-panel-level-paper-outset-top))
+  inset: calc(-1 * var(--room-top-panel-level-paper-outset-top))
     calc(-1 * var(--room-top-panel-level-paper-outset-x))
     calc(-1 * var(--room-top-panel-level-paper-outset-bottom));
   z-index: -1;
@@ -16184,7 +16181,8 @@ div.workshop-page__discovery-row {
 .room-top-panel__progress-preview[data-preview-progress="notched"]
   .room-top-panel__preview-progress-fill {
   background: var(--style-progress-notched-fill);
-  box-shadow: inset 0 1px 0 var(--style-progress-notched-stroke-light),
+  box-shadow:
+    inset 0 1px 0 var(--style-progress-notched-stroke-light),
     inset 0 -1px 0 var(--style-progress-notched-stroke-dark);
 }
 
@@ -16336,9 +16334,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-dialog {
-  --style-scroll-context-padding-top: var(
-    --style-dialog-scroll-padding-top
-  );
+  --style-scroll-context-padding-top: var(--style-dialog-scroll-padding-top);
   position: relative;
   z-index: 20;
   padding: var(--style-dialog-padding);
@@ -16735,9 +16731,7 @@ div.workshop-page__discovery-row {
   text-transform: uppercase;
 }
 
-.game-stage
-  .workshop-page__trade-alliance-member-dialog
-  > .style-box__title {
+.game-stage .workshop-page__trade-alliance-member-dialog > .style-box__title {
   text-transform: none;
 }
 
@@ -16826,7 +16820,10 @@ div.workshop-page__discovery-row {
 
 .style-button.workshop-page__summon-button {
   position: absolute;
-  top: calc(59.5% + 26px);
+  top: calc(
+    var(--workshop-summon-anchor-top) +
+      var(--workshop-summon-button-half-height)
+  );
   left: 50%;
   display: inline-grid;
   place-items: center;
@@ -16867,7 +16864,7 @@ div.workshop-page__discovery-row {
 .style-button.workshop-page__summon-info-button {
   --style-info-button-icon-height: var(--style-box-border-label-line-height);
   position: absolute;
-  top: calc(59.5% - 50px);
+  top: calc(var(--workshop-summon-anchor-top) - 50px);
   left: calc(50% + 60px);
   z-index: 3;
   display: grid;
@@ -17330,9 +17327,7 @@ div.workshop-page__discovery-row {
   -webkit-user-select: none;
 }
 
-.shop-page__sell-dialog
-  > .shop-page__sell-item-list
-  .shop-page__sell-item-row {
+.shop-page__sell-dialog > .shop-page__sell-item-list .shop-page__sell-item-row {
   min-height: 34px;
 }
 
@@ -17511,7 +17506,8 @@ div.workshop-page__discovery-row {
   transition:
     background-color var(--style-motion-fast) linear,
     scale var(--style-motion-button-press-in) var(--style-motion-button-ease),
-    translate var(--style-motion-button-press-in) var(--style-motion-button-ease);
+    translate var(--style-motion-button-press-in)
+      var(--style-motion-button-ease);
 }
 
 :where(
@@ -17534,14 +17530,15 @@ div.workshop-page__discovery-row {
     .shop-page__sell-item-button,
     .garden-page__plot-row,
     .garden-page__seed-button
-  ):is(:active, .is-pressing):not(:disabled):not(.is-disabled):not(.is-selected):not(
-    .is-locked
-  ) {
+  ):is(:active, .is-pressing):not(:disabled):not(.is-disabled):not(
+    .is-selected
+  ):not(.is-locked) {
   scale: var(--style-press-scale);
   transition:
     background-color var(--style-motion-fast) linear,
     scale var(--style-motion-button-press-in) var(--style-motion-button-ease),
-    translate var(--style-motion-button-press-in) var(--style-motion-button-ease);
+    translate var(--style-motion-button-press-in)
+      var(--style-motion-button-ease);
 }
 
 .style-button:is(:active, .is-pressing):not(:disabled):not(
@@ -17554,7 +17551,8 @@ div.workshop-page__discovery-row {
     border-color var(--style-motion-fast) linear,
     background-color var(--style-motion-fast) linear,
     scale var(--style-motion-button-press-in) var(--style-motion-button-ease),
-    translate var(--style-motion-button-press-in) var(--style-motion-button-ease);
+    translate var(--style-motion-button-press-in)
+      var(--style-motion-button-ease);
 }
 
 .is-press-releasing {
@@ -17838,7 +17836,7 @@ div.workshop-page__discovery-row {
     .tutorial-layer__lesson-show,
     .tutorial-layer__lesson-advance,
     .tutorial-layer__advance,
-      .room-top-panel__theme-preview[data-preview-theme="midnight"]
+    .room-top-panel__theme-preview[data-preview-theme="midnight"]
       .room-top-panel__theme-preview-box
   ) {
   background: transparent;
@@ -17887,10 +17885,7 @@ div.workshop-page__discovery-row {
 :root[data-style-theme="midnight"]
   .style-box:not(.tutorial-layer__hint):not(.tutorial-layer__lesson),
 :root[data-style-theme="witchcraft"]
-  .style-box:not(.tutorial-layer__hint):not(.tutorial-layer__lesson),
-:root[data-style-theme="black"] .style-panel.room-top-panel,
-:root[data-style-theme="midnight"] .style-panel.room-top-panel,
-:root[data-style-theme="witchcraft"] .style-panel.room-top-panel {
+  .style-box:not(.tutorial-layer__hint):not(.tutorial-layer__lesson) {
   background: var(--style-inner-section-fill);
   background-clip: padding-box;
   border-color: transparent;
@@ -17901,15 +17896,42 @@ div.workshop-page__discovery-row {
   border-radius: 16px;
 }
 
+:root[data-style-theme="black"] .style-panel.room-top-panel,
+:root[data-style-theme="midnight"] .style-panel.room-top-panel,
+:root[data-style-theme="witchcraft"] .style-panel.room-top-panel {
+  background: transparent;
+  border: 0;
+  border-image: none;
+  border-radius: 0;
+}
+
+:root[data-style-theme="black"] .style-panel.room-top-panel::before,
+:root[data-style-theme="midnight"] .style-panel.room-top-panel::before,
+:root[data-style-theme="witchcraft"] .style-panel.room-top-panel::before {
+  position: absolute;
+  top: -9px;
+  right: calc(var(--style-room-chrome-edge) * -1);
+  left: calc(var(--style-room-chrome-edge) * -1);
+  z-index: -1;
+  box-sizing: border-box;
+  height: var(--room-top-panel-background-height);
+  pointer-events: none;
+  content: "";
+  background: transparent;
+  border: solid transparent;
+  border-image-source: var(--style-top-panel-background-frame);
+  border-image-slice: var(--style-room-tab-frame-slice);
+  border-image-width: var(--style-room-tab-frame-width);
+  transform: scaleY(-1);
+}
+
 :root[data-style-theme="midnight"]
   .style-button:is(:active, .is-pressing):not(:disabled):not(
     [aria-disabled="true"]
   ):not(.is-disabled),
 :root[data-style-theme="midnight"] .style-button[aria-selected="true"],
 :root[data-style-theme="midnight"]
-  .style-button[aria-pressed="true"]:not(:disabled):not(
-    [aria-disabled="true"]
-  ),
+  .style-button[aria-pressed="true"]:not(:disabled):not([aria-disabled="true"]),
 :root[data-style-theme="midnight"]
   .style-button.workshop-page__summon-button:is(:active, .is-pressing):not(
     :disabled
@@ -17957,41 +17979,47 @@ div.workshop-page__discovery-row {
 
 :root[data-style-theme="midnight"]
   :where(
-    .style-box .style-button:not(.workshop-page__summon-button):is(
+    .style-box
+      .style-button:not(.workshop-page__summon-button):is(
         :disabled,
         [aria-disabled="true"],
         .is-disabled
       ),
-    .style-dialog .style-button:not(.workshop-page__summon-button):is(
+    .style-dialog
+      .style-button:not(.workshop-page__summon-button):is(
         :disabled,
         [aria-disabled="true"],
         .is-disabled
       ),
-    .style-box .style-button.workshop-page__summon-button:is(
+    .style-box
+      .style-button.workshop-page__summon-button:is(
         :disabled,
         [aria-disabled="true"],
         .is-disabled
       )
       .workshop-page__summon-button-text,
-    .style-dialog .style-button.workshop-page__summon-button:is(
+    .style-dialog
+      .style-button.workshop-page__summon-button:is(
         :disabled,
         [aria-disabled="true"],
         .is-disabled
       )
       .workshop-page__summon-button-text,
-    .style-box .tutorial-layer__objective-button:is(
+    .style-box
+      .tutorial-layer__objective-button:is(
         :disabled,
         [aria-disabled="true"],
         .is-disabled
       )
       .tutorial-layer__objective-button-label,
-    .style-dialog .tutorial-layer__objective-button:is(
+    .style-dialog
+      .tutorial-layer__objective-button:is(
         :disabled,
         [aria-disabled="true"],
         .is-disabled
       )
       .tutorial-layer__objective-button-label
-) {
+  ) {
   border-image-source: var(--style-midnight-button-disabled-frame);
 }
 
@@ -18055,8 +18083,7 @@ div.workshop-page__discovery-row {
   border-image-source: var(--style-tab-selected-frame);
 }
 
-:root[data-style-theme="midnight"]
-  .shop-page__sell-current,
+:root[data-style-theme="midnight"] .shop-page__sell-current,
 :root[data-style-theme="midnight"]
   .shop-page__sell-dialog
   > .shop-page__sell-item-list
@@ -18104,7 +18131,9 @@ div.workshop-page__discovery-row {
   box-shadow: none;
 }
 
-:root[data-style-theme="midnight"] .style-box .style-button.shop-page__stock-buy-button,
+:root[data-style-theme="midnight"]
+  .style-box
+  .style-button.shop-page__stock-buy-button,
 :root[data-style-theme="midnight"]
   .style-box
   .style-button.shop-page__stock-buy-button:is(
@@ -18234,12 +18263,12 @@ div.workshop-page__discovery-row {
 .game-stage:has(.workshop-page__discoveries-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__personal-tasks-popup:not([hidden]))
   .workshop-page,
-.game-stage:has(.workshop-page__world-notice-popup:not([hidden])) .workshop-page,
+.game-stage:has(.workshop-page__world-notice-popup:not([hidden]))
+  .workshop-page,
 .game-stage:has(.workshop-page__stats-popup:not([hidden])) .workshop-page,
 .game-stage:has(.workshop-page__summon-info-popup:not([hidden])) .workshop-page,
 .game-stage:has(.brewing-page__recipes-popup:not([hidden])) .brewing-page,
-.game-stage:has(.brewing-page__recipe-choice-popup:not([hidden]))
-  .brewing-page,
+.game-stage:has(.brewing-page__recipe-choice-popup:not([hidden])) .brewing-page,
 .game-stage:has(.brewing-page__potions-popup:not([hidden])) .brewing-page,
 .game-stage:has(.garden-page__seed-popup:not([hidden])) .garden-page,
 .game-stage:has(.garden-page__cancel-popup:not([hidden])) .garden-page,
@@ -18304,8 +18333,8 @@ div.workshop-page__discovery-row {
 }
 
 .room-announcement-layer:not([hidden]) .room-announcement {
-  animation: room-announcement-panel-enter 130ms
-    var(--style-motion-ease-rubber) both;
+  animation: room-announcement-panel-enter 130ms var(--style-motion-ease-rubber)
+    both;
   transform-origin: center;
 }
 
@@ -18345,8 +18374,7 @@ div.workshop-page__discovery-row {
     calc(970ms + (var(--room-announcement-row-index, 0) * 55ms)) both;
 }
 
-.room-announcement-layer:not([hidden])
-  .room-announcement__research-silhouette {
+.room-announcement-layer:not([hidden]) .room-announcement__research-silhouette {
   animation: room-announcement-research-silhouette 380ms
     var(--style-motion-ease-rubber) both;
 }
@@ -19812,18 +19840,12 @@ div.workshop-page__discovery-row {
 
 :root .style-dialog::after {
   position: absolute;
-  inset:
-    calc(
-      var(--style-dialog-paper-inset-top) -
-        var(--style-dialog-frame-outset)
+  inset: calc(
+      var(--style-dialog-paper-inset-top) - var(--style-dialog-frame-outset)
     )
+    calc(var(--style-dialog-paper-inset-x) - var(--style-dialog-frame-outset))
     calc(
-      var(--style-dialog-paper-inset-x) -
-        var(--style-dialog-frame-outset)
-    )
-    calc(
-      var(--style-dialog-paper-inset-bottom) -
-        var(--style-dialog-frame-outset)
+      var(--style-dialog-paper-inset-bottom) - var(--style-dialog-frame-outset)
     );
   z-index: -1;
   width: auto;
@@ -19842,8 +19864,7 @@ div.workshop-page__discovery-row {
 
 :root .style-dialog > .style-box__title {
   top: calc(
-    -1 * var(--style-dialog-frame-outset) -
-      var(--style-dialog-title-overhang)
+    -1 * var(--style-dialog-frame-outset) - var(--style-dialog-title-overhang)
   );
   left: 50%;
   z-index: 3;
@@ -19853,8 +19874,7 @@ div.workshop-page__discovery-row {
   min-width: var(--style-dialog-title-min-width);
   max-width: calc(100% - 16px);
   height: var(--style-dialog-title-height);
-  padding:
-    var(--style-dialog-title-text-top)
+  padding: var(--style-dialog-title-text-top)
     var(--style-dialog-title-text-padding-x)
     var(--style-dialog-title-text-bottom);
   place-items: start center;
@@ -19882,14 +19902,16 @@ div.workshop-page__discovery-row {
 }
 
 .game-stage
-  button:is([class*="__close"], [class*="-close"]):not(
-    .dev-console__close
-  ):not(.guild-page__close),
+  button:is([class*="__close"], [class*="-close"]):not(.dev-console__close):not(
+    .guild-page__close
+  ),
 .game-stage
   .guild-page__popup-panel:not([data-popup-kind="requestStack"])
   > .guild-page__close {
   position: absolute;
-  top: calc(100% + var(--style-dialog-frame-outset) + var(--style-dialog-close-gap));
+  top: calc(
+    100% + var(--style-dialog-frame-outset) + var(--style-dialog-close-gap)
+  );
   right: auto;
   bottom: auto;
   left: 50%;
@@ -19906,7 +19928,8 @@ div.workshop-page__discovery-row {
   font-size: 0;
   line-height: 0;
   text-indent: -999px;
-  background: transparent var(--style-dialog-close-image) center / contain no-repeat;
+  background: transparent var(--style-dialog-close-image) center / contain
+    no-repeat;
   border: 0;
   border-image: none;
   box-shadow: none;
@@ -19957,7 +19980,7 @@ div.workshop-page__discovery-row {
       .workshop-page__world-notice,
       .workshop-page__summon-button,
       .workshop-page__bag,
-      .workshop-page__stats-button,
+      .workshop-page__stats,
       .workshop-page__leaderboard,
       .workshop-page__mail,
       .workshop-page__trade-alliance,
@@ -20023,7 +20046,8 @@ div.workshop-page__discovery-row {
   .guild-page__box--secretary-upgraded,
   .guild-page__box--secretary-upgraded
     :where(.guild-page__row-value, .guild-page__wide-button),
-  .guild-page__popup-panel[data-popup-kind="request"] .style-dialog.guild-page__dialog,
+  .guild-page__popup-panel[data-popup-kind="request"]
+    .style-dialog.guild-page__dialog,
   .guild-page__popup-panel[data-popup-kind="requestStack"].is-turning-page
     :where(
       .guild-page__request-list-item.is-selected > *,

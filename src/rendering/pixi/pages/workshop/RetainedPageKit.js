@@ -10,6 +10,7 @@ import {
 
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -21,6 +22,10 @@ import {
 } from '../../../../pages/managers/StationScrollPhysics.js';
 import { createPixiPageBackgroundGradient } from '../../theme/PixiPageBackground.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
+import {
+  createPixiCapsuleSlice,
+  setPixiCapsuleBounds,
+} from '../../primitives/PixiCapsuleSkin.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
 
 let nextRetainedInputId = 1;
@@ -51,6 +56,40 @@ export const RETAINED_DIALOG_SCROLL_GEOMETRY = Object.freeze({
   contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
   scrollbarShiftRight: 4,
 });
+
+export const RETAINED_DIALOG_LIST_GEOMETRY = Object.freeze({
+  rowFrameWidth: PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth,
+  scrollbarViewportOutset: 2,
+  scrollbarRightInset: 3,
+});
+
+export function resolveRetainedDialogListLayout({
+  bodyWidth = 0,
+  paperRight = bodyWidth,
+  rowFrameWidth =
+    RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+} = {}) {
+  const frameWidth = Math.max(0, Number(rowFrameWidth) || 0);
+  const viewportWidth =
+    frameWidth +
+    RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset;
+  const centeredX = (bodyWidth - frameWidth) / 2;
+  const scrollbarAllowance =
+    RETAINED_SCROLLBAR_GEOMETRY.gap +
+    RETAINED_SCROLLBAR_GEOMETRY.width;
+  const rightLimitedX =
+    paperRight -
+    RETAINED_DIALOG_LIST_GEOMETRY.scrollbarRightInset -
+    viewportWidth -
+    scrollbarAllowance;
+
+  return {
+    x: Math.min(centeredX, rightLimitedX),
+    viewportWidth,
+    rowWidth:
+      frameWidth + PIXI_ROOT_RUN_GEOMETRY.settings.rowGap,
+  };
+}
 
 export const RETAINED_SCROLLBAR_VISUALS = Object.freeze({
   trackBackground: 0x17100c,
@@ -478,12 +517,17 @@ function normalizeRetainedButtonVariant(variant) {
 }
 
 export class RetainedProgressBar {
-  constructor({ label = 'progress', tone = 'root' } = {}) {
+  constructor({
+    assetManager = null,
+    label = 'progress',
+    tone = 'root',
+  } = {}) {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.progress = 0;
     this.width = 0;
     this.height = PIXI_UI_GEOMETRY.progressTotalHeight;
     this.control = new PixiProgressBar({
+      assetManager,
       width: 0,
       height: this.height,
       tone,
@@ -491,7 +535,7 @@ export class RetainedProgressBar {
     });
     this.root = this.control;
     this.rail = this.control.railGraphic;
-    this.fill = this.control.fillGraphic;
+    this.fill = this.control.fillContainer;
   }
 
   get tone() {
@@ -526,6 +570,7 @@ export class RetainedProgressBar {
 
 export class RetainedScrollArea {
   constructor({
+    assetManager = null,
     label = 'scroll-area',
     inputRouter = null,
     onScroll = null,
@@ -536,12 +581,27 @@ export class RetainedScrollArea {
     this.root = new Container({ label });
     this.content = new Container({ label: `${label}-content` });
     this.maskShape = new Graphics({ label: `${label}-mask` });
-    this.scrollbarTrack = new Graphics({
+    this.scrollbarTrack = createPixiCapsuleSlice({
+      assetManager,
+      kind: 'track',
       label: `${label}-scrollbar-track`,
     });
-    this.scrollbarThumb = new Graphics({
+    this.scrollbarThumb = new Container({
       label: `${label}-scrollbar-thumb`,
     });
+    this.scrollbarThumbFill = new Graphics({
+      label: `${label}-scrollbar-thumb-fill`,
+    });
+    this.scrollbarThumbMask = createPixiCapsuleSlice({
+      assetManager,
+      kind: 'fillMask',
+      label: `${label}-scrollbar-thumb-mask`,
+    });
+    this.scrollbarThumbFill.mask = this.scrollbarThumbMask;
+    this.scrollbarThumb.addChild(
+      this.scrollbarThumbFill,
+      this.scrollbarThumbMask,
+    );
     this.scrollbarTrack.eventMode = 'none';
     this.scrollbarThumb.eventMode = 'none';
     this.root.addChild(
@@ -863,39 +923,20 @@ export class RetainedScrollArea {
     this.scrollbarThumb.visible = visible;
 
     if (!visible) {
-      this.scrollbarTrack.clear();
-      this.scrollbarThumb.clear();
+      this.scrollbarThumbFill.clear();
+      this.scrollbarThumbMask.visible = false;
       return;
     }
 
     const trackX = this.width + geometry.gap;
-    const trackRadius = Math.min(geometry.width / 2, trackHeight / 2);
-    this.scrollbarTrack
-      .clear()
-      .roundRect(
-        trackX,
-        geometry.trackInset,
-        geometry.width,
-        trackHeight,
-        trackRadius,
-      )
-      .fill({
-        color: RETAINED_SCROLLBAR_VISUALS.trackBackground,
-        alpha: RETAINED_SCROLLBAR_VISUALS.trackBackgroundAlpha,
-      })
-      .roundRect(
-        trackX,
-        geometry.trackInset,
-        geometry.width,
-        trackHeight,
-        trackRadius,
-      )
-      .stroke({
-        color: RETAINED_SCROLLBAR_VISUALS.trackBorder,
-        alpha: RETAINED_SCROLLBAR_VISUALS.trackBorderAlpha,
-        width: geometry.trackBorderWidth,
-        alignment: 1,
-      });
+    setPixiCapsuleBounds(this.scrollbarTrack, {
+      x: trackX,
+      y: geometry.trackInset,
+      width: geometry.width,
+      height: trackHeight,
+      kind: 'track',
+      orientation: 'vertical',
+    });
 
     const baseThumbHeight = Math.min(
       trackHeight,
@@ -935,29 +976,36 @@ export class RetainedScrollArea {
       0,
       geometry.width - geometry.thumbGap * 2,
     );
-    const thumbRadius = Math.min(thumbWidth / 2, thumbHeight / 2);
-    this.scrollbarThumb
+    this.scrollbarThumbFill
       .clear()
-      .roundRect(
+      .rect(
         thumbX,
         thumbY,
         thumbWidth,
         thumbHeight,
-        thumbRadius,
       )
-      .fill(RETAINED_SCROLLBAR_VISUALS.thumbBackground)
-      .roundRect(
-        thumbX,
-        thumbY,
-        thumbWidth,
-        thumbHeight,
-        thumbRadius,
+      .fill(RETAINED_SCROLLBAR_VISUALS.thumbBorder);
+    const thumbInset = Math.min(
+      geometry.thumbBorderWidth,
+      thumbWidth / 2,
+      thumbHeight / 2,
+    );
+    this.scrollbarThumbFill
+      .rect(
+        thumbX + thumbInset,
+        thumbY + thumbInset,
+        Math.max(0, thumbWidth - thumbInset * 2),
+        Math.max(0, thumbHeight - thumbInset * 2),
       )
-      .stroke({
-        color: RETAINED_SCROLLBAR_VISUALS.thumbBorder,
-        width: geometry.thumbBorderWidth,
-        alignment: 1,
-      });
+      .fill(RETAINED_SCROLLBAR_VISUALS.thumbBackground);
+    setPixiCapsuleBounds(this.scrollbarThumbMask, {
+      x: thumbX,
+      y: thumbY,
+      width: thumbWidth,
+      height: thumbHeight,
+      kind: 'fillMask',
+      orientation: 'vertical',
+    });
   }
 
   scrollRectIntoView(

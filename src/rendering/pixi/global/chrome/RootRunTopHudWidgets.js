@@ -41,6 +41,7 @@ const LEVEL_TRACK_Y = 21;
 const LEVEL_TRACK_WIDTH = 631;
 const LEVEL_TRACK_HEIGHT = 51;
 const LEVEL_TRACK_INSET = 3;
+const LEVEL_PRESS_SCALE = 0.97;
 const LEVEL_TEXT_STROKE = Object.freeze({
   color: '#0a0a0a',
   width: 6,
@@ -228,10 +229,22 @@ export class RootRunHudSquareIconButton extends Container {
 
 export class RootRunHudLevelRail extends Container {
   constructor({ assets } = {}) {
-    super({ label: 'topPanel:levelRail' });
+    super({
+      label: 'topPanel:levelRail',
+      eventMode: 'static',
+    });
+    this.cursor = 'pointer';
+    this.hitArea = new Rectangle(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
     this.ratio = 0;
     this.total = 1;
     this.completed = 0;
+    this.pressed = false;
+    this.pressVisual = new Container({
+      label: 'topPanel:levelPressVisual',
+      eventMode: 'none',
+    });
+    this.pressVisual.pivot.set(LEVEL_WIDTH / 2, LEVEL_HEIGHT / 2);
+    this.pressVisual.position.set(LEVEL_WIDTH / 2, LEVEL_HEIGHT / 2);
     this.questVisuals = new Container({
       label: 'topPanel:questVisuals',
       eventMode: 'none',
@@ -272,7 +285,7 @@ export class RootRunHudLevelRail extends Container {
 
     this.levelControl = new Container({
       label: 'topPanel:levelControl',
-      eventMode: 'static',
+      eventMode: 'none',
     });
     this.levelControl.hitArea = new Rectangle(
       0,
@@ -313,7 +326,8 @@ export class RootRunHudLevelRail extends Container {
     );
     this.levelMotionRoot.addChild(this.levelStar, this.levelValue);
     this.levelControl.addChild(this.levelMotionRoot);
-    this.addChild(this.questVisuals, this.levelControl);
+    this.pressVisual.addChild(this.questVisuals, this.levelControl);
+    this.addChild(this.pressVisual);
   }
 
   setLevel(level) {
@@ -324,6 +338,18 @@ export class RootRunHudLevelRail extends Container {
   setQuestVisible(visible) {
     this.questVisuals.visible = Boolean(visible);
     this.questVisuals.renderable = this.questVisuals.visible;
+    const interactionWidth = this.questVisuals.visible
+      ? LEVEL_WIDTH
+      : LEVEL_STAR_SIZE;
+    this.hitArea.width = interactionWidth;
+    this.pressVisual.pivot.x = interactionWidth / 2;
+    this.pressVisual.position.x = interactionWidth / 2;
+    return this;
+  }
+
+  setPressed(pressed) {
+    this.pressed = Boolean(pressed);
+    this.pressVisual.scale.set(this.pressed ? LEVEL_PRESS_SCALE : 1);
     return this;
   }
 

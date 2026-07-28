@@ -1953,8 +1953,8 @@ function createSeedDrop({ event, seed, index }) {
     id: createRewardVisualId(event, 'seed', index),
     kind: 'seed',
     ...textureModel,
-    anchorId: 'workshop.summon',
-    anchorYRatio: 0.3,
+    anchorId: 'workshop.summonArea',
+    anchorYRatio: 0.5,
   };
 }
 

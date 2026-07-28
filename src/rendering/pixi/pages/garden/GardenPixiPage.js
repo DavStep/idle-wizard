@@ -805,6 +805,7 @@ class GardenPlotWidget {
     this.scissorsOpen.label = `garden-plot-${instanceId}-scissors-open`;
     this.scissorsMotion.addChild(this.scissors, this.scissorsOpen);
     this.progress = new RetainedProgressBar({
+      assetManager,
       label: `garden-plot-${instanceId}-progress`,
       tone: 'green',
     });

@@ -2,10 +2,7 @@ import {
   DEFAULT_PLAYER_COLOR_MODE,
   normalizePlayerColorMode,
 } from '../../../player/playerColorModes.js';
-import {
-  DEFAULT_PLAYER_FONT,
-  normalizePlayerFont,
-} from '../../../player/playerFonts.js';
+import { DEFAULT_PLAYER_FONT, normalizePlayerFont } from '../../../player/playerFonts.js';
 import {
   DEFAULT_PLAYER_ICON_MODE,
   normalizePlayerIconMode,
@@ -14,12 +11,10 @@ import {
   DEFAULT_PLAYER_PROGRESS_BAR,
   normalizePlayerProgressBar,
 } from '../../../player/playerProgressBars.js';
-import {
-  DEFAULT_PLAYER_THEME,
-  normalizePlayerTheme,
-} from '../../../player/playerThemes.js';
+import { DEFAULT_PLAYER_THEME, normalizePlayerTheme } from '../../../player/playerThemes.js';
 
-const ROOT_RUN_ACCOUNT_X_SCALE = 298 / 925;
+const ROOT_RUN_DIALOG_INNER_BOARD_WIDTH = 298;
+const ROOT_RUN_ACCOUNT_X_SCALE = ROOT_RUN_DIALOG_INNER_BOARD_WIDTH / 925;
 
 export const PIXI_UI_GEOMETRY = Object.freeze({
   authoredWidth: 1080,
@@ -49,6 +44,7 @@ export const PIXI_UI_GEOMETRY = Object.freeze({
   roomChatHeight: 41,
   roomChatTitleOverhang: 12,
   roomChatGap: 8,
+  topPanelContentGap: 16,
   progressRailBorderWidth: 1,
   progressHeight: 8,
   progressTotalHeight: 10,
@@ -106,90 +102,51 @@ export const PIXI_PROGRESS_VISUALS = Object.freeze({
 
 export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   buttonYellow: 'source:assets/ui/root-run-cost-button/yellow-button-9slice.png',
-  buttonYellowShort:
-    'source:assets/ui/root-run-cost-button/yellow-button-short.png',
+  buttonYellowShort: 'source:assets/ui/root-run-cost-button/yellow-button-short.png',
   buttonGreen: 'source:assets/ui/root-run-cost-button/green-button-short.png',
   buttonGray: 'source:assets/ui/root-run-cost-button/gray-button-short.png',
-  buttonGreenStacked:
-    'source:assets/ui/root-run-cost-button/green-button.png',
-  buttonBlueShort:
-    'source:assets/ui/root-run-cost-button/blue-button-short.png',
-  buttonGrayStacked:
-    'source:assets/ui/root-run-cost-button/gray-button.png',
-  buttonGreenNineSlice:
-    'source:assets/ui/root-run-cost-button/green-button-9slice.png',
-  buttonRedNineSlice:
-    'source:assets/ui/root-run-cost-button/red-button-9slice.png',
-  buttonGrayNineSlice:
-    'source:assets/ui/root-run-cost-button/gray-button-9slice.png',
-  buttonBrownDark:
-    'source:assets/ui/root-run-cost-button/brown-button-dark-9slice.png',
-  buttonBrownLight:
-    'source:assets/ui/root-run-cost-button/brown-button-light-9slice.png',
-  textFieldBrownInset:
-    'source:assets/ui/root-run-world-chat/world-chat-text-field-9slice.png',
+  buttonGreenStacked: 'source:assets/ui/root-run-cost-button/green-button.png',
+  buttonBlueShort: 'source:assets/ui/root-run-cost-button/blue-button-short.png',
+  buttonGrayStacked: 'source:assets/ui/root-run-cost-button/gray-button.png',
+  buttonGreenNineSlice: 'source:assets/ui/root-run-cost-button/green-button-9slice.png',
+  buttonRedNineSlice: 'source:assets/ui/root-run-cost-button/red-button-9slice.png',
+  buttonGrayNineSlice: 'source:assets/ui/root-run-cost-button/gray-button-9slice.png',
+  buttonBrownDark: 'source:assets/ui/root-run-cost-button/brown-button-dark-9slice.png',
+  buttonBrownLight: 'source:assets/ui/root-run-cost-button/brown-button-light-9slice.png',
+  textFieldBrownInset: 'source:assets/ui/root-run-world-chat/world-chat-text-field-9slice.png',
   coin: 'source:assets/ui/root-run-cost-button/coin.png',
-  settingsKnob:
-    'source:assets/ui/root-run-settings/settings-knob.png',
-  settingsGear:
-    'source:assets/ui/root-run-settings/settings-icon-gear.png',
-  settingsRow:
-    'source:assets/ui/root-run-settings/settings-row-bg-9slice.png',
-  settingsSound:
-    'source:assets/ui/root-run-settings/settings-icon-sound.png',
-  settingsMusic:
-    'source:assets/ui/root-run-settings/settings-icon-music.png',
-  settingsVibration:
-    'source:assets/ui/root-run-settings/settings-icon-vibration.png',
-  accountTitle:
-    'source:assets/ui/root-run-account/account-title.png',
-  accountUsername:
-    'source:assets/ui/root-run-account/username-bar.png',
-  accountEdit:
-    'source:assets/ui/root-run-account/edit-pencil.png',
-  accountTabActive:
-    'source:assets/ui/root-run-account/tab-active-9slice.png',
-  accountTabInactive:
-    'source:assets/ui/root-run-account/tab-inactive-9slice.png',
-  accountSave:
-    'source:assets/ui/root-run-account/save-button-9slice.png',
-  accountChoice:
-    'source:assets/ui/root-run-account/choice-tile.png',
-  accountSelected:
-    'source:assets/ui/root-run-account/choice-selected.png',
-  topHudAvatarFrame:
-    'source:assets/ui/root-run-top-hud/avatar-frame-9slice.png',
-  topHudAvatarHead:
-    'source:assets/ui/root-run-top-hud/avatar-head-bg.png',
-  topHudCurrency:
-    'source:assets/ui/root-run-top-hud/currency-bg-9slice.png',
-  topHudSettings:
-    'source:assets/ui/root-run-top-hud/settings-bg-9slice.png',
-  topHudLevelPanel:
-    'source:assets/ui/root-run-top-hud/level-progress-panel.png',
-  topHudLevelTrack:
-    'source:assets/ui/root-run-top-hud/level-progress-track-9slice.png',
+  settingsKnob: 'source:assets/ui/root-run-settings/settings-knob.png',
+  settingsGear: 'source:assets/ui/root-run-settings/settings-icon-gear.png',
+  settingsRow: 'source:assets/ui/root-run-settings/settings-row-bg-9slice.png',
+  settingsSound: 'source:assets/ui/root-run-settings/settings-icon-sound.png',
+  settingsMusic: 'source:assets/ui/root-run-settings/settings-icon-music.png',
+  settingsVibration: 'source:assets/ui/root-run-settings/settings-icon-vibration.png',
+  accountTitle: 'source:assets/ui/root-run-account/account-title.png',
+  accountUsername: 'source:assets/ui/root-run-account/username-bar.png',
+  accountEdit: 'source:assets/ui/root-run-account/edit-pencil.png',
+  accountTabActive: 'source:assets/ui/root-run-account/tab-active-9slice.png',
+  accountTabInactive: 'source:assets/ui/root-run-account/tab-inactive-9slice.png',
+  accountSave: 'source:assets/ui/root-run-account/save-button-9slice.png',
+  accountChoice: 'source:assets/ui/root-run-account/choice-tile.png',
+  accountSelected: 'source:assets/ui/root-run-account/choice-selected.png',
+  topHudAvatarFrame: 'source:assets/ui/root-run-top-hud/avatar-frame-9slice.png',
+  topHudAvatarHead: 'source:assets/ui/root-run-top-hud/avatar-head-bg.png',
+  topHudCurrency: 'source:assets/ui/root-run-top-hud/currency-bg-9slice.png',
+  topHudSettings: 'source:assets/ui/root-run-top-hud/settings-bg-9slice.png',
+  topHudLevelPanel: 'source:assets/ui/root-run-top-hud/level-progress-panel.png',
+  topHudLevelTrack: 'source:assets/ui/root-run-top-hud/level-progress-track-9slice.png',
   dialogBack: 'source:assets/ui/root-run-dialog/expedition-dialog-back.png',
   dialogPaper: 'source:assets/ui/root-run-dialog/expedition-dialog-front.png',
-  dialogTitle:
-    'source:assets/ui/root-run-dialog/expedition-dialog-title-purple.png',
+  dialogTitle: 'source:assets/ui/root-run-dialog/expedition-dialog-title-purple.png',
   dialogClose: 'source:assets/ui/root-run-dialog/expedition-dialog-close.png',
-  marketTitleRibbon:
-    'source:assets/ui/root-run-market/market-title-ribbon-9slice.png',
-  researchCard:
-    'source:assets/ui/root-run-research/research-card-1000x304.png',
-  researchCardLocked:
-    'source:assets/ui/root-run-research/research-card-locked-1000x304.png',
-  researchArt:
-    'source:assets/ui/root-run-research/research-art-well-204x194.png',
-  researchArtLocked:
-    'source:assets/ui/root-run-research/research-art-well-locked-204x194.png',
-  researchRank:
-    'source:assets/ui/root-run-research/research-rank-badge-217x62.png',
-  stallBatchBadge:
-    'source:assets/ui/root-run-level-badge-down-red.png',
-  researchStationTitle:
-    'source:assets/ui/root-run-research/research-station-title-red.png',
+  marketTitleRibbon: 'source:assets/ui/root-run-market/market-title-ribbon-9slice.png',
+  researchCard: 'source:assets/ui/root-run-research/research-card-1000x304.png',
+  researchCardLocked: 'source:assets/ui/root-run-research/research-card-locked-1000x304.png',
+  researchArt: 'source:assets/ui/root-run-research/research-art-well-204x194.png',
+  researchArtLocked: 'source:assets/ui/root-run-research/research-art-well-locked-204x194.png',
+  researchRank: 'source:assets/ui/root-run-research/research-rank-badge-217x62.png',
+  stallBatchBadge: 'source:assets/ui/root-run-level-badge-down-red.png',
+  researchStationTitle: 'source:assets/ui/root-run-research/research-station-title-red.png',
   researchStationTitleRegular:
     'source:assets/ui/root-run-research/research-station-title-yellow.png',
   researchStationTitleAutomation:
@@ -198,27 +155,18 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/root-run-research/research-station-title-green.png',
   researchStationTitleCrystal:
     'source:assets/ui/root-run-research/research-station-title-purple.png',
-  roomTabActive:
-    'source:assets/ui/midnight-room-tab-top-cap-selected-9slice.png',
-  roomTabInactive:
-    'source:assets/ui/midnight-room-tab-top-cap-9slice.png',
+  roomTabActive: 'source:assets/ui/midnight-room-tab-top-cap-selected-9slice.png',
+  roomTabInactive: 'source:assets/ui/midnight-room-tab-top-cap-9slice.png',
+  topPanelBackground: 'source:assets/ui/midnight-top-panel-background-9slice.png',
   info: 'source:assets/ui/prop_info.png',
-  workshopBag: 'source:assets/icons/icon-bag.png',
-  workshopStats:
-    'source:assets/icons/icon-stats-ledger-bag-style.png',
-  workshopInbox: 'source:assets/icons/icon-inbox-envelope-bag-style.png',
-  workshopAlliance:
-    'source:assets/icons/icon-alliance-banner-base.webp',
-  workshopAllianceCloth:
-    'source:assets/icons/icon-alliance-banner-cloth-mask.webp',
-  workshopLeaderboard:
-    'source:assets/icons/icon-leaderboard-trophy.webp',
-  workshopDiscoveries:
-    'source:assets/icons/icon-discoveries-journal.webp',
-  workshopPersonalTasks:
-    'source:assets/icons/icon-personal-tasks-scroll-bag-style.png',
-  workshopWorldEvent:
-    'source:assets/icons/icon-quests-scroll-bag-style.png',
+  workshopBag: 'source:assets/icons/icon-side-bag-root-run.png',
+  workshopStats: 'source:assets/icons/icon-side-stats-root-run.png',
+  workshopInbox: 'source:assets/icons/icon-side-inbox-root-run.png',
+  workshopAlliance: 'source:assets/icons/icon-side-alliance-root-run.png',
+  workshopLeaderboard: 'source:assets/icons/icon-side-leaderboard-root-run.png',
+  workshopDiscoveries: 'source:assets/icons/icon-side-discoveries-root-run.png',
+  workshopPersonalTasks: 'source:assets/icons/icon-side-tasks-root-run.png',
+  workshopWorldEvent: 'source:assets/icons/icon-side-event-root-run.png',
   lock: 'source:assets/ui/prop_lock.png',
   checkmark: 'source:assets/ui/prop_checkmark.png',
   notificationRed: 'source:assets/ui/notification-circle-red.png',
@@ -389,15 +337,26 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
     }),
   }),
   dialog: Object.freeze({
+    innerBoardWidth: ROOT_RUN_DIALOG_INNER_BOARD_WIDTH,
     frameOutset: 10,
-    frameSourceInsets: Object.freeze({ top: 139, right: 163, bottom: 83, left: 83 }),
+    frameSourceInsets: Object.freeze({
+      top: 139,
+      right: 163,
+      bottom: 83,
+      left: 83,
+    }),
     frameBorderInsets: Object.freeze({
       top: 139 / 3,
       right: 163 / 3,
       bottom: 83 / 3,
       left: 83 / 3,
     }),
-    paperSourceInsets: Object.freeze({ top: 99, right: 53, bottom: 72, left: 84 }),
+    paperSourceInsets: Object.freeze({
+      top: 99,
+      right: 53,
+      bottom: 72,
+      left: 84,
+    }),
     paperBorderInsets: Object.freeze({
       top: 99 / 3,
       right: 53 / 3,
@@ -407,8 +366,18 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
     paperInsetX: 16 / 3,
     paperInsetTop: 85 / 3,
     paperInsetBottom: 57 / 3,
-    titleSourceInsets: Object.freeze({ top: 0, right: 132, bottom: 0, left: 85 }),
-    titleBorderInsets: Object.freeze({ top: 0, right: 44, bottom: 0, left: 85 / 3 }),
+    titleSourceInsets: Object.freeze({
+      top: 0,
+      right: 132,
+      bottom: 0,
+      left: 85,
+    }),
+    titleBorderInsets: Object.freeze({
+      top: 0,
+      right: 44,
+      bottom: 0,
+      left: 85 / 3,
+    }),
     titleHeight: 121 / 3,
     titleMinWidth: 614 / 3,
     titleOverhang: 61 / 3,
@@ -420,8 +389,7 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
 });
 
 export const PIXI_FONT_FAMILIES = Object.freeze({
-  'lilita-one':
-    '"Lilita One", "Arial Black", Arial, ui-sans-serif, system-ui, sans-serif',
+  'lilita-one': '"Lilita One", "Arial Black", Arial, ui-sans-serif, system-ui, sans-serif',
   lexend:
     'Lexend, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   'comic-sans-mono':
@@ -673,8 +641,7 @@ export function createPixiThemeSnapshot(settings = {}) {
   const iconMode = normalizePlayerIconMode(settings.iconMode);
   const progressKey = resolveProgressKey(settings.progressBar);
   const theme = getPixiThemeTokens(themeKey);
-  const progress =
-    PROGRESS_TOKENS[progressKey] ?? PROGRESS_TOKENS[DEFAULT_PLAYER_PROGRESS_BAR];
+  const progress = PROGRESS_TOKENS[progressKey] ?? PROGRESS_TOKENS[DEFAULT_PLAYER_PROGRESS_BAR];
 
   return Object.freeze({
     revisionKey: [themeKey, fontKey, colorMode, iconMode, progressKey].join(':'),

@@ -183,11 +183,15 @@ describe('createShop', () => {
       tutorialId: 'shop:sell:tab:seed',
     });
     expect(model.shop.players.requests.slots[0]).toMatchObject({
-      itemLabel: 'sage seed (2)',
+      itemLabel: 'sage seed',
+      quantityLabel: '2',
       value: '5 coin',
+      priceLabel: '5 coin',
+      priceResourceKey: 'coin',
     });
     expect(model.shop.players.market).toMatchObject({
       proceedsLabel: 'claim (12 coin)',
+      proceedsValueLabel: '12 coin',
       browseNotification: true,
     });
     expect(model.shop.crystals.coinOffer).toMatchObject({

@@ -274,6 +274,7 @@ export class BrewingHudPixi {
     });
     this.phaseTime.anchor.set(1, 0);
     this.progress = new RetainedProgressBar({
+      assetManager,
       label: 'brewing-batch-progress',
       tone: 'green',
     });

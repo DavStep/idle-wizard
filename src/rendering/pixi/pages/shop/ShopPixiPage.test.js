@@ -10,7 +10,10 @@ import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
-import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
+import {
+  PIXI_DIALOG_PALETTE,
+  PixiDialogFrame,
+} from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import {
   PIXI_PROGRESS_VISUALS,
@@ -85,7 +88,7 @@ describe('ShopPixiPage', () => {
     expect(stall.progress.fillColor).toBe(
       PIXI_PROGRESS_VISUALS.tones.root.fill,
     );
-    expect(request.valueLabel.text).toBe('3 herb');
+    expect(request.price.text).toBe('3 Herb');
 
     pages.deactivate();
     expect(root).toMatchObject({
@@ -440,6 +443,37 @@ describe('ShopPixiPage', () => {
     inputRouter.destroy();
   });
 
+  it('presses the complete stall row without fading its frame', () => {
+    const inputRouter = new PixiInputRouter();
+    const harness = createHarness({ inputRouter });
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+
+    const stall = harness.page.stallsSection.stalls.get('stall-1');
+    const registration = inputRouter.store
+      .getRegistrations('press')
+      .find((entry) => entry.displayObject === stall.root);
+
+    registration.onPressChange(true, { confirmed: false });
+
+    expect(stall.visual.scale.x).toBeLessThan(1);
+    expect(stall.visual.scale.y).toBe(stall.visual.scale.x);
+    expect(stall.frame.alpha).toBe(1);
+
+    registration.onPressChange(false, {
+      confirmed: false,
+      cancelled: true,
+    });
+
+    expect(stall.visual.scale.x).toBe(1);
+    expect(stall.visual.scale.y).toBe(1);
+    expect(stall.frame.alpha).toBe(1);
+
+    harness.page.destroy();
+    harness.dispose();
+    inputRouter.destroy();
+  });
+
   it('registers every Market lesson target inside the stall dialog', () => {
     const inputRouter = new PixiInputRouter();
     const harness = createHarness({ inputRouter });
@@ -700,7 +734,23 @@ describe('ShopPixiPage', () => {
     expect(clear.control.variant).toBe('red');
     expect(future.control.variant).toBe('yellow');
     expect(dialog.tabLayer.parent).toBe(dialog.panel);
-    expect(dialog.tabLayer.y).toBe(dialog.config.height - 2);
+    expect(
+      dialog.panel.coreHeight +
+        PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset -
+        (dialog.tabLayer.y + seedsTab.height),
+    ).toBeCloseTo(6);
+    expect(
+      dialog.tabLayer.y -
+        (
+          dialog.body.y +
+          dialog.itemSection.y +
+          dialog.itemSection.frameHeight
+        ),
+    ).toBeCloseTo(4);
+    expect(
+      herbsTab.root.x -
+        (seedsTab.root.x + seedsTab.width),
+    ).toBeCloseTo(8);
     expect(seedsTab.control.variant).toBe('tab');
     expect(seedsTab.control.resolveRootRunVariant()).toBe(
       'brown-light',
@@ -853,20 +903,15 @@ describe('ShopPixiPage', () => {
       harness.page.crystalOffersSection.titlePlaque.variant,
     ).toBe('crystal');
     expect(harness.page.coinOfferSection.panel).toBeUndefined();
-    expect(harness.page.coinOfferSection.card).toBeInstanceOf(
-      PixiNineSliceFrame,
-    );
-    expect(harness.page.coinOfferSection.card.sourceInsets).toEqual(
-      PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
-    );
-    expect(
-      harness.page.crystalOffersSection.card.borderInsets,
-    ).toEqual(
-      PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
-    );
+    expect(harness.page.coinOfferSection.card).toBeUndefined();
+    expect(harness.page.crystalOffersSection.card).toBeUndefined();
 
     const coinOffer =
       harness.page.coinOfferSection.rows.get('coinOffer');
+    expect(coinOffer.frame).toBeInstanceOf(PixiNineSliceFrame);
+    expect(coinOffer.frame.sourceInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+    );
     expect(coinOffer.itemResource).toMatchObject({
       amount: '100',
       resource: 'coin',
@@ -874,13 +919,27 @@ describe('ShopPixiPage', () => {
     });
     expect(coinOffer.itemResource.icon.visible).toBe(true);
     expect(coinOffer.itemLabel.visible).toBe(false);
-    expect(coinOffer.valueLabel.text).toBe('Collect');
-    expect(coinOffer.valueLabel.textObject.style.fill).toBe(
-      '#634934',
+    expect(coinOffer.valueLabel.visible).toBe(false);
+    expect(coinOffer.valueButton.visible).toBe(true);
+    expect(coinOffer.valueButton.textLabel.text).toBe('Collect');
+    expect(coinOffer.valueButton.variant).toBe('green');
+    expect(coinOffer.valueButton.resolveRootRunVariant()).toBe(
+      'green',
     );
+    expect(
+      harness.semanticRegistry.require('shop.coinOffer.collect')
+        .displayObject,
+    ).toBe(coinOffer.valueButton);
+    expect(
+      coinOffer.itemResource.amountLabel.textObject.style.fill,
+    ).toBe(PIXI_DIALOG_PALETTE.coin);
 
     const crystalOffer =
       harness.page.crystalOffersSection.rows.get('crystal-1');
+    expect(crystalOffer.frame).toBeInstanceOf(PixiNineSliceFrame);
+    expect(crystalOffer.frame.borderInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+    );
     expect(crystalOffer.itemResource).toMatchObject({
       amount: '10',
       resource: 'crystal',
@@ -894,9 +953,7 @@ describe('ShopPixiPage', () => {
     );
     expect(
       crystalOffer.itemResource.amountLabel.textObject.style.fill,
-    ).toBe(
-      harness.page.theme.resourceColors.crystal,
-    );
+    ).toBe(PIXI_DIALOG_PALETTE.crystal);
     expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.researchCard,
     );
@@ -904,6 +961,145 @@ describe('ShopPixiPage', () => {
     expect(getAtlasTexture).toHaveBeenCalledWith(
       'resource:crystal',
     );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('reuses Traders stand widgets for Players rows and keeps border actions', () => {
+    const harness = createHarness();
+    const viewModel = createShopViewModel();
+    viewModel.shop.selectedTabId = 'players';
+    viewModel.shop.players.requests.canClear = true;
+    Object.assign(viewModel.shop.players.requests.slots[0], {
+      itemKey: 'sageSeed',
+      resourceKey: 'seed',
+      quantityLabel: '2',
+      value: '5 coin',
+      valueResourceKey: 'coin',
+    });
+    viewModel.shop.players.requests.slots.push({
+      id: 'request-2',
+      slotNumber: 2,
+      itemLabel: 'empty request',
+      value: 'select',
+    });
+    viewModel.shop.players.market.proceedsLabel = 'claim';
+    viewModel.shop.players.market.proceedsValueLabel = '25 coin';
+    viewModel.shop.players.market.canClaimProceeds = true;
+    viewModel.shop.players.market.proceedsNotification = true;
+
+    harness.page.bind(viewModel);
+    harness.page.activate();
+
+    expect(
+      harness.page.panelScrolls.get('players').root.position.x,
+    ).toBe(0);
+    expect(harness.page.requestsSection.panel).toBeUndefined();
+    expect(harness.page.playerMarketSection.panel).toBeUndefined();
+    expect(harness.page.requestsSection.card).toBeUndefined();
+    expect(harness.page.playerMarketSection.card).toBeUndefined();
+    expect(harness.page.requestsSection.titlePlaque.title.text).toBe(
+      'Requests',
+    );
+    expect(
+      harness.page.playerMarketSection.titlePlaque.title.text,
+    ).toBe('Player Market');
+    expect(harness.page.requestsSection.titlePlaque.variant).toBe(
+      'automation',
+    );
+    expect(
+      harness.page.playerMarketSection.titlePlaque.variant,
+    ).toBe('automation');
+
+    const request =
+      harness.page.requestsSection.rows.get('request-1');
+    const nextRequest =
+      harness.page.requestsSection.rows.get('request-2');
+    const listing =
+      harness.page.playerMarketSection.rows.get('listing-1');
+    expect(request.root.label).toBe('shop:stall');
+    expect(listing.root.label).toBe('shop:stall');
+    expect(request.frame).toBeInstanceOf(PixiNineSliceFrame);
+    expect(nextRequest.frame).toBeInstanceOf(PixiNineSliceFrame);
+    expect(nextRequest.frame).not.toBe(request.frame);
+    expect(request.iconFrame).toBeInstanceOf(PixiNineSliceFrame);
+    expect(listing.iconFrame).toBeInstanceOf(PixiNineSliceFrame);
+    expect(request.title.text).toBe('Request 1');
+    expect(nextRequest.title.text).toBe('Request 2');
+    expect(listing.title.text).toBe('Stand 1');
+    expect(request.item.text).toBe('Sage');
+    expect(request.quantity.text).toBe('2');
+    expect(request.price.visible).toBe(false);
+    expect(request.priceResource).toMatchObject({
+      amount: '5',
+      resource: 'coin',
+      visible: true,
+    });
+    expect(request.root.hitArea.height).toBe(84);
+    expect(listing.root.hitArea.height).toBe(84);
+    expect(nextRequest.root.y).toBeGreaterThan(
+      request.root.y + request.root.hitArea.height,
+    );
+    expect(request.item.textObject.style.fill).toBe(
+      PIXI_DIALOG_PALETTE.ink,
+    );
+    expect(
+      harness.semanticRegistry.require('shop.requests.1')
+        .displayObject,
+    ).toBe(request.root);
+    expect(
+      harness.semanticRegistry.require('shop.playerMarket.1')
+        .displayObject,
+    ).toBe(listing.root);
+
+    const clear =
+      harness.page.requestsSection.actions.get('clear');
+    expect(clear.root.label).toBe(
+      'shop:requests:footerAction',
+    );
+    expect(clear.text.text).toBe('Clear');
+    expect(clear.root.y).toBeGreaterThan(
+      harness.page.requestsSection.rowsLayer.y,
+    );
+
+    const browse =
+      harness.page.playerMarketSection.actions.get('browse');
+    const history =
+      harness.page.playerMarketSection.actions.get('history');
+    const proceeds =
+      harness.page.playerMarketSection.trailingRows.get('proceeds');
+    expect(browse.text.text).toBe('Browse Market');
+    expect(history.text.text).toBe('Trade History');
+    expect(browse.root.parent).toBe(
+      harness.page.playerMarketSection.actionsLayer,
+    );
+    expect(history.root.parent).toBe(
+      harness.page.playerMarketSection.actionsLayer,
+    );
+    expect(browse.root.visible).toBe(true);
+    expect(history.root.visible).toBe(true);
+    expect(browse.root.x).toBeLessThan(history.root.x);
+    expect(
+      history.root.x + history.root.hitArea.width,
+    ).toBeLessThanOrEqual(
+      proceeds.root.hitArea.width,
+    );
+
+    expect(proceeds.itemResource).toMatchObject({
+      amount: '25',
+      resource: 'coin',
+      visible: true,
+    });
+    expect(proceeds.valueButton.textLabel.text).toBe('Claim');
+    expect(proceeds.valueButton.variant).toBe('green');
+    expect(proceeds.notificationBadge.root.visible).toBe(false);
+    expect(
+      harness.page.playerMarketSection.trailingRowsLayer.y +
+        proceeds.root.y +
+        proceeds.valueButton.y +
+        proceeds.valueButton.height,
+    ).toBeLessThanOrEqual(browse.root.y);
 
     harness.page.destroy();
     harness.dispose();

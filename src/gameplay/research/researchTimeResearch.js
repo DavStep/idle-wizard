@@ -1,5 +1,6 @@
 export const researchTimeResearchMaxLevel = 8;
 export const researchTimeResearchStepPercent = 10;
+export const minimumResearchDurationSeconds = 5;
 
 export const researchTimeResearchIds = Object.freeze({
   reduction: (level) => `advanced:researchTime:${level}`,
@@ -29,5 +30,8 @@ export function applyResearchTimeReductionSeconds(durationSeconds, level = 0) {
 
   const reducedDurationSeconds = safeDurationSeconds * getResearchTimeMultiplier(level);
 
-  return Math.max(1, Math.round(reducedDurationSeconds * 1000) / 1000);
+  return Math.max(
+    minimumResearchDurationSeconds,
+    Math.round(reducedDurationSeconds * 1000) / 1000,
+  );
 }

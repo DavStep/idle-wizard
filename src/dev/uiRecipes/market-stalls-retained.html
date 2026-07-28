@@ -55,7 +55,11 @@
           },
           shelf: {
             autoSellSeconds: 5,
-            sellKinds: [{ kind: 'seed', label: 'seeds' }],
+            sellKinds: [
+              { kind: 'seed', label: 'seeds' },
+              { kind: 'herb', label: 'herbs' },
+              { kind: 'potion', label: 'potions' },
+            ],
             sellItems: [
               {
                 itemTypeId: 1,
@@ -115,6 +119,56 @@
               },
             ],
           },
+          playerRequests: {
+            slots: [
+              {
+                slotNumber: 1,
+                unlocked: true,
+                itemTypeId: 1,
+                itemKey: 'sageSeed',
+                itemKind: 'seed',
+                itemLabel: 'sage seed',
+                quantity: 8,
+                priceCoin: 5,
+              },
+              {
+                slotNumber: 2,
+                unlocked: true,
+              },
+              {
+                slotNumber: 3,
+                unlocked: false,
+              },
+            ],
+          },
+          playerShelf: {
+            sellKinds: [
+              { kind: 'seed', label: 'seeds' },
+              { kind: 'herb', label: 'herbs' },
+              { kind: 'potion', label: 'potions' },
+            ],
+            sellItems: [],
+            slots: [
+              {
+                slotNumber: 1,
+                unlocked: true,
+                itemTypeId: 3,
+                itemKey: 'briarSeed',
+                itemKind: 'seed',
+                itemLabel: 'briar seed',
+                quantity: 4,
+                priceCoin: 9,
+              },
+              {
+                slotNumber: 2,
+                unlocked: true,
+              },
+              {
+                slotNumber: 3,
+                unlocked: false,
+              },
+            ],
+          },
           stock: {
             sellKinds: [
               { kind: 'seed', label: 'seeds' },
@@ -142,14 +196,31 @@
           },
         },
       };
+      const playerShopSnapshot = {
+        connected: true,
+        proceedsCoin: 42,
+        listings: [],
+        ownListings: [],
+        requests: [],
+        ownRequests: [],
+        tradeHistory: [],
+      };
 
       const canvas = document.querySelector('canvas');
       const query = new URLSearchParams(window.location.search);
       const dialogQuery = query.get('dialog');
-      const selectedTabId =
-        query.get('tab') === 'crystals' ? 'crystals' : 'traders';
+      const selectedTabId = ['traders', 'players', 'crystals'].includes(
+        query.get('tab'),
+      )
+        ? query.get('tab')
+        : 'traders';
+      if (query.get('coinOffer') === 'ready') {
+        gameplaySnapshot.shop.coinOffer.canCollect = true;
+        gameplaySnapshot.shop.coinOffer.cooldownRemainingSeconds = 0;
+      }
       const showStallDialog = dialogQuery === 'stall';
       const showLedgerDialog = dialogQuery === 'ledger';
+      const showOverflowItems = query.get('items') === 'overflow';
       if (query.get('stalls') === 'full') {
         const slotTemplates = gameplaySnapshot.shop.shelf.slots;
         gameplaySnapshot.shop.shelf.slots = Array.from(
@@ -165,6 +236,21 @@
           gameplaySnapshot.shop.shelf.slots.slice(0, 1);
       }
       if (showStallDialog) {
+        if (showOverflowItems) {
+          const overflowSeeds =
+            gameplaySnapshot.shop.stock.items
+              .filter((item) => item.kind === 'seed')
+              .slice(0, 8);
+          gameplaySnapshot.shop.shelf.sellItems =
+            overflowSeeds.map((item, index) => ({
+              ...item,
+              quantity: 119 + index * 73,
+              sellCoin: Math.max(1, item.buyCoin - 2),
+              sellNeed: item.npcNeed,
+            }));
+          gameplaySnapshot.research.completedResearchIds =
+            overflowSeeds.map((item) => `unlockSeed:${item.key}`);
+        }
         gameplaySnapshot.shop.shelf.sellItems[0].quantity = 119;
         gameplaySnapshot.shop.shelf.slots[0].loadedQuantity = 10;
       }
@@ -189,18 +275,35 @@
         inputRouter,
       });
       let ledgerKind = 'seed';
+      let stallItemKind = 'seed';
       const createViewModel = () =>
         createShop({
           gameplaySnapshot,
+          playerShopSnapshot,
           selectedTabId,
           uiState: {
             ledgerKind,
             ...(showStallDialog
-              ? { stallAllocationPercentBySlot: { 1: 25 } }
+              ? {
+                  stallAllocationPercentBySlot: { 1: 25 },
+                  stallItemKindBySlot: { 1: stallItemKind },
+                }
               : {}),
           },
           actions: {
             ui: {
+              selectStallItemKind(slotNumber, kind) {
+                stallItemKind = kind;
+                const nextViewModel = createViewModel();
+                page.bind(nextViewModel);
+                page.openDialog(
+                  SHOP_DIALOG_IDS.STALL,
+                  nextViewModel.shop.traders.stalls[
+                    Math.max(0, Number(slotNumber) - 1)
+                  ].dialog,
+                );
+                return true;
+              },
               selectLedgerKind(kind) {
                 ledgerKind = kind;
                 const nextViewModel = createViewModel();

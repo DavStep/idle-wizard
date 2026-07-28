@@ -236,19 +236,14 @@ describe('WorkshopWorldNoticeManager', () => {
 
     expect(outerBadgeRule).toMatch(/\bdisplay:\s*none;/);
     expect(labelBadgeRule).toMatch(/\bposition:\s*absolute;/);
-    expect(labelBadgeRule).toMatch(
-      /\btop:\s*calc\(-1 \* var\(--style-notification-offset\)\);/,
-    );
-    expect(labelBadgeRule).toMatch(
-      /\bright:\s*calc\(-1 \* var\(--style-notification-offset\)\);/,
-    );
+    expect(labelBadgeRule).toMatch(/\btop:\s*calc\(-1 \* var\(--style-notification-offset\)\);/);
+    expect(labelBadgeRule).toMatch(/\bright:\s*calc\(-1 \* var\(--style-notification-offset\)\);/);
   });
 
   it('keeps the event header fixed with a larger dialog portrait', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const contentRule = baseCss.match(
-      /\.workshop-page__world-notice-content\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
+    const contentRule = baseCss.match(/\.workshop-page__world-notice-content\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body;
     const portraitRule = baseCss.match(
       /\.workshop-page__world-notice-dialog-character\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -258,12 +253,10 @@ describe('WorkshopWorldNoticeManager', () => {
     const instructionRule = baseCss.match(
       /\.workshop-page__world-notice-request-instruction\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const headerRule = baseCss.match(
-      /\.workshop-page__world-notice-header\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const frameRule = baseCss.match(
-      /\.workshop-page__world-notice-frame\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
+    const headerRule = baseCss.match(/\.workshop-page__world-notice-header\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body;
+    const frameRule = baseCss.match(/\.workshop-page__world-notice-frame\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body;
 
     expect(contentRule).toMatch(/\bdisplay:\s*flex;/);
     expect(contentRule).toMatch(/\bflex-direction:\s*column;/);
@@ -307,9 +300,7 @@ describe('WorkshopWorldNoticeManager', () => {
       /\.style-button\.workshop-page__leaderboard-tab-button,[\s\S]*?\.style-button\.workshop-page__world-chat-tab-button\s*\{(?<body>[^}]*)\}/,
     )?.[0];
     const leaderboardRules = [
-      ...baseCss.matchAll(
-        /\.workshop-page__world-notice-leaderboard\s*\{(?<body>[^}]*)\}/g,
-      ),
+      ...baseCss.matchAll(/\.workshop-page__world-notice-leaderboard\s*\{(?<body>[^}]*)\}/g),
     ].map((match) => match.groups?.body ?? '');
     const leaderboardRowsRule = baseCss.match(
       /\.workshop-page__world-notice-leaderboard-rows\s*\{(?<body>[^}]*)\}/,
@@ -318,19 +309,13 @@ describe('WorkshopWorldNoticeManager', () => {
       /\.workshop-page__world-notice-leaderboard\s+\.workshop-page__leaderboard-row\.workshop-page__leaderboard-current\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     const rewardsRules = [
-      ...baseCss.matchAll(
-        /\.workshop-page__world-notice-rewards\s*\{(?<body>[^}]*)\}/g,
-      ),
+      ...baseCss.matchAll(/\.workshop-page__world-notice-rewards\s*\{(?<body>[^}]*)\}/g),
     ].map((match) => match.groups?.body ?? '');
     const requestsRules = [
-      ...baseCss.matchAll(
-        /\.workshop-page__world-notice-requests\s*\{(?<body>[^}]*)\}/g,
-      ),
+      ...baseCss.matchAll(/\.workshop-page__world-notice-requests\s*\{(?<body>[^}]*)\}/g),
     ].map((match) => match.groups?.body ?? '');
 
-    expect(leaderboardRules.some((rule) => /\bborder-top:\s*0;/.test(rule))).toBe(
-      true,
-    );
+    expect(leaderboardRules.some((rule) => /\bborder-top:\s*0;/.test(rule))).toBe(true);
     expect(leaderboardRowsRule).toMatch(/\bjustify-self:\s*center;/);
     expect(leaderboardRowsRule).toMatch(/\bwidth:\s*260px;/);
     expect(leaderboardRowsRule).toMatch(/\bmax-height:\s*none;/);
@@ -338,13 +323,9 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(currentRowRule).toMatch(/\bbackground:\s*transparent;/);
     expect(rewardsRules.some((rule) => /\bborder-top:\s*0;/.test(rule))).toBe(true);
     expect(
-      requestsRules.some((rule) =>
-        /\bborder-top:\s*var\(--style-separator-border\);/.test(rule),
-      ),
+      requestsRules.some((rule) => /\bborder-top:\s*var\(--style-separator-border\);/.test(rule)),
     ).toBe(true);
-    expect(tabButtonRule).toContain(
-      '.style-button.workshop-page__world-notice-tab-button',
-    );
+    expect(tabButtonRule).toContain('.style-button.workshop-page__world-notice-tab-button');
   });
 
   it('shows world event reward resource icons without resource words', () => {
@@ -377,9 +358,7 @@ describe('WorkshopWorldNoticeManager', () => {
       /\.style-button\.workshop-page__world-notice-donate-confirm\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(closeRule).toContain(
-      '.style-button.workshop-page__world-notice-donate-close',
-    );
+    expect(closeRule).toContain('.style-button.workshop-page__world-notice-donate-close');
     expect(closeRule).toMatch(/\bright:\s*var\(--style-box-title-left\);/);
     expect(confirmRule).toMatch(/\bdisplay:\s*inline-grid;/);
     expect(confirmRule).toMatch(/\bwhite-space:\s*normal;/);
@@ -395,28 +374,22 @@ describe('WorkshopWorldNoticeManager', () => {
 
     expect(parent.querySelector('.workshop-page__world-notice').hidden).toBe(false);
     expect(parent.querySelector('.workshop-page__world-notice.style-box')).toBeNull();
-    expect(parent.querySelector('.workshop-page__world-notice')?.dataset.panelSide).toBe(
-      'right',
-    );
+    expect(parent.querySelector('.workshop-page__world-notice')?.dataset.panelSide).toBe('right');
     const openButton = parent.querySelector('.workshop-page__world-notice-open');
     expect(parent.querySelector('.workshop-page__world-notice')?.getAttribute('aria-label')).toBe(
       'world event',
     );
-    expect(openButton?.classList.contains('workshop-page__panel-button-open')).toBe(
-      true,
+    expect(openButton?.classList.contains('workshop-page__panel-button-open')).toBe(true);
+    expect(openButton?.querySelector('.workshop-page__panel-button-label')?.textContent).toBe(
+      'Event',
     );
-    expect(
-      openButton?.querySelector('.workshop-page__panel-button-label')?.textContent,
-    ).toBe('Event');
-    expect(
-      openButton?.querySelector('.workshop-page__panel-button-timer')?.textContent,
-    ).toBe('3d');
+    expect(openButton?.querySelector('.workshop-page__panel-button-timer')?.textContent).toBe('3d');
     expect(openButton?.getAttribute('aria-label')).toContain(
       'fever in the lower quarter. 125 points',
     );
     expect(
       openButton?.querySelector('.workshop-page__world-notice-icon')?.getAttribute('src'),
-    ).toContain('icon-quests-scroll-bag-style.png');
+    ).toContain('icon-side-event-root-run.png');
     expect(parent.textContent).not.toContain('fever in the lower quarter');
     expect(parent.textContent).not.toContain('1/3');
 
@@ -434,17 +407,14 @@ describe('WorkshopWorldNoticeManager', () => {
       ),
     ).toEqual(['quests', 'leaderboard', 'rewards']);
     expect(
-      popup
-        .querySelector('.workshop-page__world-notice-dialog-character')
-        ?.getAttribute('src'),
+      popup.querySelector('.workshop-page__world-notice-dialog-character')?.getAttribute('src'),
     ).toContain('guild-secretary.webp');
     expect(
-      [...popup.querySelectorAll('.workshop-page__world-notice-meta-row')].map(
-        (row) =>
-          [
-            row.querySelector('.workshop-page__world-notice-meta-key')?.textContent,
-            row.querySelector('.workshop-page__world-notice-meta-value')?.textContent,
-          ].join(':'),
+      [...popup.querySelectorAll('.workshop-page__world-notice-meta-row')].map((row) =>
+        [
+          row.querySelector('.workshop-page__world-notice-meta-key')?.textContent,
+          row.querySelector('.workshop-page__world-notice-meta-value')?.textContent,
+        ].join(':'),
       ),
     ).toEqual(['points:125 points', 'resolves:3d']);
     expect(popup.textContent).toContain('lanterns stay lit past midnight');
@@ -457,41 +427,33 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(popup.textContent).toContain('simple antidote');
     expect(popup.textContent).toContain('160 points each');
     expect(popup.textContent).toContain('total 50 points');
-    const firstDonationLabel = popup.querySelector(
-      '.workshop-page__world-notice-donation-label',
-    );
+    const firstDonationLabel = popup.querySelector('.workshop-page__world-notice-donation-label');
     expect(firstDonationLabel?.dataset.resourceColor).toBe('potion');
     expect(
-      firstDonationLabel?.querySelector('.style-potion-label__icon')?.dataset
-        .assetAtlasFrame,
+      firstDonationLabel?.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame,
     ).toBe('potion:manaTonic');
+    expect(popup.querySelector('.workshop-page__world-notice-request-title')?.textContent).toBe(
+      'cool the fever',
+    );
     expect(
-      popup.querySelector('.workshop-page__world-notice-request-title')?.textContent,
-    ).toBe('cool the fever');
-    expect(
-      popup.querySelector('.workshop-page__world-notice-donation-option')?.children
-        .length,
+      popup.querySelector('.workshop-page__world-notice-donation-option')?.children.length,
     ).toBe(4);
-    const optionLabels = [
-      ...popup.querySelectorAll('.workshop-page__world-notice-donation-label'),
-    ];
+    const optionLabels = [...popup.querySelectorAll('.workshop-page__world-notice-donation-label')];
     expect(optionLabels[0]?.textContent).toBe('mana tonic');
     expect(optionLabels[0]?.dataset.resourceColor).toBe('potion');
     expect(
-      optionLabels[0]?.querySelector('.style-potion-label__icon')?.dataset
-        .assetAtlasFrame,
+      optionLabels[0]?.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame,
     ).toBe('potion:manaTonic');
     expect(optionLabels[1]?.classList.contains('is-unavailable')).toBe(true);
     expect(optionLabels[1]?.dataset.resourceColor).toBe('potion');
     expect(
-      optionLabels[1]?.querySelector('.style-potion-label__icon')?.dataset
-        .assetAtlasFrame,
+      optionLabels[1]?.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame,
     ).toBe('potion:minorHealingPotion');
     const coinLabel = optionLabels.find((label) => label.textContent === 'coin');
     expect(coinLabel?.dataset.resourceColor).toBe('coin');
     expect(
-      coinLabel?.querySelector('.style-resource-label--coin .style-resource-label__icon')
-        ?.dataset.assetAtlasFrame,
+      coinLabel?.querySelector('.style-resource-label--coin .style-resource-label__icon')?.dataset
+        .assetAtlasFrame,
     ).toBe('resource:coin');
     expect(popup.textContent).toContain('125 points earned');
     expect(popup.querySelector('.workshop-page__world-notice-request-fill')).toBeNull();
@@ -499,22 +461,16 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(popup.textContent).not.toContain('125 points, 3d');
     expect(popup.textContent).not.toContain('resolves 3d');
 
-    popup
-      .querySelector('.workshop-page__world-notice-tab-button:nth-child(2)')
-      .click();
+    popup.querySelector('.workshop-page__world-notice-tab-button:nth-child(2)').click();
     expect(
-      [
-        ...popup.querySelectorAll(
-          '.workshop-page__world-notice-leaderboard .row_key',
-        ),
-      ].map((cell) => cell.textContent),
+      [...popup.querySelectorAll('.workshop-page__world-notice-leaderboard .row_key')].map(
+        (cell) => cell.textContent,
+      ),
     ).toEqual(['user', '1. [DAY] Daily Ada (3)', '2. Merlin (4)']);
     expect(
-      [
-        ...popup.querySelectorAll(
-          '.workshop-page__world-notice-leaderboard .row_val',
-        ),
-      ].map((cell) => cell.textContent),
+      [...popup.querySelectorAll('.workshop-page__world-notice-leaderboard .row_val')].map(
+        (cell) => cell.textContent,
+      ),
     ).toEqual(['points', '225', '125']);
     expect(
       popup.querySelectorAll(
@@ -529,16 +485,14 @@ describe('WorkshopWorldNoticeManager', () => {
         ?.getAttribute('src'),
     ).toContain('rowan.png');
     expect(
-      popup
-        .querySelector('.workshop-page__world-notice-leaderboard .workshop-page__leaderboard-current')
-        ?.textContent,
+      popup.querySelector(
+        '.workshop-page__world-notice-leaderboard .workshop-page__leaderboard-current',
+      )?.textContent,
     ).toContain('125');
     expect(popup.textContent).not.toContain('1875 points to qualify');
     expect(popup.textContent).not.toContain('past events');
 
-    popup
-      .querySelector('.workshop-page__world-notice-tab-button:nth-child(3)')
-      .click();
+    popup.querySelector('.workshop-page__world-notice-tab-button:nth-child(3)').click();
     const firstRewardValue = popup.querySelector(
       '.workshop-page__world-notice-reward-row .workshop-page__world-notice-reward-value',
     );
@@ -561,18 +515,14 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(popup.textContent).toContain('101+ qualified');
     expect(popup.textContent).toContain('1875 points to qualify');
     expect(
-      popup
-        .querySelector(
-          '.workshop-page__world-notice-reward-amount[data-resource-color="emerald"]',
-        )
-        ?.dataset.resourceColor,
+      popup.querySelector(
+        '.workshop-page__world-notice-reward-amount[data-resource-color="emerald"]',
+      )?.dataset.resourceColor,
     ).toBe('emerald');
     expect(
-      popup
-        .querySelector(
-          '.workshop-page__world-notice-reward-amount[data-resource-color="crystal"]',
-        )
-        ?.dataset.resourceColor,
+      popup.querySelector(
+        '.workshop-page__world-notice-reward-amount[data-resource-color="crystal"]',
+      )?.dataset.resourceColor,
     ).toBe('crystal');
   });
 
@@ -594,20 +544,14 @@ describe('WorkshopWorldNoticeManager', () => {
     nextSnapshot.worldNotice.current.leaderboard.currentPoints = 140;
     gameplayFacade.emit(nextSnapshot);
 
-    const refreshedFrame = popupParent.querySelector(
-      '.workshop-page__world-notice-frame',
-    );
+    const refreshedFrame = popupParent.querySelector('.workshop-page__world-notice-frame');
     expect(refreshedFrame).toBe(frame);
     expect(refreshedFrame.scrollTop).toBe(96);
 
     refreshedFrame.scrollTop = 72;
-    popupParent
-      .querySelector('.workshop-page__world-notice-tab-button:nth-child(2)')
-      .click();
+    popupParent.querySelector('.workshop-page__world-notice-tab-button:nth-child(2)').click();
 
-    expect(
-      popupParent.querySelector('.workshop-page__world-notice-frame')?.scrollTop,
-    ).toBe(0);
+    expect(popupParent.querySelector('.workshop-page__world-notice-frame')?.scrollTop).toBe(0);
   });
 
   it('keeps the leaderboard tab in the outer event scroll frame', () => {
@@ -619,14 +563,10 @@ describe('WorkshopWorldNoticeManager', () => {
 
     manager.mount(parent, popupParent);
     parent.querySelector('.workshop-page__world-notice-open').click();
-    popupParent
-      .querySelector('.workshop-page__world-notice-tab-button:nth-child(2)')
-      .click();
+    popupParent.querySelector('.workshop-page__world-notice-tab-button:nth-child(2)').click();
 
     const frame = popupParent.querySelector('.workshop-page__world-notice-frame');
-    const rows = popupParent.querySelector(
-      '.workshop-page__world-notice-leaderboard-rows',
-    );
+    const rows = popupParent.querySelector('.workshop-page__world-notice-leaderboard-rows');
 
     expect(frame.classList.contains('style-page-scroll')).toBe(true);
     expect(rows.classList.contains('workshop-page__leaderboard-rows')).toBe(false);
@@ -642,18 +582,14 @@ describe('WorkshopWorldNoticeManager', () => {
     });
     gameplayFacade.emit(nextSnapshot);
 
-    const refreshedFrame = popupParent.querySelector(
-      '.workshop-page__world-notice-frame',
-    );
+    const refreshedFrame = popupParent.querySelector('.workshop-page__world-notice-frame');
     const refreshedRows = popupParent.querySelector(
       '.workshop-page__world-notice-leaderboard-rows',
     );
 
     expect(refreshedFrame).toBe(frame);
     expect(refreshedFrame.scrollTop).toBe(118);
-    expect(refreshedRows.classList.contains('workshop-page__leaderboard-rows')).toBe(
-      false,
-    );
+    expect(refreshedRows.classList.contains('workshop-page__leaderboard-rows')).toBe(false);
   });
 
   it('renders event task rows with title, instruction, point columns, and separators', () => {
@@ -692,9 +628,9 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(
       row.querySelector('.workshop-page__world-notice-request-title')?.dataset.resourceColor,
     ).toBeUndefined();
-    expect(
-      row.querySelector('.workshop-page__world-notice-request-instruction')?.textContent,
-    ).toBe('earn coin by selling items or claiming coin. 25 coin earned gives 1 point.');
+    expect(row.querySelector('.workshop-page__world-notice-request-instruction')?.textContent).toBe(
+      'earn coin by selling items or claiming coin. 25 coin earned gives 1 point.',
+    );
     expect(
       [
         ...row.querySelectorAll(
@@ -709,8 +645,7 @@ describe('WorkshopWorldNoticeManager', () => {
     ).toBe('25');
     expect(
       [
-        ...(row.querySelector('.workshop-page__world-notice-request-points-row')?.children ??
-          []),
+        ...(row.querySelector('.workshop-page__world-notice-request-points-row')?.children ?? []),
       ].map((node) => node.textContent),
     ).toEqual(['earned 25 coin', 'earned 1 point']);
     expect(
@@ -733,13 +668,11 @@ describe('WorkshopWorldNoticeManager', () => {
 
     expect(staleRow.textContent).not.toContain('make 1125 progress');
     expect(
-      staleRow.querySelector('.workshop-page__world-notice-request-instruction')
-        ?.textContent,
+      staleRow.querySelector('.workshop-page__world-notice-request-instruction')?.textContent,
     ).toBe('complete this quest. each counted action gives 1 point.');
-    expect(
-      staleRow.querySelector('.workshop-page__world-notice-request-points')
-        ?.textContent,
-    ).toBe('counted 1125 actions');
+    expect(staleRow.querySelector('.workshop-page__world-notice-request-points')?.textContent).toBe(
+      'counted 1125 actions',
+    );
   });
 
   it('falls back to own event points when no event leaderboard rows are supplied', () => {
@@ -747,22 +680,21 @@ describe('WorkshopWorldNoticeManager', () => {
     delete snapshot.worldNotice.current.leaderboard.rows;
     const gameplayFacade = createGameplayFacadeFake(snapshot);
     const playerFacade = createPlayerFacadeFake();
-    const manager = new WorkshopWorldNoticeManager({ gameplayFacade, playerFacade });
+    const manager = new WorkshopWorldNoticeManager({
+      gameplayFacade,
+      playerFacade,
+    });
     const parent = document.createElement('div');
     const popupParent = document.createElement('div');
 
     manager.mount(parent, popupParent);
     parent.querySelector('.workshop-page__world-notice-open').click();
-    popupParent
-      .querySelector('.workshop-page__world-notice-tab-button:nth-child(2)')
-      .click();
+    popupParent.querySelector('.workshop-page__world-notice-tab-button:nth-child(2)').click();
 
     expect(
-      [
-        ...popupParent.querySelectorAll(
-          '.workshop-page__world-notice-leaderboard .row_key',
-        ),
-      ].map((cell) => cell.textContent),
+      [...popupParent.querySelectorAll('.workshop-page__world-notice-leaderboard .row_key')].map(
+        (cell) => cell.textContent,
+      ),
     ).toEqual(['user', '- Merlin (4)']);
     expect(
       popupParent.querySelector(
@@ -818,23 +750,17 @@ describe('WorkshopWorldNoticeManager', () => {
 
     manager.mount(parent, popupParent);
     parent.querySelector('.workshop-page__world-notice-open').click();
-    popupParent
-      .querySelector('.workshop-page__world-notice-tab-button:nth-child(2)')
-      .click();
+    popupParent.querySelector('.workshop-page__world-notice-tab-button:nth-child(2)').click();
 
     expect(
-      [
-        ...popupParent.querySelectorAll(
-          '.workshop-page__world-notice-leaderboard .row_key',
-        ),
-      ].map((cell) => cell.textContent),
+      [...popupParent.querySelectorAll('.workshop-page__world-notice-leaderboard .row_key')].map(
+        (cell) => cell.textContent,
+      ),
     ).toEqual(['user', '1. [DAY] Ada (5)', '2. Merlin (4)']);
     expect(
-      [
-        ...popupParent.querySelectorAll(
-          '.workshop-page__world-notice-leaderboard .row_val',
-        ),
-      ].map((cell) => cell.textContent),
+      [...popupParent.querySelectorAll('.workshop-page__world-notice-leaderboard .row_val')].map(
+        (cell) => cell.textContent,
+      ),
     ).toEqual(['points', '450', '125']);
   });
 
@@ -853,8 +779,7 @@ describe('WorkshopWorldNoticeManager', () => {
     for (const request of snapshot.worldNotice.current.requests) {
       request.completed = true;
     }
-    snapshot.worldNotice.current.completedRequests =
-      snapshot.worldNotice.current.totalRequests;
+    snapshot.worldNotice.current.completedRequests = snapshot.worldNotice.current.totalRequests;
     gameplayFacade.emit(snapshot);
 
     expect(openButton?.dataset.notification).toBeUndefined();
@@ -869,9 +794,7 @@ describe('WorkshopWorldNoticeManager', () => {
     });
 
     expect(openButton?.dataset.notification).toBeUndefined();
-    expect(
-      openButton?.querySelector('.workshop-page__panel-button-timer')?.hidden,
-    ).toBe(true);
+    expect(openButton?.querySelector('.workshop-page__panel-button-timer')?.hidden).toBe(true);
   });
 
   it('sends coin only for explicit manual event rows', () => {
@@ -942,61 +865,46 @@ describe('WorkshopWorldNoticeManager', () => {
 
     popupParent.querySelector('.workshop-page__world-notice-request-action').click();
 
-    const donatePanel = popupParent.querySelector(
-      '.workshop-page__world-notice-donate-panel',
-    );
+    const donatePanel = popupParent.querySelector('.workshop-page__world-notice-donate-panel');
     expect(donatePanel.hidden).toBe(false);
-    expect(
-      donatePanel.querySelector('.style-box__title')?.textContent,
-    ).toBe('donate');
-    expect(
-      donatePanel.querySelector('.workshop-page__world-notice-donate-close'),
-    ).not.toBeNull();
+    expect(donatePanel.querySelector('.style-box__title')?.textContent).toBe('donate');
+    expect(donatePanel.querySelector('.workshop-page__world-notice-donate-close')).not.toBeNull();
     expect(donatePanel.textContent).toContain('send bridge coin');
     const donateRows = new Map(
-      [...donatePanel.querySelectorAll('.workshop-page__world-notice-donate-row')]
-        .map((row) => [
-          row.querySelector('.row_key')?.textContent,
-          row.querySelector('.row_val'),
-        ]),
+      [...donatePanel.querySelectorAll('.workshop-page__world-notice-donate-row')].map((row) => [
+        row.querySelector('.row_key')?.textContent,
+        row.querySelector('.row_val'),
+      ]),
     );
     expect(donateRows.get('giving')?.dataset.resourceColor).toBe('coin');
     expect(
       donateRows
         .get('owned')
-        ?.querySelector('.style-resource-label--coin .style-resource-label__icon')
-        ?.dataset.assetAtlasFrame,
+        ?.querySelector('.style-resource-label--coin .style-resource-label__icon')?.dataset
+        .assetAtlasFrame,
     ).toBe('resource:coin');
-    const donateConfirm = donatePanel.querySelector(
-      '.workshop-page__world-notice-donate-confirm',
-    );
+    const donateConfirm = donatePanel.querySelector('.workshop-page__world-notice-donate-confirm');
     expect(
-      donateConfirm?.querySelector(
-        '.workshop-page__world-notice-donate-confirm-label',
-      )?.textContent,
+      donateConfirm?.querySelector('.workshop-page__world-notice-donate-confirm-label')
+        ?.textContent,
     ).toBe('donate x1');
     expect(
-      donateConfirm?.querySelector(
-        '.workshop-page__world-notice-donate-confirm-points',
-      )?.textContent,
+      donateConfirm?.querySelector('.workshop-page__world-notice-donate-confirm-points')
+        ?.textContent,
     ).toBe('1 point');
 
     [...donatePanel.querySelectorAll('.amount-selection-row__step')]
       .find((button) => button.textContent === '+10')
       .click();
     expect(
-      donateConfirm?.querySelector(
-        '.workshop-page__world-notice-donate-confirm-label',
-      )?.textContent,
+      donateConfirm?.querySelector('.workshop-page__world-notice-donate-confirm-label')
+        ?.textContent,
     ).toBe('donate x11');
     expect(
-      donateConfirm?.querySelector(
-        '.workshop-page__world-notice-donate-confirm-points',
-      )?.textContent,
+      donateConfirm?.querySelector('.workshop-page__world-notice-donate-confirm-points')
+        ?.textContent,
     ).toBe('11 points');
-    donatePanel
-      .querySelector('.workshop-page__world-notice-donate-confirm')
-      .click();
+    donatePanel.querySelector('.workshop-page__world-notice-donate-confirm').click();
 
     expect(gameplayFacade.donateWorldNoticeResource).toHaveBeenCalledWith(
       'weekly-1:siege:coin',
@@ -1025,8 +933,6 @@ describe('WorkshopWorldNoticeManager', () => {
     });
 
     expect(parent.querySelector('.workshop-page__world-notice').hidden).toBe(true);
-    expect(popupParent.querySelector('.workshop-page__world-notice-popup').hidden).toBe(
-      true,
-    );
+    expect(popupParent.querySelector('.workshop-page__world-notice-popup').hidden).toBe(true);
   });
 });

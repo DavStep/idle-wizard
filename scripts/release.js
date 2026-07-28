@@ -23,6 +23,7 @@ import {
   assertApkVersionMatches,
 } from './android-version-code-policy.js';
 import { shouldPublishBackend } from './release-backend-policy.js';
+import { waitForReleaseWorkflows } from './release-github-actions.js';
 
 const rootDir = process.cwd();
 const options = parseOptions(process.argv.slice(2));
@@ -120,6 +121,21 @@ if (!skipGit) {
 
   step('git push');
   run('git', ['push', 'origin', branch]);
+
+  if (branch === 'main') {
+    step('github release workflows');
+    const releaseCommit = capture('git', ['rev-parse', 'HEAD']).trim();
+    try {
+      await waitForReleaseWorkflows({
+        commitSha: releaseCommit,
+        listWorkflowRuns: listGithubWorkflowRuns,
+        watchWorkflowRun: watchGithubWorkflowRun,
+        log: (message) => console.log(message),
+      });
+    } catch (error) {
+      fail(error.message);
+    }
+  }
 }
 
 if (!skipDiscord) {
@@ -609,6 +625,52 @@ function capture(command, args) {
   }
 
   return result.stdout;
+}
+
+function listGithubWorkflowRuns(workflow, commitSha) {
+  const output = capture('gh', [
+    'run',
+    'list',
+    '--workflow',
+    workflow.file,
+    '--commit',
+    commitSha,
+    '--event',
+    'push',
+    '--limit',
+    '1',
+    '--json',
+    'databaseId,headSha',
+  ]);
+
+  try {
+    return JSON.parse(output);
+  } catch {
+    fail(`Could not parse GitHub Actions runs for ${workflow.label}.`);
+  }
+}
+
+function watchGithubWorkflowRun(runId, workflow) {
+  const result = spawnSync('gh', [
+    'run',
+    'watch',
+    String(runId),
+    '--exit-status',
+    '--interval',
+    '10',
+  ], {
+    cwd: rootDir,
+    env: process.env,
+    stdio: 'inherit',
+  });
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.status !== 0) {
+    throw new Error(`${workflow.label} failed. Discord was not posted.`);
+  }
 }
 
 function fail(message) {

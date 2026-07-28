@@ -1,6 +1,7 @@
 import {
   Container,
   Graphics,
+  NineSliceSprite,
   Rectangle,
   Sprite,
 } from 'pixi.js';
@@ -11,7 +12,13 @@ import {
 } from '../../primitives/index.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import {
+  PIXI_ROOM_TAB_FRAME_SCALE,
+  PIXI_ROOM_TAB_FRAME_SLICE,
+} from './PixiBottomPanelView.js';
 import {
   RootRunHudAvatarButton,
   RootRunHudCurrencyCapsule,
@@ -21,7 +28,13 @@ import {
 
 const ROOT_RUN_UI_SCALE = 3;
 const TOP_HUD_X = 32 / ROOT_RUN_UI_SCALE;
-const TOP_HUD_Y = 140 / ROOT_RUN_UI_SCALE;
+// The Root Run reference y includes a 108 px authored safe-area inset. The
+// canvas already starts below env(safe-area-inset-top), so keep only the
+// reference's 32 px content inset here.
+const TOP_HUD_Y = 32 / ROOT_RUN_UI_SCALE;
+const TOP_PANEL_BACKGROUND_HEIGHT =
+  PIXI_UI_GEOMETRY.roomContentTop -
+  PIXI_UI_GEOMETRY.topPanelContentGap;
 const LEVEL_SIZE = 93;
 const QUEST_FLIGHT_TEXTURE_WIDTH = 93 / ROOT_RUN_UI_SCALE;
 const QUEST_FLIGHT_TEXTURE_HEIGHT = 94 / ROOT_RUN_UI_SCALE;
@@ -92,6 +105,25 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     });
     this.topHudRoot.position.set(TOP_HUD_X, TOP_HUD_Y);
     this.topHudRoot.scale.set(1 / ROOT_RUN_UI_SCALE);
+
+    this.panelBackground = new NineSliceSprite({
+      texture: assets.getTexture(
+        PIXI_ROOT_RUN_ASSETS.topPanelBackground,
+      ),
+      ...PIXI_ROOM_TAB_FRAME_SLICE,
+      label: 'topPanel:background',
+      roundPixels: true,
+    });
+    this.panelBackground.eventMode = 'none';
+    this.panelBackground.position.set(0, TOP_PANEL_BACKGROUND_HEIGHT);
+    this.panelBackground.scale.set(
+      PIXI_ROOM_TAB_FRAME_SCALE,
+      -PIXI_ROOM_TAB_FRAME_SCALE,
+    );
+    this.panelBackground.setSize(
+      PIXI_UI_GEOMETRY.sourceWidth / PIXI_ROOM_TAB_FRAME_SCALE,
+      TOP_PANEL_BACKGROUND_HEIGHT / PIXI_ROOM_TAB_FRAME_SCALE,
+    );
 
     this.avatarViewport = new RootRunHudAvatarButton({
       assets,
@@ -224,6 +256,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.questArrivalRoot.renderable = false;
 
     this.root.addChild(
+      this.panelBackground,
       this.topHudRoot,
       this.questFlightRoot,
       this.questArrivalRoot,
@@ -257,8 +290,10 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       }),
       inputRouter?.registerPressTarget?.({
         id: 'top.level',
-        displayObject: this.levelControl,
-        enabled: () => this.isControlAvailable(this.levelControl),
+        displayObject: this.levelRail,
+        enabled: () => this.isControlAvailable(this.levelRail),
+        excludePageSwipe: true,
+        onPressChange: (pressed) => this.levelRail.setPressed(pressed),
         onActivate: () => this.actions.openLevel?.(),
         haptic: 'light',
       }),
@@ -303,7 +338,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     });
     this.registerSemanticTarget({
       semanticId: 'top.level',
-      displayObject: this.levelControl,
+      displayObject: this.levelRail,
       activate: () => this.actions.openLevel?.(),
     });
     this.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
@@ -368,6 +403,8 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       model.showAvatar !== false && reveal.avatar !== false;
     const topVisible = reveal.top !== false;
 
+    this.panelBackground.visible = topVisible;
+    this.panelBackground.renderable = topVisible;
     this.topHudRoot.visible = topVisible;
     this.topHudRoot.renderable = topVisible;
     this.avatarViewport.visible = topVisible && avatarVisible;
@@ -398,8 +435,13 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.coin.visible = topVisible && reveal.resources !== false;
     this.coin.renderable = this.coin.visible;
 
-    this.levelControl.visible = topVisible && level !== null;
+    this.levelRail.visible = topVisible && level !== null;
+    this.levelRail.renderable = this.levelRail.visible;
+    this.levelControl.visible = this.levelRail.visible;
     this.levelControl.renderable = this.levelControl.visible;
+    if (!this.levelRail.visible) {
+      this.levelRail.setPressed(false);
+    }
     this.levelRail.setLevel(level === null ? '' : String(level));
 
     const questVisible =

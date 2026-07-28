@@ -4400,7 +4400,8 @@ const researchCurrencyCostIds = new Set([
   ...Object.keys(researchDefaultCostEmeraldById),
 ]);
 
-const QUICK_RESEARCH_DURATION_SECONDS = 3n;
+const MIN_RESEARCH_DURATION_SECONDS = 5n;
+const QUICK_RESEARCH_DURATION_SECONDS = MIN_RESEARCH_DURATION_SECONDS;
 const DEFAULT_RESEARCH_DURATION_SECONDS = 10n * 60n;
 
 const seedResearchDurationSecondsById: Record<string, bigint> = {
@@ -8230,7 +8231,10 @@ function validateResearchCostGold(costGold: bigint | number): bigint {
 function normalizeResearchDurationSeconds(value: bigint | number, fallback: bigint): bigint {
   const safeValue = toBigInt(value);
 
-  if (safeValue <= 0n || safeValue > MAX_RESEARCH_DURATION_SECONDS) {
+  if (
+    safeValue < MIN_RESEARCH_DURATION_SECONDS ||
+    safeValue > MAX_RESEARCH_DURATION_SECONDS
+  ) {
     return fallback;
   }
 
@@ -8271,7 +8275,10 @@ function normalizeStoredResearchDurationSeconds(
 function validateResearchDurationSeconds(durationSeconds: bigint | number): bigint {
   const safeDurationSeconds = toBigInt(durationSeconds);
 
-  if (safeDurationSeconds <= 0n || safeDurationSeconds > MAX_RESEARCH_DURATION_SECONDS) {
+  if (
+    safeDurationSeconds < MIN_RESEARCH_DURATION_SECONDS ||
+    safeDurationSeconds > MAX_RESEARCH_DURATION_SECONDS
+  ) {
     throw new Error('Invalid research duration.');
   }
 

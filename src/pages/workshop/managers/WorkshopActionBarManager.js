@@ -10,11 +10,15 @@ import {
 } from './WorkshopSecondaryActionGateManager.js';
 
 const MAIL_ICON_URL = new URL(
-  '../../../../assets/game/source/icons/icon-inbox-envelope-bag-style.png',
+  '../../../../assets/game/source/icons/icon-side-inbox-root-run.png',
   import.meta.url,
 ).href;
 const BAG_ICON_URL = new URL(
-  '../../../../assets/game/source/icons/icon-bag.png',
+  '../../../../assets/game/source/icons/icon-side-bag-root-run.png',
+  import.meta.url,
+).href;
+const STATS_ICON_URL = new URL(
+  '../../../../assets/game/source/icons/icon-side-stats-root-run.png',
   import.meta.url,
 ).href;
 
@@ -33,7 +37,6 @@ export class WorkshopActionBarManager {
     onStatsClick,
     onSummonInfoClick,
     onSummonNotice,
-    onSummonNoticeList,
     rewardEventsAvailable = false,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
@@ -44,7 +47,6 @@ export class WorkshopActionBarManager {
     this.onStatsClick = onStatsClick;
     this.onSummonInfoClick = onSummonInfoClick;
     this.onSummonNotice = onSummonNotice;
-    this.onSummonNoticeList = onSummonNoticeList;
     this.rewardEventsAvailable = rewardEventsAvailable;
     this.inboxGateManager = new WorkshopSecondaryActionGateManager({
       unlockLevel: WORKSHOP_INBOX_UNLOCK_LEVEL,
@@ -85,14 +87,10 @@ export class WorkshopActionBarManager {
     this.refs.summonInfoButton = this.createSummonInfoButton();
     this.refs.bagPanel = this.createBagPanel();
     this.refs.mailPanel = this.createMailPanel();
-    this.refs.statsButton = this.createStatsButton();
+    this.refs.statsPanel = this.createStatsPanel();
 
-    this.root.append(
-      this.refs.summonButton,
-      this.refs.summonInfoButton,
-      this.refs.statsButton,
-    );
-    parent.append(this.root, this.refs.bagPanel, this.refs.mailPanel);
+    this.root.append(this.refs.summonButton, this.refs.summonInfoButton);
+    parent.append(this.root, this.refs.bagPanel, this.refs.statsPanel, this.refs.mailPanel);
 
     this.unsubscribe = this.gameplayFacade.subscribe((snapshot) => this.render(snapshot));
     this.render(this.gameplayFacade.getSnapshot());
@@ -117,6 +115,7 @@ export class WorkshopActionBarManager {
     this.inboxUnsubscribe = null;
     this.root?.remove();
     this.refs.bagPanel?.remove();
+    this.refs.statsPanel?.remove();
     this.refs.mailPanel?.remove();
     this.root = null;
     this.refs = {};
@@ -128,10 +127,7 @@ export class WorkshopActionBarManager {
     button.type = 'button';
     button.dataset.tutorialId = 'workshop:summonSeed';
 
-    const circle = createAssetAtlasSprite(
-      'workshop-page__summon-circle',
-      'ui:summonCircle',
-    );
+    const circle = createAssetAtlasSprite('workshop-page__summon-circle', 'ui:summonCircle');
 
     const text = document.createElement('span');
     text.className = 'workshop-page__summon-button-text';
@@ -198,15 +194,41 @@ export class WorkshopActionBarManager {
     return root;
   }
 
-  createStatsButton() {
+  createStatsPanel() {
+    const root = document.createElement('section');
+    root.className = 'workshop-page__panel-button workshop-page__stats';
+    root.dataset.panelSide = 'right';
+    root.setAttribute('aria-label', 'stats');
+
     const button = document.createElement('button');
-    button.className =
-      'style-button style-button--yellow workshop-page__stats-button';
+    button.className = 'workshop-page__panel-button-open workshop-page__stats-button';
     button.type = 'button';
-    button.textContent = 'Stats';
+    button.setAttribute('aria-haspopup', 'dialog');
     button.setAttribute('aria-label', 'open stats');
+
+    const iconFrame = document.createElement('span');
+    iconFrame.className = 'workshop-page__stats-button-icon-frame';
+    iconFrame.setAttribute('aria-hidden', 'true');
+
+    const icon = document.createElement('img');
+    icon.className = 'workshop-page__stats-button-icon';
+    icon.src = STATS_ICON_URL;
+    icon.alt = '';
+    icon.loading = 'lazy';
+    icon.decoding = 'async';
+    icon.setAttribute('aria-hidden', 'true');
+
+    const label = document.createElement('span');
+    label.className =
+      'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__stats-button-label';
+    label.textContent = 'Stats';
+
+    iconFrame.append(icon);
+    button.append(iconFrame, label);
     button.addEventListener('click', () => this.onStatsClick?.());
-    return button;
+    root.append(button);
+    this.refs.statsButton = button;
+    return root;
   }
 
   createMailPanel() {
@@ -320,12 +342,7 @@ export class WorkshopActionBarManager {
       }
 
       if (!this.rewardEventsAvailable) {
-        this.showSummonNotices([
-          { message: this.getSuccessMessage(result) },
-          this.getManaSpendNotice(result, snapshot),
-        ]);
-      } else {
-        this.showSummonNotices([this.getManaSpendNotice(result, snapshot)]);
+        this.onSummonNotice?.(this.getSuccessMessage(result));
       }
       return this.canContinueSummonHold();
     }
@@ -345,7 +362,11 @@ export class WorkshopActionBarManager {
 
       this.summonHoldActivated = true;
       this.suppressNextSummonClick();
-      if (this.onSummonSeed({ playManualHaptic: this.shouldPlaySummonHoldHaptic() })) {
+      if (
+        this.onSummonSeed({
+          playManualHaptic: this.shouldPlaySummonHoldHaptic(),
+        })
+      ) {
         this.scheduleNextSummon();
         return;
       }
@@ -432,10 +453,7 @@ export class WorkshopActionBarManager {
       return false;
     }
 
-    const releaseTarget = button.ownerDocument?.elementFromPoint?.(
-      event.clientX,
-      event.clientY,
-    );
+    const releaseTarget = button.ownerDocument?.elementFromPoint?.(event.clientX, event.clientY);
 
     if (releaseTarget) {
       return releaseTarget === button || button.contains(releaseTarget);
@@ -502,47 +520,6 @@ export class WorkshopActionBarManager {
     return `${result.seedCounts
       .map((seedCount) => this.formatSeedCount(seedCount))
       .join(', ')} found`;
-  }
-
-  showSummonNotices(notices) {
-    const visibleNotices = notices.filter((notice) => notice?.message);
-
-    if (visibleNotices.length <= 0) {
-      return;
-    }
-
-    if (visibleNotices.length > 1 && this.onSummonNoticeList) {
-      this.onSummonNoticeList(visibleNotices);
-      return;
-    }
-
-    for (const notice of visibleNotices) {
-      const { message, ...options } = notice;
-      this.onSummonNotice?.(message, options);
-    }
-  }
-
-  getManaSpendNotice(result, snapshot) {
-    const message = this.getManaSpendMessage(result, snapshot);
-
-    if (!message) {
-      return null;
-    }
-
-    return {
-      message,
-      flyoutKey: 'workshop-mana-spend',
-    };
-  }
-
-  getManaSpendMessage(result, snapshot) {
-    const cost = Number(result?.cost ?? snapshot?.seedSummoning?.cost);
-
-    if (!Number.isFinite(cost) || cost <= 0) {
-      return null;
-    }
-
-    return `-${cost} mana`;
   }
 
   formatSeedCount({ seed, quantity = 1 } = {}) {

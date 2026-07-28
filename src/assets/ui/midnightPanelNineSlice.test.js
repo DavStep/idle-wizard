@@ -124,4 +124,53 @@ describe('midnight panel nine-slice assets', () => {
       }
     }
   });
+
+  it('keeps the top-panel sibling unchanged outside its tighter corners', () => {
+    const roomTab = readPng('midnight-room-tab-top-cap-9slice.png');
+    const topPanel = readPng('midnight-top-panel-background-9slice.png');
+    const metadata = JSON.parse(
+      fs.readFileSync(
+        path.join(
+          UI_ASSET_DIRECTORY,
+          'midnight-top-panel-background-9slice.9slice.json',
+        ),
+        'utf8',
+      ),
+    );
+
+    expect([topPanel.width, topPanel.height]).toEqual([
+      roomTab.width,
+      roomTab.height,
+    ]);
+    expect(metadata.slice).toEqual({
+      left: 83,
+      top: 91,
+      right: 73,
+      bottom: 1,
+    });
+
+    for (let y = 0; y < topPanel.height; y += 1) {
+      for (let x = 0; x < topPanel.width; x += 1) {
+        const isCornerRemap =
+          y < 40 && (x < 40 || x > topPanel.width - 1 - 40);
+        if (!isCornerRemap) {
+          expect(readPixel(topPanel, x, y)).toEqual(
+            readPixel(roomTab, x, y),
+          );
+        }
+      }
+    }
+
+    const firstVisibleX = (image) => {
+      for (let x = 0; x < image.width; x += 1) {
+        if (readPixel(image, x, 0)[3] > 8) {
+          return x;
+        }
+      }
+      return image.width;
+    };
+
+    expect(firstVisibleX(topPanel)).toBe(9);
+    expect(firstVisibleX(roomTab)).toBe(40);
+  });
 });

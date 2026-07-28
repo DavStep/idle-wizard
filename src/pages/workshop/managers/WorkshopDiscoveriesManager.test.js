@@ -121,11 +121,10 @@ function createSnapshot() {
 }
 
 function getPagePotionNames(parent) {
-  return [...parent.querySelectorAll('.workshop-page__discovery-recipe-page')].map(
-    (page) =>
-      [...page.querySelectorAll('.workshop-page__discovery-potion-row')].map(
-        (row) => row.querySelector('.workshop-page__discovery-potion-name')?.textContent,
-      ),
+  return [...parent.querySelectorAll('.workshop-page__discovery-recipe-page')].map((page) =>
+    [...page.querySelectorAll('.workshop-page__discovery-potion-row')].map(
+      (row) => row.querySelector('.workshop-page__discovery-potion-name')?.textContent,
+    ),
   );
 }
 
@@ -148,9 +147,7 @@ describe('WorkshopDiscoveriesManager', () => {
     expect(button?.classList.contains('workshop-page__panel-button-open')).toBe(true);
     expect(button?.getAttribute('aria-label')).toBe('open discoveries');
     expect(button?.getAttribute('aria-haspopup')).toBe('dialog');
-    expect(icon?.getAttribute('src')).toContain(
-      'icon-discoveries-journal-bag-style.png',
-    );
+    expect(icon?.getAttribute('src')).toContain('icon-side-discoveries-root-run.png');
     expect(icon?.getAttribute('alt')).toBe('');
     expect(label?.textContent).toBe('Discoveries');
 
@@ -161,16 +158,13 @@ describe('WorkshopDiscoveriesManager', () => {
     const dialogRule = baseCss.match(
       /\.style-dialog\.workshop-page__discoveries-dialog\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const panelRule = baseCss.match(
-      /\.workshop-page__discoveries-panel\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
+    const panelRule = baseCss.match(/\.workshop-page__discoveries-panel\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body;
 
     expect(dialogRule).toContain('display: flex;');
     expect(dialogRule).toContain('flex-direction: column;');
     expect(dialogRule).toContain('width: 306px;');
-    expect(dialogRule).toContain(
-      'height: var(--workshop-page-discoveries-dialog-content-height);',
-    );
+    expect(dialogRule).toContain('height: var(--workshop-page-discoveries-dialog-content-height);');
     expect(panelRule).toContain('width: var(--style-discoveries-book-dialog-width);');
     expect(baseCss).toContain('.workshop-page__discovery-recipe-book[hidden]');
   });
@@ -187,10 +181,7 @@ describe('WorkshopDiscoveriesManager', () => {
 
     expect(parent.querySelector('.workshop-page__discovery-recipe-book')).not.toBeNull();
     expect(parent.querySelector('.brewing-page__recipe-select-button')).toBeNull();
-    expect(getPagePotionNames(parent)).toEqual([
-      ['unknown potion'],
-      ['silverleaf quiet'],
-    ]);
+    expect(getPagePotionNames(parent)).toEqual([['unknown potion'], ['silverleaf quiet']]);
     expect(parent.querySelector('.workshop-page__discovery-recipe-page-label')?.textContent).toBe(
       'pages 1-2/3',
     );

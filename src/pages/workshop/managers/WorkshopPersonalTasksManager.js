@@ -1,14 +1,11 @@
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
-import {
-  createResourceIconLabel,
-  setResourceIconText,
-} from '../../shared/resourceIconLabel.js';
+import { createResourceIconLabel, setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 
 const PERSONAL_TASKS_ICON_URL = new URL(
-  '../../../../assets/game/source/rooms/workshop/characters/miso-daily-tasks.webp',
+  '../../../../assets/game/source/icons/icon-side-tasks-root-run.png',
   import.meta.url,
 ).href;
 
@@ -120,26 +117,24 @@ export class WorkshopPersonalTasksManager {
 
     this.refs.dialog = document.createElement('section');
     this.refs.dialog.className = 'workshop-page__personal-tasks-dialog style-dialog';
-    this.refs.dialog.setAttribute('aria-label', 'quests');
+    this.refs.dialog.setAttribute('aria-label', 'Daily Tasks');
     this.refs.dialog.setAttribute('aria-modal', 'true');
     this.refs.dialog.setAttribute('role', 'dialog');
     this.refs.dialog.tabIndex = -1;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'quests';
+    title.textContent = 'Daily Tasks';
 
     this.refs.frame = document.createElement('div');
-    this.refs.frame.className =
-      'workshop-page__personal-tasks-frame style-page-scroll';
+    this.refs.frame.className = 'workshop-page__personal-tasks-frame style-page-scroll';
 
     this.refs.rows = document.createElement('div');
     this.refs.rows.className = 'workshop-page__personal-tasks-rows';
     this.refs.frame.append(this.refs.rows);
 
     this.refs.closeButton = document.createElement('button');
-    this.refs.closeButton.className =
-      'style-button workshop-page__personal-tasks-close';
+    this.refs.closeButton.className = 'style-button workshop-page__personal-tasks-close';
     this.refs.closeButton.type = 'button';
     this.refs.closeButton.textContent = 'close';
     this.refs.closeButton.addEventListener('click', () => this.hide());
@@ -147,7 +142,7 @@ export class WorkshopPersonalTasksManager {
     this.refs.tabs = document.createElement('div');
     this.refs.tabs.className = 'workshop-page__personal-tasks-tabs';
     this.refs.tabs.setAttribute('role', 'tablist');
-    this.refs.tabs.setAttribute('aria-label', 'quest view');
+    this.refs.tabs.setAttribute('aria-label', 'Daily Tasks view');
     this.refs.tabButtons = new Map(
       ['tasks', 'rewards'].map((tabId) => {
         const button = document.createElement('button');
@@ -242,7 +237,7 @@ export class WorkshopPersonalTasksManager {
     const claimableRewards = this.getVisibleClaimableRewards(personalTasks);
     this.refs.openButton?.setAttribute(
       'aria-label',
-      `open quests, daily ${daily?.completedTasks ?? 0}/${daily?.totalTasks ?? 0}, today ${daily?.currentPoints ?? 0}/${daily?.maxPoints ?? 0} points, week ${weekly?.currentPoints ?? 0}/${weekly?.maxPoints ?? 0} points`,
+      `open Daily Tasks, daily ${daily?.completedTasks ?? 0}/${daily?.totalTasks ?? 0}, today ${daily?.currentPoints ?? 0}/${daily?.maxPoints ?? 0} points, week ${weekly?.currentPoints ?? 0}/${weekly?.maxPoints ?? 0} points`,
     );
     setNotificationBadge(this.refs.openButton, claimableRewards > 0);
   }
@@ -279,7 +274,7 @@ export class WorkshopPersonalTasksManager {
 
     const title = document.createElement('div');
     title.className = 'workshop-page__personal-tasks-section-title';
-    title.textContent = 'daily quests';
+    title.textContent = "Today's Tasks";
 
     this.refs.rows.replaceChildren(
       this.createTaskProgressSummary(personalTasks),
@@ -398,9 +393,7 @@ export class WorkshopPersonalTasksManager {
     const rewards = document.createElement('div');
     rewards.className = 'workshop-page__personal-task-milestones';
     rewards.replaceChildren(
-      ...(period.rewards ?? []).map((reward) =>
-        this.createMilestoneRow(period.periodType, reward),
-      ),
+      ...(period.rewards ?? []).map((reward) => this.createMilestoneRow(period.periodType, reward)),
     );
 
     section.append(
@@ -449,8 +442,7 @@ export class WorkshopPersonalTasksManager {
 
   createMilestoneClaimButton(periodType, milestone) {
     const button = document.createElement('button');
-    button.className =
-      'style-button workshop-page__personal-task-milestone-claim';
+    button.className = 'style-button workshop-page__personal-task-milestone-claim';
     button.type = 'button';
     button.textContent = 'claim';
     button.dataset.personalTaskPeriodType = periodType;
@@ -460,10 +452,7 @@ export class WorkshopPersonalTasksManager {
       `claim ${milestone.reward?.text ?? 'reward'} from ${periodType} ${milestone.threshold} point reward`,
     );
     button.addEventListener('click', () => {
-      this.gameplayFacade?.claimPersonalTaskMilestoneReward?.(
-        periodType,
-        milestone.threshold,
-      );
+      this.gameplayFacade?.claimPersonalTaskMilestoneReward?.(periodType, milestone.threshold);
     });
     setNotificationBadge(button, true);
     return button;

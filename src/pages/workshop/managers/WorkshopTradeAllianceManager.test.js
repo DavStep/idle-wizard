@@ -160,28 +160,14 @@ describe('WorkshopTradeAllianceManager styles', () => {
 
     const root = parent.querySelector('.workshop-page__trade-alliance');
     const button = parent.querySelector('.workshop-page__trade-alliance-button');
-    const iconFrame = button?.querySelector(
-      '.workshop-page__trade-alliance-button-icon-frame',
-    );
-
     expect(root?.classList.contains('workshop-page__panel-button')).toBe(true);
     expect(root?.dataset.panelSide).toBe('left');
     expect(button?.textContent).toBe('Alliance');
     expect(button?.getAttribute('aria-label')).toBe('open alliance All Seeing Void');
+    expect(button?.querySelector('.workshop-page__trade-alliance-button-icon-cloth')).toBeNull();
     expect(
-      button?.querySelector('.workshop-page__trade-alliance-button-icon-cloth'),
-    ).not.toBeNull();
-    expect(
-      button
-        ?.querySelector('.workshop-page__trade-alliance-button-icon')
-        ?.getAttribute('src'),
-    ).toContain('icon-alliance-banner-base.webp');
-    expect(
-      iconFrame?.style.getPropertyValue('--workshop-trade-alliance-banner-color'),
-    ).toBe('var(--style-alliance-tag-blue)');
-    expect(
-      iconFrame?.style.getPropertyValue('--workshop-trade-alliance-banner-mask'),
-    ).toContain('icon-alliance-banner-cloth-mask.webp');
+      button?.querySelector('.workshop-page__trade-alliance-button-icon')?.getAttribute('src'),
+    ).toContain('icon-side-alliance-root-run.png');
 
     tradeAllianceFacade.emit({
       connected: true,
@@ -192,9 +178,6 @@ describe('WorkshopTradeAllianceManager styles', () => {
     });
 
     expect(button?.getAttribute('aria-label')).toBe('open trade alliance');
-    expect(
-      iconFrame?.style.getPropertyValue('--workshop-trade-alliance-banner-color'),
-    ).toBe('var(--style-alliance-tag-ink)');
 
     manager.unmount();
   });
@@ -323,7 +306,9 @@ describe('WorkshopTradeAllianceManager styles', () => {
     nameInput.setSelectionRange(4, 4);
     nameInput.dispatchEvent(new window.Event('input', { bubbles: true }));
     popup.querySelector('input[name="tag"]').value = 'TAP';
-    popup.querySelector('input[name="tag"]').dispatchEvent(new window.Event('input', { bubbles: true }));
+    popup
+      .querySelector('input[name="tag"]')
+      .dispatchEvent(new window.Event('input', { bubbles: true }));
 
     tradeAllianceFacade.emit({
       connected: true,
@@ -378,9 +363,9 @@ describe('WorkshopTradeAllianceManager styles', () => {
     });
     const { popupParent } = mountManager(tradeAllianceFacade);
     const popup = popupParent.querySelector('.workshop-page__trade-alliance-popup');
-    const settingsTab = [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')].find(
-      (button) => button.textContent === 'settings',
-    );
+    const settingsTab = [
+      ...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button'),
+    ].find((button) => button.textContent === 'settings');
 
     settingsTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 

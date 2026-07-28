@@ -74,7 +74,13 @@ This performs:
 6. minified Android release APK build, signed with the current debug key
 7. optional SpacetimeDB Maincloud publish
 8. git commit and push from `main`
-9. Discord changelog, optional feature spotlight, and APK upload
+9. wait for the pushed commit's `Checks` and `Deploy GitHub Pages` workflows to
+   succeed
+10. Discord changelog, optional feature spotlight, and APK upload
+
+Discord is the final release action. If either required GitHub Actions workflow
+fails or does not start, the command exits without posting any Discord messages
+or APK.
 
 The production Android sync converts emitted PNG assets to quality-90 WebP
 after the web build and before Capacitor copies `dist`. This optimization is
@@ -170,8 +176,9 @@ post. The repo cannot prove Discord delivery after the script exits.
 ## If Release Fails
 
 - Before git push: fix the failure and rerun `npm run release`.
-- After git push but before Discord: run `npm run discord:postApk -- path/to.apk`
-  after fixing notes/webhooks.
+- After git push but before Discord: fix or rerun the failed GitHub Actions
+  workflow first. Once both required workflows succeed, run
+  `npm run discord:postApk -- path/to.apk`.
 - After Pages failure: inspect the failed Actions run, fix, and push a new
   release commit.
 - After backend publish failure: fix SpacetimeDB, then run

@@ -43,6 +43,7 @@ experience_type: development-operations
 - If Browser stays on `server required` while local SpacetimeDB is listening and console logs a `spacetimedb.js` binary `RangeError`, local DB schema likely mismatches generated bindings; fix schema/publish before relying on room-click QA.
 - A listening SpacetimeDB port does not prove the target database or schema exists; isolated launchers must publish the current module and embed the same dedicated database name before starting the client.
 - GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.
+- Release Discord posts must wait for both `Checks` and `Deploy GitHub Pages` to succeed for the exact pushed commit; a successful `git push` is only the start of the web release.
 - Pixi production-manifest assets copied from `public/` must resolve through `import.meta.env.BASE_URL`; root-absolute Spine URLs make the GitHub Pages build fail closed on startup.
 - Pixi production preloads must retry transient asset fetch failures; GitHub Pages can briefly return `503` for a valid hashed image, and one response must not permanently fail startup.
 - If `build` delegates to `build:prod`, keep `build` as `npm run build:prod --` so Pages' `--base=/idle-wizard/` reaches Vite.

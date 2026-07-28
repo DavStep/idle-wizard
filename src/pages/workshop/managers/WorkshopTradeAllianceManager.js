@@ -19,13 +19,8 @@ import {
   isTradeAllianceQuestClaimable,
 } from './tradeAllianceQuestStatus.js';
 
-const ALLIANCE_BANNER_BASE_URL = new URL(
-  '../../../../assets/game/source/icons/icon-alliance-banner-base.webp',
-  import.meta.url,
-).href;
-
-const ALLIANCE_BANNER_CLOTH_MASK_URL = new URL(
-  '../../../../assets/game/source/icons/icon-alliance-banner-cloth-mask.webp',
+const ALLIANCE_ICON_URL = new URL(
+  '../../../../assets/game/source/icons/icon-side-alliance-root-run.png',
   import.meta.url,
 ).href;
 
@@ -37,13 +32,7 @@ const ROLE_LABELS = {
   trader: 'trader',
 };
 
-const ROLE_OPTIONS = [
-  'tradeMaster',
-  'quartermaster',
-  'factor',
-  'broker',
-  'trader',
-];
+const ROLE_OPTIONS = ['tradeMaster', 'quartermaster', 'factor', 'broker', 'trader'];
 
 const JOIN_MODE_LABELS = {
   open: 'open',
@@ -157,8 +146,7 @@ export class WorkshopTradeAllianceManager {
 
   createButton() {
     const button = document.createElement('button');
-    button.className =
-      'workshop-page__panel-button-open workshop-page__trade-alliance-button';
+    button.className = 'workshop-page__panel-button-open workshop-page__trade-alliance-button';
     button.type = 'button';
     button.setAttribute('aria-haspopup', 'dialog');
     button.setAttribute('aria-label', 'open trade alliance');
@@ -166,18 +154,10 @@ export class WorkshopTradeAllianceManager {
     const iconFrame = document.createElement('span');
     iconFrame.className = 'workshop-page__trade-alliance-button-icon-frame';
     iconFrame.setAttribute('aria-hidden', 'true');
-    iconFrame.style.setProperty(
-      '--workshop-trade-alliance-banner-mask',
-      `url("${ALLIANCE_BANNER_CLOTH_MASK_URL}")`,
-    );
-
-    const cloth = document.createElement('span');
-    cloth.className = 'workshop-page__trade-alliance-button-icon-cloth';
-    cloth.setAttribute('aria-hidden', 'true');
 
     const icon = document.createElement('img');
     icon.className = 'workshop-page__trade-alliance-button-icon';
-    icon.src = ALLIANCE_BANNER_BASE_URL;
+    icon.src = ALLIANCE_ICON_URL;
     icon.alt = '';
     icon.loading = 'lazy';
     icon.decoding = 'async';
@@ -188,9 +168,8 @@ export class WorkshopTradeAllianceManager {
       'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__trade-alliance-button-label';
     label.textContent = 'Alliance';
 
-    iconFrame.append(cloth, icon);
+    iconFrame.append(icon);
     button.append(iconFrame, label);
-    this.refs.buttonIconFrame = iconFrame;
     button.addEventListener('click', () => this.show());
     return button;
   }
@@ -214,8 +193,7 @@ export class WorkshopTradeAllianceManager {
     this.refs.title = this.createTitle();
     this.refs.closeButton = this.createCloseButton();
     this.refs.content = document.createElement('div');
-    this.refs.content.className =
-      'workshop-page__trade-alliance-content style-page-scroll';
+    this.refs.content.className = 'workshop-page__trade-alliance-content style-page-scroll';
     this.refs.status = document.createElement('div');
     this.refs.status.className = 'workshop-page__trade-alliance-status';
     this.refs.tabs = document.createElement('div');
@@ -223,12 +201,7 @@ export class WorkshopTradeAllianceManager {
     this.refs.tabs.setAttribute('role', 'tablist');
     this.refs.tabs.setAttribute('aria-label', 'Alliance view');
 
-    dialog.append(
-      this.refs.title,
-      this.refs.closeButton,
-      this.refs.content,
-      this.refs.status,
-    );
+    dialog.append(this.refs.title, this.refs.closeButton, this.refs.content, this.refs.status);
     panel.append(dialog, this.refs.tabs);
     this.refs.memberPopup = this.createMemberEditPopup();
     popup.append(panel, this.refs.memberPopup);
@@ -430,8 +403,7 @@ export class WorkshopTradeAllianceManager {
             this.selectedSoloTabId = tab.id;
           } else {
             this.selectedMemberTabId = tab.id;
-            this.pendingQuestScroll =
-              tab.id === 'quests' ? QUEST_SCROLL_ON_OPEN : null;
+            this.pendingQuestScroll = tab.id === 'quests' ? QUEST_SCROLL_ON_OPEN : null;
           }
           this.status = '';
           this.render(this.lastSnapshot);
@@ -455,13 +427,6 @@ export class WorkshopTradeAllianceManager {
   }
 
   syncButtonIconColor(ownAlliance) {
-    const tagColor = normalizeTradeAllianceTagColor(ownAlliance?.tagColor);
-
-    this.refs.buttonIconFrame?.style.setProperty(
-      '--workshop-trade-alliance-banner-color',
-      getTradeAllianceTagColorCssValue(tagColor),
-    );
-
     this.refs.button?.setAttribute(
       'aria-label',
       ownAlliance?.name ? `open alliance ${ownAlliance.name}` : 'open trade alliance',
@@ -518,18 +483,15 @@ export class WorkshopTradeAllianceManager {
     main.className = 'workshop-page__trade-alliance-list-main';
     this.makeAllianceSummaryActionable(main, alliance);
     main.append(
-      this.createTextRow(
-        this.createAllianceNameTagLabel(alliance),
-        `${alliance.memberCount}/50`,
-      ),
+      this.createTextRow(this.createAllianceNameTagLabel(alliance), `${alliance.memberCount}/50`),
       this.createAllianceInfoRow(
         alliance.description || JOIN_MODE_LABELS[alliance.joinMode] || alliance.joinMode,
       ),
-      this.createTextRow(
-        'season income',
-        this.formatCoinText(alliance.seasonIncome),
-        { muted: true, compact: true, resource: 'coin' },
-      ),
+      this.createTextRow('season income', this.formatCoinText(alliance.seasonIncome), {
+        muted: true,
+        compact: true,
+        resource: 'coin',
+      }),
     );
 
     const action = document.createElement('button');
@@ -578,7 +540,10 @@ export class WorkshopTradeAllianceManager {
     this.bindSubmitClick(submitButton, form);
 
     form.append(
-      this.createInputField('name', 'name', { value: draft.name, maxLength: 24 }),
+      this.createInputField('name', 'name', {
+        value: draft.name,
+        maxLength: 24,
+      }),
       this.createInputField('tag', 'tag', {
         value: draft.tag,
         maxLength: 5,
@@ -658,8 +623,9 @@ export class WorkshopTradeAllianceManager {
     leave.type = 'button';
     leave.textContent = 'leave';
     leave.disabled = member?.role === 'tradeMaster' && alliance.memberCount > 1;
-    leave.addEventListener('click', () =>
-      void this.runAction(() => this.tradeAllianceFacade.leaveAlliance()),
+    leave.addEventListener(
+      'click',
+      () => void this.runAction(() => this.tradeAllianceFacade.leaveAlliance()),
     );
     root.append(leave);
 
@@ -730,7 +696,10 @@ export class WorkshopTradeAllianceManager {
     const main = document.createElement('div');
     main.className = 'workshop-page__trade-alliance-quest-main';
     main.append(
-      this.createTextRow(quest.label, `${this.formatNumber(quest.progress)}/${this.formatNumber(quest.target)}`),
+      this.createTextRow(
+        quest.label,
+        `${this.formatNumber(quest.progress)}/${this.formatNumber(quest.target)}`,
+      ),
       this.createTextRow(
         `${itemFillQuest ? 'your fill' : 'your route'} ${this.formatNumber(contribution)}/${this.formatNumber(quest.minContribution)}`,
         `${quest.crystalReward} crystal`,
@@ -834,8 +803,7 @@ export class WorkshopTradeAllianceManager {
       this.getElementPageOffsetTop(element) - this.getElementPageOffsetTop(this.refs.content),
     );
     const maxScroll = Math.max(0, this.refs.content.scrollHeight - this.refs.content.clientHeight);
-    this.refs.content.scrollTop =
-      maxScroll > 0 ? Math.min(targetTop, maxScroll) : targetTop;
+    this.refs.content.scrollTop = maxScroll > 0 ? Math.min(targetTop, maxScroll) : targetTop;
     this.dispatchContentScrollEvent();
   }
 
@@ -971,9 +939,7 @@ export class WorkshopTradeAllianceManager {
     if (this.canTransferLeadership(member)) {
       rows.push(
         this.createDangerButton('lead', () =>
-          this.runAction(() =>
-            this.tradeAllianceFacade.transferLeadership(member.memberIdentity),
-          ),
+          this.runAction(() => this.tradeAllianceFacade.transferLeadership(member.memberIdentity)),
         ),
       );
     }
@@ -1008,10 +974,12 @@ export class WorkshopTradeAllianceManager {
       option.selected = role === member.role;
       select.append(option);
     }
-    select.addEventListener('change', () =>
-      void this.runAction(() =>
-        this.tradeAllianceFacade.setMemberRole(member.memberIdentity, select.value),
-      ),
+    select.addEventListener(
+      'change',
+      () =>
+        void this.runAction(() =>
+          this.tradeAllianceFacade.setMemberRole(member.memberIdentity, select.value),
+        ),
     );
 
     field.append(span, select);
@@ -1062,7 +1030,10 @@ export class WorkshopTradeAllianceManager {
     this.bindSubmitClick(submitButton, form);
 
     form.append(
-      this.createInputField('name', 'name', { value: draft.name, maxLength: 24 }),
+      this.createInputField('name', 'name', {
+        value: draft.name,
+        maxLength: 24,
+      }),
       this.createInputField('tag', 'tag', {
         value: draft.tag,
         maxLength: 5,
@@ -1073,7 +1044,10 @@ export class WorkshopTradeAllianceManager {
         value: draft.description,
         maxLength: 120,
       }),
-      this.createInputField('notice', 'notice', { value: draft.notice, maxLength: 160 }),
+      this.createInputField('notice', 'notice', {
+        value: draft.notice,
+        maxLength: 160,
+      }),
       this.createJoinModeField('join mode', draft.joinMode),
       submitButton,
       this.createDangerButton('disband', () => this.onDisband()),
@@ -1386,9 +1360,7 @@ export class WorkshopTradeAllianceManager {
 
   getFilteredAlliances() {
     const term = this.searchTerm.trim().toLowerCase();
-    const alliances = Array.isArray(this.lastSnapshot.alliances)
-      ? this.lastSnapshot.alliances
-      : [];
+    const alliances = Array.isArray(this.lastSnapshot.alliances) ? this.lastSnapshot.alliances : [];
 
     return alliances
       .filter((alliance) => {
@@ -1397,8 +1369,7 @@ export class WorkshopTradeAllianceManager {
         }
 
         return (
-          alliance.name.toLowerCase().includes(term) ||
-          alliance.tag.toLowerCase().includes(term)
+          alliance.name.toLowerCase().includes(term) || alliance.tag.toLowerCase().includes(term)
         );
       })
       .sort((left, right) => right.seasonIncome - left.seasonIncome)
@@ -1605,8 +1576,7 @@ export class WorkshopTradeAllianceManager {
     return (
       (this.lastSnapshot.members ?? []).find(
         (member) =>
-          member.allianceId === allianceId &&
-          member.memberIdentity === this.selectedMemberIdentity,
+          member.allianceId === allianceId && member.memberIdentity === this.selectedMemberIdentity,
       ) ?? null
     );
   }
@@ -1746,9 +1716,7 @@ export class WorkshopTradeAllianceManager {
     }
 
     if (!this.lastSnapshot.ownAlliance && this.selectedSoloTabId === 'browse') {
-      const search = this.refs.content.querySelector(
-        '.workshop-page__trade-alliance-search',
-      );
+      const search = this.refs.content.querySelector('.workshop-page__trade-alliance-search');
       if (search) {
         this.searchTerm = search.value;
       }

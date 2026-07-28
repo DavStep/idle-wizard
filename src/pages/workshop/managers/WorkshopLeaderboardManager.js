@@ -8,7 +8,7 @@ import {
 } from './WorkshopLeaderboardRowRenderer.js';
 
 const LEADERBOARD_ICON_URL = new URL(
-  '../../../../assets/game/source/icons/icon-leaderboard-trophy-bag-style.png',
+  '../../../../assets/game/source/icons/icon-side-leaderboard-root-run.png',
   import.meta.url,
 ).href;
 
@@ -158,8 +158,7 @@ export class WorkshopLeaderboardManager {
 
   createButton() {
     const button = document.createElement('button');
-    button.className =
-      'workshop-page__panel-button-open workshop-page__leaderboard-button';
+    button.className = 'workshop-page__panel-button-open workshop-page__leaderboard-button';
     button.type = 'button';
     button.setAttribute('aria-haspopup', 'dialog');
     button.setAttribute('aria-label', 'open leaderboard');
@@ -286,8 +285,7 @@ export class WorkshopLeaderboardManager {
 
   showUnlocked() {
     if (!this.releaseTradeAlliancePublicData) {
-      this.releaseTradeAlliancePublicData =
-        this.tradeAllianceFacade?.retainPublicData?.() ?? null;
+      this.releaseTradeAlliancePublicData = this.tradeAllianceFacade?.retainPublicData?.() ?? null;
     }
     this.previousFocus = document.activeElement;
     this.visible = true;
@@ -378,14 +376,10 @@ export class WorkshopLeaderboardManager {
     });
     const bodyRows = rows.map((row, index) =>
       this.createRow(
-        isAllianceScope
-          ? this.createAllianceLabel(row, index)
-          : this.createUserLabel(row, index),
+        isAllianceScope ? this.createAllianceLabel(row, index) : this.createUserLabel(row, index),
         this.formatValue(row[activePeriod.valueKey]),
         {
-          current: !isAllianceScope
-            ? this.isCurrentUserRow(row, currentUser, index)
-            : false,
+          current: !isAllianceScope ? this.isCurrentUserRow(row, currentUser, index) : false,
           onActivate: isAllianceScope ? () => this.openAllianceInfo(row) : null,
         },
       ),
@@ -419,8 +413,7 @@ export class WorkshopLeaderboardManager {
 
   getActiveScope() {
     return (
-      LEADERBOARD_SCOPES.find((scope) => scope.id === this.selectedScopeId) ??
-      LEADERBOARD_SCOPES[0]
+      LEADERBOARD_SCOPES.find((scope) => scope.id === this.selectedScopeId) ?? LEADERBOARD_SCOPES[0]
     );
   }
 
@@ -452,7 +445,7 @@ export class WorkshopLeaderboardManager {
     const user =
       leaderboard[period.currentUserKey] ??
       (period.id === 'allTime'
-        ? leaderboard.currentGeneratedCoinUser ?? leaderboard.currentUser
+        ? (leaderboard.currentGeneratedCoinUser ?? leaderboard.currentUser)
         : null);
 
     return this.normalizeUser(user, { includeRank: true });

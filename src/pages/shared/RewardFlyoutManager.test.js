@@ -136,7 +136,7 @@ describe('RewardFlyoutManager', () => {
     manager.unmount();
   });
 
-  it('anchors seed drops to the stage and starts them a bit above summon', () => {
+  it('anchors seed drops to the stage from the summon-area center', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const stage = document.createElement('section');
     stage.className = 'game-stage';
@@ -163,7 +163,7 @@ describe('RewardFlyoutManager', () => {
     expect(anchor?.parentElement).toBe(stage);
     expect(anchor?.style.position).toBe('absolute');
     expect(anchor?.style.left).toBe('140px');
-    expect(anchor?.style.top).toBe('174px');
+    expect(anchor?.style.top).toBe('190px');
   });
 
   it('plays reward visuals when icon mode data is missing', () => {

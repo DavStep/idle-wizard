@@ -7,6 +7,13 @@ import {
   createPixiAssetManagerFake,
 } from '../workshop/PixiPageTestHarness.js';
 import {
+  RETAINED_DIALOG_LIST_GEOMETRY,
+  RETAINED_SCROLLBAR_GEOMETRY,
+} from '../workshop/RetainedPageKit.js';
+import {
+  PIXI_ROOT_RUN_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
+import {
   SHOP_DIALOG_IDS,
   ShopDialogPixi,
 } from './ShopDialogPixi.js';
@@ -40,23 +47,34 @@ describe('ShopDialogPixi stall scrollbar', () => {
       })),
     });
 
-    const [row] = dialog.list.rows.getWidgets();
-    const trackBounds =
-      dialog.list.scroll.scrollbarTrack.getLocalBounds();
+    const [row, secondRow] = dialog.list.rows.getWidgets();
     const rowRight =
       dialog.list.root.x +
       row.root.x +
       row.background.x +
       row.background.frameWidth;
+    const scrollbarRight =
+      dialog.list.root.x +
+      dialog.list.scroll.scrollbarTrack.sprite.position.x;
+    const scrollbarLeft =
+      scrollbarRight - RETAINED_SCROLLBAR_GEOMETRY.width;
     const paperRight =
       dialog.itemSection.x + dialog.itemSection.frameWidth;
 
     expect(dialog.list.scroll.scrollbarTrack.visible).toBe(true);
     expect(dialog.list.scroll.scrollbarThumb.visible).toBe(true);
-    expect(trackBounds.x).toBeGreaterThan(rowRight);
-    expect(trackBounds.x + trackBounds.width).toBeLessThanOrEqual(
-      paperRight,
+    expect(row.background.frameWidth).toBe(
+      PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth,
     );
+    expect(dialog.list.width).toBe(
+      PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth +
+        RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+    );
+    expect(secondRow.root.y - row.root.y).toBe(
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    );
+    expect(scrollbarLeft - rowRight).toBeGreaterThan(2.5);
+    expect(paperRight - scrollbarRight).toBeGreaterThan(2.5);
   });
 
   it('hides the scrollbar when the stall rows do not overflow', () => {

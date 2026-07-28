@@ -26,6 +26,15 @@ const LEADERBOARD_TABS = Object.freeze([
   Object.freeze({ id: 'singlePlayer', label: 'single player' }),
   Object.freeze({ id: 'alliance', label: 'alliance' }),
 ]);
+const PERSONAL_TASK_TABS = Object.freeze([
+  Object.freeze({ id: 'tasks', label: 'Tasks' }),
+  Object.freeze({ id: 'rewards', label: 'Rewards' }),
+]);
+const WORLD_EVENT_TABS = Object.freeze([
+  Object.freeze({ id: 'tasks', label: 'Quests' }),
+  Object.freeze({ id: 'leaderboard', label: 'Leaderboard' }),
+  Object.freeze({ id: 'rewards', label: 'Rewards' }),
+]);
 const SEED_DROP_PREFERENCES = Object.freeze([
   'none',
   'low',
@@ -267,11 +276,22 @@ export class PixiViewModelFactory {
             actions,
           ),
           discoveries: this.createDiscoveriesDialog(gameplay),
-          personalTasks: this.createPersonalTasksDialog(gameplay),
+          personalTasks: this.createPersonalTasksDialog(
+            gameplay,
+            dialogState.personalTasksTabId,
+            actions,
+          ),
           worldEvent: this.createWorldEventDialog(
             gameplay,
             worldEventLeaderboard,
             player,
+            dialogState.worldEventTabId,
+            actions,
+          ),
+          worldEventDonate: this.createWorldEventDonationDialog(
+            gameplay,
+            dialogState.worldEventDonation,
+            actions,
           ),
           worldChat: this.createWorldChatDialog(worldChat, actions),
         },
@@ -768,21 +788,131 @@ export class PixiViewModelFactory {
     };
   }
 
-  createPersonalTasksDialog(gameplay = {}) {
+  createPersonalTasksDialog(gameplay = {}, selectedTabId = 'tasks', actions = {}) {
     const tasks = gameplay.personalTasks ?? {};
+    const safeTabId = selectedTabId === 'rewards' ? 'rewards' : 'tasks';
     const rows = [];
-    for (const periodId of ['daily', 'weekly']) {
-      const period = tasks[periodId];
-      for (const task of period?.tasks ?? []) {
+    const daily = tasks.daily;
+    const weekly = tasks.weekly;
+
+    if (safeTabId === 'rewards') {
+      for (const [periodId, label] of [
+        ['daily', 'Today'],
+        ['weekly', 'Week'],
+      ]) {
+        const period = tasks[periodId];
+        if (!period) {
+          continue;
+        }
+
         rows.push({
-          id: `${periodId}:${task.id ?? task.taskId}`,
-          label: task.label ?? task.description ?? task.id,
-          value: `${task.progress ?? task.current ?? 0}/${task.required ?? task.target ?? 0}`,
+          id: `${periodId}:rewards-summary`,
+          label,
+          value: `${period.currentPoints ?? 0}/${period.maxPoints ?? 0} · ${
+            period.resetLabel ?? ''
+          }`.trim(),
+        });
+
+        for (const reward of period.rewards ?? period.milestones ?? []) {
+          const threshold = Math.max(
+            0,
+            Math.floor(Number(reward.threshold) || 0),
+          );
+          const canClaim =
+            reward.claimable === true &&
+            typeof actions.claimPersonalTaskMilestoneReward === 'function';
+          const row = {
+            id: `${periodId}:reward:${threshold}`,
+            label: `${threshold} pts · ${
+              reward.reward?.text || 'Reward'
+            }`,
+            value: reward.claimed
+              ? 'Claimed'
+              : canClaim
+                ? ''
+                : reward.claimable
+                  ? 'Ready'
+                  : 'Locked',
+            ...(reward.claimed || !reward.claimable ? { muted: true } : {}),
+          };
+
+          if (canClaim) {
+            Object.assign(row, {
+              actionLabel: 'Claim',
+              enabled: true,
+              notification: true,
+              semanticId: `workshop.personalTasks.${periodId}.reward.${threshold}`,
+              onActivate: () =>
+                actions.claimPersonalTaskMilestoneReward(
+                  periodId,
+                  threshold,
+                ),
+            });
+          }
+
+          rows.push(row);
+        }
+      }
+    } else {
+      if (daily) {
+        rows.push({
+          id: 'daily:summary',
+          label: `Today · ${daily.completedTasks ?? 0}/${
+            daily.totalTasks ?? 0
+          } Tasks`,
+          value: `${daily.currentPoints ?? 0}/${daily.maxPoints ?? 0} pts`,
+        });
+      }
+      if (weekly) {
+        rows.push({
+          id: 'weekly:summary',
+          label: 'Week',
+          value: `${weekly.currentPoints ?? 0}/${weekly.maxPoints ?? 0} pts`,
+        });
+      }
+
+      for (const task of daily?.tasks ?? []) {
+        const progress =
+          task.progressQuantity ?? task.progress ?? task.current ?? 0;
+        const required =
+          task.requiredQuantity ?? task.required ?? task.target ?? 0;
+        const pointValue = Math.max(
+          0,
+          Math.floor(Number(task.pointValue) || 0),
+        );
+        const completed = task.completed === true;
+        rows.push({
+          id: `daily:${task.id ?? task.taskId}`,
+          label: `${toTitleCase(
+            task.label ?? task.description ?? task.id,
+          )} · +${pointValue} pts`,
+          value: completed ? 'Done' : `${progress}/${required}`,
+          muted: completed,
         });
       }
     }
+
+    const claimableRewards = Number.isFinite(tasks.claimableRewards)
+      ? Math.max(0, Math.floor(tasks.claimableRewards))
+      : [daily, weekly].reduce(
+          (total, period) =>
+            total +
+            (period?.rewards ?? period?.milestones ?? []).filter(
+              (reward) => reward.claimable === true,
+            ).length,
+          0,
+        );
+
     return {
-      title: 'quests',
+      title: 'Daily Tasks',
+      selectedTabId: safeTabId,
+      onSelectTab: (tabId) => actions.selectPersonalTasksTab?.(tabId),
+      tabs: PERSONAL_TASK_TABS.map((tab) => ({
+        ...tab,
+        selected: tab.id === safeTabId,
+        notification: tab.id === 'rewards' && claimableRewards > 0,
+        onSelect: (tabId) => actions.selectPersonalTasksTab?.(tabId),
+      })),
       status: tasks.unlocked ? '' : `unlocks at level ${tasks.unlockLevel ?? 4}`,
       rows,
     };
@@ -792,32 +922,314 @@ export class PixiViewModelFactory {
     gameplay = {},
     worldEventLeaderboard = {},
     player = {},
+    selectedTabId = 'tasks',
+    actions = {},
   ) {
     const notice = gameplay.worldNotice ?? {};
     const current = notice.current;
+    const safeTabId = WORLD_EVENT_TABS.some(
+      (tab) => tab.id === selectedTabId,
+    )
+      ? selectedTabId
+      : 'tasks';
+    const localLeaderboard = current?.leaderboard ?? {};
+    const sharedLeaderboard =
+      worldEventLeaderboard?.periodKey === current?.periodKey &&
+      worldEventLeaderboard?.eventId === current?.eventId
+        ? worldEventLeaderboard
+        : {};
+    const leaderboardSource =
+      sharedLeaderboard.topWorldEventUsers ??
+      sharedLeaderboard.topUsers ??
+      localLeaderboard.rows ??
+      [];
+    const projectedLeaderboardRows = Array.isArray(leaderboardSource)
+      ? leaderboardSource
+      : [];
+    const currentLeaderboardUser =
+      sharedLeaderboard.currentWorldEventUser ??
+      sharedLeaderboard.currentUser ??
+      null;
+    const leaderboardRows =
+      projectedLeaderboardRows.length > 0
+        ? projectedLeaderboardRows
+        : currentLeaderboardUser
+          ? [currentLeaderboardUser]
+          : [
+              {
+                rank: '-',
+                name: player.username ?? 'Wizard',
+                playerLevel:
+                  gameplay.tasks?.currentLevel ??
+                  gameplay.playerLevel?.currentLevel,
+                points: localLeaderboard.currentPoints ?? 0,
+                current: true,
+              },
+            ];
+    let rows = [];
+
+    if (safeTabId === 'leaderboard') {
+      rows = [
+        {
+          id: 'leaderboard:header',
+          label: 'Wizard',
+          value: 'Points',
+          muted: true,
+        },
+        ...leaderboardRows.map((user, index) => ({
+          id: `leaderboard:${user.rank ?? index + 1}:${
+            user.identity ?? user.name ?? index
+          }`,
+          label: `${user.rank ?? index + 1}. ${
+            user.name ?? player.username ?? 'Wizard'
+          }${
+            Number.isFinite(Number(user.playerLevel))
+              ? ` (${Math.floor(Number(user.playerLevel))})`
+              : ''
+          }`,
+          value: formatWorldEventNumber(user.points),
+        })),
+      ];
+    } else if (safeTabId === 'rewards') {
+      const remaining = Math.max(
+        0,
+        Math.floor(
+          Number(
+            localLeaderboard.remainingQualificationPoints ??
+              sharedLeaderboard.remainingQualificationPoints,
+          ) || 0,
+        ),
+      );
+      rows = [
+        {
+          id: 'rewards:qualification',
+          label: 'Leaderboard Rewards',
+          value:
+            localLeaderboard.qualified === true ||
+            sharedLeaderboard.qualified === true
+              ? 'Qualified'
+              : `${formatWorldEventNumber(remaining)} points to qualify`,
+          height: 32,
+        },
+        ...(
+          localLeaderboard.rewardTiers ??
+          sharedLeaderboard.rewardTiers ??
+          []
+        ).map((tier) => ({
+          id: `reward:${tier.rankLabel}`,
+          label: `Rank ${tier.rankLabel}`,
+          value: formatWorldEventRewardTier(tier),
+        })),
+      ];
+    } else {
+      rows = (current?.requests ?? current?.options ?? []).flatMap(
+        (request, index) => {
+          const requestId =
+            request.requestId ?? request.id ?? request.key ?? index;
+          const quest = {
+            id: `quest:${requestId}`,
+            label: request.title ?? request.label ?? 'Quest',
+            value:
+              request.collectedPointText ??
+              `${formatWorldEventNumber(request.contributionPoints)} points`,
+            height: 24,
+            strong: true,
+            muted: request.completed === true,
+          };
+          const detail = {
+            id: `quest-details:${requestId}`,
+            label: [request.situation, request.description]
+              .filter(Boolean)
+              .join('\n'),
+            value: '',
+            height: 62,
+            muted: request.completed === true,
+          };
+          const donations = (request.donationOptions ?? []).map(
+            (option, optionIndex) => {
+              const enabled =
+                option.canDonate === true &&
+                typeof actions.openWorldEventDonation === 'function';
+              const itemKind = getWorldEventDonationItemKind(option);
+              return {
+                id: `donation:${requestId}:${
+                  option.optionKey ?? optionIndex
+                }`,
+                label: option.label ?? 'Donation',
+                value: `${formatWorldEventNumber(
+                  option.pointsPerUnit,
+                )} points each\n${
+                  option.collectedPointText ??
+                  `${formatWorldEventNumber(
+                    option.contributionPoints,
+                  )} points`
+                } total`,
+                itemKind,
+                itemKey: option.itemKey,
+                resourceKey:
+                  option.resourceType === 'coin' ? 'coin' : itemKind,
+                actionLabel: enabled ? 'Donate' : 'Unavailable',
+                enabled,
+                height: 40,
+                ...(enabled
+                  ? {
+                      onActivate: () =>
+                        actions.openWorldEventDonation(
+                          requestId,
+                          option.optionKey,
+                        ),
+                    }
+                  : {}),
+              };
+            },
+          );
+          return [quest, detail, ...donations];
+        },
+      );
+    }
+
     return {
       title: 'world event',
       status: notice.unlocked
         ? ''
         : `unlocks at level ${notice.unlockLevel ?? 4}`,
-      copy: current?.description ?? current?.situation ?? '',
+      selectedTabId: safeTabId,
+      header: current
+        ? {
+            headline: current.headline ?? 'World Event',
+            body: Array.isArray(current.body)
+              ? current.body.join('\n')
+              : current.body ?? '',
+            meta: `${formatWorldEventNumber(
+              localLeaderboard.currentPoints ??
+                sharedLeaderboard.currentPoints,
+            )} points · ${formatWorldEventTimer(current.resetLabel)}`,
+          }
+        : null,
+      onSelectTab: (tabId) => actions.selectWorldEventTab?.(tabId),
+      tabs: WORLD_EVENT_TABS.map((tab) => ({
+        ...tab,
+        selected: tab.id === safeTabId,
+        onSelect: (tabId) => actions.selectWorldEventTab?.(tabId),
+      })),
+      rows,
+    };
+  }
+
+  createWorldEventDonationDialog(
+    gameplay = {},
+    draft = null,
+    actions = {},
+  ) {
+    const requests = gameplay.worldNotice?.current?.requests ?? [];
+    const request = requests.find(
+      (candidate) => candidate?.requestId === draft?.requestId,
+    );
+    const option = request?.donationOptions?.find(
+      (candidate) => candidate?.optionKey === draft?.optionKey,
+    );
+
+    if (!request || !option) {
+      return {
+        title: 'Donate',
+        status: 'Donation is no longer available.',
+        rows: [],
+      };
+    }
+
+    const maximum = Math.max(
+      0,
+      Math.floor(
+        Number(
+          option.maxDonateQuantity ?? option.availableQuantity,
+        ) || 0,
+      ),
+    );
+    const amount =
+      maximum > 0
+        ? Math.min(
+            maximum,
+            Math.max(1, Math.floor(Number(draft?.amount) || 1)),
+          )
+        : 0;
+    const points = amount * Math.max(
+      0,
+      Math.floor(Number(option.pointsPerUnit) || 0),
+    );
+    const canDonate =
+      maximum > 0 &&
+      typeof actions.confirmWorldEventDonation === 'function';
+    const createStepRow = (delta) => ({
+      id: `amount:${delta}`,
+      label: delta < 0 ? 'Decrease Amount' : 'Increase Amount',
+      value: String(amount),
+      actionLabel: `${delta > 0 ? '+' : ''}${delta}`,
+      enabled:
+        typeof actions.adjustWorldEventDonationAmount === 'function' &&
+        amount + delta >= 1 &&
+        amount + delta <= maximum,
+      onActivate: () =>
+        actions.adjustWorldEventDonationAmount?.(delta),
+    });
+
+    return {
+      title: 'Donate',
+      status: canDonate ? '' : 'Not enough resources.',
       rows: [
-        ...(current?.requests ?? current?.options ?? []).map(
-          (request, index) => ({
-            id: request.id ?? request.key ?? index,
-            label: request.label ?? request.title ?? 'request',
-            value: request.progressText ?? request.value ?? '',
-          }),
-        ),
-        ...(worldEventLeaderboard.topUsers ?? []).map(
-          (user, index) => ({
-            id: `leaderboard:${user.identity ?? user.name ?? index}`,
-            label: `${user.rank ?? index + 1}. ${
-              user.name ?? player.username ?? 'Wizard'
-            }`,
-            value: String(user.points ?? 0),
-          }),
-        ),
+        {
+          id: 'quest',
+          label: 'Quest',
+          value: request.title ?? request.label ?? '',
+          height: 32,
+        },
+        {
+          id: 'giving',
+          label: 'Giving',
+          value: option.label ?? '',
+          itemKind: getWorldEventDonationItemKind(option),
+          itemKey: option.itemKey,
+          resourceKey:
+            option.resourceType === 'coin'
+              ? 'coin'
+              : getWorldEventDonationItemKind(option),
+        },
+        {
+          id: 'total',
+          label: 'Total Contributed',
+          value:
+            option.collectedPointText ??
+            `${formatWorldEventNumber(option.contributionPoints)} points`,
+        },
+        {
+          id: 'owned',
+          label: 'Owned',
+          value: formatWorldEventNumber(maximum),
+        },
+        {
+          id: 'points',
+          label: 'Points',
+          value: `+${formatWorldEventNumber(points)}`,
+        },
+        createStepRow(-10),
+        createStepRow(-1),
+        createStepRow(1),
+        createStepRow(10),
+        {
+          id: 'confirm',
+          label: `${formatWorldEventNumber(amount)} ${
+            option.label ?? 'resource'
+          }`,
+          value: `${formatWorldEventNumber(points)} points`,
+          actionLabel: `Donate x${formatWorldEventNumber(amount)}`,
+          enabled: canDonate,
+          onActivate: () =>
+            actions.confirmWorldEventDonation?.(
+              request.requestId,
+              option.optionKey,
+              amount,
+            ),
+          height: 32,
+        },
       ],
     };
   }
@@ -1889,6 +2301,53 @@ function toTitleCase(value) {
 function formatPercent(value) {
   const percent = Math.max(0, Math.min(1, Number(value) || 0)) * 100;
   return `${Number(percent.toFixed(percent < 1 ? 2 : 1))}%`;
+}
+
+function formatWorldEventNumber(value) {
+  return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('en-US');
+}
+
+function formatWorldEventTimer(value) {
+  return String(value ?? '')
+    .trim()
+    .replace(/^resolves\s+/i, '') || 'soon';
+}
+
+function formatWorldEventRewardTier(tier = {}) {
+  return [
+    Number(tier.emerald) > 0
+      ? `${formatWorldEventNumber(tier.emerald)} emerald`
+      : '',
+    Number(tier.crystal) > 0
+      ? `${formatWorldEventNumber(tier.crystal)} crystal`
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' · ') || 'Participation';
+}
+
+function getWorldEventDonationItemKind(option = {}) {
+  if (option.resourceType === 'coin') {
+    return 'resource';
+  }
+
+  const explicitKind = String(option.itemKind ?? option.kind ?? '')
+    .trim()
+    .toLowerCase();
+  if (['seed', 'herb', 'potion', 'ingredient'].includes(explicitKind)) {
+    return explicitKind;
+  }
+
+  const itemKey = String(option.itemKey ?? option.optionKey ?? '')
+    .trim()
+    .toLowerCase();
+  if (itemKey.endsWith('seed')) {
+    return 'seed';
+  }
+  if (itemKey.endsWith('herb')) {
+    return 'herb';
+  }
+  return 'potion';
 }
 
 function normalizeSeedDropPreference(preference) {

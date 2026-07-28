@@ -16,6 +16,7 @@ import {
   stallStaffingResearchIds,
 } from '../stallStaffingResearch.js';
 import {
+  minimumResearchDurationSeconds,
   researchTimeResearchIds,
   researchTimeResearchMaxLevel,
 } from '../researchTimeResearch.js';
@@ -32,7 +33,7 @@ import {
 } from '../emeraldResearchIds.js';
 
 const maxResearchDurationSeconds = 4 * 60 * 60;
-const quickResearchDurationSeconds = 3;
+const quickResearchDurationSeconds = minimumResearchDurationSeconds;
 const defaultResearchDurationSeconds = 10 * 60;
 
 const seedResearchDurationSecondsById = {
@@ -539,7 +540,16 @@ export class ResearchBalanceManager {
       return 0;
     }
 
-    return Math.min(maxResearchDurationSeconds, Math.floor(value));
+    const wholeDurationSeconds = Math.floor(value);
+
+    if (wholeDurationSeconds === 0) {
+      return 0;
+    }
+
+    return Math.min(
+      maxResearchDurationSeconds,
+      Math.max(minimumResearchDurationSeconds, wholeDurationSeconds),
+    );
   }
 
   readCostCoinByResearchId() {

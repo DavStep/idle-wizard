@@ -29,7 +29,7 @@ inventory changes, offers, or backend results. A presenter binds this shape:
       },
       market: {
         slots: [{ id, slotNumber, itemLabel, value, enabled, dialog }],
-        countLabel, proceedsLabel, canClaimProceeds,
+        countLabel, proceedsLabel, proceedsValueLabel, canClaimProceeds,
         browseNotification
       }
     },
@@ -87,7 +87,15 @@ account, or tutorial gates. Add `?dialog=stall` to open the loader with enabled
 mark and clear actions. Add `?dialog=ledger` to open the Bag-sized Market
 Ledger with overflow rows, item icons, and unlocked category tabs.
 Add `?tab=crystals` to open the Crystal Market tab with its deterministic
-cooling-down coin offer and six crystal bundles.
+cooling-down coin offer and six crystal bundles. Add
+`&coinOffer=ready` to show the ready green Collect action.
+Add `?tab=players` to open the Player Market tab with its station-title
+sections, the same retained stand widget used by Traders for each request and
+listing slot, a dedicated compact claim-proceeds row, and bottom-border actions
+on the final card.
+Add `&items=overflow` with `?dialog=stall` to open the Load Stall
+inventory with eight unlocked seed rows for row-width, spacing, and
+scrollbar-gutter QA.
 
 ## Snapshot adapter
 

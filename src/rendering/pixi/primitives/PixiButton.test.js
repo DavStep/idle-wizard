@@ -73,7 +73,7 @@ describe('PixiButton', () => {
     button.destroy({ children: true });
   });
 
-  it('uses Root Run notification padding for regular buttons and tabs', () => {
+  it('keeps regular-button and text-tab notifications tangent to the top-right edges', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);
     const button = new PixiButton({
       assetManager: { getTexture },
@@ -97,8 +97,8 @@ describe('PixiButton', () => {
     button.setVariant('tab');
 
     expect(button.notificationBadge.root.position).toMatchObject({
-      x: 90,
-      y: 10,
+      x: 94,
+      y: 6,
     });
 
     button.destroy({ children: true });

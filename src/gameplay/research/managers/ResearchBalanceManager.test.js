@@ -19,20 +19,20 @@ describe('ResearchBalanceManager', () => {
           longStudy: 3,
         },
         researchDurationsSeconds: {
-          shortStudy: 30,
+          minimumStudy: 1,
           exactStudy: 14_400,
           longStudy: 14_401,
         },
       },
     });
 
-    expect(manager.getDurationSeconds('shortStudy')).toBe(30);
+    expect(manager.getDurationSeconds('minimumStudy')).toBe(5);
     expect(manager.getDurationSeconds('exactStudy')).toBe(14_400);
     expect(manager.getDurationSeconds('longStudy')).toBe(14_400);
 
     manager.setRuntimeConfigs([
       {
-        researchId: 'shortStudy',
+        researchId: 'minimumStudy',
         costCoin: 1,
         durationSeconds: 14_500,
         enabled: true,
@@ -45,20 +45,20 @@ describe('ResearchBalanceManager', () => {
       },
     ]);
 
-    expect(manager.getDurationSeconds('shortStudy')).toBe(14_400);
+    expect(manager.getDurationSeconds('minimumStudy')).toBe(14_400);
     expect(manager.getDurationSeconds('exactStudy')).toBe(0);
   });
 
   it('uses the default research time curve by currency and content type', () => {
     const manager = new ResearchBalanceManager();
 
-    expect(manager.getDurationSeconds('automation:autoPlantTile:1')).toBe(3);
-    expect(manager.getDurationSeconds(stallStaffingResearchIds.capacity(1))).toBe(3);
-    expect(manager.getDurationSeconds(automationReserveResearchIds.controls(1))).toBe(3);
-    expect(manager.getDurationSeconds(researchTimeResearchIds.reduction(1))).toBe(3);
-    expect(manager.getDurationSeconds(researchCostResearchIds.reduction(1))).toBe(3);
-    expect(manager.getDurationSeconds('emerald:plotPlanting:1:2')).toBe(3);
-    expect(manager.getDurationSeconds('unlockSeed:sageSeed')).toBe(3);
+    expect(manager.getDurationSeconds('automation:autoPlantTile:1')).toBe(5);
+    expect(manager.getDurationSeconds(stallStaffingResearchIds.capacity(1))).toBe(5);
+    expect(manager.getDurationSeconds(automationReserveResearchIds.controls(1))).toBe(5);
+    expect(manager.getDurationSeconds(researchTimeResearchIds.reduction(1))).toBe(5);
+    expect(manager.getDurationSeconds(researchCostResearchIds.reduction(1))).toBe(5);
+    expect(manager.getDurationSeconds('emerald:plotPlanting:1:2')).toBe(5);
+    expect(manager.getDurationSeconds('unlockSeed:sageSeed')).toBe(5);
     expect(manager.getDurationSeconds('unlockSeed:mintSeed')).toBe(60);
     expect(manager.getDurationSeconds('unlockSeed:glowcapSeed')).toBe(300);
     expect(manager.getDurationSeconds('unlockSeed:pearlrootSeed')).toBe(9_000);

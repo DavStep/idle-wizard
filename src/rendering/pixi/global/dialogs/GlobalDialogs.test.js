@@ -762,7 +762,7 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('uses the authored Root Run account row, tabs, save control, and paper spacing', () => {
+  it('contains fixed tabs below the choice viewport and keeps a wide save control close to the dialog bottom', () => {
     const harness = createHarness();
     const settings = harness.registry.open(
       GLOBAL_DIALOG_IDS.SETTINGS,
@@ -803,28 +803,58 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.usernameEdit.height).toBeCloseTo(64 / 3);
 
     expect(settings.accountHeader.frameWidth).toBeCloseTo(298);
-    expect(settings.avatarTabButton.buttonWidth).toBeCloseTo(
-      354 * (298 / 925),
+    expect(settings.panel.paperFrame.visible).toBe(false);
+    expect(settings.accountHeaderSection.visible).toBe(true);
+    expect(settings.accountChoiceSection.visible).toBe(true);
+    expect(settings.accountHeaderSection.texture).toBe(
+      settings.panel.paperFrame.texture,
     );
-    expect(settings.avatarTabButton.buttonHeight).toBeCloseTo(120 / 3);
-    expect(settings.avatarTabButton.textLabel.fontSize).toBeCloseTo(64 / 3);
-    expect(settings.frameTabButton.textLabel.colorToken).toBe('#d3c6b4');
-
-    expect(settings.accountSave.buttonWidth).toBeCloseTo(
-      456 * (298 / 925),
+    expect(settings.accountChoiceSection.texture).toBe(
+      settings.panel.paperFrame.texture,
     );
-    expect(settings.accountSave.buttonHeight).toBeCloseTo(205 / 3);
-    expect(settings.accountSave.textLabel.fontSize).toBeCloseTo(86 / 3);
-    expect(settings.accountSave.variant).toBe('account-save');
+    expect(
+      settings.accountChoiceSection.y -
+        (settings.accountHeaderSection.y +
+          settings.accountHeaderSection.frameHeight),
+    ).toBeCloseTo(8);
 
-    const paperBottom =
-      settings.panel.paperFrame.y +
-      settings.panel.paperFrame.frameHeight;
-    const saveTop =
-      settings.panel.content.y +
-      settings.accountLayer.y +
-      settings.accountSave.y;
-    expect(saveTop).toBeGreaterThan(paperBottom);
+    expect(settings.avatarTabButton.buttonWidth).toBeCloseTo(141.5);
+    expect(settings.avatarTabButton.buttonHeight).toBe(28);
+    expect(settings.avatarTabButton.textLabel.fontSize).toBe(13);
+    expect(settings.avatarTabButton.variant).toBe('tab');
+    expect(settings.avatarTabButton.resolveRootRunVariant()).toBe(
+      'brown-light',
+    );
+    expect(settings.frameTabButton.resolveRootRunVariant()).toBe(
+      'brown-dark',
+    );
+
+    expect(settings.accountSave.buttonWidth).toBe(160);
+    expect(settings.accountSave.buttonHeight).toBe(34);
+    expect(settings.accountSave.textLabel.fontSize).toBe(13);
+    expect(settings.accountSave.variant).toBe('green');
+
+    const choiceBoardBottom =
+      settings.accountChoiceBoard.y +
+      settings.accountChoiceBoard.frameHeight;
+    const choiceViewportBottom =
+      settings.accountChoiceScroll.root.y +
+      settings.accountChoiceScroll.height;
+    const tabsTop = settings.avatarTab.root.y;
+    const tabsBottom =
+      settings.avatarTab.root.y +
+      settings.avatarTab.height;
+    const choiceSectionBottom =
+      settings.accountChoiceSection.y +
+      settings.accountChoiceSection.frameHeight;
+    const saveBottom =
+      settings.accountSave.y +
+      settings.accountSave.buttonHeight;
+
+    expect(tabsTop).toBeGreaterThan(choiceViewportBottom);
+    expect(tabsBottom).toBeLessThanOrEqual(choiceBoardBottom);
+    expect(settings.accountSave.y - choiceSectionBottom).toBe(8);
+    expect(settings.contentHeight - saveBottom).toBe(8);
 
     harness.dispose();
   });
@@ -870,11 +900,23 @@ describe('retained global Pixi dialogs', () => {
       },
     );
 
-    const lastColumnTile = settings.avatars.getWidgets()[3];
-    const tileRight =
+    const avatarWidgets = settings.avatars.getWidgets();
+    const firstTile = avatarWidgets[0];
+    const lastColumnTile = avatarWidgets[3];
+    const lastTile = avatarWidgets.at(-1);
+    const selectionLeft =
+      firstTile.root.x + firstTile.selectionFrame.x;
+    const selectionTop =
+      firstTile.root.y + firstTile.selectionFrame.y;
+    const selectionRight =
       settings.accountChoiceScroll.root.x +
       lastColumnTile.root.x +
-      lastColumnTile.root.hitArea.width;
+      lastColumnTile.selectionFrame.x +
+      lastColumnTile.selectionFrame.width;
+    const selectionBottom =
+      lastTile.root.y +
+      lastTile.selectionFrame.y +
+      lastTile.selectionFrame.height;
     const scrollbarLeft =
       settings.accountChoiceScroll.root.x +
       settings.accountChoiceScroll.scrollbarTrack.getLocalBounds().x;
@@ -889,15 +931,48 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.scroll.eventMode).toBe('none');
     expect(settings.scroll.progressBar.visible).toBe(false);
     expect(settings.accountChoiceScroll.scrollbarTrack.visible).toBe(true);
-    expect(scrollbarLeft).toBeGreaterThan(tileRight);
+    expect(selectionLeft).toBeCloseTo(0);
+    expect(selectionTop).toBeCloseTo(0);
+    expect(
+      selectionRight - settings.accountChoiceScroll.root.x,
+    ).toBeCloseTo(settings.accountChoiceScroll.width);
+    expect(selectionBottom).toBeCloseTo(
+      settings.accountChoiceScroll.contentHeight,
+    );
+    expect(
+      selectionBottom -
+        (settings.accountChoiceScroll.contentHeight -
+          settings.accountChoiceScroll.height),
+    ).toBeCloseTo(settings.accountChoiceScroll.height);
+    expect(scrollbarLeft).toBeGreaterThan(selectionRight);
     expect(scrollbarRight).toBeLessThanOrEqual(
       settings.accountChoiceBoard.frameWidth,
     );
     expect(settings.accountChoiceScroll).not.toHaveProperty('fadeGraphic');
     expect(settings.accountChoiceScroll).not.toHaveProperty('progressBar');
+    const fourthRowTop = avatarWidgets[12].root.y;
+    expect(
+      (settings.accountChoiceScroll.height - fourthRowTop) /
+        firstTile.root.hitArea.height,
+    ).toBeCloseTo(0.3);
 
-    settings.selectAccountChoiceTab('frame');
+    const avatarBounds = avatarWidgets.map((widget) => ({
+      x: widget.root.x,
+      y: widget.root.y,
+      width: widget.root.hitArea.width,
+      height: widget.root.hitArea.height,
+    }));
+    settings.frameTab.control.activate();
+    expect(settings.accountChoiceTab).toBe('frame');
     expect(settings.accountChoiceScroll.scrollbarTrack.visible).toBe(true);
+    expect(
+      settings.frames.getWidgets().map((widget) => ({
+        x: widget.root.x,
+        y: widget.root.y,
+        width: widget.root.hitArea.width,
+        height: widget.root.hitArea.height,
+      })),
+    ).toEqual(avatarBounds);
 
     harness.dispose();
   });

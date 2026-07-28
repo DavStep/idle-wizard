@@ -254,6 +254,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     this.tickHandler = () => this.tick();
 
     this.scroll = new RetainedScrollArea({
+      assetManager: this.assetManager,
       label: 'research-page-scroll',
       inputRouter: this.inputRouter,
     });
@@ -1233,6 +1234,7 @@ class ResearchRowWidget {
       label: 'research-row-value-stars',
     });
     this.progress = new RetainedProgressBar({
+      assetManager,
       label: 'research-row-progress',
       tone: 'yellow',
     });

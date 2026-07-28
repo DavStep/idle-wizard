@@ -1268,6 +1268,7 @@ class BrewingCauldronWidget {
     });
     this.activeText = createText('', RETAINED_TEXT_STYLES.body);
     this.progress = new RetainedProgressBar({
+      assetManager,
       label: `brewing-cauldron-${instanceId}-progress`,
       tone: 'blue',
     });

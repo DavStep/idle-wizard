@@ -20,6 +20,8 @@ export const PIXI_DIALOG_PALETTE = Object.freeze({
   ink: '#634934',
   muted: '#76563f',
   disabled: '#80654e',
+  coin: '#875800',
+  crystal: '#7b3fc4',
   mana: '#25658a',
   herb: '#4a7146',
   title: '#9d25db',
@@ -521,6 +523,8 @@ function createContentTheme(theme) {
     disabled: PIXI_DIALOG_PALETTE.disabled,
     resourceColors: Object.freeze({
       ...theme.resourceColors,
+      coin: PIXI_DIALOG_PALETTE.coin,
+      crystal: PIXI_DIALOG_PALETTE.crystal,
       mana: PIXI_DIALOG_PALETTE.mana,
       herb: PIXI_DIALOG_PALETTE.herb,
     }),

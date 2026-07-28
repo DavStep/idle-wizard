@@ -2716,7 +2716,7 @@ describe('TutorialHintManager', () => {
     expect(imageRule).toMatch(/\bwidth:\s*70px;/);
     expect(imageRule).toMatch(/\bheight:\s*91px;/);
     expect(imageRule).toMatch(
-      /animation:\s*tutorial-elara-objective-collapse 250ms var\(--style-motion-ease-rubber\)\s+both;/,
+      /animation:\s*tutorial-elara-objective-collapse\s+250ms\s+var\(--style-motion-ease-rubber\)\s+both;/,
     );
     expect(collapseKeyframes).toContain(
       'transform: translate(0, 0) scale(1);',
@@ -2729,7 +2729,7 @@ describe('TutorialHintManager', () => {
     );
     expect(labelRule).toBeDefined();
     expect(labelRule).toMatch(
-      /animation:\s*tutorial-elara-help-label-snap 155ms var\(--style-motion-ease-rubber\)\s+95ms both;/,
+      /animation:\s*tutorial-elara-help-label-snap\s+155ms\s+var\(--style-motion-ease-rubber\)\s+95ms\s+both;/,
     );
   });
 

@@ -64,9 +64,7 @@ function createPersonalTasksSnapshot() {
           createMilestone(70),
           createMilestone(100),
         ],
-        tasks: taskDefinitions.map((definition, index) =>
-          task(definition, index + 1, index === 0),
-        ),
+        tasks: taskDefinitions.map((definition, index) => task(definition, index + 1, index === 0)),
       },
       weekly: {
         periodType: 'weekly',
@@ -111,9 +109,8 @@ function createGameplayFacadeFake(snapshot = createPersonalTasksSnapshot()) {
 describe('WorkshopPersonalTasksManager', () => {
   it('keeps the dialog width matched to the shared tabbed popup width', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const panelRule = baseCss.match(
-      /\.workshop-page__personal-tasks-panel\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
+    const panelRule = baseCss.match(/\.workshop-page__personal-tasks-panel\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body;
     const dialogRule = baseCss.match(
       /\.style-dialog\.workshop-page__personal-tasks-dialog\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -124,14 +121,11 @@ describe('WorkshopPersonalTasksManager', () => {
 
   it('gives the personal task frame the full tabbed dialog height', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const frameRule = baseCss.match(
-      /\.workshop-page__personal-tasks-frame\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
+    const frameRule = baseCss.match(/\.workshop-page__personal-tasks-frame\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body;
 
     expect(frameRule).not.toMatch(/\b90px\b/);
-    expect(frameRule).toMatch(
-      /\bheight:\s*var\(--style-tabbed-dialog-content-height\);/,
-    );
+    expect(frameRule).toMatch(/\bheight:\s*var\(--style-tabbed-dialog-content-height\);/);
     expect(frameRule).not.toMatch(/var\(--style-scroll-progress-block-size\)/);
     expect(frameRule).not.toMatch(/var\(--style-box-border-label-line-height\)/);
   });
@@ -146,9 +140,7 @@ describe('WorkshopPersonalTasksManager', () => {
 
     expect(parent.querySelector('.workshop-page__personal-tasks').hidden).toBe(false);
     expect(parent.querySelector('.workshop-page__personal-tasks.style-box')).toBeNull();
-    expect(parent.querySelector('.workshop-page__personal-tasks')?.dataset.panelSide).toBe(
-      'left',
-    );
+    expect(parent.querySelector('.workshop-page__personal-tasks')?.dataset.panelSide).toBe('left');
     const openButton = parent.querySelector('.workshop-page__personal-tasks-open');
     expect(openButton?.textContent).toBe('Tasks');
     expect(openButton?.getAttribute('aria-label')).toContain(
@@ -157,13 +149,13 @@ describe('WorkshopPersonalTasksManager', () => {
     expect(openButton?.dataset.notification).toBe('true');
     expect(
       openButton?.querySelector('.workshop-page__personal-tasks-icon')?.getAttribute('src'),
-    ).toContain('miso-daily-tasks.webp');
+    ).toContain('icon-side-tasks-root-run.png');
 
     openButton.click();
 
     const popup = popupParent.querySelector('.workshop-page__personal-tasks-popup');
     expect(popup.hidden).toBe(false);
-    expect(popup.querySelector('.style-box__title')?.textContent).toBe('quests');
+    expect(popup.querySelector('.style-box__title')?.textContent).toBe('Daily Tasks');
     expect(
       [...popup.querySelectorAll('.workshop-page__personal-tasks-tab-button')].map(
         (button) => `${button.textContent}:${button.getAttribute('aria-selected')}`,
@@ -171,12 +163,10 @@ describe('WorkshopPersonalTasksManager', () => {
     ).toEqual(['tasks:true', 'rewards:false']);
     expect(popup.textContent).toContain('today42/100 pts');
     expect(popup.textContent).toContain('week260/700 pts');
-    expect(popup.textContent).toContain('daily quests');
+    expect(popup.textContent).toContain("Today's Tasks");
     expect(popup.querySelectorAll('.workshop-page__personal-task-row')).toHaveLength(7);
     expect(popup.querySelectorAll('.workshop-page__personal-task-bar')).toHaveLength(7);
-    expect(
-      popup.querySelector('.workshop-page__personal-task-fill')?.style.width,
-    ).toBe('100%');
+    expect(popup.querySelector('.workshop-page__personal-task-fill')?.style.width).toBe('100%');
     expect(popup.textContent).toContain('1.summon seeds+10 ptsdone');
     expect(popup.textContent).toContain('2.spend mana+15 pts2/10');
     expect(popup.textContent).not.toContain('+50 coin');
@@ -198,9 +188,7 @@ describe('WorkshopPersonalTasksManager', () => {
     parent.querySelector('.workshop-page__personal-tasks-open').click();
 
     const popup = popupParent.querySelector('.workshop-page__personal-tasks-popup');
-    popup
-      .querySelector('.workshop-page__personal-tasks-tab-button[aria-selected="false"]')
-      .click();
+    popup.querySelector('.workshop-page__personal-tasks-tab-button[aria-selected="false"]').click();
 
     expect(
       [...popup.querySelectorAll('.workshop-page__personal-tasks-tab-button')].map(
@@ -209,9 +197,7 @@ describe('WorkshopPersonalTasksManager', () => {
     ).toEqual(['tasks:false', 'rewards:true']);
     expect(popup.textContent).toContain('today42/100 points, resets 12h');
     expect(popup.textContent).toContain('week260/700 points, resets 3d');
-    expect(popup.querySelectorAll('.workshop-page__personal-task-milestone')).toHaveLength(
-      8,
-    );
+    expect(popup.querySelectorAll('.workshop-page__personal-task-milestone')).toHaveLength(8);
     expect(popup.textContent).toContain('30+30 coinclaimed');
     expect(popup.textContent).toContain('50+50 coinclaim');
     expect(popup.textContent).toContain('500+500 coinlocked');
@@ -219,9 +205,7 @@ describe('WorkshopPersonalTasksManager', () => {
     const rewardsTab = popup.querySelector(
       '.workshop-page__personal-tasks-tab-button[aria-selected="true"]',
     );
-    const claimButton = popup.querySelector(
-      '.workshop-page__personal-task-milestone-claim',
-    );
+    const claimButton = popup.querySelector('.workshop-page__personal-task-milestone-claim');
 
     expect(rewardsTab?.dataset.notification).toBe('true');
     expect(claimButton?.textContent).toBe('claim');
@@ -231,10 +215,7 @@ describe('WorkshopPersonalTasksManager', () => {
 
     claimButton.click();
 
-    expect(gameplayFacade.claimPersonalTaskMilestoneReward).toHaveBeenCalledWith(
-      'daily',
-      50,
-    );
+    expect(gameplayFacade.claimPersonalTaskMilestoneReward).toHaveBeenCalledWith('daily', 50);
   });
 
   it('hides and closes when personal tasks are locked', () => {
@@ -256,8 +237,6 @@ describe('WorkshopPersonalTasksManager', () => {
     });
 
     expect(parent.querySelector('.workshop-page__personal-tasks').hidden).toBe(true);
-    expect(popupParent.querySelector('.workshop-page__personal-tasks-popup').hidden).toBe(
-      true,
-    );
+    expect(popupParent.querySelector('.workshop-page__personal-tasks-popup').hidden).toBe(true);
   });
 });

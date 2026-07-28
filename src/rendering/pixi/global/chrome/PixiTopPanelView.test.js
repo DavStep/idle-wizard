@@ -7,8 +7,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { SemanticTargetRegistry } from '../../retained/index.js';
 import {
   createPixiThemeSnapshot,
+  PIXI_UI_GEOMETRY,
   PIXI_ROOT_RUN_ASSETS,
 } from '../../theme/PixiThemeTokens.js';
+import {
+  PIXI_ROOM_TAB_FRAME_SCALE,
+  PIXI_ROOM_TAB_FRAME_SLICE,
+} from './PixiBottomPanelView.js';
 import { PixiTopPanelView } from './PixiTopPanelView.js';
 
 installPixiPageTestCanvas();
@@ -63,9 +68,45 @@ describe('PixiTopPanelView', () => {
     expect(view.questRail.visible).toBe(true);
     expect(view.topHudRoot.position).toMatchObject({
       x: 32 / 3,
-      y: 140 / 3,
+      y: 32 / 3,
     });
     expect(view.topHudRoot.scale.x).toBe(1 / 3);
+    expect(view.panelBackground).toBeInstanceOf(NineSliceSprite);
+    expect(view.panelBackground.texture).toBe(
+      assets.getTexture(PIXI_ROOT_RUN_ASSETS.topPanelBackground),
+    );
+    expect(view.panelBackground.leftWidth).toBe(
+      PIXI_ROOM_TAB_FRAME_SLICE.leftWidth,
+    );
+    expect(view.panelBackground.topHeight).toBe(
+      PIXI_ROOM_TAB_FRAME_SLICE.topHeight,
+    );
+    expect(view.panelBackground.rightWidth).toBe(
+      PIXI_ROOM_TAB_FRAME_SLICE.rightWidth,
+    );
+    expect(view.panelBackground.bottomHeight).toBe(
+      PIXI_ROOM_TAB_FRAME_SLICE.bottomHeight,
+    );
+    expect(view.panelBackground.position).toMatchObject({
+      x: 0,
+      y:
+        PIXI_UI_GEOMETRY.roomContentTop -
+        PIXI_UI_GEOMETRY.topPanelContentGap,
+    });
+    expect(view.panelBackground.scale).toMatchObject({
+      x: PIXI_ROOM_TAB_FRAME_SCALE,
+      y: -PIXI_ROOM_TAB_FRAME_SCALE,
+    });
+    expect(
+      view.panelBackground.width * view.panelBackground.scale.x,
+    ).toBe(PIXI_UI_GEOMETRY.sourceWidth);
+    expect(
+      view.panelBackground.height *
+        Math.abs(view.panelBackground.scale.y),
+    ).toBe(
+      PIXI_UI_GEOMETRY.roomContentTop -
+        PIXI_UI_GEOMETRY.topPanelContentGap,
+    );
     expect(view.avatarViewport.avatarFrame).toBeInstanceOf(NineSliceSprite);
     expect(view.coin.background).toBeInstanceOf(NineSliceSprite);
     expect(view.settingsControl.background).toBeInstanceOf(NineSliceSprite);
@@ -152,6 +193,71 @@ describe('PixiTopPanelView', () => {
     expect(view.avatarViewport.visual.scale.y).toBe(1);
     expect(avatarPress.onActivate()).toBeUndefined();
     expect(openAvatar).toHaveBeenCalledTimes(1);
+
+    view.destroy();
+  });
+
+  it('opens level rewards from the full level star and progress rail button', () => {
+    const registrations = [];
+    const openLevel = vi.fn();
+    const semanticRegistry = new SemanticTargetRegistry();
+    const view = new PixiTopPanelView({
+      assets: createAssets(),
+      semanticRegistry,
+      inputRouter: {
+        registerPressTarget: vi.fn((descriptor) => {
+          registrations.push(descriptor);
+          return { unregister: vi.fn() };
+        }),
+      },
+    });
+    view.activate();
+    view.bind({
+      level: 4,
+      quest: {
+        visible: true,
+        completed: 1,
+        total: 4,
+        activeFraction: 0.5,
+      },
+      actions: { openLevel },
+    });
+
+    const levelPress = registrations.find(
+      ({ id }) => id === 'top.level',
+    );
+    expect(levelPress).toMatchObject({
+      displayObject: view.levelRail,
+      excludePageSwipe: true,
+      haptic: 'light',
+      onPressChange: expect.any(Function),
+    });
+    expect(view.levelRail.hitArea).toMatchObject({
+      x: 0,
+      y: 0,
+      width: 662,
+      height: 93,
+    });
+    expect(semanticRegistry.get('top.level')?.displayObject).toBe(
+      view.levelRail,
+    );
+
+    levelPress.onPressChange(true, { confirmed: false });
+    expect(view.levelRail.pressVisual.scale.x).toBeLessThan(1);
+    expect(view.levelRail.pressVisual.scale.y).toBeLessThan(1);
+
+    levelPress.onPressChange(false, { confirmed: true });
+    expect(view.levelRail.pressVisual.scale.x).toBe(1);
+    expect(view.levelRail.pressVisual.scale.y).toBe(1);
+    expect(levelPress.onActivate()).toBeUndefined();
+    expect(openLevel).toHaveBeenCalledTimes(1);
+
+    view.bind({
+      level: 4,
+      quest: { visible: false },
+      actions: { openLevel },
+    });
+    expect(view.levelRail.hitArea.width).toBe(93);
 
     view.destroy();
   });

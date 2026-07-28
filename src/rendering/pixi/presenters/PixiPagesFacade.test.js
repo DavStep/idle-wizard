@@ -115,15 +115,66 @@ describe('PixiPagesFacade', () => {
     });
   });
 
-  it('emits spend bursts only after successful foreground consumption', () => {
+  it('keeps the Daily Tasks tab selection live and routes milestone claims', () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.personalTasks = {
+      unlocked: true,
+      claimableRewards: 1,
+      daily: {
+        periodType: 'daily',
+        resetLabel: 'resets 12h',
+        currentPoints: 50,
+        maxPoints: 100,
+        completedTasks: 1,
+        totalTasks: 1,
+        tasks: [],
+        rewards: [
+          {
+            threshold: 50,
+            reward: { text: '+25 coin' },
+            claimed: false,
+            claimable: true,
+          },
+        ],
+      },
+      weekly: {
+        periodType: 'weekly',
+        resetLabel: 'resets 3d',
+        currentPoints: 50,
+        maxPoints: 700,
+        tasks: [],
+        rewards: [],
+      },
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    const tasksDialog =
+      harness.getBoundPage('workshop').workshop.dialogs.personalTasks;
+    expect(tasksDialog.selectedTabId).toBe('tasks');
+
+    tasksDialog.tabs.find((tab) => tab.id === 'rewards').onSelect('rewards');
+
+    const rewardsDialog =
+      harness.getBoundPage('workshop').workshop.dialogs.personalTasks;
+    expect(rewardsDialog.selectedTabId).toBe('rewards');
+    const claimRow = rewardsDialog.rows.find(
+      (row) => row.id === 'daily:reward:50',
+    );
+    claimRow.onActivate();
+
+    expect(
+      harness.gameplayFacade.claimPersonalTaskMilestoneReward,
+    ).toHaveBeenCalledWith('daily', 50);
+  });
+
+  it('emits spend bursts only after successful purchases', () => {
     const harness = createHarness();
-    harness.gameplayFacade.summonSeed
-      .mockReturnValueOnce({ ok: true, cost: 10 })
-      .mockReturnValueOnce({
-        ok: false,
-        reason: 'not_enough_mana',
-        cost: 10,
-      });
+    harness.gameplayFacade.summonSeed.mockReturnValue({
+      ok: true,
+      cost: 10,
+    });
     harness.gameplayFacade.fillTask.mockReturnValue({
       ok: true,
       taskId: 'sage-turn-in',
@@ -134,49 +185,33 @@ describe('PixiPagesFacade', () => {
       },
       quantity: 2,
     });
-    harness.gameplayFacade.buyResearch.mockReturnValue({
-      ok: true,
-      researchId: 'manaProductionRate:1',
-      cost: 2,
-      costCurrency: 'crystal',
-    });
+    harness.gameplayFacade.buyResearch
+      .mockReturnValueOnce({
+        ok: false,
+        reason: 'not_enough_crystal',
+        cost: 2,
+        costCurrency: 'crystal',
+      })
+      .mockReturnValueOnce({
+        ok: true,
+        researchId: 'manaProductionRate:1',
+        cost: 2,
+        costCurrency: 'crystal',
+      });
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
 
     const workshop = harness.getBoundPage('workshop');
     workshop.actions.summonSeed();
-    workshop.actions.summonSeed();
     workshop.actions.fillTask('sage-turn-in');
     pages.show('research');
-    harness
-      .getBoundPage('research')
-      .actions.buyResearch('manaProductionRate:1');
+    const research = harness.getBoundPage('research');
+    research.actions.buyResearch('manaProductionRate:1');
+    research.actions.buyResearch('manaProductionRate:1');
 
     expect(
       harness.transientEffects.emitReward,
     ).toHaveBeenNthCalledWith(1, {
-      visualOnly: true,
-      spendBursts: [
-        {
-          anchorId: 'workshop.summon',
-          resource: 'mana',
-        },
-      ],
-    });
-    expect(
-      harness.transientEffects.emitReward,
-    ).toHaveBeenNthCalledWith(2, {
-      visualOnly: true,
-      spendBursts: [
-        {
-          anchorId: 'workshop.task.sage-turn-in',
-          frameName: 'seed:pack',
-        },
-      ],
-    });
-    expect(
-      harness.transientEffects.emitReward,
-    ).toHaveBeenNthCalledWith(3, {
       visualOnly: true,
       spendBursts: [
         {
@@ -187,7 +222,7 @@ describe('PixiPagesFacade', () => {
     });
     expect(
       harness.transientEffects.emitReward,
-    ).toHaveBeenCalledTimes(3);
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('keeps an open Market Ledger interactive while switching unlocked tabs', () => {
@@ -802,6 +837,7 @@ describe('PixiPagesFacade', () => {
     expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
       'garden.seed',
     );
+    expect(harness.transientEffects.emitReward).not.toHaveBeenCalled();
   });
 
   it('owns Garden and Brewing inventory expansion state outside retained views', () => {
@@ -976,6 +1012,28 @@ describe('PixiPagesFacade', () => {
     ).toBe(true);
     expect(notifications).toEqual(sourceCopy);
   });
+
+  it('opens the World Event dev route with the real selected-tab model', () => {
+    const harness = createHarness();
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    expect(
+      pages.openDialog('worldEvent', { tab: 'leaderboard' }),
+    ).toMatchObject({
+      ok: true,
+      dialogId: 'worldEvent',
+      tabId: 'leaderboard',
+    });
+    expect(
+      harness.getBoundPage('workshop').workshop.dialogs.worldEvent
+        .selectedTabId,
+    ).toBe('leaderboard');
+    expect(harness.pageSurface.openDialog).toHaveBeenLastCalledWith(
+      'worldEvent',
+      null,
+    );
+  });
 });
 
 function createHarness({
@@ -1035,6 +1093,7 @@ function createHarness({
     subscribeFrameResources: vi.fn(() => vi.fn()),
     summonSeed: vi.fn(),
     fillTask: vi.fn(),
+    claimPersonalTaskMilestoneReward: vi.fn(),
     buyResearch: vi.fn(),
     setPrestigeRunFocus: vi.fn(),
     completePrestigeMilestone: vi.fn(),

@@ -64,11 +64,7 @@ function createPlayerInboxFacadeFake(overrides = {}) {
   };
 }
 
-function dispatchPointer(
-  target,
-  type,
-  { pointerId = 1, pointerType = 'touch', ...options } = {},
-) {
+function dispatchPointer(target, type, { pointerId = 1, pointerType = 'touch', ...options } = {}) {
   const event = new window.MouseEvent(type, {
     bubbles: true,
     cancelable: true,
@@ -133,9 +129,7 @@ describe('WorkshopActionBarManager', () => {
 
     expect(outerBadgeRule).toMatch(/\bdisplay:\s*none;/);
     expect(textBoxBadgeRule).toMatch(/\bposition:\s*absolute;/);
-    expect(textBoxBadgeRule).toMatch(
-      /\btop:\s*calc\(-1 \* var\(--style-notification-offset\)\);/,
-    );
+    expect(textBoxBadgeRule).toMatch(/\btop:\s*calc\(-1 \* var\(--style-notification-offset\)\);/);
     expect(textBoxBadgeRule).toMatch(
       /\bright:\s*calc\(-1 \* var\(--style-notification-offset\)\);/,
     );
@@ -184,7 +178,10 @@ describe('WorkshopActionBarManager', () => {
   it('summons on quick touch release when native click delivery is suppressed', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const hapticsFacade = { playUiTap: vi.fn() };
-    const manager = new WorkshopActionBarManager({ gameplayFacade, hapticsFacade });
+    const manager = new WorkshopActionBarManager({
+      gameplayFacade,
+      hapticsFacade,
+    });
     const parent = document.createElement('div');
     const originalElementFromPoint = document.elementFromPoint;
     let summons = 0;
@@ -252,7 +249,10 @@ describe('WorkshopActionBarManager', () => {
         summons += 1;
         return { ok: true, seed: { label: 'sage seed' }, quantity: 1 };
       };
-      const manager = new WorkshopActionBarManager({ gameplayFacade, hapticsFacade });
+      const manager = new WorkshopActionBarManager({
+        gameplayFacade,
+        hapticsFacade,
+      });
       const parent = document.createElement('div');
 
       manager.mount(parent);
@@ -289,7 +289,10 @@ describe('WorkshopActionBarManager', () => {
       summons += 1;
       return { ok: true, seed: { label: 'sage seed' }, quantity: 1 };
     };
-    const manager = new WorkshopActionBarManager({ gameplayFacade, hapticsFacade });
+    const manager = new WorkshopActionBarManager({
+      gameplayFacade,
+      hapticsFacade,
+    });
     const parent = document.createElement('div');
 
     manager.mount(parent);
@@ -334,7 +337,10 @@ describe('WorkshopActionBarManager', () => {
 
   it('does not play the summon circle effect when summoning fails', () => {
     const gameplayFacade = createGameplayFacadeFake();
-    gameplayFacade.summonSeed = () => ({ ok: false, reason: 'not_enough_mana' });
+    gameplayFacade.summonSeed = () => ({
+      ok: false,
+      reason: 'not_enough_mana',
+    });
     const manager = new WorkshopActionBarManager({ gameplayFacade });
     const parent = document.createElement('div');
 
@@ -385,9 +391,8 @@ describe('WorkshopActionBarManager', () => {
     const actionBarButtonRule = baseCss.match(
       /\.workshop-page__action-bar \.style-button\.workshop-page__summon-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const circleRule = baseCss.match(
-      /(?:^|\n)\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
+    const circleRule = baseCss.match(/(?:^|\n)\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body;
     const textRule = baseCss.match(
       /(?:^|\n)\.workshop-page__summon-button-text\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -400,13 +405,12 @@ describe('WorkshopActionBarManager', () => {
     const summonButton = parent.querySelector('.workshop-page__summon-button');
     const summonCircle = parent.querySelector('.workshop-page__summon-circle');
 
-    expect(
-      summonButton?.dataset.pressFeedbackTarget,
-    ).toBeUndefined();
+    expect(summonButton?.dataset.pressFeedbackTarget).toBeUndefined();
     expect(summonCircle?.getAttribute('aria-hidden')).toBe('true');
     expect(summonButtonRule).toMatch(
-      /\btop:\s*calc\(59\.5% \+ 26px\);/,
+      /\btop:\s*calc\(\s*var\(--workshop-summon-anchor-top\) \+\s*var\(--workshop-summon-button-half-height\)\s*\);/,
     );
+    expect(baseCss).toContain('--workshop-summon-chat-gap: 32px;');
     expect(summonButtonRule).toMatch(/\bwidth:\s*auto;/);
     expect(summonButtonRule).not.toMatch(/\bwidth:\s*196px;/);
     expect(actionBarButtonRule).toMatch(/\bwidth:\s*auto;/);
@@ -427,9 +431,7 @@ describe('WorkshopActionBarManager', () => {
     );
 
     expect(pixiSource).toContain('const SUMMON_BUTTON_HEIGHT = 52;');
-    expect(pixiSource).toContain(
-      'const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;',
-    );
+    expect(pixiSource).toContain('const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;');
     expect(pixiSource).toMatch(
       /this\.button\.setBounds\(\s*-SUMMON_BUTTON_WIDTH \/ 2,\s*-SUMMON_BUTTON_HEIGHT \/ 2 \+ SUMMON_BUTTON_DOWN_OFFSET,/,
     );
@@ -497,176 +499,38 @@ describe('WorkshopActionBarManager', () => {
     expect(revealInteractionRule).toMatch(/\bpointer-events:\s*auto;/);
   });
 
-  it('places the secondary actions and compact panel openers at the top', () => {
+  it('keeps the approved Root Run side-action geometry and type treatment', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
-    const bagRule = baseCss.match(
-      /\.workshop-page__ui-layer > \.workshop-page__bag\s*\{(?<body>[^}]*--workshop-panel-button-row-4-top[^}]*)\}/,
-    )?.groups?.body;
-    const statsRule = baseCss.match(
-      /\.workshop-page__action-bar > \.style-button\.workshop-page__stats-button\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const mailRootRule = baseCss.match(
-      /\.workshop-page__ui-layer > \.workshop-page__mail\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const sidePanelRootRule = baseCss.match(
-      /\.workshop-page__ui-layer > \.workshop-page__mail,\s*\.workshop-page__ui-layer > \.workshop-page__leaderboard,\s*\.workshop-page__ui-layer > \.workshop-page__discoveries,\s*\.workshop-page__ui-layer > \.workshop-page__trade-alliance,\s*\.workshop-page__ui-layer > \.workshop-page__bag\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const leaderboardSideRule = baseCss.match(
-      /\.workshop-page__ui-layer > \.workshop-page__leaderboard\s*\{(?<body>[^}]*\bleft:[^}]*)\}/,
-    )?.groups?.body;
-    const discoveriesSideRule = baseCss.match(
-      /\.workshop-page__ui-layer > \.workshop-page__discoveries\s*\{(?<body>[^}]*\bright:[^}]*)\}/,
-    )?.groups?.body;
-    const sidePanelButtonRule = baseCss.match(
-      /\.workshop-page__bag > \.workshop-page__bag-button,\s*\.workshop-page__mail > \.workshop-page__mail-button,\s*\.workshop-page__leaderboard > \.workshop-page__leaderboard-button,\s*\.workshop-page__discoveries > \.workshop-page__discoveries-button,\s*\.workshop-page__trade-alliance > \.workshop-page__trade-alliance-button\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const leftPanelButtonAlignRule = baseCss.match(
-      /\.workshop-page__panel-button\[data-panel-side="left"\]\s*>\s*\.workshop-page__panel-button-open\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const rightPanelButtonAlignRule = baseCss.match(
-      /\.workshop-page__panel-button\[data-panel-side="right"\]\s*>\s*\.workshop-page__panel-button-open\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const timedPanelButtonAlignRule = baseCss.match(
-      /\.workshop-page__panel-button\.has-timer\s*>\s*\.workshop-page__panel-button-open\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const featureCharacterRule = baseCss.match(
-      /\.workshop-page__feature-character\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const leftPanelIconOffsetRule = baseCss.match(
-      /\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__feature-character,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__personal-tasks-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__bag-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__mail-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__leaderboard-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__discoveries-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="left"\]\s+\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const rightPanelIconOffsetRule = baseCss.match(
-      /\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__feature-character,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__world-notice-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__bag-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__mail-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__leaderboard-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__discoveries-button-icon-frame,\s*\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const featureCharacterLabelRule = baseCss.match(
-      /\.workshop-page__feature-character-label\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const rightFeatureCharacterLabelRule = baseCss.match(
-      /\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__feature-character-label\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const sidePanelLabelRule = baseCss.match(
-      /\.workshop-page__bag-button-label,\s*\.workshop-page__mail-button-label,\s*\.workshop-page__leaderboard-button-label,\s*\.workshop-page__discoveries-button-label,\s*\.workshop-page__trade-alliance-button-label\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const sidePanelIconFrameRule = baseCss.match(
-      /\.workshop-page__bag-button-icon-frame,\s*\.workshop-page__mail-button-icon-frame,\s*\.workshop-page__leaderboard-button-icon-frame,\s*\.workshop-page__discoveries-button-icon-frame,\s*\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const mailIconRule = baseCss.match(
-      /\.workshop-page__mail-button-icon\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const leaderboardIconRule = baseCss.match(
-      /\.workshop-page__leaderboard-button-icon\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const allianceRule = baseCss.match(
-      /\.workshop-page__ui-layer > \.workshop-page__trade-alliance\s*\{(?<body>[^}]*\bleft:[^}]*)\}/,
+    const labelRule = baseCss.match(/\.workshop-page__feature-character-label\s*\{(?<body>[^}]*)\}/)
+      ?.groups?.body;
+    const iconFrameRule = baseCss.match(
+      /\.workshop-page__personal-tasks-icon-frame,\s*\.workshop-page__world-notice-icon-frame,\s*\.workshop-page__bag-button-icon-frame,\s*\.workshop-page__stats-button-icon-frame,[\s\S]*?\.workshop-page__trade-alliance-button-icon-frame\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(rootRule).toMatch(/--workshop-secondary-button-width:\s*100px;/);
-    expect(rootRule).toMatch(/--workshop-secondary-button-half-width:\s*50px;/);
-    expect(rootRule).toMatch(/--workshop-panel-button-width:\s*45\.5px;/);
-    expect(rootRule).toMatch(/--workshop-panel-button-height:\s*80\.25px;/);
-    expect(rootRule).toMatch(
-      /--workshop-panel-button-open-height:\s*68\.25px;/,
-    );
-    expect(rootRule).toMatch(/--workshop-panel-button-label-bottom:\s*3\.9px;/);
-    expect(rootRule).toMatch(
-      /--workshop-side-controls-top-offset:\s*61px;/,
-    );
-    expect(rootRule).toMatch(
-      /--workshop-panel-button-first-row-offset-y:\s*25px;/,
-    );
-    expect(rootRule).toMatch(/--workshop-panel-button-row-gap:\s*52\.25px;/);
-    expect(rootRule).toContain('--workshop-panel-button-row-4-top');
-
-    expect(bagRule).toBeDefined();
-    expect(bagRule).toContain('--workshop-panel-button-row-4-top');
-    expect(bagRule).toMatch(/\bleft:\s*var\(--style-room-chrome-edge\);/);
-
-    expect(statsRule).toBeDefined();
-    expect(statsRule).toMatch(
-      /\btop:\s*calc\(\s*var\(--style-room-content-top\) \+\s*var\(--workshop-side-controls-top-offset\)\s*\);/,
-    );
-    expect(statsRule).toMatch(/\bright:\s*0;/);
-    expect(statsRule).toMatch(/\bbox-sizing:\s*content-box;/);
-    expect(statsRule).toMatch(
-      /\bwidth:\s*var\(--workshop-secondary-button-width\);/,
-    );
-    expect(statsRule).not.toMatch(/\btext-transform:\s*lowercase;/);
-    expect(statsRule).not.toMatch(/\bbottom:/);
-
-    expect(mailRootRule).toBeDefined();
-    expect(mailRootRule).toMatch(/\bright:\s*var\(--style-room-chrome-edge\);/);
-
-    expect(sidePanelRootRule).toBeDefined();
-    expect(sidePanelRootRule).toContain('--workshop-panel-button-row-1-top');
-    expect(sidePanelRootRule).toMatch(
-      /\btop:\s*var\(--workshop-panel-button-row-top\);/,
-    );
+    expect(rootRule).toMatch(/--workshop-side-controls-top-offset:\s*71px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-width:\s*50px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-height:\s*72px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-open-height:\s*72px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-row-gap:\s*74px;/);
+    expect(labelRule).toMatch(/\bwidth:\s*62px;/);
+    expect(labelRule).toMatch(/\bfont-size:\s*15px;/);
+    expect(labelRule).toMatch(/\bline-height:\s*var\(--workshop-panel-button-label-line-height\);/);
+    expect(labelRule).toContain('-webkit-text-stroke: 2.5px');
+    expect(labelRule).toMatch(/\btext-align:\s*center;/);
+    expect(iconFrameRule).toMatch(/\btop:\s*0;/);
+    expect(iconFrameRule).toMatch(/\bwidth:\s*50px;/);
+    expect(iconFrameRule).toMatch(/\bheight:\s*50px;/);
     expect(baseCss).toMatch(
-      /\.workshop-page__ui-layer > \.workshop-page__leaderboard,\s*\.workshop-page__ui-layer > \.workshop-page__discoveries\s*\{[^}]*--workshop-panel-button-row-2-top/s,
+      /\.workshop-page__trade-alliance-button-icon\s*\{[\s\S]*?\bscale:\s*0\.72;/,
     );
-    expect(sidePanelRootRule).toMatch(
-      /\bwidth:\s*var\(--workshop-panel-button-width\);/,
+    expect(baseCss).toContain('.workshop-page__ui-layer > .workshop-page__stats');
+    expect(baseCss).not.toContain(
+      '.workshop-page__action-bar > .style-button.workshop-page__stats-button',
     );
-    expect(sidePanelRootRule).toMatch(
-      /\bheight:\s*var\(--workshop-panel-button-height\);/,
-    );
-    expect(leaderboardSideRule).toMatch(
-      /\bleft:\s*var\(--style-room-chrome-edge\);/,
-    );
-    expect(discoveriesSideRule).toMatch(
-      /\bright:\s*var\(--style-room-chrome-edge\);/,
-    );
-    expect(sidePanelButtonRule).toMatch(/\boverflow:\s*visible;/);
-    expect(leftPanelButtonAlignRule).toMatch(/\bjustify-items:\s*start;/);
-    expect(leftPanelButtonAlignRule).toMatch(/\btext-align:\s*left;/);
-    expect(rightPanelButtonAlignRule).toMatch(/\bjustify-items:\s*end;/);
-    expect(rightPanelButtonAlignRule).toMatch(/\btext-align:\s*right;/);
-    expect(timedPanelButtonAlignRule).toMatch(/\bbottom:\s*0;/);
-    expect(featureCharacterRule).toMatch(/\bposition:\s*relative;/);
-    expect(featureCharacterRule).toMatch(/\btop:\s*10px;/);
-    expect(sidePanelIconFrameRule).toMatch(/\btop:\s*10px;/);
-    expect(leftPanelIconOffsetRule).toMatch(/\bleft:\s*-10px;/);
-    expect(rightPanelIconOffsetRule).toMatch(/\bright:\s*-10px;/);
-    expect(featureCharacterLabelRule).toMatch(/\bleft:\s*0;/);
-    expect(featureCharacterLabelRule).toContain(
-      'font-size: calc(var(--style-box-border-label-font-size) * 0.8);',
-    );
-    expect(featureCharacterLabelRule).toContain(
-      'line-height: var(--workshop-panel-button-label-line-height);',
-    );
-    expect(featureCharacterLabelRule).toMatch(/\bbackground:\s*transparent;/);
-    expect(featureCharacterLabelRule).toMatch(/\bborder:\s*0;/);
-    expect(featureCharacterLabelRule).toContain(
-      '-webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)',
-    );
-    expect(featureCharacterLabelRule).toContain(
-      'var(--style-yellow-button-text-stroke);',
-    );
-    expect(featureCharacterLabelRule).toMatch(
-      /\bcolor:\s*var\(--style-yellow-button-text\);/,
-    );
-    expect(featureCharacterLabelRule).toMatch(/\bpaint-order:\s*stroke fill;/);
-    expect(featureCharacterLabelRule).toContain(
-      '0 1px 0 var(--style-yellow-button-text-stroke)',
-    );
-    expect(rightFeatureCharacterLabelRule).toMatch(/\bright:\s*0;/);
-    expect(rightFeatureCharacterLabelRule).toMatch(/\bleft:\s*auto;/);
-    expect(rightFeatureCharacterLabelRule).toMatch(/\btext-align:\s*right;/);
-    expect(sidePanelLabelRule).toContain(
-      'font-size: calc(var(--style-box-border-label-font-size) * 0.8);',
-    );
-    expect(sidePanelLabelRule).toContain(
-      'line-height: var(--workshop-panel-button-label-line-height);',
-    );
-    expect(sidePanelLabelRule).toMatch(/\btransform:\s*none;/);
-    expect(mailIconRule).toMatch(/\bscale:\s*1\.3;/);
-    expect(leaderboardIconRule).toMatch(/\bscale:\s*1\.2;/);
-
-    expect(allianceRule).toMatch(/\bleft:\s*var\(--style-room-chrome-edge\);/);
   });
 
-  it('opens bag from the left panel and stats from the Workshop action cluster', () => {
+  it('opens Bag and Stats from matching side-panel actions', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const onBagClick = vi.fn();
     const onStatsClick = vi.fn();
@@ -679,7 +543,9 @@ describe('WorkshopActionBarManager', () => {
 
     manager.mount(parent);
 
+    const statsPanel = parent.querySelector('.workshop-page__stats');
     const button = parent.querySelector('.workshop-page__stats-button');
+    const statsIcon = parent.querySelector('.workshop-page__stats-button-icon');
     const bagPanel = parent.querySelector('.workshop-page__bag');
     const bagButton = parent.querySelector('.workshop-page__bag-button');
     const bagIcon = parent.querySelector('.workshop-page__bag-button-icon');
@@ -687,19 +553,20 @@ describe('WorkshopActionBarManager', () => {
 
     expect(button?.textContent).toBe('Stats');
     expect(button?.getAttribute('aria-label')).toBe('open stats');
-    expect(button?.querySelector('img, svg')).toBeNull();
-    expect(button?.classList.contains('style-button--yellow')).toBe(true);
+    expect(statsPanel?.classList.contains('workshop-page__panel-button')).toBe(true);
+    expect(statsPanel?.dataset.panelSide).toBe('right');
+    expect(statsPanel?.contains(button)).toBe(true);
+    expect(button?.classList.contains('workshop-page__panel-button-open')).toBe(true);
+    expect(statsIcon?.getAttribute('src')).toContain('icon-side-stats-root-run.png');
     expect(bagPanel?.classList.contains('workshop-page__panel-button')).toBe(true);
     expect(bagPanel?.dataset.panelSide).toBe('left');
     expect(bagPanel?.contains(bagButton)).toBe(true);
     expect(bagButton?.classList.contains('style-button')).toBe(false);
-    expect(bagButton?.classList.contains('workshop-page__panel-button-open')).toBe(
-      true,
-    );
+    expect(bagButton?.classList.contains('workshop-page__panel-button-open')).toBe(true);
     expect(bagButton?.getAttribute('aria-haspopup')).toBe('dialog');
     expect(bagButton?.getAttribute('aria-label')).toBe('open bag');
     expect(bagIcon?.tagName).toBe('IMG');
-    expect(bagIcon?.getAttribute('src')).toContain('icon-bag.png');
+    expect(bagIcon?.getAttribute('src')).toContain('icon-side-bag-root-run.png');
     expect(bagIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(bagLabel?.textContent).toBe('Bag');
 
@@ -739,13 +606,9 @@ describe('WorkshopActionBarManager', () => {
     expect(mailPanel?.dataset.panelSide).toBe('right');
     expect(mailPanel?.contains(mailButton)).toBe(true);
     expect(mailButton?.classList.contains('style-button')).toBe(false);
-    expect(mailButton?.classList.contains('workshop-page__panel-button-open')).toBe(
-      true,
-    );
+    expect(mailButton?.classList.contains('workshop-page__panel-button-open')).toBe(true);
     expect(mailIcon?.tagName).toBe('IMG');
-    expect(mailIcon?.getAttribute('src')).toContain(
-      'icon-inbox-envelope-bag-style.png',
-    );
+    expect(mailIcon?.getAttribute('src')).toContain('icon-side-inbox-root-run.png');
     expect(mailIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(mailLabel?.textContent).toBe('Inbox');
     expect(mailButton?.dataset.notification).toBe('true');
@@ -834,7 +697,10 @@ describe('WorkshopActionBarManager', () => {
       summons += 1;
       return { ok: true, seed: { label: 'sage seed' }, quantity: 1 };
     };
-    const manager = new WorkshopActionBarManager({ gameplayFacade, onSummonInfoClick });
+    const manager = new WorkshopActionBarManager({
+      gameplayFacade,
+      onSummonInfoClick,
+    });
     const parent = document.createElement('div');
 
     manager.mount(parent);
@@ -851,7 +717,7 @@ describe('WorkshopActionBarManager', () => {
     manager.unmount();
   });
 
-  it('reports mana spent after a successful summon', () => {
+  it('reports only the summoned reward after a successful summon', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const notices = [];
     const manager = new WorkshopActionBarManager({
@@ -866,19 +732,18 @@ describe('WorkshopActionBarManager', () => {
       .querySelector('.workshop-page__summon-button')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(notices).toEqual(['sage seed found', '-10 mana']);
+    expect(notices).toEqual(['sage seed found']);
 
     manager.unmount();
   });
 
-  it('groups successful summon flyouts when a list callback is available', () => {
+  it('leaves successful summon feedback to reward events when they are available', () => {
     const gameplayFacade = createGameplayFacadeFake();
     const notices = [];
-    const noticeLists = [];
     const manager = new WorkshopActionBarManager({
       gameplayFacade,
       onSummonNotice: (message) => notices.push(message),
-      onSummonNoticeList: (messages) => noticeLists.push(messages),
+      rewardEventsAvailable: true,
     });
     const parent = document.createElement('div');
 
@@ -889,12 +754,6 @@ describe('WorkshopActionBarManager', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(notices).toEqual([]);
-    expect(noticeLists).toEqual([
-      [
-        { message: 'sage seed found' },
-        { message: '-10 mana', flyoutKey: 'workshop-mana-spend' },
-      ],
-    ]);
 
     manager.unmount();
   });

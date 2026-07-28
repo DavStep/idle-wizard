@@ -12,7 +12,7 @@ import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcon
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
 const DISCOVERIES_ICON_URL = new URL(
-  '../../../../assets/game/source/icons/icon-discoveries-journal-bag-style.png',
+  '../../../../assets/game/source/icons/icon-side-discoveries-root-run.png',
   import.meta.url,
 ).href;
 
@@ -104,8 +104,7 @@ export class WorkshopDiscoveriesManager {
 
   createButton() {
     const button = document.createElement('button');
-    button.className =
-      'workshop-page__panel-button-open workshop-page__discoveries-button';
+    button.className = 'workshop-page__panel-button-open workshop-page__discoveries-button';
     button.type = 'button';
     button.setAttribute('aria-haspopup', 'dialog');
     button.setAttribute('aria-label', 'open discoveries');
@@ -158,13 +157,7 @@ export class WorkshopDiscoveriesManager {
     const pagination = this.createPotionPagination();
     this.refs.tabs = this.createTabs();
 
-    dialog.append(
-      this.refs.title,
-      this.refs.rows,
-      book.root,
-      pagination.root,
-      this.refs.detail,
-    );
+    dialog.append(this.refs.title, this.refs.rows, book.root, pagination.root, this.refs.detail);
     panel.append(dialog, this.refs.tabs);
     popup.append(panel);
     this.refs.book = book.root;
@@ -491,8 +484,7 @@ export class WorkshopDiscoveriesManager {
 
     if (display.discoveredByUsername) {
       const row = document.createElement('span');
-      row.className =
-        'brewing-page__recipe-discovery-row workshop-page__discovery-byline';
+      row.className = 'brewing-page__recipe-discovery-row workshop-page__discovery-byline';
       row.append(
         '- discovered by ',
         createPlayerInfoLink(
@@ -709,15 +701,8 @@ export class WorkshopDiscoveriesManager {
 
     this.setText(this.refs.pageLabel, label);
     this.setDisabled(this.refs.previousSpreadButton, this.currentSpreadIndex <= 0);
-    this.setDisabled(
-      this.refs.nextSpreadButton,
-      this.currentSpreadIndex >= spreadCount - 1,
-    );
-    this.setAttribute(
-      this.refs.previousSpreadButton,
-      'aria-label',
-      'previous discovery pages',
-    );
+    this.setDisabled(this.refs.nextSpreadButton, this.currentSpreadIndex >= spreadCount - 1);
+    this.setAttribute(this.refs.previousSpreadButton, 'aria-label', 'previous discovery pages');
     this.setAttribute(this.refs.nextSpreadButton, 'aria-label', 'next discovery pages');
   }
 
@@ -748,10 +733,7 @@ export class WorkshopDiscoveriesManager {
   }
 
   clampCurrentSpreadIndex(potionCount) {
-    this.currentSpreadIndex = this.normalizeSpreadIndex(
-      this.currentSpreadIndex,
-      potionCount,
-    );
+    this.currentSpreadIndex = this.normalizeSpreadIndex(this.currentSpreadIndex, potionCount);
   }
 
   normalizeSpreadIndex(spreadIndex, potionCount) {
@@ -795,10 +777,7 @@ export class WorkshopDiscoveriesManager {
     const deltaY = event.clientY - this.bookPointer.startY;
     this.bookPointer = null;
 
-    if (
-      Math.abs(deltaX) < BOOK_SWIPE_THRESHOLD ||
-      Math.abs(deltaX) < Math.abs(deltaY) * 1.2
-    ) {
+    if (Math.abs(deltaX) < BOOK_SWIPE_THRESHOLD || Math.abs(deltaX) < Math.abs(deltaY) * 1.2) {
       return;
     }
 
@@ -899,27 +878,22 @@ export class WorkshopDiscoveriesManager {
   createRenderSignature(snapshot) {
     const potions = snapshot.discoveries?.potions ?? [];
     const potionSignature = potions
-      .map(
-        (potion) => {
-          const ingredientsSignature = (potion.ingredients ?? [])
-            .map(
-              (ingredient) =>
-                `${ingredient.key}:${ingredient.label}:${ingredient.quantity ?? 1}`,
-            )
-            .join(',');
-          return [
-            potion.key,
-            potion.label,
-            potion.discovered,
-            potion.discoveredByUsername,
-            potion.discoveredByIdentity,
-            potion.royaltyCoin,
-            potion.manaCost,
-            potion.brewDurationMs,
-            ingredientsSignature,
-          ].join(':');
-        },
-      )
+      .map((potion) => {
+        const ingredientsSignature = (potion.ingredients ?? [])
+          .map((ingredient) => `${ingredient.key}:${ingredient.label}:${ingredient.quantity ?? 1}`)
+          .join(',');
+        return [
+          potion.key,
+          potion.label,
+          potion.discovered,
+          potion.discoveredByUsername,
+          potion.discoveredByIdentity,
+          potion.royaltyCoin,
+          potion.manaCost,
+          potion.brewDurationMs,
+          ingredientsSignature,
+        ].join(':');
+      })
       .join('|');
 
     return `${this.selectedTabId}:spread=${this.currentSpreadIndex}:${potionSignature}`;

@@ -1,15 +1,26 @@
 // @vitest-environment jsdom
 
-import { beforeAll, describe, expect, it } from 'vitest';
+import {
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import {
   PIXI_PROGRESS_VISUALS,
   PIXI_UI_GEOMETRY,
   createPixiThemeSnapshot,
 } from '../theme/PixiThemeTokens.js';
+import {
+  PIXI_CAPSULE_ASSETS,
+} from './PixiCapsuleSkin.js';
 
 let PixiProgressBar;
 let RetainedProgressBar;
+let NineSliceSprite;
+let Texture;
 
 beforeAll(async () => {
   globalThis.HTMLCanvasElement.prototype.getContext = () => ({
@@ -22,6 +33,7 @@ beforeAll(async () => {
   ({ RetainedProgressBar } = await import(
     '../pages/workshop/RetainedPageKit.js'
   ));
+  ({ NineSliceSprite, Texture } = await import('pixi.js'));
 });
 
 describe('PixiProgressBar', () => {
@@ -104,6 +116,33 @@ describe('PixiProgressBar', () => {
     expect(progress.gradient).toBeNull();
     expect(progress.fillColor).toBe('#b79a6b');
     expect(progress.fillEdgeColor).toBeNull();
+
+    progress.destroy({ children: true });
+  });
+
+  it('keeps rails and fill edges backed by the Root Run capsule assets', () => {
+    const getTexture = vi.fn(() => Texture.EMPTY);
+    const progress = new PixiProgressBar({
+      assetManager: { getTexture },
+      width: 100,
+      progress: 0.5,
+    });
+
+    expect(getTexture).toHaveBeenNthCalledWith(
+      1,
+      PIXI_CAPSULE_ASSETS.track,
+    );
+    expect(getTexture).toHaveBeenNthCalledWith(
+      2,
+      PIXI_CAPSULE_ASSETS.fillMask,
+    );
+    expect(progress.railGraphic.sprite).toBeInstanceOf(
+      NineSliceSprite,
+    );
+    expect(progress.fillMask.sprite).toBeInstanceOf(
+      NineSliceSprite,
+    );
+    expect(progress.fillGraphic.mask).toBe(progress.fillMask);
 
     progress.destroy({ children: true });
   });

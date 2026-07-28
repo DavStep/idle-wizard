@@ -931,8 +931,8 @@ describe('GardenPlotManager', () => {
     expect(plotWorldRule).toContain('bottom: var(--style-room-chat-clearance);');
     expect(plotWorldRule).toContain('left: 0;');
     expect(plotWorldRule).toContain('overflow: hidden;');
-    expect(worldShellRule).toContain(
-      'top: calc(var(--style-room-content-top) + var(--garden-page-world-top-safe-space));',
+    expect(worldShellRule).toMatch(
+      /top:\s*calc\(\s*var\(--style-room-content-top\)\s*\+\s*var\(--garden-page-world-top-safe-space\)\s*\);/,
     );
     expect(worldShellRule).toContain('right: 0;');
     expect(worldShellRule).toContain('bottom: 0;');

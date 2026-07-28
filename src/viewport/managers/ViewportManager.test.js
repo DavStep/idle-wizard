@@ -22,6 +22,7 @@ describe('ViewportManager', () => {
   it('locks browser viewport zoom so world gestures own scaling', () => {
     const html = readFileSync(`${cwd()}/index.html`, 'utf8');
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const canvasCss = readFileSync(`${cwd()}/src/styles/canvas.css`, 'utf8');
     const viewportMeta = html.match(
       /<meta\s+name="viewport"\s+content="(?<content>[^"]+)"/,
     )?.groups?.content;
@@ -30,6 +31,13 @@ describe('ViewportManager', () => {
     expect(viewportMeta).toContain('maximum-scale=1');
     expect(viewportMeta).toContain('user-scalable=no');
     expect(viewportMeta).toContain('viewport-fit=cover');
+    expect(html).toContain('<meta name="theme-color" content="#242938" />');
+    expect(canvasCss).toMatch(
+      /body::before\s*\{[^}]*height:\s*env\(safe-area-inset-top,\s*0px\);[^}]*background:\s*var\(--top-panel-safe-area-fill\);/s,
+    );
+    expect(canvasCss).toMatch(
+      /#game-canvas\s*\{[^}]*top:\s*env\(safe-area-inset-top,\s*0px\);/s,
+    );
     expect(baseCss).toMatch(/html,\s*body,\s*#app\s*\{[^}]*touch-action:\s*pan-y;/s);
     expect(baseCss).toMatch(/\.app-shell\s*\{[^}]*touch-action:\s*pan-y;/s);
   });
@@ -43,6 +51,20 @@ describe('ViewportManager', () => {
     expect(mainActivity).toContain('settings.setSupportZoom(false);');
     expect(mainActivity).toContain('settings.setBuiltInZoomControls(false);');
     expect(mainActivity).toContain('settings.setDisplayZoomControls(false);');
+  });
+
+  it('fills the Android status-bar cutout with the top-panel color', () => {
+    const androidStyles = readFileSync(
+      `${cwd()}/android/app/src/main/res/values/styles.xml`,
+      'utf8',
+    );
+
+    expect(androidStyles).toMatch(
+      /<style name="AppTheme\.NoActionBar"[\s\S]*?<item name="android:statusBarColor">#242938<\/item>/,
+    );
+    expect(androidStyles).toMatch(
+      /<style name="AppTheme\.NoActionBarLaunch"[\s\S]*?<item name="android:statusBarColor">#242938<\/item>/,
+    );
   });
 
   it('blocks native page zoom gestures while keeping single-touch gestures available', () => {

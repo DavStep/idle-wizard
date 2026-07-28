@@ -52,6 +52,7 @@ experience_type: product-shape
 - Reward flyouts on Android WebView should avoid per-event dynamic `@keyframes`; use transform/opacity Web Animations API paths and cap active particles.
 - Recurring trader-stall sales use one capped three-to-four-coin trail, an amount pop, and the top-currency pulse. Do not add a simultaneous item toss or unbounded particles; that combination causes short Android WebView frame drops.
 - Potion collection reward drops should start from the visible cauldron liquid, not the potion preview/icon or whole cauldron box.
+- Mana consumption updates the HUD balance only; do not animate negative mana flyouts, mana drops, or spend particles for summoning, brewing, automation, or other mana costs.
 - Cauldron potion preview labels need a fixed-width summary that can overflow the 86px potion box; `max-width: 100%` clamps labels and truncates names under world zoom.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
 - Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
@@ -107,7 +108,7 @@ experience_type: product-shape
 - Weekly events should be framed as `weekly world event` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
 - Personal tasks have only daily quest rows; completed daily quests add points to both daily and weekly reward tracks, separate from weekly world events and alliance quests.
 - Prestige resets the run but preserves personal task daily/weekly progress until the normal period rollover.
-- Tabbed dialog close controls use the shared round X asset centered below the shell at the authored gap; keep the tab strip attached below the content panel and back/previous/next as text navigation.
+- Tabbed dialog close controls use the shared round X asset centered below the shell at the authored gap; keep the tab strip attached below the content panel unless the surface explicitly reserves the brown shell footer for tabs, as Load Stall, Workshop Bag, and Workshop Stats do. Keep back/previous/next as text navigation.
 - Nested dialogs inside an existing popup need their own full-layer backdrop; otherwise the parent popup text bleeds through during dialog enter/fade.
 - Personal tasks is a standard tabbed popup: `--style-tabbed-dialog-width` panel with `260px` dialog content. Do not pair that panel with a `286px` dialog or the border becomes wider than the tabs.
 - Personal task badges should count only visible milestone rewards; task rows give points and should not carry reward claim buttons.
@@ -128,6 +129,7 @@ experience_type: product-shape
 - Main and world event leaderboard user rows share `WorkshopLeaderboardRowRenderer`; do not fork icon/tag/name/level DOM in each dialog.
 - Keep event qualification copy in tasks/rewards, not under the leaderboard rows; the leaderboard tab should stay table-only.
 - World event dialog top header should stay fixed with a separator; split points and resolve time into separate rows, and keep task text wrapping in a list.
+- Retained world-event migrations must project the complete header, tabs, quest detail, donation, leaderboard, and reward contract; a generic label-only row projection can pass DOM tests while shipping an empty-looking production dialog.
 - World event dialog overflow belongs on `.workshop-page__world-notice-frame`; register that frame with `ScrollCueManager` so the shared vertical scrollbar appears only when needed.
 - World event leaderboard rows must not carry `.workshop-page__leaderboard-rows`; that creates a nested scroll viewport and snaps mobile scroll on refresh.
 - World event same-tab refreshes must restore `.workshop-page__world-notice-frame.scrollTop`; live snapshot/leaderboard updates otherwise bounce mobile scrolling back to the top.
@@ -354,6 +356,7 @@ experience_type: product-shape
 - Generic `.style-button` active CSS must exclude `[aria-disabled="true"]`; aria-disabled real buttons can still get native `:active` and paint transparent art hitboxes.
 - Pixel/WebView taps need forgiving touch slop in `PressFeedbackManager`; a 12px move threshold can treat normal finger drift as a drag and suppress the valid click.
 - Workshop summon's custom hold-to-repeat pointerdown can suppress native quick-tap clicks; keep a validated touch release fallback in the summon manager and dedupe it against global synthetic clicks.
+- Workshop side-control hit areas must partition on the `52.25px` row pitch; using the taller visual widget bounds lets the next control steal taps from labels such as `Leaderboard`.
 - Retained Pixi tutorial overlays can report the stage root for a revealed room press even when the pointer is inside the control bounds; opt only the affected registration into geometric fallback hit-testing and gate that fallback on the revealed control's visibility.
 - Retained Pixi info buttons need geometric fallback hit-testing within their existing hit area; an adjacent disabled control can retarget the event path to an overlay/root while the info action must remain available.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.

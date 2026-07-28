@@ -53,7 +53,6 @@ export class WorkshopPageFacade {
       onMailClick: () => onOpenInbox?.(),
       onSummonInfoClick: () => this.summonInfoManager.show(),
       onSummonNotice: (message, options) => this.flyoutManager.show(message, options),
-      onSummonNoticeList: (notices) => this.flyoutManager.showList(notices),
       rewardEventsAvailable: Boolean(gameplayFacade?.subscribeRewardEvents),
     });
     this.leaderboardManager = new WorkshopLeaderboardManager({

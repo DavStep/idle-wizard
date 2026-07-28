@@ -59,6 +59,9 @@ describe('base styles', () => {
 
   it('uses matching red and orange notification-circle assets', () => {
     const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
+    const textTabBadgeRule = getRuleBody(
+      /\.style-button\[class\*="tab-button"\]\[data-notification="true"\]::before\s*\{(?<body>[^}]*)\}/,
+    );
     const assetDir = `${cwd()}/assets/game/source/ui`;
     const red = PNG.sync.read(
       readFileSync(`${assetDir}/notification-circle-red.png`),
@@ -118,6 +121,8 @@ describe('base styles', () => {
     expect(rootRule).toContain(
       '--style-notification-tab-inset: 4px;',
     );
+    expect(textTabBadgeRule).toContain('top: 0;');
+    expect(textTabBadgeRule).toContain('right: 0;');
     expect([red.width, red.height]).toEqual([61, 65]);
     expect([orange.width, orange.height]).toEqual([red.width, red.height]);
     expect([...red.data.slice(centerIndex, centerIndex + 4)]).toEqual([
@@ -338,11 +343,11 @@ describe('base styles', () => {
     expect(titleRule).toContain('font-weight: 400;');
     expect(titleRule).toContain('place-items: start center;');
     expect(titleRule).toContain('background: transparent;');
-    expect(closeRule).toContain(
-      'background: transparent var(--style-dialog-close-image) center / contain no-repeat;',
+    expect(closeRule).toMatch(
+      /background:\s*transparent\s+var\(--style-dialog-close-image\)\s+center\s*\/\s*contain\s+no-repeat;/,
     );
-    expect(closeRule).toContain(
-      'top: calc(100% + var(--style-dialog-frame-outset) + var(--style-dialog-close-gap));',
+    expect(closeRule).toMatch(
+      /top:\s*calc\(\s*100%\s*\+\s*var\(--style-dialog-frame-outset\)\s*\+\s*var\(--style-dialog-close-gap\)\s*\);/,
     );
     expect(closeRule).toContain('left: 50%;');
     expect(closeRule).toContain('transform: translateX(-50%);');
@@ -570,16 +575,22 @@ describe('base styles', () => {
     expect(yellowColors.has('236,222,98,255')).toBe(true);
   });
 
-  it('uses the Root Run shop tile as the shared inner-section frame', () => {
+  it('uses the shop tile for inner sections and the tighter flipped skin for the top panel', () => {
     const selectableThemeRule = getRuleBody(
       /:root\[data-style-theme="black"\],\s*:root\[data-style-theme="midnight"\],\s*:root\[data-style-theme="witchcraft"\]\s*\{(?<body>[^}]*)\}/,
     );
     const innerSectionRule = findRuleBody(
-      /:root\[data-style-theme="black"\]\s+\.style-box:not\(\.tutorial-layer__hint\):not\(\.tutorial-layer__lesson\),[\s\S]*?:root\[data-style-theme="witchcraft"\]\s+\.style-panel\.room-top-panel\s*\{(?<body>[^}]*)\}/g,
+      /:root\[data-style-theme="black"\]\s+\.style-box:not\(\.tutorial-layer__hint\):not\(\.tutorial-layer__lesson\),[\s\S]*?:root\[data-style-theme="witchcraft"\]\s+\.style-box:not\(\.tutorial-layer__hint\):not\(\.tutorial-layer__lesson\)\s*\{(?<body>[^}]*)\}/g,
       (body) =>
         body.includes(
           'border-image-source: var(--style-inner-section-frame);',
         ),
+    );
+    const topPanelRule = getRuleBody(
+      /:root\[data-style-theme="black"\]\s+\.style-panel\.room-top-panel,[\s\S]*?:root\[data-style-theme="witchcraft"\]\s+\.style-panel\.room-top-panel\s*\{(?<body>[^}]*)\}/,
+    );
+    const topPanelBackgroundRule = getRuleBody(
+      /:root\[data-style-theme="black"\]\s+\.style-panel\.room-top-panel::before,[\s\S]*?:root\[data-style-theme="witchcraft"\]\s+\.style-panel\.room-top-panel::before\s*\{(?<body>[^}]*)\}/,
     );
     const themeAssets = ['black', 'midnight', 'witchcraft'].map((theme) =>
       PNG.sync.read(
@@ -601,13 +612,15 @@ describe('base styles', () => {
       '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-witchcraft-9slice.png");',
     );
     expect(baseCss).toContain('--style-inner-section-fill: #4c335a;');
+    expect(baseCss).toContain('--style-top-panel-content-gap: 16px;');
+    expect(baseCss).toContain(
+      '--style-top-panel-background-frame: url("../../assets/game/source/ui/midnight-top-panel-background-9slice.png");',
+    );
     expect(selectableThemeRule).toContain(
       '--style-inner-section-frame-slice: 91 73 90 83 fill;',
     );
-    expect(selectableThemeRule).toContain(
-      '--style-inner-section-frame-width:\n' +
-        '    calc(91px * 390 / 1080) calc(73px * 390 / 1080)\n' +
-        '    calc(90px * 390 / 1080) calc(83px * 390 / 1080);',
+    expect(selectableThemeRule).toMatch(
+      /--style-inner-section-frame-width:\s*calc\(91px \* 390 \/ 1080\)\s+calc\(73px \* 390 \/ 1080\)\s+calc\(90px \* 390 \/ 1080\)\s+calc\(83px \* 390 \/ 1080\);/,
     );
     expect(innerSectionRule).toContain(
       'background: var(--style-inner-section-fill);',
@@ -622,15 +635,20 @@ describe('base styles', () => {
       'border-image-width: var(--style-inner-section-frame-width);',
     );
     expect(innerSectionRule).toContain('border-radius: 16px;');
-    expect(baseCss).toContain(
-      ':root[data-style-theme="black"] .style-panel.room-top-panel,',
+    expect(topPanelRule).toContain('background: transparent;');
+    expect(topPanelRule).toContain('border: 0;');
+    expect(topPanelRule).toContain('border-image: none;');
+    expect(topPanelRule).toContain('border-radius: 0;');
+    expect(topPanelBackgroundRule).toContain(
+      'border-image-source: var(--style-top-panel-background-frame);',
     );
-    expect(baseCss).toContain(
-      ':root[data-style-theme="midnight"] .style-panel.room-top-panel,',
+    expect(topPanelBackgroundRule).toContain(
+      'border-image-slice: var(--style-room-tab-frame-slice);',
     );
-    expect(baseCss).toContain(
-      ':root[data-style-theme="witchcraft"] .style-panel.room-top-panel {',
+    expect(topPanelBackgroundRule).toContain(
+      'border-image-width: var(--style-room-tab-frame-width);',
     );
+    expect(topPanelBackgroundRule).toContain('transform: scaleY(-1);');
 
     const alphaMasks = themeAssets.map((png) => {
       expect(png.width).toBe(157);
@@ -850,11 +868,11 @@ describe('base styles', () => {
     expect(baseCss).toMatch(
       /\.first-run-intro--stable-backdrop\.first-run-intro--step-enter\s+\.first-run-intro__backdrop-layer,[\s\S]*?animation:\s*none;/,
     );
-    expect(baseCss).toContain(
-      '.first-run-intro--step-enter[data-scene="peace"] .first-run-intro__backdrop-layer',
+    expect(baseCss).toMatch(
+      /\.first-run-intro--step-enter\[data-scene="peace"\]\s+\.first-run-intro__backdrop-layer/,
     );
-    expect(baseCss).toContain(
-      '.first-run-intro--step-enter[data-scene="workshop"] .first-run-intro__backdrop-layer',
+    expect(baseCss).toMatch(
+      /\.first-run-intro--step-enter\[data-scene="workshop"\]\s+\.first-run-intro__backdrop-layer/,
     );
     expect(baseCss).toContain('@keyframes first-run-intro-peace-push');
     expect(baseCss).toContain(

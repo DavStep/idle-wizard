@@ -9,12 +9,16 @@ import {
 import {
   DeviceIdentityFooter,
   PixiButton,
+  createDialogPaperSection,
   PixiNineSliceFrame,
   PixiScrollView,
   PixiTextField,
   PixiTextLabel,
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
+  resolveDialogPaperOutsets,
   RootRunDevicePreferenceRow,
   RootRunDevicePreferencesPanel,
+  setDialogPaperSectionBounds,
 } from '../../primitives/index.js';
 import {
   PooledCollection,
@@ -34,6 +38,7 @@ import {
   orderDisplayObjects,
 } from './GlobalDialogKit.js';
 import {
+  RETAINED_SCROLLBAR_GEOMETRY,
   RetainedButton,
   RetainedScrollArea,
 } from '../../pages/workshop/RetainedPageKit.js';
@@ -42,27 +47,61 @@ const SETTINGS_CONTENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
 const SETTINGS_STANDARD_CONTENT_HEIGHT = 410;
 const SETTINGS_STANDARD_SCROLL_HEIGHT = 390;
-const ACCOUNT_CONTENT_HEIGHT = 414;
-const ACCOUNT_HEADER_WIDTH = 298;
+const ACCOUNT_HEADER_WIDTH =
+  PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth;
 const ACCOUNT_HEADER_HEIGHT = 281 / 3;
 const ACCOUNT_SCROLL_X =
   (SETTINGS_CONTENT_WIDTH - ACCOUNT_HEADER_WIDTH) / 2;
+const ACCOUNT_SECTION_CONTENT_X =
+  (ACCOUNT_HEADER_WIDTH - SETTINGS_CONTENT_WIDTH) / 2;
 const ACCOUNT_HEADER_X = 0;
 const ACCOUNT_TILE_SIZE = 183 / 3;
-const ACCOUNT_TILE_GAP = 25 / 3;
 const ACCOUNT_GRID_COLUMNS = 4;
-const ACCOUNT_GRID_WIDTH =
-  ACCOUNT_GRID_COLUMNS * ACCOUNT_TILE_SIZE +
-  (ACCOUNT_GRID_COLUMNS - 1) * ACCOUNT_TILE_GAP;
 const ACCOUNT_HEADER_TILE_SIZE = 209 / 3;
 const ACCOUNT_HEADER_PORTRAIT_WIDTH = 170 / 3;
-const ACCOUNT_TAB_Y = 306 / 3;
-const ACCOUNT_CHOICES_Y = 454 / 3;
-const ACCOUNT_CHOICES_HEIGHT = 478 / 3;
-const ACCOUNT_CHOICES_SCROLL_INSET_X = 59 / 3;
 const ACCOUNT_CHOICES_SCROLL_INSET_Y = 24 / 3;
-const ACCOUNT_PAPER_BOTTOM = 978 / 3;
-const ACCOUNT_SAVE_Y = 999 / 3;
+const ACCOUNT_CHOICE_INDICATOR_BLEED = 4;
+const ACCOUNT_CHOICE_SCROLL_LEFT_INSET = 4;
+const ACCOUNT_CHOICE_SCROLL_RIGHT_INSET = 2;
+const ACCOUNT_SCROLLBAR_OUTSET =
+  RETAINED_SCROLLBAR_GEOMETRY.gap +
+  RETAINED_SCROLLBAR_GEOMETRY.width;
+const ACCOUNT_CHOICE_SCROLL_WIDTH =
+  ACCOUNT_HEADER_WIDTH -
+  ACCOUNT_CHOICE_SCROLL_LEFT_INSET -
+  ACCOUNT_SCROLLBAR_OUTSET -
+  ACCOUNT_CHOICE_SCROLL_RIGHT_INSET;
+const ACCOUNT_TILE_GAP =
+  (ACCOUNT_CHOICE_SCROLL_WIDTH -
+    ACCOUNT_CHOICE_INDICATOR_BLEED * 2 -
+    ACCOUNT_GRID_COLUMNS * ACCOUNT_TILE_SIZE) /
+  (ACCOUNT_GRID_COLUMNS - 1);
+const ACCOUNT_VISIBLE_CHOICE_ROWS = 3.3;
+const ACCOUNT_FULL_VISIBLE_CHOICE_ROWS =
+  Math.floor(ACCOUNT_VISIBLE_CHOICE_ROWS);
+const ACCOUNT_PARTIAL_VISIBLE_CHOICE_ROW =
+  ACCOUNT_VISIBLE_CHOICE_ROWS -
+  ACCOUNT_FULL_VISIBLE_CHOICE_ROWS;
+const ACCOUNT_CHOICE_SCROLL_HEIGHT =
+  ACCOUNT_CHOICE_INDICATOR_BLEED +
+  ACCOUNT_FULL_VISIBLE_CHOICE_ROWS * ACCOUNT_TILE_SIZE +
+  ACCOUNT_FULL_VISIBLE_CHOICE_ROWS * ACCOUNT_TILE_GAP +
+  ACCOUNT_PARTIAL_VISIBLE_CHOICE_ROW * ACCOUNT_TILE_SIZE;
+const ACCOUNT_TAB_ROW_WIDTH = 286;
+const ACCOUNT_TAB_HEIGHT = 28;
+const ACCOUNT_TAB_GAP = 3;
+const ACCOUNT_TABS_TOP_GAP = 6;
+const ACCOUNT_CHOICE_BOARD_BOTTOM_INSET = 8;
+const ACCOUNT_CHOICES_HEIGHT =
+  ACCOUNT_CHOICES_SCROLL_INSET_Y +
+  ACCOUNT_CHOICE_SCROLL_HEIGHT +
+  ACCOUNT_TABS_TOP_GAP +
+  ACCOUNT_TAB_HEIGHT +
+  ACCOUNT_CHOICE_BOARD_BOTTOM_INSET;
+const ACCOUNT_SAVE_WIDTH = 160;
+const ACCOUNT_SAVE_HEIGHT = 34;
+const ACCOUNT_SAVE_GAP = 8;
+const ACCOUNT_BOTTOM_GAP = 8;
 const SETTINGS_DEVICE_CONTENT_HEIGHT = 264;
 const SETTINGS_DEVICE_SCROLL_HEIGHT = 244;
 const SETTINGS_TABS = new Set([
@@ -182,6 +221,14 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   buildAccountPane() {
+    this.accountHeaderSection = createDialogPaperSection(
+      this.panel.paperFrame.texture,
+      `${this.dialogId}:accountHeaderSection`,
+    );
+    this.accountChoiceSection = createDialogPaperSection(
+      this.panel.paperFrame.texture,
+      `${this.dialogId}:accountChoiceSection`,
+    );
     this.accountHeader = new PixiNineSliceFrame({
       texture: this.context.assets.getTexture(PIXI_ROOT_RUN_ASSETS.settingsRow),
       sourceInsets: { top: 17, right: 25, bottom: 19, left: 13 },
@@ -246,7 +293,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       semanticId: `${this.dialogId}.account.avatarTab`,
       label: 'Avatar',
       buttonLabel: `${this.dialogId}:avatarTab`,
-      variant: 'account-tab',
+      variant: 'tab',
       onActivate: () => this.selectAccountChoiceTab('avatar'),
     });
     this.avatarTabButton = this.avatarTab.control;
@@ -257,7 +304,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       semanticId: `${this.dialogId}.account.frameTab`,
       label: 'Frame',
       buttonLabel: `${this.dialogId}:frameTab`,
-      variant: 'account-tab',
+      variant: 'tab',
       onActivate: () => this.selectAccountChoiceTab('frame'),
     });
     this.frameTabButton = this.frameTab.control;
@@ -270,6 +317,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       label: `${this.dialogId}:accountChoicesBoard`,
     });
     this.accountChoiceScroll = new RetainedScrollArea({
+      assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       label: `${this.dialogId}:accountChoices`,
     });
@@ -279,14 +327,16 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       semanticRegistry: this.context.semanticRegistry,
       semanticId: `${this.dialogId}.account.save`,
       text: 'Save',
-      variant: 'account-save',
-      width: PIXI_ROOT_RUN_GEOMETRY.account.save.width,
-      height: PIXI_ROOT_RUN_GEOMETRY.account.save.height,
+      variant: 'green',
+      width: ACCOUNT_SAVE_WIDTH,
+      height: ACCOUNT_SAVE_HEIGHT,
       action: () => this.saveAccount(),
       label: `${this.dialogId}:accountSave`,
     });
     this.usernameSave = this.accountSave;
     this.accountLayer.addChild(
+      this.accountHeaderSection,
+      this.accountChoiceSection,
       this.accountHeader,
       this.accountPreviewTile,
       this.accountPreviewPortrait,
@@ -294,10 +344,10 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       this.usernameField,
       this.usernameEdit,
       this.usernameStatus,
-      this.avatarTab.root,
-      this.frameTab.root,
       this.accountChoiceBoard,
       this.accountChoiceScroll.root,
+      this.avatarTab.root,
+      this.frameTab.root,
       this.accountSave,
     );
     this.syncAccountChoiceTabs();
@@ -559,7 +609,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.setPanelContentSize(
       SETTINGS_CONTENT_WIDTH,
       account
-        ? ACCOUNT_CONTENT_HEIGHT
+        ? this.activePaneHeight
         : devicePreferences
           ? SETTINGS_DEVICE_CONTENT_HEIGHT
           : SETTINGS_STANDARD_CONTENT_HEIGHT,
@@ -567,7 +617,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.scroll.setViewportSize(
       account ? ACCOUNT_HEADER_WIDTH : SETTINGS_CONTENT_WIDTH,
       account
-        ? ACCOUNT_CONTENT_HEIGHT
+        ? this.activePaneHeight
         : devicePreferences
           ? SETTINGS_DEVICE_SCROLL_HEIGHT
           : SETTINGS_STANDARD_SCROLL_HEIGHT,
@@ -591,19 +641,14 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   syncAccountPaper(account) {
-    if (!account) {
-      return;
+    this.panel.setPaperVisible(!account);
+    for (const section of [
+      this.accountHeaderSection,
+      this.accountChoiceSection,
+    ]) {
+      section.visible = account;
+      section.renderable = account;
     }
-    const paper = this.panel.paperFrame;
-    const paperBottom =
-      this.panel.content.y +
-      this.accountLayer.y +
-      ACCOUNT_PAPER_BOTTOM;
-    paper.setSize(
-      paper.frameWidth,
-      Math.max(0, paperBottom - paper.y),
-      PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
-    );
   }
 
   syncTitleFrame(account) {
@@ -658,25 +703,46 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
 
   layoutAccountPane() {
     const username = PIXI_ROOT_RUN_GEOMETRY.account.username;
-    const tab = PIXI_ROOT_RUN_GEOMETRY.account.tab;
-    this.accountHeader.position.set(ACCOUNT_HEADER_X, 0);
+    const paperOutsets = resolveDialogPaperOutsets(
+      this.panel.contentInsets,
+    );
+    const sectionInset =
+      PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
+    const headerSectionHeight =
+      sectionInset +
+      ACCOUNT_HEADER_HEIGHT +
+      PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
+    setDialogPaperSectionBounds(
+      this.accountHeaderSection,
+      {
+        x: ACCOUNT_SECTION_CONTENT_X,
+        y: 0,
+        width: SETTINGS_CONTENT_WIDTH,
+        height: headerSectionHeight,
+      },
+      paperOutsets,
+    );
+    this.accountHeader.position.set(
+      ACCOUNT_HEADER_X,
+      sectionInset,
+    );
     this.accountHeader.setSize(ACCOUNT_HEADER_WIDTH, ACCOUNT_HEADER_HEIGHT);
     this.accountPreviewTile.position.set(
       ACCOUNT_HEADER_X + 22 * (ACCOUNT_HEADER_WIDTH / 925),
-      35 / 3,
+      sectionInset + 35 / 3,
     );
     this.accountPreviewTile.width = ACCOUNT_HEADER_TILE_SIZE;
     this.accountPreviewTile.height = ACCOUNT_HEADER_TILE_SIZE;
     this.accountPreviewPortrait.position.set(
       ACCOUNT_HEADER_X + 42 * (ACCOUNT_HEADER_WIDTH / 925),
-      54 / 3,
+      sectionInset + 54 / 3,
     );
     this.accountPreviewPortrait.width = ACCOUNT_HEADER_PORTRAIT_WIDTH;
     this.accountPreviewPortrait.height =
       ACCOUNT_HEADER_PORTRAIT_WIDTH * (108 / 87);
     this.usernameBacking.position.set(
       ACCOUNT_HEADER_X + 253 * (ACCOUNT_HEADER_WIDTH / 925),
-      96 / 3,
+      sectionInset + 96 / 3,
     );
     this.usernameBacking.width = username.width;
     this.usernameBacking.height = username.height;
@@ -699,46 +765,76 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       this.usernameBacking.y + username.height + 2,
     );
 
-    const tabsWidth = tab.width * 2 + tab.gap;
-    const tabX = (ACCOUNT_HEADER_WIDTH - tabsWidth) / 2;
-    this.avatarTab.setBounds(
-      tabX,
-      ACCOUNT_TAB_Y,
-      tab.width,
-      tab.height,
+    const choiceSectionY =
+      headerSectionHeight +
+      paperOutsets.bottom +
+      PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap +
+      paperOutsets.top;
+    const choiceSectionHeight =
+      sectionInset +
+      ACCOUNT_CHOICES_HEIGHT +
+      PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
+    setDialogPaperSectionBounds(
+      this.accountChoiceSection,
+      {
+        x: ACCOUNT_SECTION_CONTENT_X,
+        y: choiceSectionY,
+        width: SETTINGS_CONTENT_WIDTH,
+        height: choiceSectionHeight,
+      },
+      paperOutsets,
     );
-    this.frameTab.setBounds(
-      tabX + tab.width + tab.gap,
-      ACCOUNT_TAB_Y,
-      tab.width,
-      tab.height,
-    );
-
     this.accountChoiceBoard.position.set(
-      ACCOUNT_HEADER_X + 1,
-      ACCOUNT_CHOICES_Y,
+      ACCOUNT_HEADER_X,
+      choiceSectionY + sectionInset,
     );
     this.accountChoiceBoard.setSize(
       ACCOUNT_HEADER_WIDTH,
       ACCOUNT_CHOICES_HEIGHT,
     );
     this.accountChoiceScroll.setBounds(
-      this.accountChoiceBoard.x + ACCOUNT_CHOICES_SCROLL_INSET_X,
-      ACCOUNT_CHOICES_Y + ACCOUNT_CHOICES_SCROLL_INSET_Y,
-      ACCOUNT_GRID_WIDTH,
-      ACCOUNT_CHOICES_HEIGHT - ACCOUNT_CHOICES_SCROLL_INSET_Y * 2,
+      this.accountChoiceBoard.x + ACCOUNT_CHOICE_SCROLL_LEFT_INSET,
+      this.accountChoiceBoard.y + ACCOUNT_CHOICES_SCROLL_INSET_Y,
+      ACCOUNT_CHOICE_SCROLL_WIDTH,
+      ACCOUNT_CHOICE_SCROLL_HEIGHT,
     );
+    const tabX =
+      (ACCOUNT_HEADER_WIDTH - ACCOUNT_TAB_ROW_WIDTH) / 2;
+    const tabY =
+      this.accountChoiceScroll.root.y +
+      ACCOUNT_CHOICE_SCROLL_HEIGHT +
+      ACCOUNT_TABS_TOP_GAP;
+    const tabWidth =
+      (ACCOUNT_TAB_ROW_WIDTH - ACCOUNT_TAB_GAP) / 2;
+    this.avatarTab.setBounds(
+      tabX,
+      tabY,
+      tabWidth,
+      ACCOUNT_TAB_HEIGHT,
+    );
+    this.frameTab.setBounds(
+      tabX + tabWidth + ACCOUNT_TAB_GAP,
+      tabY,
+      tabWidth,
+      ACCOUNT_TAB_HEIGHT,
+    );
+    const choiceSectionBottom =
+      this.accountChoiceSection.y +
+      this.accountChoiceSection.frameHeight;
     this.accountSave.position.set(
-      (ACCOUNT_HEADER_WIDTH -
-        PIXI_ROOT_RUN_GEOMETRY.account.save.width) / 2,
-      ACCOUNT_SAVE_Y,
+      (ACCOUNT_HEADER_WIDTH - ACCOUNT_SAVE_WIDTH) / 2,
+      choiceSectionBottom + ACCOUNT_SAVE_GAP,
     );
     this.accountSave.setSize(
-      PIXI_ROOT_RUN_GEOMETRY.account.save.width,
-      PIXI_ROOT_RUN_GEOMETRY.account.save.height,
+      ACCOUNT_SAVE_WIDTH,
+      ACCOUNT_SAVE_HEIGHT,
     );
     this.layoutAvatarPane();
-    return ACCOUNT_CONTENT_HEIGHT;
+    return (
+      this.accountSave.y +
+      ACCOUNT_SAVE_HEIGHT +
+      ACCOUNT_BOTTOM_GAP
+    );
   }
 
   layoutReportPane() {
@@ -776,8 +872,10 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       const column = index % ACCOUNT_GRID_COLUMNS;
       const row = Math.floor(index / ACCOUNT_GRID_COLUMNS);
       widget.setBounds(
-        column * (ACCOUNT_TILE_SIZE + ACCOUNT_TILE_GAP),
-        row * (ACCOUNT_TILE_SIZE + ACCOUNT_TILE_GAP),
+        ACCOUNT_CHOICE_INDICATOR_BLEED +
+          column * (ACCOUNT_TILE_SIZE + ACCOUNT_TILE_GAP),
+        ACCOUNT_CHOICE_INDICATOR_BLEED +
+          row * (ACCOUNT_TILE_SIZE + ACCOUNT_TILE_GAP),
         ACCOUNT_TILE_SIZE,
         ACCOUNT_TILE_SIZE,
       );
@@ -786,11 +884,12 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.accountChoiceScroll.setContentHeight(
       Math.max(
         this.accountChoiceScroll.height,
-        rows * ACCOUNT_TILE_SIZE +
+        ACCOUNT_CHOICE_INDICATOR_BLEED * 2 +
+          rows * ACCOUNT_TILE_SIZE +
           Math.max(0, rows - 1) * ACCOUNT_TILE_GAP,
       ),
     );
-    return ACCOUNT_CONTENT_HEIGHT;
+    return this.accountChoiceScroll.contentHeight;
   }
 
   selectAccountChoiceTab(tab) {

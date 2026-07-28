@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.18
+
+- Refreshed the Workshop top panel and side actions with clearer artwork, labels, spacing, and tap targets.
+- Improved Bag, Stats, Load Stall, and Player Market layouts with clearer tabs, rows, listings, requests, and proceeds.
+- Polished task, world-event, reward, and resource feedback while keeping every timed research at least five seconds long.
+
 ## 0.3.17
 
 - Added a dedicated Account screen for choosing your avatar and profile frame alongside your username.

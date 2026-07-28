@@ -404,6 +404,349 @@ describe('PixiViewModelFactory', () => {
     });
   });
 
+  it('projects the complete World Event dialog instead of bare quest labels', () => {
+    const selectWorldEventTab = vi.fn();
+    const openWorldEventDonation = vi.fn();
+    const factory = new PixiViewModelFactory();
+    const gameplay = {
+      worldNotice: {
+        unlocked: true,
+        current: {
+          periodKey: 'weekly-1',
+          eventId: 'new-crown',
+          headline: 'new crown tours town',
+          body: [
+            'the bells have not stopped.',
+            'every guild is waiting to be counted.',
+          ],
+          resetLabel: 'resolves 5d',
+          leaderboard: {
+            currentPoints: 125,
+            remainingQualificationPoints: 1875,
+            rewardTiers: [
+              { rankLabel: '1', emerald: 5, crystal: 10 },
+            ],
+            rows: [
+              {
+                rank: 1,
+                name: 'Mira',
+                playerLevel: 4,
+                points: 450,
+              },
+            ],
+          },
+          requests: [
+            {
+              requestId: 'weekly-1:new-crown:crowd',
+              title: 'quiet the crowd',
+              situation: 'the square is packed.',
+              description: 'donate calming draughts to the stewards.',
+              contributionPoints: 80,
+              collectedPointText: '80 points',
+              donationOptions: [
+                {
+                  optionKey: 'calmingDraught',
+                  resourceType: 'item',
+                  itemKey: 'calmingDraught',
+                  label: 'calming draught',
+                  pointsPerUnit: 120,
+                  availableQuantity: 2,
+                  maxDonateQuantity: 2,
+                  contributionPoints: 80,
+                  collectedPointText: '80 points',
+                  canDonate: true,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+    const actions = {
+      selectWorldEventTab,
+      openWorldEventDonation,
+    };
+
+    const tasks = factory.createWorldEventDialog(
+      gameplay,
+      {},
+      {},
+      'tasks',
+      actions,
+    );
+
+    expect(tasks).toMatchObject({
+      title: 'world event',
+      selectedTabId: 'tasks',
+      header: {
+        headline: 'new crown tours town',
+        meta: '125 points · 5d',
+      },
+      tabs: [
+        { id: 'tasks', label: 'Quests', selected: true },
+        { id: 'leaderboard', label: 'Leaderboard', selected: false },
+        { id: 'rewards', label: 'Rewards', selected: false },
+      ],
+    });
+    expect(tasks.rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'quest:weekly-1:new-crown:crowd',
+          label: expect.stringContaining('quiet the crowd'),
+        }),
+        expect.objectContaining({
+          id: 'donation:weekly-1:new-crown:crowd:calmingDraught',
+          label: 'calming draught',
+          actionLabel: 'Donate',
+          enabled: true,
+          onActivate: expect.any(Function),
+        }),
+      ]),
+    );
+
+    tasks.tabs[1].onSelect('leaderboard');
+    expect(selectWorldEventTab).toHaveBeenCalledWith('leaderboard');
+    tasks.rows.find((row) => row.actionLabel === 'Donate').onActivate();
+    expect(openWorldEventDonation).toHaveBeenCalledWith(
+      'weekly-1:new-crown:crowd',
+      'calmingDraught',
+    );
+
+    const leaderboard = factory.createWorldEventDialog(
+      gameplay,
+      {},
+      {},
+      'leaderboard',
+      actions,
+    );
+    expect(leaderboard.rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'leaderboard:1:Mira',
+          label: '1. Mira (4)',
+          value: '450',
+        }),
+      ]),
+    );
+
+    const rewards = factory.createWorldEventDialog(
+      gameplay,
+      {},
+      {},
+      'rewards',
+      actions,
+    );
+    expect(rewards.rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'reward:1',
+          label: 'Rank 1',
+          value: '5 emerald · 10 crystal',
+        }),
+      ]),
+    );
+
+    const adjustWorldEventDonationAmount = vi.fn();
+    const confirmWorldEventDonation = vi.fn();
+    const donation = factory.createWorldEventDonationDialog(
+      gameplay,
+      {
+        requestId: 'weekly-1:new-crown:crowd',
+        optionKey: 'calmingDraught',
+        amount: 2,
+      },
+      {
+        adjustWorldEventDonationAmount,
+        confirmWorldEventDonation,
+      },
+    );
+    expect(donation).toMatchObject({
+      title: 'Donate',
+      status: '',
+      rows: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'points',
+          value: '+240',
+        }),
+        expect.objectContaining({
+          id: 'confirm',
+          actionLabel: 'Donate x2',
+          enabled: true,
+        }),
+      ]),
+    });
+    donation.rows.find((row) => row.id === 'amount:-1').onActivate();
+    expect(adjustWorldEventDonationAmount).toHaveBeenCalledWith(-1);
+    donation.rows.find((row) => row.id === 'confirm').onActivate();
+    expect(confirmWorldEventDonation).toHaveBeenCalledWith(
+      'weekly-1:new-crown:crowd',
+      'calmingDraught',
+      2,
+    );
+  });
+
+  it('projects Daily Tasks progress, reward tabs, and claim actions from the personal-task snapshot', () => {
+    const claimPersonalTaskMilestoneReward = vi.fn();
+    const selectPersonalTasksTab = vi.fn();
+    const factory = new PixiViewModelFactory();
+    const gameplay = {
+      personalTasks: {
+        unlocked: true,
+        claimableRewards: 1,
+        daily: {
+          periodType: 'daily',
+          resetLabel: 'resets 12h',
+          currentPoints: 42,
+          maxPoints: 100,
+          completedTasks: 1,
+          totalTasks: 2,
+          tasks: [
+            {
+              taskId: 'daily:summon',
+              label: 'summon seeds',
+              progressQuantity: 8,
+              requiredQuantity: 20,
+              pointValue: 10,
+              completed: false,
+            },
+            {
+              taskId: 'daily:mana',
+              label: 'spend mana',
+              progressQuantity: 200,
+              requiredQuantity: 200,
+              pointValue: 15,
+              completed: true,
+            },
+          ],
+          rewards: [
+            {
+              threshold: 30,
+              reward: { text: '+10 coin' },
+              claimed: true,
+              claimable: false,
+            },
+            {
+              threshold: 50,
+              reward: { text: '+15 coin' },
+              claimed: false,
+              claimable: true,
+            },
+          ],
+        },
+        weekly: {
+          periodType: 'weekly',
+          resetLabel: 'resets 3d',
+          currentPoints: 260,
+          maxPoints: 700,
+          rewards: [
+            {
+              threshold: 100,
+              reward: { text: '+40 coin' },
+              claimed: true,
+              claimable: false,
+            },
+          ],
+          tasks: [],
+        },
+      },
+    };
+    const actions = {
+      claimPersonalTaskMilestoneReward,
+      selectPersonalTasksTab,
+    };
+
+    const tasksDialog = factory.createPersonalTasksDialog(
+      gameplay,
+      'tasks',
+      actions,
+    );
+
+    expect(tasksDialog).toMatchObject({
+      title: 'Daily Tasks',
+      selectedTabId: 'tasks',
+      tabs: [
+        { id: 'tasks', label: 'Tasks', selected: true },
+        {
+          id: 'rewards',
+          label: 'Rewards',
+          selected: false,
+          notification: true,
+        },
+      ],
+    });
+    expect(tasksDialog.rows).toEqual([
+      {
+        id: 'daily:summary',
+        label: 'Today · 1/2 Tasks',
+        value: '42/100 pts',
+      },
+      {
+        id: 'weekly:summary',
+        label: 'Week',
+        value: '260/700 pts',
+      },
+      {
+        id: 'daily:daily:summon',
+        label: 'Summon Seeds · +10 pts',
+        value: '8/20',
+        muted: false,
+      },
+      {
+        id: 'daily:daily:mana',
+        label: 'Spend Mana · +15 pts',
+        value: 'Done',
+        muted: true,
+      },
+    ]);
+
+    tasksDialog.tabs[1].onSelect('rewards');
+    expect(selectPersonalTasksTab).toHaveBeenCalledWith('rewards');
+
+    const rewardsDialog = factory.createPersonalTasksDialog(
+      gameplay,
+      'rewards',
+      actions,
+    );
+    expect(rewardsDialog.selectedTabId).toBe('rewards');
+    expect(rewardsDialog.rows).toEqual([
+      {
+        id: 'daily:rewards-summary',
+        label: 'Today',
+        value: '42/100 · resets 12h',
+      },
+      {
+        id: 'daily:reward:30',
+        label: '30 pts · +10 coin',
+        value: 'Claimed',
+        muted: true,
+      },
+      {
+        id: 'daily:reward:50',
+        label: '50 pts · +15 coin',
+        value: '',
+        actionLabel: 'Claim',
+        enabled: true,
+        notification: true,
+        semanticId: 'workshop.personalTasks.daily.reward.50',
+        onActivate: expect.any(Function),
+      },
+      {
+        id: 'weekly:rewards-summary',
+        label: 'Week',
+        value: '260/700 · resets 3d',
+      },
+      {
+        id: 'weekly:reward:100',
+        label: '100 pts · +40 coin',
+        value: 'Claimed',
+        muted: true,
+      },
+    ]);
+
+    rewardsDialog.rows[2].onActivate();
+    expect(claimPersonalTaskMilestoneReward).toHaveBeenCalledWith('daily', 50);
+  });
+
   it('projects Workshop tabs, alliance leaderboard rows, inbox notifications, and chat availability', () => {
     const selectBagTab = vi.fn();
     const selectStatsTab = vi.fn();

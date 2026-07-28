@@ -7,6 +7,9 @@ import {
   RETAINED_SCROLLBAR_GEOMETRY,
   RetainedScrollArea,
 } from './RetainedPageKit.js';
+import {
+  PIXI_CAPSULE_ASSETS,
+} from '../../primitives/PixiCapsuleSkin.js';
 
 describe('RetainedScrollArea', () => {
   let scroll = null;
@@ -108,6 +111,29 @@ describe('RetainedScrollArea', () => {
     expect(scroll.offsetY).toBe(0);
     expect(scroll.scrollbarTrack.visible).toBe(false);
     expect(scroll.scrollbarThumb.visible).toBe(false);
+  });
+
+  it('uses the shared capsule assets for the vertical track and thumb mask', () => {
+    const getTexture = vi.fn(() => ({
+      frame: { x: 0, y: 0, width: 1, height: 1 },
+      source: {},
+    }));
+    scroll = new RetainedScrollArea({
+      assetManager: { getTexture },
+    });
+
+    expect(getTexture).toHaveBeenNthCalledWith(
+      1,
+      PIXI_CAPSULE_ASSETS.track,
+    );
+    expect(getTexture).toHaveBeenNthCalledWith(
+      2,
+      PIXI_CAPSULE_ASSETS.fillMask,
+    );
+    expect(scroll.scrollbarTrack.sprite).toBeDefined();
+    expect(scroll.scrollbarThumbFill.mask).toBe(
+      scroll.scrollbarThumbMask,
+    );
   });
 });
 

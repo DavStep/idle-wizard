@@ -610,8 +610,8 @@ describe('ResearchBoxListManager', () => {
     expect(costButtonRule).toContain('width: calc(281px / 3);');
     expect(costButtonRule).toContain('height: calc(169px / 3);');
     expect(costButtonRule).toContain('font-family: "Lilita One", sans-serif;');
-    expect(costSkinRule).toContain(
-      'background: url("../../assets/game/source/ui/root-run-cost-button/green-button-short.png") center / 100%',
+    expect(costSkinRule).toMatch(
+      /background:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-cost-button\/green-button-short\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
     );
     expect(costContentRule).toContain('display: inline-flex;');
     expect(costContentRule).toContain('align-items: center;');
@@ -885,14 +885,14 @@ describe('ResearchBoxListManager', () => {
     expect(rowRule).toContain(
       'margin-left: calc(var(--style-room-content-edge) - 2px);',
     );
-    expect(rowRule).toContain(
-      'background: transparent url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png") center / 100% 100% no-repeat;',
+    expect(rowRule).toMatch(
+      /background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-1000x304\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
     );
     expect(rowRule).toContain('border-image: none;');
     expect(artRule).toContain('width: var(--style-research-card-art-width);');
     expect(artRule).toContain('height: var(--style-research-card-art-height);');
-    expect(artRule).toContain(
-      'background: transparent url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.png") center / 100% 100% no-repeat;',
+    expect(artRule).toMatch(
+      /background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-art-well-204x194\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
     );
     expect(artRule).toContain('border-image: none;');
     expect(artImageRule).toContain('width: 57px;');
@@ -910,8 +910,8 @@ describe('ResearchBoxListManager', () => {
     expect(rankRule).toContain('transform-origin: top right;');
     expect(rankRule).toContain('-webkit-text-stroke: 4px #0a0a0a;');
     expect(rankRule).not.toContain('border-image');
-    expect(rankSkinRule).toContain(
-      'background: transparent url("../../assets/game/source/ui/root-run-research/research-rank-badge-217x62.png") center / 100% 100% no-repeat;',
+    expect(rankSkinRule).toMatch(
+      /background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-rank-badge-217x62\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
     );
     expect(rankSkinRule).toContain('border-image: none;');
     expect(

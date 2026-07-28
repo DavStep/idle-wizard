@@ -45,9 +45,11 @@ import {
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
+  RETAINED_DIALOG_LIST_GEOMETRY,
   RETAINED_DIALOG_SCROLL_GEOMETRY,
   RetainedButton,
   RetainedScrollArea,
+  resolveRetainedDialogListLayout,
 } from '../workshop/RetainedPageKit.js';
 
 export const SHOP_DIALOG_IDS = Object.freeze({
@@ -73,6 +75,12 @@ const LEDGER_SCROLL_VIEWPORT_BOTTOM_INSET = 10;
 const LEDGER_TAB_ROW_WIDTH = 286;
 const TAB_HEIGHT = 28;
 const TAB_GAP = 3;
+const SHELL_FOOTER_PAPER_GAP = 4;
+const SHELL_FOOTER_BOTTOM_INSET = 6;
+const SHELL_FOOTER_TAB_MIN_GAP = 4;
+const SHELL_FOOTER_TAB_MAX_GAP = 10;
+const SHELL_FOOTER_TAB_GAP_STEP = 2;
+const SHELL_FOOTER_TAB_REFERENCE_COUNT = 5;
 const CONTENT_GAP = 6;
 const LIST_OVERSCAN = 2;
 const STALL_RANGE_HORIZONTAL_OUTSET = 8;
@@ -112,6 +120,7 @@ const DIALOG_CONFIG = Object.freeze({
     width: DEFAULT_DIALOG_WIDTH,
     height: DEFAULT_DIALOG_HEIGHT,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    tabsInShellFooter: true,
     splitPaper: Object.freeze({
       selectionHeight: STALL_SELECTION_HEIGHT,
       selectionStatusHeight:
@@ -188,7 +197,6 @@ const DIALOG_CONFIG = Object.freeze({
       manaSliderY: 64,
       manaSliderRightOutset:
         PIXI_ROOT_RUN_GEOMETRY.settings.knobSize / 2,
-      listHorizontalOutset: 8,
       actionsY: 0,
       actionHeight: 26,
       statusY: 89,
@@ -741,13 +749,17 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     const centerY = this.sourceHeight / 2;
     const tabsHeight =
       this.tabs?.getWidgets?.().length > 0 ? TAB_HEIGHT : 0;
+    const tabsInShellFooter =
+      tabsHeight > 0 && this.config.tabsInShellFooter === true;
     const shift = finiteOr(
       this.viewportProjection?.dialogShift,
       0,
     );
     const panelX = Math.round((this.sourceWidth - panelWidth) / 2);
     const panelY = Math.round(
-      centerY - (panelHeight + tabsHeight) / 2 + shift,
+      centerY -
+        (panelHeight + (tabsInShellFooter ? 0 : tabsHeight)) / 2 +
+        shift,
     );
     this.panel.position.set(panelX, panelY);
 
@@ -872,7 +884,18 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     const itemY = showsSelectionSection
       ? settledItemY * layoutProgress
       : 0;
-    const itemHeight = Math.max(0, bodyHeight - itemY);
+    const itemHeight = Math.max(
+      0,
+      bodyHeight -
+        itemY -
+        (this.config.tabsInShellFooter === true
+          ? paperOutsets.bottom +
+            resolveShellFooterPaperReduction({
+              bodyBottom: this.body.y + bodyHeight,
+              panel: this.panel,
+            })
+          : 0),
+    );
     const contentX = 0;
     const contentWidth = bodyWidth;
 
@@ -999,15 +1022,21 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       );
     }
 
-    const listHorizontalOutset = Math.max(
-      0,
-      finiteOr(splitPaper.listHorizontalOutset, 0),
+    const listFrameWidth = finiteOr(
+      splitPaper.listFrameWidth,
+      RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
     );
+    const listLayout = resolveRetainedDialogListLayout({
+      bodyWidth,
+      paperRight: bodyWidth + paperOutsets.right,
+      rowFrameWidth: listFrameWidth,
+    });
     this.list.setBounds(
-      -listHorizontalOutset,
+      listLayout.x,
       itemY,
-      bodyWidth + listHorizontalOutset * 2,
+      listLayout.viewportWidth,
       itemHeight,
+      listLayout.rowWidth,
     );
     this.list.root.visible = this.model.items.length > 0;
     this.list.root.renderable = this.list.root.visible;
@@ -1073,9 +1102,16 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     );
     this.tabLayer.visible = tabButtons.length > 0;
     this.tabLayer.renderable = this.tabLayer.visible;
+    const tabY =
+      this.config.tabsInShellFooter === true
+        ? this.panel.coreHeight +
+          PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset -
+          SHELL_FOOTER_BOTTOM_INSET -
+          TAB_HEIGHT
+        : panelHeight - 2;
     this.tabLayer.position.set(
       (this.config.width - tabRowWidth) / 2,
-      panelHeight - 2,
+      tabY,
     );
     layoutButtons(
       tabButtons,
@@ -1083,7 +1119,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       0,
       tabRowWidth,
       TAB_HEIGHT,
-      TAB_GAP,
+      this.config.tabsInShellFooter === true
+        ? resolveShellFooterTabGap(tabButtons.length)
+        : TAB_GAP,
     );
   }
 
@@ -1203,6 +1241,30 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       field.destroy();
     }
   }
+}
+
+function resolveShellFooterPaperReduction({ bodyBottom, panel }) {
+  const tabY =
+    panel.coreHeight +
+    PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset -
+    SHELL_FOOTER_BOTTOM_INSET -
+    TAB_HEIGHT;
+  const paperBottom = tabY - SHELL_FOOTER_PAPER_GAP;
+
+  return Math.max(0, bodyBottom - paperBottom);
+}
+
+function resolveShellFooterTabGap(tabCount) {
+  if (tabCount <= 1) {
+    return 0;
+  }
+
+  return Math.min(
+    SHELL_FOOTER_TAB_MAX_GAP,
+    SHELL_FOOTER_TAB_MIN_GAP +
+      Math.max(0, SHELL_FOOTER_TAB_REFERENCE_COUNT - tabCount) *
+        SHELL_FOOTER_TAB_GAP_STEP,
+  );
 }
 
 class DialogSummaryRow {
@@ -1710,6 +1772,7 @@ class VirtualShopDialogList {
     this.expansionStartedAt = null;
     this.contentPaddingTop = PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
     this.scroll = new RetainedScrollArea({
+      assetManager,
       inputRouter,
       label,
       onScroll: () => this.renderWindow(),
@@ -2772,5 +2835,5 @@ function resolveProgressToneText(tone) {
 
 function resolveProgressToneTextStroke(tone) {
   const color = PIXI_PROGRESS_VISUALS.tones[tone]?.textStroke;
-  return color ? { color, width: 1 } : null;
+  return color ? { color, width: 2 } : null;
 }

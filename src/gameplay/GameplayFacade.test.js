@@ -2715,15 +2715,15 @@ describe('GameplayFacade', () => {
 
     expect(gameplayFacade.buyResearch(stallStaffingResearchIds.capacity(1))).toMatchObject({
       ok: true,
-      durationSeconds: 3,
+      durationSeconds: 5,
     });
     expect(gameplayFacade.buyResearch(researchTimeResearchIds.reduction(1))).toMatchObject({
       ok: true,
-      durationSeconds: 3,
+      durationSeconds: 5,
     });
     expect(gameplayFacade.buyResearch(researchCostResearchIds.reduction(1))).toMatchObject({
       ok: true,
-      durationSeconds: 3,
+      durationSeconds: 5,
     });
     expect(gameplayFacade.getSnapshot().research.inProgressResearches).toHaveLength(3);
   }, 30_000);
@@ -2995,13 +2995,13 @@ describe('GameplayFacade', () => {
     expect(gameplayFacade.buyResearch(researchId)).toEqual({
       ok: true,
       researchId,
-      durationSeconds: 3,
-      remainingSeconds: 3,
+      durationSeconds: 5,
+      remainingSeconds: 5,
       cost: 1,
       costCurrency: 'emerald',
     });
 
-    ecsFacade.update({ timerDeltaSeconds: 3 });
+    ecsFacade.update({ timerDeltaSeconds: 5 });
 
     expect(gameplayFacade.getSnapshot().research.completedResearchIds).toContain(researchId);
     expect(gameplayFacade.researchFacade.getResearchTimeReductionPercent()).toBe(10);

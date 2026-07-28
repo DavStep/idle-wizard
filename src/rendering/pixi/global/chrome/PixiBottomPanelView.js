@@ -112,7 +112,7 @@ const TAB_SWIPE_BUMP_PEAK_AT = 0.55;
 const TAB_SWIPE_BUMP_Y = -1;
 const FEATURE_UNLOCK_FLYOUT_MS = 520;
 const FEATURE_UNLOCK_POOL_SIZE = 5;
-const ROOM_TAB_FRAME_STATES = Object.freeze({
+export const PIXI_ROOM_TAB_FRAME_STATES = Object.freeze({
   active: Object.freeze({
     textureId:
       'source:assets/ui/midnight-room-tab-top-cap-selected-9slice.png',
@@ -122,13 +122,13 @@ const ROOM_TAB_FRAME_STATES = Object.freeze({
       'source:assets/ui/midnight-room-tab-top-cap-9slice.png',
   }),
 });
-const ROOM_TAB_FRAME_SLICE = Object.freeze({
+export const PIXI_ROOM_TAB_FRAME_SLICE = Object.freeze({
   leftWidth: 83,
   topHeight: 91,
   rightWidth: 73,
   bottomHeight: 1,
 });
-const ROOM_TAB_FRAME_SCALE = 0.5;
+export const PIXI_ROOM_TAB_FRAME_SCALE = 0.5;
 const LABEL_SHADOW_OFFSETS = Object.freeze([
   Object.freeze({ x: 0, y: 1 }),
   Object.freeze({ x: 1, y: 0 }),
@@ -1206,10 +1206,10 @@ class PixiRoomTabFrame extends Container {
     this.mode = 'inactive';
     this.selected = false;
     this.locked = false;
-    const initial = ROOM_TAB_FRAME_STATES.inactive;
+    const initial = PIXI_ROOM_TAB_FRAME_STATES.inactive;
     this.sprite = new NineSliceSprite({
       texture: assets.getTexture(initial.textureId),
-      ...ROOM_TAB_FRAME_SLICE,
+      ...PIXI_ROOM_TAB_FRAME_SLICE,
       label: `${label}:sprite`,
       roundPixels: true,
     });
@@ -1247,7 +1247,7 @@ class PixiRoomTabFrame extends Container {
   }
 
   redraw() {
-    const appearance = ROOM_TAB_FRAME_STATES[this.mode];
+    const appearance = PIXI_ROOM_TAB_FRAME_STATES[this.mode];
     const elevated = this.selected && !this.locked;
     const frameY = elevated ? 0 : TAB_RISE;
     const frameHeight =
@@ -1262,10 +1262,10 @@ class PixiRoomTabFrame extends Container {
       this.sprite.texture = texture;
     }
     this.sprite.position.set(0, frameY);
-    this.sprite.scale.set(ROOM_TAB_FRAME_SCALE);
+    this.sprite.scale.set(PIXI_ROOM_TAB_FRAME_SCALE);
     this.sprite.setSize(
-      this.frameWidth / ROOM_TAB_FRAME_SCALE,
-      frameHeight / ROOM_TAB_FRAME_SCALE,
+      this.frameWidth / PIXI_ROOM_TAB_FRAME_SCALE,
+      frameHeight / PIXI_ROOM_TAB_FRAME_SCALE,
     );
     this.frameY = frameY;
     this.frameHeight = frameHeight;

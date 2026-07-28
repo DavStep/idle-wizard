@@ -4,10 +4,7 @@ import { normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
 import { createAmountSelectionRow } from '../../shared/AmountSelectionRow.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
-import {
-  createResourceIconLabel,
-  setResourceIconText,
-} from '../../shared/resourceIconLabel.js';
+import { createResourceIconLabel, setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import {
@@ -17,7 +14,7 @@ import {
 import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
 
 const WORLD_NOTICE_ICON_URL = new URL(
-  '../../../../assets/game/source/icons/icon-quests-scroll-bag-style.png',
+  '../../../../assets/game/source/icons/icon-side-event-root-run.png',
   import.meta.url,
 ).href;
 
@@ -59,8 +56,7 @@ export class WorkshopWorldNoticeManager {
     this.previousDonateFocus = null;
     this.currentSnapshot = null;
     this.playerSnapshot = this.playerFacade?.getSnapshot?.() ?? null;
-    this.worldEventLeaderboardSnapshot =
-      this.worldEventLeaderboardFacade?.getSnapshot?.() ?? null;
+    this.worldEventLeaderboardSnapshot = this.worldEventLeaderboardFacade?.getSnapshot?.() ?? null;
     this.handlePopupClick = (event) => {
       if (event.target === this.refs.popup) {
         this.hide();
@@ -151,8 +147,7 @@ export class WorkshopWorldNoticeManager {
       }) ?? null;
     this.playerSnapshot = this.playerFacade?.getSnapshot?.() ?? this.playerSnapshot;
     this.worldEventLeaderboardSnapshot =
-      this.worldEventLeaderboardFacade?.getSnapshot?.() ??
-      this.worldEventLeaderboardSnapshot;
+      this.worldEventLeaderboardFacade?.getSnapshot?.() ?? this.worldEventLeaderboardSnapshot;
     this.render(this.gameplayFacade.getSnapshot());
 
     return this.root;
@@ -234,8 +229,7 @@ export class WorkshopWorldNoticeManager {
     this.refs.donateTitle.textContent = 'donate';
 
     this.refs.donateCloseButton = document.createElement('button');
-    this.refs.donateCloseButton.className =
-      'style-button workshop-page__world-notice-donate-close';
+    this.refs.donateCloseButton.className = 'style-button workshop-page__world-notice-donate-close';
     this.refs.donateCloseButton.type = 'button';
     this.refs.donateCloseButton.textContent = 'close';
     this.refs.donateCloseButton.addEventListener('click', () => this.hideDonateDialog());
@@ -486,9 +480,7 @@ export class WorkshopWorldNoticeManager {
       this.renderedNoticeScrollKey === scrollKey &&
       previousFrame &&
       previousFrame.parentNode === this.refs.content;
-    const previousScrollTop = reuseFrame
-      ? Math.max(0, Number(previousFrame.scrollTop) || 0)
-      : 0;
+    const previousScrollTop = reuseFrame ? Math.max(0, Number(previousFrame.scrollTop) || 0) : 0;
     const header = this.createNoticeHeader(notice);
     const frame = reuseFrame ? previousFrame : this.createContentFrame();
 
@@ -572,10 +564,7 @@ export class WorkshopWorldNoticeManager {
     const meta = document.createElement('div');
     meta.className = 'workshop-page__world-notice-meta';
     meta.append(
-      this.createNoticeMetaRow(
-        'points',
-        this.formatPointCount(notice.leaderboard?.currentPoints),
-      ),
+      this.createNoticeMetaRow('points', this.formatPointCount(notice.leaderboard?.currentPoints)),
       this.createNoticeMetaRow('resolves', this.formatTimerLabel(notice.resetLabel)),
     );
 
@@ -724,10 +713,7 @@ export class WorkshopWorldNoticeManager {
 
     const instruction = document.createElement('div');
     instruction.className = 'workshop-page__world-notice-request-instruction';
-    setResourceIconText(
-      instruction,
-      request.description || this.getTaskInstruction(request),
-    );
+    setResourceIconText(instruction, request.description || this.getTaskInstruction(request));
     root.append(instruction);
 
     if (request.donationOptions?.length) {
@@ -751,9 +737,10 @@ export class WorkshopWorldNoticeManager {
 
     const collectedPoints = document.createElement('span');
     collectedPoints.className = 'workshop-page__world-notice-request-collected';
-    setResourceIconText(collectedPoints, `earned ${
-      request.collectedPointText ?? this.formatPointCount(request.contributionPoints)
-    }`);
+    setResourceIconText(
+      collectedPoints,
+      `earned ${request.collectedPointText ?? this.formatPointCount(request.contributionPoints)}`,
+    );
 
     detail.append(pointValue, collectedPoints);
     root.append(detail, this.createRequestAction(request));
@@ -958,9 +945,11 @@ export class WorkshopWorldNoticeManager {
     const rows = document.createElement('div');
     rows.className = 'workshop-page__world-notice-leaderboard-rows';
 
-    rows.append(this.createLeaderboardRow({ name: 'user', pointsLabel: 'points' }, 0, {
-      header: true,
-    }));
+    rows.append(
+      this.createLeaderboardRow({ name: 'user', pointsLabel: 'points' }, 0, {
+        header: true,
+      }),
+    );
 
     for (const [index, entry] of normalized.leaderboardRows.entries()) {
       rows.append(this.createLeaderboardRow(entry, index));
@@ -968,7 +957,9 @@ export class WorkshopWorldNoticeManager {
 
     if (this.shouldShowCurrentLeaderboardRow(normalized)) {
       rows.append(
-        this.createLeaderboardRow(normalized.currentLeaderboardRow, 0, { current: true }),
+        this.createLeaderboardRow(normalized.currentLeaderboardRow, 0, {
+          current: true,
+        }),
       );
     }
 
@@ -1053,8 +1044,7 @@ export class WorkshopWorldNoticeManager {
   }
 
   onDonateAmountInput() {
-    this.donateAmount =
-      this.readPositiveInteger(this.refs.donateAmountField?.input.value) ?? 0;
+    this.donateAmount = this.readPositiveInteger(this.refs.donateAmountField?.input.value) ?? 0;
     this.donateStatusText = '';
     this.renderDonateDialog();
   }
@@ -1118,9 +1108,7 @@ export class WorkshopWorldNoticeManager {
     }
 
     const maxQuantity = this.getMaxDonateAmount(option);
-    const quantity = maxQuantity > 0
-      ? this.clampDonateAmount(this.donateAmount, option) ?? 1
-      : 0;
+    const quantity = maxQuantity > 0 ? (this.clampDonateAmount(this.donateAmount, option) ?? 1) : 0;
     const disabled = maxQuantity <= 0;
 
     this.donateAmount = quantity;
@@ -1139,9 +1127,7 @@ export class WorkshopWorldNoticeManager {
     );
     setResourceIconText(
       this.refs.donatePointsRow.value,
-      quantity > 0
-        ? `+${this.formatNumber(quantity * option.pointsPerUnit)} points`
-        : '+0 points',
+      quantity > 0 ? `+${this.formatNumber(quantity * option.pointsPerUnit)} points` : '+0 points',
     );
 
     this.refs.donateAmountField.input.min = disabled ? '0' : '1';
@@ -1167,10 +1153,7 @@ export class WorkshopWorldNoticeManager {
       quantity * option.pointsPerUnit,
     );
     this.refs.donateConfirmButton.disabled = disabled;
-    this.refs.donateConfirmButton.setAttribute(
-      'aria-disabled',
-      disabled ? 'true' : 'false',
-    );
+    this.refs.donateConfirmButton.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     this.refs.donateConfirmButton.setAttribute(
       'aria-label',
       quantity > 0
@@ -1214,9 +1197,7 @@ export class WorkshopWorldNoticeManager {
       return null;
     }
 
-    return (
-      requests.find((request) => request?.requestId === this.donateRequestId) ?? null
-    );
+    return requests.find((request) => request?.requestId === this.donateRequestId) ?? null;
   }
 
   getDonateOption(request = {}) {
@@ -1225,9 +1206,7 @@ export class WorkshopWorldNoticeManager {
     }
 
     return (
-      request.donationOptions.find(
-        (option) => option?.optionKey === this.donateOptionKey,
-      ) ?? null
+      request.donationOptions.find((option) => option?.optionKey === this.donateOptionKey) ?? null
     );
   }
 
@@ -1335,10 +1314,7 @@ export class WorkshopWorldNoticeManager {
 
     return `${this.getTaskProgressVerb(request.actionType)} ${this.formatNumber(
       contributed,
-    )} ${this.getTaskProgressUnit(
-      request.actionType,
-      contributed,
-    )}`;
+    )} ${this.getTaskProgressUnit(request.actionType, contributed)}`;
   }
 
   getTaskActionCopy(request = {}) {
@@ -1375,9 +1351,7 @@ export class WorkshopWorldNoticeManager {
     if (raw.includes('=')) {
       const [left, right] = raw.split('=').map((part) => part.trim());
       const context = this.getTaskPointContext(request.actionType);
-      return context
-        ? `${left} ${context} gives ${right}`
-        : `${left} gives ${right}`;
+      return context ? `${left} ${context} gives ${right}` : `${left} gives ${right}`;
     }
 
     const eachMatch = raw.match(/^(.+?)\s+each$/i);
@@ -1477,12 +1451,11 @@ export class WorkshopWorldNoticeManager {
     const currentPoints = Math.max(0, Math.floor(Number(leaderboard.currentPoints) || 0));
     const qualificationPoints = Math.max(
       1,
-      Math.floor(Number(leaderboard.qualificationPoints) || WORLD_NOTICE_DEFAULT_QUALIFICATION_POINTS),
+      Math.floor(
+        Number(leaderboard.qualificationPoints) || WORLD_NOTICE_DEFAULT_QUALIFICATION_POINTS,
+      ),
     );
-    const currentLeaderboardRow = this.normalizeLeaderboardCurrentRow(
-      leaderboard,
-      currentPoints,
-    );
+    const currentLeaderboardRow = this.normalizeLeaderboardCurrentRow(leaderboard, currentPoints);
     const leaderboardRows = this.normalizeLeaderboardRows(
       this.getLeaderboardRows(leaderboard),
       currentLeaderboardRow,
@@ -1494,9 +1467,7 @@ export class WorkshopWorldNoticeManager {
       qualificationPoints,
       qualified: Boolean(leaderboard.qualified) || currentPoints >= qualificationPoints,
       remainingQualificationPoints: Math.max(0, qualificationPoints - currentPoints),
-      rewardTiers: Array.isArray(leaderboard.rewardTiers)
-        ? leaderboard.rewardTiers
-        : [],
+      rewardTiers: Array.isArray(leaderboard.rewardTiers) ? leaderboard.rewardTiers : [],
       leaderboardRows,
       currentLeaderboardRow,
     };
@@ -1533,8 +1504,7 @@ export class WorkshopWorldNoticeManager {
       this.normalizeLeaderboardEntry(this.getCurrentLeaderboardRow(leaderboard), 0, {
         includeRank: true,
         current: true,
-      }) ??
-      this.createFallbackLeaderboardRow(currentPoints)
+      }) ?? this.createFallbackLeaderboardRow(currentPoints)
     );
   }
 
@@ -1543,9 +1513,7 @@ export class WorkshopWorldNoticeManager {
       return [currentLeaderboardRow ?? this.createFallbackLeaderboardRow(currentPoints)];
     }
 
-    return rows
-      .map((row, index) => this.normalizeLeaderboardEntry(row, index))
-      .filter(Boolean);
+    return rows.map((row, index) => this.normalizeLeaderboardEntry(row, index)).filter(Boolean);
   }
 
   normalizeLeaderboardEntry(row, index = 0, { includeRank = false, current = false } = {}) {
@@ -1564,7 +1532,7 @@ export class WorkshopWorldNoticeManager {
 
     return {
       identity: row.identity,
-      rank: includeRank ? rank : rank ?? index + 1,
+      rank: includeRank ? rank : (rank ?? index + 1),
       rankLabel: rankLabel || '',
       name,
       allianceTag: normalizeAllianceTag(row.allianceTag ?? row.alliance_tag),
@@ -1573,12 +1541,7 @@ export class WorkshopWorldNoticeManager {
       ),
       character: normalizePlayerCharacter(row.character),
       playerLevel: this.normalizePlayerLevel(row.playerLevel ?? row.player_level),
-      points: this.normalizeMetric(
-        row.points,
-        row.contributionPoints,
-        row.eventPoints,
-        row.score,
-      ),
+      points: this.normalizeMetric(row.points, row.contributionPoints, row.eventPoints, row.score),
       current: current || row.current === true || row.isCurrent === true,
     };
   }

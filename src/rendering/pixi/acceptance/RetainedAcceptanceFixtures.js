@@ -22,6 +22,7 @@ export const DIALOG_IDS_BY_PAGE = Object.freeze({
     'workshop.discoveries',
     'workshop.personalTasks',
     'workshop.worldEvent',
+    'workshop.worldEventDonate',
     'workshop.worldChat',
   ]),
   research: Object.freeze([]),

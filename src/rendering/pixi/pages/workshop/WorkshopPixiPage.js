@@ -1,11 +1,7 @@
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
-import {
-  getHerbIconFrameName,
-} from '../../../../assets/items/herbs/herbIcons.js';
-import {
-  getPotionIconFrameName,
-} from '../../../../assets/items/potions/potionIcons.js';
+import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
+import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
 import {
   getSeedIconFrameName,
   getSeedPackItemFrameName,
@@ -25,10 +21,7 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
-import {
-  ShopDialogPixi,
-  WORKSHOP_SUMMON_INFO_DIALOG_ID,
-} from '../shop/ShopDialogPixi.js';
+import { ShopDialogPixi, WORKSHOP_SUMMON_INFO_DIALOG_ID } from '../shop/ShopDialogPixi.js';
 import {
   BaseRetainedPixiPage,
   RETAINED_PAGE_GEOMETRY,
@@ -53,13 +46,19 @@ const WORKSHOP_DIALOGS = Object.freeze([
   Object.freeze({ id: 'alliance', title: 'trade alliance' }),
   Object.freeze({ id: 'leaderboard', title: 'leaderboard' }),
   Object.freeze({ id: 'discoveries', title: 'discoveries' }),
-  Object.freeze({ id: 'personalTasks', title: 'quests' }),
+  Object.freeze({ id: 'personalTasks', title: 'Daily Tasks' }),
   Object.freeze({ id: 'worldEvent', title: 'world event' }),
+  Object.freeze({ id: 'worldEventDonate', title: 'Donate' }),
   Object.freeze({ id: 'worldChat', title: 'World Chat' }),
 ]);
 
 const DEFAULT_FEATURES = Object.freeze([
-  Object.freeze({ id: 'alliance', label: 'Alliance', side: 'left', weight: 10 }),
+  Object.freeze({
+    id: 'alliance',
+    label: 'Alliance',
+    side: 'left',
+    weight: 10,
+  }),
   Object.freeze({
     id: 'leaderboard',
     label: 'Leaderboard',
@@ -89,52 +88,51 @@ const DEFAULT_FEATURES = Object.freeze([
 const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
   alliance: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopAlliance,
-    clothAssetId: PIXI_ROOT_RUN_ASSETS.workshopAllianceCloth,
-    scale: 0.94,
   }),
   leaderboard: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopLeaderboard,
-    scale: 1.05,
   }),
   discoveries: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopDiscoveries,
-    scale: 0.96,
   }),
   personalTasks: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopPersonalTasks,
-    scale: 0.93,
   }),
   worldEvent: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopWorldEvent,
-    scale: 0.87,
-    mirrorOnRight: false,
   }),
-});
-
-const ALLIANCE_BANNER_TINTS = Object.freeze({
-  red: '#8f2530',
-  amber: '#82621f',
-  green: '#2a713c',
-  teal: '#247078',
-  blue: '#315d99',
-  violet: '#684791',
-  magenta: '#8d3c71',
-  brown: '#6d4d37',
-  slate: '#525c70',
 });
 
 const SUMMON_EFFECT_DURATION_MS = 520;
 const SUMMON_BUTTON_WIDTH = 92;
 const SUMMON_BUTTON_HEIGHT = 52;
 const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;
-const SIDE_CONTROLS_TASK_GAP = 8;
-const SIDE_PANEL_ROW_GAP = 52.25;
-const SIDE_PANEL_EDGE = 16;
-const SIDE_PANEL_ICON_WIDTH = 45.5;
-const SIDE_PANEL_ICON_HEIGHT = 80.25;
-const SIDE_PANEL_ART_HEIGHT = 59.15;
-const SIDE_PANEL_ART_TOP = 22;
-const SIDE_PANEL_ART_EDGE_OFFSET = 10;
+const SUMMON_CHAT_GAP = 32;
+export const ROOT_RUN_SIDE_ACTION_GEOMETRY = Object.freeze({
+  taskGap: 18,
+  rowPitch: 74,
+  stageEdge: 18,
+  width: 50,
+  height: 72,
+  iconSize: 50,
+  iconScale: 0.72,
+  iconEdgeNudge: 2,
+  iconLabelGap: -6,
+  labelFontSize: 15,
+  labelLineHeight: 18,
+  labelMaxWidth: 62,
+  timerFontSize: 7.5,
+  timerLineHeight: 9,
+});
+const SIDE_CONTROLS_TASK_GAP = ROOT_RUN_SIDE_ACTION_GEOMETRY.taskGap;
+const SIDE_PANEL_ROW_GAP = ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch;
+const SIDE_PANEL_EDGE = ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge;
+const SIDE_PANEL_ICON_WIDTH = ROOT_RUN_SIDE_ACTION_GEOMETRY.width;
+const SIDE_PANEL_ICON_HEIGHT = ROOT_RUN_SIDE_ACTION_GEOMETRY.height;
+const SIDE_PANEL_ART_HEIGHT = ROOT_RUN_SIDE_ACTION_GEOMETRY.iconSize;
+const SIDE_PANEL_ART_TOP = 0;
+const SIDE_PANEL_HIT_HEIGHT = SIDE_PANEL_ICON_HEIGHT;
+const SIDE_PANEL_ART_EDGE_OFFSET = 0;
 const SIDE_PANEL_ART_BOUNDS = Object.freeze({
   left: Object.freeze({
     x: -SIDE_PANEL_ART_EDGE_OFFSET,
@@ -160,7 +158,7 @@ const WORKSHOP_REQUEST_TEXT_STROKE_WIDTH = 2;
 const WORKSHOP_REQUEST_TITLE_STROKE = '#0a0a0a';
 const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
 const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
-const WORKSHOP_SIDE_LABEL_STROKE_WIDTH = 2;
+const WORKSHOP_SIDE_LABEL_STROKE_WIDTH = 5;
 const SUMMON_EFFECT_FRAMES = Object.freeze([
   Object.freeze({ progress: 0, alpha: 0.84, scale: 1 }),
   Object.freeze({ progress: 0.32, alpha: 1, scale: 1.045 }),
@@ -202,9 +200,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.cancelFrame = cancelFrame;
     this.timeSource = timeSource;
     this.reducedMotion =
-      typeof reducedMotion === 'function'
-        ? reducedMotion
-        : () => Boolean(reducedMotion);
+      typeof reducedMotion === 'function' ? reducedMotion : () => Boolean(reducedMotion);
 
     this.tasks = new WorkshopTaskPanel({
       page: this,
@@ -227,7 +223,6 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       side: 'left',
       weight: 40,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopBag,
-      scale: 0.9,
       onActivate: () => this.openDialog('bag'),
     });
     this.inboxButton = new WorkshopIconPanelAction({
@@ -238,7 +233,6 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       side: 'right',
       weight: 10,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopInbox,
-      scale: 0.95,
       onActivate: () => this.openDialog('inbox'),
     });
     this.statsButton = new WorkshopIconPanelAction({
@@ -249,7 +243,6 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       side: 'right',
       weight: 0,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopStats,
-      scale: 1.12,
       onActivate: () => this.openDialog('stats'),
     });
     this.featureLayer = new Container({ label: 'workshop-feature-buttons' });
@@ -320,36 +313,34 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
         continue;
       }
 
-      this.dialogRegistry.register(
-        dialogId,
-        () =>
-          dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID
-            ? new ShopDialogPixi({
-                dialogId,
-                parent: this.dialogLayer,
-                assetManager: this.assetManager,
-                semanticRegistry: this.semanticTargets,
-                inputRouter: this.inputRouter,
-                textEntryService: this.textEntryService,
-                counters,
-                onClose: () => this.dialogRegistry.close(dialogId),
-                theme: this.theme,
-                requestFrame: this.requestFrame,
-                cancelFrame: this.cancelFrame,
-                timeSource: this.timeSource,
-                reducedMotion: this.reducedMotion,
-              })
-            : new WorkshopDialogPixi({
-                dialogId,
-                parent: this.dialogLayer,
-                assetManager: this.assetManager,
-                semanticTargets: this.semanticTargets,
-                inputRouter: this.inputRouter,
-                textEntryService: this.textEntryService,
-                counters,
-                onClose: () => this.dialogRegistry.close(dialogId),
-                theme: this.theme,
-              }),
+      this.dialogRegistry.register(dialogId, () =>
+        dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID
+          ? new ShopDialogPixi({
+              dialogId,
+              parent: this.dialogLayer,
+              assetManager: this.assetManager,
+              semanticRegistry: this.semanticTargets,
+              inputRouter: this.inputRouter,
+              textEntryService: this.textEntryService,
+              counters,
+              onClose: () => this.dialogRegistry.close(dialogId),
+              theme: this.theme,
+              requestFrame: this.requestFrame,
+              cancelFrame: this.cancelFrame,
+              timeSource: this.timeSource,
+              reducedMotion: this.reducedMotion,
+            })
+          : new WorkshopDialogPixi({
+              dialogId,
+              parent: this.dialogLayer,
+              assetManager: this.assetManager,
+              semanticTargets: this.semanticTargets,
+              inputRouter: this.inputRouter,
+              textEntryService: this.textEntryService,
+              counters,
+              onClose: () => this.dialogRegistry.close(dialogId),
+              theme: this.theme,
+            }),
       );
     }
   }
@@ -362,9 +353,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.rebindOpenDialogs();
     this.tasks.bind(workshop.tasks ?? {});
     this.summon.bind(workshop.summon ?? {}, {
-      summon: () =>
-        workshop.summon?.onActivate?.() ??
-        this.currentActions?.summonSeed?.(),
+      summon: () => workshop.summon?.onActivate?.() ?? this.currentActions?.summonSeed?.(),
       info: () => this.openDialog('summonInfo'),
     });
     this.bagButton.setModel({
@@ -416,10 +405,11 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     const dialogId = id.startsWith('workshop.') ? id : `workshop.${id}`;
     const shortId = dialogId.slice('workshop.'.length);
     const definition = WORKSHOP_DIALOGS.find((entry) => entry.id === shortId);
-    const baseModel = explicitModel ?? this.dialogModels[shortId] ?? {
-      title: definition?.title ?? shortId,
-      rows: [],
-    };
+    const baseModel = explicitModel ??
+      this.dialogModels[shortId] ?? {
+        title: definition?.title ?? shortId,
+        rows: [],
+      };
     const model = this.prepareDialogModel(shortId, baseModel);
     const action = this.currentActions?.openDialog;
 
@@ -448,10 +438,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       }
 
       const shortId = dialogId.slice('workshop.'.length);
-      const model = this.prepareDialogModel(
-        shortId,
-        this.dialogModels[shortId],
-      );
+      const model = this.prepareDialogModel(shortId, this.dialogModels[shortId]);
       if (model) {
         this.dialogRegistry.open(dialogId, model);
         this.consumeAutoSummonUnlockReveal(shortId, model);
@@ -478,11 +465,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
   }
 
   prepareDialogModel(shortId, model) {
-    if (
-      shortId !== 'summonInfo' ||
-      !model ||
-      !this.pendingAutoSummonUnlockReveal
-    ) {
+    if (shortId !== 'summonInfo' || !model || !this.pendingAutoSummonUnlockReveal) {
       return model;
     }
 
@@ -493,10 +476,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
   }
 
   consumeAutoSummonUnlockReveal(shortId, model) {
-    if (
-      shortId === 'summonInfo' &&
-      model?.revealAutoSummonUnlock === true
-    ) {
+    if (shortId === 'summonInfo' && model?.revealAutoSummonUnlock === true) {
       this.pendingAutoSummonUnlockReveal = false;
     }
   }
@@ -515,10 +495,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
 
     for (const flyout of flyouts) {
       this.flyoutLayer.addChild(flyout.root);
-      flyout.root.position.set(
-        (this.sourceWidth - flyout.text.width) / 2,
-        y,
-      );
+      flyout.root.position.set((this.sourceWidth - flyout.text.width) / 2, y);
       y += 18;
     }
   }
@@ -563,11 +540,14 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       RETAINED_PAGE_GEOMETRY.contentTop,
       width,
     );
-    this.summon.setBounds(this.sourceWidth / 2, this.sourceHeight * 0.595);
+    const worldChatTop =
+      this.sourceHeight - PIXI_UI_GEOMETRY.roomChatBottom - PIXI_UI_GEOMETRY.roomChatHeight;
+    this.summon.setBounds(
+      this.sourceWidth / 2,
+      worldChatTop - SUMMON_BUTTON_HEIGHT - SUMMON_CHAT_GAP,
+    );
     const sideControlsTop =
-      RETAINED_PAGE_GEOMETRY.contentTop +
-      this.tasks.height +
-      SIDE_CONTROLS_TASK_GAP;
+      RETAINED_PAGE_GEOMETRY.contentTop + this.tasks.height + SIDE_CONTROLS_TASK_GAP;
     this.layoutSideControls(sideControlsTop, {
       animate: animateSideControls,
     });
@@ -587,9 +567,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
         .forEach((entry, slot) => {
           destinations.set(entry.id, {
             x:
-              side === 'right'
-                ? this.sourceWidth - SIDE_PANEL_EDGE - entry.width
-                : SIDE_PANEL_EDGE,
+              side === 'right' ? this.sourceWidth - SIDE_PANEL_EDGE - entry.width : SIDE_PANEL_EDGE,
             y: top + slot * SIDE_PANEL_ROW_GAP,
             slot,
           });
@@ -598,8 +576,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
 
     for (const entry of entries) {
       const state = this.sideControlMotionStates.get(entry.id) ?? null;
-      const destination =
-        destinations.get(entry.id) ??
+      const destination = destinations.get(entry.id) ??
         state?.destination ?? {
           x:
             entry.side === 'right'
@@ -609,10 +586,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
           slot: 0,
         };
       this.layoutSideControl(entry, destination, {
-        animate:
-          animate &&
-          this.hasBoundSideControls &&
-          !this.reducedMotion(),
+        animate: animate && this.hasBoundSideControls && !this.reducedMotion(),
       });
     }
   }
@@ -661,8 +635,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
         visible: feature.visible,
         width: SIDE_PANEL_ICON_WIDTH,
         height: SIDE_PANEL_ICON_HEIGHT,
-        setBounds: (x, y, width, height) =>
-          feature.setBounds(x, y, width, height),
+        setBounds: (x, y, width, height) => feature.setBounds(x, y, width, height),
       })),
     ];
   }
@@ -676,12 +649,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       scale: entry.root.scale.x,
     };
 
-    entry.setBounds(
-      destination.x,
-      destination.y,
-      entry.width,
-      entry.height,
-    );
+    entry.setBounds(destination.x, destination.y, entry.width, entry.height);
     entry.root.position.set(current.x, current.y);
 
     const unchanged =
@@ -724,10 +692,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
 
     const appearing = wasVisible === false && entry.visible;
     const disappearing = wasVisible === true && !entry.visible;
-    const offset =
-      entry.side === 'right'
-        ? SIDE_PANEL_ENTER_OFFSET
-        : -SIDE_PANEL_ENTER_OFFSET;
+    const offset = entry.side === 'right' ? SIDE_PANEL_ENTER_OFFSET : -SIDE_PANEL_ENTER_OFFSET;
     const from = {
       x: appearing ? destination.x + offset : current.x,
       y: appearing ? destination.y + 3 : current.y,
@@ -745,10 +710,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       : appearing
         ? SIDE_PANEL_ENTER_DURATION_MS
         : SIDE_PANEL_MOVE_DURATION_MS;
-    const delay =
-      appearing
-        ? Math.min(destination.slot, 2) * SIDE_PANEL_STAGGER_MS
-        : 0;
+    const delay = appearing ? Math.min(destination.slot, 2) * SIDE_PANEL_STAGGER_MS : 0;
 
     entry.root.visible = true;
     entry.root.renderable = true;
@@ -769,9 +731,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
         interpolate(from.y, to.y, progress),
       );
       entry.root.alpha = interpolate(from.alpha, to.alpha, progress);
-      entry.root.scale.set(
-        interpolate(from.scale, to.scale, progress),
-      );
+      entry.root.scale.set(interpolate(from.scale, to.scale, progress));
 
       if (linearProgress >= 1) {
         state.frame = 0;
@@ -786,10 +746,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
   }
 
   finishSideControlTransition(entry, state) {
-    entry.root.position.set(
-      state.destination.x,
-      state.destination.y,
-    );
+    entry.root.position.set(state.destination.x, state.destination.y);
     entry.root.alpha = 1;
     entry.root.scale.set(1);
     entry.root.visible = state.visible;
@@ -914,19 +871,14 @@ class WorkshopTaskPanel {
     this.model = model ?? {};
     this.panel.setTitle(this.model.title ?? "Elara's Request");
     setText(this.next, this.model.nextText ?? this.model.next ?? '');
-    setText(
-      this.rewards,
-      normalizeRows(this.model.rewardLines ?? this.model.rewards).join('\n'),
-    );
+    setText(this.rewards, normalizeRows(this.model.rewardLines ?? this.model.rewards).join('\n'));
     this.rows.reconcile(normalizeRows(this.model.rows ?? this.model.tasks));
     const expanded = this.model.expanded !== false;
     this.rewardsTitle.visible = expanded && Boolean(this.rewards.text);
     this.rewards.visible = this.rewardsTitle.visible;
     const canToggle = this.model.canToggle === true;
-    this.pinButton.root.visible =
-      canToggle && this.model.showPin === true;
-    this.expandButton.root.visible =
-      canToggle || this.model.showToggle === true;
+    this.pinButton.root.visible = canToggle && this.model.showPin === true;
+    this.expandButton.root.visible = canToggle || this.model.showToggle === true;
     this.expandButton.setModel({
       label: expanded ? 'collapse' : 'expand',
       action: () => this.model?.onToggleExpanded?.(),
@@ -987,21 +939,13 @@ class WorkshopTaskPanel {
 
   applyTheme(theme) {
     this.panel.applyTheme(theme);
-    applyWorkshopRequestTextTheme(
-      this.panel.title,
-      theme,
-      RETAINED_TEXT_STYLES.bold,
-    );
+    applyWorkshopRequestTextTheme(this.panel.title, theme, RETAINED_TEXT_STYLES.bold);
     this.applyTitleStroke();
     applyWorkshopRequestTextTheme(this.next, theme, {
       ...RETAINED_TEXT_STYLES.body,
       wordWrapWidth: 308,
     });
-    applyWorkshopRequestTextTheme(
-      this.rewardsTitle,
-      theme,
-      RETAINED_TEXT_STYLES.bold,
-    );
+    applyWorkshopRequestTextTheme(this.rewardsTitle, theme, RETAINED_TEXT_STYLES.bold);
     applyWorkshopRequestTextTheme(this.rewards, theme, {
       ...RETAINED_TEXT_STYLES.body,
       wordWrapWidth: 308,
@@ -1055,6 +999,7 @@ class WorkshopTaskRow {
       variant: 'yellow',
     });
     this.progress = new RetainedProgressBar({
+      assetManager,
       label: 'workshop-task-progress',
       tone: 'root',
     });
@@ -1074,21 +1019,19 @@ class WorkshopTaskRow {
     setText(this.label, model.label ?? model.text ?? '');
     setText(
       this.value,
-      model.value ??
-        `${finiteOr(model.current, 0)}/${finiteOr(model.required, 0)}`,
+      model.value ?? `${finiteOr(model.current, 0)}/${finiteOr(model.required, 0)}`,
     );
     const iconFrames = resolveTaskIconFrames(model);
     this.icon.texture =
       iconFrames.base && this.assetManager?.getAtlasTexture
-        ? this.assetManager.getAtlasTexture(iconFrames.base) ?? Texture.EMPTY
+        ? (this.assetManager.getAtlasTexture(iconFrames.base) ?? Texture.EMPTY)
         : Texture.EMPTY;
     this.iconOverlay.texture =
       iconFrames.overlay && this.assetManager?.getAtlasTexture
-        ? this.assetManager.getAtlasTexture(iconFrames.overlay) ?? Texture.EMPTY
+        ? (this.assetManager.getAtlasTexture(iconFrames.overlay) ?? Texture.EMPTY)
         : Texture.EMPTY;
     this.icon.visible = this.icon.texture !== Texture.EMPTY;
-    this.iconOverlay.visible =
-      this.icon.visible && this.iconOverlay.texture !== Texture.EMPTY;
+    this.iconOverlay.visible = this.icon.visible && this.iconOverlay.texture !== Texture.EMPTY;
     const hasAction = Boolean(model.actionLabel || model.onActivate);
     this.action.root.visible = hasAction;
     this.action.setModel({
@@ -1142,12 +1085,7 @@ class WorkshopTaskRow {
     this.label.position.set(this.icon.visible ? iconSize + 3 : 0, 1);
     this.value.position.set(width - (this.action.root.visible ? 64 : 0), 1);
     this.action.setBounds(width - 58, 0, 58, 20);
-    this.progress.setBounds(
-      0,
-      22,
-      width,
-      PIXI_UI_GEOMETRY.progressTotalHeight,
-    );
+    this.progress.setBounds(0, 22, width, PIXI_UI_GEOMETRY.progressTotalHeight);
   }
 
   getPreferredHeight() {
@@ -1236,9 +1174,7 @@ class WorkshopSummonControl {
     this.cancelFrame = cancelFrame;
     this.timeSource = timeSource;
     this.reducedMotion =
-      typeof reducedMotion === 'function'
-        ? reducedMotion
-        : () => Boolean(reducedMotion);
+      typeof reducedMotion === 'function' ? reducedMotion : () => Boolean(reducedMotion);
     this.active = false;
     this.enabled = false;
     this.pressEnabled = false;
@@ -1281,16 +1217,17 @@ class WorkshopSummonControl {
 
       return false;
     };
-    this.inputRegistration = this.page.inputRouter?.registerPressTarget?.({
-      id: createRetainedInputId('workshop-summon'),
-      displayObject: this.button,
-      enabled: () => this.pressEnabled,
-      visible: () => this.button.visible && this.button.renderable,
-      fallbackHitTest: true,
-      excludePageSwipe: true,
-      onActivate: this.handleTap,
-      onPressChange: this.handlePressChange,
-    }) ?? null;
+    this.inputRegistration =
+      this.page.inputRouter?.registerPressTarget?.({
+        id: createRetainedInputId('workshop-summon'),
+        displayObject: this.button,
+        enabled: () => this.pressEnabled,
+        visible: () => this.button.visible && this.button.renderable,
+        fallbackHitTest: true,
+        excludePageSwipe: true,
+        onActivate: this.handleTap,
+        onPressChange: this.handlePressChange,
+      }) ?? null;
     this.usesDirectInput = !this.inputRegistration;
 
     if (this.usesDirectInput) {
@@ -1309,9 +1246,7 @@ class WorkshopSummonControl {
     this.pressEnabled = model.pressEnabled ?? this.enabled;
     const actionLabel =
       model.label ??
-      (finiteOr(model.quantity, 1) > 1
-        ? `Summon x${finiteOr(model.quantity, 1)}`
-        : 'Summon Seed');
+      (finiteOr(model.quantity, 1) > 1 ? `Summon x${finiteOr(model.quantity, 1)}` : 'Summon Seed');
     this.button.setModel({
       actionLabel,
       amount: finiteOr(model.cost, 0),
@@ -1326,10 +1261,7 @@ class WorkshopSummonControl {
     });
     this.notification.bind('workshop.summon', {
       active: isNotificationActive(model.notification),
-      tone: getNotificationTone(
-        model.notification,
-        model.notificationTone,
-      ),
+      tone: getNotificationTone(model.notification, model.notificationTone),
       parent: this.button,
       bounds: {
         x: 0,
@@ -1354,6 +1286,10 @@ class WorkshopSummonControl {
       SUMMON_BUTTON_HEIGHT,
     );
     this.info.setBounds(60, -50, 18, 18);
+    this.page.registerSemanticTarget({
+      semanticId: 'workshop.summonArea',
+      displayObject: this.circle,
+    });
     this.page.registerSemanticTarget({
       semanticId: 'workshop.summon',
       tutorialId: this.model?.tutorialId ?? 'workshop:summonSeed',
@@ -1381,10 +1317,7 @@ class WorkshopSummonControl {
     this.button.applyTheme(theme);
     this.notification.applyTheme(theme);
 
-    if (
-      this.assetManager?.getAtlasTexture &&
-      this.circle.texture === Texture.EMPTY
-    ) {
+    if (this.assetManager?.getAtlasTexture && this.circle.texture === Texture.EMPTY) {
       this.circle.texture = this.assetManager.getAtlasTexture('ui:summonCircle');
     }
 
@@ -1471,8 +1404,7 @@ class WorkshopSummonControl {
     const enabledAlpha = this.enabled ? 1 : 0.38;
     this.circle.alpha = Math.min(enabledAlpha, alpha);
     this.circle.width = (this.circleBaseWidth ?? 196) * scale;
-    this.circle.height =
-      (this.circleBaseHeight ?? 196 * (592 / 1374)) * scale;
+    this.circle.height = (this.circleBaseHeight ?? 196 * (592 / 1374)) * scale;
   }
 
   stopSummonEffect() {
@@ -1526,7 +1458,7 @@ class WorkshopIconPanelAction {
     this.side = side === 'right' ? 'right' : 'left';
     this.weight = finiteOr(weight, 0);
     this.textureId = textureId;
-    this.iconScale = finiteOr(scale, 1);
+    this.iconScale = finiteOr(scale, 1) * ROOT_RUN_SIDE_ACTION_GEOMETRY.iconScale;
     this.activation = onActivate;
     this.enabled = true;
     this.visible = true;
@@ -1538,13 +1470,12 @@ class WorkshopIconPanelAction {
     this.icon.label = `workshop-${id}-icon-panel-action:icon`;
     this.icon.anchor.set(0.5);
     this.label = createText(label, {
-      fontSize: 8.8,
-      lineHeight: 11.2,
+      fontSize: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelFontSize,
+      lineHeight: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelLineHeight,
     });
     this.label.anchor.set(0.5, 0);
     this.notification = new PixiNotificationBadge({ assetManager });
-    this.notification.root.label =
-      `workshop-${id}-icon-panel-action:notification`;
+    this.notification.root.label = `workshop-${id}-icon-panel-action:notification`;
     this.iconFrame.addChild(this.icon);
     this.root.addChild(this.iconFrame, this.label);
     this.handleTap = () => {
@@ -1598,6 +1529,7 @@ class WorkshopIconPanelAction {
     this.root.cursor = this.enabled && this.visible ? 'pointer' : 'default';
     this.label.anchor.set(0.5, 0);
     setText(this.label, capitalizeInitial(label));
+    fitRootRunSideActionLabel(this.label);
     this.icon.alpha = this.enabled ? 1 : 0.55;
     this.label.alpha = this.enabled ? 1 : 0.55;
     this.notification.bind(`workshop.${this.id}`, {
@@ -1612,7 +1544,12 @@ class WorkshopIconPanelAction {
 
   setBounds(x, y) {
     this.root.position.set(x, y);
-    this.root.hitArea = new Rectangle(0, 12, 45.5, 68.25);
+    this.root.hitArea = new Rectangle(
+      0,
+      SIDE_PANEL_ART_TOP,
+      SIDE_PANEL_ICON_WIDTH,
+      SIDE_PANEL_HIT_HEIGHT,
+    );
   }
 
   setPressed(pressed) {
@@ -1627,8 +1564,7 @@ class WorkshopIconPanelAction {
       return;
     }
 
-    this.icon.texture =
-      this.assetManager.getTexture(this.textureId) ?? Texture.EMPTY;
+    this.icon.texture = this.assetManager.getTexture(this.textureId) ?? Texture.EMPTY;
   }
 
   layoutVisual() {
@@ -1644,29 +1580,27 @@ class WorkshopIconPanelAction {
       1,
       Number(this.icon.texture?.orig?.height ?? this.icon.texture?.height) || 1,
     );
-    const fit =
-      Math.min(frameWidth / textureWidth, frameHeight / textureHeight) *
-      this.iconScale;
+    const fit = Math.min(frameWidth / textureWidth, frameHeight / textureHeight) * this.iconScale;
     this.icon.width = textureWidth * fit;
     this.icon.height = textureHeight * fit;
-    this.icon.position.set(frameWidth / 2, frameHeight / 2);
-    this.iconFrame.pivot.set(frameWidth / 2, frameHeight * 0.78);
-    this.iconFrame.position.set(
-      frameLeft + frameWidth / 2,
-      frameTop + frameHeight * 0.78,
-    );
+    const iconX =
+      frameWidth / 2 +
+      (this.side === 'right' ? 1 : -1) * ROOT_RUN_SIDE_ACTION_GEOMETRY.iconEdgeNudge;
+    this.icon.position.set(iconX, frameHeight / 2);
+    this.iconFrame.pivot.set(frameWidth / 2, frameHeight / 2);
+    this.iconFrame.position.set(frameLeft + frameWidth / 2, frameTop + frameHeight / 2);
     this.iconFrameBaseY = this.iconFrame.y;
     this.label.position.set(
       frameLeft + frameWidth / 2,
-      SIDE_PANEL_ICON_HEIGHT - 3.9 - 11.2,
+      frameTop + frameHeight + ROOT_RUN_SIDE_ACTION_GEOMETRY.iconLabelGap,
     );
     this.labelBaseY = this.label.y;
   }
 
   applyTheme(theme) {
     applyTextTheme(this.label, theme, {
-      fontSize: 8.8,
-      lineHeight: 11.2,
+      fontSize: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelFontSize,
+      lineHeight: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelLineHeight,
       fill: WORKSHOP_SIDE_LABEL_FILL,
     });
     this.label.style.stroke = {
@@ -1674,6 +1608,7 @@ class WorkshopIconPanelAction {
       width: WORKSHOP_SIDE_LABEL_STROKE_WIDTH,
       join: 'round',
     };
+    fitRootRunSideActionLabel(this.label);
     this.notification.applyTheme(theme);
   }
 
@@ -1710,12 +1645,12 @@ class WorkshopFeatureButton {
     this.icon.label = 'workshop-feature-button:icon';
     this.icon.anchor.set(0.5);
     this.label = createText('', {
-      fontSize: 8.8,
-      lineHeight: 11.2,
+      fontSize: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelFontSize,
+      lineHeight: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelLineHeight,
     });
     this.timer = createText('', {
-      fontSize: 7.15,
-      lineHeight: 9.1,
+      fontSize: ROOT_RUN_SIDE_ACTION_GEOMETRY.timerFontSize,
+      lineHeight: ROOT_RUN_SIDE_ACTION_GEOMETRY.timerLineHeight,
     });
     this.notification = new PixiNotificationBadge({ assetManager });
     this.notification.root.label = 'workshop-feature-button:notification';
@@ -1729,23 +1664,21 @@ class WorkshopFeatureButton {
         return false;
       }
 
-      return this.model?.onActivate?.() ??
-        this.page.openDialog(this.model.id, this.model.dialog);
+      return this.model?.onActivate?.() ?? this.page.openDialog(this.model.id, this.model.dialog);
     };
     this.handlePressChange = (pressed) => this.setPressed(pressed);
     this.handlePointerDown = () => this.setPressed(true);
     this.handlePointerUp = () => this.setPressed(false);
-    this.inputRegistration = this.page.inputRouter?.registerPressTarget?.({
-      id: createRetainedInputId('workshop-feature'),
-      displayObject: this.root,
-      enabled: () =>
-        Boolean(this.model) &&
-        this.model.visible !== false &&
-        this.model.enabled !== false,
-      excludePageSwipe: true,
-      onActivate: this.handleTap,
-      onPressChange: this.handlePressChange,
-    }) ?? null;
+    this.inputRegistration =
+      this.page.inputRouter?.registerPressTarget?.({
+        id: createRetainedInputId('workshop-feature'),
+        displayObject: this.root,
+        enabled: () =>
+          Boolean(this.model) && this.model.visible !== false && this.model.enabled !== false,
+        excludePageSwipe: true,
+        onActivate: this.handleTap,
+        onPressChange: this.handlePressChange,
+      }) ?? null;
     this.usesDirectInput = !this.inputRegistration;
 
     if (this.usesDirectInput) {
@@ -1760,18 +1693,14 @@ class WorkshopFeatureButton {
   bind(model) {
     this.model = model;
     this.visible = model.visible !== false;
-    this.root.eventMode =
-      this.visible && model.enabled !== false ? 'static' : 'none';
-    this.root.cursor =
-      this.visible && model.enabled !== false ? 'pointer' : 'default';
+    this.root.eventMode = this.visible && model.enabled !== false ? 'static' : 'none';
+    this.root.cursor = this.visible && model.enabled !== false ? 'pointer' : 'default';
     this.side = model.side === 'right' ? 'right' : 'left';
-    this.weight = finiteOr(
-      model.weight,
-      Math.max(0, finiteOr(model.row, 0)) * 10,
-    );
+    this.weight = finiteOr(model.weight, Math.max(0, finiteOr(model.row, 0)) * 10);
     this.label.anchor.set(0.5, 0);
     this.timer.anchor.set(0.5, 0);
     setText(this.label, capitalizeInitial(model.label ?? model.id));
+    fitRootRunSideActionLabel(this.label);
     setText(this.timer, model.timer ?? '');
     this.timer.visible = this.timer.text.length > 0;
     this.resolvePresentation();
@@ -1790,9 +1719,7 @@ class WorkshopFeatureButton {
       tutorialId: model.tutorialId ?? null,
       displayObject: this.root,
       state: () => ({
-        visible:
-          model.visible !== false &&
-          this.root.worldVisible !== false,
+        visible: model.visible !== false && this.root.worldVisible !== false,
         enabled: model.enabled !== false,
         interactive: model.enabled !== false,
       }),
@@ -1801,28 +1728,26 @@ class WorkshopFeatureButton {
     this.applyTheme(this.page.theme);
   }
 
-  setBounds(x, y, width, height) {
+  setBounds(x, y, width) {
     this.root.position.set(x, y);
-    this.root.hitArea = new Rectangle(0, 12, width, height - 12);
+    this.root.hitArea = new Rectangle(0, SIDE_PANEL_ART_TOP, width, SIDE_PANEL_HIT_HEIGHT);
     this.layoutVisual();
   }
 
   resolvePresentation() {
-    const presentation =
-      WORKSHOP_FEATURE_PRESENTATIONS[this.model?.id] ?? {};
+    const presentation = WORKSHOP_FEATURE_PRESENTATIONS[this.model?.id] ?? {};
     const assetId = this.model?.assetId ?? presentation.assetId;
-    const clothAssetId =
-      this.model?.clothAssetId ?? presentation.clothAssetId;
+    const clothAssetId = this.model?.clothAssetId ?? presentation.clothAssetId;
     this.presentation = presentation;
     this.icon.texture =
       this.model?.iconFrame && this.assetManager?.getAtlasTexture
-        ? this.assetManager.getAtlasTexture(this.model.iconFrame) ?? Texture.EMPTY
+        ? (this.assetManager.getAtlasTexture(this.model.iconFrame) ?? Texture.EMPTY)
         : assetId && this.assetManager?.getTexture
-          ? this.assetManager.getTexture(assetId) ?? Texture.EMPTY
+          ? (this.assetManager.getTexture(assetId) ?? Texture.EMPTY)
           : Texture.EMPTY;
     this.cloth.texture =
       clothAssetId && this.assetManager?.getTexture
-        ? this.assetManager.getTexture(clothAssetId) ?? Texture.EMPTY
+        ? (this.assetManager.getTexture(clothAssetId) ?? Texture.EMPTY)
         : Texture.EMPTY;
     this.icon.visible = this.icon.texture !== Texture.EMPTY;
     this.cloth.visible = this.cloth.texture !== Texture.EMPTY;
@@ -1834,26 +1759,29 @@ class WorkshopFeatureButton {
     const frameLeft = SIDE_PANEL_ART_BOUNDS[this.side].x;
     const frameTop = SIDE_PANEL_ART_TOP;
     layoutContainedSprite(this.icon, frameWidth, frameHeight, {
-      scale: this.presentation?.scale ?? 1,
-      mirrored:
-        this.side === 'right' && this.presentation?.mirrorOnRight === true,
+      scale:
+        (this.presentation?.scale ?? 1) * ROOT_RUN_SIDE_ACTION_GEOMETRY.iconScale,
+      mirrored: this.side === 'right' && this.presentation?.mirrorOnRight === true,
     });
     layoutContainedSprite(this.cloth, frameWidth, frameHeight, {
-      scale: this.presentation?.scale ?? 1,
+      scale:
+        (this.presentation?.scale ?? 1) * ROOT_RUN_SIDE_ACTION_GEOMETRY.iconScale,
     });
-    this.iconFrame.pivot.set(frameWidth / 2, frameHeight * 0.78);
-    this.iconFrame.position.set(
-      frameLeft + frameWidth / 2,
-      frameTop + frameHeight * 0.78,
-    );
+    const iconX =
+      frameWidth / 2 +
+      (this.side === 'right' ? 1 : -1) * ROOT_RUN_SIDE_ACTION_GEOMETRY.iconEdgeNudge;
+    this.icon.x = iconX;
+    this.cloth.x = iconX;
+    this.iconFrame.pivot.set(frameWidth / 2, frameHeight / 2);
+    this.iconFrame.position.set(frameLeft + frameWidth / 2, frameTop + frameHeight / 2);
     this.iconFrameBaseY = this.iconFrame.y;
     const textX = frameLeft + frameWidth / 2;
     this.label.position.set(
       textX,
-      SIDE_PANEL_ICON_HEIGHT - 3.9 - 11.2,
+      frameTop + frameHeight + ROOT_RUN_SIDE_ACTION_GEOMETRY.iconLabelGap,
     );
     this.labelBaseY = this.label.y;
-    this.timer.position.set(textX, 82);
+    this.timer.position.set(textX, SIDE_PANEL_ICON_HEIGHT);
     this.timerBaseY = this.timer.y;
   }
 
@@ -1867,8 +1795,8 @@ class WorkshopFeatureButton {
 
   applyTheme(theme) {
     applyTextTheme(this.label, theme, {
-      fontSize: 8.8,
-      lineHeight: 11.2,
+      fontSize: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelFontSize,
+      lineHeight: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelLineHeight,
       fill: WORKSHOP_SIDE_LABEL_FILL,
     });
     this.label.style.stroke = {
@@ -1876,18 +1804,17 @@ class WorkshopFeatureButton {
       width: WORKSHOP_SIDE_LABEL_STROKE_WIDTH,
       join: 'round',
     };
+    fitRootRunSideActionLabel(this.label);
     this.label.alpha = this.model?.enabled === false ? 0.55 : 1;
     applyTextTheme(this.timer, theme, {
-      fontSize: 7.15,
-      lineHeight: 9.1,
+      fontSize: ROOT_RUN_SIDE_ACTION_GEOMETRY.timerFontSize,
+      lineHeight: ROOT_RUN_SIDE_ACTION_GEOMETRY.timerLineHeight,
       fill: theme.muted,
     });
     this.timer.style.stroke = {
       color: theme.surface,
       width: 2,
     };
-    this.cloth.tint =
-      ALLIANCE_BANNER_TINTS[this.model?.allianceTagColor] ?? theme.text;
     this.icon.alpha = this.model?.enabled === false ? 0.55 : 1;
     this.cloth.alpha = this.icon.alpha;
     this.notification.applyTheme(theme);
@@ -1960,7 +1887,9 @@ class WorkshopFlyout {
 }
 
 function resolveTaskIconFrames(model = {}) {
-  const kind = String(model.itemKind ?? '').trim().toLowerCase();
+  const kind = String(model.itemKind ?? '')
+    .trim()
+    .toLowerCase();
   const key = model.itemKey ?? null;
   if (kind === 'seed') {
     return {
@@ -1991,9 +1920,7 @@ function layoutContainedSprite(
     1,
     Number(sprite.texture?.orig?.height ?? sprite.texture?.height) || 1,
   );
-  const fit =
-    Math.min(frameWidth / textureWidth, frameHeight / textureHeight) *
-    scale;
+  const fit = Math.min(frameWidth / textureWidth, frameHeight / textureHeight) * scale;
   sprite.width = textureWidth * fit;
   sprite.height = textureHeight * fit;
   if (mirrored) {
@@ -2010,8 +1937,7 @@ function interpolateSummonEffect(progress) {
     }
     const previous = SUMMON_EFFECT_FRAMES[index - 1];
     const segment =
-      (progress - previous.progress) /
-      Math.max(0.0001, next.progress - previous.progress);
+      (progress - previous.progress) / Math.max(0.0001, next.progress - previous.progress);
     return {
       alpha: previous.alpha + (next.alpha - previous.alpha) * segment,
       scale: previous.scale + (next.scale - previous.scale) * segment,
@@ -2021,10 +1947,7 @@ function interpolateSummonEffect(progress) {
 }
 
 function compareSideControlEntries(left, right) {
-  return (
-    finiteOr(left.weight, 0) - finiteOr(right.weight, 0) ||
-    left.id.localeCompare(right.id)
-  );
+  return finiteOr(left.weight, 0) - finiteOr(right.weight, 0) || left.id.localeCompare(right.id);
 }
 
 function interpolate(from, to, progress) {
@@ -2037,9 +1960,15 @@ function easeOutQuart(progress) {
 }
 
 function prefersReducedMotion() {
-  return Boolean(
-    globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,
-  );
+  return Boolean(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+}
+
+function fitRootRunSideActionLabel(label) {
+  label.scale.set(1);
+  const width = Math.max(1, Number(label.width) || 1);
+  if (width > ROOT_RUN_SIDE_ACTION_GEOMETRY.labelMaxWidth) {
+    label.scale.set(ROOT_RUN_SIDE_ACTION_GEOMETRY.labelMaxWidth / width);
+  }
 }
 
 function defaultRequestFrame(callback) {
@@ -2051,16 +1980,10 @@ function defaultRequestFrame(callback) {
 
 function capitalizeInitial(value) {
   const label = String(value ?? '');
-  return label.length > 0
-    ? `${label.charAt(0).toUpperCase()}${label.slice(1)}`
-    : label;
+  return label.length > 0 ? `${label.charAt(0).toUpperCase()}${label.slice(1)}` : label;
 }
 
-function applyWorkshopRequestTextTheme(
-  text,
-  theme,
-  style = RETAINED_TEXT_STYLES.body,
-) {
+function applyWorkshopRequestTextTheme(text, theme, style = RETAINED_TEXT_STYLES.body) {
   applyTextTheme(text, theme, {
     ...style,
     fill: style.fill ?? WORKSHOP_REQUEST_TEXT_FILL,

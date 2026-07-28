@@ -186,6 +186,10 @@ export function createShop(options = {}) {
             proceedsCoin > 0
               ? `claim (${formatCoinPriceText(proceedsCoin)})`
               : '',
+          proceedsValueLabel:
+            proceedsCoin > 0
+              ? formatCoinPriceText(proceedsCoin)
+              : '',
           canClaimProceeds:
             playerShop.connected === true && proceedsCoin > 0,
           proceedsNotification: proceedsCoin > 0,
@@ -582,11 +586,16 @@ function createRequestSlotModel({
     id: slot.id ?? slotNumber,
     slotNumber,
     itemLabel: hasRequest
-      ? `${slot.itemLabel ?? 'item'} (${slot.quantity})`
+      ? slot.itemLabel ?? 'item'
       : 'empty request',
+    quantityLabel: hasRequest ? String(slot.quantity) : '',
     value: hasRequest ? formatCoinPriceText(slot.priceCoin) : 'select',
     resourceKey: hasRequest ? slot.itemKind : null,
     valueResourceKey: hasRequest ? 'coin' : null,
+    priceLabel: hasRequest
+      ? formatCoinPriceText(slot.priceCoin)
+      : 'select',
+    priceResourceKey: hasRequest ? 'coin' : null,
     enabled: slot.unlocked !== false,
     hasRequest,
     dialog: createRequestDialog({
@@ -705,11 +714,16 @@ function createPlayerListingSlotModel({
     id: slot.id ?? slotNumber,
     slotNumber,
     itemLabel: listed
-      ? `${slot.itemLabel ?? 'item'} (${slot.quantity})`
+      ? slot.itemLabel ?? 'item'
       : 'empty stand',
+    quantityLabel: listed ? String(slot.quantity) : '',
     value: listed ? formatCoinPriceText(slot.priceCoin) : 'select',
     resourceKey: listed ? slot.itemKind : null,
     valueResourceKey: listed ? 'coin' : null,
+    priceLabel: listed
+      ? formatCoinPriceText(slot.priceCoin)
+      : 'select',
+    priceResourceKey: listed ? 'coin' : null,
     enabled: slot.unlocked !== false,
     dialog: createListingDialog({
       gameplayActions,

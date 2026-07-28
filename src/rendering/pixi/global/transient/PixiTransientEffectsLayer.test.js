@@ -123,7 +123,8 @@ describe('PixiTransientEffectsLayer', () => {
     const layer = new PixiTransientEffectsLayer({
       assets: createAssets(),
       semanticRegistry: {
-        get: () => ({
+        get: (semanticId) => ({
+          semanticId,
           bounds: { x: 80, y: 100, width: 40, height: 100 },
         }),
       },
@@ -149,7 +150,8 @@ describe('PixiTransientEffectsLayer', () => {
 
     const [entry] = layer.entries;
     expect(entry.kind).toBe('item');
-    expect(entry.widget.model.anchor).toEqual({ x: 100, y: 130 });
+    expect(entry.widget.model.anchorId).toBe('workshop.summonArea');
+    expect(entry.widget.model.anchor).toEqual({ x: 100, y: 150 });
     expect(entry.widget.secondary.y).toBeCloseTo(
       entry.widget.primary.height * (0.63 - 0.5),
     );
@@ -160,7 +162,7 @@ describe('PixiTransientEffectsLayer', () => {
       entry.widget.baseX + entry.widget.tossX * 0.357,
     );
     expect(entry.widget.root.y).toBeCloseTo(
-      130 + entry.widget.tossPeak,
+      150 + entry.widget.tossPeak,
     );
     expect(entry.widget.root.rotation).toBeCloseTo(
       entry.widget.tossRotation * 0.4,
@@ -170,7 +172,7 @@ describe('PixiTransientEffectsLayer', () => {
     expect(entry.widget.root.x).toBeCloseTo(
       entry.widget.baseX + entry.widget.tossX,
     );
-    expect(entry.widget.root.y).toBeCloseTo(152);
+    expect(entry.widget.root.y).toBeCloseTo(172);
     expect(entry.widget.root.scale.x).toBeCloseTo(1.1);
     expect(entry.widget.root.scale.y).toBeCloseTo(0.9);
   });
@@ -542,8 +544,8 @@ describe('reward flyout presenter', () => {
         kind: 'seed',
         baseFrameName: 'seed:pack',
         itemFrameName: 'herb:sageHerb',
-        anchorId: 'workshop.summon',
-        anchorYRatio: 0.3,
+        anchorId: 'workshop.summonArea',
+        anchorYRatio: 0.5,
       }),
       expect.objectContaining({
         itemFrameName: 'herb:sageHerb',

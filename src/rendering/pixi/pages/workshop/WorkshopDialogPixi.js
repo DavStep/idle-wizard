@@ -32,6 +32,14 @@ import {
 const WORKSHOP_DIALOG_CONTENT_WIDTH = 264;
 const BAG_DIALOG_TAB_ROW_WIDTH = 286;
 const BAG_DIALOG_TAB_FONT_SIZE = PIXI_UI_GEOMETRY.borderLabelFontSize;
+const DIALOG_TAB_HEIGHT = 28;
+const DIALOG_SHELL_FOOTER_PAPER_GAP = 4;
+const DIALOG_SHELL_FOOTER_BOTTOM_INSET = 6;
+const DIALOG_TAB_GAP = 3;
+const DIALOG_FOOTER_TAB_MIN_GAP = 4;
+const DIALOG_FOOTER_TAB_MAX_GAP = 10;
+const DIALOG_FOOTER_TAB_GAP_STEP = 2;
+const DIALOG_FOOTER_TAB_REFERENCE_COUNT = 5;
 const DIALOG_SCROLL_VIEWPORT_TOP = 18;
 const DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET = 30;
 const DIALOG_PAPER_TOP =
@@ -115,13 +123,13 @@ export class WorkshopDialogPixi {
     this.sourceWidth = RETAINED_PAGE_GEOMETRY.width;
     this.sourceHeight = RETAINED_PAGE_GEOMETRY.height;
     this.isBagDialog = this.dialogId === 'workshop.bag';
+    this.isStatsDialog = this.dialogId === 'workshop.stats';
     this.isWorldChatDialog = this.dialogId === 'workshop.worldChat';
-    const isStatsDialog = this.dialogId === 'workshop.stats';
     this.scrollContentPaddingTop =
       RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
     this.scrollViewportTopInset = this.isBagDialog
       ? BAG_SCROLL_VIEWPORT_TOP_INSET
-      : isStatsDialog
+      : this.isStatsDialog
         ? STATS_SCROLL_VIEWPORT_TOP_INSET
         : 0;
     this.scrollViewportWidth =
@@ -130,7 +138,7 @@ export class WorkshopDialogPixi {
         : WORKSHOP_DIALOG_CONTENT_WIDTH +
           (this.isBagDialog
             ? RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight
-            : isStatsDialog
+            : this.isStatsDialog
               ? STATS_SCROLLBAR_SHIFT_RIGHT
               : 0);
 
@@ -153,17 +161,34 @@ export class WorkshopDialogPixi {
       ...RETAINED_TEXT_STYLES.body,
       wordWrapWidth: 264,
     });
+    this.headerHeadline = createText('', {
+      ...RETAINED_TEXT_STYLES.bold,
+      wordWrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
+    });
+    this.headerBody = createText('', {
+      ...RETAINED_TEXT_STYLES.border,
+      lineHeight: 14,
+      wordWrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
+    });
+    this.headerMeta = createText('', {
+      ...RETAINED_TEXT_STYLES.border,
+      wordWrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
+    });
     this.status = createText('', {
       ...RETAINED_TEXT_STYLES.border,
       wordWrapWidth: 264,
     });
     this.scroll = new RetainedScrollArea({
+      assetManager: this.assetManager,
       label: `${dialogId}-scroll`,
       inputRouter: this.inputRouter,
     });
     this.tabsLayer = new Container({ label: `${dialogId}-tabs` });
     this.panel.content.addChild(
       this.copy,
+      this.headerHeadline,
+      this.headerBody,
+      this.headerMeta,
       this.scroll.root,
       this.status,
     );
@@ -258,6 +283,17 @@ export class WorkshopDialogPixi {
       this.viewModel.title ?? this.dialogId.split('.').at(-1),
     );
     setText(this.copy, this.viewModel.copy ?? this.viewModel.description ?? '');
+    setText(this.headerHeadline, this.viewModel.header?.headline ?? '');
+    setText(this.headerBody, this.viewModel.header?.body ?? '');
+    setText(this.headerMeta, this.viewModel.header?.meta ?? '');
+    const hasHeader = Boolean(
+      this.headerHeadline.text ||
+        this.headerBody.text ||
+        this.headerMeta.text,
+    );
+    this.headerHeadline.visible = hasHeader;
+    this.headerBody.visible = hasHeader;
+    this.headerMeta.visible = hasHeader;
     this.boundStatus = this.viewModel.status ?? '';
     this.bindComposer(this.viewModel.composer);
     this.updateStatus();
@@ -340,6 +376,20 @@ export class WorkshopDialogPixi {
       ...RETAINED_TEXT_STYLES.body,
       wordWrapWidth: 264,
     });
+    applyTextTheme(this.headerHeadline, contentTheme, {
+      ...RETAINED_TEXT_STYLES.bold,
+      wordWrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
+    });
+    applyTextTheme(this.headerBody, contentTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      lineHeight: 14,
+      wordWrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
+    });
+    applyTextTheme(this.headerMeta, contentTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: contentTheme.muted,
+      wordWrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
+    });
     applyTextTheme(this.status, contentTheme, {
       ...RETAINED_TEXT_STYLES.border,
       fill: contentTheme.muted,
@@ -363,12 +413,18 @@ export class WorkshopDialogPixi {
     this.sourceHeight = Number(viewportProjection?.sourceHeight) || 2170 / 3;
     const width = 304;
     const tabs = this.tabs.getWidgets();
-    const tabsHeight = tabs.length > 0 ? 28 : 0;
+    const tabsHeight = tabs.length > 0 ? DIALOG_TAB_HEIGHT : 0;
+    const tabsInShellFooter =
+      (this.isBagDialog || this.isStatsDialog) && tabsHeight > 0;
     const composerHeight =
       this.composerField?.visible === true ? 32 : 0;
-    const height = Math.min(382, this.sourceHeight - 80 - tabsHeight);
+    const height = Math.min(
+      382,
+      this.sourceHeight - 80 - (tabsInShellFooter ? 0 : tabsHeight),
+    );
     const panelX = (this.sourceWidth - width) / 2;
-    const panelY = (this.sourceHeight - height - tabsHeight) / 2;
+    const panelY =
+      (this.sourceHeight - height - (tabsInShellFooter ? 0 : tabsHeight)) / 2;
     this.modal.layout(viewportProjection);
     this.modal.setBounds(
       panelX,
@@ -376,6 +432,25 @@ export class WorkshopDialogPixi {
       width,
       height,
     );
+    let shellFooterPaperReduction = 0;
+    if (tabsInShellFooter) {
+      const tabY =
+        this.panel.coreHeight +
+        PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset -
+        DIALOG_SHELL_FOOTER_BOTTOM_INSET -
+        DIALOG_TAB_HEIGHT;
+      const paperBottom = tabY - DIALOG_SHELL_FOOTER_PAPER_GAP;
+      const defaultPaperBottom = height - DIALOG_PAPER_BOTTOM_INSET;
+      shellFooterPaperReduction = Math.max(
+        0,
+        defaultPaperBottom - paperBottom,
+      );
+      this.panel.paperFrame.setSize(
+        this.panel.paperFrame.frameWidth,
+        Math.max(0, paperBottom - this.panel.paperFrame.y),
+        PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
+      );
+    }
     if (this.isWorldChatDialog && composerHeight > 0) {
       const paperBottom = height - 52;
       this.panel.paperFrame.setSize(
@@ -386,19 +461,43 @@ export class WorkshopDialogPixi {
     }
     this.copy.position.set(20, 18);
     const copyHeight = this.copy.text ? Math.ceil(this.copy.height) + 8 : 0;
+    this.headerHeadline.position.set(20, DIALOG_SCROLL_VIEWPORT_TOP);
+    this.headerBody.position.set(
+      20,
+      DIALOG_SCROLL_VIEWPORT_TOP +
+        (this.headerHeadline.text
+          ? Math.ceil(this.headerHeadline.height) + 4
+          : 0),
+    );
+    this.headerMeta.position.set(
+      20,
+      this.headerBody.y +
+        (this.headerBody.text
+          ? Math.ceil(this.headerBody.height) + 4
+          : 0),
+    );
+    const headerHeight = this.headerHeadline.visible
+      ? this.headerMeta.y -
+        DIALOG_SCROLL_VIEWPORT_TOP +
+        Math.ceil(this.headerMeta.height) +
+        8
+      : 0;
     const statusHeight = this.status.text ? 18 : 0;
     this.scroll.setBounds(
       this.isWorldChatDialog ? WORLD_CHAT_CONTENT_INSET_X : 20,
       DIALOG_SCROLL_VIEWPORT_TOP +
         copyHeight +
+        headerHeight +
         this.scrollViewportTopInset,
       this.scrollViewportWidth,
       height -
         DIALOG_SCROLL_VIEWPORT_TOP -
         DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET -
         copyHeight -
+        headerHeight -
         statusHeight -
         composerHeight -
+        shellFooterPaperReduction -
         this.scrollViewportTopInset,
     );
     if (this.isWorldChatDialog) {
@@ -407,9 +506,17 @@ export class WorkshopDialogPixi {
     const tabRowWidth = this.isBagDialog
       ? BAG_DIALOG_TAB_ROW_WIDTH
       : WORKSHOP_DIALOG_CONTENT_WIDTH;
-    this.tabsLayer.position.set((width - tabRowWidth) / 2, height - 2);
+    const tabsY = tabsInShellFooter
+      ? this.panel.coreHeight +
+        PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset -
+        DIALOG_SHELL_FOOTER_BOTTOM_INSET -
+        DIALOG_TAB_HEIGHT
+      : height - 2;
+    this.tabsLayer.position.set((width - tabRowWidth) / 2, tabsY);
     this.tabsLayer.visible = tabs.length > 0;
-    const gap = 3;
+    const gap = tabsInShellFooter
+      ? resolveFooterTabGap(tabs.length)
+      : DIALOG_TAB_GAP;
     const tabWidth =
       tabs.length > 0
         ? (tabRowWidth - gap * (tabs.length - 1)) / tabs.length
@@ -417,7 +524,7 @@ export class WorkshopDialogPixi {
     let tabX = 0;
 
     for (const button of tabs) {
-      button.setBounds(tabX, 0, tabWidth, 28);
+      button.setBounds(tabX, 0, tabWidth, DIALOG_TAB_HEIGHT);
       tabX += tabWidth + gap;
     }
 
@@ -580,6 +687,19 @@ export class WorkshopDialogPixi {
     this.registeredTargetIds.clear();
   }
 
+}
+
+function resolveFooterTabGap(tabCount) {
+  if (tabCount <= 1) {
+    return 0;
+  }
+
+  return Math.min(
+    DIALOG_FOOTER_TAB_MAX_GAP,
+    DIALOG_FOOTER_TAB_MIN_GAP +
+      Math.max(0, DIALOG_FOOTER_TAB_REFERENCE_COUNT - tabCount) *
+        DIALOG_FOOTER_TAB_GAP_STEP,
+  );
 }
 
 /**
@@ -896,8 +1016,17 @@ class WorkshopDialogRow {
 
   setBounds(x, y, width, height) {
     this.root.position.set(x, y);
+    const hasAction = this.action.root.visible;
+    const hasValue = Boolean(this.value.text);
+    const labelWidth = hasAction ? 78 : hasValue ? 164 : width;
+    const valueWidth = hasAction ? 96 : 92;
+    this.label.style.wordWrap = true;
+    this.label.style.wordWrapWidth = labelWidth;
+    this.value.style.wordWrap = true;
+    this.value.style.wordWrapWidth = valueWidth;
+    this.value.style.align = 'right';
     this.label.position.set(0, 2);
-    const actionWidth = this.action.root.visible ? 74 : 0;
+    const actionWidth = hasAction ? 74 : 0;
     this.action.setBounds(width - actionWidth, 0, actionWidth, 20);
     this.value.position.set(
       width -
@@ -938,11 +1067,19 @@ class WorkshopDialogRow {
   applyTheme(theme) {
     applyTextTheme(this.label, theme, {
       ...RETAINED_TEXT_STYLES.body,
+      fontWeight: this.model?.strong ? '700' : '400',
       fill: this.model?.muted ? theme.muted : theme.text,
-      wordWrapWidth: 164,
+      wordWrapWidth:
+        this.action.root.visible
+          ? 78
+          : this.value.text
+            ? 164
+            : WORKSHOP_DIALOG_CONTENT_WIDTH,
     });
     applyTextTheme(this.value, theme, {
       ...RETAINED_TEXT_STYLES.body,
+      align: 'right',
+      wordWrapWidth: this.action.root.visible ? 96 : 92,
       fill: this.dialog.isBagDialog
         ? theme.text
         : this.model?.resourceKey

@@ -1110,6 +1110,7 @@ class TutorialLessonSurface {
       label: 'tutorial:lessonCopy',
     });
     this.progress = new PixiProgressBar({
+      assetManager: this.assets,
       width: TUTORIAL_PIXI_GEOMETRY.panelContentWidth,
       tone: 'root',
       label: 'tutorial:lessonProgress',

@@ -61,7 +61,7 @@ function createStubManager(overrides = {}) {
 
 function getWorkshopCharacterRuleBody(baseCss) {
   return baseCss.match(
-    /\.workshop-page__ui-layer > \.workshop-page__personal-tasks,\s*\.workshop-page__ui-layer > \.workshop-page__world-notice\s*\{(?<body>[^}]*)\}/,
+    /\.workshop-page__ui-layer > \.workshop-page__personal-tasks,[\s\S]*?\.workshop-page__ui-layer > \.workshop-page__bag\s*\{(?<body>[^}]*)\}/,
   )?.groups?.body;
 }
 
@@ -124,7 +124,7 @@ describe('WorkshopPageFacade requirement feedback', () => {
     expect(gap).toBeLessThanOrEqual(45);
   });
 
-  it('keeps task and notice characters in top-aligned side slots', () => {
+  it('keeps task and notice actions in their declared side slots', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = getRuleBody(baseCss, ':root');
     const characterRule = getWorkshopCharacterRuleBody(baseCss);
@@ -139,10 +139,13 @@ describe('WorkshopPageFacade requirement feedback', () => {
     );
 
     expect(rootRule).toMatch(
-      /--workshop-side-controls-top-offset:\s*61px;/,
+      /--workshop-side-controls-top-offset:\s*71px;/,
     );
-    expect(characterRule).toContain(
+    expect(personalTasksRule).toContain(
       '--workshop-panel-button-row-3-top',
+    );
+    expect(worldNoticeRule).toContain(
+      '--workshop-panel-button-row-4-top',
     );
     expect(characterRule).toMatch(
       /\bheight:\s*var\(--workshop-panel-button-height\);/,

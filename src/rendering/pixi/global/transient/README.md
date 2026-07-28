@@ -29,7 +29,7 @@ Reward presentation model:
       kind: 'seed',
       frameName: 'seed:sage',
       // A source-space point/rect or a semantic/tutorial target ID.
-      anchorId: 'workshop:summon',
+      anchorId: 'workshop.summonArea',
     },
   ],
   coinTravel: {
@@ -41,8 +41,8 @@ Reward presentation model:
   },
   spendBursts: [
     {
-      resource: 'mana',
-      anchorId: 'workshop.summon',
+      resource: 'coin',
+      anchorId: 'research.unlockSeed:mintSeed',
     },
   ],
 }
@@ -62,9 +62,13 @@ back to the stall root if the price target is unavailable; shop purchases drop
 the bought item from the matching ledger or market row. Coin arrival reuses the
 existing top-coin display object for the main 340ms receive pulse and restores
 its position, scale, and pivot on finish, clear, or deactivation. Successful
-foreground spends use the consumed resource icon and Root Run's seven-particle
-ballistic burst at the semantic action origin. Reduced motion keeps matching
-text flyouts without creating item, coin, spend-burst, or target-pulse motion.
+foreground purchases use the spent currency icon and Root Run's seven-particle
+ballistic burst at the semantic purchase origin. Planting, brewing, summoning,
+and task turn-ins do not use this effect. Reduced motion keeps matching text
+flyouts without creating item, coin, spend-burst, or target-pulse motion.
+Summoned seeds originate at the ritual circle's center through
+`workshop.summonArea`; the separate `workshop.summon` target remains attached
+to the actionable button.
 
 `createPooledPixiNotificationBadges()` reconciles `{ key, parent, bounds,
 active, tone, tutorialId }` records. Dots are the existing 6px red/orange

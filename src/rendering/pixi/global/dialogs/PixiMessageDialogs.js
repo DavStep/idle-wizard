@@ -273,6 +273,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       label: `${dialogId}:continuePrompt`,
     });
     this.reportScroll = new RetainedScrollArea({
+      assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       label: `${dialogId}:reportScroll`,
     });

@@ -94,6 +94,7 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
     this.pendingConfirm = null;
 
     this.scroll = new RetainedScrollArea({
+      assetManager: this.assetManager,
       label: 'prestige-page-scroll',
       inputRouter: this.inputRouter,
     });

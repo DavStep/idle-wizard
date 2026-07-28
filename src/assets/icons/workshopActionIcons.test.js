@@ -10,8 +10,7 @@ const ICON_DIRECTORY = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../../../assets/game/source/icons',
 );
-const BAG_SHA_256 =
-  'b7cc936cb18e7c6ff68c98ab4917e62172347fa088fa67a1e2f3988867e2ac25';
+const BAG_SHA_256 = 'b7cc936cb18e7c6ff68c98ab4917e62172347fa088fa67a1e2f3988867e2ac25';
 const PNG_ICON_FILES = Object.freeze([
   'icon-personal-tasks-scroll-bag-style.png',
   'icon-stats-ledger-bag-style.png',
@@ -19,6 +18,16 @@ const PNG_ICON_FILES = Object.freeze([
   'icon-discoveries-journal-bag-style.png',
   'icon-quests-scroll-bag-style.png',
   'icon-leaderboard-trophy-bag-style.png',
+]);
+const ROOT_RUN_SIDE_ICON_FILES = Object.freeze([
+  'icon-side-alliance-root-run.png',
+  'icon-side-bag-root-run.png',
+  'icon-side-discoveries-root-run.png',
+  'icon-side-event-root-run.png',
+  'icon-side-inbox-root-run.png',
+  'icon-side-leaderboard-root-run.png',
+  'icon-side-stats-root-run.png',
+  'icon-side-tasks-root-run.png',
 ]);
 const WEBP_ICON_FILES = Object.freeze([
   'icon-alliance-banner-base.webp',
@@ -28,9 +37,7 @@ const WEBP_ICON_FILES = Object.freeze([
 ]);
 
 function inspectIcon(fileName) {
-  const image = PNG.sync.read(
-    fs.readFileSync(path.join(ICON_DIRECTORY, fileName)),
-  );
+  const image = PNG.sync.read(fs.readFileSync(path.join(ICON_DIRECTORY, fileName)));
   const visible = new Uint8Array(image.width * image.height);
   const paletteCounts = {
     blue: 0,
@@ -86,12 +93,7 @@ function inspectIcon(fileName) {
       if (red > 180 && green > 145 && blue > 95) {
         paletteCounts.cream += 1;
       }
-      if (
-        green > 100 &&
-        blue > 120 &&
-        green > red + 25 &&
-        blue > red + 30
-      ) {
+      if (green > 100 && blue > 120 && green > red + 25 && blue > red + 30) {
         paletteCounts.cyan += 1;
       }
       if (red > 150 && green > 80 && green < red - 10 && blue < 100) {
@@ -131,11 +133,7 @@ function inspectIcon(fileName) {
       ];
 
       for (const neighbor of neighbors) {
-        if (
-          neighbor >= 0 &&
-          visible[neighbor] &&
-          !visited[neighbor]
-        ) {
+        if (neighbor >= 0 && visible[neighbor] && !visited[neighbor]) {
           visited[neighbor] = 1;
           stack.push(neighbor);
         }
@@ -152,10 +150,7 @@ function inspectIcon(fileName) {
     minX,
     minY,
     paletteRatios: Object.fromEntries(
-      Object.entries(paletteCounts).map(([name, count]) => [
-        name,
-        count / visiblePixels,
-      ]),
+      Object.entries(paletteCounts).map(([name, count]) => [name, count / visiblePixels]),
     ),
     partialAlphaPixels,
     visiblePixels,
@@ -167,9 +162,7 @@ describe('Workshop action icon assets', () => {
   it('keeps the approved Bag reference byte-for-byte unchanged', () => {
     const bag = fs.readFileSync(path.join(ICON_DIRECTORY, 'icon-bag.png'));
 
-    expect(crypto.createHash('sha256').update(bag).digest('hex')).toBe(
-      BAG_SHA_256,
-    );
+    expect(crypto.createHash('sha256').update(bag).digest('hex')).toBe(BAG_SHA_256);
   });
 
   it.each(PNG_ICON_FILES)(
@@ -192,17 +185,26 @@ describe('Workshop action icon assets', () => {
     },
   );
 
+  it.each(ROOT_RUN_SIDE_ICON_FILES)(
+    'keeps approved RootRunSideAction asset %s at a consistent authored size',
+    (fileName) => {
+      const icon = inspectIcon(fileName);
+
+      expect(icon.width).toBe(128);
+      expect(icon.height).toBe(128);
+      expect(icon.visiblePixels).toBeGreaterThan(9_000);
+      expect(icon.partialAlphaPixels).toBeGreaterThan(800);
+      expect(icon.darkPixelRatio).toBeGreaterThan(0.08);
+    },
+  );
+
   it('preserves each icon’s deliberate, saturated color identity', () => {
     const tasks = inspectIcon('icon-personal-tasks-scroll-bag-style.png');
     const stats = inspectIcon('icon-stats-ledger-bag-style.png');
     const inbox = inspectIcon('icon-inbox-envelope-bag-style.png');
-    const discoveries = inspectIcon(
-      'icon-discoveries-journal-bag-style.png',
-    );
+    const discoveries = inspectIcon('icon-discoveries-journal-bag-style.png');
     const event = inspectIcon('icon-quests-scroll-bag-style.png');
-    const leaderboard = inspectIcon(
-      'icon-leaderboard-trophy-bag-style.png',
-    );
+    const leaderboard = inspectIcon('icon-leaderboard-trophy-bag-style.png');
 
     expect(tasks.paletteRatios.cream).toBeGreaterThan(0.35);
     expect(tasks.paletteRatios.purple).toBeGreaterThan(0.06);
