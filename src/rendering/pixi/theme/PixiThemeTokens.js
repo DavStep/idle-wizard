@@ -403,41 +403,38 @@ const SHARED_RESOURCE_COLORS = Object.freeze({
 });
 
 /**
- * Precomputed sRGB equivalents of the legacy OKLCH page mixes in base.css.
+ * Solid page surfaces mirrored from base.css.
  *
- * The endpoint colors are frozen here so production Pixi rendering never
- * reads CSS, computed styles, or DOM geometry. Gradient stops remain at 0%,
- * 48%, and 100%, matching the legacy `linear-gradient(0deg, ...)`
- * declaration. Workshop intentionally repeats the surface color so its
- * production fill stays solid.
+ * Production Pixi rendering never reads CSS, computed styles, or DOM
+ * geometry, so every page repeats its active theme surface color here.
  */
 export const PIXI_PAGE_BACKGROUND_COLORS = Object.freeze({
   black: Object.freeze({
     workshop: Object.freeze(['#202020', '#202020', '#202020']),
-    brewing: Object.freeze(['#253037', '#202020', '#282c2d']),
-    garden: Object.freeze(['#283028', '#202020', '#292c29']),
-    research: Object.freeze(['#312d26', '#202020', '#2c2b29']),
-    shop: Object.freeze(['#362827', '#202020', '#2d2929']),
-    guild: Object.freeze(['#2f2824', '#202020', '#2c2a28']),
-    prestige: Object.freeze(['#372b32', '#202020', '#2d2a2d']),
+    brewing: Object.freeze(['#202020', '#202020', '#202020']),
+    garden: Object.freeze(['#202020', '#202020', '#202020']),
+    research: Object.freeze(['#202020', '#202020', '#202020']),
+    shop: Object.freeze(['#202020', '#202020', '#202020']),
+    guild: Object.freeze(['#202020', '#202020', '#202020']),
+    prestige: Object.freeze(['#202020', '#202020', '#202020']),
   }),
   midnight: Object.freeze({
     workshop: Object.freeze(['#17191f', '#17191f', '#17191f']),
-    brewing: Object.freeze(['#212837', '#17191f', '#20242d']),
-    garden: Object.freeze(['#1d2834', '#17191f', '#20252c']),
-    research: Object.freeze(['#292531', '#17191f', '#20252c']),
-    shop: Object.freeze(['#262435', '#17191f', '#22232c']),
-    guild: Object.freeze(['#24222e', '#17191f', '#22232b']),
-    prestige: Object.freeze(['#262738', '#17191f', '#22242d']),
+    brewing: Object.freeze(['#17191f', '#17191f', '#17191f']),
+    garden: Object.freeze(['#17191f', '#17191f', '#17191f']),
+    research: Object.freeze(['#17191f', '#17191f', '#17191f']),
+    shop: Object.freeze(['#17191f', '#17191f', '#17191f']),
+    guild: Object.freeze(['#17191f', '#17191f', '#17191f']),
+    prestige: Object.freeze(['#17191f', '#17191f', '#17191f']),
   }),
   witchcraft: Object.freeze({
     workshop: Object.freeze(['#1a1028', '#1a1028', '#1a1028']),
-    brewing: Object.freeze(['#261f3f', '#1a1028', '#231c37']),
-    garden: Object.freeze(['#1d2140', '#1a1028', '#201d37']),
-    research: Object.freeze(['#311b33', '#1a1028', '#2a1a31']),
-    shop: Object.freeze(['#2e1938', '#1a1028', '#281a33']),
-    guild: Object.freeze(['#2c1831', '#1a1028', '#281931']),
-    prestige: Object.freeze(['#2e1d3d', '#1a1028', '#271b35']),
+    brewing: Object.freeze(['#1a1028', '#1a1028', '#1a1028']),
+    garden: Object.freeze(['#1a1028', '#1a1028', '#1a1028']),
+    research: Object.freeze(['#1a1028', '#1a1028', '#1a1028']),
+    shop: Object.freeze(['#1a1028', '#1a1028', '#1a1028']),
+    guild: Object.freeze(['#1a1028', '#1a1028', '#1a1028']),
+    prestige: Object.freeze(['#1a1028', '#1a1028', '#1a1028']),
   }),
 });
 

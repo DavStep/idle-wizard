@@ -18,6 +18,8 @@ Coin is whole-number currency. Positive prices and payouts round up to the next 
 
 The player market uses the same market-rank slot count and item-grade catalogue as NPC trading, so player listings cannot bypass a small market's restrictions. A listed player stand reserves the chosen item quantity from inventory and stores a per-item coin value. Player listings and requests cap at `1000` units and `1000000` coin per unit, matching the backend reducers. Clearing a stand returns the reserved quantity. Market purchases from other players spend local coin and add the bought item; claimed sale proceeds add local coin.
 
+Player requests store the maximum quantity the player wants to buy and the coin offered per item. Player sale listings choose their reserved quantity with the shared integer slider and store a separate coin price per item.
+
 The crystals tab also has a manual coin offer. It grants current player level `* 20` coin when collected, then enters a two-hour cooldown. Cooldown time catches up offline, but the reward is never granted until the player collects it.
 
 Security boundary: shared NPC demand, stock, market scope, item keys, and per-call quantity limits are server-validated. Player inventory and coin remain client-owned in the current architecture, so this is shared-market coordination rather than server-authoritative economy settlement.

@@ -15,6 +15,7 @@ import {
   shouldShowItemInActionList,
 } from '../../../pages/shared/itemResearchStatus.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
+import { PLAYER_MARKET_MAX_QUANTITY } from '../../../shared/playerMarketLimits.js';
 import { BrewingPixiPage } from '../pages/brewing/index.js';
 import { GardenPixiPage } from '../pages/garden/index.js';
 import {
@@ -185,6 +186,12 @@ export class PixiPagesFacade {
     this.shopStallItemTypeIdBySlot = new Map();
     this.shopStallAllocationPercentBySlot = new Map();
     this.shopStallItemKindBySlot = new Map();
+    this.shopSelectedRequestSlotNumber = 1;
+    this.shopSelectedListingSlotNumber = 1;
+    this.shopRequestDraftBySlot = new Map();
+    this.shopRequestItemKindBySlot = new Map();
+    this.shopListingDraftBySlot = new Map();
+    this.shopListingItemKindBySlot = new Map();
     this.guildTabId = 'hall';
     this.prestigeTabId = 'main';
     this.gardenInventoryTabId = null;
@@ -666,6 +673,8 @@ export class PixiPagesFacade {
           actions: { ui: actions.shop },
           uiState: {
             ledgerKind: this.shopLedgerKind,
+            selectedRequestSlotNumber:
+              this.shopSelectedRequestSlotNumber,
             stallItemTypeIdBySlot: Object.fromEntries(
               this.shopStallItemTypeIdBySlot,
             ),
@@ -674,6 +683,18 @@ export class PixiPagesFacade {
             ),
             stallItemKindBySlot: Object.fromEntries(
               this.shopStallItemKindBySlot,
+            ),
+            requestDraftBySlot: Object.fromEntries(
+              this.shopRequestDraftBySlot,
+            ),
+            requestItemKindBySlot: Object.fromEntries(
+              this.shopRequestItemKindBySlot,
+            ),
+            listingDraftBySlot: Object.fromEntries(
+              this.shopListingDraftBySlot,
+            ),
+            listingItemKindBySlot: Object.fromEntries(
+              this.shopListingItemKindBySlot,
             ),
           },
         });
@@ -743,6 +764,81 @@ export class PixiPagesFacade {
         ?.openDialog?.(SHOP_DIALOG_IDS.LEDGER, ledger);
     }
     return viewModel;
+  }
+
+  refreshShopRequestDialog(slotNumber) {
+    const viewModel = this.refreshPage('shop');
+    const runtime = this.requireRuntime();
+    if (
+      !viewModel ||
+      !runtime.getOpenDialogIds?.().includes(SHOP_DIALOG_IDS.REQUEST)
+    ) {
+      return viewModel;
+    }
+    const request = viewModel.shop?.players?.requests?.slots?.find(
+      (candidate) => candidate.slotNumber === slotNumber,
+    );
+    if (request) {
+      runtime
+        .getPage('shop')
+        ?.openDialog?.(
+          SHOP_DIALOG_IDS.REQUEST,
+          request.dialog ?? request,
+        );
+    }
+    return viewModel;
+  }
+
+  refreshShopListingDialog(slotNumber) {
+    const viewModel = this.refreshPage('shop');
+    const runtime = this.requireRuntime();
+    if (
+      !viewModel ||
+      !runtime.getOpenDialogIds?.().includes(SHOP_DIALOG_IDS.LISTING)
+    ) {
+      return viewModel;
+    }
+    const listing = viewModel.shop?.players?.market?.slots?.find(
+      (candidate) => candidate.slotNumber === slotNumber,
+    );
+    if (listing) {
+      runtime
+        .getPage('shop')
+        ?.openDialog?.(
+          SHOP_DIALOG_IDS.LISTING,
+          listing.dialog ?? listing,
+        );
+    }
+    return viewModel;
+  }
+
+  getShopRequestSlot(slotNumber) {
+    return this.gameplaySnapshot?.shop?.playerRequests?.slots?.find(
+      (slot) => slot.slotNumber === slotNumber,
+    ) ?? {};
+  }
+
+  getShopListingSlot(slotNumber) {
+    return this.gameplaySnapshot?.shop?.playerShelf?.slots?.find(
+      (slot) => slot.slotNumber === slotNumber,
+    ) ?? {};
+  }
+
+  updateShopDraft(drafts, slotNumber, patch, fallbackSlot = {}) {
+    const safeSlotNumber = Math.max(
+      1,
+      Math.floor(Number(slotNumber) || 1),
+    );
+    const previous =
+      drafts.get(safeSlotNumber) ??
+      fallbackSlot ??
+      {};
+    drafts.set(safeSlotNumber, {
+      ...previous,
+      ...patch,
+      slotNumber: safeSlotNumber,
+    });
+    return safeSlotNumber;
   }
 
   createActions() {
@@ -968,7 +1064,157 @@ export class PixiPagesFacade {
           }
           return result;
         },
-        clearPlayerRequest: () => false,
+        selectPlayerRequestSlot: (slotNumber) => {
+          this.shopSelectedRequestSlotNumber = Math.max(
+            1,
+            Math.floor(Number(slotNumber) || 1),
+          );
+          return null;
+        },
+        selectRequestItem: (slotNumber, item) => {
+          const safeSlotNumber = this.updateShopDraft(
+            this.shopRequestDraftBySlot,
+            slotNumber,
+            {
+              itemTypeId: item?.itemTypeId ?? null,
+              itemKey: item?.key ?? null,
+              itemLabel: item?.label ?? null,
+              itemKind: item?.kind ?? null,
+            },
+            this.getShopRequestSlot(slotNumber),
+          );
+          if (item?.kind) {
+            this.shopRequestItemKindBySlot.set(
+              safeSlotNumber,
+              item.kind,
+            );
+          }
+          this.refreshShopRequestDialog(safeSlotNumber);
+          return true;
+        },
+        setRequestDraftField: (slotNumber, field, value) => {
+          const safeSlotNumber = this.updateShopDraft(
+            this.shopRequestDraftBySlot,
+            slotNumber,
+            { [field]: value },
+            this.getShopRequestSlot(slotNumber),
+          );
+          this.refreshShopRequestDialog(safeSlotNumber);
+          return true;
+        },
+        selectRequestItemKind: (slotNumber, kind) => {
+          const safeSlotNumber = Math.max(
+            1,
+            Math.floor(Number(slotNumber) || 1),
+          );
+          this.shopRequestItemKindBySlot.set(
+            safeSlotNumber,
+            String(kind ?? ''),
+          );
+          this.refreshShopRequestDialog(safeSlotNumber);
+          return true;
+        },
+        closePlayerRequestDialog: (slotNumber) => {
+          this.shopRequestDraftBySlot.delete(slotNumber);
+          this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.REQUEST);
+          this.refreshPage('shop');
+          return true;
+        },
+        clearPlayerRequest: async (slotNumber) => {
+          const safeSlotNumber = Math.max(
+            1,
+            Math.floor(
+              Number(
+                slotNumber ?? this.shopSelectedRequestSlotNumber,
+              ) || 1,
+            ),
+          );
+          const published =
+            await this.playerShopFacade?.clearSlotRequest?.(
+              safeSlotNumber,
+            );
+          if (published === false || published?.ok === false) {
+            return published;
+          }
+          const result = gameplay?.clearPlayerShopRequest?.(
+            safeSlotNumber,
+          );
+          if (result?.ok) {
+            this.shopRequestDraftBySlot.delete(safeSlotNumber);
+            this.refreshPage('shop');
+          }
+          return result;
+        },
+        selectPlayerListingSlot: (slotNumber) => {
+          const safeSlotNumber = Math.max(
+            1,
+            Math.floor(Number(slotNumber) || 1),
+          );
+          this.shopSelectedListingSlotNumber = safeSlotNumber;
+          gameplay?.selectPlayerShopShelfSlot?.(safeSlotNumber);
+          return null;
+        },
+        selectListingItem: (slotNumber, item) => {
+          const slot = this.getShopListingSlot(slotNumber);
+          const availableQuantity = Math.min(
+            PLAYER_MARKET_MAX_QUANTITY,
+            Math.max(0, Math.floor(Number(item?.quantity) || 0)) +
+              (slot.itemTypeId === item?.itemTypeId
+                ? Math.max(
+                    0,
+                    Math.floor(Number(slot.quantity) || 0),
+                  )
+                : 0),
+          );
+          const safeSlotNumber = this.updateShopDraft(
+            this.shopListingDraftBySlot,
+            slotNumber,
+            {
+              itemTypeId: item?.itemTypeId ?? null,
+              itemKey: item?.key ?? null,
+              itemLabel: item?.label ?? null,
+              itemKind: item?.kind ?? null,
+              quantity: Math.max(1, availableQuantity),
+            },
+            slot,
+          );
+          if (item?.kind) {
+            this.shopListingItemKindBySlot.set(
+              safeSlotNumber,
+              item.kind,
+            );
+          }
+          this.refreshShopListingDialog(safeSlotNumber);
+          return true;
+        },
+        setListingDraftField: (slotNumber, field, value) => {
+          const safeSlotNumber = this.updateShopDraft(
+            this.shopListingDraftBySlot,
+            slotNumber,
+            { [field]: value },
+            this.getShopListingSlot(slotNumber),
+          );
+          this.refreshShopListingDialog(safeSlotNumber);
+          return true;
+        },
+        selectListingItemKind: (slotNumber, kind) => {
+          const safeSlotNumber = Math.max(
+            1,
+            Math.floor(Number(slotNumber) || 1),
+          );
+          this.shopListingItemKindBySlot.set(
+            safeSlotNumber,
+            String(kind ?? ''),
+          );
+          this.refreshShopListingDialog(safeSlotNumber);
+          return true;
+        },
+        closePlayerListingDialog: (slotNumber) => {
+          this.shopListingDraftBySlot.delete(slotNumber);
+          this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.LISTING);
+          this.refreshPage('shop');
+          return true;
+        },
         selectLedgerKind: (kind) => {
           this.shopLedgerKind = String(kind || 'seed');
           this.refreshShopLedgerDialog();
@@ -1560,8 +1806,52 @@ export class PixiPagesFacade {
       },
       selectBrewQuantity: (quantity, cauldronIndex) =>
         gameplay?.setBrewingBrewQuantity?.(quantity, cauldronIndex),
-      toggleAutoBrew: (cauldronIndex) =>
-        gameplay?.toggleBrewingAutoBrewEnabled?.(cauldronIndex),
+      toggleAutoBrew: (cauldronIndex = 0) => {
+        const index = Math.max(
+          0,
+          Math.floor(Number(cauldronIndex) || 0),
+        );
+        const cauldron =
+          (this.gameplaySnapshot.brewing?.cauldrons ?? []).find(
+            (entry) =>
+              Number(entry?.cauldronIndex) === index,
+          ) ??
+          (index === 0
+            ? this.gameplaySnapshot.brewing
+            : null);
+        if (cauldron?.autoBrewEnabled === true) {
+          return typeof gameplay?.setBrewingAutoBrewEnabled ===
+            'function'
+            ? gameplay.setBrewingAutoBrewEnabled(false, index)
+            : gameplay?.toggleBrewingAutoBrewEnabled?.(index);
+        }
+
+        const selectedRecipe =
+          this.selectedRecipeByCauldron.get(index);
+        const recipeKey =
+          selectedRecipe?.key ??
+          selectedRecipe?.id ??
+          cauldron?.autoBrewRecipeKey ??
+          null;
+        if (
+          recipeKey &&
+          recipeKey !== cauldron?.autoBrewRecipeKey
+        ) {
+          const recipeResult =
+            gameplay?.setBrewingAutoBrewRecipe?.(
+              recipeKey,
+              index,
+            );
+          if (recipeResult?.ok === false) {
+            return recipeResult;
+          }
+        }
+
+        return typeof gameplay?.setBrewingAutoBrewEnabled ===
+          'function'
+          ? gameplay.setBrewingAutoBrewEnabled(true, index)
+          : gameplay?.toggleBrewingAutoBrewEnabled?.(index);
+      },
       toggleAutoCollect: (cauldronIndex) =>
         gameplay?.toggleBrewingAutoCollectEnabled?.(cauldronIndex),
       cancelBrew: (cauldronIndex) => {

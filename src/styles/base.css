@@ -2171,51 +2171,8 @@ body {
 .shop-page,
 .guild-page,
 .prestige-page {
-  --style-page-tint-bottom: var(--style-surface);
-  --style-page-tint-top: var(--style-page-tint-bottom);
-  --style-page-background: linear-gradient(
-    0deg,
-    color-mix(in oklch, var(--style-surface) 84%, var(--style-page-tint-bottom))
-      0%,
-    var(--style-surface) 48%,
-    color-mix(in oklch, var(--style-surface) 91%, var(--style-page-tint-top))
-      100%
-  );
-  background: var(--style-page-background, var(--style-surface));
-}
-
-.workshop-page {
   --style-page-background: var(--style-surface);
-}
-
-.brewing-page {
-  --style-page-tint-bottom: oklch(60% 0.12 238);
-  --style-page-tint-top: oklch(74% 0.07 226);
-}
-
-.garden-page {
-  --style-page-tint-bottom: oklch(58% 0.11 145);
-  --style-page-tint-top: oklch(74% 0.06 140);
-}
-
-.research-page {
-  --style-page-tint-bottom: oklch(59% 0.08 84);
-  --style-page-tint-top: oklch(76% 0.05 92);
-}
-
-.shop-page {
-  --style-page-tint-bottom: oklch(56% 0.13 25);
-  --style-page-tint-top: oklch(72% 0.07 20);
-}
-
-.guild-page {
-  --style-page-tint-bottom: oklch(50% 0.08 55);
-  --style-page-tint-top: oklch(70% 0.05 62);
-}
-
-.prestige-page {
-  --style-page-tint-bottom: oklch(63% 0.13 340);
-  --style-page-tint-top: oklch(76% 0.07 335);
+  background: var(--style-page-background, var(--style-surface));
 }
 
 .game-stage[data-page-swipe-active="true"]

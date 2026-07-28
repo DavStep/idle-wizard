@@ -1,4 +1,8 @@
 import { formatCoinPriceText } from '../../../../shared/coinPrice.js';
+import {
+  PLAYER_MARKET_MAX_PRICE_COIN,
+  PLAYER_MARKET_MAX_QUANTITY,
+} from '../../../../shared/playerMarketLimits.js';
 import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
 import { ShopStallVisibilityManager } from '../../../../pages/shop/managers/ShopStallVisibilityManager.js';
 
@@ -99,6 +103,7 @@ export function createShop(options = {}) {
   const requestModels = safeArray(playerRequests.slots).map(
     (slot, index) =>
       createRequestSlotModel({
+        gameplaySnapshot,
         gameplayActions,
         index,
         playerShopActions,
@@ -111,6 +116,7 @@ export function createShop(options = {}) {
   const playerSlotModels = safeArray(playerShelf.slots).map(
     (slot, index) =>
       createPlayerListingSlotModel({
+        gameplaySnapshot,
         gameplayActions,
         index,
         playerShopActions,
@@ -567,6 +573,7 @@ function createStallDialog({
 }
 
 function createRequestSlotModel({
+  gameplaySnapshot,
   gameplayActions,
   index,
   playerShopActions,
@@ -598,7 +605,12 @@ function createRequestSlotModel({
     priceResourceKey: hasRequest ? 'coin' : null,
     enabled: slot.unlocked !== false,
     hasRequest,
+    action: () => {
+      callFirst(uiActions, ['selectPlayerRequestSlot'], [slotNumber]);
+      return null;
+    },
     dialog: createRequestDialog({
+      gameplaySnapshot,
       gameplayActions,
       playerShopActions,
       shelf,
@@ -611,6 +623,7 @@ function createRequestSlotModel({
 }
 
 function createRequestDialog({
+  gameplaySnapshot,
   gameplayActions,
   playerShopActions,
   shelf,
@@ -622,26 +635,44 @@ function createRequestDialog({
   const draft = uiState.requestDraftBySlot?.[slotNumber] ?? slot;
   const selectedItemTypeId =
     draft.itemTypeId ?? slot.itemTypeId ?? null;
+  const selectedItem = safeArray(shelf.sellItems).find(
+    (item) => item.itemTypeId === selectedItemTypeId,
+  );
+  const visibleSellKinds = stallVisibilityManager.getVisibleSellKinds(
+    gameplaySnapshot,
+    safeArray(shelf.sellKinds),
+  );
+  const requestedKind =
+    uiState.requestItemKindBySlot?.[slotNumber] ??
+    selectedItem?.kind ??
+    visibleSellKinds[0]?.kind ??
+    null;
+  const selectedKind = visibleSellKinds.some(
+    (kind) => kind.kind === requestedKind,
+  )
+    ? requestedKind
+    : visibleSellKinds[0]?.kind ?? null;
+  const quantity = positiveInteger(draft.quantity);
+  const priceCoin = positiveInteger(draft.priceCoin);
   return {
-    title: 'request',
+    title: 'Request',
+    summaryRows: [
+      {
+        id: 'current',
+        label: 'Current',
+        value: toTitleCase(selectedItem?.label ?? slot.itemLabel ?? 'empty'),
+        valueResourceKey: selectedItem?.kind ?? slot.itemKind ?? null,
+        itemKey: selectedItem?.key ?? slot.itemKey ?? null,
+        itemKind: selectedItem?.kind ?? slot.itemKind ?? null,
+      },
+    ],
     fields: [
       {
-        id: 'quantity',
-        label: 'quantity',
-        value: draft.quantity ?? 1,
-        inputKind: 'integer',
-        onChange: (value) =>
-          callFirst(uiActions, ['setRequestDraftField'], [
-            slotNumber,
-            'quantity',
-            value,
-          ]),
-      },
-      {
         id: 'priceCoin',
-        label: 'coin each',
+        label: 'Coins Per Item',
         value: draft.priceCoin ?? 1,
         inputKind: 'integer',
+        maxLength: String(PLAYER_MARKET_MAX_PRICE_COIN).length,
         onChange: (value) =>
           callFirst(uiActions, ['setRequestDraftField'], [
             slotNumber,
@@ -649,43 +680,92 @@ function createRequestDialog({
             value,
           ]),
       },
+      {
+        id: 'quantity',
+        label: 'Max Quantity',
+        value: draft.quantity ?? 1,
+        inputKind: 'integer',
+        maxLength: String(PLAYER_MARKET_MAX_QUANTITY).length,
+        onChange: (value) =>
+          callFirst(uiActions, ['setRequestDraftField'], [
+            slotNumber,
+            'quantity',
+            value,
+          ]),
+      },
     ],
-    items: safeArray(shelf.sellItems).map((item) => ({
-      id: item.itemTypeId ?? item.key,
-      label: item.label,
-      value: `(${nonNegativeInteger(item.quantity)})`,
-      resourceKey: item.kind,
-      selected: item.itemTypeId === selectedItemTypeId,
-      action: () =>
-        callFirst(uiActions, ['selectRequestItem'], [
-          slotNumber,
-          item,
-        ]),
-    })),
+    items: safeArray(shelf.sellItems)
+      .filter(
+        (item) =>
+          (!selectedKind || item.kind === selectedKind) &&
+          stallVisibilityManager.isItemVisible(gameplaySnapshot, item),
+      )
+      .map((item) => ({
+        id: item.itemTypeId ?? item.key,
+        label: toTitleCase(item.label),
+        detail: `${nonNegativeInteger(item.quantity)} Available`,
+        value: '',
+        itemKey: item.key,
+        itemKind: item.kind,
+        resourceKey: item.kind,
+        selected: item.itemTypeId === selectedItemTypeId,
+        semanticId: `shop.request.${slotNumber}.item.${item.key ?? item.itemTypeId}`,
+        action: () =>
+          callFirst(uiActions, ['selectRequestItem'], [
+            slotNumber,
+            item,
+          ]),
+      })),
     actions: [
       {
         id: 'place',
-        label: 'place request',
-        enabled: Boolean(selectedItemTypeId),
-        action: () =>
-          callFirstOr(
+        label: 'Place Request',
+        variant: 'green',
+        enabled:
+          Boolean(selectedItemTypeId) &&
+          quantity !== null &&
+          priceCoin !== null &&
+          quantity <= PLAYER_MARKET_MAX_QUANTITY &&
+          priceCoin <= PLAYER_MARKET_MAX_PRICE_COIN,
+        action: async () => {
+          const result = await callFirstOr(
             uiActions,
             ['submitPlayerRequest'],
-            [slotNumber, draft],
+            [
+              slotNumber,
+              {
+                ...draft,
+                itemTypeId: selectedItemTypeId,
+                quantity,
+                priceCoin,
+              },
+            ],
             () =>
               publishPlayerRequest({
                 gameplayActions,
                 playerShopActions,
-                request: draft,
+                request: {
+                  ...draft,
+                  itemTypeId: selectedItemTypeId,
+                  quantity,
+                  priceCoin,
+                },
                 shelf,
                 slotNumber,
               }),
-          ),
+          );
+          if (result !== false && result?.ok !== false) {
+            callFirst(uiActions, ['closePlayerRequestDialog'], [slotNumber]);
+          }
+          return result;
+        },
       },
     ],
-    tabs: safeArray(shelf.sellKinds).map((kind) => ({
+    tabs: visibleSellKinds.map((kind) => ({
       id: kind.kind,
-      label: kind.label,
+      label: toTitleCase(kind.label),
+      selected: kind.kind === selectedKind,
+      semanticId: `shop.request.${slotNumber}.tab.${kind.kind}`,
       action: () =>
         callFirst(uiActions, ['selectRequestItemKind'], [
           slotNumber,
@@ -696,6 +776,7 @@ function createRequestDialog({
 }
 
 function createPlayerListingSlotModel({
+  gameplaySnapshot,
   gameplayActions,
   index,
   playerShopActions,
@@ -725,7 +806,12 @@ function createPlayerListingSlotModel({
       : 'select',
     priceResourceKey: listed ? 'coin' : null,
     enabled: slot.unlocked !== false,
+    action: () => {
+      callFirst(uiActions, ['selectPlayerListingSlot'], [slotNumber]);
+      return null;
+    },
     dialog: createListingDialog({
+      gameplaySnapshot,
       gameplayActions,
       playerShopActions,
       playerShelf,
@@ -738,6 +824,7 @@ function createPlayerListingSlotModel({
 }
 
 function createListingDialog({
+  gameplaySnapshot,
   gameplayActions,
   playerShopActions,
   playerShelf,
@@ -749,26 +836,72 @@ function createListingDialog({
   const draft = uiState.listingDraftBySlot?.[slotNumber] ?? slot;
   const selectedItemTypeId =
     draft.itemTypeId ?? slot.itemTypeId ?? null;
+  const selectedItem = safeArray(playerShelf.sellItems).find(
+    (item) => item.itemTypeId === selectedItemTypeId,
+  );
+  const visibleSellKinds = stallVisibilityManager.getVisibleSellKinds(
+    gameplaySnapshot,
+    safeArray(playerShelf.sellKinds),
+  );
+  const requestedKind =
+    uiState.listingItemKindBySlot?.[slotNumber] ??
+    selectedItem?.kind ??
+    visibleSellKinds[0]?.kind ??
+    null;
+  const selectedKind = visibleSellKinds.some(
+    (kind) => kind.kind === requestedKind,
+  )
+    ? requestedKind
+    : visibleSellKinds[0]?.kind ?? null;
+  const availableQuantity = Math.min(
+    PLAYER_MARKET_MAX_QUANTITY,
+    nonNegativeInteger(selectedItem?.quantity) +
+      (slot.itemTypeId === selectedItemTypeId
+        ? nonNegativeInteger(slot.quantity)
+        : 0),
+  );
+  const quantity = Math.max(
+    1,
+    Math.min(
+      Math.max(1, availableQuantity),
+      positiveInteger(draft.quantity) ?? 1,
+    ),
+  );
+  const priceCoin = positiveInteger(draft.priceCoin);
   return {
-    title: 'list item',
+    title: 'Sell',
+    summaryRows: [
+      {
+        id: 'current',
+        label: 'Current',
+        value: toTitleCase(selectedItem?.label ?? slot.itemLabel ?? 'empty'),
+        valueResourceKey: selectedItem?.kind ?? slot.itemKind ?? null,
+        itemKey: selectedItem?.key ?? slot.itemKey ?? null,
+        itemKind: selectedItem?.kind ?? slot.itemKind ?? null,
+        quantityLabel: selectedItem ? `x${quantity}` : '',
+      },
+    ],
+    range: {
+      enabled: Boolean(selectedItem) && availableQuantity > 0,
+      tone: 'root',
+      min: 1,
+      max: Math.max(1, availableQuantity),
+      step: 1,
+      value: quantity,
+      onChange: (value) =>
+        callFirst(uiActions, ['setListingDraftField'], [
+          slotNumber,
+          'quantity',
+          value,
+        ]),
+    },
     fields: [
       {
-        id: 'quantity',
-        label: 'quantity',
-        value: draft.quantity ?? 1,
-        inputKind: 'integer',
-        onChange: (value) =>
-          callFirst(uiActions, ['setListingDraftField'], [
-            slotNumber,
-            'quantity',
-            value,
-          ]),
-      },
-      {
         id: 'priceCoin',
-        label: 'coin each',
+        label: 'Coins Per Item',
         value: draft.priceCoin ?? 1,
         inputKind: 'integer',
+        maxLength: String(PLAYER_MARKET_MAX_PRICE_COIN).length,
         onChange: (value) =>
           callFirst(uiActions, ['setListingDraftField'], [
             slotNumber,
@@ -777,44 +910,87 @@ function createListingDialog({
           ]),
       },
     ],
-    items: safeArray(playerShelf.sellItems).map((item) => ({
-      id: item.itemTypeId ?? item.key,
-      label: item.label,
-      value: `(${nonNegativeInteger(item.quantity)})`,
-      resourceKey: item.kind,
-      selected: item.itemTypeId === selectedItemTypeId,
-      action: () =>
-        callFirst(uiActions, ['selectListingItem'], [
-          slotNumber,
-          item,
-        ]),
-    })),
+    items: safeArray(playerShelf.sellItems)
+      .filter(
+        (item) =>
+          (!selectedKind || item.kind === selectedKind) &&
+          stallVisibilityManager.isItemVisible(gameplaySnapshot, item) &&
+          (nonNegativeInteger(item.quantity) > 0 ||
+            item.itemTypeId === slot.itemTypeId),
+      )
+      .map((item) => {
+        const itemAvailableQuantity =
+          nonNegativeInteger(item.quantity) +
+          (slot.itemTypeId === item.itemTypeId
+            ? nonNegativeInteger(slot.quantity)
+            : 0);
+        return {
+          id: item.itemTypeId ?? item.key,
+          label: toTitleCase(item.label),
+          detail: `${itemAvailableQuantity} Available`,
+          value: '',
+          itemKey: item.key,
+          itemKind: item.kind,
+          resourceKey: item.kind,
+          selected: item.itemTypeId === selectedItemTypeId,
+          semanticId: `shop.listing.${slotNumber}.item.${item.key ?? item.itemTypeId}`,
+          action: () =>
+            callFirst(uiActions, ['selectListingItem'], [
+              slotNumber,
+              item,
+            ]),
+        };
+      }),
     actions: [
       {
         id: 'list',
-        label: 'list',
-        enabled: Boolean(selectedItemTypeId),
-        action: () =>
-          callFirstOr(
+        label: 'Sell',
+        variant: 'green',
+        enabled:
+          Boolean(selectedItemTypeId) &&
+          availableQuantity > 0 &&
+          priceCoin !== null &&
+          priceCoin <= PLAYER_MARKET_MAX_PRICE_COIN,
+        action: async () => {
+          const result = await callFirstOr(
             uiActions,
             ['submitPlayerListing'],
-            [slotNumber, draft],
+            [
+              slotNumber,
+              {
+                ...draft,
+                itemTypeId: selectedItemTypeId,
+                quantity,
+                priceCoin,
+              },
+            ],
             () =>
               publishPlayerListing({
                 gameplayActions,
-                listing: draft,
+                listing: {
+                  ...draft,
+                  itemTypeId: selectedItemTypeId,
+                  quantity,
+                  priceCoin,
+                },
                 playerShopActions,
                 playerShelf,
                 slotNumber,
               }),
-          ),
+          );
+          if (result !== false && result?.ok !== false) {
+            callFirst(uiActions, ['closePlayerListingDialog'], [slotNumber]);
+          }
+          return result;
+        },
       },
       {
         id: 'clear',
-        label: 'clear',
+        label: 'Clear',
+        variant: 'red',
         enabled: Boolean(slot.itemTypeId),
-        action: () =>
-          callFirstOr(
+        action: async () => {
+          const result = await callFirstOr(
             uiActions,
             ['clearPlayerListing'],
             [slotNumber],
@@ -824,12 +1000,19 @@ function createListingDialog({
                 playerShopActions,
                 slotNumber,
               }),
-          ),
+          );
+          if (result !== false && result?.ok !== false) {
+            callFirst(uiActions, ['closePlayerListingDialog'], [slotNumber]);
+          }
+          return result;
+        },
       },
     ],
-    tabs: safeArray(playerShelf.sellKinds).map((kind) => ({
+    tabs: visibleSellKinds.map((kind) => ({
       id: kind.kind,
-      label: kind.label,
+      label: toTitleCase(kind.label),
+      selected: kind.kind === selectedKind,
+      semanticId: `shop.listing.${slotNumber}.tab.${kind.kind}`,
       action: () =>
         callFirst(uiActions, ['selectListingItemKind'], [
           slotNumber,
@@ -1026,17 +1209,13 @@ function createShopActionMap({
     hasAnyMethod(gameplayActions, ['clearPlayerShopRequest'])
   ) {
     result.clearPlayerRequest = () =>
-      callFirstOr(
-        uiActions,
-        ['clearPlayerRequest'],
-        [selectedRequestSlotNumber],
-        () =>
-          clearPlayerRequest({
+      hasAnyMethod(uiActions, ['clearPlayerRequest'])
+        ? callFirst(uiActions, ['clearPlayerRequest'], [])
+        : clearPlayerRequest({
             gameplayActions,
             playerShopActions,
             slotNumber: selectedRequestSlotNumber,
-          }),
-      );
+          });
   }
   if (
     hasAnyMethod(uiActions, ['claimPlayerMarketProceeds']) ||

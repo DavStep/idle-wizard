@@ -371,6 +371,70 @@ describe('PixiPagesFacade', () => {
     });
   });
 
+  it('copies the selected recipe into Auto Brew before enabling it', () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    const recipe = {
+      key: 'manaTonic',
+      label: 'mana tonic',
+      unlocked: true,
+      ingredients: [],
+    };
+    gameplaySnapshot.brewing = {
+      cauldrons: [
+        {
+          cauldronIndex: 0,
+          cauldronNumber: 1,
+          brewQuantity: 1,
+          maxBrewQuantity: 1,
+          autoBrewEnabled: false,
+          autoBrewRecipeKey: null,
+        },
+      ],
+      recipes: [recipe],
+      herbs: [],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.prepareBrewingRecipe.mockReturnValue({
+      ok: true,
+    });
+    harness.gameplayFacade.setBrewingAutoBrewRecipe.mockReturnValue({
+      ok: true,
+    });
+    harness.gameplayFacade.setBrewingAutoBrewEnabled.mockReturnValue({
+      ok: true,
+      autoBrewEnabled: true,
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show('brewing');
+    const brewing = harness.getBoundPage('brewing');
+
+    expect(brewing.actions.selectRecipe(recipe, 0)).toEqual({
+      ok: true,
+    });
+    expect(brewing.actions.toggleAutoBrew(0)).toEqual({
+      ok: true,
+      autoBrewEnabled: true,
+    });
+
+    expect(
+      harness.gameplayFacade.setBrewingAutoBrewRecipe,
+    ).toHaveBeenCalledWith('manaTonic', 0);
+    expect(
+      harness.gameplayFacade.setBrewingAutoBrewEnabled,
+    ).toHaveBeenCalledWith(true, 0);
+    expect(
+      harness.gameplayFacade.setBrewingAutoBrewRecipe.mock
+        .invocationCallOrder[0],
+    ).toBeLessThan(
+      harness.gameplayFacade.setBrewingAutoBrewEnabled.mock
+        .invocationCallOrder[0],
+    );
+    expect(
+      harness.gameplayFacade.toggleBrewingAutoBrewEnabled,
+    ).not.toHaveBeenCalled();
+  });
+
   it('projects recipe research availability and routes enabled research actions', () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.brewing = {
@@ -547,6 +611,92 @@ describe('PixiPagesFacade', () => {
     ).toHaveBeenCalledWith(1, 25);
     expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
       'shop.stall',
+    );
+  });
+
+  it('keeps retained player request and sale drafts interactive', () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.research.completedResearchIds = [
+      'unlockSeed:sageSeed',
+    ];
+    const sageSeed = {
+      itemTypeId: 1,
+      key: 'sageSeed',
+      kind: 'seed',
+      label: 'sage seed',
+      quantity: 8,
+    };
+    gameplaySnapshot.shop = {
+      shelf: {
+        sellKinds: [{ kind: 'seed', label: 'seeds' }],
+        sellItems: [sageSeed],
+      },
+      playerRequests: {
+        slots: [{ slotNumber: 1, unlocked: true }],
+      },
+      playerShelf: {
+        sellKinds: [{ kind: 'seed', label: 'seeds' }],
+        sellItems: [sageSeed],
+        slots: [{ slotNumber: 1, unlocked: true }],
+      },
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.runtime.getOpenDialogIds.mockReturnValue([
+      'shop.request',
+      'shop.listing',
+    ]);
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show('shop');
+
+    let shop = harness.getBoundPage('shop').shop;
+    shop.players.requests.slots[0].dialog.items[0].action();
+    shop = harness.getBoundPage('shop').shop;
+    expect(shop.players.requests.slots[0].dialog).toMatchObject({
+      title: 'Request',
+      summaryRows: [
+        expect.objectContaining({ value: 'Sage Seed' }),
+      ],
+    });
+
+    shop.players.requests.slots[0].dialog.fields[0].onChange('12');
+    shop = harness.getBoundPage('shop').shop;
+    expect(
+      shop.players.requests.slots[0].dialog.fields[0].value,
+    ).toBe('12');
+
+    shop.players.market.slots[0].dialog.items[0].action();
+    shop = harness.getBoundPage('shop').shop;
+    expect(shop.players.market.slots[0].dialog).toMatchObject({
+      title: 'Sell',
+      range: {
+        min: 1,
+        max: 8,
+        value: 8,
+      },
+      summaryRows: [
+        expect.objectContaining({
+          value: 'Sage Seed',
+          quantityLabel: 'x8',
+        }),
+      ],
+    });
+
+    shop.players.market.slots[0].dialog.range.onChange(3);
+    shop = harness.getBoundPage('shop').shop;
+    expect(shop.players.market.slots[0].dialog).toMatchObject({
+      range: { value: 3 },
+      summaryRows: [
+        expect.objectContaining({ quantityLabel: 'x3' }),
+      ],
+    });
+    expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
+      'shop.request',
+      expect.objectContaining({ title: 'Request' }),
+    );
+    expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
+      'shop.listing',
+      expect.objectContaining({ title: 'Sell' }),
     );
   });
 
@@ -1108,6 +1258,10 @@ function createHarness({
     selectGardenSeed: vi.fn(),
     cancelBrewing: vi.fn(),
     collectBrewing: vi.fn(),
+    prepareBrewingRecipe: vi.fn(),
+    setBrewingAutoBrewRecipe: vi.fn(),
+    setBrewingAutoBrewEnabled: vi.fn(),
+    toggleBrewingAutoBrewEnabled: vi.fn(),
     selectShopShelfSlot: vi.fn(() => ({ ok: true })),
     setSelectedShopShelfSlotAllocation: vi.fn(() => ({
       ok: true,

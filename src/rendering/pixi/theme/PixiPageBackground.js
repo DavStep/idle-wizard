@@ -1,11 +1,7 @@
-import { FillGradient } from 'pixi.js';
-
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_PAGE_BACKGROUND_COLORS,
 } from './PixiThemeTokens.js';
-
-export const PIXI_PAGE_BACKGROUND_STOPS = Object.freeze([0, 0.48, 1]);
 
 export function getPixiPageBackgroundColors(
   pageId,
@@ -27,18 +23,5 @@ export function getPixiPageBackgroundColors(
 
 export function createPixiPageBackgroundGradient(pageId, theme) {
   const colors = getPixiPageBackgroundColors(pageId, theme);
-  // Repeated stops are a solid-fill contract, not a zero-contrast gradient.
-  if (colors.every((color) => color === colors[0])) {
-    return colors[0];
-  }
-  return new FillGradient({
-    type: 'linear',
-    start: { x: 0, y: 1 },
-    end: { x: 0, y: 0 },
-    textureSpace: 'local',
-    colorStops: PIXI_PAGE_BACKGROUND_STOPS.map((offset, index) => ({
-      offset,
-      color: colors[index],
-    })),
-  });
+  return colors[0];
 }

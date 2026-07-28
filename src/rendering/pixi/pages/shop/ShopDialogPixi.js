@@ -91,6 +91,17 @@ const STALL_SELECTION_HEIGHT =
   STALL_ACTIONS_Y +
   STALL_ACTION_HEIGHT +
   STALL_SELECTION_BOTTOM_PADDING;
+const PLAYER_REQUEST_FIELDS_Y = 28;
+const PLAYER_REQUEST_FIELD_PITCH = 43;
+const PLAYER_REQUEST_ACTIONS_Y =
+  PLAYER_REQUEST_FIELDS_Y + PLAYER_REQUEST_FIELD_PITCH * 2 + 4;
+const PLAYER_REQUEST_SELECTION_HEIGHT =
+  PLAYER_REQUEST_ACTIONS_Y + STALL_ACTION_HEIGHT + 6;
+const PLAYER_LISTING_FIELD_Y = 57;
+const PLAYER_LISTING_ACTIONS_Y =
+  PLAYER_LISTING_FIELD_Y + 38 + 7;
+const PLAYER_LISTING_SELECTION_HEIGHT =
+  PLAYER_LISTING_ACTIONS_Y + STALL_ACTION_HEIGHT + 6;
 const STALL_ITEM_ICON_SIZE = 28;
 const STALL_SELECTED_CHECK_SIZE = 18;
 const AUTOMATION_COG_TEXTURE_ID = PIXI_ROOT_RUN_ASSETS.settingsGear;
@@ -141,16 +152,44 @@ const DIALOG_CONFIG = Object.freeze({
     tabFontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
   }),
   [SHOP_DIALOG_IDS.REQUEST]: Object.freeze({
-    title: 'request',
+    title: 'Request',
     width: DEFAULT_DIALOG_WIDTH,
     height: DEFAULT_DIALOG_HEIGHT,
-    rowHeight: 34,
+    rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    splitPaper: Object.freeze({
+      selectionHeight: PLAYER_REQUEST_SELECTION_HEIGHT,
+      selectionStatusHeight:
+        PLAYER_REQUEST_SELECTION_HEIGHT + PIXI_UI_GEOMETRY.rowMinHeight,
+      summaryY: 5,
+      summaryPitch: 22,
+      fieldsY: PLAYER_REQUEST_FIELDS_Y,
+      fieldPitch: PLAYER_REQUEST_FIELD_PITCH,
+      fieldHeight: 38,
+      actionsY: PLAYER_REQUEST_ACTIONS_Y,
+      actionHeight: STALL_ACTION_HEIGHT,
+      statusY: PLAYER_REQUEST_ACTIONS_Y + STALL_ACTION_HEIGHT + 3,
+    }),
   }),
   [SHOP_DIALOG_IDS.LISTING]: Object.freeze({
-    title: 'list item',
+    title: 'Sell',
     width: DEFAULT_DIALOG_WIDTH,
     height: DEFAULT_DIALOG_HEIGHT,
-    rowHeight: 34,
+    rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    splitPaper: Object.freeze({
+      selectionHeight: PLAYER_LISTING_SELECTION_HEIGHT,
+      selectionStatusHeight:
+        PLAYER_LISTING_SELECTION_HEIGHT + PIXI_UI_GEOMETRY.rowMinHeight,
+      summaryY: 5,
+      summaryPitch: 22,
+      rangeY: STALL_RANGE_Y,
+      rangeHorizontalOutset: STALL_RANGE_HORIZONTAL_OUTSET,
+      fieldsY: PLAYER_LISTING_FIELD_Y,
+      fieldPitch: 43,
+      fieldHeight: 38,
+      actionsY: PLAYER_LISTING_ACTIONS_Y,
+      actionHeight: STALL_ACTION_HEIGHT,
+      statusY: PLAYER_LISTING_ACTIONS_Y + STALL_ACTION_HEIGHT + 3,
+    }),
   }),
   [SHOP_DIALOG_IDS.MARKET]: Object.freeze({
     title: 'player market',
@@ -979,6 +1018,22 @@ export class ShopDialogPixi extends BasePixiRetainedView {
         16,
       );
     }
+
+    const visibleFields = this.fields.filter(
+      (field) => field.root.visible,
+    );
+    this.fieldLayer.position.set(
+      contentX,
+      finiteOr(splitPaper.fieldsY, 0),
+    );
+    visibleFields.forEach((field, index) => {
+      field.setBounds(
+        0,
+        index * finiteOr(splitPaper.fieldPitch, 43),
+        contentWidth,
+        finiteOr(splitPaper.fieldHeight, 38),
+      );
+    });
 
     if (
       this.settingsToggle.visible &&

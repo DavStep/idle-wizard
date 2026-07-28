@@ -32,7 +32,7 @@ The game should look like a polished fantasy workshop HUD: dark layered rooms, r
 - Page and surface: dark midnight tones, currently `#1c1e26` and `#17191f`.
 - Disabled/secondary text and borders: medium gray.
 - Resource and currency displays use their shared icon and approved semantic color while still inheriting disabled/locked treatment. Keep each amount, icon, and resource word together.
-- The page background and image-backed panels may use authored shading, texture, bevels, and mild gradients from their shared skins. Do not add arbitrary feature-local gradients. Default dialogs use the dedicated Root Run composition below.
+- Page backgrounds use the active theme's solid room surface. Image-backed panels may still use authored shading, texture, bevels, and mild gradients from their shared skins. Do not add arbitrary feature-local gradients. Default dialogs use the dedicated Root Run composition below.
 
 ## Boxes
 

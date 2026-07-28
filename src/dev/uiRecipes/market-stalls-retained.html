@@ -38,6 +38,7 @@
       import { createShop } from '/src/rendering/pixi/pages/shop/createShop.js';
       import { DialogRegistry } from '/src/rendering/pixi/retained/DialogRegistry.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+      import { TextEntryService } from '/src/rendering/textEntry/TextEntryService.js';
 
       const gameplaySnapshot = {
         coin: { current: 5770 },
@@ -147,7 +148,29 @@
               { kind: 'herb', label: 'herbs' },
               { kind: 'potion', label: 'potions' },
             ],
-            sellItems: [],
+            sellItems: [
+              {
+                itemTypeId: 1,
+                key: 'sageSeed',
+                label: 'sage seed',
+                kind: 'seed',
+                quantity: 12,
+              },
+              {
+                itemTypeId: 3,
+                key: 'briarSeed',
+                label: 'briar seed',
+                kind: 'seed',
+                quantity: 7,
+              },
+              {
+                itemTypeId: 1001,
+                key: 'sageHerb',
+                label: 'sage',
+                kind: 'herb',
+                quantity: 4,
+              },
+            ],
             slots: [
               {
                 slotNumber: 1,
@@ -213,13 +236,17 @@
         query.get('tab'),
       )
         ? query.get('tab')
-        : 'traders';
+        : ['request', 'listing'].includes(dialogQuery)
+          ? 'players'
+          : 'traders';
       if (query.get('coinOffer') === 'ready') {
         gameplaySnapshot.shop.coinOffer.canCollect = true;
         gameplaySnapshot.shop.coinOffer.cooldownRemainingSeconds = 0;
       }
       const showStallDialog = dialogQuery === 'stall';
       const showLedgerDialog = dialogQuery === 'ledger';
+      const showRequestDialog = dialogQuery === 'request';
+      const showListingDialog = dialogQuery === 'listing';
       const showOverflowItems = query.get('items') === 'overflow';
       if (query.get('stalls') === 'full') {
         const slotTemplates = gameplaySnapshot.shop.shelf.slots;
@@ -257,6 +284,7 @@
       const applicationManager = new PixiApplicationManager({ canvas });
       const assetManager = new PixiAssetManager();
       const inputRouter = new PixiInputRouter();
+      const textEntryService = new TextEntryService({ canvas });
 
       await Promise.all([
         applicationManager.initialize(),
@@ -273,9 +301,37 @@
         dialogLayer: applicationManager.layers.dialogsSource,
         dialogRegistry,
         inputRouter,
+        textEntryService,
       });
       let ledgerKind = 'seed';
       let stallItemKind = 'seed';
+      let requestItemKind = 'seed';
+      let listingItemKind = 'seed';
+      let requestDraft = {
+        itemTypeId: 1,
+        itemKey: 'sageSeed',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        quantity: 30,
+        priceCoin: 7,
+      };
+      let listingDraft = {
+        itemTypeId: 1,
+        itemKey: 'sageSeed',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        quantity: 5,
+        priceCoin: 9,
+      };
+      const rebindDialog = (dialogId) => {
+        const nextViewModel = createViewModel();
+        page.bind(nextViewModel);
+        const dialog =
+          dialogId === SHOP_DIALOG_IDS.REQUEST
+            ? nextViewModel.shop.players.requests.slots[0].dialog
+            : nextViewModel.shop.players.market.slots[0].dialog;
+        page.openDialog(dialogId, dialog);
+      };
       const createViewModel = () =>
         createShop({
           gameplaySnapshot,
@@ -289,6 +345,10 @@
                   stallItemKindBySlot: { 1: stallItemKind },
                 }
               : {}),
+            requestDraftBySlot: { 1: requestDraft },
+            requestItemKindBySlot: { 1: requestItemKind },
+            listingDraftBySlot: { 1: listingDraft },
+            listingItemKindBySlot: { 1: listingItemKind },
           },
           actions: {
             ui: {
@@ -314,6 +374,51 @@
                 );
                 return true;
               },
+              selectRequestItem(slotNumber, item) {
+                requestItemKind = item.kind;
+                requestDraft = {
+                  ...requestDraft,
+                  itemTypeId: item.itemTypeId,
+                  itemKey: item.key,
+                  itemLabel: item.label,
+                  itemKind: item.kind,
+                };
+                rebindDialog(SHOP_DIALOG_IDS.REQUEST);
+                return true;
+              },
+              setRequestDraftField(slotNumber, field, value) {
+                requestDraft = { ...requestDraft, [field]: value };
+                rebindDialog(SHOP_DIALOG_IDS.REQUEST);
+                return true;
+              },
+              selectRequestItemKind(slotNumber, kind) {
+                requestItemKind = kind;
+                rebindDialog(SHOP_DIALOG_IDS.REQUEST);
+                return true;
+              },
+              selectListingItem(slotNumber, item) {
+                listingItemKind = item.kind;
+                listingDraft = {
+                  ...listingDraft,
+                  itemTypeId: item.itemTypeId,
+                  itemKey: item.key,
+                  itemLabel: item.label,
+                  itemKind: item.kind,
+                  quantity: Math.max(1, item.quantity),
+                };
+                rebindDialog(SHOP_DIALOG_IDS.LISTING);
+                return true;
+              },
+              setListingDraftField(slotNumber, field, value) {
+                listingDraft = { ...listingDraft, [field]: value };
+                rebindDialog(SHOP_DIALOG_IDS.LISTING);
+                return true;
+              },
+              selectListingItemKind(slotNumber, kind) {
+                listingItemKind = kind;
+                rebindDialog(SHOP_DIALOG_IDS.LISTING);
+                return true;
+              },
             },
           },
         });
@@ -332,6 +437,16 @@
         page.openDialog(
           SHOP_DIALOG_IDS.LEDGER,
           viewModel.shop.dialogs.ledger,
+        );
+      } else if (showRequestDialog) {
+        page.openDialog(
+          SHOP_DIALOG_IDS.REQUEST,
+          viewModel.shop.players.requests.slots[0].dialog,
+        );
+      } else if (showListingDialog) {
+        page.openDialog(
+          SHOP_DIALOG_IDS.LISTING,
+          viewModel.shop.players.market.slots[0].dialog,
         );
       }
     </script>

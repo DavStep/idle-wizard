@@ -57,6 +57,10 @@ const OFFER_CARD_MIN_HEIGHT = 52;
 const OFFER_CARD_PADDING_X = 12;
 const OFFER_ACTION_WIDTH = 72;
 const OFFER_ACTION_HEIGHT = 28;
+const MARKET_OFFER_CARD_HEIGHT = STALL_CARD_HEIGHT;
+const MARKET_OFFER_ACTION_WIDTH = 92;
+const MARKET_OFFER_ACTION_HEIGHT = 30;
+const MARKET_OFFER_ICON_SIZE = 38;
 const BORDER_ACTION_EDGE_INSET = 12;
 const BORDER_ACTION_GAP = 6;
 const BORDER_ACTION_PADDING_X = 10;
@@ -222,6 +226,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
       rowHeight: OFFER_ROW_HEIGHT,
       label: 'shop:coinOffer',
       titleVariant: 'crystal',
+      rowPresentation: 'offer',
     });
     this.crystalOffersSection = new ShopRowsSection({
       page: this,
@@ -233,6 +238,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
       rowHeight: OFFER_ROW_HEIGHT,
       label: 'shop:crystalOffers',
       titleVariant: 'crystal',
+      rowPresentation: 'offer',
     });
 
     this.panelScrolls
@@ -325,8 +331,14 @@ export class ShopPixiPage extends BasePixiRetainedView {
         ? [
             {
               id: 'coinOffer',
-              label: this.model.crystals.coinOffer.rewardLabel ?? '',
+              title:
+                this.model.crystals.coinOffer.title ??
+                'Coin Offer',
               resourceKey: 'coin',
+              amountLabel: stripResourceName(
+                this.model.crystals.coinOffer.rewardLabel ?? '',
+                'coin',
+              ),
               value:
                 this.model.crystals.coinOffer.actionLabel ??
                 (this.model.crystals.coinOffer.canCollect
@@ -352,9 +364,17 @@ export class ShopPixiPage extends BasePixiRetainedView {
       this.model.crystals.offers.map((offer, index) => ({
         ...offer,
         id: offer.id ?? offer.crystalCount ?? index,
-        label: offer.bundleLabel ?? offer.label ?? '',
+        title: offer.title ?? 'Crystal Offer',
         resourceKey: 'crystal',
+        amountLabel:
+          offer.amountLabel ??
+          offer.crystalCount ??
+          stripResourceName(
+            offer.bundleLabel ?? offer.label ?? '',
+            'crystal',
+          ),
         value: offer.priceLabel ?? offer.value ?? '',
+        valueVariant: 'green',
         semanticId:
           offer.semanticId ??
           `shop.crystalOffer.${offer.crystalCount ?? index}`,
@@ -935,6 +955,13 @@ class ShopRowsSection {
               inputRouter,
               semanticRegistry,
             })
+          : this.rowPresentation === 'offer'
+            ? new MarketOfferRow({
+                assetManager,
+                inputRouter,
+                semanticRegistry,
+                label: `${label}:row`,
+              })
           : new ShopCompactRow({
               assetManager,
               inputRouter,
@@ -1040,6 +1067,8 @@ class ShopRowsSection {
     const rowHeight =
       this.rowPresentation === 'stall'
         ? STALL_CARD_HEIGHT
+        : this.rowPresentation === 'offer'
+          ? MARKET_OFFER_CARD_HEIGHT
         : Math.max(OFFER_CARD_MIN_HEIGHT, this.rowHeight);
     const trailingRowHeight = Math.max(
       OFFER_CARD_MIN_HEIGHT,
@@ -1078,6 +1107,8 @@ class ShopRowsSection {
     const rowHeight =
       this.rowPresentation === 'stall'
         ? STALL_CARD_HEIGHT
+        : this.rowPresentation === 'offer'
+          ? MARKET_OFFER_CARD_HEIGHT
         : Math.max(OFFER_CARD_MIN_HEIGHT, this.rowHeight);
     const trailingRowHeight = Math.max(
       OFFER_CARD_MIN_HEIGHT,
@@ -1630,6 +1661,233 @@ class ShopStallWidget {
     this.cancelReleaseAnimation();
     this.registration?.();
     this.registration = null;
+    this.root.destroy({ children: true });
+  }
+}
+
+class MarketOfferRow {
+  constructor({
+    assetManager,
+    inputRouter,
+    semanticRegistry,
+    label,
+  }) {
+    this.assetManager = assetManager;
+    this.semanticRegistry = semanticRegistry;
+    this.root = new Container({ label });
+    this.frame = new PixiNineSliceFrame({
+      texture: Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+      label: `${label}:frame`,
+    });
+    this.title = new PixiTextLabel({
+      fontWeight: 'bold',
+      color: STALL_TEXT_INK,
+      label: `${label}:title`,
+    });
+    this.iconFrame = new PixiNineSliceFrame({
+      texture: Texture.EMPTY,
+      sourceInsets: STALL_ART_SOURCE_INSETS,
+      borderInsets: STALL_ART_BORDER_INSETS,
+      width: STALL_ART_WELL_SIZE,
+      height: STALL_ART_WELL_SIZE,
+      label: `${label}:iconFrame`,
+    });
+    this.icon = new Sprite(Texture.EMPTY);
+    this.icon.label = `${label}:icon`;
+    this.icon.anchor.set(0.5);
+    this.icon.visible = false;
+    this.icon.renderable = false;
+    this.amountLabel = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      fontWeight: 'bold',
+      anchor: { x: 0.5, y: 1 },
+      color: STALL_QUANTITY_COLOR,
+      stroke: STALL_QUANTITY_STROKE,
+      label: `${label}:amount`,
+    });
+    this.actionButton = new PixiButton({
+      assetManager,
+      inputRouter,
+      width: MARKET_OFFER_ACTION_WIDTH,
+      height: MARKET_OFFER_ACTION_HEIGHT,
+      variant: 'green',
+      label: `${label}:action`,
+    });
+    this.valueButton = this.actionButton;
+    this.root.addChild(
+      this.frame,
+      this.title,
+      this.iconFrame,
+      this.icon,
+      this.amountLabel,
+      this.actionButton,
+    );
+    this.semanticId = null;
+    this.semanticDefinition = null;
+    this.model = null;
+    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.root.eventMode = 'passive';
+  }
+
+  bind(key, model = {}, fallbackAction) {
+    this.unregisterSemantic();
+    this.key = key;
+    this.model = model;
+    this.root.visible = model.hidden !== true;
+    this.root.renderable = this.root.visible;
+    this.enabled = model.enabled !== false && model.locked !== true;
+    this.action = model.action ?? fallbackAction ?? null;
+    this.title.setText(
+      formatTitleCase(model.title ?? model.label ?? 'Offer'),
+    );
+    this.amountLabel.setText(String(model.amountLabel ?? ''));
+    this.amountLabel.visible = Boolean(this.amountLabel.text);
+    this.amountLabel.renderable = this.amountLabel.visible;
+    this.resourceKey = String(model.resourceKey ?? '').toLowerCase();
+    this.bindResourceIcon();
+    const valueText =
+      model.priceLabel ??
+      model.actionLabel ??
+      model.value ??
+      '';
+    this.actionButton.bind(
+      key,
+      {
+        label: formatTitleCase(valueText),
+        enabled: this.enabled,
+        variant: model.valueVariant ?? 'green',
+        notification: Boolean(model.notification),
+        notificationTone: model.notificationTone,
+      },
+      this.action,
+    );
+    this.semanticId = model.semanticId ?? null;
+    if (this.semanticRegistry && this.semanticId) {
+      this.semanticDefinition = this.semanticRegistry.register({
+        semanticId: this.semanticId,
+        tutorialId: model.tutorialId ?? null,
+        displayObject: this.actionButton,
+        state: () => ({
+          enabled: this.enabled,
+          interactive: this.enabled && Boolean(this.action),
+          visible:
+            this.root.visible &&
+            this.root.renderable &&
+            this.actionButton.visible &&
+            this.actionButton.renderable,
+        }),
+        activate: (payload) =>
+          this.enabled ? this.action?.(payload) : false,
+      });
+    }
+  }
+
+  setBounds(x, y, width, height) {
+    this.root.position.set(x, y);
+    this.width = width;
+    this.height = height;
+    this.root.hitArea = new Rectangle(0, 0, width, height);
+    this.frame.setSize(
+      width,
+      height,
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+    );
+    this.title.position.set(10, 5);
+    this.title.setWrapWidth(
+      Math.max(
+        0,
+        width -
+          MARKET_OFFER_ACTION_WIDTH -
+          OFFER_CARD_PADDING_X * 3,
+      ),
+    );
+    this.iconFrame.position.set(10, 22);
+    this.iconFrame.setSize(
+      STALL_ART_WELL_SIZE,
+      STALL_ART_WELL_SIZE,
+      STALL_ART_BORDER_INSETS,
+    );
+    const iconCenterX =
+      this.iconFrame.x + STALL_ART_WELL_SIZE / 2;
+    const iconCenterY =
+      this.iconFrame.y + STALL_ART_WELL_SIZE / 2;
+    this.icon.position.set(iconCenterX, iconCenterY);
+    this.icon.width = MARKET_OFFER_ICON_SIZE;
+    this.icon.height = MARKET_OFFER_ICON_SIZE;
+    this.amountLabel.position.set(
+      iconCenterX,
+      this.iconFrame.y + STALL_ART_WELL_SIZE - 2,
+    );
+    this.actionButton.position.set(
+      width - OFFER_CARD_PADDING_X - MARKET_OFFER_ACTION_WIDTH,
+      (height - MARKET_OFFER_ACTION_HEIGHT) / 2,
+    );
+  }
+
+  applyTheme(theme) {
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.frame.setTexture(
+      resolveTexture(this.assetManager, {
+        textureId: PIXI_ROOT_RUN_ASSETS.researchCard,
+      }),
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+    );
+    this.iconFrame.setTexture(
+      resolveTexture(this.assetManager, {
+        textureId: PIXI_ROOT_RUN_ASSETS.researchArt,
+      }),
+      STALL_ART_SOURCE_INSETS,
+    );
+    this.title.applyTheme(this.theme);
+    this.title.setColor(STALL_TEXT_INK);
+    this.amountLabel.applyTheme(this.theme);
+    this.amountLabel.setColor(STALL_QUANTITY_COLOR);
+    this.actionButton.applyTheme(this.theme);
+    this.bindResourceIcon();
+  }
+
+  bindResourceIcon() {
+    const frameName = this.resourceKey
+      ? `resource:${this.resourceKey}`
+      : null;
+    this.icon.texture =
+      frameName
+        ? this.assetManager?.getAtlasTexture?.(frameName) ??
+          Texture.EMPTY
+        : Texture.EMPTY;
+    this.icon.visible = Boolean(frameName);
+    this.icon.renderable = this.icon.visible;
+  }
+
+  reset() {
+    this.unregisterSemantic();
+    this.key = null;
+    this.model = null;
+    this.action = null;
+    this.enabled = false;
+    this.resourceKey = '';
+    this.icon.texture = Texture.EMPTY;
+    this.icon.visible = false;
+    this.icon.renderable = false;
+    this.actionButton.reset();
+    this.root.visible = false;
+    this.root.renderable = false;
+  }
+
+  unregisterSemantic() {
+    if (this.semanticDefinition && this.semanticId) {
+      this.semanticRegistry?.unregister?.(this.semanticId, {
+        displayObject: this.actionButton,
+      });
+    }
+    this.semanticDefinition = null;
+    this.semanticId = null;
+  }
+
+  destroy() {
+    this.unregisterSemantic();
     this.root.destroy({ children: true });
   }
 }

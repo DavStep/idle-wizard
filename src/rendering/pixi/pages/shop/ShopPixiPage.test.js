@@ -795,6 +795,140 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it('uses the Load Stall split-paper form for Request and Sell', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+    const item = {
+      id: 'sageSeed',
+      label: 'Sage Seed',
+      detail: '12 Available',
+      itemKind: 'seed',
+      itemKey: 'sageSeed',
+      selected: true,
+    };
+    const tabs = [
+      { id: 'seed', label: 'Seeds', selected: true },
+      { id: 'herb', label: 'Herbs' },
+    ];
+
+    harness.page.openDialog(SHOP_DIALOG_IDS.REQUEST, {
+      title: 'Request',
+      summaryRows: [
+        {
+          id: 'current',
+          label: 'Current',
+          value: 'Sage Seed',
+          itemKind: 'seed',
+          itemKey: 'sageSeed',
+        },
+      ],
+      fields: [
+        {
+          id: 'priceCoin',
+          label: 'Coins Per Item',
+          value: 7,
+        },
+        {
+          id: 'quantity',
+          label: 'Max Quantity',
+          value: 30,
+        },
+      ],
+      items: [item],
+      actions: [
+        {
+          id: 'place',
+          label: 'Place Request',
+          variant: 'green',
+        },
+      ],
+      tabs,
+    });
+
+    const request = harness.dialogs.get(SHOP_DIALOG_IDS.REQUEST);
+    expect(request.panel.paperFrame.visible).toBe(false);
+    expect(request.selectionSection.visible).toBe(true);
+    expect(request.itemSection.visible).toBe(true);
+    expect(request.rangeControl.visible).toBe(false);
+    expect(request.fields[0].root.visible).toBe(true);
+    expect(request.fields[1].root.visible).toBe(true);
+    expect(request.fields[1].root.y).toBeGreaterThan(
+      request.fields[0].root.y,
+    );
+    expect(
+      request.fieldLayer.y + request.fields[1].root.y,
+    ).toBeLessThan(request.actions.getWidgets()[0].root.y);
+    expect(request.actions.getWidgets()[0].control.variant).toBe(
+      'green',
+    );
+    expect(request.list.root.y).toBeGreaterThan(
+      request.selectionSectionBounds.height,
+    );
+
+    harness.page.openDialog(SHOP_DIALOG_IDS.LISTING, {
+      title: 'Sell',
+      summaryRows: [
+        {
+          id: 'current',
+          label: 'Current',
+          value: 'Sage Seed',
+          quantityLabel: 'x5',
+          itemKind: 'seed',
+          itemKey: 'sageSeed',
+        },
+      ],
+      range: {
+        enabled: true,
+        tone: 'root',
+        min: 1,
+        max: 12,
+        step: 1,
+        value: 5,
+      },
+      fields: [
+        {
+          id: 'priceCoin',
+          label: 'Coins Per Item',
+          value: 9,
+        },
+      ],
+      items: [item],
+      actions: [
+        {
+          id: 'sell',
+          label: 'Sell',
+          variant: 'green',
+        },
+      ],
+      tabs,
+    });
+
+    const listing = harness.dialogs.get(SHOP_DIALOG_IDS.LISTING);
+    expect(listing.panel.paperFrame.visible).toBe(false);
+    expect(listing.rangeControl.visible).toBe(true);
+    expect(listing.rangeControl).toMatchObject({
+      min: 1,
+      max: 12,
+      step: 1,
+      value: 5,
+    });
+    expect(listing.fields[0].root.visible).toBe(true);
+    expect(listing.fields[1].root.visible).toBe(false);
+    expect(listing.fieldLayer.y).toBeGreaterThan(
+      listing.rangeControl.y,
+    );
+    expect(
+      listing.fieldLayer.y + listing.fields[0].root.y,
+    ).toBeLessThan(listing.actions.getWidgets()[0].root.y);
+    expect(listing.list.root.y).toBeGreaterThan(
+      listing.selectionSectionBounds.height,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('keeps the frozen source-space Shop anchors', () => {
     const harness = createHarness();
     harness.page.bind(createShopViewModel());
@@ -870,7 +1004,7 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
-  it('uses Stalls section chrome and Research row backing for Crystal Market offers', () => {
+  it('uses stall-style offer cards with currency art, overlaid amounts, and green actions', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);
     const getAtlasTexture = vi.fn(() => Texture.EMPTY);
     const harness = createHarness({
@@ -912,27 +1046,29 @@ describe('ShopPixiPage', () => {
     expect(coinOffer.frame.sourceInsets).toEqual(
       PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
     );
-    expect(coinOffer.itemResource).toMatchObject({
-      amount: '100',
-      resource: 'coin',
-      visible: true,
-    });
-    expect(coinOffer.itemResource.icon.visible).toBe(true);
-    expect(coinOffer.itemLabel.visible).toBe(false);
-    expect(coinOffer.valueLabel.visible).toBe(false);
-    expect(coinOffer.valueButton.visible).toBe(true);
-    expect(coinOffer.valueButton.textLabel.text).toBe('Collect');
-    expect(coinOffer.valueButton.variant).toBe('green');
-    expect(coinOffer.valueButton.resolveRootRunVariant()).toBe(
+    expect(coinOffer.title.text).toBe('Coin Offer');
+    expect(coinOffer.iconFrame).toBeInstanceOf(PixiNineSliceFrame);
+    expect(coinOffer.icon.visible).toBe(true);
+    expect(coinOffer.amountLabel.text).toBe('100');
+    expect(coinOffer.amountLabel.position.x).toBe(
+      coinOffer.icon.position.x,
+    );
+    expect(coinOffer.title.position.y).toBeLessThan(
+      coinOffer.iconFrame.position.y,
+    );
+    expect(coinOffer.actionButton.position.x).toBeGreaterThan(
+      coinOffer.iconFrame.position.x + coinOffer.iconFrame.width,
+    );
+    expect(coinOffer.actionButton.visible).toBe(true);
+    expect(coinOffer.actionButton.textLabel.text).toBe('Collect');
+    expect(coinOffer.actionButton.variant).toBe('green');
+    expect(coinOffer.actionButton.resolveRootRunVariant()).toBe(
       'green',
     );
     expect(
       harness.semanticRegistry.require('shop.coinOffer.collect')
         .displayObject,
-    ).toBe(coinOffer.valueButton);
-    expect(
-      coinOffer.itemResource.amountLabel.textObject.style.fill,
-    ).toBe(PIXI_DIALOG_PALETTE.coin);
+    ).toBe(coinOffer.actionButton);
 
     const crystalOffer =
       harness.page.crystalOffersSection.rows.get('crystal-1');
@@ -940,20 +1076,14 @@ describe('ShopPixiPage', () => {
     expect(crystalOffer.frame.borderInsets).toEqual(
       PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
     );
-    expect(crystalOffer.itemResource).toMatchObject({
-      amount: '10',
-      resource: 'crystal',
-      visible: true,
-    });
-    expect(crystalOffer.itemResource.icon.visible).toBe(true);
-    expect(crystalOffer.itemLabel.visible).toBe(false);
-    expect(crystalOffer.valueLabel.text).toBe('$0.99');
-    expect(crystalOffer.valueLabel.textObject.style.fill).toBe(
-      '#634934',
+    expect(crystalOffer.title.text).toBe('Crystal Offer');
+    expect(crystalOffer.icon.visible).toBe(true);
+    expect(crystalOffer.amountLabel.text).toBe('10');
+    expect(crystalOffer.actionButton.textLabel.text).toBe('$0.99');
+    expect(crystalOffer.actionButton.variant).toBe('green');
+    expect(crystalOffer.actionButton.resolveRootRunVariant()).toBe(
+      'green',
     );
-    expect(
-      crystalOffer.itemResource.amountLabel.textObject.style.fill,
-    ).toBe(PIXI_DIALOG_PALETTE.crystal);
     expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.researchCard,
     );
@@ -961,6 +1091,29 @@ describe('ShopPixiPage', () => {
     expect(getAtlasTexture).toHaveBeenCalledWith(
       'resource:crystal',
     );
+
+    viewModel.shop.crystals.coinOffer = {
+      ...viewModel.shop.crystals.coinOffer,
+      actionLabel: '1h 57m',
+      canCollect: false,
+      notification: false,
+    };
+    harness.page.bind(viewModel);
+    const coolingOffer =
+      harness.page.coinOfferSection.rows.get('coinOffer');
+    expect(coolingOffer.actionButton.textLabel.text).toBe('1h 57m');
+    expect(coolingOffer.actionButton.enabled).toBe(false);
+    expect(getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice,
+    );
+    expect(
+      harness.semanticRegistry.require('shop.coinOffer.collect')
+        .state(),
+    ).toMatchObject({
+      enabled: false,
+      interactive: false,
+      visible: true,
+    });
 
     harness.page.destroy();
     harness.dispose();

@@ -89,10 +89,19 @@ Ledger with overflow rows, item icons, and unlocked category tabs.
 Add `?tab=crystals` to open the Crystal Market tab with its deterministic
 cooling-down coin offer and six crystal bundles. Add
 `&coinOffer=ready` to show the ready green Collect action.
+Currency offers use the reusable `MarketOfferRow`: the stall card frame and
+art well hold a coin or crystal icon with the amount over the art, the offer
+name sits at the top-left, and a fixed right-side green button carries the
+price or ready `Collect` action. Cooling-down coin offers keep the same
+geometry and swap the action to the shared disabled gray state.
 Add `?tab=players` to open the Player Market tab with its station-title
 sections, the same retained stand widget used by Traders for each request and
 listing slot, a dedicated compact claim-proceeds row, and bottom-border actions
 on the final card.
+Add `?dialog=request` to open the retained Request picker directly with
+`Coins Per Item` and `Max Quantity` fields. Add `?dialog=listing` to open the
+retained Sell picker directly with its quantity slider and `Coins Per Item`
+field. Both use the same split-paper item-picker composition as Load Stall.
 Add `&items=overflow` with `?dialog=stall` to open the Load Stall
 inventory with eight unlocked seed rows for row-width, spacing, and
 scrollbar-gutter QA.

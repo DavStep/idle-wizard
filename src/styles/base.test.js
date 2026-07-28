@@ -785,16 +785,17 @@ describe('base styles', () => {
     );
   });
 
-  it('keeps the Workshop room background solid', () => {
-    const workshopRule = findRuleBody(
-      /\.workshop-page\s*\{(?<body>[^}]*)\}/g,
-      (body) => body.includes('--style-page-background'),
+  it('keeps every room background solid', () => {
+    const roomBackgroundRule = getRuleBody(
+      /\.workshop-page,\s*\.brewing-page,\s*\.garden-page,\s*\.research-page,\s*\.shop-page,\s*\.guild-page,\s*\.prestige-page\s*\{(?<body>[^}]*)\}/,
     );
 
-    expect(workshopRule).toContain(
+    expect(roomBackgroundRule).toContain(
       '--style-page-background: var(--style-surface);',
     );
-    expect(workshopRule).not.toContain('gradient(');
+    expect(roomBackgroundRule).not.toContain('gradient(');
+    expect(baseCss).not.toContain('--style-page-tint-bottom');
+    expect(baseCss).not.toContain('--style-page-tint-top');
   });
 
   it('keeps first-run cutscene art fixed to the authored source width', () => {

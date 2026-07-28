@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.22
+
+- Refined Brewing controls with a clearer potion preview, compact automation controls, and more reliable recipe selection when enabling Auto.
+- Reworked Player Market Request and Sell dialogs with clearer item, quantity, and coin controls.
+- Restyled Crystal Market offers into consistent illustrated cards with clearer prices, rewards, and cooldown states.
+
 ## 0.3.21
 
 - Reworked the Brewing room with ingredients arranged around the cauldron, a clearer potion preview, and streamlined recipe, automation, and batch controls.

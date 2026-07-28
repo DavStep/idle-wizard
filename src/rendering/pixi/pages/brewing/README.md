@@ -77,8 +77,9 @@ image-backed fantasy chevrons, horizontal swipe, centered cauldron, and six
 compact ingredient requirement tiles in a subtle connected orbit. All six
 cells are real gameplay ingredient slots; recipes may continue using fewer.
 Ingredient tiles reuse the ordinary room-panel skin and show item art, name,
-and owned/required count. Potion identity, rarity, and batch size sit directly
-below the landmark.
+and owned/required count. Cauldron liquid reuses the exact source-art mask,
+matches the cauldron sprite transform, and stays behind the rendered rim.
+Potion identity, rarity, and batch size sit directly below the landmark.
 
 The framed action section begins with the predicted potion inside the shared
 Research-row art well. With no selected ingredients or recipe, the well stays
@@ -102,18 +103,24 @@ button. Carousel chevrons remain available so the player can return to another
 cauldron.
 
 Recipe and automation settings dialogs remain retained, but the carousel has no
-separate settings or fast-forward button. The Auto button uses the settings cog
-and remains visible but disabled until that cauldron's automation research is
-complete. It reads `Auto Off` on the yellow skin and `Auto On` on the green
-skin. Recipes and `xN` stay yellow. Before x2 batch research, the quantity
-control reads `x1`; quantity is never folded into the primary Brew label.
+separate settings or fast-forward button. The compact Auto button uses the
+settings cog and the visible label `Auto`, remaining disabled until that
+cauldron's automation research is complete. Auto Off uses the static yellow
+skin. Auto On uses the green skin and advances the gear in short mechanical
+steps while the page is active; reduced motion keeps the green gear static.
+Recipes and the narrower `xN` control stay yellow. Before x2 batch research,
+the quantity control reads `x1`; quantity is never folded into the primary Brew
+label. The complete action panel aligns to the same `16px` room edges as World
+Chat, and the potion art uses the larger preview fit inside its existing well.
 
 The action section keeps existing retained button semantics. The single primary
 button follows the brewing state: manual idle is `Brew`, brewing and bottling
 are yellow `Cancel`, brewed is `Bottle`, and bottled is `Collect`. Auto mode
 shows `Collect` only while output is ready; otherwise it shows yellow `Cancel`.
 Idle Auto `Cancel` disables Auto, while active `Cancel` destroys the unfinished
-batch through the existing cancellation flow. Cancel has no icon.
+batch through the existing cancellation flow. Enabling Auto first copies the
+retained page's selected recipe into the authoritative Auto recipe, then enables
+the mode. Cancel has no icon.
 
 Brewing-owned motion also remains retained: herb pickup/count/return nudges
 reuse the row transform, ingredient drag, return, and brew flyouts use one

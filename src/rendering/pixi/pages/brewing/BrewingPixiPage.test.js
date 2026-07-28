@@ -769,7 +769,7 @@ describe('BrewingPixiPage', () => {
       height: 22,
     });
     expect(harness.page.hud.recipes.text.text).toBe('Recipes');
-    expect(harness.page.hud.autoBrew.text.text).toBe('Auto On');
+    expect(harness.page.hud.autoBrew.text.text).toBe('Auto');
     expect(harness.page.hud.autoBrew.variant).toBe('green');
     expect(harness.page.hud.autoBrew.control.variant).toBe('green');
     expect(harness.page.hud.autoBrew.selected).toBe(false);
@@ -788,16 +788,20 @@ describe('BrewingPixiPage', () => {
     );
     expect(harness.page.hud.autoBrew.control.textLabel.fontSize).toBe(10);
     expect(harness.page.hud.autoBrew.control.textLabel.lineHeight).toBe(12);
-    expect(harness.page.hud.recipes.width).toBe(100);
-    expect(harness.page.hud.autoBrew.width).toBe(100);
-    expect(harness.page.hud.quantity.width).toBe(82);
-    expect(harness.page.hud.brew.width).toBe(298);
-    expect(harness.page.hud.recipes.root.x).toBe(36);
+    expect(harness.page.hud.detailPanel.width).toBe(328);
+    expect(harness.page.hud.detailPanel.root.x).toBe(16);
+    expect(harness.page.hud.potionIcon.width).toBe(50);
+    expect(harness.page.hud.potionIcon.height).toBe(50);
+    expect(harness.page.hud.recipes.width).toBe(112);
+    expect(harness.page.hud.autoBrew.width).toBe(88);
+    expect(harness.page.hud.quantity.width).toBe(60);
+    expect(harness.page.hud.brew.width).toBe(308);
+    expect(harness.page.hud.recipes.root.x).toBe(42);
     expect(harness.page.hud.autoBrew.handleTap()).toBe(true);
     expect(model.actions.toggleAutoBrew).toHaveBeenCalledWith(0);
     model.brewing.cauldrons[0].autoBrewEnabled = false;
     harness.page.bind(model);
-    expect(harness.page.hud.autoBrew.text.text).toBe('Auto Off');
+    expect(harness.page.hud.autoBrew.text.text).toBe('Auto');
     expect(harness.page.hud.autoBrew.variant).toBe('yellow');
     expect(harness.page.hud.autoBrew.control.variant).toBe('yellow');
     expect(harness.page.hud.brew.text.text).toBe('Brew');
@@ -890,13 +894,64 @@ describe('BrewingPixiPage', () => {
       bottom: 90,
       left: 83,
     });
-    expect(harness.page.hud.progress.width).toBe(218);
+    expect(harness.page.hud.progress.width).toBe(238);
+    expect(harness.page.hud.phaseLabel.text).toBe('Select a Recipe\u3000');
+    expect(harness.page.hud.phaseTime.text).toBe('');
     expect(harness.page.hud.cancel).toBeUndefined();
     expect(harness.page.hud.collect).toBeUndefined();
 
     expect(harness.page.openAutomationSettings()).toBe(true);
     const settings = harness.dialogs.get('brewing.automation-settings');
     expect(settings.toggle.text.text).toBe('auto collect off');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('ticks the Auto gear only while Auto motion is active', () => {
+    let now = 0;
+    const harness = createHarness({ timeSource: () => now });
+    const model = createBrewingViewModel();
+    const cauldron = model.brewing.cauldrons[0];
+    cauldron.autoBrewAvailable = true;
+    cauldron.autoBrewEnabled = true;
+    harness.page.bind(model);
+    harness.page.activate();
+    const gear =
+      harness.page.hud.actionIcons.autoBrew.iconSprites[0];
+
+    harness.page.tick(now);
+    expect(gear.rotation).toBe(0);
+    now = 70;
+    harness.page.tick(now);
+    expect(gear.rotation).toBeCloseTo(Math.PI / 8);
+    now = 200;
+    harness.page.tick(now);
+    expect(gear.rotation).toBeCloseTo(Math.PI / 8);
+
+    cauldron.autoBrewEnabled = false;
+    harness.page.bind(model);
+    expect(harness.page.hud.autoBrew.variant).toBe('yellow');
+    expect(gear.rotation).toBe(0);
+
+    cauldron.autoBrewEnabled = true;
+    harness.page.bind(model);
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: true })),
+    );
+    now = 400;
+    harness.page.tick(now);
+    expect(gear.rotation).toBe(0);
+    vi.unstubAllGlobals();
+
+    now = 470;
+    harness.page.tick(now);
+    now = 540;
+    harness.page.tick(now);
+    expect(gear.rotation).toBeGreaterThan(0);
+    harness.page.deactivate();
+    expect(gear.rotation).toBe(0);
 
     harness.page.destroy();
     harness.dispose();
@@ -967,6 +1022,54 @@ describe('BrewingPixiPage', () => {
     }
   });
 
+  it('routes the single primary button through cancel, bottle, and collect actions', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    const cauldron = model.brewing.cauldrons[0];
+    model.actions.toggleAutoBrew = vi.fn(() => true);
+    model.actions.cancelBrew = vi.fn(() => true);
+    model.actions.collectBrew = vi.fn(() => true);
+    model.actions.performCauldronAction = vi.fn(() => true);
+
+    cauldron.autoBrewEnabled = true;
+    harness.page.bind(model);
+    expect(harness.page.hud.brew.text.text).toBe('Cancel');
+    expect(harness.page.hud.brew.handleTap()).toBe(true);
+    expect(model.actions.toggleAutoBrew).toHaveBeenCalledWith(0);
+
+    cauldron.autoBrewEnabled = false;
+    cauldron.activeBrew = { phase: 'brewing' };
+    harness.page.bind(model);
+    expect(harness.page.hud.brew.text.text).toBe('Cancel');
+    expect(harness.page.hud.brew.handleTap()).toBe(true);
+    expect(model.actions.cancelBrew).toHaveBeenCalledWith(0);
+
+    cauldron.activeBrew = {
+      phase: 'brewed',
+      canStartBottling: true,
+    };
+    harness.page.bind(model);
+    expect(harness.page.hud.brew.text.text).toBe('Bottle');
+    expect(harness.page.hud.phaseLabel.text).toBe('Brewed\u3000');
+    expect(harness.page.hud.brew.handleTap()).toBe(true);
+    expect(model.actions.performCauldronAction).toHaveBeenCalledWith(
+      cauldron,
+      { id: 'bottle' },
+    );
+
+    cauldron.activeBrew = {
+      phase: 'ready',
+      canCollect: true,
+    };
+    harness.page.bind(model);
+    expect(harness.page.hud.brew.text.text).toBe('Collect');
+    expect(harness.page.hud.brew.handleTap()).toBe(true);
+    expect(model.actions.collectBrew).toHaveBeenCalledWith(0);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('hides carousel dots when there is only one cauldron', () => {
     const harness = createHarness();
 
@@ -990,6 +1093,25 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.cauldronLiquid.visible).toBe(true);
     expect(harness.page.hud.cauldronLiquid.renderable).toBe(true);
     expect(harness.page.hud.cauldronLiquidColor).toBe(0x0a95f5);
+    expect(harness.page.hud.cauldronLiquid.mask).toBe(
+      harness.page.hud.cauldronLiquidMask,
+    );
+    expect(harness.page.hud.cauldronLiquidMask).toMatchObject({
+      x: harness.page.hud.cauldronArt.x,
+      y: harness.page.hud.cauldronArt.y,
+      width: harness.page.hud.cauldronArt.width,
+      height: harness.page.hud.cauldronArt.height,
+      renderable: false,
+    });
+    expect(
+      harness.page.hud.carouselPanel.body.getChildIndex(
+        harness.page.hud.cauldronLiquid,
+      ),
+    ).toBeLessThan(
+      harness.page.hud.carouselPanel.body.getChildIndex(
+        harness.page.hud.cauldronArt,
+      ),
+    );
 
     harness.page.destroy();
     harness.dispose();

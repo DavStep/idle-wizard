@@ -318,6 +318,223 @@ describe('createShop', () => {
     ]);
   });
 
+  it('reuses the Load Stall picker flow for player requests and slider-based sales', () => {
+    const selectRequestItem = vi.fn();
+    const setRequestDraftField = vi.fn();
+    const selectRequestItemKind = vi.fn();
+    const selectListingItem = vi.fn();
+    const setListingDraftField = vi.fn();
+    const selectListingItemKind = vi.fn();
+    const gameplaySnapshot = {
+      playerLevel: { currentLevel: 4 },
+      research: {
+        completedResearchIds: [
+          'unlockSeed:sageSeed',
+          'unlockHerb:sageHerb',
+        ],
+      },
+      shop: {
+        shelf: {
+          sellKinds: [
+            { kind: 'seed', label: 'seeds' },
+            { kind: 'herb', label: 'herbs' },
+          ],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              kind: 'seed',
+              label: 'sage seed',
+              quantity: 12,
+            },
+            {
+              itemTypeId: 1001,
+              key: 'sageHerb',
+              kind: 'herb',
+              label: 'sage',
+              quantity: 4,
+            },
+          ],
+        },
+        playerRequests: {
+          slots: [{ slotNumber: 1, unlocked: true }],
+        },
+        playerShelf: {
+          sellKinds: [
+            { kind: 'seed', label: 'seeds' },
+            { kind: 'herb', label: 'herbs' },
+          ],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              kind: 'seed',
+              label: 'sage seed',
+              quantity: 12,
+            },
+            {
+              itemTypeId: 1001,
+              key: 'sageHerb',
+              kind: 'herb',
+              label: 'sage',
+              quantity: 4,
+            },
+          ],
+          slots: [{ slotNumber: 1, unlocked: true }],
+        },
+      },
+    };
+    const model = createShop({
+      gameplaySnapshot,
+      uiState: {
+        requestDraftBySlot: {
+          1: {
+            itemTypeId: 1,
+            itemKind: 'seed',
+            quantity: 30,
+            priceCoin: 7,
+          },
+        },
+        requestItemKindBySlot: { 1: 'seed' },
+        listingDraftBySlot: {
+          1: {
+            itemTypeId: 1,
+            itemKind: 'seed',
+            quantity: 5,
+            priceCoin: 9,
+          },
+        },
+        listingItemKindBySlot: { 1: 'seed' },
+      },
+      actions: {
+        ui: {
+          selectRequestItem,
+          setRequestDraftField,
+          selectRequestItemKind,
+          selectListingItem,
+          setListingDraftField,
+          selectListingItemKind,
+        },
+      },
+    });
+
+    const request = model.shop.players.requests.slots[0].dialog;
+    expect(request).toMatchObject({
+      title: 'Request',
+      summaryRows: [
+        {
+          label: 'Current',
+          value: 'Sage Seed',
+          itemKey: 'sageSeed',
+        },
+      ],
+      fields: [
+        {
+          id: 'priceCoin',
+          label: 'Coins Per Item',
+          value: 7,
+        },
+        {
+          id: 'quantity',
+          label: 'Max Quantity',
+          value: 30,
+        },
+      ],
+      actions: [
+        {
+          label: 'Place Request',
+          variant: 'green',
+          enabled: true,
+        },
+      ],
+    });
+    expect(request.items).toEqual([
+      expect.objectContaining({
+        label: 'Sage Seed',
+        detail: '12 Available',
+        selected: true,
+      }),
+    ]);
+    expect(request.tabs).toEqual([
+      expect.objectContaining({ id: 'seed', selected: true }),
+      expect.objectContaining({ id: 'herb', selected: false }),
+    ]);
+
+    const listing = model.shop.players.market.slots[0].dialog;
+    expect(listing).toMatchObject({
+      title: 'Sell',
+      summaryRows: [
+        {
+          label: 'Current',
+          value: 'Sage Seed',
+          quantityLabel: 'x5',
+          itemKey: 'sageSeed',
+        },
+      ],
+      range: {
+        min: 1,
+        max: 12,
+        step: 1,
+        value: 5,
+        tone: 'root',
+      },
+      fields: [
+        {
+          id: 'priceCoin',
+          label: 'Coins Per Item',
+          value: 9,
+        },
+      ],
+      actions: [
+        {
+          label: 'Sell',
+          variant: 'green',
+          enabled: true,
+        },
+        {
+          label: 'Clear',
+          variant: 'red',
+          enabled: false,
+        },
+      ],
+    });
+    expect(listing.items).toEqual([
+      expect.objectContaining({
+        label: 'Sage Seed',
+        detail: '12 Available',
+        selected: true,
+      }),
+    ]);
+
+    request.fields[0].onChange('11');
+    request.tabs[1].action();
+    listing.range.onChange(8);
+    listing.tabs[1].action();
+    request.items[0].action();
+    listing.items[0].action();
+
+    expect(setRequestDraftField).toHaveBeenCalledWith(
+      1,
+      'priceCoin',
+      '11',
+    );
+    expect(selectRequestItemKind).toHaveBeenCalledWith(1, 'herb');
+    expect(setListingDraftField).toHaveBeenCalledWith(
+      1,
+      'quantity',
+      8,
+    );
+    expect(selectListingItemKind).toHaveBeenCalledWith(1, 'herb');
+    expect(selectRequestItem).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ itemTypeId: 1 }),
+    );
+    expect(selectListingItem).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ itemTypeId: 1 }),
+    );
+  });
+
   it('unlocks and switches Ledger tabs with the matching room features', () => {
     const selectLedgerKind = vi.fn();
     const gameplaySnapshot = {

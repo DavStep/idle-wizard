@@ -42,7 +42,13 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   previewHeight: 292,
   detailTop: 400,
   detailHeight: 159,
-  detailInset: 10,
+  detailInset: 0,
+  detailContentInset: 10,
+  recipeButtonWidth: 112,
+  autoButtonWidth: 88,
+  quantityButtonWidth: 60,
+  configurationGap: 8,
+  potionIconSize: 50,
   ingredientColumns: 3,
   ingredientRows: 2,
   ingredientSlots: 6,
@@ -50,6 +56,8 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
 
 const ASSETS = Object.freeze({
   cauldron: 'source:assets/rooms/brewing/cauldron/cauldron-empty.png',
+  cauldronLiquidMask:
+    'source:assets/rooms/brewing/cauldron/cauldron-liquid-mask.png',
   previous: 'source:assets/ui/brewing-carousel/chevron-left.png',
   next: 'source:assets/ui/brewing-carousel/chevron-right.png',
   settings: PIXI_ROOT_RUN_ASSETS.settingsGear,
@@ -87,6 +95,12 @@ const RETAINED_INGREDIENT_NAME_STYLE = Object.freeze({
   wordWrap: true,
   wordWrapWidth: 54,
 });
+// Pixi can crop the terminal Lilita One glyph; this adds texture width
+// without adding visible ink to the retained status labels.
+const DYNAMIC_STATUS_TEXT_TEXTURE_GUTTER = '\u3000';
+const AUTO_GEAR_STEP_INTERVAL_MS = 320;
+const AUTO_GEAR_STEP_DURATION_MS = 70;
+const AUTO_GEAR_STEP_RADIANS = Math.PI / 8;
 
 export class BrewingHudPixi {
   constructor({
@@ -103,6 +117,8 @@ export class BrewingHudPixi {
     this.model = {};
     this.actions = {};
     this.selectedIndex = 0;
+    this.autoBrewMotionEnabled = false;
+    this.autoBrewMotionStartedAt = null;
     this.root = new Container({ label: 'brewing-fantasy-hud' });
 
     this.carouselPanel = new RetainedPanel({
@@ -138,6 +154,13 @@ export class BrewingHudPixi {
     this.cauldronLiquid = new Graphics({
       label: 'brewing-carousel-cauldron-liquid',
     });
+    this.cauldronLiquidMask = new Sprite(
+      getTexture(assetManager, ASSETS.cauldronLiquidMask),
+    );
+    this.cauldronLiquidMask.anchor.set(0.5);
+    this.cauldronLiquidMask.label =
+      'brewing-carousel-cauldron-liquid-mask';
+    this.cauldronLiquid.mask = this.cauldronLiquidMask;
     this.lockedCauldronFilter = createLockedArtFilter();
     this.lockArt = new Sprite(getTexture(assetManager, ASSETS.lock));
     this.lockArt.anchor.set(0.5);
@@ -150,8 +173,9 @@ export class BrewingHudPixi {
       this.cauldronStars,
       this.counter,
       this.recipeOrbit,
-      this.cauldronArt,
       this.cauldronLiquid,
+      this.cauldronLiquidMask,
+      this.cauldronArt,
       this.lockArt,
       this.lockLabel,
       this.dots,
@@ -408,12 +432,13 @@ export class BrewingHudPixi {
     this.autoBrew.variant = autoBrewVariant;
     this.autoBrew.control.setVariant(autoBrewVariant);
     this.autoBrew.setModel({
-      label: autoBrewEnabled ? 'Auto On' : 'Auto Off',
+      label: 'Auto',
       enabled:
         autoBrewEnabled || cauldron?.autoBrewAvailable === true,
       selected: false,
       action: () => this.actions.toggleAutoBrew?.(this.selectedIndex),
     });
+    this.setAutoBrewMotionEnabled(autoBrewEnabled);
     const quantity = cauldron?.quantityAction ?? {};
     this.quantity.setModel({
       label: quantity.label ?? `x${Math.max(1, Number(cauldron?.brewQuantity) || 1)}`,
@@ -487,6 +512,8 @@ export class BrewingHudPixi {
     this.cauldronLiquid.visible =
       cauldron.unlocked !== false && Boolean(active || recipe);
     this.cauldronLiquid.renderable = this.cauldronLiquid.visible;
+    this.cauldronLiquidMask.visible = this.cauldronLiquid.visible;
+    this.cauldronLiquidMask.renderable = false;
     this.redrawCauldronLiquid();
 
     const requirements = normalizeRequirements(
@@ -499,7 +526,7 @@ export class BrewingHudPixi {
 
     const progress = active?.progress ?? 0;
     const canCollect = active?.canCollect === true;
-    setText(
+    setDynamicStatusText(
       this.phaseLabel,
       active
         ? active.phase === 'ready'
@@ -509,7 +536,7 @@ export class BrewingHudPixi {
           ? 'Ready to Brew'
           : 'Select a Recipe',
     );
-    setText(
+    setDynamicStatusText(
       this.phaseTime,
       active && active.remainingMs > 0
         ? formatTime(active.remainingMs)
@@ -525,11 +552,13 @@ export class BrewingHudPixi {
     const state = this.primaryState ?? resolveBrewingPrimaryState(cauldron);
     switch (state.id) {
       case 'cancel':
-        return (
-          (cauldron?.activeBrew
-            ? this.actions.cancelBrew?.(this.selectedIndex)
-            : this.actions.toggleAutoBrew?.(this.selectedIndex)) ?? false
-        );
+        if (
+          cauldron?.activeBrew?.phase === 'brewing' ||
+          cauldron?.activeBrew?.phase === 'bottling'
+        ) {
+          return this.actions.cancelBrew?.(this.selectedIndex) ?? false;
+        }
+        return this.actions.toggleAutoBrew?.(this.selectedIndex) ?? false;
       case 'collect':
         return this.actions.collectBrew?.(this.selectedIndex) ?? false;
       case 'bottle':
@@ -601,6 +630,12 @@ export class BrewingHudPixi {
     this.cauldronArt.position.set(width / 2, 136);
     this.cauldronArt.width = 116;
     this.cauldronArt.height = 94;
+    this.cauldronLiquidMask.position.set(
+      this.cauldronArt.x,
+      this.cauldronArt.y,
+    );
+    this.cauldronLiquidMask.width = this.cauldronArt.width;
+    this.cauldronLiquidMask.height = this.cauldronArt.height;
     this.redrawCauldronLiquid();
     this.lockArt.position.set(width / 2, 135);
     this.lockArt.width = 44;
@@ -638,8 +673,8 @@ export class BrewingHudPixi {
       POTION_PREVIEW_BORDER_INSETS,
     );
     this.potionIcon.position.set(39, 39);
-    this.potionIcon.width = 44;
-    this.potionIcon.height = 44;
+    this.potionIcon.width = BREWING_HUD_GEOMETRY.potionIconSize;
+    this.potionIcon.height = BREWING_HUD_GEOMETRY.potionIconSize;
     this.potionName.position.set(width / 2, 239);
     this.rarity.position.set(width / 2, 258);
     this.ownedLabel.position.set(36, 72);
@@ -661,15 +696,45 @@ export class BrewingHudPixi {
     this.phaseLabel.position.set(78, 10);
     this.phaseTime.position.set(detailWidth - 12, 12);
     this.progress.setBounds(78, 34, detailWidth - 90, 11);
-    const controlsX = edge + BREWING_HUD_GEOMETRY.detailInset + 10;
+    const configurationWidth =
+      BREWING_HUD_GEOMETRY.recipeButtonWidth +
+      BREWING_HUD_GEOMETRY.autoButtonWidth +
+      BREWING_HUD_GEOMETRY.quantityButtonWidth +
+      BREWING_HUD_GEOMETRY.configurationGap * 2;
+    const controlsX =
+      edge +
+      BREWING_HUD_GEOMETRY.detailInset +
+      (detailWidth - configurationWidth) / 2;
     const controlsTop = BREWING_HUD_GEOMETRY.detailTop + 72;
-    this.recipes.setBounds(controlsX, controlsTop, 100, 32);
-    this.autoBrew.setBounds(controlsX + 108, controlsTop, 100, 32);
-    this.quantity.setBounds(controlsX + 216, controlsTop, 82, 32);
-    this.brew.setBounds(
+    this.recipes.setBounds(
       controlsX,
+      controlsTop,
+      BREWING_HUD_GEOMETRY.recipeButtonWidth,
+      32,
+    );
+    this.autoBrew.setBounds(
+      controlsX +
+        BREWING_HUD_GEOMETRY.recipeButtonWidth +
+        BREWING_HUD_GEOMETRY.configurationGap,
+      controlsTop,
+      BREWING_HUD_GEOMETRY.autoButtonWidth,
+      32,
+    );
+    this.quantity.setBounds(
+      this.autoBrew.root.x +
+        BREWING_HUD_GEOMETRY.autoButtonWidth +
+        BREWING_HUD_GEOMETRY.configurationGap,
+      controlsTop,
+      BREWING_HUD_GEOMETRY.quantityButtonWidth,
+      32,
+    );
+    this.brew.setBounds(
+      edge +
+        BREWING_HUD_GEOMETRY.detailInset +
+        BREWING_HUD_GEOMETRY.detailContentInset,
       BREWING_HUD_GEOMETRY.detailTop + 111,
-      298,
+      detailWidth -
+        BREWING_HUD_GEOMETRY.detailContentInset * 2,
       38,
     );
   }
@@ -760,17 +825,35 @@ export class BrewingHudPixi {
     const width = this.cauldronArt.width || 116;
     const height = this.cauldronArt.height || 94;
     const centerX = this.cauldronArt.x;
-    const centerY = this.cauldronArt.y - height * 0.27;
-    this.cauldronLiquid
-      .clear()
-      .ellipse(centerX, centerY, width * 0.34, height * 0.09)
+    const centerY = this.cauldronArt.y;
+    const liquidCenterY = centerY - height * 0.312;
+    const liquid = this.cauldronLiquid.clear();
+    if (
+      this.cauldronLiquidMask &&
+      this.cauldronLiquid.mask === this.cauldronLiquidMask
+    ) {
+      liquid.rect(
+        centerX - width / 2,
+        centerY - height / 2,
+        width,
+        height,
+      );
+    } else {
+      liquid.ellipse(
+        centerX,
+        liquidCenterY,
+        width * 0.3,
+        height * 0.083,
+      );
+    }
+    liquid
       .fill({
         color: this.cauldronLiquidColor ?? 0x8740df,
         alpha: 0.94,
       })
       .ellipse(
         centerX - width * 0.09,
-        centerY - height * 0.015,
+        liquidCenterY - height * 0.008,
         width * 0.08,
         height * 0.018,
       )
@@ -836,6 +919,66 @@ export class BrewingHudPixi {
     }
   }
 
+  setAutoBrewMotionEnabled(enabled) {
+    const nextEnabled = enabled === true;
+    if (nextEnabled !== this.autoBrewMotionEnabled) {
+      this.autoBrewMotionStartedAt = null;
+    }
+    this.autoBrewMotionEnabled = nextEnabled;
+    if (!nextEnabled) {
+      this.resetAutoBrewMotion();
+    }
+  }
+
+  updateMotion(
+    now,
+    { active = true, reducedMotion = false } = {},
+  ) {
+    if (
+      !active ||
+      reducedMotion ||
+      !this.autoBrewMotionEnabled
+    ) {
+      this.resetAutoBrewMotion();
+      return;
+    }
+    if (!Number.isFinite(this.autoBrewMotionStartedAt)) {
+      this.autoBrewMotionStartedAt = Number(now) || 0;
+    }
+    const elapsed = Math.max(
+      0,
+      (Number(now) || 0) - this.autoBrewMotionStartedAt,
+    );
+    const completedSteps = Math.floor(
+      elapsed / AUTO_GEAR_STEP_INTERVAL_MS,
+    );
+    const stepElapsed =
+      elapsed % AUTO_GEAR_STEP_INTERVAL_MS;
+    const stepProgress = Math.min(
+      1,
+      stepElapsed / AUTO_GEAR_STEP_DURATION_MS,
+    );
+    const easedStep =
+      1 - Math.pow(1 - stepProgress, 4);
+    this.setAutoBrewGearRotation(
+      ((completedSteps + easedStep) *
+        AUTO_GEAR_STEP_RADIANS) %
+        (Math.PI * 2),
+    );
+  }
+
+  resetAutoBrewMotion() {
+    this.autoBrewMotionStartedAt = null;
+    this.setAutoBrewGearRotation(0);
+  }
+
+  setAutoBrewGearRotation(rotation) {
+    for (const sprite of
+      this.actionIcons.autoBrew?.iconSprites ?? []) {
+      sprite.rotation = Number(rotation) || 0;
+    }
+  }
+
   destroy() {
     releaseRegistration(this.swipeRegistration);
     for (const button of [
@@ -859,6 +1002,16 @@ export class BrewingHudPixi {
     this.carouselPanel.destroy();
     this.detailPanel.destroy();
   }
+}
+
+function setDynamicStatusText(text, value) {
+  const nextValue = String(value ?? '');
+  setText(
+    text,
+    nextValue
+      ? `${nextValue}${DYNAMIC_STATUS_TEXT_TEXTURE_GUTTER}`
+      : '',
+  );
 }
 
 export class BrewingAutomationSettingsDialogPixi {
@@ -1081,19 +1234,19 @@ function normalizeRequirements(rows, herbs) {
   return (Array.isArray(rows) ? rows : [])
     .slice(0, BREWING_HUD_GEOMETRY.ingredientSlots)
     .map((row) => {
-    const key = row.itemKey ?? row.key;
-    const herb = herbByKey.get(key) ?? {};
-    return {
-      ...row,
-      itemKey: key,
-      owned:
-        row.owned ??
-        row.availableQuantity ??
-        herb.quantity ??
-        herb.availableQuantity ??
-        0,
-      quantity: row.quantity ?? row.required ?? 1,
-    };
+      const key = row.itemKey ?? row.key;
+      const herb = herbByKey.get(key) ?? {};
+      return {
+        ...row,
+        itemKey: key,
+        owned:
+          row.owned ??
+          row.availableQuantity ??
+          herb.quantity ??
+          herb.availableQuantity ??
+          0,
+        quantity: row.quantity ?? row.required ?? 1,
+      };
     });
 }
 

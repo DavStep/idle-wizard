@@ -582,6 +582,10 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
   }
 
   tick(now = this.timeSource()) {
+    this.hud?.updateMotion(now, {
+      active: this.active,
+      reducedMotion: this.prefersReducedMotion(),
+    });
     for (const cauldron of this.cauldrons?.getWidgets?.() ?? []) {
       cauldron.updateTime(now);
       cauldron.updateMotion(now);
@@ -888,6 +892,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     for (const row of this.herbInventory?.rows?.getWidgets?.() ?? []) {
       row.clearMotion();
     }
+    this.hud?.resetAutoBrewMotion();
   }
 
   resolvePointerGhostPosition(context, fallbackDisplayObject) {
