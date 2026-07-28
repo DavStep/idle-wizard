@@ -114,6 +114,18 @@ describe('PixiTopPanelView', () => {
       PIXI_ROOT_RUN_ASSETS.settingsGear,
     );
     expect(view.levelRail.track).toBeInstanceOf(NineSliceSprite);
+    expect(assets.getTexture).toHaveBeenCalledWith(
+      'source:assets/ui/root-run-top-hud/level-progress-fill-mask.png',
+    );
+    expect(view.levelRail.fillMask).toBeInstanceOf(NineSliceSprite);
+    expect(view.levelRail.fill.effects).toContain(
+      view.levelRail.fillAlphaMask,
+    );
+    expect(view.levelRail.fillAlphaMask).toMatchObject({
+      pipe: 'alphaMask',
+      mask: view.levelRail.fillMask,
+      channel: 'alpha',
+    });
     expect(semanticRegistry.get('top.coin')?.displayObject).toBe(view.coin);
     expect(semanticRegistry.get('top.settings')?.displayObject).toBe(
       view.settingsControl,
@@ -128,6 +140,23 @@ describe('PixiTopPanelView', () => {
       },
     });
     expect(semanticRegistry.getTutorialTarget('top:mana')).not.toBeNull();
+  });
+
+  it('keeps the shared top panel compact below its content', () => {
+    const view = new PixiTopPanelView({
+      assets: createAssets(),
+    });
+    const panelHeight =
+      view.panelBackground.height *
+      Math.abs(view.panelBackground.scale.y);
+
+    expect(panelHeight).toBe(88);
+    expect(PIXI_UI_GEOMETRY.roomContentTop).toBe(104);
+    expect(
+      PIXI_UI_GEOMETRY.roomContentTop - panelHeight,
+    ).toBe(16);
+
+    view.destroy();
   });
 
   it('routes the Root Run settings button through the existing settings action', () => {
@@ -285,17 +314,16 @@ describe('PixiTopPanelView', () => {
 
     const fillRects = view.levelRail.fill.context.instructions.filter(
       (instruction) => {
-        const path = findPath(instruction, 'roundRect');
+        const path = findPath(instruction, 'rect');
         return path && path.data[2] > 3;
       },
     );
     expect(fillRects).toHaveLength(1);
-    expect(readPath(fillRects[0])).toEqual([
+    expect(readRect(fillRects[0])).toEqual([
       23,
-      24,
+      25.5,
       234.375,
-      45,
-      22.5,
+      42,
     ]);
     expect(view.levelRail.gradient).toBeInstanceOf(FillGradient);
     expect(fillSpy).toHaveBeenCalledWith(view.levelRail.gradient);
@@ -306,15 +334,15 @@ describe('PixiTopPanelView', () => {
           Boolean(findPath(instruction, 'roundRect')),
       );
     expect(dividerRects.map(readPath)).toEqual([
-      [176.25, 33, 3, 27, 1.5],
-      [182.25, 33, 3, 27, 1.5],
-      [179.25, 33, 3, 27, 1.5],
-      [332.5, 33, 3, 27, 1.5],
-      [338.5, 33, 3, 27, 1.5],
-      [335.5, 33, 3, 27, 1.5],
-      [488.75, 33, 3, 27, 1.5],
-      [494.75, 33, 3, 27, 1.5],
-      [491.75, 33, 3, 27, 1.5],
+      [176.25, 34.5, 3, 24, 1.5],
+      [182.25, 34.5, 3, 24, 1.5],
+      [179.25, 34.5, 3, 24, 1.5],
+      [332.5, 34.5, 3, 24, 1.5],
+      [338.5, 34.5, 3, 24, 1.5],
+      [335.5, 34.5, 3, 24, 1.5],
+      [488.75, 34.5, 3, 24, 1.5],
+      [494.75, 34.5, 3, 24, 1.5],
+      [491.75, 34.5, 3, 24, 1.5],
     ]);
     expect(dividerRects.map(readColorAndAlpha)).toEqual([
       [0xffffff, 0.12],
@@ -661,6 +689,10 @@ function createMotionHarness() {
 
 function readPath(instruction) {
   return findPath(instruction, 'roundRect').data.slice(0, 5);
+}
+
+function readRect(instruction) {
+  return findPath(instruction, 'rect').data.slice(0, 4);
 }
 
 function readColorAndAlpha(instruction) {

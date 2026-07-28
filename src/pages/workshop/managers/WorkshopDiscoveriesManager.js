@@ -229,7 +229,7 @@ export class WorkshopDiscoveriesManager {
   createTitle() {
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'discoveries';
+    title.textContent = 'Discoveries';
     return title;
   }
 
@@ -474,6 +474,9 @@ export class WorkshopDiscoveriesManager {
         : 'a discovered potion recipe recorded in the workshop book.',
       discoveredByUsername: this.getPotionDiscovererName(potion),
       discoveredByIdentity: this.getPotionDiscovererIdentity(potion),
+      discoveredAtLabel: unknown
+        ? null
+        : this.formatDiscoveryDate(potion.discoveredAtMs),
     };
   }
 
@@ -498,6 +501,9 @@ export class WorkshopDiscoveriesManager {
             className: 'workshop-page__discovery-player-link',
           },
         ),
+        display.discoveredAtLabel
+          ? ` · ${display.discoveredAtLabel}`
+          : '',
       );
       infoText.append(row);
     }
@@ -687,6 +693,20 @@ export class WorkshopDiscoveriesManager {
     }
 
     return `${Math.ceil(durationMs / 1_000)}s`;
+  }
+
+  formatDiscoveryDate(discoveredAtMs) {
+    const timestamp = Number(discoveredAtMs);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) {
+      return 'Date Unknown';
+    }
+
+    return new Intl.DateTimeFormat('en', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(timestamp));
   }
 
   renderPagination(potionCount) {
@@ -888,6 +908,7 @@ export class WorkshopDiscoveriesManager {
           potion.discovered,
           potion.discoveredByUsername,
           potion.discoveredByIdentity,
+          potion.discoveredAtMs,
           potion.royaltyCoin,
           potion.manaCost,
           potion.brewDurationMs,

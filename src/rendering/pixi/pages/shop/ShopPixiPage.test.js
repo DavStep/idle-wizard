@@ -612,7 +612,7 @@ describe('ShopPixiPage', () => {
     expect(dialog.list.width).toBe(268);
     expect(dialog.list.rowWidth).toBe(264);
     expect(dialog.list.root.position.y).toBe(20);
-    expect(dialog.list.height).toBe(312);
+    expect(dialog.list.height).toBe(298);
     expect(dialog.tabLayer.position.x).toBe(9);
     expect(tabs).toHaveLength(3);
     for (const tab of tabs) {
@@ -738,7 +738,7 @@ describe('ShopPixiPage', () => {
       dialog.panel.coreHeight +
         PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset -
         (dialog.tabLayer.y + seedsTab.height),
-    ).toBeCloseTo(6);
+    ).toBeCloseTo(10);
     expect(
       dialog.tabLayer.y -
         (
@@ -746,7 +746,7 @@ describe('ShopPixiPage', () => {
           dialog.itemSection.y +
           dialog.itemSection.frameHeight
         ),
-    ).toBeCloseTo(4);
+    ).toBeCloseTo(6);
     expect(
       herbsTab.root.x -
         (seedsTab.root.x + seedsTab.width),
@@ -802,7 +802,7 @@ describe('ShopPixiPage', () => {
       harness.page.panelScrolls.get('traders');
 
     expect(tradersScroll.root.x).toBe(0);
-    expect(tradersScroll.root.y).toBe(183);
+    expect(tradersScroll.root.y).toBe(151);
     expect(harness.page.tabLayer.position).toMatchObject({
       x: 16,
       y: 527.3333333333334,
@@ -812,7 +812,7 @@ describe('ShopPixiPage', () => {
     });
     expect(
       tradersScroll.height,
-    ).toBeCloseTo(338.33333333333337, 10);
+    ).toBeCloseTo(370.33333333333337, 10);
 
     harness.page.destroy();
     harness.dispose();

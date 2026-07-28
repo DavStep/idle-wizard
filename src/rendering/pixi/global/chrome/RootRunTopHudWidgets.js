@@ -1,4 +1,5 @@
 import {
+  AlphaMask,
   Container,
   FillGradient,
   Graphics,
@@ -24,6 +25,7 @@ const HUD_ASSETS = Object.freeze({
   settingsGear: PIXI_ROOT_RUN_ASSETS.settingsGear,
   levelPanel: PIXI_ROOT_RUN_ASSETS.topHudLevelPanel,
   levelTrack: PIXI_ROOT_RUN_ASSETS.topHudLevelTrack,
+  levelFill: PIXI_ROOT_RUN_ASSETS.topHudLevelFill,
   levelStar: 'public:ui/root-run-level-star.png',
 });
 
@@ -41,6 +43,8 @@ const LEVEL_TRACK_Y = 21;
 const LEVEL_TRACK_WIDTH = 631;
 const LEVEL_TRACK_HEIGHT = 51;
 const LEVEL_TRACK_INSET = 3;
+const LEVEL_FILL_HEIGHT = 42;
+const LEVEL_FILL_CAP_WIDTH = LEVEL_FILL_HEIGHT / 2;
 const LEVEL_PRESS_SCALE = 0.97;
 const LEVEL_TEXT_STROKE = Object.freeze({
   color: '#0a0a0a',
@@ -267,6 +271,24 @@ export class RootRunHudLevelRail extends Container {
     this.track.position.set(LEVEL_TRACK_X, LEVEL_TRACK_Y);
     this.fill = new Graphics();
     this.fill.label = 'topPanel:questFill';
+    this.fillMask = createNineSlice({
+      texture: assets.getTexture(HUD_ASSETS.levelFill),
+      insets: {
+        left: LEVEL_FILL_CAP_WIDTH,
+        top: 0,
+        right: LEVEL_FILL_CAP_WIDTH,
+        bottom: 0,
+      },
+      width: LEVEL_FILL_HEIGHT,
+      height: LEVEL_FILL_HEIGHT,
+      label: 'topPanel:questFillMask',
+    });
+    this.fillAlphaMask = new AlphaMask({
+      mask: this.fillMask,
+    });
+    this.fillAlphaMask.channel = 'alpha';
+    this.fill.setMask({ channel: 'alpha' });
+    this.fill.addEffect(this.fillAlphaMask);
     this.dividers = new Graphics();
     this.dividers.label = 'topPanel:questDividers';
     this.gradient = new FillGradient({
@@ -280,6 +302,7 @@ export class RootRunHudLevelRail extends Container {
       this.panel,
       this.track,
       this.fill,
+      this.fillMask,
       this.dividers,
     );
 
@@ -364,22 +387,23 @@ export class RootRunHudLevelRail extends Container {
     this.total = safeTotal;
     this.completed = safeCompleted;
     const x = LEVEL_TRACK_X + LEVEL_TRACK_INSET;
-    const y = LEVEL_TRACK_Y + LEVEL_TRACK_INSET;
+    const y =
+      LEVEL_TRACK_Y +
+      (LEVEL_TRACK_HEIGHT - LEVEL_FILL_HEIGHT) / 2;
     const width = LEVEL_TRACK_WIDTH - LEVEL_TRACK_INSET * 2;
-    const height = LEVEL_TRACK_HEIGHT - LEVEL_TRACK_INSET * 2;
+    const height = LEVEL_FILL_HEIGHT;
 
     this.fill.clear();
     const fillWidth = width * safeRatio;
     if (fillWidth > 0) {
+      this.fillMask.visible = true;
+      this.fillMask.position.set(x, y);
+      this.fillMask.setSize(fillWidth, height);
       this.fill
-        .roundRect(
-          x,
-          y,
-          fillWidth,
-          height,
-          height / 2,
-        )
+        .rect(x, y, fillWidth, height)
         .fill(this.gradient);
+    } else {
+      this.fillMask.visible = false;
     }
 
     this.dividers.clear();
@@ -437,6 +461,9 @@ export class RootRunHudLevelRail extends Container {
   destroy(options) {
     this.gradient?.destroy();
     this.gradient = null;
+    this.fill.removeEffect(this.fillAlphaMask);
+    this.fillAlphaMask.destroy();
+    this.fillAlphaMask = null;
     super.destroy(options);
   }
 }

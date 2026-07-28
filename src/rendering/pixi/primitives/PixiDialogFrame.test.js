@@ -13,8 +13,11 @@ import {
 } from '../pages/workshop/PixiPageTestHarness.js';
 import {
   PIXI_DIALOG_BASE_GEOMETRY,
+  PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
   PIXI_DIALOG_PALETTE,
   PixiDialogFrame,
+  resolveDialogFooterTabLayout,
+  setDialogPaperAboveFooterTabs,
 } from './PixiDialogFrame.js';
 
 installPixiPageTestCanvas();
@@ -250,5 +253,37 @@ describe('PixiDialogFrame', () => {
     expect(frame.titleFrame).toBe(retainedTitleFrame);
     expect(frame.titleFrame.visible).toBe(false);
     expect(frame.titleLabel.visible).toBe(false);
+  });
+
+  it('derives balanced in-shell footer tabs from the dialog and tab count', () => {
+    const { frame } = createHarness();
+    const layout = resolveDialogFooterTabLayout({
+      coreWidth: frame.coreWidth,
+      coreHeight: frame.coreHeight,
+      tabCount: 3,
+    });
+
+    expect(layout).toMatchObject({
+      rowX: PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowInsetX,
+      rowWidth:
+        frame.coreWidth -
+        PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowInsetX * 2,
+      rowHeight: PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      gap: 8,
+    });
+    expect(layout.tabWidth).toBeCloseTo(
+      (layout.rowWidth - layout.gap * 2) / 3,
+    );
+    expect(layout.rowY - layout.paperBottom).toBe(
+      PIXI_DIALOG_FOOTER_TABS_GEOMETRY.paperGap,
+    );
+    expect(
+      layout.shellBottom - (layout.rowY + layout.rowHeight),
+    ).toBe(PIXI_DIALOG_FOOTER_TABS_GEOMETRY.bottomInset);
+
+    setDialogPaperAboveFooterTabs(frame, layout);
+    expect(
+      frame.paperFrame.y + frame.paperFrame.frameHeight,
+    ).toBeCloseTo(layout.paperBottom);
   });
 });

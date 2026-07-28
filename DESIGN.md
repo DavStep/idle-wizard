@@ -199,7 +199,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 ### Navigation
 - **Bottom Room Tabs:** Five fixed-width icon tabs use the shared midnight top-cap nine-slice, with the lighter cap reserved for the selected state. They fill the source width, share one bottom baseline, and stretch their lower region to the screen edge with no gap. The selected tab is `6px` wider than every inactive tab; each visible-tab count derives one fixed inactive width so the full row remains edge-to-edge. Active/inactive frames are `56px`/`44px` tall before the shared `26px` lower region. Icons stay at full color and opacity in every unlocked state. When seven tabs are visible, all unlocked icons use the compact `1.05x` inactive and `1x` selected scale. The active tab rises `12px`, enlarges its icon, and reveals its white source-11px Title Case page name; inactive tabs sit lower with hidden visual labels. Locked tabs replace the room icon with a larger lock centered lower in the inactive frame.
-- **Popup Tabs:** Sit below and outside the bordered dialog, keep an 8px source gap, and reuse the shared very-dark deselected and lighter-brown selected Root Run button skins.
+- **Popup Tabs:** Whole-dialog category tabs sit inside the brown shell footer below the paper, using a `28px` row, `9px` side insets, `6px` paper gap, `10px` bottom inset, and equal count-derived widths. Gaps are `4px`/`6px`/`8px`/`10px` for five/four/three/two tabs. Reuse the shared very-dark deselected and lighter-brown selected Root Run button skins.
 - **Page Names:** The current room name appears inside the raised active tab; inactive room names remain available through accessible labels.
 
 ### Dialogs

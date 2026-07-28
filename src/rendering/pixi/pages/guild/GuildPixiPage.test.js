@@ -10,7 +10,11 @@ import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
-import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
+import {
+  PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
+  PixiDialogFrame,
+} from '../../primitives/PixiDialogFrame.js';
+import { PIXI_ROOT_RUN_GEOMETRY } from '../../theme/PixiThemeTokens.js';
 import { GUILD_DIALOG_IDS } from './GuildDialogPixi.js';
 import { GuildPixiPage } from './GuildPixiPage.js';
 
@@ -99,9 +103,29 @@ describe('GuildPixiPage', () => {
         );
       }
       if (dialogId === GUILD_DIALOG_IDS.ADVENTURER) {
-        expect(harness.dialogs.get(dialogId).panel.outerHeight).toBe(
-          364,
+        const dialog = harness.dialogs.get(dialogId);
+        const [statsTab, lifeTab] = dialog.cardTabs;
+        const shellBottom =
+          dialog.panel.coreHeight +
+          PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+        const paperBottom =
+          dialog.panel.paperFrame.y +
+          dialog.panel.paperFrame.frameHeight;
+
+        expect(dialog.panel.outerHeight).toBe(364);
+        expect(dialog.cardTabsLayer.parent).toBe(dialog.panel);
+        expect(dialog.cardTabsLayer.x).toBe(9);
+        expect(
+          shellBottom -
+            (dialog.cardTabsLayer.y + statsTab.height),
+        ).toBe(PIXI_DIALOG_FOOTER_TABS_GEOMETRY.bottomInset);
+        expect(dialog.cardTabsLayer.y - paperBottom).toBe(
+          PIXI_DIALOG_FOOTER_TABS_GEOMETRY.paperGap,
         );
+        expect(
+          lifeTab.root.x -
+            (statsTab.root.x + statsTab.width),
+        ).toBe(8);
       }
       harness.dialogs.close(dialogId);
     }
@@ -147,14 +171,14 @@ describe('GuildPixiPage', () => {
 
     expect(
       harness.page.tabScrolls.get('hall').position,
-    ).toMatchObject({ x: 16, y: 136 });
+    ).toMatchObject({ x: 16, y: 104 });
     expect(harness.page.tabLayer.position).toMatchObject({
       x: 16,
       y: 527.3333333333334,
     });
     expect(
       harness.page.tabScrolls.get('hall').viewportHeight,
-    ).toBeCloseTo(385.33333333333337, 10);
+    ).toBeCloseTo(417.33333333333337, 10);
 
     harness.page.destroy();
     harness.dispose();

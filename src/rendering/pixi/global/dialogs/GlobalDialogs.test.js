@@ -227,15 +227,23 @@ describe('retained global Pixi dialogs', () => {
       },
     );
     const modal = harness.inputRouter.getTopModal();
-    const shellPoint = settings.panel.toGlobal({
+    const shellLocalPoint = {
       x:
         settings.panel.coreWidth +
         PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset / 2,
       y:
         settings.panel.titleFrame.y +
         settings.panel.titleFrame.frameHeight / 2,
-    });
+    };
+    const shellPoint = settings.panel.toGlobal(shellLocalPoint);
 
+    expect(settings.panel.eventMode).toBe('static');
+    expect(
+      settings.panel.hitArea.contains(
+        shellLocalPoint.x,
+        shellLocalPoint.y,
+      ),
+    ).toBe(true);
     expect(modal?.onOutsidePress?.({ point: shellPoint })).toBe(false);
     expect(
       harness.registry.isOpen(GLOBAL_DIALOG_IDS.SETTINGS),
@@ -833,8 +841,23 @@ describe('retained global Pixi dialogs', () => {
       color: '#0a0a0a',
       width: 8 / 3,
     });
+    const usernameMaskBounds =
+      settings.usernameField.textMask.getLocalBounds();
+    const usernameRenderedHeight =
+      settings.usernameField.textLabel.fontSize +
+      settings.usernameField.textLabel.stroke.width * 2;
+    expect(
+      usernameMaskBounds.y + usernameMaskBounds.height,
+    ).toBeGreaterThanOrEqual(
+      settings.usernameField.textLabel.y + usernameRenderedHeight,
+    );
     expect(settings.usernameEdit.width).toBeCloseTo(64 / 3);
     expect(settings.usernameEdit.height).toBeCloseTo(64 / 3);
+    expect(
+      settings.usernameEdit.y + settings.usernameEdit.height / 2,
+    ).toBeCloseTo(
+      settings.usernameBacking.y + settings.usernameBacking.height / 2,
+    );
 
     expect(settings.accountHeader.frameWidth).toBeCloseTo(298);
     expect(settings.panel.paperFrame.visible).toBe(false);

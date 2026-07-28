@@ -509,6 +509,7 @@ describe('WorkshopActionBarManager', () => {
     )?.groups?.body;
 
     expect(rootRule).toMatch(/--workshop-side-controls-top-offset:\s*71px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-stage-edge:\s*10px;/);
     expect(rootRule).toMatch(/--workshop-panel-button-width:\s*50px;/);
     expect(rootRule).toMatch(/--workshop-panel-button-height:\s*60px;/);
     expect(rootRule).toMatch(/--workshop-panel-button-open-height:\s*60px;/);

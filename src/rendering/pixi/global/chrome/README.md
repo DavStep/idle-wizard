@@ -12,7 +12,7 @@ tabs on every active room after its level gate unlocks.
 
 The retained top-panel background uses the less-rounded sibling of the inactive
 room-tab nine-slice, flips it vertically, and spans source x `0…360` from
-y `0…120`. Room content begins at y `136`, preserving a `16px` separation below
+y `0…88`. Room content begins at y `104`, preserving a `16px` separation below
 the panel. The retained HUD root starts at source `10.67/10.67`; the reference
 export's extra `36px` source notch offset is omitted because the canvas already
 starts below `safe-area-inset-top`. The external safe strip and Android status

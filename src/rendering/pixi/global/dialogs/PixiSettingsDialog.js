@@ -756,13 +756,17 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       this.usernameBacking.x + username.textInsetX,
       this.usernameBacking.y + username.textInsetY,
     );
-    this.usernameField.setSize(535 / 3, username.editSize);
+    this.usernameField.setSize(
+      535 / 3,
+      username.height - username.textInsetY,
+    );
     this.usernameEdit.position.set(
       this.usernameBacking.x +
         username.width -
         username.editInsetRight -
         username.editSize,
-      this.usernameBacking.y + username.editInsetY,
+      this.usernameBacking.y +
+        (username.height - username.editSize) / 2,
     );
     this.usernameEdit.width = username.editSize;
     this.usernameEdit.height = username.editSize;

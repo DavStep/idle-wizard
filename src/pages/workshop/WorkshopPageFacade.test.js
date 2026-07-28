@@ -141,6 +141,9 @@ describe('WorkshopPageFacade requirement feedback', () => {
     expect(rootRule).toMatch(
       /--workshop-side-controls-top-offset:\s*71px;/,
     );
+    expect(rootRule).toMatch(
+      /--workshop-panel-button-stage-edge:\s*10px;/,
+    );
     expect(personalTasksRule).toContain(
       '--workshop-panel-button-row-3-top',
     );
@@ -151,10 +154,10 @@ describe('WorkshopPageFacade requirement feedback', () => {
       /\bheight:\s*var\(--workshop-panel-button-height\);/,
     );
     expect(personalTasksRule).toMatch(
-      /\bleft:\s*var\(--style-room-chrome-edge\);/,
+      /\bleft:\s*var\(--workshop-panel-button-stage-edge\);/,
     );
     expect(worldNoticeRule).toMatch(
-      /\bright:\s*var\(--style-room-chrome-edge\);/,
+      /\bright:\s*var\(--workshop-panel-button-stage-edge\);/,
     );
     expect(baseCss).toMatch(
       /\.workshop-page__panel-button\[data-panel-side="right"\]\s+\.workshop-page__feature-character\s*\{[^}]*\btransform:\s*scaleX\(-1\);/s,

@@ -14,7 +14,11 @@ rendered inside Idle Wizard at `/3`.
 - `level-progress-panel.png`: fixed authored backing `656x76`.
 - `level-progress-track-9slice.png`: horizontal insets `31 0 31 0`;
   authored node `631x51`.
+- `level-progress-fill-mask.png`: exact `259x42` qUIck fill export with
+  horizontal insets `21 0 21 0`; only the center stretches while its
+  alpha preserves the authored rounded caps.
 
 The settings gear stays in `root-run-settings`, and the level star stays
-in the existing public Root Run asset path. Idle Wizard draws its own
-approved gradient fill and request separators over the retained track.
+in the existing public Root Run asset path. Idle Wizard draws its approved
+gradient through the retained fill silhouette and adds request separators
+over the retained track.

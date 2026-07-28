@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.20
+
+- Tightened the Workshop side actions and Research lists so room controls and upcoming studies are easier to scan.
+- Polished Account tabs, dialog lists, progress bars, and popup touch handling for cleaner alignment and fewer accidental closes.
+- Compacted the Brewing room layout so cauldron details and actions fit more cleanly between the room header and chat.
+
 ## 0.3.19
 
 - Tightened the Workshop side actions and Research lists so room controls and upcoming studies are easier to scan.

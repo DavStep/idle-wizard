@@ -19,6 +19,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
   RETAINED_PAGE_GEOMETRY,
@@ -33,10 +34,10 @@ import {
 
 export const BREWING_HUD_GEOMETRY = Object.freeze({
   edge: 12,
-  top: 96,
-  carouselHeight: 218,
-  detailTop: 324,
-  detailHeight: 210,
+  top: PIXI_UI_GEOMETRY.roomContentTop,
+  carouselHeight: 174,
+  detailTop: 320,
+  detailHeight: 180,
   ingredientColumns: 3,
   ingredientRows: 2,
   ingredientSlots: 6,
@@ -548,21 +549,27 @@ export class BrewingHudPixi {
     );
     this.layoutCarouselHeader();
     this.counter.position.set(width - 10, 8);
-    this.cauldronArt.position.set(width / 2, 88);
-    this.cauldronArt.width = 132;
-    this.cauldronArt.height = 112;
-    this.lockArt.position.set(width / 2, 86);
-    this.lockArt.width = 58;
-    this.lockArt.height = 58;
-    this.lockLabel.position.set(width / 2, 121);
-    this.dots.position.set(width / 2, 151);
-    this.previous.setBounds(edge + 12, 139, 38, 42);
-    this.next.setBounds(sourceWidth - edge - 50, 139, 38, 42);
+    this.cauldronArt.position.set(width / 2, 68);
+    this.cauldronArt.width = 100;
+    this.cauldronArt.height = 84;
+    this.lockArt.position.set(width / 2, 67);
+    this.lockArt.width = 44;
+    this.lockArt.height = 44;
+    this.lockLabel.position.set(width / 2, 94);
+    this.dots.position.set(width / 2, 112);
+    const navigationTop = BREWING_HUD_GEOMETRY.top + 48;
+    this.previous.setBounds(edge + 12, navigationTop, 34, 38);
+    this.next.setBounds(
+      sourceWidth - edge - 46,
+      navigationTop,
+      34,
+      38,
+    );
     layoutNavigationIcon(this.previous, this.navigationIcons.previous);
     layoutNavigationIcon(this.next, this.navigationIcons.next);
     this.unlockCostButton.setBounds(
       (sourceWidth - PIXI_COST_BUTTON_GEOMETRY.stackedWidth) / 2,
-      258,
+      BREWING_HUD_GEOMETRY.top + 116,
       PIXI_COST_BUTTON_GEOMETRY.stackedWidth,
       PIXI_COST_BUTTON_GEOMETRY.stackedHeight,
     );
@@ -572,11 +579,13 @@ export class BrewingHudPixi {
       this.brew,
     ].filter((button) => button.root.visible);
     const actionGap = 6;
-    const actionWidth =
+    const actionWidth = Math.min(
+      100,
       (width -
-        CAULDRON_ACTION_ROW_INSET * 2 -
-        actionGap * 2) /
-      3;
+          CAULDRON_ACTION_ROW_INSET * 2 -
+          actionGap * 2) /
+        3,
+    );
     const actionRowWidth =
       actionWidth * visibleActionButtons.length +
       actionGap * Math.max(0, visibleActionButtons.length - 1);
@@ -584,9 +593,9 @@ export class BrewingHudPixi {
     visibleActionButtons.forEach((button, index) =>
       button.setBounds(
         actionRowX + index * (actionWidth + actionGap),
-        267,
+        BREWING_HUD_GEOMETRY.top + 134,
         actionWidth,
-        39,
+        34,
       ),
     );
     layoutActionIcon(this.autoBrew, this.actionIcons.autoBrew, {
@@ -602,16 +611,16 @@ export class BrewingHudPixi {
       BREWING_HUD_GEOMETRY.detailHeight,
       PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
     );
-    this.potionIcon.position.set(55, 72);
-    this.potionIcon.width = 56;
-    this.potionIcon.height = 56;
-    this.potionName.position.set(55, 10);
-    this.rarity.position.set(55, 31);
-    this.ownedLabel.position.set(55, 108);
-    this.batchLabel.position.set(55, 126);
+    this.potionIcon.position.set(55, 60);
+    this.potionIcon.width = 46;
+    this.potionIcon.height = 46;
+    this.potionName.position.set(55, 8);
+    this.rarity.position.set(55, 27);
+    this.ownedLabel.position.set(55, 90);
+    this.batchLabel.position.set(55, 106);
     this.ingredientsTitle.position.set(122, 8);
-    const tileWidth = 58;
-    const tileHeight = 50;
+    const tileWidth = 54;
+    const tileHeight = 40;
     const tileGap = 4;
     const ingredientGridWidth =
       tileWidth * BREWING_HUD_GEOMETRY.ingredientColumns +
@@ -619,30 +628,36 @@ export class BrewingHudPixi {
     this.ingredientSlots.forEach((slot, index) => {
       slot.setBounds(
         122 + (index % 3) * (tileWidth + tileGap),
-        27 + Math.floor(index / 3) * (tileHeight + tileGap),
+        25 + Math.floor(index / 3) * (tileHeight + tileGap),
         tileWidth,
         tileHeight,
       );
     });
-    this.phaseLabel.position.set(122, 135);
-    this.phaseTime.position.set(122 + ingredientGridWidth, 135);
-    this.progress.setBounds(122, 153, ingredientGridWidth, 10);
-    const footerButtonWidth = 126;
-    const footerButtonGap = 10;
+    this.phaseLabel.position.set(122, 116);
+    this.phaseTime.position.set(122 + ingredientGridWidth, 116);
+    this.progress.setBounds(122, 132, ingredientGridWidth, 10);
+    const footerButtonWidth = 118;
+    const footerButtonGap = 8;
     const footerRowX =
       (sourceWidth - footerButtonWidth * 2 - footerButtonGap) / 2;
-    this.cancel.setBounds(footerRowX, 496, footerButtonWidth, 32);
+    const footerTop = BREWING_HUD_GEOMETRY.detailTop + 142;
+    this.cancel.setBounds(
+      footerRowX,
+      footerTop,
+      footerButtonWidth,
+      30,
+    );
     layoutActionIcon(this.cancel, this.actionIcons.cancel, {
       iconWidth: 18,
       iconHeight: 18,
-      iconX: 35,
+      iconX: 33,
       labelShiftX: 8,
     });
     this.collect.setBounds(
       footerRowX + footerButtonWidth + footerButtonGap,
-      496,
+      footerTop,
       footerButtonWidth,
-      32,
+      30,
     );
   }
 
@@ -939,9 +954,9 @@ class BrewingIngredientRequirementTile {
     this.width = width;
     this.height = height;
     this.frame.setSize(width, height, RESEARCH_ART_BORDER_INSETS);
-    this.icon.position.set(width / 2, height / 2 - 4);
-    this.icon.width = 30;
-    this.icon.height = 30;
+    this.icon.position.set(width / 2, height / 2 - 3);
+    this.icon.width = 24;
+    this.icon.height = 24;
     this.quantity.position.set(width / 2, height - 2);
     this.redraw();
   }

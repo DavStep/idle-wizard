@@ -131,8 +131,32 @@ describe('RetainedScrollArea', () => {
       PIXI_CAPSULE_ASSETS.fillMask,
     );
     expect(scroll.scrollbarTrack.sprite).toBeDefined();
-    expect(scroll.scrollbarThumbFill.mask).toBe(
+    expect(scroll.scrollbarThumbFill.effects).toContain(
+      scroll.scrollbarThumbAlphaMask,
+    );
+    expect(scroll.scrollbarThumbAlphaMask).toMatchObject({
+      pipe: 'alphaMask',
+      mask: scroll.scrollbarThumbMask,
+      channel: 'alpha',
+    });
+    expect(scroll.scrollbarThumbFill._maskOptions).toMatchObject({
+      channel: 'alpha',
+    });
+  });
+
+  it('preserves rounded thumb caps while compressing at both edges', () => {
+    scroll = overflowingScroll();
+
+    expect(scroll.scrollbarThumbAlphaMask.mask).toBe(
       scroll.scrollbarThumbMask,
+    );
+
+    scroll.physics.scrollByElastic(-180);
+    scroll.applyPhysicsOffset();
+
+    expect(scroll.scrollbarThumbAlphaMask.mask.visible).toBe(true);
+    expect(scroll.scrollbarThumbFill.effects).toContain(
+      scroll.scrollbarThumbAlphaMask,
     );
   });
 });

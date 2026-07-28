@@ -176,7 +176,13 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
   { id: 'summonInfo', kind: 'dialog', dialogId: 'summonInfo', aliases: ['summon'] },
   { id: 'leaderboard', kind: 'dialog', dialogId: 'leaderboard', aliases: ['leaderboards'] },
   { id: 'alliance', kind: 'dialog', dialogId: 'alliance', aliases: ['alliances'] },
-  { id: 'discoveries', kind: 'dialog', dialogId: 'discoveries', aliases: ['discovery'] },
+  {
+    id: 'discoveries',
+    kind: 'dialog',
+    dialogId: 'discoveries',
+    setup: 'potionDiscoveries',
+    aliases: ['discovery'],
+  },
   { id: 'personalTasks', kind: 'dialog', dialogId: 'personalTasks', aliases: ['tasks'] },
   {
     id: 'worldEvent',
@@ -1937,6 +1943,10 @@ export class DevCheatCommandManager {
       return this.openBottomRoomTabsSurface(surface);
     }
 
+    if (surface.setup === 'potionDiscoveries') {
+      return this.openPotionDiscoveriesSurface(surface, options);
+    }
+
     if (surface.setup === 'onlineConnecting') {
       return this.openOnlineConnectingSurface(surface);
     }
@@ -2031,6 +2041,43 @@ export class DevCheatCommandManager {
       this.pagesFacade.setBottomRoomTabsPreview(true),
       surface,
     );
+  }
+
+  openPotionDiscoveriesSurface(surface, options = {}) {
+    const discoveryFacade =
+      this.backendFacade?.getPotionDiscoveryFacade?.();
+    if (typeof discoveryFacade?.setDevSnapshot !== 'function') {
+      return this.decorateUiResult(
+        surface.id,
+        { ok: false, reason: 'potion_discoveries_missing' },
+        surface,
+      );
+    }
+
+    const discoveredAtMs =
+      Number(options.discoveredAtMs) || Date.UTC(2026, 0, 2);
+    const snapshot = {
+      connected: true,
+      discoveries: [
+        {
+          potionKey: 'silverleafQuiet',
+          potionLabel: 'Silverleaf Quiet',
+          discoveredByIdentity: 'dev-discovery-wizard',
+          username: String(options.username ?? 'Ada').trim() || 'Ada',
+          discoveredAtMs,
+          royaltyCoin: 12.5,
+        },
+      ],
+    };
+    const state = discoveryFacade.setDevSnapshot(snapshot);
+    const dialog = this.openDialog(surface.dialogId, options);
+
+    return {
+      ...this.decorateUiResult(surface.id, dialog, surface),
+      state,
+      dialog,
+      snapshot,
+    };
   }
 
   openOnlineConnectingSurface(surface) {

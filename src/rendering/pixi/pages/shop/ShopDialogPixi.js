@@ -20,9 +20,13 @@ import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
 import {
   createDialogPaperSection,
+  PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
   PixiDialogFrame,
+  resolveDialogFooterPaperReduction,
+  resolveDialogFooterTabLayout,
   resolveDialogPaperOutsets,
+  setDialogPaperAboveFooterTabs,
   setDialogPaperSectionBounds,
 } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
@@ -72,15 +76,6 @@ const DEFAULT_DIALOG_HEIGHT = 364;
 const LEDGER_DIALOG_HEIGHT = 382;
 const LEDGER_SCROLL_VIEWPORT_TOP = 20;
 const LEDGER_SCROLL_VIEWPORT_BOTTOM_INSET = 10;
-const LEDGER_TAB_ROW_WIDTH = 286;
-const TAB_HEIGHT = 28;
-const TAB_GAP = 3;
-const SHELL_FOOTER_PAPER_GAP = 4;
-const SHELL_FOOTER_BOTTOM_INSET = 6;
-const SHELL_FOOTER_TAB_MIN_GAP = 4;
-const SHELL_FOOTER_TAB_MAX_GAP = 10;
-const SHELL_FOOTER_TAB_GAP_STEP = 2;
-const SHELL_FOOTER_TAB_REFERENCE_COUNT = 5;
 const CONTENT_GAP = 6;
 const LIST_OVERSCAN = 2;
 const STALL_RANGE_HORIZONTAL_OUTSET = 8;
@@ -120,7 +115,6 @@ const DIALOG_CONFIG = Object.freeze({
     width: DEFAULT_DIALOG_WIDTH,
     height: DEFAULT_DIALOG_HEIGHT,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
-    tabsInShellFooter: true,
     splitPaper: Object.freeze({
       selectionHeight: STALL_SELECTION_HEIGHT,
       selectionStatusHeight:
@@ -145,7 +139,6 @@ const DIALOG_CONFIG = Object.freeze({
     scrollViewportWidthOutset:
       RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight,
     tabFontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
-    tabRowWidth: LEDGER_TAB_ROW_WIDTH,
   }),
   [SHOP_DIALOG_IDS.REQUEST]: Object.freeze({
     title: 'request',
@@ -499,7 +492,8 @@ export class ShopDialogPixi extends BasePixiRetainedView {
           action: tab.action ?? tab.onSelect,
         });
         button.control.textLabel.setFontSize(
-          this.config.tabFontSize ?? PIXI_UI_GEOMETRY.bodyFontSize,
+          this.config.tabFontSize ??
+            PIXI_UI_GEOMETRY.borderLabelFontSize,
         );
         this.registerButtonSemanticTarget(button, tab);
       },
@@ -747,30 +741,52 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     const panelWidth = this.config.width;
     const panelHeight = this.config.height;
     const centerY = this.sourceHeight / 2;
-    const tabsHeight =
-      this.tabs?.getWidgets?.().length > 0 ? TAB_HEIGHT : 0;
-    const tabsInShellFooter =
-      tabsHeight > 0 && this.config.tabsInShellFooter === true;
+    const tabCount = this.tabs?.getWidgets?.().length ?? 0;
     const shift = finiteOr(
       this.viewportProjection?.dialogShift,
       0,
     );
     const panelX = Math.round((this.sourceWidth - panelWidth) / 2);
     const panelY = Math.round(
-      centerY -
-        (panelHeight + (tabsInShellFooter ? 0 : tabsHeight)) / 2 +
-        shift,
+      centerY - panelHeight / 2 + shift,
     );
     this.panel.position.set(panelX, panelY);
+    this.panel.relayout();
+    const footerTabLayout =
+      tabCount > 0
+        ? resolveDialogFooterTabLayout({
+            coreWidth: this.panel.coreWidth,
+            coreHeight: this.panel.coreHeight,
+            tabCount,
+          })
+        : null;
 
     const bodyWidth = this.panel.contentBoxWidth;
     const bodyHeight = this.panel.contentBoxHeight;
     if (this.config.splitPaper) {
-      this.relayoutSplitSettings(bodyWidth, bodyHeight);
-      this.relayoutTabs(panelHeight);
+      this.relayoutSplitSettings(
+        bodyWidth,
+        bodyHeight,
+        footerTabLayout,
+      );
+      this.relayoutTabs(footerTabLayout);
       this.redrawBackdrop();
       return;
     }
+    const footerPaperReduction = footerTabLayout
+      ? resolveDialogFooterPaperReduction({
+          panel: this.panel,
+          bodyBottom: this.body.y + bodyHeight,
+          footerLayout: footerTabLayout,
+        })
+      : 0;
+    if (footerTabLayout) {
+      setDialogPaperAboveFooterTabs(this.panel, footerTabLayout);
+    }
+    const usableBodyHeight = Math.max(
+      0,
+      bodyHeight - footerPaperReduction,
+    );
 
     this.selectionSection.visible = false;
     this.selectionSection.renderable = false;
@@ -824,7 +840,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       : 0;
     const listHeight = Math.max(
       0,
-      bodyHeight -
+      usableBodyHeight -
         y -
         (actionHeight > 0 ? actionHeight + CONTENT_GAP : 0) -
         statusHeight -
@@ -840,7 +856,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.list.root.visible = this.model.items.length > 0;
     this.list.root.renderable = this.list.root.visible;
 
-    let bottomY = bodyHeight;
+    let bottomY = usableBodyHeight;
     if (statusHeight > 0) {
       bottomY -= statusHeight;
       this.statusLabel.position.set(
@@ -853,11 +869,11 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       layoutButtons(actionButtons, 0, bottomY, bodyWidth, actionHeight, 6);
     }
 
-    this.relayoutTabs(panelHeight);
+    this.relayoutTabs(footerTabLayout);
     this.redrawBackdrop();
   }
 
-  relayoutSplitSettings(bodyWidth, bodyHeight) {
+  relayoutSplitSettings(bodyWidth, bodyHeight, footerTabLayout) {
     const splitPaper = this.config.splitPaper;
     this.resetAutoSummonRevealTransform();
     const showsSelectionSection =
@@ -888,11 +904,12 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       0,
       bodyHeight -
         itemY -
-        (this.config.tabsInShellFooter === true
+        (footerTabLayout
           ? paperOutsets.bottom +
-            resolveShellFooterPaperReduction({
-              bodyBottom: this.body.y + bodyHeight,
+            resolveDialogFooterPaperReduction({
               panel: this.panel,
+              bodyBottom: this.body.y + bodyHeight,
+              footerLayout: footerTabLayout,
             })
           : 0),
     );
@@ -1094,34 +1111,21 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     }
   }
 
-  relayoutTabs(panelHeight) {
+  relayoutTabs(footerTabLayout) {
     const tabButtons = this.tabs?.getWidgets?.() ?? [];
-    const tabRowWidth = finiteOr(
-      this.config.tabRowWidth,
-      this.panel.contentBoxWidth,
-    );
     this.tabLayer.visible = tabButtons.length > 0;
     this.tabLayer.renderable = this.tabLayer.visible;
-    const tabY =
-      this.config.tabsInShellFooter === true
-        ? this.panel.coreHeight +
-          PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset -
-          SHELL_FOOTER_BOTTOM_INSET -
-          TAB_HEIGHT
-        : panelHeight - 2;
     this.tabLayer.position.set(
-      (this.config.width - tabRowWidth) / 2,
-      tabY,
+      footerTabLayout?.rowX ?? this.panel.coreWidth / 2,
+      footerTabLayout?.rowY ?? this.panel.coreHeight,
     );
     layoutButtons(
       tabButtons,
       0,
       0,
-      tabRowWidth,
-      TAB_HEIGHT,
-      this.config.tabsInShellFooter === true
-        ? resolveShellFooterTabGap(tabButtons.length)
-        : TAB_GAP,
+      footerTabLayout?.rowWidth ?? 0,
+      PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      footerTabLayout?.gap ?? 0,
     );
   }
 
@@ -1241,30 +1245,6 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       field.destroy();
     }
   }
-}
-
-function resolveShellFooterPaperReduction({ bodyBottom, panel }) {
-  const tabY =
-    panel.coreHeight +
-    PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset -
-    SHELL_FOOTER_BOTTOM_INSET -
-    TAB_HEIGHT;
-  const paperBottom = tabY - SHELL_FOOTER_PAPER_GAP;
-
-  return Math.max(0, bodyBottom - paperBottom);
-}
-
-function resolveShellFooterTabGap(tabCount) {
-  if (tabCount <= 1) {
-    return 0;
-  }
-
-  return Math.min(
-    SHELL_FOOTER_TAB_MAX_GAP,
-    SHELL_FOOTER_TAB_MIN_GAP +
-      Math.max(0, SHELL_FOOTER_TAB_REFERENCE_COUNT - tabCount) *
-        SHELL_FOOTER_TAB_GAP_STEP,
-  );
 }
 
 class DialogSummaryRow {

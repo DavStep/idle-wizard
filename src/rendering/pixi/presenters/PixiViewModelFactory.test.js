@@ -404,6 +404,99 @@ describe('PixiViewModelFactory', () => {
     });
   });
 
+  it('projects complete potion discovery records for the retained discovery rows', () => {
+    const openPlayer = vi.fn();
+    const factory = new PixiViewModelFactory();
+    const discoveredAtMs = Date.UTC(2026, 0, 2);
+    const dialog = factory.createDiscoveriesDialog(
+      {
+        discoveries: {
+          potions: [
+            {
+              key: 'silverleafQuiet',
+              label: 'silverleaf quiet',
+              discovered: true,
+              discoveredByUsername: 'Ada',
+              discoveredByIdentity: 'identity-ada',
+              discoveredAtMs,
+              ingredients: [
+                {
+                  key: 'mintHerb',
+                  label: 'mint',
+                  quantity: 1,
+                },
+                {
+                  key: 'silverleafHerb',
+                  label: 'silverleaf',
+                  quantity: 2,
+                },
+              ],
+              manaCost: 34,
+              brewDurationMs: 75_000,
+              royaltyCoin: 12.5,
+            },
+            {
+              key: 'ashenMemory',
+              label: 'ashen memory',
+              discovered: false,
+            },
+          ],
+        },
+      },
+      { openPlayer },
+    );
+
+    expect(dialog.title).toBe('Discoveries');
+    expect(dialog.rows).toHaveLength(2);
+    expect(dialog.rows[0]).toMatchObject({
+      id: 'potion:silverleafQuiet',
+      type: 'potionDiscovery',
+      discovered: true,
+      potionKey: 'silverleafQuiet',
+      label: 'Silverleaf Quiet',
+      discovererUsername: 'Ada',
+      discovererIdentity: 'identity-ada',
+      discoveredAtLabel: 'Jan 2, 2026',
+      ingredients: [
+        {
+          key: 'mintHerb',
+          label: 'Mint',
+          quantity: 1,
+        },
+        {
+          key: 'silverleafHerb',
+          label: 'Silverleaf',
+          quantity: 2,
+        },
+      ],
+      manaLabel: '34 Mana',
+      durationLabel: '75s Brew',
+      royaltyLabel: '12.5 Coin Royalty',
+      onDiscovererActivate: expect.any(Function),
+    });
+    expect(dialog.rows[1]).toMatchObject({
+      id: 'potion:ashenMemory',
+      type: 'potionDiscovery',
+      discovered: false,
+      potionKey: 'unknownPotion',
+      label: 'Undiscovered Potion',
+      discovererUsername: '',
+      discoveredAtLabel: '',
+      ingredients: [],
+      manaLabel: '',
+      durationLabel: '',
+      royaltyLabel: '',
+      onDiscovererActivate: null,
+    });
+
+    dialog.rows[0].onDiscovererActivate();
+    expect(openPlayer).toHaveBeenCalledWith({
+      identity: 'identity-ada',
+      name: 'Ada',
+      username: 'Ada',
+    });
+  });
+
   it('projects the complete World Event dialog instead of bare quest labels', () => {
     const selectWorldEventTab = vi.fn();
     const openWorldEventDonation = vi.fn();
@@ -476,11 +569,14 @@ describe('PixiViewModelFactory', () => {
     );
 
     expect(tasks).toMatchObject({
-      title: 'world event',
+      title: 'World Event',
       selectedTabId: 'tasks',
+      rowWidget: 'worldEventQuest',
       header: {
-        headline: 'new crown tours town',
-        meta: '125 points · 5d',
+        headline: 'New Crown Tours Town',
+        body:
+          'The Bells Have Not Stopped.\nEvery Guild Is Waiting To Be Counted.',
+        meta: '125 Points · 5d',
       },
       tabs: [
         { id: 'tasks', label: 'Quests', selected: true },
@@ -488,25 +584,31 @@ describe('PixiViewModelFactory', () => {
         { id: 'rewards', label: 'Rewards', selected: false },
       ],
     });
-    expect(tasks.rows).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: 'quest:weekly-1:new-crown:crowd',
-          label: expect.stringContaining('quiet the crowd'),
-        }),
-        expect.objectContaining({
-          id: 'donation:weekly-1:new-crown:crowd:calmingDraught',
-          label: 'calming draught',
-          actionLabel: 'Donate',
-          enabled: true,
-          onActivate: expect.any(Function),
-        }),
-      ]),
-    );
+    expect(tasks.rows).toEqual([
+      expect.objectContaining({
+        id: 'quest:weekly-1:new-crown:crowd',
+        type: 'worldEventQuest',
+        title: 'Quiet The Crowd',
+        pointsLabel: '80 Points',
+        description:
+          'The Square Is Packed. Donate Calming Draughts To The Stewards.',
+        donationOptions: [
+          expect.objectContaining({
+            id: 'donation:weekly-1:new-crown:crowd:calmingDraught',
+            label: 'Calming Draught',
+            pointsEachLabel: '120 Points Each',
+            totalLabel: '80 Points Total',
+            actionLabel: 'Donate',
+            enabled: true,
+            onActivate: expect.any(Function),
+          }),
+        ],
+      }),
+    ]);
 
     tasks.tabs[1].onSelect('leaderboard');
     expect(selectWorldEventTab).toHaveBeenCalledWith('leaderboard');
-    tasks.rows.find((row) => row.actionLabel === 'Donate').onActivate();
+    tasks.rows[0].donationOptions[0].onActivate();
     expect(openWorldEventDonation).toHaveBeenCalledWith(
       'weekly-1:new-crown:crowd',
       'calmingDraught',
@@ -541,7 +643,7 @@ describe('PixiViewModelFactory', () => {
         expect.objectContaining({
           id: 'reward:1',
           label: 'Rank 1',
-          value: '5 emerald · 10 crystal',
+          value: '5 Emerald · 10 Crystal',
         }),
       ]),
     );
@@ -861,6 +963,115 @@ describe('PixiViewModelFactory', () => {
     );
     expect(offline.composer.enabled).toBe(false);
     expect(offline.onSubmit).toBeNull();
+  });
+
+  it('projects expandable alliance directory rows with members, totals, and state actions', () => {
+    const selectAlliance = vi.fn();
+    const joinAlliance = vi.fn();
+    const applyAlliance = vi.fn();
+    const cancelAllianceApplication = vi.fn();
+    const openPlayer = vi.fn();
+    const alliances = [
+      {
+        allianceId: 'dbp',
+        name: 'Dominion of Bug Players',
+        tag: 'DBP',
+        tagColor: 'violet',
+        joinMode: 'open',
+        memberCount: 6,
+        totalIncome: 12_450,
+      },
+      {
+        allianceId: 'solo',
+        name: 'Solo Warriors',
+        tag: 'SW',
+        tagColor: 'teal',
+        joinMode: 'apply',
+        memberCount: 1,
+        totalIncome: 8_150,
+      },
+      {
+        allianceId: 'closed',
+        name: 'Closed Circle',
+        tag: 'CC',
+        tagColor: 'amber',
+        joinMode: 'closed',
+        memberCount: 1,
+        totalIncome: 500,
+      },
+    ];
+    const members = Array.from({ length: 6 }, (_, index) => ({
+      allianceId: 'dbp',
+      memberIdentity: `member-${index}`,
+      username: `Wizard ${index}`,
+      role: index === 0 ? 'tradeMaster' : 'trader',
+      playerLevel: 18 - index,
+    }));
+    const dialog = new PixiViewModelFactory().createAllianceDialog(
+      {
+        connected: true,
+        alliances,
+        members,
+        ownApplications: [
+          {
+            applicationKey: 'application-solo',
+            allianceId: 'solo',
+          },
+        ],
+      },
+      'dbp',
+      {
+        selectAlliance,
+        joinAlliance,
+        applyAlliance,
+        cancelAllianceApplication,
+        openPlayer,
+      },
+    );
+
+    expect(dialog.directory).toBe(true);
+    expect(dialog.status).toBe('not in an alliance');
+    expect(dialog.rows).toHaveLength(3);
+    expect(dialog.rows[0]).toMatchObject({
+      id: 'dbp',
+      type: 'allianceDirectory',
+      tag: 'DBP',
+      tagColor: 'violet',
+      totalIncomeLabel: '12.4k',
+      memberCount: 6,
+      memberCapacity: 50,
+      expanded: true,
+      action: {
+        label: 'Join Alliance',
+        variant: 'green',
+        enabled: true,
+      },
+    });
+    expect(dialog.rows[0].members[0]).toMatchObject({
+      username: 'Wizard 0',
+      roleLabel: 'trade master',
+      levelLabel: 'Lv 18',
+    });
+    expect(dialog.rows[1].action).toMatchObject({
+      label: 'Cancel Application',
+      variant: 'brown-dark',
+      enabled: true,
+    });
+    expect(dialog.rows[2].action).toMatchObject({
+      label: 'Closed',
+      variant: 'gray',
+      enabled: false,
+    });
+
+    dialog.rows[0].onActivate();
+    dialog.rows[0].action.onActivate();
+    dialog.rows[0].members[0].onActivate();
+    dialog.rows[1].action.onActivate();
+    expect(selectAlliance).toHaveBeenCalledWith('dbp');
+    expect(joinAlliance).toHaveBeenCalledWith('dbp');
+    expect(openPlayer).toHaveBeenCalledWith(members[0]);
+    expect(cancelAllianceApplication).toHaveBeenCalledWith('application-solo');
+    expect(applyAlliance).not.toHaveBeenCalled();
   });
 
   it('projects full compact chat metadata without exposing player levels', () => {

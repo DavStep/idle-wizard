@@ -53,7 +53,9 @@ owned by the existing gameplay facade. The preferred presenter shape is:
 `statLabel`, `rewardText`, `expiresLabel`, and optional `eventLabel`.
 `person` display fields are `id`, `displayName`, `iconKey`, `level`,
 `status`, `statusLabel`, `personalityLabel`, `stats`, `history`, and optional
-dialog-ready tab rows.
+dialog-ready tab rows. Adventurer and applicant tabs use the shared
+whole-dialog footer geometry inside the brown shell, below the paper content;
+they do not own feature-local buttons or external tab placement.
 
 Charter/settings dialogs use the shared `TextEntryService`; their profile
 payload is `{ name, tag, color }`. Request-stack dialogs receive

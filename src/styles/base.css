@@ -313,6 +313,7 @@
       var(--workshop-summon-button-height)
   );
   --workshop-side-controls-top-offset: 71px;
+  --workshop-panel-button-stage-edge: 10px;
   --workshop-panel-button-width: 50px;
   --workshop-panel-button-height: 60px;
   --workshop-panel-button-open-height: 60px;
@@ -5789,21 +5790,21 @@ body {
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks {
   --workshop-panel-button-row-top: var(--workshop-panel-button-row-3-top);
-  left: var(--style-room-chrome-edge);
+  left: var(--workshop-panel-button-stage-edge);
 }
 
 .workshop-page__ui-layer > .workshop-page__world-notice {
   --workshop-panel-button-row-top: var(--workshop-panel-button-row-4-top);
-  right: var(--style-room-chrome-edge);
+  right: var(--workshop-panel-button-stage-edge);
 }
 
 .workshop-page__ui-layer > .workshop-page__mail {
   --workshop-panel-button-row-top: var(--workshop-panel-button-row-2-top);
-  right: var(--style-room-chrome-edge);
+  right: var(--workshop-panel-button-stage-edge);
 }
 
 .workshop-page__ui-layer > .workshop-page__stats {
-  right: var(--style-room-chrome-edge);
+  right: var(--workshop-panel-button-stage-edge);
 }
 
 .workshop-page__ui-layer > .workshop-page__leaderboard {
@@ -5811,21 +5812,21 @@ body {
 }
 
 .workshop-page__ui-layer > .workshop-page__leaderboard {
-  left: var(--style-room-chrome-edge);
+  left: var(--workshop-panel-button-stage-edge);
 }
 
 .workshop-page__ui-layer > .workshop-page__discoveries {
   --workshop-panel-button-row-top: var(--workshop-panel-button-row-3-top);
-  right: var(--style-room-chrome-edge);
+  right: var(--workshop-panel-button-stage-edge);
 }
 
 .workshop-page__ui-layer > .workshop-page__trade-alliance {
-  left: var(--style-room-chrome-edge);
+  left: var(--workshop-panel-button-stage-edge);
 }
 
 .workshop-page__ui-layer > .workshop-page__bag {
   --workshop-panel-button-row-top: var(--workshop-panel-button-row-4-top);
-  left: var(--style-room-chrome-edge);
+  left: var(--workshop-panel-button-stage-edge);
 }
 
 .workshop-page__ui-layer > .workshop-page__personal-tasks[hidden],

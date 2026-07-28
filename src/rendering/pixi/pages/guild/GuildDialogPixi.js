@@ -14,7 +14,12 @@ import {
 } from '../../../../shared/tradeAllianceTagColors.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
-import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
+import {
+  PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
+  PixiDialogFrame,
+  resolveDialogFooterTabLayout,
+  setDialogPaperAboveFooterTabs,
+} from '../../primitives/PixiDialogFrame.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
 import { PixiScrollView } from '../../primitives/PixiScrollView.js';
@@ -26,6 +31,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import { RetainedButton } from '../workshop/RetainedPageKit.js';
 
 export const GUILD_DIALOG_IDS = Object.freeze({
   CHARTER: 'guild.charter',
@@ -313,23 +319,31 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     this.cardTabsLayer.label = `${this.dialogId}:tabs`;
     this.cardTabs = CARD_TABS.map(
       (tab) =>
-        new PixiButton({
+        new RetainedButton({
           assetManager: this.assetManager,
           inputRouter: this.inputRouter,
           semanticRegistry: this.semanticRegistry,
           semanticId: `${this.dialogId}.tab.${tab.id}`,
-          text: tab.label,
-          label: `${this.dialogId}:tab:${tab.id}`,
-          action: () => this.selectCardTab(tab.id),
+          label: tab.label,
+          buttonLabel: `${this.dialogId}:tab:${tab.id}`,
+          variant: 'tab',
+          onActivate: () => this.selectCardTab(tab.id),
         }),
     );
-    this.cardTabsLayer.addChild(...this.cardTabs);
+    for (const tab of this.cardTabs) {
+      tab.control.textLabel.setFontSize(
+        PIXI_UI_GEOMETRY.borderLabelFontSize,
+      );
+    }
+    this.cardTabsLayer.addChild(
+      ...this.cardTabs.map((tab) => tab.root),
+    );
     this.panel.content.addChild(
       this.cardSummary,
       this.detailScroll,
       this.cardAction,
     );
-    this.root.addChild(this.cardTabsLayer);
+    this.panel.addChild(this.cardTabsLayer);
   }
 
   onBind(viewModel) {
@@ -402,7 +416,12 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     this.detailRows.reconcile(safeArray(rows));
     this.cardTabs.forEach((button, index) => {
       const tab = CARD_TABS[index];
-      button.setSelected(tab.id === this.selectedCardTab);
+      button.setModel({
+        label: tab.label,
+        selected: tab.id === this.selectedCardTab,
+        enabled: true,
+        action: () => this.selectCardTab(tab.id),
+      });
     });
     const action = this.model.action ?? card.action;
     this.cardAction
@@ -475,7 +494,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
         row.applyTheme(contentTheme);
       }
       for (const tab of this.cardTabs ?? []) {
-        tab.applyTheme(this.theme);
+        tab.applyTheme(contentTheme);
       }
     }
   }
@@ -543,7 +562,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
         this.panel.contentHeight,
       );
     } else {
-      this.layoutCard(x, y, size);
+      this.layoutCard();
     }
     this.redrawBackdrop();
   }
@@ -566,9 +585,21 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     );
   }
 
-  layoutCard(panelX, panelY, size) {
+  layoutCard() {
     const width = this.panel.contentWidth;
-    const height = this.panel.contentHeight;
+    const footerTabLayout = resolveDialogFooterTabLayout({
+      coreWidth: this.panel.coreWidth,
+      coreHeight: this.panel.coreHeight,
+      tabCount: this.cardTabs.length,
+    });
+    setDialogPaperAboveFooterTabs(this.panel, footerTabLayout);
+    const height = Math.max(
+      0,
+      Math.min(
+        this.panel.contentHeight,
+        footerTabLayout.paperBottom - this.panel.content.y,
+      ),
+    );
     this.cardSummary.position.set(0, 0);
     this.cardIconFrame.position.set(0, 0);
     this.cardIcon.position.set(0, 0);
@@ -600,16 +631,16 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       this.cardAction.setSize(width, actionHeight);
     }
     this.cardTabsLayer.position.set(
-      panelX,
-      panelY + size.height + PIXI_UI_GEOMETRY.dialogTabGap,
+      footerTabLayout.rowX,
+      footerTabLayout.rowY,
     );
     layoutButtons(
       this.cardTabs,
       0,
       0,
-      size.width,
-      40,
-      PIXI_UI_GEOMETRY.dialogTabGap,
+      footerTabLayout.rowWidth,
+      PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      footerTabLayout.gap,
     );
   }
 
@@ -2005,8 +2036,12 @@ function layoutButtons(buttons, x, y, width, height, gap) {
     (width - gap * (buttons.length - 1)) / buttons.length;
   let cursorX = x;
   for (const button of buttons) {
-    button.position.set(cursorX, y);
-    button.setSize(buttonWidth, height);
+    if (button?.root && typeof button.setBounds === 'function') {
+      button.setBounds(cursorX, y, buttonWidth, height);
+    } else {
+      button.position.set(cursorX, y);
+      button.setSize(buttonWidth, height);
+    }
     cursorX += buttonWidth + gap;
   }
 }

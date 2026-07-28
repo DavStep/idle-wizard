@@ -237,28 +237,28 @@ describe('WorkshopPixiPage', () => {
     harness.page.bind(model);
 
     expect(harness.page.inboxButton.root.position).toMatchObject({
-      x: 18,
-      y: 207,
+      x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
+      y: 175,
     });
     expect(harness.page.features.get('leaderboard').root.position).toMatchObject({
-      x: 18,
-      y: 207 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
+      x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
+      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
     });
     expect(harness.page.features.get('alliance').root.position).toMatchObject({
-      x: 18,
-      y: 207 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
+      x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
+      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
     });
     expect(harness.page.statsButton.root.position).toMatchObject({
-      x: 292,
-      y: 207,
+      x: 360 - ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge - ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
+      y: 175,
     });
     expect(harness.page.bagButton.root.position).toMatchObject({
-      x: 292,
-      y: 207 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
+      x: 360 - ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge - ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
+      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
     });
     expect(harness.page.features.get('discoveries').root.position).toMatchObject({
-      x: 292,
-      y: 207 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
+      x: 360 - ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge - ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
+      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
     });
 
     harness.page.destroy();
@@ -303,19 +303,22 @@ describe('WorkshopPixiPage', () => {
     harness.page.bind(model);
 
     expect(alliance.root.visible).toBe(true);
-    expect(alliance.root.position).toMatchObject({ x: 8, y: 210 });
+    expect(alliance.root.position).toMatchObject({ x: 0, y: 178 });
     expect(alliance.root.alpha).toBe(0);
     expect(alliance.root.scale.x).toBe(0.96);
 
     frames.shift()(0);
     frames.shift()(100);
-    expect(alliance.root.position.x).toBeGreaterThan(8);
-    expect(alliance.root.position.x).toBeLessThan(18);
+    expect(alliance.root.position.x).toBeGreaterThan(0);
+    expect(alliance.root.position.x).toBeLessThan(ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge);
     expect(alliance.root.alpha).toBeGreaterThan(0);
     expect(alliance.root.alpha).toBeLessThan(1);
 
     frames.shift()(200);
-    expect(alliance.root.position).toMatchObject({ x: 18, y: 207 });
+    expect(alliance.root.position).toMatchObject({
+      x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
+      y: 175,
+    });
     expect(alliance.root.alpha).toBe(1);
     expect(alliance.root.scale.x).toBe(1);
 
@@ -367,7 +370,10 @@ describe('WorkshopPixiPage', () => {
     const alliance = harness.page.features.get('alliance');
     expect(requestFrame).not.toHaveBeenCalled();
     expect(alliance.root.visible).toBe(true);
-    expect(alliance.root.position).toMatchObject({ x: 18, y: 207 });
+    expect(alliance.root.position).toMatchObject({
+      x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
+      y: 175,
+    });
     expect(alliance.root.alpha).toBe(1);
     expect(alliance.root.scale.x).toBe(1);
 
@@ -606,14 +612,157 @@ describe('WorkshopPixiPage', () => {
 
     expect(dialog.panel.titleLabel.textObject.text).toBe('Bag');
     expect(dialog.tabsLayer.position.x).toBe(9);
-    expect(shellBottom - tabsBottom).toBeCloseTo(6);
-    expect(dialog.tabsLayer.position.y - paperBottom).toBeCloseTo(4);
+    expect(shellBottom - tabsBottom).toBeCloseTo(10);
+    expect(dialog.tabsLayer.position.y - paperBottom).toBeCloseTo(6);
     expect(tabs).toHaveLength(5);
     expect(tabs[1].root.x - (tabs[0].root.x + tabs[0].width)).toBeCloseTo(expectedTabGap);
     for (const tab of tabs) {
       expect(tab.control.textLabel.fontSize).toBe(11);
       expect(tab.width).toBeCloseTo(expectedTabWidth);
     }
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it.each([
+    ['personalTasks', 2, 10],
+    ['worldEvent', 3, 8],
+    ['stats', 4, 6],
+    ['bag', 5, 4],
+  ])(
+    'uses the shared in-shell footer geometry for %s',
+    (dialogId, tabCount, expectedGap) => {
+      const harness = createHarness();
+      const model = createWorkshopViewModel();
+      const tabs = Array.from({ length: tabCount }, (_, index) => ({
+        id: `tab-${index}`,
+        label: `Tab ${index + 1}`,
+        selected: index === 0,
+      }));
+      model.workshop.dialogs[dialogId] = {
+        title: dialogId,
+        selectedTabId: tabs[0].id,
+        tabs,
+        rows: [],
+      };
+
+      harness.page.bind(model);
+      harness.page.openDialog(dialogId);
+
+      const dialog = harness.dialogs.get(`workshop.${dialogId}`);
+      const buttons = dialog.tabs.getWidgets();
+      const shellBottom =
+        dialog.panel.coreHeight +
+        PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+      const tabsBottom =
+        dialog.tabsLayer.y + buttons[0].height;
+      const paperBottom =
+        dialogId === 'worldEvent'
+          ? dialog.worldEventListPaper.y +
+            dialog.worldEventListPaper.frameHeight
+          : dialog.panel.paperFrame.y +
+            dialog.panel.paperFrame.frameHeight;
+
+      expect(dialog.tabsLayer.parent).toBe(dialog.panel);
+      expect(dialog.tabsLayer.x).toBe(9);
+      expect(shellBottom - tabsBottom).toBeCloseTo(10);
+      expect(dialog.tabsLayer.y - paperBottom).toBeCloseTo(6);
+      expect(
+        buttons[1].root.x -
+          (buttons[0].root.x + buttons[0].width),
+      ).toBeCloseTo(expectedGap);
+
+      harness.page.destroy();
+      harness.dispose();
+    },
+  );
+
+  it('renders World Event requests as research-card rows between separate header and list papers', () => {
+    const donate = vi.fn();
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getTexture = vi.fn(() => Texture.EMPTY);
+    assetManager.getAtlasTexture = vi.fn(() => Texture.EMPTY);
+    const harness = createHarness({ assetManager });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.worldEvent = {
+      title: 'World Event',
+      selectedTabId: 'tasks',
+      rowWidget: 'worldEventQuest',
+      header: {
+        headline: 'New King Crowned',
+        body: 'Bells Ring From Towers That Disagreed Yesterday.',
+        meta: '0 Points · 5d 9h',
+      },
+      tabs: [
+        { id: 'tasks', label: 'Quests', selected: true },
+        { id: 'leaderboard', label: 'Leaderboard', selected: false },
+        { id: 'rewards', label: 'Rewards', selected: false },
+      ],
+      rows: [
+        {
+          id: 'quest:crowd',
+          title: 'Quiet The Crowd',
+          pointsLabel: '0 Points',
+          description:
+            'The Coronation Bells Have People Cheering, Arguing, And Fainting In The Same Street.',
+          progressLabel: '0 / 120',
+          statusLabel: 'Active',
+          donationOptions: [
+            {
+              id: 'calming',
+              label: 'Calming Draught',
+              pointsEachLabel: '120 Points Each',
+              totalLabel: '0 Points Total',
+              actionLabel: 'Unavailable',
+              enabled: false,
+            },
+            {
+              id: 'valerian',
+              label: 'Valerian Rest',
+              pointsEachLabel: '320 Points Each',
+              totalLabel: '0 Points Total',
+              actionLabel: 'Donate',
+              enabled: true,
+              onActivate: donate,
+            },
+          ],
+        },
+      ],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('worldEvent');
+
+    const dialog = harness.dialogs.get('workshop.worldEvent');
+    const row = dialog.rows.get('quest:crowd');
+    const headerFrameBottom =
+      dialog.worldEventHeaderPaper.y +
+      dialog.worldEventHeaderPaper.frameHeight;
+
+    expect(dialog.panel.titleLabel.textObject.text).toBe('World Event');
+    expect(dialog.panel.paperFrame.visible).toBe(false);
+    expect(dialog.worldEventHeaderPaper.visible).toBe(true);
+    expect(dialog.worldEventListPaper.visible).toBe(true);
+    expect(dialog.worldEventListPaper.y - headerFrameBottom).toBeCloseTo(8);
+    expect(row.title.text).toBe('Quiet The Crowd');
+    expect(row.description.text).toBe(
+      'The Coronation Bells Have People Cheering, Arguing, And Fainting In The Same Street.',
+    );
+    expect(row.options[0].action.enabled).toBe(false);
+    expect(row.options[1].action.enabled).toBe(true);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.researchCard,
+    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice,
+    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice,
+    );
+
+    row.options[1].action.activate();
+    expect(donate).toHaveBeenCalledOnce();
 
     harness.page.destroy();
     harness.dispose();
@@ -1282,6 +1431,170 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('renders keyed expandable alliance rows with a 4.5-member nested viewport', () => {
+    const toggle = vi.fn();
+    const join = vi.fn();
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getAtlasTexture = vi.fn(() => new Texture());
+    const harness = createHarness({ assetManager });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.alliance = {
+      title: 'trade alliance',
+      directory: true,
+      status: 'not in an alliance',
+      rows: [
+        {
+          id: 'dbp',
+          type: 'allianceDirectory',
+          name: 'Dominion of Bug Players',
+          tag: 'DBP',
+          tagColor: 'violet',
+          totalIncomeLabel: '12.4k',
+          memberCount: 6,
+          memberCapacity: 50,
+          expanded: true,
+          onActivate: toggle,
+          action: {
+            label: 'Join Alliance',
+            variant: 'green',
+            enabled: true,
+            onActivate: join,
+          },
+          members: Array.from({ length: 6 }, (_, index) => ({
+            id: `member-${index}`,
+            username: `Wizard ${index}`,
+            roleLabel: index === 0 ? 'trade master' : 'trader',
+            levelLabel: `Lv ${18 - index}`,
+          })),
+        },
+        {
+          id: 'solo',
+          type: 'allianceDirectory',
+          name: 'Solo Warriors',
+          tag: 'SW',
+          tagColor: 'teal',
+          totalIncomeLabel: '8.15k',
+          memberCount: 1,
+          memberCapacity: 50,
+          expanded: false,
+          onActivate: vi.fn(),
+          action: {
+            label: 'Apply',
+            variant: 'green',
+            enabled: true,
+            onActivate: vi.fn(),
+          },
+          members: [],
+        },
+      ],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('alliance');
+
+    const dialog = harness.dialogs.get('workshop.alliance');
+    const row = dialog.rows.get('dbp');
+    const collapsedRow = dialog.rows.get('solo');
+    expect(row.tag.text).toBe('[DBP]');
+    expect(row.name.text).toBe('Dominion of Bug Players');
+    expect(row.total.text).toBe('12.4k');
+    expect(row.coin.visible).toBe(true);
+    expect(row.getPreferredHeight()).toBeGreaterThan(30);
+    expect(collapsedRow.getPreferredHeight()).toBe(30);
+    expect(row.memberWidgets.size).toBe(6);
+    expect(row.memberViewport.height).toBe(28 * 4.5);
+    expect(row.memberViewport.contentHeight).toBe(28 * 6);
+    expect(row.memberViewport.scrollbarTrack.visible).toBe(true);
+    expect(row.action.text.text).toBe('Join Alliance');
+    expect(row.action.control.variant).toBe('green');
+
+    row.summaryHit.handleTap();
+    row.action.handleTap();
+    expect(toggle).toHaveBeenCalledTimes(1);
+    expect(join).toHaveBeenCalledTimes(1);
+
+    model.workshop.dialogs.alliance.rows[0] = {
+      ...model.workshop.dialogs.alliance.rows[0],
+      memberCount: 7,
+    };
+    harness.page.bind(model);
+    expect(dialog.rows.get('dbp')).toBe(row);
+    expect(row.memberCount.text).toBe('7/50');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders complete potion discovery rows with item art and recipe metadata', () => {
+    const openDiscoverer = vi.fn();
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getTexture = vi.fn(() => new Texture());
+    assetManager.getAtlasTexture = vi.fn(() => new Texture());
+    const harness = createHarness({ assetManager });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.discoveries = {
+      title: 'Discoveries',
+      rows: [
+        {
+          id: 'potion:silverleafQuiet',
+          type: 'potionDiscovery',
+          discovered: true,
+          potionKey: 'silverleafQuiet',
+          label: 'Silverleaf Quiet',
+          discovererUsername: 'Ada',
+          discovererIdentity: 'identity-ada',
+          discoveredAtLabel: 'Jan 2, 2026',
+          ingredients: [
+            {
+              key: 'mintHerb',
+              label: 'Mint',
+              quantity: 1,
+            },
+            {
+              key: 'silverleafHerb',
+              label: 'Silverleaf',
+              quantity: 2,
+            },
+          ],
+          manaLabel: '34 Mana',
+          durationLabel: '75s Brew',
+          royaltyLabel: '12.5 Coin Royalty',
+          onDiscovererActivate: openDiscoverer,
+        },
+      ],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('discoveries');
+
+    const dialog = harness.dialogs.get('workshop.discoveries');
+    const row = dialog.rows.get('potion:silverleafQuiet');
+    expect(dialog.panel.titleLabel.text).toBe('Discoveries');
+    expect(row.name.text).toBe('Silverleaf Quiet');
+    expect(row.discovererName.text).toBe('Ada');
+    expect(row.date.text).toBe('Jan 2, 2026');
+    expect(row.mana.text).toBe('34 Mana');
+    expect(row.duration.text).toBe('75s Brew');
+    expect(row.royalty.text).toBe('12.5 Coin Royalty');
+    expect(row.ingredientRows[0].label.text).toBe('×1 Mint');
+    expect(row.ingredientRows[1].label.text).toBe('×2 Silverleaf');
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.settingsRow,
+    );
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith(
+      'potion:silverleafQuiet',
+    );
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('herb:mintHerb');
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith(
+      'herb:silverleafHerb',
+    );
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('resource:mana');
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('resource:coin');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('renders icons and one normal amount color across every Bag row kind', () => {
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getAtlasTexture = vi.fn(() => new Texture());
@@ -1388,10 +1701,10 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.scroll.width).toBe(268);
     expect(dialog.scroll.scrollbarTrack.visible).toBe(true);
     expect(dialog.scroll.scrollbarTrack.getLocalBounds().x).toBeGreaterThan(268);
-    expect(dialog.tabsLayer.position.x).toBe(20);
+    expect(dialog.tabsLayer.position.x).toBe(9);
     expect(tabs).toHaveLength(4);
-    expect(shellBottom - tabsBottom).toBeCloseTo(6);
-    expect(dialog.tabsLayer.position.y - paperBottom).toBeCloseTo(4);
+    expect(shellBottom - tabsBottom).toBeCloseTo(10);
+    expect(dialog.tabsLayer.position.y - paperBottom).toBeCloseTo(6);
     expect(tabs[1].root.x - (tabs[0].root.x + tabs[0].width)).toBeCloseTo(6);
 
     harness.page.destroy();
@@ -1611,19 +1924,22 @@ describe('WorkshopPixiPage', () => {
       y: 2170 / 3 - 101 - 41 - 52 - 32,
     });
     expect(harness.page.bagButton.root.position).toMatchObject({
-      x: 18,
-      y: 207 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 3,
+      x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
+      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 3,
     });
     expect(harness.page.statsButton.root.position).toMatchObject({
-      x: 292,
-      y: 207,
+      x: 360 - ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge - ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
+      y: 175,
     });
     const alliance = harness.page.features.get('alliance');
     const inbox = harness.page.inboxButton;
-    expect(alliance.root.position).toMatchObject({ x: 18, y: 207 });
+    expect(alliance.root.position).toMatchObject({
+      x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
+      y: 175,
+    });
     expect(inbox.root.position).toMatchObject({
-      x: 292,
-      y: 207 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
+      x: 360 - ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge - ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
+      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
     });
     expect(alliance.panel).toBeUndefined();
     expect(alliance.root.hitArea).toMatchObject({

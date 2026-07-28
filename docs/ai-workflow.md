@@ -7,7 +7,7 @@ Use this when an AI agent or contributor needs to change the repo without guessi
 1. Read `AGENTS.md` for mandatory project rules.
 2. Read `experience.md`, then read the routed `docs/obsidian/engineering-liveops/experience/` files for durable lessons and current traps in the touched area.
 3. Read `docs/architecture.md` when the change crosses feature boundaries or needs architecture placement.
-4. For structural or visual UI work, also read `docs/style.md` and the reusable widget library in `docs/ui-patterns.md`. Run the `idle-wizard-ui-workflow` Widget Admission Gate before product code changes.
+4. For structural or visual UI work, also read `docs/style.md` and the reusable widget library in `docs/ui-patterns.md`. Use the `idle-wizard-ui-workflow` reuse review before product code changes.
 5. For tutorial/FTUE work, use the local `idle-wizard-tutorial-ui` skill and its QA checklist.
 6. For release work, read `docs/release-workflow.md`.
 7. Read the feature-local `README.md` before editing a feature folder.
@@ -23,7 +23,7 @@ Use the smallest check that proves the change, then broaden when touching shared
 - Feature-local gameplay or page behavior: run the owning feature tests and the smallest integration test that proves the changed boundary.
 - Shared infrastructure, cross-feature behavior, persistence-format changes, backend schema changes, or release behavior: run `npm run check` plus the relevant platform build/check.
 - Structural UI, layout, interaction, or tutorial change: run focused tests plus browser screenshot/click QA at the authored mobile surface and a fitted desktop viewport.
-- Any UI task: report `New widgets: none` or list the user-approved widgets introduced. Add approved widgets to `docs/ui-patterns.md`; never integrate an unapproved widget into product code.
+- Any UI task: report `New widgets: none` or list the widgets introduced. Add new reusable widgets to `docs/ui-patterns.md` with their source, contract, and real-app evidence.
 - Visual-reference/composition change: follow `docs/visual-reference-qa.md`; define the target anchors before editing, open a reproducible real-app state, capture a native-pixel close crop, and run `npm run ui:compare`. Green tests and a full-screen thumbnail do not prove parity.
 - Dialog visual work: open the dialog through `cheats.openUi(surfaceId)` or `?devUi=surfaceId` for iteration and screenshots. If that path does not exist, add it before visual QA.
 - Tap/button/mobile-WebView interaction change or bug: use `ecc-tap-path-audit` to trace handler order, state writes, backdrop/synthetic click behavior, and final visible state.

@@ -45,9 +45,9 @@ const WORKSHOP_DIALOGS = Object.freeze([
   Object.freeze({ id: 'inbox', title: 'inbox' }),
   Object.freeze({ id: 'alliance', title: 'trade alliance' }),
   Object.freeze({ id: 'leaderboard', title: 'leaderboard' }),
-  Object.freeze({ id: 'discoveries', title: 'discoveries' }),
+  Object.freeze({ id: 'discoveries', title: 'Discoveries' }),
   Object.freeze({ id: 'personalTasks', title: 'Daily Tasks' }),
-  Object.freeze({ id: 'worldEvent', title: 'world event' }),
+  Object.freeze({ id: 'worldEvent', title: 'World Event' }),
   Object.freeze({ id: 'worldEventDonate', title: 'Donate' }),
   Object.freeze({ id: 'worldChat', title: 'World Chat' }),
 ]);
@@ -111,7 +111,7 @@ const SUMMON_CHAT_GAP = 32;
 export const ROOT_RUN_SIDE_ACTION_GEOMETRY = Object.freeze({
   taskGap: 18,
   rowPitch: 62,
-  stageEdge: 18,
+  stageEdge: 10,
   width: 50,
   height: 60,
   iconSize: 50,

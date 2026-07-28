@@ -1,4 +1,7 @@
-import { formatCoinPriceText } from '../../../shared/coinPrice.js';
+import {
+  formatCoinAmount,
+  formatCoinPriceText,
+} from '../../../shared/coinPrice.js';
 import { formatRemainingTime } from '../../../pages/shared/timerDisplay.js';
 import { getPlayerFrameTint } from '../../../player/playerFrames.js';
 import { marketLicences } from '../../../shared/marketLicence.js';
@@ -35,6 +38,13 @@ const WORLD_EVENT_TABS = Object.freeze([
   Object.freeze({ id: 'leaderboard', label: 'Leaderboard' }),
   Object.freeze({ id: 'rewards', label: 'Rewards' }),
 ]);
+const TRADE_ALLIANCE_ROLE_LABELS = Object.freeze({
+  tradeMaster: 'trade master',
+  quartermaster: 'quartermaster',
+  factor: 'factor',
+  broker: 'broker',
+  trader: 'trader',
+});
 const SEED_DROP_PREFERENCES = Object.freeze([
   'none',
   'low',
@@ -268,14 +278,18 @@ export class PixiViewModelFactory {
             actions.selectStatsTab,
           ),
           inbox: this.createInboxDialog(playerInbox, actions),
-          alliance: this.createAllianceDialog(tradeAlliance),
+          alliance: this.createAllianceDialog(
+            tradeAlliance,
+            dialogState.allianceExpandedId,
+            actions,
+          ),
           leaderboard: this.createLeaderboardDialog(
             leaderboard,
             tradeAlliance,
             dialogState.leaderboardTabId,
             actions,
           ),
-          discoveries: this.createDiscoveriesDialog(gameplay),
+          discoveries: this.createDiscoveriesDialog(gameplay, actions),
           personalTasks: this.createPersonalTasksDialog(
             gameplay,
             dialogState.personalTasksTabId,
@@ -628,17 +642,13 @@ export class PixiViewModelFactory {
     };
   }
 
-  createDiscoveriesDialog(gameplay = {}) {
-    const discoveries = gameplay.discoveries ?? {};
+  createDiscoveriesDialog(gameplay = {}, actions = {}) {
+    const potions = gameplay.discoveries?.potions ?? [];
     return {
-      title: 'discoveries',
-      rows: ['seeds', 'herbs', 'potions'].flatMap((kind) =>
-        (discoveries[kind] ?? []).map((item) => ({
-          id: `${kind}:${item.key ?? item.itemTypeId}`,
-          label: item.label ?? item.key ?? 'unknown',
-          value: item.discovered || item.researched ? 'discovered' : '???',
-          resourceKey: kind.slice(0, -1),
-        })),
+      title: 'Discoveries',
+      copy: potions.length === 0 ? 'No potion discoveries yet.' : '',
+      rows: potions.map((potion, index) =>
+        createPotionDiscoveryRowModel(potion, index, actions),
       ),
     };
   }
@@ -679,7 +689,11 @@ export class PixiViewModelFactory {
     };
   }
 
-  createAllianceDialog(tradeAlliance = {}) {
+  createAllianceDialog(
+    tradeAlliance = {},
+    expandedAllianceId = null,
+    actions = {},
+  ) {
     const alliance =
       tradeAlliance.alliance ??
       tradeAlliance.currentAlliance ??
@@ -693,16 +707,99 @@ export class PixiViewModelFactory {
       tradeAlliance.alliances ??
       tradeAlliance.publicAlliances ??
       [];
+    if (!alliance) {
+      const ownApplications = tradeAlliance.ownApplications ?? [];
+      return {
+        title: 'trade alliance',
+        directory: true,
+        status:
+          tradeAlliance.connected === false
+            ? 'connecting...'
+            : 'not in an alliance',
+        rows: browse.map((candidate, index) => {
+          const allianceId = candidate.allianceId ?? candidate.id ?? index;
+          const application = ownApplications.find(
+            (entry) => entry.allianceId === allianceId,
+          );
+          const joinMode = candidate.joinMode ?? 'apply';
+          const memberRows = members
+            .filter((member) => member.allianceId === allianceId)
+            .map((member, memberIndex) => ({
+              id: member.memberIdentity ?? `${allianceId}:member:${memberIndex}`,
+              username: member.username ?? 'Wizard',
+              roleLabel:
+                TRADE_ALLIANCE_ROLE_LABELS[member.role] ??
+                member.role ??
+                'trader',
+              levelLabel: `Lv ${normalizeVisibleLevel(member.playerLevel) ?? 1}`,
+              semanticId: `workshop.alliance.member.${
+                member.memberIdentity ?? memberIndex
+              }`,
+              onActivate: () => actions.openPlayer?.(member),
+            }));
+          const action =
+            application
+              ? {
+                  label: 'Cancel Application',
+                  variant: 'brown-dark',
+                  enabled: true,
+                  onActivate: () =>
+                    actions.cancelAllianceApplication?.(
+                      application.applicationKey,
+                    ),
+                }
+              : joinMode === 'open'
+                ? {
+                    label: 'Join Alliance',
+                    variant: 'green',
+                    enabled: true,
+                    onActivate: () => actions.joinAlliance?.(allianceId),
+                  }
+                : joinMode === 'closed'
+                  ? {
+                      label: 'Closed',
+                      variant: 'gray',
+                      enabled: false,
+                    }
+                  : {
+                      label: 'Apply',
+                      variant: 'green',
+                      enabled: true,
+                      onActivate: () => actions.applyAlliance?.(allianceId),
+                    };
+
+          return {
+            id: allianceId,
+            type: 'allianceDirectory',
+            allianceId,
+            name: candidate.name ?? candidate.allianceName ?? 'Alliance',
+            tag: candidate.tag ?? '',
+            tagColor: candidate.tagColor ?? 'ink',
+            totalIncomeLabel: formatCoinAmount(candidate.totalIncome ?? 0),
+            memberCount: Math.max(
+              memberRows.length,
+              Math.floor(Number(candidate.memberCount) || 0),
+            ),
+            memberCapacity: 50,
+            members: memberRows,
+            expanded:
+              String(allianceId) === String(expandedAllianceId ?? ''),
+            action,
+            semanticId: `workshop.alliance.directory.${allianceId}`,
+            onActivate: () => actions.selectAlliance?.(allianceId),
+          };
+        }),
+      };
+    }
+
     return {
       title: 'trade alliance',
       status:
         tradeAlliance.connected === false
           ? 'connecting...'
-          : alliance
-            ? ''
-            : 'not in an alliance',
+          : '',
       copy: alliance?.description ?? '',
-      rows: (alliance ? members : browse).map((row, index) => ({
+      rows: members.map((row, index) => ({
         id:
           row.identity ??
           row.allianceId ??
@@ -1008,7 +1105,7 @@ export class PixiViewModelFactory {
             localLeaderboard.qualified === true ||
             sharedLeaderboard.qualified === true
               ? 'Qualified'
-              : `${formatWorldEventNumber(remaining)} points to qualify`,
+              : `${formatWorldEventNumber(remaining)} Points To Qualify`,
           height: 32,
         },
         ...(
@@ -1018,59 +1115,42 @@ export class PixiViewModelFactory {
         ).map((tier) => ({
           id: `reward:${tier.rankLabel}`,
           label: `Rank ${tier.rankLabel}`,
-          value: formatWorldEventRewardTier(tier),
+          value: toTitleCase(formatWorldEventRewardTier(tier)),
         })),
       ];
     } else {
-      rows = (current?.requests ?? current?.options ?? []).flatMap(
+      rows = (current?.requests ?? current?.options ?? []).map(
         (request, index) => {
           const requestId =
             request.requestId ?? request.id ?? request.key ?? index;
-          const quest = {
-            id: `quest:${requestId}`,
-            label: request.title ?? request.label ?? 'Quest',
-            value:
-              request.collectedPointText ??
-              `${formatWorldEventNumber(request.contributionPoints)} points`,
-            height: 24,
-            strong: true,
-            muted: request.completed === true,
-          };
-          const detail = {
-            id: `quest-details:${requestId}`,
-            label: [request.situation, request.description]
-              .filter(Boolean)
-              .join('\n'),
-            value: '',
-            height: 62,
-            muted: request.completed === true,
-          };
-          const donations = (request.donationOptions ?? []).map(
+          const donationOptions = (request.donationOptions ?? []).map(
             (option, optionIndex) => {
+              const optionKey = option.optionKey ?? optionIndex;
               const enabled =
                 option.canDonate === true &&
                 typeof actions.openWorldEventDonation === 'function';
               const itemKind = getWorldEventDonationItemKind(option);
               return {
-                id: `donation:${requestId}:${
-                  option.optionKey ?? optionIndex
-                }`,
-                label: option.label ?? 'Donation',
-                value: `${formatWorldEventNumber(
+                id: `donation:${requestId}:${optionKey}`,
+                label: toTitleCase(option.label ?? 'Donation'),
+                pointsEachLabel: `${formatWorldEventNumber(
                   option.pointsPerUnit,
-                )} points each\n${
-                  option.collectedPointText ??
-                  `${formatWorldEventNumber(
-                    option.contributionPoints,
-                  )} points`
-                } total`,
+                )} Points Each`,
+                totalLabel: toTitleCase(
+                  `${
+                    option.collectedPointText ??
+                    `${formatWorldEventNumber(
+                      option.contributionPoints,
+                    )} Points`
+                  } Total`,
+                ),
                 itemKind,
                 itemKey: option.itemKey,
                 resourceKey:
                   option.resourceType === 'coin' ? 'coin' : itemKind,
                 actionLabel: enabled ? 'Donate' : 'Unavailable',
                 enabled,
-                height: 40,
+                semanticId: `workshop.worldEvent.quest.${requestId}.donation.${optionKey}`,
                 ...(enabled
                   ? {
                       onActivate: () =>
@@ -1083,27 +1163,63 @@ export class PixiViewModelFactory {
               };
             },
           );
-          return [quest, detail, ...donations];
+          return {
+            id: `quest:${requestId}`,
+            requestId,
+            type: 'worldEventQuest',
+            title: toTitleCase(request.title ?? request.label ?? 'Quest'),
+            pointsLabel: toTitleCase(
+              request.collectedPointText ??
+                `${formatWorldEventNumber(request.contributionPoints)} Points`,
+            ),
+            description: toTitleCase(
+              [request.situation, request.description]
+              .filter(Boolean)
+              .join(' '),
+            ),
+            progressLabel:
+              donationOptions.length === 0
+                ? toTitleCase(
+                    request.collectedPointText ??
+                      `${formatWorldEventNumber(
+                        request.contributionPoints,
+                      )} Points Total`,
+                  )
+                : '',
+            statusLabel:
+              donationOptions.length === 0
+                ? toTitleCase(
+                    request.completed === true
+                      ? 'Completed'
+                      : request.actionText ?? '',
+                  )
+                : '',
+            completed: request.completed === true,
+            donationOptions,
+          };
         },
       );
     }
 
     return {
-      title: 'world event',
+      title: 'World Event',
       status: notice.unlocked
         ? ''
-        : `unlocks at level ${notice.unlockLevel ?? 4}`,
+        : `Unlocks At Level ${notice.unlockLevel ?? 4}`,
       selectedTabId: safeTabId,
+      rowWidget: safeTabId === 'tasks' ? 'worldEventQuest' : 'default',
       header: current
         ? {
-            headline: current.headline ?? 'World Event',
-            body: Array.isArray(current.body)
-              ? current.body.join('\n')
-              : current.body ?? '',
+            headline: toTitleCase(current.headline ?? 'World Event'),
+            body: toTitleCase(
+              Array.isArray(current.body)
+                ? current.body.join('\n')
+                : current.body ?? '',
+            ),
             meta: `${formatWorldEventNumber(
               localLeaderboard.currentPoints ??
                 sharedLeaderboard.currentPoints,
-            )} points · ${formatWorldEventTimer(current.resetLabel)}`,
+            )} Points · ${formatWorldEventTimer(current.resetLabel)}`,
           }
         : null,
       onSelectTab: (tabId) => actions.selectWorldEventTab?.(tabId),
@@ -1132,7 +1248,7 @@ export class PixiViewModelFactory {
     if (!request || !option) {
       return {
         title: 'Donate',
-        status: 'Donation is no longer available.',
+        status: 'Donation Is No Longer Available.',
         rows: [],
       };
     }
@@ -1174,18 +1290,18 @@ export class PixiViewModelFactory {
 
     return {
       title: 'Donate',
-      status: canDonate ? '' : 'Not enough resources.',
+      status: canDonate ? '' : 'Not Enough Resources.',
       rows: [
         {
           id: 'quest',
           label: 'Quest',
-          value: request.title ?? request.label ?? '',
+          value: toTitleCase(request.title ?? request.label ?? ''),
           height: 32,
         },
         {
           id: 'giving',
           label: 'Giving',
-          value: option.label ?? '',
+          value: toTitleCase(option.label ?? ''),
           itemKind: getWorldEventDonationItemKind(option),
           itemKey: option.itemKey,
           resourceKey:
@@ -1196,9 +1312,10 @@ export class PixiViewModelFactory {
         {
           id: 'total',
           label: 'Total Contributed',
-          value:
+          value: toTitleCase(
             option.collectedPointText ??
-            `${formatWorldEventNumber(option.contributionPoints)} points`,
+              `${formatWorldEventNumber(option.contributionPoints)} Points`,
+          ),
         },
         {
           id: 'owned',
@@ -1219,7 +1336,7 @@ export class PixiViewModelFactory {
           label: `${formatWorldEventNumber(amount)} ${
             option.label ?? 'resource'
           }`,
-          value: `${formatWorldEventNumber(points)} points`,
+          value: `${formatWorldEventNumber(points)} Points`,
           actionLabel: `Donate x${formatWorldEventNumber(amount)}`,
           enabled: canDonate,
           onActivate: () =>
@@ -1442,6 +1559,116 @@ function createWorldChatPreview(worldChat = {}) {
       })
       .join('\n'),
   };
+}
+
+function createPotionDiscoveryRowModel(potion = {}, index = 0, actions = {}) {
+  const discovered = potion.discovered === true;
+  const potionKey = String(potion.key ?? potion.itemKey ?? '').trim();
+  const discovererUsername = discovered
+    ? String(potion.discoveredByUsername ?? '').trim() || 'Wizard'
+    : '';
+  const discovererIdentity = discovered
+    ? String(potion.discoveredByIdentity ?? '').trim()
+    : '';
+  const ingredients = discovered
+    ? (potion.ingredients ?? []).map((ingredient, ingredientIndex) => {
+        const key = String(
+          ingredient?.key ??
+            ingredient?.itemKey ??
+            ingredient?.itemTypeId ??
+            ingredientIndex,
+        ).trim();
+        return {
+          id: key || ingredientIndex,
+          key,
+          label: toTitleCase(
+            ingredient?.label ?? splitCamelCase(ingredient?.key) ?? 'Unknown',
+          ),
+          quantity: Math.max(
+            1,
+            Math.floor(Number(ingredient?.quantity) || 1),
+          ),
+        };
+      })
+    : [];
+  const player = {
+    identity: discovererIdentity,
+    name: discovererUsername,
+    username: discovererUsername,
+  };
+
+  return {
+    id: `potion:${potionKey || potion.itemTypeId || index}`,
+    type: 'potionDiscovery',
+    discovered,
+    potionKey: discovered ? potionKey || 'generic' : 'unknownPotion',
+    label: discovered
+      ? toTitleCase(potion.label ?? splitCamelCase(potionKey) ?? 'Potion')
+      : 'Undiscovered Potion',
+    discovererUsername,
+    discovererIdentity,
+    discoveredAtLabel: discovered
+      ? formatDiscoveryDate(potion.discoveredAtMs)
+      : '',
+    ingredients,
+    manaLabel: discovered
+      ? `${formatDiscoveryWholeNumber(potion.manaCost)} Mana`
+      : '',
+    durationLabel: discovered
+      ? `${formatDiscoveryDuration(potion.brewDurationMs)} Brew`
+      : '',
+    royaltyLabel: discovered
+      ? `${formatDiscoveryCoin(potion.royaltyCoin)} Coin Royalty`
+      : '',
+    discovererSemanticId:
+      discovered && discovererIdentity
+        ? `workshop.discovery.player:${discovererIdentity}`
+        : null,
+    onDiscovererActivate:
+      discovered && typeof actions.openPlayer === 'function'
+        ? () => actions.openPlayer(player)
+        : null,
+  };
+}
+
+function formatDiscoveryDate(timestamp) {
+  const value = Number(timestamp);
+  if (!Number.isFinite(value) || value <= 0) {
+    return 'Date Unknown';
+  }
+
+  try {
+    return new Date(value).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return 'Date Unknown';
+  }
+}
+
+function formatDiscoveryDuration(durationMs) {
+  const value = Number(durationMs);
+  if (!Number.isFinite(value) || value < 0) {
+    return '?s';
+  }
+  return `${Math.ceil(value / 1_000)}s`;
+}
+
+function formatDiscoveryWholeNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0
+    ? String(Math.floor(number))
+    : '?';
+}
+
+function formatDiscoveryCoin(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) {
+    return '?';
+  }
+  return Number(number.toFixed(2)).toString();
 }
 
 function formatWorldChatMessageAge(sentAtMs, nowMs = Date.now()) {

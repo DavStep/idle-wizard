@@ -177,6 +177,7 @@ export class PixiPagesFacade {
     this.workshopLeaderboardTabId = 'singlePlayer';
     this.workshopPersonalTasksTabId = 'tasks';
     this.workshopWorldEventTabId = 'tasks';
+    this.workshopAllianceExpandedId = null;
     this.worldEventDonationDraft = null;
     this.researchTabId = 'regular';
     this.shopTabId = 'traders';
@@ -379,6 +380,18 @@ export class PixiPagesFacade {
     this.trackSubscription(
       this.tradeAllianceFacade?.subscribe?.((snapshot) => {
         this.tradeAllianceSnapshot = snapshot ?? {};
+        const availableAllianceIds = new Set(
+          (this.tradeAllianceSnapshot.alliances ?? []).map((alliance) =>
+            String(alliance.allianceId ?? ''),
+          ),
+        );
+        if (
+          this.tradeAllianceSnapshot.ownAlliance ||
+          (this.workshopAllianceExpandedId &&
+            !availableAllianceIds.has(this.workshopAllianceExpandedId))
+        ) {
+          this.workshopAllianceExpandedId = null;
+        }
         this.refresh();
       }),
     );
@@ -613,6 +626,7 @@ export class PixiPagesFacade {
           dialogState: {
             bagTabId: this.workshopBagTabId,
             statsTabId: this.workshopStatsTabId,
+            allianceExpandedId: this.workshopAllianceExpandedId,
             leaderboardTabId: this.workshopLeaderboardTabId,
             personalTasksTabId: this.workshopPersonalTasksTabId,
             worldEventTabId: this.workshopWorldEventTabId,
@@ -789,6 +803,19 @@ export class PixiPagesFacade {
           this.refreshPage('workshop');
           return true;
         },
+        selectAlliance: (allianceId) => {
+          const nextId = String(allianceId ?? '');
+          this.workshopAllianceExpandedId =
+            this.workshopAllianceExpandedId === nextId ? null : nextId;
+          this.refreshPage('workshop');
+          return true;
+        },
+        joinAlliance: (allianceId) =>
+          this.tradeAllianceFacade?.joinAlliance?.(allianceId),
+        applyAlliance: (allianceId) =>
+          this.tradeAllianceFacade?.applyAlliance?.(allianceId),
+        cancelAllianceApplication: (applicationKey) =>
+          this.tradeAllianceFacade?.cancelApplication?.(applicationKey),
         selectLeaderboardTab: (tabId) => {
           this.workshopLeaderboardTabId = normalizeWorkshopTabId(
             tabId,

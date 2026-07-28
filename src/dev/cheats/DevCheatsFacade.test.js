@@ -637,10 +637,14 @@ describe('DevCheatsFacade', () => {
     const playerShopFacade = {
       setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
     };
+    const potionDiscoveryFacade = {
+      setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
+    };
     const backendFacade = {
       getLeaderboardFacade: () => leaderboardFacade,
       getWorldEventLeaderboardFacade: () => worldEventLeaderboardFacade,
       getPlayerShopFacade: () => playerShopFacade,
+      getPotionDiscoveryFacade: () => potionDiscoveryFacade,
     };
     const pagesFacade = {
       openDialog: vi.fn((dialogId, options) => ({ ok: true, dialogId, options })),
@@ -850,6 +854,31 @@ describe('DevCheatsFacade', () => {
       tab: 'npm',
       popup: 'sell',
     });
+
+    expect(target.cheats.openUi('discoveries')).toMatchObject({
+      ok: true,
+      surfaceId: 'discoveries',
+      snapshot: {
+        discoveries: [
+          {
+            potionKey: 'silverleafQuiet',
+            username: 'Ada',
+          },
+        ],
+      },
+    });
+    expect(potionDiscoveryFacade.setDevSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        connected: true,
+        discoveries: [
+          expect.objectContaining({
+            potionKey: 'silverleafQuiet',
+            discoveredAtMs: Date.UTC(2026, 0, 2),
+          }),
+        ],
+      }),
+    );
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('discoveries', {});
 
     expect(target.cheats.setStressText()).toMatchObject({
       ok: true,

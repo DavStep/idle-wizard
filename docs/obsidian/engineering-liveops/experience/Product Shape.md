@@ -108,9 +108,9 @@ experience_type: product-shape
 - Weekly events should be framed as `weekly world event` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
 - Personal tasks have only daily quest rows; completed daily quests add points to both daily and weekly reward tracks, separate from weekly world events and alliance quests.
 - Prestige resets the run but preserves personal task daily/weekly progress until the normal period rollover.
-- Tabbed dialog close controls use the shared round X asset centered below the shell at the authored gap; keep the tab strip attached below the content panel unless the surface explicitly reserves the brown shell footer for tabs, as Load Stall, Workshop Bag, and Workshop Stats do. Keep back/previous/next as text navigation.
+- Tabbed dialog close controls use the shared round X asset centered below the shell at the authored gap; keep every whole-dialog category tab strip inside the brown shell footer below the paper. Keep content-local subsection controls inside their paper and back/previous/next as text navigation.
 - Nested dialogs inside an existing popup need their own full-layer backdrop; otherwise the parent popup text bleeds through during dialog enter/fade.
-- Personal tasks is a standard tabbed popup: `--style-tabbed-dialog-width` panel with `260px` dialog content. Do not pair that panel with a `286px` dialog or the border becomes wider than the tabs.
+- Personal tasks is a standard tabbed popup: use the default `304px` shell and its shared count-aware in-shell footer row, with the content viewport ending above the tabs.
 - Personal task badges should count only visible milestone rewards; task rows give points and should not carry reward claim buttons.
 - Workshop personal tasks and world event character-button notification dots belong on the small `tasks`/`event` label box, not the portrait/full hit area.
 - Weekly event families should cover village crises, political changes, military danger, exploration discoveries, and trade/civil disruption.
@@ -357,6 +357,7 @@ experience_type: product-shape
 - Pixel/WebView taps need forgiving touch slop in `PressFeedbackManager`; a 12px move threshold can treat normal finger drift as a drag and suppress the valid click.
 - Workshop summon's custom hold-to-repeat pointerdown can suppress native quick-tap clicks; keep a validated touch release fallback in the summon manager and dedupe it against global synthetic clicks.
 - Workshop side-control hit areas must partition on the `52.25px` row pitch; using the taller visual widget bounds lets the next control steal taps from labels such as `Leaderboard`.
+- Retained dialog presenters must preserve the full feature record instead of flattening rich data into generic label/value rows; potion discovery projection includes art key, discoverer, timestamp, ingredients, mana, duration, and royalty.
 - Retained Pixi tutorial overlays can report the stage root for a revealed room press even when the pointer is inside the control bounds; opt only the affected registration into geometric fallback hit-testing and gate that fallback on the revealed control's visibility.
 - Retained Pixi info buttons need geometric fallback hit-testing within their existing hit area; an adjacent disabled control can retarget the event path to an overlay/root while the info action must remain available.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.

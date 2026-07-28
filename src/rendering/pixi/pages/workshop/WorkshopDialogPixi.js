@@ -7,6 +7,17 @@ import {
   getSeedIconFrameName,
   getSeedPackItemFrameName,
 } from '../../../../assets/items/seeds/seedIconFrames.js';
+import { PixiCostButton } from '../../primitives/PixiCostButton.js';
+import {
+  PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
+  createDialogPaperSection,
+  resolveDialogFooterTabLayout,
+  resolveDialogPaperOutsets,
+  setDialogPaperAboveFooterTabs,
+  setDialogPaperSectionBounds,
+} from '../../primitives/PixiDialogFrame.js';
+import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
@@ -14,6 +25,7 @@ import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
@@ -30,16 +42,6 @@ import {
 } from './RetainedPageKit.js';
 
 const WORKSHOP_DIALOG_CONTENT_WIDTH = 264;
-const BAG_DIALOG_TAB_ROW_WIDTH = 286;
-const BAG_DIALOG_TAB_FONT_SIZE = PIXI_UI_GEOMETRY.borderLabelFontSize;
-const DIALOG_TAB_HEIGHT = 28;
-const DIALOG_SHELL_FOOTER_PAPER_GAP = 4;
-const DIALOG_SHELL_FOOTER_BOTTOM_INSET = 6;
-const DIALOG_TAB_GAP = 3;
-const DIALOG_FOOTER_TAB_MIN_GAP = 4;
-const DIALOG_FOOTER_TAB_MAX_GAP = 10;
-const DIALOG_FOOTER_TAB_GAP_STEP = 2;
-const DIALOG_FOOTER_TAB_REFERENCE_COUNT = 5;
 const DIALOG_SCROLL_VIEWPORT_TOP = 18;
 const DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET = 30;
 const DIALOG_PAPER_TOP =
@@ -68,6 +70,15 @@ const WORLD_CHAT_BODY_LINE_HEIGHT = 13;
 const WORLD_CHAT_TIMESTAMP_COLOR = '#946a2e';
 const WORLD_CHAT_SYSTEM_BACKGROUND = '#efd0a2';
 const WORLD_CHAT_TAG_STROKE = '#2b1912';
+const DISCOVERY_ROW_GAP = 6;
+const DISCOVERY_MAX_INGREDIENTS = 6;
+const DISCOVERY_ICON_SIZE = 44;
+const DISCOVERY_LOCKED_ROW_HEIGHT = 64;
+const DISCOVERY_BASE_ROW_HEIGHT = 92;
+const DISCOVERY_RECIPE_COLUMNS = 2;
+const DISCOVERY_RECIPE_ROW_HEIGHT = 17;
+const DISCOVERY_PLAYER_COLOR = '#7c359d';
+const DISCOVERY_DIVIDER_COLOR = '#bd9065';
 const WORLD_CHAT_TAG_COLORS = Object.freeze({
   ink: '#634934',
   red: '#9b3439',
@@ -80,6 +91,32 @@ const WORLD_CHAT_TAG_COLORS = Object.freeze({
   brown: '#704b35',
   slate: '#596271',
 });
+const ALLIANCE_DIRECTORY_HEADER_HEIGHT = 30;
+const ALLIANCE_MEMBER_ROW_HEIGHT = 28;
+const ALLIANCE_MEMBER_VISIBLE_ROWS = 4.5;
+const ALLIANCE_MEMBER_VIEWPORT_HEIGHT =
+  ALLIANCE_MEMBER_ROW_HEIGHT * ALLIANCE_MEMBER_VISIBLE_ROWS;
+const ALLIANCE_DIRECTORY_ACTION_HEIGHT = 30;
+const ALLIANCE_DIRECTORY_EXPANDED_HEIGHT =
+  ALLIANCE_DIRECTORY_HEADER_HEIGHT +
+  18 +
+  ALLIANCE_MEMBER_VIEWPORT_HEIGHT +
+  8 +
+  ALLIANCE_DIRECTORY_ACTION_HEIGHT +
+  8;
+const WORLD_EVENT_ROW_GAP = 6;
+const WORLD_EVENT_QUEST_TITLE_HEIGHT = 16;
+const WORLD_EVENT_QUEST_DESCRIPTION_GAP = 4;
+const WORLD_EVENT_QUEST_OPTION_HEIGHT = 34;
+const WORLD_EVENT_QUEST_OPTION_GAP = 2;
+const WORLD_EVENT_QUEST_CONTENT_INSET = 10;
+const WORLD_EVENT_QUEST_ACTION_WIDTH = 72;
+const WORLD_EVENT_QUEST_ACTION_HEIGHT = 27;
+const WORLD_EVENT_QUEST_ICON_SIZE = 16;
+const WORLD_EVENT_QUEST_MIN_DESCRIPTION_HEIGHT = 24;
+const WORLD_EVENT_MAX_DONATION_OPTIONS = 4;
+const WORLD_EVENT_HEADER_CONTENT_INSET = 5;
+const WORLD_EVENT_LIST_CONTENT_INSET = 5;
 const RESOURCE_ICON_FRAMES = Object.freeze({
   coin: 'resource:coin',
   crystal: 'resource:crystal',
@@ -125,6 +162,11 @@ export class WorkshopDialogPixi {
     this.isBagDialog = this.dialogId === 'workshop.bag';
     this.isStatsDialog = this.dialogId === 'workshop.stats';
     this.isWorldChatDialog = this.dialogId === 'workshop.worldChat';
+    this.isDiscoveriesDialog =
+      this.dialogId === 'workshop.discoveries';
+    this.isAllianceDialog = this.dialogId === 'workshop.alliance';
+    this.isWorldEventDialog = this.dialogId === 'workshop.worldEvent';
+    this.counters = counters;
     this.scrollContentPaddingTop =
       RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
     this.scrollViewportTopInset = this.isBagDialog
@@ -183,6 +225,25 @@ export class WorkshopDialogPixi {
       label: `${dialogId}-scroll`,
       inputRouter: this.inputRouter,
     });
+    this.worldEventHeaderPaper = this.isWorldEventDialog
+      ? createDialogPaperSection(
+          this.panel.paperFrame.texture,
+          `${dialogId}-header-paper`,
+        )
+      : null;
+    this.worldEventListPaper = this.isWorldEventDialog
+      ? createDialogPaperSection(
+          this.panel.paperFrame.texture,
+          `${dialogId}-list-paper`,
+        )
+      : null;
+    if (this.isWorldEventDialog) {
+      this.panel.setPaperVisible(false);
+      this.panel.content.addChild(
+        this.worldEventHeaderPaper,
+        this.worldEventListPaper,
+      );
+    }
     this.tabsLayer = new Container({ label: `${dialogId}-tabs` });
     this.panel.content.addChild(
       this.copy,
@@ -235,6 +296,8 @@ export class WorkshopDialogPixi {
       create: () =>
         this.isWorldChatDialog
           ? new WorldChatMessageRowPixi({ dialog: this })
+          : this.isDiscoveriesDialog
+            ? new PotionDiscoveryRowPixi({ dialog: this })
           : new WorkshopDialogRow({ dialog: this }),
       reset: (row) => row.reset(),
       dispose: (row) => row.destroy(),
@@ -248,6 +311,47 @@ export class WorkshopDialogPixi {
       bind: (widget, row) => widget.bind(row),
       afterReconcile: (widgets) => this.orderRows(widgets),
     });
+    this.defaultRows = this.rows;
+    this.allianceRowPool = this.isAllianceDialog
+      ? new WidgetPool({
+          name: `${dialogId} alliance directory row pool`,
+          counters,
+          create: () => new AllianceDirectoryRow({ dialog: this }),
+          reset: (row) => row.reset(),
+          dispose: (row) => row.destroy(),
+          maxSize: 30,
+        })
+      : null;
+    this.allianceRows = this.allianceRowPool
+      ? new PooledCollection({
+          name: `${dialogId} alliance directory rows`,
+          pool: this.allianceRowPool,
+          counters,
+          keyOf: (row, index) => row.id ?? row.allianceId ?? index,
+          bind: (widget, row) => widget.bind(row),
+          afterReconcile: (widgets) => this.orderRows(widgets),
+        })
+      : null;
+    this.worldEventRowPool = this.isWorldEventDialog
+      ? new WidgetPool({
+          name: `${dialogId} world event quest row pool`,
+          counters,
+          create: () => new WorldEventQuestRow({ dialog: this }),
+          reset: (row) => row.reset(),
+          dispose: (row) => row.destroy(),
+          maxSize: 16,
+        })
+      : null;
+    this.worldEventRows = this.worldEventRowPool
+      ? new PooledCollection({
+          name: `${dialogId} world event quest rows`,
+          pool: this.worldEventRowPool,
+          counters,
+          keyOf: (row, index) => row.id ?? row.requestId ?? index,
+          bind: (widget, row) => widget.bind(row),
+          afterReconcile: (widgets) => this.orderRows(widgets),
+        })
+      : null;
     this.tabPool = new WidgetPool({
       name: `${dialogId} tab pool`,
       counters,
@@ -298,6 +402,20 @@ export class WorkshopDialogPixi {
     this.bindComposer(this.viewModel.composer);
     this.updateStatus();
     this.tabs.reconcile(normalizeRows(this.viewModel.tabs));
+    const nextRows =
+      this.isAllianceDialog &&
+      this.viewModel.directory === true &&
+      this.allianceRows
+        ? this.allianceRows
+        : this.isWorldEventDialog &&
+            this.viewModel.rowWidget === 'worldEventQuest' &&
+            this.worldEventRows
+          ? this.worldEventRows
+        : this.defaultRows;
+    if (this.rows !== nextRows) {
+      this.rows.reconcile([]);
+      this.rows = nextRows;
+    }
     this.rows.reconcile(normalizeRows(this.viewModel.rows));
     this.layout({
       sourceWidth: this.sourceWidth,
@@ -315,15 +433,20 @@ export class WorkshopDialogPixi {
       action: () => tab.onSelect?.(tab.id) ?? this.viewModel.onSelectTab?.(tab.id),
     });
     button.control.textLabel.setFontSize(
-      this.isBagDialog
-        ? BAG_DIALOG_TAB_FONT_SIZE
-        : PIXI_UI_GEOMETRY.bodyFontSize,
+      PIXI_UI_GEOMETRY.borderLabelFontSize,
     );
   }
 
   orderRows(widgets) {
     this.scroll.content.removeChildren();
-    const rowGap = this.isWorldChatDialog ? WORLD_CHAT_ROW_GAP : 4;
+    const rowGap = this.isWorldChatDialog
+      ? WORLD_CHAT_ROW_GAP
+      : this.isDiscoveriesDialog
+        ? DISCOVERY_ROW_GAP
+        : this.isWorldEventDialog &&
+            this.viewModel.rowWidget === 'worldEventQuest'
+          ? WORLD_EVENT_ROW_GAP
+        : 4;
     const rowsHeight = widgets.reduce(
       (height, widget, index) =>
         height + widget.getPreferredHeight() + (index > 0 ? rowGap : 0),
@@ -396,7 +519,12 @@ export class WorkshopDialogPixi {
       wordWrapWidth: 264,
     });
 
-    for (const row of this.rows?.getWidgets?.() ?? []) {
+    const allRows = new Set([
+      ...(this.defaultRows?.getWidgets?.() ?? []),
+      ...(this.allianceRows?.getWidgets?.() ?? []),
+      ...(this.worldEventRows?.getWidgets?.() ?? []),
+    ]);
+    for (const row of allRows) {
       row.applyTheme(contentTheme);
     }
 
@@ -413,18 +541,14 @@ export class WorkshopDialogPixi {
     this.sourceHeight = Number(viewportProjection?.sourceHeight) || 2170 / 3;
     const width = 304;
     const tabs = this.tabs.getWidgets();
-    const tabsHeight = tabs.length > 0 ? DIALOG_TAB_HEIGHT : 0;
-    const tabsInShellFooter =
-      (this.isBagDialog || this.isStatsDialog) && tabsHeight > 0;
+    const tabsInShellFooter = tabs.length > 0;
     const composerHeight =
       this.composerField?.visible === true ? 32 : 0;
-    const height = Math.min(
-      382,
-      this.sourceHeight - 80 - (tabsInShellFooter ? 0 : tabsHeight),
-    );
+    const height = this.isWorldEventDialog
+      ? Math.min(470, this.sourceHeight - 118)
+      : Math.min(382, this.sourceHeight - 80);
     const panelX = (this.sourceWidth - width) / 2;
-    const panelY =
-      (this.sourceHeight - height - (tabsInShellFooter ? 0 : tabsHeight)) / 2;
+    const panelY = (this.sourceHeight - height) / 2;
     this.modal.layout(viewportProjection);
     this.modal.setBounds(
       panelX,
@@ -433,25 +557,35 @@ export class WorkshopDialogPixi {
       height,
     );
     let shellFooterPaperReduction = 0;
+    let footerTabLayout = null;
     if (tabsInShellFooter) {
-      const tabY =
-        this.panel.coreHeight +
-        PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset -
-        DIALOG_SHELL_FOOTER_BOTTOM_INSET -
-        DIALOG_TAB_HEIGHT;
-      const paperBottom = tabY - DIALOG_SHELL_FOOTER_PAPER_GAP;
+      footerTabLayout = resolveDialogFooterTabLayout({
+        coreWidth: this.panel.coreWidth,
+        coreHeight: this.panel.coreHeight,
+        tabCount: tabs.length,
+      });
+    }
+    if (this.isWorldEventDialog) {
+      this.layoutWorldEventDialog({
+        width,
+        height,
+        tabs,
+        footerTabLayout,
+      });
+      return;
+    }
+    if (footerTabLayout) {
+      const paperBottom = setDialogPaperAboveFooterTabs(
+        this.panel,
+        footerTabLayout,
+      );
       const defaultPaperBottom = height - DIALOG_PAPER_BOTTOM_INSET;
       shellFooterPaperReduction = Math.max(
         0,
         defaultPaperBottom - paperBottom,
       );
-      this.panel.paperFrame.setSize(
-        this.panel.paperFrame.frameWidth,
-        Math.max(0, paperBottom - this.panel.paperFrame.y),
-        PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
-      );
     }
-    if (this.isWorldChatDialog && composerHeight > 0) {
+    if (!tabsInShellFooter && this.isWorldChatDialog && composerHeight > 0) {
       const paperBottom = height - 52;
       this.panel.paperFrame.setSize(
         this.panel.paperFrame.frameWidth,
@@ -503,40 +637,159 @@ export class WorkshopDialogPixi {
     if (this.isWorldChatDialog) {
       this.orderRows(this.rows.getWidgets());
     }
-    const tabRowWidth = this.isBagDialog
-      ? BAG_DIALOG_TAB_ROW_WIDTH
-      : WORKSHOP_DIALOG_CONTENT_WIDTH;
-    const tabsY = tabsInShellFooter
-      ? this.panel.coreHeight +
-        PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset -
-        DIALOG_SHELL_FOOTER_BOTTOM_INSET -
-        DIALOG_TAB_HEIGHT
-      : height - 2;
-    this.tabsLayer.position.set((width - tabRowWidth) / 2, tabsY);
+    this.tabsLayer.position.set(
+      footerTabLayout?.rowX ?? width / 2,
+      footerTabLayout?.rowY ?? height,
+    );
     this.tabsLayer.visible = tabs.length > 0;
-    const gap = tabsInShellFooter
-      ? resolveFooterTabGap(tabs.length)
-      : DIALOG_TAB_GAP;
-    const tabWidth =
-      tabs.length > 0
-        ? (tabRowWidth - gap * (tabs.length - 1)) / tabs.length
-        : 0;
+    const gap = footerTabLayout?.gap ?? 0;
+    const tabWidth = footerTabLayout?.tabWidth ?? 0;
     let tabX = 0;
 
     for (const button of tabs) {
-      button.setBounds(tabX, 0, tabWidth, DIALOG_TAB_HEIGHT);
+      button.setBounds(
+        tabX,
+        0,
+        tabWidth,
+        PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      );
       tabX += tabWidth + gap;
     }
 
     this.status.position.set(
       20,
-      height - 24 - statusHeight - composerHeight,
+      height -
+        24 -
+        statusHeight -
+        composerHeight -
+        shellFooterPaperReduction,
     );
 
     if (this.composerField) {
       this.composerField.position.set(18, height - 40);
       this.composerField.setSize(195, 27);
       this.composerSubmit.setBounds(219, height - 40, 67, 27);
+    }
+  }
+
+  layoutWorldEventDialog({ width, height, tabs, footerTabLayout }) {
+    this.panel.setPaperVisible(false);
+    this.copy.visible = false;
+    this.copy.renderable = false;
+    const paperOutsets = resolveDialogPaperOutsets({
+      top: PIXI_UI_GEOMETRY.dialogPadding,
+      right: PIXI_UI_GEOMETRY.dialogPadding,
+      bottom: PIXI_UI_GEOMETRY.dialogPadding,
+      left: PIXI_UI_GEOMETRY.dialogPadding,
+    });
+    const contentX = PIXI_UI_GEOMETRY.dialogPadding;
+    const contentWidth = WORKSHOP_DIALOG_CONTENT_WIDTH;
+    const headerY = PIXI_UI_GEOMETRY.dialogPadding;
+    const hasHeader = this.headerHeadline.visible === true;
+
+    this.headerHeadline.position.set(
+      contentX,
+      headerY + WORLD_EVENT_HEADER_CONTENT_INSET,
+    );
+    this.headerBody.position.set(
+      contentX,
+      this.headerHeadline.y +
+        (this.headerHeadline.text
+          ? Math.ceil(this.headerHeadline.height) + 3
+          : 0),
+    );
+    this.headerMeta.position.set(
+      contentX,
+      this.headerBody.y +
+        (this.headerBody.text ? Math.ceil(this.headerBody.height) + 3 : 0),
+    );
+    const headerContentHeight = hasHeader
+      ? Math.max(
+          52,
+          this.headerMeta.y +
+            Math.ceil(this.headerMeta.height) +
+            WORLD_EVENT_HEADER_CONTENT_INSET -
+            headerY,
+        )
+      : 0;
+
+    this.worldEventHeaderPaper.visible = hasHeader;
+    this.worldEventHeaderPaper.renderable = hasHeader;
+    if (hasHeader) {
+      setDialogPaperSectionBounds(
+        this.worldEventHeaderPaper,
+        {
+          x: contentX,
+          y: headerY,
+          width: contentWidth,
+          height: headerContentHeight,
+        },
+        paperOutsets,
+      );
+    }
+
+    const listFrameTop = hasHeader
+      ? headerY +
+        headerContentHeight +
+        paperOutsets.bottom +
+        PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap
+      : headerY - paperOutsets.top;
+    const listY = listFrameTop + paperOutsets.top;
+    const paperBottom =
+      footerTabLayout?.paperBottom ??
+      height - DIALOG_PAPER_BOTTOM_INSET;
+    const listHeight = Math.max(
+      0,
+      paperBottom - listY - paperOutsets.bottom,
+    );
+    this.worldEventListPaper.visible = true;
+    this.worldEventListPaper.renderable = true;
+    setDialogPaperSectionBounds(
+      this.worldEventListPaper,
+      {
+        x: contentX,
+        y: listY,
+        width: contentWidth,
+        height: listHeight,
+      },
+      paperOutsets,
+    );
+
+    const statusHeight = this.status.text ? 16 : 0;
+    this.scroll.setBounds(
+      contentX,
+      listY + WORLD_EVENT_LIST_CONTENT_INSET,
+      contentWidth,
+      Math.max(
+        0,
+        listHeight -
+          WORLD_EVENT_LIST_CONTENT_INSET * 2 -
+          statusHeight,
+      ),
+    );
+    this.status.position.set(
+      contentX,
+      listY + listHeight - WORLD_EVENT_LIST_CONTENT_INSET - statusHeight,
+    );
+    this.orderRows(this.rows.getWidgets());
+
+    this.tabsLayer.position.set(
+      footerTabLayout?.rowX ?? width / 2,
+      footerTabLayout?.rowY ?? height,
+    );
+    this.tabsLayer.visible = tabs.length > 0;
+    this.tabsLayer.renderable = this.tabsLayer.visible;
+    const gap = footerTabLayout?.gap ?? 0;
+    const tabWidth = footerTabLayout?.tabWidth ?? 0;
+    let tabX = 0;
+    for (const button of tabs) {
+      button.setBounds(
+        tabX,
+        0,
+        tabWidth,
+        PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      );
+      tabX += tabWidth + gap;
     }
   }
 
@@ -567,8 +820,18 @@ export class WorkshopDialogPixi {
     this.composerSubmit?.destroy();
     this.composerSubmit = null;
 
-    this.rows.destroy();
+    this.defaultRows?.destroy();
+    this.allianceRows?.destroy();
+    this.worldEventRows?.destroy();
+    this.rows = null;
+    this.defaultRows = null;
+    this.allianceRows = null;
+    this.worldEventRows = null;
     this.rowPool.destroy();
+    this.allianceRowPool?.destroy();
+    this.allianceRowPool = null;
+    this.worldEventRowPool?.destroy();
+    this.worldEventRowPool = null;
     this.tabs.destroy();
     this.tabPool.destroy();
     this.scroll.destroy();
@@ -689,17 +952,432 @@ export class WorkshopDialogPixi {
 
 }
 
-function resolveFooterTabGap(tabCount) {
-  if (tabCount <= 1) {
-    return 0;
+class WorldEventDonationOptionRow {
+  constructor({ dialog, index }) {
+    this.dialog = dialog;
+    this.root = new Container({
+      label: `${dialog.dialogId}-quest-donation:${index}`,
+    });
+    this.icon = new Sprite(Texture.EMPTY);
+    this.icon.anchor.set(0.5);
+    this.iconOverlay = new Sprite(Texture.EMPTY);
+    this.iconOverlay.anchor.set(0.5);
+    this.label = createText('', {
+      fontSize: 10,
+      lineHeight: 11,
+      wordWrapWidth: 72,
+    });
+    this.points = createText('', {
+      fontSize: 10,
+      lineHeight: 11,
+      align: 'right',
+    });
+    this.points.anchor.set(1, 0);
+    this.total = createText('', {
+      fontSize: 9,
+      lineHeight: 10,
+      align: 'right',
+    });
+    this.total.anchor.set(1, 0);
+    this.action = new PixiCostButton({
+      assetManager: dialog.assetManager,
+      inputRouter: dialog.inputRouter,
+      compact: true,
+      contentScale: 0.68,
+      width: WORLD_EVENT_QUEST_ACTION_WIDTH,
+      height: WORLD_EVENT_QUEST_ACTION_HEIGHT,
+      label: `${this.root.label}:action`,
+    });
+    this.root.addChild(
+      this.icon,
+      this.iconOverlay,
+      this.label,
+      this.points,
+      this.total,
+      this.action,
+    );
+    this.root.visible = false;
   }
 
-  return Math.min(
-    DIALOG_FOOTER_TAB_MAX_GAP,
-    DIALOG_FOOTER_TAB_MIN_GAP +
-      Math.max(0, DIALOG_FOOTER_TAB_REFERENCE_COUNT - tabCount) *
-        DIALOG_FOOTER_TAB_GAP_STEP,
-  );
+  bind(model) {
+    this.unregisterTarget();
+    this.model = model ?? {};
+    this.root.visible = true;
+    this.root.renderable = true;
+    setText(this.label, this.model.label ?? 'Donation');
+    setText(this.points, this.model.pointsEachLabel ?? '');
+    setText(this.total, this.model.totalLabel ?? '');
+    const iconFrames = resolveValueIconFrames(this.model);
+    this.icon.texture = resolveAtlasTexture(
+      this.dialog.assetManager,
+      iconFrames.base,
+    );
+    this.iconOverlay.texture = resolveAtlasTexture(
+      this.dialog.assetManager,
+      iconFrames.overlay,
+    );
+    this.icon.visible = this.icon.texture !== Texture.EMPTY;
+    this.icon.renderable = this.icon.visible;
+    this.iconOverlay.visible =
+      this.icon.visible && this.iconOverlay.texture !== Texture.EMPTY;
+    this.iconOverlay.renderable = this.iconOverlay.visible;
+    const enabled =
+      this.model.enabled === true &&
+      typeof this.model.onActivate === 'function';
+    this.action.setModel({
+      amountLabel: this.model.actionLabel ?? (enabled ? 'Donate' : 'Unavailable'),
+      resource: 'none',
+      enabled,
+      action: enabled ? () => this.model.onActivate?.(this.model) : null,
+    });
+    this.action.eventMode = enabled ? 'static' : 'none';
+    this.action.cursor = enabled ? 'pointer' : 'default';
+    this.targetId = this.model.semanticId ?? null;
+    if (this.targetId) {
+      this.dialog.registerTarget({
+        semanticId: this.targetId,
+        displayObject: this.action,
+        state: () => ({
+          enabled,
+          interactive: enabled,
+          selected: false,
+        }),
+        activate: () =>
+          enabled ? this.model?.onActivate?.(this.model) ?? true : false,
+      });
+    }
+    this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
+  }
+
+  setBounds(x, y, width, height = WORLD_EVENT_QUEST_OPTION_HEIGHT) {
+    this.root.position.set(x, y);
+    this.width = width;
+    this.height = height;
+    const actionX = width - WORLD_EVENT_QUEST_ACTION_WIDTH;
+    const iconCenterX = WORLD_EVENT_QUEST_ICON_SIZE / 2;
+    const iconCenterY = height / 2;
+    if (this.iconOverlay.visible) {
+      layoutPixiSeedPackIcon({
+        base: this.icon,
+        item: this.iconOverlay,
+        x: iconCenterX,
+        y: iconCenterY,
+        width: WORLD_EVENT_QUEST_ICON_SIZE,
+        height: WORLD_EVENT_QUEST_ICON_SIZE,
+        fitPositionX: 1,
+      });
+    } else {
+      this.icon.position.set(iconCenterX, iconCenterY);
+      this.icon.width = WORLD_EVENT_QUEST_ICON_SIZE;
+      this.icon.height = WORLD_EVENT_QUEST_ICON_SIZE;
+      this.iconOverlay.rotation = 0;
+    }
+    const copyX = this.icon.visible ? WORLD_EVENT_QUEST_ICON_SIZE + 4 : 0;
+    const copyRight = actionX - 5;
+    this.label.position.set(copyX, 2);
+    this.label.style.wordWrap = true;
+    this.label.style.wordWrapWidth = Math.max(44, copyRight - copyX - 72);
+    this.points.position.set(copyRight, 2);
+    this.total.position.set(copyRight, 17);
+    this.action.setBounds(
+      actionX,
+      Math.max(0, (height - WORLD_EVENT_QUEST_ACTION_HEIGHT) / 2),
+      WORLD_EVENT_QUEST_ACTION_WIDTH,
+      WORLD_EVENT_QUEST_ACTION_HEIGHT,
+    );
+    this.root.hitArea = new Rectangle(0, 0, width, height);
+  }
+
+  applyTheme(theme) {
+    const resolvedTheme = theme ?? this.dialog.theme;
+    applyTextTheme(this.label, resolvedTheme, {
+      fontSize: 10,
+      lineHeight: 11,
+      fill: resolvedTheme.text,
+      wordWrapWidth: this.label.style.wordWrapWidth ?? 72,
+    });
+    applyTextTheme(this.points, resolvedTheme, {
+      fontSize: 10,
+      lineHeight: 11,
+      align: 'right',
+      fill: resolvedTheme.text,
+    });
+    applyTextTheme(this.total, resolvedTheme, {
+      fontSize: 9,
+      lineHeight: 10,
+      align: 'right',
+      fill: resolvedTheme.muted,
+    });
+    this.action.applyTheme(resolvedTheme);
+  }
+
+  reset() {
+    this.unregisterTarget();
+    this.model = null;
+    this.icon.texture = Texture.EMPTY;
+    this.iconOverlay.texture = Texture.EMPTY;
+    this.iconOverlay.rotation = 0;
+    this.root.visible = false;
+    this.root.renderable = false;
+    this.action.reset();
+  }
+
+  unregisterTarget() {
+    if (this.targetId) {
+      this.dialog.unregisterTarget(this.targetId);
+    }
+    this.targetId = null;
+  }
+
+  destroy() {
+    this.unregisterTarget();
+    this.action.destroy();
+    this.root.destroy({ children: true });
+  }
+}
+
+/**
+ * Image-backed World Event quest row derived from the Research station card.
+ *
+ * The quest owns its narrative and nested donation options while each option
+ * reuses the shared green/gray cost-button interaction and press contract.
+ */
+export class WorldEventQuestRow {
+  constructor({ dialog }) {
+    this.dialog = dialog;
+    this.root = new Container({
+      label: `${dialog.dialogId}-quest-row`,
+    });
+    this.card = new PixiNineSliceFrame({
+      texture:
+        dialog.assetManager?.getTexture?.(
+          PIXI_ROOT_RUN_ASSETS.researchCard,
+        ) ?? Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+      width: WORKSHOP_DIALOG_CONTENT_WIDTH,
+      height: 100,
+      label: `${this.root.label}:card`,
+    });
+    this.title = createText('', {
+      fontSize: 13,
+      lineHeight: WORLD_EVENT_QUEST_TITLE_HEIGHT,
+      fontWeight: '700',
+      wordWrapWidth: 170,
+    });
+    this.points = createText('', {
+      fontSize: 11,
+      lineHeight: 13,
+      align: 'right',
+    });
+    this.points.anchor.set(1, 0);
+    this.description = createText('', {
+      fontSize: 10,
+      lineHeight: 12,
+      wordWrapWidth:
+        WORKSHOP_DIALOG_CONTENT_WIDTH -
+        WORLD_EVENT_QUEST_CONTENT_INSET * 2,
+    });
+    this.progress = createText('', {
+      fontSize: 10,
+      lineHeight: 12,
+    });
+    this.progress.anchor.set(0, 1);
+    this.status = createText('', {
+      fontSize: 10,
+      lineHeight: 12,
+      align: 'right',
+    });
+    this.status.anchor.set(1, 1);
+    this.options = Array.from(
+      { length: WORLD_EVENT_MAX_DONATION_OPTIONS },
+      (_, index) => new WorldEventDonationOptionRow({ dialog, index }),
+    );
+    this.root.addChild(
+      this.card,
+      this.title,
+      this.points,
+      this.description,
+      this.progress,
+      this.status,
+      ...this.options.map((option) => option.root),
+    );
+    this.root.visible = false;
+  }
+
+  bind(model) {
+    this.model = model ?? {};
+    this.root.visible = true;
+    this.root.renderable = true;
+    setText(this.title, this.model.title ?? this.model.label ?? 'Quest');
+    setText(this.points, this.model.pointsLabel ?? '');
+    setText(this.description, this.model.description ?? '');
+    setText(this.progress, this.model.progressLabel ?? '');
+    setText(this.status, this.model.statusLabel ?? '');
+    const options = normalizeRows(this.model.donationOptions).slice(
+      0,
+      WORLD_EVENT_MAX_DONATION_OPTIONS,
+    );
+    this.visibleOptionCount = options.length;
+    this.options.forEach((option, index) => {
+      if (options[index]) {
+        option.bind(options[index]);
+      } else {
+        option.reset();
+      }
+    });
+    this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
+  }
+
+  setBounds(x, y, width, height = this.getPreferredHeight()) {
+    this.root.position.set(x, y);
+    this.width = width;
+    this.height = height;
+    this.card.position.set(0, 0);
+    this.card.setSize(
+      width,
+      height,
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+    );
+    this.title.position.set(WORLD_EVENT_QUEST_CONTENT_INSET, 8);
+    this.title.style.wordWrap = true;
+    this.title.style.wordWrapWidth = Math.max(
+      80,
+      width - WORLD_EVENT_QUEST_CONTENT_INSET * 2 - 84,
+    );
+    this.points.position.set(width - WORLD_EVENT_QUEST_CONTENT_INSET, 9);
+    this.description.position.set(
+      WORLD_EVENT_QUEST_CONTENT_INSET,
+      8 +
+        WORLD_EVENT_QUEST_TITLE_HEIGHT +
+        WORLD_EVENT_QUEST_DESCRIPTION_GAP,
+    );
+    this.description.style.wordWrap = true;
+    this.description.style.wordWrapWidth =
+      width - WORLD_EVENT_QUEST_CONTENT_INSET * 2;
+    let optionY =
+      this.description.y +
+      Math.max(
+        WORLD_EVENT_QUEST_MIN_DESCRIPTION_HEIGHT,
+        Math.ceil(this.description.height),
+      ) +
+      5;
+    for (const option of this.options) {
+      if (!option.root.visible) {
+        continue;
+      }
+      option.setBounds(
+        WORLD_EVENT_QUEST_CONTENT_INSET,
+        optionY,
+        width - WORLD_EVENT_QUEST_CONTENT_INSET * 2,
+        WORLD_EVENT_QUEST_OPTION_HEIGHT,
+      );
+      optionY +=
+        WORLD_EVENT_QUEST_OPTION_HEIGHT +
+        WORLD_EVENT_QUEST_OPTION_GAP;
+    }
+    this.progress.position.set(
+      WORLD_EVENT_QUEST_CONTENT_INSET,
+      height - 8,
+    );
+    this.status.position.set(
+      width - WORLD_EVENT_QUEST_CONTENT_INSET,
+      height - 8,
+    );
+    this.root.hitArea = new Rectangle(0, 0, width, height);
+  }
+
+  getPreferredHeight() {
+    const descriptionHeight = Math.max(
+      WORLD_EVENT_QUEST_MIN_DESCRIPTION_HEIGHT,
+      Math.ceil(this.description.height),
+    );
+    const optionsHeight =
+      this.visibleOptionCount > 0
+        ? this.visibleOptionCount * WORLD_EVENT_QUEST_OPTION_HEIGHT +
+          Math.max(0, this.visibleOptionCount - 1) *
+            WORLD_EVENT_QUEST_OPTION_GAP
+        : this.progress.text || this.status.text
+          ? 18
+          : 0;
+    return (
+      8 +
+      WORLD_EVENT_QUEST_TITLE_HEIGHT +
+      WORLD_EVENT_QUEST_DESCRIPTION_GAP +
+      descriptionHeight +
+      5 +
+      optionsHeight +
+      8
+    );
+  }
+
+  applyTheme(theme) {
+    const resolvedTheme = theme ?? this.dialog.theme;
+    this.card.setTexture(
+      this.dialog.assetManager?.getTexture?.(
+        PIXI_ROOT_RUN_ASSETS.researchCard,
+      ) ?? Texture.EMPTY,
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+    );
+    this.card.alpha = this.model?.completed === true ? 0.72 : 1;
+    const textColor =
+      this.model?.completed === true
+        ? resolvedTheme.muted
+        : resolvedTheme.text;
+    applyTextTheme(this.title, resolvedTheme, {
+      fontSize: 13,
+      lineHeight: WORLD_EVENT_QUEST_TITLE_HEIGHT,
+      fontWeight: '700',
+      fill: textColor,
+      wordWrapWidth: this.title.style.wordWrapWidth ?? 170,
+    });
+    applyTextTheme(this.points, resolvedTheme, {
+      fontSize: 11,
+      lineHeight: 13,
+      align: 'right',
+      fill: textColor,
+    });
+    applyTextTheme(this.description, resolvedTheme, {
+      fontSize: 10,
+      lineHeight: 12,
+      fill: textColor,
+      wordWrapWidth:
+        this.description.style.wordWrapWidth ??
+        WORKSHOP_DIALOG_CONTENT_WIDTH -
+          WORLD_EVENT_QUEST_CONTENT_INSET * 2,
+    });
+    applyTextTheme(this.progress, resolvedTheme, {
+      fontSize: 10,
+      lineHeight: 12,
+      fill: resolvedTheme.muted,
+    });
+    applyTextTheme(this.status, resolvedTheme, {
+      fontSize: 10,
+      lineHeight: 12,
+      align: 'right',
+      fill: resolvedTheme.muted,
+    });
+    for (const option of this.options) {
+      option.applyTheme(resolvedTheme);
+    }
+  }
+
+  reset() {
+    this.model = null;
+    this.visibleOptionCount = 0;
+    for (const option of this.options) {
+      option.reset();
+    }
+    this.root.visible = false;
+    this.root.renderable = false;
+  }
+
+  destroy() {
+    for (const option of this.options) {
+      option.destroy();
+    }
+    this.root.destroy({ children: true });
+  }
 }
 
 /**
@@ -939,6 +1617,870 @@ export class WorldChatMessageRowPixi {
     disposeInputRegistration(this.usernameRegistration);
     this.avatarRegistration = null;
     this.usernameRegistration = null;
+    this.root.destroy({ children: true });
+  }
+}
+
+export class AllianceMemberRow {
+  constructor({ dialog }) {
+    this.dialog = dialog;
+    this.model = null;
+    this.targetId = null;
+    this.root = new Container({ label: `${dialog.dialogId}-alliance-member-row` });
+    this.hitTarget = new RetainedButton({
+      assetManager: dialog.assetManager,
+      buttonLabel: `${dialog.dialogId}-alliance-member-hit`,
+      inputRouter: dialog.inputRouter,
+      variant: 'inline',
+    });
+    this.username = createText('', RETAINED_TEXT_STYLES.body);
+    this.role = createText('', RETAINED_TEXT_STYLES.border);
+    this.level = createText('', RETAINED_TEXT_STYLES.border);
+    this.level.anchor.set(1, 0);
+    this.root.addChild(this.hitTarget.root, this.username, this.role, this.level);
+  }
+
+  bind(model) {
+    this.unregisterTarget();
+    this.model = model ?? {};
+    this.root.visible = true;
+    setText(this.username, this.model.username ?? 'Wizard');
+    setText(this.role, this.model.roleLabel ?? 'trader');
+    setText(this.level, this.model.levelLabel ?? 'Lv 1');
+    const interactive = typeof this.model.onActivate === 'function';
+    this.hitTarget.setModel({
+      label: '',
+      enabled: interactive,
+      action: () => this.model.onActivate?.(this.model),
+    });
+    this.targetId = this.model.semanticId ?? null;
+    if (this.targetId) {
+      this.dialog.registerTarget({
+        semanticId: this.targetId,
+        displayObject: this.hitTarget.root,
+        state: () => ({ enabled: interactive, interactive }),
+        activate: () => this.model.onActivate?.(this.model) ?? false,
+      });
+    }
+    this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
+  }
+
+  setBounds(x, y, width, height = ALLIANCE_MEMBER_ROW_HEIGHT) {
+    this.root.position.set(x, y);
+    this.hitTarget.setBounds(0, 0, width, height);
+    this.username.position.set(6, 6);
+    this.role.position.set(100, 7);
+    this.level.position.set(width - 6, 7);
+    this.root.hitArea = new Rectangle(0, 0, width, height);
+  }
+
+  applyTheme(theme) {
+    const resolvedTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    applyTextTheme(this.username, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.body,
+      fontWeight: '700',
+      fill: resolvedTheme.text,
+    });
+    applyTextTheme(this.role, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: resolvedTheme.muted,
+    });
+    applyTextTheme(this.level, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'right',
+      fill: resolvedTheme.text,
+    });
+    this.hitTarget.applyTheme(resolvedTheme);
+  }
+
+  reset() {
+    this.unregisterTarget();
+    this.model = null;
+    this.root.visible = false;
+    this.hitTarget.setModel({ label: '', enabled: false });
+  }
+
+  unregisterTarget() {
+    if (this.targetId) {
+      this.dialog.unregisterTarget(this.targetId);
+    }
+    this.targetId = null;
+  }
+
+  destroy() {
+    this.unregisterTarget();
+    this.hitTarget.destroy();
+    this.root.destroy({ children: true });
+  }
+}
+
+export class AllianceDirectoryRow {
+  constructor({ dialog }) {
+    this.dialog = dialog;
+    this.model = null;
+    this.expanded = false;
+    this.width = WORKSHOP_DIALOG_CONTENT_WIDTH;
+    this.targetIds = [];
+    this.memberWidgets = new Map();
+    this.root = new Container({ label: `${dialog.dialogId}-alliance-directory-row` });
+    this.frame = new Graphics({ label: `${dialog.dialogId}-alliance-directory-frame` });
+    this.summaryHit = new RetainedButton({
+      assetManager: dialog.assetManager,
+      buttonLabel: `${dialog.dialogId}-alliance-directory-summary`,
+      inputRouter: dialog.inputRouter,
+      variant: 'inline',
+    });
+    this.tag = createText('', RETAINED_TEXT_STYLES.bold);
+    this.name = createText('', RETAINED_TEXT_STYLES.body);
+    this.total = createText('', RETAINED_TEXT_STYLES.body);
+    this.total.anchor.set(1, 0);
+    this.coin = new Sprite(Texture.EMPTY);
+    this.coin.anchor.set(0.5);
+    this.membersLabel = createText('members', RETAINED_TEXT_STYLES.border);
+    this.memberCount = createText('', RETAINED_TEXT_STYLES.border);
+    this.memberCount.anchor.set(1, 0);
+    this.memberViewport = new RetainedScrollArea({
+      assetManager: dialog.assetManager,
+      label: `${dialog.dialogId}-alliance-member-scroll`,
+      inputRouter: dialog.inputRouter,
+    });
+    this.action = new RetainedButton({
+      assetManager: dialog.assetManager,
+      buttonLabel: `${dialog.dialogId}-alliance-directory-action`,
+      inputRouter: dialog.inputRouter,
+      variant: 'green',
+    });
+    this.details = new Container({ label: `${dialog.dialogId}-alliance-directory-details` });
+    this.details.addChild(
+      this.membersLabel,
+      this.memberCount,
+      this.memberViewport.root,
+      this.action.root,
+    );
+    this.root.addChild(
+      this.frame,
+      this.summaryHit.root,
+      this.tag,
+      this.name,
+      this.total,
+      this.coin,
+      this.details,
+    );
+  }
+
+  bind(model) {
+    this.unregisterTargets();
+    this.model = model ?? {};
+    this.root.visible = true;
+    this.expanded = this.model.expanded === true;
+    const tag = normalizeWorldChatTag(this.model.tag);
+    setText(this.tag, tag ? `[${tag}]` : '');
+    setText(this.name, this.model.name ?? 'Alliance');
+    setText(this.total, this.model.totalIncomeLabel ?? '0');
+    setText(
+      this.memberCount,
+      `${Math.max(0, Number(this.model.memberCount) || 0)}/${Math.max(
+        1,
+        Number(this.model.memberCapacity) || 50,
+      )}`,
+    );
+    this.coin.texture = resolveAtlasTexture(this.dialog.assetManager, 'resource:coin');
+    this.coin.visible = this.coin.texture !== Texture.EMPTY;
+    this.summaryHit.setModel({
+      label: '',
+      enabled: typeof this.model.onActivate === 'function',
+      action: () => this.model.onActivate?.(this.model),
+    });
+    const actionModel = this.model.action ?? {};
+    this.action.variant = actionModel.variant ?? 'green';
+    this.action.control.setVariant(this.action.variant);
+    this.action.setModel({
+      label: actionModel.label ?? '',
+      enabled: actionModel.enabled !== false,
+      action: () => actionModel.onActivate?.(this.model),
+    });
+    this.details.visible = this.expanded;
+    this.details.renderable = this.expanded;
+    this.reconcileMembers(this.model.members ?? []);
+    this.registerTargets();
+    this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
+  }
+
+  reconcileMembers(members) {
+    const nextIds = new Set();
+    for (const [index, member] of members.entries()) {
+      const id = String(member.id ?? member.memberIdentity ?? index);
+      nextIds.add(id);
+      let widget = this.memberWidgets.get(id);
+      if (!widget) {
+        widget = new AllianceMemberRow({ dialog: this.dialog });
+        this.memberWidgets.set(id, widget);
+      }
+      widget.bind(member);
+    }
+
+    for (const [id, widget] of this.memberWidgets) {
+      if (!nextIds.has(id)) {
+        widget.destroy();
+        this.memberWidgets.delete(id);
+      }
+    }
+
+    this.memberViewport.content.removeChildren();
+    let y = 0;
+    for (const [index, member] of members.entries()) {
+      const id = String(member.id ?? member.memberIdentity ?? index);
+      const widget = this.memberWidgets.get(id);
+      if (!widget) {
+        continue;
+      }
+      this.memberViewport.content.addChild(widget.root);
+      widget.setBounds(0, y, 236, ALLIANCE_MEMBER_ROW_HEIGHT);
+      y += ALLIANCE_MEMBER_ROW_HEIGHT;
+    }
+    this.memberViewport.setContentHeight(y);
+  }
+
+  registerTargets() {
+    const summaryId = this.model.semanticId
+      ? `${this.model.semanticId}.summary`
+      : null;
+    const actionId = this.model.semanticId
+      ? `${this.model.semanticId}.action`
+      : null;
+    if (summaryId) {
+      this.targetIds.push(summaryId);
+      this.dialog.registerTarget({
+        semanticId: summaryId,
+        displayObject: this.summaryHit.root,
+        state: () => ({
+          enabled: typeof this.model?.onActivate === 'function',
+          interactive: typeof this.model?.onActivate === 'function',
+          expanded: this.expanded,
+        }),
+        activate: () => this.model?.onActivate?.(this.model) ?? false,
+      });
+    }
+    if (actionId && this.expanded) {
+      this.targetIds.push(actionId);
+      this.dialog.registerTarget({
+        semanticId: actionId,
+        displayObject: this.action.root,
+        state: () => ({
+          enabled: this.model?.action?.enabled !== false,
+          interactive: typeof this.model?.action?.onActivate === 'function',
+        }),
+        activate: () => this.model?.action?.onActivate?.(this.model) ?? false,
+      });
+    }
+  }
+
+  setBounds(x, y, width, height) {
+    this.root.position.set(x, y);
+    this.width = width;
+    this.summaryHit.setBounds(0, 0, width, ALLIANCE_DIRECTORY_HEADER_HEIGHT);
+    this.tag.position.set(8, 7);
+    this.name.position.set(8 + (this.tag.text ? this.tag.width + 5 : 0), 7);
+    const coinSize = 14;
+    const coinRight = width - 7;
+    this.coin.position.set(coinRight - coinSize / 2, ALLIANCE_DIRECTORY_HEADER_HEIGHT / 2);
+    this.coin.width = coinSize;
+    this.coin.height = coinSize;
+    this.total.position.set(
+      coinRight - (this.coin.visible ? coinSize + 3 : 0),
+      7,
+    );
+    const nameWidth = Math.max(1, this.total.x - this.total.width - 6 - this.name.x);
+    this.name.scale.x =
+      this.name.width > nameWidth
+        ? Math.max(0.72, nameWidth / this.name.width)
+        : 1;
+    this.details.position.set(0, ALLIANCE_DIRECTORY_HEADER_HEIGHT + 2);
+    this.membersLabel.position.set(8, 1);
+    this.memberCount.position.set(width - 8, 1);
+    this.memberViewport.setBounds(
+      8,
+      18,
+      236,
+      this.expanded ? ALLIANCE_MEMBER_VIEWPORT_HEIGHT : 0,
+    );
+    this.action.setBounds(
+      8,
+      18 + ALLIANCE_MEMBER_VIEWPORT_HEIGHT + 6,
+      width - 16,
+      ALLIANCE_DIRECTORY_ACTION_HEIGHT,
+    );
+    this.root.hitArea = new Rectangle(0, 0, width, height);
+    this.redrawFrame();
+  }
+
+  getPreferredHeight() {
+    return this.expanded
+      ? ALLIANCE_DIRECTORY_EXPANDED_HEIGHT
+      : ALLIANCE_DIRECTORY_HEADER_HEIGHT;
+  }
+
+  applyTheme(theme) {
+    const resolvedTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.theme = resolvedTheme;
+    applyTextTheme(this.tag, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.bold,
+      fontSize: 12,
+      fill:
+        WORLD_CHAT_TAG_COLORS[normalizeWorldChatTagColor(this.model?.tagColor)] ??
+        WORLD_CHAT_TAG_COLORS.ink,
+      stroke: { color: WORLD_CHAT_TAG_STROKE, width: 2, join: 'round' },
+    });
+    applyTextTheme(this.name, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.body,
+      fontWeight: '700',
+      fill: resolvedTheme.text,
+    });
+    applyTextTheme(this.total, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.body,
+      align: 'right',
+      fill: resolvedTheme.resourceColors?.coin ?? resolvedTheme.text,
+    });
+    applyTextTheme(this.membersLabel, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: resolvedTheme.muted,
+    });
+    applyTextTheme(this.memberCount, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'right',
+      fill: resolvedTheme.muted,
+    });
+    this.summaryHit.applyTheme(resolvedTheme);
+    this.action.applyTheme(resolvedTheme);
+    for (const widget of this.memberWidgets.values()) {
+      widget.applyTheme(resolvedTheme);
+    }
+    this.redrawFrame();
+  }
+
+  redrawFrame() {
+    if (!this.theme) {
+      return;
+    }
+    this.frame
+      .clear()
+      .roundRect(0, 0, this.width, this.getPreferredHeight(), 5)
+      .fill({
+        color: this.theme.surface,
+        alpha: this.expanded ? 0.82 : 0.38,
+      })
+      .stroke({
+        color: this.expanded
+          ? this.theme.strokeStrong ?? this.theme.stroke
+          : this.theme.stroke,
+        width: this.expanded ? 2 : 1,
+      });
+  }
+
+  reset() {
+    this.unregisterTargets();
+    for (const widget of this.memberWidgets.values()) {
+      widget.destroy();
+    }
+    this.memberWidgets.clear();
+    this.memberViewport.content.removeChildren();
+    this.memberViewport.setContentHeight(0);
+    this.model = null;
+    this.expanded = false;
+    this.root.visible = false;
+    this.summaryHit.setModel({ label: '', enabled: false });
+    this.action.setModel({ label: '', enabled: false });
+  }
+
+  unregisterTargets() {
+    for (const targetId of this.targetIds) {
+      this.dialog.unregisterTarget(targetId);
+    }
+    this.targetIds.length = 0;
+  }
+
+  destroy() {
+    this.unregisterTargets();
+    for (const widget of this.memberWidgets.values()) {
+      widget.destroy();
+    }
+    this.memberWidgets.clear();
+    this.summaryHit.destroy();
+    this.action.destroy();
+    this.memberViewport.destroy();
+    this.root.destroy({ children: true });
+  }
+}
+
+class PotionDiscoveryIngredientRowPixi {
+  constructor({ dialog, index }) {
+    this.dialog = dialog;
+    this.root = new Container({
+      label: `${dialog.dialogId}-discovery-ingredient:${index}`,
+    });
+    this.icon = new Sprite(Texture.EMPTY);
+    this.icon.label = `${this.root.label}:icon`;
+    this.icon.anchor.set(0.5);
+    this.label = createText('', {
+      fontSize: 9,
+      lineHeight: 11,
+    });
+    this.root.addChild(this.icon, this.label);
+    this.root.visible = false;
+  }
+
+  bind(model) {
+    this.model = model ?? {};
+    setText(
+      this.label,
+      `×${this.model.quantity ?? 0} ${this.model.label ?? 'Unknown'}`,
+    );
+    this.icon.texture = resolveAtlasTexture(
+      this.dialog.assetManager,
+      getHerbIconFrameName(this.model.key),
+    );
+    this.root.visible = true;
+    this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
+  }
+
+  setBounds(x, y, width) {
+    this.root.position.set(x, y);
+    this.icon.position.set(8, 8);
+    this.icon.width = 16;
+    this.icon.height = 16;
+    this.label.position.set(18, 2);
+    this.label.style.wordWrap = true;
+    this.label.style.wordWrapWidth = Math.max(0, width - 18);
+  }
+
+  applyTheme(theme) {
+    applyTextTheme(this.label, theme, {
+      fontSize: 9,
+      lineHeight: 11,
+      fill: theme.text,
+      wordWrapWidth: Math.max(0, (this.width ?? 100) - 18),
+    });
+  }
+
+  reset() {
+    this.model = null;
+    this.icon.texture = Texture.EMPTY;
+    setText(this.label, '');
+    this.root.visible = false;
+  }
+
+  destroy() {
+    this.root.destroy({ children: true });
+  }
+}
+
+/**
+ * Approved passive row for a discovered potion and its recipe provenance.
+ *
+ * The discoverer name is the only action and opens the existing Player Info
+ * surface. Unknown potions intentionally hide recipe and economy metadata.
+ */
+export class PotionDiscoveryRowPixi {
+  constructor({ dialog }) {
+    this.dialog = dialog;
+    this.root = new Container({
+      label: `${dialog.dialogId}-potion-discovery-row`,
+    });
+    this.background = new PixiNineSliceFrame({
+      texture:
+        dialog.assetManager?.getTexture?.(
+          PIXI_ROOT_RUN_ASSETS.settingsRow,
+        ) ?? Texture.EMPTY,
+      sourceInsets:
+        PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets:
+        PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      label: `${this.root.label}:background`,
+    });
+    this.potionIcon = new Sprite(Texture.EMPTY);
+    this.potionIcon.label = `${this.root.label}:potion-icon`;
+    this.potionIcon.anchor.set(0.5);
+    this.name = createText('', {
+      fontSize: 13,
+      lineHeight: 15,
+      fontWeight: '700',
+    });
+    this.date = createText('', {
+      fontSize: 9,
+      lineHeight: 11,
+      align: 'right',
+    });
+    this.date.anchor.set(1, 0);
+    this.discovererPrefix = createText('', {
+      fontSize: 9.5,
+      lineHeight: 12,
+    });
+    this.discovererName = createText('', {
+      fontSize: 9.5,
+      lineHeight: 12,
+      fontWeight: '700',
+    });
+    this.recipeLabel = createText('', {
+      fontSize: 9,
+      lineHeight: 11,
+      fontWeight: '700',
+    });
+    this.divider = new Graphics({
+      label: `${this.root.label}:divider`,
+    });
+    this.manaIcon = new Sprite(Texture.EMPTY);
+    this.manaIcon.label = `${this.root.label}:mana-icon`;
+    this.manaIcon.anchor.set(0.5);
+    this.mana = createText('', {
+      fontSize: 8.5,
+      lineHeight: 10,
+    });
+    this.duration = createText('', {
+      fontSize: 8.5,
+      lineHeight: 10,
+    });
+    this.royaltyIcon = new Sprite(Texture.EMPTY);
+    this.royaltyIcon.label = `${this.root.label}:royalty-icon`;
+    this.royaltyIcon.anchor.set(0.5);
+    this.royalty = createText('', {
+      fontSize: 8.5,
+      lineHeight: 10,
+      align: 'right',
+    });
+    this.royalty.anchor.set(1, 0);
+    this.ingredientRows = Array.from(
+      { length: DISCOVERY_MAX_INGREDIENTS },
+      (_, index) =>
+        new PotionDiscoveryIngredientRowPixi({
+          dialog,
+          index,
+        }),
+    );
+    this.root.addChild(
+      this.background,
+      this.potionIcon,
+      this.name,
+      this.date,
+      this.discovererPrefix,
+      this.discovererName,
+      this.recipeLabel,
+      ...this.ingredientRows.map((row) => row.root),
+      this.divider,
+      this.manaIcon,
+      this.mana,
+      this.duration,
+      this.royaltyIcon,
+      this.royalty,
+    );
+    this.discovererRegistration =
+      dialog.inputRouter?.registerPressTarget?.(this.discovererName, {
+        enabled: () => this.isDiscovererInteractive(),
+        onActivate: () => this.activateDiscoverer(),
+        haptic: 'selection',
+        excludePageSwipe: true,
+      }) ?? null;
+    this.root.visible = false;
+  }
+
+  bind(model) {
+    if (this.targetId) {
+      this.dialog.unregisterTarget(this.targetId);
+    }
+
+    this.model = model ?? {};
+    this.targetId = null;
+    this.discovered = this.model.discovered === true;
+    this.root.visible = true;
+    setText(
+      this.name,
+      this.discovered
+        ? this.model.label ?? 'Discovered Potion'
+        : 'Undiscovered Potion',
+    );
+    setText(
+      this.discovererPrefix,
+      this.discovered
+        ? 'Discovered by'
+        : 'No wizard has recorded it yet',
+    );
+    setText(
+      this.discovererName,
+      this.discovered ? this.model.discovererUsername ?? 'Unknown Wizard' : '',
+    );
+    setText(
+      this.date,
+      this.discovered ? this.model.discoveredAtLabel ?? 'Date Unknown' : '',
+    );
+    setText(
+      this.recipeLabel,
+      this.discovered ? 'Recipe' : 'Recipe remains hidden',
+    );
+    setText(this.mana, this.model.manaLabel ?? '');
+    setText(this.duration, this.model.durationLabel ?? '');
+    setText(this.royalty, this.model.royaltyLabel ?? '');
+    this.potionIcon.texture = resolveAtlasTexture(
+      this.dialog.assetManager,
+      getPotionIconFrameName(this.model.potionKey),
+    );
+    this.potionIcon.alpha = this.discovered ? 1 : 0.38;
+    this.manaIcon.texture = resolveAtlasTexture(
+      this.dialog.assetManager,
+      RESOURCE_ICON_FRAMES.mana,
+    );
+    this.royaltyIcon.texture = resolveAtlasTexture(
+      this.dialog.assetManager,
+      RESOURCE_ICON_FRAMES.coin,
+    );
+
+    const ingredients = this.discovered
+      ? (this.model.ingredients ?? []).slice(0, DISCOVERY_MAX_INGREDIENTS)
+      : [];
+    this.ingredientRows.forEach((row, index) => {
+      if (ingredients[index]) {
+        row.bind(ingredients[index]);
+      } else {
+        row.reset();
+      }
+    });
+    this.syncMetadataVisibility();
+    this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
+    this.syncInteraction();
+
+    this.targetId = this.model.discovererSemanticId ?? null;
+    if (this.targetId && this.discovered) {
+      this.dialog.registerTarget({
+        semanticId: this.targetId,
+        displayObject: this.discovererName,
+        state: () => ({
+          enabled: this.isDiscovererInteractive(),
+          interactive: this.isDiscovererInteractive(),
+        }),
+        activate: () => this.activateDiscoverer(),
+      });
+    }
+  }
+
+  setBounds(x, y, width, height) {
+    this.root.position.set(x, y);
+    this.width = width;
+    this.height = height;
+    this.background.position.set(0, 0);
+    this.background.setSize(width, height);
+    this.root.hitArea = new Rectangle(0, 0, width, height);
+
+    if (!this.discovered) {
+      this.potionIcon.position.set(30, height / 2);
+      this.potionIcon.width = 40;
+      this.potionIcon.height = 40;
+      this.name.position.set(56, 10);
+      this.name.style.wordWrap = true;
+      this.name.style.wordWrapWidth = Math.max(0, width - 64);
+      this.discovererPrefix.position.set(56, 29);
+      this.recipeLabel.position.set(56, 45);
+      return;
+    }
+
+    this.potionIcon.position.set(30, 29);
+    this.potionIcon.width = DISCOVERY_ICON_SIZE;
+    this.potionIcon.height = DISCOVERY_ICON_SIZE;
+    this.name.position.set(59, 7);
+    this.name.style.wordWrap = true;
+    this.name.style.wordWrapWidth = Math.max(0, width - 147);
+    this.date.position.set(width - 8, 9);
+    this.discovererPrefix.position.set(59, 27);
+    this.discovererName.position.set(
+      this.discovererPrefix.x + this.discovererPrefix.width + 3,
+      27,
+    );
+    this.discovererName.hitArea = new Rectangle(
+      0,
+      0,
+      Math.max(1, this.discovererName.width),
+      Math.max(1, this.discovererName.height),
+    );
+    this.recipeLabel.position.set(8, 51);
+
+    const ingredientCount = this.visibleIngredientCount;
+    const recipeRowCount = Math.max(
+      1,
+      Math.ceil(ingredientCount / DISCOVERY_RECIPE_COLUMNS),
+    );
+    const recipeX = 50;
+    const ingredientWidth = (width - recipeX - 8) / DISCOVERY_RECIPE_COLUMNS;
+    this.ingredientRows.forEach((row, index) => {
+      if (!row.root.visible) {
+        return;
+      }
+      row.width = ingredientWidth;
+      row.setBounds(
+        recipeX + (index % DISCOVERY_RECIPE_COLUMNS) * ingredientWidth,
+        45 +
+          Math.floor(index / DISCOVERY_RECIPE_COLUMNS) *
+            DISCOVERY_RECIPE_ROW_HEIGHT,
+        ingredientWidth,
+      );
+    });
+
+    const dividerY =
+      48 + recipeRowCount * DISCOVERY_RECIPE_ROW_HEIGHT;
+    this.divider
+      .clear()
+      .moveTo(8, dividerY)
+      .lineTo(width - 8, dividerY)
+      .stroke({
+        color: DISCOVERY_DIVIDER_COLOR,
+        width: 1,
+        alpha: 0.48,
+      });
+    const metadataY = dividerY + 5;
+    this.manaIcon.position.set(14, metadataY + 5);
+    this.manaIcon.width = 12;
+    this.manaIcon.height = 12;
+    this.mana.position.set(23, metadataY);
+    this.duration.position.set(91, metadataY);
+    this.royalty.position.set(width - 8, metadataY);
+    this.royaltyIcon.width = 12;
+    this.royaltyIcon.height = 12;
+    this.royaltyIcon.position.set(
+      this.royalty.x - this.royalty.width - 8,
+      metadataY + 5,
+    );
+  }
+
+  getPreferredHeight() {
+    if (!this.discovered) {
+      return DISCOVERY_LOCKED_ROW_HEIGHT;
+    }
+    const recipeRowCount = Math.max(
+      1,
+      Math.ceil(this.visibleIngredientCount / DISCOVERY_RECIPE_COLUMNS),
+    );
+    return (
+      DISCOVERY_BASE_ROW_HEIGHT +
+      (recipeRowCount - 1) * DISCOVERY_RECIPE_ROW_HEIGHT
+    );
+  }
+
+  get visibleIngredientCount() {
+    return this.ingredientRows.filter((row) => row.root.visible).length;
+  }
+
+  syncMetadataVisibility() {
+    for (const displayObject of [
+      this.date,
+      this.discovererName,
+      this.divider,
+      this.manaIcon,
+      this.mana,
+      this.duration,
+      this.royaltyIcon,
+      this.royalty,
+    ]) {
+      displayObject.visible = this.discovered;
+      displayObject.renderable = this.discovered;
+    }
+  }
+
+  applyTheme(theme) {
+    const resolvedTheme = theme ?? this.dialog.theme;
+    applyTextTheme(this.name, resolvedTheme, {
+      fontSize: 13,
+      lineHeight: 15,
+      fontWeight: '700',
+      fill: this.discovered ? resolvedTheme.text : resolvedTheme.muted,
+    });
+    applyTextTheme(this.date, resolvedTheme, {
+      fontSize: 9,
+      lineHeight: 11,
+      align: 'right',
+      fill: resolvedTheme.muted,
+    });
+    applyTextTheme(this.discovererPrefix, resolvedTheme, {
+      fontSize: 9.5,
+      lineHeight: 12,
+      fill: resolvedTheme.muted,
+    });
+    applyTextTheme(this.discovererName, resolvedTheme, {
+      fontSize: 9.5,
+      lineHeight: 12,
+      fontWeight: '700',
+      fill: DISCOVERY_PLAYER_COLOR,
+    });
+    applyTextTheme(this.recipeLabel, resolvedTheme, {
+      fontSize: 9,
+      lineHeight: 11,
+      fontWeight: '700',
+      fill: this.discovered ? resolvedTheme.text : resolvedTheme.muted,
+    });
+    applyTextTheme(this.mana, resolvedTheme, {
+      fontSize: 8.5,
+      lineHeight: 10,
+      fill: resolvedTheme.resourceColors?.mana ?? resolvedTheme.text,
+    });
+    applyTextTheme(this.duration, resolvedTheme, {
+      fontSize: 8.5,
+      lineHeight: 10,
+      fill: resolvedTheme.text,
+    });
+    applyTextTheme(this.royalty, resolvedTheme, {
+      fontSize: 8.5,
+      lineHeight: 10,
+      align: 'right',
+      fill: resolvedTheme.text,
+    });
+    for (const row of this.ingredientRows) {
+      row.applyTheme(resolvedTheme);
+    }
+  }
+
+  isDiscovererInteractive() {
+    return Boolean(
+      this.discovered &&
+        typeof this.model?.onDiscovererActivate === 'function' &&
+        this.root.visible,
+    );
+  }
+
+  syncInteraction() {
+    const interactive = this.isDiscovererInteractive();
+    this.discovererName.eventMode = interactive ? 'static' : 'none';
+    this.discovererName.cursor = interactive ? 'pointer' : 'default';
+  }
+
+  activateDiscoverer() {
+    if (!this.isDiscovererInteractive()) {
+      return false;
+    }
+    return this.model.onDiscovererActivate(this.model) ?? true;
+  }
+
+  reset() {
+    if (this.targetId) {
+      this.dialog.unregisterTarget(this.targetId);
+    }
+    this.targetId = null;
+    this.model = null;
+    this.discovered = false;
+    this.potionIcon.texture = Texture.EMPTY;
+    this.manaIcon.texture = Texture.EMPTY;
+    this.royaltyIcon.texture = Texture.EMPTY;
+    for (const row of this.ingredientRows) {
+      row.reset();
+    }
+    this.root.visible = false;
+    this.syncInteraction();
+  }
+
+  destroy() {
+    if (this.targetId) {
+      this.dialog.unregisterTarget(this.targetId);
+    }
+    disposeInputRegistration(this.discovererRegistration);
+    this.discovererRegistration = null;
+    for (const row of this.ingredientRows) {
+      row.destroy();
+    }
+    this.ingredientRows.length = 0;
     this.root.destroy({ children: true });
   }
 }

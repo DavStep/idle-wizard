@@ -39,7 +39,7 @@ export const PIXI_UI_GEOMETRY = Object.freeze({
   rowColumnGap: 6,
   roomChromeEdge: 16,
   roomContentEdge: 16,
-  roomContentTop: 136,
+  roomContentTop: 104,
   roomChatBottom: 101,
   roomChatHeight: 41,
   roomChatTitleOverhang: 12,
@@ -135,6 +135,8 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   topHudSettings: 'source:assets/ui/root-run-top-hud/settings-bg-9slice.png',
   topHudLevelPanel: 'source:assets/ui/root-run-top-hud/level-progress-panel.png',
   topHudLevelTrack: 'source:assets/ui/root-run-top-hud/level-progress-track-9slice.png',
+  topHudLevelFill:
+    'source:assets/ui/root-run-top-hud/level-progress-fill-mask.png',
   dialogBack: 'source:assets/ui/root-run-dialog/expedition-dialog-back.png',
   dialogPaper: 'source:assets/ui/root-run-dialog/expedition-dialog-front.png',
   dialogTitle: 'source:assets/ui/root-run-dialog/expedition-dialog-title-purple.png',

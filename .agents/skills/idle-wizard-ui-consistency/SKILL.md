@@ -24,7 +24,7 @@ If the task is an audit or visual cleanup, also read the latest relevant file un
 
 ## Consistency Gates
 
-- Every visible or interactive building block must map to a documented entry in the reusable widget library in `docs/ui-patterns.md`, preserve an existing widget contract as a feature-local extension, or have explicit user approval from the `idle-wizard-ui-workflow` Widget Admission Gate. Treat a new scroll behavior, box/dialog type, control pattern, compound component, or meaningfully different state/variant as a new widget.
+- Every visible or interactive building block must map to a documented entry in the reusable widget library in `docs/ui-patterns.md`, preserve an existing widget contract as a feature-local extension, or be introduced as a reusable widget and added to the library. Treat a new scroll behavior, box/dialog type, control pattern, compound component, or meaningfully different state/variant as a new widget.
 - Default room navigation is five bottom tabs: `brewing`, `garden`, `workshop`, `research`, and `market`. Advanced, guild, prestige, and future tabs need an explicit unlock or redesign surface before they appear in default chrome.
 - Ordinary non-dialog panels use the approved shared room-panel skin with compact padding and shallow skin-owned depth. Do not invent feature-local radius, bevel, or shadow values.
 - Popup and modal panels use `style-dialog`: strong border, `20px` dialog padding, and the bottom-right dialog shadow. Do not copy dialog weight into ordinary boxes.
@@ -51,7 +51,7 @@ When reviewing UI consistency, report:
 2. Most consistent UI elements, so future work can copy them.
 3. Concrete fixes in priority order.
 4. Verification performed and any remaining risk.
-5. `New widgets: none` or the approved widgets introduced.
+5. `New widgets: none` or the widgets introduced.
 
 ## Verification
 

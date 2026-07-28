@@ -222,10 +222,10 @@ describe('ResearchPixiPage', () => {
     );
     harness.page.bind(model);
 
-    expect(harness.page.scroll.root.position).toMatchObject({ x: 0, y: 136 });
+    expect(harness.page.scroll.root.position).toMatchObject({ x: 0, y: 104 });
     expect(harness.page.scroll).toMatchObject({
       width: 344,
-      height: 385.33333333333337,
+      height: 417.33333333333337,
     });
     const box = harness.page.boxes.get('herbs');
     expect(box.root.position.x).toBe(0);

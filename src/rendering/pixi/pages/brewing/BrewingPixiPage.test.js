@@ -770,9 +770,7 @@ describe('BrewingPixiPage', () => {
     );
     expect(harness.page.hud.autoBrew.control.textLabel.fontSize).toBe(10);
     expect(harness.page.hud.autoBrew.control.textLabel.lineHeight).toBe(12);
-    expect(harness.page.hud.recipes.root.x).toBe(
-      BREWING_HUD_GEOMETRY.edge + 6,
-    );
+    expect(harness.page.hud.recipes.width).toBe(100);
     expect(harness.page.hud.autoBrew.width).toBe(
       harness.page.hud.recipes.width,
     );
@@ -780,9 +778,11 @@ describe('BrewingPixiPage', () => {
       harness.page.hud.recipes.width,
     );
     expect(
-      harness.page.hud.brew.root.x + harness.page.hud.brew.width,
+      harness.page.hud.recipes.root.x,
     ).toBe(
-      harness.page.sourceWidth - BREWING_HUD_GEOMETRY.edge - 6,
+      harness.page.sourceWidth -
+        (harness.page.hud.brew.root.x +
+          harness.page.hud.brew.width),
     );
     expect(harness.page.hud.autoBrew.handleTap()).toBe(true);
     expect(model.actions.toggleAutoBrew).toHaveBeenCalledWith(0);
@@ -836,7 +836,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.unlockCostButton.resource).toBe('coin');
     expect(harness.page.hud.unlockCostButton.position).toMatchObject({
       x: 134,
-      y: 258,
+      y: 220,
     });
     expect(harness.page.hud.unlockCostButton.activate()).toBe(true);
     expect(model.actions.performCauldronAction).toHaveBeenCalledWith(
@@ -864,7 +864,7 @@ describe('BrewingPixiPage', () => {
       bottom: 50,
       left: 49,
     });
-    expect(harness.page.hud.progress.width).toBe(182);
+    expect(harness.page.hud.progress.width).toBe(170);
     expect(harness.page.hud.cancel.enabled).toBe(true);
     expect(harness.page.hud.collect.enabled).toBe(true);
 

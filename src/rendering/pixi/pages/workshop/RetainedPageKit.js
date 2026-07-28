@@ -1,4 +1,5 @@
 import {
+  AlphaMask,
   BlurFilter,
   Container,
   Graphics,
@@ -599,7 +600,14 @@ export class RetainedScrollArea {
       kind: 'fillMask',
       label: `${label}-scrollbar-thumb-mask`,
     });
-    this.scrollbarThumbFill.mask = this.scrollbarThumbMask;
+    this.scrollbarThumbAlphaMask = new AlphaMask({
+      mask: this.scrollbarThumbMask,
+    });
+    this.scrollbarThumbAlphaMask.channel = 'alpha';
+    this.scrollbarThumbFill.setMask({ channel: 'alpha' });
+    this.scrollbarThumbFill.addEffect(
+      this.scrollbarThumbAlphaMask,
+    );
     this.scrollbarThumb.addChild(
       this.scrollbarThumbFill,
       this.scrollbarThumbMask,
@@ -1048,6 +1056,11 @@ export class RetainedScrollArea {
       this.root.off('pointertapcapture', this.handleActivationCapture);
     }
 
+    this.scrollbarThumbFill.removeEffect(
+      this.scrollbarThumbAlphaMask,
+    );
+    this.scrollbarThumbAlphaMask.destroy();
+    this.scrollbarThumbAlphaMask = null;
     this.root.destroy({ children: true });
   }
 }

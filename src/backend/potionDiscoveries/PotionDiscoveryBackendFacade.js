@@ -8,8 +8,13 @@ export class PotionDiscoveryBackendFacade {
 
   constructor() {
     this.stateObserverManager = new PotionDiscoveryStateObserverManager();
+    this.devSnapshot = null;
     this.subscriptionManager = new PotionDiscoverySubscriptionManager({
-      onSnapshot: (snapshot) => this.stateObserverManager.publish(snapshot),
+      onSnapshot: (snapshot) => {
+        if (!this.devSnapshot) {
+          this.stateObserverManager.publish(snapshot);
+        }
+      },
     });
     this.sendManager = new PotionDiscoverySendManager();
   }
@@ -25,14 +30,24 @@ export class PotionDiscoveryBackendFacade {
   }
 
   getSnapshot() {
-    return this.subscriptionManager.getSnapshot();
+    return this.devSnapshot ?? this.subscriptionManager.getSnapshot();
   }
 
   getDiscovery(potionKey) {
+    if (this.devSnapshot) {
+      return (
+        this.devSnapshot.discoveries?.find(
+          (discovery) => discovery.potionKey === potionKey,
+        ) ?? null
+      );
+    }
     return this.subscriptionManager.getDiscovery(potionKey);
   }
 
   hasDiscoveredPotion(potionKey) {
+    if (this.devSnapshot) {
+      return this.getDiscovery(potionKey) !== null;
+    }
     return this.subscriptionManager.hasDiscoveredPotion(potionKey);
   }
 
@@ -42,5 +57,18 @@ export class PotionDiscoveryBackendFacade {
 
   discoverPotionRecipe(potionKey) {
     return this.sendManager.discoverPotionRecipe(potionKey);
+  }
+
+  setDevSnapshot(snapshot) {
+    this.devSnapshot = snapshot;
+    this.stateObserverManager.publish(snapshot);
+    return { ok: true, snapshot };
+  }
+
+  clearDevSnapshot() {
+    this.devSnapshot = null;
+    const snapshot = this.subscriptionManager.getSnapshot();
+    this.stateObserverManager.publish(snapshot);
+    return { ok: true, snapshot };
   }
 }

@@ -44,6 +44,17 @@ export const PIXI_DIALOG_SPLIT_PAPER_GEOMETRY = Object.freeze({
   contentInsetBottom: 5,
 });
 
+export const PIXI_DIALOG_FOOTER_TABS_GEOMETRY = Object.freeze({
+  rowHeight: 28,
+  rowInsetX: 9,
+  paperGap: 6,
+  bottomInset: 10,
+  minGap: 4,
+  maxGap: 10,
+  gapStep: 2,
+  referenceCount: 5,
+});
+
 const TITLE_TEXT_PADDING_X = 89 / 3;
 const TITLE_MAX_INSET_X = 8;
 const SHADOW_OFFSET_X = 3;
@@ -75,6 +86,7 @@ export class PixiDialogFrame extends Container {
     label = 'dialogFrame',
   } = {}) {
     super({ label });
+    this.eventMode = 'static';
     this.assetManager = assetManager;
     this.inputRouter = inputRouter;
     this.semanticRegistry = semanticRegistry;
@@ -473,6 +485,21 @@ export class PixiDialogFrame extends Container {
       this.coreWidth / 2,
       titleY + geometry.titleHeight / 2,
     );
+    this.syncHitArea();
+  }
+
+  syncHitArea() {
+    const frameOutset = PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+    const hitTop =
+      this.titleFrame?.visible && this.titleFrame.renderable
+        ? Math.min(-frameOutset, this.titleFrame.y)
+        : -frameOutset;
+    const hitBottom = this.coreHeight + frameOutset;
+    this.hitArea ??= new Rectangle();
+    this.hitArea.x = -frameOutset;
+    this.hitArea.y = hitTop;
+    this.hitArea.width = this.coreWidth + frameOutset * 2;
+    this.hitArea.height = hitBottom - hitTop;
   }
 
   resolveTexture(assetId) {
@@ -537,6 +564,95 @@ export function setDialogPaperSectionBounds(frame, bounds, outsets) {
     bounds.width + outsets.left + outsets.right,
     bounds.height + outsets.top + outsets.bottom,
     PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
+  );
+}
+
+export function resolveDialogFooterTabGap(tabCount) {
+  const count = Math.max(0, Math.floor(Number(tabCount) || 0));
+  if (count <= 1) {
+    return 0;
+  }
+
+  const geometry = PIXI_DIALOG_FOOTER_TABS_GEOMETRY;
+  return Math.min(
+    geometry.maxGap,
+    geometry.minGap +
+      Math.max(0, geometry.referenceCount - count) *
+        geometry.gapStep,
+  );
+}
+
+export function resolveDialogFooterTabLayout({
+  coreWidth,
+  coreHeight,
+  tabCount,
+  rowWidth = null,
+} = {}) {
+  const geometry = PIXI_DIALOG_FOOTER_TABS_GEOMETRY;
+  const width = Math.max(0, Number(coreWidth) || 0);
+  const height = Math.max(0, Number(coreHeight) || 0);
+  const count = Math.max(0, Math.floor(Number(tabCount) || 0));
+  const maximumRowWidth = Math.max(0, width - geometry.rowInsetX * 2);
+  const hasRequestedRowWidth =
+    rowWidth !== null &&
+    rowWidth !== undefined &&
+    Number.isFinite(Number(rowWidth));
+  const resolvedRowWidth = hasRequestedRowWidth
+    ? Math.min(maximumRowWidth, Math.max(0, Number(rowWidth)))
+    : maximumRowWidth;
+  const gap = resolveDialogFooterTabGap(count);
+  const tabWidth =
+    count > 0
+      ? Math.max(
+          0,
+          (resolvedRowWidth - gap * Math.max(0, count - 1)) / count,
+        )
+      : 0;
+  const shellBottom =
+    height + PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+  const rowY =
+    shellBottom - geometry.bottomInset - geometry.rowHeight;
+
+  return Object.freeze({
+    rowX: (width - resolvedRowWidth) / 2,
+    rowY,
+    rowWidth: resolvedRowWidth,
+    rowHeight: geometry.rowHeight,
+    gap,
+    tabWidth,
+    paperBottom: rowY - geometry.paperGap,
+    shellBottom,
+  });
+}
+
+export function setDialogPaperAboveFooterTabs(panel, footerLayout) {
+  if (!panel?.paperFrame || !footerLayout) {
+    return 0;
+  }
+
+  const paperBottom = Math.max(
+    panel.paperFrame.y,
+    Number(footerLayout.paperBottom) || 0,
+  );
+  panel.paperFrame.setSize(
+    panel.paperFrame.frameWidth,
+    paperBottom - panel.paperFrame.y,
+    PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
+  );
+  return paperBottom;
+}
+
+export function resolveDialogFooterPaperReduction({
+  panel,
+  bodyBottom,
+  footerLayout,
+} = {}) {
+  if (!panel || !footerLayout) {
+    return 0;
+  }
+  return Math.max(
+    0,
+    (Number(bodyBottom) || 0) - footerLayout.paperBottom,
   );
 }
 
