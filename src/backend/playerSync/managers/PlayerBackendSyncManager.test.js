@@ -82,6 +82,7 @@ describe('PlayerBackendSyncManager', () => {
       font: 'lilita-one',
       colorMode: 'resources',
       character: 'elara',
+      frame: 'classic',
       usernamePromptSeen: true,
     });
   });
@@ -109,6 +110,7 @@ describe('PlayerBackendSyncManager', () => {
       font: 'comic-sans-mono',
       colorMode: 'resources',
       character: 'elara',
+      frame: 'classic',
       usernamePromptSeen: true,
     });
   });
@@ -147,6 +149,7 @@ describe('PlayerBackendSyncManager', () => {
       font: 'lilita-one',
       colorMode: 'resources',
       character: 'elara',
+      frame: 'classic',
       usernamePromptSeen: true,
     });
   });
@@ -262,6 +265,7 @@ describe('PlayerBackendSyncManager', () => {
       font: 'comic-sans-mono',
       colorMode: 'resources',
       character: 'elara',
+      frame: 'classic',
       usernamePromptSeen: true,
     });
   });
@@ -286,6 +290,7 @@ describe('PlayerBackendSyncManager', () => {
       font: 'lilita-one',
       colorMode: 'resources',
       character: 'mira',
+      frame: 'classic',
       usernamePromptSeen: false,
     });
     setPlayerProfile.mockClear();
@@ -299,6 +304,7 @@ describe('PlayerBackendSyncManager', () => {
       font: 'lilita-one',
       colorMode: 'resources',
       character: 'mira',
+      frame: 'classic',
       usernamePromptSeen: false,
     });
 

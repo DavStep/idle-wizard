@@ -4013,7 +4013,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__leaderboard')?.hidden).toBe(false);
     expect(stage.querySelector('.workshop-page__trade-alliance')?.hidden).toBe(true);
     expect(stage.querySelector('.workshop-page__world-chat')?.hidden).toBe(false);
-    expect(stage.querySelector('.workshop-page__world-chat-button')?.disabled).toBe(false);
+    expect(stage.querySelector('.workshop-page__world-chat-box')?.disabled).toBe(false);
     expect(stage.querySelector('.workshop-page__logs')).toBeNull();
     expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(true);
 
@@ -8479,7 +8479,7 @@ describe('PagesFacade', () => {
 
     const root = stage.querySelector('.workshop-page__world-chat');
     const popup = stage.querySelector('.workshop-page__world-chat-popup');
-    const button = stage.querySelector('.workshop-page__world-chat-button');
+    const button = stage.querySelector('.workshop-page__world-chat-box');
 
     expect(root.hidden).toBe(true);
     expect(button.disabled).toBe(true);
