@@ -110,19 +110,19 @@ const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;
 const SUMMON_CHAT_GAP = 32;
 export const ROOT_RUN_SIDE_ACTION_GEOMETRY = Object.freeze({
   taskGap: 18,
-  rowPitch: 74,
+  rowPitch: 62,
   stageEdge: 18,
   width: 50,
-  height: 72,
+  height: 60,
   iconSize: 50,
   iconScale: 0.72,
   iconEdgeNudge: 2,
-  iconLabelGap: -6,
-  labelFontSize: 15,
-  labelLineHeight: 18,
-  labelMaxWidth: 62,
-  timerFontSize: 7.5,
-  timerLineHeight: 9,
+  iconLabelGap: -10,
+  labelFontSize: 13.5,
+  labelLineHeight: 16.5,
+  labelMaxWidth: 58,
+  timerFontSize: 6.75,
+  timerLineHeight: 8.25,
 });
 const SIDE_CONTROLS_TASK_GAP = ROOT_RUN_SIDE_ACTION_GEOMETRY.taskGap;
 const SIDE_PANEL_ROW_GAP = ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch;
@@ -158,7 +158,7 @@ const WORKSHOP_REQUEST_TEXT_STROKE_WIDTH = 2;
 const WORKSHOP_REQUEST_TITLE_STROKE = '#0a0a0a';
 const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
 const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
-const WORKSHOP_SIDE_LABEL_STROKE_WIDTH = 5;
+const WORKSHOP_SIDE_LABEL_STROKE_WIDTH = 4.5;
 const SUMMON_EFFECT_FRAMES = Object.freeze([
   Object.freeze({ progress: 0, alpha: 0.84, scale: 1 }),
   Object.freeze({ progress: 0.32, alpha: 1, scale: 1.045 }),

@@ -335,6 +335,34 @@ export class PixiDialogFrame extends Container {
     return this.coreHeight;
   }
 
+  containsModalPoint(point) {
+    if (!point || typeof this.toLocal !== 'function') {
+      return false;
+    }
+    const localPoint = this.toLocal(point);
+    const frameOutset = PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+    const dialogTop =
+      this.titleFrame?.visible && this.titleFrame.renderable
+        ? Math.min(-frameOutset, this.titleFrame.y)
+        : -frameOutset;
+    const insideShell =
+      localPoint.x >= -frameOutset &&
+      localPoint.x <= this.coreWidth + frameOutset &&
+      localPoint.y >= dialogTop &&
+      localPoint.y <= this.coreHeight + frameOutset;
+    if (insideShell) {
+      return true;
+    }
+    return Boolean(
+      this.titleFrame?.visible &&
+        this.titleFrame.renderable &&
+        localPoint.x >= this.titleFrame.x &&
+        localPoint.x <= this.titleFrame.x + this.titleFrame.frameWidth &&
+        localPoint.y >= this.titleFrame.y &&
+        localPoint.y <= this.titleFrame.y + this.titleFrame.frameHeight,
+    );
+  }
+
   activateClose(payload) {
     if (!this.isCloseEnabled()) {
       return false;

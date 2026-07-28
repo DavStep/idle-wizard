@@ -90,14 +90,20 @@ const ACCOUNT_CHOICE_SCROLL_HEIGHT =
 const ACCOUNT_TAB_ROW_WIDTH = 286;
 const ACCOUNT_TAB_HEIGHT = 28;
 const ACCOUNT_TAB_GAP = 3;
-const ACCOUNT_TABS_TOP_GAP = 6;
+const ACCOUNT_TABS_BOTTOM_INSET = 7;
+const ACCOUNT_TABS_TOP_INSET =
+  ACCOUNT_TABS_BOTTOM_INSET +
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
 const ACCOUNT_CHOICE_BOARD_BOTTOM_INSET = 8;
-const ACCOUNT_CHOICES_HEIGHT =
+const ACCOUNT_CHOICE_BOARD_HEIGHT =
   ACCOUNT_CHOICES_SCROLL_INSET_Y +
   ACCOUNT_CHOICE_SCROLL_HEIGHT +
-  ACCOUNT_TABS_TOP_GAP +
-  ACCOUNT_TAB_HEIGHT +
   ACCOUNT_CHOICE_BOARD_BOTTOM_INSET;
+const ACCOUNT_CHOICES_HEIGHT =
+  ACCOUNT_CHOICE_BOARD_HEIGHT +
+  ACCOUNT_TABS_TOP_INSET +
+  ACCOUNT_TAB_HEIGHT +
+  ACCOUNT_TABS_BOTTOM_INSET;
 const ACCOUNT_SAVE_WIDTH = 160;
 const ACCOUNT_SAVE_HEIGHT = 34;
 const ACCOUNT_SAVE_GAP = 8;
@@ -790,7 +796,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     );
     this.accountChoiceBoard.setSize(
       ACCOUNT_HEADER_WIDTH,
-      ACCOUNT_CHOICES_HEIGHT,
+      ACCOUNT_CHOICE_BOARD_HEIGHT,
     );
     this.accountChoiceScroll.setBounds(
       this.accountChoiceBoard.x + ACCOUNT_CHOICE_SCROLL_LEFT_INSET,
@@ -801,9 +807,9 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     const tabX =
       (ACCOUNT_HEADER_WIDTH - ACCOUNT_TAB_ROW_WIDTH) / 2;
     const tabY =
-      this.accountChoiceScroll.root.y +
-      ACCOUNT_CHOICE_SCROLL_HEIGHT +
-      ACCOUNT_TABS_TOP_GAP;
+      this.accountChoiceBoard.y +
+      ACCOUNT_CHOICE_BOARD_HEIGHT +
+      ACCOUNT_TABS_TOP_INSET;
     const tabWidth =
       (ACCOUNT_TAB_ROW_WIDTH - ACCOUNT_TAB_GAP) / 2;
     this.avatarTab.setBounds(

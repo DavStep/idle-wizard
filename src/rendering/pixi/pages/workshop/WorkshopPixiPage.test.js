@@ -116,7 +116,7 @@ describe('WorkshopPixiPage', () => {
       expect(control.label.style.fill).toBe('#ffffff');
       expect(control.label.style.stroke).toMatchObject({
         color: '#0a0a0a',
-        width: 5,
+        width: 4.5,
         join: 'round',
       });
       expect(control.icon.x).toBe(
@@ -803,10 +803,15 @@ describe('WorkshopPixiPage', () => {
       expect.objectContaining({ color: '#205c22', width: 2 }),
     ]);
     expect(seedRows.every((row) => row.selectedIndicator.visible === false)).toBe(true);
-    const expectedListFrameWidth = PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth;
+    const expectedListFrameWidth =
+      PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth -
+      RETAINED_DIALOG_LIST_GEOMETRY.rowSideInset * 2;
     expect(seedRows[0].background.frameWidth).toBe(expectedListFrameWidth);
     expect(dialog.list.width).toBe(
       expectedListFrameWidth + RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+    );
+    expect(dialog.list.root.position.x).toBe(
+      (dialog.panel.contentBoxWidth - expectedListFrameWidth) / 2,
     );
 
     const collapsedHeight = seedRows[0].height;
@@ -1625,7 +1630,7 @@ describe('WorkshopPixiPage', () => {
       x: 0,
       y: 0,
       width: 50,
-      height: 72,
+      height: 60,
     });
     expect(alliance.iconFrame.position).toMatchObject({
       x: 25,
@@ -1639,13 +1644,13 @@ describe('WorkshopPixiPage', () => {
       x: 0,
       y: 0,
       width: 50,
-      height: 72,
+      height: 60,
     });
     expect(harness.page.statsButton.root.hitArea).toMatchObject({
       x: 0,
       y: 0,
       width: 50,
-      height: 72,
+      height: 60,
     });
     expect(harness.page.summon.info.icon.label).toBe('workshop-summon-info:icon');
     expect(harness.page.summon.info.textLabel).toBeUndefined();

@@ -510,19 +510,27 @@ describe('WorkshopActionBarManager', () => {
 
     expect(rootRule).toMatch(/--workshop-side-controls-top-offset:\s*71px;/);
     expect(rootRule).toMatch(/--workshop-panel-button-width:\s*50px;/);
-    expect(rootRule).toMatch(/--workshop-panel-button-height:\s*72px;/);
-    expect(rootRule).toMatch(/--workshop-panel-button-open-height:\s*72px;/);
-    expect(rootRule).toMatch(/--workshop-panel-button-row-gap:\s*74px;/);
-    expect(labelRule).toMatch(/\bwidth:\s*62px;/);
-    expect(labelRule).toMatch(/\bfont-size:\s*15px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-height:\s*60px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-open-height:\s*60px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-label-bottom:\s*3\.5px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-label-line-height:\s*16\.5px;/);
+    expect(rootRule).toMatch(/--workshop-panel-button-row-gap:\s*62px;/);
+    expect(labelRule).toMatch(/\bwidth:\s*58px;/);
+    expect(labelRule).toMatch(/\bfont-size:\s*13\.5px;/);
     expect(labelRule).toMatch(/\bline-height:\s*var\(--workshop-panel-button-label-line-height\);/);
-    expect(labelRule).toContain('-webkit-text-stroke: 2.5px');
+    expect(labelRule).toContain('-webkit-text-stroke: 2.25px');
     expect(labelRule).toMatch(/\btext-align:\s*center;/);
     expect(iconFrameRule).toMatch(/\btop:\s*0;/);
     expect(iconFrameRule).toMatch(/\bwidth:\s*50px;/);
     expect(iconFrameRule).toMatch(/\bheight:\s*50px;/);
     expect(baseCss).toMatch(
       /\.workshop-page__trade-alliance-button-icon\s*\{[\s\S]*?\bscale:\s*0\.72;/,
+    );
+    expect(baseCss).toMatch(
+      /\.workshop-page__panel-button\[data-panel-side="left"\][\s\S]*?\.workshop-page__trade-alliance-button-icon-frame\s*\{\s*left:\s*-2px;/,
+    );
+    expect(baseCss).toMatch(
+      /\.workshop-page__panel-button\[data-panel-side="right"\][\s\S]*?\.workshop-page__trade-alliance-button-icon-frame\s*\{\s*right:\s*-2px;/,
     );
     expect(baseCss).toContain('.workshop-page__ui-layer > .workshop-page__stats');
     expect(baseCss).not.toContain(

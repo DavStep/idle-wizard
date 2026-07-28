@@ -577,7 +577,7 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
-  it('shows no more than three locked preview rows in a category', () => {
+  it('shows only the next locked preview row in a category', () => {
     const harness = createHarness();
     const model = createResearchViewModel({
       locked: true,
@@ -597,9 +597,9 @@ describe('ResearchPixiPage', () => {
 
     harness.page.bind(model);
 
-    expect(harness.page.boxes.get('herbs').rowWidgets).toHaveLength(3);
-    expect(harness.page.rows.getStats().size).toBe(3);
-    expect(harness.page.rowPool.getStats().active).toBe(3);
+    expect(harness.page.boxes.get('herbs').rowWidgets).toHaveLength(1);
+    expect(harness.page.rows.getStats().size).toBe(1);
+    expect(harness.page.rowPool.getStats().active).toBe(1);
 
     harness.page.destroy();
     harness.dispose();

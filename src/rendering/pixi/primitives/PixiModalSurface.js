@@ -4,7 +4,10 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
-import { isDisplayObjectDescendant } from '../input/InputGeometry.js';
+import {
+  isDisplayObjectDescendant,
+  pointInDisplayObject,
+} from '../input/InputGeometry.js';
 import { BasePixiRetainedView } from './BasePixiRetainedView.js';
 import {
   PIXI_DIALOG_BASE_GEOMETRY,
@@ -198,6 +201,13 @@ export class PixiModalSurface extends BasePixiRetainedView {
     );
   }
 
+  isModalContentPoint(point) {
+    if (typeof this.panel?.containsModalPoint === 'function') {
+      return this.panel.containsModalPoint(point);
+    }
+    return pointInDisplayObject(this.panel, point);
+  }
+
   syncModal() {
     if (!this.active || !this.shown || this.modalHandle || !this.inputRouter) {
       return;
@@ -213,7 +223,12 @@ export class PixiModalSurface extends BasePixiRetainedView {
         ),
       onOutsidePress:
         typeof this.dismissOnOutside === 'function'
-          ? () => this.dismissOnOutside()
+          ? (context) => {
+              if (this.isModalContentPoint(context?.point)) {
+                return false;
+              }
+              return this.dismissOnOutside(context);
+            }
           : null,
       onBack: this.modalBackHandler,
       onEscape: this.modalEscapeHandler,

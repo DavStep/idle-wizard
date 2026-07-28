@@ -1,4 +1,9 @@
-import { Container, FillGradient, Graphics } from 'pixi.js';
+import {
+  AlphaMask,
+  Container,
+  FillGradient,
+  Graphics,
+} from 'pixi.js';
 
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
@@ -42,7 +47,12 @@ export class PixiProgressBar extends Container {
       kind: 'fillMask',
       label: `${label}:fillMask`,
     });
-    this.fillGraphic.mask = this.fillMask;
+    this.fillAlphaMask = new AlphaMask({
+      mask: this.fillMask,
+    });
+    this.fillAlphaMask.channel = 'alpha';
+    this.fillGraphic.setMask({ channel: 'alpha' });
+    this.fillGraphic.addEffect(this.fillAlphaMask);
     this.fillContainer.addChild(
       this.fillGraphic,
       this.fillMask,
@@ -225,6 +235,9 @@ export class PixiProgressBar extends Container {
   destroy(options) {
     this.gradient?.destroy();
     this.gradient = null;
+    this.fillGraphic.removeEffect(this.fillAlphaMask);
+    this.fillAlphaMask.destroy();
+    this.fillAlphaMask = null;
     super.destroy(options);
   }
 }

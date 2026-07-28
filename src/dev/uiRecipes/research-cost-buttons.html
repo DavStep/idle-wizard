@@ -133,6 +133,28 @@
             requiredPlayerLevel: 10,
             requiredResearchIds: [],
           },
+          {
+            id: 'recipe:locked-future-1',
+            label: 'future locked research one',
+            value: 'locked',
+            completed: false,
+            canResearch: false,
+            locked: true,
+            description: 'this deeper study stays hidden until the next one unlocks.',
+            requiredPlayerLevel: 11,
+            requiredResearchIds: ['recipe:locked'],
+          },
+          {
+            id: 'recipe:locked-future-2',
+            label: 'future locked research two',
+            value: 'locked',
+            completed: false,
+            canResearch: false,
+            locked: true,
+            description: 'this deeper study stays hidden until the earlier chain unlocks.',
+            requiredPlayerLevel: 12,
+            requiredResearchIds: ['recipe:locked-future-1'],
+          },
         ],
       };
       const completedSeedBox = {

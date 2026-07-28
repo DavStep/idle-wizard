@@ -15,7 +15,7 @@ import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { createSeedPackIcon } from '../../../assets/items/seeds/seedIcons.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 
-const maxLockedResearchesPerBox = 3;
+const maxLockedResearchesPerBox = 1;
 const RESEARCH_ARTWORK_BY_BOX_ID = Object.freeze({
   autoBrewCauldrons: new URL(
     '../../../../assets/game/source/icons/research/icon-research-auto-brew.png',

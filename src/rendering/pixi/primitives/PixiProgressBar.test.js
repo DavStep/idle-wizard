@@ -142,7 +142,14 @@ describe('PixiProgressBar', () => {
     expect(progress.fillMask.sprite).toBeInstanceOf(
       NineSliceSprite,
     );
-    expect(progress.fillGraphic.mask).toBe(progress.fillMask);
+    expect(progress.fillGraphic.effects).toContain(
+      progress.fillAlphaMask,
+    );
+    expect(progress.fillAlphaMask).toMatchObject({
+      pipe: 'alphaMask',
+      mask: progress.fillMask,
+      channel: 'alpha',
+    });
 
     progress.destroy({ children: true });
   });

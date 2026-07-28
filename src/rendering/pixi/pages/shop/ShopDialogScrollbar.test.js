@@ -64,11 +64,18 @@ describe('ShopDialogPixi stall scrollbar', () => {
     expect(dialog.list.scroll.scrollbarTrack.visible).toBe(true);
     expect(dialog.list.scroll.scrollbarThumb.visible).toBe(true);
     expect(row.background.frameWidth).toBe(
-      PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth,
+      PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth -
+        RETAINED_DIALOG_LIST_GEOMETRY.rowSideInset * 2,
     );
     expect(dialog.list.width).toBe(
-      PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth +
+      PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth -
+        RETAINED_DIALOG_LIST_GEOMETRY.rowSideInset * 2 +
         RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+    );
+    expect(dialog.list.root.x).toBe(
+      (dialog.panel.contentBoxWidth -
+        row.background.frameWidth) /
+        2,
     );
     expect(secondRow.root.y - row.root.y).toBe(
       PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,

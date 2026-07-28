@@ -314,17 +314,17 @@
   );
   --workshop-side-controls-top-offset: 71px;
   --workshop-panel-button-width: 50px;
-  --workshop-panel-button-height: 72px;
-  --workshop-panel-button-open-height: 72px;
-  --workshop-panel-button-label-bottom: 10px;
-  --workshop-panel-button-label-line-height: 18px;
+  --workshop-panel-button-height: 60px;
+  --workshop-panel-button-open-height: 60px;
+  --workshop-panel-button-label-bottom: 3.5px;
+  --workshop-panel-button-label-line-height: 16.5px;
   --workshop-panel-button-label-offset-y: calc(
     var(--workshop-panel-button-height) -
       var(--workshop-panel-button-label-bottom) -
       var(--workshop-panel-button-label-line-height)
   );
   --workshop-panel-button-first-row-offset-y: 25px;
-  --workshop-panel-button-row-gap: 74px;
+  --workshop-panel-button-row-gap: 62px;
   --workshop-panel-button-row-1-top: calc(
     var(--style-room-content-top) + var(--workshop-side-controls-top-offset) +
       var(--workshop-panel-button-first-row-offset-y)
@@ -5998,24 +5998,24 @@ body {
 
 .workshop-page__feature-character-label {
   position: absolute;
-  left: -6px;
+  left: -4px;
   right: auto;
   bottom: var(--workshop-panel-button-label-bottom);
   z-index: 2;
   display: block;
-  width: 62px;
+  width: 58px;
   min-height: var(--workshop-panel-button-label-line-height);
   padding: 0;
   color: var(--style-yellow-button-text);
   font-family: var(--style-font);
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: normal;
   line-height: var(--workshop-panel-button-label-line-height);
   text-align: center;
   white-space: nowrap;
   background: transparent;
   border: 0;
-  -webkit-text-stroke: 2.5px var(--style-yellow-button-text-stroke);
+  -webkit-text-stroke: 2.25px var(--style-yellow-button-text-stroke);
   paint-order: stroke fill;
   pointer-events: none;
   text-shadow:
@@ -6029,7 +6029,7 @@ body {
 
 .workshop-page__panel-button[data-panel-side="right"]
   .workshop-page__feature-character-label {
-  right: -6px;
+  right: -4px;
   left: auto;
   text-align: center;
 }
@@ -6045,10 +6045,10 @@ body {
   padding: 0;
   color: var(--style-muted);
   font-family: var(--style-font);
-  font-size: calc(var(--style-box-border-label-font-size) * 0.54);
+  font-size: calc(var(--style-box-border-label-font-size) * 0.49);
   font-variant-numeric: tabular-nums lining-nums;
   font-weight: normal;
-  line-height: calc(var(--style-box-border-label-line-height) * 0.54);
+  line-height: calc(var(--style-box-border-label-line-height) * 0.49);
   white-space: nowrap;
   background: transparent;
   -webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)
@@ -7481,14 +7481,14 @@ body {
 .workshop-page__discoveries-button-label,
 .workshop-page__trade-alliance-button-label {
   min-height: var(--workshop-panel-button-label-line-height);
-  font-size: 15px;
+  font-size: 13.5px;
   line-height: var(--workshop-panel-button-label-line-height);
   transform: none;
 }
 
 .workshop-page__leaderboard-button-label,
 .workshop-page__discoveries-button-label {
-  font-size: 10.75px;
+  font-size: 9.75px;
 }
 
 .workshop-page__world-chat-box {

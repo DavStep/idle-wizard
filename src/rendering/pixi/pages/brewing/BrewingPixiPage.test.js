@@ -669,6 +669,24 @@ describe('BrewingPixiPage', () => {
     model.brewing.configuredMaxCauldrons = 5;
     harness.page.bind(model);
 
+    const chatTop =
+      harness.page.sourceHeight -
+      PIXI_UI_GEOMETRY.roomChatBottom -
+      PIXI_UI_GEOMETRY.roomChatHeight;
+    expect(BREWING_HUD_GEOMETRY.top).toBe(
+      PIXI_UI_GEOMETRY.roomContentTop,
+    );
+    expect(
+      BREWING_HUD_GEOMETRY.detailTop -
+        (BREWING_HUD_GEOMETRY.top +
+          BREWING_HUD_GEOMETRY.carouselHeight),
+    ).toBeGreaterThanOrEqual(PIXI_UI_GEOMETRY.roomChatGap);
+    expect(
+      BREWING_HUD_GEOMETRY.detailTop +
+        BREWING_HUD_GEOMETRY.detailHeight +
+        PIXI_UI_GEOMETRY.roomChatGap +
+        PIXI_UI_GEOMETRY.roomChatTitleOverhang,
+    ).toBeLessThanOrEqual(chatTop);
     expect(harness.page.hud.root.visible).toBe(true);
     expect(harness.page.worldViewport.visible).toBe(false);
     expect(harness.page.hud.carouselPanel.title.visible).toBe(false);

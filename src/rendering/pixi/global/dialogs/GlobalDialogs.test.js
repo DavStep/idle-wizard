@@ -11,6 +11,7 @@ import { PixiInputRouter } from '../../input/PixiInputRouter.js';
 import {
   DeviceIdentityFooter,
   PixiDialogFrame,
+  resolveDialogPaperOutsets,
   RootRunSettingsTogglePixi,
   RootRunDevicePreferenceRow,
   RootRunDevicePreferencesPanel,
@@ -212,6 +213,39 @@ describe('retained global Pixi dialogs', () => {
       ),
     ).toBe(true);
     expect(settings.tabsLayer).toBeUndefined();
+
+    harness.dispose();
+  });
+
+  it('does not dismiss settings when the backdrop receives a release inside the visible shell', () => {
+    const harness = createHarness();
+    const settings = harness.registry.open(
+      GLOBAL_DIALOG_IDS.SETTINGS,
+      {
+        tabId: 'account',
+        account: { username: 'mira' },
+      },
+    );
+    const modal = harness.inputRouter.getTopModal();
+    const shellPoint = settings.panel.toGlobal({
+      x:
+        settings.panel.coreWidth +
+        PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset / 2,
+      y:
+        settings.panel.titleFrame.y +
+        settings.panel.titleFrame.frameHeight / 2,
+    });
+
+    expect(modal?.onOutsidePress?.({ point: shellPoint })).toBe(false);
+    expect(
+      harness.registry.isOpen(GLOBAL_DIALOG_IDS.SETTINGS),
+    ).toBe(true);
+
+    const backdropPoint = settings.panel.toGlobal({ x: -40, y: -40 });
+    expect(modal?.onOutsidePress?.({ point: backdropPoint })).toBe(true);
+    expect(
+      harness.registry.isOpen(GLOBAL_DIALOG_IDS.SETTINGS),
+    ).toBe(false);
 
     harness.dispose();
   });
@@ -762,7 +796,7 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('contains fixed tabs below the choice viewport and keeps a wide save control close to the dialog bottom', () => {
+  it('places fixed tabs on the paper below the choice board and keeps a wide save control close to the dialog bottom', () => {
     const harness = createHarness();
     const settings = harness.registry.open(
       GLOBAL_DIALOG_IDS.SETTINGS,
@@ -847,12 +881,20 @@ describe('retained global Pixi dialogs', () => {
     const choiceSectionBottom =
       settings.accountChoiceSection.y +
       settings.accountChoiceSection.frameHeight;
+    const paperOutsets = resolveDialogPaperOutsets(
+      settings.panel.contentInsets,
+    );
+    const choiceContentBottom =
+      choiceSectionBottom - paperOutsets.bottom;
     const saveBottom =
       settings.accountSave.y +
       settings.accountSave.buttonHeight;
 
     expect(tabsTop).toBeGreaterThan(choiceViewportBottom);
-    expect(tabsBottom).toBeLessThanOrEqual(choiceBoardBottom);
+    expect(tabsTop - choiceBoardBottom).toBe(
+      choiceContentBottom - tabsBottom,
+    );
+    expect(tabsBottom).toBeLessThan(choiceSectionBottom);
     expect(settings.accountSave.y - choiceSectionBottom).toBe(8);
     expect(settings.contentHeight - saveBottom).toBe(8);
 

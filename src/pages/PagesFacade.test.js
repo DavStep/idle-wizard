@@ -11618,7 +11618,7 @@ describe('PagesFacade', () => {
     expect(findResearchRow('x2 summon')?.classList.contains('is-unavailable')).toBe(false);
   });
 
-  it('shows at most three locked research rows in each block', () => {
+  it('shows only the next locked research row in each block', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 3);
@@ -11681,7 +11681,7 @@ describe('PagesFacade', () => {
       ...stage.querySelectorAll('.research-page__box--seedUnlocks .research-page__research-name'),
     ].map((name) => name.textContent);
 
-    expect(seedResearchNames).toEqual(['sage seed', 'mint seed', 'nettle seed', 'lavender seed']);
+    expect(seedResearchNames).toEqual(['sage seed', 'mint seed']);
   });
 
   it('renders research names as passive content without an info dialog', () => {

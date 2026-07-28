@@ -58,7 +58,9 @@ export const RETAINED_DIALOG_SCROLL_GEOMETRY = Object.freeze({
 });
 
 export const RETAINED_DIALOG_LIST_GEOMETRY = Object.freeze({
-  rowFrameWidth: PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth,
+  rowSideInset: 8,
+  rowFrameWidth:
+    PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth - 16,
   scrollbarViewportOutset: 2,
   scrollbarRightInset: 3,
 });

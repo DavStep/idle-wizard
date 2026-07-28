@@ -40,7 +40,7 @@ import {
   normalizeRows,
   setText,
 } from '../workshop/RetainedPageKit.js';
-const MAX_LOCKED_ROWS_PER_BOX = 3;
+const MAX_LOCKED_ROWS_PER_BOX = 1;
 export const RESEARCH_PAPER_INK = '#634934';
 export const RESEARCH_PROGRESS_INK = '#725737';
 export const RESEARCH_RANK_INK = '#ffeecf';
