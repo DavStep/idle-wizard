@@ -29,7 +29,7 @@ describe('TopPanelViewManager', () => {
       stage.querySelector('.room-top-panel__quest-progress')?.hasAttribute('hidden'),
     ).toBe(true);
     expect(stage.querySelector('.room-top-panel__level-star')?.getAttribute('src')).toContain(
-      '/assets/game/source/ui/level-star.webp',
+      '/assets/game/source/ui/root-run-level-star.png',
     );
     expect(stage.querySelector('.room-top-panel__quest-progress-fill')).not.toBeNull();
     expect(
@@ -360,9 +360,7 @@ describe('TopPanelViewManager', () => {
     expect(segmentsRule).toMatch(/\binset:\s*2px;/);
     expect(fillRule).toMatch(/\bbackground:\s*var\(--style-progress-root-fill\);/);
     expect(fillRule).toMatch(/\bborder-radius:\s*999px;/);
-    expect(fillRule).toMatch(
-      /\bbox-shadow:\s*inset 0 0 0 1px var\(--style-progress-root-edge\);/,
-    );
+    expect(fillRule).not.toMatch(/\bbox-shadow:/);
     expect(fillRule).not.toMatch(/linear-gradient/);
     expect(segmentRule).toMatch(/\bbackground:\s*transparent;/);
     expect(dividerRule).toMatch(/\bposition:\s*relative;/);
@@ -424,7 +422,7 @@ describe('TopPanelViewManager', () => {
     );
   });
 
-  it('labels level reward sections and keeps the level dialog non-scrollable', () => {
+  it('builds the board-backed level dialog from two split-paper sections', () => {
     const stage = document.createElement('section');
     const manager = new TopPanelViewManager();
 
@@ -434,7 +432,36 @@ describe('TopPanelViewManager', () => {
       [...stage.querySelectorAll('.room-top-panel__level-section-label')].map(
         (label) => label.textContent,
       ),
-    ).toEqual(['bonuses gained at this level', 'total bonuses at this level']);
+    ).toEqual([
+      'Bonuses Gained at This Level',
+      'Total Bonuses at This Level',
+    ]);
+    expect(
+      stage.querySelectorAll('.room-top-panel__level-paper-section'),
+    ).toHaveLength(2);
+    expect(
+      stage.querySelector('.room-top-panel__level-divider'),
+    ).toBeNull();
+    const levelDialog = stage.querySelector(
+      '.room-top-panel__level-dialog',
+    );
+    expect(
+      levelDialog?.classList.contains(
+        'room-top-panel__level-dialog--board-backed',
+      ),
+    ).toBe(true);
+    expect(
+      levelDialog?.querySelector('.room-top-panel__level-pager'),
+    ).not.toBeNull();
+    expect(
+      [
+        ...stage.querySelectorAll(
+          '.room-top-panel__level-pager-button',
+        ),
+      ].every((button) =>
+        button.classList.contains('style-button--yellow'),
+      ),
+    ).toBe(true);
 
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;
@@ -445,7 +472,7 @@ describe('TopPanelViewManager', () => {
       /\.room-top-panel__level-content\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
 
-    expect(rootRule).toMatch(/--room-top-panel-level-dialog-height:\s*360px;/);
+    expect(rootRule).toMatch(/--room-top-panel-level-dialog-height:\s*320px;/);
     expect(dialogRule).toMatch(
       /\bheight:\s*var\(--room-top-panel-level-dialog-height\);/,
     );

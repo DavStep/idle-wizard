@@ -200,9 +200,10 @@ export class TopPanelInboxManager {
       action.append(status);
     } else {
       const button = document.createElement('button');
-      button.className = 'style-button room-top-panel__inbox-claim';
+      button.className =
+        'style-button style-button--green room-top-panel__inbox-claim';
       button.type = 'button';
-      button.textContent = this.pendingMailKeys.has(mail.mailKey) ? '...' : 'claim';
+      button.textContent = this.pendingMailKeys.has(mail.mailKey) ? '...' : 'Claim';
       button.dataset.inboxClaimMailKey = mail.mailKey;
       button.disabled = this.pendingMailKeys.has(mail.mailKey);
       action.append(button);

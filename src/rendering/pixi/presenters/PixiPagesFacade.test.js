@@ -115,6 +115,75 @@ describe('PixiPagesFacade', () => {
     });
   });
 
+  it('keeps an open Market Ledger interactive while switching unlocked tabs', () => {
+    const gameplaySnapshot = createGameplaySnapshot({ level: 4 });
+    gameplaySnapshot.shop = {
+      shelf: {
+        sellKinds: [
+          { kind: 'seed', label: 'seeds' },
+          { kind: 'herb', label: 'herbs' },
+          { kind: 'potion', label: 'potions' },
+        ],
+      },
+      stock: {
+        sellKinds: [
+          { kind: 'seed', label: 'seeds' },
+          { kind: 'herb', label: 'herbs' },
+          { kind: 'potion', label: 'potions' },
+        ],
+        items: [
+          {
+            itemTypeId: 1,
+            key: 'sageSeed',
+            kind: 'seed',
+            label: 'sage seed',
+            buyCoin: 3,
+            stock: 4,
+            npcNeed: 6,
+          },
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            kind: 'herb',
+            label: 'sage',
+            buyCoin: 4,
+            stock: 3,
+            npcNeed: 5,
+          },
+        ],
+      },
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.runtime.getOpenDialogIds.mockReturnValue(['shop.ledger']);
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    expect(pages.show('shop')).toBe(true);
+
+    const ledger = harness.getBoundPage('shop').shop.dialogs.ledger;
+    ledger.tabs.find((tab) => tab.id === 'herb').action();
+
+    const reboundLedger =
+      harness.getBoundPage('shop').shop.dialogs.ledger;
+    expect(reboundLedger.tabs.find((tab) => tab.id === 'herb')).toMatchObject({
+      label: 'Herbs',
+      selected: true,
+    });
+    expect(reboundLedger.items).toEqual([
+      expect.objectContaining({
+        label: 'Sage',
+        itemKind: 'herb',
+        itemKey: 'sageHerb',
+      }),
+    ]);
+    expect(harness.pageSurface.openDialog).toHaveBeenLastCalledWith(
+      'shop.ledger',
+      expect.objectContaining({
+        title: 'Market Ledger',
+        items: reboundLedger.items,
+      }),
+    );
+  });
+
   it('shows a centered transient prompt when summon has no active seed weights', () => {
     const harness = createHarness();
     harness.gameplayFacade.summonSeed.mockReturnValue({
@@ -133,6 +202,62 @@ describe('PixiPagesFacade', () => {
     expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
       message: 'Select a seed to drop',
       flyoutKey: 'workshop-summon-seed-selection',
+    });
+  });
+
+  it('hides unavailable Brewing progression controls and keeps empty actions pressable', () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.brewing = {
+      configuredMaxCauldrons: 5,
+      nextCauldronNumber: 2,
+      nextCauldronCost: 25,
+      nextCauldronLockedByResearch: true,
+      cauldrons: [
+        {
+          cauldronIndex: 0,
+          cauldronNumber: 1,
+          brewQuantity: 1,
+          maxBrewQuantity: 1,
+        },
+      ],
+      recipes: [],
+      herbs: [],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.cancelBrewing.mockReturnValue({
+      ok: false,
+      reason: 'no_brew',
+    });
+    harness.gameplayFacade.collectBrewing.mockReturnValue({
+      ok: false,
+      reason: 'no_brew',
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    expect(pages.show('brewing')).toBe(true);
+    const brewingModel = harness.getBoundPage('brewing');
+    expect(brewingModel.brewing.cauldrons).toHaveLength(1);
+    expect(brewingModel.brewing.cauldrons[0]).toMatchObject({
+      autoBrewAvailable: false,
+      maxBrewQuantity: 1,
+    });
+
+    expect(brewingModel.actions.cancelBrew(0)).toEqual({
+      ok: false,
+      reason: 'no_brew',
+    });
+    expect(brewingModel.actions.collectBrew(0)).toEqual({
+      ok: false,
+      reason: 'no_brew',
+    });
+    expect(harness.transientEffects.emitReward).toHaveBeenNthCalledWith(1, {
+      message: 'No potion is brewing to cancel',
+      flyoutKey: 'brewing-cancel-empty',
+    });
+    expect(harness.transientEffects.emitReward).toHaveBeenNthCalledWith(2, {
+      message: 'No potion is ready to collect',
+      flyoutKey: 'brewing-collect-empty',
     });
   });
 
@@ -847,6 +972,8 @@ function createHarness({
     fireGuildAdventurer: vi.fn(),
     buyGardenTile: vi.fn(),
     selectGardenSeed: vi.fn(),
+    cancelBrewing: vi.fn(),
+    collectBrewing: vi.fn(),
     selectShopShelfSlot: vi.fn(() => ({ ok: true })),
     setSelectedShopShelfSlotAllocation: vi.fn(() => ({
       ok: true,

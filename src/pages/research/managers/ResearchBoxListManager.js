@@ -11,6 +11,9 @@ import { setTimerProgressFill, stopTimerProgressFill } from '../../shared/timerP
 import { formatRemainingTime } from '../../shared/timerDisplay.js';
 import { createStarLevelLabel, formatStarLevel } from '../../shared/starLevelLabel.js';
 import { UiWidgetPoolManager } from '../../../rendering/managers/UiWidgetPoolManager.js';
+import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
+import { createSeedPackIcon } from '../../../assets/items/seeds/seedIcons.js';
+import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 
 const maxLockedResearchesPerBox = 3;
 const TOUCH_LIKE_PRESS_START_DEDUPE_MS = 80;
@@ -673,11 +676,6 @@ export class ResearchBoxListManager {
     const artwork = document.createElement('span');
     artwork.className = 'research-page__research-art';
     artwork.setAttribute('aria-hidden', 'true');
-    const artworkImage = document.createElement('img');
-    artworkImage.className = 'research-page__research-art-image';
-    artworkImage.alt = '';
-    artworkImage.draggable = false;
-    artwork.append(artworkImage);
 
     const key = document.createElement('button');
     key.className =
@@ -692,7 +690,6 @@ export class ResearchBoxListManager {
     const ref = {
       row,
       artwork,
-      artworkImage,
       key,
       rank,
       research: null,
@@ -741,7 +738,7 @@ export class ResearchBoxListManager {
     ref.value?.remove();
     ref.progress?.remove();
     ref.signature = signature;
-    const { row, artwork, artworkImage, key, rank } = ref;
+    const { row, artwork, key, rank } = ref;
     row.className = 'research-page__row';
     row.classList.toggle('is-completed', Boolean(research.completed));
     row.classList.toggle(
@@ -762,7 +759,9 @@ export class ResearchBoxListManager {
       `show information for ${this.formatResearchName(research)}`,
     );
     key.replaceChildren(...this.createResearchLabelParts(research));
-    artworkImage.src = this.getResearchArtworkUrl(boxId, research.id);
+    artwork.replaceChildren(
+      this.createResearchArtworkContent(boxId, research),
+    );
     const currentRank = research.completed ? 1 : 0;
     rank.textContent = `Lv. ${String(currentRank).padStart(2, '0')}/01`;
     const val =
@@ -770,7 +769,9 @@ export class ResearchBoxListManager {
         ? this.createLockedValue(research)
         : this.isResearchedStatus(research)
         ? this.createResearchedStatusButton(research)
-        : research.completed || research.inProgress
+        : research.inProgress
+        ? this.createInProgressStatusButton(research)
+        : research.completed
         ? this.createReadonlyValue(research)
         : this.createBuyButton(research);
 
@@ -878,13 +879,46 @@ export class ResearchBoxListManager {
     root.className = 'research-page__research-art';
     root.setAttribute('aria-hidden', 'true');
 
+    root.append(this.createResearchArtworkContent(boxId, research));
+    return root;
+  }
+
+  createResearchArtworkContent(boxId, research) {
+    const researchId = String(research?.id ?? '');
+
+    if (researchId.startsWith('unlockSeed:')) {
+      const itemKey = researchId.slice('unlockSeed:'.length);
+      const icon = createSeedPackIcon(
+        'research-page__research-art-image',
+        {
+          key: itemKey,
+          label: research?.label ?? research?.displayName,
+        },
+      );
+
+      if (icon) {
+        return icon;
+      }
+    }
+
+    if (researchId.startsWith('unlockRecipe:')) {
+      const itemKey = researchId.slice('unlockRecipe:'.length);
+      const icon = createAssetAtlasSprite(
+        'research-page__research-art-image',
+        getPotionIconFrameName(itemKey),
+      );
+
+      if (icon) {
+        return icon;
+      }
+    }
+
     const image = document.createElement('img');
     image.className = 'research-page__research-art-image';
-    image.src = this.getResearchArtworkUrl(boxId, research?.id);
+    image.src = this.getResearchArtworkUrl(boxId, researchId);
     image.alt = '';
     image.draggable = false;
-    root.append(image);
-    return root;
+    return image;
   }
 
   getResearchArtworkUrl(boxId, researchId) {
@@ -1275,6 +1309,31 @@ export class ResearchBoxListManager {
     return button;
   }
 
+  createInProgressStatusButton(research) {
+    const button = document.createElement('button');
+    button.className =
+      'row_val style-button style-cost-button style-cost-button--yellow research-page__research-button research-page__research-button--in-progress research-page__research-value';
+    button.type = 'button';
+    button.disabled = true;
+
+    const content = document.createElement('span');
+    content.className =
+      'style-cost-button__plain-label research-page__research-status-content';
+    const label = document.createElement('span');
+    label.className = 'research-page__research-value-label';
+    const gap = document.createElement('span');
+    gap.className = 'research-page__research-value-gap';
+    const timer = document.createElement('span');
+    timer.className = 'research-page__research-value-timer';
+    content.append(label, gap, timer);
+    button.append(content);
+    this.setResearchValueStatus(
+      { value: button, valueLabel: label, valueGap: gap, valueTimer: timer },
+      research,
+    );
+    return button;
+  }
+
   createLockedValue(research) {
     const button = this.createBuyButton(research, {
       amountLabel: 'Locked',
@@ -1372,13 +1431,18 @@ export class ResearchBoxListManager {
     }
 
     const timer = this.formatResearchTimer(research);
-    this.setText(ref.valueLabel, research.value);
-    this.setText(ref.valueGap, timer ? ' ' : '');
+    this.setText(
+      ref.valueLabel,
+      research?.actionType === 'levelUp' ? 'Leveling Up' : 'Researching',
+    );
+    this.setText(ref.valueGap, '');
     this.setText(ref.valueTimer, timer);
     this.setAttribute(
       ref.value,
       'aria-label',
-      `${this.formatResearchName(research)} is ${research.value}${
+      `${this.formatResearchName(research)} is ${this.getResearchInProgressLabel(
+        research,
+      )}${
         timer ? `, ${timer} remaining` : ''
       }`,
     );

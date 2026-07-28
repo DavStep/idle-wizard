@@ -218,7 +218,7 @@ describe('TutorialPixiOverlay', () => {
         overlay.surface.progress.barHeight / 2,
     );
     expect(overlay.guideLabelButton.variant).toBe('brown-light');
-    expect(overlay.guideLabel.text).toBe('hide');
+    expect(overlay.guideLabel.text).toBe('Hide');
     expect(overlay.guideLabel.textObject.style.fill).toBe('#ffffff');
     expect(overlay.guideLabel.textObject.style.stroke).toMatchObject({
       color: '#0a0a0a',
@@ -289,6 +289,43 @@ describe('TutorialPixiOverlay', () => {
         expected,
       );
     }
+  });
+
+  it('keeps collapsed drag yells close to Elara with outlined white text', () => {
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      step: { id: 'drag-yell', highlightTargetIds: [] },
+      lesson: {
+        id: 'drag-yell',
+        text: 'Drag Elara.',
+        autoOpen: false,
+      },
+      cue: { kind: 'none' },
+    });
+
+    expect(overlay.panelOpen).toBe(false);
+    expect(overlay.guideLabel.text).toBe('Help');
+    expect(overlay.dragYell.position).toMatchObject({
+      x: TUTORIAL_PIXI_GEOMETRY.guideWidth / 2,
+      y: 34,
+    });
+    expect(overlay.dragYell.textObject.style.fill).toBe('#ffffff');
+    expect(overlay.dragYell.textObject.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: 2,
+    });
+
+    overlay.startGuideDrag();
+    expect(overlay.dragYell.alpha).toBe(1);
+    expect(overlay.dragYell.text).toBe('AAAAAA!!!');
+
+    overlay.finishGuideDrag();
+    overlay.destroy();
   });
 
   it('renders the intro with the shared blocking dialog shell', () => {

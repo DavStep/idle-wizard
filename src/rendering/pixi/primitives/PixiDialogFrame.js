@@ -1,4 +1,5 @@
 import {
+  ColorMatrixFilter,
   Container,
   Rectangle,
   Sprite,
@@ -22,6 +23,7 @@ export const PIXI_DIALOG_PALETTE = Object.freeze({
   mana: '#25658a',
   herb: '#4a7146',
   title: '#9d25db',
+  titleDanger: '#db1e2a',
   titleText: '#ffffff',
   titleStroke: '#0a0a0a',
   shadow: '#000000',
@@ -32,6 +34,12 @@ export const PIXI_DIALOG_BASE_GEOMETRY = Object.freeze({
   minContentHeight: 53,
   coreWidth: 344,
   minCoreHeight: 93,
+});
+
+export const PIXI_DIALOG_SPLIT_PAPER_GEOMETRY = Object.freeze({
+  sectionGap: 8,
+  contentInsetTop: 5,
+  contentInsetBottom: 5,
 });
 
 const TITLE_TEXT_PADDING_X = 89 / 3;
@@ -58,6 +66,7 @@ export class PixiDialogFrame extends Container {
     closeSemanticId = null,
     closeTutorialId = null,
     title = '',
+    titleVariant = 'default',
     coreWidth = PIXI_DIALOG_BASE_GEOMETRY.coreWidth,
     coreHeight = PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
     closeAction = null,
@@ -79,6 +88,7 @@ export class PixiDialogFrame extends Container {
     this.contentInsets = createContentInsets();
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.contentTheme = createContentTheme(this.theme);
+    this.paperVisible = true;
 
     const frameTexture = this.resolveTexture(PIXI_ROOT_RUN_ASSETS.dialogBack);
     this.shadow = new PixiNineSliceFrame({
@@ -162,6 +172,8 @@ export class PixiDialogFrame extends Container {
       this.closeControl,
     );
 
+    this.titleVariant = 'default';
+    this.dangerTitleFilter = null;
     this.modalContentRoots = Object.freeze([this]);
     this.closeRegistration =
       this.inputRouter?.registerPressTarget?.(this.closeControl, {
@@ -190,6 +202,7 @@ export class PixiDialogFrame extends Container {
         : null;
 
     this.setTitle(title);
+    this.setTitleVariant(titleVariant);
     this.relayout();
     this.syncCloseState();
   }
@@ -261,9 +274,32 @@ export class PixiDialogFrame extends Container {
     return this;
   }
 
+  setTitleVariant(variant = 'default') {
+    this.titleVariant = variant === 'danger' ? 'danger' : 'default';
+    if (this.titleVariant === 'danger') {
+      if (!this.dangerTitleFilter) {
+        this.dangerTitleFilter = new ColorMatrixFilter();
+        this.dangerTitleFilter.hue(78, false);
+        this.dangerTitleFilter.saturate(0.18, true);
+        this.dangerTitleFilter.brightness(0.96, true);
+      }
+      this.titleFrame.filters = [this.dangerTitleFilter];
+    } else {
+      this.titleFrame.filters = null;
+    }
+    return this;
+  }
+
   setCloseAction(action) {
     this.closeAction = typeof action === 'function' ? action : null;
     this.syncCloseState();
+    return this;
+  }
+
+  setPaperVisible(visible) {
+    this.paperVisible = Boolean(visible);
+    this.paperFrame.visible = this.paperVisible;
+    this.paperFrame.renderable = this.paperVisible;
     return this;
   }
 
@@ -429,8 +465,49 @@ export class PixiDialogFrame extends Container {
       });
       this.closeSemanticDefinition = null;
     }
+    this.titleFrame.filters = null;
+    this.dangerTitleFilter?.destroy();
+    this.dangerTitleFilter = null;
     super.destroy(options);
   }
+}
+
+export function createDialogPaperSection(texture, label) {
+  const frame = new PixiNineSliceFrame({
+    texture,
+    sourceInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.paperSourceInsets,
+    borderInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
+    label,
+  });
+  frame.eventMode = 'none';
+  return frame;
+}
+
+export function resolveDialogPaperOutsets(contentInsets) {
+  const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
+  const paperX = geometry.paperInsetX - geometry.frameOutset;
+  const paperY = geometry.paperInsetTop - geometry.frameOutset;
+  const paperRight = geometry.paperInsetX - geometry.frameOutset;
+  const paperBottom =
+    geometry.paperInsetBottom - geometry.frameOutset;
+  return {
+    top: Math.max(0, contentInsets.top - paperY),
+    right: Math.max(0, contentInsets.right - paperRight),
+    bottom: Math.max(0, contentInsets.bottom - paperBottom),
+    left: Math.max(0, contentInsets.left - paperX),
+  };
+}
+
+export function setDialogPaperSectionBounds(frame, bounds, outsets) {
+  frame.position.set(
+    bounds.x - outsets.left,
+    bounds.y - outsets.top,
+  );
+  frame.setSize(
+    bounds.width + outsets.left + outsets.right,
+    bounds.height + outsets.top + outsets.bottom,
+    PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
+  );
 }
 
 function createContentTheme(theme) {

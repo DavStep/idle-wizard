@@ -22,6 +22,7 @@ import { PixiFrame } from '../../primitives/PixiFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiPanel } from '../../primitives/PixiPanel.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
+import { PixiResourceLabel } from '../../primitives/PixiResourceLabel.js';
 import { PixiScrollView } from '../../primitives/PixiScrollView.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
@@ -54,6 +55,7 @@ const STALL_CARD_HEIGHT = 84;
 const COMPACT_ROW_HEIGHT = 27;
 const STALL_TEXT_INK = '#634934';
 const STALL_STAR_GAP = 4;
+const STALL_CONTENT_RAISE = 5;
 const STALL_ART_WELL_SIZE = 52;
 const STALL_ARTWORK_SIZE = 44;
 const STALL_QUANTITY_COLOR = '#ffffff';
@@ -1097,6 +1099,13 @@ class ShopStallWidget {
       color: STALL_TEXT_INK,
       label: 'shop:stall:price',
     });
+    this.priceResource = new PixiResourceLabel({
+      assetManager,
+      resource: 'coin',
+      amount: '',
+      includeResourceName: false,
+      label: 'shop:stall:priceResource',
+    });
     this.progress = new PixiProgressBar({
       assetManager,
       tone: 'root',
@@ -1104,7 +1113,7 @@ class ShopStallWidget {
     });
     this.timer = new PixiTextLabel({
       fontSize: PIXI_UI_GEOMETRY.tinyFontSize,
-      anchor: { x: 1, y: 0 },
+      anchor: { x: 1, y: 0.5 },
       color: STALL_TEXT_INK,
       label: 'shop:stall:timer',
     });
@@ -1122,6 +1131,7 @@ class ShopStallWidget {
       this.item,
       this.quantity,
       this.price,
+      this.priceResource,
       this.progress,
       this.timer,
       this.notification,
@@ -1172,9 +1182,20 @@ class ShopStallWidget {
     ));
     this.quantity.setText(stall.quantityLabel ?? '');
     this.quantity.visible = Boolean(stall.quantityLabel);
-    this.price.setText(formatTitleCase(
-      stall.priceLabel ?? stall.price ?? '',
-    ));
+    const priceText = stall.priceLabel ?? stall.price ?? '';
+    const priceResourceKey = stall.priceResourceKey ?? null;
+    this.price.setText(formatTitleCase(priceText));
+    this.price.visible = !priceResourceKey;
+    this.price.renderable = this.price.visible;
+    this.priceResource.visible = Boolean(priceResourceKey);
+    this.priceResource.renderable = this.priceResource.visible;
+    if (priceResourceKey) {
+      this.priceResource.bind(key, {
+        resource: priceResourceKey,
+        amount: stripResourceName(priceText, priceResourceKey),
+        includeResourceName: false,
+      });
+    }
     this.progress.setProgress(
       normalizeProgress(stall.progress ?? stall.progressPercent),
     );
@@ -1221,13 +1242,17 @@ class ShopStallWidget {
       height,
       PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
     );
-    this.title.position.set(10, 10);
+    const headerY = 10 - STALL_CONTENT_RAISE;
+    const iconY = 27 - STALL_CONTENT_RAISE;
+    const detailY = 35 - STALL_CONTENT_RAISE;
+    const progressY = 65 - STALL_CONTENT_RAISE;
+    this.title.position.set(10, headerY);
     this.stars.position.set(
       this.title.x + this.title.measuredWidth + STALL_STAR_GAP,
       this.title.y + 1,
     );
-    this.batch.position.set(width - 10, 10);
-    this.iconFrame.position.set(10, 27);
+    this.batch.position.set(width - 10, headerY);
+    this.iconFrame.position.set(10, iconY);
     this.iconFrame.setSize(
       STALL_ART_WELL_SIZE,
       STALL_ART_WELL_SIZE,
@@ -1250,20 +1275,28 @@ class ShopStallWidget {
       this.icon.height = STALL_ARTWORK_SIZE;
       this.iconOverlay.rotation = 0;
     }
-    this.item.position.set(70, 35);
+    this.item.position.set(70, detailY);
     this.item.setWrapWidth(Math.max(0, width - 160));
     this.quantity.position.set(
       iconCenterX,
       this.iconFrame.y + STALL_ART_WELL_SIZE - 2,
     );
-    this.price.position.set(width - 10, 35);
+    this.price.position.set(width - 10, detailY);
+    this.priceResource.position.set(
+      width - 10 - this.priceResource.measuredWidth,
+      detailY,
+    );
+    this.layoutPriceResource();
     const timerWidth = Math.max(18, this.timer.measuredWidth);
-    this.progress.position.set(70, 65);
+    this.progress.position.set(70, progressY);
     this.progress.setSize(
       Math.max(0, width - 80 - timerWidth - 4),
       PIXI_UI_GEOMETRY.progressTotalHeight,
     );
-    this.timer.position.set(width - 10, 61);
+    this.timer.position.set(
+      width - 10,
+      progressY + PIXI_UI_GEOMETRY.progressTotalHeight / 2,
+    );
     this.notificationBadge.placeAtTopRight({
       x: 0,
       y: 0,
@@ -1291,6 +1324,8 @@ class ShopStallWidget {
     this.item.applyTheme(this.theme);
     this.quantity.applyTheme(this.theme);
     this.price.applyTheme(this.theme);
+    this.priceResource.applyTheme(this.theme);
+    this.layoutPriceResource();
     this.progress.applyTheme({
       ...this.theme,
       progress: { key: 'classic' },
@@ -1307,10 +1342,27 @@ class ShopStallWidget {
     this.item.setColor(STALL_TEXT_INK);
     this.quantity.setColor(STALL_QUANTITY_COLOR);
     this.price.setColor(STALL_TEXT_INK);
+    this.priceResource.amountLabel.setColor(STALL_TEXT_INK);
     this.timer.setColor(STALL_TEXT_INK);
     this.notificationBadge
       .setTone(this.model?.notificationTone)
       .setActive(Boolean(this.model?.notification));
+  }
+
+  layoutPriceResource() {
+    const amountWidth = this.priceResource.amountLabel.measuredWidth;
+    const iconGap =
+      amountWidth > 0 ? this.priceResource.fontSize * 0.14 : 0;
+    const contentCenterY = this.priceResource.fontSize * 0.5;
+    this.priceResource.amountLabel.position.set(0, contentCenterY);
+    this.priceResource.icon.position.set(
+      amountWidth + iconGap,
+      contentCenterY,
+    );
+    if (Number.isFinite(this.width)) {
+      this.priceResource.position.x =
+        this.width - 10 - this.priceResource.measuredWidth;
+    }
   }
 
   reset() {
@@ -1752,6 +1804,14 @@ function normalizeStall(stall = {}, index) {
       stall.priceText ??
       '',
   };
+}
+
+function stripResourceName(value, resource) {
+  const text = String(value ?? '').trim();
+  const suffix = ` ${String(resource ?? '').trim().toLowerCase()}`;
+  return text.toLowerCase().endsWith(suffix)
+    ? text.slice(0, -suffix.length).trim()
+    : text;
 }
 
 function normalizeCompactSlot(slot = {}, index) {

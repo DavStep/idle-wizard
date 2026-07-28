@@ -7,12 +7,13 @@ import {
 } from 'pixi.js';
 
 import {
+  DeviceIdentityFooter,
   PixiButton,
-  PixiPanel,
   PixiScrollView,
   PixiTextField,
   PixiTextLabel,
-  RootRunSettingsTogglePixi,
+  RootRunDevicePreferenceRow,
+  RootRunDevicePreferencesPanel,
 } from '../../primitives/index.js';
 import {
   PooledCollection,
@@ -20,9 +21,10 @@ import {
 } from '../../retained/index.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
-  PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import { getClientReleaseVersion } from '../../../../shared/clientReleaseVersion.js';
 import {
   GLOBAL_DIALOG_GEOMETRY,
   RetainedGlobalDialog,
@@ -33,10 +35,8 @@ const SETTINGS_CONTENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
 const SETTINGS_STANDARD_CONTENT_HEIGHT = 410;
 const SETTINGS_STANDARD_SCROLL_HEIGHT = 390;
-const SETTINGS_DEVICE_CONTENT_HEIGHT = 190;
-const SETTINGS_DEVICE_SCROLL_HEIGHT = 170;
-const SETTINGS_SECTION_CONTENT_WIDTH =
-  SETTINGS_CONTENT_WIDTH - 24;
+const SETTINGS_DEVICE_CONTENT_HEIGHT = 264;
+const SETTINGS_DEVICE_SCROLL_HEIGHT = 244;
 const SETTINGS_TABS = new Set([
   'account',
   'report',
@@ -65,18 +65,24 @@ const FEEDBACK_KINDS = Object.freeze([
     emptyMessage: 'describe the feature',
   }),
 ]);
-const DEVICE_PREFERENCE_KEYS = Object.freeze([
-  'sfx',
-  'music',
-  'haptics',
+const DEVICE_PREFERENCES = Object.freeze([
+  Object.freeze({
+    key: 'sfx',
+    text: 'SOUND',
+    iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsSound,
+  }),
+  Object.freeze({
+    key: 'music',
+    text: 'MUSIC',
+    iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsMusic,
+  }),
+  Object.freeze({
+    key: 'haptics',
+    text: 'VIBRATION',
+    iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsVibration,
+  }),
 ]);
-const DEVICE_PREFERENCE_ROW_HEIGHT = 24;
-const DEVICE_PREFERENCE_ROW_PITCH =
-  PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
-const DEVICE_PANEL_CONTENT_HEIGHT =
-  DEVICE_PREFERENCE_ROW_PITCH *
-    (DEVICE_PREFERENCE_KEYS.length - 1) +
-  DEVICE_PREFERENCE_ROW_HEIGHT;
+const DEVICE_FOOTER_GAP = 12;
 const AVATAR_CELL_HEIGHT = 94;
 const AVATAR_GAP = 8;
 const AVATAR_CELL_WIDTH =
@@ -285,29 +291,45 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   buildConfigurationsPane() {
-    this.devicePanel = new PixiPanel({
+    this.devicePanel = new RootRunDevicePreferencesPanel({
       assetManager: this.context.assets,
-      title: '',
-      contentWidth: SETTINGS_SECTION_CONTENT_WIDTH,
-      contentHeight: DEVICE_PANEL_CONTENT_HEIGHT,
+      width: SETTINGS_CONTENT_WIDTH,
       label: `${this.dialogId}:devicePanel`,
     });
-    this.configurationsLayer.addChild(this.devicePanel);
-    this.preferenceRows = DEVICE_PREFERENCE_KEYS.map((key) => {
-      const label = new PixiTextLabel({
-        text: key,
-        label: `${this.dialogId}:preference:${key}:label`,
-      });
-      const toggle = new RootRunSettingsTogglePixi({
+    this.preferenceRows = DEVICE_PREFERENCES.map((definition) => {
+      const widget = new RootRunDevicePreferenceRow({
         assetManager: this.context.assets,
         inputRouter: this.context.inputRouter,
         semanticRegistry: this.context.semanticRegistry,
-        semanticId: `${this.dialogId}.preference.${key}`,
-        label: `${this.dialogId}:preference:${key}:toggle`,
+        semanticId: `${this.dialogId}.preference.${definition.key}`,
+        preferenceKey: definition.key,
+        text: definition.text,
+        iconAssetId: definition.iconAssetId,
+        label: `${this.dialogId}:preference:${definition.key}`,
       });
-      this.devicePanel.content.addChild(label, toggle);
-      return { key, label, toggle, enabled: true };
+      return {
+        key: definition.key,
+        widget,
+        label: widget.textLabel,
+        toggle: widget.toggle,
+        enabled: true,
+      };
     });
+    this.devicePanel.setRows(
+      this.preferenceRows.map(({ widget }) => widget),
+    );
+    this.identityFooter = new DeviceIdentityFooter({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${this.dialogId}.identity.copy`,
+      width: SETTINGS_CONTENT_WIDTH,
+      label: `${this.dialogId}:identityFooter`,
+    });
+    this.configurationsLayer.addChild(
+      this.devicePanel,
+      this.identityFooter,
+    );
   }
 
   buildAvatarPane() {
@@ -379,12 +401,19 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     for (const preference of this.preferenceRows) {
       preference.enabled =
         model.preferences[preference.key] !== false;
-      preference.toggle.bind({
+      preference.widget.bind({
         value: preference.enabled,
         onChange: (enabled) =>
           this.setPreference(preference.key, enabled),
       });
     }
+    this.identityFooter.bind({
+      version: model.account.version,
+      userId: model.account.userId,
+      onCopy:
+        this.actions.copyUserId ??
+        copyTextToClipboard,
+    });
 
     this.avatars.reconcile(model.avatars);
     this.renderSelectedPane();
@@ -507,26 +536,13 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   layoutConfigurationsPane() {
-    let y = 7;
+    let y = 0;
     this.devicePanel.position.set(0, y);
-    this.devicePanel.setContentSize(
-      SETTINGS_SECTION_CONTENT_WIDTH,
-      DEVICE_PANEL_CONTENT_HEIGHT,
-    );
-    this.preferenceRows.forEach(({ label, toggle }, index) => {
-      const rowY = index * DEVICE_PREFERENCE_ROW_PITCH;
-      label.position.set(
-        0,
-        rowY +
-          (DEVICE_PREFERENCE_ROW_HEIGHT - label.measuredHeight) /
-            2,
-      );
-      toggle.setBounds(
-        SETTINGS_SECTION_CONTENT_WIDTH - toggle.controlWidth,
-        rowY,
-      );
-    });
-    y += this.devicePanel.outerHeight + GLOBAL_DIALOG_GEOMETRY.sectionGap;
+    this.devicePanel.setWidth(SETTINGS_CONTENT_WIDTH);
+    y += this.devicePanel.panelHeight + DEVICE_FOOTER_GAP;
+    this.identityFooter.position.set(0, y);
+    this.identityFooter.setWidth(SETTINGS_CONTENT_WIDTH);
+    y += this.identityFooter.footerHeight;
     return y;
   }
 
@@ -716,10 +732,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     }
     const deviceTheme = this.theme ?? this.context.theme;
     this.devicePanel?.applyTheme(deviceTheme);
-    for (const { label, toggle } of this.preferenceRows ?? []) {
-      label.applyTheme(deviceTheme);
-      toggle.applyTheme(theme);
-    }
+    this.identityFooter?.applyTheme(deviceTheme);
     for (const avatar of this.avatars?.getWidgets?.() ?? []) {
       avatar.applyTheme(theme);
     }
@@ -982,7 +995,17 @@ function normalizeSettingsModel(
       connectEnabled:
         account.connectEnabled !== false &&
         account.loginAvailable !== false,
-      version: String(account.version ?? settings.version ?? ''),
+      version: String(
+        account.version ??
+          settings.version ??
+          getClientReleaseVersion(),
+      ),
+      userId: String(
+        account.userId ??
+          account.identity ??
+          settings.userId ??
+          '',
+      ),
     },
     feedback: {
       kind: normalizeFeedbackKind(
@@ -1043,6 +1066,19 @@ function normalizeVisualOption({
     ),
     priceHidden: option.priceHidden === true,
   };
+}
+
+async function copyTextToClipboard(text) {
+  const clipboard = globalThis.navigator?.clipboard;
+  if (typeof clipboard?.writeText !== 'function') {
+    return false;
+  }
+  try {
+    await clipboard.writeText(String(text ?? ''));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function normalizeSettingsTab(tabId) {

@@ -628,7 +628,7 @@ describe('TutorialFacade', () => {
       stage
         .querySelector('.tutorial-layer__objective-button-label')
         ?.textContent,
-    ).toBe('help');
+    ).toBe('Help');
 
     facade.unmount();
   });

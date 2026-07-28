@@ -49,10 +49,31 @@
 
       registerGlobalDialogFactories(runtime);
       await runtime.initialize();
-      runtime.openDialog(GLOBAL_DIALOG_IDS.INBOX, {
+      const inboxModel = {
         connected: true,
-        mail: [],
-      });
+        mail: [
+          {
+            mailKey: 'admin:qa-reward',
+            senderLabel: 'admin',
+            title: 'Administrative reward',
+            body: 'These are your rewards.',
+            createdAtMs: Date.UTC(2026, 6, 28),
+            read: false,
+            hasReward: true,
+            rewardCollected: false,
+            rewardText: '4 emerald',
+          },
+        ],
+      };
+      let inboxDialog;
+      inboxModel.actions = {
+        claimReward: async () => {
+          inboxModel.mail[0].rewardCollected = true;
+          inboxDialog.bind(inboxModel);
+          return { ok: true };
+        },
+      };
+      inboxDialog = runtime.openDialog(GLOBAL_DIALOG_IDS.INBOX, inboxModel);
     </script>
   </body>
 </html>

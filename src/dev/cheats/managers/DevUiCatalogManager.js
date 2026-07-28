@@ -119,12 +119,25 @@ export class DevUiCatalogManager {
     }
 
     const normalizedRequested = normalizeCatalogId(requested);
-    return (
+    const normalizedMatch =
       dialogIds.find(
         (knownDialogId) =>
           normalizeCatalogId(knownDialogId) === normalizedRequested,
-      ) ?? null
-    );
+      ) ?? null;
+    if (normalizedMatch) {
+      return normalizedMatch;
+    }
+
+    if (normalizedRequested === 'worldchat') {
+      return (
+        dialogIds.find(
+          (knownDialogId) =>
+            normalizeCatalogId(knownDialogId) === 'workshopworldchat',
+        ) ?? null
+      );
+    }
+
+    return null;
   }
 }
 
@@ -181,10 +194,10 @@ function createPreviewModel(dialogId) {
 
   if (dialogId === 'garden.cancel') {
     return {
-      title: 'cancel growing?',
-      message: 'the current seed will be returned.',
-      cancelLabel: 'keep growing',
-      confirmLabel: 'cancel',
+      title: 'Cancel Progress?',
+      message: 'Return This Plot To Empty?',
+      cancelLabel: 'Keep',
+      confirmLabel: 'Empty',
     };
   }
 
@@ -197,5 +210,97 @@ function createPreviewModel(dialogId) {
     };
   }
 
+  if (dialogId === 'workshop.worldChat') {
+    return {
+      title: 'World Chat',
+      composer: {
+        placeholder: 'Message',
+        maxLength: 160,
+        enabled: true,
+      },
+      rows: [
+        {
+          id: 'preview-mira',
+          type: 'player',
+          username: 'Mira',
+          body: 'The moon garden is glowing tonight.',
+          allianceTag: 'MOSS',
+          allianceTagColor: 'green',
+          character: 'mira',
+          ageLabel: 'now',
+        },
+        {
+          id: 'preview-rowan',
+          type: 'player',
+          username: 'Rowan',
+          body: 'Anyone found the crystal mushroom recipe?',
+          allianceTag: 'ARC',
+          allianceTagColor: 'violet',
+          character: 'rowan',
+          ageLabel: '3m ago',
+        },
+        {
+          id: 'preview-system',
+          type: 'system',
+          username: 'System',
+          body: 'The weekly world event has begun.',
+          ageLabel: '8m ago',
+        },
+        {
+          id: 'preview-juniper',
+          type: 'player',
+          username: 'Juniper',
+          body: 'Meet by the old cauldron after dusk.',
+          allianceTag: 'EMBER',
+          allianceTagColor: 'amber',
+          character: 'juniper',
+          ageLabel: '12m ago',
+        },
+      ],
+      onSubmit: async () => ({ ok: false, reason: 'offline' }),
+    };
+  }
+
+  if (dialogId === 'shop.ledger') {
+    return {
+      title: 'Market Ledger',
+      selectedTabId: 'seed',
+      tabs: [
+        { id: 'seed', label: 'Seeds', selected: true },
+        { id: 'herb', label: 'Herbs', selected: false },
+        { id: 'potion', label: 'Potions', selected: false },
+      ],
+      items: [
+        createLedgerPreviewItem('sageSeed', 'Sage Seed', 2_897, 1_294, 8),
+        createLedgerPreviewItem('mintSeed', 'Mint Seed', 4_194, 1_293, 8),
+        createLedgerPreviewItem('nettleSeed', 'Nettle Seed', 3_992, 1_294, 8),
+        createLedgerPreviewItem('lavenderSeed', 'Lavender Seed', 5_400, 1_500, 10),
+        createLedgerPreviewItem('briarSeed', 'Briar Seed', 4_515, 1_500, 11),
+        createLedgerPreviewItem('glowcapSeed', 'Glowcap Seed', 3_519, 1_500, 14),
+        createLedgerPreviewItem('mandrakeSeed', 'Mandrake Seed', 3_004, 1_500, 15),
+        createLedgerPreviewItem('sunrootSeed', 'Sunroot Seed', 2_745, 1_420, 16),
+        createLedgerPreviewItem('moonflowerSeed', 'Moonflower Seed', 2_412, 1_360, 18),
+        createLedgerPreviewItem('frostmossSeed', 'Frostmoss Seed', 2_106, 1_280, 20),
+        createLedgerPreviewItem('dreambellSeed', 'Dreambell Seed', 1_944, 1_220, 22),
+        createLedgerPreviewItem('starAniseSeed', 'Star Anise Seed', 1_788, 1_180, 24),
+      ],
+    };
+  }
+
   return {};
+}
+
+function createLedgerPreviewItem(itemKey, label, stock, buyers, coin) {
+  return {
+    id: itemKey,
+    label,
+    detail: `stock ${stock} · buyers ${buyers}`,
+    value: `${coin} coin`,
+    valueResourceKey: 'coin',
+    itemKey,
+    itemKind: 'seed',
+    resourceKey: 'seed',
+    enabled: true,
+    semanticId: `shop.ledger.item.${itemKey}`,
+  };
 }

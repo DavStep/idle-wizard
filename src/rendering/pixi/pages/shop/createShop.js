@@ -127,6 +127,7 @@ export function createShop(options = {}) {
     null;
   const dialogs = {
     ledger: createLedgerDialog({
+      gameplaySnapshot,
       gameplayActions,
       shelf,
       shop,
@@ -825,6 +826,7 @@ function createListingDialog({
 }
 
 function createLedgerDialog({
+  gameplaySnapshot,
   gameplayActions,
   shelf,
   shop,
@@ -832,16 +834,23 @@ function createLedgerDialog({
   uiState,
 }) {
   const items = safeArray(shop.stock?.items ?? shelf.sellItems);
+  const visibleSellKinds = stallVisibilityManager.getVisibleSellKinds(
+    gameplaySnapshot,
+    safeArray(shop.stock?.sellKinds ?? shelf.sellKinds),
+  );
+  const requestedKind = uiState.ledgerKind ?? visibleSellKinds[0]?.kind;
   const selectedKind =
-    uiState.ledgerKind ??
-    safeArray(shop.stock?.sellKinds ?? shelf.sellKinds)[0]?.kind;
+    visibleSellKinds.some((kind) => kind.kind === requestedKind)
+      ? requestedKind
+      : visibleSellKinds[0]?.kind;
   return {
-    title: 'market ledger',
+    title: 'Market Ledger',
+    selectedTabId: selectedKind,
     items: items
       .filter((item) => !selectedKind || item.kind === selectedKind)
       .map((item) => ({
         id: item.itemTypeId ?? item.key,
-        label: item.label,
+        label: toTitleCase(item.label),
         detail: `stock ${displayCount(item.stock)} · buyers ${displayCount(
           item.npcNeed ?? item.sellNeed,
         )}`,
@@ -852,6 +861,9 @@ function createLedgerDialog({
         valueResourceKey: Number.isFinite(Number(item.buyCoin))
           ? 'coin'
           : null,
+        itemKey: item.key,
+        itemKind: item.kind,
+        resourceKey: item.kind,
         enabled: item.tradedHere !== false,
         semanticId: `shop.ledger.item.${item.key ?? item.itemTypeId}`,
         action: () =>
@@ -867,10 +879,10 @@ function createLedgerDialog({
               ),
           ),
       })),
-    tabs: safeArray(shop.stock?.sellKinds ?? shelf.sellKinds).map(
+    tabs: visibleSellKinds.map(
       (kind) => ({
         id: kind.kind,
-        label: kind.label,
+        label: toTitleCase(kind.label),
         selected: kind.kind === selectedKind,
         action: () =>
           callFirst(uiActions, ['selectLedgerKind'], [kind.kind]),

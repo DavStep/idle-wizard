@@ -50,3 +50,7 @@ cancel-progress, and swap-seed dialogs are constructed on first open and
 retained thereafter. Pan, pinch, press, drag/drop, scrolling, modal back, and
 semantic tutorial targeting all use the injected shared registries; there are
 no DOM listeners or geometry queries.
+
+The cancel-progress confirmation uses the approved red danger title plaque,
+Title Case copy, a centered prompt, a yellow `Keep` action, and a red `Empty`
+action. The neutral seed-swap confirmation keeps the default title treatment.

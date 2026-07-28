@@ -15,7 +15,7 @@ import {
 } from '../../shared/statusIcon.js';
 
 const QUEST_STARS_ICON_URL = new URL(
-  '../../../../assets/game/source/ui/level-star.webp',
+  '../../../../assets/game/source/ui/root-run-level-star.png',
   import.meta.url,
 ).href;
 
@@ -808,46 +808,56 @@ export class TopPanelViewManager {
     this.refs.levelPanel.tabIndex = -1;
 
     this.refs.levelDialog = document.createElement('section');
-    this.refs.levelDialog.className = 'room-top-panel__level-dialog style-dialog';
+    this.refs.levelDialog.className =
+      'room-top-panel__level-dialog room-top-panel__level-dialog--board-backed style-dialog';
 
     this.refs.levelTitle = document.createElement('div');
     this.refs.levelTitle.className = 'style-box__title room-top-panel__level-title';
-    this.refs.levelTitle.textContent = 'level 1';
+    this.refs.levelTitle.textContent = 'Level 1';
 
     this.refs.levelCurrentLabel = document.createElement('div');
     this.refs.levelCurrentLabel.className = 'room-top-panel__level-current';
-    this.refs.levelCurrentLabel.textContent = 'current';
+    this.refs.levelCurrentLabel.textContent = 'Current';
     this.refs.levelCurrentLabel.hidden = true;
 
     this.refs.levelContent = document.createElement('div');
     this.refs.levelContent.className = 'room-top-panel__level-content';
 
+    this.refs.levelAddedSection = document.createElement('section');
+    this.refs.levelAddedSection.className =
+      'room-top-panel__level-paper-section room-top-panel__level-added-section';
+
     this.refs.levelAddedLabel = document.createElement('div');
     this.refs.levelAddedLabel.className = 'room-top-panel__level-section-label';
-    this.refs.levelAddedLabel.textContent = 'bonuses gained at this level';
+    this.refs.levelAddedLabel.textContent = 'Bonuses Gained at This Level';
 
     this.refs.levelAddedRows = document.createElement('div');
     this.refs.levelAddedRows.className =
       'room-top-panel__level-rows room-top-panel__level-added-rows';
 
-    this.refs.levelDivider = document.createElement('div');
-    this.refs.levelDivider.className = 'room-top-panel__level-divider';
-    this.refs.levelDivider.hidden = true;
+    this.refs.levelTotalSection = document.createElement('section');
+    this.refs.levelTotalSection.className =
+      'room-top-panel__level-paper-section room-top-panel__level-total-section';
 
     this.refs.levelTotalLabel = document.createElement('div');
     this.refs.levelTotalLabel.className = 'room-top-panel__level-section-label';
-    this.refs.levelTotalLabel.textContent = 'total bonuses at this level';
+    this.refs.levelTotalLabel.textContent = 'Total Bonuses at This Level';
 
     this.refs.levelTotalRows = document.createElement('div');
     this.refs.levelTotalRows.className =
       'room-top-panel__level-rows room-top-panel__level-total-rows';
 
-    this.refs.levelContent.append(
+    this.refs.levelAddedSection.append(
       this.refs.levelAddedLabel,
       this.refs.levelAddedRows,
-      this.refs.levelDivider,
+    );
+    this.refs.levelTotalSection.append(
       this.refs.levelTotalLabel,
       this.refs.levelTotalRows,
+    );
+    this.refs.levelContent.append(
+      this.refs.levelAddedSection,
+      this.refs.levelTotalSection,
     );
 
     const pager = document.createElement('div');
@@ -855,11 +865,12 @@ export class TopPanelViewManager {
 
     this.refs.levelPreviousButton = document.createElement('button');
     this.refs.levelPreviousButton.className =
-      'style-button room-top-panel__level-pager-button';
+      'style-button style-button--yellow room-top-panel__level-pager-button';
     this.refs.levelPreviousButton.type = 'button';
 
     this.refs.levelNextButton = document.createElement('button');
-    this.refs.levelNextButton.className = 'style-button room-top-panel__level-pager-button';
+    this.refs.levelNextButton.className =
+      'style-button style-button--yellow room-top-panel__level-pager-button';
     this.refs.levelNextButton.type = 'button';
 
     pager.append(this.refs.levelPreviousButton, this.refs.levelNextButton);
@@ -875,8 +886,9 @@ export class TopPanelViewManager {
       this.refs.levelCurrentLabel,
       this.refs.levelCloseButton,
       this.refs.levelContent,
+      pager,
     );
-    this.refs.levelPanel.append(this.refs.levelDialog, pager);
+    this.refs.levelPanel.append(this.refs.levelDialog);
     this.refs.levelPopup.append(this.refs.levelPanel);
 
     return this.refs.levelPopup;

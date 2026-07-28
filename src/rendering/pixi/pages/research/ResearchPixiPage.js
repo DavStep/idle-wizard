@@ -7,9 +7,15 @@ import {
 } from 'pixi.js';
 
 import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
+import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiResourceLabel } from '../../primitives/PixiResourceLabel.js';
+import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
+import {
+  bindPixiSeedPackIcon,
+  layoutPixiSeedPackIcon,
+} from '../../primitives/PixiSeedPackIcon.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
@@ -41,6 +47,7 @@ const MAX_LOCKED_ROWS_PER_BOX = 3;
 const RESEARCH_PAPER_INK = '#634934';
 const RESEARCH_PROGRESS_INK = '#725737';
 const RESEARCH_RANK_INK = '#ffeecf';
+const RESEARCH_TIMER_INK = '#d4d4d4';
 const RESEARCH_LOCKED_OVERLAY_ALPHA = 0.3;
 const RESEARCH_RANK_FONT =
   '"Lilita One", "Arial Black", Arial, sans-serif';
@@ -141,6 +148,7 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   artWidth: 52,
   artHeight: 52,
   artworkSize: 57,
+  seedArtworkSize: 46,
   nameX: 10,
   nameY: 0,
   nameMaxWidth: 225,
@@ -177,6 +185,10 @@ const RESEARCH_ROW_TEXT = Object.freeze({
   valueLineHeight: 14,
   researchedFontSize: 9,
   researchedLineHeight: 11,
+  researchingFontSize: 10,
+  researchingLineHeight: 11,
+  researchingTimerFontSize: 9,
+  researchingTimerLineHeight: 10,
   buttonStrokeWidth: 3.5,
   costContentScale: 0.88,
 });
@@ -1183,6 +1195,11 @@ class ResearchRowWidget {
       label: 'research-row-art',
       roundPixels: true,
     });
+    this.artOverlay = new Sprite({
+      texture: Texture.EMPTY,
+      label: 'research-row-art-overlay',
+      roundPixels: true,
+    });
     this.name = createText('', {
       fontSize: RESEARCH_ROW_TEXT.nameFontSize,
       lineHeight: RESEARCH_ROW_TEXT.nameLineHeight,
@@ -1234,6 +1251,22 @@ class ResearchRowWidget {
       contentScale: RESEARCH_ROW_TEXT.costContentScale,
       label: 'research-row-researched',
     });
+    this.researchingTimerLabel = new PixiTextLabel({
+      fontFamily: RESEARCH_RANK_FONT,
+      fontSize: RESEARCH_ROW_TEXT.researchingTimerFontSize,
+      lineHeight: RESEARCH_ROW_TEXT.researchingTimerLineHeight,
+      align: 'center',
+      color: RESEARCH_TIMER_INK,
+      stroke: {
+        color: '#0a0a0a',
+        width: RESEARCH_ROW_TEXT.buttonStrokeWidth,
+      },
+      anchor: { x: 0.5, y: 0.5 },
+      label: 'research-row-researching-timer',
+    });
+    this.researchingTimerLabel.visible = false;
+    this.researchingTimerLabel.renderable = false;
+    this.researchedButton.visual.addChild(this.researchingTimerLabel);
     this.readonlyValue = new ResearchReadonlyValue({
       assetManager,
       label: 'research-row-readonly-value',
@@ -1265,6 +1298,7 @@ class ResearchRowWidget {
     this.infoVisual.addChild(
       this.artWell,
       this.art,
+      this.artOverlay,
       this.name,
       this.nameStars,
       this.description,
@@ -1349,9 +1383,7 @@ class ResearchRowWidget {
         research.rankLabel ??
         `Lv. ${research.completed ? '01' : '00'}/01`,
     );
-    this.art.texture = this.resolveTexture(
-      research.artAssetId ?? research.artKey,
-    );
+    this.bindArtwork(research);
     this.rank.texture = this.resolveTexture(
       PIXI_ROOT_RUN_ASSETS.researchRank,
     );
@@ -1367,20 +1399,33 @@ class ResearchRowWidget {
     const researched =
       state === 'completed' &&
       String(readonlyResearchValue).trim().toLowerCase() === 'researched';
+    const inProgress =
+      research.timer?.active === true || research.inProgress === true;
     this.costButton.visible = interactive;
     this.costButton.renderable = interactive;
-    this.researchedButton.visible = researched;
-    this.researchedButton.renderable = researched;
+    this.researchedButton.visible = researched || inProgress;
+    this.researchedButton.renderable = this.researchedButton.visible;
+    const remainingLabel =
+      research.timer?.remainingLabel ??
+      formatRemainingTime(
+        finiteOr(
+          research.timer?.remainingMs,
+          finiteOr(research.remainingMs, 0),
+        ),
+      );
     this.researchedButton.setModel({
-      amountLabel: 'Researched',
+      amountLabel: researched
+        ? 'Researched'
+        : this.formatInProgressButtonLabel(research),
       resource: 'none',
       enabled: false,
       action: null,
     });
+    this.setResearchingTimer(inProgress ? remainingLabel : '');
     this.researchedButton.eventMode = 'none';
     this.researchedButton.cursor = 'default';
     this.readonlyValue.visible =
-      !interactive && !researched && starLevel <= 0;
+      !interactive && !researched && !inProgress && starLevel <= 0;
     this.readonlyValue.renderable = this.readonlyValue.visible;
     this.readonlyStars.visible =
       !interactive && research.completed === true && starLevel > 0;
@@ -1497,14 +1542,31 @@ class ResearchRowWidget {
       geometry.artHeight,
       ART_BORDER_INSETS,
     );
-    this.art.position.set(
-      geometry.artX + (geometry.artWidth - geometry.artworkSize) / 2,
-      geometry.artY +
-        geometry.contentOffsetY +
-        (geometry.artHeight - geometry.artworkSize) / 2,
-    );
-    this.art.width = geometry.artworkSize;
-    this.art.height = geometry.artworkSize;
+    const artworkCenterX = geometry.artX + geometry.artWidth / 2;
+    const artworkCenterY =
+      geometry.artY + geometry.contentOffsetY + geometry.artHeight / 2;
+    if (this.usesSeedPackArtwork) {
+      layoutPixiSeedPackIcon({
+        base: this.art,
+        item: this.artOverlay,
+        x: artworkCenterX,
+        y: artworkCenterY,
+        width: geometry.seedArtworkSize,
+        height: geometry.seedArtworkSize,
+        anchorX: 0.5,
+        anchorY: 0.5,
+      });
+    } else {
+      this.art.anchor.set(0.5);
+      this.art.position.set(artworkCenterX, artworkCenterY);
+      this.art.width = geometry.artworkSize;
+      this.art.height = geometry.artworkSize;
+      this.artOverlay.anchor.set(0.5);
+      this.artOverlay.position.set(artworkCenterX, artworkCenterY);
+      this.artOverlay.width = 0;
+      this.artOverlay.height = 0;
+      this.artOverlay.rotation = 0;
+    }
     this.name.position.set(
       geometry.nameX,
       geometry.nameY + geometry.contentOffsetY,
@@ -1595,8 +1657,73 @@ class ResearchRowWidget {
     if (this.timerTotal > 0) {
       this.progress.setProgress(1 - remaining / this.timerTotal);
     }
-    const value = this.research.displayValue ?? this.research.value ?? '';
-    this.readonlyValue.setValue(value, formatRemainingTime(remaining));
+    this.researchedButton.setModel({
+      amountLabel: this.formatInProgressButtonLabel(this.research),
+      resource: 'none',
+      enabled: false,
+      action: null,
+    });
+    this.setResearchingTimer(formatRemainingTime(remaining));
+    this.styleStatusButton();
+  }
+
+  formatInProgressButtonLabel(research) {
+    return research?.actionType === 'levelUp'
+      ? 'Leveling Up'
+      : 'Researching';
+  }
+
+  setResearchingTimer(timer) {
+    this.researchingTimerLabel.setText(timer);
+    const visible = Boolean(String(timer ?? '').trim());
+    this.researchingTimerLabel.visible = visible;
+    this.researchingTimerLabel.renderable = visible;
+  }
+
+  styleStatusButton() {
+    const inProgress =
+      this.research?.timer?.active === true ||
+      this.research?.inProgress === true;
+    this.researchedButton.amountLabel
+      .setFontSize(
+        inProgress
+          ? RESEARCH_ROW_TEXT.researchingFontSize
+          : RESEARCH_ROW_TEXT.researchedFontSize,
+      )
+      .setLineHeight(
+        inProgress
+          ? RESEARCH_ROW_TEXT.researchingLineHeight
+          : RESEARCH_ROW_TEXT.researchedLineHeight,
+      )
+      .setAlign('center')
+      .setStroke({
+        color: '#0a0a0a',
+        width: RESEARCH_ROW_TEXT.buttonStrokeWidth,
+      });
+    this.researchingTimerLabel
+      .setFontFamily(RESEARCH_RANK_FONT)
+      .setFontSize(RESEARCH_ROW_TEXT.researchingTimerFontSize)
+      .setLineHeight(RESEARCH_ROW_TEXT.researchingTimerLineHeight)
+      .setAlign('center')
+      .setColor(RESEARCH_TIMER_INK)
+      .setStroke({
+        color: '#0a0a0a',
+        width: RESEARCH_ROW_TEXT.buttonStrokeWidth,
+      });
+    this.researchingTimerLabel.position.set(
+      this.researchedButton.buttonWidth / 2,
+      this.researchedButton.buttonHeight * 0.68,
+    );
+    this.researchingTimerLabel.visible =
+      inProgress && Boolean(this.researchingTimerLabel.text);
+    this.researchingTimerLabel.renderable =
+      this.researchingTimerLabel.visible;
+    if (inProgress) {
+      this.researchedButton.amountLabel.position.set(
+        this.researchedButton.buttonWidth / 2,
+        this.researchedButton.buttonHeight * 0.34,
+      );
+    }
   }
 
   applyTheme(theme) {
@@ -1661,13 +1788,8 @@ class ResearchRowWidget {
     });
     this.costButton.applyTheme(theme);
     this.researchedButton.applyTheme(theme);
-    this.researchedButton.amountLabel
-      .setFontSize(RESEARCH_ROW_TEXT.researchedFontSize)
-      .setLineHeight(RESEARCH_ROW_TEXT.researchedLineHeight)
-      .setStroke({
-        color: '#0a0a0a',
-        width: RESEARCH_ROW_TEXT.buttonStrokeWidth,
-      });
+    this.researchingTimerLabel.applyTheme(theme);
+    this.styleStatusButton();
     this.progress.applyTheme(theme);
   }
 
@@ -1683,6 +1805,7 @@ class ResearchRowWidget {
     this.costButton.reset();
     this.researchedButton.visible = false;
     this.researchedButton.renderable = false;
+    this.setResearchingTimer('');
     this.lockedOverlay.visible = false;
     this.lockedOverlay.renderable = false;
     this.progress.root.visible = false;
@@ -1719,6 +1842,38 @@ class ResearchRowWidget {
     return this.assetManager?.has?.(assetId)
       ? this.assetManager.getTexture(assetId)
       : Texture.EMPTY;
+  }
+
+  bindArtwork(research) {
+    const itemKind = String(research?.itemKind ?? '').toLowerCase();
+    const itemKey = research?.itemKey ?? null;
+    this.usesSeedPackArtwork = itemKind === 'seed' && Boolean(itemKey);
+    this.artOverlay.texture = Texture.EMPTY;
+    this.artOverlay.visible = false;
+    this.artOverlay.renderable = false;
+    this.artOverlay.rotation = 0;
+
+    if (this.usesSeedPackArtwork) {
+      bindPixiSeedPackIcon({
+        assetManager: this.assetManager,
+        base: this.art,
+        item: this.artOverlay,
+        seed: {
+          key: itemKey,
+          label: research.displayName ?? research.label,
+        },
+      });
+      return;
+    }
+
+    this.art.texture =
+      itemKind === 'potion' && itemKey
+        ? this.assetManager?.getAtlasTexture?.(
+            getPotionIconFrameName(itemKey),
+          ) ?? Texture.EMPTY
+        : this.resolveTexture(research.artAssetId ?? research.artKey);
+    this.art.visible = true;
+    this.art.renderable = true;
   }
 }
 

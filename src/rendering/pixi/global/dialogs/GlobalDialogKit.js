@@ -607,13 +607,25 @@ export class PooledDialogRow {
           (this.rowHeight - this.valueLabel.measuredHeight) / 2,
         );
     this.keyLabel.position.set(0, keyY);
-    this.valueLabel.position.set(this.rowWidth, valueY);
+    const iconAfterValue =
+      this.valueIcon.visible &&
+      this.data.iconPosition === 'after';
+    this.valueLabel.position.set(
+      iconAfterValue
+        ? this.rowWidth -
+            this.valueIcon.width -
+            PIXI_UI_GEOMETRY.rowColumnGap / 2
+        : this.rowWidth,
+      valueY,
+    );
     if (this.valueIcon.visible) {
       this.valueIcon.position.set(
-        this.rowWidth -
-          this.valueLabel.measuredWidth -
-          PIXI_UI_GEOMETRY.rowColumnGap / 2 -
-          this.valueIcon.width / 2,
+        iconAfterValue
+          ? this.rowWidth - this.valueIcon.width / 2
+          : this.rowWidth -
+              this.valueLabel.measuredWidth -
+              PIXI_UI_GEOMETRY.rowColumnGap / 2 -
+              this.valueIcon.width / 2,
         this.rowHeight / 2,
       );
     }
@@ -639,9 +651,24 @@ export class PooledDialogRow {
       0,
       rowWidth - PIXI_UI_GEOMETRY.rowColumnGap,
     );
+    const requestedKeyWidth = Number(this.data.keyWidth);
+    const requestedKeyWidthRatio = Number(
+      this.data.keyWidthRatio,
+    );
     const keyWidth = Math.min(
       availableWidth,
-      Math.max(72, availableWidth * 0.4),
+      Number.isFinite(requestedKeyWidth)
+        ? Math.max(0, requestedKeyWidth)
+        : Math.max(
+            72,
+            availableWidth *
+              (Number.isFinite(requestedKeyWidthRatio)
+                ? Math.max(
+                    0,
+                    Math.min(1, requestedKeyWidthRatio),
+                  )
+                : 0.4),
+          ),
     );
     this.keyLabel.setWrapWidth(keyWidth);
     this.valueLabel.setWrapWidth(

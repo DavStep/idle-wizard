@@ -207,6 +207,52 @@ describe('GardenPixiPage', () => {
     ).toHaveLength(0);
   });
 
+  it('keeps untargeted plots actionable when the tutorial overlay owns the wait-state event path', () => {
+    const activatePlot = vi.fn(() => true);
+    const harness = createHarness();
+    const model = createGardenViewModel({ activatePlot });
+    model.garden.plots.push({
+      id: 'plot-2',
+      tileNumber: 2,
+      soilLevel: 1,
+      phase: 'empty',
+      label: 'sage',
+      actionText: 'plant',
+      selectedSeedItemTypeId: 1,
+    });
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const plot = harness.page.plots.get('plot-2');
+    const registration = harness.inputRouter.store
+      .getRegistrations('press')
+      .find((entry) => entry.displayObject === plot.root);
+    const tutorialOverlay = new Container({
+      label: 'tutorial-overlay-wait-state-hit',
+    });
+    const bounds = plot.root.getBounds();
+    const point = {
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2,
+    };
+
+    expect(registration?.fallbackHitTest).toBe(true);
+    harness.inputRouter.onPointerDown(
+      createPointerEvent(tutorialOverlay, 'pointerdown', point),
+    );
+    harness.inputRouter.onPointerUp(
+      createPointerEvent(tutorialOverlay, 'pointerup', point),
+    );
+
+    expect(activatePlot).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'plot-2' }),
+    );
+
+    tutorialOverlay.destroy();
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('keeps frozen Garden geometry and timer/ticker lifecycle in source space', () => {
     const ticker = {
       add: vi.fn(),
@@ -704,14 +750,24 @@ describe('GardenPixiPage', () => {
     expect(cancel.modal).toBeInstanceOf(PixiOwnedDialogSurface);
     expect(cancel.modal.panel).toBeInstanceOf(PixiDialogFrame);
     expect(cancel.modal.openMotion).toBe('center');
-    expect(cancel.message.text).toBe('empty this growing plot?');
-    expect(cancel.confirm.text.text).toBe('empty');
+    expect(cancel.modal.panel.titleVariant).toBe('danger');
+    expect(cancel.modal.panel.titleLabel.textObject.text).toBe(
+      'Cancel Progress?',
+    );
+    expect(cancel.message.text).toBe('Empty This Growing Plot?');
+    expect(cancel.message.anchor).toMatchObject({ x: 0.5, y: 0.5 });
+    expect(cancel.keep.variant).toBe('yellow');
+    expect(cancel.keep.text.text).toBe('Keep');
+    expect(cancel.confirm.variant).toBe('red');
+    expect(cancel.confirm.text.text).toBe('Empty');
+    expect(cancel.modal.panel.outerHeight).toBe(126);
     expect(cancel.confirmAction()).toBe(true);
     expect(confirmCancel).toHaveBeenCalledWith({ tileNumber: 1 });
 
     harness.page.openDialog('cancel', {
       message: 'empty another plot?',
     });
+    expect(cancel.message.text).toBe('Empty Another Plot?');
     expect(harness.dialogs.get('garden.cancel')).toBe(cancel);
     harness.dialogs.close('garden.cancel');
 
@@ -777,6 +833,22 @@ function expectPlotFrameAligned(plot) {
     plot.frame.position.y - plot.frame.pivot.y * plot.frame.scale.y,
   ).toBeCloseTo(0);
   expect(plot.frame.scale).toMatchObject({ x: 1, y: 1 });
+}
+
+function createPointerEvent(target, type, point = { x: 0, y: 0 }) {
+  return {
+    type,
+    target,
+    pointerId: 1,
+    pointerType: 'mouse',
+    button: 0,
+    global: point,
+    clientX: point.x,
+    clientY: point.y,
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
+    stopImmediatePropagation: vi.fn(),
+  };
 }
 
 function createGardenViewModel({

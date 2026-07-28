@@ -98,13 +98,16 @@ const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
   }),
   discoveries: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopDiscoveries,
+    scale: 1.18,
   }),
   personalTasks: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopPersonalTasks,
+    scale: 1.05,
   }),
   worldEvent: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopWorldEvent,
-    mirrorOnRight: true,
+    scale: 1.08,
+    mirrorOnRight: false,
   }),
 });
 
@@ -129,6 +132,23 @@ const SIDE_PANEL_ROW_GAP = 52.25;
 const SIDE_PANEL_EDGE = 16;
 const SIDE_PANEL_ICON_WIDTH = 45.5;
 const SIDE_PANEL_ICON_HEIGHT = 80.25;
+const SIDE_PANEL_ART_HEIGHT = 59.15;
+const SIDE_PANEL_ART_TOP = 22;
+const SIDE_PANEL_ART_EDGE_OFFSET = 10;
+const SIDE_PANEL_ART_BOUNDS = Object.freeze({
+  left: Object.freeze({
+    x: -SIDE_PANEL_ART_EDGE_OFFSET,
+    y: SIDE_PANEL_ART_TOP,
+    width: SIDE_PANEL_ICON_WIDTH,
+    height: SIDE_PANEL_ART_HEIGHT,
+  }),
+  right: Object.freeze({
+    x: SIDE_PANEL_ART_EDGE_OFFSET,
+    y: SIDE_PANEL_ART_TOP,
+    width: SIDE_PANEL_ICON_WIDTH,
+    height: SIDE_PANEL_ART_HEIGHT,
+  }),
+});
 const SIDE_PANEL_ENTER_DURATION_MS = 200;
 const SIDE_PANEL_EXIT_DURATION_MS = 150;
 const SIDE_PANEL_MOVE_DURATION_MS = 180;
@@ -217,7 +237,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       side: 'right',
       weight: 10,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopInbox,
-      scale: 1.3,
+      scale: 1.22,
       onActivate: () => this.openDialog('inbox'),
     });
     this.statsButton = new WorkshopIconPanelAction({
@@ -228,6 +248,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       side: 'right',
       weight: 0,
       textureId: PIXI_ROOT_RUN_ASSETS.workshopStats,
+      scale: 1.08,
       onActivate: () => this.openDialog('stats'),
     });
     this.featureLayer = new Container({ label: 'workshop-feature-buttons' });
@@ -1547,7 +1568,7 @@ class WorkshopIconPanelAction {
       fontSize: 8.8,
       lineHeight: 11.2,
     });
-    this.label.anchor.set(this.side === 'right' ? 1 : 0, 0);
+    this.label.anchor.set(0.5, 0);
     this.notification = new PixiNotificationBadge({ assetManager });
     this.notification.root.label =
       `workshop-${id}-icon-panel-action:notification`;
@@ -1602,7 +1623,7 @@ class WorkshopIconPanelAction {
     this.visible = visible !== false;
     this.root.eventMode = this.enabled && this.visible ? 'static' : 'none';
     this.root.cursor = this.enabled && this.visible ? 'pointer' : 'default';
-    this.label.anchor.set(this.side === 'right' ? 1 : 0, 0);
+    this.label.anchor.set(0.5, 0);
     setText(this.label, capitalizeInitial(label));
     this.icon.alpha = this.enabled ? 1 : 0.55;
     this.label.alpha = this.enabled ? 1 : 0.55;
@@ -1610,12 +1631,7 @@ class WorkshopIconPanelAction {
       active: isNotificationActive(notification),
       tone: getNotificationTone(notification, notificationTone),
       parent: this.root,
-      bounds: {
-        x: 0,
-        y: 12,
-        width: 45.5,
-        height: 68.25,
-      },
+      bounds: SIDE_PANEL_ART_BOUNDS[this.side],
     });
     this.layoutVisual();
     this.applyTheme(this.page.theme);
@@ -1643,10 +1659,10 @@ class WorkshopIconPanelAction {
   }
 
   layoutVisual() {
-    const frameWidth = 45.5;
-    const frameHeight = 59.15;
-    const frameLeft = this.side === 'right' ? 10 : -10;
-    const frameTop = 22;
+    const frameWidth = SIDE_PANEL_ICON_WIDTH;
+    const frameHeight = SIDE_PANEL_ART_HEIGHT;
+    const frameLeft = SIDE_PANEL_ART_BOUNDS[this.side].x;
+    const frameTop = SIDE_PANEL_ART_TOP;
     const textureWidth = Math.max(
       1,
       Number(this.icon.texture?.orig?.width ?? this.icon.texture?.width) || 1,
@@ -1668,8 +1684,8 @@ class WorkshopIconPanelAction {
     );
     this.iconFrameBaseY = this.iconFrame.y;
     this.label.position.set(
-      this.side === 'right' ? 45.5 : 0,
-      80.25 - 3.9 - 11.2,
+      frameLeft + frameWidth / 2,
+      SIDE_PANEL_ICON_HEIGHT - 3.9 - 11.2,
     );
     this.labelBaseY = this.label.y;
   }
@@ -1780,8 +1796,8 @@ class WorkshopFeatureButton {
       model.weight,
       Math.max(0, finiteOr(model.row, 0)) * 10,
     );
-    this.label.anchor.set(this.side === 'right' ? 1 : 0, 0);
-    this.timer.anchor.set(this.side === 'right' ? 1 : 0, 0);
+    this.label.anchor.set(0.5, 0);
+    this.timer.anchor.set(0.5, 0);
     setText(this.label, capitalizeInitial(model.label ?? model.id));
     setText(this.timer, model.timer ?? '');
     this.timer.visible = this.timer.text.length > 0;
@@ -1792,12 +1808,7 @@ class WorkshopFeatureButton {
       active: isNotificationActive(model.notification),
       tone: getNotificationTone(model.notification, model.notificationTone),
       parent: this.root,
-      bounds: {
-        x: 0,
-        y: 22,
-        width: 45.5,
-        height: 59.15,
-      },
+      bounds: SIDE_PANEL_ART_BOUNDS[this.side],
     });
 
     this.targetId = `workshop.feature.${model.id}`;
@@ -1845,10 +1856,10 @@ class WorkshopFeatureButton {
   }
 
   layoutVisual() {
-    const frameWidth = 45.5;
-    const frameHeight = 59.15;
-    const frameLeft = this.side === 'right' ? 10 : -10;
-    const frameTop = 22;
+    const frameWidth = SIDE_PANEL_ICON_WIDTH;
+    const frameHeight = SIDE_PANEL_ART_HEIGHT;
+    const frameLeft = SIDE_PANEL_ART_BOUNDS[this.side].x;
+    const frameTop = SIDE_PANEL_ART_TOP;
     layoutContainedSprite(this.icon, frameWidth, frameHeight, {
       scale: this.presentation?.scale ?? 1,
       mirrored:
@@ -1861,8 +1872,11 @@ class WorkshopFeatureButton {
       frameTop + frameHeight * 0.78,
     );
     this.iconFrameBaseY = this.iconFrame.y;
-    const textX = this.side === 'right' ? 45.5 : 0;
-    this.label.position.set(textX, 80.25 - 3.9 - 11.2);
+    const textX = frameLeft + frameWidth / 2;
+    this.label.position.set(
+      textX,
+      SIDE_PANEL_ICON_HEIGHT - 3.9 - 11.2,
+    );
     this.labelBaseY = this.label.y;
     this.timer.position.set(textX, 82);
     this.timerBaseY = this.timer.y;

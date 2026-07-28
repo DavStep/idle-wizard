@@ -1,11 +1,18 @@
-import { Container, Graphics, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle, Texture } from 'pixi.js';
 
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
 import { PixiFrame } from './PixiFrame.js';
+import { PixiNineSliceFrame } from './PixiNineSliceFrame.js';
 import { PixiTextLabel } from './PixiTextLabel.js';
+
+const BROWN_INSET_TEXT = '#ffe7c8';
+const BROWN_INSET_PLACEHOLDER = '#c8a67a';
+const BROWN_INSET_FOCUS = '#f1b84b';
 
 export class PixiTextField extends Container {
   constructor({
@@ -22,6 +29,7 @@ export class PixiTextField extends Container {
     onCancel = null,
     onChange = null,
     onKeyboardInset = null,
+    variant = 'brown-inset',
     label = 'textField',
   } = {}) {
     super();
@@ -37,6 +45,7 @@ export class PixiTextField extends Container {
     this.onChange = onChange;
     this.onKeyboardInset = onKeyboardInset;
     this.textEntryService = textEntryService;
+    this.variant = variant;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.value = '';
     this.selectionStart = 0;
@@ -52,6 +61,17 @@ export class PixiTextField extends Container {
       height,
       label: `${label}:frame`,
     });
+    this.insetFrame = new PixiNineSliceFrame({
+      texture:
+        assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.textFieldBrownInset) ??
+        Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.textFieldBrownInset.sourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.textFieldBrownInset.borderInsets,
+      width,
+      height,
+      label: `${label}:brownInsetFrame`,
+    });
+    this.focusGraphic = new Graphics({ label: `${label}:focus` });
     this.selectionGraphic = new Graphics();
     this.selectionGraphic.label = `${label}:selection`;
     this.textLabel = new PixiTextLabel({
@@ -71,7 +91,13 @@ export class PixiTextField extends Container {
       this.caretGraphic,
     );
     this.textViewport.mask = this.textMask;
-    this.addChild(this.frame, this.textViewport, this.textMask);
+    this.addChild(
+      this.frame,
+      this.insetFrame,
+      this.focusGraphic,
+      this.textViewport,
+      this.textMask,
+    );
     this.registration = inputRouter?.registerPressTarget?.(this, {
       enabled: () => this.visible && this.renderable,
       onActivate: () => this.focus(),
@@ -177,11 +203,25 @@ export class PixiTextField extends Container {
     return this;
   }
 
+  setVariant(variant) {
+    this.variant = String(variant || 'control');
+    this.relayout();
+    return this;
+  }
+
   relayout() {
     const border = PIXI_UI_GEOMETRY.ordinaryBorderWidth;
     const paddingX = PIXI_UI_GEOMETRY.panelPaddingX;
     const paddingY = PIXI_UI_GEOMETRY.panelPaddingY;
     this.frame.setSize(this.fieldWidth, this.fieldHeight);
+    this.insetFrame.setSize(
+      this.fieldWidth,
+      this.fieldHeight,
+      PIXI_ROOT_RUN_GEOMETRY.textFieldBrownInset.borderInsets,
+    );
+    const brownInset = this.variant === 'brown-inset';
+    this.frame.visible = !brownInset;
+    this.insetFrame.visible = brownInset;
     this.textViewport.position.set(border + paddingX, border + paddingY);
     this.textMask
       .clear()
@@ -199,16 +239,37 @@ export class PixiTextField extends Container {
 
   redrawTextState() {
     const showingPlaceholder = this.value.length === 0 && !this.focused;
+    const brownInset = this.variant === 'brown-inset';
     this.textLabel
       .setText(showingPlaceholder ? this.placeholder : this.value)
-      .setColor(showingPlaceholder ? 'muted' : 'text');
+      .setColor(
+        brownInset
+          ? showingPlaceholder
+            ? BROWN_INSET_PLACEHOLDER
+            : BROWN_INSET_TEXT
+          : showingPlaceholder
+            ? 'muted'
+            : 'text',
+      );
     this.textLabel.position.set(0, 0);
     this.selectionGraphic.clear();
     this.caretGraphic.clear();
+    this.focusGraphic.clear();
     if (!this.focused) {
       return;
     }
 
+    if (brownInset) {
+      this.focusGraphic
+        .roundRect(
+          2,
+          2,
+          Math.max(0, this.fieldWidth - 4),
+          Math.max(0, this.fieldHeight - 4),
+          3,
+        )
+        .stroke({ color: BROWN_INSET_FOCUS, width: 1, alpha: 0.9 });
+    }
     const beforeStart = this.value.slice(0, this.selectionStart);
     const beforeEnd = this.value.slice(0, this.selectionEnd);
     const startX = measurePrefix(this.textLabel, beforeStart);
@@ -220,11 +281,14 @@ export class PixiTextField extends Container {
     if (endX > startX) {
       this.selectionGraphic
         .rect(startX, 0, endX - startX, textHeight)
-        .fill({ color: this.theme.text, alpha: 0.25 });
+        .fill({
+          color: brownInset ? BROWN_INSET_TEXT : this.theme.text,
+          alpha: 0.25,
+        });
     }
     this.caretGraphic
       .rect(endX, 0, 1, textHeight)
-      .fill(this.theme.text);
+      .fill(brownInset ? BROWN_INSET_TEXT : this.theme.text);
   }
 
   destroy(options) {

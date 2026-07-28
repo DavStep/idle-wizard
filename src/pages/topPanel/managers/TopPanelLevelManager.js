@@ -126,7 +126,7 @@ export class TopPanelLevelManager {
       `Level ${selectedLevel} rewards`,
     );
     this.refs.levelContent.classList.toggle('is-locked', !selectedLevelSnapshot.unlocked);
-    this.setText(this.refs.levelTitle, `level ${selectedLevel}`);
+    this.setText(this.refs.levelTitle, `Level ${selectedLevel}`);
     this.setHidden(this.refs.levelCurrentLabel, !selectedLevelSnapshot.current);
     this.renderSections(selectedLevelSnapshot, playerLevel, selectedLevel);
     this.renderPager(selectedLevel, playerLevel.maxLevel);
@@ -183,8 +183,14 @@ export class TopPanelLevelManager {
     const hasPrevious = previousLevel >= 1;
     const hasNext = nextLevel <= maxLevel;
 
-    this.setText(this.refs.levelPreviousButton, hasPrevious ? `level ${previousLevel}` : '');
-    this.setText(this.refs.levelNextButton, hasNext ? `level ${nextLevel}` : '');
+    this.setText(
+      this.refs.levelPreviousButton,
+      hasPrevious ? `‹ Level ${previousLevel}` : '',
+    );
+    this.setText(
+      this.refs.levelNextButton,
+      hasNext ? `Level ${nextLevel} ›` : '',
+    );
     this.setHidden(this.refs.levelPreviousButton, !hasPrevious);
     this.setHidden(this.refs.levelNextButton, !hasNext);
     this.setDisabled(this.refs.levelPreviousButton, !hasPrevious);
@@ -212,11 +218,14 @@ export class TopPanelLevelManager {
     );
     const totalRows = this.formatTotalRows(this.getTotals(levelSnapshot));
 
-    this.setHidden(this.refs.levelAddedLabel, addedRows.length <= 0);
-    this.setHidden(this.refs.levelAddedRows, addedRows.length <= 0);
-    this.setHidden(this.refs.levelDivider, addedRows.length <= 0);
-    this.setHidden(this.refs.levelTotalLabel, totalRows.length <= 0);
-    this.setHidden(this.refs.levelTotalRows, totalRows.length <= 0);
+    this.setHidden(
+      this.refs.levelAddedSection,
+      addedRows.length <= 0,
+    );
+    this.setHidden(
+      this.refs.levelTotalSection,
+      totalRows.length <= 0,
+    );
     this.renderRows(this.refs.levelAddedRows, addedRows);
     this.renderRows(this.refs.levelTotalRows, totalRows);
   }
@@ -240,10 +249,11 @@ export class TopPanelLevelManager {
 
     const key = document.createElement('span');
     key.className = 'room-top-panel__level-effect-label';
-    key.textContent = label;
+    key.textContent = this.toTitleCase(label);
 
     const val = document.createElement('span');
     val.className = 'room-top-panel__level-effect-value';
+    val.setAttribute('aria-label', value);
     setResourceIconText(val, value);
 
     row.append(key, val);
@@ -298,13 +308,19 @@ export class TopPanelLevelManager {
     const unlockMatch = effect.match(/^unlocks (.+)$/);
 
     if (unlockMatch) {
-      return { label: 'unlocks', value: unlockMatch[1] };
+      return {
+        label: 'unlocks',
+        value: this.toTitleCase(unlockMatch[1]),
+      };
     }
 
     const researchMatch = effect.match(/^allows researching "(.+)"$/);
 
     if (researchMatch) {
-      return { label: 'research', value: researchMatch[1] };
+      return {
+        label: 'research',
+        value: this.toTitleCase(researchMatch[1]),
+      };
     }
 
     const crystalRewardMatch = effect.match(/^crystal reward ([\d.]+)$/);
@@ -365,6 +381,13 @@ export class TopPanelLevelManager {
 
   formatNumber(value) {
     return String(Number(value.toFixed(4)));
+  }
+
+  toTitleCase(value) {
+    return String(value ?? '').replace(
+      /\b([a-z])/g,
+      (character) => character.toUpperCase(),
+    );
   }
 
   applyVisibility() {

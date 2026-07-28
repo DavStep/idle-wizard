@@ -2367,11 +2367,21 @@ describe('GardenPlotManager', () => {
 
     expect(cancelPopup.hidden).toBe(false);
     expect(cancelPopup.querySelector('#garden-cancel-dialog-title')?.textContent).toBe(
-      'cancel progress?',
+      'Cancel Progress?',
     );
     expect(cancelPopup.querySelector('.garden-page__cancel-message')?.textContent).toBe(
-      'are you sure you want to empty plot 1? mint seed will be returned.',
+      'Return This Plot To Empty?',
     );
+    expect(
+      cancelPopup
+        .querySelector('.garden-page__cancel-keep')
+        ?.classList.contains('style-button--yellow'),
+    ).toBe(true);
+    expect(
+      cancelPopup
+        .querySelector('.garden-page__cancel-confirm')
+        ?.classList.contains('style-button--red'),
+    ).toBe(true);
 
     cancelPopup
       .querySelector('.garden-page__cancel-keep')
@@ -2383,7 +2393,7 @@ describe('GardenPlotManager', () => {
     plotRow
       .querySelector('.garden-page__plot-action')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    expect(cancelPopup.querySelector('.garden-page__cancel-confirm')?.textContent).toBe('empty');
+    expect(cancelPopup.querySelector('.garden-page__cancel-confirm')?.textContent).toBe('Empty');
     cancelPopup
       .querySelector('.garden-page__cancel-confirm')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -2623,7 +2633,7 @@ describe('GardenPlotManager', () => {
 
     expect(cancelPopup.hidden).toBe(false);
     expect(cancelPopup.querySelector('.garden-page__cancel-message')?.textContent).toBe(
-      'are you sure you want to empty plot 1? sage seed will be returned.',
+      'Return This Plot To Empty?',
     );
   });
 

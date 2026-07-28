@@ -53,6 +53,71 @@ describe('DevUiCatalogManager', () => {
     });
   });
 
+  it('provides a representative World Chat preview for visual QA', () => {
+    const manager = new DevUiCatalogManager();
+    const runtime = {
+      initialized: true,
+      getDialogIds: () => ['workshop.worldChat'],
+      closeAllDialogs: vi.fn(),
+      openDialog: vi.fn(),
+    };
+
+    manager.openRegisteredDialog(runtime, 'worldChat');
+
+    expect(runtime.openDialog).toHaveBeenCalledWith(
+      'workshop.worldChat',
+      expect.objectContaining({
+        title: 'World Chat',
+        composer: expect.objectContaining({
+          placeholder: 'Message',
+          enabled: true,
+        }),
+        rows: expect.arrayContaining([
+          expect.objectContaining({
+            type: 'player',
+            allianceTag: 'MOSS',
+          }),
+          expect.objectContaining({
+            type: 'system',
+          }),
+        ]),
+        onSubmit: expect.any(Function),
+      }),
+    );
+  });
+
+  it('provides a representative Market Ledger preview for visual QA', () => {
+    const manager = new DevUiCatalogManager();
+    const runtime = {
+      initialized: true,
+      getDialogIds: () => ['shop.ledger'],
+      closeAllDialogs: vi.fn(),
+      openDialog: vi.fn(),
+    };
+
+    manager.openRegisteredDialog(runtime, 'shop.ledger');
+
+    expect(runtime.openDialog).toHaveBeenCalledWith(
+      'shop.ledger',
+      expect.objectContaining({
+        title: 'Market Ledger',
+        selectedTabId: 'seed',
+        tabs: [
+          expect.objectContaining({ id: 'seed', label: 'Seeds' }),
+          expect.objectContaining({ id: 'herb', label: 'Herbs' }),
+          expect.objectContaining({ id: 'potion', label: 'Potions' }),
+        ],
+        items: expect.arrayContaining([
+          expect.objectContaining({
+            label: 'Sage Seed',
+            itemKind: 'seed',
+            itemKey: 'sageSeed',
+          }),
+        ]),
+      }),
+    );
+  });
+
   it('catalogs widgets and button variants with real preview surfaces', () => {
     const manager = new DevUiCatalogManager();
 

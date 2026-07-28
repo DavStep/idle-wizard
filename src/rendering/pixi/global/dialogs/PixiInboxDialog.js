@@ -273,10 +273,11 @@ class InboxMailWidget {
     this.claimButton = new PixiButton({
       assetManager,
       inputRouter,
-      text: 'claim',
+      text: 'Claim',
       width: 48,
       height: 20,
       action: () => this.claim(),
+      variant: 'green',
       label: `${label}:claim`,
     });
     this.root.addChild(
@@ -329,7 +330,7 @@ class InboxMailWidget {
     this.claimButton.visible = claimable;
     this.claimButton.renderable = claimable;
     this.claimButton
-      .setText(this.data.pending ? '...' : 'claim')
+      .setText(this.data.pending ? '...' : 'Claim')
       .setEnabled(claimable && !this.data.pending);
     this.layoutCurrent();
   }
@@ -345,7 +346,7 @@ class InboxMailWidget {
     this.claimedIcon.visible = false;
     this.claimedIcon.renderable = false;
     this.claimButton
-      .setText('claim')
+      .setText('Claim')
       .setEnabled(false);
     this.claimButton.visible = false;
     this.claimButton.renderable = false;
@@ -448,7 +449,7 @@ class InboxMailWidget {
     if (!this.data.pending) {
       return;
     }
-    this.claimButton.setText('claim').setEnabled(false);
+    this.claimButton.setText('Claim').setEnabled(false);
   }
 
   destroy() {

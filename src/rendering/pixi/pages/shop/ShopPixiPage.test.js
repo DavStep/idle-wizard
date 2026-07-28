@@ -105,7 +105,9 @@ describe('ShopPixiPage', () => {
         getTexture,
       },
     });
-    harness.page.bind(createShopViewModel());
+    const viewModel = createShopViewModel();
+    viewModel.shop.traders.stalls[0].priceResourceKey = 'coin';
+    harness.page.bind(viewModel);
     harness.page.activate();
 
     const stall = harness.page.stallsSection.stalls.get('stall-1');
@@ -179,6 +181,19 @@ describe('ShopPixiPage', () => {
     expect(stall.title.text).toBe('Stall 1');
     expect(stall.item.text).toBe('Sage');
     expect(stall.price.text).toBe('10 Coin');
+    expect(stall.price.visible).toBe(false);
+    expect(stall.priceResource).toMatchObject({
+      amount: '10',
+      resource: 'coin',
+      visible: true,
+    });
+    expect(stall.priceResource.amountLabel.text).toBe('10');
+    expect(stall.priceResource.icon.x).toBeGreaterThan(
+      stall.priceResource.amountLabel.x,
+    );
+    expect(
+      stall.priceResource.x + stall.priceResource.measuredWidth,
+    ).toBe(stall.width - 10);
     expect(harness.page.stallsSection.ledgerButton.text.text).toBe(
       'Market Ledger',
     );
@@ -192,6 +207,16 @@ describe('ShopPixiPage', () => {
       stall.title.x + stall.title.measuredWidth + 4,
     );
     expect(stall.stars.position.y).toBe(stall.title.y + 1);
+    expect(stall.title.y).toBe(5);
+    expect(stall.batch.y).toBe(5);
+    expect(stall.iconFrame.y).toBe(22);
+    expect(stall.item.y).toBe(30);
+    expect(stall.price.y).toBe(30);
+    expect(stall.progress.y).toBe(60);
+    expect(stall.timer.textObject.anchor.y).toBe(0.5);
+    expect(stall.timer.y).toBe(
+      stall.progress.y + stall.progress.barHeight / 2,
+    );
 
     harness.page.destroy();
     harness.dispose();
@@ -291,7 +316,7 @@ describe('ShopPixiPage', () => {
       }
       if (dialogId === SHOP_DIALOG_IDS.LEDGER) {
         expect(harness.dialogs.get(dialogId).panel.outerHeight).toBe(
-          283,
+          382,
         );
       }
       harness.dialogs.close(dialogId);
@@ -447,33 +472,59 @@ describe('ShopPixiPage', () => {
   });
 
   it('keeps market ledger detail lines inside their retained rows', () => {
-    const harness = createHarness();
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getAtlasTexture = vi.fn(() => new Texture());
+    const harness = createHarness({ assetManager });
     harness.page.bind(createShopViewModel());
     harness.page.activate();
 
     harness.page.openDialog(SHOP_DIALOG_IDS.LEDGER, {
-      title: 'market ledger',
+      title: 'Market Ledger',
+      selectedTabId: 'seed',
+      tabs: [
+        { id: 'seed', label: 'Seeds', selected: true },
+        { id: 'herb', label: 'Herbs', selected: false },
+        { id: 'potion', label: 'Potions', selected: false },
+      ],
       items: [
         {
           id: 'sage',
-          label: 'sage',
+          label: 'Sage Seed',
           detail: 'stock 4 · buyers 6',
           value: '3 coin',
+          itemKind: 'seed',
+          itemKey: 'sageSeed',
         },
         {
           id: 'mint',
-          label: 'mint',
+          label: 'Mint Seed',
           detail: 'stock 2 · buyers 5',
           value: '4 coin',
+          itemKind: 'seed',
+          itemKey: 'mintSeed',
         },
       ],
     });
 
     const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.LEDGER);
     const [firstRow, secondRow] = dialog.list.rows.getWidgets();
+    const tabs = dialog.tabs.getWidgets();
     const firstDetailBottom =
       firstRow.detail.y + Math.ceil(firstRow.detail.measuredHeight);
 
+    expect(dialog.panel.coreWidth).toBe(304);
+    expect(dialog.panel.coreHeight).toBe(382);
+    expect(dialog.list.width).toBe(268);
+    expect(dialog.list.rowWidth).toBe(264);
+    expect(dialog.list.root.position.y).toBe(20);
+    expect(dialog.list.height).toBe(312);
+    expect(dialog.tabLayer.position.x).toBe(9);
+    expect(tabs).toHaveLength(3);
+    for (const tab of tabs) {
+      expect(tab.control.textLabel.fontSize).toBe(11);
+    }
+    expect(firstRow.itemIcon.visible).toBe(true);
+    expect(firstRow.itemIcon.x).toBeLessThan(firstRow.label.x);
     expect(firstRow.detail.visible).toBe(true);
     expect(secondRow.root.y).toBeGreaterThanOrEqual(firstDetailBottom);
 

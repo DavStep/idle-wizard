@@ -157,7 +157,7 @@ describe('WorkshopPersonalTasksManager', () => {
     expect(openButton?.dataset.notification).toBe('true');
     expect(
       openButton?.querySelector('.workshop-page__personal-tasks-icon')?.getAttribute('src'),
-    ).toContain('icon-quests-scroll-bag-style.png');
+    ).toContain('miso-daily-tasks.webp');
 
     openButton.click();
 

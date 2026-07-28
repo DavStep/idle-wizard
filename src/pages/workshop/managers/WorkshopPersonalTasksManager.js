@@ -7,8 +7,8 @@ import {
 import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 
-const QUEST_ICON_URL = new URL(
-  '../../../../assets/game/source/icons/icon-quests-scroll-bag-style.png',
+const PERSONAL_TASKS_ICON_URL = new URL(
+  '../../../../assets/game/source/rooms/workshop/characters/miso-daily-tasks.webp',
   import.meta.url,
 ).href;
 
@@ -87,7 +87,7 @@ export class WorkshopPersonalTasksManager {
 
     const icon = document.createElement('img');
     icon.className = 'workshop-page__personal-tasks-icon';
-    icon.src = QUEST_ICON_URL;
+    icon.src = PERSONAL_TASKS_ICON_URL;
     icon.alt = '';
     icon.loading = 'lazy';
     icon.decoding = 'async';

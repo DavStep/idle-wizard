@@ -117,6 +117,23 @@ describe('PixiDialogFrame', () => {
     );
   });
 
+  it('preserves the Expedition title geometry while applying the danger title variant', () => {
+    const { frame } = createHarness({ titleVariant: 'danger' });
+    const titleFrame = frame.titleFrame;
+    const titleSlices = [...titleFrame.sprites];
+
+    expect(frame.titleVariant).toBe('danger');
+    expect(titleFrame.filters).toEqual([frame.dangerTitleFilter]);
+    expect(frame.dangerTitleFilter).not.toBeNull();
+
+    frame.setTitleVariant('default');
+
+    expect(frame.titleVariant).toBe('default');
+    expect(titleFrame.filters).toBeNull();
+    expect(frame.titleFrame).toBe(titleFrame);
+    expect(frame.titleFrame.sprites).toEqual(titleSlices);
+  });
+
   it('retains every display object while resizing, retitling, and theming', () => {
     const { frame } = createHarness();
     const retainedChildren = [...frame.children];

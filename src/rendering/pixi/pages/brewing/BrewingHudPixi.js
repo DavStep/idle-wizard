@@ -13,10 +13,12 @@ import {
   PIXI_COST_BUTTON_GEOMETRY,
   PixiCostButton,
 } from '../../primitives/PixiCostButton.js';
+import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
   RETAINED_PAGE_GEOMETRY,
@@ -34,11 +36,25 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   top: 96,
   carouselHeight: 218,
   detailTop: 324,
-  detailHeight: 230,
+  detailHeight: 210,
   ingredientColumns: 3,
   ingredientRows: 2,
   ingredientSlots: 6,
 });
+
+const RESEARCH_ART_SOURCE_INSETS = Object.freeze({
+  top: 49,
+  right: 50,
+  bottom: 50,
+  left: 49,
+});
+const RESEARCH_ART_BORDER_INSETS = Object.freeze({
+  top: 49 / 3,
+  right: 50 / 3,
+  bottom: 50 / 3,
+  left: 49 / 3,
+});
+const BREWING_DETAIL_INK = 0x634934;
 
 const ASSETS = Object.freeze({
   cauldron: 'source:assets/rooms/brewing/cauldron/cauldron-empty.png',
@@ -53,7 +69,6 @@ const ASSETS = Object.freeze({
 });
 
 const ACTION_ICON_FRAMES = Object.freeze({
-  autoBrew: 'potion:unknownPotion',
   brew: Object.freeze([
     'potion:unknownPotion',
     'potion:healingPotion',
@@ -64,6 +79,13 @@ const ACTION_ICON_FRAMES = Object.freeze({
 const CAULDRON_ACTION_LABEL_STYLE = Object.freeze({
   fontSize: 10,
   lineHeight: 12,
+});
+const CAULDRON_ACTION_ROW_INSET = 6;
+
+const BREWING_DETAIL_TEXT_STYLE = Object.freeze({
+  title: Object.freeze({ fontSize: 11, lineHeight: 13 }),
+  body: Object.freeze({ fontSize: 10, lineHeight: 12 }),
+  small: Object.freeze({ fontSize: 9, lineHeight: 11 }),
 });
 
 export class BrewingHudPixi {
@@ -91,10 +113,17 @@ export class BrewingHudPixi {
     });
     this.detailPanel = new RetainedPanel({
       assetManager,
-      label: 'brew batch',
+      label: '',
       panelLabel: 'brewing-batch-detail-panel',
-      shadowKind: 'dialog',
+      shadowKind: 'none',
     });
+    this.detailBacking = new PixiNineSliceFrame({
+      texture: Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+      label: 'brewing-batch-research-card',
+    });
+    this.detailPanel.root.addChildAt(this.detailBacking, 3);
     this.root.addChild(this.carouselPanel.root, this.detailPanel.root);
 
     this.cauldronTitle = createText('', RETAINED_TEXT_STYLES.bold);
@@ -132,20 +161,17 @@ export class BrewingHudPixi {
     this.next = this.createButton('next', '', 'gray', () =>
       this.page?.selectCauldron?.(this.selectedIndex + 1),
     );
-    this.recipes = this.createButton('recipes', 'Recipes', 'brown-light', () =>
+    this.recipes = this.createButton('recipes', 'Recipes', 'yellow', () =>
       this.actions.openRecipes?.(this.selectedIndex),
     );
-    this.autoBrew = this.createButton('autobrew', 'AutoBrew', 'brown-light', () =>
+    this.autoBrew = this.createButton('autobrew', 'Auto Brew', 'yellow', () =>
       this.actions.toggleAutoBrew?.(this.selectedIndex),
     );
-    this.brew = this.createButton('brew', 'Brew', 'yellow', () =>
+    this.brew = this.createButton('brew', 'Brew', 'green', () =>
       this.actions.performCauldronAction?.(
         this.getSelectedCauldron(),
         this.getSelectedCauldron()?.primaryAction,
       ),
-    );
-    this.settings = this.createButton('settings', 'Settings', 'brown-light', () =>
-      this.page?.openAutomationSettings?.(),
     );
     this.unlockCostButton = new PixiCostButton({
       assetManager,
@@ -169,7 +195,6 @@ export class BrewingHudPixi {
       this.recipes,
       this.autoBrew,
       this.brew,
-      this.settings,
     ]) {
       button.control.textLabel
         .setFontSize(CAULDRON_ACTION_LABEL_STYLE.fontSize)
@@ -181,14 +206,10 @@ export class BrewingHudPixi {
         'brewing-recipes-action-icon',
       ),
       autoBrew: createSpriteActionIcon(
-        getAtlasTexture(assetManager, ACTION_ICON_FRAMES.autoBrew),
+        getTexture(assetManager, ASSETS.settings),
         'brewing-autobrew-action-icon',
       ),
       brew: createPotionClusterActionIcon(assetManager),
-      settings: createSpriteActionIcon(
-        getTexture(assetManager, ASSETS.settings),
-        'brewing-settings-action-icon',
-      ),
       cancel: createSpriteActionIcon(
         getTexture(assetManager, ASSETS.cancel),
         'brewing-cancel-action-icon',
@@ -210,14 +231,12 @@ export class BrewingHudPixi {
     attachActionIcon(this.recipes, this.actionIcons.recipes);
     attachActionIcon(this.autoBrew, this.actionIcons.autoBrew);
     attachActionIcon(this.brew, this.actionIcons.brew);
-    attachActionIcon(this.settings, this.actionIcons.settings);
     for (const button of [
       this.previous,
       this.next,
       this.recipes,
       this.autoBrew,
       this.brew,
-      this.settings,
     ]) {
       this.root.addChild(button.root);
     }
@@ -226,19 +245,26 @@ export class BrewingHudPixi {
     this.potionIcon = new Sprite(Texture.EMPTY);
     this.potionIcon.anchor.set(0.5);
     this.potionName = createText('', {
-      ...RETAINED_TEXT_STYLES.bold,
+      ...BREWING_DETAIL_TEXT_STYLE.title,
+      fontWeight: '700',
       wordWrap: true,
-      wordWrapWidth: 106,
+      wordWrapWidth: 96,
       align: 'center',
     });
     this.potionName.anchor.set(0.5, 0);
-    this.rarity = centeredText('', RETAINED_TEXT_STYLES.tiny);
+    this.rarity = centeredText('', BREWING_DETAIL_TEXT_STYLE.small);
     this.rarity.anchor.set(0.5, 0);
-    this.ownedLabel = centeredText('', RETAINED_TEXT_STYLES.border);
+    this.ownedLabel = centeredText('', BREWING_DETAIL_TEXT_STYLE.body);
     this.ownedLabel.anchor.set(0.5, 0);
-    this.batchLabel = centeredText('', RETAINED_TEXT_STYLES.bold);
+    this.batchLabel = centeredText('', {
+      ...BREWING_DETAIL_TEXT_STYLE.body,
+      fontWeight: '700',
+    });
     this.batchLabel.anchor.set(0.5, 0);
-    this.ingredientsTitle = createText('ingredients', RETAINED_TEXT_STYLES.bold);
+    this.ingredientsTitle = createText('Ingredients', {
+      ...BREWING_DETAIL_TEXT_STYLE.title,
+      fontWeight: '700',
+    });
     this.detailPanel.body.addChild(
       this.potionIcon,
       this.potionName,
@@ -260,9 +286,12 @@ export class BrewingHudPixi {
       this.detailPanel.body.addChild(slot.root);
     }
 
-    this.phaseLabel = createText('', RETAINED_TEXT_STYLES.bold);
+    this.phaseLabel = createText('', {
+      ...BREWING_DETAIL_TEXT_STYLE.title,
+      fontWeight: '700',
+    });
     this.phaseTime = createText('', {
-      ...RETAINED_TEXT_STYLES.border,
+      ...BREWING_DETAIL_TEXT_STYLE.body,
       align: 'right',
     });
     this.phaseTime.anchor.set(1, 0);
@@ -275,24 +304,16 @@ export class BrewingHudPixi {
       this.phaseTime,
       this.progress.root,
     );
-    this.fastForward = this.createButton(
-      'fast-forward',
-      '»',
-      'yellow',
-      () => this.page?.showToast?.('coming soon'),
-    );
-    this.cancel = this.createButton('cancel', 'cancel', 'brown-dark', () =>
-      this.actions.cancelBrew?.(this.selectedIndex),
-    );
+    this.cancel = this.createButton('cancel', 'Cancel', 'red', () => {
+      const result = this.actions.cancelBrew?.(this.selectedIndex);
+      return result ?? false;
+    });
     attachActionIcon(this.cancel, this.actionIcons.cancel);
-    this.collect = this.createButton('collect', 'collect all', 'green', () =>
-      this.actions.collectBrew?.(this.selectedIndex),
-    );
-    this.root.addChild(
-      this.fastForward.root,
-      this.cancel.root,
-      this.collect.root,
-    );
+    this.collect = this.createButton('collect', 'Collect All', 'green', () => {
+      const result = this.actions.collectBrew?.(this.selectedIndex);
+      return result ?? false;
+    });
+    this.root.addChild(this.cancel.root, this.collect.root);
 
     this.swipeRegistration =
       this.inputRouter?.registerPageSwipe?.({
@@ -337,13 +358,21 @@ export class BrewingHudPixi {
     const number = cauldron?.cauldronNumber ?? this.selectedIndex + 1;
     setText(
       this.cauldronTitle,
-      unlocked ? `cauldron ${number}` : 'locked cauldron',
+      unlocked ? `Cauldron ${number}` : 'Locked Cauldron',
     );
     this.cauldronStars.setLevel(unlocked ? cauldron?.level ?? 1 : 0);
     this.cauldronStars.visible = unlocked;
     this.cauldronStars.renderable = unlocked;
     this.layoutCarouselHeader();
-    setText(this.counter, `${number}/${Math.max(1, model.configuredMaxCauldrons ?? 5)}`);
+    const unlockedCount = cauldrons.filter(
+      (candidate) => candidate?.unlocked !== false,
+    ).length;
+    setText(
+      this.counter,
+      `${number}/${Math.max(1, model.configuredMaxCauldrons ?? 5)}`,
+    );
+    this.counter.visible = unlockedCount > 1;
+    this.counter.renderable = this.counter.visible;
     this.cauldronArt.visible = true;
     this.cauldronArt.renderable = true;
     this.cauldronArt.tint = 0xffffff;
@@ -358,14 +387,18 @@ export class BrewingHudPixi {
     this.lockLabel.renderable = false;
     this.previous.setModel({
       label: '',
-      enabled: this.selectedIndex > 0,
+      enabled: true,
       action: () => this.page?.selectCauldron?.(this.selectedIndex - 1),
     });
+    this.previous.root.visible = this.selectedIndex > 0;
+    this.previous.root.renderable = this.previous.root.visible;
     this.next.setModel({
       label: '',
-      enabled: this.selectedIndex < cauldrons.length - 1,
+      enabled: true,
       action: () => this.page?.selectCauldron?.(this.selectedIndex + 1),
     });
+    this.next.root.visible = this.selectedIndex < cauldrons.length - 1;
+    this.next.root.renderable = this.next.root.visible;
 
     const active = cauldron?.activeBrew ?? null;
     const primary = cauldron?.primaryAction ?? {};
@@ -374,36 +407,42 @@ export class BrewingHudPixi {
       enabled: unlocked && cauldron?.canSelectRecipe !== false && !active,
       action: () => this.actions.openRecipes?.(this.selectedIndex),
     });
+    const autoBrewEnabled = cauldron?.autoBrewEnabled === true;
+    const autoBrewVariant = autoBrewEnabled ? 'green' : 'yellow';
+    this.autoBrew.variant = autoBrewVariant;
+    this.autoBrew.control.setVariant(autoBrewVariant);
     this.autoBrew.setModel({
-      label: cauldron?.autoBrewEnabled ? 'AutoBrew\nOn' : 'AutoBrew\nOff',
-      enabled: unlocked && cauldron?.autoBrewAvailable !== false,
-      selected: cauldron?.autoBrewEnabled === true,
+      label: autoBrewEnabled ? 'Auto On' : 'Auto Off',
+      enabled: true,
+      selected: false,
       action: () => this.actions.toggleAutoBrew?.(this.selectedIndex),
     });
+    const maxBrewQuantity = Math.max(
+      1,
+      Number(cauldron?.maxBrewQuantity ?? cauldron?.level) || 1,
+    );
+    const primaryLabel =
+      primary.id === 'brew' && maxBrewQuantity <= 1
+        ? 'Brew'
+        : capitalizeActionLabel(
+            primary.label ?? (active?.canStartBottling ? 'bottle' : 'brew'),
+          );
     this.brew.setModel({
       label: !unlocked
         ? cauldron?.canBuyCauldron
           ? `Unlock ${cauldron.nextCauldronCost ?? ''}`
           : 'Locked'
-        : capitalizeActionLabel(
-            primary.label ?? (active?.canStartBottling ? 'bottle' : 'brew'),
-          ),
-      enabled:
-        !unlocked
-          ? cauldron?.canBuyCauldron === true
-          : primary.enabled !== false && (!active || active.canStartBottling),
+        : primaryLabel,
+      enabled: true,
       action: () =>
         this.actions.performCauldronAction?.(
           cauldron,
           !unlocked ? { id: 'buy' } : primary,
         ),
     });
-    this.settings.setModel({
-      label: 'Settings',
-      enabled: unlocked,
-      action: () => this.page?.openAutomationSettings?.(),
+    this.setCauldronActionVisibility(unlocked, {
+      autoBrewAvailable: cauldron?.autoBrewAvailable === true,
     });
-    this.setCauldronActionVisibility(unlocked);
     this.bindUnlockCostButton(cauldron, unlocked);
     this.bindDetail(cauldron, active);
     this.syncActionIcons();
@@ -422,16 +461,16 @@ export class BrewingHudPixi {
     const potionKey = active?.key ?? recipe?.key ?? 'unknownPotion';
     const potionLabel =
       active?.label ?? recipe?.label ?? (cauldron.unlocked === false ? 'locked' : 'choose recipe');
-    this.detailPanel.setTitle(active ? active.phase ?? 'brew batch' : 'brew batch');
-    setText(this.potionName, potionLabel);
-    setText(this.rarity, recipe?.rarity ?? 'common');
+    this.detailPanel.setTitle('');
+    setText(this.potionName, toTitleCase(potionLabel));
+    setText(this.rarity, toTitleCase(recipe?.rarity ?? 'common'));
     const owned = Number(recipe?.ownedQuantity ?? cauldron.ownedPotionQuantity ?? 0);
-    setText(this.ownedLabel, `you have  ${owned}`);
+    setText(this.ownedLabel, `You Have ${owned}`);
     setText(
       this.batchLabel,
       active
-        ? `batch  x${active.resultQuantity ?? 1}`
-        : `brewing  x${cauldron.brewQuantity ?? 1}`,
+        ? `Batch x${active.resultQuantity ?? 1}`
+        : `Brewing x${cauldron.brewQuantity ?? 1}`,
     );
     const potionFrame = getPotionIconFrameName(potionKey);
     this.potionIcon.texture = getAtlasTexture(this.assetManager, potionFrame);
@@ -448,41 +487,34 @@ export class BrewingHudPixi {
     );
 
     const progress = active?.progress ?? 0;
-    const canCancel =
-      active?.phase === 'brewing' || active?.phase === 'bottling';
     const canCollect = active?.canCollect === true;
     setText(
       this.phaseLabel,
       active
         ? active.phase === 'ready'
-          ? 'ready to collect'
-          : active.phase
+          ? 'Ready to Collect'
+          : toTitleCase(active.phase)
         : recipe
-          ? 'ready to brew'
-          : 'select a recipe',
+          ? 'Ready to Brew'
+          : '',
     );
     setText(
       this.phaseTime,
       active && active.remainingMs > 0
         ? formatTime(active.remainingMs)
         : canCollect
-          ? 'complete'
+          ? 'Complete'
           : '',
     );
     this.progress.setProgress(canCollect ? 1 : progress);
-    this.fastForward.setModel({
-      label: '»',
-      enabled: true,
-      action: () => this.page?.showToast?.('coming soon'),
-    });
     this.cancel.setModel({
-      label: 'cancel',
-      enabled: canCancel,
+      label: 'Cancel',
+      enabled: true,
       action: () => this.actions.cancelBrew?.(this.selectedIndex),
     });
     this.collect.setModel({
-      label: `collect all${active?.resultQuantity ? `  x${active.resultQuantity}` : ''}`,
-      enabled: canCollect,
+      label: `Collect All${active?.resultQuantity ? ` x${active.resultQuantity}` : ''}`,
+      enabled: true,
       action: () => this.actions.collectBrew?.(this.selectedIndex),
     });
   }
@@ -550,10 +582,28 @@ export class BrewingHudPixi {
       PIXI_COST_BUTTON_GEOMETRY.stackedWidth,
       PIXI_COST_BUTTON_GEOMETRY.stackedHeight,
     );
-    const actionWidth = (width - 18) / 4;
-    [this.recipes, this.autoBrew, this.brew, this.settings].forEach(
-      (button, index) =>
-        button.setBounds(edge + index * (actionWidth + 6), 267, actionWidth, 39),
+    const visibleActionButtons = [
+      this.recipes,
+      this.autoBrew,
+      this.brew,
+    ].filter((button) => button.root.visible);
+    const actionGap = 6;
+    const actionWidth =
+      (width -
+        CAULDRON_ACTION_ROW_INSET * 2 -
+        actionGap * 2) /
+      3;
+    const actionRowWidth =
+      actionWidth * visibleActionButtons.length +
+      actionGap * Math.max(0, visibleActionButtons.length - 1);
+    const actionRowX = edge + (width - actionRowWidth) / 2;
+    visibleActionButtons.forEach((button, index) =>
+      button.setBounds(
+        actionRowX + index * (actionWidth + actionGap),
+        267,
+        actionWidth,
+        39,
+      ),
     );
     layoutActionIcon(this.recipes, this.actionIcons.recipes, {
       iconWidth: 25,
@@ -573,48 +623,53 @@ export class BrewingHudPixi {
       iconX: 18,
       labelShiftX: 10,
     });
-    layoutActionIcon(this.settings, this.actionIcons.settings, {
-      iconWidth: 23,
-      iconHeight: 23,
-      iconX: 17,
-      labelShiftX: 10,
-    });
-
-    const detailX = edge;
-    this.potionIcon.position.set(60, 83);
-    this.potionIcon.width = 68;
-    this.potionIcon.height = 68;
-    this.potionName.position.set(60, 12);
-    this.rarity.position.set(60, 38);
-    this.ownedLabel.position.set(60, 121);
-    this.batchLabel.position.set(60, 139);
-    this.ingredientsTitle.position.set(126, 10);
-    const tileWidth = 59;
-    const tileHeight = 57;
+    this.detailBacking.position.set(0, 0);
+    this.detailBacking.setSize(
+      width,
+      BREWING_HUD_GEOMETRY.detailHeight,
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+    );
+    this.potionIcon.position.set(55, 72);
+    this.potionIcon.width = 56;
+    this.potionIcon.height = 56;
+    this.potionName.position.set(55, 10);
+    this.rarity.position.set(55, 31);
+    this.ownedLabel.position.set(55, 108);
+    this.batchLabel.position.set(55, 126);
+    this.ingredientsTitle.position.set(122, 8);
+    const tileWidth = 58;
+    const tileHeight = 50;
+    const tileGap = 4;
+    const ingredientGridWidth =
+      tileWidth * BREWING_HUD_GEOMETRY.ingredientColumns +
+      tileGap * (BREWING_HUD_GEOMETRY.ingredientColumns - 1);
     this.ingredientSlots.forEach((slot, index) => {
       slot.setBounds(
-        126 + (index % 3) * (tileWidth + 5),
-        31 + Math.floor(index / 3) * (tileHeight + 5),
+        122 + (index % 3) * (tileWidth + tileGap),
+        27 + Math.floor(index / 3) * (tileHeight + tileGap),
         tileWidth,
         tileHeight,
       );
     });
-    this.phaseLabel.position.set(126, 158);
-    this.phaseTime.position.set(width - 10, 158);
-    this.progress.setBounds(126, 178, width - 178, 10);
-    this.fastForward.setBounds(sourceWidth - edge - 45, 488, 33, 32);
-    this.cancel.setBounds(detailX + 10, 520, (width - 26) / 2, 37);
+    this.phaseLabel.position.set(122, 135);
+    this.phaseTime.position.set(122 + ingredientGridWidth, 135);
+    this.progress.setBounds(122, 153, ingredientGridWidth, 10);
+    const footerButtonWidth = 126;
+    const footerButtonGap = 10;
+    const footerRowX =
+      (sourceWidth - footerButtonWidth * 2 - footerButtonGap) / 2;
+    this.cancel.setBounds(footerRowX, 496, footerButtonWidth, 32);
     layoutActionIcon(this.cancel, this.actionIcons.cancel, {
-      iconWidth: 21,
-      iconHeight: 21,
-      iconX: 54,
+      iconWidth: 18,
+      iconHeight: 18,
+      iconX: 35,
       labelShiftX: 8,
     });
     this.collect.setBounds(
-      detailX + 16 + (width - 26) / 2,
-      520,
-      (width - 26) / 2,
-      37,
+      footerRowX + footerButtonWidth + footerButtonGap,
+      496,
+      footerButtonWidth,
+      32,
     );
   }
 
@@ -622,10 +677,20 @@ export class BrewingHudPixi {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.carouselPanel.applyTheme(this.theme);
     this.detailPanel.applyTheme(this.theme);
+    this.detailPanel.frame.visible = false;
+    this.detailPanel.fallback.visible = false;
+    this.detailBacking.setTexture(
+      getTexture(this.assetManager, PIXI_ROOT_RUN_ASSETS.researchCard),
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+    );
     for (const text of [
       this.counter,
       this.cauldronTitle,
       this.lockLabel,
+    ]) {
+      applyTextTheme(text, this.theme, text.style);
+    }
+    for (const text of [
       this.potionName,
       this.rarity,
       this.ownedLabel,
@@ -634,7 +699,10 @@ export class BrewingHudPixi {
       this.phaseLabel,
       this.phaseTime,
     ]) {
-      applyTextTheme(text, this.theme, text.style);
+      applyTextTheme(text, this.theme, {
+        ...text.style,
+        fill: BREWING_DETAIL_INK,
+      });
     }
     for (const button of [
       this.previous,
@@ -642,8 +710,6 @@ export class BrewingHudPixi {
       this.recipes,
       this.autoBrew,
       this.brew,
-      this.settings,
-      this.fastForward,
       this.cancel,
       this.collect,
     ]) {
@@ -665,16 +731,13 @@ export class BrewingHudPixi {
     );
   }
 
-  setCauldronActionVisibility(visible) {
-    for (const button of [
-      this.recipes,
-      this.autoBrew,
-      this.brew,
-      this.settings,
-    ]) {
-      button.root.visible = visible;
-      button.root.renderable = visible;
-    }
+  setCauldronActionVisibility(visible, { autoBrewAvailable = false } = {}) {
+    this.recipes.root.visible = visible;
+    this.recipes.root.renderable = visible;
+    this.brew.root.visible = visible;
+    this.brew.root.renderable = visible;
+    this.autoBrew.root.visible = visible && autoBrewAvailable;
+    this.autoBrew.root.renderable = this.autoBrew.root.visible;
   }
 
   bindUnlockCostButton(cauldron, unlocked) {
@@ -721,8 +784,6 @@ export class BrewingHudPixi {
       this.recipes,
       this.autoBrew,
       this.brew,
-      this.settings,
-      this.fastForward,
       this.cancel,
       this.collect,
     ]) {
@@ -733,6 +794,7 @@ export class BrewingHudPixi {
     this.lockedCauldronFilter?.destroy?.();
     this.lockedCauldronFilter = null;
     this.progress.destroy();
+    this.detailBacking.destroy({ children: true });
     for (const slot of this.ingredientSlots) {
       slot.destroy();
     }
@@ -862,7 +924,12 @@ class BrewingIngredientRequirementTile {
     this.root = new Container({
       label: `brewing-ingredient-requirement-${index}`,
     });
-    this.frame = new Graphics();
+    this.frame = new PixiNineSliceFrame({
+      texture: Texture.EMPTY,
+      sourceInsets: RESEARCH_ART_SOURCE_INSETS,
+      borderInsets: RESEARCH_ART_BORDER_INSETS,
+      label: `brewing-ingredient-requirement-${index}-frame`,
+    });
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.anchor.set(0.5);
     this.quantity = centeredText('', RETAINED_TEXT_STYLES.bold);
@@ -886,7 +953,7 @@ class BrewingIngredientRequirementTile {
       model
         ? `${owned}/${required}`
         : decorative
-          ? 'extra'
+          ? ''
           : '—',
     );
     this.sufficient = !model || owned >= required;
@@ -898,39 +965,31 @@ class BrewingIngredientRequirementTile {
     this.root.position.set(x, y);
     this.width = width;
     this.height = height;
-    this.icon.position.set(width / 2, height / 2 - 5);
-    this.icon.width = 35;
-    this.icon.height = 35;
-    this.quantity.position.set(width / 2, height - 3);
+    this.frame.setSize(width, height, RESEARCH_ART_BORDER_INSETS);
+    this.icon.position.set(width / 2, height / 2 - 4);
+    this.icon.width = 30;
+    this.icon.height = 30;
+    this.quantity.position.set(width / 2, height - 2);
     this.redraw();
   }
 
   redraw() {
-    this.frame
-      .clear()
-      .roundRect(0, 0, this.width ?? 0, this.height ?? 0, 8)
-      .fill({
-        color: this.decorative ? 0x161921 : 0x242733,
-        alpha: this.model ? 0.95 : 0.65,
-      })
-      .stroke({
-        color: this.model
-          ? this.sufficient
-            ? 0x59634a
-            : 0x864038
-          : 0x11141c,
-        width: 2,
-      });
+    this.frame.alpha = this.decorative ? 0.72 : 1;
   }
 
   applyTheme(theme) {
+    this.frame.setTexture(
+      getTexture(this.assetManager, PIXI_ROOT_RUN_ASSETS.researchArt),
+      RESEARCH_ART_SOURCE_INSETS,
+    );
     applyTextTheme(this.quantity, theme, {
-      ...RETAINED_TEXT_STYLES.bold,
+      ...BREWING_DETAIL_TEXT_STYLE.body,
+      fontWeight: '700',
       fill: this.model
         ? this.sufficient
-          ? 0x8bdc69
-          : 0xfe8b83
-        : theme.muted,
+          ? 0x256b25
+          : 0x912f2b
+        : BREWING_DETAIL_INK,
     });
   }
 
@@ -980,6 +1039,12 @@ function formatTime(milliseconds) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function toTitleCase(value) {
+  return String(value ?? '').replace(/\b[a-z]/g, (character) =>
+    character.toUpperCase(),
+  );
 }
 
 function centeredText(text, style) {

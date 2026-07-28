@@ -17,6 +17,7 @@ import {
   BREWING_PIXI_GEOMETRY,
   BrewingPixiPage,
 } from './BrewingPixiPage.js';
+import { BREWING_HUD_GEOMETRY } from './BrewingHudPixi.js';
 
 describe('BrewingPixiPage', () => {
   it('builds once and keeps keyed cauldrons, rows, and inventory widgets', () => {
@@ -636,6 +637,7 @@ describe('BrewingPixiPage', () => {
     const harness = createHarness({ timeSource: () => now });
     const model = createBrewingViewModel();
     model.brewing.cauldrons[0].level = 1;
+    model.brewing.cauldrons[0].autoBrewAvailable = true;
     model.brewing.cauldrons[0].autoBrewEnabled = true;
     model.brewing.cauldrons[0].autoCollectEnabled = false;
     model.brewing.cauldrons[0].primaryAction.label = 'brew x1';
@@ -648,6 +650,7 @@ describe('BrewingPixiPage', () => {
       nextCauldronCost: 25,
     });
     model.actions.performCauldronAction = vi.fn(() => true);
+    model.actions.toggleAutoBrew = vi.fn(() => true);
     model.brewing.configuredMaxCauldrons = 5;
     harness.page.bind(model);
 
@@ -657,7 +660,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.cauldronTitle.parent).toBe(
       harness.page.hud.carouselPanel.body,
     );
-    expect(harness.page.hud.cauldronTitle.text).toBe('cauldron 1');
+    expect(harness.page.hud.cauldronTitle.text).toBe('Cauldron 1');
     expect(harness.page.hud.cauldronTitle.position).toMatchObject({
       x: 10,
       y: 8,
@@ -672,22 +675,22 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.cauldronStars.visible).toBe(true);
     expect(harness.page.hud.ingredientSlots).toHaveLength(6);
     expect(harness.page.hud.ingredientSlots[5].decorative).toBe(true);
+    expect(harness.page.hud.ingredientSlots[5].quantity.text).toBe('');
     expect(Object.keys(harness.page.hud.actionIcons)).toEqual([
       'recipes',
       'autoBrew',
       'brew',
-      'settings',
       'cancel',
     ]);
     expect(harness.page.hud.actionIcons.recipes.parent).toBe(
       harness.page.hud.recipes.control.visual,
     );
     expect(harness.page.hud.actionIcons.brew.iconSprites).toHaveLength(3);
-    expect(harness.page.hud.actionIcons.settings.label).toBe(
-      'brewing-settings-action-icon',
+    expect(harness.page.hud.actionIcons.autoBrew.label).toBe(
+      'brewing-autobrew-action-icon',
     );
-    expect(harness.page.hud.actionIcons.settings.iconSprites[0].label).toBe(
-      'brewing-settings-action-icon:sprite',
+    expect(harness.page.hud.actionIcons.autoBrew.iconSprites[0].label).toBe(
+      'brewing-autobrew-action-icon:sprite',
     );
     expect(harness.page.hud.actionIcons.cancel.parent).toBe(
       harness.page.hud.cancel.control.visual,
@@ -716,16 +719,18 @@ describe('BrewingPixiPage', () => {
       width: 22,
       height: 22,
     });
-    expect(harness.page.hud.cancel.text.text).toBe('cancel');
+    expect(harness.page.hud.cancel.text.text).toBe('Cancel');
     expect(harness.page.hud.recipes.text.text).toBe('Recipes');
-    expect(harness.page.hud.autoBrew.text.text).toBe('AutoBrew\nOn');
-    expect(harness.page.hud.brew.text.text).toBe('Brew x1');
-    expect(harness.page.hud.settings.text.text).toBe('Settings');
+    expect(harness.page.hud.autoBrew.text.text).toBe('Auto On');
+    expect(harness.page.hud.autoBrew.variant).toBe('green');
+    expect(harness.page.hud.autoBrew.control.variant).toBe('green');
+    expect(harness.page.hud.autoBrew.selected).toBe(false);
+    expect(harness.page.hud.brew.text.text).toBe('Brew');
+    expect(harness.page.hud.settings).toBeUndefined();
     for (const button of [
       harness.page.hud.recipes,
       harness.page.hud.autoBrew,
       harness.page.hud.brew,
-      harness.page.hud.settings,
     ]) {
       expect(button.control.textLabel.fontSize).toBe(10);
       expect(button.control.textLabel.lineHeight).toBe(12);
@@ -733,7 +738,32 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.recipes.control.textLabel.x).toBeGreaterThan(
       harness.page.hud.recipes.width / 2,
     );
-    expect(harness.page.hud.actionIcons.cancel.alpha).toBe(0.5);
+    expect(harness.page.hud.recipes.root.x).toBe(
+      BREWING_HUD_GEOMETRY.edge + 6,
+    );
+    expect(harness.page.hud.autoBrew.width).toBe(
+      harness.page.hud.recipes.width,
+    );
+    expect(harness.page.hud.brew.width).toBe(
+      harness.page.hud.recipes.width,
+    );
+    expect(
+      harness.page.hud.brew.root.x + harness.page.hud.brew.width,
+    ).toBe(
+      harness.page.sourceWidth - BREWING_HUD_GEOMETRY.edge - 6,
+    );
+    expect(harness.page.hud.autoBrew.handleTap()).toBe(true);
+    expect(model.actions.toggleAutoBrew).toHaveBeenCalledWith(0);
+    model.brewing.cauldrons[0].autoBrewEnabled = false;
+    harness.page.bind(model);
+    expect(harness.page.hud.autoBrew.text.text).toBe('Auto Off');
+    expect(harness.page.hud.autoBrew.variant).toBe('yellow');
+    expect(harness.page.hud.autoBrew.control.variant).toBe('yellow');
+    expect(harness.page.hud.autoBrew.handleTap()).toBe(true);
+    model.brewing.cauldrons[0].autoBrewEnabled = true;
+    harness.page.bind(model);
+    expect(harness.page.hud.previous.root.visible).toBe(false);
+    expect(harness.page.hud.actionIcons.cancel.alpha).toBe(1);
     expect(harness.page.hud.getCauldrons()).toHaveLength(2);
     const carouselSwipe = harness.inputRouter.store
       .getRegistrations('swipe')
@@ -741,6 +771,8 @@ describe('BrewingPixiPage', () => {
     expect(carouselSwipe.priority).toBe(10);
     expect(carouselSwipe.onSwipe({ direction: 'next' })).toBe(true);
     expect(harness.page.hud.selectedIndex).toBe(1);
+    expect(harness.page.hud.previous.root.visible).toBe(true);
+    expect(harness.page.hud.next.root.visible).toBe(false);
 
     expect(harness.page.hud.lockArt.visible).toBe(true);
     expect(harness.page.hud.cauldronArt.visible).toBe(true);
@@ -753,13 +785,12 @@ describe('BrewingPixiPage', () => {
     ]);
     expect(harness.page.hud.lockLabel.visible).toBe(false);
     expect(harness.page.hud.lockLabel.text).toBe('');
-    expect(harness.page.hud.cauldronTitle.text).toBe('locked cauldron');
+    expect(harness.page.hud.cauldronTitle.text).toBe('Locked Cauldron');
     expect(harness.page.hud.cauldronStars.visible).toBe(false);
     for (const button of [
       harness.page.hud.recipes,
       harness.page.hud.autoBrew,
       harness.page.hud.brew,
-      harness.page.hud.settings,
     ]) {
       expect(button.root.visible).toBe(false);
       expect(button.root.renderable).toBe(false);
@@ -784,12 +815,24 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.unlockCostButton.visible).toBe(false);
     expect(harness.page.hud.recipes.root.visible).toBe(true);
 
-    expect(harness.page.hud.fastForward.handleTap()).toBe(true);
-    expect(harness.page.toastText.text).toBe('coming soon');
-    expect(harness.page.toast.visible).toBe(true);
-    now = 1_601;
-    harness.page.tick(now);
-    expect(harness.page.toast.visible).toBe(false);
+    expect(harness.page.hud.fastForward).toBeUndefined();
+    expect(harness.page.hud.detailPanel.title.visible).toBe(false);
+    expect(harness.page.hud.detailPanel.fallback.visible).toBe(false);
+    expect(harness.page.hud.detailBacking.sourceInsets).toMatchObject({
+      top: 55,
+      right: 77,
+      bottom: 88,
+      left: 64,
+    });
+    expect(harness.page.hud.ingredientSlots[0].frame.sourceInsets).toMatchObject({
+      top: 49,
+      right: 50,
+      bottom: 50,
+      left: 49,
+    });
+    expect(harness.page.hud.progress.width).toBe(182);
+    expect(harness.page.hud.cancel.enabled).toBe(true);
+    expect(harness.page.hud.collect.enabled).toBe(true);
 
     expect(harness.page.openAutomationSettings()).toBe(true);
     const settings = harness.dialogs.get('brewing.automation-settings');
@@ -822,7 +865,6 @@ describe('BrewingPixiPage', () => {
       harness.page.hud.recipes,
       harness.page.hud.autoBrew,
       harness.page.hud.brew,
-      harness.page.hud.settings,
     ]) {
       expect(button.root.visible).toBe(false);
     }

@@ -79,22 +79,22 @@ describe('TopPanelLevelManager', () => {
     manager.selectLevel(2);
 
     expect(getRows(refs.levelAddedRows)).toEqual([
-      ['mana capacity', '+50 mana'],
-      ['mana regeneration', '+1/sec mana'],
-      ['bonus', '+1 crystal'],
+      ['Mana Capacity', '+50 mana'],
+      ['Mana Regeneration', '+1/sec mana'],
+      ['Bonus', '+1 crystal'],
     ]);
-    expect(refs.levelAddedRows.textContent).not.toContain('garden plots');
-    expect(refs.levelTotalRows.textContent).toContain('garden plots3');
+    expect(refs.levelAddedRows.textContent).not.toContain('Garden Plots');
+    expect(refs.levelTotalRows.textContent).toContain('Garden Plots3');
 
     manager.selectLevel(4);
 
     expect(getRows(refs.levelAddedRows)).toEqual([
-      ['mana capacity', '+50 mana'],
-      ['mana regeneration', '+1/sec mana'],
-      ['bonus', '+1 crystal'],
+      ['Mana Capacity', '+50 mana'],
+      ['Mana Regeneration', '+1/sec mana'],
+      ['Bonus', '+1 crystal'],
     ]);
-    expect(refs.levelAddedRows.textContent).not.toContain('cauldrons');
-    expect(refs.levelTotalRows.textContent).toContain('cauldrons2');
+    expect(refs.levelAddedRows.textContent).not.toContain('Cauldrons');
+    expect(refs.levelTotalRows.textContent).toContain('Cauldrons2');
 
     manager.unmount();
   });
@@ -132,9 +132,10 @@ function createRefs() {
     levelTitle: document.createElement('div'),
     levelCurrentLabel: document.createElement('div'),
     levelAddedLabel: document.createElement('div'),
+    levelAddedSection: document.createElement('section'),
     levelAddedRows: document.createElement('div'),
-    levelDivider: document.createElement('div'),
     levelTotalLabel: document.createElement('div'),
+    levelTotalSection: document.createElement('section'),
     levelTotalRows: document.createElement('div'),
   };
 }

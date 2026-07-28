@@ -7,6 +7,7 @@ import {
 } from 'pixi.js';
 
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
+import { PixiButton } from '../../primitives/PixiButton.js';
 import {
   bindPixiSeedPackIcon,
   layoutPixiSeedPackIcon,
@@ -29,6 +30,7 @@ const GARDEN_DIALOG_CONTENT_WIDTH = 220;
 const GARDEN_DIALOG_OUTER_WIDTH = GARDEN_DIALOG_CONTENT_WIDTH + DIALOG_PADDING * 2 + 4;
 const SEED_ROW_HEIGHT = 20;
 const SEED_ROWS_MAX_HEIGHT = 360;
+const DANGER_MESSAGE_ZONE_HEIGHT = 40;
 
 /**
  * Retained, lazy-once seed chooser. The dialog owns no garden rules: rows are
@@ -217,10 +219,12 @@ export class GardenConfirmDialogPixi {
     assetManager = null,
     title,
     confirmLabel,
+    variant = 'default',
     onClose = null,
     theme = DEFAULT_PIXI_THEME_SNAPSHOT,
   } = {}) {
     this.id = id;
+    this.variant = variant === 'danger' ? 'danger' : 'default';
     this.onClose = onClose;
     this.modal = new PixiOwnedDialogSurface({
       id,
@@ -228,26 +232,38 @@ export class GardenConfirmDialogPixi {
       inputRouter,
       assetManager,
       title,
+      titleVariant: this.variant,
       onClose,
       theme,
     });
     this.root = this.modal.root;
     this.message = createText('', {
       ...RETAINED_TEXT_STYLES.body,
+      align: this.variant === 'danger' ? 'center' : 'left',
       wordWrapWidth: GARDEN_DIALOG_CONTENT_WIDTH,
     });
+    if (this.variant === 'danger') {
+      this.message.anchor.set(0.5);
+    }
     this.keep = new GardenModalButton({
       id: `${id}.keep`,
+      assetManager,
       inputRouter,
       modalId: id,
-      label: 'keep',
+      label: this.variant === 'danger' ? 'Keep' : 'keep',
+      variant: this.variant === 'danger' ? 'yellow' : 'regular',
       action: () => this.close(),
     });
     this.confirm = new GardenModalButton({
       id: `${id}.confirm`,
+      assetManager,
       inputRouter,
       modalId: id,
-      label: confirmLabel,
+      label:
+        this.variant === 'danger'
+          ? titleCaseText(confirmLabel)
+          : confirmLabel,
+      variant: this.variant === 'danger' ? 'red' : 'regular',
       action: () => this.confirmAction(),
     });
     this.modal.panel.content.addChild(
@@ -272,9 +288,21 @@ export class GardenConfirmDialogPixi {
       model.onConfirm ??
       model.actions?.confirm ??
       null;
-    this.modal.setTitle(model.title ?? this.modal.title);
-    this.confirm.setLabel(model.confirmLabel ?? this.confirmLabel);
-    setText(this.message, model.message ?? '');
+    const title = model.title ?? this.modal.title;
+    const confirmLabel = model.confirmLabel ?? this.confirmLabel;
+    const message = model.message ?? '';
+    this.modal.setTitle(
+      this.variant === 'danger' ? titleCaseText(title) : title,
+    );
+    this.confirm.setLabel(
+      this.variant === 'danger'
+        ? titleCaseText(confirmLabel)
+        : confirmLabel,
+    );
+    setText(
+      this.message,
+      this.variant === 'danger' ? titleCaseText(message) : message,
+    );
     this.layout({
       sourceWidth: this.sourceWidth,
       sourceHeight: this.sourceHeight,
@@ -300,6 +328,7 @@ export class GardenConfirmDialogPixi {
     const contentTheme = this.modal.getContentTheme();
     applyTextTheme(this.message, contentTheme, {
       ...RETAINED_TEXT_STYLES.body,
+      align: this.variant === 'danger' ? 'center' : 'left',
       wordWrapWidth: GARDEN_DIALOG_CONTENT_WIDTH,
     });
     this.keep.applyTheme(contentTheme);
@@ -310,7 +339,10 @@ export class GardenConfirmDialogPixi {
     this.sourceWidth = Number(viewportProjection?.sourceWidth) || 360;
     this.sourceHeight =
       Number(viewportProjection?.sourceHeight) || RETAINED_PAGE_GEOMETRY.height;
-    const messageHeight = Math.max(20, Math.ceil(this.message.height));
+    const messageHeight =
+      this.variant === 'danger'
+        ? DANGER_MESSAGE_ZONE_HEIGHT
+        : Math.max(20, Math.ceil(this.message.height));
     const contentHeight = messageHeight + 12 + 30;
     const outerHeight = contentHeight + DIALOG_PADDING * 2 + 4;
     this.modal.setBounds(
@@ -319,7 +351,14 @@ export class GardenConfirmDialogPixi {
       GARDEN_DIALOG_OUTER_WIDTH,
       outerHeight,
     );
-    this.message.position.set(DIALOG_PADDING + 2, DIALOG_PADDING + 2);
+    if (this.variant === 'danger') {
+      this.message.position.set(
+        DIALOG_PADDING + 2 + GARDEN_DIALOG_CONTENT_WIDTH / 2,
+        DIALOG_PADDING + 2 + messageHeight / 2,
+      );
+    } else {
+      this.message.position.set(DIALOG_PADDING + 2, DIALOG_PADDING + 2);
+    }
     const buttonY = DIALOG_PADDING + 2 + messageHeight + 12;
     const buttonWidth = (GARDEN_DIALOG_CONTENT_WIDTH - 8) / 2;
     this.keep.setBounds(DIALOG_PADDING + 2, buttonY, buttonWidth, 30);
@@ -354,9 +393,11 @@ export class GardenConfirmDialogPixi {
 class GardenModalButton {
   constructor({
     id,
+    assetManager,
     inputRouter,
     modalId,
     label,
+    variant = 'regular',
     action,
   }) {
     this.id = id;
@@ -366,6 +407,24 @@ class GardenModalButton {
     this.width = 0;
     this.height = 0;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.variant = variant;
+    if (variant !== 'regular') {
+      this.button = new PixiButton({
+        assetManager,
+        inputRouter,
+        text: label,
+        width: 0,
+        height: 0,
+        action,
+        variant,
+        label: id,
+      });
+      this.root = this.button;
+      this.frame = this.button.rootRunFrame;
+      this.text = this.button.textLabel.textObject;
+      this.registration = null;
+      return;
+    }
     this.root = new Container({ label: id });
     this.frame = new Graphics({ label: `${id}-frame` });
     this.text = createText(label, {
@@ -386,10 +445,19 @@ class GardenModalButton {
   }
 
   setLabel(label) {
+    if (this.button) {
+      this.button.setText(label);
+      return;
+    }
     setText(this.text, label);
   }
 
   setBounds(x, y, width, height) {
+    if (this.button) {
+      this.button.position.set(x, y);
+      this.button.setSize(width, height);
+      return;
+    }
     this.root.position.set(x, y);
     this.width = width;
     this.height = height;
@@ -399,12 +467,19 @@ class GardenModalButton {
   }
 
   setPressed(pressed) {
+    if (this.button) {
+      return;
+    }
     this.pressed = Boolean(pressed);
     this.root.scale.set(this.pressed ? 0.97 : 1);
   }
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    if (this.button) {
+      this.button.applyTheme(this.theme);
+      return;
+    }
     applyTextTheme(this.text, this.theme, {
       ...RETAINED_TEXT_STYLES.body,
       align: 'center',
@@ -413,6 +488,9 @@ class GardenModalButton {
   }
 
   redraw() {
+    if (this.button) {
+      return;
+    }
     this.frame
       .clear()
       .rect(0, 0, this.width, this.height)
@@ -421,9 +499,21 @@ class GardenModalButton {
   }
 
   destroy() {
+    if (this.button) {
+      this.button.destroy({ children: true });
+      this.button = null;
+      return;
+    }
     releaseRegistration(this.registration);
     this.root.destroy({ children: true });
   }
+}
+
+function titleCaseText(value) {
+  return String(value ?? '').replace(
+    /(^|[\s-])([a-z])/g,
+    (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`,
+  );
 }
 
 class GardenSeedChoiceRow {

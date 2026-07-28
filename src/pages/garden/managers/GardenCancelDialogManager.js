@@ -35,7 +35,8 @@ export class GardenCancelDialogManager {
     this.root.addEventListener('click', this.handlePopupClick);
 
     const dialog = document.createElement('section');
-    dialog.className = 'garden-page__cancel-dialog style-dialog';
+    dialog.className =
+      'garden-page__cancel-dialog style-dialog style-dialog--danger';
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('role', 'dialog');
     dialog.tabIndex = -1;
@@ -43,7 +44,7 @@ export class GardenCancelDialogManager {
     const title = document.createElement('div');
     title.className = 'style-box__title';
     title.id = 'garden-cancel-dialog-title';
-    title.textContent = 'cancel progress?';
+    title.textContent = 'Cancel Progress?';
     dialog.setAttribute('aria-labelledby', title.id);
 
     const message = document.createElement('p');
@@ -53,15 +54,17 @@ export class GardenCancelDialogManager {
     actions.className = 'garden-page__cancel-actions';
 
     const keepButton = document.createElement('button');
-    keepButton.className = 'style-button garden-page__cancel-keep';
+    keepButton.className =
+      'style-button style-button--yellow garden-page__cancel-keep';
     keepButton.type = 'button';
-    keepButton.textContent = 'keep';
+    keepButton.textContent = 'Keep';
     keepButton.addEventListener('click', () => this.hide());
 
     const confirmButton = document.createElement('button');
-    confirmButton.className = 'style-button garden-page__cancel-confirm';
+    confirmButton.className =
+      'style-button style-button--red garden-page__cancel-confirm';
     confirmButton.type = 'button';
-    confirmButton.textContent = 'empty';
+    confirmButton.textContent = 'Empty';
     confirmButton.addEventListener('click', () => this.confirm());
 
     actions.append(keepButton, confirmButton);
@@ -151,7 +154,7 @@ export class GardenCancelDialogManager {
 
   updateContent(tile) {
     const seedLabel = tile.seedLabel ?? tile.selectedSeedLabel ?? 'seed';
-    const message = `are you sure you want to empty plot ${tile.tileNumber}? ${seedLabel} will be returned.`;
+    const message = 'Return This Plot To Empty?';
 
     if (this.refs.message && this.refs.message.textContent !== message) {
       this.refs.message.textContent = message;

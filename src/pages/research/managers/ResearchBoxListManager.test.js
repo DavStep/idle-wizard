@@ -238,9 +238,11 @@ describe('ResearchBoxListManager', () => {
     expect(
       rows[1]?.querySelector('.research-page__research-description')?.textContent,
     ).toBe('Allows mint seed to drop from summon seed.');
-    expect(rows[1]?.querySelector('.research-page__research-art-image')?.src).toContain(
-      'icon-research-auto-seed-spawn.png',
+    const mintArtwork = rows[1]?.querySelector(
+      '.research-page__research-art-image',
     );
+    expect(mintArtwork?.dataset.assetAtlasFrame).toBe('seed:pack');
+    expect(mintArtwork?.dataset.seedPackItemFrame).toBe('herb:mintHerb');
     expect(rows[0]?.querySelector('.research-page__research-rank')?.textContent).toBe(
       'Lv. 01/01',
     );
@@ -861,6 +863,9 @@ describe('ResearchBoxListManager', () => {
     const artImageRule = css.match(
       /\.research-page__research-art-image\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
+    const seedArtImageRule = css.match(
+      /\.research-page__research-art-image\.style-seed-pack-composite\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
     const boxRule = css.match(
       /\.research-page__box\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
@@ -912,6 +917,8 @@ describe('ResearchBoxListManager', () => {
     expect(artRule).toContain('border-image: none;');
     expect(artImageRule).toContain('width: 57px;');
     expect(artImageRule).toContain('height: 57px;');
+    expect(seedArtImageRule).toContain('width: 46px;');
+    expect(seedArtImageRule).toContain('height: 46px;');
     expect(costButtonRule).toContain('width: 72px;');
     expect(costButtonRule).toContain('height: 42px;');
     expect(rankRule).toContain('width: 217px;');
@@ -1045,9 +1052,24 @@ describe('ResearchBoxListManager', () => {
     manager.mount(stage);
 
     const value = stage.querySelector('.research-page__research-value');
+    const label = stage.querySelector('.research-page__research-value-label');
+    const timer = stage.querySelector('.research-page__research-value-timer');
     const fill = stage.querySelector('.research-page__research-progress-fill');
 
-    expect(value?.textContent).toBe('researching 1m 15s');
+    expect(
+      value?.classList.contains('research-page__research-button--in-progress'),
+    ).toBe(true);
+    expect(value?.classList.contains('style-cost-button--yellow')).toBe(true);
+    expect(value?.disabled).toBe(true);
+    expect(label?.textContent).toBe('Researching');
+    expect(timer?.textContent).toBe('1m 15s');
+    const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    const timerRule = css.match(
+      /\.research-page__research-button--in-progress\s+\.research-page__research-value-timer\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    expect(timerRule).toContain('color: #d4d4d4;');
+    expect(timerRule).toContain('text-align: center;');
+    expect(timerRule).toContain('width: 100%;');
     expect(fill?.style.width).toBe('37.5%');
 
     for (const callback of frameCallbacks) {
@@ -1116,6 +1138,10 @@ describe('ResearchBoxListManager', () => {
     );
 
     expect(row?.classList.contains('is-locked')).toBe(true);
+    expect(
+      row?.querySelector('.research-page__research-art-image')?.dataset
+        .assetAtlasFrame,
+    ).toBe('potion:minorHealingPotion');
 
     row.dispatchEvent(createTouchEvent('touchstart', row));
     row.dispatchEvent(createTouchEvent('touchend', row));

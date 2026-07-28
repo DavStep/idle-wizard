@@ -148,6 +148,64 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
+  it('renders exact seed-pack and potion artwork for item unlock research', () => {
+    const genericTexture = Texture.WHITE;
+    const seedPackTexture = new Texture();
+    const silverleafTexture = new Texture();
+    const potionTexture = new Texture();
+    const atlasTextures = new Map([
+      ['seed:pack', seedPackTexture],
+      ['herb:silverleafHerb', silverleafTexture],
+      ['potion:minorHealingPotion', potionTexture],
+    ]);
+    const assetManager = {
+      getAtlasTexture(frameName) {
+        return atlasTextures.get(frameName) ?? Texture.EMPTY;
+      },
+      getTexture() {
+        return genericTexture;
+      },
+      has() {
+        return true;
+      },
+    };
+    const harness = createHarness({ assetManager });
+    const model = createResearchViewModel();
+    const research = model.research.tabs[0].boxes[0].researches[0];
+    Object.assign(research, {
+      id: 'unlockSeed:silverleafSeed',
+      displayName: 'silverleaf seed',
+      itemKind: 'seed',
+      itemKey: 'silverleafSeed',
+    });
+
+    harness.page.bind(model);
+
+    const seedRow = harness.page.rows.get('unlockSeed:silverleafSeed');
+    expect(seedRow.art.texture).toBe(seedPackTexture);
+    expect(seedRow.artOverlay.texture).toBe(silverleafTexture);
+    expect(seedRow.artOverlay.visible).toBe(true);
+    expect(seedRow.art.height).toBe(46);
+    expect(seedRow.art.width).toBeLessThanOrEqual(46);
+
+    Object.assign(research, {
+      id: 'unlockRecipe:minorHealingPotion',
+      displayName: 'minor healing potion',
+      itemKind: 'potion',
+      itemKey: 'minorHealingPotion',
+    });
+    harness.page.bind(model);
+
+    const potionRow = harness.page.rows.get(
+      'unlockRecipe:minorHealingPotion',
+    );
+    expect(potionRow.art.texture).toBe(potionTexture);
+    expect(potionRow.artOverlay.visible).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('lays out the full-page scroll and fixed tabs in frozen source space', () => {
     const harness = createHarness();
     const model = createResearchViewModel();
@@ -567,7 +625,15 @@ describe('ResearchPixiPage', () => {
 
     now = 3_000;
     harness.page.tick();
-    expect(row.readonlyValue.text).toContain('3s');
+    expect(row.researchedButton.visible).toBe(true);
+    expect(row.researchedButton.tone).toBe('yellow');
+    expect(row.researchedButton.amountLabel.text).toBe('Researching');
+    expect(row.researchingTimerLabel.text).toBe('3s');
+    expect(row.researchingTimerLabel.colorToken).toBe('#d4d4d4');
+    expect(row.researchingTimerLabel.x).toBe(
+      row.researchedButton.buttonWidth / 2,
+    );
+    expect(row.readonlyValue.visible).toBe(false);
 
     harness.page.deactivate();
     expect(ticker.remove).toHaveBeenCalledWith(harness.page.tickHandler);
@@ -577,7 +643,7 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
-  it('retains main resource-icon values for completed and timed research', () => {
+  it('retains main resource-icon values for completed research and uses the timed status button', () => {
     const harness = createHarness();
     const completed = createResearchViewModel({
       value: '2 crystals',
@@ -617,10 +683,15 @@ describe('ResearchPixiPage', () => {
     harness.page.bind(timed);
 
     expect(harness.page.rows.get('mint')).toBe(row);
-    expect(value.text).toBe('20 mana 5s');
-    expect(value.resourceLabel.resource).toBe('mana');
-    expect(value.timerLabel.text).toBe('5s');
-    expect(value.timerLabel.visible).toBe(true);
+    expect(value.visible).toBe(false);
+    expect(row.researchedButton.visible).toBe(true);
+    expect(row.researchedButton.tone).toBe('yellow');
+    expect(row.researchedButton.amountLabel.text).toBe('Researching');
+    expect(row.researchingTimerLabel.text).toBe('5s');
+    expect(row.researchingTimerLabel.colorToken).toBe('#d4d4d4');
+    expect(row.researchingTimerLabel.x).toBe(
+      row.researchedButton.buttonWidth / 2,
+    );
 
     harness.page.destroy();
     harness.dispose();

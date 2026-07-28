@@ -45,7 +45,8 @@ experience_type: product-shape
 - Feature unlocks should remain separate queued room announcements after the level-up card; the level-up reward row and Elara lesson copy do not replace the unlock card.
 - Feature unlock announcements should clone each destination icon and measure each icon's own source rect; one shared origin makes multi-unlock flyouts detach from the icons players just saw.
 - While-away report rows should keep the row label left and the reward/status right; attach item/resource icons to the right-side value instead of adding a separate leading icon slot.
-- While-away reports cap paper content at `128px`, use the shared station scrollbar on overflow with a `12px` top inset, keep title and row labels in Title Case, and show only the numeric quantity beside each identifying icon.
+- Retained scrollable dialogs use the Workshop Bag geometry: keep rows at full content width, use the shared `12px` content top inset, and extend the scroll viewport `4px` toward the paper edge instead of narrowing rows.
+- While-away reports cap paper content at `128px`, use the shared station scrollbar only on overflow, keep title and row labels in Title Case, and show only the numeric quantity beside each identifying icon.
 - While-away reports should list produced items and market outcomes only; skip status-only rows like mana full, plots ready, research complete, and paused automation.
 - Cauldron brew/bottle success state belongs in the active brew text and progress rail; reserve cauldron messages for blocked/error feedback so stale success text does not fight the timer state.
 - Reward flyouts on Android WebView should avoid per-event dynamic `@keyframes`; use transform/opacity Web Animations API paths and cap active particles.

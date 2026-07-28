@@ -204,7 +204,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 ### Dialogs
 - **Outer Shell:** Brown Root Run Expedition `expedition-dialog-back.png` nine-slice, rendered outside the content box.
-- **Content:** Root Run Expedition `expedition-dialog-front.png` paper nine-slice with brown ink.
+- **Content:** Root Run Expedition `expedition-dialog-front.png` paper nine-slice with brown ink. When a dialog needs separated groups, reuse Load Stall's split-paper composition: full-width instances of the same paper nine-slice expand through the standard content padding with an `8px` visible gap. Level rewards uses that existing composition for its two groups.
 - **Title:** Separate centered purple `expedition-dialog-title-purple.png` plaque with white outlined text.
 - **Close:** Round `expedition-dialog-close.png` X control centered below the brown shell at the Expedition source gap; keep the accessible close label.
 - **Authored Geometry:** Preserve Expedition's `1080px` source relationships at the `390px` logical width: `1008px` shell becomes `364px`; `976px` paper becomes `352px` with a `6px` horizontal inset, `31px` top inset, and `21px` compact-dialog bottom inset; `614x121px` title becomes `222x44px`; and the `114px` close becomes `41px` with a `23px` shell gap.
@@ -214,7 +214,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 ### Progress
 - **Rail:** Shared passive in-game rails use the compact Root Rush geometry at 10px source height. Interactive sliders and the top-panel quest rail use 14px source height. Both use a black capsule track, 1px outer stroke, dark inset rim, and 1px inner gap.
-- **Fill:** Purple `#8740df` with a lighter `#bd72f3` inset edge is the shared default. Brewing uses blue, Garden uses green, and Market/Research use yellow. Keep fully rounded caps and timer text outside the rail.
+- **Fill:** Purple `#8740df` with a lighter `#bd72f3` inset edge is the shared default. Brewing uses blue, Garden uses green, and Market/Research use yellow. The top-panel level-up rail keeps the framed black track but omits the fill's inset edge, including when it uses the selected gradient treatment. Keep fully rounded caps and timer text outside the rail.
 - **Allocation Knob:** Use a 14px cream circle with a tan border and dark-brown outer ring, matching the layered round reference without any inner glyph.
 
 ### Signature Component

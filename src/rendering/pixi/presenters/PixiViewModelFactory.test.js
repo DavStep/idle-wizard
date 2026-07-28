@@ -482,6 +482,66 @@ describe('PixiViewModelFactory', () => {
     expect(offline.onSubmit).toBeNull();
   });
 
+  it('projects full compact chat metadata without exposing player levels', () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(10 * 60_000);
+    const openPlayer = vi.fn();
+    const playerMessage = {
+      id: 'mira-1',
+      username: 'Mira',
+      playerLevel: 20,
+      body: 'Hello from the moon garden.',
+      allianceTag: 'MOSS',
+      allianceTagColor: 'green',
+      character: 'mira',
+      sentAtMs: 7 * 60_000,
+    };
+
+    try {
+      const dialog = new PixiViewModelFactory().createWorldChatDialog(
+        {
+          connected: true,
+          messages: [
+            playerMessage,
+            {
+              id: 'system-1',
+              username: 'system',
+              body: 'The weekly world event has begun.',
+              sentAtMs: 9 * 60_000,
+            },
+          ],
+        },
+        {
+          openPlayer,
+          sendWorldChat: vi.fn(),
+        },
+      );
+
+      expect(dialog.composer.placeholder).toBe('Message');
+      expect(dialog.rows[0]).toMatchObject({
+        id: 'mira-1',
+        type: 'player',
+        username: 'Mira',
+        body: 'Hello from the moon garden.',
+        allianceTag: 'MOSS',
+        allianceTagColor: 'green',
+        character: 'mira',
+        ageLabel: '3m ago',
+      });
+      expect(dialog.rows[0]).not.toHaveProperty('playerLevel');
+      expect(dialog.rows[1]).toMatchObject({
+        type: 'system',
+        username: 'System',
+        ageLabel: '1m ago',
+        onActivate: null,
+      });
+
+      dialog.rows[0].onActivate();
+      expect(openPlayer).toHaveBeenCalledWith(playerMessage);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
   it('falls back to Currencies when the selected Bag feature is still locked', () => {
     const factory = new PixiViewModelFactory();
     const dialog = factory.createBagDialog(
@@ -839,6 +899,51 @@ describe('PixiViewModelFactory', () => {
       starLevel: 1,
       accessibleTitle:
         'cauldron 1 yellow star 1 level up information',
+    });
+  });
+
+  it('projects the exact unlocked seed and potion identity for research artwork', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createResearch({
+      gameplay: {
+        research: {
+          boxes: [
+            {
+              id: 'seedUnlocks',
+              label: 'seed unlocks',
+              researches: [
+                {
+                  id: 'unlockSeed:silverleafSeed',
+                  label: 'silverleaf seed',
+                  value: '45,000 coin',
+                },
+              ],
+            },
+            {
+              id: 'recipeUnlocks',
+              label: 'recipe unlocks',
+              researches: [
+                {
+                  id: 'unlockRecipe:minorHealingPotion',
+                  label: 'minor healing potion',
+                  value: '60 coin',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+
+    const [seedBox, potionBox] = model.research.tabs[0].boxes;
+
+    expect(seedBox.researches[0]).toMatchObject({
+      itemKind: 'seed',
+      itemKey: 'silverleafSeed',
+    });
+    expect(potionBox.researches[0]).toMatchObject({
+      itemKind: 'potion',
+      itemKey: 'minorHealingPotion',
     });
   });
 

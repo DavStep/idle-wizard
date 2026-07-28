@@ -120,11 +120,19 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/root-run-cost-button/brown-button-dark-9slice.png',
   buttonBrownLight:
     'source:assets/ui/root-run-cost-button/brown-button-light-9slice.png',
+  textFieldBrownInset:
+    'source:assets/ui/root-run-world-chat/world-chat-text-field-9slice.png',
   coin: 'source:assets/ui/root-run-cost-button/coin.png',
   settingsKnob:
     'source:assets/ui/root-run-settings/settings-knob.png',
   settingsRow:
     'source:assets/ui/root-run-settings/settings-row-bg-9slice.png',
+  settingsSound:
+    'source:assets/ui/root-run-settings/settings-icon-sound.png',
+  settingsMusic:
+    'source:assets/ui/root-run-settings/settings-icon-music.png',
+  settingsVibration:
+    'source:assets/ui/root-run-settings/settings-icon-vibration.png',
   dialogBack: 'source:assets/ui/root-run-dialog/expedition-dialog-back.png',
   dialogPaper: 'source:assets/ui/root-run-dialog/expedition-dialog-front.png',
   dialogTitle:
@@ -170,9 +178,9 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   workshopDiscoveries:
     'source:assets/icons/icon-discoveries-journal.webp',
   workshopPersonalTasks:
-    'source:assets/icons/icon-quests-scroll-bag-style.png',
+    'source:assets/rooms/workshop/characters/miso-daily-tasks.webp',
   workshopWorldEvent:
-    'source:assets/rooms/workshop/characters/guild-secretary.webp',
+    'source:assets/icons/icon-quests-scroll-bag-style.png',
   lock: 'source:assets/ui/prop_lock.png',
   checkmark: 'source:assets/ui/prop_checkmark.png',
   notificationRed: 'source:assets/ui/notification-circle-red.png',
@@ -233,6 +241,15 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
   button: Object.freeze({
     sourceInsets: Object.freeze({ top: 100, right: 43, bottom: 68, left: 115 }),
     borderInsets: Object.freeze({ top: 17, right: 7, bottom: 12, left: 20 }),
+  }),
+  textFieldBrownInset: Object.freeze({
+    sourceInsets: Object.freeze({ top: 26, right: 26, bottom: 26, left: 26 }),
+    borderInsets: Object.freeze({
+      top: 26 / 3,
+      right: 26 / 3,
+      bottom: 26 / 3,
+      left: 26 / 3,
+    }),
   }),
   researchCard: Object.freeze({
     sourceInsets: Object.freeze({

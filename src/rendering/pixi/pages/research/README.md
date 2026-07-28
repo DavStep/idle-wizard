@@ -18,6 +18,10 @@ lazy-once `research.info` dialog through the injected `DialogRegistry`.
 Selecting a locked row keeps the requirement off the cost button and opens the
 retained theme tooltip instead.
 
+Item-unlock rows consume `itemKind` and `itemKey`: seeds render the shared
+seed-pack plus matching herb mark, and potion recipes render the exact potion
+atlas frame. Other research rows continue to use their family `artAssetId`.
+
 The shared `PixiInputRouter`, theme snapshot, asset manager, viewport
 projection, and semantic-target registry are constructor/runtime dependencies.
 The renderer never queries DOM geometry or derives locked-state behavior.

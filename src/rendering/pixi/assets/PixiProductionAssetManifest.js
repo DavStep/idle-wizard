@@ -44,7 +44,7 @@ const PUBLIC_ASSET_PATHS = Object.freeze([
   '/ui/guild-quest/selected-frame-9slice.png',
   '/ui/guild-quest/wax-seal.png',
   '/ui/intro-dialog-panel-9slice.png',
-  '/ui/level-star.webp',
+  '/ui/root-run-level-star.png',
   '/ui/player-card-button-brown-dark-fill-9slice.png',
   '/ui/player-card-button-brown-fill-9slice.png',
   '/ui/player-card-panel-9slice-v2.png',

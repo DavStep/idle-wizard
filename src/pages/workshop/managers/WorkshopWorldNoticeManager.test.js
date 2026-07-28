@@ -415,8 +415,8 @@ describe('WorkshopWorldNoticeManager', () => {
       'fever in the lower quarter. 125 points',
     );
     expect(
-      openButton?.querySelector('.workshop-page__world-notice-character')?.getAttribute('src'),
-    ).toContain('guild-secretary.webp');
+      openButton?.querySelector('.workshop-page__world-notice-icon')?.getAttribute('src'),
+    ).toContain('icon-quests-scroll-bag-style.png');
     expect(parent.textContent).not.toContain('fever in the lower quarter');
     expect(parent.textContent).not.toContain('1/3');
 

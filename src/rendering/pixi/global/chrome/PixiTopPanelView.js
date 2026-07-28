@@ -173,7 +173,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.levelControl.eventMode = 'static';
     this.levelControl.hitArea = new Rectangle(0, 0, LEVEL_SIZE, LEVEL_SIZE);
     this.levelStar = new Sprite({
-      texture: assets.getTexture('public:ui/level-star.webp'),
+      texture: assets.getTexture('public:ui/root-run-level-star.png'),
       label: 'topPanel:levelStar',
       roundPixels: true,
     });
@@ -747,30 +747,23 @@ export class PixiTopPanelView extends BasePixiRetainedView {
   }
 
   drawQuestFillInset({ x, y, width, height, radius }) {
-    if (this.theme?.progress?.key === 'notched') {
-      this.questRail
-        .moveTo(x + radius, y)
-        .lineTo(x + width - radius, y)
-        .stroke({
-          color: this.theme.progress.insetTop,
-          width: 1,
-          alignment: 1,
-        });
-      this.questRail
-        .moveTo(x + radius, y + height)
-        .lineTo(x + width - radius, y + height)
-        .stroke({
-          color: this.theme.progress.insetBottom,
-          width: 1,
-          alignment: 1,
-        });
+    if (this.theme?.progress?.key !== 'notched') {
       return;
     }
 
     this.questRail
-      .roundRect(x, y, width, height, radius)
+      .moveTo(x + radius, y)
+      .lineTo(x + width - radius, y)
       .stroke({
-        color: QUEST_FILL_EDGE,
+        color: this.theme.progress.insetTop,
+        width: 1,
+        alignment: 1,
+      });
+    this.questRail
+      .moveTo(x + radius, y + height)
+      .lineTo(x + width - radius, y + height)
+      .stroke({
+        color: this.theme.progress.insetBottom,
         width: 1,
         alignment: 1,
       });

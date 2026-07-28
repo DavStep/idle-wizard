@@ -4673,79 +4673,98 @@ describe('PagesFacade', () => {
     expect(levelPopup.hidden).toBe(false);
     expect(levelPopup.querySelector('[role="dialog"]')).not.toBeNull();
     expect(
-      levelPopup.querySelector('.room-top-panel__level-pager')?.parentElement?.className,
-    ).toBe('room-top-panel__level-panel');
+      levelPopup.querySelector('.room-top-panel__level-pager')?.parentElement,
+    ).toBe(
+      levelPopup.querySelector('.room-top-panel__level-dialog'),
+    );
     expect(levelPopup.querySelector('.room-top-panel__level-title')?.textContent).toBe(
-      'level 1',
+      'Level 1',
     );
     expect(levelPopup.querySelector('.room-top-panel__level-current')?.hidden).toBe(false);
-    expect(levelPopup.textContent).toContain('garden plots');
-    expect(levelPopup.textContent).toContain('cauldrons');
-    expect(levelPopup.textContent).toContain('trader stands');
-    expect(levelPopup.textContent).toContain('player stands');
+    expect(levelPopup.textContent).toContain('Garden Plots');
+    expect(levelPopup.textContent).toContain('Cauldrons');
+    expect(levelPopup.textContent).toContain('Trader Stands');
+    expect(levelPopup.textContent).toContain('Player Stands');
     expect(levelPopup.textContent).not.toContain('max');
     expect(levelPopup.textContent).not.toContain('level 0');
     expect(levelPopup.querySelector('.room-top-panel__level-pager-button')?.hidden).toBe(true);
-    expect(levelPopup.querySelector('.room-top-panel__level-divider')?.hidden).toBe(false);
+    expect(levelPopup.querySelector('.room-top-panel__level-divider')).toBeNull();
+    expect(
+      levelPopup.querySelectorAll('.room-top-panel__level-paper-section'),
+    ).toHaveLength(2);
+    expect(
+      levelPopup.querySelector(
+        '.room-top-panel__level-pager-button:last-child',
+      )?.classList.contains('style-button--yellow'),
+    ).toBe(true);
     const level1AddedRows = levelPopup.querySelectorAll(
       '.room-top-panel__level-added-rows .room-top-panel__level-effect-row',
     );
     const level1TotalRows = levelPopup.querySelectorAll(
       '.room-top-panel__level-total-rows .room-top-panel__level-effect-row',
     );
-    expect(level1AddedRows[0].textContent).toBe('garden plots+2');
-    expect(level1TotalRows[0].textContent).toBe('garden plots2');
-    expect(levelPopup.textContent).toContain('mana capacity');
-    expect(levelPopup.textContent).toContain('mana regeneration');
+    expect(level1AddedRows[0].textContent).toBe('Garden Plots+2');
+    expect(level1TotalRows[0].textContent).toBe('Garden Plots2');
+    expect(levelPopup.textContent).toContain('Mana Capacity');
+    expect(levelPopup.textContent).toContain('Mana Regeneration');
 
     levelPopup
       .querySelector('.room-top-panel__level-pager-button:last-child')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(levelPopup.querySelector('.room-top-panel__level-title')?.textContent).toBe(
-      'level 2',
+      'Level 2',
     );
     expect(levelPopup.querySelector('.room-top-panel__level-current')?.hidden).toBe(true);
     expect(levelPopup.querySelector('.room-top-panel__level-added-rows')?.hidden).toBe(false);
-    expect(levelPopup.querySelector('.room-top-panel__level-divider')?.hidden).toBe(false);
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).not.toContain('garden plots+1');
+    ).not.toContain('Garden Plots+1');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).toContain('mana capacity+50 mana');
+    ).toContain('Mana Capacity+50 mana');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).toContain('mana regeneration+1/sec mana');
+    ).toContain('Mana Regeneration+1/sec mana');
     expect(
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent,
-    ).toContain('bonus+1 crystal');
+    ).toContain('Bonus+1 crystal');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
-    ).toContain('garden plots3');
+    ).toContain('Garden Plots3');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
-    ).toContain('mana capacity100 mana');
+    ).toContain('Mana Capacity100 mana');
     expect(
       levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent,
-    ).toContain('mana regeneration2/sec mana');
+    ).toContain('Mana Regeneration2/sec mana');
+    expect(
+      levelPopup.querySelector(
+        '.room-top-panel__level-added-rows .style-resource-label--mana .style-resource-label__icon',
+      ),
+    ).not.toBeNull();
+    expect(
+      levelPopup.querySelector(
+        '.room-top-panel__level-added-rows .style-resource-label--crystal .style-resource-label__icon',
+      ),
+    ).not.toBeNull();
 
     levelPopup
       .querySelector('.room-top-panel__level-pager-button:last-child')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(levelPopup.querySelector('.room-top-panel__level-title')?.textContent).toBe(
-      'level 3',
+      'Level 3',
     );
     const level3AddedText =
       levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent ?? '';
     const [level3TotalRow] = levelPopup.querySelectorAll(
       '.room-top-panel__level-total-rows .room-top-panel__level-effect-row',
     );
-    expect(level3AddedText).toContain('mana capacity+50 mana');
-    expect(level3AddedText).toContain('bonus+1 crystal');
+    expect(level3AddedText).toContain('Mana Capacity+50 mana');
+    expect(level3AddedText).toContain('Bonus+1 crystal');
     expect(level3TotalRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
-      'garden plots',
+      'Garden Plots',
     );
     expect(level3TotalRow.querySelector('.room-top-panel__level-effect-value')?.textContent).toBe(
       '3',
@@ -10862,7 +10881,7 @@ describe('PagesFacade', () => {
 
     expect(cancelPopup?.hidden).toBe(false);
     expect(stage.querySelector('#garden-cancel-dialog-title')?.textContent).toBe(
-      'cancel progress?',
+      'Cancel Progress?',
     );
   });
 
@@ -11743,11 +11762,13 @@ describe('PagesFacade', () => {
     const progressBar = row?.querySelector('.research-page__research-progress');
 
     expect(row?.classList.contains('is-unavailable')).toBe(false);
-    expect(row?.querySelector('.research-page__research-value')?.textContent).toBe(
-      'researching 8s',
+    const statusButton = row?.querySelector(
+      '.research-page__research-button--in-progress',
     );
+    expect(statusButton?.classList.contains('style-cost-button--yellow')).toBe(true);
+    expect(statusButton?.disabled).toBe(true);
     expect(row?.querySelector('.research-page__research-value-label')?.textContent).toBe(
-      'researching',
+      'Researching',
     );
     expect(row?.querySelector('.research-page__research-value-timer')?.textContent).toBe(
       '8s',
@@ -11764,8 +11785,11 @@ describe('PagesFacade', () => {
     research.progress = 0.8;
     gameplayFacade.publishSnapshot();
 
-    expect(row?.querySelector('.research-page__research-value')?.textContent).toBe(
-      'researching 2s',
+    expect(row?.querySelector('.research-page__research-value-label')?.textContent).toBe(
+      'Researching',
+    );
+    expect(row?.querySelector('.research-page__research-value-timer')?.textContent).toBe(
+      '2s',
     );
     expect(progressBar?.getAttribute('aria-valuenow')).toBe('80');
     expect(

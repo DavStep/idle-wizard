@@ -32,6 +32,7 @@
     <script type="module">
       import '@fontsource/lilita-one/400.css';
       import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
       import { SHOP_DIALOG_IDS } from '/src/rendering/pixi/pages/shop/ShopDialogPixi.js';
       import { ShopPixiPage } from '/src/rendering/pixi/pages/shop/ShopPixiPage.js';
       import { createShop } from '/src/rendering/pixi/pages/shop/createShop.js';
@@ -40,6 +41,7 @@
 
       const gameplaySnapshot = {
         coin: { current: 5770 },
+        playerLevel: { currentLevel: 4 },
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
         shop: {
           market: {
@@ -108,36 +110,89 @@
               },
             ],
           },
+          stock: {
+            sellKinds: [
+              { kind: 'seed', label: 'seeds' },
+              { kind: 'herb', label: 'herbs' },
+              { kind: 'potion', label: 'potions' },
+            ],
+            items: [
+              { itemTypeId: 1, key: 'sageSeed', label: 'sage seed', kind: 'seed', stock: 2897, npcNeed: 1294, buyCoin: 8 },
+              { itemTypeId: 2, key: 'mintSeed', label: 'mint seed', kind: 'seed', stock: 4194, npcNeed: 1293, buyCoin: 8 },
+              { itemTypeId: 3, key: 'nettleSeed', label: 'nettle seed', kind: 'seed', stock: 3992, npcNeed: 1294, buyCoin: 8 },
+              { itemTypeId: 4, key: 'lavenderSeed', label: 'lavender seed', kind: 'seed', stock: 5400, npcNeed: 1500, buyCoin: 10 },
+              { itemTypeId: 5, key: 'briarSeed', label: 'briar seed', kind: 'seed', stock: 4515, npcNeed: 1500, buyCoin: 11 },
+              { itemTypeId: 6, key: 'glowcapSeed', label: 'glowcap seed', kind: 'seed', stock: 3519, npcNeed: 1500, buyCoin: 14 },
+              { itemTypeId: 7, key: 'mandrakeSeed', label: 'mandrake seed', kind: 'seed', stock: 3004, npcNeed: 1500, buyCoin: 15 },
+              { itemTypeId: 8, key: 'sunrootSeed', label: 'sunroot seed', kind: 'seed', stock: 2745, npcNeed: 1420, buyCoin: 16 },
+              { itemTypeId: 9, key: 'moonflowerSeed', label: 'moonflower seed', kind: 'seed', stock: 2412, npcNeed: 1360, buyCoin: 18 },
+              { itemTypeId: 10, key: 'frostmossSeed', label: 'frostmoss seed', kind: 'seed', stock: 2106, npcNeed: 1280, buyCoin: 20 },
+              { itemTypeId: 11, key: 'dreambellSeed', label: 'dreambell seed', kind: 'seed', stock: 1944, npcNeed: 1220, buyCoin: 22 },
+              { itemTypeId: 12, key: 'starAniseSeed', label: 'star anise seed', kind: 'seed', stock: 1788, npcNeed: 1180, buyCoin: 24 },
+              { itemTypeId: 1001, key: 'sageHerb', label: 'sage', kind: 'herb', stock: 1822, npcNeed: 980, buyCoin: 18 },
+              { itemTypeId: 1002, key: 'mintHerb', label: 'mint', kind: 'herb', stock: 1610, npcNeed: 940, buyCoin: 20 },
+              { itemTypeId: 2001, key: 'manaTonic', label: 'mana tonic', kind: 'potion', stock: 811, npcNeed: 620, buyCoin: 28 },
+              { itemTypeId: 2002, key: 'minorHealingPotion', label: 'minor healing potion', kind: 'potion', stock: 544, npcNeed: 510, buyCoin: 35 },
+            ],
+          },
         },
       };
 
       const canvas = document.querySelector('canvas');
-      const showStallDialog =
-        new URLSearchParams(window.location.search).get('dialog') === 'stall';
+      const dialogQuery =
+        new URLSearchParams(window.location.search).get('dialog');
+      const showStallDialog = dialogQuery === 'stall';
+      const showLedgerDialog = dialogQuery === 'ledger';
       if (showStallDialog) {
         gameplaySnapshot.shop.shelf.sellItems[0].quantity = 119;
         gameplaySnapshot.shop.shelf.slots[0].loadedQuantity = 10;
       }
       const applicationManager = new PixiApplicationManager({ canvas });
       const assetManager = new PixiAssetManager();
+      const inputRouter = new PixiInputRouter();
 
       await Promise.all([
         applicationManager.initialize(),
         assetManager.loadAll(),
       ]);
+      inputRouter.mount({
+        root: applicationManager.getApplication().stage,
+        canvas,
+      });
 
       const dialogRegistry = new DialogRegistry();
       const page = new ShopPixiPage({
         assetManager,
         dialogLayer: applicationManager.layers.dialogsSource,
         dialogRegistry,
+        inputRouter,
       });
-      const viewModel = createShop({
-        gameplaySnapshot,
-        uiState: showStallDialog
-          ? { stallAllocationPercentBySlot: { 1: 25 } }
-          : undefined,
-      });
+      let ledgerKind = 'seed';
+      const createViewModel = () =>
+        createShop({
+          gameplaySnapshot,
+          uiState: {
+            ledgerKind,
+            ...(showStallDialog
+              ? { stallAllocationPercentBySlot: { 1: 25 } }
+              : {}),
+          },
+          actions: {
+            ui: {
+              selectLedgerKind(kind) {
+                ledgerKind = kind;
+                const nextViewModel = createViewModel();
+                page.bind(nextViewModel);
+                page.openDialog(
+                  SHOP_DIALOG_IDS.LEDGER,
+                  nextViewModel.shop.dialogs.ledger,
+                );
+                return true;
+              },
+            },
+          },
+        });
+      const viewModel = createViewModel();
       page.bind(viewModel);
       page.activate();
       applicationManager.layers.pageUi.addChild(page.root);
@@ -147,6 +202,11 @@
         page.openDialog(
           SHOP_DIALOG_IDS.STALL,
           viewModel.shop.traders.stalls[0].dialog,
+        );
+      } else if (showLedgerDialog) {
+        page.openDialog(
+          SHOP_DIALOG_IDS.LEDGER,
+          viewModel.shop.dialogs.ledger,
         );
       }
     </script>

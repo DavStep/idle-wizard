@@ -16,6 +16,7 @@ import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js
 import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import { ShopDialogPixi } from '../shop/ShopDialogPixi.js';
 import { WorkshopPixiPage } from './WorkshopPixiPage.js';
@@ -90,10 +91,76 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.statsButton.textureId).toBe(
       PIXI_ROOT_RUN_ASSETS.workshopStats,
     );
-    expect(harness.page.inboxButton.iconScale).toBe(1.3);
+    expect(harness.page.statsButton.iconScale).toBe(1.08);
+    expect(harness.page.inboxButton.iconScale).toBe(1.22);
     expect(
       harness.page.features.get('leaderboard').presentation.scale,
     ).toBe(1.2);
+    expect(
+      harness.page.features.get('discoveries').presentation.scale,
+    ).toBe(1.18);
+    expect(
+      harness.page.features.get('personalTasks').presentation.scale,
+    ).toBe(1.05);
+    expect(
+      harness.page.features.get('worldEvent').presentation.scale,
+    ).toBe(1.08);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('centers side-control copy under the shifted art and attaches badges to the art frame', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.inbox = {
+      notification: true,
+    };
+    model.workshop.features = [
+      {
+        id: 'worldEvent',
+        notification: true,
+      },
+    ];
+
+    harness.page.bind(model);
+
+    const sideControls = [
+      harness.page.bagButton,
+      harness.page.statsButton,
+      harness.page.inboxButton,
+      harness.page.features.get('alliance'),
+      harness.page.features.get('leaderboard'),
+      harness.page.features.get('discoveries'),
+      harness.page.features.get('personalTasks'),
+      harness.page.features.get('worldEvent'),
+    ];
+    for (const control of sideControls) {
+      expect(control.label.anchor.x).toBe(0.5);
+      expect(control.label.x).toBe(control.iconFrame.x);
+    }
+
+    const event = harness.page.features.get('worldEvent');
+    expect(event.timer.anchor.x).toBe(0.5);
+    expect(event.timer.x).toBe(event.iconFrame.x);
+
+    const badgeX =
+      10 +
+      45.5 +
+      PIXI_UI_GEOMETRY.notificationOutset -
+      PIXI_UI_GEOMETRY.notificationSize / 2;
+    const badgeY =
+      22 -
+      PIXI_UI_GEOMETRY.notificationOutset +
+      PIXI_UI_GEOMETRY.notificationSize / 2;
+    expect(harness.page.inboxButton.notification.root.position).toMatchObject({
+      x: badgeX,
+      y: badgeY,
+    });
+    expect(event.notification.root.position).toMatchObject({
+      x: badgeX,
+      y: badgeY,
+    });
 
     harness.page.destroy();
     harness.dispose();
@@ -1323,6 +1390,118 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('renders compact World Chat rows without action chrome and keeps player links on the avatar and username', () => {
+    const openPlayer = vi.fn();
+    const pressRegistrations = [];
+    const inputRouter = {
+      registerPressTarget: vi.fn((displayObject, descriptor) => {
+        pressRegistrations.push({ displayObject, descriptor });
+        const unregister = vi.fn();
+        unregister.unregister = unregister;
+        return unregister;
+      }),
+      pushModal: vi.fn(() => ({ unregister: vi.fn() })),
+    };
+    const harness = createHarness({ inputRouter });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.worldChat = {
+      title: 'World Chat',
+      composer: {
+        placeholder: 'Message',
+        maxLength: 160,
+        enabled: true,
+      },
+      rows: [
+        {
+          id: 'player-1',
+          type: 'player',
+          username: 'Mira',
+          body: 'The moon garden is glowing.',
+          allianceTag: 'MOSS',
+          allianceTagColor: 'green',
+          character: 'mira',
+          ageLabel: '3m ago',
+          onActivate: openPlayer,
+        },
+        {
+          id: 'system-1',
+          type: 'system',
+          username: 'System',
+          body: 'The weekly world event has begun.',
+          ageLabel: '8m ago',
+        },
+      ],
+      onSubmit: vi.fn(),
+    };
+    harness.page.bind(model);
+    harness.page.openDialog('worldChat');
+    const dialog = harness.dialogs.get('workshop.worldChat');
+    const playerRow = dialog.rows.get('player-1');
+    const systemRow = dialog.rows.get('system-1');
+
+    expect(dialog.composerField.variant).toBe('brown-inset');
+    expect(dialog.composerField.placeholder).toBe('Message');
+    expect(dialog.composerSubmit.control.variant).toBe('yellow');
+    expect(dialog.composerSubmit.text.text).toBe('Send');
+    expect(
+      dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight,
+    ).toBeLessThan(dialog.composerField.y);
+
+    expect(playerRow.tag.text).toBe('[MOSS]');
+    expect(playerRow.tag.style.stroke).toMatchObject({
+      color: '#2b1912',
+      width: 1,
+    });
+    expect(playerRow.username.text).toBe('Mira');
+    expect(playerRow.username.style.fill).toBe('#634934');
+    expect(playerRow.username.style.stroke?.width ?? 0).toBe(0);
+    expect(playerRow.body.x).toBe(playerRow.tag.x);
+    expect(playerRow.body.x).toBe(25);
+    expect(playerRow.body.y).toBeGreaterThan(playerRow.username.y);
+    expect(playerRow.avatar.width).toBe(22);
+    expect(dialog.scroll.root.x).toBe(8);
+    expect(dialog.scroll.width).toBe(288);
+    expect(playerRow.root.hitArea.width).toBe(288);
+    expect(playerRow.username.x - (playerRow.tag.x + playerRow.tag.width)).toBe(
+      2,
+    );
+    expect(playerRow.avatar.eventMode).toBe('static');
+    expect(playerRow.username.eventMode).toBe('static');
+    expect(playerRow.action).toBeUndefined();
+    const avatarPress = pressRegistrations.find(
+      ({ displayObject }) => displayObject === playerRow.avatar,
+    );
+    const usernamePress = pressRegistrations.find(
+      ({ displayObject }) => displayObject === playerRow.username,
+    );
+    expect(avatarPress?.descriptor.excludePageSwipe).toBe(true);
+    expect(usernamePress?.descriptor.excludePageSwipe).toBe(true);
+    expect(avatarPress?.descriptor.onActivate()).toBe(true);
+    expect(usernamePress?.descriptor.onActivate()).toBe(true);
+    expect(openPlayer).toHaveBeenCalledTimes(2);
+    expect(openPlayer).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ id: 'player-1' }),
+    );
+    expect(openPlayer).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ id: 'player-1' }),
+    );
+
+    expect(systemRow.systemBackground.visible).toBe(true);
+    expect(systemRow.avatar.visible).toBe(false);
+    expect(systemRow.avatar.eventMode).toBe('none');
+    expect(systemRow.username.eventMode).toBe('none');
+    expect(systemRow.action).toBeUndefined();
+    expect(systemRow.getPreferredHeight()).toBeLessThanOrEqual(28);
+    expect(systemRow.root.y - playerRow.root.y).toBe(
+      playerRow.getPreferredHeight() + 2,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('shows and clears the retained inbox notification from its view model', () => {
     const harness = createHarness();
     const model = createWorkshopViewModel();
@@ -1445,7 +1624,7 @@ describe('WorkshopPixiPage', () => {
     const event = harness.page.features.get('worldEvent');
     expect(event.timer.text).toBe('2d 4h');
     expect(event.notification.root.visible).toBe(true);
-    expect(event.presentation.mirrorOnRight).toBe(true);
+    expect(event.presentation.mirrorOnRight).toBe(false);
 
     harness.page.destroy();
     harness.dispose();

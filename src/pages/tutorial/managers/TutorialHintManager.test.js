@@ -1315,7 +1315,7 @@ describe('TutorialHintManager', () => {
       expect(button?.getAttribute('aria-expanded')).toBe('true');
       expect(
         button?.querySelector('.tutorial-layer__objective-button-label')?.textContent,
-      ).toBe('hide');
+      ).toBe('Hide');
       expect(buttonImage?.hidden).toBe(false);
       expect(button?.hasAttribute('data-speaking')).toBe(true);
       expect(lesson?.hidden).toBe(false);
@@ -1362,7 +1362,7 @@ describe('TutorialHintManager', () => {
       expect(button?.getAttribute('aria-expanded')).toBe('false');
       expect(
         button?.querySelector('.tutorial-layer__objective-button-label')?.textContent,
-      ).toBe('help');
+      ).toBe('Help');
       expect(buttonImage?.hidden).toBe(false);
       expect(lesson?.hidden).toBe(false);
       expect(lesson?.classList.contains('is-hiding')).toBe(true);
@@ -2497,7 +2497,7 @@ describe('TutorialHintManager', () => {
       const label = button?.querySelector(
         '.tutorial-layer__objective-button-label',
       );
-      expect(label?.textContent).toBe('hide');
+      expect(label?.textContent).toBe('Hide');
       expect(label?.classList.contains('style-button')).toBe(true);
       expect(label?.classList.contains('style-button--brown-light')).toBe(true);
 
@@ -2550,7 +2550,7 @@ describe('TutorialHintManager', () => {
       false,
     );
     expect(button?.querySelector('.tutorial-layer__objective-button-label')?.textContent).toBe(
-      'help',
+      'Help',
     );
 
     manager.setLessonAttention(true);
@@ -2567,7 +2567,7 @@ describe('TutorialHintManager', () => {
       false,
     );
     expect(button?.querySelector('.tutorial-layer__objective-button-label')?.textContent).toBe(
-      'hide',
+      'Hide',
     );
   });
 
@@ -2673,8 +2673,13 @@ describe('TutorialHintManager', () => {
     expect(dragYellRule).toMatch(/\btop:\s*9px;/);
     expect(dragYellRule).toMatch(/\bborder:\s*0;/);
     expect(dragYellRule).toMatch(/\bbackground:\s*transparent;/);
+    expect(dragYellRule).toMatch(/\bcolor:\s*#fff;/);
+    expect(dragYellRule).toMatch(
+      /-webkit-text-stroke:\s*1px #0a0a0a;/,
+    );
+    expect(dragYellRule).toMatch(/\bpaint-order:\s*stroke fill;/);
     expect(collapsedDragYellRule).toBeDefined();
-    expect(collapsedDragYellRule).toMatch(/\btop:\s*22px;/);
+    expect(collapsedDragYellRule).toMatch(/\btop:\s*28px;/);
     expect(collapsedDragYellRule).toMatch(/\bmax-width:\s*58px;/);
     expect(draggingYellRule).toBeDefined();
     expect(draggingYellRule).toMatch(/\bopacity:\s*1;/);

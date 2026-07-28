@@ -147,7 +147,6 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     this.currentHerbDrag = null;
     this.motionGhostSequence = 0;
     this.selectedCauldronIndex = 0;
-    this.toastHideAt = 0;
 
     this.worldViewport = new Container({
       label: 'brewing-world-viewport',
@@ -247,16 +246,6 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       theme,
     });
     this.content.addChild(this.hud.root);
-    this.toast = new Container({ label: 'brewing-transient-toast' });
-    this.toastFrame = new Graphics({ label: 'brewing-transient-toast-frame' });
-    this.toastText = createText('', {
-      ...RETAINED_TEXT_STYLES.bold,
-      align: 'center',
-    });
-    this.toastText.anchor.set(0.5);
-    this.toast.addChild(this.toastFrame, this.toastText);
-    this.toast.visible = false;
-    this.content.addChild(this.toast);
     this.motionLayer = new Container({
       label: 'brewing-page-motion-layer',
     });
@@ -573,14 +562,6 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     });
   }
 
-  showToast(message) {
-    setText(this.toastText, message ?? '');
-    this.toast.visible = Boolean(this.toastText.text);
-    this.toast.alpha = 1;
-    this.toastHideAt = this.timeSource() + 1_600;
-    return true;
-  }
-
   activate() {
     if (this.active) {
       return;
@@ -609,9 +590,6 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       row.updateMotion(now);
     }
     this.updateGhostMotions(now);
-    if (this.toast.visible && now >= this.toastHideAt) {
-      this.toast.visible = false;
-    }
   }
 
   syncCauldronPurchaseMotion(cauldrons) {
@@ -1118,14 +1096,6 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     this.herbsButton?.applyTheme(theme);
     this.potionsButton?.applyTheme(theme);
     this.hud?.applyTheme(theme);
-    if (this.toastText) {
-      applyTextTheme(this.toastText, theme, RETAINED_TEXT_STYLES.bold);
-      this.toastFrame
-        .clear()
-        .roundRect(-58, -17, 116, 34, 10)
-        .fill({ color: 0x111722, alpha: 0.96 })
-        .stroke({ color: theme.stroke, width: 2 });
-    }
     for (const cauldron of this.cauldrons?.getWidgets?.() ?? []) {
       cauldron.applyTheme(theme);
     }
@@ -1170,7 +1140,6 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     );
     this.layoutBrewing();
     this.hud?.layout(sourceWidth, sourceHeight);
-    this.toast?.position.set(sourceWidth / 2, 470);
   }
 
   layoutBrewing() {

@@ -22,6 +22,7 @@ export class PixiOwnedDialogSurface extends PixiModalSurface {
     semanticRegistry = null,
     assetManager = null,
     title = '',
+    titleVariant = 'default',
     onClose = null,
     backdropAlpha = 0.78,
     motionRuntime = null,
@@ -53,6 +54,7 @@ export class PixiOwnedDialogSurface extends PixiModalSurface {
     this.id = id;
     this.onClose = close;
     this.title = title ?? '';
+    this.panel.setTitleVariant(titleVariant);
     this.fixedBounds = null;
     this.panel.setCloseAction((payload) =>
       this.requestClose('close', payload),

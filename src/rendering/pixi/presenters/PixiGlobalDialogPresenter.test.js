@@ -346,6 +346,13 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(
       harness.soundSettingsFacade.setSfxEnabled,
     ).toHaveBeenCalledWith(false);
+    expect(model.account.userId).toBe('identity-mira');
+    expect(await model.actions.copyUserId(model.account.userId)).toBe(
+      true,
+    );
+    expect(harness.copyText).toHaveBeenCalledWith(
+      'identity-mira',
+    );
 
     model.actions.selectVisualOption('theme', 'witchcraft');
     model.actions.selectVisualOption('font', 'comic-sans-mono');
@@ -521,11 +528,23 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(model.levels[1]).toMatchObject({
       level: 2,
       addedRows: [
-        { label: 'mana capacity', value: '+10 mana' },
-        { label: 'unlocks', value: 'garden' },
+        {
+          label: 'Mana Capacity',
+          value: '+10',
+          resource: 'mana',
+          icon: { frameName: 'resource:mana' },
+          iconPosition: 'after',
+        },
+        { label: 'Unlocks', value: 'Garden' },
       ],
       totalRows: expect.arrayContaining([
-        { label: 'mana capacity', value: '30 mana' },
+        {
+          label: 'Mana Capacity',
+          value: '30',
+          resource: 'mana',
+          icon: { frameName: 'resource:mana' },
+          iconPosition: 'after',
+        },
       ]),
     });
 
@@ -614,8 +633,10 @@ function createHarness({
   );
   const authFacade = createSnapshotFacade({
     hasToken: false,
+    identity: 'identity-mira',
     oidc: { enabled: true },
   });
+  const copyText = vi.fn(() => Promise.resolve(true));
   const feedbackFacade = {
     submitFeedback: vi.fn(() => Promise.resolve({ ok: true })),
   };
@@ -684,6 +705,7 @@ function createHarness({
     hapticsFacade,
     soundSettingsFacade,
     reload: vi.fn(),
+    copyText,
   });
   return {
     presenter,
@@ -699,6 +721,7 @@ function createHarness({
     tradeAllianceFacade,
     hapticsFacade,
     soundSettingsFacade,
+    copyText,
     getOpenModel: (dialogId) => openModels.get(dialogId),
   };
 }

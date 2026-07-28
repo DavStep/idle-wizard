@@ -13,8 +13,9 @@ installPixiPageTestCanvas();
 describe('PixiTopPanelView', () => {
   it('updates resources and quest geometry without rebuilding the display tree', () => {
     const semanticRegistry = new SemanticTargetRegistry();
+    const assets = createAssets();
     const view = new PixiTopPanelView({
-      assets: createAssets(),
+      assets,
       semanticRegistry,
     });
     const children = [...view.root.children];
@@ -53,6 +54,9 @@ describe('PixiTopPanelView', () => {
     expect(view.coin.amount).toBe('1.2k');
     expect(view.contextCurrency.resource).toBe('ruby');
     expect(view.levelValue.text).toBe('4');
+    expect(assets.getTexture).toHaveBeenCalledWith(
+      'public:ui/root-run-level-star.png',
+    );
     expect(view.questRail.visible).toBe(true);
     expect(semanticRegistry.get('top.coin')?.displayObject).toBe(view.coin);
     expect(semanticRegistry.resolve('top.coin')).toMatchObject({
@@ -67,7 +71,7 @@ describe('PixiTopPanelView', () => {
     expect(semanticRegistry.getTutorialTarget('top:mana')).not.toBeNull();
   });
 
-  it('draws the production quest rail capsule, inset edges, and segment shadows', () => {
+  it('draws the framed quest rail with an unframed fill and segment shadows', () => {
     const view = new PixiTopPanelView({
       assets: createAssets(),
     });
@@ -94,7 +98,7 @@ describe('PixiTopPanelView', () => {
         return path && path.data[2] > 1;
       },
     );
-    expect(railRects).toHaveLength(5);
+    expect(railRects).toHaveLength(4);
     expect(readPath(railRects[0])).toEqual([0, 0, 227, 14, 7]);
     expect(railRects[0].data.style).toMatchObject({
       color: 0x000000,
@@ -115,12 +119,13 @@ describe('PixiTopPanelView', () => {
     });
     expect(readPath(railRects[3])).toEqual([1, 1, 84.125, 12, 6]);
     expect(railRects[3].data.style.color).toBe(0x8740df);
-    expect(readPath(railRects[4])).toEqual([1, 1, 84.125, 12, 6]);
-    expect(railRects[4].data.style).toMatchObject({
-      color: 0xbd72f3,
-      width: 1,
-      alignment: 1,
-    });
+    expect(
+      railRects.some(
+        (instruction) =>
+          instruction.data.style.color === 0xbd72f3 &&
+          instruction.data.style.width === 1,
+      ),
+    ).toBe(false);
 
     const dividerRects = instructions.filter(
       (instruction) => {
@@ -320,7 +325,7 @@ describe('PixiTopPanelView', () => {
 function createAssets() {
   return {
     loaded: false,
-    getTexture: () => Texture.EMPTY,
+    getTexture: vi.fn(() => Texture.EMPTY),
     getAtlasTexture: () => Texture.EMPTY,
   };
 }

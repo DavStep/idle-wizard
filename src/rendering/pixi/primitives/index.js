@@ -5,10 +5,20 @@ export {
   PixiCostButton,
 } from './PixiCostButton.js';
 export {
+  createDialogPaperSection,
   PIXI_DIALOG_BASE_GEOMETRY,
   PIXI_DIALOG_PALETTE,
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
   PixiDialogFrame,
+  resolveDialogPaperOutsets,
+  setDialogPaperSectionBounds,
 } from './PixiDialogFrame.js';
+export {
+  DeviceIdentityFooter,
+  ROOT_RUN_DEVICE_PREFERENCE_ROW_HEIGHT,
+  RootRunDevicePreferenceRow,
+  RootRunDevicePreferencesPanel,
+} from './PixiDeviceSettingsWidgets.js';
 export { PixiFrame } from './PixiFrame.js';
 export { PixiInfoButton } from './PixiInfoButton.js';
 export {

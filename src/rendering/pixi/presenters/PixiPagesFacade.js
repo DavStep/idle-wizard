@@ -1,5 +1,6 @@
 import { DEFAULT_PAGE_SWIPE_ORDER } from '../../../pages/managers/pageOrder.js';
 import { PageUnlockManager } from '../../../pages/managers/PageUnlockManager.js';
+import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
 import {
   WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL,
 } from '../../../pages/workshop/managers/WorkshopSecondaryActionGateManager.js';
@@ -167,6 +168,7 @@ export class PixiPagesFacade {
     this.workshopLeaderboardTabId = 'singlePlayer';
     this.researchTabId = 'regular';
     this.shopTabId = 'traders';
+    this.shopLedgerKind = 'seed';
     this.shopStallItemTypeIdBySlot = new Map();
     this.shopStallAllocationPercentBySlot = new Map();
     this.shopStallItemKindBySlot = new Map();
@@ -632,6 +634,7 @@ export class PixiPagesFacade {
           playerShopActions: this.playerShopFacade,
           actions: { ui: actions.shop },
           uiState: {
+            ledgerKind: this.shopLedgerKind,
             stallItemTypeIdBySlot: Object.fromEntries(
               this.shopStallItemTypeIdBySlot,
             ),
@@ -687,6 +690,26 @@ export class PixiPagesFacade {
           SHOP_DIALOG_IDS.STALL,
           stall.dialog ?? stall,
         );
+    }
+    return viewModel;
+  }
+
+  refreshShopLedgerDialog() {
+    const viewModel = this.refreshPage('shop');
+    const runtime = this.requireRuntime();
+    if (
+      !viewModel ||
+      !runtime.getOpenDialogIds?.().includes(SHOP_DIALOG_IDS.LEDGER)
+    ) {
+      return viewModel;
+    }
+    const ledger =
+      viewModel.shop?.dialogs?.ledger ??
+      viewModel.shop?.traders?.ledger;
+    if (ledger) {
+      runtime
+        .getPage('shop')
+        ?.openDialog?.(SHOP_DIALOG_IDS.LEDGER, ledger);
     }
     return viewModel;
   }
@@ -823,6 +846,11 @@ export class PixiPagesFacade {
           return result;
         },
         clearPlayerRequest: () => false,
+        selectLedgerKind: (kind) => {
+          this.shopLedgerKind = String(kind || 'seed');
+          this.refreshShopLedgerDialog();
+          return true;
+        },
         selectStallItem: (slotNumber, item) => {
           const safeSlotNumber = Math.max(
             1,
@@ -1132,12 +1160,12 @@ export class PixiPagesFacade {
     return this.requireRuntime()
       .getPage('garden')
       .openDialog(kind, {
-        title: kind === 'swap' ? 'swap seed?' : 'cancel progress?',
+        title: kind === 'swap' ? 'swap seed?' : 'Cancel Progress?',
         message:
           kind === 'swap'
             ? 'replace the growing seed?'
-            : 'return this plot to empty?',
-        confirmLabel: kind === 'swap' ? 'swap' : 'empty',
+            : 'Return This Plot To Empty?',
+        confirmLabel: kind === 'swap' ? 'swap' : 'Empty',
         payload: plot,
         onConfirm: () =>
           kind === 'swap'
@@ -1162,12 +1190,12 @@ export class PixiPagesFacade {
     );
     if (
       Number.isInteger(brewing.nextCauldronNumber) &&
-      brewing.nextCauldronNumber > cauldrons.length
+      brewing.nextCauldronNumber > cauldrons.length &&
+      !brewing.nextCauldronLockedByLevel &&
+      !brewing.nextCauldronLockedByResearch &&
+      Number.isFinite(Number(brewing.nextCauldronCost))
     ) {
       const nextCauldronCost = Number(brewing.nextCauldronCost);
-      const cauldronGateOpen =
-        !brewing.nextCauldronLockedByLevel &&
-        !brewing.nextCauldronLockedByResearch;
       const canAffordCauldron =
         Number.isFinite(nextCauldronCost) &&
         Number(this.gameplaySnapshot.coin?.current ?? 0) >= nextCauldronCost;
@@ -1176,9 +1204,9 @@ export class PixiPagesFacade {
         cauldronIndex: brewing.nextCauldronNumber - 1,
         cauldronNumber: brewing.nextCauldronNumber,
         unlocked: false,
-        canBuyCauldron: cauldronGateOpen && canAffordCauldron,
+        canBuyCauldron: canAffordCauldron,
         canAffordCauldron,
-        nextCauldronCost: brewing.nextCauldronCost,
+        nextCauldronCost,
         nextCauldronLockedByLevel: brewing.nextCauldronLockedByLevel,
         nextCauldronLockedByResearch:
           brewing.nextCauldronLockedByResearch,
@@ -1240,6 +1268,14 @@ export class PixiPagesFacade {
           })),
         }
       : null;
+    const completedResearchIds = new Set(
+      this.gameplaySnapshot.research?.completedResearchIds ?? [],
+    );
+    const autoBrewAvailable =
+      cauldron.autoBrewEnabled === true ||
+      completedResearchIds.has(
+        automationResearchIds.autoBrewCauldron(index + 1),
+      );
     const primaryAction = cauldron.activeBrew?.canStartBottling
       ? {
           id: 'bottle',
@@ -1255,6 +1291,7 @@ export class PixiPagesFacade {
       ...cauldron,
       id: cauldron.id ?? index,
       unlocked: true,
+      autoBrewAvailable,
       selectedRecipe: decoratedRecipe,
       primaryAction,
       recipesDialog: {
@@ -1363,10 +1400,26 @@ export class PixiPagesFacade {
         gameplay?.toggleBrewingAutoBrewEnabled?.(cauldronIndex),
       toggleAutoCollect: (cauldronIndex) =>
         gameplay?.toggleBrewingAutoCollectEnabled?.(cauldronIndex),
-      cancelBrew: (cauldronIndex) =>
-        gameplay?.cancelBrewing?.(cauldronIndex),
-      collectBrew: (cauldronIndex) =>
-        gameplay?.collectBrewing?.(cauldronIndex),
+      cancelBrew: (cauldronIndex) => {
+        const result = gameplay?.cancelBrewing?.(cauldronIndex);
+        if (result?.ok === false) {
+          this.experienceFacade?.transientEffects?.emitReward?.({
+            message: 'No potion is brewing to cancel',
+            flyoutKey: 'brewing-cancel-empty',
+          });
+        }
+        return result;
+      },
+      collectBrew: (cauldronIndex) => {
+        const result = gameplay?.collectBrewing?.(cauldronIndex);
+        if (result?.ok === false) {
+          this.experienceFacade?.transientEffects?.emitReward?.({
+            message: 'No potion is ready to collect',
+            flyoutKey: 'brewing-collect-empty',
+          });
+        }
+        return result;
+      },
       addHerb: (herb, cauldron) =>
         gameplay?.addBrewingIngredient?.(
           herb?.itemTypeId,

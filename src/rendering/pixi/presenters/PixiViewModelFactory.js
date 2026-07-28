@@ -831,17 +831,30 @@ export class PixiViewModelFactory {
       title: 'World Chat',
       status: worldChat.connected === false ? 'connecting...' : '',
       composer: {
-        placeholder: 'message',
+        placeholder: 'Message',
         maxLength: 160,
         enabled: canSend,
       },
       rows: (worldChat.messages ?? []).map((message, index) => {
         const body = message.body ?? message.message ?? '';
+        const username = message.username ?? message.author ?? 'Wizard';
+        const isSystem = String(username).toLowerCase() === 'system';
+        const id = message.id ?? message.messageId ?? index;
         return {
-          id: message.id ?? message.messageId ?? index,
-          label: message.username ?? message.author ?? 'Wizard',
-          value: body,
-          onActivate: () => actions.openPlayer?.(message),
+          id,
+          type: isSystem ? 'system' : 'player',
+          username: isSystem ? 'System' : username,
+          body,
+          allianceTag: message.allianceTag ?? message.alliance_tag ?? '',
+          allianceTagColor:
+            message.allianceTagColor ?? message.alliance_tag_color ?? 'ink',
+          character: message.character ?? 'elara',
+          ageLabel: formatWorldChatMessageAge(message.sentAtMs),
+          semanticId: isSystem ? null : `world-chat-player:${id}`,
+          onActivate:
+            isSystem || typeof actions.openPlayer !== 'function'
+              ? null
+              : () => actions.openPlayer(message),
         };
       }),
       onSubmit: canSend
@@ -1026,6 +1039,30 @@ function createWorldChatPreview(worldChat = {}) {
   };
 }
 
+function formatWorldChatMessageAge(sentAtMs, nowMs = Date.now()) {
+  const timestamp = Number(sentAtMs);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+    return '';
+  }
+
+  const elapsedMs = Math.max(0, nowMs - timestamp);
+  if (elapsedMs < 60_000) {
+    return 'now';
+  }
+
+  const totalMinutes = Math.floor(elapsedMs / 60_000);
+  if (totalMinutes < 60) {
+    return `${totalMinutes}m ago`;
+  }
+
+  const totalHours = Math.floor(totalMinutes / 60);
+  if (totalHours < 24) {
+    return `${totalHours}h ago`;
+  }
+
+  return `${Math.floor(totalHours / 24)}d ago`;
+}
+
 function createResearchBoxModel(
   box = {},
   {
@@ -1104,9 +1141,11 @@ function createResearchItemModel(
       ? 'potion'
       : null;
   const itemKey =
-    itemKind === 'potion'
-      ? String(item.id).slice('unlockRecipe:'.length)
-      : null;
+    itemKind === 'seed'
+      ? String(item.id).slice('unlockSeed:'.length)
+      : itemKind === 'potion'
+        ? String(item.id).slice('unlockRecipe:'.length)
+        : null;
 
   return {
     ...item,

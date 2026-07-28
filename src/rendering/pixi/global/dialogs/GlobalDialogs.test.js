@@ -9,8 +9,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
 import {
+  DeviceIdentityFooter,
   PixiDialogFrame,
   RootRunSettingsTogglePixi,
+  RootRunDevicePreferenceRow,
+  RootRunDevicePreferencesPanel,
 } from '../../primitives/index.js';
 import {
   DialogRegistry,
@@ -208,18 +211,24 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('opens settings on only the three Root Run device toggles', () => {
+  it('opens settings with one board, three device rows, and the identity footer', async () => {
     const harness = createHarness();
     const togglePreference = vi.fn(() => true);
+    const copyUserId = vi.fn(() => Promise.resolve(true));
+    const userId = '1234567890abcdef1234567890abcdef';
     const settings = harness.registry.open(
       GLOBAL_DIALOG_IDS.SETTINGS,
       {
+        account: {
+          version: '1.2.3',
+          userId,
+        },
         preferences: {
           haptics: true,
           music: true,
           sfx: true,
         },
-        actions: { togglePreference },
+        actions: { togglePreference, copyUserId },
       },
     );
 
@@ -233,19 +242,48 @@ describe('retained global Pixi dialogs', () => {
           toggle instanceof RootRunSettingsTogglePixi,
       ),
     ).toBe(true);
-    expect(settings.devicePanel.titleLabel.text).toBe('');
-    expect(settings.preferenceRows[0].label.theme.text).toBe(
-      '#e8e8e8',
+    expect(settings.devicePanel).toBeInstanceOf(
+      RootRunDevicePreferencesPanel,
+    );
+    expect(
+      settings.preferenceRows.every(
+        ({ widget }) =>
+          widget instanceof RootRunDevicePreferenceRow,
+      ),
+    ).toBe(true);
+    expect(
+      settings.preferenceRows.map(({ label }) => label.text),
+    ).toEqual(['SOUND', 'MUSIC', 'VIBRATION']);
+    expect(settings.preferenceRows[0].label.colorToken).toBe(
+      '#735036',
     );
     expect(settings.configurationsLayer.children).toEqual([
       settings.devicePanel,
+      settings.identityFooter,
     ]);
+    expect(settings.identityFooter).toBeInstanceOf(
+      DeviceIdentityFooter,
+    );
+    expect(settings.identityFooter.versionLabel.text).toBe(
+      'v 1.2.3',
+    );
+    expect(settings.identityFooter.userIdLabel.text).toBe(
+      '12345678…90abcdef',
+    );
+    expect(settings.identityFooter.copyButton.variant).toBe(
+      'yellow',
+    );
     expect(settings.scroll.maxScrollY).toBe(0);
 
     expect(settings.preferenceRows[0].toggle.activate()).toBe(
       true,
     );
     expect(togglePreference).toHaveBeenCalledWith('sfx', false);
+    await settings.identityFooter.copyButton.activate();
+    expect(copyUserId).toHaveBeenCalledWith(userId);
+    expect(settings.identityFooter.copyButton.textLabel.text).toBe(
+      'copied',
+    );
     harness.dispose();
   });
 
@@ -338,9 +376,9 @@ describe('retained global Pixi dialogs', () => {
     );
     expect(settings.panel).toMatchObject({
       contentBoxWidth: 264,
-      contentBoxHeight: 190,
+      contentBoxHeight: 264,
       outerWidth: 304,
-      outerHeight: 230,
+      outerHeight: 304,
     });
     expect(settings.panel.outerFrame.frameWidth).toBe(
       GLOBAL_DIALOG_GEOMETRY.maxShellWidth,
@@ -352,21 +390,59 @@ describe('retained global Pixi dialogs', () => {
       {
         currentLevel: 2,
         maxLevel: 3,
+        levels: [
+          {
+            level: 1,
+            current: false,
+            unlocked: true,
+            addedRows: [
+              { id: 'mana', label: 'Mana Capacity', value: '+50' },
+            ],
+            totalRows: [
+              { id: 'total', label: 'Mana Capacity', value: '150' },
+            ],
+          },
+        ],
       },
     );
 
     expect(level.panel).toMatchObject({
       contentBoxWidth: 264,
-      contentBoxHeight: 360,
+      contentBoxHeight: 320,
       outerWidth: 304,
-      outerHeight: 400,
+      outerHeight: 360,
+      paperFrame: {
+        visible: false,
+        renderable: false,
+      },
     });
-    expect(level.pager.x).toBe(18);
+    expect(level.pager.parent).toBe(level.panel.content);
+    expect(level.pager.x).toBe(0);
+    expect(level.previousButton.variant).toBe('yellow');
+    expect(level.nextButton.variant).toBe('yellow');
+    expect(level.nextButton.eventMode).toBe('static');
+    expect(level.addedSection.texture).toBe(
+      level.panel.paperFrame.texture,
+    );
+    expect(level.totalSection.texture).toBe(
+      level.panel.paperFrame.texture,
+    );
+    expect(level.addedSection.x).toBeLessThan(0);
     expect(
-      level.previousButton.width +
-        level.nextButton.width +
-        3,
-    ).toBeCloseTo(GLOBAL_DIALOG_GEOMETRY.maxShellWidth);
+      level.totalSection.y -
+        (level.addedSection.y + level.addedSection.frameHeight),
+    ).toBeCloseTo(8);
+    expect(level.addedSectionTitle.x).toBe(0);
+    expect(level.totalSectionTitle.x).toBe(0);
+    expect(level.selectLevel(2)).toBe(true);
+    expect(level.previousButton.eventMode).toBe('static');
+    expect(level.nextButton.eventMode).toBe('static');
+    expect(level.previousButton.buttonWidth).toBe(96);
+    expect(
+      level.nextButton.x + level.nextButton.buttonWidth,
+    ).toBe(
+      level.panel.contentBoxWidth,
+    );
     harness.registry.close(GLOBAL_DIALOG_IDS.LEVEL);
 
     const inbox = harness.registry.open(
@@ -413,6 +489,22 @@ describe('retained global Pixi dialogs', () => {
       );
       harness.registry.close(dialogId);
     }
+
+    harness.dispose();
+  });
+
+  it('uses the shared green Claim button for inbox rewards', () => {
+    const harness = createHarness();
+    const inbox = harness.registry.open(
+      GLOBAL_DIALOG_IDS.INBOX,
+      {
+        mail: [createMail('claimable')],
+      },
+    );
+    const mail = inbox.mailRows.getWidgets()[0];
+
+    expect(mail.claimButton.variant).toBe('green');
+    expect(mail.claimButton.textLabel.text).toBe('Claim');
 
     harness.dispose();
   });

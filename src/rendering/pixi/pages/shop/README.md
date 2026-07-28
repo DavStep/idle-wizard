@@ -82,7 +82,8 @@ component-level ribbon state. Open
 `/src/dev/uiRecipes/market-stalls-retained.html` for the production retained
 stall renderer with loaded Sage and Briar Seed rows, without gameplay,
 account, or tutorial gates. Add `?dialog=stall` to open the loader with enabled
-mark and clear actions.
+mark and clear actions. Add `?dialog=ledger` to open the Bag-sized Market
+Ledger with overflow rows, item icons, and unlocked category tabs.
 
 ## Snapshot adapter
 

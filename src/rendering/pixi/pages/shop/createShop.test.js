@@ -196,10 +196,22 @@ describe('createShop', () => {
       notification: true,
     });
     expect(model.shop.dialogs.ledger.items[0]).toMatchObject({
-      label: 'sage seed',
+      label: 'Sage Seed',
       detail: 'stock 4 · buyers 6',
       value: '3 coin',
+      itemKey: 'sageSeed',
+      itemKind: 'seed',
       semanticId: 'shop.ledger.item.sageSeed',
+    });
+    expect(model.shop.dialogs.ledger).toMatchObject({
+      title: 'Market Ledger',
+      tabs: [
+        expect.objectContaining({
+          id: 'seed',
+          label: 'Seeds',
+          selected: true,
+        }),
+      ],
     });
     expect(model.shop.dialogs.market.items[0]).toMatchObject({
       id: 'listing-1',
@@ -299,6 +311,84 @@ describe('createShop', () => {
       'seed',
       'herb',
       'potion',
+    ]);
+  });
+
+  it('unlocks and switches Ledger tabs with the matching room features', () => {
+    const selectLedgerKind = vi.fn();
+    const gameplaySnapshot = {
+      playerLevel: { currentLevel: 1 },
+      shop: {
+        shelf: {
+          sellKinds: [
+            { kind: 'seed', label: 'seeds' },
+            { kind: 'herb', label: 'herbs' },
+            { kind: 'potion', label: 'potions' },
+          ],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              kind: 'seed',
+              label: 'sage seed',
+              buyCoin: 3,
+              stock: 4,
+              npcNeed: 6,
+            },
+            {
+              itemTypeId: 1001,
+              key: 'sageHerb',
+              kind: 'herb',
+              label: 'sage',
+              buyCoin: 4,
+              stock: 3,
+              npcNeed: 5,
+            },
+            {
+              itemTypeId: 2001,
+              key: 'manaTonic',
+              kind: 'potion',
+              label: 'mana tonic',
+              buyCoin: 8,
+              stock: 2,
+              npcNeed: 4,
+            },
+          ],
+        },
+      },
+    };
+    const createLedger = (ledgerKind = 'seed') =>
+      createShop({
+        gameplaySnapshot,
+        actions: { ui: { selectLedgerKind } },
+        uiState: { ledgerKind },
+      }).shop.dialogs.ledger;
+
+    expect(createLedger().tabs.map((tab) => tab.label)).toEqual([
+      'Seeds',
+    ]);
+
+    gameplaySnapshot.playerLevel.currentLevel = 2;
+    const herbLedger = createLedger('herb');
+    expect(herbLedger.tabs.map((tab) => tab.label)).toEqual([
+      'Seeds',
+      'Herbs',
+    ]);
+    expect(herbLedger.items).toEqual([
+      expect.objectContaining({
+        label: 'Sage',
+        itemKey: 'sageHerb',
+        itemKind: 'herb',
+      }),
+    ]);
+    herbLedger.tabs[0].action();
+    expect(selectLedgerKind).toHaveBeenCalledWith('seed');
+
+    gameplaySnapshot.playerLevel.currentLevel = 4;
+    expect(createLedger('potion').tabs.map((tab) => tab.label)).toEqual([
+      'Seeds',
+      'Herbs',
+      'Potions',
     ]);
   });
 

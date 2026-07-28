@@ -19,6 +19,14 @@ const LIMIT_UNLOCK_PAGE_BY_KEY = Object.freeze({
   maxGardenTiles: 'garden',
   maxCauldrons: 'brewing',
 });
+const LEVEL_RESOURCE_BY_KEY = Object.freeze({
+  maxManaCap: 'mana',
+  manaPerSecond: 'mana',
+});
+const LEVEL_RESOURCE_ICON_FRAME = Object.freeze({
+  crystal: 'resource:crystal',
+  mana: 'resource:mana',
+});
 
 /**
  * Projects authoritative facade snapshots into the retained global dialogs.
@@ -40,6 +48,7 @@ export class PixiGlobalDialogPresenter {
     hapticsFacade = null,
     soundSettingsFacade = null,
     reload = () => globalThis.location?.reload?.(),
+    copyText = defaultCopyText,
   } = {}) {
     if (!renderFacade) {
       throw new Error(
@@ -57,6 +66,7 @@ export class PixiGlobalDialogPresenter {
     this.hapticsFacade = hapticsFacade;
     this.soundSettingsFacade = soundSettingsFacade;
     this.reload = reload;
+    this.copyText = copyText;
     this.mounted = false;
     this.openRequests = new Map();
     this.dialogCleanups = new Map();
@@ -228,6 +238,11 @@ export class PixiGlobalDialogPresenter {
             : 'connect account',
         connectEnabled: !this.authBusy && oidc.enabled !== false,
         version: getClientReleaseVersion(),
+        userId: normalizeId(
+          auth.identity ??
+            request.userId ??
+            request.account?.userId,
+        ),
       },
       feedback: {
         kind: feedbackKind,
@@ -288,6 +303,8 @@ export class PixiGlobalDialogPresenter {
           this.toggleAccountConnection(dialogId),
         togglePreference: (key, enabled) =>
           this.setPreference(key, enabled),
+        copyUserId: (userId) =>
+          this.copyUserId(userId),
         selectVisualOption: (category, optionKey) =>
           this.selectVisualOption(category, optionKey),
         researchVisualOption: (category, optionKey) =>
@@ -674,6 +691,18 @@ export class PixiGlobalDialogPresenter {
     return false;
   }
 
+  async copyUserId(userId) {
+    const identity = normalizeId(userId);
+    if (!identity || typeof this.copyText !== 'function') {
+      return false;
+    }
+    try {
+      return (await this.copyText(identity)) !== false;
+    } catch {
+      return false;
+    }
+  }
+
   selectVisualOption(category, optionKey) {
     const methods = {
       theme: 'setTheme',
@@ -823,33 +852,43 @@ function formatAddedEffect(effect, previousTotals, selectedLevel) {
     }
     const added =
       Number(match[1]) - Number(previousTotals?.[key] ?? 0);
-    return added > 0
-      ? {
-          label,
-          value: `+${formatNumber(added)}${suffix}`,
-        }
-      : null;
+    if (added <= 0) {
+      return null;
+    }
+    const resource = LEVEL_RESOURCE_BY_KEY[key] ?? null;
+    return createLevelRow(
+      label,
+      `+${formatNumber(added)}${resource ? suffix.replace(` ${resource}`, '') : suffix}`,
+      resource,
+    );
   }
   const unlockMatch = String(effect).match(/^unlocks (.+)$/);
   if (unlockMatch) {
-    return { label: 'unlocks', value: unlockMatch[1] };
+    return createLevelRow(
+      'unlocks',
+      toTitleCase(unlockMatch[1]),
+    );
   }
   const researchMatch = String(effect).match(
     /^allows researching "(.+)"$/,
   );
   if (researchMatch) {
-    return { label: 'research', value: researchMatch[1] };
+    return createLevelRow(
+      'research',
+      toTitleCase(researchMatch[1]),
+    );
   }
   const crystalMatch = String(effect).match(
     /^crystal reward ([\d.]+)$/,
   );
   if (crystalMatch) {
-    return {
-      label: 'bonus',
-      value: `+${formatNumber(Number(crystalMatch[1]))} crystal`,
-    };
+    return createLevelRow(
+      'bonus',
+      `+${formatNumber(Number(crystalMatch[1]))}`,
+      'crystal',
+    );
   }
-  return { label: String(effect), value: '' };
+  return createLevelRow(String(effect), '');
 }
 
 function formatTotalRows(totals) {
@@ -865,10 +904,43 @@ function formatTotalRows(totals) {
     ['mana regeneration', totals.manaPerSecond, '/sec mana'],
   ]
     .filter(([, value]) => Number.isFinite(value))
-    .map(([label, value, suffix]) => ({
-      label,
-      value: `${formatNumber(value)}${suffix}`,
-    }));
+    .map(([label, value, suffix]) => {
+      const resource =
+        label === 'mana capacity' ||
+        label === 'mana regeneration'
+          ? 'mana'
+          : null;
+      return createLevelRow(
+        label,
+        `${formatNumber(value)}${resource ? suffix.replace(` ${resource}`, '') : suffix}`,
+        resource,
+      );
+    });
+}
+
+function createLevelRow(label, value, resource = null) {
+  const row = {
+    label: toTitleCase(label),
+    value: String(value ?? ''),
+  };
+  if (!resource) {
+    return row;
+  }
+  return {
+    ...row,
+    resource,
+    icon: {
+      frameName: LEVEL_RESOURCE_ICON_FRAME[resource],
+    },
+    iconPosition: 'after',
+  };
+}
+
+function toTitleCase(value) {
+  return String(value ?? '').replace(
+    /\b([a-z])/g,
+    (character) => character.toUpperCase(),
+  );
 }
 
 function normalizePlayerRequest(player = {}) {
@@ -1095,4 +1167,15 @@ function getErrorText(error) {
   return String(error ?? '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function defaultCopyText(text) {
+  const clipboard = globalThis.navigator?.clipboard;
+  if (typeof clipboard?.writeText !== 'function') {
+    return false;
+  }
+  return clipboard.writeText(String(text ?? '')).then(
+    () => true,
+    () => false,
+  );
 }

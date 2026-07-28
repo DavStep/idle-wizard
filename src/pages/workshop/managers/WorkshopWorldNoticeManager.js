@@ -16,6 +16,11 @@ import {
 } from './WorkshopLeaderboardRowRenderer.js';
 import { createWorkshopCharacterPortrait } from '../workshopCharacters.js';
 
+const WORLD_NOTICE_ICON_URL = new URL(
+  '../../../../assets/game/source/icons/icon-quests-scroll-bag-style.png',
+  import.meta.url,
+).href;
+
 const WORLD_NOTICE_TABS = [
   { id: 'tasks', label: 'quests' },
   { id: 'leaderboard', label: 'leaderboard' },
@@ -107,14 +112,20 @@ export class WorkshopWorldNoticeManager {
       'workshop-page__panel-button-timer workshop-page__feature-character-timer';
     this.refs.openTimer.hidden = true;
 
-    this.refs.openButton.append(
-      createWorkshopCharacterPortrait(
-        'worldNotice',
-        'workshop-page__world-notice-character',
-      ),
-      this.refs.openLabel,
-      this.refs.openTimer,
-    );
+    const iconFrame = document.createElement('span');
+    iconFrame.className = 'workshop-page__world-notice-icon-frame';
+    iconFrame.setAttribute('aria-hidden', 'true');
+
+    const icon = document.createElement('img');
+    icon.className = 'workshop-page__world-notice-icon';
+    icon.src = WORLD_NOTICE_ICON_URL;
+    icon.alt = '';
+    icon.loading = 'lazy';
+    icon.decoding = 'async';
+    icon.setAttribute('aria-hidden', 'true');
+
+    iconFrame.append(icon);
+    this.refs.openButton.append(iconFrame, this.refs.openLabel, this.refs.openTimer);
 
     this.root.append(this.refs.openButton);
     parent.append(this.root);

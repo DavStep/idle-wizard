@@ -1,4 +1,4 @@
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 
 import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
 import { getIngredientIconFrameName } from '../../../../assets/items/ingredients/ingredientIcons.js';
@@ -18,6 +18,7 @@ import {
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
+  RETAINED_DIALOG_SCROLL_GEOMETRY,
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
   RetainedButton,
@@ -43,10 +44,34 @@ const BAG_SCROLL_VIEWPORT_TOP_INSET =
   DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET -
   DIALOG_PAPER_BOTTOM_INSET -
   (DIALOG_SCROLL_VIEWPORT_TOP - DIALOG_PAPER_TOP);
-const BAG_SCROLLBAR_SHIFT_RIGHT = 4;
 const BAG_ROW_VALUE_INSET_RIGHT = 2;
 const STATS_SCROLL_VIEWPORT_TOP_INSET = 6;
 const STATS_SCROLLBAR_SHIFT_RIGHT = 4;
+const WORLD_CHAT_ROW_GAP = 2;
+const WORLD_CHAT_SCROLL_PADDING_TOP = 4;
+const WORLD_CHAT_CONTENT_INSET_X = 8;
+const WORLD_CHAT_CONTENT_WIDTH = 288;
+const WORLD_CHAT_AVATAR_SIZE = 22;
+const WORLD_CHAT_TEXT_X = 25;
+const WORLD_CHAT_HEADER_HEIGHT = 12;
+const WORLD_CHAT_BODY_TOP = 12;
+const WORLD_CHAT_BODY_FONT_SIZE = 11;
+const WORLD_CHAT_BODY_LINE_HEIGHT = 13;
+const WORLD_CHAT_TIMESTAMP_COLOR = '#946a2e';
+const WORLD_CHAT_SYSTEM_BACKGROUND = '#efd0a2';
+const WORLD_CHAT_TAG_STROKE = '#2b1912';
+const WORLD_CHAT_TAG_COLORS = Object.freeze({
+  ink: '#634934',
+  red: '#9b3439',
+  amber: '#9a6d1f',
+  green: '#397a42',
+  teal: '#337b78',
+  blue: '#3e6392',
+  violet: '#74518e',
+  magenta: '#934a78',
+  brown: '#704b35',
+  slate: '#596271',
+});
 const RESOURCE_ICON_FRAMES = Object.freeze({
   coin: 'resource:coin',
   crystal: 'resource:crystal',
@@ -90,20 +115,24 @@ export class WorkshopDialogPixi {
     this.sourceWidth = RETAINED_PAGE_GEOMETRY.width;
     this.sourceHeight = RETAINED_PAGE_GEOMETRY.height;
     this.isBagDialog = this.dialogId === 'workshop.bag';
+    this.isWorldChatDialog = this.dialogId === 'workshop.worldChat';
     const isStatsDialog = this.dialogId === 'workshop.stats';
-    this.scrollContentPaddingTop = PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
+    this.scrollContentPaddingTop =
+      RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
     this.scrollViewportTopInset = this.isBagDialog
       ? BAG_SCROLL_VIEWPORT_TOP_INSET
       : isStatsDialog
         ? STATS_SCROLL_VIEWPORT_TOP_INSET
         : 0;
     this.scrollViewportWidth =
-      WORKSHOP_DIALOG_CONTENT_WIDTH +
-      (this.isBagDialog
-        ? BAG_SCROLLBAR_SHIFT_RIGHT
-        : isStatsDialog
-          ? STATS_SCROLLBAR_SHIFT_RIGHT
-          : 0);
+      this.isWorldChatDialog
+        ? WORLD_CHAT_CONTENT_WIDTH
+        : WORKSHOP_DIALOG_CONTENT_WIDTH +
+          (this.isBagDialog
+            ? RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight
+            : isStatsDialog
+              ? STATS_SCROLLBAR_SHIFT_RIGHT
+              : 0);
 
     this.modalId = `dialog:${this.dialogId}`;
     this.modal = new PixiOwnedDialogSurface({
@@ -146,14 +175,15 @@ export class WorkshopDialogPixi {
     this.composerStatus = '';
     this.boundStatus = '';
 
-    if (this.dialogId === 'workshop.worldChat') {
+    if (this.isWorldChatDialog) {
       this.composerField = new PixiTextField({
         assetManager: this.assetManager,
         inputRouter: this.inputRouter,
         textEntryService: this.textEntryService,
-        placeholder: 'message',
+        placeholder: 'Message',
         inputKind: 'text',
         maxLength: 160,
+        variant: 'brown-inset',
         label: `${dialogId}-composer`,
         onChange: () => this.updateComposerControl(),
         onSubmit: () => void this.submitComposer(),
@@ -162,7 +192,7 @@ export class WorkshopDialogPixi {
         assetManager: this.assetManager,
         buttonLabel: `${dialogId}-submit`,
         inputRouter: this.inputRouter,
-        variant: 'button',
+        variant: 'yellow',
       });
       this.panel.content.addChild(
         this.composerField,
@@ -178,9 +208,9 @@ export class WorkshopDialogPixi {
       name: `${dialogId} row pool`,
       counters,
       create: () =>
-        new WorkshopDialogRow({
-          dialog: this,
-        }),
+        this.isWorldChatDialog
+          ? new WorldChatMessageRowPixi({ dialog: this })
+          : new WorkshopDialogRow({ dialog: this }),
       reset: (row) => row.reset(),
       dispose: (row) => row.destroy(),
       maxSize: 30,
@@ -257,23 +287,30 @@ export class WorkshopDialogPixi {
 
   orderRows(widgets) {
     this.scroll.content.removeChildren();
-    let y = this.scrollContentPaddingTop;
+    const rowGap = this.isWorldChatDialog ? WORLD_CHAT_ROW_GAP : 4;
+    let y = this.isWorldChatDialog
+      ? WORLD_CHAT_SCROLL_PADDING_TOP
+      : this.scrollContentPaddingTop;
 
     for (const widget of widgets) {
       this.scroll.content.addChild(widget.root);
       widget.setBounds(
         0,
         y,
-        WORKSHOP_DIALOG_CONTENT_WIDTH,
+        this.isWorldChatDialog
+          ? WORLD_CHAT_CONTENT_WIDTH
+          : WORKSHOP_DIALOG_CONTENT_WIDTH,
         widget.getPreferredHeight(),
       );
-      y += widget.getPreferredHeight() + 4;
+      y += widget.getPreferredHeight() + rowGap;
     }
 
     this.scroll.setContentHeight(
       Math.max(
-        this.scrollContentPaddingTop,
-        y - (widgets.length > 0 ? 4 : 0),
+        this.isWorldChatDialog
+          ? WORLD_CHAT_SCROLL_PADDING_TOP
+          : this.scrollContentPaddingTop,
+        y - (widgets.length > 0 ? rowGap : 0),
       ),
     );
   }
@@ -331,11 +368,19 @@ export class WorkshopDialogPixi {
       width,
       height,
     );
+    if (this.isWorldChatDialog && composerHeight > 0) {
+      const paperBottom = height - 52;
+      this.panel.paperFrame.setSize(
+        this.panel.paperFrame.frameWidth,
+        Math.max(0, paperBottom - this.panel.paperFrame.y),
+        PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
+      );
+    }
     this.copy.position.set(20, 18);
     const copyHeight = this.copy.text ? Math.ceil(this.copy.height) + 8 : 0;
     const statusHeight = this.status.text ? 18 : 0;
     this.scroll.setBounds(
-      20,
+      this.isWorldChatDialog ? WORLD_CHAT_CONTENT_INSET_X : 20,
       DIALOG_SCROLL_VIEWPORT_TOP +
         copyHeight +
         this.scrollViewportTopInset,
@@ -371,9 +416,9 @@ export class WorkshopDialogPixi {
     );
 
     if (this.composerField) {
-      this.composerField.position.set(20, height - 46);
-      this.composerField.setSize(202, 24);
-      this.composerSubmit.setBounds(226, height - 46, 58, 24);
+      this.composerField.position.set(18, height - 43);
+      this.composerField.setSize(195, 27);
+      this.composerSubmit.setBounds(219, height - 43, 67, 27);
     }
   }
 
@@ -428,7 +473,7 @@ export class WorkshopDialogPixi {
     }
 
     this.composerField.placeholder =
-      this.composerModel.placeholder ?? 'message';
+      this.composerModel.placeholder ?? 'Message';
     this.composerField.maxLength =
       this.composerModel.maxLength ?? 160;
     this.composerField.inputKind = 'text';
@@ -447,7 +492,7 @@ export class WorkshopDialogPixi {
       !this.composerSubmitting &&
       Boolean(this.composerField?.value.trim());
     this.composerSubmit.setModel({
-      label: this.composerSubmitting ? 'sending' : 'send',
+      label: this.composerSubmitting ? 'Sending' : 'Send',
       enabled,
       action: () => this.submitComposer(),
     });
@@ -524,6 +569,247 @@ export class WorkshopDialogPixi {
     this.registeredTargetIds.clear();
   }
 
+}
+
+/**
+ * Compact, action-chrome-free World Chat row.
+ *
+ * The avatar and username expose the existing Player Info action while the
+ * clan tag, body, timestamp, and system surface remain passive.
+ */
+export class WorldChatMessageRowPixi {
+  constructor({ dialog }) {
+    this.dialog = dialog;
+    this.root = new Container({ label: `${dialog.dialogId}-message-row` });
+    this.systemBackground = new Graphics({
+      label: `${dialog.dialogId}-message-row:system-background`,
+    });
+    this.avatar = new Sprite(Texture.EMPTY);
+    this.avatar.label = `${dialog.dialogId}-message-row:avatar`;
+    this.avatar.anchor.set(0.5);
+    this.tag = createText('', {
+      fontSize: 11,
+      lineHeight: WORLD_CHAT_HEADER_HEIGHT,
+      fontWeight: '700',
+    });
+    this.username = createText('', {
+      fontSize: 11,
+      lineHeight: WORLD_CHAT_HEADER_HEIGHT,
+      fontWeight: '700',
+    });
+    this.body = createText('', {
+      fontSize: WORLD_CHAT_BODY_FONT_SIZE,
+      lineHeight: WORLD_CHAT_BODY_LINE_HEIGHT,
+      wordWrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH - WORLD_CHAT_TEXT_X,
+    });
+    this.timestamp = createText('', {
+      fontSize: 8.5,
+      lineHeight: 10,
+      align: 'right',
+    });
+    this.timestamp.anchor.set(1, 0);
+    this.root.addChild(
+      this.systemBackground,
+      this.avatar,
+      this.tag,
+      this.username,
+      this.body,
+      this.timestamp,
+    );
+    this.avatarRegistration =
+      dialog.inputRouter?.registerPressTarget?.(this.avatar, {
+        enabled: () => this.isInteractive(),
+        onActivate: () => this.activatePlayer(),
+        haptic: 'selection',
+        excludePageSwipe: true,
+      }) ?? null;
+    this.usernameRegistration =
+      dialog.inputRouter?.registerPressTarget?.(this.username, {
+        enabled: () => this.isInteractive(),
+        onActivate: () => this.activatePlayer(),
+        haptic: 'selection',
+        excludePageSwipe: true,
+      }) ?? null;
+  }
+
+  bind(model) {
+    this.model = model ?? {};
+    this.root.visible = true;
+    this.isSystem = this.model.type === 'system';
+    const tag = normalizeWorldChatTag(this.model.allianceTag);
+    setText(this.tag, tag ? `[${tag}]` : '');
+    setText(
+      this.username,
+      this.isSystem
+        ? this.model.username || 'System'
+        : this.model.username || 'Wizard',
+    );
+    setText(this.body, this.model.body ?? '');
+    setText(this.timestamp, this.model.ageLabel ?? '');
+    this.avatar.texture = this.isSystem
+      ? Texture.EMPTY
+      : resolveCharacterTexture(
+          this.dialog.assetManager,
+          this.model.character,
+        );
+    this.avatar.visible = !this.isSystem;
+    this.avatar.renderable = !this.isSystem;
+    this.systemBackground.visible = this.isSystem;
+    this.systemBackground.renderable = this.isSystem;
+    this.tag.visible = Boolean(tag);
+    this.tag.renderable = Boolean(tag);
+    this.syncInteraction();
+    this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
+    this.targetId = this.model.semanticId ?? null;
+
+    if (this.targetId && !this.isSystem) {
+      this.dialog.registerTarget({
+        semanticId: this.targetId,
+        tutorialId: this.model.tutorialId ?? null,
+        displayObject: this.username,
+        state: () => ({
+          enabled: this.isInteractive(),
+          interactive: this.isInteractive(),
+        }),
+        activate: () => this.activatePlayer(),
+      });
+    }
+  }
+
+  setBounds(x, y, width, height) {
+    this.root.position.set(x, y);
+    this.width = width;
+    this.height = height;
+    const contentX = this.isSystem ? 6 : WORLD_CHAT_TEXT_X;
+    const timestampInset = this.isSystem ? 6 : 0;
+    this.systemBackground
+      .clear()
+      .roundRect(0, 0, width, height, 5)
+      .fill(WORLD_CHAT_SYSTEM_BACKGROUND);
+    this.avatar.position.set(
+      WORLD_CHAT_AVATAR_SIZE / 2,
+      WORLD_CHAT_AVATAR_SIZE / 2 + 1,
+    );
+    this.avatar.width = WORLD_CHAT_AVATAR_SIZE;
+    this.avatar.height = WORLD_CHAT_AVATAR_SIZE;
+    this.tag.position.set(contentX, 0);
+    this.username.position.set(
+      contentX + (this.tag.visible ? this.tag.width + 2 : 0),
+      0,
+    );
+    this.timestamp.position.set(width - timestampInset, 1);
+    this.body.position.set(contentX, WORLD_CHAT_BODY_TOP);
+    this.body.style.wordWrapWidth = Math.max(0, width - contentX);
+    this.avatar.hitArea = new Rectangle(
+      -WORLD_CHAT_AVATAR_SIZE / 2,
+      -WORLD_CHAT_AVATAR_SIZE / 2,
+      WORLD_CHAT_AVATAR_SIZE,
+      WORLD_CHAT_AVATAR_SIZE,
+    );
+    this.username.hitArea = new Rectangle(
+      0,
+      0,
+      Math.max(1, this.username.width),
+      Math.max(1, this.username.height),
+    );
+    this.root.hitArea = new Rectangle(0, 0, width, height);
+  }
+
+  getPreferredHeight() {
+    const bodyHeight = Math.max(
+      WORLD_CHAT_BODY_LINE_HEIGHT,
+      Math.ceil(this.body.height),
+    );
+    return Math.max(
+      this.isSystem ? 25 : 27,
+      WORLD_CHAT_BODY_TOP + bodyHeight + (this.isSystem ? 3 : 1),
+    );
+  }
+
+  applyTheme(theme) {
+    const resolvedTheme = theme ?? this.dialog.theme;
+    applyTextTheme(this.tag, resolvedTheme, {
+      fontSize: 11,
+      lineHeight: WORLD_CHAT_HEADER_HEIGHT,
+      fontWeight: '700',
+      fill:
+        WORLD_CHAT_TAG_COLORS[
+          normalizeWorldChatTagColor(this.model?.allianceTagColor)
+        ] ?? WORLD_CHAT_TAG_COLORS.ink,
+    });
+    this.tag.style.stroke = {
+      color: WORLD_CHAT_TAG_STROKE,
+      width: 1,
+      join: 'round',
+    };
+    applyTextTheme(this.username, resolvedTheme, {
+      fontSize: 11,
+      lineHeight: WORLD_CHAT_HEADER_HEIGHT,
+      fontWeight: '700',
+      fill: resolvedTheme.text,
+    });
+    applyTextTheme(this.body, resolvedTheme, {
+      fontSize: WORLD_CHAT_BODY_FONT_SIZE,
+      lineHeight: WORLD_CHAT_BODY_LINE_HEIGHT,
+      fill: resolvedTheme.text,
+      wordWrapWidth:
+        (this.width || WORKSHOP_DIALOG_CONTENT_WIDTH) -
+        (this.isSystem ? 6 : WORLD_CHAT_TEXT_X),
+    });
+    applyTextTheme(this.timestamp, resolvedTheme, {
+      fontSize: 8.5,
+      lineHeight: 10,
+      align: 'right',
+      fill: WORLD_CHAT_TIMESTAMP_COLOR,
+    });
+  }
+
+  isInteractive() {
+    return Boolean(
+      !this.isSystem &&
+        this.model?.enabled !== false &&
+        typeof this.model?.onActivate === 'function' &&
+        this.root.visible,
+    );
+  }
+
+  syncInteraction() {
+    const interactive = this.isInteractive();
+    for (const target of [this.avatar, this.username]) {
+      target.eventMode = interactive ? 'static' : 'none';
+      target.cursor = interactive ? 'pointer' : 'default';
+    }
+  }
+
+  activatePlayer() {
+    if (!this.isInteractive()) {
+      return false;
+    }
+    return this.model.onActivate(this.model) ?? true;
+  }
+
+  reset() {
+    if (this.targetId) {
+      this.dialog.unregisterTarget(this.targetId);
+    }
+    this.targetId = null;
+    this.model = null;
+    this.isSystem = false;
+    this.avatar.texture = Texture.EMPTY;
+    this.root.visible = false;
+    this.syncInteraction();
+  }
+
+  destroy() {
+    if (this.targetId) {
+      this.dialog.unregisterTarget(this.targetId);
+    }
+    disposeInputRegistration(this.avatarRegistration);
+    disposeInputRegistration(this.usernameRegistration);
+    this.avatarRegistration = null;
+    this.usernameRegistration = null;
+    this.root.destroy({ children: true });
+  }
 }
 
 class WorkshopDialogRow {
@@ -721,6 +1007,47 @@ function resolveAtlasTexture(assetManager, frameName) {
   }
 
   return assetManager.getAtlasTexture(frameName) ?? Texture.EMPTY;
+}
+
+function resolveCharacterTexture(assetManager, character) {
+  const key = String(character ?? 'elara')
+    .trim()
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9_-]/g, '');
+  try {
+    return (
+      assetManager?.getTexture?.(
+        `source:assets/characters/${key || 'elara'}.png`,
+      ) ??
+      assetManager?.getTexture?.(
+        'source:assets/characters/elara.png',
+      ) ??
+      Texture.EMPTY
+    );
+  } catch {
+    return Texture.EMPTY;
+  }
+}
+
+function normalizeWorldChatTag(tag) {
+  const normalized = String(tag ?? '')
+    .trim()
+    .replace(/^\[|\]$/g, '')
+    .toUpperCase();
+  return /^[A-Z]{2,5}$/.test(normalized) ? normalized : '';
+}
+
+function normalizeWorldChatTagColor(color) {
+  const normalized = String(color ?? '').trim().toLowerCase();
+  return normalized in WORLD_CHAT_TAG_COLORS ? normalized : 'ink';
+}
+
+function disposeInputRegistration(registration) {
+  if (typeof registration === 'function') {
+    registration();
+    return;
+  }
+  registration?.unregister?.();
 }
 
 function formatComposerFailure(reason) {

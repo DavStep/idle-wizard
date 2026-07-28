@@ -73,10 +73,11 @@ describe('TopPanelInboxManager', () => {
         .map((icon) => icon.dataset.assetAtlasFrame)
         .filter(Boolean),
     ).toEqual(['resource:coin', 'resource:emerald']);
+    const claimButton = popup.querySelector('.room-top-panel__inbox-claim');
+    expect(claimButton?.textContent).toBe('Claim');
+    expect(claimButton?.classList.contains('style-button--green')).toBe(true);
 
-    popup
-      .querySelector('.room-top-panel__inbox-claim')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    claimButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await Promise.resolve();
 
     expect(inboxFacade.claimReward).toHaveBeenCalledWith('admin:gift:identity');

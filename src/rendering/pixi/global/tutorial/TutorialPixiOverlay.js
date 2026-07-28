@@ -137,7 +137,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.guideImage.anchor.set(0.5, 1);
     this.guideLabelButton = new PixiButton({
       assetManager: assets,
-      text: 'help',
+      text: 'Help',
       width: 36,
       height: 24,
       variant: 'brown-light',
@@ -152,6 +152,8 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
       fontSize: 10,
       lineHeight: 13,
       anchor: { x: 0.5, y: 0.5 },
+      color: '#ffffff',
+      stroke: { color: '#0a0a0a', width: 2 },
       label: 'tutorial:dragYell',
     });
     this.dragYell.alpha = 0;
@@ -365,11 +367,11 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.guideButton.eventMode = guideVisible ? 'static' : 'none';
     this.surface.setVisible(surfaceVisible);
 
-    this.guideLabel.setText(this.panelOpen ? 'hide' : 'help');
+    this.guideLabel.setText(this.panelOpen ? 'Hide' : 'Help');
     this.fitGuideImage(this.panelOpen);
     this.dragYell.position.set(
       TUTORIAL_PIXI_GEOMETRY.guideWidth / 2,
-      this.panelOpen ? 15 : 28,
+      this.panelOpen ? 15 : 34,
     );
     this.surface.bind({
       ...this.model.lesson,

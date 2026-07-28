@@ -1,8 +1,12 @@
 import { Container, Graphics } from 'pixi.js';
 
 import {
+  createDialogPaperSection,
   PixiButton,
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
   PixiTextLabel,
+  resolveDialogPaperOutsets,
+  setDialogPaperSectionBounds,
 } from '../../primitives/index.js';
 import {
   GLOBAL_DIALOG_GEOMETRY,
@@ -12,10 +16,12 @@ import {
 
 const LEVEL_CONTENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
-const LEVEL_CONTENT_HEIGHT = 360;
-const LEVEL_WRAPPER_WIDTH =
-  GLOBAL_DIALOG_GEOMETRY.maxShellWidth;
-const LEVEL_PAGER_GAP = 3;
+const LEVEL_CONTENT_HEIGHT = 320;
+const LEVEL_ROW_GAP = 2;
+const LEVEL_PAGER_HEIGHT = 28;
+const LEVEL_PAGER_WIDTH = 96;
+const LEVEL_SECTION_TITLE_HEIGHT =
+  GLOBAL_DIALOG_GEOMETRY.rowHeight;
 
 /**
  * Retained level detail dialog. Presenters may provide the already-formatted
@@ -27,7 +33,7 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
     super({
       context,
       dialogId,
-      title: 'level 1',
+      title: 'Level 1',
       contentWidth: LEVEL_CONTENT_WIDTH,
       contentHeight: LEVEL_CONTENT_HEIGHT,
       placement: 'top',
@@ -40,7 +46,7 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
     this.currentLabelBacking = new Graphics();
     this.currentLabelBacking.label = `${dialogId}:currentBacking`;
     this.currentLabel = new PixiTextLabel({
-      text: 'current',
+      text: 'Current',
       fontSize: 11,
       label: `${dialogId}:current`,
     });
@@ -51,16 +57,70 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
       this.currentLabel,
     );
     this.panel.addChild(this.currentBacking);
+    this.panel.setPaperVisible(false);
 
-    this.rowsLayer = new Container();
-    this.rowsLayer.label = `${dialogId}:rows`;
-    this.panel.content.addChild(this.rowsLayer);
-    this.rows = new PooledDialogRows({
-      parent: this.rowsLayer,
+    this.addedSection = createDialogPaperSection(
+      this.panel.paperFrame.texture,
+      `${dialogId}:addedSection`,
+    );
+    this.totalSection = createDialogPaperSection(
+      this.panel.paperFrame.texture,
+      `${dialogId}:totalSection`,
+    );
+    this.addedSectionLayer = new Container({
+      label: `${dialogId}:addedSectionLayer`,
+    });
+    this.totalSectionLayer = new Container({
+      label: `${dialogId}:totalSectionLayer`,
+    });
+    this.addedSectionTitle = new PixiTextLabel({
+      text: 'Bonuses Gained at This Level',
+      fontSize: 13,
+      fontWeight: 'bold',
+      label: `${dialogId}:addedSectionTitle`,
+    });
+    this.totalSectionTitle = new PixiTextLabel({
+      text: 'Total Bonuses at This Level',
+      fontSize: 13,
+      fontWeight: 'bold',
+      label: `${dialogId}:totalSectionTitle`,
+    });
+    this.addedRowsLayer = new Container({
+      label: `${dialogId}:addedRows`,
+    });
+    this.totalRowsLayer = new Container({
+      label: `${dialogId}:totalRows`,
+    });
+    this.addedSectionLayer.addChild(
+      this.addedSectionTitle,
+      this.addedRowsLayer,
+    );
+    this.totalSectionLayer.addChild(
+      this.totalSectionTitle,
+      this.totalRowsLayer,
+    );
+    this.panel.content.addChild(
+      this.addedSection,
+      this.totalSection,
+      this.addedSectionLayer,
+      this.totalSectionLayer,
+    );
+    this.addedRows = new PooledDialogRows({
+      assetManager: this.context.assets,
+      parent: this.addedRowsLayer,
       inputRouter: this.context.inputRouter,
       counters: this.context.counters,
-      name: `${dialogId} level rows`,
-      maxSize: 24,
+      name: `${dialogId} added level rows`,
+      maxSize: 12,
+      theme: this.theme,
+    });
+    this.totalRows = new PooledDialogRows({
+      assetManager: this.context.assets,
+      parent: this.totalRowsLayer,
+      inputRouter: this.context.inputRouter,
+      counters: this.context.counters,
+      name: `${dialogId} total level rows`,
+      maxSize: 12,
       theme: this.theme,
     });
 
@@ -72,7 +132,9 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
       semanticRegistry: this.context.semanticRegistry,
       semanticId: `${dialogId}.previous`,
       text: '',
-      height: 20,
+      width: LEVEL_PAGER_WIDTH,
+      height: LEVEL_PAGER_HEIGHT,
+      variant: 'yellow',
       action: () => this.selectLevel(this.selectedLevel - 1),
       label: `${dialogId}:previous`,
     });
@@ -82,12 +144,14 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
       semanticRegistry: this.context.semanticRegistry,
       semanticId: `${dialogId}.next`,
       text: '',
-      height: 20,
+      width: LEVEL_PAGER_WIDTH,
+      height: LEVEL_PAGER_HEIGHT,
+      variant: 'yellow',
       action: () => this.selectLevel(this.selectedLevel + 1),
       label: `${dialogId}:next`,
     });
     this.pager.addChild(this.previousButton, this.nextButton);
-    this.root.addChild(this.pager);
+    this.panel.content.addChild(this.pager);
     this.applyTheme(this.context.theme);
     this.bind({});
     this.layout(this.context.projection);
@@ -133,48 +197,34 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
       );
     const addedRows = selected.addedRows;
     const totalRows = selected.totalRows;
-    const rows = [];
 
-    if (addedRows.length > 0) {
-      rows.push({
-        id: 'added-label',
-        kind: 'message',
-        text: 'bonuses gained at this level',
-        mutedLabel: true,
-        boldLabel: true,
-      });
-      rows.push(
-        ...addedRows.map((row, index) => ({
-          ...row,
-          id: `added:${row.id ?? row.key ?? index}`,
-          disabled: !selected.unlocked,
-        })),
-      );
-    }
-    if (addedRows.length > 0 && totalRows.length > 0) {
-      rows.push({ id: 'divider', kind: 'divider' });
-    }
-    if (totalRows.length > 0) {
-      rows.push({
-        id: 'total-label',
-        kind: 'message',
-        text: 'total bonuses at this level',
-        mutedLabel: true,
-        boldLabel: true,
-      });
-      rows.push(
-        ...totalRows.map((row, index) => ({
-          ...row,
-          id: `total:${row.id ?? row.key ?? index}`,
-          disabled: !selected.unlocked,
-        })),
-      );
-    }
-
-    this.panel.setTitle(`level ${this.selectedLevel}`);
+    this.panel.setTitle(`Level ${this.selectedLevel}`);
     this.currentBacking.visible = selected.current;
     this.currentBacking.renderable = selected.current;
-    this.rows.reconcile(rows);
+    this.addedSection.visible = addedRows.length > 0;
+    this.addedSection.renderable = this.addedSection.visible;
+    this.addedSectionLayer.visible = this.addedSection.visible;
+    this.addedSectionLayer.renderable = this.addedSection.visible;
+    this.totalSection.visible = totalRows.length > 0;
+    this.totalSection.renderable = this.totalSection.visible;
+    this.totalSectionLayer.visible = this.totalSection.visible;
+    this.totalSectionLayer.renderable = this.totalSection.visible;
+    this.addedRows.reconcile(
+      addedRows.map((row, index) => ({
+        ...row,
+        id: `added:${row.id ?? row.key ?? index}`,
+        disabled: !selected.unlocked,
+        keyWidthRatio: 0.58,
+      })),
+    );
+    this.totalRows.reconcile(
+      totalRows.map((row, index) => ({
+        ...row,
+        id: `total:${row.id ?? row.key ?? index}`,
+        disabled: !selected.unlocked,
+        keyWidthRatio: 0.58,
+      })),
+    );
     this.updatePager();
     this.layoutDialog();
   }
@@ -184,34 +234,104 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
     const next = this.selectedLevel + 1;
     const hasPrevious = previous >= 1;
     const hasNext = next <= this.maxLevel;
-    this.previousButton
-      .setText(hasPrevious ? `level ${previous}` : '')
-      .setEnabled(hasPrevious);
     this.previousButton.visible = hasPrevious;
     this.previousButton.renderable = hasPrevious;
-    this.nextButton
-      .setText(hasNext ? `level ${next}` : '')
-      .setEnabled(hasNext);
+    this.previousButton
+      .setText(hasPrevious ? `‹ Level ${previous}` : '')
+      .setEnabled(hasPrevious);
     this.nextButton.visible = hasNext;
     this.nextButton.renderable = hasNext;
+    this.nextButton
+      .setText(hasNext ? `Level ${next} ›` : '')
+      .setEnabled(hasNext);
   }
 
   applyDialogTheme(theme) {
     this.currentLabel?.applyTheme(theme);
+    this.addedSectionTitle?.applyTheme(theme);
+    this.totalSectionTitle?.applyTheme(theme);
     this.previousButton?.applyTheme(theme);
     this.nextButton?.applyTheme(theme);
-    this.rows?.applyTheme(theme);
+    this.addedRows?.applyTheme(theme);
+    this.totalRows?.applyTheme(theme);
     this.redrawCurrentBacking();
   }
 
   layoutDialog() {
-    if (!this.rows) {
+    if (!this.addedRows || !this.totalRows) {
       return;
     }
-    this.rowsLayer.position.set(0, 0);
-    this.rows.layout(LEVEL_CONTENT_WIDTH, {
-      gap: GLOBAL_DIALOG_GEOMETRY.rowGap,
-    });
+    const paperOutsets = resolveDialogPaperOutsets(
+      this.panel.contentInsets,
+    );
+    let sectionY = 0;
+    if (this.addedSection.visible) {
+      const addedRowsHeight = this.addedRows.layout(
+        LEVEL_CONTENT_WIDTH,
+        { gap: LEVEL_ROW_GAP },
+      );
+      const addedSectionHeight =
+        PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop +
+        LEVEL_SECTION_TITLE_HEIGHT +
+        addedRowsHeight +
+        PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
+      setDialogPaperSectionBounds(
+        this.addedSection,
+        {
+          x: 0,
+          y: sectionY,
+          width: LEVEL_CONTENT_WIDTH,
+          height: addedSectionHeight,
+        },
+        paperOutsets,
+      );
+      this.addedSectionLayer.position.set(0, sectionY);
+      this.addedSectionTitle.position.set(
+        0,
+        PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop,
+      );
+      this.addedRowsLayer.position.set(
+        0,
+        PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop +
+          LEVEL_SECTION_TITLE_HEIGHT,
+      );
+      sectionY +=
+        addedSectionHeight +
+        paperOutsets.bottom +
+        PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap +
+        paperOutsets.top;
+    }
+    if (this.totalSection.visible) {
+      const totalRowsHeight = this.totalRows.layout(
+        LEVEL_CONTENT_WIDTH,
+        { gap: LEVEL_ROW_GAP },
+      );
+      const totalSectionHeight =
+        PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop +
+        LEVEL_SECTION_TITLE_HEIGHT +
+        totalRowsHeight +
+        PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
+      setDialogPaperSectionBounds(
+        this.totalSection,
+        {
+          x: 0,
+          y: sectionY,
+          width: LEVEL_CONTENT_WIDTH,
+          height: totalSectionHeight,
+        },
+        paperOutsets,
+      );
+      this.totalSectionLayer.position.set(0, sectionY);
+      this.totalSectionTitle.position.set(
+        0,
+        PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop,
+      );
+      this.totalRowsLayer.position.set(
+        0,
+        PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop +
+          LEVEL_SECTION_TITLE_HEIGHT,
+      );
+    }
 
     const labelWidth = Math.ceil(this.currentLabel.measuredWidth) + 8;
     this.currentBacking.position.set(
@@ -221,21 +341,21 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
     this.currentLabel.position.set(4, 0);
     this.redrawCurrentBacking(labelWidth);
 
-    const panelBottom =
-      this.panel.y - this.panel.pivot.y + this.panel.outerHeight;
     this.pager.position.set(
-      (GLOBAL_DIALOG_GEOMETRY.sourceWidth -
-        LEVEL_WRAPPER_WIDTH) /
-        2,
-      panelBottom + GLOBAL_DIALOG_GEOMETRY.tabGap,
+      0,
+      LEVEL_CONTENT_HEIGHT - LEVEL_PAGER_HEIGHT,
     );
-    const buttonWidth =
-      (LEVEL_WRAPPER_WIDTH - LEVEL_PAGER_GAP) / 2;
-    this.previousButton.setSize(buttonWidth, 20);
-    this.nextButton.setSize(buttonWidth, 20);
+    this.previousButton.setSize(
+      LEVEL_PAGER_WIDTH,
+      LEVEL_PAGER_HEIGHT,
+    );
+    this.nextButton.setSize(
+      LEVEL_PAGER_WIDTH,
+      LEVEL_PAGER_HEIGHT,
+    );
     this.previousButton.position.set(0, 0);
     this.nextButton.position.set(
-      buttonWidth + LEVEL_PAGER_GAP,
+      LEVEL_CONTENT_WIDTH - LEVEL_PAGER_WIDTH,
       0,
     );
   }
@@ -249,12 +369,17 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
   }
 
   destroyDialog() {
-    this.rows?.destroy();
-    this.rows = null;
+    this.addedRows?.destroy();
+    this.totalRows?.destroy();
+    this.addedRows = null;
+    this.totalRows = null;
   }
 
   getPoolStats() {
-    return this.rows?.getStats() ?? null;
+    return Object.freeze({
+      added: this.addedRows?.getStats() ?? null,
+      total: this.totalRows?.getStats() ?? null,
+    });
   }
 
   redrawCurrentBacking(
@@ -361,14 +486,27 @@ function normalizeRows(rows) {
     )
     .map((row, index) => {
       if (typeof row === 'string') {
-        return { id: index, label: row, value: '' };
+        return {
+          id: index,
+          label: toTitleCase(row),
+          value: '',
+        };
       }
       return {
         ...row,
-        label: row.label ?? row.keyText ?? row.key ?? '',
+        label: toTitleCase(
+          row.label ?? row.keyText ?? row.key ?? '',
+        ),
         value: row.value ?? row.valueText ?? '',
       };
     });
+}
+
+function toTitleCase(value) {
+  return String(value ?? '').replace(
+    /\b([a-z])/g,
+    (character) => character.toUpperCase(),
+  );
 }
 
 function clampInteger(value, minimum, maximum) {

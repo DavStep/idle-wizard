@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "world-chat-text-field-9slice.png",
+  "workingAsset": "world-chat-text-field-9slice-work-x10.png",
+  "scaleWorkflow": {
+    "workScale": 10,
+    "downscaleResample": "lanczos",
+    "alphaCrop": {
+      "enabled": true,
+      "threshold": 0,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 60,
+        "height": 60
+      },
+      "changed": false
+    }
+  },
+  "source": {
+    "path": "/Users/davitstepanyan/Documents/idle-wizard/screenshots/asset-qa/world-chat-text-field-9slice/world-chat-text-field-clean-source.png",
+    "width": 491,
+    "height": 86,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 491,
+      "height": 86
+    }
+  },
+  "sourceCropSize": {
+    "width": 491,
+    "height": 86
+  },
+  "slice": {
+    "left": 26,
+    "top": 26,
+    "right": 26,
+    "bottom": 26
+  },
+  "mode": "distilled",
+  "distill": {
+    "sampleX": 2630,
+    "sampleY": 420,
+    "centerWidth": 80,
+    "centerHeight": 80,
+    "cornerSource": "right-side",
+    "edgeSource": "right-side"
+  },
+  "cleanup": {
+    "symmetrizeCorners": false,
+    "symmetrizeEdges": false,
+    "transparentChamfer": 0,
+    "transparentChamferAaScale": 4,
+    "transparentInset": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "brownBackgroundKey": null,
+    "sideGutterTrim": {
+      "transparentThroughPx": 0,
+      "fadePx": 2
+    },
+    "allowTransparentGutters": false,
+    "geometricMask": false
+  },
+  "rendering": {
+    "stretch": "edges-and-center",
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "validation": {
+    "rasterOnly": true,
+    "pngSignatureChecked": true,
+    "naturalRoundTripExact": true,
+    "cornerRoundTripExact": true,
+    "alpha": {
+      "transparent": 166,
+      "translucent": 340,
+      "opaque": 3094
+    },
+    "alphaBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 60,
+      "height": 60
+    },
+    "transparentGutters": {
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "bottom": 0
+    },
+    "passesNoGutterGate": true,
+    "uniqueColors": {
+      "all": 862,
+      "corners": 724,
+      "edges": 263
+    },
+    "workAsset": {
+      "size": {
+        "width": 600,
+        "height": 600
+      },
+      "slice": {
+        "left": 260,
+        "top": 260,
+        "right": 260,
+        "bottom": 260
+      },
+      "naturalRoundTripExact": true,
+      "cornerRoundTripExact": true,
+      "alpha": {
+        "transparent": 20154,
+        "translucent": 25038,
+        "opaque": 314808
+      },
+      "alphaBounds": {
+        "x": 0,
+        "y": 0,
+        "width": 600,
+        "height": 600
+      },
+      "transparentGutters": {
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "bottom": 0
+      },
+      "uniqueColors": {
+        "all": 11714,
+        "corners": 11527,
+        "edges": 1797
+      }
+    }
+  },
+  "qa": {
+    "sheet": "world-chat-text-field-9slice-qa-sheet.png",
+    "examples": [
+      {
+        "label": "original: 491x86",
+        "width": 491,
+        "height": 86
+      },
+      {
+        "label": "height stretched: 491x246",
+        "width": 491,
+        "height": 246
+      },
+      {
+        "label": "width stretched: 731x86",
+        "width": 731,
+        "height": 86
+      },
+      {
+        "label": "both stretched: 731x246",
+        "width": 731,
+        "height": 246
+      }
+    ]
+  }
+}

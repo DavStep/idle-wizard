@@ -18,7 +18,13 @@ import {
 } from '../../../../assets/items/seeds/seedIconFrames.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
-import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
+import {
+  createDialogPaperSection,
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
+  PixiDialogFrame,
+  resolveDialogPaperOutsets,
+  setDialogPaperSectionBounds,
+} from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import {
@@ -39,6 +45,7 @@ import {
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
+  RETAINED_DIALOG_SCROLL_GEOMETRY,
   RetainedButton,
   RetainedScrollArea,
 } from '../workshop/RetainedPageKit.js';
@@ -58,14 +65,16 @@ export const WORKSHOP_SUMMON_INFO_DIALOG_ID = 'workshop.summonInfo';
 const AMOUNT_DELTAS = Object.freeze([-100, -10, -1, 1, 10, 100]);
 const DEFAULT_DIALOG_WIDTH = 304;
 const WIDE_DIALOG_WIDTH = 344;
-const LEDGER_DIALOG_WIDTH = 360;
+const LEDGER_DIALOG_WIDTH = DEFAULT_DIALOG_WIDTH;
 const DEFAULT_DIALOG_HEIGHT = 364;
-const LEDGER_DIALOG_HEIGHT = 283;
+const LEDGER_DIALOG_HEIGHT = 382;
+const LEDGER_SCROLL_VIEWPORT_TOP = 20;
+const LEDGER_SCROLL_VIEWPORT_BOTTOM_INSET = 10;
+const LEDGER_TAB_ROW_WIDTH = 286;
 const TAB_HEIGHT = 28;
 const TAB_GAP = 3;
 const CONTENT_GAP = 6;
 const LIST_OVERSCAN = 2;
-const SETTINGS_SECTION_GAP = 8;
 const STALL_RANGE_HORIZONTAL_OUTSET = 8;
 const STALL_RANGE_Y = 31;
 const STALL_RANGE_ACTION_GAP = 8;
@@ -118,10 +127,17 @@ const DIALOG_CONFIG = Object.freeze({
     }),
   }),
   [SHOP_DIALOG_IDS.LEDGER]: Object.freeze({
-    title: 'market ledger',
+    title: 'Market Ledger',
     width: LEDGER_DIALOG_WIDTH,
     height: LEDGER_DIALOG_HEIGHT,
     rowHeight: 34,
+    scrollViewportBottomInset:
+      LEDGER_SCROLL_VIEWPORT_BOTTOM_INSET,
+    scrollViewportTopInset: LEDGER_SCROLL_VIEWPORT_TOP,
+    scrollViewportWidthOutset:
+      RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight,
+    tabFontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+    tabRowWidth: LEDGER_TAB_ROW_WIDTH,
   }),
   [SHOP_DIALOG_IDS.REQUEST]: Object.freeze({
     title: 'request',
@@ -475,6 +491,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
           enabled: tab.enabled !== false && tab.disabled !== true,
           action: tab.action ?? tab.onSelect,
         });
+        button.control.textLabel.setFontSize(
+          this.config.tabFontSize ?? PIXI_UI_GEOMETRY.bodyFontSize,
+        );
         this.registerButtonSemanticTarget(button, tab);
       },
       afterReconcile: (buttons) => orderChildren(this.tabLayer, buttons),
@@ -785,6 +804,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     if (visibleFieldCount > 0) {
       y += visibleFieldCount * 43;
     }
+    y += finiteOr(this.config.scrollViewportTopInset, 0);
 
     const actionButtons = this.actions?.getWidgets?.() ?? [];
     const actionHeight = actionButtons.length > 0 ? 28 : 0;
@@ -796,9 +816,16 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       bodyHeight -
         y -
         (actionHeight > 0 ? actionHeight + CONTENT_GAP : 0) -
-        statusHeight,
+        statusHeight -
+        finiteOr(this.config.scrollViewportBottomInset, 0),
     );
-    this.list.setBounds(0, y, bodyWidth, listHeight);
+    this.list.setBounds(
+      0,
+      y,
+      bodyWidth + finiteOr(this.config.scrollViewportWidthOutset, 0),
+      listHeight,
+      bodyWidth,
+    );
     this.list.root.visible = this.model.items.length > 0;
     this.list.root.renderable = this.list.root.visible;
 
@@ -837,7 +864,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     const settledItemY =
       selectionHeight +
       paperOutsets.bottom +
-      SETTINGS_SECTION_GAP +
+      PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap +
       paperOutsets.top;
     const layoutProgress =
       this.autoSummonRevealProgress === null
@@ -1041,17 +1068,21 @@ export class ShopDialogPixi extends BasePixiRetainedView {
 
   relayoutTabs(panelHeight) {
     const tabButtons = this.tabs?.getWidgets?.() ?? [];
+    const tabRowWidth = finiteOr(
+      this.config.tabRowWidth,
+      this.panel.contentBoxWidth,
+    );
     this.tabLayer.visible = tabButtons.length > 0;
     this.tabLayer.renderable = this.tabLayer.visible;
     this.tabLayer.position.set(
-      this.panel.contentInsets.left,
+      (this.config.width - tabRowWidth) / 2,
       panelHeight - 2,
     );
     layoutButtons(
       tabButtons,
       0,
       0,
-      this.panel.contentBoxWidth,
+      tabRowWidth,
       TAB_HEIGHT,
       TAB_GAP,
     );
@@ -1660,6 +1691,7 @@ class VirtualShopDialogList {
     this.timeSource = timeSource;
     this.reducedMotion = reducedMotion;
     this.width = 0;
+    this.rowWidth = 0;
     this.height = 0;
     this.items = [];
     this.visibleStart = 0;
@@ -1709,7 +1741,7 @@ class VirtualShopDialogList {
         widget.setBounds(
           0,
           entry.top,
-          this.width,
+          this.rowWidth,
           entry.height,
           this.rowHeight,
         );
@@ -1747,8 +1779,9 @@ class VirtualShopDialogList {
     this.renderWindow(true);
   }
 
-  setBounds(x, y, width, height) {
+  setBounds(x, y, width, height, rowWidth = width) {
     this.width = Math.max(0, width);
+    this.rowWidth = Math.max(0, rowWidth);
     this.height = Math.max(0, height);
     this.scroll.setBounds(x, y, this.width, this.height);
     this.renderWindow(true);
@@ -2208,17 +2241,33 @@ class VirtualShopDialogRow {
     this.root.hitArea = new Rectangle(0, 0, width, summaryHeight);
     const hasDetail = this.detail.visible;
     if (!this.useSettingsStyle) {
+      const hasItemIcon = this.itemIcon.visible;
+      const itemIconSize = 28;
+      const contentLeft = hasItemIcon ? itemIconSize + 6 : 0;
+      if (hasItemIcon) {
+        setSeedPackCompositeBounds(
+          this.itemIcon,
+          this.itemIconOverlay,
+          itemIconSize / 2,
+          summaryHeight / 2,
+          itemIconSize,
+          0,
+        );
+      }
       this.label.position.set(
-        0,
+        contentLeft,
         hasDetail ? 2 : Math.max(1, (summaryHeight - 16) / 2),
       );
       this.label.setWrapWidth(
-        Math.max(0, width - this.value.measuredWidth - 8),
+        Math.max(
+          0,
+          width - contentLeft - this.value.measuredWidth - 8,
+        ),
       );
-      this.detail.position.set(0, 20);
-      this.detail.setWrapWidth(width);
+      this.detail.position.set(contentLeft, 20);
+      this.detail.setWrapWidth(Math.max(0, width - contentLeft));
       this.value.position.set(
-        width,
+        width - 2,
         hasDetail ? 2 : Math.max(1, (summaryHeight - 16) / 2),
       );
       this.redraw();
@@ -2463,44 +2512,6 @@ function normalizeDialogModel(dialogId, viewModel = {}) {
     range: model.range ?? model.allocation ?? null,
     amount: model.amount ?? model.quantityControl ?? null,
   };
-}
-
-function createDialogPaperSection(texture, label) {
-  const frame = new PixiNineSliceFrame({
-    texture,
-    sourceInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.paperSourceInsets,
-    borderInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
-    label,
-  });
-  frame.eventMode = 'none';
-  return frame;
-}
-
-function resolveDialogPaperOutsets(contentInsets) {
-  const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
-  const paperX = geometry.paperInsetX - geometry.frameOutset;
-  const paperY = geometry.paperInsetTop - geometry.frameOutset;
-  const paperRight = geometry.paperInsetX - geometry.frameOutset;
-  const paperBottom =
-    geometry.paperInsetBottom - geometry.frameOutset;
-  return {
-    top: Math.max(0, contentInsets.top - paperY),
-    right: Math.max(0, contentInsets.right - paperRight),
-    bottom: Math.max(0, contentInsets.bottom - paperBottom),
-    left: Math.max(0, contentInsets.left - paperX),
-  };
-}
-
-function setDialogPaperSectionBounds(frame, bounds, outsets) {
-  frame.position.set(
-    bounds.x - outsets.left,
-    bounds.y - outsets.top,
-  );
-  frame.setSize(
-    bounds.width + outsets.left + outsets.right,
-    bounds.height + outsets.top + outsets.bottom,
-    PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
-  );
 }
 
 function createBounds() {
