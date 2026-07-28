@@ -1184,6 +1184,7 @@ class GardenPlotWidget {
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     const disabled = !this.enabled;
+    const plantAction = isPlantActionText(resolveActionText(this.model));
     const labelColor =
       this.model.labelResource === 'seed'
         ? this.theme.resourceColors.seed
@@ -1210,9 +1211,18 @@ class GardenPlotWidget {
           ? 14
           : 11,
       fontWeight: '700',
-      fill: disabled ? this.theme.disabled : this.theme.text,
+      fill:
+        disabled
+          ? this.theme.disabled
+          : plantAction
+            ? '#ffffff'
+            : this.theme.text,
       align: 'right',
     });
+    this.action.style.stroke =
+      !disabled && plantAction
+        ? { color: '#0a0a0a', width: 2, join: 'round' }
+        : null;
     this.buyCostButton.applyTheme(this.theme);
     this.progress.applyTheme(this.theme);
     this.redraw();
@@ -2088,13 +2098,21 @@ function resolvePlotLabel(model) {
 }
 
 function resolveActionText(model) {
+  let actionText = '';
   if (model.actionText !== undefined) {
-    return String(model.actionText ?? '');
+    actionText = String(model.actionText ?? '');
+  } else if (typeof model.action === 'string') {
+    actionText = model.action;
+  } else {
+    actionText = model.action?.label ?? '';
   }
-  if (typeof model.action === 'string') {
-    return model.action;
-  }
-  return model.action?.label ?? '';
+  return isPlantActionText(actionText)
+    ? `${actionText.charAt(0).toUpperCase()}${actionText.slice(1)}`
+    : actionText;
+}
+
+function isPlantActionText(value) {
+  return /^plant(?:\s|$)/i.test(String(value ?? '').trim());
 }
 
 function resolveTimedProgress(progress, now) {

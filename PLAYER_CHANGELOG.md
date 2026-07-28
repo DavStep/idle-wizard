@@ -3,6 +3,10 @@
 Add the newest release at the top before posting a player APK. The Discord APK
 upload script posts the section whose heading matches `package.json` `version`.
 
+## 0.3.14
+
+- Improved Garden planting actions with clearer capitalized, outlined labels.
+
 ## 0.3.13
 
 - Refreshed the Workshop side actions with clearer, more consistent fantasy icons and improved label alignment.

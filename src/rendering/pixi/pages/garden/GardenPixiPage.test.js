@@ -58,6 +58,26 @@ describe('GardenPixiPage', () => {
     harness.dispose();
   });
 
+  it('renders plant actions in camel case with white outlined text', () => {
+    const harness = createHarness();
+    const model = createGardenViewModel({ actionText: 'plant' });
+    model.garden.plots[0].phase = 'empty';
+    model.garden.plots[0].process = null;
+    harness.page.bind(model);
+
+    const action = harness.page.plots.get('plot-1').action;
+    expect(action.text).toBe('Plant');
+    expect(action.style.fill).toBe('#ffffff');
+    expect(action.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: 2,
+      join: 'round',
+    });
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('windows collapsed inventory rows and reuses the expanded high-water pool', () => {
     const harness = createHarness();
     const createModel = (expanded) => {
