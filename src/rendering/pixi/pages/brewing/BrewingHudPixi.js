@@ -7,7 +7,10 @@ import {
 } from 'pixi.js';
 
 import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
-import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
+import {
+  getPotionIconFrameName,
+  getPotionLiquidColor,
+} from '../../../../assets/items/potions/potionIcons.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import {
   PIXI_COST_BUTTON_GEOMETRY,
@@ -33,51 +36,56 @@ import {
 } from '../workshop/RetainedPageKit.js';
 
 export const BREWING_HUD_GEOMETRY = Object.freeze({
-  edge: 12,
+  edge: 16,
   top: PIXI_UI_GEOMETRY.roomContentTop,
-  carouselHeight: 174,
-  detailTop: 320,
-  detailHeight: 180,
+  carouselHeight: 455,
+  previewHeight: 292,
+  detailTop: 400,
+  detailHeight: 159,
+  detailInset: 10,
   ingredientColumns: 3,
   ingredientRows: 2,
   ingredientSlots: 6,
 });
-
-const RESEARCH_ART_SOURCE_INSETS = Object.freeze({
-  top: 49,
-  right: 50,
-  bottom: 50,
-  left: 49,
-});
-const RESEARCH_ART_BORDER_INSETS = Object.freeze({
-  top: 49 / 3,
-  right: 50 / 3,
-  bottom: 50 / 3,
-  left: 49 / 3,
-});
-const BREWING_DETAIL_INK = 0x634934;
 
 const ASSETS = Object.freeze({
   cauldron: 'source:assets/rooms/brewing/cauldron/cauldron-empty.png',
   previous: 'source:assets/ui/brewing-carousel/chevron-left.png',
   next: 'source:assets/ui/brewing-carousel/chevron-right.png',
   settings: PIXI_ROOT_RUN_ASSETS.settingsGear,
-  cancel: 'source:assets/ui/guild-quest/close-x.png',
   herbs: 'source:assets/icons/icon-herb-box.png',
   potions: 'source:assets/icons/icon-potion-box.png',
   lock: PIXI_ROOT_RUN_ASSETS.lock,
+});
+const POTION_PREVIEW_SOURCE_INSETS = Object.freeze({
+  top: 49,
+  right: 50,
+  bottom: 50,
+  left: 49,
+});
+const POTION_PREVIEW_BORDER_INSETS = Object.freeze({
+  top: 49 / 3,
+  right: 50 / 3,
+  bottom: 50 / 3,
+  left: 49 / 3,
 });
 
 const COMPACT_CAULDRON_ACTION_LABEL_STYLE = Object.freeze({
   fontSize: 10,
   lineHeight: 12,
 });
-const CAULDRON_ACTION_ROW_INSET = 6;
 
 const BREWING_DETAIL_TEXT_STYLE = Object.freeze({
   title: Object.freeze({ fontSize: 11, lineHeight: 13 }),
   body: Object.freeze({ fontSize: 10, lineHeight: 12 }),
   small: Object.freeze({ fontSize: 9, lineHeight: 11 }),
+});
+const RETAINED_INGREDIENT_NAME_STYLE = Object.freeze({
+  fontSize: 8,
+  lineHeight: 9,
+  align: 'center',
+  wordWrap: true,
+  wordWrapWidth: 54,
 });
 
 export class BrewingHudPixi {
@@ -101,21 +109,15 @@ export class BrewingHudPixi {
       assetManager,
       label: '',
       panelLabel: 'brewing-carousel-panel',
-      shadowKind: 'dialog',
+      shadowKind: 'none',
     });
+    this.hidePreviewPanelChrome();
     this.detailPanel = new RetainedPanel({
       assetManager,
       label: '',
       panelLabel: 'brewing-batch-detail-panel',
       shadowKind: 'none',
     });
-    this.detailBacking = new PixiNineSliceFrame({
-      texture: Texture.EMPTY,
-      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
-      borderInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
-      label: 'brewing-batch-research-card',
-    });
-    this.detailPanel.root.addChildAt(this.detailBacking, 3);
     this.root.addChild(this.carouselPanel.root, this.detailPanel.root);
 
     this.cauldronTitle = createText('', RETAINED_TEXT_STYLES.bold);
@@ -127,9 +129,15 @@ export class BrewingHudPixi {
     });
     this.counter = centeredText('', RETAINED_TEXT_STYLES.bold);
     this.counter.anchor.set(1, 0);
+    this.recipeOrbit = new Graphics({
+      label: 'brewing-recipe-orbit',
+    });
     this.cauldronArt = new Sprite(getTexture(assetManager, ASSETS.cauldron));
     this.cauldronArt.anchor.set(0.5);
     this.cauldronArt.label = 'brewing-carousel-cauldron-art';
+    this.cauldronLiquid = new Graphics({
+      label: 'brewing-carousel-cauldron-liquid',
+    });
     this.lockedCauldronFilter = createLockedArtFilter();
     this.lockArt = new Sprite(getTexture(assetManager, ASSETS.lock));
     this.lockArt.anchor.set(0.5);
@@ -141,7 +149,9 @@ export class BrewingHudPixi {
       this.cauldronTitle,
       this.cauldronStars,
       this.counter,
+      this.recipeOrbit,
       this.cauldronArt,
+      this.cauldronLiquid,
       this.lockArt,
       this.lockLabel,
       this.dots,
@@ -159,11 +169,18 @@ export class BrewingHudPixi {
     this.autoBrew = this.createButton('autobrew', 'Auto Brew', 'yellow', () =>
       this.actions.toggleAutoBrew?.(this.selectedIndex),
     );
+    this.quantity = this.createButton('quantity', 'x1', 'yellow', () => {
+      const cauldron = this.getSelectedCauldron();
+      const quantity = cauldron?.quantityAction ?? {};
+      return (
+        this.actions.selectBrewQuantity?.(
+          quantity.nextQuantity ?? nextBrewQuantity(cauldron),
+          this.selectedIndex,
+        ) ?? false
+      );
+    });
     this.brew = this.createButton('brew', 'Brew', 'green', () =>
-      this.actions.performCauldronAction?.(
-        this.getSelectedCauldron(),
-        this.getSelectedCauldron()?.primaryAction,
-      ),
+      this.activatePrimaryAction(),
     );
     this.unlockCostButton = new PixiCostButton({
       assetManager,
@@ -191,11 +208,6 @@ export class BrewingHudPixi {
         getTexture(assetManager, ASSETS.settings),
         'brewing-autobrew-action-icon',
       ),
-      cancel: createSpriteActionIcon(
-        getTexture(assetManager, ASSETS.cancel),
-        'brewing-cancel-action-icon',
-        { tint: 0xd85743 },
-      ),
     };
     this.navigationIcons = {
       previous: createSpriteActionIcon(
@@ -215,12 +227,19 @@ export class BrewingHudPixi {
       this.next,
       this.recipes,
       this.autoBrew,
+      this.quantity,
       this.brew,
     ]) {
       this.root.addChild(button.root);
     }
     this.root.addChild(this.unlockCostButton);
 
+    this.potionPreviewFrame = new PixiNineSliceFrame({
+      texture: Texture.EMPTY,
+      sourceInsets: POTION_PREVIEW_SOURCE_INSETS,
+      borderInsets: POTION_PREVIEW_BORDER_INSETS,
+      label: 'brewing-potion-preview-well',
+    });
     this.potionIcon = new Sprite(Texture.EMPTY);
     this.potionIcon.anchor.set(0.5);
     this.potionName = createText('', {
@@ -244,7 +263,10 @@ export class BrewingHudPixi {
       ...BREWING_DETAIL_TEXT_STYLE.title,
       fontWeight: '700',
     });
+    this.ingredientsTitle.visible = false;
+    this.ingredientsTitle.renderable = false;
     this.detailPanel.body.addChild(
+      this.potionPreviewFrame,
       this.potionIcon,
       this.potionName,
       this.rarity,
@@ -264,6 +286,12 @@ export class BrewingHudPixi {
     for (const slot of this.ingredientSlots) {
       this.detailPanel.body.addChild(slot.root);
     }
+    this.carouselPanel.body.addChild(
+      this.potionName,
+      this.rarity,
+      this.batchLabel,
+      ...this.ingredientSlots.map((slot) => slot.root),
+    );
 
     this.phaseLabel = createText('', {
       ...BREWING_DETAIL_TEXT_STYLE.title,
@@ -277,24 +305,13 @@ export class BrewingHudPixi {
     this.progress = new RetainedProgressBar({
       assetManager,
       label: 'brewing-batch-progress',
-      tone: 'green',
+      tone: 'blue',
     });
     this.detailPanel.body.addChild(
       this.phaseLabel,
       this.phaseTime,
       this.progress.root,
     );
-    this.cancel = this.createButton('cancel', 'Cancel', 'red', () => {
-      const result = this.actions.cancelBrew?.(this.selectedIndex);
-      return result ?? false;
-    });
-    attachActionIcon(this.cancel, this.actionIcons.cancel);
-    this.collect = this.createButton('collect', 'Collect All', 'green', () => {
-      const result = this.actions.collectBrew?.(this.selectedIndex);
-      return result ?? false;
-    });
-    this.root.addChild(this.cancel.root, this.collect.root);
-
     this.swipeRegistration =
       this.inputRouter?.registerPageSwipe?.({
         id: 'brewing.cauldron.carousel.swipe',
@@ -381,7 +398,6 @@ export class BrewingHudPixi {
     this.next.root.renderable = this.next.root.visible;
 
     const active = cauldron?.activeBrew ?? null;
-    const primary = cauldron?.primaryAction ?? {};
     this.recipes.setModel({
       label: 'Recipes',
       enabled: unlocked && cauldron?.canSelectRecipe !== false && !active,
@@ -393,36 +409,35 @@ export class BrewingHudPixi {
     this.autoBrew.control.setVariant(autoBrewVariant);
     this.autoBrew.setModel({
       label: autoBrewEnabled ? 'Auto On' : 'Auto Off',
-      enabled: true,
+      enabled:
+        autoBrewEnabled || cauldron?.autoBrewAvailable === true,
       selected: false,
       action: () => this.actions.toggleAutoBrew?.(this.selectedIndex),
     });
-    const maxBrewQuantity = Math.max(
-      1,
-      Number(cauldron?.maxBrewQuantity ?? cauldron?.level) || 1,
-    );
-    const primaryLabel =
-      primary.id === 'brew' && maxBrewQuantity <= 1
-        ? 'Brew'
-        : capitalizeActionLabel(
-            primary.label ?? (active?.canStartBottling ? 'bottle' : 'brew'),
-          );
+    const quantity = cauldron?.quantityAction ?? {};
+    this.quantity.setModel({
+      label: quantity.label ?? `x${Math.max(1, Number(cauldron?.brewQuantity) || 1)}`,
+      enabled: quantity.enabled !== false && !active,
+      action: () =>
+        this.actions.selectBrewQuantity?.(
+          quantity.nextQuantity ?? nextBrewQuantity(cauldron),
+          this.selectedIndex,
+        ),
+    });
+    const primaryState = resolveBrewingPrimaryState(cauldron);
+    this.primaryState = primaryState;
+    this.brew.variant = primaryState.variant;
+    this.brew.control.setVariant(primaryState.variant);
     this.brew.setModel({
       label: !unlocked
         ? cauldron?.canBuyCauldron
           ? `Unlock ${cauldron.nextCauldronCost ?? ''}`
           : 'Locked'
-        : primaryLabel,
-      enabled: true,
-      action: () =>
-        this.actions.performCauldronAction?.(
-          cauldron,
-          !unlocked ? { id: 'buy' } : primary,
-        ),
+        : primaryState.label,
+      enabled: unlocked && primaryState.enabled,
+      action: () => this.activatePrimaryAction(),
     });
-    this.setCauldronActionVisibility(unlocked, {
-      autoBrewAvailable: cauldron?.autoBrewAvailable === true,
-    });
+    this.setCauldronActionVisibility(unlocked);
     this.bindUnlockCostButton(cauldron, unlocked);
     this.bindDetail(cauldron, active);
     this.syncActionIcons();
@@ -440,12 +455,19 @@ export class BrewingHudPixi {
         : null);
     const potionKey = active?.key ?? recipe?.key ?? 'unknownPotion';
     const potionLabel =
-      active?.label ?? recipe?.label ?? (cauldron.unlocked === false ? 'locked' : 'choose recipe');
+      active?.label ??
+      recipe?.label ??
+      (cauldron.unlocked === false ? 'locked' : 'choose recipe');
     this.detailPanel.setTitle('');
     setText(this.potionName, toTitleCase(potionLabel));
-    setText(this.rarity, toTitleCase(recipe?.rarity ?? 'common'));
+    setText(
+      this.rarity,
+      recipe ? toTitleCase(recipe.rarity ?? 'common') : '',
+    );
     const owned = Number(recipe?.ownedQuantity ?? cauldron.ownedPotionQuantity ?? 0);
     setText(this.ownedLabel, `You Have ${owned}`);
+    this.ownedLabel.visible = false;
+    this.ownedLabel.renderable = false;
     setText(
       this.batchLabel,
       active
@@ -454,16 +476,25 @@ export class BrewingHudPixi {
     );
     const potionFrame = getPotionIconFrameName(potionKey);
     this.potionIcon.texture = getAtlasTexture(this.assetManager, potionFrame);
-    this.potionIcon.visible = this.potionIcon.texture !== Texture.EMPTY;
+    this.potionIcon.visible =
+      Boolean(active || recipe) &&
+      this.potionIcon.texture !== Texture.EMPTY;
+    this.potionIcon.renderable = this.potionIcon.visible;
+    this.cauldronLiquidColor = colorFromHex(
+      getPotionLiquidColor(potionKey),
+      0x8740df,
+    );
+    this.cauldronLiquid.visible =
+      cauldron.unlocked !== false && Boolean(active || recipe);
+    this.cauldronLiquid.renderable = this.cauldronLiquid.visible;
+    this.redrawCauldronLiquid();
 
     const requirements = normalizeRequirements(
       recipe?.ingredients ?? cauldron.guideRows ?? cauldron.ingredients,
       cauldron.herbs ?? this.model.herbs ?? [],
     );
     this.ingredientSlots.forEach((slot, index) =>
-      slot.bind(requirements[index] ?? null, {
-        decorative: index === 5,
-      }),
+      slot.bind(requirements[index] ?? null),
     );
 
     const progress = active?.progress ?? 0;
@@ -476,7 +507,7 @@ export class BrewingHudPixi {
           : toTitleCase(active.phase)
         : recipe
           ? 'Ready to Brew'
-          : '',
+          : 'Select a Recipe',
     );
     setText(
       this.phaseTime,
@@ -487,16 +518,33 @@ export class BrewingHudPixi {
           : '',
     );
     this.progress.setProgress(canCollect ? 1 : progress);
-    this.cancel.setModel({
-      label: 'Cancel',
-      enabled: true,
-      action: () => this.actions.cancelBrew?.(this.selectedIndex),
-    });
-    this.collect.setModel({
-      label: `Collect All${active?.resultQuantity ? ` x${active.resultQuantity}` : ''}`,
-      enabled: true,
-      action: () => this.actions.collectBrew?.(this.selectedIndex),
-    });
+  }
+
+  activatePrimaryAction() {
+    const cauldron = this.getSelectedCauldron();
+    const state = this.primaryState ?? resolveBrewingPrimaryState(cauldron);
+    switch (state.id) {
+      case 'cancel':
+        return (
+          (cauldron?.activeBrew
+            ? this.actions.cancelBrew?.(this.selectedIndex)
+            : this.actions.toggleAutoBrew?.(this.selectedIndex)) ?? false
+        );
+      case 'collect':
+        return this.actions.collectBrew?.(this.selectedIndex) ?? false;
+      case 'bottle':
+        return (
+          this.actions.performCauldronAction?.(cauldron, { id: 'bottle' }) ??
+          false
+        );
+      default:
+        return (
+          this.actions.performCauldronAction?.(
+            cauldron,
+            cauldron?.primaryAction ?? { id: 'brew' },
+          ) ?? false
+        );
+    }
   }
 
   getCauldrons() {
@@ -541,23 +589,26 @@ export class BrewingHudPixi {
       width,
       BREWING_HUD_GEOMETRY.carouselHeight,
     );
+    this.hidePreviewPanelChrome();
     this.detailPanel.setBounds(
-      edge,
+      edge + BREWING_HUD_GEOMETRY.detailInset,
       BREWING_HUD_GEOMETRY.detailTop,
-      width,
+      width - BREWING_HUD_GEOMETRY.detailInset * 2,
       BREWING_HUD_GEOMETRY.detailHeight,
     );
     this.layoutCarouselHeader();
-    this.counter.position.set(width - 10, 8);
-    this.cauldronArt.position.set(width / 2, 68);
-    this.cauldronArt.width = 100;
-    this.cauldronArt.height = 84;
-    this.lockArt.position.set(width / 2, 67);
+    this.counter.position.set(width - 10, 44);
+    this.cauldronArt.position.set(width / 2, 136);
+    this.cauldronArt.width = 116;
+    this.cauldronArt.height = 94;
+    this.redrawCauldronLiquid();
+    this.lockArt.position.set(width / 2, 135);
     this.lockArt.width = 44;
     this.lockArt.height = 44;
-    this.lockLabel.position.set(width / 2, 94);
-    this.dots.position.set(width / 2, 112);
-    const navigationTop = BREWING_HUD_GEOMETRY.top + 48;
+    this.lockLabel.position.set(width / 2, 177);
+    this.dots.position.set(width / 2, 223);
+    this.drawRecipeOrbit(width);
+    const navigationTop = BREWING_HUD_GEOMETRY.top + 117;
     this.previous.setBounds(edge + 12, navigationTop, 34, 38);
     this.next.setBounds(
       sourceWidth - edge - 46,
@@ -569,34 +620,9 @@ export class BrewingHudPixi {
     layoutNavigationIcon(this.next, this.navigationIcons.next);
     this.unlockCostButton.setBounds(
       (sourceWidth - PIXI_COST_BUTTON_GEOMETRY.stackedWidth) / 2,
-      BREWING_HUD_GEOMETRY.top + 116,
+      BREWING_HUD_GEOMETRY.top + 278,
       PIXI_COST_BUTTON_GEOMETRY.stackedWidth,
       PIXI_COST_BUTTON_GEOMETRY.stackedHeight,
-    );
-    const visibleActionButtons = [
-      this.recipes,
-      this.autoBrew,
-      this.brew,
-    ].filter((button) => button.root.visible);
-    const actionGap = 6;
-    const actionWidth = Math.min(
-      100,
-      (width -
-          CAULDRON_ACTION_ROW_INSET * 2 -
-          actionGap * 2) /
-        3,
-    );
-    const actionRowWidth =
-      actionWidth * visibleActionButtons.length +
-      actionGap * Math.max(0, visibleActionButtons.length - 1);
-    const actionRowX = edge + (width - actionRowWidth) / 2;
-    visibleActionButtons.forEach((button, index) =>
-      button.setBounds(
-        actionRowX + index * (actionWidth + actionGap),
-        BREWING_HUD_GEOMETRY.top + 134,
-        actionWidth,
-        34,
-      ),
     );
     layoutActionIcon(this.autoBrew, this.actionIcons.autoBrew, {
       iconWidth:
@@ -605,59 +631,46 @@ export class BrewingHudPixi {
       iconX: 17,
       labelShiftX: 10,
     });
-    this.detailBacking.position.set(0, 0);
-    this.detailBacking.setSize(
-      width,
-      BREWING_HUD_GEOMETRY.detailHeight,
-      PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+    this.potionPreviewFrame.position.set(10, 10);
+    this.potionPreviewFrame.setSize(
+      58,
+      58,
+      POTION_PREVIEW_BORDER_INSETS,
     );
-    this.potionIcon.position.set(55, 60);
-    this.potionIcon.width = 46;
-    this.potionIcon.height = 46;
-    this.potionName.position.set(55, 8);
-    this.rarity.position.set(55, 27);
-    this.ownedLabel.position.set(55, 90);
-    this.batchLabel.position.set(55, 106);
-    this.ingredientsTitle.position.set(122, 8);
-    const tileWidth = 54;
-    const tileHeight = 40;
-    const tileGap = 4;
-    const ingredientGridWidth =
-      tileWidth * BREWING_HUD_GEOMETRY.ingredientColumns +
-      tileGap * (BREWING_HUD_GEOMETRY.ingredientColumns - 1);
+    this.potionIcon.position.set(39, 39);
+    this.potionIcon.width = 44;
+    this.potionIcon.height = 44;
+    this.potionName.position.set(width / 2, 239);
+    this.rarity.position.set(width / 2, 258);
+    this.ownedLabel.position.set(36, 72);
+    this.batchLabel.position.set(width / 2, 274);
+    const ingredientTileWidth = 56;
+    const ingredientTileHeight = 54;
+    const ingredientPositions = resolveIngredientPositions(width);
     this.ingredientSlots.forEach((slot, index) => {
+      const position = ingredientPositions[index];
       slot.setBounds(
-        122 + (index % 3) * (tileWidth + tileGap),
-        25 + Math.floor(index / 3) * (tileHeight + tileGap),
-        tileWidth,
-        tileHeight,
+        position.x,
+        position.y,
+        ingredientTileWidth,
+        ingredientTileHeight,
       );
     });
-    this.phaseLabel.position.set(122, 116);
-    this.phaseTime.position.set(122 + ingredientGridWidth, 116);
-    this.progress.setBounds(122, 132, ingredientGridWidth, 10);
-    const footerButtonWidth = 118;
-    const footerButtonGap = 8;
-    const footerRowX =
-      (sourceWidth - footerButtonWidth * 2 - footerButtonGap) / 2;
-    const footerTop = BREWING_HUD_GEOMETRY.detailTop + 142;
-    this.cancel.setBounds(
-      footerRowX,
-      footerTop,
-      footerButtonWidth,
-      30,
-    );
-    layoutActionIcon(this.cancel, this.actionIcons.cancel, {
-      iconWidth: 18,
-      iconHeight: 18,
-      iconX: 33,
-      labelShiftX: 8,
-    });
-    this.collect.setBounds(
-      footerRowX + footerButtonWidth + footerButtonGap,
-      footerTop,
-      footerButtonWidth,
-      30,
+    const detailWidth =
+      width - BREWING_HUD_GEOMETRY.detailInset * 2;
+    this.phaseLabel.position.set(78, 10);
+    this.phaseTime.position.set(detailWidth - 12, 12);
+    this.progress.setBounds(78, 34, detailWidth - 90, 11);
+    const controlsX = edge + BREWING_HUD_GEOMETRY.detailInset + 10;
+    const controlsTop = BREWING_HUD_GEOMETRY.detailTop + 72;
+    this.recipes.setBounds(controlsX, controlsTop, 100, 32);
+    this.autoBrew.setBounds(controlsX + 108, controlsTop, 100, 32);
+    this.quantity.setBounds(controlsX + 216, controlsTop, 82, 32);
+    this.brew.setBounds(
+      controlsX,
+      BREWING_HUD_GEOMETRY.detailTop + 111,
+      298,
+      38,
     );
   }
 
@@ -665,11 +678,10 @@ export class BrewingHudPixi {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.carouselPanel.applyTheme(this.theme);
     this.detailPanel.applyTheme(this.theme);
-    this.detailPanel.frame.visible = false;
-    this.detailPanel.fallback.visible = false;
-    this.detailBacking.setTexture(
-      getTexture(this.assetManager, PIXI_ROOT_RUN_ASSETS.researchCard),
-      PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+    this.hidePreviewPanelChrome();
+    this.potionPreviewFrame.setTexture(
+      getTexture(this.assetManager, PIXI_ROOT_RUN_ASSETS.researchArt),
+      POTION_PREVIEW_SOURCE_INSETS,
     );
     for (const text of [
       this.counter,
@@ -681,15 +693,22 @@ export class BrewingHudPixi {
     for (const text of [
       this.potionName,
       this.rarity,
-      this.ownedLabel,
       this.batchLabel,
+    ]) {
+      applyTextTheme(text, this.theme, text.style);
+    }
+    applyTextTheme(this.ownedLabel, this.theme, {
+      ...this.ownedLabel.style,
+      fill: this.theme.muted,
+    });
+    for (const text of [
       this.ingredientsTitle,
       this.phaseLabel,
       this.phaseTime,
     ]) {
       applyTextTheme(text, this.theme, {
         ...text.style,
-        fill: BREWING_DETAIL_INK,
+        fill: this.theme.text,
       });
     }
     for (const button of [
@@ -697,9 +716,8 @@ export class BrewingHudPixi {
       this.next,
       this.recipes,
       this.autoBrew,
+      this.quantity,
       this.brew,
-      this.cancel,
-      this.collect,
     ]) {
       button.applyTheme(this.theme);
     }
@@ -709,6 +727,7 @@ export class BrewingHudPixi {
       slot.applyTheme(this.theme);
     }
     this.syncActionIcons();
+    this.drawRecipeOrbit(this.carouselPanel.width);
   }
 
   layoutCarouselHeader() {
@@ -719,13 +738,66 @@ export class BrewingHudPixi {
     );
   }
 
-  setCauldronActionVisibility(visible, { autoBrewAvailable = false } = {}) {
+  drawRecipeOrbit(width) {
+    if (!Number.isFinite(width) || width <= 0) {
+      return;
+    }
+    const centerX = width / 2;
+    const centerY = 136;
+    this.recipeOrbit
+      .clear()
+      .ellipse(centerX, centerY, 128, 87)
+      .stroke({ color: 0x66596f, width: 1, alpha: 0.42 });
+    for (const position of resolveIngredientPositions(width)) {
+      this.recipeOrbit
+        .moveTo(position.x + 28, position.y + 27)
+        .lineTo(centerX, centerY)
+        .stroke({ color: 0x66596f, width: 1, alpha: 0.28 });
+    }
+  }
+
+  redrawCauldronLiquid() {
+    const width = this.cauldronArt.width || 116;
+    const height = this.cauldronArt.height || 94;
+    const centerX = this.cauldronArt.x;
+    const centerY = this.cauldronArt.y - height * 0.27;
+    this.cauldronLiquid
+      .clear()
+      .ellipse(centerX, centerY, width * 0.34, height * 0.09)
+      .fill({
+        color: this.cauldronLiquidColor ?? 0x8740df,
+        alpha: 0.94,
+      })
+      .ellipse(
+        centerX - width * 0.09,
+        centerY - height * 0.015,
+        width * 0.08,
+        height * 0.018,
+      )
+      .fill({ color: 0xbfe9ff, alpha: 0.45 });
+  }
+
+  setCauldronActionVisibility(visible) {
     this.recipes.root.visible = visible;
     this.recipes.root.renderable = visible;
     this.brew.root.visible = visible;
     this.brew.root.renderable = visible;
-    this.autoBrew.root.visible = visible && autoBrewAvailable;
+    this.quantity.root.visible = visible;
+    this.quantity.root.renderable = visible;
+    this.autoBrew.root.visible = visible;
     this.autoBrew.root.renderable = this.autoBrew.root.visible;
+  }
+
+  hidePreviewPanelChrome() {
+    for (const displayObject of [
+      this.carouselPanel.shadow,
+      this.carouselPanel.fallback,
+      this.carouselPanel.frame,
+      this.carouselPanel.titleBacking,
+    ]) {
+      displayObject.visible = false;
+      displayObject.renderable = false;
+    }
   }
 
   bindUnlockCostButton(cauldron, unlocked) {
@@ -771,9 +843,8 @@ export class BrewingHudPixi {
       this.next,
       this.recipes,
       this.autoBrew,
+      this.quantity,
       this.brew,
-      this.cancel,
-      this.collect,
     ]) {
       button.destroy();
     }
@@ -782,7 +853,6 @@ export class BrewingHudPixi {
     this.lockedCauldronFilter?.destroy?.();
     this.lockedCauldronFilter = null;
     this.progress.destroy();
-    this.detailBacking.destroy({ children: true });
     for (const slot of this.ingredientSlots) {
       slot.destroy();
     }
@@ -914,16 +984,19 @@ class BrewingIngredientRequirementTile {
     });
     this.frame = new PixiNineSliceFrame({
       texture: Texture.EMPTY,
-      sourceInsets: RESEARCH_ART_SOURCE_INSETS,
-      borderInsets: RESEARCH_ART_BORDER_INSETS,
+      sourceInsets: null,
+      borderInsets: null,
       label: `brewing-ingredient-requirement-${index}-frame`,
     });
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.anchor.set(0.5);
+    this.name = centeredText('', RETAINED_INGREDIENT_NAME_STYLE);
+    this.name.anchor.set(0.5, 0);
     this.quantity = centeredText('', RETAINED_TEXT_STYLES.bold);
     this.quantity.anchor.set(0.5, 1);
-    this.root.addChild(this.frame, this.icon, this.quantity);
+    this.root.addChild(this.frame, this.icon, this.name, this.quantity);
     this.model = null;
+    this.frameInsets = null;
   }
 
   bind(model, { decorative = false } = {}) {
@@ -934,6 +1007,12 @@ class BrewingIngredientRequirementTile {
       key ? getHerbIconFrameName(key) : null,
     );
     this.icon.visible = Boolean(model) && this.icon.texture !== Texture.EMPTY;
+    setText(
+      this.name,
+      model
+        ? toTitleCase(model.label ?? model.name ?? key ?? '')
+        : '',
+    );
     const owned = Math.max(0, Number(model?.owned ?? model?.availableQuantity) || 0);
     const required = Math.max(0, Number(model?.quantity ?? model?.required) || 0);
     setText(
@@ -953,11 +1032,13 @@ class BrewingIngredientRequirementTile {
     this.root.position.set(x, y);
     this.width = width;
     this.height = height;
-    this.frame.setSize(width, height, RESEARCH_ART_BORDER_INSETS);
-    this.icon.position.set(width / 2, height / 2 - 3);
-    this.icon.width = 24;
-    this.icon.height = 24;
-    this.quantity.position.set(width / 2, height - 2);
+    this.frame.setSize(width, height, this.frameInsets);
+    this.icon.position.set(width / 2, 19);
+    this.icon.width = 26;
+    this.icon.height = 26;
+    this.name.position.set(width / 2, 33);
+    this.name.style.wordWrapWidth = width - 8;
+    this.quantity.position.set(width / 2, height - 3);
     this.redraw();
   }
 
@@ -966,18 +1047,25 @@ class BrewingIngredientRequirementTile {
   }
 
   applyTheme(theme) {
+    const sourceInsets = theme?.frames?.panelSourceInsets ?? null;
+    this.frameInsets = theme?.frames?.panelBorder ?? null;
     this.frame.setTexture(
-      getTexture(this.assetManager, PIXI_ROOT_RUN_ASSETS.researchArt),
-      RESEARCH_ART_SOURCE_INSETS,
+      getTexture(this.assetManager, theme?.frames?.panel),
+      sourceInsets,
     );
+    this.frame.setSize(this.width ?? 0, this.height ?? 0, this.frameInsets);
+    applyTextTheme(this.name, theme, {
+      ...RETAINED_INGREDIENT_NAME_STYLE,
+      fill: theme?.text ?? '#d4d4d4',
+    });
     applyTextTheme(this.quantity, theme, {
-      ...BREWING_DETAIL_TEXT_STYLE.body,
+      ...BREWING_DETAIL_TEXT_STYLE.small,
       fontWeight: '700',
       fill: this.model
         ? this.sufficient
-          ? 0x256b25
-          : 0x912f2b
-        : BREWING_DETAIL_INK,
+          ? 0x79c946
+          : 0xe26859
+        : theme?.muted ?? '#a6a6a6',
     });
   }
 
@@ -990,7 +1078,9 @@ function normalizeRequirements(rows, herbs) {
   const herbByKey = new Map(
     (Array.isArray(herbs) ? herbs : []).map((herb) => [herb.key, herb]),
   );
-  return (Array.isArray(rows) ? rows : []).slice(0, 5).map((row) => {
+  return (Array.isArray(rows) ? rows : [])
+    .slice(0, BREWING_HUD_GEOMETRY.ingredientSlots)
+    .map((row) => {
     const key = row.itemKey ?? row.key;
     const herb = herbByKey.get(key) ?? {};
     return {
@@ -1004,7 +1094,24 @@ function normalizeRequirements(rows, herbs) {
         0,
       quantity: row.quantity ?? row.required ?? 1,
     };
-  });
+    });
+}
+
+function resolveIngredientPositions(width) {
+  return [
+    { x: 58, y: 52 },
+    { x: 10, y: 112 },
+    { x: 50, y: 172 },
+    { x: width - 106, y: 172 },
+    { x: width - 66, y: 112 },
+    { x: width - 114, y: 52 },
+  ];
+}
+
+function colorFromHex(value, fallback) {
+  const normalized = String(value ?? '').trim().replace(/^#/, '');
+  const parsed = Number.parseInt(normalized, 16);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function createLockedArtFilter() {
@@ -1101,9 +1208,80 @@ function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, Number(value) || 0));
 }
 
-function capitalizeActionLabel(label) {
-  const value = String(label ?? '');
-  return value ? `${value[0].toUpperCase()}${value.slice(1)}` : value;
+export function resolveBrewingPrimaryState(cauldron = {}) {
+  const active = cauldron.activeBrew ?? null;
+  const auto = cauldron.autoBrewEnabled === true;
+
+  if (auto) {
+    if (active?.canCollect === true) {
+      return {
+        id: 'collect',
+        label: 'Collect',
+        enabled: true,
+        variant: 'green',
+      };
+    }
+    return {
+      id: 'cancel',
+      label: 'Cancel',
+      enabled: true,
+      variant: 'yellow',
+    };
+  }
+
+  if (active?.canCollect === true) {
+    return {
+      id: 'collect',
+      label: 'Collect',
+      enabled: true,
+      variant: 'green',
+    };
+  }
+  if (
+    active?.canStartBottling === true ||
+    active?.phase === 'brewed'
+  ) {
+    return {
+      id: 'bottle',
+      label: 'Bottle',
+      enabled: active?.canStartBottling !== false,
+      variant: 'green',
+    };
+  }
+  if (
+    active?.phase === 'brewing' ||
+    active?.phase === 'bottling' ||
+    active
+  ) {
+    return {
+      id: 'cancel',
+      label: 'Cancel',
+      enabled:
+        active?.phase === 'brewing' ||
+        active?.phase === 'bottling',
+      variant: 'yellow',
+    };
+  }
+
+  const primary = cauldron.primaryAction ?? {};
+  return {
+    id: 'brew',
+    label: 'Brew',
+    enabled:
+      primary.enabled !== false &&
+      primary.disabled !== true &&
+      cauldron.canBrew !== false,
+    variant: 'green',
+  };
+}
+
+function nextBrewQuantity(cauldron = {}) {
+  const current = Math.max(1, Number(cauldron.brewQuantity) || 1);
+  const maximum = Math.max(
+    1,
+    Number(cauldron.maxBrewQuantity ?? cauldron.level) || 1,
+  );
+  return current >= maximum ? 1 : current + 1;
 }
 
 function releaseRegistration(registration) {

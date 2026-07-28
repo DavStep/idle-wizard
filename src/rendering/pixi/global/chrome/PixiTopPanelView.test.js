@@ -118,6 +118,12 @@ describe('PixiTopPanelView', () => {
       'source:assets/ui/root-run-top-hud/level-progress-fill-mask.png',
     );
     expect(view.levelRail.fillMask).toBeInstanceOf(NineSliceSprite);
+    expect([
+      view.levelRail.fillMask.leftWidth,
+      view.levelRail.fillMask.topHeight,
+      view.levelRail.fillMask.rightWidth,
+      view.levelRail.fillMask.bottomHeight,
+    ]).toEqual([26, 20, 26, 21]);
     expect(view.levelRail.fill.effects).toContain(
       view.levelRail.fillAlphaMask,
     );
@@ -321,10 +327,11 @@ describe('PixiTopPanelView', () => {
     expect(fillRects).toHaveLength(1);
     expect(readRect(fillRects[0])).toEqual([
       23,
-      25.5,
+      21,
       234.375,
-      42,
+      51,
     ]);
+    expect(view.levelRail.fillMask.height).toBe(51);
     expect(view.levelRail.gradient).toBeInstanceOf(FillGradient);
     expect(fillSpy).toHaveBeenCalledWith(view.levelRail.gradient);
 
@@ -334,15 +341,15 @@ describe('PixiTopPanelView', () => {
           Boolean(findPath(instruction, 'roundRect')),
       );
     expect(dividerRects.map(readPath)).toEqual([
-      [176.25, 34.5, 3, 24, 1.5],
-      [182.25, 34.5, 3, 24, 1.5],
-      [179.25, 34.5, 3, 24, 1.5],
-      [332.5, 34.5, 3, 24, 1.5],
-      [338.5, 34.5, 3, 24, 1.5],
-      [335.5, 34.5, 3, 24, 1.5],
-      [488.75, 34.5, 3, 24, 1.5],
-      [494.75, 34.5, 3, 24, 1.5],
-      [491.75, 34.5, 3, 24, 1.5],
+      [176.25, 30, 3, 33, 1.5],
+      [182.25, 30, 3, 33, 1.5],
+      [179.25, 30, 3, 33, 1.5],
+      [332.5, 30, 3, 33, 1.5],
+      [338.5, 30, 3, 33, 1.5],
+      [335.5, 30, 3, 33, 1.5],
+      [488.75, 30, 3, 33, 1.5],
+      [494.75, 30, 3, 33, 1.5],
+      [491.75, 30, 3, 33, 1.5],
     ]);
     expect(dividerRects.map(readColorAndAlpha)).toEqual([
       [0xffffff, 0.12],
@@ -358,6 +365,34 @@ describe('PixiTopPanelView', () => {
     expect(view.root.getChildByLabel('topPanel:questCaption', true)).toBeNull();
     expect(view.levelRail.total).toBe(4);
     expect(view.levelRail.completed).toBe(1);
+
+    view.destroy();
+  });
+
+  it('does not paint a request divider against the rounded fill cap', () => {
+    const view = new PixiTopPanelView({
+      assets: createAssets(),
+    });
+
+    view.levelRail.renderProgress({
+      ratio: 0.25,
+      total: 4,
+      completed: 1,
+    });
+
+    const dividerRects =
+      view.levelRail.dividers.context.instructions.filter(
+        (instruction) =>
+          Boolean(findPath(instruction, 'roundRect')),
+      );
+    expect(dividerRects.map(readPath)).toEqual([
+      [332.5, 30, 3, 33, 1.5],
+      [338.5, 30, 3, 33, 1.5],
+      [335.5, 30, 3, 33, 1.5],
+      [488.75, 30, 3, 33, 1.5],
+      [494.75, 30, 3, 33, 1.5],
+      [491.75, 30, 3, 33, 1.5],
+    ]);
 
     view.destroy();
   });

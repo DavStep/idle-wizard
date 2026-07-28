@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.21
+
+- Reworked the Brewing room with ingredients arranged around the cauldron, a clearer potion preview, and streamlined recipe, automation, and batch controls.
+- Expanded cauldrons to accept up to six ingredients.
+- Cleaned up progress-bar edges across the Brewing room and top panel.
+
 ## 0.3.20
 
 - Tightened the Workshop side actions and Research lists so room controls and upcoming studies are easier to scan.

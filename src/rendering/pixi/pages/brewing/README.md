@@ -72,16 +72,25 @@ quantities, timer endpoints, and result messages must come from the presenter.
 The small raw-snapshot fallbacks exist only to ease atomic cutover and do not
 perform writes or own game rules.
 
-The production composition is a single selected-cauldron carousel with
-image-backed fantasy chevrons and horizontal swipe. Boundary chevrons are
-removed instead of showing a disabled arrow. Its dots contain every unlocked
-cauldron plus exactly one next purchasable locked slot, stopping at five. A
-level- or research-gated future slot is omitted until it can be purchased. The
-`N/5` counter stays hidden while only one cauldron is owned. The batch panel
-always renders six visual ingredient cells in a 3x2 grid; gameplay still
-accepts at most five ingredients, so the sixth cell is a deliberate decorative
-empty state. Its panel and cells reuse the Research station row and art-well
-backings.
+The production composition has two sections. The unframed preview keeps the
+image-backed fantasy chevrons, horizontal swipe, centered cauldron, and six
+compact ingredient requirement tiles in a subtle connected orbit. All six
+cells are real gameplay ingredient slots; recipes may continue using fewer.
+Ingredient tiles reuse the ordinary room-panel skin and show item art, name,
+and owned/required count. Potion identity, rarity, and batch size sit directly
+below the landmark.
+
+The framed action section begins with the predicted potion inside the shared
+Research-row art well. With no selected ingredients or recipe, the well stays
+present as an empty solid squircle. Phase/timer progress sits beside it.
+Recipes, Auto, and the separate `xN` quantity control form the configuration
+row, with one wide primary button below.
+
+Boundary chevrons are removed instead of showing a disabled arrow. Carousel
+dots contain every unlocked cauldron plus exactly one next purchasable locked
+slot, stopping at five. A level- or research-gated future slot is omitted until
+it can be purchased. The `N/5` counter stays hidden while only one cauldron is
+owned.
 The selected cauldron title sits inside the carousel frame at the top-left,
 followed by the shared three-slot star-rank treatment for that cauldron's level.
 Selecting the next purchasable locked slot keeps the cauldron art visible with
@@ -94,18 +103,17 @@ cauldron.
 
 Recipe and automation settings dialogs remain retained, but the carousel has no
 separate settings or fast-forward button. The Auto button uses the settings cog
-and stays hidden until that cauldron's automation research is complete. It reads
-`Auto Off` on the yellow skin and `Auto On` on the green skin. Recipes stays
-yellow and Brew is green. The three controls use equal widths with an inset
-from the carousel frame. Before x2 batch research, the primary label is simply
-`Brew`, without an x1 suffix.
+and remains visible but disabled until that cauldron's automation research is
+complete. It reads `Auto Off` on the yellow skin and `Auto On` on the green
+skin. Recipes and `xN` stay yellow. Before x2 batch research, the quantity
+control reads `x1`; quantity is never folded into the primary Brew label.
 
-The carousel action row keeps its existing retained button semantics. Recipes
-and Brew use centered source-13px labels without icons. Auto Brew keeps its
-leading gray-steel cog and compact label, while Cancel keeps the shared X
-artwork. Cancel and Collect All keep their role colors and remain pressable in
-empty states; rejected presses emit the shared transient feedback flyout
-without changing gameplay state.
+The action section keeps existing retained button semantics. The single primary
+button follows the brewing state: manual idle is `Brew`, brewing and bottling
+are yellow `Cancel`, brewed is `Bottle`, and bottled is `Collect`. Auto mode
+shows `Collect` only while output is ready; otherwise it shows yellow `Cancel`.
+Idle Auto `Cancel` disables Auto, while active `Cancel` destroys the unfinished
+batch through the existing cancellation flow. Cancel has no icon.
 
 Brewing-owned motion also remains retained: herb pickup/count/return nudges
 reuse the row transform, ingredient drag, return, and brew flyouts use one

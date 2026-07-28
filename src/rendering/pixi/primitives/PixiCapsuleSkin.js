@@ -13,16 +13,20 @@ export const PIXI_CAPSULE_ASSETS = Object.freeze({
 
 const CAPSULE_SOURCE_GEOMETRY = Object.freeze({
   track: Object.freeze({
-    left: 32,
-    top: 26,
-    right: 32,
+    left: 31,
+    top: 25,
+    right: 31,
     bottom: 26,
+    radiusX: 31,
+    radiusY: 25.5,
   }),
   fillMask: Object.freeze({
-    left: 20,
-    top: 18,
-    right: 20,
+    left: 19,
+    top: 17,
+    right: 19,
     bottom: 18,
+    radiusX: 19,
+    radiusY: 17.5,
   }),
 });
 
@@ -82,8 +86,8 @@ export function setPixiCapsuleBounds(
   }
 
   const outputRadius = Math.min(nextWidth, nextHeight) / 2;
-  const scaleX = outputRadius / source.left;
-  const scaleY = outputRadius / source.top;
+  const scaleX = outputRadius / source.radiusX;
+  const scaleY = outputRadius / source.radiusY;
   slice.scale.set(scaleX, scaleY);
 
   if (orientation === 'vertical') {

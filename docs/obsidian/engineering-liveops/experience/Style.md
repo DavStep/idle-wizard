@@ -186,6 +186,8 @@ experience_type: style
 - Reveal rounded progress fills with clipping or width, not `scaleX`; scaling compresses the cap geometry along with the progress amount.
 - With the retained Pixi renderer's global antialiasing disabled, thin procedural `Graphics.roundRect` caps visibly stair-step. Keep the renderer unchanged and use the Root Run capsule PNG as a nine-slice rail plus alpha mask; rotate the same skin for vertical scrollbars so fill colors, gradients, geometry, and scroll physics remain authoritative.
 - Pixi nine-slice wrappers are `Container` masks, so assigning one through `.mask` selects a rectangular stencil and ignores transparent cap pixels. Use an explicit `AlphaMask` with the `alpha` channel when nine-slice transparency owns rounded fill caps.
+- Android-style `.9.png` files include a one-pixel metadata border; strip that border before loading them as Pixi textures and reduce the slice margins to the cleaned interior, or marker pixels render as rail artifacts.
+- A qUIck compact nine-slice texture is not its output geometry. Use the exported source node size plus `textureSlice`, or losslessly distill the protected edges and center before using the asset as a variable-width mask.
 - Validate a nine-slice frame and its live DOM fill separately; a clean generated PNG cannot catch gradients, inset highlights, or shadows added by the fill CSS.
 - Keep flat geometric web rails in CSS; converting them to a raster nine-slice adds border-image scaling variables and makes simple corner radii harder to match.
 - Player font options live in `src/player/playerFonts.js`, apply through `html[data-style-font]`, and need matching SpacetimeDB `PLAYER_FONTS` entries to survive profile sync.

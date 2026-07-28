@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+
+import { PNG } from 'pngjs';
 import {
   beforeAll,
   describe,
@@ -37,6 +40,18 @@ beforeAll(async () => {
 });
 
 describe('PixiProgressBar', () => {
+  it('uses Root Run capsule textures without .9.png metadata borders', () => {
+    const track = readPng(
+      '../../../../assets/game/source/ui/root-run-progress/progress-track-9slice.png',
+    );
+    const fill = readPng(
+      '../../../../assets/game/source/ui/root-run-progress/progress-fill-mask-9slice.png',
+    );
+
+    expect([track.width, track.height]).toEqual([66, 52]);
+    expect([fill.width, fill.height]).toEqual([42, 36]);
+  });
+
   it('uses the frozen 8px-content, 10px-total Root Run geometry', () => {
     const progress = new PixiProgressBar({
       width: 100,
@@ -181,3 +196,9 @@ describe('PixiProgressBar', () => {
     retained.destroy();
   });
 });
+
+function readPng(relativePath) {
+  return PNG.sync.read(
+    readFileSync(new URL(relativePath, import.meta.url)),
+  );
+}

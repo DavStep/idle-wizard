@@ -5276,7 +5276,7 @@ const DEFAULT_BREWING_CONFIG_JSON = toGameConfigJson({
   wastedBrewManaCost: 5,
   wastedBrewDurationMs: 4_000,
   bottlingDurationMs: 2_000,
-  maxCauldronIngredients: 5,
+  maxCauldronIngredients: 6,
   initialUnlockedCauldrons: 1,
   cauldronCostsGold: [0, 25, 75, 175, 400],
   wastedPotionKey: 'wastedPotion',
@@ -5284,6 +5284,7 @@ const DEFAULT_BREWING_CONFIG_JSON = toGameConfigJson({
 const LEGACY_BREWING_CAULDRON_COSTS_GOLD_10 = [
   0, 25, 75, 175, 400, 800, 1400, 2200, 3300, 4800,
 ];
+const LEGACY_BREWING_MAX_CAULDRON_INGREDIENTS = 5;
 const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
   weeklyQuests: [
     {
@@ -8723,25 +8724,39 @@ function normalizeBrewingGameConfigJson(
 ): string {
   const defaultConfig = JSON.parse(DEFAULT_BREWING_CONFIG_JSON) as {
     cauldronCostsGold?: number[];
+    maxCauldronIngredients?: number;
   };
   const defaultCauldronCosts = defaultConfig.cauldronCostsGold;
+  let changed = false;
+  const normalizedConfig = { ...parsedConfig };
 
   if (
-    !Array.isArray(parsedConfig.cauldronCostsGold) ||
-    !Array.isArray(defaultCauldronCosts) ||
-    (!matchesNumberList(
-      parsedConfig.cauldronCostsGold,
-      LEGACY_BREWING_CAULDRON_COSTS_GOLD_10,
-    ) &&
-      !shouldExtendDefaultNumberList(parsedConfig.cauldronCostsGold, defaultCauldronCosts))
+    parsedConfig.maxCauldronIngredients ===
+      LEGACY_BREWING_MAX_CAULDRON_INGREDIENTS &&
+    Number.isInteger(defaultConfig.maxCauldronIngredients)
   ) {
-    return originalJson;
+    normalizedConfig.maxCauldronIngredients =
+      defaultConfig.maxCauldronIngredients;
+    changed = true;
   }
 
-  return JSON.stringify({
-    ...parsedConfig,
-    cauldronCostsGold: defaultCauldronCosts,
-  });
+  if (
+    Array.isArray(parsedConfig.cauldronCostsGold) &&
+    Array.isArray(defaultCauldronCosts) &&
+    (matchesNumberList(
+      parsedConfig.cauldronCostsGold,
+      LEGACY_BREWING_CAULDRON_COSTS_GOLD_10,
+    ) ||
+      shouldExtendDefaultNumberList(
+        parsedConfig.cauldronCostsGold,
+        defaultCauldronCosts,
+      ))
+  ) {
+    normalizedConfig.cauldronCostsGold = defaultCauldronCosts;
+    changed = true;
+  }
+
+  return changed ? JSON.stringify(normalizedConfig) : originalJson;
 }
 
 function shouldExtendDefaultNumberList(existing: unknown[], defaults: number[]): boolean {
@@ -12853,9 +12868,9 @@ function mergePendingAdminCurrencyGrantsIntoSaveJson(
 function getDefaultBrewingMaxIngredients(): number {
   try {
     const config = JSON.parse(DEFAULT_BREWING_CONFIG_JSON) as { maxCauldronIngredients?: unknown };
-    return clampSaveInteger(config.maxCauldronIngredients, 1, 10, 5);
+    return clampSaveInteger(config.maxCauldronIngredients, 1, 10, 6);
   } catch {
-    return 5;
+    return 6;
   }
 }
 

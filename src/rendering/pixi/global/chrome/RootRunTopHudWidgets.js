@@ -43,8 +43,15 @@ const LEVEL_TRACK_Y = 21;
 const LEVEL_TRACK_WIDTH = 631;
 const LEVEL_TRACK_HEIGHT = 51;
 const LEVEL_TRACK_INSET = 3;
-const LEVEL_FILL_HEIGHT = 42;
-const LEVEL_FILL_CAP_WIDTH = LEVEL_FILL_HEIGHT / 2;
+const LEVEL_FILL_HEIGHT = 51;
+const LEVEL_FILL_CAP_WIDTH = 26;
+const LEVEL_FILL_TEXTURE_WIDTH = 53;
+const LEVEL_FILL_SLICE = Object.freeze({
+  left: 26,
+  top: 20,
+  right: 26,
+  bottom: 21,
+});
 const LEVEL_PRESS_SCALE = 0.97;
 const LEVEL_TEXT_STROKE = Object.freeze({
   color: '#0a0a0a',
@@ -273,13 +280,8 @@ export class RootRunHudLevelRail extends Container {
     this.fill.label = 'topPanel:questFill';
     this.fillMask = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.levelFill),
-      insets: {
-        left: LEVEL_FILL_CAP_WIDTH,
-        top: 0,
-        right: LEVEL_FILL_CAP_WIDTH,
-        bottom: 0,
-      },
-      width: LEVEL_FILL_HEIGHT,
+      insets: LEVEL_FILL_SLICE,
+      width: LEVEL_FILL_TEXTURE_WIDTH,
       height: LEVEL_FILL_HEIGHT,
       label: 'topPanel:questFillMask',
     });
@@ -407,8 +409,15 @@ export class RootRunHudLevelRail extends Container {
     }
 
     this.dividers.clear();
+    const fillEndX = x + fillWidth;
     for (let index = 1; index < safeTotal; index += 1) {
       const dividerX = x + (width * index) / safeTotal;
+      if (
+        fillWidth > 0 &&
+        Math.abs(dividerX - fillEndX) <= LEVEL_FILL_CAP_WIDTH
+      ) {
+        continue;
+      }
       const dividerY = y + 9;
       const dividerHeight = height - 18;
       const complete = index <= safeCompleted;
