@@ -754,12 +754,16 @@ describe('WorkshopPixiPage', () => {
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.researchCard,
     );
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice,
-    );
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice,
-    );
+    expect(
+      row.options[0].action.resolveBackgroundAsset({
+        skinDisabled: true,
+      }),
+    ).toBe(PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice);
+    expect(
+      row.options[1].action.resolveBackgroundAsset({
+        skinDisabled: false,
+      }),
+    ).toBe(PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice);
 
     row.options[1].action.activate();
     expect(donate).toHaveBeenCalledOnce();

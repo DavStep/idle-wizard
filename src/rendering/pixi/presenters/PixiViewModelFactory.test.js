@@ -518,6 +518,7 @@ describe('PixiViewModelFactory', () => {
             remainingQualificationPoints: 1875,
             rewardTiers: [
               { rankLabel: '1', emerald: 5, crystal: 10 },
+              { rankLabel: '101+ qualified', crystal: 1 },
             ],
             rows: [
               {
@@ -644,6 +645,11 @@ describe('PixiViewModelFactory', () => {
           id: 'reward:1',
           label: 'Rank 1',
           value: '5 Emerald · 10 Crystal',
+        }),
+        expect.objectContaining({
+          id: 'reward:101+ qualified',
+          label: 'Rank 101+ Qualified',
+          value: '1 Crystal',
         }),
       ]),
     );

@@ -1114,7 +1114,7 @@ export class PixiViewModelFactory {
           []
         ).map((tier) => ({
           id: `reward:${tier.rankLabel}`,
-          label: `Rank ${tier.rankLabel}`,
+          label: toTitleCase(`Rank ${tier.rankLabel}`),
           value: toTitleCase(formatWorldEventRewardTier(tier)),
         })),
       ];
@@ -1582,7 +1582,9 @@ function createPotionDiscoveryRowModel(potion = {}, index = 0, actions = {}) {
           id: key || ingredientIndex,
           key,
           label: toTitleCase(
-            ingredient?.label ?? splitCamelCase(ingredient?.key) ?? 'Unknown',
+            String(
+              ingredient?.label ?? splitCamelCase(key),
+            ).trim() || 'Unknown',
           ),
           quantity: Math.max(
             1,
@@ -1603,7 +1605,11 @@ function createPotionDiscoveryRowModel(potion = {}, index = 0, actions = {}) {
     discovered,
     potionKey: discovered ? potionKey || 'generic' : 'unknownPotion',
     label: discovered
-      ? toTitleCase(potion.label ?? splitCamelCase(potionKey) ?? 'Potion')
+      ? toTitleCase(
+          String(
+            potion.label ?? splitCamelCase(potionKey),
+          ).trim() || 'Potion',
+        )
       : 'Undiscovered Potion',
     discovererUsername,
     discovererIdentity,
@@ -1638,10 +1644,11 @@ function formatDiscoveryDate(timestamp) {
   }
 
   try {
-    return new Date(value).toLocaleDateString(undefined, {
+    return new Date(value).toLocaleDateString('en', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
+      timeZone: 'UTC',
     });
   } catch {
     return 'Date Unknown';
