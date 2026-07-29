@@ -1061,16 +1061,16 @@ describe('GardenPlotManager', () => {
 
     expect(baseCss).toContain('--garden-page-plot-number-color: #3b2416;');
     expect(baseCss).toContain(
-      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground.png");',
+      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-4.png");',
     );
-    expect(baseCss).toContain(
-      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-5.png");',
+    expect(baseCss).not.toMatch(
+      /\[data-plot-soil-level="\d+"\]\s*\{[^}]*--garden-page-plot-soil-image:/,
     );
     expect(baseCss).toContain('--garden-page-plot-progress-width: 80px;');
     expect(baseCss).toContain('--garden-page-plot-progress-height: 6px;');
     expect(frameRule).toContain('width: var(--garden-page-plot-visual-width);');
     expect(frameRule).toContain(
-      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground.png");',
+      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-4.png");',
     );
     expect(frameRule).toContain(
       '--garden-page-plot-level-color: var(--style-muted);',

@@ -78,6 +78,28 @@ describe('GardenPixiPage', () => {
     harness.dispose();
   });
 
+  it('keeps the fourth soil artwork at every plot level', () => {
+    const harness = createHarness();
+    harness.assetManager.getTexture = vi.fn(harness.assetManager.getTexture);
+    const model = createGardenViewModel();
+
+    model.garden.plots[0].soilLevel = 1;
+    harness.page.bind(model);
+    model.garden.plots[0].soilLevel = 5;
+    harness.page.bind(model);
+
+    const soilAssetRequests = harness.assetManager.getTexture.mock.calls
+      .map(([assetId]) => assetId)
+      .filter((assetId) => assetId.includes('/garden/plots/outpost-plot-ground'));
+    expect(soilAssetRequests).toEqual([
+      'source:assets/rooms/garden/plots/outpost-plot-ground-level-4.png',
+      'source:assets/rooms/garden/plots/outpost-plot-ground-level-4.png',
+    ]);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('windows collapsed inventory rows and reuses the expanded high-water pool', () => {
     const harness = createHarness();
     const createModel = (expanded) => {

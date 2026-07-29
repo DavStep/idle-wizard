@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.24
+
+- Standardized Garden plot soil artwork for a clearer, more consistent room layout.
+
 ## 0.3.23
 
 - Improved Elara's Brewing guidance so mana tonic lessons follow the visible recipe controls.

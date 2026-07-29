@@ -9909,7 +9909,7 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot .garden-page__plot-box-frame {
-  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground.png");
+  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-4.png");
   --garden-page-plot-level-color: var(--style-muted);
   position: relative;
   box-sizing: border-box;
@@ -9944,22 +9944,6 @@ div.workshop-page__discovery-row {
 
 .garden-page__plot .garden-page__plot-box-frame[data-plot-star-tone="purple"] {
   --garden-page-plot-level-color: var(--style-star-purple);
-}
-
-.garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="2"] {
-  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-2.png");
-}
-
-.garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="3"] {
-  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-3.png");
-}
-
-.garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="4"] {
-  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-4.png");
-}
-
-.garden-page__plot .garden-page__plot-box-frame[data-plot-soil-level="5"] {
-  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-5.png");
 }
 
 .garden-page__plot .garden-page__plot-box-frame::before {

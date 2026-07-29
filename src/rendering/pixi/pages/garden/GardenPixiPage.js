@@ -83,13 +83,8 @@ const GARDEN_DIALOG_IDS = Object.freeze({
   cancel: 'garden.cancel',
   swap: 'garden.swap',
 });
-const SOIL_ASSET_IDS = Object.freeze({
-  1: 'source:assets/rooms/garden/plots/outpost-plot-ground.png',
-  2: 'source:assets/rooms/garden/plots/outpost-plot-ground-level-2.png',
-  3: 'source:assets/rooms/garden/plots/outpost-plot-ground-level-3.png',
-  4: 'source:assets/rooms/garden/plots/outpost-plot-ground-level-4.png',
-  5: 'source:assets/rooms/garden/plots/outpost-plot-ground-level-5.png',
-});
+const SOIL_ASSET_ID =
+  'source:assets/rooms/garden/plots/outpost-plot-ground-level-4.png';
 const INVENTORY_ASSET_IDS = Object.freeze({
   herbs: 'source:assets/icons/icon-herb-box.png',
   seeds: 'source:assets/icons/icon-seed-box.png',
@@ -876,10 +871,7 @@ class GardenPlotWidget {
     setText(this.label, resolvePlotLabel(this.model));
     setText(this.action, resolveActionText(this.model));
     this.syncBuyCostButton();
-    this.soil.texture = getTexture(
-      this.assetManager,
-      SOIL_ASSET_IDS[clamp(Math.floor(Number(this.model.soilLevel) || 1), 1, 5)],
-    );
+    this.soil.texture = getTexture(this.assetManager, SOIL_ASSET_ID);
     const herbFrame =
       this.model.plantFrame ??
       getHerbIconFrameName(
