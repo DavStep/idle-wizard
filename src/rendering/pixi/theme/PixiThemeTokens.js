@@ -107,6 +107,7 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   buttonGray: 'source:assets/ui/root-run-cost-button/gray-button-short.png',
   buttonGreenStacked: 'source:assets/ui/root-run-cost-button/green-button.png',
   buttonBlueShort: 'source:assets/ui/root-run-cost-button/blue-button-short.png',
+  buttonPurpleShort: 'source:assets/ui/root-run-cost-button/purple-button-short.png',
   buttonGrayStacked: 'source:assets/ui/root-run-cost-button/gray-button.png',
   buttonGreenNineSlice: 'source:assets/ui/root-run-cost-button/green-button-9slice.png',
   buttonRedNineSlice: 'source:assets/ui/root-run-cost-button/red-button-9slice.png',
@@ -118,12 +119,6 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   settingsKnob: 'source:assets/ui/root-run-settings/settings-knob.png',
   settingsGear: 'source:assets/ui/root-run-settings/settings-icon-gear.png',
   settingsRow: 'source:assets/ui/root-run-settings/settings-row-bg-9slice.png',
-  amountStepperBacking:
-    'source:assets/ui/root-run-amount-stepper/backing-9slice.png',
-  amountStepperMinus:
-    'source:assets/ui/root-run-amount-stepper/minus.png',
-  amountStepperPlus:
-    'source:assets/ui/root-run-amount-stepper/plus.png',
   settingsSound: 'source:assets/ui/root-run-settings/settings-icon-sound.png',
   settingsMusic: 'source:assets/ui/root-run-settings/settings-icon-music.png',
   settingsVibration: 'source:assets/ui/root-run-settings/settings-icon-vibration.png',
@@ -330,20 +325,6 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
       right: 26 / 3,
       bottom: 26 / 3,
       left: 26 / 3,
-    }),
-  }),
-  amountStepper: Object.freeze({
-    sourceInsets: Object.freeze({
-      top: 32,
-      right: 60,
-      bottom: 32,
-      left: 60,
-    }),
-    borderInsets: Object.freeze({
-      top: 6,
-      right: 11,
-      bottom: 6,
-      left: 11,
     }),
   }),
   researchCard: Object.freeze({

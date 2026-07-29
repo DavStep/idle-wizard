@@ -1969,7 +1969,7 @@ describe('WorkshopPixiPage', () => {
 
     expect(harness.page.summon.root.position).toMatchObject({
       x: 180,
-      y: 2170 / 3 - 101 - 41 - 52 - 32,
+      y: 2170 / 3 - 101 - 41 - 52 - 32 + 8,
     });
     expect(harness.page.bagButton.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
@@ -2163,18 +2163,18 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('uses the stacked info-blue cost button and mana icon for summon', () => {
+  it('uses the stacked purple cost button and mana icon for summon', () => {
     const summonTexture = new Texture();
     const disabledTexture = new Texture();
     const manaTexture = new Texture();
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.has = vi.fn(
       (assetId) =>
-        assetId === PIXI_ROOT_RUN_ASSETS.buttonBlueShort ||
+        assetId === PIXI_ROOT_RUN_ASSETS.buttonPurpleShort ||
         assetId === PIXI_ROOT_RUN_ASSETS.buttonGrayStacked,
     );
     assetManager.getTexture = vi.fn((assetId) =>
-      assetId === PIXI_ROOT_RUN_ASSETS.buttonBlueShort
+      assetId === PIXI_ROOT_RUN_ASSETS.buttonPurpleShort
         ? summonTexture
         : assetId === PIXI_ROOT_RUN_ASSETS.buttonGrayStacked
           ? disabledTexture
@@ -2189,7 +2189,7 @@ describe('WorkshopPixiPage', () => {
 
     expect(harness.page.summon.button).toMatchObject({
       stacked: true,
-      tone: 'blue',
+      tone: 'purple',
       buttonWidth: 92,
       buttonHeight: 52,
     });

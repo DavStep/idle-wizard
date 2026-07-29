@@ -7,9 +7,8 @@ import {
   setDialogPaperSectionBounds,
 } from '../../primitives/PixiDialogFrame.js';
 import {
-  ROOT_RUN_AMOUNT_STEPPER_GEOMETRY,
-  RootRunAmountStepper,
-} from '../../primitives/RootRunAmountStepper.js';
+  PixiButton,
+} from '../../primitives/PixiButton.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
@@ -40,6 +39,8 @@ const CONTENT_MIN_HEIGHT =
 const CONTENT_MAX_HEIGHT = 312;
 const AMOUNT_SECTION_HEIGHT = 75;
 const AMOUNT_SECTION_TITLE_HEIGHT = 20;
+const AMOUNT_BUTTON_SIZE = 34;
+const AMOUNT_BUTTON_GAP = 6;
 const AMOUNT_SECTION_GAP =
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
 const DIALOG_PAPER_OUTSETS = resolveDialogPaperOutsets({
@@ -60,6 +61,8 @@ export const ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY = Object.freeze({
   amountSectionHeight: AMOUNT_SECTION_HEIGHT,
   amountSectionOffset: AMOUNT_SECTION_OFFSET,
   amountSectionTitleHeight: AMOUNT_SECTION_TITLE_HEIGHT,
+  amountButtonGap: AMOUNT_BUTTON_GAP,
+  amountButtonSize: AMOUNT_BUTTON_SIZE,
   contentMaxHeight: CONTENT_MAX_HEIGHT,
   contentMinHeight: CONTENT_MIN_HEIGHT,
   contentPaddingTop: CONTENT_PADDING_TOP,
@@ -348,21 +351,35 @@ class RootRunInventoryChoiceAmountSection {
       label: `${id}-selected-herb-row`,
     });
     this.list.contentPaddingTop = 0;
-    this.stepper = new RootRunAmountStepper({
+    this.decrement = new PixiButton({
       assetManager,
       inputRouter,
       semanticRegistry: semanticTargets,
-      semanticId: `${id}.selected-herb`,
-      onDecrement: () => this.step(-1),
-      onIncrement: () => this.step(1),
-      label: `${id}-selected-herb-stepper`,
+      semanticId: `${id}.selected-herb.decrement`,
+      text: '−',
+      width: AMOUNT_BUTTON_SIZE,
+      height: AMOUNT_BUTTON_SIZE,
+      action: () => this.step(-1),
+      variant: 'yellow',
+      label: `${id}-selected-herb-decrement`,
     });
-    this.decrement = this.stepper.decrement;
-    this.increment = this.stepper.increment;
+    this.increment = new PixiButton({
+      assetManager,
+      inputRouter,
+      semanticRegistry: semanticTargets,
+      semanticId: `${id}.selected-herb.increment`,
+      text: '+',
+      width: AMOUNT_BUTTON_SIZE,
+      height: AMOUNT_BUTTON_SIZE,
+      action: () => this.step(1),
+      variant: 'yellow',
+      label: `${id}-selected-herb-increment`,
+    });
     this.root.addChild(
       this.title,
       this.list.root,
-      this.stepper,
+      this.decrement,
+      this.increment,
     );
     this.bind(null);
   }
@@ -409,18 +426,12 @@ class RootRunInventoryChoiceAmountSection {
             selected: false,
           },
     ]);
-    this.stepper.visible = selected;
-    this.stepper.renderable = selected;
     for (const displayObject of [this.decrement, this.increment]) {
       displayObject.visible = selected;
       displayObject.renderable = selected;
     }
-    this.stepper.setValue({
-      value: quantity,
-      min: 0,
-      max: maxQuantity,
-      enabled: selected,
-    });
+    this.decrement.setEnabled(selected && quantity > 0);
+    this.increment.setEnabled(selected && quantity < maxQuantity);
   }
 
   applyResult(item, result, fallbackQuantity) {
@@ -469,14 +480,19 @@ class RootRunInventoryChoiceAmountSection {
       ROW_HEIGHT,
       width,
     );
-    const stepperWidth = ROOT_RUN_AMOUNT_STEPPER_GEOMETRY.width;
-    const stepperHeight = ROOT_RUN_AMOUNT_STEPPER_GEOMETRY.height;
-    const stepperX = width - 8 - stepperWidth;
-    const stepperY = rowY + (ROW_HEIGHT - stepperHeight) / 2;
-    this.stepper.position.set(stepperX, stepperY);
-    this.stepper.setSize(stepperWidth, stepperHeight);
+    const controlsWidth =
+      AMOUNT_BUTTON_SIZE * 2 + AMOUNT_BUTTON_GAP;
+    const controlsX = width - 8 - controlsWidth;
+    const controlsY = rowY + (ROW_HEIGHT - AMOUNT_BUTTON_SIZE) / 2;
+    this.decrement.position.set(controlsX, controlsY);
+    this.increment.position.set(
+      controlsX + AMOUNT_BUTTON_SIZE + AMOUNT_BUTTON_GAP,
+      controlsY,
+    );
+    this.decrement.setSize(AMOUNT_BUTTON_SIZE, AMOUNT_BUTTON_SIZE);
+    this.increment.setSize(AMOUNT_BUTTON_SIZE, AMOUNT_BUTTON_SIZE);
     const row = this.list.rows.get(SELECTED_ROW_ID);
-    const textRight = Math.max(0, stepperX - 8);
+    const textRight = Math.max(0, controlsX - 8);
     if (row) {
       row.label.setWrapWidth(
         Math.max(0, textRight - row.label.position.x),
@@ -490,7 +506,8 @@ class RootRunInventoryChoiceAmountSection {
   applyTheme(theme) {
     applyTextTheme(this.title, theme, RETAINED_TEXT_STYLES.bold);
     this.list.applyTheme(theme);
-    this.stepper.applyTheme(theme);
+    this.decrement.applyTheme(theme);
+    this.increment.applyTheme(theme);
   }
 
   destroy() {

@@ -265,6 +265,39 @@ describe('PixiCostButton', () => {
     );
   });
 
+  it('reuses the short stacked layout with a purple skin', () => {
+    const { assetManager, button } = createHarness({
+      stacked: true,
+      tone: 'purple',
+      width: 92,
+      height: 52,
+    });
+
+    button.setModel({
+      actionLabel: 'Summon Seed',
+      amount: '10',
+      resource: 'mana',
+    });
+
+    expect(button.tone).toBe('purple');
+    expect(button.actionTextLabel.fontSize).toBe(11);
+    expect(button.amountLabel.fontSize).toBe(13);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonPurpleShort,
+    );
+
+    button.setModel({
+      actionLabel: 'Summon Seed',
+      amount: '10',
+      resource: 'mana',
+      enabled: false,
+    });
+
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonGrayStacked,
+    );
+  });
+
   it('keeps the green silhouette while using the exact info icon blues', () => {
     const assetDir = `${cwd()}/assets/game/source/ui`;
     const green = PNG.sync.read(
@@ -288,6 +321,26 @@ describe('PixiCostButton', () => {
     expect(countOpaqueColor(blue, [105, 243, 243])).toBeGreaterThan(6_000);
     expect(countOpaqueColor(info, [39, 131, 217])).toBeGreaterThan(900);
     expect(countOpaqueColor(info, [105, 243, 243])).toBeGreaterThan(400);
+  });
+
+  it('keeps the short-button silhouette while using the shared purple palette', () => {
+    const assetDir = `${cwd()}/assets/game/source/ui/root-run-cost-button`;
+    const blue = PNG.sync.read(readFileSync(`${assetDir}/blue-button-short.png`));
+    const purple = PNG.sync.read(
+      readFileSync(`${assetDir}/purple-button-short.png`),
+    );
+
+    expect([purple.width, purple.height]).toEqual([blue.width, blue.height]);
+    let alphaMatches = true;
+    for (let index = 3; index < blue.data.length; index += 4) {
+      if (purple.data[index] !== blue.data[index]) {
+        alphaMatches = false;
+        break;
+      }
+    }
+    expect(alphaMatches).toBe(true);
+    expect(countOpaqueColor(purple, [135, 64, 223])).toBeGreaterThan(28_000);
+    expect(countOpaqueColor(purple, [189, 114, 243])).toBeGreaterThan(6_000);
   });
 
   it('rejects empty actionable costs instead of silently rendering fallback copy', () => {

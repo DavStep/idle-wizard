@@ -125,6 +125,7 @@ const SUMMON_BUTTON_WIDTH = 92;
 const SUMMON_BUTTON_HEIGHT = 52;
 const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;
 const SUMMON_CHAT_GAP = 32;
+const SUMMON_VERTICAL_OFFSET = 8;
 export const WORKSHOP_WINDOW_ASSET_ID =
   'source:assets/rooms/workshop/workshop-window.webp';
 export const WORKSHOP_WINDOW_GEOMETRY = Object.freeze({
@@ -584,7 +585,10 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       this.sourceHeight - PIXI_UI_GEOMETRY.roomChatBottom - PIXI_UI_GEOMETRY.roomChatHeight;
     this.summon.setBounds(
       this.sourceWidth / 2,
-      worldChatTop - SUMMON_BUTTON_HEIGHT - SUMMON_CHAT_GAP,
+      worldChatTop -
+        SUMMON_BUTTON_HEIGHT -
+        SUMMON_CHAT_GAP +
+        SUMMON_VERTICAL_OFFSET,
     );
     const sideControlsTop =
       RETAINED_PAGE_GEOMETRY.contentTop + this.tasks.height + SIDE_CONTROLS_TASK_GAP;
@@ -1195,7 +1199,7 @@ class WorkshopSummonControl {
       width: SUMMON_BUTTON_WIDTH,
       height: SUMMON_BUTTON_HEIGHT,
       stacked: true,
-      tone: 'blue',
+      tone: 'purple',
       label: 'workshop-summon-button',
     });
     this.info = new PixiInfoButton({

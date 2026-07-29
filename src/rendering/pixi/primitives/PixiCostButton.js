@@ -43,14 +43,14 @@ export const PIXI_COST_BUTTON_GEOMETRY = Object.freeze({
   stackedHeight: 52,
   stackedIconSize: 15,
   stackedContentGap: 4,
-  stackedBlueContentGap: 2,
-  stackedBlueContentOffsetX: -3,
+  stackedShortContentGap: 2,
+  stackedShortContentOffsetX: -3,
   stackedActionFontSize: 14,
-  stackedBlueActionFontSize: 11,
+  stackedShortActionFontSize: 11,
   stackedAmountFontSize: 13,
   stackedActionY: 0.34,
   stackedCostY: 0.68,
-  stackedBlueCostY: 0.64,
+  stackedShortCostY: 0.64,
   fontSize: 16,
   researchFontSize: 17,
   lockReasonFontSize: 10,
@@ -95,7 +95,7 @@ export class PixiCostButton extends PixiButton {
     this.research = Boolean(research);
     this.compact = Boolean(compact);
     this.stacked = Boolean(stacked);
-    this.tone = ['blue', 'yellow'].includes(tone) ? tone : 'green';
+    this.tone = ['blue', 'purple', 'yellow'].includes(tone) ? tone : 'green';
     this.contentScale = Math.max(0.1, Number(contentScale) || 1);
     this.costState = 'available';
     this.resource = 'coin';
@@ -271,8 +271,8 @@ export class PixiCostButton extends PixiButton {
     const locked = this.costState === 'locked';
     const unaffordable = this.costState === 'unaffordable';
     const compactDisabled = this.compact && !this.modelEnabled;
-    const blueDisabled = this.tone === 'blue' && !this.modelEnabled;
-    const skinDisabled = locked || compactDisabled || blueDisabled;
+    const shortToneDisabled = isShortStackedTone(this.tone) && !this.modelEnabled;
+    const skinDisabled = locked || compactDisabled || shortToneDisabled;
     const backgroundTexture = this.resolveTexture(
       this.resolveBackgroundAsset({ skinDisabled }),
     );
@@ -320,9 +320,11 @@ export class PixiCostButton extends PixiButton {
     if (this.stacked) {
       return skinDisabled
         ? PIXI_ROOT_RUN_ASSETS.buttonGrayStacked
-        : this.tone === 'blue'
-          ? PIXI_ROOT_RUN_ASSETS.buttonBlueShort
-          : PIXI_ROOT_RUN_ASSETS.buttonGreenStacked;
+        : this.tone === 'purple'
+          ? PIXI_ROOT_RUN_ASSETS.buttonPurpleShort
+          : this.tone === 'blue'
+            ? PIXI_ROOT_RUN_ASSETS.buttonBlueShort
+            : PIXI_ROOT_RUN_ASSETS.buttonGreenStacked;
     }
     if (skinDisabled) {
       return PIXI_ROOT_RUN_ASSETS.buttonGray;
@@ -342,7 +344,7 @@ export class PixiCostButton extends PixiButton {
           : PIXI_COST_BUTTON_GEOMETRY.fontSize
     ) * contentScale;
     const contentStrokeScale =
-      this.stacked && this.tone !== 'blue'
+      this.stacked && !isShortStackedTone(this.tone)
         ? contentScale * 0.75
         : contentScale;
     for (const label of [this.amountLabel, this.lockedLabel]) {
@@ -355,8 +357,8 @@ export class PixiCostButton extends PixiButton {
     this.actionTextLabel
       .setFontFamily(COST_FONT_FAMILY)
       .setFontSize(
-        (this.stacked && this.tone === 'blue'
-          ? PIXI_COST_BUTTON_GEOMETRY.stackedBlueActionFontSize
+        (this.stacked && isShortStackedTone(this.tone)
+          ? PIXI_COST_BUTTON_GEOMETRY.stackedShortActionFontSize
           : PIXI_COST_BUTTON_GEOMETRY.stackedActionFontSize) * contentScale,
       )
       .setStroke(scaleStroke(COST_STROKE, contentStrokeScale))
@@ -400,13 +402,13 @@ export class PixiCostButton extends PixiButton {
     const contentGap = (this.compact
       ? PIXI_COST_BUTTON_GEOMETRY.compactContentGap
       : this.stacked
-        ? this.tone === 'blue'
-          ? PIXI_COST_BUTTON_GEOMETRY.stackedBlueContentGap
+        ? isShortStackedTone(this.tone)
+          ? PIXI_COST_BUTTON_GEOMETRY.stackedShortContentGap
           : PIXI_COST_BUTTON_GEOMETRY.stackedContentGap
       : PIXI_COST_BUTTON_GEOMETRY.contentGap) * this.contentScale;
     const contentOffsetX =
-      this.stacked && this.tone === 'blue'
-        ? PIXI_COST_BUTTON_GEOMETRY.stackedBlueContentOffsetX *
+      this.stacked && isShortStackedTone(this.tone)
+        ? PIXI_COST_BUTTON_GEOMETRY.stackedShortContentOffsetX *
           this.contentScale
         : 0;
     const contentOffsetY = (this.compact
@@ -416,8 +418,8 @@ export class PixiCostButton extends PixiButton {
     this.resourceIcon.height = iconSize;
     const centerY = this.stacked
       ? this.buttonHeight *
-        (this.tone === 'blue'
-          ? PIXI_COST_BUTTON_GEOMETRY.stackedBlueCostY
+        (isShortStackedTone(this.tone)
+          ? PIXI_COST_BUTTON_GEOMETRY.stackedShortCostY
           : PIXI_COST_BUTTON_GEOMETRY.stackedCostY)
       : this.buttonHeight / 2 + contentOffsetY;
     const iconVisible = this.resourceIcon.visible;
@@ -507,6 +509,10 @@ function scaleStroke(stroke, scale) {
     ...stroke,
     width: stroke.width * scale,
   };
+}
+
+function isShortStackedTone(tone) {
+  return tone === 'blue' || tone === 'purple';
 }
 
 function parseCostLabel(value, explicitResource) {

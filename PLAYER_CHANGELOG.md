@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.29
+
+- Simplified Brewing quantity selection with clearer separate decrease and increase controls.
+- Refined the Workshop summon action with a purple button treatment and improved placement.
+- Polished the Workshop window artwork for a clearer nighttime room atmosphere.
+
 ## 0.3.28
 
 - Added exact quantity controls for Brewing ingredients and Market stall stock.

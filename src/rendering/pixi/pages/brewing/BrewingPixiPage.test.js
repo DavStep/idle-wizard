@@ -343,7 +343,17 @@ describe('BrewingPixiPage', () => {
       itemTypeId: 1001,
       quantity: 1,
     });
-    expect(herbDialog.amountSelection.stepper.valueLabel.text).toBe('1');
+    expect(herbDialog.amountSelection.decrement.textLabel.text).toBe('−');
+    expect(herbDialog.amountSelection.increment.textLabel.text).toBe('+');
+    expect(herbDialog.amountSelection.decrement.variant).toBe('yellow');
+    expect(herbDialog.amountSelection.increment.variant).toBe('yellow');
+    expect(
+      herbDialog.amountSelection.increment.x -
+        herbDialog.amountSelection.decrement.x,
+    ).toBe(
+      ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY.amountButtonSize +
+        ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY.amountButtonGap,
+    );
     expect(
       harness.semanticTargets.activate(
         'brewing.herbs.selected-herb.increment',
@@ -359,7 +369,6 @@ describe('BrewingPixiPage', () => {
       herbDialog.amountSelection.list.rows.get('selected-herb')
         .detail.text,
     ).toBe('2 Selected');
-    expect(herbDialog.amountSelection.stepper.valueLabel.text).toBe('2');
     expect(
       harness.semanticTargets.activate(
         'brewing.herbs.selected-herb.decrement',
@@ -377,7 +386,6 @@ describe('BrewingPixiPage', () => {
     ).toBe('Select an Herb Below');
     expect(herbDialog.amountSelection.decrement.visible).toBe(false);
     expect(herbDialog.amountSelection.increment.visible).toBe(false);
-    expect(herbDialog.amountSelection.stepper.visible).toBe(false);
 
     harness.page.destroy();
     harness.dispose();
@@ -414,7 +422,6 @@ describe('BrewingPixiPage', () => {
     });
     const herbDialog = harness.dialogs.get('brewing.herbs');
 
-    expect(herbDialog.amountSelection.stepper.valueLabel.text).toBe('3');
     expect(
       harness.semanticTargets.activate(
         'brewing.herbs.selected-herb.increment',
@@ -424,7 +431,6 @@ describe('BrewingPixiPage', () => {
       quantity: 4,
       selectedQuantity: 4,
     });
-    expect(herbDialog.amountSelection.stepper.valueLabel.text).toBe('4');
     expect(
       herbDialog.amountSelection.list.rows.get('selected-herb')
         .detail.text,
