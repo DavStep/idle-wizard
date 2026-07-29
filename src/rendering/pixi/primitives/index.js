@@ -39,4 +39,7 @@ export {
 } from './PixiSettingsControls.js';
 export { PixiStarLevelLabel } from './PixiStarLevelLabel.js';
 export { PixiTextField } from './PixiTextField.js';
-export { PixiTextLabel } from './PixiTextLabel.js';
+export {
+  normalizePixiTextStroke,
+  PixiTextLabel,
+} from './PixiTextLabel.js';

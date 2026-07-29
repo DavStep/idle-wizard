@@ -44,7 +44,7 @@ describe('PixiTransientEffectsLayer', () => {
     expect(visibleText.textObject.style.fill).toBe('#ffffff');
     expect(visibleText.textObject.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 2,
+      width: 4,
       join: 'round',
     });
     expect(flyoutEntry.widget.background.width).toBeGreaterThan(0);
@@ -286,7 +286,7 @@ describe('PixiTransientEffectsLayer', () => {
     );
     expect(amount.widget.label.textObject.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 2,
+      width: 4,
       join: 'round',
     });
 

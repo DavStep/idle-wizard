@@ -399,7 +399,7 @@
     },
     {
       "id": "global.announcements",
-      "label": "feature unlock, level-up, and while-away announcements",
+      "label": "feature unlock, level-up, research-complete, and while-away announcements",
       "kind": "preview",
       "production": true,
       "coverage": {
@@ -407,6 +407,7 @@
         "devUi": [
           "featureUnlockAnnouncement",
           "levelUpAnnouncement",
+          "researchCompleteAnnouncement",
           "whileAwayAnnouncement"
         ]
       },
@@ -428,6 +429,13 @@
           "recipe": {
             "kind": "devUi",
             "surfaceId": "levelUpAnnouncement"
+          }
+        },
+        {
+          "id": "research-complete",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "researchCompleteAnnouncement"
           }
         },
         {

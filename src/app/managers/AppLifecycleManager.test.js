@@ -821,7 +821,7 @@ describe('AppLifecycleManager', () => {
         hasToken: false,
         oidc: { authenticated: false, enabled: true },
       },
-      statusText: 'connecting...',
+      statusText: 'Connecting...',
       busy: true,
     });
     expect(freshStartChoiceManager.render).toHaveBeenLastCalledWith({
@@ -829,7 +829,7 @@ describe('AppLifecycleManager', () => {
         hasToken: true,
         oidc: { authenticated: true, enabled: true },
       },
-      statusText: 'connecting...',
+      statusText: 'Connecting...',
       busy: true,
     });
     expect(reload).not.toHaveBeenCalled();
@@ -1129,7 +1129,7 @@ describe('AppLifecycleManager', () => {
     expect(authFacade.signInWithGoogle).toHaveBeenCalledTimes(1);
     expect(freshStartChoiceManager.choose).toHaveBeenNthCalledWith(2, {
       authSnapshot: { oidc: { authenticated: false, enabled: true } },
-      statusText: 'login cancelled',
+      statusText: 'Login Cancelled',
       keepOpenOnConnect: true,
     });
     expect(lifecycle.gameplayFacade.resetPersistenceState).toHaveBeenCalledTimes(1);
@@ -1159,7 +1159,7 @@ describe('AppLifecycleManager', () => {
 
     expect(freshStartChoiceManager.choose).toHaveBeenNthCalledWith(2, {
       authSnapshot: { oidc: { authenticated: false, enabled: true } },
-      statusText: 'login unavailable',
+      statusText: 'Login Unavailable',
       keepOpenOnConnect: true,
     });
   });
@@ -1201,7 +1201,7 @@ describe('AppLifecycleManager', () => {
         },
       },
       statusText:
-        'login error: Google login returned a token for another client.',
+        'Login Error: Google login returned a token for another client.',
       keepOpenOnConnect: true,
     });
   });

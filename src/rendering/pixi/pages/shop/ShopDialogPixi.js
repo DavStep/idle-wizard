@@ -2246,8 +2246,8 @@ class VirtualShopDialogRow {
       this.label,
       this.detail,
       this.value,
-      this.selectedIndicator,
       this.valueResource,
+      this.selectedIndicator,
       this.notificationBadge.root,
     );
     this.root.addChild(this.visual);
@@ -2449,17 +2449,8 @@ class VirtualShopDialogRow {
       contentLeft,
       backgroundWidth - rowPadding,
     );
-    const selectedInset = this.selected
-      ? STALL_SELECTED_CHECK_SIZE + rowPadding * 2
-      : 0;
-    const notificationInset = this.notificationBadge.root.visible
-      ? PIXI_UI_GEOMETRY.notificationSize + rowPadding
-      : 0;
-    const rightInset = Math.max(selectedInset, notificationInset);
-    const valueRight = Math.max(
-      contentLeft,
-      contentRight - rightInset,
-    );
+    const valueRight = contentRight;
+    const valueY = Math.max(1, (summaryHeight - 16) / 2);
     if (hasItemIcon) {
       setSeedPackCompositeBounds(
         this.itemIcon,
@@ -2497,11 +2488,11 @@ class VirtualShopDialogRow {
     );
     this.value.position.set(
       valueRight,
-      hasDetail ? 4 : Math.max(1, (summaryHeight - 16) / 2),
+      valueY,
     );
     this.valueResource.position.set(
       valueRight - this.valueResource.measuredWidth,
-      hasDetail ? 4 : Math.max(1, (summaryHeight - 16) / 2),
+      valueY,
     );
     this.notificationBadge.placeInsideTopRight(
       {

@@ -334,8 +334,6 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
             title: 'choose herb',
             itemKind: 'herb',
             selectActionName: 'selectHerb',
-            amountSelection: true,
-            amountActionName: 'setHerbQuantity',
             listLabel: 'brewing-herb-dialog-list',
             onClose: () => this.closeDialog('herbs'),
             theme: this.theme,
@@ -543,19 +541,6 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
             ) ??
             this.currentActions?.selectHerb?.(
               herb,
-              model.cauldronIndex,
-              model.slotIndex,
-            ),
-          setHerbQuantity: (herb, quantity) =>
-            model.actions?.setHerbQuantity?.(
-              herb,
-              quantity,
-              model.cauldronIndex,
-              model.slotIndex,
-            ) ??
-            this.currentActions?.setHerbQuantity?.(
-              herb,
-              quantity,
               model.cauldronIndex,
               model.slotIndex,
             ),

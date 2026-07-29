@@ -80,6 +80,13 @@ describe('DevUiCatalogManager', () => {
           expect.objectContaining({
             type: 'system',
           }),
+          expect.objectContaining({
+            id: 'preview-prestige',
+            bodyIcon: expect.objectContaining({
+              assetId:
+                'source:assets/icons/icon-prestige-star.png',
+            }),
+          }),
         ]),
         onSubmit: expect.any(Function),
       }),

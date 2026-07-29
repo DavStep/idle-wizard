@@ -65,7 +65,7 @@ export class AppFreshStartChoiceManager {
 
     const message = document.createElement('p');
     message.className = 'app-fresh-start-choice__message';
-    message.textContent = 'do you already have an account?';
+    message.textContent = 'Do You Already Have an Account?';
 
     const status = document.createElement('p');
     status.className = 'app-fresh-start-choice__status';
@@ -78,15 +78,15 @@ export class AppFreshStartChoiceManager {
     connectButton.className =
       'style-button app-fresh-start-choice__button app-fresh-start-choice__button--connect';
     connectButton.type = 'button';
-    connectButton.textContent = 'connect account';
-    connectButton.setAttribute('aria-label', 'connect account');
+    connectButton.textContent = 'Connect Account';
+    connectButton.setAttribute('aria-label', 'Connect Account');
 
     const freshButton = document.createElement('button');
     freshButton.className =
       'style-button app-fresh-start-choice__button app-fresh-start-choice__button--fresh';
     freshButton.type = 'button';
-    freshButton.textContent = 'start new';
-    freshButton.setAttribute('aria-label', 'start new');
+    freshButton.textContent = 'Start New';
+    freshButton.setAttribute('aria-label', 'Start New');
 
     copy.append(heading, message, status);
     guide.append(portrait, copy);
@@ -185,11 +185,11 @@ export class AppFreshStartChoiceManager {
     this.refs.freshButton.disabled = isBusy;
     this.setText(
       this.refs.connectButton,
-      isBusy ? 'connecting...' : 'connect account',
+      isBusy ? 'Connecting...' : 'Connect Account',
     );
     this.refs.connectButton.setAttribute(
       'aria-label',
-      isBusy ? 'connecting account' : 'connect account',
+      isBusy ? 'Connecting Account' : 'Connect Account',
     );
     this.setText(
       this.refs.status,
@@ -200,11 +200,11 @@ export class AppFreshStartChoiceManager {
   getStatusText({ authSnapshot, busy = false } = {}) {
     const oidc = authSnapshot?.oidc ?? {};
     if (busy) {
-      return 'connecting...';
+      return 'Connecting...';
     }
 
     if (oidc.cancelled) {
-      return 'login cancelled';
+      return 'Login Cancelled';
     }
 
     if (oidc.error) {
@@ -212,22 +212,22 @@ export class AppFreshStartChoiceManager {
     }
 
     if (oidc.authenticated || (authSnapshot?.hasToken && oidc.remembered)) {
-      return oidc.displayName || oidc.email || 'connected';
+      return oidc.displayName || oidc.email || 'Connected';
     }
 
     if (!oidc.enabled) {
-      return 'login unavailable';
+      return 'Login Unavailable';
     }
 
-    return 'not connected';
+    return 'Not Connected';
   }
 
   getLoginErrorStatusText(error) {
     if (this.isLoginUnavailableReason(error)) {
-      return 'login unavailable';
+      return 'Login Unavailable';
     }
 
-    return `login error: ${this.getErrorText(error)}`;
+    return `Login Error: ${this.getErrorText(error)}`;
   }
 
   getErrorText(error) {

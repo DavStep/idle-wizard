@@ -113,10 +113,10 @@ describe('PixiCostButton', () => {
     expect(button.lockedLabel.text).toBe('Locked');
     expect(button.lockReasonLabel.stroke).toEqual({
       color: '#0a0a0a',
-      width: 2,
+      width: 4,
       join: 'round',
     });
-    expect(button.lockReasonLabel.textObject.style.stroke.width).toBe(2);
+    expect(button.lockReasonLabel.textObject.style.stroke.width).toBe(4);
     expect(button.lockReasonLabel.wrapWidth).toBe(68);
     expect(button.lockReasonLabel.textObject.style.whiteSpace).toBe(
       'pre-line',
@@ -194,8 +194,8 @@ describe('PixiCostButton', () => {
       text: '25',
       y: 35.36,
     });
-    expect(button.amountLabel.stroke.width).toBe(3);
-    expect(button.actionTextLabel.stroke.width).toBe(3);
+    expect(button.amountLabel.stroke.width).toBe(4);
+    expect(button.actionTextLabel.stroke.width).toBe(4);
     expect(button.compactBackground.visible).toBe(false);
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.buttonGreenStacked,

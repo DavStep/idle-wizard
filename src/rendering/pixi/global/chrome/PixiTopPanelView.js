@@ -145,7 +145,10 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       fontWeight: 'normal',
       anchor: { x: 0.5, y: 0 },
       color: '#fff4dc',
-      stroke: { color: '#17100c', width: 4 },
+      stroke: {
+        color: '#17100c',
+        scale: PIXI_UI_GEOMETRY.sourceScale,
+      },
       label: 'topPanel:username',
     });
     this.username.position.set(109, 0);
@@ -175,7 +178,10 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       fontSize: 27,
       anchor: { x: 0.5, y: 0 },
       color: '#72c8ff',
-      stroke: { color: '#0a0a0a', width: 3 },
+      stroke: {
+        color: '#0a0a0a',
+        scale: PIXI_UI_GEOMETRY.sourceScale,
+      },
       label: 'topPanel:manaRate',
     });
 
@@ -466,10 +472,16 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.levelRail.applyTheme(theme);
     this.username
       .setColor('#fff4dc')
-      .setStroke({ color: '#17100c', width: 4 });
+      .setStroke({
+        color: '#17100c',
+        scale: PIXI_UI_GEOMETRY.sourceScale,
+      });
     this.manaRate
       .setColor('#72c8ff')
-      .setStroke({ color: '#0a0a0a', width: 3 });
+      .setStroke({
+        color: '#0a0a0a',
+        scale: PIXI_UI_GEOMETRY.sourceScale,
+      });
     this.renderQuest(this.model.quest ?? {}, {
       visible: this.levelRail.questVisuals.visible,
     });

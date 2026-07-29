@@ -314,7 +314,7 @@ describe('ShopPixiPage', () => {
     expect(stall.quantity.textObject.style.fill).toBe('#ffffff');
     expect(stall.quantity.textObject.style.stroke).toMatchObject({
       color: '#2a160d',
-      width: 2,
+      width: 4,
       join: 'round',
     });
     expect(getAtlasTexture).toHaveBeenCalledWith('seed:pack');
@@ -365,6 +365,50 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it('presses only the Select button when the nested stall action is targeted', () => {
+    const inputRouter = new PixiInputRouter();
+    const harness = createHarness({ inputRouter });
+    const model = createShopViewModel({ stallPrice: 'select' });
+    Object.assign(model.shop.traders.stalls[0], {
+      itemLabel: 'empty stand',
+      priceVariant: 'green',
+      progress: null,
+      quantityLabel: '',
+    });
+
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const stall = harness.page.stallsSection.stalls.get('stall-1');
+    const selectRegistration = inputRouter.store
+      .getRegistrations('press')
+      .find((entry) => entry.displayObject === stall.priceAction);
+
+    expect(selectRegistration).toBeDefined();
+
+    const point = stall.priceAction.getGlobalPosition();
+    inputRouter.onPointerDown(
+      createPointerEvent(stall.priceAction, 'pointerdown', point),
+    );
+
+    expect(stall.priceAction.visual.scale.x).toBeLessThan(1);
+    expect(stall.priceAction.visual.scale.y).toBe(
+      stall.priceAction.visual.scale.x,
+    );
+    expect(stall.visual.scale.x).toBe(1);
+    expect(stall.visual.scale.y).toBe(1);
+
+    inputRouter.onPointerUp(
+      createPointerEvent(stall.priceAction, 'pointerup', point),
+    );
+
+    expect(harness.dialogs.isOpen(SHOP_DIALOG_IDS.STALL)).toBe(true);
+
+    harness.page.destroy();
+    harness.dispose();
+    inputRouter.destroy();
+  });
+
   it('renders the sale batch in a compact red top-right badge', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);
     const harness = createHarness({
@@ -385,7 +429,7 @@ describe('ShopPixiPage', () => {
     expect(stall.batch.textObject.style.fill).toBe('#ffffff');
     expect(stall.batch.textObject.style.stroke).toMatchObject({
       color: '#2a160d',
-      width: 2,
+      width: 4,
       join: 'round',
     });
     expect(stall.batchBadge).toMatchObject({
@@ -514,17 +558,21 @@ describe('ShopPixiPage', () => {
     const registration = inputRouter.store
       .getRegistrations('press')
       .find((entry) => entry.displayObject === stall.root);
+    const point = stall.root.getGlobalPosition();
 
-    registration.onPressChange(true, { confirmed: false });
+    expect(registration).toBeDefined();
+
+    inputRouter.onPointerDown(
+      createPointerEvent(stall.root, 'pointerdown', point),
+    );
 
     expect(stall.visual.scale.x).toBeLessThan(1);
     expect(stall.visual.scale.y).toBe(stall.visual.scale.x);
     expect(stall.frame.alpha).toBe(1);
 
-    registration.onPressChange(false, {
-      confirmed: false,
-      cancelled: true,
-    });
+    inputRouter.onPointerCancel(
+      createPointerEvent(stall.root, 'pointercancel', point),
+    );
 
     expect(stall.visual.scale.x).toBe(1);
     expect(stall.visual.scale.y).toBe(1);
@@ -869,6 +917,83 @@ describe('ShopPixiPage', () => {
     expect(herbsTab.notificationDot.visible).toBe(false);
     expect(row.label.fontWeight).toBe('normal');
     expect(dialog.list.scroll.progressBar).toBeNull();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps Load Stall prices in one centered right slot under status overlays', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+
+    harness.page.openDialog(SHOP_DIALOG_IDS.STALL, {
+      title: 'load stall',
+      items: [
+        {
+          id: 'selected',
+          label: 'sage seed',
+          detail: '8 available',
+          value: '2 coin',
+          valueIconResourceKey: 'coin',
+          itemKind: 'seed',
+          itemKey: 'sageSeed',
+          selected: true,
+          notification: true,
+        },
+        {
+          id: 'notified',
+          label: 'mint seed',
+          detail: '4 available',
+          value: '2 coin',
+          valueIconResourceKey: 'coin',
+          itemKind: 'seed',
+          itemKey: 'mintSeed',
+          notification: true,
+        },
+        {
+          id: 'plain',
+          label: 'nettle seed',
+          detail: '0 available',
+          value: '2 coin',
+          valueIconResourceKey: 'coin',
+          itemKind: 'seed',
+          itemKey: 'nettleSeed',
+        },
+      ],
+    });
+
+    const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.STALL);
+    const [selected, notified, plain] =
+      dialog.list.rows.getWidgets();
+    const priceRightEdges = [selected, notified, plain].map(
+      (row) =>
+        row.valueResource.x + row.valueResource.measuredWidth,
+    );
+
+    expect(priceRightEdges[0]).toBeCloseTo(priceRightEdges[1]);
+    expect(priceRightEdges[1]).toBeCloseTo(priceRightEdges[2]);
+    expect(priceRightEdges[0]).toBeCloseTo(
+      selected.background.x +
+        selected.background.frameWidth -
+        PIXI_ROOT_RUN_GEOMETRY.settings.rowPadding,
+    );
+    for (const row of [selected, notified, plain]) {
+      expect(row.valueResource.y).toBeCloseTo(
+        (row.summaryHeight - 16) / 2,
+      );
+    }
+    expect(
+      selected.selectedIndicator.x +
+        selected.selectedIndicator.width / 2,
+    ).toBeCloseTo(
+      priceRightEdges[0],
+    );
+    expect(
+      selected.visual.getChildIndex(selected.selectedIndicator),
+    ).toBeGreaterThan(
+      selected.visual.getChildIndex(selected.valueResource),
+    );
 
     harness.page.destroy();
     harness.dispose();

@@ -3,6 +3,7 @@ import {
   formatCoinPriceText,
 } from '../../../shared/coinPrice.js';
 import { formatRemainingTime } from '../../../pages/shared/timerDisplay.js';
+import { parseWorldChatSystemPlayerAnnouncement } from '../../../pages/workshop/worldChatSystemAnnouncement.js';
 import { getPlayerFrameTint } from '../../../player/playerFrames.js';
 import { marketLicences } from '../../../shared/marketLicence.js';
 
@@ -101,6 +102,10 @@ const RESEARCH_CAULDRON_LEVEL_ART_ASSET =
   'source:assets/icons/research/icon-research-cauldron-level.png';
 const RESEARCH_FALLBACK_ART_ASSET =
   'source:assets/icons/icon-research.png';
+const WORLD_CHAT_PRESTIGE_ICON_ASSET =
+  'source:assets/icons/icon-prestige-star.png';
+const WORLD_CHAT_PRESTIGE_DETAIL_PATTERN =
+  /^reached ⭐ \d+, completing prestige level \d+$/u;
 
 export class PixiViewModelFactory {
   createTopPanel({
@@ -1372,22 +1377,45 @@ export class PixiViewModelFactory {
         const body = message.body ?? message.message ?? '';
         const username = message.username ?? message.author ?? 'Wizard';
         const isSystem = String(username).toLowerCase() === 'system';
+        const systemPlayer = isSystem
+          ? parseWorldChatSystemPlayerAnnouncement(body)
+          : null;
+        const systemPlayerDetail =
+          systemPlayer?.detail.trimStart() ?? '';
         const id = message.id ?? message.messageId ?? index;
+        const canOpenPlayer =
+          typeof actions.openPlayer === 'function' &&
+          (!isSystem || Boolean(systemPlayer));
         return {
           id,
           type: isSystem ? 'system' : 'player',
           username: isSystem ? 'System' : username,
           body,
+          systemPlayerUsername: systemPlayer?.username ?? '',
+          systemPlayerDetail,
+          bodyIcon: createWorldChatBodyIcon(systemPlayerDetail, {
+            isSystem,
+          }),
           allianceTag: message.allianceTag ?? message.alliance_tag ?? '',
           allianceTagColor:
             message.allianceTagColor ?? message.alliance_tag_color ?? 'ink',
           character: message.character ?? 'elara',
           ageLabel: formatWorldChatMessageAge(message.sentAtMs),
-          semanticId: isSystem ? null : `world-chat-player:${id}`,
+          semanticId: canOpenPlayer
+            ? `${isSystem ? 'world-chat-system-player' : 'world-chat-player'}:${id}`
+            : null,
           onActivate:
-            isSystem || typeof actions.openPlayer !== 'function'
+            !canOpenPlayer
               ? null
-              : () => actions.openPlayer(message),
+              : () =>
+                  actions.openPlayer(
+                    systemPlayer
+                      ? {
+                          ...message,
+                          username: systemPlayer.username,
+                        }
+                      : message,
+                  ),
         };
       }),
       onSubmit: canSend
@@ -1558,7 +1586,12 @@ function createWorldChatPreview(worldChat = {}) {
     preview: messages
       .slice(-2)
       .map((message) => {
-        const name = message.username ?? message.author ?? 'Wizard';
+        const sourceName =
+          message.username ?? message.author ?? 'Wizard';
+        const name =
+          String(sourceName).toLowerCase() === 'system'
+            ? 'System'
+            : sourceName;
         const body = message.body ?? message.message ?? '';
         return `${name}: ${body}`;
       })
@@ -1705,6 +1738,22 @@ function formatWorldChatMessageAge(sentAtMs, nowMs = Date.now()) {
   }
 
   return `${Math.floor(totalHours / 24)}d ago`;
+}
+
+function createWorldChatBodyIcon(body, { isSystem = false } = {}) {
+  if (
+    !isSystem ||
+    !WORLD_CHAT_PRESTIGE_DETAIL_PATTERN.test(String(body ?? ''))
+  ) {
+    return null;
+  }
+
+  return {
+    marker: '⭐',
+    assetId: WORLD_CHAT_PRESTIGE_ICON_ASSET,
+    label: 'Prestige star',
+    size: 12,
+  };
 }
 
 function createResearchBoxModel(

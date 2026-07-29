@@ -241,8 +241,8 @@ describe('PixiAnnouncementPresenter', () => {
 
     expect(harness.getLastModel()).toMatchObject({
       kind: 'research',
-      title: 'research complete',
-      copy: 'staff stall 1',
+      variant: 'banner-rows',
+      title: 'Research Complete!',
       research: {
         id: 'advanced:stallStaffing:1',
       },
@@ -251,9 +251,20 @@ describe('PixiAnnouncementPresenter', () => {
         silhouetteFrameName: 'research:fastSell',
       },
     });
-    expect(harness.getLastModel().rows[0].text).toBe(
-      'sells 2 items per cycle',
-    );
+    expect(harness.getLastModel().rows).toEqual([
+      expect.objectContaining({
+        label: 'Research',
+        value: 'Staff Stall 1',
+        height: 34,
+        color: '#ffffff',
+      }),
+      expect.objectContaining({
+        label: 'Effect',
+        value: 'sells 2 items per cycle',
+        height: 34,
+        valueColor: '#ffffff',
+      }),
+    ]);
 
     harness.publishGameplay();
     expect(harness.runtime.openDialog).toHaveBeenCalledTimes(1);
@@ -397,6 +408,40 @@ describe('PixiAnnouncementPresenter', () => {
         }),
       ]),
     );
+    expect(harness.timers).toHaveLength(0);
+
+    expect(presenter.showResearchCompletePreview()).toEqual({
+      ok: true,
+      dialogId: 'researchCompleteAnnouncement',
+      pixiDialogId: PIXI_ANNOUNCEMENT_DIALOG_ID,
+      presentation: presenter.getCurrentPresentation(),
+    });
+    expect(harness.getLastModel()).toMatchObject({
+      kind: 'research',
+      variant: 'banner-rows',
+      title: 'Research Complete!',
+      preview: true,
+      dismissible: true,
+      icon: {
+        frameName: 'research:fastSell',
+        silhouetteFrameName: 'research:fastSell',
+      },
+      animation: {
+        kind: 'research-complete',
+        iconDelayMs: 180,
+        rowDelayMs: 540,
+      },
+    });
+    expect(harness.getLastModel().rows).toEqual([
+      expect.objectContaining({
+        label: 'Research',
+        value: 'Staff Stall 1',
+      }),
+      expect.objectContaining({
+        label: 'Effect',
+        value: 'Sells 2 items per cycle',
+      }),
+    ]);
     expect(harness.timers).toHaveLength(0);
   });
 

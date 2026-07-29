@@ -21,6 +21,7 @@ The game should look like a polished fantasy workshop HUD: dark layered rooms, r
 - Mobile readability comes from the room UI scale layer, not from changing the source font size.
 - Normal font weight by default.
 - Normal line height and normal letter spacing.
+- Typography has exactly two outline treatments: regular text has no stroke; stroked text uses the shared `4px` rounded outline. Stroke color may follow the owning skin, but feature-local widths and extra outline shadows are not allowed.
 - Use tabular lining numerals for resource values, costs, counts, timers, and leaderboard numbers.
 - Use bold only for totals, section names, or strong resource values. Selected, current, pressed, checked, active, and focus states keep the same font weight as their resting state.
 - Do not define mouse-hover states or use below-text lines for hold, press, or ordinary current state. The only underline exception is a neutral selected option in a one-of-many control, such as a tab or button panel button.
@@ -58,7 +59,7 @@ The game should look like a polished fantasy workshop HUD: dark layered rooms, r
 
 - Buttons are tactile image-backed controls with visible labels and optional meaningful icons.
 - Center label text.
-- Every visible button label uses a text stroke chosen by the shared button style for contrast; keep the stroke in normal, selected, pressed, and disabled states instead of adding feature-local outline values.
+- Every visible button label uses the shared thick text stroke with a color chosen by the button skin for contrast; keep it in normal, selected, pressed, and disabled states.
 - Native buttons must be reset so only the shared game skin is visible, not platform chrome.
 - Workshop side-panel labels and the summon cost button keep their authored capitalization. Side labels use centered white `13.5px` Lilita One with a heavy rounded near-black outline; rendering must not force them to lowercase.
 - Workshop side controls use the approved `RootRunSideAction`: two complete stacks anchored `10px` from their owned source-stage edges, with a `50x60px` source hit box, one flat rough-edged icon rendered at `72%` inside its `50x50px` art frame, and a further `2px` artwork nudge toward the edge. Keep the tight `-10px` icon-to-label offset and `62px` row pitch. The stacks begin `18px` below Elara's Request. Each visible control is placed by its declared left/right side and numeric weight, with hidden controls removed from slot allocation and reduced-motion-safe state transitions. Keep the shared brown, tan, gold, and purple palette; do not add feature-local backing plates, tint layers, mirroring, or per-icon scales.

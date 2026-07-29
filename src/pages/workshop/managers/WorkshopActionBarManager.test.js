@@ -479,7 +479,9 @@ describe('WorkshopActionBarManager', () => {
     expect(labelRule).toMatch(/\bwidth:\s*58px;/);
     expect(labelRule).toMatch(/\bfont-size:\s*13\.5px;/);
     expect(labelRule).toMatch(/\bline-height:\s*var\(--workshop-panel-button-label-line-height\);/);
-    expect(labelRule).toContain('-webkit-text-stroke: 2.25px');
+    expect(labelRule).toContain(
+      '-webkit-text-stroke: var(--style-text-stroke-width)',
+    );
     expect(labelRule).toMatch(/\btext-align:\s*center;/);
     expect(iconFrameRule).toMatch(/\btop:\s*0;/);
     expect(iconFrameRule).toMatch(/\bwidth:\s*50px;/);

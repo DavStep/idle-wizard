@@ -99,7 +99,7 @@ describe('WorkshopPixiPage', () => {
     const row = harness.page.tasks.rows.get('request-1');
     expect(harness.page.tasks.panel.title.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 2,
+      width: 4,
       join: 'round',
     });
     for (const text of [
@@ -112,7 +112,7 @@ describe('WorkshopPixiPage', () => {
       expect(text.style.fill).toBe('#ffffff');
       expect(text.style.stroke).toMatchObject({
         color: '#17191f',
-        width: 2,
+        width: 4,
         join: 'round',
       });
     }
@@ -150,7 +150,7 @@ describe('WorkshopPixiPage', () => {
       expect(control.label.style.fill).toBe('#ffffff');
       expect(control.label.style.stroke).toMatchObject({
         color: '#0a0a0a',
-        width: 4.5,
+        width: 4,
         join: 'round',
       });
       expect(control.icon.x).toBe(
@@ -518,7 +518,7 @@ describe('WorkshopPixiPage', () => {
     expect(flyout.text.style.fill).toBe('#ffffff');
     expect(flyout.text.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 2,
+      width: 4,
       join: 'round',
     });
     expect(flyout.background.width).toBeGreaterThan(flyout.text.width);
@@ -992,10 +992,10 @@ describe('WorkshopPixiPage', () => {
       '#4aa83f',
     ]);
     expect(seedRows.map((row) => row.value.textObject.style.stroke)).toEqual([
-      expect.objectContaining({ color: '#6c5008', width: 2 }),
+      expect.objectContaining({ color: '#6c5008', width: 4 }),
       null,
-      expect.objectContaining({ color: '#762824', width: 2 }),
-      expect.objectContaining({ color: '#205c22', width: 2 }),
+      expect.objectContaining({ color: '#762824', width: 4 }),
+      expect.objectContaining({ color: '#205c22', width: 4 }),
     ]);
     expect(seedRows.every((row) => row.selectedIndicator.visible === false)).toBe(true);
     const expectedListFrameWidth =
@@ -1895,7 +1895,7 @@ describe('WorkshopPixiPage', () => {
     expect(playerRow.tag.text).toBe('[MOSS]');
     expect(playerRow.tag.style.stroke).toMatchObject({
       color: '#2b1912',
-      width: 1,
+      width: 4,
     });
     expect(playerRow.username.text).toBe('Mira');
     expect(playerRow.username.style.fill).toBe('#634934');
@@ -1941,6 +1941,129 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('colors system announcements and opens Player Info from the announced username', () => {
+    const openPlayer = vi.fn();
+    const pressRegistrations = [];
+    const inputRouter = {
+      registerPressTarget: vi.fn((displayObject, descriptor) => {
+        pressRegistrations.push({ displayObject, descriptor });
+        const unregister = vi.fn();
+        unregister.unregister = unregister;
+        return unregister;
+      }),
+      pushModal: vi.fn(() => ({ unregister: vi.fn() })),
+    };
+    const harness = createHarness({ inputRouter });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.worldChat = {
+      title: 'World Chat',
+      composer: {
+        placeholder: 'Message',
+        maxLength: 160,
+        enabled: true,
+      },
+      rows: [
+        {
+          id: 'system-level-1',
+          type: 'system',
+          username: 'System',
+          systemPlayerUsername: 'Ada',
+          systemPlayerDetail: 'reached level 14',
+          body: 'Ada reached level 14',
+          ageLabel: 'now',
+          semanticId: 'world-chat-system-player:system-level-1',
+          onActivate: openPlayer,
+        },
+      ],
+      onSubmit: vi.fn(),
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('worldChat');
+
+    const dialog = harness.dialogs.get('workshop.worldChat');
+    const row = dialog.rows.get('system-level-1');
+    const playerPress = pressRegistrations.find(
+      ({ displayObject }) => displayObject === row.systemPlayerUsername,
+    );
+    const avatarPress = pressRegistrations.find(
+      ({ displayObject }) => displayObject === row.avatar,
+    );
+
+    expect(row.username.text).toBe('System');
+    expect(row.username.style.fill).toBe('#432d20');
+    expect(row.username.eventMode).toBe('none');
+    expect(row.systemPlayerUsername.text).toBe('Ada');
+    expect(row.systemPlayerUsername.style.fill).toBe('#72533a');
+    expect(row.systemPlayerUsername.eventMode).toBe('static');
+    expect(row.body.text).toBe('reached level 14');
+    expect(row.body.x).toBeGreaterThan(row.systemPlayerUsername.x);
+    expect(avatarPress?.descriptor.enabled()).toBe(false);
+    expect(playerPress?.descriptor.excludePageSwipe).toBe(true);
+    expect(playerPress?.descriptor.onActivate()).toBe(true);
+    expect(openPlayer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'system-level-1' }),
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('replaces the prestige announcement emoji with the retained prestige-star asset', () => {
+    const prestigeAssetId = 'source:assets/icons/icon-prestige-star.png';
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.has = vi.fn((assetId) => assetId === prestigeAssetId);
+    assetManager.getTexture = vi.fn((assetId) =>
+      assetId === prestigeAssetId ? Texture.WHITE : Texture.EMPTY,
+    );
+    const harness = createHarness({ assetManager });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.worldChat = {
+      title: 'World Chat',
+      composer: {
+        placeholder: 'Message',
+        maxLength: 160,
+        enabled: true,
+      },
+      rows: [
+        {
+          id: 'system-prestige-1',
+          type: 'system',
+          username: 'System',
+          body: 'Ada reached ⭐ 4, completing prestige level 40',
+          bodyIcon: {
+            marker: '⭐',
+            assetId: prestigeAssetId,
+            label: 'Prestige star',
+            size: 12,
+          },
+          ageLabel: 'now',
+        },
+      ],
+      onSubmit: vi.fn(),
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('worldChat');
+    const dialog = harness.dialogs.get('workshop.worldChat');
+    const systemRow = dialog.rows.get('system-prestige-1');
+
+    expect(assetManager.getTexture).toHaveBeenCalledWith(prestigeAssetId);
+    expect(systemRow.body.text).not.toContain('⭐');
+    expect(systemRow.bodyIcon.texture).toBe(Texture.WHITE);
+    expect(systemRow.bodyIcon.visible).toBe(true);
+    expect(systemRow.bodyIcon.renderable).toBe(true);
+    expect(systemRow.bodyIcon.width).toBe(12);
+    expect(systemRow.bodyIcon.height).toBe(12);
+    expect(systemRow.bodyIcon.y).toBeGreaterThan(systemRow.body.y);
+    expect(systemRow.bodyIcon.y).toBeLessThan(
+      systemRow.body.y + 13,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('shows and clears the retained inbox notification from its view model', () => {
     const harness = createHarness();
     const model = createWorkshopViewModel();
@@ -1969,7 +2092,7 @@ describe('WorkshopPixiPage', () => {
 
     expect(harness.page.summon.root.position).toMatchObject({
       x: 180,
-      y: 2170 / 3 - 101 - 41 - 52 - 32 + 8,
+      y: 2170 / 3 - 101 - 41 - 52 - 32 + 16,
     });
     expect(harness.page.bagButton.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,

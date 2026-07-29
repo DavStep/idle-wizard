@@ -31,6 +31,7 @@ import {
   PixiProgressBar,
   PixiTimedProgressBar,
 } from '../../primitives/PixiProgressBar.js';
+import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 
 let nextRetainedInputId = 1;
 
@@ -405,7 +406,7 @@ export class RetainedPanel {
     this.title.position.set(8, -12);
     this.title.style.stroke = this.strong
       ? null
-      : { color: this.theme.surface, width: 2, join: 'round' };
+      : normalizePixiTextStroke({ color: this.theme.surface });
     const titleWidth = Math.ceil(this.title.width) + 4;
     this.titleBacking
       .clear()
@@ -1121,7 +1122,9 @@ export function createText(text = '', style = RETAINED_TEXT_STYLES.body) {
       letterSpacing: 0,
       padding: Math.max(0, Number(style.padding) || 0),
       whiteSpace: style.wordWrapWidth ? 'normal' : 'pre',
-      ...(style.stroke ? { stroke: style.stroke } : {}),
+      ...(style.stroke
+        ? { stroke: normalizePixiTextStroke(style.stroke) }
+        : {}),
     },
   });
 }
@@ -1143,7 +1146,9 @@ export function applyTextTheme(text, theme, style = RETAINED_TEXT_STYLES.body) {
     letterSpacing: 0,
     padding: Math.max(0, Number(style.padding) || 0),
     whiteSpace: style.wordWrapWidth ? 'normal' : 'pre',
-    ...(style.stroke ? { stroke: style.stroke } : {}),
+    ...(style.stroke
+      ? { stroke: normalizePixiTextStroke(style.stroke) }
+      : {}),
   };
 }
 

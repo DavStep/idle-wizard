@@ -224,16 +224,25 @@ export class PixiTextField extends Container {
     const textInsetX = accountUsername ? 0 : border + paddingX;
     const textInsetY =
       accountUsername ? 0 : border + paddingY - (brownInset ? 2 : 0);
+    const textStrokeBleed = accountUsername
+      ? PIXI_UI_GEOMETRY.strokedTextWidth
+      : 0;
     this.frame.visible = !brownInset && !accountUsername;
     this.insetFrame.visible = brownInset;
     this.textViewport.position.set(textInsetX, textInsetY);
     this.textMask
       .clear()
       .rect(
-        textInsetX,
-        textInsetY,
-        Math.max(0, this.fieldWidth - textInsetX * 2),
-        Math.max(0, this.fieldHeight - textInsetY * 2),
+        textInsetX - textStrokeBleed,
+        textInsetY - textStrokeBleed,
+        Math.max(
+          0,
+          this.fieldWidth - textInsetX * 2 + textStrokeBleed * 2,
+        ),
+        Math.max(
+          0,
+          this.fieldHeight - textInsetY * 2 + textStrokeBleed * 2,
+        ),
       )
       .fill('#ffffff');
     this.hitArea = new Rectangle(0, 0, this.fieldWidth, this.fieldHeight);

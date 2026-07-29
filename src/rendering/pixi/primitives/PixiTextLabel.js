@@ -2,6 +2,7 @@ import { Container, Text } from 'pixi.js';
 
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_TEXT_STROKE_WIDTH,
   PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
 
@@ -33,7 +34,7 @@ export class PixiTextLabel extends Container {
     this.align = align;
     this.wordWrap = wordWrap;
     this.wrapWidth = wrapWidth;
-    this.stroke = stroke;
+    this.stroke = stroke ? normalizePixiTextStroke(stroke) : null;
     this.letterSpacing = letterSpacing;
     this.textObject = new Text({
       text: String(text ?? ''),
@@ -67,7 +68,7 @@ export class PixiTextLabel extends Container {
       style.lineHeight = this.lineHeight;
     }
     if (this.stroke) {
-      style.stroke = normalizeStroke(this.stroke);
+      style.stroke = this.stroke;
     }
     return style;
   }
@@ -122,8 +123,8 @@ export class PixiTextLabel extends Container {
   }
 
   setStroke(stroke) {
-    this.stroke = stroke;
-    this.textObject.style.stroke = stroke ? normalizeStroke(stroke) : null;
+    this.stroke = stroke ? normalizePixiTextStroke(stroke) : null;
+    this.textObject.style.stroke = this.stroke;
     return this;
   }
 
@@ -164,13 +165,18 @@ export class PixiTextLabel extends Container {
   }
 }
 
-function normalizeStroke(stroke) {
+export function normalizePixiTextStroke(stroke) {
   if (typeof stroke === 'string' || typeof stroke === 'number') {
-    return { color: stroke, width: 1, join: 'round' };
+    return {
+      color: stroke,
+      width: PIXI_TEXT_STROKE_WIDTH,
+      join: 'round',
+    };
   }
+  const scale = Math.max(0, Number(stroke.scale) || 1);
   return {
     color: stroke.color ?? '#0a0a0a',
-    width: Math.max(0, Number(stroke.width) || 0),
+    width: PIXI_TEXT_STROKE_WIDTH * scale,
     join: stroke.join ?? 'round',
   };
 }

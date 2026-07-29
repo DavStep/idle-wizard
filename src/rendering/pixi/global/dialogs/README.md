@@ -42,6 +42,10 @@ Canonical IDs:
 Open `/src/dev/uiRecipes/inbox-dialog.html?empty=1` to inspect the real retained
 empty inbox without gameplay setup, backend state, or save publication.
 
+Open `?devUi=researchCompleteAnnouncement` to inspect the retained
+research-complete ribbon, centered research icon, and row composition without
+completing research or publishing gameplay state.
+
 The views accept renderer-neutral view models. Common fields are:
 
 ```text

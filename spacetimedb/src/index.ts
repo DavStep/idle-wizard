@@ -4923,7 +4923,15 @@ const potionRecipeCatalog = [
       { itemKey: 'sageHerb', quantity: 1 },
     ],
   },
-];
+].map((recipe) => ({
+  ...recipe,
+  ingredients: recipe.ingredients.flatMap((ingredient) =>
+    Array.from(
+      { length: ingredient.quantity },
+      () => ({ itemKey: ingredient.itemKey, quantity: 1 }),
+    ),
+  ),
+}));
 
 const unknownPotionCatalogByKey = new Map(
   unknownPotionCatalog.map((potion) => [potion.key, potion]),
@@ -7129,13 +7137,24 @@ function formatPotionDiscoveryRecipeText(potionKey: string): string {
     return '';
   }
 
-  return recipe.ingredients
+  const ingredientGroups: Array<{ itemKey: string; quantity: number }> = [];
+  for (const ingredient of recipe.ingredients) {
+    const previous = ingredientGroups.at(-1);
+    if (previous?.itemKey === ingredient.itemKey) {
+      previous.quantity += 1;
+    } else {
+      ingredientGroups.push({
+        itemKey: ingredient.itemKey,
+        quantity: 1,
+      });
+    }
+  }
+
+  return ingredientGroups
     .map((ingredient) => {
-      const quantity = Math.floor(Number(ingredient.quantity));
-      const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
       const catalogItem = npcMarketCatalogByItemKey.get(ingredient.itemKey);
       const label = catalogItem?.itemLabel ?? ingredient.itemKey;
-      return `${safeQuantity} ${label}`;
+      return `${ingredient.quantity} ${label}`;
     })
     .join(', ');
 }
@@ -9147,8 +9166,32 @@ function normalizePotionRecipesGameConfigJson(
     return originalJson;
   }
 
+  let changed = false;
+  const normalizedRecipes = recipes.map((recipe) => {
+    if (!isRecord(recipe) || !Array.isArray(recipe.ingredients)) {
+      return recipe;
+    }
+    let recipeChanged = false;
+    const normalizedIngredients = recipe.ingredients.flatMap((ingredient) => {
+      if (!isRecord(ingredient)) {
+        return [ingredient];
+      }
+      const quantity = Math.max(1, Math.floor(Number(ingredient.quantity) || 1));
+      if (quantity !== 1) {
+        recipeChanged = true;
+        changed = true;
+      }
+      return Array.from(
+        { length: quantity },
+        () => ({ ...ingredient, quantity: 1 }),
+      );
+    });
+    return recipeChanged
+      ? { ...recipe, ingredients: normalizedIngredients }
+      : recipe;
+  });
   const seenPotionKeys = new Set(
-    recipes.map((recipe) =>
+    normalizedRecipes.map((recipe) =>
       normalizeNpcMarketItemKey(String((recipe as Record<string, unknown>)?.potionKey ?? '')),
     ),
   );
@@ -9156,13 +9199,13 @@ function normalizePotionRecipesGameConfigJson(
     (recipe) => !seenPotionKeys.has(recipe.potionKey),
   );
 
-  if (missingCatalogRecipes.length <= 0) {
+  if (missingCatalogRecipes.length <= 0 && !changed) {
     return originalJson;
   }
 
   return JSON.stringify({
     ...parsedConfig,
-    recipes: [...recipes, ...missingCatalogRecipes],
+    recipes: [...normalizedRecipes, ...missingCatalogRecipes],
   });
 }
 
@@ -13618,7 +13661,7 @@ function validatePotionRecipesGameConfig(value: unknown) {
       brewDurationMs > MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000 ||
       !Array.isArray(ingredients) ||
       ingredients.length < 1 ||
-      ingredients.length > 10
+      ingredients.length > 6
     ) {
       throw new Error('Invalid potion recipe config.');
     }

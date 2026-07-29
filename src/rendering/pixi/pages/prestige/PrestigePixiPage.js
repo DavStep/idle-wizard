@@ -7,6 +7,7 @@ import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiResourceLabel } from '../../primitives/PixiResourceLabel.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
+import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
@@ -1004,11 +1005,9 @@ class PrestigeRowWidget {
       align: 'center',
       fill: RESEARCH_RANK_INK,
     });
-    this.rankLabel.style.stroke = {
+    this.rankLabel.style.stroke = normalizePixiTextStroke({
       color: '#0a0a0a',
-      width: 1.2,
-      join: 'round',
-    };
+    });
     this.action.applyTheme(theme);
     for (const label of this.rewardResources) {
       label.applyTheme(theme);

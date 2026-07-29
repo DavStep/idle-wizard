@@ -34,7 +34,7 @@ experience_type: style
 - Reward particles anchored to room controls must measure and animate in `.game-stage` coordinates, not raw `document.body` viewport coords; the fitted stage can drift or double body-fixed positions on web/mobile.
 - Icon-mode reward text should hide only after visual nodes actually spawn; reduced-motion/mobile fallbacks need visible text.
 - Resource icons are fixed on. Resource and currency labels use their shared semantic color family, including mana blue and coin gold, while disabled/locked states consistently reduce contrast. Do not invent feature-local colors for the same resource.
-- For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
+- Recipe ingredient rows are unit slots, so show the item label without a quantity prefix; repeated herbs render as repeated ordered rows.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
 - Garden seed selection must use the exact Load Stall retained inventory-row contract: `50px` Settings-backed rows, `28px` seed-pack art, two-line availability copy, and the shared selected checkmark. Do not substitute a compact text-and-count row.
 - Standalone info/help buttons use `assets/game/source/ui/prop_info.png` through `setInfoButtonIcon`; never fall back to `[i]`, `?`, or a font glyph.
@@ -52,6 +52,7 @@ experience_type: style
 - Use high-contrast outlined text, layered midnight surfaces, readable compact panels, one dominant illustrated room landmark, and purposeful fantasy decoration.
 - Player-facing copy uses intentional capitalization: title case for titles, tabs, named items, research, events, and task labels; sentence case for instructions and narrative copy. Preserve user-entered names exactly as typed.
 - Project typography uses Root Run's `Lilita One` at `13px` source size with tabular lining numerals for values.
+- Typography has only regular and stroked treatments: regular text has no outline, while every stroked label resolves through the shared `4px` logical-surface rounded outline. Preserve skin-owned stroke colors, but never add feature-local widths or outline-building text shadows.
 - Every visible button label is stroked in every state; reuse the shared button style's skin-appropriate stroke instead of introducing feature-local outline values.
 - Keep popup/dialog titles at `14px`; ordinary block titles and body text share the source size.
 - Box titles use bold weight.
@@ -67,7 +68,7 @@ experience_type: style
 - Text-entry dialog save buttons should save on `pointerdown` so keyboard blur cannot move the scaled layout before click submit.
 - For Android safe areas, let chrome backgrounds visually extend behind status/gesture areas and inset only interactive content; avoid black gutter padding.
 - Non-dialog panels use approved shared image-backed chrome with compact padding and shallow skin-owned depth; do not invent feature-local radius, bevel, or shadow values.
-- Every player-facing popup/dialog uses the exact Root Run Expedition composition: brown outer nine-slice, Expedition paper inner nine-slice, purple title plaque, round X control centered below when dismissal is allowed, and one compact bottom-right shadow. At the `390px` logical width preserve the `364px` shell; `352px` paper with `6px` horizontal, `31px` top, and `21px` compact bottom insets; `222x44px` title; and `41px` close with `23px` shell gap. Plaque text scales the exported `64px` type, `73px` line box, `22px` top offset, and `8px` stroke to `23.1px`, `26.4px`, `7.9px`, and `2.9px`; do not reuse the generic `14px` dialog-title token. App-level blockers use the same shell with the close action hidden when the flow must retain control; feature-specific artwork stays inside the paper content area. The first-run cutscene is not a dialog: reuse the dark Research-row backing with the white title inside the frame, sentence-case white copy, and a content-width right-aligned yellow action.
+- Every player-facing popup/dialog uses the exact Root Run Expedition composition: brown outer nine-slice, Expedition paper inner nine-slice, purple title plaque, round X control centered below when dismissal is allowed, and one compact bottom-right shadow. At the `390px` logical width preserve the `364px` shell; `352px` paper with `6px` horizontal, `31px` top, and `21px` compact bottom insets; `222x44px` title; and `41px` close with `23px` shell gap. Plaque text scales the exported `64px` type, `73px` line box, and `22px` top offset to `23.1px`, `26.4px`, and `7.9px`, then uses the shared `4px` logical-surface text stroke; do not reuse the generic `14px` dialog-title token. App-level blockers use the same shell with the close action hidden when the flow must retain control; feature-specific artwork stays inside the paper content area. The first-run cutscene is not a dialog: reuse the dark Research-row backing with the white title inside the frame, sentence-case white copy, and a content-width right-aligned yellow action.
 - For separated dialog sections, copy Load Stall's split-paper composition exactly: reuse the Expedition paper nine-slice for each full-width section, keep content on the standard `20px`-inset dialog column without another side inset, start section content `5px` from its content boundary, and preserve an `8px` visible paper-to-paper gap. Never replace this with nested feature-local cards.
 - Every whole-dialog category tab row stays fully inside the brown shell footer below the paper: `28px` row height, `9px` side insets, `6px` above, and `10px` below. Expand gaps by count (`4px` for five, `6px` for four, `8px` for three, `10px` for two), then divide the remaining width equally. Apply the same rule to continuous and split paper; only content-local subsection controls remain inside the paper.
 - Progress, research-complete, and feature-unlock announcements are full-screen screens, not dialogs: keep their centered composition unframed and reserve dialog chrome for report-style announcements.
@@ -109,7 +110,7 @@ experience_type: style
 - Shared image-backed cost buttons must wrap plain labels such as `free` or `locked` in a positioned label above the skin pseudo-element; resource-cost labels already own that foreground layer.
 - Research name clicks open a `style-dialog` info popup; keep explanation text on the research definition snapshot.
 - Brewing recipe popup hides locked recipes; recipe names are bold, ingredient rows align flush with names, and `time:` details stay muted.
-- Brewing recipe popup ingredient rows show required amount on the left (`- 3 sage`) and owned count on the right (`owned 31`), not `(31/3) sage`.
+- Brewing recipe popup ingredient rows show one ordered slot on the left (`- sage`) and owned count on the right (`owned 31`); repeated herbs use repeated rows.
 - Brewing recipe popup uses only the dialog title `recipes`; do not add a second inner `recipes` group title or extra list top padding.
 - Brewing recipe popup select rows need a fixed checkbox slot; `[ ]` to `[x]` must not reflow the row, and focus or selection must not change font weight.
 - Brewing recipe page-turn ghosts must stretch recipe rows like live pages; otherwise bottom select buttons jump upward during the animation.
@@ -129,7 +130,7 @@ experience_type: style
 - Brewing cauldron action controls sit outside the bordered box in a right-side stack; keep button dimensions synced, and target hidden/disabled action CSS outside `.style-box` scope.
 - Brewing `recipes`/primary/quantity/auto controls use the shared yellow regular-button skin; cauldron purchase prices use the green cost-button skin at the same compact dimensions. Do not reintroduce feature-local player-card button frames that override those color modifiers.
 - Brewing locked/research cauldron placeholders are only the dotted locked frame; hide the normal cauldron title/count and style-box frame/background.
-- Brewing cauldron staged ingredients display as adjacent quantity groups like `2 nettle`; do not show numbered slots or visible action words.
+- Brewing cauldron staged ingredients and selected-recipe requirements use one herb per ordered slot; do not collapse adjacent duplicates into quantity groups or show visible action words.
 - Brewing flow boxes can be broken by the late shared absolute-position style block; remove flow-managed Brewing boxes from that block when converting them to scroll layout.
 - Brewing workbench must reserve bottom clearance for fixed `recipes`/`potions` buttons so scroll content cannot render underneath them.
 - Seed summon feedback is a transient flyout, not a persistent row in the `seeds` block.
@@ -139,7 +140,7 @@ experience_type: style
 - Unknown item/potion masks use static six-character `??????` labels with `aria-label="unknown"`; do not use animated matrix/glitch text.
 - Tabbed popups put whole-dialog category tabs inside the bordered `.style-dialog` brown footer; keep modal role/focus on the wrapper.
 - Keep `6px` between the paper and footer tabs and `10px` from the complete tab row to the brown shell bottom.
-- Popup tab buttons use the same `2px` stroke as popup dialogs.
+- Popup tab buttons and popup titles use the same shared `4px` logical-surface stroke.
 - The canonical whole-dialog footer tab height is `28px`; use the compact `11px` tab type without shrinking the hit area.
 - Tabbed popup wrappers should own centering/enter animation; do not also animate the nested `.style-dialog` with centered-dialog transforms.
 - Dialog close controls should sit as normal-weight border labels, like titles but not bold, not as boxed buttons inside the panel.
@@ -248,10 +249,10 @@ experience_type: style
 - Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
 - Gameplay state `subscribe` is passive; managers that diff state must seed their baseline from `gameplayFacade.getSnapshot()` on mount.
 - World chat compact chrome uses the shared room-panel skin and one full-surface press target: the title, preview rows (including the centered empty state), padding, and frame all open the dialog through the shared confirmed press, haptic, and release-feedback path.
-- World chat system sender labels use the normal chat text hierarchy; do not derive their text color from resource categories.
+- World chat system rows keep their original parchment surface. Use a darker brown for the `System` title and a subtly lighter brown than body copy for the announced-player name; make only the announced player name interactive.
 - Successful world/alliance chat sends should render a local sent row until the matching subscription row arrives; reducer success can precede the table/view echo.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
-- Compact world chat preview rows should stay one line with ellipsis; wrapping belongs in the full popup only.
+- Compact world chat preview rows stay one line with ellipsis, form one left-aligned block vertically centered with a `2px` downward optical correction, and render the system sender as `System`; wrapping belongs in the full popup only.
 - World chat popup rows need normal block flow plus at least `--style-row-min-height` line-height; fixed 16px chat line-height can overlap wrapped rows.
 - Room page content must reserve `--style-room-chat-clearance`, including the chat border-title overhang; otherwise lower page blocks render under shared world chat.
 - Workshop side controls belong in fixed left/right stacks directly below `elara's request`. Every control declares only side and weight; pack visible controls from the shared top anchor without reserving hidden rows. Keep slot coordinates fixed, animate only short enter/exit or slot-shift state changes, and do not derive placement from world-chat clearance.
@@ -287,7 +288,7 @@ experience_type: style
 - Logs popup should auto-pin new entries only while the player is at top; preserve manual scroll position otherwise.
 - Timed progress bars should visually match the logs dialog rail: 3px high, compact black border, black fill, no visible timer label inside the rail.
 - Smooth timed progress bars with compositor `transform` transitions from the latest snapshot to completion; do not raise gameplay snapshot cadence just to reduce visible stepping.
-- Brewing selected recipe requirements render inside the cauldron as `placed/required` plus `need N`/`ready`; keep them stable before and after drops.
+- Brewing selected recipe requirements render as stable one-herb orbit slots with item art and name only; do not show owned/required ratios.
 - Brewing selected recipe rows are correction targets through tap/ARIA only; do not reintroduce visible `next` or `remove` text into the cauldron body.
 - Garden plot `.is-empty` means the plot has no active plant, not that its selected seed label is unavailable; selected seed labels still follow the row's normal state color.
 - Research item-name spans may keep resource metadata for icons, but their text inherits the row's normal, completed, or unavailable state color.

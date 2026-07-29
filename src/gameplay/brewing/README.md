@@ -1,7 +1,9 @@
 # Brewing
 
 Brewing stages owned herbs in cauldron order, spends mana, and starts one active brew.
-Each cauldron accepts up to six staged ingredients; recipes may use fewer.
+Each cauldron accepts up to six staged ingredients; every occupied slot holds
+exactly one herb and recipes may use fewer than six slots. Repeated herbs are
+stored as repeated ordered recipe slots.
 Known recipes require matching ingredient order and completed recipe research.
 Unknown mixes brew into wasted potion, which uses the default wasted brew balance.
 Cauldron slots are bought with coin up to the current progression cap. Level milestones unlock the first 2 caps before prestige, then permanent advanced capacity research unlocks cauldrons 3-5 after enough completed prestiges and makes the researched cap buyable immediately in that run. Milestones and research do not grant extra cauldrons for free.

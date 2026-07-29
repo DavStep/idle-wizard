@@ -61,6 +61,7 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   autoHitTop: -4,
   quantityHitSize: 44,
   potionIconSize: 50,
+  carouselContentOffset: 32,
   previewVerticalOffset: 22,
   navigationButtonWidth: 34,
   navigationButtonHeight: 38,
@@ -108,7 +109,9 @@ const BREWING_DETAIL_TEXT_STYLE = Object.freeze({
   body: Object.freeze({ fontSize: 10, lineHeight: 12 }),
   small: Object.freeze({ fontSize: 9, lineHeight: 11 }),
 });
+const POTION_PREVIEW_BACKGROUND_COLOR = 0x0e1016;
 const BREWING_STATUS_TEXTURE_PADDING = 1;
+const BREWING_STATUS_LABEL_TEXTURE_PADDING = 16;
 const RETAINED_INGREDIENT_NAME_STYLE = Object.freeze({
   fontSize: 8,
   lineHeight: 9,
@@ -305,6 +308,12 @@ export class BrewingHudPixi {
       borderInsets: POTION_PREVIEW_BORDER_INSETS,
       label: 'brewing-potion-preview-well',
     });
+    this.potionPreviewBackgroundFilter = createSolidColorFilter(
+      POTION_PREVIEW_BACKGROUND_COLOR,
+    );
+    this.potionPreviewFrame.filters = this.potionPreviewBackgroundFilter
+      ? [this.potionPreviewBackgroundFilter]
+      : null;
     this.potionIcon = new Sprite(Texture.EMPTY);
     this.potionIcon.anchor.set(0.5);
     this.potionName = createText('', {
@@ -370,7 +379,7 @@ export class BrewingHudPixi {
     this.phaseLabel = createText('', {
       ...BREWING_DETAIL_TEXT_STYLE.title,
       fontWeight: '700',
-      padding: BREWING_STATUS_TEXTURE_PADDING,
+      padding: BREWING_STATUS_LABEL_TEXTURE_PADDING,
     });
     this.phaseTime = createText('', {
       ...BREWING_DETAIL_TEXT_STYLE.body,
@@ -758,7 +767,10 @@ export class BrewingHudPixi {
     const width = sourceWidth - edge * 2;
     const previewVerticalOffset =
       BREWING_HUD_GEOMETRY.previewVerticalOffset;
-    const cauldronCenterY = 136 + previewVerticalOffset;
+    const carouselContentOffset =
+      BREWING_HUD_GEOMETRY.carouselContentOffset;
+    const cauldronCenterY =
+      136 + previewVerticalOffset + carouselContentOffset;
     this.carouselPanel.setBounds(
       edge,
       BREWING_HUD_GEOMETRY.top,
@@ -773,7 +785,10 @@ export class BrewingHudPixi {
       BREWING_HUD_GEOMETRY.detailHeight,
     );
     this.layoutCarouselHeader();
-    this.counter.position.set(width - 10, 44);
+    this.counter.position.set(
+      width - 10,
+      44 + carouselContentOffset,
+    );
     this.cauldronArt.position.set(width / 2, cauldronCenterY);
     this.cauldronArt.width = 116;
     this.cauldronArt.height = 94;
@@ -786,12 +801,21 @@ export class BrewingHudPixi {
     this.cauldronLiquid.height = this.cauldronArt.height;
     this.redrawCauldronLiquid();
     this.cauldronLiquidHighlight.position.set(0, 0);
-    this.lockArt.position.set(width / 2, 135 + previewVerticalOffset);
+    this.lockArt.position.set(
+      width / 2,
+      135 + previewVerticalOffset + carouselContentOffset,
+    );
     this.lockArt.alpha = 1;
     this.lockArt.width = 44;
     this.lockArt.height = 44;
-    this.lockLabel.position.set(width / 2, 177 + previewVerticalOffset);
-    this.dots.position.set(width / 2, 223 + previewVerticalOffset);
+    this.lockLabel.position.set(
+      width / 2,
+      177 + previewVerticalOffset + carouselContentOffset,
+    );
+    this.dots.position.set(
+      width / 2,
+      223 + previewVerticalOffset + carouselContentOffset,
+    );
     this.drawRecipeOrbit(width);
     this.captureCauldronChangeRestState();
     const ingredientPositions = resolveIngredientPositions(width);
@@ -851,14 +875,17 @@ export class BrewingHudPixi {
     this.potionIcon.height = BREWING_HUD_GEOMETRY.potionIconSize;
     this.potionName.position.set(
       width / 2,
-      239 + previewVerticalOffset,
+      239 + previewVerticalOffset + carouselContentOffset,
     );
     this.rarity.position.set(
       width / 2,
-      258 + previewVerticalOffset,
+      258 + previewVerticalOffset + carouselContentOffset,
     );
     this.ownedLabel.position.set(36, 72);
-    this.batchLabel.position.set(width / 2, 274 + previewVerticalOffset);
+    this.batchLabel.position.set(
+      width / 2,
+      274 + previewVerticalOffset + carouselContentOffset,
+    );
     this.ingredientSlots.forEach((slot, index) => {
       const position = ingredientPositions[index];
       slot.setBounds(
@@ -915,13 +942,16 @@ export class BrewingHudPixi {
       ...this.ingredientsTitle.style,
       fill: this.theme.text,
     });
-    for (const text of [this.phaseLabel, this.phaseTime]) {
-      applyTextTheme(text, this.theme, {
-        ...text.style,
-        fill: this.theme.text,
-        padding: BREWING_STATUS_TEXTURE_PADDING,
-      });
-    }
+    applyTextTheme(this.phaseLabel, this.theme, {
+      ...this.phaseLabel.style,
+      fill: this.theme.text,
+      padding: BREWING_STATUS_LABEL_TEXTURE_PADDING,
+    });
+    applyTextTheme(this.phaseTime, this.theme, {
+      ...this.phaseTime.style,
+      fill: this.theme.text,
+      padding: BREWING_STATUS_TEXTURE_PADDING,
+    });
     for (const button of [
       this.previous,
       this.next,
@@ -947,7 +977,7 @@ export class BrewingHudPixi {
     );
     this.cauldronTitlePlaque.root.position.set(
       -BREWING_HUD_GEOMETRY.edge,
-      0,
+      BREWING_HUD_GEOMETRY.carouselContentOffset,
     );
   }
 
@@ -957,7 +987,9 @@ export class BrewingHudPixi {
     }
     const centerX = width / 2;
     const centerY =
-      136 + BREWING_HUD_GEOMETRY.previewVerticalOffset;
+      136 +
+      BREWING_HUD_GEOMETRY.previewVerticalOffset +
+      BREWING_HUD_GEOMETRY.carouselContentOffset;
     this.recipeOrbit.position.set(0, 0);
     this.recipeOrbit
       .clear()
@@ -1013,7 +1045,10 @@ export class BrewingHudPixi {
       return;
     }
 
-    const controlsTop = BREWING_HUD_GEOMETRY.top + 5;
+    const controlsTop =
+      BREWING_HUD_GEOMETRY.top +
+      BREWING_HUD_GEOMETRY.carouselContentOffset +
+      5;
     let right =
       sourceWidth - BREWING_HUD_GEOMETRY.edge;
     const controls = [
@@ -1370,6 +1405,9 @@ export class BrewingHudPixi {
     this.cauldronArt.filters = null;
     this.lockedCauldronFilter?.destroy?.();
     this.lockedCauldronFilter = null;
+    this.potionPreviewFrame.filters = null;
+    this.potionPreviewBackgroundFilter?.destroy?.();
+    this.potionPreviewBackgroundFilter = null;
     this.progress.destroy();
     for (const slot of this.ingredientSlots) {
       slot.destroy();
@@ -1528,13 +1566,10 @@ class BrewingIngredientPickerSlot {
     this.icon.anchor.set(0.5);
     this.name = centeredText('', RETAINED_INGREDIENT_NAME_STYLE);
     this.name.anchor.set(0.5, 0);
-    this.quantity = centeredText('', RETAINED_TEXT_STYLES.bold);
-    this.quantity.anchor.set(0.5, 1);
     this.control.visual.addChild(
       this.frame,
       this.icon,
       this.name,
-      this.quantity,
     );
     this.model = null;
     this.frameInsets = null;
@@ -1558,17 +1593,6 @@ class BrewingIngredientPickerSlot {
         ? toTitleCase(model.label ?? model.name ?? key ?? '')
         : '',
     );
-    const owned = Math.max(0, Number(model?.owned ?? model?.availableQuantity) || 0);
-    const required = Math.max(0, Number(model?.quantity ?? model?.required) || 0);
-    setText(
-      this.quantity,
-      model
-        ? `${owned}/${required}`
-        : decorative
-          ? ''
-          : '—',
-    );
-    this.sufficient = !model || owned >= required;
     this.decorative = decorative && !model;
     this.redraw();
   }
@@ -1582,9 +1606,8 @@ class BrewingIngredientPickerSlot {
     this.icon.position.set(width / 2, 19);
     this.icon.width = 26;
     this.icon.height = 26;
-    this.name.position.set(width / 2, 33);
+    this.name.position.set(width / 2, 35);
     this.name.style.wordWrapWidth = width - 8;
-    this.quantity.position.set(width / 2, height - 3);
     this.redraw();
   }
 
@@ -1604,15 +1627,6 @@ class BrewingIngredientPickerSlot {
     applyTextTheme(this.name, theme, {
       ...RETAINED_INGREDIENT_NAME_STYLE,
       fill: theme?.text ?? '#d4d4d4',
-    });
-    applyTextTheme(this.quantity, theme, {
-      ...BREWING_DETAIL_TEXT_STYLE.small,
-      fontWeight: '700',
-      fill: this.model
-        ? this.sufficient
-          ? 0x79c946
-          : 0xe26859
-        : theme?.muted ?? '#a6a6a6',
     });
   }
 
@@ -1646,7 +1660,9 @@ function normalizeRequirements(rows, herbs) {
 }
 
 function resolveIngredientPositions(width) {
-  const offset = BREWING_HUD_GEOMETRY.previewVerticalOffset;
+  const offset =
+    BREWING_HUD_GEOMETRY.previewVerticalOffset +
+    BREWING_HUD_GEOMETRY.carouselContentOffset;
   return [
     { x: 58, y: 52 + offset },
     { x: 10, y: 112 + offset },
@@ -1670,6 +1686,21 @@ function createLockedArtFilter() {
       0.2125, 0.7154, 0.0721, 0, 0,
       0.2125, 0.7154, 0.0721, 0, 0,
       0.2125, 0.7154, 0.0721, 0, 0,
+      0, 0, 0, 1, 0,
+    ];
+    return filter;
+  } catch {
+    return null;
+  }
+}
+
+function createSolidColorFilter(color) {
+  try {
+    const filter = new ColorMatrixFilter();
+    filter.matrix = [
+      0, 0, 0, 0, ((color >> 16) & 0xff) / 0xff,
+      0, 0, 0, 0, ((color >> 8) & 0xff) / 0xff,
+      0, 0, 0, 0, (color & 0xff) / 0xff,
       0, 0, 0, 1, 0,
     ];
     return filter;

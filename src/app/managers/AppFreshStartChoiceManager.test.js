@@ -31,10 +31,10 @@ describe('AppFreshStartChoiceManager', () => {
     expect(
       dialog.querySelector('.app-fresh-start-choice__heading')?.textContent,
     ).toBe('Welcome to Idle Wizard');
-    expect(dialog.textContent).toContain('do you already have an account?');
-    expect(dialog.textContent).toContain('connect account');
-    expect(dialog.textContent).toContain('start new');
-    expect(dialog.textContent).toContain('not connected');
+    expect(dialog.textContent).toContain('Do You Already Have an Account?');
+    expect(dialog.textContent).toContain('Connect Account');
+    expect(dialog.textContent).toContain('Start New');
+    expect(dialog.textContent).toContain('Not Connected');
     expect(
       stage.querySelector('.app-fresh-start-choice__portrait')?.src,
     ).toContain('elara.png');
@@ -83,7 +83,7 @@ describe('AppFreshStartChoiceManager', () => {
 
     manager.render({
       authSnapshot: { oidc: { enabled: true } },
-      statusText: 'connecting...',
+      statusText: 'Connecting...',
       busy: true,
     });
 
@@ -94,7 +94,7 @@ describe('AppFreshStartChoiceManager', () => {
     expect(stage.querySelector('.app-fresh-start-choice__button--fresh').disabled).toBe(
       true,
     );
-    expect(dialog.textContent).toContain('connecting...');
+    expect(dialog.textContent).toContain('Connecting...');
 
     manager.hide();
     expect(dialog.hidden).toBe(true);
@@ -111,7 +111,7 @@ describe('AppFreshStartChoiceManager', () => {
 
     const connectButton = stage.querySelector('.app-fresh-start-choice__button--connect');
     expect(connectButton.disabled).toBe(true);
-    expect(stage.textContent).toContain('login unavailable');
+    expect(stage.textContent).toContain('Login Unavailable');
 
     manager.unmount();
   });
@@ -132,7 +132,7 @@ describe('AppFreshStartChoiceManager', () => {
     });
 
     expect(stage.querySelector('.app-fresh-start-choice__status').textContent).toBe(
-      'login error: missing state',
+      'Login Error: missing state',
     );
 
     manager.unmount();

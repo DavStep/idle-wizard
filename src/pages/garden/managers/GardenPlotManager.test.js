@@ -826,7 +826,9 @@ describe('GardenPlotManager', () => {
 
     expect(rootRule).toContain('--garden-page-plot-box-detail-font-size: 9px;');
     expect(rootRule).toContain('--garden-page-plot-box-detail-line-height: 11px;');
-    expect(rootRule).toContain('--garden-page-plot-text-stroke-width: 1px;');
+    expect(rootRule).toContain(
+      '--garden-page-plot-text-stroke-width: var(--style-text-stroke-width);',
+    );
     expect(rootRule).toContain(
       '--garden-page-plot-text-stroke-color: var(--style-surface);',
     );
@@ -847,12 +849,10 @@ describe('GardenPlotManager', () => {
       'line-height: var(--garden-page-plot-box-detail-line-height);',
     );
     expect(baseCss).toContain(
-      '-webkit-text-stroke: var(--garden-page-plot-text-stroke-width)',
+      '-webkit-text-stroke: var(--style-text-stroke-width)',
     );
     expect(baseCss).toContain('paint-order: stroke fill;');
-    expect(baseCss).toContain(
-      '0 1px 0 var(--garden-page-plot-text-stroke-color),',
-    );
+    expect(baseCss).toContain('text-shadow: none;');
     expect(boxTimerRule).toContain(
       'font-size: var(--garden-page-plot-box-detail-font-size);',
     );

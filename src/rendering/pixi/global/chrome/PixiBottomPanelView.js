@@ -10,6 +10,7 @@ import {
 
 import {
   BasePixiRetainedView,
+  normalizePixiTextStroke,
   PixiDialogFrame,
   PixiTextLabel,
 } from '../../primitives/index.js';
@@ -904,10 +905,9 @@ class PixiBottomTab {
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.text.applyTheme(this.theme);
-    this.text.textObject.style.stroke = {
+    this.text.textObject.style.stroke = normalizePixiTextStroke({
       color: this.theme.surface,
-      width: 1,
-    };
+    });
     for (const shadow of this.labelShadows) {
       shadow.applyTheme(this.theme);
     }

@@ -17,10 +17,7 @@ import {
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
-import {
-  ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY,
-  RootRunInventoryChoiceDialogPixi,
-} from '../shared/RootRunInventoryChoiceDialogPixi.js';
+import { RootRunInventoryChoiceDialogPixi } from '../shared/RootRunInventoryChoiceDialogPixi.js';
 import {
   BREWING_PIXI_GEOMETRY,
   BrewingPixiPage,
@@ -177,12 +174,6 @@ describe('BrewingPixiPage', () => {
       quantity: 1,
       maxQuantity: 4,
     }));
-    const setHerbQuantity = vi.fn((herb, quantity) => ({
-      ok: true,
-      item: herb,
-      quantity,
-      maxQuantity: 4,
-    }));
     const selectRecipe = vi.fn(() => true);
     const harness = createHarness();
     const viewModel = createBrewingViewModel({
@@ -307,30 +298,17 @@ describe('BrewingPixiPage', () => {
           semanticId: 'brewing.herb.sage',
         },
       ],
-      actions: { selectHerb, setHerbQuantity },
+      actions: { selectHerb },
     });
     const herbDialog = harness.dialogs.get('brewing.herbs');
     expect(herbDialog).toBeInstanceOf(
       RootRunInventoryChoiceDialogPixi,
     );
     expect(herbDialog.modal.title).toBe('choose herb');
-    expect(herbDialog.contentHeight).toBe(
-      ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY.contentMinHeight +
-        ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY.amountSectionOffset,
-    );
-    expect(herbDialog.modal.panel.paperFrame.visible).toBe(false);
-    expect(herbDialog.selectionPaper.visible).toBe(true);
-    expect(herbDialog.listPaper.visible).toBe(true);
-    expect(
-      herbDialog.selectionPaper.y +
-        herbDialog.selectionPaper.frameHeight,
-    ).toBeLessThan(herbDialog.listPaper.y);
-    expect(herbDialog.amountSelection.title.text).toBe(
-      'Selected Herb',
-    );
-    expect(herbDialog.rows.get('sage-herb').root.y).toBe(
-      ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY.contentPaddingTop,
-    );
+    expect(herbDialog.modal.panel.paperFrame.visible).toBe(true);
+    expect('selectionPaper' in herbDialog).toBe(false);
+    expect('listPaper' in herbDialog).toBe(false);
+    expect('amountSelection' in herbDialog).toBe(false);
     expect(
       harness.semanticTargets.activate('brewing.herb.sage'),
     ).toMatchObject({ ok: true, quantity: 1 });
@@ -339,105 +317,12 @@ describe('BrewingPixiPage', () => {
       0,
       0,
     );
-    expect(herbDialog.amountSelection.model).toMatchObject({
-      itemTypeId: 1001,
-      quantity: 1,
-    });
-    expect(herbDialog.amountSelection.decrement.textLabel.text).toBe('−');
-    expect(herbDialog.amountSelection.increment.textLabel.text).toBe('+');
-    expect(herbDialog.amountSelection.decrement.variant).toBe('yellow');
-    expect(herbDialog.amountSelection.increment.variant).toBe('yellow');
-    expect(
-      herbDialog.amountSelection.increment.x -
-        herbDialog.amountSelection.decrement.x,
-    ).toBe(
-      ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY.amountButtonSize +
-        ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY.amountButtonGap,
-    );
-    expect(
-      harness.semanticTargets.activate(
-        'brewing.herbs.selected-herb.increment',
-      ),
-    ).toMatchObject({ ok: true, quantity: 2 });
-    expect(setHerbQuantity).toHaveBeenCalledWith(
-      expect.objectContaining({ itemTypeId: 1001 }),
-      2,
-      0,
-      0,
-    );
-    expect(
-      herbDialog.amountSelection.list.rows.get('selected-herb')
-        .detail.text,
-    ).toBe('2 Selected');
-    expect(
-      harness.semanticTargets.activate(
-        'brewing.herbs.selected-herb.decrement',
-      ),
-    ).toMatchObject({ ok: true, quantity: 1 });
-    expect(
-      harness.semanticTargets.activate(
-        'brewing.herbs.selected-herb.decrement',
-      ),
-    ).toMatchObject({ ok: true, quantity: 0 });
-    expect(herbDialog.amountSelection.model).toBeNull();
-    expect(
-      herbDialog.amountSelection.list.rows.get('selected-herb')
-        .label.text,
-    ).toBe('Select an Herb Below');
-    expect(herbDialog.amountSelection.decrement.visible).toBe(false);
-    expect(herbDialog.amountSelection.increment.visible).toBe(false);
 
     harness.page.destroy();
     harness.dispose();
     expect(
       harness.inputRouter.store.getRegistrations(),
     ).toHaveLength(0);
-  });
-
-  it('refreshes a selected amount when the write result echoes stale selection fields', () => {
-    const harness = createHarness();
-    const selectedHerb = {
-      id: 'sage-herb',
-      itemTypeId: 1001,
-      key: 'sageHerb',
-      label: 'sage',
-      quantity: 3,
-      selectedQuantity: 3,
-      maxQuantity: 6,
-      itemKind: 'herb',
-    };
-    const setHerbQuantity = vi.fn((herb, quantity) => ({
-      ok: true,
-      item: herb,
-      quantity,
-      maxQuantity: 6,
-    }));
-
-    harness.page.openDialog('herbs', {
-      cauldronIndex: 0,
-      slotIndex: 0,
-      selectedItem: selectedHerb,
-      rows: [selectedHerb],
-      actions: { setHerbQuantity },
-    });
-    const herbDialog = harness.dialogs.get('brewing.herbs');
-
-    expect(
-      harness.semanticTargets.activate(
-        'brewing.herbs.selected-herb.increment',
-      ),
-    ).toMatchObject({ ok: true, quantity: 4 });
-    expect(herbDialog.amountSelection.model).toMatchObject({
-      quantity: 4,
-      selectedQuantity: 4,
-    });
-    expect(
-      herbDialog.amountSelection.list.rows.get('selected-herb')
-        .detail.text,
-    ).toBe('4 Selected');
-
-    harness.page.destroy();
-    harness.dispose();
   });
 
   it('keeps the recipe book inside the retained dialog cap with readable paper styling', () => {
@@ -581,9 +466,19 @@ describe('BrewingPixiPage', () => {
     harness.page.activate();
     expect(harness.page.hud.progress.progress).toBe(0);
     expect(harness.page.hud.phaseLabel.text).toBe('Brewing');
-    expect(harness.page.hud.phaseLabel.style.padding).toBe(1);
+    expect(harness.page.hud.phaseLabel.style.padding).toBe(16);
     expect(harness.page.hud.phaseTime.text).toBe('0:10');
     expect(harness.page.hud.phaseTime.style.padding).toBe(1);
+    expect(harness.page.hud.potionPreviewFrame.filters).toHaveLength(1);
+    expect(
+      harness.page.hud.potionPreviewFrame.filters[0].matrix[4],
+    ).toBeCloseTo(0x0e / 0xff);
+    expect(
+      harness.page.hud.potionPreviewFrame.filters[0].matrix[9],
+    ).toBeCloseTo(0x10 / 0xff);
+    expect(
+      harness.page.hud.potionPreviewFrame.filters[0].matrix[14],
+    ).toBeCloseTo(0x16 / 0xff);
 
     now = 3_500;
     harness.page.hud.updateMotion(now, {
@@ -1067,7 +962,7 @@ describe('BrewingPixiPage', () => {
       harness.page.hud.cauldronTitlePlaque.root.position,
     ).toMatchObject({
       x: -BREWING_HUD_GEOMETRY.edge,
-      y: 0,
+      y: BREWING_HUD_GEOMETRY.carouselContentOffset,
     });
     expect(harness.page.hud.cauldronStars.parent).toBe(
       harness.page.hud.cauldronTitlePlaque.root,
@@ -1102,7 +997,7 @@ describe('BrewingPixiPage', () => {
       harness.page.hud.carouselPanel.body,
     );
     expect(harness.page.hud.ingredientSlots[5].decorative).toBe(false);
-    expect(harness.page.hud.ingredientSlots[5].quantity.text).toBe('0/1');
+    expect(harness.page.hud.ingredientSlots[5].quantity).toBeUndefined();
     expect(Object.keys(harness.page.hud.actionIcons)).toEqual([
       'autoBrew',
     ]);
@@ -1160,6 +1055,12 @@ describe('BrewingPixiPage', () => {
       harness.page.hud.next.root.y +
         harness.page.hud.next.height / 2,
     ).toBe(navigationCenterY);
+    expect(
+      BREWING_HUD_GEOMETRY.detailTop -
+        (harness.page.hud.carouselPanel.root.y +
+          lowerLeftSlot.root.y +
+          lowerLeftSlot.height),
+    ).toBe(55);
     expect(
       harness.page.hud.previous.root.x +
         harness.page.hud.previous.width,
@@ -1219,7 +1120,9 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.autoBrew.root.x).toBe(268);
     expect(harness.page.hud.quantity.root.x).toBe(312);
     expect(harness.page.hud.recipes.root.y).toBe(
-      BREWING_HUD_GEOMETRY.top + 5,
+      BREWING_HUD_GEOMETRY.top +
+        BREWING_HUD_GEOMETRY.carouselContentOffset +
+        5,
     );
     expect(
       harness.page.hud.cauldronTitlePlaque.frame.frameWidth,

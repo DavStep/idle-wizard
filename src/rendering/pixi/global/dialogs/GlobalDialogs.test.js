@@ -597,7 +597,7 @@ describe('retained global Pixi dialogs', () => {
     expect(level.currentLabel.textObject.style.fill).toBe('#ffffff');
     expect(level.currentLabel.textObject.style.stroke).toMatchObject({
       color: '#2a160d',
-      width: 2,
+      width: 4,
       join: 'round',
     });
     expect(level.currentLabelBacking).toMatchObject({
@@ -837,7 +837,8 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.usernameField.textLabel.fontSize).toBeCloseTo(64 / 3);
     expect(settings.usernameField.textLabel.stroke).toEqual({
       color: '#0a0a0a',
-      width: 8 / 3,
+      width: 4,
+      join: 'round',
     });
     const usernameMaskBounds =
       settings.usernameField.textMask.getLocalBounds();
@@ -1265,8 +1266,15 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('uses a darker backdrop only for level reward announcements', () => {
-    const harness = createHarness();
+  it('reuses the level-up banner and backed rows for celebration announcements', () => {
+    const announcementTexture = new Texture({
+      source: new TextureSource({
+        resource: { width: 96, height: 96 },
+        width: 96,
+        height: 96,
+      }),
+    });
+    const harness = createHarness({ announcementTexture });
     const announcement = harness.registry.open(
       GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
       {
@@ -1307,8 +1315,7 @@ describe('retained global Pixi dialogs', () => {
       colorToken: '#ffffff',
       stroke: {
         color: '#160e19',
-        width:
-          PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.titleStroke,
+        width: 4,
       },
     });
     expect(
@@ -1331,7 +1338,7 @@ describe('retained global Pixi dialogs', () => {
     expect(
       announcement.rows.collection.getWidgets()[0].keyLabel
         .stroke,
-    ).toEqual({ color: '#050505', width: 2 });
+    ).toEqual({ color: '#050505', width: 4, join: 'round' });
     const rewardRow =
       announcement.rows.collection.getWidgets()[0];
     expect(rewardRow.valueLabel.text).toBe('+10');
@@ -1355,12 +1362,83 @@ describe('retained global Pixi dialogs', () => {
     expect(announcement.requestClose('outside')).toBe(true);
 
     announcement.bind({
+      kind: 'research',
+      variant: 'banner-rows',
+      title: 'Research Complete!',
+      dismissible: false,
+      animation: {
+        kind: 'research-complete',
+        titleDelayMs: 40,
+        iconDelayMs: 180,
+        rowDelayMs: 540,
+      },
+      icon: {
+        frameName: 'research:fastSell',
+        silhouetteFrameName: 'research:fastSell',
+      },
+      rows: [
+        {
+          id: 'research:name',
+          label: 'Research',
+          value: 'Staff Stall 1',
+          height: 34,
+          keyWidth: 72,
+          mutedLabel: false,
+          boldLabel: true,
+          boldValue: true,
+          color: '#ffffff',
+          valueColor: '#ffffff',
+        },
+      ],
+    });
+    expect(announcement.backdropAlpha).toBe(0.88);
+    expect(announcement.backdrop.tint).toBe(0x000000);
+    expect(announcement.levelBannerLayer.visible).toBe(true);
+    expect(announcement.levelBannerTitle.text).toBe(
+      'Research Complete!',
+    );
+    expect(announcement.rowsLayer.visible).toBe(true);
+    expect(announcement.researchItemLayer.visible).toBe(true);
+    expect(announcement.researchItem.icon.visible).toBe(true);
+    expect(announcement.researchItem.icon.width).toBeGreaterThanOrEqual(
+      70,
+    );
+    expect(announcement.researchItem.label.text).toBe('');
+    expect(
+      announcement.researchItemLayer.position.x,
+    ).toBeLessThan(
+      announcement.rowsLayer.position.x,
+    );
+    expect(announcement.rowsLayer.position.y).toBeGreaterThan(
+      announcement.researchItemLayer.position.y +
+        announcement.researchItem.preferredHeight,
+    );
+    expect(announcement.continuePrompt.visible).toBe(false);
+    expect(announcement.levelRewardRowBackings).toHaveLength(1);
+    expect(
+      announcement.rows.collection.getWidgets()[0].keyLabel
+        .stroke,
+    ).toEqual({ color: '#050505', width: 4, join: 'round' });
+    announcement.applyLevelAnnouncementMotion(
+      0,
+      announcement.announcementModel.animation,
+    );
+    expect(announcement.researchItem.icon.alpha).toBe(0);
+    announcement.settleAnnouncementMotion();
+    expect(announcement.researchItem.icon.alpha).toBe(1);
+    expect(announcement.researchItem.silhouette.alpha).toBe(0);
+
+    announcement.bind({
       kind: 'unlock',
       title: 'garden unlocked',
       items: [],
     });
     expect(announcement.backdropAlpha).toBe(0.68);
     expect(announcement.backdrop.tint).toBe(0xffffff);
+    expect(
+      announcement.rows.collection.getWidgets()[0]?.keyLabel
+        .stroke ?? null,
+    ).toBeNull();
 
     harness.dispose();
   });
@@ -1581,12 +1659,16 @@ describe('retained global Pixi dialogs', () => {
 
 function createHarness({
   announcementMotionRuntime = null,
+  announcementTexture = null,
   characterTexture = null,
 } = {}) {
   const registry = new DialogRegistry();
   const inputRouter = new PixiInputRouter();
   const semanticRegistry = new SemanticTargetRegistry();
   const assets = createPixiAssetManagerFake(Texture);
+  if (announcementTexture) {
+    assets.getAtlasTexture = vi.fn(() => announcementTexture);
+  }
   if (characterTexture) {
     assets.getTexture = vi.fn((assetId) =>
       String(assetId).includes('/avatars/')

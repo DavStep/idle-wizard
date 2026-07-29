@@ -35,6 +35,8 @@ Potions are brewed from ordered herb recipes. Every potion below opens as its ow
 ## Core rules
 
 - Ingredient order matters.
+- Every occupied cauldron slot holds one herb. Repeated herbs occupy repeated
+  ordered slots.
 - Brewing spends mana and runs one brew timer.
 - Known recipes require completed recipe research.
 - Hidden recipes preview as wasted until globally discovered.
@@ -47,4 +49,3 @@ Potions are brewed from ordered herb recipes. Every potion below opens as its ow
 - `src/gameplay/brewing/`
 - `src/gameplay/research/managers/ResearchDefinitionManager.js`
 - `spacetimedb/src/index.ts`
-

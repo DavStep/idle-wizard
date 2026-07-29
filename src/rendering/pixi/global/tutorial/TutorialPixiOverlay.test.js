@@ -315,7 +315,7 @@ describe('TutorialPixiOverlay', () => {
     expect(overlay.dragYell.textObject.style.fill).toBe('#ffffff');
     expect(overlay.dragYell.textObject.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 2,
+      width: 4,
     });
 
     overlay.startGuideDrag();

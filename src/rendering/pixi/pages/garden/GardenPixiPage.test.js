@@ -63,7 +63,7 @@ describe("GardenPixiPage", () => {
     expect(action.style.fill).toBe("#ffffff");
     expect(action.style.stroke).toMatchObject({
       color: "#0a0a0a",
-      width: 2,
+      width: 4,
       join: "round",
     });
 
@@ -122,7 +122,7 @@ describe("GardenPixiPage", () => {
     expect(plot.action.style.fill).toBe("#ffffff");
     expect(plot.action.style.stroke).toMatchObject({
       color: "#0a0a0a",
-      width: 2,
+      width: 4,
       join: "round",
     });
     expect(

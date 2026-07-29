@@ -398,6 +398,43 @@ export class PixiAnnouncementPresenter {
     };
   }
 
+  showResearchCompletePreview({
+    research = {
+      id: 'advanced:stallStaffing:1',
+      label: 'Staff Stall 1',
+      effect: 'Sells 2 items per cycle',
+      value: 'researched',
+      actionType: 'research',
+      costCurrency: 'ruby',
+    },
+  } = {}) {
+    if (!this.mounted) {
+      return {
+        ok: false,
+        reason: 'announcements_not_mounted',
+      };
+    }
+
+    this.deferredRevision += 1;
+    this.clearHideTimeout();
+    this.clearAnnouncementState();
+    this.current = {
+      key: `preview:${++this.sequence}`,
+      kind: 'research',
+      preview: true,
+      research: { ...(research ?? {}) },
+    };
+    this.queuedKeys.add(this.current.key);
+    const presentation = this.presentCurrent();
+
+    return {
+      ok: true,
+      dialogId: 'researchCompleteAnnouncement',
+      pixiDialogId: PIXI_ANNOUNCEMENT_DIALOG_ID,
+      presentation,
+    };
+  }
+
   showWhileAwayPreview({
     source = 'dev_preview',
     offlineSeconds = 3600,
@@ -1157,24 +1194,21 @@ function createResearchDialogPresentation(
   const research = announcement.research ?? {};
   const actionLabel =
     research.actionType === 'levelUp'
-      ? 'level up complete'
-      : 'research complete';
+      ? 'Level Up Complete!'
+      : 'Research Complete!';
   const detail = getResearchDetailText(research);
   return {
     ...shared,
+    variant: 'banner-rows',
     title: actionLabel,
     ariaLabel: `${research.label} ${actionLabel}`,
-    copy: research.label ?? '',
-    rows: detail
-      ? [
-          {
-            id: `${announcement.key ?? 'research'}:detail`,
-            kind: 'message',
-            text: detail,
-            valueRuns: createResourceRuns(detail),
-          },
-        ]
-      : [],
+    dismissible: announcement.preview === true,
+    showClose: false,
+    rows: createResearchPresentationRows(
+      research,
+      detail,
+      announcement.key,
+    ),
     research,
     icon: getResearchIconPresentation(research),
     animation: {
@@ -1182,27 +1216,64 @@ function createResearchDialogPresentation(
       overlayDurationMs:
         PIXI_ANNOUNCEMENT_MOTION.overlayDurationMs,
       panelDurationMs:
-        PIXI_ANNOUNCEMENT_MOTION.panelDurationMs,
+        PIXI_ANNOUNCEMENT_MOTION.levelPanelDurationMs,
       titleDurationMs:
-        PIXI_ANNOUNCEMENT_MOTION.researchTitleDurationMs,
+        PIXI_ANNOUNCEMENT_MOTION.rowDurationMs,
+      titleDelayMs: 40,
       silhouetteDurationMs:
         PIXI_ANNOUNCEMENT_MOTION.researchSilhouetteDurationMs,
       iconDurationMs:
         PIXI_ANNOUNCEMENT_MOTION.researchIconDurationMs,
       iconDelayMs:
         PIXI_ANNOUNCEMENT_MOTION.researchIconDelayMs,
-      labelDurationMs:
-        PIXI_ANNOUNCEMENT_MOTION.rowDurationMs,
-      labelDelayMs:
-        PIXI_ANNOUNCEMENT_MOTION.researchLabelDelayMs,
-      detailDurationMs:
-        PIXI_ANNOUNCEMENT_MOTION.rowDurationMs,
-      detailDelayMs:
-        PIXI_ANNOUNCEMENT_MOTION.researchDetailDelayMs,
       fallbackIconDurationMs:
         PIXI_ANNOUNCEMENT_MOTION.fallbackIconDurationMs,
+      rowDurationMs:
+        PIXI_ANNOUNCEMENT_MOTION.rowDurationMs,
+      rowDelayMs:
+        PIXI_ANNOUNCEMENT_MOTION.researchLabelDelayMs,
+      rowStaggerMs:
+        PIXI_ANNOUNCEMENT_MOTION.levelRowStaggerMs,
     },
   };
+}
+
+function createResearchPresentationRows(
+  research,
+  detail,
+  announcementKey,
+) {
+  const rowBase = {
+    kind: 'row',
+    height: 34,
+    keyWidth: 72,
+    mutedLabel: false,
+    boldLabel: true,
+    boldValue: true,
+    color: '#ffffff',
+    valueColor: '#ffffff',
+  };
+  const rows = [
+    {
+      ...rowBase,
+      id: `${announcementKey ?? 'research'}:name`,
+      label:
+        research.actionType === 'levelUp'
+          ? 'Upgrade'
+          : 'Research',
+      value: toTitleCase(research.label ?? 'Research'),
+    },
+  ];
+  if (detail) {
+    rows.push({
+      ...rowBase,
+      id: `${announcementKey ?? 'research'}:effect`,
+      label: 'Effect',
+      value: detail,
+      valueRuns: createResourceRuns(detail),
+    });
+  }
+  return rows;
 }
 
 function createLevelPresentationRows(rows, toLevel) {

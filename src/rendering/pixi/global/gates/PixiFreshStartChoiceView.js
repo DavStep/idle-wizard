@@ -65,7 +65,7 @@ export class PixiFreshStartChoiceView extends PixiModalSurface {
       label: 'freshStartChoice:heading',
     });
     this.message = new PixiTextLabel({
-      text: 'do you already have an account?',
+      text: 'Do You Already Have an Account?',
       wordWrap: true,
       wrapWidth: FRESH_START_COPY_WIDTH,
       label: 'freshStartChoice:message',
@@ -79,7 +79,7 @@ export class PixiFreshStartChoiceView extends PixiModalSurface {
     this.connectButton = new PixiButton({
       assetManager: assets,
       inputRouter,
-      text: 'connect account',
+      text: 'Connect Account',
       width: FRESH_START_CONTENT_WIDTH,
       variant: 'yellow',
       label: 'freshStartChoice:connect',
@@ -87,7 +87,7 @@ export class PixiFreshStartChoiceView extends PixiModalSurface {
     this.freshButton = new PixiButton({
       assetManager: assets,
       inputRouter,
-      text: 'start new',
+      text: 'Start New',
       width: FRESH_START_CONTENT_WIDTH,
       variant: 'green',
       label: 'freshStartChoice:fresh',
@@ -104,9 +104,9 @@ export class PixiFreshStartChoiceView extends PixiModalSurface {
   }
 
   onBind(model = {}) {
-    this.status.setText(model.statusText ?? 'not connected');
+    this.status.setText(model.statusText ?? 'Not Connected');
     this.connectButton
-      .setText(model.busy ? 'connecting...' : 'connect account')
+      .setText(model.busy ? 'Connecting...' : 'Connect Account')
       .setEnabled(model.connectEnabled === true && model.busy !== true)
       .setAction(model.onConnect ?? null);
     this.freshButton

@@ -1675,11 +1675,6 @@ export class PixiPagesFacade {
   }
 
   openBrewingHerbDialog(cauldronIndex = 0, slotIndex = 0) {
-    const selectedItem = createBrewingHerbSlotSelection(
-      this.gameplaySnapshot,
-      cauldronIndex,
-      slotIndex,
-    );
     return (
       this.requireRuntime()
         .getPage("brewing")
@@ -1689,7 +1684,6 @@ export class PixiPagesFacade {
           cauldronIndex,
           slotIndex,
           rows: createBrewingHerbDialogRows(this.gameplaySnapshot),
-          selectedItem,
         }) ?? false
     );
   }
@@ -1716,21 +1710,11 @@ export class PixiPagesFacade {
     if (result?.ok !== true && result !== true) {
       return result;
     }
-    const nextSelection =
-      Number(quantity) > 0
-        ? createBrewingHerbSlotSelection(
-            this.gameplayFacade?.getSnapshot?.() ?? this.gameplaySnapshot,
-            cauldronIndex,
-            slotIndex,
-            herb,
-            quantity,
-          )
-        : null;
     return {
       ...(result === true ? { ok: true } : result),
-      item: nextSelection ?? herb,
+      item: herb,
       quantity: Math.max(0, Math.floor(Number(quantity) || 0)),
-      maxQuantity: nextSelection?.maxQuantity ?? 0,
+      maxQuantity: 1,
     };
   }
 
@@ -1750,25 +1734,17 @@ export class PixiPagesFacade {
       openHerbPicker: (cauldronIndex, slotIndex) =>
         this.openBrewingHerbDialog(cauldronIndex, slotIndex),
       selectHerb: (herb, cauldronIndex = 0, slotIndex = 0) => {
-        return this.setBrewingHerbSlotQuantity(
+        const result = this.setBrewingHerbSlotQuantity(
           herb,
           1,
           cauldronIndex,
           slotIndex,
         );
+        if (result === true || result?.ok === true) {
+          this.requireRuntime().closeDialog?.("brewing.herbs");
+        }
+        return result;
       },
-      setHerbQuantity: (
-        herb,
-        quantity,
-        cauldronIndex = 0,
-        slotIndex = 0,
-      ) =>
-        this.setBrewingHerbSlotQuantity(
-          herb,
-          quantity,
-          cauldronIndex,
-          slotIndex,
-        ),
       researchRecipe: (recipe, cauldronIndex = 0) => {
         if (recipe?.canResearch !== true || !recipe?.researchId) {
           return false;
@@ -2163,6 +2139,17 @@ export class PixiPagesFacade {
         }
       );
     }
+    if (
+      normalized === "researchcompleteannouncement" ||
+      normalized === "researchcomplete"
+    ) {
+      return (
+        this.announcementPresenter?.showResearchCompletePreview?.(options) ?? {
+          ok: false,
+          reason: "announcements_missing",
+        }
+      );
+    }
     if (normalized === "whileawayannouncement" || normalized === "whileaway") {
       return (
         this.announcementPresenter?.showWhileAwayPreview?.(options) ?? {
@@ -2486,107 +2473,6 @@ function createBrewingHerbDialogRows(snapshot = {}) {
       semanticId: `brewing.herb.${herb.key ?? herb.itemTypeId}`,
     };
   });
-}
-
-function createBrewingHerbSlotSelection(
-  snapshot = {},
-  cauldronIndex = 0,
-  slotIndex = 0,
-  fallbackHerb = null,
-  fallbackQuantity = null,
-) {
-  const brewing = snapshot.brewing ?? {};
-  const safeCauldronIndex = Math.max(
-    0,
-    Math.floor(Number(cauldronIndex) || 0),
-  );
-  const safeSlotIndex = Math.max(
-    0,
-    Math.floor(Number(slotIndex) || 0),
-  );
-  const cauldron =
-    (brewing.cauldrons ?? []).find(
-      (candidate) =>
-        Number(candidate?.cauldronIndex) === safeCauldronIndex,
-    ) ?? (safeCauldronIndex === 0 ? brewing : {});
-  const ingredients = Array.isArray(cauldron?.ingredients)
-    ? cauldron.ingredients
-    : [];
-  const groups = [];
-  for (const ingredient of ingredients) {
-    const group = groups.at(-1);
-    if (group?.itemTypeId === ingredient?.itemTypeId) {
-      group.quantity += 1;
-    } else {
-      groups.push({
-        ...ingredient,
-        quantity: 1,
-      });
-    }
-  }
-  const currentGroup = groups[safeSlotIndex] ?? null;
-  const selectedHerb =
-    fallbackHerb ??
-    (brewing.herbs ?? []).find(
-      (herb) => herb.itemTypeId === currentGroup?.itemTypeId,
-    ) ??
-    currentGroup;
-  const selectedQuantity = Math.max(
-    0,
-    Math.floor(
-      Number(
-        fallbackQuantity ??
-          currentGroup?.quantity ??
-          0,
-      ) || 0,
-    ),
-  );
-  if (!selectedHerb || selectedQuantity <= 0) {
-    return null;
-  }
-
-  const currentGroupQuantity =
-    currentGroup?.itemTypeId === selectedHerb.itemTypeId
-      ? currentGroup.quantity
-      : selectedQuantity;
-  const maxIngredients = Math.max(
-    1,
-    Math.floor(Number(cauldron?.maxIngredients ?? brewing.maxIngredients) || 6),
-  );
-  const occupiedOutsideSlot = Math.max(
-    0,
-    ingredients.length - currentGroupQuantity,
-  );
-  const availableQuantity = Math.max(
-    0,
-    Math.floor(
-      Number(
-        selectedHerb.availableQuantity ??
-          selectedHerb.quantity ??
-          0,
-      ) || 0,
-    ),
-  );
-  const maxQuantity = Math.max(
-    selectedQuantity,
-    Math.min(
-      maxIngredients - occupiedOutsideSlot,
-      currentGroupQuantity + availableQuantity,
-    ),
-  );
-  return {
-    ...selectedHerb,
-    id: selectedHerb.itemTypeId,
-    itemKind: "herb",
-    itemKey: selectedHerb.key,
-    icon: {
-      kind: "herb",
-      key: selectedHerb.key,
-    },
-    selectedQuantity,
-    quantity: selectedQuantity,
-    maxQuantity,
-  };
 }
 
 function createGardenSelectedSeedModel(snapshot = {}, seed = {}) {

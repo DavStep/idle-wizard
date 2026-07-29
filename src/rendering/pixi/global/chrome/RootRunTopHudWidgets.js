@@ -15,6 +15,7 @@ import {
 } from '../../primitives/index.js';
 import {
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 
 const HUD_ASSETS = Object.freeze({
@@ -55,7 +56,7 @@ const LEVEL_FILL_SLICE = Object.freeze({
 const LEVEL_PRESS_SCALE = 0.97;
 const LEVEL_TEXT_STROKE = Object.freeze({
   color: '#0a0a0a',
-  width: 6,
+  scale: PIXI_UI_GEOMETRY.sourceScale,
 });
 const HUD_GRADIENT_STOPS = Object.freeze([
   Object.freeze({ color: '#7f3cff', offset: 0 }),

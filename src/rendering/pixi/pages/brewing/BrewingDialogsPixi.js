@@ -33,6 +33,7 @@ const RECIPE_CARD_WIDTH =
 const RECIPE_ICON_SIZE = 56;
 const RECIPE_HEADER_GAP = 5;
 const RECIPE_RULE_WIDTH = 2;
+const RECIPE_INGREDIENT_ROW_HEIGHT = 20;
 const RECIPE_CHOICE_CONTENT_WIDTH = 210;
 const RECIPE_CHOICE_OUTER_WIDTH = RECIPE_CHOICE_CONTENT_WIDTH + 44;
 
@@ -502,7 +503,8 @@ class BrewingRecipeCard {
       pool: this.ingredientPool,
       counters,
       keyOf: (ingredient, index) =>
-        ingredient.id ?? ingredient.itemTypeId ?? ingredient.key ?? index,
+        ingredient.id ??
+        `${ingredient.slotIndex ?? index}:${ingredient.itemTypeId ?? ingredient.key ?? 'ingredient'}`,
       bind: (row, ingredient) => row.bind(ingredient, this.model),
       afterReconcile: (rows) => this.orderIngredients(rows),
     });
@@ -648,11 +650,14 @@ class BrewingRecipeCard {
     );
     this.ingredientsLayer.position.set(0, ingredientsY);
     this.ingredients.getWidgets().forEach((row, index) =>
-      row.setBounds(0, index * 32, width),
+      row.setBounds(0, index * RECIPE_INGREDIENT_ROW_HEIGHT, width),
     );
     const metaY = Math.min(
       height - 92,
-      ingredientsY + Math.max(1, this.ingredients.getWidgets().length) * 32 + 6,
+      ingredientsY +
+        Math.max(1, this.ingredients.getWidgets().length) *
+          RECIPE_INGREDIENT_ROW_HEIGHT +
+        6,
     );
     this.cost.position.set(0, metaY);
     this.duration.position.set(0, metaY + 15);
@@ -738,6 +743,7 @@ class BrewingRecipeIngredientRow {
     });
     this.required = createText('', RETAINED_TEXT_STYLES.border);
     this.owned = createText('', RETAINED_TEXT_STYLES.border);
+    this.owned.anchor.set(1, 0);
     this.root.addChild(this.required, this.owned);
   }
 
@@ -751,8 +757,8 @@ class BrewingRecipeIngredientRow {
       this.required,
       this.model.requiredText ??
         (masked
-          ? `- ${this.model.quantity ?? 1} ??????`
-          : `- ${this.model.quantity ?? 1} ${this.model.label ?? ''}`),
+          ? '- ??????'
+          : `- ${this.model.label ?? ''}`),
     );
     setText(
       this.owned,
@@ -767,8 +773,13 @@ class BrewingRecipeIngredientRow {
   setBounds(x, y, width) {
     this.root.position.set(x, y);
     this.required.position.set(0, 0);
-    this.owned.position.set(0, 15);
-    this.root.hitArea = new Rectangle(0, 0, width, 32);
+    this.owned.position.set(width, 0);
+    this.root.hitArea = new Rectangle(
+      0,
+      0,
+      width,
+      RECIPE_INGREDIENT_ROW_HEIGHT,
+    );
   }
 
   applyTheme(theme) {

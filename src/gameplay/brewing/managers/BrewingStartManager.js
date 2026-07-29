@@ -146,7 +146,8 @@ export class BrewingStartManager {
       !Number.isInteger(safeSlotIndex) ||
       safeSlotIndex < 0 ||
       !Number.isInteger(safeQuantity) ||
-      safeQuantity < 0
+      safeQuantity < 0 ||
+      safeQuantity > 1
     ) {
       return {
         ok: false,
@@ -169,29 +170,24 @@ export class BrewingStartManager {
       this.brewingCauldronEntityManager.getIngredientItemTypeIds(
         safeCauldronIndex,
       );
-    const groups = this.groupAdjacentIngredientItemTypeIds(currentItemTypeIds);
-    const nextGroups = groups.map((group) => ({ ...group }));
+    const nextItemTypeIds = [...currentItemTypeIds];
     if (safeQuantity === 0) {
-      if (safeSlotIndex >= nextGroups.length) {
+      if (safeSlotIndex >= nextItemTypeIds.length) {
         return {
           ok: false,
           reason: 'unknown_ingredient_slot',
           slotIndex: safeSlotIndex,
         };
       }
-      nextGroups.splice(safeSlotIndex, 1);
+      nextItemTypeIds.splice(safeSlotIndex, 1);
     } else {
-      const nextGroup = { itemTypeId, quantity: safeQuantity };
-      if (safeSlotIndex >= nextGroups.length) {
-        nextGroups.push(nextGroup);
+      if (safeSlotIndex >= nextItemTypeIds.length) {
+        nextItemTypeIds.push(itemTypeId);
       } else {
-        nextGroups.splice(safeSlotIndex, 1, nextGroup);
+        nextItemTypeIds.splice(safeSlotIndex, 1, itemTypeId);
       }
     }
 
-    const nextItemTypeIds = nextGroups.flatMap((group) =>
-      Array.from({ length: group.quantity }, () => group.itemTypeId),
-    );
     const maxIngredients =
       this.brewingBalanceManager.getMaxCauldronIngredients();
     if (nextItemTypeIds.length > maxIngredients) {

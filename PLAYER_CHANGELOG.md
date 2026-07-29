@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.30
+
+- Reworked Brewing ingredient slots so each herb is shown and replaced individually through a simpler picker.
+- Refreshed Research artwork and improved research-complete and level-up celebrations.
+- Improved World Chat system announcements with clearer player, prestige, and profile details.
+
 ## 0.3.29
 
 - Simplified Brewing quantity selection with clearer separate decrease and increase controls.

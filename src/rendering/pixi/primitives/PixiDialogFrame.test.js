@@ -110,7 +110,7 @@ describe('PixiDialogFrame', () => {
     expect(frame.titleFrame.frameWidth).toBeCloseTo(geometry.titleMinWidth);
     expect(frame.titleFrame.frameHeight).toBeCloseTo(121 / 3);
     expect(frame.titleLabel.fontSize).toBeCloseTo(64 / 3);
-    expect(frame.titleLabel.stroke.width).toBeCloseTo(8 / 3);
+    expect(frame.titleLabel.stroke.width).toBe(4);
 
     expect(frame.closeSprite.width).toBeCloseTo(38);
     expect(frame.closeSprite.height).toBeCloseTo(38);

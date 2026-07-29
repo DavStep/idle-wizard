@@ -3680,7 +3680,7 @@ describe("GameplayFacade", () => {
     });
   });
 
-  it("sets, replaces, steps, and clears a grouped brewing ingredient slot", () => {
+  it("sets, replaces, and clears unit brewing ingredient slots", () => {
     const { gameplayFacade } = createGameplay();
 
     gameplayFacade.itemsFacade.addItem(1001, 5);
@@ -3689,11 +3689,26 @@ describe("GameplayFacade", () => {
     expect(
       gameplayFacade.setBrewingIngredientSlotQuantity(1001, 3, 0),
     ).toMatchObject({
-      ok: true,
-      item: { key: "sageHerb" },
+      ok: false,
+      reason: "invalid_ingredient_slot",
       quantity: 3,
       slotIndex: 0,
     });
+
+    expect(
+      gameplayFacade.setBrewingIngredientSlotQuantity(1001, 1, 0),
+    ).toMatchObject({
+      ok: true,
+      item: { key: "sageHerb" },
+      quantity: 1,
+      slotIndex: 0,
+    });
+    expect(
+      gameplayFacade.setBrewingIngredientSlotQuantity(1001, 1, 1),
+    ).toMatchObject({ ok: true, quantity: 1, slotIndex: 1 });
+    expect(
+      gameplayFacade.setBrewingIngredientSlotQuantity(1001, 1, 2),
+    ).toMatchObject({ ok: true, quantity: 1, slotIndex: 2 });
     expect(
       gameplayFacade.getSnapshot().brewing.ingredients.map(
         (ingredient) => ingredient.key,
@@ -3701,35 +3716,29 @@ describe("GameplayFacade", () => {
     ).toEqual(["sageHerb", "sageHerb", "sageHerb"]);
 
     expect(
-      gameplayFacade.setBrewingIngredientSlotQuantity(1002, 1, 0),
+      gameplayFacade.setBrewingIngredientSlotQuantity(1002, 1, 1),
     ).toMatchObject({
       ok: true,
       item: { key: "mintHerb" },
       quantity: 1,
     });
     expect(
-      gameplayFacade.setBrewingIngredientSlotQuantity(1001, 2, 1),
-    ).toMatchObject({
-      ok: true,
-      quantity: 2,
-      slotIndex: 1,
-    });
-    expect(
       gameplayFacade.getSnapshot().brewing.ingredients.map(
         (ingredient) => ingredient.key,
       ),
-    ).toEqual(["mintHerb", "sageHerb", "sageHerb"]);
+    ).toEqual(["sageHerb", "mintHerb", "sageHerb"]);
 
-    expect(
-      gameplayFacade.setBrewingIngredientSlotQuantity(1001, 1, 1),
-    ).toMatchObject({ ok: true, quantity: 1 });
     expect(
       gameplayFacade.setBrewingIngredientSlotQuantity(1001, 0, 1),
     ).toMatchObject({ ok: true, quantity: 0 });
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([
       expect.objectContaining({
         slotIndex: 0,
-        key: "mintHerb",
+        key: "sageHerb",
+      }),
+      expect.objectContaining({
+        slotIndex: 1,
+        key: "sageHerb",
       }),
     ]);
   });
@@ -4095,9 +4104,22 @@ describe("GameplayFacade", () => {
       unlocked: true,
       ingredients: [
         {
+          slotIndex: 0,
           key: "sageHerb",
           label: "sage",
-          quantity: 3,
+          quantity: 1,
+        },
+        {
+          slotIndex: 1,
+          key: "sageHerb",
+          label: "sage",
+          quantity: 1,
+        },
+        {
+          slotIndex: 2,
+          key: "sageHerb",
+          label: "sage",
+          quantity: 1,
         },
       ],
     });

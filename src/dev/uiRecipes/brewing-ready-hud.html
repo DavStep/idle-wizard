@@ -1,0 +1,121 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="midnight"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard brewing ready HUD recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="Brewing ready HUD visual recipe"></canvas>
+    <output
+      id="brewing-ready-hud-recipe-state"
+      hidden
+      data-phase="Ready to Brew"
+      data-potion-background="#0e1016"
+      data-slot-labels="Sage,Sage,Sage"
+      data-phase-texture-padding="16"
+    ></output>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { BrewingHudPixi } from '/src/rendering/pixi/pages/brewing/BrewingHudPixi.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+      import { PixiUiRuntimeFacade } from '/src/rendering/pixi/runtime/PixiUiRuntimeFacade.js';
+
+      const canvas = document.querySelector('canvas');
+      const applicationManager = new PixiApplicationManager({ canvas });
+      const runtime = new PixiUiRuntimeFacade({ applicationManager });
+      await runtime.initialize();
+
+      const hud = new BrewingHudPixi({
+        assetManager: runtime.assetManager,
+        theme: runtime.themeManager.getSnapshot(),
+      });
+      applicationManager.getLayers().pageUi.addChild(hud.root);
+      hud.bind({
+        selectedCauldronIndex: 0,
+        configuredMaxCauldrons: 5,
+        cauldrons: [
+          {
+            cauldronNumber: 1,
+            level: 1,
+            unlocked: true,
+            selectedRecipe: {
+              key: 'manaTonic',
+              label: 'mana tonic',
+              rarity: 'common',
+              ownedQuantity: 0,
+              ingredients: [
+                {
+                  slotIndex: 0,
+                  itemTypeId: 1001,
+                  itemKey: 'sageHerb',
+                  key: 'sageHerb',
+                  label: 'sage',
+                  quantity: 1,
+                  owned: 44,
+                },
+                {
+                  slotIndex: 1,
+                  itemTypeId: 1001,
+                  itemKey: 'sageHerb',
+                  key: 'sageHerb',
+                  label: 'sage',
+                  quantity: 1,
+                  owned: 44,
+                },
+                {
+                  slotIndex: 2,
+                  itemTypeId: 1001,
+                  itemKey: 'sageHerb',
+                  key: 'sageHerb',
+                  label: 'sage',
+                  quantity: 1,
+                  owned: 44,
+                },
+              ],
+            },
+            ingredients: [],
+            canAddIngredient: true,
+            canSelectRecipe: true,
+            acceptsHerbDrop: true,
+            primaryAction: {
+              id: 'brew',
+              label: 'Brew',
+              enabled: true,
+            },
+          },
+        ],
+      });
+      hud.layout(applicationManager.getProjection().sourceWidth);
+      document.querySelector(
+        '#brewing-ready-hud-recipe-state',
+      ).dataset.visibleSlotText = hud.ingredientSlots
+        .map((slot) => slot.name.text)
+        .filter(Boolean)
+        .join(',');
+      window.__brewingReadyHudRecipe = hud;
+    </script>
+  </body>
+</html>

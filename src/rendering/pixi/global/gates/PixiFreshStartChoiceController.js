@@ -87,19 +87,19 @@ export class PixiFreshStartChoiceController {
 
   getStatusText({ authSnapshot, busy = false } = {}) {
     const oidc = authSnapshot?.oidc ?? {};
-    if (busy) return 'connecting...';
-    if (oidc.cancelled) return 'login cancelled';
+    if (busy) return 'Connecting...';
+    if (oidc.cancelled) return 'Login Cancelled';
     if (oidc.error) return this.getLoginErrorStatusText(oidc.error);
     if (oidc.authenticated || (authSnapshot?.hasToken && oidc.remembered)) {
-      return oidc.displayName || oidc.email || 'connected';
+      return oidc.displayName || oidc.email || 'Connected';
     }
-    return oidc.enabled ? 'not connected' : 'login unavailable';
+    return oidc.enabled ? 'Not Connected' : 'Login Unavailable';
   }
 
   getLoginErrorStatusText(error) {
     return this.isLoginUnavailableReason(error)
-      ? 'login unavailable'
-      : `login error: ${String(error ?? '').replace(/\s+/g, ' ').trim()}`;
+      ? 'Login Unavailable'
+      : `Login Error: ${String(error ?? '').replace(/\s+/g, ' ').trim()}`;
   }
 
   isLoginUnavailableReason(reason) {

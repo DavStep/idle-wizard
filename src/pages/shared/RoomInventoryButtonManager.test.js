@@ -78,7 +78,7 @@ describe('RoomInventoryButtonManager', () => {
     );
     expect(getRule('.room-inventory-panel-button__label')).toContain('border: 0;');
     expect(getRule('.room-inventory-panel-button__label')).toContain(
-      '-webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)',
+      '-webkit-text-stroke: var(--style-text-stroke-width)',
     );
     expect(baseCss).toMatch(
       /\.room-inventory-panel-button\[data-panel-side="right"\]\s+\.room-inventory-panel-button__label\s*\{[^}]*right: 0;/,

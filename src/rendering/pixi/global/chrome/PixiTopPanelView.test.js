@@ -55,7 +55,7 @@ describe('PixiTopPanelView', () => {
     expect(view.username.textObject.style.fill).toBe('#fff4dc');
     expect(view.username.textObject.style.stroke).toMatchObject({
       color: '#17100c',
-      width: 4,
+      width: 12,
     });
     expect(view.mana.amount).toBe('41/80');
     expect(view.manaRate.text).toBe('+2.25/s');

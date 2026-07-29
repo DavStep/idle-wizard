@@ -1,4 +1,11 @@
-import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
+import {
+  CanvasTextMetrics,
+  Container,
+  Graphics,
+  Rectangle,
+  Sprite,
+  Texture,
+} from 'pixi.js';
 
 import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
 import { getIngredientIconFrameName } from '../../../../assets/items/ingredients/ingredientIcons.js';
@@ -21,6 +28,7 @@ import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
+import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
@@ -69,7 +77,10 @@ const WORLD_CHAT_BODY_FONT_SIZE = 11;
 const WORLD_CHAT_BODY_LINE_HEIGHT = 13;
 const WORLD_CHAT_TIMESTAMP_COLOR = '#946a2e';
 const WORLD_CHAT_SYSTEM_BACKGROUND = '#efd0a2';
+const WORLD_CHAT_SYSTEM_TITLE_COLOR = '#432d20';
+const WORLD_CHAT_SYSTEM_PLAYER_COLOR = '#72533a';
 const WORLD_CHAT_TAG_STROKE = '#2b1912';
+const WORLD_CHAT_INLINE_ICON_PLACEHOLDER = '\u2002\u2002';
 const DISCOVERY_ROW_GAP = 6;
 const DISCOVERY_MAX_INGREDIENTS = 6;
 const DISCOVERY_ICON_SIZE = 44;
@@ -1385,8 +1396,9 @@ export class WorldEventQuestRow {
 /**
  * Compact, action-chrome-free World Chat row.
  *
- * The avatar and username expose the existing Player Info action while the
- * clan tag, body, timestamp, and system surface remain passive.
+ * Player avatars/usernames and announced player names expose the existing
+ * Player Info action while clan tags, message detail, timestamps, and the
+ * system title/surface remain passive.
  */
 export class WorldChatMessageRowPixi {
   constructor({ dialog }) {
@@ -1413,6 +1425,17 @@ export class WorldChatMessageRowPixi {
       lineHeight: WORLD_CHAT_BODY_LINE_HEIGHT,
       wordWrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH - WORLD_CHAT_TEXT_X,
     });
+    this.systemPlayerUsername = createText('', {
+      fontSize: WORLD_CHAT_BODY_FONT_SIZE,
+      lineHeight: WORLD_CHAT_BODY_LINE_HEIGHT,
+      fontWeight: '700',
+    });
+    this.bodyIcon = new Sprite({
+      texture: Texture.EMPTY,
+      label: `${dialog.dialogId}-message-row:body-icon`,
+      roundPixels: true,
+    });
+    this.bodyIcon.anchor.set(0.5);
     this.timestamp = createText('', {
       fontSize: 8.5,
       lineHeight: 10,
@@ -1424,19 +1447,28 @@ export class WorldChatMessageRowPixi {
       this.avatar,
       this.tag,
       this.username,
+      this.systemPlayerUsername,
       this.body,
+      this.bodyIcon,
       this.timestamp,
     );
     this.avatarRegistration =
       dialog.inputRouter?.registerPressTarget?.(this.avatar, {
-        enabled: () => this.isInteractive(),
+        enabled: () => this.isPlayerInteractive(),
         onActivate: () => this.activatePlayer(),
         haptic: 'selection',
         excludePageSwipe: true,
       }) ?? null;
     this.usernameRegistration =
       dialog.inputRouter?.registerPressTarget?.(this.username, {
-        enabled: () => this.isInteractive(),
+        enabled: () => this.isPlayerInteractive(),
+        onActivate: () => this.activatePlayer(),
+        haptic: 'selection',
+        excludePageSwipe: true,
+      }) ?? null;
+    this.systemPlayerRegistration =
+      dialog.inputRouter?.registerPressTarget?.(this.systemPlayerUsername, {
+        enabled: () => this.isSystemPlayerInteractive(),
         onActivate: () => this.activatePlayer(),
         haptic: 'selection',
         excludePageSwipe: true,
@@ -1455,7 +1487,16 @@ export class WorldChatMessageRowPixi {
         ? this.model.username || 'System'
         : this.model.username || 'Wizard',
     );
-    setText(this.body, this.model.body ?? '');
+    setText(
+      this.systemPlayerUsername,
+      this.isSystem ? this.model.systemPlayerUsername ?? '' : '',
+    );
+    this.bindBody(
+      this.isSystem && this.model.systemPlayerUsername
+        ? this.model.systemPlayerDetail ?? this.model.body ?? ''
+        : this.model.body ?? '',
+      this.model.bodyIcon,
+    );
     setText(this.timestamp, this.model.ageLabel ?? '');
     this.avatar.texture = this.isSystem
       ? Texture.EMPTY
@@ -1469,15 +1510,21 @@ export class WorldChatMessageRowPixi {
     this.systemBackground.renderable = this.isSystem;
     this.tag.visible = Boolean(tag);
     this.tag.renderable = Boolean(tag);
+    this.systemPlayerUsername.visible = Boolean(
+      this.isSystem && this.model.systemPlayerUsername,
+    );
+    this.systemPlayerUsername.renderable = this.systemPlayerUsername.visible;
     this.syncInteraction();
     this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
     this.targetId = this.model.semanticId ?? null;
 
-    if (this.targetId && !this.isSystem) {
+    if (this.targetId) {
       this.dialog.registerTarget({
         semanticId: this.targetId,
         tutorialId: this.model.tutorialId ?? null,
-        displayObject: this.username,
+        displayObject: this.isSystem
+          ? this.systemPlayerUsername
+          : this.username,
         state: () => ({
           enabled: this.isInteractive(),
           interactive: this.isInteractive(),
@@ -1509,8 +1556,13 @@ export class WorldChatMessageRowPixi {
       0,
     );
     this.timestamp.position.set(width - timestampInset, 1);
-    this.body.position.set(contentX, WORLD_CHAT_BODY_TOP);
-    this.body.style.wordWrapWidth = Math.max(0, width - contentX);
+    this.systemPlayerUsername.position.set(contentX, WORLD_CHAT_BODY_TOP);
+    const bodyX = this.systemPlayerUsername.visible
+      ? contentX + this.systemPlayerUsername.width + 2
+      : contentX;
+    this.body.position.set(bodyX, WORLD_CHAT_BODY_TOP);
+    this.body.style.wordWrapWidth = Math.max(0, width - bodyX);
+    this.layoutBodyIcon();
     this.avatar.hitArea = new Rectangle(
       -WORLD_CHAT_AVATAR_SIZE / 2,
       -WORLD_CHAT_AVATAR_SIZE / 2,
@@ -1522,6 +1574,12 @@ export class WorldChatMessageRowPixi {
       0,
       Math.max(1, this.username.width),
       Math.max(1, this.username.height),
+    );
+    this.systemPlayerUsername.hitArea = new Rectangle(
+      0,
+      0,
+      Math.max(1, this.systemPlayerUsername.width),
+      Math.max(1, this.systemPlayerUsername.height),
     );
     this.root.hitArea = new Rectangle(0, 0, width, height);
   }
@@ -1548,16 +1606,22 @@ export class WorldChatMessageRowPixi {
           normalizeWorldChatTagColor(this.model?.allianceTagColor)
         ] ?? WORLD_CHAT_TAG_COLORS.ink,
     });
-    this.tag.style.stroke = {
+    this.tag.style.stroke = normalizePixiTextStroke({
       color: WORLD_CHAT_TAG_STROKE,
-      width: 1,
-      join: 'round',
-    };
+    });
     applyTextTheme(this.username, resolvedTheme, {
       fontSize: 11,
       lineHeight: WORLD_CHAT_HEADER_HEIGHT,
       fontWeight: '700',
-      fill: resolvedTheme.text,
+      fill: this.isSystem
+        ? WORLD_CHAT_SYSTEM_TITLE_COLOR
+        : resolvedTheme.text,
+    });
+    applyTextTheme(this.systemPlayerUsername, resolvedTheme, {
+      fontSize: WORLD_CHAT_BODY_FONT_SIZE,
+      lineHeight: WORLD_CHAT_BODY_LINE_HEIGHT,
+      fontWeight: '700',
+      fill: WORLD_CHAT_SYSTEM_PLAYER_COLOR,
     });
     applyTextTheme(this.body, resolvedTheme, {
       fontSize: WORLD_CHAT_BODY_FONT_SIZE,
@@ -1565,8 +1629,15 @@ export class WorldChatMessageRowPixi {
       fill: resolvedTheme.text,
       wordWrapWidth:
         (this.width || WORKSHOP_DIALOG_CONTENT_WIDTH) -
-        (this.isSystem ? 6 : WORLD_CHAT_TEXT_X),
+        (this.systemPlayerUsername.visible
+          ? this.systemPlayerUsername.x +
+            this.systemPlayerUsername.width +
+            2
+          : this.isSystem
+            ? 6
+            : WORLD_CHAT_TEXT_X),
     });
+    this.layoutBodyIcon();
     applyTextTheme(this.timestamp, resolvedTheme, {
       fontSize: 8.5,
       lineHeight: 10,
@@ -1576,6 +1647,10 @@ export class WorldChatMessageRowPixi {
   }
 
   isInteractive() {
+    return this.isPlayerInteractive() || this.isSystemPlayerInteractive();
+  }
+
+  isPlayerInteractive() {
     return Boolean(
       !this.isSystem &&
         this.model?.enabled !== false &&
@@ -1584,12 +1659,27 @@ export class WorldChatMessageRowPixi {
     );
   }
 
+  isSystemPlayerInteractive() {
+    return Boolean(
+      this.isSystem &&
+        this.model?.systemPlayerUsername &&
+        this.model?.enabled !== false &&
+        typeof this.model?.onActivate === 'function' &&
+        this.root.visible,
+    );
+  }
+
   syncInteraction() {
-    const interactive = this.isInteractive();
     for (const target of [this.avatar, this.username]) {
-      target.eventMode = interactive ? 'static' : 'none';
-      target.cursor = interactive ? 'pointer' : 'default';
+      target.eventMode = this.isPlayerInteractive() ? 'static' : 'none';
+      target.cursor = this.isPlayerInteractive() ? 'pointer' : 'default';
     }
+    this.systemPlayerUsername.eventMode = this.isSystemPlayerInteractive()
+      ? 'static'
+      : 'none';
+    this.systemPlayerUsername.cursor = this.isSystemPlayerInteractive()
+      ? 'pointer'
+      : 'default';
   }
 
   activatePlayer() {
@@ -1597,6 +1687,70 @@ export class WorldChatMessageRowPixi {
       return false;
     }
     return this.model.onActivate(this.model) ?? true;
+  }
+
+  bindBody(body, bodyIcon) {
+    const rawBody = String(body ?? '');
+    const marker = String(bodyIcon?.marker ?? '');
+    const markerIndex = marker ? rawBody.indexOf(marker) : -1;
+    const texture =
+      markerIndex >= 0
+        ? resolveWorldChatBodyIconTexture(
+            this.dialog.assetManager,
+            bodyIcon?.assetId,
+          )
+        : Texture.EMPTY;
+    const canRenderIcon =
+      markerIndex >= 0 && texture !== Texture.EMPTY;
+
+    this.bodyIconPrefix = canRenderIcon
+      ? rawBody.slice(0, markerIndex)
+      : '';
+    this.bodyIcon.texture = canRenderIcon ? texture : Texture.EMPTY;
+    this.bodyIcon.visible = canRenderIcon;
+    this.bodyIcon.renderable = canRenderIcon;
+    setText(
+      this.body,
+      canRenderIcon
+        ? `${rawBody.slice(0, markerIndex)}${WORLD_CHAT_INLINE_ICON_PLACEHOLDER}${rawBody.slice(markerIndex + marker.length)}`
+        : rawBody,
+    );
+
+    if (canRenderIcon) {
+      fitWorldChatBodyIcon(
+        this.bodyIcon,
+        Math.max(1, Number(bodyIcon?.size) || 12),
+      );
+    }
+  }
+
+  layoutBodyIcon() {
+    if (!this.bodyIcon.visible) {
+      return;
+    }
+
+    const prefixMetrics = CanvasTextMetrics.measureText(
+      `${this.bodyIconPrefix}${WORLD_CHAT_INLINE_ICON_PLACEHOLDER}`,
+      this.body.style,
+    );
+    const lineIndex = Math.max(0, prefixMetrics.lines.length - 1);
+    const slotWidth = CanvasTextMetrics.measureText(
+      WORLD_CHAT_INLINE_ICON_PLACEHOLDER,
+      this.body.style,
+    ).width;
+    const lineWidth =
+      prefixMetrics.lineWidths?.[lineIndex] ??
+      CanvasTextMetrics.measureText(
+        prefixMetrics.lines[lineIndex] ?? '',
+        this.body.style,
+      ).width;
+    const beforeWidth = Math.max(0, lineWidth - slotWidth);
+    const lineHeight =
+      Number(this.body.style.lineHeight) || WORLD_CHAT_BODY_LINE_HEIGHT;
+    this.bodyIcon.position.set(
+      this.body.x + beforeWidth + slotWidth / 2,
+      this.body.y + lineIndex * lineHeight + lineHeight / 2,
+    );
   }
 
   reset() {
@@ -1607,6 +1761,11 @@ export class WorldChatMessageRowPixi {
     this.model = null;
     this.isSystem = false;
     this.avatar.texture = Texture.EMPTY;
+    this.bodyIconPrefix = '';
+    this.bodyIcon.texture = Texture.EMPTY;
+    this.bodyIcon.visible = false;
+    this.bodyIcon.renderable = false;
+    setText(this.systemPlayerUsername, '');
     this.root.visible = false;
     this.syncInteraction();
   }
@@ -1617,8 +1776,10 @@ export class WorldChatMessageRowPixi {
     }
     disposeInputRegistration(this.avatarRegistration);
     disposeInputRegistration(this.usernameRegistration);
+    disposeInputRegistration(this.systemPlayerRegistration);
     this.avatarRegistration = null;
     this.usernameRegistration = null;
+    this.systemPlayerRegistration = null;
     this.root.destroy({ children: true });
   }
 }
@@ -2719,6 +2880,28 @@ function resolveCharacterTexture(assetManager, character) {
   } catch {
     return Texture.EMPTY;
   }
+}
+
+function resolveWorldChatBodyIconTexture(assetManager, assetId) {
+  if (
+    !assetId ||
+    !assetManager?.getTexture ||
+    (typeof assetManager.has === 'function' &&
+      !assetManager.has(assetId))
+  ) {
+    return Texture.EMPTY;
+  }
+
+  return assetManager.getTexture(assetId) ?? Texture.EMPTY;
+}
+
+function fitWorldChatBodyIcon(icon, size) {
+  const bounds = icon.texture?.orig ?? icon.texture?.frame;
+  const width = Math.max(1, Number(bounds?.width) || 1);
+  const height = Math.max(1, Number(bounds?.height) || 1);
+  const scale = size / Math.max(width, height);
+  icon.width = width * scale;
+  icon.height = height * scale;
 }
 
 function normalizeWorldChatTag(tag) {

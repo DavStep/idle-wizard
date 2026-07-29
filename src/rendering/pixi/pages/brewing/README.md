@@ -86,21 +86,15 @@ compact ingredient requirement tiles in a subtle connected orbit. The preview
 composition sits below the title/configuration row. The chevrons sit just
 outside the two lower ingredient tiles and slightly below their centers, so
 they read as balanced carousel navigation without interrupting the cauldron or
-the middle orbit row. All six
-cells are real gameplay ingredient slots; recipes may continue using fewer.
-Ingredient slots reuse the ordinary room-panel skin and show item art, name,
-and owned/required count. Pressing an available slot opens `Choose Herb`, the
+the middle orbit row. All six cells are real gameplay ingredient slots; recipes
+may continue using fewer. Ingredient slots reuse the ordinary room-panel skin
+and show item art and name only, with no quantity ratio because every occupied
+slot represents one herb. Pressing an available slot opens `Choose Herb`, the
 same retained inventory-choice dialog used by Garden `Choose Seed`, with herb
-art and availability rows. Brewing extends that picker with a separate upper
-paper titled `Selected Herb`. A standard herb row inside it shows the selected
-item and `N Selected`, with the shared connected Root Run amount stepper in the
-right-side action area. Yellow end buttons use generated illustrated minus and
-plus sprites around the current integer on a generated cream-and-gold
-nine-slice capsule. The controls write through the gameplay facade. At zero the
-slot is cleared. Plus stops at owned stock or the existing six-ingredient
-cauldron capacity. The unchanged herb catalogue remains in its own lower paper
-while editing, and choosing another row replaces the selected slot at quantity
-one. Both pickers keep a 4.5-row minimum viewport and top-align shorter lists.
+art and availability rows in one continuous paper. It has no selected-herb
+summary or quantity controls. Choosing a herb replaces the target slot with
+one item and closes the picker. The picker keeps a 4.5-row minimum viewport
+and top-aligns shorter lists.
 Cauldron liquid reuses the exact source-art mask,
 matches the cauldron sprite transform, and stays behind the rendered rim.
 Potion identity and rarity sit directly below the landmark after a recipe is
@@ -174,3 +168,9 @@ Open `http://127.0.0.1:55173/?devUi=chooseHerb` for the deterministic
 three-row real-app picker state used by visual QA when dev cheats are enabled.
 The non-persistent fallback recipe is
 `/src/dev/uiRecipes/brewing-herb-picker.html`.
+
+Open
+`http://127.0.0.1:55173/src/dev/uiRecipes/brewing-ready-hud.html`
+for the non-persistent selected-potion batch card used to verify the potion
+well, `Ready to Brew` status, progress rail, and primary action without
+changing gameplay or save data.

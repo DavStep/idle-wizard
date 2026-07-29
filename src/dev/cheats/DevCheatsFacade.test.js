@@ -821,6 +821,15 @@ describe('DevCheatsFacade', () => {
       {},
     );
     expect(publishAndSaveSpy).not.toHaveBeenCalled();
+    expect(target.cheats.openUi('researchCompleteAnnouncement')).toMatchObject({
+      ok: true,
+      surfaceId: 'researchCompleteAnnouncement',
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith(
+      'researchCompleteAnnouncement',
+      {},
+    );
+    expect(publishAndSaveSpy).not.toHaveBeenCalled();
     expect(target.cheats.openUi('whileAwayAnnouncement')).toMatchObject({
       ok: true,
       surfaceId: 'whileAwayAnnouncement',

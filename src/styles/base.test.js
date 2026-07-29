@@ -221,7 +221,25 @@ describe('base styles', () => {
       /\.style-button\.style-cost-button\.style-cost-button\s*\{(?<body>[^}]*)\}/,
     );
 
-    expect(costButtonRule).toContain('-webkit-text-stroke: 4px #0a0a0a;');
+    expect(costButtonRule).toContain(
+      '-webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;',
+    );
+  });
+
+  it('uses only regular text or the shared thick stroked-text width', () => {
+    const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
+    const declarations = [
+      ...baseCss.matchAll(/-webkit-text-stroke:\s*(?<value>[^;]+);/g),
+    ].map((match) => match.groups.value.trim().replace(/\s+/g, ' '));
+    const outlinedDeclarations = declarations.filter(
+      (value) => !/^0(?:px)?(?:\s|$)/.test(value),
+    );
+
+    expect(rootRule).toContain('--style-text-stroke-width: 4px;');
+    expect(outlinedDeclarations.length).toBeGreaterThan(0);
+    expect(outlinedDeclarations.every((value) =>
+      value.startsWith('var(--style-text-stroke-width) '),
+    )).toBe(true);
   });
 
   it('outlines the coin amount flyout with the shared HUD stroke', () => {
@@ -230,15 +248,13 @@ describe('base styles', () => {
     );
 
     expect(rule).toMatch(
-      /-webkit-text-stroke:\s+var\(--style-page-tab-label-text-stroke-width\)/,
+      /-webkit-text-stroke:\s+var\(--style-text-stroke-width\)/,
     );
     expect(rule).toContain(
       'var(--style-yellow-button-text-stroke);',
     );
     expect(rule).toContain('paint-order: stroke fill;');
-    expect(rule).toContain(
-      '0 1px 0 var(--style-yellow-button-text-stroke),',
-    );
+    expect(rule).toContain('text-shadow: none;');
   });
 
   it('renders flyout text in a stroked white squircle', () => {
@@ -249,8 +265,11 @@ describe('base styles', () => {
     expect(rule).toContain('color: #fff;');
     expect(rule).toContain('background: rgb(0 0 0 / 62%);');
     expect(rule).toContain('border-radius: 8px;');
-    expect(rule).toContain('-webkit-text-stroke: 2px #0a0a0a;');
+    expect(rule).toContain(
+      '-webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;',
+    );
     expect(rule).toContain('paint-order: stroke fill;');
+    expect(rule).toContain('text-shadow: none;');
   });
 
   it('opens the Garden in its settled state without a page-entry animation', () => {
@@ -273,17 +292,16 @@ describe('base styles', () => {
       /\.style-dialog > \.style-box__title\s*\{(?<body>[^}]*)\}/,
     );
 
-    expect(rootRule).toContain('--style-title-text-stroke-width: 2px;');
+    expect(rootRule).toContain(
+      '--style-title-text-stroke-width: var(--style-text-stroke-width);',
+    );
     expect(rootRule).toContain(
       '--style-title-text-stroke-color: var(--style-surface);',
     );
-    expect(rootRule).toContain(
-      '0 1px 0 var(--style-title-text-stroke-color),',
-    );
+    expect(rootRule).toContain('--style-title-text-stroke-shadow: none;');
     expect(nonWhiteThemeRule).not.toContain('--style-title-text-stroke-width: 0px;');
-    expect(nonWhiteThemeRule).not.toContain('--style-title-text-stroke-shadow: none;');
     expect(titleRule).toContain(
-      '-webkit-text-stroke: var(--style-title-text-stroke-width)',
+      '-webkit-text-stroke: var(--style-text-stroke-width)',
     );
     expect(titleRule).toContain(
       'padding: 0 var(--style-box-border-label-padding-x);',
@@ -356,7 +374,7 @@ describe('base styles', () => {
       '--style-dialog-title-text-size: calc(64px * 390 / 1080);',
     );
     expect(rootRule).toContain(
-      '--style-dialog-title-text-stroke: calc(8px * 390 / 1080);',
+      '--style-dialog-title-text-stroke: var(--style-text-stroke-width);',
     );
     expect(rootRule).toContain(
       '--style-dialog-close-image: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-close.png");',
@@ -394,7 +412,7 @@ describe('base styles', () => {
       'line-height: var(--style-dialog-title-text-height);',
     );
     expect(titleRule).toContain(
-      '-webkit-text-stroke: var(--style-dialog-title-text-stroke) #0a0a0a;',
+      '-webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;',
     );
     expect(titleRule).toContain('font-weight: 400;');
     expect(titleRule).toContain('place-items: start center;');
@@ -588,7 +606,7 @@ describe('base styles', () => {
       'border-image-width: var(--style-yellow-button-frame-width);',
     );
     expect(yellowButtonRule).toContain(
-      '-webkit-text-stroke: 4px var(--style-yellow-button-text-stroke);',
+      '-webkit-text-stroke: var(--style-text-stroke-width)\n    var(--style-yellow-button-text-stroke);',
     );
     expect(brownDarkButtonRule).toContain(
       'border-image-source: var(--style-tab-frame);',

@@ -374,14 +374,14 @@ export class AppLifecycleManager {
 
       this.freshStartChoiceManager.render?.({
         authSnapshot: this.getAuthSnapshot(),
-        statusText: 'connecting...',
+        statusText: 'Connecting...',
         busy: true,
       });
       const result = await this.connectFreshStartAccount();
       if (result?.ok) {
         this.freshStartChoiceManager.render?.({
           authSnapshot: this.getAuthSnapshot(),
-          statusText: 'connecting...',
+          statusText: 'Connecting...',
           busy: true,
         });
 
@@ -446,11 +446,11 @@ export class AppLifecycleManager {
 
   getFreshStartLoginStatusText(result = {}, authSnapshot = this.getAuthSnapshot()) {
     if (result.reason === 'disabled') {
-      return 'login unavailable';
+      return 'Login Unavailable';
     }
 
     if (String(result.reason ?? '').includes('cancelled')) {
-      return 'login cancelled';
+      return 'Login Cancelled';
     }
 
     const oidcError = authSnapshot?.oidc?.error;
@@ -459,7 +459,7 @@ export class AppLifecycleManager {
     }
 
     if (!result.message && this.isLoginUnavailableReason(result.reason)) {
-      return 'login unavailable';
+      return 'Login Unavailable';
     }
 
     return this.getLoginErrorStatusText(
@@ -477,10 +477,10 @@ export class AppLifecycleManager {
 
   getLoginErrorStatusText(error) {
     if (this.isLoginUnavailableReason(error)) {
-      return 'login unavailable';
+      return 'Login Unavailable';
     }
 
-    return `login error: ${this.getErrorText(error)}`;
+    return `Login Error: ${this.getErrorText(error)}`;
   }
 
   isLoginUnavailableReason(reason) {

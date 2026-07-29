@@ -461,7 +461,6 @@ describe("PixiPagesFacade", () => {
         title: "Choose Herb",
         cauldronIndex: 0,
         slotIndex: 2,
-        selectedItem: null,
         rows: [
           expect.objectContaining({
             itemTypeId: 1001,
@@ -490,26 +489,12 @@ describe("PixiPagesFacade", () => {
     expect(
       harness.gameplayFacade.setBrewingIngredientSlotQuantity,
     ).toHaveBeenCalledWith(1001, 1, 2, 0);
-    expect(
-      brewing.actions.setHerbQuantity(
-        { itemTypeId: 1001, key: "sageHerb", label: "sage" },
-        2,
-        0,
-        2,
-      ),
-    ).toMatchObject({
-      ok: true,
-      quantity: 2,
-    });
-    expect(
-      harness.gameplayFacade.setBrewingIngredientSlotQuantity,
-    ).toHaveBeenLastCalledWith(1001, 2, 2, 0);
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
+      "brewing.herbs",
+    );
     expect(
       harness.gameplayFacade.addBrewingIngredient,
     ).not.toHaveBeenCalled();
-    expect(harness.runtime.closeDialog).not.toHaveBeenCalledWith(
-      "brewing.herbs",
-    );
   });
 
   it("copies the selected recipe into Auto Brew before enabling it", () => {

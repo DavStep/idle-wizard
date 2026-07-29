@@ -1,0 +1,129 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="midnight"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard prestige World Chat recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="Prestige World Chat visual recipe"></canvas>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
+      import { WorkshopPixiPage } from '/src/rendering/pixi/pages/workshop/WorkshopPixiPage.js';
+      import { DialogRegistry } from '/src/rendering/pixi/retained/DialogRegistry.js';
+      import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+
+      const PRESTIGE_ICON_ASSET =
+        'source:assets/icons/icon-prestige-star.png';
+      const canvas = document.querySelector('canvas');
+      const applicationManager = new PixiApplicationManager({ canvas });
+      const assetManager = new PixiAssetManager();
+      const inputRouter = new PixiInputRouter();
+
+      await Promise.all([
+        applicationManager.initialize(),
+        assetManager.loadAll(),
+      ]);
+      inputRouter.mount({
+        root: applicationManager.getApplication().stage,
+        canvas,
+      });
+
+      const dialogRegistry = new DialogRegistry();
+      const semanticTargets = new SemanticTargetRegistry();
+      const page = new WorkshopPixiPage({
+        assetManager,
+        dialogLayer: applicationManager.layers.dialogsSource,
+        dialogRegistry,
+        inputRouter,
+        semanticTargets,
+      });
+      page.layout(applicationManager.projection);
+      page.bind({
+        workshop: {
+          dialogs: {
+            worldChat: {
+              title: 'World Chat',
+              composer: {
+                placeholder: 'Message',
+                maxLength: 160,
+                enabled: true,
+              },
+              rows: [
+                {
+                  id: 'preview-player',
+                  type: 'player',
+                  username: 'Mira',
+                  body: 'The moon garden is glowing tonight.',
+                  allianceTag: 'MOSS',
+                  allianceTagColor: 'green',
+                  character: 'mira',
+                  ageLabel: '3m ago',
+                },
+                {
+                  id: 'preview-system',
+                  type: 'system',
+                  username: 'System',
+                  body: 'The weekly world event has begun.',
+                  ageLabel: '1m ago',
+                },
+                {
+                  id: 'preview-prestige',
+                  type: 'system',
+                  username: 'System',
+                  body: 'Ada reached ⭐ 4, completing prestige level 40',
+                  systemPlayerUsername: 'Ada',
+                  systemPlayerDetail:
+                    'reached ⭐ 4, completing prestige level 40',
+                  bodyIcon: {
+                    marker: '⭐',
+                    assetId: PRESTIGE_ICON_ASSET,
+                    label: 'Prestige star',
+                    size: 12,
+                  },
+                  ageLabel: 'now',
+                },
+              ],
+              onSubmit: async () => ({ ok: false, reason: 'offline' }),
+            },
+          },
+        },
+      });
+      page.activate();
+      applicationManager.layers.pageUi.addChild(page.root);
+      page.openDialog('worldChat');
+
+      window.__worldChatPrestigeRecipe = {
+        applicationManager,
+        dialogRegistry,
+        page,
+        semanticTargets,
+      };
+    </script>
+  </body>
+</html>

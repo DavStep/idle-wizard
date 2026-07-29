@@ -38,6 +38,7 @@ const ANNOUNCEMENT_BACKDROP_ALPHA = 0.68;
 const LEVEL_REWARDS_BACKDROP_ALPHA = 0.88;
 const LEVEL_REWARD_ROW_GAP = 6;
 const LEVEL_REWARD_ROW_INSET_X = 5;
+const RESEARCH_COMPLETE_ICON_TO_ROWS_GAP = 6;
 const LEVEL_REWARD_ROW_TEXT_STROKE = Object.freeze({
   color: '#050505',
   width: 2,
@@ -327,8 +328,9 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     }
     this.announcementModel = normalizeAnnouncementModel(viewModel);
     const model = this.announcementModel;
+    const bannerRows = isBannerRowsAnnouncement(model);
     this.backdropAlpha =
-      model.animation?.kind === 'level-rewards'
+      bannerRows
         ? LEVEL_REWARDS_BACKDROP_ALPHA
         : ANNOUNCEMENT_BACKDROP_ALPHA;
     this.redrawBackdrop(this.theme);
@@ -340,26 +342,28 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     const levelRewards =
       model.animation?.kind === 'level-rewards';
     this.heading.setText(
-      model.framed || levelRewards ? '' : model.title,
+      model.framed || bannerRows ? '' : model.title,
     );
     this.levelBannerTitle.setText(
-      levelRewards ? model.title : '',
+      bannerRows ? model.title : '',
     );
     this.levelAdvanceReady = false;
-    this.backdrop.tint = levelRewards ? 0x000000 : 0xffffff;
-    setDisplayObjectVisible(this.levelBannerLayer, levelRewards);
+    this.backdrop.tint = bannerRows ? 0x000000 : 0xffffff;
+    setDisplayObjectVisible(this.levelBannerLayer, bannerRows);
     setDisplayObjectVisible(
       this.levelRewardRowsBackingLayer,
-      levelRewards,
+      bannerRows,
     );
     setDisplayObjectVisible(this.continuePrompt, levelRewards);
     this.continuePrompt.setText(
       model.continueLabel || 'Tap to continue',
     );
     this.setRowsScrollMode(whileAway);
-    this.copy.visible = !research;
-    this.copy.renderable = !research;
-    this.rowsLayer.visible = !featureUnlock && !research;
+    const researchFeature = research && !bannerRows;
+    this.copy.visible = !researchFeature;
+    this.copy.renderable = !researchFeature;
+    this.rowsLayer.visible =
+      !featureUnlock && !researchFeature;
     this.rowsLayer.renderable = this.rowsLayer.visible;
     this.unlockItemsLayer.visible = featureUnlock;
     this.unlockItemsLayer.renderable = featureUnlock;
@@ -370,25 +374,40 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       this.researchItem.reset();
       this.unlockItems.reconcile(model.items ?? model.rows);
     } else if (research) {
-      this.rows.clear();
       this.unlockItems.clear();
-      this.researchItem.bind({
-        id: `${model.announcementId ?? 'research'}:presentation`,
-        label: model.copy,
-        value: getAnnouncementResearchDetail(model.rows),
-        icon: model.icon ?? {},
-        variant: 'research',
-      });
+      if (researchFeature) {
+        this.rows.clear();
+        this.researchItem.bind({
+          id: `${model.announcementId ?? 'research'}:presentation`,
+          label: model.copy,
+          value: getAnnouncementResearchDetail(model.rows),
+          icon: model.icon ?? {},
+          variant: 'research',
+        });
+      } else {
+        this.rows.reconcile(model.rows);
+        this.syncLevelRewardRowBackings(
+          this.rows.collection.getWidgets().length,
+        );
+        this.applyLevelRewardRowTypography(true);
+        this.researchItem.bind({
+          id: `${model.announcementId ?? 'research'}:celebration`,
+          label: '',
+          value: '',
+          icon: model.icon ?? {},
+          variant: 'research',
+        });
+      }
     } else {
       this.unlockItems.clear();
       this.researchItem.reset();
       this.rows.reconcile(model.rows);
       this.syncLevelRewardRowBackings(
-        levelRewards
+        bannerRows
           ? this.rows.collection.getWidgets().length
           : 0,
       );
-      this.applyLevelRewardRowTypography(levelRewards);
+      this.applyLevelRewardRowTypography(bannerRows);
       if (whileAway) {
         this.reportScroll.scrollTo(0);
       }
@@ -492,8 +511,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.unlockItems?.applyTheme(contentTheme);
     this.researchItem?.applyTheme(contentTheme);
     if (
-      this.announcementModel?.animation?.kind ===
-      'level-rewards'
+      isBannerRowsAnnouncement(this.announcementModel)
     ) {
       this.applyLevelRewardRowTypography(true);
     }
@@ -529,27 +547,33 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     const whileAway = model.kind === 'whileAway';
     const levelRewards =
       model.animation?.kind === 'level-rewards';
+    const bannerRows = isBannerRowsAnnouncement(model);
+    const researchFeature = research && !bannerRows;
+    const researchCelebration = research && bannerRows;
+    const researchItemHeight = research
+      ? this.researchItem.setBounds(
+          0,
+          0,
+          rowsWidth,
+          false,
+        ).preferredHeight
+      : 0;
     const rowsHeight = featureUnlock
       ? this.unlockItems.layout(rowsWidth)
-      : research
-        ? this.researchItem.setBounds(
-            0,
-            0,
-            rowsWidth,
-            false,
-          ).preferredHeight
+      : researchFeature
+        ? researchItemHeight
           : this.rows.layout(
             rowsWidth,
             {
               gap: whileAway
                 ? GLOBAL_DIALOG_GEOMETRY.rowGap
-                : levelRewards
+                : bannerRows
                   ? LEVEL_REWARD_ROW_GAP
                   : 2,
             },
           );
     this.copy.setWrapWidth(width);
-    const headingHeight = levelRewards
+    const headingHeight = bannerRows
       ? LEVEL_REWARD_BANNER_HEIGHT
       : this.heading.text
         ? Math.max(24, Math.ceil(this.heading.measuredHeight))
@@ -570,9 +594,21 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       ? LEVEL_REWARD_CONTINUE_GAP +
         LEVEL_REWARD_CONTINUE_HEIGHT
       : 0;
+    const researchIconHeight = researchCelebration
+      ? researchItemHeight
+      : 0;
+    const researchIconGap =
+      researchIconHeight > 0 && rowsHeight > 0
+        ? RESEARCH_COMPLETE_ICON_TO_ROWS_GAP
+        : 0;
     const bodyContentHeight = whileAway
       ? whileAwayViewportHeight
-      : copyHeight + bodyGap + rowsHeight + continueHeight;
+      : copyHeight +
+        bodyGap +
+        researchIconHeight +
+        researchIconGap +
+        rowsHeight +
+        continueHeight;
     const bodyHeight = model.framed
       ? bodyContentHeight
       : Math.max(128, bodyContentHeight);
@@ -604,7 +640,12 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.copy.position.set(0, bodyContentY);
     const rowsPosition = {
       x: (width - rowsWidth) / 2,
-      y: bodyContentY + copyHeight + bodyGap,
+      y:
+        bodyContentY +
+        copyHeight +
+        bodyGap +
+        researchIconHeight +
+        researchIconGap,
     };
     if (whileAway) {
       this.reportScroll.setBounds(
@@ -623,17 +664,19 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       );
     } else {
       this.rowsLayer.position.set(
-        rowsPosition.x + (levelRewards ? LEVEL_REWARD_ROW_INSET_X : 0),
+        rowsPosition.x + (bannerRows ? LEVEL_REWARD_ROW_INSET_X : 0),
         rowsPosition.y,
       );
       this.levelRewardRowsBackingLayer.position.set(
         rowsPosition.x,
         rowsPosition.y,
       );
-      if (levelRewards) {
+      if (bannerRows) {
         this.layoutLevelRewardRowBackings(
           rowsWidth,
         );
+      }
+      if (levelRewards) {
         this.continuePrompt.position.set(
           width / 2,
           rowsPosition.y +
@@ -648,7 +691,9 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     );
     this.researchItemLayer.position.set(
       rowsPosition.x,
-      rowsPosition.y,
+      researchCelebration
+        ? bodyContentY + copyHeight + bodyGap
+        : rowsPosition.y,
     );
     this.setPanelContentSize(width, height);
     this.applyAnnouncementPresentationMode();
@@ -826,10 +871,17 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     );
 
     if (kind === 'research-complete') {
-      this.applyResearchAnnouncementMotion(
-        elapsed,
-        animation,
-      );
+      if (isBannerRowsAnnouncement(model)) {
+        this.applyLevelAnnouncementMotion(
+          elapsed,
+          animation,
+        );
+      } else {
+        this.applyResearchAnnouncementMotion(
+          elapsed,
+          animation,
+        );
+      }
       return;
     }
     if (kind === 'feature-unlock') {
@@ -1050,6 +1102,65 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
         sample,
       ),
     );
+    if (
+      this.announcementModel?.kind === 'research' &&
+      isBannerRowsAnnouncement(this.announcementModel)
+    ) {
+      const item = this.researchItem;
+      if (item.hasFallbackIcon()) {
+        item.applyFallbackMotion(
+          sampleMotionFrames(
+            elapsed,
+            finiteDuration(
+              animation.iconDelayMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS
+                .researchIconDelayMs,
+            ),
+            finiteDuration(
+              animation.fallbackIconDurationMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS
+                .fallbackIconDurationMs,
+            ),
+            ANNOUNCEMENT_FALLBACK_FRAMES,
+            ANNOUNCEMENT_EASE_RUBBER,
+            sample,
+          ),
+        );
+      } else {
+        item.applySilhouetteMotion(
+          sampleMotionFrames(
+            elapsed,
+            0,
+            finiteDuration(
+              animation.silhouetteDurationMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS
+                .researchSilhouetteDurationMs,
+            ),
+            ANNOUNCEMENT_SILHOUETTE_FRAMES,
+            ANNOUNCEMENT_EASE_RUBBER,
+            sample,
+          ),
+        );
+        item.applyIconMotion(
+          sampleMotionFrames(
+            elapsed,
+            finiteDuration(
+              animation.iconDelayMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS
+                .researchIconDelayMs,
+            ),
+            finiteDuration(
+              animation.iconDurationMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS
+                .researchIconDurationMs,
+            ),
+            ANNOUNCEMENT_ICON_FRAMES,
+            ANNOUNCEMENT_EASE_RUBBER,
+            sample,
+          ),
+        );
+      }
+    }
     const rowDelay = finiteDuration(
       animation.rowDelayMs,
       ANNOUNCEMENT_MOTION_DEFAULTS.levelRowDelayMs,
@@ -1133,18 +1244,56 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
           : ANNOUNCEMENT_MOTION_DEFAULTS.overlayDurationMs,
       );
     if (kind === 'research-complete') {
-      duration = Math.max(
-        duration,
-        finiteDuration(
-          animation.detailDelayMs,
-          ANNOUNCEMENT_MOTION_DEFAULTS
-            .researchDetailDelayMs,
-        ) +
+      if (isBannerRowsAnnouncement(model)) {
+        const rowCount =
+          this.rows.collection.getWidgets().length;
+        duration = Math.max(
+          duration,
           finiteDuration(
-            animation.detailDurationMs,
-            ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
-          ),
-      );
+            animation.titleDelayMs,
+          ) +
+            finiteDuration(
+              animation.titleDurationMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
+            ),
+          finiteDuration(
+            animation.rowDelayMs,
+          ) +
+            Math.max(0, rowCount - 1) *
+              finiteDuration(
+                animation.rowStaggerMs,
+                ANNOUNCEMENT_MOTION_DEFAULTS
+                  .levelRowStaggerMs,
+              ) +
+            finiteDuration(
+              animation.rowDurationMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
+            ),
+          finiteDuration(
+            animation.iconDelayMs,
+            ANNOUNCEMENT_MOTION_DEFAULTS
+              .researchIconDelayMs,
+          ) +
+            finiteDuration(
+              animation.iconDurationMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS
+                .researchIconDurationMs,
+            ),
+        );
+      } else {
+        duration = Math.max(
+          duration,
+          finiteDuration(
+            animation.detailDelayMs,
+            ANNOUNCEMENT_MOTION_DEFAULTS
+              .researchDetailDelayMs,
+          ) +
+            finiteDuration(
+              animation.detailDurationMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
+            ),
+        );
+      }
     } else if (kind === 'feature-unlock') {
       const itemCount =
         this.unlockItems.collection.getWidgets().length;
@@ -1310,10 +1459,12 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
   }
 
   applyLevelRewardRowTypography(enabled) {
-    if (!enabled) {
-      return;
-    }
     for (const row of this.rows.collection.getWidgets()) {
+      if (!enabled) {
+        row.keyLabel.setStroke(null);
+        row.valueLabel.setStroke(null);
+        continue;
+      }
       row.keyLabel
         .setColor('#ffffff')
         .setStroke(LEVEL_REWARD_ROW_TEXT_STROKE);
@@ -2070,6 +2221,13 @@ function normalizeAnnouncementModel(model = {}) {
       Number(model.contentHeight) || 0,
     ),
   };
+}
+
+function isBannerRowsAnnouncement(model = {}) {
+  return (
+    model.variant === 'banner-rows' ||
+    model.animation?.kind === 'level-rewards'
+  );
 }
 
 function setDisplayObjectVisible(displayObject, visible) {

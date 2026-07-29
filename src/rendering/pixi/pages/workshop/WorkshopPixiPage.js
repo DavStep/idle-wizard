@@ -14,6 +14,7 @@ import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBa
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
+import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
@@ -125,7 +126,7 @@ const SUMMON_BUTTON_WIDTH = 92;
 const SUMMON_BUTTON_HEIGHT = 52;
 const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;
 const SUMMON_CHAT_GAP = 32;
-const SUMMON_VERTICAL_OFFSET = 8;
+const SUMMON_VERTICAL_OFFSET = 16;
 export const WORKSHOP_WINDOW_ASSET_ID =
   'source:assets/rooms/workshop/workshop-window.webp';
 export const WORKSHOP_WINDOW_GEOMETRY = Object.freeze({
@@ -180,11 +181,9 @@ const SIDE_PANEL_ENTER_OFFSET = 10;
 const SIDE_PANEL_ENTER_SCALE = 0.96;
 const SIDE_PANEL_STAGGER_MS = 16;
 const WORKSHOP_REQUEST_TEXT_FILL = '#ffffff';
-const WORKSHOP_REQUEST_TEXT_STROKE_WIDTH = 2;
 const WORKSHOP_REQUEST_TITLE_STROKE = '#0a0a0a';
 const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
 const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
-const WORKSHOP_SIDE_LABEL_STROKE_WIDTH = 4.5;
 const SUMMON_EFFECT_FRAMES = Object.freeze([
   Object.freeze({ progress: 0, alpha: 0.84, scale: 1 }),
   Object.freeze({ progress: 0.32, alpha: 1, scale: 1.045 }),
@@ -1003,11 +1002,9 @@ class WorkshopTaskPanel {
   }
 
   applyTitleStroke() {
-    this.panel.title.style.stroke = {
+    this.panel.title.style.stroke = normalizePixiTextStroke({
       color: WORKSHOP_REQUEST_TITLE_STROKE,
-      width: WORKSHOP_REQUEST_TEXT_STROKE_WIDTH,
-      join: 'round',
-    };
+    });
   }
 
   destroy() {
@@ -1647,11 +1644,9 @@ class WorkshopIconPanelAction {
       lineHeight: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelLineHeight,
       fill: WORKSHOP_SIDE_LABEL_FILL,
     });
-    this.label.style.stroke = {
+    this.label.style.stroke = normalizePixiTextStroke({
       color: WORKSHOP_SIDE_LABEL_STROKE,
-      width: WORKSHOP_SIDE_LABEL_STROKE_WIDTH,
-      join: 'round',
-    };
+    });
     fitRootRunSideActionLabel(this.label);
     this.notification.applyTheme(theme);
   }
@@ -1843,11 +1838,9 @@ class WorkshopFeatureButton {
       lineHeight: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelLineHeight,
       fill: WORKSHOP_SIDE_LABEL_FILL,
     });
-    this.label.style.stroke = {
+    this.label.style.stroke = normalizePixiTextStroke({
       color: WORKSHOP_SIDE_LABEL_STROKE,
-      width: WORKSHOP_SIDE_LABEL_STROKE_WIDTH,
-      join: 'round',
-    };
+    });
     fitRootRunSideActionLabel(this.label);
     this.label.alpha = this.model?.enabled === false ? 0.55 : 1;
     applyTextTheme(this.timer, theme, {
@@ -1855,10 +1848,9 @@ class WorkshopFeatureButton {
       lineHeight: ROOT_RUN_SIDE_ACTION_GEOMETRY.timerLineHeight,
       fill: theme.muted,
     });
-    this.timer.style.stroke = {
+    this.timer.style.stroke = normalizePixiTextStroke({
       color: theme.surface,
-      width: 2,
-    };
+    });
     this.icon.alpha = this.model?.enabled === false ? 0.55 : 1;
     this.cloth.alpha = this.icon.alpha;
     this.notification.applyTheme(theme);
@@ -2057,11 +2049,9 @@ function applyWorkshopRequestTextTheme(text, theme, style = RETAINED_TEXT_STYLES
     ...style,
     fill: style.fill ?? WORKSHOP_REQUEST_TEXT_FILL,
   });
-  text.style.stroke = {
+  text.style.stroke = normalizePixiTextStroke({
     color: theme.surface,
-    width: WORKSHOP_REQUEST_TEXT_STROKE_WIDTH,
-    join: 'round',
-  };
+  });
 }
 
 function defaultCancelFrame(frame) {

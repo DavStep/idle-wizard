@@ -60,7 +60,7 @@ describe('PrestigePixiPage', () => {
     expect(row.rankLabel.style.fill).toBe(RESEARCH_RANK_INK);
     expect(row.rankLabel.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 1.2,
+      width: 4,
     });
 
     pages.destroy();

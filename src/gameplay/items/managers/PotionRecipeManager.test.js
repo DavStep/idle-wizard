@@ -21,11 +21,28 @@ describe('PotionRecipeManager', () => {
       brewDurationMs: 30_000,
       ingredients: [
         {
+          slotIndex: 0,
           itemTypeId: 1001,
           key: 'sageHerb',
           label: 'sage',
           kind: 'herb',
-          quantity: 3,
+          quantity: 1,
+        },
+        {
+          slotIndex: 1,
+          itemTypeId: 1001,
+          key: 'sageHerb',
+          label: 'sage',
+          kind: 'herb',
+          quantity: 1,
+        },
+        {
+          slotIndex: 2,
+          itemTypeId: 1001,
+          key: 'sageHerb',
+          label: 'sage',
+          kind: 'herb',
+          quantity: 1,
         },
       ],
     });
@@ -37,6 +54,7 @@ describe('PotionRecipeManager', () => {
       brewDurationMs: 145_000,
       ingredients: [
         {
+          slotIndex: 0,
           itemTypeId: 1013,
           key: 'bloodroseHerb',
           label: 'bloodrose',
@@ -44,13 +62,23 @@ describe('PotionRecipeManager', () => {
           quantity: 1,
         },
         {
+          slotIndex: 1,
           itemTypeId: 1005,
           key: 'briarHerb',
           label: 'briar',
           kind: 'herb',
-          quantity: 2,
+          quantity: 1,
         },
         {
+          slotIndex: 2,
+          itemTypeId: 1005,
+          key: 'briarHerb',
+          label: 'briar',
+          kind: 'herb',
+          quantity: 1,
+        },
+        {
+          slotIndex: 3,
           itemTypeId: 1010,
           key: 'frostmossHerb',
           label: 'frostmoss',
@@ -59,6 +87,17 @@ describe('PotionRecipeManager', () => {
         },
       ],
     });
+    expect(
+      manager.getPotionRecipes().every(
+        (recipe) =>
+          recipe.ingredients.length <= 6 &&
+          recipe.ingredients.every(
+            (ingredient, slotIndex) =>
+              ingredient.quantity === 1 &&
+              ingredient.slotIndex === slotIndex,
+          ),
+      ),
+    ).toBe(true);
     expect(manager.getPotionRecipe('ashenMemory')).toMatchObject({
       potionTypeId: 2019,
       key: 'ashenMemory',

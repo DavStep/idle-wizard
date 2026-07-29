@@ -63,6 +63,11 @@ describe('retained Pixi gate controllers', () => {
     );
     expect(view.connectButton.variant).toBe('yellow');
     expect(view.freshButton.variant).toBe('green');
+    expect(view.message.text).toBe('Do You Already Have an Account?');
+    expect(view.connectButton.textLabel.text).toBe('Connect Account');
+    expect(view.freshButton.textLabel.text).toBe('Start New');
+    view.bind({ connectEnabled: true });
+    expect(view.status.text).toBe('Not Connected');
     expect(view.connectButton.buttonWidth).toBe(240);
     expect(view.freshButton.buttonWidth).toBe(240);
     expect(view.connectButton.x).toBeGreaterThanOrEqual(0);

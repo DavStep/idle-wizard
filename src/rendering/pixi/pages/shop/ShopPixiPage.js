@@ -1257,6 +1257,7 @@ class ShopStallWidget {
     });
     this.priceAction = new PixiButton({
       assetManager,
+      inputRouter,
       width: STALL_SELECT_ACTION_WIDTH,
       height: STALL_SELECT_ACTION_HEIGHT,
       variant: 'green',
@@ -1376,6 +1377,7 @@ class ShopStallWidget {
           Boolean(stall.notification),
         notificationTone: stall.notificationTone,
       },
+      (payload) => this.action?.(payload),
     );
     this.priceResource.visible = Boolean(priceResourceKey);
     this.priceResource.renderable = this.priceResource.visible;

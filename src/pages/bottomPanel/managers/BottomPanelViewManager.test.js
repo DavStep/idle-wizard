@@ -254,7 +254,9 @@ describe('BottomPanelViewManager', () => {
     expect(baseCss).toContain('--style-room-tab-icon-top: 3px;');
     expect(baseCss).toContain('--style-room-tab-inactive-icon-scale: 1.5;');
     expect(baseCss).toContain('--style-page-tab-selected-icon-scale: 1.22;');
-    expect(baseCss).toContain('--style-page-tab-label-text-stroke-width: 1px;');
+    expect(baseCss).toContain(
+      '--style-page-tab-label-text-stroke-width: var(--style-text-stroke-width);',
+    );
     expect(baseCss).toContain(
       '--style-page-tab-label-text-stroke-color: var(--style-surface);',
     );
@@ -263,7 +265,7 @@ describe('BottomPanelViewManager', () => {
     expect(labelRule).toContain('visibility: hidden;');
     expect(labelRule).toContain('color: #fff;');
     expect(labelRule).toContain(
-      '-webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)',
+      '-webkit-text-stroke: var(--style-text-stroke-width)',
     );
     expect(labelRule).toContain('paint-order: stroke fill;');
     expect(labelRule).toContain(

@@ -22,7 +22,7 @@ experience_type: gameplay-economy
 - Garden page herb inventory should read owned counts from `snapshot.garden.herbs`; Brewing's herb snapshot can subtract staged cauldron ingredients.
 - Garden and Brewing herb/potion use panels show only researched/unlocked or owned items; hide locked zero-count rows completely.
 - Brewing is active: herbs can be staged in cauldron order, brew spends mana, valid unlocked recipes make potions, and invalid mixes make wasted potion.
-- Potion recipe ingredient order matters; expand grouped quantities in listed order for matching.
+- Potion recipe ingredient order matters; every recipe entry is one ordered cauldron slot with `quantity: 1`, so repeated herbs must be repeated entries.
 - Brewing recipe-book UI should read `snapshot.brewing.recipes` and show only unlocked recipes; locked recipes stay hidden until research unlocks them.
 - Brewing `maxCauldrons` is only the level cap; bought slots persist as `brewing.unlockedCauldrons`.
 - Unknown potion recipes are not paid research entries; they unlock globally through the SpacetimeDB `potion_recipe_discovery` table when a player brews the hidden recipe.
@@ -34,11 +34,11 @@ experience_type: gameplay-economy
 - Brewing keeps the action button generic (`brew (N mana)`) as a one-line bottom-left cauldron border label; cauldron status carries matched potion, locked recipe, and wasted mix state.
 - Brewing recipe selection is page-local UI state; the guide box can help stage herbs but must not change recipe matching rules.
 - Brewing page unmounts should clear DOM/subscriptions only; selected recipe and current cauldron state must survive room swaps so `fill recipe` stays available after bottling.
-- Brewing recipe selection comes from the recipes popup; selected recipes render their requirements inside the cauldron as stable placed/required rows even when ingredients are missing.
+- Brewing recipe selection comes from the recipes popup; selected recipes render their unit ingredient requirements in stable ordered orbit slots even when ingredients are missing.
 - Brewing recipes popup is recipe-only: show recipe info and selection controls there, while cauldron contents/actions stay on the cauldron surface.
 - Brewing `fill recipe` is only actionable before a brew starts; active brew phases must not show it or its notification dot because gameplay rejects recipe prep as `brew_in_progress`.
-- Brewing recipe guide ingredient rows use grouped recipe quantities (`- 2 sage`), not expanded numbered slots.
-- Brewing recipe guide height follows the selected recipe's grouped ingredient row count through the guide CSS variable.
+- Brewing recipe guide ingredient rows mirror the ordered unit slots; repeated herbs remain repeated rows rather than grouped quantities.
+- Brewing recipe guide height follows the selected recipe's unit-slot count through the guide CSS variable.
 - Brewing recipe popup rows use an explicit `select` action; do not hide recipe selection behind the recipe name.
 - Brewing shows bottom `herbs` and `potions` icon buttons; herbs expands the add-to-cauldron box, and potions expands an inline owned-potion box from `snapshot.inventory`.
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.

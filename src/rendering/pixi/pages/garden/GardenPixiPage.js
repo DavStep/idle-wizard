@@ -15,6 +15,7 @@ import {
   layoutPixiSeedPackIcon,
 } from "../../primitives/PixiSeedPackIcon.js";
 import { PixiStarLevelLabel } from "../../primitives/PixiStarLevelLabel.js";
+import { normalizePixiTextStroke } from "../../primitives/PixiTextLabel.js";
 import { PooledCollection } from "../../retained/PooledCollection.js";
 import { WidgetPool } from "../../retained/WidgetPool.js";
 import {
@@ -1250,11 +1251,9 @@ class GardenPlotWidget {
       fill: "#ffffff",
       align: "right",
     });
-    this.action.style.stroke = {
+    this.action.style.stroke = normalizePixiTextStroke({
       color: "#0a0a0a",
-      width: 2,
-      join: "round",
-    };
+    });
     this.buyCostButton.applyTheme(this.theme);
     this.progress.applyTheme(this.theme);
     this.redraw();

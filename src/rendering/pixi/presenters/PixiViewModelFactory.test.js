@@ -1136,6 +1136,12 @@ describe('PixiViewModelFactory', () => {
               body: 'The weekly world event has begun.',
               sentAtMs: 9 * 60_000,
             },
+            {
+              id: 'system-prestige-1',
+              username: 'system',
+              body: 'Ada reached ⭐ 4, completing prestige level 40',
+              sentAtMs: 10 * 60_000,
+            },
           ],
         },
         {
@@ -1162,12 +1168,82 @@ describe('PixiViewModelFactory', () => {
         ageLabel: '1m ago',
         onActivate: null,
       });
+      expect(dialog.rows[1].bodyIcon).toBeNull();
+      expect(dialog.rows[2]).toMatchObject({
+        type: 'system',
+        username: 'System',
+        body: 'Ada reached ⭐ 4, completing prestige level 40',
+        systemPlayerUsername: 'Ada',
+        systemPlayerDetail:
+          'reached ⭐ 4, completing prestige level 40',
+        bodyIcon: {
+          marker: '⭐',
+          assetId: 'source:assets/icons/icon-prestige-star.png',
+          label: 'Prestige star',
+          size: 12,
+        },
+        ageLabel: 'now',
+      });
+      expect(dialog.rows[2].onActivate).toEqual(expect.any(Function));
 
       dialog.rows[0].onActivate();
       expect(openPlayer).toHaveBeenCalledWith(playerMessage);
     } finally {
       nowSpy.mockRestore();
     }
+  });
+
+  it('projects system announcement usernames as Player Info actions', () => {
+    const openPlayer = vi.fn();
+    const message = {
+      id: 'system-level-1',
+      senderIdentity: 'sender-ada',
+      username: 'system',
+      character: 'mira',
+      body: 'Ada reached level 14',
+      sentAtMs: 1_000,
+    };
+    const dialog = new PixiViewModelFactory().createWorldChatDialog(
+      {
+        connected: true,
+        messages: [message],
+      },
+      {
+        openPlayer,
+        sendWorldChat: vi.fn(),
+      },
+    );
+
+    expect(dialog.rows[0]).toMatchObject({
+      type: 'system',
+      username: 'System',
+      body: 'Ada reached level 14',
+      systemPlayerUsername: 'Ada',
+      systemPlayerDetail: 'reached level 14',
+      semanticId: 'world-chat-system-player:system-level-1',
+    });
+    expect(dialog.rows[0].onActivate).toEqual(expect.any(Function));
+
+    dialog.rows[0].onActivate();
+
+    expect(openPlayer).toHaveBeenCalledWith({
+      ...message,
+      username: 'Ada',
+    });
+  });
+
+  it('keeps compact preview rows left-aligned and normalizes the System sender label', () => {
+    const preview = new PixiViewModelFactory().createWorldChatPreview({
+      messages: [
+        { username: 'Mira', body: 'first' },
+        { username: 'system', body: 'Wizard reached level 5' },
+        { username: 'StepDav', body: 'Who are you wizard' },
+      ],
+    });
+
+    expect(preview.preview).toBe(
+      'System: Wizard reached level 5\nStepDav: Who are you wizard',
+    );
   });
 
   it('falls back to Currencies when the selected Bag feature is still locked', () => {

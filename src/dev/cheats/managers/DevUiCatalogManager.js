@@ -263,6 +263,23 @@ function createPreviewModel(dialogId) {
           character: 'juniper',
           ageLabel: '12m ago',
         },
+        {
+          id: 'preview-prestige',
+          type: 'system',
+          username: 'System',
+          body: 'Ada reached ⭐ 4, completing prestige level 40',
+          systemPlayerUsername: 'Ada',
+          systemPlayerDetail:
+            'reached ⭐ 4, completing prestige level 40',
+          bodyIcon: {
+            marker: '⭐',
+            assetId:
+              'source:assets/icons/icon-prestige-star.png',
+            label: 'Prestige star',
+            size: 12,
+          },
+          ageLabel: 'now',
+        },
       ],
       onSubmit: async () => ({ ok: false, reason: 'offline' }),
     };

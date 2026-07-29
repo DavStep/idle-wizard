@@ -2,6 +2,7 @@ import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allian
 import { createPlayerCharacterIcon } from '../../shared/playerCharacterIcon.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
+import { parseWorldChatSystemPlayerAnnouncement } from '../worldChatSystemAnnouncement.js';
 import { WorkshopChatPendingMessageManager } from './WorkshopChatPendingMessageManager.js';
 import { WorkshopSecondaryActionGateManager } from './WorkshopSecondaryActionGateManager.js';
 
@@ -25,13 +26,6 @@ const MESSAGE_LIMIT = 40;
 const MAX_MESSAGE_LENGTH = 160;
 const CHAT_AGE_MINUTE_MS = 60_000;
 const CHAT_AGE_REFRESH_FUZZ_MS = 250;
-const SYSTEM_PLAYER_ANNOUNCEMENT_PATTERNS = [
-  /^(?<username>.{1,24})(?<detail> reached level \d+)$/u,
-  /^(?<username>.{1,24})(?<detail> reached ⭐ \d+, completing prestige level \d+)$/u,
-  /^(?<username>.{1,24})(?<detail> researched .+)$/u,
-  /^(?<username>.{1,24})(?<detail> unlocked the recipe of .+)$/u,
-];
-
 export class WorkshopWorldChatManager {
   constructor({
     gameplayFacade,
@@ -529,18 +523,7 @@ export class WorkshopWorldChatManager {
   }
 
   getSystemPlayerAnnouncement(body) {
-    for (const pattern of SYSTEM_PLAYER_ANNOUNCEMENT_PATTERNS) {
-      const match = pattern.exec(body);
-
-      if (match?.groups?.username && match.groups.detail) {
-        return {
-          username: match.groups.username,
-          detail: match.groups.detail,
-        };
-      }
-    }
-
-    return null;
+    return parseWorldChatSystemPlayerAnnouncement(body);
   }
 
   getMessagesWithBody(messages) {
@@ -737,16 +720,19 @@ export class WorkshopWorldChatManager {
 
   formatSender(message) {
     const username = message?.username || 'Wizard';
+    const displayUsername = this.isSystemMessage(message)
+      ? 'System'
+      : username;
     const fallbackLevel = this.isSystemMessage(message) ? null : 1;
     const playerLevel = this.normalizePlayerLevel(message?.playerLevel, fallbackLevel);
     const allianceTag = this.normalizeAllianceTag(message?.allianceTag);
     const prefix = allianceTag ? `[${allianceTag}] ` : '';
 
     if (!playerLevel) {
-      return `${prefix}${username}`;
+      return `${prefix}${displayUsername}`;
     }
 
-    return `${prefix}${username}(${playerLevel})`;
+    return `${prefix}${displayUsername}(${playerLevel})`;
   }
 
   normalizeAllianceTag(tag) {
@@ -764,7 +750,7 @@ export class WorkshopWorldChatManager {
       if (tag) {
         nodes.push(tag, document.createTextNode(' '));
       }
-      nodes.push(document.createTextNode(username));
+      nodes.push(document.createTextNode('System'));
       return nodes;
     }
 
@@ -809,7 +795,7 @@ export class WorkshopWorldChatManager {
   }
 
   isSystemMessage(message) {
-    return message?.username === 'system';
+    return String(message?.username ?? '').toLowerCase() === 'system';
   }
 
   isRecipeDiscoveryMessage(message) {

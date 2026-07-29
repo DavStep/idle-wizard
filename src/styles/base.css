@@ -16,6 +16,8 @@
   --style-active-surface: var(--style-surface);
   --style-system-text: var(--style-muted);
   --style-announcement-coin: oklch(44% 0.13 88);
+  --style-world-chat-system-title: #432d20;
+  --style-world-chat-system-player: #72533a;
   --style-notification-red: #c1121f;
   --style-notification-orange: #d66a00;
   --style-notification: var(--style-notification-red);
@@ -93,6 +95,7 @@
   --style-border-strong: var(--style-border-strong-width) solid
     var(--style-stroke);
   --style-font-size: 13px;
+  --style-text-stroke-width: 4px;
   --style-dialog-title-font-size: 14px;
   --style-panel-padding: 5px 10px;
   --style-dialog-padding: 20px;
@@ -132,7 +135,7 @@
   --style-dialog-title-text-padding-x: calc(89px * 390 / 1080);
   --style-dialog-title-text-bottom: calc(26px * 390 / 1080);
   --style-dialog-title-text-size: calc(64px * 390 / 1080);
-  --style-dialog-title-text-stroke: calc(8px * 390 / 1080);
+  --style-dialog-title-text-stroke: var(--style-text-stroke-width);
   --style-dialog-close-image: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-close.png");
   --style-dialog-close-size: calc(114px * 390 / 1080);
   --style-dialog-close-gap: calc(64px * 390 / 1080);
@@ -151,13 +154,9 @@
   );
   --style-box-title-left: 8px;
   --style-box-title-top: -12px;
-  --style-title-text-stroke-width: 2px;
+  --style-title-text-stroke-width: var(--style-text-stroke-width);
   --style-title-text-stroke-color: var(--style-surface);
-  --style-title-text-stroke-shadow:
-    0 1px 0 var(--style-title-text-stroke-color),
-    1px 0 0 var(--style-title-text-stroke-color),
-    0 -1px 0 var(--style-title-text-stroke-color),
-    -1px 0 0 var(--style-title-text-stroke-color);
+  --style-title-text-stroke-shadow: none;
   --style-box-border-label-font-size: 11px;
   --style-box-border-label-line-height: 14px;
   --style-page-tab-button-height: calc(
@@ -168,13 +167,9 @@
   --style-page-tab-selected-icon-scale: 1.22;
   --style-page-tab-icon-y-offset: 10px;
   --style-page-tab-label-y-offset: 7px;
-  --style-page-tab-label-text-stroke-width: 1px;
+  --style-page-tab-label-text-stroke-width: var(--style-text-stroke-width);
   --style-page-tab-label-text-stroke-color: var(--style-surface);
-  --style-page-tab-label-text-stroke-shadow:
-    0 1px 0 var(--style-page-tab-label-text-stroke-color),
-    1px 0 0 var(--style-page-tab-label-text-stroke-color),
-    0 -1px 0 var(--style-page-tab-label-text-stroke-color),
-    -1px 0 0 var(--style-page-tab-label-text-stroke-color);
+  --style-page-tab-label-text-stroke-shadow: none;
   --style-room-tab-active-height: 56px;
   --style-room-tab-inactive-height: 44px;
   --style-room-tab-rise: calc(
@@ -424,7 +419,7 @@
   --garden-page-plot-number-color: #3b2416;
   --garden-page-plot-box-detail-font-size: 9px;
   --garden-page-plot-box-detail-line-height: 11px;
-  --garden-page-plot-text-stroke-width: 1px;
+  --garden-page-plot-text-stroke-width: var(--style-text-stroke-width);
   --garden-page-plot-text-stroke-color: var(--style-surface);
   --garden-page-plot-box-row-min-height: calc(
     var(--garden-page-plot-box-frame-height) +
@@ -993,7 +988,7 @@
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  -webkit-text-stroke: 4px #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
   paint-order: stroke fill;
   scale: 1;
   --style-press-scale: 0.94;
@@ -1923,7 +1918,7 @@ body {
   border: 0;
   border-image: none;
   text-shadow: 0 0.5px 0.5px rgb(43 22 14 / 0.7);
-  -webkit-text-stroke: 1px #2b160e;
+  -webkit-text-stroke: var(--style-text-stroke-width) #2b160e;
 }
 
 .first-run-intro--step-enter .style-box.first-run-intro__panel {
@@ -3043,7 +3038,7 @@ body {
   white-space: nowrap;
   background: transparent;
   border: 0;
-  -webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)
+  -webkit-text-stroke: var(--style-text-stroke-width)
     var(--style-page-tab-label-text-stroke-color);
   paint-order: stroke fill;
   pointer-events: none;
@@ -3487,7 +3482,7 @@ body {
   white-space: nowrap;
   background: transparent;
   border: 0;
-  -webkit-text-stroke: 1px #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
   paint-order: stroke fill;
   opacity: 0;
   pointer-events: none;
@@ -4132,9 +4127,9 @@ body {
   font-family: var(--style-font);
   font-size: var(--style-font-size);
   line-height: normal;
-  -webkit-text-stroke: 2px #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
   paint-order: stroke fill;
-  text-shadow: 0 1px 0 #0a0a0a;
+  text-shadow: none;
   animation: style-flyout-enter 1200ms var(--style-motion-ease-soft) both;
 }
 
@@ -4280,14 +4275,10 @@ body {
   border-radius: 0;
   box-shadow: none;
   opacity: 0;
-  -webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)
+  -webkit-text-stroke: var(--style-text-stroke-width)
     var(--style-yellow-button-text-stroke);
   paint-order: stroke fill;
-  text-shadow:
-    0 1px 0 var(--style-yellow-button-text-stroke),
-    1px 0 0 var(--style-yellow-button-text-stroke),
-    0 -1px 0 var(--style-yellow-button-text-stroke),
-    -1px 0 0 var(--style-yellow-button-text-stroke);
+  text-shadow: none;
   contain: layout paint style;
   transform: translate3d(-50%, -50%, 0) scale(0.5);
   animation: room-coin-amt-pop 820ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -5843,14 +5834,11 @@ body {
   white-space: nowrap;
   background: transparent;
   border: 0;
-  -webkit-text-stroke: 2.25px var(--style-yellow-button-text-stroke);
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-yellow-button-text-stroke);
   paint-order: stroke fill;
   pointer-events: none;
-  text-shadow:
-    0 1px 0 var(--style-yellow-button-text-stroke),
-    1px 0 0 var(--style-yellow-button-text-stroke),
-    0 -1px 0 var(--style-yellow-button-text-stroke),
-    -1px 0 0 var(--style-yellow-button-text-stroke);
+  text-shadow: none;
   transition: translate var(--style-motion-press)
     var(--style-motion-ease-rubber);
 }
@@ -5879,7 +5867,7 @@ body {
   line-height: calc(var(--style-box-border-label-line-height) * 0.49);
   white-space: nowrap;
   background: transparent;
-  -webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)
+  -webkit-text-stroke: var(--style-text-stroke-width)
     var(--style-page-tab-label-text-stroke-color);
   paint-order: stroke fill;
   pointer-events: none;
@@ -8794,13 +8782,15 @@ div.workshop-page__discovery-row {
 }
 
 .workshop-page__world-chat-message--system .workshop-page__world-chat-name {
-  color: var(--style-system-text);
+  color: var(--style-world-chat-system-title);
 }
 
-.workshop-page__world-chat-message--recipe-discovery,
-.workshop-page__world-chat-message--recipe-discovery
-  .workshop-page__world-chat-name {
+.workshop-page__world-chat-message--recipe-discovery {
   color: var(--style-announcement-coin);
+}
+
+.workshop-page__world-chat-system-player-link {
+  color: var(--style-world-chat-system-player);
 }
 
 .workshop-page__world-chat-age {
@@ -8813,7 +8803,7 @@ div.workshop-page__discovery-row {
 .workshop-page__world-chat-preview {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center;
   gap: var(--style-world-chat-row-gap);
   height: calc(
     (
@@ -8823,6 +8813,7 @@ div.workshop-page__discovery-row {
       var(--style-world-chat-row-gap)
   );
   overflow: hidden;
+  translate: 0 2px;
 }
 
 .workshop-page__world-chat-box .workshop-page__world-chat-message,
@@ -9942,14 +9933,10 @@ div.workshop-page__discovery-row {
 .garden-page__plot-box-label,
 .garden-page__plot .garden-page__plot-box-action,
 .garden-page__plot .garden-page__plot-box-timer {
-  -webkit-text-stroke: var(--garden-page-plot-text-stroke-width)
+  -webkit-text-stroke: var(--style-text-stroke-width)
     var(--garden-page-plot-text-stroke-color);
   paint-order: stroke fill;
-  text-shadow:
-    0 1px 0 var(--garden-page-plot-text-stroke-color),
-    1px 0 0 var(--garden-page-plot-text-stroke-color),
-    0 -1px 0 var(--garden-page-plot-text-stroke-color),
-    -1px 0 0 var(--garden-page-plot-text-stroke-color);
+  text-shadow: none;
 }
 
 .garden-page__plot-box-number {
@@ -10647,7 +10634,7 @@ div.workshop-page__discovery-row {
   font-weight: 400;
   line-height: 21px;
   white-space: nowrap;
-  -webkit-text-stroke: 2px #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
   paint-order: stroke fill;
 }
 
@@ -10986,7 +10973,7 @@ div.workshop-page__discovery-row {
   text-wrap: balance;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  -webkit-text-stroke: 2px #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
 }
 
 .style-button.research-page__research-button:active:not(:disabled):not(
@@ -12837,7 +12824,7 @@ div.workshop-page__discovery-row {
   font-size: var(--style-font-size);
   font-weight: bold;
   background: transparent;
-  -webkit-text-stroke: var(--style-title-text-stroke-width)
+  -webkit-text-stroke: var(--style-text-stroke-width)
     var(--style-title-text-stroke-color);
   paint-order: stroke fill;
   text-shadow: var(--style-title-text-stroke-shadow);
@@ -12992,7 +12979,7 @@ div.workshop-page__discovery-row {
   text-overflow: clip;
   translate: 0 2px;
   visibility: hidden;
-  -webkit-text-stroke: var(--style-page-tab-label-text-stroke-width)
+  -webkit-text-stroke: var(--style-text-stroke-width)
     var(--style-page-tab-label-text-stroke-color);
   paint-order: stroke fill;
   text-shadow: var(--style-page-tab-label-text-stroke-shadow);
@@ -16531,7 +16518,8 @@ div.workshop-page__discovery-row {
   border-image-slice: var(--style-yellow-button-frame-slice);
   border-image-width: var(--style-yellow-button-frame-width);
   border-image-repeat: stretch;
-  -webkit-text-stroke: 4px var(--style-yellow-button-text-stroke);
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-yellow-button-text-stroke);
   paint-order: stroke fill;
 }
 
@@ -16543,7 +16531,8 @@ div.workshop-page__discovery-row {
   border-image-slice: var(--style-green-button-frame-slice);
   border-image-width: var(--style-green-button-frame-width);
   border-image-repeat: stretch;
-  -webkit-text-stroke: 4px var(--style-yellow-button-text-stroke);
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-yellow-button-text-stroke);
   paint-order: stroke fill;
 }
 
@@ -16563,7 +16552,8 @@ div.workshop-page__discovery-row {
   border-image-slice: var(--style-tab-frame-slice);
   border-image-width: var(--style-tab-frame-width);
   border-image-repeat: stretch;
-  -webkit-text-stroke: 4px var(--style-yellow-button-text-stroke);
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-yellow-button-text-stroke);
   paint-order: stroke fill;
 }
 
@@ -19584,7 +19574,7 @@ div.workshop-page__discovery-row {
   border-image-width: var(--style-dialog-title-frame-width);
   border-image-repeat: stretch;
   transform: translateX(-50%);
-  -webkit-text-stroke: var(--style-dialog-title-text-stroke) #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
   paint-order: stroke fill;
   text-shadow: none;
 }

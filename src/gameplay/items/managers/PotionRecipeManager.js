@@ -368,7 +368,19 @@ const recipeCatalog = [
       { itemKey: 'sageHerb', quantity: 1 },
     ],
   },
-];
+].map(normalizeRecipeIngredientSlots);
+
+function normalizeRecipeIngredientSlots(recipe) {
+  return {
+    ...recipe,
+    ingredients: recipe.ingredients.flatMap((ingredient) =>
+      Array.from(
+        { length: ingredient.quantity },
+        () => ({ itemKey: ingredient.itemKey, quantity: 1 }),
+      ),
+    ),
+  };
+}
 
 export class PotionRecipeManager {
   constructor({ itemDefinitionManager }) {
@@ -410,10 +422,14 @@ export class PotionRecipeManager {
       potionKey,
       manaCost,
       brewDurationMs,
-      ingredients: ingredients.map((ingredient) => ({
-        itemKey: this.readNonEmptyString(ingredient?.itemKey),
-        quantity: this.readPositiveInteger(ingredient?.quantity),
-      })),
+      ingredients: ingredients.flatMap((ingredient) => {
+        const itemKey = this.readNonEmptyString(ingredient?.itemKey);
+        const quantity = this.readPositiveInteger(ingredient?.quantity);
+        return Array.from(
+          { length: quantity },
+          () => ({ itemKey, quantity: 1 }),
+        );
+      }),
     };
   }
 
@@ -503,16 +519,17 @@ export class PotionRecipeManager {
       unknown: potion.unknown === true,
       known: potion.known !== false,
       researchable: potion.researchable !== false,
-      ingredients: recipe.ingredients.map((ingredient) =>
-        this.resolveIngredient(ingredient),
+      ingredients: recipe.ingredients.map((ingredient, slotIndex) =>
+        this.resolveIngredient(ingredient, slotIndex),
       ),
     };
   }
 
-  resolveIngredient(ingredient) {
+  resolveIngredient(ingredient, slotIndex) {
     const item = this.itemDefinitionManager.getDefinitionByKey(ingredient.itemKey);
 
     return {
+      slotIndex,
       itemTypeId: item.id,
       key: item.key,
       label: item.label,

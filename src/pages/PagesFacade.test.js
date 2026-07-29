@@ -9203,9 +9203,9 @@ describe('PagesFacade', () => {
     const row = stage.querySelector('.workshop-page__world-chat-message');
 
     expect(row?.classList.contains('workshop-page__world-chat-message--system')).toBe(true);
-    expect(row?.querySelector('.workshop-page__world-chat-name')?.textContent).toBe('system: ');
+    expect(row?.querySelector('.workshop-page__world-chat-name')?.textContent).toBe('System: ');
     expect(row?.querySelector('.workshop-page__world-chat-character-icon')).toBeNull();
-    expect(row?.textContent).toContain('system: Ada researched mana tonic');
+    expect(row?.textContent).toContain('System: Ada researched mana tonic');
     expect(row?.querySelector('.workshop-page__world-chat-age')).not.toBeNull();
   });
 
@@ -9334,7 +9334,7 @@ describe('PagesFacade', () => {
       true,
     );
     expect(row?.textContent).toContain(
-      'system: ftw unlocked the recipe of ashen memory: 1 sage, 1 lavender, 1 frostmoss',
+      'System: ftw unlocked the recipe of ashen memory: 1 sage, 1 lavender, 1 frostmoss',
     );
   });
 

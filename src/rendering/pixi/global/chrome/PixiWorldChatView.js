@@ -1,6 +1,7 @@
 import { Rectangle } from 'pixi.js';
 
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
+import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_UI_GEOMETRY,
@@ -17,6 +18,7 @@ import {
 
 const WORLD_CHAT_TITLE = 'World Chat';
 const WORLD_CHAT_TITLE_STROKE = '#0a0a0a';
+const WORLD_CHAT_PREVIEW_OPTICAL_Y = 2;
 const PRESS_SCALE = 0.94;
 const RELEASE_PEAK_SCALE = 1.055;
 const RELEASE_DURATION_MS = 180;
@@ -49,7 +51,7 @@ export class PixiWorldChatView extends BasePixiRetainedView {
         PIXI_UI_GEOMETRY.roomChromeEdge * 2 -
         10,
     });
-    this.preview.anchor.set(0, 1);
+    this.preview.anchor.set(0, 0.5);
     this.preview.style.whiteSpace = 'pre-line';
     this.panel.body.addChild(this.preview);
     this.root.addChild(this.panel.root);
@@ -114,11 +116,9 @@ export class PixiWorldChatView extends BasePixiRetainedView {
   }
 
   applyTitleStroke() {
-    this.panel.title.style.stroke = {
+    this.panel.title.style.stroke = normalizePixiTextStroke({
       color: WORLD_CHAT_TITLE_STROKE,
-      width: 2,
-      join: 'round',
-    };
+    });
   }
 
   onLayout() {
@@ -160,7 +160,10 @@ export class PixiWorldChatView extends BasePixiRetainedView {
     );
     this.panel.root.pivot.set(width / 2, height / 2);
     this.applyTitleStroke();
-    this.preview.position.set(5, height - 4);
+    this.preview.position.set(
+      5,
+      height / 2 + WORLD_CHAT_PREVIEW_OPTICAL_Y,
+    );
     this.panel.root.hitArea = new Rectangle(0, 0, width, height);
   }
 

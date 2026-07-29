@@ -41,6 +41,8 @@ const NON_PERSISTENT_DEV_DIALOGS = new Set([
   'featureunlocks',
   'levelupannouncement',
   'levelrewardsannouncement',
+  'researchcompleteannouncement',
+  'researchcomplete',
   'whileawayannouncement',
   'whileaway',
 ]);
@@ -245,6 +247,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     kind: 'dialog',
     dialogId: 'levelUpAnnouncement',
     aliases: ['levelRewardsAnnouncement'],
+  },
+  {
+    id: 'researchCompleteAnnouncement',
+    kind: 'dialog',
+    dialogId: 'researchCompleteAnnouncement',
+    aliases: ['researchComplete'],
   },
   {
     id: 'whileAwayAnnouncement',

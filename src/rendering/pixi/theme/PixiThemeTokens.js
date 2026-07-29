@@ -23,6 +23,7 @@ export const PIXI_UI_GEOMETRY = Object.freeze({
   sourceWidth: 360,
   sourceHeight: 2170 / 3,
   bodyFontSize: 13,
+  strokedTextWidth: 4,
   dialogTitleFontSize: 14,
   borderLabelFontSize: 11,
   borderLabelLineHeight: 14,
@@ -60,6 +61,9 @@ export const PIXI_UI_GEOMETRY = Object.freeze({
   dialogShadowY: 5,
   dialogShadowBlur: 5,
 });
+
+export const PIXI_TEXT_STROKE_WIDTH =
+  PIXI_UI_GEOMETRY.strokedTextWidth;
 
 export const PIXI_PROGRESS_VISUALS = Object.freeze({
   railBackground: '#000000',
