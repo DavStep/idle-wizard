@@ -162,6 +162,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     setup: 'onlineConnecting',
     aliases: ['connectingGate', 'onlineGate'],
   },
+  {
+    id: 'deployRefresh',
+    kind: 'preview',
+    setup: 'deployRefresh',
+    aliases: ['refreshingGate'],
+  },
   { id: 'workshop', kind: 'page', pageId: 'workshop' },
   { id: 'brewing', kind: 'page', pageId: 'brewing' },
   { id: 'garden', kind: 'page', pageId: 'garden' },
@@ -253,6 +259,7 @@ const UI_SURFACE_LOOKUP = new Map(
 export class DevCheatCommandManager {
   constructor({
     backendFacade,
+    deployRefreshManager,
     freshStartChoiceManager,
     gameplayFacade,
     onlineGateManager,
@@ -263,6 +270,7 @@ export class DevCheatCommandManager {
     uiCatalogManager,
   } = {}) {
     this.backendFacade = backendFacade;
+    this.deployRefreshManager = deployRefreshManager;
     this.freshStartChoiceManager = freshStartChoiceManager;
     this.gameplayFacade = gameplayFacade;
     this.onlineGateManager = onlineGateManager;
@@ -1951,6 +1959,10 @@ export class DevCheatCommandManager {
       return this.openOnlineConnectingSurface(surface);
     }
 
+    if (surface.setup === 'deployRefresh') {
+      return this.openDeployRefreshSurface(surface);
+    }
+
     const resolvedOptions = { ...(surface.options ?? {}), ...(options ?? {}) };
     const result =
       surface.kind === 'page'
@@ -2093,6 +2105,22 @@ export class DevCheatCommandManager {
     return this.decorateUiResult(
       surface.id,
       { ok: true },
+      surface,
+    );
+  }
+
+  openDeployRefreshSurface(surface) {
+    if (typeof this.deployRefreshManager?.showPreview !== 'function') {
+      return this.decorateUiResult(
+        surface.id,
+        { ok: false, reason: 'deploy_refresh_missing' },
+        surface,
+      );
+    }
+
+    return this.decorateUiResult(
+      surface.id,
+      this.deployRefreshManager.showPreview(),
       surface,
     );
   }
@@ -2519,8 +2547,19 @@ export class DevCheatCommandManager {
         preset.inventory[SAGE_HERB_KEY] = 3;
         break;
       case 'first-brew-complete':
-      case 'refill-mana-tonic-cauldron':
         this.applyManaTonicBrewedPreset(preset);
+        break;
+      case 'refill-mana-tonic-cauldron':
+        this.applyManaTonicResearchPreset(preset);
+        preset.inventory[SAGE_HERB_KEY] = 3;
+        preset.tasks.push(
+          this.createTutorialTaskState(LEVEL_FIVE_BREW_MANA_TONIC_TASK_ID, 1, true),
+        );
+        preset.brewing.cauldrons[0].cauldronItemKeys = [
+          SAGE_HERB_KEY,
+          SAGE_HERB_KEY,
+          SAGE_HERB_KEY,
+        ];
         break;
       default:
         if (preset.level >= 2) {

@@ -151,7 +151,6 @@ export class ShopPixiPage extends BasePixiRetainedView {
     this.tabLayer = new Container();
     this.tabLayer.label = 'shop:tabs';
     this.tabButtons = new Map();
-    this.tabNotifications = new Map();
     for (const tab of SHOP_TABS) {
       const button = new PixiButton({
         assetManager,
@@ -164,7 +163,6 @@ export class ShopPixiPage extends BasePixiRetainedView {
         action: () => this.selectTab(tab.id),
       });
       this.tabButtons.set(tab.id, button);
-      this.tabNotifications.set(tab.id, button.notificationBadge);
       this.tabLayer.addChild(button);
     }
 
@@ -712,15 +710,14 @@ export class ShopPixiPage extends BasePixiRetainedView {
   }
 
   updateTabNotifications() {
-    if (!this.tabNotifications) {
+    if (!this.tabButtons) {
       return;
     }
     for (const tab of SHOP_TABS) {
-      const notification = this.tabNotifications.get(tab.id);
       const state = getShopTabNotification(this.model, tab.id);
-      notification
-        .setTone(state.tone)
-        .setActive(state.active);
+      this.tabButtons
+        .get(tab.id)
+        ?.setNotification(state.active, state.tone);
     }
   }
 

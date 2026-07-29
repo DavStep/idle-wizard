@@ -77,7 +77,7 @@
   --style-separator-border: var(--style-border);
   --style-tab-border: var(--style-border-strong);
   --style-yellow-button-frame: url("../../assets/game/source/ui/root-run-cost-button/yellow-button-9slice.png");
-  --style-yellow-button-frame-slice: 100 43 68 115 fill;
+  --style-yellow-button-frame-slice: 100 43 68 85 fill;
   --style-yellow-button-frame-width: 17px 7px 12px 20px;
   --style-yellow-button-text: #fff;
   --style-yellow-button-text-stroke: #0a0a0a;
@@ -298,6 +298,8 @@
   --style-room-chat-gap: 8px;
   --style-top-panel-content-gap: 16px;
   --style-top-panel-background-frame: url("../../assets/game/source/ui/midnight-top-panel-background-9slice.png");
+  --style-top-panel-background-frame-slice: 40 40 1 40 fill;
+  --style-top-panel-background-frame-width: 20px 20px 0.5px 20px;
   --style-room-chat-clearance: calc(
     var(--style-room-chat-bottom) + var(--style-room-chat-source-height) +
       var(--style-room-chat-title-overhang) + var(--style-room-chat-gap)
@@ -9767,7 +9769,7 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot .garden-page__plot-box-frame {
-  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-4.png");
+  --garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-5.png");
   --garden-page-plot-level-color: var(--style-muted);
   position: relative;
   box-sizing: border-box;
@@ -10324,6 +10326,10 @@ div.workshop-page__discovery-row {
   min-height: 82px;
 }
 
+.style-dialog.garden-page__swap-dialog {
+  min-height: 106px;
+}
+
 .garden-page__cancel-message {
   display: grid;
   min-height: 40px;
@@ -10333,13 +10339,17 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__swap-message {
+  display: flex;
+  min-height: 64px;
   margin: 0 0 12px;
+  align-items: center;
 }
 
 .garden-page__cancel-actions,
 .garden-page__swap-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
   justify-content: space-between;
 }
 
@@ -14662,9 +14672,9 @@ div.workshop-page__discovery-row {
 .room-top-panel__avatar-button .room-top-panel__username-avatar {
   flex: 0 0 auto;
   width: var(--room-top-panel-avatar-size);
-  height: 86px;
-  object-fit: cover;
-  object-position: 50% 13%;
+  height: var(--room-top-panel-avatar-size);
+  object-fit: contain;
+  object-position: 50% 50%;
   vertical-align: 0;
   border: 0;
 }
@@ -15859,8 +15869,8 @@ div.workshop-page__discovery-row {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: 50% 13%;
+  object-fit: contain;
+  object-position: 50% 50%;
   vertical-align: 0;
   border: 0;
 }
@@ -15870,8 +15880,8 @@ div.workshop-page__discovery-row {
   inset: 0;
   display: none;
   background: var(--style-stroke);
-  -webkit-mask: var(--room-top-panel-character-mask) 50% 13% / cover no-repeat;
-  mask: var(--room-top-panel-character-mask) 50% 13% / cover no-repeat;
+  -webkit-mask: var(--room-top-panel-character-mask) 50% 50% / contain no-repeat;
+  mask: var(--room-top-panel-character-mask) 50% 50% / contain no-repeat;
 }
 
 .room-top-panel__character-status {
@@ -15937,8 +15947,8 @@ div.workshop-page__discovery-row {
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
-  object-fit: cover;
-  object-position: 50% 13%;
+  object-fit: contain;
+  object-position: 50% 50%;
   vertical-align: -4px;
   background: transparent;
   border: 0;
@@ -16360,7 +16370,8 @@ div.workshop-page__discovery-row {
   justify-self: start;
   width: 72px;
   height: 72px;
-  object-position: 50% 28%;
+  object-fit: contain;
+  object-position: 50% 50%;
   vertical-align: 0;
 }
 
@@ -17719,8 +17730,8 @@ div.workshop-page__discovery-row {
   background: transparent;
   border: solid transparent;
   border-image-source: var(--style-top-panel-background-frame);
-  border-image-slice: var(--style-room-tab-frame-slice);
-  border-image-width: var(--style-room-tab-frame-width);
+  border-image-slice: var(--style-top-panel-background-frame-slice);
+  border-image-width: var(--style-top-panel-background-frame-width);
   transform: scaleY(-1);
 }
 

@@ -146,7 +146,7 @@ describe('TopPanelSettingsManager', () => {
       '#room-top-panel-settings-avatar .room-top-panel__character-button[data-character="rowan"]',
     );
 
-    expect(avatar?.getAttribute('src')).toContain('/assets/game/source/characters/mira.png');
+    expect(avatar?.getAttribute('src')).toContain('/assets/game/source/avatars/mira.png');
     expect(avatarButton?.hidden).toBe(false);
     expect(avatar?.hidden).toBe(false);
     expect(topPanel?.classList.contains('has-avatar')).toBe(true);
@@ -167,7 +167,7 @@ describe('TopPanelSettingsManager', () => {
       rowanButton.querySelector('.room-top-panel__character-check svg')?.dataset
         .assetAtlasFrame,
     ).toBe('status:checkDefault');
-    expect(avatar?.getAttribute('src')).toContain('/assets/game/source/characters/rowan.png');
+    expect(avatar?.getAttribute('src')).toContain('/assets/game/source/avatars/rowan.png');
 
     playerFacade.setIconMode('none');
 

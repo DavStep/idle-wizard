@@ -27,9 +27,9 @@
     "height": 93
   },
   "slice": {
-    "left": 83,
-    "top": 91,
-    "right": 73,
+    "left": 40,
+    "top": 40,
+    "right": 40,
     "bottom": 1
   },
   "mode": "source",
@@ -97,9 +97,9 @@
         "height": 93
       },
       "slice": {
-        "left": 83,
-        "top": 91,
-        "right": 73,
+        "left": 40,
+        "top": 40,
+        "right": 40,
         "bottom": 1
       },
       "naturalRoundTripExact": true,

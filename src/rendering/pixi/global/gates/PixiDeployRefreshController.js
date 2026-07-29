@@ -40,6 +40,7 @@ export class PixiDeployRefreshController {
     this.beforeReloadTimeoutId = null;
     this.checking = false;
     this.reloading = false;
+    this.previewing = false;
     this.view = null;
     this.handleVisibilityChange = () => {
       if (this.documentRef?.visibilityState === 'visible') {
@@ -51,7 +52,7 @@ export class PixiDeployRefreshController {
 
   attach(view) {
     this.view = view;
-    if (this.reloading) {
+    if (this.reloading || this.previewing) {
       this.show();
     }
     return view;
@@ -219,10 +220,16 @@ export class PixiDeployRefreshController {
     this.hide();
   }
 
+  showPreview() {
+    this.previewing = true;
+    this.show();
+    return { ok: true };
+  }
+
   show() {
     this.view?.bind({
-      title: 'new version',
-      message: 'refreshing...',
+      title: 'New Version',
+      message: 'Refreshing...',
     });
   }
 
@@ -245,5 +252,6 @@ export class PixiDeployRefreshController {
     this.currentVersion = this.initialVersion;
     this.checking = false;
     this.reloading = false;
+    this.previewing = false;
   }
 }

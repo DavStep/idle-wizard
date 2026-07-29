@@ -1717,7 +1717,7 @@ function estimateLessonContentHeight(
       0,
     );
   let height = Math.max(
-    TUTORIAL_PIXI_GEOMETRY.panelDefaultContentHeight,
+    TUTORIAL_PIXI_GEOMETRY.panelMinContentHeight,
     Number(measuredCopyHeight) || 0,
     lines * 16,
     model.text ? 20 : 0,

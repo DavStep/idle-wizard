@@ -5,8 +5,10 @@ import { Container, Texture } from "pixi.js";
 import { describe, expect, it, vi } from "vitest";
 
 import { PixiInputRouter } from "../../input/PixiInputRouter.js";
+import { PixiButton } from "../../primitives/PixiButton.js";
 import { PixiCostButton } from "../../primitives/PixiCostButton.js";
 import { PixiDialogFrame } from "../../primitives/PixiDialogFrame.js";
+import { PixiNineSliceFrame } from "../../primitives/PixiNineSliceFrame.js";
 import { PixiOwnedDialogSurface } from "../../primitives/PixiOwnedDialogSurface.js";
 import { DialogRegistry } from "../../retained/DialogRegistry.js";
 import { PageRegistry } from "../../retained/PageRegistry.js";
@@ -68,7 +70,7 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
-  it("keeps the fourth soil artwork at every plot level", () => {
+  it("keeps the fifth soil artwork at every plot level", () => {
     const harness = createHarness();
     harness.assetManager.getTexture = vi.fn(harness.assetManager.getTexture);
     const model = createGardenViewModel();
@@ -84,8 +86,8 @@ describe("GardenPixiPage", () => {
         assetId.includes("/garden/plots/outpost-plot-ground"),
       );
     expect(soilAssetRequests).toEqual([
-      "source:assets/rooms/garden/plots/outpost-plot-ground-level-4.png",
-      "source:assets/rooms/garden/plots/outpost-plot-ground-level-4.png",
+      "source:assets/rooms/garden/plots/outpost-plot-ground-level-5.png",
+      "source:assets/rooms/garden/plots/outpost-plot-ground-level-5.png",
     ]);
 
     harness.page.destroy();
@@ -157,7 +159,9 @@ describe("GardenPixiPage", () => {
           key: "sageSeed",
           label: "sage seed",
           quantity: 2,
+          quantityText: "2",
           itemKind: "seed",
+          selected: true,
           semanticId: "garden.seed.sage",
           onSelect: selectSeed,
         },
@@ -172,8 +176,35 @@ describe("GardenPixiPage", () => {
     expect(harness.semanticTargets.activate("garden.seed.sage")).toBe(true);
     expect(selectSeed).toHaveBeenCalledTimes(1);
     const seedRow = dialog.rows.get("sage");
-    expect(seedRow.seedPack.visible).toBe(true);
-    expect(seedRow.seedItem.visible).toBe(true);
+    expect(dialog.modal.panel.coreWidth).toBe(304);
+    expect(dialog.list.rowHeight).toBe(50);
+    expect(seedRow.height).toBe(50);
+    expect(seedRow.background).toBeInstanceOf(PixiNineSliceFrame);
+    expect(seedRow.background.sourceInsets).toEqual({
+      top: 17,
+      right: 25,
+      bottom: 19,
+      left: 13,
+    });
+    expect(seedRow.itemIcon.visible).toBe(true);
+    expect(seedRow.itemIconOverlay.visible).toBe(true);
+    expect(seedRow.itemIcon.width).toBeLessThanOrEqual(28);
+    expect(seedRow.itemIconOverlay.width / seedRow.itemIcon.width).toBeCloseTo(
+      0.44,
+    );
+    expect(
+      seedRow.itemIcon.x -
+        seedRow.itemIcon.width / 2 -
+        seedRow.background.x,
+    ).toBeCloseTo(8);
+    expect(seedRow.label.text).toBe("sage seed");
+    expect(seedRow.detail.text).toBe("2 Available");
+    expect(seedRow.selectedIndicator.visible).toBe(true);
+    expect(
+      seedRow.background.x +
+        seedRow.background.frameWidth -
+        (seedRow.selectedIndicator.x + seedRow.selectedIndicator.width / 2),
+    ).toBeCloseTo(8);
     expect(harness.assetManager.getAtlasTexture).toHaveBeenCalledWith(
       "seed:pack",
     );
@@ -282,7 +313,7 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
-  it("replaces buy-slot copy with the shared yellow cost button", () => {
+  it("uses the shared green stacked Unlock button and keeps its notification on the button", () => {
     const harness = createHarness();
     const model = createGardenViewModel();
     model.garden.plots.push({
@@ -293,6 +324,7 @@ describe("GardenPixiPage", () => {
       costCoin: 25,
       affordable: false,
       actionText: "buy 25 coin",
+      notification: true,
     });
 
     harness.page.bind(model);
@@ -300,7 +332,8 @@ describe("GardenPixiPage", () => {
 
     expect(plot.buyCostButton).toBeInstanceOf(PixiCostButton);
     expect(plot.buyCostButton).toMatchObject({
-      tone: "yellow",
+      tone: "green",
+      stacked: true,
       visible: true,
       renderable: true,
       costState: "unaffordable",
@@ -308,8 +341,12 @@ describe("GardenPixiPage", () => {
       buttonWidth: GARDEN_PIXI_GEOMETRY.buyButtonWidth,
       buttonHeight: GARDEN_PIXI_GEOMETRY.buyButtonHeight,
     });
+    expect(plot.buyCostButton.actionTextLabel.text).toBe("Unlock");
     expect(plot.buyCostButton.amountLabel.text).toBe("25");
     expect(plot.buyCostButton.amountLabel.colorToken).toBe("#c1121f");
+    expect(plot.buyCostButton.notification).toBe(true);
+    expect(plot.buyCostButton.notificationBadge.root.visible).toBe(false);
+    expect(plot.notificationBadge.root.visible).toBe(false);
     expect(plot.buyCostButton.position).toMatchObject({
       x:
         (GARDEN_PIXI_GEOMETRY.plotWidth - GARDEN_PIXI_GEOMETRY.buyButtonWidth) /
@@ -327,6 +364,8 @@ describe("GardenPixiPage", () => {
     expect(plot.buyCostButton.costState).toBe("available");
     expect(plot.buyCostButton.enabled).toBe(true);
     expect(plot.buyCostButton.amountLabel.colorToken).toBe("#ffffff");
+    expect(plot.buyCostButton.notificationBadge.root.visible).toBe(true);
+    expect(plot.notificationBadge.root.visible).toBe(false);
     expect(plot.action.visible).toBe(false);
 
     harness.page.destroy();
@@ -683,7 +722,17 @@ describe("GardenPixiPage", () => {
     });
     const swap = harness.dialogs.get("garden.swap");
     expect(swap.message.text).toBe("swap sage seed for thyme seed?");
-    expect(swap.confirm.text.text).toBe("swap");
+    expect(swap.modal.panel.titleLabel.textObject.text).toBe("Swap Seed?");
+    expect(swap.message.anchor).toMatchObject({ x: 0, y: 0.5 });
+    expect(swap.keep.button).toBeInstanceOf(PixiButton);
+    expect(swap.keep.variant).toBe("yellow");
+    expect(swap.keep.frame.visible).toBe(true);
+    expect(swap.confirm.button).toBeInstanceOf(PixiButton);
+    expect(swap.confirm.variant).toBe("yellow");
+    expect(swap.keep.text.text).toBe("Keep");
+    expect(swap.confirm.text.text).toBe("Swap");
+    expect(swap.keep.root.position.y).toBe(swap.confirm.root.position.y);
+    expect(swap.modal.panel.outerHeight).toBe(150);
     harness.dialogs.close("garden.swap");
     harness.page.openDialog("swap", { message: "swap again?" });
     expect(harness.dialogs.get("garden.swap")).toBe(swap);

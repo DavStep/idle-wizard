@@ -290,6 +290,7 @@ experience_type: product-shape
 - Tutorial guide is Elara Starbrew; only lesson body copy typewrites, while lesson titles, step labels, and action labels appear immediately.
 - FTUE lesson body copy typewrites only until the player has seen that exact step/copy once; reopening an already revealed guide shows full text immediately.
 - FTUE lesson panels should measure final copy/progress first and set box size before typewriter text appears; do not let panels resize as copy reveals.
+- FTUE objective copy, progress, and target must derive from the same live state; a ready `3/3` cauldron must point to Brew instead of still asking the player to fill it.
 - Retained FTUE panels must reject null/undefined progress before numeric coercion; `Number(null)` otherwise creates an empty rail and false height. Tween measured block-height changes with the shared reduced-motion snap.
 - FTUE target cues should be pointer-only while the lesson panel is open or the player asks with `show me`; never stack a target hint box with a lesson box.
 - FTUE pointer rendering must not rewrite unchanged placement/style on every render; repeated DOM writes restart the cue animation before it can move.

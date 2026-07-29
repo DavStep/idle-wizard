@@ -84,34 +84,41 @@ Potion identity, rarity, and batch size sit directly below the landmark.
 The framed action section begins with the predicted potion inside the shared
 Research-row art well. With no selected ingredients or recipe, the well stays
 present as an empty solid squircle. Phase/timer progress sits beside it.
-Recipes, Auto, and the separate `xN` quantity control form the configuration
-row, with one wide primary button below.
+The shortened panel is bottom-anchored directly above World Chat and ends with
+one wide primary button. Compact Recipes, Auto, and `xN` controls sit outside
+the panel in the carousel header, right-aligned beside the cauldron title
+plaque.
 
 Boundary chevrons are removed instead of showing a disabled arrow. Carousel
 dots contain every unlocked cauldron plus exactly one next purchasable locked
 slot, stopping at five. A level- or research-gated future slot is omitted until
 it can be purchased. The `N/5` counter stays hidden while only one cauldron is
 owned.
-The selected cauldron title sits inside the carousel frame at the top-left,
-followed by the shared three-slot star-rank treatment for that cauldron's level.
+The selected cauldron title and shared three-slot star rank sit together inside
+the blue Brewing variant of the shared Research station title plaque. The
+plaque connects to the screen's left edge above the carousel orbit.
 Selecting the next purchasable locked slot keeps the cauldron art visible with
 the Idle Outpost luminance-weighted monochrome filter and overlays the shared
 lock icon. It hides recipes, auto brew, and brew plus the old unlock
 sentence, then shows only the approved compact stacked cost button: `Unlock`
-above the coin icon and amount. Level- or research-gated slots show no purchase
-button. Carousel chevrons remain available so the player can return to another
-cauldron.
+above the coin icon and amount. The normal framed batch-detail section and all
+of its recipe/status content stay hidden for locked slots; the purchase button
+is centered in that freed content region with no backing panel. Level- or
+research-gated slots show no purchase button. Carousel chevrons remain
+available so the player can return to another cauldron.
 
 Recipe and automation settings dialogs remain retained, but the carousel has no
-separate settings or fast-forward button. The compact Auto button uses the
-settings cog and the visible label `Auto`, remaining disabled until that
-cauldron's automation research is complete. Auto Off uses the static yellow
-skin. Auto On uses the green skin and advances the gear in short mechanical
-steps while the page is active; reduced motion keeps the green gear static.
-Recipes and the narrower `xN` control stay yellow. Before x2 batch research,
-the quantity control reads `x1`; quantity is never folded into the primary Brew
-label. The complete action panel aligns to the same `16px` room edges as World
-Chat, and the potion art uses the larger preview fit inside its existing well.
+separate settings or fast-forward button. The compact Auto control uses a
+gear-only button with the visible label `Auto` over the gear's lower edge and a
+larger invisible hit region, remaining disabled until that cauldron's automation
+research is complete. Auto Off uses the static yellow skin. Auto On uses the
+green skin and advances the gear in short mechanical steps while the page is
+active; reduced motion keeps the green gear static. Recipes and the narrower
+`xN` control stay yellow and retain larger invisible tap regions. Before x2
+batch research, the quantity control reads `x1`; quantity is never folded into
+the primary Brew label. The shortened
+action panel aligns to the same `16px` room edges as World Chat, and the potion
+art uses the larger preview fit inside its existing well.
 
 The action section keeps existing retained button semantics. The single primary
 button follows the brewing state: manual idle is `Brew`, brewing and bottling

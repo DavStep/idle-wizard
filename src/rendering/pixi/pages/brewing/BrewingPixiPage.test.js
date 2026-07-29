@@ -367,6 +367,48 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
+  it('advances the visible batch timer smoothly between gameplay snapshots', () => {
+    let now = 1_000;
+    const harness = createHarness({ timeSource: () => now });
+    const model = createBrewingViewModel({ withActiveBrew: true });
+    model.brewing.now = now;
+    model.brewing.cauldrons[0].activeBrew = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      phase: 'brewing',
+      totalMs: 10_000,
+      remainingMs: 10_000,
+      progress: 0,
+    };
+
+    harness.page.bind(model);
+    harness.page.activate();
+    expect(harness.page.hud.progress.progress).toBe(0);
+    expect(harness.page.hud.phaseTime.text).toBe('0:10\u3000');
+
+    now = 3_500;
+    harness.page.hud.updateMotion(now, {
+      active: true,
+      reducedMotion: true,
+    });
+    expect(harness.page.hud.progress.progress).toBe(0);
+    expect(harness.page.hud.phaseTime.text).toBe('0:10\u3000');
+
+    harness.page.tick(now);
+
+    expect(harness.page.hud.progress.progress).toBeCloseTo(0.25);
+    expect(harness.page.hud.phaseTime.text).toBe('0:08\u3000');
+
+    model.brewing.now = now;
+    harness.page.bind(model);
+
+    expect(harness.page.hud.progress.progress).toBeCloseTo(0.25);
+    expect(harness.page.hud.phaseTime.text).toBe('0:08\u3000');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('renders projected cauldron and herb notifications without rebuilding controls', () => {
     const harness = createHarness();
     const activeModel = createBrewingViewModel();
@@ -726,22 +768,52 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.root.visible).toBe(true);
     expect(harness.page.worldViewport.visible).toBe(false);
     expect(harness.page.hud.carouselPanel.title.visible).toBe(false);
-    expect(harness.page.hud.cauldronTitle.parent).toBe(
+    expect(harness.page.hud.cauldronTitlePlaque.root.parent).toBe(
       harness.page.hud.carouselPanel.body,
     );
+    expect(harness.page.hud.cauldronTitle.parent).toBe(
+      harness.page.hud.cauldronTitlePlaque.root,
+    );
     expect(harness.page.hud.cauldronTitle.text).toBe('Cauldron 1');
-    expect(harness.page.hud.cauldronTitle.position).toMatchObject({
-      x: 10,
-      y: 8,
+    expect(harness.page.hud.cauldronTitlePlaque).toMatchObject({
+      variant: 'brewing',
+      assetId:
+        'source:assets/ui/root-run-research/research-station-title-blue.png',
+    });
+    expect(
+      harness.page.hud.cauldronTitlePlaque.root.position,
+    ).toMatchObject({
+      x: -BREWING_HUD_GEOMETRY.edge,
+      y: 0,
     });
     expect(harness.page.hud.cauldronStars.parent).toBe(
-      harness.page.hud.carouselPanel.body,
+      harness.page.hud.cauldronTitlePlaque.root,
     );
     expect(harness.page.hud.cauldronStars.level).toBe(1);
     expect(harness.page.hud.cauldronStars.tone).toBe('yellow');
     expect(harness.page.hud.cauldronStars.starCount).toBe(1);
     expect(harness.page.hud.cauldronStars.slots).toHaveLength(3);
     expect(harness.page.hud.cauldronStars.visible).toBe(true);
+    expect(harness.page.hud.cauldronTitle.position).toMatchObject({
+      x: 12,
+      y: 21,
+    });
+    expect(harness.page.hud.cauldronStars.position).toMatchObject({
+      x:
+        harness.page.hud.cauldronTitle.x +
+        Math.ceil(harness.page.hud.cauldronTitle.width) +
+        6,
+      y: 15,
+    });
+    expect(harness.page.hud.cauldronTitlePlaque.frame).toMatchObject({
+      frameHeight: 42,
+      frameWidth: Math.ceil(
+        harness.page.hud.cauldronTitle.width +
+          6 +
+          harness.page.hud.cauldronStars.measuredWidth +
+          60,
+      ),
+    });
     expect(harness.page.hud.ingredientSlots).toHaveLength(6);
     expect(harness.page.hud.ingredientSlots[0].root.parent).toBe(
       harness.page.hud.carouselPanel.body,
@@ -759,10 +831,13 @@ describe('BrewingPixiPage', () => {
     );
     expect(
       harness.page.hud.actionIcons.autoBrew.iconSprites[0].width,
-    ).toBe(25 * PIXI_ROOT_RUN_GEOMETRY.settings.gearAspectRatio);
+    ).toBe(
+      BREWING_HUD_GEOMETRY.autoIconHeight *
+        PIXI_ROOT_RUN_GEOMETRY.settings.gearAspectRatio,
+    );
     expect(
       harness.page.hud.actionIcons.autoBrew.iconSprites[0].height,
-    ).toBe(25);
+    ).toBe(BREWING_HUD_GEOMETRY.autoIconHeight);
     expect(Object.keys(harness.page.hud.navigationIcons)).toEqual([
       'previous',
       'next',
@@ -787,6 +862,26 @@ describe('BrewingPixiPage', () => {
       width: 22,
       height: 22,
     });
+    const batchLabelCenterY =
+      harness.page.hud.carouselPanel.root.y +
+      harness.page.hud.batchLabel.y +
+      harness.page.hud.batchLabel.style.lineHeight / 2;
+    expect(
+      harness.page.hud.previous.root.y +
+        harness.page.hud.previous.height / 2,
+    ).toBe(batchLabelCenterY);
+    expect(
+      harness.page.hud.next.root.y +
+        harness.page.hud.next.height / 2,
+    ).toBe(batchLabelCenterY);
+    expect(harness.page.hud.navigationIcons.previous.x).toBe(
+      harness.page.hud.previous.width / 2 -
+        BREWING_HUD_GEOMETRY.navigationIconOpticalNudge,
+    );
+    expect(harness.page.hud.navigationIcons.next.x).toBe(
+      harness.page.hud.next.width / 2 +
+        BREWING_HUD_GEOMETRY.navigationIconOpticalNudge,
+    );
     expect(harness.page.hud.recipes.text.text).toBe('Recipes');
     expect(harness.page.hud.autoBrew.text.text).toBe('Auto');
     expect(harness.page.hud.autoBrew.variant).toBe('green');
@@ -811,11 +906,57 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.detailPanel.root.x).toBe(16);
     expect(harness.page.hud.potionIcon.width).toBe(50);
     expect(harness.page.hud.potionIcon.height).toBe(50);
-    expect(harness.page.hud.recipes.width).toBe(112);
-    expect(harness.page.hud.autoBrew.width).toBe(88);
-    expect(harness.page.hud.quantity.width).toBe(60);
+    expect(harness.page.hud.recipes.width).toBe(58);
+    expect(harness.page.hud.autoBrew.width).toBe(32);
+    expect(harness.page.hud.autoBrew.height).toBe(28);
+    expect(harness.page.hud.quantity.width).toBe(32);
     expect(harness.page.hud.brew.width).toBe(308);
-    expect(harness.page.hud.recipes.root.x).toBe(42);
+    expect(harness.page.hud.recipes.root.x).toBe(198);
+    expect(harness.page.hud.autoBrew.root.x).toBe(268);
+    expect(harness.page.hud.quantity.root.x).toBe(312);
+    expect(harness.page.hud.recipes.root.y).toBe(
+      BREWING_HUD_GEOMETRY.top + 5,
+    );
+    expect(
+      harness.page.hud.cauldronTitlePlaque.frame.frameWidth,
+    ).toBeLessThanOrEqual(
+      harness.page.hud.recipes.root.x -
+        BREWING_HUD_GEOMETRY.configurationGap,
+    );
+    expect(harness.page.hud.brew.root.y).toBe(
+      BREWING_HUD_GEOMETRY.detailTop + 72,
+    );
+    const autoIcon = harness.page.hud.actionIcons.autoBrew;
+    const autoLabel = harness.page.hud.autoBrew.control.textLabel;
+    expect(autoIcon.position).toMatchObject({
+      x: harness.page.hud.autoBrew.width / 2,
+      y: harness.page.hud.autoBrew.height / 2,
+    });
+    expect(autoLabel.position).toMatchObject({
+      x: harness.page.hud.autoBrew.width / 2,
+      y: BREWING_HUD_GEOMETRY.autoLabelY,
+    });
+    expect(harness.page.hud.autoBrew.control.hitArea).toMatchObject({
+      x:
+        (harness.page.hud.autoBrew.width -
+          BREWING_HUD_GEOMETRY.autoHitSize) /
+        2,
+      y: BREWING_HUD_GEOMETRY.autoHitTop,
+      width: BREWING_HUD_GEOMETRY.autoHitSize,
+      height: BREWING_HUD_GEOMETRY.autoHitSize,
+    });
+    expect(harness.page.hud.quantity.control.hitArea).toMatchObject({
+      x:
+        (harness.page.hud.quantity.width -
+          BREWING_HUD_GEOMETRY.quantityHitSize) /
+        2,
+      y:
+        (harness.page.hud.quantity.height -
+          BREWING_HUD_GEOMETRY.quantityHitSize) /
+        2,
+      width: BREWING_HUD_GEOMETRY.quantityHitSize,
+      height: BREWING_HUD_GEOMETRY.quantityHitSize,
+    });
     expect(harness.page.hud.autoBrew.handleTap()).toBe(true);
     expect(model.actions.toggleAutoBrew).toHaveBeenCalledWith(0);
     model.brewing.cauldrons[0].autoBrewEnabled = false;
@@ -868,9 +1009,11 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.unlockCostButton.actionTextLabel.text).toBe('Unlock');
     expect(harness.page.hud.unlockCostButton.amountLabel.text).toBe('25');
     expect(harness.page.hud.unlockCostButton.resource).toBe('coin');
+    expect(harness.page.hud.detailPanel.root.visible).toBe(false);
+    expect(harness.page.hud.detailPanel.root.renderable).toBe(false);
     expect(harness.page.hud.unlockCostButton.position).toMatchObject({
       x: 134,
-      y: 382,
+      y: 473,
     });
     expect(harness.page.hud.unlockCostButton.activate()).toBe(true);
     expect(model.actions.performCauldronAction).toHaveBeenCalledWith(
@@ -882,6 +1025,8 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.lockArt.visible).toBe(false);
     expect(harness.page.hud.unlockCostButton.visible).toBe(false);
     expect(harness.page.hud.recipes.root.visible).toBe(true);
+    expect(harness.page.hud.detailPanel.root.visible).toBe(true);
+    expect(harness.page.hud.detailPanel.root.renderable).toBe(true);
 
     expect(harness.page.hud.fastForward).toBeUndefined();
     expect(harness.page.hud.carouselPanel.shadow.visible).toBe(false);
@@ -1154,6 +1299,8 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.cauldronArt.visible).toBe(true);
     expect(harness.page.hud.lockArt.visible).toBe(true);
     expect(harness.page.hud.unlockCostButton.visible).toBe(false);
+    expect(harness.page.hud.detailPanel.root.visible).toBe(false);
+    expect(harness.page.hud.detailPanel.root.renderable).toBe(false);
     for (const button of [
       harness.page.hud.recipes,
       harness.page.hud.autoBrew,

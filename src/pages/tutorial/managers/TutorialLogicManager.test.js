@@ -110,6 +110,8 @@ describe('TutorialLogicManager', () => {
       lesson: {
         id: 'finish-seed-task',
         title: undefined,
+        text: 'Summon And Turn In Sage Seeds For The Next Level',
+        progressLabel: '1/5 Seeds',
         autoOpen: true,
         canShowTarget: false,
       },
@@ -118,6 +120,29 @@ describe('TutorialLogicManager', () => {
         target,
         showPointer: true,
       },
+    });
+  });
+
+  it('keeps narrative lesson copy in its authored sentence case', () => {
+    const step = createStep({
+      id: 'intro-welcome',
+      kind: 'prompt',
+      targetId: null,
+      text: "I'm Elara. Let's get the workshop running.",
+      progress: null,
+      progressLabel: '',
+    });
+    const { manager } = createManager({ step });
+
+    expect(
+      manager.getViewState({
+        snapshot: {},
+        dom: {},
+        targetResolver: () => null,
+      }).lesson,
+    ).toMatchObject({
+      text: "I'm Elara. Let's get the workshop running.",
+      progressLabel: '',
     });
   });
 
@@ -495,7 +520,7 @@ describe('TutorialLogicManager', () => {
       kind: 'lesson',
       lesson: {
         id: 'finish-seed-task',
-        text: 'wait for sage to grow',
+        text: 'Wait For Sage To Grow',
         autoOpen: true,
         canShowTarget: false,
       },

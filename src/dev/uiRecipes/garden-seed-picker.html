@@ -1,0 +1,109 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="midnight"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard Garden seed picker recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="Garden seed picker visual recipe"></canvas>
+    <output
+      id="garden-seed-picker-recipe-state"
+      hidden
+      data-selected-seed="mintSeed"
+    ></output>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { Container } from 'pixi.js';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
+      import { GardenSeedDialogPixi } from '/src/rendering/pixi/pages/garden/GardenDialogPixi.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+      import { PixiUiRuntimeFacade } from '/src/rendering/pixi/runtime/PixiUiRuntimeFacade.js';
+
+      const canvas = document.querySelector('canvas');
+      const recipeState = document.querySelector(
+        '#garden-seed-picker-recipe-state',
+      );
+      const inputRouter = new PixiInputRouter();
+      const applicationManager = new PixiApplicationManager({ canvas });
+      const runtime = new PixiUiRuntimeFacade({
+        applicationManager,
+        inputRouter,
+      });
+      await runtime.initialize();
+
+      const seedRows = [
+        { itemTypeId: 1, key: 'mintSeed', label: 'Mint Seed', quantity: 25 },
+        { itemTypeId: 2, key: 'nettleSeed', label: 'Nettle Seed', quantity: 1 },
+        {
+          itemTypeId: 3,
+          key: 'lavenderSeed',
+          label: 'Lavender Seed',
+          quantity: 1,
+        },
+        { itemTypeId: 4, key: 'sageSeed', label: 'Sage Seed', quantity: 0 },
+      ];
+      let selectedSeedKey = recipeState.dataset.selectedSeed;
+      const parent = new Container({ label: 'garden-seed-picker-recipe' });
+      applicationManager.getLayers().dialogsSource.addChild(parent);
+      const dialog = new GardenSeedDialogPixi({
+        parent,
+        inputRouter,
+        semanticTargets: runtime.semanticRegistry,
+        assetManager: runtime.assetManager,
+        counters: runtime.counters,
+        theme: runtime.themeManager.getSnapshot(),
+      });
+
+      const bindDialog = () => {
+        dialog.bind({
+          title: 'Choose Seed',
+          rows: seedRows.map((seed) => ({
+            ...seed,
+            id: seed.itemTypeId,
+            detail: `${seed.quantity} Available`,
+            selected: seed.key === selectedSeedKey,
+            enabled: true,
+            itemKind: 'seed',
+            itemKey: seed.key,
+            icon: { kind: 'seed', key: seed.key },
+            semanticId: `garden.seed.${seed.key}`,
+            onSelect: () => {
+              selectedSeedKey = seed.key;
+              recipeState.dataset.selectedSeed = seed.key;
+              bindDialog();
+              return true;
+            },
+          })),
+        });
+      };
+
+      bindDialog();
+      dialog.layout(applicationManager.getProjection());
+      dialog.activate();
+      window.__gardenSeedPickerRecipe = dialog;
+    </script>
+  </body>
+</html>

@@ -21,7 +21,7 @@ describe('TopPanelViewManager', () => {
       avatarButton
         ?.querySelector('.room-top-panel__username-avatar')
         ?.getAttribute('src'),
-    ).toContain('/assets/game/source/characters/elara.png');
+    ).toContain('/assets/game/source/avatars/elara.png');
     expect(usernameButton?.querySelector('.room-top-panel__username-label')?.textContent).toBe(
       'Wizard',
     );
@@ -247,7 +247,9 @@ describe('TopPanelViewManager', () => {
     )?.groups?.body;
 
     expect(topAvatarRule).toMatch(/\bwidth:\s*var\(--room-top-panel-avatar-size\);/);
-    expect(topAvatarRule).toMatch(/\bheight:\s*86px;/);
+    expect(topAvatarRule).toMatch(
+      /\bheight:\s*var\(--room-top-panel-avatar-size\);/,
+    );
     expect(topAvatarRule).toMatch(/\bborder:\s*0;/);
     expect(pickerFrameRule).toMatch(/\bwidth:\s*72px;/);
     expect(pickerFrameRule).toMatch(/\bheight:\s*72px;/);

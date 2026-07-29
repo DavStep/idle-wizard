@@ -120,10 +120,10 @@ export class RootRunHudAvatarButton extends PixiButton {
       this.portrait.texture = texture;
     }
     this.portrait.width = AVATAR_PORTRAIT_SIZE;
-    this.portrait.height = AVATAR_PORTRAIT_SIZE * (108 / 87);
+    this.portrait.height = AVATAR_PORTRAIT_SIZE;
     this.portrait.position.set(
       AVATAR_INSET,
-      AVATAR_INSET - 14,
+      AVATAR_INSET,
     );
     return this;
   }

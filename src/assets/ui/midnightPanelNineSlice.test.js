@@ -143,9 +143,9 @@ describe('midnight panel nine-slice assets', () => {
       roomTab.height,
     ]);
     expect(metadata.slice).toEqual({
-      left: 83,
-      top: 91,
-      right: 73,
+      left: 40,
+      top: 40,
+      right: 40,
       bottom: 1,
     });
 

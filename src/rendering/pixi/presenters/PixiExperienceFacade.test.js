@@ -82,7 +82,7 @@ describe('PixiExperienceFacade', () => {
 
     expect(firstModel.actions.advance()).toBe(true);
     expect(logic.advanceActiveStep).toHaveBeenCalledTimes(1);
-    expect(harness.activations).toContain('workshop.tasks');
+    expect(harness.activations).not.toContain('workshop.tasks');
     expect(showPage).not.toHaveBeenCalled();
 
     expect(facade.listTutorialStages().ok).toBe(true);
@@ -267,7 +267,6 @@ function createTutorialLogic() {
         targetId: 'task:demo',
         highlightTargetIds: [],
         advanceOnClick: true,
-        advanceAction: 'expand-workshop-tasks',
         cueMode: 'active',
       },
       lesson: {

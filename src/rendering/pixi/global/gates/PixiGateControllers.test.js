@@ -276,6 +276,25 @@ describe('retained Pixi gate controllers', () => {
     view.destroy();
   });
 
+  it('keeps the deploy-refresh gate at a fixed height with centered copy', () => {
+    const view = new PixiDeployRefreshView({
+      assets: createAssets(),
+    });
+
+    view.bind({});
+
+    expect(view.panel.titleLabel.text).toBe('New Version');
+    expect(view.message.text).toBe('Refreshing...');
+    expect(view.panel.contentBoxHeight).toBe(80);
+    expect(view.message.align).toBe('center');
+    expect(view.message.textObject.anchor.x).toBe(0.5);
+    expect(view.message.textObject.anchor.y).toBe(0.5);
+    expect(view.message.x).toBe(view.panel.contentBoxWidth / 2);
+    expect(view.message.y).toBe(view.panel.contentBoxHeight / 2);
+
+    view.destroy();
+  });
+
   it('keeps the selected gradient on the connection and loading rail', () => {
     const view = new PixiOnlineGateView({
       assets: createAssets(),
@@ -435,10 +454,23 @@ describe('retained Pixi gate controllers', () => {
     await flushAsyncWork();
 
     expect(view.bind).toHaveBeenCalledWith({
-      title: 'new version',
-      message: 'refreshing...',
+      title: 'New Version',
+      message: 'Refreshing...',
     });
     expect(events).toEqual(['save', 'reload']);
+  });
+
+  it('retains a deploy-refresh preview requested before the view attaches', () => {
+    const controller = new PixiDeployRefreshController();
+    const view = createView();
+
+    expect(controller.showPreview()).toEqual({ ok: true });
+    controller.attach(view);
+
+    expect(view.bind).toHaveBeenCalledWith({
+      title: 'New Version',
+      message: 'Refreshing...',
+    });
   });
 });
 

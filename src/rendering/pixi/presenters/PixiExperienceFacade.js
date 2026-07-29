@@ -4,7 +4,6 @@ import { TutorialLogicManager } from '../../../pages/tutorial/managers/TutorialL
 import { TutorialProgressManager } from '../../../pages/tutorial/managers/TutorialProgressManager.js';
 import { TutorialSaleManager } from '../../../pages/tutorial/managers/TutorialSaleManager.js';
 import {
-  TUTORIAL_ADVANCE_ACTIONS,
   TUTORIAL_STEP_IDS,
   TutorialStepManager,
   getTutorialStepGraph,
@@ -470,21 +469,8 @@ export class PixiExperienceFacade {
 
     this.requestedTargetGuidanceStepId = null;
     this.tutorialSaleManager.cancel();
-    this.applyTutorialAdvanceAction(step.advanceAction);
     this.refresh();
     return true;
-  }
-
-  applyTutorialAdvanceAction(action) {
-    if (
-      action !== TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS ||
-      this.tutorialDomState?.isTasksExpanded?.()
-    ) {
-      return false;
-    }
-    return this.activateTarget('workshop:tasks', {
-      source: 'tutorial-advance',
-    });
   }
 
   pressTutorialObjective({ source = 'lesson-panel' } = {}) {
@@ -518,27 +504,6 @@ export class PixiExperienceFacade {
       this.semanticRegistry,
       targetId,
     );
-  }
-
-  activateTarget(targetId, payload) {
-    const target = this.resolveTarget(targetId);
-    return target
-      ? this.activateResolvedTarget(target, payload)
-      : false;
-  }
-
-  activateResolvedTarget(target, payload) {
-    if (!target?.semanticId) {
-      return false;
-    }
-    try {
-      return this.semanticRegistry.activate(
-        target.semanticId,
-        payload,
-      );
-    } catch {
-      return false;
-    }
   }
 
   scheduleTutorialRefresh(viewState) {

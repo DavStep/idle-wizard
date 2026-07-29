@@ -115,6 +115,9 @@ const STATION_TITLE_VARIANTS = Object.freeze({
   crystal: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.researchStationTitleCrystal,
   }),
+  brewing: Object.freeze({
+    assetId: PIXI_ROOT_RUN_ASSETS.researchStationTitleBrewing,
+  }),
 });
 const RESEARCH_CARD_OFFSET_X = -2;
 const RESEARCH_CARD_WIDTH =
@@ -123,7 +126,11 @@ const RESEARCH_CARD_WIDTH =
   RESEARCH_CARD_OFFSET_X;
 
 function normalizeStationTitleVariant(tabId) {
-  if (tabId === 'automation' || tabId === 'advanced') {
+  if (
+    tabId === 'automation' ||
+    tabId === 'advanced' ||
+    tabId === 'brewing'
+  ) {
     return tabId;
   }
   if (tabId === 'emerald' || tabId === 'crystal') {
@@ -898,13 +905,19 @@ class ResearchBoxWidget {
 }
 
 export class ResearchStationTitlePlaque {
-  constructor({ assetManager }) {
+  constructor({
+    assetManager,
+    trailingContent = null,
+    trailingGap = 6,
+  } = {}) {
     this.assetManager = assetManager;
     this.label = '';
     this.variant = 'regular';
     this.assetId = STATION_TITLE_VARIANTS.regular.assetId;
     this.maxWidth = Infinity;
     this.width = 0;
+    this.trailingContent = trailingContent;
+    this.trailingGap = Math.max(0, Number(trailingGap) || 0);
     this.root = new Container({ label: 'research-station-title-plaque' });
     this.frame = new PixiNineSliceFrame({
       texture: this.resolveTexture(this.assetId),
@@ -918,6 +931,9 @@ export class ResearchStationTitlePlaque {
     this.title.anchor.set(0, 0.5);
     this.applyTitleStyle(STATION_TITLE_FONT_SIZE);
     this.root.addChild(this.frame, this.title);
+    if (this.trailingContent) {
+      this.root.addChild(this.trailingContent);
+    }
     this.layout();
   }
 
@@ -950,8 +966,14 @@ export class ResearchStationTitlePlaque {
   layout() {
     let fontSize = STATION_TITLE_FONT_SIZE;
     this.applyTitleStyle(fontSize);
+    const trailingWidth = this.getTrailingWidth();
+    const trailingGap = trailingWidth > 0 ? this.trailingGap : 0;
     while (
-      this.title.width + STATION_TITLE_WIDTH_ALLOWANCE > this.maxWidth &&
+      this.title.width +
+        trailingGap +
+        trailingWidth +
+        STATION_TITLE_WIDTH_ALLOWANCE >
+        this.maxWidth &&
       fontSize > STATION_TITLE_MIN_FONT_SIZE
     ) {
       fontSize -= 1;
@@ -960,7 +982,12 @@ export class ResearchStationTitlePlaque {
 
     this.width = Math.min(
       this.maxWidth,
-      Math.ceil(this.title.width + STATION_TITLE_WIDTH_ALLOWANCE),
+      Math.ceil(
+        this.title.width +
+          trailingGap +
+          trailingWidth +
+          STATION_TITLE_WIDTH_ALLOWANCE,
+      ),
     );
     this.frame.setSize(
       this.width,
@@ -970,6 +997,33 @@ export class ResearchStationTitlePlaque {
     this.title.position.set(
       STATION_TITLE_TEXT_INSET_X,
       STATION_TITLE_HEIGHT / 2,
+    );
+    if (this.trailingContent) {
+      this.trailingContent.position.set(
+        this.title.x + Math.ceil(this.title.width) + trailingGap,
+        Math.round(
+          (STATION_TITLE_HEIGHT -
+            Math.max(0, Number(this.trailingContent.height) || 0)) /
+            2,
+        ),
+      );
+    }
+  }
+
+  getTrailingWidth() {
+    if (
+      !this.trailingContent ||
+      this.trailingContent.visible === false ||
+      this.trailingContent.renderable === false
+    ) {
+      return 0;
+    }
+    return Math.max(
+      0,
+      Number(
+        this.trailingContent.measuredWidth ??
+          this.trailingContent.width,
+      ) || 0,
     );
   }
 

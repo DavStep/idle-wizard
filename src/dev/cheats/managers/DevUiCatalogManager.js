@@ -203,10 +203,10 @@ function createPreviewModel(dialogId) {
 
   if (dialogId === 'garden.swap') {
     return {
-      title: 'swap seed?',
-      message: 'replace the growing seed with this one?',
+      title: 'Swap Seed?',
+      message: 'Replace the growing seed with this one?',
       cancelLabel: 'keep seed',
-      confirmLabel: 'swap',
+      confirmLabel: 'Swap',
     };
   }
 
@@ -219,6 +219,13 @@ function createPreviewModel(dialogId) {
         enabled: true,
       },
       rows: [
+        ...Array.from({ length: 10 }, (_, index) => ({
+          id: `preview-history-${index}`,
+          type: 'system',
+          username: 'System',
+          body: `Wizard reached level ${30 + index}.`,
+          ageLabel: '5d ago',
+        })),
         {
           id: 'preview-mira',
           type: 'player',

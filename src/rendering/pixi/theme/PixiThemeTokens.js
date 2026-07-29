@@ -157,6 +157,8 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/root-run-research/research-station-title-green.png',
   researchStationTitleCrystal:
     'source:assets/ui/root-run-research/research-station-title-purple.png',
+  researchStationTitleBrewing:
+    'source:assets/ui/root-run-research/research-station-title-blue.png',
   roomTabActive: 'source:assets/ui/midnight-room-tab-top-cap-selected-9slice.png',
   roomTabInactive: 'source:assets/ui/midnight-room-tab-top-cap-9slice.png',
   topPanelBackground: 'source:assets/ui/midnight-top-panel-background-9slice.png',
@@ -312,7 +314,7 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
     }),
   }),
   button: Object.freeze({
-    sourceInsets: Object.freeze({ top: 100, right: 43, bottom: 68, left: 115 }),
+    sourceInsets: Object.freeze({ top: 100, right: 43, bottom: 68, left: 85 }),
     borderInsets: Object.freeze({ top: 17, right: 7, bottom: 12, left: 20 }),
   }),
   textFieldBrownInset: Object.freeze({

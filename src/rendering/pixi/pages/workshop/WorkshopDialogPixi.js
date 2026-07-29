@@ -169,11 +169,13 @@ export class WorkshopDialogPixi {
     this.counters = counters;
     this.scrollContentPaddingTop =
       RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
-    this.scrollViewportTopInset = this.isBagDialog
-      ? BAG_SCROLL_VIEWPORT_TOP_INSET
-      : this.isStatsDialog
-        ? STATS_SCROLL_VIEWPORT_TOP_INSET
-        : 0;
+    this.scrollViewportTopInset = this.isWorldChatDialog
+      ? WORLD_CHAT_SCROLL_PADDING_TOP
+      : this.isBagDialog
+        ? BAG_SCROLL_VIEWPORT_TOP_INSET
+        : this.isStatsDialog
+          ? STATS_SCROLL_VIEWPORT_TOP_INSET
+          : 0;
     this.scrollViewportWidth =
       this.isWorldChatDialog
         ? WORLD_CHAT_CONTENT_WIDTH
@@ -2707,10 +2709,10 @@ function resolveCharacterTexture(assetManager, character) {
   try {
     return (
       assetManager?.getTexture?.(
-        `source:assets/characters/${key || 'elara'}.png`,
+        `source:assets/avatars/${key || 'elara'}.png`,
       ) ??
       assetManager?.getTexture?.(
-        'source:assets/characters/elara.png',
+        'source:assets/avatars/elara.png',
       ) ??
       Texture.EMPTY
     );

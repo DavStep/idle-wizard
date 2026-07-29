@@ -3,6 +3,23 @@ import {
   normalizePlayerCharacter,
 } from '../../player/playerCharacters.js';
 
+const PLAYER_AVATAR_MODULES = import.meta.glob(
+  '../../../assets/game/source/avatars/*.png',
+  {
+    eager: true,
+    import: 'default',
+    query: '?url',
+  },
+);
+const PLAYER_AVATAR_IMAGE_URLS = Object.freeze(
+  Object.fromEntries(
+    Object.entries(PLAYER_AVATAR_MODULES).map(([path, url]) => [
+      path.split('/').at(-1).replace(/\.png$/i, ''),
+      url,
+    ]),
+  ),
+);
+
 const CHARACTER_IMAGE_URLS = Object.freeze({
   adventurer_blackarmor_sword: new URL(
     '../../../assets/game/source/characters/adventurer_blackarmor_sword.png',
@@ -214,7 +231,11 @@ export function createCharacterImage(character, className = '') {
 
 export function getPlayerCharacterImageUrl(character) {
   const key = normalizePlayerCharacter(character);
-  return getCharacterImageUrl(key) || getCharacterImageUrl(DEFAULT_PLAYER_CHARACTER);
+  return (
+    PLAYER_AVATAR_IMAGE_URLS[key] ??
+    PLAYER_AVATAR_IMAGE_URLS[DEFAULT_PLAYER_CHARACTER] ??
+    getCharacterImageUrl(DEFAULT_PLAYER_CHARACTER)
+  );
 }
 
 export function createPlayerCharacterIcon(character, className = '') {
@@ -222,5 +243,6 @@ export function createPlayerCharacterIcon(character, className = '') {
     normalizePlayerCharacter(character),
     ['style-player-character-icon', className].filter(Boolean).join(' '),
   );
+  img.src = getPlayerCharacterImageUrl(character);
   return img;
 }

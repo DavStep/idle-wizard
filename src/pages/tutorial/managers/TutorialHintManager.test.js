@@ -1159,7 +1159,7 @@ describe('TutorialHintManager', () => {
     }
   });
 
-  it('widens for final copy before growing the stable lesson height', () => {
+  it('sizes lesson boxes from final copy before typewriter reveal', () => {
     vi.useFakeTimers();
 
     try {
@@ -1208,7 +1208,7 @@ describe('TutorialHintManager', () => {
       expect(shortSize.width).toBe(190);
       expect(wideSize.width).toBeGreaterThan(shortSize.width);
       expect(wideSize.width).toBeLessThanOrEqual(254);
-      expect(shortSize.height).toBe(82);
+      expect(shortSize.height).toBe(34);
       expect(wideSize.height).toBe(shortSize.height);
 
       manager.showLesson({

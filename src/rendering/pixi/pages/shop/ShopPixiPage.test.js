@@ -1004,6 +1004,21 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it('keeps the Crystals tab notification visible while the free coin offer is ready', () => {
+    const harness = createHarness();
+    const viewModel = createShopViewModel();
+    viewModel.shop.selectedTabId = 'crystals';
+
+    harness.page.bind(viewModel);
+
+    const crystalsTab = harness.page.tabButtons.get('crystals');
+    expect(crystalsTab.notificationBadge.root.visible).toBe(true);
+    expect(crystalsTab.notificationBadge.tone).toBe('red');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('uses stall-style offer cards with currency art, overlaid amounts, and green actions', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);
     const getAtlasTexture = vi.fn(() => Texture.EMPTY);

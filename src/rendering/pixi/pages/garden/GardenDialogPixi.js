@@ -1,36 +1,32 @@
-import {
-  Container,
-  Graphics,
-  Rectangle,
-  Sprite,
-  Texture,
-} from 'pixi.js';
-
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
 import {
-  bindPixiSeedPackIcon,
-  layoutPixiSeedPackIcon,
-  resetPixiSeedPackIcon,
-} from '../../primitives/PixiSeedPackIcon.js';
-import { PooledCollection } from '../../retained/PooledCollection.js';
-import { WidgetPool } from '../../retained/WidgetPool.js';
-import { DEFAULT_PIXI_THEME_SNAPSHOT } from '../../theme/PixiThemeTokens.js';
+  DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 import {
+  RETAINED_DIALOG_LIST_GEOMETRY,
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
   applyTextTheme,
   createText,
   normalizeRows,
+  resolveRetainedDialogListLayout,
   setText,
 } from '../workshop/RetainedPageKit.js';
+import { RootRunInventoryChoiceList } from '../shop/ShopDialogPixi.js';
 
-const DIALOG_PADDING = 20;
-const GARDEN_DIALOG_CONTENT_WIDTH = 220;
-const GARDEN_DIALOG_OUTER_WIDTH = GARDEN_DIALOG_CONTENT_WIDTH + DIALOG_PADDING * 2 + 4;
-const SEED_ROW_HEIGHT = 20;
-const SEED_ROWS_MAX_HEIGHT = 360;
+const DIALOG_PADDING = PIXI_UI_GEOMETRY.dialogPadding;
+const GARDEN_DIALOG_OUTER_WIDTH = 304;
+const GARDEN_DIALOG_CONTENT_WIDTH =
+  GARDEN_DIALOG_OUTER_WIDTH - DIALOG_PADDING * 2;
+const SEED_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
+const SEED_ROWS_CONTENT_PADDING_TOP =
+  PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
+const SEED_ROWS_MAX_HEIGHT = 312;
 const DANGER_MESSAGE_ZONE_HEIGHT = 40;
+const SWAP_MESSAGE_ZONE_HEIGHT = 64;
 
 /**
  * Retained, lazy-once seed chooser. The dialog owns no garden rules: rows are
@@ -61,47 +57,17 @@ export class GardenSeedDialogPixi {
     this.semanticTargets = semanticTargets;
     this.onClose = onClose;
     this.actions = {};
-    this.instanceSequence = 0;
-    this.rowsLayer = new Container({ label: 'garden-seed-dialog-rows' });
-    this.rowsMask = new Graphics({ label: 'garden-seed-dialog-mask' });
-    this.rowsViewport = new Container({ label: 'garden-seed-dialog-viewport' });
-    this.rowsViewport.addChild(this.rowsLayer, this.rowsMask);
-    this.rowsLayer.mask = this.rowsMask;
-    this.modal.panel.content.addChild(this.rowsViewport);
-    this.rowPool = new WidgetPool({
-      name: 'garden seed dialog row pool',
+    this.list = new RootRunInventoryChoiceList({
+      assetManager,
+      inputRouter: this.inputRouter,
+      semanticRegistry: this.semanticTargets,
       counters,
-      create: () =>
-        new GardenSeedChoiceRow({
-          instanceId: ++this.instanceSequence,
-          assetManager,
-          inputRouter: this.inputRouter,
-          semanticTargets: this.semanticTargets,
-          modalId: this.modal.id,
-        }),
-      reset: (row) => row.reset(),
-      dispose: (row) => row.destroy(),
-      maxSize: 32,
+      rowHeight: SEED_ROW_HEIGHT,
+      useSettingsRows: true,
+      label: 'garden-seed-dialog-list',
     });
-    this.rows = new PooledCollection({
-      name: 'garden seed dialog rows',
-      pool: this.rowPool,
-      counters,
-      keyOf: (seed, index) =>
-        seed.id ?? seed.itemTypeId ?? seed.key ?? `seed-${index}`,
-      bind: (row, seed) => row.bind(seed, this.actions),
-      afterReconcile: (rows) => this.orderRows(rows),
-    });
-    this.scrollOffset = 0;
-    this.scrollRegistration = this.inputRouter?.registerScrollRegion?.({
-      id: 'garden.seed.rows',
-      displayObject: this.rowsViewport,
-      modalId: this.modal.id,
-      enabled: () => this.modal.active && this.maxScrollOffset > 0,
-      getOffset: () => this.scrollOffset,
-      getMaxOffset: () => this.maxScrollOffset,
-      onScroll: (offset) => this.setScrollOffset(offset),
-    }) ?? null;
+    this.rows = this.list.rows;
+    this.modal.panel.content.addChild(this.list.root);
     this.applyTheme(theme);
     this.layout({
       sourceWidth: RETAINED_PAGE_GEOMETRY.width,
@@ -113,78 +79,70 @@ export class GardenSeedDialogPixi {
     const model = viewModel ?? {};
     this.actions = model.actions ?? {};
     this.modal.setTitle(model.title ?? 'choose seed');
-    this.rows.reconcile(normalizeRows(model.rows ?? model.seeds));
+    this.list.setItems(
+      normalizeRows(model.rows ?? model.seeds).map((seed) => ({
+        ...seed,
+        detail:
+          seed.detail ??
+          `${seed.quantityText ?? seed.quantity ?? 0} Available`,
+        value: '',
+        action: () =>
+          seed.onSelect?.(seed) ??
+          this.actions.selectSeed?.(seed) ??
+          true,
+      })),
+    );
     const contentTheme = this.modal.getContentTheme();
-    for (const row of this.rows.getWidgets()) {
-      row.applyTheme(contentTheme);
-    }
-    this.setScrollOffset(this.scrollOffset);
+    this.list.applyTheme(contentTheme);
     this.layout({
       sourceWidth: this.sourceWidth,
       sourceHeight: this.sourceHeight,
     });
   }
 
-  orderRows(rows) {
-    this.rowsLayer.removeChildren();
-    for (const row of rows) {
-      this.rowsLayer.addChild(row.root);
-    }
-  }
-
-  setScrollOffset(offset) {
-    this.scrollOffset = Math.max(
-      0,
-      Math.min(this.maxScrollOffset ?? 0, Number(offset) || 0),
-    );
-    this.rowsLayer.y = -this.scrollOffset;
-  }
-
   applyTheme(themeSnapshot) {
     this.theme = themeSnapshot ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.modal.applyTheme(this.theme);
     const contentTheme = this.modal.getContentTheme();
-    for (const row of this.rows?.getWidgets?.() ?? []) {
-      row.applyTheme(contentTheme);
-    }
+    this.list?.applyTheme(contentTheme);
   }
 
   layout(viewportProjection) {
     this.sourceWidth = Number(viewportProjection?.sourceWidth) || 360;
     this.sourceHeight =
       Number(viewportProjection?.sourceHeight) || RETAINED_PAGE_GEOMETRY.height;
-    const rowCount = this.rows?.getWidgets?.().length ?? 0;
+    const rowCount = this.list?.items?.length ?? 0;
     this.contentHeight = Math.min(
       SEED_ROWS_MAX_HEIGHT,
-      Math.max(SEED_ROW_HEIGHT, rowCount * SEED_ROW_HEIGHT),
+      Math.max(
+        SEED_ROW_HEIGHT + SEED_ROWS_CONTENT_PADDING_TOP,
+        rowCount * SEED_ROW_HEIGHT + SEED_ROWS_CONTENT_PADDING_TOP,
+      ),
     );
-    const outerHeight = this.contentHeight + DIALOG_PADDING * 2 + 4;
+    const outerHeight = this.contentHeight + DIALOG_PADDING * 2;
     this.modal.setBounds(
       (this.sourceWidth - GARDEN_DIALOG_OUTER_WIDTH) / 2,
       (this.sourceHeight - outerHeight) / 2,
       GARDEN_DIALOG_OUTER_WIDTH,
       outerHeight,
     );
-    this.rowsViewport.position.set(DIALOG_PADDING + 2, DIALOG_PADDING + 2);
-    this.rowsViewport.hitArea = new Rectangle(
-      0,
-      0,
+    this.modal.panel.setContentBoxSize(
       GARDEN_DIALOG_CONTENT_WIDTH,
       this.contentHeight,
+      DIALOG_PADDING,
     );
-    this.rowsMask
-      .clear()
-      .rect(0, 0, GARDEN_DIALOG_CONTENT_WIDTH, this.contentHeight)
-      .fill({ color: 0xffffff });
-    const rows = this.rows?.getWidgets?.() ?? [];
-    rows.forEach((row, index) =>
-      row.setBounds(0, index * SEED_ROW_HEIGHT, GARDEN_DIALOG_CONTENT_WIDTH),
-    );
-    this.maxScrollOffset = Math.max(
+    const listLayout = resolveRetainedDialogListLayout({
+      bodyWidth: GARDEN_DIALOG_CONTENT_WIDTH,
+      paperRight: GARDEN_DIALOG_CONTENT_WIDTH + DIALOG_PADDING + 14 / 3,
+      rowFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+    });
+    this.list.setBounds(
+      listLayout.x,
       0,
-      rows.length * SEED_ROW_HEIGHT - this.contentHeight,
+      listLayout.viewportWidth,
+      this.contentHeight,
+      listLayout.rowWidth,
     );
-    this.setScrollOffset(this.scrollOffset);
     this.modal.layout(viewportProjection);
   }
 
@@ -197,9 +155,7 @@ export class GardenSeedDialogPixi {
   }
 
   destroy() {
-    releaseRegistration(this.scrollRegistration);
-    this.rows.destroy();
-    this.rowPool.destroy();
+    this.list.destroy();
     this.modal.destroy();
   }
 
@@ -242,28 +198,21 @@ export class GardenConfirmDialogPixi {
       align: this.variant === 'danger' ? 'center' : 'left',
       wordWrapWidth: GARDEN_DIALOG_CONTENT_WIDTH,
     });
-    if (this.variant === 'danger') {
-      this.message.anchor.set(0.5);
-    }
+    this.message.anchor.set(this.variant === 'danger' ? 0.5 : 0, 0.5);
     this.keep = new GardenModalButton({
       id: `${id}.keep`,
       assetManager,
       inputRouter,
-      modalId: id,
-      label: this.variant === 'danger' ? 'Keep' : 'keep',
-      variant: this.variant === 'danger' ? 'yellow' : 'regular',
+      label: 'Keep',
+      variant: 'yellow',
       action: () => this.close(),
     });
     this.confirm = new GardenModalButton({
       id: `${id}.confirm`,
       assetManager,
       inputRouter,
-      modalId: id,
-      label:
-        this.variant === 'danger'
-          ? titleCaseText(confirmLabel)
-          : confirmLabel,
-      variant: this.variant === 'danger' ? 'red' : 'regular',
+      label: titleCaseText(confirmLabel),
+      variant: this.variant === 'danger' ? 'red' : 'yellow',
       action: () => this.confirmAction(),
     });
     this.modal.panel.content.addChild(
@@ -291,14 +240,8 @@ export class GardenConfirmDialogPixi {
     const title = model.title ?? this.modal.title;
     const confirmLabel = model.confirmLabel ?? this.confirmLabel;
     const message = model.message ?? '';
-    this.modal.setTitle(
-      this.variant === 'danger' ? titleCaseText(title) : title,
-    );
-    this.confirm.setLabel(
-      this.variant === 'danger'
-        ? titleCaseText(confirmLabel)
-        : confirmLabel,
-    );
+    this.modal.setTitle(titleCaseText(title));
+    this.confirm.setLabel(titleCaseText(confirmLabel));
     setText(
       this.message,
       this.variant === 'danger' ? titleCaseText(message) : message,
@@ -342,7 +285,7 @@ export class GardenConfirmDialogPixi {
     const messageHeight =
       this.variant === 'danger'
         ? DANGER_MESSAGE_ZONE_HEIGHT
-        : Math.max(20, Math.ceil(this.message.height));
+        : Math.max(SWAP_MESSAGE_ZONE_HEIGHT, Math.ceil(this.message.height));
     const contentHeight = messageHeight + 12 + 30;
     const outerHeight = contentHeight + DIALOG_PADDING * 2 + 4;
     this.modal.setBounds(
@@ -357,7 +300,10 @@ export class GardenConfirmDialogPixi {
         DIALOG_PADDING + 2 + messageHeight / 2,
       );
     } else {
-      this.message.position.set(DIALOG_PADDING + 2, DIALOG_PADDING + 2);
+      this.message.position.set(
+        DIALOG_PADDING + 2,
+        DIALOG_PADDING + 2 + messageHeight / 2,
+      );
     }
     const buttonY = DIALOG_PADDING + 2 + messageHeight + 12;
     const buttonWidth = (GARDEN_DIALOG_CONTENT_WIDTH - 8) / 2;
@@ -395,117 +341,44 @@ class GardenModalButton {
     id,
     assetManager,
     inputRouter,
-    modalId,
     label,
-    variant = 'regular',
+    variant = 'yellow',
     action,
   }) {
     this.id = id;
     this.action = action;
-    this.enabled = true;
-    this.pressed = false;
-    this.width = 0;
-    this.height = 0;
-    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.variant = variant;
-    if (variant !== 'regular') {
-      this.button = new PixiButton({
-        assetManager,
-        inputRouter,
-        text: label,
-        width: 0,
-        height: 0,
-        action,
-        variant,
-        label: id,
-      });
-      this.root = this.button;
-      this.frame = this.button.rootRunFrame;
-      this.text = this.button.textLabel.textObject;
-      this.registration = null;
-      return;
-    }
-    this.root = new Container({ label: id });
-    this.frame = new Graphics({ label: `${id}-frame` });
-    this.text = createText(label, {
-      ...RETAINED_TEXT_STYLES.body,
-      align: 'center',
+    this.button = new PixiButton({
+      assetManager,
+      inputRouter,
+      text: label,
+      width: 0,
+      height: 0,
+      action,
+      variant,
+      label: id,
     });
-    this.text.anchor.set(0.5);
-    this.root.addChild(this.frame, this.text);
-    this.registration = inputRouter?.registerPressTarget?.({
-      id,
-      displayObject: this.root,
-      modalId,
-      focusable: true,
-      enabled: () => this.enabled,
-      onPressChange: (pressed) => this.setPressed(pressed),
-      onActivate: () => this.action?.() ?? true,
-    }) ?? null;
+    this.root = this.button;
+    this.frame = this.button.rootRunFrame;
+    this.text = this.button.textLabel.textObject;
   }
 
   setLabel(label) {
-    if (this.button) {
-      this.button.setText(label);
-      return;
-    }
-    setText(this.text, label);
+    this.button.setText(label);
   }
 
   setBounds(x, y, width, height) {
-    if (this.button) {
-      this.button.position.set(x, y);
-      this.button.setSize(width, height);
-      return;
-    }
-    this.root.position.set(x, y);
-    this.width = width;
-    this.height = height;
-    this.root.hitArea = new Rectangle(0, 0, width, height);
-    this.text.position.set(width / 2, height / 2);
-    this.redraw();
-  }
-
-  setPressed(pressed) {
-    if (this.button) {
-      return;
-    }
-    this.pressed = Boolean(pressed);
-    this.root.scale.set(this.pressed ? 0.97 : 1);
+    this.button.position.set(x, y);
+    this.button.setSize(width, height);
   }
 
   applyTheme(theme) {
-    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    if (this.button) {
-      this.button.applyTheme(this.theme);
-      return;
-    }
-    applyTextTheme(this.text, this.theme, {
-      ...RETAINED_TEXT_STYLES.body,
-      align: 'center',
-    });
-    this.redraw();
-  }
-
-  redraw() {
-    if (this.button) {
-      return;
-    }
-    this.frame
-      .clear()
-      .rect(0, 0, this.width, this.height)
-      .fill({ color: this.theme.surface })
-      .stroke({ color: this.theme.stroke, width: 2 });
+    this.button.applyTheme(theme ?? DEFAULT_PIXI_THEME_SNAPSHOT);
   }
 
   destroy() {
-    if (this.button) {
-      this.button.destroy({ children: true });
-      this.button = null;
-      return;
-    }
-    releaseRegistration(this.registration);
-    this.root.destroy({ children: true });
+    this.button.destroy({ children: true });
+    this.button = null;
   }
 }
 
@@ -514,205 +387,4 @@ function titleCaseText(value) {
     /(^|[\s-])([a-z])/g,
     (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`,
   );
-}
-
-class GardenSeedChoiceRow {
-  constructor({
-    instanceId,
-    assetManager,
-    inputRouter,
-    semanticTargets,
-    modalId,
-  }) {
-    this.instanceId = instanceId;
-    this.assetManager = assetManager;
-    this.inputRouter = inputRouter;
-    this.semanticTargets = semanticTargets;
-    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.model = {};
-    this.actions = {};
-    this.semanticId = null;
-    this.modalId = modalId;
-    this.enabled = false;
-    this.pressed = false;
-    this.root = new Container({ label: `garden-seed-row-${instanceId}` });
-    this.press = new Graphics({ label: `garden-seed-row-${instanceId}-press` });
-    this.label = createText('', RETAINED_TEXT_STYLES.body);
-    this.quantity = createText('', {
-      ...RETAINED_TEXT_STYLES.body,
-      align: 'right',
-    });
-    this.quantity.anchor.set(1, 0);
-    this.seedPack = new Sprite(Texture.EMPTY);
-    this.seedPack.label = `garden-seed-row-${instanceId}-pack`;
-    this.seedPack.anchor.set(0.5);
-    this.seedPack.visible = false;
-    this.seedItem = new Sprite(Texture.EMPTY);
-    this.seedItem.label = `garden-seed-row-${instanceId}-item`;
-    this.seedItem.anchor.set(0.5);
-    this.seedItem.visible = false;
-    this.root.addChild(
-      this.press,
-      this.label,
-      this.quantity,
-      this.seedPack,
-      this.seedItem,
-    );
-    this.registration = this.inputRouter?.registerPressTarget?.({
-      id: `garden.seed.row.instance.${instanceId}`,
-      displayObject: this.root,
-      modalId: this.modalId,
-      focusable: true,
-      enabled: () => this.enabled,
-      onPressChange: (pressed) => {
-        this.pressed = pressed;
-        this.redraw();
-      },
-      onActivate: () =>
-        this.model.onSelect?.(this.model) ??
-        this.actions.selectSeed?.(this.model) ??
-        true,
-    }) ?? null;
-  }
-
-  bind(model, actions) {
-    this.unregisterSemantic();
-    this.model = model ?? {};
-    this.actions = actions ?? {};
-    this.enabled = this.model.enabled !== false && this.model.disabled !== true;
-    setText(this.label, this.model.label ?? 'empty');
-    setText(
-      this.quantity,
-      this.model.quantityText ??
-        (this.model.quantity === null || this.model.quantity === undefined
-          ? ''
-          : String(this.model.quantity)),
-    );
-    const showsSeedIcon =
-      this.model.emptyOption !== true &&
-      (this.model.itemKind === 'seed' || this.model.icon?.kind === 'seed');
-    if (showsSeedIcon) {
-      bindPixiSeedPackIcon({
-        assetManager: this.assetManager,
-        base: this.seedPack,
-        item: this.seedItem,
-        seed: this.model,
-      });
-    } else {
-      resetPixiSeedPackIcon({
-        base: this.seedPack,
-        item: this.seedItem,
-      });
-    }
-    this.root.visible = true;
-    this.root.renderable = true;
-    this.root.eventMode = this.enabled ? 'static' : 'none';
-    this.semanticId =
-      this.model.semanticId ??
-      `garden.seed.${this.model.key ?? this.model.itemTypeId ?? this.model.id ?? 'empty'}`;
-    this.semanticTargets?.register?.({
-      semanticId: this.semanticId,
-      tutorialId:
-        this.model.tutorialId ??
-        (this.model.key ? `garden:seed:${this.model.key}` : null),
-      displayObject: this.root,
-      state: () => ({
-        visible: this.root.visible && this.root.renderable,
-        interactive: this.root.eventMode !== 'none',
-        enabled: this.enabled,
-        active: !this.root.destroyed,
-      }),
-      activate: () =>
-        this.model.onSelect?.(this.model) ??
-        this.actions.selectSeed?.(this.model) ??
-        true,
-    });
-    this.applyTheme(this.theme);
-  }
-
-  setBounds(x, y, width) {
-    this.root.position.set(x, y);
-    this.width = width;
-    this.root.hitArea = new Rectangle(0, 0, width, SEED_ROW_HEIGHT);
-    this.label.position.set(0, 2);
-    const iconVisible = this.seedPack.visible;
-    const iconCenterX = width - 7;
-    this.quantity.position.set(iconVisible ? width - 17 : width, 2);
-    layoutPixiSeedPackIcon({
-      base: this.seedPack,
-      item: this.seedItem,
-      x: iconCenterX,
-      y: SEED_ROW_HEIGHT / 2,
-      width: 14,
-      height: 14,
-    });
-    this.redraw();
-  }
-
-  applyTheme(theme) {
-    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    const color = this.enabled && this.model.empty !== true
-      ? this.theme.resourceColors.seed
-      : this.theme.disabled;
-    applyTextTheme(this.label, this.theme, {
-      ...RETAINED_TEXT_STYLES.body,
-      fill: color,
-    });
-    applyTextTheme(this.quantity, this.theme, {
-      ...RETAINED_TEXT_STYLES.body,
-      fill: color,
-      align: 'right',
-    });
-    this.redraw();
-  }
-
-  redraw() {
-    this.press.clear();
-    if (this.pressed || this.model.selected === true) {
-      this.press
-        .rect(0, 0, this.width ?? 0, SEED_ROW_HEIGHT)
-        .fill({ color: this.theme.text, alpha: 0.1 });
-    }
-  }
-
-  reset() {
-    this.unregisterSemantic();
-    this.model = {};
-    this.actions = {};
-    this.enabled = false;
-    this.pressed = false;
-    this.root.eventMode = 'none';
-    this.root.renderable = false;
-    this.root.visible = false;
-    setText(this.label, '');
-    setText(this.quantity, '');
-    resetPixiSeedPackIcon({
-      base: this.seedPack,
-      item: this.seedItem,
-    });
-    this.redraw();
-  }
-
-  unregisterSemantic() {
-    if (this.semanticId) {
-      this.semanticTargets?.unregister?.(this.semanticId, {
-        displayObject: this.root,
-      });
-      this.semanticId = null;
-    }
-  }
-
-  destroy() {
-    this.unregisterSemantic();
-    releaseRegistration(this.registration);
-    this.root.destroy({ children: true });
-  }
-}
-
-function releaseRegistration(registration) {
-  if (typeof registration === 'function') {
-    registration();
-    return;
-  }
-  registration?.unregister?.();
 }

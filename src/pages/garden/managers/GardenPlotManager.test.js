@@ -1061,7 +1061,7 @@ describe('GardenPlotManager', () => {
 
     expect(baseCss).toContain('--garden-page-plot-number-color: #3b2416;');
     expect(baseCss).toContain(
-      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-4.png");',
+      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-5.png");',
     );
     expect(baseCss).not.toMatch(
       /\[data-plot-soil-level="\d+"\]\s*\{[^}]*--garden-page-plot-soil-image:/,
@@ -1070,7 +1070,7 @@ describe('GardenPlotManager', () => {
     expect(baseCss).toContain('--garden-page-plot-progress-height: 6px;');
     expect(frameRule).toContain('width: var(--garden-page-plot-visual-width);');
     expect(frameRule).toContain(
-      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-4.png");',
+      '--garden-page-plot-soil-image: url("../../assets/game/source/rooms/garden/plots/outpost-plot-ground-level-5.png");',
     );
     expect(frameRule).toContain(
       '--garden-page-plot-level-color: var(--style-muted);',
@@ -2444,6 +2444,16 @@ describe('GardenPlotManager', () => {
     expect(swapPopup.querySelector('.garden-page__swap-message')?.textContent).toBe(
       'replace mint seed with nettle seed and restart plot 1.',
     );
+    expect(
+      swapPopup
+        .querySelector('.garden-page__swap-keep')
+        ?.classList.contains('style-button--yellow'),
+    ).toBe(true);
+    expect(
+      swapPopup
+        .querySelector('.garden-page__swap-confirm')
+        ?.classList.contains('style-button--yellow'),
+    ).toBe(true);
 
     swapPopup
       .querySelector('.garden-page__swap-confirm')

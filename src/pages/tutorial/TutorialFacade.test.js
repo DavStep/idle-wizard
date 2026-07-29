@@ -409,7 +409,7 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
-  it('expands level 1 requirements when showing them from the lesson prompt', () => {
+  it('advances level 1 guidance without opening requirements for the player', () => {
     let expanded = false;
     const stage = document.createElement('section');
     const tasksToggle = document.createElement('button');
@@ -464,8 +464,8 @@ describe('TutorialFacade', () => {
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
     facade.refresh();
 
-    expect(expanded).toBe(true);
-    expect(tasksToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(expanded).toBe(false);
+    expect(tasksToggle.getAttribute('aria-expanded')).toBe('false');
     expect(facade.activeStep?.id).toBe('first-fill-seed-task');
     expect(facade.activeStep?.targetId).toBe('task:level1-turn-in-sage-seed');
 

@@ -24,7 +24,6 @@ const OBJECTIVE_HORIZONTAL_CHROME = OBJECTIVE_PADDED_WIDTH - OBJECTIVE_WIDTH;
 const OBJECTIVE_VERTICAL_CHROME = OBJECTIVE_HEIGHT - OBJECTIVE_CONTENT_HEIGHT;
 const LESSON_MIN_WIDTH = OBJECTIVE_WIDTH;
 const LESSON_MAX_WIDTH = 254;
-const LESSON_STABLE_HEIGHT = OBJECTIVE_CONTENT_HEIGHT + 8;
 const INTRO_DIALOG_WIDTH = 260;
 const LESSON_MIN_HEIGHT = 34;
 const LESSON_MAX_HEIGHT = 126;
@@ -724,13 +723,10 @@ export class TutorialHintManager {
       height: clamp(
         introDialog
           ? measuredHeight ?? estimatedHeight
-          : Math.max(
-              LESSON_STABLE_HEIGHT,
-              measuredHeight ?? estimatedHeight,
-            ),
+          : measuredHeight ?? estimatedHeight,
         introDialog
           ? INTRO_DIALOG_MIN_HEIGHT
-          : LESSON_STABLE_HEIGHT,
+          : LESSON_MIN_HEIGHT,
         introDialog ? INTRO_DIALOG_MAX_HEIGHT : LESSON_MAX_HEIGHT,
       ),
     };
@@ -842,7 +838,7 @@ export class TutorialHintManager {
     let height = Math.max(
       variant === 'intro-dialog'
         ? LESSON_MIN_HEIGHT
-        : LESSON_STABLE_HEIGHT,
+        : LESSON_MIN_HEIGHT,
       textLines * LESSON_ESTIMATED_LINE_HEIGHT,
       Number(Boolean(text)) * 20,
     );

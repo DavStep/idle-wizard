@@ -113,7 +113,7 @@ export class TutorialLogicManager {
         text: this.getLessonText(step),
         stepLabel: step.stepLabel,
         progress: step.progress,
-        progressLabel: step.progressLabel,
+        progressLabel: formatTutorialDisplayLabel(step.progressLabel),
         attention: autoOpen || cue.lessonAttention === true,
         autoOpen,
         forceOpen,
@@ -278,7 +278,9 @@ export class TutorialLogicManager {
 
   getLessonText(step) {
     if (step.kind === 'objective') {
-      return step.objectiveText ?? step.hintText ?? step.text ?? '';
+      return formatTutorialDisplayLabel(
+        step.objectiveText ?? step.hintText ?? step.text ?? '',
+      );
     }
 
     return step.text ?? step.hintText ?? step.objectiveText ?? '';
@@ -341,6 +343,13 @@ export class TutorialLogicManager {
     this.autoAdvanceStepId = null;
     this.autoAdvanceStartedAt = null;
   }
+}
+
+function formatTutorialDisplayLabel(value) {
+  return String(value ?? '').replace(
+    /(^|\s)([a-z])/g,
+    (_match, prefix, letter) => `${prefix}${letter.toUpperCase()}`,
+  );
 }
 
 function isDuplicateOfActiveQuest(step, snapshot) {

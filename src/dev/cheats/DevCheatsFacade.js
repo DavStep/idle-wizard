@@ -30,6 +30,9 @@ export class DevCheatsFacade {
     const onlineGateManager =
       app?.onlineGateManager ??
       app?.renderFacade?.getOnlineGateManager?.();
+    const deployRefreshManager =
+      app?.deployRefreshManager ??
+      app?.renderFacade?.getDeployRefreshManager?.();
     const freshStartChoiceManager =
       app?.freshStartChoiceManager ??
       app?.renderFacade?.getFreshStartChoiceManager?.();
@@ -38,6 +41,7 @@ export class DevCheatsFacade {
     });
     this.commandManager = new DevCheatCommandManager({
       backendFacade: app?.backendFacade,
+      deployRefreshManager,
       freshStartChoiceManager,
       gameplayFacade: app?.gameplayFacade,
       onlineGateManager,

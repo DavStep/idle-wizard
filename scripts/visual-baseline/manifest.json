@@ -227,11 +227,12 @@
       "production": true,
       "coverage": {
         "globalOwners": ["deployRefreshManager"],
+        "devUi": ["deployRefresh"],
         "domSelectors": [".app-deploy-refresh__dialog"]
       },
       "recipe": {
-        "kind": "manual",
-        "gap": "No checked-in capture command currently injects a newer deploy-version response without initiating reload."
+        "kind": "devUi",
+        "surfaceId": "deployRefresh"
       },
       "anchors": [
         {

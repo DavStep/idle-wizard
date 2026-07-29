@@ -15,10 +15,7 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
-import {
-  PIXI_ROOM_TAB_FRAME_SCALE,
-  PIXI_ROOM_TAB_FRAME_SLICE,
-} from './PixiBottomPanelView.js';
+import { PIXI_ROOM_TAB_FRAME_SCALE } from './PixiBottomPanelView.js';
 import {
   RootRunHudAvatarButton,
   RootRunHudCurrencyCapsule,
@@ -27,6 +24,12 @@ import {
 } from './RootRunTopHudWidgets.js';
 
 const ROOT_RUN_UI_SCALE = 3;
+export const PIXI_TOP_PANEL_BACKGROUND_SLICE = Object.freeze({
+  leftWidth: 40,
+  topHeight: 40,
+  rightWidth: 40,
+  bottomHeight: 1,
+});
 const TOP_HUD_X = 32 / ROOT_RUN_UI_SCALE;
 // The Root Run reference y includes a 108 px authored safe-area inset. The
 // canvas already starts below env(safe-area-inset-top), so keep only the
@@ -110,7 +113,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       texture: assets.getTexture(
         PIXI_ROOT_RUN_ASSETS.topPanelBackground,
       ),
-      ...PIXI_ROOM_TAB_FRAME_SLICE,
+      ...PIXI_TOP_PANEL_BACKGROUND_SLICE,
       label: 'topPanel:background',
       roundPixels: true,
     });
@@ -147,7 +150,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     });
     this.username.position.set(109, 0);
     this.usernameControl.addChild(this.username);
-    this.usernameControl.position.set(-16, 190);
+    this.usernameControl.position.set(-16, 178);
 
     this.coin = new RootRunHudCurrencyCapsule({
       assets,
@@ -975,11 +978,11 @@ export class PixiTopPanelView extends BasePixiRetainedView {
   }
 
   getCharacterTexture(character) {
-    const assetId = `source:assets/characters/${character}.png`;
+    const assetId = `source:assets/avatars/${character}.png`;
     try {
       return this.assets.getTexture(assetId);
     } catch {
-      return this.assets.getTexture('source:assets/characters/elara.png');
+      return this.assets.getTexture('source:assets/avatars/elara.png');
     }
   }
 

@@ -73,7 +73,7 @@ const GARDEN_DIALOG_IDS = Object.freeze({
   swap: "garden.swap",
 });
 const SOIL_ASSET_ID =
-  "source:assets/rooms/garden/plots/outpost-plot-ground-level-4.png";
+  "source:assets/rooms/garden/plots/outpost-plot-ground-level-5.png";
 /**
  * Retained Garden room. The display tree and router registrations are built
  * once; presenters provide formatted rows and action callbacks through bind().
@@ -226,8 +226,8 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
             parent: this.dialogLayer,
             inputRouter: this.inputRouter,
             assetManager: this.assetManager,
-            title: "swap seed?",
-            confirmLabel: "swap",
+            title: "Swap Seed?",
+            confirmLabel: "Swap",
             onClose: () => this.closeDialog("swap"),
             theme: this.theme,
           }),
@@ -760,7 +760,8 @@ class GardenPlotWidget {
       assetManager,
       width: GARDEN_PIXI_GEOMETRY.buyButtonWidth,
       height: GARDEN_PIXI_GEOMETRY.buyButtonHeight,
-      tone: "yellow",
+      stacked: true,
+      tone: "green",
       label: `garden-plot-${instanceId}-buy-cost`,
     });
     this.buyCostButton.eventMode = "none";
@@ -851,9 +852,7 @@ class GardenPlotWidget {
     this.scissorsMotion.visible = this.model.phase === "harvesting";
     this.scissors.visible = this.scissorsMotion.visible;
     this.scissorsOpen.visible = this.scissorsMotion.visible;
-    this.notificationBadge
-      .setTone(this.model.notificationTone)
-      .setActive(this.model.notification === true);
+    this.syncNotificationBadges();
     this.registerSemanticTargets(tileNumber);
     this.applyTheme(this.theme);
     this.updateTime(this.page.timeSource());
@@ -1163,11 +1162,25 @@ class GardenPlotWidget {
     }
 
     this.buyCostButton.setModel({
+      actionLabel: "Unlock",
       amountLabel: costCoin === 0 ? "Free" : formatCoinPriceText(costCoin),
       resource: costCoin === 0 ? "none" : "coin",
       state: this.model.affordable === false ? "unaffordable" : "available",
       enabled: this.enabled,
     });
+  }
+
+  syncNotificationBadges() {
+    const buttonOwnsNotification = this.buyCostButton.visible;
+    this.buyCostButton.setNotification(
+      buttonOwnsNotification && this.model.notification === true,
+      this.model.notificationTone,
+    );
+    this.notificationBadge
+      .setTone(this.model.notificationTone)
+      .setActive(
+        !buttonOwnsNotification && this.model.notification === true,
+      );
   }
 
   redraw() {
@@ -1212,9 +1225,7 @@ class GardenPlotWidget {
         );
       }
     }
-    this.notificationBadge
-      .setTone(this.model.notificationTone)
-      .setActive(this.model.notification === true);
+    this.syncNotificationBadges();
   }
 
   reset() {

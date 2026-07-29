@@ -10,11 +10,11 @@ import {
   PIXI_UI_GEOMETRY,
   PIXI_ROOT_RUN_ASSETS,
 } from '../../theme/PixiThemeTokens.js';
+import { PIXI_ROOM_TAB_FRAME_SCALE } from './PixiBottomPanelView.js';
 import {
-  PIXI_ROOM_TAB_FRAME_SCALE,
-  PIXI_ROOM_TAB_FRAME_SLICE,
-} from './PixiBottomPanelView.js';
-import { PixiTopPanelView } from './PixiTopPanelView.js';
+  PIXI_TOP_PANEL_BACKGROUND_SLICE,
+  PixiTopPanelView,
+} from './PixiTopPanelView.js';
 
 installPixiPageTestCanvas();
 
@@ -71,21 +71,31 @@ describe('PixiTopPanelView', () => {
       y: 32 / 3,
     });
     expect(view.topHudRoot.scale.x).toBe(1 / 3);
+    expect(view.usernameControl.position).toMatchObject({
+      x: -16,
+      y: 178,
+    });
     expect(view.panelBackground).toBeInstanceOf(NineSliceSprite);
     expect(view.panelBackground.texture).toBe(
       assets.getTexture(PIXI_ROOT_RUN_ASSETS.topPanelBackground),
     );
+    expect(PIXI_TOP_PANEL_BACKGROUND_SLICE).toEqual({
+      leftWidth: 40,
+      topHeight: 40,
+      rightWidth: 40,
+      bottomHeight: 1,
+    });
     expect(view.panelBackground.leftWidth).toBe(
-      PIXI_ROOM_TAB_FRAME_SLICE.leftWidth,
+      PIXI_TOP_PANEL_BACKGROUND_SLICE.leftWidth,
     );
     expect(view.panelBackground.topHeight).toBe(
-      PIXI_ROOM_TAB_FRAME_SLICE.topHeight,
+      PIXI_TOP_PANEL_BACKGROUND_SLICE.topHeight,
     );
     expect(view.panelBackground.rightWidth).toBe(
-      PIXI_ROOM_TAB_FRAME_SLICE.rightWidth,
+      PIXI_TOP_PANEL_BACKGROUND_SLICE.rightWidth,
     );
     expect(view.panelBackground.bottomHeight).toBe(
-      PIXI_ROOM_TAB_FRAME_SLICE.bottomHeight,
+      PIXI_TOP_PANEL_BACKGROUND_SLICE.bottomHeight,
     );
     expect(view.panelBackground.position).toMatchObject({
       x: 0,

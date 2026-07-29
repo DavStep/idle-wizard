@@ -1780,9 +1780,11 @@ describe('WorkshopPixiPage', () => {
     harness.page.bind(model);
     harness.page.openDialog('worldChat');
     const dialog = harness.dialogs.get('workshop.worldChat');
+    const paperTop = dialog.panel.paperFrame.y;
 
     expect(dialog.scroll.offsetY).toBeGreaterThan(0);
     expect(dialog.scroll.offsetY).toBe(dialog.scroll.contentHeight - dialog.scroll.height);
+    expect(dialog.scroll.root.y - paperTop).toBeGreaterThanOrEqual(7);
 
     harness.page.destroy();
     harness.dispose();

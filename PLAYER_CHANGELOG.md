@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.26
+
+- Refined Brewing with a clearer cauldron header, larger touch targets, a tighter action layout, and cleaner locked-cauldron states.
+- Reworked the Garden seed picker for clearer seed art, availability, and current selection, and made plot unlocks easier to spot.
+- Improved character portraits across the top panel and account screens, and polished Elara's Brewing guidance.
+
 ## 0.3.25
 
 - Reworked Garden controls with a persistent seed choice, quicker plot planting, and a Harvest All action for ready herbs.

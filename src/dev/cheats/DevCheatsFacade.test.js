@@ -627,6 +627,26 @@ describe('DevCheatsFacade', () => {
     });
   });
 
+  it('opens the retained deploy-refresh gate without reloading', () => {
+    const deployRefreshManager = {
+      showPreview: vi.fn(() => ({ ok: true })),
+    };
+    const renderFacade = {
+      getDeployRefreshManager: () => deployRefreshManager,
+    };
+    const { app } = createApp({ renderFacade });
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+    expect(target.cheats.openUi('deployRefresh')).toMatchObject({
+      ok: true,
+      surfaceId: 'deployRefresh',
+    });
+
+    expect(deployRefreshManager.showPreview).toHaveBeenCalledOnce();
+  });
+
   it('sets event, guild, timer, stress, and dialog states for UI QA', () => {
     const leaderboardFacade = {
       setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
@@ -753,6 +773,10 @@ describe('DevCheatsFacade', () => {
         expect.objectContaining({
           id: 'serverRequired',
           command: 'cheats.openUi("serverRequired")',
+        }),
+        expect.objectContaining({
+          id: 'deployRefresh',
+          command: 'cheats.openUi("deployRefresh")',
         }),
         expect.objectContaining({
           id: 'traderStallLoader',
@@ -963,6 +987,21 @@ describe('DevCheatsFacade', () => {
       completedStepIds: ['purchase-house'],
     });
     expect(pagesFacade.setTutorialStage).toHaveBeenLastCalledWith('intro-garden');
+
+    expect(target.cheats.loadTutorialStep('refill-mana-tonic-cauldron')).toMatchObject({
+      ok: true,
+      requestedStepId: 'refill-mana-tonic-cauldron',
+      snapshot: {
+        level: 4,
+        inventory: [{ key: 'sageHerb', quantity: 3 }],
+      },
+    });
+    expect(app.gameplayFacade.getSnapshot().brewing.ingredients).toHaveLength(3);
+    expect(
+      app.gameplayFacade.getSnapshot().brewing.ingredients.every(
+        (ingredient) => ingredient.key === 'sageHerb',
+      ),
+    ).toBe(true);
   });
 
   it('publishes dummy leaderboard snapshots through backend dev overrides', () => {

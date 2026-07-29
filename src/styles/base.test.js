@@ -529,7 +529,7 @@ describe('base styles', () => {
       '--style-yellow-button-frame: url("../../assets/game/source/ui/root-run-cost-button/yellow-button-9slice.png");',
     );
     expect(rootRule).toContain(
-      '--style-yellow-button-frame-slice: 100 43 68 115 fill;',
+      '--style-yellow-button-frame-slice: 100 43 68 85 fill;',
     );
     expect(yellowButtonRule).toContain(
       'border-image-source: var(--style-yellow-button-frame);',
@@ -625,6 +625,12 @@ describe('base styles', () => {
     expect(baseCss).toContain(
       '--style-top-panel-background-frame: url("../../assets/game/source/ui/midnight-top-panel-background-9slice.png");',
     );
+    expect(baseCss).toContain(
+      '--style-top-panel-background-frame-slice: 40 40 1 40 fill;',
+    );
+    expect(baseCss).toContain(
+      '--style-top-panel-background-frame-width: 20px 20px 0.5px 20px;',
+    );
     expect(selectableThemeRule).toContain(
       '--style-inner-section-frame-slice: 91 73 90 83 fill;',
     );
@@ -652,10 +658,10 @@ describe('base styles', () => {
       'border-image-source: var(--style-top-panel-background-frame);',
     );
     expect(topPanelBackgroundRule).toContain(
-      'border-image-slice: var(--style-room-tab-frame-slice);',
+      'border-image-slice: var(--style-top-panel-background-frame-slice);',
     );
     expect(topPanelBackgroundRule).toContain(
-      'border-image-width: var(--style-room-tab-frame-width);',
+      'border-image-width: var(--style-top-panel-background-frame-width);',
     );
     expect(topPanelBackgroundRule).toContain('transform: scaleY(-1);');
 

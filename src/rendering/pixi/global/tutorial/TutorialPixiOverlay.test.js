@@ -433,6 +433,49 @@ describe('TutorialPixiOverlay', () => {
     ).toBe(20);
   });
 
+  it('sizes ordinary lesson panels from their visible content', () => {
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      step: { id: 'short-objective', highlightTargetIds: [] },
+      lesson: {
+        id: 'short-objective',
+        title: 'Lesson 5: Brewing',
+        text: 'Open Recipes',
+        autoOpen: true,
+      },
+      cue: { kind: 'none' },
+    });
+
+    const shortHeight = overlay.surface.outerHeight;
+    expect(shortHeight).toBe(
+      TUTORIAL_PIXI_GEOMETRY.panelMinContentHeight + 21,
+    );
+
+    overlay.bind({
+      kind: 'lesson',
+      step: { id: 'progress-objective', highlightTargetIds: [] },
+      lesson: {
+        id: 'progress-objective',
+        title: 'Lesson 5: Brewing',
+        text: 'Fill The Cauldron Again',
+        progress: 1,
+        progressLabel: '3/3 Sage',
+        autoOpen: true,
+      },
+      cue: { kind: 'none' },
+    });
+
+    expect(overlay.surface.outerHeight).toBeGreaterThan(shortHeight);
+    expect(overlay.surface.outerHeight).toBeLessThan(
+      TUTORIAL_PIXI_GEOMETRY.panelDefaultOuterHeight,
+    );
+  });
+
   it('animates lesson height changes in both directions and snaps for reduced motion', () => {
     const ticker = createTicker();
     const overlay = new TutorialPixiOverlay({

@@ -3771,7 +3771,7 @@ describe('PagesFacade', () => {
     expect(avatarButton).not.toBeNull();
     expect(
       avatarButton.querySelector('.room-top-panel__username-avatar')?.getAttribute('src'),
-    ).toContain('/assets/game/source/characters/elara.png');
+    ).toContain('/assets/game/source/avatars/elara.png');
     expect(topPanel.children[0]?.className).toBe('room-top-panel__avatar-button');
     expect(topPanel.children[1]?.className).toBe('room-top-panel__identity-row');
     expect(topPanel.children[2]?.classList.contains('room-top-panel__resources')).toBe(true);
@@ -4192,7 +4192,7 @@ describe('PagesFacade', () => {
     expect(usernameButton?.textContent).toBe('Merlin');
     expect(avatarButton).not.toBeNull();
     expect(usernameAvatar?.getAttribute('src')).toContain(
-      '/assets/game/source/characters/mira.png',
+      '/assets/game/source/avatars/mira.png',
     );
     expect(avatarButton?.hidden).toBe(false);
     expect(usernameAvatar?.hidden).toBe(false);
@@ -4201,7 +4201,7 @@ describe('PagesFacade', () => {
     playerFacade.setCharacter('rowan');
 
     expect(usernameAvatar?.getAttribute('src')).toContain(
-      '/assets/game/source/characters/rowan.png',
+      '/assets/game/source/avatars/rowan.png',
     );
 
     playerFacade.setIconMode('none');
@@ -5186,7 +5186,7 @@ describe('PagesFacade', () => {
         .querySelector('.room-top-panel__avatar-button')
         .querySelector('.room-top-panel__username-avatar')
         ?.getAttribute('src'),
-    ).toContain('/assets/game/source/characters/rowan.png');
+    ).toContain('/assets/game/source/avatars/rowan.png');
     expect(
       [...settings.querySelectorAll('.room-top-panel__progress-bar-button')].map(
         (button) => button.textContent,

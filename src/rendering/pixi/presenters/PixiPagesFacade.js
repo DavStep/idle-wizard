@@ -2288,6 +2288,7 @@ function createGardenSeedDialogRows(
       label: display.label,
       displayLabel: display.label,
       quantityText: String(seed.quantity ?? 0),
+      detail: `${Number(seed.quantity) || 0} Available`,
       selected: selectedSeedItemTypeId === seed.itemTypeId,
       enabled: true,
       known: display.known,

@@ -2163,6 +2163,8 @@ class VirtualShopDialogList {
   }
 }
 
+export { VirtualShopDialogList as RootRunInventoryChoiceList };
+
 class VirtualShopDialogRow {
   constructor({
     assetManager,

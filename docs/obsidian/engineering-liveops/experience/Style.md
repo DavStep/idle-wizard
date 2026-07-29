@@ -36,6 +36,7 @@ experience_type: style
 - Resource icons are fixed on. Resource and currency labels use their shared semantic color family, including mana blue and coin gold, while disabled/locked states consistently reduce contrast. Do not invent feature-local colors for the same resource.
 - For recipe ingredient rows, put the quantity prefix outside the icon label so icon mode reads `- 3 [icon] sage`, not `[icon] - 3 sage`.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
+- Garden seed selection must use the exact Load Stall retained inventory-row contract: `50px` Settings-backed rows, `28px` seed-pack art, two-line availability copy, and the shared selected checkmark. Do not substitute a compact text-and-count row.
 - Standalone info/help buttons use `assets/game/source/ui/prop_info.png` through `setInfoButtonIcon`; never fall back to `[i]`, `?`, or a font glyph.
 - All lock graphics use `assets/game/source/ui/prop_lock.png` through `createStatusIcon(..., STATUS_ICON_LOCK)`; keep meaningful `locked` text, but do not introduce alternate lock artwork or glyphs.
 - All checkmark graphics use `assets/game/source/ui/prop_checkmark.png` through `createStatusIcon(..., STATUS_ICON_CHECK)` or the research-icon generator for baked composites; keep meaningful state text, but do not introduce alternate checkmark artwork or glyphs.
@@ -160,6 +161,7 @@ experience_type: style
 - Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
 - Top panel coin should keep amount and `coin` in the same fitted value span; a separate suffix can leave clipped values like `308... coin`.
 - Clicking the top-panel avatar or username opens the Root Run Account dialog; the settings gear remains the device-preferences entry point.
+- Player avatars use dedicated square cuts generated from full character art. Treat Elara's face center, eye line, head scale, and hand scale as the reference; decoration may clip and must never determine the apparent character size.
 - Account keeps username, avatar, and frame as one draft until Save. The selection outline follows the draft while the shared checkmark stays on the equipped option; locked avatars use a dark tile overlay with the shared lock at top-right.
 - The Account choice board alone scrolls; keep the preview, Avatar/Frame tabs, Save action, shell, and detached close control fixed.
 - Account is the width exception inside the capped global dialog: map its `925px` qUIck board proportionally to the approved `298px` source width and center an Account-only viewport over the generic `264px` content box. Leaving the generic scroll mask in place clips the username pencil and right scrollbar.

@@ -53,13 +53,15 @@ export class GardenSeedSwapDialogManager {
     actions.className = 'garden-page__swap-actions';
 
     const keepButton = document.createElement('button');
-    keepButton.className = 'style-button garden-page__swap-keep';
+    keepButton.className =
+      'style-button style-button--yellow garden-page__swap-keep';
     keepButton.type = 'button';
     keepButton.textContent = 'keep';
     keepButton.addEventListener('click', () => this.hide());
 
     const confirmButton = document.createElement('button');
-    confirmButton.className = 'style-button garden-page__swap-confirm';
+    confirmButton.className =
+      'style-button style-button--yellow garden-page__swap-confirm';
     confirmButton.type = 'button';
     confirmButton.textContent = 'swap';
     confirmButton.addEventListener('click', () => this.confirm());

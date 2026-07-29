@@ -3,7 +3,6 @@ import { TutorialLogicManager } from './managers/TutorialLogicManager.js';
 import { TutorialProgressManager } from './managers/TutorialProgressManager.js';
 import { TutorialSaleManager } from './managers/TutorialSaleManager.js';
 import {
-  TUTORIAL_ADVANCE_ACTIONS,
   TUTORIAL_STEP_IDS,
   getTutorialStepGraph,
   resolveTutorialStepId,
@@ -329,9 +328,6 @@ export class TutorialFacade {
   }
 
   advanceActiveStep() {
-    const step = this.activeStep;
-    const advanceAction = step?.advanceAction;
-
     if (!this.logicManager.advanceActiveStep()) {
       return;
     }
@@ -340,29 +336,8 @@ export class TutorialFacade {
     this.clearRequestedTargetGuidance();
     this.cancelAutoAdvance();
     this.hintManager.hideTargetCue();
-    this.applyAdvanceAction(advanceAction);
 
     this.scheduleRefresh();
-  }
-
-  applyAdvanceAction(action) {
-    if (action !== TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS) {
-      return;
-    }
-
-    const target = this.targetManager.getTarget('workshop:tasks');
-
-    if (
-      !target ||
-      target.hidden ||
-      target.disabled ||
-      target.getAttribute?.('aria-expanded') === 'true' ||
-      typeof target.click !== 'function'
-    ) {
-      return;
-    }
-
-    target.click();
   }
 
   pressActiveLesson({ source } = {}) {

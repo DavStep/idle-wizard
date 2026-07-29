@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   TutorialStepManager,
-  TUTORIAL_ADVANCE_ACTIONS,
   TUTORIAL_STEP_IDS,
 } from './TutorialStepManager.js';
 
@@ -437,7 +436,6 @@ describe('TutorialStepManager', () => {
       id: 'intro-level-requirements',
       text: "I'll give you one request at a time. Complete it to earn xp toward your next level.",
       advanceLabel: 'show',
-      advanceAction: TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS,
     });
   });
 
@@ -1367,6 +1365,68 @@ describe('TutorialStepManager', () => {
       targetId: 'brewing:recipe:manaTonic',
       hintText: 'choose mana tonic',
       stepLabel: '31/31',
+    });
+  });
+
+  it('asks the player to brew again once the refill reaches 3/3 sage', () => {
+    const snapshot = createLevelFiveSnapshot({
+      research: {
+        completedResearchIds: ['unlockRecipe:manaTonic'],
+        inProgressResearches: [],
+      },
+      tasks: {
+        currentLevel: 4,
+        level: {
+          completion: { canComplete: false, costCoin: 30 },
+          tasks: [
+            createTask({
+              taskId: 'level5-brew-mana-tonic',
+              itemKey: 'manaTonic',
+              type: 'brew',
+              requiredQuantity: 1,
+              progressQuantity: 1,
+              remainingQuantity: 0,
+              completed: true,
+            }),
+            createTask({
+              taskId: 'level5-turn-in-mana-tonic',
+              itemKey: 'manaTonic',
+              requiredQuantity: 1,
+              progressQuantity: 0,
+              remainingQuantity: 1,
+            }),
+          ],
+        },
+      },
+      brewing: {
+        ingredients: Array.from({ length: 3 }, (_unused, slotIndex) => ({
+          slotIndex,
+          key: 'sageHerb',
+        })),
+        canBrew: true,
+        canAddIngredient: true,
+        activeBrew: null,
+        match: {
+          key: 'manaTonic',
+          unlocked: true,
+        },
+        herbs: [{ key: 'sageHerb', availableQuantity: 0 }],
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'brewing',
+        snapshot,
+        completed: completedThrough('first-brew-complete'),
+      }),
+    ).toMatchObject({
+      id: 'refill-mana-tonic-cauldron',
+      objectiveText: 'brew mana tonic again',
+      targetId: 'brewing:action',
+      hintText: 'brew mana tonic again',
+      progress: { value: 3, max: 3 },
+      progressLabel: '3/3 sage',
     });
   });
 

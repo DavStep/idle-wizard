@@ -654,7 +654,7 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('contain-fits avatar art without changing the texture aspect ratio', () => {
+  it('uses the normalized square avatar cut without distortion', () => {
     const characterTexture = new Texture({
       source: new TextureSource({
         resource: { width: 87, height: 108 },
@@ -678,9 +678,7 @@ describe('retained global Pixi dialogs', () => {
     );
     const avatar = settings.avatars.getWidgets()[0];
 
-    expect(avatar.sprite.width / avatar.sprite.height).toBeCloseTo(
-      87 / 108,
-    );
+    expect(avatar.sprite.width / avatar.sprite.height).toBe(1);
     expect(avatar.sprite.x).toBeCloseTo(
       (avatar.root.hitArea.width - avatar.sprite.width) / 2,
     );
@@ -1591,7 +1589,7 @@ function createHarness({
   const assets = createPixiAssetManagerFake(Texture);
   if (characterTexture) {
     assets.getTexture = vi.fn((assetId) =>
-      String(assetId).includes('/characters/')
+      String(assetId).includes('/avatars/')
         ? characterTexture
         : Texture.EMPTY,
     );

@@ -15,9 +15,6 @@ const MANA_READOUT_TARGET_ID = 'top:mana';
 const MANA_VALUE_TARGET_ID = 'top:mana:value';
 const MANA_REGEN_TARGET_ID = 'top:mana:regen';
 const LEVEL_ONE_SEED_TASK_IDS = ['level1-turn-in-sage-seed'];
-export const TUTORIAL_ADVANCE_ACTIONS = Object.freeze({
-  EXPAND_WORKSHOP_TASKS: 'expand-workshop-tasks',
-});
 const DEFAULT_LEVEL_FOUR_SAGE_GROW_TARGET = 2;
 const TURN_IN_TEXT = 'turn in';
 const WORKSHOP_TASKS_PIN_TARGET_ID = 'workshop:tasksPin';
@@ -238,7 +235,6 @@ export const TUTORIAL_STEPS = [
     text: "I'll give you one request at a time. Complete it to earn xp toward your next level.",
     advanceLabel: 'show',
     advanceOnClick: true,
-    advanceAction: TUTORIAL_ADVANCE_ACTIONS.EXPAND_WORKSHOP_TASKS,
     showPointer: false,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 0 &&
@@ -1038,10 +1034,31 @@ export const TUTORIAL_STEPS = [
   {
     id: 'refill-mana-tonic-cauldron',
     kind: 'objective',
-    getObjectiveText: ({ snapshot }) =>
-      hasTaskActionForItem(snapshot, MANA_TONIC_KEY)
-        ? 'turn in mana tonic for the next level'
-        : 'fill the cauldron again',
+    getObjectiveText: ({ currentPageId, dom, snapshot }) => {
+      if (hasTaskActionForItem(snapshot, MANA_TONIC_KEY)) {
+        return 'turn in mana tonic for the next level';
+      }
+
+      if (currentPageId !== 'brewing') {
+        return 'open brewing';
+      }
+
+      if (dom.isBrewingRecipePopupOpen()) {
+        return 'choose mana tonic';
+      }
+
+      if (hasExtraManaTonicSage(snapshot)) {
+        return 'remove extra sage';
+      }
+
+      if (isManaTonicCauldronReady(snapshot)) {
+        return 'brew mana tonic again';
+      }
+
+      return getManaTonicCauldronFillCount(snapshot) >= MANA_TONIC_SAGE_COUNT
+        ? 'mana tonic is ready'
+        : 'fill the cauldron again';
+    },
     getTargetId: ({ currentPageId, dom, snapshot }) => {
       const taskAction = getTaskActionForItem(snapshot, MANA_TONIC_KEY);
 
@@ -1103,7 +1120,7 @@ export const TUTORIAL_STEPS = [
       }
 
       if (isManaTonicCauldronReady(snapshot)) {
-        return 'brew again';
+        return 'brew mana tonic again';
       }
 
       if (hasExtraManaTonicSage(snapshot)) {
@@ -1478,7 +1495,6 @@ export class TutorialStepManager {
         autoAdvanceMs: getAutoAdvanceMs(step, context),
         targetCueDelayMs: getTargetCueDelayMs(step, context),
         variant: getVariant(step, context),
-        advanceAction: step.advanceAction,
         effect: step.effect,
         sale: step.sale,
       };
@@ -1511,7 +1527,6 @@ export class TutorialStepManager {
       autoAdvanceMs: getAutoAdvanceMs(step, { ...context, targetId, text, hintText }),
       targetCueDelayMs: getTargetCueDelayMs(step, { ...context, targetId, text, hintText }),
       variant: getVariant(step, { ...context, targetId, text, hintText }),
-      advanceAction: step.advanceAction,
       effect: step.effect,
       sale: step.sale,
     };

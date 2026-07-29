@@ -340,10 +340,10 @@ function getCharacterTexture(assetManager, key) {
   try {
     return (
       assetManager?.getTexture?.(
-        `source:assets/characters/${key}.png`,
+        `source:assets/avatars/${key}.png`,
       ) ??
       assetManager?.getTexture?.(
-        'source:assets/characters/elara.png',
+        'source:assets/avatars/elara.png',
       ) ??
       Texture.EMPTY
     );

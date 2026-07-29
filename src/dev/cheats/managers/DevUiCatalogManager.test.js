@@ -84,6 +84,7 @@ describe('DevUiCatalogManager', () => {
         onSubmit: expect.any(Function),
       }),
     );
+    expect(runtime.openDialog.mock.calls[0][1].rows.length).toBeGreaterThan(10);
   });
 
   it('provides a representative Market Ledger preview for visual QA', () => {

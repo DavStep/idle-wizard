@@ -744,8 +744,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       sectionInset + 54 / 3,
     );
     this.accountPreviewPortrait.width = ACCOUNT_HEADER_PORTRAIT_WIDTH;
-    this.accountPreviewPortrait.height =
-      ACCOUNT_HEADER_PORTRAIT_WIDTH * (108 / 87);
+    this.accountPreviewPortrait.height = ACCOUNT_HEADER_PORTRAIT_WIDTH;
     this.usernameBacking.position.set(
       ACCOUNT_HEADER_X + 253 * (ACCOUNT_HEADER_WIDTH / 925),
       sectionInset + 96 / 3,
@@ -1322,9 +1321,9 @@ class SettingsAvatarWidget {
     this.frame.width = width;
     this.frame.height = height;
     const inset = 4;
-    this.sprite.position.set(inset, inset - 3);
+    this.sprite.position.set(inset, inset);
     this.sprite.width = width - inset * 2;
-    this.sprite.height = (width - inset * 2) * (108 / 87);
+    this.sprite.height = height - inset * 2;
     this.lockOverlay
       .clear()
       .roundRect(1, 1, width - 2, height - 2, 7)
@@ -1575,12 +1574,12 @@ function capitalize(value) {
 function getCharacterTexture(assetManager, key) {
   try {
     return assetManager?.getTexture?.(
-      `source:assets/characters/${key}.png`,
+      `source:assets/avatars/${key}.png`,
     ) ?? Texture.EMPTY;
   } catch {
     try {
       return assetManager?.getTexture?.(
-        'source:assets/characters/elara.png',
+        'source:assets/avatars/elara.png',
       ) ?? Texture.EMPTY;
     } catch {
       return Texture.EMPTY;
