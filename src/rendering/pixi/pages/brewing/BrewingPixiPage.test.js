@@ -3,7 +3,7 @@
 import {
   createPixiAssetManagerFake,
 } from '../workshop/PixiPageTestHarness.js';
-import { Container, Texture } from 'pixi.js';
+import { Container, Sprite, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
@@ -159,6 +159,10 @@ describe('BrewingPixiPage', () => {
       harness.semanticTargets.getTutorialTarget('brewing:action')
         ?.semanticId,
     ).toBe('brewing.cauldron.0.primary');
+    expect(
+      harness.semanticTargets.getTutorialTarget('brewing:recipes')
+        ?.semanticId,
+    ).toBe('brewing.recipes');
     expect(
       harness.inputRouter.store.getRegistrations('drag'),
     ).toHaveLength(1);
@@ -1092,24 +1096,23 @@ describe('BrewingPixiPage', () => {
 
     expect(harness.page.hud.cauldronLiquid.visible).toBe(true);
     expect(harness.page.hud.cauldronLiquid.renderable).toBe(true);
+    expect(harness.page.hud.cauldronLiquid).toBeInstanceOf(Sprite);
     expect(harness.page.hud.cauldronLiquidColor).toBe(0x0a95f5);
-    expect(harness.page.hud.cauldronLiquid.mask).toBe(
-      harness.page.hud.cauldronLiquidMask,
-    );
-    expect(harness.page.hud.cauldronLiquidMask).toMatchObject({
+    expect(harness.page.hud.cauldronLiquid).toMatchObject({
       x: harness.page.hud.cauldronArt.x,
       y: harness.page.hud.cauldronArt.y,
       width: harness.page.hud.cauldronArt.width,
       height: harness.page.hud.cauldronArt.height,
-      renderable: false,
+      tint: 0x0a95f5,
+      alpha: 0.94,
     });
     expect(
       harness.page.hud.carouselPanel.body.getChildIndex(
-        harness.page.hud.cauldronLiquid,
+        harness.page.hud.cauldronArt,
       ),
     ).toBeLessThan(
       harness.page.hud.carouselPanel.body.getChildIndex(
-        harness.page.hud.cauldronArt,
+        harness.page.hud.cauldronLiquid,
       ),
     );
 

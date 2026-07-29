@@ -316,12 +316,17 @@ export class PixiViewModelFactory {
 
   createTaskRow(task, actions = {}) {
     const automatic = task.autoProgress === true;
+    const current = Math.max(0, Number(task.progressQuantity) || 0);
+    const required = Math.max(0, Number(task.requiredQuantity) || 0);
     return {
       id: task.taskId,
       label: task.requirementLabel ?? task.itemLabel ?? '',
-      current: task.progressQuantity ?? 0,
-      required: task.requiredQuantity ?? 0,
-      progress: task.progress ?? 0,
+      current,
+      required,
+      progress:
+        required > 0
+          ? clampUnit(current / required)
+          : clampUnit(task.progress),
       itemKind: task.itemKind ?? null,
       itemKey: task.itemKey ?? null,
       itemLabel: task.itemLabel ?? null,

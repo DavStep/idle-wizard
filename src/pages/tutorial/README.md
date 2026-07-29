@@ -6,6 +6,8 @@ Tutorial logic is unified through `TutorialLogicManager`. `TutorialStepManager` 
 
 The guide covers the sequential main requests for a free level 1 seed task with automatic level-up, level 2 summon/load/wait/turn-in play with normal trader-stand rules, level 3 Research and mint seed requests, level 4 Garden herb requests, and level 5 Brewing with mana tonic research. After the first summon, only mana and the summon button stay revealed until the fifth first-lesson sage seed. Then Elara explains that she gives one request at a time before her request box is revealed and pointed at the sage seed turn-in. It has no skip state.
 
+Lesson 5 prepares and refills mana tonic through the live retained Brewing controls: `Recipes`, Mana Tonic in the recipe book, then the primary Brew action. Hidden legacy herb-inventory controls are not tutorial targets.
+
 The first Market sequence opens stand 1, points at `shop:sell:sageSeed`, then demonstrates the percentage gesture from the live knob to `25%`: appear on the knob, press and hold, drag right, release, hide, and repeat after a two-second pause. Once one of the five lesson seeds is selected, it points at `shop:sell:mark`. Once matching stock is loaded, the objective becomes a passive wait for the five-second sale.
 
 The target cue keeps the same diagonal placement math and uses the Spine pointer on a pointer-local Pixi canvas. Rotate the Spine shell by placement so the authored upward tap points at the target anchor.

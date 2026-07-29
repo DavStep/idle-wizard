@@ -386,6 +386,38 @@ describe('PageNotificationStateManager', () => {
     });
   });
 
+  it('rolls affordable research from every visible research tab up to the page', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+
+    snapshot.research.tabs = [
+      {
+        id: 'regular',
+        boxes: [
+          {
+            researches: [{ id: 'regular-study', canResearch: false }],
+          },
+        ],
+      },
+      {
+        id: 'crystal',
+        boxes: [
+          {
+            researches: [{ id: 'crystal-study', canResearch: true }],
+          },
+        ],
+      },
+    ];
+
+    expect(manager.getSnapshot(snapshot).pages.research).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        research: true,
+      },
+    });
+  });
+
   it('does not mark empty player market stands as player-market notifications', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();

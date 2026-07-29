@@ -42,20 +42,15 @@ const CHILD_TARGETS = Object.freeze({
 });
 
 /**
- * Projects notification state for bottom chrome. A page dot is related only
- * to `page:<id>`, matching the legacy bottom-panel button target.
+ * Projects notification state for bottom chrome. Room-level action badges stay
+ * visible during tutorial filtering so selecting a room cannot hide its badge.
  */
-export function projectChromeNotificationPages(pages = {}, policy = null) {
-  const allowed = getAllowedTutorialIds(policy);
+export function projectChromeNotificationPages(pages = {}) {
   const result = {};
 
   for (const pageId of new Set([...PAGE_IDS, ...Object.keys(pages ?? {})])) {
     const page = pages?.[pageId];
-    result[pageId] =
-      isActive(page) &&
-      (allowed === null || allowed.has(`page:${pageId}`))
-        ? page
-        : false;
+    result[pageId] = isActive(page) ? page : false;
   }
 
   return result;

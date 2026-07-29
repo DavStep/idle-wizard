@@ -438,6 +438,7 @@ export class RetainedButton {
     inputRouter = null,
     semanticRegistry = null,
     semanticId = null,
+    tutorialId = null,
     variant = 'button',
   } = {}) {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
@@ -453,6 +454,7 @@ export class RetainedButton {
       inputRouter,
       semanticRegistry,
       semanticId,
+      tutorialId,
       text: label,
       action: onActivate,
       fallbackHitTest,

@@ -105,7 +105,11 @@ function getNotificationElements(root) {
 }
 
 function shouldSuppressNotificationBadge(element) {
-  if (!notificationVisibilityPolicy || isTutorialElement(element)) {
+  if (
+    !notificationVisibilityPolicy ||
+    isTutorialElement(element) ||
+    isBottomRoomTab(element)
+  ) {
     return false;
   }
 
@@ -126,6 +130,10 @@ function shouldSuppressNotificationBadge(element) {
 
 function isTutorialElement(element) {
   return Boolean(element.closest?.('.tutorial-layer'));
+}
+
+function isBottomRoomTab(element) {
+  return element.matches?.('.room-bottom-panel__tab') === true;
 }
 
 function isElementRelatedToTutorialId(element, tutorialId) {

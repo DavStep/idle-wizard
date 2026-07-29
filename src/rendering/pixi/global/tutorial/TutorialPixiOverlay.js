@@ -991,10 +991,10 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
       Boolean(this.model.lesson?.attention) && !this.panelOpen;
     this.attentionBadge
       .placeAtTopRight({
-        x: 0,
-        y: 0,
-        width: TUTORIAL_PIXI_GEOMETRY.guideWidth,
-        height: TUTORIAL_PIXI_GEOMETRY.guideHeight,
+        x: this.guideLabelButton.x,
+        y: this.guideLabelButton.y,
+        width: this.guideLabelButton.buttonWidth,
+        height: this.guideLabelButton.buttonHeight,
       })
       .setTone('red')
       .setActive(active);

@@ -86,6 +86,10 @@ describe('PixiProgressBar', () => {
       maxX: 50,
       maxY: 9,
     });
+    expect(getFillPathCommands(progress)).toEqual([
+      { action: 'roundRect', data: [1, 1, 49, 8, 4] },
+      { action: 'roundRect', data: [2, 2, 47, 6, 3] },
+    ]);
 
     progress.destroy({ children: true });
   });
@@ -200,5 +204,17 @@ describe('PixiProgressBar', () => {
 function readPng(relativePath) {
   return PNG.sync.read(
     readFileSync(new URL(relativePath, import.meta.url)),
+  );
+}
+
+function getFillPathCommands(progress) {
+  return progress.fillGraphic.context.instructions.flatMap(
+    (instruction) =>
+      instruction.data.path.instructions
+        .filter(({ action }) => action === 'roundRect' || action === 'rect')
+        .map(({ action, data }) => ({
+          action,
+          data: data.slice(0, 5),
+        })),
   );
 }

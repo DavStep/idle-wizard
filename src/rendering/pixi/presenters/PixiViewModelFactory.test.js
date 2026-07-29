@@ -127,6 +127,36 @@ describe('PixiViewModelFactory', () => {
     expect(fillTask).toHaveBeenCalledWith('turn-in-sage');
   });
 
+  it('keeps request fill in sync with the visible quantity', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createWorkshop({
+      gameplay: {
+        tasks: {
+          currentLevel: 5,
+          level: {
+            tasks: [
+              {
+                taskId: 'brew-mana-tonic',
+                requirementLabel: 'Brew Mana Tonic',
+                progressQuantity: 1,
+                requiredQuantity: 3,
+                progress: 0,
+                autoProgress: true,
+                isActiveQuest: true,
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    expect(model.workshop.tasks.rows[0]).toMatchObject({
+      current: 1,
+      required: 3,
+      progress: 1 / 3,
+    });
+  });
+
   it('does not project the obsolete manual level-up row', () => {
     const factory = new PixiViewModelFactory();
     const model = factory.createWorkshop({

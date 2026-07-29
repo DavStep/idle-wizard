@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.23
+
+- Improved Elara's Brewing guidance so mana tonic lessons follow the visible recipe controls.
+- Fixed request progress fills and room notification badges showing the wrong state during guided lessons.
+- Polished Brewing cauldron liquid, progress-bar corners, and Elara's notification placement.
+
 ## 0.3.22
 
 - Refined Brewing controls with a clearer potion preview, compact automation controls, and more reliable recipe selection when enabling Auto.

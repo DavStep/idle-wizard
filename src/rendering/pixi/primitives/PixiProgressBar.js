@@ -139,6 +139,7 @@ export class PixiProgressBar extends Container {
     }
 
     const fillX = border + innerWidth * this.start;
+    const fillRadius = Math.min(fillWidth / 2, innerHeight / 2);
     setPixiCapsuleBounds(this.fillMask, {
       x: fillX,
       y: border,
@@ -149,7 +150,7 @@ export class PixiProgressBar extends Container {
 
     if (this.theme.progress?.key === 'notched') {
       this.fillGraphic
-        .rect(fillX, border, fillWidth, innerHeight)
+        .roundRect(fillX, border, fillWidth, innerHeight, fillRadius)
         .fill(visual.fill)
         .moveTo(fillX, border + 0.5)
         .lineTo(fillX + fillWidth, border + 0.5)
@@ -169,26 +170,29 @@ export class PixiProgressBar extends Container {
 
     if (visual.edge) {
       this.fillGraphic
-        .rect(fillX, border, fillWidth, innerHeight)
+        .roundRect(fillX, border, fillWidth, innerHeight, fillRadius)
         .fill(visual.edge);
       const inset = Math.min(
         1,
         fillWidth / 2,
         innerHeight / 2,
       );
+      const insetWidth = Math.max(0, fillWidth - inset * 2);
+      const insetHeight = Math.max(0, innerHeight - inset * 2);
       this.fillGraphic
-        .rect(
+        .roundRect(
           fillX + inset,
           border + inset,
-          Math.max(0, fillWidth - inset * 2),
-          Math.max(0, innerHeight - inset * 2),
+          insetWidth,
+          insetHeight,
+          Math.min(insetWidth / 2, insetHeight / 2),
         )
         .fill(visual.fill);
       return;
     }
 
     this.fillGraphic
-      .rect(fillX, border, fillWidth, innerHeight)
+      .roundRect(fillX, border, fillWidth, innerHeight, fillRadius)
       .fill(visual.fill);
   }
 

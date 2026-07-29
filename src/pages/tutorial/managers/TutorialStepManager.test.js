@@ -1270,7 +1270,7 @@ describe('TutorialStepManager', () => {
     });
   });
 
-  it('guides brewing mana tonic after recipe research', () => {
+  it('targets mana tonic after opening the retained recipe book', () => {
     expect(
       getStep({
         pageId: 'brewing',
@@ -1281,17 +1281,17 @@ describe('TutorialStepManager', () => {
           },
         }),
         completed: completedThrough('intro-brewing'),
-        dom: createDomFake({ brewingHerbInventoryOpen: true }),
+        dom: createDomFake({ recipePopupOpen: true }),
       }),
     ).toMatchObject({
       id: 'brew-mana-tonic',
-      targetId: 'brewing:herb:sageHerb',
-      hintText: 'tap sage to fill cauldron. recipes care about order',
+      targetId: 'brewing:recipe:manaTonic',
+      hintText: 'choose mana tonic',
       stepLabel: '29/31',
     });
   });
 
-  it('opens the Brewing herbs inventory before targeting sage', () => {
+  it('opens the retained Brewing recipe book before preparing mana tonic', () => {
     expect(
       getStep({
         pageId: 'brewing',
@@ -1305,9 +1305,69 @@ describe('TutorialStepManager', () => {
       }),
     ).toMatchObject({
       id: 'brew-mana-tonic',
-      targetId: 'brewing:inventory:herbs',
-      hintText: 'open herbs',
+      targetId: 'brewing:recipes',
+      hintText: 'open recipes',
       stepLabel: '29/31',
+    });
+  });
+
+  it('reopens the retained recipe book to refill the cauldron', () => {
+    const snapshot = createLevelFiveSnapshot({
+      research: {
+        completedResearchIds: ['unlockRecipe:manaTonic'],
+        inProgressResearches: [],
+      },
+      tasks: {
+        currentLevel: 4,
+        level: {
+          completion: { canComplete: false, costCoin: 30 },
+          tasks: [
+            createTask({
+              taskId: 'level5-brew-mana-tonic',
+              itemKey: 'manaTonic',
+              type: 'brew',
+              requiredQuantity: 1,
+              progressQuantity: 1,
+              remainingQuantity: 0,
+              completed: true,
+            }),
+            createTask({
+              taskId: 'level5-turn-in-mana-tonic',
+              itemKey: 'manaTonic',
+              requiredQuantity: 1,
+              progressQuantity: 0,
+              remainingQuantity: 1,
+            }),
+          ],
+        },
+      },
+    });
+
+    expect(
+      getStep({
+        pageId: 'brewing',
+        snapshot,
+        completed: completedThrough('first-brew-complete'),
+      }),
+    ).toMatchObject({
+      id: 'refill-mana-tonic-cauldron',
+      targetId: 'brewing:recipes',
+      hintText: 'open recipes',
+      stepLabel: '31/31',
+    });
+
+    expect(
+      getStep({
+        pageId: 'brewing',
+        snapshot,
+        completed: completedThrough('first-brew-complete'),
+        dom: createDomFake({ recipePopupOpen: true }),
+      }),
+    ).toMatchObject({
+      id: 'refill-mana-tonic-cauldron',
+      targetId: 'brewing:recipe:manaTonic',
+      hintText: 'choose mana tonic',
+      stepLabel: '31/31',
     });
   });
 

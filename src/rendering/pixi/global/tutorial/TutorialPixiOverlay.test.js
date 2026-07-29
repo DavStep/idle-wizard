@@ -328,6 +328,37 @@ describe('TutorialPixiOverlay', () => {
     overlay.destroy();
   });
 
+  it('anchors Elara attention to the visible Help button', () => {
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      step: { id: 'attention', highlightTargetIds: [] },
+      lesson: {
+        id: 'attention',
+        text: 'Ask Elara for help.',
+        attention: true,
+        autoOpen: false,
+      },
+      cue: { kind: 'none' },
+    });
+
+    const badgeRadius = overlay.attentionBadge.sprite.width / 2;
+    expect(overlay.attentionDot.visible).toBe(true);
+    expect(overlay.attentionDot.position).toMatchObject({
+      x:
+        overlay.guideLabelButton.x +
+        overlay.guideLabelButton.buttonWidth -
+        badgeRadius,
+      y: overlay.guideLabelButton.y + badgeRadius,
+    });
+
+    overlay.destroy();
+  });
+
   it('renders the intro with the shared blocking dialog shell', () => {
     const overlay = new TutorialPixiOverlay({
       assets: createAssets(),

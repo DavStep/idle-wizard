@@ -107,4 +107,25 @@ describe('notificationBadge', () => {
 
     expect(button.dataset.notification).toBe('true');
   });
+
+  it('keeps bottom room-tab badges visible during tutorial filtering', () => {
+    const root = document.createElement('section');
+    const roomTab = document.createElement('button');
+
+    roomTab.className = 'room-bottom-panel__tab';
+    roomTab.dataset.tutorialId = 'page:brewing';
+    root.append(roomTab);
+    document.body.append(root);
+
+    setNotificationBadge(roomTab, true);
+    setNotificationVisibilityPolicy(
+      {
+        active: true,
+        allowedTutorialIds: ['brewing:action'],
+      },
+      { root },
+    );
+
+    expect(roomTab.dataset.notification).toBe('true');
+  });
 });

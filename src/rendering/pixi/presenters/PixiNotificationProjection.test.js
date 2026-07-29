@@ -8,7 +8,18 @@ import {
 } from './PixiNotificationProjection.js';
 
 describe('PixiNotificationProjection', () => {
-  it('suppresses every page and child notification for an empty tutorial allow-list', () => {
+  it('keeps active bottom-room badges visible during tutorial filtering', () => {
+    const pages = createNotificationPages();
+    const chrome = projectChromeNotificationPages(pages, {
+      active: true,
+      allowedTutorialIds: ['brewing:action'],
+    });
+
+    expect(chrome.brewing).toBe(pages.brewing);
+    expect(chrome.research).toBe(pages.research);
+  });
+
+  it('keeps page badges but suppresses child notifications for an empty tutorial allow-list', () => {
     const pages = createNotificationPages();
     const policy = { active: true, allowedTutorialIds: [] };
 
@@ -19,8 +30,9 @@ describe('PixiNotificationProjection', () => {
       policy,
     );
 
-    expect(Object.values(chrome).every((notification) => notification === false))
-      .toBe(true);
+    expect(chrome.workshop).toBe(pages.workshop);
+    expect(chrome.brewing).toBe(pages.brewing);
+    expect(chrome.research).toBe(pages.research);
     expect(workshop).toEqual({
       active: false,
       children: {
@@ -223,7 +235,7 @@ describe('PixiNotificationProjection', () => {
     expect(brewing.brewing.cauldrons[0].notification).toBe(false);
   });
 
-  it('exposes page badges only for matching page targets, including Guild', () => {
+  it('keeps all active page badges regardless of the current tutorial targets', () => {
     const pages = createNotificationPages();
     const projected = projectChromeNotificationPages(pages, {
       active: true,
@@ -236,7 +248,7 @@ describe('PixiNotificationProjection', () => {
       ],
     });
 
-    expect(projected.workshop).toBe(false);
+    expect(projected.workshop).toBe(pages.workshop);
     expect(projected.garden).toBe(pages.garden);
     expect(projected.brewing).toBe(pages.brewing);
     expect(projected.research).toBe(pages.research);

@@ -10,6 +10,7 @@ const MANA_TONIC_RESEARCH_ID = 'unlockRecipe:manaTonic';
 const STALL_SELL_POPUP_CLASS = 'shop-page__sell-popup';
 const MANA_TONIC_SAGE_COUNT = 3;
 const MANA_TONIC_EXTRA_SAGE_TARGET_ID = `brewing:remove:${SAGE_HERB_KEY}`;
+const BREWING_RECIPES_TARGET_ID = 'brewing:recipes';
 const MANA_READOUT_TARGET_ID = 'top:mana';
 const MANA_VALUE_TARGET_ID = 'top:mana:value';
 const MANA_REGEN_TARGET_ID = 'top:mana:regen';
@@ -968,10 +969,6 @@ export const TUTORIAL_STEPS = [
       }
 
       if (dom.isBrewingRecipePopupOpen()) {
-        if (isBrewingRecipeSelected(dom, MANA_TONIC_KEY)) {
-          return 'brewing:recipes:close';
-        }
-
         return `brewing:recipe:${MANA_TONIC_KEY}`;
       }
 
@@ -997,11 +994,7 @@ export const TUTORIAL_STEPS = [
         return 'brewing:action';
       }
 
-      if (canAddManaTonicSage(snapshot) && !dom.isBrewingHerbInventoryOpen?.()) {
-        return 'brewing:inventory:herbs';
-      }
-
-      return canAddManaTonicSage(snapshot) ? `brewing:herb:${SAGE_HERB_KEY}` : null;
+      return canAddManaTonicSage(snapshot) ? BREWING_RECIPES_TARGET_ID : null;
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
       if (currentPageId !== 'brewing') {
@@ -1009,10 +1002,6 @@ export const TUTORIAL_STEPS = [
       }
 
       if (dom.isBrewingRecipePopupOpen()) {
-        if (isBrewingRecipeSelected(dom, MANA_TONIC_KEY)) {
-          return 'close recipes';
-        }
-
         return 'choose mana tonic';
       }
 
@@ -1043,15 +1032,7 @@ export const TUTORIAL_STEPS = [
         return 'brew mana tonic';
       }
 
-      if (canAddManaTonicSage(snapshot) && !dom.isBrewingHerbInventoryOpen?.()) {
-        return 'open herbs';
-      }
-
-      if (getManaTonicCauldronFillCount(snapshot) > 0) {
-        return 'add sage. recipes care about order';
-      }
-
-      return 'tap sage to fill cauldron. recipes care about order';
+      return canAddManaTonicSage(snapshot) ? 'open recipes' : 'grow more sage';
     },
     getProgress: ({ snapshot }) => ({
       value: hasBrewedManaTonic(snapshot) ? 1 : 0,
@@ -1099,6 +1080,10 @@ export const TUTORIAL_STEPS = [
         return 'page:brewing';
       }
 
+      if (dom.isBrewingRecipePopupOpen()) {
+        return `brewing:recipe:${MANA_TONIC_KEY}`;
+      }
+
       const brewing = getPrimaryBrewingState(snapshot);
       const activeAction = isActiveManaTonicBrew(snapshot)
         ? getActiveBrewingAction(brewing)
@@ -1112,11 +1097,7 @@ export const TUTORIAL_STEPS = [
         return MANA_TONIC_EXTRA_SAGE_TARGET_ID;
       }
 
-      if (canAddManaTonicSage(snapshot) && !dom.isBrewingHerbInventoryOpen?.()) {
-        return 'brewing:inventory:herbs';
-      }
-
-      return canAddManaTonicSage(snapshot) ? `brewing:herb:${SAGE_HERB_KEY}` : null;
+      return canAddManaTonicSage(snapshot) ? BREWING_RECIPES_TARGET_ID : null;
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
       const taskAction = getTaskActionForItem(snapshot, MANA_TONIC_KEY);
@@ -1133,6 +1114,10 @@ export const TUTORIAL_STEPS = [
 
       if (currentPageId !== 'brewing') {
         return 'open brewing';
+      }
+
+      if (dom.isBrewingRecipePopupOpen()) {
+        return 'choose mana tonic';
       }
 
       const brewing = getPrimaryBrewingState(snapshot);
@@ -1152,15 +1137,7 @@ export const TUTORIAL_STEPS = [
         return 'remove extra sage';
       }
 
-      if (canAddManaTonicSage(snapshot) && !dom.isBrewingHerbInventoryOpen?.()) {
-        return 'open herbs';
-      }
-
-      const progress = getManaTonicCauldronFillCount(snapshot);
-
-      return progress > 0
-        ? 'add sage. recipes care about order'
-        : 'tap sage to fill cauldron. recipes care about order';
+      return canAddManaTonicSage(snapshot) ? 'open recipes' : 'grow more sage';
     },
     getProgress: ({ snapshot }) =>
       hasTaskActionForItem(snapshot, MANA_TONIC_KEY)
@@ -2808,10 +2785,6 @@ function isNpcMarketSelling(snapshot, itemKey) {
   return (snapshot?.shop?.shelf?.slots ?? []).some(
     (slot) => slot?.unlocked && slot.sellKey === itemKey && slot.loadedQuantity > 0,
   );
-}
-
-function isBrewingRecipeSelected(dom, recipeKey) {
-  return Boolean(dom?.isBrewingRecipeSelected?.(recipeKey));
 }
 
 function getPrimaryBrewingState(snapshot) {

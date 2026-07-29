@@ -58,6 +58,7 @@ experience_type: product-shape
 - Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
 - Progress rails should use the real `.style-progress` capsule with the fill inside its inset gap; drive the fill by width or a live right edge so rounded caps are never compressed.
+- Quantity progress labels and fills must derive from the same current/required values; do not trust a separate cached ratio that can render `1/3` beside an empty rail.
 - Level-up announcement rows can contain long multi-level unlock lists; keep a stable label column and let the value column wrap so labels do not collapse to one character per line.
 - Level-up reward celebrations wait for explicit `Tap to continue` dismissal after their banner/title/row entrance sequence; do not auto-close before the player can read the icon-backed rewards.
 - Workshop requirement rewards and level-up announcements share `levelPayoffSummary`, but the top-panel level popup parses player-level effects separately in `TopPanelLevelManager`; update both paths for reward wording or capacity-display rules.
@@ -319,7 +320,7 @@ experience_type: product-shape
 - FTUE lesson collapse animations need a temporary exit class before setting `hidden`; full tutorial hides still clear immediately to prevent stale flashes.
 - FTUE guide auto-move should use source-pixel rAF interpolation from the current visual offset to the desired placement; CSS transitions after writing final `left`/`top` can still paint as a teleport in target browsers.
 - FTUE guide auto-move should not rely on inline `style.translate` for the moving wrapper, because active CSS keyframe animations that also set `translate` can override it and make the guide jump.
-- After the first mana tonic, FTUE should point at the sage herb row to refill the cauldron and remind players that recipes care about ingredient order.
+- Lesson 5 Brewing must follow the live retained action path: point at `Recipes`, then Mana Tonic in the recipe book, then the primary Brew action. Do not target the hidden legacy herb inventory controls.
 - Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` is a gated room page that stays hidden until level 7.
 - Dev cheats that force garden/brewing capacity must satisfy their progression gates; market slot count is derived from permanent licence rank instead of run-level capacity.
 - Prestige summary copy and ruby amounts use the surrounding normal text color; keep the ruby icon attached to the amount.

@@ -4571,7 +4571,7 @@ describe('PagesFacade', () => {
     expect(updatedStartButton?.dataset.notification).toBeUndefined();
   });
 
-  it('suppresses unrelated notifications while a blocking FTUE step is active', () => {
+  it('keeps room-tab notifications visible while FTUE suppresses unrelated child badges', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     gameplayFacade.getSnapshot().tasks.currentLevel = 0;
@@ -4585,14 +4585,19 @@ describe('PagesFacade', () => {
     });
 
     gameplayFacade.getSnapshot().shop.coinOffer.canCollect = true;
+    gameplayFacade.getSnapshot().seedSummoning.canSummon = true;
 
     pagesFacade.mount(stage);
     gameplayFacade.publishSnapshot();
     pagesFacade.tutorialFacade.refresh();
 
+    const workshopTab = stage.querySelector(
+      '.room-bottom-panel__tab[data-page-id="workshop"]',
+    );
     const shopTab = stage.querySelector('.room-bottom-panel__tab[data-page-id="shop"]');
 
     expect(pagesFacade.tutorialFacade.activeStep?.id).toBe('purchase-house');
+    expect(workshopTab?.dataset.notification).toBe('true');
     expect(shopTab?.dataset.notification).toBeUndefined();
 
     pagesFacade.tutorialFacade.progressManager.completeMany(TUTORIAL_STEP_IDS);

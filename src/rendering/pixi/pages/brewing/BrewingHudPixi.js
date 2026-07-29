@@ -151,16 +151,15 @@ export class BrewingHudPixi {
     this.cauldronArt = new Sprite(getTexture(assetManager, ASSETS.cauldron));
     this.cauldronArt.anchor.set(0.5);
     this.cauldronArt.label = 'brewing-carousel-cauldron-art';
-    this.cauldronLiquid = new Graphics({
-      label: 'brewing-carousel-cauldron-liquid',
-    });
-    this.cauldronLiquidMask = new Sprite(
+    this.cauldronLiquid = new Sprite(
       getTexture(assetManager, ASSETS.cauldronLiquidMask),
     );
-    this.cauldronLiquidMask.anchor.set(0.5);
-    this.cauldronLiquidMask.label =
-      'brewing-carousel-cauldron-liquid-mask';
-    this.cauldronLiquid.mask = this.cauldronLiquidMask;
+    this.cauldronLiquid.anchor.set(0.5);
+    this.cauldronLiquid.alpha = 0.94;
+    this.cauldronLiquid.label = 'brewing-carousel-cauldron-liquid';
+    this.cauldronLiquidHighlight = new Graphics({
+      label: 'brewing-carousel-cauldron-liquid-highlight',
+    });
     this.lockedCauldronFilter = createLockedArtFilter();
     this.lockArt = new Sprite(getTexture(assetManager, ASSETS.lock));
     this.lockArt.anchor.set(0.5);
@@ -173,9 +172,9 @@ export class BrewingHudPixi {
       this.cauldronStars,
       this.counter,
       this.recipeOrbit,
-      this.cauldronLiquid,
-      this.cauldronLiquidMask,
       this.cauldronArt,
+      this.cauldronLiquid,
+      this.cauldronLiquidHighlight,
       this.lockArt,
       this.lockLabel,
       this.dots,
@@ -187,8 +186,12 @@ export class BrewingHudPixi {
     this.next = this.createButton('next', '', 'gray', () =>
       this.page?.selectCauldron?.(this.selectedIndex + 1),
     );
-    this.recipes = this.createButton('recipes', 'Recipes', 'yellow', () =>
-      this.actions.openRecipes?.(this.selectedIndex),
+    this.recipes = this.createButton(
+      'recipes',
+      'Recipes',
+      'yellow',
+      () => this.actions.openRecipes?.(this.selectedIndex),
+      'brewing:recipes',
     );
     this.autoBrew = this.createButton('autobrew', 'Auto Brew', 'yellow', () =>
       this.actions.toggleAutoBrew?.(this.selectedIndex),
@@ -350,12 +353,13 @@ export class BrewingHudPixi {
     this.applyTheme(theme);
   }
 
-  createButton(name, label, variant, action) {
+  createButton(name, label, variant, action, tutorialId = null) {
     return new RetainedButton({
       assetManager: this.assetManager,
       inputRouter: this.inputRouter,
       semanticRegistry: this.semanticTargets,
       semanticId: `brewing.${name}`,
+      tutorialId,
       buttonLabel: `brewing-${name}`,
       label,
       variant,
@@ -512,8 +516,9 @@ export class BrewingHudPixi {
     this.cauldronLiquid.visible =
       cauldron.unlocked !== false && Boolean(active || recipe);
     this.cauldronLiquid.renderable = this.cauldronLiquid.visible;
-    this.cauldronLiquidMask.visible = this.cauldronLiquid.visible;
-    this.cauldronLiquidMask.renderable = false;
+    this.cauldronLiquid.tint = this.cauldronLiquidColor;
+    this.cauldronLiquidHighlight.visible = this.cauldronLiquid.visible;
+    this.cauldronLiquidHighlight.renderable = this.cauldronLiquid.visible;
     this.redrawCauldronLiquid();
 
     const requirements = normalizeRequirements(
@@ -630,12 +635,12 @@ export class BrewingHudPixi {
     this.cauldronArt.position.set(width / 2, 136);
     this.cauldronArt.width = 116;
     this.cauldronArt.height = 94;
-    this.cauldronLiquidMask.position.set(
+    this.cauldronLiquid.position.set(
       this.cauldronArt.x,
       this.cauldronArt.y,
     );
-    this.cauldronLiquidMask.width = this.cauldronArt.width;
-    this.cauldronLiquidMask.height = this.cauldronArt.height;
+    this.cauldronLiquid.width = this.cauldronArt.width;
+    this.cauldronLiquid.height = this.cauldronArt.height;
     this.redrawCauldronLiquid();
     this.lockArt.position.set(width / 2, 135);
     this.lockArt.width = 44;
@@ -827,30 +832,8 @@ export class BrewingHudPixi {
     const centerX = this.cauldronArt.x;
     const centerY = this.cauldronArt.y;
     const liquidCenterY = centerY - height * 0.312;
-    const liquid = this.cauldronLiquid.clear();
-    if (
-      this.cauldronLiquidMask &&
-      this.cauldronLiquid.mask === this.cauldronLiquidMask
-    ) {
-      liquid.rect(
-        centerX - width / 2,
-        centerY - height / 2,
-        width,
-        height,
-      );
-    } else {
-      liquid.ellipse(
-        centerX,
-        liquidCenterY,
-        width * 0.3,
-        height * 0.083,
-      );
-    }
-    liquid
-      .fill({
-        color: this.cauldronLiquidColor ?? 0x8740df,
-        alpha: 0.94,
-      })
+    this.cauldronLiquidHighlight
+      .clear()
       .ellipse(
         centerX - width * 0.09,
         liquidCenterY - height * 0.008,

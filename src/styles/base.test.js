@@ -62,6 +62,9 @@ describe('base styles', () => {
     const textTabBadgeRule = getRuleBody(
       /\.style-button\[class\*="tab-button"\]\[data-notification="true"\]::before\s*\{(?<body>[^}]*)\}/,
     );
+    const tutorialBadgeRule = getRuleBody(
+      /\.tutorial-layer__objective-button\[data-notification="true"\]::before,[\s\S]*?\.tutorial-layer__objective-button\[aria-expanded="false"\]\[data-notification="true"\]::before\s*\{(?<body>[^}]*)\}/,
+    );
     const assetDir = `${cwd()}/assets/game/source/ui`;
     const red = PNG.sync.read(
       readFileSync(`${assetDir}/notification-circle-red.png`),
@@ -123,6 +126,12 @@ describe('base styles', () => {
     );
     expect(textTabBadgeRule).toContain('top: 0;');
     expect(textTabBadgeRule).toContain('right: 0;');
+    expect(tutorialBadgeRule).toContain(
+      'top: calc(100% - var(--tutorial-objective-label-bottom) - 24px);',
+    );
+    expect(tutorialBadgeRule).toContain(
+      'right: var(--tutorial-objective-label-right);',
+    );
     expect([red.width, red.height]).toEqual([61, 65]);
     expect([orange.width, orange.height]).toEqual([red.width, red.height]);
     expect([...red.data.slice(centerIndex, centerIndex + 4)]).toEqual([

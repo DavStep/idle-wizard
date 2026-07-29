@@ -1124,8 +1124,8 @@ describe('PixiPagesFacade', () => {
     expect(
       harness.getBoundGlobal('chrome.bottom').notifications,
     ).toMatchObject({
-      workshop: false,
-      garden: false,
+      workshop: notifications.pages.workshop,
+      garden: notifications.pages.garden,
     });
     expect(
       harness.getBoundPage('workshop').workshop.summon.notification,

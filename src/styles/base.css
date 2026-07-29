@@ -3737,8 +3737,8 @@ body {
 
 .tutorial-layer__objective-button[data-notification="true"]::before,
 .tutorial-layer__objective-button[aria-expanded="false"][data-notification="true"]::before {
-  top: calc(-1 * var(--style-notification-offset));
-  right: calc(-1 * var(--style-notification-offset));
+  top: calc(100% - var(--tutorial-objective-label-bottom) - 24px);
+  right: var(--tutorial-objective-label-right);
   bottom: auto;
   z-index: 3;
 }
