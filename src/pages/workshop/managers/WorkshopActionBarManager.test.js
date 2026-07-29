@@ -453,50 +453,10 @@ describe('WorkshopActionBarManager', () => {
     );
   });
 
-  it('animates the first tutorial summon reveal without changing the hit box', () => {
+  it('does not let tutorial state disable the summon button', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const summonRevealRule = baseCss.match(
-      /\.game-stage\.is-tutorial-summon-revealing\[data-tutorial-reveal~="summon"\]\s+\.workshop-page__action-bar\s+>\s+\.workshop-page__summon-button\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const signRevealRule = baseCss.match(
-      /\.game-stage\.is-tutorial-summon-revealing\[data-tutorial-reveal~="summon"\]\s+\.workshop-page__summon-button\s+\.workshop-page__summon-circle\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const textRevealRule = baseCss.match(
-      /\.game-stage\.is-tutorial-summon-revealing\[data-tutorial-reveal~="summon"\]\s+\.workshop-page__summon-button\s+\.workshop-page__summon-button-text\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-
-    expect(summonRevealRule).toMatch(
-      /\banimation:\s*workshop-summon-button-reveal 640ms\s+var\(--style-motion-ease-rubber\)\s+both;/,
-    );
-    expect(summonRevealRule).not.toMatch(/\bwidth:/);
-    expect(signRevealRule).toMatch(
-      /\banimation:\s*workshop-summon-sign-reveal 640ms\s+var\(--style-motion-ease-rubber\)\s+both;/,
-    );
-    expect(textRevealRule).toMatch(
-      /\banimation:\s*workshop-summon-button-text-reveal 520ms\s+var\(--style-motion-ease-rubber\)\s+80ms both;/,
-    );
-    expect(baseCss).toContain('@keyframes workshop-summon-button-reveal');
-    expect(baseCss).toContain('@keyframes workshop-summon-sign-reveal');
-    expect(baseCss).toContain('@keyframes workshop-summon-button-text-reveal');
-    expect(baseCss).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.game-stage\.is-tutorial-summon-revealing\[data-tutorial-reveal~="summon"\][\s\S]*\.workshop-page__summon-button-text[\s\S]*animation:\s*none;/,
-    );
-  });
-
-  it('keeps the tutorial-revealed summon button tappable after the reveal animation', () => {
-    const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const hiddenActionRule = baseCss.match(
-      /\.game-stage\[data-tutorial-reveal\]\s+\.workshop-page__action-bar\s+>\s+\.style-button\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const revealInteractionRule = baseCss.match(
-      /\.game-stage\[data-tutorial-reveal~="top"\]\s+\.room-top-panel-layer\s+:where\(button,[\s\S]*?\.game-stage\[data-tutorial-reveal~="tasks"\]\s+\.workshop-page__tasks\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-
-    expect(baseCss).toMatch(
-      /\.game-stage\[data-tutorial-reveal~="summon"\]\s+\.workshop-page__action-bar\s+>\s+\.style-button\.workshop-page__summon-button/,
-    );
-    expect(hiddenActionRule).toMatch(/\bpointer-events:\s*none;/);
-    expect(revealInteractionRule).toMatch(/\bpointer-events:\s*auto;/);
+    expect(baseCss).not.toContain('data-tutorial-reveal');
+    expect(baseCss).not.toContain('is-tutorial-summon-revealing');
   });
 
   it('keeps the approved Root Run side-action geometry and type treatment', () => {

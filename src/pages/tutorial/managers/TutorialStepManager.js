@@ -149,17 +149,11 @@ const TUTORIAL_STEP_NOTES = new Map([
   ],
 ]);
 
-const REVEAL_MANA = ['top', 'mana'];
-const REVEAL_MANA_SUMMON = ['top', 'mana', 'summon'];
-const REVEAL_MANA_SUMMON_TASKS = ['top', 'mana', 'summon', 'tasks'];
-const REVEAL_LEVEL_ONE_WORKFLOW = ['mana', 'summon', 'tasks', 'top', 'rooms'];
-
 export const TUTORIAL_STEPS = [
   {
     id: 'purchase-house',
     kind: 'dialog',
     variant: 'intro-dialog',
-    revealTokens: [],
     text:
       "This old workshop is for sale.\n\nIt needs work, but it can become a real potion shop.\n\nElara used to work here. She'll help you get started.",
     advanceLabel: 'enter workshop',
@@ -173,7 +167,6 @@ export const TUTORIAL_STEPS = [
   {
     id: 'intro-welcome',
     kind: 'prompt',
-    revealTokens: [],
     text: "I'm Elara. Let's get the workshop running.",
     advanceOnClick: true,
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 0,
@@ -184,7 +177,6 @@ export const TUTORIAL_STEPS = [
     kind: 'prompt',
     pageId: 'workshop',
     targetId: MANA_READOUT_TARGET_ID,
-    revealTokens: REVEAL_MANA,
     highlightTargetIds: [MANA_VALUE_TARGET_ID, MANA_REGEN_TARGET_ID],
     text: 'This is your mana. It fills over time, up to the cap shown here.',
     advanceOnClick: true,
@@ -197,7 +189,6 @@ export const TUTORIAL_STEPS = [
     kind: 'prompt',
     pageId: 'workshop',
     targetId: 'workshop:summonSeed',
-    revealTokens: REVEAL_MANA_SUMMON,
     text: 'Use your mana to summon seeds.',
     targetCueDelayMs: 2000,
     getPausedText: () => 'wait for mana',
@@ -217,7 +208,6 @@ export const TUTORIAL_STEPS = [
     id: 'summon-five-seeds',
     kind: 'objective',
     pageId: 'workshop',
-    revealTokens: REVEAL_MANA_SUMMON,
     objectiveText: 'summon 5 sage seeds',
     getTargetId: ({ snapshot }) =>
       snapshot?.seedSummoning?.canSummon ? 'workshop:summonSeed' : MANA_READOUT_TARGET_ID,
@@ -245,7 +235,6 @@ export const TUTORIAL_STEPS = [
     id: 'intro-level-requirements',
     kind: 'prompt',
     pageId: 'workshop',
-    revealTokens: REVEAL_MANA_SUMMON,
     text: "I'll give you one request at a time. Complete it to earn xp toward your next level.",
     advanceLabel: 'show',
     advanceOnClick: true,
@@ -261,7 +250,6 @@ export const TUTORIAL_STEPS = [
     id: 'first-fill-seed-task',
     kind: 'prompt',
     pageId: 'workshop',
-    revealTokens: REVEAL_MANA_SUMMON_TASKS,
     getTargetId: ({ snapshot }) => {
       const task = getLevelOneSeedTask(snapshot);
 
@@ -304,7 +292,6 @@ export const TUTORIAL_STEPS = [
     id: 'finish-seed-task',
     kind: 'objective',
     pageId: 'workshop',
-    revealTokens: REVEAL_MANA_SUMMON_TASKS,
     objectiveText: 'summon and turn in 5 sage seeds for level 1',
     getTargetId: ({ snapshot }) => {
       const task = getLevelOneSeedTask(snapshot);
@@ -347,11 +334,9 @@ export const TUTORIAL_STEPS = [
     kind: 'dialog',
     targetId: 'workshop:summonSeed',
     advanceLabel: 'continue',
-    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     text:
       'The front room is cleared out.\n\nFirst, summon sage seeds again. Then sell one in market.',
     advanceOnClick: true,
-    allowTargetClick: false,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 && !hasLevelTwoSageSellTaskComplete(snapshot),
     isComplete: ({ currentPageId, snapshot }) =>
@@ -364,7 +349,6 @@ export const TUTORIAL_STEPS = [
     id: 'prepare-seed-sale',
     kind: 'objective',
     pageId: 'workshop',
-    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'summon sage seeds for market',
     getTargetId: ({ snapshot }) => getLevelTwoSummonTargetId(snapshot),
     getHintText: ({ snapshot }) => getLevelTwoSummonHintText(snapshot),
@@ -384,7 +368,6 @@ export const TUTORIAL_STEPS = [
     kind: 'objective',
     pageId: 'shop',
     targetId: 'page:shop',
-    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'sell sage seeds in market',
     text: 'Load a market stall',
     getProgress: () => ({ value: 0, max: 1 }),
@@ -404,7 +387,6 @@ export const TUTORIAL_STEPS = [
     kind: 'objective',
     pageId: 'shop',
     targetId: 'shop:stand:1',
-    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     getObjectiveText: ({ currentPageId }) =>
       currentPageId === 'shop' ? 'open the first stall' : 'open market',
     text: 'Open a stall',
@@ -427,7 +409,6 @@ export const TUTORIAL_STEPS = [
     id: 'select-sage-seed-sale',
     kind: 'objective',
     pageId: 'shop',
-    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     objectiveText: 'load sage seed into the stall',
     getTargetId: ({ dom }) => {
       if (!dom.isShopSellPopupOpen?.()) return 'shop:stand:1';
@@ -469,7 +450,6 @@ export const TUTORIAL_STEPS = [
     id: 'earn-tutorial-coin',
     kind: 'objective',
     pageId: null,
-    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     getObjectiveText: ({ currentPageId, dom, snapshot }) =>
       getLevelTwoSaleObjectiveText({ currentPageId, dom, snapshot }),
     getTargetId: ({ currentPageId, dom, snapshot }) =>
@@ -490,7 +470,6 @@ export const TUTORIAL_STEPS = [
     id: 'first-sale-complete',
     kind: 'prompt',
     targetId: 'page:workshop',
-    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     getText: ({ snapshot }) => {
       const remainingQuantity = getTaskRemainingQuantity(
         getLevelTwoSageTurnInTask(snapshot),
@@ -500,7 +479,6 @@ export const TUTORIAL_STEPS = [
     },
     advanceLabel: 'continue',
     advanceOnClick: true,
-    allowTargetClick: true,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 1 &&
       hasLevelTwoSageSellTaskComplete(snapshot) &&
@@ -512,7 +490,6 @@ export const TUTORIAL_STEPS = [
     id: 'unselect-sage-seed-sale',
     kind: 'objective',
     pageId: 'workshop',
-    revealTokens: REVEAL_LEVEL_ONE_WORKFLOW,
     getObjectiveText: ({ snapshot }) =>
       getLevelTwoTurnInAction(snapshot)
         ? 'turn in remaining sage seeds'
@@ -535,11 +512,9 @@ export const TUTORIAL_STEPS = [
     id: 'intro-garden',
     kind: 'dialog',
     targetId: 'page:garden',
-    revealTokens: null,
     text: 'Level 4. The garden matters now.\n\nSeeds can become herbs there.',
     advanceLabel: 'continue',
     advanceOnClick: true,
-    allowTargetClick: true,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 3 && hasSageSeedSource(snapshot),
     isComplete: ({ currentPageId, snapshot }) =>
@@ -768,7 +743,6 @@ export const TUTORIAL_STEPS = [
       'Elara found notes from the old owner.\n\nYou can study them to learn what this place can make.',
     advanceLabel: 'continue',
     advanceOnClick: true,
-    allowTargetClick: true,
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 2,
     isComplete: ({ currentPageId, snapshot }) =>
       getCurrentLevel(snapshot) >= 3 ||
@@ -952,7 +926,6 @@ export const TUTORIAL_STEPS = [
       'The cauldron room is usable again.\n\nYou can brew simple potions there.',
     advanceLabel: 'continue',
     advanceOnClick: true,
-    allowTargetClick: true,
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 4 && hasCompletedResearch(snapshot, MANA_TONIC_RESEARCH_ID),
     isComplete: ({ currentPageId, snapshot }) =>
@@ -1497,15 +1470,11 @@ export class TutorialStepManager {
         stepLabel,
         reminderKey: step.getReminderKey?.(context) ?? null,
         reminderMs: getReminderMs(step, context),
-        revealTokens: getRevealTokens(step),
         highlightTargetIds: getHighlightTargetIds(step, context),
         allowedPopupClasses: [],
-        allowTargetClick: step.allowTargetClick === true,
         cueMode: getCueMode(step, context),
         emphasizeTarget: step.emphasizeTarget === true,
-        autoPageId: getAutoPageId(step, context),
         advanceLabel: getAdvanceLabel(step, context),
-        advancePageId: getAdvancePageId(step, context),
         autoAdvanceMs: getAutoAdvanceMs(step, context),
         targetCueDelayMs: getTargetCueDelayMs(step, context),
         variant: getVariant(step, context),
@@ -1531,18 +1500,14 @@ export class TutorialStepManager {
       progressLabel: step.getProgressLabel?.(context) ?? '',
       stepLabel,
       advanceOnClick: step.advanceOnClick === true,
-      allowTargetClick: step.allowTargetClick === true,
       showPointer: step.showPointer !== false,
       emphasizeTarget: step.emphasizeTarget === true,
       reminderKey: step.getReminderKey?.({ ...context, targetId, text, hintText }) ?? null,
       reminderMs: getReminderMs(step, { ...context, targetId, text, hintText }),
-      revealTokens: getRevealTokens(step),
       highlightTargetIds: getHighlightTargetIds(step, { ...context, targetId, text, hintText }),
       allowedPopupClasses: getAllowedPopupClasses(step, { ...context, targetId, text, hintText }),
       cueMode: getCueMode(step, { ...context, targetId, text, hintText }),
-      autoPageId: getAutoPageId(step, { ...context, targetId, text, hintText }),
       advanceLabel: getAdvanceLabel(step, { ...context, targetId, text, hintText }),
-      advancePageId: getAdvancePageId(step, { ...context, targetId, text, hintText }),
       autoAdvanceMs: getAutoAdvanceMs(step, { ...context, targetId, text, hintText }),
       targetCueDelayMs: getTargetCueDelayMs(step, { ...context, targetId, text, hintText }),
       variant: getVariant(step, { ...context, targetId, text, hintText }),
@@ -1606,10 +1571,6 @@ function getLessonTitle(step) {
   return step?.lessonTitle ?? LESSON_TITLE_BY_STEP_ID.get(step?.id) ?? 'lesson';
 }
 
-function getRevealTokens(step) {
-  return Array.isArray(step?.revealTokens) ? step.revealTokens : null;
-}
-
 function getHighlightTargetIds(step, context) {
   const targetIds = step?.getHighlightTargetIds?.(context) ?? step?.highlightTargetIds ?? [];
 
@@ -1640,19 +1601,9 @@ function getCueMode(step, context) {
   return cueMode || 'active';
 }
 
-function getAutoPageId(step, context) {
-  const pageId = step?.getAutoPageId?.(context) ?? step?.autoPageId ?? null;
-  return typeof pageId === 'string' && pageId.length > 0 ? pageId : null;
-}
-
 function getAdvanceLabel(step, context) {
   const label = step?.getAdvanceLabel?.(context) ?? step?.advanceLabel ?? 'next';
   return typeof label === 'string' && label.trim().length > 0 ? label.trim() : 'next';
-}
-
-function getAdvancePageId(step, context) {
-  const pageId = step?.getAdvancePageId?.(context) ?? step?.advancePageId ?? null;
-  return typeof pageId === 'string' && pageId.length > 0 ? pageId : null;
 }
 
 function getAutoAdvanceMs(step, context) {

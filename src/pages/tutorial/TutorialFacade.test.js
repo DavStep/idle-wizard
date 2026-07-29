@@ -235,7 +235,7 @@ describe('TutorialFacade', () => {
     ).toBe(spineRuntimeFacade);
   });
 
-  it('primes the intro reveal gate before the first animation-frame refresh', () => {
+  it('leaves room controls ungated before the first tutorial refresh', () => {
     const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
     const originalCancelAnimationFrame = globalThis.cancelAnimationFrame;
     const hadRequestAnimationFrame = 'requestAnimationFrame' in globalThis;
@@ -279,8 +279,7 @@ describe('TutorialFacade', () => {
 
       facade.mount(stage);
 
-      expect(stage.dataset.tutorialReveal).toBe('');
-      expect(stage.hasAttribute('data-tutorial-reveal')).toBe(true);
+      expect(stage.hasAttribute('data-tutorial-reveal')).toBe(false);
       expect(stage.querySelector('.tutorial-layer')?.hidden).toBe(true);
 
       frames.shift()?.(0);
@@ -371,7 +370,7 @@ describe('TutorialFacade', () => {
     facade.unmount();
   });
 
-  it('treats any press as next while an advance prompt is active', () => {
+  it('leaves ordinary player actions untouched while an advance prompt is active', () => {
     let underlyingClicks = 0;
     const stage = document.createElement('section');
     const target = document.createElement('button');
@@ -397,16 +396,15 @@ describe('TutorialFacade', () => {
     facade.refresh();
 
     expect(facade.activeStep?.id).toBe('purchase-house');
-    expect(stage.dataset.tutorialReveal).toBe('');
-    expect(stage.hasAttribute('data-tutorial-reveal')).toBe(true);
+    expect(stage.hasAttribute('data-tutorial-reveal')).toBe(false);
 
     const click = new window.MouseEvent('click', { bubbles: true, cancelable: true });
 
     target.dispatchEvent(click);
 
-    expect(click.defaultPrevented).toBe(true);
-    expect(underlyingClicks).toBe(0);
-    expect(facade.progressManager.hasCompleted('purchase-house')).toBe(true);
+    expect(click.defaultPrevented).toBe(false);
+    expect(underlyingClicks).toBe(1);
+    expect(facade.progressManager.hasCompleted('purchase-house')).toBe(false);
 
     facade.unmount();
   });

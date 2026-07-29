@@ -1,73 +1,75 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from "vitest";
 
-import { PixiPagesFacade } from './PixiPagesFacade.js';
+import { PixiPagesFacade } from "./PixiPagesFacade.js";
 
-describe('PixiPagesFacade', () => {
-  it('registers all pages once and binds only the active retained instance', () => {
+describe("PixiPagesFacade", () => {
+  it("registers all pages once and binds only the active retained instance", () => {
     const harness = createHarness();
     const pages = new PixiPagesFacade(harness.dependencies);
 
     expect([...harness.factories.keys()]).toEqual([
-      'workshop',
-      'brewing',
-      'garden',
-      'research',
-      'shop',
-      'guild',
-      'prestige',
+      "workshop",
+      "brewing",
+      "garden",
+      "research",
+      "shop",
+      "guild",
+      "prestige",
     ]);
 
     pages.mount();
 
     expect(harness.runtime.bindPage).toHaveBeenCalledTimes(1);
-    expect(harness.runtime.activatePage).toHaveBeenCalledWith('workshop');
+    expect(harness.runtime.activatePage).toHaveBeenCalledWith("workshop");
     expect(harness.runtime.bindGlobalSurface).toHaveBeenCalledWith(
-      'chrome.top',
-      expect.objectContaining({ username: 'elara' }),
+      "chrome.top",
+      expect.objectContaining({ username: "elara" }),
     );
     expect(harness.runtime.bindGlobalSurface).toHaveBeenCalledWith(
-      'chrome.chat',
+      "chrome.chat",
       expect.objectContaining({
-        label: 'World Chat',
+        label: "World Chat",
         visible: true,
       }),
     );
 
-    expect(pages.show('research')).toBe(true);
-    expect(pages.getCurrentPageId()).toBe('research');
-    expect(harness.runtime.activatePage).toHaveBeenLastCalledWith('research');
+    expect(pages.show("research")).toBe(true);
+    expect(pages.getCurrentPageId()).toBe("research");
+    expect(harness.runtime.activatePage).toHaveBeenLastCalledWith("research");
     expect(harness.runtime.bindPage).toHaveBeenCalledTimes(2);
-    expect(harness.getBoundGlobal('chrome.chat')).toEqual(
+    expect(harness.getBoundGlobal("chrome.chat")).toEqual(
       expect.objectContaining({
-        label: 'World Chat',
+        label: "World Chat",
         visible: true,
       }),
     );
-    expect(harness.getBoundGlobal('chrome.chat').onActivate()).toBe(true);
+    expect(harness.getBoundGlobal("chrome.chat").onActivate()).toBe(true);
     expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
-      'worldChat',
-      expect.objectContaining({ title: 'World Chat' }),
+      "worldChat",
+      expect.objectContaining({ title: "World Chat" }),
     );
-    expect(pages.getCurrentPageId()).toBe('research');
+    expect(pages.getCurrentPageId()).toBe("research");
 
     pages.unmount();
     expect(harness.runtime.deactivatePage).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps level progress visible across partial frame resource snapshots', () => {
+  it("keeps level progress visible across partial frame resource snapshots", () => {
     const harness = createHarness({
       gameplaySnapshot: createGameplaySnapshot({ level: 1 }),
     });
     let publishFrameResources = null;
-    harness.gameplayFacade.subscribeFrameResources.mockImplementation((listener) => {
-      publishFrameResources = listener;
-      return vi.fn();
-    });
+    harness.gameplayFacade.subscribeFrameResources.mockImplementation(
+      (listener) => {
+        publishFrameResources = listener;
+        return vi.fn();
+      },
+    );
     const pages = new PixiPagesFacade(harness.dependencies);
 
     pages.mount();
 
-    expect(harness.getBoundGlobal('chrome.top').quest).toMatchObject({
+    expect(harness.getBoundGlobal("chrome.top").quest).toMatchObject({
       visible: true,
       completed: 0,
       total: 4,
@@ -78,51 +80,51 @@ describe('PixiPagesFacade', () => {
       tasks: { currentLevel: 1 },
     });
 
-    expect(harness.getBoundGlobal('chrome.top').quest).toMatchObject({
+    expect(harness.getBoundGlobal("chrome.top").quest).toMatchObject({
       visible: true,
       completed: 0,
       total: 4,
     });
   });
 
-  it('routes view actions to authoritative gameplay facades', () => {
+  it("routes view actions to authoritative gameplay facades", () => {
     const harness = createHarness();
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
 
-    const workshopModel = harness.getBoundPage('workshop');
+    const workshopModel = harness.getBoundPage("workshop");
     workshopModel.actions.summonSeed();
     expect(harness.gameplayFacade.summonSeed).toHaveBeenCalledTimes(1);
 
-    expect(pages.show('research')).toBe(true);
-    const researchModel = harness.getBoundPage('research');
-    researchModel.actions.buyResearch('mana-tonic');
+    expect(pages.show("research")).toBe(true);
+    const researchModel = harness.getBoundPage("research");
+    researchModel.actions.buyResearch("mana-tonic");
     expect(harness.gameplayFacade.buyResearch).toHaveBeenCalledWith(
-      'mana-tonic',
+      "mana-tonic",
     );
 
-    expect(pages.show('guild')).toBe(true);
-    const guildModel = harness.getBoundPage('guild');
+    expect(pages.show("guild")).toBe(true);
+    const guildModel = harness.getBoundPage("guild");
     guildModel.actions.createGuild({
-      name: 'Moon',
-      tag: 'MOON',
-      color: 'violet',
+      name: "Moon",
+      tag: "MOON",
+      color: "violet",
     });
     expect(harness.gameplayFacade.createGuild).toHaveBeenCalledWith({
-      name: 'Moon',
-      tag: 'MOON',
-      color: 'violet',
+      name: "Moon",
+      tag: "MOON",
+      color: "violet",
     });
   });
 
-  it('keeps the Daily Tasks tab selection live and routes milestone claims', () => {
+  it("keeps the Daily Tasks tab selection live and routes milestone claims", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.personalTasks = {
       unlocked: true,
       claimableRewards: 1,
       daily: {
-        periodType: 'daily',
-        resetLabel: 'resets 12h',
+        periodType: "daily",
+        resetLabel: "resets 12h",
         currentPoints: 50,
         maxPoints: 100,
         completedTasks: 1,
@@ -131,15 +133,15 @@ describe('PixiPagesFacade', () => {
         rewards: [
           {
             threshold: 50,
-            reward: { text: '+25 coin' },
+            reward: { text: "+25 coin" },
             claimed: false,
             claimable: true,
           },
         ],
       },
       weekly: {
-        periodType: 'weekly',
-        resetLabel: 'resets 3d',
+        periodType: "weekly",
+        resetLabel: "resets 3d",
         currentPoints: 50,
         maxPoints: 700,
         tasks: [],
@@ -151,25 +153,25 @@ describe('PixiPagesFacade', () => {
     pages.mount();
 
     const tasksDialog =
-      harness.getBoundPage('workshop').workshop.dialogs.personalTasks;
-    expect(tasksDialog.selectedTabId).toBe('tasks');
+      harness.getBoundPage("workshop").workshop.dialogs.personalTasks;
+    expect(tasksDialog.selectedTabId).toBe("tasks");
 
-    tasksDialog.tabs.find((tab) => tab.id === 'rewards').onSelect('rewards');
+    tasksDialog.tabs.find((tab) => tab.id === "rewards").onSelect("rewards");
 
     const rewardsDialog =
-      harness.getBoundPage('workshop').workshop.dialogs.personalTasks;
-    expect(rewardsDialog.selectedTabId).toBe('rewards');
+      harness.getBoundPage("workshop").workshop.dialogs.personalTasks;
+    expect(rewardsDialog.selectedTabId).toBe("rewards");
     const claimRow = rewardsDialog.rows.find(
-      (row) => row.id === 'daily:reward:50',
+      (row) => row.id === "daily:reward:50",
     );
     claimRow.onActivate();
 
     expect(
       harness.gameplayFacade.claimPersonalTaskMilestoneReward,
-    ).toHaveBeenCalledWith('daily', 50);
+    ).toHaveBeenCalledWith("daily", 50);
   });
 
-  it('emits spend bursts only after successful purchases', () => {
+  it("emits spend bursts only after successful purchases", () => {
     const harness = createHarness();
     harness.gameplayFacade.summonSeed.mockReturnValue({
       ok: true,
@@ -177,85 +179,81 @@ describe('PixiPagesFacade', () => {
     });
     harness.gameplayFacade.fillTask.mockReturnValue({
       ok: true,
-      taskId: 'sage-turn-in',
+      taskId: "sage-turn-in",
       item: {
-        key: 'sageSeed',
-        label: 'sage seed',
-        kind: 'seed',
+        key: "sageSeed",
+        label: "sage seed",
+        kind: "seed",
       },
       quantity: 2,
     });
     harness.gameplayFacade.buyResearch
       .mockReturnValueOnce({
         ok: false,
-        reason: 'not_enough_crystal',
+        reason: "not_enough_crystal",
         cost: 2,
-        costCurrency: 'crystal',
+        costCurrency: "crystal",
       })
       .mockReturnValueOnce({
         ok: true,
-        researchId: 'manaProductionRate:1',
+        researchId: "manaProductionRate:1",
         cost: 2,
-        costCurrency: 'crystal',
+        costCurrency: "crystal",
       });
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
 
-    const workshop = harness.getBoundPage('workshop');
+    const workshop = harness.getBoundPage("workshop");
     workshop.actions.summonSeed();
-    workshop.actions.fillTask('sage-turn-in');
-    pages.show('research');
-    const research = harness.getBoundPage('research');
-    research.actions.buyResearch('manaProductionRate:1');
-    research.actions.buyResearch('manaProductionRate:1');
+    workshop.actions.fillTask("sage-turn-in");
+    pages.show("research");
+    const research = harness.getBoundPage("research");
+    research.actions.buyResearch("manaProductionRate:1");
+    research.actions.buyResearch("manaProductionRate:1");
 
-    expect(
-      harness.transientEffects.emitReward,
-    ).toHaveBeenNthCalledWith(1, {
+    expect(harness.transientEffects.emitReward).toHaveBeenNthCalledWith(1, {
       visualOnly: true,
       spendBursts: [
         {
-          anchorId: 'research.manaProductionRate:1',
-          resource: 'crystal',
+          anchorId: "research.manaProductionRate:1",
+          resource: "crystal",
         },
       ],
     });
-    expect(
-      harness.transientEffects.emitReward,
-    ).toHaveBeenCalledTimes(1);
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps an open Market Ledger interactive while switching unlocked tabs', () => {
+  it("keeps an open Market Ledger interactive while switching unlocked tabs", () => {
     const gameplaySnapshot = createGameplaySnapshot({ level: 4 });
     gameplaySnapshot.shop = {
       shelf: {
         sellKinds: [
-          { kind: 'seed', label: 'seeds' },
-          { kind: 'herb', label: 'herbs' },
-          { kind: 'potion', label: 'potions' },
+          { kind: "seed", label: "seeds" },
+          { kind: "herb", label: "herbs" },
+          { kind: "potion", label: "potions" },
         ],
       },
       stock: {
         sellKinds: [
-          { kind: 'seed', label: 'seeds' },
-          { kind: 'herb', label: 'herbs' },
-          { kind: 'potion', label: 'potions' },
+          { kind: "seed", label: "seeds" },
+          { kind: "herb", label: "herbs" },
+          { kind: "potion", label: "potions" },
         ],
         items: [
           {
             itemTypeId: 1,
-            key: 'sageSeed',
-            kind: 'seed',
-            label: 'sage seed',
+            key: "sageSeed",
+            kind: "seed",
+            label: "sage seed",
             buyCoin: 3,
             stock: 4,
             npcNeed: 6,
           },
           {
             itemTypeId: 1001,
-            key: 'sageHerb',
-            kind: 'herb',
-            label: 'sage',
+            key: "sageHerb",
+            kind: "herb",
+            label: "sage",
             buyCoin: 4,
             stock: 3,
             npcNeed: 5,
@@ -264,58 +262,57 @@ describe('PixiPagesFacade', () => {
       },
     };
     const harness = createHarness({ gameplaySnapshot });
-    harness.runtime.getOpenDialogIds.mockReturnValue(['shop.ledger']);
+    harness.runtime.getOpenDialogIds.mockReturnValue(["shop.ledger"]);
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
-    expect(pages.show('shop')).toBe(true);
+    expect(pages.show("shop")).toBe(true);
 
-    const ledger = harness.getBoundPage('shop').shop.dialogs.ledger;
-    ledger.tabs.find((tab) => tab.id === 'herb').action();
+    const ledger = harness.getBoundPage("shop").shop.dialogs.ledger;
+    ledger.tabs.find((tab) => tab.id === "herb").action();
 
-    const reboundLedger =
-      harness.getBoundPage('shop').shop.dialogs.ledger;
-    expect(reboundLedger.tabs.find((tab) => tab.id === 'herb')).toMatchObject({
-      label: 'Herbs',
+    const reboundLedger = harness.getBoundPage("shop").shop.dialogs.ledger;
+    expect(reboundLedger.tabs.find((tab) => tab.id === "herb")).toMatchObject({
+      label: "Herbs",
       selected: true,
     });
     expect(reboundLedger.items).toEqual([
       expect.objectContaining({
-        label: 'Sage',
-        itemKind: 'herb',
-        itemKey: 'sageHerb',
+        label: "Sage",
+        itemKind: "herb",
+        itemKey: "sageHerb",
       }),
     ]);
     expect(harness.pageSurface.openDialog).toHaveBeenLastCalledWith(
-      'shop.ledger',
+      "shop.ledger",
       expect.objectContaining({
-        title: 'Market Ledger',
+        title: "Market Ledger",
         items: reboundLedger.items,
       }),
     );
   });
 
-  it('shows a centered transient prompt when summon has no active seed weights', () => {
+  it("shows a centered transient prompt when summon has no active seed weights", () => {
     const harness = createHarness();
     harness.gameplayFacade.summonSeed.mockReturnValue({
       ok: false,
-      reason: 'no_active_seed_weights',
+      reason: "no_active_seed_weights",
     });
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
 
-    const result = harness.getBoundPage('workshop').actions.summonSeed();
+    const result = harness.getBoundPage("workshop").actions.summonSeed();
 
     expect(result).toEqual({
       ok: false,
-      reason: 'no_active_seed_weights',
+      reason: "no_active_seed_weights",
     });
     expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
-      message: 'Select a seed to drop',
-      flyoutKey: 'workshop-summon-seed-selection',
+      message: "Select a seed to drop",
+      flyoutKey: "workshop-summon-seed-selection",
     });
   });
 
-  it('hides unavailable Brewing progression controls and keeps empty actions pressable', () => {
+  it("hides unavailable Brewing progression controls and keeps empty actions pressable", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.brewing = {
       configuredMaxCauldrons: 5,
@@ -336,17 +333,17 @@ describe('PixiPagesFacade', () => {
     const harness = createHarness({ gameplaySnapshot });
     harness.gameplayFacade.cancelBrewing.mockReturnValue({
       ok: false,
-      reason: 'no_brew',
+      reason: "no_brew",
     });
     harness.gameplayFacade.collectBrewing.mockReturnValue({
       ok: false,
-      reason: 'no_brew',
+      reason: "no_brew",
     });
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
 
-    expect(pages.show('brewing')).toBe(true);
-    const brewingModel = harness.getBoundPage('brewing');
+    expect(pages.show("brewing")).toBe(true);
+    const brewingModel = harness.getBoundPage("brewing");
     expect(brewingModel.brewing.cauldrons).toHaveLength(1);
     expect(brewingModel.brewing.cauldrons[0]).toMatchObject({
       autoBrewAvailable: false,
@@ -355,27 +352,27 @@ describe('PixiPagesFacade', () => {
 
     expect(brewingModel.actions.cancelBrew(0)).toEqual({
       ok: false,
-      reason: 'no_brew',
+      reason: "no_brew",
     });
     expect(brewingModel.actions.collectBrew(0)).toEqual({
       ok: false,
-      reason: 'no_brew',
+      reason: "no_brew",
     });
     expect(harness.transientEffects.emitReward).toHaveBeenNthCalledWith(1, {
-      message: 'No potion is brewing to cancel',
-      flyoutKey: 'brewing-cancel-empty',
+      message: "No potion is brewing to cancel",
+      flyoutKey: "brewing-cancel-empty",
     });
     expect(harness.transientEffects.emitReward).toHaveBeenNthCalledWith(2, {
-      message: 'No potion is ready to collect',
-      flyoutKey: 'brewing-collect-empty',
+      message: "No potion is ready to collect",
+      flyoutKey: "brewing-collect-empty",
     });
   });
 
-  it('copies the selected recipe into Auto Brew before enabling it', () => {
+  it("copies the selected recipe into Auto Brew before enabling it", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     const recipe = {
-      key: 'manaTonic',
-      label: 'mana tonic',
+      key: "manaTonic",
+      label: "mana tonic",
       unlocked: true,
       ingredients: [],
     };
@@ -406,8 +403,8 @@ describe('PixiPagesFacade', () => {
     });
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
-    pages.show('brewing');
-    const brewing = harness.getBoundPage('brewing');
+    pages.show("brewing");
+    const brewing = harness.getBoundPage("brewing");
 
     expect(brewing.actions.selectRecipe(recipe, 0)).toEqual({
       ok: true,
@@ -419,7 +416,7 @@ describe('PixiPagesFacade', () => {
 
     expect(
       harness.gameplayFacade.setBrewingAutoBrewRecipe,
-    ).toHaveBeenCalledWith('manaTonic', 0);
+    ).toHaveBeenCalledWith("manaTonic", 0);
     expect(
       harness.gameplayFacade.setBrewingAutoBrewEnabled,
     ).toHaveBeenCalledWith(true, 0);
@@ -435,20 +432,20 @@ describe('PixiPagesFacade', () => {
     ).not.toHaveBeenCalled();
   });
 
-  it('projects recipe research availability and routes enabled research actions', () => {
+  it("projects recipe research availability and routes enabled research actions", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.brewing = {
       cauldrons: [],
       herbs: [],
       recipes: [
         {
-          key: 'manaTonic',
-          label: 'mana tonic',
+          key: "manaTonic",
+          label: "mana tonic",
           unlocked: false,
         },
         {
-          key: 'minorHealingPotion',
-          label: 'minor healing potion',
+          key: "minorHealingPotion",
+          label: "minor healing potion",
           unlocked: false,
         },
       ],
@@ -456,17 +453,17 @@ describe('PixiPagesFacade', () => {
     gameplaySnapshot.research = {
       tabs: [
         {
-          id: 'regular',
+          id: "regular",
           boxes: [
             {
-              id: 'recipes',
+              id: "recipes",
               researches: [
                 {
-                  id: 'unlockRecipe:manaTonic',
+                  id: "unlockRecipe:manaTonic",
                   canResearch: true,
                 },
                 {
-                  id: 'unlockRecipe:minorHealingPotion',
+                  id: "unlockRecipe:minorHealingPotion",
                   canResearch: false,
                 },
               ],
@@ -480,65 +477,59 @@ describe('PixiPagesFacade', () => {
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
 
-    expect(pages.show('brewing')).toBe(true);
-    const brewingModel = harness.getBoundPage('brewing');
+    expect(pages.show("brewing")).toBe(true);
+    const brewingModel = harness.getBoundPage("brewing");
     expect(brewingModel.brewing.recipes).toEqual([
       expect.objectContaining({
-        key: 'manaTonic',
-        researchId: 'unlockRecipe:manaTonic',
+        key: "manaTonic",
+        researchId: "unlockRecipe:manaTonic",
         canResearch: true,
       }),
       expect.objectContaining({
-        key: 'minorHealingPotion',
-        researchId: 'unlockRecipe:minorHealingPotion',
+        key: "minorHealingPotion",
+        researchId: "unlockRecipe:minorHealingPotion",
         canResearch: false,
       }),
     ]);
 
     expect(
-      brewingModel.actions.researchRecipe(
-        brewingModel.brewing.recipes[0],
-        1,
-      ),
+      brewingModel.actions.researchRecipe(brewingModel.brewing.recipes[0], 1),
     ).toEqual({ ok: true });
     expect(harness.gameplayFacade.buyResearch).toHaveBeenCalledWith(
-      'unlockRecipe:manaTonic',
+      "unlockRecipe:manaTonic",
     );
     expect(harness.pageSurface.openDialog).toHaveBeenLastCalledWith(
-      'recipes',
+      "recipes",
       expect.objectContaining({ cauldronIndex: 1 }),
     );
     expect(
-      brewingModel.actions.researchRecipe(
-        brewingModel.brewing.recipes[1],
-        1,
-      ),
+      brewingModel.actions.researchRecipe(brewingModel.brewing.recipes[1], 1),
     ).toBe(false);
     expect(harness.gameplayFacade.buyResearch).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps retained stall picker drafts interactive until an allocation is marked', () => {
+  it("keeps retained stall picker drafts interactive until an allocation is marked", () => {
     const gameplaySnapshot = createGameplaySnapshot();
-    gameplaySnapshot.research.completedResearchIds = ['unlockSeed:sageSeed'];
+    gameplaySnapshot.research.completedResearchIds = ["unlockSeed:sageSeed"];
     gameplaySnapshot.shop = {
       shelf: {
         sellKinds: [
-          { kind: 'seed', label: 'seeds' },
-          { kind: 'herb', label: 'herbs' },
+          { kind: "seed", label: "seeds" },
+          { kind: "herb", label: "herbs" },
         ],
         sellItems: [
           {
             itemTypeId: 1,
-            key: 'sageSeed',
-            kind: 'seed',
-            label: 'sage seed',
+            key: "sageSeed",
+            kind: "seed",
+            label: "sage seed",
             quantity: 8,
           },
           {
             itemTypeId: 2,
-            key: 'sageHerb',
-            kind: 'herb',
-            label: 'sage',
+            key: "sageHerb",
+            kind: "herb",
+            label: "sage",
             quantity: 3,
           },
         ],
@@ -553,122 +544,99 @@ describe('PixiPagesFacade', () => {
       },
     };
     const harness = createHarness({ gameplaySnapshot });
-    harness.runtime.getOpenDialogIds.mockReturnValue([
-      'shop.stall',
-    ]);
+    harness.runtime.getOpenDialogIds.mockReturnValue(["shop.stall"]);
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
-    pages.show('shop');
+    pages.show("shop");
 
-    let dialog =
-      harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
-    expect(dialog.items.map((item) => item.itemKey)).toEqual([
-      'sageSeed',
-    ]);
+    let dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
+    expect(dialog.items.map((item) => item.itemKey)).toEqual(["sageSeed"]);
 
     dialog.items[0].action();
     expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
-      'shop.stall',
+      "shop.stall",
       expect.objectContaining({
-        summaryRows: [
-          expect.objectContaining({ value: 'Sage Seed' }),
-        ],
+        summaryRows: [expect.objectContaining({ value: "Sage Seed" })],
       }),
     );
-    dialog =
-      harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
+    dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
     expect(dialog.summaryRows[0]).toMatchObject({
-      value: 'Sage Seed',
-      quantityLabel: 'x8',
+      value: "Sage Seed",
+      quantityLabel: "x8",
     });
     expect(dialog.actions[0]).toMatchObject({
-      label: 'Mark x8',
+      label: "Mark x8",
       enabled: true,
     });
 
     dialog.range.onChange(25);
-    dialog =
-      harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
-    expect(dialog.actions[0].label).toBe('Mark x2');
+    dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
+    expect(dialog.actions[0].label).toBe("Mark x2");
 
-    dialog.tabs.find((tab) => tab.id === 'herb').action();
-    dialog =
-      harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
-    expect(dialog.items.map((item) => item.itemKey)).toEqual([
-      'sageHerb',
-    ]);
+    dialog.tabs.find((tab) => tab.id === "herb").action();
+    dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
+    expect(dialog.items.map((item) => item.itemKey)).toEqual(["sageHerb"]);
 
-    dialog.tabs.find((tab) => tab.id === 'seed').action();
-    dialog =
-      harness.getBoundPage('shop').shop.traders.stalls[0].dialog;
+    dialog.tabs.find((tab) => tab.id === "seed").action();
+    dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
     dialog.actions[0].action();
 
-    expect(
-      harness.gameplayFacade.selectShopShelfSlot,
-    ).toHaveBeenCalledWith(1);
+    expect(harness.gameplayFacade.selectShopShelfSlot).toHaveBeenCalledWith(1);
     expect(
       harness.gameplayFacade.setSelectedShopShelfSlotAllocation,
     ).toHaveBeenCalledWith(1, 25);
-    expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
-      'shop.stall',
-    );
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith("shop.stall");
   });
 
-  it('keeps retained player request and sale drafts interactive', () => {
+  it("keeps retained player request and sale drafts interactive", () => {
     const gameplaySnapshot = createGameplaySnapshot();
-    gameplaySnapshot.research.completedResearchIds = [
-      'unlockSeed:sageSeed',
-    ];
+    gameplaySnapshot.research.completedResearchIds = ["unlockSeed:sageSeed"];
     const sageSeed = {
       itemTypeId: 1,
-      key: 'sageSeed',
-      kind: 'seed',
-      label: 'sage seed',
+      key: "sageSeed",
+      kind: "seed",
+      label: "sage seed",
       quantity: 8,
     };
     gameplaySnapshot.shop = {
       shelf: {
-        sellKinds: [{ kind: 'seed', label: 'seeds' }],
+        sellKinds: [{ kind: "seed", label: "seeds" }],
         sellItems: [sageSeed],
       },
       playerRequests: {
         slots: [{ slotNumber: 1, unlocked: true }],
       },
       playerShelf: {
-        sellKinds: [{ kind: 'seed', label: 'seeds' }],
+        sellKinds: [{ kind: "seed", label: "seeds" }],
         sellItems: [sageSeed],
         slots: [{ slotNumber: 1, unlocked: true }],
       },
     };
     const harness = createHarness({ gameplaySnapshot });
     harness.runtime.getOpenDialogIds.mockReturnValue([
-      'shop.request',
-      'shop.listing',
+      "shop.request",
+      "shop.listing",
     ]);
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
-    pages.show('shop');
+    pages.show("shop");
 
-    let shop = harness.getBoundPage('shop').shop;
+    let shop = harness.getBoundPage("shop").shop;
     shop.players.requests.slots[0].dialog.items[0].action();
-    shop = harness.getBoundPage('shop').shop;
+    shop = harness.getBoundPage("shop").shop;
     expect(shop.players.requests.slots[0].dialog).toMatchObject({
-      title: 'Request',
-      summaryRows: [
-        expect.objectContaining({ value: 'Sage Seed' }),
-      ],
+      title: "Request",
+      summaryRows: [expect.objectContaining({ value: "Sage Seed" })],
     });
 
-    shop.players.requests.slots[0].dialog.fields[0].onChange('12');
-    shop = harness.getBoundPage('shop').shop;
-    expect(
-      shop.players.requests.slots[0].dialog.fields[0].value,
-    ).toBe('12');
+    shop.players.requests.slots[0].dialog.fields[0].onChange("12");
+    shop = harness.getBoundPage("shop").shop;
+    expect(shop.players.requests.slots[0].dialog.fields[0].value).toBe("12");
 
     shop.players.market.slots[0].dialog.items[0].action();
-    shop = harness.getBoundPage('shop').shop;
+    shop = harness.getBoundPage("shop").shop;
     expect(shop.players.market.slots[0].dialog).toMatchObject({
-      title: 'Sell',
+      title: "Sell",
       range: {
         min: 1,
         max: 8,
@@ -676,46 +644,44 @@ describe('PixiPagesFacade', () => {
       },
       summaryRows: [
         expect.objectContaining({
-          value: 'Sage Seed',
-          quantityLabel: 'x8',
+          value: "Sage Seed",
+          quantityLabel: "x8",
         }),
       ],
     });
 
     shop.players.market.slots[0].dialog.range.onChange(3);
-    shop = harness.getBoundPage('shop').shop;
+    shop = harness.getBoundPage("shop").shop;
     expect(shop.players.market.slots[0].dialog).toMatchObject({
       range: { value: 3 },
-      summaryRows: [
-        expect.objectContaining({ quantityLabel: 'x3' }),
-      ],
+      summaryRows: [expect.objectContaining({ quantityLabel: "x3" })],
     });
     expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
-      'shop.request',
-      expect.objectContaining({ title: 'Request' }),
+      "shop.request",
+      expect.objectContaining({ title: "Request" }),
     );
     expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
-      'shop.listing',
-      expect.objectContaining({ title: 'Sell' }),
+      "shop.listing",
+      expect.objectContaining({ title: "Sell" }),
     );
   });
 
-  it('rejects locked navigation and delegates the lock surface to retained chrome', () => {
+  it("rejects locked navigation and delegates the lock surface to retained chrome", () => {
     const harness = createHarness({
       gameplaySnapshot: createGameplaySnapshot({ level: 1 }),
     });
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
 
-    expect(pages.show('garden')).toBe(false);
+    expect(pages.show("garden")).toBe(false);
     expect(harness.bottomSurface.showLockedPage).toHaveBeenCalledWith(
-      'garden',
+      "garden",
       expect.objectContaining({ unlocked: false }),
     );
-    expect(pages.getCurrentPageId()).toBe('workshop');
+    expect(pages.getCurrentPageId()).toBe("workshop");
   });
 
-  it('keeps global world chat hidden until its existing level-three gate', () => {
+  it("keeps global world chat hidden until its existing level-three gate", () => {
     const harness = createHarness({
       gameplaySnapshot: createGameplaySnapshot({ level: 1 }),
     });
@@ -723,17 +689,17 @@ describe('PixiPagesFacade', () => {
 
     pages.mount();
 
-    expect(harness.getBoundGlobal('chrome.chat')).toEqual(
+    expect(harness.getBoundGlobal("chrome.chat")).toEqual(
       expect.objectContaining({
-        label: 'World Chat',
+        label: "World Chat",
         visible: false,
       }),
     );
-    expect(harness.getBoundGlobal('chrome.chat').onActivate()).toBe(false);
+    expect(harness.getBoundGlobal("chrome.chat").onActivate()).toBe(false);
     expect(harness.pageSurface.openDialog).not.toHaveBeenCalled();
   });
 
-  it('prehighlights the adjacent retained tab while a page swipe is owned', () => {
+  it("prehighlights the adjacent retained tab while a page swipe is owned", () => {
     const harness = createHarness({
       gameplaySnapshot: createGameplaySnapshot({ level: 1 }),
     });
@@ -745,29 +711,29 @@ describe('PixiPagesFacade', () => {
     swipe.onSwipeMove({
       movement: { screen: { x: -24, y: 1 } },
     });
-    expect(
-      harness.bottomSurface.setSwipeTargetPageId,
-    ).toHaveBeenLastCalledWith('research');
+    expect(harness.bottomSurface.setSwipeTargetPageId).toHaveBeenLastCalledWith(
+      "research",
+    );
 
     swipe.onSwipeEnd();
-    expect(
-      harness.bottomSurface.setSwipeTargetPageId,
-    ).toHaveBeenLastCalledWith(null);
+    expect(harness.bottomSurface.setSwipeTargetPageId).toHaveBeenLastCalledWith(
+      null,
+    );
 
     swipe.onSwipeMove({
       movement: { screen: { x: 24, y: 1 } },
     });
-    expect(
-      harness.bottomSurface.setSwipeTargetPageId,
-    ).toHaveBeenLastCalledWith('garden');
-    expect(swipe.onSwipe({ direction: 'previous' })).toBe(false);
+    expect(harness.bottomSurface.setSwipeTargetPageId).toHaveBeenLastCalledWith(
+      "garden",
+    );
+    expect(swipe.onSwipe({ direction: "previous" })).toBe(false);
     expect(harness.bottomSurface.showLockedPage).toHaveBeenCalledWith(
-      'garden',
+      "garden",
       expect.objectContaining({ unlocked: false }),
     );
   });
 
-  it('projects only main-visible Garden plots with per-tile notifications', () => {
+  it("projects only main-visible Garden plots with per-tile notifications", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.garden.plot = {
       maxTiles: 3,
@@ -777,22 +743,22 @@ describe('PixiPagesFacade', () => {
       nextTileLockedByResearch: false,
       tiles: [
         {
-          id: 'plot-1',
+          id: "plot-1",
           tileNumber: 1,
           unlocked: true,
-          phase: 'ready',
+          phase: "ready",
         },
         {
-          id: 'plot-2',
+          id: "plot-2",
           tileNumber: 2,
           unlocked: false,
-          phase: 'empty',
+          phase: "empty",
         },
         {
-          id: 'plot-3',
+          id: "plot-3",
           tileNumber: 3,
           unlocked: false,
-          phase: 'empty',
+          phase: "empty",
         },
       ],
     };
@@ -800,9 +766,9 @@ describe('PixiPagesFacade', () => {
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
 
-    expect(pages.show('garden')).toBe(true);
+    expect(pages.show("garden")).toBe(true);
     expect(
-      harness.getBoundPage('garden').garden.plots.map((plot) => ({
+      harness.getBoundPage("garden").garden.plots.map((plot) => ({
         tileNumber: plot.tileNumber,
         hidden: plot.hidden,
         buySlot: plot.buySlot,
@@ -830,7 +796,7 @@ describe('PixiPagesFacade', () => {
     ]);
   });
 
-  it('projects Garden locked-slot affordability and blocks purchases until affordable', () => {
+  it("projects Garden locked-slot affordability and blocks purchases until affordable", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.coin.current = 10;
     gameplaySnapshot.garden.plot = {
@@ -841,16 +807,16 @@ describe('PixiPagesFacade', () => {
       nextTileLockedByResearch: false,
       tiles: [
         {
-          id: 'plot-1',
+          id: "plot-1",
           tileNumber: 1,
           unlocked: true,
-          phase: 'empty',
+          phase: "empty",
         },
         {
-          id: 'plot-2',
+          id: "plot-2",
           tileNumber: 2,
           unlocked: false,
-          phase: 'empty',
+          phase: "empty",
         },
       ],
     };
@@ -861,22 +827,22 @@ describe('PixiPagesFacade', () => {
     });
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
-    pages.show('garden');
+    pages.show("garden");
 
-    let garden = harness.getBoundPage('garden');
+    let garden = harness.getBoundPage("garden");
     let buyPlot = garden.garden.plots[1];
     expect(buyPlot).toMatchObject({
       buySlot: true,
       affordable: false,
       costCoin: 25,
       missingCoin: 15,
-      actionText: 'buy 25 coin',
+      actionText: "buy 25 coin",
       actionResource: null,
       disabled: false,
     });
     expect(garden.actions.activatePlot(buyPlot)).toEqual({
       ok: false,
-      reason: 'insufficient_coin',
+      reason: "insufficient_coin",
       cost: 25,
       missingCoin: 15,
       tileNumber: 2,
@@ -884,13 +850,13 @@ describe('PixiPagesFacade', () => {
     expect(harness.gameplayFacade.buyGardenTile).not.toHaveBeenCalled();
 
     gameplaySnapshot.coin.current = 25;
-    pages.refreshPage('garden');
-    garden = harness.getBoundPage('garden');
+    pages.refreshPage("garden");
+    garden = harness.getBoundPage("garden");
     buyPlot = garden.garden.plots[1];
     expect(buyPlot).toMatchObject({
       affordable: true,
       missingCoin: 0,
-      actionResource: 'coin',
+      actionResource: "coin",
     });
     expect(garden.actions.activatePlot(buyPlot)).toEqual({
       ok: true,
@@ -899,31 +865,29 @@ describe('PixiPagesFacade', () => {
     expect(harness.gameplayFacade.buyGardenTile).toHaveBeenCalledTimes(1);
   });
 
-  it('filters and orders Garden seed choices and closes only after a successful selection', () => {
+  it("selects one Garden seed globally, plants empty plots, and offers swaps for growing plots", () => {
     const gameplaySnapshot = createGameplaySnapshot();
-    gameplaySnapshot.research.completedResearchIds = [
-      'unlockSeed:mintSeed',
-    ];
+    gameplaySnapshot.research.completedResearchIds = ["unlockSeed:mintSeed"];
     gameplaySnapshot.garden.seeds = [
       {
         itemTypeId: 2,
-        key: 'mintSeed',
-        label: 'mint seed',
-        kind: 'seed',
+        key: "mintSeed",
+        label: "mint seed",
+        kind: "seed",
         quantity: 0,
       },
       {
         itemTypeId: 3,
-        key: 'nettleSeed',
-        label: 'nettle seed',
-        kind: 'seed',
+        key: "nettleSeed",
+        label: "nettle seed",
+        kind: "seed",
         quantity: 0,
       },
       {
         itemTypeId: 1,
-        key: 'sageSeed',
-        label: 'sage seed',
-        kind: 'seed',
+        key: "sageSeed",
+        label: "sage seed",
+        kind: "seed",
         quantity: 2,
       },
     ];
@@ -931,162 +895,143 @@ describe('PixiPagesFacade', () => {
       maxTiles: 1,
       tiles: [
         {
-          id: 'plot-1',
+          id: "plot-1",
           tileNumber: 1,
           unlocked: true,
-          phase: 'empty',
+          phase: "empty",
         },
       ],
     };
     const harness = createHarness({ gameplaySnapshot });
-    harness.gameplayFacade.selectGardenSeed
-      .mockReturnValueOnce({ ok: false, reason: 'not_enough_seed' })
-      .mockReturnValueOnce({ ok: true, planted: true });
+    harness.gameplayFacade.plantGardenSeed.mockReturnValue({
+      ok: true,
+      tileNumber: 1,
+    });
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
-    pages.show('garden');
-    const garden = harness.getBoundPage('garden');
+    pages.show("garden");
+    const garden = harness.getBoundPage("garden");
     const plot = garden.garden.plots[0];
 
     expect(garden.actions.activatePlot(plot)).toBe(true);
     expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
-      'seed',
+      "seed",
       expect.objectContaining({
-        plot,
         rows: [
           expect.objectContaining({
-            id: 'empty',
-            itemTypeId: null,
-            emptyOption: true,
-          }),
-          expect.objectContaining({
             id: 1,
-            key: 'sageSeed',
+            key: "sageSeed",
             quantity: 2,
-            icon: { kind: 'seed', key: 'sageSeed' },
+            icon: { kind: "seed", key: "sageSeed" },
           }),
           expect.objectContaining({
             id: 2,
-            key: 'mintSeed',
+            key: "mintSeed",
             quantity: 0,
           }),
         ],
       }),
     );
 
-    expect(garden.actions.selectSeed(
-      { itemTypeId: 1 },
-      plot,
-    )).toEqual({ ok: false, reason: 'not_enough_seed' });
-    expect(harness.runtime.closeDialog).not.toHaveBeenCalled();
+    expect(
+      garden.actions.selectSeed({
+        itemTypeId: 1,
+      }),
+    ).toEqual({
+      ok: true,
+      selectedSeedItemTypeId: 1,
+    });
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith("garden.seed");
+    const selectedGarden = harness.getBoundPage("garden");
+    expect(selectedGarden.garden.actionBar.selectedSeed).toMatchObject({
+      itemTypeId: 1,
+      label: "sage",
+      quantity: 2,
+    });
+    expect(
+      selectedGarden.actions.activatePlot(selectedGarden.garden.plots[0]),
+    ).toEqual({
+      ok: true,
+      tileNumber: 1,
+    });
+    expect(harness.gameplayFacade.plantGardenSeed).toHaveBeenCalledWith(1, 1);
 
-    expect(garden.actions.selectSeed(
-      { itemTypeId: 1 },
-      plot,
-    )).toEqual({ ok: true, planted: true });
-    expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
-      'garden.seed',
+    gameplaySnapshot.garden.plot.tiles[0] = {
+      ...gameplaySnapshot.garden.plot.tiles[0],
+      phase: "growing",
+      seedItemTypeId: 2,
+      seedLabel: "mint seed",
+      process: {
+        totalMs: 60_000,
+        remainingMs: 30_000,
+      },
+    };
+    pages.refreshPage("garden");
+    const growingGarden = harness.getBoundPage("garden");
+    expect(
+      growingGarden.actions.activatePlot(growingGarden.garden.plots[0]),
+    ).toBe(true);
+    expect(harness.pageSurface.openDialog).toHaveBeenLastCalledWith(
+      "swap",
+      expect.objectContaining({
+        title: "Swap Seed?",
+        message: "Swap mint for sage? Growth will restart.",
+        confirmLabel: "Swap",
+      }),
     );
     expect(harness.transientEffects.emitReward).not.toHaveBeenCalled();
   });
 
-  it('owns Garden and Brewing inventory expansion state outside retained views', () => {
+  it("removes Garden inventory buttons while retaining Brewing inventory expansion", () => {
     const gameplaySnapshot = createGameplaySnapshot();
-    gameplaySnapshot.garden.herbs = createInventoryRows('herb', 7);
-    gameplaySnapshot.garden.seeds = createInventoryRows('seed', 8);
-    gameplaySnapshot.brewing.herbs = createInventoryRows('herb', 7);
-    gameplaySnapshot.inventory = createInventoryRows('potion', 8);
+    gameplaySnapshot.garden.herbs = createInventoryRows("herb", 7);
+    gameplaySnapshot.garden.seeds = createInventoryRows("seed", 8);
+    gameplaySnapshot.brewing.herbs = createInventoryRows("herb", 7);
+    gameplaySnapshot.inventory = createInventoryRows("potion", 8);
     const harness = createHarness({ gameplaySnapshot });
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
 
-    expect(pages.show('garden')).toBe(true);
-    let garden = harness.getBoundPage('garden');
-    expect(garden.garden.inventory.herbs).toMatchObject({
-      expanded: false,
-      canToggle: true,
-      countText: '6/7',
-    });
-    expect(garden.garden.inventory.seeds).toMatchObject({
-      expanded: false,
-      canToggle: true,
-      countText: '6/8',
+    expect(pages.show("garden")).toBe(true);
+    const garden = harness.getBoundPage("garden");
+    expect(garden.garden.inventory).toBeUndefined();
+    expect(garden.garden.actionBar).toMatchObject({
+      selectedSeed: null,
+      readyHarvestCount: 0,
+      hasSeedChoices: true,
     });
 
-    garden.actions.toggleInventory('herbs');
-    garden = harness.getBoundPage('garden');
-    expect(garden.garden.inventory.activeTab).toBe('herbs');
-    expect(
-      garden.actions.toggleInventoryExpanded('herbs'),
-    ).toBe(true);
-    garden = harness.getBoundPage('garden');
-    expect(garden.garden.inventory.herbs).toMatchObject({
-      expanded: true,
-      countText: '7/7',
-    });
-
-    garden.actions.toggleInventoryExpanded('herbs');
-    garden = harness.getBoundPage('garden');
-    expect(garden.garden.inventory.herbs).toMatchObject({
-      expanded: false,
-      countText: '6/7',
-    });
-
-    garden.actions.toggleInventory('seeds');
-    garden = harness.getBoundPage('garden');
-    expect(garden.garden.inventory).toMatchObject({
-      activeTab: 'seeds',
-      herbs: { expanded: false },
-      seeds: { expanded: false },
-    });
-    garden.actions.toggleInventoryExpanded('seeds');
-    garden = harness.getBoundPage('garden');
-    expect(garden.garden.inventory.seeds).toMatchObject({
-      expanded: true,
-      countText: '8/8',
-    });
-
-    expect(pages.show('brewing')).toBe(true);
-    let brewing = harness.getBoundPage('brewing');
+    expect(pages.show("brewing")).toBe(true);
+    let brewing = harness.getBoundPage("brewing");
     expect(brewing.brewing.inventory.herbs).toMatchObject({
       expanded: false,
       canToggle: true,
-      countText: '6/7',
+      countText: "6/7",
     });
     expect(brewing.brewing.inventory.potions).toMatchObject({
       expanded: false,
       canToggle: true,
-      countText: '6/8',
+      countText: "6/8",
     });
 
-    brewing.actions.toggleInventory('potions');
-    brewing = harness.getBoundPage('brewing');
-    expect(brewing.brewing.inventory.activeTab).toBe('potions');
-    brewing.actions.toggleInventoryExpanded('potions');
-    brewing = harness.getBoundPage('brewing');
+    brewing.actions.toggleInventory("potions");
+    brewing = harness.getBoundPage("brewing");
+    expect(brewing.brewing.inventory.activeTab).toBe("potions");
+    brewing.actions.toggleInventoryExpanded("potions");
+    brewing = harness.getBoundPage("brewing");
     expect(brewing.brewing.inventory.potions).toMatchObject({
       expanded: true,
-      countText: '8/8',
+      countText: "8/8",
     });
-    expect(
-      brewing.actions.toggleInventoryExpanded('seeds'),
-    ).toBe(false);
-
-    expect(pages.show('garden')).toBe(true);
-    garden = harness.getBoundPage('garden');
-    expect(garden.garden.inventory).toMatchObject({
-      activeTab: null,
-      herbs: { expanded: false },
-      seeds: { expanded: false },
-    });
+    expect(brewing.actions.toggleInventoryExpanded("seeds")).toBe(false);
   });
 
-  it('projects tutorial notification policy without changing source snapshots', () => {
+  it("projects tutorial notification policy without changing source snapshots", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.tasks.level.tasks = [
       {
-        taskId: 'demo-task',
-        requirementLabel: 'sage seeds',
+        taskId: "demo-task",
+        requirementLabel: "sage seeds",
         canFill: true,
         requiredQuantity: 1,
         progressQuantity: 1,
@@ -1099,7 +1044,7 @@ describe('PixiPagesFacade', () => {
       pages: {
         workshop: {
           active: true,
-          tone: 'red',
+          tone: "red",
           children: {
             seeds: true,
             tasks: true,
@@ -1107,7 +1052,7 @@ describe('PixiPagesFacade', () => {
         },
         garden: {
           active: true,
-          tone: 'red',
+          tone: "red",
           children: { plots: true },
         },
       },
@@ -1118,77 +1063,75 @@ describe('PixiPagesFacade', () => {
 
     pages.applyTutorialNotificationVisibilityPolicy({
       active: true,
-      allowedTutorialIds: ['workshop:summonSeed'],
+      allowedTutorialIds: ["workshop:summonSeed"],
     });
 
+    expect(harness.getBoundGlobal("chrome.bottom").notifications).toMatchObject(
+      {
+        workshop: notifications.pages.workshop,
+        garden: notifications.pages.garden,
+      },
+    );
+    expect(harness.getBoundPage("workshop").workshop.summon.notification).toBe(
+      true,
+    );
     expect(
-      harness.getBoundGlobal('chrome.bottom').notifications,
-    ).toMatchObject({
-      workshop: notifications.pages.workshop,
-      garden: notifications.pages.garden,
-    });
-    expect(
-      harness.getBoundPage('workshop').workshop.summon.notification,
-    ).toBe(true);
-    expect(
-      harness.getBoundPage('workshop').workshop.tasks.rows[0].notification,
+      harness.getBoundPage("workshop").workshop.tasks.rows[0].notification,
     ).toBe(false);
 
     pages.applyTutorialNotificationVisibilityPolicy({
       active: true,
-      allowedTutorialIds: ['task:demo-task', 'page:garden'],
+      allowedTutorialIds: ["task:demo-task", "page:garden"],
     });
 
+    expect(harness.getBoundGlobal("chrome.bottom").notifications.garden).toBe(
+      notifications.pages.garden,
+    );
+    expect(harness.getBoundPage("workshop").workshop.summon.notification).toBe(
+      false,
+    );
     expect(
-      harness.getBoundGlobal('chrome.bottom').notifications.garden,
-    ).toBe(notifications.pages.garden);
-    expect(
-      harness.getBoundPage('workshop').workshop.summon.notification,
-    ).toBe(false);
-    expect(
-      harness.getBoundPage('workshop').workshop.tasks.rows[0].notification,
+      harness.getBoundPage("workshop").workshop.tasks.rows[0].notification,
     ).toBe(true);
 
     pages.applyTutorialNotificationVisibilityPolicy(null);
 
+    expect(harness.getBoundGlobal("chrome.bottom").notifications.workshop).toBe(
+      notifications.pages.workshop,
+    );
+    expect(harness.getBoundPage("workshop").workshop.summon.notification).toBe(
+      true,
+    );
     expect(
-      harness.getBoundGlobal('chrome.bottom').notifications.workshop,
-    ).toBe(notifications.pages.workshop);
-    expect(
-      harness.getBoundPage('workshop').workshop.summon.notification,
-    ).toBe(true);
-    expect(
-      harness.getBoundPage('workshop').workshop.tasks.rows[0].notification,
+      harness.getBoundPage("workshop").workshop.tasks.rows[0].notification,
     ).toBe(true);
     expect(notifications).toEqual(sourceCopy);
   });
 
-  it('opens the World Event dev route with the real selected-tab model', () => {
+  it("opens the World Event dev route with the real selected-tab model", () => {
     const harness = createHarness();
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
 
     expect(
-      pages.openDialog('worldEvent', { tab: 'leaderboard' }),
+      pages.openDialog("worldEvent", { tab: "leaderboard" }),
     ).toMatchObject({
       ok: true,
-      dialogId: 'worldEvent',
-      tabId: 'leaderboard',
+      dialogId: "worldEvent",
+      tabId: "leaderboard",
     });
     expect(
-      harness.getBoundPage('workshop').workshop.dialogs.worldEvent
+      harness.getBoundPage("workshop").workshop.dialogs.worldEvent
         .selectedTabId,
-    ).toBe('leaderboard');
+    ).toBe("leaderboard");
     expect(harness.pageSurface.openDialog).toHaveBeenLastCalledWith(
-      'worldEvent',
+      "worldEvent",
       null,
     );
   });
 });
 
-function createHarness({
-  gameplaySnapshot = createGameplaySnapshot(),
-} = {}) {
+function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
   const factories = new Map();
   const boundPages = new Map();
   const boundGlobals = new Map();
@@ -1255,6 +1198,10 @@ function createHarness({
     hireGuildApplicant: vi.fn(),
     fireGuildAdventurer: vi.fn(),
     buyGardenTile: vi.fn(),
+    plantGardenSeed: vi.fn(),
+    replaceGardenSeed: vi.fn(),
+    startGardenHarvest: vi.fn(),
+    startAllReadyGardenHarvests: vi.fn(),
     selectGardenSeed: vi.fn(),
     cancelBrewing: vi.fn(),
     collectBrewing: vi.fn(),
@@ -1271,8 +1218,8 @@ function createHarness({
   };
   const playerFacade = {
     getSnapshot: vi.fn(() => ({
-      username: 'elara',
-      character: 'elara',
+      username: "elara",
+      character: "elara",
     })),
     subscribe: vi.fn(() => vi.fn()),
   };

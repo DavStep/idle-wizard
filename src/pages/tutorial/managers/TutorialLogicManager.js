@@ -88,7 +88,6 @@ export class TutorialLogicManager {
         step,
         cue: { kind: 'none' },
         nextRefreshAt: null,
-        revealTokens: step.revealTokens,
       };
     }
 
@@ -108,7 +107,6 @@ export class TutorialLogicManager {
     return {
       kind: 'lesson',
       step,
-      revealTokens: step.revealTokens,
       lesson: {
         id: step.id,
         title: step.lessonTitle,
@@ -136,7 +134,6 @@ export class TutorialLogicManager {
       step: null,
       cue: { kind: 'none' },
       nextRefreshAt: null,
-      revealTokens: [],
     };
   }
 

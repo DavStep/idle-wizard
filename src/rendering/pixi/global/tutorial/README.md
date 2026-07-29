@@ -11,7 +11,6 @@ The presenter shape mirrors `TutorialFacade`:
 ```js
 {
   kind: 'lesson', // hidden | blocked | quest | lesson
-  revealTokens: ['top', 'mana'],
   step: {
     id: 'mana-intro',
     targetId: 'top:mana',
@@ -58,19 +57,6 @@ existing tutorial logic computes its next view state.
 Seed persisted Elara position once with
 `overlay.setGuidePlacement(guideDragManager.getPlacement())`; route the
 `guideMoved(placement)` action back to that renderer-neutral manager.
-
-`TutorialRevealController` uses explicit registrations:
-
-```js
-reveal.register('mana', {
-  objects: [manaRoot],
-  interactiveObjects: [manaRoot],
-});
-```
-
-Calling `apply(tokens)` hides unrevealed registered groups and reveals newly
-added groups with the current 4px/opacity transition. `restore()` returns every
-object to its captured pre-tutorial state.
 
 `TutorialPointerSpine` loads `tutorial:pointer` once through
 `SpineRuntimeFacade`, attaches it inside the existing Pixi tree with

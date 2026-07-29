@@ -4448,7 +4448,7 @@ describe('PagesFacade', () => {
     );
   });
 
-  it('fills a ready task when the active objective panel is pressed', () => {
+  it('guides to a ready task without filling it from the objective panel', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -4489,9 +4489,9 @@ describe('PagesFacade', () => {
       .querySelector('.tutorial-layer__objective')
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    expect(task.progressQuantity).toBe(2);
-    expect(task.remainingQuantity).toBe(0);
-    expect(snapshot.seedInventory[0].quantity).toBe(0);
+    expect(task.progressQuantity).toBe(1);
+    expect(task.remainingQuantity).toBe(1);
+    expect(snapshot.seedInventory[0].quantity).toBe(1);
   });
 
   it('shows a garden tab notification when garden work is ready outside Workshop', () => {

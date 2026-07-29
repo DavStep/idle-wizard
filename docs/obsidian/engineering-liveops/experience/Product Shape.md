@@ -79,9 +79,7 @@ experience_type: product-shape
 - World chat dialog should use a fixed upper source-coordinate anchor; focus-within keyboard recentering makes it jump down when the keyboard closes.
 - The approved illustrated fantasy HUD and Root Run asset pipeline are the visual guidance; keep the fixed `390x844` logical resolution and contain-fit behavior.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
-- FTUE reveal-gated action loops need an active step while waiting for repeated actions; a null step clears `data-tutorial-reveal` and shows unrevealed room UI.
-- Collapsing Elara must restore normal room visibility; reopening her reapplies the active step's reveal gate.
-- FTUE reveal `pointer-events` enables must match or exceed the hidden action selector specificity; visible controls can otherwise remain untappable after reveal animations end.
+- Tutorial state is guidance only: never hide or disable gameplay controls, consume unrelated presses, activate suggested targets, or navigate for the player.
 - FTUE level-one sage guidance must resolve the turn-in task by item/action too; live configs may still use legacy `level1-sage-seeds` while defaults use `level1-turn-in-sage-seed`.
 - The final level-0 request must advance to level 1 before publishing; never expose an intermediate `all quests complete` rail or clickable `reach level 1` row, and migrate completed legacy level-0 saves on load.
 - Resource-gated FTUE steps must refresh from `subscribeFrameResources`; top-panel mana can change without a full gameplay snapshot.
@@ -186,14 +184,13 @@ experience_type: product-shape
 - Market popup item-picker visible labels need stable hit targets and click/backdrop dedupe; icon/text fragments inside those labels should not own separate hit testing.
 - Trader loader rows select one current item on click. The `0%` / `25%` / `50%` / `75%` / `100%` rail reconciles loaded plus available matching stock in one update, while `mark future` persists a separate item target and queues only copies produced after enablement.
 - Scrollable choice/item rows should activate on validated touch release with a small movement tolerance; keep press-start only for non-scroll openers where mobile click retargets.
-- Garden selected seed labels need touch/pointer press-start with click/backdrop dedupe; click-only handling lets mobile/WebView taps retarget to the plot row or closing backdrop instead of opening seed choices.
+- Garden seed choice is owned by the page-level `Seeds` action and retained picker; plot labels do not open seed choices.
 - Garden cancel/swap dialogs opened from touch-selected seed picker rows need their own one-shot backdrop dedupe; otherwise WebView can close the new dialog with the same synthetic click.
 - Garden seeds and Brewing herbs are tap-first item controls only; do not reintroduce drag/drop for these rows.
 - Brewing herb drag thresholds must not be lower than validated tap slop; otherwise small WebView drift suppresses the synthetic click and adds no herb.
-- Garden boxes mode shows `.garden-page__plot-box-label`; bind seed-name interactions and FTUE `data-tutorial-id` there too, not only hidden `.garden-page__plot-label`.
-- FTUE empty Garden plot guidance should target `garden:plot:N` and anchor the pointer to `.garden-page__plot-box-frame`; reserve `garden:plot:N:label` for seed-label choices.
+- FTUE empty Garden plot guidance should target the real `garden:plot:N` control; the first empty-plot tap may open the page-level seed picker, then the same plot target plants the chosen seed.
 - Garden plant availability and copy must compare selected seed count to the plot level/multiplier; `>0` is wrong for x2+ plots.
-- Garden empty plot taps without a plantable selected seed should open seed choices; plantable empty plots still plant from the whole slot/row, and seed-name labels open seed choices.
+- Garden empty plot taps without a page-level selected seed open seed choices; once selected, whole-plot taps plant that seed.
 - Plantable Garden plot taps need a no-drag world pointerup path with click dedupe, same as ready harvest; WebView can drop the native row click after small drift.
 - Garden no-drag plot actions must suppress retargeted herb/seed label clicks too; after planting, the new herb label can appear under the release point and reopen choices.
 - Ready Garden plot boxes should harvest from the visible plot frame, not only the plant/action label; the plant icon is too small as the sole tap target.
@@ -205,16 +202,13 @@ experience_type: product-shape
 - Username-gated social/player surfaces should check `PlayerFacade.getSnapshot().hasExplicitUsername`, not the visible username string, because generated defaults can exist.
 - FTUE guide should hide while the top-panel settings dialog is open, then resume after it closes.
 - FTUE blocking-dialog hides should suspend the current lesson; closing settings must not restart typed Elara text from zero.
-- Retained FTUE blocking surfaces own their own occlusion; restore the Pixi reveal projection when Elara hides for `blocked`, or a stale/invisible blocker can strand the room with only ungated controls visible.
-- Retained FTUE reveal state must preserve `null` versus `[]`: `null` means no reveal mask/full room, while `[]` intentionally hides every gated group for intro-only steps.
 - FTUE guide should also hide behind app-level account gates such as fresh-start/account-link choice dialogs, not only page popups.
 - Fresh-start/account gates are pre-game surfaces: keep their backdrops opaque and do not mount room chrome behind them before the player chooses.
 - Screenshot QA must dismiss app-level account/server gates before trusting target-dialog DOM checks; the target can exist behind a blocking gate.
 - After screenshot QA viewport changes, wait for `.app-online-gate[hidden]`; the server gate can flash during reconnect and stale screenshots can be blank even if later DOM metrics pass.
-- Top-panel screenshot QA on a fresh FTUE save must reveal `top mana` or complete FTUE first; empty `data-tutorial-reveal` hides the chrome.
-- Explicit FTUE spotlight targets can be inside reveal opacity transitions; use layout/hidden/display/visibility checks for mask placement instead of rejecting opacity `0`.
+- Explicit FTUE spotlight targets can animate independently; use layout/hidden/display/visibility checks for mask placement instead of rejecting transient opacity `0`.
 - FTUE dim backdrops must use stage-wide coordinates for web-wide gutters; guide, pointer, and collision placement should stay source-layer based.
-- FTUE text-shaped spotlight holes must remeasure for a few RAFs during reveal transitions; web-wide SVG backdrops need explicit `100% + gutters` width because `width:auto` can stop short.
+- FTUE text-shaped spotlight holes must remeasure for a few RAFs during layout transitions; web-wide SVG backdrops need explicit `100% + gutters` width because `width:auto` can stop short.
 - Icon-mode top-panel resource FTUE spotlights should target the resource label wrapper with an element hole; SVG text holes can ghost the amount and leave the icon dimmed.
 - HTML screenshot harnesses that load `/src/styles/base.css` must set `html[data-style-theme="midnight"]`; missing or `white` themes fall back to the removed light base.
 - Resource-label screenshot harnesses must set `html[data-style-icons="icons"]`; resource and currency labels must retain their shared semantic colors and still match the live app.
@@ -259,20 +253,14 @@ experience_type: product-shape
 - FTUE target cues are Spine-only; preserve diagonal placement math and rotate the Spine shell by placement so the authored upward tap points at the target anchor.
 - FTUE Spine target cues should use the pointer Spine, not the removed old hand sprite.
 - Pointer-local Pixi canvases inside the scaled tutorial layer must use `devicePixelRatio * --style-ui-scale` resolution; DPR-only backing stores look pixelated after the room UI scale transform.
-- FTUE opening should reveal the room piece by piece: intro first, then top-panel username, then the top-panel mana readout, then summon, then tasks and room chrome.
 - FTUE graph still includes legacy `fill-sage-seed-task`; default `tasks.json` no longer has a level-3 sage seed turn-in, so dev loaders should report the actual active step for balance-dependent states.
-- Room section entry animations must opt out while `data-tutorial-reveal` is present; opacity/translate animations can override FTUE reveal gates.
-- FTUE intro-only reveal needs an empty `data-tutorial-reveal` attribute; clearing the attribute makes all gated room controls appear.
-- FTUE intro-to-Elara handoffs must prime `data-tutorial-reveal` with transitions disabled before the scheduled guide refresh; otherwise hidden chrome can fade for one frame.
-- FTUE hidden action buttons need reveal-gate `pointer-events: none` with enough specificity to beat action-bar base button rules.
-- Once FTUE reveals the top panel, keep it visible; players have already unlocked that chrome.
 - FTUE press-to-advance lessons must stay visible until pressed; only action reminders should auto-hide.
 - FTUE should not own special market economy. Teach the normal timed-stall sale as a level-2 request, never as a currency prerequisite for level-up.
 - FTUE level-2 Market guidance must follow the live task order: summon enough sage seeds, sell one, then turn in the remainder. Do not wait until `completion.canComplete` before showing the summon/sell guidance.
 - FTUE task guidance must follow `questProgress.activeQuest` before matching by item key; level 4 reuses herb keys across grow and turn-in tasks, so owned herbs must not skip the active grow quest or target an inactive request row.
 - FTUE terminal hides must clear inner lesson/button/pointer state; hiding only the layer lets later click-driven hides re-show stale tutorial UI for one frame.
 - FTUE uses one left Elara lesson button and one lesson panel; do not add separate dialog, hint, prompt, or objective boxes.
-- FTUE advance prompts treat any stage click as `next` and consume the click so underlying controls do not fire.
+- FTUE advance prompts progress only from their explicit tutorial action; ordinary stage presses remain gameplay presses.
 - FTUE level-up objectives should point directly to the Workshop completion action once all requests are complete.
 - FTUE level-up prompts should target the full completion row so the action keeps a stable, readable tutorial target.
 - Wide FTUE context rows can keep `data-tutorial-id` on the row while the pointer uses a child CTA anchor; otherwise the hand may point back to row center.
@@ -320,7 +308,7 @@ experience_type: product-shape
 - FTUE lesson collapse animations need a temporary exit class before setting `hidden`; full tutorial hides still clear immediately to prevent stale flashes.
 - FTUE guide auto-move should use source-pixel rAF interpolation from the current visual offset to the desired placement; CSS transitions after writing final `left`/`top` can still paint as a teleport in target browsers.
 - FTUE guide auto-move should not rely on inline `style.translate` for the moving wrapper, because active CSS keyframe animations that also set `translate` can override it and make the guide jump.
-- Lesson 5 Brewing must follow the live retained action path: point at `Recipes`, then Mana Tonic in the recipe book, then the primary Brew action. Do not target the hidden legacy herb inventory controls.
+- Lesson 5 Brewing must follow the live retained action path: point at `Recipes`, then Mana Tonic in the recipe book, then the primary Brew action. Live HUD controls own those tutorial IDs; hidden legacy Brewing controls must not register competing guided targets.
 - Workshop logs, leaderboard, and shared `world chat` unlock at level 3; discoveries and alliance unlock at level 4; `prestige` is a gated room page that stays hidden until level 7.
 - Dev cheats that force garden/brewing capacity must satisfy their progression gates; market slot count is derived from permanent licence rank instead of run-level capacity.
 - Prestige summary copy and ruby amounts use the surrounding normal text color; keep the ruby icon attached to the amount.
@@ -359,7 +347,7 @@ experience_type: product-shape
 - Workshop summon's custom hold-to-repeat pointerdown can suppress native quick-tap clicks; keep a validated touch release fallback in the summon manager and dedupe it against global synthetic clicks.
 - Workshop side-control hit areas must partition on the `52.25px` row pitch; using the taller visual widget bounds lets the next control steal taps from labels such as `Leaderboard`.
 - Retained dialog presenters must preserve the full feature record instead of flattening rich data into generic label/value rows; potion discovery projection includes art key, discoverer, timestamp, ingredients, mana, duration, and royalty.
-- Retained Pixi tutorial overlays can report the stage root for a revealed room press even when the pointer is inside the control bounds; opt only the affected registration into geometric fallback hit-testing and gate that fallback on the revealed control's visibility.
+- Retained Pixi tutorial overlays can report the stage root for a guided room press even when the pointer is inside the control bounds; opt only the affected registration into geometric fallback hit-testing and gate that fallback on the control's normal visibility and interactivity.
 - Retained Pixi info buttons need geometric fallback hit-testing within their existing hit area; an adjacent disabled control can retarget the event path to an overlay/root while the info action must remain available.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.

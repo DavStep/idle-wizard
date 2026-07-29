@@ -378,17 +378,9 @@ describe('TopPanelViewManager', () => {
 
   });
 
-  it('keeps quest progress hidden until first-run requests are revealed', () => {
+  it('does not let tutorial state hide quest progress', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const hiddenRule = baseCss.match(
-      /\.game-stage\[data-tutorial-reveal\]\s+\.room-top-panel__quest-progress\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const revealedRule = baseCss.match(
-      /\.game-stage\[data-tutorial-reveal~="tasks"\]\s+\.room-top-panel__quest-progress:not\(\[hidden\]\)\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-
-    expect(hiddenRule).toMatch(/\bdisplay:\s*none;/);
-    expect(revealedRule).toMatch(/\bdisplay:\s*grid;/);
+    expect(baseCss).not.toContain('data-tutorial-reveal');
   });
 
   it('keeps amount-icon labels tight when resource words are hidden', () => {

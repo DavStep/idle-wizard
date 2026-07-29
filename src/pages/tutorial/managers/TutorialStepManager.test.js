@@ -545,7 +545,6 @@ describe('TutorialStepManager', () => {
       targetId: 'workshop:summonSeed',
       hintText: 'summon seed',
       objectiveText: 'summon 5 sage seeds',
-      revealTokens: ['top', 'mana', 'summon'],
       progressLabel: '4/5 seeds',
     });
   });

@@ -22,7 +22,6 @@ import {
 import {
   createTutorialPixiOverlay,
   createTutorialPixiViewModel,
-  createTutorialRevealController,
   resolveSemanticTutorialTarget,
 } from '../global/tutorial/index.js';
 
@@ -31,14 +30,6 @@ export const PIXI_EXPERIENCE_SURFACE_IDS = Object.freeze({
   tutorial: 'experience.tutorial',
   transient: 'experience.transient',
 });
-
-export const PIXI_TUTORIAL_REVEAL_TOKENS = Object.freeze([
-  'top',
-  'rooms',
-  'mana',
-  'summon',
-  'tasks',
-]);
 
 const TUTORIAL_DIALOG_POLL_MS = 100;
 const FIRST_RUN_INTRO_MODAL_PRIORITY = 100;
@@ -75,8 +66,6 @@ const DEFAULT_FACTORIES = Object.freeze({
   createIntroView: (options) => createFirstRunIntroPixiView(options),
   createIntroPresenter: (options) =>
     createFirstRunIntroPixiPresenter(options),
-  createRevealController: (options) =>
-    createTutorialRevealController(options),
   createTutorialOverlay: (options) =>
     createTutorialPixiOverlay(options),
   createTransientEffects: (options) =>
@@ -94,14 +83,13 @@ const DEFAULT_FACTORIES = Object.freeze({
  */
 export class PixiExperienceFacade {
   static explain =
-    'Runs the opening story, Elara tutorial, reveal gates, and reward feedback through retained Pixi surfaces.';
+    'Runs the opening story, optional Elara guidance, and reward feedback through retained Pixi surfaces.';
 
   constructor({
     renderFacade,
     gameplayFacade = null,
     storage,
     getCurrentPageId = () => 'workshop',
-    onShowPage = null,
     onFirstRunIntroComplete = null,
     onNotificationVisibilityPolicyChange = null,
     presentRewardEvent = defaultRewardPresenter,
@@ -134,8 +122,6 @@ export class PixiExperienceFacade {
       typeof getCurrentPageId === 'function'
         ? getCurrentPageId
         : () => 'workshop';
-    this.onShowPage =
-      typeof onShowPage === 'function' ? onShowPage : null;
     this.onFirstRunIntroComplete =
       typeof onFirstRunIntroComplete === 'function'
         ? onFirstRunIntroComplete
@@ -181,11 +167,9 @@ export class PixiExperienceFacade {
 
     this.runtime = null;
     this.semanticRegistry = null;
-    this.layers = null;
     this.introView = null;
     this.introPresenter = null;
     this.tutorialOverlay = null;
-    this.revealController = null;
     this.transientEffects = null;
     this.rewardEventConsumer = null;
     this.tutorialRuntimeState = null;
@@ -201,7 +185,6 @@ export class PixiExperienceFacade {
     this.refreshQueued = false;
     this.tutorialRefreshTimeout = null;
     this.unsubscribers = [];
-    this.revealUnregisters = [];
     this.notificationPolicy = null;
     this.notificationPolicyKey = '';
     this.notificationPolicyListeners = new Set();
@@ -257,15 +240,10 @@ export class PixiExperienceFacade {
 
   createTutorialSurface(context) {
     this.semanticRegistry = context.semanticRegistry;
-    this.layers = context.layers;
-    this.revealController = this.factories.createRevealController({
-      ticker: context.application?.ticker,
-    });
     const view = this.factories.createTutorialOverlay({
       assets: context.assets,
       inputRouter: context.inputRouter,
       semanticRegistry: context.semanticRegistry,
-      revealController: this.revealController,
       spineRuntime: this.renderFacade.getSpineRuntime?.(),
       application: context.application,
       theme: context.theme?.(),
@@ -277,7 +255,6 @@ export class PixiExperienceFacade {
 
   createTransientSurface(context) {
     this.semanticRegistry ??= context.semanticRegistry;
-    this.layers ??= context.layers;
     const view = this.factories.createTransientEffects({
       assets: context.assets,
       semanticRegistry: context.semanticRegistry,
@@ -310,7 +287,6 @@ export class PixiExperienceFacade {
       PIXI_EXPERIENCE_SURFACE_IDS.transient,
     );
     this.semanticRegistry ??= this.runtime.semanticRegistry;
-    this.layers ??= this.renderFacade.getPixiLayers?.();
     this.introPresenter ??= this.factories.createIntroPresenter({
       view: this.introView,
     });
@@ -326,7 +302,6 @@ export class PixiExperienceFacade {
     });
     this.tutorialDomState =
       this.tutorialRuntimeState.createManagerState();
-    this.registerRevealGroups();
     this.tutorialOverlay.setGuidePlacement?.(
       this.tutorialGuideDragManager.getPlacement(),
     );
@@ -364,7 +339,6 @@ export class PixiExperienceFacade {
     this.requestedTargetGuidanceStepId = null;
     this.tutorialSaleManager.cancel();
     this.tutorialOverlay?.bind?.({ kind: 'hidden' });
-    this.unregisterRevealGroups();
     this.publishNotificationPolicy(null);
     this.tutorialRuntimeState = null;
     this.tutorialDomState = null;
@@ -418,7 +392,6 @@ export class PixiExperienceFacade {
       this.tutorialSaleManager.update({
         step: viewState.step,
       });
-      this.routeAutoPage(viewState.step);
     } else {
       this.tutorialSaleManager.cancel();
     }
@@ -498,9 +471,6 @@ export class PixiExperienceFacade {
     this.requestedTargetGuidanceStepId = null;
     this.tutorialSaleManager.cancel();
     this.applyTutorialAdvanceAction(step.advanceAction);
-    if (step.advancePageId) {
-      this.onShowPage?.(step.advancePageId);
-    }
     this.refresh();
     return true;
   }
@@ -524,21 +494,6 @@ export class PixiExperienceFacade {
     }
 
     const target = this.resolveTarget(step.targetId);
-    const directlyActivatable =
-      step.targetId?.startsWith('task:') &&
-      target?.activate &&
-      target.state?.enabled !== false &&
-      target.state?.interactive !== false;
-    if (directlyActivatable) {
-      if (this.tutorialOverlay?.isLessonPanelOpen?.()) {
-        this.tutorialOverlay.togglePanel?.();
-      }
-      const result = this.activateResolvedTarget(target, {
-        source: 'tutorial-objective',
-      });
-      this.refresh();
-      return result;
-    }
 
     if (!target) {
       return false;
@@ -555,16 +510,6 @@ export class PixiExperienceFacade {
   handleLessonPanelClose() {
     this.requestedTargetGuidanceStepId = null;
     this.refresh();
-    return true;
-  }
-
-  routeAutoPage(step) {
-    const pageId = step?.autoPageId;
-    if (!pageId || pageId === this.getCurrentPageId()) {
-      return false;
-    }
-    this.requestedTargetGuidanceStepId = null;
-    this.onShowPage?.(pageId);
     return true;
   }
 
@@ -630,80 +575,6 @@ export class PixiExperienceFacade {
     }
     this.clearTimeoutFn(this.tutorialRefreshTimeout);
     this.tutorialRefreshTimeout = null;
-  }
-
-  registerRevealGroups() {
-    this.unregisterRevealGroups();
-    const layers =
-      this.layers ?? this.renderFacade.getPixiLayers?.();
-    const topTarget = this.requireRevealTarget('top:mana');
-    const roomsTarget = this.requireRevealTarget('page:workshop');
-    const definitions = [
-      {
-        token: 'top',
-        displayObject:
-          findLayerOwnedRoot(
-            topTarget.displayObject,
-            layers?.globalChrome,
-          ) ??
-          findDescendantByLabel(layers?.globalChrome, 'topPanel'),
-      },
-      {
-        token: 'rooms',
-        displayObject:
-          findLayerOwnedRoot(
-            roomsTarget.displayObject,
-            layers?.globalChrome,
-          ) ??
-          findDescendantByLabel(layers?.globalChrome, 'bottomPanel'),
-      },
-      {
-        token: 'mana',
-        displayObject: topTarget.displayObject,
-      },
-      {
-        token: 'summon',
-        displayObject:
-          this.requireRevealTarget('workshop:summonSeed')
-            .displayObject,
-      },
-      {
-        token: 'tasks',
-        displayObject:
-          this.requireRevealTarget('workshop:tasks').displayObject,
-      },
-    ];
-
-    for (const { token, displayObject } of definitions) {
-      if (!displayObject) {
-        throw new Error(
-          `Missing retained Pixi reveal display object for "${token}".`,
-        );
-      }
-      const unregister = this.revealController.register(token, {
-        objects: [displayObject],
-        interactiveObjects: [displayObject],
-      });
-      if (typeof unregister === 'function') {
-        this.revealUnregisters.push(unregister);
-      }
-    }
-  }
-
-  requireRevealTarget(targetId) {
-    const target = this.resolveTarget(targetId);
-    if (!target?.displayObject) {
-      throw new Error(
-        `Missing retained Pixi tutorial target: ${targetId}`,
-      );
-    }
-    return target;
-  }
-
-  unregisterRevealGroups() {
-    for (const unregister of this.revealUnregisters.splice(0).reverse()) {
-      unregister();
-    }
   }
 
   getNotificationVisibilityPolicy(viewState) {
@@ -1180,33 +1051,6 @@ function getAllowedDialogIds(targetId) {
     }
   }
   return allowed;
-}
-
-function findLayerOwnedRoot(displayObject, layer) {
-  if (!displayObject || !layer) {
-    return null;
-  }
-  let current = displayObject;
-  while (current?.parent && current.parent !== layer) {
-    current = current.parent;
-  }
-  return current?.parent === layer ? current : null;
-}
-
-function findDescendantByLabel(root, label) {
-  if (!root) {
-    return null;
-  }
-  if (root.label === label) {
-    return root;
-  }
-  for (const child of root.children ?? []) {
-    const match = findDescendantByLabel(child, label);
-    if (match) {
-      return match;
-    }
-  }
-  return null;
 }
 
 function isDisplayObjectDescendant(displayObject, root) {

@@ -60,7 +60,6 @@ const DRAG_YELLS = Object.freeze([
  *
  * @typedef {object} TutorialPixiViewModel
  * @property {'hidden'|'blocked'|'quest'|'lesson'} kind
- * @property {string[]|null} revealTokens
  * @property {{id?: string, targetId?: string, highlightTargetIds?: string[]}} step
  * @property {object|null} lesson
  * @property {object|null} cue
@@ -76,7 +75,6 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     assets,
     inputRouter = null,
     semanticRegistry = null,
-    revealController = null,
     spineRuntime = null,
     application = null,
     parent = null,
@@ -90,7 +88,6 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.assets = assets;
     this.inputRouter = inputRouter;
     this.semanticRegistry = semanticRegistry;
-    this.revealController = revealController;
     this.application = application;
     this.reducedMotion = Boolean(reducedMotion);
     this.model = createHiddenTutorialModel();
@@ -253,7 +250,6 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
       this.restoreTargetEmphasis();
     }
 
-    this.syncRevealProjection();
     this.render();
     if (next.kind === 'lesson' && this.panelOpen) {
       this.startTypewriterIfNeeded();
@@ -318,14 +314,12 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
   }
 
   onActivate() {
-    this.revealController?.activate?.();
     this.render();
     this.syncTicker();
   }
 
   onDeactivate() {
     this.stopTicker();
-    this.revealController?.deactivate?.();
     this.clearTargetPressProxy();
     this.pointer.setVisible(false);
     this.cancelTypewriter();
@@ -341,7 +335,6 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.registrations.length = 0;
     this.surface.destroy();
     this.pointer.destroy();
-    this.revealController?.destroy?.();
   }
 
   render() {
@@ -649,32 +642,13 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.panelOpen = !this.panelOpen;
     if (!this.panelOpen) {
       this.cancelTypewriter();
-      this.syncRevealProjection();
       this.actions.lessonPanelClose?.();
     } else {
-      this.syncRevealProjection();
       this.startTypewriterIfNeeded();
     }
     this.render();
     this.syncTicker();
     return true;
-  }
-
-  syncRevealProjection() {
-    // Blocking surfaces own their occlusion, and a collapsed Elara panel must
-    // leave the room usable. Reapply the current lesson gate when help opens.
-    if (
-      this.model.kind === 'hidden' ||
-      this.model.kind === 'blocked' ||
-      this.model.revealTokens === null ||
-      (this.model.kind === 'lesson' && !this.panelOpen)
-    ) {
-      this.revealController?.restore?.();
-      return;
-    }
-    this.revealController?.apply?.(this.model.revealTokens, {
-      reducedMotion: this.reducedMotion,
-    });
   }
 
   setGuidePressed(pressed) {
@@ -1022,7 +996,6 @@ export function createTutorialPixiViewModel(
     null;
   return normalizeTutorialPixiViewModel({
     kind: state.kind,
-    revealTokens: state.revealTokens,
     step: step
       ? {
           ...step,
@@ -1647,7 +1620,6 @@ export function normalizeTutorialPixiViewModel(model) {
   }
   return {
     kind,
-    revealTokens: normalizeRevealTokens(model?.revealTokens),
     step,
     lesson,
     cue,
@@ -1793,10 +1765,6 @@ function normalizeIds(values) {
         .map(normalizeOptionalId)
         .filter(Boolean)
     : [];
-}
-
-function normalizeRevealTokens(values) {
-  return Array.isArray(values) ? normalizeIds(values) : null;
 }
 
 function normalizeOptionalId(value) {

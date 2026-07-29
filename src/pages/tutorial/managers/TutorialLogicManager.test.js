@@ -13,7 +13,6 @@ function createStep(overrides = {}) {
     progressLabel: '1/5 seeds',
     cueMode: 'active',
     showPointer: true,
-    revealTokens: ['mana', 'summon', 'tasks'],
     ...overrides,
   };
 }
@@ -59,7 +58,6 @@ describe('TutorialLogicManager', () => {
   it('uses the active quest alone when its label matches the lesson objective', () => {
     const step = createStep({
       objectiveText: 'research mana tonic.',
-      revealTokens: ['top', 'rooms'],
     });
     const { manager, reminderManager } = createManager({ step });
 
@@ -90,7 +88,6 @@ describe('TutorialLogicManager', () => {
     expect(viewState).toMatchObject({
       kind: 'quest',
       step,
-      revealTokens: ['top', 'rooms'],
       cue: { kind: 'none' },
     });
     expect(reminderManager.clearVisibleCount).toBe(1);
@@ -110,7 +107,6 @@ describe('TutorialLogicManager', () => {
 
     expect(viewState).toMatchObject({
       kind: 'lesson',
-      revealTokens: ['mana', 'summon', 'tasks'],
       lesson: {
         id: 'finish-seed-task',
         title: undefined,
@@ -135,7 +131,6 @@ describe('TutorialLogicManager', () => {
       progress: null,
       progressLabel: '',
       cueMode: 'focus-target',
-      revealTokens: ['top'],
     });
     const { manager, reminderManager } = createManager({ step });
 
@@ -197,7 +192,6 @@ describe('TutorialLogicManager', () => {
       progress: null,
       progressLabel: '',
       cueMode: 'focus-target',
-      revealTokens: ['top'],
     });
 
     const viewState = manager.getViewState({
@@ -232,7 +226,6 @@ describe('TutorialLogicManager', () => {
       progress: null,
       progressLabel: '',
       cueMode: 'focus-target',
-      revealTokens: ['top'],
     });
     const { manager } = createManager({ step });
 

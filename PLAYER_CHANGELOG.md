@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.25
+
+- Reworked Garden controls with a persistent seed choice, quicker plot planting, and a Harvest All action for ready herbs.
+- Fixed Elara's Brewing guidance so it points to the live Brew action.
+- Kept normal room controls available while Elara is guiding the current lesson.
+
 ## 0.3.24
 
 - Standardized Garden plot soil artwork for a clearer, more consistent room layout.

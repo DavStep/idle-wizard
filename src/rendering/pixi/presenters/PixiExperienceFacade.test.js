@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   PIXI_EXPERIENCE_SURFACE_IDS,
-  PIXI_TUTORIAL_REVEAL_TOKENS,
   PixiExperienceFacade,
 } from './PixiExperienceFacade.js';
 
@@ -49,7 +48,7 @@ describe('PixiExperienceFacade', () => {
     expect(harness.introModal.unregister).toHaveBeenCalledTimes(2);
   });
 
-  it('routes semantic tutorial actions, stage APIs, reveal groups, and notification policy', () => {
+  it('routes optional tutorial guidance without activating targets or changing pages', () => {
     const logic = createTutorialLogic();
     const showPage = vi.fn();
     const policyListener = vi.fn();
@@ -69,11 +68,6 @@ describe('PixiExperienceFacade', () => {
     facade.subscribeNotificationPolicy(policyListener);
     facade.mount();
 
-    expect(
-      harness.revealController.register.mock.calls.map(
-        ([token]) => token,
-      ),
-    ).toEqual(PIXI_TUTORIAL_REVEAL_TOKENS);
     expect(policyListener).toHaveBeenLastCalledWith({
       active: true,
       allowedTutorialIds: ['task:demo'],
@@ -84,12 +78,12 @@ describe('PixiExperienceFacade', () => {
     expect(
       firstModel.actions.objectivePress({ source: 'show-me' }),
     ).toBe(true);
-    expect(harness.activations).toContain('task.demo');
+    expect(harness.activations).not.toContain('task.demo');
 
     expect(firstModel.actions.advance()).toBe(true);
     expect(logic.advanceActiveStep).toHaveBeenCalledTimes(1);
     expect(harness.activations).toContain('workshop.tasks');
-    expect(showPage).toHaveBeenCalledWith('garden');
+    expect(showPage).not.toHaveBeenCalled();
 
     expect(facade.listTutorialStages().ok).toBe(true);
     expect(facade.setTutorialStage('t02')).toMatchObject({
@@ -128,10 +122,6 @@ describe('PixiExperienceFacade', () => {
     expect(harness.gameplayUnsubscribe).toHaveBeenCalledTimes(1);
     expect(harness.frameUnsubscribe).toHaveBeenCalledTimes(1);
     expect(harness.clearTimeoutFn).toHaveBeenCalled();
-    expect(harness.revealUnregisters).toHaveLength(5);
-    for (const unregister of harness.revealUnregisters) {
-      expect(unregister).toHaveBeenCalledTimes(1);
-    }
     expect(harness.views.tutorial.bind).toHaveBeenLastCalledWith({
       kind: 'hidden',
     });
@@ -162,14 +152,6 @@ function createHarness({
       return true;
     }),
     hide: vi.fn(),
-  };
-  const revealUnregisters = [];
-  const revealController = {
-    register: vi.fn(() => {
-      const unregister = vi.fn();
-      revealUnregisters.push(unregister);
-      return unregister;
-    }),
   };
   const views = {
     intro: {
@@ -227,7 +209,6 @@ function createHarness({
   const factories = {
     createIntroView: vi.fn(() => views.intro),
     createIntroPresenter: vi.fn(() => introPresenter),
-    createRevealController: vi.fn(() => revealController),
     createTutorialOverlay: vi.fn(() => views.tutorial),
     createTransientEffects: vi.fn(() => views.transient),
   };
@@ -265,8 +246,6 @@ function createHarness({
         viewsById.set(id, factory(context));
       }
     },
-    revealController,
-    revealUnregisters,
     rewardListener: () => {},
     rewardUnsubscribe,
     surfaceFactories,
@@ -283,14 +262,12 @@ function createTutorialLogic() {
     },
     getViewState: vi.fn(() => ({
       kind: 'lesson',
-      revealTokens: ['top', 'rooms', 'mana', 'summon', 'tasks'],
       step: {
         id: 'semantic-demo',
         targetId: 'task:demo',
         highlightTargetIds: [],
         advanceOnClick: true,
         advanceAction: 'expand-workshop-tasks',
-        advancePageId: 'garden',
         cueMode: 'active',
       },
       lesson: {

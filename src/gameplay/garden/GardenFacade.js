@@ -1,16 +1,19 @@
-import { GardenBalanceManager } from './managers/GardenBalanceManager.js';
-import { GardenCancellationManager } from './managers/GardenCancellationManager.js';
-import { GardenPlantingManager } from './managers/GardenPlantingManager.js';
-import { GardenProcessManager } from './managers/GardenProcessManager.js';
-import { GardenSnapshotManager } from './managers/GardenSnapshotManager.js';
-import { GardenTileEntityManager } from './managers/GardenTileEntityManager.js';
-import { GardenTilePurchaseManager } from './managers/GardenTilePurchaseManager.js';
-import { gardenTilePhases } from './components/GardenComponents.js';
-import { parseGameConfig } from '../config/gameConfigSnapshot.js';
+import { GardenBalanceManager } from "./managers/GardenBalanceManager.js";
+import { GardenCancellationManager } from "./managers/GardenCancellationManager.js";
+import { GardenPlantingManager } from "./managers/GardenPlantingManager.js";
+import { GardenProcessManager } from "./managers/GardenProcessManager.js";
+import { GardenSnapshotManager } from "./managers/GardenSnapshotManager.js";
+import { GardenTileEntityManager } from "./managers/GardenTileEntityManager.js";
+import { GardenTilePurchaseManager } from "./managers/GardenTilePurchaseManager.js";
+import {
+  gardenTilePhaseNames,
+  gardenTilePhases,
+} from "./components/GardenComponents.js";
+import { parseGameConfig } from "../config/gameConfigSnapshot.js";
 
 export class GardenFacade {
   static explain =
-    'The garden turns planted seeds into herbs: tiles are opened with coin, then each tile grows and harvests over time.';
+    "The garden turns planted seeds into herbs: tiles are opened with coin, then each tile grows and harvests over time.";
 
   constructor({
     coinFacade,
@@ -64,7 +67,7 @@ export class GardenFacade {
   }
 
   applyRuntimeConfig(snapshot = {}) {
-    const balance = parseGameConfig(snapshot, 'garden');
+    const balance = parseGameConfig(snapshot, "garden");
 
     if (!balance) {
       return;
@@ -73,7 +76,8 @@ export class GardenFacade {
     try {
       this.gardenBalanceManager.setRuntimeBalance(balance);
       this.gardenTileEntityManager.configureCapacity({
-        initialUnlockedTiles: this.gardenBalanceManager.getInitialUnlockedTiles(),
+        initialUnlockedTiles:
+          this.gardenBalanceManager.getInitialUnlockedTiles(),
         maxTiles: this.gardenBalanceManager.getMaxTiles(),
       });
     } catch {
@@ -105,6 +109,29 @@ export class GardenFacade {
     return this.gardenPlantingManager.startHarvest(tileNumber);
   }
 
+  startAllReadyHarvests() {
+    const readyTiles = this.gardenSnapshotManager
+      .getTileSnapshots()
+      .filter(
+        (tile) => tile.phase === gardenTilePhaseNames[gardenTilePhases.ready],
+      );
+    const results = readyTiles.map((tile) =>
+      this.gardenPlantingManager.startHarvest(tile.tileNumber),
+    );
+    const harvestedTileNumbers = results
+      .filter((result) => result.ok)
+      .map((result) => result.tileNumber);
+
+    return {
+      ok: harvestedTileNumbers.length > 0,
+      harvestedTileNumbers,
+      results,
+      ...(harvestedTileNumbers.length === 0
+        ? { reason: "no_ready_tiles" }
+        : {}),
+    };
+  }
+
   cancelProgress(tileNumber) {
     return this.gardenCancellationManager.cancelProgress(tileNumber);
   }
@@ -134,7 +161,7 @@ export class GardenFacade {
   }
 
   applyPersistenceSnapshot(snapshot = {}) {
-    if (!snapshot || typeof snapshot !== 'object') {
+    if (!snapshot || typeof snapshot !== "object") {
       return;
     }
 
@@ -153,11 +180,17 @@ export class GardenFacade {
       return unlockedTiles;
     }
 
-    return Math.min(unlockedTiles, this.getMaxUnlockedTilesByProgression(unlockedTiles));
+    return Math.min(
+      unlockedTiles,
+      this.getMaxUnlockedTilesByProgression(unlockedTiles),
+    );
   }
 
-  getMaxUnlockedTilesByProgression(fallback = this.gardenBalanceManager.getMaxTiles()) {
-    const maxTilesByLevel = this.playerLevelFacade?.getMaxGardenTiles?.() ?? fallback;
+  getMaxUnlockedTilesByProgression(
+    fallback = this.gardenBalanceManager.getMaxTiles(),
+  ) {
+    const maxTilesByLevel =
+      this.playerLevelFacade?.getMaxGardenTiles?.() ?? fallback;
 
     return Math.min(
       this.gardenBalanceManager.getMaxTiles(),
@@ -172,20 +205,23 @@ export class GardenFacade {
     }
 
     const seed =
-      typeof tile.seedItemKey === 'string'
+      typeof tile.seedItemKey === "string"
         ? this.itemsFacade.safeGetDefinitionByKey(tile.seedItemKey)
         : null;
     let selectedSeed = seed;
     const phase = gardenTilePhases[tile.phase] ?? gardenTilePhases.empty;
 
-    if (phase === gardenTilePhases.empty && Object.hasOwn(tile, 'selectedSeedItemKey')) {
+    if (
+      phase === gardenTilePhases.empty &&
+      Object.hasOwn(tile, "selectedSeedItemKey")
+    ) {
       selectedSeed =
-        typeof tile.selectedSeedItemKey === 'string'
+        typeof tile.selectedSeedItemKey === "string"
           ? this.itemsFacade.safeGetDefinitionByKey(tile.selectedSeedItemKey)
           : null;
     }
     const herb =
-      typeof tile.herbItemKey === 'string'
+      typeof tile.herbItemKey === "string"
         ? this.itemsFacade.safeGetDefinitionByKey(tile.herbItemKey)
         : null;
 
@@ -194,10 +230,15 @@ export class GardenFacade {
       selectedSeedItemTypeId: selectedSeed?.id ?? 0,
       seedItemTypeId: seed?.id ?? 0,
       herbItemTypeId: herb?.id ?? 0,
-      harvestQuantity: Math.max(1, Math.floor(Number(tile.harvestQuantity) || 1)),
+      harvestQuantity: Math.max(
+        1,
+        Math.floor(Number(tile.harvestQuantity) || 1),
+      ),
       phase,
       totalSeconds: Number.isFinite(tile.totalMs) ? tile.totalMs / 1_000 : 0,
-      remainingSeconds: Number.isFinite(tile.remainingMs) ? tile.remainingMs / 1_000 : 0,
+      remainingSeconds: Number.isFinite(tile.remainingMs)
+        ? tile.remainingMs / 1_000
+        : 0,
     };
   }
 }

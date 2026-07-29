@@ -18,7 +18,6 @@ import {
   resolveTutorialPointerPlacement,
   TUTORIAL_PIXI_GEOMETRY,
 } from './TutorialPixiGeometry.js';
-import { TutorialRevealController } from './TutorialRevealController.js';
 import {
   TUTORIAL_POINTER_DRAG_TIMING,
   TutorialPointerSpine,
@@ -146,7 +145,6 @@ describe('TutorialPixiOverlay', () => {
       createTutorialPixiViewModel(
         {
           kind: 'lesson',
-          revealTokens: ['top', 'mana'],
           step: {
             id: 'mana-intro',
             targetId: 'top:mana',
@@ -574,142 +572,21 @@ describe('TutorialPixiOverlay', () => {
     expect(overlay.surface.outerHeight).toBe(initialSize.height);
   });
 
-  it('restores room reveal groups when a blocker hides the tutorial surface', () => {
-    const revealController = {
-      apply: vi.fn(),
-      restore: vi.fn(),
-    };
+  it('keeps guidance hidden while a real blocker owns the screen', () => {
     const overlay = new TutorialPixiOverlay({
       assets: createAssets(),
-      revealController,
       reducedMotion: true,
     });
     overlay.activate();
-    overlay.bind({
-      kind: 'lesson',
-      revealTokens: [],
-      step: { id: 'intro', highlightTargetIds: [] },
-      lesson: {
-        id: 'intro',
-        text: 'Let’s get the workshop running.',
-        autoOpen: true,
-      },
-      cue: { kind: 'none' },
-    });
-
-    expect(revealController.apply).toHaveBeenCalledWith([], {
-      reducedMotion: true,
-    });
-
     overlay.bind({
       kind: 'blocked',
-      revealTokens: [],
       step: { id: 'intro', highlightTargetIds: [] },
       lesson: null,
       cue: { kind: 'none' },
     });
 
     expect(overlay.root.visible).toBe(false);
-    expect(revealController.restore).toHaveBeenCalledTimes(1);
-  });
-
-  it('restores room reveal groups while Elara is collapsed and reapplies them when reopened', () => {
-    const revealController = {
-      apply: vi.fn(),
-      restore: vi.fn(),
-    };
-    const overlay = new TutorialPixiOverlay({
-      assets: createAssets(),
-      revealController,
-      reducedMotion: true,
-    });
-    const model = {
-      kind: 'lesson',
-      revealTokens: [],
-      step: { id: 'intro', highlightTargetIds: [] },
-      lesson: {
-        id: 'intro',
-        text: 'Let’s get the workshop running.',
-        autoOpen: true,
-      },
-      cue: { kind: 'none' },
-    };
-
-    overlay.activate();
-    overlay.bind(model);
-    expect(revealController.apply).toHaveBeenCalledTimes(1);
-
-    overlay.togglePanel();
-    expect(overlay.isLessonPanelOpen()).toBe(false);
-    expect(revealController.restore).toHaveBeenCalledTimes(1);
-
-    overlay.bind(model);
-    expect(revealController.apply).toHaveBeenCalledTimes(1);
-    expect(revealController.restore).toHaveBeenCalledTimes(2);
-
-    overlay.togglePanel();
-    expect(overlay.isLessonPanelOpen()).toBe(true);
-    expect(revealController.apply).toHaveBeenCalledTimes(2);
-  });
-
-  it('restores room reveal groups when a quest has no reveal contract', () => {
-    const revealController = {
-      apply: vi.fn(),
-      restore: vi.fn(),
-    };
-    const overlay = new TutorialPixiOverlay({
-      assets: createAssets(),
-      revealController,
-      reducedMotion: true,
-    });
-    overlay.activate();
-    overlay.bind({
-      kind: 'lesson',
-      revealTokens: [],
-      step: { id: 'intro', highlightTargetIds: [] },
-      lesson: {
-        id: 'intro',
-        text: 'Let’s get the workshop running.',
-        autoOpen: true,
-      },
-      cue: { kind: 'none' },
-    });
-
-    overlay.bind({
-      kind: 'quest',
-      revealTokens: null,
-      step: { id: 'grow-sage', highlightTargetIds: [] },
-      lesson: null,
-      cue: { kind: 'none' },
-    });
-
-    expect(overlay.root.visible).toBe(false);
-    expect(overlay.model.revealTokens).toBeNull();
-    expect(revealController.restore).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('TutorialRevealController', () => {
-  it('reveals explicit Pixi groups and restores captured state', () => {
-    const ticker = createTicker();
-    const root = new Container();
-    root.eventMode = 'static';
-    root.position.set(0, 12);
-    const reveal = new TutorialRevealController({ ticker });
-    reveal.register('mana', { objects: [root] });
-
-    expect(root.visible).toBe(true);
-    reveal.activate();
-    reveal.apply(['mana']);
-    expect(root.visible).toBe(true);
-    expect(root.alpha).toBe(0);
-    ticker.tick(220);
-    expect(root.alpha).toBe(1);
-    expect(root.y).toBe(12);
-
-    reveal.restore();
-    expect(root.visible).toBe(true);
-    expect(root.eventMode).toBe('static');
+    expect(overlay.root.eventMode).toBe('none');
   });
 });
 

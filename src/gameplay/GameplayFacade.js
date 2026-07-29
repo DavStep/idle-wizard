@@ -1,37 +1,37 @@
-import { AutomationFacade } from './automation/AutomationFacade.js';
-import { BrewingFacade } from './brewing/BrewingFacade.js';
-import { CrystalFacade } from './crystal/CrystalFacade.js';
-import { EmeraldFacade } from './emerald/EmeraldFacade.js';
-import { CoinFacade } from './coin/CoinFacade.js';
-import { GardenFacade } from './garden/GardenFacade.js';
-import { GuildFacade } from './guild/GuildFacade.js';
-import { InboxRewardsFacade } from './inboxRewards/InboxRewardsFacade.js';
-import { ItemsFacade } from './items/ItemsFacade.js';
-import { ManaFacade } from './mana/ManaFacade.js';
-import { MarketLicenceFacade } from './market/MarketLicenceFacade.js';
-import { GameplayRewardEventManager } from './managers/GameplayRewardEventManager.js';
-import { GameplayStateObserverManager } from './managers/GameplayStateObserverManager.js';
-import { LevelUpCrystalRewardManager } from './managers/LevelUpCrystalRewardManager.js';
-import { GameplayLogFacade } from './logs/GameplayLogFacade.js';
-import { GameplayPersistenceFacade } from './persistence/GameplayPersistenceFacade.js';
+import { AutomationFacade } from "./automation/AutomationFacade.js";
+import { BrewingFacade } from "./brewing/BrewingFacade.js";
+import { CrystalFacade } from "./crystal/CrystalFacade.js";
+import { EmeraldFacade } from "./emerald/EmeraldFacade.js";
+import { CoinFacade } from "./coin/CoinFacade.js";
+import { GardenFacade } from "./garden/GardenFacade.js";
+import { GuildFacade } from "./guild/GuildFacade.js";
+import { InboxRewardsFacade } from "./inboxRewards/InboxRewardsFacade.js";
+import { ItemsFacade } from "./items/ItemsFacade.js";
+import { ManaFacade } from "./mana/ManaFacade.js";
+import { MarketLicenceFacade } from "./market/MarketLicenceFacade.js";
+import { GameplayRewardEventManager } from "./managers/GameplayRewardEventManager.js";
+import { GameplayStateObserverManager } from "./managers/GameplayStateObserverManager.js";
+import { LevelUpCrystalRewardManager } from "./managers/LevelUpCrystalRewardManager.js";
+import { GameplayLogFacade } from "./logs/GameplayLogFacade.js";
+import { GameplayPersistenceFacade } from "./persistence/GameplayPersistenceFacade.js";
 import {
   PERSONAL_TASK_ACTIONS,
   PersonalTasksFacade,
-} from './personalTasks/PersonalTasksFacade.js';
-import { PlayerLevelFacade } from './playerLevel/PlayerLevelFacade.js';
-import { PrestigeFacade } from './prestige/PrestigeFacade.js';
-import { ResearchFacade } from './research/ResearchFacade.js';
-import { RubyFacade } from './ruby/RubyFacade.js';
-import { SeedSummoningFacade } from './seedSummoning/SeedSummoningFacade.js';
-import { ShopFacade } from './shop/ShopFacade.js';
-import { StatsFacade } from './stats/StatsFacade.js';
-import { TasksFacade } from './tasks/TasksFacade.js';
-import { VisualSettingsFacade } from './visualSettings/VisualSettingsFacade.js';
-import { WhileAwayReportFacade } from './whileAway/WhileAwayReportFacade.js';
+} from "./personalTasks/PersonalTasksFacade.js";
+import { PlayerLevelFacade } from "./playerLevel/PlayerLevelFacade.js";
+import { PrestigeFacade } from "./prestige/PrestigeFacade.js";
+import { ResearchFacade } from "./research/ResearchFacade.js";
+import { RubyFacade } from "./ruby/RubyFacade.js";
+import { SeedSummoningFacade } from "./seedSummoning/SeedSummoningFacade.js";
+import { ShopFacade } from "./shop/ShopFacade.js";
+import { StatsFacade } from "./stats/StatsFacade.js";
+import { TasksFacade } from "./tasks/TasksFacade.js";
+import { VisualSettingsFacade } from "./visualSettings/VisualSettingsFacade.js";
+import { WhileAwayReportFacade } from "./whileAway/WhileAwayReportFacade.js";
 import {
   WORLD_NOTICE_ACTIONS,
   WorldNoticeFacade,
-} from './worldNotice/WorldNoticeFacade.js';
+} from "./worldNotice/WorldNoticeFacade.js";
 
 export const GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS = 50;
 export const GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS = 250;
@@ -58,7 +58,7 @@ function normalizeFrameLevel(level) {
 
 export class GameplayFacade {
   static explain =
-    'Runs the player resources and actions: mana fills up, actions spend it, and owned things change.';
+    "Runs the player resources and actions: mana fills up, actions spend it, and owned things change.";
 
   constructor({ persistenceStorage, persistenceNow, shopNow } = {}) {
     this.stateObserverManager = new GameplayStateObserverManager();
@@ -155,7 +155,8 @@ export class GameplayFacade {
       marketLicenceFacade: this.marketLicenceFacade,
       playerLevelFacade: this.playerLevelFacade,
       researchFacade: this.researchFacade,
-      getReservedItemQuantity: (itemTypeId) => this.getReservedShopItemQuantity(itemTypeId),
+      getReservedItemQuantity: (itemTypeId) =>
+        this.getReservedShopItemQuantity(itemTypeId),
       onItemSold: (event) => this.handleItemSold(event),
       now: shopNow,
     });
@@ -214,8 +215,8 @@ export class GameplayFacade {
     this.initialized = false;
     this.lastFrameSnapshotPublishTime = Number.NEGATIVE_INFINITY;
     this.lastFrameSnapshotBuildTime = Number.NEGATIVE_INFINITY;
-    this.lastFrameSnapshotKey = '';
-    this.lastFrameResourceSnapshotKey = '';
+    this.lastFrameSnapshotKey = "";
+    this.lastFrameResourceSnapshotKey = "";
     this.lastFrameSeedSummoningAvailable = false;
     this.lastFrameHadTimerWork = false;
     this.snapshotCacheDepth = 0;
@@ -232,13 +233,14 @@ export class GameplayFacade {
   setGameConfigFacade(gameConfigFacade) {
     this.gameConfigUnsubscribe?.();
     this.gameConfigFacade = gameConfigFacade;
-    this.gameConfigUnsubscribe = gameConfigFacade?.subscribe?.((snapshot) => {
-      this.applyRuntimeConfig(snapshot);
+    this.gameConfigUnsubscribe =
+      gameConfigFacade?.subscribe?.((snapshot) => {
+        this.applyRuntimeConfig(snapshot);
 
-      if (this.initialized) {
-        this.publishSnapshot();
-      }
-    }) ?? null;
+        if (this.initialized) {
+          this.publishSnapshot();
+        }
+      }) ?? null;
     this.applyRuntimeConfig(gameConfigFacade?.getSnapshot?.());
   }
 
@@ -253,9 +255,12 @@ export class GameplayFacade {
     this.playerLevelFacade.applyRuntimeConfig(snapshot);
 
     if (this.initialized) {
-      const taskLevelCompletion = this.completeReadyTaskLevels({ announce: false });
+      const taskLevelCompletion = this.completeReadyTaskLevels({
+        announce: false,
+      });
       this.syncPlayerLevelManaEffects();
-      const backfilledCrystal = this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
+      const backfilledCrystal =
+        this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
       if (backfilledCrystal > 0 || taskLevelCompletion?.advanced) {
         this.persistenceFacade.save();
       }
@@ -266,9 +271,10 @@ export class GameplayFacade {
     this.npcMarketUnsubscribe?.();
     this.npcMarketUnsubscribe = null;
     this.shopFacade.setNpcMarketFacade(npcMarketFacade);
-    this.npcMarketUnsubscribe = npcMarketFacade?.subscribe?.(() => {
-      this.scheduleNpcMarketSnapshotPublish();
-    }) ?? null;
+    this.npcMarketUnsubscribe =
+      npcMarketFacade?.subscribe?.(() => {
+        this.scheduleNpcMarketSnapshotPublish();
+      }) ?? null;
 
     if (this.initialized) {
       this.publishSnapshot();
@@ -330,7 +336,8 @@ export class GameplayFacade {
     }
     this.shopFacade.syncActiveMarketLicence();
     this.syncRubyFromPrestige();
-    const backfilledCrystal = this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
+    const backfilledCrystal =
+      this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
     this.syncPlayerLevelManaEffects();
     this.tasksFacade.syncCurrentLevelStateRequirements();
     const taskLevelCompletion = loaded
@@ -380,7 +387,7 @@ export class GameplayFacade {
     if (result.ok) {
       this.gameplayLogFacade.logShopStandBought({
         ...result,
-        marketLabel: 'trader market',
+        marketLabel: "trader market",
       });
     }
     this.publishAndSaveSnapshot();
@@ -392,7 +399,7 @@ export class GameplayFacade {
     if (result.ok) {
       this.gameplayLogFacade.logShopStandBought({
         ...result,
-        marketLabel: 'player market',
+        marketLabel: "player market",
       });
     }
     this.publishAndSaveSnapshot();
@@ -420,7 +427,10 @@ export class GameplayFacade {
   fillTask(taskId) {
     const result = this.tasksFacade.fillTask(taskId);
     if (result.ok && result.completed) {
-      this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS, 1);
+      this.recordPersonalTaskAction(
+        PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS,
+        1,
+      );
       this.completeReadyTaskLevels();
     }
     this.publishAndSaveSnapshot();
@@ -430,7 +440,10 @@ export class GameplayFacade {
   completeTask(taskId) {
     const result = this.tasksFacade.completeTask(taskId);
     if (result.ok) {
-      this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS, 1);
+      this.recordPersonalTaskAction(
+        PERSONAL_TASK_ACTIONS.COMPLETE_MAIN_REQUIREMENTS,
+        1,
+      );
       this.completeReadyTaskLevels();
     }
     this.publishAndSaveSnapshot();
@@ -492,7 +505,7 @@ export class GameplayFacade {
       this.publishAndSaveSnapshot();
       return {
         ok: false,
-        reason: 'unknown_milestone',
+        reason: "unknown_milestone",
       };
     }
 
@@ -522,11 +535,16 @@ export class GameplayFacade {
 
   buyResearch(researchId) {
     const result = this.researchFacade.buyResearch(researchId);
-    if (result.ok && this.researchFacade.hasCompletedResearch(result.researchId)) {
+    if (
+      result.ok &&
+      this.researchFacade.hasCompletedResearch(result.researchId)
+    ) {
       this.handleResearchComplete({
         researchId: result.researchId,
         label: this.researchFacade.getResearchLabel(result.researchId),
-        actionType: this.researchFacade.getResearchActionType(result.researchId),
+        actionType: this.researchFacade.getResearchActionType(
+          result.researchId,
+        ),
       });
     }
     this.publishAndSaveSnapshot();
@@ -541,8 +559,11 @@ export class GameplayFacade {
 
   resetRunAfterPrestige() {
     const prestige = this.prestigeFacade.getPersistenceSnapshot();
-    const prestigeResetLevel = getPrestigeResetLevel(prestige.completedLevels.at(-1));
-    const completedCapacityResearchIds = this.researchFacade.getPermanentCompletedResearchIds();
+    const prestigeResetLevel = getPrestigeResetLevel(
+      prestige.completedLevels.at(-1),
+    );
+    const completedCapacityResearchIds =
+      this.researchFacade.getPermanentCompletedResearchIds();
     const emerald = {
       current: this.getPrestigeResetEmeraldCurrent(),
     };
@@ -615,7 +636,10 @@ export class GameplayFacade {
     this.rubyFacade.setCurrent(
       resetRun
         ? earnedRuby
-        : Math.max(clampedCurrentRuby, Math.min(missingUnspentRuby, earnedRuby)),
+        : Math.max(
+            clampedCurrentRuby,
+            Math.min(missingUnspentRuby, earnedRuby),
+          ),
     );
   }
 
@@ -626,7 +650,9 @@ export class GameplayFacade {
     );
     const spentEmerald = Math.max(
       0,
-      Math.floor(Number(this.researchFacade.getCommittedEmeraldCostTotal()) || 0),
+      Math.floor(
+        Number(this.researchFacade.getCommittedEmeraldCostTotal()) || 0,
+      ),
     );
 
     return currentEmerald + spentEmerald;
@@ -646,7 +672,9 @@ export class GameplayFacade {
     const completedLevels = new Set(prestige.completedLevels);
 
     if (milestone && !milestone.completed) {
-      for (const creditedLevel of milestone.creditedLevels ?? [milestone.level]) {
+      for (const creditedLevel of milestone.creditedLevels ?? [
+        milestone.level,
+      ]) {
         completedLevels.add(creditedLevel);
       }
     }
@@ -663,20 +691,24 @@ export class GameplayFacade {
     };
   }
 
-  handleResearchComplete({ researchId, label, actionType = 'research' }) {
+  handleResearchComplete({ researchId, label, actionType = "research" }) {
     this.recordTaskAction({
-      type: 'research',
+      type: "research",
       researchId,
       quantity: 1,
     });
-    this.whileAwayReportFacade.recordResearchComplete({ researchId, label, actionType });
+    this.whileAwayReportFacade.recordResearchComplete({
+      researchId,
+      label,
+      actionType,
+    });
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.COMPLETE_RESEARCH, 1);
     this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH, 1);
     this.gameplayLogFacade.logResearchBought({
       label,
       actionType,
     });
-    if (actionType !== 'levelUp') {
+    if (actionType !== "levelUp") {
       void this.worldChatFacade?.announceResearch(label);
     }
   }
@@ -686,11 +718,12 @@ export class GameplayFacade {
 
     for (const seedCount of result.seedCounts ?? []) {
       const taskResult = this.tasksFacade.recordAction({
-        type: 'summon',
+        type: "summon",
         itemKey: seedCount.seed?.key,
         quantity: seedCount.quantity,
       });
-      completedRequest ||= taskResult.updates?.some((update) => update.completed) === true;
+      completedRequest ||=
+        taskResult.updates?.some((update) => update.completed) === true;
     }
 
     if (completedRequest) {
@@ -698,14 +731,24 @@ export class GameplayFacade {
     }
     this.statsFacade.recordSeedsGenerated(result.seedCounts ?? []);
     this.whileAwayReportFacade.recordSeedSummoned(result);
-    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SUMMON_SEEDS, result.quantity);
-    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SPEND_MANA, result.cost);
-    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.SUMMON_SEEDS, result.quantity, {
-      seed: result.seed,
-    });
+    this.recordPersonalTaskAction(
+      PERSONAL_TASK_ACTIONS.SUMMON_SEEDS,
+      result.quantity,
+    );
+    this.recordPersonalTaskAction(
+      PERSONAL_TASK_ACTIONS.SPEND_MANA,
+      result.cost,
+    );
+    this.recordWorldNoticeAction(
+      WORLD_NOTICE_ACTIONS.SUMMON_SEEDS,
+      result.quantity,
+      {
+        seed: result.seed,
+      },
+    );
     this.gameplayLogFacade.logSeedSummoned(result);
     this.rewardEventManager.publish({
-      type: 'seed_summoned',
+      type: "seed_summoned",
       seed: result.seed,
       seedCounts: result.seedCounts,
       quantity: result.quantity,
@@ -714,24 +757,34 @@ export class GameplayFacade {
 
   handleBrewStarted(event) {
     this.whileAwayReportFacade.recordBrewStarted(event);
-    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SPEND_MANA, event?.manaCost);
+    this.recordPersonalTaskAction(
+      PERSONAL_TASK_ACTIONS.SPEND_MANA,
+      event?.manaCost,
+    );
   }
 
   handleBrewComplete(event) {
     this.recordTaskAction({
-      type: 'brew',
+      type: "brew",
       itemKey: event.potion?.key,
       quantity: event.quantity,
     });
     this.statsFacade.recordPotionsBrewed(event);
     this.whileAwayReportFacade.recordBrewComplete(event);
-    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.BREW_POTIONS, event.quantity);
-    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.BREW_POTIONS, event.quantity, {
-      potion: event.potion,
-    });
+    this.recordPersonalTaskAction(
+      PERSONAL_TASK_ACTIONS.BREW_POTIONS,
+      event.quantity,
+    );
+    this.recordWorldNoticeAction(
+      WORLD_NOTICE_ACTIONS.BREW_POTIONS,
+      event.quantity,
+      {
+        potion: event.potion,
+      },
+    );
     this.gameplayLogFacade.logBrewCompleted(event);
     this.rewardEventManager.publish({
-      type: 'potion_collected',
+      type: "potion_collected",
       cauldronIndex: event.cauldronIndex,
       cauldronNumber: event.cauldronNumber,
       potion: event.potion,
@@ -741,19 +794,26 @@ export class GameplayFacade {
 
   handleGardenHarvestComplete(event) {
     this.recordTaskAction({
-      type: 'grow',
+      type: "grow",
       itemKey: event.herb?.key,
       quantity: event.quantity,
     });
     this.statsFacade.recordHerbsGrown(event);
     this.whileAwayReportFacade.recordGardenHarvestComplete(event);
-    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.HARVEST_HERBS, event.quantity);
-    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.HARVEST_HERBS, event.quantity, {
-      herb: event.herb,
-    });
+    this.recordPersonalTaskAction(
+      PERSONAL_TASK_ACTIONS.HARVEST_HERBS,
+      event.quantity,
+    );
+    this.recordWorldNoticeAction(
+      WORLD_NOTICE_ACTIONS.HARVEST_HERBS,
+      event.quantity,
+      {
+        herb: event.herb,
+      },
+    );
     this.gameplayLogFacade.logGardenHarvestCompleted(event);
     this.rewardEventManager.publish({
-      type: 'herb_harvested',
+      type: "herb_harvested",
       herb: event.herb,
       quantity: event.quantity,
       tileNumber: event.tileNumber,
@@ -771,21 +831,28 @@ export class GameplayFacade {
 
   handleItemSold(event) {
     this.recordTaskAction({
-      type: 'sell',
+      type: "sell",
       itemKey: event.item?.key,
       quantity: event.quantity ?? 1,
     });
     this.statsFacade.recordNpcTradeCoin(event.coin);
     this.whileAwayReportFacade.recordItemSold(event);
-    this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.SELL_ITEMS, event.quantity ?? 1);
+    this.recordPersonalTaskAction(
+      PERSONAL_TASK_ACTIONS.SELL_ITEMS,
+      event.quantity ?? 1,
+    );
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_COIN, event.coin);
-    this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.SELL_ITEMS, event.quantity ?? 1, {
-      item: event.item,
-    });
+    this.recordWorldNoticeAction(
+      WORLD_NOTICE_ACTIONS.SELL_ITEMS,
+      event.quantity ?? 1,
+      {
+        item: event.item,
+      },
+    );
     this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.EARN_COIN, event.coin);
     this.gameplayLogFacade.logItemSold(event);
     this.rewardEventManager.publish({
-      type: 'item_sold',
+      type: "item_sold",
       item: event.item,
       coin: event.coin,
       quantity: event.quantity ?? 1,
@@ -795,7 +862,7 @@ export class GameplayFacade {
 
   publishItemBought(event) {
     this.rewardEventManager.publish({
-      type: 'item_bought',
+      type: "item_bought",
       item: event.item,
       coin: event.coin,
       quantity: event.quantity ?? 1,
@@ -808,7 +875,7 @@ export class GameplayFacade {
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.EARN_COIN, event.coin);
     this.recordWorldNoticeAction(WORLD_NOTICE_ACTIONS.EARN_COIN, event.coin);
     this.rewardEventManager.publish({
-      type: 'coin_collected',
+      type: "coin_collected",
       coin: event.coin,
       source: event.source,
     });
@@ -832,7 +899,10 @@ export class GameplayFacade {
   }
 
   claimPersonalTaskMilestoneReward(periodType, threshold) {
-    const result = this.personalTasksFacade.claimMilestoneReward(periodType, threshold);
+    const result = this.personalTasksFacade.claimMilestoneReward(
+      periodType,
+      threshold,
+    );
     this.publishPersonalTaskRewardEvent(result);
     this.publishAndSaveSnapshot();
     return result;
@@ -858,7 +928,7 @@ export class GameplayFacade {
     }
 
     this.rewardEventManager.publish({
-      type: 'personal_task_reward_claimed',
+      type: "personal_task_reward_claimed",
       periodType: result.periodType,
       taskId: result.taskId,
       label: result.label,
@@ -880,7 +950,11 @@ export class GameplayFacade {
   }
 
   donateWorldNoticeResource(requestId, optionKey, quantity = null) {
-    const result = this.worldNoticeFacade.donateResource(requestId, optionKey, quantity);
+    const result = this.worldNoticeFacade.donateResource(
+      requestId,
+      optionKey,
+      quantity,
+    );
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -934,7 +1008,10 @@ export class GameplayFacade {
   }
 
   removeBrewingIngredientAt(slotIndex, cauldronIndex = 0) {
-    const result = this.brewingFacade.removeIngredientAt(slotIndex, cauldronIndex);
+    const result = this.brewingFacade.removeIngredientAt(
+      slotIndex,
+      cauldronIndex,
+    );
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -946,19 +1023,28 @@ export class GameplayFacade {
   }
 
   prepareBrewingRecipe(recipeKey, cauldronIndex = 0) {
-    const result = this.brewingFacade.prepareRecipeForSelection(recipeKey, cauldronIndex);
+    const result = this.brewingFacade.prepareRecipeForSelection(
+      recipeKey,
+      cauldronIndex,
+    );
     this.publishAndSaveSnapshot();
     return result;
   }
 
   setBrewingAutoBrewRecipe(recipeKey, cauldronIndex = 0) {
-    const result = this.brewingFacade.setAutoBrewRecipeKey(recipeKey, cauldronIndex);
+    const result = this.brewingFacade.setAutoBrewRecipeKey(
+      recipeKey,
+      cauldronIndex,
+    );
     this.publishAndFlushSnapshot();
     return result;
   }
 
   setBrewingAutoBrewEnabled(enabled, cauldronIndex = 0) {
-    const result = this.brewingFacade.setAutoBrewEnabled(enabled, cauldronIndex);
+    const result = this.brewingFacade.setAutoBrewEnabled(
+      enabled,
+      cauldronIndex,
+    );
     this.publishAndFlushSnapshot();
     return result;
   }
@@ -970,7 +1056,10 @@ export class GameplayFacade {
   }
 
   setBrewingAutoCollectEnabled(enabled, cauldronIndex = 0) {
-    const result = this.brewingFacade.setAutoCollectEnabled(enabled, cauldronIndex);
+    const result = this.brewingFacade.setAutoCollectEnabled(
+      enabled,
+      cauldronIndex,
+    );
     this.publishAndFlushSnapshot();
     return result;
   }
@@ -1004,13 +1093,17 @@ export class GameplayFacade {
   }
 
   setSeedSummoningManaReserve(manaReserve) {
-    const result = this.automationFacade.setSeedSummoningManaReserve(manaReserve);
+    const result =
+      this.automationFacade.setSeedSummoningManaReserve(manaReserve);
     this.publishAndSaveSnapshot();
     return result;
   }
 
   setSeedDropPreference(seedKey, preference) {
-    const result = this.seedSummoningFacade.setSeedDropPreference(seedKey, preference);
+    const result = this.seedSummoningFacade.setSeedDropPreference(
+      seedKey,
+      preference,
+    );
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -1021,7 +1114,9 @@ export class GameplayFacade {
       this.handleBrewStarted(result);
     }
     if (result.ok && result.discovery?.potionKey) {
-      void this.potionDiscoveryFacade?.discoverPotionRecipe(result.discovery.potionKey);
+      void this.potionDiscoveryFacade?.discoverPotionRecipe(
+        result.discovery.potionKey,
+      );
     }
     this.publishAndSaveSnapshot();
     return result;
@@ -1057,8 +1152,15 @@ export class GameplayFacade {
     return result;
   }
 
-  loadSelectedShopShelfSlotItem(itemTypeId, quantity = 1, { save = true } = {}) {
-    const result = this.shopFacade.loadSelectedShelfSlotItem(itemTypeId, quantity);
+  loadSelectedShopShelfSlotItem(
+    itemTypeId,
+    quantity = 1,
+    { save = true } = {},
+  ) {
+    const result = this.shopFacade.loadSelectedShelfSlotItem(
+      itemTypeId,
+      quantity,
+    );
     save ? this.publishAndSaveSnapshot() : this.publishSnapshot();
     return result;
   }
@@ -1076,13 +1178,19 @@ export class GameplayFacade {
   }
 
   setSelectedShopShelfSlotAllocation(itemTypeId, percentage) {
-    const result = this.shopFacade.setSelectedShelfSlotAllocation(itemTypeId, percentage);
+    const result = this.shopFacade.setSelectedShelfSlotAllocation(
+      itemTypeId,
+      percentage,
+    );
     this.publishAndSaveSnapshot();
     return result;
   }
 
   setSelectedShopShelfFutureItem(itemTypeId, enabled) {
-    const result = this.shopFacade.setSelectedShelfFutureItem(itemTypeId, enabled);
+    const result = this.shopFacade.setSelectedShelfFutureItem(
+      itemTypeId,
+      enabled,
+    );
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -1122,7 +1230,10 @@ export class GameplayFacade {
   }
 
   applyPlayerShopMarketSlotQuantity(slotNumber, quantity) {
-    const result = this.shopFacade.applyPlayerShopMarketSlotQuantity(slotNumber, quantity);
+    const result = this.shopFacade.applyPlayerShopMarketSlotQuantity(
+      slotNumber,
+      quantity,
+    );
     this.publishAndSaveSnapshot();
     return result;
   }
@@ -1134,7 +1245,7 @@ export class GameplayFacade {
         item: result.item,
         coin: result.totalPriceCoin,
         quantity: result.quantity,
-        source: 'player_market',
+        source: "player_market",
         listingKey: listing?.listingKey,
       });
     }
@@ -1155,7 +1266,7 @@ export class GameplayFacade {
         item: result.item,
         coin: result.totalPriceCoin,
         quantity: result.quantity,
-        source: 'npc_stock',
+        source: "npc_stock",
       });
     }
 
@@ -1172,7 +1283,7 @@ export class GameplayFacade {
     if (result.ok) {
       this.statsFacade.recordPlayerMarketProceeds({
         proceedsCoin: result.coin,
-        ...(statsBreakdown && typeof statsBreakdown === 'object'
+        ...(statsBreakdown && typeof statsBreakdown === "object"
           ? statsBreakdown
           : {
               fallbackPlayerTradeCoin: result.coin,
@@ -1180,7 +1291,7 @@ export class GameplayFacade {
       });
       this.handleCoinCollected({
         coin: result.coin,
-        source: 'player_shop_proceeds',
+        source: "player_shop_proceeds",
       });
     }
     this.publishAndSaveSnapshot();
@@ -1192,7 +1303,7 @@ export class GameplayFacade {
     if (result.ok) {
       this.handleCoinCollected({
         coin: result.coin,
-        source: 'shop_coin_offer',
+        source: "shop_coin_offer",
       });
     }
     this.publishAndSaveSnapshot();
@@ -1200,12 +1311,15 @@ export class GameplayFacade {
   }
 
   claimTradeAllianceCrystalReward(reward) {
-    const crystalReward = Math.max(0, Math.floor(Number(reward?.crystalReward) || 0));
+    const crystalReward = Math.max(
+      0,
+      Math.floor(Number(reward?.crystalReward) || 0),
+    );
 
     if (crystalReward <= 0) {
       return {
         ok: false,
-        reason: 'empty_reward',
+        reason: "empty_reward",
       };
     }
 
@@ -1233,11 +1347,17 @@ export class GameplayFacade {
   }
 
   fillTradeAllianceItemQuest(quest) {
-    const itemKey = String(quest?.itemKey ?? '').trim();
+    const itemKey = String(quest?.itemKey ?? "").trim();
     const target = Math.max(0, Math.floor(Number(quest?.target) || 0));
     const progress = Math.max(0, Math.floor(Number(quest?.progress) || 0));
-    const minContribution = Math.max(0, Math.floor(Number(quest?.minContribution) || 0));
-    const ownContribution = Math.max(0, Math.floor(Number(quest?.ownContribution) || 0));
+    const minContribution = Math.max(
+      0,
+      Math.floor(Number(quest?.minContribution) || 0),
+    );
+    const ownContribution = Math.max(
+      0,
+      Math.floor(Number(quest?.ownContribution) || 0),
+    );
     const remainingQuantity = Math.max(0, target - progress);
     const missingContribution = Math.max(0, minContribution - ownContribution);
     const fillGoalQuantity = Math.max(remainingQuantity, missingContribution);
@@ -1245,7 +1365,7 @@ export class GameplayFacade {
     if (!itemKey || fillGoalQuantity <= 0) {
       return {
         ok: false,
-        reason: 'not_ready',
+        reason: "not_ready",
       };
     }
 
@@ -1256,7 +1376,7 @@ export class GameplayFacade {
     } catch {
       return {
         ok: false,
-        reason: 'unknown_item',
+        reason: "unknown_item",
       };
     }
 
@@ -1266,16 +1386,19 @@ export class GameplayFacade {
     if (fillQuantity <= 0) {
       return {
         ok: false,
-        reason: 'not_enough_items',
+        reason: "not_enough_items",
       };
     }
 
-    const removed = this.itemsFacade.removeItem(itemDefinition.id, fillQuantity);
+    const removed = this.itemsFacade.removeItem(
+      itemDefinition.id,
+      fillQuantity,
+    );
 
     if (!removed) {
       return {
         ok: false,
-        reason: 'not_enough_items',
+        reason: "not_enough_items",
       };
     }
 
@@ -1301,7 +1424,7 @@ export class GameplayFacade {
     if (!Number.isInteger(itemTypeId) || itemTypeId <= 0 || quantity <= 0) {
       return {
         ok: false,
-        reason: 'invalid_fill',
+        reason: "invalid_fill",
       };
     }
 
@@ -1365,6 +1488,12 @@ export class GameplayFacade {
     return result;
   }
 
+  startAllReadyGardenHarvests() {
+    const result = this.gardenFacade.startAllReadyHarvests();
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   cancelGardenPlanting(tileNumber) {
     const result = this.gardenFacade.cancelProgress(tileNumber);
     this.publishAndSaveSnapshot();
@@ -1382,7 +1511,7 @@ export class GameplayFacade {
     return (this.gardenFacade.getSnapshot().plot?.tiles ?? []).filter(
       (tile) =>
         tile.unlocked &&
-        tile.phase === 'empty' &&
+        tile.phase === "empty" &&
         tile.selectedSeedItemTypeId === itemTypeId,
     ).length;
   }
@@ -1460,7 +1589,7 @@ export class GameplayFacade {
   }
 
   withSnapshotCache(callback) {
-    if (typeof callback !== 'function') {
+    if (typeof callback !== "function") {
       return undefined;
     }
 
@@ -1500,7 +1629,8 @@ export class GameplayFacade {
     if (
       !timerWorkCompleted &&
       time >= this.lastFrameSnapshotPublishTime &&
-      time - this.lastFrameSnapshotPublishTime < GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS
+      time - this.lastFrameSnapshotPublishTime <
+        GAMEPLAY_FRAME_SNAPSHOT_INTERVAL_MS
     ) {
       this.lastFrameHadTimerWork = hasTimerWork;
       return false;
@@ -1511,7 +1641,8 @@ export class GameplayFacade {
 
     const snapshotKey = this.getFrameSnapshotKey();
     const shouldRefresh = this.shouldRefreshFrameSnapshot(time, hasTimerWork);
-    const seedSummoningBecameAvailable = this.updateFrameSeedSummoningAvailability();
+    const seedSummoningBecameAvailable =
+      this.updateFrameSeedSummoningAvailability();
 
     if (
       snapshotKey === this.lastFrameSnapshotKey &&
@@ -1523,7 +1654,12 @@ export class GameplayFacade {
       return false;
     }
 
-    this.publishSnapshotObject(this.getSnapshot(), snapshotKey, time, hasTimerWork);
+    this.publishSnapshotObject(
+      this.getSnapshot(),
+      snapshotKey,
+      time,
+      hasTimerWork,
+    );
     return true;
   }
 
@@ -1533,7 +1669,11 @@ export class GameplayFacade {
     frameTime = this.getCurrentFrameTime(),
     hasTimerWork = this.hasFrameTimerWork(),
   ) {
-    this.updateSnapshotPublishMetadata(frameSnapshotKey, frameTime, hasTimerWork);
+    this.updateSnapshotPublishMetadata(
+      frameSnapshotKey,
+      frameTime,
+      hasTimerWork,
+    );
 
     if (!this.stateObserverManager.hasListeners()) {
       return false;
@@ -1552,7 +1692,8 @@ export class GameplayFacade {
     this.lastFrameSnapshotBuildTime = frameTime;
     this.lastFrameHadTimerWork = hasTimerWork;
     this.lastFrameResourceSnapshotKey = this.getFrameResourceSnapshotKey();
-    this.lastFrameSeedSummoningAvailable = this.seedSummoningFacade.canSummonSeed();
+    this.lastFrameSeedSummoningAvailable =
+      this.seedSummoningFacade.canSummonSeed();
   }
 
   getFrameSnapshotKey() {
@@ -1569,7 +1710,8 @@ export class GameplayFacade {
 
   updateFrameSeedSummoningAvailability() {
     const canSummonSeed = this.seedSummoningFacade.canSummonSeed();
-    const becameAvailable = !this.lastFrameSeedSummoningAvailable && canSummonSeed;
+    const becameAvailable =
+      !this.lastFrameSeedSummoningAvailable && canSummonSeed;
 
     this.lastFrameSeedSummoningAvailable = canSummonSeed;
     return becameAvailable;
@@ -1579,7 +1721,8 @@ export class GameplayFacade {
     return (
       hasTimerWork &&
       time >= this.lastFrameSnapshotBuildTime &&
-      time - this.lastFrameSnapshotBuildTime >= GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS
+      time - this.lastFrameSnapshotBuildTime >=
+        GAMEPLAY_FRAME_SNAPSHOT_REFRESH_MS
     );
   }
 
@@ -1775,25 +1918,28 @@ export class GameplayFacade {
   }
 
   syncPlayerLevelManaEffects() {
-    this.manaFacade.setLevelUpgradeEffects(this.playerLevelFacade.getManaEffects());
+    this.manaFacade.setLevelUpgradeEffects(
+      this.playerLevelFacade.getManaEffects(),
+    );
   }
 
   applyOfflineTimerCatchup(ecsFacade) {
-    const offlineDeltaSeconds = this.persistenceFacade.consumeOfflineDeltaSeconds();
+    const offlineDeltaSeconds =
+      this.persistenceFacade.consumeOfflineDeltaSeconds();
 
     return this.applyAwayTimerCatchup(ecsFacade, {
       deltaSeconds: offlineDeltaSeconds,
-      source: 'save_load',
+      source: "save_load",
     });
   }
 
-  applyAwayTimerCatchup(ecsFacade, { deltaSeconds, source = 'resume' } = {}) {
+  applyAwayTimerCatchup(ecsFacade, { deltaSeconds, source = "resume" } = {}) {
     const awayDeltaSeconds = Number(deltaSeconds);
 
     if (
       !Number.isFinite(awayDeltaSeconds) ||
       awayDeltaSeconds <= 0 ||
-      typeof ecsFacade?.update !== 'function'
+      typeof ecsFacade?.update !== "function"
     ) {
       return null;
     }

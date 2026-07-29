@@ -130,16 +130,17 @@ describe('BrewingPixiPage', () => {
   it('routes nested cauldron actions, herb drag/drop, dialogs, and semantic targets', () => {
     const selectCauldron = vi.fn(() => true);
     const primaryAction = vi.fn(() => true);
+    const performCauldronAction = vi.fn(() => true);
     const dropHerb = vi.fn(() => true);
     const selectRecipe = vi.fn(() => true);
     const harness = createHarness();
-    harness.page.bind(
-      createBrewingViewModel({
-        selectCauldron,
-        primaryAction,
-        dropHerb,
-      }),
-    );
+    const viewModel = createBrewingViewModel({
+      selectCauldron,
+      primaryAction,
+      dropHerb,
+    });
+    viewModel.actions.performCauldronAction = performCauldronAction;
+    harness.page.bind(viewModel);
     harness.page.activate();
 
     expect(
@@ -155,10 +156,24 @@ describe('BrewingPixiPage', () => {
       ),
     ).toBe(true);
     expect(primaryAction).toHaveBeenCalledTimes(1);
+    const brewingActionTarget =
+      harness.semanticTargets.getTutorialTarget('brewing:action');
+    expect(brewingActionTarget?.semanticId).toBe('brewing.brew');
+    expect(brewingActionTarget?.displayObject).toBe(
+      harness.page.hud.brew.root,
+    );
     expect(
-      harness.semanticTargets.getTutorialTarget('brewing:action')
-        ?.semanticId,
-    ).toBe('brewing.cauldron.0.primary');
+      harness.semanticTargets
+        .getTutorialTargets('brewing:action')
+        .map(({ semanticId }) => semanticId),
+    ).toEqual(['brewing.brew']);
+    expect(
+      harness.semanticTargets.activate(brewingActionTarget.semanticId),
+    ).toBe(true);
+    expect(performCauldronAction).toHaveBeenCalledWith(
+      viewModel.brewing.cauldrons[0],
+      viewModel.brewing.cauldrons[0].primaryAction,
+    );
     expect(
       harness.semanticTargets.getTutorialTarget('brewing:recipes')
         ?.semanticId,

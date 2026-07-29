@@ -6,7 +6,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
-import { TutorialRevealController } from '../../global/tutorial/TutorialRevealController.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
@@ -2201,7 +2200,7 @@ describe('WorkshopPixiPage', () => {
     expect(inputRouter.store.getRegistrations()).toHaveLength(0);
   });
 
-  it('routes a tutorial-revealed summon press through the stable button target', () => {
+  it('keeps the summon actionable when the tutorial overlay owns the event path', () => {
     const inputRouter = new PixiInputRouter();
     const summonSeed = vi.fn(() => ({ ok: true }));
     const harness = createHarness({ inputRouter });
@@ -2228,14 +2227,6 @@ describe('WorkshopPixiPage', () => {
       },
     });
 
-    const revealController = new TutorialRevealController();
-    revealController.register('summon', {
-      objects: [tutorialTarget.displayObject],
-      interactiveObjects: [tutorialTarget.displayObject],
-    });
-    revealController.apply([], { reducedMotion: true });
-    expect(inputRouter.isRegistrationAllowed(summonRegistration)).toBe(false);
-    revealController.apply(['summon'], { reducedMotion: true });
     expect(inputRouter.isRegistrationAllowed(summonRegistration)).toBe(true);
 
     const overlayTarget = new Container({ label: 'tutorial-overlay-hit' });
@@ -2251,7 +2242,6 @@ describe('WorkshopPixiPage', () => {
     expect(summonSeed).toHaveBeenCalledTimes(1);
 
     overlayTarget.destroy();
-    revealController.destroy();
     harness.page.destroy();
     harness.dispose();
   });

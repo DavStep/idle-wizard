@@ -963,17 +963,10 @@ describe('base styles', () => {
     expect(baseCss).not.toContain('--intro-dialog-button-slice:');
   });
 
-  it('snaps the initial tutorial reveal gate hidden before Elara paints', () => {
-    const primingRule = getRuleBody(
-      /\.game-stage\.is-tutorial-reveal-priming\[data-tutorial-reveal\][\s\S]*?\.room-top-panel__resource\[aria-label="mana"\]\s*\{(?<body>[^}]*)\}/,
-    );
-
-    expect(baseCss).toContain(
-      '.game-stage.is-tutorial-reveal-priming[data-tutorial-reveal]',
-    );
-    expect(baseCss).toContain('.room-bottom-panel-layer');
-    expect(baseCss).toContain('.workshop-page__tasks');
-    expect(primingRule).toContain('transition: none;');
+  it('does not use tutorial state to hide or disable room controls', () => {
+    expect(baseCss).not.toContain('[data-tutorial-reveal]');
+    expect(baseCss).not.toContain('[data-tutorial-reveal~=');
+    expect(baseCss).not.toContain('.is-tutorial-reveal-priming');
   });
 
   it('keeps Workshop requirement row actions compact for long labels', () => {

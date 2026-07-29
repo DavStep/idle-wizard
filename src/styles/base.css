@@ -2853,7 +2853,7 @@ body {
   white-space: nowrap;
 }
 
-.game-stage:not([data-tutorial-reveal])
+.game-stage
   :where(
     .workshop-page__tasks,
     .workshop-page__personal-tasks,
@@ -3094,13 +3094,6 @@ body {
   transform-origin: center bottom;
 }
 
-.game-stage[data-tutorial-reveal] .room-inventory-box:not([hidden]),
-.game-stage[data-tutorial-reveal] .style-box.brewing-page__herbs:not([hidden]) {
-  animation: none;
-  opacity: 1;
-  transform: none;
-}
-
 .room-inventory-box__count {
   position: absolute;
   top: var(--style-box-border-label-offset);
@@ -3251,128 +3244,6 @@ body {
 .game-stage[data-dev-bottom-tabs-preview] .room-bottom-panel-layer {
   opacity: 1;
   translate: 0;
-}
-
-.game-stage[data-dev-bottom-tabs-preview][data-tutorial-reveal]
-  .room-bottom-panel-layer
-  :where(button, [role="button"]) {
-  pointer-events: auto;
-}
-
-.game-stage[data-tutorial-reveal]
-  :where(
-    .room-top-panel-layer,
-    .room-bottom-panel-layer,
-    .room-world-chat-layer,
-    .workshop-page__action-bar > .style-button,
-    .workshop-page__bag,
-    .workshop-page__tasks,
-    .workshop-page__personal-tasks,
-    .workshop-page__world-notice
-  ) {
-  opacity: 0;
-  pointer-events: none;
-  translate: 0 4px;
-  transition:
-    opacity var(--style-motion-normal) var(--style-motion-ease),
-    translate var(--style-motion-normal) var(--style-motion-ease);
-}
-
-.game-stage[data-tutorial-reveal] .room-top-panel__resource[aria-label="mana"] {
-  opacity: 0;
-  pointer-events: none;
-  translate: 0 4px;
-  transition:
-    opacity var(--style-motion-normal) var(--style-motion-ease),
-    translate var(--style-motion-normal) var(--style-motion-ease);
-}
-
-.game-stage[data-tutorial-reveal] .room-top-panel__quest-progress {
-  display: none;
-}
-
-.game-stage[data-tutorial-reveal~="tasks"]
-  .room-top-panel__quest-progress:not([hidden]) {
-  display: grid;
-}
-
-.game-stage.is-tutorial-reveal-priming[data-tutorial-reveal]
-  :where(
-    .room-top-panel-layer,
-    .room-bottom-panel-layer,
-    .room-world-chat-layer,
-    .workshop-page__action-bar > .style-button,
-    .workshop-page__bag,
-    .workshop-page__tasks,
-    .workshop-page__personal-tasks,
-    .workshop-page__world-notice
-  ),
-.game-stage.is-tutorial-reveal-priming[data-tutorial-reveal]
-  .room-top-panel__resource[aria-label="mana"] {
-  transition: none;
-}
-
-.game-stage[data-tutorial-reveal]
-  :where(.room-top-panel-layer, .room-bottom-panel-layer)
-  :where(button, [role="button"], input, select, textarea) {
-  pointer-events: none;
-}
-
-.game-stage[data-tutorial-reveal] .workshop-page__action-bar > .style-button {
-  pointer-events: none;
-}
-
-.game-stage[data-tutorial-reveal]
-  .workshop-page__bag
-  > .workshop-page__bag-button {
-  pointer-events: none;
-}
-
-.game-stage[data-tutorial-reveal~="top"] .room-top-panel-layer,
-.game-stage[data-tutorial-reveal~="rooms"] .room-bottom-panel-layer,
-.game-stage[data-tutorial-reveal~="mana"]
-  .room-top-panel__resource[aria-label="mana"],
-.game-stage[data-tutorial-reveal~="summon"] .workshop-page__summon-button,
-.game-stage[data-tutorial-reveal~="tasks"] .workshop-page__tasks {
-  opacity: 1;
-  translate: 0;
-}
-
-.game-stage[data-tutorial-reveal~="top"]
-  .room-top-panel-layer
-  :where(button, [role="button"], input, select, textarea),
-.game-stage[data-tutorial-reveal~="rooms"]
-  .room-bottom-panel-layer
-  :where(button, [role="button"]),
-.game-stage[data-tutorial-reveal~="mana"]
-  .room-top-panel__resource[aria-label="mana"],
-.game-stage[data-tutorial-reveal~="summon"]
-  .workshop-page__action-bar
-  > .style-button.workshop-page__summon-button,
-.game-stage[data-tutorial-reveal~="tasks"] .workshop-page__tasks {
-  pointer-events: auto;
-}
-
-.game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
-  .workshop-page__action-bar
-  > .workshop-page__summon-button {
-  animation: workshop-summon-button-reveal 640ms var(--style-motion-ease-rubber)
-    both;
-  pointer-events: auto;
-}
-
-.game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
-  .workshop-page__summon-button
-  .workshop-page__summon-circle {
-  animation: workshop-summon-sign-reveal 640ms var(--style-motion-ease-rubber)
-    both;
-}
-
-.game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
-  .workshop-page__summon-button
-  .workshop-page__summon-button-text {
-  animation: workshop-summon-button-text-reveal 520ms
-    var(--style-motion-ease-rubber) 80ms both;
 }
 
 .tutorial-layer,
@@ -4058,19 +3929,6 @@ body {
   .game-stage.is-control-revealing :where(button, [role="button"]) {
     pointer-events: auto;
     animation: none;
-  }
-
-  .game-stage[data-tutorial-reveal]
-    :where(
-      .room-top-panel-layer,
-      .room-bottom-panel-layer,
-      .room-world-chat-layer,
-      .room-top-panel__resource[aria-label="mana"],
-      .workshop-page__action-bar > .style-button,
-      .workshop-page__bag,
-      .workshop-page__tasks
-    ) {
-    transition: none;
   }
 
   .tutorial-layer__objective-button:not([hidden]),
@@ -16824,8 +16682,7 @@ div.workshop-page__discovery-row {
   touch-action: manipulation;
 }
 
-.game-stage:not([data-tutorial-reveal])
-  .style-button.workshop-page__summon-button:not([hidden]) {
+.game-stage .style-button.workshop-page__summon-button:not([hidden]) {
   transform-origin: center;
 }
 
@@ -19512,63 +19369,6 @@ div.workshop-page__discovery-row {
   }
 }
 
-@keyframes workshop-summon-button-reveal {
-  0% {
-    opacity: 0;
-    scale: 0.94;
-    translate: 0 10px;
-  }
-
-  58% {
-    opacity: 1;
-    scale: 1.035;
-    translate: 0 -2px;
-  }
-
-  100% {
-    opacity: 1;
-    scale: 1;
-    translate: 0;
-  }
-}
-
-@keyframes workshop-summon-sign-reveal {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -44%) scale(0.82);
-  }
-
-  64% {
-    opacity: 1;
-    transform: translate(-50%, -52%) scale(1.055);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-@keyframes workshop-summon-button-text-reveal {
-  0% {
-    opacity: 0;
-    scale: 0.96;
-    translate: 0 5px;
-  }
-
-  68% {
-    opacity: 1;
-    scale: 1.025;
-    translate: 0 -1px;
-  }
-
-  100% {
-    opacity: 1;
-    scale: 1;
-    translate: 0;
-  }
-}
-
 @keyframes room-coin-amt-pop {
   0% {
     opacity: 0;
@@ -20005,27 +19805,6 @@ div.workshop-page__discovery-row {
   .style-button.workshop-page__summon-button.is-summoning
     .workshop-page__summon-circle {
     animation: none;
-  }
-
-  .game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
-    .workshop-page__action-bar
-    > .workshop-page__summon-button,
-  .game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
-    .workshop-page__summon-button
-    .workshop-page__summon-circle,
-  .game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
-    .workshop-page__summon-button
-    .workshop-page__summon-button-text {
-    animation: none;
-    opacity: 1;
-    scale: 1;
-    translate: 0;
-  }
-
-  .game-stage.is-tutorial-summon-revealing[data-tutorial-reveal~="summon"]
-    .workshop-page__summon-button
-    .workshop-page__summon-circle {
-    transform: translate(-50%, -50%);
   }
 
   .room-feature-unlock-flyout {

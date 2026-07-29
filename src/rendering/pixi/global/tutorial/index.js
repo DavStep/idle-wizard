@@ -18,7 +18,3 @@ export {
   TUTORIAL_POINTER_SPINE_DEFINITION,
   TutorialPointerSpine,
 } from './TutorialPointerSpine.js';
-export {
-  createTutorialRevealController,
-  TutorialRevealController,
-} from './TutorialRevealController.js';

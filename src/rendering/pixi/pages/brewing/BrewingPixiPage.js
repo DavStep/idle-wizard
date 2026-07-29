@@ -1625,10 +1625,6 @@ class BrewingCauldronWidget {
         `${semanticId}.${kind}`;
       this.semanticTargets?.register?.({
         semanticId: actionId,
-        tutorialId:
-          kind === 'primary'
-            ? this.model.actionTutorialId ?? 'brewing:action'
-            : null,
         displayObject: button.root,
         state: () => ({
           visible: button.root.visible && this.root.visible,

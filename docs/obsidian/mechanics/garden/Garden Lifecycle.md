@@ -19,14 +19,16 @@ related:
 # Garden Lifecycle
 
 ```text
-choose seed → plant → grow → ready → harvest → herb inventory
+choose seed in Garden action bar → tap plot → grow → ready → harvest → herb inventory
 ```
 
-- Planting consumes the plot's selected seed quantity.
+- The manual Garden flow keeps one page-level selected seed and uses it on any empty plot the player taps.
+- Planting consumes the selected seed quantity required by that plot's multiplier.
 - Growth duration comes from the matching herb's base time, modified by plot growth research.
 - Ready crops wait until harvesting starts.
 - Harvest is a separate fixed 3-second phase in the current effective client.
-- Completion adds herbs and keeps the seed selected, but does not automatically replant.
+- `Harvest All` starts harvesting on every ready plot and leaves growing or empty plots unchanged.
+- Completion adds herbs but does not automatically replant.
 - Replacing a growing crop returns its committed seeds and restarts growth.
 - Canceling growth or harvest returns the planted seeds and clears selection.
 - Any purchased plot can grow any researched seed; herbs are not plot-specific.

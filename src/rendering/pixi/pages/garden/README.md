@@ -19,37 +19,42 @@ The page consumes display-ready presenter data:
       disabled, visible, buySlot, notification,
       herbKey, plantFrame,
       progress: { durationMs, remainingMs, endTimeMs, progress },
-      acceptsSeedDrop, semanticId, tutorialId,
-      onActivate, onSeedDrop
+      toolbarSeedItemTypeId, semanticId, tutorialId,
+      onActivate
     }],
-    inventory: {
-      activeTab: null | 'herbs' | 'seeds',
-      herbs: { visible, expanded, canToggle, countText, rows },
-      seeds: { visible, expanded, canToggle, countText, rows }
+    actionBar: {
+      selectedSeed: null | {
+        itemTypeId, key, label, quantity,
+        icon: { kind: 'seed', key }
+      },
+      readyHarvestCount,
+      hasSeedChoices
     },
     dialogs: {
-      seed: { open, title, plot, rows: [{ id, label, quantity, onSelect }] },
+      seed: { open, title, rows: [{ id, label, quantity, onSelect }] },
       cancel: { open, title, message, confirmLabel, payload, onConfirm },
       swap: { open, title, message, confirmLabel, payload, onConfirm }
     }
   },
   actions: {
-    activatePlot, activatePlotLabel, dropSeed,
-    toggleInventory, toggleInventoryExpanded,
-    previewSeedDrag, endSeedDrag, cancelSeedDrag,
+    activatePlot, activatePlotLabel,
+    openSeedPicker, harvestAll,
     selectSeed, confirmCancel, confirmSwap, closeDialog,
     setWorldViewport
   }
 }
 ```
 
-The presenter owns plot rules, costs, lock reasons, messages, inventory
-filtering, and formatted copy. The renderer does not infer gameplay outcomes.
-Plots, inventory rows, and seed rows are keyed high-water pools. Seed,
-cancel-progress, and swap-seed dialogs are constructed on first open and
-retained thereafter. Pan, pinch, press, drag/drop, scrolling, modal back, and
-semantic tutorial targeting all use the injected shared registries; there are
-no DOM listeners or geometry queries.
+The presenter owns plot rules, costs, lock reasons, messages, seed filtering,
+page-level selection, and formatted copy. The renderer does not infer gameplay outcomes.
+Plots and seed-dialog rows are keyed high-water pools. The persistent
+`GardenSeedActionBar` keeps one room-level seed choice, opens the retained seed
+picker, and starts every ready harvest through the gameplay facade. Empty plots
+plant the selected seed when pressed; growing plots offer the existing swap
+confirmation when the selected seed differs. Seed, cancel-progress, and
+swap-seed dialogs are constructed on first open and retained thereafter. Pan,
+pinch, press, scrolling, modal back, and semantic tutorial targeting all use
+the injected shared registries; there are no DOM listeners or geometry queries.
 
 The cancel-progress confirmation uses the approved red danger title plaque,
 Title Case copy, a centered prompt, a yellow `Keep` action, and a red `Empty`

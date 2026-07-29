@@ -1,7 +1,6 @@
 import { TutorialHintManager } from './managers/TutorialHintManager.js';
 import { TutorialLogicManager } from './managers/TutorialLogicManager.js';
 import { TutorialProgressManager } from './managers/TutorialProgressManager.js';
-import { TutorialRevealManager } from './managers/TutorialRevealManager.js';
 import { TutorialSaleManager } from './managers/TutorialSaleManager.js';
 import {
   TUTORIAL_ADVANCE_ACTIONS,
@@ -11,7 +10,6 @@ import {
 } from './managers/TutorialStepManager.js';
 import { TutorialTargetManager } from './managers/TutorialTargetManager.js';
 
-const TUTORIAL_REVEAL_PRIMING_CLASS = 'is-tutorial-reveal-priming';
 const POST_ANNOUNCEMENT_TUTORIAL_RESUME_DELAY_MS = 1000;
 
 export class TutorialFacade {
@@ -24,11 +22,9 @@ export class TutorialFacade {
     storage,
     now,
     onNotificationVisibilityPolicyChange,
-    onShowPage,
     spineRuntimeFacade = null,
   } = {}) {
     this.gameplayFacade = gameplayFacade;
-    this.onShowPage = typeof onShowPage === 'function' ? onShowPage : null;
     this.stage = null;
     this.unsubscribe = null;
     this.frameResourceUnsubscribe = null;
@@ -46,7 +42,6 @@ export class TutorialFacade {
       storage,
       spineRuntimeFacade,
     });
-    this.revealManager = new TutorialRevealManager();
     this.reminderManager = this.logicManager.reminderManager;
     this.saleManager = new TutorialSaleManager();
     this.animationFrame = null;
@@ -62,20 +57,6 @@ export class TutorialFacade {
     this.notificationVisibilityPolicyKey = '';
     this.handleClick = (event) => {
       if (event.target?.closest?.('.tutorial-layer')) {
-        return;
-      }
-
-      if (this.activeStep?.advanceOnClick) {
-        const step = this.activeStep;
-        const targetId = event.target?.closest?.('[data-tutorial-id]')?.dataset?.tutorialId;
-        const allowTargetClick = step.allowTargetClick === true && targetId === step.targetId;
-
-        if (!allowTargetClick) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-
-        this.advanceActiveStep();
         return;
       }
 
@@ -107,8 +88,6 @@ export class TutorialFacade {
 
     this.stage = stage;
     this.targetManager.setStage(stage);
-    this.revealManager.setStage(stage);
-    this.primeRevealGate();
     this.hintManager.mount(stage);
     this.hintManager.setAdvanceHandler(this.handleAdvance);
     this.hintManager.setObjectivePressHandler(this.handleObjectivePress);
@@ -120,42 +99,6 @@ export class TutorialFacade {
     window.addEventListener('resize', this.handleResize);
     this.watchBlockingDialogs();
     this.scheduleRefresh();
-  }
-
-  primeRevealGate() {
-    this.stage?.classList.add(TUTORIAL_REVEAL_PRIMING_CLASS);
-
-    try {
-      this.applyPrimedRevealGate();
-      void this.stage?.offsetWidth;
-    } finally {
-      this.stage?.classList.remove(TUTORIAL_REVEAL_PRIMING_CLASS);
-    }
-  }
-
-  applyPrimedRevealGate() {
-    const snapshot = this.gameplayFacade?.getSnapshot?.();
-    this.stepManager.syncSnapshotProgress(snapshot);
-
-    if (this.stepManager.hasCompletedAllSteps()) {
-      this.revealManager.clear();
-      return;
-    }
-
-    const step = this.stepManager.getActiveStep({
-      snapshot,
-      dom: this.targetManager.getDomState(),
-    });
-
-    if (!step) {
-      this.revealManager.clear();
-      return;
-    }
-
-    this.revealManager.update({
-      step,
-      revealTokens: step.revealTokens,
-    });
   }
 
   unmount() {
@@ -176,7 +119,6 @@ export class TutorialFacade {
     this.hintManager.setLessonPanelCloseHandler(null);
     this.hintManager.unmount();
     this.updateNotificationVisibilityPolicy(null);
-    this.revealManager.setStage(null);
     this.targetManager.setStage(null);
     this.roomAnnouncementWasOpen = false;
     this.stage = null;
@@ -319,12 +261,9 @@ export class TutorialFacade {
       this.clearRequestedTargetGuidance();
       this.cancelAutoAdvance();
       this.saleManager.cancel();
-      this.revealManager.clear();
       this.hintManager.hide();
       return;
     }
-
-    this.revealManager.update(viewState);
 
     if (viewState.kind === 'quest') {
       this.clearRequestedTargetGuidance();
@@ -335,10 +274,6 @@ export class TutorialFacade {
     }
 
     if (viewState.kind === 'lesson') {
-      if (this.applyAutoPage(viewState.step)) {
-        return;
-      }
-
       const target = viewState.step?.targetId
         ? this.targetManager.getTarget(viewState.step.targetId)
         : null;
@@ -395,7 +330,6 @@ export class TutorialFacade {
 
   advanceActiveStep() {
     const step = this.activeStep;
-    const advancePageId = step?.advancePageId;
     const advanceAction = step?.advanceAction;
 
     if (!this.logicManager.advanceActiveStep()) {
@@ -405,12 +339,8 @@ export class TutorialFacade {
     this.activeStep = null;
     this.clearRequestedTargetGuidance();
     this.cancelAutoAdvance();
-    this.hintManager.hideTargetCue({ immediate: Boolean(advancePageId) });
+    this.hintManager.hideTargetCue();
     this.applyAdvanceAction(advanceAction);
-
-    if (advancePageId && this.onShowPage) {
-      this.onShowPage(advancePageId);
-    }
 
     this.scheduleRefresh();
   }
@@ -435,21 +365,6 @@ export class TutorialFacade {
     target.click();
   }
 
-  applyAutoPage(step) {
-    const pageId = step?.autoPageId;
-
-    if (!pageId || !this.onShowPage) {
-      return false;
-    }
-
-    this.clearRequestedTargetGuidance();
-    this.cancelAutoAdvance();
-    this.hintManager.hideTargetCue({ immediate: true });
-    this.onShowPage(pageId);
-    this.scheduleRefresh();
-    return true;
-  }
-
   pressActiveLesson({ source } = {}) {
     const step = this.activeStep;
 
@@ -457,36 +372,12 @@ export class TutorialFacade {
       return;
     }
 
-    const target = this.targetManager.getTarget(step.targetId);
-
-    if (this.shouldClickObjectiveTarget(step, target)) {
-      this.hintManager.closeLessonPanel();
-      target.click();
-      this.scheduleRefresh();
-      return;
-    }
-
     this.showTargetNow(step, { emphasize: source === 'show-me' });
-  }
-
-  shouldClickObjectiveTarget(step, target) {
-    const ButtonElement = target?.ownerDocument?.defaultView?.HTMLButtonElement;
-
-    return (
-      Boolean(target) &&
-      step?.targetId?.startsWith('task:') &&
-      typeof ButtonElement === 'function' &&
-      target instanceof ButtonElement &&
-      !target.disabled
-    );
   }
 
   showTargetNow(step, { emphasize = false } = {}) {
     const target = this.targetManager.getTarget(step?.targetId);
     const targetWasVisible = this.hintManager.isTargetVisibleOnScreen(target);
-    this.revealManager.update({
-      step,
-    });
     const cue = this.logicManager.getForcedTargetCue({ step, target });
 
     if (cue.kind !== 'target-cue') {

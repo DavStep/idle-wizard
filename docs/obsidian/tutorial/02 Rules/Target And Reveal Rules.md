@@ -27,12 +27,12 @@ Important target families:
 - Garden plot and seed label targets such as `garden:plot:1` and
   `garden:plot:1:label`
 
-## Reveal Gates
+## Guidance, Never Gating
 
-Reveal tokens keep hidden room UI out of the way until the lesson needs it.
-Active tutorial steps should preserve the current reveal gate when hidden behind
-blocking dialogs. Collapsing Elara restores the room's normal visibility;
-reopening her reapplies the active step's reveal tokens.
+Tutorial state must not hide or disable gameplay controls, consume unrelated
+presses, activate a suggested target, or navigate for the player. Elara copy,
+the optional lesson panel, pointer cues, and target emphasis are guidance only.
+Real gameplay locks remain owned by their gameplay or app-level feature.
 
 ## Placement
 

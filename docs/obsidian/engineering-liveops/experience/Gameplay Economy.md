@@ -113,13 +113,13 @@ experience_type: gameplay-economy
 - Garden plot is a compact world of plot boxes, not a bordered `plots` panel or row-view toggle; show open plots plus only the next buy slot, with no future locked summary.
 - Garden plot rows use one right-aligned status/action slot; do not split phase and action into separate columns.
 - Garden plot number cells use the shared numbered-row label (`1.`, `2.`) and spacing, matching market stand/request rows.
-- Keep Garden seed choice in a popup opened from an empty plot row/seed label; do not put seed lists inline in the plot.
-- Garden empty-plot blank row space is inert; use the seed/empty label to change selection and the right action to choose or plant.
+- Keep Garden seed choice in the page-level `Seeds` popup opened from the action bar; do not put seed lists inline in plots.
+- Garden empty plots use the current page-level seed selection. A full-plot tap plants it; without a selection, the tap opens the seed picker.
 - Garden plot right-action hit areas must be real block/flex boxes; inline spans ignore min-size and make mobile taps land on label/blank row behavior.
 - Inventory-style seed/herb/potion rows should display `locked` instead of `0` when the matching research is incomplete.
-- Garden seed picker title is `choose seed`; hide locked/unresearched seeds, but keep researched zero-count seeds visible/selectable and gray.
-- Garden tiles keep selected seed separate from active crop; harvest completion preserves selection but does not auto-replant. Player must press `plant`.
-- Garden seed selection is locked while a tile has an active crop; active crop saves should restore selected seed from the planted crop.
+- Garden seed picker title is `Choose Seed`; hide locked/unresearched seeds, but keep researched zero-count seeds visible/selectable and gray.
+- Garden manual seed choice is page-level and remains visible in the selected-seed tool. Active plots keep their planted crop data, and harvest completion does not auto-replant.
+- Tapping a growing plot with a different page-level seed selected opens the swap confirmation; replacement returns the committed old seed and restarts growth.
 - Garden growth/harvest timer text belongs next to the right action label, not inside the progress rail.
 - Garden plot right-side action labels (`choose`, `no seeds`, `buy`, `growing`, `harvest`) should share the smaller growing-label size.
 - Garden plot row height must include the progress rail slot even when no progress is shown; hide the rail but keep the space.
@@ -130,5 +130,4 @@ experience_type: gameplay-economy
 - Garden plot bottom-left star labels can look like dark rocks in screenshots; inspect DOM/assets before redrawing soil decoration.
 - Keep herbs below the plot with enough space for active progress rows; bounded plot scrolling is acceptable once many plots are unlocked.
 - Garden page overflow belongs to `.garden-page__ui-layer`; plot and herb boxes should grow to content instead of using fixed inner row heights.
-- Garden seed/herb inventory boxes open from bottom icon buttons, reset hidden on room swaps, and collapsed previews show three item rows.
-- Garden seed/herb inventory expansion should keep the expanded box inside the page scroll viewport, converting scaled DOM rect deltas back to source scroll pixels.
+- The Garden action bar replaces the old seed/herb inventory icon buttons and sits directly above World Chat.

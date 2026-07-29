@@ -206,8 +206,12 @@ export class BrewingHudPixi {
         ) ?? false
       );
     });
-    this.brew = this.createButton('brew', 'Brew', 'green', () =>
-      this.activatePrimaryAction(),
+    this.brew = this.createButton(
+      'brew',
+      'Brew',
+      'green',
+      () => this.activatePrimaryAction(),
+      'brewing:action',
     );
     this.unlockCostButton = new PixiCostButton({
       assetManager,

@@ -1,85 +1,72 @@
-import { DEFAULT_PAGE_SWIPE_ORDER } from '../../../pages/managers/pageOrder.js';
-import { PageUnlockManager } from '../../../pages/managers/PageUnlockManager.js';
-import { automationResearchIds } from '../../../gameplay/automation/automationResearchIds.js';
-import {
-  WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL,
-} from '../../../pages/workshop/managers/WorkshopSecondaryActionGateManager.js';
+import { DEFAULT_PAGE_SWIPE_ORDER } from "../../../pages/managers/pageOrder.js";
+import { PageUnlockManager } from "../../../pages/managers/PageUnlockManager.js";
+import { automationResearchIds } from "../../../gameplay/automation/automationResearchIds.js";
+import { WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL } from "../../../pages/workshop/managers/WorkshopSecondaryActionGateManager.js";
 import {
   PageNotificationStateManager,
   getGardenNotificationContext,
   hasGardenTileNotification,
-} from '../../../pages/notifications/managers/PageNotificationStateManager.js';
+} from "../../../pages/notifications/managers/PageNotificationStateManager.js";
 import {
   getItemDisplay,
   isItemResearched,
   shouldShowItemInActionList,
-} from '../../../pages/shared/itemResearchStatus.js';
-import { formatCoinPriceText } from '../../../shared/coinPrice.js';
-import { PLAYER_MARKET_MAX_QUANTITY } from '../../../shared/playerMarketLimits.js';
-import { BrewingPixiPage } from '../pages/brewing/index.js';
-import { GardenPixiPage } from '../pages/garden/index.js';
+} from "../../../pages/shared/itemResearchStatus.js";
+import { formatCoinPriceText } from "../../../shared/coinPrice.js";
+import { PLAYER_MARKET_MAX_QUANTITY } from "../../../shared/playerMarketLimits.js";
+import { BrewingPixiPage } from "../pages/brewing/index.js";
+import { GardenPixiPage } from "../pages/garden/index.js";
 import {
   GUILD_DIALOG_IDS,
   GuildPixiPage,
   createGuildPixiViewModel,
-} from '../pages/guild/index.js';
-import { PrestigePixiPage } from '../pages/prestige/index.js';
-import { ResearchPixiPage } from '../pages/research/index.js';
+} from "../pages/guild/index.js";
+import { PrestigePixiPage } from "../pages/prestige/index.js";
+import { ResearchPixiPage } from "../pages/research/index.js";
 import {
   SHOP_DIALOG_IDS,
   ShopPixiPage,
   createShopPixiViewModel,
-} from '../pages/shop/index.js';
-import { WorkshopPixiPage } from '../pages/workshop/index.js';
+} from "../pages/shop/index.js";
+import { WorkshopPixiPage } from "../pages/workshop/index.js";
 import {
   normalizeTutorialNotificationPolicy,
   projectChromeNotificationPages,
   projectPageNotificationState,
   projectPageViewModelNotifications,
-} from './PixiNotificationProjection.js';
-import { PixiViewModelFactory } from './PixiViewModelFactory.js';
+} from "./PixiNotificationProjection.js";
+import { PixiViewModelFactory } from "./PixiViewModelFactory.js";
 
 const PAGE_IDS = Object.freeze([
-  'workshop',
-  'brewing',
-  'garden',
-  'research',
-  'shop',
-  'guild',
-  'prestige',
+  "workshop",
+  "brewing",
+  "garden",
+  "research",
+  "shop",
+  "guild",
+  "prestige",
 ]);
 
 const SWIPE_PAGE_IDS = new Set(PAGE_IDS);
 const COLLAPSED_INVENTORY_ITEM_COUNT = 6;
 const INVENTORY_KINDS_BY_PAGE = Object.freeze({
-  garden: Object.freeze(['herbs', 'seeds']),
-  brewing: Object.freeze(['herbs', 'potions']),
+  garden: Object.freeze(["herbs", "seeds"]),
+  brewing: Object.freeze(["herbs", "potions"]),
 });
 const WORKSHOP_BAG_TAB_IDS = new Set([
-  'currencies',
-  'seeds',
-  'herbs',
-  'potions',
-  'ingredients',
+  "currencies",
+  "seeds",
+  "herbs",
+  "potions",
+  "ingredients",
 ]);
-const WORKSHOP_STATS_TAB_IDS = new Set([
-  'seeds',
-  'herbs',
-  'potions',
-  'coin',
-]);
-const WORKSHOP_LEADERBOARD_TAB_IDS = new Set([
-  'singlePlayer',
-  'alliance',
-]);
-const WORKSHOP_PERSONAL_TASK_TAB_IDS = new Set([
-  'tasks',
-  'rewards',
-]);
+const WORKSHOP_STATS_TAB_IDS = new Set(["seeds", "herbs", "potions", "coin"]);
+const WORKSHOP_LEADERBOARD_TAB_IDS = new Set(["singlePlayer", "alliance"]);
+const WORKSHOP_PERSONAL_TASK_TAB_IDS = new Set(["tasks", "rewards"]);
 const WORKSHOP_WORLD_EVENT_TAB_IDS = new Set([
-  'tasks',
-  'leaderboard',
-  'rewards',
+  "tasks",
+  "leaderboard",
+  "rewards",
 ]);
 
 /**
@@ -91,7 +78,7 @@ const WORKSHOP_WORLD_EVENT_TAB_IDS = new Set([
  */
 export class PixiPagesFacade {
   static explain =
-    'Keeps every Pixi room alive, binds authoritative game state, and switches rooms without rebuilding them.';
+    "Keeps every Pixi room alive, binds authoritative game state, and switches rooms without rebuilding them.";
 
   constructor({
     renderFacade,
@@ -113,7 +100,7 @@ export class PixiPagesFacade {
     hapticsFacade = null,
     soundSettingsFacade = null,
     appPlugin = null,
-    defaultPageId = 'workshop',
+    defaultPageId = "workshop",
     viewModelFactory = new PixiViewModelFactory(),
     pageUnlockManager = new PageUnlockManager({
       pageOrder: DEFAULT_PAGE_SWIPE_ORDER,
@@ -121,7 +108,7 @@ export class PixiPagesFacade {
     notificationManager = new PageNotificationStateManager(),
   } = {}) {
     if (!renderFacade) {
-      throw new Error('PixiPagesFacade requires the production RenderFacade.');
+      throw new Error("PixiPagesFacade requires the production RenderFacade.");
     }
 
     this.renderFacade = renderFacade;
@@ -148,7 +135,7 @@ export class PixiPagesFacade {
     this.notificationManager = notificationManager;
     this.defaultPageId = PAGE_IDS.includes(defaultPageId)
       ? defaultPageId
-      : 'workshop';
+      : "workshop";
     this.currentPageId = this.defaultPageId;
     this.mounted = false;
     this.registered = false;
@@ -173,16 +160,16 @@ export class PixiPagesFacade {
     this.tutorialNotificationPolicy = null;
     this.devNotifications = null;
     this.questProgressPreview = null;
-    this.workshopBagTabId = 'currencies';
-    this.workshopStatsTabId = 'seeds';
-    this.workshopLeaderboardTabId = 'singlePlayer';
-    this.workshopPersonalTasksTabId = 'tasks';
-    this.workshopWorldEventTabId = 'tasks';
+    this.workshopBagTabId = "currencies";
+    this.workshopStatsTabId = "seeds";
+    this.workshopLeaderboardTabId = "singlePlayer";
+    this.workshopPersonalTasksTabId = "tasks";
+    this.workshopWorldEventTabId = "tasks";
     this.workshopAllianceExpandedId = null;
     this.worldEventDonationDraft = null;
-    this.researchTabId = 'regular';
-    this.shopTabId = 'traders';
-    this.shopLedgerKind = 'seed';
+    this.researchTabId = "regular";
+    this.shopTabId = "traders";
+    this.shopLedgerKind = "seed";
     this.shopStallItemTypeIdBySlot = new Map();
     this.shopStallAllocationPercentBySlot = new Map();
     this.shopStallItemKindBySlot = new Map();
@@ -192,9 +179,10 @@ export class PixiPagesFacade {
     this.shopRequestItemKindBySlot = new Map();
     this.shopListingDraftBySlot = new Map();
     this.shopListingItemKindBySlot = new Map();
-    this.guildTabId = 'hall';
-    this.prestigeTabId = 'main';
+    this.guildTabId = "hall";
+    this.prestigeTabId = "main";
     this.gardenInventoryTabId = null;
+    this.gardenSelectedSeedItemTypeId = null;
     this.brewingInventoryTabId = null;
     this.expandedInventoryKindsByPage = new Map();
     this.prestigeConfirm = null;
@@ -224,23 +212,23 @@ export class PixiPagesFacade {
 
     this.renderFacade
       .registerPage(
-        'workshop',
+        "workshop",
         (context) => new WorkshopPixiPage(createSharedOptions(context)),
       )
       .registerPage(
-        'brewing',
+        "brewing",
         (context) => new BrewingPixiPage(createSharedOptions(context)),
       )
       .registerPage(
-        'garden',
+        "garden",
         (context) => new GardenPixiPage(createSharedOptions(context)),
       )
       .registerPage(
-        'research',
+        "research",
         (context) => new ResearchPixiPage(createSharedOptions(context)),
       )
       .registerPage(
-        'shop',
+        "shop",
         (context) =>
           new ShopPixiPage({
             ...createSharedOptions(context),
@@ -249,7 +237,7 @@ export class PixiPagesFacade {
           }),
       )
       .registerPage(
-        'guild',
+        "guild",
         (context) =>
           new GuildPixiPage({
             ...createSharedOptions(context),
@@ -258,7 +246,7 @@ export class PixiPagesFacade {
           }),
       )
       .registerPage(
-        'prestige',
+        "prestige",
         (context) => new PrestigePixiPage(createSharedOptions(context)),
       );
     this.registered = true;
@@ -304,8 +292,8 @@ export class PixiPagesFacade {
     const runtime = this.renderFacade.getUiRuntime();
     runtime?.closeAllDialogs?.();
     runtime?.deactivatePage?.();
-    this.resetInventoryUiState('garden');
-    this.resetInventoryUiState('brewing');
+    this.resetInventoryUiState("garden");
+    this.resetInventoryUiState("brewing");
     this.dirtyPageIds = new Set(PAGE_IDS);
   }
 
@@ -313,12 +301,10 @@ export class PixiPagesFacade {
     this.gameplaySnapshot = this.gameplayFacade?.getSnapshot?.() ?? {};
     this.playerSnapshot = this.playerFacade?.getSnapshot?.() ?? {};
     this.worldChatSnapshot = this.worldChatFacade?.getSnapshot?.() ?? {};
-    this.leaderboardSnapshot =
-      this.leaderboardFacade?.getSnapshot?.() ?? {};
+    this.leaderboardSnapshot = this.leaderboardFacade?.getSnapshot?.() ?? {};
     this.worldEventLeaderboardSnapshot =
       this.worldEventLeaderboardFacade?.getSnapshot?.() ?? {};
-    this.playerInboxSnapshot =
-      this.playerInboxFacade?.getSnapshot?.() ?? {};
+    this.playerInboxSnapshot = this.playerInboxFacade?.getSnapshot?.() ?? {};
     this.playerShopSnapshot = this.playerShopFacade?.getSnapshot?.() ?? {};
     this.tradeAllianceSnapshot =
       this.tradeAllianceFacade?.getSnapshot?.() ?? {};
@@ -363,19 +349,19 @@ export class PixiPagesFacade {
     this.trackSubscription(
       this.leaderboardFacade?.subscribe?.((snapshot) => {
         this.leaderboardSnapshot = snapshot ?? {};
-        this.refreshPage('workshop');
+        this.refreshPage("workshop");
       }),
     );
     this.trackSubscription(
       this.worldEventLeaderboardFacade?.subscribe?.((snapshot) => {
         this.worldEventLeaderboardSnapshot = snapshot ?? {};
-        this.refreshPage('workshop');
+        this.refreshPage("workshop");
       }),
     );
     this.trackSubscription(
       this.playerInboxFacade?.subscribe?.((snapshot) => {
         this.playerInboxSnapshot = snapshot ?? {};
-        this.refreshPage('workshop');
+        this.refreshPage("workshop");
       }),
     );
     this.trackSubscription(
@@ -389,7 +375,7 @@ export class PixiPagesFacade {
         this.tradeAllianceSnapshot = snapshot ?? {};
         const availableAllianceIds = new Set(
           (this.tradeAllianceSnapshot.alliances ?? []).map((alliance) =>
-            String(alliance.allianceId ?? ''),
+            String(alliance.allianceId ?? ""),
           ),
         );
         if (
@@ -405,7 +391,7 @@ export class PixiPagesFacade {
   }
 
   trackSubscription(unsubscribe) {
-    if (typeof unsubscribe === 'function') {
+    if (typeof unsubscribe === "function") {
       this.unsubscribers.push(unsubscribe);
     }
   }
@@ -415,7 +401,7 @@ export class PixiPagesFacade {
     const layers = this.renderFacade.getPixiLayers();
     this.pageSwipeRegistration =
       router?.registerPageSwipe?.({
-        id: 'pages.navigation',
+        id: "pages.navigation",
         displayObject: layers?.pageUi,
         enabled: () => this.mounted,
         onSwipeStart: () => {
@@ -427,9 +413,7 @@ export class PixiPagesFacade {
           this.setSwipeTargetPageId(
             deltaX === 0
               ? null
-              : this.getAdjacentPageId(
-                  deltaX < 0 ? 'next' : 'previous',
-                ),
+              : this.getAdjacentPageId(deltaX < 0 ? "next" : "previous"),
           );
         },
         onSwipe: ({ direction }) => this.showAdjacent(direction),
@@ -438,8 +422,8 @@ export class PixiPagesFacade {
     router?.setBackHandler?.(() => this.handleBack());
     router?.setEscapeHandler?.(() => this.handleBack());
 
-    const nativeHandle = this.appPlugin?.addListener?.('backButton', () => {
-      router?.handleBack?.({ source: 'native' });
+    const nativeHandle = this.appPlugin?.addListener?.("backButton", () => {
+      router?.handleBack?.({ source: "native" });
     });
     if (nativeHandle?.then) {
       void nativeHandle.then((handle) => {
@@ -469,7 +453,8 @@ export class PixiPagesFacade {
     this.refreshing = true;
     try {
       this.gameplayFacade?.withSnapshotCache?.(() => {
-        this.gameplaySnapshot = this.gameplayFacade?.getSnapshot?.() ?? this.gameplaySnapshot;
+        this.gameplaySnapshot =
+          this.gameplayFacade?.getSnapshot?.() ?? this.gameplaySnapshot;
       });
       this.pageStates = this.pageUnlockManager.getPageStates(
         this.gameplaySnapshot,
@@ -512,7 +497,7 @@ export class PixiPagesFacade {
     }
     const runtime = this.requireRuntime();
     runtime.bindGlobalSurface(
-      'chrome.top',
+      "chrome.top",
       this.viewModelFactory.createTopPanel({
         gameplay: this.gameplaySnapshot,
         player: this.playerSnapshot,
@@ -520,17 +505,15 @@ export class PixiPagesFacade {
         researchTabId: this.researchTabId,
         questPreview: this.questProgressPreview,
         actions: {
-          openAvatar: () =>
-            this.openDialog('settings', { tab: 'account' }),
-          openAccount: () =>
-            this.openDialog('settings', { tab: 'account' }),
-          openSettings: () => this.openDialog('settings'),
-          openLevel: () => this.openDialog('level'),
+          openAvatar: () => this.openDialog("settings", { tab: "account" }),
+          openAccount: () => this.openDialog("settings", { tab: "account" }),
+          openSettings: () => this.openDialog("settings"),
+          openLevel: () => this.openDialog("level"),
         },
       }),
     );
     runtime.bindGlobalSurface(
-      'chrome.bottom',
+      "chrome.bottom",
       this.viewModelFactory.createBottomPanel({
         currentPageId: this.currentPageId,
         pages: this.pageStates,
@@ -545,14 +528,11 @@ export class PixiPagesFacade {
       }),
     );
     runtime.bindGlobalSurface(
-      'chrome.chat',
-      this.viewModelFactory.createWorldChatPreview(
-        this.worldChatSnapshot,
-        {
-          visible: this.isWorldChatUnlocked(),
-          onActivate: () => this.openWorldChat(),
-        },
-      ),
+      "chrome.chat",
+      this.viewModelFactory.createWorldChatPreview(this.worldChatSnapshot, {
+        visible: this.isWorldChatUnlocked(),
+        onActivate: () => this.openWorldChat(),
+      }),
     );
   }
 
@@ -576,9 +556,9 @@ export class PixiPagesFacade {
 
     return (
       this.requireRuntime()
-        .getPage('workshop')
+        .getPage("workshop")
         ?.openDialog?.(
-          'worldChat',
+          "worldChat",
           this.viewModelFactory.createWorldChatDialog(
             this.worldChatSnapshot,
             this.createActions().workshop,
@@ -592,7 +572,7 @@ export class PixiPagesFacade {
       !this.mounted ||
       !this.requireRuntime()
         .getOpenDialogIds?.()
-        ?.includes('workshop.worldChat')
+        ?.includes("workshop.worldChat")
     ) {
       return;
     }
@@ -618,7 +598,7 @@ export class PixiPagesFacade {
     let viewModel;
 
     switch (pageId) {
-      case 'workshop':
+      case "workshop":
         viewModel = this.viewModelFactory.createWorkshop({
           gameplay: this.gameplaySnapshot,
           player: this.playerSnapshot,
@@ -641,14 +621,14 @@ export class PixiPagesFacade {
           },
         });
         break;
-      case 'research':
+      case "research":
         viewModel = this.viewModelFactory.createResearch({
           gameplay: this.gameplaySnapshot,
           selectedTabId: this.researchTabId,
           actions: actions.research,
         });
         break;
-      case 'prestige':
+      case "prestige":
         viewModel = this.viewModelFactory.createPrestige({
           gameplay: this.gameplaySnapshot,
           selectedTabId: this.prestigeTabId,
@@ -656,13 +636,13 @@ export class PixiPagesFacade {
           actions: actions.prestige,
         });
         break;
-      case 'garden':
+      case "garden":
         viewModel = this.createGardenViewModel(actions.garden);
         break;
-      case 'brewing':
+      case "brewing":
         viewModel = this.createBrewingViewModel(actions.brewing);
         break;
-      case 'shop':
+      case "shop":
         viewModel = createShopPixiViewModel({
           gameplaySnapshot: this.gameplaySnapshot,
           playerShopSnapshot: this.playerShopSnapshot,
@@ -673,8 +653,7 @@ export class PixiPagesFacade {
           actions: { ui: actions.shop },
           uiState: {
             ledgerKind: this.shopLedgerKind,
-            selectedRequestSlotNumber:
-              this.shopSelectedRequestSlotNumber,
+            selectedRequestSlotNumber: this.shopSelectedRequestSlotNumber,
             stallItemTypeIdBySlot: Object.fromEntries(
               this.shopStallItemTypeIdBySlot,
             ),
@@ -684,22 +663,18 @@ export class PixiPagesFacade {
             stallItemKindBySlot: Object.fromEntries(
               this.shopStallItemKindBySlot,
             ),
-            requestDraftBySlot: Object.fromEntries(
-              this.shopRequestDraftBySlot,
-            ),
+            requestDraftBySlot: Object.fromEntries(this.shopRequestDraftBySlot),
             requestItemKindBySlot: Object.fromEntries(
               this.shopRequestItemKindBySlot,
             ),
-            listingDraftBySlot: Object.fromEntries(
-              this.shopListingDraftBySlot,
-            ),
+            listingDraftBySlot: Object.fromEntries(this.shopListingDraftBySlot),
             listingItemKindBySlot: Object.fromEntries(
               this.shopListingItemKindBySlot,
             ),
           },
         });
         break;
-      case 'guild':
+      case "guild":
         viewModel = createGuildPixiViewModel({
           gameplaySnapshot: this.gameplaySnapshot,
           selectedTabId: this.guildTabId,
@@ -724,7 +699,7 @@ export class PixiPagesFacade {
   }
 
   refreshShopStallDialog(slotNumber) {
-    const viewModel = this.refreshPage('shop');
+    const viewModel = this.refreshPage("shop");
     const runtime = this.requireRuntime();
     if (
       !viewModel ||
@@ -737,17 +712,14 @@ export class PixiPagesFacade {
     );
     if (stall) {
       runtime
-        .getPage('shop')
-        ?.openDialog?.(
-          SHOP_DIALOG_IDS.STALL,
-          stall.dialog ?? stall,
-        );
+        .getPage("shop")
+        ?.openDialog?.(SHOP_DIALOG_IDS.STALL, stall.dialog ?? stall);
     }
     return viewModel;
   }
 
   refreshShopLedgerDialog() {
-    const viewModel = this.refreshPage('shop');
+    const viewModel = this.refreshPage("shop");
     const runtime = this.requireRuntime();
     if (
       !viewModel ||
@@ -756,18 +728,15 @@ export class PixiPagesFacade {
       return viewModel;
     }
     const ledger =
-      viewModel.shop?.dialogs?.ledger ??
-      viewModel.shop?.traders?.ledger;
+      viewModel.shop?.dialogs?.ledger ?? viewModel.shop?.traders?.ledger;
     if (ledger) {
-      runtime
-        .getPage('shop')
-        ?.openDialog?.(SHOP_DIALOG_IDS.LEDGER, ledger);
+      runtime.getPage("shop")?.openDialog?.(SHOP_DIALOG_IDS.LEDGER, ledger);
     }
     return viewModel;
   }
 
   refreshShopRequestDialog(slotNumber) {
-    const viewModel = this.refreshPage('shop');
+    const viewModel = this.refreshPage("shop");
     const runtime = this.requireRuntime();
     if (
       !viewModel ||
@@ -780,17 +749,14 @@ export class PixiPagesFacade {
     );
     if (request) {
       runtime
-        .getPage('shop')
-        ?.openDialog?.(
-          SHOP_DIALOG_IDS.REQUEST,
-          request.dialog ?? request,
-        );
+        .getPage("shop")
+        ?.openDialog?.(SHOP_DIALOG_IDS.REQUEST, request.dialog ?? request);
     }
     return viewModel;
   }
 
   refreshShopListingDialog(slotNumber) {
-    const viewModel = this.refreshPage('shop');
+    const viewModel = this.refreshPage("shop");
     const runtime = this.requireRuntime();
     if (
       !viewModel ||
@@ -803,36 +769,31 @@ export class PixiPagesFacade {
     );
     if (listing) {
       runtime
-        .getPage('shop')
-        ?.openDialog?.(
-          SHOP_DIALOG_IDS.LISTING,
-          listing.dialog ?? listing,
-        );
+        .getPage("shop")
+        ?.openDialog?.(SHOP_DIALOG_IDS.LISTING, listing.dialog ?? listing);
     }
     return viewModel;
   }
 
   getShopRequestSlot(slotNumber) {
-    return this.gameplaySnapshot?.shop?.playerRequests?.slots?.find(
-      (slot) => slot.slotNumber === slotNumber,
-    ) ?? {};
+    return (
+      this.gameplaySnapshot?.shop?.playerRequests?.slots?.find(
+        (slot) => slot.slotNumber === slotNumber,
+      ) ?? {}
+    );
   }
 
   getShopListingSlot(slotNumber) {
-    return this.gameplaySnapshot?.shop?.playerShelf?.slots?.find(
-      (slot) => slot.slotNumber === slotNumber,
-    ) ?? {};
+    return (
+      this.gameplaySnapshot?.shop?.playerShelf?.slots?.find(
+        (slot) => slot.slotNumber === slotNumber,
+      ) ?? {}
+    );
   }
 
   updateShopDraft(drafts, slotNumber, patch, fallbackSlot = {}) {
-    const safeSlotNumber = Math.max(
-      1,
-      Math.floor(Number(slotNumber) || 1),
-    );
-    const previous =
-      drafts.get(safeSlotNumber) ??
-      fallbackSlot ??
-      {};
+    const safeSlotNumber = Math.max(1, Math.floor(Number(slotNumber) || 1));
+    const previous = drafts.get(safeSlotNumber) ?? fallbackSlot ?? {};
     drafts.set(safeSlotNumber, {
       ...previous,
       ...patch,
@@ -847,63 +808,57 @@ export class PixiPagesFacade {
       workshop: {
         summonSeed: () => {
           const result = gameplay?.summonSeed?.();
-          if (result?.reason === 'no_active_seed_weights') {
+          if (result?.reason === "no_active_seed_weights") {
             this.experienceFacade?.transientEffects?.emitReward?.({
-              message: 'Select a seed to drop',
-              flyoutKey: 'workshop-summon-seed-selection',
+              message: "Select a seed to drop",
+              flyoutKey: "workshop-summon-seed-selection",
             });
           }
           return result;
         },
         setSummonDropPreference: (seedKey, preference) => {
-          const result = gameplay?.setSeedDropPreference?.(
-            seedKey,
-            preference,
-          );
-          this.refreshPage('workshop');
+          const result = gameplay?.setSeedDropPreference?.(seedKey, preference);
+          this.refreshPage("workshop");
           return result ?? false;
         },
         toggleSummonAutomation: () => {
           const result = gameplay?.toggleSeedSummoningAutoEnabled?.();
-          this.refreshPage('workshop');
+          this.refreshPage("workshop");
           return result ?? false;
         },
         setSummonManaReserve: (manaReserve) => {
-          const result = gameplay?.setSeedSummoningManaReserve?.(
-            manaReserve,
-          );
-          this.refreshPage('workshop');
+          const result = gameplay?.setSeedSummoningManaReserve?.(manaReserve);
+          this.refreshPage("workshop");
           return result ?? false;
         },
         fillTask: (taskId) => gameplay?.fillTask?.(taskId),
         sendWorldChat: (body) => this.worldChatFacade?.sendMessage?.(body),
         claimInboxReward: (mailKey) =>
           this.playerInboxFacade?.claimReward?.(mailKey),
-        markInboxRead: (mailKey) =>
-          this.playerInboxFacade?.markRead?.(mailKey),
+        markInboxRead: (mailKey) => this.playerInboxFacade?.markRead?.(mailKey),
         selectBagTab: (tabId) => {
           this.workshopBagTabId = normalizeWorkshopTabId(
             tabId,
             WORKSHOP_BAG_TAB_IDS,
-            'currencies',
+            "currencies",
           );
-          this.refreshPage('workshop');
+          this.refreshPage("workshop");
           return true;
         },
         selectStatsTab: (tabId) => {
           this.workshopStatsTabId = normalizeWorkshopTabId(
             tabId,
             WORKSHOP_STATS_TAB_IDS,
-            'seeds',
+            "seeds",
           );
-          this.refreshPage('workshop');
+          this.refreshPage("workshop");
           return true;
         },
         selectAlliance: (allianceId) => {
-          const nextId = String(allianceId ?? '');
+          const nextId = String(allianceId ?? "");
           this.workshopAllianceExpandedId =
             this.workshopAllianceExpandedId === nextId ? null : nextId;
-          this.refreshPage('workshop');
+          this.refreshPage("workshop");
           return true;
         },
         joinAlliance: (allianceId) =>
@@ -916,27 +871,27 @@ export class PixiPagesFacade {
           this.workshopLeaderboardTabId = normalizeWorkshopTabId(
             tabId,
             WORKSHOP_LEADERBOARD_TAB_IDS,
-            'singlePlayer',
+            "singlePlayer",
           );
-          this.refreshPage('workshop');
+          this.refreshPage("workshop");
           return true;
         },
         selectPersonalTasksTab: (tabId) => {
           this.workshopPersonalTasksTabId = normalizeWorkshopTabId(
             tabId,
             WORKSHOP_PERSONAL_TASK_TAB_IDS,
-            'tasks',
+            "tasks",
           );
-          this.refreshPage('workshop');
+          this.refreshPage("workshop");
           return true;
         },
         selectWorldEventTab: (tabId) => {
           this.workshopWorldEventTabId = normalizeWorkshopTabId(
             tabId,
             WORKSHOP_WORLD_EVENT_TAB_IDS,
-            'tasks',
+            "tasks",
           );
-          this.refreshPage('workshop');
+          this.refreshPage("workshop");
           return true;
         },
         openWorldEventDonation: (requestId, optionKey) => {
@@ -945,11 +900,11 @@ export class PixiPagesFacade {
             optionKey,
             amount: 1,
           };
-          this.refreshPage('workshop');
+          this.refreshPage("workshop");
           return (
             this.requireRuntime()
-              .getPage('workshop')
-              ?.openDialog?.('worldEventDonate') ?? false
+              .getPage("workshop")
+              ?.openDialog?.("worldEventDonate") ?? false
           );
         },
         adjustWorldEventDonationAmount: (delta) => {
@@ -960,19 +915,14 @@ export class PixiPagesFacade {
             ...this.worldEventDonationDraft,
             amount: Math.max(
               1,
-              Math.floor(
-                Number(this.worldEventDonationDraft.amount) || 1,
-              ) + Math.floor(Number(delta) || 0),
+              Math.floor(Number(this.worldEventDonationDraft.amount) || 1) +
+                Math.floor(Number(delta) || 0),
             ),
           };
-          this.refreshPage('workshop');
+          this.refreshPage("workshop");
           return true;
         },
-        confirmWorldEventDonation: (
-          requestId,
-          optionKey,
-          amount,
-        ) => {
+        confirmWorldEventDonation: (requestId, optionKey, amount) => {
           const result = gameplay?.donateWorldNoticeResource?.(
             requestId,
             optionKey,
@@ -980,24 +930,19 @@ export class PixiPagesFacade {
           );
           if (result?.ok === true) {
             this.worldEventDonationDraft = null;
-            this.requireRuntime().closeDialog?.(
-              'workshop.worldEventDonate',
-            );
-            this.refreshPage('workshop');
+            this.requireRuntime().closeDialog?.("workshop.worldEventDonate");
+            this.refreshPage("workshop");
           }
           return result ?? false;
         },
         claimPersonalTaskMilestoneReward: (periodType, threshold) =>
-          gameplay?.claimPersonalTaskMilestoneReward?.(
-            periodType,
-            threshold,
-          ),
+          gameplay?.claimPersonalTaskMilestoneReward?.(periodType, threshold),
         openPlayer: (player) =>
-          this.globalDialogPresenter?.open?.('player', {
+          this.globalDialogPresenter?.open?.("player", {
             player,
           }) ?? false,
         openAlliance: (alliance) =>
-          this.globalDialogPresenter?.open?.('alliance', {
+          this.globalDialogPresenter?.open?.("alliance", {
             alliance,
           }) ?? false,
       },
@@ -1006,15 +951,15 @@ export class PixiPagesFacade {
           const result = gameplay?.buyResearch?.(researchId);
           this.emitPurchaseSpendBurstForResult(result, {
             anchorId: `research.${researchId}`,
-            resource: result?.costCurrency ?? 'coin',
+            resource: result?.costCurrency ?? "coin",
             amount: result?.cost,
           });
           return result;
         },
         showLockedReason: () => false,
         selectTab: (tabId) => {
-          this.researchTabId = String(tabId || 'regular');
-          this.refreshPage('research');
+          this.researchTabId = String(tabId || "regular");
+          this.refreshPage("research");
           this.refreshChrome();
           return true;
         },
@@ -1022,18 +967,18 @@ export class PixiPagesFacade {
       },
       prestige: {
         selectTab: (tabId) => {
-          this.prestigeTabId = tabId === 'points' ? 'points' : 'main';
-          this.refreshPage('prestige');
+          this.prestigeTabId = tabId === "points" ? "points" : "main";
+          this.refreshPage("prestige");
           return true;
         },
         requestPrestige: (row) => {
           this.prestigeConfirm = row?.confirm ?? row ?? null;
-          this.refreshPage('prestige');
+          this.refreshPage("prestige");
           return true;
         },
         cancelPrestige: () => {
           this.prestigeConfirm = null;
-          this.refreshPage('prestige');
+          this.refreshPage("prestige");
           return true;
         },
         completePrestige: (level) => {
@@ -1048,8 +993,8 @@ export class PixiPagesFacade {
       brewing: this.createBrewingActions(),
       shop: {
         selectTab: (_legacyId, tabId) => {
-          this.shopTabId = tabId ?? _legacyId ?? 'traders';
-          this.refreshPage('shop');
+          this.shopTabId = tabId ?? _legacyId ?? "traders";
+          this.refreshPage("shop");
           this.syncExternalDataRetention();
           return true;
         },
@@ -1084,10 +1029,7 @@ export class PixiPagesFacade {
             this.getShopRequestSlot(slotNumber),
           );
           if (item?.kind) {
-            this.shopRequestItemKindBySlot.set(
-              safeSlotNumber,
-              item.kind,
-            );
+            this.shopRequestItemKindBySlot.set(safeSlotNumber, item.kind);
           }
           this.refreshShopRequestDialog(safeSlotNumber);
           return true;
@@ -1109,7 +1051,7 @@ export class PixiPagesFacade {
           );
           this.shopRequestItemKindBySlot.set(
             safeSlotNumber,
-            String(kind ?? ''),
+            String(kind ?? ""),
           );
           this.refreshShopRequestDialog(safeSlotNumber);
           return true;
@@ -1117,31 +1059,25 @@ export class PixiPagesFacade {
         closePlayerRequestDialog: (slotNumber) => {
           this.shopRequestDraftBySlot.delete(slotNumber);
           this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.REQUEST);
-          this.refreshPage('shop');
+          this.refreshPage("shop");
           return true;
         },
         clearPlayerRequest: async (slotNumber) => {
           const safeSlotNumber = Math.max(
             1,
             Math.floor(
-              Number(
-                slotNumber ?? this.shopSelectedRequestSlotNumber,
-              ) || 1,
+              Number(slotNumber ?? this.shopSelectedRequestSlotNumber) || 1,
             ),
           );
           const published =
-            await this.playerShopFacade?.clearSlotRequest?.(
-              safeSlotNumber,
-            );
+            await this.playerShopFacade?.clearSlotRequest?.(safeSlotNumber);
           if (published === false || published?.ok === false) {
             return published;
           }
-          const result = gameplay?.clearPlayerShopRequest?.(
-            safeSlotNumber,
-          );
+          const result = gameplay?.clearPlayerShopRequest?.(safeSlotNumber);
           if (result?.ok) {
             this.shopRequestDraftBySlot.delete(safeSlotNumber);
-            this.refreshPage('shop');
+            this.refreshPage("shop");
           }
           return result;
         },
@@ -1160,10 +1096,7 @@ export class PixiPagesFacade {
             PLAYER_MARKET_MAX_QUANTITY,
             Math.max(0, Math.floor(Number(item?.quantity) || 0)) +
               (slot.itemTypeId === item?.itemTypeId
-                ? Math.max(
-                    0,
-                    Math.floor(Number(slot.quantity) || 0),
-                  )
+                ? Math.max(0, Math.floor(Number(slot.quantity) || 0))
                 : 0),
           );
           const safeSlotNumber = this.updateShopDraft(
@@ -1179,10 +1112,7 @@ export class PixiPagesFacade {
             slot,
           );
           if (item?.kind) {
-            this.shopListingItemKindBySlot.set(
-              safeSlotNumber,
-              item.kind,
-            );
+            this.shopListingItemKindBySlot.set(safeSlotNumber, item.kind);
           }
           this.refreshShopListingDialog(safeSlotNumber);
           return true;
@@ -1204,7 +1134,7 @@ export class PixiPagesFacade {
           );
           this.shopListingItemKindBySlot.set(
             safeSlotNumber,
-            String(kind ?? ''),
+            String(kind ?? ""),
           );
           this.refreshShopListingDialog(safeSlotNumber);
           return true;
@@ -1212,11 +1142,11 @@ export class PixiPagesFacade {
         closePlayerListingDialog: (slotNumber) => {
           this.shopListingDraftBySlot.delete(slotNumber);
           this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.LISTING);
-          this.refreshPage('shop');
+          this.refreshPage("shop");
           return true;
         },
         selectLedgerKind: (kind) => {
-          this.shopLedgerKind = String(kind || 'seed');
+          this.shopLedgerKind = String(kind || "seed");
           this.refreshShopLedgerDialog();
           return true;
         },
@@ -1229,15 +1159,9 @@ export class PixiPagesFacade {
             safeSlotNumber,
             item?.itemTypeId ?? null,
           );
-          this.shopStallAllocationPercentBySlot.set(
-            safeSlotNumber,
-            100,
-          );
+          this.shopStallAllocationPercentBySlot.set(safeSlotNumber, 100);
           if (item?.kind) {
-            this.shopStallItemKindBySlot.set(
-              safeSlotNumber,
-              item.kind,
-            );
+            this.shopStallItemKindBySlot.set(safeSlotNumber, item.kind);
           }
           this.refreshShopStallDialog(safeSlotNumber);
           return {
@@ -1246,27 +1170,17 @@ export class PixiPagesFacade {
             itemTypeId: item?.itemTypeId ?? null,
           };
         },
-        setStallAllocationDraft: (
-          slotNumber,
-          percentage,
-          item,
-        ) => {
+        setStallAllocationDraft: (slotNumber, percentage, item) => {
           const safeSlotNumber = Math.max(
             1,
             Math.floor(Number(slotNumber) || 1),
           );
           const safePercentage = Math.max(
             0,
-            Math.min(
-              100,
-              Math.round((Number(percentage) || 0) / 5) * 5,
-            ),
+            Math.min(100, Math.round((Number(percentage) || 0) / 5) * 5),
           );
           if (item?.itemTypeId !== undefined) {
-            this.shopStallItemTypeIdBySlot.set(
-              safeSlotNumber,
-              item.itemTypeId,
-            );
+            this.shopStallItemTypeIdBySlot.set(safeSlotNumber, item.itemTypeId);
           }
           this.shopStallAllocationPercentBySlot.set(
             safeSlotNumber,
@@ -1284,78 +1198,56 @@ export class PixiPagesFacade {
             1,
             Math.floor(Number(slotNumber) || 1),
           );
-          this.shopStallItemKindBySlot.set(
-            safeSlotNumber,
-            String(kind ?? ''),
-          );
+          this.shopStallItemKindBySlot.set(safeSlotNumber, String(kind ?? ""));
           this.refreshShopStallDialog(safeSlotNumber);
           return true;
         },
         markStall: (slotNumber, item, percentage) => {
-          const selected = gameplay?.selectShopShelfSlot?.(
-            slotNumber,
-          );
+          const selected = gameplay?.selectShopShelfSlot?.(slotNumber);
           if (selected === false || selected?.ok === false) {
             return selected;
           }
-          const result =
-            gameplay?.setSelectedShopShelfSlotAllocation?.(
-              item?.itemTypeId,
-              percentage,
-            );
+          const result = gameplay?.setSelectedShopShelfSlotAllocation?.(
+            item?.itemTypeId,
+            percentage,
+          );
           if (result?.ok) {
-            this.requireRuntime().closeDialog(
-              SHOP_DIALOG_IDS.STALL,
-            );
+            this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.STALL);
           }
           return result;
         },
         clearStall: (slotNumber) => {
-          const selected = gameplay?.selectShopShelfSlot?.(
-            slotNumber,
-          );
+          const selected = gameplay?.selectShopShelfSlot?.(slotNumber);
           if (selected === false || selected?.ok === false) {
             return selected;
           }
-          const result =
-            gameplay?.clearSelectedShopShelfSlot?.();
+          const result = gameplay?.clearSelectedShopShelfSlot?.();
           if (result?.ok) {
             this.shopStallItemTypeIdBySlot.delete(slotNumber);
             this.shopStallAllocationPercentBySlot.delete(slotNumber);
-            this.requireRuntime().closeDialog(
-              SHOP_DIALOG_IDS.STALL,
-            );
+            this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.STALL);
           }
           return result;
         },
-        toggleStallFuture: (
-          slotNumber,
-          item,
-          enabled,
-        ) => {
-          const selected = gameplay?.selectShopShelfSlot?.(
-            slotNumber,
-          );
+        toggleStallFuture: (slotNumber, item, enabled) => {
+          const selected = gameplay?.selectShopShelfSlot?.(slotNumber);
           if (selected === false || selected?.ok === false) {
             return selected;
           }
-          const result =
-            gameplay?.setSelectedShopShelfFutureItem?.(
-              item?.itemTypeId,
-              enabled,
-            );
+          const result = gameplay?.setSelectedShopShelfFutureItem?.(
+            item?.itemTypeId,
+            enabled,
+          );
           if (result?.ok) {
-            this.requireRuntime().closeDialog(
-              SHOP_DIALOG_IDS.STALL,
-            );
+            this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.STALL);
           }
           return result;
         },
       },
       guild: {
         selectTab: (tabId) => {
-          this.guildTabId = String(tabId || 'hall');
-          this.refreshPage('guild');
+          this.guildTabId = String(tabId || "hall");
+          this.refreshPage("guild");
           return true;
         },
         createGuild: (profile) => gameplay?.createGuild?.(profile),
@@ -1365,8 +1257,7 @@ export class PixiPagesFacade {
         postRequest: (requestId) => gameplay?.postGuildRequest?.(requestId),
         postGuildRequest: (requestId) =>
           gameplay?.postGuildRequest?.(requestId),
-        removeRequest: (requestId) =>
-          gameplay?.removeGuildRequest?.(requestId),
+        removeRequest: (requestId) => gameplay?.removeGuildRequest?.(requestId),
         removeGuildRequest: (requestId) =>
           gameplay?.removeGuildRequest?.(requestId),
         hireApplicant: (applicantId) =>
@@ -1379,11 +1270,7 @@ export class PixiPagesFacade {
 
   emitPurchaseSpendBurstForResult(
     result,
-    {
-      anchorId,
-      resource = 'coin',
-      amount = null,
-    } = {},
+    { anchorId, resource = "coin", amount = null } = {},
   ) {
     const spentAmount = Number(amount ?? result?.cost ?? 0);
     if (result?.ok !== true || spentAmount <= 0 || !anchorId) {
@@ -1404,6 +1291,11 @@ export class PixiPagesFacade {
   createGardenViewModel(actions) {
     const garden = this.gameplaySnapshot.garden ?? {};
     const plot = garden.plot ?? {};
+    const seeds = garden.seeds ?? [];
+    const selectedSeed =
+      seeds.find(
+        (seed) => seed.itemTypeId === this.gardenSelectedSeedItemTypeId,
+      ) ?? null;
     const notificationContext = getGardenNotificationContext(
       this.gameplaySnapshot,
     );
@@ -1412,11 +1304,10 @@ export class PixiPagesFacade {
         tile,
         plot,
         coin: this.gameplaySnapshot.coin,
+        selectedSeed,
         ...notificationContext,
       }),
     );
-    const herbs = garden.herbs ?? [];
-    const seeds = garden.seeds ?? [];
 
     return {
       garden: {
@@ -1424,19 +1315,19 @@ export class PixiPagesFacade {
         now: Date.now(),
         maxPlots: plot.maxTiles ?? tiles.length,
         plots: tiles,
-        world: this.worldViewportByPage.get('garden') ?? {},
-        inventory: {
-          activeTab: this.gardenInventoryTabId,
-          herbs: this.createInventoryPanelModel(
-            'garden',
-            'herbs',
-            herbs,
-          ),
-          seeds: this.createInventoryPanelModel(
-            'garden',
-            'seeds',
-            seeds,
-          ),
+        world: this.worldViewportByPage.get("garden") ?? {},
+        actionBar: {
+          selectedSeed: selectedSeed
+            ? createGardenSelectedSeedModel(this.gameplaySnapshot, selectedSeed)
+            : null,
+          readyHarvestCount: tiles.filter(
+            (tile) => tile.phase === "ready" && tile.hidden !== true,
+          ).length,
+          hasSeedChoices:
+            createGardenSeedDialogRows(
+              this.gameplaySnapshot,
+              this.gardenSelectedSeedItemTypeId,
+            ).length > 0,
         },
       },
       actions,
@@ -1445,94 +1336,96 @@ export class PixiPagesFacade {
 
   createGardenActions() {
     const gameplay = this.gameplayFacade;
-    return {
-      activatePlot: (plot) => {
-        if (plot?.unlocked === false) {
-          if (plot.disabled === true) {
-            return {
-              ok: false,
-              reason: plot.lockReason ?? 'tile_locked',
-            };
-          }
-          if (plot.affordable === false) {
-            return {
-              ok: false,
-              reason: 'insufficient_coin',
-              cost: plot.costCoin,
-              missingCoin: plot.missingCoin,
-              tileNumber: plot.tileNumber,
-            };
-          }
-          const result = gameplay?.buyGardenTile?.();
-          this.emitPurchaseSpendBurstForResult(result, {
-            anchorId: `garden.plot.${result?.tileNumber ?? plot?.tileNumber}`,
-            resource: 'coin',
-            amount: result?.cost,
-          });
-          return result;
+    const activatePlot = (plot) => {
+      if (plot?.unlocked === false) {
+        if (plot.disabled === true) {
+          return {
+            ok: false,
+            reason: plot.lockReason ?? "tile_locked",
+          };
         }
-        if (plot?.phase === 'ready') {
-          return gameplay?.startGardenHarvest?.(plot.tileNumber);
+        if (plot.affordable === false) {
+          return {
+            ok: false,
+            reason: "insufficient_coin",
+            cost: plot.costCoin,
+            missingCoin: plot.missingCoin,
+            tileNumber: plot.tileNumber,
+          };
         }
-        if (plot?.phase === 'empty') {
-          if (
-            plot.selectedSeedItemTypeId &&
-            plot.canPlantSelectedSeed === true
-          ) {
-            return gameplay?.plantSelectedGardenSeed?.(plot.tileNumber);
-          }
-          return this.openGardenSeedDialog(plot);
-        }
-        if (plot?.process) {
-          return this.openGardenConfirmDialog('cancel', plot);
-        }
-        return this.openGardenSeedDialog(plot);
-      },
-      activatePlotLabel: (plot) =>
-        plot?.process
-          ? this.openGardenConfirmDialog('cancel', plot)
-          : this.openGardenSeedDialog(plot),
-      dropSeed: (seed, plot) =>
-        !canUseGardenSeedOnPlot(seed, plot)
-          ? { ok: false, reason: 'not_enough_seed' }
-          : plot?.phase === 'growing'
-          ? this.openGardenConfirmDialog('swap', {
-              ...plot,
-              seedTypeId: seed?.itemTypeId,
-            })
-          : gameplay?.plantGardenSeed?.(
-              plot?.tileNumber,
-              seed?.itemTypeId,
-            ),
-      toggleInventory: (tabId) => {
-        this.gardenInventoryTabId =
-          this.gardenInventoryTabId === tabId ? null : tabId;
-        this.resetInventoryExpansion('garden');
-        this.refreshPage('garden');
-        return true;
-      },
-      toggleInventoryExpanded: (kind) =>
-        this.toggleInventoryExpanded('garden', kind),
-      selectSeed: (seed, plot) => {
-        const result = gameplay?.selectGardenSeed?.(
-          plot?.tileNumber,
-          seed?.itemTypeId ?? null,
-        );
-        if (result?.ok === true) {
-          this.requireRuntime().closeDialog?.('garden.seed');
-        }
+        const result = gameplay?.buyGardenTile?.();
+        this.emitPurchaseSpendBurstForResult(result, {
+          anchorId: `garden.plot.${result?.tileNumber ?? plot?.tileNumber}`,
+          resource: "coin",
+          amount: result?.cost,
+        });
         return result;
+      }
+      if (plot?.phase === "ready") {
+        return gameplay?.startGardenHarvest?.(plot.tileNumber);
+      }
+      if (plot?.phase === "empty") {
+        if (plot.toolbarSeedItemTypeId) {
+          return gameplay?.plantGardenSeed?.(
+            plot.tileNumber,
+            plot.toolbarSeedItemTypeId,
+          );
+        }
+        return this.openGardenSeedDialog();
+      }
+      if (plot?.phase === "growing") {
+        if (!plot.toolbarSeedItemTypeId) {
+          return this.openGardenSeedDialog();
+        }
+        if (plot.toolbarSeedItemTypeId === plot.seedItemTypeId) {
+          return {
+            ok: false,
+            reason: "same_seed",
+            tileNumber: plot.tileNumber,
+          };
+        }
+        return this.openGardenConfirmDialog("swap", {
+          ...plot,
+          seedTypeId: plot.toolbarSeedItemTypeId,
+        });
+      }
+      if (plot?.process) {
+        return this.openGardenConfirmDialog("cancel", plot);
+      }
+      return false;
+    };
+
+    return {
+      activatePlot,
+      activatePlotLabel: activatePlot,
+      openSeedPicker: () => this.openGardenSeedDialog(),
+      harvestAll: () =>
+        gameplay?.startAllReadyGardenHarvests?.() ?? {
+          ok: false,
+          reason: "unavailable",
+        },
+      selectSeed: (seed) => {
+        if (!Number.isInteger(seed?.itemTypeId)) {
+          return {
+            ok: false,
+            reason: "invalid_seed",
+          };
+        }
+        this.gardenSelectedSeedItemTypeId = seed.itemTypeId;
+        this.requireRuntime().closeDialog?.("garden.seed");
+        this.refreshPage("garden");
+        return {
+          ok: true,
+          selectedSeedItemTypeId: seed.itemTypeId,
+        };
       },
       confirmCancel: (plot) =>
         gameplay?.cancelGardenPlanting?.(plot?.tileNumber),
       confirmSwap: (plot) =>
-        gameplay?.replaceGardenSeed?.(
-          plot?.tileNumber,
-          plot?.seedTypeId,
-        ),
+        gameplay?.replaceGardenSeed?.(plot?.tileNumber, plot?.seedTypeId),
       closeDialog: () => true,
       setWorldViewport: (viewport) => {
-        this.worldViewportByPage.set('garden', {
+        this.worldViewportByPage.set("garden", {
           ...viewport,
           controlled: true,
         });
@@ -1540,41 +1433,44 @@ export class PixiPagesFacade {
     };
   }
 
-  openGardenSeedDialog(plot) {
+  openGardenSeedDialog() {
     const rows = createGardenSeedDialogRows(
       this.gameplaySnapshot,
-      plot,
+      this.gardenSelectedSeedItemTypeId,
     );
-    return this.requireRuntime()
-      .getPage('garden')
-      .openDialog('seed', {
-        open: true,
-        title: 'choose seed',
-        plot,
-        rows,
-      });
+    return this.requireRuntime().getPage("garden").openDialog("seed", {
+      open: true,
+      title: "Choose Seed",
+      rows,
+    });
   }
 
   openGardenConfirmDialog(kind, plot) {
+    const selectedSeed = (this.gameplaySnapshot.garden?.seeds ?? []).find(
+      (seed) => seed.itemTypeId === plot?.seedTypeId,
+    );
+    const currentSeedLabel =
+      stripSeedSuffix(plot?.seedLabel ?? plot?.selectedSeedLabel) ??
+      "current crop";
+    const selectedSeedLabel =
+      stripSeedSuffix(selectedSeed?.label) ?? "selected seed";
     return this.requireRuntime()
-      .getPage('garden')
+      .getPage("garden")
       .openDialog(kind, {
-        title: kind === 'swap' ? 'swap seed?' : 'Cancel Progress?',
+        title: kind === "swap" ? "Swap Seed?" : "Cancel Progress?",
         message:
-          kind === 'swap'
-            ? 'replace the growing seed?'
-            : 'Return This Plot To Empty?',
-        confirmLabel: kind === 'swap' ? 'swap' : 'Empty',
+          kind === "swap"
+            ? `Swap ${currentSeedLabel} for ${selectedSeedLabel}? Growth will restart.`
+            : "Return This Plot To Empty?",
+        confirmLabel: kind === "swap" ? "Swap" : "Empty",
         payload: plot,
         onConfirm: () =>
-          kind === 'swap'
+          kind === "swap"
             ? this.gameplayFacade?.replaceGardenSeed?.(
                 plot?.tileNumber,
                 plot?.seedTypeId,
               )
-            : this.gameplayFacade?.cancelGardenPlanting?.(
-                plot?.tileNumber,
-              ),
+            : this.gameplayFacade?.cancelGardenPlanting?.(plot?.tileNumber),
       });
   }
 
@@ -1607,15 +1503,13 @@ export class PixiPagesFacade {
         canAffordCauldron,
         nextCauldronCost,
         nextCauldronLockedByLevel: brewing.nextCauldronLockedByLevel,
-        nextCauldronLockedByResearch:
-          brewing.nextCauldronLockedByResearch,
+        nextCauldronLockedByResearch: brewing.nextCauldronLockedByResearch,
         nextCauldronRequiresLevel: brewing.nextCauldronRequiresLevel,
-        nextCauldronRequiresResearchId:
-          brewing.nextCauldronRequiresResearchId,
+        nextCauldronRequiresResearchId: brewing.nextCauldronRequiresResearchId,
       });
     }
     const potions = (this.gameplaySnapshot.inventory ?? []).filter(
-      (item) => item.kind === 'potion',
+      (item) => item.kind === "potion",
     );
     const herbs = brewing.herbs ?? [];
 
@@ -1628,17 +1522,13 @@ export class PixiPagesFacade {
           this.selectedBrewingCauldronIndex,
           Math.max(0, cauldrons.length - 1),
         ),
-        world: this.worldViewportByPage.get('brewing') ?? {},
+        world: this.worldViewportByPage.get("brewing") ?? {},
         inventory: {
           activeTab: this.brewingInventoryTabId,
-          herbs: this.createInventoryPanelModel(
-            'brewing',
-            'herbs',
-            herbs,
-          ),
+          herbs: this.createInventoryPanelModel("brewing", "herbs", herbs),
           potions: this.createInventoryPanelModel(
-            'brewing',
-            'potions',
+            "brewing",
+            "potions",
             potions,
           ),
         },
@@ -1648,10 +1538,7 @@ export class PixiPagesFacade {
   }
 
   decorateCauldron(cauldron, brewing) {
-    const index = Math.max(
-      0,
-      Math.floor(Number(cauldron?.cauldronIndex) || 0),
-    );
+    const index = Math.max(0, Math.floor(Number(cauldron?.cauldronIndex) || 0));
     const selectedRecipe = this.selectedRecipeByCauldron.get(index) ?? null;
     const herbsByKey = new Map(
       (brewing.herbs ?? []).map((herb) => [herb.key, herb]),
@@ -1677,12 +1564,12 @@ export class PixiPagesFacade {
       );
     const primaryAction = cauldron.activeBrew?.canStartBottling
       ? {
-          id: 'bottle',
-          label: 'bottle',
+          id: "bottle",
+          label: "bottle",
           enabled: true,
         }
       : {
-          id: 'brew',
+          id: "brew",
           label: `brew x${cauldron.brewQuantity ?? 1}`,
           enabled: cauldron.canBrew === true,
         };
@@ -1694,7 +1581,7 @@ export class PixiPagesFacade {
       selectedRecipe: decoratedRecipe,
       primaryAction,
       recipesDialog: {
-        title: 'recipes',
+        title: "recipes",
         cauldronIndex: index,
         recipes: brewing.recipes ?? [],
       },
@@ -1708,7 +1595,7 @@ export class PixiPagesFacade {
         recipe?.unlocked === true ||
         recipe?.unknown === true ||
         recipe?.known === false ||
-        recipe?.discoveryType === 'unknown'
+        recipe?.discoveryType === "unknown"
       ) {
         return {
           ...recipe,
@@ -1716,8 +1603,7 @@ export class PixiPagesFacade {
         };
       }
       const researchId =
-        recipe.researchId ??
-        (recipe.key ? `unlockRecipe:${recipe.key}` : null);
+        recipe.researchId ?? (recipe.key ? `unlockRecipe:${recipe.key}` : null);
       const research = findResearchSnapshot(
         this.gameplaySnapshot.research,
         researchId,
@@ -1733,10 +1619,10 @@ export class PixiPagesFacade {
   openBrewingRecipesDialog(cauldronIndex = 0) {
     return (
       this.requireRuntime()
-        .getPage('brewing')
-        .openDialog('recipes', {
+        .getPage("brewing")
+        .openDialog("recipes", {
           open: true,
-          title: 'recipes',
+          title: "recipes",
           cauldronIndex,
           recipes: this.decorateBrewingRecipes(
             this.gameplaySnapshot.brewing?.recipes,
@@ -1753,7 +1639,7 @@ export class PixiPagesFacade {
           0,
           Math.floor(Number(cauldronIndex) || 0),
         );
-        this.refreshPage('brewing');
+        this.refreshPage("brewing");
         return true;
       },
       openRecipes: (cauldronIndex) =>
@@ -1766,7 +1652,7 @@ export class PixiPagesFacade {
         if (result?.ok === true) {
           this.emitPurchaseSpendBurstForResult(result, {
             anchorId: `brewing.cauldron.${cauldronIndex}`,
-            resource: result?.costCurrency ?? 'coin',
+            resource: result?.costCurrency ?? "coin",
             amount: result?.cost,
           });
           this.openBrewingRecipesDialog(cauldronIndex);
@@ -1779,24 +1665,24 @@ export class PixiPagesFacade {
         const result = key
           ? gameplay?.prepareBrewingRecipe?.(key, cauldronIndex)
           : gameplay?.setBrewingAutoBrewRecipe?.(null, cauldronIndex);
-        this.requireRuntime().closeDialog?.('brewing.recipes');
+        this.requireRuntime().closeDialog?.("brewing.recipes");
         return result;
       },
       performCauldronAction: (cauldron, action) => {
         const index = cauldron?.cauldronIndex ?? 0;
-        if (cauldron?.unlocked === false || action?.id === 'buy') {
+        if (cauldron?.unlocked === false || action?.id === "buy") {
           const result = gameplay?.buyBrewingCauldron?.();
           this.emitPurchaseSpendBurstForResult(result, {
             anchorId: `brewing.cauldron.${index}`,
-            resource: 'coin',
+            resource: "coin",
             amount: result?.cost,
           });
           return result;
         }
-        if (action?.id === 'bottle' || cauldron?.activeBrew?.canStartBottling) {
+        if (action?.id === "bottle" || cauldron?.activeBrew?.canStartBottling) {
           return gameplay?.startBrewingBottling?.(index);
         }
-        if (action?.id === 'fill' && cauldron?.selectedRecipe?.key) {
+        if (action?.id === "fill" && cauldron?.selectedRecipe?.key) {
           return gameplay?.prepareBrewingRecipe?.(
             cauldron.selectedRecipe.key,
             index,
@@ -1807,48 +1693,34 @@ export class PixiPagesFacade {
       selectBrewQuantity: (quantity, cauldronIndex) =>
         gameplay?.setBrewingBrewQuantity?.(quantity, cauldronIndex),
       toggleAutoBrew: (cauldronIndex = 0) => {
-        const index = Math.max(
-          0,
-          Math.floor(Number(cauldronIndex) || 0),
-        );
+        const index = Math.max(0, Math.floor(Number(cauldronIndex) || 0));
         const cauldron =
           (this.gameplaySnapshot.brewing?.cauldrons ?? []).find(
-            (entry) =>
-              Number(entry?.cauldronIndex) === index,
-          ) ??
-          (index === 0
-            ? this.gameplaySnapshot.brewing
-            : null);
+            (entry) => Number(entry?.cauldronIndex) === index,
+          ) ?? (index === 0 ? this.gameplaySnapshot.brewing : null);
         if (cauldron?.autoBrewEnabled === true) {
-          return typeof gameplay?.setBrewingAutoBrewEnabled ===
-            'function'
+          return typeof gameplay?.setBrewingAutoBrewEnabled === "function"
             ? gameplay.setBrewingAutoBrewEnabled(false, index)
             : gameplay?.toggleBrewingAutoBrewEnabled?.(index);
         }
 
-        const selectedRecipe =
-          this.selectedRecipeByCauldron.get(index);
+        const selectedRecipe = this.selectedRecipeByCauldron.get(index);
         const recipeKey =
           selectedRecipe?.key ??
           selectedRecipe?.id ??
           cauldron?.autoBrewRecipeKey ??
           null;
-        if (
-          recipeKey &&
-          recipeKey !== cauldron?.autoBrewRecipeKey
-        ) {
-          const recipeResult =
-            gameplay?.setBrewingAutoBrewRecipe?.(
-              recipeKey,
-              index,
-            );
+        if (recipeKey && recipeKey !== cauldron?.autoBrewRecipeKey) {
+          const recipeResult = gameplay?.setBrewingAutoBrewRecipe?.(
+            recipeKey,
+            index,
+          );
           if (recipeResult?.ok === false) {
             return recipeResult;
           }
         }
 
-        return typeof gameplay?.setBrewingAutoBrewEnabled ===
-          'function'
+        return typeof gameplay?.setBrewingAutoBrewEnabled === "function"
           ? gameplay.setBrewingAutoBrewEnabled(true, index)
           : gameplay?.toggleBrewingAutoBrewEnabled?.(index);
       },
@@ -1858,8 +1730,8 @@ export class PixiPagesFacade {
         const result = gameplay?.cancelBrewing?.(cauldronIndex);
         if (result?.ok === false) {
           this.experienceFacade?.transientEffects?.emitReward?.({
-            message: 'No potion is brewing to cancel',
-            flyoutKey: 'brewing-cancel-empty',
+            message: "No potion is brewing to cancel",
+            flyoutKey: "brewing-cancel-empty",
           });
         }
         return result;
@@ -1868,8 +1740,8 @@ export class PixiPagesFacade {
         const result = gameplay?.collectBrewing?.(cauldronIndex);
         if (result?.ok === false) {
           this.experienceFacade?.transientEffects?.emitReward?.({
-            message: 'No potion is ready to collect',
-            flyoutKey: 'brewing-collect-empty',
+            message: "No potion is ready to collect",
+            flyoutKey: "brewing-collect-empty",
           });
         }
         return result;
@@ -1897,16 +1769,16 @@ export class PixiPagesFacade {
       toggleInventory: (tabId) => {
         this.brewingInventoryTabId =
           this.brewingInventoryTabId === tabId ? null : tabId;
-        this.resetInventoryExpansion('brewing');
-        this.refreshPage('brewing');
+        this.resetInventoryExpansion("brewing");
+        this.refreshPage("brewing");
         return true;
       },
       toggleInventoryExpanded: (kind) =>
-        this.toggleInventoryExpanded('brewing', kind),
+        this.toggleInventoryExpanded("brewing", kind),
       inspectPotion: () => true,
       closeDialog: () => true,
       setWorldViewport: (viewport) => {
-        this.worldViewportByPage.set('brewing', {
+        this.worldViewportByPage.set("brewing", {
           ...viewport,
           controlled: true,
           touched: true,
@@ -1931,7 +1803,7 @@ export class PixiPagesFacade {
     }
     if (state.unlocked === false) {
       this.requireRuntime()
-        .getGlobalSurface('chrome.bottom')
+        .getGlobalSurface("chrome.bottom")
         .showLockedPage?.(pageId, state);
       return false;
     }
@@ -1997,9 +1869,9 @@ export class PixiPagesFacade {
   }
 
   resetInventoryUiState(pageId) {
-    if (pageId === 'garden') {
+    if (pageId === "garden") {
       this.gardenInventoryTabId = null;
-    } else if (pageId === 'brewing') {
+    } else if (pageId === "brewing") {
       this.brewingInventoryTabId = null;
     } else {
       return false;
@@ -2017,15 +1889,11 @@ export class PixiPagesFacade {
 
   getAdjacentPageId(direction) {
     const visible = this.pageStates
-      .filter(
-        (page) =>
-          page.visible !== false &&
-          SWIPE_PAGE_IDS.has(page.id),
-      )
+      .filter((page) => page.visible !== false && SWIPE_PAGE_IDS.has(page.id))
       .map((page) => page.id);
     const index = visible.indexOf(this.currentPageId);
-    const offset = direction === 'previous' ? -1 : 1;
-    return index < 0 ? null : visible[index + offset] ?? null;
+    const offset = direction === "previous" ? -1 : 1;
+    return index < 0 ? null : (visible[index + offset] ?? null);
   }
 
   setSwipeTargetPageId(pageId) {
@@ -2034,7 +1902,7 @@ export class PixiPagesFacade {
     }
     return (
       this.requireRuntime()
-        .getGlobalSurface('chrome.bottom')
+        .getGlobalSurface("chrome.bottom")
         .setSwipeTargetPageId?.(pageId) ?? false
     );
   }
@@ -2044,8 +1912,8 @@ export class PixiPagesFacade {
     if (runtime.getOpenDialogIds().length > 0) {
       return runtime.closeTopDialog();
     }
-    if (this.currentPageId !== 'workshop') {
-      return this.show('workshop');
+    if (this.currentPageId !== "workshop") {
+      return this.show("workshop");
     }
     return false;
   }
@@ -2054,7 +1922,7 @@ export class PixiPagesFacade {
     if (!this.mounted) {
       return;
     }
-    const shouldRetainNpc = this.currentPageId === 'shop';
+    const shouldRetainNpc = this.currentPageId === "shop";
     if (shouldRetainNpc && !this.releaseNpcMarket) {
       this.releaseNpcMarket =
         this.npcMarketFacade?.retainPrices?.() ??
@@ -2066,7 +1934,7 @@ export class PixiPagesFacade {
     }
 
     const shouldRetainPlayers =
-      this.currentPageId === 'shop' && this.shopTabId === 'players';
+      this.currentPageId === "shop" && this.shopTabId === "players";
     if (shouldRetainPlayers && !this.releasePlayerMarket) {
       this.releasePlayerMarket =
         this.playerShopFacade?.retainMarketData?.() ??
@@ -2077,17 +1945,11 @@ export class PixiPagesFacade {
       this.releasePlayerMarket = null;
     }
 
-    const shouldRetainTradeAlliance = this.currentPageId === 'workshop';
-    if (
-      shouldRetainTradeAlliance &&
-      !this.releaseTradeAlliancePublic
-    ) {
+    const shouldRetainTradeAlliance = this.currentPageId === "workshop";
+    if (shouldRetainTradeAlliance && !this.releaseTradeAlliancePublic) {
       this.releaseTradeAlliancePublic =
         this.tradeAllianceFacade?.retainPublicData?.() ?? null;
-    } else if (
-      !shouldRetainTradeAlliance &&
-      this.releaseTradeAlliancePublic
-    ) {
+    } else if (!shouldRetainTradeAlliance && this.releaseTradeAlliancePublic) {
       this.releaseTradeAlliancePublic();
       this.releaseTradeAlliancePublic = null;
     }
@@ -2110,12 +1972,12 @@ export class PixiPagesFacade {
       return requested.id;
     }
     return this.pageStates.some(
-      (page) => page.id === 'workshop' && page.unlocked,
+      (page) => page.id === "workshop" && page.unlocked,
     )
-      ? 'workshop'
-      : this.pageStates.find(
+      ? "workshop"
+      : (this.pageStates.find(
           (page) => page.unlocked && SWIPE_PAGE_IDS.has(page.id),
-        )?.id ?? 'workshop';
+        )?.id ?? "workshop");
   }
 
   getCurrentPageId() {
@@ -2124,7 +1986,7 @@ export class PixiPagesFacade {
 
   setTopPanelQuestProgressPreview(progress = null) {
     if (!this.mounted) {
-      return { ok: false, reason: 'pages_not_mounted' };
+      return { ok: false, reason: "pages_not_mounted" };
     }
     this.questProgressPreview = progress;
     this.refreshChrome();
@@ -2132,10 +1994,9 @@ export class PixiPagesFacade {
   }
 
   setDevNotifications(snapshot) {
-    this.devNotifications =
-      snapshot?.pages
-        ? snapshot
-        : this.notificationManager.getSnapshot(this.gameplaySnapshot);
+    this.devNotifications = snapshot?.pages
+      ? snapshot
+      : this.notificationManager.getSnapshot(this.gameplaySnapshot);
     if (snapshot?.pages) {
       this.devNotifications = snapshot;
     }
@@ -2151,51 +2012,42 @@ export class PixiPagesFacade {
 
   openDialog(dialogId, options = {}) {
     if (!this.mounted) {
-      return { ok: false, reason: 'pages_not_mounted' };
+      return { ok: false, reason: "pages_not_mounted" };
     }
     const normalized = normalizeDialogId(dialogId);
     if (
-      normalized === 'featureunlockannouncement' ||
-      normalized === 'featureunlocks'
+      normalized === "featureunlockannouncement" ||
+      normalized === "featureunlocks"
     ) {
       return (
-        this.announcementPresenter?.showFeatureUnlockPreview?.(
-          options,
-        ) ?? {
+        this.announcementPresenter?.showFeatureUnlockPreview?.(options) ?? {
           ok: false,
-          reason: 'announcements_missing',
+          reason: "announcements_missing",
         }
       );
     }
     if (
-      normalized === 'levelupannouncement' ||
-      normalized === 'levelrewardsannouncement'
+      normalized === "levelupannouncement" ||
+      normalized === "levelrewardsannouncement"
     ) {
       return (
-        this.announcementPresenter?.showLevelUpPreview?.(
-          options,
-        ) ?? {
+        this.announcementPresenter?.showLevelUpPreview?.(options) ?? {
           ok: false,
-          reason: 'announcements_missing',
+          reason: "announcements_missing",
         }
       );
     }
-    if (
-      normalized === 'whileawayannouncement' ||
-      normalized === 'whileaway'
-    ) {
+    if (normalized === "whileawayannouncement" || normalized === "whileaway") {
       return (
-        this.announcementPresenter?.showWhileAwayPreview?.(
-          options,
-        ) ?? {
+        this.announcementPresenter?.showWhileAwayPreview?.(options) ?? {
           ok: false,
-          reason: 'announcements_missing',
+          reason: "announcements_missing",
         }
       );
     }
     const target = DEV_DIALOG_TARGETS[normalized];
     if (!target) {
-      return { ok: false, reason: 'unknown_dialog', dialogId };
+      return { ok: false, reason: "unknown_dialog", dialogId };
     }
 
     if (target.pageId) {
@@ -2208,37 +2060,27 @@ export class PixiPagesFacade {
       ...(target.options ?? {}),
       ...(options ?? {}),
     };
-    if (target.pageMethod === 'worldEvent') {
+    if (target.pageMethod === "worldEvent") {
       this.workshopWorldEventTabId = normalizeWorkshopTabId(
         resolvedOptions.tab,
         WORKSHOP_WORLD_EVENT_TAB_IDS,
         this.workshopWorldEventTabId,
       );
-      this.refreshPage('workshop', { force: true });
+      this.refreshPage("workshop", { force: true });
     }
     const opened = target.pageMethod
       ? page?.openDialog?.(
           target.pageMethod,
-          target.pageMethod === 'worldEvent'
-            ? null
-            : resolvedOptions,
+          target.pageMethod === "worldEvent" ? null : resolvedOptions,
         )
-      : this.globalDialogPresenter?.open?.(
-          target.dialogId,
-          resolvedOptions,
-        ) ??
-        this.requireRuntime().openDialog?.(
-          target.dialogId,
-          resolvedOptions,
-        );
+      : (this.globalDialogPresenter?.open?.(target.dialogId, resolvedOptions) ??
+        this.requireRuntime().openDialog?.(target.dialogId, resolvedOptions));
     return opened === false
-      ? { ok: false, reason: 'dialog_unavailable', dialogId }
+      ? { ok: false, reason: "dialog_unavailable", dialogId }
       : {
           ok: true,
           dialogId: target.resultId ?? dialogId,
-          ...(resolvedOptions.tab
-            ? { tabId: resolvedOptions.tab }
-            : {}),
+          ...(resolvedOptions.tab ? { tabId: resolvedOptions.tab } : {}),
         };
   }
 
@@ -2247,16 +2089,14 @@ export class PixiPagesFacade {
   }
 
   resetFirstRunIntroProgress() {
-    return (
-      this.experienceFacade?.resetFirstRunIntroProgress?.() ?? false
-    );
+    return this.experienceFacade?.resetFirstRunIntroProgress?.() ?? false;
   }
 
   showFirstRunIntroPreview(options = {}) {
     return (
       this.experienceFacade?.showFirstRunIntroPreview?.(options) ?? {
         ok: false,
-        reason: 'intro_missing',
+        reason: "intro_missing",
       }
     );
   }
@@ -2265,7 +2105,7 @@ export class PixiPagesFacade {
     return (
       this.experienceFacade?.listTutorialStages?.() ?? {
         ok: false,
-        reason: 'tutorial_missing',
+        reason: "tutorial_missing",
       }
     );
   }
@@ -2274,7 +2114,7 @@ export class PixiPagesFacade {
     return (
       this.experienceFacade?.setTutorialStage?.(stageId) ?? {
         ok: false,
-        reason: 'tutorial_missing',
+        reason: "tutorial_missing",
       }
     );
   }
@@ -2292,7 +2132,7 @@ export class PixiPagesFacade {
     const runtime = this.renderFacade.getUiRuntime();
     if (!runtime?.initialized) {
       throw new Error(
-        'PixiPagesFacade requires RenderFacade.initialize() before mounting.',
+        "PixiPagesFacade requires RenderFacade.initialize() before mounting.",
       );
     }
     return runtime;
@@ -2303,43 +2143,41 @@ function createGardenPlotModel({
   tile = {},
   plot = {},
   coin = {},
+  selectedSeed = null,
   seedQuantityById = new Map(),
   hasPlantableSeed = false,
 } = {}) {
   const unlocked = tile.unlocked !== false;
-  const nextLockedTile =
-    !unlocked && tile.tileNumber === plot.nextTileNumber;
-  const lockedByLevel =
-    nextLockedTile && plot.nextTileLockedByLevel === true;
+  const nextLockedTile = !unlocked && tile.tileNumber === plot.nextTileNumber;
+  const lockedByLevel = nextLockedTile && plot.nextTileLockedByLevel === true;
   const lockedByResearch =
     nextLockedTile && plot.nextTileLockedByResearch === true;
   const costCoin = Number(plot.nextTileCost);
   const currentCoin = Number(coin?.current ?? 0);
   const affordable =
-    !nextLockedTile ||
-    !Number.isFinite(costCoin) ||
-    currentCoin >= costCoin;
+    !nextLockedTile || !Number.isFinite(costCoin) || currentCoin >= costCoin;
   const selectedSeedRequirement = Math.max(
     1,
     Math.floor(Number(tile.level) || 1),
   );
-  const selectedSeedQuantity = tile.selectedSeedItemTypeId
-    ? Number(seedQuantityById.get(tile.selectedSeedItemTypeId) ?? 0)
+  const selectedSeedQuantity = selectedSeed?.itemTypeId
+    ? Number(
+        seedQuantityById.get(selectedSeed.itemTypeId) ??
+          selectedSeed.quantity ??
+          0,
+      )
     : 0;
-  const hasSelectedSeed = Boolean(tile.selectedSeedItemTypeId);
+  const hasSelectedSeed = Boolean(selectedSeed?.itemTypeId);
   const canPlantSelectedSeed =
-    hasSelectedSeed &&
-    selectedSeedQuantity >= selectedSeedRequirement;
+    hasSelectedSeed && selectedSeedQuantity >= selectedSeedRequirement;
   let label = tile.label;
   let labelResource = tile.labelResource;
   let actionText = tile.actionText;
   let actionResource = tile.actionResource;
 
   if (!unlocked) {
-    label = '';
-    actionText = nextLockedTile
-      ? formatGardenLockedPlotAction(plot)
-      : '';
+    label = "";
+    actionText = nextLockedTile ? formatGardenLockedPlotAction(plot) : "";
     actionResource =
       nextLockedTile &&
       !lockedByLevel &&
@@ -2347,24 +2185,20 @@ function createGardenPlotModel({
       affordable &&
       Number.isFinite(costCoin) &&
       costCoin > 0
-        ? 'coin'
+        ? "coin"
         : null;
-  } else if (tile.phase === 'empty') {
-    label = hasSelectedSeed
-      ? tile.selectedHerbLabel ??
-        stripSeedSuffix(tile.selectedSeedLabel) ??
-        'empty'
-      : 'choose';
-    labelResource = hasSelectedSeed ? 'herb' : null;
+  } else if (tile.phase === "empty") {
+    label = "";
+    labelResource = null;
     actionText = hasSelectedSeed
       ? canPlantSelectedSeed
         ? selectedSeedRequirement > 1
           ? `plant x${selectedSeedRequirement}`
-          : 'plant'
+          : "plant"
         : selectedSeedRequirement > 1
           ? `no x${selectedSeedRequirement} seed`
-          : 'no seeds'
-      : 'empty';
+          : "no seeds"
+      : "choose seed";
     actionResource = null;
   }
 
@@ -2377,12 +2211,11 @@ function createGardenPlotModel({
     buySlot: nextLockedTile,
     disabled:
       tile.disabled === true ||
-      (!unlocked &&
-        (!nextLockedTile || lockedByLevel || lockedByResearch)),
+      (!unlocked && (!nextLockedTile || lockedByLevel || lockedByResearch)),
     lockReason: lockedByLevel
-      ? 'level_locked'
+      ? "level_locked"
       : lockedByResearch
-        ? 'research_locked'
+        ? "research_locked"
         : null,
     costCoin: Number.isFinite(costCoin) ? costCoin : null,
     affordable,
@@ -2400,6 +2233,9 @@ function createGardenPlotModel({
     selectedSeedQuantity,
     hasSelectedSeed,
     canPlantSelectedSeed,
+    toolbarSeedItemTypeId: selectedSeed?.itemTypeId ?? null,
+    toolbarSeedKey: selectedSeed?.key ?? null,
+    toolbarSeedLabel: selectedSeed?.label ?? null,
     notification:
       tile.notification === true ||
       hasGardenTileNotification({
@@ -2410,8 +2246,7 @@ function createGardenPlotModel({
         hasPlantableSeed,
       }),
     acceptsSeedDrop:
-      unlocked &&
-      (tile.phase === 'empty' || tile.phase === 'growing'),
+      unlocked && (tile.phase === "empty" || tile.phase === "growing"),
   };
 }
 
@@ -2420,14 +2255,16 @@ function formatGardenLockedPlotAction(plot = {}) {
     return `level ${plot.nextTileRequiresLevel}`;
   }
   if (plot.nextTileLockedByResearch === true) {
-    return 'research';
+    return "research";
   }
   const cost = Number(plot.nextTileCost);
-  return `buy ${cost === 0 ? 'free' : formatCoinPriceText(cost)}`;
+  return `buy ${cost === 0 ? "free" : formatCoinPriceText(cost)}`;
 }
 
-function createGardenSeedDialogRows(snapshot = {}, plot = {}) {
-  const selectedSeedItemTypeId = plot?.selectedSeedItemTypeId ?? null;
+function createGardenSeedDialogRows(
+  snapshot = {},
+  selectedSeedItemTypeId = null,
+) {
   const seeds = (snapshot.garden?.seeds ?? [])
     .map((seed) => ({
       ...seed,
@@ -2439,81 +2276,55 @@ function createGardenSeedDialogRows(snapshot = {}, plot = {}) {
   const orderedSeeds = [
     ...seeds.filter((seed) => Number(seed.quantity) > 0),
     ...seeds.filter(
-      (seed) =>
-        Number(seed.quantity) <= 0 && seed.researched === true,
+      (seed) => Number(seed.quantity) <= 0 && seed.researched === true,
     ),
   ];
 
-  return [
-    {
-      id: 'empty',
-      key: 'empty',
-      itemTypeId: null,
-      label: 'empty',
-      quantity: null,
-      quantityText: '',
-      emptyOption: true,
-      selected: Boolean(plot) && !selectedSeedItemTypeId,
+  return orderedSeeds.map((seed) => {
+    const display = getItemDisplay(snapshot, seed, seed.quantity);
+    return {
+      ...seed,
+      id: seed.itemTypeId,
+      label: display.label,
+      displayLabel: display.label,
+      quantityText: String(seed.quantity ?? 0),
+      selected: selectedSeedItemTypeId === seed.itemTypeId,
       enabled: true,
-      semanticId: 'garden.seed.empty',
-    },
-    ...orderedSeeds.map((seed) => {
-      const display = getItemDisplay(snapshot, seed, seed.quantity);
-      return {
-        ...seed,
-        id: seed.itemTypeId,
-        label: display.label,
-        displayLabel: display.label,
-        quantityText: String(seed.quantity ?? 0),
-        selected: selectedSeedItemTypeId === seed.itemTypeId,
-        enabled: true,
-        known: display.known,
-        researched: display.researched,
-        owned: display.owned,
-        empty: display.empty,
-        notification: Number(seed.quantity) > 0,
-        itemKind: 'seed',
-        itemKey: seed.key,
-        icon: {
-          kind: 'seed',
-          key: seed.key,
-        },
-        semanticId: `garden.seed.${seed.key ?? seed.itemTypeId}`,
-        tutorialId: seed.key ? `garden:seed:${seed.key}` : null,
-      };
-    }),
-  ];
+      known: display.known,
+      researched: display.researched,
+      owned: display.owned,
+      empty: display.empty,
+      notification: Number(seed.quantity) > 0,
+      itemKind: "seed",
+      itemKey: seed.key,
+      icon: {
+        kind: "seed",
+        key: seed.key,
+      },
+      semanticId: `garden.seed.${seed.key ?? seed.itemTypeId}`,
+      tutorialId: seed.key ? `garden:seed:${seed.key}` : null,
+    };
+  });
 }
 
-function canUseGardenSeedOnPlot(seed, plot) {
-  if (
-    plot?.unlocked === false ||
-    !seed ||
-    !Number.isFinite(Number(seed.quantity))
-  ) {
-    return false;
-  }
-  const requiredQuantity = Math.max(
-    1,
-    Math.floor(
-      Number(plot.selectedSeedRequirement ?? plot.level) || 1,
-    ),
-  );
-  if (Number(seed.quantity) < requiredQuantity) {
-    return false;
-  }
-  if (plot.phase === 'empty') {
-    return true;
-  }
-  return (
-    plot.phase === 'growing' &&
-    seed.itemTypeId !== plot.seedItemTypeId
-  );
+function createGardenSelectedSeedModel(snapshot = {}, seed = {}) {
+  const display = getItemDisplay(snapshot, seed, seed.quantity);
+  return {
+    ...seed,
+    label: stripSeedSuffix(display.label) ?? display.label,
+    quantity: Number(seed.quantity) || 0,
+    quantityText: String(seed.quantity ?? 0),
+    itemKind: "seed",
+    icon: {
+      kind: "seed",
+      key: seed.key,
+    },
+  };
 }
 
 function stripSeedSuffix(label) {
-  const value = String(label ?? '').trim();
-  return value ? value.replace(/\s+seed$/i, '') : null;
+  const value = String(label ?? "").trim();
+  return value ? value.replace(/\s+seed$/i, "") : null;
 }
 
 function findResearchSnapshot(researchSnapshot, researchId) {
@@ -2537,91 +2348,91 @@ function findResearchSnapshot(researchSnapshot, researchId) {
 }
 
 const DEV_DIALOG_TARGETS = Object.freeze({
-  bag: { pageId: 'workshop', pageMethod: 'bag' },
-  inventory: { pageId: 'workshop', pageMethod: 'bag' },
-  seeds: { pageId: 'workshop', pageMethod: 'bag' },
-  herbs: { pageId: 'workshop', pageMethod: 'bag' },
-  potions: { pageId: 'workshop', pageMethod: 'bag' },
-  summon: { pageId: 'workshop', pageMethod: 'summonInfo' },
-  summoninfo: { pageId: 'workshop', pageMethod: 'summonInfo' },
-  leaderboard: { pageId: 'workshop', pageMethod: 'leaderboard' },
-  leaderboards: { pageId: 'workshop', pageMethod: 'leaderboard' },
-  alliance: { pageId: 'workshop', pageMethod: 'alliance' },
-  alliances: { pageId: 'workshop', pageMethod: 'alliance' },
-  discoveries: { pageId: 'workshop', pageMethod: 'discoveries' },
-  discovery: { pageId: 'workshop', pageMethod: 'discoveries' },
-  personaltasks: { pageId: 'workshop', pageMethod: 'personalTasks' },
-  tasks: { pageId: 'workshop', pageMethod: 'personalTasks' },
-  worldevent: { pageId: 'workshop', pageMethod: 'worldEvent' },
-  event: { pageId: 'workshop', pageMethod: 'worldEvent' },
-  worldnotice: { pageId: 'workshop', pageMethod: 'worldEvent' },
-  chat: { pageId: 'workshop', pageMethod: 'worldChat' },
-  worldchat: { pageId: 'workshop', pageMethod: 'worldChat' },
-  market: { pageId: 'shop', pageMethod: SHOP_DIALOG_IDS.MARKET },
-  shop: { pageId: 'shop', pageMethod: SHOP_DIALOG_IDS.MARKET },
-  guild: { pageId: 'guild', pageMethod: GUILD_DIALOG_IDS.CHARTER },
+  bag: { pageId: "workshop", pageMethod: "bag" },
+  inventory: { pageId: "workshop", pageMethod: "bag" },
+  seeds: { pageId: "workshop", pageMethod: "bag" },
+  herbs: { pageId: "workshop", pageMethod: "bag" },
+  potions: { pageId: "workshop", pageMethod: "bag" },
+  summon: { pageId: "workshop", pageMethod: "summonInfo" },
+  summoninfo: { pageId: "workshop", pageMethod: "summonInfo" },
+  leaderboard: { pageId: "workshop", pageMethod: "leaderboard" },
+  leaderboards: { pageId: "workshop", pageMethod: "leaderboard" },
+  alliance: { pageId: "workshop", pageMethod: "alliance" },
+  alliances: { pageId: "workshop", pageMethod: "alliance" },
+  discoveries: { pageId: "workshop", pageMethod: "discoveries" },
+  discovery: { pageId: "workshop", pageMethod: "discoveries" },
+  personaltasks: { pageId: "workshop", pageMethod: "personalTasks" },
+  tasks: { pageId: "workshop", pageMethod: "personalTasks" },
+  worldevent: { pageId: "workshop", pageMethod: "worldEvent" },
+  event: { pageId: "workshop", pageMethod: "worldEvent" },
+  worldnotice: { pageId: "workshop", pageMethod: "worldEvent" },
+  chat: { pageId: "workshop", pageMethod: "worldChat" },
+  worldchat: { pageId: "workshop", pageMethod: "worldChat" },
+  market: { pageId: "shop", pageMethod: SHOP_DIALOG_IDS.MARKET },
+  shop: { pageId: "shop", pageMethod: SHOP_DIALOG_IDS.MARKET },
+  guild: { pageId: "guild", pageMethod: GUILD_DIALOG_IDS.CHARTER },
   guildcharter: {
-    pageId: 'guild',
+    pageId: "guild",
     pageMethod: GUILD_DIALOG_IDS.CHARTER,
   },
   guildsettings: {
-    pageId: 'guild',
+    pageId: "guild",
     pageMethod: GUILD_DIALOG_IDS.SETTINGS,
   },
   guildrequest: {
-    pageId: 'guild',
+    pageId: "guild",
     pageMethod: GUILD_DIALOG_IDS.REQUEST,
   },
   guildrequeststack: {
-    pageId: 'guild',
+    pageId: "guild",
     pageMethod: GUILD_DIALOG_IDS.REQUEST_STACK,
   },
   guildquestposting: {
-    pageId: 'guild',
+    pageId: "guild",
     pageMethod: GUILD_DIALOG_IDS.REQUEST_STACK,
   },
   guildquests: {
-    pageId: 'guild',
+    pageId: "guild",
     pageMethod: GUILD_DIALOG_IDS.REQUEST_STACK,
   },
   guildadventurer: {
-    pageId: 'guild',
+    pageId: "guild",
     pageMethod: GUILD_DIALOG_IDS.ADVENTURER,
   },
-  settings: { dialogId: 'global.settings' },
+  settings: { dialogId: "global.settings" },
   configurations: {
-    dialogId: 'global.settings',
-    options: { tab: 'configurations' },
+    dialogId: "global.settings",
+    options: { tab: "configurations" },
   },
   feedback: {
-    dialogId: 'global.feedback',
-    options: { tab: 'report', kind: 'feedback' },
+    dialogId: "global.feedback",
+    options: { tab: "report", kind: "feedback" },
   },
   bug: {
-    dialogId: 'global.feedback',
-    options: { tab: 'report', kind: 'bug' },
+    dialogId: "global.feedback",
+    options: { tab: "report", kind: "bug" },
   },
   feature: {
-    dialogId: 'global.feedback',
-    options: { tab: 'report', kind: 'feature' },
+    dialogId: "global.feedback",
+    options: { tab: "report", kind: "feature" },
   },
-  level: { dialogId: 'global.level' },
-  levels: { dialogId: 'global.level' },
-  mail: { dialogId: 'global.inbox' },
-  inbox: { dialogId: 'global.inbox' },
-  player: { dialogId: 'global.player' },
-  playerinfo: { dialogId: 'global.player' },
-  allianceinfo: { dialogId: 'global.alliance' },
+  level: { dialogId: "global.level" },
+  levels: { dialogId: "global.level" },
+  mail: { dialogId: "global.inbox" },
+  inbox: { dialogId: "global.inbox" },
+  player: { dialogId: "global.player" },
+  playerinfo: { dialogId: "global.player" },
+  allianceinfo: { dialogId: "global.alliance" },
 });
 
 function normalizeDialogId(dialogId) {
-  return String(dialogId ?? '')
+  return String(dialogId ?? "")
     .trim()
-    .replace(/[_\s-]/g, '')
+    .replace(/[_\s-]/g, "")
     .toLowerCase();
 }
 
 function normalizeWorkshopTabId(tabId, allowedTabIds, fallback) {
-  const normalized = String(tabId ?? '');
+  const normalized = String(tabId ?? "");
   return allowedTabIds.has(normalized) ? normalized : fallback;
 }

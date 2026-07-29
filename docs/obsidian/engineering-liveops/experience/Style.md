@@ -236,7 +236,7 @@ experience_type: style
 - Notification dots use `data-notification="true"` on existing controls; page tab dots roll up from `PageNotificationFacade` snapshot state.
 - Notification dots render the shared `notification-circle-red.png` / `notification-circle-orange.png` sprites in both DOM and Pixi mirror paths at `12px` on the authored `390x844` surface; preserve the source 61x65 alpha canvas and black outer ring across tones.
 - Market sub-tab notification dots should derive from `PageNotificationStateManager` shop children so `player market` mirrors the orange player-listing/proceeds/listing badges instead of only the bottom Market tab showing them.
-- FTUE notification suppression is a visible badge policy only; keep gameplay notification state intact, keep valid bottom room-tab badges visible, and filter unrelated in-room badges during non-passive blocking steps.
+- FTUE notification suppression is a visible badge policy only; keep gameplay notification state intact, keep valid bottom room-tab badges visible, and never treat badge filtering as an interaction gate.
 - Notification tones use red for normal priority and orange for one tier lower; page tabs show red if any child notification is red, otherwise orange.
 - Root Run notification geometry maps from its `1080px` station canvas by `/3`: render `12px` badges, keep regular-button and text-tab dots fully inside and tangent to the top/right edges so they stay clear of labels, and inset bottom room-tab dots `4px` from both edges. Keep bottom-tab badges in an overlay above neighboring widgets.
 - Scroll containers that hold notification dots need invisible top/right bleed so offset dots do not get clipped without moving the controls.

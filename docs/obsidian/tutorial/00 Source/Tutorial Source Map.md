@@ -12,7 +12,7 @@ world: tutorial
 ## Main Flow
 
 - `TutorialStepManager.js` defines step IDs, groups, availability, completion,
-  targets, reveal tokens, cue modes, and the exported source graph.
+  targets, cue modes, and the exported source graph.
 - `TutorialLogicManager.js` combines the active step, reminder timing, reveal
   state, target state, and lesson view state.
 - `TutorialFacade.js` renders the returned view state and exposes dev cheat
@@ -24,7 +24,6 @@ world: tutorial
   show-me action, target hint, and collision-aware placement.
 - `TutorialTargetManager.js` resolves live `data-tutorial-id` targets and
   blockers.
-- `TutorialRevealManager.js` applies reveal gates to the room surface.
 - `TutorialReminderManager.js` handles idle timing and reminder visibility.
 - `TutorialSaleManager.js` keeps tutorial price/stock overrides disabled; timed-stall routing lives in step helpers.
 - `TutorialPointerSpineManager.js` owns the pointer cue asset.
