@@ -13,6 +13,7 @@ import { PixiOwnedDialogSurface } from "../../primitives/PixiOwnedDialogSurface.
 import { DialogRegistry } from "../../retained/DialogRegistry.js";
 import { PageRegistry } from "../../retained/PageRegistry.js";
 import { SemanticTargetRegistry } from "../../retained/SemanticTargetRegistry.js";
+import { ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY } from "../shared/RootRunInventoryChoiceDialogPixi.js";
 import { GARDEN_PIXI_GEOMETRY, GardenPixiPage } from "./GardenPixiPage.js";
 
 describe("GardenPixiPage", () => {
@@ -178,7 +179,13 @@ describe("GardenPixiPage", () => {
     const seedRow = dialog.rows.get("sage");
     expect(dialog.modal.panel.coreWidth).toBe(304);
     expect(dialog.list.rowHeight).toBe(50);
+    expect(dialog.contentHeight).toBe(
+      ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY.contentMinHeight,
+    );
     expect(seedRow.height).toBe(50);
+    expect(seedRow.root.y).toBe(
+      ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY.contentPaddingTop,
+    );
     expect(seedRow.background).toBeInstanceOf(PixiNineSliceFrame);
     expect(seedRow.background.sourceInsets).toEqual({
       top: 17,

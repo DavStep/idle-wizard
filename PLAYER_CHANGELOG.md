@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.27
+
+- Added an illustrated loading screen for Android launch, game startup, and backend reconnects.
+- Improved Brewing with direct herb selection from cauldron slots, clearer configuration controls, and smoother cauldron switching.
+- Unified the Garden seed and Brewing herb pickers for clearer item availability and more consistent selection.
+
 ## 0.3.26
 
 - Refined Brewing with a clearer cauldron header, larger touch targets, a tighter action layout, and cleaner locked-cauldron states.

@@ -45,7 +45,7 @@ experience_type: backend-android
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.
 - When asked to run the project, also check whether SpacetimeDB backend is running; start it if port `3000` has no backend listener.
 - The client must block play until SpacetimeDB connects, and must stop the frame loop again when the backend disconnects.
-- Transient SpacetimeDB `connect_error`/`disconnect` states should keep the gate in `Connecting to server...` and retry; reserve `server unavailable` for hard startup/schema failures.
+- SpacetimeDB startup and reconnect states keep the full-screen loading splash visible until online. Transient `connect_error`/`disconnect` states still retry; presentation must not bring back a server-required dialog.
 - Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
 - Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields and gameplay save JSON, but not trusted public level/rank state.

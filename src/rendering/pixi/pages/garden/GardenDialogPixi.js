@@ -2,29 +2,21 @@ import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.
 import { PixiButton } from '../../primitives/PixiButton.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
-  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
-  RETAINED_DIALOG_LIST_GEOMETRY,
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
   applyTextTheme,
   createText,
-  normalizeRows,
-  resolveRetainedDialogListLayout,
   setText,
 } from '../workshop/RetainedPageKit.js';
-import { RootRunInventoryChoiceList } from '../shop/ShopDialogPixi.js';
+import { RootRunInventoryChoiceDialogPixi } from '../shared/RootRunInventoryChoiceDialogPixi.js';
 
 const DIALOG_PADDING = PIXI_UI_GEOMETRY.dialogPadding;
 const GARDEN_DIALOG_OUTER_WIDTH = 304;
 const GARDEN_DIALOG_CONTENT_WIDTH =
   GARDEN_DIALOG_OUTER_WIDTH - DIALOG_PADDING * 2;
-const SEED_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
-const SEED_ROWS_CONTENT_PADDING_TOP =
-  PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
-const SEED_ROWS_MAX_HEIGHT = 312;
 const DANGER_MESSAGE_ZONE_HEIGHT = 40;
 const SWAP_MESSAGE_ZONE_HEIGHT = 64;
 
@@ -32,135 +24,16 @@ const SWAP_MESSAGE_ZONE_HEIGHT = 64;
  * Retained, lazy-once seed chooser. The dialog owns no garden rules: rows are
  * already filtered/formatted by the presenter and invoke the supplied action.
  */
-export class GardenSeedDialogPixi {
-  constructor({
-    parent,
-    inputRouter = null,
-    semanticTargets = null,
-    assetManager = null,
-    counters = null,
-    onClose = null,
-    theme = DEFAULT_PIXI_THEME_SNAPSHOT,
-  } = {}) {
-    this.modal = new PixiOwnedDialogSurface({
+export class GardenSeedDialogPixi extends RootRunInventoryChoiceDialogPixi {
+  constructor(options = {}) {
+    super({
+      ...options,
       id: 'garden.seed',
-      parent,
-      inputRouter,
-      semanticRegistry: semanticTargets,
-      assetManager,
       title: 'choose seed',
-      onClose,
-      theme,
+      itemKind: 'seed',
+      selectActionName: 'selectSeed',
+      listLabel: 'garden-seed-dialog-list',
     });
-    this.root = this.modal.root;
-    this.inputRouter = inputRouter;
-    this.semanticTargets = semanticTargets;
-    this.onClose = onClose;
-    this.actions = {};
-    this.list = new RootRunInventoryChoiceList({
-      assetManager,
-      inputRouter: this.inputRouter,
-      semanticRegistry: this.semanticTargets,
-      counters,
-      rowHeight: SEED_ROW_HEIGHT,
-      useSettingsRows: true,
-      label: 'garden-seed-dialog-list',
-    });
-    this.rows = this.list.rows;
-    this.modal.panel.content.addChild(this.list.root);
-    this.applyTheme(theme);
-    this.layout({
-      sourceWidth: RETAINED_PAGE_GEOMETRY.width,
-      sourceHeight: RETAINED_PAGE_GEOMETRY.height,
-    });
-  }
-
-  bind(viewModel) {
-    const model = viewModel ?? {};
-    this.actions = model.actions ?? {};
-    this.modal.setTitle(model.title ?? 'choose seed');
-    this.list.setItems(
-      normalizeRows(model.rows ?? model.seeds).map((seed) => ({
-        ...seed,
-        detail:
-          seed.detail ??
-          `${seed.quantityText ?? seed.quantity ?? 0} Available`,
-        value: '',
-        action: () =>
-          seed.onSelect?.(seed) ??
-          this.actions.selectSeed?.(seed) ??
-          true,
-      })),
-    );
-    const contentTheme = this.modal.getContentTheme();
-    this.list.applyTheme(contentTheme);
-    this.layout({
-      sourceWidth: this.sourceWidth,
-      sourceHeight: this.sourceHeight,
-    });
-  }
-
-  applyTheme(themeSnapshot) {
-    this.theme = themeSnapshot ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.modal.applyTheme(this.theme);
-    const contentTheme = this.modal.getContentTheme();
-    this.list?.applyTheme(contentTheme);
-  }
-
-  layout(viewportProjection) {
-    this.sourceWidth = Number(viewportProjection?.sourceWidth) || 360;
-    this.sourceHeight =
-      Number(viewportProjection?.sourceHeight) || RETAINED_PAGE_GEOMETRY.height;
-    const rowCount = this.list?.items?.length ?? 0;
-    this.contentHeight = Math.min(
-      SEED_ROWS_MAX_HEIGHT,
-      Math.max(
-        SEED_ROW_HEIGHT + SEED_ROWS_CONTENT_PADDING_TOP,
-        rowCount * SEED_ROW_HEIGHT + SEED_ROWS_CONTENT_PADDING_TOP,
-      ),
-    );
-    const outerHeight = this.contentHeight + DIALOG_PADDING * 2;
-    this.modal.setBounds(
-      (this.sourceWidth - GARDEN_DIALOG_OUTER_WIDTH) / 2,
-      (this.sourceHeight - outerHeight) / 2,
-      GARDEN_DIALOG_OUTER_WIDTH,
-      outerHeight,
-    );
-    this.modal.panel.setContentBoxSize(
-      GARDEN_DIALOG_CONTENT_WIDTH,
-      this.contentHeight,
-      DIALOG_PADDING,
-    );
-    const listLayout = resolveRetainedDialogListLayout({
-      bodyWidth: GARDEN_DIALOG_CONTENT_WIDTH,
-      paperRight: GARDEN_DIALOG_CONTENT_WIDTH + DIALOG_PADDING + 14 / 3,
-      rowFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
-    });
-    this.list.setBounds(
-      listLayout.x,
-      0,
-      listLayout.viewportWidth,
-      this.contentHeight,
-      listLayout.rowWidth,
-    );
-    this.modal.layout(viewportProjection);
-  }
-
-  activate() {
-    this.modal.activate();
-  }
-
-  deactivate() {
-    this.modal.deactivate();
-  }
-
-  destroy() {
-    this.list.destroy();
-    this.modal.destroy();
-  }
-
-  getDisplayObject() {
-    return this.root;
   }
 }
 

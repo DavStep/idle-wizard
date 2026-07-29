@@ -28,7 +28,8 @@ experience_type: development-operations
 - When a feature needs faster or safer repeat work, add the smallest reusable dev tool and document its command/env in `docs/ai-workflow.md` or the feature README.
 - App-level retained preview commands must resolve managers through
   `RenderFacade`; `AppFacade` does not expose the online gate as a direct
-  property. Use `?devUi=serverRequired` for a connection-gate state that live
+  property. Use `?devUi=serverRequired` for the backend loading splash state
+  that live
   backend events cannot overwrite during screenshot QA.
 - Raw retained-dialog and widget previews must bypass gameplay setup and save
   publication; visual inspection should not mutate or persist player state.
@@ -40,7 +41,7 @@ experience_type: development-operations
 - Match verification to risk: tiny deterministic edits can use inspection or a focused check, while shared runtime/UI changes justify lint, tests, build, and browser/device checks.
 - Tutorial placement tests that create default `TutorialHintManager` instances must clear shared `localStorage`; saved Elara drag placement leaks across full-file CI runs.
 - If local shows `server unavailable`, check both Vite `55173` and SpacetimeDB `3000`; this workspace may target `.env.local` database `idle-wizard-codex-run`, so publish that DB directly when `npm run stdb:publish` is unauthorized for `idle-wizard`.
-- If Browser stays on `server required` while local SpacetimeDB is listening and console logs a `spacetimedb.js` binary `RangeError`, local DB schema likely mismatches generated bindings; fix schema/publish before relying on room-click QA.
+- If Browser stays on the loading splash while local SpacetimeDB is listening and console logs a `spacetimedb.js` binary `RangeError`, local DB schema likely mismatches generated bindings; fix schema/publish before relying on room-click QA.
 - A listening SpacetimeDB port does not prove the target database or schema exists; isolated launchers must publish the current module and embed the same dedicated database name before starting the client.
 - GitHub Pages deploys for this repo should build with `npm run build -- --base=/idle-wizard/`; static Pages still needs a hosted `wss://` SpacetimeDB URI before visitors can play.
 - Release Discord posts must wait for both `Checks` and `Deploy GitHub Pages` to succeed for the exact pushed commit; a successful `git push` is only the start of the web release.

@@ -43,6 +43,13 @@ The preferred renderer-neutral view model is:
       potions: { visible, expanded, canToggle, countText, rows }
     },
     dialogs: {
+      herbs: {
+        open, title, cauldronIndex, slotIndex,
+        rows: [{
+          id, itemTypeId, key, label, detail, quantity,
+          itemKind, icon, enabled, disabled, semanticId
+        }]
+      },
       recipes: {
         open, title, cauldronIndex, spreadIndex,
         recipes: [{
@@ -56,6 +63,7 @@ The preferred renderer-neutral view model is:
   },
   actions: {
     selectCauldron, openRecipes, selectRecipe,
+    openHerbPicker, selectHerb,
     performCauldronAction, primaryAction,
     selectBrewQuantity, toggleAutoBrew, toggleAutoCollect,
     cancelBrew, collectBrew,
@@ -74,12 +82,20 @@ perform writes or own game rules.
 
 The production composition has two sections. The unframed preview keeps the
 image-backed fantasy chevrons, horizontal swipe, centered cauldron, and six
-compact ingredient requirement tiles in a subtle connected orbit. All six
+compact ingredient requirement tiles in a subtle connected orbit. The preview
+composition sits below the title/configuration row, and the chevrons flank the
+cauldron instead of floating beside lower status copy. All six
 cells are real gameplay ingredient slots; recipes may continue using fewer.
-Ingredient tiles reuse the ordinary room-panel skin and show item art, name,
-and owned/required count. Cauldron liquid reuses the exact source-art mask,
+Ingredient slots reuse the ordinary room-panel skin and show item art, name,
+and owned/required count. Pressing an available slot opens `Choose Herb`, the
+same retained inventory-choice dialog used by Garden `Choose Seed`, with herb
+art and availability rows. Both pickers keep a 4.5-row minimum viewport and
+top-align shorter lists. Selecting a herb adds one copy to the selected
+cauldron through the gameplay facade. Cauldron liquid reuses the exact source-art mask,
 matches the cauldron sprite transform, and stays behind the rendered rim.
-Potion identity, rarity, and batch size sit directly below the landmark.
+Potion identity and rarity sit directly below the landmark after a recipe is
+selected. The empty preview does not repeat `Choose Recipe`, and batch quantity
+appears only in the existing `xN` configuration control.
 
 The framed action section begins with the predicted potion inside the shared
 Research-row art well. With no selected ingredients or recipe, the well stays
@@ -110,13 +126,15 @@ available so the player can return to another cauldron.
 Recipe and automation settings dialogs remain retained, but the carousel has no
 separate settings or fast-forward button. The compact Auto control uses a
 gear-only button with the visible label `Auto` over the gear's lower edge and a
-larger invisible hit region, remaining disabled until that cauldron's automation
+larger invisible hit region. It stays hidden until that cauldron's automation
 research is complete. Auto Off uses the static yellow skin. Auto On uses the
 green skin and advances the gear in short mechanical steps while the page is
 active; reduced motion keeps the green gear static. Recipes and the narrower
-`xN` control stay yellow and retain larger invisible tap regions. Before x2
-batch research, the quantity control reads `x1`; quantity is never folded into
-the primary Brew label. The shortened
+`xN` control stay yellow and retain larger invisible tap regions. The quantity
+control stays hidden until x2 batch research is complete; quantity is never
+folded into the primary Brew label. All visible configuration buttons share one
+fixed height and pack from the right edge without reserving locked-control
+slots. The shortened
 action panel aligns to the same `16px` room edges as World Chat, and the potion
 art uses the larger preview fit inside its existing well.
 
@@ -132,5 +150,13 @@ the mode. Cancel has no icon.
 Brewing-owned motion also remains retained: herb pickup/count/return nudges
 reuse the row transform, ingredient drag, return, and brew flyouts use one
 bounded ghost pool, and cauldron receive/recipe-receive/buy feedback reuses the
-cauldron display tree. Deactivation and pool reset clear every target, timer,
-transform, and active ghost so hidden Brewing UI performs no motion work.
+cauldron display tree. Changing the selected cauldron through a chevron or swipe
+plays the same directional blue/gold arc swoosh and compact `240ms` settle.
+Reduced motion switches instantly. Deactivation and pool reset clear every
+target, timer, transform, swoosh, and active ghost so hidden Brewing UI performs
+no motion work.
+
+Open `http://127.0.0.1:55173/?devUi=chooseHerb` for the deterministic
+three-row real-app picker state used by visual QA when dev cheats are enabled.
+The non-persistent fallback recipe is
+`/src/dev/uiRecipes/brewing-herb-picker.html`.

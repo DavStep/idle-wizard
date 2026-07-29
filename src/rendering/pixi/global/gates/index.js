@@ -18,4 +18,8 @@ export {
   sampleAccountDialogOpenScale,
 } from './PixiFreshStartChoiceView.js';
 export { PixiOnlineGateController } from './PixiOnlineGateController.js';
-export { PixiOnlineGateView } from './PixiOnlineGateView.js';
+export { PixiLoadingSplash } from './PixiLoadingSplash.js';
+export {
+  PixiOnlineGateView,
+  sampleSplashProgress,
+} from './PixiOnlineGateView.js';

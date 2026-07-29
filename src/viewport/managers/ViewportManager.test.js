@@ -53,7 +53,7 @@ describe('ViewportManager', () => {
     expect(mainActivity).toContain('settings.setDisplayZoomControls(false);');
   });
 
-  it('fills the Android status-bar cutout with the top-panel color', () => {
+  it('uses the splash color during launch and the top-panel color in game', () => {
     const androidStyles = readFileSync(
       `${cwd()}/android/app/src/main/res/values/styles.xml`,
       'utf8',
@@ -63,7 +63,10 @@ describe('ViewportManager', () => {
       /<style name="AppTheme\.NoActionBar"[\s\S]*?<item name="android:statusBarColor">#242938<\/item>/,
     );
     expect(androidStyles).toMatch(
-      /<style name="AppTheme\.NoActionBarLaunch"[\s\S]*?<item name="android:statusBarColor">#242938<\/item>/,
+      /<style name="AppTheme\.NoActionBarLaunch"[\s\S]*?<item name="android:windowSplashScreenBackground">#07040e<\/item>/,
+    );
+    expect(androidStyles).toMatch(
+      /<style name="AppTheme\.NoActionBarLaunch"[\s\S]*?<item name="android:statusBarColor">#07040e<\/item>/,
     );
   });
 

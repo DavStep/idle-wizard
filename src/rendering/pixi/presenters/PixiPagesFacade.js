@@ -1631,6 +1631,20 @@ export class PixiPagesFacade {
     );
   }
 
+  openBrewingHerbDialog(cauldronIndex = 0, slotIndex = 0) {
+    return (
+      this.requireRuntime()
+        .getPage("brewing")
+        .openDialog("herbs", {
+          open: true,
+          title: "Choose Herb",
+          cauldronIndex,
+          slotIndex,
+          rows: createBrewingHerbDialogRows(this.gameplaySnapshot),
+        }) ?? false
+    );
+  }
+
   createBrewingActions() {
     const gameplay = this.gameplayFacade;
     return {
@@ -1644,6 +1658,24 @@ export class PixiPagesFacade {
       },
       openRecipes: (cauldronIndex) =>
         this.openBrewingRecipesDialog(cauldronIndex),
+      openHerbPicker: (cauldronIndex, slotIndex) =>
+        this.openBrewingHerbDialog(cauldronIndex, slotIndex),
+      selectHerb: (herb, cauldronIndex = 0) => {
+        if (!Number.isInteger(herb?.itemTypeId)) {
+          return {
+            ok: false,
+            reason: "invalid_herb",
+          };
+        }
+        const result = gameplay?.addBrewingIngredient?.(
+          herb.itemTypeId,
+          cauldronIndex,
+        );
+        if (result?.ok === true || result === true) {
+          this.requireRuntime().closeDialog?.("brewing.herbs");
+        }
+        return result ?? false;
+      },
       researchRecipe: (recipe, cauldronIndex = 0) => {
         if (recipe?.canResearch !== true || !recipe?.researchId) {
           return false;
@@ -2308,6 +2340,63 @@ function createGardenSeedDialogRows(
   });
 }
 
+function createBrewingHerbDialogRows(snapshot = {}) {
+  const herbs = (snapshot.brewing?.herbs ?? [])
+    .map((herb) => ({
+      ...herb,
+      researched: isItemResearched(snapshot, herb),
+    }))
+    .filter((herb) =>
+      shouldShowItemInActionList(
+        snapshot,
+        herb,
+        herb.availableQuantity ?? herb.quantity,
+      ),
+    );
+  const orderedHerbs = [
+    ...herbs.filter(
+      (herb) =>
+        Number(herb.availableQuantity ?? herb.quantity) > 0,
+    ),
+    ...herbs.filter(
+      (herb) =>
+        Number(herb.availableQuantity ?? herb.quantity) <= 0 &&
+        herb.researched === true,
+    ),
+  ];
+
+  return orderedHerbs.map((herb) => {
+    const quantity = Math.max(
+      0,
+      Number(herb.availableQuantity ?? herb.quantity) || 0,
+    );
+    const display = getItemDisplay(snapshot, herb, quantity);
+    return {
+      ...herb,
+      id: herb.itemTypeId,
+      label: display.label,
+      displayLabel: display.label,
+      quantity,
+      quantityText: String(quantity),
+      detail: `${quantity} Available`,
+      selected: false,
+      enabled: quantity > 0,
+      disabled: quantity <= 0,
+      known: display.known,
+      researched: display.researched,
+      owned: display.owned,
+      empty: display.empty,
+      itemKind: "herb",
+      itemKey: herb.key,
+      icon: {
+        kind: "herb",
+        key: herb.key,
+      },
+      semanticId: `brewing.herb.${herb.key ?? herb.itemTypeId}`,
+    };
+  });
+}
+
 function createGardenSelectedSeedModel(snapshot = {}, seed = {}) {
   const display = getItemDisplay(snapshot, seed, seed.quantity);
   return {
@@ -2348,12 +2437,67 @@ function findResearchSnapshot(researchSnapshot, researchId) {
   return null;
 }
 
+const DEV_BREWING_HERB_ROWS = Object.freeze([
+  Object.freeze({
+    id: 1001,
+    itemTypeId: 1001,
+    key: "sageHerb",
+    label: "Sage",
+    detail: "17 Available",
+    quantity: 17,
+    itemKind: "herb",
+    icon: Object.freeze({ kind: "herb", key: "sageHerb" }),
+    enabled: true,
+  }),
+  Object.freeze({
+    id: 1002,
+    itemTypeId: 1002,
+    key: "mintHerb",
+    label: "Mint",
+    detail: "14 Available",
+    quantity: 14,
+    itemKind: "herb",
+    icon: Object.freeze({ kind: "herb", key: "mintHerb" }),
+    enabled: true,
+  }),
+  Object.freeze({
+    id: 1003,
+    itemTypeId: 1003,
+    key: "lavenderHerb",
+    label: "Lavender",
+    detail: "1 Available",
+    quantity: 1,
+    itemKind: "herb",
+    icon: Object.freeze({ kind: "herb", key: "lavenderHerb" }),
+    enabled: true,
+  }),
+]);
+
+const DEV_BREWING_HERB_DIALOG_OPTIONS = Object.freeze({
+  title: "Choose Herb",
+  cauldronIndex: 0,
+  slotIndex: 0,
+  rows: DEV_BREWING_HERB_ROWS,
+});
+
 const DEV_DIALOG_TARGETS = Object.freeze({
   bag: { pageId: "workshop", pageMethod: "bag" },
   inventory: { pageId: "workshop", pageMethod: "bag" },
   seeds: { pageId: "workshop", pageMethod: "bag" },
   herbs: { pageId: "workshop", pageMethod: "bag" },
   potions: { pageId: "workshop", pageMethod: "bag" },
+  brewingherbs: {
+    pageId: "brewing",
+    pageMethod: "herbs",
+    resultId: "brewing.herbs",
+    options: DEV_BREWING_HERB_DIALOG_OPTIONS,
+  },
+  chooseherb: {
+    pageId: "brewing",
+    pageMethod: "herbs",
+    resultId: "brewing.herbs",
+    options: DEV_BREWING_HERB_DIALOG_OPTIONS,
+  },
   summon: { pageId: "workshop", pageMethod: "summonInfo" },
   summoninfo: { pageId: "workshop", pageMethod: "summonInfo" },
   leaderboard: { pageId: "workshop", pageMethod: "leaderboard" },

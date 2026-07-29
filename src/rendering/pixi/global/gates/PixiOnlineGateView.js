@@ -5,12 +5,22 @@ import {
   PixiTextLabel,
 } from '../../primitives/index.js';
 import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
+import { PixiLoadingSplash } from './PixiLoadingSplash.js';
 
 const ONLINE_GATE_CONTENT_WIDTH = 260;
 const ONLINE_GATE_CONTENT_HEIGHT = 80;
 const ONLINE_GATE_ACTION_CONTENT_HEIGHT = 96;
 const ONLINE_GATE_MIN_MESSAGE_TOP_OFFSET = 4;
 const ONLINE_GATE_MESSAGE_ACTION_GAP = 12;
+const ONLINE_GATE_PRESENTATION_DIALOG = 'dialog';
+const ONLINE_GATE_PRESENTATION_SPLASH = 'splash';
+const SPLASH_PROGRESS_DURATION_MS = 3000;
+const SPLASH_PROGRESS_KEYFRAMES = Object.freeze([
+  Object.freeze({ time: 0, value: 0 }),
+  Object.freeze({ time: 0.54, value: 0.72 }),
+  Object.freeze({ time: 0.82, value: 0.92 }),
+  Object.freeze({ time: 1, value: 1 }),
+]);
 
 export class PixiOnlineGateView extends PixiModalSurface {
   constructor({
@@ -33,7 +43,12 @@ export class PixiOnlineGateView extends PixiModalSurface {
     this.reload = reload;
     this.preferredLayer = 'interactionLocks';
     this.model = null;
+    this.presentation = ONLINE_GATE_PRESENTATION_DIALOG;
     this.elapsedMs = 0;
+    this.splashProgressValue = 0;
+    this.splash = new PixiLoadingSplash({ assets });
+    this.root.removeChild(this.panel);
+    this.root.addChild(this.splash, this.panel);
     this.message = new PixiTextLabel({
       label: 'onlineGate:message',
       align: 'center',
@@ -59,7 +74,30 @@ export class PixiOnlineGateView extends PixiModalSurface {
   }
 
   onBind(viewModel = {}) {
+    const previousPresentation = this.presentation;
     this.model = viewModel;
+    this.presentation =
+      viewModel.presentation === ONLINE_GATE_PRESENTATION_SPLASH
+        ? ONLINE_GATE_PRESENTATION_SPLASH
+        : ONLINE_GATE_PRESENTATION_DIALOG;
+    this.syncPresentation();
+
+    if (this.presentation === ONLINE_GATE_PRESENTATION_SPLASH) {
+      this.splash.setText(viewModel.message ?? 'Loading game');
+      if (
+        previousPresentation !== ONLINE_GATE_PRESENTATION_SPLASH ||
+        !this.shown
+      ) {
+        this.elapsedMs = 0;
+        this.splashProgressValue = prefersReducedMotion() ? 1 : 0;
+        this.splash.setProgress(this.splashProgressValue);
+      }
+      this.show();
+      this.layoutSplash();
+      this.syncTicker();
+      return;
+    }
+
     this.panel.setTitle(viewModel.title ?? '');
     this.message.setText(viewModel.message ?? '');
     this.progress.visible = viewModel.progress === true;
@@ -86,6 +124,12 @@ export class PixiOnlineGateView extends PixiModalSurface {
       progress: theme?.progress ?? contentTheme.progress,
     });
     this.action.applyTheme(contentTheme);
+    this.splash.applyTheme(theme);
+  }
+
+  onLayout(projection) {
+    super.onLayout(projection);
+    this.layoutSplash();
   }
 
   onActivate() {
@@ -101,6 +145,19 @@ export class PixiOnlineGateView extends PixiModalSurface {
   hide() {
     super.hide();
     this.stopTicker();
+  }
+
+  syncPresentation() {
+    const splashVisible =
+      this.presentation === ONLINE_GATE_PRESENTATION_SPLASH;
+    this.splash.visible = splashVisible;
+    this.splash.renderable = splashVisible;
+    this.panel.visible = !splashVisible;
+    this.panel.renderable = !splashVisible;
+  }
+
+  layoutSplash() {
+    this.splash.layout(this.viewportProjection);
   }
 
   relayoutContent() {
@@ -149,6 +206,21 @@ export class PixiOnlineGateView extends PixiModalSurface {
   }
 
   tick(deltaMs) {
+    if (this.presentation === ONLINE_GATE_PRESENTATION_SPLASH) {
+      if (this.splashProgressValue >= 1) {
+        return;
+      }
+      this.elapsedMs = Math.min(
+        SPLASH_PROGRESS_DURATION_MS,
+        this.elapsedMs + (Number(deltaMs) || 0),
+      );
+      this.splashProgressValue = sampleSplashProgress(
+        this.elapsedMs / SPLASH_PROGRESS_DURATION_MS,
+      );
+      this.splash.setProgress(this.splashProgressValue);
+      return;
+    }
+
     if (!this.progress.visible) {
       return;
     }
@@ -162,7 +234,12 @@ export class PixiOnlineGateView extends PixiModalSurface {
 
   syncTicker() {
     this.stopTicker();
-    if (this.active && this.shown && this.progress.visible) {
+    if (
+      this.active &&
+      this.shown &&
+      (this.presentation === ONLINE_GATE_PRESENTATION_SPLASH ||
+        this.progress.visible)
+    ) {
       this.application?.ticker?.add?.(this.handleTick);
     }
   }
@@ -170,4 +247,24 @@ export class PixiOnlineGateView extends PixiModalSurface {
   stopTicker() {
     this.application?.ticker?.remove?.(this.handleTick);
   }
+}
+
+export function sampleSplashProgress(progress) {
+  const normalizedProgress = Math.max(0, Math.min(1, Number(progress) || 0));
+  for (let index = 1; index < SPLASH_PROGRESS_KEYFRAMES.length; index += 1) {
+    const previous = SPLASH_PROGRESS_KEYFRAMES[index - 1];
+    const next = SPLASH_PROGRESS_KEYFRAMES[index];
+    if (normalizedProgress > next.time) {
+      continue;
+    }
+    const span = next.time - previous.time;
+    const localProgress =
+      span > 0 ? (normalizedProgress - previous.time) / span : 1;
+    return previous.value + (next.value - previous.value) * localProgress;
+  }
+  return 1;
+}
+
+function prefersReducedMotion() {
+  return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
 }

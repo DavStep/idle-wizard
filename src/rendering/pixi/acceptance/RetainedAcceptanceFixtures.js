@@ -33,6 +33,7 @@ export const DIALOG_IDS_BY_PAGE = Object.freeze({
     'garden.swap',
   ]),
   brewing: Object.freeze([
+    'brewing.herbs',
     'brewing.recipes',
     'brewing.recipe-choice',
     'brewing.automation-settings',
@@ -108,6 +109,26 @@ export function createDialogViewModel(
         dialogId === 'garden.cancel' ? 'empty' : 'swap',
       payload: { key },
       onConfirm: accept,
+    };
+  }
+
+  if (dialogId === 'brewing.herbs') {
+    return {
+      title: 'Choose Herb',
+      cauldronIndex: key === 'a' ? 0 : 1,
+      slotIndex: key === 'a' ? 0 : 1,
+      rows: [1, 2].map((index) => ({
+        id: `herb-${key}-${index}`,
+        itemTypeId: index,
+        key: `herb-${key}-${index}`,
+        label: `herb ${key} ${index}`,
+        quantity: index + 1,
+        enabled: true,
+        semanticId: `brewing.herb.${key}.${index}`,
+      })),
+      actions: {
+        selectHerb: accept,
+      },
     };
   }
 

@@ -45,6 +45,7 @@ import {
   BrewingRecipeBookDialogPixi,
   BrewingRecipeChoiceDialogPixi,
 } from './BrewingDialogsPixi.js';
+import { RootRunInventoryChoiceDialogPixi } from '../shared/RootRunInventoryChoiceDialogPixi.js';
 
 export const BREWING_PIXI_GEOMETRY = Object.freeze({
   worldTop: 88,
@@ -94,6 +95,7 @@ const BREWING_ITEM_GHOST_POINTER_LIFT = 60;
 const BREWING_ITEM_GHOST_POOL_SIZE = 12;
 const BREWING_DIALOG_IDS = Object.freeze({
   recipes: 'brewing.recipes',
+  herbs: 'brewing.herbs',
   choice: 'brewing.recipe-choice',
   settings: 'brewing.automation-settings',
 });
@@ -313,6 +315,26 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
           }),
       );
     }
+    if (!this.dialogRegistry.has(BREWING_DIALOG_IDS.herbs)) {
+      this.dialogRegistry.register(
+        BREWING_DIALOG_IDS.herbs,
+        () =>
+          new RootRunInventoryChoiceDialogPixi({
+            id: BREWING_DIALOG_IDS.herbs,
+            parent: this.dialogLayer,
+            inputRouter: this.inputRouter,
+            semanticTargets: this.semanticTargets,
+            assetManager: this.assetManager,
+            counters,
+            title: 'choose herb',
+            itemKind: 'herb',
+            selectActionName: 'selectHerb',
+            listLabel: 'brewing-herb-dialog-list',
+            onClose: () => this.closeDialog('herbs'),
+            theme: this.theme,
+          }),
+      );
+    }
     if (!this.dialogRegistry.has(BREWING_DIALOG_IDS.choice)) {
       this.dialogRegistry.register(
         BREWING_DIALOG_IDS.choice,
@@ -499,6 +521,27 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
         },
       };
     }
+    if (kind === 'herbs') {
+      return {
+        ...model,
+        actions: {
+          ...this.currentActions,
+          ...model.actions,
+          selectHerb: (herb) =>
+            herb.onSelect?.(herb) ??
+            model.actions?.selectHerb?.(
+              herb,
+              model.cauldronIndex,
+              model.slotIndex,
+            ) ??
+            this.currentActions?.selectHerb?.(
+              herb,
+              model.cauldronIndex,
+              model.slotIndex,
+            ),
+        },
+      };
+    }
     return {
       ...model,
       actions: {
@@ -529,6 +572,8 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     if (nextIndex === this.selectedCauldronIndex) {
       return false;
     }
+    const direction =
+      nextIndex > this.selectedCauldronIndex ? 1 : -1;
     this.selectedCauldronIndex = nextIndex;
     this.currentActions?.selectCauldron?.(nextIndex);
     this.hud.bind(
@@ -540,6 +585,11 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       this.currentActions,
     );
     this.hud.layout(this.sourceWidth, this.sourceHeight);
+    this.hud.startCauldronChangeMotion(
+      direction,
+      this.timeSource(),
+      { reducedMotion: this.prefersReducedMotion() },
+    );
     return true;
   }
 
@@ -892,6 +942,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     for (const row of this.herbInventory?.rows?.getWidgets?.() ?? []) {
       row.clearMotion();
     }
+    this.hud?.resetCauldronChangeMotion();
     this.hud?.resetAutoBrewMotion();
   }
 

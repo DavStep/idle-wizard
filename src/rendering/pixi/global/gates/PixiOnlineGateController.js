@@ -20,8 +20,8 @@ export class PixiOnlineGateController {
 
   showConnecting({ preview = false } = {}) {
     const model = {
-      title: 'Server Required',
-      message: 'Connecting to server...',
+      presentation: 'splash',
+      message: 'Loading game',
       progress: true,
     };
     if (preview) {
@@ -32,13 +32,19 @@ export class PixiOnlineGateController {
   }
 
   showOffline(reason) {
-    const message = getOfflineMessage(reason);
+    if (reason !== 'account_in_use') {
+      this.showConnecting();
+      return;
+    }
+
     this.show({
-      title: 'Server Required',
-      message,
-      progress: message === 'Connecting to server...',
-      actionLabel: reason === 'account_in_use' ? 'Play Here' : '',
-      onAction: reason === 'account_in_use' ? () => this.reload() : null,
+      presentation: 'dialog',
+      title: 'Account in Use',
+      message:
+        'Account opened on another device. Close this one to continue there.',
+      progress: false,
+      actionLabel: 'Play Here',
+      onAction: () => this.reload(),
     });
   }
 
@@ -49,6 +55,7 @@ export class PixiOnlineGateController {
   } = {}) {
     const normalizedMessage = String(message || 'maintenance in progress').trim();
     this.show({
+      presentation: 'dialog',
       title: 'maintenance',
       message: saving
         ? 'maintenance active. saving progress...'
@@ -83,27 +90,4 @@ export class PixiOnlineGateController {
     this.view?.hide();
     this.view = null;
   }
-}
-
-function getOfflineMessage(reason) {
-  if (reason === 'bindings_missing') {
-    return 'server bindings missing';
-  }
-  if (reason === 'server_paused') {
-    return 'server paused. start the database to continue.';
-  }
-  if (reason === 'server_no_energy') {
-    return 'server out of energy. add energy to continue.';
-  }
-  if (reason === 'account_in_use') {
-    return 'Account opened on another device. Close this one to continue there.';
-  }
-  if (
-    ['connect_error', 'connect_timeout', 'disconnect', 'gameplay_save_timeout'].includes(
-      reason,
-    )
-  ) {
-    return 'Connecting to server...';
-  }
-  return 'server unavailable';
 }

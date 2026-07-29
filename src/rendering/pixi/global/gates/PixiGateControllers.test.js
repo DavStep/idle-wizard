@@ -21,9 +21,11 @@ import {
   PixiDeployRefreshController,
   PixiFreshStartChoiceView,
   PixiFreshStartChoiceController,
+  PixiLoadingSplash,
   PixiOnlineGateView,
   PixiOnlineGateController,
   sampleAccountDialogOpenScale,
+  sampleSplashProgress,
 } from './index.js';
 
 installPixiPageTestCanvas();
@@ -241,39 +243,85 @@ describe('retained Pixi gate controllers', () => {
 
     controller.showConnecting();
     expect(view.bind).toHaveBeenLastCalledWith({
-      title: 'Server Required',
-      message: 'Connecting to server...',
+      presentation: 'splash',
+      message: 'Loading game',
       progress: true,
     });
 
     controller.showMaintenance({ mode: 'locked', message: 'back soon' });
     expect(view.bind).toHaveBeenLastCalledWith({
+      presentation: 'dialog',
       title: 'maintenance',
       message: 'back soon',
       progress: false,
     });
-  });
 
-  it('centers the connecting message inside a taller online gate', () => {
-    const view = new PixiOnlineGateView({
-      assets: createAssets(),
-    });
-
-    view.bind({
-      title: 'Server Required',
-      message: 'Connecting to server...',
+    controller.showOffline('bindings_missing');
+    expect(view.bind).toHaveBeenLastCalledWith({
+      presentation: 'splash',
+      message: 'Loading game',
       progress: true,
     });
 
-    expect(view.panel.contentBoxHeight).toBe(80);
-    expect(
-      view.message.y + view.message.measuredHeight / 2,
-    ).toBe(view.panel.contentBoxHeight / 2);
-    expect(view.progress.y + view.progress.barHeight).toBe(
-      view.panel.contentBoxHeight,
+    controller.showOffline('account_in_use');
+    expect(view.bind).toHaveBeenLastCalledWith({
+      presentation: 'dialog',
+      title: 'Account in Use',
+      message: 'Account opened on another device. Close this one to continue there.',
+      progress: false,
+      actionLabel: 'Play Here',
+      onAction: expect.any(Function),
+    });
+  });
+
+  it('shows the copied full-height splash until the backend connects', () => {
+    const view = new PixiOnlineGateView({
+      assets: createAssets(),
+    });
+    const sourceHeight = 2170 / 3;
+
+    view.applyTheme(createPixiThemeSnapshot({ theme: 'midnight' }));
+    view.layout({
+      viewportPx: { width: 390, height: 844 },
+      sourceHeight,
+      sourceOffsetX: 0,
+      sourceScale: 3,
+      stageLogicalWidth: 1080,
+      dialogShift: 0,
+    });
+    view.bind({
+      presentation: 'splash',
+      message: 'Loading game',
+      progress: true,
+    });
+
+    expect(view.panel.visible).toBe(false);
+    expect(view.splash).toBeInstanceOf(PixiLoadingSplash);
+    expect(view.splash.visible).toBe(true);
+    expect(view.splash.art.height).toBe(sourceHeight);
+    expect(view.splash.art.width).toBeCloseTo(
+      844 * (818 / 1923) * (360 / 390),
+      5,
+    );
+    expect(view.splash.art.x).toBe(PIXI_UI_GEOMETRY.sourceWidth / 2);
+    expect(view.splash.loadingLabel.text).toBe('Loading game');
+    expect(view.splash.loadingLabel.x).toBe(
+      PIXI_UI_GEOMETRY.sourceWidth / 2,
     );
 
+    view.tick(1620);
+    expect(view.splashProgressValue).toBeCloseTo(0.72, 5);
+    view.tick(1380);
+    expect(view.splashProgressValue).toBe(1);
+
     view.destroy();
+  });
+
+  it('uses the source splash progress keyframes', () => {
+    expect(sampleSplashProgress(0)).toBe(0);
+    expect(sampleSplashProgress(0.54)).toBe(0.72);
+    expect(sampleSplashProgress(0.82)).toBe(0.92);
+    expect(sampleSplashProgress(1)).toBe(1);
   });
 
   it('keeps the deploy-refresh gate at a fixed height with centered copy', () => {
@@ -295,7 +343,7 @@ describe('retained Pixi gate controllers', () => {
     view.destroy();
   });
 
-  it('keeps the selected gradient on the connection and loading rail', () => {
+  it('keeps gradient fills on splash and dialog loading rails', () => {
     const view = new PixiOnlineGateView({
       assets: createAssets(),
     });
@@ -309,6 +357,7 @@ describe('retained Pixi gate controllers', () => {
 
     expect(view.progress.theme.progress.key).toBe('gradient');
     expect(view.progress.gradient).not.toBeNull();
+    expect(view.splash.progressGradient).not.toBeNull();
 
     view.destroy();
   });
@@ -323,8 +372,8 @@ describe('retained Pixi gate controllers', () => {
     controller.hide();
 
     expect(view.bind).toHaveBeenLastCalledWith({
-      title: 'Server Required',
-      message: 'Connecting to server...',
+      presentation: 'splash',
+      message: 'Loading game',
       progress: true,
     });
     expect(view.hide).not.toHaveBeenCalled();
@@ -340,7 +389,8 @@ describe('retained Pixi gate controllers', () => {
     });
 
     view.bind({
-      title: 'Server Required',
+      presentation: 'dialog',
+      title: 'Account in Use',
       message: 'Account opened on another device. Close this one to continue there.',
       actionLabel: 'Play Here',
       onAction,

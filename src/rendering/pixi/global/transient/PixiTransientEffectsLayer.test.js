@@ -389,7 +389,7 @@ describe('PixiTransientEffectsLayer', () => {
       x: 286,
       y: 322,
     });
-    expect(first.widget.sprite.width).toBeCloseTo(49.6);
+    expect(first.widget.sprite.width).toBeCloseTo(34.72);
     expect(first.durationMs).toBeCloseTo(
       (0.78 / 1.3) * 1_000,
     );

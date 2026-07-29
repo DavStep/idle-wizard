@@ -739,6 +739,10 @@ describe('DevCheatsFacade', () => {
           command: 'cheats.openUi("accountChoice")',
         }),
         expect.objectContaining({
+          id: 'chooseHerb',
+          command: 'cheats.openUi("chooseHerb")',
+        }),
+        expect.objectContaining({
           id: 'accountProfile',
           command: 'cheats.openUi("accountProfile")',
         }),

@@ -1074,6 +1074,7 @@
       "kind": "dialog",
       "production": true,
       "coverage": {
+        "devUi": ["chooseHerb"],
         "domSelectors": [
           ".brewing-page__recipes-dialog",
           ".brewing-page__recipe-choice-dialog"
@@ -1098,6 +1099,10 @@
         }
       ],
       "states": [
+        {
+          "id": "herb-selection",
+          "recipe": { "kind": "devUi", "surfaceId": "chooseHerb" }
+        },
         { "id": "recipes" },
         { "id": "recipe-selected" },
         { "id": "recipe-choice" },

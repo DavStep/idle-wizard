@@ -1,0 +1,117 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="midnight"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard Brewing herb picker recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="Brewing herb picker visual recipe"></canvas>
+    <output
+      id="brewing-herb-picker-recipe-state"
+      hidden
+      data-selected-herb=""
+    ></output>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { Container } from 'pixi.js';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
+      import { RootRunInventoryChoiceDialogPixi } from '/src/rendering/pixi/pages/shared/RootRunInventoryChoiceDialogPixi.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+      import { PixiUiRuntimeFacade } from '/src/rendering/pixi/runtime/PixiUiRuntimeFacade.js';
+
+      const canvas = document.querySelector('canvas');
+      const recipeState = document.querySelector(
+        '#brewing-herb-picker-recipe-state',
+      );
+      const inputRouter = new PixiInputRouter();
+      const applicationManager = new PixiApplicationManager({ canvas });
+      const runtime = new PixiUiRuntimeFacade({
+        applicationManager,
+        inputRouter,
+      });
+      await runtime.initialize();
+
+      const herbRows = [
+        {
+          itemTypeId: 1001,
+          key: 'sageHerb',
+          label: 'Sage',
+          quantity: 17,
+        },
+        {
+          itemTypeId: 1002,
+          key: 'mintHerb',
+          label: 'Mint',
+          quantity: 14,
+        },
+        {
+          itemTypeId: 1003,
+          key: 'lavenderHerb',
+          label: 'Lavender',
+          quantity: 1,
+        },
+      ];
+      const parent = new Container({
+        label: 'brewing-herb-picker-recipe',
+      });
+      applicationManager.getLayers().dialogsSource.addChild(parent);
+      const dialog = new RootRunInventoryChoiceDialogPixi({
+        id: 'brewing.herbs.recipe',
+        title: 'Choose Herb',
+        itemKind: 'herb',
+        selectActionName: 'selectHerb',
+        listLabel: 'brewing-herb-picker-recipe-list',
+        parent,
+        inputRouter,
+        semanticTargets: runtime.semanticRegistry,
+        assetManager: runtime.assetManager,
+        counters: runtime.counters,
+        theme: runtime.themeManager.getSnapshot(),
+      });
+
+      dialog.bind({
+        title: 'Choose Herb',
+        rows: herbRows.map((herb) => ({
+          ...herb,
+          id: herb.itemTypeId,
+          detail: `${herb.quantity} Available`,
+          enabled: true,
+          itemKind: 'herb',
+          itemKey: herb.key,
+          icon: { kind: 'herb', key: herb.key },
+          semanticId: `brewing.herb.${herb.key}`,
+          onSelect: () => {
+            recipeState.dataset.selectedHerb = herb.key;
+            return true;
+          },
+        })),
+      });
+      dialog.layout(applicationManager.getProjection());
+      dialog.activate();
+      window.__brewingHerbPickerRecipe = dialog;
+    </script>
+  </body>
+</html>

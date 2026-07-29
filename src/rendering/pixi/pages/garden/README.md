@@ -68,7 +68,9 @@ the injected shared registries; there are no DOM listeners or geometry queries.
 The seed picker reuses the exact `RootRunInventoryChoiceList` rendered by Load
 Stall: `50px` Settings-backed rows, `28px` seed-pack art, a two-line seed name
 and `N Available` label, `6px` row rhythm, and the shared right-inset checkmark
-for the selected seed. Do not replace it with a compact Garden-specific row.
+for the selected seed. Its shared choice-dialog viewport keeps a 4.5-row
+minimum height and top-aligns shorter lists. Do not replace it with a compact
+Garden-specific row.
 Open `/src/dev/uiRecipes/garden-seed-picker.html` for the deterministic,
 non-persistent four-row visual-reference state.
 

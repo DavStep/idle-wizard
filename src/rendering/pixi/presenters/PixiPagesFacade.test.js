@@ -368,6 +368,89 @@ describe("PixiPagesFacade", () => {
     });
   });
 
+  it("opens the cauldron herb picker and adds the selected herb to that cauldron", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.research.completedResearchIds = [
+      "unlockSeed:sageSeed",
+      "unlockSeed:mintSeed",
+    ];
+    gameplaySnapshot.brewing = {
+      cauldrons: [
+        {
+          cauldronIndex: 0,
+          cauldronNumber: 1,
+          canAddIngredient: true,
+        },
+      ],
+      recipes: [],
+      herbs: [
+        {
+          itemTypeId: 1001,
+          key: "sageHerb",
+          label: "sage",
+          kind: "herb",
+          availableQuantity: 3,
+        },
+        {
+          itemTypeId: 1002,
+          key: "mintHerb",
+          label: "mint",
+          kind: "herb",
+          availableQuantity: 0,
+        },
+      ],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.addBrewingIngredient.mockReturnValue({
+      ok: true,
+      itemTypeId: 1001,
+      cauldronIndex: 0,
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("brewing");
+    const brewing = harness.getBoundPage("brewing");
+
+    expect(brewing.actions.openHerbPicker(0, 2)).toBe(true);
+    expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
+      "herbs",
+      expect.objectContaining({
+        title: "Choose Herb",
+        cauldronIndex: 0,
+        slotIndex: 2,
+        rows: [
+          expect.objectContaining({
+            itemTypeId: 1001,
+            key: "sageHerb",
+            detail: "3 Available",
+            enabled: true,
+            itemKind: "herb",
+          }),
+          expect.objectContaining({
+            itemTypeId: 1002,
+            key: "mintHerb",
+            detail: "0 Available",
+            disabled: true,
+          }),
+        ],
+      }),
+    );
+
+    expect(
+      brewing.actions.selectHerb(
+        { itemTypeId: 1001 },
+        0,
+        2,
+      ),
+    ).toMatchObject({ ok: true });
+    expect(
+      harness.gameplayFacade.addBrewingIngredient,
+    ).toHaveBeenCalledWith(1001, 0);
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
+      "brewing.herbs",
+    );
+  });
+
   it("copies the selected recipe into Auto Brew before enabling it", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     const recipe = {
@@ -1207,6 +1290,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     selectGardenSeed: vi.fn(),
     cancelBrewing: vi.fn(),
     collectBrewing: vi.fn(),
+    addBrewingIngredient: vi.fn(),
     prepareBrewingRecipe: vi.fn(),
     setBrewingAutoBrewRecipe: vi.fn(),
     setBrewingAutoBrewEnabled: vi.fn(),

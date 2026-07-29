@@ -59,7 +59,7 @@ export const PIXI_TRANSIENT_TIMING = Object.freeze({
 const SPEND_BURST = Object.freeze({
   count: 7,
   gravity: 760,
-  sizeScale: 1.6,
+  sizeScale: 1.12,
   timeScale: 1.3,
   spreadScale: 1.5,
 });
