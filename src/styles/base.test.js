@@ -29,6 +29,41 @@ function findRuleBody(pattern, predicate) {
 }
 
 describe('base styles', () => {
+  it('opens dialogs with a fast full-alpha rubber snap', () => {
+    const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
+    const dialogKeyframes = baseCss.match(
+      /@keyframes style-dialog-enter\s*\{[\s\S]*?\n\}/,
+    )?.[0] ?? '';
+    const topDialogKeyframes = baseCss.match(
+      /@keyframes style-dialog-top-enter\s*\{[\s\S]*?\n\}/,
+    )?.[0] ?? '';
+    const accountDialogKeyframes = baseCss.match(
+      /@keyframes app-account-link-choice-dialog-enter\s*\{[\s\S]*?\n\}/,
+    )?.[0] ?? '';
+    const guildRequestDialogKeyframes = baseCss.match(
+      /@keyframes guild-request-paper-zoom\s*\{[\s\S]*?\n\}/,
+    )?.[0] ?? '';
+
+    expect(rootRule).toContain('--style-motion-dialog-open: 175ms;');
+    for (const keyframes of [
+      dialogKeyframes,
+      topDialogKeyframes,
+      accountDialogKeyframes,
+      guildRequestDialogKeyframes,
+    ]) {
+      expect(keyframes).not.toContain('opacity:');
+      expect(keyframes).toContain('0.94');
+    }
+    expect(dialogKeyframes).toContain('scale: 1.02;');
+    expect(topDialogKeyframes).toContain('scale: 1.015;');
+    expect(baseCss).not.toMatch(
+      /\.app-account-link-choice:not\(\[hidden\]\)\s*\{[^}]*style-overlay-enter/,
+    );
+    expect(baseCss).not.toMatch(
+      /\.room-top-panel__inbox-popup:not\(\[hidden\]\)\s*\{[^}]*style-overlay-enter/,
+    );
+  });
+
   it('matches Root Run station-upgrade button press and release motion', () => {
     const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
     const releaseRule = getRuleBody(
@@ -204,6 +239,18 @@ describe('base styles', () => {
     expect(rule).toContain(
       '0 1px 0 var(--style-yellow-button-text-stroke),',
     );
+  });
+
+  it('renders flyout text in a stroked white squircle', () => {
+    const rule = getRuleBody(
+      /\.room-reward-flyout,\s*\.workshop-page__flyout\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(rule).toContain('color: #fff;');
+    expect(rule).toContain('background: rgb(0 0 0 / 62%);');
+    expect(rule).toContain('border-radius: 8px;');
+    expect(rule).toContain('-webkit-text-stroke: 2px #0a0a0a;');
+    expect(rule).toContain('paint-order: stroke fill;');
   });
 
   it('opens the Garden in its settled state without a page-entry animation', () => {

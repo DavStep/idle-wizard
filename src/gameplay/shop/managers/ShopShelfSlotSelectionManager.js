@@ -140,12 +140,28 @@ export class ShopShelfSlotSelectionManager {
   }
 
   setSelectedSlotAllocation(itemTypeId, percentage) {
+    const safePercentage = Math.max(
+      0,
+      Math.min(100, Math.floor(Number(percentage) || 0)),
+    );
+    const loadedQuantity = this.getLoadedQuantity(itemTypeId);
+    const totalQuantity =
+      this.getAvailableQuantity(itemTypeId) + loadedQuantity;
+    const targetQuantity = Math.floor(
+      (totalQuantity * safePercentage) / 100,
+    );
+    return {
+      ...this.setSelectedSlotQuantity(itemTypeId, targetQuantity),
+      percentage: safePercentage,
+    };
+  }
+
+  setSelectedSlotQuantity(itemTypeId, quantity) {
     const selectedSlotNumber = this.shopShelfEntityManager.getSelectedSlotNumber();
     if (!selectedSlotNumber) {
       return { ok: false, reason: 'no_selected_slot' };
     }
 
-    const safePercentage = Math.max(0, Math.min(100, Math.floor(Number(percentage) || 0)));
     const slot = this.getSlot(selectedSlotNumber);
     if (slot.sellItemTypeId && slot.sellItemTypeId !== itemTypeId) {
       return { ok: false, reason: 'different_item_loaded', itemTypeId };
@@ -153,7 +169,14 @@ export class ShopShelfSlotSelectionManager {
 
     const loadedQuantity = slot.sellItemTypeId === itemTypeId ? slot.loadedQuantity : 0;
     const totalQuantity = this.getAvailableQuantity(itemTypeId) + loadedQuantity;
-    const targetQuantity = Math.floor((totalQuantity * safePercentage) / 100);
+    const requestedQuantity = Number(quantity);
+    if (!Number.isInteger(requestedQuantity) || requestedQuantity < 0) {
+      return { ok: false, reason: 'invalid_quantity', itemTypeId };
+    }
+    const targetQuantity = Math.max(
+      0,
+      Math.min(totalQuantity, requestedQuantity),
+    );
     const delta = targetQuantity - loadedQuantity;
     const result = delta > 0
       ? this.loadSlot(selectedSlotNumber, itemTypeId, delta)
@@ -163,10 +186,16 @@ export class ShopShelfSlotSelectionManager {
 
     return {
       ...result,
-      percentage: safePercentage,
       targetQuantity,
       totalQuantity,
     };
+  }
+
+  getLoadedQuantity(itemTypeId) {
+    const slot = this.getSelectedSlot();
+    return slot?.sellItemTypeId === itemTypeId
+      ? slot.loadedQuantity
+      : 0;
   }
 
   unloadSelectedSlotAll() {

@@ -14,6 +14,7 @@ experience_type: architecture
 - Use full ECS for gameplay.
 - Every micro feature should have its own manager.
 - Big features need facades with compact non-programmer explanations.
+- Rebase the gameplay timer clock when an external state change wakes the sleeping tick loop; otherwise elapsed idle time advances newly created brewing, gardening, research, or cooldown timers immediately.
 - Full gameplay snapshots can publish during frame timers; cache expensive static catalogs/lookups such as research definitions instead of rebuilding them per snapshot.
 - No-subscriber gameplay publishes should refresh cheap frame metadata without building full snapshots; no-storage persistence should skip save construction because broad facade tests amplify both costs.
 - Renamed save branches need server normalizer aliases and client load fallbacks; otherwise server-normalized restarts can silently reset cooldowns.

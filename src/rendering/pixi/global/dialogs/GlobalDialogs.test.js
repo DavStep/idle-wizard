@@ -554,7 +554,7 @@ describe('retained global Pixi dialogs', () => {
     ).toBe(10);
     expect(inbox.panel.titleLabel.text).toBe('Inbox');
     expect(inbox.emptyLabel.text).toBe('No Mail');
-    expect(inbox.emptyLabel.fontSize).toBe(18);
+    expect(inbox.emptyLabel.fontSize).toBe(20);
     expect(inbox.emptyLabel.x).toBe(
       inbox.panel.contentBoxWidth / 2,
     );

@@ -49,9 +49,10 @@
 
       registerGlobalDialogFactories(runtime);
       await runtime.initialize();
+      const showEmptyState = new URLSearchParams(window.location.search).has('empty');
       const inboxModel = {
         connected: true,
-        mail: [
+        mail: showEmptyState ? [] : [
           {
             mailKey: 'admin:qa-reward',
             senderLabel: 'admin',

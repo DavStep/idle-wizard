@@ -34,7 +34,7 @@ describe('PixiModalSurface open motion', () => {
     surface.destroy();
   });
 
-  it('matches the retained center dialog and overlay keyframes', () => {
+  it('opens the retained center dialog with a full-alpha fast scale snap', () => {
     const runtime = createMotionRuntime();
     const surface = createSurface({
       openMotion: 'center',
@@ -46,8 +46,15 @@ describe('PixiModalSurface open motion', () => {
     surface.show();
     surface.activate();
 
-    expect(surface.backdrop.alpha).toBe(0);
-    expect(surface.panel.alpha).toBe(0);
+    expect(PIXI_MODAL_OPEN_MOTION).toMatchObject({
+      durationMs: 175,
+      overshootProgress: 0.62,
+      startScale: 0.94,
+      centerOvershootScale: 1.02,
+      topOvershootScale: 1.015,
+    });
+    expect(surface.backdrop.alpha).toBe(1);
+    expect(surface.panel.alpha).toBe(1);
     expect(surface.panel.scale.x).toBe(
       PIXI_MODAL_OPEN_MOTION.startScale,
     );
@@ -57,9 +64,8 @@ describe('PixiModalSurface open motion', () => {
         PIXI_MODAL_OPEN_MOTION.overshootProgress,
     );
 
-    expect(surface.backdrop.alpha).toBeGreaterThan(0);
-    expect(surface.backdrop.alpha).toBeLessThan(1);
-    expect(surface.panel.alpha).toBeCloseTo(1);
+    expect(surface.backdrop.alpha).toBe(1);
+    expect(surface.panel.alpha).toBe(1);
     expect(surface.panel.scale.x).toBeCloseTo(
       PIXI_MODAL_OPEN_MOTION.centerOvershootScale,
     );

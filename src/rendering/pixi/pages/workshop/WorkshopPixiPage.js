@@ -1,4 +1,4 @@
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 
 import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
 import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
@@ -85,6 +85,23 @@ const DEFAULT_FEATURES = Object.freeze([
   }),
 ]);
 
+const WORKSHOP_FLYOUT_VISUALS = Object.freeze({
+  backgroundColor: 0x000000,
+  backgroundAlpha: 0.62,
+  height: 24,
+  horizontalPadding: 8,
+  radius: 8,
+  textStyle: Object.freeze({
+    ...RETAINED_TEXT_STYLES.bold,
+    fill: '#ffffff',
+    stroke: Object.freeze({
+      color: '#0a0a0a',
+      width: 2,
+      join: 'round',
+    }),
+  }),
+});
+
 const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
   alliance: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopAlliance,
@@ -108,6 +125,14 @@ const SUMMON_BUTTON_WIDTH = 92;
 const SUMMON_BUTTON_HEIGHT = 52;
 const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;
 const SUMMON_CHAT_GAP = 32;
+export const WORKSHOP_WINDOW_ASSET_ID =
+  'source:assets/rooms/workshop/workshop-window.webp';
+export const WORKSHOP_WINDOW_GEOMETRY = Object.freeze({
+  top: 172,
+  width: 150,
+  height: 300,
+  alpha: 0.86,
+});
 export const ROOT_RUN_SIDE_ACTION_GEOMETRY = Object.freeze({
   taskGap: 18,
   rowPitch: 62,
@@ -202,6 +227,14 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.reducedMotion =
       typeof reducedMotion === 'function' ? reducedMotion : () => Boolean(reducedMotion);
 
+    this.workshopWindow = new Sprite({
+      texture:
+        this.assetManager?.getTexture?.(WORKSHOP_WINDOW_ASSET_ID) ?? Texture.EMPTY,
+      label: 'workshop-window',
+    });
+    this.workshopWindow.anchor.set(0.5, 0);
+    this.workshopWindow.alpha = WORKSHOP_WINDOW_GEOMETRY.alpha;
+    this.workshopWindow.eventMode = 'none';
     this.tasks = new WorkshopTaskPanel({
       page: this,
       assetManager: this.assetManager,
@@ -247,6 +280,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     });
     this.featureLayer = new Container({ label: 'workshop-feature-buttons' });
     this.content.addChild(
+      this.workshopWindow,
       this.tasks.root,
       this.summon.root,
       this.bagButton.root,
@@ -496,7 +530,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     for (const flyout of flyouts) {
       this.flyoutLayer.addChild(flyout.root);
       flyout.root.position.set((this.sourceWidth - flyout.text.width) / 2, y);
-      y += 18;
+      y += 28;
     }
   }
 
@@ -535,6 +569,12 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     }
 
     const width = this.sourceWidth - RETAINED_PAGE_GEOMETRY.contentEdge * 2;
+    this.workshopWindow.position.set(
+      this.sourceWidth / 2,
+      WORKSHOP_WINDOW_GEOMETRY.top,
+    );
+    this.workshopWindow.width = WORKSHOP_WINDOW_GEOMETRY.width;
+    this.workshopWindow.height = WORKSHOP_WINDOW_GEOMETRY.height;
     this.tasks.setBounds(
       RETAINED_PAGE_GEOMETRY.contentEdge,
       RETAINED_PAGE_GEOMETRY.contentTop,
@@ -1862,23 +1902,48 @@ class WorkshopFeatureButton {
 class WorkshopFlyout {
   constructor() {
     this.root = new Container({ label: 'workshop-flyout' });
-    this.text = createText('', RETAINED_TEXT_STYLES.bold);
-    this.root.addChild(this.text);
+    this.background = new Graphics({
+      label: 'workshop-flyout-background',
+    });
+    this.text = createText('', WORKSHOP_FLYOUT_VISUALS.textStyle);
+    this.root.addChild(this.background, this.text);
   }
 
   bind(model) {
     this.model = model;
     this.root.visible = true;
     setText(this.text, model.message ?? model.text ?? '');
+    this.drawBackground();
   }
 
   applyTheme(theme) {
-    applyTextTheme(this.text, theme, RETAINED_TEXT_STYLES.bold);
+    applyTextTheme(this.text, theme, WORKSHOP_FLYOUT_VISUALS.textStyle);
+    this.drawBackground();
+  }
+
+  drawBackground() {
+    const width =
+      this.text.width + WORKSHOP_FLYOUT_VISUALS.horizontalPadding * 2;
+    const height = WORKSHOP_FLYOUT_VISUALS.height;
+    this.background
+      .clear()
+      .roundRect(
+        -WORKSHOP_FLYOUT_VISUALS.horizontalPadding,
+        (this.text.height - height) / 2,
+        width,
+        height,
+        WORKSHOP_FLYOUT_VISUALS.radius,
+      )
+      .fill({
+        color: WORKSHOP_FLYOUT_VISUALS.backgroundColor,
+        alpha: WORKSHOP_FLYOUT_VISUALS.backgroundAlpha,
+      });
   }
 
   reset() {
     this.root.visible = false;
     this.model = null;
+    this.background.clear();
   }
 
   destroy() {

@@ -75,8 +75,8 @@ describe('ResearchPixiPage', () => {
     );
     const lockedRow = harness.page.boxes.get('herbs').rows.get('mint');
 
-    expect(lockedRow.rank.visible).toBe(false);
-    expect(lockedRow.rankLabel.visible).toBe(false);
+    expect(lockedRow.rank).toBeUndefined();
+    expect(lockedRow.rankLabel).toBeUndefined();
     expect(lockedRow.costButton.lockReason).toBe('');
     expect(lockedRow.costButton.lockReasonLabel.visible).toBe(false);
     expect(harness.semanticTargets.activate('research.mint')).toBe(true);
@@ -498,6 +498,7 @@ describe('ResearchPixiPage', () => {
       {
         displayName: 'plot 1',
         starLevel: 1,
+        starMaxLevel: 5,
         description:
           'levels plot 1 to lvl 2: it uses 2 seeds and harvests 2 herbs in one growth timer.',
       },
@@ -513,7 +514,10 @@ describe('ResearchPixiPage', () => {
       visible: true,
       level: 1,
       starCount: 1,
+      slotCount: 3,
     });
+    expect(row.nameStars.slots.filter((slot) => slot.fill.visible)).toHaveLength(1);
+    expect(row.nameStars.slots.filter((slot) => slot.root.visible)).toHaveLength(3);
     expect(row.description.style.fontSize).toBeLessThan(11);
     expect(row.description.style.fontSize).toBeGreaterThanOrEqual(8);
     expect(row.description.width).toBeLessThanOrEqual(
@@ -531,6 +535,18 @@ describe('ResearchPixiPage', () => {
         RESEARCH_PIXI_GEOMETRY.descriptionBottom +
         0.5,
     );
+
+    model.research.tabs[0].boxes[0].researches[0].starMaxLevel = 2;
+    harness.page.bind(model);
+
+    expect(row.nameStars).toMatchObject({
+      visible: true,
+      level: 1,
+      starCount: 1,
+      slotCount: 2,
+    });
+    expect(row.nameStars.slots.filter((slot) => slot.root.visible)).toHaveLength(2);
+    expect(row.nameStars.slots[2].root.visible).toBe(false);
 
     harness.page.destroy();
     harness.dispose();
@@ -643,6 +659,7 @@ describe('ResearchPixiPage', () => {
     expect(row.researchedButton.tone).toBe('yellow');
     expect(row.researchedButton.amountLabel.text).toBe('Researching');
     expect(row.researchingTimerLabel.text).toBe('3s');
+    expect(row.progress.progress).toBeCloseTo(0.7);
     expect(row.researchingTimerLabel.colorToken).toBe('#d4d4d4');
     expect(row.researchingTimerLabel.x).toBe(
       row.researchedButton.buttonWidth / 2,

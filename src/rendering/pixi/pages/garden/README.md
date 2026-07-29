@@ -53,17 +53,26 @@ The page consumes display-ready presenter data:
 
 The presenter owns plot rules, costs, lock reasons, messages, seed filtering,
 page-level selection, and formatted copy. The renderer does not infer gameplay outcomes.
+Crop names remain available to plot semantics and accessible action copy, but
+the soil face intentionally renders only the plot number, upgrade stars, and
+action or timer text. All text rendered directly over the soil is white with a
+rounded near-black outline.
 The next purchasable plot uses the shared green stacked cost button with
 `Unlock` above the coin row; its affordable-action notification stays on that
 button rather than the surrounding plot frame.
 Plots and seed-dialog rows are keyed high-water pools. The persistent
 `GardenSeedActionBar` keeps one room-level seed choice, opens the retained seed
-picker, and starts every ready harvest through the gameplay facade. Empty plots
-plant the selected seed when pressed; growing plots offer the existing swap
-confirmation when the selected seed differs. Seed, cancel-progress, and
+picker, and starts every ready harvest through the gameplay facade. `Harvest
+All` remains actionable when no plot is ready and reuses the shared reward
+flyout for `Nothing to harvest`; its notification appears only when harvests
+are ready. Empty plots show no unavailable-status label: they plant when the
+selected seed stock meets the plot requirement, or emit the shared `no seed`
+flyout when pressed without enough stock. Growing plots offer the existing
+swap confirmation when the selected seed differs. Seed, cancel-progress, and
 swap-seed dialogs are constructed on first open and retained thereafter. Pan,
 pinch, press, scrolling, modal back, and semantic tutorial targeting all use
-the injected shared registries; there are no DOM listeners or geometry queries.
+the injected shared registries; there are no DOM listeners or geometry
+queries.
 
 The seed picker reuses the exact `RootRunInventoryChoiceList` rendered by Load
 Stall: `50px` Settings-backed rows, `28px` seed-pack art, a two-line seed name
@@ -73,6 +82,9 @@ minimum height and top-aligns shorter lists. Do not replace it with a compact
 Garden-specific row.
 Open `/src/dev/uiRecipes/garden-seed-picker.html` for the deterministic,
 non-persistent four-row visual-reference state.
+Open `/src/dev/uiRecipes/garden-plots.html` for the deterministic,
+non-persistent empty-plot state used to verify label removal and the `no seed`
+press flyout.
 
 The cancel-progress confirmation uses the approved red danger title plaque,
 Title Case copy, a centered prompt, a yellow `Keep` action, and a red `Empty`

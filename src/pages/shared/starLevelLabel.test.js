@@ -97,4 +97,19 @@ describe('star level labels', () => {
         ?.getAttribute('src'),
     ).toContain('star-orange.png');
   });
+
+  it('limits the visible slots for research with two levels', () => {
+    const element = document.createElement('span');
+
+    setStarLevelLabel(element, 1, { slotCount: 2 });
+
+    expect(element.textContent).toBe('★');
+    expect(element.dataset.starCount).toBe('1');
+    expect(element.dataset.starSlots).toBe('2');
+    expect(element.querySelectorAll('.style-star-level__slot')).toHaveLength(2);
+    expect(
+      element.querySelectorAll('.style-star-level__slot[data-star-filled="true"]'),
+    ).toHaveLength(1);
+    expect(element.querySelectorAll('.style-star-level__image--empty')).toHaveLength(2);
+  });
 });

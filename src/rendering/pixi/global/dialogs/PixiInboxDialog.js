@@ -33,7 +33,7 @@ const MAIL_PADDING_X = 10;
 const MAIL_PADDING_Y = 8;
 const MAIL_ACTION_WIDTH = 54;
 const MAIL_COLUMN_GAP = 8;
-const INBOX_EMPTY_FONT_SIZE = 18;
+const INBOX_EMPTY_FONT_SIZE = 20;
 
 /**
  * Retained, keyed inbox. Mail cards are pooled and keep one installed claim

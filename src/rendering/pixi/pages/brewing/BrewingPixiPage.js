@@ -18,6 +18,9 @@ import {
 import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
 import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
+import {
+  createTimedProgressWindow,
+} from '../../primitives/PixiProgressBar.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
@@ -30,7 +33,7 @@ import {
   RETAINED_TEXT_STYLES,
   RetainedButton,
   RetainedPanel,
-  RetainedProgressBar,
+  RetainedTimedProgressBar,
   applyTextTheme,
   createText,
   finiteOr,
@@ -87,6 +90,8 @@ const BREWING_HERB_RETURN_NUDGE_MS = 140;
 const BREWING_CAULDRON_DROP_MS = 220;
 const BREWING_BREW_DROP_MS = 240;
 const BREWING_BREW_DROP_STAGGER_MS = 45;
+const BREWING_HUD_BREW_GHOST_SIZE = 30;
+const BREWING_LIQUID_VISIBLE_CENTER_Y_RATIO = 91.5 / 486;
 const BREWING_CAULDRON_RECEIVE_MS = 205;
 const BREWING_RECIPE_RECEIVE_MS = 140;
 const BREWING_CAULDRON_BUY_MS = 205;
@@ -329,6 +334,8 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
             title: 'choose herb',
             itemKind: 'herb',
             selectActionName: 'selectHerb',
+            amountSelection: true,
+            amountActionName: 'setHerbQuantity',
             listLabel: 'brewing-herb-dialog-list',
             onClose: () => this.closeDialog('herbs'),
             theme: this.theme,
@@ -536,6 +543,19 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
             ) ??
             this.currentActions?.selectHerb?.(
               herb,
+              model.cauldronIndex,
+              model.slotIndex,
+            ),
+          setHerbQuantity: (herb, quantity) =>
+            model.actions?.setHerbQuantity?.(
+              herb,
+              quantity,
+              model.cauldronIndex,
+              model.slotIndex,
+            ) ??
+            this.currentActions?.setHerbQuantity?.(
+              herb,
+              quantity,
               model.cauldronIndex,
               model.slotIndex,
             ),
@@ -838,21 +858,51 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
   }
 
   animateBrewIngredients(cauldron, sources) {
+    this.animateBrewIngredientSources(sources, {
+      target: this.getCauldronReceivePoint(cauldron),
+      onArrival: () => {
+        if (cauldron.root.visible) {
+          cauldron.startIngredientReceive(this.timeSource());
+        }
+      },
+    });
+  }
+
+  animateHudBrewIngredients(hud, sources) {
+    this.animateBrewIngredientSources(sources, {
+      target: this.getDisplayObjectCenter(
+        hud.cauldronArt,
+        BREWING_LIQUID_VISIBLE_CENTER_Y_RATIO,
+      ),
+      ghostSize: BREWING_HUD_BREW_GHOST_SIZE,
+    });
+  }
+
+  animateBrewIngredientSources(
+    sources,
+    {
+      target,
+      ghostSize = BREWING_ITEM_GHOST_SIZE,
+      onArrival = null,
+    } = {},
+  ) {
     if (this.prefersReducedMotion() || sources.length === 0) {
       return;
     }
-    const target = this.getCauldronReceivePoint(cauldron);
     const startTime = this.timeSource();
     sources.forEach((source, index) => {
-      const texture = getAtlasTexture(
-        this.assetManager,
-        getHerbIconFrameName(source.key),
-      );
+      const texture =
+        source.texture ??
+        getAtlasTexture(
+          this.assetManager,
+          getHerbIconFrameName(source.key),
+        );
       const ghost = this.motionGhostPool.acquire();
       ghost.bind({
         texture,
         itemKind: source.kind ?? 'herb',
         itemKey: source.key ?? '',
+        size: source.size ?? ghostSize,
       });
       this.motionLayer.addChild(ghost.root);
       ghost.setPosition(source.position.x, source.position.y);
@@ -862,11 +912,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
         delayMs: index * BREWING_BREW_DROP_STAGGER_MS,
         kind: 'brew',
         startTime,
-        onFinish: () => {
-          if (cauldron.root.visible) {
-            cauldron.startIngredientReceive(this.timeSource());
-          }
-        },
+        onFinish: onArrival,
       });
     });
   }
@@ -892,6 +938,13 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       ghost,
       start: { x: ghost.root.x, y: ghost.root.y },
       target,
+      path:
+        kind === 'brew'
+          ? createBrewIngredientArc(
+              { x: ghost.root.x, y: ghost.root.y },
+              target,
+            )
+          : null,
       durationMs,
       delayMs,
       kind,
@@ -1323,7 +1376,7 @@ class BrewingCauldronWidget {
       label: `brewing-cauldron-${instanceId}-rows`,
     });
     this.activeText = createText('', RETAINED_TEXT_STYLES.body);
-    this.progress = new RetainedProgressBar({
+    this.progress = new RetainedTimedProgressBar({
       assetManager,
       label: `brewing-cauldron-${instanceId}-progress`,
       tone: 'blue',
@@ -1444,6 +1497,14 @@ class BrewingCauldronWidget {
     this.unregisterSemanticTargets();
     this.model = model ?? {};
     this.actions = actions ?? {};
+    const active = this.model.activeBrew ?? this.model.process;
+    if (active && typeof active === 'object') {
+      this.progress.setTimer(
+        createTimedProgressWindow(active, this.page.timeSource()),
+      );
+    } else {
+      this.progress.clearTimer(0);
+    }
     const visible =
       this.model.hidden !== true && this.model.visible !== false;
     const unlocked = this.model.unlocked !== false;
@@ -1924,7 +1985,6 @@ class BrewingCauldronWidget {
 
   updateTime(now) {
     const active = this.model.activeBrew ?? this.model.process;
-    const timed = resolveTimedProgress(active, now);
     const visible = Boolean(active);
     this.activeText.visible = visible;
     this.progress.root.visible = visible;
@@ -1934,16 +1994,18 @@ class BrewingCauldronWidget {
     this.status.visible =
       !visible && Boolean(this.status.text);
     if (!visible) {
-      this.progress.setProgress(0);
+      this.progress.clearTimer(0);
       setText(this.activeText, '');
       return;
     }
-    this.progress.setProgress(timed.progress);
+    const timed = this.progress.updateTimer(now);
+    const timerText =
+      active.timerText ?? formatRemainingTime(timed.remainingMs);
     setText(
       this.activeText,
       active.text ??
         active.labelText ??
-        [active.label, timed.timerText].filter(Boolean).join(' '),
+        [active.label, timerText].filter(Boolean).join(' '),
     );
   }
 
@@ -2062,6 +2124,7 @@ class BrewingCauldronWidget {
     setText(this.activeText, '');
     setText(this.previewLabel, '');
     setText(this.message, '');
+    this.progress.clearTimer(0);
     this.progress.root.visible = false;
     for (const button of Object.values(this.buttons)) {
       button.reset();
@@ -3025,12 +3088,17 @@ class BrewingItemMotionGhost {
     this.reset();
   }
 
-  bind({ texture = Texture.EMPTY, itemKind = '', itemKey = '' } = {}) {
+  bind({
+    texture = Texture.EMPTY,
+    itemKind = '',
+    itemKey = '',
+    size = BREWING_ITEM_GHOST_SIZE,
+  } = {}) {
     this.itemKind = itemKind;
     this.itemKey = itemKey;
     this.icon.texture = texture;
-    this.icon.width = BREWING_ITEM_GHOST_SIZE;
-    this.icon.height = BREWING_ITEM_GHOST_SIZE;
+    this.icon.width = size;
+    this.icon.height = size;
     this.root.visible = true;
     this.root.renderable = true;
     this.root.alpha = 1;
@@ -3327,38 +3395,6 @@ function nextBrewQuantity(model) {
   return current >= maximum ? 1 : current + 1;
 }
 
-function resolveTimedProgress(progress, now) {
-  if (!progress || typeof progress !== 'object') {
-    return { progress: 0, timerText: '' };
-  }
-  let remainingMs = finiteOr(progress.remainingMs, Number.NaN);
-  const durationMs = finiteOr(
-    progress.durationMs,
-    finiteOr(progress.totalMs, Number.NaN),
-  );
-  const endTimeMs = finiteOr(
-    progress.endTimeMs,
-    finiteOr(progress.endsAt, Number.NaN),
-  );
-  if (Number.isFinite(endTimeMs)) {
-    remainingMs = Math.max(0, endTimeMs - now);
-  }
-  const ratio =
-    Number.isFinite(durationMs) &&
-    durationMs > 0 &&
-    Number.isFinite(remainingMs)
-      ? 1 - remainingMs / durationMs
-      : finiteOr(progress.progress, 0);
-  return {
-    progress: clamp(ratio, 0, 1),
-    timerText:
-      progress.timerText ??
-      (Number.isFinite(remainingMs)
-        ? formatRemainingTime(remainingMs)
-        : ''),
-  };
-}
-
 function drawDashedRect(graphics, x, y, width, height, color) {
   const dash = 5;
   const gap = 3;
@@ -3413,6 +3449,10 @@ function didActionSucceed(result) {
 }
 
 function applyGhostMotion(motion, progress) {
+  if (motion.kind === 'brew' && motion.path) {
+    applyBrewIngredientArcMotion(motion, progress);
+    return;
+  }
   const eased = cubicBezierProgress(progress, 0.25, 1, 0.5, 1);
   const midpoint = 0.58;
   const cauldronDrop =
@@ -3461,6 +3501,76 @@ function applyGhostMotion(motion, progress) {
   motion.ghost.root.scale.set(sample.scale);
   motion.ghost.root.alpha = sample.alpha;
   motion.ghost.root.rotation = degreesToRadians(sample.rotation);
+}
+
+function createBrewIngredientArc(start, target) {
+  const deltaX = target.x - start.x;
+  const deltaY = target.y - start.y;
+  const side = Math.sign(start.x - target.x) || 1;
+  const burst = {
+    x: side * (12 + Math.min(10, Math.abs(deltaX) * 0.08)),
+    y: -18 - Math.min(10, Math.abs(deltaY) * 0.05),
+  };
+  const lift =
+    38 +
+    Math.min(24, Math.abs(deltaX) * 0.08) +
+    Math.max(0, deltaY) * 0.1;
+  return {
+    burst,
+    control: {
+      x:
+        (burst.x + deltaX) * 0.5 +
+        side * (18 + Math.min(18, Math.abs(deltaX) * 0.06)),
+      y: Math.min(burst.y, deltaY) - lift,
+    },
+    delta: { x: deltaX, y: deltaY },
+    side,
+  };
+}
+
+function applyBrewIngredientArcMotion(motion, progress) {
+  const burstEnd = 0.18;
+  const eased = clamp(progress, 0, 1);
+  let x;
+  let y;
+  let travelProgress;
+  if (eased <= burstEnd) {
+    const local = eased / burstEnd;
+    x = lerp(0, motion.path.burst.x, local);
+    y = lerp(0, motion.path.burst.y, local);
+    travelProgress = local * 0.12;
+  } else {
+    const local = (eased - burstEnd) / (1 - burstEnd);
+    const inverse = 1 - local;
+    x =
+      inverse * inverse * motion.path.burst.x +
+      2 * inverse * local * motion.path.control.x +
+      local * local * motion.path.delta.x;
+    y =
+      inverse * inverse * motion.path.burst.y +
+      2 * inverse * local * motion.path.control.y +
+      local * local * motion.path.delta.y;
+    travelProgress = 0.12 + local * 0.88;
+  }
+  const shrinkProgress = clamp(
+    (travelProgress - 0.66) / 0.34,
+    0,
+    1,
+  );
+  const fadeProgress = clamp(
+    (travelProgress - 0.8) / 0.2,
+    0,
+    1,
+  );
+  motion.ghost.root.position.set(
+    motion.start.x + x,
+    motion.start.y + y,
+  );
+  motion.ghost.root.scale.set(lerp(1, 0.42, shrinkProgress));
+  motion.ghost.root.alpha = 1 - fadeProgress;
+  motion.ghost.root.rotation =
+    motion.path.side *
+    degreesToRadians(8 + travelProgress * 34);
 }
 
 function sampleCauldronReceive(progress) {

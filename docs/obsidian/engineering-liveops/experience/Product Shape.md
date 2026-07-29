@@ -353,6 +353,7 @@ experience_type: product-shape
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
 - Reward text flyouts should all spawn from the same base anchor; do not stack older notices upward or derive one flyout position from another.
+- Reward flyouts are page-owned: filter events against the active room, never replay hidden-room reward events on resume, and clear active transients when the room changes.
 - With reward events enabled, Workshop summon item text comes from `subscribeRewardEvents`; the action bar only adds the mana-spend flyout.
 - Claim-button reward flyouts should publish before the claim snapshot rebuilds, so the original button can still anchor the motion.
 - Haptics are app-level device feedback: keep the preference in local storage, route pulses through `HapticsFacade`, and fire touch haptic/sound only when activation is confirmed so cancelled or retargeted presses stay silent.

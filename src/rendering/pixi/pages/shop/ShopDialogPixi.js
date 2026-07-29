@@ -39,6 +39,7 @@ import {
 import { PixiResourceLabel } from '../../primitives/PixiResourceLabel.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
+import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
@@ -2228,6 +2229,16 @@ class VirtualShopDialogRow {
       anchor: { x: 1, y: 0 },
       label: `${label}:value`,
     });
+    this.valueResource = new PixiResourceLabel({
+      assetManager,
+      resource: 'coin',
+      includeResourceName: false,
+      label: `${label}:valueResource`,
+    });
+    this.valueResource.visible = false;
+    this.valueResource.renderable = false;
+    this.notificationBadge = new PixiNotificationBadge({ assetManager });
+    this.notificationBadge.root.label = `${label}:notification`;
     this.visual.addChild(
       this.background,
       this.itemIcon,
@@ -2236,6 +2247,8 @@ class VirtualShopDialogRow {
       this.detail,
       this.value,
       this.selectedIndicator,
+      this.valueResource,
+      this.notificationBadge.root,
     );
     this.root.addChild(this.visual);
     this.semanticRegistry = semanticRegistry;
@@ -2279,6 +2292,27 @@ class VirtualShopDialogRow {
     this.detail.setText(item.detail ?? item.secondary ?? '');
     this.detail.visible = Boolean(item.detail ?? item.secondary);
     this.value.setText(item.value ?? item.actionLabel ?? '');
+    const valueIconResourceKey = item.valueIconResourceKey ?? null;
+    this.value.visible = !valueIconResourceKey;
+    this.value.renderable = this.value.visible;
+    this.valueResource.visible = Boolean(valueIconResourceKey);
+    this.valueResource.renderable = this.valueResource.visible;
+    if (valueIconResourceKey) {
+      this.valueResource.bind(key, {
+        resource: valueIconResourceKey,
+        amount: stripDialogResourceName(
+          item.value ?? item.actionLabel ?? '',
+          valueIconResourceKey,
+        ),
+        includeResourceName: false,
+      });
+    }
+    this.notificationBadge.bind(key, {
+      active: item.notification === true,
+      tone: item.notificationTone ?? 'red',
+      parent: this.visual,
+      bounds: createBounds(),
+    });
     this.enabled = item.enabled !== false && item.disabled !== true;
     this.selected = item.selected === true;
     this.expanded = item.expanded === true;
@@ -2321,6 +2355,7 @@ class VirtualShopDialogRow {
     this.value.setStroke(
       item.disabled ? null : resolveProgressToneTextStroke(item.valueTone),
     );
+    this.valueResource.applyTheme(this.theme);
     this.semanticId = item.semanticId ?? null;
     if (this.semanticId && this.semanticRegistry) {
       this.semanticDefinition = this.semanticRegistry.register({
@@ -2348,6 +2383,9 @@ class VirtualShopDialogRow {
     this.visual.position.set(width / 2, summaryHeight / 2);
     this.root.hitArea = new Rectangle(0, 0, width, summaryHeight);
     const hasDetail = this.detail.visible;
+    const valueWidth = this.valueResource.visible
+      ? this.valueResource.measuredWidth
+      : this.value.measuredWidth;
     if (!this.useSettingsStyle) {
       const hasItemIcon = this.itemIcon.visible;
       const itemIconSize = 28;
@@ -2369,7 +2407,7 @@ class VirtualShopDialogRow {
       this.label.setWrapWidth(
         Math.max(
           0,
-          width - contentLeft - this.value.measuredWidth - 8,
+          width - contentLeft - valueWidth - 8,
         ),
       );
       this.detail.position.set(contentLeft, 20);
@@ -2377,6 +2415,14 @@ class VirtualShopDialogRow {
       this.value.position.set(
         width - 2,
         hasDetail ? 2 : Math.max(1, (summaryHeight - 16) / 2),
+      );
+      this.valueResource.position.set(
+        width - 2 - this.valueResource.measuredWidth,
+        hasDetail ? 2 : Math.max(1, (summaryHeight - 16) / 2),
+      );
+      this.notificationBadge.placeInsideTopRight(
+        { x: 0, y: 0, width, height: summaryHeight },
+        0,
       );
       this.redraw();
       return;
@@ -2403,9 +2449,13 @@ class VirtualShopDialogRow {
       contentLeft,
       backgroundWidth - rowPadding,
     );
-    const rightInset = this.selected
+    const selectedInset = this.selected
       ? STALL_SELECTED_CHECK_SIZE + rowPadding * 2
       : 0;
+    const notificationInset = this.notificationBadge.root.visible
+      ? PIXI_UI_GEOMETRY.notificationSize + rowPadding
+      : 0;
+    const rightInset = Math.max(selectedInset, notificationInset);
     const valueRight = Math.max(
       contentLeft,
       contentRight - rightInset,
@@ -2437,7 +2487,7 @@ class VirtualShopDialogRow {
         0,
         valueRight -
           contentLeft -
-          this.value.measuredWidth -
+          valueWidth -
           8,
       ),
     );
@@ -2449,6 +2499,19 @@ class VirtualShopDialogRow {
       valueRight,
       hasDetail ? 4 : Math.max(1, (summaryHeight - 16) / 2),
     );
+    this.valueResource.position.set(
+      valueRight - this.valueResource.measuredWidth,
+      hasDetail ? 4 : Math.max(1, (summaryHeight - 16) / 2),
+    );
+    this.notificationBadge.placeInsideTopRight(
+      {
+        x: this.background.x,
+        y: this.background.y,
+        width: backgroundWidth,
+        height: backgroundHeight,
+      },
+      0,
+    );
     this.redraw();
   }
 
@@ -2457,6 +2520,8 @@ class VirtualShopDialogRow {
     this.label.applyTheme(this.theme);
     this.detail.applyTheme(this.theme);
     this.value.applyTheme(this.theme);
+    this.valueResource.applyTheme(this.theme);
+    this.notificationBadge.applyTheme(this.theme);
     this.redraw();
   }
 
@@ -2558,6 +2623,9 @@ class VirtualShopDialogRow {
     this.itemIconOverlay.visible = false;
     this.selectedIndicator.visible = false;
     this.selectedIndicator.renderable = false;
+    this.valueResource.visible = false;
+    this.valueResource.renderable = false;
+    this.notificationBadge.reset();
     this.root.eventMode = 'none';
     this.root.visible = false;
     this.root.renderable = false;
@@ -2620,6 +2688,20 @@ function normalizeDialogModel(dialogId, viewModel = {}) {
     range: model.range ?? model.allocation ?? null,
     amount: model.amount ?? model.quantityControl ?? null,
   };
+}
+
+function stripDialogResourceName(value, resource) {
+  const text = String(value ?? '').trim();
+  const resourceName = String(resource ?? '').trim().toLowerCase();
+  const suffixes = [
+    ` ${resourceName}`,
+    ` ${resourceName === 'ruby' ? 'rubies' : `${resourceName}s`}`,
+  ];
+  const normalizedText = text.toLowerCase();
+  const suffix = suffixes.find((candidate) =>
+    normalizedText.endsWith(candidate),
+  );
+  return suffix ? text.slice(0, -suffix.length).trim() : text;
 }
 
 function createBounds() {

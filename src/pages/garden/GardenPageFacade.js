@@ -6,6 +6,7 @@ import {
 import { GardenRoomViewManager } from './managers/GardenRoomViewManager.js';
 import { RewardFlyoutManager } from '../shared/RewardFlyoutManager.js';
 import { RoomInventoryButtonManager } from '../shared/RoomInventoryButtonManager.js';
+import { isRewardEventForPage } from '../shared/rewardEventPage.js';
 
 export class GardenPageFacade {
   static explain =
@@ -25,6 +26,8 @@ export class GardenPageFacade {
     this.plotManager = new GardenPlotManager({
       gameplayFacade,
       pixiProgressOverlayManager,
+      onFeedback: (message, options) =>
+        this.flyoutManager.show(message, options),
     });
     this.seedInventoryManager = new GardenSeedInventoryManager({
       gameplayFacade,
@@ -62,9 +65,11 @@ export class GardenPageFacade {
     this.plotManager.mount(uiLayer, popupLayer);
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
-      this.gameplayFacade?.subscribeRewardEvents?.((event) =>
-        this.flyoutManager.showReward(event),
-      ) ?? null;
+      this.gameplayFacade?.subscribeRewardEvents?.((event) => {
+        if (isRewardEventForPage(event, 'garden')) {
+          this.flyoutManager.showReward(event);
+        }
+      }) ?? null;
   }
 
   unmount() {
@@ -82,6 +87,7 @@ export class GardenPageFacade {
   }
 
   deactivate() {
+    this.flyoutManager.clear();
     this.activeInventoryTab = null;
     this.herbInventoryManager.setVisible(false);
     this.seedInventoryManager.setVisible(false);

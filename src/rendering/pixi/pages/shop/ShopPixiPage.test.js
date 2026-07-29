@@ -243,6 +243,29 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it('renders an orange notification badge on the empty stall Select action', () => {
+    const harness = createHarness();
+    const viewModel = createShopViewModel({ stallPrice: 'select' });
+    Object.assign(viewModel.shop.traders.stalls[0], {
+      priceVariant: 'green',
+      notification: true,
+      notificationTone: 'orange',
+    });
+
+    harness.page.bind(viewModel);
+    harness.page.activate();
+
+    const stall = harness.page.stallsSection.stalls.get('stall-1');
+    expect(stall.notificationBadge.root.visible).toBe(false);
+    expect(stall.priceAction.notificationBadge.root.visible).toBe(true);
+    expect(stall.priceAction.notificationBadge.tone).toBe('orange');
+    expect(stall.priceAction.notificationBadge.sprite.width).toBe(12);
+    expect(stall.priceAction.notificationBadge.sprite.height).toBe(12);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('renders loaded seeds inside the Research row art well', () => {
     const getAtlasTexture = vi.fn(() => Texture.EMPTY);
     const getTexture = vi.fn(() => Texture.EMPTY);
@@ -298,6 +321,44 @@ describe('ShopPixiPage', () => {
     expect(getAtlasTexture).toHaveBeenCalledWith('herb:sageHerb');
     expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.researchArt,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders an empty trader stall Select action with the shared green button skin', () => {
+    const harness = createHarness();
+    const model = createShopViewModel({ stallPrice: 'select' });
+    Object.assign(model.shop.traders.stalls[0], {
+      itemLabel: 'empty stand',
+      priceVariant: 'green',
+      progress: null,
+      quantityLabel: '',
+    });
+
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const stall = harness.page.stallsSection.stalls.get('stall-1');
+    expect(stall.item.text).toBe('Empty Stand');
+    expect(stall.price.visible).toBe(false);
+    expect(stall.priceAction).toMatchObject({
+      variant: 'green',
+      visible: true,
+      renderable: true,
+    });
+    expect(stall.priceAction.textLabel.text).toBe('Select');
+    expect(stall.priceAction.rootRunFrame.visible).toBe(true);
+    expect(stall.priceAction.hitArea).toMatchObject({
+      width: 72,
+      height: 42,
+    });
+    expect(stall.priceAction.x + stall.priceAction.hitArea.width).toBe(
+      stall.width - 10,
+    );
+    expect(stall.priceAction.y).toBe(
+      (stall.height - stall.priceAction.hitArea.height) / 2,
     );
 
     harness.page.destroy();
@@ -654,9 +715,12 @@ describe('ShopPixiPage', () => {
           id: 'sageSeed',
           label: 'sage seed',
           detail: '8 available',
+          value: '2 coin',
+          valueIconResourceKey: 'coin',
           itemKind: 'seed',
           itemKey: 'sageSeed',
           selected: true,
+          notification: true,
         },
       ],
       actions: [
@@ -675,7 +739,12 @@ describe('ShopPixiPage', () => {
         { id: 'future', label: 'mark future', enabled: true },
       ],
       tabs: [
-        { id: 'seed', label: 'seeds', selected: true },
+        {
+          id: 'seed',
+          label: 'seeds',
+          selected: true,
+          notification: true,
+        },
         { id: 'herb', label: 'herbs' },
         { id: 'potion', label: 'potions' },
       ],
@@ -788,6 +857,16 @@ describe('ShopPixiPage', () => {
         (row.selectedIndicator.x +
           row.selectedIndicator.width / 2),
     ).toBeCloseTo(8);
+    expect(row.value.visible).toBe(false);
+    expect(row.valueResource.visible).toBe(true);
+    expect(row.valueResource.amountLabel.text).toBe('2');
+    expect(row.valueResource.icon.x).toBeLessThan(
+      row.valueResource.amountLabel.x,
+    );
+    expect(row.notificationBadge.root.visible).toBe(true);
+    expect(row.notificationBadge.tone).toBe('red');
+    expect(seedsTab.notificationDot.visible).toBe(true);
+    expect(herbsTab.notificationDot.visible).toBe(false);
     expect(row.label.fontWeight).toBe('normal');
     expect(dialog.list.scroll.progressBar).toBeNull();
 

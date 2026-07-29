@@ -226,10 +226,21 @@ function createResearchModel(key) {
             label: `box ${key} ${boxIndex}`,
             researches: [1, 2].map((rowIndex) => ({
               id: `research-${key}-${boxIndex}-${rowIndex}`,
-              displayName: `research ${rowIndex}`,
+              displayName:
+                boxIndex === 1 && rowIndex === 1
+                  ? 'five-level research'
+                  : boxIndex === 1 && rowIndex === 2
+                    ? 'two-level research'
+                    : `research ${rowIndex}`,
               effect: `+${rowIndex}`,
               displayValue: `${rowIndex * 10} mana`,
               canResearch: true,
+              ...(boxIndex === 1 && rowIndex === 1
+                ? { starLevel: 1, starMaxLevel: 5 }
+                : {}),
+              ...(boxIndex === 1 && rowIndex === 2
+                ? { starLevel: 1, starMaxLevel: 2 }
+                : {}),
               info: {
                 title: `research ${rowIndex}`,
                 copy: `research copy ${key}`,

@@ -150,4 +150,40 @@ describe('ShopShelfSlotSelectionManager', () => {
     expect(getInventory()).toBe(100);
     expect(slot.sellItemTypeId).toBeNull();
   });
+
+  it('reconciles a selected stand to an exact target quantity', () => {
+    const { getInventory, manager, slot } = createHarness({
+      inventoryQuantity: 3,
+    });
+
+    expect(manager.setSelectedSlotQuantity(1, 2)).toMatchObject({
+      ok: true,
+      targetQuantity: 2,
+      totalQuantity: 3,
+    });
+    expect(getInventory()).toBe(1);
+    expect(slot.loadedQuantity).toBe(2);
+
+    expect(manager.setSelectedSlotQuantity(1, 3)).toMatchObject({
+      ok: true,
+      targetQuantity: 3,
+      totalQuantity: 3,
+    });
+    expect(getInventory()).toBe(0);
+    expect(slot.loadedQuantity).toBe(3);
+  });
+
+  it('rejects a fractional target quantity without moving stock', () => {
+    const { getInventory, manager, slot } = createHarness({
+      inventoryQuantity: 3,
+    });
+
+    expect(manager.setSelectedSlotQuantity(1, 1.5)).toEqual({
+      ok: false,
+      reason: 'invalid_quantity',
+      itemTypeId: 1,
+    });
+    expect(getInventory()).toBe(3);
+    expect(slot.loadedQuantity).toBe(0);
+  });
 });

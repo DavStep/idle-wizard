@@ -28,7 +28,7 @@ const CHILD_TARGETS = Object.freeze({
   },
   shop: {
     npcStand: ['shop:stand:*'],
-    npcListing: ['shop:sell:*'],
+    npcListing: ['shop:stand:*', 'shop:sell:*'],
     playerStand: ['shop:player:stand:*'],
     playerListing: ['shop:player:listing:*'],
     playerProceeds: ['shop:player:proceeds*'],

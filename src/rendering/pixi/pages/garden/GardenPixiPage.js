@@ -7,6 +7,10 @@ import { PixiCostButton } from "../../primitives/PixiCostButton.js";
 import { PixiButton } from "../../primitives/PixiButton.js";
 import { PixiNotificationBadge } from "../../global/transient/PixiNotificationBadges.js";
 import {
+  createTimedProgressWindow,
+  getTimedProgressSnapshotProgress,
+} from "../../primitives/PixiProgressBar.js";
+import {
   bindPixiSeedPackIcon,
   layoutPixiSeedPackIcon,
 } from "../../primitives/PixiSeedPackIcon.js";
@@ -22,7 +26,7 @@ import {
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
   RetainedPanel,
-  RetainedProgressBar,
+  RetainedTimedProgressBar,
   applyTextTheme,
   createText,
   finiteOr,
@@ -150,7 +154,10 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
       inputRouter: this.inputRouter,
       semanticTargets: this.semanticTargets,
     });
-    this.content.addChild(this.actionBar.root);
+    this.plotTooltip = new GardenPlotTooltip({
+      assetManager: this.assetManager,
+    });
+    this.content.addChild(this.actionBar.root, this.plotTooltip.root);
 
     this.panRegistration =
       this.inputRouter?.registerPanSurface?.({
@@ -333,6 +340,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     }
     this.ticker?.remove?.(this.tickHandler);
     this.active = false;
+    this.hidePlotTooltip();
     this.settleTransientMotion();
     super.deactivate();
   }
@@ -347,6 +355,45 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     for (const plot of this.plots?.getWidgets?.() ?? []) {
       plot.settleTransientMotion();
     }
+  }
+
+  showPlotTooltip(copy, target) {
+    if (!copy || !target) {
+      this.hidePlotTooltip();
+      return false;
+    }
+
+    this.plotTooltip.bind(copy);
+    const targetBounds = target.getBounds();
+    const targetRight = Number.isFinite(targetBounds.maxX)
+      ? targetBounds.maxX
+      : targetBounds.x + targetBounds.width;
+    const targetTop = Number.isFinite(targetBounds.minY)
+      ? targetBounds.minY
+      : targetBounds.y;
+    const targetBottom = Number.isFinite(targetBounds.maxY)
+      ? targetBounds.maxY
+      : targetBounds.y + targetBounds.height;
+    const topRight = this.content.toLocal({
+      x: targetRight,
+      y: targetTop,
+    });
+    const bottomRight = this.content.toLocal({
+      x: targetRight,
+      y: targetBottom,
+    });
+    const x = Math.min(
+      this.sourceWidth - this.plotTooltip.width - 8,
+      Math.max(8, topRight.x - this.plotTooltip.width),
+    );
+    const aboveY = topRight.y - this.plotTooltip.height - 6;
+    const y = aboveY >= 8 ? aboveY : bottomRight.y + 6;
+    this.plotTooltip.show({ x, y });
+    return true;
+  }
+
+  hidePlotTooltip() {
+    this.plotTooltip?.hide();
   }
 
   orderPlots(plots) {
@@ -470,6 +517,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
 
   applyThemeToChildren(theme) {
     this.actionBar?.applyTheme(theme);
+    this.plotTooltip?.applyTheme(theme);
     for (const plot of this.plots?.getWidgets?.() ?? []) {
       plot.applyTheme(theme);
     }
@@ -540,6 +588,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     this.plots?.destroy();
     this.plotPool?.destroy();
     this.actionBar?.destroy();
+    this.plotTooltip?.destroy();
   }
 }
 
@@ -604,7 +653,7 @@ export class GardenSeedActionBar {
     const selectedSeed = model.selectedSeed ?? null;
     this.harvestButton
       .setText("Harvest All")
-      .setEnabled(Number(model.readyHarvestCount) > 0)
+      .setEnabled(true)
       .setNotification(Number(model.readyHarvestCount) > 0)
       .setAction(() => actions.harvestAll?.() ?? false);
     this.seedsButton
@@ -699,6 +748,59 @@ export class GardenSeedActionBar {
   }
 }
 
+class GardenPlotTooltip {
+  constructor({ assetManager }) {
+    this.width = 180;
+    this.height = 0;
+    this.panel = new RetainedPanel({
+      assetManager,
+      panelLabel: "garden-plot-tooltip",
+      strong: true,
+      shadowKind: "tooltip",
+    });
+    this.root = this.panel.root;
+    this.copy = createText("", {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: "#ffffff",
+      wordWrapWidth: this.width - 20,
+    });
+    this.panel.body.addChild(this.copy);
+    this.root.visible = false;
+    this.root.renderable = false;
+  }
+
+  bind(copy) {
+    setText(this.copy, copy);
+    this.copy.position.set(10, 8);
+    this.height = Math.ceil(this.copy.height + 16);
+    this.panel.setBounds(0, 0, this.width, this.height);
+  }
+
+  show({ x, y }) {
+    this.root.position.set(x, y);
+    this.root.visible = true;
+    this.root.renderable = true;
+  }
+
+  hide() {
+    this.root.visible = false;
+    this.root.renderable = false;
+  }
+
+  applyTheme(theme) {
+    this.panel.applyTheme(theme);
+    applyTextTheme(this.copy, theme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: "#ffffff",
+      wordWrapWidth: this.width - 20,
+    });
+  }
+
+  destroy() {
+    this.panel.destroy();
+  }
+}
+
 class GardenPlotWidget {
   constructor({
     instanceId,
@@ -714,7 +816,7 @@ class GardenPlotWidget {
     this.semanticTargets = semanticTargets;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.model = {};
-    this.timedProgress = null;
+    this.timerSnapshotProgress = Number.NaN;
     this.actions = {};
     this.enabled = false;
     this.pressed = false;
@@ -740,8 +842,6 @@ class GardenPlotWidget {
       gap: 1,
       label: `garden-plot-${instanceId}-stars`,
     });
-    this.label = createText("", RETAINED_TEXT_STYLES.border);
-    this.label.anchor.set(1, 0);
     this.plantMotion = new Container({
       label: `garden-plot-${instanceId}-plant-motion`,
     });
@@ -779,7 +879,7 @@ class GardenPlotWidget {
     );
     this.scissorsOpen.label = `garden-plot-${instanceId}-scissors-open`;
     this.scissorsMotion.addChild(this.scissors, this.scissorsOpen);
-    this.progress = new RetainedProgressBar({
+    this.progress = new RetainedTimedProgressBar({
       assetManager,
       label: `garden-plot-${instanceId}-progress`,
       tone: "green",
@@ -792,7 +892,6 @@ class GardenPlotWidget {
       this.buyFrame,
       this.number,
       this.level,
-      this.label,
       this.plantMotion,
       this.action,
       this.buyCostButton,
@@ -813,17 +912,28 @@ class GardenPlotWidget {
 
   bind(model, actions) {
     this.unregisterSemanticTargets();
-    const previousModel = this.model;
-    const previousTimedProgress = this.timedProgress;
     this.model = model ?? {};
     const process = this.model.process ?? this.model.progress;
-    this.timedProgress = bindTimedProgress(
-      process,
-      this.page.timeSource(),
-      shouldContinueTimedProgress(previousModel, this.model)
-        ? previousTimedProgress
-        : null,
-    );
+    if (process && typeof process === "object") {
+      const snapshotProgress =
+        getTimedProgressSnapshotProgress(process);
+      if (
+        Number.isFinite(this.timerSnapshotProgress) &&
+        snapshotProgress + Number.EPSILON <
+          this.timerSnapshotProgress
+      ) {
+        this.progress.clearTimer(0);
+      }
+      this.timerSnapshotProgress = snapshotProgress;
+      this.progress.setTimer(
+        createTimedProgressWindow(process, this.page.timeSource()),
+      );
+    } else {
+      this.timerSnapshotProgress = Number.NaN;
+      this.progress.clearTimer(
+        typeof process === "number" ? process : 0,
+      );
+    }
     this.actions = actions ?? {};
     const tileNumber =
       this.model.tileNumber ?? this.model.number ?? this.model.id;
@@ -838,7 +948,6 @@ class GardenPlotWidget {
     setText(this.number, this.model.showNumber === false ? "" : tileNumber);
     const plotLevel = Math.max(1, Math.floor(Number(this.model.level) || 1));
     this.level.setLevel(plotLevel - 1);
-    setText(this.label, resolvePlotLabel(this.model));
     setText(this.action, resolveActionText(this.model));
     this.syncBuyCostButton();
     this.soil.texture = getTexture(this.assetManager, SOIL_ASSET_ID);
@@ -878,9 +987,9 @@ class GardenPlotWidget {
       semanticId: labelSemanticId,
       tutorialId:
         this.model.labelTutorialId ?? `garden:plot:${tileNumber}:label`,
-      displayObject: this.label,
+      displayObject: this.root,
       state: () => ({
-        visible: this.label.visible && this.root.visible,
+        visible: this.root.visible && this.root.renderable,
         interactive: this.enabled,
         enabled: this.enabled,
         active: !this.root.destroyed,
@@ -901,6 +1010,11 @@ class GardenPlotWidget {
       this.model.action?.activate?.(this.model) ??
       this.actions.activatePlot?.(this.model) ??
       true;
+    if (result?.tooltip) {
+      this.page.showPlotTooltip(result.tooltip, this.root);
+    } else {
+      this.page.hidePlotTooltip();
+    }
     if (receivesSeed && actionSucceeded(result)) {
       this.startSeedReceive(this.page.timeSource());
     }
@@ -920,8 +1034,7 @@ class GardenPlotWidget {
     this.soil.height = GARDEN_PIXI_GEOMETRY.plotHeight;
     this.buyFrame.position.set(0, 0);
     this.number.position.set(10, 6);
-    this.level.position.set(5, GARDEN_PIXI_GEOMETRY.plotHeight - 16);
-    this.label.position.set(GARDEN_PIXI_GEOMETRY.plotWidth - 9, 18);
+    this.level.position.set(5, GARDEN_PIXI_GEOMETRY.plotHeight - 19);
     this.plantMotion.position.set(
       GARDEN_PIXI_GEOMETRY.plotWidth / 2,
       GARDEN_PIXI_GEOMETRY.plotHeight - 20,
@@ -987,18 +1100,33 @@ class GardenPlotWidget {
   }
 
   updateTime(now) {
-    const timed = resolveTimedProgress(this.timedProgress, now);
+    const process = this.model.process ?? this.model.progress;
+    const timed =
+      process && typeof process === "object"
+        ? this.progress.updateTimer(now)
+        : {
+            progress:
+              typeof process === "number"
+                ? clamp(process, 0, 1)
+                : 0,
+            remainingMs: 0,
+          };
     const visible =
       this.model.phase === "ready" ||
       Boolean(this.model.process) ||
       this.model.progressVisible === true;
     this.progress.root.visible = visible;
-    this.progress.setProgress(
-      this.model.phase === "ready" ? 1 : timed.progress,
-    );
-    if (timed.timerText && this.model.actionTextIncludesTimer !== false) {
+    if (this.model.phase === "ready") {
+      this.progress.clearTimer(1);
+      timed.progress = 1;
+    }
+    const timerText =
+      process && typeof process === "object"
+        ? process.timerText ?? formatRemainingTime(timed.remainingMs)
+        : "";
+    if (timerText && this.model.actionTextIncludesTimer !== false) {
       const base = resolveActionText(this.model);
-      setText(this.action, [base, timed.timerText].filter(Boolean).join(" "));
+      setText(this.action, [base, timerText].filter(Boolean).join(" "));
     }
     this.updateMotion(now, timed.progress);
   }
@@ -1110,39 +1238,23 @@ class GardenPlotWidget {
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    const disabled = !this.enabled;
-    const plantAction = isPlantActionText(resolveActionText(this.model));
-    const labelColor =
-      this.model.labelResource === "seed"
-        ? this.theme.resourceColors.seed
-        : this.model.labelResource === "herb"
-          ? this.theme.resourceColors.herb
-          : disabled
-            ? this.theme.disabled
-            : this.theme.text;
     applyTextTheme(this.number, this.theme, {
       ...RETAINED_TEXT_STYLES.bold,
       fill: "#3b2416",
     });
-    applyTextTheme(this.label, this.theme, {
-      ...RETAINED_TEXT_STYLES.border,
-      fill: labelColor,
-    });
+    this.number.style.stroke = null;
     applyTextTheme(this.action, this.theme, {
       fontSize: this.model.phase === "empty" || this.model.buySlot ? 11 : 9,
       lineHeight: this.model.phase === "empty" || this.model.buySlot ? 14 : 11,
       fontWeight: "700",
-      fill: disabled
-        ? this.theme.disabled
-        : plantAction
-          ? "#ffffff"
-          : this.theme.text,
+      fill: "#ffffff",
       align: "right",
     });
-    this.action.style.stroke =
-      !disabled && plantAction
-        ? { color: "#0a0a0a", width: 2, join: "round" }
-        : null;
+    this.action.style.stroke = {
+      color: "#0a0a0a",
+      width: 2,
+      join: "round",
+    };
     this.buyCostButton.applyTheme(this.theme);
     this.progress.applyTheme(this.theme);
     this.redraw();
@@ -1200,7 +1312,6 @@ class GardenPlotWidget {
       this.soil.visible = false;
       this.number.visible = false;
       this.level.visible = false;
-      this.label.visible = false;
       this.action.anchor.set(0.5);
       this.action.position.set(
         GARDEN_PIXI_GEOMETRY.plotWidth / 2,
@@ -1210,7 +1321,6 @@ class GardenPlotWidget {
       this.soil.visible = true;
       this.number.visible = this.model.showNumber !== false;
       this.level.visible = this.model.showLevel !== false;
-      this.label.visible = Boolean(this.label.text);
       this.action.anchor.set(1, 1);
       if (this.model.phase === "empty") {
         this.action.anchor.set(0.5);
@@ -1231,7 +1341,8 @@ class GardenPlotWidget {
   reset() {
     this.unregisterSemanticTargets();
     this.model = {};
-    this.timedProgress = null;
+    this.timerSnapshotProgress = Number.NaN;
+    this.progress.clearTimer(0);
     this.actions = {};
     this.enabled = false;
     this.pressed = false;
@@ -1252,7 +1363,6 @@ class GardenPlotWidget {
     this.width = 0;
     setText(this.number, "");
     this.level.setLevel(0);
-    setText(this.label, "");
     setText(this.action, "");
     this.buyCostButton.reset();
     this.progress.setProgress(0);
@@ -1283,21 +1393,6 @@ class GardenPlotWidget {
   }
 }
 
-function resolvePlotLabel(model) {
-  if (model.label !== undefined) {
-    return String(model.label ?? "");
-  }
-  if (model.phase === "empty") {
-    return model.selectedSeedLabel
-      ? String(model.selectedHerbLabel ?? model.selectedSeedLabel).replace(
-          /\s+seed$/i,
-          "",
-        )
-      : "choose";
-  }
-  return model.herbLabel ?? model.seedLabel ?? "";
-}
-
 function resolveActionText(model) {
   let actionText = "";
   if (model.actionText !== undefined) {
@@ -1314,137 +1409,6 @@ function resolveActionText(model) {
 
 function isPlantActionText(value) {
   return /^plant(?:\s|$)/i.test(String(value ?? "").trim());
-}
-
-function resolveTimedProgress(progress, now) {
-  if (typeof progress === "number") {
-    return { progress: clamp(progress, 0, 1), timerText: "" };
-  }
-  if (!progress || typeof progress !== "object") {
-    return { progress: 0, timerText: "" };
-  }
-  let remainingMs = finiteOr(progress.remainingMs, Number.NaN);
-  const durationMs = finiteOr(
-    progress.durationMs,
-    finiteOr(progress.totalMs, Number.NaN),
-  );
-  const endTimeMs = finiteOr(
-    progress.endTimeMs,
-    finiteOr(progress.endsAt, Number.NaN),
-  );
-  if (Number.isFinite(endTimeMs)) {
-    remainingMs = Math.max(0, endTimeMs - now);
-  }
-  const ratio =
-    Number.isFinite(durationMs) &&
-    durationMs > 0 &&
-    Number.isFinite(remainingMs)
-      ? 1 - remainingMs / durationMs
-      : finiteOr(progress.progress, 0);
-  return {
-    progress: clamp(ratio, 0, 1),
-    timerText:
-      progress.timerText ??
-      (Number.isFinite(remainingMs) ? formatRemainingTime(remainingMs) : ""),
-  };
-}
-
-function bindTimedProgress(progress, now, previousProgress = null) {
-  if (!progress || typeof progress !== "object") {
-    return progress;
-  }
-
-  const endTimeMs = finiteOr(
-    progress.endTimeMs,
-    finiteOr(progress.endsAt, Number.NaN),
-  );
-  const remainingMs = finiteOr(progress.remainingMs, Number.NaN);
-
-  if (Number.isFinite(endTimeMs) || !Number.isFinite(remainingMs)) {
-    return progress;
-  }
-
-  const inferredEndTimeMs =
-    finiteOr(now, Date.now()) + Math.max(0, remainingMs);
-  const previousEndTimeMs = finiteOr(
-    previousProgress?.endTimeMs,
-    finiteOr(previousProgress?.endsAt, Number.NaN),
-  );
-
-  return {
-    ...progress,
-    endTimeMs: Number.isFinite(previousEndTimeMs)
-      ? Math.min(previousEndTimeMs, inferredEndTimeMs)
-      : inferredEndTimeMs,
-  };
-}
-
-function shouldContinueTimedProgress(previousModel, nextModel) {
-  const previousProcess = previousModel?.process ?? previousModel?.progress;
-  const nextProcess = nextModel?.process ?? nextModel?.progress;
-
-  if (
-    !previousProcess ||
-    typeof previousProcess !== "object" ||
-    !nextProcess ||
-    typeof nextProcess !== "object" ||
-    previousModel?.phase !== nextModel?.phase
-  ) {
-    return false;
-  }
-
-  for (const key of [
-    "seedItemTypeId",
-    "herbItemTypeId",
-    "herbKey",
-    "plantFrame",
-  ]) {
-    if ((previousModel?.[key] ?? null) !== (nextModel?.[key] ?? null)) {
-      return false;
-    }
-  }
-
-  const previousDurationMs = resolveTimerDurationMs(previousProcess);
-  const nextDurationMs = resolveTimerDurationMs(nextProcess);
-  if (
-    Number.isFinite(previousDurationMs) &&
-    Number.isFinite(nextDurationMs) &&
-    previousDurationMs !== nextDurationMs
-  ) {
-    return false;
-  }
-
-  const previousSnapshotProgress =
-    resolveTimerSnapshotProgress(previousProcess);
-  const nextSnapshotProgress = resolveTimerSnapshotProgress(nextProcess);
-
-  return (
-    Number.isFinite(previousSnapshotProgress) &&
-    Number.isFinite(nextSnapshotProgress) &&
-    nextSnapshotProgress + Number.EPSILON >= previousSnapshotProgress
-  );
-}
-
-function resolveTimerDurationMs(progress) {
-  return finiteOr(
-    progress?.durationMs,
-    finiteOr(progress?.totalMs, Number.NaN),
-  );
-}
-
-function resolveTimerSnapshotProgress(progress) {
-  const durationMs = resolveTimerDurationMs(progress);
-  const remainingMs = finiteOr(progress?.remainingMs, Number.NaN);
-
-  if (
-    Number.isFinite(durationMs) &&
-    durationMs > 0 &&
-    Number.isFinite(remainingMs)
-  ) {
-    return clamp(1 - remainingMs / durationMs, 0, 1);
-  }
-
-  return finiteOr(progress?.progress, Number.NaN);
 }
 
 function applyReadyPlantMotion(motion, progress, growthScale) {

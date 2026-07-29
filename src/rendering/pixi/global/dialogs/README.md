@@ -6,12 +6,11 @@ its first `DialogRegistry.open()`, and is retained until application shutdown.
 Closing a dialog only deactivates its subscriptions, text-entry session, modal
 handle, ticker work, rendering, and interaction.
 
-Every retained global dialog replays the shared 225ms Pixi open motion without
-rebuilding its display tree: the backdrop fades from transparent to its authored
-alpha while the panel scales from `0.982` through the center (`1.008`) or
-top-panel (`1.006`) overshoot and settles at `1`. Reduced-motion mode displays
-the settled state immediately; close and shutdown cancel and restore all motion
-state.
+Every retained global dialog replays the shared 175ms Pixi open motion without
+rebuilding its display tree. The backdrop and panel stay at full authored alpha
+while the panel scales from `0.94` through the center (`1.02`) or top-panel
+(`1.015`) overshoot and settles at `1`. Reduced-motion mode displays the settled
+state immediately; close and shutdown cancel and restore all motion state.
 
 The shared retained-global base caps the visible Root Run shell at `324px`,
 leaving a `5%` inset on both sides of the `360px` source screen. After the
@@ -40,8 +39,8 @@ Canonical IDs:
 - `global.announcement`
 - `global.confirmation`
 
-Open `/src/dev/uiRecipes/inbox-dialog.html` to inspect the real retained empty
-inbox without gameplay setup, backend state, or save publication.
+Open `/src/dev/uiRecipes/inbox-dialog.html?empty=1` to inspect the real retained
+empty inbox without gameplay setup, backend state, or save publication.
 
 The views accept renderer-neutral view models. Common fields are:
 

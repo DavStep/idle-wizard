@@ -19,6 +19,7 @@ export class PixiStarLevelLabel extends Container {
   constructor({
     assetManager,
     level = 0,
+    slotCount = STARS_PER_TONE,
     size = 12,
     gap = 1,
     label = 'starLevel',
@@ -26,6 +27,7 @@ export class PixiStarLevelLabel extends Container {
     super({ label });
     this.assetManager = assetManager;
     this.level = 0;
+    this.slotCount = normalizeSlotCount(slotCount);
     this.starSize = size;
     this.gap = gap;
     this.slots = Array.from({ length: STARS_PER_TONE }, (_, index) =>
@@ -53,20 +55,28 @@ export class PixiStarLevelLabel extends Container {
   }
 
   bind(_key, data = {}) {
-    this.setLevel(data.level ?? data.starLevel ?? 0);
+    this.setLevel(data.level ?? data.starLevel ?? 0, {
+      slotCount: data.slotCount ?? this.slotCount,
+    });
     this.visible = data.hidden !== true;
     this.renderable = this.visible;
   }
 
-  setLevel(level) {
+  setLevel(level, { slotCount = this.slotCount } = {}) {
     const safeLevel = Math.max(0, Math.floor(Number(level) || 0));
+    this.setSlotCount(slotCount);
     const visualLevel = Math.min(safeLevel, MAX_STAR_LEVEL);
     const toneIndex =
       visualLevel > 0
         ? Math.floor((visualLevel - 1) / STARS_PER_TONE)
         : -1;
     const starCount =
-      visualLevel > 0 ? ((visualLevel - 1) % STARS_PER_TONE) + 1 : 0;
+      visualLevel > 0
+        ? Math.min(
+            ((visualLevel - 1) % STARS_PER_TONE) + 1,
+            this.slotCount,
+          )
+        : 0;
     const tone = TONES[toneIndex] ?? null;
     const texture = tone
       ? this.resolveTexture(TONE_ASSETS[tone])
@@ -80,6 +90,16 @@ export class PixiStarLevelLabel extends Container {
       slot.fill.visible = index < starCount;
       slot.fill.renderable = slot.fill.visible;
     });
+    return this;
+  }
+
+  setSlotCount(slotCount) {
+    this.slotCount = normalizeSlotCount(slotCount);
+    this.slots.forEach((slot, index) => {
+      slot.root.visible = index < this.slotCount;
+      slot.root.renderable = slot.root.visible;
+    });
+    this.relayout();
     return this;
   }
 
@@ -107,8 +127,8 @@ export class PixiStarLevelLabel extends Container {
   }
 
   get measuredWidth() {
-    return STARS_PER_TONE * this.starSize +
-      (STARS_PER_TONE - 1) * this.gap;
+    return this.slotCount * this.starSize +
+      (this.slotCount - 1) * this.gap;
   }
 
   get accessibleLabel() {
@@ -122,4 +142,11 @@ export class PixiStarLevelLabel extends Container {
       ? this.assetManager.getTexture(assetId)
       : Texture.EMPTY;
   }
+}
+
+function normalizeSlotCount(slotCount) {
+  return Math.min(
+    STARS_PER_TONE,
+    Math.max(1, Math.floor(Number(slotCount) || STARS_PER_TONE)),
+  );
 }

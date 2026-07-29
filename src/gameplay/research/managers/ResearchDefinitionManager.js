@@ -580,8 +580,11 @@ export class ResearchDefinitionManager {
       return {
         id: researchTimeResearchIds.reduction(level),
         label: `research time lvl ${level}`,
+        displayName: 'research time',
         value: `-${percent}% time`,
         showEffect: true,
+        starLevel: level,
+        starMaxLevel: researchTimeResearchMaxLevel,
         seriesId: 'researchTime',
         requiredResearchIds:
           level > 1 ? [researchTimeResearchIds.reduction(level - 1)] : [],
@@ -598,8 +601,11 @@ export class ResearchDefinitionManager {
       return {
         id: researchCostResearchIds.reduction(level),
         label: `research cost lvl ${level}`,
+        displayName: 'research cost',
         value: `-${percent}% cost`,
         showEffect: true,
+        starLevel: level,
+        starMaxLevel: researchCostResearchMaxLevel,
         seriesId: 'researchCost',
         requiredResearchIds:
           level > 1 ? [researchCostResearchIds.reduction(level - 1)] : [],
@@ -615,8 +621,11 @@ export class ResearchDefinitionManager {
       return {
         id: automationReserveResearchIds.controls(level),
         label: getAutomationReserveResearchLabel(level),
+        displayName: 'automation reserve',
         value: getAutomationReserveResearchValue(level),
         showEffect: true,
+        starLevel: level,
+        starMaxLevel: automationReserveResearchMaxLevel,
         seriesId: 'automationReserve',
         requiredPrestigeCount: this.getUnlockPrestigeCount(
           prestigeUnlockIds.automationReserveControls,
@@ -638,6 +647,9 @@ export class ResearchDefinitionManager {
     getRequiredPrestigeCount,
   }) {
     const researches = [];
+    const starMaxLevel = starLevel
+      ? starLevel(advancedResearchMaxLevel)
+      : 0;
 
     for (let targetNumber = 1; targetNumber <= count; targetNumber += 1) {
       for (let level = 1; level <= advancedResearchMaxLevel; level += 1) {
@@ -648,6 +660,7 @@ export class ResearchDefinitionManager {
           value: `-${getAdvancedResearchLevelReductionPercent(level)}% time`,
           showEffect: true,
           ...(starLevel ? { starLevel: starLevel(level) } : {}),
+          ...(starMaxLevel > 1 ? { starMaxLevel } : {}),
           seriesId: seriesId(targetNumber),
           requiredResearchIds:
             level > 1 ? [getId(targetNumber, level - 1)] : [],
@@ -671,6 +684,9 @@ export class ResearchDefinitionManager {
     description,
   }) {
     const researches = [];
+    const starMaxLevel = starLevel
+      ? starLevel(emeraldResearchMaxMultiplier)
+      : 0;
 
     for (let targetNumber = 1; targetNumber <= count; targetNumber += 1) {
       for (
@@ -689,6 +705,7 @@ export class ResearchDefinitionManager {
           actionType: 'levelUp',
           level: multiplier,
           ...(starLevel ? { starLevel: starLevel(multiplier) } : {}),
+          ...(starMaxLevel > 1 ? { starMaxLevel } : {}),
           seriesId: seriesId(targetNumber),
           requiredResearchIds:
             multiplier > emeraldResearchMinMultiplier

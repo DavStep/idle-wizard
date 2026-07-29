@@ -83,15 +83,25 @@ perform writes or own game rules.
 The production composition has two sections. The unframed preview keeps the
 image-backed fantasy chevrons, horizontal swipe, centered cauldron, and six
 compact ingredient requirement tiles in a subtle connected orbit. The preview
-composition sits below the title/configuration row, and the chevrons flank the
-cauldron instead of floating beside lower status copy. All six
+composition sits below the title/configuration row. The chevrons sit just
+outside the two lower ingredient tiles and slightly below their centers, so
+they read as balanced carousel navigation without interrupting the cauldron or
+the middle orbit row. All six
 cells are real gameplay ingredient slots; recipes may continue using fewer.
 Ingredient slots reuse the ordinary room-panel skin and show item art, name,
 and owned/required count. Pressing an available slot opens `Choose Herb`, the
 same retained inventory-choice dialog used by Garden `Choose Seed`, with herb
-art and availability rows. Both pickers keep a 4.5-row minimum viewport and
-top-align shorter lists. Selecting a herb adds one copy to the selected
-cauldron through the gameplay facade. Cauldron liquid reuses the exact source-art mask,
+art and availability rows. Brewing extends that picker with a separate upper
+paper titled `Selected Herb`. A standard herb row inside it shows the selected
+item and `N Selected`, with the shared connected Root Run amount stepper in the
+right-side action area. Yellow end buttons use generated illustrated minus and
+plus sprites around the current integer on a generated cream-and-gold
+nine-slice capsule. The controls write through the gameplay facade. At zero the
+slot is cleared. Plus stops at owned stock or the existing six-ingredient
+cauldron capacity. The unchanged herb catalogue remains in its own lower paper
+while editing, and choosing another row replaces the selected slot at quantity
+one. Both pickers keep a 4.5-row minimum viewport and top-align shorter lists.
+Cauldron liquid reuses the exact source-art mask,
 matches the cauldron sprite transform, and stays behind the rendered rim.
 Potion identity and rarity sit directly below the landmark after a recipe is
 selected. The empty preview does not repeat `Choose Recipe`, and batch quantity
@@ -149,9 +159,13 @@ the mode. Cancel has no icon.
 
 Brewing-owned motion also remains retained: herb pickup/count/return nudges
 reuse the row transform, ingredient drag, return, and brew flyouts use one
-bounded ghost pool, and cauldron receive/recipe-receive/buy feedback reuses the
-cauldron display tree. Changing the selected cauldron through a chevron or swipe
-plays the same directional blue/gold arc swoosh and compact `240ms` settle.
+bounded ghost pool. A successful manual Brew launches each visible ingredient
+from its orbit icon with a short outward/upward kick, then follows a high curved
+path into the visible center of the cauldron liquid. Flights keep the existing
+`45ms` stagger and `240ms` per-item duration. Cauldron
+receive/recipe-receive/buy feedback reuses the cauldron display tree. Changing
+the selected cauldron through a chevron or swipe plays the same directional
+blue/gold arc swoosh and compact `240ms` settle.
 Reduced motion switches instantly. Deactivation and pool reset clear every
 target, timer, transform, swoosh, and active ghost so hidden Brewing UI performs
 no motion work.

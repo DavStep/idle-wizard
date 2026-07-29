@@ -35,6 +35,7 @@ describe('createShop', () => {
                 kind: 'seed',
                 label: 'sage seed',
                 quantity: 8,
+                sellCoin: 2,
                 buyCoin: 3,
                 stock: 4,
                 npcNeed: 6,
@@ -146,7 +147,10 @@ describe('createShop', () => {
       range: {
         enabled: true,
         tone: 'root',
-        value: 20,
+        min: 0,
+        max: 10,
+        step: 1,
+        value: 2,
       },
       summaryRows: [
         {
@@ -163,6 +167,9 @@ describe('createShop', () => {
       detail: '8 Available',
       itemKey: 'sageSeed',
       itemKind: 'seed',
+      value: '2 coin',
+      valueIconResourceKey: 'coin',
+      notification: true,
       semanticId: 'shop.stall.1.item.sageSeed',
       tutorialId: 'shop:sell:sageSeed',
     });
@@ -179,6 +186,7 @@ describe('createShop', () => {
     ]);
     expect(model.shop.traders.stalls[0].dialog.tabs[0]).toMatchObject({
       label: 'Seeds',
+      notification: true,
       semanticId: 'shop.stall.1.tab.seed',
       tutorialId: 'shop:sell:tab:seed',
     });
@@ -301,9 +309,15 @@ describe('createShop', () => {
       },
     };
 
-    const createDialog = () =>
-      createShop({ gameplaySnapshot }).shop.traders.stalls[0].dialog;
+    const createStall = () =>
+      createShop({ gameplaySnapshot }).shop.traders.stalls[0];
+    const createDialog = () => createStall().dialog;
 
+    expect(createStall()).toMatchObject({
+      itemLabel: 'empty stand',
+      priceLabel: 'select',
+      priceVariant: 'green',
+    });
     expect(createDialog().tabs.map((tab) => tab.id)).toEqual(['seed']);
     expect(createDialog().items.map((item) => item.itemKey)).toEqual(['sageSeed']);
 
@@ -315,6 +329,121 @@ describe('createShop', () => {
       'seed',
       'herb',
       'potion',
+    ]);
+  });
+
+  it('notifies only sell-ready Load Stall rows and their category tabs', () => {
+    const gameplaySnapshot = {
+      playerLevel: { currentLevel: 4 },
+      research: {
+        completedResearchIds: [
+          'unlockSeed:sageSeed',
+          'unlockSeed:mintSeed',
+          'unlockHerb:sageHerb',
+        ],
+      },
+      shop: {
+        shelf: {
+          sellKinds: [
+            { kind: 'seed', label: 'seeds' },
+            { kind: 'herb', label: 'herbs' },
+          ],
+          sellItems: [
+            {
+              itemTypeId: 1,
+              key: 'sageSeed',
+              kind: 'seed',
+              label: 'sage seed',
+              quantity: 3,
+              sellCoin: 2,
+            },
+            {
+              itemTypeId: 2,
+              key: 'mintSeed',
+              kind: 'seed',
+              label: 'mint seed',
+              quantity: 0,
+              sellCoin: 4,
+            },
+            {
+              itemTypeId: 1001,
+              key: 'sageHerb',
+              kind: 'herb',
+              label: 'sage',
+              quantity: 2,
+              sellCoin: null,
+            },
+          ],
+          slots: [{ slotNumber: 1 }],
+        },
+      },
+    };
+
+    const dialog =
+      createShop({ gameplaySnapshot }).shop.traders.stalls[0].dialog;
+
+    expect(dialog.items).toMatchObject([
+      {
+        itemKey: 'sageSeed',
+        value: '2 coin',
+        valueIconResourceKey: 'coin',
+        notification: true,
+      },
+      {
+        itemKey: 'mintSeed',
+        value: '4 coin',
+        valueIconResourceKey: 'coin',
+        notification: false,
+      },
+    ]);
+    expect(dialog.tabs).toMatchObject([
+      { id: 'seed', notification: true },
+      { id: 'herb', notification: false },
+    ]);
+  });
+
+  it('projects the orange NPC listing notification onto each actionable empty stall Select action', () => {
+    const stalls = createShop({
+      gameplaySnapshot: {
+        shop: {
+          shelf: {
+            sellKinds: [{ kind: 'seed', label: 'seeds' }],
+            sellItems: [],
+            slots: [
+              { slotNumber: 1, unlocked: true },
+              {
+                slotNumber: 2,
+                unlocked: true,
+                futureItemTypeId: 1,
+              },
+              { slotNumber: 3, unlocked: false },
+            ],
+          },
+        },
+      },
+      notificationSnapshot: {
+        active: true,
+        tone: 'orange',
+        children: {
+          npcListing: 'orange',
+        },
+      },
+    }).shop.traders.stalls;
+
+    expect(stalls).toMatchObject([
+      {
+        slotNumber: 1,
+        notification: true,
+        notificationTone: 'orange',
+      },
+      {
+        slotNumber: 2,
+        notification: false,
+      },
+      {
+        slotNumber: 3,
+        notification: false,
+      },
     ]);
   });
 

@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.28
+
+- Added exact quantity controls for Brewing ingredients and Market stall stock.
+- Polished Garden plots, Research level stars and requirements, Workshop artwork, and empty Inbox presentation.
+- Improved room activity timing and feedback so rewards and actions stay aligned with the room currently on screen.
+
 ## 0.3.27
 
 - Added an illustrated loading screen for Android launch, game startup, and backend reconnects.

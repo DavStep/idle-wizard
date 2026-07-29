@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Garden research lock reference review</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 24px; color: #ececf1; background: #17191f; }
+      h1 { margin: 0 0 16px; font-size: 18px; }
+      h2 { margin: 0 0 8px; font-size: 13px; }
+      .grid { display: grid; grid-template-columns: repeat(2, 160px); gap: 16px; }
+      .panel { padding: 12px; background: #20232d; border: 1px solid #555d76; }
+      .frame { position: relative; width: 130px; height: 128px; overflow: hidden; }
+      .frame img { position: absolute; inset: 0; width: 130px; height: 128px; }
+      .overlay { margin-top: 16px; width: 156px; }
+      #actual-overlay { opacity: 0.5; }
+      input { width: 130px; }
+    </style>
+  </head>
+  <body>
+    <h1>Garden Research slot comparison</h1>
+    <div class="grid">
+      <section class="panel">
+        <h2>Reference</h2>
+        <div class="frame">
+          <img src="garden-research-lock-reference.png" alt="Reference">
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Actual</h2>
+        <div class="frame">
+          <img src="garden-research-locked-native-crop.jpg" alt="Actual">
+        </div>
+      </section>
+    </div>
+    <section class="panel overlay">
+      <h2>Overlay</h2>
+      <div class="frame">
+        <img src="garden-research-lock-reference.png" alt="">
+        <img id="actual-overlay" src="garden-research-locked-native-crop.jpg" alt="">
+      </div>
+      <input id="opacity" type="range" min="0" max="1" step="0.01" value="0.5">
+    </section>
+    <script>
+      const opacity = document.querySelector('#opacity');
+      const actual = document.querySelector('#actual-overlay');
+      opacity.addEventListener('input', () => {
+        actual.style.opacity = opacity.value;
+      });
+    </script>
+  </body>
+</html>

@@ -83,6 +83,8 @@
         title: 'Choose Herb',
         itemKind: 'herb',
         selectActionName: 'selectHerb',
+        amountSelection: true,
+        amountActionName: 'setHerbQuantity',
         listLabel: 'brewing-herb-picker-recipe-list',
         parent,
         inputRouter,
@@ -94,6 +96,12 @@
 
       dialog.bind({
         title: 'Choose Herb',
+        selectedItem: {
+          ...herbRows[0],
+          selectedQuantity: 3,
+          quantity: 3,
+          maxQuantity: 6,
+        },
         rows: herbRows.map((herb) => ({
           ...herb,
           id: herb.itemTypeId,
@@ -105,9 +113,28 @@
           semanticId: `brewing.herb.${herb.key}`,
           onSelect: () => {
             recipeState.dataset.selectedHerb = herb.key;
-            return true;
+            recipeState.dataset.selectedQuantity = '1';
+            return {
+              ok: true,
+              item: herb,
+              quantity: 1,
+              maxQuantity: Math.min(6, herb.quantity),
+            };
           },
         })),
+        actions: {
+          setHerbQuantity: (herb, quantity) => {
+            recipeState.dataset.selectedHerb =
+              quantity > 0 ? herb.key : '';
+            recipeState.dataset.selectedQuantity = String(quantity);
+            return {
+              ok: true,
+              item: herb,
+              quantity,
+              maxQuantity: 6,
+            };
+          },
+        },
       });
       dialog.layout(applicationManager.getProjection());
       dialog.activate();

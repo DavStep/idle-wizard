@@ -368,7 +368,48 @@ describe("PixiPagesFacade", () => {
     });
   });
 
-  it("opens the cauldron herb picker and adds the selected herb to that cauldron", () => {
+  it("keeps a Brewing cauldron id stable when its buy slot becomes unlocked", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.coin.current = 100;
+    gameplaySnapshot.brewing = {
+      configuredMaxCauldrons: 5,
+      nextCauldronNumber: 2,
+      nextCauldronCost: 25,
+      cauldrons: [
+        {
+          cauldronIndex: 0,
+          cauldronNumber: 1,
+          brewQuantity: 1,
+          maxBrewQuantity: 1,
+        },
+      ],
+      recipes: [],
+      herbs: [],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("brewing");
+
+    const lockedId = harness.getBoundPage("brewing")
+      .brewing.cauldrons[1].id;
+
+    gameplaySnapshot.brewing.cauldrons.push({
+      cauldronIndex: 1,
+      cauldronNumber: 2,
+      brewQuantity: 1,
+      maxBrewQuantity: 1,
+    });
+    gameplaySnapshot.brewing.nextCauldronNumber = null;
+    gameplaySnapshot.brewing.nextCauldronCost = null;
+    pages.refreshPage("brewing");
+
+    expect(
+      harness.getBoundPage("brewing").brewing.cauldrons[1].id,
+    ).toBe(lockedId);
+  });
+
+  it("places the selected herb in the chosen cauldron slot", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.research.completedResearchIds = [
       "unlockSeed:sageSeed",
@@ -401,9 +442,11 @@ describe("PixiPagesFacade", () => {
       ],
     };
     const harness = createHarness({ gameplaySnapshot });
-    harness.gameplayFacade.addBrewingIngredient.mockReturnValue({
+    harness.gameplayFacade.setBrewingIngredientSlotQuantity.mockReturnValue({
       ok: true,
       itemTypeId: 1001,
+      quantity: 1,
+      slotIndex: 2,
       cauldronIndex: 0,
     });
     const pages = new PixiPagesFacade(harness.dependencies);
@@ -418,6 +461,7 @@ describe("PixiPagesFacade", () => {
         title: "Choose Herb",
         cauldronIndex: 0,
         slotIndex: 2,
+        selectedItem: null,
         rows: [
           expect.objectContaining({
             itemTypeId: 1001,
@@ -444,9 +488,26 @@ describe("PixiPagesFacade", () => {
       ),
     ).toMatchObject({ ok: true });
     expect(
+      harness.gameplayFacade.setBrewingIngredientSlotQuantity,
+    ).toHaveBeenCalledWith(1001, 1, 2, 0);
+    expect(
+      brewing.actions.setHerbQuantity(
+        { itemTypeId: 1001, key: "sageHerb", label: "sage" },
+        2,
+        0,
+        2,
+      ),
+    ).toMatchObject({
+      ok: true,
+      quantity: 2,
+    });
+    expect(
+      harness.gameplayFacade.setBrewingIngredientSlotQuantity,
+    ).toHaveBeenLastCalledWith(1001, 2, 2, 0);
+    expect(
       harness.gameplayFacade.addBrewingIngredient,
-    ).toHaveBeenCalledWith(1001, 0);
-    expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
+    ).not.toHaveBeenCalled();
+    expect(harness.runtime.closeDialog).not.toHaveBeenCalledWith(
       "brewing.herbs",
     );
   });
@@ -652,7 +713,7 @@ describe("PixiPagesFacade", () => {
       enabled: true,
     });
 
-    dialog.range.onChange(25);
+    dialog.range.onChange(2);
     dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
     expect(dialog.actions[0].label).toBe("Mark x2");
 
@@ -666,8 +727,8 @@ describe("PixiPagesFacade", () => {
 
     expect(harness.gameplayFacade.selectShopShelfSlot).toHaveBeenCalledWith(1);
     expect(
-      harness.gameplayFacade.setSelectedShopShelfSlotAllocation,
-    ).toHaveBeenCalledWith(1, 25);
+      harness.gameplayFacade.setSelectedShopShelfSlotQuantity,
+    ).toHaveBeenCalledWith(1, 2);
     expect(harness.runtime.closeDialog).toHaveBeenCalledWith("shop.stall");
   });
 
@@ -948,6 +1009,53 @@ describe("PixiPagesFacade", () => {
     expect(harness.gameplayFacade.buyGardenTile).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps a research-locked Garden slot pressable for its tooltip", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.garden.plot = {
+      maxTiles: 2,
+      nextTileNumber: 2,
+      nextTileCost: 25,
+      nextTileLockedByLevel: false,
+      nextTileLockedByResearch: true,
+      tiles: [
+        {
+          id: "plot-1",
+          tileNumber: 1,
+          unlocked: true,
+          phase: "empty",
+        },
+        {
+          id: "plot-2",
+          tileNumber: 2,
+          unlocked: false,
+          phase: "empty",
+        },
+      ],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("garden");
+
+    const garden = harness.getBoundPage("garden");
+    const lockedPlot = garden.garden.plots[1];
+
+    expect(lockedPlot).toMatchObject({
+      actionText: "Research",
+      buySlot: true,
+      disabled: false,
+      lockReason: "research_locked",
+    });
+    expect(garden.actions.activatePlot(lockedPlot)).toEqual({
+      ok: false,
+      reason: "research_locked",
+      tileNumber: 2,
+      tooltip:
+        "You need to research first to unlock buying this slot.",
+    });
+    expect(harness.gameplayFacade.buyGardenTile).not.toHaveBeenCalled();
+  });
+
   it("selects one Garden seed globally, plants empty plots, and offers swaps for growing plots", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.research.completedResearchIds = ["unlockSeed:mintSeed"];
@@ -1065,6 +1173,79 @@ describe("PixiPagesFacade", () => {
       }),
     );
     expect(harness.transientEffects.emitReward).not.toHaveBeenCalled();
+  });
+
+  it("shows a flyout when Harvest All finds no ready plots", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.startAllReadyGardenHarvests.mockReturnValue({
+      ok: false,
+      reason: "no_ready_tiles",
+      harvestedTileNumbers: [],
+      results: [],
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("garden");
+
+    const result = harness.getBoundPage("garden").actions.harvestAll();
+
+    expect(result).toMatchObject({
+      ok: false,
+      reason: "no_ready_tiles",
+    });
+    expect(
+      harness.gameplayFacade.startAllReadyGardenHarvests,
+    ).toHaveBeenCalledTimes(1);
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: "Nothing to harvest",
+    });
+  });
+
+  it("keeps unavailable empty Garden plots unlabeled and flies out no seed on press", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.garden.seeds = [
+      {
+        itemTypeId: 1,
+        key: "sageSeed",
+        label: "sage seed",
+        kind: "seed",
+        quantity: 0,
+      },
+    ];
+    gameplaySnapshot.garden.plot = {
+      maxTiles: 1,
+      tiles: [
+        {
+          id: "plot-1",
+          tileNumber: 1,
+          unlocked: true,
+          phase: "empty",
+        },
+      ],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("garden");
+
+    let garden = harness.getBoundPage("garden");
+    garden.actions.selectSeed({ itemTypeId: 1 });
+    garden = harness.getBoundPage("garden");
+    const plot = garden.garden.plots[0];
+
+    expect(plot.actionText).toBe("");
+    expect(garden.actions.activatePlot(plot)).toEqual({
+      ok: false,
+      reason: "not_enough_seed",
+      tileNumber: 1,
+    });
+    expect(harness.gameplayFacade.plantGardenSeed).not.toHaveBeenCalled();
+    expect(harness.pageSurface.openDialog).not.toHaveBeenCalled();
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: "no seed",
+      flyoutKey: "garden-no-seed-1",
+    });
   });
 
   it("removes Garden inventory buttons while retaining Brewing inventory expansion", () => {
@@ -1291,12 +1472,16 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     cancelBrewing: vi.fn(),
     collectBrewing: vi.fn(),
     addBrewingIngredient: vi.fn(),
+    setBrewingIngredientSlotQuantity: vi.fn(),
     prepareBrewingRecipe: vi.fn(),
     setBrewingAutoBrewRecipe: vi.fn(),
     setBrewingAutoBrewEnabled: vi.fn(),
     toggleBrewingAutoBrewEnabled: vi.fn(),
     selectShopShelfSlot: vi.fn(() => ({ ok: true })),
     setSelectedShopShelfSlotAllocation: vi.fn(() => ({
+      ok: true,
+    })),
+    setSelectedShopShelfSlotQuantity: vi.fn(() => ({
       ok: true,
     })),
     clearSelectedShopShelfSlot: vi.fn(() => ({ ok: true })),

@@ -368,6 +368,23 @@ describe('RewardFlyoutManager', () => {
     manager.unmount();
   });
 
+  it('clears active flyouts when their owning page deactivates', () => {
+    const host = document.createElement('section');
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    manager.show('page-owned notice');
+
+    manager.clear();
+
+    expect(host.querySelector('.room-reward-flyout')).toBeNull();
+    expect(manager.timeouts).toHaveLength(0);
+    expect(manager.flyoutTimeouts.size).toBe(0);
+
+    manager.unmount();
+  });
+
   it('keeps repeated keyed text flyouts independent until the active text cap', () => {
     const host = document.createElement('section');
     document.body.append(host);

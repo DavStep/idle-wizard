@@ -86,6 +86,9 @@ stall renderer with loaded Sage and Briar Seed rows, without gameplay,
 account, or tutorial gates. Add `?dialog=stall` to open the loader with enabled
 mark and clear actions. Add `?dialog=ledger` to open the Bag-sized Market
 Ledger with overflow rows, item icons, and unlocked category tabs.
+Add `?stalls=empty-notified` to render one actionable empty stall with the
+rolled-up orange NPC-listing notification on both the Traders tab and the
+stall's Select action.
 Add `?tab=crystals` to open the Crystal Market tab with its deterministic
 cooling-down coin offer and six crystal bundles. Add
 `&coinOffer=ready` to show the ready green Collect action.
@@ -104,7 +107,8 @@ retained Sell picker directly with its quantity slider and `Coins Per Item`
 field. Both use the same split-paper item-picker composition as Load Stall.
 Add `&items=overflow` with `?dialog=stall` to open the Load Stall
 inventory with eight unlocked seed rows for row-width, spacing, and
-scrollbar-gutter QA.
+scrollbar-gutter QA. Add `&count=3` to bind the allocation slider to the
+four exact states `0`, `1`, `2`, and `3`.
 
 ## Snapshot adapter
 
@@ -119,7 +123,7 @@ createShop({
   uiState: {
     selectedRequestSlotNumber,
     stallItemTypeIdBySlot,
-    stallAllocationPercentBySlot,
+    stallTargetQuantityBySlot,
     requestDraftBySlot,
     listingDraftBySlot,
     ledgerKind,

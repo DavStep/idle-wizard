@@ -60,20 +60,6 @@ const RESEARCH_SKINS = Object.freeze([
     right: 50,
     bottom: 50,
   }),
-  Object.freeze({
-    id: 'rank',
-    selector: '.research-page__research-rank',
-    url: new URL(
-      '../../../../assets/game/source/ui/root-run-research/upgrade-lvl-bg.png',
-      import.meta.url,
-    ).href,
-    width: 217,
-    height: 62,
-    left: 36,
-    top: 15,
-    right: 37,
-    bottom: 10,
-  }),
 ]);
 const RESEARCH_SKIN_SELECTOR = RESEARCH_SKINS.map(({ selector }) => selector).join(',');
 

@@ -95,7 +95,9 @@ describe('PixiExperienceFacade', () => {
 
   it('owns one reward subscription and releases all active lifecycle work', () => {
     const harness = createHarness();
-    const facade = harness.createFacade();
+    const facade = harness.createFacade({
+      getCurrentPageId: () => 'shop',
+    });
     facade.firstRunProgressManager.markComplete();
     harness.materializeSurfaces();
 
@@ -125,6 +127,43 @@ describe('PixiExperienceFacade', () => {
     expect(harness.views.tutorial.bind).toHaveBeenLastCalledWith({
       kind: 'hidden',
     });
+  });
+
+  it('does not render another page reward event over the active room', () => {
+    let currentPageId = 'workshop';
+    const harness = createHarness();
+    const facade = harness.createFacade({
+      getCurrentPageId: () => currentPageId,
+    });
+    facade.firstRunProgressManager.markComplete();
+    harness.materializeSurfaces();
+    facade.mount();
+
+    harness.rewardListener({
+      id: 8,
+      type: 'herb_harvested',
+      herb: { label: 'sage' },
+      quantity: 1,
+    });
+    expect(harness.views.transient.emitReward).not.toHaveBeenCalled();
+
+    currentPageId = 'garden';
+    harness.rewardListener({
+      id: 9,
+      type: 'herb_harvested',
+      herb: { label: 'sage' },
+      quantity: 1,
+    });
+    expect(harness.views.transient.emitReward).toHaveBeenCalledOnce();
+    expect(harness.views.transient.emitReward).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 9,
+        message: 'harvested sage',
+      }),
+    );
+
+    facade.onPageChanged('workshop');
+    expect(harness.views.transient.clear).toHaveBeenCalledOnce();
   });
 });
 
@@ -168,6 +207,7 @@ function createHarness({
     transient: {
       root: createNode('transientEffects'),
       emitReward: vi.fn(),
+      clear: vi.fn(),
     },
   };
   const runtime = {

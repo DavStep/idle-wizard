@@ -60,9 +60,14 @@ const SCISSORS_CLOSED_FRAME = 'tool:herbCuttingScissorsClosed';
 const SCISSORS_OPEN_FRAME = 'tool:herbCuttingScissorsOpen';
 
 export class GardenPlotManager {
-  constructor({ gameplayFacade, pixiProgressOverlayManager = null } = {}) {
+  constructor({
+    gameplayFacade,
+    pixiProgressOverlayManager = null,
+    onFeedback = null,
+  } = {}) {
     this.gameplayFacade = gameplayFacade;
     this.pixiProgressOverlayManager = pixiProgressOverlayManager;
+    this.onFeedback = onFeedback;
     this.cancelDialogManager = new GardenCancelDialogManager({
       onConfirm: (tileNumber) => this.onConfirmCancel(tileNumber),
     });
@@ -577,7 +582,7 @@ export class GardenPlotManager {
     if (!tile.unlocked) {
       const lockedTileAction = isNextLockedTile ? this.formatLockedTileAction(plot) : '';
       const lockedTileDisabled =
-        !isNextLockedTile || plot.nextTileLockedByLevel || plot.nextTileLockedByResearch;
+        !isNextLockedTile || plot.nextTileLockedByLevel;
       const unaffordable =
         isNextLockedTile &&
         !lockedTileDisabled &&
@@ -621,11 +626,10 @@ export class GardenPlotManager {
 
     if (tile.phase === 'empty') {
       const emptyTileDisplay = this.getPlotLabelDisplay(tile);
-      const emptyTileAction = hasSelectedSeed
-        ? canPlantSelectedSeed
+      const emptyTileAction =
+        hasSelectedSeed && canPlantSelectedSeed
           ? this.formatPlantAction(tile)
-          : this.formatMissingPlantSeedAction(tile)
-        : 'choose';
+          : '';
       this.setText(refs.label, emptyTileDisplay.label);
       setItemIconLabel(
         refs.label,
@@ -640,7 +644,7 @@ export class GardenPlotManager {
       this.setBoxTile(refs, tile, {
         label: hasSelectedSeed ? emptyTileDisplay.label : 'choose',
         labelResource: emptyTileDisplay.resource,
-        action: hasSelectedSeed ? emptyTileAction : 'empty',
+        action: emptyTileAction,
       });
       refs.button.setAttribute(
         'aria-label',
@@ -732,7 +736,7 @@ export class GardenPlotManager {
     }
 
     if (plot.nextTileLockedByResearch) {
-      return 'research';
+      return 'Research';
     }
 
     return `buy ${this.formatCoin(plot.nextTileCost)}`;
@@ -895,11 +899,6 @@ export class GardenPlotManager {
   formatPlantAction(tile) {
     const requiredQuantity = this.getPlantSeedRequirement(tile);
     return requiredQuantity > 1 ? `plant x${requiredQuantity}` : 'plant';
-  }
-
-  formatMissingPlantSeedAction(tile) {
-    const requiredQuantity = this.getPlantSeedRequirement(tile);
-    return requiredQuantity > 1 ? `no x${requiredQuantity} seed` : 'no seeds';
   }
 
   getPlantSeedRequirement(tile) {
@@ -1121,7 +1120,7 @@ export class GardenPlotManager {
         return;
       }
 
-      this.showSeedPopup(tileNumber);
+      this.handleUnavailableEmptyPlotPress(tileNumber, snapshot);
       return;
     }
 
@@ -1153,6 +1152,17 @@ export class GardenPlotManager {
       return { ok: false };
     }
 
+    if (plot.nextTileLockedByResearch) {
+      const message =
+        'You need to research first to unlock buying this slot.';
+      this.showPlotTooltip(refs, message);
+      return {
+        ok: false,
+        reason: 'research_locked',
+        tileNumber,
+      };
+    }
+
     const cost = Number(plot.nextTileCost);
     const currentCoin = Number(snapshot.coin?.current ?? 0);
     if (Number.isFinite(cost) && currentCoin < cost) {
@@ -1172,11 +1182,15 @@ export class GardenPlotManager {
   }
 
   showMissingCoinTooltip(refs, missingCoin) {
-    if (!refs?.buyTooltip) {
+    const message = `missing ${formatCoinPriceText(Math.max(0, missingCoin))}`;
+    this.showPlotTooltip(refs, message);
+  }
+
+  showPlotTooltip(refs, message) {
+    if (!refs?.buyTooltip || !message) {
       return;
     }
 
-    const message = `missing ${formatCoinPriceText(Math.max(0, missingCoin))}`;
     setResourceIconText(refs.buyTooltip, message);
     refs.buyTooltip.setAttribute('aria-label', message);
     refs.buyTooltip.classList.remove('is-visible');
@@ -1225,6 +1239,29 @@ export class GardenPlotManager {
     }
 
     return result;
+  }
+
+  handleUnavailableEmptyPlotPress(
+    tileNumber,
+    snapshot = this.gameplayFacade.getSnapshot(),
+  ) {
+    const tile = snapshot.garden?.plot?.tiles.find(
+      (candidate) => candidate.tileNumber === tileNumber,
+    );
+
+    if (tile?.selectedSeedItemTypeId) {
+      this.onFeedback?.('no seed', {
+        flyoutKey: `garden-no-seed-${tileNumber}`,
+      });
+      return {
+        ok: false,
+        reason: 'not_enough_seed',
+        tileNumber,
+      };
+    }
+
+    this.showSeedPopup(tileNumber);
+    return { ok: true, openedSeedPicker: true };
   }
 
   canPlantSelectedSeed(tile, snapshot) {
@@ -1815,8 +1852,7 @@ export class GardenPlotManager {
       !refs?.button ||
       refs.button.disabled ||
       plot.nextTileLockedByLevel ||
-      plot.nextTileLockedByResearch ||
-      !Number.isFinite(cost)
+      (!plot.nextTileLockedByResearch && !Number.isFinite(cost))
     ) {
       return null;
     }
@@ -2630,7 +2666,7 @@ export class GardenPlotManager {
       this.suppressWorldClick();
       event.preventDefault();
       event.stopPropagation();
-      this.showSeedPopup(tapSeedChoiceTileNumber);
+      this.handleUnavailableEmptyPlotPress(tapSeedChoiceTileNumber);
       this.setHandledTileLabelPressStartTileNumber(tapSeedChoiceTileNumber);
     }
   }

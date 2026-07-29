@@ -53,14 +53,14 @@ function createHarness({ loadedQuantity = 0, sageQuantity = 1_000 } = {}) {
   };
   const publish = () => listeners.forEach((listener) => listener(snapshot));
   const selectShopShelfSlot = vi.fn(() => ({ ok: true, slotNumber: 1 }));
-  const setSelectedShopShelfSlotAllocation = vi.fn((itemTypeId, percentage) => {
+  const applyTargetQuantity = (itemTypeId, targetQuantity) => {
     const item = itemTypeId === sageSeed.itemTypeId ? sageSeed : mintSeed;
     if (slot.sellItemTypeId && slot.sellItemTypeId !== itemTypeId) {
       return { ok: false, reason: 'different_item_loaded' };
     }
     const loaded = slot.sellItemTypeId === itemTypeId ? slot.loadedQuantity : 0;
     const total = item.quantity + loaded;
-    const target = Math.floor((total * percentage) / 100);
+    const target = Math.max(0, Math.min(total, Math.floor(targetQuantity)));
     const delta = target - loaded;
     item.quantity -= delta;
     slot.sellItemTypeId = target > 0 ? itemTypeId : null;
@@ -70,8 +70,19 @@ function createHarness({ loadedQuantity = 0, sageQuantity = 1_000 } = {}) {
     slot.sellCoin = target > 0 ? item.sellCoin : null;
     slot.loadedQuantity = target;
     publish();
-    return { ok: true, percentage, targetQuantity: target, loadedQuantity: target };
+    return { ok: true, targetQuantity: target, loadedQuantity: target };
+  };
+  const setSelectedShopShelfSlotAllocation = vi.fn((itemTypeId, percentage) => {
+    const item = itemTypeId === sageSeed.itemTypeId ? sageSeed : mintSeed;
+    const total =
+      item.quantity +
+      (slot.sellItemTypeId === itemTypeId ? slot.loadedQuantity : 0);
+    return applyTargetQuantity(
+      itemTypeId,
+      Math.floor((total * percentage) / 100),
+    );
   });
+  const setSelectedShopShelfSlotQuantity = vi.fn(applyTargetQuantity);
   const setSelectedShopShelfFutureItem = vi.fn((itemTypeId, enabled) => {
     const item = itemTypeId === sageSeed.itemTypeId ? sageSeed : mintSeed;
     slot.futureItemTypeId = enabled ? itemTypeId : null;
@@ -109,6 +120,7 @@ function createHarness({ loadedQuantity = 0, sageQuantity = 1_000 } = {}) {
     selectShopShelfSlot,
     setSelectedShopShelfFutureItem,
     setSelectedShopShelfSlotAllocation,
+    setSelectedShopShelfSlotQuantity,
     subscribe(listener) {
       listeners.add(listener);
       listener(snapshot);
@@ -128,6 +140,7 @@ function createHarness({ loadedQuantity = 0, sageQuantity = 1_000 } = {}) {
     sageSeed,
     setSelectedShopShelfFutureItem,
     setSelectedShopShelfSlotAllocation,
+    setSelectedShopShelfSlotQuantity,
     slot,
     stage,
   };
@@ -137,8 +150,8 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-describe('ShopShelfManager percentage allocation', () => {
-  it('shows an empty current row and a five-percent progress slider before selection', () => {
+describe('ShopShelfManager quantity allocation', () => {
+  it('shows an empty current row and a disabled integer slider before selection', () => {
     const harness = createHarness();
     harness.manager.showSellPopup();
     const popup = harness.popupLayer.querySelector('.shop-page__sell-popup');
@@ -148,8 +161,8 @@ describe('ShopShelfManager percentage allocation', () => {
     );
     expect(popup.querySelector('.shop-page__sell-allocation-range')).toMatchObject({
       min: '0',
-      max: '100',
-      step: '5',
+      max: '0',
+      step: '1',
       disabled: true,
     });
     expect(popup.querySelector('.shop-page__sell-allocation-progress')).not.toBeNull();
@@ -178,29 +191,36 @@ describe('ShopShelfManager percentage allocation', () => {
     expect(harness.popupLayer.querySelector('.shop-page__sell-current')?.textContent)
       .toContain('sage seedx1000');
     expect(harness.popupLayer.querySelector('.shop-page__sell-allocation-range').value)
-      .toBe('100');
+      .toBe('1000');
   });
 
-  it('updates the marked quantity at 25% and applies it in one gameplay call', () => {
-    const harness = createHarness();
+  it('snaps a three-item stall through exact integer counts', () => {
+    const harness = createHarness({ sageQuantity: 3 });
     harness.manager.showSellPopup();
     harness.popupLayer.querySelector('[data-shop-sell-item-key="sageSeed"]').click();
     const range = harness.popupLayer.querySelector('.shop-page__sell-allocation-range');
-    range.value = '25';
+    expect(range).toMatchObject({
+      min: '0',
+      max: '3',
+      step: '1',
+      value: '3',
+    });
+
+    range.value = '2';
     range.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     expect(harness.popupLayer.querySelector('.shop-page__sell-mark-button').textContent)
-      .toBe('mark x250');
+      .toBe('mark x2');
     harness.popupLayer.querySelector('.shop-page__sell-mark-button').click();
 
-    expect(harness.setSelectedShopShelfSlotAllocation).toHaveBeenCalledOnce();
-    expect(harness.setSelectedShopShelfSlotAllocation).toHaveBeenCalledWith(1, 25);
-    expect(harness.slot.loadedQuantity).toBe(250);
-    expect(harness.sageSeed.quantity).toBe(750);
+    expect(harness.setSelectedShopShelfSlotQuantity).toHaveBeenCalledOnce();
+    expect(harness.setSelectedShopShelfSlotQuantity).toHaveBeenCalledWith(1, 2);
+    expect(harness.slot.loadedQuantity).toBe(2);
+    expect(harness.sageSeed.quantity).toBe(1);
     expect(harness.popupLayer.querySelector('.shop-page__sell-popup').hidden).toBe(true);
   });
 
-  it('moves the marked quantity in five-percent steps', () => {
+  it('moves the marked quantity in one-item steps', () => {
     const harness = createHarness();
     harness.manager.showSellPopup();
     harness.popupLayer.querySelector('[data-shop-sell-item-key="sageSeed"]').click();
@@ -210,20 +230,20 @@ describe('ShopShelfManager percentage allocation', () => {
     range.dispatchEvent(new window.Event('input', { bubbles: true }));
 
     expect(harness.popupLayer.querySelector('.shop-page__sell-mark-button').textContent)
-      .toBe('mark x50');
+      .toBe('mark x5');
 
-    range.value = '100';
+    range.value = '1000';
     range.dispatchEvent(new window.Event('input', { bubbles: true }));
     range.dispatchEvent(
       new window.KeyboardEvent('keydown', { bubbles: true, key: 'ArrowLeft' }),
     );
 
-    expect(range.value).toBe('95');
+    expect(range.value).toBe('999');
     expect(harness.popupLayer.querySelector('.shop-page__sell-mark-button').textContent)
-      .toBe('mark x950');
+      .toBe('mark x999');
   });
 
-  it('uses 0% to return all currently marked stock', () => {
+  it('uses 0 to return all currently marked stock', () => {
     const harness = createHarness({ loadedQuantity: 100, sageQuantity: 900 });
     harness.manager.showSellPopup();
     const range = harness.popupLayer.querySelector('.shop-page__sell-allocation-range');
@@ -231,7 +251,7 @@ describe('ShopShelfManager percentage allocation', () => {
     range.dispatchEvent(new window.Event('input', { bubbles: true }));
     harness.popupLayer.querySelector('.shop-page__sell-mark-button').click();
 
-    expect(harness.setSelectedShopShelfSlotAllocation).toHaveBeenCalledWith(1, 0);
+    expect(harness.setSelectedShopShelfSlotQuantity).toHaveBeenCalledWith(1, 0);
     expect(harness.slot.loadedQuantity).toBe(0);
     expect(harness.sageSeed.quantity).toBe(1_000);
   });

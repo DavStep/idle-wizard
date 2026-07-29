@@ -262,7 +262,6 @@
   --style-research-card-content-offset-y: 3px;
   --style-research-card-info-left: calc(252px * 390 / 1080);
   --style-research-card-info-width: calc(422px * 390 / 1080);
-  --style-research-card-rank-right: calc(63px * 390 / 1080);
   --style-button-width: 100px;
   --style-room-edge: 27px;
   --style-room-chrome-edge: 16px;
@@ -443,6 +442,7 @@
   --style-motion-normal: 205ms;
   --style-motion-expand: 225ms;
   --style-motion-dialog: 225ms;
+  --style-motion-dialog-open: 175ms;
   --style-motion-section: 225ms;
   --style-motion-section-step: 24ms;
   --style-motion-ease: cubic-bezier(0.37, 0, 0.63, 1);
@@ -1429,11 +1429,6 @@ body {
   display: none;
 }
 
-.app-account-link-choice:not([hidden]) {
-  animation: style-overlay-enter var(--style-motion-dialog)
-    var(--style-motion-ease) both;
-}
-
 .app-account-link-choice__panel {
   width: calc(
     260px + var(--style-dialog-padding) + var(--style-dialog-padding) + 4px
@@ -1443,7 +1438,7 @@ body {
 }
 
 .app-account-link-choice:not([hidden]) .app-account-link-choice__panel {
-  animation: app-account-link-choice-dialog-enter var(--style-motion-dialog)
+  animation: app-account-link-choice-dialog-enter var(--style-motion-dialog-open)
     var(--style-motion-ease-rubber) both;
   transform-origin: center;
 }
@@ -1540,7 +1535,7 @@ body {
 }
 
 .app-fresh-start-choice:not([hidden]) .app-fresh-start-choice__panel {
-  animation: app-account-link-choice-dialog-enter var(--style-motion-dialog)
+  animation: app-account-link-choice-dialog-enter var(--style-motion-dialog-open)
     var(--style-motion-ease-rubber) both;
   transform-origin: center;
 }
@@ -4126,10 +4121,20 @@ body {
   top: var(--style-reward-flyout-top);
   right: 0;
   left: 0;
-  color: var(--style-text);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  margin-inline: auto;
+  padding: 4px 8px;
+  color: #fff;
+  background: rgb(0 0 0 / 62%);
+  border-radius: 8px;
   font-family: var(--style-font);
   font-size: var(--style-font-size);
   line-height: normal;
+  -webkit-text-stroke: 2px #0a0a0a;
+  paint-order: stroke fill;
+  text-shadow: 0 1px 0 #0a0a0a;
   animation: style-flyout-enter 1200ms var(--style-motion-ease-soft) both;
 }
 
@@ -4140,6 +4145,11 @@ body {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
   opacity: 0;
   transform: none;
   animation: none;
@@ -9952,7 +9962,7 @@ div.workshop-page__discovery-row {
 }
 
 .garden-page__plot-box-level {
-  bottom: 5px;
+  bottom: 8px;
   left: 5px;
   top: auto;
   color: var(--garden-page-plot-level-color);
@@ -10771,7 +10781,6 @@ div.workshop-page__discovery-row {
 
 .research-page__row.is-locked .research-page__research-label,
 .research-page__row.is-locked .research-page__research-description,
-.research-page__row.is-locked .research-page__research-rank,
 .research-page__row.is-locked .research-page__research-value {
   color: inherit;
 }
@@ -10810,42 +10819,6 @@ div.workshop-page__discovery-row {
 
 .research-page__row.is-in-progress .research-page__research-label {
   inset: 0 var(--style-research-value-width) 0 0;
-}
-
-.research-page__research-rank {
-  position: absolute;
-  top: 0;
-  right: var(--style-research-card-rank-right);
-  z-index: 2;
-  box-sizing: border-box;
-  width: 217px;
-  min-width: 217px;
-  height: 62px;
-  padding: 8px 25px;
-  color: #ffeecf;
-  font-size: 40px;
-  line-height: 46px;
-  text-align: center;
-  white-space: nowrap;
-  background: transparent;
-  border: 0;
-  transform: scale(0.267);
-  transform-origin: top right;
-  -webkit-text-stroke: 4px #0a0a0a;
-  paint-order: stroke fill;
-}
-
-.research-page__research-rank::before {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  content: "";
-  background: transparent
-    url("../../assets/game/source/ui/root-run-research/research-rank-badge-217x62.png")
-    center / 100% 100% no-repeat;
-  border: 0;
-  border-image: none;
 }
 
 .research-page__research-value-label,
@@ -11050,9 +11023,7 @@ div.workshop-page__discovery-row {
 .research-page__ui-layer[data-research-skin-renderer="pixi"]
   .research-page__row,
 .research-page__ui-layer[data-research-skin-renderer="pixi"]
-  .research-page__research-art,
-.research-page__ui-layer[data-research-skin-renderer="pixi"]
-  .research-page__research-rank::before {
+  .research-page__research-art {
   background-image: none;
 }
 
@@ -13847,7 +13818,7 @@ div.workshop-page__discovery-row {
 
 .guild-page__popup-panel[data-popup-kind="request"]
   .style-dialog.guild-page__dialog {
-  animation: guild-request-paper-zoom var(--style-motion-dialog)
+  animation: guild-request-paper-zoom var(--style-motion-dialog-open)
     var(--style-motion-ease-rubber) both;
   transform-origin: center;
 }
@@ -14589,13 +14560,8 @@ div.workshop-page__discovery-row {
   transform-origin: var(--room-bottom-lock-origin-x) calc(100% + 8px);
 }
 
-.room-bottom-panel__lock-popup.is-entering {
-  animation: room-bottom-lock-popup-enter var(--style-motion-fast)
-    var(--style-motion-ease-soft) both;
-}
-
 .room-bottom-panel__lock-popup.is-entering .room-bottom-panel__lock-dialog {
-  animation: room-bottom-lock-dialog-enter var(--style-motion-dialog)
+  animation: room-bottom-lock-dialog-enter var(--style-motion-dialog-open)
     var(--style-motion-ease-rubber) both;
 }
 
@@ -15338,7 +15304,7 @@ div.workshop-page__discovery-row {
   place-items: center;
   min-height: 100%;
   color: var(--style-muted);
-  font-size: 18px;
+  font-size: 20px;
   text-align: center;
 }
 
@@ -18061,8 +18027,6 @@ div.workshop-page__discovery-row {
 .room-top-panel__level-popup:not([hidden]),
 .room-top-panel__inbox-popup:not([hidden]) {
   background: rgb(var(--style-backdrop-rgb) / 68%);
-  animation: style-overlay-enter var(--style-motion-dialog)
-    var(--style-motion-ease) both;
 }
 
 .game-stage:has(.workshop-page__bag-popup:not([hidden])) .workshop-page,
@@ -18117,27 +18081,27 @@ div.workshop-page__discovery-row {
 .brewing-page__potions-popup:not([hidden]) .style-dialog,
 .garden-page__seed-popup:not([hidden]) .style-dialog,
 .garden-page__cancel-popup:not([hidden]) .style-dialog {
-  animation: style-dialog-enter var(--style-motion-dialog)
+  animation: style-dialog-enter var(--style-motion-dialog-open)
     var(--style-motion-ease-rubber) both;
   transform-origin: center;
 }
 
 .room-top-panel__settings:not([hidden]) .room-top-panel__settings-panel,
 .room-top-panel__inbox-popup:not([hidden]) .room-top-panel__inbox-panel {
-  animation: style-dialog-top-enter var(--style-motion-dialog)
+  animation: style-dialog-top-enter var(--style-motion-dialog-open)
     var(--style-motion-ease-rubber) both;
   transform-origin: center;
 }
 
 .room-alliance-info-popup:not([hidden]) .room-alliance-info-dialog,
 .room-player-info-popup:not([hidden]) .room-player-info-dialog {
-  animation: style-dialog-enter var(--style-motion-dialog)
+  animation: style-dialog-enter var(--style-motion-dialog-open)
     var(--style-motion-ease-rubber) both;
   transform-origin: center;
 }
 
 .room-top-panel__level-popup:not([hidden]) .room-top-panel__level-panel {
-  animation: style-dialog-top-enter var(--style-motion-dialog)
+  animation: style-dialog-top-enter var(--style-motion-dialog-open)
     var(--style-motion-ease-rubber) both;
   transform-origin: center;
 }
@@ -18237,7 +18201,7 @@ div.workshop-page__discovery-row {
   .shop-page__crystal-support-dialog,
 .shop-page__stock-buy-popup:not([hidden]) .shop-page__stock-buy-dialog,
 .room-player-info-popup:not([hidden]) .room-player-info-dialog {
-  animation: style-dialog-enter var(--style-motion-dialog)
+  animation: style-dialog-enter var(--style-motion-dialog-open)
     var(--style-motion-ease-rubber) both;
   transform-origin: center;
 }
@@ -18352,31 +18316,18 @@ div.workshop-page__discovery-row {
   }
 }
 
-@keyframes room-bottom-lock-popup-enter {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
 @keyframes room-bottom-lock-dialog-enter {
   0% {
-    opacity: 0;
-    scale: 0.986;
+    scale: 0.94;
     translate: var(--room-bottom-lock-enter-x) 7px;
   }
 
-  72% {
-    opacity: 1;
-    scale: 1.008;
+  62% {
+    scale: 1.02;
     translate: 0 -1px;
   }
 
   100% {
-    opacity: 1;
     scale: 1;
     translate: 0 0;
   }
@@ -18384,19 +18335,16 @@ div.workshop-page__discovery-row {
 
 @keyframes style-dialog-enter {
   0% {
-    opacity: 0;
-    scale: 0.982;
+    scale: 0.94;
     translate: 0 0;
   }
 
-  72% {
-    opacity: 1;
-    scale: 1.008;
+  62% {
+    scale: 1.02;
     translate: 0 0;
   }
 
   100% {
-    opacity: 1;
     scale: 1;
     translate: 0 0;
   }
@@ -18404,17 +18352,14 @@ div.workshop-page__discovery-row {
 
 @keyframes app-account-link-choice-dialog-enter {
   0% {
-    opacity: 0;
-    transform: scale(0.982);
+    transform: scale(0.94);
   }
 
-  72% {
-    opacity: 1;
-    transform: scale(1.008);
+  62% {
+    transform: scale(1.02);
   }
 
   100% {
-    opacity: 1;
     transform: scale(1);
   }
 }
@@ -18677,19 +18622,16 @@ div.workshop-page__discovery-row {
 
 @keyframes style-dialog-top-enter {
   0% {
-    opacity: 0;
-    scale: 0.982;
+    scale: 0.94;
     translate: 0 0;
   }
 
-  72% {
-    opacity: 1;
-    scale: 1.006;
+  62% {
+    scale: 1.015;
     translate: 0 0;
   }
 
   100% {
-    opacity: 1;
     scale: 1;
     translate: 0 0;
   }
@@ -19049,19 +18991,16 @@ div.workshop-page__discovery-row {
 
 @keyframes guild-request-paper-zoom {
   0% {
-    opacity: 0.72;
     scale: 0.94;
     translate: 0 4px;
   }
 
-  68% {
-    opacity: 1;
-    scale: 1.012;
+  62% {
+    scale: 1.02;
     translate: 0 -1px;
   }
 
   100% {
-    opacity: 1;
     scale: 1;
     translate: 0 0;
   }

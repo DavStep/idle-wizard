@@ -23,6 +23,7 @@ import {
   createTutorialPixiViewModel,
   resolveSemanticTutorialTarget,
 } from '../global/tutorial/index.js';
+import { isRewardEventForPage } from '../../../pages/shared/rewardEventPage.js';
 
 export const PIXI_EXPERIENCE_SURFACE_IDS = Object.freeze({
   intro: 'experience.firstRunIntro',
@@ -265,7 +266,7 @@ export class PixiExperienceFacade {
     this.transientEffects = view;
     this.rewardEventConsumer = this.factories.createRewardConsumer({
       effects: view,
-      presentRewardEvent: this.presentRewardEvent,
+      presentRewardEvent: (event) => this.presentVisibleRewardEvent(event),
     });
     return view;
   }
@@ -291,7 +292,7 @@ export class PixiExperienceFacade {
     });
     this.rewardEventConsumer ??= this.factories.createRewardConsumer({
       effects: this.transientEffects,
-      presentRewardEvent: this.presentRewardEvent,
+      presentRewardEvent: (event) => this.presentVisibleRewardEvent(event),
     });
 
     this.tutorialRuntimeState = new PixiTutorialRuntimeState({
@@ -317,6 +318,18 @@ export class PixiExperienceFacade {
     this.rewardEventConsumer.mount?.(this.gameplayFacade);
     this.refresh();
     return true;
+  }
+
+  presentVisibleRewardEvent(event) {
+    if (!isRewardEventForPage(event, this.getCurrentPageId())) {
+      return null;
+    }
+
+    return this.presentRewardEvent(event);
+  }
+
+  onPageChanged() {
+    this.transientEffects?.clear?.();
   }
 
   unmount() {

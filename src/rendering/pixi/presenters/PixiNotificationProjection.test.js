@@ -115,6 +115,23 @@ describe('PixiNotificationProjection', () => {
     expect(sourceModel.workshop.tasks.rows[1].notification).toBe(true);
   });
 
+  it('keeps an NPC listing notification when its actionable stall is a tutorial target', () => {
+    const notification = {
+      active: true,
+      tone: 'orange',
+      children: {
+        npcListing: 'orange',
+      },
+    };
+
+    expect(
+      projectPageNotificationState('shop', notification, {
+        active: true,
+        allowedTutorialIds: ['shop:stand:1'],
+      }),
+    ).toEqual(notification);
+  });
+
   it('keeps only the concrete Garden, Research, Shop, and Brewing target dots', () => {
     const garden = projectPageViewModelNotifications(
       'garden',

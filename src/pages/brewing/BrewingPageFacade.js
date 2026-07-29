@@ -6,6 +6,7 @@ import { BrewingRecipeGuideManager } from './managers/BrewingRecipeGuideManager.
 import { BrewingRoomViewManager } from './managers/BrewingRoomViewManager.js';
 import { RewardFlyoutManager } from '../shared/RewardFlyoutManager.js';
 import { RoomInventoryButtonManager } from '../shared/RoomInventoryButtonManager.js';
+import { isRewardEventForPage } from '../shared/rewardEventPage.js';
 
 export class BrewingPageFacade {
   static explain =
@@ -95,9 +96,11 @@ export class BrewingPageFacade {
     this.inventoryButtonManager.mount(uiLayer);
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
-      this.gameplayFacade?.subscribeRewardEvents?.((event) =>
-        this.flyoutManager.showReward(event),
-      ) ?? null;
+      this.gameplayFacade?.subscribeRewardEvents?.((event) => {
+        if (isRewardEventForPage(event, 'brewing')) {
+          this.flyoutManager.showReward(event);
+        }
+      }) ?? null;
     this.recipeBookManager.mount(uiLayer, popupLayer);
     this.recipeChoiceDialogManager.mount(popupLayer);
   }
@@ -119,6 +122,7 @@ export class BrewingPageFacade {
   }
 
   deactivate() {
+    this.flyoutManager.clear();
     this.activeInventoryTab = null;
     this.potionInventoryManager.setVisible(false);
     this.inventoryButtonManager.setActiveTab(null);

@@ -1016,6 +1016,22 @@ export class GameplayFacade {
     return result;
   }
 
+  setBrewingIngredientSlotQuantity(
+    itemTypeId,
+    quantity,
+    slotIndex,
+    cauldronIndex = 0,
+  ) {
+    const result = this.brewingFacade.setIngredientSlotQuantity(
+      itemTypeId,
+      quantity,
+      slotIndex,
+      cauldronIndex,
+    );
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   clearBrewingCauldron(cauldronIndex = 0) {
     const result = this.brewingFacade.clearCauldron(cauldronIndex);
     this.publishAndSaveSnapshot();
@@ -1181,6 +1197,15 @@ export class GameplayFacade {
     const result = this.shopFacade.setSelectedShelfSlotAllocation(
       itemTypeId,
       percentage,
+    );
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  setSelectedShopShelfSlotQuantity(itemTypeId, quantity) {
+    const result = this.shopFacade.setSelectedShelfSlotQuantity(
+      itemTypeId,
+      quantity,
     );
     this.publishAndSaveSnapshot();
     return result;

@@ -60,6 +60,7 @@ export class RootRunSettingsSliderPixi extends Container {
     this.max = 1;
     this.step = 1;
     this.value = 0;
+    this.tutorialTargetValue = TUTORIAL_ALLOCATION_TARGET_VALUE;
     this.normalizedValue = 0;
     this.tone = 'blue';
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
@@ -195,6 +196,10 @@ export class RootRunSettingsSliderPixi extends Container {
       finiteOr(model.step, usesLegacyPercentage ? 5 : 1),
     );
     const rawValue = finiteOr(model.value ?? model.percent, this.min);
+    this.tutorialTargetValue = finiteOr(
+      model.tutorialTargetValue,
+      TUTORIAL_ALLOCATION_TARGET_VALUE,
+    );
     this.value = clamp(
       quantize(
         usesLegacyPercentage && rawValue <= 1
@@ -393,7 +398,7 @@ export class RootRunSettingsSliderPixi extends Container {
     const targetNormalizedValue =
       this.max > this.min
         ? clamp01(
-            (TUTORIAL_ALLOCATION_TARGET_VALUE - this.min) /
+            (this.tutorialTargetValue - this.min) /
               (this.max - this.min),
           )
         : 0;

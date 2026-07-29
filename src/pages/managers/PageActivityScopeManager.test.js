@@ -53,4 +53,31 @@ describe('PageActivityScopeManager', () => {
     expect(unsubscribers[0]).toHaveBeenCalledTimes(1);
     expect(unsubscribers[1]).toHaveBeenCalledTimes(1);
   });
+
+  it('does not replay one-shot reward events when a hidden page resumes', () => {
+    let publishReward = () => {};
+    const facade = {
+      subscribeRewardEvents: vi.fn((listener) => {
+        publishReward = listener;
+        return vi.fn();
+      }),
+    };
+    const listener = vi.fn();
+    const scope = new PageActivityScopeManager();
+    const scopedFacade = scope.scope(facade);
+
+    scopedFacade.subscribeRewardEvents(listener);
+    scope.suspend();
+    publishReward({ id: 1, type: 'item_sold' });
+    scope.resume();
+
+    expect(listener).not.toHaveBeenCalled();
+
+    publishReward({ id: 2, type: 'item_sold' });
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenLastCalledWith({
+      id: 2,
+      type: 'item_sold',
+    });
+  });
 });

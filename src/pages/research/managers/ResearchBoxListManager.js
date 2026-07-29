@@ -214,7 +214,7 @@ export class ResearchBoxListManager {
           `${box.id}:${box.researches
             .map(
               (research) =>
-                `${research.id}:${research.label}:${research.starLevel ?? ''}:${research.value}:${research.effect}:${research.showEffect}:${research.actionType ?? ''}:${research.description}:${research.completed}:${research.inProgress}:${research.locked}:${research.canResearch}:${research.lockReason ?? ''}`,
+                `${research.id}:${research.label}:${research.starLevel ?? ''}:${research.starMaxLevel ?? ''}:${research.value}:${research.effect}:${research.showEffect}:${research.actionType ?? ''}:${research.description}:${research.completed}:${research.inProgress}:${research.locked}:${research.canResearch}:${research.lockReason ?? ''}`,
             )
             .join(',')}`,
       )
@@ -660,15 +660,10 @@ export class ResearchBoxListManager {
     const key = document.createElement('span');
     key.className = 'row_key research-page__research-label';
 
-    const rank = document.createElement('span');
-    rank.className = 'research-page__research-rank';
-    rank.setAttribute('aria-hidden', 'true');
-
     const ref = {
       row,
       artwork,
       key,
-      rank,
       research: null,
       boxId: '',
       signature: '',
@@ -680,7 +675,7 @@ export class ResearchBoxListManager {
       progressFill: null,
       progressText: null,
     };
-    row.append(artwork, key, rank);
+    row.append(artwork, key);
     return ref;
   }
 
@@ -697,7 +692,7 @@ export class ResearchBoxListManager {
     ref.value?.remove();
     ref.progress?.remove();
     ref.signature = signature;
-    const { row, artwork, key, rank } = ref;
+    const { row, artwork, key } = ref;
     row.className = 'research-page__row';
     row.classList.toggle('is-completed', Boolean(research.completed));
     row.classList.toggle(
@@ -717,8 +712,6 @@ export class ResearchBoxListManager {
     artwork.replaceChildren(
       this.createResearchArtworkContent(boxId, research),
     );
-    const currentRank = research.completed ? 1 : 0;
-    rank.textContent = `Lv. ${String(currentRank).padStart(2, '0')}/01`;
     const val =
       research.locked
         ? this.createLockedValue(research)
@@ -730,7 +723,7 @@ export class ResearchBoxListManager {
         ? this.createReadonlyValue(research)
         : this.createBuyButton(research);
 
-    row.append(artwork, key, rank, val);
+    row.append(artwork, key, val);
     ref.value = val;
     ref.valueLabel = null;
     ref.valueGap = null;
@@ -758,6 +751,7 @@ export class ResearchBoxListManager {
       research.label,
       research.displayName ?? '',
       research.starLevel ?? '',
+      research.starMaxLevel ?? '',
       research.value,
       research.effect,
       research.showEffect,
@@ -805,15 +799,6 @@ export class ResearchBoxListManager {
       this.rowRefs.delete(researchId);
       this.rowPool.release(ref);
     }
-  }
-
-  createResearchRank(research) {
-    const rank = document.createElement('span');
-    rank.className = 'research-page__research-rank';
-    const currentRank = research.completed ? 1 : 0;
-    rank.textContent = `Lv. ${String(currentRank).padStart(2, '0')}/01`;
-    rank.setAttribute('aria-hidden', 'true');
-    return rank;
   }
 
   createResearchArtwork(boxId, research) {
@@ -943,17 +928,31 @@ export class ResearchBoxListManager {
 
   appendResearchStarLabel(element, research) {
     const starLevel = this.getResearchStarLevel(research);
+    const slotCount = this.getResearchStarSlotCount(research, starLevel);
 
-    if (starLevel <= 0) {
+    if (starLevel <= 0 || slotCount <= 0) {
       return;
     }
 
-    element.append(document.createTextNode(' '), createStarLevelLabel(starLevel));
+    element.append(
+      document.createTextNode(' '),
+      createStarLevelLabel(starLevel, { slotCount }),
+    );
   }
 
   getResearchStarLevel(research) {
     const safeStarLevel = Math.floor(Number(research?.starLevel));
     return Number.isInteger(safeStarLevel) && safeStarLevel > 0 ? safeStarLevel : 0;
+  }
+
+  getResearchStarSlotCount(research, starLevel = this.getResearchStarLevel(research)) {
+    const maxLevel = Math.floor(Number(research?.starMaxLevel));
+
+    if (Number.isInteger(maxLevel) && maxLevel > 0) {
+      return maxLevel > 1 ? Math.min(maxLevel, 3) : 0;
+    }
+
+    return starLevel > 0 ? 3 : 0;
   }
 
   createReadonlyValue(research) {
@@ -962,8 +961,9 @@ export class ResearchBoxListManager {
 
     if (!research.inProgress) {
       const starLevel = this.getResearchStarLevel(research);
-      if (research.completed && starLevel > 0) {
-        val.replaceChildren(createStarLevelLabel(starLevel));
+      const slotCount = this.getResearchStarSlotCount(research, starLevel);
+      if (research.completed && starLevel > 0 && slotCount > 0) {
+        val.replaceChildren(createStarLevelLabel(starLevel, { slotCount }));
         this.setResearchValueResourceColor(val, research);
         return val;
       }
@@ -1189,9 +1189,10 @@ export class ResearchBoxListManager {
   formatResearchName(research) {
     const parts = [research.label];
     const starLevel = this.getResearchStarLevel(research);
+    const slotCount = this.getResearchStarSlotCount(research, starLevel);
 
-    if (starLevel > 0) {
-      parts.push(formatStarLevel(starLevel).text);
+    if (starLevel > 0 && slotCount > 0) {
+      parts.push(formatStarLevel(starLevel, { slotCount }).text);
     }
 
     if (research.showEffect) {

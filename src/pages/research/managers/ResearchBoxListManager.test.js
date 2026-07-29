@@ -220,12 +220,7 @@ describe('ResearchBoxListManager', () => {
     );
     expect(mintArtwork?.dataset.assetAtlasFrame).toBe('seed:pack');
     expect(mintArtwork?.dataset.seedPackItemFrame).toBe('herb:mintHerb');
-    expect(rows[0]?.querySelector('.research-page__research-rank')?.textContent).toBe(
-      'Lv. 01/01',
-    );
-    expect(rows[1]?.querySelector('.research-page__research-rank')?.textContent).toBe(
-      'Lv. 00/01',
-    );
+    expect(stage.querySelector('.research-page__research-rank')).toBeNull();
     expect(
       rows[1]?.querySelector('.style-cost-button__plain-label')?.textContent,
     ).toBe('Free');
@@ -395,6 +390,7 @@ describe('ResearchBoxListManager', () => {
                     actionType: 'levelUp',
                     level: 2,
                     starLevel: 1,
+                    starMaxLevel: 2,
                     costCrystal: 1,
                     costCurrency: 'crystal',
                     completed: true,
@@ -408,6 +404,7 @@ describe('ResearchBoxListManager', () => {
                     actionType: 'levelUp',
                     level: 3,
                     starLevel: 2,
+                    starMaxLevel: 2,
                     costCrystal: 2,
                     costCurrency: 'crystal',
                     completed: false,
@@ -480,6 +477,9 @@ describe('ResearchBoxListManager', () => {
     expect(
       completedEmeraldName?.querySelector('.style-star-level')?.dataset.starCount,
     ).toBe('1');
+    expect(
+      completedEmeraldName?.querySelector('.style-star-level')?.dataset.starSlots,
+    ).toBe('2');
     expect(completedEmeraldName?.dataset.resourceColor).toBeUndefined();
     expect(completedEmeraldValue?.textContent).toBe('★');
     expect(
@@ -487,6 +487,9 @@ describe('ResearchBoxListManager', () => {
     ).toBe('1');
     expect(completedEmeraldValue?.dataset.resourceColor).toBe('crystal');
     expect(availableEmeraldName?.textContent).toBe('cauldron 1 ★★');
+    expect(
+      availableEmeraldName?.querySelectorAll('.style-star-level__slot'),
+    ).toHaveLength(2);
     expect(stage.textContent).not.toContain('cauldron 1 lvl');
     expect(
       availableEmeraldRow?.querySelector('.research-page__research-button')?.dataset.resourceColor,
@@ -852,12 +855,6 @@ describe('ResearchBoxListManager', () => {
     const costButtonRule = css.match(
       /\.style-button\.style-cost-button\.research-page__research-button\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    const rankRule = css.match(
-      /\.research-page__research-rank\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
-    const rankSkinRule = css.match(
-      /\.research-page__research-rank::before\s*\{(?<body>[^}]*)\}/,
-    )?.groups?.body;
 
     expect(rootRule).toMatch(
       /--style-research-card-width:\s*calc\(\s*390px\s*-\s*2\s*\*\s*var\(--style-room-content-edge\)\s*\);/,
@@ -901,24 +898,11 @@ describe('ResearchBoxListManager', () => {
     expect(seedArtImageRule).toContain('height: 46px;');
     expect(costButtonRule).toContain('width: 72px;');
     expect(costButtonRule).toContain('height: 42px;');
-    expect(rankRule).toContain('width: 217px;');
-    expect(rankRule).toContain('height: 62px;');
-    expect(rankRule).toContain('padding: 8px 25px;');
-    expect(rankRule).toContain('font-size: 40px;');
-    expect(rankRule).toContain('line-height: 46px;');
-    expect(rankRule).toContain('transform: scale(0.267);');
-    expect(rankRule).toContain('transform-origin: top right;');
-    expect(rankRule).toContain('-webkit-text-stroke: 4px #0a0a0a;');
-    expect(rankRule).not.toContain('border-image');
-    expect(rankSkinRule).toMatch(
-      /background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-rank-badge-217x62\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
-    );
-    expect(rankSkinRule).toContain('border-image: none;');
+    expect(css).not.toContain('.research-page__research-rank');
     expect(
       [
         rowRule,
         artRule,
-        rankSkinRule,
       ].join('\n'),
     ).not.toContain('border-image-source');
     expect(
@@ -927,7 +911,6 @@ describe('ResearchBoxListManager', () => {
         'research-card-locked-1000x304.png',
         'research-art-well-204x194.png',
         'research-art-well-locked-204x194.png',
-        'research-rank-badge-217x62.png',
       ].map((fileName) => {
         const image = PNG.sync.read(readFileSync(`${assetDir}/${fileName}`));
         return [image.width, image.height];
@@ -937,7 +920,6 @@ describe('ResearchBoxListManager', () => {
       [1000, 304],
       [204, 194],
       [204, 194],
-      [217, 62],
     ]);
     const normalCard = PNG.sync.read(
       readFileSync(`${assetDir}/research-card-1000x304.png`),

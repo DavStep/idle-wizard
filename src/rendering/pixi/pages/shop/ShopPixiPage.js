@@ -57,6 +57,8 @@ const OFFER_CARD_MIN_HEIGHT = 52;
 const OFFER_CARD_PADDING_X = 12;
 const OFFER_ACTION_WIDTH = 72;
 const OFFER_ACTION_HEIGHT = 28;
+const STALL_SELECT_ACTION_WIDTH = 72;
+const STALL_SELECT_ACTION_HEIGHT = 42;
 const MARKET_OFFER_CARD_HEIGHT = STALL_CARD_HEIGHT;
 const MARKET_OFFER_ACTION_WIDTH = 92;
 const MARKET_OFFER_ACTION_HEIGHT = 30;
@@ -1253,6 +1255,15 @@ class ShopStallWidget {
       color: STALL_TEXT_INK,
       label: 'shop:stall:price',
     });
+    this.priceAction = new PixiButton({
+      assetManager,
+      width: STALL_SELECT_ACTION_WIDTH,
+      height: STALL_SELECT_ACTION_HEIGHT,
+      variant: 'green',
+      label: 'shop:stall:priceAction',
+    });
+    this.priceAction.visible = false;
+    this.priceAction.renderable = false;
     this.priceResource = new PixiResourceLabel({
       assetManager,
       resource: 'coin',
@@ -1286,6 +1297,7 @@ class ShopStallWidget {
       this.item,
       this.quantity,
       this.price,
+      this.priceAction,
       this.priceResource,
       this.progress,
       this.timer,
@@ -1348,9 +1360,23 @@ class ShopStallWidget {
     this.quantity.visible = Boolean(stall.quantityLabel);
     const priceText = stall.priceLabel ?? stall.price ?? '';
     const priceResourceKey = stall.priceResourceKey ?? null;
+    const priceActionVariant = stall.priceVariant ?? null;
     this.price.setText(formatTitleCase(priceText));
-    this.price.visible = !priceResourceKey;
+    this.price.visible = !priceResourceKey && !priceActionVariant;
     this.price.renderable = this.price.visible;
+    this.priceAction.bind(
+      key,
+      {
+        label: formatTitleCase(priceText),
+        enabled: this.enabled,
+        variant: priceActionVariant ?? 'green',
+        hidden: !priceActionVariant,
+        notification:
+          Boolean(priceActionVariant) &&
+          Boolean(stall.notification),
+        notificationTone: stall.notificationTone,
+      },
+    );
     this.priceResource.visible = Boolean(priceResourceKey);
     this.priceResource.renderable = this.priceResource.visible;
     if (priceResourceKey) {
@@ -1475,6 +1501,10 @@ class ShopStallWidget {
       this.iconFrame.y + STALL_ART_WELL_SIZE - 2,
     );
     this.price.position.set(width - 10, detailY);
+    this.priceAction.position.set(
+      width - 10 - STALL_SELECT_ACTION_WIDTH,
+      (height - STALL_SELECT_ACTION_HEIGHT) / 2,
+    );
     this.priceResource.position.set(
       width - 10 - this.priceResource.measuredWidth,
       detailY,
@@ -1521,6 +1551,7 @@ class ShopStallWidget {
     this.item.applyTheme(this.theme);
     this.quantity.applyTheme(this.theme);
     this.price.applyTheme(this.theme);
+    this.priceAction.applyTheme(this.theme);
     this.priceResource.applyTheme(this.theme);
     this.layoutPriceResource();
     this.progress.applyTheme({
@@ -1598,7 +1629,10 @@ class ShopStallWidget {
     this.timer.setColor(STALL_TEXT_INK);
     this.notificationBadge
       .setTone(this.model?.notificationTone)
-      .setActive(Boolean(this.model?.notification));
+      .setActive(
+        Boolean(this.model?.notification) &&
+        !this.model?.priceVariant,
+      );
   }
 
   layoutPriceResource() {
@@ -1634,6 +1668,7 @@ class ShopStallWidget {
     this.iconOverlay.visible = false;
     this.iconOverlay.renderable = false;
     this.iconOverlay.rotation = 0;
+    this.priceAction.reset();
   }
 
   unregisterSemantic() {

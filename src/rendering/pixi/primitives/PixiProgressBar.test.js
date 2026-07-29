@@ -21,6 +21,7 @@ import {
 } from './PixiCapsuleSkin.js';
 
 let PixiProgressBar;
+let PixiTimedProgressBar;
 let RetainedProgressBar;
 let NineSliceSprite;
 let Texture;
@@ -32,7 +33,9 @@ beforeAll(async () => {
     }),
     fillRect() {},
   });
-  ({ PixiProgressBar } = await import('./PixiProgressBar.js'));
+  ({ PixiProgressBar, PixiTimedProgressBar } = await import(
+    './PixiProgressBar.js'
+  ));
   ({ RetainedProgressBar } = await import(
     '../pages/workshop/RetainedPageKit.js'
   ));
@@ -198,6 +201,48 @@ describe('PixiProgressBar', () => {
     });
 
     retained.destroy();
+  });
+
+  it('derives smooth timed progress from only its start time and duration', () => {
+    const progress = new PixiTimedProgressBar({
+      width: 100,
+      tone: 'blue',
+    });
+
+    progress.setTimer({
+      startedAtMs: 1_000,
+      durationMs: 8_000,
+    });
+
+    expect(progress.updateTimer(3_000)).toMatchObject({
+      progress: 0.25,
+      remainingMs: 6_000,
+      complete: false,
+    });
+    expect(progress.end).toBe(0.25);
+
+    expect(progress.updateTimer(9_000)).toMatchObject({
+      progress: 1,
+      remainingMs: 0,
+      complete: true,
+    });
+    expect(progress.end).toBe(1);
+
+    progress.setTimer({
+      startedAtMs: 10_000,
+      durationMs: 8_000,
+    });
+    expect(progress.updateTimer(10_000)).toMatchObject({
+      progress: 0,
+      remainingMs: 8_000,
+      complete: false,
+    });
+    expect(progress).toMatchObject({
+      startedAtMs: 10_000,
+      durationMs: 8_000,
+    });
+
+    progress.destroy({ children: true });
   });
 });
 

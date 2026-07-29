@@ -71,6 +71,84 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
+  it("keeps unavailable empty plots visually unlabeled", () => {
+    const harness = createHarness();
+    const model = createGardenViewModel({ actionText: "" });
+    model.garden.plots[0].phase = "empty";
+    model.garden.plots[0].process = null;
+    model.garden.plots[0].hasSelectedSeed = true;
+    model.garden.plots[0].canPlantSelectedSeed = false;
+    harness.page.bind(model);
+
+    const action = harness.page.plots.get("plot-1").action;
+    expect(action.text).toBe("");
+    expect(action.visible).toBe(false);
+    expect(action.renderable).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("renders Research in title case and shows its lock tooltip on press", () => {
+    const harness = createHarness();
+    const activatePlot = vi.fn(() => ({
+      ok: false,
+      reason: "research_locked",
+      tileNumber: 1,
+      tooltip:
+        "You need to research first to unlock buying this slot.",
+    }));
+    const model = createGardenViewModel({
+      actionText: "Research",
+      activatePlot,
+    });
+    model.garden.plots[0].phase = "empty";
+    model.garden.plots[0].process = null;
+    model.garden.plots[0].buySlot = true;
+    model.garden.plots[0].disabled = false;
+    model.garden.plots[0].lockReason = "research_locked";
+    harness.page.bind(model);
+
+    const plot = harness.page.plots.get("plot-1");
+    expect(plot.label).toBeUndefined();
+    expect(
+      plot.frame.children.some((child) =>
+        String(child?.label ?? "").includes("plot-label"),
+      ),
+    ).toBe(false);
+    expect(plot.number.style.fill).toBe("#3b2416");
+    expect(plot.number.style.stroke).toBeNull();
+    expect(plot.action.text).toBe("Research");
+    expect(plot.action.style.fill).toBe("#ffffff");
+    expect(plot.action.style.stroke).toMatchObject({
+      color: "#0a0a0a",
+      width: 2,
+      join: "round",
+    });
+    expect(
+      harness.semanticTargets.getTutorialTarget("garden:plot:1:label")
+        ?.displayObject,
+    ).toBe(plot.root);
+
+    expect(plot.enabled).toBe(true);
+    expect(plot.buyCostButton.visible).toBe(false);
+    expect(plot.activate()).toMatchObject({
+      ok: false,
+      reason: "research_locked",
+    });
+    expect(activatePlot).toHaveBeenCalledWith(
+      expect.objectContaining({ lockReason: "research_locked" }),
+    );
+    expect(harness.page.plotTooltip.copy.text).toBe(
+      "You need to research first to unlock buying this slot.",
+    );
+    expect(harness.page.plotTooltip.root.visible).toBe(true);
+    expect(harness.page.plotTooltip.copy.style.fill).toBe("#ffffff");
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it("keeps the fifth soil artwork at every plot level", () => {
     const harness = createHarness();
     harness.assetManager.getTexture = vi.fn(harness.assetManager.getTexture);
@@ -95,9 +173,13 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
-  it("shows the selected seed tool and disables Harvest All without ready plots", () => {
+  it("keeps Harvest All actionable without ready plots for empty-state feedback", () => {
     const harness = createHarness();
-    const model = createGardenViewModel({ seedQuantity: 8 });
+    const harvestAll = vi.fn(() => ({
+      ok: false,
+      reason: "no_ready_tiles",
+    }));
+    const model = createGardenViewModel({ seedQuantity: 8, harvestAll });
     model.garden.actionBar.readyHarvestCount = 0;
     harness.page.bind(model);
 
@@ -105,7 +187,13 @@ describe("GardenPixiPage", () => {
     expect(harness.page.actionBar.selectionLabel.text).toBe(
       "sage selected · 8",
     );
-    expect(harness.page.actionBar.harvestButton.enabled).toBe(false);
+    expect(harness.page.actionBar.harvestButton.enabled).toBe(true);
+    expect(harness.page.actionBar.harvestButton.notification).toBe(false);
+    expect(harness.page.actionBar.harvestButton.activate()).toEqual({
+      ok: false,
+      reason: "no_ready_tiles",
+    });
+    expect(harvestAll).toHaveBeenCalledTimes(1);
     expect(harness.page.actionBar.seedsButton.enabled).toBe(true);
 
     model.garden.actionBar.selectedSeed = null;
@@ -390,6 +478,10 @@ describe("GardenPixiPage", () => {
       level: 0,
       tone: "empty",
       starCount: 0,
+    });
+    expect(plot.level.position).toMatchObject({
+      x: 5,
+      y: GARDEN_PIXI_GEOMETRY.plotHeight - 19,
     });
     expect(plot.level.slots).toHaveLength(3);
     expect(plot.level.slots.map((slot) => slot.fill.visible)).toEqual([

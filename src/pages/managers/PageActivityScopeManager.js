@@ -31,7 +31,10 @@ export class PageActivityScopeManager {
         }
 
         const method = String(property).startsWith('subscribe')
-          ? (...args) => this.subscribe(target, value, args)
+          ? (...args) =>
+              this.subscribe(target, value, args, {
+                replayLatest: property !== 'subscribeRewardEvents',
+              })
           : value.bind(target);
         methodCache.set(property, method);
         return method;
@@ -42,7 +45,7 @@ export class PageActivityScopeManager {
     return scoped;
   }
 
-  subscribe(target, subscribe, args) {
+  subscribe(target, subscribe, args, { replayLatest = true } = {}) {
     const callbackIndex = args.findIndex((argument) => typeof argument === 'function');
     if (callbackIndex < 0) {
       return subscribe.apply(target, args);
@@ -52,11 +55,14 @@ export class PageActivityScopeManager {
     const subscription = {
       listener,
       lastArgs: null,
+      replayLatest,
       disposed: false,
       unsubscribe: null,
     };
     const wrappedListener = (...listenerArgs) => {
-      subscription.lastArgs = listenerArgs;
+      subscription.lastArgs = subscription.replayLatest
+        ? listenerArgs
+        : null;
       if (this.active && !subscription.disposed) {
         listener(...listenerArgs);
       }
@@ -86,7 +92,11 @@ export class PageActivityScopeManager {
 
     this.active = true;
     for (const subscription of this.subscriptions) {
-      if (!subscription.disposed && subscription.lastArgs) {
+      if (
+        subscription.replayLatest &&
+        !subscription.disposed &&
+        subscription.lastArgs
+      ) {
         subscription.listener(...subscription.lastArgs);
       }
     }

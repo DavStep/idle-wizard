@@ -3680,6 +3680,60 @@ describe("GameplayFacade", () => {
     });
   });
 
+  it("sets, replaces, steps, and clears a grouped brewing ingredient slot", () => {
+    const { gameplayFacade } = createGameplay();
+
+    gameplayFacade.itemsFacade.addItem(1001, 5);
+    gameplayFacade.itemsFacade.addItem(1002, 2);
+
+    expect(
+      gameplayFacade.setBrewingIngredientSlotQuantity(1001, 3, 0),
+    ).toMatchObject({
+      ok: true,
+      item: { key: "sageHerb" },
+      quantity: 3,
+      slotIndex: 0,
+    });
+    expect(
+      gameplayFacade.getSnapshot().brewing.ingredients.map(
+        (ingredient) => ingredient.key,
+      ),
+    ).toEqual(["sageHerb", "sageHerb", "sageHerb"]);
+
+    expect(
+      gameplayFacade.setBrewingIngredientSlotQuantity(1002, 1, 0),
+    ).toMatchObject({
+      ok: true,
+      item: { key: "mintHerb" },
+      quantity: 1,
+    });
+    expect(
+      gameplayFacade.setBrewingIngredientSlotQuantity(1001, 2, 1),
+    ).toMatchObject({
+      ok: true,
+      quantity: 2,
+      slotIndex: 1,
+    });
+    expect(
+      gameplayFacade.getSnapshot().brewing.ingredients.map(
+        (ingredient) => ingredient.key,
+      ),
+    ).toEqual(["mintHerb", "sageHerb", "sageHerb"]);
+
+    expect(
+      gameplayFacade.setBrewingIngredientSlotQuantity(1001, 1, 1),
+    ).toMatchObject({ ok: true, quantity: 1 });
+    expect(
+      gameplayFacade.setBrewingIngredientSlotQuantity(1001, 0, 1),
+    ).toMatchObject({ ok: true, quantity: 0 });
+    expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([
+      expect.objectContaining({
+        slotIndex: 0,
+        key: "mintHerb",
+      }),
+    ]);
+  });
+
   it("reserves mana for pending auto brew before auto summoning seeds", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
@@ -5666,7 +5720,7 @@ describe("GameplayFacade", () => {
     openFirstNpcMarketStand(gameplayFacade);
     unlockSageSeed(gameplayFacade);
     gameplayFacade.itemsFacade.addItem(1, 10);
-    gameplayFacade.setSelectedShopShelfSlotAllocation(1, 50);
+    gameplayFacade.setSelectedShopShelfSlotQuantity(1, 5);
     gameplayFacade.setSelectedShopShelfFutureItem(1, true);
 
     expect(gameplayFacade.clearSelectedShopShelfSlot()).toMatchObject({

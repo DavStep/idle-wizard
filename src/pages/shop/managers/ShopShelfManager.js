@@ -15,8 +15,6 @@ import {
 } from '../../../gameplay/shop/managers/npcMarketPricing.js';
 import { ShopStallVisibilityManager } from './ShopStallVisibilityManager.js';
 
-const STALL_ALLOCATION_STEP = 5;
-
 export class ShopShelfManager {
   constructor({
     gameplayFacade,
@@ -38,7 +36,7 @@ export class ShopShelfManager {
     this.visible = false;
     this.selectedSellTab = 'seed';
     this.draftSellItemTypeId = null;
-    this.draftSellPercentage = 100;
+    this.draftSellQuantity = 0;
     this.statusText = '';
     this.previousFocus = null;
     this.handleKeydown = (event) => {
@@ -220,13 +218,13 @@ export class ShopShelfManager {
     allocationRange.className = 'shop-page__sell-allocation-range';
     allocationRange.type = 'range';
     allocationRange.min = '0';
-    allocationRange.max = '100';
-    allocationRange.step = String(STALL_ALLOCATION_STEP);
-    allocationRange.value = '100';
+    allocationRange.max = '0';
+    allocationRange.step = '1';
+    allocationRange.value = '0';
     allocationRange.dataset.tutorialId = 'shop:sell:percentage';
-    allocationRange.setAttribute('aria-label', 'share of current stock to mark');
+    allocationRange.setAttribute('aria-label', 'number of items to mark');
     allocationRange.addEventListener('input', () => {
-      this.selectDraftPercentage(Number(allocationRange.value));
+      this.selectDraftQuantity(Number(allocationRange.value));
     });
     allocationRange.addEventListener('keydown', (event) => {
       const direction = {
@@ -237,10 +235,13 @@ export class ShopShelfManager {
       }[event.key];
       if (!direction) return;
       event.preventDefault();
-      this.selectDraftPercentage(
+      this.selectDraftQuantity(
         Math.max(
           0,
-          Math.min(100, this.draftSellPercentage + direction * STALL_ALLOCATION_STEP),
+          Math.min(
+            Number(allocationRange.max) || 0,
+            Number(allocationRange.value) + direction,
+          ),
         ),
       );
     });
@@ -381,28 +382,28 @@ export class ShopShelfManager {
     if (!item) return { ok: false, reason: 'item_missing' };
 
     this.draftSellItemTypeId = itemTypeId;
-    this.draftSellPercentage = 100;
+    this.draftSellQuantity = this.getAllocationTotal(shelf, item);
     this.selectedSellTab = item.kind;
     this.statusText = '';
     this.renderSellDraft(shelf);
     return { ok: true, itemTypeId };
   }
 
-  selectDraftPercentage(percentage) {
+  selectDraftQuantity(quantity) {
     if (this.draftSellItemTypeId === null) return { ok: false, reason: 'empty_selection' };
-    if (
-      !Number.isInteger(percentage) ||
-      percentage < 0 ||
-      percentage > 100 ||
-      percentage % STALL_ALLOCATION_STEP !== 0
-    ) {
-      return { ok: false, reason: 'invalid_percentage' };
+    const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
+    const item = shelf?.sellItems?.find(
+      (candidate) => candidate.itemTypeId === this.draftSellItemTypeId,
+    );
+    const totalQuantity = this.getAllocationTotal(shelf, item);
+    if (!Number.isInteger(quantity) || quantity < 0 || quantity > totalQuantity) {
+      return { ok: false, reason: 'invalid_quantity' };
     }
 
-    this.draftSellPercentage = percentage;
+    this.draftSellQuantity = quantity;
     this.statusText = '';
-    this.renderSellDraft(this.gameplayFacade.getSnapshot()?.shop?.shelf);
-    return { ok: true, percentage };
+    this.renderSellDraft(shelf);
+    return { ok: true, quantity };
   }
 
   markDraft() {
@@ -412,9 +413,9 @@ export class ShopShelfManager {
     );
     if (!item) return { ok: false, reason: 'empty_selection' };
 
-    const result = this.gameplayFacade.setSelectedShopShelfSlotAllocation(
+    const result = this.gameplayFacade.setSelectedShopShelfSlotQuantity(
       item.itemTypeId,
-      this.draftSellPercentage,
+      this.getDraftTargetQuantity(shelf, item),
     );
     if (!result?.ok) {
       this.statusText = this.getLoadFailureText(result?.reason);
@@ -468,31 +469,20 @@ export class ShopShelfManager {
   }
 
   getDraftTargetQuantity(shelf, item) {
-    return Math.floor(
-      (this.getAllocationTotal(shelf, item) * this.draftSellPercentage) / 100,
+    return Math.max(
+      0,
+      Math.min(
+        this.getAllocationTotal(shelf, item),
+        Math.floor(Number(this.draftSellQuantity) || 0),
+      ),
     );
   }
 
   resetSellDraft(slot = null) {
     this.draftSellItemTypeId = slot?.sellItemTypeId ?? slot?.futureItemTypeId ?? null;
-    const totalQuantity =
-      Math.max(0, Number(slot?.loadedQuantity) || 0) +
-      Math.max(0, Number(
-        this.gameplayFacade
-          .getSnapshot()
-          ?.shop?.shelf?.sellItems?.find(
-            (item) => item.itemTypeId === this.draftSellItemTypeId,
-          )?.quantity,
-      ) || 0);
-    const currentPercentage = totalQuantity > 0
-      ? ((slot?.loadedQuantity ?? 0) / totalQuantity) * 100
-      : 0;
-    this.draftSellPercentage = Math.max(
+    this.draftSellQuantity = Math.max(
       0,
-      Math.min(
-        100,
-        Math.round(currentPercentage / STALL_ALLOCATION_STEP) * STALL_ALLOCATION_STEP,
-      ),
+      Math.floor(Number(slot?.loadedQuantity) || 0),
     );
     this.statusText = '';
   }
@@ -703,7 +693,7 @@ export class ShopShelfManager {
     this.refs.current.setAttribute(
       'aria-label',
       hasSelection
-        ? `current ${item.label}, ${this.draftSellPercentage} percent, ${targetQuantity} marked`
+        ? `current ${item.label}, ${targetQuantity} marked`
         : 'current selection empty',
     );
     setTextContentIfChanged(this.refs.currentItem, hasSelection ? item.label : 'empty');
@@ -716,12 +706,17 @@ export class ShopShelfManager {
     this.refs.currentQuantity.textContent = hasSelection ? `x${targetQuantity}` : '';
 
     this.refs.allocationRange.disabled = !hasSelection;
-    this.refs.allocationRange.value = String(this.draftSellPercentage);
-    this.refs.allocationProgressFill.style.width = `${this.draftSellPercentage}%`;
+    const totalQuantity = hasSelection
+      ? this.getAllocationTotal(shelf, item)
+      : 0;
+    this.refs.allocationRange.max = String(totalQuantity);
+    this.refs.allocationRange.value = String(targetQuantity);
+    this.refs.allocationProgressFill.style.width =
+      `${totalQuantity > 0 ? (targetQuantity / totalQuantity) * 100 : 0}%`;
     this.refs.allocationRange.setAttribute(
       'aria-valuetext',
       hasSelection
-        ? `${this.draftSellPercentage} percent, ${targetQuantity} items`
+        ? `${targetQuantity} of ${totalQuantity} items`
         : 'no item selected',
     );
     const allocationChanges = hasSelection && targetQuantity !== loadedQuantity;

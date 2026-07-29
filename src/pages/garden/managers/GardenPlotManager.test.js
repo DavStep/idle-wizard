@@ -639,7 +639,7 @@ describe('GardenPlotManager', () => {
     ).toHaveLength(0);
   });
 
-  it('shows choose above empty plot boxes and empty in the plot center', () => {
+  it('keeps empty plot actions unlabeled until a seed is plantable', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const manager = new GardenPlotManager({ gameplayFacade });
@@ -651,13 +651,11 @@ describe('GardenPlotManager', () => {
     expect(plotRow?.classList.contains('is-empty')).toBe(true);
     expect(plotRow?.classList.contains('has-herb-label')).toBe(true);
     expect(plotRow?.querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
-    expect(plotRow?.querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
+    expect(plotRow?.querySelector('.garden-page__plot-action')?.textContent).toBe('');
     expect(plotRow?.querySelector('.garden-page__plot-box-label')?.textContent).toBe(
       'choose',
     );
-    expect(plotRow?.querySelector('.garden-page__plot-box-action')?.textContent).toBe(
-      'empty',
-    );
+    expect(plotRow?.querySelector('.garden-page__plot-box-action')?.textContent).toBe('');
   });
 
   it('caps plot soil tint at the richest supported level', () => {
@@ -698,10 +696,11 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-box-action')?.textContent).toBe('plant x3');
   });
 
-  it('shows missing xN seed copy when an enhanced plot lacks enough selected seeds', () => {
+  it('keeps an enhanced plot unlabeled and flies out no seed when stock is short', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
-    const manager = new GardenPlotManager({ gameplayFacade });
+    const onFeedback = vi.fn();
+    const manager = new GardenPlotManager({ gameplayFacade, onFeedback });
     const tile = gameplayFacade.getSnapshot().garden.plot.tiles[0];
 
     Object.assign(tile, {
@@ -720,12 +719,11 @@ describe('GardenPlotManager', () => {
 
     expect(plotRow.classList.contains('is-plantable')).toBe(false);
     expect(plotRow.classList.contains('is-selected-without-seeds')).toBe(true);
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe(
-      'no x2 seed',
-    );
-    expect(plotRow.querySelector('.garden-page__plot-box-action')?.textContent).toBe(
-      'no x2 seed',
-    );
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('');
+    expect(plotRow.querySelector('.garden-page__plot-box-action')?.textContent).toBe('');
+    expect(onFeedback).toHaveBeenCalledWith('no seed', {
+      flyoutKey: 'garden-no-seed-1',
+    });
     expect(tile.phase).toBe('empty');
   });
 
@@ -839,6 +837,7 @@ describe('GardenPlotManager', () => {
       'line-height: var(--garden-page-plot-box-detail-line-height);',
     );
     expect(boxLevelRule).toContain('left: 5px;');
+    expect(boxLevelRule).toContain('bottom: 8px;');
     expect(boxActionRule).toContain(
       'font-size: var(--garden-page-plot-box-detail-font-size);',
     );
@@ -1384,6 +1383,63 @@ describe('GardenPlotManager', () => {
     expect(plotRow.disabled).toBe(false);
     expect(plotRow.classList.contains('is-unaffordable')).toBe(false);
     expect(actionLabel?.getAttribute('data-resource-color')).toBe('coin');
+  });
+
+  it('keeps a research-locked plot pressable and explains the lock in its tooltip', () => {
+    const parent = document.createElement('section');
+    document.body.append(parent);
+    const gameplayFacade = createGameplayFacadeFake();
+    const snapshot = gameplayFacade.getSnapshot();
+    const manager = new GardenPlotManager({ gameplayFacade });
+
+    snapshot.garden.plot.unlockedTiles = 0;
+    snapshot.garden.plot.nextTileNumber = 1;
+    snapshot.garden.plot.nextTileCost = 25;
+    snapshot.garden.plot.nextTileLockedByResearch = true;
+    snapshot.garden.plot.tiles[0].unlocked = false;
+
+    manager.mount(parent);
+
+    const plotRow = parent.querySelector('.garden-page__plot-row');
+    const tooltip = plotRow.querySelector('.garden-page__plot-buy-tooltip');
+
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe(
+      'Research',
+    );
+    expect(plotRow.disabled).toBe(false);
+    expect(plotRow.getAttribute('aria-label')).toBe(
+      'garden tile 1 requires research',
+    );
+
+    plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+    expect(gameplayFacade.buyGardenTile).not.toHaveBeenCalled();
+    expect(tooltip?.textContent).toBe(
+      'You need to research first to unlock buying this slot.',
+    );
+    expect(tooltip?.classList.contains('is-visible')).toBe(true);
+    expect(tooltip?.getAttribute('aria-label')).toBe(
+      'You need to research first to unlock buying this slot.',
+    );
+
+    tooltip.classList.remove('is-visible');
+    const shell = parent.querySelector('.garden-page__world-shell');
+    dispatchPointer(plotRow, 'pointerdown', {
+      pointerId: 1,
+      clientX: 100,
+      clientY: 100,
+    });
+    dispatchPointer(shell, 'pointerup', {
+      pointerId: 1,
+      clientX: 100,
+      clientY: 100,
+    });
+
+    expect(tooltip?.classList.contains('is-visible')).toBe(true);
+    expect(gameplayFacade.buyGardenTile).not.toHaveBeenCalled();
+
+    manager.unmount();
+    parent.remove();
   });
 
   it('shows the missing coin tooltip from a touch-like world tap with small drift', () => {
@@ -2154,7 +2210,7 @@ describe('GardenPlotManager', () => {
 
     expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(false);
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('');
 
     manager.unmount();
     parent.remove();
@@ -2259,12 +2315,13 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('12s');
   });
 
-  it('opens seed choices from blank row space when the selected seed count is empty', () => {
+  it('keeps seed choices closed and flies out no seed from blank plot space', () => {
     const parent = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
     const tile = snapshot.garden.plot.tiles[0];
-    const manager = new GardenPlotManager({ gameplayFacade });
+    const onFeedback = vi.fn();
+    const manager = new GardenPlotManager({ gameplayFacade, onFeedback });
 
     Object.assign(tile, {
       selectedSeedItemTypeId: 1,
@@ -2278,7 +2335,7 @@ describe('GardenPlotManager', () => {
     const plotRow = parent.querySelector('.garden-page__plot-row');
     plotRow.dispatchEvent(new window.MouseEvent('click', { bubbles: true, detail: 1 }));
 
-    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(false);
+    expect(parent.querySelector('.garden-page__seed-popup').hidden).toBe(true);
     expect(plotRow.classList.contains('is-empty')).toBe(true);
     expect(plotRow.classList.contains('has-herb-label')).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-label')?.dataset.resourceColor).toBe(
@@ -2287,7 +2344,10 @@ describe('GardenPlotManager', () => {
     expect(plotRow.querySelector('.garden-page__plot-box-label')?.dataset.resourceColor).toBe(
       undefined,
     );
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('no seeds');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('');
+    expect(onFeedback).toHaveBeenCalledWith('no seed', {
+      flyoutKey: 'garden-no-seed-1',
+    });
   });
 
   it('keeps selected empty plot herb labels on the inherited row color', () => {
@@ -2400,7 +2460,7 @@ describe('GardenPlotManager', () => {
 
     expect(cancelPopup.hidden).toBe(true);
     expect(plotRow.querySelector('.garden-page__plot-label')?.textContent).toBe('empty');
-    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('choose');
+    expect(plotRow.querySelector('.garden-page__plot-action')?.textContent).toBe('');
     expect(plotRow.querySelector('.garden-page__plot-progress')?.hidden).toBe(true);
     expect(gameplayFacade.getSnapshot().garden.seeds[0]).toMatchObject({
       label: 'mint seed',

@@ -94,6 +94,29 @@ export class BrewingCauldronEntityManager {
     return true;
   }
 
+  replaceIngredients(itemTypeIds = [], cauldronIndex = 0) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const normalizedItemTypeIds = Array.isArray(itemTypeIds)
+      ? itemTypeIds.filter((itemTypeId) => Number.isInteger(itemTypeId))
+      : [];
+
+    if (
+      !this.isCauldronUnlocked(safeCauldronIndex) ||
+      normalizedItemTypeIds.length > this.maxIngredients
+    ) {
+      return false;
+    }
+
+    this.clearIngredients(safeCauldronIndex);
+    for (const itemTypeId of normalizedItemTypeIds) {
+      if (!this.addIngredient(itemTypeId, safeCauldronIndex)) {
+        this.clearIngredients(safeCauldronIndex);
+        return false;
+      }
+    }
+    return true;
+  }
+
   removeIngredientAt(slotIndex, cauldronIndex = 0) {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
     const entityId = this.getIngredientEntityIds(safeCauldronIndex)[slotIndex];

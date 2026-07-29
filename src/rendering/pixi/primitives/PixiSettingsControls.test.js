@@ -122,7 +122,7 @@ describe('Root Run settings controls', () => {
     slider.destroy({ children: true });
   });
 
-  it('anchors the stall tutorial cue to the knob and describes a drag to 25%', () => {
+  it('anchors the stall tutorial cue to the knob and its discrete target count', () => {
     const harness = createHarness();
     const slider = new RootRunSettingsSliderPixi({
       ...harness.dependencies,
@@ -133,9 +133,10 @@ describe('Root Run settings controls', () => {
     slider.bind({
       mode: 'range',
       min: 0,
-      max: 100,
-      step: 5,
+      max: 3,
+      step: 1,
       value: 0,
+      tutorialTargetValue: 1,
       onChange: vi.fn(),
     });
     slider.setBounds(0, 0, 200);
@@ -151,7 +152,7 @@ describe('Root Run settings controls', () => {
     ).toEqual({
       kind: 'horizontal-drag',
       travelX:
-        (200 - PIXI_ROOT_RUN_GEOMETRY.settings.knobSize) * 0.25,
+        (200 - PIXI_ROOT_RUN_GEOMETRY.settings.knobSize) / 3,
     });
 
     slider.destroy({ children: true });

@@ -67,6 +67,24 @@ describe('AppGameplayTickManager', () => {
     expect(scheduled.size).toBe(0);
   });
 
+  it('does not charge elapsed sleep time to timer work created before an external wake', () => {
+    const { manager, runTimeout, setNow } = createTickManager();
+    const onTick = vi.fn(() => null);
+
+    manager.start(onTick);
+    runTimeout();
+
+    setNow(60_000);
+    manager.requestTick(0);
+    runTimeout();
+
+    expect(onTick).toHaveBeenLastCalledWith({
+      time: 60_000,
+      deltaSeconds: 0,
+      timerDeltaSeconds: 0,
+    });
+  });
+
   it('lets a wake request move the next tick earlier', () => {
     const { manager, clearTimeoutFn, runTimeout, scheduled, setNow } =
       createTickManager();

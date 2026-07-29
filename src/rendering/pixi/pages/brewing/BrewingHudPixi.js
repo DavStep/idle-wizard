@@ -17,7 +17,11 @@ import {
   PIXI_COST_BUTTON_GEOMETRY,
   PixiCostButton,
 } from '../../primitives/PixiCostButton.js';
+import { PixiButton } from '../../primitives/PixiButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
+import {
+  createTimedProgressWindow,
+} from '../../primitives/PixiProgressBar.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
@@ -30,7 +34,7 @@ import {
   RETAINED_TEXT_STYLES,
   RetainedButton,
   RetainedPanel,
-  RetainedProgressBar,
+  RetainedTimedProgressBar,
   applyTextTheme,
   createText,
   setText,
@@ -60,8 +64,11 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   previewVerticalOffset: 22,
   navigationButtonWidth: 34,
   navigationButtonHeight: 38,
-  navigationCauldronGap: 4,
+  navigationSlotGap: 4,
+  navigationVerticalOffset: 8,
   navigationIconOpticalNudge: 0.7,
+  ingredientSlotWidth: 56,
+  ingredientSlotHeight: 54,
   ingredientColumns: 3,
   ingredientRows: 2,
   ingredientSlots: 6,
@@ -101,6 +108,7 @@ const BREWING_DETAIL_TEXT_STYLE = Object.freeze({
   body: Object.freeze({ fontSize: 10, lineHeight: 12 }),
   small: Object.freeze({ fontSize: 9, lineHeight: 11 }),
 });
+const BREWING_STATUS_TEXTURE_PADDING = 1;
 const RETAINED_INGREDIENT_NAME_STYLE = Object.freeze({
   fontSize: 8,
   lineHeight: 9,
@@ -108,9 +116,6 @@ const RETAINED_INGREDIENT_NAME_STYLE = Object.freeze({
   wordWrap: true,
   wordWrapWidth: 54,
 });
-// Pixi can crop the terminal Lilita One glyph; this adds texture width
-// without adding visible ink to the retained status labels.
-const DYNAMIC_STATUS_TEXT_TEXTURE_GUTTER = '\u3000';
 const AUTO_GEAR_STEP_INTERVAL_MS = 320;
 const AUTO_GEAR_STEP_DURATION_MS = 70;
 const AUTO_GEAR_STEP_RADIANS = Math.PI / 8;
@@ -136,7 +141,6 @@ export class BrewingHudPixi {
     this.autoBrewMotionStartedAt = null;
     this.cauldronChangeMotion = null;
     this.cauldronChangeRestState = null;
-    this.activeTimerState = null;
     this.root = new Container({ label: 'brewing-fantasy-hud' });
 
     this.carouselPanel = new RetainedPanel({
@@ -366,13 +370,15 @@ export class BrewingHudPixi {
     this.phaseLabel = createText('', {
       ...BREWING_DETAIL_TEXT_STYLE.title,
       fontWeight: '700',
+      padding: BREWING_STATUS_TEXTURE_PADDING,
     });
     this.phaseTime = createText('', {
       ...BREWING_DETAIL_TEXT_STYLE.body,
       align: 'right',
+      padding: BREWING_STATUS_TEXTURE_PADDING,
     });
     this.phaseTime.anchor.set(1, 0);
-    this.progress = new RetainedProgressBar({
+    this.progress = new RetainedTimedProgressBar({
       assetManager,
       label: 'brewing-batch-progress',
       tone: 'blue',
@@ -583,7 +589,7 @@ export class BrewingHudPixi {
       }),
     );
 
-    setDynamicStatusText(
+    setText(
       this.phaseLabel,
       active
         ? active.phase === 'ready'
@@ -611,56 +617,13 @@ export class BrewingHudPixi {
 
   syncActiveTimer(active, now) {
     if (!active) {
-      this.activeTimerState = null;
+      this.progress.clearTimer(0);
       return;
     }
 
-    const totalMs = nonNegativeFinite(
-      active.durationMs ?? active.totalMs,
-    );
-    const remainingMs = nonNegativeFinite(active.remainingMs);
-    const snapshotProgress =
-      totalMs > 0
-        ? clamp(1 - remainingMs / totalMs, 0, 1)
-        : clamp(active.progress, 0, 1);
-    const identity = [
-      this.selectedIndex,
-      active.phase ?? '',
-      active.key ?? active.resultItemTypeId ?? '',
-      totalMs,
-    ].join(':');
-    const inferredEndTime = now + remainingMs;
-    const existing = this.activeTimerState;
-
-    if (
-      !existing ||
-      existing.identity !== identity ||
-      snapshotProgress + Number.EPSILON <
-        existing.snapshotProgress
-    ) {
-      this.activeTimerState = {
-        identity,
-        endTime: inferredEndTime,
-        remainingMs,
-        snapshotProgress,
-        totalMs,
-      };
-      return;
-    }
-
-    existing.endTime = Math.min(
-      existing.endTime,
-      inferredEndTime,
-    );
-    existing.remainingMs = Math.min(
-      existing.remainingMs,
-      remainingMs,
-    );
-    existing.snapshotProgress = Math.max(
-      existing.snapshotProgress,
-      snapshotProgress,
-    );
-    existing.totalMs = totalMs;
+    this.progress
+      .setTimer(createTimedProgressWindow(active, now))
+      .updateTimer(now);
   }
 
   updateActiveTimer(
@@ -669,72 +632,91 @@ export class BrewingHudPixi {
   ) {
     const active = this.getSelectedCauldron()?.activeBrew ?? null;
     if (!active) {
-      this.activeTimerState = null;
-      this.setTimerProgress(0);
-      setDynamicStatusText(this.phaseTime, '');
+      this.progress.clearTimer(0);
+      setText(this.phaseTime, '');
       return;
     }
 
-    if (!this.activeTimerState) {
-      this.syncActiveTimer(active, now);
-    }
-    const state = this.activeTimerState;
     const canCollect = active.canCollect === true;
     if (canCollect) {
-      this.setTimerProgress(1);
-      setDynamicStatusText(this.phaseTime, 'Complete');
+      this.progress.clearTimer(1);
+      setText(this.phaseTime, 'Complete');
       return;
     }
 
-    const remainingMs = reducedMotion
-      ? state.remainingMs
-      : Math.max(0, state.endTime - now);
-    const progress =
-      state.totalMs > 0
-        ? clamp(1 - remainingMs / state.totalMs, 0, 1)
-        : state.snapshotProgress;
-    this.setTimerProgress(progress);
-    setDynamicStatusText(
+    if (reducedMotion) {
+      return;
+    }
+    const { remainingMs } = this.progress.updateTimer(now);
+    setText(
       this.phaseTime,
       remainingMs > 0 ? formatTime(remainingMs) : '',
     );
   }
 
-  setTimerProgress(progress) {
-    const nextProgress = clamp(progress, 0, 1);
-    if (this.progress.progress === nextProgress) {
-      return;
-    }
-    this.progress.setProgress(nextProgress);
-  }
-
   activatePrimaryAction() {
     const cauldron = this.getSelectedCauldron();
     const state = this.primaryState ?? resolveBrewingPrimaryState(cauldron);
+    const brewSources =
+      state.id === 'brew'
+        ? this.captureIngredientMotionSources()
+        : [];
+    let result;
     switch (state.id) {
       case 'cancel':
         if (
           cauldron?.activeBrew?.phase === 'brewing' ||
           cauldron?.activeBrew?.phase === 'bottling'
         ) {
-          return this.actions.cancelBrew?.(this.selectedIndex) ?? false;
+          result =
+            this.actions.cancelBrew?.(this.selectedIndex) ?? false;
+          break;
         }
-        return this.actions.toggleAutoBrew?.(this.selectedIndex) ?? false;
+        result =
+          this.actions.toggleAutoBrew?.(this.selectedIndex) ?? false;
+        break;
       case 'collect':
-        return this.actions.collectBrew?.(this.selectedIndex) ?? false;
+        result =
+          this.actions.collectBrew?.(this.selectedIndex) ?? false;
+        break;
       case 'bottle':
-        return (
+        result =
           this.actions.performCauldronAction?.(cauldron, { id: 'bottle' }) ??
-          false
-        );
+          false;
+        break;
       default:
-        return (
+        result =
           this.actions.performCauldronAction?.(
             cauldron,
             cauldron?.primaryAction ?? { id: 'brew' },
-          ) ?? false
-        );
+          ) ?? false;
+        break;
     }
+    if (
+      state.id === 'brew' &&
+      result !== false &&
+      result?.ok !== false
+    ) {
+      this.page?.animateHudBrewIngredients?.(this, brewSources);
+    }
+    return result;
+  }
+
+  captureIngredientMotionSources() {
+    return this.ingredientSlots
+      .filter(
+        (slot) =>
+          Boolean(slot.model?.itemKey ?? slot.model?.key) &&
+          slot.icon.visible &&
+          slot.icon.texture !== Texture.EMPTY,
+      )
+      .map((slot) => ({
+        kind: slot.model.kind ?? 'herb',
+        key: slot.model.itemKey ?? slot.model.key,
+        texture: slot.icon.texture,
+        size: Math.max(slot.icon.width, slot.icon.height),
+        position: this.page.getDisplayObjectCenter(slot.icon),
+      }));
   }
 
   getCauldrons() {
@@ -812,24 +794,29 @@ export class BrewingHudPixi {
     this.dots.position.set(width / 2, 223 + previewVerticalOffset);
     this.drawRecipeOrbit(width);
     this.captureCauldronChangeRestState();
+    const ingredientPositions = resolveIngredientPositions(width);
+    const lowerLeftSlot = ingredientPositions[2];
+    const lowerRightSlot = ingredientPositions[3];
     const navigationTop =
       BREWING_HUD_GEOMETRY.top +
-      cauldronCenterY -
+      lowerLeftSlot.y +
+      BREWING_HUD_GEOMETRY.ingredientSlotHeight / 2 +
+      BREWING_HUD_GEOMETRY.navigationVerticalOffset -
       BREWING_HUD_GEOMETRY.navigationButtonHeight / 2;
-    const cauldronHalfWidth = this.cauldronArt.width / 2;
     this.previous.setBounds(
-      sourceWidth / 2 -
-        cauldronHalfWidth -
-        BREWING_HUD_GEOMETRY.navigationCauldronGap -
+      edge +
+        lowerLeftSlot.x -
+        BREWING_HUD_GEOMETRY.navigationSlotGap -
         BREWING_HUD_GEOMETRY.navigationButtonWidth,
       navigationTop,
       BREWING_HUD_GEOMETRY.navigationButtonWidth,
       BREWING_HUD_GEOMETRY.navigationButtonHeight,
     );
     this.next.setBounds(
-      sourceWidth / 2 +
-        cauldronHalfWidth +
-        BREWING_HUD_GEOMETRY.navigationCauldronGap,
+      edge +
+        lowerRightSlot.x +
+        BREWING_HUD_GEOMETRY.ingredientSlotWidth +
+        BREWING_HUD_GEOMETRY.navigationSlotGap,
       navigationTop,
       BREWING_HUD_GEOMETRY.navigationButtonWidth,
       BREWING_HUD_GEOMETRY.navigationButtonHeight,
@@ -872,16 +859,13 @@ export class BrewingHudPixi {
     );
     this.ownedLabel.position.set(36, 72);
     this.batchLabel.position.set(width / 2, 274 + previewVerticalOffset);
-    const ingredientTileWidth = 56;
-    const ingredientTileHeight = 54;
-    const ingredientPositions = resolveIngredientPositions(width);
     this.ingredientSlots.forEach((slot, index) => {
       const position = ingredientPositions[index];
       slot.setBounds(
         position.x,
         position.y,
-        ingredientTileWidth,
-        ingredientTileHeight,
+        BREWING_HUD_GEOMETRY.ingredientSlotWidth,
+        BREWING_HUD_GEOMETRY.ingredientSlotHeight,
       );
     });
     const detailWidth =
@@ -927,14 +911,15 @@ export class BrewingHudPixi {
       ...this.ownedLabel.style,
       fill: this.theme.muted,
     });
-    for (const text of [
-      this.ingredientsTitle,
-      this.phaseLabel,
-      this.phaseTime,
-    ]) {
+    applyTextTheme(this.ingredientsTitle, this.theme, {
+      ...this.ingredientsTitle.style,
+      fill: this.theme.text,
+    });
+    for (const text of [this.phaseLabel, this.phaseTime]) {
       applyTextTheme(text, this.theme, {
         ...text.style,
         fill: this.theme.text,
+        padding: BREWING_STATUS_TEXTURE_PADDING,
       });
     }
     for (const button of [
@@ -1394,16 +1379,6 @@ export class BrewingHudPixi {
   }
 }
 
-function setDynamicStatusText(text, value) {
-  const nextValue = String(value ?? '');
-  setText(
-    text,
-    nextValue
-      ? `${nextValue}${DYNAMIC_STATUS_TEXT_TEXTURE_GUTTER}`
-      : '',
-  );
-}
-
 export class BrewingAutomationSettingsDialogPixi {
   constructor({
     parent,
@@ -1531,9 +1506,18 @@ class BrewingIngredientPickerSlot {
     this.semanticTargets = semanticTargets;
     this.onActivate = onActivate;
     this.enabled = false;
-    this.root = new Container({
+    this.control = new PixiButton({
+      assetManager,
+      inputRouter,
+      semanticRegistry: semanticTargets,
+      semanticId: `brewing.ingredient-slot.${index}`,
+      text: '',
+      action: () => this.onActivate?.() ?? false,
+      haptic: 'light',
+      variant: 'inline',
       label: `brewing-ingredient-picker-slot-${index}`,
     });
+    this.root = this.control;
     this.frame = new PixiNineSliceFrame({
       texture: Texture.EMPTY,
       sourceInsets: null,
@@ -1546,35 +1530,22 @@ class BrewingIngredientPickerSlot {
     this.name.anchor.set(0.5, 0);
     this.quantity = centeredText('', RETAINED_TEXT_STYLES.bold);
     this.quantity.anchor.set(0.5, 1);
-    this.root.addChild(this.frame, this.icon, this.name, this.quantity);
+    this.control.visual.addChild(
+      this.frame,
+      this.icon,
+      this.name,
+      this.quantity,
+    );
     this.model = null;
     this.frameInsets = null;
     this.semanticId = `brewing.ingredient-slot.${index}`;
-    this.pressRegistration =
-      inputRouter?.registerPressTarget?.(this.root, {
-        enabled: () =>
-          this.enabled &&
-          this.root.visible &&
-          this.root.renderable,
-        onActivate: () => this.onActivate?.() ?? false,
-        haptic: 'light',
-      }) ?? null;
-    this.semanticDefinition = semanticTargets?.register?.({
-      semanticId: this.semanticId,
-      displayObject: this.root,
-      state: () => ({
-        enabled: this.enabled,
-        interactive: true,
-        visible: this.root.visible && this.root.renderable,
-      }),
-      activate: () => this.onActivate?.() ?? false,
-    });
+    this.control.setEnabled(false);
   }
 
   bind(model, { decorative = false, enabled = true } = {}) {
     this.model = model;
     this.enabled = enabled === true;
-    this.root.eventMode = this.enabled ? 'static' : 'none';
+    this.control.setEnabled(this.enabled);
     const key = model?.itemKey ?? model?.key ?? null;
     this.icon.texture = getAtlasTexture(
       this.assetManager,
@@ -1606,6 +1577,7 @@ class BrewingIngredientPickerSlot {
     this.root.position.set(x, y);
     this.width = width;
     this.height = height;
+    this.control.setSize(width, height);
     this.frame.setSize(width, height, this.frameInsets);
     this.icon.position.set(width / 2, 19);
     this.icon.width = 26;
@@ -1621,6 +1593,7 @@ class BrewingIngredientPickerSlot {
   }
 
   applyTheme(theme) {
+    this.control.applyTheme(theme);
     const sourceInsets = theme?.frames?.panelSourceInsets ?? null;
     this.frameInsets = theme?.frames?.panelBorder ?? null;
     this.frame.setTexture(
@@ -1644,11 +1617,8 @@ class BrewingIngredientPickerSlot {
   }
 
   destroy() {
-    this.semanticTargets?.unregister?.(this.semanticId, {
-      displayObject: this.root,
-    });
-    releaseRegistration(this.pressRegistration);
-    this.root.destroy({ children: true });
+    this.control.destroy({ children: true });
+    this.control = null;
   }
 }
 
@@ -1923,11 +1893,6 @@ function isBrewingQuantityActionVisible(cauldron = {}) {
 
 function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, Number(value) || 0));
-}
-
-function nonNegativeFinite(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? Math.max(0, number) : 0;
 }
 
 export function resolveBrewingPrimaryState(cauldron = {}) {

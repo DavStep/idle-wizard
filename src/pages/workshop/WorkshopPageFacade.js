@@ -14,6 +14,7 @@ import {
   WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
   WorkshopSecondaryActionGateManager,
 } from './managers/WorkshopSecondaryActionGateManager.js';
+import { isRewardEventForPage } from '../shared/rewardEventPage.js';
 
 export class WorkshopPageFacade {
   static explain =
@@ -103,8 +104,10 @@ export class WorkshopPageFacade {
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
       this.gameplayFacade?.subscribeRewardEvents?.((event) => {
-        this.flyoutManager.showReward(event);
-        this.showRequirementConnection(event);
+        if (isRewardEventForPage(event, 'workshop')) {
+          this.flyoutManager.showReward(event);
+          this.showRequirementConnection(event);
+        }
       }) ?? null;
     this.leaderboardManager.mount(uiLayer, popupLayer);
     this.tradeAllianceManager.mount(uiLayer, popupLayer);
@@ -136,6 +139,7 @@ export class WorkshopPageFacade {
   }
 
   deactivate() {
+    this.flyoutManager.clear();
     this.summonInfoManager.hide();
     this.discoveriesManager.hide();
     this.tradeAllianceManager.hide();

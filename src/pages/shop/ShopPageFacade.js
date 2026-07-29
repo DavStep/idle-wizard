@@ -8,6 +8,7 @@ import { ShopShelfManager } from './managers/ShopShelfManager.js';
 import { ShopMarketLedgerManager } from './managers/ShopMarketLedgerManager.js';
 import { ShopTradeHistoryManager } from './managers/ShopTradeHistoryManager.js';
 import { RewardFlyoutManager } from '../shared/RewardFlyoutManager.js';
+import { isRewardEventForPage } from '../shared/rewardEventPage.js';
 
 export class ShopPageFacade {
   static explain =
@@ -65,9 +66,11 @@ export class ShopPageFacade {
     this.marketTabsManager.mount(uiLayer);
     this.flyoutManager.mount(uiLayer);
     this.rewardEventsUnsubscribe =
-      this.gameplayFacade?.subscribeRewardEvents?.((event) =>
-        this.flyoutManager.showReward(event),
-      ) ?? null;
+      this.gameplayFacade?.subscribeRewardEvents?.((event) => {
+        if (isRewardEventForPage(event, 'shop')) {
+          this.flyoutManager.showReward(event);
+        }
+      }) ?? null;
     const npmMarketPanel = this.marketTabsManager.getPanel('npm');
     const playerMarketPanel = this.marketTabsManager.getPanel('player');
     const crystalsPanel = this.marketTabsManager.getPanel('crystals');
@@ -110,6 +113,7 @@ export class ShopPageFacade {
   }
 
   deactivate() {
+    this.flyoutManager.clear();
     this.releasePlayerShopPublicData?.();
     this.releasePlayerShopPublicData = null;
     this.crystalOfferManager.hideSupportPopup();

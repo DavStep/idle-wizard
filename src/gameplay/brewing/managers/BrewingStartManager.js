@@ -116,6 +116,128 @@ export class BrewingStartManager {
     };
   }
 
+  setIngredientSlotQuantity(
+    itemTypeId,
+    quantity,
+    slotIndex,
+    cauldronIndex = 0,
+  ) {
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    const safeSlotIndex = Math.floor(Number(slotIndex));
+    const safeQuantity = Math.floor(Number(quantity));
+
+    if (!this.brewingCauldronEntityManager.isCauldronUnlocked(safeCauldronIndex)) {
+      return {
+        ok: false,
+        reason: 'cauldron_locked',
+        cauldronIndex: safeCauldronIndex,
+        cauldronNumber: safeCauldronIndex + 1,
+      };
+    }
+
+    if (this.brewingProcessEntityManager.hasActiveBrew(safeCauldronIndex)) {
+      return {
+        ok: false,
+        reason: 'brew_in_progress',
+      };
+    }
+
+    if (
+      !Number.isInteger(safeSlotIndex) ||
+      safeSlotIndex < 0 ||
+      !Number.isInteger(safeQuantity) ||
+      safeQuantity < 0
+    ) {
+      return {
+        ok: false,
+        reason: 'invalid_ingredient_slot',
+        slotIndex,
+        quantity,
+      };
+    }
+
+    const item = this.itemsFacade.getItemDefinition(itemTypeId);
+    if (item.kind !== itemKinds.herb) {
+      return {
+        ok: false,
+        reason: 'not_herb',
+        itemTypeId,
+      };
+    }
+
+    const currentItemTypeIds =
+      this.brewingCauldronEntityManager.getIngredientItemTypeIds(
+        safeCauldronIndex,
+      );
+    const groups = this.groupAdjacentIngredientItemTypeIds(currentItemTypeIds);
+    const nextGroups = groups.map((group) => ({ ...group }));
+    if (safeQuantity === 0) {
+      if (safeSlotIndex >= nextGroups.length) {
+        return {
+          ok: false,
+          reason: 'unknown_ingredient_slot',
+          slotIndex: safeSlotIndex,
+        };
+      }
+      nextGroups.splice(safeSlotIndex, 1);
+    } else {
+      const nextGroup = { itemTypeId, quantity: safeQuantity };
+      if (safeSlotIndex >= nextGroups.length) {
+        nextGroups.push(nextGroup);
+      } else {
+        nextGroups.splice(safeSlotIndex, 1, nextGroup);
+      }
+    }
+
+    const nextItemTypeIds = nextGroups.flatMap((group) =>
+      Array.from({ length: group.quantity }, () => group.itemTypeId),
+    );
+    const maxIngredients =
+      this.brewingBalanceManager.getMaxCauldronIngredients();
+    if (nextItemTypeIds.length > maxIngredients) {
+      return {
+        ok: false,
+        reason: 'cauldron_full',
+        maxIngredients,
+      };
+    }
+
+    if (
+      !this.hasEnoughInventoryForCauldron(
+        nextItemTypeIds,
+        safeCauldronIndex,
+      )
+    ) {
+      return {
+        ok: false,
+        reason: 'not_enough_item',
+        item,
+      };
+    }
+
+    if (
+      !this.brewingCauldronEntityManager.replaceIngredients(
+        nextItemTypeIds,
+        safeCauldronIndex,
+      )
+    ) {
+      return {
+        ok: false,
+        reason: 'cauldron_full',
+        maxIngredients,
+      };
+    }
+
+    return {
+      ok: true,
+      item,
+      quantity: safeQuantity,
+      slotIndex: safeSlotIndex,
+      cauldronIndex: safeCauldronIndex,
+      cauldronNumber: safeCauldronIndex + 1,
+    };
+  }
+
   clearCauldron(cauldronIndex = 0) {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
 
@@ -484,6 +606,19 @@ export class BrewingStartManager {
     }
 
     return counts;
+  }
+
+  groupAdjacentIngredientItemTypeIds(itemTypeIds = []) {
+    const groups = [];
+    for (const itemTypeId of itemTypeIds) {
+      const current = groups.at(-1);
+      if (current?.itemTypeId === itemTypeId) {
+        current.quantity += 1;
+      } else {
+        groups.push({ itemTypeId, quantity: 1 });
+      }
+    }
+    return groups;
   }
 
   getStagedInOtherCauldrons(itemTypeId, cauldronIndex = 0) {

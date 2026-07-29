@@ -12,6 +12,7 @@ export class AppGameplayTickManager {
     this.timeoutDueTime = Number.POSITIVE_INFINITY;
     this.lastTime = 0;
     this.onTick = null;
+    this.ticking = false;
   }
 
   start(onTick) {
@@ -30,6 +31,7 @@ export class AppGameplayTickManager {
     this.started = false;
     this.lastTime = 0;
     this.onTick = null;
+    this.ticking = false;
   }
 
   requestTick(delayMs = 0) {
@@ -42,11 +44,15 @@ export class AppGameplayTickManager {
       return false;
     }
 
-    const dueTime = this.now() + normalizedDelayMs;
+    const requestTime = this.now();
+    const dueTime = requestTime + normalizedDelayMs;
     if (this.timeoutId !== null && dueTime >= this.timeoutDueTime) {
       return false;
     }
 
+    if (!this.ticking) {
+      this.lastTime = requestTime;
+    }
     this.clearScheduledTick();
     this.timeoutDueTime = dueTime;
     this.timeoutId = this.setTimeoutFn(() => this.tick(), normalizedDelayMs);
@@ -70,8 +76,13 @@ export class AppGameplayTickManager {
     };
     this.lastTime = time;
 
-    const nextDelayMs = this.onTick?.(frame);
-    this.requestTick(nextDelayMs);
+    this.ticking = true;
+    try {
+      const nextDelayMs = this.onTick?.(frame);
+      this.requestTick(nextDelayMs);
+    } finally {
+      this.ticking = false;
+    }
   }
 
   normalizeDelayMs(delayMs) {

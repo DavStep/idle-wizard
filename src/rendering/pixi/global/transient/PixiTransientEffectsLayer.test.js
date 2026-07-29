@@ -35,6 +35,20 @@ describe('PixiTransientEffectsLayer', () => {
     expect(layer.getStats().active.text).toBe(10);
     expect(layer.getStats().pools.text.allocated).toBe(10);
     expect(ticker.handlers.size).toBe(1);
+    const flyoutEntry = layer.entries.find(
+      (entry) => entry.kind === 'text',
+    );
+    const visibleText = flyoutEntry.widget.slots.find(
+      (slot) => slot.text.visible,
+    ).text;
+    expect(visibleText.textObject.style.fill).toBe('#ffffff');
+    expect(visibleText.textObject.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: 2,
+      join: 'round',
+    });
+    expect(flyoutEntry.widget.background.width).toBeGreaterThan(0);
+    expect(flyoutEntry.widget.background.height).toBe(24);
 
     ticker.tick(1200);
     expect(layer.getStats().active.text).toBe(0);

@@ -17,9 +17,44 @@ import {
 } from '../../theme/PixiThemeTokens.js';
 import { ShopDialogPixi } from '../shop/ShopDialogPixi.js';
 import { RETAINED_DIALOG_LIST_GEOMETRY, RETAINED_SCROLLBAR_GEOMETRY } from './RetainedPageKit.js';
-import { ROOT_RUN_SIDE_ACTION_GEOMETRY, WorkshopPixiPage } from './WorkshopPixiPage.js';
+import {
+  ROOT_RUN_SIDE_ACTION_GEOMETRY,
+  WORKSHOP_WINDOW_ASSET_ID,
+  WORKSHOP_WINDOW_GEOMETRY,
+  WorkshopPixiPage,
+} from './WorkshopPixiPage.js';
 
 describe('WorkshopPixiPage', () => {
+  it('grounds the Workshop with passive window art behind the summon control', () => {
+    const windowTexture = new Texture();
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getTexture = vi.fn((assetId) =>
+      assetId === WORKSHOP_WINDOW_ASSET_ID ? windowTexture : Texture.EMPTY,
+    );
+    const harness = createHarness({ assetManager });
+
+    harness.page.bind(createWorkshopViewModel());
+
+    expect(assetManager.getTexture).toHaveBeenCalledWith(WORKSHOP_WINDOW_ASSET_ID);
+    expect(harness.page.workshopWindow.texture).toBe(windowTexture);
+    expect(harness.page.workshopWindow.eventMode).toBe('none');
+    expect(harness.page.workshopWindow.position).toMatchObject({
+      x: PIXI_UI_GEOMETRY.sourceWidth / 2,
+      y: WORKSHOP_WINDOW_GEOMETRY.top,
+    });
+    expect(harness.page.workshopWindow).toMatchObject({
+      width: WORKSHOP_WINDOW_GEOMETRY.width,
+      height: WORKSHOP_WINDOW_GEOMETRY.height,
+      alpha: WORKSHOP_WINDOW_GEOMETRY.alpha,
+    });
+    expect(harness.page.content.getChildIndex(harness.page.workshopWindow)).toBeLessThan(
+      harness.page.content.getChildIndex(harness.page.summon.root),
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('keeps adjacent side-control hit areas from stealing leaderboard taps', () => {
     const harness = createHarness();
 
@@ -480,6 +515,14 @@ describe('WorkshopPixiPage', () => {
     });
     expect(task.label.text).toBe('gather 1 sage');
     expect(flyout.text.text).toBe('+2 seeds');
+    expect(flyout.text.style.fill).toBe('#ffffff');
+    expect(flyout.text.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: 2,
+      join: 'round',
+    });
+    expect(flyout.background.width).toBeGreaterThan(flyout.text.width);
+    expect(flyout.background.height).toBe(24);
 
     registry.deactivate();
     expect(root).toMatchObject({

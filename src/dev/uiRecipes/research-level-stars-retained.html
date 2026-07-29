@@ -1,0 +1,135 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="midnight"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard retained Research level stars recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="Retained Research level stars visual recipe"></canvas>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
+      import { ResearchPixiPage } from '/src/rendering/pixi/pages/research/ResearchPixiPage.js';
+      import { DialogRegistry } from '/src/rendering/pixi/retained/DialogRegistry.js';
+      import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+
+      const canvas = document.querySelector('canvas');
+      const applicationManager = new PixiApplicationManager({ canvas });
+      const assetManager = new PixiAssetManager();
+      const inputRouter = new PixiInputRouter();
+
+      await Promise.all([
+        applicationManager.initialize(),
+        assetManager.loadAll(),
+      ]);
+      inputRouter.mount({
+        root: applicationManager.getApplication().stage,
+        canvas,
+      });
+
+      const dialogRegistry = new DialogRegistry();
+      const semanticTargets = new SemanticTargetRegistry();
+      const page = new ResearchPixiPage({
+        assetManager,
+        dialogLayer: applicationManager.layers.dialogsSource,
+        dialogRegistry,
+        inputRouter,
+        semanticTargets,
+      });
+      const viewModel = {
+        research: {
+          selectedTabId: 'regular',
+          tabs: [
+            {
+              id: 'regular',
+              label: 'regular research',
+              boxes: [
+                {
+                  id: 'seedUnlocks',
+                  label: 'seed unlock researches',
+                  researches: [
+                    {
+                      id: 'unlockSeed:sageSeed',
+                      displayName: 'sage seed',
+                      description: 'allows sage seed to drop from summon seed.',
+                      displayValue: 'researched',
+                      completed: true,
+                      canResearch: false,
+                    },
+                  ],
+                },
+                {
+                  id: 'levelExamples',
+                  label: 'levelled researches',
+                  researches: [
+                    {
+                      id: 'recipe:five-level',
+                      displayName: 'five-level research',
+                      description: 'level 1 of 5 uses one filled and two empty stars.',
+                      displayValue: '25 coin',
+                      starLevel: 1,
+                      starMaxLevel: 5,
+                      canResearch: true,
+                    },
+                    {
+                      id: 'recipe:two-level',
+                      displayName: 'two-level research',
+                      description: 'level 1 of 2 uses one filled and one empty star.',
+                      displayValue: 'free',
+                      starLevel: 1,
+                      starMaxLevel: 2,
+                      canResearch: true,
+                    },
+                  ],
+                },
+              ],
+            },
+            { id: 'automation', label: 'automation', boxes: [] },
+            { id: 'advanced', label: 'advanced research', boxes: [] },
+            { id: 'emerald', label: 'crystal research', boxes: [] },
+          ],
+        },
+        actions: {
+          buyResearch: () => true,
+          selectTab: () => true,
+          showLockedReason: () => false,
+        },
+      };
+
+      page.bind(viewModel);
+      page.activate();
+      applicationManager.layers.pageUi.addChild(page.root);
+      window.__researchLevelStarsRecipe = {
+        applicationManager,
+        dialogRegistry,
+        page,
+        semanticTargets,
+      };
+    </script>
+  </body>
+</html>

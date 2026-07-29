@@ -171,7 +171,7 @@ export class PixiPagesFacade {
     this.shopTabId = "traders";
     this.shopLedgerKind = "seed";
     this.shopStallItemTypeIdBySlot = new Map();
-    this.shopStallAllocationPercentBySlot = new Map();
+    this.shopStallTargetQuantityBySlot = new Map();
     this.shopStallItemKindBySlot = new Map();
     this.shopSelectedRequestSlotNumber = 1;
     this.shopSelectedListingSlotNumber = 1;
@@ -657,8 +657,8 @@ export class PixiPagesFacade {
             stallItemTypeIdBySlot: Object.fromEntries(
               this.shopStallItemTypeIdBySlot,
             ),
-            stallAllocationPercentBySlot: Object.fromEntries(
-              this.shopStallAllocationPercentBySlot,
+            stallTargetQuantityBySlot: Object.fromEntries(
+              this.shopStallTargetQuantityBySlot,
             ),
             stallItemKindBySlot: Object.fromEntries(
               this.shopStallItemKindBySlot,
@@ -1159,7 +1159,23 @@ export class PixiPagesFacade {
             safeSlotNumber,
             item?.itemTypeId ?? null,
           );
-          this.shopStallAllocationPercentBySlot.set(safeSlotNumber, 100);
+          const shelf = gameplay?.getSnapshot?.()?.shop?.shelf;
+          const slot = shelf?.slots?.find(
+            (candidate) =>
+              candidate?.slotNumber === safeSlotNumber,
+          );
+          const loadedQuantity =
+            slot?.sellItemTypeId === item?.itemTypeId
+              ? Math.max(
+                  0,
+                  Math.floor(Number(slot?.loadedQuantity) || 0),
+                )
+              : 0;
+          this.shopStallTargetQuantityBySlot.set(
+            safeSlotNumber,
+            loadedQuantity +
+              Math.max(0, Math.floor(Number(item?.quantity) || 0)),
+          );
           if (item?.kind) {
             this.shopStallItemKindBySlot.set(safeSlotNumber, item.kind);
           }
@@ -1170,27 +1186,27 @@ export class PixiPagesFacade {
             itemTypeId: item?.itemTypeId ?? null,
           };
         },
-        setStallAllocationDraft: (slotNumber, percentage, item) => {
+        setStallTargetQuantityDraft: (slotNumber, quantity, item) => {
           const safeSlotNumber = Math.max(
             1,
             Math.floor(Number(slotNumber) || 1),
           );
-          const safePercentage = Math.max(
+          const safeQuantity = Math.max(
             0,
-            Math.min(100, Math.round((Number(percentage) || 0) / 5) * 5),
+            Math.floor(Number(quantity) || 0),
           );
           if (item?.itemTypeId !== undefined) {
             this.shopStallItemTypeIdBySlot.set(safeSlotNumber, item.itemTypeId);
           }
-          this.shopStallAllocationPercentBySlot.set(
+          this.shopStallTargetQuantityBySlot.set(
             safeSlotNumber,
-            safePercentage,
+            safeQuantity,
           );
           this.refreshShopStallDialog(safeSlotNumber);
           return {
             ok: true,
             slotNumber: safeSlotNumber,
-            percentage: safePercentage,
+            quantity: safeQuantity,
           };
         },
         selectStallItemKind: (slotNumber, kind) => {
@@ -1202,14 +1218,14 @@ export class PixiPagesFacade {
           this.refreshShopStallDialog(safeSlotNumber);
           return true;
         },
-        markStall: (slotNumber, item, percentage) => {
+        markStall: (slotNumber, item, quantity) => {
           const selected = gameplay?.selectShopShelfSlot?.(slotNumber);
           if (selected === false || selected?.ok === false) {
             return selected;
           }
-          const result = gameplay?.setSelectedShopShelfSlotAllocation?.(
+          const result = gameplay?.setSelectedShopShelfSlotQuantity?.(
             item?.itemTypeId,
-            percentage,
+            quantity,
           );
           if (result?.ok) {
             this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.STALL);
@@ -1224,7 +1240,7 @@ export class PixiPagesFacade {
           const result = gameplay?.clearSelectedShopShelfSlot?.();
           if (result?.ok) {
             this.shopStallItemTypeIdBySlot.delete(slotNumber);
-            this.shopStallAllocationPercentBySlot.delete(slotNumber);
+            this.shopStallTargetQuantityBySlot.delete(slotNumber);
             this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.STALL);
           }
           return result;
@@ -1338,6 +1354,15 @@ export class PixiPagesFacade {
     const gameplay = this.gameplayFacade;
     const activatePlot = (plot) => {
       if (plot?.unlocked === false) {
+        if (plot.lockReason === "research_locked") {
+          return {
+            ok: false,
+            reason: "research_locked",
+            tileNumber: plot.tileNumber,
+            tooltip:
+              "You need to research first to unlock buying this slot.",
+          };
+        }
         if (plot.disabled === true) {
           return {
             ok: false,
@@ -1366,6 +1391,17 @@ export class PixiPagesFacade {
       }
       if (plot?.phase === "empty") {
         if (plot.toolbarSeedItemTypeId) {
+          if (!plot.canPlantSelectedSeed) {
+            this.experienceFacade?.transientEffects?.emitReward?.({
+              message: "no seed",
+              flyoutKey: `garden-no-seed-${plot.tileNumber}`,
+            });
+            return {
+              ok: false,
+              reason: "not_enough_seed",
+              tileNumber: plot.tileNumber,
+            };
+          }
           return gameplay?.plantGardenSeed?.(
             plot.tileNumber,
             plot.toolbarSeedItemTypeId,
@@ -1399,11 +1435,18 @@ export class PixiPagesFacade {
       activatePlot,
       activatePlotLabel: activatePlot,
       openSeedPicker: () => this.openGardenSeedDialog(),
-      harvestAll: () =>
-        gameplay?.startAllReadyGardenHarvests?.() ?? {
+      harvestAll: () => {
+        const result = gameplay?.startAllReadyGardenHarvests?.() ?? {
           ok: false,
           reason: "unavailable",
-        },
+        };
+        if (result?.ok !== true && result?.reason === "no_ready_tiles") {
+          this.experienceFacade?.transientEffects?.emitReward?.({
+            message: "Nothing to harvest",
+          });
+        }
+        return result;
+      },
       selectSeed: (seed) => {
         if (!Number.isInteger(seed?.itemTypeId)) {
           return {
@@ -1495,7 +1538,7 @@ export class PixiPagesFacade {
         Number.isFinite(nextCauldronCost) &&
         Number(this.gameplaySnapshot.coin?.current ?? 0) >= nextCauldronCost;
       cauldrons.push({
-        id: `buy:${brewing.nextCauldronNumber}`,
+        id: brewing.nextCauldronNumber - 1,
         cauldronIndex: brewing.nextCauldronNumber - 1,
         cauldronNumber: brewing.nextCauldronNumber,
         unlocked: false,
@@ -1575,7 +1618,7 @@ export class PixiPagesFacade {
         };
     return {
       ...cauldron,
-      id: cauldron.id ?? index,
+      id: index,
       unlocked: true,
       autoBrewAvailable,
       selectedRecipe: decoratedRecipe,
@@ -1632,6 +1675,11 @@ export class PixiPagesFacade {
   }
 
   openBrewingHerbDialog(cauldronIndex = 0, slotIndex = 0) {
+    const selectedItem = createBrewingHerbSlotSelection(
+      this.gameplaySnapshot,
+      cauldronIndex,
+      slotIndex,
+    );
     return (
       this.requireRuntime()
         .getPage("brewing")
@@ -1641,8 +1689,49 @@ export class PixiPagesFacade {
           cauldronIndex,
           slotIndex,
           rows: createBrewingHerbDialogRows(this.gameplaySnapshot),
+          selectedItem,
         }) ?? false
     );
+  }
+
+  setBrewingHerbSlotQuantity(
+    herb,
+    quantity,
+    cauldronIndex = 0,
+    slotIndex = 0,
+  ) {
+    if (!Number.isInteger(herb?.itemTypeId)) {
+      return {
+        ok: false,
+        reason: "invalid_herb",
+      };
+    }
+    const result =
+      this.gameplayFacade?.setBrewingIngredientSlotQuantity?.(
+        herb.itemTypeId,
+        quantity,
+        slotIndex,
+        cauldronIndex,
+      ) ?? false;
+    if (result?.ok !== true && result !== true) {
+      return result;
+    }
+    const nextSelection =
+      Number(quantity) > 0
+        ? createBrewingHerbSlotSelection(
+            this.gameplayFacade?.getSnapshot?.() ?? this.gameplaySnapshot,
+            cauldronIndex,
+            slotIndex,
+            herb,
+            quantity,
+          )
+        : null;
+    return {
+      ...(result === true ? { ok: true } : result),
+      item: nextSelection ?? herb,
+      quantity: Math.max(0, Math.floor(Number(quantity) || 0)),
+      maxQuantity: nextSelection?.maxQuantity ?? 0,
+    };
   }
 
   createBrewingActions() {
@@ -1660,22 +1749,26 @@ export class PixiPagesFacade {
         this.openBrewingRecipesDialog(cauldronIndex),
       openHerbPicker: (cauldronIndex, slotIndex) =>
         this.openBrewingHerbDialog(cauldronIndex, slotIndex),
-      selectHerb: (herb, cauldronIndex = 0) => {
-        if (!Number.isInteger(herb?.itemTypeId)) {
-          return {
-            ok: false,
-            reason: "invalid_herb",
-          };
-        }
-        const result = gameplay?.addBrewingIngredient?.(
-          herb.itemTypeId,
+      selectHerb: (herb, cauldronIndex = 0, slotIndex = 0) => {
+        return this.setBrewingHerbSlotQuantity(
+          herb,
+          1,
           cauldronIndex,
+          slotIndex,
         );
-        if (result?.ok === true || result === true) {
-          this.requireRuntime().closeDialog?.("brewing.herbs");
-        }
-        return result ?? false;
       },
+      setHerbQuantity: (
+        herb,
+        quantity,
+        cauldronIndex = 0,
+        slotIndex = 0,
+      ) =>
+        this.setBrewingHerbSlotQuantity(
+          herb,
+          quantity,
+          cauldronIndex,
+          slotIndex,
+        ),
       researchRecipe: (recipe, cauldronIndex = 0) => {
         if (recipe?.canResearch !== true || !recipe?.researchId) {
           return false;
@@ -1847,6 +1940,7 @@ export class PixiPagesFacade {
     }
     this.resetInventoryUiState(this.currentPageId);
     this.currentPageId = pageId;
+    this.experienceFacade?.onPageChanged?.(pageId);
     this.requireRuntime().activatePage(pageId);
     this.refreshChrome();
     this.refreshPage(pageId, { force: true });
@@ -2222,15 +2316,12 @@ function createGardenPlotModel({
   } else if (tile.phase === "empty") {
     label = "";
     labelResource = null;
-    actionText = hasSelectedSeed
-      ? canPlantSelectedSeed
+    actionText =
+      hasSelectedSeed && canPlantSelectedSeed
         ? selectedSeedRequirement > 1
           ? `plant x${selectedSeedRequirement}`
           : "plant"
-        : selectedSeedRequirement > 1
-          ? `no x${selectedSeedRequirement} seed`
-          : "no seeds"
-      : "choose seed";
+        : "";
     actionResource = null;
   }
 
@@ -2243,7 +2334,7 @@ function createGardenPlotModel({
     buySlot: nextLockedTile,
     disabled:
       tile.disabled === true ||
-      (!unlocked && (!nextLockedTile || lockedByLevel || lockedByResearch)),
+      (!unlocked && (!nextLockedTile || lockedByLevel)),
     lockReason: lockedByLevel
       ? "level_locked"
       : lockedByResearch
@@ -2287,7 +2378,7 @@ function formatGardenLockedPlotAction(plot = {}) {
     return `level ${plot.nextTileRequiresLevel}`;
   }
   if (plot.nextTileLockedByResearch === true) {
-    return "research";
+    return "Research";
   }
   const cost = Number(plot.nextTileCost);
   return `buy ${cost === 0 ? "free" : formatCoinPriceText(cost)}`;
@@ -2397,6 +2488,107 @@ function createBrewingHerbDialogRows(snapshot = {}) {
   });
 }
 
+function createBrewingHerbSlotSelection(
+  snapshot = {},
+  cauldronIndex = 0,
+  slotIndex = 0,
+  fallbackHerb = null,
+  fallbackQuantity = null,
+) {
+  const brewing = snapshot.brewing ?? {};
+  const safeCauldronIndex = Math.max(
+    0,
+    Math.floor(Number(cauldronIndex) || 0),
+  );
+  const safeSlotIndex = Math.max(
+    0,
+    Math.floor(Number(slotIndex) || 0),
+  );
+  const cauldron =
+    (brewing.cauldrons ?? []).find(
+      (candidate) =>
+        Number(candidate?.cauldronIndex) === safeCauldronIndex,
+    ) ?? (safeCauldronIndex === 0 ? brewing : {});
+  const ingredients = Array.isArray(cauldron?.ingredients)
+    ? cauldron.ingredients
+    : [];
+  const groups = [];
+  for (const ingredient of ingredients) {
+    const group = groups.at(-1);
+    if (group?.itemTypeId === ingredient?.itemTypeId) {
+      group.quantity += 1;
+    } else {
+      groups.push({
+        ...ingredient,
+        quantity: 1,
+      });
+    }
+  }
+  const currentGroup = groups[safeSlotIndex] ?? null;
+  const selectedHerb =
+    fallbackHerb ??
+    (brewing.herbs ?? []).find(
+      (herb) => herb.itemTypeId === currentGroup?.itemTypeId,
+    ) ??
+    currentGroup;
+  const selectedQuantity = Math.max(
+    0,
+    Math.floor(
+      Number(
+        fallbackQuantity ??
+          currentGroup?.quantity ??
+          0,
+      ) || 0,
+    ),
+  );
+  if (!selectedHerb || selectedQuantity <= 0) {
+    return null;
+  }
+
+  const currentGroupQuantity =
+    currentGroup?.itemTypeId === selectedHerb.itemTypeId
+      ? currentGroup.quantity
+      : selectedQuantity;
+  const maxIngredients = Math.max(
+    1,
+    Math.floor(Number(cauldron?.maxIngredients ?? brewing.maxIngredients) || 6),
+  );
+  const occupiedOutsideSlot = Math.max(
+    0,
+    ingredients.length - currentGroupQuantity,
+  );
+  const availableQuantity = Math.max(
+    0,
+    Math.floor(
+      Number(
+        selectedHerb.availableQuantity ??
+          selectedHerb.quantity ??
+          0,
+      ) || 0,
+    ),
+  );
+  const maxQuantity = Math.max(
+    selectedQuantity,
+    Math.min(
+      maxIngredients - occupiedOutsideSlot,
+      currentGroupQuantity + availableQuantity,
+    ),
+  );
+  return {
+    ...selectedHerb,
+    id: selectedHerb.itemTypeId,
+    itemKind: "herb",
+    itemKey: selectedHerb.key,
+    icon: {
+      kind: "herb",
+      key: selectedHerb.key,
+    },
+    selectedQuantity,
+    quantity: selectedQuantity,
+    maxQuantity,
+  };
+}
+
 function createGardenSelectedSeedModel(snapshot = {}, seed = {}) {
   const display = getItemDisplay(snapshot, seed, seed.quantity);
   return {
@@ -2478,6 +2670,12 @@ const DEV_BREWING_HERB_DIALOG_OPTIONS = Object.freeze({
   cauldronIndex: 0,
   slotIndex: 0,
   rows: DEV_BREWING_HERB_ROWS,
+  selectedItem: Object.freeze({
+    ...DEV_BREWING_HERB_ROWS[0],
+    selectedQuantity: 3,
+    quantity: 3,
+    maxQuantity: 6,
+  }),
 });
 
 const DEV_DIALOG_TARGETS = Object.freeze({

@@ -464,6 +464,20 @@ export class BrewingFacade {
     return this.brewingStartManager.removeIngredientAt(slotIndex, cauldronIndex);
   }
 
+  setIngredientSlotQuantity(
+    itemTypeId,
+    quantity,
+    slotIndex,
+    cauldronIndex = 0,
+  ) {
+    return this.brewingStartManager.setIngredientSlotQuantity(
+      itemTypeId,
+      quantity,
+      slotIndex,
+      cauldronIndex,
+    );
+  }
+
   clearCauldron(cauldronIndex = 0) {
     return this.brewingStartManager.clearCauldron(cauldronIndex);
   }

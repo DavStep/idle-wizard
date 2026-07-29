@@ -2303,6 +2303,40 @@ function createGameplayFacadeFake() {
       publish();
       return { ok: true, slotNumber, percentage, targetQuantity };
     },
+    setSelectedShopShelfSlotQuantity: (itemTypeId, quantity) => {
+      const slotNumber = snapshot.shop.shelf.selectedSlotNumber;
+      const slot = snapshot.shop.shelf.slots.find(
+        (shelfSlot) => shelfSlot.slotNumber === slotNumber,
+      );
+      const item = snapshot.shop.shelf.sellItems.find(
+        (sellItem) => sellItem.itemTypeId === itemTypeId,
+      );
+      if (!slot || !item) return { ok: false, reason: 'item_missing' };
+      if (slot.sellItemTypeId && slot.sellItemTypeId !== itemTypeId) {
+        return { ok: false, reason: 'different_item_loaded' };
+      }
+      const loadedQuantity =
+        slot.sellItemTypeId === itemTypeId
+          ? (slot.loadedQuantity ?? 0)
+          : 0;
+      const totalQuantity = item.quantity + loadedQuantity;
+      const targetQuantity = Math.max(
+        0,
+        Math.min(totalQuantity, Math.floor(Number(quantity) || 0)),
+      );
+      item.quantity -= targetQuantity - loadedQuantity;
+      slot.sellItemTypeId = targetQuantity > 0 ? item.itemTypeId : null;
+      slot.sellKind = targetQuantity > 0 ? item.kind : null;
+      slot.sellKey = targetQuantity > 0 ? item.key : null;
+      slot.sellLabel = targetQuantity > 0 ? item.label : null;
+      slot.loadedQuantity = targetQuantity;
+      slot.sellQuantity = targetQuantity;
+      slot.batchSize = 1;
+      slot.sellCoin = targetQuantity > 0 ? item.sellCoin : null;
+      slot.sellNeed = targetQuantity > 0 ? item.sellNeed : null;
+      publish();
+      return { ok: true, slotNumber, targetQuantity };
+    },
     setSelectedShopShelfFutureItem: (itemTypeId, enabled) => {
       const slotNumber = snapshot.shop.shelf.selectedSlotNumber;
       const slot = snapshot.shop.shelf.slots.find(
@@ -10583,7 +10617,7 @@ describe('PagesFacade', () => {
     expect(rows[0].querySelector('.garden-page__plot-box-number')?.textContent).toBe('1');
     expect(rows[0].querySelector('.garden-page__plot-box-label')?.textContent).toBe('choose');
     expect(rows[0].querySelector('.garden-page__plot-box-level')?.textContent).toBe('☆☆☆');
-    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe('empty');
+    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe('');
     expect(rows[0].disabled).toBe(false);
     expect(rows[1].classList.contains('is-buy-slot')).toBe(true);
     expect(rows[1].querySelector('.garden-page__plot-box-number')?.textContent).toBe('');
@@ -10609,7 +10643,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.garden-page__message')).toBeNull();
     expect(rows[1].querySelector('.garden-page__plot-box-label')?.textContent).toBe('choose');
     expect(rows[1].querySelector('.garden-page__plot-box-level')?.textContent).toBe('☆☆☆');
-    expect(rows[1].querySelector('.garden-page__plot-box-action')?.textContent).toBe('empty');
+    expect(rows[1].querySelector('.garden-page__plot-box-action')?.textContent).toBe('');
     expect(rows[1].disabled).toBe(false);
     expect(rows.filter((row) => !row.hidden)).toHaveLength(3);
     expect(stage.querySelector('.garden-page__plot-summary')).toBeNull();
@@ -10624,7 +10658,7 @@ describe('PagesFacade', () => {
     });
     gameplayFacade.setGardenSeedQuantity(1, 1);
     expect(rows[0].querySelector('.garden-page__plot-box-label')?.textContent).toBe('choose');
-    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe('empty');
+    expect(rows[0].querySelector('.garden-page__plot-box-action')?.textContent).toBe('');
     expect(rows[0].classList.contains('is-plantable')).toBe(false);
     expect(rows[0].disabled).toBe(false);
     rows[0]

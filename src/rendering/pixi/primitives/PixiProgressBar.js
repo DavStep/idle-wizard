@@ -246,6 +246,132 @@ export class PixiProgressBar extends Container {
   }
 }
 
+export class PixiTimedProgressBar extends PixiProgressBar {
+  constructor(options = {}) {
+    super(options);
+    this.startedAtMs = null;
+    this.durationMs = 0;
+  }
+
+  setTimer({
+    startedAtMs,
+    durationMs,
+  } = {}) {
+    const nextStartedAtMs = Number(startedAtMs);
+    const nextDurationMs = Math.max(0, Number(durationMs) || 0);
+    if (
+      !Number.isFinite(nextStartedAtMs) ||
+      nextDurationMs <= 0
+    ) {
+      return this.clearTimer(0);
+    }
+
+    this.startedAtMs =
+      this.durationMs === nextDurationMs &&
+      Number.isFinite(this.startedAtMs) &&
+      this.end < 1
+        ? Math.min(this.startedAtMs, nextStartedAtMs)
+        : nextStartedAtMs;
+    this.durationMs = nextDurationMs;
+    return this;
+  }
+
+  updateTimer(now = Date.now()) {
+    const snapshot = this.getTimerSnapshot(now);
+    if (Math.abs(this.end - snapshot.progress) > 0.000001) {
+      super.setProgress(snapshot.progress);
+    }
+    return snapshot;
+  }
+
+  getTimerSnapshot(now = Date.now()) {
+    if (
+      !Number.isFinite(this.startedAtMs) ||
+      this.durationMs <= 0
+    ) {
+      return {
+        progress: this.end,
+        remainingMs: 0,
+        complete: this.end >= 1,
+      };
+    }
+
+    const elapsedMs = Math.max(
+      0,
+      Number(now) - this.startedAtMs,
+    );
+    const remainingMs = Math.max(
+      0,
+      this.durationMs - elapsedMs,
+    );
+    const progress = clamp01(elapsedMs / this.durationMs);
+    return {
+      progress,
+      remainingMs,
+      complete: remainingMs <= 0,
+    };
+  }
+
+  clearTimer(progress = 0) {
+    this.startedAtMs = null;
+    this.durationMs = 0;
+    super.setProgress(progress);
+    return this;
+  }
+
+  setProgress(progress) {
+    return this.clearTimer(progress);
+  }
+}
+
+export function createTimedProgressWindow(
+  timer = {},
+  now = Date.now(),
+) {
+  const durationMs = Math.max(
+    0,
+    Number(timer.durationMs ?? timer.totalMs) || 0,
+  );
+  const snapshotProgress = getTimedProgressSnapshotProgress(timer);
+  const fallbackRemainingMs =
+    durationMs * (1 - snapshotProgress);
+  const remainingMs = Math.max(
+    0,
+    Math.min(
+      durationMs,
+      Number.isFinite(Number(timer.remainingMs))
+        ? Number(timer.remainingMs)
+        : fallbackRemainingMs,
+    ),
+  );
+  const explicitStartedAtMs = Number(timer.startedAtMs);
+  const explicitEndTimeMs = Number(
+    timer.endTimeMs ?? timer.endsAt,
+  );
+  const startedAtMs = Number.isFinite(explicitStartedAtMs)
+    ? explicitStartedAtMs
+    : Number.isFinite(explicitEndTimeMs)
+      ? explicitEndTimeMs - durationMs
+      : Number(now) - (durationMs - remainingMs);
+
+  return {
+    startedAtMs,
+    durationMs,
+  };
+}
+
+export function getTimedProgressSnapshotProgress(timer = {}) {
+  const durationMs = Math.max(
+    0,
+    Number(timer.durationMs ?? timer.totalMs) || 0,
+  );
+  const remainingMs = Number(timer.remainingMs);
+  if (durationMs > 0 && Number.isFinite(remainingMs)) {
+    return clamp01(1 - remainingMs / durationMs);
+  }
+  return clamp01(timer.progress);
+}
+
 function clamp01(value) {
   return Math.max(0, Math.min(1, Number(value) || 0));
 }

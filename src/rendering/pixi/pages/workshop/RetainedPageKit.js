@@ -27,7 +27,10 @@ import {
   createPixiCapsuleSlice,
   setPixiCapsuleBounds,
 } from '../../primitives/PixiCapsuleSkin.js';
-import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
+import {
+  PixiProgressBar,
+  PixiTimedProgressBar,
+} from '../../primitives/PixiProgressBar.js';
 
 let nextRetainedInputId = 1;
 
@@ -526,12 +529,13 @@ export class RetainedProgressBar {
     assetManager = null,
     label = 'progress',
     tone = 'root',
+    ProgressBarClass = PixiProgressBar,
   } = {}) {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.progress = 0;
     this.width = 0;
     this.height = PIXI_UI_GEOMETRY.progressTotalHeight;
-    this.control = new PixiProgressBar({
+    this.control = new ProgressBarClass({
       assetManager,
       width: 0,
       height: this.height,
@@ -570,6 +574,35 @@ export class RetainedProgressBar {
 
   destroy() {
     this.control.destroy({ children: true });
+  }
+}
+
+export class RetainedTimedProgressBar extends RetainedProgressBar {
+  constructor(options = {}) {
+    super({
+      ...options,
+      ProgressBarClass: PixiTimedProgressBar,
+    });
+  }
+
+  setTimer(timer) {
+    this.control.setTimer(timer);
+    return this;
+  }
+
+  updateTimer(now = Date.now()) {
+    const snapshot = this.control.updateTimer(now);
+    this.progress = snapshot.progress;
+    return snapshot;
+  }
+
+  clearTimer(progress = 0) {
+    this.progress = Math.min(
+      1,
+      Math.max(0, finiteOr(progress, 0)),
+    );
+    this.control.clearTimer(this.progress);
+    return this;
   }
 }
 
@@ -1086,8 +1119,9 @@ export function createText(text = '', style = RETAINED_TEXT_STYLES.body) {
       breakWords: false,
       leading: 0,
       letterSpacing: 0,
-      padding: 0,
+      padding: Math.max(0, Number(style.padding) || 0),
       whiteSpace: style.wordWrapWidth ? 'normal' : 'pre',
+      ...(style.stroke ? { stroke: style.stroke } : {}),
     },
   });
 }
@@ -1107,8 +1141,9 @@ export function applyTextTheme(text, theme, style = RETAINED_TEXT_STYLES.body) {
     breakWords: false,
     leading: 0,
     letterSpacing: 0,
-    padding: 0,
+    padding: Math.max(0, Number(style.padding) || 0),
     whiteSpace: style.wordWrapWidth ? 'normal' : 'pre',
+    ...(style.stroke ? { stroke: style.stroke } : {}),
   };
 }
 

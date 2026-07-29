@@ -206,7 +206,10 @@ describe('ResearchDefinitionManager', () => {
     expect(box?.researches[0]).toMatchObject({
       id: researchTimeResearchIds.reduction(1),
       label: 'research time lvl 1',
+      displayName: 'research time',
       value: '-10% time',
+      starLevel: 1,
+      starMaxLevel: 8,
       requiredResearchIds: [],
     });
     expect(box?.researches[7]).toMatchObject({
@@ -226,7 +229,10 @@ describe('ResearchDefinitionManager', () => {
     expect(box?.researches[0]).toMatchObject({
       id: researchCostResearchIds.reduction(1),
       label: 'research cost lvl 1',
+      displayName: 'research cost',
       value: '-10% cost',
+      starLevel: 1,
+      starMaxLevel: 8,
       requiredResearchIds: [],
     });
     expect(box?.researches[7]).toMatchObject({
@@ -247,7 +253,10 @@ describe('ResearchDefinitionManager', () => {
       {
         id: automationReserveResearchIds.controls(1),
         label: 'automation reserve lvl 1',
+        displayName: 'automation reserve',
         value: '75% preset',
+        starLevel: 1,
+        starMaxLevel: 3,
         requiredPrestigeCount: 4,
         requiredResearchIds: [],
       },
@@ -301,10 +310,12 @@ describe('ResearchDefinitionManager', () => {
       id: advancedResearchIds.plotGrowth(1, 1),
       label: 'plot 1 growth',
       starLevel: 1,
+      starMaxLevel: 12,
     });
     expect(plotOneResearches?.at(-1)).toMatchObject({
       id: advancedResearchIds.plotGrowth(1, 12),
       starLevel: 12,
+      starMaxLevel: 12,
       requiredResearchIds: [advancedResearchIds.plotGrowth(1, 11)],
     });
   });
@@ -328,6 +339,7 @@ describe('ResearchDefinitionManager', () => {
       actionType: 'levelUp',
       level: 2,
       starLevel: 1,
+      starMaxLevel: 4,
       description:
         'levels plot 1 to lvl 2: it uses 2 seeds and harvests 2 herbs in one growth timer.',
     });
@@ -341,6 +353,7 @@ describe('ResearchDefinitionManager', () => {
       actionType: 'levelUp',
       level: 2,
       starLevel: 1,
+      starMaxLevel: 4,
       description:
         'sets cauldron 1 to ★: it uses 2 recipe inputs and mana costs to bottle 2 potions in one brew timer.',
     });

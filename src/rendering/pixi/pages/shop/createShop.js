@@ -88,12 +88,21 @@ export function createShop(options = {}) {
     safeArray(options.crystalOffers ?? shop.crystalOffers).length > 0
       ? safeArray(options.crystalOffers ?? shop.crystalOffers)
       : DEFAULT_CRYSTAL_OFFERS;
+  const notifications =
+    options.notificationSnapshot ??
+    shop.notifications ??
+    null;
+  const npcListingNotification = notificationChildState(
+    notifications,
+    'npcListing',
+  );
 
   const stallModels = safeArray(shelf.slots).map((slot, index) =>
     createStallModel({
       gameplaySnapshot,
       gameplayActions,
       index,
+      npcListingNotification,
       shelf,
       slot,
       uiActions,
@@ -127,10 +136,6 @@ export function createShop(options = {}) {
       }),
   );
   const proceedsCoin = finiteNumber(playerShop.proceedsCoin, 0);
-  const notifications =
-    options.notificationSnapshot ??
-    shop.notifications ??
-    null;
   const dialogs = {
     ledger: createLedgerDialog({
       gameplaySnapshot,
@@ -257,6 +262,7 @@ function createStallModel({
   gameplaySnapshot,
   gameplayActions,
   index,
+  npcListingNotification,
   shelf,
   slot,
   uiActions,
@@ -295,13 +301,26 @@ function createStallModel({
   const selectedKind = visibleSellKinds.some((kind) => kind.kind === requestedKind)
     ? requestedKind
     : visibleSellKinds[0]?.kind ?? null;
-  const draftAllocation = finiteNumber(
-    uiState.stallAllocationPercentBySlot?.[slotNumber],
+  const loadedSelectedQuantity =
+    slot.sellItemTypeId === selectedItemTypeId
+      ? nonNegativeInteger(slot.loadedQuantity)
+      : 0;
+  const allocationTotal =
+    loadedSelectedQuantity +
+    nonNegativeInteger(selectedItem?.quantity);
+  const draftTargetQuantity = finiteNumber(
+    uiState.stallTargetQuantityBySlot?.[slotNumber],
     Number.NaN,
   );
-  const allocationPercent = Number.isFinite(draftAllocation)
-    ? draftAllocation
-    : calculateAllocationPercent(slot, shelf, selectedItemTypeId);
+  const targetQuantity = Math.max(
+    0,
+    Math.min(
+      allocationTotal,
+      Number.isFinite(draftTargetQuantity)
+        ? Math.floor(draftTargetQuantity)
+        : loadedSelectedQuantity,
+    ),
+  );
   const price =
     loaded && Number.isFinite(Number(slot.sellCoin))
       ? formatCoinPriceText(Number(slot.sellCoin) * batchSize)
@@ -311,6 +330,11 @@ function createStallModel({
   const durationSeconds = finiteNumber(shelf.autoSellSeconds, 0);
   const progressSeconds = finiteNumber(slot.sellProgressSeconds, 0);
   const paused = Boolean(slot.pauseLabel);
+  const notification =
+    npcListingNotification.active &&
+    slot.unlocked === true &&
+    !loaded &&
+    !future;
 
   return {
     ...slot,
@@ -341,6 +365,7 @@ function createStallModel({
         ? slot.futureItemKind
         : null,
     priceLabel: price,
+    priceVariant: price === 'select' ? 'green' : null,
     priceResourceKey: loaded ? 'coin' : null,
     progress:
       loaded && durationSeconds > 0
@@ -359,10 +384,13 @@ function createStallModel({
         : ''),
     paused,
     pauseLabel: slot.pauseLabel ?? '',
+    notification,
+    notificationTone: notification
+      ? npcListingNotification.tone
+      : null,
     semanticId: `shop.stall.${slotNumber}`,
     tutorialId: `shop:stand:${slotNumber}`,
     dialog: createStallDialog({
-      allocationPercent,
       gameplaySnapshot,
       gameplayActions,
       selectedItemTypeId,
@@ -370,6 +398,7 @@ function createStallModel({
       shelf,
       slot,
       slotNumber,
+      targetQuantity,
       uiActions,
       visibleSellKinds,
     }),
@@ -377,7 +406,6 @@ function createStallModel({
 }
 
 function createStallDialog({
-  allocationPercent,
   gameplaySnapshot,
   gameplayActions,
   selectedItemTypeId,
@@ -385,6 +413,7 @@ function createStallDialog({
   shelf,
   slot,
   slotNumber,
+  targetQuantity,
   uiActions,
   visibleSellKinds,
 }) {
@@ -396,13 +425,12 @@ function createStallDialog({
     slot.sellItemTypeId === selectedItem.itemTypeId
       ? nonNegativeInteger(slot.loadedQuantity)
       : 0;
-  const targetQuantity = selectedItem
-    ? Math.floor(
-        ((loadedQuantity + nonNegativeInteger(selectedItem.quantity)) *
-          allocationPercent) /
-          100,
-      )
+  const totalQuantity = selectedItem
+    ? loadedQuantity + nonNegativeInteger(selectedItem.quantity)
     : 0;
+  const visibleItems = safeArray(shelf.sellItems).filter((item) =>
+    stallVisibilityManager.isItemVisible(gameplaySnapshot, item),
+  );
   const selectSlot = () =>
     callFirst(
       gameplayActions,
@@ -449,38 +477,55 @@ function createStallDialog({
     range: {
       enabled: Boolean(selectedItem),
       tone: 'root',
-      value: allocationPercent,
-      onChange: (percentage) =>
+      min: 0,
+      max: totalQuantity,
+      step: 1,
+      value: targetQuantity,
+      tutorialTargetValue:
+        totalQuantity > 0
+          ? Math.max(1, Math.ceil(totalQuantity * 0.25))
+          : 0,
+      onChange: (quantity) =>
         callFirst(
           uiActions,
-          ['setStallAllocationDraft'],
-          [slotNumber, percentage, selectedItem],
+          ['setStallTargetQuantityDraft'],
+          [slotNumber, quantity, selectedItem],
         ),
     },
-    items: safeArray(shelf.sellItems)
+    items: visibleItems
       .filter(
         (item) =>
-          (!selectedKind || item.kind === selectedKind) &&
-          stallVisibilityManager.isItemVisible(gameplaySnapshot, item),
+          !selectedKind || item.kind === selectedKind,
       )
-      .map((item) => ({
-        id: item.itemTypeId ?? item.key,
-        label: toTitleCase(item.label),
-        detail: `${nonNegativeInteger(item.quantity)} Available`,
-        value: '',
-        itemKey: item.key,
-        itemKind: item.kind,
-        resourceKey: item.kind,
-        selected: item.itemTypeId === selectedItemTypeId,
-        semanticId: `shop.stall.${slotNumber}.item.${item.key ?? item.itemTypeId}`,
-        tutorialId: `shop:sell:${item.key ?? item.itemTypeId}`,
-        action: () =>
-          callFirst(
-            uiActions,
-            ['selectStallItem'],
-            [slotNumber, item],
-          ),
-      })),
+      .map((item) => {
+        const sellable = isSellReady(item);
+        return {
+          id: item.itemTypeId ?? item.key,
+          label: toTitleCase(item.label),
+          detail: `${nonNegativeInteger(item.quantity)} Available`,
+          value:
+            positiveInteger(item.sellCoin) !== null
+              ? formatCoinPriceText(item.sellCoin)
+              : '',
+          valueIconResourceKey:
+            positiveInteger(item.sellCoin) !== null
+              ? 'coin'
+              : null,
+          itemKey: item.key,
+          itemKind: item.kind,
+          resourceKey: item.kind,
+          selected: item.itemTypeId === selectedItemTypeId,
+          notification: sellable,
+          semanticId: `shop.stall.${slotNumber}.item.${item.key ?? item.itemTypeId}`,
+          tutorialId: `shop:sell:${item.key ?? item.itemTypeId}`,
+          action: () =>
+            callFirst(
+              uiActions,
+              ['selectStallItem'],
+              [slotNumber, item],
+            ),
+        };
+      }),
     actions: [
       {
         id: 'mark',
@@ -495,14 +540,14 @@ function createStallDialog({
           callFirstOr(
             uiActions,
             ['markStall'],
-            [slotNumber, selectedItem, allocationPercent],
+            [slotNumber, selectedItem, targetQuantity],
             () =>
               selectAndCall(
                 [
-                  'setSelectedShopShelfSlotAllocation',
-                  'setSelectedShelfSlotAllocation',
+                  'setSelectedShopShelfSlotQuantity',
+                  'setSelectedShelfSlotQuantity',
                 ],
-                [selectedItem?.itemTypeId, allocationPercent],
+                [selectedItem?.itemTypeId, targetQuantity],
               ),
           ),
       },
@@ -560,6 +605,9 @@ function createStallDialog({
     tabs: visibleSellKinds.map((kind) => ({
       id: kind.kind,
       label: toTitleCase(kind.label),
+      notification: visibleItems.some(
+        (item) => item.kind === kind.kind && isSellReady(item),
+      ),
       semanticId: `shop.stall.${slotNumber}.tab.${kind.kind}`,
       tutorialId: `shop:sell:tab:${kind.kind}`,
       selected: kind.kind === selectedKind,
@@ -570,6 +618,13 @@ function createStallDialog({
         ]),
     })),
   };
+}
+
+function isSellReady(item) {
+  return (
+    nonNegativeInteger(item?.quantity) > 0 &&
+    positiveInteger(item?.sellCoin) !== null
+  );
 }
 
 function createRequestSlotModel({
@@ -1430,26 +1485,6 @@ async function claimPlayerMarketProceeds({
   );
 }
 
-function calculateAllocationPercent(
-  slot,
-  shelf,
-  selectedItemTypeId,
-) {
-  if (!selectedItemTypeId) {
-    return 0;
-  }
-  const item = safeArray(shelf.sellItems).find(
-    (candidate) =>
-      candidate.itemTypeId === selectedItemTypeId,
-  );
-  const loaded =
-    slot.sellItemTypeId === selectedItemTypeId
-      ? nonNegativeInteger(slot.loadedQuantity)
-      : 0;
-  const total = loaded + nonNegativeInteger(item?.quantity);
-  return total > 0 ? Math.round((loaded / total) * 100) : 0;
-}
-
 function formatSlotCount(slots) {
   const values = safeArray(slots);
   const unlocked = values.filter(
@@ -1462,17 +1497,27 @@ function formatSlotCount(slots) {
 }
 
 function notificationChildActive(snapshot, key) {
+  return notificationChildState(snapshot, key).active;
+}
+
+function notificationChildState(snapshot, key) {
   const page =
     snapshot?.pages?.shop ??
     snapshot?.shop ??
     snapshot;
   const value = page?.children?.[key];
-  return (
-    value === true ||
-    value === 'red' ||
-    value === 'orange' ||
-    value?.active === true
-  );
+  return {
+    active:
+      value === true ||
+      value === 'red' ||
+      value === 'orange' ||
+      value?.active === true,
+    tone:
+      value === 'orange' ||
+      value?.tone === 'orange'
+        ? 'orange'
+        : 'red',
+  };
 }
 
 function normalizeTabId(tabId) {

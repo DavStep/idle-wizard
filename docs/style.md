@@ -80,6 +80,7 @@ The game should look like a polished fantasy workshop HUD: dark layered rooms, r
 
 - Motion should feel like a restrained rubber snap: move slightly past the final position once, then settle.
 - Use the rubber snap for page entry, dialog entry, expandable content, row reorder, reward feedback, and pressed release.
+- Dialog entry keeps the panel and backdrop at their final alpha. Use a fast scale snap instead of fading either layer in or out.
 - Keep the overshoot small in source units: usually `1px` to `2px`, or about `1.02x` scale.
 - Keep normal UI motion at or under `250ms`; longer reward flyouts may persist, but their snap happens early.
 - Do not add looping bounce, decorative wobble, or motion that fights readability.

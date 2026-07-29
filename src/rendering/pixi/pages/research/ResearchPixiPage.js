@@ -10,6 +10,9 @@ import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
 import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
+import {
+  createTimedProgressWindow,
+} from '../../primitives/PixiProgressBar.js';
 import { PixiResourceLabel } from '../../primitives/PixiResourceLabel.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
 import {
@@ -31,7 +34,7 @@ import {
   RETAINED_TEXT_STYLES,
   RetainedButton,
   RetainedPanel,
-  RetainedProgressBar,
+  RetainedTimedProgressBar,
   RetainedScrollArea,
   applyTextTheme,
   createRetainedInputId,
@@ -139,6 +142,18 @@ function normalizeStationTitleVariant(tabId) {
   return 'regular';
 }
 
+function getResearchStarSlotCount(research, starLevel) {
+  const maxLevel = Math.floor(
+    Number(research.star?.maxLevel ?? research.starMaxLevel),
+  );
+
+  if (Number.isInteger(maxLevel) && maxLevel > 0) {
+    return maxLevel > 1 ? Math.min(maxLevel, 3) : 0;
+  }
+
+  return starLevel > 0 ? 3 : 0;
+}
+
 export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   cardWidth: RESEARCH_CARD_WIDTH,
   rowHeight: 80,
@@ -169,9 +184,6 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   actionHeight: 64,
   costWidth: 72,
   costHeight: 42,
-  rankWidth: 217 * 0.267,
-  rankHeight: 62 * 0.267,
-  rankRight: 63 / 3,
   progressBottom: 7,
   progressHeight: PIXI_UI_GEOMETRY.progressTotalHeight,
 });
@@ -182,8 +194,6 @@ export const RESEARCH_ROW_TEXT = Object.freeze({
   descriptionFontSize: 11,
   descriptionLineHeight: 13,
   descriptionMinFontSize: 8,
-  rankFontSize: 11,
-  rankLineHeight: 12.6,
   valueFontSize: 12,
   timedValueFontSize: 10,
   valueLineHeight: 14,
@@ -1229,20 +1239,6 @@ class ResearchRowWidget {
       wordWrapWidth: RESEARCH_PIXI_GEOMETRY.infoWidth,
     });
     this.description.label = 'research-row-description';
-    this.rank = new Sprite({
-      texture: Texture.EMPTY,
-      label: 'research-row-rank',
-      roundPixels: true,
-    });
-    this.rankLabel = createText('', {
-      fontFamily: RESEARCH_RANK_FONT,
-      fontSize: RESEARCH_ROW_TEXT.rankFontSize,
-      lineHeight: RESEARCH_ROW_TEXT.rankLineHeight,
-      align: 'center',
-      fill: RESEARCH_RANK_INK,
-    });
-    this.rankLabel.anchor.set(0.5);
-    this.rankLabel.label = 'research-row-rank-label';
     this.costButton = new PixiCostButton({
       assetManager,
       inputRouter: this.page.inputRouter,
@@ -1287,7 +1283,7 @@ class ResearchRowWidget {
       assetManager,
       label: 'research-row-value-stars',
     });
-    this.progress = new RetainedProgressBar({
+    this.progress = new RetainedTimedProgressBar({
       assetManager,
       label: 'research-row-progress',
       tone: 'yellow',
@@ -1319,8 +1315,6 @@ class ResearchRowWidget {
     this.root.addChild(
       this.card,
       this.infoVisual,
-      this.rank,
-      this.rankLabel,
       this.costButton,
       this.researchedButton,
       this.readonlyValue,
@@ -1361,14 +1355,17 @@ class ResearchRowWidget {
     this.lockedOverlay.renderable = locked;
     const starLevel =
       research.star?.level ?? finiteOr(research.starLevel, 0);
+    const starSlotCount = getResearchStarSlotCount(research, starLevel);
     setText(
       this.name,
       formatResearchTitle(
         research.displayName ?? research.label ?? research.id,
       ),
     );
-    this.nameStars.setLevel(starLevel);
-    this.nameStars.visible = starLevel > 0;
+    this.nameStars.setLevel(starLevel, {
+      slotCount: starSlotCount || 3,
+    });
+    this.nameStars.visible = starLevel > 0 && starSlotCount > 0;
     this.nameStars.renderable = this.nameStars.visible;
     setText(
       this.description,
@@ -1377,20 +1374,7 @@ class ResearchRowWidget {
           (research.showEffect === false ? '' : research.effect ?? ''),
       ),
     );
-    setText(
-      this.rankLabel,
-      research.rank?.label ??
-        research.rankLabel ??
-        `Lv. ${research.completed ? '01' : '00'}/01`,
-    );
     this.bindArtwork(research);
-    this.rank.texture = this.resolveTexture(
-      PIXI_ROOT_RUN_ASSETS.researchRank,
-    );
-    this.rank.visible = !locked;
-    this.rank.renderable = !locked;
-    this.rankLabel.visible = !locked;
-    this.rankLabel.renderable = !locked;
 
     const interactive =
       state === 'available' || state === 'unavailable' || state === 'locked';
@@ -1428,9 +1412,14 @@ class ResearchRowWidget {
       !interactive && !researched && !inProgress && starLevel <= 0;
     this.readonlyValue.renderable = this.readonlyValue.visible;
     this.readonlyStars.visible =
-      !interactive && research.completed === true && starLevel > 0;
+      !interactive &&
+      research.completed === true &&
+      starLevel > 0 &&
+      starSlotCount > 0;
     this.readonlyStars.renderable = this.readonlyStars.visible;
-    this.readonlyStars.setLevel(starLevel);
+    this.readonlyStars.setLevel(starLevel, {
+      slotCount: starSlotCount || 3,
+    });
     const timer = research.timer ?? {};
     this.readonlyValue.setValue(
       timer.active
@@ -1464,21 +1453,24 @@ class ResearchRowWidget {
     this.progress.root.visible = timer.active === true ||
       research.inProgress === true;
     this.progress.root.renderable = this.progress.root.visible;
-    this.timerBoundAt = this.timeSource();
-    this.timerStartRemaining = finiteOr(
-      timer.remainingMs,
-      finiteOr(research.remainingMs, 0),
-    );
-    this.timerTotal = finiteOr(
-      timer.totalMs,
-      finiteOr(research.totalMs, 0),
-    );
-    this.progress.setProgress(
-      finiteOr(
-        timer.progress,
-        finiteOr(research.progress, finiteOr(research.percent, 0) / 100),
-      ),
-    );
+    const now = this.timeSource();
+    if (this.progress.root.visible) {
+      this.progress
+        .setTimer(createTimedProgressWindow({
+          ...research,
+          ...timer,
+          remainingMs:
+            timer.remainingMs ?? research.remainingMs,
+          totalMs: timer.totalMs ?? research.totalMs,
+          progress:
+            timer.progress ??
+            research.progress ??
+            finiteOr(research.percent, 0) / 100,
+        }, now))
+        .updateTimer(now);
+    } else {
+      this.progress.clearTimer(0);
+    }
     this.labelHit.cursor = locked ? 'pointer' : 'default';
     this.labelHit.eventMode = locked ? 'static' : 'none';
     this.applyTheme(this.page.theme);
@@ -1581,16 +1573,6 @@ class ResearchRowWidget {
     );
     fitResearchDescription(this.description, geometry);
     this.description.y += geometry.contentOffsetY;
-    this.rank.position.set(
-      geometry.cardWidth - geometry.rankRight - geometry.rankWidth,
-      0,
-    );
-    this.rank.width = geometry.rankWidth;
-    this.rank.height = geometry.rankHeight;
-    this.rankLabel.position.set(
-      this.rank.x + geometry.rankWidth / 2,
-      geometry.rankHeight / 2 + 0.5,
-    );
     const costRight =
       geometry.actionRight +
       (geometry.valueWidth - geometry.costWidth) / 2;
@@ -1650,19 +1632,16 @@ class ResearchRowWidget {
     if (!this.progress.root.visible || !this.research) {
       return;
     }
-    const elapsed = Math.max(0, finiteOr(now, this.timeSource()) -
-      this.timerBoundAt);
-    const remaining = Math.max(0, this.timerStartRemaining - elapsed);
-    if (this.timerTotal > 0) {
-      this.progress.setProgress(1 - remaining / this.timerTotal);
-    }
+    const { remainingMs } = this.progress.updateTimer(
+      finiteOr(now, this.timeSource()),
+    );
     this.researchedButton.setModel({
       amountLabel: this.formatInProgressButtonLabel(this.research),
       resource: 'none',
       enabled: false,
       action: null,
     });
-    this.setResearchingTimer(formatRemainingTime(remaining));
+    this.setResearchingTimer(formatRemainingTime(remainingMs));
     this.styleStatusButton();
   }
 
@@ -1758,18 +1737,6 @@ class ResearchRowWidget {
       fill: RESEARCH_PAPER_INK,
     });
     fitResearchDescription(this.description, RESEARCH_PIXI_GEOMETRY);
-    applyTextTheme(this.rankLabel, theme, {
-      fontFamily: RESEARCH_RANK_FONT,
-      fontSize: RESEARCH_ROW_TEXT.rankFontSize,
-      lineHeight: RESEARCH_ROW_TEXT.rankLineHeight,
-      align: 'center',
-      fill: RESEARCH_RANK_INK,
-    });
-    this.rankLabel.style.stroke = {
-      color: '#0a0a0a',
-      width: 1.2,
-      join: 'round',
-    };
     const inProgress =
       this.research?.timer?.active === true ||
       this.research?.inProgress === true;
@@ -1805,6 +1772,7 @@ class ResearchRowWidget {
     this.researchedButton.visible = false;
     this.researchedButton.renderable = false;
     this.setResearchingTimer('');
+    this.progress.clearTimer(0);
     this.lockedOverlay.visible = false;
     this.lockedOverlay.renderable = false;
     this.progress.root.visible = false;

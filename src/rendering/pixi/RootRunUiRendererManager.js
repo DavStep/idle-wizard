@@ -106,23 +106,8 @@ const RESEARCH_SKINS = Object.freeze([
     right: 50,
     bottom: 50,
   }),
-  Object.freeze({
-    selector: '.research-page__research-rank',
-    url: new URL(
-      '../../../assets/game/source/ui/root-run-research/upgrade-lvl-bg.png',
-      import.meta.url,
-    ).href,
-    width: 217,
-    height: 62,
-    left: 36,
-    top: 15,
-    right: 37,
-    bottom: 10,
-  }),
 ]);
-const RESEARCH_FALLBACK_PSEUDO_SELECTORS = new Map([
-  ['before', '.research-page__research-rank'],
-]);
+const RESEARCH_FALLBACK_PSEUDO_SELECTORS = new Map();
 const TRANSPARENT = Object.freeze({ color: 0, alpha: 0 });
 const DEFAULT_BACKGROUND = Object.freeze({ color: 0xd6d6d6, alpha: 1 });
 const MAX_RETAINED_ROLES_PER_POOLED_WIDGET = 32;

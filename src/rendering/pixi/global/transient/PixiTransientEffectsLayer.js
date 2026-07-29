@@ -1,5 +1,6 @@
 import {
   Container,
+  Graphics,
   Sprite,
   Texture,
 } from 'pixi.js';
@@ -77,17 +78,19 @@ const ITEM_DROP_SIZES = Object.freeze({
   herb: 38,
   potion: 36,
 });
-const RESOURCE_COLOR_RESOLVERS = Object.freeze(
-  Object.fromEntries(
-    ['mana', 'coin', 'crystal', 'emerald', 'ruby', 'seed', 'herb'].map(
-      (resource) => [
-        resource,
-        (theme) => theme.resourceColors[resource] ?? theme.text,
-      ],
-    ),
-  ),
-);
-
+const REWARD_FLYOUT_VISUALS = Object.freeze({
+  backgroundColor: 0x000000,
+  backgroundAlpha: 0.62,
+  height: 24,
+  horizontalPadding: 8,
+  radius: 8,
+  textColor: '#ffffff',
+  textStroke: Object.freeze({
+    color: '#0a0a0a',
+    width: 2,
+    join: 'round',
+  }),
+});
 /**
  * Bounded pooled transient layer. The single ticker registration is active
  * only while retained effects are alive.
@@ -1046,6 +1049,9 @@ class RewardFlyoutWidget {
     this.root = new Container();
     this.root.label = 'rewardFlyout';
     this.root.eventMode = 'none';
+    this.background = new Graphics({
+      label: 'rewardFlyout:background',
+    });
     this.slots = Array.from({ length: 16 }, (_, index) => {
       const root = new Container();
       root.label = `rewardFlyout:run:${index}`;
@@ -1053,6 +1059,8 @@ class RewardFlyoutWidget {
         text: '',
         fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
         anchor: { x: 0, y: 0.5 },
+        color: REWARD_FLYOUT_VISUALS.textColor,
+        stroke: REWARD_FLYOUT_VISUALS.textStroke,
         label: `rewardFlyout:text:${index}`,
       });
       const icon = new Sprite({
@@ -1070,7 +1078,10 @@ class RewardFlyoutWidget {
       root.addChild(text, icon, iconOverlay);
       return { root, text, icon, iconOverlay };
     });
-    this.root.addChild(...this.slots.map((slot) => slot.root));
+    this.root.addChild(
+      this.background,
+      ...this.slots.map((slot) => slot.root),
+    );
     parent.addChild(this.root);
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
   }
@@ -1136,14 +1147,23 @@ class RewardFlyoutWidget {
         slot.iconOverlay.visible = false;
         slot.text.visible = true;
         slot.text.setText(run.text ?? '');
-        slot.text.setColor(
-          run.colorResource
-            ? RESOURCE_COLOR_RESOLVERS[run.colorResource] ?? null
-            : run.color ?? null,
-        );
+        slot.text.setColor(REWARD_FLYOUT_VISUALS.textColor);
         x += slot.text.measuredWidth;
       }
     }
+    this.background
+      .clear()
+      .roundRect(
+        -REWARD_FLYOUT_VISUALS.horizontalPadding,
+        -REWARD_FLYOUT_VISUALS.height / 2,
+        x + REWARD_FLYOUT_VISUALS.horizontalPadding * 2,
+        REWARD_FLYOUT_VISUALS.height,
+        REWARD_FLYOUT_VISUALS.radius,
+      )
+      .fill({
+        color: REWARD_FLYOUT_VISUALS.backgroundColor,
+        alpha: REWARD_FLYOUT_VISUALS.backgroundAlpha,
+      });
     this.root.pivot.set(x / 2, 0);
     this.root.position.set(
       PIXI_UI_GEOMETRY.sourceWidth / 2,
@@ -1224,6 +1244,7 @@ class RewardFlyoutWidget {
     this.root.renderable = false;
     this.root.alpha = 0;
     this.root.scale.set(1);
+    this.background.clear();
     for (const slot of this.slots) {
       slot.root.visible = false;
       slot.text.setText('');

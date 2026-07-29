@@ -219,6 +219,13 @@ export class ShopFacade {
     );
   }
 
+  setSelectedShelfSlotQuantity(itemTypeId, quantity) {
+    return this.shopShelfSlotSelectionManager.setSelectedSlotQuantity(
+      itemTypeId,
+      quantity,
+    );
+  }
+
   setSelectedShelfFutureItem(itemTypeId, enabled) {
     return this.shopShelfFutureLoadManager.setSelectedFutureItem(itemTypeId, enabled);
   }

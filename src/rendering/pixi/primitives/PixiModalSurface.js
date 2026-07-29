@@ -15,17 +15,16 @@ import {
 } from './PixiDialogFrame.js';
 
 export const PIXI_MODAL_OPEN_MOTION = Object.freeze({
-  durationMs: 225,
-  overshootProgress: 0.72,
-  startScale: 0.982,
-  centerOvershootScale: 1.008,
-  topOvershootScale: 1.006,
+  durationMs: 175,
+  overshootProgress: 0.62,
+  startScale: 0.94,
+  centerOvershootScale: 1.02,
+  topOvershootScale: 1.015,
 });
 
 const CENTER_MOTION = 'center';
 const TOP_MOTION = 'top';
 const DIALOG_EASING = Object.freeze([0.39, 0.575, 0.565, 1]);
-const OVERLAY_EASING = Object.freeze([0.37, 0, 0.63, 1]);
 
 export class PixiModalSurface extends BasePixiRetainedView {
   constructor({
@@ -299,8 +298,8 @@ export class PixiModalSurface extends BasePixiRetainedView {
       return;
     }
     const state = sampleOpenMotion(progress, this.openMotion);
-    this.backdrop.alpha = state.backdropAlpha;
-    this.panel.alpha = state.panelAlpha;
+    this.backdrop.alpha = 1;
+    this.panel.alpha = 1;
     this.panel.scale.set(state.panelScale);
     this.panel.position.x = this.openMotionBaseX;
     this.panel.position.y =
@@ -348,18 +347,12 @@ function sampleOpenMotion(progress, variant) {
     variant === TOP_MOTION
       ? PIXI_MODAL_OPEN_MOTION.topOvershootScale
       : PIXI_MODAL_OPEN_MOTION.centerOvershootScale;
-  const backdropAlpha = sampleCubicBezier(
-    normalized,
-    ...OVERLAY_EASING,
-  );
   if (normalized <= split) {
     const local = sampleCubicBezier(
       normalized / split,
       ...DIALOG_EASING,
     );
     return {
-      backdropAlpha,
-      panelAlpha: local,
       panelScale:
         PIXI_MODAL_OPEN_MOTION.startScale +
         (overshoot - PIXI_MODAL_OPEN_MOTION.startScale) * local,
@@ -370,8 +363,6 @@ function sampleOpenMotion(progress, variant) {
     ...DIALOG_EASING,
   );
   return {
-    backdropAlpha,
-    panelAlpha: 1,
     panelScale: overshoot + (1 - overshoot) * local,
   };
 }

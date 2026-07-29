@@ -1123,18 +1123,28 @@ export class RewardFlyoutManager {
     return parts.join(', ') || 'reward claimed';
   }
 
-  unmount() {
+  clear() {
+    for (const flyout of [...this.flyoutTimeouts.keys()]) {
+      this.releaseFlyout(flyout);
+    }
+
     for (const timeoutId of this.timeouts) {
       window.clearTimeout(timeoutId);
     }
 
     this.timeouts.clear();
     this.flyoutTimeouts.clear();
-    this.flyoutPool = [];
     for (const node of this.visualNodes) {
       node.remove();
     }
     this.visualNodes.clear();
+    this.lastTextFlyoutAtMs = Number.NEGATIVE_INFINITY;
+    this.textFlyoutBurstIndex = 0;
+  }
+
+  unmount() {
+    this.clear();
+    this.flyoutPool = [];
     this.root?.remove();
     this.root = null;
   }

@@ -14,47 +14,51 @@ const STAR_IMAGE_URLS = Object.freeze({
   purple: new URL('../../../assets/game/source/ui/stars/star-purple.png', import.meta.url).href,
 });
 
-export function formatStarLevel(level) {
+export function formatStarLevel(level, { slotCount = STARS_PER_TONE } = {}) {
   const safeLevel = Math.max(0, Math.floor(Number(level) || 0));
+  const safeSlotCount = normalizeSlotCount(slotCount);
   const visualLevel = Math.min(safeLevel, MAX_STAR_LEVEL);
   if (visualLevel === 0) {
     return {
       level: safeLevel,
       tone: EMPTY_STAR_TONE,
       starCount: 0,
-      slotCount: STARS_PER_TONE,
-      text: EMPTY_STAR_SYMBOL.repeat(STARS_PER_TONE),
+      slotCount: safeSlotCount,
+      text: EMPTY_STAR_SYMBOL.repeat(safeSlotCount),
       ariaLabel: '0 stars',
     };
   }
 
   const zeroBasedLevel = visualLevel - 1;
   const toneIndex = Math.floor(zeroBasedLevel / STARS_PER_TONE);
-  const starCount = (zeroBasedLevel % STARS_PER_TONE) + 1;
+  const starCount = Math.min(
+    (zeroBasedLevel % STARS_PER_TONE) + 1,
+    safeSlotCount,
+  );
   const tone = STAR_TONES[toneIndex];
 
   return {
     level: safeLevel,
     tone,
     starCount,
-    slotCount: STARS_PER_TONE,
+    slotCount: safeSlotCount,
     text: STAR_SYMBOL.repeat(starCount),
     ariaLabel: `${tone} star ${starCount}`,
   };
 }
 
-export function createStarLevelLabel(level) {
+export function createStarLevelLabel(level, options) {
   const element = document.createElement('span');
-  setStarLevelLabel(element, level);
+  setStarLevelLabel(element, level, options);
   return element;
 }
 
-export function setStarLevelLabel(element, level) {
+export function setStarLevelLabel(element, level, options) {
   if (!element) {
     return;
   }
 
-  const starLevel = formatStarLevel(level);
+  const starLevel = formatStarLevel(level, options);
   element.classList.add(STAR_LEVEL_LABEL_CLASS);
   element.dataset.starTone = starLevel.tone;
   element.dataset.starCount = String(starLevel.starCount);
@@ -106,4 +110,11 @@ function createStarImage(src, type) {
   image.draggable = false;
   image.setAttribute('aria-hidden', 'true');
   return image;
+}
+
+function normalizeSlotCount(slotCount) {
+  return Math.min(
+    STARS_PER_TONE,
+    Math.max(1, Math.floor(Number(slotCount) || STARS_PER_TONE)),
+  );
 }

@@ -179,22 +179,13 @@ function createResearchSurface({ locked = false } = {}) {
     height: 58,
   });
 
-  const rank = document.createElement('span');
-  rank.className = 'research-page__research-rank';
-  setRect(rank, {
-    left: 14 + 720 * ROOT_RUN_TO_LOGICAL_SCALE,
-    top: 128,
-    width: 217 * 0.3,
-    height: 62 * 0.3,
-  });
-
-  row.append(art, rank);
+  row.append(art);
   list.append(row);
   content.append(list);
   uiLayer.append(content);
   page.append(uiLayer);
 
-  return { art, list, page, rank, row, uiLayer };
+  return { art, list, page, row, uiLayer };
 }
 
 describe('ResearchCardSkinManager', () => {
@@ -228,7 +219,7 @@ describe('ResearchCardSkinManager', () => {
 
   it('composes Root Run research skins at authored size before scaling the Pixi layer', async () => {
     const { runtime, applications, loadedUrls, sprites } = createFakePixiRuntime();
-    const { art, list, rank, row, uiLayer } = createResearchSurface();
+    const { art, list, row, uiLayer } = createResearchSurface();
     const manager = new ResearchCardSkinManager({
       loadPixiRuntime: async () => runtime,
       observeMutations: false,
@@ -260,7 +251,6 @@ describe('ResearchCardSkinManager', () => {
       '/assets/game/source/ui/root-run-research/research-upgrade-bg.png',
       '/assets/game/source/ui/root-run-research/squirqle-40-cream.png',
       '/assets/game/source/ui/root-run-research/squirqle-40-cream.png',
-      '/assets/game/source/ui/root-run-research/upgrade-lvl-bg.png',
     ]);
     const authoredRoot = applications[0].stage.children.find(
       (child) => child.label === 'researchCardSkinScene',
@@ -281,7 +271,6 @@ describe('ResearchCardSkinManager', () => {
 
     const rowSprite = sprites.find((sprite) => sprite.sourceElement === row);
     const artSprite = sprites.find((sprite) => sprite.sourceElement === art);
-    const rankSprite = sprites.find((sprite) => sprite.sourceElement === rank);
 
     expect(rowSprite).toMatchObject({
       leftWidth: 64,
@@ -299,18 +288,6 @@ describe('ResearchCardSkinManager', () => {
     });
     expect(artSprite.width).toBeCloseTo(58 / ROOT_RUN_TO_LOGICAL_SCALE);
     expect(artSprite.height).toBeCloseTo(58 / ROOT_RUN_TO_LOGICAL_SCALE);
-    expect(rankSprite).toMatchObject({
-      leftWidth: 36,
-      topHeight: 15,
-      rightWidth: 37,
-      bottomHeight: 10,
-    });
-    expect(rankSprite.width).toBeCloseTo(
-      (217 * 0.3) / ROOT_RUN_TO_LOGICAL_SCALE,
-    );
-    expect(rankSprite.height).toBeCloseTo(
-      (62 * 0.3) / ROOT_RUN_TO_LOGICAL_SCALE,
-    );
     const initialRowY = rowSprite.position.y;
     setRect(row, {
       left: 14,
@@ -320,7 +297,7 @@ describe('ResearchCardSkinManager', () => {
     });
     list.dispatchEvent(new window.Event('scroll'));
 
-    expect(sprites).toHaveLength(3);
+    expect(sprites).toHaveLength(2);
     expect(rowSprite.position.y).toBeLessThan(initialRowY);
     expect(applications[0].renderCount).toBe(2);
 
