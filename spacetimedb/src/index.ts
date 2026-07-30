@@ -40,6 +40,10 @@ import {
   TRADE_ALLIANCE_UNLOCK_LEVEL,
 } from './tradeAllianceAccess';
 import {
+  hasCurrentVisualSettingsConfigShape,
+  VISUAL_SETTINGS_COST_CATEGORIES,
+} from './visualSettingsConfig';
+import {
   defaultMarketId,
   getMarketGradeForCatalogIndex,
   getMarketRank,
@@ -13444,19 +13448,11 @@ function validateVisualSettingsGameConfig(value: unknown) {
   };
   const costsCrystal = config.costsCrystal as Record<string, unknown>;
 
-  if (!costsCrystal || typeof costsCrystal !== 'object' || Array.isArray(costsCrystal)) {
+  if (!hasCurrentVisualSettingsConfigShape(value)) {
     throw new Error('Invalid visual settings config.');
   }
 
-  for (const category of [
-    'theme',
-    'font',
-    'color',
-    'character',
-    'progressBar',
-    'plotView',
-    'icons',
-  ]) {
+  for (const category of VISUAL_SETTINGS_COST_CATEGORIES) {
     try {
       validateCostRecord(costsCrystal[category], BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
     } catch {
