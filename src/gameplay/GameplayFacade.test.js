@@ -2807,7 +2807,7 @@ describe("GameplayFacade", () => {
       {
         id: "summonSeedsX2",
         label: "x2 summon",
-        value: "1k coin",
+        value: "1000 coin",
         effect: "20 mana",
         description: "summons 2 researched seeds for 20 mana.",
         costCoin: 1_000,
@@ -3949,7 +3949,7 @@ describe("GameplayFacade", () => {
       cost: 1_000,
     });
     expect(getResearch("summonSeedsX3")).toMatchObject({
-      value: "10.0k coin",
+      value: "10000 coin",
       canResearch: true,
     });
     expect(gameplayFacade.buyResearch("summonSeedsX4")).toEqual({
