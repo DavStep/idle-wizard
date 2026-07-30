@@ -269,9 +269,16 @@ export class PixiButton extends Container {
     if (rootRunVariant) {
       const visualVariant = this.enabled ? rootRunVariant : 'gray';
       const visualGeometry =
-        getRootRunVisualGeometry(visualVariant, this.buttonWidth, this.buttonHeight);
+        getRootRunVisualGeometry(
+          visualVariant,
+          this.buttonWidth,
+          this.buttonHeight,
+          this.variant === 'tab',
+        );
       this.rootRunFrame.setTexture(
-        this.assetManager.getTexture(getRootRunTextureId(visualVariant)),
+        this.assetManager.getTexture(
+          getRootRunTextureId(visualVariant, this.variant === 'tab'),
+        ),
         visualGeometry.sourceInsets,
       );
       this.rootRunFrame.position.set(
@@ -395,7 +402,18 @@ export class PixiButton extends Container {
   }
 }
 
-function getRootRunTextureId(variant) {
+function getRootRunTextureId(variant, compactTab = false) {
+  if (compactTab) {
+    if (variant === 'brown-light') {
+      return PIXI_ROOT_RUN_ASSETS.buttonTabActive;
+    }
+    if (variant === 'brown-dark') {
+      return PIXI_ROOT_RUN_ASSETS.buttonTabInactive;
+    }
+    if (variant === 'gray') {
+      return PIXI_ROOT_RUN_ASSETS.buttonTabDisabled;
+    }
+  }
   if (variant === 'account-tab-active') {
     return PIXI_ROOT_RUN_ASSETS.accountTabActive;
   }
@@ -413,7 +431,7 @@ function getRootRunTextureId(variant) {
   return PIXI_ROOT_RUN_ASSETS.buttonBrownDark;
 }
 
-function getRootRunVisualGeometry(variant, width, height) {
+function getRootRunVisualGeometry(variant, width, height, compactTab = false) {
   const account = PIXI_ROOT_RUN_GEOMETRY.account;
   if (variant === 'account-tab-active') {
     return {
@@ -439,9 +457,12 @@ function getRootRunVisualGeometry(variant, width, height) {
       textColor: '#ffffff',
     };
   }
+  const buttonGeometry = compactTab
+    ? PIXI_ROOT_RUN_GEOMETRY.tabButton
+    : PIXI_ROOT_RUN_GEOMETRY.button;
   return {
-    sourceInsets: PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
-    borderInsets: PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
+    sourceInsets: buttonGeometry.sourceInsets,
+    borderInsets: buttonGeometry.borderInsets,
     frame: { x: 0, y: 0, width, height },
     fontSize: null,
     textStroke: PIXI_TEXT_STROKE_WIDTH,

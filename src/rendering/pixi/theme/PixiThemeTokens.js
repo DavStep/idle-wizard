@@ -133,6 +133,9 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   buttonGrayNineSlice: 'source:assets/ui/root-run-cost-button/gray-button-9slice.png',
   buttonBrownDark: 'source:assets/ui/root-run-cost-button/brown-button-dark-9slice.png',
   buttonBrownLight: 'source:assets/ui/root-run-cost-button/brown-button-light-9slice.png',
+  buttonTabActive: 'source:assets/ui/root-run-cost-button/brown-tab-active-9slice.png',
+  buttonTabInactive: 'source:assets/ui/root-run-cost-button/brown-tab-inactive-9slice.png',
+  buttonTabDisabled: 'source:assets/ui/root-run-cost-button/gray-tab-disabled-9slice.png',
   textFieldBrownInset: 'source:assets/ui/root-run-world-chat/world-chat-text-field-9slice.png',
   coin: 'source:assets/ui/root-run-cost-button/coin.png',
   settingsKnob: 'source:assets/ui/root-run-settings/settings-knob.png',
@@ -350,6 +353,10 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
   button: Object.freeze({
     sourceInsets: Object.freeze({ top: 100, right: 43, bottom: 68, left: 85 }),
     borderInsets: Object.freeze({ top: 17, right: 7, bottom: 12, left: 20 }),
+  }),
+  tabButton: Object.freeze({
+    sourceInsets: Object.freeze({ top: 78, right: 43, bottom: 53, left: 85 }),
+    borderInsets: Object.freeze({ top: 13, right: 7, bottom: 9, left: 20 }),
   }),
   textFieldBrownInset: Object.freeze({
     sourceInsets: Object.freeze({ top: 26, right: 26, bottom: 26, left: 26 }),

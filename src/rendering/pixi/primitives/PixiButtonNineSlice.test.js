@@ -26,6 +26,11 @@ const COMPACT_TAB_ASSETS = [
     face: '45,33,25,255',
     highlight: '92,62,39,255',
   },
+  {
+    file: 'gray-tab-disabled-9slice.png',
+    face: '122,122,122,255',
+    highlight: '155,155,155,255',
+  },
 ];
 
 describe('compact Root Run button nine-slices', () => {
