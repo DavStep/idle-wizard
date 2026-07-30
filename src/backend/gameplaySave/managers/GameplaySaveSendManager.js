@@ -199,6 +199,11 @@ export class GameplaySaveSendManager {
       return false;
     }
 
+    if (this.pendingSaveLowersServerLevel(serverSave, pendingSave)) {
+      this.discardPendingSaves();
+      return true;
+    }
+
     if (
       typeof serverSessionId !== 'string' ||
       serverSessionId !== pendingSessionId ||
@@ -646,6 +651,41 @@ export class GameplaySaveSendManager {
     return {
       contentKey: this.getSaveContentKey(save, JSON.stringify(save)),
     };
+  }
+
+  pendingSaveLowersServerLevel(serverSave, pendingSave) {
+    const serverLevel = Number(serverSave?.tasks?.currentLevel);
+    const pendingLevel = Number(pendingSave?.tasks?.currentLevel);
+
+    if (
+      !Number.isInteger(serverLevel) ||
+      serverLevel < 0 ||
+      !Number.isInteger(pendingLevel) ||
+      pendingLevel < 0 ||
+      pendingLevel >= serverLevel
+    ) {
+      return false;
+    }
+
+    const serverPrestigeLevels = this.getPrestigeCompletedLevels(serverSave);
+    const pendingPrestigeLevels = this.getPrestigeCompletedLevels(pendingSave);
+    return !pendingPrestigeLevels.some(
+      (level) => !serverPrestigeLevels.includes(level),
+    );
+  }
+
+  getPrestigeCompletedLevels(save) {
+    if (!Array.isArray(save?.prestige?.completedLevels)) {
+      return [];
+    }
+
+    return Array.from(
+      new Set(
+        save.prestige.completedLevels
+          .map((level) => Number(level))
+          .filter((level) => Number.isInteger(level) && level > 0),
+      ),
+    );
   }
 
   serverMatchesRevision(serverSave, revision) {

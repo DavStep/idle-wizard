@@ -716,6 +716,62 @@ describe('GameplaySaveSendManager', () => {
     expect(manager.getPendingHydratedSave()).toEqual(save);
   });
 
+  it('discards a pending save that lowers server level before reconnect can replay it', () => {
+    const storage = createStorage();
+    const journalManager = new GameplaySaveJournalManager({ storage });
+    const manager = new GameplaySaveSendManager({
+      syncTimeoutMs: 0,
+      journalManager,
+    });
+    const staleSave = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 9,
+      tasks: { currentLevel: 7 },
+    };
+    const serverSave = {
+      version: 3,
+      clientSaveSessionId: 'server-session',
+      clientSaveSequence: 12,
+      tasks: { currentLevel: 8 },
+    };
+
+    manager.connect({}, 'player-1');
+    manager.discardHydratedSaveIfServerIsAtLeastAsNew(serverSave);
+    manager.setHydrated(true);
+    manager.save(staleSave);
+
+    expect(manager.discardHydratedSaveIfServerIsAtLeastAsNew(serverSave)).toBe(true);
+    expect(journalManager.load()).toBeNull();
+    expect(manager.getPendingHydratedSave()).toBeNull();
+  });
+
+  it('keeps a lower-level pending save when it records a new prestige completion', () => {
+    const manager = new GameplaySaveSendManager({ syncTimeoutMs: 0 });
+    const pendingSave = {
+      version: 3,
+      clientSaveSessionId: 'client-session',
+      clientSaveSequence: 9,
+      tasks: { currentLevel: 0 },
+      prestige: { completedLevels: [10] },
+    };
+    const serverSave = {
+      version: 3,
+      clientSaveSessionId: 'server-session',
+      clientSaveSequence: 12,
+      tasks: { currentLevel: 10 },
+      prestige: { completedLevels: [] },
+    };
+
+    manager.connect({}, 'player-1');
+    manager.discardHydratedSaveIfServerIsAtLeastAsNew(serverSave);
+    manager.setHydrated(true);
+    manager.save(pendingSave);
+
+    expect(manager.discardHydratedSaveIfServerIsAtLeastAsNew(serverSave)).toBe(false);
+    expect(manager.getPendingHydratedSave()).toEqual(pendingSave);
+  });
+
   it('cancels an in-flight flush on disconnect without clearing its journal', async () => {
     const storage = createStorage();
     const journalManager = new GameplaySaveJournalManager({ storage });

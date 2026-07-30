@@ -50,6 +50,7 @@ experience_type: backend-android
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
 - Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields and gameplay save JSON, but not trusted public level/rank state.
 - On reconnect, discard a hydrated pending gameplay save when the server row is at least as new; resending it can roll back unrelated coin or cauldron batch settings.
+- Gameplay-save journal reconciliation must also discard a pending save that lowers the hydrated server level unless it adds a prestige completion; revision lineage alone can otherwise replay a stale runtime snapshot forever.
 - A resolved SpacetimeDB reducer promise is not gameplay-save durability proof; keep the own-save subscription live and clear the local journal only after observing the exact client session/sequence in the server row.
 - An authoritative empty gameplay-save row must replace stale runtime with the canonical fresh state, then persist and observe that baseline before gameplay opens.
 - Missing own-session rows and session subscription errors must fail closed; treating them as active lets invalidated clients continue writing, while observation errors should reconnect without deleting the gameplay-save journal.
