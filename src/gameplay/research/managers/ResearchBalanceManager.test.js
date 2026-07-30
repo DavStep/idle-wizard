@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { automationResearchIds } from '../../automation/automationResearchIds.js';
+import { ItemDefinitionManager } from '../../items/managers/ItemDefinitionManager.js';
 import { advancedResearchIds } from '../advancedResearchIds.js';
 import { automationReserveResearchIds } from '../automationReserveResearch.js';
 import { emeraldResearchIds } from '../emeraldResearchIds.js';
@@ -110,7 +111,7 @@ describe('ResearchBalanceManager', () => {
         researchCostReductionLevel: 1,
       }),
     ).toEqual({
-      amount: 54,
+      amount: 72,
       currency: 'coin',
     });
     expect(
@@ -127,6 +128,33 @@ describe('ResearchBalanceManager', () => {
       amount: 2,
       currency: 'emerald',
     });
+  });
+
+  it('keeps coin research aligned with the compounding item economy', () => {
+    const research = new ResearchBalanceManager();
+    const items = new ItemDefinitionManager();
+    const seeds = items.getSeedDefinitions();
+
+    expect(research.getCost('unlockSeed:sageSeed').amount).toBe(0);
+    expect(research.getCost('unlockSeed:mintSeed').amount).toBe(0);
+
+    for (const seed of seeds.slice(2)) {
+      expect(research.getCost(`unlockSeed:${seed.key}`).amount).toBe(
+        seed.baseSellPrice * 10,
+      );
+    }
+
+    for (const potion of items.getRecipePotionDefinitions()) {
+      expect(research.getCost(`unlockRecipe:${potion.key}`).amount).toBe(
+        potion.key === 'manaTonic' ? 0 : potion.baseSellPrice,
+      );
+    }
+
+    expect(
+      ['summonSeedsX2', 'summonSeedsX3', 'summonSeedsX4', 'summonSeedsX5'].map(
+        (researchId) => research.getCost(researchId).amount,
+      ),
+    ).toEqual([1_000, 10_000, 100_000, 1_000_000]);
   });
 
   it('reads crystal multiplier costs from balance', () => {

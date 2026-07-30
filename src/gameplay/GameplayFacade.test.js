@@ -2463,11 +2463,11 @@ describe("GameplayFacade", () => {
   it("uses completed summon research as the active seed summon multiplier", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
-    gameplayFacade.coinFacade.add(600);
+    gameplayFacade.coinFacade.add(1_000);
     expect(gameplayFacade.buyResearch("summonSeedsX2")).toEqual({
       ok: true,
       researchId: "summonSeedsX2",
-      cost: 600,
+      cost: 1_000,
     });
     ecsFacade.update({ deltaSeconds: 20 });
 
@@ -2807,10 +2807,10 @@ describe("GameplayFacade", () => {
       {
         id: "summonSeedsX2",
         label: "x2 summon",
-        value: "600 coin",
+        value: "1k coin",
         effect: "20 mana",
         description: "summons 2 researched seeds for 20 mana.",
-        costCoin: 600,
+        costCoin: 1_000,
         completed: false,
         canResearch: false,
       },
@@ -2821,7 +2821,7 @@ describe("GameplayFacade", () => {
         effect: "30 mana",
         requiredResearchIds: ["summonSeedsX2"],
         description: "summons 3 researched seeds for 30 mana.",
-        costCoin: 1800,
+        costCoin: 10_000,
         completed: false,
         locked: true,
         canResearch: false,
@@ -2833,7 +2833,7 @@ describe("GameplayFacade", () => {
         effect: "40 mana",
         requiredResearchIds: ["summonSeedsX3"],
         description: "summons 4 researched seeds for 40 mana.",
-        costCoin: 4500,
+        costCoin: 100_000,
         completed: false,
         locked: true,
         canResearch: false,
@@ -2845,7 +2845,7 @@ describe("GameplayFacade", () => {
         effect: "50 mana",
         requiredResearchIds: ["summonSeedsX4"],
         description: "summons 5 researched seeds for 50 mana.",
-        costCoin: 10000,
+        costCoin: 1_000_000,
         completed: false,
         locked: true,
         canResearch: false,
@@ -3917,7 +3917,7 @@ describe("GameplayFacade", () => {
         .find((research) => research.id === researchId);
 
     advanceToLevel(gameplayFacade, 3);
-    gameplayFacade.coinFacade.add(10000);
+    gameplayFacade.coinFacade.add(1_000_000);
 
     expect(getResearch("unlockSeed:mintSeed")).toMatchObject({
       value: "Free",
@@ -3940,16 +3940,16 @@ describe("GameplayFacade", () => {
       reason: "missing_required_research",
       researchId: "summonSeedsX3",
       requiredResearchId: "summonSeedsX2",
-      cost: 1800,
+      cost: 10_000,
     });
 
     expect(gameplayFacade.buyResearch("summonSeedsX2")).toEqual({
       ok: true,
       researchId: "summonSeedsX2",
-      cost: 600,
+      cost: 1_000,
     });
     expect(getResearch("summonSeedsX3")).toMatchObject({
-      value: "1800 coin",
+      value: "10.0k coin",
       canResearch: true,
     });
     expect(gameplayFacade.buyResearch("summonSeedsX4")).toEqual({
@@ -3957,7 +3957,7 @@ describe("GameplayFacade", () => {
       reason: "missing_required_research",
       researchId: "summonSeedsX4",
       requiredResearchId: "summonSeedsX3",
-      cost: 4500,
+      cost: 100_000,
     });
 
     advanceToLevel(gameplayFacade, 5);
@@ -3975,7 +3975,7 @@ describe("GameplayFacade", () => {
       reason: "missing_required_research",
       researchId: "unlockRecipe:minorHealingPotion",
       requiredResearchId: "unlockRecipe:manaTonic",
-      cost: 60,
+      cost: 80,
     });
 
     expect(gameplayFacade.buyResearch("unlockRecipe:manaTonic")).toEqual({
@@ -3985,7 +3985,7 @@ describe("GameplayFacade", () => {
     });
     advanceToLevel(gameplayFacade, 6);
     expect(getResearch("unlockRecipe:minorHealingPotion")).toMatchObject({
-      value: "60 coin",
+      value: "80 coin",
       canResearch: true,
     });
 
