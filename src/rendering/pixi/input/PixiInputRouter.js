@@ -1,3 +1,4 @@
+import { UI_HELD_RELEASE_HAPTIC_MS } from '../../../app/haptics/hapticTiming.js';
 import {
   InputRegistrationStore,
   isInputRegistrationAvailable,
@@ -58,6 +59,8 @@ export class PixiInputRouter {
     swipeCommitRatio = PIXI_INPUT_DEFAULTS.swipeCommitRatio,
     swipeThreshold = PIXI_INPUT_DEFAULTS.swipeThreshold,
     dragThreshold = PIXI_INPUT_DEFAULTS.dragThreshold,
+    heldReleaseHapticMs = UI_HELD_RELEASE_HAPTIC_MS,
+    now = defaultNow,
   } = {}) {
     this.hapticsFacade = hapticsFacade;
     this.uiClickSoundFacade = uiClickSoundFacade;
@@ -68,6 +71,11 @@ export class PixiInputRouter {
     this.swipeCommitRatio = positiveOr(swipeCommitRatio, 1.15);
     this.swipeThreshold = positiveOr(swipeThreshold, 48);
     this.dragThreshold = positiveOr(dragThreshold, 12);
+    this.heldReleaseHapticMs = positiveOr(
+      heldReleaseHapticMs,
+      UI_HELD_RELEASE_HAPTIC_MS,
+    );
+    this.now = now;
 
     this.store = new InputRegistrationStore();
     this.root = null;
@@ -622,6 +630,12 @@ export class PixiInputRouter {
       point.global,
     );
     if (
+      this.focusedId !== null &&
+      resolvedPress?.id !== this.focusedId
+    ) {
+      this.blurFocus();
+    }
+    if (
       modal &&
       !this.isDisplayObjectInsideModal(event?.target, modal) &&
       !this.isRegistrationInsideModal(resolvedPress, modal)
@@ -659,6 +673,8 @@ export class PixiInputRouter {
       if (this.isFocusable(pointer.press)) {
         this.focus(pointer.press.id);
       }
+
+      this.playPointerHaptic(pointer.press, pointer);
     }
 
     this.beginPendingScrolls(pointer, event);
@@ -769,6 +785,9 @@ export class PixiInputRouter {
     }
 
     if (shouldActivate) {
+      if (this.now() - pointer.startedAtMs >= this.heldReleaseHapticMs) {
+        this.playPointerHaptic(pointer.press, pointer);
+      }
       this.activateRegistration(
         pointer.press,
         this.activationContext(pointer.press, pointer, event, 'pointer'),
@@ -1051,6 +1070,7 @@ export class PixiInputRouter {
       previous: point,
       press,
       pressActive: false,
+      startedAtMs: this.now(),
       moved: false,
       consumed: false,
       blockedModal,
@@ -1643,16 +1663,17 @@ export class PixiInputRouter {
   }
 
   playConfirmedFeedback(context) {
-    if (
-      context?.source === 'pointer' &&
-      context.pointerType !== 'mouse' &&
-      context.registration?.haptic !== false
-    ) {
-      this.hapticsFacade?.playUiTap?.();
-    }
-
     if (context?.registration?.sound !== false) {
       this.uiClickSoundFacade?.playClick?.();
+    }
+  }
+
+  playPointerHaptic(registration, pointer) {
+    if (
+      pointer?.pointerType !== 'mouse' &&
+      resolveRegistrationBoolean(registration?.haptic, true) !== false
+    ) {
+      this.hapticsFacade?.playUiTap?.();
     }
   }
 
@@ -2051,6 +2072,17 @@ function validateId(id, label) {
 function positiveOr(value, fallback) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : fallback;
+}
+
+function defaultNow() {
+  if (
+    typeof performance !== 'undefined' &&
+    typeof performance.now === 'function'
+  ) {
+    return performance.now();
+  }
+
+  return Date.now();
 }
 
 function isPromiseLike(value) {

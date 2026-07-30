@@ -5,6 +5,7 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
+  resolvePixiTextStrokeWidth,
 } from '../theme/PixiThemeTokens.js';
 import { PixiFrame } from './PixiFrame.js';
 import { PixiNineSliceFrame } from './PixiNineSliceFrame.js';
@@ -53,6 +54,7 @@ export class PixiTextField extends Container {
     this.focused = false;
     this.session = null;
     this.sessionUnsubscribe = null;
+    this.focusRequestToken = 0;
     this.fieldDestroying = false;
     this.frame = new PixiFrame({
       assetManager,
@@ -101,6 +103,11 @@ export class PixiTextField extends Container {
     this.registration = inputRouter?.registerPressTarget?.(this, {
       enabled: () => this.visible && this.renderable,
       onActivate: () => this.focus(),
+      onFocusChange: (focused) => {
+        if (!focused) {
+          this.blur();
+        }
+      },
       haptic: 'selection',
       sound: false,
     }) ?? null;
@@ -131,8 +138,9 @@ export class PixiTextField extends Container {
     if (this.focused || !this.textEntryService) {
       return this.session;
     }
+    const requestToken = ++this.focusRequestToken;
     this.focused = true;
-    this.session = await this.textEntryService.open({
+    const session = await this.textEntryService.open({
       value: this.value,
       selectionStart: this.selectionStart,
       selectionEnd: this.selectionEnd,
@@ -161,6 +169,11 @@ export class PixiTextField extends Container {
         }
       },
     });
+    if (requestToken !== this.focusRequestToken || !this.focused) {
+      void Promise.resolve(session?.close?.()).catch(() => {});
+      return null;
+    }
+    this.session = session;
     this.sessionUnsubscribe = this.session?.subscribe?.((event) =>
       this.applySessionSnapshot(event.snapshot),
     ) ?? null;
@@ -169,6 +182,7 @@ export class PixiTextField extends Container {
   }
 
   blur() {
+    this.focusRequestToken += 1;
     const session = this.session;
     this.endSession();
     void Promise.resolve(session?.close?.()).catch(() => {});
@@ -225,7 +239,9 @@ export class PixiTextField extends Container {
     const textInsetY =
       accountUsername ? 0 : border + paddingY - (brownInset ? 2 : 0);
     const textStrokeBleed = accountUsername
-      ? PIXI_UI_GEOMETRY.strokedTextWidth
+      ? resolvePixiTextStrokeWidth(
+          PIXI_ROOT_RUN_GEOMETRY.account.username.fontSize,
+        )
       : 0;
     this.frame.visible = !brownInset && !accountUsername;
     this.insetFrame.visible = brownInset;

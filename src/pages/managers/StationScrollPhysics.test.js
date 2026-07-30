@@ -102,6 +102,20 @@ describe('StationScrollPhysics', () => {
     );
   });
 
+  it('keeps release velocity stable across pointer sample rates', () => {
+    const velocities = [120, 60, 30].map((sampleRate) =>
+      sampledReleaseVelocity(sampleRate),
+    );
+    const sixtyHertzVelocity = velocities[1];
+
+    for (const velocity of velocities) {
+      expect(
+        Math.abs(velocity - sixtyHertzVelocity) /
+          sixtyHertzVelocity,
+      ).toBeLessThan(0.15);
+    }
+  });
+
   it('caps a frame delta at 0.05 seconds', () => {
     const longFrame = releasedScroll();
     const cappedFrame = releasedScroll();
@@ -150,4 +164,31 @@ function releasedScroll() {
   scroll.dragTo(900, 100);
   scroll.endDrag();
   return scroll;
+}
+
+function sampledReleaseVelocity(sampleRate) {
+  const scroll = new StationScrollPhysics();
+  const durationMs = 180;
+  const frameMs = 1000 / sampleRate;
+  const startY = 600;
+  const distance = 220;
+  scroll.setMaxOffset(10_000);
+  scroll.beginDrag(startY, 0);
+
+  for (
+    let elapsedMs = frameMs;
+    elapsedMs < durationMs;
+    elapsedMs += frameMs
+  ) {
+    const progress = elapsedMs / durationMs;
+    const easedProgress = 1 - (1 - progress) ** 2;
+    scroll.dragTo(
+      startY - distance * easedProgress,
+      elapsedMs,
+    );
+  }
+
+  scroll.dragTo(startY - distance, durationMs);
+  scroll.endDrag();
+  return scroll.velocity;
 }

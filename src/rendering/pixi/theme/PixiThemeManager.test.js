@@ -17,6 +17,7 @@ describe('Pixi theme tokens', () => {
       bodyFontSize: 13,
       dialogTitleFontSize: 14,
       borderLabelFontSize: 11,
+      roomControlHeight: 36,
     });
     expect(DEFAULT_PIXI_THEME_SNAPSHOT).toMatchObject({
       themeKey: 'midnight',

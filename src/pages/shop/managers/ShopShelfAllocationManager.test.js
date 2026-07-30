@@ -83,16 +83,6 @@ function createHarness({ loadedQuantity = 0, sageQuantity = 1_000 } = {}) {
     );
   });
   const setSelectedShopShelfSlotQuantity = vi.fn(applyTargetQuantity);
-  const setSelectedShopShelfFutureItem = vi.fn((itemTypeId, enabled) => {
-    const item = itemTypeId === sageSeed.itemTypeId ? sageSeed : mintSeed;
-    slot.futureItemTypeId = enabled ? itemTypeId : null;
-    slot.futureItemKey = enabled ? item.key : null;
-    slot.futureItemKind = enabled ? item.kind : null;
-    slot.futureItemLabel = enabled ? item.label : null;
-    slot.futurePendingQuantity = 0;
-    publish();
-    return { ok: true, enabled, itemTypeId: enabled ? itemTypeId : null };
-  });
   const clearSelectedShopShelfSlot = vi.fn(() => {
     if (slot.sellItemTypeId === sageSeed.itemTypeId) {
       sageSeed.quantity += slot.loadedQuantity;
@@ -118,7 +108,6 @@ function createHarness({ loadedQuantity = 0, sageQuantity = 1_000 } = {}) {
     clearSelectedShopShelfSlot,
     getSnapshot: () => snapshot,
     selectShopShelfSlot,
-    setSelectedShopShelfFutureItem,
     setSelectedShopShelfSlotAllocation,
     setSelectedShopShelfSlotQuantity,
     subscribe(listener) {
@@ -138,7 +127,6 @@ function createHarness({ loadedQuantity = 0, sageQuantity = 1_000 } = {}) {
     mintSeed,
     popupLayer,
     sageSeed,
-    setSelectedShopShelfFutureItem,
     setSelectedShopShelfSlotAllocation,
     setSelectedShopShelfSlotQuantity,
     slot,
@@ -155,10 +143,18 @@ describe('ShopShelfManager quantity allocation', () => {
     const harness = createHarness();
     harness.manager.showSellPopup();
     const popup = harness.popupLayer.querySelector('.shop-page__sell-popup');
+    const actions = [
+      ...popup.querySelectorAll('.shop-page__sell-action-row > .style-button'),
+    ];
 
     expect(popup.querySelector('.shop-page__sell-current')?.textContent).toContain(
       'currentempty',
     );
+    expect(actions.map((button) => button.textContent)).toEqual([
+      'clear',
+      'mark x0',
+    ]);
+    expect(popup.querySelector('.shop-page__sell-future-button')).toBeNull();
     expect(popup.querySelector('.shop-page__sell-allocation-range')).toMatchObject({
       min: '0',
       max: '0',
@@ -256,37 +252,6 @@ describe('ShopShelfManager quantity allocation', () => {
     expect(harness.sageSeed.quantity).toBe(1_000);
   });
 
-  it('can mark a researched zero-count item for all future production', () => {
-    const harness = createHarness();
-    harness.manager.showSellPopup();
-    const item = harness.popupLayer.querySelector('[data-shop-sell-item-key="mintSeed"]');
-
-    expect(item.disabled).toBe(false);
-    item.click();
-    const future = harness.popupLayer.querySelector('.shop-page__sell-future-button');
-    future.click();
-
-    expect(harness.setSelectedShopShelfFutureItem).toHaveBeenCalledWith(2, true);
-    expect(future.textContent).toBe('stop future');
-    expect(future.getAttribute('aria-pressed')).toBe('true');
-    expect(harness.popupLayer.querySelector('.shop-page__sell-popup').hidden).toBe(true);
-    expect(harness.stage.querySelector('.shop-page__slot-item-value')?.textContent)
-      .toContain('waiting for mint seed');
-  });
-
-  it('stops future marking from the same selected item', () => {
-    const harness = createHarness();
-    harness.manager.showSellPopup();
-    harness.popupLayer.querySelector('[data-shop-sell-item-key="sageSeed"]').click();
-    const future = harness.popupLayer.querySelector('.shop-page__sell-future-button');
-    future.click();
-    harness.manager.showSellPopup();
-    future.click();
-
-    expect(harness.setSelectedShopShelfFutureItem).toHaveBeenLastCalledWith(1, false);
-    expect(future.textContent).toBe('mark future');
-  });
-
   it('clears loaded stock and future marking, then closes the dialog', () => {
     const harness = createHarness({ loadedQuantity: 100, sageQuantity: 900 });
     harness.manager.showSellPopup();
@@ -324,9 +289,12 @@ describe('ShopShelfManager quantity allocation', () => {
     ).toBe(true);
 
     const future = createHarness();
+    future.slot.futureItemTypeId = 1;
+    future.slot.futureItemKey = 'sageSeed';
+    future.slot.futureItemKind = 'seed';
+    future.slot.futureItemLabel = 'sage seed';
+    future.manager.render(future.manager.gameplayFacade.getSnapshot());
     future.manager.showSellPopup();
-    future.popupLayer.querySelector('[data-shop-sell-item-key="sageSeed"]').click();
-    future.popupLayer.querySelector('.shop-page__sell-future-button').click();
     expect(
       future.popupLayer.querySelector('[data-shop-sell-item-key="mintSeed"]').disabled,
     ).toBe(true);
@@ -341,7 +309,7 @@ describe('ShopShelfManager quantity allocation', () => {
       .toContain('sage seed');
   });
 
-  it('exposes tutorial targets for the item, percentage, mark, and future controls', () => {
+  it('exposes tutorial targets for the item, percentage, and mark controls', () => {
     const harness = createHarness();
     harness.manager.showSellPopup();
 
@@ -349,7 +317,6 @@ describe('ShopShelfManager quantity allocation', () => {
       'shop:sell:sageSeed',
       'shop:sell:percentage',
       'shop:sell:mark',
-      'shop:sell:future',
     ]) {
       expect(harness.popupLayer.querySelector(`[data-tutorial-id="${tutorialId}"]`))
         .not.toBeNull();

@@ -693,14 +693,14 @@ describe("PixiPagesFacade", () => {
       value: "Sage Seed",
       quantityLabel: "x8",
     });
-    expect(dialog.actions[0]).toMatchObject({
+    expect(dialog.actions[1]).toMatchObject({
       label: "Mark x8",
       enabled: true,
     });
 
     dialog.range.onChange(2);
     dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
-    expect(dialog.actions[0].label).toBe("Mark x2");
+    expect(dialog.actions[1].label).toBe("Mark x2");
 
     dialog.tabs.find((tab) => tab.id === "herb").action();
     dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
@@ -708,7 +708,7 @@ describe("PixiPagesFacade", () => {
 
     dialog.tabs.find((tab) => tab.id === "seed").action();
     dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
-    dialog.actions[0].action();
+    dialog.actions[1].action();
 
     expect(harness.gameplayFacade.selectShopShelfSlot).toHaveBeenCalledWith(1);
     expect(

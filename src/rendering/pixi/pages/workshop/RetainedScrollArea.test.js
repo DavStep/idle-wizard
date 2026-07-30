@@ -32,6 +32,17 @@ describe('RetainedScrollArea', () => {
     expect(scroll.content.y).toBe(-scroll.offsetY);
   });
 
+  it('samples the final pointer-up position before releasing inertia', () => {
+    scroll = overflowingScroll();
+    scroll.beginDrag(pointerContext(0, 120));
+    scroll.dragTo(pointerContext(40, 80));
+
+    scroll.endDrag(pointerContext(80, 40));
+
+    expect(scroll.offsetY).toBeCloseTo(80, 10);
+    expect(scroll.physics.velocity).toBeGreaterThan(0);
+  });
+
   it('keeps release inertia through unchanged layout refreshes', () => {
     scroll = overflowingScroll();
     scroll.beginDrag(pointerContext(0, 120));

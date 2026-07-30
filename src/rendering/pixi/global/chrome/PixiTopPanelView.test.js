@@ -7,8 +7,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { SemanticTargetRegistry } from '../../retained/index.js';
 import {
   createPixiThemeSnapshot,
+  PIXI_TEXT_STROKE_COLOR,
   PIXI_UI_GEOMETRY,
   PIXI_ROOT_RUN_ASSETS,
+  resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 import { PIXI_ROOM_TAB_FRAME_SCALE } from './PixiBottomPanelView.js';
 import {
@@ -54,8 +56,8 @@ describe('PixiTopPanelView', () => {
     expect(view.username.text).toBe('mira');
     expect(view.username.textObject.style.fill).toBe('#fff4dc');
     expect(view.username.textObject.style.stroke).toMatchObject({
-      color: '#17100c',
-      width: 12,
+      color: PIXI_TEXT_STROKE_COLOR,
+      width: resolvePixiTextStrokeWidth(view.username.fontSize),
     });
     expect(view.mana.amount).toBe('41/80');
     expect(view.manaRate.text).toBe('+2.25/s');

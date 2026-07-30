@@ -53,11 +53,15 @@ receive stable pointer ids, center points, absolute scale, and delta scale.
 Page swipes receive `next` or `previous` only after their release threshold
 and horizontal-axis ratio pass.
 
-Haptic and click sound feedback run only after `onActivate` confirms by
-returning anything except `false` (or resolving a promise to anything except
-`false`). Touch activation gets the subtle app haptic; mouse and keyboard
-activation get click sound only. Disabled, selected, dragged, cancelled, and
-retargeted presses remain silent.
+Enabled touch controls get one subtle app haptic on pointer-down. A quick
+validated release adds no haptic; a validated release after at least `350ms`
+adds one more subtle haptic. The action itself still runs only on release, and
+click sound runs only after `onActivate` confirms by returning anything except
+`false` (or resolving a promise to anything except `false`). Mouse and keyboard
+activation get click sound only. Disabled and selected controls stay silent;
+dragged, cancelled, and retargeted presses keep their initial down pulse but do
+not activate or get a release pulse. Milestone sliders replace that initial
+pulse with one light touch haptic after each newly accepted stop.
 
 Use `pushModal()` / `popModal()` for modal ownership, `focus()` / `moveFocus()`
 for semantic keyboard focus, and `handleBack({ source: 'native' })` from the

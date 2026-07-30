@@ -4,7 +4,10 @@ import { Container, Graphics, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
-import { createPixiThemeSnapshot } from '../../theme/PixiThemeTokens.js';
+import {
+  createPixiThemeSnapshot,
+  resolvePixiTextStrokeWidth,
+} from '../../theme/PixiThemeTokens.js';
 import {
   createRewardFlyoutPresentation,
   createRewardVisualPresentation,
@@ -44,7 +47,7 @@ describe('PixiTransientEffectsLayer', () => {
     expect(visibleText.textObject.style.fill).toBe('#ffffff');
     expect(visibleText.textObject.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 4,
+      width: resolvePixiTextStrokeWidth(visibleText.fontSize),
       join: 'round',
     });
     expect(flyoutEntry.widget.background.width).toBeGreaterThan(0);
@@ -286,7 +289,9 @@ describe('PixiTransientEffectsLayer', () => {
     );
     expect(amount.widget.label.textObject.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 4,
+      width: resolvePixiTextStrokeWidth(
+        amount.widget.label.fontSize,
+      ),
       join: 'round',
     });
 

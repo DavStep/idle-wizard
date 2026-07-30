@@ -31,12 +31,16 @@ describe('ViewportManager', () => {
     expect(viewportMeta).toContain('maximum-scale=1');
     expect(viewportMeta).toContain('user-scalable=no');
     expect(viewportMeta).toContain('viewport-fit=cover');
+    expect(viewportMeta).toContain('interactive-widget=overlays-content');
     expect(html).toContain('<meta name="theme-color" content="#242938" />');
     expect(canvasCss).toMatch(
       /body::before\s*\{[^}]*height:\s*env\(safe-area-inset-top,\s*0px\);[^}]*background:\s*var\(--top-panel-safe-area-fill\);/s,
     );
     expect(canvasCss).toMatch(
       /#game-canvas\s*\{[^}]*top:\s*env\(safe-area-inset-top,\s*0px\);/s,
+    );
+    expect(canvasCss).toMatch(
+      /#game-canvas\.is-splash-viewport\s*\{[^}]*top:\s*0;[^}]*left:\s*0;[^}]*width:\s*100vw;[^}]*height:\s*100dvh;/s,
     );
     expect(baseCss).toMatch(/html,\s*body,\s*#app\s*\{[^}]*touch-action:\s*pan-y;/s);
     expect(baseCss).toMatch(/\.app-shell\s*\{[^}]*touch-action:\s*pan-y;/s);

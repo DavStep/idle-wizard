@@ -104,12 +104,14 @@ const ACCOUNT_CHOICES_HEIGHT =
   ACCOUNT_TABS_TOP_INSET +
   ACCOUNT_TAB_HEIGHT +
   ACCOUNT_TABS_BOTTOM_INSET;
-const ACCOUNT_SAVE_WIDTH = 160;
-const ACCOUNT_SAVE_HEIGHT = 34;
+const ACCOUNT_SAVE_WIDTH =
+  PIXI_ROOT_RUN_GEOMETRY.account.save.width;
+const ACCOUNT_SAVE_HEIGHT =
+  PIXI_ROOT_RUN_GEOMETRY.account.save.height;
 const ACCOUNT_SAVE_GAP = 8;
 const ACCOUNT_BOTTOM_GAP = 8;
-const SETTINGS_DEVICE_CONTENT_HEIGHT = 264;
-const SETTINGS_DEVICE_SCROLL_HEIGHT = 244;
+const SETTINGS_DEVICE_CONTENT_HEIGHT = 364;
+const SETTINGS_DEVICE_SCROLL_HEIGHT = 344;
 const SETTINGS_TABS = new Set([
   'account',
   'report',
@@ -155,12 +157,19 @@ const DEVICE_PREFERENCES = Object.freeze([
     iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsVibration,
   }),
 ]);
-const DEVICE_FOOTER_GAP = 12;
+const DEVICE_ACCOUNT_PANEL_GAP = 8;
+const DEVICE_ACCOUNT_PANEL_HEIGHT = 92;
+const DEVICE_ACCOUNT_PANEL_PADDING_TOP = 10;
+const DEVICE_ACCOUNT_STATUS_GAP = 2;
+const DEVICE_ACCOUNT_BUTTON_GAP = 6;
+const DEVICE_ACCOUNT_BUTTON_WIDTH = 218;
+const DEVICE_ACCOUNT_BUTTON_HEIGHT = 30;
+const DEVICE_ACCOUNT_FOOTER_GAP = 12;
 
 /**
  * Retained single-pane surface used by settings, feedback, username, and
- * avatar entry points. Normal settings open directly on the three device
- * preferences, matching Root Run without exposing visual-option tabs.
+ * avatar entry points. Normal settings open directly on device preferences,
+ * Google account connection, and identity details without visual-option tabs.
  */
 export class PixiSettingsDialog extends RetainedGlobalDialog {
   constructor({
@@ -174,7 +183,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     super({
       context,
       dialogId,
-      title: 'settings',
+      title: 'Settings',
       contentWidth: SETTINGS_CONTENT_WIDTH,
       contentHeight: startsOnDevicePreferences
         ? SETTINGS_DEVICE_CONTENT_HEIGHT
@@ -333,7 +342,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       semanticRegistry: this.context.semanticRegistry,
       semanticId: `${this.dialogId}.account.save`,
       text: 'Save',
-      variant: 'green',
+      variant: 'account-save',
       width: ACCOUNT_SAVE_WIDTH,
       height: ACCOUNT_SAVE_HEIGHT,
       action: () => this.saveAccount(),
@@ -442,6 +451,46 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.devicePanel.setRows(
       this.preferenceRows.map(({ widget }) => widget),
     );
+    this.accountConnectionPanel = new PixiNineSliceFrame({
+      texture: this.context.assets.getTexture(
+        PIXI_ROOT_RUN_ASSETS.settingsRow,
+      ),
+      sourceInsets:
+        PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets:
+        PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      width: SETTINGS_CONTENT_WIDTH,
+      height: DEVICE_ACCOUNT_PANEL_HEIGHT,
+      label: `${this.dialogId}:accountConnectionPanel`,
+    });
+    this.accountConnectionLabel = new PixiTextLabel({
+      text: 'GOOGLE ACCOUNT',
+      fontSize: 17,
+      fontFamily:
+        '"Lilita One", "Arial Black", Arial, sans-serif',
+      color: '#735036',
+      anchor: { x: 0.5, y: 0 },
+      label: `${this.dialogId}:accountConnectionLabel`,
+    });
+    this.accountStatus = new PixiTextLabel({
+      text: 'not connected',
+      fontSize: 12,
+      color: 'muted',
+      anchor: { x: 0.5, y: 0 },
+      label: `${this.dialogId}:accountStatus`,
+    });
+    this.accountConnectButton = new PixiButton({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${this.dialogId}.account.connect`,
+      text: 'connect account',
+      width: DEVICE_ACCOUNT_BUTTON_WIDTH,
+      height: DEVICE_ACCOUNT_BUTTON_HEIGHT,
+      variant: 'yellow',
+      action: () => this.runAction('connectAccount'),
+      label: `${this.dialogId}:accountConnect`,
+    });
     this.identityFooter = new DeviceIdentityFooter({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
@@ -452,6 +501,10 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     });
     this.configurationsLayer.addChild(
       this.devicePanel,
+      this.accountConnectionPanel,
+      this.accountConnectionLabel,
+      this.accountStatus,
+      this.accountConnectButton,
       this.identityFooter,
     );
   }
@@ -554,6 +607,12 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
           this.setPreference(preference.key, enabled),
       });
     }
+    this.accountStatus.setText(
+      compactConnectionStatus(model.account.accountStatus),
+    );
+    this.accountConnectButton
+      .setText(model.account.connectLabel)
+      .setEnabled(model.account.connectEnabled);
     this.identityFooter.bind({
       version: model.account.version,
       userId: model.account.userId,
@@ -660,7 +719,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   syncTitleFrame(account) {
     this.panel.setTitle(
       account
-        ? 'Account'
+        ? 'Wizard'
         : this.model.title ?? this.defaultTitle,
     );
     const titleFrame = this.panel.titleFrame;
@@ -866,7 +925,43 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     let y = 0;
     this.devicePanel.position.set(0, y);
     this.devicePanel.setWidth(SETTINGS_CONTENT_WIDTH);
-    y += this.devicePanel.panelHeight + DEVICE_FOOTER_GAP;
+    y +=
+      this.devicePanel.panelHeight +
+      DEVICE_ACCOUNT_PANEL_GAP;
+    this.accountConnectionPanel.position.set(0, y);
+    this.accountConnectionPanel.setSize(
+      SETTINGS_CONTENT_WIDTH,
+      DEVICE_ACCOUNT_PANEL_HEIGHT,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+    );
+    const accountPanelY = y;
+    y += DEVICE_ACCOUNT_PANEL_PADDING_TOP;
+    this.accountConnectionLabel.position.set(
+      SETTINGS_CONTENT_WIDTH / 2,
+      y,
+    );
+    y +=
+      this.accountConnectionLabel.measuredHeight +
+      DEVICE_ACCOUNT_STATUS_GAP;
+    this.accountStatus.position.set(
+      SETTINGS_CONTENT_WIDTH / 2,
+      y,
+    );
+    y +=
+      this.accountStatus.measuredHeight +
+      DEVICE_ACCOUNT_BUTTON_GAP;
+    this.accountConnectButton.position.set(
+      (SETTINGS_CONTENT_WIDTH - DEVICE_ACCOUNT_BUTTON_WIDTH) / 2,
+      y,
+    );
+    this.accountConnectButton.setSize(
+      DEVICE_ACCOUNT_BUTTON_WIDTH,
+      DEVICE_ACCOUNT_BUTTON_HEIGHT,
+    );
+    y =
+      accountPanelY +
+      DEVICE_ACCOUNT_PANEL_HEIGHT +
+      DEVICE_ACCOUNT_FOOTER_GAP;
     this.identityFooter.position.set(0, y);
     this.identityFooter.setWidth(SETTINGS_CONTENT_WIDTH);
     y += this.identityFooter.footerHeight;
@@ -1127,6 +1222,8 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     for (const label of [
       this.usernameStatus,
       this.feedbackStatus,
+      this.accountConnectionLabel,
+      this.accountStatus,
     ]) {
       label?.applyTheme(theme);
     }
@@ -1141,6 +1238,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       this.frameTabButton,
       this.accountSave,
       this.feedbackSend,
+      this.accountConnectButton,
       ...this.feedbackKindButtons?.map(({ button }) => button) ?? [],
     ]) {
       button?.applyTheme(theme);
@@ -1526,6 +1624,14 @@ async function copyTextToClipboard(text) {
   } catch {
     return false;
   }
+}
+
+function compactConnectionStatus(status) {
+  const value = String(status ?? '').trim();
+  if (value.length <= 42) {
+    return value;
+  }
+  return `${value.slice(0, 25)}…${value.slice(-16)}`;
 }
 
 function normalizeSettingsTab(tabId) {

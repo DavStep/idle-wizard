@@ -94,6 +94,37 @@ describe('PixiUiRuntimeFacade', () => {
     });
   });
 
+  it('locks the viewport from text-entry activation before keyboard inset events', async () => {
+    const harness = createHarness();
+    let activeStateListener = null;
+    harness.applicationManager.setTextEntryActive = vi.fn();
+    harness.applicationManager.setKeyboardMetrics = vi.fn();
+    harness.textEntryService = {
+      subscribeActiveState: vi.fn((listener, { emitCurrent }) => {
+        activeStateListener = listener;
+        if (emitCurrent) {
+          listener(false);
+        }
+        return vi.fn();
+      }),
+      subscribeKeyboardInset: vi.fn(() => vi.fn()),
+      destroy: vi.fn(),
+    };
+    const runtime = new PixiUiRuntimeFacade(harness);
+
+    await runtime.initialize();
+    activeStateListener(true);
+
+    expect(harness.applicationManager.setTextEntryActive).toHaveBeenNthCalledWith(
+      1,
+      false,
+    );
+    expect(harness.applicationManager.setTextEntryActive).toHaveBeenNthCalledWith(
+      2,
+      true,
+    );
+  });
+
   it('eagerly constructs pages/globals and constructs each dialog only once', async () => {
     const harness = createHarness();
     const pageFactory = vi.fn(() => createView('page'));

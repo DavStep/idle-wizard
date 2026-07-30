@@ -58,7 +58,7 @@ export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   progressWidth: 80,
   progressHeight: PIXI_UI_GEOMETRY.progressTotalHeight,
   actionBarBottom: 162,
-  actionButtonHeight: 30,
+  actionButtonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
   actionButtonGap: 8,
   selectedSeedHeight: 24,
   selectedSeedGap: 5,
@@ -1253,7 +1253,7 @@ class GardenPlotWidget {
     });
     this.action.style.stroke = normalizePixiTextStroke({
       color: "#0a0a0a",
-    });
+    }, this.action.style.fontSize);
     this.buyCostButton.applyTheme(this.theme);
     this.progress.applyTheme(this.theme);
     this.redraw();

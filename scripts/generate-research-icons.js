@@ -18,14 +18,12 @@ const TEMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'idle-wizard-research-ico
 
 const sourcePaths = Object.freeze({
   arrow: 'art-source/research-icons/primitives/upgrade-arrow.png',
-  bottle: 'art-source/research-icons/primitives/potion-bottle.png',
   cauldron: 'art-source/research-icons/primitives/cauldron.png',
   check: 'assets/game/source/ui/prop_checkmark.png',
   hourglass: 'art-source/research-icons/primitives/hourglass.png',
   lens: 'art-source/research-icons/primitives/research-lens.png',
   pack: 'art-source/research-icons/primitives/seed-pack.png',
   plot: 'art-source/research-icons/primitives/plot.png',
-  scissors: 'assets/game/source/icons/tools/herb-cutting-scissors-open.png',
   stall: 'art-source/research-icons/primitives/market-stall.png',
 });
 
@@ -47,24 +45,8 @@ const recipes = Object.freeze([
     [mainLayer('plot'), checkLayer()],
   ],
   [
-    'icon-research-auto-harvest.png',
-    [
-      mainLayer('plot'),
-      layer('scissors', 136, 138, 76, 76, { shadow: true }),
-      checkLayer(),
-    ],
-  ],
-  [
     'icon-research-auto-brew.png',
     [mainLayer('cauldron'), checkLayer()],
-  ],
-  [
-    'icon-research-auto-bottle.png',
-    [
-      layer('cauldron', 12, 24, 222, 208, { shadow: true }),
-      layer('bottle', 148, 128, 72, 88, { shadow: true }),
-      checkLayer(),
-    ],
   ],
   [
     'icon-research-fast-sell.png',

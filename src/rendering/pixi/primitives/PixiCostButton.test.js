@@ -10,6 +10,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { installPixiPageTestCanvas } from '../pages/workshop/PixiPageTestHarness.js';
 import {
   PIXI_ROOT_RUN_ASSETS,
+  resolvePixiTextStrokeWidth,
 } from '../theme/PixiThemeTokens.js';
 import { PixiCostButton } from './PixiCostButton.js';
 
@@ -113,10 +114,14 @@ describe('PixiCostButton', () => {
     expect(button.lockedLabel.text).toBe('Locked');
     expect(button.lockReasonLabel.stroke).toEqual({
       color: '#0a0a0a',
-      width: 4,
+      width: resolvePixiTextStrokeWidth(
+        button.lockReasonLabel.fontSize,
+      ),
       join: 'round',
     });
-    expect(button.lockReasonLabel.textObject.style.stroke.width).toBe(4);
+    expect(button.lockReasonLabel.textObject.style.stroke.width).toBe(
+      resolvePixiTextStrokeWidth(button.lockReasonLabel.fontSize),
+    );
     expect(button.lockReasonLabel.wrapWidth).toBe(68);
     expect(button.lockReasonLabel.textObject.style.whiteSpace).toBe(
       'pre-line',
@@ -147,8 +152,12 @@ describe('PixiCostButton', () => {
     expect(button.resourceIcon.height).toBeCloseTo(16.512);
     expect(button.resourceIcon.y).toBe(14);
     expect(button.amountLabel.y).toBe(14);
-    expect(button.amountLabel.stroke.width).toBe(4);
-    expect(button.lockReasonLabel.stroke.width).toBe(4);
+    expect(button.amountLabel.stroke.width).toBe(
+      resolvePixiTextStrokeWidth(button.amountLabel.fontSize),
+    );
+    expect(button.lockReasonLabel.stroke.width).toBe(
+      resolvePixiTextStrokeWidth(button.lockReasonLabel.fontSize),
+    );
     expect(button.amountLabel.visible).toBe(true);
     expect(button.lockedLabel.visible).toBe(false);
     expect(assetManager.getTexture).toHaveBeenCalledWith(
@@ -194,8 +203,12 @@ describe('PixiCostButton', () => {
       text: '25',
       y: 35.36,
     });
-    expect(button.amountLabel.stroke.width).toBe(4);
-    expect(button.actionTextLabel.stroke.width).toBe(4);
+    expect(button.amountLabel.stroke.width).toBe(
+      resolvePixiTextStrokeWidth(button.amountLabel.fontSize),
+    );
+    expect(button.actionTextLabel.stroke.width).toBe(
+      resolvePixiTextStrokeWidth(button.actionTextLabel.fontSize),
+    );
     expect(button.compactBackground.visible).toBe(false);
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.buttonGreenStacked,
@@ -238,8 +251,12 @@ describe('PixiCostButton', () => {
     expect(button.amountLabel.text).toBe('10');
     expect(button.actionTextLabel.fontSize).toBe(11);
     expect(button.amountLabel.fontSize).toBe(13);
-    expect(button.actionTextLabel.stroke.width).toBe(4);
-    expect(button.amountLabel.stroke.width).toBe(4);
+    expect(button.actionTextLabel.stroke.width).toBe(
+      resolvePixiTextStrokeWidth(button.actionTextLabel.fontSize),
+    );
+    expect(button.amountLabel.stroke.width).toBe(
+      resolvePixiTextStrokeWidth(button.amountLabel.fontSize),
+    );
     expect(button.resourceIcon.y).toBeCloseTo(33.28);
     expect(button.amountLabel.y).toBeCloseTo(33.28);
     const iconRight = button.resourceIcon.x + button.resourceIcon.width / 2;

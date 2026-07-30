@@ -476,7 +476,7 @@ function createStallDialog({
     ],
     range: {
       enabled: Boolean(selectedItem),
-      tone: 'root',
+      tone: 'yellow',
       min: 0,
       max: totalQuantity,
       step: 1,
@@ -528,30 +528,6 @@ function createStallDialog({
       }),
     actions: [
       {
-        id: 'mark',
-        label: `Mark x${targetQuantity}`,
-        variant: 'green',
-        semanticId: `shop.stall.${slotNumber}.mark`,
-        tutorialId: 'shop:sell:mark',
-        enabled:
-          Boolean(selectedItem) &&
-          targetQuantity !== loadedQuantity,
-        action: () =>
-          callFirstOr(
-            uiActions,
-            ['markStall'],
-            [slotNumber, selectedItem, targetQuantity],
-            () =>
-              selectAndCall(
-                [
-                  'setSelectedShopShelfSlotQuantity',
-                  'setSelectedShelfSlotQuantity',
-                ],
-                [selectedItem?.itemTypeId, targetQuantity],
-              ),
-          ),
-      },
-      {
         id: 'clear',
         label: 'Clear',
         variant: 'red',
@@ -574,30 +550,26 @@ function createStallDialog({
           ),
       },
       {
-        id: 'future',
-        label: slot.futureItemTypeId
-          ? 'Stop Future'
-          : 'Mark Future',
-        enabled: Boolean(selectedItem),
+        id: 'mark',
+        label: `Mark x${targetQuantity}`,
+        variant: 'green',
+        semanticId: `shop.stall.${slotNumber}.mark`,
+        tutorialId: 'shop:sell:mark',
+        enabled:
+          Boolean(selectedItem) &&
+          targetQuantity !== loadedQuantity,
         action: () =>
           callFirstOr(
             uiActions,
-            ['toggleStallFuture'],
-            [
-              slotNumber,
-              selectedItem,
-              !slot.futureItemTypeId,
-            ],
+            ['markStall'],
+            [slotNumber, selectedItem, targetQuantity],
             () =>
               selectAndCall(
                 [
-                  'setSelectedShopShelfFutureItem',
-                  'setSelectedShelfFutureItem',
+                  'setSelectedShopShelfSlotQuantity',
+                  'setSelectedShelfSlotQuantity',
                 ],
-                [
-                  selectedItem?.itemTypeId,
-                  !slot.futureItemTypeId,
-                ],
+                [selectedItem?.itemTypeId, targetQuantity],
               ),
           ),
       },

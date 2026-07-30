@@ -125,6 +125,17 @@ describe('item icon labels', () => {
     );
   });
 
+  it('uses the unknown potion icon when a potion key has no dedicated frame', () => {
+    const element = document.createElement('span');
+    element.textContent = 'mystery potion';
+
+    setItemIconLabel(element, 'potion', 'missingPotion');
+
+    expect(element.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame).toBe(
+      'potion:unknownPotion',
+    );
+  });
+
   it('marks seed labels with the seed pack icon while preserving text', () => {
     const element = document.createElement('span');
     element.textContent = 'sage seed (3)';

@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.31
+
+- Improved touch feedback, scrolling, and text layout across rooms and dialogs.
+- Refined Brewing, Workshop, Garden, Research, Market, World Chat, and Settings presentation for clearer controls and more consistent spacing.
+- Added haptic timing improvements and strengthened account, online-state, and input handling.
+
 ## 0.3.30
 
 - Reworked Brewing ingredient slots so each herb is shown and replaced individually through a simpler picker.

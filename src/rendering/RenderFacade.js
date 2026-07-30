@@ -117,6 +117,8 @@ export class RenderFacade {
             assets: context.assets,
             inputRouter: context.inputRouter,
             application: context.application,
+            onSplashViewportChange: (active) =>
+              this.applicationManager.setSplashViewportActive(active),
           }),
         ),
       )

@@ -1004,7 +1004,7 @@ class WorkshopTaskPanel {
   applyTitleStroke() {
     this.panel.title.style.stroke = normalizePixiTextStroke({
       color: WORKSHOP_REQUEST_TITLE_STROKE,
-    });
+    }, this.panel.title.style.fontSize);
   }
 
   destroy() {
@@ -1208,9 +1208,6 @@ class WorkshopSummonControl {
     this.notification = new PixiNotificationBadge({ assetManager });
     this.notification.root.label = 'workshop-summon-notification';
     this.root.addChild(this.circle, this.button, this.info);
-    this.pointerId = null;
-    this.holdTriggered = false;
-    this.holdTimer = null;
     this.requestFrame = requestFrame;
     this.cancelFrame = cancelFrame;
     this.timeSource = timeSource;
@@ -1222,37 +1219,19 @@ class WorkshopSummonControl {
     this.effectFrame = 0;
     this.effectStart = 0;
     this.effectTick = (time) => this.tickSummonEffect(time);
-    this.beginHold = (pointerId) => {
-      if (!this.enabled || this.pointerId !== null) {
-        return;
-      }
-
-      this.pointerId = pointerId;
-      this.holdTriggered = false;
-      this.scheduleHold();
-    };
-    this.handlePointerDown = (event) => {
+    this.handlePointerDown = () => {
       this.button.setPressed(true);
-      this.beginHold(event.pointerId);
     };
     this.handlePointerEnd = (event) => {
       this.button.setPressed(false, {
         confirmed: event.type === 'pointerup',
       });
-      if (event.pointerId === this.pointerId) {
-        this.stopHold();
-      }
     };
     this.handlePressChange = (pressed, context) => {
       this.button.setPressed(pressed, context);
-      if (pressed) {
-        this.beginHold('router');
-      } else {
-        this.stopHold();
-      }
     };
     this.handleTap = () => {
-      if (this.pressEnabled && !this.holdTriggered) {
+      if (this.pressEnabled) {
         return this.activateSummon();
       }
 
@@ -1365,38 +1344,6 @@ class WorkshopSummonControl {
     this.circle.alpha = this.enabled ? 1 : 0.38;
   }
 
-  scheduleHold() {
-    this.clearTimer();
-    this.holdTimer = globalThis.setTimeout(() => {
-      this.holdTimer = null;
-
-      if (this.pointerId === null || !this.enabled) {
-        return;
-      }
-
-      this.holdTriggered = true;
-      const shouldContinue = this.activateSummon();
-
-      if (shouldContinue !== false) {
-        this.scheduleHold();
-      } else {
-        this.stopHold();
-      }
-    }, 100);
-  }
-
-  stopHold() {
-    this.clearTimer();
-    this.pointerId = null;
-  }
-
-  clearTimer() {
-    if (this.holdTimer !== null) {
-      globalThis.clearTimeout(this.holdTimer);
-      this.holdTimer = null;
-    }
-  }
-
   setActive(active) {
     this.active = Boolean(active);
     if (!this.active) {
@@ -1461,7 +1408,6 @@ class WorkshopSummonControl {
   }
 
   destroy() {
-    this.stopHold();
     this.stopSummonEffect();
     this.inputRegistration?.unregister?.();
     this.inputRegistration = null;
@@ -1646,7 +1592,7 @@ class WorkshopIconPanelAction {
     });
     this.label.style.stroke = normalizePixiTextStroke({
       color: WORKSHOP_SIDE_LABEL_STROKE,
-    });
+    }, this.label.style.fontSize);
     fitRootRunSideActionLabel(this.label);
     this.notification.applyTheme(theme);
   }
@@ -1840,7 +1786,7 @@ class WorkshopFeatureButton {
     });
     this.label.style.stroke = normalizePixiTextStroke({
       color: WORKSHOP_SIDE_LABEL_STROKE,
-    });
+    }, this.label.style.fontSize);
     fitRootRunSideActionLabel(this.label);
     this.label.alpha = this.model?.enabled === false ? 0.55 : 1;
     applyTextTheme(this.timer, theme, {
@@ -1850,7 +1796,7 @@ class WorkshopFeatureButton {
     });
     this.timer.style.stroke = normalizePixiTextStroke({
       color: theme.surface,
-    });
+    }, this.timer.style.fontSize);
     this.icon.alpha = this.model?.enabled === false ? 0.55 : 1;
     this.cloth.alpha = this.icon.alpha;
     this.notification.applyTheme(theme);
@@ -2051,7 +1997,7 @@ function applyWorkshopRequestTextTheme(text, theme, style = RETAINED_TEXT_STYLES
   });
   text.style.stroke = normalizePixiTextStroke({
     color: theme.surface,
-  });
+  }, text.style.fontSize);
 }
 
 function defaultCancelFrame(frame) {

@@ -32,9 +32,7 @@ const RESOURCE_ICON_FRAMES = Object.freeze({
   ruby: 'resource:ruby',
 });
 const RESEARCH_ICON_FRAMES = Object.freeze({
-  autoBottle: 'research:autoBottle',
   autoBrew: 'research:autoBrew',
-  autoHarvest: 'research:autoHarvest',
   autoPlant: 'research:autoPlant',
   autoSeedSpawn: 'research:autoSeedSpawn',
   automationReserve: 'research:automationReserve',
@@ -1064,7 +1062,7 @@ export class PageAnnouncementManager {
     }
 
     if (researchId.startsWith('automation:autoHarvestPlant:')) {
-      return RESEARCH_ICON_FRAMES.autoHarvest;
+      return RESEARCH_ICON_FRAMES.autoPlant;
     }
 
     if (researchId.startsWith('automation:autoBrewCauldron:')) {
@@ -1072,7 +1070,7 @@ export class PageAnnouncementManager {
     }
 
     if (researchId.startsWith('automation:autoBottleCauldron:')) {
-      return RESEARCH_ICON_FRAMES.autoBottle;
+      return RESEARCH_ICON_FRAMES.autoBrew;
     }
 
     if (researchId.startsWith('advanced:stallStaffing:')) {

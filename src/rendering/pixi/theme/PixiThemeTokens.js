@@ -23,7 +23,7 @@ export const PIXI_UI_GEOMETRY = Object.freeze({
   sourceWidth: 360,
   sourceHeight: 2170 / 3,
   bodyFontSize: 13,
-  strokedTextWidth: 4,
+  strokedTextWidth: 3,
   dialogTitleFontSize: 14,
   borderLabelFontSize: 11,
   borderLabelLineHeight: 14,
@@ -56,6 +56,7 @@ export const PIXI_UI_GEOMETRY = Object.freeze({
   notificationOutset: 0,
   notificationTabInset: 4,
   buttonWidth: 100,
+  roomControlHeight: 36,
   tabHeight: 28,
   dialogShadowX: 5,
   dialogShadowY: 5,
@@ -64,6 +65,20 @@ export const PIXI_UI_GEOMETRY = Object.freeze({
 
 export const PIXI_TEXT_STROKE_WIDTH =
   PIXI_UI_GEOMETRY.strokedTextWidth;
+export const PIXI_TEXT_STROKE_RATIO =
+  PIXI_TEXT_STROKE_WIDTH / PIXI_UI_GEOMETRY.bodyFontSize;
+export const PIXI_TEXT_STROKE_COLOR = '#0a0a0a';
+
+export function resolvePixiTextStrokeWidth(
+  fontSize = PIXI_UI_GEOMETRY.bodyFontSize,
+) {
+  const resolvedFontSize = Number(fontSize);
+  return (
+    (Number.isFinite(resolvedFontSize) && resolvedFontSize > 0
+      ? resolvedFontSize
+      : PIXI_UI_GEOMETRY.bodyFontSize) * PIXI_TEXT_STROKE_RATIO
+  );
+}
 
 export const PIXI_PROGRESS_VISUALS = Object.freeze({
   railBackground: '#000000',
@@ -87,19 +102,19 @@ export const PIXI_PROGRESS_VISUALS = Object.freeze({
       fill: '#be403b',
       edge: '#e66a5d',
       text: '#be403b',
-      textStroke: '#762824',
+      textStroke: PIXI_TEXT_STROKE_COLOR,
     }),
     green: Object.freeze({
       fill: '#4aa83f',
       edge: '#8bdc69',
       text: '#4aa83f',
-      textStroke: '#205c22',
+      textStroke: PIXI_TEXT_STROKE_COLOR,
     }),
     yellow: Object.freeze({
       fill: '#d8ad32',
       edge: '#f6d86a',
       text: '#d8ad32',
-      textStroke: '#6c5008',
+      textStroke: PIXI_TEXT_STROKE_COLOR,
     }),
   }),
 });
@@ -244,14 +259,14 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
       editInsetY: 10 / 3,
       editSize: 64 / 3,
       fontSize: 64 / 3,
-      textStroke: 8 / 3,
+      textStroke: PIXI_UI_GEOMETRY.strokedTextWidth,
     }),
     tab: Object.freeze({
       width: 354 * ROOT_RUN_ACCOUNT_X_SCALE,
       height: 120 / 3,
       gap: 29 * ROOT_RUN_ACCOUNT_X_SCALE,
       fontSize: 64 / 3,
-      textStroke: 8 / 3,
+      textStroke: PIXI_UI_GEOMETRY.strokedTextWidth,
       active: Object.freeze({
         sourceInsets: Object.freeze({
           top: 126,
@@ -297,7 +312,7 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
       width: 456 * ROOT_RUN_ACCOUNT_X_SCALE,
       height: 205 / 3,
       fontSize: 86 / 3,
-      textStroke: 8 / 3,
+      textStroke: PIXI_UI_GEOMETRY.strokedTextWidth,
       sourceInsets: Object.freeze({
         top: 99,
         right: 72,

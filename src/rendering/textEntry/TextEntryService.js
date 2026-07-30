@@ -32,6 +32,7 @@ export class TextEntryService {
     this.nativeAdapterFactory = nativeAdapterFactory;
     this.activeSession = null;
     this.activeAdapter = null;
+    this.activeStateListeners = new Set();
     this.keyboardInsetListeners = new Set();
     this.keyboardInset = 0;
   }
@@ -56,6 +57,7 @@ export class TextEntryService {
 
     this.activeSession = session;
     this.activeAdapter = adapter;
+    this.publishActiveState(true);
 
     try {
       await adapter.open(session.getSnapshot(), this.createHandlers(session));
@@ -134,6 +136,7 @@ export class TextEntryService {
   }
 
   destroy() {
+    this.activeStateListeners.clear();
     this.keyboardInsetListeners.clear();
     this.keyboardInset = 0;
     return this.close();
@@ -218,6 +221,23 @@ export class TextEntryService {
     return () => this.keyboardInsetListeners.delete(listener);
   }
 
+  subscribeActiveState(listener, { emitCurrent = false } = {}) {
+    if (typeof listener !== 'function') {
+      throw new TypeError('Text-entry active-state listener must be a function.');
+    }
+    this.activeStateListeners.add(listener);
+    if (emitCurrent) {
+      listener(Boolean(this.activeSession));
+    }
+    return () => this.activeStateListeners.delete(listener);
+  }
+
+  publishActiveState(active) {
+    for (const listener of this.activeStateListeners) {
+      listener(active === true);
+    }
+  }
+
   publishKeyboardInset(keyboardInset) {
     const normalizedInset = Math.max(0, Number(keyboardInset) || 0);
     if (normalizedInset === this.keyboardInset) {
@@ -237,6 +257,7 @@ export class TextEntryService {
 
     this.activeSession = null;
     this.activeAdapter = null;
+    this.publishActiveState(false);
   }
 
   assertActive(session) {

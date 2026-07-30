@@ -4,7 +4,10 @@ import { Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
-import { createPixiThemeSnapshot } from '../../theme/PixiThemeTokens.js';
+import {
+  createPixiThemeSnapshot,
+  resolvePixiTextStrokeWidth,
+} from '../../theme/PixiThemeTokens.js';
 import { PixiWorldChatView } from './PixiWorldChatView.js';
 
 installPixiPageTestCanvas();
@@ -36,7 +39,9 @@ describe('PixiWorldChatView', () => {
     expect(view.panel.title.text).toBe('World Chat');
     expect(view.panel.title.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 4,
+      width: resolvePixiTextStrokeWidth(
+        view.panel.title.style.fontSize,
+      ),
       join: 'round',
     });
     expect(view.panel.root.position).toMatchObject({

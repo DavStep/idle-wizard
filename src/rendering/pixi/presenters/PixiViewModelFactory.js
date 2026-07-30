@@ -2,6 +2,7 @@ import {
   formatCoinAmount,
   formatCoinPriceText,
 } from '../../../shared/coinPrice.js';
+import { getItemDisplay } from '../../../pages/shared/itemResearchStatus.js';
 import { formatRemainingTime } from '../../../pages/shared/timerDisplay.js';
 import { parseWorldChatSystemPlayerAnnouncement } from '../../../pages/workshop/worldChatSystemAnnouncement.js';
 import { getPlayerFrameTint } from '../../../player/playerFrames.js';
@@ -1393,9 +1394,10 @@ export class PixiViewModelFactory {
           body,
           systemPlayerUsername: systemPlayer?.username ?? '',
           systemPlayerDetail,
-          bodyIcon: createWorldChatBodyIcon(systemPlayerDetail, {
-            isSystem,
-          }),
+          bodyRuns: createWorldChatBodyRuns(
+            systemPlayer ? systemPlayerDetail : body,
+            { isSystem },
+          ),
           allianceTag: message.allianceTag ?? message.alliance_tag ?? '',
           allianceTagColor:
             message.allianceTagColor ?? message.alliance_tag_color ?? 'ink',
@@ -1740,20 +1742,34 @@ function formatWorldChatMessageAge(sentAtMs, nowMs = Date.now()) {
   return `${Math.floor(totalHours / 24)}d ago`;
 }
 
-function createWorldChatBodyIcon(body, { isSystem = false } = {}) {
-  if (
-    !isSystem ||
-    !WORLD_CHAT_PRESTIGE_DETAIL_PATTERN.test(String(body ?? ''))
-  ) {
-    return null;
+function createWorldChatBodyRuns(body, { isSystem = false } = {}) {
+  const text = String(body ?? '');
+  const marker = '⭐';
+  const markerIndex =
+    isSystem && WORLD_CHAT_PRESTIGE_DETAIL_PATTERN.test(text)
+      ? text.indexOf(marker)
+      : -1;
+  if (markerIndex < 0) {
+    return [{ kind: 'text', text }];
   }
 
-  return {
-    marker: '⭐',
-    assetId: WORLD_CHAT_PRESTIGE_ICON_ASSET,
-    label: 'Prestige star',
-    size: 12,
-  };
+  return [
+    {
+      kind: 'text',
+      text: text.slice(0, markerIndex),
+    },
+    {
+      kind: 'icon',
+      assetId: WORLD_CHAT_PRESTIGE_ICON_ASSET,
+      fallbackText: marker,
+      label: 'Prestige star',
+      size: 12,
+    },
+    {
+      kind: 'text',
+      text: text.slice(markerIndex + marker.length),
+    },
+  ];
 }
 
 function createResearchBoxModel(
@@ -2506,14 +2522,24 @@ function createBagItemRows(gameplay, tabId) {
         : (gameplay.inventory ?? []).filter(
             (item) => item.kind === singular,
           );
-  return (items ?? []).map((item) => ({
-    id: item.key ?? item.itemTypeId,
-    label: toTitleCase(item.label ?? splitCamelCase(item.key)),
-    value: String(Math.floor(Number(item.quantity) || 0)),
-    resourceKey: singular,
-    itemKind: singular,
-    itemKey: item.key,
-  }));
+  return (items ?? [])
+    .map((item) => ({
+      ...item,
+      kind: item.kind ?? singular,
+    }))
+    .filter((item) =>
+      tabId === 'ingredients'
+        ? Number(item.quantity) > 0
+        : getItemDisplay(gameplay, item, item.quantity).unlocked,
+    )
+    .map((item) => ({
+      id: item.key ?? item.itemTypeId,
+      label: toTitleCase(item.label ?? splitCamelCase(item.key)),
+      value: String(Math.floor(Number(item.quantity) || 0)),
+      resourceKey: singular,
+      itemKind: singular,
+      itemKey: item.key,
+    }));
 }
 
 function getVisibleBagTabs(pageStates) {

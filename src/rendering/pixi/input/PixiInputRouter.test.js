@@ -1,10 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { UI_HELD_RELEASE_HAPTIC_MS } from '../../../app/haptics/hapticTiming.js';
 import { PixiInputRouter } from './PixiInputRouter.js';
 
 describe('PixiInputRouter', () => {
-  it('validates touch release with configurable slop and confirms feedback once', () => {
-    const harness = createHarness({ touchPressSlop: 20 });
+  it('pulses on touch down, validates quick release with slop, and does not pulse again', () => {
+    let nowMs = 1000;
+    const harness = createHarness({
+      touchPressSlop: 20,
+      now: () => nowMs,
+    });
     const button = displayObject(harness.root);
     const activate = vi.fn();
     const pressChanges = vi.fn();
@@ -22,8 +27,9 @@ describe('PixiInputRouter', () => {
       true,
       expect.objectContaining({ registrationId: 'button' }),
     );
-    expect(harness.haptics.playUiTap).not.toHaveBeenCalled();
+    expect(harness.haptics.playUiTap).toHaveBeenCalledTimes(1);
 
+    nowMs += UI_HELD_RELEASE_HAPTIC_MS - 1;
     harness.emitRoot('pointerup', pointerEvent(button, 1, 25, 10));
 
     expect(activate).toHaveBeenCalledTimes(1);
@@ -46,8 +52,33 @@ describe('PixiInputRouter', () => {
     harness.emitRoot('pointerup', pointerEvent(button, 2, 40, 10));
 
     expect(activate).toHaveBeenCalledTimes(1);
-    expect(harness.haptics.playUiTap).toHaveBeenCalledTimes(1);
+    expect(harness.haptics.playUiTap).toHaveBeenCalledTimes(2);
     expect(harness.sound.playClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('pulses again only when a held touch releases on its original control', () => {
+    let nowMs = 1000;
+    const harness = createHarness({ now: () => nowMs });
+    const button = displayObject(harness.root);
+    const activate = vi.fn();
+    harness.router.registerPressTarget({
+      id: 'held-button',
+      displayObject: button,
+      onActivate: activate,
+    });
+
+    harness.emitRoot('pointerdown', pointerEvent(button, 1, 10, 10));
+    expect(harness.haptics.playUiTap).toHaveBeenCalledTimes(1);
+    expect(activate).not.toHaveBeenCalled();
+
+    nowMs += UI_HELD_RELEASE_HAPTIC_MS;
+    expect(activate).not.toHaveBeenCalled();
+    expect(harness.haptics.playUiTap).toHaveBeenCalledTimes(1);
+
+    harness.emitRoot('pointerup', pointerEvent(button, 1, 10, 10));
+
+    expect(activate).toHaveBeenCalledTimes(1);
+    expect(harness.haptics.playUiTap).toHaveBeenCalledTimes(2);
   });
 
   it('turns a drag into one drop and never activates the pressed source', () => {
@@ -95,10 +126,10 @@ describe('PixiInputRouter', () => {
       expect.objectContaining({ accepted: true, dropTargetId: 'cauldron' }),
     );
     expect(activate).not.toHaveBeenCalled();
-    expect(harness.haptics.playUiTap).not.toHaveBeenCalled();
+    expect(harness.haptics.playUiTap).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps rejected, disabled, and selected activations silent', () => {
+  it('pulses valid touch down while disabled and selected controls stay silent', () => {
     const harness = createHarness();
     const rejected = displayObject(harness.root);
     const disabled = displayObject(harness.root);
@@ -136,7 +167,7 @@ describe('PixiInputRouter', () => {
     expect(rejectedActivate).toHaveBeenCalledTimes(1);
     expect(disabledActivate).not.toHaveBeenCalled();
     expect(selectedActivate).not.toHaveBeenCalled();
-    expect(harness.haptics.playUiTap).not.toHaveBeenCalled();
+    expect(harness.haptics.playUiTap).toHaveBeenCalledTimes(1);
     expect(harness.sound.playClick).not.toHaveBeenCalled();
   });
 
@@ -515,7 +546,7 @@ describe('PixiInputRouter', () => {
       expect.objectContaining({ cancelled: false, reason: 'pointerup' }),
     );
     expect(press).not.toHaveBeenCalled();
-    expect(harness.haptics.playUiTap).not.toHaveBeenCalled();
+    expect(harness.haptics.playUiTap).toHaveBeenCalledTimes(2);
   });
 
   it('cycles semantic focus, activates by keyboard, and routes clipboard callbacks', () => {
@@ -562,6 +593,29 @@ describe('PixiInputRouter', () => {
     );
     expect(harness.sound.playClick).toHaveBeenCalledTimes(1);
     expect(harness.haptics.playUiTap).not.toHaveBeenCalled();
+  });
+
+  it('clears focused text-entry controls when a press starts elsewhere', () => {
+    const harness = createHarness();
+    const field = displayObject(harness.root);
+    const background = displayObject(harness.root);
+    const focusChanges = vi.fn();
+    harness.router.registerPressTarget({
+      id: 'message-field',
+      displayObject: field,
+      onActivate: vi.fn(),
+      onFocusChange: focusChanges,
+    });
+
+    harness.emitRoot('pointerdown', pointerEvent(field, 1, 10, 10));
+    harness.emitRoot('pointerup', pointerEvent(field, 1, 10, 10));
+    harness.emitRoot('pointerdown', pointerEvent(background, 2, 80, 80));
+
+    expect(harness.router.getFocusedId()).toBeNull();
+    expect(focusChanges).toHaveBeenLastCalledWith(
+      false,
+      expect.objectContaining({ registrationId: 'message-field' }),
+    );
   });
 
   it('routes Escape and native back through only the top modal', () => {

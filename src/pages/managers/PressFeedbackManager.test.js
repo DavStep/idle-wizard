@@ -222,7 +222,7 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
-  it('activates non-button open controls on touch press start and suppresses release clicks', () => {
+  it('waits for touch release before activating non-button controls', () => {
     const root = document.createElement('div');
     const button = document.createElement('div');
     const popup = document.createElement('section');
@@ -242,18 +242,19 @@ describe('PressFeedbackManager', () => {
     });
     root.append(button, popup);
     document.body.append(root);
-    document.elementFromPoint = () => popup;
+    document.elementFromPoint = () => button;
 
     const manager = new PressFeedbackManager({ now: () => nowMs });
     manager.mount(root);
 
     dispatchPointer(button, 'pointerdown', { clientX: 80, clientY: 120 });
 
-    expect(clicks).toEqual(['synthetic']);
-    expect(popup.hidden).toBe(false);
+    expect(clicks).toEqual([]);
+    expect(popup.hidden).toBe(true);
 
     nowMs += HELD_RELEASE_FEEDBACK_MS + 200;
     dispatchPointer(document, 'pointerup', { clientX: 80, clientY: 120 });
+    document.elementFromPoint = () => popup;
     popup.dispatchEvent(
       new window.MouseEvent('click', {
         bubbles: true,
@@ -268,7 +269,7 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
-  it('lets a non-button press target opt out of touch press-start activation', () => {
+  it('ignores legacy press-start data and activates non-button controls on release', () => {
     const root = document.createElement('div');
     const button = document.createElement('div');
     const clicks = [];
@@ -392,7 +393,7 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
-  it('plays haptics after confirmed touch activation', () => {
+  it('plays haptics on touch down and not again after a quick release', () => {
     const root = document.createElement('div');
     const button = document.createElement('button');
     const hapticsFacade = {
@@ -407,7 +408,7 @@ describe('PressFeedbackManager', () => {
     manager.mount(root);
 
     dispatchPointer(button, 'pointerdown');
-    expect(hapticsFacade.playUiTap).not.toHaveBeenCalled();
+    expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
 
     dispatchPointer(document, 'pointerup');
     button.dispatchEvent(
@@ -421,7 +422,7 @@ describe('PressFeedbackManager', () => {
     manager.unmount();
   });
 
-  it('plays touch feedback once when a held press releases on the same control', () => {
+  it('plays a second mild haptic when a held press releases on the same control', () => {
     const root = document.createElement('div');
     const button = document.createElement('button');
     const clicks = [];
@@ -449,7 +450,7 @@ describe('PressFeedbackManager', () => {
     manager.mount(root);
 
     dispatchPointer(button, 'pointerdown');
-    expect(hapticsFacade.playUiTap).not.toHaveBeenCalled();
+    expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
     expect(uiClickSoundFacade.playClick).not.toHaveBeenCalled();
 
     nowMs += HELD_RELEASE_FEEDBACK_MS;
@@ -461,7 +462,7 @@ describe('PressFeedbackManager', () => {
     );
 
     expect(clicks).toEqual(['synthetic']);
-    expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
+    expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(2);
     expect(uiClickSoundFacade.playClick).toHaveBeenCalledTimes(1);
 
     manager.unmount();
@@ -680,7 +681,7 @@ describe('PressFeedbackManager', () => {
 
     expect(button.classList.contains('is-pressing')).toBe(false);
     expect(clicks).toBe(0);
-    expect(hapticsFacade.playUiTap).not.toHaveBeenCalled();
+    expect(hapticsFacade.playUiTap).toHaveBeenCalledTimes(1);
 
     manager.unmount();
   });

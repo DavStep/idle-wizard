@@ -100,12 +100,23 @@
                   systemPlayerUsername: 'Ada',
                   systemPlayerDetail:
                     'reached ⭐ 4, completing prestige level 40',
-                  bodyIcon: {
-                    marker: '⭐',
-                    assetId: PRESTIGE_ICON_ASSET,
-                    label: 'Prestige star',
-                    size: 12,
-                  },
+                  bodyRuns: [
+                    {
+                      kind: 'text',
+                      text: 'reached ',
+                    },
+                    {
+                      kind: 'icon',
+                      assetId: PRESTIGE_ICON_ASSET,
+                      fallbackText: '⭐',
+                      label: 'Prestige star',
+                      size: 12,
+                    },
+                    {
+                      kind: 'text',
+                      text: ' 4, completing prestige level 40',
+                    },
+                  ],
                   ageLabel: 'now',
                 },
               ],

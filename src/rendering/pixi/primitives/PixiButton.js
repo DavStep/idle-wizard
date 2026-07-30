@@ -10,6 +10,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_TEXT_STROKE_WIDTH,
   PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
 import { PixiFrame } from './PixiFrame.js';
@@ -443,7 +444,7 @@ function getRootRunVisualGeometry(variant, width, height) {
     borderInsets: PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
     frame: { x: 0, y: 0, width, height },
     fontSize: null,
-    textStroke: 4,
+    textStroke: PIXI_TEXT_STROKE_WIDTH,
     textColor: '#ffffff',
   };
 }

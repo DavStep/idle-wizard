@@ -258,7 +258,7 @@ describe('BottomPanelViewManager', () => {
       '--style-page-tab-label-text-stroke-width: var(--style-text-stroke-width);',
     );
     expect(baseCss).toContain(
-      '--style-page-tab-label-text-stroke-color: var(--style-surface);',
+      '--style-page-tab-label-text-stroke-color: var(--style-text-stroke-color);',
     );
     expect(tabScrollClearance).not.toContain('style-page-tab-icon');
     expect(labelRule).toContain('opacity: 0;');

@@ -63,9 +63,7 @@ const RESOURCE_ICON_FRAMES = Object.freeze({
 });
 
 const RESEARCH_ICON_FRAMES = Object.freeze({
-  autoBottle: 'research:autoBottle',
   autoBrew: 'research:autoBrew',
-  autoHarvest: 'research:autoHarvest',
   autoPlant: 'research:autoPlant',
   autoSeedSpawn: 'research:autoSeedSpawn',
   automationReserve: 'research:automationReserve',
@@ -1637,9 +1635,9 @@ function getResearchFamilyIconFrameName(researchId = '') {
   const mappings = [
     ['automation:autoSeedSpawn', RESEARCH_ICON_FRAMES.autoSeedSpawn],
     ['automation:autoPlantTile:', RESEARCH_ICON_FRAMES.autoPlant],
-    ['automation:autoHarvestPlant:', RESEARCH_ICON_FRAMES.autoHarvest],
+    ['automation:autoHarvestPlant:', RESEARCH_ICON_FRAMES.autoPlant],
     ['automation:autoBrewCauldron:', RESEARCH_ICON_FRAMES.autoBrew],
-    ['automation:autoBottleCauldron:', RESEARCH_ICON_FRAMES.autoBottle],
+    ['automation:autoBottleCauldron:', RESEARCH_ICON_FRAMES.autoBrew],
     ['advanced:stallStaffing:', RESEARCH_ICON_FRAMES.stallStaffing],
     ['advanced:researchTime:', RESEARCH_ICON_FRAMES.researchTime],
     ['emerald:researchCost:', RESEARCH_ICON_FRAMES.researchCost],

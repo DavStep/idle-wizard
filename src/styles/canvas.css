@@ -63,3 +63,10 @@ body::before {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
+
+#game-canvas.is-splash-viewport {
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100dvh;
+}

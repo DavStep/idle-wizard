@@ -582,7 +582,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
         PIXI_UI_GEOMETRY.roomChatTitleOverhang +
         PIXI_UI_GEOMETRY.roomChatGap) -
       6 -
-      PIXI_UI_GEOMETRY.tabHeight;
+      PIXI_UI_GEOMETRY.roomControlHeight;
     const panelBottom = tabY - PAGE_SCROLL_CUT;
     const panelHeight = Math.max(0, panelBottom - panelTop);
 
@@ -604,7 +604,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
     for (const tab of SHOP_TABS) {
       const button = this.tabButtons.get(tab.id);
       button.position.set(x, 0);
-      button.setSize(tabWidth, PIXI_UI_GEOMETRY.tabHeight);
+      button.setSize(tabWidth, PIXI_UI_GEOMETRY.roomControlHeight);
       x += tabWidth + TAB_GAP;
     }
     this.relayoutSections();

@@ -2,8 +2,9 @@ import { Container, Text } from 'pixi.js';
 
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
-  PIXI_TEXT_STROKE_WIDTH,
+  PIXI_TEXT_STROKE_COLOR,
   PIXI_UI_GEOMETRY,
+  resolvePixiTextStrokeWidth,
 } from '../theme/PixiThemeTokens.js';
 
 export class PixiTextLabel extends Container {
@@ -34,7 +35,10 @@ export class PixiTextLabel extends Container {
     this.align = align;
     this.wordWrap = wordWrap;
     this.wrapWidth = wrapWidth;
-    this.stroke = stroke ? normalizePixiTextStroke(stroke) : null;
+    this.strokeSource = stroke;
+    this.stroke = stroke
+      ? normalizePixiTextStroke(stroke, this.fontSize)
+      : null;
     this.letterSpacing = letterSpacing;
     this.textObject = new Text({
       text: String(text ?? ''),
@@ -101,6 +105,13 @@ export class PixiTextLabel extends Container {
   setFontSize(fontSize) {
     this.fontSize = Number(fontSize);
     this.textObject.style.fontSize = this.fontSize;
+    if (this.strokeSource) {
+      this.stroke = normalizePixiTextStroke(
+        this.strokeSource,
+        this.fontSize,
+      );
+      this.textObject.style.stroke = this.stroke;
+    }
     return this;
   }
 
@@ -123,7 +134,10 @@ export class PixiTextLabel extends Container {
   }
 
   setStroke(stroke) {
-    this.stroke = stroke ? normalizePixiTextStroke(stroke) : null;
+    this.strokeSource = stroke;
+    this.stroke = stroke
+      ? normalizePixiTextStroke(stroke, this.fontSize)
+      : null;
     this.textObject.style.stroke = this.stroke;
     return this;
   }
@@ -165,18 +179,20 @@ export class PixiTextLabel extends Container {
   }
 }
 
-export function normalizePixiTextStroke(stroke) {
+export function normalizePixiTextStroke(
+  stroke,
+  fontSize = PIXI_UI_GEOMETRY.bodyFontSize,
+) {
   if (typeof stroke === 'string' || typeof stroke === 'number') {
     return {
-      color: stroke,
-      width: PIXI_TEXT_STROKE_WIDTH,
+      color: PIXI_TEXT_STROKE_COLOR,
+      width: resolvePixiTextStrokeWidth(fontSize),
       join: 'round',
     };
   }
-  const scale = Math.max(0, Number(stroke.scale) || 1);
   return {
-    color: stroke.color ?? '#0a0a0a',
-    width: PIXI_TEXT_STROKE_WIDTH * scale,
+    color: PIXI_TEXT_STROKE_COLOR,
+    width: resolvePixiTextStrokeWidth(fontSize),
     join: stroke.join ?? 'round',
   };
 }

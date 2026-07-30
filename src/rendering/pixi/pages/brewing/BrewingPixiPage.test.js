@@ -16,6 +16,7 @@ import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js
 import {
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
+  resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 import { RootRunInventoryChoiceDialogPixi } from '../shared/RootRunInventoryChoiceDialogPixi.js';
 import {
@@ -98,6 +99,49 @@ describe('BrewingPixiPage', () => {
     expect(slot.control.visual.scale.x).toBe(1);
     expect(slot.control.visual.scale.y).toBe(1);
     expect(slot.frame.alpha).toBe(1);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('shows a red zero for a missing selected-recipe ingredient slot', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    model.brewing.cauldrons[0].ingredients = [];
+    model.brewing.cauldrons[0].selectedRecipe = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      ingredients: [
+        {
+          key: 'sage',
+          label: 'sage',
+          owned: 0,
+          quantity: 1,
+        },
+      ],
+    };
+
+    harness.page.bind(model);
+
+    const slot = harness.page.hud.ingredientSlots[0];
+    expect(slot.missingCount.text).toBe('0');
+    expect(slot.missingCount.style.fill).toBe('#c1121f');
+    expect(slot.requiredCount.text).toBe('/1');
+    expect(slot.requiredCount.style.fill).toBe('#d4d4d4');
+    expect(slot.missingCount.visible).toBe(true);
+    expect(slot.requiredCount.visible).toBe(true);
+
+    model.brewing.cauldrons[0].ingredients = [
+      {
+        key: 'sage',
+        label: 'sage',
+        quantity: 1,
+      },
+    ];
+    harness.page.bind(model);
+
+    expect(slot.missingCount.visible).toBe(false);
+    expect(slot.requiredCount.visible).toBe(false);
 
     harness.page.destroy();
     harness.dispose();
@@ -464,9 +508,17 @@ describe('BrewingPixiPage', () => {
 
     harness.page.bind(model);
     harness.page.activate();
+    harness.page.hud.applyTheme(harness.page.theme);
+    harness.page.hud.applyTheme(harness.page.theme);
     expect(harness.page.hud.progress.progress).toBe(0);
     expect(harness.page.hud.phaseLabel.text).toBe('Brewing');
-    expect(harness.page.hud.phaseLabel.style.padding).toBe(16);
+    expect(harness.page.hud.phaseLabel.style.fontSize).toBe(11);
+    expect(harness.page.hud.phaseLabel.style.lineHeight).toBe(13);
+    expect(harness.page.hud.phaseLabel.style.padding).toBe(1);
+    expect(harness.page.hud.phaseLabel.scale).toMatchObject({
+      x: 1,
+      y: 1,
+    });
     expect(harness.page.hud.phaseTime.text).toBe('0:10');
     expect(harness.page.hud.phaseTime.style.padding).toBe(1);
     expect(harness.page.hud.potionPreviewFrame.filters).toHaveLength(1);
@@ -485,8 +537,8 @@ describe('BrewingPixiPage', () => {
       active: true,
       reducedMotion: true,
     });
-    expect(harness.page.hud.progress.progress).toBe(0);
-    expect(harness.page.hud.phaseTime.text).toBe('0:10');
+    expect(harness.page.hud.progress.progress).toBeCloseTo(0.25);
+    expect(harness.page.hud.phaseTime.text).toBe('0:08');
 
     harness.page.tick(now);
 
@@ -953,6 +1005,22 @@ describe('BrewingPixiPage', () => {
       harness.page.hud.cauldronTitlePlaque.root,
     );
     expect(harness.page.hud.cauldronTitle.text).toBe('Cauldron 1');
+    expect(harness.page.hud.cauldronTitle.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: resolvePixiTextStrokeWidth(
+        harness.page.hud.cauldronTitle.style.fontSize,
+      ),
+      join: 'round',
+    });
+    expect(
+      harness.page.hud.brew.control.textLabel.textObject.style.stroke,
+    ).toMatchObject({
+      color: '#0a0a0a',
+      width: resolvePixiTextStrokeWidth(
+        harness.page.hud.brew.control.textLabel.fontSize,
+      ),
+      join: 'round',
+    });
     expect(harness.page.hud.cauldronTitlePlaque).toMatchObject({
       variant: 'brewing',
       assetId:
@@ -1113,7 +1181,9 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.potionIcon.height).toBe(50);
     expect(harness.page.hud.recipes.width).toBe(58);
     expect(harness.page.hud.autoBrew.width).toBe(32);
-    expect(harness.page.hud.autoBrew.height).toBe(32);
+    expect(harness.page.hud.autoBrew.height).toBe(
+      PIXI_UI_GEOMETRY.roomControlHeight,
+    );
     expect(harness.page.hud.quantity.width).toBe(32);
     expect(harness.page.hud.brew.width).toBe(308);
     expect(harness.page.hud.recipes.root.x).toBe(198);
@@ -1617,7 +1687,11 @@ describe('BrewingPixiPage', () => {
       harness.page.hud.recipes.height,
       harness.page.hud.autoBrew.height,
       harness.page.hud.quantity.height,
-    ]).toEqual([32, 32, 32]);
+    ]).toEqual([
+      PIXI_UI_GEOMETRY.roomControlHeight,
+      PIXI_UI_GEOMETRY.roomControlHeight,
+      PIXI_UI_GEOMETRY.roomControlHeight,
+    ]);
 
     harness.page.destroy();
     harness.dispose();

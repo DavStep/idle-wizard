@@ -174,3 +174,9 @@ Open
 for the non-persistent selected-potion batch card used to verify the potion
 well, `Ready to Brew` status, progress rail, and primary action without
 changing gameplay or save data.
+
+Add
+`?state=active&theme=black&repeatTheme=true&reducedMotion=true`
+to reopen the active-brew regression state. It reapplies the selected theme,
+keeps reduced motion enabled, and exposes the live rail value through
+`#brewing-ready-hud-recipe-state[data-progress]`.

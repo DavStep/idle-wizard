@@ -830,7 +830,7 @@ describe('GardenPlotManager', () => {
       '--garden-page-plot-text-stroke-width: var(--style-text-stroke-width);',
     );
     expect(rootRule).toContain(
-      '--garden-page-plot-text-stroke-color: var(--style-surface);',
+      '--garden-page-plot-text-stroke-color: var(--style-text-stroke-color);',
     );
     expect(boxLevelRule).toContain(
       'font-size: var(--garden-page-plot-box-detail-font-size);',

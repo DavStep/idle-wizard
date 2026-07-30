@@ -7,6 +7,7 @@ colors:
   ink: "#d4d4d4"
   muted: "#a6a6a6"
   stroke: "#3f465c"
+  text-stroke: "#0a0a0a"
   disabled: "#6a6a6a"
   active-surface: "{colors.room-surface}"
   notification-red: "#c1121f"
@@ -158,7 +159,7 @@ Palette is functional and full enough to support fantasy materials, resources, a
 
 **The Authored Case Rule.** Player-facing text keeps the capitalization supplied by feature copy. Rendering must not force labels to lowercase.
 
-**The Two Text Treatments Rule.** Regular text has no outline. Every outlined label uses the shared `4px` rounded stroke at the logical game surface; only the stroke color varies with its owning skin.
+**The Two Text Treatments Rule.** Regular text has no outline. Every outlined label uses the same shared rounded `#0a0a0a` stroke at a `3/13` font-size ratio (`13px` text resolves to a `3px` stroke); feature and skin variants may not change its ratio or color.
 
 ## 4. Elevation
 
@@ -210,7 +211,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 - **Title:** Separate centered purple `expedition-dialog-title-purple.png` plaque with white outlined text.
 - **Close:** Round `expedition-dialog-close.png` X control centered below the brown shell at the Expedition source gap; keep the accessible close label.
 - **Authored Geometry:** Preserve Expedition's `1080px` source relationships at the `390px` logical width: `1008px` shell becomes `364px`; `976px` paper becomes `352px` with a `6px` horizontal inset, `31px` top inset, and `21px` compact-dialog bottom inset; `614x121px` title becomes `222x44px`; and the `114px` close becomes `41px` with a `23px` shell gap.
-- **Title Type:** Match the exported title node's `64px` Lilita One Regular size and `73px` source line box, scaled to `23.1px` type with the shared `4px` logical-surface black stroke. Its line box starts `22px` below the plaque top on the `1080px` source canvas.
+- **Title Type:** Match the exported title node's `64px` Lilita One Regular size and `73px` source line box, scaled to `23.1px` type with the shared proportional black stroke (`5.33px` at that font size). Its line box starts `22px` below the plaque top on the `1080px` source canvas.
 - **Transparency:** The PNG nine-slices own their centers and transparent corners. Do not paint rectangular fallback fills behind the shell, paper, title, or close artwork.
 - **Coverage:** All game dialogs use this shell, including Shop, Guild, app-level blocker gates, and the first tutorial story prompt. Non-dismissible flows hide the close action; feature-specific artwork belongs inside the paper content area. Full-screen progress and feature-unlock announcement screens remain centered, unframed compositions; only report-style announcements use dialog chrome.
 

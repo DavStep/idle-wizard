@@ -118,7 +118,7 @@ export class PixiWorldChatView extends BasePixiRetainedView {
   applyTitleStroke() {
     this.panel.title.style.stroke = normalizePixiTextStroke({
       color: WORLD_CHAT_TITLE_STROKE,
-    });
+    }, this.panel.title.style.fontSize);
   }
 
   onLayout() {

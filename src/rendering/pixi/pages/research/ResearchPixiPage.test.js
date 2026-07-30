@@ -17,7 +17,11 @@ import {
   RETAINED_SCROLLBAR_GEOMETRY,
   RETAINED_SCROLLBAR_VISUALS,
 } from '../workshop/RetainedPageKit.js';
-import { PIXI_ROOT_RUN_ASSETS } from '../../theme/PixiThemeTokens.js';
+import {
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_UI_GEOMETRY,
+  resolvePixiTextStrokeWidth,
+} from '../../theme/PixiThemeTokens.js';
 
 describe('ResearchPixiPage', () => {
   it('builds once and keeps keyed boxes and research rows across updates', () => {
@@ -225,7 +229,7 @@ describe('ResearchPixiPage', () => {
     expect(harness.page.scroll.root.position).toMatchObject({ x: 0, y: 104 });
     expect(harness.page.scroll).toMatchObject({
       width: 344,
-      height: 417.33333333333337,
+      height: 409.33333333333337,
     });
     const box = harness.page.boxes.get('herbs');
     expect(box.root.position.x).toBe(0);
@@ -235,7 +239,7 @@ describe('ResearchPixiPage', () => {
     expect(box.rows.get('mint').card.position.x).toBe(-2);
     expect(harness.page.tabsLayer.position).toMatchObject({
       x: 16,
-      y: 527.3333333333334,
+      y: 519.3333333333334,
     });
     const tabs = harness.page.tabs.getWidgets();
     expect(tabs.map((tab) => tab.control.textLabel.text)).toEqual([
@@ -248,6 +252,7 @@ describe('ResearchPixiPage', () => {
       (328 - 3 * (tabs.length - 1)) / tabs.length - 6;
     expect(expectedWrapWidth).toBe(73.75);
     for (const tab of tabs) {
+      expect(tab.height).toBe(PIXI_UI_GEOMETRY.roomControlHeight);
       expect(tab.control.textLabel.fontSize).toBe(10);
       expect(tab.control.textLabel.lineHeight).toBe(12);
       expect(tab.control.textLabel.align).toBe('center');
@@ -412,6 +417,11 @@ describe('ResearchPixiPage', () => {
       fontSize: 18,
       fill: '#ffffff',
       lineHeight: 21,
+      stroke: {
+        color: '#0a0a0a',
+        width: resolvePixiTextStrokeWidth(box.title.style.fontSize),
+        join: 'round',
+      },
     });
     expect(box.titlePlaque.frame).toMatchObject({
       frameHeight: 42,

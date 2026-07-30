@@ -19,7 +19,10 @@ import {
   PIXI_PROGRESS_VISUALS,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_TEXT_STROKE_COLOR,
+  PIXI_UI_GEOMETRY,
   createPixiThemeSnapshot,
+  resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 import { SHOP_DIALOG_IDS } from './ShopDialogPixi.js';
 import { ShopPixiPage } from './ShopPixiPage.js';
@@ -313,8 +316,8 @@ describe('ShopPixiPage', () => {
     expect(stall.quantityFrame).toBeUndefined();
     expect(stall.quantity.textObject.style.fill).toBe('#ffffff');
     expect(stall.quantity.textObject.style.stroke).toMatchObject({
-      color: '#2a160d',
-      width: 4,
+      color: PIXI_TEXT_STROKE_COLOR,
+      width: resolvePixiTextStrokeWidth(stall.quantity.fontSize),
       join: 'round',
     });
     expect(getAtlasTexture).toHaveBeenCalledWith('seed:pack');
@@ -428,8 +431,8 @@ describe('ShopPixiPage', () => {
     expect(stall.batch.text).toBe('x1');
     expect(stall.batch.textObject.style.fill).toBe('#ffffff');
     expect(stall.batch.textObject.style.stroke).toMatchObject({
-      color: '#2a160d',
-      width: 4,
+      color: PIXI_TEXT_STROKE_COLOR,
+      width: resolvePixiTextStrokeWidth(stall.batch.fontSize),
       join: 'round',
     });
     expect(stall.batchBadge).toMatchObject({
@@ -755,7 +758,7 @@ describe('ShopPixiPage', () => {
       ],
       range: {
         enabled: true,
-        tone: 'root',
+        tone: 'yellow',
         value: 25,
       },
       items: [
@@ -773,18 +776,17 @@ describe('ShopPixiPage', () => {
       ],
       actions: [
         {
-          id: 'mark',
-          label: 'mark x2',
-          variant: 'green',
-          enabled: true,
-        },
-        {
           id: 'clear',
           label: 'clear',
           variant: 'red',
           enabled: true,
         },
-        { id: 'future', label: 'mark future', enabled: true },
+        {
+          id: 'mark',
+          label: 'mark x2',
+          variant: 'green',
+          enabled: true,
+        },
       ],
       tabs: [
         {
@@ -800,7 +802,7 @@ describe('ShopPixiPage', () => {
 
     const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.STALL);
     const [row] = dialog.list.rows.getWidgets();
-    const [mark, clear, future] = dialog.actions.getWidgets();
+    const [clear, mark] = dialog.actions.getWidgets();
     const [seedsTab, herbsTab] = dialog.tabs.getWidgets();
 
     expect(dialog.selectionSection.visible).toBe(true);
@@ -845,11 +847,11 @@ describe('ShopPixiPage', () => {
           dialog.selectionSection.frameHeight),
     ).toBeCloseTo(8);
     expect(mark.root.y).toBeLessThan(dialog.list.root.y);
-    expect(dialog.rangeControl.progress.tone).toBe('root');
-    expect(dialog.rangeControl.progress.fillColor).toBe('#8740df');
+    expect(dialog.rangeControl.progress.tone).toBe('yellow');
+    expect(dialog.rangeControl.progress.fillColor).toBe('#d8ad32');
     expect(mark.control.variant).toBe('green');
     expect(clear.control.variant).toBe('red');
-    expect(future.control.variant).toBe('yellow');
+    expect(clear.root.x).toBeLessThan(mark.root.x);
     expect(dialog.tabLayer.parent).toBe(dialog.panel);
     expect(
       dialog.panel.coreHeight +
@@ -1143,14 +1145,14 @@ describe('ShopPixiPage', () => {
     expect(tradersScroll.root.y).toBe(151);
     expect(harness.page.tabLayer.position).toMatchObject({
       x: 16,
-      y: 527.3333333333334,
+      y: 519.3333333333334,
     });
     expect(harness.page.tabButtons.get('traders')).toMatchObject({
-      buttonHeight: 28,
+      buttonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
     });
     expect(
       tradersScroll.height,
-    ).toBeCloseTo(370.33333333333337, 10);
+    ).toBeCloseTo(362.33333333333337, 10);
 
     harness.page.destroy();
     harness.dispose();

@@ -94,7 +94,6 @@ const POTION_ASSETS = [
   ['potion:pearlrootDraught', 'assets/game/source/items/potions/potion-pearlroot-draught.png'],
   ['potion:wastedPotion', 'assets/game/source/items/potions/potion-wasted.png'],
   ['potion:unknownPotion', 'assets/game/source/items/potions/potion-unknown.png'],
-  ['potion:generic', 'assets/game/source/items/potions/potion-generic.png'],
 ];
 
 const INGREDIENT_ASSETS = ingredientCatalog.map((ingredient) => [
@@ -119,9 +118,7 @@ const STATUS_ASSETS = [
 ];
 
 const RESEARCH_ASSETS = [
-  ['research:autoBottle', 'assets/game/source/icons/research/icon-research-auto-bottle.png'],
   ['research:autoBrew', 'assets/game/source/icons/research/icon-research-auto-brew.png'],
-  ['research:autoHarvest', 'assets/game/source/icons/research/icon-research-auto-harvest.png'],
   ['research:autoPlant', 'assets/game/source/icons/research/icon-research-auto-plant.png'],
   [
     'research:autoSeedSpawn',

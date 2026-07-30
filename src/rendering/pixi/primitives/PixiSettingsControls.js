@@ -92,7 +92,8 @@ export class RootRunSettingsSliderPixi extends Container {
         fallbackHitTest: Boolean(tutorialId),
         enabled: () => this.isInteractive(),
         onActivate: (payload) => this.activate(payload),
-        haptic: 'selection',
+        haptic: () =>
+          this.mode !== ROOT_RUN_SETTINGS_SLIDER_MODES.MILESTONES,
       }) ?? null;
     this.dragRegistration =
       inputRouter?.registerGestureSurface?.(this, {
@@ -293,7 +294,9 @@ export class RootRunSettingsSliderPixi extends Container {
         this.options,
         requestedIndex,
       );
-      return index >= 0 ? this.commitMilestone(index) : false;
+      return index >= 0
+        ? this.commitMilestone(index, payload)
+        : false;
     }
     const rawValue =
       this.min + normalized * Math.max(0, this.max - this.min);
@@ -318,7 +321,7 @@ export class RootRunSettingsSliderPixi extends Container {
     return this.toLocal(point).x;
   }
 
-  commitMilestone(index) {
+  commitMilestone(index, payload = {}) {
     const option = this.options[index];
     if (!option || option.enabled === false || option.value === this.value) {
       return false;
@@ -328,7 +331,29 @@ export class RootRunSettingsSliderPixi extends Container {
       this.options.length > 1 ? index / (this.options.length - 1) : 0;
     this.tone = normalizeTone(option.tone ?? 'yellow');
     this.redraw();
-    return this.action?.(this.value) ?? true;
+    const result = this.action?.(this.value) ?? true;
+    if (isPromiseLike(result)) {
+      result
+        .then((resolved) => {
+          if (resolved !== false) {
+            this.playMilestoneHaptic(payload);
+          }
+        })
+        .catch(() => {});
+    } else if (result !== false) {
+      this.playMilestoneHaptic(payload);
+    }
+    return result;
+  }
+
+  playMilestoneHaptic(payload) {
+    if (!payload?.pointerType || payload.pointerType === 'mouse') {
+      return;
+    }
+    this.inputRouter?.playPointerHaptic?.(
+      payload.registration,
+      payload,
+    );
   }
 
   commitRange(value) {
@@ -673,6 +698,10 @@ function clamp(value, min, max) {
 
 function clamp01(value) {
   return clamp(Number(value) || 0, 0, 1);
+}
+
+function isPromiseLike(value) {
+  return Boolean(value && typeof value.then === 'function');
 }
 
 function finiteOr(value, fallback) {

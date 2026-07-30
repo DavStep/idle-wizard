@@ -907,7 +907,7 @@ class PixiBottomTab {
     this.text.applyTheme(this.theme);
     this.text.textObject.style.stroke = normalizePixiTextStroke({
       color: this.theme.surface,
-    });
+    }, this.text.fontSize);
     for (const shadow of this.labelShadows) {
       shadow.applyTheme(this.theme);
     }

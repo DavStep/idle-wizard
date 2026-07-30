@@ -74,19 +74,44 @@ describe('Root Run settings controls', () => {
       [railStart + milestoneGap * 2, slider.controlHeight / 2, 1.5],
     ]);
 
-    harness.gestures[0].onMove({ point: { x: 200, y: 12 } });
+    const highPayload = {
+      point: { x: 200, y: 12 },
+      pointerType: 'touch',
+      registration: { id: 'drop-rate-drag' },
+    };
+    harness.gestures[0].onMove(highPayload);
 
     expect(onChange).toHaveBeenCalledWith('high');
     expect(slider.value).toBe('high');
     expect(slider.progress.fillColor).toBe(
       PIXI_PROGRESS_VISUALS.tones.green.fill,
     );
+    expect(harness.inputRouter.playPointerHaptic).toHaveBeenCalledWith(
+      highPayload.registration,
+      highPayload,
+    );
 
-    harness.gestures[0].onMove({ point: { x: 0, y: 12 } });
+    const nonePayload = {
+      point: { x: 0, y: 12 },
+      pointerType: 'touch',
+      registration: { id: 'drop-rate-drag' },
+    };
+    harness.gestures[0].onMove(nonePayload);
 
     expect(onChange).toHaveBeenLastCalledWith('none');
     expect(slider.value).toBe('none');
     expect(slider.normalizedValue).toBe(0);
+    expect(harness.inputRouter.playPointerHaptic).toHaveBeenCalledTimes(2);
+
+    harness.gestures[0].onMove(nonePayload);
+    harness.gestures[0].onMove({
+      point: { x: 200, y: 12 },
+      pointerType: 'mouse',
+      registration: { id: 'drop-rate-drag' },
+    });
+
+    expect(harness.inputRouter.playPointerHaptic).toHaveBeenCalledTimes(2);
+    expect(harness.presses[0].haptic()).toBe(false);
 
     slider.destroy({ children: true });
   });
@@ -229,6 +254,7 @@ function createHarness() {
     getTexture: vi.fn(() => Texture.EMPTY),
   };
   const inputRouter = {
+    playPointerHaptic: vi.fn(),
     registerPressTarget: vi.fn((displayObject, descriptor) => {
       presses.push(descriptor);
       return vi.fn();
@@ -244,6 +270,7 @@ function createHarness() {
   };
   return {
     assetManager,
+    inputRouter,
     presses,
     gestures,
     dependencies: {

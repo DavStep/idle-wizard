@@ -13,6 +13,10 @@ import { PixiOwnedDialogSurface } from "../../primitives/PixiOwnedDialogSurface.
 import { DialogRegistry } from "../../retained/DialogRegistry.js";
 import { PageRegistry } from "../../retained/PageRegistry.js";
 import { SemanticTargetRegistry } from "../../retained/SemanticTargetRegistry.js";
+import {
+  PIXI_UI_GEOMETRY,
+  resolvePixiTextStrokeWidth,
+} from "../../theme/PixiThemeTokens.js";
 import { ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY } from "../shared/RootRunInventoryChoiceDialogPixi.js";
 import { GARDEN_PIXI_GEOMETRY, GardenPixiPage } from "./GardenPixiPage.js";
 
@@ -63,7 +67,7 @@ describe("GardenPixiPage", () => {
     expect(action.style.fill).toBe("#ffffff");
     expect(action.style.stroke).toMatchObject({
       color: "#0a0a0a",
-      width: 4,
+      width: resolvePixiTextStrokeWidth(action.style.fontSize),
       join: "round",
     });
 
@@ -122,7 +126,7 @@ describe("GardenPixiPage", () => {
     expect(plot.action.style.fill).toBe("#ffffff");
     expect(plot.action.style.stroke).toMatchObject({
       color: "#0a0a0a",
-      width: 4,
+      width: resolvePixiTextStrokeWidth(plot.action.style.fontSize),
       join: "round",
     });
     expect(
@@ -392,6 +396,15 @@ describe("GardenPixiPage", () => {
     });
     expect(harness.page.actionBar.seedsButton.position.y).toBe(
       -GARDEN_PIXI_GEOMETRY.actionButtonHeight,
+    );
+    expect(GARDEN_PIXI_GEOMETRY.actionButtonHeight).toBe(
+      PIXI_UI_GEOMETRY.roomControlHeight,
+    );
+    expect(harness.page.actionBar.harvestButton.buttonHeight).toBe(
+      PIXI_UI_GEOMETRY.roomControlHeight,
+    );
+    expect(harness.page.actionBar.seedsButton.buttonHeight).toBe(
+      PIXI_UI_GEOMETRY.roomControlHeight,
     );
     expect(plot.progress.progress).toBeCloseTo(0.5);
     expect(plot.progress).toMatchObject({

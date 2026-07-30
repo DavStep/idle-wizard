@@ -84,6 +84,21 @@ describe('TextEntryService', () => {
     expect(service.getActiveSession()).toBeNull();
   });
 
+  it('publishes active text-entry state before the keyboard adapter opens', async () => {
+    const adapter = new FakeTextEntryAdapter();
+    const service = createService({ adapter });
+    const activeStates = [];
+    service.subscribeActiveState(
+      (active) => activeStates.push(active),
+      { emitCurrent: true },
+    );
+
+    const session = await service.open({ value: 'mana' });
+    await service.close(session);
+
+    expect(activeStates).toEqual([false, true, false]);
+  });
+
   it('closes the previous session before opening the next one', async () => {
     const adapters = [];
     const service = new TextEntryService({

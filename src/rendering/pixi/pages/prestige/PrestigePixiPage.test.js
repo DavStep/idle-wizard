@@ -10,6 +10,7 @@ import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
+import { resolvePixiTextStrokeWidth } from '../../theme/PixiThemeTokens.js';
 import {
   PRESTIGE_DESCRIPTION_LINES,
   PrestigePixiPage,
@@ -60,7 +61,9 @@ describe('PrestigePixiPage', () => {
     expect(row.rankLabel.style.fill).toBe(RESEARCH_RANK_INK);
     expect(row.rankLabel.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 4,
+      width: resolvePixiTextStrokeWidth(
+        row.rankLabel.style.fontSize,
+      ),
     });
 
     pages.destroy();
@@ -141,11 +144,11 @@ describe('PrestigePixiPage', () => {
     expect(page.scroll.root.position).toMatchObject({ x: 0, y: 151 });
     expect(page.scroll).toMatchObject({
       width: 344,
-      height: 370.33333333333337,
+      height: 362.33333333333337,
     });
     expect(page.tabsLayer.position).toMatchObject({
       x: 16,
-      y: 527.3333333333334,
+      y: 519.3333333333334,
     });
     page.destroy();
   });

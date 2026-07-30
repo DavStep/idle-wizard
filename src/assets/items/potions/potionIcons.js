@@ -1,4 +1,4 @@
-export const GENERIC_POTION_ICON_FRAME_NAME = 'potion:generic';
+export const FALLBACK_POTION_ICON_FRAME_NAME = 'potion:unknownPotion';
 
 export const potionIconFrameNamesByKey = Object.freeze({
   manaTonic: 'potion:manaTonic',
@@ -139,7 +139,7 @@ const potionIconLabelEntries = Object.freeze(
 );
 
 export function getPotionIconFrameName(itemKey) {
-  return potionIconFrameNamesByKey[itemKey] ?? GENERIC_POTION_ICON_FRAME_NAME;
+  return potionIconFrameNamesByKey[itemKey] ?? FALLBACK_POTION_ICON_FRAME_NAME;
 }
 
 export function getPotionLiquidColor(itemKey) {

@@ -59,4 +59,69 @@ describe('PixiTextField', () => {
 
     field.destroy({ children: true });
   });
+
+  it('closes and deselects its text-entry session when routed focus leaves', async () => {
+    let registration = null;
+    const close = vi.fn(async () => {});
+    const field = new PixiTextField({
+      inputRouter: {
+        registerPressTarget: vi.fn((displayObject, descriptor) => {
+          registration = descriptor;
+          return vi.fn();
+        }),
+      },
+      textEntryService: {
+        open: vi.fn(async () => ({
+          close,
+          getSnapshot: () => ({ active: true }),
+          subscribe: () => vi.fn(),
+        })),
+      },
+    });
+
+    await registration.onActivate();
+    registration.onFocusChange(false);
+
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(field.focused).toBe(false);
+
+    field.destroy({ children: true });
+  });
+
+  it('does not restore a late text-entry session after focus already left', async () => {
+    let registration = null;
+    let resolveSession = null;
+    const close = vi.fn(async () => {});
+    const field = new PixiTextField({
+      inputRouter: {
+        registerPressTarget: vi.fn((displayObject, descriptor) => {
+          registration = descriptor;
+          return vi.fn();
+        }),
+      },
+      textEntryService: {
+        open: vi.fn(
+          () =>
+            new Promise((resolve) => {
+              resolveSession = resolve;
+            }),
+        ),
+      },
+    });
+
+    const focusPromise = registration.onActivate();
+    registration.onFocusChange(false);
+    resolveSession({
+      close,
+      getSnapshot: () => ({ active: true }),
+      subscribe: () => vi.fn(),
+    });
+    await focusPromise;
+
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(field.focused).toBe(false);
+    expect(field.session).toBeNull();
+
+    field.destroy({ children: true });
+  });
 });

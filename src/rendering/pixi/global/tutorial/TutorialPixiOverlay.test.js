@@ -7,6 +7,7 @@ import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarn
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import {
   PIXI_ROOT_RUN_ASSETS,
+  resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import {
@@ -220,7 +221,9 @@ describe('TutorialPixiOverlay', () => {
     expect(overlay.guideLabel.textObject.style.fill).toBe('#ffffff');
     expect(overlay.guideLabel.textObject.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 4,
+      width: resolvePixiTextStrokeWidth(
+        overlay.guideLabel.fontSize,
+      ),
     });
     expect(assets.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.researchCard,
@@ -315,7 +318,7 @@ describe('TutorialPixiOverlay', () => {
     expect(overlay.dragYell.textObject.style.fill).toBe('#ffffff');
     expect(overlay.dragYell.textObject.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 4,
+      width: resolvePixiTextStrokeWidth(overlay.dragYell.fontSize),
     });
 
     overlay.startGuideDrag();

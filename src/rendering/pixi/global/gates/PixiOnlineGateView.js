@@ -27,6 +27,7 @@ export class PixiOnlineGateView extends PixiModalSurface {
     assets,
     inputRouter,
     application,
+    onSplashViewportChange = null,
     reload = () => globalThis.location?.reload?.(),
   } = {}) {
     super({
@@ -40,6 +41,11 @@ export class PixiOnlineGateView extends PixiModalSurface {
       label: 'onlineGate',
     });
     this.application = application;
+    this.onSplashViewportChange =
+      typeof onSplashViewportChange === 'function'
+        ? onSplashViewportChange
+        : null;
+    this.splashViewportActive = false;
     this.reload = reload;
     this.preferredLayer = 'interactionLocks';
     this.model = null;
@@ -134,16 +140,24 @@ export class PixiOnlineGateView extends PixiModalSurface {
 
   onActivate() {
     super.onActivate();
+    this.syncSplashViewport();
     this.syncTicker();
   }
 
   onDeactivate() {
+    this.setSplashViewportActive(false);
     this.stopTicker();
     super.onDeactivate();
   }
 
+  show() {
+    super.show();
+    this.syncSplashViewport();
+  }
+
   hide() {
     super.hide();
+    this.setSplashViewportActive(false);
     this.stopTicker();
   }
 
@@ -154,6 +168,23 @@ export class PixiOnlineGateView extends PixiModalSurface {
     this.splash.renderable = splashVisible;
     this.panel.visible = !splashVisible;
     this.panel.renderable = !splashVisible;
+    this.syncSplashViewport();
+  }
+
+  syncSplashViewport() {
+    this.setSplashViewportActive(
+      this.shown &&
+        this.presentation === ONLINE_GATE_PRESENTATION_SPLASH,
+    );
+  }
+
+  setSplashViewportActive(active) {
+    const nextActive = active === true;
+    if (this.splashViewportActive === nextActive) {
+      return;
+    }
+    this.splashViewportActive = nextActive;
+    this.onSplashViewportChange?.(nextActive);
   }
 
   layoutSplash() {
@@ -246,6 +277,11 @@ export class PixiOnlineGateView extends PixiModalSurface {
 
   stopTicker() {
     this.application?.ticker?.remove?.(this.handleTick);
+  }
+
+  onDestroy() {
+    this.setSplashViewportActive(false);
+    super.onDestroy();
   }
 }
 

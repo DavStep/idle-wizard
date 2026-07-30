@@ -11,7 +11,7 @@ description: "Use for Idle Wizard haptic feedback work: adding, reviewing, tunin
 2. For any visible settings/UI change, also use `impeccable` and follow `PRODUCT.md`, `DESIGN.md`, `docs/style.md`, and `docs/ui-patterns.md`.
 3. Keep haptics app-level. Do not put vibration state in ECS gameplay, SpacetimeDB, backend profile sync, or player progression.
 4. Wire tactile feedback through `src/app/haptics/HapticsFacade.js`; other features should call named facade methods, not native haptic APIs directly.
-5. Prefer haptics from confirmed interactions. For touch controls, fire after `PressFeedbackManager` validates pointer release on the original target, not on raw `pointerdown`.
+5. Use the shared touch contract for every enabled control: mild haptic on pointer-down, no extra haptic for a quick release, and one mild haptic after a validated release following a `350ms` hold. Actions and click sounds remain release-confirmed.
 6. Verify with focused tests first; run broader checks when touching shared app/page lifecycle.
 
 ## Marble Master Pattern
@@ -31,10 +31,11 @@ For Idle Wizard, use the official `@capacitor/haptics` plugin unless there is a 
 
 - Keep default tap haptic subtle: `5ms`.
 - Keep a short cooldown, currently `40ms`, to avoid double buzzes from synthetic/native click paths.
+- Keep actions release-only. Holding a button must never activate or repeat it before pointer-up.
 - Default haptics on, but expose a plain settings row to disable them.
 - Store haptic preference under local storage only. Treat it like a device preference, not account/profile data.
 - Do not add color, icons, animations, or gameplay copy just to announce haptics.
-- Do not vibrate disabled, selected, locked, dragged, cancelled, or retargeted interactions.
+- Do not vibrate disabled or selected controls. A valid touch-down keeps its initial pulse even if the gesture later drags, cancels, or retargets; those paths must not activate or receive the held-release pulse.
 - Do not add stronger success/error haptics unless the user explicitly asks for semantic haptic patterns.
 
 ## Implementation Map
@@ -42,7 +43,9 @@ For Idle Wizard, use the official `@capacitor/haptics` plugin unless there is a 
 - `src/app/haptics/HapticsFacade.js`: public entry point.
 - `src/app/haptics/managers/HapticPreferenceManager.js`: local enabled preference.
 - `src/app/haptics/managers/HapticPulseManager.js`: Capacitor native pulse plus web fallback.
+- `src/app/haptics/hapticTiming.js`: shared held-release threshold.
 - `src/pages/managers/PressFeedbackManager.js`: central validated tap hook.
+- `src/rendering/pixi/input/PixiInputRouter.js`: retained Pixi touch lifecycle.
 - `src/pages/topPanel/managers/TopPanelSettingsManager.js`: settings toggle state.
 - `src/pages/topPanel/managers/TopPanelViewManager.js`: plain settings row.
 

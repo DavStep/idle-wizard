@@ -24,8 +24,10 @@ Bag's optical weight without changing the underlying assets.
 
 Workshop-owned dialogs are registered lazily as `workshop.<feature>` in the
 injected `DialogRegistry` and retain their display trees after close.
+The Bag presenter keeps unlocked or owned item rows and omits locked zero-count
+catalog entries.
 
-Pass the shared `PixiInputRouter` when constructing the page. Buttons, hold
-summoning, scrolling, dialog backdrops, Escape/Android back, and modal blocking
-register once through that router; their registrations are removed only when
-the retained view is destroyed.
+Pass the shared `PixiInputRouter` when constructing the page. Buttons,
+release-only summoning, scrolling, dialog backdrops, Escape/Android back, and
+modal blocking register once through that router; their registrations are
+removed only when the retained view is destroyed.

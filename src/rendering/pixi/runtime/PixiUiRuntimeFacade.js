@@ -53,6 +53,7 @@ export class PixiUiRuntimeFacade {
     this.themeUnsubscribe = null;
     this.projectionUnsubscribe = null;
     this.textEntryUnsubscribe = null;
+    this.textEntryActiveUnsubscribe = null;
   }
 
   registerPage(pageId, factory) {
@@ -147,6 +148,11 @@ export class PixiUiRuntimeFacade {
       this.textEntryService?.subscribeKeyboardInset?.(
         (keyboardInset) => this.setKeyboardMetrics({ keyboardInset }),
         { emitCurrent: false },
+      ) ?? null;
+    this.textEntryActiveUnsubscribe =
+      this.textEntryService?.subscribeActiveState?.(
+        (active) => this.applicationManager.setTextEntryActive(active),
+        { emitCurrent: true },
       ) ?? null;
 
     for (const lifecycle of this.globalViews.values()) {
@@ -352,6 +358,8 @@ export class PixiUiRuntimeFacade {
     this.projectionUnsubscribe = null;
     this.textEntryUnsubscribe?.();
     this.textEntryUnsubscribe = null;
+    this.textEntryActiveUnsubscribe?.();
+    this.textEntryActiveUnsubscribe = null;
 
     for (const lifecycle of this.globalViews.values()) {
       try {

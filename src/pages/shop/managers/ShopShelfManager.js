@@ -261,13 +261,7 @@ export class ShopShelfManager {
     clear.type = 'button';
     clear.textContent = 'clear';
     clear.addEventListener('click', () => this.clearDraft());
-    const future = document.createElement('button');
-    future.className = 'style-button shop-page__sell-future-button';
-    future.type = 'button';
-    future.dataset.tutorialId = 'shop:sell:future';
-    future.textContent = 'mark future';
-    future.addEventListener('click', () => this.toggleFutureDraft());
-    actions.append(mark, clear, future);
+    actions.append(clear, mark);
     const status = document.createElement('div');
     status.className = 'shop-page__sell-status';
     status.setAttribute('role', 'status');
@@ -293,7 +287,6 @@ export class ShopShelfManager {
     this.refs.allocationRange = allocationRange;
     this.refs.mark = mark;
     this.refs.clear = clear;
-    this.refs.future = future;
     this.refs.status = status;
     this.refs.itemList = itemList;
     this.refs.tabs = tabs;
@@ -434,27 +427,6 @@ export class ShopShelfManager {
       return result;
     }
 
-    this.hideSellPopup();
-    return result;
-  }
-
-  toggleFutureDraft() {
-    const shelf = this.gameplayFacade.getSnapshot()?.shop?.shelf;
-    const slot = this.getSelectedSlot(shelf);
-    const item = shelf?.sellItems?.find(
-      (candidate) => candidate.itemTypeId === this.draftSellItemTypeId,
-    );
-    if (!item) return { ok: false, reason: 'empty_selection' };
-    const enabled = slot?.futureItemTypeId !== item.itemTypeId;
-    const result = this.gameplayFacade.setSelectedShopShelfFutureItem(
-      item.itemTypeId,
-      enabled,
-    );
-    if (!result?.ok) {
-      this.statusText = this.getLoadFailureText(result?.reason);
-      this.renderSellDraft(this.gameplayFacade.getSnapshot()?.shop?.shelf);
-      return result;
-    }
     this.hideSellPopup();
     return result;
   }
@@ -685,10 +657,6 @@ export class ShopShelfManager {
     const loadedQuantity = slot?.sellItemTypeId === item?.itemTypeId
       ? slot.loadedQuantity
       : 0;
-    const futureEnabled = Boolean(
-      hasSelection && slot?.futureItemTypeId === item.itemTypeId,
-    );
-
     this.refs.current.dataset.hasSelection = hasSelection ? 'true' : 'false';
     this.refs.current.setAttribute(
       'aria-label',
@@ -726,10 +694,6 @@ export class ShopShelfManager {
     const canClear = Boolean(slot?.sellItemTypeId || slot?.futureItemTypeId);
     this.refs.clear.disabled = !canClear;
     this.refs.clear.setAttribute('aria-disabled', canClear ? 'false' : 'true');
-    this.refs.future.disabled = !hasSelection;
-    this.refs.future.setAttribute('aria-disabled', hasSelection ? 'false' : 'true');
-    this.refs.future.setAttribute('aria-pressed', futureEnabled ? 'true' : 'false');
-    this.refs.future.textContent = futureEnabled ? 'stop future' : 'mark future';
     this.refs.status.textContent = this.statusText;
     this.refs.status.hidden = !this.statusText;
 

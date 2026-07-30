@@ -82,7 +82,7 @@
   --style-yellow-button-frame-slice: 100 43 68 85 fill;
   --style-yellow-button-frame-width: 17px 7px 12px 20px;
   --style-yellow-button-text: #fff;
-  --style-yellow-button-text-stroke: #0a0a0a;
+  --style-yellow-button-text-stroke: var(--style-text-stroke-color);
   --style-green-button-frame: url("../../assets/game/source/ui/root-run-cost-button/green-button-9slice.png");
   --style-red-button-frame: url("../../assets/game/source/ui/root-run-cost-button/red-button-9slice.png");
   --style-green-button-disabled-frame: url("../../assets/game/source/ui/root-run-cost-button/gray-button-9slice.png");
@@ -95,7 +95,8 @@
   --style-border-strong: var(--style-border-strong-width) solid
     var(--style-stroke);
   --style-font-size: 13px;
-  --style-text-stroke-width: 4px;
+  --style-text-stroke-width: 0.2307692308em;
+  --style-text-stroke-color: #0a0a0a;
   --style-dialog-title-font-size: 14px;
   --style-panel-padding: 5px 10px;
   --style-dialog-padding: 20px;
@@ -155,20 +156,19 @@
   --style-box-title-left: 8px;
   --style-box-title-top: -12px;
   --style-title-text-stroke-width: var(--style-text-stroke-width);
-  --style-title-text-stroke-color: var(--style-surface);
+  --style-title-text-stroke-color: var(--style-text-stroke-color);
   --style-title-text-stroke-shadow: none;
   --style-box-border-label-font-size: 11px;
   --style-box-border-label-line-height: 14px;
-  --style-page-tab-button-height: calc(
-    var(--style-box-border-label-line-height) * 2
-  );
+  --style-room-control-height: 36px;
+  --style-page-tab-button-height: var(--style-room-control-height);
   --style-page-tab-icon-size: calc(38px * 1.3);
   --style-page-tab-icon-center-offset: 4px;
   --style-page-tab-selected-icon-scale: 1.22;
   --style-page-tab-icon-y-offset: 10px;
   --style-page-tab-label-y-offset: 7px;
   --style-page-tab-label-text-stroke-width: var(--style-text-stroke-width);
-  --style-page-tab-label-text-stroke-color: var(--style-surface);
+  --style-page-tab-label-text-stroke-color: var(--style-text-stroke-color);
   --style-page-tab-label-text-stroke-shadow: none;
   --style-room-tab-active-height: 56px;
   --style-room-tab-inactive-height: 44px;
@@ -373,7 +373,7 @@
     (var(--style-row-min-height) * var(--brewing-page-cauldron-row-count)) +
       var(--brewing-page-cauldron-frame-height)
   );
-  --brewing-page-cauldron-action-height: 28px;
+  --brewing-page-cauldron-action-height: var(--style-room-control-height);
   --brewing-page-cauldron-actions-gap: 4px;
   --brewing-page-cauldron-action-column-gap: 6px;
   --brewing-page-cauldron-side-actions-gap: 8px;
@@ -420,7 +420,7 @@
   --garden-page-plot-box-detail-font-size: 9px;
   --garden-page-plot-box-detail-line-height: 11px;
   --garden-page-plot-text-stroke-width: var(--style-text-stroke-width);
-  --garden-page-plot-text-stroke-color: var(--style-surface);
+  --garden-page-plot-text-stroke-color: var(--style-text-stroke-color);
   --garden-page-plot-box-row-min-height: calc(
     var(--garden-page-plot-box-frame-height) +
       var(--garden-page-plot-progress-slot-height) + 3px
@@ -988,7 +988,8 @@
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
   scale: 1;
   --style-press-scale: 0.94;
@@ -1918,7 +1919,8 @@ body {
   border: 0;
   border-image: none;
   text-shadow: 0 0.5px 0.5px rgb(43 22 14 / 0.7);
-  -webkit-text-stroke: var(--style-text-stroke-width) #2b160e;
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-text-stroke-color);
 }
 
 .first-run-intro--step-enter .style-box.first-run-intro__panel {
@@ -3039,7 +3041,7 @@ body {
   background: transparent;
   border: 0;
   -webkit-text-stroke: var(--style-text-stroke-width)
-    var(--style-page-tab-label-text-stroke-color);
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
   pointer-events: none;
   text-shadow: var(--style-page-tab-label-text-stroke-shadow);
@@ -3482,7 +3484,8 @@ body {
   white-space: nowrap;
   background: transparent;
   border: 0;
-  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
   opacity: 0;
   pointer-events: none;
@@ -4127,7 +4130,8 @@ body {
   font-family: var(--style-font);
   font-size: var(--style-font-size);
   line-height: normal;
-  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
   text-shadow: none;
   animation: style-flyout-enter 1200ms var(--style-motion-ease-soft) both;
@@ -4276,7 +4280,7 @@ body {
   box-shadow: none;
   opacity: 0;
   -webkit-text-stroke: var(--style-text-stroke-width)
-    var(--style-yellow-button-text-stroke);
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
   text-shadow: none;
   contain: layout paint style;
@@ -5516,7 +5520,7 @@ body {
 }
 
 .workshop-page__tasks-title {
-  --style-title-text-stroke-color: #0a0a0a;
+  --style-title-text-stroke-color: var(--style-text-stroke-color);
 }
 
 .workshop-page__tasks-pin:focus,
@@ -5835,7 +5839,7 @@ body {
   background: transparent;
   border: 0;
   -webkit-text-stroke: var(--style-text-stroke-width)
-    var(--style-yellow-button-text-stroke);
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
   pointer-events: none;
   text-shadow: none;
@@ -5868,7 +5872,7 @@ body {
   white-space: nowrap;
   background: transparent;
   -webkit-text-stroke: var(--style-text-stroke-width)
-    var(--style-page-tab-label-text-stroke-color);
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
   pointer-events: none;
   text-shadow: var(--style-page-tab-label-text-stroke-shadow);
@@ -7333,7 +7337,7 @@ body {
 }
 
 .workshop-page__world-chat-title {
-  --style-title-text-stroke-color: #0a0a0a;
+  --style-title-text-stroke-color: var(--style-text-stroke-color);
 
   padding: 0 2px;
   appearance: none;
@@ -9934,7 +9938,7 @@ div.workshop-page__discovery-row {
 .garden-page__plot .garden-page__plot-box-action,
 .garden-page__plot .garden-page__plot-box-timer {
   -webkit-text-stroke: var(--style-text-stroke-width)
-    var(--garden-page-plot-text-stroke-color);
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
   text-shadow: none;
 }
@@ -10634,7 +10638,8 @@ div.workshop-page__discovery-row {
   font-weight: 400;
   line-height: 21px;
   white-space: nowrap;
-  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
 }
 
@@ -10973,7 +10978,8 @@ div.workshop-page__discovery-row {
   text-wrap: balance;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-text-stroke-color);
 }
 
 .style-button.research-page__research-button:active:not(:disabled):not(
@@ -12359,8 +12365,8 @@ div.workshop-page__discovery-row {
 }
 
 .style-progress.shop-page__sell-allocation-progress {
-  --style-progress-fill-background: #8740df;
-  --style-progress-fill-edge: #bd72f3;
+  --style-progress-fill-background: var(--style-progress-yellow-fill);
+  --style-progress-fill-edge: var(--style-progress-yellow-edge);
   --style-progress-fill-shadow: inset 0 0 0 1px var(--style-progress-fill-edge);
   position: absolute;
   top: 50%;
@@ -12825,7 +12831,7 @@ div.workshop-page__discovery-row {
   font-weight: bold;
   background: transparent;
   -webkit-text-stroke: var(--style-text-stroke-width)
-    var(--style-title-text-stroke-color);
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
   text-shadow: var(--style-title-text-stroke-shadow);
 }
@@ -12980,7 +12986,7 @@ div.workshop-page__discovery-row {
   translate: 0 2px;
   visibility: hidden;
   -webkit-text-stroke: var(--style-text-stroke-width)
-    var(--style-page-tab-label-text-stroke-color);
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
   text-shadow: var(--style-page-tab-label-text-stroke-shadow);
   transition:
@@ -16519,7 +16525,7 @@ div.workshop-page__discovery-row {
   border-image-width: var(--style-yellow-button-frame-width);
   border-image-repeat: stretch;
   -webkit-text-stroke: var(--style-text-stroke-width)
-    var(--style-yellow-button-text-stroke);
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
 }
 
@@ -16532,7 +16538,7 @@ div.workshop-page__discovery-row {
   border-image-width: var(--style-green-button-frame-width);
   border-image-repeat: stretch;
   -webkit-text-stroke: var(--style-text-stroke-width)
-    var(--style-yellow-button-text-stroke);
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
 }
 
@@ -16553,7 +16559,7 @@ div.workshop-page__discovery-row {
   border-image-width: var(--style-tab-frame-width);
   border-image-repeat: stretch;
   -webkit-text-stroke: var(--style-text-stroke-width)
-    var(--style-yellow-button-text-stroke);
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
 }
 
@@ -16926,8 +16932,7 @@ div.workshop-page__discovery-row {
   margin: 0;
 }
 
-.style-button.shop-page__sell-mark-button,
-.style-button.shop-page__sell-future-button {
+.style-button.shop-page__sell-mark-button {
   box-sizing: border-box;
   flex: 1 1 0;
   width: auto;
@@ -19574,7 +19579,8 @@ div.workshop-page__discovery-row {
   border-image-width: var(--style-dialog-title-frame-width);
   border-image-repeat: stretch;
   transform: translateX(-50%);
-  -webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-text-stroke-color);
   paint-order: stroke fill;
   text-shadow: none;
 }

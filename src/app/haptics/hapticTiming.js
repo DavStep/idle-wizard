@@ -1,0 +1,1 @@
+export const UI_HELD_RELEASE_HAPTIC_MS = 350;

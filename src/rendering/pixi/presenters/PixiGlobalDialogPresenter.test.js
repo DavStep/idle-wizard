@@ -98,6 +98,25 @@ describe('PixiGlobalDialogPresenter', () => {
     ).toBe(true);
   });
 
+  it('opens device settings after the Wizard surface was opened previously', () => {
+    const harness = createHarness();
+    harness.presenter.mount();
+
+    harness.presenter.open('settings', { tab: 'account' });
+    expect(
+      harness.getOpenModel(GLOBAL_DIALOG_IDS.SETTINGS).tabId,
+    ).toBe('account');
+    harness.presenter.close('settings');
+
+    harness.presenter.open('settings');
+    expect(
+      harness.getOpenModel(GLOBAL_DIALOG_IDS.SETTINGS),
+    ).toMatchObject({
+      title: 'Settings',
+      tabId: 'configurations',
+    });
+  });
+
   it('gates an explicitly unnamed player surface and resumes its request once after save', () => {
     const harness = createHarness({
       playerSnapshot: { hasExplicitUsername: false },
@@ -120,7 +139,7 @@ describe('PixiGlobalDialogPresenter', () => {
       GLOBAL_DIALOG_IDS.SETTINGS,
     );
     expect(prompt).toMatchObject({
-      title: 'Account',
+      title: 'Wizard',
       tabId: 'account',
       focusInput: true,
       account: {
@@ -407,6 +426,46 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
       GLOBAL_DIALOG_IDS.SETTINGS,
     );
+  });
+
+  it('connects Google from settings with the current gameplay save', async () => {
+    const harness = createHarness();
+    harness.authFacade.signInWithGoogle = vi.fn(() =>
+      Promise.resolve({
+        ok: false,
+        reason: 'popup_cancelled',
+      }),
+    );
+    harness.presenter.mount();
+    harness.presenter.open('settings');
+    const model = harness.getOpenModel(
+      GLOBAL_DIALOG_IDS.SETTINGS,
+    );
+
+    expect(model.account).toMatchObject({
+      accountStatus: 'not connected',
+      connectLabel: 'connect account',
+      connectEnabled: true,
+    });
+    expect(await model.actions.connectAccount()).toEqual({
+      ok: false,
+      reason: 'popup_cancelled',
+    });
+    expect(
+      harness.gameplayFacade.createPersistenceSave,
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      harness.authFacade.signInWithGoogle,
+    ).toHaveBeenCalledWith({
+      pendingGameplaySave: { version: 1 },
+    });
+    expect(
+      harness.getOpenModel(GLOBAL_DIALOG_IDS.SETTINGS).account,
+    ).toMatchObject({
+      accountStatus: 'login cancelled',
+      connectLabel: 'connect account',
+      connectEnabled: true,
+    });
   });
 
   it('keeps selected settings tab and feedback kind through subscription refreshes', () => {

@@ -14,7 +14,10 @@ import {
   createTimedProgressWindow,
 } from '../../primitives/PixiProgressBar.js';
 import { PixiResourceLabel } from '../../primitives/PixiResourceLabel.js';
-import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
+import {
+  PixiTextLabel,
+  normalizePixiTextStroke,
+} from '../../primitives/PixiTextLabel.js';
 import {
   bindPixiSeedPackIcon,
   layoutPixiSeedPackIcon,
@@ -26,6 +29,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_TEXT_STROKE_WIDTH,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -101,7 +105,8 @@ const STATION_TITLE_TEXT_STYLE = Object.freeze({
   lineHeight: 21,
   stroke: Object.freeze({
     color: '#0a0a0a',
-    width: 2,
+    width: PIXI_TEXT_STROKE_WIDTH,
+    join: 'round',
   }),
   padding: 2,
 });
@@ -1042,6 +1047,10 @@ export class ResearchStationTitlePlaque {
       ...STATION_TITLE_TEXT_STYLE,
       fontSize,
       lineHeight: Math.round((fontSize * 21) / 18),
+      stroke: normalizePixiTextStroke(
+        STATION_TITLE_TEXT_STYLE.stroke,
+        fontSize,
+      ),
     };
   }
 

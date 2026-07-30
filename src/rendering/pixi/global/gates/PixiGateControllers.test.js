@@ -280,8 +280,10 @@ describe('retained Pixi gate controllers', () => {
   });
 
   it('shows the copied full-height splash until the backend connects', () => {
+    const onSplashViewportChange = vi.fn();
     const view = new PixiOnlineGateView({
       assets: createAssets(),
+      onSplashViewportChange,
     });
     const sourceHeight = 2170 / 3;
 
@@ -300,6 +302,7 @@ describe('retained Pixi gate controllers', () => {
       progress: true,
     });
 
+    expect(onSplashViewportChange).toHaveBeenLastCalledWith(true);
     expect(view.panel.visible).toBe(false);
     expect(view.splash).toBeInstanceOf(PixiLoadingSplash);
     expect(view.splash.visible).toBe(true);
@@ -319,6 +322,8 @@ describe('retained Pixi gate controllers', () => {
     view.tick(1380);
     expect(view.splashProgressValue).toBe(1);
 
+    view.hide();
+    expect(onSplashViewportChange).toHaveBeenLastCalledWith(false);
     view.destroy();
   });
 

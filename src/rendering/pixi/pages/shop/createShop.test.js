@@ -146,7 +146,7 @@ describe('createShop', () => {
       title: 'Load Stall',
       range: {
         enabled: true,
-        tone: 'root',
+        tone: 'yellow',
         min: 0,
         max: 10,
         step: 1,
@@ -173,16 +173,15 @@ describe('createShop', () => {
       semanticId: 'shop.stall.1.item.sageSeed',
       tutorialId: 'shop:sell:sageSeed',
     });
-    expect(model.shop.traders.stalls[0].dialog.actions[0]).toMatchObject({
+    expect(model.shop.traders.stalls[0].dialog.actions[1]).toMatchObject({
       label: 'Mark x2',
       enabled: false,
       semanticId: 'shop.stall.1.mark',
       tutorialId: 'shop:sell:mark',
     });
     expect(model.shop.traders.stalls[0].dialog.actions).toMatchObject([
-      { label: 'Mark x2', variant: 'green' },
       { label: 'Clear', variant: 'red' },
-      { label: 'Mark Future' },
+      { label: 'Mark x2', variant: 'green' },
     ]);
     expect(model.shop.traders.stalls[0].dialog.tabs[0]).toMatchObject({
       label: 'Seeds',

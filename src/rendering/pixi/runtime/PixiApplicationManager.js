@@ -60,6 +60,8 @@ export class PixiApplicationManager {
     this.listeners = new Set();
     this.keyboardInset = 0;
     this.visibleHeight = null;
+    this.textEntryActive = false;
+    this.splashViewportActive = false;
     this.destroyed = false;
     this.handleResize = () => this.scheduleResize();
     this.handleContextLost = (event) => event.preventDefault?.();
@@ -210,6 +212,7 @@ export class PixiApplicationManager {
         this.viewport.height,
       )
       .fill(this.theme.surface);
+    this.layers.stageFrame.visible = this.projection.isWide;
     this.layers.stageFrame
       .clear()
       .rect(
@@ -230,9 +233,29 @@ export class PixiApplicationManager {
     this.visibleHeight = Number.isFinite(visibleHeight) ? visibleHeight : null;
     if (this.keyboardInset > 0) {
       this.projectionManager.lockTextEntry();
+    } else if (!this.textEntryActive) {
+      this.projectionManager.unlockTextEntry();
+    }
+    return this.resizeNow();
+  }
+
+  setTextEntryActive(active) {
+    this.textEntryActive = active === true;
+    if (this.textEntryActive) {
+      this.projectionManager.lockTextEntry();
     } else {
       this.projectionManager.unlockTextEntry();
     }
+    return this.resizeNow();
+  }
+
+  setSplashViewportActive(active) {
+    const nextActive = active === true;
+    if (this.splashViewportActive === nextActive) {
+      return this.projection;
+    }
+    this.splashViewportActive = nextActive;
+    this.canvas.classList?.toggle('is-splash-viewport', nextActive);
     return this.resizeNow();
   }
 
@@ -358,6 +381,10 @@ export class PixiApplicationManager {
       return false;
     }
     this.destroyed = true;
+    this.textEntryActive = false;
+    this.projectionManager.unlockTextEntry({ force: true });
+    this.splashViewportActive = false;
+    this.canvas.classList?.remove('is-splash-viewport');
     this.removeListeners();
     this.listeners.clear();
     this.app?.destroy({ removeView: false }, { children: true });

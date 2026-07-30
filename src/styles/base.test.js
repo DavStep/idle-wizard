@@ -216,17 +216,17 @@ describe('base styles', () => {
     );
   });
 
-  it('uses a 4px black outline on shared cost-button text', () => {
+  it('uses the shared proportional project outline on cost-button text', () => {
     const costButtonRule = getRuleBody(
       /\.style-button\.style-cost-button\.style-cost-button\s*\{(?<body>[^}]*)\}/,
     );
 
     expect(costButtonRule).toContain(
-      '-webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;',
+      '-webkit-text-stroke: var(--style-text-stroke-width)\n    var(--style-text-stroke-color);',
     );
   });
 
-  it('uses only regular text or the shared thick stroked-text width', () => {
+  it('uses only regular text or the shared stroked-text width and color', () => {
     const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
     const declarations = [
       ...baseCss.matchAll(/-webkit-text-stroke:\s*(?<value>[^;]+);/g),
@@ -235,10 +235,14 @@ describe('base styles', () => {
       (value) => !/^0(?:px)?(?:\s|$)/.test(value),
     );
 
-    expect(rootRule).toContain('--style-text-stroke-width: 4px;');
+    expect(rootRule).toContain(
+      '--style-text-stroke-width: 0.2307692308em;',
+    );
+    expect(rootRule).toContain('--style-text-stroke-color: #0a0a0a;');
     expect(outlinedDeclarations.length).toBeGreaterThan(0);
     expect(outlinedDeclarations.every((value) =>
-      value.startsWith('var(--style-text-stroke-width) '),
+      value ===
+        'var(--style-text-stroke-width) var(--style-text-stroke-color)',
     )).toBe(true);
   });
 
@@ -251,7 +255,7 @@ describe('base styles', () => {
       /-webkit-text-stroke:\s+var\(--style-text-stroke-width\)/,
     );
     expect(rule).toContain(
-      'var(--style-yellow-button-text-stroke);',
+      'var(--style-text-stroke-color);',
     );
     expect(rule).toContain('paint-order: stroke fill;');
     expect(rule).toContain('text-shadow: none;');
@@ -266,7 +270,7 @@ describe('base styles', () => {
     expect(rule).toContain('background: rgb(0 0 0 / 62%);');
     expect(rule).toContain('border-radius: 8px;');
     expect(rule).toContain(
-      '-webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;',
+      '-webkit-text-stroke: var(--style-text-stroke-width)\n    var(--style-text-stroke-color);',
     );
     expect(rule).toContain('paint-order: stroke fill;');
     expect(rule).toContain('text-shadow: none;');
@@ -296,7 +300,7 @@ describe('base styles', () => {
       '--style-title-text-stroke-width: var(--style-text-stroke-width);',
     );
     expect(rootRule).toContain(
-      '--style-title-text-stroke-color: var(--style-surface);',
+      '--style-title-text-stroke-color: var(--style-text-stroke-color);',
     );
     expect(rootRule).toContain('--style-title-text-stroke-shadow: none;');
     expect(nonWhiteThemeRule).not.toContain('--style-title-text-stroke-width: 0px;');
@@ -306,7 +310,7 @@ describe('base styles', () => {
     expect(titleRule).toContain(
       'padding: 0 var(--style-box-border-label-padding-x);',
     );
-    expect(titleRule).toContain('var(--style-title-text-stroke-color);');
+    expect(titleRule).toContain('var(--style-text-stroke-color);');
     expect(titleRule).toContain('paint-order: stroke fill;');
     expect(titleRule).toContain(
       'text-shadow: var(--style-title-text-stroke-shadow);',
@@ -412,7 +416,7 @@ describe('base styles', () => {
       'line-height: var(--style-dialog-title-text-height);',
     );
     expect(titleRule).toContain(
-      '-webkit-text-stroke: var(--style-text-stroke-width) #0a0a0a;',
+      '-webkit-text-stroke: var(--style-text-stroke-width)\n    var(--style-text-stroke-color);',
     );
     expect(titleRule).toContain('font-weight: 400;');
     expect(titleRule).toContain('place-items: start center;');
@@ -606,7 +610,7 @@ describe('base styles', () => {
       'border-image-width: var(--style-yellow-button-frame-width);',
     );
     expect(yellowButtonRule).toContain(
-      '-webkit-text-stroke: var(--style-text-stroke-width)\n    var(--style-yellow-button-text-stroke);',
+      '-webkit-text-stroke: var(--style-text-stroke-width)\n    var(--style-text-stroke-color);',
     );
     expect(brownDarkButtonRule).toContain(
       'border-image-source: var(--style-tab-frame);',
@@ -1245,9 +1249,11 @@ describe('base styles', () => {
     expect(progressRule).toContain('position: absolute;');
     expect(progressRule).toContain('pointer-events: none;');
     expect(progressRule).toContain(
-      '--style-progress-fill-background: #8740df;',
+      '--style-progress-fill-background: var(--style-progress-yellow-fill);',
     );
-    expect(progressRule).toContain('--style-progress-fill-edge: #bd72f3;');
+    expect(progressRule).toContain(
+      '--style-progress-fill-edge: var(--style-progress-yellow-edge);',
+    );
     expect(progressRule).toContain(
       'height: var(--style-slider-progress-total-height);',
     );

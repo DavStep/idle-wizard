@@ -1,5 +1,4 @@
 import {
-  CanvasTextMetrics,
   Container,
   Graphics,
   Rectangle,
@@ -26,6 +25,7 @@ import {
 } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
+import { PixiInlineText } from '../../primitives/PixiInlineText.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
@@ -69,6 +69,8 @@ const WORLD_CHAT_ROW_GAP = 3;
 const WORLD_CHAT_SCROLL_PADDING_TOP = 8;
 const WORLD_CHAT_CONTENT_INSET_X = 8;
 const WORLD_CHAT_CONTENT_WIDTH = 288;
+const WORLD_CHAT_DIALOG_DEFAULT_SHIFT_Y = -42;
+const WORLD_CHAT_DIALOG_MIN_TOP = 18;
 const WORLD_CHAT_AVATAR_SIZE = 22;
 const WORLD_CHAT_TEXT_X = 25;
 const WORLD_CHAT_HEADER_HEIGHT = 12;
@@ -80,7 +82,6 @@ const WORLD_CHAT_SYSTEM_BACKGROUND = '#efd0a2';
 const WORLD_CHAT_SYSTEM_TITLE_COLOR = '#432d20';
 const WORLD_CHAT_SYSTEM_PLAYER_COLOR = '#72533a';
 const WORLD_CHAT_TAG_STROKE = '#2b1912';
-const WORLD_CHAT_INLINE_ICON_PLACEHOLDER = '\u2002\u2002';
 const DISCOVERY_ROW_GAP = 6;
 const DISCOVERY_MAX_INGREDIENTS = 6;
 const DISCOVERY_ICON_SIZE = 44;
@@ -561,7 +562,19 @@ export class WorkshopDialogPixi {
       ? Math.min(470, this.sourceHeight - 118)
       : Math.min(382, this.sourceHeight - 80);
     const panelX = (this.sourceWidth - width) / 2;
-    const panelY = (this.sourceHeight - height) / 2;
+    const centeredPanelY = (this.sourceHeight - height) / 2;
+    const defaultPanelY = this.isWorldChatDialog
+      ? centeredPanelY + WORLD_CHAT_DIALOG_DEFAULT_SHIFT_Y
+      : centeredPanelY;
+    const keyboardShift = this.isWorldChatDialog
+      ? Math.min(0, Number(viewportProjection?.dialogShift) || 0)
+      : 0;
+    const panelY = this.isWorldChatDialog
+      ? Math.max(
+          WORLD_CHAT_DIALOG_MIN_TOP,
+          defaultPanelY + keyboardShift,
+        )
+      : defaultPanelY;
     this.modal.layout(viewportProjection);
     this.modal.setBounds(
       panelX,
@@ -1420,22 +1433,19 @@ export class WorldChatMessageRowPixi {
       lineHeight: WORLD_CHAT_HEADER_HEIGHT,
       fontWeight: '700',
     });
-    this.body = createText('', {
-      fontSize: WORLD_CHAT_BODY_FONT_SIZE,
-      lineHeight: WORLD_CHAT_BODY_LINE_HEIGHT,
-      wordWrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH - WORLD_CHAT_TEXT_X,
+    this.body = new PixiInlineText({
+      label: `${dialog.dialogId}-message-row:body`,
+      style: {
+        fontSize: WORLD_CHAT_BODY_FONT_SIZE,
+        lineHeight: WORLD_CHAT_BODY_LINE_HEIGHT,
+      },
+      wrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH - WORLD_CHAT_TEXT_X,
     });
     this.systemPlayerUsername = createText('', {
       fontSize: WORLD_CHAT_BODY_FONT_SIZE,
       lineHeight: WORLD_CHAT_BODY_LINE_HEIGHT,
       fontWeight: '700',
     });
-    this.bodyIcon = new Sprite({
-      texture: Texture.EMPTY,
-      label: `${dialog.dialogId}-message-row:body-icon`,
-      roundPixels: true,
-    });
-    this.bodyIcon.anchor.set(0.5);
     this.timestamp = createText('', {
       fontSize: 8.5,
       lineHeight: 10,
@@ -1449,7 +1459,6 @@ export class WorldChatMessageRowPixi {
       this.username,
       this.systemPlayerUsername,
       this.body,
-      this.bodyIcon,
       this.timestamp,
     );
     this.avatarRegistration =
@@ -1495,6 +1504,7 @@ export class WorldChatMessageRowPixi {
       this.isSystem && this.model.systemPlayerUsername
         ? this.model.systemPlayerDetail ?? this.model.body ?? ''
         : this.model.body ?? '',
+      this.model.bodyRuns,
       this.model.bodyIcon,
     );
     setText(this.timestamp, this.model.ageLabel ?? '');
@@ -1561,8 +1571,7 @@ export class WorldChatMessageRowPixi {
       ? contentX + this.systemPlayerUsername.width + 2
       : contentX;
     this.body.position.set(bodyX, WORLD_CHAT_BODY_TOP);
-    this.body.style.wordWrapWidth = Math.max(0, width - bodyX);
-    this.layoutBodyIcon();
+    this.body.setWrapWidth(Math.max(0, width - bodyX));
     this.avatar.hitArea = new Rectangle(
       -WORLD_CHAT_AVATAR_SIZE / 2,
       -WORLD_CHAT_AVATAR_SIZE / 2,
@@ -1587,7 +1596,7 @@ export class WorldChatMessageRowPixi {
   getPreferredHeight() {
     const bodyHeight = Math.max(
       WORLD_CHAT_BODY_LINE_HEIGHT,
-      Math.ceil(this.body.height),
+      Math.ceil(this.body.layoutHeight),
     );
     return Math.max(
       this.isSystem ? 25 : 27,
@@ -1608,7 +1617,7 @@ export class WorldChatMessageRowPixi {
     });
     this.tag.style.stroke = normalizePixiTextStroke({
       color: WORLD_CHAT_TAG_STROKE,
-    });
+    }, this.tag.style.fontSize);
     applyTextTheme(this.username, resolvedTheme, {
       fontSize: 11,
       lineHeight: WORLD_CHAT_HEADER_HEIGHT,
@@ -1637,7 +1646,6 @@ export class WorldChatMessageRowPixi {
             ? 6
             : WORLD_CHAT_TEXT_X),
     });
-    this.layoutBodyIcon();
     applyTextTheme(this.timestamp, resolvedTheme, {
       fontSize: 8.5,
       lineHeight: 10,
@@ -1689,67 +1697,15 @@ export class WorldChatMessageRowPixi {
     return this.model.onActivate(this.model) ?? true;
   }
 
-  bindBody(body, bodyIcon) {
+  bindBody(body, bodyRuns, bodyIcon) {
     const rawBody = String(body ?? '');
-    const marker = String(bodyIcon?.marker ?? '');
-    const markerIndex = marker ? rawBody.indexOf(marker) : -1;
-    const texture =
-      markerIndex >= 0
-        ? resolveWorldChatBodyIconTexture(
-            this.dialog.assetManager,
-            bodyIcon?.assetId,
-          )
-        : Texture.EMPTY;
-    const canRenderIcon =
-      markerIndex >= 0 && texture !== Texture.EMPTY;
-
-    this.bodyIconPrefix = canRenderIcon
-      ? rawBody.slice(0, markerIndex)
-      : '';
-    this.bodyIcon.texture = canRenderIcon ? texture : Texture.EMPTY;
-    this.bodyIcon.visible = canRenderIcon;
-    this.bodyIcon.renderable = canRenderIcon;
-    setText(
-      this.body,
-      canRenderIcon
-        ? `${rawBody.slice(0, markerIndex)}${WORLD_CHAT_INLINE_ICON_PLACEHOLDER}${rawBody.slice(markerIndex + marker.length)}`
-        : rawBody,
-    );
-
-    if (canRenderIcon) {
-      fitWorldChatBodyIcon(
-        this.bodyIcon,
-        Math.max(1, Number(bodyIcon?.size) || 12),
-      );
-    }
-  }
-
-  layoutBodyIcon() {
-    if (!this.bodyIcon.visible) {
-      return;
-    }
-
-    const prefixMetrics = CanvasTextMetrics.measureText(
-      `${this.bodyIconPrefix}${WORLD_CHAT_INLINE_ICON_PLACEHOLDER}`,
-      this.body.style,
-    );
-    const lineIndex = Math.max(0, prefixMetrics.lines.length - 1);
-    const slotWidth = CanvasTextMetrics.measureText(
-      WORLD_CHAT_INLINE_ICON_PLACEHOLDER,
-      this.body.style,
-    ).width;
-    const lineWidth =
-      prefixMetrics.lineWidths?.[lineIndex] ??
-      CanvasTextMetrics.measureText(
-        prefixMetrics.lines[lineIndex] ?? '',
-        this.body.style,
-      ).width;
-    const beforeWidth = Math.max(0, lineWidth - slotWidth);
-    const lineHeight =
-      Number(this.body.style.lineHeight) || WORLD_CHAT_BODY_LINE_HEIGHT;
-    this.bodyIcon.position.set(
-      this.body.x + beforeWidth + slotWidth / 2,
-      this.body.y + lineIndex * lineHeight + lineHeight / 2,
+    this.body.setRuns(
+      resolveWorldChatBodyRuns(
+        this.dialog.assetManager,
+        rawBody,
+        bodyRuns,
+        bodyIcon,
+      ),
     );
   }
 
@@ -1761,10 +1717,7 @@ export class WorldChatMessageRowPixi {
     this.model = null;
     this.isSystem = false;
     this.avatar.texture = Texture.EMPTY;
-    this.bodyIconPrefix = '';
-    this.bodyIcon.texture = Texture.EMPTY;
-    this.bodyIcon.visible = false;
-    this.bodyIcon.renderable = false;
+    this.body.setRuns([]);
     setText(this.systemPlayerUsername, '');
     this.root.visible = false;
     this.syncInteraction();
@@ -2895,13 +2848,58 @@ function resolveWorldChatBodyIconTexture(assetManager, assetId) {
   return assetManager.getTexture(assetId) ?? Texture.EMPTY;
 }
 
-function fitWorldChatBodyIcon(icon, size) {
-  const bounds = icon.texture?.orig ?? icon.texture?.frame;
-  const width = Math.max(1, Number(bounds?.width) || 1);
-  const height = Math.max(1, Number(bounds?.height) || 1);
-  const scale = size / Math.max(width, height);
-  icon.width = width * scale;
-  icon.height = height * scale;
+function resolveWorldChatBodyRuns(
+  assetManager,
+  body,
+  bodyRuns,
+  legacyBodyIcon,
+) {
+  const runs = Array.isArray(bodyRuns) && bodyRuns.length > 0
+    ? bodyRuns
+    : createLegacyWorldChatBodyRuns(body, legacyBodyIcon);
+
+  return runs.map((run) => {
+    if (run?.kind !== 'icon') {
+      return {
+        kind: 'text',
+        text:
+          typeof run === 'string'
+            ? run
+            : String(run?.text ?? ''),
+      };
+    }
+    return {
+      ...run,
+      fallbackText: String(
+        run.fallbackText ?? run.marker ?? '',
+      ),
+      texture: resolveWorldChatBodyIconTexture(
+        assetManager,
+        run.assetId,
+      ),
+    };
+  });
+}
+
+function createLegacyWorldChatBodyRuns(body, bodyIcon) {
+  const rawBody = String(body ?? '');
+  const marker = String(bodyIcon?.marker ?? '');
+  const markerIndex = marker ? rawBody.indexOf(marker) : -1;
+  if (markerIndex < 0) {
+    return [{ kind: 'text', text: rawBody }];
+  }
+  return [
+    { kind: 'text', text: rawBody.slice(0, markerIndex) },
+    {
+      ...bodyIcon,
+      fallbackText: marker,
+      kind: 'icon',
+    },
+    {
+      kind: 'text',
+      text: rawBody.slice(markerIndex + marker.length),
+    },
+  ];
 }
 
 function normalizeWorldChatTag(tag) {

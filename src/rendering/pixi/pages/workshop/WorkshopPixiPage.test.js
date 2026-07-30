@@ -13,7 +13,9 @@ import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js
 import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_TEXT_STROKE_COLOR,
   PIXI_UI_GEOMETRY,
+  resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 import { ShopDialogPixi } from '../shop/ShopDialogPixi.js';
 import { RETAINED_DIALOG_LIST_GEOMETRY, RETAINED_SCROLLBAR_GEOMETRY } from './RetainedPageKit.js';
@@ -99,7 +101,9 @@ describe('WorkshopPixiPage', () => {
     const row = harness.page.tasks.rows.get('request-1');
     expect(harness.page.tasks.panel.title.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 4,
+      width: resolvePixiTextStrokeWidth(
+        harness.page.tasks.panel.title.style.fontSize,
+      ),
       join: 'round',
     });
     for (const text of [
@@ -111,8 +115,8 @@ describe('WorkshopPixiPage', () => {
     ]) {
       expect(text.style.fill).toBe('#ffffff');
       expect(text.style.stroke).toMatchObject({
-        color: '#17191f',
-        width: 4,
+        color: PIXI_TEXT_STROKE_COLOR,
+        width: resolvePixiTextStrokeWidth(text.style.fontSize),
         join: 'round',
       });
     }
@@ -150,7 +154,9 @@ describe('WorkshopPixiPage', () => {
       expect(control.label.style.fill).toBe('#ffffff');
       expect(control.label.style.stroke).toMatchObject({
         color: '#0a0a0a',
-        width: 4,
+        width: resolvePixiTextStrokeWidth(
+          control.label.style.fontSize,
+        ),
         join: 'round',
       });
       expect(control.icon.x).toBe(
@@ -518,7 +524,7 @@ describe('WorkshopPixiPage', () => {
     expect(flyout.text.style.fill).toBe('#ffffff');
     expect(flyout.text.style.stroke).toMatchObject({
       color: '#0a0a0a',
-      width: 4,
+      width: resolvePixiTextStrokeWidth(flyout.text.style.fontSize),
       join: 'round',
     });
     expect(flyout.background.width).toBeGreaterThan(flyout.text.width);
@@ -992,10 +998,19 @@ describe('WorkshopPixiPage', () => {
       '#4aa83f',
     ]);
     expect(seedRows.map((row) => row.value.textObject.style.stroke)).toEqual([
-      expect.objectContaining({ color: '#6c5008', width: 4 }),
+      expect.objectContaining({
+        color: PIXI_TEXT_STROKE_COLOR,
+        width: resolvePixiTextStrokeWidth(seedRows[0].value.fontSize),
+      }),
       null,
-      expect.objectContaining({ color: '#762824', width: 4 }),
-      expect.objectContaining({ color: '#205c22', width: 4 }),
+      expect.objectContaining({
+        color: PIXI_TEXT_STROKE_COLOR,
+        width: resolvePixiTextStrokeWidth(seedRows[2].value.fontSize),
+      }),
+      expect.objectContaining({
+        color: PIXI_TEXT_STROKE_COLOR,
+        width: resolvePixiTextStrokeWidth(seedRows[3].value.fontSize),
+      }),
     ]);
     expect(seedRows.every((row) => row.selectedIndicator.visible === false)).toBe(true);
     const expectedListFrameWidth =
@@ -1833,6 +1848,44 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('anchors World Chat higher by default and keeps its composer above the keyboard', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.worldChat = {
+      title: 'World Chat',
+      composer: {
+        placeholder: 'Message',
+        maxLength: 160,
+        enabled: true,
+      },
+      rows: [],
+      onSubmit: vi.fn(),
+    };
+    harness.page.bind(model);
+    harness.page.openDialog('worldChat');
+    const dialog = harness.dialogs.get('workshop.worldChat');
+    const centeredTop =
+      (dialog.sourceHeight - dialog.modal.fixedBounds.height) / 2;
+
+    expect(dialog.modal.fixedBounds.y).toBeLessThan(centeredTop);
+
+    dialog.layout({
+      sourceWidth: 360,
+      sourceHeight: 2170 / 3,
+      dialogShift: -145,
+    });
+
+    expect(dialog.modal.fixedBounds.y).toBeGreaterThanOrEqual(18);
+    expect(
+      dialog.modal.fixedBounds.y +
+        dialog.composerField.y +
+        dialog.composerField.fieldHeight,
+    ).toBeLessThan(1300 / 3);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('renders compact World Chat rows without action chrome and keeps player links on the avatar and username', () => {
     const openPlayer = vi.fn();
     const pressRegistrations = [];
@@ -1894,8 +1947,10 @@ describe('WorkshopPixiPage', () => {
 
     expect(playerRow.tag.text).toBe('[MOSS]');
     expect(playerRow.tag.style.stroke).toMatchObject({
-      color: '#2b1912',
-      width: 4,
+      color: PIXI_TEXT_STROKE_COLOR,
+      width: resolvePixiTextStrokeWidth(
+        playerRow.tag.style.fontSize,
+      ),
     });
     expect(playerRow.username.text).toBe('Mira');
     expect(playerRow.username.style.fill).toBe('#634934');
@@ -2009,7 +2064,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('replaces the prestige announcement emoji with the retained prestige-star asset', () => {
+  it('lays out prestige text and the retained star as non-overlapping inline runs', () => {
     const prestigeAssetId = 'source:assets/icons/icon-prestige-star.png';
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.has = vi.fn((assetId) => assetId === prestigeAssetId);
@@ -2031,12 +2086,26 @@ describe('WorkshopPixiPage', () => {
           type: 'system',
           username: 'System',
           body: 'Ada reached ⭐ 4, completing prestige level 40',
-          bodyIcon: {
-            marker: '⭐',
-            assetId: prestigeAssetId,
-            label: 'Prestige star',
-            size: 12,
-          },
+          systemPlayerUsername: 'Ada',
+          systemPlayerDetail:
+            'reached ⭐ 4, completing prestige level 40',
+          bodyRuns: [
+            {
+              kind: 'text',
+              text: 'reached ',
+            },
+            {
+              kind: 'icon',
+              assetId: prestigeAssetId,
+              fallbackText: '⭐',
+              label: 'Prestige star',
+              size: 12,
+            },
+            {
+              kind: 'text',
+              text: ' 4, completing prestige level 40',
+            },
+          ],
           ageLabel: 'now',
         },
       ],
@@ -2049,16 +2118,25 @@ describe('WorkshopPixiPage', () => {
     const systemRow = dialog.rows.get('system-prestige-1');
 
     expect(assetManager.getTexture).toHaveBeenCalledWith(prestigeAssetId);
-    expect(systemRow.body.text).not.toContain('⭐');
-    expect(systemRow.bodyIcon.texture).toBe(Texture.WHITE);
-    expect(systemRow.bodyIcon.visible).toBe(true);
-    expect(systemRow.bodyIcon.renderable).toBe(true);
-    expect(systemRow.bodyIcon.width).toBe(12);
-    expect(systemRow.bodyIcon.height).toBe(12);
-    expect(systemRow.bodyIcon.y).toBeGreaterThan(systemRow.body.y);
-    expect(systemRow.bodyIcon.y).toBeLessThan(
-      systemRow.body.y + 13,
+    const bodyIcon = systemRow.body.iconObjects[0];
+    const followingText = systemRow.body.textObjects.find(
+      (textObject) =>
+        textObject.visible && textObject.text.startsWith('4,'),
     );
+    expect(systemRow.body.text).toBe(
+      'reached ⭐ 4, completing prestige level 40',
+    );
+    expect(bodyIcon.texture).toBe(Texture.WHITE);
+    expect(bodyIcon.visible).toBe(true);
+    expect(bodyIcon.renderable).toBe(true);
+    expect(bodyIcon.width).toBe(12);
+    expect(bodyIcon.height).toBe(12);
+    expect(followingText).toBeDefined();
+    expect(bodyIcon.x + bodyIcon.width / 2).toBeLessThan(
+      followingText.x,
+    );
+    expect(bodyIcon.y).toBeGreaterThan(0);
+    expect(bodyIcon.y).toBeLessThan(13);
 
     harness.page.destroy();
     harness.dispose();
@@ -2320,8 +2398,18 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.summon.button.actionTextLabel.text).toBe('Summon Seed');
     expect(harness.page.summon.button.actionTextLabel.fontSize).toBe(11);
     expect(harness.page.summon.button.amountLabel.fontSize).toBe(13);
-    expect(harness.page.summon.button.actionTextLabel.stroke.width).toBe(4);
-    expect(harness.page.summon.button.amountLabel.stroke.width).toBe(4);
+    expect(
+      harness.page.summon.button.actionTextLabel.stroke.width,
+    ).toBe(
+      resolvePixiTextStrokeWidth(
+        harness.page.summon.button.actionTextLabel.fontSize,
+      ),
+    );
+    expect(harness.page.summon.button.amountLabel.stroke.width).toBe(
+      resolvePixiTextStrokeWidth(
+        harness.page.summon.button.amountLabel.fontSize,
+      ),
+    );
     expect(harness.page.summon.button.resource).toBe('mana');
     expect(harness.page.summon.button.amountLabel.text).toBe('10');
     expect(harness.page.summon.button.resourceIcon.texture).toBe(manaTexture);
@@ -2368,7 +2456,8 @@ describe('WorkshopPixiPage', () => {
     expect(inputRouter.store.getRegistrations()).toHaveLength(0);
   });
 
-  it('keeps the summon actionable when the tutorial overlay owns the event path', () => {
+  it('keeps summon release-only when the tutorial overlay owns the event path', () => {
+    vi.useFakeTimers();
     const inputRouter = new PixiInputRouter();
     const summonSeed = vi.fn(() => ({ ok: true }));
     const harness = createHarness({ inputRouter });
@@ -2405,6 +2494,8 @@ describe('WorkshopPixiPage', () => {
     };
     inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', summonPoint));
     expect(harness.page.summon.button.pressed).toBe(true);
+    vi.advanceTimersByTime(500);
+    expect(summonSeed).not.toHaveBeenCalled();
     inputRouter.onPointerUp(createPointerEvent(overlayTarget, 'pointerup', summonPoint));
     expect(harness.page.summon.button.pressed).toBe(false);
     expect(summonSeed).toHaveBeenCalledTimes(1);
@@ -2412,6 +2503,7 @@ describe('WorkshopPixiPage', () => {
     overlayTarget.destroy();
     harness.page.destroy();
     harness.dispose();
+    vi.useRealTimers();
   });
 
   it('opens adjacent summon info after a retargeted tap while summoning is unavailable', () => {

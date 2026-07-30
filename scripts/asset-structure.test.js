@@ -42,6 +42,34 @@ describe('asset structure', () => {
     expect(quickUiAtlas.meta.image).toBe('atlas.png');
   });
 
+  it('keeps retired fallback and split-automation icons out of runtime assets', () => {
+    const gameAtlas = JSON.parse(
+      fs.readFileSync(
+        path.join(ROOT, 'assets/game/atlas/game-asset-atlas.json'),
+        'utf8',
+      ),
+    );
+    const retiredFrames = [
+      'potion:generic',
+      'research:autoBottle',
+      'research:autoHarvest',
+    ];
+    const retiredSourcePaths = [
+      'assets/game/source/items/potions/potion-generic.png',
+      'assets/game/source/icons/research/icon-research-auto-bottle.png',
+      'assets/game/source/icons/research/icon-research-auto-harvest.png',
+    ];
+
+    expect(
+      retiredFrames.filter((frameName) => gameAtlas.frames[frameName]),
+    ).toEqual([]);
+    expect(
+      retiredSourcePaths.filter((relativePath) =>
+        fs.existsSync(path.join(ROOT, relativePath)),
+      ),
+    ).toEqual([]);
+  });
+
   it('builds research icons from shared currency-free object masters', () => {
     const generatorSource = fs.readFileSync(
       path.join(ROOT, 'scripts/generate-research-icons.js'),

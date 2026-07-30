@@ -1168,7 +1168,12 @@ describe('PixiViewModelFactory', () => {
         ageLabel: '1m ago',
         onActivate: null,
       });
-      expect(dialog.rows[1].bodyIcon).toBeNull();
+      expect(dialog.rows[1].bodyRuns).toEqual([
+        {
+          kind: 'text',
+          text: 'The weekly world event has begun.',
+        },
+      ]);
       expect(dialog.rows[2]).toMatchObject({
         type: 'system',
         username: 'System',
@@ -1176,12 +1181,23 @@ describe('PixiViewModelFactory', () => {
         systemPlayerUsername: 'Ada',
         systemPlayerDetail:
           'reached ⭐ 4, completing prestige level 40',
-        bodyIcon: {
-          marker: '⭐',
-          assetId: 'source:assets/icons/icon-prestige-star.png',
-          label: 'Prestige star',
-          size: 12,
-        },
+        bodyRuns: [
+          {
+            kind: 'text',
+            text: 'reached ',
+          },
+          {
+            kind: 'icon',
+            assetId: 'source:assets/icons/icon-prestige-star.png',
+            fallbackText: '⭐',
+            label: 'Prestige star',
+            size: 12,
+          },
+          {
+            kind: 'text',
+            text: ' 4, completing prestige level 40',
+          },
+        ],
         ageLabel: 'now',
       });
       expect(dialog.rows[2].onActivate).toEqual(expect.any(Function));
@@ -1337,6 +1353,52 @@ describe('PixiViewModelFactory', () => {
         id: 'cyclopsEye',
         itemKind: 'ingredient',
         itemKey: 'cyclopsEye',
+      }),
+    ]);
+  });
+
+  it('hides locked zero-count items from retained Bag rows', () => {
+    const factory = new PixiViewModelFactory();
+    const gameplay = {
+      seedInventory: [
+        {
+          itemTypeId: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          kind: 'seed',
+          quantity: 0,
+        },
+        {
+          itemTypeId: 2,
+          key: 'mintSeed',
+          label: 'mint seed',
+          kind: 'seed',
+          quantity: 0,
+        },
+        {
+          itemTypeId: 3,
+          key: 'nettleSeed',
+          label: 'nettle seed',
+          kind: 'seed',
+          quantity: 2,
+        },
+      ],
+      research: {
+        completedResearchIds: ['unlockSeed:sageSeed'],
+        boxes: [],
+      },
+    };
+
+    expect(factory.createBagDialog(gameplay, 'seeds').rows).toEqual([
+      expect.objectContaining({
+        id: 'sageSeed',
+        label: 'Sage Seed',
+        value: '0',
+      }),
+      expect.objectContaining({
+        id: 'nettleSeed',
+        label: 'Nettle Seed',
+        value: '2',
       }),
     ]);
   });

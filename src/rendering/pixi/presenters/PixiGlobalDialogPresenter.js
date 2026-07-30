@@ -110,8 +110,20 @@ export class PixiGlobalDialogPresenter {
     if (!canonicalId) {
       return false;
     }
+    const isAlreadyOpen =
+      this.renderFacade
+        .getUiRuntime?.()
+        ?.getOpenDialogIds?.()
+        .includes(canonicalId) === true;
+    const startsFreshSettings =
+      canonicalId === GLOBAL_DIALOG_IDS.SETTINGS && !isAlreadyOpen;
     const request = {
-      ...(this.openRequests.get(canonicalId) ?? {}),
+      ...(!startsFreshSettings
+        ? this.openRequests.get(canonicalId) ?? {}
+        : {}),
+      ...(startsFreshSettings
+        ? { tab: 'configurations' }
+        : {}),
       ...getGlobalDialogAliasOptions(dialogId),
       ...(options ?? {}),
     };
@@ -209,7 +221,7 @@ export class PixiGlobalDialogPresenter {
     );
 
     return {
-      title: requestedTab === 'account' ? 'Account' : 'settings',
+      title: requestedTab === 'account' ? 'Wizard' : 'Settings',
       tabId: requestedTab,
       focusInput:
         request.focusInput === true ||

@@ -2675,7 +2675,7 @@ describe('TutorialHintManager', () => {
     expect(dragYellRule).toMatch(/\bbackground:\s*transparent;/);
     expect(dragYellRule).toMatch(/\bcolor:\s*#fff;/);
     expect(dragYellRule).toMatch(
-      /-webkit-text-stroke:\s*var\(--style-text-stroke-width\) #0a0a0a;/,
+      /-webkit-text-stroke:\s*var\(--style-text-stroke-width\)\s*var\(--style-text-stroke-color\);/,
     );
     expect(dragYellRule).toMatch(/\bpaint-order:\s*stroke fill;/);
     expect(collapsedDragYellRule).toBeDefined();

@@ -43,7 +43,7 @@ export const RETAINED_PAGE_GEOMETRY = Object.freeze({
   chatClearance: 162,
   rowHeight: 20,
   researchRowHeight: 22,
-  tabHeight: 28,
+  tabHeight: PIXI_UI_GEOMETRY.roomControlHeight,
   scrollCut: 6,
 });
 
@@ -406,7 +406,10 @@ export class RetainedPanel {
     this.title.position.set(8, -12);
     this.title.style.stroke = this.strong
       ? null
-      : normalizePixiTextStroke({ color: this.theme.surface });
+      : normalizePixiTextStroke(
+          { color: this.theme.surface },
+          this.title.style.fontSize,
+        );
     const titleWidth = Math.ceil(this.title.width) + 4;
     this.titleBacking
       .clear()
@@ -709,7 +712,10 @@ export class RetainedScrollArea {
 
       this.dragPointerId = null;
       releaseNativePointer(event, event.pointerId ?? 1);
-      this.endDrag({ event });
+      this.endDrag({
+        event,
+        point: event?.global,
+      });
     };
     this.handleActivationCapture = (event) => {
       if (!this.suppressNextActivation) {
@@ -828,11 +834,14 @@ export class RetainedScrollArea {
     return true;
   }
 
-  endDrag() {
+  endDrag(context = {}) {
     if (!this.physics.isDragging) {
       return false;
     }
 
+    if (Number.isFinite(context.point?.y)) {
+      this.dragTo(context);
+    }
     const suppressActivation =
       this.physics.dragDistance >
       ROOT_RUN_STATION_CLICK_DRAG_THRESHOLD;
@@ -1123,7 +1132,12 @@ export function createText(text = '', style = RETAINED_TEXT_STYLES.body) {
       padding: Math.max(0, Number(style.padding) || 0),
       whiteSpace: style.wordWrapWidth ? 'normal' : 'pre',
       ...(style.stroke
-        ? { stroke: normalizePixiTextStroke(style.stroke) }
+        ? {
+            stroke: normalizePixiTextStroke(
+              style.stroke,
+              style.fontSize,
+            ),
+          }
         : {}),
     },
   });
@@ -1147,7 +1161,12 @@ export function applyTextTheme(text, theme, style = RETAINED_TEXT_STYLES.body) {
     padding: Math.max(0, Number(style.padding) || 0),
     whiteSpace: style.wordWrapWidth ? 'normal' : 'pre',
     ...(style.stroke
-      ? { stroke: normalizePixiTextStroke(style.stroke) }
+      ? {
+          stroke: normalizePixiTextStroke(
+            style.stroke,
+            style.fontSize,
+          ),
+        }
       : {}),
   };
 }

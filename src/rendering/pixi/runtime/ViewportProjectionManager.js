@@ -18,6 +18,7 @@ export class ViewportProjectionManager {
     this.viewport = viewport;
     this.sourceUiScale = sourceUiScale;
     this.layoutViewport = null;
+    this.textEntryActive = false;
     this.textEntryLocked = false;
     this.lastProjection = null;
   }
@@ -85,12 +86,16 @@ export class ViewportProjectionManager {
   }
 
   lockTextEntry() {
+    this.textEntryActive = true;
     this.textEntryLocked = true;
   }
 
-  unlockTextEntry() {
-    this.textEntryLocked = false;
-    this.layoutViewport = null;
+  unlockTextEntry({ force = false } = {}) {
+    this.textEntryActive = false;
+    if (force) {
+      this.textEntryLocked = false;
+      this.layoutViewport = null;
+    }
   }
 
   getProjection() {
@@ -105,11 +110,20 @@ export class ViewportProjectionManager {
 
     const widthChanged = Math.abs(measured.width - this.layoutViewport.width) > 1;
     const heightShrank = measured.height < this.layoutViewport.height;
+    if (widthChanged) {
+      this.layoutViewport = measured;
+      this.textEntryLocked = this.textEntryActive;
+      return measured;
+    }
+
     if (lockForTextEntry && heightShrank && !widthChanged) {
       return this.layoutViewport;
     }
 
     this.layoutViewport = measured;
+    if (this.textEntryLocked && !this.textEntryActive) {
+      this.textEntryLocked = false;
+    }
     return measured;
   }
 

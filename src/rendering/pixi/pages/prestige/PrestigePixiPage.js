@@ -1007,7 +1007,7 @@ class PrestigeRowWidget {
     });
     this.rankLabel.style.stroke = normalizePixiTextStroke({
       color: '#0a0a0a',
-    });
+    }, this.rankLabel.style.fontSize);
     this.action.applyTheme(theme);
     for (const label of this.rewardResources) {
       label.applyTheme(theme);

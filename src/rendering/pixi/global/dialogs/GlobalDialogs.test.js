@@ -11,6 +11,7 @@ import { PixiInputRouter } from '../../input/PixiInputRouter.js';
 import {
   DeviceIdentityFooter,
   PixiDialogFrame,
+  PixiNineSliceFrame,
   resolveDialogPaperOutsets,
   RootRunSettingsTogglePixi,
   RootRunDevicePreferenceRow,
@@ -23,7 +24,9 @@ import {
 import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_TEXT_STROKE_COLOR,
   createPixiThemeSnapshot,
+  resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 import {
   GLOBAL_DIALOG_IDS,
@@ -258,15 +261,21 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('opens settings with one board, three device rows, and the identity footer', async () => {
+  it('opens settings with device preferences, Google account connection, and identity details', async () => {
     const harness = createHarness();
     const togglePreference = vi.fn(() => true);
+    const connectAccount = vi.fn(() =>
+      Promise.resolve({ ok: true }),
+    );
     const copyUserId = vi.fn(() => Promise.resolve(true));
     const userId = '1234567890abcdef1234567890abcdef';
     const settings = harness.registry.open(
       GLOBAL_DIALOG_IDS.SETTINGS,
       {
         account: {
+          accountStatus: 'not connected',
+          connectLabel: 'connect account',
+          connectEnabled: true,
           version: '1.2.3',
           userId,
         },
@@ -275,11 +284,16 @@ describe('retained global Pixi dialogs', () => {
           music: true,
           sfx: true,
         },
-        actions: { togglePreference, copyUserId },
+        actions: {
+          togglePreference,
+          connectAccount,
+          copyUserId,
+        },
       },
     );
 
     expect(settings.selectedTab).toBe('configurations');
+    expect(settings.panel.titleLabel.text).toBe('Settings');
     expect(
       settings.preferenceRows.map(({ key }) => key),
     ).toEqual(['sfx', 'music', 'haptics']);
@@ -306,8 +320,28 @@ describe('retained global Pixi dialogs', () => {
     );
     expect(settings.configurationsLayer.children).toEqual([
       settings.devicePanel,
+      settings.accountConnectionPanel,
+      settings.accountConnectionLabel,
+      settings.accountStatus,
+      settings.accountConnectButton,
       settings.identityFooter,
     ]);
+    expect(settings.accountConnectionPanel).toBeInstanceOf(
+      PixiNineSliceFrame,
+    );
+    expect(settings.accountConnectionPanel).toMatchObject({
+      frameWidth: 264,
+      frameHeight: 92,
+    });
+    expect(settings.accountConnectionLabel.text).toBe(
+      'GOOGLE ACCOUNT',
+    );
+    expect(settings.accountStatus.text).toBe('not connected');
+    expect(settings.accountConnectButton.variant).toBe('yellow');
+    expect(settings.accountConnectButton.textLabel.text).toBe(
+      'connect account',
+    );
+    expect(settings.accountConnectButton.enabled).toBe(true);
     expect(settings.identityFooter).toBeInstanceOf(
       DeviceIdentityFooter,
     );
@@ -326,6 +360,8 @@ describe('retained global Pixi dialogs', () => {
       true,
     );
     expect(togglePreference).toHaveBeenCalledWith('sfx', false);
+    await settings.accountConnectButton.activate();
+    expect(connectAccount).toHaveBeenCalledTimes(1);
     await settings.identityFooter.copyButton.activate();
     expect(copyUserId).toHaveBeenCalledWith(userId);
     expect(settings.identityFooter.copyButton.textLabel.text).toBe(
@@ -423,9 +459,9 @@ describe('retained global Pixi dialogs', () => {
     );
     expect(settings.panel).toMatchObject({
       contentBoxWidth: 264,
-      contentBoxHeight: 264,
+      contentBoxHeight: 364,
       outerWidth: 304,
-      outerHeight: 304,
+      outerHeight: 404,
     });
     expect(settings.panel.outerFrame.frameWidth).toBe(
       GLOBAL_DIALOG_GEOMETRY.maxShellWidth,
@@ -596,8 +632,8 @@ describe('retained global Pixi dialogs', () => {
     expect(level.currentLabel.text).toBe('Current');
     expect(level.currentLabel.textObject.style.fill).toBe('#ffffff');
     expect(level.currentLabel.textObject.style.stroke).toMatchObject({
-      color: '#2a160d',
-      width: 4,
+      color: PIXI_TEXT_STROKE_COLOR,
+      width: resolvePixiTextStrokeWidth(level.currentLabel.fontSize),
       join: 'round',
     });
     expect(level.currentLabelBacking).toMatchObject({
@@ -829,7 +865,7 @@ describe('retained global Pixi dialogs', () => {
       },
     );
 
-    expect(settings.panel.titleLabel.text).toBe('Account');
+    expect(settings.panel.titleLabel.text).toBe('Wizard');
     expect(
       settings.usernameBacking.width / settings.usernameBacking.height,
     ).toBeCloseTo((650 * (298 / 925)) / (88 / 3));
@@ -837,7 +873,9 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.usernameField.textLabel.fontSize).toBeCloseTo(64 / 3);
     expect(settings.usernameField.textLabel.stroke).toEqual({
       color: '#0a0a0a',
-      width: 4,
+      width: resolvePixiTextStrokeWidth(
+        settings.usernameField.textLabel.fontSize,
+      ),
       join: 'round',
     });
     const usernameMaskBounds =
@@ -885,10 +923,16 @@ describe('retained global Pixi dialogs', () => {
       'brown-dark',
     );
 
-    expect(settings.accountSave.buttonWidth).toBe(160);
-    expect(settings.accountSave.buttonHeight).toBe(34);
-    expect(settings.accountSave.textLabel.fontSize).toBe(13);
-    expect(settings.accountSave.variant).toBe('green');
+    expect(settings.accountSave.buttonWidth).toBeCloseTo(
+      PIXI_ROOT_RUN_GEOMETRY.account.save.width,
+    );
+    expect(settings.accountSave.buttonHeight).toBeCloseTo(
+      PIXI_ROOT_RUN_GEOMETRY.account.save.height,
+    );
+    expect(settings.accountSave.textLabel.fontSize).toBeCloseTo(
+      PIXI_ROOT_RUN_GEOMETRY.account.save.fontSize,
+    );
+    expect(settings.accountSave.variant).toBe('account-save');
 
     const choiceBoardBottom =
       settings.accountChoiceBoard.y +
@@ -1314,8 +1358,10 @@ describe('retained global Pixi dialogs', () => {
         PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.titleLineHeight,
       colorToken: '#ffffff',
       stroke: {
-        color: '#160e19',
-        width: 4,
+        color: PIXI_TEXT_STROKE_COLOR,
+        width: resolvePixiTextStrokeWidth(
+          announcement.levelBannerTitle.fontSize,
+        ),
       },
     });
     expect(
@@ -1338,7 +1384,14 @@ describe('retained global Pixi dialogs', () => {
     expect(
       announcement.rows.collection.getWidgets()[0].keyLabel
         .stroke,
-    ).toEqual({ color: '#050505', width: 4, join: 'round' });
+    ).toEqual({
+      color: PIXI_TEXT_STROKE_COLOR,
+      width: resolvePixiTextStrokeWidth(
+        announcement.rows.collection.getWidgets()[0].keyLabel
+          .fontSize,
+      ),
+      join: 'round',
+    });
     const rewardRow =
       announcement.rows.collection.getWidgets()[0];
     expect(rewardRow.valueLabel.text).toBe('+10');
@@ -1418,7 +1471,14 @@ describe('retained global Pixi dialogs', () => {
     expect(
       announcement.rows.collection.getWidgets()[0].keyLabel
         .stroke,
-    ).toEqual({ color: '#050505', width: 4, join: 'round' });
+    ).toEqual({
+      color: PIXI_TEXT_STROKE_COLOR,
+      width: resolvePixiTextStrokeWidth(
+        announcement.rows.collection.getWidgets()[0].keyLabel
+          .fontSize,
+      ),
+      join: 'round',
+    });
     announcement.applyLevelAnnouncementMotion(
       0,
       announcement.announcementModel.animation,

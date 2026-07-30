@@ -52,7 +52,7 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   detailContentInset: 10,
   recipeButtonWidth: 58,
   autoButtonWidth: 32,
-  autoButtonHeight: 32,
+  configurationButtonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
   quantityButtonWidth: 32,
   configurationGap: 12,
   autoIconHeight: 21,
@@ -111,13 +111,16 @@ const BREWING_DETAIL_TEXT_STYLE = Object.freeze({
 });
 const POTION_PREVIEW_BACKGROUND_COLOR = 0x0e1016;
 const BREWING_STATUS_TEXTURE_PADDING = 1;
-const BREWING_STATUS_LABEL_TEXTURE_PADDING = 16;
 const RETAINED_INGREDIENT_NAME_STYLE = Object.freeze({
   fontSize: 8,
   lineHeight: 9,
   align: 'center',
   wordWrap: true,
   wordWrapWidth: 54,
+});
+const RETAINED_INGREDIENT_COUNT_STYLE = Object.freeze({
+  fontSize: 8,
+  lineHeight: 9,
 });
 const AUTO_GEAR_STEP_INTERVAL_MS = 320;
 const AUTO_GEAR_STEP_DURATION_MS = 70;
@@ -379,7 +382,7 @@ export class BrewingHudPixi {
     this.phaseLabel = createText('', {
       ...BREWING_DETAIL_TEXT_STYLE.title,
       fontWeight: '700',
-      padding: BREWING_STATUS_LABEL_TEXTURE_PADDING,
+      padding: BREWING_STATUS_TEXTURE_PADDING,
     });
     this.phaseTime = createText('', {
       ...BREWING_DETAIL_TEXT_STYLE.body,
@@ -586,6 +589,7 @@ export class BrewingHudPixi {
     const requirements = normalizeRequirements(
       recipe?.ingredients ?? cauldron.guideRows ?? cauldron.ingredients,
       cauldron.herbs ?? this.model.herbs ?? [],
+      cauldron.ingredients,
     );
     const ingredientSelectionEnabled =
       cauldron.unlocked !== false &&
@@ -595,6 +599,7 @@ export class BrewingHudPixi {
     this.ingredientSlots.forEach((slot, index) =>
       slot.bind(requirements[index] ?? null, {
         enabled: ingredientSelectionEnabled,
+        showMissing: Boolean(recipe && !active),
       }),
     );
 
@@ -610,9 +615,7 @@ export class BrewingHudPixi {
     );
     const now = this.getTimerNow();
     this.syncActiveTimer(active, now);
-    this.updateActiveTimer(now, {
-      reducedMotion: this.page?.prefersReducedMotion?.() === true,
-    });
+    this.updateActiveTimer(now);
   }
 
   getTimerNow() {
@@ -635,10 +638,7 @@ export class BrewingHudPixi {
       .updateTimer(now);
   }
 
-  updateActiveTimer(
-    now,
-    { reducedMotion = false } = {},
-  ) {
+  updateActiveTimer(now) {
     const active = this.getSelectedCauldron()?.activeBrew ?? null;
     if (!active) {
       this.progress.clearTimer(0);
@@ -653,9 +653,6 @@ export class BrewingHudPixi {
       return;
     }
 
-    if (reducedMotion) {
-      return;
-    }
     const { remainingMs } = this.progress.updateTimer(now);
     setText(
       this.phaseTime,
@@ -935,20 +932,23 @@ export class BrewingHudPixi {
       applyTextTheme(text, this.theme, text.style);
     }
     applyTextTheme(this.ownedLabel, this.theme, {
-      ...this.ownedLabel.style,
+      ...BREWING_DETAIL_TEXT_STYLE.body,
       fill: this.theme.muted,
     });
     applyTextTheme(this.ingredientsTitle, this.theme, {
-      ...this.ingredientsTitle.style,
+      ...BREWING_DETAIL_TEXT_STYLE.title,
+      fontWeight: '700',
       fill: this.theme.text,
     });
     applyTextTheme(this.phaseLabel, this.theme, {
-      ...this.phaseLabel.style,
+      ...BREWING_DETAIL_TEXT_STYLE.title,
+      fontWeight: '700',
       fill: this.theme.text,
-      padding: BREWING_STATUS_LABEL_TEXTURE_PADDING,
+      padding: BREWING_STATUS_TEXTURE_PADDING,
     });
     applyTextTheme(this.phaseTime, this.theme, {
-      ...this.phaseTime.style,
+      ...BREWING_DETAIL_TEXT_STYLE.body,
+      align: 'right',
       fill: this.theme.text,
       padding: BREWING_STATUS_TEXTURE_PADDING,
     });
@@ -1066,7 +1066,7 @@ export class BrewingHudPixi {
         x,
         controlsTop,
         width,
-        BREWING_HUD_GEOMETRY.autoButtonHeight,
+        BREWING_HUD_GEOMETRY.configurationButtonHeight,
       );
       right = x - BREWING_HUD_GEOMETRY.configurationGap;
     }
@@ -1153,7 +1153,7 @@ export class BrewingHudPixi {
     now,
     { active = true, reducedMotion = false } = {},
   ) {
-    this.updateActiveTimer(now, { reducedMotion });
+    this.updateActiveTimer(now);
     this.updateCauldronChangeMotion(now, {
       active,
       reducedMotion,
@@ -1566,10 +1566,17 @@ class BrewingIngredientPickerSlot {
     this.icon.anchor.set(0.5);
     this.name = centeredText('', RETAINED_INGREDIENT_NAME_STYLE);
     this.name.anchor.set(0.5, 0);
+    this.countGroup = new Container();
+    this.missingCount = centeredText('', RETAINED_INGREDIENT_COUNT_STYLE);
+    this.requiredCount = centeredText('', RETAINED_INGREDIENT_COUNT_STYLE);
+    this.missingCount.anchor.set(0, 0);
+    this.requiredCount.anchor.set(0, 0);
+    this.countGroup.addChild(this.missingCount, this.requiredCount);
     this.control.visual.addChild(
       this.frame,
       this.icon,
       this.name,
+      this.countGroup,
     );
     this.model = null;
     this.frameInsets = null;
@@ -1577,7 +1584,10 @@ class BrewingIngredientPickerSlot {
     this.control.setEnabled(false);
   }
 
-  bind(model, { decorative = false, enabled = true } = {}) {
+  bind(
+    model,
+    { decorative = false, enabled = true, showMissing = false } = {},
+  ) {
     this.model = model;
     this.enabled = enabled === true;
     this.control.setEnabled(this.enabled);
@@ -1593,7 +1603,19 @@ class BrewingIngredientPickerSlot {
         ? toTitleCase(model.label ?? model.name ?? key ?? '')
         : '',
     );
+    const required = Math.max(1, Math.floor(Number(model?.quantity) || 1));
+    const owned = Math.max(0, Math.floor(Number(model?.owned) || 0));
+    const missing = Boolean(model) && showMissing && owned < required;
+    setText(this.missingCount, missing ? String(Math.min(owned, required)) : '');
+    setText(this.requiredCount, missing ? `/${required}` : '');
+    this.countGroup.visible = missing;
+    this.countGroup.renderable = missing;
+    this.missingCount.visible = missing;
+    this.missingCount.renderable = missing;
+    this.requiredCount.visible = missing;
+    this.requiredCount.renderable = missing;
     this.decorative = decorative && !model;
+    this.layoutCount();
     this.redraw();
   }
 
@@ -1608,7 +1630,17 @@ class BrewingIngredientPickerSlot {
     this.icon.height = 26;
     this.name.position.set(width / 2, 35);
     this.name.style.wordWrapWidth = width - 8;
+    this.layoutCount();
     this.redraw();
+  }
+
+  layoutCount() {
+    this.missingCount.position.set(0, 0);
+    this.requiredCount.position.set(this.missingCount.width, 0);
+    this.countGroup.position.set(
+      Math.max(3, (this.width ?? 0) - this.countGroup.width - 4),
+      2,
+    );
   }
 
   redraw() {
@@ -1628,6 +1660,15 @@ class BrewingIngredientPickerSlot {
       ...RETAINED_INGREDIENT_NAME_STYLE,
       fill: theme?.text ?? '#d4d4d4',
     });
+    applyTextTheme(this.missingCount, theme, {
+      ...RETAINED_INGREDIENT_COUNT_STYLE,
+      fill: theme?.notificationRed ?? '#c1121f',
+    });
+    applyTextTheme(this.requiredCount, theme, {
+      ...RETAINED_INGREDIENT_COUNT_STYLE,
+      fill: theme?.text ?? '#d4d4d4',
+    });
+    this.layoutCount();
   }
 
   destroy() {
@@ -1636,25 +1677,32 @@ class BrewingIngredientPickerSlot {
   }
 }
 
-function normalizeRequirements(rows, herbs) {
+function normalizeRequirements(rows, herbs, stagedIngredients = []) {
   const herbByKey = new Map(
     (Array.isArray(herbs) ? herbs : []).map((herb) => [herb.key, herb]),
   );
+  const stagedRows = Array.isArray(stagedIngredients) ? stagedIngredients : [];
   return (Array.isArray(rows) ? rows : [])
     .slice(0, BREWING_HUD_GEOMETRY.ingredientSlots)
-    .map((row) => {
+    .map((row, index) => {
       const key = row.itemKey ?? row.key;
       const herb = herbByKey.get(key) ?? {};
+      const staged = stagedRows[index];
+      const required = row.quantity ?? row.required ?? 1;
+      const stagedMatches =
+        (staged?.itemKey ?? staged?.key) === key;
       return {
         ...row,
         itemKey: key,
         owned:
-          row.owned ??
-          row.availableQuantity ??
-          herb.quantity ??
-          herb.availableQuantity ??
-          0,
-        quantity: row.quantity ?? row.required ?? 1,
+          stagedMatches
+            ? required
+            : row.owned ??
+              row.availableQuantity ??
+              herb.quantity ??
+              herb.availableQuantity ??
+              0,
+        quantity: required,
       };
     });
 }

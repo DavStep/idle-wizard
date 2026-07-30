@@ -19,6 +19,7 @@ experience_type: product-shape
 - Android dev builds that point at local SpacetimeDB need `adb reverse tcp:3000 tcp:3000`; without it, Pixel WebView loops on `connecting to server`.
 - Before wiping local SpacetimeDB progress, check `.env.local` for the active `VITE_SPACETIME_DATABASE`; the shared Vite app may use `idle-wizard-codex-run` while `npm run stdb:publish` still targets `idle-wizard`.
 - The logical game viewport matches Root Run at `390x844` and uses Root Run-style contain-fit scaling.
+- Full-screen loading splashes must temporarily expand the canvas across every safe-area inset; restore the normal gameplay inset as soon as the splash hides.
 - Game-stage text copy/paste suppression needs both CSS `user-select`/touch-callout rules and an app-level guard for clipboard, context menu, selectstart, and paste `beforeinput` events.
 - In-game UI no longer supports mouse hover; do not add `:hover` selectors or hover-only behavior. Press/focus states should keep `--style-active-surface` equal to the current surface, preserve font weight, and rely on border cues, never below-text line decoration.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
@@ -57,6 +58,7 @@ experience_type: product-shape
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
 - Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
+- Reduced motion must not freeze elapsed timer labels or progress rails; only decorative motion should stop.
 - Progress rails should use the real `.style-progress` capsule with the fill inside its inset gap; drive the fill by width or a live right edge so rounded caps are never compressed.
 - Quantity progress labels and fills must derive from the same current/required values; do not trust a separate cached ratio that can render `1/3` beside an empty rail.
 - Level-up announcement rows can contain long multi-level unlock lists; keep a stable label column and let the value column wrap so labels do not collapse to one character per line.
@@ -68,6 +70,7 @@ experience_type: product-shape
 - Brewing herb notification dots belong on the herb label, not the full row/button, or they cover right-aligned counts.
 - Brewing herbs box uses the shared room chrome inset like the top panel and world chat; do not size it with `--style-main-box-width`.
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
+- Fresh retained-dialog opens must discard the previous entry point's tab while same-open refreshes preserve it; otherwise Settings can inherit the Wizard pane.
 - Cauldron tap opens should fire from no-drag world pointerup when the press started on a cauldron; Android/WebView can retarget the native click to the world shell, especially from empty overlays.
 - Cauldron tap drift should use the tap-action tolerance, not the normal world-pan threshold; 4 source pixels can classify WebView finger jitter as a drag.
 - Cauldron action buttons sit inside the cauldron tap opener; stop/suppress action clicks so selected-recipe brews do not reopen the recipes dialog.
@@ -167,7 +170,7 @@ experience_type: product-shape
 - Buyable locked market stand rows should accept taps on the row text as a fallback; players do not reliably hit only the tiny right-side buy label.
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
-- Non-button text/row press targets should fire synthetic click on touch/pointer press-start with click dedupe; native buttons should activate on release/click. Use `data-press-start-click="false"` only when a non-button target needs validated release.
+- Every button-like touch target, including non-button text/row controls, activates only after validated release on the original target; never synthesize the action on press-start.
 - `.is-locked` is not a disabled signal for shared press handling; use native `disabled`, `aria-disabled="true"`, or `.is-disabled` so buyable locked rows and locked room tabs still synth-click on web.
 - Native dialog/open/submit buttons should activate on validated pointerup/click; do not add touchstart/pointerdown action handlers to buttons unless the interaction is a true hold/drag setup.
 - Retained Pixi room tabs need `fallbackHitTest` on their central-router press registrations; tutorial and other higher layers can make the native event path miss the real tab even when the release point is inside its live bounds.
@@ -182,8 +185,8 @@ experience_type: product-shape
 - Market stand/request rows keep selected slot state invisible; do not add selected-row fill or bold text there.
 - Empty NPC demand stands should read `empty stand` with right-side `select`; the whole unlocked stand row, including the right action, must open the sell picker.
 - Market popup item-picker visible labels need stable hit targets and click/backdrop dedupe; icon/text fragments inside those labels should not own separate hit testing.
-- Trader loader rows select one current item on click. The `0%` / `25%` / `50%` / `75%` / `100%` rail reconciles loaded plus available matching stock in one update, while `mark future` persists a separate item target and queues only copies produced after enablement.
-- Scrollable choice/item rows should activate on validated touch release with a small movement tolerance; keep press-start only for non-scroll openers where mobile click retargets.
+- Trader loader rows select one current item on click. The exact-count rail reconciles loaded plus available matching stock in one update. Keep the Load Stall actions balanced with `clear` on the left and `mark xN` on the right; do not expose a `mark future` action.
+- Scrollable choice/item rows and non-scroll openers both activate on validated touch release with a small movement tolerance; use central release retarget/slop handling instead of press-start actions.
 - Garden seed choice is owned by the page-level `Seeds` action and retained picker; plot labels do not open seed choices.
 - Garden cancel/swap dialogs opened from touch-selected seed picker rows need their own one-shot backdrop dedupe; otherwise WebView can close the new dialog with the same synthetic click.
 - Garden seeds and Brewing herbs are tap-first item controls only; do not reintroduce drag/drop for these rows.
@@ -345,7 +348,7 @@ experience_type: product-shape
 - Workshop summon sign/circle art is visual only; the real summon hit box must be the bordered `summon seed` label box.
 - Generic `.style-button` active CSS must exclude `[aria-disabled="true"]`; aria-disabled real buttons can still get native `:active` and paint transparent art hitboxes.
 - Pixel/WebView taps need forgiving touch slop in `PressFeedbackManager`; a 12px move threshold can treat normal finger drift as a drag and suppress the valid click.
-- Workshop summon's custom hold-to-repeat pointerdown can suppress native quick-tap clicks; keep a validated touch release fallback in the summon manager and dedupe it against global synthetic clicks.
+- Workshop summon is release-only; do not restore its former hold-to-repeat timer or any pointerdown action path.
 - Workshop side-control hit areas must partition on the `52.25px` row pitch; using the taller visual widget bounds lets the next control steal taps from labels such as `Leaderboard`.
 - Retained dialog presenters must preserve the full feature record instead of flattening rich data into generic label/value rows; potion discovery projection includes art key, discoverer, timestamp, ingredients, mana, duration, and royalty.
 - Retained Pixi tutorial overlays can report the stage root for a guided room press even when the pointer is inside the control bounds; opt only the affected registration into geometric fallback hit-testing and gate that fallback on the control's normal visibility and interactivity.
@@ -356,5 +359,6 @@ experience_type: product-shape
 - Reward flyouts are page-owned: filter events against the active room, never replay hidden-room reward events on resume, and clear active transients when the room changes.
 - With reward events enabled, Workshop summon item text comes from `subscribeRewardEvents`; the action bar only adds the mana-spend flyout.
 - Claim-button reward flyouts should publish before the claim snapshot rebuilds, so the original button can still anchor the motion.
-- Haptics are app-level device feedback: keep the preference in local storage, route pulses through `HapticsFacade`, and fire touch haptic/sound only when activation is confirmed so cancelled or retargeted presses stay silent.
+- Haptics are app-level device feedback: keep the preference in local storage and route pulses through `HapticsFacade`. Every enabled touch control gets a mild pulse on touch-down, no second pulse on quick release, and a mild second pulse only after a validated release following a `350ms` hold; actions and click sounds remain release-confirmed.
+- Holding a button must never activate or repeat its action before release; Workshop summon follows the same release-only rule as tabs, regular buttons, icon buttons, and dialog close controls.
 - Android tap haptics should prefer the `IdleWizardHaptics` constant pulse (`5ms`, `0.5` amplitude); Capacitor `Haptics.vibrate()` uses default amplitude and feels harsher.

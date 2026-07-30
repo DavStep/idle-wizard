@@ -43,10 +43,27 @@
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
       import { PixiUiRuntimeFacade } from '/src/rendering/pixi/runtime/PixiUiRuntimeFacade.js';
 
+      const parameters = new URLSearchParams(location.search);
+      const requestedTheme = parameters.get('theme');
+      if (requestedTheme) {
+        document.documentElement.dataset.styleTheme = requestedTheme;
+      }
       const canvas = document.querySelector('canvas');
       const applicationManager = new PixiApplicationManager({ canvas });
       const runtime = new PixiUiRuntimeFacade({ applicationManager });
       await runtime.initialize();
+      const state = parameters.get('state');
+      const activeBrew =
+        state === 'active'
+          ? {
+              key: 'healingPotion',
+              label: 'healing potion',
+              phase: 'brewing',
+              totalMs: 60_000,
+              remainingMs: 57_000,
+              progress: 0.05,
+            }
+          : null;
 
       const hud = new BrewingHudPixi({
         assetManager: runtime.assetManager,
@@ -62,8 +79,8 @@
             level: 1,
             unlocked: true,
             selectedRecipe: {
-              key: 'manaTonic',
-              label: 'mana tonic',
+              key: activeBrew?.key ?? 'manaTonic',
+              label: activeBrew?.label ?? 'mana tonic',
               rarity: 'common',
               ownedQuantity: 0,
               ingredients: [
@@ -97,6 +114,7 @@
               ],
             },
             ingredients: [],
+            activeBrew,
             canAddIngredient: true,
             canSelectRecipe: true,
             acceptsHerbDrop: true,
@@ -109,6 +127,24 @@
         ],
       });
       hud.layout(applicationManager.getProjection().sourceWidth);
+      if (parameters.get('repeatTheme') === 'true') {
+        hud.applyTheme(runtime.themeManager.getSnapshot());
+        hud.applyTheme(runtime.themeManager.getSnapshot());
+      }
+      if (activeBrew) {
+        applicationManager.getApplication().ticker.add(() => {
+          hud.updateMotion(Date.now(), {
+            active: true,
+            reducedMotion: parameters.get('reducedMotion') === 'true',
+          });
+          document.querySelector(
+            '#brewing-ready-hud-recipe-state',
+          ).dataset.progress = hud.progress.progress.toFixed(4);
+        });
+      }
+      document.querySelector(
+        '#brewing-ready-hud-recipe-state',
+      ).dataset.state = state ?? 'ready';
       document.querySelector(
         '#brewing-ready-hud-recipe-state',
       ).dataset.visibleSlotText = hud.ingredientSlots
