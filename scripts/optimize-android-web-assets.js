@@ -2,6 +2,7 @@
 /* global console, process */
 
 import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import {
   readdir,
   readFile,
@@ -65,40 +66,55 @@ export async function optimizeAndroidWebAssets({
   ]);
   let sourceBytes = 0;
   let outputBytes = 0;
+  let converted = 0;
 
   for (const [sourceName, outputName] of replacements) {
     const sourcePath = path.join(assetsDir, sourceName);
     const outputPath = path.join(assetsDir, outputName);
-    const temporaryPath = `${outputPath}.tmp`;
-    sourceBytes += (await stat(sourcePath)).size;
-
-    const result = runCommand(
-      cwebpPath,
-      [
-        '-quiet',
-        '-q',
-        '90',
-        '-alpha_q',
-        '100',
-        '-m',
-        '6',
-        sourcePath,
-        '-o',
-        temporaryPath,
-      ],
-      {
-        encoding: 'utf8',
-      },
-    );
-    if (result.status !== 0) {
-      throw new Error(
-        `cwebp failed for ${sourceName}: `
-          + (result.stderr || result.stdout || `exit ${result.status}`),
-      );
+    const temporaryPath = `${outputPath}.${randomUUID()}.tmp`;
+    let sourceStat;
+    try {
+      sourceStat = await stat(sourcePath);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') {
+        throw error;
+      }
+      await stat(outputPath);
+      continue;
     }
+    sourceBytes += sourceStat.size;
 
-    await rename(temporaryPath, outputPath);
+    try {
+      const result = runCommand(
+        cwebpPath,
+        [
+          '-quiet',
+          '-q',
+          '90',
+          '-alpha_q',
+          '100',
+          '-m',
+          '6',
+          sourcePath,
+          '-o',
+          temporaryPath,
+        ],
+        {
+          encoding: 'utf8',
+        },
+      );
+      if (result.status !== 0) {
+        throw new Error(
+          `cwebp failed for ${sourceName}: `
+            + (result.stderr || result.stdout || `exit ${result.status}`),
+        );
+      }
+      await rename(temporaryPath, outputPath);
+    } finally {
+      await unlinkIfExists(temporaryPath);
+    }
     outputBytes += (await stat(outputPath)).size;
+    converted += 1;
   }
 
   const textFiles = await collectTextFiles(distDir);
@@ -125,14 +141,24 @@ export async function optimizeAndroidWebAssets({
   }
 
   await Promise.all(
-    pngNames.map((sourceName) => unlink(path.join(assetsDir, sourceName))),
+    pngNames.map((sourceName) => unlinkIfExists(path.join(assetsDir, sourceName))),
   );
 
   return {
-    converted: pngNames.length,
+    converted,
     sourceBytes,
     outputBytes,
   };
+}
+
+async function unlinkIfExists(filePath) {
+  try {
+    await unlink(filePath);
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      throw error;
+    }
+  }
 }
 
 async function collectTextFiles(rootDir) {
@@ -153,7 +179,10 @@ async function collectTextFiles(rootDir) {
 }
 
 async function run() {
-  const result = await optimizeAndroidWebAssets();
+  const distDir = process.argv[2]
+    ? path.resolve(process.argv[2])
+    : path.resolve('dist');
+  const result = await optimizeAndroidWebAssets({ distDir });
   const savedBytes = result.sourceBytes - result.outputBytes;
   console.log(
     `Optimized ${result.converted} Android PNG assets to WebP `

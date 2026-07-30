@@ -22,6 +22,10 @@ export class PixiFreshStartChoiceController {
     return this.view?.root ?? null;
   }
 
+  isChoosing() {
+    return Boolean(this.resolveChoice);
+  }
+
   choose({
     authSnapshot,
     statusText,

@@ -15,6 +15,7 @@ function createMemoryStorage() {
 }
 
 function createApp({
+  accountLinkChoiceManager,
   backendFacade,
   freshStartChoiceManager,
   onlineGateManager,
@@ -30,6 +31,7 @@ function createApp({
   return {
     ecsFacade,
     app: {
+      accountLinkChoiceManager,
       backendFacade,
       freshStartChoiceManager,
       gameplayFacade,
@@ -134,6 +136,37 @@ describe('DevCheatsFacade', () => {
       authSnapshot: { oidc: { enabled: true } },
       preview: true,
     });
+
+    facade.unmount();
+  });
+
+  it('opens the retained account-link conflict through a deterministic preview', () => {
+    const accountLinkChoiceManager = {
+      showPreview: vi.fn(() => ({ ok: true })),
+    };
+    const freshStartChoiceManager = {
+      hide: vi.fn(),
+    };
+    const { app } = createApp({
+      accountLinkChoiceManager,
+      freshStartChoiceManager,
+    });
+    const target = {};
+    const facade = new DevCheatsFacade({
+      app,
+      target,
+      logger: null,
+    });
+
+    facade.mount();
+
+    expect(target.cheats.openUi('accountLinkChoice')).toMatchObject({
+      ok: true,
+      surfaceId: 'accountLinkChoice',
+      surfaceKind: 'preview',
+    });
+    expect(accountLinkChoiceManager.showPreview).toHaveBeenCalledOnce();
+    expect(freshStartChoiceManager.hide).toHaveBeenCalledWith({ force: true });
 
     facade.unmount();
   });
@@ -737,6 +770,10 @@ describe('DevCheatsFacade', () => {
         expect.objectContaining({
           id: 'accountChoice',
           command: 'cheats.openUi("accountChoice")',
+        }),
+        expect.objectContaining({
+          id: 'accountLinkChoice',
+          command: 'cheats.openUi("accountLinkChoice")',
         }),
         expect.objectContaining({
           id: 'chooseHerb',

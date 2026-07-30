@@ -393,7 +393,7 @@ export class BrewingHudPixi {
     this.progress = new RetainedTimedProgressBar({
       assetManager,
       label: 'brewing-batch-progress',
-      tone: 'blue',
+      tone: 'root',
     });
     this.detailPanel.body.addChild(
       this.phaseLabel,

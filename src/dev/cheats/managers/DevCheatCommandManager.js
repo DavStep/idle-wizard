@@ -113,6 +113,7 @@ const CHEAT_HELP = Object.freeze([
   'cheats.listButtons()',
   'cheats.listUiSurfaces()',
   'cheats.openUi("accountChoice")',
+  'cheats.openUi("accountLinkChoice")',
   'cheats.openUi("firstRunIntro")',
   'cheats.openUi("guildQuestPosting")',
   'cheats.setTimers("allReady")',
@@ -145,6 +146,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     kind: 'preview',
     setup: 'freshStartChoice',
     aliases: ['accountDialog', 'freshStart'],
+  },
+  {
+    id: 'accountLinkChoice',
+    kind: 'preview',
+    setup: 'accountLinkChoice',
+    aliases: ['accountConflict', 'saveChoice'],
   },
   {
     id: 'topPanelQuestProgress',
@@ -272,6 +279,7 @@ const UI_SURFACE_LOOKUP = new Map(
 
 export class DevCheatCommandManager {
   constructor({
+    accountLinkChoiceManager,
     backendFacade,
     deployRefreshManager,
     freshStartChoiceManager,
@@ -283,6 +291,7 @@ export class DevCheatCommandManager {
     renderFacade,
     uiCatalogManager,
   } = {}) {
+    this.accountLinkChoiceManager = accountLinkChoiceManager;
     this.backendFacade = backendFacade;
     this.deployRefreshManager = deployRefreshManager;
     this.freshStartChoiceManager = freshStartChoiceManager;
@@ -1957,6 +1966,10 @@ export class DevCheatCommandManager {
       return this.openFreshStartChoiceSurface(surface);
     }
 
+    if (surface.setup === 'accountLinkChoice') {
+      return this.openAccountLinkChoiceSurface(surface);
+    }
+
     if (surface.setup === 'topPanelQuestProgress') {
       return this.openTopPanelQuestProgressSurface(surface, options);
     }
@@ -2021,6 +2034,23 @@ export class DevCheatCommandManager {
     return this.decorateUiResult(
       surface.id,
       { ok: true },
+      surface,
+    );
+  }
+
+  openAccountLinkChoiceSurface(surface) {
+    if (typeof this.accountLinkChoiceManager?.showPreview !== 'function') {
+      return this.decorateUiResult(
+        surface.id,
+        { ok: false, reason: 'account_link_choice_missing' },
+        surface,
+      );
+    }
+
+    this.freshStartChoiceManager?.hide?.({ force: true });
+    return this.decorateUiResult(
+      surface.id,
+      this.accountLinkChoiceManager.showPreview(),
       surface,
     );
   }

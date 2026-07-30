@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { AppThemeManager } from './AppThemeManager.js';
 
 function createPlayerFacade(
-  initialTheme = 'midnight',
+  initialTheme = 'night',
   initialColorMode = 'resources',
   initialFont = 'lilita-one',
   initialIconMode = 'icons',
@@ -75,7 +75,7 @@ describe('AppThemeManager', () => {
 
   it('applies current and changed player visual settings to the document root', () => {
     const playerFacade = createPlayerFacade(
-      'black',
+      'day',
       'resources',
       'comic-sans-mono',
       'icons',
@@ -85,18 +85,18 @@ describe('AppThemeManager', () => {
 
     manager.mount(playerFacade);
 
-    expect(document.documentElement.dataset.styleTheme).toBe('black');
+    expect(document.documentElement.dataset.styleTheme).toBe('day');
     expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
     expect(document.documentElement.dataset.styleColor).toBe('resources');
     expect(document.documentElement.dataset.styleIcons).toBe('icons');
     expect(document.documentElement.dataset.styleProgress).toBe('gradient');
 
-    playerFacade.setTheme('midnight');
+    playerFacade.setTheme('night');
     playerFacade.setFont('comic sans mono');
     playerFacade.setIconMode('none');
     playerFacade.setProgressBar('notched');
 
-    expect(document.documentElement.dataset.styleTheme).toBe('midnight');
+    expect(document.documentElement.dataset.styleTheme).toBe('night');
     expect(document.documentElement.dataset.styleFont).toBe('comic-sans-mono');
     expect(document.documentElement.dataset.styleIcons).toBe('icons');
     expect(document.documentElement.dataset.styleProgress).toBe('notched');
@@ -105,24 +105,23 @@ describe('AppThemeManager', () => {
 
     expect(document.documentElement.dataset.styleFont).toBe('lilita-one');
 
-    playerFacade.setTheme('witchcraft');
-
-    expect(document.documentElement.dataset.styleTheme).toBe('witchcraft');
+    playerFacade.setTheme('day');
+    expect(document.documentElement.dataset.styleTheme).toBe('day');
 
     playerFacade.setTheme('night-black');
     playerFacade.setFont('unknown');
     playerFacade.setColorMode('colored');
 
-    expect(document.documentElement.dataset.styleTheme).toBe('black');
+    expect(document.documentElement.dataset.styleTheme).toBe('night');
     expect(document.documentElement.dataset.styleFont).toBe('lilita-one');
     expect(document.documentElement.dataset.styleColor).toBe('resources');
 
     playerFacade.setTheme('mild-white');
 
-    expect(document.documentElement.dataset.styleTheme).toBe('midnight');
+    expect(document.documentElement.dataset.styleTheme).toBe('night');
 
     manager.unmount();
-    expect(document.documentElement.dataset.styleTheme).toBe('midnight');
+    expect(document.documentElement.dataset.styleTheme).toBe('night');
     expect(document.documentElement.dataset.styleFont).toBe('lilita-one');
     expect(document.documentElement.dataset.styleColor).toBe('resources');
     expect(document.documentElement.dataset.styleIcons).toBe('icons');

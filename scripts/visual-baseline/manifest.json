@@ -49,8 +49,8 @@
   "settings": {
     "axes": {
       "theme": {
-        "values": ["black", "midnight", "witchcraft"],
-        "default": "midnight"
+        "values": ["night", "day"],
+        "default": "night"
       },
       "font": {
         "values": ["lilita-one", "comic-sans-mono"],
@@ -202,11 +202,12 @@
       "production": true,
       "coverage": {
         "globalOwners": ["accountLinkChoiceManager"],
+        "devUi": ["accountLinkChoice"],
         "domSelectors": [".app-account-link-choice__dialog"]
       },
       "recipe": {
-        "kind": "manual",
-        "gap": "No checked-in fixture currently creates both a device save and an authenticated account save at the link boundary."
+        "kind": "devUi",
+        "surfaceId": "accountLinkChoice"
       },
       "anchors": [
         {

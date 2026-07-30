@@ -7,7 +7,7 @@ function createPlayerFacade(username) {
   let snapshot = {
     username,
     usernamePromptSeen: username !== 'wizard',
-    theme: 'midnight',
+    theme: 'night',
     font: 'lexend',
     colorMode: 'resources',
     character: 'elara',
@@ -78,7 +78,7 @@ describe('PlayerBackendSyncManager', () => {
 
     expect(setPlayerProfile).toHaveBeenCalledWith({
       username: 'Merlin',
-      theme: 'midnight',
+      theme: 'night',
       font: 'lilita-one',
       colorMode: 'resources',
       character: 'elara',
@@ -100,13 +100,13 @@ describe('PlayerBackendSyncManager', () => {
     });
     playerFacade.setUsername('Mira');
     playerFacade.setUsername('Mira');
-    playerFacade.setTheme('black');
+    playerFacade.setTheme('day');
     playerFacade.setFont('comic-sans-mono');
 
     expect(setPlayerProfile).toHaveBeenCalledTimes(4);
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'Mira',
-      theme: 'black',
+      theme: 'day',
       font: 'comic-sans-mono',
       colorMode: 'resources',
       character: 'elara',
@@ -132,11 +132,11 @@ describe('PlayerBackendSyncManager', () => {
 
     expect(setPlayerProfile).not.toHaveBeenCalled();
 
-    manager.applyServerProfile({ username: 'Server Mage', theme: 'black' });
+    manager.applyServerProfile({ username: 'Server Mage', theme: 'day' });
 
     expect(playerFacade.getSnapshot()).toMatchObject({
       username: 'Server Mage',
-      theme: 'black',
+      theme: 'day',
     });
     expect(setPlayerProfile).not.toHaveBeenCalled();
 
@@ -145,7 +145,7 @@ describe('PlayerBackendSyncManager', () => {
     expect(setPlayerProfile).toHaveBeenCalledTimes(1);
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'Mira',
-      theme: 'black',
+      theme: 'day',
       font: 'lilita-one',
       colorMode: 'resources',
       character: 'elara',
@@ -173,7 +173,7 @@ describe('PlayerBackendSyncManager', () => {
 
     manager.applyServerProfile({
       username: 'Server Mage',
-      theme: 'black',
+      theme: 'day',
       font: 'comic-sans-mono',
       colorMode: 'resources',
       character: 'mira',
@@ -182,7 +182,7 @@ describe('PlayerBackendSyncManager', () => {
 
     expect(playerFacade.getSnapshot()).toMatchObject({
       username: 'Server Mage',
-      theme: 'black',
+      theme: 'day',
       font: 'comic-sans-mono',
       colorMode: 'resources',
       character: 'mira',
@@ -212,7 +212,7 @@ describe('PlayerBackendSyncManager', () => {
 
     manager.applyServerProfile({
       username: 'Server Mage',
-      theme: 'black',
+      theme: 'day',
       font: 'comic-sans-mono',
       colorMode: 'resources',
       character: 'mira',
@@ -221,7 +221,7 @@ describe('PlayerBackendSyncManager', () => {
 
     expect(playerFacade.getSnapshot()).toMatchObject({
       username: 'Server Mage',
-      theme: 'black',
+      theme: 'day',
       font: 'comic-sans-mono',
       colorMode: 'resources',
       character: 'mira',
@@ -246,7 +246,7 @@ describe('PlayerBackendSyncManager', () => {
     });
 
     playerFacade.setUsername('MobileDav');
-    playerFacade.setTheme('black');
+    playerFacade.setTheme('day');
     playerFacade.setFont('comic-sans-mono');
 
     expect(setPlayerProfile).not.toHaveBeenCalled();
@@ -255,13 +255,13 @@ describe('PlayerBackendSyncManager', () => {
 
     expect(playerFacade.getSnapshot()).toMatchObject({
       username: 'MobileDav',
-      theme: 'black',
+      theme: 'day',
       font: 'comic-sans-mono',
     });
     expect(setPlayerProfile).toHaveBeenCalledTimes(1);
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'MobileDav',
-      theme: 'black',
+      theme: 'day',
       font: 'comic-sans-mono',
       colorMode: 'resources',
       character: 'elara',
@@ -295,12 +295,12 @@ describe('PlayerBackendSyncManager', () => {
     });
     setPlayerProfile.mockClear();
 
-    playerFacade.setTheme('black');
+    playerFacade.setTheme('day');
 
     expect(setPlayerProfile).toHaveBeenCalledTimes(1);
     expect(setPlayerProfile).toHaveBeenLastCalledWith({
       username: 'wizard',
-      theme: 'black',
+      theme: 'day',
       font: 'lilita-one',
       colorMode: 'resources',
       character: 'mira',
@@ -318,7 +318,7 @@ describe('PlayerBackendSyncManager', () => {
     });
 
     expect(playerFacade.getSnapshot()).toMatchObject({
-      theme: 'black',
+      theme: 'day',
       font: 'lilita-one',
       character: 'mira',
     });

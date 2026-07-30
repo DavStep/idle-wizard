@@ -36,10 +36,14 @@ export class DevCheatsFacade {
     const freshStartChoiceManager =
       app?.freshStartChoiceManager ??
       app?.renderFacade?.getFreshStartChoiceManager?.();
+    const accountLinkChoiceManager =
+      app?.accountLinkChoiceManager ??
+      app?.renderFacade?.getAccountLinkChoiceManager?.();
     this.qaDataFacade = new QaDataFacade({
       gameplayFacade: app?.gameplayFacade,
     });
     this.commandManager = new DevCheatCommandManager({
+      accountLinkChoiceManager,
       backendFacade: app?.backendFacade,
       deployRefreshManager,
       freshStartChoiceManager,
@@ -256,7 +260,10 @@ export class DevCheatsFacade {
 
     this.devUiRequest.attempts += 1;
 
-    if (this.hasBlockingUiGate()) {
+    if (
+      this.hasBlockingUiGate() ||
+      this.shouldWaitForRequestedUiSurface()
+    ) {
       this.retryRequestedUiSurfaceOpen();
       return;
     }
@@ -305,6 +312,18 @@ export class DevCheatsFacade {
     const document = this.target?.document ?? globalThis.document;
 
     return Boolean(document?.querySelector?.(DEV_UI_BLOCKING_SELECTOR));
+  }
+
+  shouldWaitForRequestedUiSurface() {
+    const surfaceId = String(this.devUiRequest?.surfaceId ?? '')
+      .replace(/[^a-z0-9]/gi, '')
+      .toLowerCase();
+    return Boolean(
+      surfaceId === 'accountlinkchoice' &&
+        this.lifecycleManager &&
+        this.lifecycleManager.backendOnline !== true &&
+        !this.commandManager?.freshStartChoiceManager?.isChoosing?.(),
+    );
   }
 
   clearDevUiTimer() {

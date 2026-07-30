@@ -27,7 +27,7 @@ function luminance([red, green, blue]) {
   return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
 }
 
-describe('midnight panel nine-slice assets', () => {
+describe('Night and Day panel nine-slice assets', () => {
   it('keeps the inner panel center free of the exported scratch pixels', () => {
     const panel = readPng('inner-section-panel-midnight-9slice.png');
 
@@ -172,5 +172,48 @@ describe('midnight panel nine-slice assets', () => {
 
     expect(firstVisibleX(topPanel)).toBe(9);
     expect(firstVisibleX(roomTab)).toBe(40);
+  });
+
+  it('keeps every Day recolor pixel-aligned with its Night source', () => {
+    const pairs = [
+      [
+        'inner-section-panel-midnight-9slice.png',
+        'inner-section-panel-day-9slice.png',
+      ],
+      [
+        'midnight-room-tab-top-cap-9slice.png',
+        'day-room-tab-top-cap-9slice.png',
+      ],
+      [
+        'midnight-room-tab-top-cap-selected-9slice.png',
+        'day-room-tab-top-cap-selected-9slice.png',
+      ],
+      [
+        'midnight-top-panel-background-9slice.png',
+        'day-top-panel-background-9slice.png',
+      ],
+    ];
+
+    for (const [nightFile, dayFile] of pairs) {
+      const night = readPng(nightFile);
+      const day = readPng(dayFile);
+
+      expect([day.width, day.height]).toEqual([
+        night.width,
+        night.height,
+      ]);
+
+      for (let offset = 3; offset < night.data.length; offset += 4) {
+        expect(day.data[offset]).toBe(night.data[offset]);
+      }
+    }
+
+    const inactive = readPng('day-room-tab-top-cap-9slice.png');
+    const selected = readPng(
+      'day-room-tab-top-cap-selected-9slice.png',
+    );
+    expect(luminance(readPixel(selected, 78, 46))).toBeGreaterThan(
+      luminance(readPixel(inactive, 78, 46)),
+    );
   });
 });

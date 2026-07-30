@@ -109,12 +109,12 @@ function createGameplayFacadeFake() {
     },
     visualSettings: {
       costsCrystal: {
-        theme: { black: 0, midnight: 0, witchcraft: 0 },
+        theme: { night: 0, day: 0 },
         font: { 'lilita-one': 0, 'comic-sans-mono': 0 },
         progressBar: { regular: 0, gradient: 0 },
       },
       researched: {
-        theme: { black: false, midnight: true, witchcraft: false },
+        theme: { night: true, day: true },
         font: {
           'lilita-one': true,
           'comic-sans-mono': false,
@@ -2854,7 +2854,7 @@ function markShopSellSelection(stage) {
 
 function createPlayerFacadeFake(
   initialUsername = 'wizard',
-  initialTheme = 'midnight',
+  initialTheme = 'night',
   {
     shouldPromptForUsername = false,
     hasExplicitUsername = true,
@@ -2911,29 +2911,7 @@ function createPlayerFacadeFake(
     setTheme: (theme) => {
       snapshot = {
         ...snapshot,
-        theme: [
-          'white',
-          'mild-white',
-          'mild-black',
-          'black',
-          'dark-gray',
-          'night-black',
-          'midnight',
-          'witchcraft',
-          'vs-code-midnight',
-          'vscode-midnight',
-          'idle witch craft',
-        ].includes(theme)
-          ? theme
-              .replace('mild-white', 'midnight')
-              .replace('white', 'midnight')
-              .replace('mild-black', 'black')
-              .replace('dark-gray', 'black')
-              .replace('night-black', 'black')
-              .replace('vs-code-midnight', 'midnight')
-              .replace('vscode-midnight', 'midnight')
-              .replace('idle witch craft', 'witchcraft')
-          : 'midnight',
+        theme: theme === 'day' ? 'day' : 'night',
       };
 
       publish();
@@ -5152,7 +5130,7 @@ describe('PagesFacade', () => {
       [...settings.querySelectorAll('.room-top-panel__theme-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['black', 'midnight', 'witchcraft']);
+    ).toEqual(['night', 'day']);
     expect(
       [...settings.querySelectorAll('.room-top-panel__font-button')].map(
         (button) => button.textContent,
@@ -5237,7 +5215,15 @@ describe('PagesFacade', () => {
           '#room-top-panel-settings-theme .room-top-panel__visual-option-price',
         ),
       ].map((price) => price.textContent),
-    ).toEqual(['free', 'researched', 'free', 'researched', 'free', 'researched', 'free', 'free']);
+    ).toEqual([
+      'researched',
+      'researched',
+      'researched',
+      'free',
+      'researched',
+      'free',
+      'free',
+    ]);
     expect(
       [...settings.querySelectorAll('.room-top-panel__settings-tab-button')].map(
         (button) => button.dataset.settingsTab,
@@ -5475,20 +5461,16 @@ describe('PagesFacade', () => {
     const darkGrayButton = stage.querySelector(
       '.room-top-panel__theme-button[data-theme="dark-gray"]',
     );
-    const blackButton = stage.querySelector('.room-top-panel__theme-button[data-theme="black"]');
-    const midnightButton = stage.querySelector(
-      '.room-top-panel__theme-button[data-theme="midnight"]',
+    const nightButton = stage.querySelector(
+      '.room-top-panel__theme-button[data-theme="night"]',
     );
-    const witchcraftButton = stage.querySelector(
-      '.room-top-panel__theme-button[data-theme="witchcraft"]',
+    const dayButton = stage.querySelector(
+      '.room-top-panel__theme-button[data-theme="day"]',
     );
-    const blackResearchButton = blackButton
+    const nightResearchButton = nightButton
       ?.closest('.room-top-panel__visual-option')
       ?.querySelector('.room-top-panel__visual-option-price');
-    const midnightResearchButton = midnightButton
-      ?.closest('.room-top-panel__visual-option')
-      ?.querySelector('.room-top-panel__visual-option-price');
-    const witchcraftResearchButton = witchcraftButton
+    const dayResearchButton = dayButton
       ?.closest('.room-top-panel__visual-option')
       ?.querySelector('.room-top-panel__visual-option-price');
 
@@ -5496,70 +5478,28 @@ describe('PagesFacade', () => {
     expect(mildWhiteButton).toBeNull();
     expect(mildBlackButton).toBeNull();
     expect(darkGrayButton).toBeNull();
-    expect(blackButton.disabled).toBe(false);
-    expect(midnightButton.disabled).toBe(false);
-    expect(witchcraftButton.disabled).toBe(false);
-    expect(blackResearchButton?.textContent).toBe('free');
-    expect(midnightResearchButton?.textContent).toBe('researched');
-    expect(witchcraftResearchButton?.textContent).toBe('free');
-    expect(midnightButton.getAttribute('aria-checked')).toBe('true');
+    expect(nightButton.disabled).toBe(false);
+    expect(dayButton.disabled).toBe(false);
+    expect(nightResearchButton?.textContent).toBe('researched');
+    expect(dayResearchButton?.textContent).toBe('researched');
+    expect(nightButton.getAttribute('aria-checked')).toBe('true');
 
-    blackButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().theme).toBe('midnight');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.black).toBe(false);
-    expect(stage.querySelector('.room-top-panel__visual-status')?.textContent).toBe(
-      'research first',
-    );
-
-    blackResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().theme).toBe('midnight');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.black).toBe(true);
-    expect(blackResearchButton?.textContent).toBe('researched');
-    expect(blackButton.getAttribute('aria-checked')).toBe('false');
-
-    blackButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().theme).toBe('black');
-    expect(blackButton.getAttribute('aria-checked')).toBe('true');
-    expect(midnightButton.getAttribute('aria-checked')).toBe('false');
-
-    const midnightPointerDown = new window.Event('pointerdown', {
+    const dayPointerDown = new window.Event('pointerdown', {
       bubbles: true,
       cancelable: true,
     });
 
-    midnightButton.dispatchEvent(midnightPointerDown);
+    dayButton.dispatchEvent(dayPointerDown);
 
-    expect(playerFacade.getSnapshot().theme).toBe('black');
-    expect(gameplayFacade.getSnapshot().visualSettings.researched.theme.midnight).toBe(true);
-    expect(midnightPointerDown.defaultPrevented).toBe(false);
-    expect(midnightButton.getAttribute('aria-checked')).toBe('false');
+    expect(playerFacade.getSnapshot().theme).toBe('night');
+    expect(dayPointerDown.defaultPrevented).toBe(false);
+    expect(dayButton.getAttribute('aria-checked')).toBe('false');
 
-    const midnightSelectPointerDown = new window.Event('pointerdown', {
-      bubbles: true,
-      cancelable: true,
-    });
+    dayButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    midnightButton.dispatchEvent(midnightSelectPointerDown);
-
-    expect(playerFacade.getSnapshot().theme).toBe('black');
-    expect(midnightSelectPointerDown.defaultPrevented).toBe(false);
-    expect(midnightButton.getAttribute('aria-checked')).toBe('false');
-
-    midnightButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().theme).toBe('midnight');
-    expect(midnightButton.getAttribute('aria-checked')).toBe('true');
-    expect(blackButton.getAttribute('aria-checked')).toBe('false');
-
-    witchcraftResearchButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    witchcraftButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(playerFacade.getSnapshot().theme).toBe('witchcraft');
-    expect(witchcraftButton.getAttribute('aria-checked')).toBe('true');
-    expect(midnightButton.getAttribute('aria-checked')).toBe('false');
+    expect(playerFacade.getSnapshot().theme).toBe('day');
+    expect(dayButton.getAttribute('aria-checked')).toBe('true');
+    expect(nightButton.getAttribute('aria-checked')).toBe('false');
   });
 
   it('changes progress bar mode from settings', () => {

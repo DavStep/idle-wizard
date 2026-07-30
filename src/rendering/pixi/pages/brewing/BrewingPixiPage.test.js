@@ -511,6 +511,7 @@ describe('BrewingPixiPage', () => {
     harness.page.hud.applyTheme(harness.page.theme);
     harness.page.hud.applyTheme(harness.page.theme);
     expect(harness.page.hud.progress.progress).toBe(0);
+    expect(harness.page.hud.progress.tone).toBe('root');
     expect(harness.page.hud.phaseLabel.text).toBe('Brewing');
     expect(harness.page.hud.phaseLabel.style.fontSize).toBe(11);
     expect(harness.page.hud.phaseLabel.style.lineHeight).toBe(13);

@@ -103,13 +103,8 @@ describe('TopPanelViewManager', () => {
           ?.dataset.assetAtlasFrame,
       })),
     ).toEqual([
-      { theme: 'black', label: 'black', checkFrame: 'status:checkDefault' },
-      { theme: 'midnight', label: 'midnight', checkFrame: 'status:checkDefault' },
-      {
-        theme: 'witchcraft',
-        label: 'witchcraft',
-        checkFrame: 'status:checkDefault',
-      },
+      { theme: 'night', label: 'night', checkFrame: 'status:checkDefault' },
+      { theme: 'day', label: 'day', checkFrame: 'status:checkDefault' },
     ]);
     expect(stage.querySelector('.room-top-panel__theme-preview')).toBeNull();
 

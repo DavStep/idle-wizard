@@ -154,6 +154,8 @@ Useful view setup commands:
   seed, herb, potion, and coin rows.
 - `/?devUi=accountChoice` opens the real retained first-run account choice
   without changing save or account state.
+- `/?devUi=accountLinkChoice` opens the real retained device-versus-account
+  save choice with deterministic profile and currency data.
 - `/?devUi=bottomRoomTabs` reveals the real five-tab bottom room chrome for
   screenshot and interaction QA without changing tutorial progress or gameplay
   state.

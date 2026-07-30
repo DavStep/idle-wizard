@@ -286,7 +286,7 @@ describe('base styles', () => {
   it('uses stroked box and dialog titles without a background', () => {
     const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
     const nonWhiteThemeRule = getRuleBody(
-      /:root\[data-style-theme="black"\],\s*:root\[data-style-theme="midnight"\],\s*:root\[data-style-theme="witchcraft"\]\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s*\{(?<body>[^}]*)\}/,
     );
     const titleRule = findRuleBody(
       /\.style-box__title\s*\{(?<body>[^}]*)\}/g,
@@ -447,14 +447,18 @@ describe('base styles', () => {
     );
   });
 
-  it('uses the midnight box frame for standalone buttons and the button frame inside boxes or dialogs', () => {
-    const rootRule = getRuleBody(/:root\[data-style-theme="midnight"\]\s*\{(?<body>[^}]*)\}/);
+  it('uses the theme box frame for standalone buttons and the button frame inside boxes or dialogs', () => {
+    const rootRule = getRuleBody(/:root\[data-style-theme="night"\]\s*\{(?<body>[^}]*)\}/);
     const sharedFrameRule = getRuleBody(
-      /:root\[data-style-theme="midnight"\]\s*:where\(\s*\.style-panel,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s*:where\(\s*\.style-panel,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
     );
     const midnightRules = baseCss
       .split('}')
-      .filter((rule) => rule.includes(':root[data-style-theme="midnight"]'));
+      .filter((rule) =>
+        rule.includes(
+          ':root:is([data-style-theme="night"], [data-style-theme="day"])',
+        ),
+      );
     const nestedButtonFrameRule = midnightRules.find(
       (rule) =>
         rule.includes('.style-box .style-button:not(.workshop-page__summon-button),') &&
@@ -495,10 +499,10 @@ describe('base styles', () => {
       /\.style-button\[role="tab"\]\[aria-selected="true"\]\s*\{(?<body>[^}]*)\}/,
     );
     const midnightDeselectedTabRule = getRuleBody(
-      /:root\[data-style-theme="midnight"\]\s+\.style-button\[role="tab"\]\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s+\.style-button\[role="tab"\]\s*\{(?<body>[^}]*)\}/,
     );
     const midnightSelectedTabRule = getRuleBody(
-      /:root\[data-style-theme="midnight"\]\s+\.style-button\[role="tab"\]\[aria-selected="true"\]\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s+\.style-button\[role="tab"\]\[aria-selected="true"\]\s*\{(?<body>[^}]*)\}/,
     );
     const assetDir = `${cwd()}/assets/game/source/ui/root-run-cost-button`;
     const source = PNG.sync.read(
@@ -655,22 +659,22 @@ describe('base styles', () => {
 
   it('uses the shop tile for inner sections and the tighter flipped skin for the top panel', () => {
     const selectableThemeRule = getRuleBody(
-      /:root\[data-style-theme="black"\],\s*:root\[data-style-theme="midnight"\],\s*:root\[data-style-theme="witchcraft"\]\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s*\{(?<body>[^}]*)\}/,
     );
     const innerSectionRule = findRuleBody(
-      /:root\[data-style-theme="black"\]\s+\.style-box:not\(\.tutorial-layer__hint\):not\(\.tutorial-layer__lesson\),[\s\S]*?:root\[data-style-theme="witchcraft"\]\s+\.style-box:not\(\.tutorial-layer__hint\):not\(\.tutorial-layer__lesson\)\s*\{(?<body>[^}]*)\}/g,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s+\.style-box:not\(\.tutorial-layer__hint\):not\(\.tutorial-layer__lesson\)\s*\{(?<body>[^}]*)\}/g,
       (body) =>
         body.includes(
           'border-image-source: var(--style-inner-section-frame);',
         ),
     );
     const topPanelRule = getRuleBody(
-      /:root\[data-style-theme="black"\]\s+\.style-panel\.room-top-panel,[\s\S]*?:root\[data-style-theme="witchcraft"\]\s+\.style-panel\.room-top-panel\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s+\.style-panel\.room-top-panel\s*\{(?<body>[^}]*)\}/,
     );
     const topPanelBackgroundRule = getRuleBody(
-      /:root\[data-style-theme="black"\]\s+\.style-panel\.room-top-panel::before,[\s\S]*?:root\[data-style-theme="witchcraft"\]\s+\.style-panel\.room-top-panel::before\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s+\.style-panel\.room-top-panel::before\s*\{(?<body>[^}]*)\}/,
     );
-    const themeAssets = ['black', 'midnight', 'witchcraft'].map((theme) =>
+    const themeAssets = ['midnight', 'day'].map((theme) =>
       PNG.sync.read(
         readFileSync(
           `${cwd()}/assets/game/source/ui/inner-section-panel-${theme}-9slice.png`,
@@ -679,17 +683,13 @@ describe('base styles', () => {
     );
 
     expect(baseCss).toContain(
-      '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-black-9slice.png");',
-    );
-    expect(baseCss).toContain('--style-inner-section-fill: #4b4b4b;');
-    expect(baseCss).toContain(
       '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-midnight-9slice.png");',
     );
     expect(baseCss).toContain('--style-inner-section-fill: #242938;');
     expect(baseCss).toContain(
-      '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-witchcraft-9slice.png");',
+      '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-day-9slice.png");',
     );
-    expect(baseCss).toContain('--style-inner-section-fill: #4c335a;');
+    expect(baseCss).toContain('--style-inner-section-fill: #765238;');
     expect(baseCss).toContain('--style-top-panel-content-gap: 16px;');
     expect(baseCss).toContain(
       '--style-top-panel-background-frame: url("../../assets/game/source/ui/midnight-top-panel-background-9slice.png");',
@@ -744,52 +744,51 @@ describe('base styles', () => {
     });
 
     expect(alphaMasks[1]).toEqual(alphaMasks[0]);
-    expect(alphaMasks[2]).toEqual(alphaMasks[0]);
 
-    const midnightCenterOffset = ((91 * themeAssets[1].width + 83) * 4);
+    const midnightCenterOffset = ((91 * themeAssets[0].width + 83) * 4);
     expect(
       Array.from(
-        themeAssets[1].data.subarray(
+        themeAssets[0].data.subarray(
           midnightCenterOffset,
           midnightCenterOffset + 4,
         ),
       ),
     ).toEqual([36, 41, 56, 255]);
     const midnightFillPixelCount = Array.from(
-      { length: themeAssets[1].data.length / 4 },
+      { length: themeAssets[0].data.length / 4 },
       (_, pixelIndex) => pixelIndex * 4,
     ).filter(
       (offset) =>
-        themeAssets[1].data[offset] === 36 &&
-        themeAssets[1].data[offset + 1] === 41 &&
-        themeAssets[1].data[offset + 2] === 56 &&
-        themeAssets[1].data[offset + 3] === 255,
+        themeAssets[0].data[offset] === 36 &&
+        themeAssets[0].data[offset + 1] === 41 &&
+        themeAssets[0].data[offset + 2] === 56 &&
+        themeAssets[0].data[offset + 3] === 255,
     ).length;
     expect(midnightFillPixelCount).toBe(18_262);
 
-    const witchcraftCenterOffset = ((91 * themeAssets[2].width + 83) * 4);
+    const dayCenterOffset = ((91 * themeAssets[1].width + 83) * 4);
     expect(
       Array.from(
-        themeAssets[2].data.subarray(
-          witchcraftCenterOffset,
-          witchcraftCenterOffset + 4,
+        themeAssets[1].data.subarray(
+          dayCenterOffset,
+          dayCenterOffset + 4,
         ),
       ),
-    ).toEqual([76, 51, 90, 255]);
+    ).toEqual([104, 74, 49, 255]);
   });
 
-  it('keeps midnight 9-slice transparent corners clear of rectangular backing fills', () => {
+  it('keeps themed 9-slice transparent corners clear of rectangular backing fills', () => {
     const sharedFrameRule = getRuleBody(
-      /:root\[data-style-theme="midnight"\]\s*:where\(\s*\.style-panel,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s*:where\(\s*\.style-panel,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
     );
     const controlFrameRule = getRuleBody(
-      /:root\[data-style-theme="midnight"\]\s*:where\(\s*\.style-button,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s*:where\(\s*\.style-button,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
     );
     const activeControlRule = getRuleBody(
-      /:root\[data-style-theme="midnight"\]\s*\.style-button:is\(:active, \.is-pressing\)[\s\S]*?\.workshop-page__summon-button-text\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s*\.style-button:is\(:active, \.is-pressing\)[\s\S]*?\.workshop-page__summon-button-text\s*\{(?<body>[^}]*)\}/,
     );
     const dialogBackingRule = getRuleBody(
-      /:root\[data-style-theme="midnight"\]\s*\.style-dialog::before\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s*\.style-dialog::before\s*\{(?<body>[^}]*)\}/,
     );
 
     expect(sharedFrameRule).toContain('background: transparent;');
@@ -1239,10 +1238,10 @@ describe('base styles', () => {
       /\.shop-page__sell-allocation-range::\s*-moz-range-thumb\s*\{(?<body>[^}]*)\}/,
     );
     const midnightRowFrameRule = getRuleBody(
-      /:root\[data-style-theme="midnight"\]\s*\.shop-page__sell-current,[\s\S]*?\.shop-page__sell-item-button\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s*\.shop-page__sell-current,[\s\S]*?\.shop-page__sell-item-button\s*\{(?<body>[^}]*)\}/,
     );
     const midnightSelectedRowRule = getRuleBody(
-      /:root\[data-style-theme="midnight"\]\s*\.shop-page__sell-current\[data-has-selection="true"\],[\s\S]*?\.shop-page__sell-item-button\[aria-pressed="true"\]\s*\{(?<body>[^}]*)\}/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s*\.shop-page__sell-current\[data-has-selection="true"\],[\s\S]*?\.shop-page__sell-item-button\[aria-pressed="true"\]\s*\{(?<body>[^}]*)\}/,
     );
 
     expect(controlRule).toContain('position: relative;');

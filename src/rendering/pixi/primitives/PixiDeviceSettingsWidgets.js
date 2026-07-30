@@ -130,6 +130,7 @@ export class RootRunDevicePreferenceRow extends Container {
     preferenceKey,
     text,
     iconAssetId,
+    onIconAssetId = null,
     label = 'rootRunDevicePreferenceRow',
   } = {}) {
     super({ label });
@@ -137,10 +138,21 @@ export class RootRunDevicePreferenceRow extends Container {
     this.rowWidth = 0;
     this.rowHeight = ROOT_RUN_DEVICE_PREFERENCE_ROW_HEIGHT;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.icon = new Sprite({
-      texture:
+    this.iconTextures = {
+      off:
         assetManager?.getTexture?.(iconAssetId) ??
         Texture.EMPTY,
+      on:
+        (
+          onIconAssetId
+            ? assetManager?.getTexture?.(onIconAssetId)
+            : null
+        ) ??
+        assetManager?.getTexture?.(iconAssetId) ??
+        Texture.EMPTY,
+    };
+    this.icon = new Sprite({
+      texture: this.iconTextures.off,
       anchor: 0.5,
       roundPixels: true,
       label: `${label}:icon`,
@@ -168,6 +180,10 @@ export class RootRunDevicePreferenceRow extends Container {
   }
 
   bind({ value, enabled = true, onChange = null } = {}) {
+    this.icon.texture =
+      value === true
+        ? this.iconTextures.on
+        : this.iconTextures.off;
     this.toggle.bind({
       value: value === true,
       enabled,

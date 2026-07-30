@@ -208,7 +208,7 @@ const MAINTENANCE_MODES = new Set([
   MAINTENANCE_MODE_DRAIN,
   MAINTENANCE_MODE_LOCKED,
 ]);
-const PLAYER_THEMES = new Set(['black', 'midnight', 'witchcraft']);
+const PLAYER_THEMES = new Set(['night', 'day']);
 const TRADE_ALLIANCE_TAG_COLORS = new Set([
   'ink',
   'red',
@@ -222,16 +222,19 @@ const TRADE_ALLIANCE_TAG_COLORS = new Set([
   'slate',
 ]);
 const PLAYER_THEME_ALIASES = new Map([
-  ['mild-white', 'midnight'],
-  ['mild-black', 'black'],
-  ['dark-gray', 'black'],
-  ['night-black', 'black'],
-  ['vs-code-midnight', 'midnight'],
-  ['vscode-midnight', 'midnight'],
-  ['idle-witch-craft', 'witchcraft'],
-  ['idle witch craft', 'witchcraft'],
-  ['idle-whitch-craft', 'witchcraft'],
-  ['idle whitch craft', 'witchcraft'],
+  ['midnight', 'night'],
+  ['black', 'night'],
+  ['witchcraft', 'night'],
+  ['mild-white', 'night'],
+  ['mild-black', 'night'],
+  ['dark-gray', 'night'],
+  ['night-black', 'night'],
+  ['vs-code-midnight', 'night'],
+  ['vscode-midnight', 'night'],
+  ['idle-witch-craft', 'night'],
+  ['idle witch craft', 'night'],
+  ['idle-whitch-craft', 'night'],
+  ['idle whitch craft', 'night'],
 ]);
 const PLAYER_FONTS = new Set(['lilita-one', 'comic-sans-mono']);
 const PLAYER_FONT_ALIASES = new Map([
@@ -5369,9 +5372,8 @@ const DEFAULT_TRADE_ALLIANCE_CONFIG_JSON = toGameConfigJson({
 const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
   costsCrystal: {
     theme: {
-      black: 0,
-      midnight: 0,
-      witchcraft: 0,
+      night: 0,
+      day: 0,
     },
     font: {
       'lilita-one': 0,

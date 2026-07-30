@@ -5,8 +5,15 @@ import {
   Sprite,
 } from 'pixi.js';
 
-import { PixiTextLabel } from '../../primitives/index.js';
-import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
+import {
+  PixiProgressBar,
+  PixiTextLabel,
+} from '../../primitives/index.js';
+import {
+  createPixiThemeSnapshot,
+  PIXI_FONT_FAMILIES,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 
 const SPLASH_TEXTURE_ID =
   'source:assets/ui/idle-witch-craft-splash/splash-screen.png';
@@ -14,12 +21,9 @@ const SPLASH_IMAGE_ASPECT = 818 / 1923;
 const SPLASH_BAR_WIDTH_RATIO = 0.84;
 const SPLASH_BAR_BOTTOM_RATIO = 0.0465;
 const SPLASH_LABEL_BOTTOM_RATIO = 0.0695;
-const SPLASH_PROGRESS_COLORS = Object.freeze([
-  Object.freeze({ offset: 0, color: '#7f3cff' }),
-  Object.freeze({ offset: 0.48, color: '#d868ff' }),
-  Object.freeze({ offset: 0.74, color: '#64caff' }),
-  Object.freeze({ offset: 1, color: '#ffd76a' }),
-]);
+const SPLASH_PROGRESS_THEME = createPixiThemeSnapshot({
+  progressBar: 'gradient',
+});
 
 export class PixiLoadingSplash extends Container {
   constructor({ assets } = {}) {
@@ -44,25 +48,20 @@ export class PixiLoadingSplash extends Container {
       text: 'Loading game',
       fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
       fontWeight: 'normal',
+      fontFamily: PIXI_FONT_FAMILIES['lilita-one'],
       anchor: { x: 0.5, y: 0.5 },
       align: 'center',
       color: '#fff0bf',
       stroke: { color: '#05030a', width: 2 },
       label: 'loadingSplash:label',
     });
-    this.progressTrack = new Graphics({
-      label: 'loadingSplash:progressTrack',
+    this.progressBar = new PixiProgressBar({
+      assetManager: assets,
+      width: 0,
+      height: PIXI_UI_GEOMETRY.progressTotalHeight,
+      label: 'loadingSplash:progress',
     });
-    this.progressFill = new Graphics({
-      label: 'loadingSplash:progressFill',
-    });
-    this.progressGradient = new FillGradient({
-      type: 'linear',
-      start: { x: 0, y: 0 },
-      end: { x: 1, y: 0 },
-      textureSpace: 'local',
-      colorStops: SPLASH_PROGRESS_COLORS,
-    });
+    this.progressBar.applyTheme(SPLASH_PROGRESS_THEME);
     this.verticalGradient = new FillGradient({
       type: 'linear',
       start: { x: 0, y: 0 },
@@ -94,8 +93,7 @@ export class PixiLoadingSplash extends Container {
       this.verticalShade,
       this.horizontalShade,
       this.loadingLabel,
-      this.progressTrack,
-      this.progressFill,
+      this.progressBar,
     );
   }
 
@@ -105,11 +103,15 @@ export class PixiLoadingSplash extends Container {
 
   setProgress(value) {
     this.progressValue = Math.max(0, Math.min(1, Number(value) || 0));
-    this.redrawProgress();
+    this.progressBar.setProgress(this.progressValue);
   }
 
   applyTheme(theme) {
     this.loadingLabel.applyTheme(theme);
+    this.progressBar.applyTheme({
+      ...theme,
+      progress: SPLASH_PROGRESS_THEME.progress,
+    });
   }
 
   layout(projection) {
@@ -124,7 +126,7 @@ export class PixiLoadingSplash extends Container {
     const artWidth = getSplashArtWidth(projection);
     const artLeft = PIXI_UI_GEOMETRY.sourceWidth / 2 - artWidth / 2;
     const barWidth = artWidth * SPLASH_BAR_WIDTH_RATIO;
-    const barHeight = 13;
+    const barHeight = PIXI_UI_GEOMETRY.progressTotalHeight;
     const barX = PIXI_UI_GEOMETRY.sourceWidth / 2 - barWidth / 2;
     const barY = sourceHeight * (1 - SPLASH_BAR_BOTTOM_RATIO) - barHeight;
     const labelY =
@@ -137,7 +139,7 @@ export class PixiLoadingSplash extends Container {
       .fill('#07040e');
     this.art.position.set(PIXI_UI_GEOMETRY.sourceWidth / 2, 0);
     this.art.width = artWidth;
-    this.art.height = sourceHeight;
+    this.art.height = artWidth / SPLASH_IMAGE_ASPECT;
     this.verticalShade
       .clear()
       .rect(artLeft, 0, artWidth, sourceHeight)
@@ -150,56 +152,12 @@ export class PixiLoadingSplash extends Container {
       PIXI_UI_GEOMETRY.sourceWidth / 2,
       labelY,
     );
-    this.progressTrack
-      .clear()
-      .rect(barX, barY, barWidth, barHeight)
-      .fill('#080611')
-      .stroke({ color: '#07030c', width: 2, alignment: 1 })
-      .rect(barX + 2, barY + 2, barWidth - 4, barHeight - 4)
-      .stroke({ color: '#3f2258', width: 1, alignment: 1 });
-    this.redrawProgress({
-      x: barX,
-      y: barY,
-      width: barWidth,
-      height: barHeight,
-    });
-  }
-
-  redrawProgress(bounds = null) {
-    if (!this.projection) {
-      return;
-    }
-    const sourceHeight = this.projection.sourceHeight;
-    const artWidth = getSplashArtWidth(this.projection);
-    const width = bounds?.width ?? artWidth * SPLASH_BAR_WIDTH_RATIO;
-    const height = bounds?.height ?? 13;
-    const x =
-      bounds?.x ?? PIXI_UI_GEOMETRY.sourceWidth / 2 - width / 2;
-    const y =
-      bounds?.y ??
-      sourceHeight * (1 - SPLASH_BAR_BOTTOM_RATIO) - height;
-    const inset = 4;
-    const fillWidth = Math.max(
-      0,
-      (width - inset * 2) * this.progressValue,
-    );
-
-    this.progressFill.clear();
-    if (fillWidth <= 0) {
-      return;
-    }
-    this.progressFill
-      .rect(
-        x + inset,
-        y + inset,
-        fillWidth,
-        Math.max(1, height - inset * 2),
-      )
-      .fill(this.progressGradient);
+    this.progressBar.position.set(barX, barY);
+    this.progressBar.setSize(barWidth, barHeight);
+    this.progressBar.setProgress(this.progressValue);
   }
 
   destroy(options) {
-    this.progressGradient.destroy();
     this.verticalGradient.destroy();
     this.horizontalGradient.destroy();
     super.destroy(options);
@@ -207,14 +165,5 @@ export class PixiLoadingSplash extends Container {
 }
 
 function getSplashArtWidth(projection) {
-  const sourceStageWidth =
-    projection.stageLogicalWidth / projection.sourceScale;
-  const viewportWidth = Math.max(1, projection.viewportPx?.width ?? 1);
-  const viewportHeight = Math.max(1, projection.viewportPx?.height ?? 1);
-  const sourceUnitsPerPixel = sourceStageWidth / viewportWidth;
-  const targetPixelWidth = Math.min(
-    viewportWidth,
-    viewportHeight * SPLASH_IMAGE_ASPECT,
-  );
-  return targetPixelWidth * sourceUnitsPerPixel;
+  return projection.stageLogicalWidth / projection.sourceScale;
 }

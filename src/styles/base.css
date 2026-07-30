@@ -746,27 +746,7 @@
     "Lilita One", "Arial Black", Arial, ui-sans-serif, system-ui, sans-serif;
 }
 
-:root[data-style-theme="black"] {
-  --style-bg: #1a1a1a;
-  --style-surface: #202020;
-  --style-text: #e8e8e8;
-  --style-stroke: #6a6a6a;
-  --style-muted: #a6a6a6;
-  --style-disabled: #7a7a7a;
-  --style-active-surface: var(--style-surface);
-  --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-black-9slice.png");
-  --style-inner-section-fill: #4b4b4b;
-  --style-announcement-coin: oklch(82% 0.14 88);
-  --style-backdrop-rgb: 26 26 26;
-  --style-log-fade-rgb: 32 32 32;
-  --style-block-shadow: 5px 5px 5px #b8b8b8;
-  --style-dialog-shadow: var(--style-block-shadow);
-  --style-overlay-shadow: 5px 5px 5px #d8d8d8;
-  --style-tooltip-shadow: -1px 3px 2px #d8d8d8;
-  color-scheme: dark;
-}
-
-:root[data-style-theme="midnight"] {
+:root[data-style-theme="night"] {
   --style-bg: #1c1e26;
   --style-surface: #17191f;
   --style-text: #d4d4d4;
@@ -795,30 +775,39 @@
   color-scheme: dark;
 }
 
-:root[data-style-theme="witchcraft"] {
-  --style-bg: #07040e;
-  --style-surface: #1a1028;
-  --style-text: #f2e4bc;
-  --style-stroke: #674579;
-  --style-muted: #d1bd86;
-  --style-disabled: #8f805c;
+:root[data-style-theme="day"] {
+  --style-bg: #ffe2c0;
+  --style-surface: #543a28;
+  --style-text: #f4eadb;
+  --style-stroke: #765339;
+  --style-muted: #d2b38e;
+  --style-disabled: #9c805f;
   --style-active-surface: var(--style-surface);
-  --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-witchcraft-9slice.png");
-  --style-inner-section-fill: #4c335a;
-  --style-system-text: #ffd76a;
-  --style-announcement-coin: #ffd76a;
-  --style-backdrop-rgb: 7 4 14;
-  --style-log-fade-rgb: 26 16 40;
-  --style-block-shadow: 5px 5px 5px #05030a;
+  --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-day-9slice.png");
+  --style-inner-section-fill: #765238;
+  --style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel-day-9slice.png");
+  --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected-day-9slice.png");
+  --style-midnight-button-frame: url("../../assets/game/source/ui/player-card-button-brown-fill-9slice.png");
+  --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/player-card-button-brown-dark-fill-9slice.png");
+  --style-midnight-frame-slice: 31 29 31 29 fill;
+  --style-midnight-frame-outline-slice: 31 29 31 29;
+  --style-midnight-frame-width: 8px 10px;
+  --style-midnight-frame-control-width: 5px 6px;
+  --style-midnight-frame-compact-width: 4px 5px;
+  --style-room-tab-active-frame: url("../../assets/game/source/ui/day-room-tab-top-cap-selected-9slice.png");
+  --style-room-tab-inactive-frame: url("../../assets/game/source/ui/day-room-tab-top-cap-9slice.png");
+  --style-top-panel-background-frame: url("../../assets/game/source/ui/day-top-panel-background-9slice.png");
+  --style-announcement-coin: oklch(84% 0.13 88);
+  --style-backdrop-rgb: 84 58 40;
+  --style-log-fade-rgb: 84 58 40;
+  --style-block-shadow: 5px 5px 5px #2d1f17;
   --style-dialog-shadow: var(--style-block-shadow);
-  --style-overlay-shadow: 5px 5px 5px #05030a;
-  --style-tooltip-shadow: -1px 3px 2px #05030a;
+  --style-overlay-shadow: 5px 5px 5px #2d1f17;
+  --style-tooltip-shadow: -1px 3px 2px #2d1f17;
   color-scheme: dark;
 }
 
-:root[data-style-theme="black"],
-:root[data-style-theme="midnight"],
-:root[data-style-theme="witchcraft"] {
+:root:is([data-style-theme="night"], [data-style-theme="day"]) {
   --style-border-width: 2px;
   --style-inner-section-frame-slice: 91 73 90 83 fill;
   --style-inner-section-frame-width: calc(91px * 390 / 1080)
@@ -12710,7 +12699,7 @@ div.workshop-page__discovery-row {
   border: var(--style-border);
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   :where(
     .style-panel,
     .style-box,
@@ -12727,7 +12716,7 @@ div.workshop-page__discovery-row {
   border-image-repeat: stretch;
 }
 
-:root[data-style-theme="midnight"] .shop-page__shelf > .shop-page__slot-row {
+:root:is([data-style-theme="night"], [data-style-theme="day"]) .shop-page__shelf > .shop-page__slot-row {
   background: transparent;
   background-clip: padding-box;
   border-color: transparent;
@@ -12737,7 +12726,7 @@ div.workshop-page__discovery-row {
   border-image-repeat: stretch;
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   :where(
     .style-button,
     .style-input,
@@ -15717,12 +15706,12 @@ div.workshop-page__discovery-row {
   border-radius: 13px;
 }
 
-.room-top-panel__theme-button[data-theme="midnight"] {
+.room-top-panel__theme-button[data-theme="night"] {
   --room-top-panel-theme-swatch-color: #46578f;
 }
 
-.room-top-panel__theme-button[data-theme="witchcraft"] {
-  --room-top-panel-theme-swatch-color: #8554aa;
+.room-top-panel__theme-button[data-theme="day"] {
+  --room-top-panel-theme-swatch-color: #bd8d58;
 }
 
 .room-top-panel__visual-option-name.room-top-panel__theme-button::before {
@@ -16136,7 +16125,7 @@ div.workshop-page__discovery-row {
   content: " ";
 }
 
-:root[data-style-theme="midnight"] .style-dialog::after {
+:root:is([data-style-theme="night"], [data-style-theme="day"]) .style-dialog::after {
   border-color: transparent;
   border-image-source: var(--style-midnight-panel-frame);
   border-image-slice: var(--style-midnight-frame-slice);
@@ -16144,7 +16133,7 @@ div.workshop-page__discovery-row {
   border-image-repeat: stretch;
 }
 
-:root[data-style-theme="midnight"] .style-dialog::before {
+:root:is([data-style-theme="night"], [data-style-theme="day"]) .style-dialog::before {
   background: transparent;
 }
 
@@ -17591,7 +17580,7 @@ div.workshop-page__discovery-row {
   box-shadow: var(--style-overlay-shadow);
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   :where(
     .style-panel,
     .style-box,
@@ -17607,7 +17596,10 @@ div.workshop-page__discovery-row {
     .tutorial-layer__lesson-show,
     .tutorial-layer__lesson-advance,
     .tutorial-layer__advance,
-    .room-top-panel__theme-preview[data-preview-theme="midnight"]
+    .room-top-panel__theme-preview:is(
+        [data-preview-theme="night"],
+        [data-preview-theme="day"]
+      )
       .room-top-panel__theme-preview-box
   ) {
   background: transparent;
@@ -17618,7 +17610,7 @@ div.workshop-page__discovery-row {
   border-image-repeat: stretch;
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   :where(
     .style-panel,
     .style-box,
@@ -17637,7 +17629,7 @@ div.workshop-page__discovery-row {
   border-image-width: var(--style-midnight-frame-width);
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   :where(
     .style-button:not(.workshop-page__summon-button),
     .style-input,
@@ -17651,11 +17643,7 @@ div.workshop-page__discovery-row {
   background: transparent;
 }
 
-:root[data-style-theme="black"]
-  .style-box:not(.tutorial-layer__hint):not(.tutorial-layer__lesson),
-:root[data-style-theme="midnight"]
-  .style-box:not(.tutorial-layer__hint):not(.tutorial-layer__lesson),
-:root[data-style-theme="witchcraft"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .style-box:not(.tutorial-layer__hint):not(.tutorial-layer__lesson) {
   background: var(--style-inner-section-fill);
   background-clip: padding-box;
@@ -17667,18 +17655,14 @@ div.workshop-page__discovery-row {
   border-radius: 16px;
 }
 
-:root[data-style-theme="black"] .style-panel.room-top-panel,
-:root[data-style-theme="midnight"] .style-panel.room-top-panel,
-:root[data-style-theme="witchcraft"] .style-panel.room-top-panel {
+:root:is([data-style-theme="night"], [data-style-theme="day"]) .style-panel.room-top-panel {
   background: transparent;
   border: 0;
   border-image: none;
   border-radius: 0;
 }
 
-:root[data-style-theme="black"] .style-panel.room-top-panel::before,
-:root[data-style-theme="midnight"] .style-panel.room-top-panel::before,
-:root[data-style-theme="witchcraft"] .style-panel.room-top-panel::before {
+:root:is([data-style-theme="night"], [data-style-theme="day"]) .style-panel.room-top-panel::before {
   position: absolute;
   top: -9px;
   right: calc(var(--style-room-chrome-edge) * -1);
@@ -17696,14 +17680,14 @@ div.workshop-page__discovery-row {
   transform: scaleY(-1);
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .style-button:is(:active, .is-pressing):not(:disabled):not(
     [aria-disabled="true"]
   ):not(.is-disabled),
-:root[data-style-theme="midnight"] .style-button[aria-selected="true"],
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"]) .style-button[aria-selected="true"],
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .style-button[aria-pressed="true"]:not(:disabled):not([aria-disabled="true"]),
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .style-button.workshop-page__summon-button:is(:active, .is-pressing):not(
     :disabled
   ):not([aria-disabled="true"])
@@ -17711,7 +17695,7 @@ div.workshop-page__discovery-row {
   background: transparent;
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   :where(
     .style-box .style-button:not(.workshop-page__summon-button),
     .style-dialog .style-button:not(.workshop-page__summon-button),
@@ -17730,7 +17714,7 @@ div.workshop-page__discovery-row {
   border-image-width: var(--style-midnight-frame-control-width);
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   :where(
     .style-box .style-button:not(.workshop-page__summon-button),
     .style-dialog .style-button:not(.workshop-page__summon-button),
@@ -17748,7 +17732,7 @@ div.workshop-page__discovery-row {
   border-image-source: var(--style-midnight-button-frame);
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   :where(
     .style-box
       .style-button:not(.workshop-page__summon-button):is(
@@ -17794,7 +17778,7 @@ div.workshop-page__discovery-row {
   border-image-source: var(--style-midnight-button-disabled-frame);
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .guild-page__popup-panel[data-popup-kind="requestStack"]
   .style-button.guild-page__request-stack-action {
   background: transparent;
@@ -17803,7 +17787,7 @@ div.workshop-page__discovery-row {
   border-image-width: 10px;
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .guild-page__popup-panel[data-popup-kind="requestStack"]
   .style-button.guild-page__request-stack-post {
   border-image-source: var(--guild-page-quest-button-green-frame);
@@ -17823,13 +17807,16 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-:root[data-style-theme="midnight"]
-  .room-top-panel__theme-preview[data-preview-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
+  .room-top-panel__theme-preview:is(
+    [data-preview-theme="night"],
+    [data-preview-theme="day"]
+  )
   .room-top-panel__theme-preview-box {
   border-image-width: var(--style-midnight-frame-compact-width);
 }
 
-:root[data-style-theme="midnight"] .room-top-panel__inbox-row {
+:root:is([data-style-theme="night"], [data-style-theme="day"]) .room-top-panel__inbox-row {
   background: transparent;
   border-color: transparent;
   border-image-source: var(--style-midnight-panel-frame);
@@ -17838,7 +17825,7 @@ div.workshop-page__discovery-row {
   border-image-repeat: stretch;
 }
 
-:root[data-style-theme="midnight"] .style-button[role="tab"] {
+:root:is([data-style-theme="night"], [data-style-theme="day"]) .style-button[role="tab"] {
   background: transparent;
   border-color: transparent;
   border-image-source: var(--style-tab-frame);
@@ -17847,15 +17834,15 @@ div.workshop-page__discovery-row {
   border-image-repeat: stretch;
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .style-button[role="tab"][aria-selected="true"] {
   background: transparent;
   border-color: transparent;
   border-image-source: var(--style-tab-selected-frame);
 }
 
-:root[data-style-theme="midnight"] .shop-page__sell-current,
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"]) .shop-page__sell-current,
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .shop-page__sell-dialog
   > .shop-page__sell-item-list
   .shop-page__sell-item-button {
@@ -17869,9 +17856,9 @@ div.workshop-page__discovery-row {
   border-image-repeat: stretch;
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .shop-page__sell-current[data-has-selection="true"],
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .shop-page__sell-dialog
   > .shop-page__sell-item-list
   .shop-page__sell-item-button[aria-pressed="true"] {
@@ -17902,10 +17889,10 @@ div.workshop-page__discovery-row {
   box-shadow: none;
 }
 
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .style-box
   .style-button.shop-page__stock-buy-button,
-:root[data-style-theme="midnight"]
+:root:is([data-style-theme="night"], [data-style-theme="day"])
   .style-box
   .style-button.shop-page__stock-buy-button:is(
     :disabled,

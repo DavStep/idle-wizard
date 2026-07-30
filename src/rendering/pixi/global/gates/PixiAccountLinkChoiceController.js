@@ -1,3 +1,10 @@
+import {
+  normalizePlayerCharacter,
+} from '../../../../player/playerCharacters.js';
+import {
+  normalizePlayerFrame,
+} from '../../../../player/playerFrames.js';
+
 export const ACCOUNT_LINK_CHOICE_FORGET_DEVICE = 'forget_device';
 export const ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT = 'overwrite_account';
 
@@ -20,15 +27,31 @@ export class PixiAccountLinkChoiceController {
     return this.view?.root ?? null;
   }
 
-  choose({ deviceSave, accountSave, accountUsername } = {}) {
+  choose({
+    deviceSave,
+    accountSave,
+    accountUsername,
+    accountProfile,
+  } = {}) {
     if (this.resolveChoice) {
       this.resolve(ACCOUNT_LINK_CHOICE_FORGET_DEVICE);
     }
+    const resolvedAccountProfile = this.normalizeAccountProfile({
+      ...accountProfile,
+      username: accountProfile?.username ?? accountUsername,
+    });
+    const device = this.describeSaveDetails(deviceSave);
+    const account = {
+      ...this.describeSaveDetails(accountSave),
+      ...resolvedAccountProfile,
+    };
     this.model = {
       deviceSummary: this.describeSave(deviceSave),
       accountSummary: this.describeSave(accountSave, {
-        username: accountUsername,
+        username: resolvedAccountProfile.username,
       }),
+      device,
+      account,
       onSelectDevice: () => this.resolve(ACCOUNT_LINK_CHOICE_OVERWRITE_ACCOUNT),
       onSelectAccount: () => this.resolve(ACCOUNT_LINK_CHOICE_FORGET_DEVICE),
     };
@@ -36,6 +59,31 @@ export class PixiAccountLinkChoiceController {
     return new Promise((resolve) => {
       this.resolveChoice = resolve;
     });
+  }
+
+  showPreview() {
+    void this.choose({
+      deviceSave: {
+        tasks: { currentLevel: 1 },
+        coin: { current: 0 },
+        crystal: { current: 1 },
+        emerald: { current: 2 },
+        ruby: { current: 3 },
+      },
+      accountSave: {
+        tasks: { currentLevel: 5 },
+        coin: { current: 53 },
+        crystal: { current: 3 },
+        emerald: { current: 2 },
+        ruby: { current: 1 },
+      },
+      accountProfile: {
+        username: 'StepWizzard',
+        character: 'elara',
+        frame: 'violet',
+      },
+    });
+    return { ok: true };
   }
 
   resolve(choice) {
@@ -58,18 +106,43 @@ export class PixiAccountLinkChoiceController {
   describeSave(save, { username } = {}) {
     const usernameText = this.getUsernameText(username);
     if (!save || typeof save !== 'object') {
-      return usernameText ? `${usernameText}, new save` : 'new save';
+      return usernameText ? `${usernameText}, New Save` : 'New Save';
     }
-    const level = this.getPositiveInteger(save.tasks?.currentLevel, 1);
-    const coin = this.getNonNegativeInteger(save.coin?.current);
-    const crystal = this.getNonNegativeInteger(save.crystal?.current);
-    const summary = `level ${level}, ${coin} coin, ${crystal} crystal`;
+    const {
+      level,
+      coin,
+      crystal,
+      emerald,
+      ruby,
+    } = this.describeSaveDetails(save);
+    const summary =
+      `Level ${level}, ${coin} Coin, ${crystal} Crystal, ` +
+      `${emerald} Emerald, ${ruby} Ruby`;
     return usernameText ? `${usernameText}, ${summary}` : summary;
+  }
+
+  describeSaveDetails(save) {
+    return {
+      level: this.getPositiveInteger(save?.tasks?.currentLevel, 1),
+      coin: this.getNonNegativeInteger(save?.coin?.current),
+      crystal: this.getNonNegativeInteger(save?.crystal?.current),
+      emerald: this.getNonNegativeInteger(save?.emerald?.current),
+      ruby: this.getNonNegativeInteger(save?.ruby?.current),
+    };
   }
 
   getUsernameText(username) {
     const value = String(username ?? '').replace(/\s+/g, ' ').trim();
-    return value ? `username ${value}` : '';
+    return value;
+  }
+
+  normalizeAccountProfile(profile = {}) {
+    const username = this.getUsernameText(profile.username);
+    return {
+      ...(username ? { username } : {}),
+      character: normalizePlayerCharacter(profile.character),
+      frame: normalizePlayerFrame(profile.frame),
+    };
   }
 
   getPositiveInteger(value, fallback) {

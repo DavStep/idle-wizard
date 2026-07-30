@@ -11,6 +11,10 @@ import {
   PixiBottomPanelView,
 } from './PixiBottomPanelView.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
+import {
+  createPixiThemeSnapshot,
+  PIXI_ROOT_RUN_ASSETS,
+} from '../../theme/PixiThemeTokens.js';
 
 installPixiPageTestCanvas();
 
@@ -222,6 +226,31 @@ describe('PixiBottomPanelView', () => {
     expect(brewing.icon.width).toBeCloseTo(50 * 0.72, 6);
     expect(research.icon.width).toBeCloseTo(50 * 0.84, 6);
     expect(shop.icon.width).toBeCloseTo(50 * 0.9, 6);
+  });
+
+  it('recolors the retained active and inactive tab frames for Day', () => {
+    const view = new PixiBottomPanelView({ assets: createAssets() });
+    view.bind({
+      currentPageId: 'workshop',
+      pages: pageStates([
+        'brewing',
+        'garden',
+        'workshop',
+        'research',
+        'shop',
+      ]),
+    });
+
+    view.applyTheme(createPixiThemeSnapshot({ theme: 'day' }));
+
+    expect(getTab(view, 'workshop').frame.textureId).toBe(
+      PIXI_ROOT_RUN_ASSETS.roomTabActiveDay,
+    );
+    expect(getTab(view, 'brewing').frame.textureId).toBe(
+      PIXI_ROOT_RUN_ASSETS.roomTabInactiveDay,
+    );
+
+    view.destroy();
   });
 
   it('lifts the selected icon during the retained tab motion', () => {
@@ -717,6 +746,12 @@ function createAssets() {
         return textures.active;
       }
       if (assetId.endsWith('midnight-room-tab-top-cap-9slice.png')) {
+        return textures.inactive;
+      }
+      if (assetId.endsWith('day-room-tab-top-cap-selected-9slice.png')) {
+        return textures.active;
+      }
+      if (assetId.endsWith('day-room-tab-top-cap-9slice.png')) {
         return textures.inactive;
       }
       if (assetId.endsWith('notification-circle-red.png')) {

@@ -14,7 +14,7 @@ Idle Wizard is an illustrated fantasy mobile idle game. It gives the player a se
 
 ## Brand Personality
 
-Whimsical, tactile, readable. The game should feel like a polished wizard workshop: dark midnight-blue rooms, richly rendered props and item icons, warm brown/gold controls, compact high-contrast labels, and decoration tied to gameplay meaning.
+Whimsical, tactile, readable. The game should feel like a polished wizard workshop: richly rendered props and item icons, warm brown/gold controls, compact high-contrast labels, and decoration tied to gameplay meaning. Night uses the original midnight-blue rooms; Day places warm brown illustrated chrome over a pale peach daylight wall.
 
 ## Anti-references
 
@@ -30,4 +30,4 @@ Do not let the fantasy treatment turn into casino clutter, a generic card battle
 
 ## Accessibility & Inclusion
 
-Prefer high-contrast text on the active surface, with midnight as the default theme. Support reduced motion by disabling nonessential transitions. Keep hit targets comfortable after viewport scaling without changing the source 16px text system.
+Prefer high-contrast text on the active surface, with Night as the default theme. Support reduced motion by disabling nonessential transitions. Keep hit targets comfortable after viewport scaling without changing the source 16px text system.

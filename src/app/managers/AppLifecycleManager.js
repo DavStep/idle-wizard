@@ -282,6 +282,10 @@ export class AppLifecycleManager {
       if (accountUsername) {
         choiceOptions.accountUsername = accountUsername;
       }
+      const accountProfile = this.getAccountProfile();
+      if (accountProfile) {
+        choiceOptions.accountProfile = accountProfile;
+      }
 
       const choice = await this.accountLinkChoiceManager.choose(choiceOptions);
 
@@ -600,6 +604,19 @@ export class AppLifecycleManager {
 
     const oidc = this.backendFacade.getAuthFacade?.()?.getSnapshot?.()?.oidc ?? {};
     return this.normalizeUsername(oidc.displayName) || this.normalizeUsername(oidc.email);
+  }
+
+  getAccountProfile() {
+    const snapshot = this.playerFacade?.getSnapshot?.() ?? {};
+    const username = this.getAccountUsername();
+    const character = String(snapshot.character ?? '').trim();
+    const frame = String(snapshot.frame ?? '').trim();
+    const profile = {
+      ...(username ? { username } : {}),
+      ...(character ? { character } : {}),
+      ...(frame ? { frame } : {}),
+    };
+    return Object.keys(profile).length > 0 ? profile : null;
   }
 
   normalizeUsername(username) {

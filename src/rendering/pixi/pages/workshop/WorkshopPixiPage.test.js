@@ -11,6 +11,7 @@ import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import {
+  createPixiThemeSnapshot,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_TEXT_STROKE_COLOR,
@@ -29,10 +30,17 @@ import {
 describe('WorkshopPixiPage', () => {
   it('grounds the Workshop with passive window art behind the summon control', () => {
     const windowTexture = new Texture();
+    const dayWindowTexture = new Texture();
     const assetManager = createPixiAssetManagerFake(Texture);
-    assetManager.getTexture = vi.fn((assetId) =>
-      assetId === WORKSHOP_WINDOW_ASSET_ID ? windowTexture : Texture.EMPTY,
-    );
+    assetManager.getTexture = vi.fn((assetId) => {
+      if (assetId === WORKSHOP_WINDOW_ASSET_ID) {
+        return windowTexture;
+      }
+      if (assetId === PIXI_ROOT_RUN_ASSETS.workshopWindowDay) {
+        return dayWindowTexture;
+      }
+      return Texture.EMPTY;
+    });
     const harness = createHarness({ assetManager });
 
     harness.page.bind(createWorkshopViewModel());
@@ -52,6 +60,14 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.content.getChildIndex(harness.page.workshopWindow)).toBeLessThan(
       harness.page.content.getChildIndex(harness.page.summon.root),
     );
+
+    harness.page.applyTheme(
+      createPixiThemeSnapshot({ theme: 'day' }),
+    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.workshopWindowDay,
+    );
+    expect(harness.page.workshopWindow.texture).toBe(dayWindowTexture);
 
     harness.page.destroy();
     harness.dispose();

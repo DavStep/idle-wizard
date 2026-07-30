@@ -13,7 +13,7 @@ describe('PlayerFacade', () => {
       hasExplicitUsername: true,
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
-      theme: 'midnight',
+      theme: 'night',
       font: 'lilita-one',
       colorMode: 'resources',
       character: 'elara',
@@ -34,7 +34,7 @@ describe('PlayerFacade', () => {
       hasExplicitUsername: true,
       shouldPromptForUsername: false,
       usernamePromptSeen: true,
-      theme: 'midnight',
+      theme: 'night',
       font: 'lilita-one',
       colorMode: 'resources',
       character: 'elara',
@@ -137,18 +137,14 @@ describe('PlayerFacade', () => {
   it('normalizes theme', () => {
     const playerFacade = new PlayerFacade();
 
-    playerFacade.setTheme('black');
+    playerFacade.setTheme('day');
+    expect(playerFacade.getSnapshot().theme).toBe('day');
 
-    expect(playerFacade.getSnapshot().theme).toBe('black');
-
-    playerFacade.setTheme('midnight');
-    expect(playerFacade.getSnapshot().theme).toBe('midnight');
-
-    playerFacade.setTheme('witchcraft');
-    expect(playerFacade.getSnapshot().theme).toBe('witchcraft');
+    playerFacade.setTheme('night');
+    expect(playerFacade.getSnapshot().theme).toBe('night');
 
     playerFacade.setTheme('unknown');
-    expect(playerFacade.getSnapshot().theme).toBe('midnight');
+    expect(playerFacade.getSnapshot().theme).toBe('night');
   });
 
   it('normalizes color mode', () => {
@@ -230,7 +226,7 @@ describe('PlayerFacade', () => {
 
     playerFacade.applyServerProfile({
       username: 'Mira',
-      theme: 'black',
+      theme: 'day',
       font: 'comic-sans-mono',
       colorMode: 'resources',
       character: 'mira',
@@ -244,7 +240,7 @@ describe('PlayerFacade', () => {
     expect(playerFacade.getProfileSnapshot()).toEqual({
       username: 'Mira',
       usernamePromptSeen: true,
-      theme: 'black',
+      theme: 'day',
       font: 'comic-sans-mono',
       colorMode: 'resources',
       character: 'mira',
@@ -259,21 +255,21 @@ describe('PlayerFacade', () => {
     const playerFacade = new PlayerFacade();
 
     playerFacade.setTheme('mild-white');
-    expect(playerFacade.getSnapshot().theme).toBe('midnight');
+    expect(playerFacade.getSnapshot().theme).toBe('night');
 
     playerFacade.setTheme('mild-black');
-    expect(playerFacade.getSnapshot().theme).toBe('black');
+    expect(playerFacade.getSnapshot().theme).toBe('night');
 
     playerFacade.setTheme('night-black');
-    expect(playerFacade.getSnapshot().theme).toBe('black');
+    expect(playerFacade.getSnapshot().theme).toBe('night');
 
     playerFacade.setTheme('dark-gray');
-    expect(playerFacade.getSnapshot().theme).toBe('black');
+    expect(playerFacade.getSnapshot().theme).toBe('night');
 
     playerFacade.setTheme('vs-code-midnight');
-    expect(playerFacade.getSnapshot().theme).toBe('midnight');
+    expect(playerFacade.getSnapshot().theme).toBe('night');
 
     playerFacade.setTheme('idle witch craft');
-    expect(playerFacade.getSnapshot().theme).toBe('witchcraft');
+    expect(playerFacade.getSnapshot().theme).toBe('night');
   });
 });

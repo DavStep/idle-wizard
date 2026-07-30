@@ -535,6 +535,12 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
   }
 
   applyThemeToChildren(theme) {
+    if (this.workshopWindow && this.assetManager?.getTexture) {
+      this.workshopWindow.texture = this.assetManager.getTexture(
+        theme.chrome?.workshopWindow ??
+          PIXI_ROOT_RUN_ASSETS.workshopWindowNight,
+      );
+    }
     this.tasks?.applyTheme(theme);
     this.summon?.applyTheme(theme);
     this.bagButton?.applyTheme(theme);

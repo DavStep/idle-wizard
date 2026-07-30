@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.32
+
+- Added day and night themes with matching room panels, tabs, settings controls, and Workshop atmosphere.
+- Redesigned account save selection to show clearer profile, level, and currency details before choosing which progress to keep.
+- Improved loading-screen scaling and progress presentation across phone and fitted desktop displays.
+- Strengthened account profile syncing and recovery of pending gameplay saves.
+
 ## 0.3.31
 
 - Improved touch feedback, scrolling, and text layout across rooms and dialogs.

@@ -348,7 +348,7 @@ describe('PixiGlobalDialogPresenter', () => {
       'progressBar',
     ]);
     expect(model.selections).toMatchObject({
-      theme: 'midnight',
+      theme: 'night',
       font: 'lexend',
       color: 'resources',
       icons: 'icons',
@@ -360,6 +360,7 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(model.actions.togglePreference('haptics', false)).toBe(true);
     expect(model.actions.togglePreference('music', false)).toBe(true);
     expect(model.actions.togglePreference('sfx', false)).toBe(true);
+    expect(model.actions.togglePreference('theme', true)).toBe(true);
     expect(harness.hapticsFacade.setEnabled).toHaveBeenCalledWith(false);
     expect(
       harness.soundSettingsFacade.setMusicEnabled,
@@ -367,6 +368,7 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(
       harness.soundSettingsFacade.setSfxEnabled,
     ).toHaveBeenCalledWith(false);
+    expect(harness.playerFacade.setTheme).toHaveBeenCalledWith('day');
     expect(model.account.userId).toBe('identity-mira');
     expect(await model.actions.copyUserId(model.account.userId)).toBe(
       true,
@@ -375,7 +377,7 @@ describe('PixiGlobalDialogPresenter', () => {
       'identity-mira',
     );
 
-    model.actions.selectVisualOption('theme', 'witchcraft');
+    model.actions.selectVisualOption('theme', 'day');
     model.actions.selectVisualOption('font', 'comic-sans-mono');
     model.actions.selectVisualOption('color', 'single');
     model.actions.selectVisualOption('icons', 'text');
@@ -383,7 +385,7 @@ describe('PixiGlobalDialogPresenter', () => {
     model.actions.selectVisualOption('frame', 'emerald');
     model.actions.selectVisualOption('progressBar', 'notched');
     expect(harness.playerFacade.setTheme).toHaveBeenCalledWith(
-      'witchcraft',
+      'day',
     );
     expect(harness.playerFacade.setFont).toHaveBeenCalledWith(
       'comic-sans-mono',
@@ -404,10 +406,10 @@ describe('PixiGlobalDialogPresenter', () => {
       harness.playerFacade.setProgressBar,
     ).toHaveBeenCalledWith('notched');
 
-    model.actions.researchVisualOption('theme', 'black');
+    model.actions.researchVisualOption('theme', 'day');
     expect(
       harness.gameplayFacade.buyVisualSettingOption,
-    ).toHaveBeenCalledWith('theme', 'black');
+    ).toHaveBeenCalledWith('theme', 'day');
 
     await model.actions.sendFeedback({
       kind: 'bug',
@@ -678,7 +680,7 @@ function createHarness({
   const playerFacade = createSnapshotFacade(
     {
       username: 'mira',
-      theme: 'midnight',
+      theme: 'night',
       font: 'lexend',
       colorMode: 'resources',
       iconMode: 'icons',
@@ -828,8 +830,8 @@ function createGameplaySnapshot() {
   return {
     tasks: { currentLevel: 2 },
     visualSettings: {
-      costsCrystal: { theme: { black: 4 } },
-      researched: { theme: { midnight: true } },
+      costsCrystal: { theme: { day: 0, night: 0 } },
+      researched: { theme: { day: true, night: true } },
     },
     playerLevel: {
       currentLevel: 2,

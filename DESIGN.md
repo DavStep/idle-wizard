@@ -18,12 +18,14 @@ colors:
   action-brown: "#9b6a2f"
   action-green: "#79b93f"
   action-red: "#b54c40"
-  black-theme-bg: "#1a1a1a"
-  black-theme-surface: "#202020"
-  black-theme-ink: "#e8e8e8"
-  black-theme-stroke: "#6a6a6a"
-  midnight-theme-bg: "#1c1e26"
-  midnight-theme-ink: "#d4d4d4"
+  night-theme-bg: "#1c1e26"
+  night-theme-surface: "#17191f"
+  night-theme-ink: "#d4d4d4"
+  night-theme-stroke: "#3f465c"
+  day-theme-bg: "#ffe2c0"
+  day-theme-surface: "#543a28"
+  day-theme-ink: "#f4eadb"
+  day-theme-stroke: "#765339"
 typography:
   body:
     fontFamily: "Lilita One, Arial Black, Arial, ui-sans-serif, system-ui, sans-serif"
@@ -175,7 +177,9 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 **The Grounded Room Rule.** Ordinary panels may use the shared shallow depth, but must stay subordinate to the room landmark and dialogs.
 
-**The Dialog Weight Rule.** Popup panels use the brown Root Run Expedition outer nine-slice, its paper inner nine-slice, separate purple title plaque, round X control centered below the shell, 20px padding, and one bottom-right shadow. Ordinary room panels use their own shared midnight skin and do not borrow the paper dialog treatment.
+**The Dialog Weight Rule.** Popup panels use the brown Root Run Expedition outer nine-slice, its paper inner nine-slice, separate purple title plaque, round X control centered below the shell, 20px padding, and one bottom-right shadow. Ordinary room panels use their active Night or Day skin and do not borrow the paper dialog treatment.
+
+**The Day Recolor Rule.** Night is the unchanged default formerly called Midnight. Day preserves the exact silhouettes, alpha masks, slice margins, layout, and depth of Night assets while recoloring shared chrome to warm brown over a flat pale-peach daylight wall. Theme changes may swap the room background, top panel, bottom tab frames, ordinary inner boxes, and room landmarks such as the Workshop window; they must not redesign those components. The Day Workshop window keeps its exact arch geometry, uses neutral gray stone, and shows a sunny exterior.
 
 ## 5. Components
 
@@ -189,7 +193,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 ### Cards / Containers
 - **Corner Style:** Owned by the shared panel nine-slice, typically softly rounded with a dark outline.
-- **Background:** Layered midnight/navy surface with authored inset shading.
+- **Background:** Layered Night navy or the flat Day wall color `#ffe2c0`; Day components retain their authored warm-brown inset shading.
 - **Shadow Strategy:** Compact, directional, and shared; stronger only for the dominant landmark or modal layer.
 - **Border:** Image-backed frame or approved generated nine-slice, never an arbitrary feature-local radius and shadow.
 - **Internal Padding:** Compact source padding sized to the panel's artwork and content.
@@ -201,7 +205,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 - **Error / Disabled:** Error copy stays compact, disabled fields use disabled gray.
 
 ### Navigation
-- **Bottom Room Tabs:** Five fixed-width icon tabs use the shared midnight top-cap nine-slice, with the lighter cap reserved for the selected state. They fill the source width, share one bottom baseline, and stretch their lower region to the screen edge with no gap. The selected tab is `6px` wider than every inactive tab; each visible-tab count derives one fixed inactive width so the full row remains edge-to-edge. Active/inactive frames are `56px`/`44px` tall before the shared `26px` lower region. Icons stay at full color and opacity in every unlocked state. When seven tabs are visible, all unlocked icons use the compact `1.05x` inactive and `1x` selected scale. The active tab rises `12px`, enlarges its icon, and reveals its white source-11px Title Case page name; inactive tabs sit lower with hidden visual labels. Locked tabs replace the room icon with a larger lock centered lower in the inactive frame.
+- **Bottom Room Tabs:** Five fixed-width icon tabs use the active theme's matching top-cap nine-slices, with the lighter cap reserved for the selected state. Night uses the original midnight assets and Day uses pixel-aligned warm-brown recolors. They fill the source width, share one bottom baseline, and stretch their lower region to the screen edge with no gap. The selected tab is `6px` wider than every inactive tab; each visible-tab count derives one fixed inactive width so the full row remains edge-to-edge. Active/inactive frames are `56px`/`44px` tall before the shared `26px` lower region. Icons stay at full color and opacity in every unlocked state. When seven tabs are visible, all unlocked icons use the compact `1.05x` inactive and `1x` selected scale. The active tab rises `12px`, enlarges its icon, and reveals its white source-11px Title Case page name; inactive tabs sit lower with hidden visual labels. Locked tabs replace the room icon with a larger lock centered lower in the inactive frame.
 - **Popup Tabs:** Whole-dialog category tabs sit inside the brown shell footer below the paper, using a `28px` row, `9px` side insets, `6px` paper gap, `10px` bottom inset, and equal count-derived widths. Gaps are `4px`/`6px`/`8px`/`10px` for five/four/three/two tabs. Reuse the shared very-dark deselected and lighter-brown selected Root Run button skins.
 - **Page Names:** The current room name appears inside the raised active tab; inactive room names remain available through accessible labels.
 
@@ -217,7 +221,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 ### Progress
 - **Rail:** Shared passive in-game rails use the compact Root Rush geometry at 10px source height. Interactive sliders and the top-panel quest rail use 14px source height. Both use a black capsule track, 1px outer stroke, dark inset rim, and 1px inner gap.
-- **Fill:** Purple `#8740df` with a lighter `#bd72f3` inset edge is the shared default. Brewing uses blue, Garden uses green, and Market/Research use yellow. The top-panel level-up rail keeps the framed black track but omits the fill's inset edge, including when it uses the selected gradient treatment. Keep fully rounded caps and timer text outside the rail.
+- **Fill:** Purple `#8740df` with a lighter `#bd72f3` inset edge is the shared default. Brewing uses blue, Garden uses green, and Market/Research use yellow. The top-panel level-up rail uses Root Run's authored yellow fill texture without a feature-local gradient or inset edge. Keep fully rounded caps and timer text outside the rail.
 - **Allocation Knob:** Use a 14px cream circle with a tan border and dark-brown outer ring, matching the layered round reference without any inner glyph.
 
 ### Signature Component

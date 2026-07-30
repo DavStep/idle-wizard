@@ -82,10 +82,11 @@ Discord is the final release action. If either required GitHub Actions workflow
 fails or does not start, the command exits without posting any Discord messages
 or APK.
 
-The production Android sync converts emitted PNG assets to quality-90 WebP
-after the web build and before Capacitor copies `dist`. This optimization is
-Android-only; GitHub Pages continues to serve the original production assets.
-Full alpha quality keeps transparent HUD edges unchanged.
+The production Android sync builds into isolated `tmp/android-dist`, converts
+emitted PNG assets there to quality-90 WebP, and then lets Capacitor copy that
+directory. This optimization is Android-only; concurrent web builds can safely
+keep using `dist`, and GitHub Pages continues to serve the original production
+assets. Full alpha quality keeps transparent HUD edges unchanged.
 
 The release preflight also requires the semantic version to increase Android's
 `versionCode`, and it verifies the built APK manifest before upload. The Android

@@ -1286,6 +1286,12 @@ describe('ShopPixiPage', () => {
     expect(coinOffer.actionButton.resolveRootRunVariant()).toBe(
       'green',
     );
+    const stall =
+      harness.page.stallsSection.stalls.get('stall-1');
+    expect(coinOffer.actionButton.hitArea).toMatchObject({
+      width: stall.priceAction.hitArea.width,
+      height: stall.priceAction.hitArea.height,
+    });
     expect(
       harness.semanticRegistry.require('shop.coinOffer.collect')
         .displayObject,

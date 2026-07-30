@@ -85,6 +85,228 @@ describe('retained Pixi gate controllers', () => {
     view.destroy();
   });
 
+  it('composes account-link choices as two identity boards with currency icons and yellow actions', () => {
+    const view = new PixiAccountLinkChoiceView({
+      assets: createAssets(),
+    });
+    const theme = createPixiThemeSnapshot({ theme: 'midnight' });
+    view.applyTheme(theme);
+
+    view.bind({
+      device: {
+        level: 1,
+        coin: 0,
+        crystal: 1,
+        emerald: 2,
+        ruby: 3,
+      },
+      account: {
+        username: 'StepWizzard',
+        character: 'elara',
+        frame: 'violet',
+        level: 5,
+        coin: 53,
+        crystal: 3,
+        emerald: 2,
+        ruby: 1,
+      },
+      onSelectDevice: vi.fn(),
+      onSelectAccount: vi.fn(),
+    });
+
+    expect(view.panel.titleLabel.text).toBe('Account Data');
+    expect(view.panel.paperVisible).toBe(false);
+    expect(view.deviceRow.label.text).toBe('This Device');
+    expect(view.accountRow.label.text).toBe('StepWizzard');
+    expect(view.accountRow.username.text).toBe('StepWizzard');
+    expect(view.deviceRow.level.text).toBe('Level 1');
+    expect(view.accountRow.level.text).toBe('Level 5');
+    expect(view.deviceRow.coin.resource).toBe('coin');
+    expect(view.deviceRow.coin.amount).toBe('0');
+    expect(view.deviceRow.crystal.resource).toBe('crystal');
+    expect(view.deviceRow.crystal.amount).toBe('1');
+    expect(view.deviceRow.emerald.resource).toBe('emerald');
+    expect(view.deviceRow.emerald.amount).toBe('2');
+    expect(view.deviceRow.ruby.resource).toBe('ruby');
+    expect(view.deviceRow.ruby.amount).toBe('3');
+    expect(view.accountRow.coin.amount).toBe('53');
+    expect(view.accountRow.crystal.amount).toBe('3');
+    expect(view.accountRow.emerald.amount).toBe('2');
+    expect(view.accountRow.ruby.amount).toBe('1');
+    expect(view.deviceRow.button.variant).toBe('yellow');
+    expect(view.accountRow.button.variant).toBe('yellow');
+    expect(view.deviceRow.button.textLabel.text).toBe('Select');
+    expect(view.accountRow.button.textLabel.text).toBe('Select');
+    expect(view.deviceSection.frameHeight).toBe(
+      view.accountSection.frameHeight,
+    );
+    expect(view.deviceRow.button.buttonWidth).toBe(72);
+    expect(view.deviceRow.button.buttonHeight).toBe(42);
+    expect(view.accountRow.button.buttonWidth).toBe(72);
+    expect(view.accountRow.button.buttonHeight).toBe(42);
+    expect(view.deviceRow.button.x).toBe(view.accountRow.button.x);
+    expect(view.deviceRow.button.y).toBe(view.accountRow.button.y);
+    expect(
+      view.deviceRow.button.x + view.deviceRow.button.buttonWidth,
+    ).toBe(view.panel.contentBoxWidth - 8);
+    expect(
+      view.deviceRow.button.y + view.deviceRow.button.buttonHeight / 2,
+    ).toBe(40);
+    expect(view.deviceRow.label.x).toBe(view.deviceRow.level.x);
+    expect(view.deviceRow.coin.x).toBe(
+      view.deviceRow.level.x,
+    );
+    expect(view.deviceRow.crystal.x).toBeGreaterThan(
+      view.deviceRow.coin.x + view.deviceRow.coin.measuredWidth,
+    );
+    expect(view.deviceRow.emerald.x).toBeGreaterThan(
+      view.deviceRow.crystal.x + view.deviceRow.crystal.measuredWidth,
+    );
+    expect(view.deviceRow.ruby.x).toBeGreaterThan(
+      view.deviceRow.emerald.x + view.deviceRow.emerald.measuredWidth,
+    );
+    expect(
+      view.deviceRow.ruby.x + view.deviceRow.ruby.measuredWidth,
+    ).toBeCloseTo(view.deviceRow.button.x - 8);
+    expect(
+      view.deviceRow.crystal.x -
+        view.deviceRow.coin.x -
+        view.deviceRow.coin.measuredWidth,
+    ).toBeCloseTo(
+      view.deviceRow.emerald.x -
+        view.deviceRow.crystal.x -
+        view.deviceRow.crystal.measuredWidth,
+    );
+    expect(
+      view.deviceRow.emerald.x -
+        view.deviceRow.crystal.x -
+        view.deviceRow.crystal.measuredWidth,
+    ).toBeCloseTo(
+      view.deviceRow.ruby.x -
+        view.deviceRow.emerald.x -
+        view.deviceRow.emerald.measuredWidth,
+    );
+    expect(view.accountRow.label.x).toBe(
+      view.accountRow.level.x,
+    );
+    expect(view.accountRow.level.x).toBe(
+      view.accountRow.username.x,
+    );
+    expect(
+      view.accountRow.avatar.y +
+        view.accountRow.avatar.buttonHeight *
+          view.accountRow.avatar.scale.y /
+          2,
+    ).toBeCloseTo(
+      view.accountRow.button.y +
+        view.accountRow.button.buttonHeight / 2,
+    );
+    expect(view.accountRow.crystal.x).toBeGreaterThan(
+      view.accountRow.coin.x + view.accountRow.coin.measuredWidth,
+    );
+    expect(view.accountRow.emerald.x).toBeGreaterThan(
+      view.accountRow.crystal.x + view.accountRow.crystal.measuredWidth,
+    );
+    expect(view.accountRow.ruby.x).toBeGreaterThan(
+      view.accountRow.emerald.x + view.accountRow.emerald.measuredWidth,
+    );
+    expect(
+      view.accountRow.ruby.x + view.accountRow.ruby.measuredWidth,
+    ).toBeCloseTo(view.accountRow.button.x - 8);
+    const contentTheme = view.panel.getContentTheme();
+    for (const resource of [
+      view.deviceRow.coin,
+      view.deviceRow.crystal,
+      view.deviceRow.emerald,
+      view.deviceRow.ruby,
+      view.accountRow.coin,
+      view.accountRow.crystal,
+      view.accountRow.emerald,
+      view.accountRow.ruby,
+    ]) {
+      expect(resource.amountLabel.textObject.style.fill).toBe(
+        contentTheme.text,
+      );
+    }
+    expect(view.deviceRow.coin.amountLabel.textObject.style.fill).not.toBe(
+      contentTheme.resourceColors.coin,
+    );
+    expect(view.warning.text).toBe(
+      'The Progress You Do Not Select Will Be Lost',
+    );
+    expect(view.accountAvatar.visible).toBe(true);
+    expect(view.accountAvatar.avatarFrame.tint).not.toBe(0xffffff);
+    expect(view.accountSection.y).toBeGreaterThan(
+      view.deviceSection.y + view.deviceSection.frameHeight,
+    );
+    expect(view.warning.y).toBeGreaterThan(
+      view.accountSection.y + view.accountSection.frameHeight,
+    );
+
+    view.destroy();
+  });
+
+  it('uses the default character and frame when the account has no selection', () => {
+    const assets = createAssets();
+    assets.getTexture = vi.fn(() => Texture.EMPTY);
+    const view = new PixiAccountLinkChoiceView({ assets });
+    const textureCallCount = assets.getTexture.mock.calls.length;
+
+    view.bind({
+      account: {
+        username: 'Wizard',
+        character: '',
+        frame: '',
+      },
+    });
+
+    expect(
+      assets.getTexture.mock.calls.slice(textureCallCount),
+    ).toContainEqual(['source:assets/avatars/elara.png']);
+    expect(view.accountAvatar.avatarFrame.tint).toBe(0xffffff);
+
+    view.destroy();
+  });
+
+  it('preserves currency gaps when four larger balances fill the account lane', () => {
+    const view = new PixiAccountLinkChoiceView({
+      assets: createAssets(),
+    });
+    view.applyTheme(createPixiThemeSnapshot({ theme: 'midnight' }));
+
+    view.bind({
+      account: {
+        coin: 999,
+        crystal: 999,
+        emerald: 999,
+        ruby: 999,
+      },
+    });
+
+    const currencies = [
+      view.accountRow.coin,
+      view.accountRow.crystal,
+      view.accountRow.emerald,
+      view.accountRow.ruby,
+    ];
+    expect(currencies[0].scale.x).toBeLessThan(1);
+    for (let index = 1; index < currencies.length; index += 1) {
+      const previous = currencies[index - 1];
+      expect(
+        currencies[index].x -
+          previous.x -
+          previous.measuredWidth * previous.scale.x,
+      ).toBeGreaterThanOrEqual(4);
+    }
+    expect(
+      view.accountRow.ruby.x +
+        view.accountRow.ruby.measuredWidth *
+          view.accountRow.ruby.scale.x,
+    ).toBeCloseTo(view.accountRow.button.x - 8);
+
+    view.destroy();
+  });
+
   it('opens the full account panel with the exact rigid scale motion', () => {
     const motionRuntime = createMotionRuntime();
     const playOpenSound = vi.fn();
@@ -279,7 +501,7 @@ describe('retained Pixi gate controllers', () => {
     });
   });
 
-  it('shows the copied full-height splash until the backend connects', () => {
+  it('fits the splash to viewport width and clips vertical overflow', () => {
     const onSplashViewportChange = vi.fn();
     const view = new PixiOnlineGateView({
       assets: createAssets(),
@@ -306,12 +528,11 @@ describe('retained Pixi gate controllers', () => {
     expect(view.panel.visible).toBe(false);
     expect(view.splash).toBeInstanceOf(PixiLoadingSplash);
     expect(view.splash.visible).toBe(true);
-    expect(view.splash.art.height).toBe(sourceHeight);
-    expect(view.splash.art.width).toBeCloseTo(
-      844 * (818 / 1923) * (360 / 390),
-      5,
-    );
+    expect(view.splash.art.width).toBe(360);
+    expect(view.splash.art.height).toBeCloseTo(360 / (818 / 1923), 5);
+    expect(view.splash.art.height).toBeGreaterThan(sourceHeight);
     expect(view.splash.art.x).toBe(PIXI_UI_GEOMETRY.sourceWidth / 2);
+    expect(view.splash.art.y).toBe(0);
     expect(view.splash.loadingLabel.text).toBe('Loading game');
     expect(view.splash.loadingLabel.x).toBe(
       PIXI_UI_GEOMETRY.sourceWidth / 2,
@@ -494,6 +715,80 @@ describe('retained Pixi gate controllers', () => {
     expect(view.hide).toHaveBeenCalledOnce();
   });
 
+  it('projects structured save and account identity data into the choice view', () => {
+    const view = createView();
+    const controller = new PixiAccountLinkChoiceController();
+    controller.attach(view);
+
+    void controller.choose({
+      deviceSave: {
+        tasks: { currentLevel: 3 },
+        coin: { current: 4 },
+        crystal: { current: 5 },
+        emerald: { current: 6 },
+        ruby: { current: 7 },
+      },
+      accountSave: {
+        tasks: { currentLevel: 6 },
+        coin: { current: 7 },
+        crystal: { current: 8 },
+        emerald: { current: 9 },
+        ruby: { current: 10 },
+      },
+      accountProfile: {
+        username: 'Mira',
+        character: 'elara',
+        frame: 'violet',
+      },
+    });
+
+    expect(view.bind).toHaveBeenLastCalledWith({
+      deviceSummary:
+        'Level 3, 4 Coin, 5 Crystal, 6 Emerald, 7 Ruby',
+      accountSummary:
+        'Mira, Level 6, 7 Coin, 8 Crystal, 9 Emerald, 10 Ruby',
+      device: {
+        level: 3,
+        coin: 4,
+        crystal: 5,
+        emerald: 6,
+        ruby: 7,
+      },
+      account: {
+        username: 'Mira',
+        character: 'elara',
+        frame: 'violet',
+        level: 6,
+        coin: 7,
+        crystal: 8,
+        emerald: 9,
+        ruby: 10,
+      },
+      onSelectDevice: expect.any(Function),
+      onSelectAccount: expect.any(Function),
+    });
+  });
+
+  it('projects default account visuals when character options are empty', () => {
+    const view = createView();
+    const controller = new PixiAccountLinkChoiceController();
+    controller.attach(view);
+
+    void controller.choose({
+      accountProfile: {
+        username: 'Mira',
+        character: '',
+        frame: '',
+      },
+    });
+
+    expect(view.bind.mock.calls.at(-1)[0].account).toMatchObject({
+      username: 'Mira',
+      character: 'elara',
+      frame: 'classic',
+    });
+  });
+
   it('shows the deploy lock only after a confirmed newer version and saves first', async () => {
     const events = [];
     const view = createView();
@@ -602,5 +897,6 @@ function createAssets() {
   return {
     loaded: true,
     getTexture: () => Texture.EMPTY,
+    getAtlasTexture: () => Texture.EMPTY,
   };
 }

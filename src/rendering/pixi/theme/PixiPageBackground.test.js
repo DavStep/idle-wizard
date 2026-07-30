@@ -21,8 +21,14 @@ describe('Pixi page background tokens', () => {
       'prestige',
     ];
 
-    for (const themeKey of ['black', 'midnight', 'witchcraft']) {
+    for (const themeKey of ['night', 'day']) {
       const theme = createPixiThemeSnapshot({ theme: themeKey });
+      const expectedBackground =
+        themeKey === 'day' ? theme.background : theme.surface;
+      if (themeKey === 'day') {
+        expect(theme.background).toBe('#ffe2c0');
+        expect(theme.surface).toBe('#543a28');
+      }
       expect(Object.keys(theme.pageBackgrounds)).toEqual(pageIds);
       for (const pageId of pageIds) {
         const colors = getPixiPageBackgroundColors(pageId, theme);
@@ -30,13 +36,13 @@ describe('Pixi page background tokens', () => {
           PIXI_PAGE_BACKGROUND_COLORS[themeKey][pageId],
         );
         expect(colors).toEqual([
-          theme.surface,
-          theme.surface,
-          theme.surface,
+          expectedBackground,
+          expectedBackground,
+          expectedBackground,
         ]);
         expect(
           createPixiPageBackgroundGradient(pageId, theme),
-        ).toBe(theme.surface);
+        ).toBe(expectedBackground);
       }
     }
   });

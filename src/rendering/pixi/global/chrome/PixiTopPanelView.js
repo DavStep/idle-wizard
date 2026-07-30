@@ -464,6 +464,10 @@ export class PixiTopPanelView extends BasePixiRetainedView {
   }
 
   onApplyTheme(theme) {
+    this.panelBackground.texture = this.assets.getTexture(
+      theme.chrome?.topPanelBackground ??
+        PIXI_ROOT_RUN_ASSETS.topPanelBackground,
+    );
     this.username.applyTheme(theme);
     this.coin.applyTheme(theme);
     this.contextCurrency.applyTheme(theme);

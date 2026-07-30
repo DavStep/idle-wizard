@@ -1,7 +1,5 @@
 import {
-  AlphaMask,
   Container,
-  FillGradient,
   Graphics,
   NineSliceSprite,
   Rectangle,
@@ -58,12 +56,6 @@ const LEVEL_TEXT_STROKE = Object.freeze({
   color: '#0a0a0a',
   scale: PIXI_UI_GEOMETRY.sourceScale,
 });
-const HUD_GRADIENT_STOPS = Object.freeze([
-  Object.freeze({ color: '#7f3cff', offset: 0 }),
-  Object.freeze({ color: '#d868ff', offset: 0.48 }),
-  Object.freeze({ color: '#64caff', offset: 0.74 }),
-  Object.freeze({ color: '#ffd76a', offset: 1 }),
-]);
 
 export class RootRunHudAvatarButton extends PixiButton {
   constructor({ assets, texture } = {}) {
@@ -277,35 +269,19 @@ export class RootRunHudLevelRail extends Container {
       label: 'topPanel:questTrack',
     });
     this.track.position.set(LEVEL_TRACK_X, LEVEL_TRACK_Y);
-    this.fill = new Graphics();
-    this.fill.label = 'topPanel:questFill';
-    this.fillMask = createNineSlice({
+    this.fill = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.levelFill),
       insets: LEVEL_FILL_SLICE,
       width: LEVEL_FILL_TEXTURE_WIDTH,
       height: LEVEL_FILL_HEIGHT,
-      label: 'topPanel:questFillMask',
+      label: 'topPanel:questFill',
     });
-    this.fillAlphaMask = new AlphaMask({
-      mask: this.fillMask,
-    });
-    this.fillAlphaMask.channel = 'alpha';
-    this.fill.setMask({ channel: 'alpha' });
-    this.fill.addEffect(this.fillAlphaMask);
     this.dividers = new Graphics();
     this.dividers.label = 'topPanel:questDividers';
-    this.gradient = new FillGradient({
-      type: 'linear',
-      start: { x: 0, y: 0 },
-      end: { x: 1, y: 0 },
-      textureSpace: 'local',
-      colorStops: HUD_GRADIENT_STOPS,
-    });
     this.questVisuals.addChild(
       this.panel,
       this.track,
       this.fill,
-      this.fillMask,
       this.dividers,
     );
 
@@ -396,17 +372,13 @@ export class RootRunHudLevelRail extends Container {
     const width = LEVEL_TRACK_WIDTH - LEVEL_TRACK_INSET * 2;
     const height = LEVEL_FILL_HEIGHT;
 
-    this.fill.clear();
     const fillWidth = width * safeRatio;
     if (fillWidth > 0) {
-      this.fillMask.visible = true;
-      this.fillMask.position.set(x, y);
-      this.fillMask.setSize(fillWidth, height);
-      this.fill
-        .rect(x, y, fillWidth, height)
-        .fill(this.gradient);
+      this.fill.visible = true;
+      this.fill.position.set(x, y);
+      this.fill.setSize(fillWidth, height);
     } else {
-      this.fillMask.visible = false;
+      this.fill.visible = false;
     }
 
     this.dividers.clear();
@@ -469,11 +441,6 @@ export class RootRunHudLevelRail extends Container {
   }
 
   destroy(options) {
-    this.gradient?.destroy();
-    this.gradient = null;
-    this.fill.removeEffect(this.fillAlphaMask);
-    this.fillAlphaMask.destroy();
-    this.fillAlphaMask = null;
     super.destroy(options);
   }
 }

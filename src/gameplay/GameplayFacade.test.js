@@ -403,7 +403,6 @@ describe("GameplayFacade", () => {
     first.gameplayFacade.emeraldFacade.add(1);
     first.gameplayFacade.itemsFacade.addItem(1, 3);
     first.gameplayFacade.itemsFacade.addItem(1001, 2);
-    first.gameplayFacade.buyVisualSettingOption("theme", "black");
     first.gameplayFacade.setSeedSummoningAutoEnabled(false);
     first.gameplayFacade.setSeedSummoningManaReserve(25);
     first.gameplayFacade.setSeedDropPreference("sageSeed", "high");
@@ -430,7 +429,10 @@ describe("GameplayFacade", () => {
     expect(snapshot.research.completedResearchIds).toEqual([
       "unlockSeed:sageSeed",
     ]);
-    expect(snapshot.visualSettings.researched.theme.black).toBe(true);
+    expect(snapshot.visualSettings.researched.theme).toEqual({
+      night: true,
+      day: true,
+    });
     expect(snapshot.seedSummoning.autoSummoning).toMatchObject({
       enabled: false,
       manaReserve: 25,
@@ -1009,7 +1011,6 @@ describe("GameplayFacade", () => {
     gameplayFacade.emeraldFacade.add(7);
     gameplayFacade.coinFacade.add(99);
     gameplayFacade.itemsFacade.addItem(1, 5);
-    gameplayFacade.buyVisualSettingOption("theme", "black");
     gameplayFacade.buyResearch("unlockSeed:sageSeed");
     gameplayFacade.addBrewingIngredient(1001);
     gameplayFacade.loadSelectedShopShelfSlotItem(1, 1);
@@ -1047,7 +1048,10 @@ describe("GameplayFacade", () => {
     expect(snapshot.brewing.ingredients).toEqual([]);
     expect(snapshot.shop.shelf.selectedSlotNumber).toBe(1);
     expect(snapshot.logs.entries).toEqual([]);
-    expect(snapshot.visualSettings.researched.theme.black).toBe(true);
+    expect(snapshot.visualSettings.researched.theme).toEqual({
+      night: true,
+      day: true,
+    });
     expect(snapshot.mana).toMatchObject({
       current: 0,
       cap: 250,
@@ -1444,7 +1448,6 @@ describe("GameplayFacade", () => {
     gameplayFacade.crystalFacade.add(8);
     gameplayFacade.emeraldFacade.add(7);
     gameplayFacade.coinFacade.add(99);
-    gameplayFacade.buyVisualSettingOption("theme", "black");
     gameplayFacade.buyResearch("unlockSeed:sageSeed");
     advanceToLevel(gameplayFacade, 10);
 
@@ -1464,7 +1467,8 @@ describe("GameplayFacade", () => {
       visualSettings: {
         researched: {
           theme: {
-            black: true,
+            night: true,
+            day: true,
           },
         },
       },
@@ -2146,7 +2150,10 @@ describe("GameplayFacade", () => {
     expect(snapshot.research.completedResearchIds).toEqual([
       "unlockSeed:sageSeed",
     ]);
-    expect(snapshot.visualSettings.researched.theme.black).toBe(true);
+    expect(snapshot.visualSettings.researched.theme).toEqual({
+      night: true,
+      day: true,
+    });
     expect(snapshot.tasks.currentLevel).toBe(1);
     expect(snapshot.tasks.level.tasks).toHaveLength(3);
     expect(gameplayFacade.consumeProgressResetPending()).toBe(false);
@@ -2355,8 +2362,8 @@ describe("GameplayFacade", () => {
           configKey: "visualSettings",
           configJson: JSON.stringify({
             costsCrystal: {
-              theme: { black: 2, midnight: 0, witchcraft: 0 },
-              font: { "lilita-one": 0, "comic-sans-mono": 0 },
+              theme: { night: 0, day: 0 },
+              font: { "lilita-one": 0, "comic-sans-mono": 2 },
               progressBar: { regular: 0, gradient: 0 },
             },
           }),
@@ -2365,45 +2372,55 @@ describe("GameplayFacade", () => {
     });
 
     expect(
-      gameplayFacade.getSnapshot().visualSettings.costsCrystal.theme.black,
+      gameplayFacade.getSnapshot().visualSettings.costsCrystal.font[
+        "comic-sans-mono"
+      ],
     ).toBe(2);
     expect(
       gameplayFacade.getSnapshot().visualSettings.researched,
     ).toMatchObject({
-      theme: { black: false, midnight: true, witchcraft: false },
+      theme: { night: true, day: true },
       font: {
         "lilita-one": true,
         "comic-sans-mono": false,
       },
       progressBar: { regular: true, gradient: false },
     });
-    expect(gameplayFacade.buyVisualSettingOption("theme", "black")).toEqual({
+    expect(
+      gameplayFacade.buyVisualSettingOption("font", "comic-sans-mono"),
+    ).toEqual({
       ok: false,
       reason: "not_enough_crystal",
-      category: "theme",
-      optionKey: "black",
+      category: "font",
+      optionKey: "comic-sans-mono",
       costCrystal: 2,
       costCurrency: "crystal",
     });
 
     gameplayFacade.crystalFacade.add(2);
 
-    expect(gameplayFacade.buyVisualSettingOption("theme", "black")).toEqual({
+    expect(
+      gameplayFacade.buyVisualSettingOption("font", "comic-sans-mono"),
+    ).toEqual({
       ok: true,
-      category: "theme",
-      optionKey: "black",
+      category: "font",
+      optionKey: "comic-sans-mono",
       costCrystal: 2,
       costCurrency: "crystal",
     });
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(1);
     expect(
-      gameplayFacade.getSnapshot().visualSettings.researched.theme.black,
+      gameplayFacade.getSnapshot().visualSettings.researched.font[
+        "comic-sans-mono"
+      ],
     ).toBe(true);
-    expect(gameplayFacade.buyVisualSettingOption("theme", "black")).toEqual({
+    expect(
+      gameplayFacade.buyVisualSettingOption("font", "comic-sans-mono"),
+    ).toEqual({
       ok: false,
       reason: "already_researched",
-      category: "theme",
-      optionKey: "black",
+      category: "font",
+      optionKey: "comic-sans-mono",
       costCrystal: 2,
       costCurrency: "crystal",
     });

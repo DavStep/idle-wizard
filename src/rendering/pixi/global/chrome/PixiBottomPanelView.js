@@ -904,6 +904,7 @@ class PixiBottomTab {
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.frame.applyTheme(this.theme);
     this.text.applyTheme(this.theme);
     this.text.textObject.style.stroke = normalizePixiTextStroke({
       color: this.theme.surface,
@@ -1206,6 +1207,7 @@ class PixiRoomTabFrame extends Container {
     this.mode = 'inactive';
     this.selected = false;
     this.locked = false;
+    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     const initial = PIXI_ROOM_TAB_FRAME_STATES.inactive;
     this.sprite = new NineSliceSprite({
       texture: assets.getTexture(initial.textureId),
@@ -1219,6 +1221,12 @@ class PixiRoomTabFrame extends Container {
     });
     this.addChild(this.sprite);
     this.redraw();
+  }
+
+  applyTheme(theme) {
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.redraw();
+    return this;
   }
 
   setWidth(width) {
@@ -1247,7 +1255,18 @@ class PixiRoomTabFrame extends Container {
   }
 
   redraw() {
-    const appearance = PIXI_ROOM_TAB_FRAME_STATES[this.mode];
+    const appearance = {
+      textureId:
+        this.mode === 'active'
+          ? (
+              this.theme.chrome?.roomTabActive ??
+              PIXI_ROOM_TAB_FRAME_STATES.active.textureId
+            )
+          : (
+              this.theme.chrome?.roomTabInactive ??
+              PIXI_ROOM_TAB_FRAME_STATES.inactive.textureId
+            ),
+    };
     const elevated = this.selected && !this.locked;
     const frameY = elevated ? 0 : TAB_RISE;
     const frameHeight =

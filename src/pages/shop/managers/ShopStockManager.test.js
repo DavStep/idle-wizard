@@ -418,7 +418,7 @@ describe('ShopStockManager', () => {
       /\.style-button\.shop-page__stock-buy-button\s*\{[^}]*min-width:\s*var\(--shop-page-stock-buy-width\);/s,
     );
     expect(baseCss).toMatch(
-      /:root\[data-style-theme="midnight"\][\s\S]*?\.style-button\.shop-page__stock-buy-button[\s\S]*?\{\s*border-image:\s*none;/,
+      /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)[\s\S]*?\.style-button\.shop-page__stock-buy-button[\s\S]*?\{\s*border-image:\s*none;/,
     );
   });
 });

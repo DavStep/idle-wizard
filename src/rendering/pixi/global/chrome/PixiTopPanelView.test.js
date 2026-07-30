@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
-import { FillGradient, NineSliceSprite, Texture } from 'pixi.js';
+import { NineSliceSprite, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { SemanticTargetRegistry } from '../../retained/index.js';
@@ -30,7 +30,7 @@ describe('PixiTopPanelView', () => {
     });
     const children = [...view.root.children];
 
-    view.applyTheme(createPixiThemeSnapshot({ theme: 'midnight' }));
+    view.applyTheme(createPixiThemeSnapshot({ theme: 'night' }));
     view.activate();
     view.bind({
       username: 'mira',
@@ -129,21 +129,13 @@ describe('PixiTopPanelView', () => {
     expect(assets.getTexture).toHaveBeenCalledWith(
       'source:assets/ui/root-run-top-hud/level-progress-fill-mask.png',
     );
-    expect(view.levelRail.fillMask).toBeInstanceOf(NineSliceSprite);
+    expect(view.levelRail.fill).toBeInstanceOf(NineSliceSprite);
     expect([
-      view.levelRail.fillMask.leftWidth,
-      view.levelRail.fillMask.topHeight,
-      view.levelRail.fillMask.rightWidth,
-      view.levelRail.fillMask.bottomHeight,
+      view.levelRail.fill.leftWidth,
+      view.levelRail.fill.topHeight,
+      view.levelRail.fill.rightWidth,
+      view.levelRail.fill.bottomHeight,
     ]).toEqual([26, 20, 26, 21]);
-    expect(view.levelRail.fill.effects).toContain(
-      view.levelRail.fillAlphaMask,
-    );
-    expect(view.levelRail.fillAlphaMask).toMatchObject({
-      pipe: 'alphaMask',
-      mask: view.levelRail.fillMask,
-      channel: 'alpha',
-    });
     expect(semanticRegistry.get('top.coin')?.displayObject).toBe(view.coin);
     expect(semanticRegistry.get('top.settings')?.displayObject).toBe(
       view.settingsControl,
@@ -158,6 +150,11 @@ describe('PixiTopPanelView', () => {
       },
     });
     expect(semanticRegistry.getTutorialTarget('top:mana')).not.toBeNull();
+
+    view.applyTheme(createPixiThemeSnapshot({ theme: 'day' }));
+    expect(assets.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.topPanelBackgroundDay,
+    );
   });
 
   it('keeps the shared top panel compact below its content', () => {
@@ -309,7 +306,7 @@ describe('PixiTopPanelView', () => {
     view.destroy();
   });
 
-  it('draws the Root Run rail with a gradient fill, separators, and no progress numbers', () => {
+  it('draws the Root Run rail with its authored fill, separators, and no progress numbers', () => {
     const view = new PixiTopPanelView({
       assets: createAssets(),
     });
@@ -318,7 +315,6 @@ describe('PixiTopPanelView', () => {
       theme: 'midnight',
       progressBar: 'regular',
     }));
-    const fillSpy = vi.spyOn(view.levelRail.fill, 'fill');
     view.activate();
     view.bind({
       level: 4,
@@ -330,22 +326,15 @@ describe('PixiTopPanelView', () => {
       },
     });
 
-    const fillRects = view.levelRail.fill.context.instructions.filter(
-      (instruction) => {
-        const path = findPath(instruction, 'rect');
-        return path && path.data[2] > 3;
-      },
-    );
-    expect(fillRects).toHaveLength(1);
-    expect(readRect(fillRects[0])).toEqual([
-      23,
-      21,
-      234.375,
-      51,
-    ]);
-    expect(view.levelRail.fillMask.height).toBe(51);
-    expect(view.levelRail.gradient).toBeInstanceOf(FillGradient);
-    expect(fillSpy).toHaveBeenCalledWith(view.levelRail.gradient);
+    expect(view.levelRail.fill).toBeInstanceOf(NineSliceSprite);
+    expect(view.levelRail.fill.position).toMatchObject({
+      x: 23,
+      y: 21,
+    });
+    expect(view.levelRail.fill.width).toBe(234.375);
+    expect(view.levelRail.fill.height).toBe(51);
+    expect(view.levelRail.fill.visible).toBe(true);
+    expect(view.levelRail.fill.tint).toBe(0xffffff);
 
     const dividerRects =
       view.levelRail.dividers.context.instructions.filter(
@@ -409,7 +398,7 @@ describe('PixiTopPanelView', () => {
     view.destroy();
   });
 
-  it('keeps the Idle Wizard gradient regardless of the selected player rail style', () => {
+  it('keeps the Root Run fill regardless of the selected player rail style', () => {
     const view = new PixiTopPanelView({
       assets: createAssets(),
     });
@@ -418,7 +407,6 @@ describe('PixiTopPanelView', () => {
       theme: 'midnight',
       progressBar: 'notched',
     }));
-    const fillSpy = vi.spyOn(view.levelRail.fill, 'fill');
 
     view.activate();
     view.bind({
@@ -431,8 +419,9 @@ describe('PixiTopPanelView', () => {
       },
     });
 
-    expect(view.levelRail.gradient).toBeInstanceOf(FillGradient);
-    expect(fillSpy).toHaveBeenCalledWith(view.levelRail.gradient);
+    expect(view.levelRail.fill).toBeInstanceOf(NineSliceSprite);
+    expect(view.levelRail.fill.tint).toBe(0xffffff);
+    expect(view.levelRail.fill.visible).toBe(true);
 
     view.destroy();
   });

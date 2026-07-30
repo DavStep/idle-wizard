@@ -30,7 +30,7 @@ describe('identity-only player reset', () => {
       createdAt: resetAt,
       lastSeenAt: resetAt,
       playerLevel: 1,
-      theme: 'midnight',
+      theme: 'night',
       colorMode: 'resources',
       usernamePromptSeen: false,
       font: 'lilita-one',

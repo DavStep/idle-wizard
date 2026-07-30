@@ -2,11 +2,11 @@
 
 Canonical direction: the approved illustrated Brewing-page reference, using the shared Root Run-inspired asset and nine-slice pipeline already present in the project.
 
-The game should look like a polished fantasy workshop HUD: dark layered rooms, rendered props and item art, tactile image-backed controls, compact outlined labels, and clear resource/action colors.
+The game should look like a polished fantasy workshop HUD: layered illustrated rooms, rendered props and item art, tactile image-backed controls, compact outlined labels, and clear resource/action colors.
 
 ## Core Feel
 
-- High-contrast outlined text over dark midnight/navy panels.
+- High-contrast outlined text over Night navy or Day warm-brown panels.
 - Give each room one dominant illustrated landmark that makes its production loop recognizable.
 - Use shared rendered item/resource art and image-backed panel/button skins as functional UI.
 - Prefer clear grouping, direct labels, and a strong landmark → status → action hierarchy.
@@ -28,12 +28,13 @@ The game should look like a polished fantasy workshop HUD: dark layered rooms, r
 
 ## Color
 
-- Primary text: active theme text, currently `#d4d4d4` in the midnight theme.
-- Midnight-theme panel and control strokes: muted blue-gray, currently `#3f465c`. Text outlines always use the shared near-black text-stroke token.
-- Page and surface: dark midnight tones, currently `#1c1e26` and `#17191f`.
+- Primary text: active theme text, `#d4d4d4` in Night and `#f4eadb` in Day.
+- Panel and control strokes: muted blue-gray `#3f465c` in Night and warm brown `#765339` in Day. Text outlines always use the shared near-black text-stroke token.
+- Page and surface: Night uses the unchanged original `#1c1e26` and `#17191f`; Day uses the flat pale-peach wall `#ffe2c0` behind warm-brown `#543a28` components.
 - Disabled/secondary text and borders: medium gray.
 - Resource and currency displays use their shared icon and approved semantic color while still inheriting disabled/locked treatment. Keep each amount, icon, and resource word together.
 - Page backgrounds use the active theme's solid room surface. Image-backed panels may still use authored shading, texture, bevels, and mild gradients from their shared skins. Do not add arbitrary feature-local gradients. Default dialogs use the dedicated Root Run composition below.
+- Night is the default and preserves the exact former Midnight appearance. Day is a recolor only: matching assets keep the same dimensions, transparent silhouette, nine-slice margins, layout, and depth.
 
 ## Boxes
 
@@ -48,7 +49,7 @@ The game should look like a polished fantasy workshop HUD: dark layered rooms, r
 - Keep the base dialog at a fixed `304px` content width with a `53px` minimum content height and `20px` source content padding inside the paper. Named wider or fixed-height variants may override the base geometry. The brown frame and its compact bottom-right shadow sit outside that content box; do not add a second themed border or rectangular dialog fill.
 - Retained global dialogs cap the complete brown shell at `324px`, which preserves `5%` left and right insets on the `360px` source screen. Their content width is therefore capped at `264px` after shell outsets and `20px` dialog padding; reflow content within the cap instead of scaling the dialog.
 - Dialog text uses the paper palette (`#634934` ink on `#ffe7c8`), independent of the selected room theme. Dialog titles use white text with the shared dark outline on the purple title plaque. Approved destructive or loss-bearing confirmations may use the same plaque geometry and ornaments with the shared semantic-red danger treatment.
-- Backend boot and reconnect stay on the full-screen Idle Witch Craft loading splash until the backend reports online. Account-in-use, maintenance, account, deploy, Shop, Guild, page-owned dialogs, and the first tutorial story prompt use the shared dialog shell. Flows that must retain control hide the close action; feature-specific artwork stays inside the shared paper content area. Full-screen progress and feature-unlock announcement screens stay unframed; report-style announcements remain dialogs.
+- Backend boot and reconnect stay on the full-screen Idle Wizard loading splash until the backend reports online. Its wooden sign reads exactly `Idle Wizard`. Account-in-use, maintenance, account, deploy, Shop, Guild, page-owned dialogs, and the first tutorial story prompt use the shared dialog shell. Flows that must retain control hide the close action; feature-specific artwork stays inside the shared paper content area. Full-screen progress and feature-unlock announcement screens stay unframed; report-style announcements remain dialogs.
 - Tabbed dialogs use a fixed panel height. If tab content is taller than that height, keep the bottom tabs fixed and scroll only the content viewport.
 - Every true tab button uses the shared selected-tab state. Text tabs use the very-dark Root Run brown button skin when deselected and the lighter brown skin when selected; the five bottom room icon tabs keep their dedicated raised active-tab skin. Previous/next pagers are ordinary navigation buttons, not tabs.
 - Every managed scroll panel uses the single `style-page-scroll` primitive, including room pages, dialogs, popups, and bounded lists. It owns the complete Root Run station-panel model: wheel and pointer drag share progressive asymmetric edge resistance, release inertia, elastic top/bottom limits, and a cushioned `260`/`22` spring return that settles in about `250ms`. The thumb compresses against either overscrolled edge. Preserve the `6.5px` vertical track with `4.333333px` block inset, translucent `#17100c` fill, and 72%-alpha black outline; the proportional thumb uses `#f2ae54`, a `#5e321b` outline, and a `29.611111px` minimum height. Keep it on the right edge of the actual viewport, visible only when content overflows. Do not append a horizontal progress rail below scroll content.
@@ -72,7 +73,7 @@ The game should look like a polished fantasy workshop HUD: dark layered rooms, r
 - Disabled buttons use the shared gray button asset and keep normal weight. Never apply grayscale or monochrome shaders to button chrome; those shaders are reserved for icons.
 - Brown/gold is the default action family, green is positive/claim/collect/confirm, and red is cancellation or loss. Cost and tab skins keep their documented roles.
 - Room-level text tabs and compact room actions use the shared `36px` source height. This includes Research and Market page tabs, Garden `Harvest All` and `Seeds`, and Brewing `Recipes`, `Auto`, and `xN`. Dialog footer tabs keep their separate `28px` contract.
-- Shared passive progress rails use losslessly cleaned Root Run capsule assets: the one-pixel Android metadata border is stripped from `progress-bar-bg.9.png` and `progress-bar-fill.9.png`, then only their clean centers stretch at the 10px source height. Retained scrollbars rotate those same capsule interiors vertically so both thumb caps remain authored and round. Purple is the default fill, Brewing uses blue, Garden uses green, and Market/Research use yellow. Trader-stall sale progress is the Market exception: keep it purple and do not inherit the gradient player style. The top-panel level-up rail reuses Root Run's exact panel and track plus a losslessly distilled fill silhouette rendered at the authored 51px qUIck height while retaining the approved Idle Wizard gradient; app-level connection/loading rails keep their selected gradient treatment. Interactive sliders and the top-panel quest rail use the thicker 14px height.
+- Shared passive progress rails use losslessly cleaned Root Run capsule assets: the one-pixel Android metadata border is stripped from `progress-bar-bg.9.png` and `progress-bar-fill.9.png`, then only their clean centers stretch at the 10px source height. Retained scrollbars rotate those same capsule interiors vertically so both thumb caps remain authored and round. Purple is the default fill, Brewing uses blue, Garden uses green, and Market/Research use yellow. Trader-stall sale progress is the Market exception: keep it purple and do not inherit the gradient player style. The top-panel level-up rail reuses Root Run's exact panel, track, and authored yellow fill texture, rendered at the authored 51px qUIck height without an Idle Wizard gradient; app-level connection/loading rails keep their selected gradient treatment. Interactive sliders and the top-panel quest rail use the thicker 14px height.
 
 ## Text Inputs
 
@@ -107,7 +108,7 @@ The game should look like a polished fantasy workshop HUD: dark layered rooms, r
 - Scale source UI directly by the Root Run-style contain-fit viewport scale, including desktop upscaling, so both web and mobile views fit.
 - Do not copy reference-image pixel dimensions; author at the fixed Root Run `390x844` logical surface.
 - Keep future page UI organized around one dominant illustrated landmark with compact supporting panels and actions.
-- Show all five room page icons in the bottom panel. Render each tab with the shared midnight top-cap nine-slice at `83 91 73 1`; inactive tabs use the dark cap and the selected tab uses the lighter cap. Fill the source width and keep an `8px` source safe gap below the complete frames. Keep unlocked icons at full color and opacity in every state, with non-selected icons rendered at `1.5x` their base artwork size. Selecting a tab applies its existing selected-icon treatment while lifting it `12px` into the raised active frame. Keep every tab at the same font weight; the selected tab shows its white Title Case page name while inactive tabs remain icon-only. Locked tabs replace the room icon with a larger lock centered lower in the inactive frame.
+- Show all five room page icons in the bottom panel. Render each tab with the active theme's matching top-cap nine-slice at `83 91 73 1`; inactive tabs use the darker cap and the selected tab uses the lighter cap. Night uses the original midnight assets and Day uses exact warm-brown recolors. Fill the source width and keep an `8px` source safe gap below the complete frames. Keep unlocked icons at full color and opacity in every state, with non-selected icons rendered at `1.5x` their base artwork size. Selecting a tab applies its existing selected-icon treatment while lifting it `12px` into the raised active frame. Keep every tab at the same font weight; the selected tab shows its white Title Case page name while inactive tabs remain icon-only. Locked tabs replace the room icon with a larger lock centered lower in the inactive frame.
 - Keep category tabs and paired actions balanced within their approved image-backed strip or panel.
 - Reuse documented UI motifs from `docs/ui-patterns.md` before creating a new row, box, popup, tab, or border label treatment.
 - Use illustrations, icons, textures, gradients, rounded silhouettes, and shadows only through approved shared skins or purposeful room/item art. Avoid generic cards, arbitrary glow, and decoration without a gameplay role.

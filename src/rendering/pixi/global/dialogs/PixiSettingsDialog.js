@@ -110,8 +110,8 @@ const ACCOUNT_SAVE_HEIGHT =
   PIXI_ROOT_RUN_GEOMETRY.account.save.height;
 const ACCOUNT_SAVE_GAP = 8;
 const ACCOUNT_BOTTOM_GAP = 8;
-const SETTINGS_DEVICE_CONTENT_HEIGHT = 364;
-const SETTINGS_DEVICE_SCROLL_HEIGHT = 344;
+const SETTINGS_DEVICE_CONTENT_HEIGHT = 442;
+const SETTINGS_DEVICE_SCROLL_HEIGHT = 422;
 const SETTINGS_TABS = new Set([
   'account',
   'report',
@@ -156,8 +156,14 @@ const DEVICE_PREFERENCES = Object.freeze([
     text: 'VIBRATION',
     iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsVibration,
   }),
+  Object.freeze({
+    key: 'theme',
+    text: 'THEME',
+    iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsThemeNight,
+    onIconAssetId: PIXI_ROOT_RUN_ASSETS.settingsThemeDay,
+  }),
 ]);
-const DEVICE_ACCOUNT_PANEL_GAP = 8;
+const DEVICE_SECTION_GAP = 8;
 const DEVICE_ACCOUNT_PANEL_HEIGHT = 92;
 const DEVICE_ACCOUNT_PANEL_PADDING_TOP = 10;
 const DEVICE_ACCOUNT_STATUS_GAP = 2;
@@ -438,6 +444,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
         preferenceKey: definition.key,
         text: definition.text,
         iconAssetId: definition.iconAssetId,
+        onIconAssetId: definition.onIconAssetId,
         label: `${this.dialogId}:preference:${definition.key}`,
       });
       return {
@@ -449,7 +456,19 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       };
     });
     this.devicePanel.setRows(
-      this.preferenceRows.map(({ widget }) => widget),
+      this.preferenceRows
+        .filter(({ key }) => key !== 'theme')
+        .map(({ widget }) => widget),
+    );
+    this.themePanel = new RootRunDevicePreferencesPanel({
+      assetManager: this.context.assets,
+      width: SETTINGS_CONTENT_WIDTH,
+      label: `${this.dialogId}:themePanel`,
+    });
+    this.themePanel.setRows(
+      this.preferenceRows
+        .filter(({ key }) => key === 'theme')
+        .map(({ widget }) => widget),
     );
     this.accountConnectionPanel = new PixiNineSliceFrame({
       texture: this.context.assets.getTexture(
@@ -501,6 +520,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     });
     this.configurationsLayer.addChild(
       this.devicePanel,
+      this.themePanel,
       this.accountConnectionPanel,
       this.accountConnectionLabel,
       this.accountStatus,
@@ -927,7 +947,12 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.devicePanel.setWidth(SETTINGS_CONTENT_WIDTH);
     y +=
       this.devicePanel.panelHeight +
-      DEVICE_ACCOUNT_PANEL_GAP;
+      DEVICE_SECTION_GAP;
+    this.themePanel.position.set(0, y);
+    this.themePanel.setWidth(SETTINGS_CONTENT_WIDTH);
+    y +=
+      this.themePanel.panelHeight +
+      DEVICE_SECTION_GAP;
     this.accountConnectionPanel.position.set(0, y);
     this.accountConnectionPanel.setSize(
       SETTINGS_CONTENT_WIDTH,
@@ -1245,6 +1270,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     }
     const deviceTheme = this.theme ?? this.context.theme;
     this.devicePanel?.applyTheme(deviceTheme);
+    this.themePanel?.applyTheme(deviceTheme);
     this.identityFooter?.applyTheme(deviceTheme);
     for (const avatar of this.avatars?.getWidgets?.() ?? []) {
       avatar.applyTheme(theme);
@@ -1571,6 +1597,9 @@ function normalizeSettingsModel(
         settings.preferences?.sfx ??
         settings.sfxEnabled ??
         true,
+      theme:
+        settings.preferences?.theme ??
+        settings.theme === 'day',
     },
     avatars,
     frames,

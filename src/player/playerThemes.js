@@ -1,32 +1,31 @@
-export const DEFAULT_PLAYER_THEME = 'midnight';
+export const DEFAULT_PLAYER_THEME = 'night';
 
 export const PLAYER_THEME_OPTIONS = Object.freeze([
   Object.freeze({
-    key: 'black',
-    label: 'black',
+    key: 'night',
+    label: 'night',
   }),
   Object.freeze({
-    key: 'midnight',
-    label: 'midnight',
-  }),
-  Object.freeze({
-    key: 'witchcraft',
-    label: 'witchcraft',
+    key: 'day',
+    label: 'day',
   }),
 ]);
 
 const THEME_KEYS = new Set(PLAYER_THEME_OPTIONS.map((theme) => theme.key));
 const THEME_ALIASES = new Map([
-  ['mild-white', 'midnight'],
-  ['mild-black', 'black'],
-  ['dark-gray', 'black'],
-  ['night-black', 'black'],
-  ['vs-code-midnight', 'midnight'],
-  ['vscode-midnight', 'midnight'],
-  ['idle-witch-craft', 'witchcraft'],
-  ['idle witch craft', 'witchcraft'],
-  ['idle-whitch-craft', 'witchcraft'],
-  ['idle whitch craft', 'witchcraft'],
+  ['midnight', 'night'],
+  ['black', 'night'],
+  ['witchcraft', 'night'],
+  ['mild-white', 'night'],
+  ['mild-black', 'night'],
+  ['dark-gray', 'night'],
+  ['night-black', 'night'],
+  ['vs-code-midnight', 'night'],
+  ['vscode-midnight', 'night'],
+  ['idle-witch-craft', 'night'],
+  ['idle witch craft', 'night'],
+  ['idle-whitch-craft', 'night'],
+  ['idle whitch craft', 'night'],
 ]);
 
 export function normalizePlayerTheme(theme) {

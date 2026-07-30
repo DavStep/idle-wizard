@@ -8,7 +8,7 @@ import {
 } from './PixiThemeTokens.js';
 
 describe('Pixi theme tokens', () => {
-  it('keeps the authored source geometry and midnight defaults', () => {
+  it('keeps the authored source geometry and Night defaults', () => {
     expect(PIXI_UI_GEOMETRY).toMatchObject({
       authoredWidth: 1080,
       authoredHeight: 2170,
@@ -20,7 +20,7 @@ describe('Pixi theme tokens', () => {
       roomControlHeight: 36,
     });
     expect(DEFAULT_PIXI_THEME_SNAPSHOT).toMatchObject({
-      themeKey: 'midnight',
+      themeKey: 'night',
       background: '#1c1e26',
       surface: '#17191f',
       text: '#d4d4d4',
@@ -30,19 +30,19 @@ describe('Pixi theme tokens', () => {
 
   it('normalizes aliases and resolves the full visual settings snapshot', () => {
     const snapshot = createPixiThemeSnapshot({
-      theme: 'idle-witch-craft',
+      theme: 'day',
       font: 'comic sans mono',
       colorMode: 'resources',
       iconMode: 'icons',
       progressBar: 'bronze',
     });
 
-    expect(snapshot.themeKey).toBe('witchcraft');
+    expect(snapshot.themeKey).toBe('day');
     expect(snapshot.fontKey).toBe('comic-sans-mono');
     expect(snapshot.progressKey).toBe('notched');
-    expect(snapshot.resourceColors.coin).toBe('#ffd76a');
+    expect(snapshot.resourceColors.coin).toBe('#f2d36c');
     expect(snapshot.revisionKey).toBe(
-      'witchcraft:comic-sans-mono:resources:icons:notched',
+      'day:comic-sans-mono:resources:icons:notched',
     );
   });
 });
@@ -52,7 +52,7 @@ describe('PixiThemeManager', () => {
     let publish = null;
     const playerFacade = {
       getSnapshot: () => ({
-        theme: 'midnight',
+        theme: 'night',
         font: 'lexend',
         colorMode: 'resources',
         iconMode: 'icons',
@@ -71,8 +71,8 @@ describe('PixiThemeManager', () => {
     publish(playerFacade.getSnapshot());
     expect(listener).not.toHaveBeenCalled();
 
-    publish({ ...playerFacade.getSnapshot(), theme: 'black' });
+    publish({ ...playerFacade.getSnapshot(), theme: 'day' });
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(manager.getSnapshot().themeKey).toBe('black');
+    expect(manager.getSnapshot().themeKey).toBe('day');
   });
 });

@@ -260,6 +260,7 @@ export class PixiGlobalDialogPresenter {
         haptics: haptics.enabled !== false,
         music: sound.musicEnabled !== false,
         sfx: sound.sfxEnabled !== false,
+        theme: player.theme === 'day',
       },
       categories: createSettingsCategories(),
       selections: {
@@ -713,6 +714,13 @@ export class PixiGlobalDialogPresenter {
       return (
         this.soundSettingsFacade?.setSfxEnabled?.(enabled) ??
         false
+      );
+    }
+    if (key === 'theme') {
+      return Boolean(
+        this.playerFacade?.setTheme?.(
+          enabled ? 'day' : 'night',
+        ),
       );
     }
     return false;

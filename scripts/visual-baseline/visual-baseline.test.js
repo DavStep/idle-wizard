@@ -70,7 +70,7 @@ describe('visual baseline manifest', () => {
     });
 
     expect(defaultJobs).toHaveLength(1);
-    expect(matrixJobs).toHaveLength(18);
+    expect(matrixJobs).toHaveLength(12);
     expect(matrixJobs.every(({ automated }) => automated)).toBe(true);
   });
 
@@ -85,9 +85,8 @@ describe('visual baseline manifest', () => {
       ]),
     );
     expect(inventory.settingOptions.theme).toEqual([
-      'black',
-      'midnight',
-      'witchcraft',
+      'night',
+      'day',
     ]);
   });
 });

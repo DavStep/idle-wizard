@@ -1,7 +1,7 @@
 <!doctype html>
 <html
   lang="en"
-  data-style-theme="witchcraft"
+  data-style-theme="night"
   data-style-font="lilita-one"
 >
   <head>
@@ -80,7 +80,7 @@
       import '@fontsource/lilita-one/400.css';
 
       const requestedTheme = new URLSearchParams(location.search).get('theme');
-      if (['black', 'midnight', 'witchcraft'].includes(requestedTheme)) {
+      if (['night', 'day'].includes(requestedTheme)) {
         document.documentElement.dataset.styleTheme = requestedTheme;
       }
 

@@ -104,6 +104,7 @@ appears only in the existing `xN` configuration control.
 The framed action section begins with the predicted potion inside the shared
 Research-row art well. With no selected ingredients or recipe, the well stays
 present as an empty solid squircle. Phase/timer progress sits beside it.
+That batch-detail rail uses the shared default purple fill.
 The shortened panel is bottom-anchored directly above World Chat and ends with
 one wide primary button. Compact Recipes, Auto, and `xN` controls sit outside
 the panel in the carousel header, right-aligned beside the cauldron title

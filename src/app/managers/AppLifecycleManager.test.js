@@ -1036,7 +1036,11 @@ describe('AppLifecycleManager', () => {
       accountLinkChoiceManager,
       authFacade,
       playerFacade: {
-        getSnapshot: vi.fn(() => ({ username: 'Mira' })),
+        getSnapshot: vi.fn(() => ({
+          username: 'Mira',
+          character: 'elara',
+          frame: 'violet',
+        })),
       },
     });
 
@@ -1047,6 +1051,11 @@ describe('AppLifecycleManager', () => {
       deviceSave,
       accountSave,
       accountUsername: 'Mira',
+      accountProfile: {
+        username: 'Mira',
+        character: 'elara',
+        frame: 'violet',
+      },
     });
     expect(authFacade.clearPendingAccountLinkSave).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(

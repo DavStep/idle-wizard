@@ -8,7 +8,7 @@ import {
   DEFAULT_PLAYER_PROGRESS_BAR,
   PLAYER_PROGRESS_BAR_OPTIONS,
 } from './playerProgressBars.js';
-import { DEFAULT_PLAYER_THEME, PLAYER_THEME_OPTIONS } from './playerThemes.js';
+import { PLAYER_THEME_OPTIONS } from './playerThemes.js';
 
 export const PLAYER_VISUAL_SETTING_CATEGORIES = Object.freeze([
   Object.freeze({
@@ -48,7 +48,9 @@ export const DEFAULT_PLAYER_VISUAL_SETTINGS_COSTS_CRYSTAL = Object.freeze(
 );
 
 export const DEFAULT_PLAYER_VISUAL_SETTINGS_RESEARCHED = Object.freeze({
-  theme: Object.freeze({ [DEFAULT_PLAYER_THEME]: true }),
+  theme: Object.freeze(
+    Object.fromEntries(PLAYER_THEME_OPTIONS.map((option) => [option.key, true])),
+  ),
   font: Object.freeze({ [DEFAULT_PLAYER_FONT]: true }),
   character: Object.freeze(
     Object.fromEntries(

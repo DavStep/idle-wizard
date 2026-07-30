@@ -204,6 +204,7 @@ describe('retained global Pixi dialogs', () => {
           haptics: true,
           music: true,
           sfx: true,
+          theme: false,
         },
       },
     );
@@ -296,7 +297,7 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.panel.titleLabel.text).toBe('Settings');
     expect(
       settings.preferenceRows.map(({ key }) => key),
-    ).toEqual(['sfx', 'music', 'haptics']);
+    ).toEqual(['sfx', 'music', 'haptics', 'theme']);
     expect(
       settings.preferenceRows.every(
         ({ toggle }) =>
@@ -306,6 +307,17 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.devicePanel).toBeInstanceOf(
       RootRunDevicePreferencesPanel,
     );
+    expect(settings.themePanel).toBeInstanceOf(
+      RootRunDevicePreferencesPanel,
+    );
+    expect(settings.devicePanel.rows).toEqual(
+      settings.preferenceRows
+        .slice(0, 3)
+        .map(({ widget }) => widget),
+    );
+    expect(settings.themePanel.rows).toEqual([
+      settings.preferenceRows[3].widget,
+    ]);
     expect(
       settings.preferenceRows.every(
         ({ widget }) =>
@@ -314,12 +326,13 @@ describe('retained global Pixi dialogs', () => {
     ).toBe(true);
     expect(
       settings.preferenceRows.map(({ label }) => label.text),
-    ).toEqual(['SOUND', 'MUSIC', 'VIBRATION']);
+    ).toEqual(['SOUND', 'MUSIC', 'VIBRATION', 'THEME']);
     expect(settings.preferenceRows[0].label.colorToken).toBe(
       '#735036',
     );
     expect(settings.configurationsLayer.children).toEqual([
       settings.devicePanel,
+      settings.themePanel,
       settings.accountConnectionPanel,
       settings.accountConnectionLabel,
       settings.accountStatus,
@@ -355,11 +368,21 @@ describe('retained global Pixi dialogs', () => {
       'yellow',
     );
     expect(settings.scroll.maxScrollY).toBe(0);
+    expect(
+      settings.themePanel.y -
+        (settings.devicePanel.y + settings.devicePanel.panelHeight),
+    ).toBe(8);
+    expect(
+      settings.accountConnectionPanel.y -
+        (settings.themePanel.y + settings.themePanel.panelHeight),
+    ).toBe(8);
 
     expect(settings.preferenceRows[0].toggle.activate()).toBe(
       true,
     );
     expect(togglePreference).toHaveBeenCalledWith('sfx', false);
+    expect(settings.preferenceRows[3].toggle.activate()).toBe(true);
+    expect(togglePreference).toHaveBeenCalledWith('theme', true);
     await settings.accountConnectButton.activate();
     expect(connectAccount).toHaveBeenCalledTimes(1);
     await settings.identityFooter.copyButton.activate();
@@ -422,8 +445,8 @@ describe('retained global Pixi dialogs', () => {
       closeControl: { visible: false, renderable: false },
     });
     expect(announcement.heading.theme).toMatchObject({
-      surface: '#202020',
-      text: '#e8e8e8',
+      surface: '#17191f',
+      text: '#d4d4d4',
     });
 
     announcement.bind({
@@ -459,9 +482,9 @@ describe('retained global Pixi dialogs', () => {
     );
     expect(settings.panel).toMatchObject({
       contentBoxWidth: 264,
-      contentBoxHeight: 364,
+      contentBoxHeight: 442,
       outerWidth: 304,
-      outerHeight: 404,
+      outerHeight: 482,
     });
     expect(settings.panel.outerFrame.frameWidth).toBe(
       GLOBAL_DIALOG_GEOMETRY.maxShellWidth,
